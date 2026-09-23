@@ -398,6 +398,10 @@
     programBackToHome: document.getElementById("programBackToHome"),
     programTitle: document.getElementById("programTitle"),
     chapterList: document.getElementById("chapterList"),
+    bundleOverview: document.getElementById("bundleOverview"),
+    bundleBackToHome: document.getElementById("bundleBackToHome"),
+    bundleTitle: document.getElementById("bundleTitle"),
+    bundleList: document.getElementById("bundleList"),
     programStartBtn: document.getElementById("programStartBtn"),
     pauseScreen: document.getElementById("pauseScreen"),
     pauseCountdown: document.getElementById("pauseCountdown"),
@@ -676,6 +680,8 @@
     return null;
   }
 
+  let originBundle = null; // { def, code } - set when a programme was opened from a bundle overview
+
   async function openProgramIntro(code) {
     if (els.programGoBtn) els.programGoBtn.disabled = true;
     const def = await lookupProgram(code);
@@ -685,7 +691,33 @@
       return;
     }
     els.programError.hidden = true;
-    els.programTitle.textContent = def.name;
+    if (def.type === "bundle") {
+      openBundleOverview(def, code);
+      return;
+    }
+    originBundle = null;
+    renderProgramIntro(def, code);
+  }
+
+  function openBundleOverview(bundleDef, code) {
+    els.bundleTitle.textContent = bundleDef.name;
+    els.bundleList.innerHTML = "";
+    bundleDef.programs.forEach((p, i) => {
+      const item = document.createElement("button");
+      item.className = "bundle-item";
+      item.innerHTML = `<strong>${p.label || ("Programm " + (i + 1))}</strong><span>${p.description || ""}</span>`;
+      item.addEventListener("click", () => {
+        originBundle = { def: bundleDef, code };
+        renderProgramIntro(p, code);
+      });
+      els.bundleList.appendChild(item);
+    });
+    els.home.hidden = true;
+    els.bundleOverview.hidden = false;
+  }
+
+  function renderProgramIntro(def, code) {
+    els.programTitle.textContent = def.name || def.label;
     if (def.introVideo) {
       els.introVideo.src = def.introVideo;
       els.introVideo.hidden = false;
@@ -722,6 +754,7 @@
       playChapter(0);
     };
     els.home.hidden = true;
+    els.bundleOverview.hidden = true;
     els.programIntro.hidden = false;
   }
 
@@ -739,6 +772,16 @@
   if (els.programBackToHome) {
     els.programBackToHome.addEventListener("click", () => {
       els.programIntro.hidden = true;
+      if (originBundle) {
+        openBundleOverview(originBundle.def, originBundle.code);
+      } else {
+        els.home.hidden = false;
+      }
+    });
+  }
+  if (els.bundleBackToHome) {
+    els.bundleBackToHome.addEventListener("click", () => {
+      els.bundleOverview.hidden = true;
       els.home.hidden = false;
     });
   }
@@ -1088,6 +1131,7 @@
     els.pauseScreen.hidden = true;
     els.programDonePanel.hidden = true;
     els.programIntro.hidden = true;
+    els.bundleOverview.hidden = true;
     els.home.hidden = false;
     els.ready.hidden = true;
   }
