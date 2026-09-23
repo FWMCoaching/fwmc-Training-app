@@ -360,7 +360,8 @@
     readyTitle: document.getElementById("readyTitle"),
     readyIcon: document.getElementById("readyIcon"),
     rulesBox: document.getElementById("rulesBox"),
-    audioToggle: document.getElementById("audioToggle"),
+    filterMoreBtn: document.getElementById("filterMoreBtn"),
+    filterExtra: document.getElementById("filterExtra"),
     startBtn: document.getElementById("startBtn"),
     backToHome: document.getElementById("backToHome"),
     backBtn: document.getElementById("backBtn"),
@@ -478,7 +479,6 @@
     stimulusS: 1.5,
     intervalMin: 2,
     intervalMax: 4,
-    audioEnabled: false,
     palette: "ORL",
     sequence: "frei",
   };
@@ -536,16 +536,44 @@
     els.ready.hidden = false;
   }
 
-  const crossCard = document.querySelector('[data-exercise="cross-modal"]');
-  function syncAudioToggle() {
-    if (crossCard) crossCard.hidden = !state.audioEnabled;
-    if (els.audioToggle) els.audioToggle.checked = !!state.audioEnabled;
+  // ---- Exercise filter chips (multi-select "typ", exclusive "ton") ----
+  const activeFilters = { ton: null, typ: new Set() };
+  function applyFilters() {
+    document.querySelectorAll(".excard").forEach((card) => {
+      const tags = (card.dataset.tags || "").split(/\s+/).filter(Boolean);
+      let visible = true;
+      if (activeFilters.ton === "ton" && !tags.includes("ton")) visible = false;
+      if (activeFilters.ton === "ohne-ton" && tags.includes("ton")) visible = false;
+      if (activeFilters.typ.size > 0 && !tags.some((t) => activeFilters.typ.has(t))) visible = false;
+      card.hidden = !visible;
+    });
   }
-  if (els.audioToggle) {
-    els.audioToggle.addEventListener("change", () => {
-      state.audioEnabled = els.audioToggle.checked;
-      savePrefs();
-      syncAudioToggle();
+  document.querySelectorAll(".filter-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const group = chip.dataset.filterGroup;
+      const value = chip.dataset.filterValue;
+      if (group === "ton") {
+        const turningOn = activeFilters.ton !== value;
+        document.querySelectorAll('.filter-chip[data-filter-group="ton"]').forEach((c) => c.classList.remove("active"));
+        activeFilters.ton = turningOn ? value : null;
+        if (turningOn) chip.classList.add("active");
+      } else {
+        if (activeFilters.typ.has(value)) {
+          activeFilters.typ.delete(value);
+          chip.classList.remove("active");
+        } else {
+          activeFilters.typ.add(value);
+          chip.classList.add("active");
+        }
+      }
+      applyFilters();
+    });
+  });
+  if (els.filterMoreBtn) {
+    els.filterMoreBtn.addEventListener("click", () => {
+      const willShow = els.filterExtra.hidden;
+      els.filterExtra.hidden = !willShow;
+      els.filterMoreBtn.textContent = willShow ? "Weniger Filter" : "Mehr Filter";
     });
   }
 
@@ -1099,7 +1127,6 @@
   });
 
   loadPrefs();
-  syncAudioToggle();
 
   // PWA: only meaningful on real hosting - service workers do not run
   // inside the Artifacts preview sandbox, so registration there is a

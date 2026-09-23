@@ -107,13 +107,22 @@ h1.page-title{
   max-width:56ch;
 }
 
-.toggle-row{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  border:1px solid var(--line);background:var(--surface);border-radius:14px;
-  padding:12px 16px;margin-bottom:16px;font-size:14px;font-weight:500;
-  box-shadow:var(--shadow);
+.filter-bar{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:16px;
 }
-.toggle-row input{width:20px;height:20px;accent-color:var(--brand)}
+.filter-extra{display:flex;flex-wrap:wrap;gap:8px;width:100%}
+.filter-chip{
+  border:1.5px solid var(--line);background:var(--surface);color:var(--ink-soft);
+  font-family:"Public Sans",sans-serif;font-size:12.5px;font-weight:600;
+  padding:8px 14px;border-radius:999px;cursor:pointer;
+}
+.filter-chip.active{
+  border-color:var(--brand);background:var(--brand);color:#fff;
+}
+.filter-more{
+  border:none;background:none;color:var(--brand);font-family:"Public Sans",sans-serif;
+  font-size:12.5px;font-weight:700;text-decoration:underline;cursor:pointer;padding:8px 4px;
+}
 
 .palette-grid{
   display:flex;flex-wrap:wrap;gap:8px;
