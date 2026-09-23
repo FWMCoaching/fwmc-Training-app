@@ -78,7 +78,7 @@ h1,h2,h3{font-family:"Magra",system-ui,sans-serif}
   align-items:center;
   flex-wrap:wrap;
   column-gap:14px;
-  row-gap:4px;
+  row-gap:12px;
   margin-bottom:22px;
 }
 .brand-logo{
