@@ -699,13 +699,26 @@
     renderProgramIntro(def, code);
   }
 
+  function formatDateDE(iso) {
+    const parts = (iso || "").split("-");
+    if (parts.length !== 3) return "";
+    const [y, m, d] = parts;
+    return `${d}.${m}.${y}`;
+  }
+
   function openBundleOverview(bundleDef, code) {
     els.bundleTitle.textContent = bundleDef.name;
     els.bundleList.innerHTML = "";
-    bundleDef.programs.forEach((p, i) => {
+    const sorted = bundleDef.programs
+      .map((p, i) => ({ p, i }))
+      .sort((a, b) => (b.p.createdAt || "").localeCompare(a.p.createdAt || "") || (a.i - b.i));
+    sorted.forEach(({ p, i }) => {
       const item = document.createElement("button");
       item.className = "bundle-item";
-      item.innerHTML = `<strong>${p.label || ("Programm " + (i + 1))}</strong><span>${p.description || ""}</span>`;
+      const dateLabel = formatDateDE(p.createdAt);
+      item.innerHTML =
+        `<div class="bundle-item-head"><strong>${p.label || ("Programm " + (i + 1))}</strong>${dateLabel ? `<span class="bundle-date">${dateLabel}</span>` : ""}</div>` +
+        `<span>${p.description || ""}</span>`;
       item.addEventListener("click", () => {
         originBundle = { def: bundleDef, code };
         renderProgramIntro(p, code);
