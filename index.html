@@ -25,6 +25,7 @@
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
     <button class="section-tab active" data-section="visual" role="tab" aria-selected="true">Visual Training</button>
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
   </nav>
 
   <section class="hero">
@@ -204,6 +205,7 @@
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
     <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
     <button class="section-tab active" data-section="breath" role="tab" aria-selected="true">Atemtraining</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
   </nav>
 
   <section class="hero">
@@ -247,6 +249,56 @@
       <span class="section-note">alle Phasen frei einstellbar</span>
     </div>
     <div class="featured-grid" id="patternGrid"></div>
+  </section>
+
+  <footer class="site-footer">
+    <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong><span class="beta">Beta</span></p>
+    <nav>
+      <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
+      <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a>
+      <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutz</a>
+    </nav>
+  </footer>
+</div>
+
+<div class="screen" id="movementHome" hidden>
+  <header class="brandbar">
+    <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC Online-Training</em>
+  </header>
+
+  <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
+    <button class="section-tab active" data-section="movement" role="tab" aria-selected="true">Movement</button>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-kicker">Movement <span class="placeholder-tag">Name noch offen</span></div>
+    <h1 class="hero-title">Bewegen. Merken. Reagieren.</h1>
+    <p class="hero-text">Ganzk&ouml;rper-Reaktionstraining im Takt &ndash; ein Symbol zeigt dir, was als N&auml;chstes zu tun ist, bevor du dran bist.</p>
+    <button class="text-link" id="movementTipsBtn">Wie funktioniert das? &rarr;</button>
+  </section>
+
+  <section class="history" id="movementHistorySection" hidden>
+    <div class="section-head">
+      <h2>Dein Verlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t gespeichert</span>
+    </div>
+    <div class="history-stats" id="movementHistoryStats"></div>
+    <ul class="history-list" id="movementHistoryList"></ul>
+    <button class="text-link small" id="movementHistoryClearBtn">Verlauf l&ouml;schen</button>
+  </section>
+
+  <section class="patterns">
+    <div class="section-head">
+      <h2>Training starten</h2>
+      <span class="section-note">8 Grundbewegungen, frei kombinierbar</span>
+    </div>
+    <button class="featured-card" id="movementStartCard">
+      <span class="fc-title">Ganzk&ouml;rper-Reaktion</span>
+      <span class="fc-desc">Arme und Beine heben oder strecken, im Takt &ndash; mit Vorschau auf das, was als N&auml;chstes kommt.</span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -431,6 +483,78 @@
   <div class="chapter-list" id="breathChapterList"></div>
   <p class="program-hint">Das Programm l&auml;uft automatisch durch alle &Uuml;bungen, mit kurzem &Uuml;bergang dazwischen. Tippe auf eine &Uuml;bung, um direkt dort einzusteigen.</p>
   <button class="start-btn" id="breathProgramStartBtn">Programm starten</button>
+</div>
+
+<div class="screen" id="movementReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="movementBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Ganzk&ouml;rper-Reaktion</h1>
+  <p class="page-sub">Ein Symbol zeigt die n&auml;chste Bewegung. Stell ein, wie viele Bewegungen du im Voraus sehen willst.</p>
+
+  <div class="group">
+    <div class="group-label">Bewegungen <span class="group-count" id="movementCount"></span></div>
+    <div class="movement-picker" id="movementPicker"></div>
+    <div class="group-help">Mindestens zwei ausgew&auml;hlt lassen, damit Abwechslung entsteht.</div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Vorschau</div>
+    <div class="choice-row" id="previewRow">
+      <button class="choice" data-mv-preview="1">Keine<small>1 Feld</small></button>
+      <button class="choice" data-mv-preview="2">Kurz<small>2 Felder</small></button>
+      <button class="choice" data-mv-preview="3">Mittel<small>3 Felder</small></button>
+      <button class="choice" data-mv-preview="4">Weit<small>4 Felder</small></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Tempo</div>
+    <div class="choice-row" id="tempoRow">
+      <button class="choice" data-mv-bpm="40">Langsam<small>40 BPM</small></button>
+      <button class="choice" data-mv-bpm="60">Mittel<small>60 BPM</small></button>
+      <button class="choice" data-mv-bpm="80">Schnell<small>80 BPM</small></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Dauer</div>
+    <div class="choice-row" id="movementDurRow">
+      <button class="choice" data-mv-dur="1">1 Min</button>
+      <button class="choice" data-mv-dur="2">2 Min</button>
+      <button class="choice" data-mv-dur="3">3 Min</button>
+    </div>
+  </div>
+
+  <details class="advanced" id="movementAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Ansicht</div>
+        <div class="choice-row two" id="mirrorRow">
+          <button class="choice" data-mv-mirror="1">Spiegelbild<small>wie im Spiegel</small></button>
+          <button class="choice" data-mv-mirror="0">Eigene Sicht<small>von vorne betrachtet</small></button>
+        </div>
+        <div class="group-help">Spiegelbild: deine linke Seite erscheint links im Bild &ndash; wie beim Nachmachen vor einem Bildschirm. Eigene Sicht: die Figur schaut dich an, ihre linke Seite ist dann rechts im Bild.</div>
+      </div>
+      <div class="group">
+        <div class="group-label">Ansage</div>
+        <div class="choice-row two" id="movementSoundRow">
+          <button class="choice" data-mv-sound="1">Mit Ansage</button>
+          <button class="choice" data-mv-sound="0">Still</button>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Beschriftung</div>
+        <div class="choice-row two" id="labelRow">
+          <button class="choice" data-mv-label="1">Text anzeigen</button>
+          <button class="choice" data-mv-label="0">Nur Symbol</button>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <button class="start-btn" id="movementStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="wimhofReady" hidden>
@@ -618,6 +742,45 @@
     <div class="rating" id="wimhofRating"></div>
     <button class="again" id="wimhofAgainBtn">Nochmal</button>
     <button class="back" id="wimhofDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="movementPlayer" hidden>
+  <div class="movement-stage">
+    <div class="movement-lane" id="movementLane"></div>
+  </div>
+  <div class="progress-track" id="movementProgressTrack"></div>
+  <div class="player-bar" id="movementPlayerBar">
+    <button id="movementBackBtn">&#10005; Beenden</button>
+    <span class="player-status" id="movementTimeEl">0:00</span>
+    <button id="movementFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="movementFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt.</span>
+    <button id="movementFsHintOpenBtn">In neuem Tab &ouml;ffnen</button>
+    <button class="fs-hint-close" id="movementFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="movementDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="movementDoneSummary"></p>
+    <div class="rating" id="movementRating"></div>
+    <button class="again" id="movementAgainBtn">Nochmal</button>
+    <button class="back" id="movementDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="sheet" id="movementTipsSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="movementTipsTitle">
+    <h2 id="movementTipsTitle">So funktioniert Movement</h2>
+    <ol class="tips">
+      <li><strong>Symbol beobachten.</strong> Eine kleine Figur zeigt, welcher Arm oder welches Bein sich bewegt und wie (heben oder strecken).</li>
+      <li><strong>Vorschau nutzen.</strong> Rechts siehst du schon, was als N&auml;chstes kommt &ndash; so kannst du dich vorbereiten, statt nur zu reagieren.</li>
+      <li><strong>Im Takt bleiben.</strong> Ein Feld r&uuml;ckt nach links, sobald die Bewegung dran ist. F&uuml;hre sie aus, bevor das n&auml;chste dran ist.</li>
+      <li><strong>Platz zum Bewegen.</strong> Sorge f&uuml;r etwas freien Raum um dich herum.</li>
+    </ol>
+    <button class="start-btn" id="movementTipsCloseBtn">Los geht&rsquo;s</button>
   </div>
 </div>
 

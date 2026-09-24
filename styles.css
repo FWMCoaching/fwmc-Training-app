@@ -104,6 +104,11 @@ button{font-family:inherit;color:inherit}
   font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--brand);
   margin-bottom:6px;
 }
+.placeholder-tag{
+  text-transform:none;letter-spacing:0;font-weight:600;font-size:11px;color:var(--ink-soft);
+  background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:2px 9px;margin-left:4px;
+  vertical-align:1px;
+}
 .hero-title{font-size:clamp(28px,7vw,40px);line-height:1.05;margin:0 0 10px;text-wrap:balance}
 .hero-text{color:var(--ink-soft);font-size:16px;margin:0 0 10px;max-width:52ch}
 .text-link{
@@ -375,6 +380,33 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .color-swatch.active .swatch-name{color:var(--ink)}
 .color-hint{font-size:12.5px;color:var(--ink-soft);min-height:1.4em}
 .color-hint.warn{color:var(--warn);font-weight:700}
+
+/* ---- Movement: picker chips + figure pictogram + lane player ---- */
+.movement-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media (max-width:380px){.movement-picker{grid-template-columns:repeat(2,1fr)}}
+.movement-chip{
+  display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;
+  border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 4px 6px;
+}
+.movement-chip .figure-svg{width:34px;height:52px}
+.movement-chip span{font-size:10.5px;font-weight:600;color:var(--ink-soft);text-align:center;line-height:1.25}
+.movement-chip.active{border-color:var(--brand);background:var(--brand-pale)}
+.movement-chip.active span{color:var(--brand-deep)}
+
+.figure-svg{display:block}
+
+.movement-stage{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 14px}
+.movement-lane{display:flex;align-items:flex-end;justify-content:center;gap:10px;width:100%;max-width:720px}
+.movement-tile{
+  flex:1;max-width:190px;display:flex;flex-direction:column;align-items:center;gap:8px;
+  background:#fff;border:2px solid #dde6e8;border-radius:18px;padding:14px 8px 12px;
+  transition:transform .15s ease, opacity .15s ease, border-color .15s ease;
+  opacity:.55;transform:scale(.86);
+}
+.movement-tile .figure-svg{width:64px;height:98px}
+.movement-tile .mv-label{font-size:12.5px;font-weight:700;color:#16232a;text-align:center;min-height:1.4em}
+.movement-tile.active{opacity:1;transform:scale(1.08);border-color:#ff9110;box-shadow:0 6px 20px -8px rgba(255,145,16,.5)}
+.movement-tile.next{opacity:.82;transform:scale(.94)}
 
 /* Advanced settings */
 .advanced{

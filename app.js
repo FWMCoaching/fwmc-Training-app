@@ -555,6 +555,85 @@
     }, 0);
   }
 
+  // ==== Movement (placeholder name) ====
+  // Deliberately designed from scratch, from Fabian's own description only
+  // (no reference product was looked at), so the pictogram style, movement
+  // set and interaction (a look-ahead "lane" of upcoming moves) are our own.
+  // Parked for a later iteration, per Fabian: head-tilt + colour-inversion
+  // rule (mirrors the VRW "green=shown/red=opposite" idea onto the body),
+  // two-limb combo tiles, and coach-authored programmes/codes like the
+  // other two sections already have.
+  const MOVEMENTS = [
+    { id: "armL-heben", limb: "armL", type: "heben", label: "Linker Arm heben" },
+    { id: "armL-strecken", limb: "armL", type: "strecken", label: "Linker Arm strecken" },
+    { id: "armR-heben", limb: "armR", type: "heben", label: "Rechter Arm heben" },
+    { id: "armR-strecken", limb: "armR", type: "strecken", label: "Rechter Arm strecken" },
+    { id: "legL-heben", limb: "legL", type: "heben", label: "Linkes Bein heben" },
+    { id: "legL-strecken", limb: "legL", type: "strecken", label: "Linkes Bein strecken" },
+    { id: "legR-heben", limb: "legR", type: "heben", label: "Rechtes Bein heben" },
+    { id: "legR-strecken", limb: "legR", type: "strecken", label: "Rechtes Bein strecken" },
+  ];
+  const MOVEMENT_BY_ID = Object.fromEntries(MOVEMENTS.map((m) => [m.id, m]));
+  const MIN_MOVEMENTS = 2;
+
+  // A minimal humanoid pictogram, built from lines/shapes rather than any
+  // borrowed artwork: one limb is drawn highlighted in its "heben" (raised)
+  // or "strecken" (extended) pose, the rest stay in the neutral standing
+  // pose. `baseColor` lets the same renderer sit on a themed background
+  // (settings screen, following the site's dark mode) or the always-light
+  // player stage (fixed dark ink, matching the visual-training canvas).
+  const FIG_HIGHLIGHT = "#ff9110";
+  const ARM_POSE = {
+    neutral: [[38, 36], [30, 66]],
+    heben: [[38, 36], [18, 8]],
+    strecken: [[38, 36], [4, 36]],
+  };
+  const LEG_POSE = {
+    // Both poses stay below the torso's bounding box (y > 74) so the torso
+    // rect drawn on top never clips them. "heben" bends the leg out to the
+    // side almost at a right angle (thigh out, shin down); "strecken" is
+    // one long straight diagonal - the bend is what tells them apart.
+    neutral: [[42, 78], [38, 144]],
+    heben: [[42, 78], [20, 76], [24, 106]],
+    strecken: [[42, 78], [4, 112]],
+  };
+  function mirrorPoints(pts) { return pts.map(([x, y]) => [100 - x, y]); }
+  function limbPoints(pose, side) { return side === "right" ? mirrorPoints(pose) : pose; }
+  function limbPolyline(pts, active, baseColor) {
+    const pointsAttr = pts.map((p) => p.join(",")).join(" ");
+    return `<polyline points="${pointsAttr}" fill="none" stroke="${active ? FIG_HIGHLIGHT : baseColor}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  // slots: { armLeft, armRight, legLeft, legRight } - each holds a pose
+  // name ("heben"/"strecken") when that screen-side limb is the active one.
+  function figureSVG(slots, baseColor) {
+    baseColor = baseColor || "#16232a";
+    const legL = limbPoints(LEG_POSE[slots.legLeft || "neutral"], "left");
+    const legR = limbPoints(LEG_POSE[slots.legRight || "neutral"], "right");
+    const armL = limbPoints(ARM_POSE[slots.armLeft || "neutral"], "left");
+    const armR = limbPoints(ARM_POSE[slots.armRight || "neutral"], "right");
+    return `<svg viewBox="0 0 100 150" class="figure-svg" aria-hidden="true">` +
+      limbPolyline(legL, !!slots.legLeft, baseColor) + limbPolyline(legR, !!slots.legRight, baseColor) +
+      `<rect x="38" y="30" width="24" height="48" rx="12" fill="${baseColor}"/>` +
+      limbPolyline(armL, !!slots.armLeft, baseColor) + limbPolyline(armR, !!slots.armRight, baseColor) +
+      `<circle cx="50" cy="16" r="12" fill="${baseColor}"/>` +
+      `</svg>`;
+  }
+  // Resolves which SCREEN side each anatomical limb is drawn on. Mirrored
+  // (default): the client's left appears on-screen left, like copying a
+  // reflection. Non-mirrored: the figure faces the client, so its left is
+  // on their right - anatomically correct but less intuitive to copy.
+  function resolveSlots(moves, mirrored) {
+    const slots = {};
+    moves.forEach((m) => {
+      const side = m.limb.endsWith("L") ? "left" : "right";
+      const flip = !mirrored;
+      const screenSide = flip ? (side === "left" ? "right" : "left") : side;
+      const group = m.limb.startsWith("arm") ? "arm" : "leg";
+      slots[group + (screenSide === "left" ? "Left" : "Right")] = m.type;
+    });
+    return slots;
+  }
+
   // ---- Elements ----
   const $ = (id) => document.getElementById(id);
   const els = {
@@ -627,12 +706,25 @@
     wimhofFsHintOpenBtn: $("wimhofFsHintOpenBtn"), wimhofFsHintClose: $("wimhofFsHintClose"),
     wimhofDonePanel: $("wimhofDonePanel"), wimhofDoneSummary: $("wimhofDoneSummary"), wimhofRating: $("wimhofRating"),
     wimhofAgainBtn: $("wimhofAgainBtn"), wimhofDoneBackBtn: $("wimhofDoneBackBtn"),
+    movementHome: $("movementHome"), movementHistorySection: $("movementHistorySection"),
+    movementHistoryStats: $("movementHistoryStats"), movementHistoryList: $("movementHistoryList"),
+    movementHistoryClearBtn: $("movementHistoryClearBtn"), movementStartCard: $("movementStartCard"),
+    movementTipsBtn: $("movementTipsBtn"), movementTipsSheet: $("movementTipsSheet"), movementTipsCloseBtn: $("movementTipsCloseBtn"),
+    movementReady: $("movementReady"), movementBackToHome: $("movementBackToHome"),
+    movementPicker: $("movementPicker"), movementCount: $("movementCount"),
+    movementStartBtn: $("movementStartBtn"),
+    movementPlayer: $("movementPlayer"), movementLane: $("movementLane"), movementProgressTrack: $("movementProgressTrack"),
+    movementPlayerBar: $("movementPlayerBar"), movementBackBtn: $("movementBackBtn"), movementTimeEl: $("movementTimeEl"),
+    movementFsBtn: $("movementFsBtn"), movementFsHint: $("movementFsHint"),
+    movementFsHintOpenBtn: $("movementFsHintOpenBtn"), movementFsHintClose: $("movementFsHintClose"),
+    movementDonePanel: $("movementDonePanel"), movementDoneSummary: $("movementDoneSummary"), movementRating: $("movementRating"),
+    movementAgainBtn: $("movementAgainBtn"), movementDoneBackBtn: $("movementDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
-    if (name === "home" || name === "breathHome") renderHistory();
+    if (name === "home" || name === "breathHome" || name === "movementHome") renderHistory();
     if (name !== "home") els.programError.hidden = true;
     if (name !== "breathHome") els.breathProgramError.hidden = true;
     window.scrollTo(0, 0);
@@ -647,7 +739,7 @@
         b.classList.toggle("active", on);
         b.setAttribute("aria-selected", on ? "true" : "false");
       });
-      showScreen(sec === "breath" ? "breathHome" : "home");
+      showScreen(sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : "home");
     });
   });
 
@@ -709,6 +801,7 @@
     const list = loadHistory();
     renderHistoryInto(els.historySection, els.historyStats, els.historyList, list);
     renderHistoryInto(els.breathHistorySection, els.breathHistoryStats, els.breathHistoryList, list);
+    renderHistoryInto(els.movementHistorySection, els.movementHistoryStats, els.movementHistoryList, list);
   }
   function clearHistory() {
     if (!confirm("Deinen Trainingsverlauf auf diesem Gerät löschen?")) return;
@@ -717,6 +810,7 @@
   }
   els.historyClearBtn.addEventListener("click", clearHistory);
   els.breathHistoryClearBtn.addEventListener("click", clearHistory);
+  els.movementHistoryClearBtn.addEventListener("click", clearHistory);
 
   // Rating widget shown on the finish screens.
   function renderRating(container, entryId, question) {
@@ -1418,6 +1512,7 @@
     els.player.hidden = true;
     els.breathPlayer.hidden = true;
     els.wimhofPlayer.hidden = true;
+    els.movementPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.breathProgramDonePanel.hidden = true;
   }
@@ -1625,9 +1720,10 @@
   wireFullscreen({ player: els.player, btn: els.fsBtn, hint: els.fsHint, hintOpen: els.fsHintOpenBtn, hintClose: els.fsHintClose });
   wireFullscreen({ player: els.breathPlayer, btn: els.breathFsBtn, hint: els.breathFsHint, hintOpen: els.breathFsHintOpenBtn, hintClose: els.breathFsHintClose });
   wireFullscreen({ player: els.wimhofPlayer, btn: els.wimhofFsBtn, hint: els.wimhofFsHint, hintOpen: els.wimhofFsHintOpenBtn, hintClose: els.wimhofFsHintClose });
+  wireFullscreen({ player: els.movementPlayer, btn: els.movementFsBtn, hint: els.movementFsHint, hintOpen: els.movementFsHintOpenBtn, hintClose: els.movementFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden) fitCanvas(); });
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && (session || breathSession || wimhofState) && wakeLock === null) requestWakeLock();
+    if (document.visibilityState === "visible" && (session || breathSession || wimhofState || movementSession) && wakeLock === null) requestWakeLock();
   });
 
   // ---- Tips sheet (shown once on first visit, reopenable) ----
@@ -2066,6 +2162,181 @@
   els.wimhofBackBtn.addEventListener("click", wimhofAbort);
   els.wimhofAgainBtn.addEventListener("click", () => { wimhofLeave(); startWimhofSession(); });
   els.wimhofDoneBackBtn.addEventListener("click", () => { wimhofLeave(); showScreen("breathHome"); });
+
+  // ==== Movement settings + engine ====
+  const MOVEMENT_PREFS_KEY = "fwmc-movement-v1";
+  const movementPrefs = {
+    movements: MOVEMENTS.map((m) => m.id),
+    preview: 3, bpm: 60, durationMin: 1, mirror: true, sound: true, showLabel: true,
+  };
+  function loadMovementPrefs() {
+    const saved = readJSON(MOVEMENT_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(movementPrefs, saved);
+    if (!Array.isArray(movementPrefs.movements) || movementPrefs.movements.length < MIN_MOVEMENTS) {
+      movementPrefs.movements = MOVEMENTS.map((m) => m.id);
+    }
+  }
+  function saveMovementPrefs() { writeJSON(MOVEMENT_PREFS_KEY, movementPrefs); }
+  loadMovementPrefs();
+
+  MOVEMENTS.forEach((m) => {
+    const chip = document.createElement("button");
+    chip.className = "movement-chip";
+    chip.dataset.moveId = m.id;
+    chip.innerHTML = figureSVG(resolveSlots([m], true), "var(--ink)") + `<span>${esc(m.label)}</span>`;
+    chip.addEventListener("click", () => {
+      const on = movementPrefs.movements.includes(m.id);
+      if (on) {
+        if (movementPrefs.movements.length <= MIN_MOVEMENTS) return;
+        movementPrefs.movements = movementPrefs.movements.filter((id) => id !== m.id);
+      } else {
+        movementPrefs.movements = MOVEMENTS.map((x) => x.id).filter((id) => id === m.id || movementPrefs.movements.includes(id));
+      }
+      saveMovementPrefs();
+      syncMvPickerUI();
+    });
+    els.movementPicker.appendChild(chip);
+  });
+  function syncMvPickerUI() {
+    els.movementPicker.querySelectorAll(".movement-chip").forEach((el) => {
+      el.classList.toggle("active", movementPrefs.movements.includes(el.dataset.moveId));
+    });
+    els.movementCount.textContent = `${movementPrefs.movements.length} gewählt`;
+  }
+
+  document.querySelectorAll("[data-mv-preview]").forEach((el) => el.addEventListener("click", () => { movementPrefs.preview = Number(el.dataset.mvPreview); saveMovementPrefs(); syncMvPreviewUI(); }));
+  function syncMvPreviewUI() { document.querySelectorAll("[data-mv-preview]").forEach((el) => el.classList.toggle("active", Number(el.dataset.mvPreview) === movementPrefs.preview)); }
+
+  document.querySelectorAll("[data-mv-bpm]").forEach((el) => el.addEventListener("click", () => { movementPrefs.bpm = Number(el.dataset.mvBpm); saveMovementPrefs(); syncMvTempoUI(); }));
+  function syncMvTempoUI() { document.querySelectorAll("[data-mv-bpm]").forEach((el) => el.classList.toggle("active", Number(el.dataset.mvBpm) === movementPrefs.bpm)); }
+
+  document.querySelectorAll("[data-mv-dur]").forEach((el) => el.addEventListener("click", () => { movementPrefs.durationMin = Number(el.dataset.mvDur); saveMovementPrefs(); syncMvDurationUI(); }));
+  function syncMvDurationUI() { document.querySelectorAll("[data-mv-dur]").forEach((el) => el.classList.toggle("active", Number(el.dataset.mvDur) === movementPrefs.durationMin)); }
+
+  document.querySelectorAll("[data-mv-mirror]").forEach((el) => el.addEventListener("click", () => { movementPrefs.mirror = el.dataset.mvMirror === "1"; saveMovementPrefs(); syncMvMirrorUI(); }));
+  function syncMvMirrorUI() { document.querySelectorAll("[data-mv-mirror]").forEach((el) => el.classList.toggle("active", (el.dataset.mvMirror === "1") === movementPrefs.mirror)); }
+
+  document.querySelectorAll("[data-mv-sound]").forEach((el) => el.addEventListener("click", () => { movementPrefs.sound = el.dataset.mvSound === "1"; saveMovementPrefs(); syncMvSoundUI(); }));
+  function syncMvSoundUI() { document.querySelectorAll("[data-mv-sound]").forEach((el) => el.classList.toggle("active", (el.dataset.mvSound === "1") === movementPrefs.sound)); }
+
+  document.querySelectorAll("[data-mv-label]").forEach((el) => el.addEventListener("click", () => { movementPrefs.showLabel = el.dataset.mvLabel === "1"; saveMovementPrefs(); syncMvLabelUI(); }));
+  function syncMvLabelUI() { document.querySelectorAll("[data-mv-label]").forEach((el) => el.classList.toggle("active", (el.dataset.mvLabel === "1") === movementPrefs.showLabel)); }
+
+  function openMovementReady() {
+    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvSoundUI(); syncMvLabelUI();
+    showScreen("movementReady");
+  }
+  els.movementStartCard.addEventListener("click", openMovementReady);
+  els.movementBackToHome.addEventListener("click", () => showScreen("movementHome"));
+
+  function openMovementTips() { els.movementTipsSheet.hidden = false; }
+  function closeMovementTips() { els.movementTipsSheet.hidden = true; }
+  els.movementTipsBtn.addEventListener("click", openMovementTips);
+  els.movementTipsCloseBtn.addEventListener("click", closeMovementTips);
+  els.movementTipsSheet.addEventListener("click", (e) => { if (e.target === els.movementTipsSheet) closeMovementTips(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !els.movementTipsSheet.hidden) closeMovementTips();
+  });
+
+  // ---- Movement session engine: a queue of upcoming movements, one made
+  // active per beat; the lane always shows `preview` of them at once so the
+  // client can see what's coming, not just what's due right now. ----
+  let movementRaf = null;
+  let movementSession = null; // { sequence, beatLenS, totalBeats, startTime, lastBeatIdx }
+
+  function pickRandomMovement(pool, avoidId) {
+    let choice;
+    do { choice = pool[Math.floor(Math.random() * pool.length)]; } while (pool.length > 1 && choice.id === avoidId);
+    return choice;
+  }
+  function buildMovementSequence(pool, count) {
+    const seq = [];
+    let last = null;
+    for (let i = 0; i < count; i++) {
+      const m = pickRandomMovement(pool, last ? last.id : null);
+      seq.push(m);
+      last = m;
+    }
+    return seq;
+  }
+  function renderMovementLane(seq, beatIdx, preview, mirrored, showLabel) {
+    els.movementLane.innerHTML = "";
+    for (let j = 0; j < preview; j++) {
+      const m = seq[beatIdx + j];
+      if (!m) continue;
+      const tile = document.createElement("div");
+      tile.className = "movement-tile" + (j === 0 ? " active" : " next");
+      const slots = resolveSlots([m], mirrored);
+      tile.innerHTML = figureSVG(slots, "#16232a") + (showLabel ? `<span class="mv-label">${esc(m.label)}</span>` : "");
+      els.movementLane.appendChild(tile);
+    }
+  }
+
+  function startMovementSession() {
+    const pool = MOVEMENTS.filter((m) => movementPrefs.movements.includes(m.id));
+    if (pool.length < MIN_MOVEMENTS) return;
+    const beatLenS = 60 / movementPrefs.bpm;
+    const totalBeats = Math.max(4, Math.round((movementPrefs.durationMin * 60) / beatLenS));
+    const sequence = buildMovementSequence(pool, totalBeats + movementPrefs.preview - 1);
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.movementPlayer.hidden = false;
+    els.movementPlayerBar.hidden = false;
+    els.movementDonePanel.hidden = true;
+    els.movementProgressTrack.innerHTML = `<span class="seg"><span class="fill"></span></span>`;
+    movementSession = { sequence, beatLenS, totalBeats, startTime: performance.now(), lastBeatIdx: 0 };
+    renderMovementLane(sequence, 0, movementPrefs.preview, movementPrefs.mirror, movementPrefs.showLabel);
+    if (movementPrefs.sound) speakWord(sequence[0].label);
+    requestWakeLock();
+    movementRaf = requestAnimationFrame(movementTick);
+  }
+  els.movementStartBtn.addEventListener("click", startMovementSession);
+
+  function movementTick(now) {
+    if (!movementSession) return;
+    const elapsed = (now - movementSession.startTime) / 1000;
+    const totalS = movementSession.totalBeats * movementSession.beatLenS;
+    if (elapsed >= totalS) { movementFinishSession(); return; }
+    const beatIdx = Math.min(Math.floor(elapsed / movementSession.beatLenS), movementSession.totalBeats - 1);
+    if (beatIdx !== movementSession.lastBeatIdx) {
+      movementSession.lastBeatIdx = beatIdx;
+      renderMovementLane(movementSession.sequence, beatIdx, movementPrefs.preview, movementPrefs.mirror, movementPrefs.showLabel);
+      if (movementPrefs.sound) speakWord(movementSession.sequence[beatIdx].label);
+    }
+    els.movementTimeEl.textContent = fmtClock(totalS - elapsed);
+    const fill = els.movementProgressTrack.querySelector(".fill");
+    if (fill) fill.style.width = Math.min(100, (elapsed / totalS) * 100) + "%";
+    movementRaf = requestAnimationFrame(movementTick);
+  }
+
+  function movementFinishSession() {
+    if (movementRaf) cancelAnimationFrame(movementRaf);
+    movementRaf = null;
+    const played = movementSession ? movementSession.totalBeats * movementSession.beatLenS : 0;
+    movementSession = null;
+    releaseWakeLock();
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    els.movementPlayerBar.hidden = true;
+    els.movementDoneSummary.textContent = `Ganzkörper-Reaktion · ${fmtMinutes(played)}`;
+    const id = addHistory({ kind: "movement", title: "Ganzkörper-Reaktion", seconds: Math.round(played) });
+    renderRating(els.movementRating, id, "Wie gut hast du mitgehalten?");
+    els.movementDonePanel.hidden = false;
+  }
+  function movementLeavePlayer() {
+    if (movementRaf) cancelAnimationFrame(movementRaf);
+    movementRaf = null;
+    movementSession = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.movementPlayer) document.exitFullscreen().catch(() => {});
+    els.movementFsHint.hidden = true;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    els.movementPlayer.hidden = true;
+    els.movementDonePanel.hidden = true;
+  }
+  function movementAbort() { movementLeavePlayer(); showScreen("movementReady"); }
+  els.movementBackBtn.addEventListener("click", movementAbort);
+  els.movementAgainBtn.addEventListener("click", () => { movementLeavePlayer(); startMovementSession(); });
+  els.movementDoneBackBtn.addEventListener("click", () => { movementLeavePlayer(); showScreen("movementHome"); });
 
   // ---- Start-up ----
   renderHistory();
