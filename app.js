@@ -38,6 +38,13 @@
   const COLOR_BY_KEY = Object.fromEntries(COLOR_LIB.map((c) => [c.key, c]));
   const MIN_COLORS = 2;
   const MAX_COLORS = 4;
+  // The three pure-arrow exercises (4 gerade, 4 diagonal, 8 Pfeile) pick
+  // their arrow colour from a separately stored selection, with a much
+  // looser range than VT/VRW's 2-4 (down to a single colour, up to all of
+  // COLOR_LIB) plus an "alle Farben" shortcut - see the colour-picker code
+  // below.
+  const ARROW_MIN_COLORS = 1;
+  const ARROW_MAX_COLORS = COLOR_LIB.length;
 
   // Fixed four-colour set for "Hütchen antippen" (cone order sorting) -
   // this exercise is always about four cones, so it skips the free colour
@@ -437,19 +444,19 @@
       explainerVideo: "explainer-vrw-placeholder.mp4",
     },
     "4-straight": {
-      title: "4 Pfeile · gerade", type: "arrows", dirset: 4, dual: false,
+      title: "4 Pfeile · gerade", type: "arrows", dirset: 4, dual: false, usesArrowColors: true,
       task: "Reagiere so schnell wie möglich in die gezeigte Richtung.",
       trains: "Reaktionsgeschwindigkeit und Richtungserkennung",
       rules: "Ein Pfeil zeigt nach vorne, rechts, hinten oder links. Reagiere so schnell wie möglich in diese Richtung.",
     },
     "4-diag": {
-      title: "4 Pfeile · diagonal", type: "arrows", dirset: "diag", dual: false,
+      title: "4 Pfeile · diagonal", type: "arrows", dirset: "diag", dual: false, usesArrowColors: true,
       task: "Reagiere so schnell wie möglich in die gezeigte Schrägrichtung.",
       trains: "Reaktionsgeschwindigkeit und Orientierung",
       rules: "Ein Pfeil zeigt in eine der vier Schrägrichtungen. Reagiere so schnell wie möglich in diese Richtung.",
     },
     "8-solo": {
-      title: "8 Pfeile", type: "arrows", dirset: 8, dual: false,
+      title: "8 Pfeile", type: "arrows", dirset: 8, dual: false, usesArrowColors: true,
       task: "Reagiere so schnell wie möglich in die gezeigte Richtung.",
       trains: "Reaktion in alle Richtungen",
       rules: "Ein Pfeil zeigt in eine von acht Richtungen – gerade oder schräg. Reagiere so schnell wie möglich in diese Richtung.",
@@ -1201,25 +1208,35 @@
     intervalMin: 3,
     intervalMax: 6,
     colors: ["orange", "rot", "lila"],
+    arrowColors: ["blau"],
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
     const saved = readJSON(PREFS_KEY, null);
     Object.assign(state, DEFAULTS, saved && typeof saved === "object" ? saved : {});
     if (!Array.isArray(state.colors) || keysToColors(state.colors).length < MIN_COLORS) state.colors = ["orange", "rot", "lila"];
+    if (!Array.isArray(state.arrowColors) || keysToColors(state.arrowColors).length < ARROW_MIN_COLORS) state.arrowColors = ["blau"];
   }
   function savePrefs() { writeJSON(PREFS_KEY, state); }
   loadPrefs();
 
   // Colours + seed used by the running exercise (set per start).
-  let active = { colors: keysToColors(state.colors) };
+  let active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors) };
 
   function randInterval(rng) {
     const lo = Math.min(state.intervalMin, state.intervalMax);
     const hi = Math.max(state.intervalMin, state.intervalMax);
     return lo + rng() * (hi - lo);
   }
-  // ---- Colour picker ----
+  // ---- Colour picker. Shared by two independent selections: the
+  // "standard" 2-4 colour VT/VRW/Kompass palette (state.colors) and the
+  // looser 1-7 colour palette for the three pure-arrow exercises
+  // (state.arrowColors, plus an "alle Farben" shortcut). Which one is
+  // active is decided per exercise in openReady() below.
+  let colorMode = "standard";
+  function colorModeArray() { return colorMode === "arrows" ? state.arrowColors : state.colors; }
+  function setColorModeArray(keys) { if (colorMode === "arrows") state.arrowColors = keys; else state.colors = keys; }
+  function colorModeLimits() { return colorMode === "arrows" ? { min: ARROW_MIN_COLORS, max: ARROW_MAX_COLORS } : { min: MIN_COLORS, max: MAX_COLORS }; }
   let hintTimer = null;
   function colorHint(text, warn) {
     els.colorHint.textContent = text;
@@ -1228,7 +1245,8 @@
     if (warn) hintTimer = setTimeout(() => colorHint(defaultColorHint()), 2200);
   }
   function defaultColorHint() {
-    return `Wähle ${MIN_COLORS} bis ${MAX_COLORS} Farben – sie werden zufällig gemischt.`;
+    const { min, max } = colorModeLimits();
+    return `Wähle ${min} bis ${max} Farben – sie werden zufällig gemischt.`;
   }
   COLOR_LIB.forEach((c) => {
     const btn = document.createElement("button");
@@ -1237,26 +1255,49 @@
     btn.setAttribute("aria-pressed", "false");
     btn.innerHTML = `<span class="swatch" style="background:${c.hex}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">${c.name}</span>`;
     btn.addEventListener("click", () => {
-      const selected = state.colors.includes(c.key);
+      const keys = colorModeArray();
+      const { min, max } = colorModeLimits();
+      const selected = keys.includes(c.key);
       if (selected) {
-        if (state.colors.length <= MIN_COLORS) { colorHint(`Mindestens ${MIN_COLORS} Farben.`, true); return; }
-        state.colors = state.colors.filter((k) => k !== c.key);
+        if (keys.length <= min) { colorHint(`Mindestens ${min} Farbe${min === 1 ? "" : "n"}.`, true); return; }
+        setColorModeArray(keys.filter((k) => k !== c.key));
       } else {
-        if (state.colors.length >= MAX_COLORS) { colorHint(`Höchstens ${MAX_COLORS} Farben – wähle zuerst eine ab.`, true); return; }
-        state.colors = COLOR_LIB.map((x) => x.key).filter((k) => k === c.key || state.colors.includes(k));
+        if (keys.length >= max) { colorHint(`Höchstens ${max} Farben – wähle zuerst eine ab.`, true); return; }
+        setColorModeArray(COLOR_LIB.map((x) => x.key).filter((k) => k === c.key || keys.includes(k)));
       }
       savePrefs();
       syncColorUI();
     });
     els.colorPicker.appendChild(btn);
   });
+  // "Alle Farben" shortcut - only shown in arrow mode (standard mode's 2-4
+  // cap makes "all seven" impossible there anyway). Its active state is
+  // never stored on its own - it's simply true whenever every colour
+  // happens to be selected, whether that came from this button or from
+  // picking all seven swatches by hand.
+  const colorAllBtn = document.createElement("button");
+  colorAllBtn.className = "color-swatch";
+  colorAllBtn.setAttribute("aria-pressed", "false");
+  const wedges = COLOR_LIB.map((c, i) => `${c.hex} ${(i / COLOR_LIB.length * 100).toFixed(2)}% ${((i + 1) / COLOR_LIB.length * 100).toFixed(2)}%`).join(",");
+  colorAllBtn.innerHTML = `<span class="swatch" style="background:conic-gradient(${wedges})"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">Alle Farben</span>`;
+  colorAllBtn.addEventListener("click", () => {
+    setColorModeArray(COLOR_LIB.map((c) => c.key));
+    savePrefs();
+    syncColorUI();
+  });
+  els.colorPicker.appendChild(colorAllBtn);
   function syncColorUI() {
-    els.colorPicker.querySelectorAll(".color-swatch").forEach((el) => {
-      const on = state.colors.includes(el.dataset.color);
+    const keys = colorModeArray();
+    els.colorPicker.querySelectorAll(".color-swatch[data-color]").forEach((el) => {
+      const on = keys.includes(el.dataset.color);
       el.classList.toggle("active", on);
       el.setAttribute("aria-pressed", on ? "true" : "false");
     });
-    els.colorCount.textContent = `${state.colors.length} gewählt`;
+    colorAllBtn.hidden = colorMode !== "arrows";
+    const allOn = keys.length === COLOR_LIB.length;
+    colorAllBtn.classList.toggle("active", allOn);
+    colorAllBtn.setAttribute("aria-pressed", allOn ? "true" : "false");
+    els.colorCount.textContent = `${keys.length} gewählt`;
     colorHint(defaultColorHint());
   }
 
@@ -1323,7 +1364,8 @@
     els.rulesBox.hidden = !ex.rules;
     els.explainerBtn.hidden = !ex.explainerVideo;
     els.explainerBtn.onclick = ex.explainerVideo ? () => openVideoModal(ex.explainerVideo) : null;
-    els.colorGroup.hidden = !ex.usesColors;
+    colorMode = ex.usesArrowColors ? "arrows" : "standard";
+    els.colorGroup.hidden = !ex.usesColors && !ex.usesArrowColors;
     const isConeTap = ex.type === "color-tap";
     els.tempoGroup.hidden = isConeTap;
     els.advanced.hidden = isConeTap;
@@ -1761,7 +1803,7 @@
       const choices = directions.filter((d) => d[0] !== last);
       const [name, angle] = choices[Math.floor(rng() * choices.length)];
       last = name;
-      const color = cfg.dual ? (rng() < 0.5 ? GREEN : RED) : BLUE;
+      const color = cfg.dual ? (rng() < 0.5 ? GREEN : RED) : active.arrowColors[Math.floor(rng() * active.arrowColors.length)].hex;
       const caption = cfg.dual ? "GRÜN = gezeigte Richtung · ROT = Gegenrichtung" : null;
       const pause = randInterval(rng);
       schedule.push({ t0: t, t1: t + show, kind: "cue", payload: { angle, color, caption } });
@@ -2176,7 +2218,7 @@
   function startSession() {
     program = null;
     hideOverlays();
-    active = { colors: keysToColors(state.colors) };
+    active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors) };
     buildProgressTrack(1);
     els.liveNav.hidden = true;
     if (EXERCISES[state.exercise].type === "color-tap") startConeTap();
@@ -2246,15 +2288,19 @@
   const vtSavedStore = makePresetStore(VT_SAVED_KEY);
   function renderVTSaved() {
     renderPresetList(vtSavedStore, els.vtSavedList, els.vtSavedGroup, (e) => e.exercise === state.exercise,
-      (e) => `${fmtMinutes(e.duration)}${e.colors && e.colors.length ? ` · ${e.colors.length} Farben` : ""}`,
+      (e) => {
+        const usedColors = EXERCISES[e.exercise] && EXERCISES[e.exercise].usesArrowColors ? e.arrowColors : e.colors;
+        return `${fmtMinutes(e.duration)}${usedColors && usedColors.length ? ` · ${usedColors.length} Farben` : ""}`;
+      },
       (entry) => {
         state.colors = entry.colors.slice();
+        if (entry.arrowColors) state.arrowColors = entry.arrowColors.slice();
         state.duration = entry.duration;
         state.stimulusS = entry.stimulusS;
         state.intervalMin = entry.intervalMin;
         state.intervalMax = entry.intervalMax;
         savePrefs();
-        active = { colors: keysToColors(state.colors) };
+        active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors) };
         startSession();
       });
   }
@@ -2266,7 +2312,7 @@
       const list = vtSavedStore.load();
       list.push({
         id: String(Date.now()), name, exercise: state.exercise,
-        colors: state.colors.slice(), duration: state.duration,
+        colors: state.colors.slice(), arrowColors: state.arrowColors.slice(), duration: state.duration,
         stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax,
       });
       vtSavedStore.save(list);
@@ -3806,7 +3852,7 @@
       state.stimulusS = block.stimulusS ?? 1.5;
       state.intervalMin = block.intervalMin ?? 3;
       state.intervalMax = block.intervalMax ?? 6;
-        active = { colors: keysToColors(state.colors) };
+        active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors) };
       startSession();
     } else if (block.domain === "workout") {
       workoutPlan = null;
