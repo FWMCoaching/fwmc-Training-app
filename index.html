@@ -21,6 +21,11 @@
     <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
   </header>
 
+  <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab active" data-section="visual" role="tab" aria-selected="true">Visual Training</button>
+    <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
+  </nav>
+
   <section class="hero">
     <div class="hero-kicker">Visual Training</div>
     <h1 class="hero-title">Wahrnehmen. Entscheiden. Reagieren.</h1>
@@ -189,6 +194,51 @@
   </footer>
 </div>
 
+<div class="screen" id="breathHome" hidden>
+  <header class="brandbar">
+    <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
+  </header>
+
+  <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab active" data-section="breath" role="tab" aria-selected="true">Atemtraining</button>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-kicker">Atemtraining</div>
+    <h1 class="hero-title">Ruhig werden. Fokus finden.</h1>
+    <p class="hero-text">Gef&uuml;hrte Atemmuster mit visuellem Takt &ndash; pr&auml;ziser einstellbar als ein Metronom, direkt im Browser.</p>
+    <button class="text-link" id="breathTipsBtn">Wie funktioniert das? &rarr;</button>
+  </section>
+
+  <section class="history" id="breathHistorySection" hidden>
+    <div class="section-head">
+      <h2>Dein Verlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t gespeichert</span>
+    </div>
+    <div class="history-stats" id="breathHistoryStats"></div>
+    <ul class="history-list" id="breathHistoryList"></ul>
+    <button class="text-link small" id="breathHistoryClearBtn">Verlauf l&ouml;schen</button>
+  </section>
+
+  <section class="patterns">
+    <div class="section-head">
+      <h2>Atemmuster</h2>
+      <span class="section-note">alle Phasen frei einstellbar</span>
+    </div>
+    <div class="featured-grid" id="patternGrid"></div>
+  </section>
+
+  <footer class="site-footer">
+    <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong><span class="beta">Beta</span></p>
+    <nav>
+      <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
+      <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a>
+      <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutz</a>
+    </nav>
+  </footer>
+</div>
+
 <div class="screen" id="bundleOverview" hidden>
   <div class="readyhead">
     <button class="back-link" id="bundleBackToHome">&larr; Zur&uuml;ck</button>
@@ -293,6 +343,55 @@
   <button class="start-btn" id="startBtn">Training starten</button>
 </div>
 
+<div class="screen" id="breathReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="breathBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <div class="ready-head">
+    <div class="ready-icon"><div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.2" fill="none" stroke="#fff" stroke-width="2.2"/></svg></div></div>
+    <div>
+      <h1 class="page-title" id="breathReadyTitle">&nbsp;</h1>
+      <div class="ready-trains" id="breathReadyGoal"></div>
+    </div>
+  </div>
+
+  <div class="pattern-breakdown" id="patternBreakdown"></div>
+
+  <div class="group">
+    <div class="group-label">Phasen in Sekunden <span class="group-count">0 = &uuml;berspringen</span></div>
+    <div class="phase-sliders">
+      <div class="slider-line"><span class="slider-label">Einatmen</span><input type="range" id="phaseInSlider" min="0" max="15" step="0.5" aria-label="Einatmen, Sekunden"><span class="slider-value" id="phaseInValue"></span></div>
+      <div class="slider-line"><span class="slider-label">Halten</span><input type="range" id="phaseHold1Slider" min="0" max="15" step="0.5" aria-label="Halten nach dem Einatmen, Sekunden"><span class="slider-value" id="phaseHold1Value"></span></div>
+      <div class="slider-line"><span class="slider-label">Ausatmen</span><input type="range" id="phaseOutSlider" min="0" max="15" step="0.5" aria-label="Ausatmen, Sekunden"><span class="slider-value" id="phaseOutValue"></span></div>
+      <div class="slider-line"><span class="slider-label">Halten</span><input type="range" id="phaseHold2Slider" min="0" max="15" step="0.5" aria-label="Halten nach dem Ausatmen, Sekunden"><span class="slider-value" id="phaseHold2Value"></span></div>
+    </div>
+    <div class="group-help" id="phaseHelp" hidden>Mindestens eine Phase muss l&auml;nger als 0 Sekunden sein.</div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Dauer</div>
+    <div class="choice-row">
+      <button class="choice" data-breath-dur="3">3 Min</button>
+      <button class="choice" data-breath-dur="5">5 Min</button>
+      <button class="choice" data-breath-dur="10">10 Min</button>
+    </div>
+    <div class="slider-row">
+      <input type="range" id="breathDurationSlider" min="1" max="20" step="1" aria-label="Dauer in Minuten">
+      <span class="slider-value" id="breathDurationValue">5 Min</span>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Ansage</div>
+    <div class="choice-row two">
+      <button class="choice" data-breath-sound="on">Mit Ansage<small>sagt &bdquo;Einatmen&ldquo; / &bdquo;Ausatmen&ldquo;</small></button>
+      <button class="choice" data-breath-sound="off">Still<small>nur die Animation</small></button>
+    </div>
+  </div>
+
+  <button class="start-btn" id="breathStartBtn">Atemtraining starten</button>
+</div>
+
 <div class="player" id="player" hidden>
   <div class="stage-wrap"><canvas id="stage"></canvas></div>
   <div class="progress-track" id="progressTrack"></div>
@@ -361,6 +460,35 @@
   </div>
 </div>
 
+<div class="player calm" id="breathPlayer" hidden>
+  <div class="breath-stage">
+    <div class="breath big" id="breathBig">
+      <div class="breath-circle"></div>
+      <div class="breath-phase-count" id="breathPhaseCount">4</div>
+    </div>
+    <div class="breath-phase-label" id="breathPhaseLabel">Einatmen</div>
+  </div>
+  <div class="player-bar" id="breathPlayerBar">
+    <button id="breathBackBtn">&#10005; Beenden</button>
+    <span class="player-status" id="breathTimeEl">5:00</span>
+    <button id="breathFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="breathFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt.</span>
+    <button id="breathFsHintOpenBtn">In neuem Tab &ouml;ffnen</button>
+    <button class="fs-hint-close" id="breathFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="breathDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="breathDoneSummary"></p>
+    <div class="rating" id="breathRating"></div>
+    <button class="again" id="breathAgainBtn">Nochmal</button>
+    <button class="back" id="breathDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
 <div class="video-modal" id="videoModal" hidden>
   <div class="video-modal-inner">
     <button class="video-modal-close" id="videoModalClose" aria-label="Schlie&szlig;en">&times;</button>
@@ -378,6 +506,19 @@
       <li id="tipInstall"><strong>Wie eine App nutzen.</strong> <span id="tipInstallText">&Ouml;ffne im Browser-Men&uuml; &bdquo;Zum Startbildschirm hinzuf&uuml;gen&ldquo; &ndash; dann startest du dein Training mit einem Tipp.</span></li>
     </ol>
     <button class="start-btn" id="tipsCloseBtn">Los geht&rsquo;s</button>
+  </div>
+</div>
+
+<div class="sheet" id="breathTipsSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="breathTipsTitle">
+    <h2 id="breathTipsTitle">So funktioniert das Atemtraining</h2>
+    <ol class="tips">
+      <li><strong>Dem Kreis folgen.</strong> Er wird beim Einatmen gr&ouml;&szlig;er und beim Ausatmen kleiner &ndash; atme in seinem Tempo.</li>
+      <li><strong>Ruhig durch die Nase.</strong> Wenn m&ouml;glich, atme ruhig durch die Nase ein und aus.</li>
+      <li><strong>Ton optional.</strong> Bei &bdquo;Mit Ansage&ldquo; sagt eine Stimme die Phase an &ndash; praktisch mit geschlossenen Augen.</li>
+      <li><strong>Bei Unwohlsein pausieren.</strong> Brich sofort ab, wenn dir schwindelig wird. Kein Ersatz f&uuml;r medizinische Behandlung.</li>
+    </ol>
+    <button class="start-btn" id="breathTipsCloseBtn">Verstanden</button>
   </div>
 </div>
 

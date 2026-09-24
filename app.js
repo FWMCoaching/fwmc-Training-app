@@ -462,6 +462,42 @@
     },
   };
 
+  // ---- Breathing patterns (Atemtraining) ----
+  // Every pattern uses the same four-phase model (in / hold / out / hold);
+  // a phase set to 0 seconds is skipped. "custom" starts from the client's
+  // saved values (see breathPrefs below) so it works as a persistent
+  // "rebuild my metronome tempo" slot, while the named presets always reset
+  // to their textbook timing when reopened (on-screen tweaks to them are
+  // for that session only).
+  const BREATH_PATTERNS = {
+    coherent: {
+      name: "Ruhige Atmung (Kohärenz)",
+      short: "Gleichmäßig ein und aus, kein Halten.",
+      goal: "Bei diesem Tempo (ca. 5,5 Atemzüge pro Minute) ist die Herzratenvariabilität bei den meisten Menschen am höchsten – gut für Ruhe und Fokus.",
+      phases: { in: 5.5, hold1: 0, out: 5.5, hold2: 0 },
+    },
+    box: {
+      name: "Box-Atmung",
+      short: "4-4-4-4 – ein- und ausatmen, mit Halten dazwischen.",
+      goal: "Bekannt aus dem Einsatztraining (u.a. Navy SEALs) – hilft, unter Druck ruhig und klar zu bleiben.",
+      phases: { in: 4, hold1: 4, out: 4, hold2: 4 },
+    },
+    relax478: {
+      name: "4-7-8",
+      short: "Kurz einatmen, lange halten, lang ausatmen.",
+      goal: "Wirkt stark beruhigend – beliebt zum Runterkommen und vor dem Einschlafen.",
+      phases: { in: 4, hold1: 7, out: 8, hold2: 0 },
+    },
+    custom: {
+      name: "Eigenes Muster",
+      short: "Stelle jede Phase frei ein.",
+      goal: "Baue dir dein bisheriges Metronom-Tempo nach oder finde ein neues Muster für deine Klienten.",
+      phases: null,
+    },
+  };
+  const PHASE_LABELS = { in: "Einatmen", hold1: "Halten", out: "Ausatmen", hold2: "Halten" };
+  const PHASE_ORDER = ["in", "hold1", "out", "hold2"];
+
   // ---- Elements ----
   const $ = (id) => document.getElementById(id);
   const els = {
@@ -497,15 +533,46 @@
     historySection: $("historySection"), historyStats: $("historyStats"), historyList: $("historyList"), historyClearBtn: $("historyClearBtn"),
     tipsSheet: $("tipsSheet"), tipsBtn: $("tipsBtn"), tipsCloseBtn: $("tipsCloseBtn"),
     tipInstall: $("tipInstall"), tipInstallText: $("tipInstallText"),
+    breathHome: $("breathHome"), breathReady: $("breathReady"), breathBackToHome: $("breathBackToHome"),
+    breathReadyTitle: $("breathReadyTitle"), breathReadyGoal: $("breathReadyGoal"), patternGrid: $("patternGrid"),
+    patternBreakdown: $("patternBreakdown"), phaseHelp: $("phaseHelp"),
+    phaseInSlider: $("phaseInSlider"), phaseInValue: $("phaseInValue"),
+    phaseHold1Slider: $("phaseHold1Slider"), phaseHold1Value: $("phaseHold1Value"),
+    phaseOutSlider: $("phaseOutSlider"), phaseOutValue: $("phaseOutValue"),
+    phaseHold2Slider: $("phaseHold2Slider"), phaseHold2Value: $("phaseHold2Value"),
+    breathDurationSlider: $("breathDurationSlider"), breathDurationValue: $("breathDurationValue"),
+    breathStartBtn: $("breathStartBtn"),
+    breathPlayer: $("breathPlayer"), breathPlayerBar: $("breathPlayerBar"), breathBig: $("breathBig"),
+    breathPhaseCount: $("breathPhaseCount"), breathPhaseLabel: $("breathPhaseLabel"), breathTimeEl: $("breathTimeEl"),
+    breathBackBtn: $("breathBackBtn"), breathFsBtn: $("breathFsBtn"), breathFsHint: $("breathFsHint"),
+    breathFsHintOpenBtn: $("breathFsHintOpenBtn"), breathFsHintClose: $("breathFsHintClose"),
+    breathDonePanel: $("breathDonePanel"), breathDoneSummary: $("breathDoneSummary"), breathRating: $("breathRating"),
+    breathAgainBtn: $("breathAgainBtn"), breathDoneBackBtn: $("breathDoneBackBtn"),
+    breathHistorySection: $("breathHistorySection"), breathHistoryStats: $("breathHistoryStats"),
+    breathHistoryList: $("breathHistoryList"), breathHistoryClearBtn: $("breathHistoryClearBtn"),
+    breathTipsSheet: $("breathTipsSheet"), breathTipsBtn: $("breathTipsBtn"), breathTipsCloseBtn: $("breathTipsCloseBtn"),
   };
 
-  const SCREENS = ["home", "bundleOverview", "programIntro", "ready"];
+  const SCREENS = ["home", "breathHome", "bundleOverview", "programIntro", "ready", "breathReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
-    if (name === "home") renderHistory();
-    else els.programError.hidden = true;
+    if (name === "home" || name === "breathHome") renderHistory();
+    if (name !== "home") els.programError.hidden = true;
     window.scrollTo(0, 0);
   }
+
+  // ---- Section switcher (Visual Training / Atemtraining) ----
+  document.querySelectorAll(".section-tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const sec = btn.dataset.section;
+      document.querySelectorAll(".section-tab").forEach((b) => {
+        const on = b.dataset.section === sec;
+        b.classList.toggle("active", on);
+        b.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      showScreen(sec === "breath" ? "breathHome" : "home");
+    });
+  });
 
   // ---- Storage (all local to this device, wrapped for private mode) ----
   function readJSON(key, fallback) {
@@ -543,34 +610,41 @@
     return d;
   }
   const WEEKDAYS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-  function renderHistory() {
-    const list = loadHistory();
-    els.historySection.hidden = list.length === 0;
+  function ratingLabel(kind) { return kind === "breath" ? "Ruhe" : "Fokus"; }
+  function renderHistoryInto(sectionEl, statsEl, listEl, list) {
+    sectionEl.hidden = list.length === 0;
     if (!list.length) return;
     const weekStart = startOfWeek();
     const week = list.filter((e) => new Date(e.ts) >= weekStart);
     const weekSec = week.reduce((s, e) => s + (e.seconds || 0), 0);
-    els.historyStats.innerHTML =
+    statsEl.innerHTML =
       `<div class="stat"><strong>${week.length}</strong><span>Trainings diese Woche</span></div>` +
       `<div class="stat"><strong>${week.length ? fmtMinutes(weekSec) : "–"}</strong><span>Trainingszeit diese Woche</span></div>` +
       `<div class="stat"><strong>${list.length}</strong><span>Trainings gesamt</span></div>`;
-    els.historyList.innerHTML = list.slice(0, 5).map((e) => {
+    listEl.innerHTML = list.slice(0, 5).map((e) => {
       const d = new Date(e.ts);
       const date = `${WEEKDAYS[d.getDay()]}, ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
-      const rating = e.rating ? ` · Fokus ${e.rating}/5` : "";
+      const rating = e.rating ? ` · ${ratingLabel(e.kind)} ${e.rating}/5` : "";
       return `<li><span class="h-date">${date}</span><span class="h-title">${esc(e.title)}</span><span class="h-meta">${fmtMinutes(e.seconds || 0)}${rating}</span></li>`;
     }).join("");
   }
-  els.historyClearBtn.addEventListener("click", () => {
+  function renderHistory() {
+    const list = loadHistory();
+    renderHistoryInto(els.historySection, els.historyStats, els.historyList, list);
+    renderHistoryInto(els.breathHistorySection, els.breathHistoryStats, els.breathHistoryList, list);
+  }
+  function clearHistory() {
     if (!confirm("Deinen Trainingsverlauf auf diesem Gerät löschen?")) return;
     writeJSON(HISTORY_KEY, []);
     renderHistory();
-  });
+  }
+  els.historyClearBtn.addEventListener("click", clearHistory);
+  els.breathHistoryClearBtn.addEventListener("click", clearHistory);
 
   // Rating widget shown on the finish screens.
-  function renderRating(container, entryId) {
+  function renderRating(container, entryId, question) {
     container.innerHTML =
-      `<div class="rating-q">Wie fokussiert warst du?</div>` +
+      `<div class="rating-q">${esc(question || "Wie fokussiert warst du?")}</div>` +
       `<div class="rating-row">${[1, 2, 3, 4, 5].map((n) => `<button data-rate="${n}" aria-label="${n} von 5">${n}</button>`).join("")}</div>` +
       `<div class="rating-scale"><span>kaum</span><span>voll da</span></div>` +
       `<div class="rating-thanks" hidden>Danke – gespeichert.</div>`;
@@ -1345,27 +1419,28 @@
   els.doneBack.addEventListener("click", stopToHome);
   els.again.addEventListener("click", startSession);
 
-  // ---- Fullscreen ----
-  function updateFsBtnLabel() {
-    els.fsBtn.textContent = document.fullscreenElement ? "Vollbild aus" : "Vollbild";
+  // ---- Fullscreen (shared by the visual player and the breath player) ----
+  function wireFullscreen(cfg) {
+    function updateLabel() {
+      cfg.btn.textContent = document.fullscreenElement === cfg.player ? "Vollbild aus" : "Vollbild";
+    }
+    document.addEventListener("fullscreenchange", updateLabel);
+    cfg.btn.addEventListener("click", () => {
+      if (document.fullscreenElement === cfg.player) { document.exitFullscreen().catch(() => {}); return; }
+      if (document.fullscreenEnabled && cfg.player.requestFullscreen) {
+        cfg.player.requestFullscreen().catch(() => { cfg.hint.hidden = false; });
+      } else {
+        cfg.hint.hidden = false;
+      }
+    });
+    cfg.hintOpen.addEventListener("click", () => window.open(location.href, "_blank"));
+    cfg.hintClose.addEventListener("click", () => { cfg.hint.hidden = true; });
   }
-  document.addEventListener("fullscreenchange", updateFsBtnLabel);
-  els.fsBtn.addEventListener("click", () => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {});
-      return;
-    }
-    if (document.fullscreenEnabled && els.player.requestFullscreen) {
-      els.player.requestFullscreen().catch(() => { els.fsHint.hidden = false; });
-    } else {
-      els.fsHint.hidden = false;
-    }
-  });
-  els.fsHintOpenBtn.addEventListener("click", () => window.open(location.href, "_blank"));
-  els.fsHintClose.addEventListener("click", () => { els.fsHint.hidden = true; });
+  wireFullscreen({ player: els.player, btn: els.fsBtn, hint: els.fsHint, hintOpen: els.fsHintOpenBtn, hintClose: els.fsHintClose });
+  wireFullscreen({ player: els.breathPlayer, btn: els.breathFsBtn, hint: els.breathFsHint, hintOpen: els.breathFsHintOpenBtn, hintClose: els.breathFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden) fitCanvas(); });
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && session && wakeLock === null) requestWakeLock();
+    if (document.visibilityState === "visible" && (session || breathSession) && wakeLock === null) requestWakeLock();
   });
 
   // ---- Tips sheet (shown once on first visit, reopenable) ----
@@ -1379,11 +1454,192 @@
   els.tipsBtn.addEventListener("click", openTips);
   els.tipsCloseBtn.addEventListener("click", closeTips);
   els.tipsSheet.addEventListener("click", (e) => { if (e.target === els.tipsSheet) closeTips(); });
+  function openBreathTips() { els.breathTipsSheet.hidden = false; }
+  function closeBreathTips() { els.breathTipsSheet.hidden = true; }
+  els.breathTipsBtn.addEventListener("click", openBreathTips);
+  els.breathTipsCloseBtn.addEventListener("click", closeBreathTips);
+  els.breathTipsSheet.addEventListener("click", (e) => { if (e.target === els.breathTipsSheet) closeBreathTips(); });
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     if (!els.tipsSheet.hidden) closeTips();
+    if (!els.breathTipsSheet.hidden) closeBreathTips();
     if (!els.videoModal.hidden) closeVideoModal();
   });
+
+  // ==== Atemtraining (breathing) ====
+  // Client-adjustable phase pacer, built to replace a hand-set metronome:
+  // every pattern is the same four-phase model (in/hold/out/hold, seconds),
+  // rendered as a circle that grows on the in-breath and shrinks on the
+  // out-breath, with an optional spoken phase cue.
+  const BREATH_PREFS_KEY = "fwmc-breath-v1";
+  const breathPrefs = { durationMin: 5, sound: true, custom: { in: 4, hold1: 0, out: 6, hold2: 0 } };
+  function loadBreathPrefs() {
+    const saved = readJSON(BREATH_PREFS_KEY, null);
+    if (saved && typeof saved === "object") {
+      Object.assign(breathPrefs, saved);
+      breathPrefs.custom = Object.assign({ in: 4, hold1: 0, out: 6, hold2: 0 }, saved.custom || {});
+    }
+  }
+  function saveBreathPrefs() { writeJSON(BREATH_PREFS_KEY, breathPrefs); }
+  loadBreathPrefs();
+
+  function renderPatternGrid() {
+    els.patternGrid.innerHTML = "";
+    Object.entries(BREATH_PATTERNS).forEach(([key, p]) => {
+      const card = document.createElement("button");
+      card.className = "featured-card";
+      card.innerHTML = `<span class="fc-title">${esc(p.name)}</span><span class="fc-desc">${esc(p.short)}</span>`;
+      card.addEventListener("click", () => openBreathReady(key));
+      els.patternGrid.appendChild(card);
+    });
+  }
+  renderPatternGrid();
+
+  let breathPatternKey = null;
+  let breathWorking = null; // { in, hold1, out, hold2 } - the phase seconds used for the next start
+
+  function phaseChipsHtml(phases) {
+    return PHASE_ORDER.filter((k) => phases[k] > 0)
+      .map((k) => `<span class="phase-chip">${fmtSeconds(phases[k]).replace(" ", "")} ${PHASE_LABELS[k]}</span>`)
+      .join("");
+  }
+  function syncPhaseUI() {
+    const total = PHASE_ORDER.reduce((s, k) => s + breathWorking[k], 0);
+    els.phaseInSlider.value = breathWorking.in; els.phaseInValue.textContent = fmtSeconds(breathWorking.in);
+    els.phaseHold1Slider.value = breathWorking.hold1; els.phaseHold1Value.textContent = fmtSeconds(breathWorking.hold1);
+    els.phaseOutSlider.value = breathWorking.out; els.phaseOutValue.textContent = fmtSeconds(breathWorking.out);
+    els.phaseHold2Slider.value = breathWorking.hold2; els.phaseHold2Value.textContent = fmtSeconds(breathWorking.hold2);
+    els.patternBreakdown.innerHTML = phaseChipsHtml(breathWorking);
+    els.phaseHelp.hidden = total > 0;
+    els.breathStartBtn.disabled = total <= 0;
+  }
+  function onPhaseSliderInput(key, slider) {
+    breathWorking[key] = Number(slider.value);
+    if (breathPatternKey === "custom") { breathPrefs.custom[key] = breathWorking[key]; saveBreathPrefs(); }
+    syncPhaseUI();
+  }
+  els.phaseInSlider.addEventListener("input", () => onPhaseSliderInput("in", els.phaseInSlider));
+  els.phaseHold1Slider.addEventListener("input", () => onPhaseSliderInput("hold1", els.phaseHold1Slider));
+  els.phaseOutSlider.addEventListener("input", () => onPhaseSliderInput("out", els.phaseOutSlider));
+  els.phaseHold2Slider.addEventListener("input", () => onPhaseSliderInput("hold2", els.phaseHold2Slider));
+
+  document.querySelectorAll("[data-breath-dur]").forEach((el) => {
+    el.addEventListener("click", () => { breathPrefs.durationMin = Number(el.dataset.breathDur); saveBreathPrefs(); syncBreathDurationUI(); });
+  });
+  function syncBreathDurationUI() {
+    document.querySelectorAll("[data-breath-dur]").forEach((el) => el.classList.toggle("active", Number(el.dataset.breathDur) === breathPrefs.durationMin));
+    els.breathDurationSlider.value = breathPrefs.durationMin;
+    els.breathDurationValue.textContent = `${breathPrefs.durationMin} Min`;
+  }
+  els.breathDurationSlider.addEventListener("input", () => {
+    breathPrefs.durationMin = Number(els.breathDurationSlider.value); saveBreathPrefs(); syncBreathDurationUI();
+  });
+
+  document.querySelectorAll("[data-breath-sound]").forEach((el) => {
+    el.addEventListener("click", () => { breathPrefs.sound = el.dataset.breathSound === "on"; saveBreathPrefs(); syncBreathSoundUI(); });
+  });
+  function syncBreathSoundUI() {
+    document.querySelectorAll("[data-breath-sound]").forEach((el) => {
+      el.classList.toggle("active", (el.dataset.breathSound === "on") === breathPrefs.sound);
+    });
+  }
+
+  function openBreathReady(key) {
+    breathPatternKey = key;
+    const pattern = BREATH_PATTERNS[key];
+    breathWorking = key === "custom" ? { ...breathPrefs.custom } : { ...pattern.phases };
+    els.breathReadyTitle.textContent = pattern.name;
+    els.breathReadyGoal.textContent = pattern.goal;
+    syncPhaseUI();
+    syncBreathDurationUI();
+    syncBreathSoundUI();
+    showScreen("breathReady");
+  }
+  els.breathBackToHome.addEventListener("click", () => showScreen("breathHome"));
+
+  // ---- Breathing session engine ----
+  let breathRaf = null;
+  let breathSession = null; // { schedule, cycleLen, plannedTotal, startTime, lastKey, sound }
+  let breathPatternName = "";
+  const breathCircle = els.breathBig.querySelector(".breath-circle");
+
+  function buildBreathCycle(phases) {
+    const schedule = [];
+    let t = 0;
+    PHASE_ORDER.forEach((k) => {
+      if (phases[k] > 0) { schedule.push({ key: k, label: PHASE_LABELS[k], t0: t, t1: t + phases[k] }); t += phases[k]; }
+    });
+    return { schedule, cycleLen: t };
+  }
+  function easeInOut(x) { return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; }
+
+  function breathTick(now) {
+    if (!breathSession) return;
+    const elapsed = Math.min((now - breathSession.startTime) / 1000, breathSession.plannedTotal);
+    const inCycle = elapsed % breathSession.cycleLen;
+    const cycleNum = Math.floor(elapsed / breathSession.cycleLen);
+    const frame = breathSession.schedule.find((f) => inCycle >= f.t0 && inCycle < f.t1) || breathSession.schedule[breathSession.schedule.length - 1];
+    const frameKey = cycleNum + ":" + frame.key;
+    if (frameKey !== breathSession.lastKey) {
+      breathSession.lastKey = frameKey;
+      if (breathSession.sound) speakWord(frame.label);
+    }
+    const progress = easeInOut((inCycle - frame.t0) / (frame.t1 - frame.t0 || 1));
+    let scale;
+    if (frame.key === "in") scale = 0.55 + 0.45 * progress;
+    else if (frame.key === "out") scale = 1 - 0.45 * progress;
+    else if (frame.key === "hold1") scale = 1;
+    else scale = 0.55;
+    breathCircle.style.transform = `scale(${scale.toFixed(3)})`;
+    els.breathPhaseLabel.textContent = frame.label;
+    els.breathPhaseCount.textContent = Math.max(1, Math.ceil(frame.t1 - inCycle));
+    els.breathTimeEl.textContent = fmtClock(breathSession.plannedTotal - elapsed);
+    if (elapsed >= breathSession.plannedTotal) { breathFinishSession(); return; }
+    breathRaf = requestAnimationFrame(breathTick);
+  }
+
+  function startBreathSession() {
+    const built = buildBreathCycle(breathWorking);
+    if (built.cycleLen <= 0) return;
+    breathPatternName = BREATH_PATTERNS[breathPatternKey].name;
+    const cycles = Math.max(1, Math.round((breathPrefs.durationMin * 60) / built.cycleLen));
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.breathPlayer.hidden = false;
+    els.breathPlayerBar.hidden = false;
+    els.breathDonePanel.hidden = true;
+    breathSession = { schedule: built.schedule, cycleLen: built.cycleLen, plannedTotal: cycles * built.cycleLen, startTime: performance.now(), lastKey: null, sound: breathPrefs.sound };
+    requestWakeLock();
+    breathRaf = requestAnimationFrame(breathTick);
+  }
+  els.breathStartBtn.addEventListener("click", startBreathSession);
+
+  function breathLeavePlayer() {
+    if (breathRaf) cancelAnimationFrame(breathRaf);
+    breathRaf = null;
+    breathSession = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.breathPlayer) document.exitFullscreen().catch(() => {});
+    els.breathFsHint.hidden = true;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    els.breathPlayer.hidden = true;
+    els.breathDonePanel.hidden = true;
+  }
+  function breathFinishSession() {
+    if (breathRaf) cancelAnimationFrame(breathRaf);
+    breathRaf = null;
+    const played = breathSession ? breathSession.plannedTotal : 0;
+    breathSession = null;
+    releaseWakeLock();
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    els.breathPlayerBar.hidden = true;
+    els.breathDoneSummary.textContent = `${breathPatternName} · ${fmtMinutes(played)}`;
+    const id = addHistory({ kind: "breath", title: breathPatternName, seconds: Math.round(played) });
+    renderRating(els.breathRating, id, "Wie ruhig fühlst du dich gerade?");
+    els.breathDonePanel.hidden = false;
+  }
+  els.breathBackBtn.addEventListener("click", () => { breathLeavePlayer(); showScreen("breathReady"); });
+  els.breathAgainBtn.addEventListener("click", () => { breathLeavePlayer(); startBreathSession(); });
+  els.breathDoneBackBtn.addEventListener("click", () => { breathLeavePlayer(); showScreen("breathHome"); });
 
   // ---- Start-up ----
   renderHistory();
