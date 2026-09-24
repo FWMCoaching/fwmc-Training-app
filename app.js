@@ -955,6 +955,14 @@
     workoutFeaturedPrograms: $("workoutFeaturedPrograms"), workoutFeaturedGrid: $("workoutFeaturedGrid"),
     workoutTabataStartCard: $("workoutTabataStartCard"),
     natHome: $("natHome"), natPeripherPanel: $("natPeripherPanel"), natRememberPanel: $("natRememberPanel"), natFlashPanel: $("natFlashPanel"),
+    rememberStartFixed: $("rememberStartFixed"), rememberStartShuffle: $("rememberStartShuffle"),
+    rememberBestFixed: $("rememberBestFixed"), rememberBestShuffle: $("rememberBestShuffle"),
+    rememberPlayer: $("rememberPlayer"), rememberStage: $("rememberStage"), rememberHint: $("rememberHint"),
+    rememberPlayerBar: $("rememberPlayerBar"), rememberBackBtn: $("rememberBackBtn"), rememberLevelEl: $("rememberLevelEl"),
+    rememberFsBtn: $("rememberFsBtn"), rememberFsHint: $("rememberFsHint"),
+    rememberFsHintOpenBtn: $("rememberFsHintOpenBtn"), rememberFsHintClose: $("rememberFsHintClose"),
+    rememberDonePanel: $("rememberDonePanel"), rememberDoneSummary: $("rememberDoneSummary"), rememberRating: $("rememberRating"),
+    rememberAgainBtn: $("rememberAgainBtn"), rememberDoneBackBtn: $("rememberDoneBackBtn"),
     workoutBundleOverview: $("workoutBundleOverview"), workoutBundleBackToHome: $("workoutBundleBackToHome"),
     workoutBundleTitle: $("workoutBundleTitle"), workoutBundleList: $("workoutBundleList"),
     workoutProgramIntro: $("workoutProgramIntro"), workoutProgramBackToHome: $("workoutProgramBackToHome"),
@@ -1036,6 +1044,7 @@
       els.natPeripherPanel.hidden = sub !== "peripher";
       els.natRememberPanel.hidden = sub !== "remember";
       els.natFlashPanel.hidden = sub !== "flash";
+      if (sub === "remember") renderRememberBests();
     });
   });
   document.querySelectorAll("[data-open-combo]").forEach((btn) => btn.addEventListener("click", () => openComboScreen()));
@@ -1957,6 +1966,7 @@
     els.breathPlayer.hidden = true;
     els.wimhofPlayer.hidden = true;
     els.movementPlayer.hidden = true;
+    els.rememberPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -2286,6 +2296,7 @@
   wireFullscreen({ player: els.breathPlayer, btn: els.breathFsBtn, hint: els.breathFsHint, hintOpen: els.breathFsHintOpenBtn, hintClose: els.breathFsHintClose });
   wireFullscreen({ player: els.wimhofPlayer, btn: els.wimhofFsBtn, hint: els.wimhofFsHint, hintOpen: els.wimhofFsHintOpenBtn, hintClose: els.wimhofFsHintClose });
   wireFullscreen({ player: els.movementPlayer, btn: els.movementFsBtn, hint: els.movementFsHint, hintOpen: els.movementFsHintOpenBtn, hintClose: els.movementFsHintClose });
+  wireFullscreen({ player: els.rememberPlayer, btn: els.rememberFsBtn, hint: els.rememberFsHint, hintOpen: els.rememberFsHintOpenBtn, hintClose: els.rememberFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -3094,6 +3105,148 @@
   els.movementBackBtn.addEventListener("click", movementAbort);
   els.movementAgainBtn.addEventListener("click", () => { movementLeavePlayer(); startMovementSession(); });
   els.movementDoneBackBtn.addEventListener("click", () => { movementLeavePlayer(); showScreen("movementHome"); });
+
+  // ==== NAT · Remember: spatial sequence memory game ====
+  // A number appears somewhere on screen and stays there; more numbers get
+  // added one at a time, then all get covered and must be tapped back in
+  // order (1, 2, 3, ...). Two variants, sharing one engine, differ only in
+  // whether a new round's already-placed numbers keep last round's spot
+  // ("fixed") or every number - old and new - gets reshuffled together
+  // ("shuffle"). Endless/progressive - there's no fixed end, so the only
+  // way to finish is "Beenden", which doubles as the finish action (shows
+  // a summary) once at least the first round has been cleared.
+  const REMEMBER_MODES = {
+    fixed: { id: "fixed", title: "Feste Positionen", keepPositions: true },
+    shuffle: { id: "shuffle", title: "Bewegte Positionen", keepPositions: false },
+  };
+  const REMEMBER_BEST_KEY = "fwmc-remember-best-v1"; // { fixed: bestLevel, shuffle: bestLevel }
+  function rememberBestFor(mode) { return readJSON(REMEMBER_BEST_KEY, {})[mode] || 0; }
+  function saveRememberBest(mode, level) {
+    const best = readJSON(REMEMBER_BEST_KEY, {});
+    if (level > (best[mode] || 0)) { best[mode] = level; writeJSON(REMEMBER_BEST_KEY, best); return true; }
+    return false;
+  }
+  function renderRememberBests() {
+    const f = rememberBestFor("fixed");
+    const s = rememberBestFor("shuffle");
+    els.rememberBestFixed.textContent = f ? `Bestleistung: ${f}` : "";
+    els.rememberBestShuffle.textContent = s ? `Bestleistung: ${s}` : "";
+  }
+  renderRememberBests();
+
+  let rememberState = null; // { mode, level, cleared, positions, phase, nextExpected, startTime, timer }
+
+  function randomRememberPosition(existing) {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const x = 12 + Math.random() * 76;
+      const y = 18 + Math.random() * 64;
+      if (!existing.some((p) => Math.hypot(p.x - x, p.y - y) < 16)) return { x, y };
+    }
+    return { x: 12 + Math.random() * 76, y: 18 + Math.random() * 64 };
+  }
+  function buildRememberPositions(count, keep) {
+    const positions = keep && rememberState ? rememberState.positions.slice(0, count - 1).map((p) => ({ ...p })) : [];
+    while (positions.length < count) positions.push({ num: positions.length + 1, ...randomRememberPosition(positions) });
+    return positions;
+  }
+  function renderRememberMarkers() {
+    els.rememberStage.querySelectorAll(".remember-marker").forEach((el) => el.remove());
+    rememberState.positions.forEach((p) => {
+      const el = document.createElement("button");
+      const covered = rememberState.phase === "covered";
+      el.className = "remember-marker" + (covered ? " covered" : "");
+      el.style.left = p.x + "%";
+      el.style.top = p.y + "%";
+      el.textContent = covered ? "" : String(p.num);
+      el.dataset.num = p.num;
+      if (covered) el.addEventListener("click", () => rememberClick(p.num, el));
+      els.rememberStage.appendChild(el);
+    });
+  }
+  function startRememberLevel() {
+    rememberState.positions = buildRememberPositions(rememberState.level, REMEMBER_MODES[rememberState.mode].keepPositions);
+    rememberState.phase = "reveal";
+    rememberState.nextExpected = 1;
+    els.rememberHint.textContent = "Merken …";
+    els.rememberLevelEl.textContent = `${rememberState.level} Zahlen`;
+    renderRememberMarkers();
+    const revealMs = Math.min(4500, 900 + rememberState.level * 350);
+    rememberState.timer = setTimeout(coverRememberLevel, revealMs);
+  }
+  function coverRememberLevel() {
+    if (!rememberState) return;
+    rememberState.phase = "covered";
+    els.rememberHint.textContent = "Jetzt in der richtigen Reihenfolge antippen";
+    renderRememberMarkers();
+  }
+  function rememberClick(num, el) {
+    if (!rememberState || rememberState.phase !== "covered") return;
+    if (num === rememberState.nextExpected) {
+      el.classList.add("correct");
+      el.textContent = String(num);
+      el.style.pointerEvents = "none";
+      rememberState.nextExpected += 1;
+      if (rememberState.nextExpected > rememberState.level) {
+        if (rememberState.level > rememberState.cleared) rememberState.cleared = rememberState.level;
+        rememberState.phase = "success";
+        els.rememberHint.textContent = "Richtig! Weiter geht's …";
+        els.rememberStage.querySelectorAll(".remember-marker").forEach((m) => { m.textContent = m.dataset.num; m.style.pointerEvents = "none"; m.classList.remove("covered"); });
+        rememberState.level += 1;
+        rememberState.timer = setTimeout(startRememberLevel, 900);
+      }
+    } else {
+      rememberState.phase = "checking";
+      el.classList.add("wrong");
+      el.textContent = String(num);
+      els.rememberStage.querySelectorAll(".remember-marker").forEach((m) => { m.textContent = m.dataset.num; m.style.pointerEvents = "none"; m.classList.remove("covered"); });
+      els.rememberHint.textContent = "Leider falsch – nochmal von vorne";
+      rememberState.timer = setTimeout(() => { rememberState.level = 2; startRememberLevel(); }, 1400);
+    }
+  }
+  let lastRememberMode = null;
+  function startRememberGame(mode) {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.rememberPlayer.hidden = false;
+    els.rememberPlayerBar.hidden = false;
+    els.rememberDonePanel.hidden = true;
+    lastRememberMode = mode;
+    rememberState = { mode, level: 2, cleared: 0, positions: [], phase: "reveal", nextExpected: 1, startTime: performance.now(), timer: null };
+    requestWakeLock();
+    startRememberLevel();
+  }
+  els.rememberStartFixed.addEventListener("click", () => startRememberGame("fixed"));
+  els.rememberStartShuffle.addEventListener("click", () => startRememberGame("shuffle"));
+
+  // "Beenden" doubles as the finish action here (see comment above) - only
+  // shows a summary once at least one round has actually been cleared.
+  function rememberStop() {
+    if (!rememberState) return;
+    if (rememberState.timer) clearTimeout(rememberState.timer);
+    const state = rememberState;
+    rememberState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.rememberPlayer) document.exitFullscreen().catch(() => {});
+    els.rememberFsHint.hidden = true;
+    if (state.cleared > 0) {
+      const isRecord = saveRememberBest(state.mode, state.cleared);
+      renderRememberBests();
+      const played = (performance.now() - state.startTime) / 1000;
+      const modeTitle = REMEMBER_MODES[state.mode].title;
+      els.rememberPlayerBar.hidden = true;
+      els.rememberDoneSummary.textContent = `${modeTitle} · Zahl ${state.cleared} erreicht` + (isRecord ? " · Neue Bestleistung!" : "");
+      const id = addHistory({ kind: "remember", title: `Remember · ${modeTitle}`, seconds: Math.round(played), note: `Zahl ${state.cleared} erreicht` });
+      renderRating(els.rememberRating, id, "Wie war deine Konzentration?");
+      els.rememberDonePanel.hidden = false;
+    } else {
+      renderRememberBests();
+      els.rememberPlayer.hidden = true;
+      showScreen("natHome");
+    }
+  }
+  els.rememberBackBtn.addEventListener("click", rememberStop);
+  els.rememberAgainBtn.addEventListener("click", () => { els.rememberDonePanel.hidden = true; startRememberGame(lastRememberMode); });
+  els.rememberDoneBackBtn.addEventListener("click", () => { els.rememberPlayer.hidden = true; els.rememberDonePanel.hidden = true; showScreen("natHome"); });
 
   // ==== Workout engine ====
   // One engine serves three situations: a block inside a coach-authored/

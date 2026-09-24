@@ -466,10 +466,20 @@
   </section>
 
   <section class="nat-panel" id="natRememberPanel" hidden>
-    <div class="nat-panel-card">
-      <h3>Remember</h3>
-      <p>Merkf&auml;higkeits-&Uuml;bung. Der genaue Ablauf wird hier als N&auml;chstes gestaltet.</p>
+    <div class="section-head">
+      <h2>Remember</h2>
+      <span class="section-note">merke dir die Positionen, dann klicke sie in der richtigen Reihenfolge an</span>
     </div>
+    <button class="featured-card" id="rememberStartFixed">
+      <span class="fc-title">Feste Positionen</span>
+      <span class="fc-desc">Jede neue Zahl kommt an einen neuen Platz dazu &ndash; die bisherigen bleiben, wo sie waren.</span>
+      <span class="fc-meta" id="rememberBestFixed"></span>
+    </button>
+    <button class="featured-card" id="rememberStartShuffle">
+      <span class="fc-title">Bewegte Positionen</span>
+      <span class="fc-desc">Bei jeder neuen Zahl werden alle Positionen neu gemischt &ndash; schwerer zu merken.</span>
+      <span class="fc-meta" id="rememberBestShuffle"></span>
+    </button>
   </section>
 
   <section class="nat-panel" id="natFlashPanel" hidden>
@@ -1088,6 +1098,31 @@
     <div class="rating" id="movementRating"></div>
     <button class="again" id="movementAgainBtn">Nochmal</button>
     <button class="back" id="movementDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="rememberPlayer" hidden>
+  <div class="remember-stage" id="rememberStage">
+    <div class="remember-hint" id="rememberHint"></div>
+  </div>
+  <div class="player-bar" id="rememberPlayerBar">
+    <button id="rememberBackBtn">&#10005; Beenden</button>
+    <span class="player-status" id="rememberLevelEl"></span>
+    <button id="rememberFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="rememberFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="rememberFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="rememberFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="rememberDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="rememberDoneSummary"></p>
+    <div class="rating" id="rememberRating"></div>
+    <button class="again" id="rememberAgainBtn">Nochmal</button>
+    <button class="back" id="rememberDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 
