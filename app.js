@@ -1259,7 +1259,11 @@
       const { min, max } = colorModeLimits();
       const selected = keys.includes(c.key);
       if (selected) {
-        if (keys.length <= min) { colorHint(`Mindestens ${min} Farbe${min === 1 ? "" : "n"}.`, true); return; }
+        // Arrow mode allows going all the way down to zero - syncColorUI()
+        // shows a "pick at least one" hint and disables the start button
+        // for that, rather than blocking the click outright like the
+        // standard 2-4 palette below does.
+        if (colorMode !== "arrows" && keys.length <= min) { colorHint(`Mindestens ${min} Farben.`, true); return; }
         setColorModeArray(keys.filter((k) => k !== c.key));
       } else {
         if (keys.length >= max) { colorHint(`Höchstens ${max} Farben – wähle zuerst eine ab.`, true); return; }
@@ -1281,7 +1285,11 @@
   const wedges = COLOR_LIB.map((c, i) => `${c.hex} ${(i / COLOR_LIB.length * 100).toFixed(2)}% ${((i + 1) / COLOR_LIB.length * 100).toFixed(2)}%`).join(",");
   colorAllBtn.innerHTML = `<span class="swatch" style="background:conic-gradient(${wedges})"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">Alle Farben</span>`;
   colorAllBtn.addEventListener("click", () => {
-    setColorModeArray(COLOR_LIB.map((c) => c.key));
+    const allSelected = colorModeArray().length === COLOR_LIB.length;
+    // Toggle: all seven <-> none at all, rather than picking an arbitrary
+    // colour to leave behind. syncColorUI() shows a "pick at least one"
+    // hint and disables the start button while nothing is selected.
+    setColorModeArray(allSelected ? [] : COLOR_LIB.map((c) => c.key));
     savePrefs();
     syncColorUI();
   });
@@ -1298,7 +1306,12 @@
     colorAllBtn.classList.toggle("active", allOn);
     colorAllBtn.setAttribute("aria-pressed", allOn ? "true" : "false");
     els.colorCount.textContent = `${keys.length} gewählt`;
-    colorHint(defaultColorHint());
+    const nothingPicked = colorMode === "arrows" && keys.length === 0;
+    if (hintTimer) { clearTimeout(hintTimer); hintTimer = null; }
+    els.colorHint.textContent = nothingPicked ? "Wähle mindestens eine Farbe." : defaultColorHint();
+    els.colorHint.classList.toggle("warn", nothingPicked);
+    els.startBtn.disabled = nothingPicked;
+    els.vtSaveBtn.disabled = nothingPicked;
   }
 
   // ---- Duration / tempo / sliders ----
@@ -2216,6 +2229,7 @@
 
   // ---- Single exercise ----
   function startSession() {
+    if (EXERCISES[state.exercise].usesArrowColors && state.arrowColors.length === 0) return;
     program = null;
     hideOverlays();
     active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors) };

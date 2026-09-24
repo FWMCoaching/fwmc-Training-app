@@ -132,6 +132,8 @@ button{font-family:inherit;color:inherit}
 }
 .text-link:hover{text-decoration:underline}
 .text-link.small{font-size:13px;font-weight:600}
+.text-link:disabled{opacity:.45;cursor:not-allowed}
+.text-link:disabled:hover{text-decoration:none}
 
 /* ---- Section headings ---- */
 section{margin-bottom:26px}
