@@ -1207,17 +1207,19 @@
 
   <div class="group">
     <div class="group-label">Deine Abfolge <span class="group-count" id="comboBlockCount"></span></div>
-    <div class="program-entry-row">
-      <input type="text" id="comboNameInput" placeholder="Name deines Programms (z.B. Abendroutine)" aria-label="Name des Programms" autocomplete="off">
-    </div>
     <div class="chapter-list" id="comboBlockList"></div>
     <div class="group-help" id="comboEmptyHint">Noch keine Bausteine hinzugef&uuml;gt.</div>
+    <button class="text-link small" id="comboSaveBtn">Aktuelles Programm speichern</button>
+    <div class="custom-exercise-form" id="comboSaveForm" hidden>
+      <input type="text" id="comboNameInput" placeholder="Name deines Programms (z.B. Abendroutine)" aria-label="Name des Programms" autocomplete="off" maxlength="40">
+      <div class="custom-exercise-form-actions">
+        <button class="start-btn secondary" id="comboSaveCancelBtn">Abbrechen</button>
+        <button class="start-btn" id="comboSaveConfirmBtn">Speichern</button>
+      </div>
+    </div>
   </div>
 
-  <div class="combo-actions">
-    <button class="start-btn" id="comboStartBtn">Programm starten</button>
-    <button class="start-btn secondary" id="comboSaveBtn">Nur speichern</button>
-  </div>
+  <button class="start-btn" id="comboStartBtn">Programm starten</button>
 </div>
 
 <div class="screen" id="comboBundleOverview" hidden>

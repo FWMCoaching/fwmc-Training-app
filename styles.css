@@ -668,7 +668,6 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .start-btn.secondary{
   background:var(--surface);color:var(--brand-deep);border:1.5px solid var(--brand);box-shadow:none;
 }
-.combo-actions{display:flex;flex-direction:column;gap:10px;margin-top:auto}
 
 /* ---- Combo builder ---- */
 .combo-domain-group{margin-bottom:14px}

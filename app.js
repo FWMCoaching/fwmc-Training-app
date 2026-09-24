@@ -995,6 +995,7 @@
     comboScreen: $("comboScreen"), comboBackToHome: $("comboBackToHome"), comboSavedGroup: $("comboSavedGroup"), comboSavedList: $("comboSavedList"),
     comboNameInput: $("comboNameInput"), comboAddGrid: $("comboAddGrid"), comboBlockCount: $("comboBlockCount"),
     comboBlockList: $("comboBlockList"), comboEmptyHint: $("comboEmptyHint"), comboStartBtn: $("comboStartBtn"), comboSaveBtn: $("comboSaveBtn"),
+    comboSaveForm: $("comboSaveForm"), comboSaveCancelBtn: $("comboSaveCancelBtn"), comboSaveConfirmBtn: $("comboSaveConfirmBtn"),
     comboTransition: $("comboTransition"), comboTransitionTitle: $("comboTransitionTitle"), comboTransitionMeta: $("comboTransitionMeta"), comboTransitionBtn: $("comboTransitionBtn"),
     comboDonePanel: $("comboDonePanel"), comboDoneSummary: $("comboDoneSummary"), comboRating: $("comboRating"),
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
@@ -3740,8 +3741,7 @@
   // ---- Self-service builder: pick preset blocks from any section, order
   // them, then start right away or save locally under a name for later. ----
   const COMBO_SAVED_KEY = "fwmc-combo-saved-v1";
-  function loadSavedCombos() { const l = readJSON(COMBO_SAVED_KEY, []); return Array.isArray(l) ? l : []; }
-  function saveSavedCombos(list) { writeJSON(COMBO_SAVED_KEY, list); }
+  const comboSavedStore = makePresetStore(COMBO_SAVED_KEY);
 
   let comboDraftBlocks = [];
   function renderComboAddGrid() {
@@ -3785,25 +3785,17 @@
     });
   }
   function renderComboSaved() {
-    const saved = loadSavedCombos();
-    els.comboSavedGroup.hidden = saved.length === 0;
-    els.comboSavedList.innerHTML = "";
-    saved.slice().reverse().forEach((entry) => {
-      const item = document.createElement("button");
-      item.className = "bundle-item";
-      item.innerHTML =
-        `<div class="bundle-item-head"><strong>${esc(entry.name)}</strong></div>` +
-        `<span class="bundle-meta">${exerciseCountLabel(entry.blocks.length)} · ca. ${fmtMinutes(entry.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0))}</span>`;
-      item.addEventListener("click", () => {
+    renderPresetList(comboSavedStore, els.comboSavedList, els.comboSavedGroup, null,
+      (e) => `${exerciseCountLabel(e.blocks.length)} · ca. ${fmtMinutes(e.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0))}`,
+      (entry) => {
         comboOriginBundle = null;
         startComboProgram({ name: entry.name, blocks: entry.blocks }, "local", "local:" + entry.id, currentHomeScreen());
       });
-      els.comboSavedList.appendChild(item);
-    });
   }
   function openComboScreen() {
     comboDraftBlocks = [];
-    els.comboNameInput.value = "";
+    els.comboSaveForm.hidden = true;
+    els.comboSaveBtn.hidden = false;
     renderComboAddGrid();
     renderComboBlockList();
     renderComboSaved();
@@ -3818,15 +3810,18 @@
     comboOriginBundle = null;
     startComboProgram({ name: comboDraftName(), blocks: comboDraftBlocks.slice() }, "local", "local:draft", currentHomeScreen());
   });
-  els.comboSaveBtn.addEventListener("click", () => {
-    if (comboDraftBlocks.length === 0) return;
-    const saved = loadSavedCombos();
-    saved.push({ id: String(Date.now()), name: comboDraftName(), blocks: comboDraftBlocks.slice(), createdAt: new Date().toISOString() });
-    saveSavedCombos(saved);
-    renderComboSaved();
-    els.comboNameInput.value = "";
-    comboDraftBlocks = [];
-    renderComboBlockList();
+  wirePresetSaveForm({
+    saveBtn: els.comboSaveBtn, form: els.comboSaveForm, nameInput: els.comboNameInput,
+    cancelBtn: els.comboSaveCancelBtn, confirmBtn: els.comboSaveConfirmBtn,
+    defaultName: () => `Programm ${new Date().toLocaleDateString("de-DE")}`,
+    onSave: (name) => {
+      const list = comboSavedStore.load();
+      list.push({ id: String(Date.now()), name, blocks: comboDraftBlocks.slice(), createdAt: new Date().toISOString() });
+      comboSavedStore.save(list);
+      renderComboSaved();
+      comboDraftBlocks = [];
+      renderComboBlockList();
+    },
   });
 
   // ---- Start-up ----
