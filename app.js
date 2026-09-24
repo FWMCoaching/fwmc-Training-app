@@ -492,7 +492,7 @@
       rules: "Du siehst vier große Farbpunkte – sie zeigen die Reihenfolge, in der deine vier Farbhütchen von links nach rechts stehen sollen. Sortiere deine Hütchen so schnell wie möglich um und tippe danach irgendwo auf den Bildschirm für die nächste Reihenfolge. Gezählt wird, wie viele Durchgänge du innerhalb der eingestellten Zeit schaffst – nicht, ob du eine bestimmte Anzahl erreichst.",
     },
     "cone-compass": {
-      title: "Hütchen · Kompass-Aufbau", type: "color", usesColors: true,
+      title: "Hütchen · Kompass-Aufbau", type: "color", usesColors: true, setupDiagram: true,
       task: "Reagiere auf die Farbe – passend zu deinem eigenen Richtungs-Aufbau am Boden.",
       trains: "Reaktionsschnelligkeit gezielt in frei gewählte Richtungen",
       rules: "Klebe ein Kreuz oder einen Stern mit vier oder acht Richtungen auf den Boden und stelle deine Farbhütchen in die Richtungen, die du trainieren willst. Mehrere Farben auf derselben Richtung lassen diese Richtung häufiger drankommen. Welche Farbe wohin gehört, legst du komplett selbst fest – die App zeigt immer nur die Farbe.",
@@ -893,6 +893,10 @@
     programAgainBtn: $("programAgainBtn"), programDoneBackBtn: $("programDoneBackBtn"),
     introVideo: $("introVideo"), explainerBtn: $("explainerBtn"),
     videoModal: $("videoModal"), videoModalPlayer: $("videoModalPlayer"), videoModalClose: $("videoModalClose"),
+    setupBtn: $("setupBtn"), setupThumb: $("setupThumb"),
+    setupModal: $("setupModal"), setupModalClose: $("setupModalClose"),
+    setupSlideArt: $("setupSlideArt"), setupSlideTitle: $("setupSlideTitle"), setupSlideCaption: $("setupSlideCaption"),
+    setupCounter: $("setupCounter"), setupPrevBtn: $("setupPrevBtn"), setupNextBtn: $("setupNextBtn"),
     historySection: $("historySection"), historyStats: $("historyStats"), historyList: $("historyList"), historyClearBtn: $("historyClearBtn"),
     historyMoreBtn: $("historyMoreBtn"),
     tipsSheet: $("tipsSheet"), tipsBtn: $("tipsBtn"), tipsCloseBtn: $("tipsCloseBtn"),
@@ -1206,6 +1210,97 @@
   els.videoModal.addEventListener("click", (e) => { if (e.target === els.videoModal) closeVideoModal(); });
   els.videoModal.addEventListener("keydown", (e) => trapTabKey(els.videoModal, e));
 
+  // ---- Setup diagrams (e.g. Hütchen-Kompass-Aufbau): small SVG sketches ----
+  // showing how the physical cone layout on the ground can look, since this
+  // exercise has no fixed setup - the player builds it themselves.
+  function coneSetupSVG(points) {
+    const size = 220, cx = size / 2, cy = size / 2, r = 78;
+    let lines = "", cones = "";
+    points.forEach((p) => {
+      const rad = ((p.angle - 90) * Math.PI) / 180;
+      const ex = cx + r * Math.cos(rad), ey = cy + r * Math.sin(rad);
+      lines += `<line x1="${cx}" y1="${cy}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" stroke="var(--line)" stroke-width="2" stroke-dasharray="4 4"/>`;
+      const perpX = -Math.sin(rad), perpY = Math.cos(rad);
+      const n = p.colors.length;
+      p.colors.forEach((color, i) => {
+        const spread = (i - (n - 1) / 2) * 20;
+        const x = (ex + perpX * spread).toFixed(1), y = (ey + perpY * spread).toFixed(1);
+        cones += `<g transform="translate(${x},${y})"><circle r="13" fill="${color}" stroke="rgba(0,0,0,.15)" stroke-width="1.5"/><polygon points="0,-6 5,6 -5,6" fill="#fff" opacity=".9"/></g>`;
+      });
+    });
+    return `<svg viewBox="0 0 ${size} ${size}" class="setup-svg" role="img" aria-hidden="true">
+      <circle cx="${cx}" cy="${cy}" r="${r + 24}" fill="var(--surface-2)"/>
+      ${lines}
+      <circle cx="${cx}" cy="${cy}" r="15" fill="var(--brand)"/>
+      <text x="${cx}" y="${cy + 4.5}" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">DU</text>
+      ${cones}
+    </svg>`;
+  }
+  const SETUP_SLIDES = [
+    {
+      title: "Kreuz · 4 Richtungen",
+      caption: "Klebe ein einfaches Kreuz auf den Boden – vorne, rechts, hinten, links – und stelle in jede Richtung ein Hütchen in einer eigenen Farbe.",
+      points: [
+        { angle: 0, colors: [COLOR_BY_KEY.rot.hex] },
+        { angle: 90, colors: [COLOR_BY_KEY.gruen.hex] },
+        { angle: 180, colors: [COLOR_BY_KEY.blau.hex] },
+        { angle: 270, colors: [COLOR_BY_KEY.gelb.hex] },
+      ],
+    },
+    {
+      title: "Kompass · 8 Richtungen (Kreuz + Diagonale)",
+      caption: "Ergänze die vier Schrägen, um alle acht Richtungen zu trainieren – ein Hütchen pro Richtung.",
+      points: [
+        { angle: 0, colors: [COLOR_BY_KEY.rot.hex] },
+        { angle: 45, colors: [COLOR_BY_KEY.orange.hex] },
+        { angle: 90, colors: [COLOR_BY_KEY.gruen.hex] },
+        { angle: 135, colors: [COLOR_BY_KEY.lila.hex] },
+        { angle: 180, colors: [COLOR_BY_KEY.blau.hex] },
+        { angle: 225, colors: [COLOR_BY_KEY.pink.hex] },
+        { angle: 270, colors: [COLOR_BY_KEY.gelb.hex] },
+        { angle: 315, colors: [COLOR_BY_KEY.rot.hex] },
+      ],
+    },
+    {
+      title: "Eigene Auswahl – nur die Richtungen, die du üben willst",
+      caption: "Du musst nicht alle Punkte besetzen. Stellst du mehrere Farben auf dieselbe Richtung (hier Rot und Grün beide nach vorne), kommt genau diese Richtung häufiger dran, weil mehrere Farben zu ihr führen.",
+      points: [
+        { angle: 0, colors: [COLOR_BY_KEY.rot.hex, COLOR_BY_KEY.gruen.hex] },
+        { angle: 90, colors: [COLOR_BY_KEY.blau.hex] },
+        { angle: 315, colors: [COLOR_BY_KEY.gelb.hex] },
+      ],
+    },
+  ];
+  els.setupThumb.innerHTML = coneSetupSVG(SETUP_SLIDES[0].points);
+
+  let setupSlideIdx = 0;
+  function renderSetupSlide() {
+    const s = SETUP_SLIDES[setupSlideIdx];
+    els.setupSlideTitle.textContent = s.title;
+    els.setupSlideArt.innerHTML = coneSetupSVG(s.points);
+    els.setupSlideCaption.textContent = s.caption;
+    els.setupCounter.textContent = `${setupSlideIdx + 1} / ${SETUP_SLIDES.length}`;
+    els.setupPrevBtn.disabled = setupSlideIdx === 0;
+    els.setupNextBtn.disabled = setupSlideIdx === SETUP_SLIDES.length - 1;
+  }
+  let setupModalReturnFocus = null;
+  function openSetupModal() {
+    setupSlideIdx = 0;
+    renderSetupSlide();
+    setupModalReturnFocus = document.activeElement;
+    els.setupModal.hidden = false;
+    focusFirstIn(els.setupModal);
+  }
+  function closeSetupModal() {
+    els.setupModal.hidden = true;
+    if (setupModalReturnFocus) setupModalReturnFocus.focus();
+  }
+  els.setupModalClose.addEventListener("click", closeSetupModal);
+  els.setupModal.addEventListener("click", (e) => { if (e.target === els.setupModal) closeSetupModal(); });
+  els.setupModal.addEventListener("keydown", (e) => trapTabKey(els.setupModal, e));
+  els.setupPrevBtn.addEventListener("click", () => { if (setupSlideIdx > 0) { setupSlideIdx--; renderSetupSlide(); } });
+  els.setupNextBtn.addEventListener("click", () => { if (setupSlideIdx < SETUP_SLIDES.length - 1) { setupSlideIdx++; renderSetupSlide(); } });
+
   // ---- Settings state ----
   const TEMPO_PRESETS = {
     leicht: { stimulusS: 2.5, intervalMin: 6, intervalMax: 10 },
@@ -1389,6 +1484,8 @@
     els.rulesBox.hidden = !ex.rules;
     els.explainerBtn.hidden = !ex.explainerVideo;
     els.explainerBtn.onclick = ex.explainerVideo ? () => openVideoModal(ex.explainerVideo) : null;
+    els.setupBtn.hidden = !ex.setupDiagram;
+    els.setupBtn.onclick = ex.setupDiagram ? openSetupModal : null;
     colorMode = ex.usesArrowColors ? "arrows" : "standard";
     els.colorGroup.hidden = !ex.usesColors && !ex.usesArrowColors;
     const isConeTap = ex.type === "color-tap";
@@ -2428,6 +2525,7 @@
     if (!els.tipsSheet.hidden) closeTips();
     if (!els.breathTipsSheet.hidden) closeBreathTips();
     if (!els.videoModal.hidden) closeVideoModal();
+    if (!els.setupModal.hidden) closeSetupModal();
   });
 
   // ==== Atemtraining (breathing) ====

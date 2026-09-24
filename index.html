@@ -655,6 +655,10 @@
   </div>
   <div class="rules-box" id="rulesBox" hidden></div>
   <button class="explainer-link" id="explainerBtn" hidden>&#9654; Erkl&auml;rvideo ansehen</button>
+  <button class="setup-link" id="setupBtn" hidden>
+    <span class="setup-thumb" id="setupThumb"></span>
+    <span>Aufbau-Beispiele ansehen</span>
+  </button>
 
   <div class="group" id="colorGroup" hidden>
     <div class="group-label">Farben <span class="group-count" id="colorCount"></span></div>
@@ -1412,6 +1416,20 @@
   <div class="video-modal-inner">
     <button class="video-modal-close" id="videoModalClose" aria-label="Schlie&szlig;en">&times;</button>
     <video id="videoModalPlayer" controls playsinline></video>
+  </div>
+</div>
+
+<div class="video-modal" id="setupModal" hidden>
+  <div class="video-modal-inner setup-modal-inner" role="dialog" aria-modal="true" aria-labelledby="setupSlideTitle">
+    <button class="video-modal-close" id="setupModalClose" aria-label="Schlie&szlig;en">&times;</button>
+    <h2 class="setup-slide-title" id="setupSlideTitle">&nbsp;</h2>
+    <div class="setup-slide-art" id="setupSlideArt"></div>
+    <p class="setup-slide-caption" id="setupSlideCaption"></p>
+    <div class="setup-nav">
+      <button id="setupPrevBtn" aria-label="Vorheriges Beispiel">&laquo;</button>
+      <span class="setup-counter" id="setupCounter"></span>
+      <button id="setupNextBtn" aria-label="N&auml;chstes Beispiel">&raquo;</button>
+    </div>
   </div>
 </div>
 
