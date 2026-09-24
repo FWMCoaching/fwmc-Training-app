@@ -39,7 +39,7 @@
   const MIN_COLORS = 2;
   const MAX_COLORS = 4;
 
-  // Fixed four-colour set for "Hütchen · Antippen" (cone order sorting) -
+  // Fixed four-colour set for "Hütchen antippen" (cone order sorting) -
   // this exercise is always about four cones, so it skips the free colour
   // picker and always uses this base set, only their on-screen order changes.
   const CONE_TAP_COLORS = ["rot", "gelb", "gruen", "blau"].map((k) => COLOR_BY_KEY[k]);
@@ -440,10 +440,10 @@
       rules: "Nur Bild oder nur Ton: Reagiere wie gezeigt oder gesagt. Bild und Ton gleichzeitig mit unterschiedlicher Richtung: Zeigt der Pfeil nach VORNE oder RECHTS, gilt der TON; zeigt er nach HINTEN oder LINKS, gilt das BILD. Bild mit Piepton: Reagiere in die Gegenrichtung des Pfeils. Die Sprachausgabe nutzt die Stimme deines Geräts. Diese Übung ist eine Weiterentwicklung von Fabian Westermann Mentalcoaching.",
     },
     "cone-tap": {
-      title: "Hütchen · Antippen", type: "color-tap",
-      task: "Sortiere deine vier Farbhütchen in dieser Reihenfolge, dann tippe irgendwo auf den Bildschirm für die nächste Runde.",
-      trains: "Eigenes Tempo, Schnelligkeit und Umsortieren im selbst gebauten Hütchen-Parcours",
-      rules: "Du siehst vier große Farbpunkte – sie zeigen die Reihenfolge, in der deine vier Farbhütchen von links nach rechts stehen sollen. Sortiere deine Hütchen entsprechend um und tippe danach irgendwo auf den Bildschirm: Die nächste Reihenfolge erscheint erst, wenn du bereit bist.",
+      title: "Hütchen sortieren", type: "color-tap",
+      task: "Sortiere deine vier Farbhütchen in dieser Reihenfolge, dann tippe für die nächste Reihenfolge. Wie oft schaffst du das in der eingestellten Zeit?",
+      trains: "Schnelligkeit beim Umsortieren unter Zeitdruck",
+      rules: "Du siehst vier große Farbpunkte – sie zeigen die Reihenfolge, in der deine vier Farbhütchen von links nach rechts stehen sollen. Sortiere deine Hütchen so schnell wie möglich um und tippe danach irgendwo auf den Bildschirm für die nächste Reihenfolge. Gezählt wird, wie viele Durchgänge du innerhalb der eingestellten Zeit schaffst – nicht, ob du eine bestimmte Anzahl erreichst.",
     },
     "cone-compass": {
       title: "Hütchen · Kompass-Aufbau", type: "color", usesColors: true,
@@ -767,8 +767,9 @@
     intervalMinSlider: $("intervalMinSlider"), intervalMaxSlider: $("intervalMaxSlider"), intervalValue: $("intervalValue"),
     tempoCustom: $("tempoCustom"),
     colorGroup: $("colorGroup"), colorPicker: $("colorPicker"), colorCount: $("colorCount"), colorHint: $("colorHint"),
-    durationGroup: $("durationGroup"), tempoGroup: $("tempoGroup"), coneCountGroup: $("coneCountGroup"), advanced: $("advanced"),
+    durationGroup: $("durationGroup"), tempoGroup: $("tempoGroup"), advanced: $("advanced"),
     stageWrap: $("stageWrap"), coneOrderStage: $("coneOrderStage"), coneOrderRow: $("coneOrderRow"),
+    coneOrderCount: $("coneOrderCount"), coneBestHint: $("coneBestHint"),
     programCodeInput: $("programCodeInput"), programGoBtn: $("programGoBtn"), programError: $("programError"),
     programIntro: $("programIntro"), programBackToHome: $("programBackToHome"), programTitle: $("programTitle"),
     programMeta: $("programMeta"), programDesc: $("programDesc"), chapterList: $("chapterList"),
@@ -949,7 +950,8 @@
       const d = new Date(e.ts);
       const date = `${WEEKDAYS[d.getDay()]}, ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
       const rating = e.rating ? ` · ${ratingLabel(e.kind)} ${e.rating}/5` : "";
-      return `<li><span class="h-date">${date}</span><span class="h-title">${esc(e.title)}</span><span class="h-meta">${fmtMinutes(e.seconds || 0)}${rating}</span></li>`;
+      const note = e.note ? ` · ${esc(e.note)}` : "";
+      return `<li><span class="h-date">${date}</span><span class="h-title">${esc(e.title)}</span><span class="h-meta">${fmtMinutes(e.seconds || 0)}${note}${rating}</span></li>`;
     }).join("");
   }
   function renderHistory() {
@@ -1016,7 +1018,6 @@
     intervalMax: 6,
     colors: ["orange", "rot", "lila"],
     sequence: "frei",
-    coneCount: 10,
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -1097,15 +1098,17 @@
     document.querySelectorAll("[data-dur]").forEach((el) => el.classList.toggle("active", el.dataset.dur === String(state.duration)));
     els.durationSlider.value = state.duration;
     els.durationValue.textContent = state.duration >= 60 ? fmtMinutes(state.duration) : state.duration + " s";
+    const ex = EXERCISES[state.exercise];
+    const isConeTap = ex && ex.type === "color-tap";
+    els.coneBestHint.hidden = !isConeTap;
+    if (isConeTap) {
+      const best = coneBestFor(state.duration);
+      els.coneBestHint.textContent = best
+        ? `Deine Bestleistung bei dieser Dauer: ${best} Durchgänge.`
+        : "Noch keine Bestleistung bei dieser Dauer – leg los!";
+    }
   }
   els.durationSlider.addEventListener("input", () => { state.duration = Number(els.durationSlider.value); savePrefs(); syncDurationUI(); });
-
-  document.querySelectorAll("[data-cone-count]").forEach((el) => {
-    el.addEventListener("click", () => { state.coneCount = Number(el.dataset.coneCount); savePrefs(); syncConeCountUI(); });
-  });
-  function syncConeCountUI() {
-    document.querySelectorAll("[data-cone-count]").forEach((el) => el.classList.toggle("active", el.dataset.coneCount === String(state.coneCount)));
-  }
 
   document.querySelectorAll("[data-tempo]").forEach((el) => {
     el.addEventListener("click", () => { Object.assign(state, TEMPO_PRESETS[el.dataset.tempo]); savePrefs(); syncTempoUI(); });
@@ -1152,15 +1155,12 @@
     els.explainerBtn.onclick = ex.explainerVideo ? () => openVideoModal(ex.explainerVideo) : null;
     els.colorGroup.hidden = !ex.usesColors;
     const isConeTap = ex.type === "color-tap";
-    els.durationGroup.hidden = isConeTap;
     els.tempoGroup.hidden = isConeTap;
     els.advanced.hidden = isConeTap;
-    els.coneCountGroup.hidden = !isConeTap;
     syncColorUI();
     syncSequenceUI();
     syncDurationUI();
     syncTempoUI();
-    syncConeCountUI();
     showScreen("ready");
   }
   els.backToHome.addEventListener("click", () => showScreen("home"));
@@ -1820,13 +1820,23 @@
     raf = requestAnimationFrame(tick);
   }
 
-  // Tap-paced cone-order exercise ("Hütchen · Antippen"): four big colour
-  // dots show the order the client's four cones should be sorted into. No
-  // timed schedule - the client taps the stage whenever they're ready for
-  // the next order, so it gets its own tiny loop instead of the timed
-  // schedule/tick() engine, and plain DOM dots instead of the canvas (so the
-  // whole stage - including the gaps between dots - is tappable, with no
-  // dead zone from canvas/CSS sizing mismatches).
+  // Tap-paced cone-order exercise ("Hütchen sortieren"): four big colour
+  // dots show the order the client's four cones should be sorted into. Runs
+  // for a fixed duration (the shared "Dauer" setting) and counts how many
+  // times the client manages to re-sort and confirm a new order before the
+  // time is up - speed of repetition, not a target count, is the point. It
+  // gets its own tiny tick loop (time-driven, not schedule-driven) and plain
+  // DOM dots instead of the canvas, so the whole stage - including the gaps
+  // between dots - is tappable, with no dead zone from canvas/CSS sizing
+  // mismatches.
+  const CONE_BEST_KEY = "fwmc-cone-best-v1"; // { [durationSeconds]: bestRoundCount }
+  function coneBestFor(duration) { return readJSON(CONE_BEST_KEY, {})[duration] || 0; }
+  function saveConeBest(duration, count) {
+    const best = readJSON(CONE_BEST_KEY, {});
+    if (count > (best[duration] || 0)) { best[duration] = count; writeJSON(CONE_BEST_KEY, best); return true; }
+    return false;
+  }
+
   function shuffledConeOrder(prevKey) {
     let order;
     do {
@@ -1844,7 +1854,15 @@
     coneTap.lastOrder = order.map((c) => c.key).join();
     els.coneOrderRow.innerHTML = order.map((c) =>
       `<span class="cone-order-dot" style="background:${c.hex}" aria-label="${c.name}"></span>`).join("");
-    els.timeEl.textContent = `${coneTap.count} / ${coneTap.target}`;
+    els.coneOrderCount.textContent = `${coneTap.count} geschafft`;
+  }
+
+  function coneTapTick(now) {
+    if (!coneTap) return;
+    const elapsed = (now - session.startTime) / 1000;
+    if (elapsed >= session.total) { finishSession(); return; }
+    els.timeEl.textContent = fmtClock(session.total - elapsed);
+    raf = requestAnimationFrame(coneTapTick);
   }
 
   function startConeTap() {
@@ -1856,16 +1874,15 @@
     els.stageWrap.hidden = true;
     els.coneOrderStage.hidden = false;
     if (raf) cancelAnimationFrame(raf);
-    raf = null;
-    session = { startTime: performance.now(), total: 86400, schedule: [] };
-    coneTap = { target: state.coneCount, count: 1, lastOrder: null };
+    session = { startTime: performance.now(), total: state.duration, schedule: [] };
+    coneTap = { count: 0, lastOrder: null, duration: state.duration };
     requestWakeLock();
     renderConeOrderRound();
+    raf = requestAnimationFrame(coneTapTick);
   }
 
   function coneTapAdvance() {
     if (!coneTap) return;
-    if (coneTap.count >= coneTap.target) { finishSession(); return; }
     coneTap.count++;
     renderConeOrderRound();
   }
@@ -2004,9 +2021,16 @@
     releaseWakeLock();
     setProgress(1, 0);
     const ex = EXERCISES[state.exercise];
-    const summary = coneTap ? `${coneTap.target} Runden · ${fmtMinutes(spent)}` : `${ex.title} · ${fmtMinutes(spent)}`;
+    let summary, note;
+    if (coneTap) {
+      const isRecord = saveConeBest(coneTap.duration, coneTap.count);
+      note = `${coneTap.count} Durchgänge`;
+      summary = `${coneTap.count} Durchgänge · ${fmtMinutes(spent)}` + (isRecord && coneTap.count > 0 ? " · Neue Bestleistung!" : "");
+    } else {
+      summary = `${ex.title} · ${fmtMinutes(spent)}`;
+    }
     els.doneSummary.textContent = summary;
-    const id = addHistory({ kind: "exercise", title: ex.title, seconds: Math.round(spent) });
+    const id = addHistory({ kind: "exercise", title: ex.title, seconds: Math.round(spent), note });
     renderRating(els.doneRating, id);
     els.donePanel.hidden = false;
     els.playerBar.hidden = true;

@@ -193,8 +193,8 @@
           <polygon points="12,4 16.5,18 7.5,18" fill="#fff"/>
           <rect x="5" y="18" width="14" height="2.4" rx="1" fill="#fff"/>
         </svg></div>
-        <h3>H&uuml;tchen &middot; Antippen</h3>
-        <p>Ordne deine Farbh&uuml;tchen frei an, tippe f&uuml;r die n&auml;chste Farbe.</p>
+        <h3>H&uuml;tchen sortieren</h3>
+        <p>Sortiere so schnell du kannst &ndash; wie viele Durchg&auml;nge schaffst du in der Zeit?</p>
         <span class="tag">H&uuml;tchen</span>
       </button>
 
@@ -463,6 +463,7 @@
       <button class="choice" data-dur="120">2 Min</button>
       <button class="choice" data-dur="180">3 Min</button>
     </div>
+    <div class="group-help" id="coneBestHint" hidden></div>
   </div>
 
   <div class="group" id="tempoGroup">
@@ -473,16 +474,6 @@
       <button class="choice" data-tempo="schwer">Schwer<small>schnell &amp; kurz</small></button>
     </div>
     <div class="tempo-custom" id="tempoCustom" hidden>Individuell eingestellt (siehe Feineinstellungen)</div>
-  </div>
-
-  <div class="group" id="coneCountGroup" hidden>
-    <div class="group-label">Anzahl Runden</div>
-    <div class="choice-row">
-      <button class="choice" data-cone-count="5">5</button>
-      <button class="choice" data-cone-count="10">10</button>
-      <button class="choice" data-cone-count="15">15</button>
-    </div>
-    <div class="group-help">Nach jedem Antippen des Bildschirms kommt eine neue Reihenfolge &ndash; du bestimmst das Tempo.</div>
   </div>
 
   <details class="advanced" id="advanced">
@@ -797,6 +788,7 @@
 <div class="player" id="player" hidden>
   <div class="stage-wrap" id="stageWrap"><canvas id="stage"></canvas></div>
   <div class="cone-order-stage" id="coneOrderStage" hidden>
+    <div class="cone-order-count" id="coneOrderCount"></div>
     <div class="cone-order-row" id="coneOrderRow"></div>
   </div>
   <div class="progress-track" id="progressTrack"></div>
