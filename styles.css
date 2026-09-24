@@ -671,6 +671,14 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
   background:var(--surface-2);color:var(--ink-soft);font-size:16px;cursor:pointer;
 }
 
+/* ---- Workout circuit builder: per-exercise duration stepper ---- */
+.circuit-duration{display:flex;align-items:center;gap:6px;flex:none}
+.circuit-step{
+  width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:var(--surface);
+  color:var(--ink);font-size:16px;font-weight:700;cursor:pointer;line-height:1;flex:none;
+}
+.circuit-duration-value{font-size:13px;font-weight:700;color:var(--ink);min-width:32px;text-align:center;font-variant-numeric:tabular-nums}
+
 /* ---- Workout ---- */
 .workout-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px 18px;overflow-y:auto}
 .workout-reps-view,.workout-tabata-view{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:420px}

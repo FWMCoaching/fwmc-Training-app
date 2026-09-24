@@ -670,16 +670,22 @@
     hampelmann: { name: "Hampelmann", note: "Locker und im eigenen Tempo." },
     bergsteiger: { name: "Bergsteiger", note: "Rücken flach, Knie zügig zur Brust ziehen." },
   };
-  function workoutBlockLabel(block) { return WORKOUT_EXERCISES[block.exercise] ? WORKOUT_EXERCISES[block.exercise].name : block.exercise; }
+  function circuitSummaryLabel(block) {
+    return `Zirkel · ${block.items.length} Übung${block.items.length === 1 ? "" : "en"}` + (block.sets > 1 ? ` × ${block.sets} Sätze` : "");
+  }
+  function workoutBlockLabel(block) {
+    if (block.kind === "circuit") return circuitSummaryLabel(block);
+    return WORKOUT_EXERCISES[block.exercise] ? WORKOUT_EXERCISES[block.exercise].name : block.exercise;
+  }
   function workoutBlockMeta(block) {
-    return block.kind === "tabata"
-      ? `${block.rounds} Runden à ${block.workS}s/${block.restS}s`
-      : `${block.sets}×${block.reps}`;
+    if (block.kind === "tabata") return `${block.rounds} Runden à ${block.workS}s/${block.restS}s`;
+    if (block.kind === "circuit") return `${block.items.length} Übungen × ${block.sets} Sätze`;
+    return `${block.sets}×${block.reps}`;
   }
   function workoutBlockSeconds(block) {
-    return block.kind === "tabata"
-      ? block.rounds * (block.workS + block.restS)
-      : block.sets * 30 + (block.sets - 1) * (block.restS ?? 30); // 30s/set is a rough estimate for the "ca." total
+    if (block.kind === "tabata") return block.rounds * (block.workS + block.restS);
+    if (block.kind === "circuit") return buildCircuitSchedule(block).total;
+    return block.sets * 30 + (block.sets - 1) * (block.restS ?? 30); // 30s/set is a rough estimate for the "ca." total
   }
   // ---- Coach-authored / self-built workout plans (mirrors the breath and
   // combo programme tables): a sequence of "reps" or "tabata" blocks,
@@ -860,7 +866,11 @@
     workoutProgramTitle: $("workoutProgramTitle"), workoutProgramMeta: $("workoutProgramMeta"), workoutProgramDesc: $("workoutProgramDesc"),
     workoutChapterList: $("workoutChapterList"), workoutProgramStartBtn: $("workoutProgramStartBtn"),
     workoutTabataReady: $("workoutTabataReady"), workoutTabataBackToHome: $("workoutTabataBackToHome"),
-    workoutExerciseRow: $("workoutExerciseRow"), workoutTabataStartBtn: $("workoutTabataStartBtn"),
+    workoutTabataStartBtn: $("workoutTabataStartBtn"),
+    workoutCircuitAddGrid: $("workoutCircuitAddGrid"), workoutCircuitCount: $("workoutCircuitCount"),
+    workoutCircuitEmptyHint: $("workoutCircuitEmptyHint"), workoutCircuitList: $("workoutCircuitList"),
+    workoutCircuitSetRestGroup: $("workoutCircuitSetRestGroup"),
+    workoutCircuitDefaultWorkSlider: $("workoutCircuitDefaultWorkSlider"), workoutCircuitDefaultWorkValue: $("workoutCircuitDefaultWorkValue"),
     workoutPlayer: $("workoutPlayer"), workoutRepsView: $("workoutRepsView"), workoutExerciseName: $("workoutExerciseName"),
     workoutSetInfo: $("workoutSetInfo"), workoutRepsBig: $("workoutRepsBig"), workoutNote: $("workoutNote"),
     workoutSetDoneBtn: $("workoutSetDoneBtn"), workoutRestBox: $("workoutRestBox"), workoutRestCountdown: $("workoutRestCountdown"),
@@ -2896,11 +2906,13 @@
     els.workoutPlayer.hidden = false;
     els.workoutPlayerBar.hidden = false;
     els.workoutDonePanel.hidden = true;
-    els.workoutRepsView.hidden = block.kind === "tabata";
-    els.workoutTabataView.hidden = block.kind !== "tabata";
+    const isTimed = block.kind === "tabata" || block.kind === "circuit";
+    els.workoutRepsView.hidden = isTimed;
+    els.workoutTabataView.hidden = !isTimed;
     els.workoutTabataView.classList.remove("phase-work", "phase-rest");
     renderWorkoutOverview();
     if (block.kind === "tabata") startTabataBlock(block);
+    else if (block.kind === "circuit") startCircuitBlock(block);
     else startRepsBlock(block);
   }
   function renderWorkoutOverview() {
@@ -2992,6 +3004,80 @@
       if (remain <= 0) { workoutState.round += 1; workoutState.phase = "work"; workoutState.phaseStart = now; }
     }
     workoutRaf = requestAnimationFrame(tabataTick);
+  }
+
+  // ---- Circuit mode: a self-built sequence of several exercises, each with
+  // its own work time, separated by a rest, the whole sequence repeatable
+  // for several sets with a longer rest between sets. Built as one flat,
+  // timed schedule up front (like the visual/breath engines) rather than a
+  // phase-by-phase state machine, so pausing/backgrounding compensation
+  // (see the shared visibilitychange handler) works for free via
+  // workoutState.startTime.
+  function buildCircuitSchedule(block) {
+    const schedule = [];
+    let t = 0;
+    schedule.push({ t0: t, t1: t + TABATA_PREP_S, type: "prep" });
+    t += TABATA_PREP_S;
+    for (let set = 1; set <= block.sets; set++) {
+      block.items.forEach((item, i) => {
+        schedule.push({ t0: t, t1: t + item.workS, type: "work", set, itemIdx: i, exercise: item.exercise });
+        t += item.workS;
+        if (i < block.items.length - 1) {
+          schedule.push({ t0: t, t1: t + block.restS, type: "rest", set, itemIdx: i });
+          t += block.restS;
+        }
+      });
+      if (set < block.sets) {
+        schedule.push({ t0: t, t1: t + block.setRestS, type: "setrest", set });
+        t += block.setRestS;
+      }
+    }
+    return { schedule, total: t };
+  }
+  function startCircuitBlock(block) {
+    const built = buildCircuitSchedule(block);
+    workoutState = { kind: "circuit", block, ex: { name: circuitSummaryLabel(block) }, schedule: built.schedule, total: built.total, startTime: performance.now() };
+    requestWakeLock();
+    workoutRaf = requestAnimationFrame(circuitTick);
+  }
+  function circuitTick(now) {
+    if (!workoutState || workoutState.kind !== "circuit") return;
+    const elapsed = (now - workoutState.startTime) / 1000;
+    if (elapsed >= workoutState.total) { finishWorkoutBlock(); return; }
+    const frame = workoutState.schedule.find((f) => elapsed >= f.t0 && elapsed < f.t1);
+    if (frame) {
+      const remain = frame.t1 - elapsed;
+      const totalSets = workoutState.block.sets;
+      const itemCount = workoutState.block.items.length;
+      els.tabataCountdown.textContent = Math.max(0, Math.ceil(remain));
+      els.workoutTabataView.classList.remove("phase-work", "phase-rest");
+      if (frame.type === "prep") {
+        const first = WORKOUT_EXERCISES[workoutState.block.items[0].exercise] || {};
+        els.tabataPhaseLabel.textContent = "Bereit machen";
+        els.tabataExerciseName.textContent = first.name || "";
+        els.tabataRoundLabel.textContent = `Satz 1 von ${totalSets} · Übung 1 von ${itemCount}`;
+      } else if (frame.type === "work") {
+        const ex = WORKOUT_EXERCISES[frame.exercise] || { name: frame.exercise };
+        els.tabataPhaseLabel.textContent = "Los!";
+        els.tabataExerciseName.textContent = ex.name;
+        els.tabataRoundLabel.textContent = `Satz ${frame.set} von ${totalSets} · Übung ${frame.itemIdx + 1} von ${itemCount}`;
+        els.workoutTabataView.classList.add("phase-work");
+      } else if (frame.type === "rest") {
+        const nextItem = workoutState.block.items[frame.itemIdx + 1];
+        const ex = nextItem ? (WORKOUT_EXERCISES[nextItem.exercise] || { name: nextItem.exercise }) : null;
+        els.tabataPhaseLabel.textContent = "Pause";
+        els.tabataExerciseName.textContent = ex ? ex.name : "";
+        els.tabataRoundLabel.textContent = `Satz ${frame.set} von ${totalSets} · gleich: Übung ${frame.itemIdx + 2} von ${itemCount}`;
+        els.workoutTabataView.classList.add("phase-rest");
+      } else if (frame.type === "setrest") {
+        const first = WORKOUT_EXERCISES[workoutState.block.items[0].exercise] || {};
+        els.tabataPhaseLabel.textContent = "Satzpause";
+        els.tabataExerciseName.textContent = first.name || "";
+        els.tabataRoundLabel.textContent = `Satz ${frame.set + 1} von ${totalSets} beginnt gleich`;
+        els.workoutTabataView.classList.add("phase-rest");
+      }
+    }
+    workoutRaf = requestAnimationFrame(circuitTick);
   }
 
   // ---- Shared block completion ----
@@ -3098,40 +3184,116 @@
     runWorkoutBlock(block);
   }
 
-  // ---- Standalone Tabata quick-start (no plan, no code) ----
-  const WORKOUT_TABATA_KEY = "fwmc-workout-tabata-v1";
-  const workoutTabataPrefs = { exercise: "hampelmann", rounds: 8, workS: 20, restS: 10 };
-  function loadWorkoutTabataPrefs() {
-    const saved = readJSON(WORKOUT_TABATA_KEY, null);
-    if (saved && typeof saved === "object") Object.assign(workoutTabataPrefs, saved);
+  // ---- Standalone Tabata/circuit quick-start (no plan, no code): the
+  // client builds their own sequence of exercises (tap to append, tap the
+  // same one again for a duplicate later in the sequence), each with its
+  // own work time, then sets how many sets to repeat and the rests. Mirrors
+  // the combo builder's add-grid/draft-list pattern.
+  const WORKOUT_CIRCUIT_KEY = "fwmc-workout-circuit-v1";
+  const workoutCircuitPrefs = { items: [], restS: 10, sets: 1, setRestS: 30, defaultWorkS: 15 };
+  function loadWorkoutCircuitPrefs() {
+    const saved = readJSON(WORKOUT_CIRCUIT_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(workoutCircuitPrefs, saved);
+    if (!Array.isArray(workoutCircuitPrefs.items)) workoutCircuitPrefs.items = [];
   }
-  function saveWorkoutTabataPrefs() { writeJSON(WORKOUT_TABATA_KEY, workoutTabataPrefs); }
-  loadWorkoutTabataPrefs();
+  function saveWorkoutCircuitPrefs() { writeJSON(WORKOUT_CIRCUIT_KEY, workoutCircuitPrefs); }
+  loadWorkoutCircuitPrefs();
 
-  Object.entries(WORKOUT_EXERCISES).forEach(([id, ex]) => {
-    const btn = document.createElement("button");
-    btn.className = "choice";
-    btn.dataset.woExercise = id;
-    btn.textContent = ex.name;
-    btn.addEventListener("click", () => { workoutTabataPrefs.exercise = id; saveWorkoutTabataPrefs(); syncWorkoutTabataUI(); });
-    els.workoutExerciseRow.appendChild(btn);
-  });
-  document.querySelectorAll("[data-wo-rounds]").forEach((el) => el.addEventListener("click", () => { workoutTabataPrefs.rounds = Number(el.dataset.woRounds); saveWorkoutTabataPrefs(); syncWorkoutTabataUI(); }));
-  document.querySelectorAll("[data-wo-work]").forEach((el) => el.addEventListener("click", () => { workoutTabataPrefs.workS = Number(el.dataset.woWork); saveWorkoutTabataPrefs(); syncWorkoutTabataUI(); }));
-  document.querySelectorAll("[data-wo-rest]").forEach((el) => el.addEventListener("click", () => { workoutTabataPrefs.restS = Number(el.dataset.woRest); saveWorkoutTabataPrefs(); syncWorkoutTabataUI(); }));
-  function syncWorkoutTabataUI() {
-    els.workoutExerciseRow.querySelectorAll("[data-wo-exercise]").forEach((el) => setActive(el, el.dataset.woExercise === workoutTabataPrefs.exercise));
-    document.querySelectorAll("[data-wo-rounds]").forEach((el) => setActive(el, Number(el.dataset.woRounds) === workoutTabataPrefs.rounds));
-    document.querySelectorAll("[data-wo-work]").forEach((el) => setActive(el, Number(el.dataset.woWork) === workoutTabataPrefs.workS));
-    document.querySelectorAll("[data-wo-rest]").forEach((el) => setActive(el, Number(el.dataset.woRest) === workoutTabataPrefs.restS));
+  function renderWorkoutCircuitAddGrid() {
+    els.workoutCircuitAddGrid.innerHTML = "";
+    Object.entries(WORKOUT_EXERCISES).forEach(([id, ex]) => {
+      const count = workoutCircuitPrefs.items.filter((it) => it.exercise === id).length;
+      const btn = document.createElement("button");
+      btn.className = "combo-add-btn";
+      btn.innerHTML = `<span><span class="ca-title">${esc(ex.name)}</span>` +
+        (count ? `<br><span class="ca-meta">${count}× im Zirkel</span>` : "") + `</span><span class="ca-plus">+</span>`;
+      btn.addEventListener("click", () => {
+        workoutCircuitPrefs.items.push({ exercise: id, workS: workoutCircuitPrefs.defaultWorkS });
+        saveWorkoutCircuitPrefs();
+        renderWorkoutCircuitAddGrid();
+        renderWorkoutCircuitList();
+        syncWorkoutCircuitUI();
+      });
+      els.workoutCircuitAddGrid.appendChild(btn);
+    });
   }
-  function openWorkoutTabataReady() { syncWorkoutTabataUI(); showScreen("workoutTabataReady"); }
+  function renderWorkoutCircuitList() {
+    const items = workoutCircuitPrefs.items;
+    els.workoutCircuitCount.textContent = items.length ? `${items.length} Übung${items.length === 1 ? "" : "en"}` : "";
+    els.workoutCircuitEmptyHint.hidden = items.length > 0;
+    els.workoutCircuitList.innerHTML = "";
+    items.forEach((item, i) => {
+      const ex = WORKOUT_EXERCISES[item.exercise] || { name: item.exercise };
+      const row = document.createElement("div");
+      row.className = "chapter-row";
+      row.innerHTML =
+        `<span class="chapter-main" style="cursor:default"><span class="num">${i + 1}</span><span class="info"><strong>${esc(ex.name)}</strong></span></span>` +
+        `<div class="circuit-duration">` +
+        `<button class="circuit-step" data-i="${i}" data-dir="-1" aria-label="kürzer">&minus;</button>` +
+        `<span class="circuit-duration-value">${item.workS}s</span>` +
+        `<button class="circuit-step" data-i="${i}" data-dir="1" aria-label="länger">+</button>` +
+        `</div>` +
+        `<button class="combo-block-remove" data-i="${i}" title="Entfernen">&#10005;</button>`;
+      els.workoutCircuitList.appendChild(row);
+    });
+    els.workoutCircuitList.querySelectorAll(".circuit-step").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const item = workoutCircuitPrefs.items[Number(btn.dataset.i)];
+        item.workS = Math.max(5, Math.min(120, item.workS + Number(btn.dataset.dir) * 5));
+        saveWorkoutCircuitPrefs();
+        renderWorkoutCircuitList();
+      });
+    });
+    els.workoutCircuitList.querySelectorAll(".combo-block-remove").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        workoutCircuitPrefs.items.splice(Number(btn.dataset.i), 1);
+        saveWorkoutCircuitPrefs();
+        renderWorkoutCircuitAddGrid();
+        renderWorkoutCircuitList();
+        syncWorkoutCircuitUI();
+      });
+    });
+  }
+  document.querySelectorAll("[data-wo-rest]").forEach((el) => el.addEventListener("click", () => {
+    workoutCircuitPrefs.restS = Number(el.dataset.woRest); saveWorkoutCircuitPrefs(); syncWorkoutCircuitUI();
+  }));
+  document.querySelectorAll("[data-wo-sets]").forEach((el) => el.addEventListener("click", () => {
+    workoutCircuitPrefs.sets = Number(el.dataset.woSets); saveWorkoutCircuitPrefs(); syncWorkoutCircuitUI();
+  }));
+  document.querySelectorAll("[data-wo-setrest]").forEach((el) => el.addEventListener("click", () => {
+    workoutCircuitPrefs.setRestS = Number(el.dataset.woSetrest); saveWorkoutCircuitPrefs(); syncWorkoutCircuitUI();
+  }));
+  function syncWorkoutCircuitUI() {
+    document.querySelectorAll("[data-wo-rest]").forEach((el) => setActive(el, Number(el.dataset.woRest) === workoutCircuitPrefs.restS));
+    document.querySelectorAll("[data-wo-sets]").forEach((el) => setActive(el, Number(el.dataset.woSets) === workoutCircuitPrefs.sets));
+    document.querySelectorAll("[data-wo-setrest]").forEach((el) => setActive(el, Number(el.dataset.woSetrest) === workoutCircuitPrefs.setRestS));
+    els.workoutCircuitSetRestGroup.hidden = workoutCircuitPrefs.sets <= 1;
+    els.workoutCircuitDefaultWorkSlider.value = workoutCircuitPrefs.defaultWorkS;
+    els.workoutCircuitDefaultWorkValue.textContent = `${workoutCircuitPrefs.defaultWorkS} s`;
+    els.workoutTabataStartBtn.disabled = workoutCircuitPrefs.items.length === 0;
+    els.workoutTabataStartBtn.textContent = workoutCircuitPrefs.items.length ? "Zirkel starten" : "Mindestens eine Übung hinzufügen";
+  }
+  els.workoutCircuitDefaultWorkSlider.addEventListener("input", () => {
+    workoutCircuitPrefs.defaultWorkS = Number(els.workoutCircuitDefaultWorkSlider.value);
+    saveWorkoutCircuitPrefs();
+    syncWorkoutCircuitUI();
+  });
+  function openWorkoutTabataReady() {
+    renderWorkoutCircuitAddGrid();
+    renderWorkoutCircuitList();
+    syncWorkoutCircuitUI();
+    showScreen("workoutTabataReady");
+  }
   els.workoutTabataStartCard.addEventListener("click", openWorkoutTabataReady);
   els.workoutTabataBackToHome.addEventListener("click", () => showScreen("workoutHome"));
   els.workoutTabataStartBtn.addEventListener("click", () => {
+    if (!workoutCircuitPrefs.items.length) return;
     startStandaloneWorkoutBlock({
-      kind: "tabata", exercise: workoutTabataPrefs.exercise,
-      workS: workoutTabataPrefs.workS, restS: workoutTabataPrefs.restS, rounds: workoutTabataPrefs.rounds,
+      kind: "circuit",
+      items: workoutCircuitPrefs.items.map((it) => ({ ...it })),
+      restS: workoutCircuitPrefs.restS,
+      sets: workoutCircuitPrefs.sets,
+      setRestS: workoutCircuitPrefs.setRestS,
     });
   });
 

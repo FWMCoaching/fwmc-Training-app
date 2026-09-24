@@ -700,41 +700,62 @@
     <button class="back-link" id="workoutTabataBackToHome">&larr; Zur&uuml;ck</button>
   </div>
   <h1 class="page-title">Tabata / Intervalltraining</h1>
-  <p class="page-sub">W&auml;hle eine &Uuml;bung sowie Arbeits- und Pausenzeit. Läuft danach automatisch im Wechsel durch.</p>
+  <p class="page-sub">Baue dir deinen eigenen Zirkel: tippe &Uuml;bungen in der Reihenfolge an, in der du sie machen willst &ndash; auch mehrfach.</p>
 
   <div class="group">
-    <div class="group-label">&Uuml;bung</div>
-    <div class="choice-row" id="workoutExerciseRow"></div>
+    <div class="group-label">&Uuml;bung hinzuf&uuml;gen</div>
+    <div class="combo-add-grid" id="workoutCircuitAddGrid"></div>
   </div>
 
   <div class="group">
-    <div class="group-label">Runden</div>
-    <div class="choice-row" id="workoutRoundsRow">
-      <button class="choice" data-wo-rounds="6">6</button>
-      <button class="choice" data-wo-rounds="8">8</button>
-      <button class="choice" data-wo-rounds="10">10</button>
-    </div>
+    <div class="group-label">Dein Zirkel <span class="group-count" id="workoutCircuitCount"></span></div>
+    <p class="group-help" id="workoutCircuitEmptyHint">Noch keine &Uuml;bung ausgew&auml;hlt &ndash; tippe oben eine an.</p>
+    <div class="chapter-list" id="workoutCircuitList"></div>
   </div>
 
   <div class="group">
-    <div class="group-label">Arbeitszeit</div>
-    <div class="choice-row" id="workoutWorkRow">
-      <button class="choice" data-wo-work="20">20 s</button>
-      <button class="choice" data-wo-work="30">30 s</button>
-      <button class="choice" data-wo-work="40">40 s</button>
-    </div>
-  </div>
-
-  <div class="group">
-    <div class="group-label">Pausenzeit</div>
-    <div class="choice-row" id="workoutRestRow">
+    <div class="group-label">Pause zwischen &Uuml;bungen</div>
+    <div class="choice-row" id="workoutCircuitRestRow">
+      <button class="choice" data-wo-rest="5">5 s</button>
       <button class="choice" data-wo-rest="10">10 s</button>
       <button class="choice" data-wo-rest="15">15 s</button>
-      <button class="choice" data-wo-rest="20">20 s</button>
     </div>
   </div>
 
-  <button class="start-btn" id="workoutTabataStartBtn">Intervall starten</button>
+  <div class="group">
+    <div class="group-label">S&auml;tze <span class="group-count">wiederholt den ganzen Zirkel</span></div>
+    <div class="choice-row" id="workoutCircuitSetsRow">
+      <button class="choice" data-wo-sets="1">1</button>
+      <button class="choice" data-wo-sets="2">2</button>
+      <button class="choice" data-wo-sets="3">3</button>
+      <button class="choice" data-wo-sets="4">4</button>
+    </div>
+  </div>
+
+  <div class="group" id="workoutCircuitSetRestGroup" hidden>
+    <div class="group-label">Pause zwischen S&auml;tzen</div>
+    <div class="choice-row" id="workoutCircuitSetRestRow">
+      <button class="choice" data-wo-setrest="20">20 s</button>
+      <button class="choice" data-wo-setrest="30">30 s</button>
+      <button class="choice" data-wo-setrest="60">60 s</button>
+    </div>
+  </div>
+
+  <details class="advanced" id="workoutCircuitAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Standard-Dauer f&uuml;r neu hinzugef&uuml;gte &Uuml;bungen</div>
+        <div class="slider-row">
+          <input type="range" id="workoutCircuitDefaultWorkSlider" min="5" max="90" step="5" aria-label="Standard-&Uuml;bungsdauer">
+          <span class="slider-value" id="workoutCircuitDefaultWorkValue">15 s</span>
+        </div>
+        <div class="group-help">Gilt nur f&uuml;r neue &Uuml;bungen &ndash; schon hinzugef&uuml;gte &auml;nderst du einzeln mit den +/&minus;-Kn&ouml;pfen.</div>
+      </div>
+    </div>
+  </details>
+
+  <button class="start-btn" id="workoutTabataStartBtn" disabled>Mindestens eine &Uuml;bung hinzuf&uuml;gen</button>
 </div>
 
 <div class="screen" id="wimhofReady" hidden>
