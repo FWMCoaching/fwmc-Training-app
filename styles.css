@@ -424,14 +424,15 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 }
 .remember-marker{
   position:absolute;transform:translate(-50%,-50%);
-  width:58px;height:58px;border-radius:50%;border:none;padding:0;
+  width:72px;height:72px;border-radius:50%;border:none;padding:0;
   display:flex;align-items:center;justify-content:center;
-  font-family:"Magra",sans-serif;font-weight:700;font-size:23px;color:#fff;
+  font-family:"Magra",sans-serif;font-weight:700;font-size:28px;color:#fff;
   background:#007094;box-shadow:0 2px 10px rgba(0,0,0,.18);
   cursor:default;transition:background .15s ease,transform .1s ease;
 }
 .remember-marker.covered{background:#16232a;cursor:pointer}
 .remember-marker.covered:active{transform:translate(-50%,-50%) scale(.9)}
+#rememberNav{padding:10px 14px calc(14px + env(safe-area-inset-bottom,0px))}
 .remember-marker.correct{background:#2e7d32}
 .remember-marker.wrong{background:#d32f2f}
 
@@ -640,7 +641,7 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .pause-skip{border:none;background:#007094;color:#fff}
 .pause-toggle{border:1.5px solid #dde6e8;background:#fff;color:#16232a}
 .breath-pause-btn{border-radius:14px;font-weight:700;font-size:14px;padding:11px 26px;cursor:pointer}
-.chapter-nav{display:flex;align-items:center;gap:8px}
+.chapter-nav{display:flex;align-items:center;justify-content:center;gap:8px}
 .chapter-nav button{
   border:none;background:rgba(22,35,42,.07);color:#16232a;width:42px;height:42px;
   border-radius:50%;font-size:17px;cursor:pointer;font-weight:700;

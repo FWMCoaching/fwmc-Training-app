@@ -470,15 +470,20 @@
       <h2>Remember</h2>
       <span class="section-note">merke dir die Positionen, dann klicke sie in der richtigen Reihenfolge an</span>
     </div>
-    <button class="featured-card" id="rememberStartFixed">
+    <button class="featured-card" id="rememberOpenFixed">
       <span class="fc-title">Feste Positionen</span>
       <span class="fc-desc">Jede neue Zahl kommt an einen neuen Platz dazu &ndash; die bisherigen bleiben, wo sie waren.</span>
       <span class="fc-meta" id="rememberBestFixed"></span>
     </button>
-    <button class="featured-card" id="rememberStartShuffle">
+    <button class="featured-card" id="rememberOpenShuffle">
       <span class="fc-title">Bewegte Positionen</span>
       <span class="fc-desc">Bei jeder neuen Zahl werden alle Positionen neu gemischt &ndash; schwerer zu merken.</span>
       <span class="fc-meta" id="rememberBestShuffle"></span>
+    </button>
+    <button class="featured-card" id="rememberOpenTraining">
+      <span class="fc-title">Trainingsmodus</span>
+      <span class="fc-desc">Starte direkt bei einer bestimmten Zahlenanzahl und &uuml;be gezielt dort &ndash; mit Vor/Zur&uuml;ck und Wahl, ob du dich danach steigerst.</span>
+      <span class="fc-meta" id="rememberBestTraining"></span>
     </button>
   </section>
 
@@ -497,6 +502,105 @@
       <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutz</a>
     </nav>
   </footer>
+</div>
+
+<div class="screen" id="rememberReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="rememberReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="rememberReadyTitle">&nbsp;</h1>
+  <p class="page-sub" id="rememberReadyDesc"></p>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="rememberDifficultyRow">
+      <button class="choice" data-remember-diff="leicht">Leicht<small>mehr Zeit</small></button>
+      <button class="choice" data-remember-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-remember-diff="schwer">Schwer<small>knapp bemessen</small></button>
+    </div>
+    <div class="tempo-custom" id="rememberDiffCustom" hidden>Individuell eingestellt (siehe Feineinstellungen)</div>
+  </div>
+
+  <details class="advanced" id="rememberAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Einblenddauer bei 2 Zahlen</div>
+        <div class="slider-row">
+          <input type="range" id="rememberRevealSlider" min="0.4" max="3" step="0.1" aria-label="Einblenddauer bei 2 Zahlen">
+          <span class="slider-value" id="rememberRevealValue"></span>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Zus&auml;tzliche Zeit je weiterer Zahl</div>
+        <div class="slider-row">
+          <input type="range" id="rememberStepSlider" min="0.05" max="0.6" step="0.05" aria-label="Zus&auml;tzliche Zeit je weiterer Zahl">
+          <span class="slider-value" id="rememberStepValue"></span>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="group-help" id="rememberReadyBestHint"></div>
+
+  <button class="start-btn" id="rememberReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="rememberTrainingReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="rememberTrainingBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Trainingsmodus</h1>
+  <p class="page-sub">Starte direkt bei einer bestimmten Zahlenanzahl, statt dich immer erst von 2 an hochzuarbeiten.</p>
+
+  <div class="group">
+    <div class="group-label">Startzahl <span class="group-count" id="rememberStartValue"></span></div>
+    <div class="slider-row">
+      <input type="range" id="rememberStartSlider" min="2" max="12" step="1" aria-label="Startzahl">
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Nach Erfolg</div>
+    <div class="choice-row two" id="rememberProgressRow">
+      <button class="choice" data-remember-progress="1">Weiter steigern<small>wie gewohnt +1</small></button>
+      <button class="choice" data-remember-progress="0">Bei dieser Zahl bleiben<small>zum gezielten &Uuml;ben</small></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="rememberTrainingDifficultyRow">
+      <button class="choice" data-remember-diff="leicht">Leicht<small>mehr Zeit</small></button>
+      <button class="choice" data-remember-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-remember-diff="schwer">Schwer<small>knapp bemessen</small></button>
+    </div>
+    <div class="tempo-custom" id="rememberTrainingDiffCustom" hidden>Individuell eingestellt (siehe Feineinstellungen)</div>
+  </div>
+
+  <details class="advanced" id="rememberTrainingAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Einblenddauer bei 2 Zahlen</div>
+        <div class="slider-row">
+          <input type="range" id="rememberTrainingRevealSlider" min="0.4" max="3" step="0.1" aria-label="Einblenddauer bei 2 Zahlen">
+          <span class="slider-value" id="rememberTrainingRevealValue"></span>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Zus&auml;tzliche Zeit je weiterer Zahl</div>
+        <div class="slider-row">
+          <input type="range" id="rememberTrainingStepSlider" min="0.05" max="0.6" step="0.05" aria-label="Zus&auml;tzliche Zeit je weiterer Zahl">
+          <span class="slider-value" id="rememberTrainingStepValue"></span>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="group-help" id="rememberTrainingBestHint"></div>
+
+  <button class="start-btn" id="rememberTrainingStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="bundleOverview" hidden>
@@ -1104,6 +1208,11 @@
 <div class="player" id="rememberPlayer" hidden>
   <div class="remember-stage" id="rememberStage">
     <div class="remember-hint" id="rememberHint"></div>
+  </div>
+  <div class="chapter-nav" id="rememberNav" hidden>
+    <button id="rememberNavPrevBtn" title="Eine Zahl weniger" aria-label="Eine Zahl weniger">&laquo;</button>
+    <button id="rememberNavRestartBtn" title="Diese Stufe neu starten" aria-label="Diese Stufe neu starten">&#8635;</button>
+    <button id="rememberNavNextBtn" title="Eine Zahl mehr" aria-label="Eine Zahl mehr">&raquo;</button>
   </div>
   <div class="player-bar" id="rememberPlayerBar">
     <button id="rememberBackBtn">&#10005; Beenden</button>

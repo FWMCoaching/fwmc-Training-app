@@ -962,9 +962,21 @@
     workoutFeaturedPrograms: $("workoutFeaturedPrograms"), workoutFeaturedGrid: $("workoutFeaturedGrid"),
     workoutTabataStartCard: $("workoutTabataStartCard"),
     natHome: $("natHome"), natPeripherPanel: $("natPeripherPanel"), natRememberPanel: $("natRememberPanel"), natFlashPanel: $("natFlashPanel"),
-    rememberStartFixed: $("rememberStartFixed"), rememberStartShuffle: $("rememberStartShuffle"),
-    rememberBestFixed: $("rememberBestFixed"), rememberBestShuffle: $("rememberBestShuffle"),
+    rememberOpenFixed: $("rememberOpenFixed"), rememberOpenShuffle: $("rememberOpenShuffle"), rememberOpenTraining: $("rememberOpenTraining"),
+    rememberBestFixed: $("rememberBestFixed"), rememberBestShuffle: $("rememberBestShuffle"), rememberBestTraining: $("rememberBestTraining"),
+    rememberReady: $("rememberReady"), rememberReadyBackToHome: $("rememberReadyBackToHome"),
+    rememberReadyTitle: $("rememberReadyTitle"), rememberReadyDesc: $("rememberReadyDesc"),
+    rememberDiffCustom: $("rememberDiffCustom"), rememberRevealSlider: $("rememberRevealSlider"), rememberRevealValue: $("rememberRevealValue"),
+    rememberStepSlider: $("rememberStepSlider"), rememberStepValue: $("rememberStepValue"),
+    rememberReadyBestHint: $("rememberReadyBestHint"), rememberReadyStartBtn: $("rememberReadyStartBtn"),
+    rememberTrainingReady: $("rememberTrainingReady"), rememberTrainingBackToHome: $("rememberTrainingBackToHome"),
+    rememberStartSlider: $("rememberStartSlider"), rememberStartValue: $("rememberStartValue"),
+    rememberTrainingDiffCustom: $("rememberTrainingDiffCustom"),
+    rememberTrainingRevealSlider: $("rememberTrainingRevealSlider"), rememberTrainingRevealValue: $("rememberTrainingRevealValue"),
+    rememberTrainingStepSlider: $("rememberTrainingStepSlider"), rememberTrainingStepValue: $("rememberTrainingStepValue"),
+    rememberTrainingBestHint: $("rememberTrainingBestHint"), rememberTrainingStartBtn: $("rememberTrainingStartBtn"),
     rememberPlayer: $("rememberPlayer"), rememberStage: $("rememberStage"), rememberHint: $("rememberHint"),
+    rememberNav: $("rememberNav"), rememberNavPrevBtn: $("rememberNavPrevBtn"), rememberNavRestartBtn: $("rememberNavRestartBtn"), rememberNavNextBtn: $("rememberNavNextBtn"),
     rememberPlayerBar: $("rememberPlayerBar"), rememberBackBtn: $("rememberBackBtn"), rememberLevelEl: $("rememberLevelEl"),
     rememberFsBtn: $("rememberFsBtn"), rememberFsHint: $("rememberFsHint"),
     rememberFsHintOpenBtn: $("rememberFsHintOpenBtn"), rememberFsHintClose: $("rememberFsHintClose"),
@@ -1016,7 +1028,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3169,40 +3181,132 @@
   // ==== NAT · Remember: spatial sequence memory game ====
   // A number appears somewhere on screen and stays there; more numbers get
   // added one at a time, then all get covered and must be tapped back in
-  // order (1, 2, 3, ...). Two variants, sharing one engine, differ only in
-  // whether a new round's already-placed numbers keep last round's spot
-  // ("fixed") or every number - old and new - gets reshuffled together
-  // ("shuffle"). Endless/progressive - there's no fixed end, so the only
-  // way to finish is "Beenden", which doubles as the finish action (shows
-  // a summary) once at least the first round has been cleared.
+  // order (1, 2, 3, ...). Three variants, sharing one engine:
+  // - "fixed": already-placed numbers keep last round's spot, only the new
+  //   one gets a fresh position.
+  // - "shuffle": every number - old and new - gets reshuffled together.
+  // - "training": you pick your own starting count (instead of always 2)
+  //   and can skip freely up/down with the on-screen nav during play;
+  //   because that manual skipping breaks the "kept last round's spot"
+  //   assumption, positions always reshuffle fresh here, same as "shuffle".
+  // Endless/progressive - there's no fixed end, so the only way to finish
+  // is "Beenden", which doubles as the finish action (shows a summary)
+  // once at least the first round has been cleared.
   const REMEMBER_MODES = {
     fixed: { id: "fixed", title: "Feste Positionen", keepPositions: true },
     shuffle: { id: "shuffle", title: "Bewegte Positionen", keepPositions: false },
+    training: { id: "training", title: "Trainingsmodus", keepPositions: false },
   };
-  const REMEMBER_BEST_KEY = "fwmc-remember-best-v1"; // { fixed: bestLevel, shuffle: bestLevel }
-  function rememberBestFor(mode) { return readJSON(REMEMBER_BEST_KEY, {})[mode] || 0; }
+  // Schwierigkeit sets how long a round is shown: a base time for the
+  // first (2-number) round, plus extra time for every number beyond that.
+  // Higher values on both = more generous = easier.
+  const REMEMBER_DIFFICULTIES = {
+    leicht: { title: "Leicht", revealBaseS: 1.8, revealStepS: 0.5 },
+    mittel: { title: "Mittel", revealBaseS: 1.1, revealStepS: 0.3 },
+    schwer: { title: "Schwer", revealBaseS: 0.7, revealStepS: 0.15 },
+  };
+  const REMEMBER_PREFS_KEY = "fwmc-remember-prefs-v1";
+  const rememberPrefs = {
+    revealBaseS: REMEMBER_DIFFICULTIES.mittel.revealBaseS,
+    revealStepS: REMEMBER_DIFFICULTIES.mittel.revealStepS,
+    trainingStart: 8,
+    trainingProgress: true,
+  };
+  function loadRememberPrefs() {
+    const saved = readJSON(REMEMBER_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(rememberPrefs, saved);
+  }
+  function saveRememberPrefsToStorage() { writeJSON(REMEMBER_PREFS_KEY, rememberPrefs); }
+  loadRememberPrefs();
+
+  function rememberDifficultyBucket() {
+    for (const key of Object.keys(REMEMBER_DIFFICULTIES)) {
+      const p = REMEMBER_DIFFICULTIES[key];
+      if (Math.abs(p.revealBaseS - rememberPrefs.revealBaseS) < 0.001 && Math.abs(p.revealStepS - rememberPrefs.revealStepS) < 0.001) return key;
+    }
+    return "custom";
+  }
+  // { fixed: {leicht:N, mittel:N, schwer:N, custom:N}, shuffle: {...}, training: N }
+  const REMEMBER_BEST_KEY = "fwmc-remember-best-v1";
+  function rememberBestFor(mode) {
+    const all = readJSON(REMEMBER_BEST_KEY, {});
+    if (mode === "training") return all.training || 0;
+    return (all[mode] && all[mode][rememberDifficultyBucket()]) || 0;
+  }
+  function rememberOverallBestFor(mode) {
+    const all = readJSON(REMEMBER_BEST_KEY, {});
+    if (mode === "training") return all.training || 0;
+    const byDifficulty = all[mode] || {};
+    return Math.max(0, ...Object.values(byDifficulty));
+  }
   function saveRememberBest(mode, level) {
-    const best = readJSON(REMEMBER_BEST_KEY, {});
-    if (level > (best[mode] || 0)) { best[mode] = level; writeJSON(REMEMBER_BEST_KEY, best); return true; }
+    const all = readJSON(REMEMBER_BEST_KEY, {});
+    if (mode === "training") {
+      if (level > (all.training || 0)) { all.training = level; writeJSON(REMEMBER_BEST_KEY, all); return true; }
+      return false;
+    }
+    if (!all[mode]) all[mode] = {};
+    const bucket = rememberDifficultyBucket();
+    if (level > (all[mode][bucket] || 0)) { all[mode][bucket] = level; writeJSON(REMEMBER_BEST_KEY, all); return true; }
     return false;
   }
   function renderRememberBests() {
-    const f = rememberBestFor("fixed");
-    const s = rememberBestFor("shuffle");
+    const f = rememberOverallBestFor("fixed");
+    const s = rememberOverallBestFor("shuffle");
+    const t = rememberOverallBestFor("training");
     els.rememberBestFixed.textContent = f ? `Bestleistung: ${f}` : "";
     els.rememberBestShuffle.textContent = s ? `Bestleistung: ${s}` : "";
+    els.rememberBestTraining.textContent = t ? `Bestleistung: ${t}` : "";
   }
   renderRememberBests();
 
-  let rememberState = null; // { mode, level, cleared, positions, phase, nextExpected, startTime, timer }
+  // ---- Difficulty picker, shared by the fixed/shuffle Ready screen and
+  // the Trainingsmodus Ready screen (each has its own set of DOM elements
+  // but the same underlying rememberPrefs and sync logic). ----
+  function wireRememberDifficultyUI(cfg) {
+    document.querySelectorAll(cfg.rowSelector + " [data-remember-diff]").forEach((el) => {
+      el.addEventListener("click", () => {
+        Object.assign(rememberPrefs, REMEMBER_DIFFICULTIES[el.dataset.rememberDiff]);
+        saveRememberPrefsToStorage();
+        cfg.sync();
+      });
+    });
+    cfg.revealSlider.addEventListener("input", () => {
+      rememberPrefs.revealBaseS = Number(cfg.revealSlider.value);
+      saveRememberPrefsToStorage();
+      cfg.sync();
+    });
+    cfg.stepSlider.addEventListener("input", () => {
+      rememberPrefs.revealStepS = Number(cfg.stepSlider.value);
+      saveRememberPrefsToStorage();
+      cfg.sync();
+    });
+  }
+  function syncRememberDifficultyUI(cfg) {
+    let any = false;
+    document.querySelectorAll(cfg.rowSelector + " [data-remember-diff]").forEach((el) => {
+      const p = REMEMBER_DIFFICULTIES[el.dataset.rememberDiff];
+      const on = Math.abs(p.revealBaseS - rememberPrefs.revealBaseS) < 0.001 && Math.abs(p.revealStepS - rememberPrefs.revealStepS) < 0.001;
+      if (on) any = true;
+      setActive(el, on);
+    });
+    cfg.custom.hidden = any;
+    cfg.revealSlider.value = rememberPrefs.revealBaseS;
+    cfg.revealValue.textContent = fmtSeconds(rememberPrefs.revealBaseS);
+    cfg.stepSlider.value = rememberPrefs.revealStepS;
+    cfg.stepValue.textContent = fmtSeconds(rememberPrefs.revealStepS);
+  }
+
+  let rememberState = null; // { mode, level, cleared, positions, phase, nextExpected, startTime, timer, revealBaseS, revealStepS, trainingStart, trainingProgress }
+  let rememberReturnScreen = "natHome";
 
   function randomRememberPosition(existing) {
     for (let attempt = 0; attempt < 20; attempt++) {
-      const x = 12 + Math.random() * 76;
-      const y = 18 + Math.random() * 64;
-      if (!existing.some((p) => Math.hypot(p.x - x, p.y - y) < 16)) return { x, y };
+      const x = 14 + Math.random() * 72;
+      const y = 20 + Math.random() * 60;
+      if (!existing.some((p) => Math.hypot(p.x - x, p.y - y) < 20)) return { x, y };
     }
-    return { x: 12 + Math.random() * 76, y: 18 + Math.random() * 64 };
+    return { x: 14 + Math.random() * 72, y: 20 + Math.random() * 60 };
   }
   function buildRememberPositions(count, keep) {
     const positions = keep && rememberState ? rememberState.positions.slice(0, count - 1).map((p) => ({ ...p })) : [];
@@ -3230,7 +3334,8 @@
     els.rememberHint.textContent = "Merken …";
     els.rememberLevelEl.textContent = `${rememberState.level} Zahlen`;
     renderRememberMarkers();
-    const revealMs = Math.min(4500, 900 + rememberState.level * 350);
+    const extra = Math.max(0, rememberState.level - 2) * rememberState.revealStepS;
+    const revealMs = Math.min(6000, Math.max(300, (rememberState.revealBaseS + extra) * 1000));
     rememberState.timer = setTimeout(coverRememberLevel, revealMs);
   }
   function coverRememberLevel() {
@@ -3238,6 +3343,14 @@
     rememberState.phase = "covered";
     els.rememberHint.textContent = "Jetzt in der richtigen Reihenfolge antippen";
     renderRememberMarkers();
+  }
+  // Manual skip nav (Trainingsmodus only): jump straight to a given level,
+  // never below the chosen starting number.
+  function rememberGoToLevel(newLevel) {
+    if (!rememberState || rememberState.mode !== "training") return;
+    if (rememberState.timer) clearTimeout(rememberState.timer);
+    rememberState.level = Math.max(rememberState.trainingStart, newLevel);
+    startRememberLevel();
   }
   function rememberClick(num, el) {
     if (!rememberState || rememberState.phase !== "covered") return;
@@ -3251,7 +3364,8 @@
         rememberState.phase = "success";
         els.rememberHint.textContent = "Richtig! Weiter geht's …";
         els.rememberStage.querySelectorAll(".remember-marker").forEach((m) => { m.textContent = m.dataset.num; m.style.pointerEvents = "none"; m.classList.remove("covered"); });
-        rememberState.level += 1;
+        const stayPut = rememberState.mode === "training" && !rememberState.trainingProgress;
+        if (!stayPut) rememberState.level += 1;
         rememberState.timer = setTimeout(startRememberLevel, 900);
       }
     } else {
@@ -3260,7 +3374,8 @@
       el.textContent = String(num);
       els.rememberStage.querySelectorAll(".remember-marker").forEach((m) => { m.textContent = m.dataset.num; m.style.pointerEvents = "none"; m.classList.remove("covered"); });
       els.rememberHint.textContent = "Leider falsch – nochmal von vorne";
-      rememberState.timer = setTimeout(() => { rememberState.level = 2; startRememberLevel(); }, 1400);
+      const resetLevel = rememberState.mode === "training" ? rememberState.trainingStart : 2;
+      rememberState.timer = setTimeout(() => { rememberState.level = resetLevel; startRememberLevel(); }, 1400);
     }
   }
   let lastRememberMode = null;
@@ -3270,16 +3385,99 @@
     els.rememberPlayer.hidden = false;
     els.rememberPlayerBar.hidden = false;
     els.rememberDonePanel.hidden = true;
+    els.rememberNav.hidden = mode !== "training";
     lastRememberMode = mode;
-    rememberState = { mode, level: 2, cleared: 0, positions: [], phase: "reveal", nextExpected: 1, startTime: performance.now(), timer: null };
+    rememberReturnScreen = mode === "training" ? "rememberTrainingReady" : "rememberReady";
+    const startLevel = mode === "training" ? rememberPrefs.trainingStart : 2;
+    rememberState = {
+      mode, level: startLevel, cleared: 0, positions: [], phase: "reveal", nextExpected: 1,
+      startTime: performance.now(), timer: null,
+      revealBaseS: rememberPrefs.revealBaseS, revealStepS: rememberPrefs.revealStepS,
+      trainingStart: rememberPrefs.trainingStart, trainingProgress: rememberPrefs.trainingProgress,
+    };
     requestWakeLock();
     startRememberLevel();
   }
-  els.rememberStartFixed.addEventListener("click", () => startRememberGame("fixed"));
-  els.rememberStartShuffle.addEventListener("click", () => startRememberGame("shuffle"));
+  els.rememberNavPrevBtn.addEventListener("click", () => rememberState && rememberGoToLevel(rememberState.level - 1));
+  els.rememberNavRestartBtn.addEventListener("click", () => rememberState && rememberGoToLevel(rememberState.level));
+  els.rememberNavNextBtn.addEventListener("click", () => rememberState && rememberGoToLevel(rememberState.level + 1));
+
+  // ---- Ready screens: Feste/Bewegte Positionen share one, Trainingsmodus
+  // has its own (extra Startzahl + Steigern controls). ----
+  let rememberReadyMode = "fixed";
+  function updateRememberReadyBestHint() {
+    const best = rememberBestFor(rememberReadyMode);
+    els.rememberReadyBestHint.textContent = best
+      ? `Deine Bestleistung bei dieser Schwierigkeit: ${best}.`
+      : "Noch keine Bestleistung bei dieser Schwierigkeit – leg los!";
+  }
+  function openRememberReady(mode) {
+    rememberReadyMode = mode;
+    const m = REMEMBER_MODES[mode];
+    els.rememberReadyTitle.textContent = m.title;
+    els.rememberReadyDesc.textContent = mode === "fixed"
+      ? "Jede neue Zahl kommt an einen neuen Platz dazu – die bisherigen bleiben, wo sie waren."
+      : "Bei jeder neuen Zahl werden alle Positionen neu gemischt – schwerer zu merken.";
+    syncRememberDifficultyUI(rememberReadyCfg);
+    updateRememberReadyBestHint();
+    showScreen("rememberReady");
+  }
+  const rememberReadyCfg = {
+    rowSelector: "#rememberDifficultyRow",
+    custom: els.rememberDiffCustom,
+    revealSlider: els.rememberRevealSlider, revealValue: els.rememberRevealValue,
+    stepSlider: els.rememberStepSlider, stepValue: els.rememberStepValue,
+    // Just re-sync the values in place - no showScreen() here, or every
+    // slider drag on the already-open Feineinstellungen would jump the
+    // page back to the top.
+    sync: () => { syncRememberDifficultyUI(rememberReadyCfg); updateRememberReadyBestHint(); },
+  };
+  wireRememberDifficultyUI(rememberReadyCfg);
+  els.rememberOpenFixed.addEventListener("click", () => openRememberReady("fixed"));
+  els.rememberOpenShuffle.addEventListener("click", () => openRememberReady("shuffle"));
+  els.rememberReadyBackToHome.addEventListener("click", () => showScreen("natHome"));
+  els.rememberReadyStartBtn.addEventListener("click", () => startRememberGame(rememberReadyMode));
+
+  function syncRememberTrainingUI() {
+    els.rememberStartSlider.value = rememberPrefs.trainingStart;
+    els.rememberStartValue.textContent = String(rememberPrefs.trainingStart);
+    document.querySelectorAll("[data-remember-progress]").forEach((el) => {
+      setActive(el, (el.dataset.rememberProgress === "1") === rememberPrefs.trainingProgress);
+    });
+    syncRememberDifficultyUI(rememberTrainingCfg);
+    const best = rememberBestFor("training");
+    els.rememberTrainingBestHint.textContent = best
+      ? `Deine bisher höchste geschaffte Zahlenfolge im Trainingsmodus: ${best}.`
+      : "Noch keine Bestleistung im Trainingsmodus – leg los!";
+  }
+  const rememberTrainingCfg = {
+    rowSelector: "#rememberTrainingDifficultyRow",
+    custom: els.rememberTrainingDiffCustom,
+    revealSlider: els.rememberTrainingRevealSlider, revealValue: els.rememberTrainingRevealValue,
+    stepSlider: els.rememberTrainingStepSlider, stepValue: els.rememberTrainingStepValue,
+    sync: syncRememberTrainingUI,
+  };
+  wireRememberDifficultyUI(rememberTrainingCfg);
+  els.rememberStartSlider.addEventListener("input", () => {
+    rememberPrefs.trainingStart = Number(els.rememberStartSlider.value);
+    saveRememberPrefsToStorage();
+    syncRememberTrainingUI();
+  });
+  document.querySelectorAll("[data-remember-progress]").forEach((el) => {
+    el.addEventListener("click", () => {
+      rememberPrefs.trainingProgress = el.dataset.rememberProgress === "1";
+      saveRememberPrefsToStorage();
+      syncRememberTrainingUI();
+    });
+  });
+  els.rememberOpenTraining.addEventListener("click", () => { syncRememberTrainingUI(); showScreen("rememberTrainingReady"); });
+  els.rememberTrainingBackToHome.addEventListener("click", () => showScreen("natHome"));
+  els.rememberTrainingStartBtn.addEventListener("click", () => startRememberGame("training"));
 
   // "Beenden" doubles as the finish action here (see comment above) - only
-  // shows a summary once at least one round has actually been cleared.
+  // shows a summary once at least one round has actually been cleared;
+  // quitting with no progress at all just returns to the settings screen
+  // it was started from, like "Beenden" elsewhere in the app.
   function rememberStop() {
     if (!rememberState) return;
     if (rememberState.timer) clearTimeout(rememberState.timer);
@@ -3299,9 +3497,8 @@
       renderRating(els.rememberRating, id, "Wie war deine Konzentration?");
       els.rememberDonePanel.hidden = false;
     } else {
-      renderRememberBests();
       els.rememberPlayer.hidden = true;
-      showScreen("natHome");
+      showScreen(rememberReturnScreen);
     }
   }
   els.rememberBackBtn.addEventListener("click", rememberStop);
