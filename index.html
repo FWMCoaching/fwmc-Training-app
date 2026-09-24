@@ -792,6 +792,11 @@
   <h1 class="page-title">Tabata / Intervalltraining</h1>
   <p class="page-sub">Baue dir deinen eigenen Zirkel: tippe &Uuml;bungen in der Reihenfolge an, in der du sie machen willst &ndash; auch mehrfach.</p>
 
+  <div class="group" id="workoutCircuitSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Zirkel</div>
+    <div class="bundle-list" id="workoutCircuitSavedList"></div>
+  </div>
+
   <div class="group">
     <div class="group-label">&Uuml;bung hinzuf&uuml;gen</div>
     <div class="combo-add-grid" id="workoutCircuitAddGrid"></div>
@@ -810,6 +815,14 @@
     <div class="group-label">Dein Zirkel <span class="group-count" id="workoutCircuitCount"></span></div>
     <p class="group-help" id="workoutCircuitEmptyHint">Noch keine &Uuml;bung ausgew&auml;hlt &ndash; tippe oben eine an.</p>
     <div class="chapter-list" id="workoutCircuitList"></div>
+    <button class="text-link small" id="workoutCircuitSaveBtn">Aktuellen Zirkel speichern</button>
+    <div class="custom-exercise-form" id="workoutCircuitSaveForm" hidden>
+      <input type="text" id="workoutCircuitSaveNameInput" placeholder="Name (z.B. &bdquo;Oberkörper kurz&ldquo;)" maxlength="40">
+      <div class="custom-exercise-form-actions">
+        <button class="start-btn secondary" id="workoutCircuitSaveCancelBtn">Abbrechen</button>
+        <button class="start-btn" id="workoutCircuitSaveConfirmBtn">Speichern</button>
+      </div>
+    </div>
   </div>
 
   <div class="group">
@@ -853,19 +866,6 @@
       </div>
     </div>
   </details>
-
-  <div class="group" id="workoutCircuitSavedGroup" hidden>
-    <div class="group-label">Deine gespeicherten Zirkel</div>
-    <div class="bundle-list" id="workoutCircuitSavedList"></div>
-  </div>
-  <button class="text-link small" id="workoutCircuitSaveBtn">Aktuellen Zirkel speichern</button>
-  <div class="custom-exercise-form" id="workoutCircuitSaveForm" hidden>
-    <input type="text" id="workoutCircuitSaveNameInput" placeholder="Name (z.B. &bdquo;Oberkörper kurz&ldquo;)" maxlength="40">
-    <div class="custom-exercise-form-actions">
-      <button class="start-btn secondary" id="workoutCircuitSaveCancelBtn">Abbrechen</button>
-      <button class="start-btn" id="workoutCircuitSaveConfirmBtn">Speichern</button>
-    </div>
-  </div>
 
   <button class="start-btn" id="workoutTabataStartBtn" disabled>Mindestens eine &Uuml;bung hinzuf&uuml;gen</button>
 </div>
@@ -1201,19 +1201,15 @@
   </div>
 
   <div class="group">
-    <div class="group-label">Name</div>
-    <div class="program-entry-row">
-      <input type="text" id="comboNameInput" placeholder="z.B. Abendroutine" aria-label="Name des Programms" autocomplete="off">
-    </div>
-  </div>
-
-  <div class="group">
     <div class="group-label">Baustein hinzuf&uuml;gen</div>
     <div class="combo-add-grid" id="comboAddGrid"></div>
   </div>
 
   <div class="group">
     <div class="group-label">Deine Abfolge <span class="group-count" id="comboBlockCount"></span></div>
+    <div class="program-entry-row">
+      <input type="text" id="comboNameInput" placeholder="Name deines Programms (z.B. Abendroutine)" aria-label="Name des Programms" autocomplete="off">
+    </div>
     <div class="chapter-list" id="comboBlockList"></div>
     <div class="group-help" id="comboEmptyHint">Noch keine Bausteine hinzugef&uuml;gt.</div>
   </div>
