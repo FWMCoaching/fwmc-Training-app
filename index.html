@@ -516,6 +516,19 @@
     </div>
   </details>
 
+  <div class="group" id="vtSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="vtSavedList"></div>
+  </div>
+  <button class="text-link small" id="vtSaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="vtSaveForm" hidden>
+    <input type="text" id="vtSaveNameInput" placeholder="Name (z.B. &bdquo;Schnell, 4 Farben&ldquo;)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="vtSaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="vtSaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
+
   <button class="start-btn" id="startBtn">Training starten</button>
 </div>
 
@@ -562,6 +575,19 @@
     <div class="choice-row two">
       <button class="choice" data-breath-sound="on">Mit Ansage<small>sagt &bdquo;Einatmen&ldquo; / &bdquo;Ausatmen&ldquo;</small></button>
       <button class="choice" data-breath-sound="off">Still<small>nur die Animation</small></button>
+    </div>
+  </div>
+
+  <div class="group" id="breathSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="breathSavedList"></div>
+  </div>
+  <button class="text-link small" id="breathSaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="breathSaveForm" hidden>
+    <input type="text" id="breathSaveNameInput" placeholder="Name (z.B. &bdquo;Vor dem Schlafen&ldquo;)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="breathSaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="breathSaveConfirmBtn">Speichern</button>
     </div>
   </div>
 
@@ -658,6 +684,19 @@
       </div>
     </div>
   </details>
+
+  <div class="group" id="movementSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="movementSavedList"></div>
+  </div>
+  <button class="text-link small" id="movementSaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="movementSaveForm" hidden>
+    <input type="text" id="movementSaveNameInput" placeholder="Name (z.B. &bdquo;Schnell, 4 Bewegungen&ldquo;)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="movementSaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="movementSaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
 
   <button class="start-btn" id="movementStartBtn">Training starten</button>
 </div>

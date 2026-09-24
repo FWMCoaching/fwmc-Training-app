@@ -121,6 +121,56 @@
     return `<span class="dots">${colors.map((c) => `<span class="dot" style="background:${c.hex}"></span>`).join("")}</span>`;
   }
 
+  // ---- Named local presets: "save the current settings under a name, see
+  // them in a list, tap to reuse" - the same idea as the combo builder's
+  // saved list, reused for a single domain's own settings (Visual Training,
+  // Atemtraining, Movement). A "store" just wraps one localStorage array;
+  // renderPresetList renders it as a tappable list with a delete button per
+  // entry; wirePresetSaveForm wires the "Speichern" link + its inline name
+  // form shared by all three domains' ready screens.
+  function makePresetStore(key) {
+    function load() { const l = readJSON(key, []); return Array.isArray(l) ? l : []; }
+    function save(list) { writeJSON(key, list); }
+    return { load, save };
+  }
+  function renderPresetList(store, listEl, groupEl, filterFn, metaFn, onStart) {
+    const all = store.load();
+    const entries = filterFn ? all.filter(filterFn) : all;
+    groupEl.hidden = entries.length === 0;
+    listEl.innerHTML = "";
+    entries.slice().reverse().forEach((entry) => {
+      const wrap = document.createElement("div");
+      wrap.className = "bundle-item-wrap";
+      const btn = document.createElement("button");
+      btn.className = "bundle-item";
+      btn.innerHTML = `<div class="bundle-item-head"><strong>${esc(entry.name)}</strong></div><span class="bundle-meta">${esc(metaFn(entry))}</span>`;
+      btn.addEventListener("click", () => onStart(entry));
+      const rm = document.createElement("button");
+      rm.className = "combo-block-remove";
+      rm.title = "Löschen";
+      rm.textContent = "✕";
+      rm.addEventListener("click", () => {
+        store.save(store.load().filter((e) => e.id !== entry.id));
+        renderPresetList(store, listEl, groupEl, filterFn, metaFn, onStart);
+      });
+      wrap.appendChild(btn);
+      wrap.appendChild(rm);
+      listEl.appendChild(wrap);
+    });
+  }
+  function wirePresetSaveForm(cfg) {
+    // cfg: { saveBtn, form, nameInput, cancelBtn, confirmBtn, defaultName, onSave }
+    function open() { cfg.form.hidden = false; cfg.saveBtn.hidden = true; cfg.nameInput.value = ""; cfg.nameInput.focus(); }
+    function close() { cfg.form.hidden = true; cfg.saveBtn.hidden = false; }
+    cfg.saveBtn.addEventListener("click", open);
+    cfg.cancelBtn.addEventListener("click", close);
+    cfg.confirmBtn.addEventListener("click", () => {
+      const name = (cfg.nameInput.value || "").trim() || cfg.defaultName();
+      cfg.onSave(name);
+      close();
+    });
+  }
+
   // ---- Audio: spoken direction words (Web Speech API) + a plain beep ----
   let audioCtx = null;
   function ensureAudioCtx() {
@@ -818,6 +868,9 @@
     tempoCustom: $("tempoCustom"),
     colorGroup: $("colorGroup"), colorPicker: $("colorPicker"), colorCount: $("colorCount"), colorHint: $("colorHint"),
     durationGroup: $("durationGroup"), tempoGroup: $("tempoGroup"), advanced: $("advanced"),
+    vtSavedGroup: $("vtSavedGroup"), vtSavedList: $("vtSavedList"), vtSaveBtn: $("vtSaveBtn"),
+    vtSaveForm: $("vtSaveForm"), vtSaveNameInput: $("vtSaveNameInput"),
+    vtSaveCancelBtn: $("vtSaveCancelBtn"), vtSaveConfirmBtn: $("vtSaveConfirmBtn"),
     stageWrap: $("stageWrap"), coneOrderStage: $("coneOrderStage"), coneOrderRow: $("coneOrderRow"),
     coneOrderCount: $("coneOrderCount"), coneBestHint: $("coneBestHint"),
     programCodeInput: $("programCodeInput"), programGoBtn: $("programGoBtn"), programError: $("programError"),
@@ -846,6 +899,9 @@
     phaseHold2Slider: $("phaseHold2Slider"), phaseHold2Value: $("phaseHold2Value"),
     breathDurationSlider: $("breathDurationSlider"), breathDurationValue: $("breathDurationValue"),
     breathStartBtn: $("breathStartBtn"),
+    breathSavedGroup: $("breathSavedGroup"), breathSavedList: $("breathSavedList"), breathSaveBtn: $("breathSaveBtn"),
+    breathSaveForm: $("breathSaveForm"), breathSaveNameInput: $("breathSaveNameInput"),
+    breathSaveCancelBtn: $("breathSaveCancelBtn"), breathSaveConfirmBtn: $("breathSaveConfirmBtn"),
     breathPlayer: $("breathPlayer"), breathPlayerBar: $("breathPlayerBar"), breathBig: $("breathBig"),
     breathPhaseCount: $("breathPhaseCount"), breathPhaseLabel: $("breathPhaseLabel"), breathTimeEl: $("breathTimeEl"),
     breathBackBtn: $("breathBackBtn"), breathFsBtn: $("breathFsBtn"), breathFsHint: $("breathFsHint"),
@@ -882,6 +938,9 @@
     movementReady: $("movementReady"), movementBackToHome: $("movementBackToHome"),
     movementPicker: $("movementPicker"), movementCount: $("movementCount"),
     movementStartBtn: $("movementStartBtn"),
+    movementSavedGroup: $("movementSavedGroup"), movementSavedList: $("movementSavedList"), movementSaveBtn: $("movementSaveBtn"),
+    movementSaveForm: $("movementSaveForm"), movementSaveNameInput: $("movementSaveNameInput"),
+    movementSaveCancelBtn: $("movementSaveCancelBtn"), movementSaveConfirmBtn: $("movementSaveConfirmBtn"),
     movementPlayer: $("movementPlayer"), movementLane: $("movementLane"), movementProgressTrack: $("movementProgressTrack"),
     movementFinishBadge: $("movementFinishBadge"), movementBpmSlider: $("movementBpmSlider"), movementBpmValue: $("movementBpmValue"),
     movementPlayerBar: $("movementPlayerBar"), movementBackBtn: $("movementBackBtn"), movementTimeEl: $("movementTimeEl"),
@@ -1240,6 +1299,9 @@
     syncColorUI();
     syncDurationUI();
     syncTempoUI();
+    els.vtSaveForm.hidden = true;
+    els.vtSaveBtn.hidden = false;
+    renderVTSaved();
     showScreen("ready");
   }
   els.backToHome.addEventListener("click", () => showScreen("home"));
@@ -2146,6 +2208,39 @@
   els.startBtn.addEventListener("click", startSession);
   els.backBtn.addEventListener("click", abortTraining);
   els.doneBack.addEventListener("click", stopToHome);
+
+  // ---- VT: save the current settings under a name, reuse from the list ----
+  const VT_SAVED_KEY = "fwmc-vt-saved-v1";
+  const vtSavedStore = makePresetStore(VT_SAVED_KEY);
+  function renderVTSaved() {
+    renderPresetList(vtSavedStore, els.vtSavedList, els.vtSavedGroup, (e) => e.exercise === state.exercise,
+      (e) => `${fmtMinutes(e.duration)}${e.colors && e.colors.length ? ` · ${e.colors.length} Farben` : ""}`,
+      (entry) => {
+        state.colors = entry.colors.slice();
+        state.duration = entry.duration;
+        state.stimulusS = entry.stimulusS;
+        state.intervalMin = entry.intervalMin;
+        state.intervalMax = entry.intervalMax;
+        savePrefs();
+        active = { colors: keysToColors(state.colors) };
+        startSession();
+      });
+  }
+  wirePresetSaveForm({
+    saveBtn: els.vtSaveBtn, form: els.vtSaveForm, nameInput: els.vtSaveNameInput,
+    cancelBtn: els.vtSaveCancelBtn, confirmBtn: els.vtSaveConfirmBtn,
+    defaultName: () => `Eigene Einstellung ${new Date().toLocaleDateString("de-DE")}`,
+    onSave: (name) => {
+      const list = vtSavedStore.load();
+      list.push({
+        id: String(Date.now()), name, exercise: state.exercise,
+        colors: state.colors.slice(), duration: state.duration,
+        stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax,
+      });
+      vtSavedStore.save(list);
+      renderVTSaved();
+    },
+  });
   els.again.addEventListener("click", startSession);
 
   // ---- Fullscreen (shared by the visual player and the breath player) ----
@@ -2327,6 +2422,9 @@
     syncPhaseUI();
     syncBreathDurationUI();
     syncBreathSoundUI();
+    els.breathSaveForm.hidden = true;
+    els.breathSaveBtn.hidden = false;
+    renderBreathSaved();
     showScreen("breathReady");
   }
   els.breathBackToHome.addEventListener("click", () => showScreen("breathHome"));
@@ -2455,6 +2553,38 @@
   els.breathBackBtn.addEventListener("click", breathAbort);
   els.breathAgainBtn.addEventListener("click", () => { breathLeavePlayer(); startBreathSession(); });
   els.breathDoneBackBtn.addEventListener("click", () => { breathLeavePlayer(); showScreen("breathHome"); });
+
+  // ---- Saved breathing settings: same "save under a name, tap to reuse"
+  // pattern as Kombi/Visual Training, scoped per pattern (a saved 4-7-8
+  // setting only shows up again under 4-7-8, etc.). ----
+  const BREATH_SAVED_KEY = "fwmc-breath-saved-v1";
+  const breathSavedStore = makePresetStore(BREATH_SAVED_KEY);
+  function renderBreathSaved() {
+    renderPresetList(breathSavedStore, els.breathSavedList, els.breathSavedGroup, (e) => e.patternKey === breathPatternKey,
+      (e) => `${fmtMinutes(e.durationMin * 60)} · ${e.phases.in}-${e.phases.hold1}-${e.phases.out}-${e.phases.hold2}s`,
+      (entry) => {
+        breathPatternKey = entry.patternKey;
+        breathWorking = { ...entry.phases };
+        breathPrefs.durationMin = entry.durationMin;
+        breathPrefs.sound = entry.sound;
+        saveBreathPrefs();
+        startBreathSession();
+      });
+  }
+  wirePresetSaveForm({
+    saveBtn: els.breathSaveBtn, form: els.breathSaveForm, nameInput: els.breathSaveNameInput,
+    cancelBtn: els.breathSaveCancelBtn, confirmBtn: els.breathSaveConfirmBtn,
+    defaultName: () => `Eigene Einstellung ${new Date().toLocaleDateString("de-DE")}`,
+    onSave: (name) => {
+      const list = breathSavedStore.load();
+      list.push({
+        id: String(Date.now()), name, patternKey: breathPatternKey,
+        phases: { ...breathWorking }, durationMin: breathPrefs.durationMin, sound: breathPrefs.sound,
+      });
+      breathSavedStore.save(list);
+      renderBreathSaved();
+    },
+  });
 
   // ---- Breathing programmes: chain cycle-engine and/or Wim-Hof blocks ----
   function startBreathProgramBlock(idx) {
@@ -2741,6 +2871,9 @@
 
   function openMovementReady() {
     syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI();
+    els.movementSaveForm.hidden = true;
+    els.movementSaveBtn.hidden = false;
+    renderMovementSaved();
     showScreen("movementReady");
   }
   els.movementStartCard.addEventListener("click", openMovementReady);
@@ -2845,6 +2978,41 @@
     movementRaf = requestAnimationFrame(movementTick);
   }
   els.movementStartBtn.addEventListener("click", startMovementSession);
+
+  // ---- Saved movement settings: same "save under a name, tap to reuse"
+  // pattern as Kombi/Visual Training/Atemtraining. One flat list - there's
+  // only one Movement mode, so no scoping needed. ----
+  const MOVEMENT_SAVED_KEY = "fwmc-movement-saved-v1";
+  const movementSavedStore = makePresetStore(MOVEMENT_SAVED_KEY);
+  function renderMovementSaved() {
+    renderPresetList(movementSavedStore, els.movementSavedList, els.movementSavedGroup, null,
+      (e) => `${e.durationMin} Min · ${e.movements.length} Bewegungen · ${e.bpm} BPM`,
+      (entry) => {
+        movementPrefs.movements = entry.movements.slice();
+        movementPrefs.preview = entry.preview;
+        movementPrefs.bpm = entry.bpm;
+        movementPrefs.durationMin = entry.durationMin;
+        movementPrefs.mirror = entry.mirror;
+        movementPrefs.showLabel = entry.showLabel;
+        saveMovementPrefs();
+        startMovementSession();
+      });
+  }
+  wirePresetSaveForm({
+    saveBtn: els.movementSaveBtn, form: els.movementSaveForm, nameInput: els.movementSaveNameInput,
+    cancelBtn: els.movementSaveCancelBtn, confirmBtn: els.movementSaveConfirmBtn,
+    defaultName: () => `Eigene Einstellung ${new Date().toLocaleDateString("de-DE")}`,
+    onSave: (name) => {
+      const list = movementSavedStore.load();
+      list.push({
+        id: String(Date.now()), name,
+        movements: movementPrefs.movements.slice(), preview: movementPrefs.preview, bpm: movementPrefs.bpm,
+        durationMin: movementPrefs.durationMin, mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel,
+      });
+      movementSavedStore.save(list);
+      renderMovementSaved();
+    },
+  });
 
   function movementTick(now) {
     if (!movementSession) return;
