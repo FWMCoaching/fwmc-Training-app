@@ -79,30 +79,13 @@
   function blockColors(block) {
     if (Array.isArray(block.colors)) {
       const list = block.colors.map((k) => COLOR_BY_KEY[k]).filter(Boolean);
-      if (list.length >= MIN_COLORS) return { colors: list, seedKey: block.colors.join("-") };
+      if (list.length >= MIN_COLORS) return { colors: list };
     }
     const id = PALETTES[block.palette] ? block.palette : "ORL";
-    return { colors: PALETTES[id], seedKey: id };
+    return { colors: PALETTES[id] };
   }
   function keysToColors(keys) {
     return COLOR_LIB.filter((c) => keys.includes(c.key));
-  }
-
-  // ---- Seeded RNG (mulberry32) so a fixed "Reihenfolge" always
-  // reproduces the exact same stimulus order for the same settings.
-  // "Zufällig" keeps using Math.random for a fresh draw each run.
-  function mulberry32(seed) {
-    return function () {
-      seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
-      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-  }
-  function hashSeed(str) {
-    let h = 0;
-    for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
-    return h;
   }
 
   // ---- Small helpers ----
@@ -470,8 +453,8 @@
       description: "Zweimal VT: erst ruhig mit viel Zeit, dann doppelt so schnell. Beispiel-Zuordnung für dieses Demo: Orange = mit der Hand antippen · Rot = mit dem Fuß antippen · Lila = kurz stehen bleiben. Bei deinem Coach kann das anders aussehen.",
       pauseS: 15,
       blocks: [
-        { exercise: "vt-color", palette: "ORL", duration: 60, stimulusS: 2.5, intervalMin: 15, intervalMax: 25, sequence: "S01" },
-        { exercise: "vt-color", palette: "ORL", duration: 60, stimulusS: 1.25, intervalMin: 7.5, intervalMax: 12.5, sequence: "S01" },
+        { exercise: "vt-color", palette: "ORL", duration: 60, stimulusS: 2.5, intervalMin: 15, intervalMax: 25 },
+        { exercise: "vt-color", palette: "ORL", duration: 60, stimulusS: 1.25, intervalMin: 7.5, intervalMax: 12.5 },
       ],
     },
     "dig02": {
@@ -480,10 +463,10 @@
       description: "VT, VRW, Stroop und nochmal VRW – durchgehend zügiges Tempo. Beispiel-Zuordnung für dieses Demo: Orange = mit der Hand antippen · Rot = mit dem Fuß antippen · Lila = kurz stehen bleiben. Bei deinem Coach kann das anders aussehen.",
       pauseS: 15,
       blocks: [
-        { exercise: "vt-color", palette: "ORL", duration: 60, stimulusS: 0.8, intervalMin: 3, intervalMax: 5, sequence: "S01" },
-        { exercise: "vrw-original", palette: "ORL", duration: 60, stimulusS: 0.8, intervalMin: 3, intervalMax: 5, sequence: "S01" },
-        { exercise: "stroop-classic", duration: 60, stimulusS: 0.8, intervalMin: 3, intervalMax: 5, sequence: "S01" },
-        { exercise: "vrw-original", palette: "ORL", duration: 60, stimulusS: 0.8, intervalMin: 3, intervalMax: 5, sequence: "S01" },
+        { exercise: "vt-color", palette: "ORL", duration: 60, stimulusS: 0.8, intervalMin: 3, intervalMax: 5 },
+        { exercise: "vrw-original", palette: "ORL", duration: 60, stimulusS: 0.8, intervalMin: 3, intervalMax: 5 },
+        { exercise: "stroop-classic", duration: 60, stimulusS: 0.8, intervalMin: 3, intervalMax: 5 },
+        { exercise: "vrw-original", palette: "ORL", duration: 60, stimulusS: 0.8, intervalMin: 3, intervalMax: 5 },
       ],
     },
   };
@@ -1128,7 +1111,6 @@
     intervalMin: 3,
     intervalMax: 6,
     colors: ["orange", "rot", "lila"],
-    sequence: "frei",
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -1140,23 +1122,13 @@
   loadPrefs();
 
   // Colours + seed used by the running exercise (set per start).
-  let active = { colors: keysToColors(state.colors), seedKey: state.colors.join("-") };
+  let active = { colors: keysToColors(state.colors) };
 
   function randInterval(rng) {
     const lo = Math.min(state.intervalMin, state.intervalMax);
     const hi = Math.max(state.intervalMin, state.intervalMax);
     return lo + rng() * (hi - lo);
   }
-  function makeRng() {
-    if (state.sequence === "frei") return Math.random;
-    // Colours are deliberately NOT part of the seed: a fixed sequence must
-    // give the same directions/timing regardless of which colours are
-    // mapped onto them, so different clients (or the same client with a
-    // different palette) can compare runs on equal footing.
-    const key = [state.exercise, state.sequence, state.duration, state.stimulusS, state.intervalMin, state.intervalMax].join("|");
-    return mulberry32(hashSeed(key));
-  }
-
   // ---- Colour picker ----
   let hintTimer = null;
   function colorHint(text, warn) {
@@ -1198,14 +1170,7 @@
     colorHint(defaultColorHint());
   }
 
-  // ---- Sequence / duration / tempo / sliders ----
-  document.querySelectorAll("[data-seq]").forEach((el) => {
-    el.addEventListener("click", () => { state.sequence = el.dataset.seq; savePrefs(); syncSequenceUI(); });
-  });
-  function syncSequenceUI() {
-    document.querySelectorAll("[data-seq]").forEach((el) => setActive(el, el.dataset.seq === state.sequence));
-  }
-
+  // ---- Duration / tempo / sliders ----
   document.querySelectorAll("[data-dur]").forEach((el) => {
     el.addEventListener("click", () => { state.duration = Number(el.dataset.dur); savePrefs(); syncDurationUI(); });
   });
@@ -1273,7 +1238,6 @@
     els.tempoGroup.hidden = isConeTap;
     els.advanced.hidden = isConeTap;
     syncColorUI();
-    syncSequenceUI();
     syncDurationUI();
     syncTempoUI();
     showScreen("ready");
@@ -1882,7 +1846,6 @@
 
   function applyBlockToState(block) {
     state.exercise = block.exercise;
-    state.sequence = block.sequence || "frei";
     state.duration = block.duration;
     state.stimulusS = block.stimulusS ?? 1.5;
     state.intervalMin = block.intervalMin ?? 2;
@@ -1929,7 +1892,7 @@
     els.stageWrap.hidden = false;
     fitCanvas();
     ensureAudioCtx();
-    const built = buildScheduleFor(EXERCISES[state.exercise], makeRng());
+    const built = buildScheduleFor(EXERCISES[state.exercise], Math.random);
     session = { ...built, startTime: performance.now(), lastIndex: -1 };
     requestWakeLock();
     raf = requestAnimationFrame(tick);
@@ -2119,7 +2082,7 @@
   function startSession() {
     program = null;
     hideOverlays();
-    active = { colors: keysToColors(state.colors), seedKey: state.colors.join("-") };
+    active = { colors: keysToColors(state.colors) };
     buildProgressTrack(1);
     els.liveNav.hidden = true;
     if (EXERCISES[state.exercise].type === "color-tap") startConeTap();
@@ -3460,8 +3423,7 @@
       state.stimulusS = block.stimulusS ?? 1.5;
       state.intervalMin = block.intervalMin ?? 3;
       state.intervalMax = block.intervalMax ?? 6;
-      state.sequence = block.sequence || "frei";
-      active = { colors: keysToColors(state.colors), seedKey: state.colors.join("-") };
+        active = { colors: keysToColors(state.colors) };
       startSession();
     } else if (block.domain === "workout") {
       workoutPlan = null;
