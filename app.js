@@ -576,47 +576,42 @@
   const MOVEMENT_BY_ID = Object.fromEntries(MOVEMENTS.map((m) => [m.id, m]));
   const MIN_MOVEMENTS = 2;
 
-  // A minimal humanoid pictogram, built from lines/shapes rather than any
-  // borrowed artwork: one limb is drawn highlighted in its "heben" (raised)
-  // or "strecken" (extended) pose, the rest stay in the neutral standing
-  // pose. `baseColor` lets the same renderer sit on a themed background
-  // (settings screen, following the site's dark mode) or the always-light
+  // An abstract four-spoke pictogram - deliberately NOT a little figure with
+  // a head, since the closest known reference (Life Kinetik's "Bocobrain"
+  // sheets, seen after this was first designed) already owns that visual
+  // territory: a stick body topped with a smiley head, with triangles and
+  // squares placed beside it to mark arms/legs. This version has no body
+  // outline and no face at all - four short bars radiate from a plain hub,
+  // one per limb; the active one turns the highlight colour and swings
+  // toward vertical and short ("heben") or toward horizontal and long
+  // ("strecken"). `baseColor` lets the same renderer sit on a themed
+  // background (settings screen, follows dark mode) or the always-light
   // player stage (fixed dark ink, matching the visual-training canvas).
   const FIG_HIGHLIGHT = "#ff9110";
-  const ARM_POSE = {
-    neutral: [[38, 36], [30, 66]],
-    heben: [[38, 36], [18, 8]],
-    strecken: [[38, 36], [4, 36]],
+  const SPOKE_NEUTRAL_DIR = {
+    armLeft: [-0.7071, -0.7071], armRight: [0.7071, -0.7071],
+    legLeft: [-0.7071, 0.7071], legRight: [0.7071, 0.7071],
   };
-  const LEG_POSE = {
-    // Both poses stay below the torso's bounding box (y > 74) so the torso
-    // rect drawn on top never clips them. "heben" bends the leg out to the
-    // side almost at a right angle (thigh out, shin down); "strecken" is
-    // one long straight diagonal - the bend is what tells them apart.
-    neutral: [[42, 78], [38, 144]],
-    heben: [[42, 78], [20, 76], [24, 106]],
-    strecken: [[42, 78], [4, 112]],
+  const SPOKE_ACTIVE_DIR = {
+    heben: { armLeft: [-0.5, -0.87], armRight: [0.5, -0.87], legLeft: [-0.5, 0.87], legRight: [0.5, 0.87] },
+    strecken: { armLeft: [-0.97, -0.26], armRight: [0.97, -0.26], legLeft: [-0.97, 0.26], legRight: [0.97, 0.26] },
   };
-  function mirrorPoints(pts) { return pts.map(([x, y]) => [100 - x, y]); }
-  function limbPoints(pose, side) { return side === "right" ? mirrorPoints(pose) : pose; }
-  function limbPolyline(pts, active, baseColor) {
-    const pointsAttr = pts.map((p) => p.join(",")).join(" ");
-    return `<polyline points="${pointsAttr}" fill="none" stroke="${active ? FIG_HIGHLIGHT : baseColor}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>`;
-  }
+  const SPOKE_LEN = { neutral: 15, heben: 30, strecken: 43 };
+  const SPOKE_START_R = 8;
   // slots: { armLeft, armRight, legLeft, legRight } - each holds a pose
   // name ("heben"/"strecken") when that screen-side limb is the active one.
   function figureSVG(slots, baseColor) {
     baseColor = baseColor || "#16232a";
-    const legL = limbPoints(LEG_POSE[slots.legLeft || "neutral"], "left");
-    const legR = limbPoints(LEG_POSE[slots.legRight || "neutral"], "right");
-    const armL = limbPoints(ARM_POSE[slots.armLeft || "neutral"], "left");
-    const armR = limbPoints(ARM_POSE[slots.armRight || "neutral"], "right");
-    return `<svg viewBox="0 0 100 150" class="figure-svg" aria-hidden="true">` +
-      limbPolyline(legL, !!slots.legLeft, baseColor) + limbPolyline(legR, !!slots.legRight, baseColor) +
-      `<rect x="38" y="30" width="24" height="48" rx="12" fill="${baseColor}"/>` +
-      limbPolyline(armL, !!slots.armLeft, baseColor) + limbPolyline(armR, !!slots.armRight, baseColor) +
-      `<circle cx="50" cy="16" r="12" fill="${baseColor}"/>` +
-      `</svg>`;
+    const parts = ["armLeft", "armRight", "legLeft", "legRight"].map((key) => {
+      const type = slots[key];
+      const dir = type ? SPOKE_ACTIVE_DIR[type][key] : SPOKE_NEUTRAL_DIR[key];
+      const len = SPOKE_LEN[type || "neutral"];
+      const color = type ? FIG_HIGHLIGHT : baseColor;
+      const x1 = (50 + dir[0] * SPOKE_START_R).toFixed(1), y1 = (50 + dir[1] * SPOKE_START_R).toFixed(1);
+      const x2 = (50 + dir[0] * len).toFixed(1), y2 = (50 + dir[1] * len).toFixed(1);
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="11" stroke-linecap="round"/>`;
+    }).join("");
+    return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">${parts}<circle cx="50" cy="50" r="7" fill="${baseColor}"/></svg>`;
   }
   // Resolves which SCREEN side each anatomical limb is drawn on. Mirrored
   // (default): the client's left appears on-screen left, like copying a
@@ -714,6 +709,7 @@
     movementPicker: $("movementPicker"), movementCount: $("movementCount"),
     movementStartBtn: $("movementStartBtn"),
     movementPlayer: $("movementPlayer"), movementLane: $("movementLane"), movementProgressTrack: $("movementProgressTrack"),
+    movementFinishBadge: $("movementFinishBadge"), movementBpmSlider: $("movementBpmSlider"), movementBpmValue: $("movementBpmValue"),
     movementPlayerBar: $("movementPlayerBar"), movementBackBtn: $("movementBackBtn"), movementTimeEl: $("movementTimeEl"),
     movementFsBtn: $("movementFsBtn"), movementFsHint: $("movementFsHint"),
     movementFsHintOpenBtn: $("movementFsHintOpenBtn"), movementFsHintClose: $("movementFsHintClose"),
@@ -2167,7 +2163,7 @@
   const MOVEMENT_PREFS_KEY = "fwmc-movement-v1";
   const movementPrefs = {
     movements: MOVEMENTS.map((m) => m.id),
-    preview: 3, bpm: 60, durationMin: 1, mirror: true, sound: true, showLabel: true,
+    preview: 3, bpm: 60, durationMin: 1, mirror: true, showLabel: true,
   };
   function loadMovementPrefs() {
     const saved = readJSON(MOVEMENT_PREFS_KEY, null);
@@ -2204,11 +2200,21 @@
     els.movementCount.textContent = `${movementPrefs.movements.length} gewählt`;
   }
 
-  document.querySelectorAll("[data-mv-preview]").forEach((el) => el.addEventListener("click", () => { movementPrefs.preview = Number(el.dataset.mvPreview); saveMovementPrefs(); syncMvPreviewUI(); }));
-  function syncMvPreviewUI() { document.querySelectorAll("[data-mv-preview]").forEach((el) => el.classList.toggle("active", Number(el.dataset.mvPreview) === movementPrefs.preview)); }
+  function parsePreview(v) { return v === "all" ? "all" : Number(v); }
+  document.querySelectorAll("[data-mv-preview]").forEach((el) => el.addEventListener("click", () => { movementPrefs.preview = parsePreview(el.dataset.mvPreview); saveMovementPrefs(); syncMvPreviewUI(); }));
+  function syncMvPreviewUI() { document.querySelectorAll("[data-mv-preview]").forEach((el) => el.classList.toggle("active", parsePreview(el.dataset.mvPreview) === movementPrefs.preview)); }
 
   document.querySelectorAll("[data-mv-bpm]").forEach((el) => el.addEventListener("click", () => { movementPrefs.bpm = Number(el.dataset.mvBpm); saveMovementPrefs(); syncMvTempoUI(); }));
-  function syncMvTempoUI() { document.querySelectorAll("[data-mv-bpm]").forEach((el) => el.classList.toggle("active", Number(el.dataset.mvBpm) === movementPrefs.bpm)); }
+  function syncMvTempoUI() {
+    document.querySelectorAll("[data-mv-bpm]").forEach((el) => el.classList.toggle("active", Number(el.dataset.mvBpm) === movementPrefs.bpm));
+    els.movementBpmSlider.value = movementPrefs.bpm;
+    els.movementBpmValue.textContent = `${movementPrefs.bpm} BPM`;
+  }
+  els.movementBpmSlider.addEventListener("input", () => {
+    movementPrefs.bpm = Number(els.movementBpmSlider.value);
+    saveMovementPrefs();
+    syncMvTempoUI();
+  });
 
   document.querySelectorAll("[data-mv-dur]").forEach((el) => el.addEventListener("click", () => { movementPrefs.durationMin = Number(el.dataset.mvDur); saveMovementPrefs(); syncMvDurationUI(); }));
   function syncMvDurationUI() { document.querySelectorAll("[data-mv-dur]").forEach((el) => el.classList.toggle("active", Number(el.dataset.mvDur) === movementPrefs.durationMin)); }
@@ -2216,14 +2222,11 @@
   document.querySelectorAll("[data-mv-mirror]").forEach((el) => el.addEventListener("click", () => { movementPrefs.mirror = el.dataset.mvMirror === "1"; saveMovementPrefs(); syncMvMirrorUI(); }));
   function syncMvMirrorUI() { document.querySelectorAll("[data-mv-mirror]").forEach((el) => el.classList.toggle("active", (el.dataset.mvMirror === "1") === movementPrefs.mirror)); }
 
-  document.querySelectorAll("[data-mv-sound]").forEach((el) => el.addEventListener("click", () => { movementPrefs.sound = el.dataset.mvSound === "1"; saveMovementPrefs(); syncMvSoundUI(); }));
-  function syncMvSoundUI() { document.querySelectorAll("[data-mv-sound]").forEach((el) => el.classList.toggle("active", (el.dataset.mvSound === "1") === movementPrefs.sound)); }
-
   document.querySelectorAll("[data-mv-label]").forEach((el) => el.addEventListener("click", () => { movementPrefs.showLabel = el.dataset.mvLabel === "1"; saveMovementPrefs(); syncMvLabelUI(); }));
   function syncMvLabelUI() { document.querySelectorAll("[data-mv-label]").forEach((el) => el.classList.toggle("active", (el.dataset.mvLabel === "1") === movementPrefs.showLabel)); }
 
   function openMovementReady() {
-    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvSoundUI(); syncMvLabelUI();
+    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI();
     showScreen("movementReady");
   }
   els.movementStartCard.addEventListener("click", openMovementReady);
@@ -2239,10 +2242,13 @@
   });
 
   // ---- Movement session engine: a queue of upcoming movements, one made
-  // active per beat; the lane always shows `preview` of them at once so the
-  // client can see what's coming, not just what's due right now. ----
+  // active per beat. Two display modes: a sliding "lane" of `preview`
+  // tiles (rebuilt each beat), or - when preview is "all" - the complete
+  // sequence laid out once as a wrapping grid, where a beat just moves
+  // which tile carries the "active" class. No audio: this runs purely on
+  // the beat, per Fabian (a metronome, not an announcer). ----
   let movementRaf = null;
-  let movementSession = null; // { sequence, beatLenS, totalBeats, startTime, lastBeatIdx }
+  let movementSession = null; // { sequence, beatLenS, totalBeats, startTime, lastBeatIdx, finishTimer }
 
   function pickRandomMovement(pool, avoidId) {
     let choice;
@@ -2259,16 +2265,37 @@
     }
     return seq;
   }
-  function renderMovementLane(seq, beatIdx, preview, mirrored, showLabel) {
+  function movementTileHTML(m, mirrored, showLabel) {
+    const slots = resolveSlots([m], mirrored);
+    return figureSVG(slots, "#16232a") + (showLabel ? `<span class="mv-label">${esc(m.label)}</span>` : "");
+  }
+  function renderMovementLaneWindow(seq, beatIdx, preview, mirrored, showLabel) {
+    els.movementLane.className = "movement-lane";
     els.movementLane.innerHTML = "";
     for (let j = 0; j < preview; j++) {
       const m = seq[beatIdx + j];
       if (!m) continue;
       const tile = document.createElement("div");
       tile.className = "movement-tile" + (j === 0 ? " active" : " next");
-      const slots = resolveSlots([m], mirrored);
-      tile.innerHTML = figureSVG(slots, "#16232a") + (showLabel ? `<span class="mv-label">${esc(m.label)}</span>` : "");
+      tile.innerHTML = movementTileHTML(m, mirrored, showLabel);
       els.movementLane.appendChild(tile);
+    }
+  }
+  function buildMovementLaneGrid(seq, mirrored, showLabel) {
+    els.movementLane.className = "movement-lane grid";
+    els.movementLane.innerHTML = "";
+    seq.forEach((m) => {
+      const tile = document.createElement("div");
+      tile.className = "movement-tile";
+      tile.innerHTML = movementTileHTML(m, mirrored, showLabel);
+      els.movementLane.appendChild(tile);
+    });
+  }
+  function updateMovementLaneGrid(beatIdx) {
+    const tiles = els.movementLane.children;
+    for (let i = 0; i < tiles.length; i++) {
+      tiles[i].classList.toggle("active", i === beatIdx);
+      tiles[i].classList.toggle("done", i < beatIdx);
     }
   }
 
@@ -2277,16 +2304,23 @@
     if (pool.length < MIN_MOVEMENTS) return;
     const beatLenS = 60 / movementPrefs.bpm;
     const totalBeats = Math.max(4, Math.round((movementPrefs.durationMin * 60) / beatLenS));
-    const sequence = buildMovementSequence(pool, totalBeats + movementPrefs.preview - 1);
+    const gridMode = movementPrefs.preview === "all";
+    const seqCount = gridMode ? totalBeats : totalBeats + movementPrefs.preview - 1;
+    const sequence = buildMovementSequence(pool, seqCount);
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.movementPlayer.hidden = false;
     els.movementPlayerBar.hidden = false;
     els.movementDonePanel.hidden = true;
+    els.movementFinishBadge.hidden = true;
     els.movementProgressTrack.innerHTML = `<span class="seg"><span class="fill"></span></span>`;
-    movementSession = { sequence, beatLenS, totalBeats, startTime: performance.now(), lastBeatIdx: 0 };
-    renderMovementLane(sequence, 0, movementPrefs.preview, movementPrefs.mirror, movementPrefs.showLabel);
-    if (movementPrefs.sound) speakWord(sequence[0].label);
+    movementSession = { sequence, beatLenS, totalBeats, gridMode, startTime: performance.now(), lastBeatIdx: 0, finishTimer: null };
+    if (gridMode) {
+      buildMovementLaneGrid(sequence, movementPrefs.mirror, movementPrefs.showLabel);
+      updateMovementLaneGrid(0);
+    } else {
+      renderMovementLaneWindow(sequence, 0, movementPrefs.preview, movementPrefs.mirror, movementPrefs.showLabel);
+    }
     requestWakeLock();
     movementRaf = requestAnimationFrame(movementTick);
   }
@@ -2296,12 +2330,21 @@
     if (!movementSession) return;
     const elapsed = (now - movementSession.startTime) / 1000;
     const totalS = movementSession.totalBeats * movementSession.beatLenS;
-    if (elapsed >= totalS) { movementFinishSession(); return; }
+    if (elapsed >= totalS) {
+      // Keep the chart on screen with a "Fertig!" banner for a moment so
+      // anyone who drifted off-beat sees the finish line, not a hard cut.
+      // `movementSession` stays set (just no more raf frames) until the
+      // timer below calls movementFinishSession, which reads it and clears it.
+      els.movementFinishBadge.hidden = false;
+      els.movementTimeEl.textContent = "0:00";
+      movementSession.finishTimer = setTimeout(movementFinishSession, 1400);
+      return;
+    }
     const beatIdx = Math.min(Math.floor(elapsed / movementSession.beatLenS), movementSession.totalBeats - 1);
     if (beatIdx !== movementSession.lastBeatIdx) {
       movementSession.lastBeatIdx = beatIdx;
-      renderMovementLane(movementSession.sequence, beatIdx, movementPrefs.preview, movementPrefs.mirror, movementPrefs.showLabel);
-      if (movementPrefs.sound) speakWord(movementSession.sequence[beatIdx].label);
+      if (movementSession.gridMode) updateMovementLaneGrid(beatIdx);
+      else renderMovementLaneWindow(movementSession.sequence, beatIdx, movementPrefs.preview, movementPrefs.mirror, movementPrefs.showLabel);
     }
     els.movementTimeEl.textContent = fmtClock(totalS - elapsed);
     const fill = els.movementProgressTrack.querySelector(".fill");
@@ -2310,12 +2353,10 @@
   }
 
   function movementFinishSession() {
-    if (movementRaf) cancelAnimationFrame(movementRaf);
-    movementRaf = null;
     const played = movementSession ? movementSession.totalBeats * movementSession.beatLenS : 0;
     movementSession = null;
     releaseWakeLock();
-    if (window.speechSynthesis) speechSynthesis.cancel();
+    els.movementFinishBadge.hidden = true;
     els.movementPlayerBar.hidden = true;
     els.movementDoneSummary.textContent = `Ganzkörper-Reaktion · ${fmtMinutes(played)}`;
     const id = addHistory({ kind: "movement", title: "Ganzkörper-Reaktion", seconds: Math.round(played) });
@@ -2325,11 +2366,12 @@
   function movementLeavePlayer() {
     if (movementRaf) cancelAnimationFrame(movementRaf);
     movementRaf = null;
+    if (movementSession && movementSession.finishTimer) clearTimeout(movementSession.finishTimer);
     movementSession = null;
     releaseWakeLock();
     if (document.fullscreenElement === els.movementPlayer) document.exitFullscreen().catch(() => {});
     els.movementFsHint.hidden = true;
-    if (window.speechSynthesis) speechSynthesis.cancel();
+    els.movementFinishBadge.hidden = true;
     els.movementPlayer.hidden = true;
     els.movementDonePanel.hidden = true;
   }

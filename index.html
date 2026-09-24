@@ -505,7 +505,9 @@
       <button class="choice" data-mv-preview="2">Kurz<small>2 Felder</small></button>
       <button class="choice" data-mv-preview="3">Mittel<small>3 Felder</small></button>
       <button class="choice" data-mv-preview="4">Weit<small>4 Felder</small></button>
+      <button class="choice" data-mv-preview="all">Ganz<small>ganzes Programm</small></button>
     </div>
+    <div class="group-help">&bdquo;Ganzes Programm&ldquo; zeigt die komplette Abfolge auf einmal &ndash; eine Markierung wandert im Takt durch, der Rest bleibt sichtbar.</div>
   </div>
 
   <div class="group">
@@ -530,18 +532,17 @@
     <summary>Feineinstellungen</summary>
     <div class="advanced-body">
       <div class="group">
+        <div class="group-label">Exaktes Tempo</div>
+        <div class="slider-row">
+          <input type="range" id="movementBpmSlider" min="20" max="160" step="1" aria-label="Tempo in Beats pro Minute">
+          <span class="slider-value" id="movementBpmValue">60 BPM</span>
+        </div>
+      </div>
+      <div class="group">
         <div class="group-label">Ansicht</div>
         <div class="choice-row two" id="mirrorRow">
           <button class="choice" data-mv-mirror="1">Spiegelbild<small>wie im Spiegel</small></button>
-          <button class="choice" data-mv-mirror="0">Eigene Sicht<small>von vorne betrachtet</small></button>
-        </div>
-        <div class="group-help">Spiegelbild: deine linke Seite erscheint links im Bild &ndash; wie beim Nachmachen vor einem Bildschirm. Eigene Sicht: die Figur schaut dich an, ihre linke Seite ist dann rechts im Bild.</div>
-      </div>
-      <div class="group">
-        <div class="group-label">Ansage</div>
-        <div class="choice-row two" id="movementSoundRow">
-          <button class="choice" data-mv-sound="1">Mit Ansage</button>
-          <button class="choice" data-mv-sound="0">Still</button>
+          <button class="choice" data-mv-mirror="0">Eigene Sicht<small>links/rechts vertauscht</small></button>
         </div>
       </div>
       <div class="group">
@@ -748,6 +749,7 @@
 <div class="player" id="movementPlayer" hidden>
   <div class="movement-stage">
     <div class="movement-lane" id="movementLane"></div>
+    <div class="movement-finish-badge" id="movementFinishBadge" hidden>Fertig!</div>
   </div>
   <div class="progress-track" id="movementProgressTrack"></div>
   <div class="player-bar" id="movementPlayerBar">
@@ -775,9 +777,9 @@
   <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="movementTipsTitle">
     <h2 id="movementTipsTitle">So funktioniert Movement</h2>
     <ol class="tips">
-      <li><strong>Symbol beobachten.</strong> Eine kleine Figur zeigt, welcher Arm oder welches Bein sich bewegt und wie (heben oder strecken).</li>
-      <li><strong>Vorschau nutzen.</strong> Rechts siehst du schon, was als N&auml;chstes kommt &ndash; so kannst du dich vorbereiten, statt nur zu reagieren.</li>
-      <li><strong>Im Takt bleiben.</strong> Ein Feld r&uuml;ckt nach links, sobald die Bewegung dran ist. F&uuml;hre sie aus, bevor das n&auml;chste dran ist.</li>
+      <li><strong>Symbol beobachten.</strong> Vier Balken zeigen Arme und Beine. Der hervorgehobene Balken zeigt, welcher sich bewegt &ndash; kurz und steil f&uuml;r heben, lang und flach f&uuml;r strecken.</li>
+      <li><strong>Vorschau nutzen.</strong> Du siehst schon, was als N&auml;chstes kommt &ndash; so kannst du dich vorbereiten, statt nur zu reagieren.</li>
+      <li><strong>Im Takt bleiben.</strong> Ein neues Feld wird aktiv, sobald die Bewegung dran ist. F&uuml;hre sie aus, bevor das n&auml;chste dran ist. Es l&auml;uft ohne Ansage, rein im Takt.</li>
       <li><strong>Platz zum Bewegen.</strong> Sorge f&uuml;r etwas freien Raum um dich herum.</li>
     </ol>
     <button class="start-btn" id="movementTipsCloseBtn">Los geht&rsquo;s</button>
