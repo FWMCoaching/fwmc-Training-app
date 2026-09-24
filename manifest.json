@@ -1,12 +1,12 @@
 {
-  "name": "FWMC Schritt-Richtung",
-  "short_name": "Schritt-Richtung",
-  "description": "Reaktions-Trainingsreiz: Schrittrichtung per Pfeil, live im Browser.",
+  "name": "FWMC Visual Training",
+  "short_name": "Visual Training",
+  "description": "Visuelles Reaktionstraining von Fabian Westermann Mentalcoaching.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#faf8f5",
-  "theme_color": "#1565c0",
+  "background_color": "#f6f8f9",
+  "theme_color": "#007094",
   "orientation": "any",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

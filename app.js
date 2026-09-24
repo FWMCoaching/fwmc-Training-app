@@ -1,11 +1,13 @@
 (() => {
   "use strict";
 
-  // ---- Shared palette (matches FWMC's existing training colour library) ----
+  // ---- Shared colours ----
   const BLUE = "#1565c0";
   const GREEN = "#2e7d32";
   const RED = "#d32f2f";
   const INK = "#16232a";
+  const INK_SOFT = "#4f6168";
+  const BRAND = "#007094";
   const NEUTRAL = "#eef3f4";
   const DOT = "#8fa2a8";
 
@@ -20,45 +22,69 @@
   const DIR4 = [["Vorne", 0], ["Rechts", 90], ["Hinten", 180], ["Links", 270]];
   const DIR_DIAG = [["Vorne-Rechts", 45], ["Hinten-Rechts", 135], ["Hinten-Links", 225], ["Vorne-Links", 315]];
   const DIR8 = [...DIR4, ...DIR_DIAG].sort((a, b) => a[1] - b[1]);
-  const INVERT_OF = { Vorne: "Hinten", Hinten: "Vorne", Rechts: "Links", Links: "Rechts" };
 
-  // ---- Palette library: the same 20 three-colour combinations from the
-  // production ARCHITECTURE/PALETTES/*.json files, ported as data so
-  // VT/VRW can use the exact same colour meanings as the real videos.
-  const C = {
-    orange: "#ff9110", rot: "#d32f2f", lila: "#7e4fbe",
-    blau: "#1565c0", gruen: "#2e7d32", gelb: "#f2a900",
-    orl_orange: "#ff911f", orl_rot: "#e84835",
-  };
-  function pal(id, name, colors) { return { id, name, colors }; }
+  // ---- Colour library for VT/VRW. The client picks MIN_COLORS..MAX_COLORS
+  // of these and they are mixed at random. Raise MAX_COLORS (and add colours
+  // here) if an exercise ever needs more than four.
+  const COLOR_LIB = [
+    { key: "orange", name: "Orange", hex: "#ff9110" },
+    { key: "rot", name: "Rot", hex: "#d32f2f" },
+    { key: "lila", name: "Lila", hex: "#7e4fbe" },
+    { key: "blau", name: "Blau", hex: "#1565c0" },
+    { key: "gruen", name: "Grün", hex: "#2e7d32" },
+    { key: "gelb", name: "Gelb", hex: "#f2a900" },
+  ];
+  const COLOR_BY_KEY = Object.fromEntries(COLOR_LIB.map((c) => [c.key, c]));
+  const MIN_COLORS = 2;
+  const MAX_COLORS = 4;
+
+  // Legacy three-colour palettes from the production ARCHITECTURE/PALETTES
+  // files. Programmes stored before the free colour picker existed reference
+  // these by code ("palette": "ORL"), so they stay resolvable with their
+  // exact original shades.
+  const C = { orange: "#ff9110", rot: "#d32f2f", lila: "#7e4fbe", blau: "#1565c0", gruen: "#2e7d32", gelb: "#f2a900" };
+  const N = { orange: "Orange", rot: "Rot", lila: "Lila", blau: "Blau", gruen: "Grün", gelb: "Gelb" };
+  const col = (k) => ({ name: N[k], hex: C[k] });
   const PALETTES = {
-    ORL: pal("ORL", "Orange Rot Lila", [{ name: "Orange", hex: "#ff911f" }, { name: "Rot", hex: "#e84835" }, { name: "Lila", hex: C.lila }]),
-    RGB: pal("RGB", "Rot Grün Blau", [{ name: "Rot", hex: C.rot }, { name: "Blau", hex: C.blau }, { name: "Grün", hex: C.gruen }]),
-    RGY: pal("RGY", "Rot Grün Gelb", [{ name: "Rot", hex: C.rot }, { name: "Grün", hex: C.gruen }, { name: "Gelb", hex: C.gelb }]),
-    RYB: pal("RYB", "Rot Gelb Blau", [{ name: "Rot", hex: C.rot }, { name: "Gelb", hex: C.gelb }, { name: "Blau", hex: C.blau }]),
-    YGB: pal("YGB", "Gelb Grün Blau", [{ name: "Gelb", hex: C.gelb }, { name: "Grün", hex: C.gruen }, { name: "Blau", hex: C.blau }]),
-    ORB: pal("ORB", "Orange Rot Blau", [{ name: "Orange", hex: C.orange }, { name: "Rot", hex: C.rot }, { name: "Blau", hex: C.blau }]),
-    ORG: pal("ORG", "Orange Rot Grün", [{ name: "Orange", hex: C.orange }, { name: "Rot", hex: C.rot }, { name: "Grün", hex: C.gruen }]),
-    ORY: pal("ORY", "Orange Rot Gelb", [{ name: "Orange", hex: C.orange }, { name: "Rot", hex: C.rot }, { name: "Gelb", hex: C.gelb }]),
-    OLB: pal("OLB", "Orange Lila Blau", [{ name: "Orange", hex: C.orange }, { name: "Lila", hex: C.lila }, { name: "Blau", hex: C.blau }]),
-    OLG: pal("OLG", "Orange Lila Grün", [{ name: "Orange", hex: C.orange }, { name: "Lila", hex: C.lila }, { name: "Grün", hex: C.gruen }]),
-    OLY: pal("OLY", "Orange Lila Gelb", [{ name: "Orange", hex: C.orange }, { name: "Lila", hex: C.lila }, { name: "Gelb", hex: C.gelb }]),
-    OBG: pal("OBG", "Orange Blau Grün", [{ name: "Orange", hex: C.orange }, { name: "Blau", hex: C.blau }, { name: "Grün", hex: C.gruen }]),
-    OBY: pal("OBY", "Orange Blau Gelb", [{ name: "Orange", hex: C.orange }, { name: "Blau", hex: C.blau }, { name: "Gelb", hex: C.gelb }]),
-    OGY: pal("OGY", "Orange Grün Gelb", [{ name: "Orange", hex: C.orange }, { name: "Grün", hex: C.gruen }, { name: "Gelb", hex: C.gelb }]),
-    RLB: pal("RLB", "Rot Lila Blau", [{ name: "Rot", hex: C.rot }, { name: "Lila", hex: C.lila }, { name: "Blau", hex: C.blau }]),
-    RLG: pal("RLG", "Rot Lila Grün", [{ name: "Rot", hex: C.rot }, { name: "Lila", hex: C.lila }, { name: "Grün", hex: C.gruen }]),
-    RLY: pal("RLY", "Rot Lila Gelb", [{ name: "Rot", hex: C.rot }, { name: "Lila", hex: C.lila }, { name: "Gelb", hex: C.gelb }]),
-    LBG: pal("LBG", "Lila Blau Grün", [{ name: "Lila", hex: C.lila }, { name: "Blau", hex: C.blau }, { name: "Grün", hex: C.gruen }]),
-    LBY: pal("LBY", "Lila Blau Gelb", [{ name: "Lila", hex: C.lila }, { name: "Blau", hex: C.blau }, { name: "Gelb", hex: C.gelb }]),
-    LGY: pal("LGY", "Lila Grün Gelb", [{ name: "Lila", hex: C.lila }, { name: "Grün", hex: C.gruen }, { name: "Gelb", hex: C.gelb }]),
+    ORL: [{ name: "Orange", hex: "#ff911f" }, { name: "Rot", hex: "#e84835" }, col("lila")],
+    RGB: [col("rot"), col("blau"), col("gruen")],
+    RGY: [col("rot"), col("gruen"), col("gelb")],
+    RYB: [col("rot"), col("gelb"), col("blau")],
+    YGB: [col("gelb"), col("gruen"), col("blau")],
+    ORB: [col("orange"), col("rot"), col("blau")],
+    ORG: [col("orange"), col("rot"), col("gruen")],
+    ORY: [col("orange"), col("rot"), col("gelb")],
+    OLB: [col("orange"), col("lila"), col("blau")],
+    OLG: [col("orange"), col("lila"), col("gruen")],
+    OLY: [col("orange"), col("lila"), col("gelb")],
+    OBG: [col("orange"), col("blau"), col("gruen")],
+    OBY: [col("orange"), col("blau"), col("gelb")],
+    OGY: [col("orange"), col("gruen"), col("gelb")],
+    RLB: [col("rot"), col("lila"), col("blau")],
+    RLG: [col("rot"), col("lila"), col("gruen")],
+    RLY: [col("rot"), col("lila"), col("gelb")],
+    LBG: [col("lila"), col("blau"), col("gruen")],
+    LBY: [col("lila"), col("blau"), col("gelb")],
+    LGY: [col("lila"), col("gruen"), col("gelb")],
   };
-  const PALETTE_ORDER = ["ORL", "RGB", "RGY", "RYB", "YGB", "ORB", "ORG", "ORY", "OLB", "OLG", "OLY", "OBG", "OBY", "OGY", "RLB", "RLG", "RLY", "LBG", "LBY", "LGY"];
 
-  // ---- Seeded RNG (mulberry32) so a chosen "Sequenz" (S01-S05) always
-  // reproduces the exact same stimulus order for the same settings -
-  // matching the deterministic seed_pair() behaviour of the real render
-  // pipeline. "Zufällig" keeps using Math.random for a fresh draw each run.
+  // Colours of a programme block: free selection ("colors": ["rot","blau"]),
+  // a legacy palette code, or the ORL default.
+  function blockColors(block) {
+    if (Array.isArray(block.colors)) {
+      const list = block.colors.map((k) => COLOR_BY_KEY[k]).filter(Boolean);
+      if (list.length >= MIN_COLORS) return { colors: list, seedKey: block.colors.join("-") };
+    }
+    const id = PALETTES[block.palette] ? block.palette : "ORL";
+    return { colors: PALETTES[id], seedKey: id };
+  }
+  function keysToColors(keys) {
+    return COLOR_LIB.filter((c) => keys.includes(c.key));
+  }
+
+  // ---- Seeded RNG (mulberry32) so a fixed "Reihenfolge" always
+  // reproduces the exact same stimulus order for the same settings.
+  // "Zufällig" keeps using Math.random for a fresh draw each run.
   function mulberry32(seed) {
     return function () {
       seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
@@ -73,9 +99,34 @@
     return h;
   }
 
-  // ---- Audio: spoken direction words (Web Speech API) + a plain beep
-  // (Web Audio API). No audio files needed, works fully offline once the
-  // page/voices are loaded once.
+  // ---- Small helpers ----
+  function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+  }
+  function fmtClock(sec) {
+    const s = Math.max(0, Math.ceil(sec));
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  }
+  function fmtMinutes(sec) {
+    if (sec < 60) return `${Math.max(1, Math.round(sec))} Sek`;
+    const m = Math.round(sec / 30) / 2;
+    return `${String(m).replace(".", ",")} Min`;
+  }
+  function fmtSeconds(sec) {
+    return `${String(Math.round(sec * 10) / 10).replace(".", ",")} s`;
+  }
+  function programSeconds(def) {
+    const pause = def.pauseS ?? 15;
+    return def.blocks.reduce((sum, b, i) => sum + b.duration + (i > 0 ? (b.pauseS ?? pause) : 0), 0);
+  }
+  function exerciseCountLabel(n) {
+    return n === 1 ? "1 Übung" : `${n} Übungen`;
+  }
+  function colorDots(colors) {
+    return `<span class="dots">${colors.map((c) => `<span class="dot" style="background:${c.hex}"></span>`).join("")}</span>`;
+  }
+
+  // ---- Audio: spoken direction words (Web Speech API) + a plain beep ----
   let audioCtx = null;
   function ensureAudioCtx() {
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -149,6 +200,18 @@
     return size;
   }
 
+  function wrapLines(ctx, text, maxW) {
+    const words = text.split(/\s+/);
+    const lines = [];
+    let line = "";
+    words.forEach((w) => {
+      const test = line ? line + " " + w : w;
+      if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; } else { line = test; }
+    });
+    if (line) lines.push(line);
+    return lines;
+  }
+
   // ---- Canvas rendering ----
   const canvas = document.getElementById("stage");
   const ctx = canvas.getContext("2d");
@@ -209,6 +272,26 @@
     ctx.restore();
   }
 
+  function drawCountdown(cw, ch, payload) {
+    const cx = cw / 2, cy = ch / 2;
+    const unit = Math.min(cw, ch) / 2;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = BRAND;
+    ctx.font = `700 ${Math.round(unit * 0.07)}px 'Public Sans', sans-serif`;
+    ctx.fillText("GLEICH GEHT’S LOS", cx, cy - unit * 0.62);
+    ctx.fillStyle = INK;
+    ctx.font = `700 ${Math.round(unit * 0.55)}px Magra, sans-serif`;
+    ctx.fillText(String(payload.n), cx, cy - unit * 0.06);
+    if (payload.task) {
+      const size = Math.round(unit * 0.075);
+      ctx.font = `600 ${size}px 'Public Sans', sans-serif`;
+      ctx.fillStyle = INK_SOFT;
+      const lines = wrapLines(ctx, payload.task, Math.min(cw * 0.84, unit * 2.2));
+      lines.forEach((line, i) => ctx.fillText(line, cx, cy + unit * 0.48 + i * size * 1.35));
+    }
+  }
+
   function drawScene(kind, payload) {
     const cw = canvas.width, ch = canvas.height;
     const cx = cw / 2, cy = ch / 2;
@@ -221,14 +304,10 @@
       ctx.fillRect(0, 0, cw, ch);
       ctx.beginPath();
       ctx.fillStyle = DOT;
-      ctx.arc(cx, cy, unit * 0.026, 0, Math.PI * 2);
+      ctx.arc(cx, cy, unit * 0.03, 0, Math.PI * 2);
       ctx.fill();
     } else if (kind === "count") {
-      ctx.fillStyle = INK;
-      ctx.font = `800 ${Math.round(unit * 0.5)}px Magra, sans-serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(String(payload.n), cx, cy);
+      drawCountdown(cw, ch, payload);
     } else if (kind === "cue") {
       const pts = arrowPoints(payload.angle, cx, cy, unit);
       ctx.beginPath();
@@ -244,8 +323,8 @@
       ctx.fillStyle = payload.ink;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      const size = fitText(ctx, payload.word, cw * 0.82, Math.round(unit * 0.62), "Magra, sans-serif", 800);
-      ctx.font = `800 ${size}px Magra, sans-serif`;
+      const size = fitText(ctx, payload.word, cw * 0.82, Math.round(unit * 0.62), "Magra, sans-serif", 700);
+      ctx.font = `700 ${size}px Magra, sans-serif`;
       ctx.fillText(payload.word, cx, cy);
     } else if (kind === "cross") {
       const p = payload;
@@ -287,49 +366,81 @@
     }
   }
 
-  // ---- Exercise catalogue (drives the "ready" sub-screen) ----
+  // ---- Exercise catalogue ----
+  // title: full name · task: one sentence shown in the countdown and pause
+  // preview · trains: what the exercise is good for · rules: explanation on
+  // the settings screen.
   const EXERCISES = {
     "vt-color": {
-      title: "VT · Farbe + Handseite",
+      title: "VT · Farbe & Seite",
       type: "vt",
-      usesPalette: true,
-      rules:
-        "Original-System: Hintergrundfarbe aus der gewählten Palette + weißer Pfeil = Handseite (links/rechts). Portierung des echten VT-Prinzips – die genaue Sequenz-Balancierung des Original-Algorithmus ist hier vereinfacht (gleichverteilt statt kontrolliert-zufällig).",
+      usesColors: true,
+      task: "Erkenne Farbe und Pfeilrichtung und reagiere mit der passenden Seite.",
+      trains: "Farbwahrnehmung und schnelle Seitenentscheidung",
+      rules: "Du siehst eine Farbfläche mit weißem Pfeil. Die Farbe sagt dir, was du tust – der Pfeil zeigt die Seite (links oder rechts). Welche Farbe wofür steht, legst du mit deinem Coach fest.",
     },
     "vrw-original": {
-      title: "VRW · Original (Direkt/Umgekehrt)",
+      title: "VRW · Direkt & Umgekehrt",
       type: "vrw-real",
-      usesPalette: true,
-      rules:
-        "Original-System: Weißer Pfeil auf Farbe = gezeigte Seite zählt (direkt). Farbiger Pfeil auf Weiß = Gegenseite zählt (umgekehrt). Portierung des echten VRW-Prinzips, vereinfachte Sequenzverteilung.",
+      usesColors: true,
+      task: "Weißer Pfeil auf Farbe: gezeigte Seite. Farbiger Pfeil auf Weiß: Gegenseite.",
+      trains: "Regelwechsel und Impulskontrolle",
+      rules: "Weißer Pfeil auf farbiger Fläche: Die gezeigte Seite zählt (direkt). Farbiger Pfeil auf weißer Fläche: Die Gegenseite zählt (umgekehrt).",
       explainerVideo: "explainer-vrw-placeholder.mp4",
     },
-    "4-straight": { title: "4 Pfeile · gerade", type: "arrows", dirset: 4, dual: false },
-    "4-diag": { title: "4 Pfeile · diagonal", type: "arrows", dirset: "diag", dual: false },
-    "8-solo": { title: "8 Pfeile · einfarbig", type: "arrows", dirset: 8, dual: false },
-    "8-vrw": { title: "8 Pfeile · Rot/Grün (VRW)", type: "arrows", dirset: 8, dual: true },
-    "stroop-classic": { title: "Stroop · klassisch", type: "stroop", bg: false },
-    "stroop-bg": { title: "Stroop · mit Hintergrundfarbe", type: "stroop", bg: true },
+    "4-straight": {
+      title: "4 Pfeile · gerade", type: "arrows", dirset: 4, dual: false,
+      task: "Reagiere so schnell wie möglich in die gezeigte Richtung.",
+      trains: "Reaktionsgeschwindigkeit und Richtungserkennung",
+      rules: "Ein Pfeil zeigt nach vorne, rechts, hinten oder links. Reagiere so schnell wie möglich in diese Richtung.",
+    },
+    "4-diag": {
+      title: "4 Pfeile · diagonal", type: "arrows", dirset: "diag", dual: false,
+      task: "Reagiere so schnell wie möglich in die gezeigte Schrägrichtung.",
+      trains: "Reaktionsgeschwindigkeit und Orientierung",
+      rules: "Ein Pfeil zeigt in eine der vier Schrägrichtungen. Reagiere so schnell wie möglich in diese Richtung.",
+    },
+    "8-solo": {
+      title: "8 Pfeile", type: "arrows", dirset: 8, dual: false,
+      task: "Reagiere so schnell wie möglich in die gezeigte Richtung.",
+      trains: "Reaktion in alle Richtungen",
+      rules: "Ein Pfeil zeigt in eine von acht Richtungen – gerade oder schräg. Reagiere so schnell wie möglich in diese Richtung.",
+    },
+    "8-vrw": {
+      title: "8 Pfeile · Rot/Grün", type: "arrows", dirset: 8, dual: true,
+      task: "Grüner Pfeil: gezeigte Richtung. Roter Pfeil: Gegenrichtung.",
+      trains: "Umschalten unter Zeitdruck und Impulskontrolle",
+      rules: "Grüner Pfeil: Reagiere in die gezeigte Richtung. Roter Pfeil: Reagiere in die Gegenrichtung.",
+    },
+    "stroop-classic": {
+      title: "Stroop · klassisch", type: "stroop", bg: false,
+      task: "Sag laut die Schriftfarbe – nicht das Wort.",
+      trains: "Konzentration und Ausblenden von Störreizen",
+      rules: "Du siehst ein Farbwort in einer anderen Schriftfarbe. Sag laut die Schriftfarbe – nicht das, was da steht.",
+    },
+    "stroop-bg": {
+      title: "Stroop · mit Hintergrund", type: "stroop", bg: true,
+      task: "Sag laut die Schriftfarbe – nicht das Wort, nicht den Hintergrund.",
+      trains: "Konzentration bei starker Ablenkung",
+      rules: "Wort, Schriftfarbe und Hintergrund sind alle unterschiedlich. Sag laut die Schriftfarbe. Diese Variante ist eine Weiterentwicklung von Fabian Westermann Mentalcoaching.",
+    },
     "cross-modal": {
-      title: "Kreuzmodal · Sehen & Hören",
-      type: "cross",
-      rules:
-        "Nur Bild oder nur Ton: reagiere wie gezeigt/gesagt. Bild + Ton gleichzeitig (unterschiedliche Richtung): zeigt der Pfeil VORNE oder RECHTS → der TON gilt; zeigt er HINTEN oder LINKS → das BILD gilt. Bild + Piepton: reagiere auf die Gegenrichtung des gezeigten Pfeils.",
+      title: "Sehen & Hören", type: "cross",
+      task: "Reagiere auf Bild oder Ton – bei Konflikt gilt die Sonderregel.",
+      trains: "Verarbeitung von Sehen und Hören, Regelwechsel",
+      rules: "Nur Bild oder nur Ton: Reagiere wie gezeigt oder gesagt. Bild und Ton gleichzeitig mit unterschiedlicher Richtung: Zeigt der Pfeil nach VORNE oder RECHTS, gilt der TON; zeigt er nach HINTEN oder LINKS, gilt das BILD. Bild mit Piepton: Reagiere in die Gegenrichtung des Pfeils. Die Sprachausgabe nutzt die Stimme deines Geräts. Diese Übung ist eine Weiterentwicklung von Fabian Westermann Mentalcoaching.",
     },
   };
 
-  // ---- Programme: coach-authored multi-block sessions, looked up by a
-  // short code (baked into this table - no account/login needed, works
-  // for any client with the link). Real client programmes live in the
-  // Cloudflare database (see lookupProgram below), never here - this table
-  // only holds anonymous, public example programmes.
+  // ---- Programmes: coach-authored multi-block sessions. Real client
+  // programmes live in the Cloudflare database (see lookupProgram below),
+  // never here - this table only holds anonymous, public example programmes.
   const PROGRAMS = {
-    // "featured: true" programmes are shown publicly on the home screen
-    // (no code needed) as examples of what a coach-built programme looks like.
+    // "featured: true" programmes are shown publicly on the home screen.
     "dig01": {
-      name: "Dig01 · VT Tempo-Steigerung",
+      name: "Einstieg · Tempo-Steigerung",
       featured: true,
-      description: "2 Durchgänge VT: erst langsam mit langen Pausen, dann doppelt so schnell mit halber Einblendzeit.",
+      description: "Zweimal VT: erst ruhig mit viel Zeit, dann doppelt so schnell.",
       pauseS: 15,
       blocks: [
         { exercise: "vt-color", palette: "ORL", duration: 60, stimulusS: 2.5, intervalMin: 15, intervalMax: 25, sequence: "S01" },
@@ -337,9 +448,9 @@
       ],
     },
     "dig02": {
-      name: "Dig02 · Gemischt (Fortgeschritten)",
+      name: "Fortgeschritten · Gemischtes Training",
       featured: true,
-      description: "VT → VRW → Stroop → VRW, durchgehend kurze Einblendzeit und kurze Pausen für ein zügiges Tempo.",
+      description: "VT, VRW, Stroop und nochmal VRW – durchgehend zügiges Tempo.",
       pauseS: 15,
       blocks: [
         { exercise: "vt-color", palette: "ORL", duration: 60, stimulusS: 0.8, intervalMin: 3, intervalMax: 5, sequence: "S01" },
@@ -350,77 +461,127 @@
     },
   };
 
-  // ---- Navigation ----
+  // ---- Elements ----
+  const $ = (id) => document.getElementById(id);
   const els = {
-    home: document.getElementById("home"),
-    ready: document.getElementById("ready"),
-    player: document.getElementById("player"),
-    playerBar: document.getElementById("playerBar"),
-    donePanel: document.getElementById("donePanel"),
-    readyTitle: document.getElementById("readyTitle"),
-    readyIcon: document.getElementById("readyIcon"),
-    rulesBox: document.getElementById("rulesBox"),
-    filterMoreBtn: document.getElementById("filterMoreBtn"),
-    filterExtra: document.getElementById("filterExtra"),
-    startBtn: document.getElementById("startBtn"),
-    backToHome: document.getElementById("backToHome"),
-    backBtn: document.getElementById("backBtn"),
-    fsBtn: document.getElementById("fsBtn"),
-    fsHint: document.getElementById("fsHint"),
-    fsHintOpenBtn: document.getElementById("fsHintOpenBtn"),
-    fsHintClose: document.getElementById("fsHintClose"),
-    featuredPrograms: document.getElementById("featuredPrograms"),
-    featuredGrid: document.getElementById("featuredGrid"),
-    featuredMoreBtn: document.getElementById("featuredMoreBtn"),
-    liveNav: document.getElementById("liveNav"),
-    livePrevBtn: document.getElementById("livePrevBtn"),
-    liveRestartBtn: document.getElementById("liveRestartBtn"),
-    liveEndBtn: document.getElementById("liveEndBtn"),
-    liveNextBtn: document.getElementById("liveNextBtn"),
-    liveChapterLabel: document.getElementById("liveChapterLabel"),
-    timeEl: document.getElementById("timeEl"),
-    again: document.getElementById("againBtn"),
-    doneBack: document.getElementById("doneBackBtn"),
-    durationSlider: document.getElementById("durationSlider"),
-    durationValue: document.getElementById("durationValue"),
-    stimulusSlider: document.getElementById("stimulusSlider"),
-    stimulusValue: document.getElementById("stimulusValue"),
-    intervalMinSlider: document.getElementById("intervalMinSlider"),
-    intervalMaxSlider: document.getElementById("intervalMaxSlider"),
-    intervalValue: document.getElementById("intervalValue"),
-    paletteGroup: document.getElementById("paletteGroup"),
-    paletteGrid: document.getElementById("paletteGrid"),
-    sequenceGroup: document.getElementById("sequenceGroup"),
-    programCodeInput: document.getElementById("programCodeInput"),
-    programGoBtn: document.getElementById("programGoBtn"),
-    programError: document.getElementById("programError"),
-    programIntro: document.getElementById("programIntro"),
-    programBackToHome: document.getElementById("programBackToHome"),
-    programTitle: document.getElementById("programTitle"),
-    chapterList: document.getElementById("chapterList"),
-    bundleOverview: document.getElementById("bundleOverview"),
-    bundleBackToHome: document.getElementById("bundleBackToHome"),
-    bundleTitle: document.getElementById("bundleTitle"),
-    bundleList: document.getElementById("bundleList"),
-    programStartBtn: document.getElementById("programStartBtn"),
-    pauseScreen: document.getElementById("pauseScreen"),
-    pauseCountdown: document.getElementById("pauseCountdown"),
-    pauseToggleBtn: document.getElementById("pauseToggleBtn"),
-    pauseAbortBtn: document.getElementById("pauseAbortBtn"),
-    prevChapterBtn: document.getElementById("prevChapterBtn"),
-    restartChapterBtn: document.getElementById("restartChapterBtn"),
-    nextChapterBtn: document.getElementById("nextChapterBtn"),
-    chapterLabel: document.getElementById("chapterLabel"),
-    nextPreview: document.getElementById("nextPreview"),
-    programDonePanel: document.getElementById("programDonePanel"),
-    programAgainBtn: document.getElementById("programAgainBtn"),
-    programDoneBackBtn: document.getElementById("programDoneBackBtn"),
-    introVideo: document.getElementById("introVideo"),
-    explainerBtn: document.getElementById("explainerBtn"),
-    videoModal: document.getElementById("videoModal"),
-    videoModalPlayer: document.getElementById("videoModalPlayer"),
-    videoModalClose: document.getElementById("videoModalClose"),
+    home: $("home"), ready: $("ready"), player: $("player"), playerBar: $("playerBar"),
+    donePanel: $("donePanel"), doneSummary: $("doneSummary"), doneRating: $("doneRating"),
+    readyTitle: $("readyTitle"), readyIcon: $("readyIcon"), readyTrains: $("readyTrains"), rulesBox: $("rulesBox"),
+    filterMoreBtn: $("filterMoreBtn"), filterExtra: $("filterExtra"),
+    startBtn: $("startBtn"), backToHome: $("backToHome"), backBtn: $("backBtn"),
+    fsBtn: $("fsBtn"), fsHint: $("fsHint"), fsHintOpenBtn: $("fsHintOpenBtn"), fsHintClose: $("fsHintClose"),
+    featuredPrograms: $("featuredPrograms"), featuredGrid: $("featuredGrid"), featuredMoreBtn: $("featuredMoreBtn"),
+    liveNav: $("liveNav"), livePrevBtn: $("livePrevBtn"), liveRestartBtn: $("liveRestartBtn"),
+    liveEndBtn: $("liveEndBtn"), liveNextBtn: $("liveNextBtn"),
+    timeEl: $("timeEl"), progressTrack: $("progressTrack"),
+    again: $("againBtn"), doneBack: $("doneBackBtn"),
+    durationSlider: $("durationSlider"), durationValue: $("durationValue"),
+    stimulusSlider: $("stimulusSlider"), stimulusValue: $("stimulusValue"),
+    intervalMinSlider: $("intervalMinSlider"), intervalMaxSlider: $("intervalMaxSlider"), intervalValue: $("intervalValue"),
+    tempoCustom: $("tempoCustom"),
+    colorGroup: $("colorGroup"), colorPicker: $("colorPicker"), colorCount: $("colorCount"), colorHint: $("colorHint"),
+    programCodeInput: $("programCodeInput"), programGoBtn: $("programGoBtn"), programError: $("programError"),
+    programIntro: $("programIntro"), programBackToHome: $("programBackToHome"), programTitle: $("programTitle"),
+    programMeta: $("programMeta"), programDesc: $("programDesc"), chapterList: $("chapterList"),
+    programStartBtn: $("programStartBtn"),
+    bundleOverview: $("bundleOverview"), bundleBackToHome: $("bundleBackToHome"), bundleTitle: $("bundleTitle"), bundleList: $("bundleList"),
+    pauseScreen: $("pauseScreen"), pauseCountdown: $("pauseCountdown"), pauseToggleBtn: $("pauseToggleBtn"),
+    pauseSkipBtn: $("pauseSkipBtn"), pauseAbortBtn: $("pauseAbortBtn"), pauseProgress: $("pauseProgress"),
+    breath: $("breath"), breathLabel: $("breathLabel"), nextTitle: $("nextTitle"), nextTask: $("nextTask"), nextCard: $("nextCard"),
+    prevChapterBtn: $("prevChapterBtn"), restartChapterBtn: $("restartChapterBtn"), nextChapterBtn: $("nextChapterBtn"),
+    programDonePanel: $("programDonePanel"), programDoneSummary: $("programDoneSummary"), programRating: $("programRating"),
+    programAgainBtn: $("programAgainBtn"), programDoneBackBtn: $("programDoneBackBtn"),
+    introVideo: $("introVideo"), explainerBtn: $("explainerBtn"),
+    videoModal: $("videoModal"), videoModalPlayer: $("videoModalPlayer"), videoModalClose: $("videoModalClose"),
+    historySection: $("historySection"), historyStats: $("historyStats"), historyList: $("historyList"), historyClearBtn: $("historyClearBtn"),
+    tipsSheet: $("tipsSheet"), tipsBtn: $("tipsBtn"), tipsCloseBtn: $("tipsCloseBtn"),
+    tipInstall: $("tipInstall"), tipInstallText: $("tipInstallText"),
   };
+
+  const SCREENS = ["home", "bundleOverview", "programIntro", "ready"];
+  function showScreen(name) {
+    SCREENS.forEach((s) => { els[s].hidden = s !== name; });
+    if (name === "home") renderHistory();
+    else els.programError.hidden = true;
+    window.scrollTo(0, 0);
+  }
+
+  // ---- Storage (all local to this device, wrapped for private mode) ----
+  function readJSON(key, fallback) {
+    try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch (e) { return fallback; }
+  }
+  function writeJSON(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+  }
+
+  // ---- Training history ----
+  const HISTORY_KEY = "fwmc-history-v1";
+  function loadHistory() {
+    const h = readJSON(HISTORY_KEY, []);
+    return Array.isArray(h) ? h : [];
+  }
+  function addHistory(entry) {
+    const list = loadHistory();
+    const item = { id: String(Date.now()), ts: new Date().toISOString(), rating: null, ...entry };
+    list.unshift(item);
+    writeJSON(HISTORY_KEY, list.slice(0, 200));
+    return item.id;
+  }
+  function rateHistory(id, rating) {
+    const list = loadHistory();
+    const item = list.find((e) => e.id === id);
+    if (item) { item.rating = rating; writeJSON(HISTORY_KEY, list); }
+  }
+  function isCompleted(progKey) {
+    return loadHistory().some((e) => e.kind === "program" && e.progKey === progKey);
+  }
+  function startOfWeek() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d;
+  }
+  const WEEKDAYS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+  function renderHistory() {
+    const list = loadHistory();
+    els.historySection.hidden = list.length === 0;
+    if (!list.length) return;
+    const weekStart = startOfWeek();
+    const week = list.filter((e) => new Date(e.ts) >= weekStart);
+    const weekSec = week.reduce((s, e) => s + (e.seconds || 0), 0);
+    els.historyStats.innerHTML =
+      `<div class="stat"><strong>${week.length}</strong><span>Trainings diese Woche</span></div>` +
+      `<div class="stat"><strong>${week.length ? fmtMinutes(weekSec) : "–"}</strong><span>Trainingszeit diese Woche</span></div>` +
+      `<div class="stat"><strong>${list.length}</strong><span>Trainings gesamt</span></div>`;
+    els.historyList.innerHTML = list.slice(0, 5).map((e) => {
+      const d = new Date(e.ts);
+      const date = `${WEEKDAYS[d.getDay()]}, ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
+      const rating = e.rating ? ` · Fokus ${e.rating}/5` : "";
+      return `<li><span class="h-date">${date}</span><span class="h-title">${esc(e.title)}</span><span class="h-meta">${fmtMinutes(e.seconds || 0)}${rating}</span></li>`;
+    }).join("");
+  }
+  els.historyClearBtn.addEventListener("click", () => {
+    if (!confirm("Deinen Trainingsverlauf auf diesem Gerät löschen?")) return;
+    writeJSON(HISTORY_KEY, []);
+    renderHistory();
+  });
+
+  // Rating widget shown on the finish screens.
+  function renderRating(container, entryId) {
+    container.innerHTML =
+      `<div class="rating-q">Wie fokussiert warst du?</div>` +
+      `<div class="rating-row">${[1, 2, 3, 4, 5].map((n) => `<button data-rate="${n}" aria-label="${n} von 5">${n}</button>`).join("")}</div>` +
+      `<div class="rating-scale"><span>kaum</span><span>voll da</span></div>` +
+      `<div class="rating-thanks" hidden>Danke – gespeichert.</div>`;
+    container.querySelectorAll("[data-rate]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const n = Number(btn.dataset.rate);
+        rateHistory(entryId, n);
+        container.querySelectorAll("[data-rate]").forEach((b) => b.classList.toggle("active", Number(b.dataset.rate) === n));
+        container.querySelector(".rating-thanks").hidden = false;
+      });
+    });
+  }
 
   // ---- Video modal (explainer clips) ----
   function openVideoModal(src) {
@@ -434,111 +595,158 @@
     els.videoModalPlayer.load();
     els.videoModal.hidden = true;
   }
-  if (els.videoModalClose) els.videoModalClose.addEventListener("click", closeVideoModal);
-  if (els.videoModal) {
-    els.videoModal.addEventListener("click", (e) => { if (e.target === els.videoModal) closeVideoModal(); });
-  }
+  els.videoModalClose.addEventListener("click", closeVideoModal);
+  els.videoModal.addEventListener("click", (e) => { if (e.target === els.videoModal) closeVideoModal(); });
 
-  // Build the palette swatch grid once (20 buttons, three colour dots + code).
-  if (els.paletteGrid) {
-    PALETTE_ORDER.forEach((id) => {
-      const p = PALETTES[id];
-      const btn = document.createElement("button");
-      btn.className = "palette-chip";
-      btn.dataset.palette = id;
-      btn.innerHTML =
-        p.colors.map((c) => `<span class="dot" style="background:${c.hex}"></span>`).join("") +
-        `<span class="code">${id}</span>`;
-      btn.addEventListener("click", () => {
-        state.palette = id;
-        savePrefs();
-        syncPaletteUI();
-      });
-      els.paletteGrid.appendChild(btn);
-    });
-  }
-  function syncPaletteUI() {
-    if (!els.paletteGrid) return;
-    els.paletteGrid.querySelectorAll(".palette-chip").forEach((el) => {
-      el.classList.toggle("active", el.dataset.palette === state.palette);
-    });
-  }
-
-  document.querySelectorAll("[data-seq]").forEach((el) => {
-    el.addEventListener("click", () => {
-      state.sequence = el.dataset.seq;
-      savePrefs();
-      syncSequenceUI();
-    });
-  });
-  function syncSequenceUI() {
-    document.querySelectorAll("[data-seq]").forEach((el) => {
-      el.classList.toggle("active", el.dataset.seq === state.sequence);
-    });
-  }
-
-  const state = {
+  // ---- Settings state ----
+  const TEMPO_PRESETS = {
+    leicht: { stimulusS: 2.5, intervalMin: 6, intervalMax: 10 },
+    mittel: { stimulusS: 1.5, intervalMin: 3, intervalMax: 6 },
+    schwer: { stimulusS: 0.8, intervalMin: 2, intervalMax: 4 },
+  };
+  const PREFS_KEY = "fwmc-webapp-v3";
+  const DEFAULTS = {
     exercise: null,
-    duration: 30,
+    duration: 60,
     stimulusS: 1.5,
-    intervalMin: 2,
-    intervalMax: 4,
-    palette: "ORL",
+    intervalMin: 3,
+    intervalMax: 6,
+    colors: ["orange", "rot", "lila"],
     sequence: "frei",
   };
+  const state = { ...DEFAULTS };
+  function loadPrefs() {
+    const saved = readJSON(PREFS_KEY, null);
+    Object.assign(state, DEFAULTS, saved && typeof saved === "object" ? saved : {});
+    if (!Array.isArray(state.colors) || keysToColors(state.colors).length < MIN_COLORS) state.colors = ["orange", "rot", "lila"];
+  }
+  function savePrefs() { writeJSON(PREFS_KEY, state); }
+  loadPrefs();
+
+  // Colours + seed used by the running exercise (set per start).
+  let active = { colors: keysToColors(state.colors), seedKey: state.colors.join("-") };
 
   function randInterval(rng) {
     const lo = Math.min(state.intervalMin, state.intervalMax);
     const hi = Math.max(state.intervalMin, state.intervalMax);
     return lo + rng() * (hi - lo);
   }
-
   function makeRng() {
     if (state.sequence === "frei") return Math.random;
-    const key = [state.exercise, state.palette, state.sequence, state.duration, state.stimulusS, state.intervalMin, state.intervalMax].join("|");
+    const key = [state.exercise, active.seedKey, state.sequence, state.duration, state.stimulusS, state.intervalMin, state.intervalMax].join("|");
     return mulberry32(hashSeed(key));
   }
 
-  function loadPrefs() {
-    try {
-      const raw = localStorage.getItem("fwmc-webapp-v2");
-      if (raw) Object.assign(state, JSON.parse(raw));
-    } catch (e) {}
+  // ---- Colour picker ----
+  let hintTimer = null;
+  function colorHint(text, warn) {
+    els.colorHint.textContent = text;
+    els.colorHint.classList.toggle("warn", !!warn);
+    if (hintTimer) clearTimeout(hintTimer);
+    if (warn) hintTimer = setTimeout(() => colorHint(defaultColorHint()), 2200);
   }
-  function savePrefs() {
-    try { localStorage.setItem("fwmc-webapp-v2", JSON.stringify(state)); } catch (e) {}
+  function defaultColorHint() {
+    return `Wähle ${MIN_COLORS} bis ${MAX_COLORS} Farben – sie werden zufällig gemischt.`;
+  }
+  COLOR_LIB.forEach((c) => {
+    const btn = document.createElement("button");
+    btn.className = "color-swatch";
+    btn.dataset.color = c.key;
+    btn.setAttribute("aria-pressed", "false");
+    btn.innerHTML = `<span class="swatch" style="background:${c.hex}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">${c.name}</span>`;
+    btn.addEventListener("click", () => {
+      const selected = state.colors.includes(c.key);
+      if (selected) {
+        if (state.colors.length <= MIN_COLORS) { colorHint(`Mindestens ${MIN_COLORS} Farben.`, true); return; }
+        state.colors = state.colors.filter((k) => k !== c.key);
+      } else {
+        if (state.colors.length >= MAX_COLORS) { colorHint(`Höchstens ${MAX_COLORS} Farben – wähle zuerst eine ab.`, true); return; }
+        state.colors = COLOR_LIB.map((x) => x.key).filter((k) => k === c.key || state.colors.includes(k));
+      }
+      savePrefs();
+      syncColorUI();
+    });
+    els.colorPicker.appendChild(btn);
+  });
+  function syncColorUI() {
+    els.colorPicker.querySelectorAll(".color-swatch").forEach((el) => {
+      const on = state.colors.includes(el.dataset.color);
+      el.classList.toggle("active", on);
+      el.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    els.colorCount.textContent = `${state.colors.length} gewählt`;
+    colorHint(defaultColorHint());
   }
 
+  // ---- Sequence / duration / tempo / sliders ----
+  document.querySelectorAll("[data-seq]").forEach((el) => {
+    el.addEventListener("click", () => { state.sequence = el.dataset.seq; savePrefs(); syncSequenceUI(); });
+  });
+  function syncSequenceUI() {
+    document.querySelectorAll("[data-seq]").forEach((el) => el.classList.toggle("active", el.dataset.seq === state.sequence));
+  }
+
+  document.querySelectorAll("[data-dur]").forEach((el) => {
+    el.addEventListener("click", () => { state.duration = Number(el.dataset.dur); savePrefs(); syncDurationUI(); });
+  });
+  function syncDurationUI() {
+    document.querySelectorAll("[data-dur]").forEach((el) => el.classList.toggle("active", el.dataset.dur === String(state.duration)));
+    els.durationSlider.value = state.duration;
+    els.durationValue.textContent = state.duration >= 60 ? fmtMinutes(state.duration) : state.duration + " s";
+  }
+  els.durationSlider.addEventListener("input", () => { state.duration = Number(els.durationSlider.value); savePrefs(); syncDurationUI(); });
+
+  document.querySelectorAll("[data-tempo]").forEach((el) => {
+    el.addEventListener("click", () => { Object.assign(state, TEMPO_PRESETS[el.dataset.tempo]); savePrefs(); syncTempoUI(); });
+  });
+  function syncTempoUI() {
+    let any = false;
+    document.querySelectorAll("[data-tempo]").forEach((el) => {
+      const p = TEMPO_PRESETS[el.dataset.tempo];
+      const on = p.stimulusS === state.stimulusS && p.intervalMin === state.intervalMin && p.intervalMax === state.intervalMax;
+      if (on) any = true;
+      el.classList.toggle("active", on);
+    });
+    els.tempoCustom.hidden = any;
+    els.stimulusSlider.value = state.stimulusS;
+    els.stimulusValue.textContent = fmtSeconds(state.stimulusS);
+    els.intervalMinSlider.value = state.intervalMin;
+    els.intervalMaxSlider.value = state.intervalMax;
+    els.intervalValue.textContent = `${Math.round(state.intervalMin)}–${Math.round(state.intervalMax)} s`;
+  }
+  els.stimulusSlider.addEventListener("input", () => { state.stimulusS = Number(els.stimulusSlider.value); savePrefs(); syncTempoUI(); });
+  els.intervalMinSlider.addEventListener("input", () => {
+    state.intervalMin = Math.min(Number(els.intervalMinSlider.value), state.intervalMax); savePrefs(); syncTempoUI();
+  });
+  els.intervalMaxSlider.addEventListener("input", () => {
+    state.intervalMax = Math.max(Number(els.intervalMaxSlider.value), state.intervalMin); savePrefs(); syncTempoUI();
+  });
+
+  // ---- Exercise settings screen ----
   document.querySelectorAll(".excard").forEach((card) => {
     card.addEventListener("click", () => openReady(card.dataset.exercise, card.querySelector(".icon-badge,.icon-tile").outerHTML));
   });
 
   function openReady(id, iconHtml) {
+    const ex = EXERCISES[id];
+    loadPrefs(); // drop any values a programme run left in `state`
     state.exercise = id;
     savePrefs();
-    els.readyTitle.textContent = EXERCISES[id].title;
+    els.readyTitle.textContent = ex.title;
     els.readyIcon.innerHTML = iconHtml;
-    if (EXERCISES[id].rules) {
-      els.rulesBox.textContent = EXERCISES[id].rules;
-      els.rulesBox.hidden = false;
-    } else {
-      els.rulesBox.hidden = true;
-    }
-    if (EXERCISES[id].explainerVideo) {
-      els.explainerBtn.hidden = false;
-      els.explainerBtn.onclick = () => openVideoModal(EXERCISES[id].explainerVideo);
-    } else {
-      els.explainerBtn.hidden = true;
-    }
-    if (els.paletteGroup) els.paletteGroup.hidden = !EXERCISES[id].usesPalette;
-    syncPaletteUI();
+    els.readyTrains.textContent = ex.trains ? "Trainiert: " + ex.trains : "";
+    els.rulesBox.textContent = ex.rules || "";
+    els.rulesBox.hidden = !ex.rules;
+    els.explainerBtn.hidden = !ex.explainerVideo;
+    els.explainerBtn.onclick = ex.explainerVideo ? () => openVideoModal(ex.explainerVideo) : null;
+    els.colorGroup.hidden = !ex.usesColors;
+    syncColorUI();
     syncSequenceUI();
     syncDurationUI();
-    syncStimulusUI();
-    syncIntervalUI();
-    els.home.hidden = true;
-    els.ready.hidden = false;
+    syncTempoUI();
+    showScreen("ready");
   }
+  els.backToHome.addEventListener("click", () => showScreen("home"));
 
   // ---- Exercise filter chips (multi-select "typ", exclusive "ton") ----
   const activeFilters = { ton: null, typ: new Set() };
@@ -561,111 +769,24 @@
         document.querySelectorAll('.filter-chip[data-filter-group="ton"]').forEach((c) => c.classList.remove("active"));
         activeFilters.ton = turningOn ? value : null;
         if (turningOn) chip.classList.add("active");
+      } else if (activeFilters.typ.has(value)) {
+        activeFilters.typ.delete(value);
+        chip.classList.remove("active");
       } else {
-        if (activeFilters.typ.has(value)) {
-          activeFilters.typ.delete(value);
-          chip.classList.remove("active");
-        } else {
-          activeFilters.typ.add(value);
-          chip.classList.add("active");
-        }
+        activeFilters.typ.add(value);
+        chip.classList.add("active");
       }
       applyFilters();
     });
   });
-  if (els.filterMoreBtn) {
-    els.filterMoreBtn.addEventListener("click", () => {
-      const willShow = els.filterExtra.hidden;
-      els.filterExtra.hidden = !willShow;
-      els.filterMoreBtn.textContent = willShow ? "Weniger Filter" : "Mehr Filter";
-    });
-  }
-
-  document.querySelectorAll("[data-dur]").forEach((el) => {
-    el.addEventListener("click", () => {
-      state.duration = Number(el.dataset.dur);
-      savePrefs();
-      syncDurationUI();
-    });
+  els.filterMoreBtn.addEventListener("click", () => {
+    const willShow = els.filterExtra.hidden;
+    els.filterExtra.hidden = !willShow;
+    els.filterMoreBtn.textContent = willShow ? "Weniger Filter" : "Mehr Filter";
   });
-  function syncDurationUI() {
-    document.querySelectorAll("[data-dur]").forEach((el) => {
-      el.classList.toggle("active", el.dataset.dur === String(state.duration));
-    });
-    if (els.durationSlider) els.durationSlider.value = state.duration;
-    if (els.durationValue) els.durationValue.textContent = state.duration + " s";
-  }
 
-  const INTERVAL_PRESETS = { kurz: [3, 5], mittel: [8, 12], lang: [15, 25] };
-  document.querySelectorAll("[data-interval-preset]").forEach((el) => {
-    el.addEventListener("click", () => {
-      const [lo, hi] = INTERVAL_PRESETS[el.dataset.intervalPreset];
-      state.intervalMin = lo;
-      state.intervalMax = hi;
-      savePrefs();
-      syncIntervalUI();
-    });
-  });
-  function syncIntervalUI() {
-    document.querySelectorAll("[data-interval-preset]").forEach((el) => {
-      const [lo, hi] = INTERVAL_PRESETS[el.dataset.intervalPreset];
-      el.classList.toggle("active", lo === state.intervalMin && hi === state.intervalMax);
-    });
-    if (els.intervalMinSlider) els.intervalMinSlider.value = state.intervalMin;
-    if (els.intervalMaxSlider) els.intervalMaxSlider.value = state.intervalMax;
-    if (els.intervalValue) {
-      els.intervalValue.textContent = `${state.intervalMin.toFixed(0)}–${state.intervalMax.toFixed(0)} s`;
-    }
-  }
-  if (els.intervalMinSlider) {
-    els.intervalMinSlider.addEventListener("input", () => {
-      state.intervalMin = Math.min(Number(els.intervalMinSlider.value), state.intervalMax);
-      savePrefs();
-      syncIntervalUI();
-    });
-  }
-  if (els.intervalMaxSlider) {
-    els.intervalMaxSlider.addEventListener("input", () => {
-      state.intervalMax = Math.max(Number(els.intervalMaxSlider.value), state.intervalMin);
-      savePrefs();
-      syncIntervalUI();
-    });
-  }
-
-  const STIMULUS_PRESETS = { kurz: 0.8, mittel: 1.5, lang: 2.5 };
-  document.querySelectorAll("[data-stimulus-preset]").forEach((el) => {
-    el.addEventListener("click", () => {
-      state.stimulusS = STIMULUS_PRESETS[el.dataset.stimulusPreset];
-      savePrefs();
-      syncStimulusUI();
-    });
-  });
-  function syncStimulusUI() {
-    document.querySelectorAll("[data-stimulus-preset]").forEach((el) => {
-      el.classList.toggle("active", STIMULUS_PRESETS[el.dataset.stimulusPreset] === state.stimulusS);
-    });
-    if (els.stimulusSlider) els.stimulusSlider.value = state.stimulusS;
-    if (els.stimulusValue) els.stimulusValue.textContent = state.stimulusS.toFixed(1) + " s";
-  }
-  if (els.stimulusSlider) {
-    els.stimulusSlider.addEventListener("input", () => {
-      state.stimulusS = Number(els.stimulusSlider.value);
-      savePrefs();
-      syncStimulusUI();
-    });
-  }
-  if (els.durationSlider) {
-    els.durationSlider.addEventListener("input", () => {
-      state.duration = Number(els.durationSlider.value);
-      savePrefs();
-      syncDurationUI();
-    });
-  }
-
-  els.backToHome.addEventListener("click", () => { els.ready.hidden = true; els.home.hidden = false; });
-
-  // ---- Programme lookup + overview screen ----
-  let program = null; // { def, chapterIndex, code }
+  // ---- Programme lookup + overview screens ----
+  let program = null; // { def, chapterIndex, code, key, title, playedS }
 
   function normCode(s) { return s.trim().toLowerCase().replace(/\s+/g, "-"); }
 
@@ -683,11 +804,14 @@
   let originBundle = null; // { def, code } - set when a programme was opened from a bundle overview
 
   async function openProgramIntro(code) {
-    if (els.programGoBtn) els.programGoBtn.disabled = true;
+    els.programGoBtn.disabled = true;
+    els.programGoBtn.textContent = "Lädt …";
     const def = await lookupProgram(code);
-    if (els.programGoBtn) els.programGoBtn.disabled = false;
+    els.programGoBtn.disabled = false;
+    els.programGoBtn.textContent = "Öffnen";
     if (!def) {
       els.programError.hidden = false;
+      showScreen("home");
       return;
     }
     els.programError.hidden = true;
@@ -696,7 +820,7 @@
       return;
     }
     originBundle = null;
-    renderProgramIntro(def, code);
+    renderProgramIntro(def, code, code);
   }
 
   function formatDateDE(iso) {
@@ -707,30 +831,39 @@
   }
 
   function openBundleOverview(bundleDef, code) {
-    els.bundleTitle.textContent = bundleDef.name;
+    els.bundleTitle.textContent = bundleDef.name || "Deine Programme";
     els.bundleList.innerHTML = "";
     const sorted = bundleDef.programs
       .map((p, i) => ({ p, i }))
       .sort((a, b) => (b.p.createdAt || "").localeCompare(a.p.createdAt || "") || (a.i - b.i));
-    sorted.forEach(({ p, i }) => {
+    sorted.forEach(({ p, i }, pos) => {
+      const key = `${code}#${i}`;
+      const done = isCompleted(key);
+      const isNew = pos === 0 && sorted.length > 1 && p.createdAt;
       const item = document.createElement("button");
       item.className = "bundle-item";
       const dateLabel = formatDateDE(p.createdAt);
+      const badges = (isNew ? `<span class="badge badge-new">Neu</span>` : "") + (done ? `<span class="badge badge-done">&#10003; Erledigt</span>` : "");
       item.innerHTML =
-        `<div class="bundle-item-head"><strong>${p.label || ("Programm " + (i + 1))}</strong>${dateLabel ? `<span class="bundle-date">${dateLabel}</span>` : ""}</div>` +
-        `<span>${p.description || ""}</span>`;
+        `<div class="bundle-item-head"><strong>${esc(p.label || ("Programm " + (i + 1)))}</strong>${dateLabel ? `<span class="bundle-date">${dateLabel}</span>` : ""}</div>` +
+        (badges ? `<div class="badges">${badges}</div>` : "") +
+        `<span class="bundle-meta">${exerciseCountLabel(p.blocks.length)} · ca. ${fmtMinutes(programSeconds({ pauseS: bundleDef.pauseS, ...p }))}</span>` +
+        (p.description ? `<span class="bundle-desc">${esc(p.description)}</span>` : "");
       item.addEventListener("click", () => {
         originBundle = { def: bundleDef, code };
-        renderProgramIntro(p, code);
+        renderProgramIntro({ pauseS: bundleDef.pauseS, ...p }, code, key);
       });
       els.bundleList.appendChild(item);
     });
-    els.home.hidden = true;
-    els.bundleOverview.hidden = false;
+    showScreen("bundleOverview");
   }
 
-  function renderProgramIntro(def, code) {
-    els.programTitle.textContent = def.name || def.label;
+  function renderProgramIntro(def, code, key) {
+    const title = def.name || def.label || "Dein Programm";
+    els.programTitle.textContent = title;
+    els.programMeta.textContent = `${exerciseCountLabel(def.blocks.length)} · ca. ${fmtMinutes(programSeconds(def))}`;
+    els.programDesc.textContent = def.description || "";
+    els.programDesc.hidden = !def.description;
     if (def.introVideo) {
       els.introVideo.src = def.introVideo;
       els.introVideo.hidden = false;
@@ -738,81 +871,67 @@
       els.introVideo.hidden = true;
       els.introVideo.removeAttribute("src");
     }
+    const start = (i) => {
+      program = { def, chapterIndex: i, code, key, title, playedS: 0 };
+      playChapter(i);
+    };
     els.chapterList.innerHTML = "";
     def.blocks.forEach((block, i) => {
+      const ex = EXERCISES[block.exercise];
+      if (!ex) return;
       const row = document.createElement("div");
       row.className = "chapter-row";
       const main = document.createElement("button");
       main.className = "chapter-main";
-      main.innerHTML =
-        `<span class="num">${i + 1}</span><span class="info"><strong>${EXERCISES[block.exercise].title}</strong><span>${block.duration}s${block.palette ? " · " + block.palette : ""}</span></span>`;
-      main.addEventListener("click", () => {
-        program = { def, chapterIndex: i, code };
-        playChapter(i);
-      });
+      let detail = fmtMinutes(block.duration);
+      if (ex.usesColors) {
+        const cols = blockColors(block).colors;
+        detail += ` · ${colorDots(cols)} ${cols.map((c) => c.name).join(", ")}`;
+      }
+      main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(ex.title)}</strong><span>${detail}</span></span>`;
+      main.addEventListener("click", () => start(i));
       row.appendChild(main);
-      const video = block.video || EXERCISES[block.exercise].explainerVideo;
+      const video = block.video || ex.explainerVideo;
       if (video) {
         const playBtn = document.createElement("button");
         playBtn.className = "play-explainer";
+        playBtn.innerHTML = "&#9654; Video";
         playBtn.title = "Erklärvideo ansehen";
-        playBtn.textContent = "▶";
         playBtn.addEventListener("click", (e) => { e.stopPropagation(); openVideoModal(video); });
         row.appendChild(playBtn);
       }
       els.chapterList.appendChild(row);
     });
-    els.programStartBtn.onclick = () => {
-      program = { def, chapterIndex: 0, code };
-      playChapter(0);
-    };
-    els.home.hidden = true;
-    els.bundleOverview.hidden = true;
-    els.programIntro.hidden = false;
+    els.programStartBtn.onclick = () => start(0);
+    showScreen("programIntro");
   }
 
-  if (els.programGoBtn) {
-    els.programGoBtn.addEventListener("click", () => {
-      const code = normCode(els.programCodeInput.value || "");
-      if (code) openProgramIntro(code);
-    });
-  }
-  if (els.programCodeInput) {
-    els.programCodeInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") els.programGoBtn.click();
-    });
-  }
-  if (els.programBackToHome) {
-    els.programBackToHome.addEventListener("click", () => {
-      els.programIntro.hidden = true;
-      if (originBundle) {
-        openBundleOverview(originBundle.def, originBundle.code);
-      } else {
-        els.home.hidden = false;
-      }
-    });
-  }
-  if (els.bundleBackToHome) {
-    els.bundleBackToHome.addEventListener("click", () => {
-      els.bundleOverview.hidden = true;
-      els.home.hidden = false;
-    });
-  }
+  els.programGoBtn.addEventListener("click", () => {
+    const code = normCode(els.programCodeInput.value || "");
+    if (code) openProgramIntro(code);
+  });
+  els.programCodeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") els.programGoBtn.click(); });
+  els.programCodeInput.addEventListener("input", () => { els.programError.hidden = true; });
+  els.programBackToHome.addEventListener("click", () => {
+    if (originBundle) openBundleOverview(originBundle.def, originBundle.code);
+    else showScreen("home");
+  });
+  els.bundleBackToHome.addEventListener("click", () => { originBundle = null; showScreen("home"); });
 
-  // A bare #token in the artifact's link (e.g. .../artifact/xyz#julia-1)
-  // auto-opens that client's programme - no code typing needed.
-  if (location.hash && location.hash.length > 1) {
+  // A #code in the link (…/fwmc-Training-app/#abc123) opens that programme
+  // directly - no typing needed. Also reacts when only the hash changes.
+  function openFromHash() {
+    if (!location.hash || location.hash.length < 2) return;
     const tokenCode = normCode(decodeURIComponent(location.hash.slice(1)));
-    if (tokenCode) {
-      if (els.programCodeInput) els.programCodeInput.value = tokenCode;
-      openProgramIntro(tokenCode);
-    }
+    if (!tokenCode) return;
+    els.programCodeInput.value = tokenCode;
+    openProgramIntro(tokenCode);
   }
+  window.addEventListener("hashchange", openFromHash);
 
-  // ---- Featured programmes: public showcase examples, no code needed ----
+  // ---- Featured programmes: public examples, no code needed ----
   const FEATURED_VISIBLE = 3;
   function renderFeaturedPrograms() {
-    if (!els.featuredGrid) return;
     const entries = Object.entries(PROGRAMS).filter(([, def]) => def.featured);
     if (entries.length === 0) { els.featuredPrograms.hidden = true; return; }
     els.featuredPrograms.hidden = false;
@@ -821,25 +940,23 @@
       const card = document.createElement("button");
       card.className = "featured-card";
       if (i >= FEATURED_VISIBLE) card.classList.add("hidden-extra");
-      card.innerHTML = `<span class="fc-title">${def.name}</span><span class="fc-desc">${def.description || ""}</span>`;
+      card.innerHTML =
+        `<span class="fc-title">${esc(def.name)}</span>` +
+        `<span class="fc-desc">${esc(def.description || "")}</span>` +
+        `<span class="fc-meta">${exerciseCountLabel(def.blocks.length)} · ca. ${fmtMinutes(programSeconds(def))}</span>`;
       card.addEventListener("click", () => openProgramIntro(code));
       els.featuredGrid.appendChild(card);
     });
-    if (entries.length > FEATURED_VISIBLE) {
-      els.featuredMoreBtn.hidden = false;
-      els.featuredMoreBtn.dataset.expanded = "0";
-      els.featuredMoreBtn.textContent = "Weitere anzeigen";
-      els.featuredMoreBtn.onclick = () => {
-        const expanded = els.featuredMoreBtn.dataset.expanded === "1";
-        els.featuredGrid.querySelectorAll(".featured-card").forEach((c, idx) => {
-          if (idx >= FEATURED_VISIBLE) c.classList.toggle("hidden-extra", expanded);
-        });
-        els.featuredMoreBtn.dataset.expanded = expanded ? "0" : "1";
-        els.featuredMoreBtn.textContent = expanded ? "Weitere anzeigen" : "Weniger anzeigen";
-      };
-    } else {
-      els.featuredMoreBtn.hidden = true;
-    }
+    els.featuredMoreBtn.hidden = entries.length <= FEATURED_VISIBLE;
+    els.featuredMoreBtn.dataset.expanded = "0";
+    els.featuredMoreBtn.onclick = () => {
+      const expanded = els.featuredMoreBtn.dataset.expanded === "1";
+      els.featuredGrid.querySelectorAll(".featured-card").forEach((c, idx) => {
+        if (idx >= FEATURED_VISIBLE) c.classList.toggle("hidden-extra", expanded);
+      });
+      els.featuredMoreBtn.dataset.expanded = expanded ? "0" : "1";
+      els.featuredMoreBtn.textContent = expanded ? "Weitere anzeigen" : "Weniger anzeigen";
+    };
   }
   renderFeaturedPrograms();
 
@@ -848,11 +965,16 @@
   let wakeLock = null;
   let session = null;
 
+  // 3-2-1 lead-in with the exercise's one-line task; returns its length.
+  function pushCountdown(schedule, cfg) {
+    for (let n = 3; n >= 1; n--) schedule.push({ t0: 3 - n, t1: 4 - n, kind: "count", payload: { n, task: cfg.task } });
+    return 3;
+  }
+
   function buildArrowSchedule(cfg, rng) {
     const directions = cfg.dirset === "diag" ? DIR_DIAG : cfg.dirset === 8 ? DIR8 : DIR4;
     const schedule = [];
-    let t = 0;
-    for (let n = 3; n >= 1; n--) { schedule.push({ t0: t, t1: t + 1, kind: "count", payload: { n } }); t += 1; }
+    let t = pushCountdown(schedule, cfg);
     let last = null;
     const show = state.stimulusS;
     while (t < state.duration) {
@@ -877,18 +999,14 @@
 
   function buildStroopSchedule(cfg, rng) {
     const schedule = [];
-    let t = 0;
-    for (let n = 3; n >= 1; n--) { schedule.push({ t0: t, t1: t + 1, kind: "count", payload: { n } }); t += 1; }
+    let t = pushCountdown(schedule, cfg);
     const instruction = "Sag laut die SCHRIFTFARBE (nicht das Wort)";
     const show = state.stimulusS;
     while (t < state.duration) {
       const wIdx = Math.floor(rng() * STROOP_COLORS.length);
       const inkIdx = pick(STROOP_COLORS, [wIdx], rng);
       let bg = "#ffffff";
-      if (cfg.bg) {
-        const bgIdx = pick(STROOP_COLORS, [wIdx, inkIdx], rng);
-        bg = STROOP_COLORS[bgIdx].hex;
-      }
+      if (cfg.bg) bg = STROOP_COLORS[pick(STROOP_COLORS, [wIdx, inkIdx], rng)].hex;
       const word = STROOP_COLORS[wIdx].name;
       const ink = STROOP_COLORS[inkIdx].hex;
       const pause = randInterval(rng);
@@ -901,8 +1019,7 @@
 
   function buildCrossModalSchedule(cfg, rng) {
     const schedule = [];
-    let t = 0;
-    for (let n = 3; n >= 1; n--) { schedule.push({ t0: t, t1: t + 1, kind: "count", payload: {} }); t += 1; }
+    let t = pushCountdown(schedule, cfg);
     const show = state.stimulusS;
     let last = null;
     while (t < state.duration) {
@@ -937,13 +1054,12 @@
   }
 
   function buildVTSchedule(cfg, rng) {
-    const palette = PALETTES[state.palette];
+    const colors = active.colors;
     const schedule = [];
-    let t = 0;
-    for (let n = 3; n >= 1; n--) { schedule.push({ t0: t, t1: t + 1, kind: "count", payload: { n } }); t += 1; }
+    let t = pushCountdown(schedule, cfg);
     const show = state.stimulusS;
     while (t < state.duration) {
-      const color = palette.colors[Math.floor(rng() * palette.colors.length)];
+      const color = colors[Math.floor(rng() * colors.length)];
       const angle = rng() < 0.5 ? 90 : 270;
       const pause = randInterval(rng);
       schedule.push({ t0: t, t1: t + show, kind: "vt", payload: { angle, bg: color.hex } });
@@ -954,13 +1070,12 @@
   }
 
   function buildVRWRealSchedule(cfg, rng) {
-    const palette = PALETTES[state.palette];
+    const colors = active.colors;
     const schedule = [];
-    let t = 0;
-    for (let n = 3; n >= 1; n--) { schedule.push({ t0: t, t1: t + 1, kind: "count", payload: { n } }); t += 1; }
+    let t = pushCountdown(schedule, cfg);
     const show = state.stimulusS;
     while (t < state.duration) {
-      const color = palette.colors[Math.floor(rng() * palette.colors.length)];
+      const color = colors[Math.floor(rng() * colors.length)];
       const angle = rng() < 0.5 ? 90 : 270;
       const direct = rng() < 0.5;
       const pause = randInterval(rng);
@@ -971,11 +1086,29 @@
     return { schedule, total: t };
   }
 
+  function buildScheduleFor(cfg, rng) {
+    return cfg.type === "stroop" ? buildStroopSchedule(cfg, rng) :
+      cfg.type === "cross" ? buildCrossModalSchedule(cfg, rng) :
+      cfg.type === "vt" ? buildVTSchedule(cfg, rng) :
+      cfg.type === "vrw-real" ? buildVRWRealSchedule(cfg, rng) :
+      buildArrowSchedule(cfg, rng);
+  }
+
   function onEnterFrame(frame) {
     if (frame.kind !== "cross") return;
     const p = frame.payload;
     if (p.mode === "audio" || p.mode === "conflict") speakWord(p.word);
     else if (p.mode === "invert") playBeep();
+  }
+
+  // Segmented progress bar: one segment per exercise of the programme.
+  function buildProgressTrack(count) {
+    els.progressTrack.innerHTML = Array.from({ length: count }, () => `<span class="seg"><span class="fill"></span></span>`).join("");
+  }
+  function setProgress(index, fraction) {
+    els.progressTrack.querySelectorAll(".seg .fill").forEach((f, i) => {
+      f.style.width = (i < index ? 100 : i === index ? Math.min(100, fraction * 100) : 0) + "%";
+    });
   }
 
   function tick(now) {
@@ -993,168 +1126,227 @@
       finishSession();
       return;
     }
-    els.timeEl.textContent = Math.max(0, Math.ceil(session.total - elapsed)) + "s";
+    const remaining = fmtClock(session.total - elapsed);
+    els.timeEl.textContent = program ? `Übung ${program.chapterIndex + 1}/${program.def.blocks.length} · ${remaining}` : remaining;
+    setProgress(program ? program.chapterIndex : 0, elapsed / session.total);
     raf = requestAnimationFrame(tick);
+  }
+
+  // Adds the time spent in the current exercise to the programme total.
+  function accountSession() {
+    if (!session) return 0;
+    const spent = Math.min((performance.now() - session.startTime) / 1000, session.total);
+    if (program) program.playedS += spent;
+    session = null;
+    return spent;
   }
 
   function applyBlockToState(block) {
     state.exercise = block.exercise;
-    if (block.palette) state.palette = block.palette;
     state.sequence = block.sequence || "frei";
     state.duration = block.duration;
     state.stimulusS = block.stimulusS ?? 1.5;
     state.intervalMin = block.intervalMin ?? 2;
     state.intervalMax = block.intervalMax ?? 4;
+    active = blockColors(block);
   }
 
-  function buildScheduleFor(cfg, rng) {
-    return cfg.type === "stroop" ? buildStroopSchedule(cfg, rng) :
-      cfg.type === "cross" ? buildCrossModalSchedule(cfg, rng) :
-      cfg.type === "vt" ? buildVTSchedule(cfg, rng) :
-      cfg.type === "vrw-real" ? buildVRWRealSchedule(cfg, rng) :
-      buildArrowSchedule(cfg, rng);
+  async function requestWakeLock() {
+    try { if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {}
   }
 
-  async function playChapter(idx) {
-    if (!program) return;
-    if (idx < 0) idx = 0;
-    if (idx >= program.def.blocks.length) { finishProgram(); return; }
-    if (raf) cancelAnimationFrame(raf);
-    if (window.speechSynthesis) speechSynthesis.cancel();
-    program.chapterIndex = idx;
-    const block = program.def.blocks[idx];
-    applyBlockToState(block);
-    els.home.hidden = true;
-    els.programIntro.hidden = true;
-    els.ready.hidden = true;
-    els.player.hidden = false;
+  function hideOverlays() {
     els.donePanel.hidden = true;
     els.programDonePanel.hidden = true;
     els.pauseScreen.hidden = true;
+    stopPauseTimers();
+  }
+
+  function runSession() {
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.player.hidden = false;
     els.playerBar.hidden = false;
-    els.liveNav.hidden = false;
+    els.progressTrack.hidden = false;
     fitCanvas();
     ensureAudioCtx();
-    const cfg = EXERCISES[state.exercise];
-    const rng = makeRng();
-    const built = buildScheduleFor(cfg, rng);
+    const built = buildScheduleFor(EXERCISES[state.exercise], makeRng());
     session = { ...built, startTime: performance.now(), lastIndex: -1 };
-    const label = `Kapitel ${idx + 1}/${program.def.blocks.length}`;
-    els.chapterLabel.textContent = label;
-    els.liveChapterLabel.textContent = label;
-    try { if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {}
+    requestWakeLock();
     raf = requestAnimationFrame(tick);
   }
 
-  if (els.liveRestartBtn) els.liveRestartBtn.addEventListener("click", () => { if (program) playChapter(program.chapterIndex); });
-  if (els.liveEndBtn) els.liveEndBtn.addEventListener("click", () => finishSession());
-  if (els.livePrevBtn) els.livePrevBtn.addEventListener("click", () => { if (program) playChapter(program.chapterIndex - 1); });
-  if (els.liveNextBtn) els.liveNextBtn.addEventListener("click", () => { if (program) playChapter(program.chapterIndex + 1); });
+  function playChapter(idx) {
+    if (!program) return;
+    if (idx < 0) idx = 0;
+    if (raf) cancelAnimationFrame(raf);
+    accountSession();
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    hideOverlays();
+    if (idx >= program.def.blocks.length) { finishProgram(); return; }
+    program.chapterIndex = idx;
+    applyBlockToState(program.def.blocks[idx]);
+    buildProgressTrack(program.def.blocks.length);
+    els.liveNav.hidden = false;
+    runSession();
+  }
 
+  els.liveRestartBtn.addEventListener("click", () => { if (program) playChapter(program.chapterIndex); });
+  els.liveEndBtn.addEventListener("click", () => finishSession());
+  els.livePrevBtn.addEventListener("click", () => { if (program) playChapter(program.chapterIndex - 1); });
+  els.liveNextBtn.addEventListener("click", () => { if (program) playChapter(program.chapterIndex + 1); });
+
+  // ---- Pause between programme exercises ----
   let pauseTimer = null;
+  let breathTimer = null;
   let pauseRemaining = 0;
   let pausePaused = false;
 
+  function stopPauseTimers() {
+    if (pauseTimer) clearTimeout(pauseTimer);
+    if (breathTimer) clearInterval(breathTimer);
+    pauseTimer = breathTimer = null;
+    els.breath.classList.remove("run");
+  }
+
   function startPause() {
     const def = program.def;
-    const block = def.blocks[program.chapterIndex];
-    pauseRemaining = block.pauseS ?? def.pauseS ?? 15;
+    const nextBlock = def.blocks[program.chapterIndex + 1];
+    if (!nextBlock) { finishProgram(); return; }
+    pauseRemaining = nextBlock.pauseS ?? def.pauseS ?? 15;
     pausePaused = false;
     els.pauseToggleBtn.textContent = "Pause verlängern";
+    els.pauseProgress.textContent = `Übung ${program.chapterIndex + 1} von ${def.blocks.length} geschafft`;
+    const ex = EXERCISES[nextBlock.exercise];
+    els.nextTitle.textContent = ex.title;
+    els.nextTask.textContent = ex.task || "";
     els.pauseScreen.hidden = false;
     els.playerBar.hidden = true;
     els.liveNav.hidden = true;
-    const nextBlock = def.blocks[program.chapterIndex + 1];
-    els.nextPreview.textContent = nextBlock ? "Nächstes: " + EXERCISES[nextBlock.exercise].title : "Letztes Kapitel";
-    els.chapterLabel.textContent = `Kapitel ${program.chapterIndex + 1}/${def.blocks.length}`;
+    setProgress(program.chapterIndex + 1, 0);
+    // Breathing guide: 4 s in, 4 s out, synced with the CSS animation.
+    let inhale = true;
+    els.breathLabel.textContent = "Einatmen";
+    els.breath.classList.remove("run");
+    void els.breath.offsetWidth;
+    els.breath.classList.add("run");
+    breathTimer = setInterval(() => {
+      inhale = !inhale;
+      els.breathLabel.textContent = inhale ? "Einatmen" : "Ausatmen";
+    }, 4000);
     tickPause();
   }
   function tickPause() {
     if (pauseTimer) clearTimeout(pauseTimer);
-    els.pauseCountdown.textContent = Math.max(0, Math.ceil(pauseRemaining)) + "s";
+    els.pauseCountdown.textContent = Math.max(0, Math.ceil(pauseRemaining));
     if (pausePaused) return;
     if (pauseRemaining <= 0) {
-      els.pauseScreen.hidden = true;
       playChapter(program.chapterIndex + 1);
       return;
     }
     pauseTimer = setTimeout(() => { pauseRemaining -= 1; tickPause(); }, 1000);
   }
-  if (els.pauseToggleBtn) {
-    els.pauseToggleBtn.addEventListener("click", () => {
-      pausePaused = !pausePaused;
-      els.pauseToggleBtn.textContent = pausePaused ? "Fortsetzen" : "Pause verlängern";
-      if (!pausePaused) tickPause();
-    });
+  els.pauseToggleBtn.addEventListener("click", () => {
+    pausePaused = !pausePaused;
+    els.pauseToggleBtn.textContent = pausePaused ? "Countdown fortsetzen" : "Pause verlängern";
+    if (!pausePaused) tickPause();
+  });
+  els.pauseSkipBtn.addEventListener("click", () => playChapter(program.chapterIndex + 1));
+  els.prevChapterBtn.addEventListener("click", () => playChapter(program.chapterIndex - 1));
+  els.restartChapterBtn.addEventListener("click", () => playChapter(program.chapterIndex));
+  els.nextChapterBtn.addEventListener("click", () => playChapter(program.chapterIndex + 1));
+  els.pauseAbortBtn.addEventListener("click", () => abortTraining());
+
+  function releaseWakeLock() {
+    if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
   }
-  if (els.prevChapterBtn) els.prevChapterBtn.addEventListener("click", () => { if (pauseTimer) clearTimeout(pauseTimer); playChapter(program.chapterIndex - 1); });
-  if (els.restartChapterBtn) els.restartChapterBtn.addEventListener("click", () => { if (pauseTimer) clearTimeout(pauseTimer); playChapter(program.chapterIndex); });
-  if (els.nextChapterBtn) els.nextChapterBtn.addEventListener("click", () => { if (pauseTimer) clearTimeout(pauseTimer); playChapter(program.chapterIndex + 1); });
-  if (els.pauseAbortBtn) els.pauseAbortBtn.addEventListener("click", () => stopToHome());
 
   function finishProgram() {
+    if (raf) cancelAnimationFrame(raf);
+    accountSession();
+    releaseWakeLock();
+    stopPauseTimers();
     els.pauseScreen.hidden = true;
-    els.programDonePanel.hidden = false;
-    els.playerBar.hidden = true;
-  }
-  if (els.programAgainBtn) {
-    els.programAgainBtn.addEventListener("click", () => { if (program) playChapter(0); });
-  }
-  if (els.programDoneBackBtn) {
-    els.programDoneBackBtn.addEventListener("click", () => stopToHome());
-  }
-
-  async function startSession() {
-    const cfg = EXERCISES[state.exercise];
-    els.ready.hidden = true;
-    els.player.hidden = false;
-    els.donePanel.hidden = true;
-    els.playerBar.hidden = false;
     els.liveNav.hidden = true;
-    fitCanvas();
-    ensureAudioCtx();
-    const rng = makeRng();
-    const built = buildScheduleFor(cfg, rng);
-    session = { ...built, startTime: performance.now(), lastIndex: -1 };
-    try { if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {}
-    raf = requestAnimationFrame(tick);
+    els.playerBar.hidden = true;
+    setProgress(program.def.blocks.length, 0);
+    const played = program.playedS;
+    els.programDoneSummary.textContent = `${exerciseCountLabel(program.def.blocks.length)} · ${fmtMinutes(played)} Training`;
+    const id = addHistory({ kind: "program", title: program.title, progKey: program.key, seconds: Math.round(played) });
+    renderRating(els.programRating, id);
+    els.programDoneBackBtn.textContent = originBundle ? "Zurück zu meinen Programmen" : "Zur Startseite";
+    els.programDonePanel.hidden = false;
+  }
+  els.programAgainBtn.addEventListener("click", () => {
+    if (!program) return;
+    program.playedS = 0;
+    playChapter(0);
+  });
+  els.programDoneBackBtn.addEventListener("click", () => {
+    leavePlayer();
+    if (originBundle) openBundleOverview(originBundle.def, originBundle.code);
+    else showScreen("home");
+  });
+
+  // ---- Single exercise ----
+  function startSession() {
+    program = null;
+    hideOverlays();
+    active = { colors: keysToColors(state.colors), seedKey: state.colors.join("-") };
+    buildProgressTrack(1);
+    els.liveNav.hidden = true;
+    runSession();
   }
 
   function finishSession() {
     if (raf) cancelAnimationFrame(raf);
-    session = null;
-    if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+    const spent = accountSession();
+    if (window.speechSynthesis) speechSynthesis.cancel();
     els.liveNav.hidden = true;
     if (program) { startPause(); return; }
+    releaseWakeLock();
+    setProgress(1, 0);
+    const ex = EXERCISES[state.exercise];
+    els.doneSummary.textContent = `${ex.title} · ${fmtMinutes(spent)}`;
+    const id = addHistory({ kind: "exercise", title: ex.title, seconds: Math.round(spent) });
+    renderRating(els.doneRating, id);
     els.donePanel.hidden = false;
     els.playerBar.hidden = true;
   }
 
-  function stopToHome() {
+  function leavePlayer() {
     if (raf) cancelAnimationFrame(raf);
     session = null;
-    if (pauseTimer) clearTimeout(pauseTimer);
     program = null;
-    if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+    stopPauseTimers();
+    releaseWakeLock();
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     els.fsHint.hidden = true;
     els.liveNav.hidden = true;
     if (window.speechSynthesis) speechSynthesis.cancel();
     els.player.hidden = true;
-    els.pauseScreen.hidden = true;
-    els.programDonePanel.hidden = true;
-    els.programIntro.hidden = true;
-    els.bundleOverview.hidden = true;
-    els.home.hidden = false;
-    els.ready.hidden = true;
+    hideOverlays();
+  }
+  function stopToHome() {
+    leavePlayer();
+    originBundle = null;
+    showScreen("home");
+  }
+  // "Beenden" mid-training: back to where the training was started from.
+  function abortTraining() {
+    const wasProgram = !!program;
+    leavePlayer();
+    if (wasProgram) showScreen("programIntro");
+    else openReady(state.exercise, els.readyIcon.innerHTML);
   }
 
   els.startBtn.addEventListener("click", startSession);
-  els.backBtn.addEventListener("click", stopToHome);
+  els.backBtn.addEventListener("click", abortTraining);
   els.doneBack.addEventListener("click", stopToHome);
   els.again.addEventListener("click", startSession);
+
+  // ---- Fullscreen ----
   function updateFsBtnLabel() {
-    els.fsBtn.textContent = document.fullscreenElement ? "Vollbild verlassen" : "Vollbild";
+    els.fsBtn.textContent = document.fullscreenElement ? "Vollbild aus" : "Vollbild";
   }
   document.addEventListener("fullscreenchange", updateFsBtnLabel);
   els.fsBtn.addEventListener("click", () => {
@@ -1168,22 +1360,34 @@
       els.fsHint.hidden = false;
     }
   });
-  if (els.fsHintOpenBtn) {
-    els.fsHintOpenBtn.addEventListener("click", () => {
-      window.open(location.href, "_blank");
-    });
-  }
-  if (els.fsHintClose) {
-    els.fsHintClose.addEventListener("click", () => { els.fsHint.hidden = true; });
-  }
+  els.fsHintOpenBtn.addEventListener("click", () => window.open(location.href, "_blank"));
+  els.fsHintClose.addEventListener("click", () => { els.fsHint.hidden = true; });
   window.addEventListener("resize", () => { if (!els.player.hidden) fitCanvas(); });
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && session && wakeLock === null && "wakeLock" in navigator) {
-      navigator.wakeLock.request("screen").then((w) => (wakeLock = w)).catch(() => {});
-    }
+    if (document.visibilityState === "visible" && session && wakeLock === null) requestWakeLock();
   });
 
-  loadPrefs();
+  // ---- Tips sheet (shown once on first visit, reopenable) ----
+  const TIPS_KEY = "fwmc-tips-seen";
+  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (standalone) els.tipInstall.hidden = true;
+  else if (isIOS) els.tipInstallText.textContent = "Tippe in Safari auf „Teilen“ und dann auf „Zum Home-Bildschirm“ – dann startest du dein Training mit einem Tipp.";
+  function openTips() { els.tipsSheet.hidden = false; }
+  function closeTips() { els.tipsSheet.hidden = true; writeJSON(TIPS_KEY, true); }
+  els.tipsBtn.addEventListener("click", openTips);
+  els.tipsCloseBtn.addEventListener("click", closeTips);
+  els.tipsSheet.addEventListener("click", (e) => { if (e.target === els.tipsSheet) closeTips(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (!els.tipsSheet.hidden) closeTips();
+    if (!els.videoModal.hidden) closeVideoModal();
+  });
+
+  // ---- Start-up ----
+  renderHistory();
+  openFromHash();
+  if (!readJSON(TIPS_KEY, false)) openTips();
 
   // PWA: only meaningful on real hosting - service workers do not run
   // inside the Artifacts preview sandbox, so registration there is a
