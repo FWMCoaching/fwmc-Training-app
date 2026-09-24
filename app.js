@@ -978,6 +978,7 @@
     workoutRestSkipBtn: $("workoutRestSkipBtn"), workoutTabataView: $("workoutTabataView"), tabataPhaseLabel: $("tabataPhaseLabel"),
     tabataCountdown: $("tabataCountdown"), tabataExerciseName: $("tabataExerciseName"), tabataRoundLabel: $("tabataRoundLabel"),
     tabataExerciseIcon: $("tabataExerciseIcon"), tabataExerciseNote: $("tabataExerciseNote"),
+    tabataExerciseCustomNote: $("tabataExerciseCustomNote"),
     tabataPrevBtn: $("tabataPrevBtn"), tabataRestartBtn: $("tabataRestartBtn"), tabataSkipBtn: $("tabataSkipBtn"),
     workoutOverview: $("workoutOverview"), workoutProgressTrack: $("workoutProgressTrack"), workoutPlayerBar: $("workoutPlayerBar"),
     workoutBackBtn: $("workoutBackBtn"), workoutTimeEl: $("workoutTimeEl"), workoutFsBtn: $("workoutFsBtn"), workoutFsHint: $("workoutFsHint"),
@@ -3222,7 +3223,10 @@
         const ex = findWorkoutExercise(id);
         els.tabataExerciseName.textContent = ex.name;
         els.tabataExerciseIcon.innerHTML = workoutIconSVG(ex.icon);
-        els.tabataExerciseNote.textContent = [ex.note, note].filter(Boolean).join(" · ");
+        els.tabataExerciseNote.textContent = ex.note || "";
+        els.tabataExerciseNote.hidden = !ex.note;
+        els.tabataExerciseCustomNote.hidden = !note;
+        if (note) els.tabataExerciseCustomNote.innerHTML = `<strong>Deine Notiz:</strong> ${esc(note)}`;
       };
       if (frame.type === "prep") {
         showExercise(items[0].exercise, items[0].note);

@@ -736,6 +736,11 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .tabata-exercise{font-size:20px;font-weight:700;color:#16232a;text-align:center}
 .tabata-round{font-size:13px;color:#4f6168}
 .tabata-note{font-size:13px;color:#4f6168;text-align:center;max-width:34ch;margin-top:-4px}
+.tabata-note-custom{
+  font-size:13px;color:#005973;text-align:center;max-width:34ch;margin-top:4px;
+  padding:8px 14px;border-radius:10px;background:#e5f1f4;border:1px solid #2f95b8;
+}
+.tabata-note-custom strong{font-weight:700}
 .workout-tabata-view.phase-work{background:#e4f5e8}
 .workout-tabata-view.phase-rest{background:#fdece0}
 .workout-tabata-view.phase-work,.workout-tabata-view.phase-rest{
