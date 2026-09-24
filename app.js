@@ -3300,17 +3300,54 @@
   let rememberState = null; // { mode, level, cleared, positions, phase, nextExpected, startTime, timer, revealBaseS, revealStepS, trainingStart, trainingProgress }
   let rememberReturnScreen = "natHome";
 
-  function randomRememberPosition(existing) {
-    for (let attempt = 0; attempt < 20; attempt++) {
-      const x = 14 + Math.random() * 72;
-      const y = 20 + Math.random() * 60;
-      if (!existing.some((p) => Math.hypot(p.x - x, p.y - y) < 20)) return { x, y };
+  // Placement works in real pixels (not raw percent) so the no-overlap
+  // guarantee is exact regardless of the stage's aspect ratio - a phone
+  // screen is much taller than wide, so equal percent distances on the x
+  // and y axes are very different absolute distances. MIN_CENTER_PX is
+  // the marker's own diameter plus a visible gap, i.e. the true minimum
+  // centre-to-centre distance for two markers to never touch.
+  const REMEMBER_MARKER_PX = 72;
+  const REMEMBER_MIN_CENTER_PX = REMEMBER_MARKER_PX + 10;
+  function rememberStageBounds() {
+    const rect = els.rememberStage.getBoundingClientRect();
+    const w = rect.width || 390;
+    const h = rect.height || 600;
+    const half = REMEMBER_MARKER_PX / 2;
+    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY: 112, maxY: Math.max(112, h - 16) };
+  }
+  function randomRememberPixelPosition(existingPx, bounds) {
+    for (let attempt = 0; attempt < 300; attempt++) {
+      const x = bounds.minX + Math.random() * (bounds.maxX - bounds.minX);
+      const y = bounds.minY + Math.random() * (bounds.maxY - bounds.minY);
+      if (!existingPx.some((p) => Math.hypot(p.x - x, p.y - y) < REMEMBER_MIN_CENTER_PX)) return { x, y };
     }
-    return { x: 14 + Math.random() * 72, y: 20 + Math.random() * 60 };
+    // Crowded fallback (many markers in a small area): scan a fine grid of
+    // candidates and take whichever is farthest from every existing marker,
+    // so it's always the best available spot rather than a blind overlap.
+    let best = null, bestDist = -1;
+    const STEPS = 24;
+    for (let gx = 0; gx <= STEPS; gx++) {
+      for (let gy = 0; gy <= STEPS; gy++) {
+        const x = bounds.minX + (gx / STEPS) * (bounds.maxX - bounds.minX);
+        const y = bounds.minY + (gy / STEPS) * (bounds.maxY - bounds.minY);
+        const dist = existingPx.length ? Math.min(...existingPx.map((p) => Math.hypot(p.x - x, p.y - y))) : Infinity;
+        if (dist > bestDist) { bestDist = dist; best = { x, y }; }
+      }
+    }
+    return best;
   }
   function buildRememberPositions(count, keep) {
+    const bounds = rememberStageBounds();
     const positions = keep && rememberState ? rememberState.positions.slice(0, count - 1).map((p) => ({ ...p })) : [];
-    while (positions.length < count) positions.push({ num: positions.length + 1, ...randomRememberPosition(positions) });
+    // Re-derive each kept marker's current pixel spot from its stored
+    // percent (the stage size may differ from when it was first placed),
+    // so new markers are always checked against where things actually are.
+    const existingPx = positions.map((p) => ({ x: (p.x / 100) * bounds.w, y: (p.y / 100) * bounds.h }));
+    while (positions.length < count) {
+      const px = randomRememberPixelPosition(existingPx, bounds);
+      existingPx.push(px);
+      positions.push({ num: positions.length + 1, x: (px.x / bounds.w) * 100, y: (px.y / bounds.h) * 100 });
+    }
     return positions;
   }
   function renderRememberMarkers() {
@@ -3345,11 +3382,14 @@
     renderRememberMarkers();
   }
   // Manual skip nav (Trainingsmodus only): jump straight to a given level,
-  // never below the chosen starting number.
+  // clamped between the chosen starting number and a practical ceiling -
+  // past that many markers, a phone screen can no longer fit them all with
+  // a guaranteed non-overlapping gap.
+  const REMEMBER_MAX_LEVEL = 20;
   function rememberGoToLevel(newLevel) {
     if (!rememberState || rememberState.mode !== "training") return;
     if (rememberState.timer) clearTimeout(rememberState.timer);
-    rememberState.level = Math.max(rememberState.trainingStart, newLevel);
+    rememberState.level = Math.min(REMEMBER_MAX_LEVEL, Math.max(rememberState.trainingStart, newLevel));
     startRememberLevel();
   }
   function rememberClick(num, el) {
@@ -3365,7 +3405,7 @@
         els.rememberHint.textContent = "Richtig! Weiter geht's …";
         els.rememberStage.querySelectorAll(".remember-marker").forEach((m) => { m.textContent = m.dataset.num; m.style.pointerEvents = "none"; m.classList.remove("covered"); });
         const stayPut = rememberState.mode === "training" && !rememberState.trainingProgress;
-        if (!stayPut) rememberState.level += 1;
+        if (!stayPut) rememberState.level = Math.min(REMEMBER_MAX_LEVEL, rememberState.level + 1);
         rememberState.timer = setTimeout(startRememberLevel, 900);
       }
     } else {

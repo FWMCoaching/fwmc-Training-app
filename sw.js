@@ -2,7 +2,7 @@
 // the cache is only a fallback for offline use. Requests to other origins
 // (e.g. the programme-code API) are never cached, so a revoked code stops
 // working immediately.
-const CACHE = "fwmc-visual-training-v3";
+const CACHE = "fwmc-visual-training-v4";
 const ASSETS = [
   "./",
   "./index.html",
@@ -34,7 +34,10 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   if (new URL(req.url).origin !== self.location.origin) return;
   event.respondWith(
-    fetch(req)
+    // "no-store" so a browser HTTP cache never quietly answers this network-
+    // first fetch with a stale response right after a deploy - it must be an
+    // actual round trip, or the whole point of "network-first" is defeated.
+    fetch(req, { cache: "no-store" })
       .then((res) => {
         if (res.ok) {
           const copy = res.clone();
