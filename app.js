@@ -954,6 +954,7 @@
     workoutHistoryStats: $("workoutHistoryStats"), workoutHistoryList: $("workoutHistoryList"), workoutHistoryClearBtn: $("workoutHistoryClearBtn"), workoutHistoryMoreBtn: $("workoutHistoryMoreBtn"),
     workoutFeaturedPrograms: $("workoutFeaturedPrograms"), workoutFeaturedGrid: $("workoutFeaturedGrid"),
     workoutTabataStartCard: $("workoutTabataStartCard"),
+    natHome: $("natHome"), natPeripherPanel: $("natPeripherPanel"), natRememberPanel: $("natRememberPanel"), natFlashPanel: $("natFlashPanel"),
     workoutBundleOverview: $("workoutBundleOverview"), workoutBundleBackToHome: $("workoutBundleBackToHome"),
     workoutBundleTitle: $("workoutBundleTitle"), workoutBundleList: $("workoutBundleList"),
     workoutProgramIntro: $("workoutProgramIntro"), workoutProgramBackToHome: $("workoutProgramBackToHome"),
@@ -999,7 +1000,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -1018,7 +1019,22 @@
         b.classList.toggle("active", on);
         b.setAttribute("aria-selected", on ? "true" : "false");
       });
-      showScreen(sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : "home");
+      showScreen(sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "nat" ? "natHome" : "home");
+    });
+  });
+
+  // ---- NAT sub-navigation (second-level tabs within the NAT section) ----
+  document.querySelectorAll(".sub-tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const sub = btn.dataset.natSub;
+      document.querySelectorAll(".sub-tab").forEach((b) => {
+        const on = b.dataset.natSub === sub;
+        setActive(b, on);
+        b.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      els.natPeripherPanel.hidden = sub !== "peripher";
+      els.natRememberPanel.hidden = sub !== "remember";
+      els.natFlashPanel.hidden = sub !== "flash";
     });
   });
   document.querySelectorAll("[data-open-combo]").forEach((btn) => btn.addEventListener("click", () => openComboScreen()));
@@ -3591,7 +3607,7 @@
   function currentHomeScreen() {
     const active = document.querySelector(".section-tab.active");
     const sec = active ? active.dataset.section : "visual";
-    return sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : "home";
+    return sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "nat" ? "natHome" : "home";
   }
 
   function startComboProgram(def, code, key, fallbackReturnScreen) {

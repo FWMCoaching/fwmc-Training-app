@@ -27,6 +27,7 @@
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
     <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
     <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
+    <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
   </nav>
 
   <button class="combo-entry-link" data-open-combo="1">Komplett-Programm aus mehreren Bereichen &rarr;</button>
@@ -237,6 +238,7 @@
     <button class="section-tab active" data-section="breath" role="tab" aria-selected="true">Atemtraining</button>
     <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
     <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
+    <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
   </nav>
 
   <button class="combo-entry-link" data-open-combo="1">Komplett-Programm aus mehreren Bereichen &rarr;</button>
@@ -308,6 +310,7 @@
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
     <button class="section-tab active" data-section="movement" role="tab" aria-selected="true">Movement</button>
     <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
+    <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
   </nav>
 
   <button class="combo-entry-link" data-open-combo="1">Komplett-Programm aus mehreren Bereichen &rarr;</button>
@@ -364,6 +367,7 @@
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
     <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
     <button class="section-tab active" data-section="workout" role="tab" aria-selected="true">Workout</button>
+    <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
   </nav>
 
   <button class="combo-entry-link" data-open-combo="1">Komplett-Programm aus mehreren Bereichen &rarr;</button>
@@ -414,6 +418,65 @@
       <span class="fc-title">Intervall-Timer starten</span>
       <span class="fc-desc">W&auml;hle eine &Uuml;bung, Arbeits- und Pausenzeit sowie die Rundenzahl &ndash; l&auml;uft dann automatisch durch.</span>
     </button>
+  </section>
+
+  <footer class="site-footer">
+    <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong><span class="beta">Beta</span></p>
+    <nav>
+      <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
+      <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a>
+      <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutz</a>
+    </nav>
+  </footer>
+</div>
+
+<div class="screen" id="natHome" hidden>
+  <header class="brandbar">
+    <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC Online-Training</em>
+  </header>
+
+  <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
+    <button class="section-tab active" data-section="nat" role="tab" aria-selected="true">NAT</button>
+  </nav>
+
+  <button class="combo-entry-link" data-open-combo="1">Komplett-Programm aus mehreren Bereichen &rarr;</button>
+
+  <section class="hero">
+    <div class="hero-kicker">NAT <span class="placeholder-tag">Name noch offen</span></div>
+    <h1 class="hero-title">Wahrnehmung. Ged&auml;chtnis. Reaktion.</h1>
+    <p class="hero-text">Drei neue &Uuml;bungsformen &ndash; hier entsteht als N&auml;chstes der Feinschliff.</p>
+  </section>
+
+  <nav class="sub-switch" role="tablist" aria-label="NAT Unterbereich">
+    <button class="sub-tab active" data-nat-sub="peripher" role="tab" aria-selected="true">Periphere Wahrnehmung</button>
+    <button class="sub-tab" data-nat-sub="remember" role="tab" aria-selected="false">Remember</button>
+    <button class="sub-tab" data-nat-sub="flash" role="tab" aria-selected="false">Flash Speicher Test</button>
+  </nav>
+
+  <section class="nat-panel" id="natPeripherPanel">
+    <div class="nat-panel-card">
+      <h3>Periphere Wahrnehmung</h3>
+      <p>Training des Sichtfelds am Rand des Blickfelds, w&auml;hrend der Blick fest geradeaus gerichtet bleibt. Der genaue Ablauf wird hier als N&auml;chstes gestaltet.</p>
+    </div>
+  </section>
+
+  <section class="nat-panel" id="natRememberPanel" hidden>
+    <div class="nat-panel-card">
+      <h3>Remember</h3>
+      <p>Merkf&auml;higkeits-&Uuml;bung. Der genaue Ablauf wird hier als N&auml;chstes gestaltet.</p>
+    </div>
+  </section>
+
+  <section class="nat-panel" id="natFlashPanel" hidden>
+    <div class="nat-panel-card">
+      <h3>Flash Speicher Test</h3>
+      <p>Kurzzeitged&auml;chtnis-Test mit kurz eingeblendeten Reizen. Der genaue Ablauf wird hier als N&auml;chstes gestaltet.</p>
+    </div>
   </section>
 
   <footer class="site-footer">
