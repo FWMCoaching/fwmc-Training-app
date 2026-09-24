@@ -503,7 +503,11 @@
   // fit the steady four-phase cycle above, so it gets its own engine and
   // its own settings/info object instead of a BREATH_PATTERNS entry.
   const WIMHOF_INFO = {
-    name: "Kraftvolle Atmung (Wim-Hof-Stil)",
+    // The asterisk + footnote (see wimhofReady in _body.html and the
+    // .footnote-mini styling) flags that "Wim-Hof-Stil" is a placeholder
+    // name Fabian still needs to clear legally (trademark/name rights)
+    // before this ships to real clients under that label.
+    name: "Kraftvolle Atmung (Wim-Hof-Stil)*",
     short: "Schnelle Atemzüge, dann die Luft anhalten.",
   };
   const WIMHOF_DEFAULTS = { breaths: 30, rounds: 3, breathPaceS: 1.7, recoveryHoldS: 15 };

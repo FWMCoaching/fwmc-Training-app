@@ -306,6 +306,7 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .ready-icon .icon-badge svg{width:32px;height:32px}
 .ready-icon .icon-tile{font-size:14px}
 .ready-trains{font-size:13.5px;color:var(--brand-deep);font-weight:600}
+.footnote-mini{font-size:11.5px;color:var(--ink-soft);margin-top:2px}
 .rules-box{
   font-size:14px;line-height:1.55;color:var(--ink);
   background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--brand);
