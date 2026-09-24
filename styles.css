@@ -671,13 +671,43 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
   background:var(--surface-2);color:var(--ink-soft);font-size:16px;cursor:pointer;
 }
 
-/* ---- Workout circuit builder: per-exercise duration stepper ---- */
+/* ---- Workout circuit builder: per-exercise duration stepper, icons, notes,
+   and custom exercises ---- */
 .circuit-duration{display:flex;align-items:center;gap:6px;flex:none}
 .circuit-step{
   width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:var(--surface);
   color:var(--ink);font-size:16px;font-weight:700;cursor:pointer;line-height:1;flex:none;
 }
 .circuit-duration-value{font-size:13px;font-weight:700;color:var(--ink);min-width:32px;text-align:center;font-variant-numeric:tabular-nums}
+.ca-icon{
+  flex:none;width:30px;height:30px;border-radius:50%;background:var(--brand);
+  display:flex;align-items:center;justify-content:center;
+}
+.ca-icon svg{width:18px;height:18px}
+.ca-text{flex:1;min-width:0}
+.chapter-row .ca-icon{width:26px;height:26px}
+.chapter-row .ca-icon svg{width:15px;height:15px}
+.custom-exercise-add-row{display:flex;align-items:center;gap:8px}
+.custom-exercise-add-row .combo-add-btn{flex:1}
+.custom-exercise-form{
+  display:flex;flex-direction:column;gap:8px;margin-top:10px;padding:12px;
+  border:1px dashed var(--line);border-radius:12px;background:var(--surface-2);
+}
+.custom-exercise-form input{
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;
+  font-family:inherit;color:var(--ink);background:var(--surface);
+}
+.custom-exercise-form-actions{display:flex;gap:8px}
+.custom-exercise-form-actions button{flex:1}
+.circuit-item-row{
+  display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);
+  background:var(--surface);border-radius:var(--radius);padding:12px 14px;box-shadow:var(--shadow);
+}
+.circuit-item-main{display:flex;align-items:center;gap:8px}
+.circuit-item-note{
+  border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;
+  font-family:inherit;color:var(--ink);background:var(--surface-2);width:100%;
+}
 
 /* ---- Workout ---- */
 .workout-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px 18px;overflow-y:auto}
@@ -697,9 +727,12 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .workout-overview-row .wo-num{flex:none;width:20px;height:20px;border-radius:50%;background:#eef3f4;color:#4f6168;font-size:11px;display:flex;align-items:center;justify-content:center}
 
 .tabata-phase-label{font-size:15px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#16232a}
+.tabata-icon{width:56px;height:56px;border-radius:50%;background:#007094;display:flex;align-items:center;justify-content:center}
+.tabata-icon svg{width:34px;height:34px}
 .tabata-countdown{font-family:"Magra",sans-serif;font-weight:700;font-size:88px;color:#16232a;font-variant-numeric:tabular-nums}
 .tabata-exercise{font-size:20px;font-weight:700;color:#16232a;text-align:center}
 .tabata-round{font-size:13px;color:#4f6168}
+.tabata-note{font-size:13px;color:#4f6168;text-align:center;max-width:34ch;margin-top:-4px}
 .workout-tabata-view.phase-work{background:#e4f5e8}
 .workout-tabata-view.phase-rest{background:#fdece0}
 .workout-tabata-view.phase-work,.workout-tabata-view.phase-rest{

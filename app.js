@@ -660,22 +660,74 @@
 
   // ==== Workout (placeholder name) ====
   // A small demo exercise library - real content (photos, precise coaching
-  // notes) is for Fabian to fill in later; the schema already carries an
-  // optional `image` per exercise for that.
+  // notes) is for Fabian to fill in later; the schema carries an optional
+  // `image` per exercise for that. Until then, `icon` points at a small
+  // abstract pictogram (see WORKOUT_ICONS) as at-least-a-picture stand-in.
   const WORKOUT_EXERCISES = {
-    kniebeuge: { name: "Kniebeugen", note: "Rücken gerade, Knie zeigen in Richtung der Zehen." },
-    liegestuetz: { name: "Liegestütze", note: "Körper bildet eine gerade Linie, Ellbogen nah am Körper." },
-    ausfallschritt: { name: "Ausfallschritte", note: "Oberkörper aufrecht, das vordere Knie nicht über die Zehenspitzen." },
-    plank: { name: "Unterarmstütz (Plank)", note: "Bauch anspannen, Hüfte nicht durchhängen lassen." },
-    hampelmann: { name: "Hampelmann", note: "Locker und im eigenen Tempo." },
-    bergsteiger: { name: "Bergsteiger", note: "Rücken flach, Knie zügig zur Brust ziehen." },
+    kniebeuge: {
+      name: "Kniebeugen", icon: "squat",
+      note: "Rücken gerade, Blick nach vorne. Knie zeigen in Richtung der Zehen, Gewicht bleibt auf den Fersen.",
+    },
+    liegestuetz: {
+      name: "Liegestütze", icon: "pushup",
+      note: "Körper bildet eine gerade Linie von Kopf bis Ferse. Ellbogen nah am Körper, Arme nicht ganz durchdrücken.",
+    },
+    ausfallschritt: {
+      name: "Ausfallschritte", icon: "lunge",
+      note: "Oberkörper aufrecht, großer Schritt nach vorne. Das vordere Knie bleibt hinter der Zehenspitze.",
+    },
+    plank: {
+      name: "Unterarmstütz (Plank)", icon: "plank",
+      note: "Bauch und Gesäß anspannen. Hüfte weder durchhängen lassen noch hochziehen, Ellbogen unter den Schultern.",
+    },
+    hampelmann: {
+      name: "Hampelmann", icon: "jumpingjack",
+      note: "Locker und im eigenen Tempo, weiche Knie beim Landen.",
+    },
+    bergsteiger: {
+      name: "Bergsteiger", icon: "mountainclimber",
+      note: "Rücken flach wie im Unterarmstütz, Knie zügig und kontrolliert zur Brust ziehen.",
+    },
   };
+  // Small abstract stick-figure pictograms - generic exercise iconography
+  // (the same kind of simple figure used everywhere from safety signage to
+  // fitness apps), not tied to any specific reference system.
+  const WORKOUT_ICONS = {
+    squat: `<circle cx="12" cy="4" r="2" fill="#fff"/><path d="M12 6 L12 11" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M12 7 L6 7 M12 7 L18 7" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M12 11 L8 15 L8 19 M12 11 L16 15 L16 19" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    pushup: `<circle cx="4" cy="10" r="2" fill="#fff"/><path d="M6 11 L18 11 L21 13" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 11 L9 17 M15 11 L15 17" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    lunge: `<circle cx="12" cy="4" r="2" fill="#fff"/><path d="M12 6 L12 12" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M12 12 L9 15 L9 19" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12 L17 15 L20 19" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8 L8 10 M12 8 L16 6" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    plank: `<circle cx="4" cy="9" r="2" fill="#fff"/><path d="M6 10 L20 14" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M9 10.7 L9 16" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M20 14 L17 18" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    jumpingjack: `<circle cx="12" cy="4" r="2" fill="#fff"/><path d="M12 6 L12 13" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M12 7 L5 2 M12 7 L19 2" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M12 13 L6 20 M12 13 L18 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    mountainclimber: `<circle cx="4" cy="9" r="2" fill="#fff"/><path d="M6 10 L18 15 L21 19" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 12 L8 13 L6 16" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 10.6 L9 16" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    custom: `<circle cx="7" cy="12" r="2.4" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="17" cy="12" r="2.4" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M9.4 12 L14.6 12" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>`,
+  };
+  function workoutIconSVG(key) {
+    return `<svg viewBox="0 0 24 24">${WORKOUT_ICONS[key] || WORKOUT_ICONS.custom}</svg>`;
+  }
+  // ---- Custom exercises: the client's own additions, alongside the built-in
+  // library above. Stored locally, selectable and reusable just like a
+  // built-in exercise (they just get the generic "custom" icon).
+  const CUSTOM_WORKOUT_KEY = "fwmc-workout-custom-v1";
+  function loadCustomWorkoutExercises() {
+    const list = readJSON(CUSTOM_WORKOUT_KEY, []);
+    return Array.isArray(list) ? list : [];
+  }
+  function saveCustomWorkoutExercises(list) { writeJSON(CUSTOM_WORKOUT_KEY, list); }
+  let customWorkoutExercises = loadCustomWorkoutExercises();
+  function findWorkoutExercise(id) {
+    if (WORKOUT_EXERCISES[id]) return WORKOUT_EXERCISES[id];
+    const custom = customWorkoutExercises.find((c) => c.id === id);
+    return custom || { name: id, note: "", icon: "custom" };
+  }
+  function allWorkoutExerciseEntries() {
+    return [...Object.entries(WORKOUT_EXERCISES), ...customWorkoutExercises.map((c) => [c.id, c])];
+  }
   function circuitSummaryLabel(block) {
     return `Zirkel · ${block.items.length} Übung${block.items.length === 1 ? "" : "en"}` + (block.sets > 1 ? ` × ${block.sets} Sätze` : "");
   }
   function workoutBlockLabel(block) {
     if (block.kind === "circuit") return circuitSummaryLabel(block);
-    return WORKOUT_EXERCISES[block.exercise] ? WORKOUT_EXERCISES[block.exercise].name : block.exercise;
+    return findWorkoutExercise(block.exercise).name;
   }
   function workoutBlockMeta(block) {
     if (block.kind === "tabata") return `${block.rounds} Runden à ${block.workS}s/${block.restS}s`;
@@ -871,11 +923,16 @@
     workoutCircuitEmptyHint: $("workoutCircuitEmptyHint"), workoutCircuitList: $("workoutCircuitList"),
     workoutCircuitSetRestGroup: $("workoutCircuitSetRestGroup"),
     workoutCircuitDefaultWorkSlider: $("workoutCircuitDefaultWorkSlider"), workoutCircuitDefaultWorkValue: $("workoutCircuitDefaultWorkValue"),
+    workoutCircuitAddCustomBtn: $("workoutCircuitAddCustomBtn"), workoutCircuitCustomForm: $("workoutCircuitCustomForm"),
+    workoutCircuitCustomName: $("workoutCircuitCustomName"), workoutCircuitCustomNote: $("workoutCircuitCustomNote"),
+    workoutCircuitCustomCancelBtn: $("workoutCircuitCustomCancelBtn"), workoutCircuitCustomSaveBtn: $("workoutCircuitCustomSaveBtn"),
     workoutPlayer: $("workoutPlayer"), workoutRepsView: $("workoutRepsView"), workoutExerciseName: $("workoutExerciseName"),
     workoutSetInfo: $("workoutSetInfo"), workoutRepsBig: $("workoutRepsBig"), workoutNote: $("workoutNote"),
     workoutSetDoneBtn: $("workoutSetDoneBtn"), workoutRestBox: $("workoutRestBox"), workoutRestCountdown: $("workoutRestCountdown"),
     workoutRestSkipBtn: $("workoutRestSkipBtn"), workoutTabataView: $("workoutTabataView"), tabataPhaseLabel: $("tabataPhaseLabel"),
     tabataCountdown: $("tabataCountdown"), tabataExerciseName: $("tabataExerciseName"), tabataRoundLabel: $("tabataRoundLabel"),
+    tabataExerciseIcon: $("tabataExerciseIcon"), tabataExerciseNote: $("tabataExerciseNote"),
+    tabataPrevBtn: $("tabataPrevBtn"), tabataRestartBtn: $("tabataRestartBtn"), tabataSkipBtn: $("tabataSkipBtn"),
     workoutOverview: $("workoutOverview"), workoutProgressTrack: $("workoutProgressTrack"), workoutPlayerBar: $("workoutPlayerBar"),
     workoutBackBtn: $("workoutBackBtn"), workoutTimeEl: $("workoutTimeEl"), workoutFsBtn: $("workoutFsBtn"), workoutFsHint: $("workoutFsHint"),
     workoutFsHintOpenBtn: $("workoutFsHintOpenBtn"), workoutFsHintClose: $("workoutFsHintClose"),
@@ -2926,7 +2983,7 @@
 
   // ---- Reps mode: manual "Satz erledigt", optional rest countdown ----
   function startRepsBlock(block) {
-    const ex = WORKOUT_EXERCISES[block.exercise] || { name: block.exercise, note: "" };
+    const ex = findWorkoutExercise(block.exercise);
     workoutState = { kind: "reps", block, ex, setIndex: 1, startTime: performance.now() };
     renderRepsView();
     requestWakeLock();
@@ -2964,55 +3021,20 @@
   }
   els.workoutRestSkipBtn.addEventListener("click", () => advanceRepsSet());
 
-  // ---- Tabata / interval mode: prep, then work/rest per round ----
+  // ---- Tabata / circuit mode: a self-built sequence of one or several
+  // exercises, each with its own work time, separated by a rest, the whole
+  // sequence repeatable for several sets with a longer rest between sets.
+  // A plain single-exercise "tabata" block (kind: "tabata", from an older
+  // coach plan or a combo preset) is just a circuit with one item repeated
+  // as "sets" - it's translated into that shape here so both kinds share
+  // one engine, including the prev/restart/skip nav.
+  //
+  // Built as one flat, timed schedule up front (like the visual/breath
+  // engines) rather than a phase-by-phase state machine, so pausing/
+  // backgrounding compensation (see the shared visibilitychange handler)
+  // works for free via workoutState.startTime, and jumping to a given
+  // point is just moving that one timestamp.
   const TABATA_PREP_S = 5;
-  function startTabataBlock(block) {
-    const ex = WORKOUT_EXERCISES[block.exercise] || { name: block.exercise };
-    workoutState = { kind: "tabata", block, ex, phase: "prep", round: 1, phaseStart: performance.now(), sessionStart: performance.now() };
-    requestWakeLock();
-    workoutRaf = requestAnimationFrame(tabataTick);
-  }
-  function tabataTick(now) {
-    if (!workoutState || workoutState.kind !== "tabata") return;
-    const s = workoutState.block;
-    const elapsed = (now - workoutState.phaseStart) / 1000;
-    els.tabataExerciseName.textContent = workoutState.ex.name;
-    if (workoutState.phase === "prep") {
-      const remain = TABATA_PREP_S - elapsed;
-      els.tabataPhaseLabel.textContent = "Bereit machen";
-      els.tabataCountdown.textContent = Math.max(0, Math.ceil(remain));
-      els.tabataRoundLabel.textContent = `Runde 1 von ${s.rounds}`;
-      if (remain <= 0) { workoutState.phase = "work"; workoutState.phaseStart = now; }
-    } else if (workoutState.phase === "work") {
-      const remain = s.workS - elapsed;
-      els.tabataPhaseLabel.textContent = "Los!";
-      els.tabataCountdown.textContent = Math.max(0, Math.ceil(remain));
-      els.tabataRoundLabel.textContent = `Runde ${workoutState.round} von ${s.rounds}`;
-      els.workoutTabataView.classList.add("phase-work");
-      els.workoutTabataView.classList.remove("phase-rest");
-      if (remain <= 0) {
-        if (workoutState.round >= s.rounds) { finishWorkoutBlock(); return; }
-        workoutState.phase = "rest"; workoutState.phaseStart = now;
-      }
-    } else {
-      const remain = s.restS - elapsed;
-      els.tabataPhaseLabel.textContent = "Pause";
-      els.tabataCountdown.textContent = Math.max(0, Math.ceil(remain));
-      els.tabataRoundLabel.textContent = `Runde ${workoutState.round} von ${s.rounds}`;
-      els.workoutTabataView.classList.add("phase-rest");
-      els.workoutTabataView.classList.remove("phase-work");
-      if (remain <= 0) { workoutState.round += 1; workoutState.phase = "work"; workoutState.phaseStart = now; }
-    }
-    workoutRaf = requestAnimationFrame(tabataTick);
-  }
-
-  // ---- Circuit mode: a self-built sequence of several exercises, each with
-  // its own work time, separated by a rest, the whole sequence repeatable
-  // for several sets with a longer rest between sets. Built as one flat,
-  // timed schedule up front (like the visual/breath engines) rather than a
-  // phase-by-phase state machine, so pausing/backgrounding compensation
-  // (see the shared visibilitychange handler) works for free via
-  // workoutState.startTime.
   function buildCircuitSchedule(block) {
     const schedule = [];
     let t = 0;
@@ -3020,7 +3042,7 @@
     t += TABATA_PREP_S;
     for (let set = 1; set <= block.sets; set++) {
       block.items.forEach((item, i) => {
-        schedule.push({ t0: t, t1: t + item.workS, type: "work", set, itemIdx: i, exercise: item.exercise });
+        schedule.push({ t0: t, t1: t + item.workS, type: "work", set, itemIdx: i, exercise: item.exercise, note: item.note });
         t += item.workS;
         if (i < block.items.length - 1) {
           schedule.push({ t0: t, t1: t + block.restS, type: "rest", set, itemIdx: i });
@@ -3040,45 +3062,81 @@
     requestWakeLock();
     workoutRaf = requestAnimationFrame(circuitTick);
   }
+  function startTabataBlock(block) {
+    const circuitBlock = { items: [{ exercise: block.exercise, workS: block.workS }], restS: 0, sets: block.rounds, setRestS: block.restS };
+    const built = buildCircuitSchedule(circuitBlock);
+    workoutState = { kind: "circuit", block: circuitBlock, ex: findWorkoutExercise(block.exercise), schedule: built.schedule, total: built.total, startTime: performance.now() };
+    requestWakeLock();
+    workoutRaf = requestAnimationFrame(circuitTick);
+  }
   function circuitTick(now) {
     if (!workoutState || workoutState.kind !== "circuit") return;
     const elapsed = (now - workoutState.startTime) / 1000;
     if (elapsed >= workoutState.total) { finishWorkoutBlock(); return; }
+    els.workoutTimeEl.textContent = fmtClock(workoutState.total - elapsed);
     const frame = workoutState.schedule.find((f) => elapsed >= f.t0 && elapsed < f.t1);
     if (frame) {
       const remain = frame.t1 - elapsed;
       const totalSets = workoutState.block.sets;
-      const itemCount = workoutState.block.items.length;
+      const items = workoutState.block.items;
+      const itemCount = items.length;
+      const single = itemCount === 1; // an old-style single-exercise tabata block, shown as "Runde" not "Satz/Übung"
       els.tabataCountdown.textContent = Math.max(0, Math.ceil(remain));
       els.workoutTabataView.classList.remove("phase-work", "phase-rest");
-      if (frame.type === "prep") {
-        const first = WORKOUT_EXERCISES[workoutState.block.items[0].exercise] || {};
-        els.tabataPhaseLabel.textContent = "Bereit machen";
-        els.tabataExerciseName.textContent = first.name || "";
-        els.tabataRoundLabel.textContent = `Satz 1 von ${totalSets} · Übung 1 von ${itemCount}`;
-      } else if (frame.type === "work") {
-        const ex = WORKOUT_EXERCISES[frame.exercise] || { name: frame.exercise };
-        els.tabataPhaseLabel.textContent = "Los!";
+      const showExercise = (id, note) => {
+        const ex = findWorkoutExercise(id);
         els.tabataExerciseName.textContent = ex.name;
-        els.tabataRoundLabel.textContent = `Satz ${frame.set} von ${totalSets} · Übung ${frame.itemIdx + 1} von ${itemCount}`;
+        els.tabataExerciseIcon.innerHTML = workoutIconSVG(ex.icon);
+        els.tabataExerciseNote.textContent = [ex.note, note].filter(Boolean).join(" · ");
+      };
+      if (frame.type === "prep") {
+        showExercise(items[0].exercise, items[0].note);
+        els.tabataPhaseLabel.textContent = "Bereit machen";
+        els.tabataRoundLabel.textContent = single ? `Runde 1 von ${totalSets}` : `Satz 1 von ${totalSets} · Übung 1 von ${itemCount}`;
+      } else if (frame.type === "work") {
+        showExercise(frame.exercise, frame.note);
+        els.tabataPhaseLabel.textContent = "Los!";
+        els.tabataRoundLabel.textContent = single ? `Runde ${frame.set} von ${totalSets}` : `Satz ${frame.set} von ${totalSets} · Übung ${frame.itemIdx + 1} von ${itemCount}`;
         els.workoutTabataView.classList.add("phase-work");
       } else if (frame.type === "rest") {
-        const nextItem = workoutState.block.items[frame.itemIdx + 1];
-        const ex = nextItem ? (WORKOUT_EXERCISES[nextItem.exercise] || { name: nextItem.exercise }) : null;
+        const nextItem = items[frame.itemIdx + 1];
+        if (nextItem) showExercise(nextItem.exercise, nextItem.note);
         els.tabataPhaseLabel.textContent = "Pause";
-        els.tabataExerciseName.textContent = ex ? ex.name : "";
         els.tabataRoundLabel.textContent = `Satz ${frame.set} von ${totalSets} · gleich: Übung ${frame.itemIdx + 2} von ${itemCount}`;
         els.workoutTabataView.classList.add("phase-rest");
       } else if (frame.type === "setrest") {
-        const first = WORKOUT_EXERCISES[workoutState.block.items[0].exercise] || {};
+        showExercise(items[0].exercise, items[0].note);
         els.tabataPhaseLabel.textContent = "Satzpause";
-        els.tabataExerciseName.textContent = first.name || "";
-        els.tabataRoundLabel.textContent = `Satz ${frame.set + 1} von ${totalSets} beginnt gleich`;
+        els.tabataRoundLabel.textContent = single ? `Runde ${frame.set + 1} von ${totalSets} beginnt gleich` : `Satz ${frame.set + 1} von ${totalSets} beginnt gleich`;
         els.workoutTabataView.classList.add("phase-rest");
       }
     }
     workoutRaf = requestAnimationFrame(circuitTick);
   }
+
+  // ---- Skip back/restart/forward through the exercises, like the visual
+  // player's live-nav. Jumping just moves workoutState.startTime so the
+  // next tick's elapsed-time lookup lands on the target exercise's frame.
+  function circuitWorkFrames() {
+    return workoutState.schedule.filter((f) => f.type === "work");
+  }
+  function circuitCurrentWorkIndex() {
+    const frames = circuitWorkFrames();
+    const elapsed = (performance.now() - workoutState.startTime) / 1000;
+    let idx = 0;
+    for (let i = 0; i < frames.length; i++) if (frames[i].t0 <= elapsed) idx = i;
+    return idx;
+  }
+  function circuitJumpToWorkIndex(idx) {
+    if (!workoutState || workoutState.kind !== "circuit") return;
+    const frames = circuitWorkFrames();
+    if (idx >= frames.length) { finishWorkoutBlock(); return; }
+    const targetT = frames[Math.max(0, idx)].t0;
+    workoutState.startTime = performance.now() - targetT * 1000;
+  }
+  els.tabataPrevBtn.addEventListener("click", () => circuitJumpToWorkIndex(circuitCurrentWorkIndex() - 1));
+  els.tabataRestartBtn.addEventListener("click", () => circuitJumpToWorkIndex(circuitCurrentWorkIndex()));
+  els.tabataSkipBtn.addEventListener("click", () => circuitJumpToWorkIndex(circuitCurrentWorkIndex() + 1));
 
   // ---- Shared block completion ----
   function finishWorkoutBlock() {
@@ -3201,20 +3259,37 @@
 
   function renderWorkoutCircuitAddGrid() {
     els.workoutCircuitAddGrid.innerHTML = "";
-    Object.entries(WORKOUT_EXERCISES).forEach(([id, ex]) => {
+    allWorkoutExerciseEntries().forEach(([id, ex]) => {
+      const isCustom = !WORKOUT_EXERCISES[id];
       const count = workoutCircuitPrefs.items.filter((it) => it.exercise === id).length;
+      const wrap = document.createElement("div");
+      wrap.className = "custom-exercise-add-row";
       const btn = document.createElement("button");
       btn.className = "combo-add-btn";
-      btn.innerHTML = `<span><span class="ca-title">${esc(ex.name)}</span>` +
+      btn.innerHTML = `<span class="ca-icon">${workoutIconSVG(ex.icon)}</span>` +
+        `<span class="ca-text"><span class="ca-title">${esc(ex.name)}</span>` +
         (count ? `<br><span class="ca-meta">${count}× im Zirkel</span>` : "") + `</span><span class="ca-plus">+</span>`;
       btn.addEventListener("click", () => {
-        workoutCircuitPrefs.items.push({ exercise: id, workS: workoutCircuitPrefs.defaultWorkS });
+        workoutCircuitPrefs.items.push({ exercise: id, workS: workoutCircuitPrefs.defaultWorkS, note: "" });
         saveWorkoutCircuitPrefs();
         renderWorkoutCircuitAddGrid();
         renderWorkoutCircuitList();
         syncWorkoutCircuitUI();
       });
-      els.workoutCircuitAddGrid.appendChild(btn);
+      wrap.appendChild(btn);
+      if (isCustom) {
+        const rm = document.createElement("button");
+        rm.className = "combo-block-remove";
+        rm.title = "Eigene Übung löschen";
+        rm.textContent = "✕";
+        rm.addEventListener("click", () => {
+          customWorkoutExercises = customWorkoutExercises.filter((c) => c.id !== id);
+          saveCustomWorkoutExercises(customWorkoutExercises);
+          renderWorkoutCircuitAddGrid();
+        });
+        wrap.appendChild(rm);
+      }
+      els.workoutCircuitAddGrid.appendChild(wrap);
     });
   }
   function renderWorkoutCircuitList() {
@@ -3223,17 +3298,20 @@
     els.workoutCircuitEmptyHint.hidden = items.length > 0;
     els.workoutCircuitList.innerHTML = "";
     items.forEach((item, i) => {
-      const ex = WORKOUT_EXERCISES[item.exercise] || { name: item.exercise };
+      const ex = findWorkoutExercise(item.exercise);
       const row = document.createElement("div");
-      row.className = "chapter-row";
+      row.className = "circuit-item-row";
       row.innerHTML =
-        `<span class="chapter-main" style="cursor:default"><span class="num">${i + 1}</span><span class="info"><strong>${esc(ex.name)}</strong></span></span>` +
+        `<div class="circuit-item-main">` +
+        `<span class="chapter-main" style="cursor:default"><span class="num">${i + 1}</span><span class="ca-icon">${workoutIconSVG(ex.icon)}</span><span class="info"><strong>${esc(ex.name)}</strong></span></span>` +
         `<div class="circuit-duration">` +
         `<button class="circuit-step" data-i="${i}" data-dir="-1" aria-label="kürzer">&minus;</button>` +
         `<span class="circuit-duration-value">${item.workS}s</span>` +
         `<button class="circuit-step" data-i="${i}" data-dir="1" aria-label="länger">+</button>` +
         `</div>` +
-        `<button class="combo-block-remove" data-i="${i}" title="Entfernen">&#10005;</button>`;
+        `<button class="combo-block-remove" data-i="${i}" title="Entfernen">&#10005;</button>` +
+        `</div>` +
+        `<input type="text" class="circuit-item-note" data-i="${i}" placeholder="Eigene Notiz für diese Übung (optional)" maxlength="80" value="${esc(item.note || "")}">`;
       els.workoutCircuitList.appendChild(row);
     });
     els.workoutCircuitList.querySelectorAll(".circuit-step").forEach((btn) => {
@@ -3253,7 +3331,36 @@
         syncWorkoutCircuitUI();
       });
     });
+    els.workoutCircuitList.querySelectorAll(".circuit-item-note").forEach((input) => {
+      input.addEventListener("change", () => {
+        workoutCircuitPrefs.items[Number(input.dataset.i)].note = input.value.trim();
+        saveWorkoutCircuitPrefs();
+      });
+    });
   }
+  // ---- Custom exercises: name + optional note, reusable like a built-in ----
+  function openWorkoutCircuitCustomForm() {
+    els.workoutCircuitCustomForm.hidden = false;
+    els.workoutCircuitAddCustomBtn.hidden = true;
+    els.workoutCircuitCustomName.value = "";
+    els.workoutCircuitCustomNote.value = "";
+    els.workoutCircuitCustomName.focus();
+  }
+  function closeWorkoutCircuitCustomForm() {
+    els.workoutCircuitCustomForm.hidden = true;
+    els.workoutCircuitAddCustomBtn.hidden = false;
+  }
+  els.workoutCircuitAddCustomBtn.addEventListener("click", openWorkoutCircuitCustomForm);
+  els.workoutCircuitCustomCancelBtn.addEventListener("click", closeWorkoutCircuitCustomForm);
+  els.workoutCircuitCustomSaveBtn.addEventListener("click", () => {
+    const name = els.workoutCircuitCustomName.value.trim();
+    if (!name) { els.workoutCircuitCustomName.focus(); return; }
+    const note = els.workoutCircuitCustomNote.value.trim();
+    customWorkoutExercises.push({ id: `custom-${Date.now()}`, name, note, icon: "custom" });
+    saveCustomWorkoutExercises(customWorkoutExercises);
+    closeWorkoutCircuitCustomForm();
+    renderWorkoutCircuitAddGrid();
+  });
   document.querySelectorAll("[data-wo-rest]").forEach((el) => el.addEventListener("click", () => {
     workoutCircuitPrefs.restS = Number(el.dataset.woRest); saveWorkoutCircuitPrefs(); syncWorkoutCircuitUI();
   }));
@@ -3279,6 +3386,7 @@
     syncWorkoutCircuitUI();
   });
   function openWorkoutTabataReady() {
+    closeWorkoutCircuitCustomForm();
     renderWorkoutCircuitAddGrid();
     renderWorkoutCircuitList();
     syncWorkoutCircuitUI();

@@ -705,6 +705,15 @@
   <div class="group">
     <div class="group-label">&Uuml;bung hinzuf&uuml;gen</div>
     <div class="combo-add-grid" id="workoutCircuitAddGrid"></div>
+    <button class="text-link small" id="workoutCircuitAddCustomBtn">+ Eigene &Uuml;bung hinzuf&uuml;gen</button>
+    <div class="custom-exercise-form" id="workoutCircuitCustomForm" hidden>
+      <input type="text" id="workoutCircuitCustomName" placeholder="Name der &Uuml;bung" maxlength="40">
+      <input type="text" id="workoutCircuitCustomNote" placeholder="Notiz, worauf zu achten ist (optional)" maxlength="120">
+      <div class="custom-exercise-form-actions">
+        <button class="start-btn secondary" id="workoutCircuitCustomCancelBtn">Abbrechen</button>
+        <button class="start-btn" id="workoutCircuitCustomSaveBtn">Hinzuf&uuml;gen</button>
+      </div>
+    </div>
   </div>
 
   <div class="group">
@@ -1008,9 +1017,16 @@
     </div>
     <div class="workout-tabata-view" id="workoutTabataView" hidden>
       <div class="tabata-phase-label" id="tabataPhaseLabel">Bereit machen</div>
+      <div class="tabata-icon" id="tabataExerciseIcon"></div>
       <div class="tabata-countdown" id="tabataCountdown">5</div>
       <div class="tabata-exercise" id="tabataExerciseName"></div>
       <div class="tabata-round" id="tabataRoundLabel"></div>
+      <div class="tabata-note" id="tabataExerciseNote"></div>
+      <div class="chapter-nav">
+        <button id="tabataPrevBtn" title="Vorherige Übung" aria-label="Vorherige Übung">&laquo;</button>
+        <button id="tabataRestartBtn" title="Übung neu starten" aria-label="Übung neu starten">&#8635;</button>
+        <button id="tabataSkipBtn" title="Weiter zur nächsten Übung" aria-label="Weiter zur nächsten Übung">&raquo;</button>
+      </div>
     </div>
     <div class="workout-overview" id="workoutOverview" hidden></div>
   </div>
