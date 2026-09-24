@@ -476,13 +476,13 @@
   </div>
 
   <div class="group" id="coneCountGroup" hidden>
-    <div class="group-label">Anzahl Farbwechsel</div>
+    <div class="group-label">Anzahl Runden</div>
     <div class="choice-row">
+      <button class="choice" data-cone-count="5">5</button>
       <button class="choice" data-cone-count="10">10</button>
-      <button class="choice" data-cone-count="20">20</button>
-      <button class="choice" data-cone-count="30">30</button>
+      <button class="choice" data-cone-count="15">15</button>
     </div>
-    <div class="group-help">Nach jedem Antippen des Bildschirms kommt die n&auml;chste Farbe &ndash; du bestimmst das Tempo.</div>
+    <div class="group-help">Nach jedem Antippen des Bildschirms kommt eine neue Reihenfolge &ndash; du bestimmst das Tempo.</div>
   </div>
 
   <details class="advanced" id="advanced">
@@ -795,7 +795,10 @@
 </div>
 
 <div class="player" id="player" hidden>
-  <div class="stage-wrap"><canvas id="stage"></canvas></div>
+  <div class="stage-wrap" id="stageWrap"><canvas id="stage"></canvas></div>
+  <div class="cone-order-stage" id="coneOrderStage" hidden>
+    <div class="cone-order-row" id="coneOrderRow"></div>
+  </div>
   <div class="progress-track" id="progressTrack"></div>
   <div class="player-bar" id="playerBar">
     <button id="backBtn">&#10005; Beenden</button>

@@ -39,6 +39,11 @@
   const MIN_COLORS = 2;
   const MAX_COLORS = 4;
 
+  // Fixed four-colour set for "Hütchen · Antippen" (cone order sorting) -
+  // this exercise is always about four cones, so it skips the free colour
+  // picker and always uses this base set, only their on-screen order changes.
+  const CONE_TAP_COLORS = ["rot", "gelb", "gruen", "blau"].map((k) => COLOR_BY_KEY[k]);
+
   // Legacy three-colour palettes from the production ARCHITECTURE/PALETTES
   // files. Programmes stored before the free colour picker existed reference
   // these by code ("palette": "ORL"), so they stay resolvable with their
@@ -435,10 +440,10 @@
       rules: "Nur Bild oder nur Ton: Reagiere wie gezeigt oder gesagt. Bild und Ton gleichzeitig mit unterschiedlicher Richtung: Zeigt der Pfeil nach VORNE oder RECHTS, gilt der TON; zeigt er nach HINTEN oder LINKS, gilt das BILD. Bild mit Piepton: Reagiere in die Gegenrichtung des Pfeils. Die Sprachausgabe nutzt die Stimme deines Geräts. Diese Übung ist eine Weiterentwicklung von Fabian Westermann Mentalcoaching.",
     },
     "cone-tap": {
-      title: "Hütchen · Antippen", type: "color-tap", usesColors: true,
-      task: "Tippe auf den Bildschirm, sobald du am Hütchen warst, für die nächste Farbe.",
-      trains: "Eigenes Tempo, Schnelligkeit und Orientierung im selbst gebauten Hütchen-Parcours",
-      rules: "Du bestimmst selbst, wie viele Farbhütchen du aufstellst und was sie bedeuten – die App zeigt nur, welche Farbe als Nächstes dran ist. Lauf zum passenden Hütchen und tippe danach irgendwo auf den Bildschirm: Die nächste Farbe erscheint erst, wenn du bereit bist.",
+      title: "Hütchen · Antippen", type: "color-tap",
+      task: "Sortiere deine vier Farbhütchen in dieser Reihenfolge, dann tippe irgendwo auf den Bildschirm für die nächste Runde.",
+      trains: "Eigenes Tempo, Schnelligkeit und Umsortieren im selbst gebauten Hütchen-Parcours",
+      rules: "Du siehst vier große Farbpunkte – sie zeigen die Reihenfolge, in der deine vier Farbhütchen von links nach rechts stehen sollen. Sortiere deine Hütchen entsprechend um und tippe danach irgendwo auf den Bildschirm: Die nächste Reihenfolge erscheint erst, wenn du bereit bist.",
     },
     "cone-compass": {
       title: "Hütchen · Kompass-Aufbau", type: "color", usesColors: true,
@@ -763,6 +768,7 @@
     tempoCustom: $("tempoCustom"),
     colorGroup: $("colorGroup"), colorPicker: $("colorPicker"), colorCount: $("colorCount"), colorHint: $("colorHint"),
     durationGroup: $("durationGroup"), tempoGroup: $("tempoGroup"), coneCountGroup: $("coneCountGroup"), advanced: $("advanced"),
+    stageWrap: $("stageWrap"), coneOrderStage: $("coneOrderStage"), coneOrderRow: $("coneOrderRow"),
     programCodeInput: $("programCodeInput"), programGoBtn: $("programGoBtn"), programError: $("programError"),
     programIntro: $("programIntro"), programBackToHome: $("programBackToHome"), programTitle: $("programTitle"),
     programMeta: $("programMeta"), programDesc: $("programDesc"), chapterList: $("chapterList"),
@@ -1010,7 +1016,7 @@
     intervalMax: 6,
     colors: ["orange", "rot", "lila"],
     sequence: "frei",
-    coneCount: 20,
+    coneCount: 10,
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -1804,6 +1810,8 @@
     els.player.hidden = false;
     els.playerBar.hidden = false;
     els.progressTrack.hidden = false;
+    els.coneOrderStage.hidden = true;
+    els.stageWrap.hidden = false;
     fitCanvas();
     ensureAudioCtx();
     const built = buildScheduleFor(EXERCISES[state.exercise], makeRng());
@@ -1812,17 +1820,30 @@
     raf = requestAnimationFrame(tick);
   }
 
-  // Tap-paced cone-colour exercise ("Hütchen · Antippen"): no timed schedule -
-  // the client taps the stage whenever they're ready for the next colour, so
-  // it gets its own tiny loop instead of the timed schedule/tick() engine.
-  function drawNextConeColor() {
-    const colors = active.colors;
-    let color = colors[Math.floor(Math.random() * colors.length)];
-    if (colors.length > 1) {
-      while (color === coneTap.lastColor) color = colors[Math.floor(Math.random() * colors.length)];
-    }
-    coneTap.lastColor = color;
-    drawScene("color", { color: color.hex });
+  // Tap-paced cone-order exercise ("Hütchen · Antippen"): four big colour
+  // dots show the order the client's four cones should be sorted into. No
+  // timed schedule - the client taps the stage whenever they're ready for
+  // the next order, so it gets its own tiny loop instead of the timed
+  // schedule/tick() engine, and plain DOM dots instead of the canvas (so the
+  // whole stage - including the gaps between dots - is tappable, with no
+  // dead zone from canvas/CSS sizing mismatches).
+  function shuffledConeOrder(prevKey) {
+    let order;
+    do {
+      order = [...CONE_TAP_COLORS];
+      for (let i = order.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+      }
+    } while (prevKey && order.map((c) => c.key).join() === prevKey);
+    return order;
+  }
+
+  function renderConeOrderRound() {
+    const order = shuffledConeOrder(coneTap.lastOrder);
+    coneTap.lastOrder = order.map((c) => c.key).join();
+    els.coneOrderRow.innerHTML = order.map((c) =>
+      `<span class="cone-order-dot" style="background:${c.hex}" aria-label="${c.name}"></span>`).join("");
     els.timeEl.textContent = `${coneTap.count} / ${coneTap.target}`;
   }
 
@@ -1832,22 +1853,23 @@
     els.player.hidden = false;
     els.playerBar.hidden = false;
     els.progressTrack.hidden = true;
-    fitCanvas();
+    els.stageWrap.hidden = true;
+    els.coneOrderStage.hidden = false;
     if (raf) cancelAnimationFrame(raf);
     raf = null;
     session = { startTime: performance.now(), total: 86400, schedule: [] };
-    coneTap = { target: state.coneCount, count: 1, lastColor: null };
+    coneTap = { target: state.coneCount, count: 1, lastOrder: null };
     requestWakeLock();
-    drawNextConeColor();
+    renderConeOrderRound();
   }
 
   function coneTapAdvance() {
     if (!coneTap) return;
     if (coneTap.count >= coneTap.target) { finishSession(); return; }
     coneTap.count++;
-    drawNextConeColor();
+    renderConeOrderRound();
   }
-  canvas.addEventListener("click", () => coneTapAdvance());
+  els.coneOrderStage.addEventListener("click", () => coneTapAdvance());
 
   function playChapter(idx) {
     if (!program) return;
@@ -1982,7 +2004,7 @@
     releaseWakeLock();
     setProgress(1, 0);
     const ex = EXERCISES[state.exercise];
-    const summary = coneTap ? `${coneTap.target} Farbwechsel · ${fmtMinutes(spent)}` : `${ex.title} · ${fmtMinutes(spent)}`;
+    const summary = coneTap ? `${coneTap.target} Runden · ${fmtMinutes(spent)}` : `${ex.title} · ${fmtMinutes(spent)}`;
     els.doneSummary.textContent = summary;
     const id = addHistory({ kind: "exercise", title: ex.title, seconds: Math.round(spent) });
     renderRating(els.doneRating, id);
@@ -2046,11 +2068,7 @@
   wireFullscreen({ player: els.wimhofPlayer, btn: els.wimhofFsBtn, hint: els.wimhofFsHint, hintOpen: els.wimhofFsHintOpenBtn, hintClose: els.wimhofFsHintClose });
   wireFullscreen({ player: els.movementPlayer, btn: els.movementFsBtn, hint: els.movementFsHint, hintOpen: els.movementFsHintOpenBtn, hintClose: els.movementFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
-  window.addEventListener("resize", () => {
-    if (els.player.hidden) return;
-    fitCanvas();
-    if (coneTap) drawScene("color", { color: coneTap.lastColor.hex });
-  });
+  window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && (session || breathSession || wimhofState || movementSession || workoutState) && wakeLock === null) requestWakeLock();
   });

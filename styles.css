@@ -460,6 +460,19 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .stage-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
 #stage{width:100%;height:100%;display:block}
 
+/* Cone-order stage ("Hütchen · Antippen"): four big colour dots showing the
+   target order, tap anywhere to get a new order. Plain DOM (not canvas) and
+   sized to fill the whole area so there is no dead zone to tap into, plus
+   touch-action/user-select to stop double-tap-zoom or a long-press callout
+   from swallowing a tap on mobile. */
+.cone-order-stage{
+  flex:1;display:flex;align-items:center;justify-content:center;min-height:0;
+  background:#fff;cursor:pointer;touch-action:manipulation;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
+}
+.cone-order-row{display:flex;gap:4vmin;align-items:center;justify-content:center}
+.cone-order-dot{width:20vmin;height:20vmin;max-width:130px;max-height:130px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+
 /* ---- Breathing player ---- */
 .breath-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:0 20px}
 .breath.big{width:min(64vw,270px);height:min(64vw,270px)}
