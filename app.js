@@ -109,6 +109,12 @@
   function esc(s) {
     return String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
   }
+  // Pairs the visual ".active" state every choice/toggle button uses with
+  // aria-pressed, so a screen reader can tell which option is selected.
+  function setActive(el, on) {
+    el.classList.toggle("active", on);
+    el.setAttribute("aria-pressed", on ? "true" : "false");
+  }
   function fmtClock(sec) {
     const s = Math.max(0, Math.ceil(sec));
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -461,7 +467,7 @@
     "dig01": {
       name: "Einstieg · Tempo-Steigerung",
       featured: true,
-      description: "Zweimal VT: erst ruhig mit viel Zeit, dann doppelt so schnell.",
+      description: "Zweimal VT: erst ruhig mit viel Zeit, dann doppelt so schnell. Beispiel-Zuordnung für dieses Demo: Orange = mit der Hand antippen · Rot = mit dem Fuß antippen · Lila = kurz stehen bleiben. Bei deinem Coach kann das anders aussehen.",
       pauseS: 15,
       blocks: [
         { exercise: "vt-color", palette: "ORL", duration: 60, stimulusS: 2.5, intervalMin: 15, intervalMax: 25, sequence: "S01" },
@@ -471,7 +477,7 @@
     "dig02": {
       name: "Fortgeschritten · Gemischtes Training",
       featured: true,
-      description: "VT, VRW, Stroop und nochmal VRW – durchgehend zügiges Tempo.",
+      description: "VT, VRW, Stroop und nochmal VRW – durchgehend zügiges Tempo. Beispiel-Zuordnung für dieses Demo: Orange = mit der Hand antippen · Rot = mit dem Fuß antippen · Lila = kurz stehen bleiben. Bei deinem Coach kann das anders aussehen.",
       pauseS: 15,
       blocks: [
         { exercise: "vt-color", palette: "ORL", duration: 60, stimulusS: 0.8, intervalMin: 3, intervalMax: 5, sequence: "S01" },
@@ -493,7 +499,7 @@
     coherent: {
       name: "Ruhige Atmung (Kohärenz)",
       short: "Gleichmäßig ein und aus, kein Halten.",
-      goal: "Bei diesem Tempo (ca. 5,5 Atemzüge pro Minute) ist die Herzratenvariabilität bei den meisten Menschen am höchsten – gut für Ruhe und Fokus.",
+      goal: "Dieses Tempo liegt im typischen Bereich der individuellen Resonanzatmung (ca. 4,5–6,5 Atemzüge pro Minute) und kann die Herzratenvariabilität unterstützen. Das optimale Tempo ist individuell – bei Bedarf in den Feineinstellungen anpassen.",
       phases: { in: 5.5, hold1: 0, out: 5.5, hold2: 0 },
     },
     box: {
@@ -503,9 +509,12 @@
       phases: { in: 4, hold1: 4, out: 4, hold2: 4 },
     },
     relax478: {
-      name: "4-7-8",
-      short: "Kurz einatmen, lange halten, lang ausatmen.",
-      goal: "Wirkt stark beruhigend – beliebt zum Runterkommen und vor dem Einschlafen.",
+      // Angelehnter Takt, kein 1:1-Original: das Original arbeitet mit
+      // wenigen Runden (anfangs 4, später bis 8) statt einer Gesamtdauer in
+      // Minuten, und atmet hörbar durch den Mund aus statt durch die Nase.
+      name: "4-7-8 (angelehnter Takt)",
+      short: "Kurz einatmen, lange halten, lang ausatmen – ausatmen hier bewusst durch den Mund.",
+      goal: "Wird häufig zur Beruhigung und zum Einschlafen eingesetzt; die Wirkung ist individuell. Im Original übt man wenige Runden (4–8) statt einer festen Dauer – hier läuft das Muster wie die anderen über eine frei wählbare Gesamtdauer.",
       phases: { in: 4, hold1: 7, out: 8, hold2: 0 },
     },
     custom: {
@@ -784,6 +793,7 @@
     introVideo: $("introVideo"), explainerBtn: $("explainerBtn"),
     videoModal: $("videoModal"), videoModalPlayer: $("videoModalPlayer"), videoModalClose: $("videoModalClose"),
     historySection: $("historySection"), historyStats: $("historyStats"), historyList: $("historyList"), historyClearBtn: $("historyClearBtn"),
+    historyMoreBtn: $("historyMoreBtn"),
     tipsSheet: $("tipsSheet"), tipsBtn: $("tipsBtn"), tipsCloseBtn: $("tipsCloseBtn"),
     tipInstall: $("tipInstall"), tipInstallText: $("tipInstallText"),
     breathHome: $("breathHome"), breathReady: $("breathReady"), breathBackToHome: $("breathBackToHome"),
@@ -798,11 +808,12 @@
     breathPlayer: $("breathPlayer"), breathPlayerBar: $("breathPlayerBar"), breathBig: $("breathBig"),
     breathPhaseCount: $("breathPhaseCount"), breathPhaseLabel: $("breathPhaseLabel"), breathTimeEl: $("breathTimeEl"),
     breathBackBtn: $("breathBackBtn"), breathFsBtn: $("breathFsBtn"), breathFsHint: $("breathFsHint"),
+    breathPauseBtn: $("breathPauseBtn"),
     breathFsHintOpenBtn: $("breathFsHintOpenBtn"), breathFsHintClose: $("breathFsHintClose"),
     breathDonePanel: $("breathDonePanel"), breathDoneSummary: $("breathDoneSummary"), breathRating: $("breathRating"),
     breathAgainBtn: $("breathAgainBtn"), breathDoneBackBtn: $("breathDoneBackBtn"),
     breathHistorySection: $("breathHistorySection"), breathHistoryStats: $("breathHistoryStats"),
-    breathHistoryList: $("breathHistoryList"), breathHistoryClearBtn: $("breathHistoryClearBtn"),
+    breathHistoryList: $("breathHistoryList"), breathHistoryClearBtn: $("breathHistoryClearBtn"), breathHistoryMoreBtn: $("breathHistoryMoreBtn"),
     breathTipsSheet: $("breathTipsSheet"), breathTipsBtn: $("breathTipsBtn"), breathTipsCloseBtn: $("breathTipsCloseBtn"),
     breathFeaturedPrograms: $("breathFeaturedPrograms"), breathFeaturedGrid: $("breathFeaturedGrid"),
     breathProgramCodeInput: $("breathProgramCodeInput"), breathProgramGoBtn: $("breathProgramGoBtn"), breathProgramError: $("breathProgramError"),
@@ -825,7 +836,7 @@
     wimhofAgainBtn: $("wimhofAgainBtn"), wimhofDoneBackBtn: $("wimhofDoneBackBtn"),
     movementHome: $("movementHome"), movementHistorySection: $("movementHistorySection"),
     movementHistoryStats: $("movementHistoryStats"), movementHistoryList: $("movementHistoryList"),
-    movementHistoryClearBtn: $("movementHistoryClearBtn"), movementStartCard: $("movementStartCard"),
+    movementHistoryClearBtn: $("movementHistoryClearBtn"), movementHistoryMoreBtn: $("movementHistoryMoreBtn"), movementStartCard: $("movementStartCard"),
     movementTipsBtn: $("movementTipsBtn"), movementTipsSheet: $("movementTipsSheet"), movementTipsCloseBtn: $("movementTipsCloseBtn"),
     movementReady: $("movementReady"), movementBackToHome: $("movementBackToHome"),
     movementPicker: $("movementPicker"), movementCount: $("movementCount"),
@@ -840,7 +851,7 @@
 
     workoutHome: $("workoutHome"), workoutProgramCodeInput: $("workoutProgramCodeInput"), workoutProgramGoBtn: $("workoutProgramGoBtn"),
     workoutProgramError: $("workoutProgramError"), workoutHistorySection: $("workoutHistorySection"),
-    workoutHistoryStats: $("workoutHistoryStats"), workoutHistoryList: $("workoutHistoryList"), workoutHistoryClearBtn: $("workoutHistoryClearBtn"),
+    workoutHistoryStats: $("workoutHistoryStats"), workoutHistoryList: $("workoutHistoryList"), workoutHistoryClearBtn: $("workoutHistoryClearBtn"), workoutHistoryMoreBtn: $("workoutHistoryMoreBtn"),
     workoutFeaturedPrograms: $("workoutFeaturedPrograms"), workoutFeaturedGrid: $("workoutFeaturedGrid"),
     workoutTabataStartCard: $("workoutTabataStartCard"),
     workoutBundleOverview: $("workoutBundleOverview"), workoutBundleBackToHome: $("workoutBundleBackToHome"),
@@ -936,7 +947,9 @@
   }
   const WEEKDAYS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
   function ratingLabel(kind) { return kind === "breath" || kind === "breath-program" ? "Ruhe" : "Fokus"; }
-  function renderHistoryInto(sectionEl, statsEl, listEl, list) {
+  const HISTORY_VISIBLE_SHORT = 5;
+  const HISTORY_VISIBLE_EXPANDED = 20;
+  function renderHistoryInto(sectionEl, statsEl, listEl, moreBtn, list) {
     sectionEl.hidden = list.length === 0;
     if (!list.length) return;
     const weekStart = startOfWeek();
@@ -946,20 +959,24 @@
       `<div class="stat"><strong>${week.length}</strong><span>Trainings diese Woche</span></div>` +
       `<div class="stat"><strong>${week.length ? fmtMinutes(weekSec) : "–"}</strong><span>Trainingszeit diese Woche</span></div>` +
       `<div class="stat"><strong>${list.length}</strong><span>Trainings gesamt</span></div>`;
-    listEl.innerHTML = list.slice(0, 5).map((e) => {
+    const expanded = listEl.dataset.expanded === "1";
+    const visibleCount = expanded ? HISTORY_VISIBLE_EXPANDED : HISTORY_VISIBLE_SHORT;
+    listEl.innerHTML = list.slice(0, visibleCount).map((e) => {
       const d = new Date(e.ts);
       const date = `${WEEKDAYS[d.getDay()]}, ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
       const rating = e.rating ? ` · ${ratingLabel(e.kind)} ${e.rating}/5` : "";
       const note = e.note ? ` · ${esc(e.note)}` : "";
       return `<li><span class="h-date">${date}</span><span class="h-title">${esc(e.title)}</span><span class="h-meta">${fmtMinutes(e.seconds || 0)}${note}${rating}</span></li>`;
     }).join("");
+    moreBtn.hidden = list.length <= HISTORY_VISIBLE_SHORT;
+    moreBtn.textContent = expanded ? "Weniger anzeigen" : "Alle anzeigen";
   }
   function renderHistory() {
     const list = loadHistory();
-    renderHistoryInto(els.historySection, els.historyStats, els.historyList, list);
-    renderHistoryInto(els.breathHistorySection, els.breathHistoryStats, els.breathHistoryList, list);
-    renderHistoryInto(els.movementHistorySection, els.movementHistoryStats, els.movementHistoryList, list);
-    renderHistoryInto(els.workoutHistorySection, els.workoutHistoryStats, els.workoutHistoryList, list);
+    renderHistoryInto(els.historySection, els.historyStats, els.historyList, els.historyMoreBtn, list);
+    renderHistoryInto(els.breathHistorySection, els.breathHistoryStats, els.breathHistoryList, els.breathHistoryMoreBtn, list);
+    renderHistoryInto(els.movementHistorySection, els.movementHistoryStats, els.movementHistoryList, els.movementHistoryMoreBtn, list);
+    renderHistoryInto(els.workoutHistorySection, els.workoutHistoryStats, els.workoutHistoryList, els.workoutHistoryMoreBtn, list);
   }
   function clearHistory() {
     if (!confirm("Deinen Trainingsverlauf auf diesem Gerät löschen?")) return;
@@ -970,6 +987,10 @@
   els.breathHistoryClearBtn.addEventListener("click", clearHistory);
   els.movementHistoryClearBtn.addEventListener("click", clearHistory);
   els.workoutHistoryClearBtn.addEventListener("click", clearHistory);
+  [els.historyList, els.breathHistoryList, els.movementHistoryList, els.workoutHistoryList].forEach((listEl, i) => {
+    const btn = [els.historyMoreBtn, els.breathHistoryMoreBtn, els.movementHistoryMoreBtn, els.workoutHistoryMoreBtn][i];
+    btn.addEventListener("click", () => { listEl.dataset.expanded = listEl.dataset.expanded === "1" ? "0" : "1"; renderHistory(); });
+  });
 
   // Rating widget shown on the finish screens.
   function renderRating(container, entryId, question) {
@@ -982,26 +1003,49 @@
       btn.addEventListener("click", () => {
         const n = Number(btn.dataset.rate);
         rateHistory(entryId, n);
-        container.querySelectorAll("[data-rate]").forEach((b) => b.classList.toggle("active", Number(b.dataset.rate) === n));
+        container.querySelectorAll("[data-rate]").forEach((b) => setActive(b, Number(b.dataset.rate) === n));
         container.querySelector(".rating-thanks").hidden = false;
       });
     });
   }
 
+  // ---- Focus trap for the sheets/modal (tips, video) ----
+  // Keeps Tab from leaving the open dialog and returns focus to whatever
+  // opened it on close, instead of letting it fall through to elements
+  // underneath (e.g. Tab landing on "Verlauf löschen" behind the sheet).
+  const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+  function focusFirstIn(sheetEl) {
+    const f = sheetEl.querySelector(FOCUSABLE);
+    if (f) f.focus();
+  }
+  function trapTabKey(sheetEl, e) {
+    if (e.key !== "Tab" || sheetEl.hidden) return;
+    const list = sheetEl.querySelectorAll(FOCUSABLE);
+    if (!list.length) return;
+    const first = list[0], last = list[list.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+
   // ---- Video modal (explainer clips) ----
+  let videoModalReturnFocus = null;
   function openVideoModal(src) {
+    videoModalReturnFocus = document.activeElement;
     els.videoModalPlayer.src = src;
     els.videoModal.hidden = false;
     els.videoModalPlayer.play().catch(() => {});
+    focusFirstIn(els.videoModal);
   }
   function closeVideoModal() {
     els.videoModalPlayer.pause();
     els.videoModalPlayer.removeAttribute("src");
     els.videoModalPlayer.load();
     els.videoModal.hidden = true;
+    if (videoModalReturnFocus) videoModalReturnFocus.focus();
   }
   els.videoModalClose.addEventListener("click", closeVideoModal);
   els.videoModal.addEventListener("click", (e) => { if (e.target === els.videoModal) closeVideoModal(); });
+  els.videoModal.addEventListener("keydown", (e) => trapTabKey(els.videoModal, e));
 
   // ---- Settings state ----
   const TEMPO_PRESETS = {
@@ -1038,7 +1082,11 @@
   }
   function makeRng() {
     if (state.sequence === "frei") return Math.random;
-    const key = [state.exercise, active.seedKey, state.sequence, state.duration, state.stimulusS, state.intervalMin, state.intervalMax].join("|");
+    // Colours are deliberately NOT part of the seed: a fixed sequence must
+    // give the same directions/timing regardless of which colours are
+    // mapped onto them, so different clients (or the same client with a
+    // different palette) can compare runs on equal footing.
+    const key = [state.exercise, state.sequence, state.duration, state.stimulusS, state.intervalMin, state.intervalMax].join("|");
     return mulberry32(hashSeed(key));
   }
 
@@ -1088,14 +1136,14 @@
     el.addEventListener("click", () => { state.sequence = el.dataset.seq; savePrefs(); syncSequenceUI(); });
   });
   function syncSequenceUI() {
-    document.querySelectorAll("[data-seq]").forEach((el) => el.classList.toggle("active", el.dataset.seq === state.sequence));
+    document.querySelectorAll("[data-seq]").forEach((el) => setActive(el, el.dataset.seq === state.sequence));
   }
 
   document.querySelectorAll("[data-dur]").forEach((el) => {
     el.addEventListener("click", () => { state.duration = Number(el.dataset.dur); savePrefs(); syncDurationUI(); });
   });
   function syncDurationUI() {
-    document.querySelectorAll("[data-dur]").forEach((el) => el.classList.toggle("active", el.dataset.dur === String(state.duration)));
+    document.querySelectorAll("[data-dur]").forEach((el) => setActive(el, el.dataset.dur === String(state.duration)));
     els.durationSlider.value = state.duration;
     els.durationValue.textContent = state.duration >= 60 ? fmtMinutes(state.duration) : state.duration + " s";
     const ex = EXERCISES[state.exercise];
@@ -1119,7 +1167,7 @@
       const p = TEMPO_PRESETS[el.dataset.tempo];
       const on = p.stimulusS === state.stimulusS && p.intervalMin === state.intervalMin && p.intervalMax === state.intervalMax;
       if (on) any = true;
-      el.classList.toggle("active", on);
+      setActive(el, on);
     });
     els.tempoCustom.hidden = any;
     els.stimulusSlider.value = state.stimulusS;
@@ -2093,8 +2141,36 @@
   wireFullscreen({ player: els.movementPlayer, btn: els.movementFsBtn, hint: els.movementFsHint, hintOpen: els.movementFsHintOpenBtn, hintClose: els.movementFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
+  // All the exercise engines compute "elapsed" as performance.now() minus a
+  // startTime captured when they began. Backgrounding the tab (switching
+  // apps, locking the screen) doesn't pause that clock, so returning later
+  // could skip stimuli or a whole breath phase. Shifting every active
+  // engine's timestamps forward by exactly the hidden duration makes it as
+  // if no time passed while away, instead of building a separate pause/
+  // resume UI for each engine.
+  let hiddenAt = null;
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && (session || breathSession || wimhofState || movementSession || workoutState) && wakeLock === null) requestWakeLock();
+    if (document.visibilityState === "hidden") {
+      hiddenAt = performance.now();
+      return;
+    }
+    if (document.visibilityState !== "visible") return;
+    if (hiddenAt !== null) {
+      const hiddenMs = performance.now() - hiddenAt;
+      hiddenAt = null;
+      if (hiddenMs > 500) {
+        if (session) session.startTime += hiddenMs;
+        if (breathSession && !breathPaused) breathSession.startTime += hiddenMs;
+        if (wimhofState) { wimhofState.phaseStart += hiddenMs; wimhofState.sessionStart += hiddenMs; }
+        if (movementSession) movementSession.startTime += hiddenMs;
+        if (workoutState) {
+          if (workoutState.startTime) workoutState.startTime += hiddenMs;
+          if (workoutState.phaseStart) workoutState.phaseStart += hiddenMs;
+          if (workoutState.sessionStart) workoutState.sessionStart += hiddenMs;
+        }
+      }
+    }
+    if ((session || breathSession || wimhofState || movementSession || workoutState) && wakeLock === null) requestWakeLock();
   });
 
   // ---- Tips sheet (shown once on first visit, reopenable) ----
@@ -2103,16 +2179,20 @@
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   if (standalone) els.tipInstall.hidden = true;
   else if (isIOS) els.tipInstallText.textContent = "Tippe in Safari auf „Teilen“ und dann auf „Zum Home-Bildschirm“ – dann startest du dein Training mit einem Tipp.";
-  function openTips() { els.tipsSheet.hidden = false; }
-  function closeTips() { els.tipsSheet.hidden = true; writeJSON(TIPS_KEY, true); }
+  let tipsReturnFocus = null;
+  function openTips() { tipsReturnFocus = document.activeElement; els.tipsSheet.hidden = false; focusFirstIn(els.tipsSheet); }
+  function closeTips() { els.tipsSheet.hidden = true; writeJSON(TIPS_KEY, true); if (tipsReturnFocus) tipsReturnFocus.focus(); }
   els.tipsBtn.addEventListener("click", openTips);
   els.tipsCloseBtn.addEventListener("click", closeTips);
   els.tipsSheet.addEventListener("click", (e) => { if (e.target === els.tipsSheet) closeTips(); });
-  function openBreathTips() { els.breathTipsSheet.hidden = false; }
-  function closeBreathTips() { els.breathTipsSheet.hidden = true; }
+  els.tipsSheet.addEventListener("keydown", (e) => trapTabKey(els.tipsSheet, e));
+  let breathTipsReturnFocus = null;
+  function openBreathTips() { breathTipsReturnFocus = document.activeElement; els.breathTipsSheet.hidden = false; focusFirstIn(els.breathTipsSheet); }
+  function closeBreathTips() { els.breathTipsSheet.hidden = true; if (breathTipsReturnFocus) breathTipsReturnFocus.focus(); }
   els.breathTipsBtn.addEventListener("click", openBreathTips);
   els.breathTipsCloseBtn.addEventListener("click", closeBreathTips);
   els.breathTipsSheet.addEventListener("click", (e) => { if (e.target === els.breathTipsSheet) closeBreathTips(); });
+  els.breathTipsSheet.addEventListener("keydown", (e) => trapTabKey(els.breathTipsSheet, e));
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     if (!els.tipsSheet.hidden) closeTips();
@@ -2191,7 +2271,7 @@
     el.addEventListener("click", () => { breathPrefs.durationMin = Number(el.dataset.breathDur); saveBreathPrefs(); syncBreathDurationUI(); });
   });
   function syncBreathDurationUI() {
-    document.querySelectorAll("[data-breath-dur]").forEach((el) => el.classList.toggle("active", Number(el.dataset.breathDur) === breathPrefs.durationMin));
+    document.querySelectorAll("[data-breath-dur]").forEach((el) => setActive(el, Number(el.dataset.breathDur) === breathPrefs.durationMin));
     els.breathDurationSlider.value = breathPrefs.durationMin;
     els.breathDurationValue.textContent = `${breathPrefs.durationMin} Min`;
   }
@@ -2204,7 +2284,7 @@
   });
   function syncBreathSoundUI() {
     document.querySelectorAll("[data-breath-sound]").forEach((el) => {
-      el.classList.toggle("active", (el.dataset.breathSound === "on") === breathPrefs.sound);
+      setActive(el, (el.dataset.breathSound === "on") === breathPrefs.sound);
     });
   }
 
@@ -2277,15 +2357,40 @@
     els.breathPlayerBar.hidden = false;
     els.breathDonePanel.hidden = true;
     breathSession = { schedule: built.schedule, cycleLen: built.cycleLen, plannedTotal: cycles * built.cycleLen, startTime: performance.now(), lastKey: null, sound: breathPrefs.sound };
+    breathPaused = false;
+    els.breathPauseBtn.textContent = "Pause";
     requestWakeLock();
     breathRaf = requestAnimationFrame(breathTick);
   }
   els.breathStartBtn.addEventListener("click", startBreathSession);
 
+  // Pause/Fortsetzen: the tips sheet tells clients to pause if they feel
+  // unwell, so the breath player needs an actual pause, not just "Beenden".
+  let breathPaused = false;
+  let breathPauseTime = 0;
+  function toggleBreathPause() {
+    if (!breathSession) return;
+    if (breathPaused) {
+      breathPaused = false;
+      breathSession.startTime += performance.now() - breathPauseTime;
+      els.breathPauseBtn.textContent = "Pause";
+      breathRaf = requestAnimationFrame(breathTick);
+    } else {
+      breathPaused = true;
+      breathPauseTime = performance.now();
+      if (breathRaf) cancelAnimationFrame(breathRaf);
+      breathRaf = null;
+      els.breathPauseBtn.textContent = "Fortsetzen";
+      els.breathPhaseLabel.textContent = "Pausiert";
+    }
+  }
+  els.breathPauseBtn.addEventListener("click", toggleBreathPause);
+
   function breathLeavePlayer() {
     if (breathRaf) cancelAnimationFrame(breathRaf);
     breathRaf = null;
     breathSession = null;
+    breathPaused = false;
     releaseWakeLock();
     if (document.fullscreenElement === els.breathPlayer) document.exitFullscreen().catch(() => {});
     els.breathFsHint.hidden = true;
@@ -2404,10 +2509,10 @@
   loadWimhofSettings();
 
   function syncWimhofUI() {
-    document.querySelectorAll("[data-wh-breaths]").forEach((el) => el.classList.toggle("active", Number(el.dataset.whBreaths) === wimhofSettings.breaths));
-    document.querySelectorAll("[data-wh-rounds]").forEach((el) => el.classList.toggle("active", Number(el.dataset.whRounds) === wimhofSettings.rounds));
-    document.querySelectorAll("[data-wh-pace]").forEach((el) => el.classList.toggle("active", Number(el.dataset.whPace) === wimhofSettings.breathPaceS));
-    document.querySelectorAll("[data-wh-recovery]").forEach((el) => el.classList.toggle("active", Number(el.dataset.whRecovery) === wimhofSettings.recoveryHoldS));
+    document.querySelectorAll("[data-wh-breaths]").forEach((el) => setActive(el, Number(el.dataset.whBreaths) === wimhofSettings.breaths));
+    document.querySelectorAll("[data-wh-rounds]").forEach((el) => setActive(el, Number(el.dataset.whRounds) === wimhofSettings.rounds));
+    document.querySelectorAll("[data-wh-pace]").forEach((el) => setActive(el, Number(el.dataset.whPace) === wimhofSettings.breathPaceS));
+    document.querySelectorAll("[data-wh-recovery]").forEach((el) => setActive(el, Number(el.dataset.whRecovery) === wimhofSettings.recoveryHoldS));
   }
   document.querySelectorAll("[data-wh-breaths]").forEach((el) => el.addEventListener("click", () => { wimhofSettings.breaths = Number(el.dataset.whBreaths); saveWimhofSettings(); syncWimhofUI(); }));
   document.querySelectorAll("[data-wh-rounds]").forEach((el) => el.addEventListener("click", () => { wimhofSettings.rounds = Number(el.dataset.whRounds); saveWimhofSettings(); syncWimhofUI(); }));
@@ -2510,8 +2615,8 @@
     if (breathProgram) { advanceBreathProgram(played); return; }
     if (comboProgram) { advanceComboProgram(played); return; }
     els.wimhofPlayerBar.hidden = true;
-    const best = retentions.length ? Math.max(...retentions) : 0;
-    els.wimhofDoneSummary.textContent = `${wimhofSettings.rounds} Runden${best ? " · längste Anhaltezeit " + fmtClock(best) : ""}`;
+    const avgHold = retentions.length ? retentions.reduce((a, b) => a + b, 0) / retentions.length : 0;
+    els.wimhofDoneSummary.textContent = `${wimhofSettings.rounds} Runden${avgHold ? " · komfortable Anhaltezeit " + fmtClock(avgHold) : ""}`;
     const id = addHistory({ kind: "breath", title: WIMHOF_INFO.name, seconds: Math.round(played) });
     renderRating(els.wimhofRating, id, "Wie wach und energiegeladen fühlst du dich?");
     els.wimhofDonePanel.hidden = false;
@@ -2574,18 +2679,18 @@
   });
   function syncMvPickerUI() {
     els.movementPicker.querySelectorAll(".movement-chip").forEach((el) => {
-      el.classList.toggle("active", movementPrefs.movements.includes(el.dataset.moveId));
+      setActive(el, movementPrefs.movements.includes(el.dataset.moveId));
     });
     els.movementCount.textContent = `${movementPrefs.movements.length} gewählt`;
   }
 
   function parsePreview(v) { return v === "all" ? "all" : Number(v); }
   document.querySelectorAll("[data-mv-preview]").forEach((el) => el.addEventListener("click", () => { movementPrefs.preview = parsePreview(el.dataset.mvPreview); saveMovementPrefs(); syncMvPreviewUI(); }));
-  function syncMvPreviewUI() { document.querySelectorAll("[data-mv-preview]").forEach((el) => el.classList.toggle("active", parsePreview(el.dataset.mvPreview) === movementPrefs.preview)); }
+  function syncMvPreviewUI() { document.querySelectorAll("[data-mv-preview]").forEach((el) => setActive(el, parsePreview(el.dataset.mvPreview) === movementPrefs.preview)); }
 
   document.querySelectorAll("[data-mv-bpm]").forEach((el) => el.addEventListener("click", () => { movementPrefs.bpm = Number(el.dataset.mvBpm); saveMovementPrefs(); syncMvTempoUI(); }));
   function syncMvTempoUI() {
-    document.querySelectorAll("[data-mv-bpm]").forEach((el) => el.classList.toggle("active", Number(el.dataset.mvBpm) === movementPrefs.bpm));
+    document.querySelectorAll("[data-mv-bpm]").forEach((el) => setActive(el, Number(el.dataset.mvBpm) === movementPrefs.bpm));
     els.movementBpmSlider.value = movementPrefs.bpm;
     els.movementBpmValue.textContent = `${movementPrefs.bpm} BPM`;
   }
@@ -2596,13 +2701,13 @@
   });
 
   document.querySelectorAll("[data-mv-dur]").forEach((el) => el.addEventListener("click", () => { movementPrefs.durationMin = Number(el.dataset.mvDur); saveMovementPrefs(); syncMvDurationUI(); }));
-  function syncMvDurationUI() { document.querySelectorAll("[data-mv-dur]").forEach((el) => el.classList.toggle("active", Number(el.dataset.mvDur) === movementPrefs.durationMin)); }
+  function syncMvDurationUI() { document.querySelectorAll("[data-mv-dur]").forEach((el) => setActive(el, Number(el.dataset.mvDur) === movementPrefs.durationMin)); }
 
   document.querySelectorAll("[data-mv-mirror]").forEach((el) => el.addEventListener("click", () => { movementPrefs.mirror = el.dataset.mvMirror === "1"; saveMovementPrefs(); syncMvMirrorUI(); }));
-  function syncMvMirrorUI() { document.querySelectorAll("[data-mv-mirror]").forEach((el) => el.classList.toggle("active", (el.dataset.mvMirror === "1") === movementPrefs.mirror)); }
+  function syncMvMirrorUI() { document.querySelectorAll("[data-mv-mirror]").forEach((el) => setActive(el, (el.dataset.mvMirror === "1") === movementPrefs.mirror)); }
 
   document.querySelectorAll("[data-mv-label]").forEach((el) => el.addEventListener("click", () => { movementPrefs.showLabel = el.dataset.mvLabel === "1"; saveMovementPrefs(); syncMvLabelUI(); }));
-  function syncMvLabelUI() { document.querySelectorAll("[data-mv-label]").forEach((el) => el.classList.toggle("active", (el.dataset.mvLabel === "1") === movementPrefs.showLabel)); }
+  function syncMvLabelUI() { document.querySelectorAll("[data-mv-label]").forEach((el) => setActive(el, (el.dataset.mvLabel === "1") === movementPrefs.showLabel)); }
 
   function openMovementReady() {
     syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI();
@@ -2611,11 +2716,13 @@
   els.movementStartCard.addEventListener("click", openMovementReady);
   els.movementBackToHome.addEventListener("click", () => showScreen("movementHome"));
 
-  function openMovementTips() { els.movementTipsSheet.hidden = false; }
-  function closeMovementTips() { els.movementTipsSheet.hidden = true; }
+  let movementTipsReturnFocus = null;
+  function openMovementTips() { movementTipsReturnFocus = document.activeElement; els.movementTipsSheet.hidden = false; focusFirstIn(els.movementTipsSheet); }
+  function closeMovementTips() { els.movementTipsSheet.hidden = true; if (movementTipsReturnFocus) movementTipsReturnFocus.focus(); }
   els.movementTipsBtn.addEventListener("click", openMovementTips);
   els.movementTipsCloseBtn.addEventListener("click", closeMovementTips);
   els.movementTipsSheet.addEventListener("click", (e) => { if (e.target === els.movementTipsSheet) closeMovementTips(); });
+  els.movementTipsSheet.addEventListener("keydown", (e) => trapTabKey(els.movementTipsSheet, e));
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && !els.movementTipsSheet.hidden) closeMovementTips();
   });
@@ -2676,6 +2783,10 @@
       tiles[i].classList.toggle("active", i === beatIdx);
       tiles[i].classList.toggle("done", i < beatIdx);
     }
+    // At faster tempos or longer durations there are far more tiles than fit
+    // on screen at once - without this, "Ganz" mode is unusable in practice
+    // because nothing keeps the current step in view while you're moving.
+    if (tiles[beatIdx]) tiles[beatIdx].scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
   }
 
   function startMovementSession() {
@@ -3009,10 +3120,10 @@
   document.querySelectorAll("[data-wo-work]").forEach((el) => el.addEventListener("click", () => { workoutTabataPrefs.workS = Number(el.dataset.woWork); saveWorkoutTabataPrefs(); syncWorkoutTabataUI(); }));
   document.querySelectorAll("[data-wo-rest]").forEach((el) => el.addEventListener("click", () => { workoutTabataPrefs.restS = Number(el.dataset.woRest); saveWorkoutTabataPrefs(); syncWorkoutTabataUI(); }));
   function syncWorkoutTabataUI() {
-    els.workoutExerciseRow.querySelectorAll("[data-wo-exercise]").forEach((el) => el.classList.toggle("active", el.dataset.woExercise === workoutTabataPrefs.exercise));
-    document.querySelectorAll("[data-wo-rounds]").forEach((el) => el.classList.toggle("active", Number(el.dataset.woRounds) === workoutTabataPrefs.rounds));
-    document.querySelectorAll("[data-wo-work]").forEach((el) => el.classList.toggle("active", Number(el.dataset.woWork) === workoutTabataPrefs.workS));
-    document.querySelectorAll("[data-wo-rest]").forEach((el) => el.classList.toggle("active", Number(el.dataset.woRest) === workoutTabataPrefs.restS));
+    els.workoutExerciseRow.querySelectorAll("[data-wo-exercise]").forEach((el) => setActive(el, el.dataset.woExercise === workoutTabataPrefs.exercise));
+    document.querySelectorAll("[data-wo-rounds]").forEach((el) => setActive(el, Number(el.dataset.woRounds) === workoutTabataPrefs.rounds));
+    document.querySelectorAll("[data-wo-work]").forEach((el) => setActive(el, Number(el.dataset.woWork) === workoutTabataPrefs.workS));
+    document.querySelectorAll("[data-wo-rest]").forEach((el) => setActive(el, Number(el.dataset.woRest) === workoutTabataPrefs.restS));
   }
   function openWorkoutTabataReady() { syncWorkoutTabataUI(); showScreen("workoutTabataReady"); }
   els.workoutTabataStartCard.addEventListener("click", openWorkoutTabataReady);

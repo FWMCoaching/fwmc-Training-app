@@ -95,7 +95,7 @@ button{font-family:inherit;color:inherit}
 
 /* ---- Section switcher (Visual Training / Atemtraining) ---- */
 .section-switch{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px;margin-bottom:22px;max-width:360px}
-.section-tab{flex:1;border:none;background:none;border-radius:999px;padding:9px 6px;font-size:13.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;text-align:center}
+.section-tab{flex:1;border:none;background:none;border-radius:999px;padding:13px 6px;font-size:13.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;text-align:center}
 .section-tab.active{background:var(--surface);color:var(--brand-deep);box-shadow:var(--shadow)}
 
 /* ---- Hero ---- */
@@ -165,6 +165,7 @@ section{margin-bottom:26px}
 .h-date{font-size:12.5px;color:var(--ink-soft);grid-row:span 2;font-variant-numeric:tabular-nums;padding-top:1px}
 .h-title{font-weight:600;font-size:14px}
 .h-meta{font-size:12.5px;color:var(--ink-soft)}
+.history-actions{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 
 /* ---- Featured programmes ---- */
 .featured-grid{display:grid;grid-template-columns:1fr;gap:10px}
@@ -194,7 +195,7 @@ section{margin-bottom:26px}
 .filter-extra{display:flex;flex-wrap:wrap;gap:8px;width:100%}
 .filter-chip{
   border:1.5px solid var(--line);background:var(--surface);color:var(--ink-soft);
-  font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;cursor:pointer;
+  font-size:13px;font-weight:600;padding:13px 14px;border-radius:999px;cursor:pointer;
 }
 .filter-chip.active{border-color:var(--brand);background:var(--brand);color:#fff}
 .filter-more{
@@ -412,10 +413,10 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 /* Whole-programme grid mode: every tile laid out at once, wrapping, so the
    full sequence stays visible in the background while a marker moves
    through it - no DOM rebuild per beat, just class toggles. */
-.movement-lane.grid{flex-wrap:wrap;justify-content:center;gap:8px;max-width:none}
-.movement-lane.grid .movement-tile{flex:0 0 auto;width:64px;padding:8px 4px 6px}
-.movement-lane.grid .figure-svg{width:38px;height:38px}
-.movement-lane.grid .mv-label{font-size:9.5px;min-height:2.2em}
+.movement-lane.grid{flex-wrap:wrap;justify-content:center;gap:8px;max-width:none;scroll-margin:0}
+.movement-lane.grid .movement-tile{flex:0 0 auto;width:74px;padding:8px 4px 6px;scroll-margin-block:12px}
+.movement-lane.grid .figure-svg{width:46px;height:46px}
+.movement-lane.grid .mv-label{font-size:10.5px;min-height:2.2em}
 
 .movement-finish-badge{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;
@@ -599,6 +600,7 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .pause-actions button{flex:1;border-radius:14px;cursor:pointer;font-weight:700;font-size:15px;padding:14px 10px}
 .pause-skip{border:none;background:#007094;color:#fff}
 .pause-toggle{border:1.5px solid #dde6e8;background:#fff;color:#16232a}
+.breath-pause-btn{border-radius:14px;font-weight:700;font-size:14px;padding:11px 26px;cursor:pointer}
 .chapter-nav{display:flex;align-items:center;gap:8px}
 .chapter-nav button{
   border:none;background:rgba(22,35,42,.07);color:#16232a;width:42px;height:42px;

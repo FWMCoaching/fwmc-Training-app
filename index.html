@@ -45,17 +45,20 @@
       <input type="text" id="programCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="programGoBtn">&Ouml;ffnen</button>
     </div>
-    <div class="program-error" id="programError" hidden>Zu diesem Code wurde kein Training gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
+    <div class="program-error" id="programError" role="alert" hidden>Zu diesem Code wurde kein Training gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
   </section>
 
   <section class="history" id="historySection" hidden>
     <div class="section-head">
-      <h2>Dein Verlauf</h2>
-      <span class="section-note">nur auf diesem Ger&auml;t gespeichert</span>
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
     </div>
     <div class="history-stats" id="historyStats"></div>
     <ul class="history-list" id="historyList"></ul>
-    <button class="text-link small" id="historyClearBtn">Verlauf l&ouml;schen</button>
+    <div class="history-actions">
+      <button class="text-link small" id="historyMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="historyClearBtn">Verlauf l&ouml;schen</button>
+    </div>
   </section>
 
   <section class="featured-programs" id="featuredPrograms" hidden>
@@ -252,17 +255,20 @@
       <input type="text" id="breathProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="breathProgramGoBtn">&Ouml;ffnen</button>
     </div>
-    <div class="program-error" id="breathProgramError" hidden>Zu diesem Code wurde kein Training gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
+    <div class="program-error" id="breathProgramError" role="alert" hidden>Zu diesem Code wurde kein Training gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
   </section>
 
   <section class="history" id="breathHistorySection" hidden>
     <div class="section-head">
-      <h2>Dein Verlauf</h2>
-      <span class="section-note">nur auf diesem Ger&auml;t gespeichert</span>
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
     </div>
     <div class="history-stats" id="breathHistoryStats"></div>
     <ul class="history-list" id="breathHistoryList"></ul>
-    <button class="text-link small" id="breathHistoryClearBtn">Verlauf l&ouml;schen</button>
+    <div class="history-actions">
+      <button class="text-link small" id="breathHistoryMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="breathHistoryClearBtn">Verlauf l&ouml;schen</button>
+    </div>
   </section>
 
   <section class="featured-programs" id="breathFeaturedPrograms" hidden>
@@ -315,12 +321,15 @@
 
   <section class="history" id="movementHistorySection" hidden>
     <div class="section-head">
-      <h2>Dein Verlauf</h2>
-      <span class="section-note">nur auf diesem Ger&auml;t gespeichert</span>
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
     </div>
     <div class="history-stats" id="movementHistoryStats"></div>
     <ul class="history-list" id="movementHistoryList"></ul>
-    <button class="text-link small" id="movementHistoryClearBtn">Verlauf l&ouml;schen</button>
+    <div class="history-actions">
+      <button class="text-link small" id="movementHistoryMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="movementHistoryClearBtn">Verlauf l&ouml;schen</button>
+    </div>
   </section>
 
   <section class="patterns">
@@ -372,17 +381,20 @@
       <input type="text" id="workoutProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="workoutProgramGoBtn">&Ouml;ffnen</button>
     </div>
-    <div class="program-error" id="workoutProgramError" hidden>Zu diesem Code wurde kein Trainingsplan gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
+    <div class="program-error" id="workoutProgramError" role="alert" hidden>Zu diesem Code wurde kein Trainingsplan gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
   </section>
 
   <section class="history" id="workoutHistorySection" hidden>
     <div class="section-head">
-      <h2>Dein Verlauf</h2>
-      <span class="section-note">nur auf diesem Ger&auml;t gespeichert</span>
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
     </div>
     <div class="history-stats" id="workoutHistoryStats"></div>
     <ul class="history-list" id="workoutHistoryList"></ul>
-    <button class="text-link small" id="workoutHistoryClearBtn">Verlauf l&ouml;schen</button>
+    <div class="history-actions">
+      <button class="text-link small" id="workoutHistoryMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="workoutHistoryClearBtn">Verlauf l&ouml;schen</button>
+    </div>
   </section>
 
   <section class="featured-programs" id="workoutFeaturedPrograms" hidden>
@@ -745,6 +757,7 @@
       <li>Niemals im oder am Wasser (auch nicht in der Badewanne), niemals beim Autofahren oder beim Bedienen von Maschinen.</li>
       <li>Nicht geeignet bei Schwangerschaft, Epilepsie, Herz-Kreislauf-Erkrankungen oder wenn du schon einmal ohnm&auml;chtig geworden bist. Im Zweifel vorher &auml;rztlich abkl&auml;ren.</li>
       <li>Kribbeln in H&auml;nden/F&uuml;&szlig;en und leichter Schwindel sind normal. Bei starkem Unwohlsein sofort abbrechen und normal weiteratmen.</li>
+      <li>Das ist kein Wettbewerb: Halte die Luft nur so lange an, wie es sich angenehm anf&uuml;hlt &ndash; nicht so lange wie m&ouml;glich. Ohnmacht bedeutet, dass du zu weit gegangen bist.</li>
     </ul>
     <label class="warn-check"><input type="checkbox" id="wimhofAckCheck"> Ich habe die Hinweise gelesen und &uuml;be an einem sicheren Ort, im Sitzen oder Liegen.</label>
   </div>
@@ -798,8 +811,8 @@
     <button id="fsBtn">Vollbild</button>
   </div>
   <div class="fs-hint" id="fsHint" hidden>
-    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt.</span>
-    <button id="fsHintOpenBtn">In neuem Tab &ouml;ffnen</button>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="fsHintOpenBtn">App neu &ouml;ffnen</button>
     <button class="fs-hint-close" id="fsHintClose" aria-label="Schlie&szlig;en">&times;</button>
   </div>
   <div class="live-nav" id="liveNav" hidden>
@@ -864,6 +877,7 @@
       <div class="breath-phase-count" id="breathPhaseCount">4</div>
     </div>
     <div class="breath-phase-label" id="breathPhaseLabel">Einatmen</div>
+    <button class="breath-pause-btn pause-toggle" id="breathPauseBtn">Pause</button>
   </div>
   <div class="player-bar" id="breathPlayerBar">
     <button id="breathBackBtn">&#10005; Beenden</button>
@@ -871,8 +885,8 @@
     <button id="breathFsBtn">Vollbild</button>
   </div>
   <div class="fs-hint" id="breathFsHint" hidden>
-    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt.</span>
-    <button id="breathFsHintOpenBtn">In neuem Tab &ouml;ffnen</button>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="breathFsHintOpenBtn">App neu &ouml;ffnen</button>
     <button class="fs-hint-close" id="breathFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
   </div>
 
@@ -902,8 +916,8 @@
     <button id="wimhofFsBtn">Vollbild</button>
   </div>
   <div class="fs-hint" id="wimhofFsHint" hidden>
-    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt.</span>
-    <button id="wimhofFsHintOpenBtn">In neuem Tab &ouml;ffnen</button>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="wimhofFsHintOpenBtn">App neu &ouml;ffnen</button>
     <button class="fs-hint-close" id="wimhofFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
   </div>
 
@@ -929,8 +943,8 @@
     <button id="movementFsBtn">Vollbild</button>
   </div>
   <div class="fs-hint" id="movementFsHint" hidden>
-    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt.</span>
-    <button id="movementFsHintOpenBtn">In neuem Tab &ouml;ffnen</button>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="movementFsHintOpenBtn">App neu &ouml;ffnen</button>
     <button class="fs-hint-close" id="movementFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
   </div>
 
@@ -986,8 +1000,8 @@
     <button id="workoutFsBtn">Vollbild</button>
   </div>
   <div class="fs-hint" id="workoutFsHint" hidden>
-    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt.</span>
-    <button id="workoutFsHintOpenBtn">In neuem Tab &ouml;ffnen</button>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="workoutFsHintOpenBtn">App neu &ouml;ffnen</button>
     <button class="fs-hint-close" id="workoutFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
   </div>
 
