@@ -83,6 +83,7 @@
         <button class="filter-chip" data-filter-group="typ" data-filter-value="vrw">VRW</button>
         <button class="filter-chip" data-filter-group="typ" data-filter-value="stroop">Stroop</button>
         <button class="filter-chip" data-filter-group="typ" data-filter-value="erweitert">Erweitert</button>
+        <button class="filter-chip" data-filter-group="typ" data-filter-value="huetchen">H&uuml;tchen</button>
       </div>
     </div>
 
@@ -185,6 +186,29 @@
         <h3>Sehen &amp; H&ouml;ren</h3>
         <p>Bild und Ton kombiniert &ndash; mit Sonderregel.</p>
         <span class="tag tag-ton">&#128266; Ton</span>
+      </button>
+
+      <button class="excard" data-exercise="cone-tap" data-tags="huetchen">
+        <div class="icon-badge"><svg viewBox="0 0 24 24">
+          <polygon points="12,4 16.5,18 7.5,18" fill="#fff"/>
+          <rect x="5" y="18" width="14" height="2.4" rx="1" fill="#fff"/>
+        </svg></div>
+        <h3>H&uuml;tchen &middot; Antippen</h3>
+        <p>Ordne deine Farbh&uuml;tchen frei an, tippe f&uuml;r die n&auml;chste Farbe.</p>
+        <span class="tag">H&uuml;tchen</span>
+      </button>
+
+      <button class="excard" data-exercise="cone-compass" data-tags="huetchen">
+        <div class="icon-badge"><svg viewBox="0 0 24 24">
+          <line x1="12" y1="12" x2="12" y2="4" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+          <line x1="12" y1="12" x2="20" y2="12" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+          <line x1="12" y1="12" x2="12" y2="20" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+          <line x1="12" y1="12" x2="4" y2="12" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+          <circle cx="12" cy="12" r="1.6" fill="#fff"/>
+        </svg></div>
+        <h3>H&uuml;tchen &middot; Kompass-Aufbau</h3>
+        <p>Baue deinen eigenen Richtungs-Aufbau &ndash; die App zeigt nur die Farbe.</p>
+        <span class="tag">H&uuml;tchen</span>
       </button>
     </div>
   </section>
@@ -432,7 +456,7 @@
     <div class="color-hint" id="colorHint"></div>
   </div>
 
-  <div class="group">
+  <div class="group" id="durationGroup">
     <div class="group-label">Dauer</div>
     <div class="choice-row">
       <button class="choice" data-dur="60">1 Min</button>
@@ -441,7 +465,7 @@
     </div>
   </div>
 
-  <div class="group">
+  <div class="group" id="tempoGroup">
     <div class="group-label">Tempo</div>
     <div class="choice-row">
       <button class="choice" data-tempo="leicht">Leicht<small>ruhig, mit viel Zeit</small></button>
@@ -449,6 +473,16 @@
       <button class="choice" data-tempo="schwer">Schwer<small>schnell &amp; kurz</small></button>
     </div>
     <div class="tempo-custom" id="tempoCustom" hidden>Individuell eingestellt (siehe Feineinstellungen)</div>
+  </div>
+
+  <div class="group" id="coneCountGroup" hidden>
+    <div class="group-label">Anzahl Farbwechsel</div>
+    <div class="choice-row">
+      <button class="choice" data-cone-count="10">10</button>
+      <button class="choice" data-cone-count="20">20</button>
+      <button class="choice" data-cone-count="30">30</button>
+    </div>
+    <div class="group-help">Nach jedem Antippen des Bildschirms kommt die n&auml;chste Farbe &ndash; du bestimmst das Tempo.</div>
   </div>
 
   <details class="advanced" id="advanced">

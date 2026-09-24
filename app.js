@@ -353,6 +353,9 @@
       ctx.closePath();
       ctx.fillStyle = "#ffffff";
       ctx.fill();
+    } else if (kind === "color") {
+      ctx.fillStyle = payload.color;
+      ctx.fillRect(0, 0, cw, ch);
     } else if (kind === "vrw") {
       const bg = payload.direct ? payload.color : "#ffffff";
       const arrowFill = payload.direct ? "#ffffff" : payload.color;
@@ -430,6 +433,18 @@
       task: "Reagiere auf Bild oder Ton – bei Konflikt gilt die Sonderregel.",
       trains: "Verarbeitung von Sehen und Hören, Regelwechsel",
       rules: "Nur Bild oder nur Ton: Reagiere wie gezeigt oder gesagt. Bild und Ton gleichzeitig mit unterschiedlicher Richtung: Zeigt der Pfeil nach VORNE oder RECHTS, gilt der TON; zeigt er nach HINTEN oder LINKS, gilt das BILD. Bild mit Piepton: Reagiere in die Gegenrichtung des Pfeils. Die Sprachausgabe nutzt die Stimme deines Geräts. Diese Übung ist eine Weiterentwicklung von Fabian Westermann Mentalcoaching.",
+    },
+    "cone-tap": {
+      title: "Hütchen · Antippen", type: "color-tap", usesColors: true,
+      task: "Tippe auf den Bildschirm, sobald du am Hütchen warst, für die nächste Farbe.",
+      trains: "Eigenes Tempo, Schnelligkeit und Orientierung im selbst gebauten Hütchen-Parcours",
+      rules: "Du bestimmst selbst, wie viele Farbhütchen du aufstellst und was sie bedeuten – die App zeigt nur, welche Farbe als Nächstes dran ist. Lauf zum passenden Hütchen und tippe danach irgendwo auf den Bildschirm: Die nächste Farbe erscheint erst, wenn du bereit bist.",
+    },
+    "cone-compass": {
+      title: "Hütchen · Kompass-Aufbau", type: "color", usesColors: true,
+      task: "Reagiere auf die Farbe – passend zu deinem eigenen Richtungs-Aufbau am Boden.",
+      trains: "Reaktionsschnelligkeit gezielt in frei gewählte Richtungen",
+      rules: "Klebe ein Kreuz oder einen Stern mit vier oder acht Richtungen auf den Boden und stelle deine Farbhütchen in die Richtungen, die du trainieren willst. Mehrere Farben auf derselben Richtung lassen diese Richtung häufiger drankommen. Welche Farbe wohin gehört, legst du komplett selbst fest – die App zeigt immer nur die Farbe.",
     },
   };
 
@@ -747,6 +762,7 @@
     intervalMinSlider: $("intervalMinSlider"), intervalMaxSlider: $("intervalMaxSlider"), intervalValue: $("intervalValue"),
     tempoCustom: $("tempoCustom"),
     colorGroup: $("colorGroup"), colorPicker: $("colorPicker"), colorCount: $("colorCount"), colorHint: $("colorHint"),
+    durationGroup: $("durationGroup"), tempoGroup: $("tempoGroup"), coneCountGroup: $("coneCountGroup"), advanced: $("advanced"),
     programCodeInput: $("programCodeInput"), programGoBtn: $("programGoBtn"), programError: $("programError"),
     programIntro: $("programIntro"), programBackToHome: $("programBackToHome"), programTitle: $("programTitle"),
     programMeta: $("programMeta"), programDesc: $("programDesc"), chapterList: $("chapterList"),
@@ -994,6 +1010,7 @@
     intervalMax: 6,
     colors: ["orange", "rot", "lila"],
     sequence: "frei",
+    coneCount: 20,
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -1077,6 +1094,13 @@
   }
   els.durationSlider.addEventListener("input", () => { state.duration = Number(els.durationSlider.value); savePrefs(); syncDurationUI(); });
 
+  document.querySelectorAll("[data-cone-count]").forEach((el) => {
+    el.addEventListener("click", () => { state.coneCount = Number(el.dataset.coneCount); savePrefs(); syncConeCountUI(); });
+  });
+  function syncConeCountUI() {
+    document.querySelectorAll("[data-cone-count]").forEach((el) => el.classList.toggle("active", el.dataset.coneCount === String(state.coneCount)));
+  }
+
   document.querySelectorAll("[data-tempo]").forEach((el) => {
     el.addEventListener("click", () => { Object.assign(state, TEMPO_PRESETS[el.dataset.tempo]); savePrefs(); syncTempoUI(); });
   });
@@ -1121,10 +1145,16 @@
     els.explainerBtn.hidden = !ex.explainerVideo;
     els.explainerBtn.onclick = ex.explainerVideo ? () => openVideoModal(ex.explainerVideo) : null;
     els.colorGroup.hidden = !ex.usesColors;
+    const isConeTap = ex.type === "color-tap";
+    els.durationGroup.hidden = isConeTap;
+    els.tempoGroup.hidden = isConeTap;
+    els.advanced.hidden = isConeTap;
+    els.coneCountGroup.hidden = !isConeTap;
     syncColorUI();
     syncSequenceUI();
     syncDurationUI();
     syncTempoUI();
+    syncConeCountUI();
     showScreen("ready");
   }
   els.backToHome.addEventListener("click", () => showScreen("home"));
@@ -1535,6 +1565,7 @@
   let raf = null;
   let wakeLock = null;
   let session = null;
+  let coneTap = null; // { target, count } - set while the tap-paced cone-colour exercise runs
 
   // 3-2-1 lead-in with the exercise's one-line task; returns its length.
   function pushCountdown(schedule, cfg) {
@@ -1640,6 +1671,21 @@
     return { schedule, total: t };
   }
 
+  function buildColorSchedule(cfg, rng) {
+    const colors = active.colors;
+    const schedule = [];
+    let t = pushCountdown(schedule, cfg);
+    const show = state.stimulusS;
+    while (t < state.duration) {
+      const color = colors[Math.floor(rng() * colors.length)];
+      const pause = randInterval(rng);
+      schedule.push({ t0: t, t1: t + show, kind: "color", payload: { color: color.hex } });
+      schedule.push({ t0: t + show, t1: t + show + pause, kind: "blank", payload: {} });
+      t += show + pause;
+    }
+    return { schedule, total: t };
+  }
+
   function buildVRWRealSchedule(cfg, rng) {
     const colors = active.colors;
     const schedule = [];
@@ -1661,6 +1707,7 @@
     return cfg.type === "stroop" ? buildStroopSchedule(cfg, rng) :
       cfg.type === "cross" ? buildCrossModalSchedule(cfg, rng) :
       cfg.type === "vt" ? buildVTSchedule(cfg, rng) :
+      cfg.type === "color" ? buildColorSchedule(cfg, rng) :
       cfg.type === "vrw-real" ? buildVRWRealSchedule(cfg, rng) :
       buildArrowSchedule(cfg, rng);
   }
@@ -1764,6 +1811,43 @@
     requestWakeLock();
     raf = requestAnimationFrame(tick);
   }
+
+  // Tap-paced cone-colour exercise ("Hütchen · Antippen"): no timed schedule -
+  // the client taps the stage whenever they're ready for the next colour, so
+  // it gets its own tiny loop instead of the timed schedule/tick() engine.
+  function drawNextConeColor() {
+    const colors = active.colors;
+    let color = colors[Math.floor(Math.random() * colors.length)];
+    if (colors.length > 1) {
+      while (color === coneTap.lastColor) color = colors[Math.floor(Math.random() * colors.length)];
+    }
+    coneTap.lastColor = color;
+    drawScene("color", { color: color.hex });
+    els.timeEl.textContent = `${coneTap.count} / ${coneTap.target}`;
+  }
+
+  function startConeTap() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.player.hidden = false;
+    els.playerBar.hidden = false;
+    els.progressTrack.hidden = true;
+    fitCanvas();
+    if (raf) cancelAnimationFrame(raf);
+    raf = null;
+    session = { startTime: performance.now(), total: 86400, schedule: [] };
+    coneTap = { target: state.coneCount, count: 1, lastColor: null };
+    requestWakeLock();
+    drawNextConeColor();
+  }
+
+  function coneTapAdvance() {
+    if (!coneTap) return;
+    if (coneTap.count >= coneTap.target) { finishSession(); return; }
+    coneTap.count++;
+    drawNextConeColor();
+  }
+  canvas.addEventListener("click", () => coneTapAdvance());
 
   function playChapter(idx) {
     if (!program) return;
@@ -1884,7 +1968,8 @@
     active = { colors: keysToColors(state.colors), seedKey: state.colors.join("-") };
     buildProgressTrack(1);
     els.liveNav.hidden = true;
-    runSession();
+    if (EXERCISES[state.exercise].type === "color-tap") startConeTap();
+    else runSession();
   }
 
   function finishSession() {
@@ -1893,20 +1978,23 @@
     if (window.speechSynthesis) speechSynthesis.cancel();
     els.liveNav.hidden = true;
     if (program) { startPause(); return; }
-    if (comboProgram) { advanceComboProgram(spent); return; }
+    if (comboProgram) { coneTap = null; advanceComboProgram(spent); return; }
     releaseWakeLock();
     setProgress(1, 0);
     const ex = EXERCISES[state.exercise];
-    els.doneSummary.textContent = `${ex.title} · ${fmtMinutes(spent)}`;
+    const summary = coneTap ? `${coneTap.target} Farbwechsel · ${fmtMinutes(spent)}` : `${ex.title} · ${fmtMinutes(spent)}`;
+    els.doneSummary.textContent = summary;
     const id = addHistory({ kind: "exercise", title: ex.title, seconds: Math.round(spent) });
     renderRating(els.doneRating, id);
     els.donePanel.hidden = false;
     els.playerBar.hidden = true;
+    coneTap = null;
   }
 
   function leavePlayer() {
     if (raf) cancelAnimationFrame(raf);
     session = null;
+    coneTap = null;
     program = null;
     stopPauseTimers();
     releaseWakeLock();
@@ -1958,7 +2046,11 @@
   wireFullscreen({ player: els.wimhofPlayer, btn: els.wimhofFsBtn, hint: els.wimhofFsHint, hintOpen: els.wimhofFsHintOpenBtn, hintClose: els.wimhofFsHintClose });
   wireFullscreen({ player: els.movementPlayer, btn: els.movementFsBtn, hint: els.movementFsHint, hintOpen: els.movementFsHintOpenBtn, hintClose: els.movementFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
-  window.addEventListener("resize", () => { if (!els.player.hidden) fitCanvas(); });
+  window.addEventListener("resize", () => {
+    if (els.player.hidden) return;
+    fitCanvas();
+    if (coneTap) drawScene("color", { color: coneTap.lastColor.hex });
+  });
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && (session || breathSession || wimhofState || movementSession || workoutState) && wakeLock === null) requestWakeLock();
   });
