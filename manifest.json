@@ -1,7 +1,7 @@
 {
-  "name": "FWMC Visual Training",
-  "short_name": "Visual Training",
-  "description": "Visuelles Reaktionstraining von Fabian Westermann Mentalcoaching.",
+  "name": "FWMC Online-Training",
+  "short_name": "Online-Training",
+  "description": "Visual Training und Atemtraining von Fabian Westermann Mentalcoaching.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

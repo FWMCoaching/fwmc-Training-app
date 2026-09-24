@@ -498,6 +498,59 @@
   const PHASE_LABELS = { in: "Einatmen", hold1: "Halten", out: "Ausatmen", hold2: "Halten" };
   const PHASE_ORDER = ["in", "hold1", "out", "hold2"];
 
+  // Wim-Hof-style power breathing is a different mechanic (fast breathing,
+  // then a self-timed breath hold, then a timed recovery hold) and doesn't
+  // fit the steady four-phase cycle above, so it gets its own engine and
+  // its own settings/info object instead of a BREATH_PATTERNS entry.
+  const WIMHOF_INFO = {
+    name: "Kraftvolle Atmung (Wim-Hof-Stil)",
+    short: "Schnelle Atemzüge, dann die Luft anhalten.",
+  };
+  const WIMHOF_DEFAULTS = { breaths: 30, rounds: 3, breathPaceS: 1.7, recoveryHoldS: 15 };
+
+  // ---- Coach-authored breathing programmes (mirrors PROGRAMS below): a
+  // sequence of breathing blocks delivered by code, or shown here for free
+  // as a public example. Real client breath-programmes live in the same
+  // Cloudflare database as the visual ones (see lookupProgram), returned
+  // with type "breath-program" (single) or "breath-bundle" (several per
+  // code, newest first) instead of the visual "bundle"/plain shape.
+  //   Cycle block:  { pattern: "coherent"|"box"|"relax478"|"custom",
+  //                   durationMin, phases?: {in,hold1,out,hold2}, sound? }
+  //   Wim-Hof block: { pattern: "wimhof", breaths, rounds, breathPaceS,
+  //                    recoveryHoldS, sound? }
+  const BREATH_PROGRAMS = {
+    "atem-reset": {
+      type: "breath-program",
+      name: "Feierabend-Reset",
+      featured: true,
+      description: "Erst Box-Atmung zum Ankommen, dann lange ruhige Atmung zum Runterkommen.",
+      blocks: [
+        { pattern: "box", durationMin: 3 },
+        { pattern: "coherent", durationMin: 5 },
+      ],
+    },
+  };
+  function blockPatternName(block) {
+    return block.pattern === "wimhof" ? WIMHOF_INFO.name : BREATH_PATTERNS[block.pattern].name;
+  }
+  function blockMetaText(block) {
+    if (block.pattern === "wimhof") {
+      const r = block.rounds ?? WIMHOF_DEFAULTS.rounds, n = block.breaths ?? WIMHOF_DEFAULTS.breaths;
+      return `${r} ${r === 1 ? "Runde" : "Runden"} à ${n} Atemzüge`;
+    }
+    return fmtMinutes((block.durationMin ?? 5) * 60);
+  }
+  function breathProgramSeconds(def) {
+    return def.blocks.reduce((sum, b) => {
+      if (b.pattern === "wimhof") {
+        const r = b.rounds ?? WIMHOF_DEFAULTS.rounds, n = b.breaths ?? WIMHOF_DEFAULTS.breaths;
+        const pace = b.breathPaceS ?? WIMHOF_DEFAULTS.breathPaceS, rec = b.recoveryHoldS ?? WIMHOF_DEFAULTS.recoveryHoldS;
+        return sum + r * (n * pace + 30 + rec); // 30s = rough average retention, for the "ca." estimate only
+      }
+      return sum + (b.durationMin ?? 5) * 60;
+    }, 0);
+  }
+
   // ---- Elements ----
   const $ = (id) => document.getElementById(id);
   const els = {
@@ -551,13 +604,33 @@
     breathHistorySection: $("breathHistorySection"), breathHistoryStats: $("breathHistoryStats"),
     breathHistoryList: $("breathHistoryList"), breathHistoryClearBtn: $("breathHistoryClearBtn"),
     breathTipsSheet: $("breathTipsSheet"), breathTipsBtn: $("breathTipsBtn"), breathTipsCloseBtn: $("breathTipsCloseBtn"),
+    breathFeaturedPrograms: $("breathFeaturedPrograms"), breathFeaturedGrid: $("breathFeaturedGrid"),
+    breathProgramCodeInput: $("breathProgramCodeInput"), breathProgramGoBtn: $("breathProgramGoBtn"), breathProgramError: $("breathProgramError"),
+    breathBundleOverview: $("breathBundleOverview"), breathBundleBackToHome: $("breathBundleBackToHome"),
+    breathBundleTitle: $("breathBundleTitle"), breathBundleList: $("breathBundleList"),
+    breathProgramIntro: $("breathProgramIntro"), breathProgramBackToHome: $("breathProgramBackToHome"),
+    breathProgramTitle: $("breathProgramTitle"), breathProgramMeta: $("breathProgramMeta"), breathProgramDesc: $("breathProgramDesc"),
+    breathChapterList: $("breathChapterList"), breathProgramStartBtn: $("breathProgramStartBtn"),
+    breathTransition: $("breathTransition"), breathTransitionTitle: $("breathTransitionTitle"),
+    breathTransitionMeta: $("breathTransitionMeta"), breathTransitionBtn: $("breathTransitionBtn"),
+    breathProgramDonePanel: $("breathProgramDonePanel"), breathProgramDoneSummary: $("breathProgramDoneSummary"),
+    breathProgramRating: $("breathProgramRating"), breathProgramAgainBtn: $("breathProgramAgainBtn"), breathProgramDoneBackBtn: $("breathProgramDoneBackBtn"),
+    wimhofReady: $("wimhofReady"), wimhofBackToHome: $("wimhofBackToHome"), wimhofAckCheck: $("wimhofAckCheck"), wimhofStartBtn: $("wimhofStartBtn"),
+    wimhofPlayer: $("wimhofPlayer"), wimhofPlayerBar: $("wimhofPlayerBar"), wimhofBig: $("wimhofBig"),
+    wimhofPhaseCount: $("wimhofPhaseCount"), wimhofPhaseLabel: $("wimhofPhaseLabel"), wimhofSub: $("wimhofSub"),
+    wimhofHoldDoneBtn: $("wimhofHoldDoneBtn"), wimhofStatusEl: $("wimhofStatusEl"),
+    wimhofBackBtn: $("wimhofBackBtn"), wimhofFsBtn: $("wimhofFsBtn"), wimhofFsHint: $("wimhofFsHint"),
+    wimhofFsHintOpenBtn: $("wimhofFsHintOpenBtn"), wimhofFsHintClose: $("wimhofFsHintClose"),
+    wimhofDonePanel: $("wimhofDonePanel"), wimhofDoneSummary: $("wimhofDoneSummary"), wimhofRating: $("wimhofRating"),
+    wimhofAgainBtn: $("wimhofAgainBtn"), wimhofDoneBackBtn: $("wimhofDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "bundleOverview", "programIntro", "ready", "breathReady"];
+  const SCREENS = ["home", "breathHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome") renderHistory();
     if (name !== "home") els.programError.hidden = true;
+    if (name !== "breathHome") els.breathProgramError.hidden = true;
     window.scrollTo(0, 0);
   }
 
@@ -601,7 +674,7 @@
     if (item) { item.rating = rating; writeJSON(HISTORY_KEY, list); }
   }
   function isCompleted(progKey) {
-    return loadHistory().some((e) => e.kind === "program" && e.progKey === progKey);
+    return loadHistory().some((e) => (e.kind === "program" || e.kind === "breath-program") && e.progKey === progKey);
   }
   function startOfWeek() {
     const d = new Date();
@@ -610,7 +683,7 @@
     return d;
   }
   const WEEKDAYS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-  function ratingLabel(kind) { return kind === "breath" ? "Ruhe" : "Fokus"; }
+  function ratingLabel(kind) { return kind === "breath" || kind === "breath-program" ? "Ruhe" : "Fokus"; }
   function renderHistoryInto(sectionEl, statsEl, listEl, list) {
     sectionEl.hidden = list.length === 0;
     if (!list.length) return;
@@ -869,6 +942,7 @@
 
   async function lookupProgram(code) {
     if (PROGRAMS[code]) return PROGRAMS[code];
+    if (BREATH_PROGRAMS[code]) return BREATH_PROGRAMS[code];
     try {
       const res = await fetch(`${CODE_API}?code=${encodeURIComponent(code)}`);
       if (res.ok) return await res.json();
@@ -878,22 +952,27 @@
 
   let originBundle = null; // { def, code } - set when a programme was opened from a bundle overview
 
-  async function openProgramIntro(code) {
-    els.programGoBtn.disabled = true;
-    els.programGoBtn.textContent = "Lädt …";
+  // A code can resolve to a visual programme/bundle or, with the newer
+  // "breath-program"/"breath-bundle" types, a breathing one - handled from
+  // either home's code box (and from a #code link) through this one lookup,
+  // branching on the shape the API/local table returns.
+  const VISUAL_CODE_CTX = { goBtn: els.programGoBtn, errorEl: els.programError, homeScreen: "home" };
+  const BREATH_CODE_CTX = { goBtn: els.breathProgramGoBtn, errorEl: els.breathProgramError, homeScreen: "breathHome" };
+
+  async function openProgramIntro(code, ctx) {
+    ctx = ctx || VISUAL_CODE_CTX;
+    if (ctx.goBtn) { ctx.goBtn.disabled = true; ctx.goBtn.textContent = "Lädt …"; }
     const def = await lookupProgram(code);
-    els.programGoBtn.disabled = false;
-    els.programGoBtn.textContent = "Öffnen";
+    if (ctx.goBtn) { ctx.goBtn.disabled = false; ctx.goBtn.textContent = "Öffnen"; }
     if (!def) {
-      els.programError.hidden = false;
-      showScreen("home");
+      if (ctx.errorEl) ctx.errorEl.hidden = false;
+      showScreen(ctx.homeScreen);
       return;
     }
-    els.programError.hidden = true;
-    if (def.type === "bundle") {
-      openBundleOverview(def, code);
-      return;
-    }
+    if (ctx.errorEl) ctx.errorEl.hidden = true;
+    if (def.type === "bundle") { openBundleOverview(def, code); return; }
+    if (def.type === "breath-bundle") { openBreathBundleOverview(def, code); return; }
+    if (def.type === "breath-program") { breathOriginBundle = null; renderBreathProgramIntro(def, code, code); return; }
     originBundle = null;
     renderProgramIntro(def, code, code);
   }
@@ -983,7 +1062,7 @@
 
   els.programGoBtn.addEventListener("click", () => {
     const code = normCode(els.programCodeInput.value || "");
-    if (code) openProgramIntro(code);
+    if (code) openProgramIntro(code, VISUAL_CODE_CTX);
   });
   els.programCodeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") els.programGoBtn.click(); });
   els.programCodeInput.addEventListener("input", () => { els.programError.hidden = true; });
@@ -993,14 +1072,23 @@
   });
   els.bundleBackToHome.addEventListener("click", () => { originBundle = null; showScreen("home"); });
 
+  els.breathProgramGoBtn.addEventListener("click", () => {
+    const code = normCode(els.breathProgramCodeInput.value || "");
+    if (code) openProgramIntro(code, BREATH_CODE_CTX);
+  });
+  els.breathProgramCodeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") els.breathProgramGoBtn.click(); });
+  els.breathProgramCodeInput.addEventListener("input", () => { els.breathProgramError.hidden = true; });
+
   // A #code in the link (…/fwmc-Training-app/#abc123) opens that programme
   // directly - no typing needed. Also reacts when only the hash changes.
+  // Works for either a visual or a breathing code; only the fallback (error
+  // box, home screen) if the code isn't found assumes Visual Training.
   function openFromHash() {
     if (!location.hash || location.hash.length < 2) return;
     const tokenCode = normCode(decodeURIComponent(location.hash.slice(1)));
     if (!tokenCode) return;
     els.programCodeInput.value = tokenCode;
-    openProgramIntro(tokenCode);
+    openProgramIntro(tokenCode, VISUAL_CODE_CTX);
   }
   window.addEventListener("hashchange", openFromHash);
 
@@ -1034,6 +1122,87 @@
     };
   }
   renderFeaturedPrograms();
+
+  function renderBreathFeaturedPrograms() {
+    const entries = Object.entries(BREATH_PROGRAMS).filter(([, def]) => def.featured);
+    if (entries.length === 0) { els.breathFeaturedPrograms.hidden = true; return; }
+    els.breathFeaturedPrograms.hidden = false;
+    els.breathFeaturedGrid.innerHTML = "";
+    entries.forEach(([code, def]) => {
+      const card = document.createElement("button");
+      card.className = "featured-card";
+      card.innerHTML =
+        `<span class="fc-title">${esc(def.name)}</span>` +
+        `<span class="fc-desc">${esc(def.description || "")}</span>` +
+        `<span class="fc-meta">${exerciseCountLabel(def.blocks.length)} · ca. ${fmtMinutes(breathProgramSeconds(def))}</span>`;
+      card.addEventListener("click", () => openProgramIntro(code, BREATH_CODE_CTX));
+      els.breathFeaturedGrid.appendChild(card);
+    });
+  }
+  renderBreathFeaturedPrograms();
+
+  // ---- Breathing programme overview + intro screens (mirrors the visual
+  // bundle/programme screens above, one code namespace for both) ----
+  let breathOriginBundle = null; // { def, code } - set when opened from a bundle overview
+
+  function openBreathBundleOverview(bundleDef, code) {
+    els.breathBundleTitle.textContent = bundleDef.name || "Deine Programme";
+    els.breathBundleList.innerHTML = "";
+    const sorted = bundleDef.programs
+      .map((p, i) => ({ p, i }))
+      .sort((a, b) => (b.p.createdAt || "").localeCompare(a.p.createdAt || "") || (a.i - b.i));
+    sorted.forEach(({ p, i }, pos) => {
+      const key = `breath:${code}#${i}`;
+      const done = isCompleted(key);
+      const isNew = pos === 0 && sorted.length > 1 && p.createdAt;
+      const item = document.createElement("button");
+      item.className = "bundle-item";
+      const dateLabel = formatDateDE(p.createdAt);
+      const badges = (isNew ? `<span class="badge badge-new">Neu</span>` : "") + (done ? `<span class="badge badge-done">&#10003; Erledigt</span>` : "");
+      item.innerHTML =
+        `<div class="bundle-item-head"><strong>${esc(p.label || ("Programm " + (i + 1)))}</strong>${dateLabel ? `<span class="bundle-date">${dateLabel}</span>` : ""}</div>` +
+        (badges ? `<div class="badges">${badges}</div>` : "") +
+        `<span class="bundle-meta">${exerciseCountLabel(p.blocks.length)} · ca. ${fmtMinutes(breathProgramSeconds(p))}</span>` +
+        (p.description ? `<span class="bundle-desc">${esc(p.description)}</span>` : "");
+      item.addEventListener("click", () => {
+        breathOriginBundle = { def: bundleDef, code };
+        renderBreathProgramIntro(p, code, key);
+      });
+      els.breathBundleList.appendChild(item);
+    });
+    showScreen("breathBundleOverview");
+  }
+
+  function renderBreathProgramIntro(def, code, key) {
+    const title = def.name || def.label || "Dein Atemtraining";
+    els.breathProgramTitle.textContent = title;
+    els.breathProgramMeta.textContent = `${exerciseCountLabel(def.blocks.length)} · ca. ${fmtMinutes(breathProgramSeconds(def))}`;
+    els.breathProgramDesc.textContent = def.description || "";
+    els.breathProgramDesc.hidden = !def.description;
+    const start = (i) => {
+      breathProgram = { def, blockIndex: i, code, key, title, totalPlayedS: 0 };
+      startBreathProgramBlock(i);
+    };
+    els.breathChapterList.innerHTML = "";
+    def.blocks.forEach((block, i) => {
+      const row = document.createElement("div");
+      row.className = "chapter-row";
+      const main = document.createElement("button");
+      main.className = "chapter-main";
+      main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(blockPatternName(block))}</strong><span>${esc(blockMetaText(block))}</span></span>`;
+      main.addEventListener("click", () => start(i));
+      row.appendChild(main);
+      els.breathChapterList.appendChild(row);
+    });
+    els.breathProgramStartBtn.onclick = () => start(0);
+    showScreen("breathProgramIntro");
+  }
+
+  els.breathProgramBackToHome.addEventListener("click", () => {
+    if (breathOriginBundle) openBreathBundleOverview(breathOriginBundle.def, breathOriginBundle.code);
+    else showScreen("breathHome");
+  });
+  els.breathBundleBackToHome.addEventListener("click", () => { breathOriginBundle = null; showScreen("breathHome"); });
 
   // ---- Session engine ----
   let raf = null;
@@ -1237,7 +1406,20 @@
     stopPauseTimers();
   }
 
+  // Hides every full-screen player overlay (visual, breath-cycle, Wim Hof)
+  // plus the cross-engine transition/finish panels. Called at the start of
+  // each engine's own start function so a leftover overlay from switching
+  // mid-programme between a cycle block and a Wim-Hof block never shows.
+  function hideAllPlayers() {
+    els.player.hidden = true;
+    els.breathPlayer.hidden = true;
+    els.wimhofPlayer.hidden = true;
+    els.breathTransition.hidden = true;
+    els.breathProgramDonePanel.hidden = true;
+  }
+
   function runSession() {
+    hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.player.hidden = false;
     els.playerBar.hidden = false;
@@ -1438,9 +1620,10 @@
   }
   wireFullscreen({ player: els.player, btn: els.fsBtn, hint: els.fsHint, hintOpen: els.fsHintOpenBtn, hintClose: els.fsHintClose });
   wireFullscreen({ player: els.breathPlayer, btn: els.breathFsBtn, hint: els.breathFsHint, hintOpen: els.breathFsHintOpenBtn, hintClose: els.breathFsHintClose });
+  wireFullscreen({ player: els.wimhofPlayer, btn: els.wimhofFsBtn, hint: els.wimhofFsHint, hintOpen: els.wimhofFsHintOpenBtn, hintClose: els.wimhofFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden) fitCanvas(); });
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && (session || breathSession) && wakeLock === null) requestWakeLock();
+    if (document.visibilityState === "visible" && (session || breathSession || wimhofState) && wakeLock === null) requestWakeLock();
   });
 
   // ---- Tips sheet (shown once on first visit, reopenable) ----
@@ -1492,6 +1675,16 @@
       card.addEventListener("click", () => openBreathReady(key));
       els.patternGrid.appendChild(card);
     });
+    // Wim Hof is a different mechanic (see below), so it's a separate card
+    // with its own caution tag rather than one more BREATH_PATTERNS entry.
+    const whCard = document.createElement("button");
+    whCard.className = "featured-card";
+    whCard.innerHTML =
+      `<span class="fc-title">${esc(WIMHOF_INFO.name)}</span>` +
+      `<span class="fc-desc">${esc(WIMHOF_INFO.short)}</span>` +
+      `<span class="tag-caution">Aktivierend &middot; Sicherheitshinweise beachten</span>`;
+    whCard.addEventListener("click", () => openWimhofReady());
+    els.patternGrid.appendChild(whCard);
   }
   renderPatternGrid();
 
@@ -1561,6 +1754,10 @@
   let breathRaf = null;
   let breathSession = null; // { schedule, cycleLen, plannedTotal, startTime, lastKey, sound }
   let breathPatternName = "";
+  // Set while a coach-authored breathing programme is chaining blocks
+  // through this engine and/or the Wim-Hof one below; null for a single
+  // freely-chosen pattern. { def, blockIndex, code, key, title, totalPlayedS }
+  let breathProgram = null;
   const breathCircle = els.breathBig.querySelector(".breath-circle");
 
   function buildBreathCycle(phases) {
@@ -1603,6 +1800,7 @@
     if (built.cycleLen <= 0) return;
     breathPatternName = BREATH_PATTERNS[breathPatternKey].name;
     const cycles = Math.max(1, Math.round((breathPrefs.durationMin * 60) / built.cycleLen));
+    hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.breathPlayer.hidden = false;
     els.breathPlayerBar.hidden = false;
@@ -1631,15 +1829,239 @@
     breathSession = null;
     releaseWakeLock();
     if (window.speechSynthesis) speechSynthesis.cancel();
+    if (breathProgram) { advanceBreathProgram(played); return; }
     els.breathPlayerBar.hidden = true;
     els.breathDoneSummary.textContent = `${breathPatternName} · ${fmtMinutes(played)}`;
     const id = addHistory({ kind: "breath", title: breathPatternName, seconds: Math.round(played) });
     renderRating(els.breathRating, id, "Wie ruhig fühlst du dich gerade?");
     els.breathDonePanel.hidden = false;
   }
-  els.breathBackBtn.addEventListener("click", () => { breathLeavePlayer(); showScreen("breathReady"); });
+  // "Beenden" mid-training: back to the pattern's settings, or to the
+  // programme intro if a coach-authored programme was chaining blocks.
+  function breathAbort() {
+    const wasProgram = !!breathProgram;
+    breathProgram = null;
+    breathLeavePlayer();
+    showScreen(wasProgram ? "breathProgramIntro" : "breathReady");
+  }
+  els.breathBackBtn.addEventListener("click", breathAbort);
   els.breathAgainBtn.addEventListener("click", () => { breathLeavePlayer(); startBreathSession(); });
   els.breathDoneBackBtn.addEventListener("click", () => { breathLeavePlayer(); showScreen("breathHome"); });
+
+  // ---- Breathing programmes: chain cycle-engine and/or Wim-Hof blocks ----
+  function startBreathProgramBlock(idx) {
+    if (!breathProgram) return;
+    if (idx >= breathProgram.def.blocks.length) { finishBreathProgram(); return; }
+    breathProgram.blockIndex = idx;
+    const block = breathProgram.def.blocks[idx];
+    if (block.pattern === "wimhof") {
+      wimhofSettings.breaths = block.breaths ?? WIMHOF_DEFAULTS.breaths;
+      wimhofSettings.rounds = block.rounds ?? WIMHOF_DEFAULTS.rounds;
+      wimhofSettings.breathPaceS = block.breathPaceS ?? WIMHOF_DEFAULTS.breathPaceS;
+      wimhofSettings.recoveryHoldS = block.recoveryHoldS ?? WIMHOF_DEFAULTS.recoveryHoldS;
+      startWimhofSession();
+    } else {
+      breathPatternKey = block.pattern;
+      breathWorking = block.phases ? { ...block.phases } : { ...(BREATH_PATTERNS[block.pattern].phases || breathPrefs.custom) };
+      breathPrefs.durationMin = block.durationMin ?? 5;
+      breathPrefs.sound = block.sound !== false;
+      startBreathSession();
+    }
+  }
+  let breathTransitionTimer = null;
+  function showBreathTransition(nextBlock, onContinue) {
+    hideAllPlayers();
+    els.breathTransitionTitle.textContent = blockPatternName(nextBlock);
+    els.breathTransitionMeta.textContent = blockMetaText(nextBlock);
+    els.breathTransition.hidden = false;
+    if (breathTransitionTimer) clearTimeout(breathTransitionTimer);
+    const go = () => {
+      if (breathTransitionTimer) clearTimeout(breathTransitionTimer);
+      els.breathTransition.hidden = true;
+      onContinue();
+    };
+    els.breathTransitionBtn.onclick = go;
+    breathTransitionTimer = setTimeout(go, 4000);
+  }
+  function advanceBreathProgram(playedS) {
+    if (!breathProgram) return;
+    breathProgram.totalPlayedS += playedS;
+    const nextIdx = breathProgram.blockIndex + 1;
+    if (nextIdx >= breathProgram.def.blocks.length) { finishBreathProgram(); return; }
+    showBreathTransition(breathProgram.def.blocks[nextIdx], () => startBreathProgramBlock(nextIdx));
+  }
+  let lastBreathProgram = null; // kept after finishBreathProgram so "Nochmal von vorne" can restart it
+  function finishBreathProgram() {
+    hideAllPlayers();
+    const played = breathProgram.totalPlayedS;
+    const title = breathProgram.title;
+    els.breathProgramDoneSummary.textContent = `${exerciseCountLabel(breathProgram.def.blocks.length)} · ${fmtMinutes(played)} Training`;
+    const id = addHistory({ kind: "breath-program", title, progKey: breathProgram.key, seconds: Math.round(played) });
+    renderRating(els.breathProgramRating, id, "Wie fühlst du dich nach dem Programm?");
+    els.breathProgramDoneBackBtn.textContent = breathOriginBundle ? "Zurück zu meinen Programmen" : "Zur Startseite";
+    els.breathProgramDonePanel.hidden = false;
+    lastBreathProgram = breathProgram;
+    breathProgram = null;
+  }
+  els.breathProgramAgainBtn.addEventListener("click", () => {
+    if (!lastBreathProgram) return;
+    els.breathProgramDonePanel.hidden = true;
+    breathProgram = { ...lastBreathProgram, blockIndex: 0, totalPlayedS: 0 };
+    startBreathProgramBlock(0);
+  });
+  els.breathProgramDoneBackBtn.addEventListener("click", () => {
+    els.breathProgramDonePanel.hidden = true;
+    if (breathOriginBundle) openBreathBundleOverview(breathOriginBundle.def, breathOriginBundle.code);
+    else showScreen("breathHome");
+  });
+
+  // ==== Wim-Hof-style power breathing ====
+  // A different mechanic from the steady cycle engine above: a round of
+  // fast, full breaths, then a breath hold timed by the client themselves
+  // (they end it whenever they feel the urge to breathe - never a forced
+  // countdown), then a timed recovery hold on a full inhale, repeated for
+  // the chosen number of rounds. Gated behind the safety notes checkbox.
+  const WIMHOF_PREFS_KEY = "fwmc-wimhof-v1";
+  const wimhofSettings = { ...WIMHOF_DEFAULTS };
+  function loadWimhofSettings() {
+    const saved = readJSON(WIMHOF_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(wimhofSettings, saved);
+  }
+  function saveWimhofSettings() { writeJSON(WIMHOF_PREFS_KEY, wimhofSettings); }
+  loadWimhofSettings();
+
+  function syncWimhofUI() {
+    document.querySelectorAll("[data-wh-breaths]").forEach((el) => el.classList.toggle("active", Number(el.dataset.whBreaths) === wimhofSettings.breaths));
+    document.querySelectorAll("[data-wh-rounds]").forEach((el) => el.classList.toggle("active", Number(el.dataset.whRounds) === wimhofSettings.rounds));
+    document.querySelectorAll("[data-wh-pace]").forEach((el) => el.classList.toggle("active", Number(el.dataset.whPace) === wimhofSettings.breathPaceS));
+    document.querySelectorAll("[data-wh-recovery]").forEach((el) => el.classList.toggle("active", Number(el.dataset.whRecovery) === wimhofSettings.recoveryHoldS));
+  }
+  document.querySelectorAll("[data-wh-breaths]").forEach((el) => el.addEventListener("click", () => { wimhofSettings.breaths = Number(el.dataset.whBreaths); saveWimhofSettings(); syncWimhofUI(); }));
+  document.querySelectorAll("[data-wh-rounds]").forEach((el) => el.addEventListener("click", () => { wimhofSettings.rounds = Number(el.dataset.whRounds); saveWimhofSettings(); syncWimhofUI(); }));
+  document.querySelectorAll("[data-wh-pace]").forEach((el) => el.addEventListener("click", () => { wimhofSettings.breathPaceS = Number(el.dataset.whPace); saveWimhofSettings(); syncWimhofUI(); }));
+  document.querySelectorAll("[data-wh-recovery]").forEach((el) => el.addEventListener("click", () => { wimhofSettings.recoveryHoldS = Number(el.dataset.whRecovery); saveWimhofSettings(); syncWimhofUI(); }));
+
+  function syncWimhofStartBtn() {
+    const ok = els.wimhofAckCheck.checked;
+    els.wimhofStartBtn.disabled = !ok;
+    els.wimhofStartBtn.textContent = ok ? "Kraftvolle Atmung starten" : "Bitte oben bestätigen";
+  }
+  els.wimhofAckCheck.addEventListener("change", syncWimhofStartBtn);
+
+  function openWimhofReady() {
+    els.wimhofAckCheck.checked = false; // the safety notes are re-confirmed every visit, not just once
+    syncWimhofStartBtn();
+    syncWimhofUI();
+    showScreen("wimhofReady");
+  }
+  els.wimhofBackToHome.addEventListener("click", () => showScreen("breathHome"));
+
+  let wimhofRaf = null;
+  let wimhofState = null; // { round, phase: "power"|"retention"|"recovery", phaseStart, sessionStart, retentions }
+  const wimhofCircle = els.wimhofBig.querySelector(".breath-circle");
+
+  function startWimhofSession() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.wimhofPlayer.hidden = false;
+    els.wimhofPlayerBar.hidden = false;
+    els.wimhofDonePanel.hidden = true;
+    els.wimhofHoldDoneBtn.hidden = true;
+    wimhofState = { round: 1, phase: "power", phaseStart: performance.now(), sessionStart: performance.now(), retentions: [] };
+    requestWakeLock();
+    wimhofRaf = requestAnimationFrame(wimhofTick);
+  }
+  els.wimhofStartBtn.addEventListener("click", startWimhofSession);
+
+  function wimhofTick(now) {
+    if (!wimhofState) return;
+    const s = wimhofSettings;
+    if (wimhofState.phase === "power") {
+      const elapsedInPhase = (now - wimhofState.phaseStart) / 1000;
+      const idx = Math.floor(elapsedInPhase / s.breathPaceS);
+      if (idx >= s.breaths) {
+        wimhofState.phase = "retention";
+        wimhofState.phaseStart = now;
+        wimhofCircle.style.transform = "scale(0.55)";
+        els.wimhofHoldDoneBtn.hidden = false;
+      } else {
+        const within = (elapsedInPhase % s.breathPaceS) / s.breathPaceS;
+        const half = within < 0.5;
+        const p = half ? within * 2 : (within - 0.5) * 2;
+        const eased = easeInOut(p);
+        const scale = half ? 0.55 + 0.45 * eased : 1 - 0.45 * eased;
+        wimhofCircle.style.transform = `scale(${scale.toFixed(3)})`;
+        els.wimhofPhaseLabel.textContent = half ? "Kräftig einatmen" : "Locker loslassen";
+        els.wimhofPhaseCount.textContent = idx + 1;
+        els.wimhofSub.textContent = `Atemzug ${idx + 1} von ${s.breaths}`;
+      }
+    } else if (wimhofState.phase === "retention") {
+      const held = (now - wimhofState.phaseStart) / 1000;
+      els.wimhofPhaseLabel.textContent = "Anhalten – ausgeatmet";
+      els.wimhofPhaseCount.textContent = fmtClock(held);
+      els.wimhofSub.textContent = "Drücke unten, sobald du wieder einatmen musst.";
+    } else {
+      const elapsed = (now - wimhofState.phaseStart) / 1000;
+      const remain = Math.max(0, s.recoveryHoldS - elapsed);
+      wimhofCircle.style.transform = "scale(1)";
+      els.wimhofPhaseLabel.textContent = "Halten – voll eingeatmet";
+      els.wimhofPhaseCount.textContent = Math.ceil(remain);
+      els.wimhofSub.textContent = `Runde ${wimhofState.round} von ${s.rounds}`;
+      if (elapsed >= s.recoveryHoldS) {
+        if (wimhofState.round >= s.rounds) { wimhofFinish(); return; }
+        wimhofState.round += 1;
+        wimhofState.phase = "power";
+        wimhofState.phaseStart = now;
+      }
+    }
+    els.wimhofStatusEl.textContent = `Runde ${wimhofState.round}/${s.rounds}`;
+    wimhofRaf = requestAnimationFrame(wimhofTick);
+  }
+  els.wimhofHoldDoneBtn.addEventListener("click", () => {
+    if (!wimhofState || wimhofState.phase !== "retention") return;
+    const held = (performance.now() - wimhofState.phaseStart) / 1000;
+    wimhofState.retentions.push(held);
+    wimhofState.phase = "recovery";
+    wimhofState.phaseStart = performance.now();
+    els.wimhofHoldDoneBtn.hidden = true;
+  });
+
+  function wimhofFinish() {
+    if (wimhofRaf) cancelAnimationFrame(wimhofRaf);
+    wimhofRaf = null;
+    const s = wimhofState;
+    const played = s ? (performance.now() - s.sessionStart) / 1000 : 0;
+    const retentions = s ? s.retentions : [];
+    wimhofState = null;
+    releaseWakeLock();
+    if (breathProgram) { advanceBreathProgram(played); return; }
+    els.wimhofPlayerBar.hidden = true;
+    const best = retentions.length ? Math.max(...retentions) : 0;
+    els.wimhofDoneSummary.textContent = `${wimhofSettings.rounds} Runden${best ? " · längste Anhaltezeit " + fmtClock(best) : ""}`;
+    const id = addHistory({ kind: "breath", title: WIMHOF_INFO.name, seconds: Math.round(played) });
+    renderRating(els.wimhofRating, id, "Wie wach und energiegeladen fühlst du dich?");
+    els.wimhofDonePanel.hidden = false;
+  }
+  function wimhofLeave() {
+    if (wimhofRaf) cancelAnimationFrame(wimhofRaf);
+    wimhofRaf = null;
+    wimhofState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.wimhofPlayer) document.exitFullscreen().catch(() => {});
+    els.wimhofFsHint.hidden = true;
+    els.wimhofHoldDoneBtn.hidden = true;
+    els.wimhofPlayer.hidden = true;
+    els.wimhofDonePanel.hidden = true;
+  }
+  function wimhofAbort() {
+    const wasProgram = !!breathProgram;
+    breathProgram = null;
+    wimhofLeave();
+    showScreen(wasProgram ? "breathProgramIntro" : "wimhofReady");
+  }
+  els.wimhofBackBtn.addEventListener("click", wimhofAbort);
+  els.wimhofAgainBtn.addEventListener("click", () => { wimhofLeave(); startWimhofSession(); });
+  els.wimhofDoneBackBtn.addEventListener("click", () => { wimhofLeave(); showScreen("breathHome"); });
 
   // ---- Start-up ----
   renderHistory();

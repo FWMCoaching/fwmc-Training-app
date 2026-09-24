@@ -83,8 +83,12 @@ button{font-family:inherit;color:inherit}
 }
 
 /* ---- Brand header ---- */
-.brandbar{display:flex;align-items:center;margin-bottom:26px}
+.brandbar{display:flex;align-items:center;flex-wrap:wrap;column-gap:14px;row-gap:6px;margin-bottom:26px}
 .brand-logo{height:40px;width:auto;display:block}
+.brand-sub{
+  font-style:normal;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--brand);
+}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]) .brand-logo{background:#fff;border-radius:10px;padding:6px 10px;height:52px}
 }
@@ -172,6 +176,13 @@ section{margin-bottom:26px}
 .fc-title{font-family:"Magra",sans-serif;font-weight:700;font-size:16.5px;color:var(--ink)}
 .fc-desc{font-size:13.5px;color:var(--ink-soft)}
 .fc-meta{font-size:12.5px;font-weight:600;color:var(--brand-deep);margin-top:2px}
+.tag-caution{
+  align-self:flex-start;margin-top:2px;font-size:11px;font-weight:700;
+  color:#8a5a10;background:#fff1dc;padding:3px 9px;border-radius:999px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .tag-caution{background:#3a2c12;color:#f2b866}
+}
 
 /* ---- Filters ---- */
 .filter-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:14px}
@@ -331,6 +342,21 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 }
 .start-btn:disabled{opacity:.45;cursor:not-allowed}
 
+/* ---- Wim-Hof safety box ---- */
+.warn-box{
+  background:#fff6ec;border:1px solid #f0d4a8;border-left:4px solid #e08a1e;border-radius:0 12px 12px 0;
+  padding:14px 16px;margin-bottom:20px;font-size:13.5px;line-height:1.5;color:var(--ink);
+}
+.warn-box strong{display:block;margin-bottom:6px;color:#8a5a10}
+.warn-box ul{margin:0 0 12px;padding-left:20px}
+.warn-box li{margin-bottom:6px}
+.warn-check{display:flex;align-items:flex-start;gap:8px;font-weight:600;font-size:13.5px;cursor:pointer}
+.warn-check input{margin-top:3px;flex:none;width:18px;height:18px;accent-color:var(--brand)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .warn-box{background:#2c2210;border-color:#5a4520}
+  :root:not([data-theme="light"]) .warn-box strong{color:#f2b866}
+}
+
 /* Colour picker */
 .color-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 6px;max-width:420px}
 .color-swatch{
@@ -393,7 +419,15 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
   border:2px solid rgba(0,112,148,.32);will-change:transform;
 }
 .breath-phase-count{font-family:"Magra",sans-serif;font-weight:700;font-size:46px;color:#16232a;font-variant-numeric:tabular-nums}
-.breath-phase-label{font-size:21px;font-weight:700;color:#16232a}
+.breath-phase-label{font-size:21px;font-weight:700;color:#16232a;text-align:center}
+.wimhof-sub{font-size:14px;color:#4f6168;font-weight:600;text-align:center;min-height:1.4em}
+#wimhofHoldDoneBtn{border-radius:14px;padding:16px 26px;font-size:16px;margin-top:4px}
+
+/* Standalone finish/transition overlays that must show regardless of which
+   player engine (visual, breath-cycle or Wim Hof) was running underneath. */
+.done-panel.standalone{position:fixed;inset:0;z-index:30;background:var(--bg);color:var(--ink)}
+.done-panel.standalone .again{background:var(--brand)}
+.done-panel.standalone .back{color:var(--brand)}
 .progress-track{
   position:absolute;top:0;left:0;right:0;display:flex;gap:4px;z-index:23;
   padding:calc(6px + env(safe-area-inset-top,0px)) 10px 0;pointer-events:none;

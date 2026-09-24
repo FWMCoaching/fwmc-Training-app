@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FWMC Visual Training</title>
-<meta name="description" content="Visuelles Reaktionstraining von Fabian Westermann Mentalcoaching.">
+<title>FWMC Online-Training</title>
+<meta name="description" content="FWMC Online-Training von Fabian Westermann Mentalcoaching – Visual Training und Atemtraining, direkt im Browser.">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#007094">
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Visual Training">
+<meta name="apple-mobile-web-app-title" content="FWMC Online-Training">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="./styles.css">
 </head>
@@ -19,6 +19,7 @@
 <div class="screen" id="home">
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC Online-Training</em>
   </header>
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
@@ -197,6 +198,7 @@
 <div class="screen" id="breathHome" hidden>
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC Online-Training</em>
   </header>
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
@@ -211,6 +213,16 @@
     <button class="text-link" id="breathTipsBtn">Wie funktioniert das? &rarr;</button>
   </section>
 
+  <section class="code-card">
+    <h2>Dein pers&ouml;nliches Atemtraining</h2>
+    <p>Du hast einen Trainings-Code von deinem Coach? Gib ihn hier ein.</p>
+    <div class="program-entry-row">
+      <input type="text" id="breathProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <button id="breathProgramGoBtn">&Ouml;ffnen</button>
+    </div>
+    <div class="program-error" id="breathProgramError" hidden>Zu diesem Code wurde kein Training gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
+  </section>
+
   <section class="history" id="breathHistorySection" hidden>
     <div class="section-head">
       <h2>Dein Verlauf</h2>
@@ -219,6 +231,14 @@
     <div class="history-stats" id="breathHistoryStats"></div>
     <ul class="history-list" id="breathHistoryList"></ul>
     <button class="text-link small" id="breathHistoryClearBtn">Verlauf l&ouml;schen</button>
+  </section>
+
+  <section class="featured-programs" id="breathFeaturedPrograms" hidden>
+    <div class="section-head">
+      <h2>Beispiel-Programme</h2>
+      <span class="section-note">ohne Code starten</span>
+    </div>
+    <div class="featured-grid" id="breathFeaturedGrid"></div>
   </section>
 
   <section class="patterns">
@@ -392,6 +412,86 @@
   <button class="start-btn" id="breathStartBtn">Atemtraining starten</button>
 </div>
 
+<div class="screen" id="breathBundleOverview" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="breathBundleBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="breathBundleTitle">&nbsp;</h1>
+  <p class="page-sub">W&auml;hle eines deiner Programme aus. Das neueste steht oben.</p>
+  <div class="bundle-list" id="breathBundleList"></div>
+</div>
+
+<div class="screen" id="breathProgramIntro" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="breathProgramBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="breathProgramTitle">&nbsp;</h1>
+  <div class="program-meta" id="breathProgramMeta"></div>
+  <p class="page-sub" id="breathProgramDesc"></p>
+  <div class="chapter-list" id="breathChapterList"></div>
+  <p class="program-hint">Das Programm l&auml;uft automatisch durch alle &Uuml;bungen, mit kurzem &Uuml;bergang dazwischen. Tippe auf eine &Uuml;bung, um direkt dort einzusteigen.</p>
+  <button class="start-btn" id="breathProgramStartBtn">Programm starten</button>
+</div>
+
+<div class="screen" id="wimhofReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="wimhofBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <div class="ready-head">
+    <div class="ready-icon"><div class="icon-badge"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h6l-1 8 10-13h-6l1-7z" fill="#fff"/></svg></div></div>
+    <div>
+      <h1 class="page-title">Kraftvolle Atmung<br>(Wim-Hof-Stil)</h1>
+      <div class="ready-trains">Aktivierend &ndash; nicht zum Runterkommen oder Einschlafen</div>
+    </div>
+  </div>
+
+  <div class="warn-box">
+    <strong>Bitte vorher lesen</strong>
+    <ul>
+      <li>Nur im Sitzen oder Liegen &ndash; an einem sicheren, ruhigen Ort.</li>
+      <li>Niemals im oder am Wasser (auch nicht in der Badewanne), niemals beim Autofahren oder beim Bedienen von Maschinen.</li>
+      <li>Nicht geeignet bei Schwangerschaft, Epilepsie, Herz-Kreislauf-Erkrankungen oder wenn du schon einmal ohnm&auml;chtig geworden bist. Im Zweifel vorher &auml;rztlich abkl&auml;ren.</li>
+      <li>Kribbeln in H&auml;nden/F&uuml;&szlig;en und leichter Schwindel sind normal. Bei starkem Unwohlsein sofort abbrechen und normal weiteratmen.</li>
+    </ul>
+    <label class="warn-check"><input type="checkbox" id="wimhofAckCheck"> Ich habe die Hinweise gelesen und &uuml;be an einem sicheren Ort, im Sitzen oder Liegen.</label>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Atemz&uuml;ge pro Runde</div>
+    <div class="choice-row" id="wimhofBreathsRow">
+      <button class="choice" data-wh-breaths="20">20</button>
+      <button class="choice" data-wh-breaths="30">30</button>
+      <button class="choice" data-wh-breaths="40">40</button>
+    </div>
+  </div>
+  <div class="group">
+    <div class="group-label">Runden</div>
+    <div class="choice-row" id="wimhofRoundsRow">
+      <button class="choice" data-wh-rounds="1">1</button>
+      <button class="choice" data-wh-rounds="2">2</button>
+      <button class="choice" data-wh-rounds="3">3</button>
+    </div>
+  </div>
+  <div class="group">
+    <div class="group-label">Tempo der Atemz&uuml;ge</div>
+    <div class="choice-row" id="wimhofPaceRow">
+      <button class="choice" data-wh-pace="2.2">Ruhig</button>
+      <button class="choice" data-wh-pace="1.7">Mittel</button>
+      <button class="choice" data-wh-pace="1.3">Schnell</button>
+    </div>
+  </div>
+  <div class="group">
+    <div class="group-label">Erholungs-Haltezeit (nach dem Einatmen)</div>
+    <div class="choice-row" id="wimhofRecoveryRow">
+      <button class="choice" data-wh-recovery="10">10 s</button>
+      <button class="choice" data-wh-recovery="15">15 s</button>
+      <button class="choice" data-wh-recovery="20">20 s</button>
+    </div>
+  </div>
+
+  <button class="start-btn" id="wimhofStartBtn" disabled>Bitte oben best&auml;tigen</button>
+</div>
+
 <div class="player" id="player" hidden>
   <div class="stage-wrap"><canvas id="stage"></canvas></div>
   <div class="progress-track" id="progressTrack"></div>
@@ -487,6 +587,53 @@
     <button class="again" id="breathAgainBtn">Nochmal</button>
     <button class="back" id="breathDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
+</div>
+
+<div class="player calm" id="wimhofPlayer" hidden>
+  <div class="breath-stage">
+    <div class="breath big" id="wimhofBig">
+      <div class="breath-circle"></div>
+      <div class="breath-phase-count" id="wimhofPhaseCount"></div>
+    </div>
+    <div class="breath-phase-label" id="wimhofPhaseLabel">Kr&auml;ftig einatmen</div>
+    <div class="wimhof-sub" id="wimhofSub"></div>
+    <button class="pause-skip" id="wimhofHoldDoneBtn" hidden>Einatmen &ndash; Anhalten beenden</button>
+  </div>
+  <div class="player-bar" id="wimhofPlayerBar">
+    <button id="wimhofBackBtn">&#10005; Beenden</button>
+    <span class="player-status" id="wimhofStatusEl"></span>
+    <button id="wimhofFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="wimhofFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt.</span>
+    <button id="wimhofFsHintOpenBtn">In neuem Tab &ouml;ffnen</button>
+    <button class="fs-hint-close" id="wimhofFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="wimhofDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="wimhofDoneSummary"></p>
+    <div class="rating" id="wimhofRating"></div>
+    <button class="again" id="wimhofAgainBtn">Nochmal</button>
+    <button class="back" id="wimhofDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="done-panel standalone" id="breathTransition" hidden>
+  <div class="next-label">Weiter geht&rsquo;s</div>
+  <h2 id="breathTransitionTitle"></h2>
+  <p class="done-summary" id="breathTransitionMeta"></p>
+  <button class="again" id="breathTransitionBtn">Weiter</button>
+</div>
+
+<div class="done-panel standalone" id="breathProgramDonePanel" hidden>
+  <div class="done-check">&#10003;</div>
+  <h2>Programm geschafft!</h2>
+  <p class="done-summary" id="breathProgramDoneSummary"></p>
+  <div class="rating" id="breathProgramRating"></div>
+  <button class="again" id="breathProgramAgainBtn">Nochmal von vorne</button>
+  <button class="back" id="breathProgramDoneBackBtn">Zur Startseite</button>
 </div>
 
 <div class="video-modal" id="videoModal" hidden>
