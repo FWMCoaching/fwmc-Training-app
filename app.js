@@ -27,12 +27,13 @@
   // of these and they are mixed at random. Raise MAX_COLORS (and add colours
   // here) if an exercise ever needs more than four.
   const COLOR_LIB = [
-    { key: "orange", name: "Orange", hex: "#ff9110" },
     { key: "rot", name: "Rot", hex: "#d32f2f" },
-    { key: "lila", name: "Lila", hex: "#7e4fbe" },
-    { key: "blau", name: "Blau", hex: "#1565c0" },
-    { key: "gruen", name: "Grün", hex: "#2e7d32" },
     { key: "gelb", name: "Gelb", hex: "#f2a900" },
+    { key: "gruen", name: "Grün", hex: "#2e7d32" },
+    { key: "blau", name: "Blau", hex: "#1565c0" },
+    { key: "orange", name: "Orange", hex: "#ff9110" },
+    { key: "lila", name: "Lila", hex: "#7e4fbe" },
+    { key: "pink", name: "Pink", hex: "#e6399b" },
   ];
   const COLOR_BY_KEY = Object.fromEntries(COLOR_LIB.map((c) => [c.key, c]));
   const MIN_COLORS = 2;
