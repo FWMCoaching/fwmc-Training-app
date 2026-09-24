@@ -961,6 +961,10 @@
     workoutChapterList: $("workoutChapterList"), workoutProgramStartBtn: $("workoutProgramStartBtn"),
     workoutTabataReady: $("workoutTabataReady"), workoutTabataBackToHome: $("workoutTabataBackToHome"),
     workoutTabataStartBtn: $("workoutTabataStartBtn"),
+    workoutCircuitSavedGroup: $("workoutCircuitSavedGroup"), workoutCircuitSavedList: $("workoutCircuitSavedList"),
+    workoutCircuitSaveBtn: $("workoutCircuitSaveBtn"), workoutCircuitSaveForm: $("workoutCircuitSaveForm"),
+    workoutCircuitSaveNameInput: $("workoutCircuitSaveNameInput"),
+    workoutCircuitSaveCancelBtn: $("workoutCircuitSaveCancelBtn"), workoutCircuitSaveConfirmBtn: $("workoutCircuitSaveConfirmBtn"),
     workoutCircuitAddGrid: $("workoutCircuitAddGrid"), workoutCircuitCount: $("workoutCircuitCount"),
     workoutCircuitEmptyHint: $("workoutCircuitEmptyHint"), workoutCircuitList: $("workoutCircuitList"),
     workoutCircuitSetRestGroup: $("workoutCircuitSetRestGroup"),
@@ -3521,11 +3525,14 @@
     renderWorkoutCircuitAddGrid();
     renderWorkoutCircuitList();
     syncWorkoutCircuitUI();
+    els.workoutCircuitSaveForm.hidden = true;
+    els.workoutCircuitSaveBtn.hidden = false;
+    renderWorkoutCircuitSaved();
     showScreen("workoutTabataReady");
   }
   els.workoutTabataStartCard.addEventListener("click", openWorkoutTabataReady);
   els.workoutTabataBackToHome.addEventListener("click", () => showScreen("workoutHome"));
-  els.workoutTabataStartBtn.addEventListener("click", () => {
+  function startWorkoutCircuitNow() {
     if (!workoutCircuitPrefs.items.length) return;
     startStandaloneWorkoutBlock({
       kind: "circuit",
@@ -3534,6 +3541,40 @@
       sets: workoutCircuitPrefs.sets,
       setRestS: workoutCircuitPrefs.setRestS,
     });
+  }
+  els.workoutTabataStartBtn.addEventListener("click", startWorkoutCircuitNow);
+
+  // ---- Saved workout circuits: same "save under a name, tap to reuse"
+  // pattern as Kombi/Visual Training/Atemtraining/Movement. One flat list -
+  // there's only one circuit builder, so no scoping needed. ----
+  const WORKOUT_CIRCUIT_SAVED_KEY = "fwmc-workout-circuit-saved-v1";
+  const workoutCircuitSavedStore = makePresetStore(WORKOUT_CIRCUIT_SAVED_KEY);
+  function renderWorkoutCircuitSaved() {
+    renderPresetList(workoutCircuitSavedStore, els.workoutCircuitSavedList, els.workoutCircuitSavedGroup, null,
+      (e) => `${e.items.length} Übung${e.items.length === 1 ? "" : "en"} · ${e.sets} Satz${e.sets === 1 ? "" : "e"}`,
+      (entry) => {
+        workoutCircuitPrefs.items = entry.items.map((it) => ({ ...it }));
+        workoutCircuitPrefs.restS = entry.restS;
+        workoutCircuitPrefs.sets = entry.sets;
+        workoutCircuitPrefs.setRestS = entry.setRestS;
+        saveWorkoutCircuitPrefs();
+        startWorkoutCircuitNow();
+      });
+  }
+  wirePresetSaveForm({
+    saveBtn: els.workoutCircuitSaveBtn, form: els.workoutCircuitSaveForm, nameInput: els.workoutCircuitSaveNameInput,
+    cancelBtn: els.workoutCircuitSaveCancelBtn, confirmBtn: els.workoutCircuitSaveConfirmBtn,
+    defaultName: () => `Eigener Zirkel ${new Date().toLocaleDateString("de-DE")}`,
+    onSave: (name) => {
+      const list = workoutCircuitSavedStore.load();
+      list.push({
+        id: String(Date.now()), name,
+        items: workoutCircuitPrefs.items.map((it) => ({ ...it })),
+        restS: workoutCircuitPrefs.restS, sets: workoutCircuitPrefs.sets, setRestS: workoutCircuitPrefs.setRestS,
+      });
+      workoutCircuitSavedStore.save(list);
+      renderWorkoutCircuitSaved();
+    },
   });
 
   // ==== Cross-section combo programmes ====
