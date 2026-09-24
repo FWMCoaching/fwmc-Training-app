@@ -622,3 +622,62 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
   background:var(--brand-pale);color:var(--brand-deep);font-weight:700;font-size:14px;
   display:flex;align-items:center;justify-content:center;
 }
+
+/* ---- Cross-section entry point (Komplett-Programm) ---- */
+.combo-entry-link{
+  display:block;width:100%;text-align:left;border:1.5px dashed var(--line);background:var(--surface-2);
+  color:var(--brand-deep);font-size:13.5px;font-weight:700;border-radius:12px;padding:11px 14px;
+  cursor:pointer;margin-bottom:18px;
+}
+.combo-entry-link:hover{border-color:var(--brand-light)}
+
+.start-btn.secondary{
+  background:var(--surface);color:var(--brand-deep);border:1.5px solid var(--brand);box-shadow:none;
+}
+.combo-actions{display:flex;flex-direction:column;gap:10px;margin-top:auto}
+
+/* ---- Combo builder ---- */
+.combo-domain-group{margin-bottom:14px}
+.combo-domain-title{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px}
+.combo-add-grid{display:flex;flex-direction:column;gap:4px}
+.combo-domain-options{display:flex;flex-direction:column;gap:8px}
+.combo-add-btn{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;
+  border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 14px;
+  cursor:pointer;box-shadow:var(--shadow);
+}
+.combo-add-btn:hover{border-color:var(--brand-light)}
+.combo-add-btn .ca-title{font-size:13.5px;font-weight:700;color:var(--ink)}
+.combo-add-btn .ca-meta{font-size:12px;color:var(--ink-soft)}
+.combo-add-btn .ca-plus{flex:none;font-size:20px;font-weight:700;color:var(--brand);line-height:1}
+.combo-block-remove{
+  margin-left:auto;flex:none;width:30px;height:30px;border-radius:50%;border:none;
+  background:var(--surface-2);color:var(--ink-soft);font-size:16px;cursor:pointer;
+}
+
+/* ---- Workout ---- */
+.workout-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px 18px;overflow-y:auto}
+.workout-reps-view,.workout-tabata-view{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:420px}
+.workout-exercise-name{font-family:"Magra",sans-serif;font-weight:700;font-size:26px;color:#16232a;text-align:center}
+.workout-set-info{font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#007094}
+.workout-reps-big{font-family:"Magra",sans-serif;font-weight:700;font-size:52px;color:#16232a}
+.workout-note{font-size:14px;color:#4f6168;text-align:center;max-width:36ch}
+.workout-rest{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:6px}
+.workout-overview{width:100%;max-width:420px;display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.workout-overview-row{
+  display:flex;align-items:center;gap:8px;font-size:13px;color:#4f6168;
+  background:#fff;border:1px solid #dde6e8;border-radius:10px;padding:8px 12px;
+}
+.workout-overview-row.current{border-color:#ff9110;color:#16232a;font-weight:700}
+.workout-overview-row.done{opacity:.5;text-decoration:line-through}
+.workout-overview-row .wo-num{flex:none;width:20px;height:20px;border-radius:50%;background:#eef3f4;color:#4f6168;font-size:11px;display:flex;align-items:center;justify-content:center}
+
+.tabata-phase-label{font-size:15px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#16232a}
+.tabata-countdown{font-family:"Magra",sans-serif;font-weight:700;font-size:88px;color:#16232a;font-variant-numeric:tabular-nums}
+.tabata-exercise{font-size:20px;font-weight:700;color:#16232a;text-align:center}
+.tabata-round{font-size:13px;color:#4f6168}
+.workout-tabata-view.phase-work{background:#e4f5e8}
+.workout-tabata-view.phase-rest{background:#fdece0}
+.workout-tabata-view.phase-work,.workout-tabata-view.phase-rest{
+  border-radius:24px;padding:32px 20px;width:100%;
+}

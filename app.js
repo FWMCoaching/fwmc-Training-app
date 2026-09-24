@@ -629,6 +629,105 @@
     return slots;
   }
 
+  // ==== Workout (placeholder name) ====
+  // A small demo exercise library - real content (photos, precise coaching
+  // notes) is for Fabian to fill in later; the schema already carries an
+  // optional `image` per exercise for that.
+  const WORKOUT_EXERCISES = {
+    kniebeuge: { name: "Kniebeugen", note: "Rücken gerade, Knie zeigen in Richtung der Zehen." },
+    liegestuetz: { name: "Liegestütze", note: "Körper bildet eine gerade Linie, Ellbogen nah am Körper." },
+    ausfallschritt: { name: "Ausfallschritte", note: "Oberkörper aufrecht, das vordere Knie nicht über die Zehenspitzen." },
+    plank: { name: "Unterarmstütz (Plank)", note: "Bauch anspannen, Hüfte nicht durchhängen lassen." },
+    hampelmann: { name: "Hampelmann", note: "Locker und im eigenen Tempo." },
+    bergsteiger: { name: "Bergsteiger", note: "Rücken flach, Knie zügig zur Brust ziehen." },
+  };
+  function workoutBlockLabel(block) { return WORKOUT_EXERCISES[block.exercise] ? WORKOUT_EXERCISES[block.exercise].name : block.exercise; }
+  function workoutBlockMeta(block) {
+    return block.kind === "tabata"
+      ? `${block.rounds} Runden à ${block.workS}s/${block.restS}s`
+      : `${block.sets}×${block.reps}`;
+  }
+  function workoutBlockSeconds(block) {
+    return block.kind === "tabata"
+      ? block.rounds * (block.workS + block.restS)
+      : block.sets * 30 + (block.sets - 1) * (block.restS ?? 30); // 30s/set is a rough estimate for the "ca." total
+  }
+  // ---- Coach-authored / self-built workout plans (mirrors the breath and
+  // combo programme tables): a sequence of "reps" or "tabata" blocks,
+  // delivered by code or built locally. Real client plans live in the same
+  // Cloudflare database, returned as type "workout-plan" (single) or
+  // "workout-bundle" (several per code).
+  const WORKOUT_PLANS = {
+    "workout-start": {
+      type: "workout-plan",
+      name: "Ganzkörper-Einstieg",
+      featured: true,
+      description: "Drei Kraftübungen mit festen Wiederholungen, zum Abschluss ein kurzes Intervall.",
+      blocks: [
+        { kind: "reps", exercise: "kniebeuge", sets: 3, reps: 12, restS: 30 },
+        { kind: "reps", exercise: "liegestuetz", sets: 3, reps: 10, restS: 30 },
+        { kind: "reps", exercise: "ausfallschritt", sets: 3, reps: 10, restS: 30 },
+        { kind: "tabata", exercise: "hampelmann", workS: 20, restS: 10, rounds: 8 },
+      ],
+    },
+  };
+
+  // ==== Cross-section combo programmes ====
+  // A combo programme chains blocks from any of the four sections behind
+  // one code or one locally-saved plan - each block just says which
+  // section's engine should run it (`domain`) plus that engine's own
+  // settings. The dispatcher below reuses every section's existing start/
+  // finish functions rather than a parallel implementation.
+  function comboBlockLabel(block) {
+    if (block.domain === "wimhof") return WIMHOF_INFO.name;
+    if (block.domain === "breath") return BREATH_PATTERNS[block.pattern].name;
+    if (block.domain === "movement") return "Movement · Ganzkörper-Reaktion";
+    if (block.domain === "workout") return workoutBlockLabel(block);
+    if (block.domain === "visual") return EXERCISES[block.exercise] ? EXERCISES[block.exercise].title : block.exercise;
+    return block.domain;
+  }
+  function comboBlockMeta(block) {
+    if (block.domain === "wimhof") return `${block.rounds ?? WIMHOF_DEFAULTS.rounds} Runden`;
+    if (block.domain === "breath") return fmtMinutes((block.durationMin ?? 5) * 60);
+    if (block.domain === "movement") return fmtMinutes((block.durationMin ?? 2) * 60);
+    if (block.domain === "workout") return workoutBlockMeta(block);
+    if (block.domain === "visual") return fmtMinutes((block.duration ?? 60));
+    return "";
+  }
+  function comboBlockSeconds(block) {
+    if (block.domain === "wimhof") { const r = block.rounds ?? WIMHOF_DEFAULTS.rounds, n = block.breaths ?? WIMHOF_DEFAULTS.breaths; return r * (n * (block.breathPaceS ?? WIMHOF_DEFAULTS.breathPaceS) + 30 + (block.recoveryHoldS ?? WIMHOF_DEFAULTS.recoveryHoldS)); }
+    if (block.domain === "breath") return (block.durationMin ?? 5) * 60;
+    if (block.domain === "movement") return (block.durationMin ?? 2) * 60;
+    if (block.domain === "workout") return workoutBlockSeconds(block);
+    if (block.domain === "visual") return block.duration ?? 60;
+    return 0;
+  }
+  // Curated quick-add presets the combo builder offers per section - not the
+  // full settings depth of each section's own screen, but enough to build a
+  // useful cross-section session without reimplementing every settings UI.
+  const COMBO_PRESETS = {
+    breath: [
+      { domain: "breath", pattern: "box", durationMin: 3 },
+      { domain: "breath", pattern: "coherent", durationMin: 5 },
+      { domain: "breath", pattern: "relax478", durationMin: 3 },
+      { domain: "wimhof", breaths: 30, rounds: 3, breathPaceS: 1.7, recoveryHoldS: 15 },
+    ],
+    movement: [
+      { domain: "movement", durationMin: 2, bpm: 60, preview: 3, mirror: true, showLabel: true },
+      { domain: "movement", durationMin: 3, bpm: 80, preview: "all", mirror: true, showLabel: true },
+    ],
+    visual: [
+      { domain: "visual", exercise: "vt-color", duration: 60, colors: ["orange", "rot", "lila"] },
+      { domain: "visual", exercise: "vrw-original", duration: 60, colors: ["orange", "rot", "lila"] },
+      { domain: "visual", exercise: "stroop-classic", duration: 60 },
+    ],
+    workout: [
+      { domain: "workout", kind: "reps", exercise: "kniebeuge", sets: 3, reps: 12, restS: 30 },
+      { domain: "workout", kind: "tabata", exercise: "hampelmann", workS: 20, restS: 10, rounds: 8 },
+    ],
+  };
+  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Movement", visual: "Visual Training", workout: "Workout" };
+
   // ---- Elements ----
   const $ = (id) => document.getElementById(id);
   const els = {
@@ -715,14 +814,50 @@
     movementFsHintOpenBtn: $("movementFsHintOpenBtn"), movementFsHintClose: $("movementFsHintClose"),
     movementDonePanel: $("movementDonePanel"), movementDoneSummary: $("movementDoneSummary"), movementRating: $("movementRating"),
     movementAgainBtn: $("movementAgainBtn"), movementDoneBackBtn: $("movementDoneBackBtn"),
+
+    workoutHome: $("workoutHome"), workoutProgramCodeInput: $("workoutProgramCodeInput"), workoutProgramGoBtn: $("workoutProgramGoBtn"),
+    workoutProgramError: $("workoutProgramError"), workoutHistorySection: $("workoutHistorySection"),
+    workoutHistoryStats: $("workoutHistoryStats"), workoutHistoryList: $("workoutHistoryList"), workoutHistoryClearBtn: $("workoutHistoryClearBtn"),
+    workoutFeaturedPrograms: $("workoutFeaturedPrograms"), workoutFeaturedGrid: $("workoutFeaturedGrid"),
+    workoutTabataStartCard: $("workoutTabataStartCard"),
+    workoutBundleOverview: $("workoutBundleOverview"), workoutBundleBackToHome: $("workoutBundleBackToHome"),
+    workoutBundleTitle: $("workoutBundleTitle"), workoutBundleList: $("workoutBundleList"),
+    workoutProgramIntro: $("workoutProgramIntro"), workoutProgramBackToHome: $("workoutProgramBackToHome"),
+    workoutProgramTitle: $("workoutProgramTitle"), workoutProgramMeta: $("workoutProgramMeta"), workoutProgramDesc: $("workoutProgramDesc"),
+    workoutChapterList: $("workoutChapterList"), workoutProgramStartBtn: $("workoutProgramStartBtn"),
+    workoutTabataReady: $("workoutTabataReady"), workoutTabataBackToHome: $("workoutTabataBackToHome"),
+    workoutExerciseRow: $("workoutExerciseRow"), workoutTabataStartBtn: $("workoutTabataStartBtn"),
+    workoutPlayer: $("workoutPlayer"), workoutRepsView: $("workoutRepsView"), workoutExerciseName: $("workoutExerciseName"),
+    workoutSetInfo: $("workoutSetInfo"), workoutRepsBig: $("workoutRepsBig"), workoutNote: $("workoutNote"),
+    workoutSetDoneBtn: $("workoutSetDoneBtn"), workoutRestBox: $("workoutRestBox"), workoutRestCountdown: $("workoutRestCountdown"),
+    workoutRestSkipBtn: $("workoutRestSkipBtn"), workoutTabataView: $("workoutTabataView"), tabataPhaseLabel: $("tabataPhaseLabel"),
+    tabataCountdown: $("tabataCountdown"), tabataExerciseName: $("tabataExerciseName"), tabataRoundLabel: $("tabataRoundLabel"),
+    workoutOverview: $("workoutOverview"), workoutProgressTrack: $("workoutProgressTrack"), workoutPlayerBar: $("workoutPlayerBar"),
+    workoutBackBtn: $("workoutBackBtn"), workoutTimeEl: $("workoutTimeEl"), workoutFsBtn: $("workoutFsBtn"), workoutFsHint: $("workoutFsHint"),
+    workoutFsHintOpenBtn: $("workoutFsHintOpenBtn"), workoutFsHintClose: $("workoutFsHintClose"),
+    workoutDonePanel: $("workoutDonePanel"), workoutDoneSummary: $("workoutDoneSummary"), workoutRating: $("workoutRating"),
+    workoutAgainBtn: $("workoutAgainBtn"), workoutDoneBackBtn: $("workoutDoneBackBtn"),
+    workoutTransition: $("workoutTransition"), workoutTransitionTitle: $("workoutTransitionTitle"),
+    workoutTransitionMeta: $("workoutTransitionMeta"), workoutTransitionBtn: $("workoutTransitionBtn"),
+    workoutProgramDonePanel: $("workoutProgramDonePanel"), workoutProgramDoneSummary: $("workoutProgramDoneSummary"),
+    workoutProgramRating: $("workoutProgramRating"), workoutProgramAgainBtn: $("workoutProgramAgainBtn"), workoutProgramDoneBackBtn: $("workoutProgramDoneBackBtn"),
+
+    comboBundleOverview: $("comboBundleOverview"), comboBundleBackToHome: $("comboBundleBackToHome"), comboBundleTitle: $("comboBundleTitle"), comboBundleList: $("comboBundleList"),
+    comboScreen: $("comboScreen"), comboBackToHome: $("comboBackToHome"), comboSavedGroup: $("comboSavedGroup"), comboSavedList: $("comboSavedList"),
+    comboNameInput: $("comboNameInput"), comboAddGrid: $("comboAddGrid"), comboBlockCount: $("comboBlockCount"),
+    comboBlockList: $("comboBlockList"), comboEmptyHint: $("comboEmptyHint"), comboStartBtn: $("comboStartBtn"), comboSaveBtn: $("comboSaveBtn"),
+    comboTransition: $("comboTransition"), comboTransitionTitle: $("comboTransitionTitle"), comboTransitionMeta: $("comboTransitionMeta"), comboTransitionBtn: $("comboTransitionBtn"),
+    comboDonePanel: $("comboDonePanel"), comboDoneSummary: $("comboDoneSummary"), comboRating: $("comboRating"),
+    comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
-    if (name === "home" || name === "breathHome" || name === "movementHome") renderHistory();
+    if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
     if (name !== "home") els.programError.hidden = true;
     if (name !== "breathHome") els.breathProgramError.hidden = true;
+    if (name !== "workoutHome") els.workoutProgramError.hidden = true;
     window.scrollTo(0, 0);
   }
 
@@ -735,9 +870,10 @@
         b.classList.toggle("active", on);
         b.setAttribute("aria-selected", on ? "true" : "false");
       });
-      showScreen(sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : "home");
+      showScreen(sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : "home");
     });
   });
+  document.querySelectorAll("[data-open-combo]").forEach((btn) => btn.addEventListener("click", () => openComboScreen()));
 
   // ---- Storage (all local to this device, wrapped for private mode) ----
   function readJSON(key, fallback) {
@@ -765,8 +901,9 @@
     const item = list.find((e) => e.id === id);
     if (item) { item.rating = rating; writeJSON(HISTORY_KEY, list); }
   }
+  const PROGRAM_HISTORY_KINDS = ["program", "breath-program", "workout-plan", "combo"];
   function isCompleted(progKey) {
-    return loadHistory().some((e) => (e.kind === "program" || e.kind === "breath-program") && e.progKey === progKey);
+    return loadHistory().some((e) => PROGRAM_HISTORY_KINDS.includes(e.kind) && e.progKey === progKey);
   }
   function startOfWeek() {
     const d = new Date();
@@ -798,6 +935,7 @@
     renderHistoryInto(els.historySection, els.historyStats, els.historyList, list);
     renderHistoryInto(els.breathHistorySection, els.breathHistoryStats, els.breathHistoryList, list);
     renderHistoryInto(els.movementHistorySection, els.movementHistoryStats, els.movementHistoryList, list);
+    renderHistoryInto(els.workoutHistorySection, els.workoutHistoryStats, els.workoutHistoryList, list);
   }
   function clearHistory() {
     if (!confirm("Deinen Trainingsverlauf auf diesem Gerät löschen?")) return;
@@ -807,6 +945,7 @@
   els.historyClearBtn.addEventListener("click", clearHistory);
   els.breathHistoryClearBtn.addEventListener("click", clearHistory);
   els.movementHistoryClearBtn.addEventListener("click", clearHistory);
+  els.workoutHistoryClearBtn.addEventListener("click", clearHistory);
 
   // Rating widget shown on the finish screens.
   function renderRating(container, entryId, question) {
@@ -1037,6 +1176,7 @@
   async function lookupProgram(code) {
     if (PROGRAMS[code]) return PROGRAMS[code];
     if (BREATH_PROGRAMS[code]) return BREATH_PROGRAMS[code];
+    if (WORKOUT_PLANS[code]) return WORKOUT_PLANS[code];
     try {
       const res = await fetch(`${CODE_API}?code=${encodeURIComponent(code)}`);
       if (res.ok) return await res.json();
@@ -1052,6 +1192,7 @@
   // branching on the shape the API/local table returns.
   const VISUAL_CODE_CTX = { goBtn: els.programGoBtn, errorEl: els.programError, homeScreen: "home" };
   const BREATH_CODE_CTX = { goBtn: els.breathProgramGoBtn, errorEl: els.breathProgramError, homeScreen: "breathHome" };
+  const WORKOUT_CODE_CTX = { goBtn: els.workoutProgramGoBtn, errorEl: els.workoutProgramError, homeScreen: "workoutHome" };
 
   async function openProgramIntro(code, ctx) {
     ctx = ctx || VISUAL_CODE_CTX;
@@ -1067,6 +1208,10 @@
     if (def.type === "bundle") { openBundleOverview(def, code); return; }
     if (def.type === "breath-bundle") { openBreathBundleOverview(def, code); return; }
     if (def.type === "breath-program") { breathOriginBundle = null; renderBreathProgramIntro(def, code, code); return; }
+    if (def.type === "workout-bundle") { openWorkoutBundleOverview(def, code); return; }
+    if (def.type === "workout-plan") { workoutOriginBundle = null; renderWorkoutProgramIntro(def, code, code); return; }
+    if (def.type === "combo-bundle") { openComboBundleOverview(def, code); return; }
+    if (def.type === "combo-program") { comboOriginBundle = null; startComboProgram(def, code, code, ctx.homeScreen); return; }
     originBundle = null;
     renderProgramIntro(def, code, code);
   }
@@ -1298,6 +1443,94 @@
   });
   els.breathBundleBackToHome.addEventListener("click", () => { breathOriginBundle = null; showScreen("breathHome"); });
 
+  // ---- Workout programme overview + intro screens (same pattern as breath's) ----
+  els.workoutProgramGoBtn.addEventListener("click", () => {
+    const code = normCode(els.workoutProgramCodeInput.value || "");
+    if (code) openProgramIntro(code, WORKOUT_CODE_CTX);
+  });
+  els.workoutProgramCodeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") els.workoutProgramGoBtn.click(); });
+  els.workoutProgramCodeInput.addEventListener("input", () => { els.workoutProgramError.hidden = true; });
+
+  function renderWorkoutFeaturedPrograms() {
+    const entries = Object.entries(WORKOUT_PLANS).filter(([, def]) => def.featured);
+    if (entries.length === 0) { els.workoutFeaturedPrograms.hidden = true; return; }
+    els.workoutFeaturedPrograms.hidden = false;
+    els.workoutFeaturedGrid.innerHTML = "";
+    entries.forEach(([code, def]) => {
+      const card = document.createElement("button");
+      card.className = "featured-card";
+      card.innerHTML =
+        `<span class="fc-title">${esc(def.name)}</span>` +
+        `<span class="fc-desc">${esc(def.description || "")}</span>` +
+        `<span class="fc-meta">${exerciseCountLabel(def.blocks.length)} · ca. ${fmtMinutes(def.blocks.reduce((s, b) => s + workoutBlockSeconds(b), 0))}</span>`;
+      card.addEventListener("click", () => openProgramIntro(code, WORKOUT_CODE_CTX));
+      els.workoutFeaturedGrid.appendChild(card);
+    });
+  }
+  renderWorkoutFeaturedPrograms();
+
+  let workoutOriginBundle = null; // { def, code } - set when opened from a bundle overview
+  function workoutPlanSeconds(def) { return def.blocks.reduce((s, b) => s + workoutBlockSeconds(b), 0); }
+
+  function openWorkoutBundleOverview(bundleDef, code) {
+    els.workoutBundleTitle.textContent = bundleDef.name || "Deine Trainingspläne";
+    els.workoutBundleList.innerHTML = "";
+    const sorted = bundleDef.programs
+      .map((p, i) => ({ p, i }))
+      .sort((a, b) => (b.p.createdAt || "").localeCompare(a.p.createdAt || "") || (a.i - b.i));
+    sorted.forEach(({ p, i }, pos) => {
+      const key = `workout:${code}#${i}`;
+      const done = isCompleted(key);
+      const isNew = pos === 0 && sorted.length > 1 && p.createdAt;
+      const item = document.createElement("button");
+      item.className = "bundle-item";
+      const dateLabel = formatDateDE(p.createdAt);
+      const badges = (isNew ? `<span class="badge badge-new">Neu</span>` : "") + (done ? `<span class="badge badge-done">&#10003; Erledigt</span>` : "");
+      item.innerHTML =
+        `<div class="bundle-item-head"><strong>${esc(p.label || ("Plan " + (i + 1)))}</strong>${dateLabel ? `<span class="bundle-date">${dateLabel}</span>` : ""}</div>` +
+        (badges ? `<div class="badges">${badges}</div>` : "") +
+        `<span class="bundle-meta">${exerciseCountLabel(p.blocks.length)} · ca. ${fmtMinutes(workoutPlanSeconds(p))}</span>` +
+        (p.description ? `<span class="bundle-desc">${esc(p.description)}</span>` : "");
+      item.addEventListener("click", () => {
+        workoutOriginBundle = { def: bundleDef, code };
+        renderWorkoutProgramIntro(p, code, key);
+      });
+      els.workoutBundleList.appendChild(item);
+    });
+    showScreen("workoutBundleOverview");
+  }
+
+  function renderWorkoutProgramIntro(def, code, key) {
+    const title = def.name || def.label || "Dein Trainingsplan";
+    els.workoutProgramTitle.textContent = title;
+    els.workoutProgramMeta.textContent = `${exerciseCountLabel(def.blocks.length)} · ca. ${fmtMinutes(workoutPlanSeconds(def))}`;
+    els.workoutProgramDesc.textContent = def.description || "";
+    els.workoutProgramDesc.hidden = !def.description;
+    const start = (i) => {
+      workoutPlan = { def, blockIndex: i, code, key, title, totalPlayedS: 0 };
+      startWorkoutPlanBlock(i);
+    };
+    els.workoutChapterList.innerHTML = "";
+    def.blocks.forEach((block, i) => {
+      const row = document.createElement("div");
+      row.className = "chapter-row";
+      const main = document.createElement("button");
+      main.className = "chapter-main";
+      main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(workoutBlockLabel(block))}</strong><span>${esc(workoutBlockMeta(block))}</span></span>`;
+      main.addEventListener("click", () => start(i));
+      row.appendChild(main);
+      els.workoutChapterList.appendChild(row);
+    });
+    els.workoutProgramStartBtn.onclick = () => start(0);
+    showScreen("workoutProgramIntro");
+  }
+
+  els.workoutProgramBackToHome.addEventListener("click", () => {
+    if (workoutOriginBundle) openWorkoutBundleOverview(workoutOriginBundle.def, workoutOriginBundle.code);
+    else showScreen("workoutHome");
+  });
+  els.workoutBundleBackToHome.addEventListener("click", () => { workoutOriginBundle = null; showScreen("workoutHome"); });
+
   // ---- Session engine ----
   let raf = null;
   let wakeLock = null;
@@ -1509,7 +1742,12 @@
     els.breathPlayer.hidden = true;
     els.wimhofPlayer.hidden = true;
     els.movementPlayer.hidden = true;
+    els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
+    els.workoutTransition.hidden = true;
+    els.workoutProgramDonePanel.hidden = true;
+    els.comboTransition.hidden = true;
+    els.comboDonePanel.hidden = true;
     els.breathProgramDonePanel.hidden = true;
   }
 
@@ -1655,6 +1893,7 @@
     if (window.speechSynthesis) speechSynthesis.cancel();
     els.liveNav.hidden = true;
     if (program) { startPause(); return; }
+    if (comboProgram) { advanceComboProgram(spent); return; }
     releaseWakeLock();
     setProgress(1, 0);
     const ex = EXERCISES[state.exercise];
@@ -1685,6 +1924,7 @@
   }
   // "Beenden" mid-training: back to where the training was started from.
   function abortTraining() {
+    if (comboProgram) { leavePlayer(); abortComboProgram(); return; }
     const wasProgram = !!program;
     leavePlayer();
     if (wasProgram) showScreen("programIntro");
@@ -1717,9 +1957,10 @@
   wireFullscreen({ player: els.breathPlayer, btn: els.breathFsBtn, hint: els.breathFsHint, hintOpen: els.breathFsHintOpenBtn, hintClose: els.breathFsHintClose });
   wireFullscreen({ player: els.wimhofPlayer, btn: els.wimhofFsBtn, hint: els.wimhofFsHint, hintOpen: els.wimhofFsHintOpenBtn, hintClose: els.wimhofFsHintClose });
   wireFullscreen({ player: els.movementPlayer, btn: els.movementFsBtn, hint: els.movementFsHint, hintOpen: els.movementFsHintOpenBtn, hintClose: els.movementFsHintClose });
+  wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden) fitCanvas(); });
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && (session || breathSession || wimhofState || movementSession) && wakeLock === null) requestWakeLock();
+    if (document.visibilityState === "visible" && (session || breathSession || wimhofState || movementSession || workoutState) && wakeLock === null) requestWakeLock();
   });
 
   // ---- Tips sheet (shown once on first visit, reopenable) ----
@@ -1926,6 +2167,7 @@
     releaseWakeLock();
     if (window.speechSynthesis) speechSynthesis.cancel();
     if (breathProgram) { advanceBreathProgram(played); return; }
+    if (comboProgram) { advanceComboProgram(played); return; }
     els.breathPlayerBar.hidden = true;
     els.breathDoneSummary.textContent = `${breathPatternName} · ${fmtMinutes(played)}`;
     const id = addHistory({ kind: "breath", title: breathPatternName, seconds: Math.round(played) });
@@ -1935,6 +2177,7 @@
   // "Beenden" mid-training: back to the pattern's settings, or to the
   // programme intro if a coach-authored programme was chaining blocks.
   function breathAbort() {
+    if (comboProgram) { breathLeavePlayer(); abortComboProgram(); return; }
     const wasProgram = !!breathProgram;
     breathProgram = null;
     breathLeavePlayer();
@@ -2131,6 +2374,7 @@
     wimhofState = null;
     releaseWakeLock();
     if (breathProgram) { advanceBreathProgram(played); return; }
+    if (comboProgram) { advanceComboProgram(played); return; }
     els.wimhofPlayerBar.hidden = true;
     const best = retentions.length ? Math.max(...retentions) : 0;
     els.wimhofDoneSummary.textContent = `${wimhofSettings.rounds} Runden${best ? " · längste Anhaltezeit " + fmtClock(best) : ""}`;
@@ -2150,6 +2394,7 @@
     els.wimhofDonePanel.hidden = true;
   }
   function wimhofAbort() {
+    if (comboProgram) { wimhofLeave(); abortComboProgram(); return; }
     const wasProgram = !!breathProgram;
     breathProgram = null;
     wimhofLeave();
@@ -2357,6 +2602,7 @@
     movementSession = null;
     releaseWakeLock();
     els.movementFinishBadge.hidden = true;
+    if (comboProgram) { advanceComboProgram(played); return; }
     els.movementPlayerBar.hidden = true;
     els.movementDoneSummary.textContent = `Ganzkörper-Reaktion · ${fmtMinutes(played)}`;
     const id = addHistory({ kind: "movement", title: "Ganzkörper-Reaktion", seconds: Math.round(played) });
@@ -2375,10 +2621,507 @@
     els.movementPlayer.hidden = true;
     els.movementDonePanel.hidden = true;
   }
-  function movementAbort() { movementLeavePlayer(); showScreen("movementReady"); }
+  function movementAbort() {
+    if (comboProgram) { movementLeavePlayer(); abortComboProgram(); return; }
+    movementLeavePlayer();
+    showScreen("movementReady");
+  }
   els.movementBackBtn.addEventListener("click", movementAbort);
   els.movementAgainBtn.addEventListener("click", () => { movementLeavePlayer(); startMovementSession(); });
   els.movementDoneBackBtn.addEventListener("click", () => { movementLeavePlayer(); showScreen("movementHome"); });
+
+  // ==== Workout engine ====
+  // One engine serves three situations: a block inside a coach-authored/
+  // self-built plan (workoutPlan set), a single block inside a cross-section
+  // combo (comboProgram set), or a standalone quick Tabata run (neither
+  // set). `onWorkoutBlockDone` is the single place that decides which of
+  // those applies, so "reps" and "tabata" only ever report "this block is
+  // done" and never need to know their own context.
+  let workoutPlan = null; // { def, blockIndex, code, key, title, totalPlayedS }
+  let workoutState = null; // running block state; shape depends on .kind
+  let workoutRaf = null;
+  let workoutRestTimer = null;
+  let workoutTransitionTimer = null;
+  let lastWorkoutPlan = null;
+  let lastStandaloneWorkoutBlock = null;
+
+  function runWorkoutBlock(block) {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.workoutPlayer.hidden = false;
+    els.workoutPlayerBar.hidden = false;
+    els.workoutDonePanel.hidden = true;
+    els.workoutRepsView.hidden = block.kind === "tabata";
+    els.workoutTabataView.hidden = block.kind !== "tabata";
+    els.workoutTabataView.classList.remove("phase-work", "phase-rest");
+    renderWorkoutOverview();
+    if (block.kind === "tabata") startTabataBlock(block);
+    else startRepsBlock(block);
+  }
+  function renderWorkoutOverview() {
+    if (!workoutPlan) { els.workoutOverview.hidden = true; return; }
+    els.workoutOverview.hidden = false;
+    els.workoutOverview.innerHTML = workoutPlan.def.blocks.map((b, i) => {
+      const cls = i === workoutPlan.blockIndex ? "current" : i < workoutPlan.blockIndex ? "done" : "";
+      return `<div class="workout-overview-row ${cls}"><span class="wo-num">${i + 1}</span><span>${esc(workoutBlockLabel(b))} · ${esc(workoutBlockMeta(b))}</span></div>`;
+    }).join("");
+  }
+
+  // ---- Reps mode: manual "Satz erledigt", optional rest countdown ----
+  function startRepsBlock(block) {
+    const ex = WORKOUT_EXERCISES[block.exercise] || { name: block.exercise, note: "" };
+    workoutState = { kind: "reps", block, ex, setIndex: 1, startTime: performance.now() };
+    renderRepsView();
+    requestWakeLock();
+  }
+  function renderRepsView() {
+    const { block, ex, setIndex } = workoutState;
+    els.workoutExerciseName.textContent = ex.name;
+    els.workoutSetInfo.textContent = `Satz ${setIndex} von ${block.sets}`;
+    els.workoutRepsBig.textContent = `${block.reps} Wiederholungen`;
+    els.workoutNote.textContent = block.note || ex.note || "";
+    els.workoutSetDoneBtn.hidden = false;
+    els.workoutRestBox.hidden = true;
+  }
+  els.workoutSetDoneBtn.addEventListener("click", () => {
+    if (!workoutState || workoutState.kind !== "reps") return;
+    if (workoutState.setIndex >= workoutState.block.sets) { finishWorkoutBlock(); return; }
+    startRepsRest(workoutState.block.restS ?? 30);
+  });
+  function startRepsRest(restS) {
+    els.workoutSetDoneBtn.hidden = true;
+    els.workoutRestBox.hidden = false;
+    let remaining = restS;
+    const tick = () => {
+      els.workoutRestCountdown.textContent = Math.max(0, Math.ceil(remaining));
+      if (remaining <= 0) { advanceRepsSet(); return; }
+      workoutRestTimer = setTimeout(() => { remaining -= 1; tick(); }, 1000);
+    };
+    tick();
+  }
+  function advanceRepsSet() {
+    if (workoutRestTimer) clearTimeout(workoutRestTimer);
+    workoutRestTimer = null;
+    workoutState.setIndex += 1;
+    renderRepsView();
+  }
+  els.workoutRestSkipBtn.addEventListener("click", () => advanceRepsSet());
+
+  // ---- Tabata / interval mode: prep, then work/rest per round ----
+  const TABATA_PREP_S = 5;
+  function startTabataBlock(block) {
+    const ex = WORKOUT_EXERCISES[block.exercise] || { name: block.exercise };
+    workoutState = { kind: "tabata", block, ex, phase: "prep", round: 1, phaseStart: performance.now(), sessionStart: performance.now() };
+    requestWakeLock();
+    workoutRaf = requestAnimationFrame(tabataTick);
+  }
+  function tabataTick(now) {
+    if (!workoutState || workoutState.kind !== "tabata") return;
+    const s = workoutState.block;
+    const elapsed = (now - workoutState.phaseStart) / 1000;
+    els.tabataExerciseName.textContent = workoutState.ex.name;
+    if (workoutState.phase === "prep") {
+      const remain = TABATA_PREP_S - elapsed;
+      els.tabataPhaseLabel.textContent = "Bereit machen";
+      els.tabataCountdown.textContent = Math.max(0, Math.ceil(remain));
+      els.tabataRoundLabel.textContent = `Runde 1 von ${s.rounds}`;
+      if (remain <= 0) { workoutState.phase = "work"; workoutState.phaseStart = now; }
+    } else if (workoutState.phase === "work") {
+      const remain = s.workS - elapsed;
+      els.tabataPhaseLabel.textContent = "Los!";
+      els.tabataCountdown.textContent = Math.max(0, Math.ceil(remain));
+      els.tabataRoundLabel.textContent = `Runde ${workoutState.round} von ${s.rounds}`;
+      els.workoutTabataView.classList.add("phase-work");
+      els.workoutTabataView.classList.remove("phase-rest");
+      if (remain <= 0) {
+        if (workoutState.round >= s.rounds) { finishWorkoutBlock(); return; }
+        workoutState.phase = "rest"; workoutState.phaseStart = now;
+      }
+    } else {
+      const remain = s.restS - elapsed;
+      els.tabataPhaseLabel.textContent = "Pause";
+      els.tabataCountdown.textContent = Math.max(0, Math.ceil(remain));
+      els.tabataRoundLabel.textContent = `Runde ${workoutState.round} von ${s.rounds}`;
+      els.workoutTabataView.classList.add("phase-rest");
+      els.workoutTabataView.classList.remove("phase-work");
+      if (remain <= 0) { workoutState.round += 1; workoutState.phase = "work"; workoutState.phaseStart = now; }
+    }
+    workoutRaf = requestAnimationFrame(tabataTick);
+  }
+
+  // ---- Shared block completion ----
+  function finishWorkoutBlock() {
+    if (workoutRaf) cancelAnimationFrame(workoutRaf);
+    workoutRaf = null;
+    if (workoutRestTimer) clearTimeout(workoutRestTimer);
+    workoutRestTimer = null;
+    const st = workoutState;
+    const played = st ? (performance.now() - (st.sessionStart || st.startTime)) / 1000 : 0;
+    workoutState = null;
+    onWorkoutBlockDone(played, st ? st.ex : null);
+  }
+  function onWorkoutBlockDone(playedS, ex) {
+    releaseWakeLock();
+    if (workoutPlan) {
+      workoutPlan.totalPlayedS += playedS;
+      const next = workoutPlan.blockIndex + 1;
+      if (next >= workoutPlan.def.blocks.length) { finishWorkoutPlan(); return; }
+      showWorkoutTransition(workoutPlan.def.blocks[next], () => startWorkoutPlanBlock(next));
+      return;
+    }
+    if (comboProgram) { advanceComboProgram(playedS); return; }
+    els.workoutPlayerBar.hidden = true;
+    els.workoutDoneSummary.textContent = `${ex ? ex.name : "Training"} · ${fmtMinutes(playedS)}`;
+    const id = addHistory({ kind: "workout", title: ex ? ex.name : "Workout", seconds: Math.round(playedS) });
+    renderRating(els.workoutRating, id, "Wie gut hast du durchgehalten?");
+    els.workoutDonePanel.hidden = false;
+  }
+
+  function startWorkoutPlanBlock(idx) {
+    if (!workoutPlan) return;
+    if (idx >= workoutPlan.def.blocks.length) { finishWorkoutPlan(); return; }
+    workoutPlan.blockIndex = idx;
+    runWorkoutBlock(workoutPlan.def.blocks[idx]);
+  }
+  function showWorkoutTransition(nextBlock, onContinue) {
+    hideAllPlayers();
+    els.workoutTransitionTitle.textContent = workoutBlockLabel(nextBlock);
+    els.workoutTransitionMeta.textContent = workoutBlockMeta(nextBlock);
+    els.workoutTransition.hidden = false;
+    if (workoutTransitionTimer) clearTimeout(workoutTransitionTimer);
+    const go = () => { if (workoutTransitionTimer) clearTimeout(workoutTransitionTimer); els.workoutTransition.hidden = true; onContinue(); };
+    els.workoutTransitionBtn.onclick = go;
+    workoutTransitionTimer = setTimeout(go, 4000);
+  }
+  function finishWorkoutPlan() {
+    hideAllPlayers();
+    const played = workoutPlan.totalPlayedS;
+    const title = workoutPlan.title;
+    els.workoutProgramDoneSummary.textContent = `${exerciseCountLabel(workoutPlan.def.blocks.length)} · ${fmtMinutes(played)} Training`;
+    const id = addHistory({ kind: "workout-plan", title, progKey: workoutPlan.key, seconds: Math.round(played) });
+    renderRating(els.workoutProgramRating, id, "Wie gut hast du durchgehalten?");
+    els.workoutProgramDoneBackBtn.textContent = workoutOriginBundle ? "Zurück zu meinen Plänen" : "Zur Startseite";
+    els.workoutProgramDonePanel.hidden = false;
+    lastWorkoutPlan = workoutPlan;
+    workoutPlan = null;
+  }
+  els.workoutProgramAgainBtn.addEventListener("click", () => {
+    if (!lastWorkoutPlan) return;
+    els.workoutProgramDonePanel.hidden = true;
+    workoutPlan = { ...lastWorkoutPlan, blockIndex: 0, totalPlayedS: 0 };
+    startWorkoutPlanBlock(0);
+  });
+  els.workoutProgramDoneBackBtn.addEventListener("click", () => {
+    els.workoutProgramDonePanel.hidden = true;
+    if (workoutOriginBundle) openWorkoutBundleOverview(workoutOriginBundle.def, workoutOriginBundle.code);
+    else showScreen("workoutHome");
+  });
+
+  function workoutLeavePlayer() {
+    if (workoutRaf) cancelAnimationFrame(workoutRaf);
+    workoutRaf = null;
+    if (workoutRestTimer) clearTimeout(workoutRestTimer);
+    workoutRestTimer = null;
+    if (workoutTransitionTimer) clearTimeout(workoutTransitionTimer);
+    workoutTransitionTimer = null;
+    workoutState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.workoutPlayer) document.exitFullscreen().catch(() => {});
+    els.workoutFsHint.hidden = true;
+    els.workoutPlayer.hidden = true;
+    els.workoutDonePanel.hidden = true;
+    els.workoutTransition.hidden = true;
+  }
+  function workoutAbort() {
+    if (comboProgram) { workoutLeavePlayer(); abortComboProgram(); return; }
+    const wasPlan = !!workoutPlan;
+    workoutPlan = null;
+    workoutLeavePlayer();
+    showScreen(wasPlan ? "workoutProgramIntro" : "workoutTabataReady");
+  }
+  els.workoutBackBtn.addEventListener("click", workoutAbort);
+  els.workoutAgainBtn.addEventListener("click", () => {
+    if (!lastStandaloneWorkoutBlock) return;
+    workoutLeavePlayer();
+    startStandaloneWorkoutBlock(lastStandaloneWorkoutBlock);
+  });
+  els.workoutDoneBackBtn.addEventListener("click", () => { workoutLeavePlayer(); showScreen("workoutHome"); });
+
+  function startStandaloneWorkoutBlock(block) {
+    workoutPlan = null;
+    lastStandaloneWorkoutBlock = block;
+    runWorkoutBlock(block);
+  }
+
+  // ---- Standalone Tabata quick-start (no plan, no code) ----
+  const WORKOUT_TABATA_KEY = "fwmc-workout-tabata-v1";
+  const workoutTabataPrefs = { exercise: "hampelmann", rounds: 8, workS: 20, restS: 10 };
+  function loadWorkoutTabataPrefs() {
+    const saved = readJSON(WORKOUT_TABATA_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(workoutTabataPrefs, saved);
+  }
+  function saveWorkoutTabataPrefs() { writeJSON(WORKOUT_TABATA_KEY, workoutTabataPrefs); }
+  loadWorkoutTabataPrefs();
+
+  Object.entries(WORKOUT_EXERCISES).forEach(([id, ex]) => {
+    const btn = document.createElement("button");
+    btn.className = "choice";
+    btn.dataset.woExercise = id;
+    btn.textContent = ex.name;
+    btn.addEventListener("click", () => { workoutTabataPrefs.exercise = id; saveWorkoutTabataPrefs(); syncWorkoutTabataUI(); });
+    els.workoutExerciseRow.appendChild(btn);
+  });
+  document.querySelectorAll("[data-wo-rounds]").forEach((el) => el.addEventListener("click", () => { workoutTabataPrefs.rounds = Number(el.dataset.woRounds); saveWorkoutTabataPrefs(); syncWorkoutTabataUI(); }));
+  document.querySelectorAll("[data-wo-work]").forEach((el) => el.addEventListener("click", () => { workoutTabataPrefs.workS = Number(el.dataset.woWork); saveWorkoutTabataPrefs(); syncWorkoutTabataUI(); }));
+  document.querySelectorAll("[data-wo-rest]").forEach((el) => el.addEventListener("click", () => { workoutTabataPrefs.restS = Number(el.dataset.woRest); saveWorkoutTabataPrefs(); syncWorkoutTabataUI(); }));
+  function syncWorkoutTabataUI() {
+    els.workoutExerciseRow.querySelectorAll("[data-wo-exercise]").forEach((el) => el.classList.toggle("active", el.dataset.woExercise === workoutTabataPrefs.exercise));
+    document.querySelectorAll("[data-wo-rounds]").forEach((el) => el.classList.toggle("active", Number(el.dataset.woRounds) === workoutTabataPrefs.rounds));
+    document.querySelectorAll("[data-wo-work]").forEach((el) => el.classList.toggle("active", Number(el.dataset.woWork) === workoutTabataPrefs.workS));
+    document.querySelectorAll("[data-wo-rest]").forEach((el) => el.classList.toggle("active", Number(el.dataset.woRest) === workoutTabataPrefs.restS));
+  }
+  function openWorkoutTabataReady() { syncWorkoutTabataUI(); showScreen("workoutTabataReady"); }
+  els.workoutTabataStartCard.addEventListener("click", openWorkoutTabataReady);
+  els.workoutTabataBackToHome.addEventListener("click", () => showScreen("workoutHome"));
+  els.workoutTabataStartBtn.addEventListener("click", () => {
+    startStandaloneWorkoutBlock({
+      kind: "tabata", exercise: workoutTabataPrefs.exercise,
+      workS: workoutTabataPrefs.workS, restS: workoutTabataPrefs.restS, rounds: workoutTabataPrefs.rounds,
+    });
+  });
+
+  // ==== Cross-section combo programmes ====
+  let comboProgram = null; // { def, blockIndex, code, key, title, totalPlayedS }
+  let comboOriginBundle = null; // { def, code } - set when opened from a combo-bundle code
+  let comboReturnScreen = "home";
+  let comboTransitionTimer = null;
+  let lastComboProgram = null;
+
+  function currentHomeScreen() {
+    const active = document.querySelector(".section-tab.active");
+    const sec = active ? active.dataset.section : "visual";
+    return sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : "home";
+  }
+
+  function startComboProgram(def, code, key, fallbackReturnScreen) {
+    comboReturnScreen = fallbackReturnScreen || "home";
+    comboProgram = { def, blockIndex: 0, code, key, title: def.name || "Dein Programm", totalPlayedS: 0 };
+    startComboBlock(0);
+  }
+  function startComboBlock(idx) {
+    if (!comboProgram) return;
+    if (idx >= comboProgram.def.blocks.length) { finishComboProgram(); return; }
+    comboProgram.blockIndex = idx;
+    const block = comboProgram.def.blocks[idx];
+    if (block.domain === "wimhof") {
+      // Safety first, always: even inside a combo, Wim-Hof-style breathing
+      // stops on its own settings screen so the safety checkbox is never
+      // skipped. wimhofFinish already checks comboProgram to continue on.
+      wimhofSettings.breaths = block.breaths ?? WIMHOF_DEFAULTS.breaths;
+      wimhofSettings.rounds = block.rounds ?? WIMHOF_DEFAULTS.rounds;
+      wimhofSettings.breathPaceS = block.breathPaceS ?? WIMHOF_DEFAULTS.breathPaceS;
+      wimhofSettings.recoveryHoldS = block.recoveryHoldS ?? WIMHOF_DEFAULTS.recoveryHoldS;
+      hideAllPlayers();
+      openWimhofReady();
+    } else if (block.domain === "breath") {
+      breathPatternKey = block.pattern;
+      breathWorking = block.phases ? { ...block.phases } : { ...(BREATH_PATTERNS[block.pattern].phases || breathPrefs.custom) };
+      breathPrefs.durationMin = block.durationMin ?? 5;
+      breathPrefs.sound = block.sound !== false;
+      startBreathSession();
+    } else if (block.domain === "movement") {
+      if (block.movements) movementPrefs.movements = block.movements;
+      movementPrefs.preview = block.preview ?? movementPrefs.preview;
+      movementPrefs.bpm = block.bpm ?? movementPrefs.bpm;
+      movementPrefs.durationMin = block.durationMin ?? 2;
+      movementPrefs.mirror = block.mirror ?? movementPrefs.mirror;
+      movementPrefs.showLabel = block.showLabel ?? movementPrefs.showLabel;
+      startMovementSession();
+    } else if (block.domain === "visual") {
+      program = null;
+      state.exercise = block.exercise;
+      if (block.colors && EXERCISES[block.exercise].usesColors) state.colors = block.colors;
+      state.duration = block.duration ?? 60;
+      state.stimulusS = block.stimulusS ?? 1.5;
+      state.intervalMin = block.intervalMin ?? 3;
+      state.intervalMax = block.intervalMax ?? 6;
+      state.sequence = block.sequence || "frei";
+      active = { colors: keysToColors(state.colors), seedKey: state.colors.join("-") };
+      startSession();
+    } else if (block.domain === "workout") {
+      workoutPlan = null;
+      runWorkoutBlock(block);
+    } else {
+      startComboBlock(idx + 1); // unknown domain - skip rather than get stuck
+    }
+  }
+  function showComboTransition(nextBlock, onContinue) {
+    hideAllPlayers();
+    els.comboTransitionTitle.textContent = comboBlockLabel(nextBlock);
+    els.comboTransitionMeta.textContent = comboBlockMeta(nextBlock);
+    els.comboTransition.hidden = false;
+    if (comboTransitionTimer) clearTimeout(comboTransitionTimer);
+    const go = () => { if (comboTransitionTimer) clearTimeout(comboTransitionTimer); els.comboTransition.hidden = true; onContinue(); };
+    els.comboTransitionBtn.onclick = go;
+    comboTransitionTimer = setTimeout(go, 4000);
+  }
+  function advanceComboProgram(playedS) {
+    if (!comboProgram) return;
+    comboProgram.totalPlayedS += playedS;
+    const nextIdx = comboProgram.blockIndex + 1;
+    if (nextIdx >= comboProgram.def.blocks.length) { finishComboProgram(); return; }
+    showComboTransition(comboProgram.def.blocks[nextIdx], () => startComboBlock(nextIdx));
+  }
+  function finishComboProgram() {
+    hideAllPlayers();
+    const played = comboProgram.totalPlayedS;
+    const title = comboProgram.title;
+    const key = comboProgram.key;
+    els.comboDoneSummary.textContent = `${exerciseCountLabel(comboProgram.def.blocks.length)} · ${fmtMinutes(played)} Training`;
+    const id = addHistory({ kind: "combo", title, progKey: key, seconds: Math.round(played) });
+    renderRating(els.comboRating, id, "Wie fühlst du dich nach dem Programm?");
+    els.comboDoneBackBtn.textContent = comboOriginBundle ? "Zurück zu meinen Programmen" : "Zurück";
+    els.comboDonePanel.hidden = false;
+    lastComboProgram = comboProgram;
+    comboProgram = null;
+  }
+  function abortComboProgram() {
+    hideAllPlayers();
+    comboProgram = null;
+    showScreen(comboReturnScreen);
+  }
+  els.comboAgainBtn.addEventListener("click", () => {
+    if (!lastComboProgram) return;
+    els.comboDonePanel.hidden = true;
+    comboProgram = { ...lastComboProgram, blockIndex: 0, totalPlayedS: 0 };
+    startComboBlock(0);
+  });
+  els.comboDoneBackBtn.addEventListener("click", () => {
+    els.comboDonePanel.hidden = true;
+    if (comboOriginBundle) { openComboBundleOverview(comboOriginBundle.def, comboOriginBundle.code); comboOriginBundle = null; }
+    else showScreen(comboReturnScreen);
+  });
+
+  function openComboBundleOverview(bundleDef, code) {
+    els.comboBundleTitle.textContent = bundleDef.name || "Deine Programme";
+    els.comboBundleList.innerHTML = "";
+    const sorted = bundleDef.programs
+      .map((p, i) => ({ p, i }))
+      .sort((a, b) => (b.p.createdAt || "").localeCompare(a.p.createdAt || "") || (a.i - b.i));
+    sorted.forEach(({ p, i }, pos) => {
+      const key = `combo:${code}#${i}`;
+      const done = isCompleted(key);
+      const isNew = pos === 0 && sorted.length > 1 && p.createdAt;
+      const item = document.createElement("button");
+      item.className = "bundle-item";
+      const dateLabel = formatDateDE(p.createdAt);
+      const badges = (isNew ? `<span class="badge badge-new">Neu</span>` : "") + (done ? `<span class="badge badge-done">&#10003; Erledigt</span>` : "");
+      item.innerHTML =
+        `<div class="bundle-item-head"><strong>${esc(p.label || ("Programm " + (i + 1)))}</strong>${dateLabel ? `<span class="bundle-date">${dateLabel}</span>` : ""}</div>` +
+        (badges ? `<div class="badges">${badges}</div>` : "") +
+        `<span class="bundle-meta">${exerciseCountLabel(p.blocks.length)} · ca. ${fmtMinutes(p.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0))}</span>` +
+        (p.description ? `<span class="bundle-desc">${esc(p.description)}</span>` : "");
+      item.addEventListener("click", () => {
+        comboOriginBundle = { def: bundleDef, code };
+        startComboProgram(p, code, key, currentHomeScreen());
+      });
+      els.comboBundleList.appendChild(item);
+    });
+    showScreen("comboBundleOverview");
+  }
+  els.comboBundleBackToHome.addEventListener("click", () => { comboOriginBundle = null; showScreen(currentHomeScreen()); });
+
+  // ---- Self-service builder: pick preset blocks from any section, order
+  // them, then start right away or save locally under a name for later. ----
+  const COMBO_SAVED_KEY = "fwmc-combo-saved-v1";
+  function loadSavedCombos() { const l = readJSON(COMBO_SAVED_KEY, []); return Array.isArray(l) ? l : []; }
+  function saveSavedCombos(list) { writeJSON(COMBO_SAVED_KEY, list); }
+
+  let comboDraftBlocks = [];
+  function renderComboAddGrid() {
+    els.comboAddGrid.innerHTML = "";
+    Object.entries(COMBO_PRESETS).forEach(([domain, presets]) => {
+      const group = document.createElement("div");
+      group.className = "combo-domain-group";
+      group.innerHTML = `<div class="combo-domain-title">${esc(COMBO_DOMAIN_TITLE[domain])}</div>`;
+      const opts = document.createElement("div");
+      opts.className = "combo-domain-options";
+      presets.forEach((preset) => {
+        const btn = document.createElement("button");
+        btn.className = "combo-add-btn";
+        btn.innerHTML = `<span><span class="ca-title">${esc(comboBlockLabel(preset))}</span><br><span class="ca-meta">${esc(comboBlockMeta(preset))}</span></span><span class="ca-plus">+</span>`;
+        btn.addEventListener("click", () => { comboDraftBlocks.push({ ...preset }); renderComboBlockList(); });
+        opts.appendChild(btn);
+      });
+      group.appendChild(opts);
+      els.comboAddGrid.appendChild(group);
+    });
+  }
+  function renderComboBlockList() {
+    els.comboBlockCount.textContent = comboDraftBlocks.length ? `${comboDraftBlocks.length} Baustein${comboDraftBlocks.length === 1 ? "" : "e"}` : "";
+    els.comboEmptyHint.hidden = comboDraftBlocks.length > 0;
+    els.comboBlockList.innerHTML = "";
+    comboDraftBlocks.forEach((block, i) => {
+      const row = document.createElement("div");
+      row.className = "chapter-row";
+      const main = document.createElement("span");
+      main.className = "chapter-main";
+      main.style.cursor = "default";
+      main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(comboBlockLabel(block))}</strong><span>${esc(comboBlockMeta(block))}</span></span>`;
+      row.appendChild(main);
+      const rm = document.createElement("button");
+      rm.className = "combo-block-remove";
+      rm.textContent = "✕";
+      rm.title = "Entfernen";
+      rm.addEventListener("click", () => { comboDraftBlocks.splice(i, 1); renderComboBlockList(); });
+      row.appendChild(rm);
+      els.comboBlockList.appendChild(row);
+    });
+  }
+  function renderComboSaved() {
+    const saved = loadSavedCombos();
+    els.comboSavedGroup.hidden = saved.length === 0;
+    els.comboSavedList.innerHTML = "";
+    saved.slice().reverse().forEach((entry) => {
+      const item = document.createElement("button");
+      item.className = "bundle-item";
+      item.innerHTML =
+        `<div class="bundle-item-head"><strong>${esc(entry.name)}</strong></div>` +
+        `<span class="bundle-meta">${exerciseCountLabel(entry.blocks.length)} · ca. ${fmtMinutes(entry.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0))}</span>`;
+      item.addEventListener("click", () => {
+        comboOriginBundle = null;
+        startComboProgram({ name: entry.name, blocks: entry.blocks }, "local", "local:" + entry.id, currentHomeScreen());
+      });
+      els.comboSavedList.appendChild(item);
+    });
+  }
+  function openComboScreen() {
+    comboDraftBlocks = [];
+    els.comboNameInput.value = "";
+    renderComboAddGrid();
+    renderComboBlockList();
+    renderComboSaved();
+    showScreen("comboScreen");
+  }
+  els.comboBackToHome.addEventListener("click", () => showScreen(currentHomeScreen()));
+  function comboDraftName() {
+    return (els.comboNameInput.value || "").trim() || `Programm ${new Date().toLocaleDateString("de-DE")}`;
+  }
+  els.comboStartBtn.addEventListener("click", () => {
+    if (comboDraftBlocks.length === 0) return;
+    comboOriginBundle = null;
+    startComboProgram({ name: comboDraftName(), blocks: comboDraftBlocks.slice() }, "local", "local:draft", currentHomeScreen());
+  });
+  els.comboSaveBtn.addEventListener("click", () => {
+    if (comboDraftBlocks.length === 0) return;
+    const saved = loadSavedCombos();
+    saved.push({ id: String(Date.now()), name: comboDraftName(), blocks: comboDraftBlocks.slice(), createdAt: new Date().toISOString() });
+    saveSavedCombos(saved);
+    renderComboSaved();
+    els.comboNameInput.value = "";
+    comboDraftBlocks = [];
+    renderComboBlockList();
+  });
 
   // ---- Start-up ----
   renderHistory();
