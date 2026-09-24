@@ -1,7 +1,7 @@
 {
   "name": "FWMC Online-Training",
   "short_name": "Online-Training",
-  "description": "Visual Training, Atemtraining, Movement und Workout von Fabian Westermann Mentalcoaching.",
+  "description": "Visual Training, Atemtraining, Movement, Workout und NAT von Fabian Westermann Mentalcoaching.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

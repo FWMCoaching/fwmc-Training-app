@@ -179,6 +179,10 @@ section{margin-bottom:26px}
 .history-list{list-style:none;margin:0 0 4px;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:14px}
 .history-list li{display:grid;grid-template-columns:auto 1fr;column-gap:12px;padding:10px 14px;border-top:1px solid var(--line)}
 .history-list li:first-child{border-top:none}
+/* Expanded ("Alle anzeigen"): a bit taller than the collapsed 3-row view,
+   but capped and scrollable in place - so a long history never pushes
+   everything further down the page out of reach. */
+.history-list[data-expanded="1"]{max-height:340px;overflow-y:auto;scrollbar-gutter:stable}
 .h-date{font-size:12.5px;color:var(--ink-soft);grid-row:span 2;font-variant-numeric:tabular-nums;padding-top:1px}
 .h-title{font-weight:600;font-size:14px}
 .h-meta{font-size:12.5px;color:var(--ink-soft)}

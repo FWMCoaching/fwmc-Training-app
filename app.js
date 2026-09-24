@@ -1106,8 +1106,8 @@
   }
   const WEEKDAYS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
   function ratingLabel(kind) { return kind === "breath" || kind === "breath-program" ? "Ruhe" : "Fokus"; }
-  const HISTORY_VISIBLE_SHORT = 5;
-  const HISTORY_VISIBLE_EXPANDED = 20;
+  const HISTORY_VISIBLE_SHORT = 3;
+  const HISTORY_VISIBLE_EXPANDED = 200; // effectively "all" - addHistory() itself caps storage at 200
   function renderHistoryInto(sectionEl, statsEl, listEl, moreBtn, list) {
     sectionEl.hidden = list.length === 0;
     if (!list.length) return;
@@ -3205,12 +3205,18 @@
     mittel: { title: "Mittel", revealBaseS: 1.1, revealStepS: 0.3 },
     schwer: { title: "Schwer", revealBaseS: 0.7, revealStepS: 0.15 },
   };
+  // Bei Fehler (Feste/Bewegte Positionen only - Trainingsmodus always
+  // resets to its own configured start number, see rememberClick below):
+  // "reset2" restarts from 2 like before, "backOne" drops one level, "stay"
+  // repeats the same level until it's cleared.
   const REMEMBER_PREFS_KEY = "fwmc-remember-prefs-v1";
   const rememberPrefs = {
     revealBaseS: REMEMBER_DIFFICULTIES.mittel.revealBaseS,
     revealStepS: REMEMBER_DIFFICULTIES.mittel.revealStepS,
+    errorMode: "reset2",
     trainingStart: 8,
     trainingProgress: true,
+    trainingPositionMode: "shuffle",
   };
   function loadRememberPrefs() {
     const saved = readJSON(REMEMBER_PREFS_KEY, null);
@@ -3336,17 +3342,30 @@
     }
     return best;
   }
+  // "keep" (fixed positions): every number's spot is looked up in
+  // rememberState.positionCache, keyed by its own number, and only
+  // generated once, the first time that number is ever shown - so jumping
+  // back down (Trainingsmodus nav) and back up again always finds the same
+  // numbers exactly where they were, not just "whatever last round had".
+  // Without "keep" (shuffle), the cache is ignored and every number gets a
+  // fresh spot on every call.
   function buildRememberPositions(count, keep) {
     const bounds = rememberStageBounds();
-    const positions = keep && rememberState ? rememberState.positions.slice(0, count - 1).map((p) => ({ ...p })) : [];
-    // Re-derive each kept marker's current pixel spot from its stored
-    // percent (the stage size may differ from when it was first placed),
-    // so new markers are always checked against where things actually are.
-    const existingPx = positions.map((p) => ({ x: (p.x / 100) * bounds.w, y: (p.y / 100) * bounds.h }));
-    while (positions.length < count) {
-      const px = randomRememberPixelPosition(existingPx, bounds);
-      existingPx.push(px);
-      positions.push({ num: positions.length + 1, x: (px.x / bounds.w) * 100, y: (px.y / bounds.h) * 100 });
+    const cache = keep && rememberState ? rememberState.positionCache : null;
+    const positions = [];
+    const existingPx = [];
+    for (let num = 1; num <= count; num++) {
+      const cached = cache && cache[num];
+      if (cached) {
+        positions.push({ num, x: cached.x, y: cached.y });
+        existingPx.push({ x: (cached.x / 100) * bounds.w, y: (cached.y / 100) * bounds.h });
+      } else {
+        const px = randomRememberPixelPosition(existingPx, bounds);
+        existingPx.push(px);
+        const pos = { num, x: (px.x / bounds.w) * 100, y: (px.y / bounds.h) * 100 };
+        if (cache) cache[num] = { x: pos.x, y: pos.y };
+        positions.push(pos);
+      }
     }
     return positions;
   }
@@ -3359,13 +3378,18 @@
       el.style.left = p.x + "%";
       el.style.top = p.y + "%";
       el.textContent = covered ? "" : String(p.num);
+      // A covered marker must not have its number in the accessible name -
+      // that would hand a screen reader user the answer - so it gets a
+      // plain, identical-for-all label instead of being left unlabelled.
+      if (covered) el.setAttribute("aria-label", "Verdecktes Zahlenfeld");
+      else el.removeAttribute("aria-label");
       el.dataset.num = p.num;
       if (covered) el.addEventListener("click", () => rememberClick(p.num, el));
       els.rememberStage.appendChild(el);
     });
   }
   function startRememberLevel() {
-    rememberState.positions = buildRememberPositions(rememberState.level, REMEMBER_MODES[rememberState.mode].keepPositions);
+    rememberState.positions = buildRememberPositions(rememberState.level, rememberState.keepPositions);
     rememberState.phase = "reveal";
     rememberState.nextExpected = 1;
     els.rememberHint.textContent = "Merken …";
@@ -3385,7 +3409,7 @@
   // clamped between the chosen starting number and a practical ceiling -
   // past that many markers, a phone screen can no longer fit them all with
   // a guaranteed non-overlapping gap.
-  const REMEMBER_MAX_LEVEL = 20;
+  const REMEMBER_MAX_LEVEL = 24;
   function rememberGoToLevel(newLevel) {
     if (!rememberState || rememberState.mode !== "training") return;
     if (rememberState.timer) clearTimeout(rememberState.timer);
@@ -3413,8 +3437,23 @@
       el.classList.add("wrong");
       el.textContent = String(num);
       els.rememberStage.querySelectorAll(".remember-marker").forEach((m) => { m.textContent = m.dataset.num; m.style.pointerEvents = "none"; m.classList.remove("covered"); });
-      els.rememberHint.textContent = "Leider falsch – nochmal von vorne";
-      const resetLevel = rememberState.mode === "training" ? rememberState.trainingStart : 2;
+      let resetLevel, hint;
+      if (rememberState.mode === "training") {
+        resetLevel = rememberState.trainingStart;
+        rememberState.positionCache = {};
+        hint = "Leider falsch – nochmal von vorne";
+      } else if (rememberState.errorMode === "stay") {
+        resetLevel = rememberState.level;
+        hint = "Leider falsch – nochmal versuchen";
+      } else if (rememberState.errorMode === "backOne") {
+        resetLevel = Math.max(2, rememberState.level - 1);
+        hint = "Leider falsch – eine Zahl zurück";
+      } else {
+        resetLevel = 2;
+        rememberState.positionCache = {};
+        hint = "Leider falsch – nochmal von vorne";
+      }
+      els.rememberHint.textContent = hint;
       rememberState.timer = setTimeout(() => { rememberState.level = resetLevel; startRememberLevel(); }, 1400);
     }
   }
@@ -3429,10 +3468,12 @@
     lastRememberMode = mode;
     rememberReturnScreen = mode === "training" ? "rememberTrainingReady" : "rememberReady";
     const startLevel = mode === "training" ? rememberPrefs.trainingStart : 2;
+    const keepPositions = mode === "training" ? rememberPrefs.trainingPositionMode === "fixed" : REMEMBER_MODES[mode].keepPositions;
     rememberState = {
       mode, level: startLevel, cleared: 0, positions: [], phase: "reveal", nextExpected: 1,
-      startTime: performance.now(), timer: null,
+      startTime: performance.now(), timer: null, positionCache: {}, keepPositions,
       revealBaseS: rememberPrefs.revealBaseS, revealStepS: rememberPrefs.revealStepS,
+      errorMode: rememberPrefs.errorMode,
       trainingStart: rememberPrefs.trainingStart, trainingProgress: rememberPrefs.trainingProgress,
     };
     requestWakeLock();
@@ -3451,6 +3492,11 @@
       ? `Deine Bestleistung bei dieser Schwierigkeit: ${best}.`
       : "Noch keine Bestleistung bei dieser Schwierigkeit – leg los!";
   }
+  function syncRememberErrorUI() {
+    document.querySelectorAll("#rememberErrorRow [data-remember-error]").forEach((el) => {
+      setActive(el, el.dataset.rememberError === rememberPrefs.errorMode);
+    });
+  }
   function openRememberReady(mode) {
     rememberReadyMode = mode;
     const m = REMEMBER_MODES[mode];
@@ -3459,9 +3505,17 @@
       ? "Jede neue Zahl kommt an einen neuen Platz dazu – die bisherigen bleiben, wo sie waren."
       : "Bei jeder neuen Zahl werden alle Positionen neu gemischt – schwerer zu merken.";
     syncRememberDifficultyUI(rememberReadyCfg);
+    syncRememberErrorUI();
     updateRememberReadyBestHint();
     showScreen("rememberReady");
   }
+  document.querySelectorAll("#rememberErrorRow [data-remember-error]").forEach((el) => {
+    el.addEventListener("click", () => {
+      rememberPrefs.errorMode = el.dataset.rememberError;
+      saveRememberPrefsToStorage();
+      syncRememberErrorUI();
+    });
+  });
   const rememberReadyCfg = {
     rowSelector: "#rememberDifficultyRow",
     custom: els.rememberDiffCustom,
@@ -3481,6 +3535,9 @@
   function syncRememberTrainingUI() {
     els.rememberStartSlider.value = rememberPrefs.trainingStart;
     els.rememberStartValue.textContent = String(rememberPrefs.trainingStart);
+    document.querySelectorAll("[data-remember-position]").forEach((el) => {
+      setActive(el, el.dataset.rememberPosition === rememberPrefs.trainingPositionMode);
+    });
     document.querySelectorAll("[data-remember-progress]").forEach((el) => {
       setActive(el, (el.dataset.rememberProgress === "1") === rememberPrefs.trainingProgress);
     });
@@ -3506,6 +3563,13 @@
   document.querySelectorAll("[data-remember-progress]").forEach((el) => {
     el.addEventListener("click", () => {
       rememberPrefs.trainingProgress = el.dataset.rememberProgress === "1";
+      saveRememberPrefsToStorage();
+      syncRememberTrainingUI();
+    });
+  });
+  document.querySelectorAll("[data-remember-position]").forEach((el) => {
+    el.addEventListener("click", () => {
+      rememberPrefs.trainingPositionMode = el.dataset.rememberPosition;
       saveRememberPrefsToStorage();
       syncRememberTrainingUI();
     });

@@ -521,6 +521,15 @@
     <div class="tempo-custom" id="rememberDiffCustom" hidden>Individuell eingestellt (siehe Feineinstellungen)</div>
   </div>
 
+  <div class="group">
+    <div class="group-label">Bei Fehler</div>
+    <div class="choice-row" id="rememberErrorRow">
+      <button class="choice" data-remember-error="reset2">Zur&uuml;ck auf 2<small>ganz von vorne</small></button>
+      <button class="choice" data-remember-error="backOne">Eine Zahl zur&uuml;ck<small>eine Stufe runter</small></button>
+      <button class="choice" data-remember-error="stay">Gleiche Zahl<small>so lange, bis es klappt</small></button>
+    </div>
+  </div>
+
   <details class="advanced" id="rememberAdvanced">
     <summary>Feineinstellungen</summary>
     <div class="advanced-body">
@@ -556,7 +565,15 @@
   <div class="group">
     <div class="group-label">Startzahl <span class="group-count" id="rememberStartValue"></span></div>
     <div class="slider-row">
-      <input type="range" id="rememberStartSlider" min="2" max="12" step="1" aria-label="Startzahl">
+      <input type="range" id="rememberStartSlider" min="2" max="16" step="1" aria-label="Startzahl">
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Positionsart</div>
+    <div class="choice-row two" id="rememberTrainingPositionRow">
+      <button class="choice" data-remember-position="fixed">Feste Positionen<small>bisherige bleiben</small></button>
+      <button class="choice" data-remember-position="shuffle">Bewegte Positionen<small>immer neu gemischt</small></button>
     </div>
   </div>
 
