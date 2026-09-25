@@ -430,6 +430,7 @@
   <nav class="sub-switch" role="tablist" aria-label="NAT Unterbereich">
     <button class="sub-tab active" data-nat-sub="peripher" role="tab" aria-selected="true">Periphere Wahrnehmung</button>
     <button class="sub-tab" data-nat-sub="remember" role="tab" aria-selected="false">Remember</button>
+    <button class="sub-tab" data-nat-sub="blitz" role="tab" aria-selected="false">Blitz-Raster</button>
     <button class="sub-tab" data-nat-sub="flash" role="tab" aria-selected="false">Flash Speicher Test</button>
   </nav>
 
@@ -470,6 +471,18 @@
       <span class="fc-title">Trainingsmodus</span>
       <span class="fc-desc">Starte direkt bei einer bestimmten Zahlenanzahl und &uuml;be gezielt dort &ndash; mit Vor/Zur&uuml;ck und Wahl, ob du dich danach steigerst.</span>
       <span class="fc-meta" id="rememberBestTraining"></span>
+    </button>
+  </section>
+
+  <section class="nat-panel" id="natBlitzPanel" hidden>
+    <div class="section-head">
+      <h2>Blitz-Raster</h2>
+      <span class="section-note">merke dir, welche Felder aufleuchten</span>
+    </div>
+    <button class="featured-card" id="blitzOpenBtn">
+      <span class="fc-title">Blitz-Raster starten</span>
+      <span class="fc-desc">Mehrere Felder leuchten gleichzeitig kurz auf &ndash; tippe danach genau diese Felder an, die Reihenfolge ist egal.</span>
+      <span class="fc-meta" id="blitzBestHint"></span>
     </button>
   </section>
 
@@ -650,6 +663,106 @@
   <div class="group-help" id="rememberTrainingBestHint"></div>
 
   <button class="start-btn" id="rememberTrainingStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="blitzReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="blitzReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Blitz-Raster</h1>
+  <p class="page-sub">Mehrere Felder leuchten gleichzeitig kurz auf. Merke dir, welche es waren, und tippe sie danach an &ndash; die Reihenfolge spielt keine Rolle.</p>
+
+  <div class="group">
+    <div class="group-label">Rastergr&ouml;&szlig;e</div>
+    <div class="choice-row" id="blitzGridSizeRow">
+      <button class="choice" data-blitz-grid="3">3&times;3</button>
+      <button class="choice" data-blitz-grid="4">4&times;4</button>
+      <button class="choice" data-blitz-grid="5">5&times;5</button>
+    </div>
+  </div>
+
+  <div class="group" id="blitzZoneGroup" hidden>
+    <div class="group-label">Bereich</div>
+    <div class="choice-row" style="grid-template-columns:1fr">
+      <button class="choice" id="blitzZoneAllBtn">&Uuml;berall</button>
+    </div>
+    <div class="periph-zone-grid" id="blitzZoneGrid">
+      <button class="periph-zone" data-zone="tl" aria-label="Oben links"></button>
+      <button class="periph-zone" data-zone="tm" aria-label="Oben Mitte"></button>
+      <button class="periph-zone" data-zone="tr" aria-label="Oben rechts"></button>
+      <button class="periph-zone" data-zone="ml" aria-label="Mitte links"></button>
+      <div class="periph-zone periph-zone-center" aria-hidden="true"></div>
+      <button class="periph-zone" data-zone="mr" aria-label="Mitte rechts"></button>
+      <button class="periph-zone" data-zone="bl" aria-label="Unten links"></button>
+      <button class="periph-zone" data-zone="bm" aria-label="Unten Mitte"></button>
+      <button class="periph-zone" data-zone="br" aria-label="Unten rechts"></button>
+    </div>
+    <div class="color-hint" id="blitzZoneHint"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="blitzDifficultyRow">
+      <button class="choice" data-blitz-diff="leicht">Leicht<small>l&auml;nger sichtbar</small></button>
+      <button class="choice" data-blitz-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-blitz-diff="schwer">Schwer<small>ganz kurz</small></button>
+    </div>
+    <div class="tempo-custom" id="blitzDiffCustom" hidden>Individuell eingestellt (siehe Feineinstellungen)</div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Bei Fehler</div>
+    <div class="choice-row" id="blitzErrorRow">
+      <button class="choice" data-blitz-error="reset2">Zur&uuml;ck auf 2<small>ganz von vorne</small></button>
+      <button class="choice" data-blitz-error="backOne">Ein Feld weniger<small>eine Stufe runter</small></button>
+      <button class="choice" data-blitz-error="stay">Gleiche Anzahl<small>so lange, bis es klappt</small></button>
+    </div>
+  </div>
+
+  <details class="advanced" id="blitzAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Blitzdauer <span class="slider-value" id="blitzFlashValue"></span></div>
+        <div class="slider-row">
+          <input type="range" id="blitzFlashSlider" min="0.3" max="2" step="0.1" aria-label="Blitzdauer">
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Startanzahl <span class="group-count" id="blitzStartValue"></span></div>
+        <div class="slider-row">
+          <input type="range" id="blitzStartSlider" min="2" max="12" step="1" aria-label="Startanzahl">
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="blitzBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="blitzBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="blitzBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="blitzBgContrastHint" hidden></div>
+        <div class="choice-row" id="blitzBgSourceRow"></div>
+        <div class="group" id="blitzBgPresetGroup" hidden>
+          <div class="group-label">Gespeicherte Farbgestaltungen</div>
+          <div class="bundle-list" id="blitzBgPresetList"></div>
+        </div>
+        <button class="text-link small" id="blitzBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
+        <div class="custom-exercise-form" id="blitzBgSaveForm" hidden>
+          <input type="text" id="blitzBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <div class="custom-exercise-form-actions">
+            <button class="start-btn secondary" id="blitzBgSaveCancelBtn">Abbrechen</button>
+            <button class="start-btn" id="blitzBgSaveConfirmBtn">Speichern</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="group-help" id="blitzReadyBestHint"></div>
+
+  <button class="start-btn" id="blitzReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="bundleOverview" hidden>
@@ -1400,6 +1513,47 @@
     <div class="rating" id="rememberRating"></div>
     <button class="again" id="rememberAgainBtn">Nochmal</button>
     <button class="back" id="rememberDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="blitzPlayer" hidden>
+  <div class="blitz-stage" id="blitzStage">
+    <div class="remember-hint" id="blitzHint"></div>
+    <div class="blitz-grid" id="blitzGrid"></div>
+  </div>
+  <div class="pause-overlay" id="blitzPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="blitzPauseBgValue"></span></div>
+        <input type="range" id="blitzPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="blitzPauseBgColorPicker"></div>
+      </div>
+      <button class="start-btn" id="blitzResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="blitzPlayerBar">
+    <button id="blitzBackBtn">&#10005; Beenden</button>
+    <button id="blitzPauseBtn">Pause</button>
+    <span class="player-status" id="blitzLevelEl"></span>
+    <button id="blitzFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="blitzFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="blitzFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="blitzFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="blitzDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="blitzDoneSummary"></p>
+    <div class="rating" id="blitzRating"></div>
+    <button class="again" id="blitzAgainBtn">Nochmal</button>
+    <button class="back" id="blitzDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

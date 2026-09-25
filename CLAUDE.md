@@ -230,10 +230,48 @@ unrelated to the feature being changed.
   (Phase 1-4: fixation point, Zeichentyp, Bereich programmes incl. 3×3 zone
   picker, radial size growth, background colour/intensity) plus a
   mid-exercise Pause with live background/fixation-point adjustment (see
-  Established patterns). Flash Speicher Test is still an unbuilt
-  placeholder panel - the user wants the same pattern (pre-settable
-  background + pause-to-adjust) applied there too once it's built; there
-  was nothing to attach it to yet, so it's not done.
+  Established patterns). **Blitz-Raster** (4th NAT sub-tab) is fully built:
+  an NxN grid (3×3/4×4/5×5) where several cells light up SIMULTANEOUSLY and
+  briefly, then go dark; the client taps back exactly those cells, order
+  doesn't matter - the key difference from Remember (which is an ordered,
+  studied-layout recall). At 4×4/5×5 a "Bereich" restricts play to specific
+  3×3-band zones, reusing `PERIPH_ZONES` band math (see
+  `blitzEligibleCells()`) rather than a second zone system; the centre band
+  is always eligible (no fixation point to protect here, but keeping the
+  convention avoids a confusing 9th toggle). Same Bei-Fehler options as
+  Remember (reset2/backOne/stay), same background colour/intensity +
+  transfer + mid-game Pause pattern as Periph/Remember (`blitzPrefs`, a
+  `"blitz"` `BG_SOURCES` entry). Engine mirrors Remember's setTimeout/
+  `scheduleBlitzTimer` pause approach closely (own state, own functions,
+  copy-adapted rather than shared - the phase model and win/lose logic
+  differ enough - simultaneous flash + unordered tap-set vs. sequential
+  reveal + ordered click - that a shared engine would need a maze of
+  conditionals for little gain). No fixed/shuffle/training sub-modes like
+  Remember (grid cell positions never move, so there's nothing to persist)
+  - if a Trainingsmodus-style "start straight at level N" turns out to be
+  wanted later, add a second ready screen the same way Remember has one.
+  Not (yet) wired into the Kombi builder - wasn't asked for.
+  Flash Speicher Test is still an unbuilt placeholder panel and is a
+  **third, distinct** concept from both Remember and Blitz-Raster (the
+  user was explicit about this): numbers appear ONE AT A TIME at scattered
+  positions (Periph-style placement, with its own Bereich), each briefly,
+  then an input field opens to type them back in the order shown. Needs
+  several sub-modes (analogous to Remember's three): a constant-count mode
+  that only gets faster, a count-increases-every-round mode, a
+  count-increases-with-2-3-repeats-per-level mode, and a Trainingsmodus
+  that starts directly at a chosen count/speed. Not yet built - confirm the
+  mode breakdown with the user before building (it's dense and was given
+  in one long message; see the "Dominanz" item below too, floated in the
+  same message for Periph/Blitz/Flash/possibly Remember but not designed
+  or built yet).
+- **Dominanz-Gewichtung (not yet designed or built)**: a later,
+  explicitly "Champions League"-tier enhancement floated for Periph,
+  Blitz-Raster and Flash Speicher Test (possibly Remember too): within the
+  *currently selected* Bereich zones, let the client weight individual
+  zones to appear proportionally more often (e.g. one zone 2× or 3× as
+  likely as the others) instead of a flat equal split across all selected
+  zones. Needs a concrete UI (a weight slider per selected zone? a couple
+  of discrete "dominance levels"?) - ask before building.
 - **Live-pause-adjust, remaining scope decision**: now built for Periphere
   Wahrnehmung and Remember. Not yet decided/built: extending it to other
   domains — Atemtraining "wird Sinn machen", Movement "kann auch Sinn

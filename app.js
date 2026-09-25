@@ -1096,7 +1096,26 @@
     workoutHistoryStats: $("workoutHistoryStats"), workoutHistoryList: $("workoutHistoryList"), workoutHistoryClearBtn: $("workoutHistoryClearBtn"), workoutHistoryMoreBtn: $("workoutHistoryMoreBtn"),
     workoutFeaturedPrograms: $("workoutFeaturedPrograms"), workoutFeaturedGrid: $("workoutFeaturedGrid"),
     workoutTabataStartCard: $("workoutTabataStartCard"),
-    natHome: $("natHome"), natPeripherPanel: $("natPeripherPanel"), natRememberPanel: $("natRememberPanel"), natFlashPanel: $("natFlashPanel"),
+    natHome: $("natHome"), natPeripherPanel: $("natPeripherPanel"), natRememberPanel: $("natRememberPanel"), natBlitzPanel: $("natBlitzPanel"), natFlashPanel: $("natFlashPanel"),
+    blitzOpenBtn: $("blitzOpenBtn"), blitzBestHint: $("blitzBestHint"), blitzReady: $("blitzReady"),
+    blitzReadyBackToHome: $("blitzReadyBackToHome"), blitzGridSizeRow: $("blitzGridSizeRow"),
+    blitzZoneGroup: $("blitzZoneGroup"), blitzZoneAllBtn: $("blitzZoneAllBtn"), blitzZoneGrid: $("blitzZoneGrid"), blitzZoneHint: $("blitzZoneHint"),
+    blitzDifficultyRow: $("blitzDifficultyRow"), blitzDiffCustom: $("blitzDiffCustom"), blitzErrorRow: $("blitzErrorRow"),
+    blitzAdvanced: $("blitzAdvanced"), blitzFlashSlider: $("blitzFlashSlider"), blitzFlashValue: $("blitzFlashValue"),
+    blitzStartSlider: $("blitzStartSlider"), blitzStartValue: $("blitzStartValue"),
+    blitzBgColorPicker: $("blitzBgColorPicker"), blitzBgIntensitySlider: $("blitzBgIntensitySlider"),
+    blitzBgIntensityValue: $("blitzBgIntensityValue"), blitzBgContrastHint: $("blitzBgContrastHint"),
+    blitzBgSourceRow: $("blitzBgSourceRow"), blitzBgPresetGroup: $("blitzBgPresetGroup"), blitzBgPresetList: $("blitzBgPresetList"),
+    blitzBgSaveBtn: $("blitzBgSaveBtn"), blitzBgSaveForm: $("blitzBgSaveForm"), blitzBgSaveNameInput: $("blitzBgSaveNameInput"),
+    blitzBgSaveCancelBtn: $("blitzBgSaveCancelBtn"), blitzBgSaveConfirmBtn: $("blitzBgSaveConfirmBtn"),
+    blitzReadyBestHint: $("blitzReadyBestHint"), blitzReadyStartBtn: $("blitzReadyStartBtn"),
+    blitzPlayer: $("blitzPlayer"), blitzStage: $("blitzStage"), blitzHint: $("blitzHint"), blitzGrid: $("blitzGrid"),
+    blitzPauseOverlay: $("blitzPauseOverlay"), blitzPauseBgSlider: $("blitzPauseBgSlider"), blitzPauseBgValue: $("blitzPauseBgValue"),
+    blitzPauseBgColorPicker: $("blitzPauseBgColorPicker"), blitzResumeBtn: $("blitzResumeBtn"),
+    blitzPlayerBar: $("blitzPlayerBar"), blitzBackBtn: $("blitzBackBtn"), blitzPauseBtn: $("blitzPauseBtn"), blitzLevelEl: $("blitzLevelEl"),
+    blitzFsBtn: $("blitzFsBtn"), blitzFsHint: $("blitzFsHint"), blitzFsHintOpenBtn: $("blitzFsHintOpenBtn"), blitzFsHintClose: $("blitzFsHintClose"),
+    blitzDonePanel: $("blitzDonePanel"), blitzDoneSummary: $("blitzDoneSummary"), blitzRating: $("blitzRating"),
+    blitzAgainBtn: $("blitzAgainBtn"), blitzDoneBackBtn: $("blitzDoneBackBtn"),
     rememberOpenFixed: $("rememberOpenFixed"), rememberOpenShuffle: $("rememberOpenShuffle"), rememberOpenTraining: $("rememberOpenTraining"),
     rememberBestFixed: $("rememberBestFixed"), rememberBestShuffle: $("rememberBestShuffle"), rememberBestTraining: $("rememberBestTraining"),
     rememberReady: $("rememberReady"), rememberReadyBackToHome: $("rememberReadyBackToHome"),
@@ -1176,7 +1195,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -1210,8 +1229,10 @@
       });
       els.natPeripherPanel.hidden = sub !== "peripher";
       els.natRememberPanel.hidden = sub !== "remember";
+      els.natBlitzPanel.hidden = sub !== "blitz";
       els.natFlashPanel.hidden = sub !== "flash";
       if (sub === "remember") renderRememberBests();
+      if (sub === "blitz") renderBlitzBest();
     });
   });
   document.querySelectorAll("[data-open-combo]").forEach((btn) => btn.addEventListener("click", () => openComboScreen()));
@@ -1709,6 +1730,7 @@
   const BG_SOURCES = [
     { id: "vt", label: "Visual Training / NAT", get: () => ({ colorKey: state.bgColorKey, intensity: state.bgIntensity }) },
     { id: "remember", label: "Remember", get: () => ({ colorKey: rememberPrefs.bgColorKey, intensity: rememberPrefs.bgIntensity }) },
+    { id: "blitz", label: "Blitz-Raster", get: () => ({ colorKey: blitzPrefs.bgColorKey, intensity: blitzPrefs.bgIntensity }) },
   ];
   const BG_PRESETS_KEY = "fwmc-bg-presets-v1"; // [{ id, name, colorKey, intensity }] - not scoped to a domain, any saved combo applies anywhere
   const bgPresetStore = makePresetStore(BG_PRESETS_KEY);
@@ -2701,6 +2723,7 @@
     els.wimhofPlayer.hidden = true;
     els.movementPlayer.hidden = true;
     els.rememberPlayer.hidden = true;
+    els.blitzPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3072,6 +3095,7 @@
   wireFullscreen({ player: els.wimhofPlayer, btn: els.wimhofFsBtn, hint: els.wimhofFsHint, hintOpen: els.wimhofFsHintOpenBtn, hintClose: els.wimhofFsHintClose });
   wireFullscreen({ player: els.movementPlayer, btn: els.movementFsBtn, hint: els.movementFsHint, hintOpen: els.movementFsHintOpenBtn, hintClose: els.movementFsHintClose });
   wireFullscreen({ player: els.rememberPlayer, btn: els.rememberFsBtn, hint: els.rememberFsHint, hintOpen: els.rememberFsHintOpenBtn, hintClose: els.rememberFsHintClose });
+  wireFullscreen({ player: els.blitzPlayer, btn: els.blitzFsBtn, hint: els.blitzFsHint, hintOpen: els.blitzFsHintOpenBtn, hintClose: els.blitzFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -4435,6 +4459,367 @@
   els.rememberBackBtn.addEventListener("click", rememberStop);
   els.rememberAgainBtn.addEventListener("click", () => { els.rememberDonePanel.hidden = true; startRememberGame(lastRememberMode); });
   els.rememberDoneBackBtn.addEventListener("click", () => { els.rememberPlayer.hidden = true; els.rememberDonePanel.hidden = true; showScreen("natHome"); });
+
+  // ==== Blitz-Raster engine ====
+  // A grid of cells lights up SIMULTANEOUSLY for a brief moment, then goes
+  // dark; the client taps back exactly the cells that lit up - order
+  // doesn't matter. That's the key difference from Remember (a sequential,
+  // ordered recall of a layout you have time to study): this is a single
+  // brief snapshot and an unordered "which ones" recall. Endless/
+  // progressive like Remember - "Beenden" doubles as the finish action.
+  const BLITZ_PREFS_KEY = "fwmc-blitz-prefs-v1";
+  const BLITZ_DIFFICULTIES = {
+    leicht: { title: "Leicht", flashS: 1.2 },
+    mittel: { title: "Mittel", flashS: 0.8 },
+    schwer: { title: "Schwer", flashS: 0.5 },
+  };
+  const BLITZ_MAX_LEVEL_CAP = 16; // absolute ceiling, regardless of how many cells a grid/Bereich combo could fit
+  const blitzPrefs = {
+    flashS: BLITZ_DIFFICULTIES.mittel.flashS,
+    errorMode: "reset2",
+    gridSize: 4,
+    zones: PERIPH_ZONE_KEYS.slice(),
+    startCount: 3,
+    bgColorKey: "gruen",
+    bgIntensity: 0,
+  };
+  function loadBlitzPrefs() {
+    const saved = readJSON(BLITZ_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(blitzPrefs, saved);
+    if (![3, 4, 5].includes(blitzPrefs.gridSize)) blitzPrefs.gridSize = 4;
+    if (!Array.isArray(blitzPrefs.zones) || blitzPrefs.zones.length === 0 || !blitzPrefs.zones.every((z) => PERIPH_ZONE_KEYS.includes(z))) blitzPrefs.zones = PERIPH_ZONE_KEYS.slice();
+    if (!["reset2", "backOne", "stay"].includes(blitzPrefs.errorMode)) blitzPrefs.errorMode = "reset2";
+    if (typeof blitzPrefs.flashS !== "number" || blitzPrefs.flashS < 0.3 || blitzPrefs.flashS > 2) blitzPrefs.flashS = BLITZ_DIFFICULTIES.mittel.flashS;
+    if (typeof blitzPrefs.startCount !== "number" || blitzPrefs.startCount < 2) blitzPrefs.startCount = 3;
+    if (!STROOP_COLOR_BY_KEY[blitzPrefs.bgColorKey]) blitzPrefs.bgColorKey = "gruen";
+    if (typeof blitzPrefs.bgIntensity !== "number" || blitzPrefs.bgIntensity < 0 || blitzPrefs.bgIntensity > 1) blitzPrefs.bgIntensity = 0;
+  }
+  function saveBlitzPrefsToStorage() { writeJSON(BLITZ_PREFS_KEY, blitzPrefs); }
+  loadBlitzPrefs();
+
+  function blitzDifficultyBucket() {
+    for (const key of Object.keys(BLITZ_DIFFICULTIES)) {
+      if (Math.abs(BLITZ_DIFFICULTIES[key].flashS - blitzPrefs.flashS) < 0.001) return key;
+    }
+    return "custom";
+  }
+  const BLITZ_BEST_KEY = "fwmc-blitz-best-v1"; // { [difficultyBucket]: bestLevel }
+  function blitzBestFor() { return readJSON(BLITZ_BEST_KEY, {})[blitzDifficultyBucket()] || 0; }
+  function blitzOverallBest() { return Math.max(0, ...Object.values(readJSON(BLITZ_BEST_KEY, {})), 0); }
+  function saveBlitzBest(level) {
+    const all = readJSON(BLITZ_BEST_KEY, {});
+    const bucket = blitzDifficultyBucket();
+    if (level > (all[bucket] || 0)) { all[bucket] = level; writeJSON(BLITZ_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderBlitzBest() {
+    const b = blitzOverallBest();
+    els.blitzBestHint.textContent = b ? `Bestleistung: ${b}` : "";
+  }
+  renderBlitzBest();
+
+  // Maps the 3x3 "Bereich" band system Periphere Wahrnehmung already uses
+  // (PERIPH_ZONES) onto an NxN grid, splitting rows/cols into three bands.
+  // The centre band is always eligible, same convention as Periph (there
+  // it's reserved for the fixation point; here there's no such reason, but
+  // keeping it "always on" avoids a confusing extra toggle for one band).
+  function blitzEligibleCells(gridSize, zones) {
+    const cells = [];
+    for (let r = 0; r < gridSize; r++) {
+      for (let c = 0; c < gridSize; c++) {
+        const br = Math.floor((r * 3) / gridSize), bc = Math.floor((c * 3) / gridSize);
+        const isCenter = br === 1 && bc === 1;
+        const inZone = isCenter || zones.some((z) => PERIPH_ZONES[z].row === br && PERIPH_ZONES[z].col === bc);
+        if (inZone) cells.push(r + "," + c);
+      }
+    }
+    return cells;
+  }
+  function blitzMaxLevelForCurrentSettings() {
+    const eligible = blitzEligibleCells(blitzPrefs.gridSize, blitzPrefs.zones);
+    return Math.max(2, Math.min(BLITZ_MAX_LEVEL_CAP, eligible.length - 1));
+  }
+
+  function applyBlitzBg() {
+    els.blitzStage.style.background = blitzPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[blitzPrefs.bgColorKey].hex, blitzPrefs.bgIntensity)
+      : "";
+  }
+  const syncBlitzBgUI = wireBgIntensityControl(blitzPrefs, {
+    pickers: [els.blitzBgColorPicker, els.blitzPauseBgColorPicker],
+    sliders: [els.blitzBgIntensitySlider, els.blitzPauseBgSlider],
+    valueEls: [els.blitzBgIntensityValue, els.blitzPauseBgValue],
+    hintEls: [els.blitzBgContrastHint],
+    transfer: [{
+      sourceRow: els.blitzBgSourceRow, presetGroup: els.blitzBgPresetGroup, presetList: els.blitzBgPresetList,
+      saveBtn: els.blitzBgSaveBtn, form: els.blitzBgSaveForm, nameInput: els.blitzBgSaveNameInput,
+      cancelBtn: els.blitzBgSaveCancelBtn, confirmBtn: els.blitzBgSaveConfirmBtn,
+    }],
+  }, () => { saveBlitzPrefsToStorage(); applyBlitzBg(); }, "blitz");
+
+  // ---- Ready screen ----
+  function syncBlitzGridSizeUI() {
+    document.querySelectorAll("#blitzGridSizeRow [data-blitz-grid]").forEach((el) => setActive(el, Number(el.dataset.blitzGrid) === blitzPrefs.gridSize));
+    els.blitzZoneGroup.hidden = blitzPrefs.gridSize === 3;
+  }
+  document.querySelectorAll("#blitzGridSizeRow [data-blitz-grid]").forEach((el) => {
+    el.addEventListener("click", () => {
+      blitzPrefs.gridSize = Number(el.dataset.blitzGrid);
+      saveBlitzPrefsToStorage();
+      syncBlitzGridSizeUI();
+      syncBlitzStartUI();
+    });
+  });
+  document.querySelectorAll("#blitzZoneGrid [data-zone]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const z = el.dataset.zone;
+      const on = blitzPrefs.zones.includes(z);
+      // Keep at least one zone selected, same rule as Periph's own zone grid.
+      if (on && blitzPrefs.zones.length <= 1) return;
+      blitzPrefs.zones = on ? blitzPrefs.zones.filter((k) => k !== z) : [...blitzPrefs.zones, z];
+      saveBlitzPrefsToStorage();
+      syncBlitzZoneUI();
+      syncBlitzStartUI();
+    });
+  });
+  els.blitzZoneAllBtn.addEventListener("click", () => {
+    const allOn = blitzPrefs.zones.length === PERIPH_ZONE_KEYS.length;
+    blitzPrefs.zones = allOn ? [] : PERIPH_ZONE_KEYS.slice();
+    saveBlitzPrefsToStorage();
+    syncBlitzZoneUI();
+    syncBlitzStartUI();
+  });
+  function syncBlitzZoneUI() {
+    document.querySelectorAll("#blitzZoneGrid [data-zone]").forEach((el) => el.classList.toggle("active", blitzPrefs.zones.includes(el.dataset.zone)));
+    setActive(els.blitzZoneAllBtn, blitzPrefs.zones.length === PERIPH_ZONE_KEYS.length);
+    const belowMin = blitzPrefs.zones.length === 0;
+    els.blitzZoneHint.textContent = belowMin ? "Wähle mindestens einen Bereich." : "";
+    els.blitzZoneHint.classList.toggle("warn", belowMin);
+    els.blitzReadyStartBtn.disabled = belowMin;
+  }
+  document.querySelectorAll("#blitzDifficultyRow [data-blitz-diff]").forEach((el) => {
+    el.addEventListener("click", () => {
+      blitzPrefs.flashS = BLITZ_DIFFICULTIES[el.dataset.blitzDiff].flashS;
+      saveBlitzPrefsToStorage();
+      syncBlitzDifficultyUI();
+    });
+  });
+  els.blitzFlashSlider.addEventListener("input", () => {
+    blitzPrefs.flashS = Number(els.blitzFlashSlider.value);
+    saveBlitzPrefsToStorage();
+    syncBlitzDifficultyUI();
+  });
+  function syncBlitzDifficultyUI() {
+    const bucket = blitzDifficultyBucket();
+    document.querySelectorAll("#blitzDifficultyRow [data-blitz-diff]").forEach((el) => setActive(el, el.dataset.blitzDiff === bucket));
+    els.blitzDiffCustom.hidden = bucket !== "custom";
+    els.blitzFlashSlider.value = blitzPrefs.flashS;
+    els.blitzFlashValue.textContent = fmtSeconds(blitzPrefs.flashS);
+    updateBlitzReadyBestHint();
+  }
+  document.querySelectorAll("#blitzErrorRow [data-blitz-error]").forEach((el) => {
+    el.addEventListener("click", () => {
+      blitzPrefs.errorMode = el.dataset.blitzError;
+      saveBlitzPrefsToStorage();
+      syncBlitzErrorUI();
+    });
+  });
+  function syncBlitzErrorUI() {
+    document.querySelectorAll("#blitzErrorRow [data-blitz-error]").forEach((el) => setActive(el, el.dataset.blitzError === blitzPrefs.errorMode));
+  }
+  function syncBlitzStartUI() {
+    const max = blitzMaxLevelForCurrentSettings();
+    blitzPrefs.startCount = Math.min(blitzPrefs.startCount, max);
+    els.blitzStartSlider.max = String(max);
+    els.blitzStartSlider.value = blitzPrefs.startCount;
+    els.blitzStartValue.textContent = String(blitzPrefs.startCount);
+  }
+  els.blitzStartSlider.addEventListener("input", () => {
+    blitzPrefs.startCount = Number(els.blitzStartSlider.value);
+    saveBlitzPrefsToStorage();
+    syncBlitzStartUI();
+  });
+  function updateBlitzReadyBestHint() {
+    const best = blitzBestFor();
+    els.blitzReadyBestHint.textContent = best
+      ? `Deine Bestleistung bei dieser Schwierigkeit: ${best}.`
+      : "Noch keine Bestleistung bei dieser Schwierigkeit – leg los!";
+  }
+  els.blitzOpenBtn.addEventListener("click", () => {
+    syncBlitzGridSizeUI();
+    syncBlitzZoneUI();
+    syncBlitzDifficultyUI();
+    syncBlitzErrorUI();
+    syncBlitzStartUI();
+    syncBlitzBgUI();
+    showScreen("blitzReady");
+  });
+  els.blitzReadyBackToHome.addEventListener("click", () => showScreen("natHome"));
+
+  // ---- Grid rendering + gameplay ----
+  function pickRandomSubset(pool, count) {
+    const copy = pool.slice();
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return new Set(copy.slice(0, count));
+  }
+  // Same timer-wrapping trick as Remember's scheduleRememberTimer: records
+  // what's pending and when it fires, so Pause can cancel it and Resume can
+  // replay it with its exact remaining delay.
+  function scheduleBlitzTimer(fn, delayMs) {
+    blitzState.timerFn = fn;
+    blitzState.timerFiresAt = performance.now() + delayMs;
+    blitzState.timer = setTimeout(fn, delayMs);
+  }
+  function renderBlitzGrid() {
+    els.blitzGrid.style.gridTemplateColumns = `repeat(${blitzState.gridSize}, 1fr)`;
+    els.blitzGrid.style.gridTemplateRows = `repeat(${blitzState.gridSize}, 1fr)`;
+    els.blitzGrid.innerHTML = "";
+    for (let r = 0; r < blitzState.gridSize; r++) {
+      for (let c = 0; c < blitzState.gridSize; c++) {
+        const key = r + "," + c;
+        const eligible = blitzState.eligible.has(key);
+        const el = document.createElement("button");
+        el.className = "blitz-cell";
+        el.setAttribute("aria-label", `Feld Zeile ${r + 1}, Spalte ${c + 1}`);
+        if (blitzState.phase === "flash" && blitzState.lit.has(key)) el.classList.add("lit");
+        if (blitzState.tapped.has(key) && blitzState.lit.has(key)) el.classList.add("correct");
+        if (key === blitzState.wrongKey) el.classList.add("wrong");
+        const tappable = eligible && blitzState.phase === "input" && !blitzState.tapped.has(key);
+        if (tappable) {
+          el.classList.add("tappable");
+          el.addEventListener("click", () => blitzTapCell(key, el));
+        }
+        els.blitzGrid.appendChild(el);
+      }
+    }
+  }
+  function blitzStartRound() {
+    const eligibleArr = blitzEligibleCells(blitzState.gridSize, blitzState.zones);
+    blitzState.eligible = new Set(eligibleArr);
+    const maxLevel = Math.max(2, eligibleArr.length - 1);
+    blitzState.level = Math.min(blitzState.level, maxLevel);
+    blitzState.lit = pickRandomSubset(eligibleArr, blitzState.level);
+    blitzState.tapped = new Set();
+    blitzState.wrongKey = null;
+    blitzState.phase = "flash";
+    els.blitzHint.textContent = "Merken …";
+    els.blitzLevelEl.textContent = `${blitzState.level} Felder`;
+    renderBlitzGrid();
+    scheduleBlitzTimer(blitzCoverRound, blitzState.flashS * 1000);
+  }
+  function blitzCoverRound() {
+    if (!blitzState) return;
+    blitzState.phase = "input";
+    els.blitzHint.textContent = "Jetzt genau diese Felder antippen";
+    renderBlitzGrid();
+  }
+  function blitzTapCell(key, el) {
+    if (!blitzState || blitzState.phase !== "input" || blitzState.paused || blitzState.tapped.has(key)) return;
+    if (blitzState.lit.has(key)) {
+      blitzState.tapped.add(key);
+      el.classList.remove("tappable");
+      el.classList.add("correct");
+      if ([...blitzState.lit].every((k) => blitzState.tapped.has(k))) {
+        if (blitzState.level > blitzState.cleared) blitzState.cleared = blitzState.level;
+        blitzState.phase = "success";
+        els.blitzHint.textContent = "Richtig! Weiter geht's …";
+        blitzState.level = Math.min(blitzMaxLevelForCurrentSettings(), blitzState.level + 1);
+        scheduleBlitzTimer(blitzStartRound, 900);
+      }
+    } else {
+      blitzState.phase = "checking";
+      blitzState.wrongKey = key;
+      blitzState.tapped = new Set(blitzState.lit); // reveal every cell that was actually lit
+      renderBlitzGrid();
+      let resetLevel, hint;
+      if (blitzState.errorMode === "stay") { resetLevel = blitzState.level; hint = "Leider falsch – nochmal versuchen"; }
+      else if (blitzState.errorMode === "backOne") { resetLevel = Math.max(2, blitzState.level - 1); hint = "Leider falsch – ein Feld weniger"; }
+      else { resetLevel = 2; hint = "Leider falsch – nochmal von vorne"; }
+      els.blitzHint.textContent = hint;
+      scheduleBlitzTimer(() => { blitzState.level = resetLevel; blitzStartRound(); }, 1400);
+    }
+  }
+  let blitzState = null;
+  function startBlitzGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.blitzPlayer.hidden = false;
+    els.blitzPlayerBar.hidden = false;
+    els.blitzDonePanel.hidden = true;
+    els.blitzPauseOverlay.hidden = true;
+    els.blitzPauseBtn.hidden = false;
+    blitzState = {
+      level: blitzPrefs.startCount, cleared: 0, phase: "reveal", lit: new Set(), tapped: new Set(), eligible: new Set(),
+      startTime: performance.now(), timer: null, gridSize: blitzPrefs.gridSize, zones: blitzPrefs.zones.slice(),
+      flashS: blitzPrefs.flashS, errorMode: blitzPrefs.errorMode, paused: false,
+    };
+    applyBlitzBg();
+    requestWakeLock();
+    blitzStartRound();
+  }
+  els.blitzReadyStartBtn.addEventListener("click", startBlitzGame);
+
+  // ---- Pause mid-game, live-adjust the background - same trick as
+  // Remember's pause (cancel the pending timer, replay it with its exact
+  // remaining delay on resume) since Blitz-Raster is also setTimeout-driven. ----
+  function pauseBlitz() {
+    if (!blitzState || blitzState.paused) return;
+    blitzState.paused = true;
+    blitzState.pausedAt = performance.now();
+    if (blitzState.timer) {
+      clearTimeout(blitzState.timer);
+      blitzState.timer = null;
+      blitzState.timerRemainingMs = Math.max(0, blitzState.timerFiresAt - blitzState.pausedAt);
+    }
+    syncBlitzBgUI();
+    els.blitzPauseBtn.hidden = true;
+    els.blitzPauseOverlay.hidden = false;
+  }
+  function resumeBlitz() {
+    if (!blitzState || !blitzState.paused) return;
+    blitzState.startTime += performance.now() - blitzState.pausedAt;
+    blitzState.paused = false;
+    if (blitzState.timerFn && blitzState.timerRemainingMs != null) {
+      scheduleBlitzTimer(blitzState.timerFn, blitzState.timerRemainingMs);
+      blitzState.timerRemainingMs = null;
+    }
+    els.blitzPauseOverlay.hidden = true;
+    els.blitzPauseBtn.hidden = false;
+  }
+  els.blitzPauseBtn.addEventListener("click", pauseBlitz);
+  els.blitzResumeBtn.addEventListener("click", resumeBlitz);
+
+  // "Beenden" doubles as the finish action, same convention as Remember -
+  // Blitz-Raster is endless/progressive with no fixed end of its own.
+  function blitzStop() {
+    if (!blitzState) return;
+    if (blitzState.timer) clearTimeout(blitzState.timer);
+    const state = blitzState;
+    blitzState = null;
+    els.blitzPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.blitzPlayer) document.exitFullscreen().catch(() => {});
+    els.blitzFsHint.hidden = true;
+    if (state.cleared > 0) {
+      const isRecord = saveBlitzBest(state.cleared);
+      renderBlitzBest();
+      const played = (performance.now() - state.startTime) / 1000;
+      els.blitzPlayerBar.hidden = true;
+      els.blitzDoneSummary.textContent = `Blitz-Raster · Stufe ${state.cleared} erreicht` + (isRecord ? " · Neue Bestleistung!" : "");
+      const id = addHistory({ kind: "blitz", title: "Blitz-Raster", seconds: Math.round(played), note: `Stufe ${state.cleared} erreicht` });
+      renderRating(els.blitzRating, id, "Wie war deine Konzentration?");
+      els.blitzDonePanel.hidden = false;
+    } else {
+      els.blitzPlayer.hidden = true;
+      showScreen("natHome");
+    }
+  }
+  els.blitzBackBtn.addEventListener("click", blitzStop);
+  els.blitzAgainBtn.addEventListener("click", () => { els.blitzDonePanel.hidden = true; startBlitzGame(); });
+  els.blitzDoneBackBtn.addEventListener("click", () => { els.blitzPlayer.hidden = true; els.blitzDonePanel.hidden = true; showScreen("natHome"); });
 
   // ==== Workout engine ====
   // One engine serves three situations: a block inside a coach-authored/
