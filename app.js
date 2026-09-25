@@ -994,6 +994,7 @@
     periphFixSizeSlider: $("periphFixSizeSlider"), periphFixSizeValue: $("periphFixSizeValue"),
     periphOpenBtn: $("periphOpenBtn"),
     periphFieldGroup: $("periphFieldGroup"), periphFieldRow: $("periphFieldRow"), periphZoneGrid: $("periphZoneGrid"), periphSizeGroup: $("periphSizeGroup"),
+    periphZoneWeights: $("periphZoneWeights"),
     periphAllBtn: $("periphAllBtn"), periphZonesBtn: $("periphZonesBtn"), periphFieldHint: $("periphFieldHint"),
     bgGroup: $("bgGroup"), bgColorPicker: $("bgColorPicker"), bgIntensitySlider: $("bgIntensitySlider"),
     bgIntensityValue: $("bgIntensityValue"), bgContrastHint: $("bgContrastHint"),
@@ -1554,6 +1555,9 @@
     periphAxes: ["horizontal", "vertikal", "diagonal"],
     periphUseZones: false,
     periphZones: ["tl", "tm", "tr", "ml", "mr", "bl", "bm", "br"],
+    // "Dominanz": relative pick-weight per zone (1-3x) when useZones is on -
+    // 1 everywhere means the previous flat-equal-split behaviour.
+    periphZoneWeights: { tl: 1, tm: 1, tr: 1, ml: 1, mr: 1, bl: 1, bm: 1, br: 1 },
     periphSizeMode: "gleich",
     bgColorKey: "gruen",
     bgIntensity: 0,
@@ -1572,6 +1576,11 @@
     if (!Array.isArray(state.periphAxes) || !state.periphAxes.every((a) => ["horizontal", "vertikal", "diagonal"].includes(a))) state.periphAxes = DEFAULTS.periphAxes.slice();
     if (typeof state.periphUseZones !== "boolean") state.periphUseZones = false;
     if (!Array.isArray(state.periphZones) || !state.periphZones.length || !state.periphZones.every((z) => PERIPH_ZONE_KEYS.includes(z))) state.periphZones = DEFAULTS.periphZones.slice();
+    if (!state.periphZoneWeights || typeof state.periphZoneWeights !== "object") state.periphZoneWeights = { ...DEFAULTS.periphZoneWeights };
+    else PERIPH_ZONE_KEYS.forEach((z) => {
+      const w = state.periphZoneWeights[z];
+      state.periphZoneWeights[z] = typeof w === "number" && w >= 1 && w <= 3 ? w : 1;
+    });
     if (!["gleich", "wachsend"].includes(state.periphSizeMode)) state.periphSizeMode = "gleich";
     if (!STROOP_COLOR_BY_KEY[state.bgColorKey]) state.bgColorKey = "gruen";
     if (typeof state.bgIntensity !== "number" || state.bgIntensity < 0 || state.bgIntensity > 1) state.bgIntensity = 0;
@@ -1913,6 +1922,30 @@
       syncPeriphFieldUI();
     });
   });
+  // "Dominanz": one 1x-3x weight slider per currently *selected* zone,
+  // shown only in zone mode with more than one zone picked (weighting a
+  // single zone against nothing else is meaningless). Rebuilt on every
+  // zone (de)selection so it always matches exactly what's on offer.
+  function renderPeriphZoneWeights() {
+    const show = state.periphUseZones && state.periphZones.length > 1;
+    els.periphZoneWeights.hidden = !show;
+    if (!show) return;
+    els.periphZoneWeights.querySelectorAll(".slider-row").forEach((el) => el.remove());
+    state.periphZones.forEach((z) => {
+      const label = els.periphZoneGrid.querySelector(`[data-zone="${z}"]`).getAttribute("aria-label");
+      const row = document.createElement("div");
+      row.className = "slider-row";
+      row.innerHTML = `<span class="slider-label">${label}</span><input type="range" data-zone-weight="${z}" min="1" max="3" step="1" aria-label="Dominanz ${label}"><span class="slider-value">${state.periphZoneWeights[z]}×</span>`;
+      const input = row.querySelector("input");
+      input.value = state.periphZoneWeights[z];
+      input.addEventListener("input", () => {
+        state.periphZoneWeights[z] = Number(input.value);
+        savePrefs();
+        row.querySelector(".slider-value").textContent = state.periphZoneWeights[z] + "×";
+      });
+      els.periphZoneWeights.appendChild(row);
+    });
+  }
   function syncPeriphFieldUI() {
     document.querySelectorAll("#periphFieldRow [data-periph-axis]").forEach((el) => setActive(el, state.periphAxes.includes(el.dataset.periphAxis)));
     setActive(els.periphAllBtn, state.periphAxes.length === PERIPH_AXIS_KEYS.length);
@@ -1920,6 +1953,7 @@
     els.periphFieldRow.hidden = state.periphUseZones;
     els.periphZoneGrid.hidden = !state.periphUseZones;
     document.querySelectorAll("#periphZoneGrid [data-zone]").forEach((el) => el.classList.toggle("active", state.periphZones.includes(el.dataset.zone)));
+    renderPeriphZoneWeights();
     const belowMin = !state.periphUseZones && state.periphAxes.length === 0;
     els.periphFieldHint.textContent = belowMin ? "Wähle mindestens einen Bereich." : "";
     els.periphFieldHint.classList.toggle("warn", belowMin);
@@ -2635,13 +2669,27 @@
     vertikal: [Math.PI / 2, Math.PI * 1.5],
     diagonal: [Math.PI / 4, Math.PI * 0.75, Math.PI * 1.25, Math.PI * 1.75],
   };
+  // Weighted random pick - "Dominanz": each item's own weight makes it
+  // proportionally more likely, instead of every item having an equal
+  // 1/n chance. A flat weight of 1 everywhere reduces to a plain equal pick.
+  function weightedPick(items, weightFn, rng) {
+    const weights = items.map(weightFn);
+    const total = weights.reduce((a, b) => a + b, 0);
+    let r = rng() * total;
+    for (let i = 0; i < items.length; i++) {
+      r -= weights[i];
+      if (r <= 0) return items[i];
+    }
+    return items[items.length - 1];
+  }
   // Every "Bereich" mode ends up as a simple {fx, fy} fraction of the canvas
   // (0..1), resolved to real pixels at render time - so a stimulus already
   // mid-flight still lands correctly if the device is rotated.
   function randPeriphPos(rng) {
     if (state.periphUseZones) {
       const zones = state.periphZones.length ? state.periphZones : PERIPH_ZONE_KEYS;
-      const { row, col } = PERIPH_ZONES[zones[Math.floor(rng() * zones.length)]];
+      const zone = weightedPick(zones, (z) => state.periphZoneWeights[z] || 1, rng);
+      const { row, col } = PERIPH_ZONES[zone];
       const pad = 0.14, cell = 1 / 3;
       return {
         fx: col * cell + pad * cell + rng() * cell * (1 - 2 * pad),

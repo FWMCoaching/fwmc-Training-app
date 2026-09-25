@@ -277,14 +277,25 @@ unrelated to the feature being changed.
   `scheduleFlashTimer` pause approach as its own copy, not a shared
   abstraction, for the same "phase models differ too much" reason as
   Blitz-Raster. Not wired into Kombi - wasn't asked for.
-- **Dominanz-Gewichtung**: a "Champions League"-tier enhancement, confirmed
-  design for Periphere Wahrnehmung first (user's own words: "Regler pro
-  Zone, 1×–3×, erstmal nur bei Periphere Wahrnehmung testen") - a slider
-  per selected Bereich zone (1×–3×) that skews how often that zone gets
-  picked relative to the others, on top of the existing flat-equal-split
-  zone selection. Not yet built. Once proven out on Periph, the same
-  pattern was floated (not yet confirmed) for Blitz-Raster, Flash Speicher
-  Test, and possibly Remember - ask before extending it there.
+- **Dominanz-Gewichtung**: built for Periphere Wahrnehmung only so far (the
+  user's own words: "Regler pro Zone, 1×–3×, erstmal nur bei Periphere
+  Wahrnehmung testen" - explicitly a test on one exercise before deciding
+  whether to extend it). `state.periphZoneWeights` (`{tl:1,...,br:1}`,
+  1-3 each, validated in `loadPrefs()`) holds a weight per zone regardless
+  of current selection, so toggling a zone off and back on doesn't lose a
+  custom weight. `renderPeriphZoneWeights()` (called from
+  `syncPeriphFieldUI()`) rebuilds one slider row per *currently selected*
+  zone into `#periphZoneWeights`, reading each zone's German label straight
+  off its `aria-label` rather than a second label map; hidden entirely
+  outside zone mode or with ≤1 zone selected (weighting one zone against
+  nothing is meaningless). The actual skew is one shared generic helper,
+  `weightedPick(items, weightFn, rng)` (plain proportional weighted-random
+  pick, weight 1 everywhere reduces to the old flat equal split) - wired
+  into `randPeriphPos()`'s zone branch only; axis mode is untouched, and
+  Blitz-Raster/Flash Speicher Test/Remember don't use it yet. If dominance
+  gets confirmed for those too, reuse `weightedPick()` rather than
+  reimplementing the ratio math - it's already generic over "the pool" and
+  "how weight for the pool" get read.
 - **Live-pause-adjust, remaining scope decision**: now built for Periphere
   Wahrnehmung and Remember. Not yet decided/built: extending it to other
   domains — Atemtraining "wird Sinn machen", Movement "kann auch Sinn

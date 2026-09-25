@@ -804,6 +804,8 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
   font-family:inherit;color:var(--ink);background:var(--surface);margin-bottom:4px;width:100%;
 }
 .periph-zone-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px;max-width:220px;aspect-ratio:1}
+.periph-zone-weights{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.periph-zone-weights .slider-label{min-width:96px}
 .periph-zone{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;cursor:pointer;padding:0}
 .periph-zone.active{border-color:var(--brand);background:var(--brand-pale)}
 .periph-zone-center{
