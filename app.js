@@ -1190,6 +1190,29 @@
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   }
 
+  // ---- Swipe navigation: lets a left/right swipe trigger the same action as
+  // an existing prev/next button, wherever paging through a fixed sequence
+  // (slides, chapters) makes sense. Reuses the button's own .click() so
+  // disabled state (start/end of the sequence) is respected for free.
+  function wireSwipeNav(el, { onLeft, onRight, thresholdPx = 40 } = {}) {
+    let startX = 0, startY = 0, tracking = false;
+    el.addEventListener("touchstart", (e) => {
+      if (e.touches.length !== 1) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      tracking = true;
+    }, { passive: true });
+    el.addEventListener("touchend", (e) => {
+      if (!tracking) return;
+      tracking = false;
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = e.changedTouches[0].clientY - startY;
+      if (Math.abs(dx) < thresholdPx || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      if (dx < 0) onLeft && onLeft();
+      else onRight && onRight();
+    }, { passive: true });
+  }
+
   // ---- Video modal (explainer clips) ----
   let videoModalReturnFocus = null;
   function openVideoModal(src) {
@@ -1300,6 +1323,10 @@
   els.setupModal.addEventListener("keydown", (e) => trapTabKey(els.setupModal, e));
   els.setupPrevBtn.addEventListener("click", () => { if (setupSlideIdx > 0) { setupSlideIdx--; renderSetupSlide(); } });
   els.setupNextBtn.addEventListener("click", () => { if (setupSlideIdx < SETUP_SLIDES.length - 1) { setupSlideIdx++; renderSetupSlide(); } });
+  wireSwipeNav(els.setupModal, {
+    onLeft: () => els.setupNextBtn.click(),
+    onRight: () => els.setupPrevBtn.click(),
+  });
 
   // ---- Settings state ----
   const TEMPO_PRESETS = {
@@ -2304,6 +2331,10 @@
   els.restartChapterBtn.addEventListener("click", () => playChapter(program.chapterIndex));
   els.nextChapterBtn.addEventListener("click", () => playChapter(program.chapterIndex + 1));
   els.pauseAbortBtn.addEventListener("click", () => abortTraining());
+  wireSwipeNav(els.pauseScreen, {
+    onLeft: () => els.nextChapterBtn.click(),
+    onRight: () => els.prevChapterBtn.click(),
+  });
 
   function releaseWakeLock() {
     if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
@@ -3905,6 +3936,10 @@
   els.tabataPrevBtn.addEventListener("click", () => circuitJumpToWorkIndex(circuitCurrentWorkIndex() - 1));
   els.tabataRestartBtn.addEventListener("click", () => circuitJumpToWorkIndex(circuitCurrentWorkIndex()));
   els.tabataSkipBtn.addEventListener("click", () => circuitJumpToWorkIndex(circuitCurrentWorkIndex() + 1));
+  wireSwipeNav(els.workoutTabataView, {
+    onLeft: () => els.tabataSkipBtn.click(),
+    onRight: () => els.tabataPrevBtn.click(),
+  });
 
   // ---- Shared block completion ----
   function finishWorkoutBlock() {
