@@ -407,6 +407,67 @@ unrelated to the feature being changed.
     (the Pause button only ever shows for Periph, see `runSession()`'s
     `els.periphPauseBtn.hidden` line) - not asked for.
   - Test: `tests/addon_periph_test.py`.
+  - **Fixed bug**: the add-on fired during the 3-2-1 countdown, before the
+    host exercise itself had started. `buildAddonSchedule()` classified any
+    non-`"blank"` frame as "Reiz", which included the countdown's `"count"`
+    frames (always first, from `pushCountdown()`). Fixed by skipping
+    `"count"` frames outright, before the phase check.
+  - **"Farbe der Reize"**: the flashed characters' own colour is now
+    client-configurable too, under Feineinstellungen, for **both** Periph
+    itself (`state.periphColors`, `#periphColorGroup`) and the add-on's
+    "eigene Feineinstellung" bundle (`entry.own.colors`, `#addonColorPicker`
+    inside `#addonOwnBody`) - a deliberately **separate** multi-select
+    swatch picker from the `colorMode`/`colorModeArray()` system used for
+    arrow/Stroop/VT colours (`buildStimColorSwatch`/`buildStimColorPicker`/
+    `syncStimColorUI`), since an arrow exercise's own colour picker and its
+    add-on's stimulus-colour picker need to be open and edited independently
+    at the same time - reusing the shared system (which tracks one "current"
+    array) would conflict. Palette is `STROOP_COLOR_LIB` (includes Schwarz/
+    Weiß, relevant for contrast), default `["schwarz"]`, minimum one colour
+    (same "can't drop the last one" rule as every other colour picker).
+    Selecting more than one is "gemischt" - each individual flash rolls its
+    own colour independently (`pickPeriphColor()`), "in den Rhythmus mit
+    eingerechnet" per the client's own phrasing.
+    - **Contrast safety**: a flashed character must never end up the same
+      (or too close a) colour as whatever it's flashed on top of, or it's
+      "faktisch nicht wahrzunehmen" per the client. `colorsClash(hexA,hexB)`
+      (exact match, or a luma-distance check under 0.12 - reusing the exact
+      threshold idea already used for Stroop's word/background outline fix)
+      feeds `pickPeriphColor(colorKeys, avoidHex, rng)`, which filters the
+      client's selection down to non-clashing candidates before picking -
+      falling back to the full selection only if every one of them clashes
+      (in practice: only one colour was selected at all, so there's no
+      alternative to substitute - the UI hint calls this out explicitly).
+      The tricky part is that VT/VRW/Kompass-Aufbau/Stroop mit Hintergrund
+      carry a **new** background colour in their own frame payload every
+      single stimulus (the background IS the trained signal there), not the
+      one constant flat tint every other exercise uses - so `frameBgHex
+      (frame)` mirrors `drawScene()`'s own fill logic per `frame.kind`
+      exactly (`payload.bg`/`payload.color`/`"#ffffff"`/the flat tint, case
+      by case) to know what a given add-on flash would actually land on,
+      entirely at schedule-build time (no need to render a frame to find
+      out - each add-on flash is built by subdividing exactly one host
+      frame's own `[t0,t1)` window, so it's always contained within a frame
+      whose background is already known). Periph's own schedule only needs
+      this once per run (`buildPeriphSchedule` computes `bgHex` up front),
+      since its own background is always the flat, run-constant tint.
+    - **Arrow overlap avoidance**: "bei den Pfeilen sollte natürlich dann
+      auch nicht unbedingt der Zusatzreiz auf dem Pfeil liegen" - any host
+      frame that draws an arrow (`"cue"`/`"vt"`/`"vrw"`, and `"cross"`'s
+      visual/conflict/invert branch) gets its polygon recomputed at
+      schedule-build time (`frameArrowPolygon()`, the exact same
+      `arrowPoints()` call `drawScene()` itself uses) and a candidate
+      add-on position is re-rolled (`pointInPolygon()`, standard ray-casting,
+      up to 12 tries) until it lands outside it, rather than possibly
+      landing right on top of the arrow. Kompass-Aufbau ("color" kind, a
+      flat colour fill) draws no arrow, so nothing to avoid there beyond the
+      background-colour rule above; Sehen & Hören's audio-only frames
+      (speaker icon) are likewise left alone.
+    - Test: `tests/addon_color_test.py` (picker UI/persistence/independence,
+      plus runtime smoke tests running the new logic for real against VRW
+      and an arrow exercise - no internal hook exists to assert the exact
+      colour/position chosen for a given flash, so the maths itself was
+      verified by careful reading rather than a dedicated unit test).
 
 ## Working conventions
 

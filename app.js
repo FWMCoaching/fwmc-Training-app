@@ -417,7 +417,7 @@
   // show on top of their own schedule) at a {fx,fy} canvas fraction, sized
   // per the given "gleich"/"wachsend" mode - pulled out so both call sites
   // stay pixel-identical instead of drifting apart.
-  function drawPeriphChar(cw, ch, unit, fx, fy, char, sizeMode) {
+  function drawPeriphChar(cw, ch, unit, fx, fy, char, sizeMode, color) {
     const x = fx * cw, y = fy * ch;
     // Distance from the fixation point, 0 in the centre to ~1 at the
     // screen edge - used for the "nach außen größer" size mode.
@@ -426,7 +426,7 @@
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.font = `700 ${Math.round(unit * 0.16 * sizeMul)}px Magra, sans-serif`;
-    ctx.fillStyle = INK;
+    ctx.fillStyle = color || INK;
     ctx.fillText(char, x, y);
   }
 
@@ -455,7 +455,7 @@
       ctx.fillStyle = currentBgFill(NEUTRAL);
       ctx.fillRect(0, 0, cw, ch);
       drawFixationPoint(cx, cy, unit);
-      drawPeriphChar(cw, ch, unit, payload.fx, payload.fy, payload.char, state.periphSizeMode);
+      drawPeriphChar(cw, ch, unit, payload.fx, payload.fy, payload.char, state.periphSizeMode, payload.color);
       barCaption(cw, ch, "Blick auf die Mitte richten", false);
     } else if (kind === "count") {
       drawCountdown(cw, ch, payload);
@@ -997,6 +997,7 @@
     periphKindGroup: $("periphKindGroup"), periphFixGroup: $("periphFixGroup"),
     periphFixCharInput: $("periphFixCharInput"), periphFixColorPicker: $("periphFixColorPicker"),
     periphFixSizeSlider: $("periphFixSizeSlider"), periphFixSizeValue: $("periphFixSizeValue"),
+    periphColorGroup: $("periphColorGroup"), periphColorPicker: $("periphColorPicker"), periphColorHint: $("periphColorHint"),
     periphOpenBtn: $("periphOpenBtn"),
     periphFieldGroup: $("periphFieldGroup"), periphFieldRow: $("periphFieldRow"), periphZoneGrid: $("periphZoneGrid"), periphSizeGroup: $("periphSizeGroup"),
     periphZoneWeights: $("periphZoneWeights"),
@@ -1005,6 +1006,7 @@
     addonConfigBody: $("addonConfigBody"), addonModeRow: $("addonModeRow"), addonOwnBody: $("addonOwnBody"),
     addonKindRow: $("addonKindRow"), addonFieldRow: $("addonFieldRow"), addonAllBtn: $("addonAllBtn"),
     addonFieldHint: $("addonFieldHint"), addonZonesBtn: $("addonZonesBtn"), addonZoneGrid: $("addonZoneGrid"),
+    addonColorPicker: $("addonColorPicker"), addonColorHint: $("addonColorHint"),
     addonStimulusSlider: $("addonStimulusSlider"), addonStimulusValue: $("addonStimulusValue"),
     addonIntervalMinSlider: $("addonIntervalMinSlider"), addonIntervalMaxSlider: $("addonIntervalMaxSlider"), addonIntervalValue: $("addonIntervalValue"),
     addonPresetGroup: $("addonPresetGroup"), addonPresetList: $("addonPresetList"),
@@ -1580,6 +1582,10 @@
     // 1 everywhere means the previous flat-equal-split behaviour.
     periphZoneWeights: { tl: 1, tm: 1, tr: 1, ml: 1, mr: 1, bl: 1, bm: 1, br: 1 },
     periphSizeMode: "gleich",
+    // Which colour(s) the flashed characters themselves use - separate from
+    // the background tint. More than one selected is "gemischt": each flash
+    // rolls its own colour independently (see pickPeriphColor()).
+    periphColors: ["schwarz"],
     bgColorKey: "gruen",
     bgIntensity: 0,
   };
@@ -1603,6 +1609,7 @@
       state.periphZoneWeights[z] = typeof w === "number" && w >= 1 && w <= 3 ? w : 1;
     });
     if (!["gleich", "wachsend"].includes(state.periphSizeMode)) state.periphSizeMode = "gleich";
+    if (!Array.isArray(state.periphColors) || !state.periphColors.length || !state.periphColors.every((k) => STROOP_COLOR_BY_KEY[k])) state.periphColors = DEFAULTS.periphColors.slice();
     if (!STROOP_COLOR_BY_KEY[state.bgColorKey]) state.bgColorKey = "gruen";
     if (typeof state.bgIntensity !== "number" || state.bgIntensity < 0 || state.bgIntensity > 1) state.bgIntensity = 0;
   }
@@ -1631,7 +1638,7 @@
   function addonDefaultOwn() {
     return {
       kind: "gemischt", axes: PERIPH_AXIS_KEYS.slice(), useZones: false, zones: PERIPH_ZONE_KEYS.slice(),
-      sizeMode: "gleich", stimulusS: 1, intervalMin: 2, intervalMax: 4,
+      sizeMode: "gleich", stimulusS: 1, intervalMin: 2, intervalMax: 4, colors: ["schwarz"],
     };
   }
   function normalizeAddonEntry(e) {
@@ -1650,6 +1657,7 @@
       if (typeof e.own.stimulusS !== "number" || e.own.stimulusS < 0.3 || e.own.stimulusS > 2) e.own.stimulusS = d.stimulusS;
       if (typeof e.own.intervalMin !== "number" || e.own.intervalMin < 0.5 || e.own.intervalMin > 15) e.own.intervalMin = d.intervalMin;
       if (typeof e.own.intervalMax !== "number" || e.own.intervalMax < 0.5 || e.own.intervalMax > 15) e.own.intervalMax = d.intervalMax;
+      if (!Array.isArray(e.own.colors) || !e.own.colors.length || !e.own.colors.every((k) => STROOP_COLOR_BY_KEY[k])) e.own.colors = d.colors.slice();
     }
     return e;
   }
@@ -1671,6 +1679,7 @@
     return {
       kind: state.periphKind, useZones: state.periphUseZones, axes: state.periphAxes, zones: state.periphZones,
       sizeMode: state.periphSizeMode, stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax,
+      colors: state.periphColors,
     };
   }
 
@@ -1806,6 +1815,49 @@
     els.startBtn.disabled = belowMin;
     els.vtSaveBtn.disabled = belowMin;
   }
+
+  // ---- "Farbe der Reize": a second, independent multi-select swatch picker
+  // for the peripheral characters themselves (Periphere Wahrnehmung's own,
+  // and the Zusatzaufgabe's "eigene Feineinstellung" bundle) - deliberately
+  // NOT the colorMode/colorModeArray() system above, since both of these can
+  // be open on screen at the same time as an exercise's own arrow/Stroop
+  // colour picker (they colour a different thing), not instead of it.
+  // Selecting more than one colour is what "gemischt" means here - each
+  // flash rolls its own colour independently, see pickPeriphColor().
+  function buildStimColorSwatch(c, getKeys, setKeys, onChange) {
+    const btn = document.createElement("button");
+    btn.className = "color-swatch";
+    btn.dataset.color = c.key;
+    btn.setAttribute("aria-pressed", "false");
+    const stroke = relLuma(c.hex) > 0.75 ? "#16232a" : "#fff";
+    btn.innerHTML = `<span class="swatch" style="background:${c.hex}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="${stroke}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">${c.name}</span>`;
+    btn.addEventListener("click", () => {
+      const keys = getKeys();
+      const selected = keys.includes(c.key);
+      if (selected && keys.length <= 1) return; // keep at least one, same rule as every other colour picker
+      setKeys(selected ? keys.filter((k) => k !== c.key) : [...keys, c.key]);
+      onChange();
+    });
+    return btn;
+  }
+  function buildStimColorPicker(container, getKeys, setKeys, onChange) {
+    container.innerHTML = "";
+    STROOP_COLOR_LIB.forEach((c) => container.appendChild(buildStimColorSwatch(c, getKeys, setKeys, onChange)));
+  }
+  function syncStimColorUI(container, getKeys, hintEl) {
+    const keys = getKeys();
+    container.querySelectorAll(".color-swatch[data-color]").forEach((el) => {
+      const on = keys.includes(el.dataset.color);
+      el.classList.toggle("active", on);
+      el.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    if (!hintEl) return;
+    hintEl.textContent = keys.length > 1
+      ? "Gemischt – bei jedem Reiz wird automatisch eine Farbe aus deiner Auswahl gewählt, die sich vom Hintergrund abhebt."
+      : "Nur eine Farbe gewählt – wähle mehr als eine, damit automatisch ausgewichen werden kann, falls sie einmal zum Hintergrund passt.";
+  }
+  buildStimColorPicker(els.periphColorPicker, () => state.periphColors, (keys) => { state.periphColors = keys; }, () => { savePrefs(); syncPeriphColorUI(); });
+  function syncPeriphColorUI() { syncStimColorUI(els.periphColorPicker, () => state.periphColors, els.periphColorHint); }
 
   // ---- Periphere Wahrnehmung: Zeichentyp + Fixpunkt Feineinstellungen ----
   document.querySelectorAll("#periphKindRow [data-periph-kind]").forEach((el) => {
@@ -2142,6 +2194,10 @@
       syncAddonUI();
     });
   });
+  buildStimColorPicker(els.addonColorPicker,
+    () => getAddonEntry(state.exercise).own.colors,
+    (keys) => { getAddonEntry(state.exercise).own.colors = keys; },
+    () => { saveAddonStore(); syncStimColorUI(els.addonColorPicker, () => getAddonEntry(state.exercise).own.colors, els.addonColorHint); });
   els.addonStimulusSlider.addEventListener("input", () => {
     const entry = getAddonEntry(state.exercise);
     entry.own.stimulusS = Number(els.addonStimulusSlider.value);
@@ -2214,6 +2270,7 @@
     els.startBtn.disabled = els.startBtn.disabled || belowMin;
     els.vtSaveBtn.disabled = els.vtSaveBtn.disabled || belowMin;
     document.querySelectorAll("#addonOwnBody [data-addon-size]").forEach((el) => setActive(el, el.dataset.addonSize === entry.own.sizeMode));
+    syncStimColorUI(els.addonColorPicker, () => entry.own.colors, els.addonColorHint);
     els.addonStimulusSlider.value = entry.own.stimulusS;
     els.addonStimulusValue.textContent = fmtSeconds(entry.own.stimulusS);
     els.addonIntervalMinSlider.value = entry.own.intervalMin;
@@ -2325,6 +2382,7 @@
     els.periphFixGroup.hidden = isConeTap;
     els.periphFieldGroup.hidden = !isPeriph;
     els.periphSizeGroup.hidden = !isPeriph;
+    els.periphColorGroup.hidden = !isPeriph;
     els.bgGroup.hidden = !bgAllowed;
     // The add-on can't sensibly run on itself, and Hütchen sortieren has no
     // schedule of "Reiz"/"Pause" frames for it to hook into at all.
@@ -2335,7 +2393,7 @@
     // "pick at least one Bereich" rule) isn't clobbered by colour's - the
     // two checks are independent and both need to hold.
     if (!isConeTap) syncPeriphFixUI();
-    if (isPeriph) { syncPeriphKindUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); }
+    if (isPeriph) { syncPeriphKindUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); syncPeriphColorUI(); }
     if (bgAllowed) syncBgUI();
     if (!isConeTap && !isPeriph) syncAddonUI();
     syncDurationUI();
@@ -2966,19 +3024,83 @@
   function randPeriphPos(rng) {
     return randPosFromCfg({ useZones: state.periphUseZones, zones: state.periphZones, axes: state.periphAxes, zoneWeights: state.periphZoneWeights }, rng);
   }
+  // Two colours "clash" - one drawn on the other would be hard or impossible
+  // to make out - if they're the same named colour, or close enough in
+  // brightness that they'd blend (the same luma-distance check already used
+  // for Stroop's word/background outline fix, just reused here).
+  function colorsClash(hexA, hexB) {
+    if (hexA.toLowerCase() === hexB.toLowerCase()) return true;
+    return Math.abs(relLuma(hexA) - relLuma(hexB)) < 0.12;
+  }
+  // Picks a stimulus colour from the client's selection, situationally
+  // avoiding whichever colour the background happens to be right now (a
+  // fixed tint for most exercises, but a new colour every single frame for
+  // VT/VRW/Kompass-Aufbau/Stroop mit Hintergrund, where the background IS
+  // the trained stimulus) - so the client can never end up with, say, a red
+  // character flashed on a red background. If every selected colour clashes
+  // (most likely: only one colour is selected at all, so there's nothing
+  // else to fall back to), keeps the full selection rather than picking
+  // nothing - a rare near-invisible flash beats a crash.
+  function pickPeriphColor(colorKeys, avoidHex, rng) {
+    const all = keysToColors(colorKeys && colorKeys.length ? colorKeys : ["schwarz"], STROOP_COLOR_LIB);
+    const safe = avoidHex ? all.filter((c) => !colorsClash(c.hex, avoidHex)) : all;
+    const pool = safe.length ? safe : all;
+    return pool[Math.floor(rng() * pool.length)].hex;
+  }
   function buildPeriphSchedule(cfg, rng) {
     const schedule = [];
     let t = pushCountdown(schedule, cfg);
     const show = state.stimulusS;
+    // Periph's own background is a flat tint, constant for the whole run
+    // (it's never bgIsStimulus), so this only needs computing once.
+    const bgHex = currentBgFill(NEUTRAL);
     while (t < state.duration) {
       const char = randPeriphChar(state.periphKind, rng);
       const pos = randPeriphPos(rng);
+      const color = pickPeriphColor(state.periphColors, bgHex, rng);
       const pause = randInterval(rng);
-      schedule.push({ t0: t, t1: t + show, kind: "periph", payload: { char, fx: pos.fx, fy: pos.fy } });
+      schedule.push({ t0: t, t1: t + show, kind: "periph", payload: { char, fx: pos.fx, fy: pos.fy, color } });
       schedule.push({ t0: t + show, t1: t + show + pause, kind: "blank", payload: {} });
       t += show + pause;
     }
     return { schedule, total: t };
+  }
+
+  // The background hex actually painted for one host schedule frame - most
+  // kinds paint a flat, run-constant tint (see currentBgFill()), but VT/VRW/
+  // Kompass-Aufbau/Stroop mit Hintergrund carry a fresh background colour in
+  // their own payload every single frame (that colour IS the trained
+  // stimulus there) - mirrors drawScene()'s own fill logic exactly, so a
+  // Zusatzaufgabe flash always knows what it would actually be drawn on top
+  // of, without having to render a frame to find out.
+  function frameBgHex(frame) {
+    if (frame.kind === "stroop" || frame.kind === "vt") return frame.payload.bg;
+    if (frame.kind === "color") return frame.payload.color;
+    if (frame.kind === "vrw") return frame.payload.direct ? frame.payload.color : "#ffffff";
+    if (frame.kind === "cross" && frame.payload.mode === "audio") return "#e5f1f4";
+    if (frame.kind === "blank" || frame.kind === "periph") return currentBgFill(NEUTRAL);
+    return currentBgFill("#ffffff"); // "cue" (arrows) and cross's visual/conflict/invert branch: the flat top-level fill
+  }
+  // Standard ray-casting point-in-polygon test, used to keep a Zusatzaufgabe
+  // flash off of a drawn arrow (see frameArrowPolygon()) rather than landing
+  // right on top of it, where it'd be unreadable either way.
+  function pointInPolygon(px, py, pts) {
+    let inside = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const [xi, yi] = pts[i], [xj, yj] = pts[j];
+      const crosses = yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi;
+      if (crosses) inside = !inside;
+    }
+    return inside;
+  }
+  // The arrow polygon a frame draws, in pixel space, or null for a frame
+  // with no arrow to avoid (e.g. Kompass-Aufbau's flat colour, or Sehen &
+  // Hören's audio-only frames, which show a speaker icon instead).
+  function frameArrowPolygon(cw, ch, frame) {
+    const drawsArrow = frame.kind === "cue" || frame.kind === "vt" || frame.kind === "vrw" ||
+      (frame.kind === "cross" && frame.payload.mode !== "audio");
+    if (!drawsArrow) return null;
+    return arrowPoints(frame.payload.angle, cw / 2, ch / 2, Math.min(cw, ch) / 2);
   }
 
   // Zusatzaufgabe overlay schedule: subdivides the host exercise's own
@@ -2990,24 +3112,33 @@
   // Periphere Wahrnehmung/Hütchen sortieren themselves. The 3-2-1 countdown
   // ("count" frames, always first) is neither Reiz nor Pause and is always
   // skipped, so the add-on never starts before the exercise itself does.
+  // Each flash also situationally avoids the background colour in effect
+  // during ITS OWN host frame (frameBgHex()) and, for a frame that draws an
+  // arrow, re-rolls its position (a handful of tries) rather than landing
+  // on top of it.
   function buildAddonSchedule(ex, exId, hostSchedule, rng) {
     if (!ex || ex.type === "color-tap" || ex.type === "periph") return { schedule: [], sizeMode: "gleich" };
     const entry = getAddonEntry(exId);
     if (!entry.phases.length) return { schedule: [], sizeMode: "gleich" };
     const cfg = entry.mode === "eigen" ? entry.own : addonConfigFromState();
     const phaseSet = new Set(entry.phases);
+    const cw = canvas.width, ch = canvas.height;
     const schedule = [];
     hostSchedule.forEach((frame) => {
       if (frame.kind === "count") return;
       const phase = frame.kind === "blank" ? "pause" : "reiz";
       if (!phaseSet.has(phase)) return;
+      const avoidHex = frameBgHex(frame);
+      const polygon = frameArrowPolygon(cw, ch, frame);
       let t = frame.t0;
       const show = cfg.stimulusS;
       const gapMin = Math.min(cfg.intervalMin, cfg.intervalMax), gapMax = Math.max(cfg.intervalMin, cfg.intervalMax);
       while (t + show <= frame.t1) {
         const char = randPeriphChar(cfg.kind, rng);
-        const pos = randPosFromCfg(cfg, rng);
-        schedule.push({ t0: t, t1: t + show, char, fx: pos.fx, fy: pos.fy });
+        let pos = randPosFromCfg(cfg, rng);
+        for (let tries = 0; polygon && tries < 12 && pointInPolygon(pos.fx * cw, pos.fy * ch, polygon); tries++) pos = randPosFromCfg(cfg, rng);
+        const color = pickPeriphColor(cfg.colors, avoidHex, rng);
+        schedule.push({ t0: t, t1: t + show, char, fx: pos.fx, fy: pos.fy, color });
         t += show + (gapMin + rng() * (gapMax - gapMin));
       }
     });
@@ -3063,7 +3194,7 @@
     if (idx === -1) return;
     const f = session.addonSchedule[idx];
     const cw = canvas.width, ch = canvas.height, unit = Math.min(cw, ch) / 2;
-    drawPeriphChar(cw, ch, unit, f.fx, f.fy, f.char, session.addonSizeMode);
+    drawPeriphChar(cw, ch, unit, f.fx, f.fy, f.char, session.addonSizeMode, f.color);
   }
 
   // Redraws whatever frame is currently frozen on screen (used while the

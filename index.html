@@ -1200,6 +1200,12 @@
         </div>
 
         <div class="group">
+          <div class="group-label">Farbe der Reize</div>
+          <div class="color-picker" id="addonColorPicker"></div>
+          <div class="color-hint" id="addonColorHint"></div>
+        </div>
+
+        <div class="group">
           <div class="group-label">Einblenddauer</div>
           <div class="slider-row">
             <input type="range" id="addonStimulusSlider" min="0.3" max="2" step="0.1" aria-label="Einblenddauer der Zusatzaufgabe">
@@ -1308,6 +1314,11 @@
           <input type="range" id="periphFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Gr&ouml;&szlig;e des Fixpunkts">
           <span class="slider-value" id="periphFixSizeValue"></span>
         </div>
+      </div>
+      <div class="group" id="periphColorGroup" hidden>
+        <div class="group-label">Farbe der Reize</div>
+        <div class="color-picker" id="periphColorPicker"></div>
+        <div class="color-hint" id="periphColorHint"></div>
       </div>
     </div>
   </details>
