@@ -1117,6 +1117,15 @@
     workoutTabataStartCard: $("workoutTabataStartCard"),
     natHome: $("natHome"), natPeripherPanel: $("natPeripherPanel"), natRememberPanel: $("natRememberPanel"), natBlitzPanel: $("natBlitzPanel"), natFlashPanel: $("natFlashPanel"), natMotPanel: $("natMotPanel"),
     testHome: $("testHome"), testPanel: $("testPanel"), testEmptyHint: $("testEmptyHint"),
+    gngOpenBtn: $("gngOpenBtn"), gngBestHint: $("gngBestHint"), gngReady: $("gngReady"),
+    gngReadyBackToHome: $("gngReadyBackToHome"), gngDifficultyRow: $("gngDifficultyRow"),
+    gngReadyBestHint: $("gngReadyBestHint"), gngReadyStartBtn: $("gngReadyStartBtn"),
+    gngPlayer: $("gngPlayer"), gngStage: $("gngStage"), gngHint: $("gngHint"), gngStimulus: $("gngStimulus"),
+    gngPauseOverlay: $("gngPauseOverlay"), gngResumeBtn: $("gngResumeBtn"),
+    gngPlayerBar: $("gngPlayerBar"), gngBackBtn: $("gngBackBtn"), gngPauseBtn: $("gngPauseBtn"), gngProgressEl: $("gngProgressEl"),
+    gngFsBtn: $("gngFsBtn"), gngFsHint: $("gngFsHint"), gngFsHintOpenBtn: $("gngFsHintOpenBtn"), gngFsHintClose: $("gngFsHintClose"),
+    gngDonePanel: $("gngDonePanel"), gngDoneSummary: $("gngDoneSummary"), gngRating: $("gngRating"),
+    gngAgainBtn: $("gngAgainBtn"), gngDoneBackBtn: $("gngDoneBackBtn"),
     blitzOpenBtn: $("blitzOpenBtn"), blitzBestHint: $("blitzBestHint"), blitzReady: $("blitzReady"),
     blitzReadyBackToHome: $("blitzReadyBackToHome"), blitzGridSizeRow: $("blitzGridSizeRow"),
     blitzZoneGroup: $("blitzZoneGroup"), blitzZoneAllBtn: $("blitzZoneAllBtn"), blitzZoneGrid: $("blitzZoneGrid"), blitzZoneHint: $("blitzZoneHint"),
@@ -1313,7 +1322,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3327,6 +3336,7 @@
     els.blitzPlayer.hidden = true;
     els.flashPlayer.hidden = true;
     els.motPlayer.hidden = true;
+    els.gngPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3702,6 +3712,7 @@
   wireFullscreen({ player: els.blitzPlayer, btn: els.blitzFsBtn, hint: els.blitzFsHint, hintOpen: els.blitzFsHintOpenBtn, hintClose: els.blitzFsHintClose });
   wireFullscreen({ player: els.flashPlayer, btn: els.flashFsBtn, hint: els.flashFsHint, hintOpen: els.flashFsHintOpenBtn, hintClose: els.flashFsHintClose });
   wireFullscreen({ player: els.motPlayer, btn: els.motFsBtn, hint: els.motFsHint, hintOpen: els.motFsHintOpenBtn, hintClose: els.motFsHintClose });
+  wireFullscreen({ player: els.gngPlayer, btn: els.gngFsBtn, hint: els.gngFsHint, hintOpen: els.gngFsHintOpenBtn, hintClose: els.gngFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -6826,6 +6837,256 @@
   els.motBackBtn.addEventListener("click", motStop);
   els.motAgainBtn.addEventListener("click", () => { els.motDonePanel.hidden = true; startMotGame(lastMotMode); });
   els.motDoneBackBtn.addEventListener("click", () => { els.motPlayer.hidden = true; els.motDonePanel.hidden = true; showScreen(motReturnScreen); });
+
+  // ==== Go/No-Go Reaktionstest (Test-Bereich, first autonomous entry) ====
+  // Classic Go/No-Go inhibitory-control paradigm: a series of single
+  // stimuli, most demanding a fast "Go" response, a minority demanding the
+  // response be WITHHELD ("No-Go"). Research on this task in sport/exercise
+  // contexts measures reaction time to Go stimuli plus the false-alarm
+  // (commission-error) rate on No-Go trials as the key outcome (see e.g. the
+  // 2023 ScienceDirect meta-analysis on inhibitory control in sport
+  // performance, and PMC8048576 on go/no-go ISI design) - both are reported
+  // here. The classic design keeps the No-Go rate a MINORITY (commonly ~20%,
+  // per PMC12650625/PMC8048576-style designs) rather than 50/50, precisely
+  // so a prepotent "respond" tendency actually builds up and there is
+  // something real to inhibit - a 50/50 split would just be simple choice
+  // reaction time, not response inhibition. Distinct from every other Test/
+  // NAT exercise: no spatial recall (Remember/Blitz), no sequence memory
+  // (Flash), no sustained tracking (MOT) - this is pure speeded go/no-go
+  // decision + inhibition, closest to what real game situations demand
+  // (react to the real cue, don't react to the decoy).
+  const GNG_PREFS_KEY = "fwmc-gng-prefs-v1";
+  const GNG_DIFFICULTIES = {
+    leicht: { title: "Leicht", stimMs: 600, isiMin: 1000, isiMax: 1600 },
+    mittel: { title: "Mittel", stimMs: 450, isiMin: 800, isiMax: 1300 },
+    schwer: { title: "Schwer", stimMs: 300, isiMin: 600, isiMax: 1000 },
+  };
+  const GNG_TRIAL_COUNT = 24;
+  const GNG_NOGO_RATIO = 0.2;
+  const gngPrefs = { difficulty: "mittel" };
+  function loadGngPrefs() {
+    const saved = readJSON(GNG_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(gngPrefs, saved);
+    if (!GNG_DIFFICULTIES[gngPrefs.difficulty]) gngPrefs.difficulty = "mittel";
+  }
+  loadGngPrefs();
+  function saveGngPrefsToStorage() { writeJSON(GNG_PREFS_KEY, gngPrefs); }
+
+  const GNG_BEST_KEY = "fwmc-gng-best-v1"; // { [difficulty]: bestAccuracyPct }
+  function gngBestFor() { return readJSON(GNG_BEST_KEY, {})[gngPrefs.difficulty] || 0; }
+  function saveGngBest(accuracyPct) {
+    const all = readJSON(GNG_BEST_KEY, {});
+    if (accuracyPct > (all[gngPrefs.difficulty] || 0)) { all[gngPrefs.difficulty] = accuracyPct; writeJSON(GNG_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderGngBest() {
+    const best = gngBestFor();
+    const text = best ? `Beste Genauigkeit (${GNG_DIFFICULTIES[gngPrefs.difficulty].title}): ${best}%` : "";
+    els.gngBestHint.textContent = text;
+    els.gngReadyBestHint.textContent = text;
+  }
+  function syncGngDifficultyUI() {
+    els.gngDifficultyRow.querySelectorAll("[data-gng-diff]").forEach((btn) => setActive(btn, btn.dataset.gngDiff === gngPrefs.difficulty));
+  }
+  els.gngDifficultyRow.querySelectorAll("[data-gng-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      gngPrefs.difficulty = btn.dataset.gngDiff;
+      saveGngPrefsToStorage();
+      syncGngDifficultyUI();
+      renderGngBest();
+    });
+  });
+
+  els.gngOpenBtn.addEventListener("click", () => {
+    syncGngDifficultyUI();
+    renderGngBest();
+    showScreen("gngReady");
+  });
+  els.gngReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Same timer-wrapping trick as scheduleBlitzTimer/scheduleRememberTimer:
+  // records what's pending and when it fires, so Pause can cancel it and
+  // Resume can replay it with its exact remaining delay.
+  function scheduleGngTimer(fn, delayMs) {
+    gngState.timerFn = fn;
+    gngState.timerFiresAt = performance.now() + delayMs;
+    gngState.timer = setTimeout(() => { gngState.timer = null; fn(); }, delayMs);
+  }
+
+  function buildGngTrials() {
+    const n = GNG_TRIAL_COUNT;
+    const nogoCount = Math.round(n * GNG_NOGO_RATIO);
+    const trials = [];
+    for (let i = 0; i < n; i++) trials.push(i < nogoCount ? "nogo" : "go");
+    // Shuffle, then avoid two No-Go trials back to back - a run of
+    // consecutive No-Go trials would let the client just switch the
+    // "respond" impulse off instead of actually having to inhibit it.
+    for (let tries = 0; tries < 200; tries++) {
+      for (let i = trials.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [trials[i], trials[j]] = [trials[j], trials[i]];
+      }
+      let ok = true;
+      for (let i = 1; i < trials.length; i++) if (trials[i] === "nogo" && trials[i - 1] === "nogo") { ok = false; break; }
+      if (ok) break;
+    }
+    return trials;
+  }
+
+  let gngState = null;
+  function startGngGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.gngPlayer.hidden = false;
+    els.gngPlayerBar.hidden = false;
+    els.gngDonePanel.hidden = true;
+    els.gngPauseOverlay.hidden = true;
+    els.gngPauseBtn.hidden = false;
+    gngState = {
+      diff: GNG_DIFFICULTIES[gngPrefs.difficulty], trials: buildGngTrials(), index: -1, phase: "gap", responded: false,
+      hits: 0, misses: 0, falseAlarms: 0, correctInhibitions: 0, rts: [],
+      stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      startTime: performance.now(),
+    };
+    els.gngStimulus.className = "gng-stimulus";
+    els.gngHint.textContent = "Bereit? Gleich geht's los …";
+    els.gngProgressEl.textContent = `0/${gngState.trials.length}`;
+    requestWakeLock();
+    scheduleGngTimer(gngNextTrial, 1200);
+  }
+  els.gngReadyStartBtn.addEventListener("click", startGngGame);
+
+  function gngNextTrial() {
+    if (!gngState) return;
+    gngState.index++;
+    if (gngState.index >= gngState.trials.length) { gngFinish(); return; }
+    els.gngProgressEl.textContent = `${gngState.index + 1}/${gngState.trials.length}`;
+    gngState.phase = "gap";
+    gngState.responded = false;
+    els.gngStimulus.className = "gng-stimulus";
+    const isi = gngState.diff.isiMin + Math.random() * (gngState.diff.isiMax - gngState.diff.isiMin);
+    scheduleGngTimer(gngShowStimulus, isi);
+  }
+  function gngShowStimulus() {
+    if (!gngState) return;
+    const kind = gngState.trials[gngState.index];
+    gngState.phase = kind; // "go" or "nogo"
+    gngState.stimAt = performance.now();
+    gngState.responded = false;
+    els.gngHint.textContent = "";
+    els.gngStimulus.className = "gng-stimulus " + kind;
+    scheduleGngTimer(gngEndStimulus, gngState.diff.stimMs);
+  }
+  function gngEndStimulus() {
+    if (!gngState) return;
+    if (gngState.phase === "go" && !gngState.responded) { gngState.misses++; els.gngHint.textContent = "Verpasst!"; }
+    else if (gngState.phase === "nogo" && !gngState.responded) gngState.correctInhibitions++;
+    gngState.phase = "gap";
+    els.gngStimulus.className = "gng-stimulus";
+    gngNextTrial();
+  }
+  function gngTap() {
+    if (!gngState || gngState.paused || gngState.responded) return;
+    if (gngState.phase === "go") {
+      gngState.responded = true;
+      gngState.hits++;
+      gngState.rts.push(performance.now() - gngState.stimAt);
+      els.gngStimulus.classList.add("hit");
+    } else if (gngState.phase === "nogo") {
+      gngState.responded = true;
+      gngState.falseAlarms++;
+      els.gngStimulus.classList.add("wrong");
+      els.gngHint.textContent = "Fehlalarm – das war Rot!";
+    }
+    // Taps during the "gap" phase (no stimulus shown yet) are ignored -
+    // reaction time is measured stimulus-locked, same as the paradigm this
+    // is grounded in.
+  }
+  els.gngStage.addEventListener("click", gngTap);
+
+  // Pause just stops/replays the pending timer, no live background-adjust
+  // overlay - background colour customisation was skipped for this first
+  // Test-Bereich exercise (explicitly optional per the client's own
+  // instruction) so there is nothing to adjust while paused.
+  function pauseGng() {
+    if (!gngState || gngState.paused) return;
+    gngState.paused = true;
+    gngState.pausedAt = performance.now();
+    if (gngState.timer) {
+      clearTimeout(gngState.timer);
+      gngState.timer = null;
+      gngState.timerRemainingMs = Math.max(0, gngState.timerFiresAt - gngState.pausedAt);
+    }
+    els.gngPauseBtn.hidden = true;
+    els.gngPauseOverlay.hidden = false;
+  }
+  function resumeGng() {
+    if (!gngState || !gngState.paused) return;
+    const pausedMs = performance.now() - gngState.pausedAt;
+    gngState.startTime += pausedMs;
+    gngState.stimAt += pausedMs;
+    gngState.paused = false;
+    if (gngState.timerFn && gngState.timerRemainingMs != null) {
+      scheduleGngTimer(gngState.timerFn, gngState.timerRemainingMs);
+      gngState.timerRemainingMs = null;
+    }
+    els.gngPauseOverlay.hidden = true;
+    els.gngPauseBtn.hidden = false;
+  }
+  els.gngPauseBtn.addEventListener("click", pauseGng);
+  els.gngResumeBtn.addEventListener("click", resumeGng);
+
+  function finalizeGngRun(state, totalTrials) {
+    els.gngPauseOverlay.hidden = true;
+    els.gngPlayerBar.hidden = true;
+    const correct = state.hits + state.correctInhibitions;
+    const accuracyPct = Math.round(100 * correct / totalTrials);
+    const avgRt = state.rts.length ? Math.round(state.rts.reduce((a, b) => a + b, 0) / state.rts.length) : null;
+    const isRecord = saveGngBest(accuracyPct);
+    renderGngBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.gngDoneSummary.textContent =
+      `Go/No-Go (${state.diff.title}) · ${accuracyPct}% richtig` +
+      (avgRt != null ? ` · Ø Reaktionszeit ${avgRt} ms` : "") +
+      ` · ${state.falseAlarms} Fehlalarm${state.falseAlarms === 1 ? "" : "e"}` +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const id = addHistory({ kind: "gng", title: "Go/No-Go Reaktionstest", seconds: Math.round(played), note: `${accuracyPct}% richtig${avgRt != null ? `, Ø ${avgRt} ms` : ""}` });
+    renderRating(els.gngRating, id, "Wie fokussiert warst du?");
+    els.gngDonePanel.hidden = false;
+  }
+  function gngFinish() {
+    if (!gngState) return;
+    const state = gngState;
+    gngState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.gngPlayer) document.exitFullscreen().catch(() => {});
+    els.gngFsHint.hidden = true;
+    finalizeGngRun(state, state.trials.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as Remember/
+  // Blitz/Flash/MOT - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved, otherwise it's not worth a
+  // done-panel and just exits like Blitz-Raster does at level 0.
+  function gngStop() {
+    if (!gngState) return;
+    if (gngState.timer) clearTimeout(gngState.timer);
+    const state = gngState;
+    gngState = null;
+    els.gngPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.gngPlayer) document.exitFullscreen().catch(() => {});
+    els.gngFsHint.hidden = true;
+    const resolved = state.hits + state.misses + state.falseAlarms + state.correctInhibitions;
+    if (resolved >= 4) {
+      finalizeGngRun(state, resolved);
+    } else {
+      els.gngPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.gngBackBtn.addEventListener("click", gngStop);
+  els.gngAgainBtn.addEventListener("click", () => { els.gngDonePanel.hidden = true; startGngGame(); });
+  els.gngDoneBackBtn.addEventListener("click", () => { els.gngPlayer.hidden = true; els.gngDonePanel.hidden = true; showScreen("testHome"); });
 
   // ==== Workout engine ====
   // One engine serves three situations: a block inside a coach-authored/

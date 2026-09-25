@@ -559,6 +559,17 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .mot-object.wrong{background:#d32f2f}
 .mot-object.style-3d.wrong{background:radial-gradient(circle at 34% 28%, #f3a6a6 0%, #d32f2f 55%, #941f1f 100%)}
 
+.gng-stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;padding:24px;cursor:pointer}
+.gng-stimulus{
+  width:min(220px,55vw);height:min(220px,55vw);border-radius:50%;
+  background:#e2e6e7;border:6px solid #cfd6d8;
+  transition:background .1s ease,border-color .1s ease,transform .08s ease;
+}
+.gng-stimulus.go{background:#2e7d32;border-color:#1b5e20}
+.gng-stimulus.nogo{background:#d32f2f;border-color:#8e1c1c}
+.gng-stimulus.hit{transform:scale(.86)}
+.gng-stimulus.wrong{transform:scale(1.08)}
+
 .movement-stage{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 14px;position:relative;overflow-y:auto}
 .movement-lane{display:flex;align-items:flex-end;justify-content:center;gap:10px;width:100%;max-width:720px}
 .movement-tile{

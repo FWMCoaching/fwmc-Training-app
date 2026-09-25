@@ -782,13 +782,48 @@ doesn't:
   (`https://claude.ai/artifact/MXieTDSa8y6W4BeRMfAw8K`) with the changed
   files. If the suite doesn't come back clean, do not push — fix it, or
   revert just the files you touched and note the blocker below instead.
+  **The `git push` is the step that actually saves your work - the
+  Artifact is only a preview mirror, republished from whatever this
+  container has on disk right now.** The container is reclaimed once your
+  turn ends; anything not pushed to `origin main` by then is gone. If
+  you're running short on time and can only do one of the two, push to
+  git and skip the Artifact republish (the client's own session can catch
+  that up) - never the other way round. Confirm the push actually landed
+  with `git log --oneline -3` (or `git status` showing a clean tree
+  up to date with `origin/main`) before ending your turn; a firing that
+  published to the Artifact but didn't push (this happened once, 2026-09-25 -
+  the Go/No-Go exercise below was built entirely correctly but the session
+  ended before `git push` ran, and had to be recovered by hand from the
+  Artifact's published files in the next session) has not actually saved
+  anything.
 
 ### Roster (what's been added under Test so far)
 
-*(empty — nothing added yet as of 2026-09-25; the first autonomous firing
-adds its entry here, in the same terse-but-thorough style as the rest of
-this file: what it is, the paradigm it's grounded in if any, what
-conventions it reused vs. skipped, and its test file.)*
+- **Go/No-Go Reaktionstest** (first autonomous entry, 2026-09-25): classic
+  inhibitory-control paradigm - a run of single stimuli, most demanding a
+  fast tap ("Go", green circle), a minority (`GNG_NOGO_RATIO = 0.2`, ~20% of
+  `GNG_TRIAL_COUNT = 24` trials) demanding the tap be withheld ("No-Go",
+  red) - grounded in the sport/exercise inhibitory-control literature
+  (cited in-code: a 2023 meta-analysis on inhibitory control in sport
+  performance, and PMC8048576/PMC12650625-style go/no-go ISI designs); the
+  ~20% minority split (not 50/50) is deliberate so a "just respond"
+  impulse actually builds up and there's something real to inhibit -
+  50/50 would just be simple choice reaction time. Trials are shuffled but
+  never place two No-Go trials back to back (`buildGngTrials()`), so the
+  client can't just switch "respond" off for a stretch. Reports accuracy %
+  (hits + correct inhibitions) and average reaction time on Go trials
+  instead of a level - this task has no natural "level", it's a fixed-length
+  test, so `GNG_BEST_KEY` tracks best accuracy % per difficulty rather than
+  best level reached. `gngPrefs.difficulty` (leicht/mittel/schwer) sets
+  `stimMs`/`isiMin`/`isiMax`; no Bei-Fehler, no background customisation,
+  no Trainingsmodus - all correctly skipped per the "optional, skip what
+  doesn't fit in an hour" guidance above, since none of them make sense for
+  a fixed-trial accuracy test. Pause/resume uses the same
+  scheduleXTimer-remaining-delay trick as Blitz/Remember. Reuses
+  `.remember-hint` for the on-stage hint text and the standard done-panel/
+  rating/`addHistory()`/`wireFullscreen()` conventions; new CSS is just
+  `.gng-stage`/`.gng-stimulus` (a plain circle, green/red states, fixed
+  hex colours, no `var(--...)`). Test: `tests/gng_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
