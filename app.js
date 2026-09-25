@@ -52,6 +52,12 @@
   const STROOP_MIN_COLORS = 2;
   const STROOP_MAX_COLORS = STROOP_COLOR_LIB.length;
 
+  // Single-select colour for the centre fixation point (Periphere
+  // Wahrnehmung's own Feineinstellung) - "Grau" is the plain default dot
+  // every other exercise still uses, plus every Stroop colour on top.
+  const FIX_COLOR_LIB = [{ key: "grau", name: "Grau", hex: DOT }, ...STROOP_COLOR_LIB];
+  const FIX_COLOR_BY_KEY = Object.fromEntries(FIX_COLOR_LIB.map((c) => [c.key, c]));
+
   // Fixed four-colour set for "Hütchen antippen" (cone order sorting) -
   // this exercise is always about four cones, so it skips the free colour
   // picker and always uses this base set, only their on-screen order changes.
@@ -358,6 +364,31 @@
     }
   }
 
+  // The small centre dot every VT-style exercise shows between stimuli, so
+  // the eyes have somewhere fixed to rest on. Periphere Wahrnehmung is the
+  // first exercise that lets the client swap it for their own character and
+  // change its size/colour - every other exercise keeps the plain default
+  // dot untouched.
+  function drawFixationPoint(cx, cy, unit) {
+    const ex = EXERCISES[state.exercise];
+    const custom = ex && ex.type === "periph";
+    const color = custom ? (FIX_COLOR_BY_KEY[state.periphFixColor] || FIX_COLOR_BY_KEY.grau).hex : DOT;
+    const scale = custom ? state.periphFixSize : 1;
+    const char = custom ? state.periphFixChar.trim() : "";
+    if (char) {
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `700 ${Math.round(unit * 0.09 * scale)}px Magra, sans-serif`;
+      ctx.fillStyle = color;
+      ctx.fillText(char.slice(0, 3), cx, cy);
+    } else {
+      ctx.beginPath();
+      ctx.fillStyle = color;
+      ctx.arc(cx, cy, unit * 0.03 * scale, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   function drawScene(kind, payload) {
     const cw = canvas.width, ch = canvas.height;
     const cx = cw / 2, cy = ch / 2;
@@ -368,10 +399,23 @@
     if (kind === "blank") {
       ctx.fillStyle = NEUTRAL;
       ctx.fillRect(0, 0, cw, ch);
-      ctx.beginPath();
-      ctx.fillStyle = DOT;
-      ctx.arc(cx, cy, unit * 0.03, 0, Math.PI * 2);
-      ctx.fill();
+      drawFixationPoint(cx, cy, unit);
+    } else if (kind === "periph") {
+      ctx.fillStyle = NEUTRAL;
+      ctx.fillRect(0, 0, cw, ch);
+      drawFixationPoint(cx, cy, unit);
+      // Position is stored as an angle + a fraction of the safe ellipse
+      // rather than a baked-in pixel, so it re-lands correctly if the
+      // device is rotated mid-exercise (the whole point of this exercise
+      // working in both portrait and landscape).
+      const rx = cw * 0.42 * payload.radiusFrac, ry = ch * 0.42 * payload.radiusFrac;
+      const x = cx + rx * Math.cos(payload.angle), y = cy + ry * Math.sin(payload.angle);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `700 ${Math.round(unit * 0.16)}px Magra, sans-serif`;
+      ctx.fillStyle = INK;
+      ctx.fillText(payload.char, x, y);
+      barCaption(cw, ch, "Blick auf die Mitte richten", false);
     } else if (kind === "count") {
       drawCountdown(cw, ch, payload);
     } else if (kind === "cue") {
@@ -518,6 +562,12 @@
       task: "Reagiere auf die Farbe – passend zu deinem eigenen Richtungs-Aufbau am Boden.",
       trains: "Reaktionsschnelligkeit gezielt in frei gewählte Richtungen",
       rules: "Klebe ein Kreuz oder einen Stern mit vier oder acht Richtungen auf den Boden und stelle deine Farbhütchen in die Richtungen, die du trainieren willst. Mehrere Farben auf derselben Richtung lassen diese Richtung häufiger drankommen. Welche Farbe wohin gehört, legst du komplett selbst fest – die App zeigt immer nur die Farbe.",
+    },
+    "periph-flash": {
+      title: "Periphere Wahrnehmung", type: "periph",
+      task: "Fixiere den Punkt in der Mitte. Nimm wahr, was am Rand erscheint, ohne die Augen zu bewegen.",
+      trains: "Peripheres Sehen bei stabiler Fixierung",
+      rules: "Visuelles Training ist anstrengend – vor allem für Augen und Nervensystem. Achte auf ausreichend Pausen. Merkst du, dass dein System stark gefordert ist oder droht zu überlasten, reduziere Tempo/Dauer oder sprich im Zweifel mit deinem Trainer.",
     },
   };
 
@@ -903,6 +953,10 @@
     intervalMinSlider: $("intervalMinSlider"), intervalMaxSlider: $("intervalMaxSlider"), intervalValue: $("intervalValue"),
     tempoCustom: $("tempoCustom"),
     colorGroup: $("colorGroup"), colorPicker: $("colorPicker"), colorCount: $("colorCount"), colorHint: $("colorHint"),
+    periphKindGroup: $("periphKindGroup"), periphFixGroup: $("periphFixGroup"),
+    periphFixCharInput: $("periphFixCharInput"), periphFixColorPicker: $("periphFixColorPicker"),
+    periphFixSizeSlider: $("periphFixSizeSlider"), periphFixSizeValue: $("periphFixSizeValue"),
+    periphOpenBtn: $("periphOpenBtn"),
     durationGroup: $("durationGroup"), tempoGroup: $("tempoGroup"), advanced: $("advanced"),
     vtSavedGroup: $("vtSavedGroup"), vtSavedList: $("vtSavedList"), vtSaveBtn: $("vtSaveBtn"),
     vtSaveForm: $("vtSaveForm"), vtSaveNameInput: $("vtSaveNameInput"),
@@ -1373,6 +1427,10 @@
     colors: ["orange", "rot", "lila"],
     arrowColors: ["blau"],
     stroopColors: ["rot", "gruen", "blau", "gelb", "lila"],
+    periphKind: "gemischt",
+    periphFixChar: "",
+    periphFixColor: "grau",
+    periphFixSize: 1,
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -1381,6 +1439,10 @@
     if (!Array.isArray(state.colors) || keysToColors(state.colors).length < MIN_COLORS) state.colors = ["orange", "rot", "lila"];
     if (!Array.isArray(state.arrowColors) || keysToColors(state.arrowColors).length < ARROW_MIN_COLORS) state.arrowColors = ["blau"];
     if (!Array.isArray(state.stroopColors) || keysToColors(state.stroopColors, STROOP_COLOR_LIB).length < STROOP_MIN_COLORS) state.stroopColors = DEFAULTS.stroopColors.slice();
+    if (!["buchstaben", "zahlen", "gemischt"].includes(state.periphKind)) state.periphKind = "gemischt";
+    if (typeof state.periphFixChar !== "string") state.periphFixChar = "";
+    if (!FIX_COLOR_BY_KEY[state.periphFixColor]) state.periphFixColor = "grau";
+    if (typeof state.periphFixSize !== "number" || state.periphFixSize < 0.6 || state.periphFixSize > 2) state.periphFixSize = 1;
   }
   function savePrefs() { writeJSON(PREFS_KEY, state); }
   loadPrefs();
@@ -1518,6 +1580,53 @@
     els.vtSaveBtn.disabled = belowMin;
   }
 
+  // ---- Periphere Wahrnehmung: Zeichentyp + Fixpunkt Feineinstellungen ----
+  document.querySelectorAll("#periphKindRow [data-periph-kind]").forEach((el) => {
+    el.addEventListener("click", () => {
+      state.periphKind = el.dataset.periphKind;
+      savePrefs();
+      syncPeriphKindUI();
+    });
+  });
+  function syncPeriphKindUI() {
+    document.querySelectorAll("#periphKindRow [data-periph-kind]").forEach((el) => {
+      setActive(el, el.dataset.periphKind === state.periphKind);
+    });
+  }
+  FIX_COLOR_LIB.forEach((c) => {
+    const btn = document.createElement("button");
+    btn.className = "color-swatch";
+    btn.dataset.fixColor = c.key;
+    btn.setAttribute("aria-pressed", "false");
+    const stroke = relLuma(c.hex) > 0.75 ? "#16232a" : "#fff";
+    btn.innerHTML = `<span class="swatch" style="background:${c.hex}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="${stroke}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">${c.name}</span>`;
+    btn.addEventListener("click", () => {
+      state.periphFixColor = c.key;
+      savePrefs();
+      syncPeriphFixUI();
+    });
+    els.periphFixColorPicker.appendChild(btn);
+  });
+  els.periphFixCharInput.addEventListener("input", () => {
+    state.periphFixChar = els.periphFixCharInput.value.slice(0, 3);
+    savePrefs();
+  });
+  els.periphFixSizeSlider.addEventListener("input", () => {
+    state.periphFixSize = Number(els.periphFixSizeSlider.value);
+    savePrefs();
+    syncPeriphFixUI();
+  });
+  function syncPeriphFixUI() {
+    els.periphFixColorPicker.querySelectorAll(".color-swatch").forEach((el) => {
+      const on = el.dataset.fixColor === state.periphFixColor;
+      el.classList.toggle("active", on);
+      el.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    els.periphFixCharInput.value = state.periphFixChar;
+    els.periphFixSizeSlider.value = state.periphFixSize;
+    els.periphFixSizeValue.textContent = state.periphFixSize.toFixed(1) + "×";
+  }
+
   // ---- Duration / tempo / sliders ----
   document.querySelectorAll("[data-dur]").forEach((el) => {
     el.addEventListener("click", () => { state.duration = Number(el.dataset.dur); savePrefs(); syncDurationUI(); });
@@ -1565,8 +1674,12 @@
   });
 
   // ---- Exercise settings screen ----
+  // Almost every exercise opens from the VT home grid, so "Zurück" on the
+  // ready/done screens defaults to "home" - but Periphere Wahrnehmung opens
+  // from the NAT home instead and needs to return there.
+  let readyReturnScreen = "home";
   document.querySelectorAll(".excard").forEach((card) => {
-    card.addEventListener("click", () => openReady(card.dataset.exercise, card.querySelector(".icon-badge,.icon-tile").outerHTML));
+    card.addEventListener("click", () => { readyReturnScreen = "home"; openReady(card.dataset.exercise, card.querySelector(".icon-badge,.icon-tile").outerHTML); });
   });
 
   function openReady(id, iconHtml) {
@@ -1586,8 +1699,12 @@
     colorMode = ex.usesArrowColors ? "arrows" : ex.usesStroopColors ? "stroop" : "standard";
     els.colorGroup.hidden = !ex.usesColors && !ex.usesArrowColors && !ex.usesStroopColors;
     const isConeTap = ex.type === "color-tap";
+    const isPeriph = ex.type === "periph";
     els.tempoGroup.hidden = isConeTap;
     els.advanced.hidden = isConeTap;
+    els.periphKindGroup.hidden = !isPeriph;
+    els.periphFixGroup.hidden = !isPeriph;
+    if (isPeriph) { syncPeriphKindUI(); syncPeriphFixUI(); }
     renderColorSwatches();
     syncColorUI();
     syncDurationUI();
@@ -1597,7 +1714,7 @@
     renderVTSaved();
     showScreen("ready");
   }
-  els.backToHome.addEventListener("click", () => showScreen("home"));
+  els.backToHome.addEventListener("click", () => showScreen(readyReturnScreen));
 
   // ---- Exercise filter chips (multi-select "typ", exclusive "ton") ----
   const activeFilters = { ton: null, typ: new Set() };
@@ -2154,7 +2271,31 @@
       cfg.type === "vt" ? buildVTSchedule(cfg, rng) :
       cfg.type === "color" ? buildColorSchedule(cfg, rng) :
       cfg.type === "vrw-real" ? buildVRWRealSchedule(cfg, rng) :
+      cfg.type === "periph" ? buildPeriphSchedule(cfg, rng) :
       buildArrowSchedule(cfg, rng);
+  }
+  const PERIPH_LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // I/O left out - too easily confused with 1/0
+  const PERIPH_DIGITS = "0123456789";
+  function randPeriphChar(kind, rng) {
+    const pool = kind === "buchstaben" ? PERIPH_LETTERS
+      : kind === "zahlen" ? PERIPH_DIGITS
+      : (rng() < 0.5 ? PERIPH_LETTERS : PERIPH_DIGITS);
+    return pool[Math.floor(rng() * pool.length)];
+  }
+  function buildPeriphSchedule(cfg, rng) {
+    const schedule = [];
+    let t = pushCountdown(schedule, cfg);
+    const show = state.stimulusS;
+    while (t < state.duration) {
+      const char = randPeriphChar(state.periphKind, rng);
+      const angle = rng() * Math.PI * 2;
+      const radiusFrac = 0.45 + rng() * 0.5;
+      const pause = randInterval(rng);
+      schedule.push({ t0: t, t1: t + show, kind: "periph", payload: { char, angle, radiusFrac } });
+      schedule.push({ t0: t + show, t1: t + show + pause, kind: "blank", payload: {} });
+      t += show + pause;
+    }
+    return { schedule, total: t };
   }
 
   function onEnterFrame(frame) {
@@ -2500,7 +2641,7 @@
   function stopToHome() {
     leavePlayer();
     originBundle = null;
-    showScreen("home");
+    showScreen(readyReturnScreen);
   }
   // "Beenden" mid-training: back to where the training was started from.
   function abortTraining() {
@@ -3756,6 +3897,14 @@
   els.rememberOpenFixed.addEventListener("click", () => openRememberReady("fixed"));
   els.rememberOpenShuffle.addEventListener("click", () => openRememberReady("shuffle"));
   els.rememberReadyBackToHome.addEventListener("click", () => showScreen("natHome"));
+
+  // ---- Periphere Wahrnehmung: reuses the shared VT ready/player screens
+  // (same flashing-stimulus mechanic, just centred on a fixation point)
+  // instead of a separate mini-screen set like Remember has. ----
+  els.periphOpenBtn.addEventListener("click", () => {
+    readyReturnScreen = "natHome";
+    openReady("periph-flash", '<div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg></div>');
+  });
   els.rememberReadyStartBtn.addEventListener("click", () => startRememberGame(rememberReadyMode));
 
   function syncRememberTrainingUI() {

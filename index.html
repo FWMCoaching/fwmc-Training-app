@@ -459,10 +459,14 @@
   </section>
 
   <section class="nat-panel" id="natPeripherPanel">
-    <div class="nat-panel-card">
-      <h3>Periphere Wahrnehmung</h3>
-      <p>Training des Sichtfelds am Rand des Blickfelds, w&auml;hrend der Blick fest geradeaus gerichtet bleibt. Der genaue Ablauf wird hier als N&auml;chstes gestaltet.</p>
+    <div class="section-head">
+      <h2>Periphere Wahrnehmung</h2>
+      <span class="section-note">Punkt fixieren, den Rand wahrnehmen</span>
     </div>
+    <button class="featured-card" id="periphOpenBtn">
+      <span class="fc-title">Blitz-Reize</span>
+      <span class="fc-desc">Buchstaben und/oder Zahlen blitzen rund um den Fixpunkt auf. Augen auf der Mitte lassen, den Rand wahrnehmen &ndash; funktioniert im Hoch- und Querformat.</span>
+    </button>
   </section>
 
   <section class="nat-panel" id="natRememberPanel" hidden>
@@ -666,6 +670,15 @@
     <div class="color-hint" id="colorHint"></div>
   </div>
 
+  <div class="group" id="periphKindGroup" hidden>
+    <div class="group-label">Zeichentyp</div>
+    <div class="choice-row" id="periphKindRow">
+      <button class="choice" data-periph-kind="buchstaben">Buchstaben</button>
+      <button class="choice" data-periph-kind="zahlen">Zahlen</button>
+      <button class="choice" data-periph-kind="gemischt">Gemischt</button>
+    </div>
+  </div>
+
   <div class="group" id="durationGroup">
     <div class="group-label">Dauer</div>
     <div class="choice-row">
@@ -709,6 +722,16 @@
           <div class="slider-line"><span class="slider-label">Min</span><input type="range" id="intervalMinSlider" min="1" max="30" step="1" aria-label="Pause minimal"></div>
           <div class="slider-line"><span class="slider-label">Max</span><input type="range" id="intervalMaxSlider" min="1" max="30" step="1" aria-label="Pause maximal"></div>
           <span class="slider-value" id="intervalValue">3&ndash;6 s</span>
+        </div>
+      </div>
+      <div class="group" id="periphFixGroup" hidden>
+        <div class="group-label">Fixpunkt in der Mitte</div>
+        <input type="text" id="periphFixCharInput" maxlength="3" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen f&uuml;r den Fixpunkt (leer lassen f&uuml;r den Standardpunkt)">
+        <div class="color-picker" id="periphFixColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Gr&ouml;&szlig;e</span>
+          <input type="range" id="periphFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Gr&ouml;&szlig;e des Fixpunkts">
+          <span class="slider-value" id="periphFixSizeValue"></span>
         </div>
       </div>
     </div>

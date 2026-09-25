@@ -763,6 +763,10 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
   border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;
   font-family:inherit;color:var(--ink);background:var(--surface);
 }
+#periphFixCharInput{
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;
+  font-family:inherit;color:var(--ink);background:var(--surface);margin-bottom:4px;width:100%;
+}
 .custom-exercise-form-actions{display:flex;gap:8px}
 .custom-exercise-form-actions button{flex:1}
 .circuit-item-row{
