@@ -1133,7 +1133,31 @@
 </div>
 
 <div class="player" id="player" hidden>
-  <div class="stage-wrap" id="stageWrap"><canvas id="stage"></canvas></div>
+  <div class="stage-wrap" id="stageWrap">
+    <canvas id="stage"></canvas>
+    <div class="periph-pause-overlay" id="periphPauseOverlay" hidden>
+      <div class="periph-pause-panel">
+        <h3>Pausiert</h3>
+        <div class="group">
+          <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="periphPauseBgValue"></span></div>
+          <input type="range" id="periphPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+        </div>
+        <div class="group">
+          <div class="group-label">Hintergrundfarbe</div>
+          <div class="color-picker" id="periphPauseBgColorPicker"></div>
+        </div>
+        <div class="group">
+          <div class="group-label">Fixpunkt-Farbe</div>
+          <div class="color-picker" id="periphPauseFixColorPicker"></div>
+        </div>
+        <div class="group">
+          <div class="group-label">Fixpunkt-Gr&ouml;&szlig;e <span class="slider-value" id="periphPauseFixSizeValue"></span></div>
+          <input type="range" id="periphPauseFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Fixpunkt-Gr&ouml;&szlig;e">
+        </div>
+        <button class="start-btn" id="periphResumeBtn">Weiter</button>
+      </div>
+    </div>
+  </div>
   <div class="cone-order-stage" id="coneOrderStage" hidden>
     <div class="cone-order-count" id="coneOrderCount"></div>
     <div class="cone-order-row" id="coneOrderRow"></div>
@@ -1141,6 +1165,7 @@
   <div class="progress-track" id="progressTrack"></div>
   <div class="player-bar" id="playerBar">
     <button id="backBtn">&#10005; Beenden</button>
+    <button id="periphPauseBtn" hidden>Pause</button>
     <span class="player-status" id="timeEl">0:00</span>
     <button id="fsBtn">Vollbild</button>
   </div>

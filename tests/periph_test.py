@@ -38,7 +38,7 @@ async def main():
         fix_swatch_count = await pg.locator("#periphFixColorPicker .color-swatch").count()
         print("fix colour swatch count (grau + 9 = 10):", fix_swatch_count)
         await pg.fill("#periphFixCharInput", "X")
-        await pg.click('#periphFixColorPicker .color-swatch[data-fix-color="rot"]'); await pg.wait_for_timeout(80)
+        await pg.click('#periphFixColorPicker .color-swatch[data-key="rot"]'); await pg.wait_for_timeout(80)
         await pg.fill("#periphFixSizeSlider", "1.6")
         await pg.dispatch_event("#periphFixSizeSlider", "input")
         await pg.wait_for_timeout(80)
@@ -53,7 +53,7 @@ async def main():
         print("kind persisted (buchstaben):", "active" in (await pg.get_attribute('#periphKindRow [data-periph-kind="buchstaben"]', "class") or ""))
         await pg.click("#advanced summary"); await pg.wait_for_timeout(100)
         print("fix char persisted:", await pg.input_value("#periphFixCharInput"))
-        print("fix colour persisted (rot active):", "active" in (await pg.get_attribute('#periphFixColorPicker .color-swatch[data-fix-color="rot"]', "class") or ""))
+        print("fix colour persisted (rot active):", "active" in (await pg.get_attribute('#periphFixColorPicker .color-swatch[data-key="rot"]', "class") or ""))
 
         # "Zurück" should return to natHome, not the generic VT home
         await pg.click("#backToHome"); await pg.wait_for_timeout(150)

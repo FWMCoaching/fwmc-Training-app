@@ -997,6 +997,11 @@
     periphAllBtn: $("periphAllBtn"), periphZonesBtn: $("periphZonesBtn"), periphFieldHint: $("periphFieldHint"),
     bgGroup: $("bgGroup"), bgColorPicker: $("bgColorPicker"), bgIntensitySlider: $("bgIntensitySlider"),
     bgIntensityValue: $("bgIntensityValue"), bgContrastHint: $("bgContrastHint"),
+    periphPauseBtn: $("periphPauseBtn"), periphPauseOverlay: $("periphPauseOverlay"),
+    periphPauseBgSlider: $("periphPauseBgSlider"), periphPauseBgValue: $("periphPauseBgValue"),
+    periphPauseBgColorPicker: $("periphPauseBgColorPicker"), periphPauseFixColorPicker: $("periphPauseFixColorPicker"),
+    periphPauseFixSizeSlider: $("periphPauseFixSizeSlider"), periphPauseFixSizeValue: $("periphPauseFixSizeValue"),
+    periphResumeBtn: $("periphResumeBtn"),
     durationGroup: $("durationGroup"), tempoGroup: $("tempoGroup"), advanced: $("advanced"),
     vtSavedGroup: $("vtSavedGroup"), vtSavedList: $("vtSavedList"), vtSaveBtn: $("vtSaveBtn"),
     vtSaveForm: $("vtSaveForm"), vtSaveNameInput: $("vtSaveNameInput"),
@@ -1645,19 +1650,38 @@
       setActive(el, el.dataset.periphKind === state.periphKind);
     });
   }
-  FIX_COLOR_LIB.forEach((c) => {
-    const btn = document.createElement("button");
-    btn.className = "color-swatch";
-    btn.dataset.fixColor = c.key;
-    btn.setAttribute("aria-pressed", "false");
-    const stroke = relLuma(c.hex) > 0.75 ? "#16232a" : "#fff";
-    btn.innerHTML = `<span class="swatch" style="background:${c.hex}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="${stroke}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">${c.name}</span>`;
-    btn.addEventListener("click", () => {
-      state.periphFixColor = c.key;
-      savePrefs();
-      syncPeriphFixUI();
+  // Single-select swatch picker, shared by every "pick one colour" UI
+  // (fixation-point colour, background colour, and their pause-overlay
+  // twins) - avoids a near-identical copy of this DOM-building code per screen.
+  function buildSingleSelectPicker(container, lib, onPick) {
+    lib.forEach((c) => {
+      const btn = document.createElement("button");
+      btn.className = "color-swatch";
+      btn.dataset.key = c.key;
+      btn.setAttribute("aria-pressed", "false");
+      const stroke = relLuma(c.hex) > 0.75 ? "#16232a" : "#fff";
+      btn.innerHTML = `<span class="swatch" style="background:${c.hex}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="${stroke}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">${c.name}</span>`;
+      btn.addEventListener("click", () => onPick(c.key));
+      container.appendChild(btn);
     });
-    els.periphFixColorPicker.appendChild(btn);
+  }
+  function syncSingleSelectPicker(container, currentKey) {
+    container.querySelectorAll(".color-swatch").forEach((el) => {
+      const on = el.dataset.key === currentKey;
+      el.classList.toggle("active", on);
+      el.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+  }
+  buildSingleSelectPicker(els.periphFixColorPicker, FIX_COLOR_LIB, (key) => {
+    state.periphFixColor = key;
+    savePrefs();
+    syncPeriphFixUI();
+  });
+  buildSingleSelectPicker(els.periphPauseFixColorPicker, FIX_COLOR_LIB, (key) => {
+    state.periphFixColor = key;
+    savePrefs();
+    syncPeriphFixUI();
+    redrawFrozenFrame();
   });
   els.periphFixCharInput.addEventListener("input", () => {
     state.periphFixChar = els.periphFixCharInput.value.slice(0, 3);
@@ -1668,15 +1692,20 @@
     savePrefs();
     syncPeriphFixUI();
   });
+  els.periphPauseFixSizeSlider.addEventListener("input", () => {
+    state.periphFixSize = Number(els.periphPauseFixSizeSlider.value);
+    savePrefs();
+    syncPeriphFixUI();
+    redrawFrozenFrame();
+  });
   function syncPeriphFixUI() {
-    els.periphFixColorPicker.querySelectorAll(".color-swatch").forEach((el) => {
-      const on = el.dataset.fixColor === state.periphFixColor;
-      el.classList.toggle("active", on);
-      el.setAttribute("aria-pressed", on ? "true" : "false");
-    });
+    syncSingleSelectPicker(els.periphFixColorPicker, state.periphFixColor);
+    syncSingleSelectPicker(els.periphPauseFixColorPicker, state.periphFixColor);
     els.periphFixCharInput.value = state.periphFixChar;
     els.periphFixSizeSlider.value = state.periphFixSize;
     els.periphFixSizeValue.textContent = state.periphFixSize.toFixed(1) + "×";
+    els.periphPauseFixSizeSlider.value = state.periphFixSize;
+    els.periphPauseFixSizeValue.textContent = state.periphFixSize.toFixed(1) + "×";
   }
   // Horizontal/Vertikal/Diagonal are a multi-select set, same pattern as
   // the arrow-colour picker: "Überall" is the "alle Farben" shortcut for
@@ -1746,33 +1775,35 @@
   // page stays plain white at intensity 0 and gets tinted from there, for
   // every exercise whose background isn't already the trained signal
   // itself (see bgIsStimulus on VT/VRW/Kompass-Aufbau/Stroop mit Hintergrund). ----
-  STROOP_COLOR_LIB.forEach((c) => {
-    const btn = document.createElement("button");
-    btn.className = "color-swatch";
-    btn.dataset.bgColor = c.key;
-    btn.setAttribute("aria-pressed", "false");
-    const stroke = relLuma(c.hex) > 0.75 ? "#16232a" : "#fff";
-    btn.innerHTML = `<span class="swatch" style="background:${c.hex}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="${stroke}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">${c.name}</span>`;
-    btn.addEventListener("click", () => {
-      state.bgColorKey = c.key;
-      savePrefs();
-      syncBgUI();
-    });
-    els.bgColorPicker.appendChild(btn);
+  buildSingleSelectPicker(els.bgColorPicker, STROOP_COLOR_LIB, (key) => {
+    state.bgColorKey = key;
+    savePrefs();
+    syncBgUI();
+  });
+  buildSingleSelectPicker(els.periphPauseBgColorPicker, STROOP_COLOR_LIB, (key) => {
+    state.bgColorKey = key;
+    savePrefs();
+    syncBgUI();
+    redrawFrozenFrame();
   });
   els.bgIntensitySlider.addEventListener("input", () => {
     state.bgIntensity = Number(els.bgIntensitySlider.value);
     savePrefs();
     syncBgUI();
   });
+  els.periphPauseBgSlider.addEventListener("input", () => {
+    state.bgIntensity = Number(els.periphPauseBgSlider.value);
+    savePrefs();
+    syncBgUI();
+    redrawFrozenFrame();
+  });
   function syncBgUI() {
-    els.bgColorPicker.querySelectorAll(".color-swatch").forEach((el) => {
-      const on = el.dataset.bgColor === state.bgColorKey;
-      el.classList.toggle("active", on);
-      el.setAttribute("aria-pressed", on ? "true" : "false");
-    });
+    syncSingleSelectPicker(els.bgColorPicker, state.bgColorKey);
+    syncSingleSelectPicker(els.periphPauseBgColorPicker, state.bgColorKey);
     els.bgIntensitySlider.value = state.bgIntensity;
     els.bgIntensityValue.textContent = Math.round(state.bgIntensity * 100) + "%";
+    els.periphPauseBgSlider.value = state.bgIntensity;
+    els.periphPauseBgValue.textContent = Math.round(state.bgIntensity * 100) + "%";
     const mixed = mixHex("#ffffff", STROOP_COLOR_BY_KEY[state.bgColorKey].hex, state.bgIntensity);
     const showTip = state.bgIntensity > 0 && relLuma(mixed) < 0.45;
     els.bgContrastHint.hidden = !showTip;
@@ -2287,6 +2318,7 @@
   let wakeLock = null;
   let session = null;
   let coneTap = null; // { target, count } - set while the tap-paced cone-colour exercise runs
+  let periphPausedAt = null; // performance.now() timestamp while the Periph pause overlay is open, else null
 
   // 3-2-1 lead-in with the exercise's one-line task; returns its length.
   function pushCountdown(schedule, cfg) {
@@ -2530,6 +2562,15 @@
     raf = requestAnimationFrame(tick);
   }
 
+  // Redraws whatever frame is currently frozen on screen (used while the
+  // Periph pause overlay is open) without touching the schedule/elapsed
+  // time, so a live background/fixation-point tweak shows immediately.
+  function redrawFrozenFrame() {
+    if (!session || session.lastIndex < 0) return;
+    const frame = session.schedule[session.lastIndex];
+    if (frame) drawScene(frame.kind, frame.payload);
+  }
+
   // Adds the time spent in the current exercise to the programme total.
   function accountSession() {
     if (!session) return 0;
@@ -2557,6 +2598,8 @@
     els.programDonePanel.hidden = true;
     els.pauseScreen.hidden = true;
     stopPauseTimers();
+    els.periphPauseOverlay.hidden = true;
+    periphPausedAt = null;
   }
 
   // Hides every full-screen player overlay (visual, breath-cycle, Wim Hof)
@@ -2586,6 +2629,7 @@
     els.progressTrack.hidden = false;
     els.coneOrderStage.hidden = true;
     els.stageWrap.hidden = false;
+    els.periphPauseBtn.hidden = EXERCISES[state.exercise].type !== "periph";
     fitCanvas();
     ensureAudioCtx();
     const built = buildScheduleFor(EXERCISES[state.exercise], Math.random);
@@ -2647,6 +2691,7 @@
     els.progressTrack.hidden = true;
     els.stageWrap.hidden = true;
     els.coneOrderStage.hidden = false;
+    els.periphPauseBtn.hidden = true;
     if (raf) cancelAnimationFrame(raf);
     session = { startTime: performance.now(), total: state.duration, schedule: [] };
     coneTap = { count: 0, lastOrder: null, duration: state.duration };
@@ -2850,6 +2895,31 @@
   els.startBtn.addEventListener("click", startSession);
   els.backBtn.addEventListener("click", abortTraining);
   els.doneBack.addEventListener("click", stopToHome);
+
+  // ---- Periph: pause mid-training to adjust background/fixation point ----
+  // Reuses the same startTime-shift trick as the visibilitychange handler
+  // below (backgrounding compensation), so the schedule never notices the
+  // gap: elapsed time is always (now - session.startTime), so shifting
+  // startTime forward by exactly the paused duration on resume makes the
+  // pause invisible to the stimulus timing.
+  els.periphPauseBtn.addEventListener("click", () => {
+    if (!session || periphPausedAt) return;
+    if (raf) cancelAnimationFrame(raf);
+    raf = null;
+    periphPausedAt = performance.now();
+    syncBgUI();
+    syncPeriphFixUI();
+    els.periphPauseBtn.hidden = true;
+    els.periphPauseOverlay.hidden = false;
+  });
+  els.periphResumeBtn.addEventListener("click", () => {
+    if (!session || !periphPausedAt) return;
+    session.startTime += performance.now() - periphPausedAt;
+    periphPausedAt = null;
+    els.periphPauseOverlay.hidden = true;
+    els.periphPauseBtn.hidden = false;
+    raf = requestAnimationFrame(tick);
+  });
 
   // ---- VT: save the current settings under a name, reuse from the list ----
   const VT_SAVED_KEY = "fwmc-vt-saved-v1";

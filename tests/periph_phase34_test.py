@@ -44,7 +44,7 @@ async def main():
 
         # set a custom fixation char + a dark background at high intensity
         await pg.fill("#periphFixCharInput", ":)")
-        await pg.click('#bgColorPicker .color-swatch[data-bg-color="blau"]'); await pg.wait_for_timeout(80)
+        await pg.click('#bgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
         await pg.fill("#bgIntensitySlider", "0.9")
         await pg.dispatch_event("#bgIntensitySlider", "input")
         await pg.wait_for_timeout(80)

@@ -566,7 +566,7 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .progress-track .seg{flex:1;height:4px;border-radius:4px;background:rgba(22,35,42,.12);overflow:hidden}
 .progress-track .fill{display:block;height:100%;width:0;background:#007094;border-radius:4px}
 .player-bar{
-  position:absolute;top:0;left:0;right:0;
+  position:absolute;top:0;left:0;right:0;z-index:24;
   padding:calc(18px + env(safe-area-inset-top,0px)) 14px 12px;
   display:flex;justify-content:space-between;align-items:center;gap:8px;pointer-events:none;
 }
@@ -582,6 +582,18 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
   background:#16232a;color:#fff;border-radius:14px;padding:12px 12px 12px 16px;
   display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);font-size:13.5px;line-height:1.35;
 }
+.stage-wrap{position:relative}
+.periph-pause-overlay{
+  position:absolute;inset:0;z-index:22;background:rgba(10,16,19,.72);
+  display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;
+}
+.periph-pause-panel{
+  background:var(--surface);border-radius:16px;padding:20px;width:100%;max-width:340px;
+  display:flex;flex-direction:column;gap:4px;
+}
+.periph-pause-panel h3{margin:0 0 8px;font-size:17px;color:var(--ink);text-align:center}
+.periph-pause-panel .group{margin-bottom:14px}
+.periph-pause-panel .start-btn{margin-top:4px}
 .fs-hint span{flex:1}
 .fs-hint button{border:none;border-radius:999px;cursor:pointer}
 .fs-hint #fsHintOpenBtn{background:#007094;color:#fff;font-size:12.5px;font-weight:700;padding:8px 12px;white-space:nowrap}

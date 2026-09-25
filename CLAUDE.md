@@ -145,6 +145,23 @@ unrelated to the feature being changed.
   Add it wherever a screen already has prev/next buttons for browsing a
   fixed sequence; don't add it to a screen with scattered tap-targets a
   swipe could conflict with (e.g. Remember's training-mode markers).
+- **Single-select swatch picker**: `buildSingleSelectPicker(container, lib,
+  onPick)` / `syncSingleSelectPicker(container, currentKey)` build and sync
+  a "pick exactly one colour" swatch grid (as opposed to the multi-select
+  pattern above). Used for the fixation-point colour and background colour
+  pickers, each of which now has two live instances (the ready screen and
+  the Periph pause overlay) that must always show the same selection.
+- **Mid-exercise pause with live adjustment** (Periphere Wahrnehmung):
+  `#periphPauseBtn` stops `raf`, records `periphPausedAt =
+  performance.now()`, and shows `#periphPauseOverlay`; `#periphResumeBtn`
+  shifts `session.startTime` forward by the paused duration (same
+  timestamp-shift trick as the `visibilitychange` backgrounding handler)
+  and restarts `raf` — the stimulus schedule never notices the gap. While
+  paused, the overlay's four controls (background intensity/colour,
+  fixation colour/size) mutate `state` directly and call
+  `redrawFrozenFrame()` to repaint the current frame immediately, without
+  resuming. Gated to `ex.type === "periph"` in `runSession()`; only built
+  for Periphere Wahrnehmung so far (see Known open items).
 
 ## Known open items
 
@@ -163,8 +180,15 @@ unrelated to the feature being changed.
 - **NAT status**: Remember is fully built (Feste/Bewegte Positionen +
   Trainingsmodus). Periphere Wahrnehmung is fully built (Phase 1-4:
   fixation point, Zeichentyp, Bereich programmes incl. 3×3 zone picker,
-  radial size growth, background colour/intensity). Flash Speicher Test
-  is still an unbuilt placeholder panel.
+  radial size growth, background colour/intensity) plus a mid-exercise
+  Pause with live background/fixation-point adjustment (see Established
+  patterns). Flash Speicher Test is still an unbuilt placeholder panel.
+- **Live-pause-adjust, deferred scope decision**: currently built only for
+  Periphere Wahrnehmung. Not yet decided/built: whether to extend it to
+  other NAT exercises (Remember, Flash) or other domains — Atemtraining
+  "wird Sinn machen", Movement "kann auch Sinn machen", VT-Videos
+  explicitly "macht keinen Sinn" per the user. Ask before assuming it
+  should spread further.
 
 ## Working conventions
 
