@@ -1126,6 +1126,18 @@
     gngFsBtn: $("gngFsBtn"), gngFsHint: $("gngFsHint"), gngFsHintOpenBtn: $("gngFsHintOpenBtn"), gngFsHintClose: $("gngFsHintClose"),
     gngDonePanel: $("gngDonePanel"), gngDoneSummary: $("gngDoneSummary"), gngRating: $("gngRating"),
     gngAgainBtn: $("gngAgainBtn"), gngDoneBackBtn: $("gngDoneBackBtn"),
+    testNbackOpenBtn: $("testNbackOpenBtn"), testNbackBestHint: $("testNbackBestHint"),
+    testNbackReady: $("testNbackReady"), testNbackReadyBackToHome: $("testNbackReadyBackToHome"),
+    testNbackStartRow: $("testNbackStartRow"), testNbackReadyBestHint: $("testNbackReadyBestHint"),
+    testNbackReadyStartBtn: $("testNbackReadyStartBtn"),
+    testNbackPlayer: $("testNbackPlayer"), testNbackStage: $("testNbackStage"), testNbackHint: $("testNbackHint"),
+    testNbackGrid: $("testNbackGrid"), testNbackMatchBtn: $("testNbackMatchBtn"),
+    testNbackPauseOverlay: $("testNbackPauseOverlay"), testNbackResumeBtn: $("testNbackResumeBtn"),
+    testNbackPlayerBar: $("testNbackPlayerBar"), testNbackBackBtn: $("testNbackBackBtn"), testNbackPauseBtn: $("testNbackPauseBtn"),
+    testNbackLevelEl: $("testNbackLevelEl"), testNbackFsBtn: $("testNbackFsBtn"), testNbackFsHint: $("testNbackFsHint"),
+    testNbackFsHintOpenBtn: $("testNbackFsHintOpenBtn"), testNbackFsHintClose: $("testNbackFsHintClose"),
+    testNbackDonePanel: $("testNbackDonePanel"), testNbackDoneSummary: $("testNbackDoneSummary"), testNbackRating: $("testNbackRating"),
+    testNbackAgainBtn: $("testNbackAgainBtn"), testNbackDoneBackBtn: $("testNbackDoneBackBtn"),
     blitzOpenBtn: $("blitzOpenBtn"), blitzBestHint: $("blitzBestHint"), blitzReady: $("blitzReady"),
     blitzReadyBackToHome: $("blitzReadyBackToHome"), blitzGridSizeRow: $("blitzGridSizeRow"),
     blitzZoneGroup: $("blitzZoneGroup"), blitzZoneAllBtn: $("blitzZoneAllBtn"), blitzZoneGrid: $("blitzZoneGrid"), blitzZoneHint: $("blitzZoneHint"),
@@ -1322,7 +1334,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3337,6 +3349,7 @@
     els.flashPlayer.hidden = true;
     els.motPlayer.hidden = true;
     els.gngPlayer.hidden = true;
+    els.testNbackPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3713,6 +3726,7 @@
   wireFullscreen({ player: els.flashPlayer, btn: els.flashFsBtn, hint: els.flashFsHint, hintOpen: els.flashFsHintOpenBtn, hintClose: els.flashFsHintClose });
   wireFullscreen({ player: els.motPlayer, btn: els.motFsBtn, hint: els.motFsHint, hintOpen: els.motFsHintOpenBtn, hintClose: els.motFsHintClose });
   wireFullscreen({ player: els.gngPlayer, btn: els.gngFsBtn, hint: els.gngFsHint, hintOpen: els.gngFsHintOpenBtn, hintClose: els.gngFsHintClose });
+  wireFullscreen({ player: els.testNbackPlayer, btn: els.testNbackFsBtn, hint: els.testNbackFsHint, hintOpen: els.testNbackFsHintOpenBtn, hintClose: els.testNbackFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -6838,256 +6852,6 @@
   els.motAgainBtn.addEventListener("click", () => { els.motDonePanel.hidden = true; startMotGame(lastMotMode); });
   els.motDoneBackBtn.addEventListener("click", () => { els.motPlayer.hidden = true; els.motDonePanel.hidden = true; showScreen(motReturnScreen); });
 
-  // ==== Go/No-Go Reaktionstest (Test-Bereich, first autonomous entry) ====
-  // Classic Go/No-Go inhibitory-control paradigm: a series of single
-  // stimuli, most demanding a fast "Go" response, a minority demanding the
-  // response be WITHHELD ("No-Go"). Research on this task in sport/exercise
-  // contexts measures reaction time to Go stimuli plus the false-alarm
-  // (commission-error) rate on No-Go trials as the key outcome (see e.g. the
-  // 2023 ScienceDirect meta-analysis on inhibitory control in sport
-  // performance, and PMC8048576 on go/no-go ISI design) - both are reported
-  // here. The classic design keeps the No-Go rate a MINORITY (commonly ~20%,
-  // per PMC12650625/PMC8048576-style designs) rather than 50/50, precisely
-  // so a prepotent "respond" tendency actually builds up and there is
-  // something real to inhibit - a 50/50 split would just be simple choice
-  // reaction time, not response inhibition. Distinct from every other Test/
-  // NAT exercise: no spatial recall (Remember/Blitz), no sequence memory
-  // (Flash), no sustained tracking (MOT) - this is pure speeded go/no-go
-  // decision + inhibition, closest to what real game situations demand
-  // (react to the real cue, don't react to the decoy).
-  const GNG_PREFS_KEY = "fwmc-gng-prefs-v1";
-  const GNG_DIFFICULTIES = {
-    leicht: { title: "Leicht", stimMs: 600, isiMin: 1000, isiMax: 1600 },
-    mittel: { title: "Mittel", stimMs: 450, isiMin: 800, isiMax: 1300 },
-    schwer: { title: "Schwer", stimMs: 300, isiMin: 600, isiMax: 1000 },
-  };
-  const GNG_TRIAL_COUNT = 24;
-  const GNG_NOGO_RATIO = 0.2;
-  const gngPrefs = { difficulty: "mittel" };
-  function loadGngPrefs() {
-    const saved = readJSON(GNG_PREFS_KEY, null);
-    if (saved && typeof saved === "object") Object.assign(gngPrefs, saved);
-    if (!GNG_DIFFICULTIES[gngPrefs.difficulty]) gngPrefs.difficulty = "mittel";
-  }
-  loadGngPrefs();
-  function saveGngPrefsToStorage() { writeJSON(GNG_PREFS_KEY, gngPrefs); }
-
-  const GNG_BEST_KEY = "fwmc-gng-best-v1"; // { [difficulty]: bestAccuracyPct }
-  function gngBestFor() { return readJSON(GNG_BEST_KEY, {})[gngPrefs.difficulty] || 0; }
-  function saveGngBest(accuracyPct) {
-    const all = readJSON(GNG_BEST_KEY, {});
-    if (accuracyPct > (all[gngPrefs.difficulty] || 0)) { all[gngPrefs.difficulty] = accuracyPct; writeJSON(GNG_BEST_KEY, all); return true; }
-    return false;
-  }
-  function renderGngBest() {
-    const best = gngBestFor();
-    const text = best ? `Beste Genauigkeit (${GNG_DIFFICULTIES[gngPrefs.difficulty].title}): ${best}%` : "";
-    els.gngBestHint.textContent = text;
-    els.gngReadyBestHint.textContent = text;
-  }
-  function syncGngDifficultyUI() {
-    els.gngDifficultyRow.querySelectorAll("[data-gng-diff]").forEach((btn) => setActive(btn, btn.dataset.gngDiff === gngPrefs.difficulty));
-  }
-  els.gngDifficultyRow.querySelectorAll("[data-gng-diff]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      gngPrefs.difficulty = btn.dataset.gngDiff;
-      saveGngPrefsToStorage();
-      syncGngDifficultyUI();
-      renderGngBest();
-    });
-  });
-
-  els.gngOpenBtn.addEventListener("click", () => {
-    syncGngDifficultyUI();
-    renderGngBest();
-    showScreen("gngReady");
-  });
-  els.gngReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
-
-  // Same timer-wrapping trick as scheduleBlitzTimer/scheduleRememberTimer:
-  // records what's pending and when it fires, so Pause can cancel it and
-  // Resume can replay it with its exact remaining delay.
-  function scheduleGngTimer(fn, delayMs) {
-    gngState.timerFn = fn;
-    gngState.timerFiresAt = performance.now() + delayMs;
-    gngState.timer = setTimeout(() => { gngState.timer = null; fn(); }, delayMs);
-  }
-
-  function buildGngTrials() {
-    const n = GNG_TRIAL_COUNT;
-    const nogoCount = Math.round(n * GNG_NOGO_RATIO);
-    const trials = [];
-    for (let i = 0; i < n; i++) trials.push(i < nogoCount ? "nogo" : "go");
-    // Shuffle, then avoid two No-Go trials back to back - a run of
-    // consecutive No-Go trials would let the client just switch the
-    // "respond" impulse off instead of actually having to inhibit it.
-    for (let tries = 0; tries < 200; tries++) {
-      for (let i = trials.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [trials[i], trials[j]] = [trials[j], trials[i]];
-      }
-      let ok = true;
-      for (let i = 1; i < trials.length; i++) if (trials[i] === "nogo" && trials[i - 1] === "nogo") { ok = false; break; }
-      if (ok) break;
-    }
-    return trials;
-  }
-
-  let gngState = null;
-  function startGngGame() {
-    hideAllPlayers();
-    SCREENS.forEach((s) => { els[s].hidden = true; });
-    els.gngPlayer.hidden = false;
-    els.gngPlayerBar.hidden = false;
-    els.gngDonePanel.hidden = true;
-    els.gngPauseOverlay.hidden = true;
-    els.gngPauseBtn.hidden = false;
-    gngState = {
-      diff: GNG_DIFFICULTIES[gngPrefs.difficulty], trials: buildGngTrials(), index: -1, phase: "gap", responded: false,
-      hits: 0, misses: 0, falseAlarms: 0, correctInhibitions: 0, rts: [],
-      stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
-      startTime: performance.now(),
-    };
-    els.gngStimulus.className = "gng-stimulus";
-    els.gngHint.textContent = "Bereit? Gleich geht's los …";
-    els.gngProgressEl.textContent = `0/${gngState.trials.length}`;
-    requestWakeLock();
-    scheduleGngTimer(gngNextTrial, 1200);
-  }
-  els.gngReadyStartBtn.addEventListener("click", startGngGame);
-
-  function gngNextTrial() {
-    if (!gngState) return;
-    gngState.index++;
-    if (gngState.index >= gngState.trials.length) { gngFinish(); return; }
-    els.gngProgressEl.textContent = `${gngState.index + 1}/${gngState.trials.length}`;
-    gngState.phase = "gap";
-    gngState.responded = false;
-    els.gngStimulus.className = "gng-stimulus";
-    const isi = gngState.diff.isiMin + Math.random() * (gngState.diff.isiMax - gngState.diff.isiMin);
-    scheduleGngTimer(gngShowStimulus, isi);
-  }
-  function gngShowStimulus() {
-    if (!gngState) return;
-    const kind = gngState.trials[gngState.index];
-    gngState.phase = kind; // "go" or "nogo"
-    gngState.stimAt = performance.now();
-    gngState.responded = false;
-    els.gngHint.textContent = "";
-    els.gngStimulus.className = "gng-stimulus " + kind;
-    scheduleGngTimer(gngEndStimulus, gngState.diff.stimMs);
-  }
-  function gngEndStimulus() {
-    if (!gngState) return;
-    if (gngState.phase === "go" && !gngState.responded) { gngState.misses++; els.gngHint.textContent = "Verpasst!"; }
-    else if (gngState.phase === "nogo" && !gngState.responded) gngState.correctInhibitions++;
-    gngState.phase = "gap";
-    els.gngStimulus.className = "gng-stimulus";
-    gngNextTrial();
-  }
-  function gngTap() {
-    if (!gngState || gngState.paused || gngState.responded) return;
-    if (gngState.phase === "go") {
-      gngState.responded = true;
-      gngState.hits++;
-      gngState.rts.push(performance.now() - gngState.stimAt);
-      els.gngStimulus.classList.add("hit");
-    } else if (gngState.phase === "nogo") {
-      gngState.responded = true;
-      gngState.falseAlarms++;
-      els.gngStimulus.classList.add("wrong");
-      els.gngHint.textContent = "Fehlalarm – das war Rot!";
-    }
-    // Taps during the "gap" phase (no stimulus shown yet) are ignored -
-    // reaction time is measured stimulus-locked, same as the paradigm this
-    // is grounded in.
-  }
-  els.gngStage.addEventListener("click", gngTap);
-
-  // Pause just stops/replays the pending timer, no live background-adjust
-  // overlay - background colour customisation was skipped for this first
-  // Test-Bereich exercise (explicitly optional per the client's own
-  // instruction) so there is nothing to adjust while paused.
-  function pauseGng() {
-    if (!gngState || gngState.paused) return;
-    gngState.paused = true;
-    gngState.pausedAt = performance.now();
-    if (gngState.timer) {
-      clearTimeout(gngState.timer);
-      gngState.timer = null;
-      gngState.timerRemainingMs = Math.max(0, gngState.timerFiresAt - gngState.pausedAt);
-    }
-    els.gngPauseBtn.hidden = true;
-    els.gngPauseOverlay.hidden = false;
-  }
-  function resumeGng() {
-    if (!gngState || !gngState.paused) return;
-    const pausedMs = performance.now() - gngState.pausedAt;
-    gngState.startTime += pausedMs;
-    gngState.stimAt += pausedMs;
-    gngState.paused = false;
-    if (gngState.timerFn && gngState.timerRemainingMs != null) {
-      scheduleGngTimer(gngState.timerFn, gngState.timerRemainingMs);
-      gngState.timerRemainingMs = null;
-    }
-    els.gngPauseOverlay.hidden = true;
-    els.gngPauseBtn.hidden = false;
-  }
-  els.gngPauseBtn.addEventListener("click", pauseGng);
-  els.gngResumeBtn.addEventListener("click", resumeGng);
-
-  function finalizeGngRun(state, totalTrials) {
-    els.gngPauseOverlay.hidden = true;
-    els.gngPlayerBar.hidden = true;
-    const correct = state.hits + state.correctInhibitions;
-    const accuracyPct = Math.round(100 * correct / totalTrials);
-    const avgRt = state.rts.length ? Math.round(state.rts.reduce((a, b) => a + b, 0) / state.rts.length) : null;
-    const isRecord = saveGngBest(accuracyPct);
-    renderGngBest();
-    const played = (performance.now() - state.startTime) / 1000;
-    els.gngDoneSummary.textContent =
-      `Go/No-Go (${state.diff.title}) · ${accuracyPct}% richtig` +
-      (avgRt != null ? ` · Ø Reaktionszeit ${avgRt} ms` : "") +
-      ` · ${state.falseAlarms} Fehlalarm${state.falseAlarms === 1 ? "" : "e"}` +
-      (isRecord ? " · Neue Bestleistung!" : "");
-    const id = addHistory({ kind: "gng", title: "Go/No-Go Reaktionstest", seconds: Math.round(played), note: `${accuracyPct}% richtig${avgRt != null ? `, Ø ${avgRt} ms` : ""}` });
-    renderRating(els.gngRating, id, "Wie fokussiert warst du?");
-    els.gngDonePanel.hidden = false;
-  }
-  function gngFinish() {
-    if (!gngState) return;
-    const state = gngState;
-    gngState = null;
-    releaseWakeLock();
-    if (document.fullscreenElement === els.gngPlayer) document.exitFullscreen().catch(() => {});
-    els.gngFsHint.hidden = true;
-    finalizeGngRun(state, state.trials.length);
-  }
-  // "Beenden" doubles as the finish action, same convention as Remember/
-  // Blitz/Flash/MOT - quitting early still shows a summary as long as at
-  // least a few trials were actually resolved, otherwise it's not worth a
-  // done-panel and just exits like Blitz-Raster does at level 0.
-  function gngStop() {
-    if (!gngState) return;
-    if (gngState.timer) clearTimeout(gngState.timer);
-    const state = gngState;
-    gngState = null;
-    els.gngPauseOverlay.hidden = true;
-    releaseWakeLock();
-    if (document.fullscreenElement === els.gngPlayer) document.exitFullscreen().catch(() => {});
-    els.gngFsHint.hidden = true;
-    const resolved = state.hits + state.misses + state.falseAlarms + state.correctInhibitions;
-    if (resolved >= 4) {
-      finalizeGngRun(state, resolved);
-    } else {
-      els.gngPlayer.hidden = true;
-      showScreen("testHome");
-    }
-  }
-  els.gngBackBtn.addEventListener("click", gngStop);
-  els.gngAgainBtn.addEventListener("click", () => { els.gngDonePanel.hidden = true; startGngGame(); });
-  els.gngDoneBackBtn.addEventListener("click", () => { els.gngPlayer.hidden = true; els.gngDonePanel.hidden = true; showScreen("testHome"); });
-
   // ==== Workout engine ====
   // One engine serves three situations: a block inside a coach-authored/
   // self-built plan (workoutPlan set), a single block inside a cross-section
@@ -7822,6 +7586,509 @@
       renderComboBlockList();
     },
   });
+
+  // ==== Go/No-Go Reaktionstest (Test-Bereich, first autonomous entry) ====
+  // Classic Go/No-Go inhibitory-control paradigm: a series of single
+  // stimuli, most demanding a fast "Go" response, a minority demanding the
+  // response be WITHHELD ("No-Go"). Research on this task in sport/exercise
+  // contexts measures reaction time to Go stimuli plus the false-alarm
+  // (commission-error) rate on No-Go trials as the key outcome (see e.g. the
+  // 2023 ScienceDirect meta-analysis on inhibitory control in sport
+  // performance, and PMC8048576 on go/no-go ISI design) - both are reported
+  // here. The classic design keeps the No-Go rate a MINORITY (commonly ~20%,
+  // per PMC12650625/PMC8048576-style designs) rather than 50/50, precisely
+  // so a prepotent "respond" tendency actually builds up and there is
+  // something real to inhibit - a 50/50 split would just be simple choice
+  // reaction time, not response inhibition. Distinct from every other Test/
+  // NAT exercise: no spatial recall (Remember/Blitz), no sequence memory
+  // (Flash), no sustained tracking (MOT) - this is pure speeded go/no-go
+  // decision + inhibition, closest to what real game situations demand
+  // (react to the real cue, don't react to the decoy).
+  const GNG_PREFS_KEY = "fwmc-gng-prefs-v1";
+  const GNG_DIFFICULTIES = {
+    leicht: { title: "Leicht", stimMs: 600, isiMin: 1000, isiMax: 1600 },
+    mittel: { title: "Mittel", stimMs: 450, isiMin: 800, isiMax: 1300 },
+    schwer: { title: "Schwer", stimMs: 300, isiMin: 600, isiMax: 1000 },
+  };
+  const GNG_TRIAL_COUNT = 24;
+  const GNG_NOGO_RATIO = 0.2;
+  const gngPrefs = { difficulty: "mittel" };
+  function loadGngPrefs() {
+    const saved = readJSON(GNG_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(gngPrefs, saved);
+    if (!GNG_DIFFICULTIES[gngPrefs.difficulty]) gngPrefs.difficulty = "mittel";
+  }
+  loadGngPrefs();
+  function saveGngPrefsToStorage() { writeJSON(GNG_PREFS_KEY, gngPrefs); }
+
+  const GNG_BEST_KEY = "fwmc-gng-best-v1"; // { [difficulty]: bestAccuracyPct }
+  function gngBestFor() { return readJSON(GNG_BEST_KEY, {})[gngPrefs.difficulty] || 0; }
+  function saveGngBest(accuracyPct) {
+    const all = readJSON(GNG_BEST_KEY, {});
+    if (accuracyPct > (all[gngPrefs.difficulty] || 0)) { all[gngPrefs.difficulty] = accuracyPct; writeJSON(GNG_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderGngBest() {
+    const best = gngBestFor();
+    const text = best ? `Beste Genauigkeit (${GNG_DIFFICULTIES[gngPrefs.difficulty].title}): ${best}%` : "";
+    els.gngBestHint.textContent = text;
+    els.gngReadyBestHint.textContent = text;
+  }
+  function syncGngDifficultyUI() {
+    els.gngDifficultyRow.querySelectorAll("[data-gng-diff]").forEach((btn) => setActive(btn, btn.dataset.gngDiff === gngPrefs.difficulty));
+  }
+  els.gngDifficultyRow.querySelectorAll("[data-gng-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      gngPrefs.difficulty = btn.dataset.gngDiff;
+      saveGngPrefsToStorage();
+      syncGngDifficultyUI();
+      renderGngBest();
+    });
+  });
+
+  els.gngOpenBtn.addEventListener("click", () => {
+    syncGngDifficultyUI();
+    renderGngBest();
+    showScreen("gngReady");
+  });
+  els.gngReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Same timer-wrapping trick as scheduleBlitzTimer/scheduleRememberTimer:
+  // records what's pending and when it fires, so Pause can cancel it and
+  // Resume can replay it with its exact remaining delay.
+  function scheduleGngTimer(fn, delayMs) {
+    gngState.timerFn = fn;
+    gngState.timerFiresAt = performance.now() + delayMs;
+    gngState.timer = setTimeout(() => { gngState.timer = null; fn(); }, delayMs);
+  }
+
+  function buildGngTrials() {
+    const n = GNG_TRIAL_COUNT;
+    const nogoCount = Math.round(n * GNG_NOGO_RATIO);
+    const trials = [];
+    for (let i = 0; i < n; i++) trials.push(i < nogoCount ? "nogo" : "go");
+    // Shuffle, then avoid two No-Go trials back to back - a run of
+    // consecutive No-Go trials would let the client just switch the
+    // "respond" impulse off instead of actually having to inhibit it.
+    for (let tries = 0; tries < 200; tries++) {
+      for (let i = trials.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [trials[i], trials[j]] = [trials[j], trials[i]];
+      }
+      let ok = true;
+      for (let i = 1; i < trials.length; i++) if (trials[i] === "nogo" && trials[i - 1] === "nogo") { ok = false; break; }
+      if (ok) break;
+    }
+    return trials;
+  }
+
+  let gngState = null;
+  function startGngGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.gngPlayer.hidden = false;
+    els.gngPlayerBar.hidden = false;
+    els.gngDonePanel.hidden = true;
+    els.gngPauseOverlay.hidden = true;
+    els.gngPauseBtn.hidden = false;
+    gngState = {
+      diff: GNG_DIFFICULTIES[gngPrefs.difficulty], trials: buildGngTrials(), index: -1, phase: "gap", responded: false,
+      hits: 0, misses: 0, falseAlarms: 0, correctInhibitions: 0, rts: [],
+      stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      startTime: performance.now(),
+    };
+    els.gngStimulus.className = "gng-stimulus";
+    els.gngHint.textContent = "Bereit? Gleich geht's los …";
+    els.gngProgressEl.textContent = `0/${gngState.trials.length}`;
+    requestWakeLock();
+    scheduleGngTimer(gngNextTrial, 1200);
+  }
+  els.gngReadyStartBtn.addEventListener("click", startGngGame);
+
+  function gngNextTrial() {
+    if (!gngState) return;
+    gngState.index++;
+    if (gngState.index >= gngState.trials.length) { gngFinish(); return; }
+    els.gngProgressEl.textContent = `${gngState.index + 1}/${gngState.trials.length}`;
+    gngState.phase = "gap";
+    gngState.responded = false;
+    els.gngStimulus.className = "gng-stimulus";
+    const isi = gngState.diff.isiMin + Math.random() * (gngState.diff.isiMax - gngState.diff.isiMin);
+    scheduleGngTimer(gngShowStimulus, isi);
+  }
+  function gngShowStimulus() {
+    if (!gngState) return;
+    const kind = gngState.trials[gngState.index];
+    gngState.phase = kind; // "go" or "nogo"
+    gngState.stimAt = performance.now();
+    gngState.responded = false;
+    els.gngHint.textContent = "";
+    els.gngStimulus.className = "gng-stimulus " + kind;
+    scheduleGngTimer(gngEndStimulus, gngState.diff.stimMs);
+  }
+  function gngEndStimulus() {
+    if (!gngState) return;
+    if (gngState.phase === "go" && !gngState.responded) { gngState.misses++; els.gngHint.textContent = "Verpasst!"; }
+    else if (gngState.phase === "nogo" && !gngState.responded) gngState.correctInhibitions++;
+    gngState.phase = "gap";
+    els.gngStimulus.className = "gng-stimulus";
+    gngNextTrial();
+  }
+  function gngTap() {
+    if (!gngState || gngState.paused || gngState.responded) return;
+    if (gngState.phase === "go") {
+      gngState.responded = true;
+      gngState.hits++;
+      gngState.rts.push(performance.now() - gngState.stimAt);
+      els.gngStimulus.classList.add("hit");
+    } else if (gngState.phase === "nogo") {
+      gngState.responded = true;
+      gngState.falseAlarms++;
+      els.gngStimulus.classList.add("wrong");
+      els.gngHint.textContent = "Fehlalarm – das war Rot!";
+    }
+    // Taps during the "gap" phase (no stimulus shown yet) are ignored -
+    // reaction time is measured stimulus-locked, same as the paradigm this
+    // is grounded in.
+  }
+  els.gngStage.addEventListener("click", gngTap);
+
+  // Pause just stops/replays the pending timer, no live background-adjust
+  // overlay - background colour customisation was skipped for this first
+  // Test-Bereich exercise (explicitly optional per the client's own
+  // instruction) so there is nothing to adjust while paused.
+  function pauseGng() {
+    if (!gngState || gngState.paused) return;
+    gngState.paused = true;
+    gngState.pausedAt = performance.now();
+    if (gngState.timer) {
+      clearTimeout(gngState.timer);
+      gngState.timer = null;
+      gngState.timerRemainingMs = Math.max(0, gngState.timerFiresAt - gngState.pausedAt);
+    }
+    els.gngPauseBtn.hidden = true;
+    els.gngPauseOverlay.hidden = false;
+  }
+  function resumeGng() {
+    if (!gngState || !gngState.paused) return;
+    const pausedMs = performance.now() - gngState.pausedAt;
+    gngState.startTime += pausedMs;
+    gngState.stimAt += pausedMs;
+    gngState.paused = false;
+    if (gngState.timerFn && gngState.timerRemainingMs != null) {
+      scheduleGngTimer(gngState.timerFn, gngState.timerRemainingMs);
+      gngState.timerRemainingMs = null;
+    }
+    els.gngPauseOverlay.hidden = true;
+    els.gngPauseBtn.hidden = false;
+  }
+  els.gngPauseBtn.addEventListener("click", pauseGng);
+  els.gngResumeBtn.addEventListener("click", resumeGng);
+
+  function finalizeGngRun(state, totalTrials) {
+    els.gngPauseOverlay.hidden = true;
+    els.gngPlayerBar.hidden = true;
+    const correct = state.hits + state.correctInhibitions;
+    const accuracyPct = Math.round(100 * correct / totalTrials);
+    const avgRt = state.rts.length ? Math.round(state.rts.reduce((a, b) => a + b, 0) / state.rts.length) : null;
+    const isRecord = saveGngBest(accuracyPct);
+    renderGngBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.gngDoneSummary.textContent =
+      `Go/No-Go (${state.diff.title}) · ${accuracyPct}% richtig` +
+      (avgRt != null ? ` · Ø Reaktionszeit ${avgRt} ms` : "") +
+      ` · ${state.falseAlarms} Fehlalarm${state.falseAlarms === 1 ? "" : "e"}` +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const id = addHistory({ kind: "gng", title: "Go/No-Go Reaktionstest", seconds: Math.round(played), note: `${accuracyPct}% richtig${avgRt != null ? `, Ø ${avgRt} ms` : ""}` });
+    renderRating(els.gngRating, id, "Wie fokussiert warst du?");
+    els.gngDonePanel.hidden = false;
+  }
+  function gngFinish() {
+    if (!gngState) return;
+    const state = gngState;
+    gngState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.gngPlayer) document.exitFullscreen().catch(() => {});
+    els.gngFsHint.hidden = true;
+    finalizeGngRun(state, state.trials.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as Remember/
+  // Blitz/Flash/MOT - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved, otherwise it's not worth a
+  // done-panel and just exits like Blitz-Raster does at level 0.
+  function gngStop() {
+    if (!gngState) return;
+    if (gngState.timer) clearTimeout(gngState.timer);
+    const state = gngState;
+    gngState = null;
+    els.gngPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.gngPlayer) document.exitFullscreen().catch(() => {});
+    els.gngFsHint.hidden = true;
+    const resolved = state.hits + state.misses + state.falseAlarms + state.correctInhibitions;
+    if (resolved >= 4) {
+      finalizeGngRun(state, resolved);
+    } else {
+      els.gngPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.gngBackBtn.addEventListener("click", gngStop);
+  els.gngAgainBtn.addEventListener("click", () => { els.gngDonePanel.hidden = true; startGngGame(); });
+  els.gngDoneBackBtn.addEventListener("click", () => { els.gngPlayer.hidden = true; els.gngDonePanel.hidden = true; showScreen("testHome"); });
+
+  // ==== Test-Bereich: Positions-Gedächtnis (N-Back) ====
+  // First exercise added under the autonomous "Test" section (see CLAUDE.md's
+  // "Test-Bereich (autonomous, ongoing)"). Grounded in the classic n-back
+  // working-memory paradigm (Kirchner 1958) and its adaptive form used for
+  // training studies (Jaeggi et al. 2008, PNAS "Improving fluid intelligence
+  // with training on working memory"): a single stimulus position appears at
+  // a time in a 3×3 grid; the client reports whether the CURRENT position
+  // matches the one exactly N steps back. This is a genuinely distinct
+  // mechanic from every existing NAT memory exercise - Remember/Blitz-Raster/
+  // Flash Speicher Test all show a set/sequence ONCE and then ask for pure
+  // recall afterwards, whereas n-back is continuous *updating*: every single
+  // trial is simultaneously a probe on the last one and new material to hold
+  // for the next. Only the visuospatial half of Jaeggi's DUAL n-back was
+  // built (no simultaneous audio letter stream) - a deliberate v1 scope cut,
+  // see the roster entry in CLAUDE.md for why.
+  // Timing/adaptive parameters taken directly from Jaeggi et al. 2008's own
+  // single-modality stream, not guessed: 500ms stimulus, 2500ms ISI (3000ms/
+  // trial), a block of 20+N trials, and the exact published adaptive rule -
+  // ≤2 errors in a block → N+1, >5 errors → N-1 (floor 1), otherwise N stays.
+  // "Bei-Fehler reset2/backOne/stay" does NOT apply here on purpose: that
+  // convention is about ONE wrong tap ending a round outright (Remember/
+  // Blitz/Flash/MOT), but n-back's own paradigm is judged over a whole block
+  // of many trials, not a single mistake - inventing a per-tap fail mode
+  // would misrepresent the paradigm being trained. Likewise no background
+  // colour/intensity or Zusatzaufgabe (all explicitly optional for a first
+  // Test pass, and there is no obvious per-domain colour choice here - the
+  // grid itself, not a tinted backdrop, is the whole stimulus).
+  const NBACK_STIMULUS_MS = 500;
+  const NBACK_ISI_MS = 2500;
+  const NBACK_MATCH_PROB = 0.3; // standard target-trial rate in n-back implementations (~20-35%)
+  const NBACK_BLOCK_BASE_TRIALS = 20; // block length = 20 + N, per Jaeggi et al. 2008
+
+  const TEST_NBACK_PREFS_KEY = "fwmc-test-nback-prefs-v1";
+  const testNbackPrefs = { startLevel: 2 }; // Jaeggi's own studies start every participant at 2-back
+  (function loadTestNbackPrefs() {
+    const saved = readJSON(TEST_NBACK_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(testNbackPrefs, saved);
+    if (![1, 2, 3].includes(testNbackPrefs.startLevel)) testNbackPrefs.startLevel = 2;
+  })();
+  function saveTestNbackPrefsToStorage() { writeJSON(TEST_NBACK_PREFS_KEY, testNbackPrefs); }
+
+  const TEST_NBACK_BEST_KEY = "fwmc-test-nback-best-v1"; // plain number: highest N level ever played to the end of a block
+  function testNbackBest() { return readJSON(TEST_NBACK_BEST_KEY, 0); }
+  function saveTestNbackBest(level) {
+    const cur = testNbackBest();
+    if (level > cur) { writeJSON(TEST_NBACK_BEST_KEY, level); return true; }
+    return false;
+  }
+  function renderTestNbackBest() {
+    const b = testNbackBest();
+    els.testNbackBestHint.textContent = b ? `Bestleistung: Stufe ${b}` : "";
+    els.testNbackReadyBestHint.textContent = b
+      ? `Deine bisherige Bestleistung: Stufe ${b}.`
+      : "Noch keine Bestleistung – leg los!";
+  }
+  renderTestNbackBest();
+
+  function syncTestNbackStartUI() {
+    document.querySelectorAll("#testNbackStartRow [data-nback-start]").forEach((el) => setActive(el, Number(el.dataset.nbackStart) === testNbackPrefs.startLevel));
+  }
+  document.querySelectorAll("#testNbackStartRow [data-nback-start]").forEach((el) => {
+    el.addEventListener("click", () => {
+      testNbackPrefs.startLevel = Number(el.dataset.nbackStart);
+      saveTestNbackPrefsToStorage();
+      syncTestNbackStartUI();
+    });
+  });
+  els.testNbackOpenBtn.addEventListener("click", () => {
+    syncTestNbackStartUI();
+    renderTestNbackBest();
+    showScreen("testNbackReady");
+  });
+  els.testNbackReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // ---- Sequence generation: a match trial reuses the position from exactly
+  // N steps back; a non-match trial re-rolls until it genuinely differs from
+  // that same target position, so "isMatch" is never accidentally wrong. ----
+  function nbackGenerateBlock(n, trialCount) {
+    const seq = [];
+    for (let i = 0; i < trialCount; i++) {
+      const isMatch = i >= n && Math.random() < NBACK_MATCH_PROB;
+      let pos;
+      if (isMatch) {
+        pos = seq[i - n].pos;
+      } else {
+        do { pos = Math.floor(Math.random() * 9); } while (i >= n && pos === seq[i - n].pos);
+      }
+      seq.push({ pos, isMatch });
+    }
+    return seq;
+  }
+
+  function renderTestNbackGrid() {
+    const state = testNbackState;
+    els.testNbackGrid.innerHTML = "";
+    const litPos = state && state.phase === "show" && state.trialIndex >= 0 ? state.seq[state.trialIndex].pos : -1;
+    for (let i = 0; i < 9; i++) {
+      const el = document.createElement("div");
+      el.className = "nback-cell" + (i === litPos ? " lit" : "");
+      els.testNbackGrid.appendChild(el);
+    }
+  }
+
+  function scheduleNbackTimer(fn, delayMs) {
+    testNbackState.timerFn = fn;
+    testNbackState.timerFiresAt = performance.now() + delayMs;
+    testNbackState.timer = setTimeout(fn, delayMs);
+  }
+
+  function flashNbackMatchBtn(cls) {
+    els.testNbackMatchBtn.classList.remove("correct", "wrong");
+    void els.testNbackMatchBtn.offsetWidth; // restart the transition if the same class was just applied
+    els.testNbackMatchBtn.classList.add(cls);
+    setTimeout(() => { if (els.testNbackMatchBtn) els.testNbackMatchBtn.classList.remove(cls); }, 350);
+  }
+
+  function testNbackUpdateStatus() {
+    const state = testNbackState;
+    els.testNbackLevelEl.textContent = `Stufe ${state.level} · ${state.trialIndex + 1}/${state.seq.length}`;
+  }
+
+  function testNbackNextTrial() {
+    const state = testNbackState;
+    state.trialIndex++;
+    if (state.trialIndex >= state.seq.length) { testNbackFinishBlock(); return; }
+    state.responded = false;
+    state.phase = "show";
+    renderTestNbackGrid();
+    testNbackUpdateStatus();
+    els.testNbackHint.textContent = state.trialIndex < state.level ? "Merken …" : "Übereinstimmung mit vorhin?";
+    scheduleNbackTimer(testNbackHideStimulus, NBACK_STIMULUS_MS);
+  }
+  function testNbackHideStimulus() {
+    testNbackState.phase = "gap";
+    renderTestNbackGrid();
+    scheduleNbackTimer(testNbackEndTrial, NBACK_ISI_MS);
+  }
+  function testNbackEndTrial() {
+    const state = testNbackState;
+    const trial = state.seq[state.trialIndex];
+    const correct = trial.isMatch === state.responded;
+    if (!correct) state.errors++;
+    flashNbackMatchBtn(correct ? "correct" : "wrong");
+    testNbackNextTrial();
+  }
+  function testNbackTapMatch() {
+    const state = testNbackState;
+    if (!state || state.paused || state.responded) return;
+    if (state.phase !== "show" && state.phase !== "gap") return;
+    state.responded = true;
+  }
+  els.testNbackMatchBtn.addEventListener("click", testNbackTapMatch);
+
+  function testNbackStartBlock() {
+    const state = testNbackState;
+    state.seq = nbackGenerateBlock(state.level, NBACK_BLOCK_BASE_TRIALS + state.level);
+    state.trialIndex = -1;
+    state.errors = 0;
+    testNbackNextTrial();
+  }
+  // Adaptive rule per Jaeggi et al. 2008: ≤2 errors in the block → harder;
+  // >5 errors → easier; otherwise the level carries over unchanged.
+  function testNbackFinishBlock() {
+    const state = testNbackState;
+    state.cleared = Math.max(state.cleared, state.level);
+    const delta = state.errors <= 2 ? 1 : state.errors > 5 ? -1 : 0;
+    const newLevel = Math.max(1, state.level + delta);
+    const changeLabel = delta > 0 ? "Stufe steigt" : delta < 0 ? "Stufe sinkt" : "Stufe bleibt gleich";
+    els.testNbackHint.textContent = `Block beendet · ${state.errors} Fehler · ${changeLabel} auf ${newLevel}`;
+    state.phase = "betweenBlocks";
+    renderTestNbackGrid();
+    state.level = newLevel;
+    state.blockIndex++;
+    scheduleNbackTimer(testNbackStartBlock, 1800);
+  }
+
+  let testNbackState = null;
+  function startTestNbackGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.testNbackPlayer.hidden = false;
+    els.testNbackPlayerBar.hidden = false;
+    els.testNbackDonePanel.hidden = true;
+    els.testNbackPauseOverlay.hidden = true;
+    els.testNbackPauseBtn.hidden = false;
+    testNbackState = {
+      level: testNbackPrefs.startLevel, cleared: 0, blockIndex: 0, seq: [], trialIndex: -1,
+      phase: "idle", responded: false, errors: 0, timer: null, timerFn: null, timerFiresAt: null,
+      timerRemainingMs: null, paused: false, startTime: performance.now(),
+    };
+    requestWakeLock();
+    testNbackStartBlock();
+  }
+  els.testNbackReadyStartBtn.addEventListener("click", startTestNbackGame);
+
+  // ---- Pause: cancel/replay the pending timer, same setTimeout trick as
+  // Remember/Blitz/Flash/MOT - no live background adjustment here since this
+  // exercise has no background setting to adjust (see note above). ----
+  function pauseTestNback() {
+    if (!testNbackState || testNbackState.paused) return;
+    testNbackState.paused = true;
+    testNbackState.pausedAt = performance.now();
+    if (testNbackState.timer) {
+      clearTimeout(testNbackState.timer);
+      testNbackState.timer = null;
+      testNbackState.timerRemainingMs = Math.max(0, testNbackState.timerFiresAt - testNbackState.pausedAt);
+    }
+    els.testNbackPauseBtn.hidden = true;
+    els.testNbackPauseOverlay.hidden = false;
+  }
+  function resumeTestNback() {
+    if (!testNbackState || !testNbackState.paused) return;
+    testNbackState.startTime += performance.now() - testNbackState.pausedAt;
+    testNbackState.paused = false;
+    if (testNbackState.timerFn && testNbackState.timerRemainingMs != null) {
+      scheduleNbackTimer(testNbackState.timerFn, testNbackState.timerRemainingMs);
+      testNbackState.timerRemainingMs = null;
+    }
+    els.testNbackPauseOverlay.hidden = true;
+    els.testNbackPauseBtn.hidden = false;
+  }
+  els.testNbackPauseBtn.addEventListener("click", pauseTestNback);
+  els.testNbackResumeBtn.addEventListener("click", resumeTestNback);
+
+  // "Beenden" doubles as the finish action, same convention as every other
+  // NAT/Test memory exercise - n-back is endless/progressive with no fixed end.
+  function testNbackStop() {
+    if (!testNbackState) return;
+    if (testNbackState.timer) clearTimeout(testNbackState.timer);
+    const state = testNbackState;
+    testNbackState = null;
+    els.testNbackPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.testNbackPlayer) document.exitFullscreen().catch(() => {});
+    els.testNbackFsHint.hidden = true;
+    if (state.cleared > 0) {
+      const isRecord = saveTestNbackBest(state.cleared);
+      renderTestNbackBest();
+      const played = (performance.now() - state.startTime) / 1000;
+      els.testNbackPlayerBar.hidden = true;
+      els.testNbackDoneSummary.textContent = `Positions-Gedächtnis (N-Back) · Stufe ${state.cleared} erreicht` + (isRecord ? " · Neue Bestleistung!" : "");
+      const id = addHistory({ kind: "test-nback", title: "Positions-Gedächtnis (N-Back)", seconds: Math.round(played), note: `Stufe ${state.cleared} erreicht` });
+      renderRating(els.testNbackRating, id, "Wie war deine Konzentration?");
+      els.testNbackDonePanel.hidden = false;
+    } else {
+      els.testNbackPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.testNbackBackBtn.addEventListener("click", testNbackStop);
+  els.testNbackAgainBtn.addEventListener("click", () => { els.testNbackDonePanel.hidden = true; startTestNbackGame(); });
+  els.testNbackDoneBackBtn.addEventListener("click", () => { els.testNbackPlayer.hidden = true; els.testNbackDonePanel.hidden = true; showScreen("testHome"); });
 
   // ---- Start-up ----
   renderHistory();

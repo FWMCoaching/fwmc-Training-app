@@ -824,6 +824,30 @@ doesn't:
   rating/`addHistory()`/`wireFullscreen()` conventions; new CSS is just
   `.gng-stage`/`.gng-stimulus` (a plain circle, green/red states, fixed
   hex colours, no `var(--...)`). Test: `tests/gng_test.py`.
+- **Positions-Gedächtnis (N-Back)** (second autonomous entry, 2026-09-25,
+  same firing that also recovered the Go/No-Go push - see the note above):
+  classic spatial N-back working-memory task - one cell in a 3×3 grid
+  lights up per trial, the client taps "Übereinstimmung!" whenever the
+  current position matches the one shown N trials back. Explicitly
+  grounded in Jaeggi et al. 2008's adaptive dual/single N-back protocol
+  (cited in-code): block length `NBACK_BLOCK_BASE_TRIALS + N` (20 + N),
+  `NBACK_MATCH_PROB = 0.3` (the standard ~20-35% target-trial rate), and
+  the adaptive rule after each block - ≤2 errors → N goes up, >5 → N goes
+  down, otherwise unchanged (`testNbackFinishBlock()`). No fixed "level" a
+  client sets themselves like Remember/Blitz/Flash/MOT; the exercise picks
+  its own difficulty via this adaptive rule, so the done-panel/best-hint
+  report "höchstes erreichtes N" instead. Each trial is stimulus
+  (`NBACK_STIMULUS_MS` = 500ms) + ISI (`NBACK_ISI_MS` = 2500ms); the
+  correct/wrong flash on the match button is DEFERRED to the end of that
+  window (`testNbackEndTrial()`), not shown immediately on tap - a trial's
+  correctness can't be judged until its full response window (which spans
+  both the "show" and "gap" phases) actually closes. Reuses
+  `.remember-hint`, pause/resume-with-timer-remaining, `wireFullscreen()`,
+  done-panel/rating/`addHistory()` conventions; new CSS is
+  `.nback-stage`/`.nback-grid`/`.nback-cell`/`.nback-match-btn` (fixed hex
+  colours throughout, no `var(--...)`). Built independently alongside
+  Go/No-Go with no collision or duplication - the firing correctly read
+  the roster above before picking this. Test: `tests/nback_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 

@@ -608,6 +608,11 @@
       <span class="fc-desc">Bei Gr&uuml;n so schnell wie m&ouml;glich antippen, bei Rot stehen bleiben &ndash; trainiert Reaktionszeit und Impulskontrolle.</span>
       <span class="fc-meta" id="gngBestHint"></span>
     </button>
+    <button class="featured-card" id="testNbackOpenBtn">
+      <span class="fc-title">Positions-Ged&auml;chtnis (N-Back)</span>
+      <span class="fc-desc">Ein Feld im 3&times;3-Raster leuchtet nacheinander auf &ndash; melde dich, wenn die aktuelle Position mit der von N Schritten zuvor &uuml;bereinstimmt. Die Schwierigkeit passt sich automatisch an deine Genauigkeit an.</span>
+      <span class="fc-meta" id="testNbackBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -639,6 +644,27 @@
   <div class="group-help" id="gngReadyBestHint"></div>
 
   <button class="start-btn" id="gngReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="testNbackReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="testNbackReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Positions-Ged&auml;chtnis (N-Back)</h1>
+  <p class="page-sub">Ein Feld im 3&times;3-Raster leuchtet kurz auf, dann das n&auml;chste &ndash; immer nur eins auf einmal. Tippe auf &bdquo;&Uuml;bereinstimmung&ldquo;, sobald die aktuelle Position genau der von N Schritten zuvor entspricht. Nach jeder Runde passt sich die Stufe N automatisch an deine Treffergenauigkeit an.</p>
+
+  <div class="group">
+    <div class="group-label">Startstufe</div>
+    <div class="choice-row" id="testNbackStartRow">
+      <button class="choice" data-nback-start="1">Leicht<small>1-Back</small></button>
+      <button class="choice" data-nback-start="2">Mittel<small>2-Back</small></button>
+      <button class="choice" data-nback-start="3">Schwer<small>3-Back</small></button>
+    </div>
+  </div>
+
+  <div class="group-help" id="testNbackReadyBestHint"></div>
+
+  <button class="start-btn" id="testNbackReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="rememberReady" hidden>
@@ -2414,6 +2440,40 @@
     <div class="rating" id="gngRating"></div>
     <button class="again" id="gngAgainBtn">Nochmal</button>
     <button class="back" id="gngDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="testNbackPlayer" hidden>
+  <div class="nback-stage" id="testNbackStage">
+    <div class="remember-hint" id="testNbackHint"></div>
+    <div class="nback-grid" id="testNbackGrid"></div>
+    <button class="nback-match-btn" id="testNbackMatchBtn">&Uuml;bereinstimmung!</button>
+  </div>
+  <div class="pause-overlay" id="testNbackPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="testNbackResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="testNbackPlayerBar">
+    <button id="testNbackBackBtn">&#10005; Beenden</button>
+    <button id="testNbackPauseBtn">Pause</button>
+    <span class="player-status" id="testNbackLevelEl"></span>
+    <button id="testNbackFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="testNbackFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="testNbackFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="testNbackFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="testNbackDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="testNbackDoneSummary"></p>
+    <div class="rating" id="testNbackRating"></div>
+    <button class="again" id="testNbackAgainBtn">Nochmal</button>
+    <button class="back" id="testNbackDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 
