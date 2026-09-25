@@ -2987,7 +2987,9 @@
   // else = Reiz) - so an add-on flash can never land outside its chosen
   // phase, whatever the host exercise's own timing looks like. Returns []
   // (i.e. nothing drawn) when the add-on is off for this exercise, or for
-  // Periphere Wahrnehmung/Hütchen sortieren themselves.
+  // Periphere Wahrnehmung/Hütchen sortieren themselves. The 3-2-1 countdown
+  // ("count" frames, always first) is neither Reiz nor Pause and is always
+  // skipped, so the add-on never starts before the exercise itself does.
   function buildAddonSchedule(ex, exId, hostSchedule, rng) {
     if (!ex || ex.type === "color-tap" || ex.type === "periph") return { schedule: [], sizeMode: "gleich" };
     const entry = getAddonEntry(exId);
@@ -2996,6 +2998,7 @@
     const phaseSet = new Set(entry.phases);
     const schedule = [];
     hostSchedule.forEach((frame) => {
+      if (frame.kind === "count") return;
       const phase = frame.kind === "blank" ? "pause" : "reiz";
       if (!phaseSet.has(phase)) return;
       let t = frame.t0;
