@@ -466,7 +466,7 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .blitz-stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;padding:24px}
 .blitz-grid{display:grid;gap:10px;width:100%;max-width:460px;aspect-ratio:1/1}
 .blitz-cell{
-  border-radius:16px;border:none;padding:0;background:var(--brand-pale);
+  border-radius:16px;border:none;padding:0;background:#e5f1f4;
   transition:background .12s ease,transform .1s ease;cursor:default;
 }
 .blitz-cell.lit{background:#f2a900}
@@ -476,15 +476,20 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .blitz-cell.wrong{background:#d32f2f}
 
 .flash-stage{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.flash-fixpoint{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  display:flex;align-items:center;justify-content:center;
+  font-family:"Magra",sans-serif;font-weight:700;pointer-events:none;
+}
 .flash-digit{
   position:absolute;transform:translate(-50%,-50%);
-  font-family:"Magra",sans-serif;font-weight:700;font-size:64px;color:var(--ink);
+  font-family:"Magra",sans-serif;font-weight:700;font-size:64px;color:#16232a;
 }
 .flash-input-panel{display:flex;flex-direction:column;align-items:center;gap:14px;padding:20px}
-.flash-input-label{font-size:15px;font-weight:700;color:var(--ink-soft)}
+.flash-input-label{font-size:15px;font-weight:700;color:#4f6168}
 .flash-typed-input{
   font-family:"Magra",sans-serif;font-size:40px;font-weight:700;letter-spacing:12px;text-align:center;
-  border:2px solid var(--line);border-radius:14px;padding:10px 18px;width:220px;background:var(--surface);color:var(--ink);
+  border:2px solid #dde6e8;border-radius:14px;padding:10px 18px;width:220px;background:#ffffff;color:#16232a;
 }
 
 .movement-stage{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 14px;position:relative;overflow-y:auto}

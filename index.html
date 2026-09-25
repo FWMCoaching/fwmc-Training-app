@@ -915,6 +915,22 @@
           </div>
         </div>
       </div>
+      <div class="group" id="flashFixGroup">
+        <div class="group-label">Fixpunkt in der Mitte</div>
+        <div class="choice-row two" id="flashFixToggleRow">
+          <button class="choice" data-flash-fix="1">Anzeigen</button>
+          <button class="choice" data-flash-fix="0">Ausblenden</button>
+        </div>
+        <div id="flashFixOptions">
+          <input type="text" id="flashFixCharInput" maxlength="3" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen f&uuml;r den Fixpunkt (leer lassen f&uuml;r den Standardpunkt)">
+          <div class="color-picker" id="flashFixColorPicker"></div>
+          <div class="slider-row">
+            <span class="slider-label">Gr&ouml;&szlig;e</span>
+            <input type="range" id="flashFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Gr&ouml;&szlig;e des Fixpunkts">
+            <span class="slider-value" id="flashFixSizeValue"></span>
+          </div>
+        </div>
+      </div>
     </div>
   </details>
 
@@ -1007,6 +1023,22 @@
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="flashTrainingBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="flashTrainingBgSaveConfirmBtn">Speichern</button>
+          </div>
+        </div>
+      </div>
+      <div class="group" id="flashTrainingFixGroup">
+        <div class="group-label">Fixpunkt in der Mitte</div>
+        <div class="choice-row two" id="flashTrainingFixToggleRow">
+          <button class="choice" data-flash-fix="1">Anzeigen</button>
+          <button class="choice" data-flash-fix="0">Ausblenden</button>
+        </div>
+        <div id="flashTrainingFixOptions">
+          <input type="text" id="flashTrainingFixCharInput" maxlength="3" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen f&uuml;r den Fixpunkt (leer lassen f&uuml;r den Standardpunkt)">
+          <div class="color-picker" id="flashTrainingFixColorPicker"></div>
+          <div class="slider-row">
+            <span class="slider-label">Gr&ouml;&szlig;e</span>
+            <input type="range" id="flashTrainingFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Gr&ouml;&szlig;e des Fixpunkts">
+            <span class="slider-value" id="flashTrainingFixSizeValue"></span>
           </div>
         </div>
       </div>
@@ -1816,6 +1848,7 @@
 <div class="player" id="flashPlayer" hidden>
   <div class="flash-stage" id="flashStage">
     <div class="remember-hint" id="flashHint"></div>
+    <div class="flash-fixpoint" id="flashFixpointEl" hidden></div>
     <div class="flash-digit" id="flashDigitEl" hidden></div>
     <div class="flash-input-panel" id="flashInputPanel" hidden>
       <div class="flash-input-label">Zahlen eingeben</div>

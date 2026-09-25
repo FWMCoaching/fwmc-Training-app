@@ -276,7 +276,32 @@ unrelated to the feature being changed.
   `BG_SOURCES` entry). Engine again mirrors Remember/Blitz's setTimeout/
   `scheduleFlashTimer` pause approach as its own copy, not a shared
   abstraction, for the same "phase models differ too much" reason as
-  Blitz-Raster. Not wired into Kombi - wasn't asked for.
+  Blitz-Raster. Not wired into Kombi - wasn't asked for. Also got a
+  togglable, customisable Fixpunkt (`flashPrefs.fixEnabled/fixChar/
+  fixColor/fixSize`, reusing `FIX_COLOR_LIB`) matching Periph's - the
+  client asked for it explicitly ("wie bei anderen bereits gestaltet")
+  since Flash's positioning already mirrors Periph's peripheral-focus
+  design. Unlike Periph's canvas dot (always drawn, no on/off), Flash's is
+  a DOM element (`#flashFixpointEl`, centred via CSS) with its own toggle,
+  and it stays visible for the entire run regardless of flash/gap/input
+  phase - `renderFlashFixpoint()` is the DOM equivalent of Periph's
+  `drawFixationPoint()`.
+- **Dark-mode contrast bug (fixed) - a pattern to watch for**: `.flash-
+  digit`/`.flash-input-label`/`.flash-typed-input` were styled with
+  `var(--ink)`/`var(--surface)`/`var(--line)`, which switch with the OS
+  colour scheme - but `.player`'s own background is hardcoded
+  `#ffffff` regardless of theme (by design: every exercise's background is
+  controlled by its own bgColorKey/bgIntensity, never by OS dark mode).
+  Every OTHER player-scoped element already uses fixed hex values for
+  exactly this reason (`.remember-hint`'s `#4f6168`, `.remember-marker`'s
+  `#fff`, etc.) - these three broke that convention, so in OS dark mode the
+  digit rendered pale grey-on-white ("zu durchsichtig"). Fixed to fixed hex
+  values. Also caught and fixed the same class of bug in `.blitz-cell`'s
+  unlit background (was `var(--brand-pale)`, dark-teal in dark mode against
+  a white stage - now a fixed `#e5f1f4`) while auditing for it. When adding
+  any new player/stage-scoped visual, use fixed hex colours, never a
+  `var(--...)` custom property - those are for the surrounding app chrome
+  (cards, buttons, settings screens), which correctly does follow OS theme.
 - **Dominanz-Gewichtung**: built for Periphere Wahrnehmung only so far (the
   user's own words: "Regler pro Zone, 1×–3×, erstmal nur bei Periphere
   Wahrnehmung testen" - explicitly a test on one exercise before deciding

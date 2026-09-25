@@ -1154,6 +1154,13 @@
     flashFsBtn: $("flashFsBtn"), flashFsHint: $("flashFsHint"), flashFsHintOpenBtn: $("flashFsHintOpenBtn"), flashFsHintClose: $("flashFsHintClose"),
     flashDonePanel: $("flashDonePanel"), flashDoneSummary: $("flashDoneSummary"), flashRating: $("flashRating"),
     flashAgainBtn: $("flashAgainBtn"), flashDoneBackBtn: $("flashDoneBackBtn"),
+    flashFixGroup: $("flashFixGroup"), flashFixToggleRow: $("flashFixToggleRow"), flashFixOptions: $("flashFixOptions"),
+    flashFixCharInput: $("flashFixCharInput"), flashFixColorPicker: $("flashFixColorPicker"),
+    flashFixSizeSlider: $("flashFixSizeSlider"), flashFixSizeValue: $("flashFixSizeValue"),
+    flashTrainingFixGroup: $("flashTrainingFixGroup"), flashTrainingFixToggleRow: $("flashTrainingFixToggleRow"), flashTrainingFixOptions: $("flashTrainingFixOptions"),
+    flashTrainingFixCharInput: $("flashTrainingFixCharInput"), flashTrainingFixColorPicker: $("flashTrainingFixColorPicker"),
+    flashTrainingFixSizeSlider: $("flashTrainingFixSizeSlider"), flashTrainingFixSizeValue: $("flashTrainingFixSizeValue"),
+    flashFixpointEl: $("flashFixpointEl"),
     rememberOpenFixed: $("rememberOpenFixed"), rememberOpenShuffle: $("rememberOpenShuffle"), rememberOpenTraining: $("rememberOpenTraining"),
     rememberBestFixed: $("rememberBestFixed"), rememberBestShuffle: $("rememberBestShuffle"), rememberBestTraining: $("rememberBestTraining"),
     rememberReady: $("rememberReady"), rememberReadyBackToHome: $("rememberReadyBackToHome"),
@@ -4945,6 +4952,10 @@
     trainingProgress: true,
     bgColorKey: "gruen",
     bgIntensity: 0,
+    fixEnabled: true,
+    fixChar: "",
+    fixColor: "grau",
+    fixSize: 1,
   };
   function loadFlashPrefs() {
     const saved = readJSON(FLASH_PREFS_KEY, null);
@@ -4961,6 +4972,10 @@
     if (typeof flashPrefs.trainingProgress !== "boolean") flashPrefs.trainingProgress = true;
     if (!STROOP_COLOR_BY_KEY[flashPrefs.bgColorKey]) flashPrefs.bgColorKey = "gruen";
     if (typeof flashPrefs.bgIntensity !== "number" || flashPrefs.bgIntensity < 0 || flashPrefs.bgIntensity > 1) flashPrefs.bgIntensity = 0;
+    if (typeof flashPrefs.fixEnabled !== "boolean") flashPrefs.fixEnabled = true;
+    if (typeof flashPrefs.fixChar !== "string") flashPrefs.fixChar = "";
+    if (!FIX_COLOR_BY_KEY[flashPrefs.fixColor]) flashPrefs.fixColor = "grau";
+    if (typeof flashPrefs.fixSize !== "number" || flashPrefs.fixSize < 0.6 || flashPrefs.fixSize > 2) flashPrefs.fixSize = 1;
   }
   function saveFlashPrefsToStorage() { writeJSON(FLASH_PREFS_KEY, flashPrefs); }
   loadFlashPrefs();
@@ -5004,6 +5019,85 @@
       },
     ],
   }, () => { saveFlashPrefsToStorage(); applyFlashBg(); }, "flash");
+
+  // ---- Fixpunkt in der Mitte - same customisation (Zeichen/Farbe/Größe)
+  // as Periphere Wahrnehmung's, reusing FIX_COLOR_LIB, but with its own
+  // on/off toggle: unlike Periph's canvas dot (always drawn), Flash
+  // Speicher Test's is a DOM element the client can switch off entirely,
+  // and it stays visible for the whole run (not tied to flash/gap/input
+  // phase) as a constant reference point. Shared flashPrefs.fix* fields,
+  // both ready screens carry a synced instance (same pattern as Bereich/
+  // Hintergrund above).
+  document.querySelectorAll("#flashFixToggleRow [data-flash-fix], #flashTrainingFixToggleRow [data-flash-fix]").forEach((el) => {
+    el.addEventListener("click", () => {
+      flashPrefs.fixEnabled = el.dataset.flashFix === "1";
+      saveFlashPrefsToStorage();
+      syncFlashFixUI();
+    });
+  });
+  buildSingleSelectPicker(els.flashFixColorPicker, FIX_COLOR_LIB, (key) => {
+    flashPrefs.fixColor = key;
+    saveFlashPrefsToStorage();
+    syncFlashFixUI();
+  });
+  buildSingleSelectPicker(els.flashTrainingFixColorPicker, FIX_COLOR_LIB, (key) => {
+    flashPrefs.fixColor = key;
+    saveFlashPrefsToStorage();
+    syncFlashFixUI();
+  });
+  function flashFixCharInputHandler(input) {
+    flashPrefs.fixChar = input.value.slice(0, 3);
+    saveFlashPrefsToStorage();
+    if (flashState) renderFlashFixpoint();
+  }
+  els.flashFixCharInput.addEventListener("input", () => flashFixCharInputHandler(els.flashFixCharInput));
+  els.flashTrainingFixCharInput.addEventListener("input", () => flashFixCharInputHandler(els.flashTrainingFixCharInput));
+  function flashFixSizeSliderInput(slider) {
+    flashPrefs.fixSize = Number(slider.value);
+    saveFlashPrefsToStorage();
+    syncFlashFixUI();
+  }
+  els.flashFixSizeSlider.addEventListener("input", () => flashFixSizeSliderInput(els.flashFixSizeSlider));
+  els.flashTrainingFixSizeSlider.addEventListener("input", () => flashFixSizeSliderInput(els.flashTrainingFixSizeSlider));
+  function syncFlashFixUI() {
+    [
+      [els.flashFixToggleRow, els.flashFixOptions, els.flashFixColorPicker, els.flashFixCharInput, els.flashFixSizeSlider, els.flashFixSizeValue],
+      [els.flashTrainingFixToggleRow, els.flashTrainingFixOptions, els.flashTrainingFixColorPicker, els.flashTrainingFixCharInput, els.flashTrainingFixSizeSlider, els.flashTrainingFixSizeValue],
+    ].forEach(([toggleRow, options, picker, charInput, sizeSlider, sizeValue]) => {
+      toggleRow.querySelectorAll("[data-flash-fix]").forEach((el) => setActive(el, (el.dataset.flashFix === "1") === flashPrefs.fixEnabled));
+      options.hidden = !flashPrefs.fixEnabled;
+      syncSingleSelectPicker(picker, flashPrefs.fixColor);
+      charInput.value = flashPrefs.fixChar;
+      sizeSlider.value = flashPrefs.fixSize;
+      sizeValue.textContent = flashPrefs.fixSize.toFixed(1) + "×";
+    });
+    if (flashState) renderFlashFixpoint();
+  }
+  // Mirrors Periph's drawFixationPoint(): a custom character (sized text,
+  // no background) if one is set, otherwise a plain coloured dot.
+  function renderFlashFixpoint() {
+    const el = els.flashFixpointEl;
+    if (!flashPrefs.fixEnabled) { el.hidden = true; return; }
+    el.hidden = false;
+    const color = (FIX_COLOR_BY_KEY[flashPrefs.fixColor] || FIX_COLOR_BY_KEY.grau).hex;
+    const char = flashPrefs.fixChar.trim();
+    if (char) {
+      el.textContent = char;
+      el.style.fontSize = Math.round(28 * flashPrefs.fixSize) + "px";
+      el.style.color = color;
+      el.style.background = "transparent";
+      el.style.width = "auto";
+      el.style.height = "auto";
+      el.style.borderRadius = "0";
+    } else {
+      el.textContent = "";
+      const size = Math.round(12 * flashPrefs.fixSize);
+      el.style.width = size + "px";
+      el.style.height = size + "px";
+      el.style.background = color;
+      el.style.borderRadius = "50%";
+    }
+  }
 
   // ---- Bereich (axes/zones) - same picker pattern as Periph's, mirrored
   // onto flashPrefs.axes/useZones/zones, shared by both ready screens. ----
@@ -5196,6 +5290,7 @@
     syncFlashStartUI();
     syncFlashRepsUI();
     syncFlashBgUI();
+    syncFlashFixUI();
     updateFlashReadyBestHint();
     showScreen("flashReady");
   }
@@ -5207,6 +5302,7 @@
     syncFlashFieldUI();
     syncFlashTrainingUI();
     syncFlashBgUI();
+    syncFlashFixUI();
     showScreen("flashTrainingReady");
   });
   els.flashTrainingBackToHome.addEventListener("click", () => showScreen("natHome"));
@@ -5364,6 +5460,7 @@
       startTime: performance.now(), paused: false,
     };
     applyFlashBg();
+    renderFlashFixpoint();
     requestWakeLock();
     flashStartRound();
   }
@@ -5413,6 +5510,7 @@
     els.flashPauseOverlay.hidden = true;
     els.flashDigitEl.hidden = true;
     els.flashInputPanel.hidden = true;
+    els.flashFixpointEl.hidden = true;
     releaseWakeLock();
     if (document.fullscreenElement === els.flashPlayer) document.exitFullscreen().catch(() => {});
     els.flashFsHint.hidden = true;
