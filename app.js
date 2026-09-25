@@ -997,6 +997,9 @@
     periphAllBtn: $("periphAllBtn"), periphZonesBtn: $("periphZonesBtn"), periphFieldHint: $("periphFieldHint"),
     bgGroup: $("bgGroup"), bgColorPicker: $("bgColorPicker"), bgIntensitySlider: $("bgIntensitySlider"),
     bgIntensityValue: $("bgIntensityValue"), bgContrastHint: $("bgContrastHint"),
+    bgSourceRow: $("bgSourceRow"), bgPresetGroup: $("bgPresetGroup"), bgPresetList: $("bgPresetList"),
+    bgSaveBtn: $("bgSaveBtn"), bgSaveForm: $("bgSaveForm"), bgSaveNameInput: $("bgSaveNameInput"),
+    bgSaveCancelBtn: $("bgSaveCancelBtn"), bgSaveConfirmBtn: $("bgSaveConfirmBtn"),
     periphPauseBtn: $("periphPauseBtn"), periphPauseOverlay: $("periphPauseOverlay"),
     periphPauseBgSlider: $("periphPauseBgSlider"), periphPauseBgValue: $("periphPauseBgValue"),
     periphPauseBgColorPicker: $("periphPauseBgColorPicker"), periphPauseFixColorPicker: $("periphPauseFixColorPicker"),
@@ -1109,8 +1112,14 @@
     rememberTrainingBestHint: $("rememberTrainingBestHint"), rememberTrainingStartBtn: $("rememberTrainingStartBtn"),
     rememberBgColorPicker: $("rememberBgColorPicker"), rememberBgIntensitySlider: $("rememberBgIntensitySlider"),
     rememberBgIntensityValue: $("rememberBgIntensityValue"), rememberBgContrastHint: $("rememberBgContrastHint"),
+    rememberBgSourceRow: $("rememberBgSourceRow"), rememberBgPresetGroup: $("rememberBgPresetGroup"), rememberBgPresetList: $("rememberBgPresetList"),
+    rememberBgSaveBtn: $("rememberBgSaveBtn"), rememberBgSaveForm: $("rememberBgSaveForm"), rememberBgSaveNameInput: $("rememberBgSaveNameInput"),
+    rememberBgSaveCancelBtn: $("rememberBgSaveCancelBtn"), rememberBgSaveConfirmBtn: $("rememberBgSaveConfirmBtn"),
     rememberTrainingBgColorPicker: $("rememberTrainingBgColorPicker"), rememberTrainingBgIntensitySlider: $("rememberTrainingBgIntensitySlider"),
     rememberTrainingBgIntensityValue: $("rememberTrainingBgIntensityValue"), rememberTrainingBgContrastHint: $("rememberTrainingBgContrastHint"),
+    rememberTrainingBgSourceRow: $("rememberTrainingBgSourceRow"), rememberTrainingBgPresetGroup: $("rememberTrainingBgPresetGroup"), rememberTrainingBgPresetList: $("rememberTrainingBgPresetList"),
+    rememberTrainingBgSaveBtn: $("rememberTrainingBgSaveBtn"), rememberTrainingBgSaveForm: $("rememberTrainingBgSaveForm"), rememberTrainingBgSaveNameInput: $("rememberTrainingBgSaveNameInput"),
+    rememberTrainingBgSaveCancelBtn: $("rememberTrainingBgSaveCancelBtn"), rememberTrainingBgSaveConfirmBtn: $("rememberTrainingBgSaveConfirmBtn"),
     rememberPlayer: $("rememberPlayer"), rememberStage: $("rememberStage"), rememberHint: $("rememberHint"),
     rememberNav: $("rememberNav"), rememberNavPrevBtn: $("rememberNavPrevBtn"), rememberNavRestartBtn: $("rememberNavRestartBtn"), rememberNavNextBtn: $("rememberNavNextBtn"),
     rememberPlayerBar: $("rememberPlayerBar"), rememberBackBtn: $("rememberBackBtn"), rememberLevelEl: $("rememberLevelEl"),
@@ -1688,7 +1697,51 @@
   // re-apply the tint to whatever it's drawn on and persist the prefs.
   // (Periph/VT's own bg picker predates this and isn't migrated to it, to
   // avoid touching that already-tested code for no functional gain.)
-  function wireBgIntensityControl(store, refs, onChange) {
+  // Every place with a background colour/intensity control can copy
+  // another domain's CURRENT live setting, or a name the client saved
+  // themselves - "Bestehende Farbgestaltung übernehmen". Only two domains
+  // have one today: the whole VT/NAT canvas pipeline shares one setting
+  // (every non-"bgIsStimulus" VT/Periph exercise reads state.bgColorKey/
+  // bgIntensity - it isn't exclusive to Periph, that's just where the
+  // control first got built) and Remember has its own
+  // (rememberPrefs.bgColorKey/bgIntensity). Flash Speicher Test will be a
+  // third once it exists and gets its own background setting.
+  const BG_SOURCES = [
+    { id: "vt", label: "Visual Training / NAT", get: () => ({ colorKey: state.bgColorKey, intensity: state.bgIntensity }) },
+    { id: "remember", label: "Remember", get: () => ({ colorKey: rememberPrefs.bgColorKey, intensity: rememberPrefs.bgIntensity }) },
+  ];
+  const BG_PRESETS_KEY = "fwmc-bg-presets-v1"; // [{ id, name, colorKey, intensity }] - not scoped to a domain, any saved combo applies anywhere
+  const bgPresetStore = makePresetStore(BG_PRESETS_KEY);
+  function wireBgIntensityControl(store, refs, onChange, transferSelfId) {
+    function apply(colorKey, intensity) {
+      if (colorKey != null) store.bgColorKey = colorKey;
+      if (intensity != null) store.bgIntensity = intensity;
+      onChange();
+      sync();
+    }
+    function renderTransfer() {
+      (refs.transfer || []).forEach((t) => {
+        t.sourceRow.innerHTML = "";
+        BG_SOURCES.filter((s) => s.id !== transferSelfId).forEach((s) => {
+          // A source whose own prefs object is declared later in the file
+          // (rememberPrefs isn't initialised yet when this first runs for
+          // the VT/Periph instance, at page-load time) throws a TDZ error -
+          // skip it for now, it'll render fine once actually opened, after
+          // every top-level const has run.
+          let v;
+          try { v = s.get(); } catch (e) { return; }
+          const hex = STROOP_COLOR_BY_KEY[v.colorKey].hex;
+          const btn = document.createElement("button");
+          btn.className = "choice";
+          btn.innerHTML = `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${hex};margin-right:6px;vertical-align:-1px"></span>Wie bei ${s.label}`;
+          btn.addEventListener("click", () => apply(v.colorKey, v.intensity));
+          t.sourceRow.appendChild(btn);
+        });
+        renderPresetList(bgPresetStore, t.presetList, t.presetGroup, null,
+          (p) => `${STROOP_COLOR_BY_KEY[p.colorKey].name} · ${Math.round(p.intensity * 100)}%`,
+          (p) => apply(p.colorKey, p.intensity));
+      });
+    }
     function sync() {
       refs.pickers.forEach((el) => syncSingleSelectPicker(el, store.bgColorKey));
       refs.sliders.forEach((el) => { el.value = store.bgIntensity; });
@@ -1700,9 +1753,23 @@
         el.hidden = !showTip;
         el.textContent = showTip ? "Tipp: Bei dieser Hintergrundfarbe ist weißer Text/eine weiße Form oft besser lesbar als Schwarz." : "";
       });
+      renderTransfer();
     }
-    refs.pickers.forEach((el) => buildSingleSelectPicker(el, STROOP_COLOR_LIB, (key) => { store.bgColorKey = key; onChange(); sync(); }));
-    refs.sliders.forEach((el) => el.addEventListener("input", () => { store.bgIntensity = Number(el.value); onChange(); sync(); }));
+    refs.pickers.forEach((el) => buildSingleSelectPicker(el, STROOP_COLOR_LIB, (key) => apply(key, null)));
+    refs.sliders.forEach((el) => el.addEventListener("input", () => apply(null, Number(el.value))));
+    (refs.transfer || []).forEach((t) => {
+      wirePresetSaveForm({
+        saveBtn: t.saveBtn, form: t.form, nameInput: t.nameInput,
+        cancelBtn: t.cancelBtn, confirmBtn: t.confirmBtn,
+        defaultName: () => `${STROOP_COLOR_BY_KEY[store.bgColorKey].name} ${Math.round(store.bgIntensity * 100)}%`,
+        onSave: (name) => {
+          const list = bgPresetStore.load();
+          list.push({ id: String(Date.now()), name, colorKey: store.bgColorKey, intensity: store.bgIntensity });
+          bgPresetStore.save(list);
+          renderTransfer();
+        },
+      });
+    });
     sync();
     return sync;
   }
@@ -1808,41 +1875,22 @@
   // ---- Background colour + intensity ("Champions League" mode) - the
   // page stays plain white at intensity 0 and gets tinted from there, for
   // every exercise whose background isn't already the trained signal
-  // itself (see bgIsStimulus on VT/VRW/Kompass-Aufbau/Stroop mit Hintergrund). ----
-  buildSingleSelectPicker(els.bgColorPicker, STROOP_COLOR_LIB, (key) => {
-    state.bgColorKey = key;
-    savePrefs();
-    syncBgUI();
-  });
-  buildSingleSelectPicker(els.periphPauseBgColorPicker, STROOP_COLOR_LIB, (key) => {
-    state.bgColorKey = key;
-    savePrefs();
-    syncBgUI();
-    redrawFrozenFrame();
-  });
-  els.bgIntensitySlider.addEventListener("input", () => {
-    state.bgIntensity = Number(els.bgIntensitySlider.value);
-    savePrefs();
-    syncBgUI();
-  });
-  els.periphPauseBgSlider.addEventListener("input", () => {
-    state.bgIntensity = Number(els.periphPauseBgSlider.value);
-    savePrefs();
-    syncBgUI();
-    redrawFrozenFrame();
-  });
-  function syncBgUI() {
-    syncSingleSelectPicker(els.bgColorPicker, state.bgColorKey);
-    syncSingleSelectPicker(els.periphPauseBgColorPicker, state.bgColorKey);
-    els.bgIntensitySlider.value = state.bgIntensity;
-    els.bgIntensityValue.textContent = Math.round(state.bgIntensity * 100) + "%";
-    els.periphPauseBgSlider.value = state.bgIntensity;
-    els.periphPauseBgValue.textContent = Math.round(state.bgIntensity * 100) + "%";
-    const mixed = mixHex("#ffffff", STROOP_COLOR_BY_KEY[state.bgColorKey].hex, state.bgIntensity);
-    const showTip = state.bgIntensity > 0 && relLuma(mixed) < 0.45;
-    els.bgContrastHint.hidden = !showTip;
-    els.bgContrastHint.textContent = showTip ? "Tipp: Bei dieser Hintergrundfarbe ist weißer Text/eine weiße Form oft besser lesbar als Schwarz." : "";
-  }
+  // itself (see bgIsStimulus on VT/VRW/Kompass-Aufbau/Stroop mit Hintergrund).
+  // redrawFrozenFrame() is a safe no-op with no active/paused session (i.e.
+  // every edit made on the ready screen, before a session exists), and
+  // repaints the frozen frame immediately when edited from the pause
+  // overlay mid-session. ----
+  const syncBgUI = wireBgIntensityControl(state, {
+    pickers: [els.bgColorPicker, els.periphPauseBgColorPicker],
+    sliders: [els.bgIntensitySlider, els.periphPauseBgSlider],
+    valueEls: [els.bgIntensityValue, els.periphPauseBgValue],
+    hintEls: [els.bgContrastHint],
+    transfer: [{
+      sourceRow: els.bgSourceRow, presetGroup: els.bgPresetGroup, presetList: els.bgPresetList,
+      saveBtn: els.bgSaveBtn, form: els.bgSaveForm, nameInput: els.bgSaveNameInput,
+      cancelBtn: els.bgSaveCancelBtn, confirmBtn: els.bgSaveConfirmBtn,
+    }],
+  }, () => { savePrefs(); redrawFrozenFrame(); }, "vt");
 
   // ---- Duration / tempo / sliders ----
   document.querySelectorAll("[data-dur]").forEach((el) => {
@@ -3892,7 +3940,19 @@
     sliders: [els.rememberBgIntensitySlider, els.rememberTrainingBgIntensitySlider, els.rememberPauseBgSlider],
     valueEls: [els.rememberBgIntensityValue, els.rememberTrainingBgIntensityValue, els.rememberPauseBgValue],
     hintEls: [els.rememberBgContrastHint, els.rememberTrainingBgContrastHint],
-  }, () => { saveRememberPrefsToStorage(); applyRememberBg(); });
+    transfer: [
+      {
+        sourceRow: els.rememberBgSourceRow, presetGroup: els.rememberBgPresetGroup, presetList: els.rememberBgPresetList,
+        saveBtn: els.rememberBgSaveBtn, form: els.rememberBgSaveForm, nameInput: els.rememberBgSaveNameInput,
+        cancelBtn: els.rememberBgSaveCancelBtn, confirmBtn: els.rememberBgSaveConfirmBtn,
+      },
+      {
+        sourceRow: els.rememberTrainingBgSourceRow, presetGroup: els.rememberTrainingBgPresetGroup, presetList: els.rememberTrainingBgPresetList,
+        saveBtn: els.rememberTrainingBgSaveBtn, form: els.rememberTrainingBgSaveForm, nameInput: els.rememberTrainingBgSaveNameInput,
+        cancelBtn: els.rememberTrainingBgSaveCancelBtn, confirmBtn: els.rememberTrainingBgSaveConfirmBtn,
+      },
+    ],
+  }, () => { saveRememberPrefsToStorage(); applyRememberBg(); }, "remember");
 
   function rememberDifficultyBucket() {
     for (const key of Object.keys(REMEMBER_DIFFICULTIES)) {

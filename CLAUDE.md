@@ -172,17 +172,38 @@ unrelated to the feature being changed.
   no such on-screen element (there's nothing to stare at a fixed centre
   for), so that part of the Periph pattern just doesn't apply there.
   Shared across both: `buildSingleSelectPicker`/`syncSingleSelectPicker`
-  for the swatch grids, and (new, Remember-only so far)
-  `wireBgIntensityControl(store, refs, onChange)` - a generic "colour +
-  intensity, N synced UI instances" wirer, used because Remember needed a
-  *third* near-identical bg-picker instance (fixed/shuffle ready screen +
-  Trainingsmodus ready screen + pause overlay, all sharing one
-  `rememberPrefs` object) where a fourth copy of the inline Periph/VT
-  pattern stopped being worth it. Periph/VT's own bg code predates this
-  helper and was deliberately left as-is (already tested, no functional
-  gain from migrating it) - if a third consumer of background tinting
-  shows up (Flash Speicher Test, once built), prefer wiring it through
-  `wireBgIntensityControl` too rather than adding a fourth hand-rolled copy.
+  for the swatch grids, and `wireBgIntensityControl(store, refs, onChange,
+  transferSelfId)` - a generic "colour + intensity, N synced UI instances"
+  wirer, used because Remember needed a *third* near-identical bg-picker
+  instance (fixed/shuffle ready screen + Trainingsmodus ready screen +
+  pause overlay, all sharing one `rememberPrefs` object) where a fourth
+  copy of the original inline Periph/VT pattern stopped being worth it.
+  Periph/VT's own bg code has since been migrated onto this same helper
+  too (`transferSelfId: "vt"`), once the transfer feature below needed
+  wiring on both sides anyway.
+- **"Bestehende Farbgestaltung übernehmen"**: `wireBgIntensityControl`'s
+  optional `refs.transfer` (array of `{sourceRow, presetGroup, presetList,
+  saveBtn, form, nameInput, cancelBtn, confirmBtn}`, one per UI instance
+  that should offer it - typically just the ready screen, not a pause
+  overlay) plus the `transferSelfId` argument. Renders two things into
+  `sourceRow`: a button per *other* entry in `BG_SOURCES` (each exercise
+  domain that has its own background setting - `"vt"` for the whole shared
+  VT/NAT canvas setting, `"remember"` for `rememberPrefs`; excludes
+  `transferSelfId` so a domain never offers to copy its own live value),
+  showing that domain's CURRENT colour and applying it on click exactly
+  like a swatch pick (a source's `.get()` is wrapped in try/catch since the
+  VT instance renders before `rememberPrefs` exists yet at page-load time -
+  it just skips that source until the screen is actually opened, by which
+  point every top-level `const` has run); and, via `renderPresetList` into
+  `presetGroup`/`presetList`, every named preset the client saved from
+  *any* domain (`bgPresetStore`, not domain-scoped - a saved combo is
+  meant to be reusable everywhere). `wirePresetSaveForm` wires the save
+  button/name-input/confirm the same way every other "gespeicherte
+  Einstellungen" screen in this app does. Adding a third domain (Flash
+  Speicher Test) means: give it its own `bgColorKey`/`bgIntensity` store,
+  add one `BG_SOURCES` entry for it, and wire its own Hintergrund group
+  through `wireBgIntensityControl` with a `transfer` config - the
+  source-list and presets both pick up the new domain automatically.
 
 ## Known open items
 
