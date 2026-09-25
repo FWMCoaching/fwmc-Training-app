@@ -58,6 +58,16 @@
   const FIX_COLOR_LIB = [{ key: "grau", name: "Grau", hex: DOT }, ...STROOP_COLOR_LIB];
   const FIX_COLOR_BY_KEY = Object.fromEntries(FIX_COLOR_LIB.map((c) => [c.key, c]));
 
+  // 3x3 field split for Periphere Wahrnehmung's "Eigene Auswahl" mode - the
+  // centre cell is where the fixation point already sits, so it's not a
+  // selectable zone.
+  const PERIPH_ZONES = {
+    tl: { row: 0, col: 0 }, tm: { row: 0, col: 1 }, tr: { row: 0, col: 2 },
+    ml: { row: 1, col: 0 },                          mr: { row: 1, col: 2 },
+    bl: { row: 2, col: 0 }, bm: { row: 2, col: 1 }, br: { row: 2, col: 2 },
+  };
+  const PERIPH_ZONE_KEYS = Object.keys(PERIPH_ZONES);
+
   // Fixed four-colour set for "Hütchen antippen" (cone order sorting) -
   // this exercise is always about four cones, so it skips the free colour
   // picker and always uses this base set, only their on-screen order changes.
@@ -404,15 +414,18 @@
       ctx.fillStyle = NEUTRAL;
       ctx.fillRect(0, 0, cw, ch);
       drawFixationPoint(cx, cy, unit);
-      // Position is stored as an angle + a fraction of the safe ellipse
+      // Position is stored as a {fx, fy} fraction of the canvas (0..1)
       // rather than a baked-in pixel, so it re-lands correctly if the
       // device is rotated mid-exercise (the whole point of this exercise
       // working in both portrait and landscape).
-      const rx = cw * 0.42 * payload.radiusFrac, ry = ch * 0.42 * payload.radiusFrac;
-      const x = cx + rx * Math.cos(payload.angle), y = cy + ry * Math.sin(payload.angle);
+      const x = payload.fx * cw, y = payload.fy * ch;
+      // Distance from the fixation point, 0 in the centre to ~1 at the
+      // screen edge - used for the "nach außen größer" size mode.
+      const dist = Math.min(1, Math.hypot((payload.fx - 0.5) * 2, (payload.fy - 0.5) * 2));
+      const sizeMul = state.periphSizeMode === "wachsend" ? 0.65 + dist * 0.9 : 1;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = `700 ${Math.round(unit * 0.16)}px Magra, sans-serif`;
+      ctx.font = `700 ${Math.round(unit * 0.16 * sizeMul)}px Magra, sans-serif`;
       ctx.fillStyle = INK;
       ctx.fillText(payload.char, x, y);
       barCaption(cw, ch, "Blick auf die Mitte richten", false);
@@ -957,6 +970,7 @@
     periphFixCharInput: $("periphFixCharInput"), periphFixColorPicker: $("periphFixColorPicker"),
     periphFixSizeSlider: $("periphFixSizeSlider"), periphFixSizeValue: $("periphFixSizeValue"),
     periphOpenBtn: $("periphOpenBtn"),
+    periphFieldGroup: $("periphFieldGroup"), periphZoneGrid: $("periphZoneGrid"), periphSizeGroup: $("periphSizeGroup"),
     durationGroup: $("durationGroup"), tempoGroup: $("tempoGroup"), advanced: $("advanced"),
     vtSavedGroup: $("vtSavedGroup"), vtSavedList: $("vtSavedList"), vtSaveBtn: $("vtSaveBtn"),
     vtSaveForm: $("vtSaveForm"), vtSaveNameInput: $("vtSaveNameInput"),
@@ -1431,6 +1445,9 @@
     periphFixChar: "",
     periphFixColor: "grau",
     periphFixSize: 1,
+    periphField: "ueberall",
+    periphZones: ["tl", "tm", "tr", "ml", "mr", "bl", "bm", "br"],
+    periphSizeMode: "gleich",
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -1443,6 +1460,9 @@
     if (typeof state.periphFixChar !== "string") state.periphFixChar = "";
     if (!FIX_COLOR_BY_KEY[state.periphFixColor]) state.periphFixColor = "grau";
     if (typeof state.periphFixSize !== "number" || state.periphFixSize < 0.6 || state.periphFixSize > 2) state.periphFixSize = 1;
+    if (!["ueberall", "horizontal", "vertikal", "diagonal", "zonen"].includes(state.periphField)) state.periphField = "ueberall";
+    if (!Array.isArray(state.periphZones) || !state.periphZones.length || !state.periphZones.every((z) => PERIPH_ZONE_KEYS.includes(z))) state.periphZones = DEFAULTS.periphZones.slice();
+    if (!["gleich", "wachsend"].includes(state.periphSizeMode)) state.periphSizeMode = "gleich";
   }
   function savePrefs() { writeJSON(PREFS_KEY, state); }
   loadPrefs();
@@ -1626,6 +1646,40 @@
     els.periphFixSizeSlider.value = state.periphFixSize;
     els.periphFixSizeValue.textContent = state.periphFixSize.toFixed(1) + "×";
   }
+  document.querySelectorAll("#periphFieldRow [data-periph-field]").forEach((el) => {
+    el.addEventListener("click", () => {
+      state.periphField = el.dataset.periphField;
+      savePrefs();
+      syncPeriphFieldUI();
+    });
+  });
+  document.querySelectorAll("#periphZoneGrid [data-zone]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const z = el.dataset.zone;
+      const on = state.periphZones.includes(z);
+      // Keep at least one zone selected - same "don't let the last one go"
+      // rule as the standard VT colour picker.
+      if (on && state.periphZones.length <= 1) return;
+      state.periphZones = on ? state.periphZones.filter((k) => k !== z) : [...state.periphZones, z];
+      savePrefs();
+      syncPeriphFieldUI();
+    });
+  });
+  function syncPeriphFieldUI() {
+    document.querySelectorAll("#periphFieldRow [data-periph-field]").forEach((el) => setActive(el, el.dataset.periphField === state.periphField));
+    els.periphZoneGrid.hidden = state.periphField !== "zonen";
+    document.querySelectorAll("#periphZoneGrid [data-zone]").forEach((el) => el.classList.toggle("active", state.periphZones.includes(el.dataset.zone)));
+  }
+  document.querySelectorAll("#periphSizeGroup [data-periph-size]").forEach((el) => {
+    el.addEventListener("click", () => {
+      state.periphSizeMode = el.dataset.periphSize;
+      savePrefs();
+      syncPeriphSizeUI();
+    });
+  });
+  function syncPeriphSizeUI() {
+    document.querySelectorAll("#periphSizeGroup [data-periph-size]").forEach((el) => setActive(el, el.dataset.periphSize === state.periphSizeMode));
+  }
 
   // ---- Duration / tempo / sliders ----
   document.querySelectorAll("[data-dur]").forEach((el) => {
@@ -1704,7 +1758,9 @@
     els.advanced.hidden = isConeTap;
     els.periphKindGroup.hidden = !isPeriph;
     els.periphFixGroup.hidden = !isPeriph;
-    if (isPeriph) { syncPeriphKindUI(); syncPeriphFixUI(); }
+    els.periphFieldGroup.hidden = !isPeriph;
+    els.periphSizeGroup.hidden = !isPeriph;
+    if (isPeriph) { syncPeriphKindUI(); syncPeriphFixUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); }
     renderColorSwatches();
     syncColorUI();
     syncDurationUI();
@@ -2282,16 +2338,44 @@
       : (rng() < 0.5 ? PERIPH_LETTERS : PERIPH_DIGITS);
     return pool[Math.floor(rng() * pool.length)];
   }
+  // Base angles (radians) each "Bereich" mode samples its stimuli around -
+  // "Überall" ignores this and picks any angle at all.
+  const PERIPH_FIELD_ANGLES = {
+    horizontal: [0, Math.PI],
+    vertikal: [Math.PI / 2, Math.PI * 1.5],
+    diagonal: [Math.PI / 4, Math.PI * 0.75, Math.PI * 1.25, Math.PI * 1.75],
+  };
+  // Every "Bereich" mode ends up as a simple {fx, fy} fraction of the canvas
+  // (0..1), resolved to real pixels at render time - so a stimulus already
+  // mid-flight still lands correctly if the device is rotated.
+  function randPeriphPos(rng) {
+    if (state.periphField === "zonen") {
+      const zones = state.periphZones.length ? state.periphZones : PERIPH_ZONE_KEYS;
+      const { row, col } = PERIPH_ZONES[zones[Math.floor(rng() * zones.length)]];
+      const pad = 0.14, cell = 1 / 3;
+      return {
+        fx: col * cell + pad * cell + rng() * cell * (1 - 2 * pad),
+        fy: row * cell + pad * cell + rng() * cell * (1 - 2 * pad),
+      };
+    }
+    const radiusFrac = 0.45 + rng() * 0.5;
+    let angle = rng() * Math.PI * 2;
+    if (state.periphField !== "ueberall") {
+      const bases = PERIPH_FIELD_ANGLES[state.periphField];
+      const base = bases[Math.floor(rng() * bases.length)];
+      angle = base + (rng() - 0.5) * (Math.PI / 6); // ±15° jitter around the axis
+    }
+    return { fx: 0.5 + 0.42 * radiusFrac * Math.cos(angle), fy: 0.5 + 0.42 * radiusFrac * Math.sin(angle) };
+  }
   function buildPeriphSchedule(cfg, rng) {
     const schedule = [];
     let t = pushCountdown(schedule, cfg);
     const show = state.stimulusS;
     while (t < state.duration) {
       const char = randPeriphChar(state.periphKind, rng);
-      const angle = rng() * Math.PI * 2;
-      const radiusFrac = 0.45 + rng() * 0.5;
+      const pos = randPeriphPos(rng);
       const pause = randInterval(rng);
-      schedule.push({ t0: t, t1: t + show, kind: "periph", payload: { char, angle, radiusFrac } });
+      schedule.push({ t0: t, t1: t + show, kind: "periph", payload: { char, fx: pos.fx, fy: pos.fy } });
       schedule.push({ t0: t + show, t1: t + show + pause, kind: "blank", payload: {} });
       t += show + pause;
     }

@@ -679,6 +679,36 @@
     </div>
   </div>
 
+  <div class="group" id="periphFieldGroup" hidden>
+    <div class="group-label">Bereich</div>
+    <div class="choice-row two" id="periphFieldRow">
+      <button class="choice" data-periph-field="ueberall">&Uuml;berall</button>
+      <button class="choice" data-periph-field="horizontal">Horizontal</button>
+      <button class="choice" data-periph-field="vertikal">Vertikal</button>
+      <button class="choice" data-periph-field="diagonal">Diagonal</button>
+      <button class="choice" data-periph-field="zonen">Eigene Auswahl</button>
+    </div>
+    <div class="periph-zone-grid" id="periphZoneGrid" hidden>
+      <button class="periph-zone" data-zone="tl" aria-label="Oben links"></button>
+      <button class="periph-zone" data-zone="tm" aria-label="Oben Mitte"></button>
+      <button class="periph-zone" data-zone="tr" aria-label="Oben rechts"></button>
+      <button class="periph-zone" data-zone="ml" aria-label="Mitte links"></button>
+      <div class="periph-zone periph-zone-center" aria-hidden="true"></div>
+      <button class="periph-zone" data-zone="mr" aria-label="Mitte rechts"></button>
+      <button class="periph-zone" data-zone="bl" aria-label="Unten links"></button>
+      <button class="periph-zone" data-zone="bm" aria-label="Unten Mitte"></button>
+      <button class="periph-zone" data-zone="br" aria-label="Unten rechts"></button>
+    </div>
+  </div>
+
+  <div class="group" id="periphSizeGroup" hidden>
+    <div class="group-label">Gr&ouml;&szlig;e der Reize</div>
+    <div class="choice-row two">
+      <button class="choice" data-periph-size="gleich">Gleich gro&szlig;<small>&uuml;berall gleich</small></button>
+      <button class="choice" data-periph-size="wachsend">Nach au&szlig;en gr&ouml;&szlig;er<small>je weiter vom Punkt entfernt</small></button>
+    </div>
+  </div>
+
   <div class="group" id="durationGroup">
     <div class="group-label">Dauer</div>
     <div class="choice-row">

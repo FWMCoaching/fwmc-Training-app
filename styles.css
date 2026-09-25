@@ -767,6 +767,14 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
   border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;
   font-family:inherit;color:var(--ink);background:var(--surface);margin-bottom:4px;width:100%;
 }
+.periph-zone-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px;max-width:220px;aspect-ratio:1}
+.periph-zone{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;cursor:pointer;padding:0}
+.periph-zone.active{border-color:var(--brand);background:var(--brand-pale)}
+.periph-zone-center{
+  border:1.5px dashed var(--line);background:var(--surface-2);
+  display:flex;align-items:center;justify-content:center;
+}
+.periph-zone-center::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--ink-soft)}
 .custom-exercise-form-actions{display:flex;gap:8px}
 .custom-exercise-form-actions button{flex:1}
 .circuit-item-row{
