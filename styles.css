@@ -583,17 +583,17 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
   display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);font-size:13.5px;line-height:1.35;
 }
 .stage-wrap{position:relative}
-.periph-pause-overlay{
+.pause-overlay{
   position:absolute;inset:0;z-index:22;background:rgba(10,16,19,.72);
   display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;
 }
-.periph-pause-panel{
+.pause-panel{
   background:var(--surface);border-radius:16px;padding:20px;width:100%;max-width:340px;
   display:flex;flex-direction:column;gap:4px;
 }
-.periph-pause-panel h3{margin:0 0 8px;font-size:17px;color:var(--ink);text-align:center}
-.periph-pause-panel .group{margin-bottom:14px}
-.periph-pause-panel .start-btn{margin-top:4px}
+.pause-panel h3{margin:0 0 8px;font-size:17px;color:var(--ink);text-align:center}
+.pause-panel .group{margin-bottom:14px}
+.pause-panel .start-btn{margin-top:4px}
 .fs-hint span{flex:1}
 .fs-hint button{border:none;border-radius:999px;cursor:pointer}
 .fs-hint #fsHintOpenBtn{background:#007094;color:#fff;font-size:12.5px;font-weight:700;padding:8px 12px;white-space:nowrap}

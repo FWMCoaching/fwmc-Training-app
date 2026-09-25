@@ -551,6 +551,16 @@
           <span class="slider-value" id="rememberStepValue"></span>
         </div>
       </div>
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="rememberBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="rememberBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="rememberBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="rememberBgContrastHint" hidden></div>
+      </div>
     </div>
   </details>
 
@@ -615,6 +625,16 @@
           <input type="range" id="rememberTrainingStepSlider" min="0.05" max="0.6" step="0.05" aria-label="Zus&auml;tzliche Zeit je weiterer Zahl">
           <span class="slider-value" id="rememberTrainingStepValue"></span>
         </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="rememberTrainingBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="rememberTrainingBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="rememberTrainingBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="rememberTrainingBgContrastHint" hidden></div>
       </div>
     </div>
   </details>
@@ -1135,8 +1155,8 @@
 <div class="player" id="player" hidden>
   <div class="stage-wrap" id="stageWrap">
     <canvas id="stage"></canvas>
-    <div class="periph-pause-overlay" id="periphPauseOverlay" hidden>
-      <div class="periph-pause-panel">
+    <div class="pause-overlay" id="periphPauseOverlay" hidden>
+      <div class="pause-panel">
         <h3>Pausiert</h3>
         <div class="group">
           <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="periphPauseBgValue"></span></div>
@@ -1326,8 +1346,23 @@
     <button id="rememberNavRestartBtn" title="Diese Stufe neu starten" aria-label="Diese Stufe neu starten">&#8635;</button>
     <button id="rememberNavNextBtn" title="Eine Zahl mehr" aria-label="Eine Zahl mehr">&raquo;</button>
   </div>
+  <div class="pause-overlay" id="rememberPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="rememberPauseBgValue"></span></div>
+        <input type="range" id="rememberPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="rememberPauseBgColorPicker"></div>
+      </div>
+      <button class="start-btn" id="rememberResumeBtn">Weiter</button>
+    </div>
+  </div>
   <div class="player-bar" id="rememberPlayerBar">
     <button id="rememberBackBtn">&#10005; Beenden</button>
+    <button id="rememberPauseBtn">Pause</button>
     <span class="player-status" id="rememberLevelEl"></span>
     <button id="rememberFsBtn">Vollbild</button>
   </div>

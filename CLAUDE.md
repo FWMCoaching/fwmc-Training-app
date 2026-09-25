@@ -151,8 +151,8 @@ unrelated to the feature being changed.
   pattern above). Used for the fixation-point colour and background colour
   pickers, each of which now has two live instances (the ready screen and
   the Periph pause overlay) that must always show the same selection.
-- **Mid-exercise pause with live adjustment** (Periphere Wahrnehmung):
-  `#periphPauseBtn` stops `raf`, records `periphPausedAt =
+- **Mid-exercise pause with live adjustment** (Periphere Wahrnehmung,
+  Remember): `#periphPauseBtn` stops `raf`, records `periphPausedAt =
   performance.now()`, and shows `#periphPauseOverlay`; `#periphResumeBtn`
   shifts `session.startTime` forward by the paused duration (same
   timestamp-shift trick as the `visibilitychange` backgrounding handler)
@@ -160,8 +160,29 @@ unrelated to the feature being changed.
   paused, the overlay's four controls (background intensity/colour,
   fixation colour/size) mutate `state` directly and call
   `redrawFrozenFrame()` to repaint the current frame immediately, without
-  resuming. Gated to `ex.type === "periph"` in `runSession()`; only built
-  for Periphere Wahrnehmung so far (see Known open items).
+  resuming. Gated to `ex.type === "periph"` in `runSession()`.
+  Remember has no rAF schedule to shift - it drives its reveal/cover cycle
+  with plain `setTimeout`s - so its pause (`pauseRemember`/
+  `resumeRemember`) instead cancels the pending timer and replays it with
+  its *remaining* delay on resume, via `scheduleRememberTimer(fn, delayMs)`
+  (records `timerFn`/`timerFiresAt` on `rememberState` so any of the three
+  places that schedule a transition can be paused generically); the Kombi
+  `comboDurationTimer` gets the same treatment. Only background colour/
+  intensity is exposed for Remember, not a fixation point - Remember has
+  no such on-screen element (there's nothing to stare at a fixed centre
+  for), so that part of the Periph pattern just doesn't apply there.
+  Shared across both: `buildSingleSelectPicker`/`syncSingleSelectPicker`
+  for the swatch grids, and (new, Remember-only so far)
+  `wireBgIntensityControl(store, refs, onChange)` - a generic "colour +
+  intensity, N synced UI instances" wirer, used because Remember needed a
+  *third* near-identical bg-picker instance (fixed/shuffle ready screen +
+  Trainingsmodus ready screen + pause overlay, all sharing one
+  `rememberPrefs` object) where a fourth copy of the inline Periph/VT
+  pattern stopped being worth it. Periph/VT's own bg code predates this
+  helper and was deliberately left as-is (already tested, no functional
+  gain from migrating it) - if a third consumer of background tinting
+  shows up (Flash Speicher Test, once built), prefer wiring it through
+  `wireBgIntensityControl` too rather than adding a fourth hand-rolled copy.
 
 ## Known open items
 
@@ -178,17 +199,21 @@ unrelated to the feature being changed.
   DOM-hide for Workout's finish state (currently relies only on the
   done-panel's opaque overlay).
 - **NAT status**: Remember is fully built (Feste/Bewegte Positionen +
-  Trainingsmodus). Periphere Wahrnehmung is fully built (Phase 1-4:
-  fixation point, Zeichentyp, Bereich programmes incl. 3×3 zone picker,
-  radial size growth, background colour/intensity) plus a mid-exercise
-  Pause with live background/fixation-point adjustment (see Established
-  patterns). Flash Speicher Test is still an unbuilt placeholder panel.
-- **Live-pause-adjust, deferred scope decision**: currently built only for
-  Periphere Wahrnehmung. Not yet decided/built: whether to extend it to
-  other NAT exercises (Remember, Flash) or other domains — Atemtraining
-  "wird Sinn machen", Movement "kann auch Sinn machen", VT-Videos
-  explicitly "macht keinen Sinn" per the user. Ask before assuming it
-  should spread further.
+  Trainingsmodus), now including background colour/intensity (pre-settable
+  in each mode's Feineinstellungen) plus a mid-exercise Pause with live
+  adjustment of the same setting. Periphere Wahrnehmung is fully built
+  (Phase 1-4: fixation point, Zeichentyp, Bereich programmes incl. 3×3 zone
+  picker, radial size growth, background colour/intensity) plus a
+  mid-exercise Pause with live background/fixation-point adjustment (see
+  Established patterns). Flash Speicher Test is still an unbuilt
+  placeholder panel - the user wants the same pattern (pre-settable
+  background + pause-to-adjust) applied there too once it's built; there
+  was nothing to attach it to yet, so it's not done.
+- **Live-pause-adjust, remaining scope decision**: now built for Periphere
+  Wahrnehmung and Remember. Not yet decided/built: extending it to other
+  domains — Atemtraining "wird Sinn machen", Movement "kann auch Sinn
+  machen", VT-Videos explicitly "macht keinen Sinn" per the user. Ask
+  before assuming it should spread further.
 
 ## Working conventions
 

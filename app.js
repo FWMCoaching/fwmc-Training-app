@@ -1107,9 +1107,16 @@
     rememberTrainingRevealSlider: $("rememberTrainingRevealSlider"), rememberTrainingRevealValue: $("rememberTrainingRevealValue"),
     rememberTrainingStepSlider: $("rememberTrainingStepSlider"), rememberTrainingStepValue: $("rememberTrainingStepValue"),
     rememberTrainingBestHint: $("rememberTrainingBestHint"), rememberTrainingStartBtn: $("rememberTrainingStartBtn"),
+    rememberBgColorPicker: $("rememberBgColorPicker"), rememberBgIntensitySlider: $("rememberBgIntensitySlider"),
+    rememberBgIntensityValue: $("rememberBgIntensityValue"), rememberBgContrastHint: $("rememberBgContrastHint"),
+    rememberTrainingBgColorPicker: $("rememberTrainingBgColorPicker"), rememberTrainingBgIntensitySlider: $("rememberTrainingBgIntensitySlider"),
+    rememberTrainingBgIntensityValue: $("rememberTrainingBgIntensityValue"), rememberTrainingBgContrastHint: $("rememberTrainingBgContrastHint"),
     rememberPlayer: $("rememberPlayer"), rememberStage: $("rememberStage"), rememberHint: $("rememberHint"),
     rememberNav: $("rememberNav"), rememberNavPrevBtn: $("rememberNavPrevBtn"), rememberNavRestartBtn: $("rememberNavRestartBtn"), rememberNavNextBtn: $("rememberNavNextBtn"),
     rememberPlayerBar: $("rememberPlayerBar"), rememberBackBtn: $("rememberBackBtn"), rememberLevelEl: $("rememberLevelEl"),
+    rememberPauseBtn: $("rememberPauseBtn"), rememberPauseOverlay: $("rememberPauseOverlay"),
+    rememberPauseBgSlider: $("rememberPauseBgSlider"), rememberPauseBgValue: $("rememberPauseBgValue"),
+    rememberPauseBgColorPicker: $("rememberPauseBgColorPicker"), rememberResumeBtn: $("rememberResumeBtn"),
     rememberFsBtn: $("rememberFsBtn"), rememberFsHint: $("rememberFsHint"),
     rememberFsHintOpenBtn: $("rememberFsHintOpenBtn"), rememberFsHintClose: $("rememberFsHintClose"),
     rememberDonePanel: $("rememberDonePanel"), rememberDoneSummary: $("rememberDoneSummary"), rememberRating: $("rememberRating"),
@@ -1671,6 +1678,33 @@
       el.classList.toggle("active", on);
       el.setAttribute("aria-pressed", on ? "true" : "false");
     });
+  }
+  // Generic "background colour + intensity" control for exercises outside
+  // the shared VT/Periph canvas pipeline (Remember; Flash Speicher Test
+  // will reuse it once it exists) that still want the same customisable
+  // tint. Wires as many synced picker/slider instances as given against a
+  // single prefs object (e.g. one per ready screen plus one in a pause
+  // overlay) and calls `onChange` after every edit so the caller can
+  // re-apply the tint to whatever it's drawn on and persist the prefs.
+  // (Periph/VT's own bg picker predates this and isn't migrated to it, to
+  // avoid touching that already-tested code for no functional gain.)
+  function wireBgIntensityControl(store, refs, onChange) {
+    function sync() {
+      refs.pickers.forEach((el) => syncSingleSelectPicker(el, store.bgColorKey));
+      refs.sliders.forEach((el) => { el.value = store.bgIntensity; });
+      const pct = Math.round(store.bgIntensity * 100) + "%";
+      refs.valueEls.forEach((el) => { el.textContent = pct; });
+      const mixed = mixHex("#ffffff", STROOP_COLOR_BY_KEY[store.bgColorKey].hex, store.bgIntensity);
+      const showTip = store.bgIntensity > 0 && relLuma(mixed) < 0.45;
+      (refs.hintEls || []).forEach((el) => {
+        el.hidden = !showTip;
+        el.textContent = showTip ? "Tipp: Bei dieser Hintergrundfarbe ist weißer Text/eine weiße Form oft besser lesbar als Schwarz." : "";
+      });
+    }
+    refs.pickers.forEach((el) => buildSingleSelectPicker(el, STROOP_COLOR_LIB, (key) => { store.bgColorKey = key; onChange(); sync(); }));
+    refs.sliders.forEach((el) => el.addEventListener("input", () => { store.bgIntensity = Number(el.value); onChange(); sync(); }));
+    sync();
+    return sync;
   }
   buildSingleSelectPicker(els.periphFixColorPicker, FIX_COLOR_LIB, (key) => {
     state.periphFixColor = key;
@@ -3832,13 +3866,33 @@
     trainingStart: 8,
     trainingProgress: true,
     trainingPositionMode: "shuffle",
+    bgColorKey: "gruen",
+    bgIntensity: 0,
   };
   function loadRememberPrefs() {
     const saved = readJSON(REMEMBER_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(rememberPrefs, saved);
+    if (!STROOP_COLOR_BY_KEY[rememberPrefs.bgColorKey]) rememberPrefs.bgColorKey = "gruen";
+    if (typeof rememberPrefs.bgIntensity !== "number" || rememberPrefs.bgIntensity < 0 || rememberPrefs.bgIntensity > 1) rememberPrefs.bgIntensity = 0;
   }
   function saveRememberPrefsToStorage() { writeJSON(REMEMBER_PREFS_KEY, rememberPrefs); }
   loadRememberPrefs();
+
+  // Remember has no canvas - the tint goes straight on the DOM stage that
+  // holds the number markers, applied fresh whenever a game starts (in
+  // case the prefs changed since the stage was last shown) and again on
+  // every live edit (ready screen or the mid-game pause overlay).
+  function applyRememberBg() {
+    els.rememberStage.style.background = rememberPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[rememberPrefs.bgColorKey].hex, rememberPrefs.bgIntensity)
+      : "";
+  }
+  const syncRememberBgUI = wireBgIntensityControl(rememberPrefs, {
+    pickers: [els.rememberBgColorPicker, els.rememberTrainingBgColorPicker, els.rememberPauseBgColorPicker],
+    sliders: [els.rememberBgIntensitySlider, els.rememberTrainingBgIntensitySlider, els.rememberPauseBgSlider],
+    valueEls: [els.rememberBgIntensityValue, els.rememberTrainingBgIntensityValue, els.rememberPauseBgValue],
+    hintEls: [els.rememberBgContrastHint, els.rememberTrainingBgContrastHint],
+  }, () => { saveRememberPrefsToStorage(); applyRememberBg(); });
 
   function rememberDifficultyBucket() {
     for (const key of Object.keys(REMEMBER_DIFFICULTIES)) {
@@ -4003,6 +4057,15 @@
       els.rememberStage.appendChild(el);
     });
   }
+  // Wraps every rememberState.timer scheduling so Pause can later work out
+  // "how much longer was this waiting" and reschedule the exact same
+  // callback with the remaining time on Resume, instead of restarting the
+  // whole reveal/cover cycle from scratch.
+  function scheduleRememberTimer(fn, delayMs) {
+    rememberState.timerFn = fn;
+    rememberState.timerFiresAt = performance.now() + delayMs;
+    rememberState.timer = setTimeout(fn, delayMs);
+  }
   function startRememberLevel() {
     rememberState.positions = buildRememberPositions(rememberState.level, rememberState.keepPositions);
     rememberState.phase = "reveal";
@@ -4012,7 +4075,7 @@
     renderRememberMarkers();
     const extra = Math.max(0, rememberState.level - 2) * rememberState.revealStepS;
     const revealMs = Math.min(6000, Math.max(300, (rememberState.revealBaseS + extra) * 1000));
-    rememberState.timer = setTimeout(coverRememberLevel, revealMs);
+    scheduleRememberTimer(coverRememberLevel, revealMs);
   }
   function coverRememberLevel() {
     if (!rememberState) return;
@@ -4026,13 +4089,13 @@
   // a guaranteed non-overlapping gap.
   const REMEMBER_MAX_LEVEL = 24;
   function rememberGoToLevel(newLevel) {
-    if (!rememberState || rememberState.mode !== "training") return;
+    if (!rememberState || rememberState.mode !== "training" || rememberState.paused) return;
     if (rememberState.timer) clearTimeout(rememberState.timer);
     rememberState.level = Math.min(REMEMBER_MAX_LEVEL, Math.max(rememberState.trainingStart, newLevel));
     startRememberLevel();
   }
   function rememberClick(num, el) {
-    if (!rememberState || rememberState.phase !== "covered") return;
+    if (!rememberState || rememberState.phase !== "covered" || rememberState.paused) return;
     if (num === rememberState.nextExpected) {
       el.classList.add("correct");
       el.textContent = String(num);
@@ -4045,7 +4108,7 @@
         els.rememberStage.querySelectorAll(".remember-marker").forEach((m) => { m.textContent = m.dataset.num; m.style.pointerEvents = "none"; m.classList.remove("covered"); });
         const stayPut = rememberState.mode === "training" && !rememberState.trainingProgress;
         if (!stayPut) rememberState.level = Math.min(REMEMBER_MAX_LEVEL, rememberState.level + 1);
-        rememberState.timer = setTimeout(startRememberLevel, 900);
+        scheduleRememberTimer(startRememberLevel, 900);
       }
     } else {
       rememberState.phase = "checking";
@@ -4069,7 +4132,7 @@
         hint = "Leider falsch – nochmal von vorne";
       }
       els.rememberHint.textContent = hint;
-      rememberState.timer = setTimeout(() => { rememberState.level = resetLevel; startRememberLevel(); }, 1400);
+      scheduleRememberTimer(() => { rememberState.level = resetLevel; startRememberLevel(); }, 1400);
     }
   }
   let lastRememberMode = null;
@@ -4080,6 +4143,8 @@
     els.rememberPlayerBar.hidden = false;
     els.rememberDonePanel.hidden = true;
     els.rememberNav.hidden = mode !== "training";
+    els.rememberPauseOverlay.hidden = true;
+    els.rememberPauseBtn.hidden = false;
     lastRememberMode = mode;
     rememberReturnScreen = mode === "training" ? "rememberTrainingReady" : "rememberReady";
     const startLevel = mode === "training" ? rememberPrefs.trainingStart : 2;
@@ -4090,7 +4155,9 @@
       revealBaseS: rememberPrefs.revealBaseS, revealStepS: rememberPrefs.revealStepS,
       errorMode: rememberPrefs.errorMode,
       trainingStart: rememberPrefs.trainingStart, trainingProgress: rememberPrefs.trainingProgress,
+      paused: false,
     };
+    applyRememberBg();
     requestWakeLock();
     startRememberLevel();
     // Kombi block: Remember has no natural end of its own (unlike VT's
@@ -4098,6 +4165,7 @@
     // cuts over to the next block when time is up, same as every other
     // domain's Kombi blocks.
     if (opts && opts.comboDurationS) {
+      rememberState.comboDurationFiresAt = performance.now() + opts.comboDurationS * 1000;
       rememberState.comboDurationTimer = setTimeout(finishRememberCombo, opts.comboDurationS * 1000);
     }
   }
@@ -4106,11 +4174,56 @@
     if (rememberState.timer) clearTimeout(rememberState.timer);
     const playedS = (performance.now() - rememberState.startTime) / 1000;
     rememberState = null;
+    els.rememberPauseOverlay.hidden = true;
     releaseWakeLock();
     if (document.fullscreenElement === els.rememberPlayer) document.exitFullscreen().catch(() => {});
     els.rememberFsHint.hidden = true;
     if (comboProgram) advanceComboProgram(playedS);
   }
+
+  // ---- Remember: pause mid-game to adjust the background, same
+  // mechanism as Periph's pause (freeze, let the overlay's controls edit
+  // state directly, shift timestamps forward by the paused duration on
+  // resume) but adapted for Remember's setTimeout-driven reveal/cover
+  // cycle instead of a rAF schedule - the pending timer is cancelled and
+  // its remaining delay is replayed via scheduleRememberTimer() on resume,
+  // rather than shifting a startTime that a schedule is re-read against. ----
+  function pauseRemember() {
+    if (!rememberState || rememberState.paused) return;
+    rememberState.paused = true;
+    rememberState.pausedAt = performance.now();
+    if (rememberState.timer) {
+      clearTimeout(rememberState.timer);
+      rememberState.timer = null;
+      rememberState.timerRemainingMs = Math.max(0, rememberState.timerFiresAt - rememberState.pausedAt);
+    }
+    if (rememberState.comboDurationTimer) {
+      clearTimeout(rememberState.comboDurationTimer);
+      rememberState.comboDurationTimer = null;
+      rememberState.comboRemainingMs = Math.max(0, rememberState.comboDurationFiresAt - rememberState.pausedAt);
+    }
+    syncRememberBgUI();
+    els.rememberPauseBtn.hidden = true;
+    els.rememberPauseOverlay.hidden = false;
+  }
+  function resumeRemember() {
+    if (!rememberState || !rememberState.paused) return;
+    rememberState.startTime += performance.now() - rememberState.pausedAt;
+    rememberState.paused = false;
+    if (rememberState.timerFn && rememberState.timerRemainingMs != null) {
+      scheduleRememberTimer(rememberState.timerFn, rememberState.timerRemainingMs);
+      rememberState.timerRemainingMs = null;
+    }
+    if (rememberState.comboRemainingMs != null) {
+      rememberState.comboDurationFiresAt = performance.now() + rememberState.comboRemainingMs;
+      rememberState.comboDurationTimer = setTimeout(finishRememberCombo, rememberState.comboRemainingMs);
+      rememberState.comboRemainingMs = null;
+    }
+    els.rememberPauseOverlay.hidden = true;
+    els.rememberPauseBtn.hidden = false;
+  }
+  els.rememberPauseBtn.addEventListener("click", pauseRemember);
+  els.rememberResumeBtn.addEventListener("click", resumeRemember);
   els.rememberNavPrevBtn.addEventListener("click", () => rememberState && rememberGoToLevel(rememberState.level - 1));
   els.rememberNavRestartBtn.addEventListener("click", () => rememberState && rememberGoToLevel(rememberState.level));
   els.rememberNavNextBtn.addEventListener("click", () => rememberState && rememberGoToLevel(rememberState.level + 1));
@@ -4138,6 +4251,7 @@
       : "Bei jeder neuen Zahl werden alle Positionen neu gemischt – schwerer zu merken.";
     syncRememberDifficultyUI(rememberReadyCfg);
     syncRememberErrorUI();
+    syncRememberBgUI();
     updateRememberReadyBestHint();
     showScreen("rememberReady");
   }
@@ -4182,6 +4296,7 @@
       setActive(el, (el.dataset.rememberProgress === "1") === rememberPrefs.trainingProgress);
     });
     syncRememberDifficultyUI(rememberTrainingCfg);
+    syncRememberBgUI();
     const best = rememberBestFor("training");
     els.rememberTrainingBestHint.textContent = best
       ? `Deine bisher höchste geschaffte Zahlenfolge im Trainingsmodus: ${best}.`
@@ -4228,6 +4343,7 @@
     if (rememberState.comboDurationTimer) clearTimeout(rememberState.comboDurationTimer);
     const state = rememberState;
     rememberState = null;
+    els.rememberPauseOverlay.hidden = true;
     releaseWakeLock();
     if (document.fullscreenElement === els.rememberPlayer) document.exitFullscreen().catch(() => {});
     els.rememberFsHint.hidden = true;
