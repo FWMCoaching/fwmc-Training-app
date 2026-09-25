@@ -1116,6 +1116,43 @@
     blitzFsBtn: $("blitzFsBtn"), blitzFsHint: $("blitzFsHint"), blitzFsHintOpenBtn: $("blitzFsHintOpenBtn"), blitzFsHintClose: $("blitzFsHintClose"),
     blitzDonePanel: $("blitzDonePanel"), blitzDoneSummary: $("blitzDoneSummary"), blitzRating: $("blitzRating"),
     blitzAgainBtn: $("blitzAgainBtn"), blitzDoneBackBtn: $("blitzDoneBackBtn"),
+    flashOpenConstant: $("flashOpenConstant"), flashOpenClimb: $("flashOpenClimb"), flashOpenClimbRepeat: $("flashOpenClimbRepeat"), flashOpenTraining: $("flashOpenTraining"),
+    flashBestConstant: $("flashBestConstant"), flashBestClimb: $("flashBestClimb"), flashBestClimbRepeat: $("flashBestClimbRepeat"), flashBestTraining: $("flashBestTraining"),
+    flashReady: $("flashReady"), flashReadyBackToHome: $("flashReadyBackToHome"), flashReadyTitle: $("flashReadyTitle"), flashReadyDesc: $("flashReadyDesc"),
+    flashFieldRow: $("flashFieldRow"), flashAllBtn: $("flashAllBtn"), flashFieldHint: $("flashFieldHint"), flashZonesBtn: $("flashZonesBtn"), flashZoneGrid: $("flashZoneGrid"),
+    flashDifficultyRow: $("flashDifficultyRow"), flashDiffCustom: $("flashDiffCustom"), flashErrorRow: $("flashErrorRow"),
+    flashConstantGroup: $("flashConstantGroup"), flashConstantSlider: $("flashConstantSlider"), flashConstantValue: $("flashConstantValue"),
+    flashStartGroup: $("flashStartGroup"), flashStartSlider: $("flashStartSlider"), flashStartValue: $("flashStartValue"),
+    flashRepsGroup: $("flashRepsGroup"), flashRepsSlider: $("flashRepsSlider"), flashRepsValue: $("flashRepsValue"),
+    flashAdvanced: $("flashAdvanced"), flashStimulusSlider: $("flashStimulusSlider"), flashStimulusValue: $("flashStimulusValue"),
+    flashIntervalSlider: $("flashIntervalSlider"), flashIntervalValue: $("flashIntervalValue"),
+    flashBgColorPicker: $("flashBgColorPicker"), flashBgIntensitySlider: $("flashBgIntensitySlider"),
+    flashBgIntensityValue: $("flashBgIntensityValue"), flashBgContrastHint: $("flashBgContrastHint"),
+    flashBgSourceRow: $("flashBgSourceRow"), flashBgPresetGroup: $("flashBgPresetGroup"), flashBgPresetList: $("flashBgPresetList"),
+    flashBgSaveBtn: $("flashBgSaveBtn"), flashBgSaveForm: $("flashBgSaveForm"), flashBgSaveNameInput: $("flashBgSaveNameInput"),
+    flashBgSaveCancelBtn: $("flashBgSaveCancelBtn"), flashBgSaveConfirmBtn: $("flashBgSaveConfirmBtn"),
+    flashReadyBestHint: $("flashReadyBestHint"), flashReadyStartBtn: $("flashReadyStartBtn"),
+    flashTrainingReady: $("flashTrainingReady"), flashTrainingBackToHome: $("flashTrainingBackToHome"),
+    flashTrainingStartSlider: $("flashTrainingStartSlider"), flashTrainingStartValue: $("flashTrainingStartValue"),
+    flashTrainingProgressRow: $("flashTrainingProgressRow"),
+    flashTrainingFieldRow: $("flashTrainingFieldRow"), flashTrainingAllBtn: $("flashTrainingAllBtn"), flashTrainingFieldHint: $("flashTrainingFieldHint"),
+    flashTrainingZonesBtn: $("flashTrainingZonesBtn"), flashTrainingZoneGrid: $("flashTrainingZoneGrid"),
+    flashTrainingAdvanced: $("flashTrainingAdvanced"), flashTrainingStimulusSlider: $("flashTrainingStimulusSlider"), flashTrainingStimulusValue: $("flashTrainingStimulusValue"),
+    flashTrainingIntervalSlider: $("flashTrainingIntervalSlider"), flashTrainingIntervalValue: $("flashTrainingIntervalValue"),
+    flashTrainingBgColorPicker: $("flashTrainingBgColorPicker"), flashTrainingBgIntensitySlider: $("flashTrainingBgIntensitySlider"),
+    flashTrainingBgIntensityValue: $("flashTrainingBgIntensityValue"), flashTrainingBgContrastHint: $("flashTrainingBgContrastHint"),
+    flashTrainingBgSourceRow: $("flashTrainingBgSourceRow"), flashTrainingBgPresetGroup: $("flashTrainingBgPresetGroup"), flashTrainingBgPresetList: $("flashTrainingBgPresetList"),
+    flashTrainingBgSaveBtn: $("flashTrainingBgSaveBtn"), flashTrainingBgSaveForm: $("flashTrainingBgSaveForm"), flashTrainingBgSaveNameInput: $("flashTrainingBgSaveNameInput"),
+    flashTrainingBgSaveCancelBtn: $("flashTrainingBgSaveCancelBtn"), flashTrainingBgSaveConfirmBtn: $("flashTrainingBgSaveConfirmBtn"),
+    flashTrainingBestHint: $("flashTrainingBestHint"), flashTrainingStartBtn: $("flashTrainingStartBtn"),
+    flashPlayer: $("flashPlayer"), flashStage: $("flashStage"), flashHint: $("flashHint"), flashDigitEl: $("flashDigitEl"),
+    flashInputPanel: $("flashInputPanel"), flashTypedInput: $("flashTypedInput"),
+    flashPauseOverlay: $("flashPauseOverlay"), flashPauseBgSlider: $("flashPauseBgSlider"), flashPauseBgValue: $("flashPauseBgValue"),
+    flashPauseBgColorPicker: $("flashPauseBgColorPicker"), flashResumeBtn: $("flashResumeBtn"),
+    flashPlayerBar: $("flashPlayerBar"), flashBackBtn: $("flashBackBtn"), flashPauseBtn: $("flashPauseBtn"), flashLevelEl: $("flashLevelEl"),
+    flashFsBtn: $("flashFsBtn"), flashFsHint: $("flashFsHint"), flashFsHintOpenBtn: $("flashFsHintOpenBtn"), flashFsHintClose: $("flashFsHintClose"),
+    flashDonePanel: $("flashDonePanel"), flashDoneSummary: $("flashDoneSummary"), flashRating: $("flashRating"),
+    flashAgainBtn: $("flashAgainBtn"), flashDoneBackBtn: $("flashDoneBackBtn"),
     rememberOpenFixed: $("rememberOpenFixed"), rememberOpenShuffle: $("rememberOpenShuffle"), rememberOpenTraining: $("rememberOpenTraining"),
     rememberBestFixed: $("rememberBestFixed"), rememberBestShuffle: $("rememberBestShuffle"), rememberBestTraining: $("rememberBestTraining"),
     rememberReady: $("rememberReady"), rememberReadyBackToHome: $("rememberReadyBackToHome"),
@@ -1195,7 +1232,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -1233,6 +1270,7 @@
       els.natFlashPanel.hidden = sub !== "flash";
       if (sub === "remember") renderRememberBests();
       if (sub === "blitz") renderBlitzBest();
+      if (sub === "flash") renderFlashBests();
     });
   });
   document.querySelectorAll("[data-open-combo]").forEach((btn) => btn.addEventListener("click", () => openComboScreen()));
@@ -1731,6 +1769,7 @@
     { id: "vt", label: "Visual Training / NAT", get: () => ({ colorKey: state.bgColorKey, intensity: state.bgIntensity }) },
     { id: "remember", label: "Remember", get: () => ({ colorKey: rememberPrefs.bgColorKey, intensity: rememberPrefs.bgIntensity }) },
     { id: "blitz", label: "Blitz-Raster", get: () => ({ colorKey: blitzPrefs.bgColorKey, intensity: blitzPrefs.bgIntensity }) },
+    { id: "flash", label: "Flash Speicher Test", get: () => ({ colorKey: flashPrefs.bgColorKey, intensity: flashPrefs.bgIntensity }) },
   ];
   const BG_PRESETS_KEY = "fwmc-bg-presets-v1"; // [{ id, name, colorKey, intensity }] - not scoped to a domain, any saved combo applies anywhere
   const bgPresetStore = makePresetStore(BG_PRESETS_KEY);
@@ -2724,6 +2763,7 @@
     els.movementPlayer.hidden = true;
     els.rememberPlayer.hidden = true;
     els.blitzPlayer.hidden = true;
+    els.flashPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3096,6 +3136,7 @@
   wireFullscreen({ player: els.movementPlayer, btn: els.movementFsBtn, hint: els.movementFsHint, hintOpen: els.movementFsHintOpenBtn, hintClose: els.movementFsHintClose });
   wireFullscreen({ player: els.rememberPlayer, btn: els.rememberFsBtn, hint: els.rememberFsHint, hintOpen: els.rememberFsHintOpenBtn, hintClose: els.rememberFsHintClose });
   wireFullscreen({ player: els.blitzPlayer, btn: els.blitzFsBtn, hint: els.blitzFsHint, hintOpen: els.blitzFsHintOpenBtn, hintClose: els.blitzFsHintClose });
+  wireFullscreen({ player: els.flashPlayer, btn: els.flashFsBtn, hint: els.flashFsHint, hintOpen: els.flashFsHintOpenBtn, hintClose: els.flashFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -4820,6 +4861,532 @@
   els.blitzBackBtn.addEventListener("click", blitzStop);
   els.blitzAgainBtn.addEventListener("click", () => { els.blitzDonePanel.hidden = true; startBlitzGame(); });
   els.blitzDoneBackBtn.addEventListener("click", () => { els.blitzPlayer.hidden = true; els.blitzDonePanel.hidden = true; showScreen("natHome"); });
+
+  // ==== Flash Speicher Test engine ====
+  // A THIRD distinct NAT memory mechanic (the user was explicit this isn't
+  // "Remember but faster" nor "Blitz-Raster"): numbers appear ONE AT A TIME
+  // at scattered positions - reusing Periph's own axis/zone "Bereich" maths
+  // directly (randFlashPos() mirrors randPeriphPos()) rather than a new
+  // positioning system - each briefly, then an input box opens to type the
+  // whole sequence back IN ORDER (unlike Blitz-Raster, where order doesn't
+  // matter). Four modes share one `flashPrefs` object (mirroring how
+  // Remember's fixed/shuffle/training share `rememberPrefs`):
+  // - "constant": count never changes, only gets faster on success.
+  // - "climb": count grows by one every successful round.
+  // - "climbRepeat": like climb, but repeats each count `repsPerLevel`
+  //   times before advancing.
+  // - "training": Remember-style direct start at a chosen count/speed.
+  const FLASH_PREFS_KEY = "fwmc-flash-prefs-v1";
+  const FLASH_DIFFICULTIES = {
+    leicht: { title: "Leicht", stimulusS: 1.2, intervalS: 0.6 },
+    mittel: { title: "Mittel", stimulusS: 0.8, intervalS: 0.4 },
+    schwer: { title: "Schwer", stimulusS: 0.5, intervalS: 0.25 },
+  };
+  const FLASH_SPEED_STEPS = 8; // ceiling for "constant" mode's speed-up steps
+  const flashPrefs = {
+    stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS,
+    intervalS: FLASH_DIFFICULTIES.mittel.intervalS,
+    errorMode: "reset2",
+    axes: PERIPH_AXIS_KEYS.slice(),
+    useZones: false,
+    zones: PERIPH_ZONE_KEYS.slice(),
+    constantCount: 3,
+    startCount: 3,
+    repsPerLevel: 2,
+    trainingStart: 5,
+    trainingProgress: true,
+    bgColorKey: "gruen",
+    bgIntensity: 0,
+  };
+  function loadFlashPrefs() {
+    const saved = readJSON(FLASH_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(flashPrefs, saved);
+    if (!Array.isArray(flashPrefs.axes) || flashPrefs.axes.length === 0 || !flashPrefs.axes.every((a) => PERIPH_AXIS_KEYS.includes(a))) flashPrefs.axes = PERIPH_AXIS_KEYS.slice();
+    if (!Array.isArray(flashPrefs.zones) || flashPrefs.zones.length === 0 || !flashPrefs.zones.every((z) => PERIPH_ZONE_KEYS.includes(z))) flashPrefs.zones = PERIPH_ZONE_KEYS.slice();
+    if (!["reset2", "backOne", "stay"].includes(flashPrefs.errorMode)) flashPrefs.errorMode = "reset2";
+    if (typeof flashPrefs.stimulusS !== "number" || flashPrefs.stimulusS < 0.3 || flashPrefs.stimulusS > 2) flashPrefs.stimulusS = FLASH_DIFFICULTIES.mittel.stimulusS;
+    if (typeof flashPrefs.intervalS !== "number" || flashPrefs.intervalS < 0.2 || flashPrefs.intervalS > 2) flashPrefs.intervalS = FLASH_DIFFICULTIES.mittel.intervalS;
+    if (typeof flashPrefs.constantCount !== "number" || flashPrefs.constantCount < 2) flashPrefs.constantCount = 3;
+    if (typeof flashPrefs.startCount !== "number" || flashPrefs.startCount < 2) flashPrefs.startCount = 3;
+    if (![2, 3].includes(flashPrefs.repsPerLevel)) flashPrefs.repsPerLevel = 2;
+    if (typeof flashPrefs.trainingStart !== "number" || flashPrefs.trainingStart < 2) flashPrefs.trainingStart = 5;
+    if (typeof flashPrefs.trainingProgress !== "boolean") flashPrefs.trainingProgress = true;
+    if (!STROOP_COLOR_BY_KEY[flashPrefs.bgColorKey]) flashPrefs.bgColorKey = "gruen";
+    if (typeof flashPrefs.bgIntensity !== "number" || flashPrefs.bgIntensity < 0 || flashPrefs.bgIntensity > 1) flashPrefs.bgIntensity = 0;
+  }
+  function saveFlashPrefsToStorage() { writeJSON(FLASH_PREFS_KEY, flashPrefs); }
+  loadFlashPrefs();
+
+  const FLASH_BEST_KEY = "fwmc-flash-best-v1"; // { constant: bestSpeedStep, climb: N, climbRepeat: N, training: N }
+  function flashBestFor(mode) { return readJSON(FLASH_BEST_KEY, {})[mode] || 0; }
+  function saveFlashBest(mode, value) {
+    const all = readJSON(FLASH_BEST_KEY, {});
+    if (value > (all[mode] || 0)) { all[mode] = value; writeJSON(FLASH_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderFlashBests() {
+    const c = flashBestFor("constant"), cl = flashBestFor("climb"), cr = flashBestFor("climbRepeat"), t = flashBestFor("training");
+    els.flashBestConstant.textContent = c ? `Bestleistung: Tempo-Stufe ${c + 1}` : "";
+    els.flashBestClimb.textContent = cl ? `Bestleistung: ${cl} Zahlen` : "";
+    els.flashBestClimbRepeat.textContent = cr ? `Bestleistung: ${cr} Zahlen` : "";
+    els.flashBestTraining.textContent = t ? `Bestleistung: ${t} Zahlen` : "";
+  }
+  renderFlashBests();
+
+  function applyFlashBg() {
+    els.flashStage.style.background = flashPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[flashPrefs.bgColorKey].hex, flashPrefs.bgIntensity)
+      : "";
+  }
+  const syncFlashBgUI = wireBgIntensityControl(flashPrefs, {
+    pickers: [els.flashBgColorPicker, els.flashTrainingBgColorPicker, els.flashPauseBgColorPicker],
+    sliders: [els.flashBgIntensitySlider, els.flashTrainingBgIntensitySlider, els.flashPauseBgSlider],
+    valueEls: [els.flashBgIntensityValue, els.flashTrainingBgIntensityValue, els.flashPauseBgValue],
+    hintEls: [els.flashBgContrastHint, els.flashTrainingBgContrastHint],
+    transfer: [
+      {
+        sourceRow: els.flashBgSourceRow, presetGroup: els.flashBgPresetGroup, presetList: els.flashBgPresetList,
+        saveBtn: els.flashBgSaveBtn, form: els.flashBgSaveForm, nameInput: els.flashBgSaveNameInput,
+        cancelBtn: els.flashBgSaveCancelBtn, confirmBtn: els.flashBgSaveConfirmBtn,
+      },
+      {
+        sourceRow: els.flashTrainingBgSourceRow, presetGroup: els.flashTrainingBgPresetGroup, presetList: els.flashTrainingBgPresetList,
+        saveBtn: els.flashTrainingBgSaveBtn, form: els.flashTrainingBgSaveForm, nameInput: els.flashTrainingBgSaveNameInput,
+        cancelBtn: els.flashTrainingBgSaveCancelBtn, confirmBtn: els.flashTrainingBgSaveConfirmBtn,
+      },
+    ],
+  }, () => { saveFlashPrefsToStorage(); applyFlashBg(); }, "flash");
+
+  // ---- Bereich (axes/zones) - same picker pattern as Periph's, mirrored
+  // onto flashPrefs.axes/useZones/zones, shared by both ready screens. ----
+  document.querySelectorAll("#flashFieldRow [data-flash-axis], #flashTrainingFieldRow [data-flash-axis]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const axis = el.dataset.flashAxis;
+      const on = flashPrefs.axes.includes(axis);
+      flashPrefs.axes = on ? flashPrefs.axes.filter((a) => a !== axis) : [...flashPrefs.axes, axis];
+      saveFlashPrefsToStorage();
+      syncFlashFieldUI();
+    });
+  });
+  function flashToggleAllAxes() {
+    const allOn = flashPrefs.axes.length === PERIPH_AXIS_KEYS.length;
+    flashPrefs.axes = allOn ? [] : PERIPH_AXIS_KEYS.slice();
+    saveFlashPrefsToStorage();
+    syncFlashFieldUI();
+  }
+  els.flashAllBtn.addEventListener("click", flashToggleAllAxes);
+  els.flashTrainingAllBtn.addEventListener("click", flashToggleAllAxes);
+  function flashToggleZonesMode() {
+    flashPrefs.useZones = !flashPrefs.useZones;
+    saveFlashPrefsToStorage();
+    syncFlashFieldUI();
+  }
+  els.flashZonesBtn.addEventListener("click", flashToggleZonesMode);
+  els.flashTrainingZonesBtn.addEventListener("click", flashToggleZonesMode);
+  document.querySelectorAll("#flashZoneGrid [data-zone], #flashTrainingZoneGrid [data-zone]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const z = el.dataset.zone;
+      const on = flashPrefs.zones.includes(z);
+      if (on && flashPrefs.zones.length <= 1) return;
+      flashPrefs.zones = on ? flashPrefs.zones.filter((k) => k !== z) : [...flashPrefs.zones, z];
+      saveFlashPrefsToStorage();
+      syncFlashFieldUI();
+    });
+  });
+  function syncFlashFieldUI() {
+    document.querySelectorAll("#flashFieldRow [data-flash-axis], #flashTrainingFieldRow [data-flash-axis]").forEach((el) => setActive(el, flashPrefs.axes.includes(el.dataset.flashAxis)));
+    setActive(els.flashAllBtn, flashPrefs.axes.length === PERIPH_AXIS_KEYS.length);
+    setActive(els.flashTrainingAllBtn, flashPrefs.axes.length === PERIPH_AXIS_KEYS.length);
+    setActive(els.flashZonesBtn, flashPrefs.useZones);
+    setActive(els.flashTrainingZonesBtn, flashPrefs.useZones);
+    els.flashFieldRow.hidden = flashPrefs.useZones;
+    els.flashTrainingFieldRow.hidden = flashPrefs.useZones;
+    els.flashZoneGrid.hidden = !flashPrefs.useZones;
+    els.flashTrainingZoneGrid.hidden = !flashPrefs.useZones;
+    document.querySelectorAll("#flashZoneGrid [data-zone], #flashTrainingZoneGrid [data-zone]").forEach((el) => el.classList.toggle("active", flashPrefs.zones.includes(el.dataset.zone)));
+    const belowMin = !flashPrefs.useZones && flashPrefs.axes.length === 0;
+    els.flashFieldHint.textContent = belowMin ? "Wähle mindestens einen Bereich." : "";
+    els.flashFieldHint.classList.toggle("warn", belowMin);
+    els.flashTrainingFieldHint.textContent = belowMin ? "Wähle mindestens einen Bereich." : "";
+    els.flashTrainingFieldHint.classList.toggle("warn", belowMin);
+    els.flashReadyStartBtn.disabled = belowMin;
+    els.flashTrainingStartBtn.disabled = belowMin;
+  }
+
+  // ---- Schwierigkeit / Bei Fehler / mode-specific sliders ----
+  function flashDifficultyBucket() {
+    for (const key of Object.keys(FLASH_DIFFICULTIES)) {
+      const p = FLASH_DIFFICULTIES[key];
+      if (Math.abs(p.stimulusS - flashPrefs.stimulusS) < 0.001 && Math.abs(p.intervalS - flashPrefs.intervalS) < 0.001) return key;
+    }
+    return "custom";
+  }
+  function syncFlashSpeedUI() {
+    els.flashStimulusSlider.value = flashPrefs.stimulusS;
+    els.flashStimulusValue.textContent = fmtSeconds(flashPrefs.stimulusS);
+    els.flashIntervalSlider.value = flashPrefs.intervalS;
+    els.flashIntervalValue.textContent = fmtSeconds(flashPrefs.intervalS);
+    els.flashTrainingStimulusSlider.value = flashPrefs.stimulusS;
+    els.flashTrainingStimulusValue.textContent = fmtSeconds(flashPrefs.stimulusS);
+    els.flashTrainingIntervalSlider.value = flashPrefs.intervalS;
+    els.flashTrainingIntervalValue.textContent = fmtSeconds(flashPrefs.intervalS);
+  }
+  function syncFlashDifficultyUI() {
+    const bucket = flashDifficultyBucket();
+    document.querySelectorAll("#flashDifficultyRow [data-flash-diff]").forEach((el) => setActive(el, el.dataset.flashDiff === bucket));
+    els.flashDiffCustom.hidden = bucket !== "custom";
+    syncFlashSpeedUI();
+    updateFlashReadyBestHint();
+  }
+  document.querySelectorAll("#flashDifficultyRow [data-flash-diff]").forEach((el) => {
+    el.addEventListener("click", () => {
+      Object.assign(flashPrefs, FLASH_DIFFICULTIES[el.dataset.flashDiff]);
+      saveFlashPrefsToStorage();
+      syncFlashDifficultyUI();
+    });
+  });
+  function flashSpeedSliderInput() {
+    flashPrefs.stimulusS = Number(els.flashStimulusSlider.value);
+    flashPrefs.intervalS = Number(els.flashIntervalSlider.value);
+    saveFlashPrefsToStorage();
+    syncFlashDifficultyUI();
+  }
+  els.flashStimulusSlider.addEventListener("input", flashSpeedSliderInput);
+  els.flashIntervalSlider.addEventListener("input", flashSpeedSliderInput);
+  function flashTrainingSpeedSliderInput() {
+    flashPrefs.stimulusS = Number(els.flashTrainingStimulusSlider.value);
+    flashPrefs.intervalS = Number(els.flashTrainingIntervalSlider.value);
+    saveFlashPrefsToStorage();
+    syncFlashDifficultyUI();
+  }
+  els.flashTrainingStimulusSlider.addEventListener("input", flashTrainingSpeedSliderInput);
+  els.flashTrainingIntervalSlider.addEventListener("input", flashTrainingSpeedSliderInput);
+
+  document.querySelectorAll("#flashErrorRow [data-flash-error]").forEach((el) => {
+    el.addEventListener("click", () => {
+      flashPrefs.errorMode = el.dataset.flashError;
+      saveFlashPrefsToStorage();
+      syncFlashErrorUI();
+    });
+  });
+  function syncFlashErrorUI() {
+    document.querySelectorAll("#flashErrorRow [data-flash-error]").forEach((el) => setActive(el, el.dataset.flashError === flashPrefs.errorMode));
+  }
+  els.flashConstantSlider.addEventListener("input", () => {
+    flashPrefs.constantCount = Number(els.flashConstantSlider.value);
+    saveFlashPrefsToStorage();
+    syncFlashConstantUI();
+  });
+  function syncFlashConstantUI() {
+    els.flashConstantSlider.value = flashPrefs.constantCount;
+    els.flashConstantValue.textContent = String(flashPrefs.constantCount);
+  }
+  els.flashStartSlider.addEventListener("input", () => {
+    flashPrefs.startCount = Number(els.flashStartSlider.value);
+    saveFlashPrefsToStorage();
+    syncFlashStartUI();
+  });
+  function syncFlashStartUI() {
+    els.flashStartSlider.value = flashPrefs.startCount;
+    els.flashStartValue.textContent = String(flashPrefs.startCount);
+  }
+  els.flashRepsSlider.addEventListener("input", () => {
+    flashPrefs.repsPerLevel = Number(els.flashRepsSlider.value);
+    saveFlashPrefsToStorage();
+    syncFlashRepsUI();
+  });
+  function syncFlashRepsUI() {
+    els.flashRepsSlider.value = flashPrefs.repsPerLevel;
+    els.flashRepsValue.textContent = String(flashPrefs.repsPerLevel);
+  }
+  els.flashTrainingStartSlider.addEventListener("input", () => {
+    flashPrefs.trainingStart = Number(els.flashTrainingStartSlider.value);
+    saveFlashPrefsToStorage();
+    syncFlashTrainingUI();
+  });
+  document.querySelectorAll("#flashTrainingProgressRow [data-flash-progress]").forEach((el) => {
+    el.addEventListener("click", () => {
+      flashPrefs.trainingProgress = el.dataset.flashProgress === "1";
+      saveFlashPrefsToStorage();
+      syncFlashTrainingUI();
+    });
+  });
+  function syncFlashTrainingUI() {
+    els.flashTrainingStartSlider.value = flashPrefs.trainingStart;
+    els.flashTrainingStartValue.textContent = String(flashPrefs.trainingStart);
+    document.querySelectorAll("#flashTrainingProgressRow [data-flash-progress]").forEach((el) => setActive(el, (el.dataset.flashProgress === "1") === flashPrefs.trainingProgress));
+    syncFlashSpeedUI();
+    const best = flashBestFor("training");
+    els.flashTrainingBestHint.textContent = best
+      ? `Deine bisher höchste geschaffte Zahlenfolge im Trainingsmodus: ${best}.`
+      : "Noch keine Bestleistung im Trainingsmodus – leg los!";
+  }
+
+  // ---- Ready screens ----
+  let flashReadyMode = "constant";
+  function updateFlashReadyBestHint() {
+    const best = flashBestFor(flashReadyMode);
+    els.flashReadyBestHint.textContent = best
+      ? (flashReadyMode === "constant" ? `Deine Bestleistung: Tempo-Stufe ${best + 1}.` : `Deine bisher höchste geschaffte Zahlenfolge: ${best}.`)
+      : "Noch keine Bestleistung bei diesem Modus – leg los!";
+  }
+  function openFlashReady(mode) {
+    flashReadyMode = mode;
+    els.flashReadyTitle.textContent = mode === "constant" ? "Konstant" : mode === "climb" ? "Steigend, direkt" : "Steigend, mit Wiederholung";
+    els.flashReadyDesc.textContent = mode === "constant"
+      ? "Immer gleich viele Zahlen – wird dafür immer schneller eingeblendet."
+      : mode === "climb"
+      ? "Nach jeder richtigen Runde kommt eine Zahl mehr dazu."
+      : "Jede Stufe wird erst mehrmals wiederholt, bevor eine Zahl dazukommt.";
+    els.flashConstantGroup.hidden = mode !== "constant";
+    els.flashStartGroup.hidden = mode === "constant";
+    els.flashRepsGroup.hidden = mode !== "climbRepeat";
+    syncFlashFieldUI();
+    syncFlashDifficultyUI();
+    syncFlashErrorUI();
+    syncFlashConstantUI();
+    syncFlashStartUI();
+    syncFlashRepsUI();
+    syncFlashBgUI();
+    updateFlashReadyBestHint();
+    showScreen("flashReady");
+  }
+  els.flashOpenConstant.addEventListener("click", () => openFlashReady("constant"));
+  els.flashOpenClimb.addEventListener("click", () => openFlashReady("climb"));
+  els.flashOpenClimbRepeat.addEventListener("click", () => openFlashReady("climbRepeat"));
+  els.flashReadyBackToHome.addEventListener("click", () => showScreen("natHome"));
+  els.flashOpenTraining.addEventListener("click", () => {
+    syncFlashFieldUI();
+    syncFlashTrainingUI();
+    syncFlashBgUI();
+    showScreen("flashTrainingReady");
+  });
+  els.flashTrainingBackToHome.addEventListener("click", () => showScreen("natHome"));
+
+  // ---- Round engine ----
+  // Same {fx,fy} fractional positioning as Periph, so a number already
+  // mid-flash still lands correctly if the device is rotated.
+  function randFlashPos() {
+    if (flashState.useZones) {
+      const zones = flashState.zones.length ? flashState.zones : PERIPH_ZONE_KEYS;
+      const { row, col } = PERIPH_ZONES[zones[Math.floor(Math.random() * zones.length)]];
+      const pad = 0.14, cell = 1 / 3;
+      return {
+        fx: col * cell + pad * cell + Math.random() * cell * (1 - 2 * pad),
+        fy: row * cell + pad * cell + Math.random() * cell * (1 - 2 * pad),
+      };
+    }
+    const axes = flashState.axes.length ? flashState.axes : PERIPH_AXIS_KEYS;
+    const radiusFrac = 0.45 + Math.random() * 0.5;
+    const axis = axes[Math.floor(Math.random() * axes.length)];
+    const bases = PERIPH_FIELD_ANGLES[axis];
+    const base = bases[Math.floor(Math.random() * bases.length)];
+    const angle = base + (Math.random() - 0.5) * (Math.PI / 6);
+    return { fx: 0.5 + 0.42 * radiusFrac * Math.cos(angle), fy: 0.5 + 0.42 * radiusFrac * Math.sin(angle) };
+  }
+  // Same timer-wrapping trick as Remember/Blitz-Raster: records what's
+  // pending and when it fires, so Pause can cancel it and Resume can
+  // replay it with its exact remaining delay.
+  function scheduleFlashTimer(fn, delayMs) {
+    flashState.timerFn = fn;
+    flashState.timerFiresAt = performance.now() + delayMs;
+    flashState.timer = setTimeout(fn, delayMs);
+  }
+  function flashEffectiveStimulusS() {
+    if (flashState.mode !== "constant") return flashState.stimulusS;
+    return Math.max(0.25, flashState.stimulusS * Math.pow(0.85, flashState.speedStep));
+  }
+  function flashEffectiveIntervalS() {
+    if (flashState.mode !== "constant") return flashState.intervalS;
+    return Math.max(0.15, flashState.intervalS * Math.pow(0.85, flashState.speedStep));
+  }
+  function flashStartRound() {
+    const count = flashState.mode === "constant" ? flashState.constantCount : flashState.count;
+    flashState.sequence = Array.from({ length: count }, () => String(Math.floor(Math.random() * 10)));
+    flashState.shownIndex = 0;
+    els.flashInputPanel.hidden = true;
+    els.flashHint.textContent = "Merken …";
+    els.flashLevelEl.textContent = flashState.mode === "constant" ? `Tempo-Stufe ${flashState.speedStep + 1}` : `${flashState.count} Zahlen`;
+    flashShowDigit();
+  }
+  function flashShowDigit() {
+    const digit = flashState.sequence[flashState.shownIndex];
+    const pos = randFlashPos();
+    flashState.phase = "flash";
+    els.flashDigitEl.textContent = digit;
+    els.flashDigitEl.style.left = pos.fx * 100 + "%";
+    els.flashDigitEl.style.top = pos.fy * 100 + "%";
+    els.flashDigitEl.hidden = false;
+    scheduleFlashTimer(flashAfterDigit, flashEffectiveStimulusS() * 1000);
+  }
+  function flashAfterDigit() {
+    if (!flashState) return;
+    els.flashDigitEl.hidden = true;
+    flashState.shownIndex += 1;
+    if (flashState.shownIndex >= flashState.sequence.length) {
+      flashOpenInput();
+    } else {
+      flashState.phase = "gap";
+      scheduleFlashTimer(flashShowDigit, flashEffectiveIntervalS() * 1000);
+    }
+  }
+  function flashOpenInput() {
+    flashState.phase = "input";
+    els.flashHint.textContent = "Jetzt in der richtigen Reihenfolge eintippen";
+    els.flashTypedInput.value = "";
+    els.flashInputPanel.hidden = false;
+    els.flashTypedInput.focus();
+  }
+  els.flashTypedInput.addEventListener("input", () => {
+    if (!flashState || flashState.phase !== "input" || flashState.paused) return;
+    const digitsOnly = els.flashTypedInput.value.replace(/\D/g, "").slice(0, flashState.sequence.length);
+    els.flashTypedInput.value = digitsOnly;
+    if (digitsOnly.length < flashState.sequence.length) return;
+    flashCheckAnswer(digitsOnly);
+  });
+  function flashCheckAnswer(typed) {
+    flashState.phase = "checking";
+    if (typed === flashState.sequence.join("")) flashSuccessTransition();
+    else flashWrongTransition();
+  }
+  function flashSuccessTransition() {
+    els.flashHint.textContent = "Richtig! Weiter geht's …";
+    els.flashInputPanel.hidden = true;
+    if (flashState.mode === "constant") {
+      if (flashState.speedStep > flashState.cleared) flashState.cleared = flashState.speedStep;
+      flashState.speedStep = Math.min(FLASH_SPEED_STEPS, flashState.speedStep + 1);
+    } else if (flashState.mode === "climb") {
+      if (flashState.count > flashState.cleared) flashState.cleared = flashState.count;
+      flashState.count += 1;
+    } else if (flashState.mode === "climbRepeat") {
+      flashState.repsDone += 1;
+      if (flashState.repsDone >= flashState.repsPerLevel) {
+        if (flashState.count > flashState.cleared) flashState.cleared = flashState.count;
+        flashState.count += 1;
+        flashState.repsDone = 0;
+      }
+    } else if (flashState.mode === "training") {
+      if (flashState.count > flashState.cleared) flashState.cleared = flashState.count;
+      if (flashState.trainingProgress) flashState.count += 1;
+    }
+    scheduleFlashTimer(flashStartRound, 900);
+  }
+  function flashWrongTransition() {
+    let hint;
+    els.flashInputPanel.hidden = true;
+    if (flashState.mode === "training") {
+      flashState.count = flashState.trainingStartLevel;
+      hint = "Leider falsch – nochmal von vorne";
+    } else if (flashState.mode === "constant") {
+      if (flashState.errorMode === "stay") hint = "Leider falsch – nochmal versuchen";
+      else if (flashState.errorMode === "backOne") { flashState.speedStep = Math.max(0, flashState.speedStep - 1); hint = "Leider falsch – einen Schritt langsamer"; }
+      else { flashState.speedStep = 0; hint = "Leider falsch – wieder von vorne"; }
+    } else {
+      flashState.repsDone = 0;
+      if (flashState.errorMode === "stay") hint = "Leider falsch – nochmal versuchen";
+      else if (flashState.errorMode === "backOne") { flashState.count = Math.max(2, flashState.count - 1); hint = "Leider falsch – eine Zahl weniger"; }
+      else { flashState.count = flashState.startLevel; hint = "Leider falsch – nochmal von vorne"; }
+    }
+    els.flashHint.textContent = hint;
+    scheduleFlashTimer(flashStartRound, 1400);
+  }
+
+  let flashState = null;
+  let lastFlashMode = null;
+  let flashReturnScreen = "natHome";
+  function startFlashGame(mode) {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.flashPlayer.hidden = false;
+    els.flashPlayerBar.hidden = false;
+    els.flashDonePanel.hidden = true;
+    els.flashPauseOverlay.hidden = true;
+    els.flashPauseBtn.hidden = false;
+    els.flashInputPanel.hidden = true;
+    els.flashDigitEl.hidden = true;
+    lastFlashMode = mode;
+    flashReturnScreen = mode === "training" ? "flashTrainingReady" : "flashReady";
+    const startCount = mode === "training" ? flashPrefs.trainingStart : flashPrefs.startCount;
+    flashState = {
+      mode, count: startCount, constantCount: flashPrefs.constantCount, speedStep: 0, repsDone: 0, cleared: 0,
+      sequence: [], shownIndex: 0, phase: "flash", timer: null,
+      stimulusS: flashPrefs.stimulusS, intervalS: flashPrefs.intervalS, errorMode: flashPrefs.errorMode,
+      axes: flashPrefs.axes.slice(), zones: flashPrefs.zones.slice(), useZones: flashPrefs.useZones,
+      trainingProgress: flashPrefs.trainingProgress, startLevel: flashPrefs.startCount, trainingStartLevel: flashPrefs.trainingStart,
+      startTime: performance.now(), paused: false,
+    };
+    applyFlashBg();
+    requestWakeLock();
+    flashStartRound();
+  }
+  els.flashReadyStartBtn.addEventListener("click", () => startFlashGame(flashReadyMode));
+  els.flashTrainingStartBtn.addEventListener("click", () => startFlashGame("training"));
+
+  // ---- Pause mid-game, live-adjust the background - same trick as
+  // Remember/Blitz-Raster's pause (cancel the pending timer, replay it
+  // with its exact remaining delay on resume). ----
+  function pauseFlash() {
+    if (!flashState || flashState.paused) return;
+    flashState.paused = true;
+    flashState.pausedAt = performance.now();
+    if (flashState.timer) {
+      clearTimeout(flashState.timer);
+      flashState.timer = null;
+      flashState.timerRemainingMs = Math.max(0, flashState.timerFiresAt - flashState.pausedAt);
+    }
+    els.flashTypedInput.blur(); // a still-focused input could otherwise keep taking keystrokes under the overlay
+    syncFlashBgUI();
+    els.flashPauseBtn.hidden = true;
+    els.flashPauseOverlay.hidden = false;
+  }
+  function resumeFlash() {
+    if (!flashState || !flashState.paused) return;
+    flashState.startTime += performance.now() - flashState.pausedAt;
+    flashState.paused = false;
+    if (flashState.timerFn && flashState.timerRemainingMs != null) {
+      scheduleFlashTimer(flashState.timerFn, flashState.timerRemainingMs);
+      flashState.timerRemainingMs = null;
+    }
+    els.flashPauseOverlay.hidden = true;
+    els.flashPauseBtn.hidden = false;
+    if (flashState.phase === "input") els.flashTypedInput.focus();
+  }
+  els.flashPauseBtn.addEventListener("click", pauseFlash);
+  els.flashResumeBtn.addEventListener("click", resumeFlash);
+
+  // "Beenden" doubles as the finish action, same convention as Remember/
+  // Blitz-Raster - Flash Speicher Test is endless/progressive with no
+  // fixed end of its own.
+  function flashStop() {
+    if (!flashState) return;
+    if (flashState.timer) clearTimeout(flashState.timer);
+    const state = flashState;
+    flashState = null;
+    els.flashPauseOverlay.hidden = true;
+    els.flashDigitEl.hidden = true;
+    els.flashInputPanel.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.flashPlayer) document.exitFullscreen().catch(() => {});
+    els.flashFsHint.hidden = true;
+    if (state.cleared > 0) {
+      const isRecord = saveFlashBest(state.mode, state.cleared);
+      renderFlashBests();
+      const played = (performance.now() - state.startTime) / 1000;
+      const modeTitle = state.mode === "constant" ? "Konstant" : state.mode === "climb" ? "Steigend, direkt" : state.mode === "climbRepeat" ? "Steigend, mit Wiederholung" : "Trainingsmodus";
+      const note = state.mode === "constant" ? `Tempo-Stufe ${state.cleared + 1} erreicht` : `${state.cleared} Zahlen erreicht`;
+      els.flashPlayerBar.hidden = true;
+      els.flashDoneSummary.textContent = `${modeTitle} · ${note}` + (isRecord ? " · Neue Bestleistung!" : "");
+      const id = addHistory({ kind: "flash", title: `Flash Speicher Test · ${modeTitle}`, seconds: Math.round(played), note });
+      renderRating(els.flashRating, id, "Wie war deine Konzentration?");
+      els.flashDonePanel.hidden = false;
+    } else {
+      els.flashPlayer.hidden = true;
+      showScreen(flashReturnScreen);
+    }
+  }
+  els.flashBackBtn.addEventListener("click", flashStop);
+  els.flashAgainBtn.addEventListener("click", () => { els.flashDonePanel.hidden = true; startFlashGame(lastFlashMode); });
+  els.flashDoneBackBtn.addEventListener("click", () => { els.flashPlayer.hidden = true; els.flashDonePanel.hidden = true; showScreen("natHome"); });
 
   // ==== Workout engine ====
   // One engine serves three situations: a block inside a coach-authored/

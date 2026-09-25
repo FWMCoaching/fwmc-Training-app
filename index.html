@@ -505,10 +505,30 @@
   </section>
 
   <section class="nat-panel" id="natFlashPanel" hidden>
-    <div class="nat-panel-card">
-      <h3>Flash Speicher Test</h3>
-      <p>Kurzzeitged&auml;chtnis-Test mit kurz eingeblendeten Reizen. Der genaue Ablauf wird hier als N&auml;chstes gestaltet.</p>
+    <div class="section-head">
+      <h2>Flash Speicher Test</h2>
+      <span class="section-note">Zahlen nacheinander merken, dann in der Reihenfolge eintippen</span>
     </div>
+    <button class="featured-card" id="flashOpenConstant">
+      <span class="fc-title">Konstant</span>
+      <span class="fc-desc">Immer gleich viele Zahlen &ndash; wird daf&uuml;r immer schneller eingeblendet.</span>
+      <span class="fc-meta" id="flashBestConstant"></span>
+    </button>
+    <button class="featured-card" id="flashOpenClimb">
+      <span class="fc-title">Steigend, direkt</span>
+      <span class="fc-desc">Nach jeder richtigen Runde kommt eine Zahl mehr dazu.</span>
+      <span class="fc-meta" id="flashBestClimb"></span>
+    </button>
+    <button class="featured-card" id="flashOpenClimbRepeat">
+      <span class="fc-title">Steigend, mit Wiederholung</span>
+      <span class="fc-desc">Jede Stufe wird erst 2&ndash;3 Mal wiederholt, bevor eine Zahl dazukommt.</span>
+      <span class="fc-meta" id="flashBestClimbRepeat"></span>
+    </button>
+    <button class="featured-card" id="flashOpenTraining">
+      <span class="fc-title">Trainingsmodus</span>
+      <span class="fc-desc">Starte direkt bei einer bestimmten Zahlenanzahl und Geschwindigkeit und &uuml;be gezielt dort.</span>
+      <span class="fc-meta" id="flashBestTraining"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -781,6 +801,221 @@
   <div class="group-help" id="blitzReadyBestHint"></div>
 
   <button class="start-btn" id="blitzReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="flashReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="flashReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="flashReadyTitle">&nbsp;</h1>
+  <p class="page-sub" id="flashReadyDesc"></p>
+
+  <div class="group">
+    <div class="group-label">Bereich</div>
+    <div class="choice-row two" id="flashFieldRow">
+      <button class="choice" data-flash-axis="horizontal">Horizontal</button>
+      <button class="choice" data-flash-axis="vertikal">Vertikal</button>
+      <button class="choice" data-flash-axis="diagonal">Diagonal</button>
+      <button class="choice" id="flashAllBtn">&Uuml;berall</button>
+    </div>
+    <div class="color-hint" id="flashFieldHint"></div>
+    <div class="choice-row" style="grid-template-columns:1fr;margin-top:4px">
+      <button class="choice" id="flashZonesBtn">Eigene Auswahl (3&times;3-Raster)</button>
+    </div>
+    <div class="periph-zone-grid" id="flashZoneGrid" hidden>
+      <button class="periph-zone" data-zone="tl" aria-label="Oben links"></button>
+      <button class="periph-zone" data-zone="tm" aria-label="Oben Mitte"></button>
+      <button class="periph-zone" data-zone="tr" aria-label="Oben rechts"></button>
+      <button class="periph-zone" data-zone="ml" aria-label="Mitte links"></button>
+      <div class="periph-zone periph-zone-center" aria-hidden="true"></div>
+      <button class="periph-zone" data-zone="mr" aria-label="Mitte rechts"></button>
+      <button class="periph-zone" data-zone="bl" aria-label="Unten links"></button>
+      <button class="periph-zone" data-zone="bm" aria-label="Unten Mitte"></button>
+      <button class="periph-zone" data-zone="br" aria-label="Unten rechts"></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="flashDifficultyRow">
+      <button class="choice" data-flash-diff="leicht">Leicht<small>mehr Zeit</small></button>
+      <button class="choice" data-flash-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-flash-diff="schwer">Schwer<small>knapp bemessen</small></button>
+    </div>
+    <div class="tempo-custom" id="flashDiffCustom" hidden>Individuell eingestellt (siehe Feineinstellungen)</div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Bei Fehler</div>
+    <div class="choice-row" id="flashErrorRow">
+      <button class="choice" data-flash-error="reset2">Ganz von vorne<small>zur&uuml;ck auf den Start</small></button>
+      <button class="choice" data-flash-error="backOne">Eine Stufe zur&uuml;ck<small>eine runter</small></button>
+      <button class="choice" data-flash-error="stay">Gleiche Stufe<small>so lange, bis es klappt</small></button>
+    </div>
+  </div>
+
+  <div class="group" id="flashConstantGroup" hidden>
+    <div class="group-label">Anzahl der Zahlen <span class="group-count" id="flashConstantValue"></span></div>
+    <div class="slider-row">
+      <input type="range" id="flashConstantSlider" min="2" max="6" step="1" aria-label="Anzahl der Zahlen">
+    </div>
+  </div>
+
+  <div class="group" id="flashStartGroup" hidden>
+    <div class="group-label">Startanzahl <span class="group-count" id="flashStartValue"></span></div>
+    <div class="slider-row">
+      <input type="range" id="flashStartSlider" min="2" max="9" step="1" aria-label="Startanzahl">
+    </div>
+  </div>
+
+  <div class="group" id="flashRepsGroup" hidden>
+    <div class="group-label">Wiederholungen je Stufe <span class="group-count" id="flashRepsValue"></span></div>
+    <div class="slider-row">
+      <input type="range" id="flashRepsSlider" min="2" max="3" step="1" aria-label="Wiederholungen je Stufe">
+    </div>
+  </div>
+
+  <details class="advanced" id="flashAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Einblenddauer je Zahl</div>
+        <div class="slider-row">
+          <input type="range" id="flashStimulusSlider" min="0.3" max="2" step="0.1" aria-label="Einblenddauer je Zahl">
+          <span class="slider-value" id="flashStimulusValue"></span>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Pause zwischen den Zahlen</div>
+        <div class="slider-row">
+          <input type="range" id="flashIntervalSlider" min="0.2" max="2" step="0.1" aria-label="Pause zwischen den Zahlen">
+          <span class="slider-value" id="flashIntervalValue"></span>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="flashBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="flashBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="flashBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="flashBgContrastHint" hidden></div>
+        <div class="choice-row" id="flashBgSourceRow"></div>
+        <div class="group" id="flashBgPresetGroup" hidden>
+          <div class="group-label">Gespeicherte Farbgestaltungen</div>
+          <div class="bundle-list" id="flashBgPresetList"></div>
+        </div>
+        <button class="text-link small" id="flashBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
+        <div class="custom-exercise-form" id="flashBgSaveForm" hidden>
+          <input type="text" id="flashBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <div class="custom-exercise-form-actions">
+            <button class="start-btn secondary" id="flashBgSaveCancelBtn">Abbrechen</button>
+            <button class="start-btn" id="flashBgSaveConfirmBtn">Speichern</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="group-help" id="flashReadyBestHint"></div>
+
+  <button class="start-btn" id="flashReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="flashTrainingReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="flashTrainingBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Trainingsmodus</h1>
+  <p class="page-sub">Starte direkt bei einer bestimmten Zahlenanzahl, statt dich immer erst hochzuarbeiten.</p>
+
+  <div class="group">
+    <div class="group-label">Startzahl <span class="group-count" id="flashTrainingStartValue"></span></div>
+    <div class="slider-row">
+      <input type="range" id="flashTrainingStartSlider" min="2" max="9" step="1" aria-label="Startzahl">
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Nach Erfolg</div>
+    <div class="choice-row two" id="flashTrainingProgressRow">
+      <button class="choice" data-flash-progress="1">Weiter steigern<small>wie gewohnt +1</small></button>
+      <button class="choice" data-flash-progress="0">Bei dieser Zahl bleiben<small>zum gezielten &Uuml;ben</small></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Bereich</div>
+    <div class="choice-row two" id="flashTrainingFieldRow">
+      <button class="choice" data-flash-axis="horizontal">Horizontal</button>
+      <button class="choice" data-flash-axis="vertikal">Vertikal</button>
+      <button class="choice" data-flash-axis="diagonal">Diagonal</button>
+      <button class="choice" id="flashTrainingAllBtn">&Uuml;berall</button>
+    </div>
+    <div class="color-hint" id="flashTrainingFieldHint"></div>
+    <div class="choice-row" style="grid-template-columns:1fr;margin-top:4px">
+      <button class="choice" id="flashTrainingZonesBtn">Eigene Auswahl (3&times;3-Raster)</button>
+    </div>
+    <div class="periph-zone-grid" id="flashTrainingZoneGrid" hidden>
+      <button class="periph-zone" data-zone="tl" aria-label="Oben links"></button>
+      <button class="periph-zone" data-zone="tm" aria-label="Oben Mitte"></button>
+      <button class="periph-zone" data-zone="tr" aria-label="Oben rechts"></button>
+      <button class="periph-zone" data-zone="ml" aria-label="Mitte links"></button>
+      <div class="periph-zone periph-zone-center" aria-hidden="true"></div>
+      <button class="periph-zone" data-zone="mr" aria-label="Mitte rechts"></button>
+      <button class="periph-zone" data-zone="bl" aria-label="Unten links"></button>
+      <button class="periph-zone" data-zone="bm" aria-label="Unten Mitte"></button>
+      <button class="periph-zone" data-zone="br" aria-label="Unten rechts"></button>
+    </div>
+  </div>
+
+  <details class="advanced" id="flashTrainingAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Einblenddauer je Zahl</div>
+        <div class="slider-row">
+          <input type="range" id="flashTrainingStimulusSlider" min="0.3" max="2" step="0.1" aria-label="Einblenddauer je Zahl">
+          <span class="slider-value" id="flashTrainingStimulusValue"></span>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Pause zwischen den Zahlen</div>
+        <div class="slider-row">
+          <input type="range" id="flashTrainingIntervalSlider" min="0.2" max="2" step="0.1" aria-label="Pause zwischen den Zahlen">
+          <span class="slider-value" id="flashTrainingIntervalValue"></span>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="flashTrainingBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="flashTrainingBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="flashTrainingBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="flashTrainingBgContrastHint" hidden></div>
+        <div class="choice-row" id="flashTrainingBgSourceRow"></div>
+        <div class="group" id="flashTrainingBgPresetGroup" hidden>
+          <div class="group-label">Gespeicherte Farbgestaltungen</div>
+          <div class="bundle-list" id="flashTrainingBgPresetList"></div>
+        </div>
+        <button class="text-link small" id="flashTrainingBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
+        <div class="custom-exercise-form" id="flashTrainingBgSaveForm" hidden>
+          <input type="text" id="flashTrainingBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <div class="custom-exercise-form-actions">
+            <button class="start-btn secondary" id="flashTrainingBgSaveCancelBtn">Abbrechen</button>
+            <button class="start-btn" id="flashTrainingBgSaveConfirmBtn">Speichern</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="group-help" id="flashTrainingBestHint"></div>
+
+  <button class="start-btn" id="flashTrainingStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="bundleOverview" hidden>
@@ -1572,6 +1807,51 @@
     <div class="rating" id="blitzRating"></div>
     <button class="again" id="blitzAgainBtn">Nochmal</button>
     <button class="back" id="blitzDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="flashPlayer" hidden>
+  <div class="flash-stage" id="flashStage">
+    <div class="remember-hint" id="flashHint"></div>
+    <div class="flash-digit" id="flashDigitEl" hidden></div>
+    <div class="flash-input-panel" id="flashInputPanel" hidden>
+      <div class="flash-input-label">Zahlen eingeben</div>
+      <input type="tel" inputmode="numeric" pattern="[0-9]*" id="flashTypedInput" class="flash-typed-input" autocomplete="off" aria-label="Eingegebene Zahlenfolge">
+    </div>
+  </div>
+  <div class="pause-overlay" id="flashPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="flashPauseBgValue"></span></div>
+        <input type="range" id="flashPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="flashPauseBgColorPicker"></div>
+      </div>
+      <button class="start-btn" id="flashResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="flashPlayerBar">
+    <button id="flashBackBtn">&#10005; Beenden</button>
+    <button id="flashPauseBtn">Pause</button>
+    <span class="player-status" id="flashLevelEl"></span>
+    <button id="flashFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="flashFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="flashFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="flashFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="flashDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="flashDoneSummary"></p>
+    <div class="rating" id="flashRating"></div>
+    <button class="again" id="flashAgainBtn">Nochmal</button>
+    <button class="back" id="flashDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

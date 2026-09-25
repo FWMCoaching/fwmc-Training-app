@@ -251,27 +251,40 @@ unrelated to the feature being changed.
   - if a Trainingsmodus-style "start straight at level N" turns out to be
   wanted later, add a second ready screen the same way Remember has one.
   Not (yet) wired into the Kombi builder - wasn't asked for.
-  Flash Speicher Test is still an unbuilt placeholder panel and is a
+  **Flash Speicher Test** (4th NAT sub-tab) is fully built and is a
   **third, distinct** concept from both Remember and Blitz-Raster (the
   user was explicit about this): numbers appear ONE AT A TIME at scattered
-  positions (Periph-style placement, with its own Bereich), each briefly,
-  then an input field opens to type them back in the order shown. Needs
-  several sub-modes (analogous to Remember's three): a constant-count mode
-  that only gets faster, a count-increases-every-round mode, a
-  count-increases-with-2-3-repeats-per-level mode, and a Trainingsmodus
-  that starts directly at a chosen count/speed. Not yet built - confirm the
-  mode breakdown with the user before building (it's dense and was given
-  in one long message; see the "Dominanz" item below too, floated in the
-  same message for Periph/Blitz/Flash/possibly Remember but not designed
-  or built yet).
-- **Dominanz-Gewichtung (not yet designed or built)**: a later,
-  explicitly "Champions League"-tier enhancement floated for Periph,
-  Blitz-Raster and Flash Speicher Test (possibly Remember too): within the
-  *currently selected* Bereich zones, let the client weight individual
-  zones to appear proportionally more often (e.g. one zone 2× or 3× as
-  likely as the others) instead of a flat equal split across all selected
-  zones. Needs a concrete UI (a weight slider per selected zone? a couple
-  of discrete "dominance levels"?) - ask before building.
+  positions - `randFlashPos()` mirrors Periph's own `randPeriphPos()` axis/
+  zone maths directly rather than a new positioning system, own
+  `flashPrefs.axes/useZones/zones` - each briefly, then an input field
+  (`<input inputmode="numeric">`, auto-checked once its length matches the
+  sequence) opens to type them back IN ORDER (unlike Blitz-Raster, where
+  order doesn't matter). Four modes share one `flashPrefs` object
+  (mirroring `rememberPrefs`): `"constant"` (fixed count, speeds up via a
+  `speedStep` that shortens `stimulusS`/`intervalS` by ~15% per step, capped
+  at `FLASH_SPEED_STEPS`), `"climb"` (count +1 every success),
+  `"climbRepeat"` (like climb, but repeats `repsPerLevel` times per count
+  before advancing), `"training"` (Remember-style direct start count/
+  speed). The first three share one ready screen (`#flashReady`, mode
+  picked via `flashReadyMode`, mirroring how Remember's fixed/shuffle share
+  `#rememberReady`); training gets its own (`#flashTrainingReady`). Same
+  Bei-Fehler semantics as Remember/Blitz but reinterpreted per mode
+  (resets `speedStep` for constant, `count` for the climb modes) - button
+  labels were reworded ("Ganz von vorne" not "Zurück auf 2") since there's
+  no universal "2" floor here. Same background colour/intensity + transfer
+  + mid-game Pause pattern as the others (`flashPrefs` is now a 4th
+  `BG_SOURCES` entry). Engine again mirrors Remember/Blitz's setTimeout/
+  `scheduleFlashTimer` pause approach as its own copy, not a shared
+  abstraction, for the same "phase models differ too much" reason as
+  Blitz-Raster. Not wired into Kombi - wasn't asked for.
+- **Dominanz-Gewichtung**: a "Champions League"-tier enhancement, confirmed
+  design for Periphere Wahrnehmung first (user's own words: "Regler pro
+  Zone, 1×–3×, erstmal nur bei Periphere Wahrnehmung testen") - a slider
+  per selected Bereich zone (1×–3×) that skews how often that zone gets
+  picked relative to the others, on top of the existing flat-equal-split
+  zone selection. Not yet built. Once proven out on Periph, the same
+  pattern was floated (not yet confirmed) for Blitz-Raster, Flash Speicher
+  Test, and possibly Remember - ask before extending it there.
 - **Live-pause-adjust, remaining scope decision**: now built for Periphere
   Wahrnehmung and Remember. Not yet decided/built: extending it to other
   domains — Atemtraining "wird Sinn machen", Movement "kann auch Sinn
