@@ -682,11 +682,14 @@
   <div class="group" id="periphFieldGroup" hidden>
     <div class="group-label">Bereich</div>
     <div class="choice-row two" id="periphFieldRow">
-      <button class="choice" data-periph-field="ueberall">&Uuml;berall</button>
-      <button class="choice" data-periph-field="horizontal">Horizontal</button>
-      <button class="choice" data-periph-field="vertikal">Vertikal</button>
-      <button class="choice" data-periph-field="diagonal">Diagonal</button>
-      <button class="choice" data-periph-field="zonen">Eigene Auswahl</button>
+      <button class="choice" data-periph-axis="horizontal">Horizontal</button>
+      <button class="choice" data-periph-axis="vertikal">Vertikal</button>
+      <button class="choice" data-periph-axis="diagonal">Diagonal</button>
+      <button class="choice" id="periphAllBtn">&Uuml;berall</button>
+    </div>
+    <div class="color-hint" id="periphFieldHint"></div>
+    <div class="choice-row" style="grid-template-columns:1fr;margin-top:4px">
+      <button class="choice" id="periphZonesBtn">Eigene Auswahl (3&times;3-Raster)</button>
     </div>
     <div class="periph-zone-grid" id="periphZoneGrid" hidden>
       <button class="periph-zone" data-zone="tl" aria-label="Oben links"></button>

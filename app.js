@@ -67,6 +67,7 @@
     bl: { row: 2, col: 0 }, bm: { row: 2, col: 1 }, br: { row: 2, col: 2 },
   };
   const PERIPH_ZONE_KEYS = Object.keys(PERIPH_ZONES);
+  const PERIPH_AXIS_KEYS = ["horizontal", "vertikal", "diagonal"];
 
   // Fixed four-colour set for "Hütchen antippen" (cone order sorting) -
   // this exercise is always about four cones, so it skips the free colour
@@ -970,7 +971,8 @@
     periphFixCharInput: $("periphFixCharInput"), periphFixColorPicker: $("periphFixColorPicker"),
     periphFixSizeSlider: $("periphFixSizeSlider"), periphFixSizeValue: $("periphFixSizeValue"),
     periphOpenBtn: $("periphOpenBtn"),
-    periphFieldGroup: $("periphFieldGroup"), periphZoneGrid: $("periphZoneGrid"), periphSizeGroup: $("periphSizeGroup"),
+    periphFieldGroup: $("periphFieldGroup"), periphFieldRow: $("periphFieldRow"), periphZoneGrid: $("periphZoneGrid"), periphSizeGroup: $("periphSizeGroup"),
+    periphAllBtn: $("periphAllBtn"), periphZonesBtn: $("periphZonesBtn"), periphFieldHint: $("periphFieldHint"),
     durationGroup: $("durationGroup"), tempoGroup: $("tempoGroup"), advanced: $("advanced"),
     vtSavedGroup: $("vtSavedGroup"), vtSavedList: $("vtSavedList"), vtSaveBtn: $("vtSaveBtn"),
     vtSaveForm: $("vtSaveForm"), vtSaveNameInput: $("vtSaveNameInput"),
@@ -1445,7 +1447,8 @@
     periphFixChar: "",
     periphFixColor: "grau",
     periphFixSize: 1,
-    periphField: "ueberall",
+    periphAxes: ["horizontal", "vertikal", "diagonal"],
+    periphUseZones: false,
     periphZones: ["tl", "tm", "tr", "ml", "mr", "bl", "bm", "br"],
     periphSizeMode: "gleich",
   };
@@ -1460,7 +1463,8 @@
     if (typeof state.periphFixChar !== "string") state.periphFixChar = "";
     if (!FIX_COLOR_BY_KEY[state.periphFixColor]) state.periphFixColor = "grau";
     if (typeof state.periphFixSize !== "number" || state.periphFixSize < 0.6 || state.periphFixSize > 2) state.periphFixSize = 1;
-    if (!["ueberall", "horizontal", "vertikal", "diagonal", "zonen"].includes(state.periphField)) state.periphField = "ueberall";
+    if (!Array.isArray(state.periphAxes) || !state.periphAxes.every((a) => ["horizontal", "vertikal", "diagonal"].includes(a))) state.periphAxes = DEFAULTS.periphAxes.slice();
+    if (typeof state.periphUseZones !== "boolean") state.periphUseZones = false;
     if (!Array.isArray(state.periphZones) || !state.periphZones.length || !state.periphZones.every((z) => PERIPH_ZONE_KEYS.includes(z))) state.periphZones = DEFAULTS.periphZones.slice();
     if (!["gleich", "wachsend"].includes(state.periphSizeMode)) state.periphSizeMode = "gleich";
   }
@@ -1646,12 +1650,30 @@
     els.periphFixSizeSlider.value = state.periphFixSize;
     els.periphFixSizeValue.textContent = state.periphFixSize.toFixed(1) + "×";
   }
-  document.querySelectorAll("#periphFieldRow [data-periph-field]").forEach((el) => {
+  // Horizontal/Vertikal/Diagonal are a multi-select set, same pattern as
+  // the arrow-colour picker: "Überall" is the "alle Farben" shortcut for
+  // "all three at once", auto-activates once all three end up selected by
+  // hand, and toggling it off drops to zero (with a "pick at least one"
+  // warning) rather than falling back to some arbitrary one.
+  document.querySelectorAll("#periphFieldRow [data-periph-axis]").forEach((el) => {
     el.addEventListener("click", () => {
-      state.periphField = el.dataset.periphField;
+      const axis = el.dataset.periphAxis;
+      const on = state.periphAxes.includes(axis);
+      state.periphAxes = on ? state.periphAxes.filter((a) => a !== axis) : [...state.periphAxes, axis];
       savePrefs();
       syncPeriphFieldUI();
     });
+  });
+  els.periphAllBtn.addEventListener("click", () => {
+    const allOn = state.periphAxes.length === PERIPH_AXIS_KEYS.length;
+    state.periphAxes = allOn ? [] : PERIPH_AXIS_KEYS.slice();
+    savePrefs();
+    syncPeriphFieldUI();
+  });
+  els.periphZonesBtn.addEventListener("click", () => {
+    state.periphUseZones = !state.periphUseZones;
+    savePrefs();
+    syncPeriphFieldUI();
   });
   document.querySelectorAll("#periphZoneGrid [data-zone]").forEach((el) => {
     el.addEventListener("click", () => {
@@ -1666,9 +1688,20 @@
     });
   });
   function syncPeriphFieldUI() {
-    document.querySelectorAll("#periphFieldRow [data-periph-field]").forEach((el) => setActive(el, el.dataset.periphField === state.periphField));
-    els.periphZoneGrid.hidden = state.periphField !== "zonen";
+    document.querySelectorAll("#periphFieldRow [data-periph-axis]").forEach((el) => setActive(el, state.periphAxes.includes(el.dataset.periphAxis)));
+    setActive(els.periphAllBtn, state.periphAxes.length === PERIPH_AXIS_KEYS.length);
+    setActive(els.periphZonesBtn, state.periphUseZones);
+    els.periphFieldRow.hidden = state.periphUseZones;
+    els.periphZoneGrid.hidden = !state.periphUseZones;
     document.querySelectorAll("#periphZoneGrid [data-zone]").forEach((el) => el.classList.toggle("active", state.periphZones.includes(el.dataset.zone)));
+    const belowMin = !state.periphUseZones && state.periphAxes.length === 0;
+    els.periphFieldHint.textContent = belowMin ? "Wähle mindestens einen Bereich." : "";
+    els.periphFieldHint.classList.toggle("warn", belowMin);
+    // Safe to assign outright (not OR-in): Periphere Wahrnehmung never uses
+    // the colour picker, so syncColorUI()'s own belowMin for this exercise
+    // is always false and there's nothing of its to preserve here.
+    els.startBtn.disabled = belowMin;
+    els.vtSaveBtn.disabled = belowMin;
   }
   document.querySelectorAll("#periphSizeGroup [data-periph-size]").forEach((el) => {
     el.addEventListener("click", () => {
@@ -1760,9 +1793,12 @@
     els.periphFixGroup.hidden = !isPeriph;
     els.periphFieldGroup.hidden = !isPeriph;
     els.periphSizeGroup.hidden = !isPeriph;
-    if (isPeriph) { syncPeriphKindUI(); syncPeriphFixUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); }
     renderColorSwatches();
     syncColorUI();
+    // Runs after syncColorUI() so its own start/save-button disabling (the
+    // "pick at least one Bereich" rule) isn't clobbered by colour's - the
+    // two checks are independent and both need to hold.
+    if (isPeriph) { syncPeriphKindUI(); syncPeriphFixUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); }
     syncDurationUI();
     syncTempoUI();
     els.vtSaveForm.hidden = true;
@@ -2349,7 +2385,7 @@
   // (0..1), resolved to real pixels at render time - so a stimulus already
   // mid-flight still lands correctly if the device is rotated.
   function randPeriphPos(rng) {
-    if (state.periphField === "zonen") {
+    if (state.periphUseZones) {
       const zones = state.periphZones.length ? state.periphZones : PERIPH_ZONE_KEYS;
       const { row, col } = PERIPH_ZONES[zones[Math.floor(rng() * zones.length)]];
       const pad = 0.14, cell = 1 / 3;
@@ -2358,13 +2394,15 @@
         fy: row * cell + pad * cell + rng() * cell * (1 - 2 * pad),
       };
     }
+    // "Überall" isn't its own mode any more - selecting all three axes
+    // (via the individual buttons or the "Überall" shortcut) covers it,
+    // same as picking every colour does for the arrow exercises.
+    const axes = state.periphAxes.length ? state.periphAxes : PERIPH_AXIS_KEYS;
     const radiusFrac = 0.45 + rng() * 0.5;
-    let angle = rng() * Math.PI * 2;
-    if (state.periphField !== "ueberall") {
-      const bases = PERIPH_FIELD_ANGLES[state.periphField];
-      const base = bases[Math.floor(rng() * bases.length)];
-      angle = base + (rng() - 0.5) * (Math.PI / 6); // ±15° jitter around the axis
-    }
+    const axis = axes[Math.floor(rng() * axes.length)];
+    const bases = PERIPH_FIELD_ANGLES[axis];
+    const base = bases[Math.floor(rng() * bases.length)];
+    const angle = base + (rng() - 0.5) * (Math.PI / 6); // ±15° jitter around the axis
     return { fx: 0.5 + 0.42 * radiusFrac * Math.cos(angle), fy: 0.5 + 0.42 * radiusFrac * Math.sin(angle) };
   }
   function buildPeriphSchedule(cfg, rng) {
@@ -2673,6 +2711,7 @@
     const startEx = EXERCISES[state.exercise];
     if (startEx.usesArrowColors && state.arrowColors.length < ARROW_MIN_COLORS) return;
     if (startEx.usesStroopColors && state.stroopColors.length < STROOP_MIN_COLORS) return;
+    if (startEx.type === "periph" && !state.periphUseZones && state.periphAxes.length === 0) return;
     program = null;
     hideOverlays();
     active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors), stroopColors: keysToColors(state.stroopColors, STROOP_COLOR_LIB) };
