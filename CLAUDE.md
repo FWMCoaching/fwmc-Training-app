@@ -528,6 +528,138 @@ unrelated to the feature being changed.
       and an arrow exercise - no internal hook exists to assert the exact
       colour/position chosen for a given flash, so the maths itself was
       verified by careful reading rather than a dedicated unit test).
+- **MOT-Fähigkeit** (5th NAT sub-tab, next to Flash Speicher Test): Multiple
+  Object Tracking - N identical-looking objects drift around the stage, K of
+  them are briefly highlighted as "targets", then everything looks the same
+  again and keeps moving for a while; the client tracks the target(s) with
+  their eyes the whole time, then taps them back once movement stops (same
+  unordered tap-set mechanic as Blitz-Raster's `blitzTapCell` - a wrong tap
+  immediately reveals the real target(s) and fails the round; enough correct
+  taps succeeds). Same Bei-Fehler/background-colour+transfer/mid-game-Pause/
+  Beenden-doubles-as-Finish conventions as Remember/Blitz/Flash (`motPrefs`,
+  a 5th `BG_SOURCES` entry).
+  - **Difficulty progression was researched, not guessed, before building
+    it** (the client explicitly expected this: "ich gehe davon aus, dass du
+    ... recherchierst, bevor du da richtig loslegst"): the classic MOT
+    paradigm and commercial tools (NeuroTracker's 3D-MOT) keep object/target
+    count FIXED per session (NeuroTracker: 8 objects, 4 targets) and instead
+    adapt SPEED via a staircase - correct round: speed up by a fixed ratio
+    (NeuroTracker: ±0.05 in log space, i.e. ×10^0.05 ≈ ×1.12 per step);
+    wrong: slow down by the same ratio. That became the "Tempo steigt" mode
+    below - but the client then explicitly asked for the Flash-Speicher-Test
+    treatment instead of settling for a single mode: separate modes for
+    speed rising, count rising, both rising, plus a Trainingsmodus, each
+    individually configurable, with a configurable object colour and the
+    usual background controls thrown in too.
+  - **Four modes, one shared level counter** (`motState.level`, starts at 1;
+    Bei-Fehler's reset2/backOne/stay always resets/steps this ONE counter,
+    mode-agnostically):
+    - **`"speed"`** ("Tempo steigt"): `motPrefs.objectCount`/`targetCount`
+      are plain, FIXED client-set sliders - "Anzahl Objekte" 4-12 **default
+      8**, "Anzahl Ziele" 1-4 **default 4** (matches the NeuroTracker
+      standard exactly - an earlier draft shipped 8/3 as a "gentler" default
+      and the client caught the inconsistency between what was researched
+      and what was built; fixed). Only `motState.speedStep` "levels up"
+      (`motEffectiveSpeed() = speed × MOT_SPEED_STEP_FACTOR^speedStep`,
+      `MOT_SPEED_STEP_FACTOR = 1.12`) - the exact same shape as Flash
+      Speicher Test's "Konstant" mode, shown as "Tempo-Stufe N".
+    - **`"count"`** ("Anzahl steigt"): speed fixed, object/target count
+      rises from a configurable start (`motPrefs.growStartObjects` 3-8
+      default 4, `growStartTargets` 1-3 default 1). No "Tempo-Stufe" shown
+      (speed never moves in this mode).
+    - **`"both"`** ("Beides steigt"): count and speed rise together from the
+      same starting point and the same level counter.
+    - **`"training"`**: direct start at chosen object/target/speed-step
+      values (`motPrefs.trainingObjects/trainingTargets/trainingSpeedStep`),
+      plus a "Weiter steigern" / "Bei dieser Einstellung bleiben" toggle
+      (`motPrefs.trainingProgress`) - progressing follows the same rule as
+      "both". Own dual-instance screen (`#motTrainingReady`), same pattern
+      as Flash's own Trainingsmodus screen (own Darstellung/Farbe/
+      Feineinstellungen/Hintergrund controls, all sharing the same
+      underlying `motPrefs` fields as the main Ready screen).
+    All four modes are derived from `motState.level` by ONE function,
+    `motCountsForRound()` - the single place the growth formulas live:
+    object count grows roughly every 2 levels, target count roughly every 4,
+    both capped (`MOT_OBJ_MAX`, `MOT_TARGET_MAX`, and target count is always
+    also clamped to `n - 2` so there are always ≥2 distractors). Best-score
+    tracking (`MOT_BEST_KEY`) is keyed by mode name, same shape as Flash's
+    own per-mode bests - four separate best-hints, one per featured card.
+  - **Farbe der Objekte**: one colour is rolled per ROUND (not per object -
+    every object must look identical to its neighbours within a round, or
+    the whole point of MOT is lost; only the round-to-round palette can
+    vary), via `pickPeriphColor(motState.colors, bgHex, Math.random)` -
+    reusing the exact same swatch-picker (`buildStimColorPicker`/
+    `syncStimColorUI`) and contrast-avoidance (`pickPeriphColor`/
+    `colorsClash`) infrastructure originally built for the Zusatzaufgabe/
+    Periph "Farbe der Reize" feature. `motGradientCss(hex)` generalises the
+    3D-Optik glossy-sphere gradient (see below) from a hardcoded grey to
+    whichever colour was rolled, reusing the existing `mixHex()` helper for
+    the lighten/darken highlight/shadow. The semantic highlight/correct/
+    wrong states keep their own fixed CSS colours regardless of the rolled
+    object colour, so the round always stays readable.
+  - An earlier draft grew object AND target count with level instead of any
+    of the above (`motObjectCount(level)`/`motTargetCount(level)`), and a
+    second draft had only the single "speed" mode with an (inconsistent) 8/3
+    default - both built, tested, and superseded once the client asked for
+    the full 4-mode treatment; if an old commit still mentions level-scaled
+    counts or a single mode, that's one of the superseded drafts.
+  - **The first requestAnimationFrame-driven engine outside the VT canvas**:
+    every other exercise is either a precomputed schedule (`tick()`-driven)
+    or discrete setTimeout flash/gap/input phases - MOT additionally needs a
+    continuous physics simulation while "tracking". `motPhysicsTick(ts)`
+    advances position by `dt` (clamped to 50ms so a backgrounded/dropped
+    frame can't fling objects across the stage on return), bounces off the
+    stage edges, and stops itself once `trackElapsedMs` reaches `trackS`
+    (from the Schwierigkeit bucket, same custom-slider-degrades-bucket-to-
+    "custom" pattern as Blitz/Flash's `flashDifficultyBucket()`). Positions
+    /velocities live in **pixel space** relative to `#motObjectsLayer`'s own
+    `getBoundingClientRect()` (captured once per round, immediately after
+    unhiding the player - same "read the rect right after unhiding, no rAF
+    wait needed" trick `fitCanvas()` already relies on), not the app's usual
+    `{fx,fy}` fractional convention - device rotation mid-round isn't
+    handled (objects would just look off until the next round), an accepted
+    simplification since nothing else in the app has continuous
+    multi-second animation either. Pause cancels the `raf` outright (not a
+    "remaining delay" replay like the setTimeout-based phases; there's
+    nothing to resume BUT re-arm, since `trackElapsedMs` already reflects
+    exactly how much tracking time had elapsed) and restarts it fresh on
+    resume; the highlight/checking phases' delays use the same
+    `scheduleXTimer` remaining-delay trick as everywhere else
+    (`scheduleMotTimer`).
+  - **Objects don't collide, but do get separated**: `motMoveObjects()` only
+    bounces objects off the stage edges, not off each other (full elastic
+    collision wasn't worth the complexity for v1) - but a real bug surfaced
+    during testing: two objects drifting close enough overlap not just
+    visually but in their (square, `2×radius` a side) actual hit-areas, so a
+    tap meant for one can register on its neighbour instead - on a real
+    finger, not just in a Playwright click. Fixed with `motSeparateObjects()`,
+    a lightweight positional-only correction (no velocity change) run once
+    per tick that pushes any pair closer than `MOT_MIN_DIST_FACTOR × radius`
+    apart back out to exactly that distance. The factor is `2.9`, not the
+    more obvious `2` (circle-tangency) - two `2×radius` squares whose
+    centres are exactly `2×radius` apart can still overlap depending on the
+    angle between them (worst case, diagonal: needs up to `2×radius×√2 ≈
+    2.83×radius` to guarantee no overlap at any angle) - `motPlaceObjects()`'s
+    own initial rejection-sampling placement uses the same factor, so the
+    round never even starts with two objects too close together.
+  - **Darstellung** (client asked for this up front, alongside the base
+    version): `motPrefs.style`, `"flach"` (plain circle) or `"3d"` (a
+    radial-gradient glossy-sphere look via the `.mot-object.style-3d` CSS
+    class - highlight/correct/wrong states each get their own gradient
+    variant so the colour semantics still read clearly) - movement stays a
+    flat 2D plane in both cases. Genuine 3D movement is explicitly
+    "Zukunftsmusik" per the client's own framing - noted here so the
+    `motPrefs`/round-engine shape isn't assumed final, but nothing further
+    was attempted.
+  - **Not built / explicitly deferred**: which exercises/rules to add under
+    this tab next ("dann werden wir da wieder verschiedene Übungen drunter
+    setzen" - the client's own framing, same "start with one version" spirit
+    as Flash Speicher Test's four modes were added incrementally); actual
+    3D movement (see Darstellung above); a fixation point (doesn't fit this
+    exercise - there's no single point to hold focus on, the whole point is
+    tracking a moving target across the stage); Zusatzaufgabe/Dominanz
+    (neither asked for here).
+  - Test: `tests/mot_test.py`.
 
 ## Working conventions
 

@@ -510,6 +510,27 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 }
 .flash-keypad-backspace:active{background:#e5f1f4}
 
+.mot-stage{flex:1;position:relative;overflow:hidden}
+.mot-objects{position:absolute;inset:0}
+.mot-object{
+  /* Normal-state fill (flach or 3D-Optik) is set inline per-round from the
+     client's chosen "Farbe der Objekte" - see motGradientCss()/renderMotObjects()
+     - this is only the fallback before that first inline style is applied. */
+  position:absolute;border:none;padding:0;border-radius:50%;background:#8fa2a8;
+  cursor:default;transition:background .12s ease,transform .1s ease;
+}
+.mot-object.style-3d{box-shadow:0 3px 6px rgba(0,0,0,.25)}
+.mot-object.target{background:#f2a900}
+.mot-object.style-3d.target{
+  background:radial-gradient(circle at 34% 28%, #ffe0a3 0%, #f2a900 55%, #b87c00 100%);
+}
+.mot-object.tappable{cursor:pointer}
+.mot-object.tappable:active{transform:scale(.9)}
+.mot-object.correct{background:#2e7d32}
+.mot-object.style-3d.correct{background:radial-gradient(circle at 34% 28%, #a8e0ac 0%, #2e7d32 55%, #1b5e20 100%)}
+.mot-object.wrong{background:#d32f2f}
+.mot-object.style-3d.wrong{background:radial-gradient(circle at 34% 28%, #f3a6a6 0%, #d32f2f 55%, #941f1f 100%)}
+
 .movement-stage{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 14px;position:relative;overflow-y:auto}
 .movement-lane{display:flex;align-items:flex-end;justify-content:center;gap:10px;width:100%;max-width:720px}
 .movement-tile{

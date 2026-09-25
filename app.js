@@ -1115,7 +1115,7 @@
     workoutHistoryStats: $("workoutHistoryStats"), workoutHistoryList: $("workoutHistoryList"), workoutHistoryClearBtn: $("workoutHistoryClearBtn"), workoutHistoryMoreBtn: $("workoutHistoryMoreBtn"),
     workoutFeaturedPrograms: $("workoutFeaturedPrograms"), workoutFeaturedGrid: $("workoutFeaturedGrid"),
     workoutTabataStartCard: $("workoutTabataStartCard"),
-    natHome: $("natHome"), natPeripherPanel: $("natPeripherPanel"), natRememberPanel: $("natRememberPanel"), natBlitzPanel: $("natBlitzPanel"), natFlashPanel: $("natFlashPanel"),
+    natHome: $("natHome"), natPeripherPanel: $("natPeripherPanel"), natRememberPanel: $("natRememberPanel"), natBlitzPanel: $("natBlitzPanel"), natFlashPanel: $("natFlashPanel"), natMotPanel: $("natMotPanel"),
     blitzOpenBtn: $("blitzOpenBtn"), blitzBestHint: $("blitzBestHint"), blitzReady: $("blitzReady"),
     blitzReadyBackToHome: $("blitzReadyBackToHome"), blitzGridSizeRow: $("blitzGridSizeRow"),
     blitzZoneGroup: $("blitzZoneGroup"), blitzZoneAllBtn: $("blitzZoneAllBtn"), blitzZoneGrid: $("blitzZoneGrid"), blitzZoneHint: $("blitzZoneHint"),
@@ -1181,6 +1181,56 @@
     flashTrainingFixCharInput: $("flashTrainingFixCharInput"), flashTrainingFixColorPicker: $("flashTrainingFixColorPicker"),
     flashTrainingFixSizeSlider: $("flashTrainingFixSizeSlider"), flashTrainingFixSizeValue: $("flashTrainingFixSizeValue"),
     flashFixpointEl: $("flashFixpointEl"),
+
+    motOpenSpeed: $("motOpenSpeed"), motBestSpeed: $("motBestSpeed"),
+    motOpenCount: $("motOpenCount"), motBestCount: $("motBestCount"),
+    motOpenBoth: $("motOpenBoth"), motBestBoth: $("motBestBoth"),
+    motOpenTraining: $("motOpenTraining"), motBestTraining: $("motBestTraining"),
+    motReady: $("motReady"), motReadyBackToHome: $("motReadyBackToHome"),
+    motReadyTitle: $("motReadyTitle"), motReadyDesc: $("motReadyDesc"),
+    motStyleRow: $("motStyleRow"), motColorPicker: $("motColorPicker"), motColorHint: $("motColorHint"),
+    motDifficultyRow: $("motDifficultyRow"), motDiffCustom: $("motDiffCustom"),
+    motErrorRow: $("motErrorRow"),
+    motFixedCountGroup: $("motFixedCountGroup"),
+    motObjectsSlider: $("motObjectsSlider"), motObjectsValue: $("motObjectsValue"),
+    motTargetsSlider: $("motTargetsSlider"), motTargetsValue: $("motTargetsValue"),
+    motGrowStartGroup: $("motGrowStartGroup"),
+    motGrowObjectsSlider: $("motGrowObjectsSlider"), motGrowObjectsValue: $("motGrowObjectsValue"),
+    motGrowTargetsSlider: $("motGrowTargetsSlider"), motGrowTargetsValue: $("motGrowTargetsValue"),
+    motAdvanced: $("motAdvanced"),
+    motSpeedSlider: $("motSpeedSlider"), motSpeedValue: $("motSpeedValue"),
+    motTrackSlider: $("motTrackSlider"), motTrackValue: $("motTrackValue"),
+    motHighlightSlider: $("motHighlightSlider"), motHighlightValue: $("motHighlightValue"),
+    motBgColorPicker: $("motBgColorPicker"), motBgIntensitySlider: $("motBgIntensitySlider"),
+    motBgIntensityValue: $("motBgIntensityValue"), motBgContrastHint: $("motBgContrastHint"),
+    motBgSourceRow: $("motBgSourceRow"), motBgPresetGroup: $("motBgPresetGroup"), motBgPresetList: $("motBgPresetList"),
+    motBgSaveBtn: $("motBgSaveBtn"), motBgSaveForm: $("motBgSaveForm"), motBgSaveNameInput: $("motBgSaveNameInput"),
+    motBgSaveCancelBtn: $("motBgSaveCancelBtn"), motBgSaveConfirmBtn: $("motBgSaveConfirmBtn"),
+    motReadyBestHint: $("motReadyBestHint"), motReadyStartBtn: $("motReadyStartBtn"),
+    motTrainingReady: $("motTrainingReady"), motTrainingBackToHome: $("motTrainingBackToHome"),
+    motTrainingObjectsSlider: $("motTrainingObjectsSlider"), motTrainingObjectsValue: $("motTrainingObjectsValue"),
+    motTrainingTargetsSlider: $("motTrainingTargetsSlider"), motTrainingTargetsValue: $("motTrainingTargetsValue"),
+    motTrainingSpeedStepSlider: $("motTrainingSpeedStepSlider"), motTrainingSpeedStepValue: $("motTrainingSpeedStepValue"),
+    motTrainingProgressRow: $("motTrainingProgressRow"),
+    motTrainingStyleRow: $("motTrainingStyleRow"),
+    motTrainingColorPicker: $("motTrainingColorPicker"), motTrainingColorHint: $("motTrainingColorHint"),
+    motTrainingAdvanced: $("motTrainingAdvanced"),
+    motTrainingSpeedSlider: $("motTrainingSpeedSlider"), motTrainingSpeedValue: $("motTrainingSpeedValue"),
+    motTrainingTrackSlider: $("motTrainingTrackSlider"), motTrainingTrackValue: $("motTrainingTrackValue"),
+    motTrainingHighlightSlider: $("motTrainingHighlightSlider"), motTrainingHighlightValue: $("motTrainingHighlightValue"),
+    motTrainingBgColorPicker: $("motTrainingBgColorPicker"), motTrainingBgIntensitySlider: $("motTrainingBgIntensitySlider"),
+    motTrainingBgIntensityValue: $("motTrainingBgIntensityValue"), motTrainingBgContrastHint: $("motTrainingBgContrastHint"),
+    motTrainingBgSourceRow: $("motTrainingBgSourceRow"), motTrainingBgPresetGroup: $("motTrainingBgPresetGroup"), motTrainingBgPresetList: $("motTrainingBgPresetList"),
+    motTrainingBgSaveBtn: $("motTrainingBgSaveBtn"), motTrainingBgSaveForm: $("motTrainingBgSaveForm"), motTrainingBgSaveNameInput: $("motTrainingBgSaveNameInput"),
+    motTrainingBgSaveCancelBtn: $("motTrainingBgSaveCancelBtn"), motTrainingBgSaveConfirmBtn: $("motTrainingBgSaveConfirmBtn"),
+    motTrainingBestHint: $("motTrainingBestHint"), motTrainingStartBtn: $("motTrainingStartBtn"),
+    motPlayer: $("motPlayer"), motStage: $("motStage"), motHint: $("motHint"), motObjectsLayer: $("motObjectsLayer"),
+    motPauseOverlay: $("motPauseOverlay"), motPauseBgSlider: $("motPauseBgSlider"), motPauseBgValue: $("motPauseBgValue"),
+    motPauseBgColorPicker: $("motPauseBgColorPicker"), motResumeBtn: $("motResumeBtn"),
+    motPlayerBar: $("motPlayerBar"), motBackBtn: $("motBackBtn"), motPauseBtn: $("motPauseBtn"), motLevelEl: $("motLevelEl"),
+    motFsBtn: $("motFsBtn"), motFsHint: $("motFsHint"), motFsHintOpenBtn: $("motFsHintOpenBtn"), motFsHintClose: $("motFsHintClose"),
+    motDonePanel: $("motDonePanel"), motDoneSummary: $("motDoneSummary"), motRating: $("motRating"),
+    motAgainBtn: $("motAgainBtn"), motDoneBackBtn: $("motDoneBackBtn"),
     rememberOpenFixed: $("rememberOpenFixed"), rememberOpenShuffle: $("rememberOpenShuffle"), rememberOpenTraining: $("rememberOpenTraining"),
     rememberBestFixed: $("rememberBestFixed"), rememberBestShuffle: $("rememberBestShuffle"), rememberBestTraining: $("rememberBestTraining"),
     rememberReady: $("rememberReady"), rememberReadyBackToHome: $("rememberReadyBackToHome"),
@@ -1260,7 +1310,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -1296,9 +1346,11 @@
       els.natRememberPanel.hidden = sub !== "remember";
       els.natBlitzPanel.hidden = sub !== "blitz";
       els.natFlashPanel.hidden = sub !== "flash";
+      els.natMotPanel.hidden = sub !== "mot";
       if (sub === "remember") renderRememberBests();
       if (sub === "blitz") renderBlitzBest();
       if (sub === "flash") renderFlashBests();
+      if (sub === "mot") renderMotBests();
     });
   });
   document.querySelectorAll("[data-open-combo]").forEach((btn) => btn.addEventListener("click", () => openComboScreen()));
@@ -1923,6 +1975,7 @@
     { id: "remember", label: "Remember", get: () => ({ colorKey: rememberPrefs.bgColorKey, intensity: rememberPrefs.bgIntensity }) },
     { id: "blitz", label: "Blitz-Raster", get: () => ({ colorKey: blitzPrefs.bgColorKey, intensity: blitzPrefs.bgIntensity }) },
     { id: "flash", label: "Flash Speicher Test", get: () => ({ colorKey: flashPrefs.bgColorKey, intensity: flashPrefs.bgIntensity }) },
+    { id: "mot", label: "MOT-Fähigkeit", get: () => ({ colorKey: motPrefs.bgColorKey, intensity: motPrefs.bgIntensity }) },
   ];
   const BG_PRESETS_KEY = "fwmc-bg-presets-v1"; // [{ id, name, colorKey, intensity }] - not scoped to a domain, any saved combo applies anywhere
   const bgPresetStore = makePresetStore(BG_PRESETS_KEY);
@@ -3270,6 +3323,7 @@
     els.rememberPlayer.hidden = true;
     els.blitzPlayer.hidden = true;
     els.flashPlayer.hidden = true;
+    els.motPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3644,6 +3698,7 @@
   wireFullscreen({ player: els.rememberPlayer, btn: els.rememberFsBtn, hint: els.rememberFsHint, hintOpen: els.rememberFsHintOpenBtn, hintClose: els.rememberFsHintClose });
   wireFullscreen({ player: els.blitzPlayer, btn: els.blitzFsBtn, hint: els.blitzFsHint, hintOpen: els.blitzFsHintOpenBtn, hintClose: els.blitzFsHintClose });
   wireFullscreen({ player: els.flashPlayer, btn: els.flashFsBtn, hint: els.flashFsHint, hintOpen: els.flashFsHintOpenBtn, hintClose: els.flashFsHintClose });
+  wireFullscreen({ player: els.motPlayer, btn: els.motFsBtn, hint: els.motFsHint, hintOpen: els.motFsHintOpenBtn, hintClose: els.motFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -6064,6 +6119,688 @@
   els.flashBackBtn.addEventListener("click", flashStop);
   els.flashAgainBtn.addEventListener("click", () => { els.flashDonePanel.hidden = true; startFlashGame(lastFlashMode); });
   els.flashDoneBackBtn.addEventListener("click", () => { els.flashPlayer.hidden = true; els.flashDonePanel.hidden = true; showScreen("natHome"); });
+
+  // ==== MOT-Fähigkeit engine ====
+  // Multiple Object Tracking: N identical-looking objects drift around the
+  // stage; K of them are briefly highlighted as "targets", then everything
+  // looks the same again and keeps moving for a while - the client has to
+  // track the target(s) with their eyes the whole time - and finally
+  // everything stops and the client taps back exactly the target(s), same
+  // unordered tap-set mechanic as Blitz-Raster's (blitzTapCell). A genuinely
+  // new shape for this app: every other exercise is either a precomputed
+  // schedule (VT/Periph, tick()-driven) or discrete flash/gap/input phases
+  // (Remember/Blitz/Flash, setTimeout-driven) - MOT additionally needs a
+  // continuous physics simulation (bouncing off the stage edges) during its
+  // "tracking" phase, so it's the first requestAnimationFrame-driven engine
+  // outside the VT canvas.
+  //
+  // Difficulty progression is modelled on the established MOT literature
+  // (researched before building this, not guessed): the classic paradigm
+  // and commercial tools (e.g. NeuroTracker's 3D-MOT) fix object/target
+  // count per session (NeuroTracker: 8 objects, 4 targets) and instead adapt
+  // SPEED via a staircase - correct round: speed up by a fixed ratio; wrong:
+  // slow down by the same ratio. An initial draft only offered that one
+  // "Tempo steigt" shape; the client then asked for the other two obvious
+  // axes too - "Anzahl steigt" (count grows, speed fixed) and "Beides
+  // steigt" - plus a Trainingsmodus, mirroring how Flash Speicher Test
+  // itself grew from one mode to four. So there are now FOUR modes sharing
+  // one `motPrefs` object (mirroring `flashPrefs`): "speed" (fixed count,
+  // Tempo-Stufe rises), "count" (fixed speed, count rises), "both" (both
+  // rise together), "training" (direct start at a chosen object/target/
+  // speed combination, with the same "weiter steigern"/"bei dieser
+  // Einstellung bleiben" choice as Flash's Trainingsmodus - progressing
+  // there follows the same rule as "both"). A single `motState.level`
+  // counter drives whichever of these an active mode says should grow;
+  // Bei-Fehler always resets/steps that one counter, so the three error
+  // options behave identically regardless of what they end up changing.
+  //
+  // Plus a "Darstellung" and "Farbe der Objekte" setting the client asked
+  // for up front - "Flach" (plain circles) or "3D-Optik" (a radial-gradient
+  // glossy-sphere look, generated from whichever colour(s) are chosen -
+  // see motGradientCss()) - movement stays a flat 2D plane either way;
+  // genuine 3D movement is explicitly "Zukunftsmusik" per the client, not
+  // attempted here. Objects don't bounce off each other (only off the stage
+  // edges) - a full elastic collision isn't needed here - but a lightweight
+  // positional separation pass (motSeparateObjects()) keeps them from fully
+  // overlapping, which would otherwise hide one object behind another and
+  // make it untappable once movement stops (a real usability bug, not just
+  // a visual nitpick).
+  const MOT_PREFS_KEY = "fwmc-mot-prefs-v1";
+  const MOT_DIFFICULTIES = {
+    leicht: { title: "Leicht", speed: 0.10, trackS: 5, highlightS: 2.5 },
+    mittel: { title: "Mittel", speed: 0.16, trackS: 7, highlightS: 2 },
+    schwer: { title: "Schwer", speed: 0.24, trackS: 9, highlightS: 1.5 },
+  };
+  // Per-round speed multiplier for a correct/wrong round: 10^0.05 ≈ 1.12,
+  // matching NeuroTracker's published "±0.05 log" staircase step exactly.
+  const MOT_SPEED_STEP_FACTOR = 1.12;
+  const MOT_OBJ_MIN = 3, MOT_OBJ_MAX = 12;
+  const MOT_TARGET_MAX = 4;
+  const MOT_RADIUS = 22; // px - constant regardless of object count, like real MOT tasks
+  // Each object's actual clickable hit-area is a square (2×radius a side),
+  // not the circle it looks like. Two circles merely touching (centres
+  // 2×radius apart) can still have OVERLAPPING square hit-areas depending
+  // on the angle between them (worst case: exactly diagonal, needing up to
+  // 2×radius×√2 ≈ 2.83×radius of separation to guarantee no overlap at any
+  // angle) - hence 2.9, not the more obvious-looking 2. Below this, a tap
+  // meant for one object could register on its (invisibly) overlapping
+  // neighbour instead - confusing for a real finger, and exactly what broke
+  // Playwright's own click targeting during testing.
+  const MOT_MIN_DIST_FACTOR = 2.9;
+  const motPrefs = {
+    speed: MOT_DIFFICULTIES.mittel.speed,
+    trackS: MOT_DIFFICULTIES.mittel.trackS,
+    highlightS: MOT_DIFFICULTIES.mittel.highlightS,
+    errorMode: "reset2",
+    style: "flach",
+    colors: ["schwarz"],
+    bgColorKey: "gruen",
+    bgIntensity: 0,
+    objectCount: 8, targetCount: 4,           // "speed" mode's fixed counts (matches NeuroTracker's own 8/4)
+    growStartObjects: 4, growStartTargets: 1, // "count"/"both" modes' starting counts
+    trainingObjects: 6, trainingTargets: 2, trainingSpeedStep: 0, trainingProgress: true,
+  };
+  function loadMotPrefs() {
+    const saved = readJSON(MOT_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(motPrefs, saved);
+    if (typeof motPrefs.speed !== "number" || motPrefs.speed < 0.05 || motPrefs.speed > 0.4) motPrefs.speed = MOT_DIFFICULTIES.mittel.speed;
+    if (typeof motPrefs.trackS !== "number" || motPrefs.trackS < 3 || motPrefs.trackS > 15) motPrefs.trackS = MOT_DIFFICULTIES.mittel.trackS;
+    if (typeof motPrefs.highlightS !== "number" || motPrefs.highlightS < 1 || motPrefs.highlightS > 4) motPrefs.highlightS = MOT_DIFFICULTIES.mittel.highlightS;
+    if (!["reset2", "backOne", "stay"].includes(motPrefs.errorMode)) motPrefs.errorMode = "reset2";
+    if (!["flach", "3d"].includes(motPrefs.style)) motPrefs.style = "flach";
+    if (!Array.isArray(motPrefs.colors) || !motPrefs.colors.length || !motPrefs.colors.every((k) => STROOP_COLOR_BY_KEY[k])) motPrefs.colors = ["schwarz"];
+    if (!STROOP_COLOR_BY_KEY[motPrefs.bgColorKey]) motPrefs.bgColorKey = "gruen";
+    if (typeof motPrefs.bgIntensity !== "number" || motPrefs.bgIntensity < 0 || motPrefs.bgIntensity > 1) motPrefs.bgIntensity = 0;
+    if (typeof motPrefs.objectCount !== "number" || motPrefs.objectCount < MOT_OBJ_MIN || motPrefs.objectCount > MOT_OBJ_MAX) motPrefs.objectCount = 8;
+    if (typeof motPrefs.targetCount !== "number" || motPrefs.targetCount < 1) motPrefs.targetCount = 4;
+    motPrefs.targetCount = Math.min(motPrefs.targetCount, Math.max(1, motPrefs.objectCount - 2), MOT_TARGET_MAX);
+    if (typeof motPrefs.growStartObjects !== "number" || motPrefs.growStartObjects < MOT_OBJ_MIN || motPrefs.growStartObjects > 8) motPrefs.growStartObjects = 4;
+    if (typeof motPrefs.growStartTargets !== "number" || motPrefs.growStartTargets < 1) motPrefs.growStartTargets = 1;
+    motPrefs.growStartTargets = Math.min(motPrefs.growStartTargets, Math.max(1, motPrefs.growStartObjects - 2), 3);
+    if (typeof motPrefs.trainingObjects !== "number" || motPrefs.trainingObjects < MOT_OBJ_MIN || motPrefs.trainingObjects > MOT_OBJ_MAX) motPrefs.trainingObjects = 6;
+    if (typeof motPrefs.trainingTargets !== "number" || motPrefs.trainingTargets < 1) motPrefs.trainingTargets = 2;
+    motPrefs.trainingTargets = Math.min(motPrefs.trainingTargets, Math.max(1, motPrefs.trainingObjects - 2), MOT_TARGET_MAX);
+    if (typeof motPrefs.trainingSpeedStep !== "number" || motPrefs.trainingSpeedStep < 0) motPrefs.trainingSpeedStep = 0;
+    if (typeof motPrefs.trainingProgress !== "boolean") motPrefs.trainingProgress = true;
+  }
+  function saveMotPrefsToStorage() { writeJSON(MOT_PREFS_KEY, motPrefs); }
+  loadMotPrefs();
+
+  const MOT_BEST_KEY = "fwmc-mot-best-v1"; // { speed: bestLevel, count: N, both: N, training: N }
+  function motDifficultyBucket() {
+    for (const key of Object.keys(MOT_DIFFICULTIES)) {
+      const p = MOT_DIFFICULTIES[key];
+      if (Math.abs(p.speed - motPrefs.speed) < 0.001 && Math.abs(p.trackS - motPrefs.trackS) < 0.001 && Math.abs(p.highlightS - motPrefs.highlightS) < 0.001) return key;
+    }
+    return "custom";
+  }
+  function motBestFor(mode) { return readJSON(MOT_BEST_KEY, {})[mode] || 0; }
+  function saveMotBest(mode, level) {
+    const all = readJSON(MOT_BEST_KEY, {});
+    if (level > (all[mode] || 0)) { all[mode] = level; writeJSON(MOT_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderMotBests() {
+    const s = motBestFor("speed"), c = motBestFor("count"), b = motBestFor("both"), t = motBestFor("training");
+    els.motBestSpeed.textContent = s ? `Bestleistung: Tempo-Stufe ${s + 1}` : "";
+    els.motBestCount.textContent = c ? `Bestleistung: Stufe ${c}` : "";
+    els.motBestBoth.textContent = b ? `Bestleistung: Stufe ${b}` : "";
+    els.motBestTraining.textContent = t ? `Bestleistung: Stufe ${t}` : "";
+  }
+  renderMotBests();
+
+  function applyMotBg() {
+    els.motStage.style.background = motPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[motPrefs.bgColorKey].hex, motPrefs.bgIntensity)
+      : "";
+  }
+  const syncMotBgUI = wireBgIntensityControl(motPrefs, {
+    pickers: [els.motBgColorPicker, els.motTrainingBgColorPicker, els.motPauseBgColorPicker],
+    sliders: [els.motBgIntensitySlider, els.motTrainingBgIntensitySlider, els.motPauseBgSlider],
+    valueEls: [els.motBgIntensityValue, els.motTrainingBgIntensityValue, els.motPauseBgValue],
+    hintEls: [els.motBgContrastHint, els.motTrainingBgContrastHint],
+    transfer: [
+      {
+        sourceRow: els.motBgSourceRow, presetGroup: els.motBgPresetGroup, presetList: els.motBgPresetList,
+        saveBtn: els.motBgSaveBtn, form: els.motBgSaveForm, nameInput: els.motBgSaveNameInput,
+        cancelBtn: els.motBgSaveCancelBtn, confirmBtn: els.motBgSaveConfirmBtn,
+      },
+      {
+        sourceRow: els.motTrainingBgSourceRow, presetGroup: els.motTrainingBgPresetGroup, presetList: els.motTrainingBgPresetList,
+        saveBtn: els.motTrainingBgSaveBtn, form: els.motTrainingBgSaveForm, nameInput: els.motTrainingBgSaveNameInput,
+        cancelBtn: els.motTrainingBgSaveCancelBtn, confirmBtn: els.motTrainingBgSaveConfirmBtn,
+      },
+    ],
+  }, () => { saveMotPrefsToStorage(); applyMotBg(); }, "mot");
+
+  // ---- Darstellung: Flach vs. 3D-Optik (still 2D movement either way) -
+  // shared by both ready screens, same "two synced DOM instances" pattern
+  // as Flash's Bereich/Fixpunkt controls. ----
+  document.querySelectorAll("#motStyleRow [data-mot-style], #motTrainingStyleRow [data-mot-style]").forEach((el) => {
+    el.addEventListener("click", () => {
+      motPrefs.style = el.dataset.motStyle;
+      saveMotPrefsToStorage();
+      syncMotStyleUI();
+    });
+  });
+  function syncMotStyleUI() {
+    document.querySelectorAll("#motStyleRow [data-mot-style], #motTrainingStyleRow [data-mot-style]").forEach((el) => setActive(el, el.dataset.motStyle === motPrefs.style));
+  }
+
+  // ---- Farbe der Objekte - the same generic multi-select swatch picker
+  // built for the Zusatzaufgabe/Periph "Farbe der Reize" controls
+  // (buildStimColorPicker/syncStimColorUI), reused as-is. "Gemischt" (2+
+  // colours) rolls one colour per ROUND, not per object - every object in
+  // a single round still looks identical to every other, which is the
+  // whole point of the exercise; only the round-to-round palette varies. ----
+  buildStimColorPicker(els.motColorPicker, () => motPrefs.colors, (keys) => { motPrefs.colors = keys; }, () => { saveMotPrefsToStorage(); syncMotColorUI(); });
+  buildStimColorPicker(els.motTrainingColorPicker, () => motPrefs.colors, (keys) => { motPrefs.colors = keys; }, () => { saveMotPrefsToStorage(); syncMotColorUI(); });
+  function syncMotColorUI() {
+    syncStimColorUI(els.motColorPicker, () => motPrefs.colors, els.motColorHint);
+    syncStimColorUI(els.motTrainingColorPicker, () => motPrefs.colors, els.motTrainingColorHint);
+  }
+
+  // ---- Bei Fehler - shared setting, no separate Trainingsmodus picker
+  // (same precedent as Flash's Trainingsmodus, which also reuses whatever
+  // Bei-Fehler was last set on its other screens rather than showing its
+  // own). ----
+  document.querySelectorAll("#motErrorRow [data-mot-error]").forEach((el) => {
+    el.addEventListener("click", () => {
+      motPrefs.errorMode = el.dataset.motError;
+      saveMotPrefsToStorage();
+      syncMotErrorUI();
+    });
+  });
+  function syncMotErrorUI() {
+    document.querySelectorAll("#motErrorRow [data-mot-error]").forEach((el) => setActive(el, el.dataset.motError === motPrefs.errorMode));
+  }
+
+  // ---- Schwierigkeit (Geschwindigkeit/Verfolgungsdauer/Markierdauer) -
+  // shared base pace, two synced slider instances (main + Trainingsmodus),
+  // same pattern as Flash's syncFlashSpeedUI(). ----
+  function syncMotSpeedUI() {
+    [[els.motSpeedSlider, els.motSpeedValue], [els.motTrainingSpeedSlider, els.motTrainingSpeedValue]].forEach(([slider, value]) => {
+      slider.value = motPrefs.speed;
+      value.textContent = Math.round(motPrefs.speed * 100) + "%";
+    });
+    [[els.motTrackSlider, els.motTrackValue], [els.motTrainingTrackSlider, els.motTrainingTrackValue]].forEach(([slider, value]) => {
+      slider.value = motPrefs.trackS;
+      value.textContent = fmtSeconds(motPrefs.trackS);
+    });
+    [[els.motHighlightSlider, els.motHighlightValue], [els.motTrainingHighlightSlider, els.motTrainingHighlightValue]].forEach(([slider, value]) => {
+      slider.value = motPrefs.highlightS;
+      value.textContent = fmtSeconds(motPrefs.highlightS);
+    });
+  }
+  function syncMotDifficultyUI() {
+    const bucket = motDifficultyBucket();
+    document.querySelectorAll("#motDifficultyRow [data-mot-diff]").forEach((el) => setActive(el, el.dataset.motDiff === bucket));
+    els.motDiffCustom.hidden = bucket !== "custom";
+    syncMotSpeedUI();
+    updateMotReadyBestHint();
+  }
+  document.querySelectorAll("#motDifficultyRow [data-mot-diff]").forEach((el) => {
+    el.addEventListener("click", () => {
+      Object.assign(motPrefs, MOT_DIFFICULTIES[el.dataset.motDiff]);
+      saveMotPrefsToStorage();
+      syncMotDifficultyUI();
+    });
+  });
+  function motSliderInput(speedEl, trackEl, highlightEl) {
+    motPrefs.speed = Number(speedEl.value);
+    motPrefs.trackS = Number(trackEl.value);
+    motPrefs.highlightS = Number(highlightEl.value);
+    saveMotPrefsToStorage();
+    syncMotDifficultyUI();
+  }
+  els.motSpeedSlider.addEventListener("input", () => motSliderInput(els.motSpeedSlider, els.motTrackSlider, els.motHighlightSlider));
+  els.motTrackSlider.addEventListener("input", () => motSliderInput(els.motSpeedSlider, els.motTrackSlider, els.motHighlightSlider));
+  els.motHighlightSlider.addEventListener("input", () => motSliderInput(els.motSpeedSlider, els.motTrackSlider, els.motHighlightSlider));
+  els.motTrainingSpeedSlider.addEventListener("input", () => motSliderInput(els.motTrainingSpeedSlider, els.motTrainingTrackSlider, els.motTrainingHighlightSlider));
+  els.motTrainingTrackSlider.addEventListener("input", () => motSliderInput(els.motTrainingSpeedSlider, els.motTrainingTrackSlider, els.motTrainingHighlightSlider));
+  els.motTrainingHighlightSlider.addEventListener("input", () => motSliderInput(els.motTrainingSpeedSlider, els.motTrainingTrackSlider, els.motTrainingHighlightSlider));
+
+  // ---- "speed" mode's fixed Anzahl Objekte/Ziele - the target slider's
+  // max is clamped to leave ≥2 distractors and never exceed MOT_TARGET_MAX,
+  // same "recompute the other slider's bounds when this one changes"
+  // pattern as Blitz-Raster's syncBlitzStartUI(). ----
+  els.motObjectsSlider.addEventListener("input", () => {
+    motPrefs.objectCount = Number(els.motObjectsSlider.value);
+    motPrefs.targetCount = Math.min(motPrefs.targetCount, Math.max(1, motPrefs.objectCount - 2), MOT_TARGET_MAX);
+    saveMotPrefsToStorage();
+    syncMotCountsUI();
+  });
+  els.motTargetsSlider.addEventListener("input", () => {
+    motPrefs.targetCount = Number(els.motTargetsSlider.value);
+    saveMotPrefsToStorage();
+    syncMotCountsUI();
+  });
+  function syncMotCountsUI() {
+    els.motObjectsSlider.value = motPrefs.objectCount;
+    els.motObjectsValue.textContent = String(motPrefs.objectCount);
+    els.motTargetsSlider.max = String(Math.min(MOT_TARGET_MAX, Math.max(1, motPrefs.objectCount - 2)));
+    els.motTargetsSlider.value = motPrefs.targetCount;
+    els.motTargetsValue.textContent = String(motPrefs.targetCount);
+  }
+
+  // ---- "count"/"both" modes' starting Anzahl Objekte/Ziele (the point
+  // they then grow from) - a separate pair of fields from the "speed"
+  // mode's fixed counts above, same "each mode keeps its own starting
+  // point" precedent as Flash's constantCount vs. startCount vs.
+  // trainingStart. ----
+  els.motGrowObjectsSlider.addEventListener("input", () => {
+    motPrefs.growStartObjects = Number(els.motGrowObjectsSlider.value);
+    motPrefs.growStartTargets = Math.min(motPrefs.growStartTargets, Math.max(1, motPrefs.growStartObjects - 2), 3);
+    saveMotPrefsToStorage();
+    syncMotGrowStartUI();
+  });
+  els.motGrowTargetsSlider.addEventListener("input", () => {
+    motPrefs.growStartTargets = Number(els.motGrowTargetsSlider.value);
+    saveMotPrefsToStorage();
+    syncMotGrowStartUI();
+  });
+  function syncMotGrowStartUI() {
+    els.motGrowObjectsSlider.value = motPrefs.growStartObjects;
+    els.motGrowObjectsValue.textContent = String(motPrefs.growStartObjects);
+    els.motGrowTargetsSlider.max = String(Math.min(3, Math.max(1, motPrefs.growStartObjects - 2)));
+    els.motGrowTargetsSlider.value = motPrefs.growStartTargets;
+    els.motGrowTargetsValue.textContent = String(motPrefs.growStartTargets);
+  }
+
+  // ---- Trainingsmodus: direct start point for every axis + progress choice ----
+  els.motTrainingObjectsSlider.addEventListener("input", () => {
+    motPrefs.trainingObjects = Number(els.motTrainingObjectsSlider.value);
+    motPrefs.trainingTargets = Math.min(motPrefs.trainingTargets, Math.max(1, motPrefs.trainingObjects - 2), MOT_TARGET_MAX);
+    saveMotPrefsToStorage();
+    syncMotTrainingUI();
+  });
+  els.motTrainingTargetsSlider.addEventListener("input", () => {
+    motPrefs.trainingTargets = Number(els.motTrainingTargetsSlider.value);
+    saveMotPrefsToStorage();
+    syncMotTrainingUI();
+  });
+  els.motTrainingSpeedStepSlider.addEventListener("input", () => {
+    motPrefs.trainingSpeedStep = Number(els.motTrainingSpeedStepSlider.value);
+    saveMotPrefsToStorage();
+    syncMotTrainingUI();
+  });
+  document.querySelectorAll("#motTrainingProgressRow [data-mot-progress]").forEach((el) => {
+    el.addEventListener("click", () => {
+      motPrefs.trainingProgress = el.dataset.motProgress === "1";
+      saveMotPrefsToStorage();
+      syncMotTrainingUI();
+    });
+  });
+  function syncMotTrainingUI() {
+    els.motTrainingObjectsSlider.value = motPrefs.trainingObjects;
+    els.motTrainingObjectsValue.textContent = String(motPrefs.trainingObjects);
+    els.motTrainingTargetsSlider.max = String(Math.min(MOT_TARGET_MAX, Math.max(1, motPrefs.trainingObjects - 2)));
+    els.motTrainingTargetsSlider.value = motPrefs.trainingTargets;
+    els.motTrainingTargetsValue.textContent = String(motPrefs.trainingTargets);
+    els.motTrainingSpeedStepSlider.value = motPrefs.trainingSpeedStep;
+    els.motTrainingSpeedStepValue.textContent = String(motPrefs.trainingSpeedStep + 1);
+    document.querySelectorAll("#motTrainingProgressRow [data-mot-progress]").forEach((el) => setActive(el, (el.dataset.motProgress === "1") === motPrefs.trainingProgress));
+    syncMotSpeedUI();
+    const best = motBestFor("training");
+    els.motTrainingBestHint.textContent = best ? `Deine bisher höchste geschaffte Stufe im Trainingsmodus: ${best}.` : "Noch keine Bestleistung im Trainingsmodus – leg los!";
+  }
+
+  // ---- Ready screens ----
+  let motReadyMode = "speed";
+  function updateMotReadyBestHint() {
+    const best = motBestFor(motReadyMode);
+    els.motReadyBestHint.textContent = best
+      ? (motReadyMode === "speed" ? `Deine Bestleistung: Tempo-Stufe ${best + 1}.` : `Deine bisher höchste geschaffte Stufe: ${best}.`)
+      : "Noch keine Bestleistung bei diesem Modus – leg los!";
+  }
+  function openMotReady(mode) {
+    motReadyMode = mode;
+    els.motReadyTitle.textContent = mode === "speed" ? "Tempo steigt" : mode === "count" ? "Anzahl steigt" : "Beides steigt";
+    els.motReadyDesc.textContent = mode === "speed"
+      ? "Anzahl der Objekte und Ziele bleibt gleich – sie bewegen sich dafür immer schneller."
+      : mode === "count"
+      ? "Tempo bleibt gleich – es kommen dafür immer mehr Objekte und irgendwann auch mehr Ziele dazu."
+      : "Tempo und Anzahl steigern sich gemeinsam.";
+    els.motFixedCountGroup.hidden = mode !== "speed";
+    els.motGrowStartGroup.hidden = mode === "speed";
+    syncMotStyleUI();
+    syncMotColorUI();
+    syncMotErrorUI();
+    syncMotDifficultyUI();
+    syncMotCountsUI();
+    syncMotGrowStartUI();
+    syncMotBgUI();
+    updateMotReadyBestHint();
+    showScreen("motReady");
+  }
+  els.motOpenSpeed.addEventListener("click", () => openMotReady("speed"));
+  els.motOpenCount.addEventListener("click", () => openMotReady("count"));
+  els.motOpenBoth.addEventListener("click", () => openMotReady("both"));
+  els.motReadyBackToHome.addEventListener("click", () => showScreen("natHome"));
+  els.motOpenTraining.addEventListener("click", () => {
+    syncMotStyleUI();
+    syncMotColorUI();
+    syncMotTrainingUI();
+    syncMotBgUI();
+    showScreen("motTrainingReady");
+  });
+  els.motTrainingBackToHome.addEventListener("click", () => showScreen("natHome"));
+
+  // ---- Round engine ----
+  function motEffectiveSpeed() { return motState.speed * Math.pow(MOT_SPEED_STEP_FACTOR, motState.speedStep); }
+  // Same timer-wrapping trick as Remember/Blitz/Flash's: records what's
+  // pending and when it fires, so Pause can cancel it and Resume can replay
+  // it with its exact remaining delay. Only used for the highlight/checking
+  // phases' delays - the tracking phase's own continuous animation is paused
+  // separately (cancelling/restarting its requestAnimationFrame loop).
+  function scheduleMotTimer(fn, delayMs) {
+    motState.timerFn = fn;
+    motState.timerFiresAt = performance.now() + delayMs;
+    motState.timer = setTimeout(fn, delayMs);
+  }
+  // Rejection-sampling placement (same idea as Remember's overlap avoidance):
+  // retry a candidate spot a handful of times if it lands too close to an
+  // already-placed object, else just accept it - a rare, brief overlap at
+  // high object counts is a much smaller problem than an infinite loop.
+  function motPlaceObjects(n, stageW, stageH, radius) {
+    const objs = [];
+    const minDist = radius * MOT_MIN_DIST_FACTOR;
+    for (let i = 0; i < n; i++) {
+      let x, y, tries = 0;
+      do {
+        x = radius + Math.random() * Math.max(1, stageW - 2 * radius);
+        y = radius + Math.random() * Math.max(1, stageH - 2 * radius);
+        tries++;
+      } while (tries < 30 && objs.some((o) => Math.hypot(o.x - x, o.y - y) < minDist));
+      const angle = Math.random() * Math.PI * 2;
+      objs.push({ id: i, x, y, vx: Math.cos(angle), vy: Math.sin(angle) });
+    }
+    return objs;
+  }
+  function motMoveObjects(dt) {
+    const speedPx = motEffectiveSpeed() * Math.min(motState.stageW, motState.stageH);
+    motState.objects.forEach((o) => {
+      o.x += o.vx * speedPx * dt;
+      o.y += o.vy * speedPx * dt;
+      if (o.x < motState.radius) { o.x = motState.radius; o.vx = Math.abs(o.vx); }
+      if (o.x > motState.stageW - motState.radius) { o.x = motState.stageW - motState.radius; o.vx = -Math.abs(o.vx); }
+      if (o.y < motState.radius) { o.y = motState.radius; o.vy = Math.abs(o.vy); }
+      if (o.y > motState.stageH - motState.radius) { o.y = motState.stageH - motState.radius; o.vy = -Math.abs(o.vy); }
+    });
+    motSeparateObjects();
+  }
+  // Positional-only separation (no velocity/bounce change) for any pair of
+  // objects that have drifted closer than 2×radius - just enough to stop
+  // one from fully hiding behind another. O(n²) but object count tops out
+  // at MOT_OBJ_MAX, so this is trivially cheap once per frame.
+  function motSeparateObjects() {
+    const objs = motState.objects, minDist = motState.radius * MOT_MIN_DIST_FACTOR;
+    for (let i = 0; i < objs.length; i++) {
+      for (let j = i + 1; j < objs.length; j++) {
+        const a = objs[i], b = objs[j];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist >= minDist) continue;
+        // Coincident centres (vanishingly rare) - nudge apart along a fixed
+        // axis rather than dividing by a zero distance.
+        const nx = dist > 0.0001 ? dx / dist : 1, ny = dist > 0.0001 ? dy / dist : 0;
+        const push = (minDist - dist) / 2;
+        a.x -= nx * push; a.y -= ny * push;
+        b.x += nx * push; b.y += ny * push;
+      }
+    }
+    objs.forEach((o) => {
+      o.x = Math.min(motState.stageW - motState.radius, Math.max(motState.radius, o.x));
+      o.y = Math.min(motState.stageH - motState.radius, Math.max(motState.radius, o.y));
+    });
+  }
+  // Generalises the fixed-gray "3D-Optik" gradient to whichever colour was
+  // rolled for this round - mixHex() (already used for the background
+  // Intensität slider) gives a lighter "highlight" spot and a darker
+  // "shadow" edge from the same base hex, same glossy-sphere illusion as
+  // before but now colour-agnostic.
+  function motGradientCss(hex) {
+    const light = mixHex(hex, "#ffffff", 0.55), dark = mixHex(hex, "#000000", 0.35);
+    return `radial-gradient(circle at 34% 28%, ${light} 0%, ${hex} 55%, ${dark} 100%)`;
+  }
+  // Full rebuild (creates/removes DOM nodes and sets classes) - called on
+  // every phase change. renderMotPositions() below is the cheap per-frame
+  // counterpart used during the tracking animation itself.
+  function renderMotObjects() {
+    els.motObjectsLayer.innerHTML = "";
+    motState.objects.forEach((o) => {
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = "mot-object" + (motState.style === "3d" ? " style-3d" : "");
+      el.style.width = el.style.height = motState.radius * 2 + "px";
+      el.style.left = o.x - motState.radius + "px";
+      el.style.top = o.y - motState.radius + "px";
+      const isTarget = motState.phase === "highlight" && motState.targetIds.has(o.id);
+      const isCorrect = motState.tapped.has(o.id) && motState.targetIds.has(o.id);
+      const isWrong = o.id === motState.wrongId;
+      if (isTarget) el.classList.add("target");
+      if (isCorrect) el.classList.add("correct");
+      if (isWrong) el.classList.add("wrong");
+      // Only the "normal" (untargeted, untapped) state uses the client's
+      // chosen colour - target/correct/wrong stay fixed semantic colours
+      // (CSS classes above), so setting an inline background here would
+      // just override those for no reason.
+      if (!isTarget && !isCorrect && !isWrong) {
+        el.style.background = motState.style === "3d" ? motGradientCss(motState.baseColorHex) : motState.baseColorHex;
+      }
+      const tappable = motState.phase === "identify" && !motState.tapped.has(o.id);
+      if (tappable) {
+        el.classList.add("tappable");
+        el.addEventListener("click", () => motTapObject(o.id));
+      }
+      el.setAttribute("aria-label", `Objekt ${o.id + 1}`);
+      o.el = el;
+      els.motObjectsLayer.appendChild(el);
+    });
+  }
+  function renderMotPositions() {
+    motState.objects.forEach((o) => {
+      if (!o.el) return;
+      o.el.style.left = o.x - motState.radius + "px";
+      o.el.style.top = o.y - motState.radius + "px";
+    });
+  }
+  // Derives this round's object/target count and speed-step from
+  // `motState.level` and the active mode - the one place all four modes'
+  // progression rules are decided. "count" mode never advances speed;
+  // "speed" mode never advances count; "both" advances both from the same
+  // level; "training" either stays exactly at its chosen start (progress
+  // off) or advances both, same as "both" (progress on).
+  function motCountsForRound() {
+    if (motState.mode === "speed") return { n: motState.objectCount, k: motState.targetCount, speedStep: motState.level - 1 };
+    if (motState.mode === "training" && !motState.trainingProgress) return { n: motState.startObjects, k: motState.startTargets, speedStep: motState.startSpeedStep };
+    const n = Math.min(MOT_OBJ_MAX, motState.startObjects + Math.floor((motState.level - 1) / 2));
+    const k = Math.min(MOT_TARGET_MAX, n - 2, motState.startTargets + Math.floor((motState.level - 1) / 4));
+    const speedStep = motState.mode === "count" ? 0 : (motState.mode === "training" ? motState.startSpeedStep : 0) + motState.level - 1;
+    return { n, k, speedStep };
+  }
+  function motLevelLabel() {
+    const { n, k } = motCountsForRound();
+    const base = `${n} Objekte · ${k} Ziel${k > 1 ? "e" : ""}`;
+    return motState.mode === "count" ? base : `${base} · Tempo-Stufe ${motState.speedStep + 1}`;
+  }
+  function motStartRound() {
+    const { n, k, speedStep } = motCountsForRound();
+    motState.speedStep = speedStep;
+    const rect = els.motObjectsLayer.getBoundingClientRect();
+    motState.stageW = rect.width;
+    motState.stageH = rect.height;
+    motState.radius = MOT_RADIUS;
+    motState.objects = motPlaceObjects(n, motState.stageW, motState.stageH, motState.radius);
+    motState.targetIds = pickRandomSubset(motState.objects.map((o) => o.id), k);
+    motState.tapped = new Set();
+    motState.wrongId = null;
+    motState.phase = "highlight";
+    // One colour per ROUND (not per object - see the engine header comment),
+    // situationally avoiding the current background colour so the objects
+    // never blend into it - same pickPeriphColor()/colorsClash() logic the
+    // Zusatzaufgabe add-on and Periph's own stimulus colour already use.
+    const bgHex = motPrefs.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[motPrefs.bgColorKey].hex, motPrefs.bgIntensity) : "#ffffff";
+    motState.baseColorHex = pickPeriphColor(motState.colors, bgHex, Math.random);
+    els.motHint.textContent = k > 1 ? "Merke dir die markierten Objekte" : "Merke dir das markierte Objekt";
+    els.motLevelEl.textContent = motLevelLabel();
+    renderMotObjects();
+    scheduleMotTimer(motBeginTracking, motState.highlightS * 1000);
+  }
+  function motBeginTracking() {
+    if (!motState) return;
+    motState.phase = "tracking";
+    els.motHint.textContent = "Mit den Augen verfolgen …";
+    motState.trackTotalMs = motState.trackS * 1000;
+    motState.trackElapsedMs = 0;
+    motState.trackLastTs = null;
+    renderMotObjects(); // rebuilds without the "target" highlight class
+    motState.raf = requestAnimationFrame(motPhysicsTick);
+  }
+  function motPhysicsTick(ts) {
+    if (!motState || motState.phase !== "tracking") return;
+    if (motState.trackLastTs == null) motState.trackLastTs = ts;
+    // Clamped so a dropped/backgrounded frame can't fling objects across
+    // the stage in one jump once the tab regains focus.
+    const dt = Math.min(0.05, (ts - motState.trackLastTs) / 1000);
+    motState.trackLastTs = ts;
+    motState.trackElapsedMs += dt * 1000;
+    motMoveObjects(dt);
+    renderMotPositions();
+    if (motState.trackElapsedMs >= motState.trackTotalMs) { motOpenIdentify(); return; }
+    motState.raf = requestAnimationFrame(motPhysicsTick);
+  }
+  function motOpenIdentify() {
+    if (!motState) return;
+    motState.raf = null;
+    motState.phase = "identify";
+    els.motHint.textContent = motState.targetIds.size > 1 ? "Welche waren es? Tippen." : "Welches war es? Tippen.";
+    renderMotObjects();
+  }
+  function motTapObject(id) {
+    if (!motState || motState.phase !== "identify" || motState.paused || motState.tapped.has(id)) return;
+    if (motState.targetIds.has(id)) {
+      motState.tapped.add(id);
+      renderMotObjects();
+      if (motState.tapped.size >= motState.targetIds.size) {
+        if (motState.level > motState.cleared) motState.cleared = motState.level;
+        motState.phase = "success";
+        els.motHint.textContent = "Richtig! Weiter geht's …";
+        motState.level += 1;
+        scheduleMotTimer(motStartRound, 900);
+      }
+    } else {
+      motState.phase = "checking";
+      motState.wrongId = id;
+      motState.tapped = new Set(motState.targetIds); // reveal every actual target
+      renderMotObjects();
+      let resetLevel, hint;
+      if (motState.errorMode === "stay") { resetLevel = motState.level; hint = "Leider falsch – nochmal versuchen"; }
+      else if (motState.errorMode === "backOne") { resetLevel = Math.max(1, motState.level - 1); hint = "Leider falsch – eine Stufe runter"; }
+      else { resetLevel = 1; hint = "Leider falsch – nochmal von vorne"; }
+      els.motHint.textContent = hint;
+      scheduleMotTimer(() => { motState.level = resetLevel; motStartRound(); }, 1400);
+    }
+  }
+
+  let motState = null;
+  let lastMotMode = null;
+  let motReturnScreen = "natHome";
+  function startMotGame(mode) {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.motPlayer.hidden = false;
+    els.motPlayerBar.hidden = false;
+    els.motDonePanel.hidden = true;
+    els.motPauseOverlay.hidden = true;
+    els.motPauseBtn.hidden = false;
+    lastMotMode = mode;
+    motReturnScreen = mode === "training" ? "motTrainingReady" : "motReady";
+    const startObjects = mode === "training" ? motPrefs.trainingObjects : motPrefs.growStartObjects;
+    const startTargets = mode === "training" ? motPrefs.trainingTargets : motPrefs.growStartTargets;
+    const startSpeedStep = mode === "training" ? motPrefs.trainingSpeedStep : 0;
+    motState = {
+      mode, level: 1, cleared: 0, phase: "highlight",
+      objects: [], targetIds: new Set(), tapped: new Set(), wrongId: null,
+      objectCount: motPrefs.objectCount, targetCount: motPrefs.targetCount,
+      startObjects, startTargets, startSpeedStep,
+      trainingProgress: motPrefs.trainingProgress,
+      speed: motPrefs.speed, trackS: motPrefs.trackS, highlightS: motPrefs.highlightS,
+      errorMode: motPrefs.errorMode, style: motPrefs.style, colors: motPrefs.colors.slice(),
+      startTime: performance.now(), timer: null, raf: null, paused: false,
+    };
+    applyMotBg();
+    requestWakeLock();
+    motStartRound();
+  }
+  els.motReadyStartBtn.addEventListener("click", () => startMotGame(motReadyMode));
+  els.motTrainingStartBtn.addEventListener("click", () => startMotGame("training"));
+
+  // ---- Pause mid-game, live-adjust the background - same trick as
+  // Remember/Blitz/Flash's for the highlight/checking delays; the tracking
+  // phase's requestAnimationFrame loop is cancelled outright and restarted
+  // fresh on resume (trackElapsedMs already reflects exactly how much
+  // tracking time had elapsed, so nothing is lost or double-counted). ----
+  function pauseMot() {
+    if (!motState || motState.paused) return;
+    motState.paused = true;
+    motState.pausedAt = performance.now();
+    if (motState.raf) { cancelAnimationFrame(motState.raf); motState.raf = null; motState.trackLastTs = null; }
+    if (motState.timer) {
+      clearTimeout(motState.timer);
+      motState.timer = null;
+      motState.timerRemainingMs = Math.max(0, motState.timerFiresAt - motState.pausedAt);
+    }
+    syncMotBgUI();
+    els.motPauseBtn.hidden = true;
+    els.motPauseOverlay.hidden = false;
+  }
+  function resumeMot() {
+    if (!motState || !motState.paused) return;
+    motState.startTime += performance.now() - motState.pausedAt;
+    motState.paused = false;
+    if (motState.phase === "tracking") motState.raf = requestAnimationFrame(motPhysicsTick);
+    if (motState.timerFn && motState.timerRemainingMs != null) {
+      scheduleMotTimer(motState.timerFn, motState.timerRemainingMs);
+      motState.timerRemainingMs = null;
+    }
+    els.motPauseOverlay.hidden = true;
+    els.motPauseBtn.hidden = false;
+  }
+  els.motPauseBtn.addEventListener("click", pauseMot);
+  els.motResumeBtn.addEventListener("click", resumeMot);
+
+  // "Beenden" doubles as the finish action, same convention as Remember/
+  // Blitz/Flash - MOT-Fähigkeit is endless/progressive with no fixed end.
+  function motStop() {
+    if (!motState) return;
+    if (motState.timer) clearTimeout(motState.timer);
+    if (motState.raf) cancelAnimationFrame(motState.raf);
+    const state = motState;
+    motState = null;
+    els.motPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.motPlayer) document.exitFullscreen().catch(() => {});
+    els.motFsHint.hidden = true;
+    if (state.cleared > 0) {
+      const isRecord = saveMotBest(state.mode, state.cleared);
+      renderMotBests();
+      const played = (performance.now() - state.startTime) / 1000;
+      const modeTitle = state.mode === "speed" ? "Tempo steigt" : state.mode === "count" ? "Anzahl steigt" : state.mode === "both" ? "Beides steigt" : "Trainingsmodus";
+      const note = state.mode === "speed" ? `Tempo-Stufe ${state.cleared + 1} erreicht` : `Stufe ${state.cleared} erreicht`;
+      els.motPlayerBar.hidden = true;
+      els.motDoneSummary.textContent = `MOT-Fähigkeit · ${modeTitle} · ${note}` + (isRecord ? " · Neue Bestleistung!" : "");
+      const id = addHistory({ kind: "mot", title: `MOT-Fähigkeit · ${modeTitle}`, seconds: Math.round(played), note });
+      renderRating(els.motRating, id, "Wie war deine Konzentration?");
+      els.motDonePanel.hidden = false;
+    } else {
+      els.motPlayer.hidden = true;
+      showScreen(motReturnScreen);
+    }
+  }
+  els.motBackBtn.addEventListener("click", motStop);
+  els.motAgainBtn.addEventListener("click", () => { els.motDonePanel.hidden = true; startMotGame(lastMotMode); });
+  els.motDoneBackBtn.addEventListener("click", () => { els.motPlayer.hidden = true; els.motDonePanel.hidden = true; showScreen(motReturnScreen); });
 
   // ==== Workout engine ====
   // One engine serves three situations: a block inside a coach-authored/
