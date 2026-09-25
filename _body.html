@@ -1,0 +1,1509 @@
+<div class="screen" id="home">
+  <header class="brandbar">
+    <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC Online-Training</em>
+  </header>
+
+  <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab active" data-section="visual" role="tab" aria-selected="true">Visual Training</button>
+    <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
+    <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
+  </nav>
+
+  <button class="combo-entry-link" data-open-combo="1">Komplett-Programm aus mehreren Bereichen &rarr;</button>
+
+  <section class="hero">
+    <div class="hero-kicker">Visual Training</div>
+    <h1 class="hero-title">Wahrnehmen. Entscheiden. Reagieren.</h1>
+    <p class="hero-text">Kurze visuelle Trainingseinheiten f&uuml;r schnelle, klare Entscheidungen &ndash; direkt im Browser auf Handy, Tablet oder Laptop.</p>
+    <button class="text-link" id="tipsBtn">So trainierst du richtig &rarr;</button>
+  </section>
+
+  <section class="code-card">
+    <h2>Dein pers&ouml;nliches Training</h2>
+    <p>Du hast einen Trainings-Code von deinem Coach? Gib ihn hier ein.</p>
+    <div class="program-entry-row">
+      <input type="text" id="programCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <button id="programGoBtn">&Ouml;ffnen</button>
+    </div>
+    <div class="program-error" id="programError" role="alert" hidden>Zu diesem Code wurde kein Training gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
+  </section>
+
+  <section class="history" id="historySection" hidden>
+    <div class="section-head">
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
+    </div>
+    <div class="history-stats" id="historyStats"></div>
+    <ul class="history-list" id="historyList"></ul>
+    <div class="history-actions">
+      <button class="text-link small" id="historyMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="historyClearBtn">Verlauf l&ouml;schen</button>
+    </div>
+  </section>
+
+  <section class="featured-programs" id="featuredPrograms" hidden>
+    <div class="section-head">
+      <h2>Beispiel-Programme</h2>
+      <span class="section-note">ohne Code starten</span>
+    </div>
+    <div class="featured-grid" id="featuredGrid"></div>
+    <button class="text-link small" id="featuredMoreBtn" hidden>Weitere anzeigen</button>
+  </section>
+
+  <section class="exercises">
+    <div class="section-head">
+      <h2>Einzelne &Uuml;bungen</h2>
+      <span class="section-note">frei einstellbar</span>
+    </div>
+
+    <div class="filter-bar" id="filterBar">
+      <button class="filter-chip" data-filter-group="ton" data-filter-value="ton">&#128266; Mit Ton</button>
+      <button class="filter-chip" data-filter-group="ton" data-filter-value="ohne-ton">Ohne Ton</button>
+      <button class="filter-more" id="filterMoreBtn">Mehr Filter</button>
+      <div class="filter-extra" id="filterExtra" hidden>
+        <button class="filter-chip" data-filter-group="typ" data-filter-value="original">Original</button>
+        <button class="filter-chip" data-filter-group="typ" data-filter-value="pfeil">Pfeil</button>
+        <button class="filter-chip" data-filter-group="typ" data-filter-value="vrw">VRW</button>
+        <button class="filter-chip" data-filter-group="typ" data-filter-value="stroop">Stroop</button>
+        <button class="filter-chip" data-filter-group="typ" data-filter-value="erweitert">Erweitert</button>
+        <button class="filter-chip" data-filter-group="typ" data-filter-value="huetchen">H&uuml;tchen</button>
+      </div>
+    </div>
+
+    <div class="card-grid">
+      <button class="excard" data-exercise="vt-color" data-tags="original">
+        <div class="icon-badge"><svg viewBox="0 0 24 24">
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(90 12 12)"/>
+        </svg></div>
+        <h3>VT &middot; Farbe &amp; Seite</h3>
+        <p>Farbe erkennen, richtige Seite w&auml;hlen.</p>
+        <span class="tag">Original</span>
+      </button>
+
+      <button class="excard" data-exercise="vrw-original" data-tags="original">
+        <div class="icon-badge pale"><svg viewBox="0 0 24 24">
+          <rect x="3" y="3" width="18" height="18" rx="4" fill="#d32f2f"/>
+          <polygon points="12,7 16,12 8,12" fill="#fff" transform="rotate(90 12 12)"/>
+        </svg></div>
+        <h3>VRW &middot; Direkt &amp; Umgekehrt</h3>
+        <p>Mal z&auml;hlt die gezeigte Seite, mal die Gegenseite.</p>
+        <span class="tag">Original</span>
+      </button>
+
+      <button class="excard" data-exercise="4-straight" data-tags="pfeil">
+        <div class="icon-badge"><svg viewBox="0 0 24 24">
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(0 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(90 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(180 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(270 12 12)"/>
+        </svg></div>
+        <h3>4 Pfeile &middot; gerade</h3>
+        <p>Vorne, rechts, hinten, links.</p>
+        <span class="tag">Pfeil</span>
+      </button>
+
+      <button class="excard" data-exercise="4-diag" data-tags="pfeil">
+        <div class="icon-badge"><svg viewBox="0 0 24 24">
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(45 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(135 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(225 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(315 12 12)"/>
+        </svg></div>
+        <h3>4 Pfeile &middot; diagonal</h3>
+        <p>Die vier Schr&auml;grichtungen.</p>
+        <span class="tag">Pfeil</span>
+      </button>
+
+      <button class="excard" data-exercise="8-solo" data-tags="pfeil">
+        <div class="icon-badge"><svg viewBox="0 0 24 24">
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(0 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(45 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(90 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(135 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(180 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(225 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(270 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#fff" transform="rotate(315 12 12)"/>
+        </svg></div>
+        <h3>8 Pfeile</h3>
+        <p>Alle acht Richtungen.</p>
+        <span class="tag">Pfeil</span>
+      </button>
+
+      <button class="excard" data-exercise="8-vrw" data-tags="vrw">
+        <div class="icon-badge pale"><svg viewBox="0 0 24 24">
+          <polygon points="12,3 16,11 8,11" fill="#2e7d32" transform="rotate(0 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#d32f2f" transform="rotate(45 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#2e7d32" transform="rotate(90 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#d32f2f" transform="rotate(135 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#2e7d32" transform="rotate(180 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#d32f2f" transform="rotate(225 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#2e7d32" transform="rotate(270 12 12)"/>
+          <polygon points="12,3 16,11 8,11" fill="#d32f2f" transform="rotate(315 12 12)"/>
+        </svg></div>
+        <h3>8 Pfeile &middot; Rot/Gr&uuml;n</h3>
+        <p>Gr&uuml;n: gezeigte Richtung. Rot: Gegenrichtung.</p>
+        <span class="tag">VRW</span>
+      </button>
+
+      <button class="excard" data-exercise="stroop-classic" data-tags="stroop">
+        <div class="icon-tile" style="background:#fff;border:1.5px solid var(--line);color:#2e7d32">ROT</div>
+        <h3>Stroop &middot; klassisch</h3>
+        <p>Farbe benennen, nicht das Wort lesen.</p>
+        <span class="tag">Stroop</span>
+      </button>
+
+      <button class="excard" data-exercise="stroop-bg" data-tags="erweitert">
+        <div class="icon-tile" style="background:#d32f2f;color:#f2a900">GR&Uuml;N</div>
+        <h3>Stroop &middot; mit Hintergrund</h3>
+        <p>Wort, Schrift und Hintergrund in drei Farben.</p>
+        <span class="tag">Erweitert</span>
+      </button>
+
+      <button class="excard" data-exercise="cross-modal" data-tags="ton experimentell">
+        <div class="icon-badge"><svg viewBox="0 0 24 24">
+          <polygon points="8,5 11,10 5,10" fill="#fff" transform="translate(0,2)"/>
+          <path d="M15 9 Q18 12 15 15" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          <path d="M17.5 6.5 Q23 12 17.5 17.5" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        </svg></div>
+        <h3>Sehen &amp; H&ouml;ren</h3>
+        <p>Bild und Ton kombiniert &ndash; mit Sonderregel.</p>
+        <span class="tag tag-ton">&#128266; Ton</span>
+      </button>
+
+      <button class="excard" data-exercise="cone-tap" data-tags="huetchen">
+        <div class="icon-badge"><svg viewBox="0 0 24 24">
+          <polygon points="12,4 16.5,18 7.5,18" fill="#fff"/>
+          <rect x="5" y="18" width="14" height="2.4" rx="1" fill="#fff"/>
+        </svg></div>
+        <h3>H&uuml;tchen sortieren</h3>
+        <p>Sortiere so schnell du kannst &ndash; wie viele Durchg&auml;nge schaffst du in der Zeit?</p>
+        <span class="tag">H&uuml;tchen</span>
+      </button>
+
+      <button class="excard" data-exercise="cone-compass" data-tags="huetchen">
+        <div class="icon-badge"><svg viewBox="0 0 24 24">
+          <line x1="12" y1="12" x2="12" y2="4" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+          <line x1="12" y1="12" x2="20" y2="12" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+          <line x1="12" y1="12" x2="12" y2="20" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+          <line x1="12" y1="12" x2="4" y2="12" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+          <circle cx="12" cy="12" r="1.6" fill="#fff"/>
+        </svg></div>
+        <h3>H&uuml;tchen &middot; Kompass-Aufbau</h3>
+        <p>Baue deinen eigenen Richtungs-Aufbau &ndash; die App zeigt nur die Farbe.</p>
+        <span class="tag">H&uuml;tchen</span>
+      </button>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong><span class="beta">Beta</span></p>
+    <nav>
+      <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
+      <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a>
+      <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutz</a>
+    </nav>
+  </footer>
+</div>
+
+<div class="screen" id="breathHome" hidden>
+  <header class="brandbar">
+    <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC Online-Training</em>
+  </header>
+
+  <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab active" data-section="breath" role="tab" aria-selected="true">Atemtraining</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
+    <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
+  </nav>
+
+  <button class="combo-entry-link" data-open-combo="1">Komplett-Programm aus mehreren Bereichen &rarr;</button>
+
+  <section class="hero">
+    <div class="hero-kicker">Atemtraining</div>
+    <h1 class="hero-title">Ruhig werden. Fokus finden.</h1>
+    <p class="hero-text">Gef&uuml;hrte Atemmuster mit visuellem Takt &ndash; pr&auml;ziser einstellbar als ein Metronom, direkt im Browser.</p>
+    <button class="text-link" id="breathTipsBtn">Wie funktioniert das? &rarr;</button>
+  </section>
+
+  <section class="code-card">
+    <h2>Dein pers&ouml;nliches Atemtraining</h2>
+    <p>Du hast einen Trainings-Code von deinem Coach? Gib ihn hier ein.</p>
+    <div class="program-entry-row">
+      <input type="text" id="breathProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <button id="breathProgramGoBtn">&Ouml;ffnen</button>
+    </div>
+    <div class="program-error" id="breathProgramError" role="alert" hidden>Zu diesem Code wurde kein Training gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
+  </section>
+
+  <section class="history" id="breathHistorySection" hidden>
+    <div class="section-head">
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
+    </div>
+    <div class="history-stats" id="breathHistoryStats"></div>
+    <ul class="history-list" id="breathHistoryList"></ul>
+    <div class="history-actions">
+      <button class="text-link small" id="breathHistoryMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="breathHistoryClearBtn">Verlauf l&ouml;schen</button>
+    </div>
+  </section>
+
+  <section class="featured-programs" id="breathFeaturedPrograms" hidden>
+    <div class="section-head">
+      <h2>Beispiel-Programme</h2>
+      <span class="section-note">ohne Code starten</span>
+    </div>
+    <div class="featured-grid" id="breathFeaturedGrid"></div>
+  </section>
+
+  <section class="patterns">
+    <div class="section-head">
+      <h2>Atemmuster</h2>
+      <span class="section-note">alle Phasen frei einstellbar</span>
+    </div>
+    <div class="featured-grid" id="patternGrid"></div>
+  </section>
+
+  <footer class="site-footer">
+    <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong><span class="beta">Beta</span></p>
+    <nav>
+      <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
+      <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a>
+      <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutz</a>
+    </nav>
+  </footer>
+</div>
+
+<div class="screen" id="movementHome" hidden>
+  <header class="brandbar">
+    <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC Online-Training</em>
+  </header>
+
+  <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
+    <button class="section-tab active" data-section="movement" role="tab" aria-selected="true">Movement</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
+    <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
+  </nav>
+
+  <button class="combo-entry-link" data-open-combo="1">Komplett-Programm aus mehreren Bereichen &rarr;</button>
+
+  <section class="hero">
+    <div class="hero-kicker">Movement <span class="placeholder-tag">Name noch offen</span></div>
+    <h1 class="hero-title">Bewegen. Merken. Reagieren.</h1>
+    <p class="hero-text">Ganzk&ouml;rper-Reaktionstraining im Takt &ndash; ein Symbol zeigt dir, was als N&auml;chstes zu tun ist, bevor du dran bist.</p>
+    <button class="text-link" id="movementTipsBtn">Wie funktioniert das? &rarr;</button>
+  </section>
+
+  <section class="history" id="movementHistorySection" hidden>
+    <div class="section-head">
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
+    </div>
+    <div class="history-stats" id="movementHistoryStats"></div>
+    <ul class="history-list" id="movementHistoryList"></ul>
+    <div class="history-actions">
+      <button class="text-link small" id="movementHistoryMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="movementHistoryClearBtn">Verlauf l&ouml;schen</button>
+    </div>
+  </section>
+
+  <section class="patterns">
+    <div class="section-head">
+      <h2>Training starten</h2>
+      <span class="section-note">8 Grundbewegungen, frei kombinierbar</span>
+    </div>
+    <button class="featured-card" id="movementStartCard">
+      <span class="fc-title">Ganzk&ouml;rper-Reaktion</span>
+      <span class="fc-desc">Arme und Beine heben oder strecken, im Takt &ndash; mit Vorschau auf das, was als N&auml;chstes kommt.</span>
+    </button>
+  </section>
+
+  <footer class="site-footer">
+    <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong><span class="beta">Beta</span></p>
+    <nav>
+      <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
+      <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a>
+      <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutz</a>
+    </nav>
+  </footer>
+</div>
+
+<div class="screen" id="workoutHome" hidden>
+  <header class="brandbar">
+    <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC Online-Training</em>
+  </header>
+
+  <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
+    <button class="section-tab active" data-section="workout" role="tab" aria-selected="true">Workout</button>
+    <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
+  </nav>
+
+  <button class="combo-entry-link" data-open-combo="1">Komplett-Programm aus mehreren Bereichen &rarr;</button>
+
+  <section class="hero">
+    <div class="hero-kicker">Workout <span class="placeholder-tag">Name noch offen</span></div>
+    <h1 class="hero-title">K&ouml;rperliches Training.</h1>
+    <p class="hero-text">Trainingspl&auml;ne mit festen S&auml;tzen und Wiederholungen, oder ein Tabata-/Intervall-Timer &ndash; direkt im Browser.</p>
+  </section>
+
+  <section class="code-card">
+    <h2>Dein pers&ouml;nlicher Trainingsplan</h2>
+    <p>Du hast einen Trainings-Code von deinem Coach? Gib ihn hier ein.</p>
+    <div class="program-entry-row">
+      <input type="text" id="workoutProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <button id="workoutProgramGoBtn">&Ouml;ffnen</button>
+    </div>
+    <div class="program-error" id="workoutProgramError" role="alert" hidden>Zu diesem Code wurde kein Trainingsplan gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
+  </section>
+
+  <section class="history" id="workoutHistorySection" hidden>
+    <div class="section-head">
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
+    </div>
+    <div class="history-stats" id="workoutHistoryStats"></div>
+    <ul class="history-list" id="workoutHistoryList"></ul>
+    <div class="history-actions">
+      <button class="text-link small" id="workoutHistoryMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="workoutHistoryClearBtn">Verlauf l&ouml;schen</button>
+    </div>
+  </section>
+
+  <section class="featured-programs" id="workoutFeaturedPrograms" hidden>
+    <div class="section-head">
+      <h2>Beispiel-Trainingsplan</h2>
+      <span class="section-note">ohne Code starten</span>
+    </div>
+    <div class="featured-grid" id="workoutFeaturedGrid"></div>
+  </section>
+
+  <section class="patterns">
+    <div class="section-head">
+      <h2>Tabata / Intervalltraining</h2>
+      <span class="section-note">frei einstellbar, ohne Plan</span>
+    </div>
+    <button class="featured-card" id="workoutTabataStartCard">
+      <span class="fc-title">Intervall-Timer starten</span>
+      <span class="fc-desc">W&auml;hle eine &Uuml;bung, Arbeits- und Pausenzeit sowie die Rundenzahl &ndash; l&auml;uft dann automatisch durch.</span>
+    </button>
+  </section>
+
+  <footer class="site-footer">
+    <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong><span class="beta">Beta</span></p>
+    <nav>
+      <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
+      <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a>
+      <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutz</a>
+    </nav>
+  </footer>
+</div>
+
+<div class="screen" id="natHome" hidden>
+  <header class="brandbar">
+    <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC Online-Training</em>
+  </header>
+
+  <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
+    <button class="section-tab active" data-section="nat" role="tab" aria-selected="true">NAT</button>
+  </nav>
+
+  <div class="subnav-label">W&auml;hle eine &Uuml;bung</div>
+  <nav class="sub-switch" role="tablist" aria-label="NAT Unterbereich">
+    <button class="sub-tab active" data-nat-sub="peripher" role="tab" aria-selected="true">Periphere Wahrnehmung</button>
+    <button class="sub-tab" data-nat-sub="remember" role="tab" aria-selected="false">Remember</button>
+    <button class="sub-tab" data-nat-sub="flash" role="tab" aria-selected="false">Flash Speicher Test</button>
+  </nav>
+
+  <button class="combo-entry-link" data-open-combo="1">Komplett-Programm aus mehreren Bereichen &rarr;</button>
+
+  <section class="hero">
+    <div class="hero-kicker">NAT <span class="placeholder-tag">Name noch offen</span></div>
+    <h1 class="hero-title">Wahrnehmung. Ged&auml;chtnis. Reaktion.</h1>
+  </section>
+
+  <section class="nat-panel" id="natPeripherPanel">
+    <div class="section-head">
+      <h2>Periphere Wahrnehmung</h2>
+      <span class="section-note">Punkt fixieren, den Rand wahrnehmen</span>
+    </div>
+    <button class="featured-card" id="periphOpenBtn">
+      <span class="fc-title">Blitz-Reize</span>
+      <span class="fc-desc">Buchstaben und/oder Zahlen blitzen rund um den Fixpunkt auf. Augen auf der Mitte lassen, den Rand wahrnehmen &ndash; funktioniert im Hoch- und Querformat.</span>
+    </button>
+  </section>
+
+  <section class="nat-panel" id="natRememberPanel" hidden>
+    <div class="section-head">
+      <h2>Remember</h2>
+      <span class="section-note">merke dir die Positionen, dann klicke sie in der richtigen Reihenfolge an</span>
+    </div>
+    <button class="featured-card" id="rememberOpenFixed">
+      <span class="fc-title">Feste Positionen</span>
+      <span class="fc-desc">Jede neue Zahl kommt an einen neuen Platz dazu &ndash; die bisherigen bleiben, wo sie waren.</span>
+      <span class="fc-meta" id="rememberBestFixed"></span>
+    </button>
+    <button class="featured-card" id="rememberOpenShuffle">
+      <span class="fc-title">Bewegte Positionen</span>
+      <span class="fc-desc">Bei jeder neuen Zahl werden alle Positionen neu gemischt &ndash; schwerer zu merken.</span>
+      <span class="fc-meta" id="rememberBestShuffle"></span>
+    </button>
+    <button class="featured-card" id="rememberOpenTraining">
+      <span class="fc-title">Trainingsmodus</span>
+      <span class="fc-desc">Starte direkt bei einer bestimmten Zahlenanzahl und &uuml;be gezielt dort &ndash; mit Vor/Zur&uuml;ck und Wahl, ob du dich danach steigerst.</span>
+      <span class="fc-meta" id="rememberBestTraining"></span>
+    </button>
+  </section>
+
+  <section class="nat-panel" id="natFlashPanel" hidden>
+    <div class="nat-panel-card">
+      <h3>Flash Speicher Test</h3>
+      <p>Kurzzeitged&auml;chtnis-Test mit kurz eingeblendeten Reizen. Der genaue Ablauf wird hier als N&auml;chstes gestaltet.</p>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong><span class="beta">Beta</span></p>
+    <nav>
+      <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
+      <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a>
+      <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutz</a>
+    </nav>
+  </footer>
+</div>
+
+<div class="screen" id="rememberReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="rememberReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="rememberReadyTitle">&nbsp;</h1>
+  <p class="page-sub" id="rememberReadyDesc"></p>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="rememberDifficultyRow">
+      <button class="choice" data-remember-diff="leicht">Leicht<small>mehr Zeit</small></button>
+      <button class="choice" data-remember-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-remember-diff="schwer">Schwer<small>knapp bemessen</small></button>
+    </div>
+    <div class="tempo-custom" id="rememberDiffCustom" hidden>Individuell eingestellt (siehe Feineinstellungen)</div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Bei Fehler</div>
+    <div class="choice-row" id="rememberErrorRow">
+      <button class="choice" data-remember-error="reset2">Zur&uuml;ck auf 2<small>ganz von vorne</small></button>
+      <button class="choice" data-remember-error="backOne">Eine Zahl zur&uuml;ck<small>eine Stufe runter</small></button>
+      <button class="choice" data-remember-error="stay">Gleiche Zahl<small>so lange, bis es klappt</small></button>
+    </div>
+  </div>
+
+  <details class="advanced" id="rememberAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Einblenddauer bei 2 Zahlen</div>
+        <div class="slider-row">
+          <input type="range" id="rememberRevealSlider" min="0.4" max="3" step="0.1" aria-label="Einblenddauer bei 2 Zahlen">
+          <span class="slider-value" id="rememberRevealValue"></span>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Zus&auml;tzliche Zeit je weiterer Zahl</div>
+        <div class="slider-row">
+          <input type="range" id="rememberStepSlider" min="0.05" max="0.6" step="0.05" aria-label="Zus&auml;tzliche Zeit je weiterer Zahl">
+          <span class="slider-value" id="rememberStepValue"></span>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="group-help" id="rememberReadyBestHint"></div>
+
+  <button class="start-btn" id="rememberReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="rememberTrainingReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="rememberTrainingBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Trainingsmodus</h1>
+  <p class="page-sub">Starte direkt bei einer bestimmten Zahlenanzahl, statt dich immer erst von 2 an hochzuarbeiten.</p>
+
+  <div class="group">
+    <div class="group-label">Startzahl <span class="group-count" id="rememberStartValue"></span></div>
+    <div class="slider-row">
+      <input type="range" id="rememberStartSlider" min="2" max="16" step="1" aria-label="Startzahl">
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Positionsart</div>
+    <div class="choice-row two" id="rememberTrainingPositionRow">
+      <button class="choice" data-remember-position="fixed">Feste Positionen<small>bisherige bleiben</small></button>
+      <button class="choice" data-remember-position="shuffle">Bewegte Positionen<small>immer neu gemischt</small></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Nach Erfolg</div>
+    <div class="choice-row two" id="rememberProgressRow">
+      <button class="choice" data-remember-progress="1">Weiter steigern<small>wie gewohnt +1</small></button>
+      <button class="choice" data-remember-progress="0">Bei dieser Zahl bleiben<small>zum gezielten &Uuml;ben</small></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="rememberTrainingDifficultyRow">
+      <button class="choice" data-remember-diff="leicht">Leicht<small>mehr Zeit</small></button>
+      <button class="choice" data-remember-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-remember-diff="schwer">Schwer<small>knapp bemessen</small></button>
+    </div>
+    <div class="tempo-custom" id="rememberTrainingDiffCustom" hidden>Individuell eingestellt (siehe Feineinstellungen)</div>
+  </div>
+
+  <details class="advanced" id="rememberTrainingAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Einblenddauer bei 2 Zahlen</div>
+        <div class="slider-row">
+          <input type="range" id="rememberTrainingRevealSlider" min="0.4" max="3" step="0.1" aria-label="Einblenddauer bei 2 Zahlen">
+          <span class="slider-value" id="rememberTrainingRevealValue"></span>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Zus&auml;tzliche Zeit je weiterer Zahl</div>
+        <div class="slider-row">
+          <input type="range" id="rememberTrainingStepSlider" min="0.05" max="0.6" step="0.05" aria-label="Zus&auml;tzliche Zeit je weiterer Zahl">
+          <span class="slider-value" id="rememberTrainingStepValue"></span>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="group-help" id="rememberTrainingBestHint"></div>
+
+  <button class="start-btn" id="rememberTrainingStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="bundleOverview" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="bundleBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="bundleTitle">&nbsp;</h1>
+  <p class="page-sub">W&auml;hle eines deiner Programme aus. Das neueste steht oben.</p>
+  <div class="bundle-list" id="bundleList"></div>
+</div>
+
+<div class="screen" id="programIntro" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="programBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="programTitle">&nbsp;</h1>
+  <div class="program-meta" id="programMeta"></div>
+  <p class="page-sub" id="programDesc"></p>
+  <video class="intro-video" id="introVideo" hidden controls playsinline></video>
+  <div class="chapter-list" id="chapterList"></div>
+  <p class="program-hint">Das Programm l&auml;uft automatisch durch alle &Uuml;bungen, mit kurzer Pause dazwischen. Tippe auf eine &Uuml;bung, um direkt dort einzusteigen.</p>
+  <button class="start-btn" id="programStartBtn">Programm starten</button>
+</div>
+
+<div class="screen" id="ready" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="backToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <div class="ready-head">
+    <div class="ready-icon" id="readyIcon"></div>
+    <div>
+      <h1 class="page-title" id="readyTitle">&nbsp;</h1>
+      <div class="ready-trains" id="readyTrains"></div>
+    </div>
+  </div>
+  <div class="rules-box" id="rulesBox" hidden></div>
+  <button class="explainer-link" id="explainerBtn" hidden>&#9654; Erkl&auml;rvideo ansehen</button>
+  <button class="setup-link" id="setupBtn" hidden>
+    <span class="setup-thumb" id="setupThumb"></span>
+    <span>Aufbau-Beispiele ansehen</span>
+  </button>
+
+  <div class="group" id="colorGroup" hidden>
+    <div class="group-label">Farben <span class="group-count" id="colorCount"></span></div>
+    <div class="color-picker" id="colorPicker"></div>
+    <div class="color-hint" id="colorHint"></div>
+  </div>
+
+  <div class="group" id="periphKindGroup" hidden>
+    <div class="group-label">Zeichentyp</div>
+    <div class="choice-row" id="periphKindRow">
+      <button class="choice" data-periph-kind="buchstaben">Buchstaben</button>
+      <button class="choice" data-periph-kind="zahlen">Zahlen</button>
+      <button class="choice" data-periph-kind="gemischt">Gemischt</button>
+    </div>
+  </div>
+
+  <div class="group" id="periphFieldGroup" hidden>
+    <div class="group-label">Bereich</div>
+    <div class="choice-row two" id="periphFieldRow">
+      <button class="choice" data-periph-axis="horizontal">Horizontal</button>
+      <button class="choice" data-periph-axis="vertikal">Vertikal</button>
+      <button class="choice" data-periph-axis="diagonal">Diagonal</button>
+      <button class="choice" id="periphAllBtn">&Uuml;berall</button>
+    </div>
+    <div class="color-hint" id="periphFieldHint"></div>
+    <div class="choice-row" style="grid-template-columns:1fr;margin-top:4px">
+      <button class="choice" id="periphZonesBtn">Eigene Auswahl (3&times;3-Raster)</button>
+    </div>
+    <div class="periph-zone-grid" id="periphZoneGrid" hidden>
+      <button class="periph-zone" data-zone="tl" aria-label="Oben links"></button>
+      <button class="periph-zone" data-zone="tm" aria-label="Oben Mitte"></button>
+      <button class="periph-zone" data-zone="tr" aria-label="Oben rechts"></button>
+      <button class="periph-zone" data-zone="ml" aria-label="Mitte links"></button>
+      <div class="periph-zone periph-zone-center" aria-hidden="true"></div>
+      <button class="periph-zone" data-zone="mr" aria-label="Mitte rechts"></button>
+      <button class="periph-zone" data-zone="bl" aria-label="Unten links"></button>
+      <button class="periph-zone" data-zone="bm" aria-label="Unten Mitte"></button>
+      <button class="periph-zone" data-zone="br" aria-label="Unten rechts"></button>
+    </div>
+  </div>
+
+  <div class="group" id="periphSizeGroup" hidden>
+    <div class="group-label">Gr&ouml;&szlig;e der Reize</div>
+    <div class="choice-row two">
+      <button class="choice" data-periph-size="gleich">Gleich gro&szlig;<small>&uuml;berall gleich</small></button>
+      <button class="choice" data-periph-size="wachsend">Nach au&szlig;en gr&ouml;&szlig;er<small>je weiter vom Punkt entfernt</small></button>
+    </div>
+  </div>
+
+  <div class="group" id="durationGroup">
+    <div class="group-label">Dauer</div>
+    <div class="choice-row">
+      <button class="choice" data-dur="60">1 Min</button>
+      <button class="choice" data-dur="120">2 Min</button>
+      <button class="choice" data-dur="180">3 Min</button>
+    </div>
+    <div class="group-help" id="coneBestHint" hidden></div>
+  </div>
+
+  <div class="group" id="tempoGroup">
+    <div class="group-label">Tempo</div>
+    <div class="choice-row">
+      <button class="choice" data-tempo="leicht">Leicht<small>ruhig, mit viel Zeit</small></button>
+      <button class="choice" data-tempo="mittel">Mittel<small>z&uuml;gig</small></button>
+      <button class="choice" data-tempo="schwer">Schwer<small>schnell &amp; kurz</small></button>
+    </div>
+    <div class="tempo-custom" id="tempoCustom" hidden>Individuell eingestellt (siehe Feineinstellungen)</div>
+  </div>
+
+  <details class="advanced" id="advanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Gesamtdauer</div>
+        <div class="slider-row">
+          <input type="range" id="durationSlider" min="15" max="300" step="5" aria-label="Gesamtdauer">
+          <span class="slider-value" id="durationValue">60 s</span>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Einblenddauer (wie lange ein Reiz sichtbar ist)</div>
+        <div class="slider-row">
+          <input type="range" id="stimulusSlider" min="0.5" max="3" step="0.1" aria-label="Einblenddauer">
+          <span class="slider-value" id="stimulusValue">1,5 s</span>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Pause zwischen den Reizen</div>
+        <div class="slider-row two-line">
+          <div class="slider-line"><span class="slider-label">Min</span><input type="range" id="intervalMinSlider" min="1" max="30" step="1" aria-label="Pause minimal"></div>
+          <div class="slider-line"><span class="slider-label">Max</span><input type="range" id="intervalMaxSlider" min="1" max="30" step="1" aria-label="Pause maximal"></div>
+          <span class="slider-value" id="intervalValue">3&ndash;6 s</span>
+        </div>
+      </div>
+      <div class="group" id="bgGroup" hidden>
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="bgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="bgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="bgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="bgContrastHint" hidden></div>
+      </div>
+      <div class="group" id="periphFixGroup" hidden>
+        <div class="group-label">Fixpunkt in der Mitte</div>
+        <input type="text" id="periphFixCharInput" maxlength="3" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen f&uuml;r den Fixpunkt (leer lassen f&uuml;r den Standardpunkt)">
+        <div class="color-picker" id="periphFixColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Gr&ouml;&szlig;e</span>
+          <input type="range" id="periphFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Gr&ouml;&szlig;e des Fixpunkts">
+          <span class="slider-value" id="periphFixSizeValue"></span>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="group" id="vtSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="vtSavedList"></div>
+  </div>
+  <button class="text-link small" id="vtSaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="vtSaveForm" hidden>
+    <input type="text" id="vtSaveNameInput" placeholder="Name (z.B. &bdquo;Schnell, 4 Farben&ldquo;)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="vtSaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="vtSaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
+
+  <button class="start-btn" id="startBtn">Training starten</button>
+</div>
+
+<div class="screen" id="breathReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="breathBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <div class="ready-head">
+    <div class="ready-icon"><div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.2" fill="none" stroke="#fff" stroke-width="2.2"/></svg></div></div>
+    <div>
+      <h1 class="page-title" id="breathReadyTitle">&nbsp;</h1>
+      <div class="ready-trains" id="breathReadyGoal"></div>
+    </div>
+  </div>
+
+  <div class="pattern-breakdown" id="patternBreakdown"></div>
+
+  <div class="group">
+    <div class="group-label">Phasen in Sekunden <span class="group-count">0 = &uuml;berspringen</span></div>
+    <div class="phase-sliders">
+      <div class="slider-line"><span class="slider-label">Einatmen</span><input type="range" id="phaseInSlider" min="0" max="15" step="0.5" aria-label="Einatmen, Sekunden"><span class="slider-value" id="phaseInValue"></span></div>
+      <div class="slider-line"><span class="slider-label">Halten</span><input type="range" id="phaseHold1Slider" min="0" max="15" step="0.5" aria-label="Halten nach dem Einatmen, Sekunden"><span class="slider-value" id="phaseHold1Value"></span></div>
+      <div class="slider-line"><span class="slider-label">Ausatmen</span><input type="range" id="phaseOutSlider" min="0" max="15" step="0.5" aria-label="Ausatmen, Sekunden"><span class="slider-value" id="phaseOutValue"></span></div>
+      <div class="slider-line"><span class="slider-label">Halten</span><input type="range" id="phaseHold2Slider" min="0" max="15" step="0.5" aria-label="Halten nach dem Ausatmen, Sekunden"><span class="slider-value" id="phaseHold2Value"></span></div>
+    </div>
+    <div class="group-help" id="phaseHelp" hidden>Mindestens eine Phase muss l&auml;nger als 0 Sekunden sein.</div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Dauer</div>
+    <div class="choice-row">
+      <button class="choice" data-breath-dur="3">3 Min</button>
+      <button class="choice" data-breath-dur="5">5 Min</button>
+      <button class="choice" data-breath-dur="10">10 Min</button>
+    </div>
+    <div class="slider-row">
+      <input type="range" id="breathDurationSlider" min="1" max="20" step="1" aria-label="Dauer in Minuten">
+      <span class="slider-value" id="breathDurationValue">5 Min</span>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Ansage</div>
+    <div class="choice-row two">
+      <button class="choice" data-breath-sound="on">Mit Ansage<small>sagt &bdquo;Einatmen&ldquo; / &bdquo;Ausatmen&ldquo;</small></button>
+      <button class="choice" data-breath-sound="off">Still<small>nur die Animation</small></button>
+    </div>
+  </div>
+
+  <div class="group" id="breathSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="breathSavedList"></div>
+  </div>
+  <button class="text-link small" id="breathSaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="breathSaveForm" hidden>
+    <input type="text" id="breathSaveNameInput" placeholder="Name (z.B. &bdquo;Vor dem Schlafen&ldquo;)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="breathSaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="breathSaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
+
+  <button class="start-btn" id="breathStartBtn">Atemtraining starten</button>
+</div>
+
+<div class="screen" id="breathBundleOverview" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="breathBundleBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="breathBundleTitle">&nbsp;</h1>
+  <p class="page-sub">W&auml;hle eines deiner Programme aus. Das neueste steht oben.</p>
+  <div class="bundle-list" id="breathBundleList"></div>
+</div>
+
+<div class="screen" id="breathProgramIntro" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="breathProgramBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="breathProgramTitle">&nbsp;</h1>
+  <div class="program-meta" id="breathProgramMeta"></div>
+  <p class="page-sub" id="breathProgramDesc"></p>
+  <div class="chapter-list" id="breathChapterList"></div>
+  <p class="program-hint">Das Programm l&auml;uft automatisch durch alle &Uuml;bungen, mit kurzem &Uuml;bergang dazwischen. Tippe auf eine &Uuml;bung, um direkt dort einzusteigen.</p>
+  <button class="start-btn" id="breathProgramStartBtn">Programm starten</button>
+</div>
+
+<div class="screen" id="movementReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="movementBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Ganzk&ouml;rper-Reaktion</h1>
+  <p class="page-sub">Ein Symbol zeigt die n&auml;chste Bewegung. Stell ein, wie viele Bewegungen du im Voraus sehen willst.</p>
+
+  <div class="group">
+    <div class="group-label">Bewegungen <span class="group-count" id="movementCount"></span></div>
+    <div class="movement-picker" id="movementPicker"></div>
+    <div class="group-help">Mindestens zwei ausgew&auml;hlt lassen, damit Abwechslung entsteht.</div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Vorschau</div>
+    <div class="choice-row" id="previewRow">
+      <button class="choice" data-mv-preview="1">Keine<small>1 Feld</small></button>
+      <button class="choice" data-mv-preview="2">Kurz<small>2 Felder</small></button>
+      <button class="choice" data-mv-preview="3">Mittel<small>3 Felder</small></button>
+      <button class="choice" data-mv-preview="4">Weit<small>4 Felder</small></button>
+      <button class="choice" data-mv-preview="all">Ganz<small>ganzes Programm</small></button>
+    </div>
+    <div class="group-help">&bdquo;Ganzes Programm&ldquo; zeigt die komplette Abfolge auf einmal &ndash; eine Markierung wandert im Takt durch, der Rest bleibt sichtbar.</div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Tempo</div>
+    <div class="choice-row" id="tempoRow">
+      <button class="choice" data-mv-bpm="40">Langsam<small>40 BPM</small></button>
+      <button class="choice" data-mv-bpm="60">Mittel<small>60 BPM</small></button>
+      <button class="choice" data-mv-bpm="80">Schnell<small>80 BPM</small></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Dauer</div>
+    <div class="choice-row" id="movementDurRow">
+      <button class="choice" data-mv-dur="1">1 Min</button>
+      <button class="choice" data-mv-dur="2">2 Min</button>
+      <button class="choice" data-mv-dur="3">3 Min</button>
+    </div>
+  </div>
+
+  <details class="advanced" id="movementAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Exaktes Tempo</div>
+        <div class="slider-row">
+          <input type="range" id="movementBpmSlider" min="20" max="160" step="1" aria-label="Tempo in Beats pro Minute">
+          <span class="slider-value" id="movementBpmValue">60 BPM</span>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Ansicht</div>
+        <div class="choice-row two" id="mirrorRow">
+          <button class="choice" data-mv-mirror="1">Spiegelbild<small>wie im Spiegel</small></button>
+          <button class="choice" data-mv-mirror="0">Eigene Sicht<small>links/rechts vertauscht</small></button>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Beschriftung</div>
+        <div class="choice-row two" id="labelRow">
+          <button class="choice" data-mv-label="1">Text anzeigen</button>
+          <button class="choice" data-mv-label="0">Nur Symbol</button>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="group" id="movementSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="movementSavedList"></div>
+  </div>
+  <button class="text-link small" id="movementSaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="movementSaveForm" hidden>
+    <input type="text" id="movementSaveNameInput" placeholder="Name (z.B. &bdquo;Schnell, 4 Bewegungen&ldquo;)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="movementSaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="movementSaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
+
+  <button class="start-btn" id="movementStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="workoutBundleOverview" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="workoutBundleBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="workoutBundleTitle">&nbsp;</h1>
+  <p class="page-sub">W&auml;hle einen deiner Trainingspl&auml;ne aus. Der neueste steht oben.</p>
+  <div class="bundle-list" id="workoutBundleList"></div>
+</div>
+
+<div class="screen" id="workoutProgramIntro" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="workoutProgramBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="workoutProgramTitle">&nbsp;</h1>
+  <div class="program-meta" id="workoutProgramMeta"></div>
+  <p class="page-sub" id="workoutProgramDesc"></p>
+  <div class="chapter-list" id="workoutChapterList"></div>
+  <p class="program-hint">Der Plan l&auml;uft der Reihe nach durch, mit kurzem &Uuml;bergang dazwischen. Tippe auf eine &Uuml;bung, um direkt dort einzusteigen.</p>
+  <button class="start-btn" id="workoutProgramStartBtn">Plan starten</button>
+</div>
+
+<div class="screen" id="workoutTabataReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="workoutTabataBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Tabata / Intervalltraining</h1>
+  <p class="page-sub">Baue dir deinen eigenen Zirkel: tippe &Uuml;bungen in der Reihenfolge an, in der du sie machen willst &ndash; auch mehrfach.</p>
+
+  <div class="group" id="workoutCircuitSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Zirkel</div>
+    <div class="bundle-list" id="workoutCircuitSavedList"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">&Uuml;bung hinzuf&uuml;gen</div>
+    <div class="combo-add-grid" id="workoutCircuitAddGrid"></div>
+    <button class="text-link small" id="workoutCircuitAddCustomBtn">+ Eigene &Uuml;bung hinzuf&uuml;gen</button>
+    <div class="custom-exercise-form" id="workoutCircuitCustomForm" hidden>
+      <input type="text" id="workoutCircuitCustomName" placeholder="Name der &Uuml;bung" maxlength="40">
+      <input type="text" id="workoutCircuitCustomNote" placeholder="Notiz, worauf zu achten ist (optional)" maxlength="120">
+      <div class="custom-exercise-form-actions">
+        <button class="start-btn secondary" id="workoutCircuitCustomCancelBtn">Abbrechen</button>
+        <button class="start-btn" id="workoutCircuitCustomSaveBtn">Hinzuf&uuml;gen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Dein Zirkel <span class="group-count" id="workoutCircuitCount"></span></div>
+    <p class="group-help" id="workoutCircuitEmptyHint">Noch keine &Uuml;bung ausgew&auml;hlt &ndash; tippe oben eine an.</p>
+    <div class="chapter-list" id="workoutCircuitList"></div>
+    <button class="text-link small" id="workoutCircuitSaveBtn">Aktuellen Zirkel speichern</button>
+    <div class="custom-exercise-form" id="workoutCircuitSaveForm" hidden>
+      <input type="text" id="workoutCircuitSaveNameInput" placeholder="Name (z.B. &bdquo;Oberkörper kurz&ldquo;)" maxlength="40">
+      <div class="custom-exercise-form-actions">
+        <button class="start-btn secondary" id="workoutCircuitSaveCancelBtn">Abbrechen</button>
+        <button class="start-btn" id="workoutCircuitSaveConfirmBtn">Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Pause zwischen &Uuml;bungen</div>
+    <div class="choice-row" id="workoutCircuitRestRow">
+      <button class="choice" data-wo-rest="5">5 s</button>
+      <button class="choice" data-wo-rest="10">10 s</button>
+      <button class="choice" data-wo-rest="15">15 s</button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">S&auml;tze <span class="group-count">wiederholt den ganzen Zirkel</span></div>
+    <div class="choice-row" id="workoutCircuitSetsRow">
+      <button class="choice" data-wo-sets="1">1</button>
+      <button class="choice" data-wo-sets="2">2</button>
+      <button class="choice" data-wo-sets="3">3</button>
+      <button class="choice" data-wo-sets="4">4</button>
+    </div>
+  </div>
+
+  <div class="group" id="workoutCircuitSetRestGroup" hidden>
+    <div class="group-label">Pause zwischen S&auml;tzen</div>
+    <div class="choice-row" id="workoutCircuitSetRestRow">
+      <button class="choice" data-wo-setrest="20">20 s</button>
+      <button class="choice" data-wo-setrest="30">30 s</button>
+      <button class="choice" data-wo-setrest="60">60 s</button>
+    </div>
+  </div>
+
+  <details class="advanced" id="workoutCircuitAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Standard-Dauer f&uuml;r neu hinzugef&uuml;gte &Uuml;bungen</div>
+        <div class="slider-row">
+          <input type="range" id="workoutCircuitDefaultWorkSlider" min="5" max="90" step="5" aria-label="Standard-&Uuml;bungsdauer">
+          <span class="slider-value" id="workoutCircuitDefaultWorkValue">15 s</span>
+        </div>
+        <div class="group-help">Gilt nur f&uuml;r neue &Uuml;bungen &ndash; schon hinzugef&uuml;gte &auml;nderst du einzeln mit den +/&minus;-Kn&ouml;pfen.</div>
+      </div>
+    </div>
+  </details>
+
+  <button class="start-btn" id="workoutTabataStartBtn" disabled>Mindestens eine &Uuml;bung hinzuf&uuml;gen</button>
+</div>
+
+<div class="screen" id="wimhofReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="wimhofBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <div class="ready-head">
+    <div class="ready-icon"><div class="icon-badge"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h6l-1 8 10-13h-6l1-7z" fill="#fff"/></svg></div></div>
+    <div>
+      <h1 class="page-title">Kraftvolle Atmung<br>(Wim-Hof-Stil)*</h1>
+      <div class="ready-trains">Aktivierend &ndash; nicht zum Runterkommen oder Einschlafen</div>
+      <div class="footnote-mini">* Begriff ist noch zu kl&auml;ren</div>
+    </div>
+  </div>
+
+  <div class="warn-box">
+    <strong>Bitte vorher lesen</strong>
+    <ul>
+      <li>Nur im Sitzen oder Liegen &ndash; an einem sicheren, ruhigen Ort.</li>
+      <li>Niemals im oder am Wasser (auch nicht in der Badewanne), niemals beim Autofahren oder beim Bedienen von Maschinen.</li>
+      <li>Nicht geeignet bei Schwangerschaft, Epilepsie, Herz-Kreislauf-Erkrankungen oder wenn du schon einmal ohnm&auml;chtig geworden bist. Im Zweifel vorher &auml;rztlich abkl&auml;ren.</li>
+      <li>Kribbeln in H&auml;nden/F&uuml;&szlig;en und leichter Schwindel sind normal. Bei starkem Unwohlsein sofort abbrechen und normal weiteratmen.</li>
+      <li>Das ist kein Wettbewerb: Halte die Luft nur so lange an, wie es sich angenehm anf&uuml;hlt &ndash; nicht so lange wie m&ouml;glich. Ohnmacht bedeutet, dass du zu weit gegangen bist.</li>
+    </ul>
+    <label class="warn-check"><input type="checkbox" id="wimhofAckCheck"> Ich habe die Hinweise gelesen und &uuml;be an einem sicheren Ort, im Sitzen oder Liegen.</label>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Atemz&uuml;ge pro Runde</div>
+    <div class="choice-row" id="wimhofBreathsRow">
+      <button class="choice" data-wh-breaths="20">20</button>
+      <button class="choice" data-wh-breaths="30">30</button>
+      <button class="choice" data-wh-breaths="40">40</button>
+    </div>
+  </div>
+  <div class="group">
+    <div class="group-label">Runden</div>
+    <div class="choice-row" id="wimhofRoundsRow">
+      <button class="choice" data-wh-rounds="1">1</button>
+      <button class="choice" data-wh-rounds="2">2</button>
+      <button class="choice" data-wh-rounds="3">3</button>
+    </div>
+  </div>
+  <div class="group">
+    <div class="group-label">Tempo der Atemz&uuml;ge</div>
+    <div class="choice-row" id="wimhofPaceRow">
+      <button class="choice" data-wh-pace="2.2">Ruhig</button>
+      <button class="choice" data-wh-pace="1.7">Mittel</button>
+      <button class="choice" data-wh-pace="1.3">Schnell</button>
+    </div>
+  </div>
+  <div class="group">
+    <div class="group-label">Erholungs-Haltezeit (nach dem Einatmen)</div>
+    <div class="choice-row" id="wimhofRecoveryRow">
+      <button class="choice" data-wh-recovery="10">10 s</button>
+      <button class="choice" data-wh-recovery="15">15 s</button>
+      <button class="choice" data-wh-recovery="20">20 s</button>
+    </div>
+  </div>
+
+  <button class="start-btn" id="wimhofStartBtn" disabled>Bitte oben best&auml;tigen</button>
+</div>
+
+<div class="player" id="player" hidden>
+  <div class="stage-wrap" id="stageWrap"><canvas id="stage"></canvas></div>
+  <div class="cone-order-stage" id="coneOrderStage" hidden>
+    <div class="cone-order-count" id="coneOrderCount"></div>
+    <div class="cone-order-row" id="coneOrderRow"></div>
+  </div>
+  <div class="progress-track" id="progressTrack"></div>
+  <div class="player-bar" id="playerBar">
+    <button id="backBtn">&#10005; Beenden</button>
+    <span class="player-status" id="timeEl">0:00</span>
+    <button id="fsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="fsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="fsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="fsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+  <div class="live-nav" id="liveNav" hidden>
+    <button id="livePrevBtn" title="Vorherige &Uuml;bung" aria-label="Vorherige &Uuml;bung">&laquo;</button>
+    <button id="liveRestartBtn" title="&Uuml;bung neu starten" aria-label="&Uuml;bung neu starten">&#8635;</button>
+    <button id="liveEndBtn" title="&Uuml;bung beenden &ndash; weiter zur Pause">&Uuml;bung beenden</button>
+    <button id="liveNextBtn" title="N&auml;chste &Uuml;bung" aria-label="N&auml;chste &Uuml;bung">&raquo;</button>
+  </div>
+
+  <div class="done-panel" id="donePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="doneSummary"></p>
+    <div class="rating" id="doneRating"></div>
+    <button class="again" id="againBtn">Nochmal</button>
+    <button class="back" id="doneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+
+  <div class="pause-screen" id="pauseScreen" hidden>
+    <div class="pause-top">
+      <button class="pause-abort" id="pauseAbortBtn">&#10005; Programm beenden</button>
+      <span class="pause-progress" id="pauseProgress"></span>
+    </div>
+    <div class="pause-main">
+      <div class="pause-label">Kurze Pause</div>
+      <div class="breath" id="breath">
+        <div class="breath-circle"></div>
+        <div class="pause-countdown" id="pauseCountdown">15</div>
+      </div>
+      <div class="breath-label" id="breathLabel">Einatmen</div>
+      <div class="next-card" id="nextCard">
+        <div class="next-label">Als N&auml;chstes</div>
+        <div class="next-title" id="nextTitle"></div>
+        <div class="next-task" id="nextTask"></div>
+      </div>
+      <div class="pause-actions">
+        <button class="pause-skip" id="pauseSkipBtn">Jetzt weiter</button>
+        <button class="pause-toggle" id="pauseToggleBtn">Pause verl&auml;ngern</button>
+      </div>
+    </div>
+    <div class="chapter-nav">
+      <button id="prevChapterBtn" title="Vorherige &Uuml;bung" aria-label="Vorherige &Uuml;bung">&laquo;</button>
+      <button id="restartChapterBtn" title="Letzte &Uuml;bung wiederholen" aria-label="Letzte &Uuml;bung wiederholen">&#8635;</button>
+      <button id="nextChapterBtn" title="N&auml;chste &Uuml;bung" aria-label="N&auml;chste &Uuml;bung">&raquo;</button>
+    </div>
+  </div>
+
+  <div class="done-panel" id="programDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Programm geschafft!</h2>
+    <p class="done-summary" id="programDoneSummary"></p>
+    <div class="rating" id="programRating"></div>
+    <button class="again" id="programAgainBtn">Nochmal von vorne</button>
+    <button class="back" id="programDoneBackBtn">Zur Startseite</button>
+  </div>
+</div>
+
+<div class="player calm" id="breathPlayer" hidden>
+  <div class="breath-stage">
+    <div class="breath big" id="breathBig">
+      <div class="breath-circle"></div>
+      <div class="breath-phase-count" id="breathPhaseCount">4</div>
+    </div>
+    <div class="breath-phase-label" id="breathPhaseLabel">Einatmen</div>
+    <button class="breath-pause-btn pause-toggle" id="breathPauseBtn">Pause</button>
+  </div>
+  <div class="player-bar" id="breathPlayerBar">
+    <button id="breathBackBtn">&#10005; Beenden</button>
+    <span class="player-status" id="breathTimeEl">5:00</span>
+    <button id="breathFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="breathFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="breathFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="breathFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="breathDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="breathDoneSummary"></p>
+    <div class="rating" id="breathRating"></div>
+    <button class="again" id="breathAgainBtn">Nochmal</button>
+    <button class="back" id="breathDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player calm" id="wimhofPlayer" hidden>
+  <div class="breath-stage">
+    <div class="breath big" id="wimhofBig">
+      <div class="breath-circle"></div>
+      <div class="breath-phase-count" id="wimhofPhaseCount"></div>
+    </div>
+    <div class="breath-phase-label" id="wimhofPhaseLabel">Kr&auml;ftig einatmen</div>
+    <div class="wimhof-sub" id="wimhofSub"></div>
+    <button class="pause-skip" id="wimhofHoldDoneBtn" hidden>Einatmen &ndash; Anhalten beenden</button>
+  </div>
+  <div class="player-bar" id="wimhofPlayerBar">
+    <button id="wimhofBackBtn">&#10005; Beenden</button>
+    <span class="player-status" id="wimhofStatusEl"></span>
+    <button id="wimhofFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="wimhofFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="wimhofFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="wimhofFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="wimhofDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="wimhofDoneSummary"></p>
+    <div class="rating" id="wimhofRating"></div>
+    <button class="again" id="wimhofAgainBtn">Nochmal</button>
+    <button class="back" id="wimhofDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="movementPlayer" hidden>
+  <div class="movement-stage">
+    <div class="movement-lane" id="movementLane"></div>
+    <div class="movement-finish-badge" id="movementFinishBadge" hidden>Fertig!</div>
+  </div>
+  <div class="progress-track" id="movementProgressTrack"></div>
+  <div class="player-bar" id="movementPlayerBar">
+    <button id="movementBackBtn">&#10005; Beenden</button>
+    <span class="player-status" id="movementTimeEl">0:00</span>
+    <button id="movementFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="movementFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="movementFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="movementFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="movementDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="movementDoneSummary"></p>
+    <div class="rating" id="movementRating"></div>
+    <button class="again" id="movementAgainBtn">Nochmal</button>
+    <button class="back" id="movementDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="rememberPlayer" hidden>
+  <div class="remember-stage" id="rememberStage">
+    <div class="remember-hint" id="rememberHint"></div>
+  </div>
+  <div class="chapter-nav" id="rememberNav" hidden>
+    <button id="rememberNavPrevBtn" title="Eine Zahl weniger" aria-label="Eine Zahl weniger">&laquo;</button>
+    <button id="rememberNavRestartBtn" title="Diese Stufe neu starten" aria-label="Diese Stufe neu starten">&#8635;</button>
+    <button id="rememberNavNextBtn" title="Eine Zahl mehr" aria-label="Eine Zahl mehr">&raquo;</button>
+  </div>
+  <div class="player-bar" id="rememberPlayerBar">
+    <button id="rememberBackBtn">&#10005; Beenden</button>
+    <span class="player-status" id="rememberLevelEl"></span>
+    <button id="rememberFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="rememberFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="rememberFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="rememberFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="rememberDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="rememberDoneSummary"></p>
+    <div class="rating" id="rememberRating"></div>
+    <button class="again" id="rememberAgainBtn">Nochmal</button>
+    <button class="back" id="rememberDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="sheet" id="movementTipsSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="movementTipsTitle">
+    <h2 id="movementTipsTitle">So funktioniert Movement</h2>
+    <ol class="tips">
+      <li><strong>Symbol beobachten.</strong> Vier Balken zeigen Arme und Beine. Der hervorgehobene Balken zeigt, welcher sich bewegt &ndash; kurz und steil f&uuml;r heben, lang und flach f&uuml;r strecken.</li>
+      <li><strong>Vorschau nutzen.</strong> Du siehst schon, was als N&auml;chstes kommt &ndash; so kannst du dich vorbereiten, statt nur zu reagieren.</li>
+      <li><strong>Im Takt bleiben.</strong> Ein neues Feld wird aktiv, sobald die Bewegung dran ist. F&uuml;hre sie aus, bevor das n&auml;chste dran ist. Es l&auml;uft ohne Ansage, rein im Takt.</li>
+      <li><strong>Platz zum Bewegen.</strong> Sorge f&uuml;r etwas freien Raum um dich herum.</li>
+    </ol>
+    <button class="start-btn" id="movementTipsCloseBtn">Los geht&rsquo;s</button>
+  </div>
+</div>
+
+<div class="player" id="workoutPlayer" hidden>
+  <div class="workout-stage">
+    <div class="workout-reps-view" id="workoutRepsView" hidden>
+      <div class="workout-exercise-name" id="workoutExerciseName"></div>
+      <div class="workout-set-info" id="workoutSetInfo"></div>
+      <div class="workout-reps-big" id="workoutRepsBig"></div>
+      <div class="workout-note" id="workoutNote"></div>
+      <button class="start-btn" id="workoutSetDoneBtn">Satz erledigt</button>
+      <div class="workout-rest" id="workoutRestBox" hidden>
+        <div class="pause-label">Pause</div>
+        <div class="pause-countdown" id="workoutRestCountdown">30</div>
+        <button class="pause-skip" id="workoutRestSkipBtn">Jetzt weiter</button>
+      </div>
+    </div>
+    <div class="workout-tabata-view" id="workoutTabataView" hidden>
+      <div class="tabata-phase-label" id="tabataPhaseLabel">Bereit machen</div>
+      <div class="tabata-icon" id="tabataExerciseIcon"></div>
+      <div class="tabata-countdown" id="tabataCountdown">5</div>
+      <div class="tabata-exercise" id="tabataExerciseName"></div>
+      <div class="tabata-round" id="tabataRoundLabel"></div>
+      <div class="tabata-note" id="tabataExerciseNote"></div>
+      <div class="tabata-note-custom" id="tabataExerciseCustomNote" hidden></div>
+      <div class="chapter-nav">
+        <button id="tabataPrevBtn" title="Vorherige Übung" aria-label="Vorherige Übung">&laquo;</button>
+        <button id="tabataRestartBtn" title="Übung neu starten" aria-label="Übung neu starten">&#8635;</button>
+        <button id="tabataSkipBtn" title="Weiter zur nächsten Übung" aria-label="Weiter zur nächsten Übung">&raquo;</button>
+      </div>
+    </div>
+    <div class="workout-overview" id="workoutOverview" hidden></div>
+  </div>
+  <div class="progress-track" id="workoutProgressTrack"></div>
+  <div class="player-bar" id="workoutPlayerBar">
+    <button id="workoutBackBtn">&#10005; Beenden</button>
+    <span class="player-status" id="workoutTimeEl"></span>
+    <button id="workoutFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="workoutFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="workoutFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="workoutFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="workoutDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="workoutDoneSummary"></p>
+    <div class="rating" id="workoutRating"></div>
+    <button class="again" id="workoutAgainBtn">Nochmal</button>
+    <button class="back" id="workoutDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="done-panel standalone" id="workoutTransition" hidden>
+  <div class="next-label">Weiter geht&rsquo;s</div>
+  <h2 id="workoutTransitionTitle"></h2>
+  <p class="done-summary" id="workoutTransitionMeta"></p>
+  <button class="again" id="workoutTransitionBtn">Weiter</button>
+</div>
+
+<div class="done-panel standalone" id="workoutProgramDonePanel" hidden>
+  <div class="done-check">&#10003;</div>
+  <h2>Plan geschafft!</h2>
+  <p class="done-summary" id="workoutProgramDoneSummary"></p>
+  <div class="rating" id="workoutProgramRating"></div>
+  <button class="again" id="workoutProgramAgainBtn">Nochmal von vorne</button>
+  <button class="back" id="workoutProgramDoneBackBtn">Zur Startseite</button>
+</div>
+
+<div class="done-panel standalone" id="breathTransition" hidden>
+  <div class="next-label">Weiter geht&rsquo;s</div>
+  <h2 id="breathTransitionTitle"></h2>
+  <p class="done-summary" id="breathTransitionMeta"></p>
+  <button class="again" id="breathTransitionBtn">Weiter</button>
+</div>
+
+<div class="done-panel standalone" id="breathProgramDonePanel" hidden>
+  <div class="done-check">&#10003;</div>
+  <h2>Programm geschafft!</h2>
+  <p class="done-summary" id="breathProgramDoneSummary"></p>
+  <div class="rating" id="breathProgramRating"></div>
+  <button class="again" id="breathProgramAgainBtn">Nochmal von vorne</button>
+  <button class="back" id="breathProgramDoneBackBtn">Zur Startseite</button>
+</div>
+
+<div class="screen" id="comboScreen" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="comboBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Komplett-Programm</h1>
+  <p class="page-sub">Stelle dir ein Programm aus mehreren Bereichen zusammen &ndash; oder starte eines, das du schon gespeichert hast.</p>
+
+  <div class="group" id="comboSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Programme</div>
+    <div class="bundle-list" id="comboSavedList"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Baustein hinzuf&uuml;gen</div>
+    <div class="combo-add-grid" id="comboAddGrid"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Deine Abfolge <span class="group-count" id="comboBlockCount"></span></div>
+    <div class="chapter-list" id="comboBlockList"></div>
+    <div class="group-help" id="comboEmptyHint">Noch keine Bausteine hinzugef&uuml;gt.</div>
+    <button class="text-link small" id="comboSaveBtn">Aktuelles Programm speichern</button>
+    <div class="custom-exercise-form" id="comboSaveForm" hidden>
+      <input type="text" id="comboNameInput" placeholder="Name deines Programms (z.B. Abendroutine)" aria-label="Name des Programms" autocomplete="off" maxlength="40">
+      <div class="custom-exercise-form-actions">
+        <button class="start-btn secondary" id="comboSaveCancelBtn">Abbrechen</button>
+        <button class="start-btn" id="comboSaveConfirmBtn">Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="start-btn" id="comboStartBtn">Programm starten</button>
+</div>
+
+<div class="screen" id="comboBundleOverview" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="comboBundleBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="comboBundleTitle">&nbsp;</h1>
+  <p class="page-sub">W&auml;hle eines deiner Programme aus. Das neueste steht oben.</p>
+  <div class="bundle-list" id="comboBundleList"></div>
+</div>
+
+<div class="done-panel standalone" id="comboTransition" hidden>
+  <div class="next-label">Weiter geht&rsquo;s</div>
+  <h2 id="comboTransitionTitle"></h2>
+  <p class="done-summary" id="comboTransitionMeta"></p>
+  <button class="again" id="comboTransitionBtn">Weiter</button>
+</div>
+
+<div class="done-panel standalone" id="comboDonePanel" hidden>
+  <div class="done-check">&#10003;</div>
+  <h2>Programm geschafft!</h2>
+  <p class="done-summary" id="comboDoneSummary"></p>
+  <div class="rating" id="comboRating"></div>
+  <button class="again" id="comboAgainBtn">Nochmal von vorne</button>
+  <button class="back" id="comboDoneBackBtn">Zur Startseite</button>
+</div>
+
+<div class="video-modal" id="videoModal" hidden>
+  <div class="video-modal-inner">
+    <button class="video-modal-close" id="videoModalClose" aria-label="Schlie&szlig;en">&times;</button>
+    <video id="videoModalPlayer" controls playsinline></video>
+  </div>
+</div>
+
+<div class="video-modal" id="setupModal" hidden>
+  <div class="video-modal-inner setup-modal-inner" role="dialog" aria-modal="true" aria-labelledby="setupSlideTitle">
+    <button class="video-modal-close" id="setupModalClose" aria-label="Schlie&szlig;en">&times;</button>
+    <h2 class="setup-slide-title" id="setupSlideTitle">&nbsp;</h2>
+    <div class="setup-slide-art" id="setupSlideArt"></div>
+    <p class="setup-slide-caption" id="setupSlideCaption"></p>
+    <div class="setup-nav">
+      <button id="setupPrevBtn" aria-label="Vorheriges Beispiel">&laquo;</button>
+      <span class="setup-counter" id="setupCounter"></span>
+      <button id="setupNextBtn" aria-label="N&auml;chstes Beispiel">&raquo;</button>
+    </div>
+    <div class="setup-swipe-hint">oder seitlich wischen</div>
+  </div>
+</div>
+
+<div class="sheet" id="tipsSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="tipsTitle">
+    <h2 id="tipsTitle">So trainierst du richtig</h2>
+    <ol class="tips">
+      <li><strong>Platz &amp; Ruhe.</strong> Such dir eine ruhige Umgebung mit genug Platz, um dich zu bewegen.</li>
+      <li><strong>Ger&auml;t stabil aufstellen.</strong> Stell Handy, Tablet oder Laptop so hin, dass du den Bildschirm gut siehst &ndash; am besten im Vollbild.</li>
+      <li><strong>Ton bei &#128266;.</strong> &Uuml;bungen mit Ton-Symbol brauchen Lautsprecher oder Kopfh&ouml;rer.</li>
+      <li id="tipInstall"><strong>Wie eine App nutzen.</strong> <span id="tipInstallText">&Ouml;ffne im Browser-Men&uuml; &bdquo;Zum Startbildschirm hinzuf&uuml;gen&ldquo; &ndash; dann startest du dein Training mit einem Tipp.</span></li>
+    </ol>
+    <button class="start-btn" id="tipsCloseBtn">Los geht&rsquo;s</button>
+  </div>
+</div>
+
+<div class="sheet" id="breathTipsSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="breathTipsTitle">
+    <h2 id="breathTipsTitle">So funktioniert das Atemtraining</h2>
+    <ol class="tips">
+      <li><strong>Dem Kreis folgen.</strong> Er wird beim Einatmen gr&ouml;&szlig;er und beim Ausatmen kleiner &ndash; atme in seinem Tempo.</li>
+      <li><strong>Ruhig durch die Nase.</strong> Wenn m&ouml;glich, atme ruhig durch die Nase ein und aus.</li>
+      <li><strong>Ton optional.</strong> Bei &bdquo;Mit Ansage&ldquo; sagt eine Stimme die Phase an &ndash; praktisch mit geschlossenen Augen.</li>
+      <li><strong>Bei Unwohlsein pausieren.</strong> Brich sofort ab, wenn dir schwindelig wird. Kein Ersatz f&uuml;r medizinische Behandlung.</li>
+    </ol>
+    <button class="start-btn" id="breathTipsCloseBtn">Verstanden</button>
+  </div>
+</div>
