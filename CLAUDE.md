@@ -237,14 +237,22 @@ unrelated to the feature being changed.
   picker, radial size growth, background colour/intensity) plus a
   mid-exercise Pause with live background/fixation-point adjustment (see
   Established patterns). **Blitz-Raster** (4th NAT sub-tab) is fully built:
-  an NxN grid (3×3/4×4/5×5) where several cells light up SIMULTANEOUSLY and
-  briefly, then go dark; the client taps back exactly those cells, order
-  doesn't matter - the key difference from Remember (which is an ordered,
-  studied-layout recall). At 4×4/5×5 a "Bereich" restricts play to specific
-  3×3-band zones, reusing `PERIPH_ZONES` band math (see
-  `blitzEligibleCells()`) rather than a second zone system; the centre band
-  is always eligible (no fixation point to protect here, but keeping the
-  convention avoids a confusing 9th toggle). Same Bei-Fehler options as
+  an NxN grid (3×3 up to 8×8 - raised from a 3-5 ceiling per the client's
+  own "8x8 oder so, mindestens auf iPad macht das Sinn"; `blitzEligibleCells
+  ()`/`blitzMaxLevelForCurrentSettings()` were already generic over
+  `gridSize`, so this was mostly a new `#blitzGridSizeRow` choice + widening
+  `loadBlitzPrefs()`'s validation array - `renderBlitzGrid()` now also
+  narrows `.blitz-grid`'s gap in steps as `gridSize` grows past 5, so the
+  extra cells stay a reasonable tap target on a phone-width screen too, not
+  just on the bigger screen - iPad - the client actually had in mind) where
+  several cells light up SIMULTANEOUSLY and briefly, then go dark; the
+  client taps back exactly those cells, order doesn't matter - the key
+  difference from Remember (which is an ordered, studied-layout recall). At
+  anything above 3×3 a "Bereich" restricts play to specific 3×3-band zones,
+  reusing `PERIPH_ZONES` band math (see `blitzEligibleCells()`) rather than
+  a second zone system; the centre band is always eligible (no fixation
+  point to protect here, but keeping the convention avoids a confusing 9th
+  toggle). Test: `tests/blitz_grid_size_test.py`. Same Bei-Fehler options as
   Remember (reset2/backOne/stay), same background colour/intensity +
   transfer + mid-game Pause pattern as Periph/Remember (`blitzPrefs`, a
   `"blitz"` `BG_SOURCES` entry). Engine mirrors Remember's setTimeout/
@@ -320,6 +328,29 @@ unrelated to the feature being changed.
   Test: `tests/flash_kind_keypad_test.py`; `tests/flash_test.py` and
   `tests/flash_fixpoint_test.py` were updated to tap the keypad instead of
   typing into the now-removed input.
+- **Fixpunkt: on/off toggle, comprehensively, plus a Flash overlap bug**:
+  the shared VT-canvas fixation point (`drawFixationPoint()` - Periphere
+  Wahrnehmung and every other VT exercise, since it's one shared
+  `state.periphFix*` setting, not per-exercise) could be recoloured/resized
+  but never fully switched off; the client asked for it to be "einstellbar
+  und entfernbar" everywhere it exists. Added `state.periphFixEnabled`
+  (default `true`) with the exact same "Anzeigen"/"Ausblenden" two-button
+  toggle Flash Speicher Test's fixpoint already had (`#periphFixToggleRow`,
+  collapsing `#periphFixOptions` when off) - `drawFixationPoint()` now
+  returns immediately when it's off. Scoped to the Ready screen's
+  Feineinstellungen only (the client said "in den Voreinstellungen"), not
+  duplicated into Periph's mid-exercise Pause overlay - unlike colour/size,
+  which already are (see Established patterns) - since a live-toggle wasn't
+  asked for. Remember/Blitz-Raster have no fixpoint at all, so nothing to
+  do there. Separately, a real bug: Flash Speicher Test's own fixpoint
+  (`#flashFixpointEl`) is absolutely centred on the WHOLE stage - once the
+  answer panel (boxes + keypad, see above) fills that space, the centred
+  dot landed right on top of a keypad key and covered it. `flashOpenInput()`
+  now force-hides it (`els.flashFixpointEl.hidden = true`, regardless of
+  `flashPrefs.fixEnabled`) the moment the answer panel opens;
+  `flashShowDigit()` calls `renderFlashFixpoint()` to restore it (or keep it
+  off, if disabled) for the next flash/gap phase. Test:
+  `tests/fixpoint_toggle_test.py`.
 - **Dark-mode contrast bug (fixed) - a pattern to watch for**: `.flash-
   digit`/`.flash-input-label`/`.flash-typed-input` (the last since replaced
   by `.flash-answer-box`/`.flash-key`, built fixed-hex from the start) were

@@ -698,6 +698,9 @@
       <button class="choice" data-blitz-grid="3">3&times;3</button>
       <button class="choice" data-blitz-grid="4">4&times;4</button>
       <button class="choice" data-blitz-grid="5">5&times;5</button>
+      <button class="choice" data-blitz-grid="6">6&times;6</button>
+      <button class="choice" data-blitz-grid="7">7&times;7</button>
+      <button class="choice" data-blitz-grid="8">8&times;8<small>z.B. f&uuml;rs iPad</small></button>
     </div>
   </div>
 
@@ -1307,12 +1310,18 @@
       </div>
       <div class="group" id="periphFixGroup" hidden>
         <div class="group-label">Fixpunkt in der Mitte</div>
-        <input type="text" id="periphFixCharInput" maxlength="3" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen f&uuml;r den Fixpunkt (leer lassen f&uuml;r den Standardpunkt)">
-        <div class="color-picker" id="periphFixColorPicker"></div>
-        <div class="slider-row">
-          <span class="slider-label">Gr&ouml;&szlig;e</span>
-          <input type="range" id="periphFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Gr&ouml;&szlig;e des Fixpunkts">
-          <span class="slider-value" id="periphFixSizeValue"></span>
+        <div class="choice-row two" id="periphFixToggleRow">
+          <button class="choice" data-periph-fix="1">Anzeigen</button>
+          <button class="choice" data-periph-fix="0">Ausblenden</button>
+        </div>
+        <div id="periphFixOptions">
+          <input type="text" id="periphFixCharInput" maxlength="3" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen f&uuml;r den Fixpunkt (leer lassen f&uuml;r den Standardpunkt)">
+          <div class="color-picker" id="periphFixColorPicker"></div>
+          <div class="slider-row">
+            <span class="slider-label">Gr&ouml;&szlig;e</span>
+            <input type="range" id="periphFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Gr&ouml;&szlig;e des Fixpunkts">
+            <span class="slider-value" id="periphFixSizeValue"></span>
+          </div>
         </div>
       </div>
       <div class="group" id="periphColorGroup" hidden>

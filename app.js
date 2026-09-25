@@ -391,6 +391,7 @@
   // change its size/colour - every other exercise keeps the plain default
   // dot untouched.
   function drawFixationPoint(cx, cy, unit) {
+    if (!state.periphFixEnabled) return;
     const ex = EXERCISES[state.exercise];
     // Every exercise with this dot can customise it now, except "Hütchen
     // sortieren" which never shows it at all (own colour-tap mechanic).
@@ -995,6 +996,7 @@
     tempoCustom: $("tempoCustom"),
     colorGroup: $("colorGroup"), colorPicker: $("colorPicker"), colorCount: $("colorCount"), colorHint: $("colorHint"),
     periphKindGroup: $("periphKindGroup"), periphFixGroup: $("periphFixGroup"),
+    periphFixToggleRow: $("periphFixToggleRow"), periphFixOptions: $("periphFixOptions"),
     periphFixCharInput: $("periphFixCharInput"), periphFixColorPicker: $("periphFixColorPicker"),
     periphFixSizeSlider: $("periphFixSizeSlider"), periphFixSizeValue: $("periphFixSizeValue"),
     periphColorGroup: $("periphColorGroup"), periphColorPicker: $("periphColorPicker"), periphColorHint: $("periphColorHint"),
@@ -1574,6 +1576,7 @@
     arrowColors: ["blau"],
     stroopColors: ["rot", "gruen", "blau", "gelb", "lila"],
     periphKind: "gemischt",
+    periphFixEnabled: true,
     periphFixChar: "",
     periphFixColor: "grau",
     periphFixSize: 1,
@@ -1599,6 +1602,7 @@
     if (!Array.isArray(state.arrowColors) || keysToColors(state.arrowColors).length < ARROW_MIN_COLORS) state.arrowColors = ["blau"];
     if (!Array.isArray(state.stroopColors) || keysToColors(state.stroopColors, STROOP_COLOR_LIB).length < STROOP_MIN_COLORS) state.stroopColors = DEFAULTS.stroopColors.slice();
     if (!["buchstaben", "zahlen", "gemischt"].includes(state.periphKind)) state.periphKind = "gemischt";
+    if (typeof state.periphFixEnabled !== "boolean") state.periphFixEnabled = true;
     if (typeof state.periphFixChar !== "string") state.periphFixChar = "";
     if (!FIX_COLOR_BY_KEY[state.periphFixColor]) state.periphFixColor = "grau";
     if (typeof state.periphFixSize !== "number" || state.periphFixSize < 0.6 || state.periphFixSize > 2) state.periphFixSize = 1;
@@ -1990,6 +1994,19 @@
     sync();
     return sync;
   }
+  // On/off toggle for the fixation point itself - same "Anzeigen"/
+  // "Ausblenden" pattern as Flash Speicher Test's, added so it can be fully
+  // removed (not just recoloured/resized) for every exercise that shows it
+  // (Periphere Wahrnehmung and, since drawFixationPoint() is shared, every
+  // other VT-canvas exercise too - one shared state.periphFixEnabled, no
+  // per-exercise duplication needed).
+  document.querySelectorAll("#periphFixToggleRow [data-periph-fix]").forEach((el) => {
+    el.addEventListener("click", () => {
+      state.periphFixEnabled = el.dataset.periphFix === "1";
+      savePrefs();
+      syncPeriphFixUI();
+    });
+  });
   buildSingleSelectPicker(els.periphFixColorPicker, FIX_COLOR_LIB, (key) => {
     state.periphFixColor = key;
     savePrefs();
@@ -2017,6 +2034,8 @@
     redrawFrozenFrame();
   });
   function syncPeriphFixUI() {
+    document.querySelectorAll("#periphFixToggleRow [data-periph-fix]").forEach((el) => setActive(el, (el.dataset.periphFix === "1") === state.periphFixEnabled));
+    els.periphFixOptions.hidden = !state.periphFixEnabled;
     syncSingleSelectPicker(els.periphFixColorPicker, state.periphFixColor);
     syncSingleSelectPicker(els.periphPauseFixColorPicker, state.periphFixColor);
     els.periphFixCharInput.value = state.periphFixChar;
@@ -5015,7 +5034,7 @@
   function loadBlitzPrefs() {
     const saved = readJSON(BLITZ_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(blitzPrefs, saved);
-    if (![3, 4, 5].includes(blitzPrefs.gridSize)) blitzPrefs.gridSize = 4;
+    if (![3, 4, 5, 6, 7, 8].includes(blitzPrefs.gridSize)) blitzPrefs.gridSize = 4;
     if (!Array.isArray(blitzPrefs.zones) || blitzPrefs.zones.length === 0 || !blitzPrefs.zones.every((z) => PERIPH_ZONE_KEYS.includes(z))) blitzPrefs.zones = PERIPH_ZONE_KEYS.slice();
     if (!["reset2", "backOne", "stay"].includes(blitzPrefs.errorMode)) blitzPrefs.errorMode = "reset2";
     if (typeof blitzPrefs.flashS !== "number" || blitzPrefs.flashS < 0.3 || blitzPrefs.flashS > 2) blitzPrefs.flashS = BLITZ_DIFFICULTIES.mittel.flashS;
@@ -5205,6 +5224,11 @@
   function renderBlitzGrid() {
     els.blitzGrid.style.gridTemplateColumns = `repeat(${blitzState.gridSize}, 1fr)`;
     els.blitzGrid.style.gridTemplateRows = `repeat(${blitzState.gridSize}, 1fr)`;
+    // A fixed 10px gap (the CSS default) eats too much of each cell once
+    // there are 6+ of them per row on a phone-width screen - narrow it down
+    // for the larger grids so cells stay a reasonable tap target. Still
+    // roomy on a bigger screen (iPad), which is the main use case for 6-8.
+    els.blitzGrid.style.gap = blitzState.gridSize <= 5 ? "10px" : blitzState.gridSize === 6 ? "8px" : blitzState.gridSize === 7 ? "6px" : "5px";
     els.blitzGrid.innerHTML = "";
     for (let r = 0; r < blitzState.gridSize; r++) {
       for (let c = 0; c < blitzState.gridSize; c++) {
@@ -5816,6 +5840,7 @@
     const digit = flashState.sequence[flashState.shownIndex];
     const pos = randFlashPos();
     flashState.phase = "flash";
+    renderFlashFixpoint(); // restores it (if enabled) after flashOpenInput() forced it off
     els.flashDigitEl.textContent = digit;
     els.flashDigitEl.style.left = pos.fx * 100 + "%";
     els.flashDigitEl.style.top = pos.fy * 100 + "%";
@@ -5888,6 +5913,12 @@
     els.flashHint.textContent = "Jetzt in der richtigen Reihenfolge eintippen";
     renderFlashAnswerBoxes();
     els.flashInputPanel.hidden = false;
+    // The fixpoint is absolutely centred on the whole stage, which - once
+    // the answer panel (boxes + keypad) fills that space - lands it right
+    // on top of the keypad and covers a key. Always hide it here regardless
+    // of flashPrefs.fixEnabled; flashShowDigit() restores it for the next
+    // flash/gap phase.
+    els.flashFixpointEl.hidden = true;
   }
   function flashCheckAnswer(typed) {
     flashState.phase = "checking";
