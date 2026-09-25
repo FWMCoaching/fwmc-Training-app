@@ -78,16 +78,23 @@ human) is driving the session:
 2. `sh build.sh`
 3. `cd tests && for f in *.py; do python3 "$f"; done` (full regression
    suite against `localhost:8845` — a dev server must already be running)
-4. `git add` the changed files, commit with the attribution footer the
+4. Check whether this change affects anything documented below — a new
+   lasting pattern worth reusing, a "Known open item" now resolved, or a
+   change to the workflow in this file itself. If so, edit this file
+   too and include it in the same commit. This file goes stale exactly
+   as fast as anything else that isn't automatically kept in sync — it
+   only stays accurate if this step is actually done, not because
+   editing the app somehow implies it.
+5. `git add` the changed files, commit with the attribution footer the
    session's system prompt specifies (varies by session — check it fresh
    rather than assuming), `git push -u origin main`
-5. Publish `artifact-body.html` (+ changed assets) via the `Artifact` tool
+6. Publish `artifact-body.html` (+ changed assets) via the `Artifact` tool
    to the existing Artifact URL above
 
 Once pushed, GitHub itself does auto-build Pages from the `main` branch
 (no separate "deploy" click needed on GitHub's side) — but the push in
-step 4 is still a manual, explicit action, not a background sync. The
-Artifact in step 5 is a wholly separate, always-manual publish; pushing
+step 5 is still a manual, explicit action, not a background sync. The
+Artifact in step 6 is a wholly separate, always-manual publish; pushing
 to GitHub never updates it and vice versa.
 
 Never skip step 3 for "small" changes — several regressions in this
