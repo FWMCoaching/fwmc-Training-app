@@ -222,7 +222,13 @@ unrelated to the feature being changed.
   480 tiles today); Kombi block reordering after adding; whether "skip to
   end" should still count a programme as fully completed; a defensive
   DOM-hide for Workout's finish state (currently relies only on the
-  done-panel's opaque overlay).
+  done-panel's opaque overlay); which exercises the Zusatzaufgabe add-on
+  (below) should be EXCLUDED from, not yet decided ("die müssen wir aber
+  später dann mal noch mal besprechen") - ask before touching its current
+  scope; combining an exercise's peripheral add-on with **acoustic
+  signals** that get "perceived and processed with some rules or other" -
+  explicitly a later idea, not to build until asked ("das merkst du dir
+  mal bitte").
 - **NAT status**: Remember is fully built (Feste/Bewegte Positionen +
   Trainingsmodus), now including background colour/intensity (pre-settable
   in each mode's Feineinstellungen) plus a mid-exercise Pause with live
@@ -326,6 +332,81 @@ unrelated to the feature being changed.
   domains — Atemtraining "wird Sinn machen", Movement "kann auch Sinn
   machen", VT-Videos explicitly "macht keinen Sinn" per the user. Ask
   before assuming it should spread further.
+- **Zusatzaufgabe** (peripheral flashes as an add-on inside other
+  exercises): any exercise that goes through the shared VT canvas
+  engine - `buildScheduleFor`/`drawScene`, i.e. every `EXERCISES` entry
+  except `type:"periph"` (itself) and `type:"color-tap"` (Hütchen
+  sortieren, which has no Reiz/Pause schedule to hook into) - can now
+  optionally run Periphere Wahrnehmung's own peripheral character flash
+  on top of its own "Reiz" (any non-`"blank"` frame) and/or "Pause"
+  (`"blank"` frame) phases. This is the app's **first genuinely
+  per-exercise setting** - every earlier per-domain setting (background
+  colour, Bereich, ...) is one value shared by an entire domain (e.g. ALL
+  VT/NAT-canvas exercises share one `state.bgColorKey`), but "4 Pfeile
+  gerade" and "4 Pfeile diagonal" each need their own independent add-on
+  config - so it can't live in the flat `state` prefs blob like everything
+  else. It gets its own store instead: `ADDON_KEY = "fwmc-addon-v1"`,
+  `{ [exerciseId]: { phases, mode, own } }`, read/written via
+  `getAddonEntry(exId)` (always returns a normalized entry, creating an
+  "off" one on first ask) - never through `state`/`loadPrefs()`/
+  `savePrefs()`.
+  - `phases`: subset of `["reiz","pause"]`. The Phase-1/Phase-2/"Beide"
+    UI (`#addonPhaseRow`/`#addonPhaseAllBtn`) is the same multi-select +
+    "select all" shortcut pattern as every other one in the app (colours,
+    Periph's own Bereich axes, ...), **except** empty is this control's
+    valid "off" state rather than an error - so unlike every other use of
+    the pattern, empty gets no warning hint and doesn't disable Start.
+  - `mode`: `"uebernehmen"` (default) live-mirrors Periphere Wahrnehmung's
+    own current Zeichentyp/Bereich/Größe/Tempo (`addonConfigFromState()`
+    reads `state.periph*`/`state.stimulusS`/`intervalMin/Max` directly, so
+    it always tracks Periph's main settings, exactly like the background
+    colour "übernehmen" idea) or `"eigen"` - a per-exercise override
+    bundle (`entry.own`: kind/axes/useZones/zones/sizeMode/stimulusS/
+    intervalMin/intervalMax) edited independently via the same Kind/
+    Bereich/Größe controls as Periph's own ready screen, just writing to
+    `entry.own` instead of `state`. No Dominanz-Gewichtung in `own` -
+    consistent with Dominanz staying Periph-only until confirmed
+    elsewhere (see above).
+  - **Positioning math is shared, not duplicated**: `randPeriphPos(rng)`
+    is now a thin wrapper around `randPosFromCfg(cfg, rng)`, which takes
+    a plain `{useZones, zones, axes, zoneWeights?}` and does the zone/axis
+    math generically - Periph calls it with a `state`-derived cfg
+    (including `periphZoneWeights` for Dominanz), the add-on calls it with
+    either `addonConfigFromState()` or `entry.own` (no `zoneWeights`, so
+    `randPosFromCfg` falls back to a plain equal pick within
+    `weightedPick`'s call site). Likewise `drawPeriphChar(cw, ch, unit, fx,
+    fy, char, sizeMode)` was pulled out of `drawScene`'s `"periph"` case so
+    both Periph's own frames and the add-on overlay render pixel-identical
+    characters.
+  - **Runtime**: `buildAddonSchedule(ex, exId, hostSchedule, rng)` (called
+    once in `runSession()`, stored as `session.addonSchedule`/
+    `session.addonSizeMode`) walks the host exercise's *already-built*
+    schedule and, for every frame whose kind maps to an enabled phase
+    (`"blank"` → pause, anything else → reiz), subdivides that frame's
+    `[t0,t1)` window with the add-on's own show/gap timing - so an add-on
+    flash can never land outside the phase it was enabled for, whatever
+    the host's own timing looks like, without needing the two schedules to
+    share a merge step. `tick()` draws it via `drawAddonOverlay(elapsed)`
+    right after the host's own `drawScene()` call, as a plain overlay on
+    the same canvas frame - it's independent of `session.lastIndex`/
+    `onEnterFrame()`, which stay host-schedule-only.
+  - **Presets**: `entry.own` bundles can be saved by name
+    (`ADDON_PRESETS_KEY = "fwmc-addon-presets-v1"`, a plain
+    `makePresetStore()` like `bgPresetStore` - **not** exercise-scoped, so
+    a bundle saved from "4 Pfeile gerade" shows up and can be applied from
+    any other eligible exercise's ready screen too), satisfying the
+    client's "beide Möglichkeiten" ask (transfer-from-Periph AND a
+    separately-saveable local override).
+  - **Not built / explicitly out of scope for this first pass**: which
+    exercises to exclude (see Deferred/parked above); acoustic signals
+    (see Deferred/parked above); Remember/Blitz-Raster/Flash Speicher
+    Test don't go through `buildScheduleFor`/`drawScene` at all (separate
+    setTimeout/DOM engines with no equivalent Reiz/Pause schedule
+    concept), so they're **not** wired into this - would need its own
+    design if wanted later; no pause-and-live-adjust for the add-on itself
+    (the Pause button only ever shows for Periph, see `runSession()`'s
+    `els.periphPauseBtn.hidden` line) - not asked for.
+  - Test: `tests/addon_periph_test.py`.
 
 ## Working conventions
 

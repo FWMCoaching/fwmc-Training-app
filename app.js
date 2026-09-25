@@ -412,6 +412,24 @@
     }
   }
 
+  // Draws one peripheral character (used both by Periphere Wahrnehmung's own
+  // "periph" frames and by the Zusatzaufgabe overlay other exercises can
+  // show on top of their own schedule) at a {fx,fy} canvas fraction, sized
+  // per the given "gleich"/"wachsend" mode - pulled out so both call sites
+  // stay pixel-identical instead of drifting apart.
+  function drawPeriphChar(cw, ch, unit, fx, fy, char, sizeMode) {
+    const x = fx * cw, y = fy * ch;
+    // Distance from the fixation point, 0 in the centre to ~1 at the
+    // screen edge - used for the "nach außen größer" size mode.
+    const dist = Math.min(1, Math.hypot((fx - 0.5) * 2, (fy - 0.5) * 2));
+    const sizeMul = sizeMode === "wachsend" ? 0.65 + dist * 0.9 : 1;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `700 ${Math.round(unit * 0.16 * sizeMul)}px Magra, sans-serif`;
+    ctx.fillStyle = INK;
+    ctx.fillText(char, x, y);
+  }
+
   // The client's chosen background tint, or `fallback` for an exercise
   // whose background already carries the trained signal itself (VT's
   // colour, VRW, Kompass-Aufbau, Stroop mit Hintergrund) or when the
@@ -437,20 +455,7 @@
       ctx.fillStyle = currentBgFill(NEUTRAL);
       ctx.fillRect(0, 0, cw, ch);
       drawFixationPoint(cx, cy, unit);
-      // Position is stored as a {fx, fy} fraction of the canvas (0..1)
-      // rather than a baked-in pixel, so it re-lands correctly if the
-      // device is rotated mid-exercise (the whole point of this exercise
-      // working in both portrait and landscape).
-      const x = payload.fx * cw, y = payload.fy * ch;
-      // Distance from the fixation point, 0 in the centre to ~1 at the
-      // screen edge - used for the "nach außen größer" size mode.
-      const dist = Math.min(1, Math.hypot((payload.fx - 0.5) * 2, (payload.fy - 0.5) * 2));
-      const sizeMul = state.periphSizeMode === "wachsend" ? 0.65 + dist * 0.9 : 1;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.font = `700 ${Math.round(unit * 0.16 * sizeMul)}px Magra, sans-serif`;
-      ctx.fillStyle = INK;
-      ctx.fillText(payload.char, x, y);
+      drawPeriphChar(cw, ch, unit, payload.fx, payload.fy, payload.char, state.periphSizeMode);
       barCaption(cw, ch, "Blick auf die Mitte richten", false);
     } else if (kind === "count") {
       drawCountdown(cw, ch, payload);
@@ -996,6 +1001,15 @@
     periphFieldGroup: $("periphFieldGroup"), periphFieldRow: $("periphFieldRow"), periphZoneGrid: $("periphZoneGrid"), periphSizeGroup: $("periphSizeGroup"),
     periphZoneWeights: $("periphZoneWeights"),
     periphAllBtn: $("periphAllBtn"), periphZonesBtn: $("periphZonesBtn"), periphFieldHint: $("periphFieldHint"),
+    addonGroup: $("addonGroup"), addonPhaseRow: $("addonPhaseRow"), addonPhaseAllBtn: $("addonPhaseAllBtn"), addonPhaseHint: $("addonPhaseHint"),
+    addonConfigBody: $("addonConfigBody"), addonModeRow: $("addonModeRow"), addonOwnBody: $("addonOwnBody"),
+    addonKindRow: $("addonKindRow"), addonFieldRow: $("addonFieldRow"), addonAllBtn: $("addonAllBtn"),
+    addonFieldHint: $("addonFieldHint"), addonZonesBtn: $("addonZonesBtn"), addonZoneGrid: $("addonZoneGrid"),
+    addonStimulusSlider: $("addonStimulusSlider"), addonStimulusValue: $("addonStimulusValue"),
+    addonIntervalMinSlider: $("addonIntervalMinSlider"), addonIntervalMaxSlider: $("addonIntervalMaxSlider"), addonIntervalValue: $("addonIntervalValue"),
+    addonPresetGroup: $("addonPresetGroup"), addonPresetList: $("addonPresetList"),
+    addonSaveBtn: $("addonSaveBtn"), addonSaveForm: $("addonSaveForm"), addonSaveNameInput: $("addonSaveNameInput"),
+    addonSaveCancelBtn: $("addonSaveCancelBtn"), addonSaveConfirmBtn: $("addonSaveConfirmBtn"),
     bgGroup: $("bgGroup"), bgColorPicker: $("bgColorPicker"), bgIntensitySlider: $("bgIntensitySlider"),
     bgIntensityValue: $("bgIntensityValue"), bgContrastHint: $("bgContrastHint"),
     bgSourceRow: $("bgSourceRow"), bgPresetGroup: $("bgPresetGroup"), bgPresetList: $("bgPresetList"),
@@ -1595,6 +1609,71 @@
   function savePrefs() { writeJSON(PREFS_KEY, state); }
   loadPrefs();
 
+  // ---- Zusatzaufgabe: peripheral flashes as an optional add-on other
+  // exercises can run during their own "Reiz"/"Pause" phases. Unlike every
+  // other per-domain setting so far (background colour, Bereich, ...), this
+  // one is genuinely per-EXERCISE - "4 Pfeile" and "8 Pfeile" can each carry
+  // their own on/off + config - so it can't live in the flat `state` blob
+  // the way everything else does. It gets its own small store keyed by
+  // exercise id instead: { [exerciseId]: { phases, mode, own } }.
+  //   phases: subset of "reiz"/"pause" - which of the host exercise's own
+  //     schedule kinds ("blank" = pause, anything else = reiz) the add-on
+  //     is allowed to fire during. Empty = the add-on is off for this
+  //     exercise - a *valid* rest state here, unlike every other multi-select
+  //     in the app where zero-selected is an error.
+  //   mode: "uebernehmen" (default - mirrors Periphere Wahrnehmung's own
+  //     live Bereich/Zeichentyp/Tempo settings, always in sync) or "eigen"
+  //     (a per-exercise override bundle, `own`, edited independently).
+  const ADDON_KEY = "fwmc-addon-v1";
+  const ADDON_PHASE_KEYS = ["reiz", "pause"];
+  const ADDON_PRESETS_KEY = "fwmc-addon-presets-v1"; // [{ id, name, own }] - not exercise-scoped, any saved bundle applies anywhere
+  const addonPresetStore = makePresetStore(ADDON_PRESETS_KEY);
+  function addonDefaultOwn() {
+    return {
+      kind: "gemischt", axes: PERIPH_AXIS_KEYS.slice(), useZones: false, zones: PERIPH_ZONE_KEYS.slice(),
+      sizeMode: "gleich", stimulusS: 1, intervalMin: 2, intervalMax: 4,
+    };
+  }
+  function normalizeAddonEntry(e) {
+    if (!e || typeof e !== "object") e = {};
+    if (!Array.isArray(e.phases) || !e.phases.every((p) => ADDON_PHASE_KEYS.includes(p))) e.phases = [];
+    e.phases = [...new Set(e.phases)];
+    if (!["uebernehmen", "eigen"].includes(e.mode)) e.mode = "uebernehmen";
+    const d = addonDefaultOwn();
+    if (!e.own || typeof e.own !== "object") e.own = d;
+    else {
+      if (!["buchstaben", "zahlen", "gemischt"].includes(e.own.kind)) e.own.kind = d.kind;
+      if (!Array.isArray(e.own.axes) || !e.own.axes.every((a) => PERIPH_AXIS_KEYS.includes(a))) e.own.axes = d.axes.slice();
+      if (typeof e.own.useZones !== "boolean") e.own.useZones = d.useZones;
+      if (!Array.isArray(e.own.zones) || !e.own.zones.length || !e.own.zones.every((z) => PERIPH_ZONE_KEYS.includes(z))) e.own.zones = d.zones.slice();
+      if (!["gleich", "wachsend"].includes(e.own.sizeMode)) e.own.sizeMode = d.sizeMode;
+      if (typeof e.own.stimulusS !== "number" || e.own.stimulusS < 0.3 || e.own.stimulusS > 2) e.own.stimulusS = d.stimulusS;
+      if (typeof e.own.intervalMin !== "number" || e.own.intervalMin < 0.5 || e.own.intervalMin > 15) e.own.intervalMin = d.intervalMin;
+      if (typeof e.own.intervalMax !== "number" || e.own.intervalMax < 0.5 || e.own.intervalMax > 15) e.own.intervalMax = d.intervalMax;
+    }
+    return e;
+  }
+  function loadAddonStore() {
+    const s = readJSON(ADDON_KEY, {});
+    return s && typeof s === "object" && !Array.isArray(s) ? s : {};
+  }
+  let addonStore = loadAddonStore();
+  function saveAddonStore() { writeJSON(ADDON_KEY, addonStore); }
+  // Always returns a normalized entry for this exercise id, creating one
+  // (add-on off, defaults otherwise) the first time it's asked for.
+  function getAddonEntry(exId) {
+    addonStore[exId] = normalizeAddonEntry(addonStore[exId]);
+    return addonStore[exId];
+  }
+  // The "übernehmen" config: reads Periphere Wahrnehmung's own live settings
+  // (no Dominanz here - that stays opt-in-tested on Periph itself only).
+  function addonConfigFromState() {
+    return {
+      kind: state.periphKind, useZones: state.periphUseZones, axes: state.periphAxes, zones: state.periphZones,
+      sizeMode: state.periphSizeMode, stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax,
+    };
+  }
+
   // Colours + seed used by the running exercise (set per start).
   let active = {
     colors: keysToColors(state.colors),
@@ -1981,6 +2060,168 @@
     document.querySelectorAll("#periphSizeGroup [data-periph-size]").forEach((el) => setActive(el, el.dataset.periphSize === state.periphSizeMode));
   }
 
+  // ---- Zusatzaufgabe: Phase 1/Phase 2/Beide is the same multi-select +
+  // "select all" shortcut pattern as everywhere else (colours, Periph's own
+  // Bereich, ...), except zero-selected is this control's valid "off" state
+  // rather than an error - so no warning hint and no start-button disabling
+  // for it. Everything below reads/writes getAddonEntry(state.exercise), not
+  // `state` itself, since this is the app's first genuinely per-exercise
+  // setting (see the comment by ADDON_KEY above).
+  document.querySelectorAll("#addonPhaseRow [data-addon-phase]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const entry = getAddonEntry(state.exercise);
+      const p = el.dataset.addonPhase;
+      const on = entry.phases.includes(p);
+      entry.phases = on ? entry.phases.filter((x) => x !== p) : [...entry.phases, p];
+      saveAddonStore();
+      syncAddonUI();
+    });
+  });
+  els.addonPhaseAllBtn.addEventListener("click", () => {
+    const entry = getAddonEntry(state.exercise);
+    const allOn = entry.phases.length === ADDON_PHASE_KEYS.length;
+    entry.phases = allOn ? [] : ADDON_PHASE_KEYS.slice();
+    saveAddonStore();
+    syncAddonUI();
+  });
+  document.querySelectorAll("#addonModeRow [data-addon-mode]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const entry = getAddonEntry(state.exercise);
+      entry.mode = el.dataset.addonMode;
+      saveAddonStore();
+      syncAddonUI();
+    });
+  });
+  document.querySelectorAll("#addonKindRow [data-addon-kind]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const entry = getAddonEntry(state.exercise);
+      entry.own.kind = el.dataset.addonKind;
+      saveAddonStore();
+      syncAddonUI();
+    });
+  });
+  document.querySelectorAll("#addonFieldRow [data-addon-axis]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const entry = getAddonEntry(state.exercise);
+      const axis = el.dataset.addonAxis;
+      const on = entry.own.axes.includes(axis);
+      entry.own.axes = on ? entry.own.axes.filter((a) => a !== axis) : [...entry.own.axes, axis];
+      saveAddonStore();
+      syncAddonUI();
+    });
+  });
+  els.addonAllBtn.addEventListener("click", () => {
+    const entry = getAddonEntry(state.exercise);
+    const allOn = entry.own.axes.length === PERIPH_AXIS_KEYS.length;
+    entry.own.axes = allOn ? [] : PERIPH_AXIS_KEYS.slice();
+    saveAddonStore();
+    syncAddonUI();
+  });
+  els.addonZonesBtn.addEventListener("click", () => {
+    const entry = getAddonEntry(state.exercise);
+    entry.own.useZones = !entry.own.useZones;
+    saveAddonStore();
+    syncAddonUI();
+  });
+  document.querySelectorAll("#addonZoneGrid [data-zone]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const entry = getAddonEntry(state.exercise);
+      const z = el.dataset.zone;
+      const on = entry.own.zones.includes(z);
+      if (on && entry.own.zones.length <= 1) return;
+      entry.own.zones = on ? entry.own.zones.filter((k) => k !== z) : [...entry.own.zones, z];
+      saveAddonStore();
+      syncAddonUI();
+    });
+  });
+  document.querySelectorAll("#addonOwnBody [data-addon-size]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const entry = getAddonEntry(state.exercise);
+      entry.own.sizeMode = el.dataset.addonSize;
+      saveAddonStore();
+      syncAddonUI();
+    });
+  });
+  els.addonStimulusSlider.addEventListener("input", () => {
+    const entry = getAddonEntry(state.exercise);
+    entry.own.stimulusS = Number(els.addonStimulusSlider.value);
+    saveAddonStore();
+    els.addonStimulusValue.textContent = fmtSeconds(entry.own.stimulusS);
+  });
+  els.addonIntervalMinSlider.addEventListener("input", () => {
+    const entry = getAddonEntry(state.exercise);
+    entry.own.intervalMin = Number(els.addonIntervalMinSlider.value);
+    saveAddonStore();
+    syncAddonIntervalLabel(entry);
+  });
+  els.addonIntervalMaxSlider.addEventListener("input", () => {
+    const entry = getAddonEntry(state.exercise);
+    entry.own.intervalMax = Number(els.addonIntervalMaxSlider.value);
+    saveAddonStore();
+    syncAddonIntervalLabel(entry);
+  });
+  function syncAddonIntervalLabel(entry) {
+    const lo = Math.min(entry.own.intervalMin, entry.own.intervalMax), hi = Math.max(entry.own.intervalMin, entry.own.intervalMax);
+    els.addonIntervalValue.textContent = `${fmtSeconds(lo)}–${fmtSeconds(hi)}`;
+  }
+  function addonPresetMeta(own) {
+    const kindLabel = own.kind === "buchstaben" ? "Buchstaben" : own.kind === "zahlen" ? "Zahlen" : "Gemischt";
+    return `${kindLabel} · ${fmtSeconds(own.stimulusS)}`;
+  }
+  function renderAddonPresets() {
+    renderPresetList(addonPresetStore, els.addonPresetList, els.addonPresetGroup, null, (e) => addonPresetMeta(e.own), (e) => {
+      const entry = getAddonEntry(state.exercise);
+      entry.own = { ...addonDefaultOwn(), ...e.own };
+      saveAddonStore();
+      syncAddonUI();
+    });
+  }
+  wirePresetSaveForm({
+    saveBtn: els.addonSaveBtn, form: els.addonSaveForm, nameInput: els.addonSaveNameInput,
+    cancelBtn: els.addonSaveCancelBtn, confirmBtn: els.addonSaveConfirmBtn,
+    defaultName: () => "Zusatzaufgabe " + new Date().toLocaleDateString("de-DE"),
+    onSave: (name) => {
+      const entry = getAddonEntry(state.exercise);
+      const list = addonPresetStore.load();
+      list.push({ id: String(Date.now()), name, own: { ...entry.own } });
+      addonPresetStore.save(list);
+      renderAddonPresets();
+    },
+  });
+  function syncAddonUI() {
+    const entry = getAddonEntry(state.exercise);
+    document.querySelectorAll("#addonPhaseRow [data-addon-phase]").forEach((el) => setActive(el, entry.phases.includes(el.dataset.addonPhase)));
+    setActive(els.addonPhaseAllBtn, entry.phases.length === ADDON_PHASE_KEYS.length);
+    const enabled = entry.phases.length > 0;
+    els.addonPhaseHint.textContent = enabled ? "" : "Aus – wähle „Beim Reiz“, „In der Pause“ oder beides, um die Zusatzaufgabe zu aktivieren.";
+    els.addonConfigBody.hidden = !enabled;
+    if (!enabled) return;
+    document.querySelectorAll("#addonModeRow [data-addon-mode]").forEach((el) => setActive(el, el.dataset.addonMode === entry.mode));
+    els.addonOwnBody.hidden = entry.mode !== "eigen";
+    if (entry.mode !== "eigen") return;
+    document.querySelectorAll("#addonKindRow [data-addon-kind]").forEach((el) => setActive(el, el.dataset.addonKind === entry.own.kind));
+    document.querySelectorAll("#addonFieldRow [data-addon-axis]").forEach((el) => setActive(el, entry.own.axes.includes(el.dataset.addonAxis)));
+    setActive(els.addonAllBtn, entry.own.axes.length === PERIPH_AXIS_KEYS.length);
+    setActive(els.addonZonesBtn, entry.own.useZones);
+    els.addonFieldRow.hidden = entry.own.useZones;
+    els.addonZoneGrid.hidden = !entry.own.useZones;
+    document.querySelectorAll("#addonZoneGrid [data-zone]").forEach((el) => el.classList.toggle("active", entry.own.zones.includes(el.dataset.zone)));
+    const belowMin = !entry.own.useZones && entry.own.axes.length === 0;
+    els.addonFieldHint.textContent = belowMin ? "Wähle mindestens einen Bereich." : "";
+    els.addonFieldHint.classList.toggle("warn", belowMin);
+    // OR'd in (not assigned outright) - the host exercise's own colour
+    // picker may already have disabled these for an unrelated reason.
+    els.startBtn.disabled = els.startBtn.disabled || belowMin;
+    els.vtSaveBtn.disabled = els.vtSaveBtn.disabled || belowMin;
+    document.querySelectorAll("#addonOwnBody [data-addon-size]").forEach((el) => setActive(el, el.dataset.addonSize === entry.own.sizeMode));
+    els.addonStimulusSlider.value = entry.own.stimulusS;
+    els.addonStimulusValue.textContent = fmtSeconds(entry.own.stimulusS);
+    els.addonIntervalMinSlider.value = entry.own.intervalMin;
+    els.addonIntervalMaxSlider.value = entry.own.intervalMax;
+    syncAddonIntervalLabel(entry);
+    renderAddonPresets();
+  }
+
   // ---- Background colour + intensity ("Champions League" mode) - the
   // page stays plain white at intensity 0 and gets tinted from there, for
   // every exercise whose background isn't already the trained signal
@@ -2085,6 +2326,9 @@
     els.periphFieldGroup.hidden = !isPeriph;
     els.periphSizeGroup.hidden = !isPeriph;
     els.bgGroup.hidden = !bgAllowed;
+    // The add-on can't sensibly run on itself, and Hütchen sortieren has no
+    // schedule of "Reiz"/"Pause" frames for it to hook into at all.
+    els.addonGroup.hidden = isConeTap || isPeriph;
     renderColorSwatches();
     syncColorUI();
     // Runs after syncColorUI() so its own start/save-button disabling (the
@@ -2093,6 +2337,7 @@
     if (!isConeTap) syncPeriphFixUI();
     if (isPeriph) { syncPeriphKindUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); }
     if (bgAllowed) syncBgUI();
+    if (!isConeTap && !isPeriph) syncAddonUI();
     syncDurationUI();
     syncTempoUI();
     els.vtSaveForm.hidden = true;
@@ -2691,11 +2936,15 @@
   }
   // Every "Bereich" mode ends up as a simple {fx, fy} fraction of the canvas
   // (0..1), resolved to real pixels at render time - so a stimulus already
-  // mid-flight still lands correctly if the device is rotated.
-  function randPeriphPos(rng) {
-    if (state.periphUseZones) {
-      const zones = state.periphZones.length ? state.periphZones : PERIPH_ZONE_KEYS;
-      const zone = weightedPick(zones, (z) => state.periphZoneWeights[z] || 1, rng);
+  // mid-flight still lands correctly if the device is rotated. Pulled out of
+  // randPeriphPos() so the Zusatzaufgabe add-on (which has its own Bereich
+  // config, either "übernehmen" from state or its own per-exercise "eigen"
+  // bundle) can reuse the exact same positioning math instead of duplicating
+  // it - cfg just needs {useZones, zones, axes, zoneWeights?}.
+  function randPosFromCfg(cfg, rng) {
+    if (cfg.useZones) {
+      const zones = cfg.zones && cfg.zones.length ? cfg.zones : PERIPH_ZONE_KEYS;
+      const zone = cfg.zoneWeights ? weightedPick(zones, (z) => cfg.zoneWeights[z] || 1, rng) : zones[Math.floor(rng() * zones.length)];
       const { row, col } = PERIPH_ZONES[zone];
       const pad = 0.14, cell = 1 / 3;
       return {
@@ -2706,13 +2955,16 @@
     // "Überall" isn't its own mode any more - selecting all three axes
     // (via the individual buttons or the "Überall" shortcut) covers it,
     // same as picking every colour does for the arrow exercises.
-    const axes = state.periphAxes.length ? state.periphAxes : PERIPH_AXIS_KEYS;
+    const axes = cfg.axes && cfg.axes.length ? cfg.axes : PERIPH_AXIS_KEYS;
     const radiusFrac = 0.45 + rng() * 0.5;
     const axis = axes[Math.floor(rng() * axes.length)];
     const bases = PERIPH_FIELD_ANGLES[axis];
     const base = bases[Math.floor(rng() * bases.length)];
     const angle = base + (rng() - 0.5) * (Math.PI / 6); // ±15° jitter around the axis
     return { fx: 0.5 + 0.42 * radiusFrac * Math.cos(angle), fy: 0.5 + 0.42 * radiusFrac * Math.sin(angle) };
+  }
+  function randPeriphPos(rng) {
+    return randPosFromCfg({ useZones: state.periphUseZones, zones: state.periphZones, axes: state.periphAxes, zoneWeights: state.periphZoneWeights }, rng);
   }
   function buildPeriphSchedule(cfg, rng) {
     const schedule = [];
@@ -2727,6 +2979,36 @@
       t += show + pause;
     }
     return { schedule, total: t };
+  }
+
+  // Zusatzaufgabe overlay schedule: subdivides the host exercise's own
+  // schedule frames into the add-on's own show/gap timing, but only inside
+  // the frame kinds the client enabled it for ("blank" = Pause, anything
+  // else = Reiz) - so an add-on flash can never land outside its chosen
+  // phase, whatever the host exercise's own timing looks like. Returns []
+  // (i.e. nothing drawn) when the add-on is off for this exercise, or for
+  // Periphere Wahrnehmung/Hütchen sortieren themselves.
+  function buildAddonSchedule(ex, exId, hostSchedule, rng) {
+    if (!ex || ex.type === "color-tap" || ex.type === "periph") return { schedule: [], sizeMode: "gleich" };
+    const entry = getAddonEntry(exId);
+    if (!entry.phases.length) return { schedule: [], sizeMode: "gleich" };
+    const cfg = entry.mode === "eigen" ? entry.own : addonConfigFromState();
+    const phaseSet = new Set(entry.phases);
+    const schedule = [];
+    hostSchedule.forEach((frame) => {
+      const phase = frame.kind === "blank" ? "pause" : "reiz";
+      if (!phaseSet.has(phase)) return;
+      let t = frame.t0;
+      const show = cfg.stimulusS;
+      const gapMin = Math.min(cfg.intervalMin, cfg.intervalMax), gapMax = Math.max(cfg.intervalMin, cfg.intervalMax);
+      while (t + show <= frame.t1) {
+        const char = randPeriphChar(cfg.kind, rng);
+        const pos = randPosFromCfg(cfg, rng);
+        schedule.push({ t0: t, t1: t + show, char, fx: pos.fx, fy: pos.fy });
+        t += show + (gapMin + rng() * (gapMax - gapMin));
+      }
+    });
+    return { schedule, sizeMode: cfg.sizeMode };
   }
 
   function onEnterFrame(frame) {
@@ -2757,6 +3039,7 @@
         onEnterFrame(frame);
       }
       drawScene(frame.kind, frame.payload);
+      drawAddonOverlay(elapsed);
     } else if (elapsed >= session.total) {
       finishSession();
       return;
@@ -2765,6 +3048,19 @@
     els.timeEl.textContent = program ? `Übung ${program.chapterIndex + 1}/${program.def.blocks.length} · ${remaining}` : remaining;
     setProgress(program ? program.chapterIndex : 0, elapsed / session.total);
     raf = requestAnimationFrame(tick);
+  }
+
+  // Draws the Zusatzaufgabe's own peripheral flash (if this exercise has one
+  // active right now) on top of whatever the host exercise's own frame just
+  // drew - an independent overlay schedule, gated to the phases the client
+  // enabled it for, see buildAddonSchedule().
+  function drawAddonOverlay(elapsed) {
+    if (!session.addonSchedule || !session.addonSchedule.length) return;
+    const idx = session.addonSchedule.findIndex((f) => elapsed >= f.t0 && elapsed < f.t1);
+    if (idx === -1) return;
+    const f = session.addonSchedule[idx];
+    const cw = canvas.width, ch = canvas.height, unit = Math.min(cw, ch) / 2;
+    drawPeriphChar(cw, ch, unit, f.fx, f.fy, f.char, session.addonSizeMode);
   }
 
   // Redraws whatever frame is currently frozen on screen (used while the
@@ -2840,7 +3136,8 @@
     fitCanvas();
     ensureAudioCtx();
     const built = buildScheduleFor(EXERCISES[state.exercise], Math.random);
-    session = { ...built, startTime: performance.now(), lastIndex: -1 };
+    const addon = buildAddonSchedule(EXERCISES[state.exercise], state.exercise, built.schedule, Math.random);
+    session = { ...built, startTime: performance.now(), lastIndex: -1, addonSchedule: addon.schedule, addonSizeMode: addon.sizeMode };
     requestWakeLock();
     raf = requestAnimationFrame(tick);
   }

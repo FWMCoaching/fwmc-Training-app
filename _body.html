@@ -1123,6 +1123,96 @@
     </div>
   </div>
 
+  <div class="group" id="addonGroup" hidden>
+    <div class="group-label">Zusatzaufgabe: Periphere Wahrnehmung</div>
+    <div class="choice-row two" id="addonPhaseRow">
+      <button class="choice" data-addon-phase="reiz">Beim Reiz</button>
+      <button class="choice" data-addon-phase="pause">In der Pause</button>
+      <button class="choice" id="addonPhaseAllBtn">Beide</button>
+    </div>
+    <div class="color-hint" id="addonPhaseHint"></div>
+
+    <div id="addonConfigBody" hidden>
+      <div class="choice-row two" style="margin-top:10px" id="addonModeRow">
+        <button class="choice" data-addon-mode="uebernehmen">Wie Periphere Wahrnehmung<small>&uuml;bernimmt Bereich, Zeichentyp &amp; Tempo</small></button>
+        <button class="choice" data-addon-mode="eigen">Eigene Feineinstellung<small>weicht f&uuml;r diese &Uuml;bung ab</small></button>
+      </div>
+
+      <div id="addonOwnBody" hidden>
+        <div class="group" style="margin-top:10px">
+          <div class="group-label">Zeichentyp</div>
+          <div class="choice-row" id="addonKindRow">
+            <button class="choice" data-addon-kind="buchstaben">Buchstaben</button>
+            <button class="choice" data-addon-kind="zahlen">Zahlen</button>
+            <button class="choice" data-addon-kind="gemischt">Gemischt</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="group-label">Bereich</div>
+          <div class="choice-row two" id="addonFieldRow">
+            <button class="choice" data-addon-axis="horizontal">Horizontal</button>
+            <button class="choice" data-addon-axis="vertikal">Vertikal</button>
+            <button class="choice" data-addon-axis="diagonal">Diagonal</button>
+            <button class="choice" id="addonAllBtn">&Uuml;berall</button>
+          </div>
+          <div class="color-hint" id="addonFieldHint"></div>
+          <div class="choice-row" style="grid-template-columns:1fr;margin-top:4px">
+            <button class="choice" id="addonZonesBtn">Eigene Auswahl (3&times;3-Raster)</button>
+          </div>
+          <div class="periph-zone-grid" id="addonZoneGrid" hidden>
+            <button class="periph-zone" data-zone="tl" aria-label="Oben links"></button>
+            <button class="periph-zone" data-zone="tm" aria-label="Oben Mitte"></button>
+            <button class="periph-zone" data-zone="tr" aria-label="Oben rechts"></button>
+            <button class="periph-zone" data-zone="ml" aria-label="Mitte links"></button>
+            <div class="periph-zone periph-zone-center" aria-hidden="true"></div>
+            <button class="periph-zone" data-zone="mr" aria-label="Mitte rechts"></button>
+            <button class="periph-zone" data-zone="bl" aria-label="Unten links"></button>
+            <button class="periph-zone" data-zone="bm" aria-label="Unten Mitte"></button>
+            <button class="periph-zone" data-zone="br" aria-label="Unten rechts"></button>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="group-label">Gr&ouml;&szlig;e der Reize</div>
+          <div class="choice-row two">
+            <button class="choice" data-addon-size="gleich">Gleich gro&szlig;</button>
+            <button class="choice" data-addon-size="wachsend">Nach au&szlig;en gr&ouml;&szlig;er</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="group-label">Einblenddauer</div>
+          <div class="slider-row">
+            <input type="range" id="addonStimulusSlider" min="0.3" max="2" step="0.1" aria-label="Einblenddauer der Zusatzaufgabe">
+            <span class="slider-value" id="addonStimulusValue"></span>
+          </div>
+        </div>
+        <div class="group">
+          <div class="group-label">Pause zwischen den Reizen</div>
+          <div class="slider-row two-line">
+            <div class="slider-line"><span class="slider-label">Min</span><input type="range" id="addonIntervalMinSlider" min="0.5" max="15" step="0.5" aria-label="Pause minimal"></div>
+            <div class="slider-line"><span class="slider-label">Max</span><input type="range" id="addonIntervalMaxSlider" min="0.5" max="15" step="0.5" aria-label="Pause maximal"></div>
+            <span class="slider-value" id="addonIntervalValue"></span>
+          </div>
+        </div>
+
+        <div class="group" id="addonPresetGroup" hidden>
+          <div class="group-label">Gespeicherte Zusatzaufgaben</div>
+          <div class="bundle-list" id="addonPresetList"></div>
+        </div>
+        <button class="text-link small" id="addonSaveBtn">Diese Feineinstellung speichern</button>
+        <div class="custom-exercise-form" id="addonSaveForm" hidden>
+          <input type="text" id="addonSaveNameInput" placeholder="Name (z.B. &bdquo;Nur unten, schnell&ldquo;)" maxlength="40">
+          <div class="custom-exercise-form-actions">
+            <button class="start-btn secondary" id="addonSaveCancelBtn">Abbrechen</button>
+            <button class="start-btn" id="addonSaveConfirmBtn">Speichern</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="group" id="durationGroup">
     <div class="group-label">Dauer</div>
     <div class="choice-row">
