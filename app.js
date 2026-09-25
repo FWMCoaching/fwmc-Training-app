@@ -130,6 +130,16 @@
     const r = parseInt(h.substr(0, 2), 16), g = parseInt(h.substr(2, 2), 16), b = parseInt(h.substr(4, 2), 16);
     return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   }
+  // Blends two "#rrggbb" colours - used for the background "Intensität"
+  // slider (white at 0 .. the full chosen colour at 1).
+  function mixHex(hexA, hexB, t) {
+    const pa = hexA.replace("#", ""), pb = hexB.replace("#", "");
+    const ar = parseInt(pa.substr(0, 2), 16), ag = parseInt(pa.substr(2, 2), 16), ab = parseInt(pa.substr(4, 2), 16);
+    const br = parseInt(pb.substr(0, 2), 16), bg = parseInt(pb.substr(2, 2), 16), bb = parseInt(pb.substr(4, 2), 16);
+    const r = Math.round(ar + (br - ar) * t), g = Math.round(ag + (bg - ag) * t), b = Math.round(ab + (bb - ab) * t);
+    const hex = (n) => n.toString(16).padStart(2, "0");
+    return `#${hex(r)}${hex(g)}${hex(b)}`;
+  }
   // Pairs the visual ".active" state every choice/toggle button uses with
   // aria-pressed, so a screen reader can tell which option is selected.
   function setActive(el, on) {
@@ -382,7 +392,9 @@
   // dot untouched.
   function drawFixationPoint(cx, cy, unit) {
     const ex = EXERCISES[state.exercise];
-    const custom = ex && ex.type === "periph";
+    // Every exercise with this dot can customise it now, except "Hütchen
+    // sortieren" which never shows it at all (own colour-tap mechanic).
+    const custom = ex && ex.type !== "color-tap";
     const color = custom ? (FIX_COLOR_BY_KEY[state.periphFixColor] || FIX_COLOR_BY_KEY.grau).hex : DOT;
     const scale = custom ? state.periphFixSize : 1;
     const char = custom ? state.periphFixChar.trim() : "";
@@ -400,19 +412,29 @@
     }
   }
 
+  // The client's chosen background tint, or `fallback` for an exercise
+  // whose background already carries the trained signal itself (VT's
+  // colour, VRW, Kompass-Aufbau, Stroop mit Hintergrund) or when the
+  // intensity slider is still at 0 (nothing to blend).
+  function currentBgFill(fallback) {
+    const ex = EXERCISES[state.exercise];
+    if (!ex || ex.type === "color-tap" || ex.bgIsStimulus || state.bgIntensity <= 0) return fallback;
+    return mixHex("#ffffff", (STROOP_COLOR_BY_KEY[state.bgColorKey] || STROOP_COLOR_BY_KEY.gruen).hex, state.bgIntensity);
+  }
+
   function drawScene(kind, payload) {
     const cw = canvas.width, ch = canvas.height;
     const cx = cw / 2, cy = ch / 2;
     const unit = Math.min(cw, ch) / 2;
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = currentBgFill("#ffffff");
     ctx.fillRect(0, 0, cw, ch);
 
     if (kind === "blank") {
-      ctx.fillStyle = NEUTRAL;
+      ctx.fillStyle = currentBgFill(NEUTRAL);
       ctx.fillRect(0, 0, cw, ch);
       drawFixationPoint(cx, cy, unit);
     } else if (kind === "periph") {
-      ctx.fillStyle = NEUTRAL;
+      ctx.fillStyle = currentBgFill(NEUTRAL);
       ctx.fillRect(0, 0, cw, ch);
       drawFixationPoint(cx, cy, unit);
       // Position is stored as a {fx, fy} fraction of the canvas (0..1)
@@ -509,7 +531,7 @@
     "vt-color": {
       title: "VT · Farbe & Seite",
       type: "vt",
-      usesColors: true,
+      usesColors: true, bgIsStimulus: true,
       task: "Erkenne Farbe und Pfeilrichtung und reagiere mit der passenden Seite.",
       trains: "Farbwahrnehmung und schnelle Seitenentscheidung",
       rules: "Du siehst eine Farbfläche mit weißem Pfeil. Die Farbe sagt dir, was du tust – der Pfeil zeigt die Seite (links oder rechts). Welche Farbe wofür steht, legst du mit deinem Coach fest.",
@@ -517,7 +539,7 @@
     "vrw-original": {
       title: "VRW · Direkt & Umgekehrt",
       type: "vrw-real",
-      usesColors: true,
+      usesColors: true, bgIsStimulus: true,
       task: "Weißer Pfeil auf Farbe: gezeigte Seite. Farbiger Pfeil auf Weiß: Gegenseite.",
       trains: "Regelwechsel und Impulskontrolle",
       rules: "Weißer Pfeil auf farbiger Fläche: Die gezeigte Seite zählt (direkt). Farbiger Pfeil auf weißer Fläche: Die Gegenseite zählt (umgekehrt).",
@@ -554,7 +576,7 @@
       rules: "Du siehst ein Farbwort in einer anderen Schriftfarbe. Sag laut die Schriftfarbe – nicht das, was da steht.",
     },
     "stroop-bg": {
-      title: "Stroop · mit Hintergrund", type: "stroop", bg: true, usesStroopColors: true,
+      title: "Stroop · mit Hintergrund", type: "stroop", bg: true, usesStroopColors: true, bgIsStimulus: true,
       task: "Sag laut die Schriftfarbe – nicht das Wort, nicht den Hintergrund.",
       trains: "Konzentration bei starker Ablenkung",
       rules: "Wort, Schriftfarbe und Hintergrund sind alle unterschiedlich. Sag laut die Schriftfarbe. Diese Variante ist eine Weiterentwicklung von Fabian Westermann Mentalcoaching.",
@@ -572,7 +594,7 @@
       rules: "Du siehst vier große Farbpunkte – sie zeigen die Reihenfolge, in der deine vier Farbhütchen von links nach rechts stehen sollen. Sortiere deine Hütchen so schnell wie möglich um und tippe danach irgendwo auf den Bildschirm für die nächste Reihenfolge. Gezählt wird, wie viele Durchgänge du innerhalb der eingestellten Zeit schaffst – nicht, ob du eine bestimmte Anzahl erreichst.",
     },
     "cone-compass": {
-      title: "Hütchen · Kompass-Aufbau", type: "color", usesColors: true, setupDiagram: true,
+      title: "Hütchen · Kompass-Aufbau", type: "color", usesColors: true, setupDiagram: true, bgIsStimulus: true,
       task: "Reagiere auf die Farbe – passend zu deinem eigenen Richtungs-Aufbau am Boden.",
       trains: "Reaktionsschnelligkeit gezielt in frei gewählte Richtungen",
       rules: "Klebe ein Kreuz oder einen Stern mit vier oder acht Richtungen auf den Boden und stelle deine Farbhütchen in die Richtungen, die du trainieren willst. Mehrere Farben auf derselben Richtung lassen diese Richtung häufiger drankommen. Welche Farbe wohin gehört, legst du komplett selbst fest – die App zeigt immer nur die Farbe.",
@@ -973,6 +995,8 @@
     periphOpenBtn: $("periphOpenBtn"),
     periphFieldGroup: $("periphFieldGroup"), periphFieldRow: $("periphFieldRow"), periphZoneGrid: $("periphZoneGrid"), periphSizeGroup: $("periphSizeGroup"),
     periphAllBtn: $("periphAllBtn"), periphZonesBtn: $("periphZonesBtn"), periphFieldHint: $("periphFieldHint"),
+    bgGroup: $("bgGroup"), bgColorPicker: $("bgColorPicker"), bgIntensitySlider: $("bgIntensitySlider"),
+    bgIntensityValue: $("bgIntensityValue"), bgContrastHint: $("bgContrastHint"),
     durationGroup: $("durationGroup"), tempoGroup: $("tempoGroup"), advanced: $("advanced"),
     vtSavedGroup: $("vtSavedGroup"), vtSavedList: $("vtSavedList"), vtSaveBtn: $("vtSaveBtn"),
     vtSaveForm: $("vtSaveForm"), vtSaveNameInput: $("vtSaveNameInput"),
@@ -1451,6 +1475,8 @@
     periphUseZones: false,
     periphZones: ["tl", "tm", "tr", "ml", "mr", "bl", "bm", "br"],
     periphSizeMode: "gleich",
+    bgColorKey: "gruen",
+    bgIntensity: 0,
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -1467,6 +1493,8 @@
     if (typeof state.periphUseZones !== "boolean") state.periphUseZones = false;
     if (!Array.isArray(state.periphZones) || !state.periphZones.length || !state.periphZones.every((z) => PERIPH_ZONE_KEYS.includes(z))) state.periphZones = DEFAULTS.periphZones.slice();
     if (!["gleich", "wachsend"].includes(state.periphSizeMode)) state.periphSizeMode = "gleich";
+    if (!STROOP_COLOR_BY_KEY[state.bgColorKey]) state.bgColorKey = "gruen";
+    if (typeof state.bgIntensity !== "number" || state.bgIntensity < 0 || state.bgIntensity > 1) state.bgIntensity = 0;
   }
   function savePrefs() { writeJSON(PREFS_KEY, state); }
   loadPrefs();
@@ -1714,6 +1742,43 @@
     document.querySelectorAll("#periphSizeGroup [data-periph-size]").forEach((el) => setActive(el, el.dataset.periphSize === state.periphSizeMode));
   }
 
+  // ---- Background colour + intensity ("Champions League" mode) - the
+  // page stays plain white at intensity 0 and gets tinted from there, for
+  // every exercise whose background isn't already the trained signal
+  // itself (see bgIsStimulus on VT/VRW/Kompass-Aufbau/Stroop mit Hintergrund). ----
+  STROOP_COLOR_LIB.forEach((c) => {
+    const btn = document.createElement("button");
+    btn.className = "color-swatch";
+    btn.dataset.bgColor = c.key;
+    btn.setAttribute("aria-pressed", "false");
+    const stroke = relLuma(c.hex) > 0.75 ? "#16232a" : "#fff";
+    btn.innerHTML = `<span class="swatch" style="background:${c.hex}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="${stroke}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">${c.name}</span>`;
+    btn.addEventListener("click", () => {
+      state.bgColorKey = c.key;
+      savePrefs();
+      syncBgUI();
+    });
+    els.bgColorPicker.appendChild(btn);
+  });
+  els.bgIntensitySlider.addEventListener("input", () => {
+    state.bgIntensity = Number(els.bgIntensitySlider.value);
+    savePrefs();
+    syncBgUI();
+  });
+  function syncBgUI() {
+    els.bgColorPicker.querySelectorAll(".color-swatch").forEach((el) => {
+      const on = el.dataset.bgColor === state.bgColorKey;
+      el.classList.toggle("active", on);
+      el.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    els.bgIntensitySlider.value = state.bgIntensity;
+    els.bgIntensityValue.textContent = Math.round(state.bgIntensity * 100) + "%";
+    const mixed = mixHex("#ffffff", STROOP_COLOR_BY_KEY[state.bgColorKey].hex, state.bgIntensity);
+    const showTip = state.bgIntensity > 0 && relLuma(mixed) < 0.45;
+    els.bgContrastHint.hidden = !showTip;
+    els.bgContrastHint.textContent = showTip ? "Tipp: Bei dieser Hintergrundfarbe ist weißer Text/eine weiße Form oft besser lesbar als Schwarz." : "";
+  }
+
   // ---- Duration / tempo / sliders ----
   document.querySelectorAll("[data-dur]").forEach((el) => {
     el.addEventListener("click", () => { state.duration = Number(el.dataset.dur); savePrefs(); syncDurationUI(); });
@@ -1787,18 +1852,25 @@
     els.colorGroup.hidden = !ex.usesColors && !ex.usesArrowColors && !ex.usesStroopColors;
     const isConeTap = ex.type === "color-tap";
     const isPeriph = ex.type === "periph";
+    const bgAllowed = !isConeTap && !ex.bgIsStimulus;
     els.tempoGroup.hidden = isConeTap;
     els.advanced.hidden = isConeTap;
     els.periphKindGroup.hidden = !isPeriph;
-    els.periphFixGroup.hidden = !isPeriph;
+    // The fixation-point Feineinstellung applies to every exercise with
+    // this dot (i.e. everything except Hütchen sortieren), not just
+    // Periphere Wahrnehmung - it was just built there first.
+    els.periphFixGroup.hidden = isConeTap;
     els.periphFieldGroup.hidden = !isPeriph;
     els.periphSizeGroup.hidden = !isPeriph;
+    els.bgGroup.hidden = !bgAllowed;
     renderColorSwatches();
     syncColorUI();
     // Runs after syncColorUI() so its own start/save-button disabling (the
     // "pick at least one Bereich" rule) isn't clobbered by colour's - the
     // two checks are independent and both need to hold.
-    if (isPeriph) { syncPeriphKindUI(); syncPeriphFixUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); }
+    if (!isConeTap) syncPeriphFixUI();
+    if (isPeriph) { syncPeriphKindUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); }
+    if (bgAllowed) syncBgUI();
     syncDurationUI();
     syncTempoUI();
     els.vtSaveForm.hidden = true;
@@ -2257,7 +2329,7 @@
     while (t < state.duration) {
       const wIdx = Math.floor(rng() * colors.length);
       const inkIdx = pick(colors, [wIdx], rng);
-      let bg = "#ffffff";
+      let bg = currentBgFill("#ffffff");
       // With only 2 colours picked there's no third one left for the
       // background to stay distinct from both word and ink - fall back to
       // just excluding the word colour then (bg may equal ink; the render

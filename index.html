@@ -757,6 +757,16 @@
           <span class="slider-value" id="intervalValue">3&ndash;6 s</span>
         </div>
       </div>
+      <div class="group" id="bgGroup" hidden>
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="bgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="bgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="bgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="bgContrastHint" hidden></div>
+      </div>
       <div class="group" id="periphFixGroup" hidden>
         <div class="group-label">Fixpunkt in der Mitte</div>
         <input type="text" id="periphFixCharInput" maxlength="3" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen f&uuml;r den Fixpunkt (leer lassen f&uuml;r den Standardpunkt)">
