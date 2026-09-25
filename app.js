@@ -11,14 +11,6 @@
   const NEUTRAL = "#eef3f4";
   const DOT = "#8fa2a8";
 
-  const STROOP_COLORS = [
-    { name: "ROT", hex: RED },
-    { name: "GRÜN", hex: GREEN },
-    { name: "BLAU", hex: BLUE },
-    { name: "GELB", hex: "#f2a900" },
-    { name: "LILA", hex: "#7e4fbe" },
-  ];
-
   const DIR4 = [["Vorne", 0], ["Rechts", 90], ["Hinten", 180], ["Links", 270]];
   const DIR_DIAG = [["Vorne-Rechts", 45], ["Hinten-Rechts", 135], ["Hinten-Links", 225], ["Vorne-Links", 315]];
   const DIR8 = [...DIR4, ...DIR_DIAG].sort((a, b) => a[1] - b[1]);
@@ -45,6 +37,20 @@
   // below.
   const ARROW_MIN_COLORS = 1;
   const ARROW_MAX_COLORS = COLOR_LIB.length;
+
+  // Stroop uses the same colour picker again, but with Schwarz/Weiß added on
+  // top of COLOR_LIB - "the colour word isn't the ink colour" reads better
+  // with black/white in the mix, and unlike VT/arrows there's no physical
+  // hütchen to match, so any colour is fair game. Needs at least two colours
+  // to have a word/ink mismatch at all.
+  const STROOP_EXTRA_COLORS = [
+    { key: "schwarz", name: "Schwarz", hex: "#000000" },
+    { key: "weiss", name: "Weiß", hex: "#ffffff" },
+  ];
+  const STROOP_COLOR_LIB = [...COLOR_LIB, ...STROOP_EXTRA_COLORS];
+  const STROOP_COLOR_BY_KEY = Object.fromEntries(STROOP_COLOR_LIB.map((c) => [c.key, c]));
+  const STROOP_MIN_COLORS = 2;
+  const STROOP_MAX_COLORS = STROOP_COLOR_LIB.length;
 
   // Fixed four-colour set for "Hütchen antippen" (cone order sorting) -
   // this exercise is always about four cones, so it skips the free colour
@@ -91,13 +97,21 @@
     const id = PALETTES[block.palette] ? block.palette : "ORL";
     return { colors: PALETTES[id] };
   }
-  function keysToColors(keys) {
-    return COLOR_LIB.filter((c) => keys.includes(c.key));
+  function keysToColors(keys, lib = COLOR_LIB) {
+    return lib.filter((c) => keys.includes(c.key));
   }
 
   // ---- Small helpers ----
   function esc(s) {
     return String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+  }
+  // Perceived brightness (0 = black, 1 = white) of a "#rrggbb" hex colour -
+  // used to pick a legible checkmark/outline colour against an arbitrary
+  // swatch, now that Schwarz/Weiß are selectable Stroop colours too.
+  function relLuma(hex) {
+    const h = hex.replace("#", "");
+    const r = parseInt(h.substr(0, 2), 16), g = parseInt(h.substr(2, 2), 16), b = parseInt(h.substr(4, 2), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   }
   // Pairs the visual ".active" state every choice/toggle button uses with
   // aria-pressed, so a screen reader can tell which option is selected.
@@ -372,11 +386,19 @@
       ctx.fillStyle = payload.bg;
       ctx.fillRect(0, 0, cw, ch);
       if (payload.instruction) barCaption(cw, ch, payload.instruction, false);
-      ctx.fillStyle = payload.ink;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       const size = fitText(ctx, payload.word, cw * 0.82, Math.round(unit * 0.62), "Magra, sans-serif", 700);
       ctx.font = `700 ${size}px Magra, sans-serif`;
+      // Ink and background can now both be black or white (Stroop's colour
+      // picker includes Schwarz/Weiß) - a thin outline of the opposite
+      // brightness keeps the word legible whenever the two nearly match.
+      if (Math.abs(relLuma(payload.ink) - relLuma(payload.bg)) < 0.15) {
+        ctx.lineWidth = Math.max(2, size * 0.05);
+        ctx.strokeStyle = relLuma(payload.ink) > 0.5 ? "#000000" : "#ffffff";
+        ctx.strokeText(payload.word, cx, cy);
+      }
+      ctx.fillStyle = payload.ink;
       ctx.fillText(payload.word, cx, cy);
     } else if (kind === "cross") {
       const p = payload;
@@ -468,13 +490,13 @@
       rules: "Grüner Pfeil: Reagiere in die gezeigte Richtung. Roter Pfeil: Reagiere in die Gegenrichtung.",
     },
     "stroop-classic": {
-      title: "Stroop · klassisch", type: "stroop", bg: false,
+      title: "Stroop · klassisch", type: "stroop", bg: false, usesStroopColors: true,
       task: "Sag laut die Schriftfarbe – nicht das Wort.",
       trains: "Konzentration und Ausblenden von Störreizen",
       rules: "Du siehst ein Farbwort in einer anderen Schriftfarbe. Sag laut die Schriftfarbe – nicht das, was da steht.",
     },
     "stroop-bg": {
-      title: "Stroop · mit Hintergrund", type: "stroop", bg: true,
+      title: "Stroop · mit Hintergrund", type: "stroop", bg: true, usesStroopColors: true,
       task: "Sag laut die Schriftfarbe – nicht das Wort, nicht den Hintergrund.",
       trains: "Konzentration bei starker Ablenkung",
       rules: "Wort, Schriftfarbe und Hintergrund sind alle unterschiedlich. Sag laut die Schriftfarbe. Diese Variante ist eine Weiterentwicklung von Fabian Westermann Mentalcoaching.",
@@ -811,6 +833,7 @@
     if (block.domain === "movement") return "Movement · Ganzkörper-Reaktion";
     if (block.domain === "workout") return workoutBlockLabel(block);
     if (block.domain === "visual") return EXERCISES[block.exercise] ? EXERCISES[block.exercise].title : block.exercise;
+    if (block.domain === "nat") return `Remember · ${REMEMBER_MODES[block.mode] ? REMEMBER_MODES[block.mode].title : block.mode}`;
     return block.domain;
   }
   function comboBlockMeta(block) {
@@ -819,6 +842,7 @@
     if (block.domain === "movement") return fmtMinutes((block.durationMin ?? 2) * 60);
     if (block.domain === "workout") return workoutBlockMeta(block);
     if (block.domain === "visual") return fmtMinutes((block.duration ?? 60));
+    if (block.domain === "nat") return fmtMinutes((block.duration ?? 60));
     return "";
   }
   function comboBlockSeconds(block) {
@@ -827,6 +851,7 @@
     if (block.domain === "movement") return (block.durationMin ?? 2) * 60;
     if (block.domain === "workout") return workoutBlockSeconds(block);
     if (block.domain === "visual") return block.duration ?? 60;
+    if (block.domain === "nat") return block.duration ?? 60;
     return 0;
   }
   // Curated quick-add presets the combo builder offers per section - not the
@@ -852,8 +877,12 @@
       { domain: "workout", kind: "reps", exercise: "kniebeuge", sets: 3, reps: 12, restS: 30 },
       { domain: "workout", kind: "tabata", exercise: "hampelmann", workS: 20, restS: 10, rounds: 8 },
     ],
+    nat: [
+      { domain: "nat", mode: "fixed", duration: 60 },
+      { domain: "nat", mode: "shuffle", duration: 60 },
+    ],
   };
-  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Movement", visual: "Visual Training", workout: "Workout" };
+  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Movement", visual: "Visual Training", workout: "Workout", nat: "NAT" };
 
   // ---- Elements ----
   const $ = (id) => document.getElementById(id);
@@ -1343,6 +1372,7 @@
     intervalMax: 6,
     colors: ["orange", "rot", "lila"],
     arrowColors: ["blau"],
+    stroopColors: ["rot", "gruen", "blau", "gelb", "lila"],
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -1350,27 +1380,48 @@
     Object.assign(state, DEFAULTS, saved && typeof saved === "object" ? saved : {});
     if (!Array.isArray(state.colors) || keysToColors(state.colors).length < MIN_COLORS) state.colors = ["orange", "rot", "lila"];
     if (!Array.isArray(state.arrowColors) || keysToColors(state.arrowColors).length < ARROW_MIN_COLORS) state.arrowColors = ["blau"];
+    if (!Array.isArray(state.stroopColors) || keysToColors(state.stroopColors, STROOP_COLOR_LIB).length < STROOP_MIN_COLORS) state.stroopColors = DEFAULTS.stroopColors.slice();
   }
   function savePrefs() { writeJSON(PREFS_KEY, state); }
   loadPrefs();
 
   // Colours + seed used by the running exercise (set per start).
-  let active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors) };
+  let active = {
+    colors: keysToColors(state.colors),
+    arrowColors: keysToColors(state.arrowColors),
+    stroopColors: keysToColors(state.stroopColors, STROOP_COLOR_LIB),
+  };
 
   function randInterval(rng) {
     const lo = Math.min(state.intervalMin, state.intervalMax);
     const hi = Math.max(state.intervalMin, state.intervalMax);
     return lo + rng() * (hi - lo);
   }
-  // ---- Colour picker. Shared by two independent selections: the
-  // "standard" 2-4 colour VT/VRW/Kompass palette (state.colors) and the
-  // looser 1-7 colour palette for the three pure-arrow exercises
-  // (state.arrowColors, plus an "alle Farben" shortcut). Which one is
-  // active is decided per exercise in openReady() below.
+  // ---- Colour picker. Shared by three independent selections: the
+  // "standard" 2-4 colour VT/VRW/Kompass palette (state.colors), the looser
+  // 1-7 colour palette for the three pure-arrow exercises (state.arrowColors),
+  // and Stroop's own 2-9 colour palette (state.stroopColors, COLOR_LIB plus
+  // Schwarz/Weiß). Which one is active is decided per exercise in
+  // openReady() below, which also rebuilds the swatches for that palette's
+  // colour list via renderColorSwatches() - the three lists differ in size,
+  // so the DOM can't just stay built from a single fixed COLOR_LIB forever.
   let colorMode = "standard";
-  function colorModeArray() { return colorMode === "arrows" ? state.arrowColors : state.colors; }
-  function setColorModeArray(keys) { if (colorMode === "arrows") state.arrowColors = keys; else state.colors = keys; }
-  function colorModeLimits() { return colorMode === "arrows" ? { min: ARROW_MIN_COLORS, max: ARROW_MAX_COLORS } : { min: MIN_COLORS, max: MAX_COLORS }; }
+  function colorModePalette() { return colorMode === "stroop" ? STROOP_COLOR_LIB : COLOR_LIB; }
+  function colorModeArray() {
+    if (colorMode === "arrows") return state.arrowColors;
+    if (colorMode === "stroop") return state.stroopColors;
+    return state.colors;
+  }
+  function setColorModeArray(keys) {
+    if (colorMode === "arrows") state.arrowColors = keys;
+    else if (colorMode === "stroop") state.stroopColors = keys;
+    else state.colors = keys;
+  }
+  function colorModeLimits() {
+    if (colorMode === "arrows") return { min: ARROW_MIN_COLORS, max: ARROW_MAX_COLORS };
+    if (colorMode === "stroop") return { min: STROOP_MIN_COLORS, max: STROOP_MAX_COLORS };
+    return { min: MIN_COLORS, max: MAX_COLORS };
+  }
   let hintTimer = null;
   function colorHint(text, warn) {
     els.colorHint.textContent = text;
@@ -1382,70 +1433,89 @@
     const { min, max } = colorModeLimits();
     return `Wähle ${min} bis ${max} Farben – sie werden zufällig gemischt.`;
   }
-  COLOR_LIB.forEach((c) => {
+  function buildColorSwatch(c) {
     const btn = document.createElement("button");
     btn.className = "color-swatch";
     btn.dataset.color = c.key;
     btn.setAttribute("aria-pressed", "false");
-    btn.innerHTML = `<span class="swatch" style="background:${c.hex}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">${c.name}</span>`;
+    // A checkmark drawn in white would vanish on a white (Weiß) swatch, so
+    // pick a stroke colour that stays visible against this specific swatch.
+    const stroke = relLuma(c.hex) > 0.75 ? "#16232a" : "#fff";
+    btn.innerHTML = `<span class="swatch" style="background:${c.hex}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="${stroke}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">${c.name}</span>`;
     btn.addEventListener("click", () => {
       const keys = colorModeArray();
       const { min, max } = colorModeLimits();
+      const lib = colorModePalette();
       const selected = keys.includes(c.key);
       if (selected) {
-        // Arrow mode allows going all the way down to zero - syncColorUI()
-        // shows a "pick at least one" hint and disables the start button
-        // for that, rather than blocking the click outright like the
-        // standard 2-4 palette below does.
-        if (colorMode !== "arrows" && keys.length <= min) { colorHint(`Mindestens ${min} Farben.`, true); return; }
+        // Arrow/Stroop mode allow going all the way down to zero -
+        // syncColorUI() shows a "pick at least N" hint and disables the
+        // start button for that, rather than blocking the click outright
+        // like the standard 2-4 palette below does.
+        if (colorMode === "standard" && keys.length <= min) { colorHint(`Mindestens ${min} Farben.`, true); return; }
         setColorModeArray(keys.filter((k) => k !== c.key));
       } else {
         if (keys.length >= max) { colorHint(`Höchstens ${max} Farben – wähle zuerst eine ab.`, true); return; }
-        setColorModeArray(COLOR_LIB.map((x) => x.key).filter((k) => k === c.key || keys.includes(k)));
+        setColorModeArray(lib.map((x) => x.key).filter((k) => k === c.key || keys.includes(k)));
       }
       savePrefs();
       syncColorUI();
     });
-    els.colorPicker.appendChild(btn);
-  });
-  // "Alle Farben" shortcut - only shown in arrow mode (standard mode's 2-4
-  // cap makes "all seven" impossible there anyway). Its active state is
-  // never stored on its own - it's simply true whenever every colour
-  // happens to be selected, whether that came from this button or from
-  // picking all seven swatches by hand.
-  const colorAllBtn = document.createElement("button");
-  colorAllBtn.className = "color-swatch";
-  colorAllBtn.setAttribute("aria-pressed", "false");
-  const wedges = COLOR_LIB.map((c, i) => `${c.hex} ${(i / COLOR_LIB.length * 100).toFixed(2)}% ${((i + 1) / COLOR_LIB.length * 100).toFixed(2)}%`).join(",");
-  colorAllBtn.innerHTML = `<span class="swatch" style="background:conic-gradient(${wedges})"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">Alle Farben</span>`;
-  colorAllBtn.addEventListener("click", () => {
-    const allSelected = colorModeArray().length === COLOR_LIB.length;
-    // Toggle: all seven <-> none at all, rather than picking an arbitrary
-    // colour to leave behind. syncColorUI() shows a "pick at least one"
-    // hint and disables the start button while nothing is selected.
-    setColorModeArray(allSelected ? [] : COLOR_LIB.map((c) => c.key));
-    savePrefs();
-    syncColorUI();
-  });
-  els.colorPicker.appendChild(colorAllBtn);
+    return btn;
+  }
+  // "Alle Farben" shortcut - hidden in standard mode (its 2-4 cap makes "all
+  // colours" impossible there anyway). Its active state is never stored on
+  // its own - it's simply true whenever every colour of the current
+  // palette happens to be selected, whether that came from this button or
+  // from picking every swatch by hand.
+  let colorAllBtn = null;
+  function buildColorAllBtn(lib) {
+    const btn = document.createElement("button");
+    btn.className = "color-swatch";
+    btn.setAttribute("aria-pressed", "false");
+    const wedges = lib.map((c, i) => `${c.hex} ${(i / lib.length * 100).toFixed(2)}% ${((i + 1) / lib.length * 100).toFixed(2)}%`).join(",");
+    btn.innerHTML = `<span class="swatch" style="background:conic-gradient(${wedges})"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">Alle Farben</span>`;
+    btn.addEventListener("click", () => {
+      const allSelected = colorModeArray().length === lib.length;
+      // Toggle: every colour <-> none at all, rather than picking an
+      // arbitrary colour to leave behind. syncColorUI() shows a "pick at
+      // least N" hint and disables the start button while too few (or none)
+      // are selected.
+      setColorModeArray(allSelected ? [] : lib.map((c) => c.key));
+      savePrefs();
+      syncColorUI();
+    });
+    return btn;
+  }
+  function renderColorSwatches() {
+    const lib = colorModePalette();
+    els.colorPicker.innerHTML = "";
+    lib.forEach((c) => els.colorPicker.appendChild(buildColorSwatch(c)));
+    colorAllBtn = buildColorAllBtn(lib);
+    els.colorPicker.appendChild(colorAllBtn);
+  }
   function syncColorUI() {
     const keys = colorModeArray();
+    const { min, max } = colorModeLimits();
+    const lib = colorModePalette();
     els.colorPicker.querySelectorAll(".color-swatch[data-color]").forEach((el) => {
       const on = keys.includes(el.dataset.color);
       el.classList.toggle("active", on);
       el.setAttribute("aria-pressed", on ? "true" : "false");
     });
-    colorAllBtn.hidden = colorMode !== "arrows";
-    const allOn = keys.length === COLOR_LIB.length;
+    colorAllBtn.hidden = colorMode === "standard";
+    const allOn = keys.length === lib.length;
     colorAllBtn.classList.toggle("active", allOn);
     colorAllBtn.setAttribute("aria-pressed", allOn ? "true" : "false");
     els.colorCount.textContent = `${keys.length} gewählt`;
-    const nothingPicked = colorMode === "arrows" && keys.length === 0;
+    const belowMin = colorMode !== "standard" && keys.length < min;
     if (hintTimer) { clearTimeout(hintTimer); hintTimer = null; }
-    els.colorHint.textContent = nothingPicked ? "Wähle mindestens eine Farbe." : defaultColorHint();
-    els.colorHint.classList.toggle("warn", nothingPicked);
-    els.startBtn.disabled = nothingPicked;
-    els.vtSaveBtn.disabled = nothingPicked;
+    els.colorHint.textContent = belowMin
+      ? (min === 1 ? "Wähle mindestens eine Farbe." : `Wähle mindestens ${min} Farben.`)
+      : defaultColorHint();
+    els.colorHint.classList.toggle("warn", belowMin);
+    els.startBtn.disabled = belowMin;
+    els.vtSaveBtn.disabled = belowMin;
   }
 
   // ---- Duration / tempo / sliders ----
@@ -1513,11 +1583,12 @@
     els.explainerBtn.onclick = ex.explainerVideo ? () => openVideoModal(ex.explainerVideo) : null;
     els.setupBtn.hidden = !ex.setupDiagram;
     els.setupBtn.onclick = ex.setupDiagram ? openSetupModal : null;
-    colorMode = ex.usesArrowColors ? "arrows" : "standard";
-    els.colorGroup.hidden = !ex.usesColors && !ex.usesArrowColors;
+    colorMode = ex.usesArrowColors ? "arrows" : ex.usesStroopColors ? "stroop" : "standard";
+    els.colorGroup.hidden = !ex.usesColors && !ex.usesArrowColors && !ex.usesStroopColors;
     const isConeTap = ex.type === "color-tap";
     els.tempoGroup.hidden = isConeTap;
     els.advanced.hidden = isConeTap;
+    renderColorSwatches();
     syncColorUI();
     syncDurationUI();
     syncTempoUI();
@@ -1973,13 +2044,18 @@
     let t = pushCountdown(schedule, cfg);
     const instruction = "Sag laut die SCHRIFTFARBE (nicht das Wort)";
     const show = state.stimulusS;
+    const colors = active.stroopColors;
     while (t < state.duration) {
-      const wIdx = Math.floor(rng() * STROOP_COLORS.length);
-      const inkIdx = pick(STROOP_COLORS, [wIdx], rng);
+      const wIdx = Math.floor(rng() * colors.length);
+      const inkIdx = pick(colors, [wIdx], rng);
       let bg = "#ffffff";
-      if (cfg.bg) bg = STROOP_COLORS[pick(STROOP_COLORS, [wIdx, inkIdx], rng)].hex;
-      const word = STROOP_COLORS[wIdx].name;
-      const ink = STROOP_COLORS[inkIdx].hex;
+      // With only 2 colours picked there's no third one left for the
+      // background to stay distinct from both word and ink - fall back to
+      // just excluding the word colour then (bg may equal ink; the render
+      // code's outline keeps the word legible even so).
+      if (cfg.bg) bg = colors[pick(colors, colors.length > 2 ? [wIdx, inkIdx] : [wIdx], rng)].hex;
+      const word = colors[wIdx].name.toUpperCase();
+      const ink = colors[inkIdx].hex;
       const pause = randInterval(rng);
       schedule.push({ t0: t, t1: t + show, kind: "stroop", payload: { word, ink, bg, instruction } });
       schedule.push({ t0: t + show, t1: t + show + pause, kind: "blank", payload: {} });
@@ -2369,10 +2445,12 @@
 
   // ---- Single exercise ----
   function startSession() {
-    if (EXERCISES[state.exercise].usesArrowColors && state.arrowColors.length === 0) return;
+    const startEx = EXERCISES[state.exercise];
+    if (startEx.usesArrowColors && state.arrowColors.length < ARROW_MIN_COLORS) return;
+    if (startEx.usesStroopColors && state.stroopColors.length < STROOP_MIN_COLORS) return;
     program = null;
     hideOverlays();
-    active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors) };
+    active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors), stroopColors: keysToColors(state.stroopColors, STROOP_COLOR_LIB) };
     buildProgressTrack(1);
     els.liveNav.hidden = true;
     if (EXERCISES[state.exercise].type === "color-tap") startConeTap();
@@ -2443,18 +2521,20 @@
   function renderVTSaved() {
     renderPresetList(vtSavedStore, els.vtSavedList, els.vtSavedGroup, (e) => e.exercise === state.exercise,
       (e) => {
-        const usedColors = EXERCISES[e.exercise] && EXERCISES[e.exercise].usesArrowColors ? e.arrowColors : e.colors;
+        const ex = EXERCISES[e.exercise];
+        const usedColors = ex && ex.usesArrowColors ? e.arrowColors : ex && ex.usesStroopColors ? e.stroopColors : e.colors;
         return `${fmtMinutes(e.duration)}${usedColors && usedColors.length ? ` · ${usedColors.length} Farben` : ""}`;
       },
       (entry) => {
         state.colors = entry.colors.slice();
         if (entry.arrowColors) state.arrowColors = entry.arrowColors.slice();
+        if (entry.stroopColors) state.stroopColors = entry.stroopColors.slice();
         state.duration = entry.duration;
         state.stimulusS = entry.stimulusS;
         state.intervalMin = entry.intervalMin;
         state.intervalMax = entry.intervalMax;
         savePrefs();
-        active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors) };
+        active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors), stroopColors: keysToColors(state.stroopColors, STROOP_COLOR_LIB) };
         startSession();
       });
   }
@@ -2466,7 +2546,7 @@
       const list = vtSavedStore.load();
       list.push({
         id: String(Date.now()), name, exercise: state.exercise,
-        colors: state.colors.slice(), arrowColors: state.arrowColors.slice(), duration: state.duration,
+        colors: state.colors.slice(), arrowColors: state.arrowColors.slice(), stroopColors: state.stroopColors.slice(), duration: state.duration,
         stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax,
       });
       vtSavedStore.save(list);
@@ -3587,7 +3667,7 @@
     }
   }
   let lastRememberMode = null;
-  function startRememberGame(mode) {
+  function startRememberGame(mode, opts) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.rememberPlayer.hidden = false;
@@ -3600,13 +3680,30 @@
     const keepPositions = mode === "training" ? rememberPrefs.trainingPositionMode === "fixed" : REMEMBER_MODES[mode].keepPositions;
     rememberState = {
       mode, level: startLevel, cleared: 0, positions: [], phase: "reveal", nextExpected: 1,
-      startTime: performance.now(), timer: null, positionCache: {}, keepPositions,
+      startTime: performance.now(), timer: null, comboDurationTimer: null, positionCache: {}, keepPositions,
       revealBaseS: rememberPrefs.revealBaseS, revealStepS: rememberPrefs.revealStepS,
       errorMode: rememberPrefs.errorMode,
       trainingStart: rememberPrefs.trainingStart, trainingProgress: rememberPrefs.trainingProgress,
     };
     requestWakeLock();
     startRememberLevel();
+    // Kombi block: Remember has no natural end of its own (unlike VT's
+    // fixed-length schedule), so a Kombi block gives it a duration and just
+    // cuts over to the next block when time is up, same as every other
+    // domain's Kombi blocks.
+    if (opts && opts.comboDurationS) {
+      rememberState.comboDurationTimer = setTimeout(finishRememberCombo, opts.comboDurationS * 1000);
+    }
+  }
+  function finishRememberCombo() {
+    if (!rememberState) return;
+    if (rememberState.timer) clearTimeout(rememberState.timer);
+    const playedS = (performance.now() - rememberState.startTime) / 1000;
+    rememberState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.rememberPlayer) document.exitFullscreen().catch(() => {});
+    els.rememberFsHint.hidden = true;
+    if (comboProgram) advanceComboProgram(playedS);
   }
   els.rememberNavPrevBtn.addEventListener("click", () => rememberState && rememberGoToLevel(rememberState.level - 1));
   els.rememberNavRestartBtn.addEventListener("click", () => rememberState && rememberGoToLevel(rememberState.level));
@@ -3714,11 +3811,15 @@
   function rememberStop() {
     if (!rememberState) return;
     if (rememberState.timer) clearTimeout(rememberState.timer);
+    if (rememberState.comboDurationTimer) clearTimeout(rememberState.comboDurationTimer);
     const state = rememberState;
     rememberState = null;
     releaseWakeLock();
     if (document.fullscreenElement === els.rememberPlayer) document.exitFullscreen().catch(() => {});
     els.rememberFsHint.hidden = true;
+    // "Beenden" mid-Kombi quits the whole Kombi programme, not just this
+    // block - matches every other domain's "Beenden" behaviour.
+    if (comboProgram) { abortComboProgram(); return; }
     if (state.cleared > 0) {
       const isRecord = saveRememberBest(state.mode, state.cleared);
       renderRememberBests();
@@ -4300,11 +4401,13 @@
       state.stimulusS = block.stimulusS ?? 1.5;
       state.intervalMin = block.intervalMin ?? 3;
       state.intervalMax = block.intervalMax ?? 6;
-        active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors) };
+        active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors), stroopColors: keysToColors(state.stroopColors, STROOP_COLOR_LIB) };
       startSession();
     } else if (block.domain === "workout") {
       workoutPlan = null;
       runWorkoutBlock(block);
+    } else if (block.domain === "nat") {
+      startRememberGame(block.mode || "fixed", { comboDurationS: block.duration ?? 60 });
     } else {
       startComboBlock(idx + 1); // unknown domain - skip rather than get stuck
     }
