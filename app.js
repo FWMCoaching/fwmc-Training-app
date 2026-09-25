@@ -1116,6 +1116,7 @@
     workoutFeaturedPrograms: $("workoutFeaturedPrograms"), workoutFeaturedGrid: $("workoutFeaturedGrid"),
     workoutTabataStartCard: $("workoutTabataStartCard"),
     natHome: $("natHome"), natPeripherPanel: $("natPeripherPanel"), natRememberPanel: $("natRememberPanel"), natBlitzPanel: $("natBlitzPanel"), natFlashPanel: $("natFlashPanel"), natMotPanel: $("natMotPanel"),
+    testHome: $("testHome"), testPanel: $("testPanel"), testEmptyHint: $("testEmptyHint"),
     blitzOpenBtn: $("blitzOpenBtn"), blitzBestHint: $("blitzBestHint"), blitzReady: $("blitzReady"),
     blitzReadyBackToHome: $("blitzReadyBackToHome"), blitzGridSizeRow: $("blitzGridSizeRow"),
     blitzZoneGroup: $("blitzZoneGroup"), blitzZoneAllBtn: $("blitzZoneAllBtn"), blitzZoneGrid: $("blitzZoneGrid"), blitzZoneHint: $("blitzZoneHint"),
@@ -1189,6 +1190,7 @@
     motReady: $("motReady"), motReadyBackToHome: $("motReadyBackToHome"),
     motReadyTitle: $("motReadyTitle"), motReadyDesc: $("motReadyDesc"),
     motStyleRow: $("motStyleRow"), motColorPicker: $("motColorPicker"), motColorHint: $("motColorHint"),
+    motTargetColorPicker: $("motTargetColorPicker"), motTargetColorHint: $("motTargetColorHint"),
     motDifficultyRow: $("motDifficultyRow"), motDiffCustom: $("motDiffCustom"),
     motErrorRow: $("motErrorRow"),
     motFixedCountGroup: $("motFixedCountGroup"),
@@ -1214,6 +1216,7 @@
     motTrainingProgressRow: $("motTrainingProgressRow"),
     motTrainingStyleRow: $("motTrainingStyleRow"),
     motTrainingColorPicker: $("motTrainingColorPicker"), motTrainingColorHint: $("motTrainingColorHint"),
+    motTrainingTargetColorPicker: $("motTrainingTargetColorPicker"), motTrainingTargetColorHint: $("motTrainingTargetColorHint"),
     motTrainingAdvanced: $("motTrainingAdvanced"),
     motTrainingSpeedSlider: $("motTrainingSpeedSlider"), motTrainingSpeedValue: $("motTrainingSpeedValue"),
     motTrainingTrackSlider: $("motTrainingTrackSlider"), motTrainingTrackValue: $("motTrainingTrackValue"),
@@ -1310,7 +1313,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -1329,7 +1332,7 @@
         b.classList.toggle("active", on);
         b.setAttribute("aria-selected", on ? "true" : "false");
       });
-      showScreen(sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "nat" ? "natHome" : "home");
+      showScreen(sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "nat" ? "natHome" : sec === "test" ? "testHome" : "home");
     });
   });
 
@@ -6194,6 +6197,7 @@
     errorMode: "reset2",
     style: "flach",
     colors: ["schwarz"],
+    targetColors: ["gelb"], // "gelb" = #f2a900, the exact colour .mot-object.target used before this was configurable
     bgColorKey: "gruen",
     bgIntensity: 0,
     objectCount: 8, targetCount: 4,           // "speed" mode's fixed counts (matches NeuroTracker's own 8/4)
@@ -6209,6 +6213,7 @@
     if (!["reset2", "backOne", "stay"].includes(motPrefs.errorMode)) motPrefs.errorMode = "reset2";
     if (!["flach", "3d"].includes(motPrefs.style)) motPrefs.style = "flach";
     if (!Array.isArray(motPrefs.colors) || !motPrefs.colors.length || !motPrefs.colors.every((k) => STROOP_COLOR_BY_KEY[k])) motPrefs.colors = ["schwarz"];
+    if (!Array.isArray(motPrefs.targetColors) || !motPrefs.targetColors.length || !motPrefs.targetColors.every((k) => STROOP_COLOR_BY_KEY[k])) motPrefs.targetColors = ["gelb"];
     if (!STROOP_COLOR_BY_KEY[motPrefs.bgColorKey]) motPrefs.bgColorKey = "gruen";
     if (typeof motPrefs.bgIntensity !== "number" || motPrefs.bgIntensity < 0 || motPrefs.bgIntensity > 1) motPrefs.bgIntensity = 0;
     if (typeof motPrefs.objectCount !== "number" || motPrefs.objectCount < MOT_OBJ_MIN || motPrefs.objectCount > MOT_OBJ_MAX) motPrefs.objectCount = 8;
@@ -6295,9 +6300,13 @@
   // whole point of the exercise; only the round-to-round palette varies. ----
   buildStimColorPicker(els.motColorPicker, () => motPrefs.colors, (keys) => { motPrefs.colors = keys; }, () => { saveMotPrefsToStorage(); syncMotColorUI(); });
   buildStimColorPicker(els.motTrainingColorPicker, () => motPrefs.colors, (keys) => { motPrefs.colors = keys; }, () => { saveMotPrefsToStorage(); syncMotColorUI(); });
+  buildStimColorPicker(els.motTargetColorPicker, () => motPrefs.targetColors, (keys) => { motPrefs.targetColors = keys; }, () => { saveMotPrefsToStorage(); syncMotColorUI(); });
+  buildStimColorPicker(els.motTrainingTargetColorPicker, () => motPrefs.targetColors, (keys) => { motPrefs.targetColors = keys; }, () => { saveMotPrefsToStorage(); syncMotColorUI(); });
   function syncMotColorUI() {
     syncStimColorUI(els.motColorPicker, () => motPrefs.colors, els.motColorHint);
     syncStimColorUI(els.motTrainingColorPicker, () => motPrefs.colors, els.motTrainingColorHint);
+    syncStimColorUI(els.motTargetColorPicker, () => motPrefs.targetColors, els.motTargetColorHint);
+    syncStimColorUI(els.motTrainingTargetColorPicker, () => motPrefs.targetColors, els.motTrainingTargetColorHint);
   }
 
   // ---- Bei Fehler - shared setting, no separate Trainingsmodus picker
@@ -6563,6 +6572,18 @@
     const light = mixHex(hex, "#ffffff", 0.55), dark = mixHex(hex, "#000000", 0.35);
     return `radial-gradient(circle at 34% 28%, ${light} 0%, ${hex} 55%, ${dark} 100%)`;
   }
+  // Same idea as pickPeriphColor(), but the target highlight needs to avoid
+  // TWO colours at once - the background AND this round's own object colour
+  // (during the highlight phase both are on screen together and must read
+  // as clearly different at a glance) - pickPeriphColor() itself only ever
+  // avoids one, so this is a small MOT-local variant rather than a change
+  // to that shared helper.
+  function pickMotColor(colorKeys, avoidHexes, rng) {
+    const all = keysToColors(colorKeys && colorKeys.length ? colorKeys : ["gelb"], STROOP_COLOR_LIB);
+    const safe = all.filter((c) => !avoidHexes.some((h) => h && colorsClash(c.hex, h)));
+    const pool = safe.length ? safe : all;
+    return pool[Math.floor(rng() * pool.length)].hex;
+  }
   // Full rebuild (creates/removes DOM nodes and sets classes) - called on
   // every phase change. renderMotPositions() below is the cheap per-frame
   // counterpart used during the tracking animation itself.
@@ -6581,11 +6602,14 @@
       if (isTarget) el.classList.add("target");
       if (isCorrect) el.classList.add("correct");
       if (isWrong) el.classList.add("wrong");
-      // Only the "normal" (untargeted, untapped) state uses the client's
-      // chosen colour - target/correct/wrong stay fixed semantic colours
-      // (CSS classes above), so setting an inline background here would
-      // just override those for no reason.
-      if (!isTarget && !isCorrect && !isWrong) {
+      // Normal objects use the round's chosen object colour, the
+      // highlighted target(s) the round's chosen target colour - both
+      // configurable and rolled once per round (see the engine header
+      // comment). correct/wrong stay fixed semantic colours (CSS classes
+      // above): those are pass/fail feedback, not a look the client picks.
+      if (isTarget) {
+        el.style.background = motState.style === "3d" ? motGradientCss(motState.targetColorHex) : motState.targetColorHex;
+      } else if (!isCorrect && !isWrong) {
         el.style.background = motState.style === "3d" ? motGradientCss(motState.baseColorHex) : motState.baseColorHex;
       }
       const tappable = motState.phase === "identify" && !motState.tapped.has(o.id);
@@ -6642,6 +6666,7 @@
     // Zusatzaufgabe add-on and Periph's own stimulus colour already use.
     const bgHex = motPrefs.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[motPrefs.bgColorKey].hex, motPrefs.bgIntensity) : "#ffffff";
     motState.baseColorHex = pickPeriphColor(motState.colors, bgHex, Math.random);
+    motState.targetColorHex = pickMotColor(motState.targetColors, [bgHex, motState.baseColorHex], Math.random);
     els.motHint.textContent = k > 1 ? "Merke dir die markierten Objekte" : "Merke dir das markierte Objekt";
     els.motLevelEl.textContent = motLevelLabel();
     renderMotObjects();
@@ -6726,7 +6751,7 @@
       startObjects, startTargets, startSpeedStep,
       trainingProgress: motPrefs.trainingProgress,
       speed: motPrefs.speed, trackS: motPrefs.trackS, highlightS: motPrefs.highlightS,
-      errorMode: motPrefs.errorMode, style: motPrefs.style, colors: motPrefs.colors.slice(),
+      errorMode: motPrefs.errorMode, style: motPrefs.style, colors: motPrefs.colors.slice(), targetColors: motPrefs.targetColors.slice(),
       startTime: performance.now(), timer: null, raf: null, paused: false,
     };
     applyMotBg();
@@ -7319,7 +7344,7 @@
   function currentHomeScreen() {
     const active = document.querySelector(".section-tab.active");
     const sec = active ? active.dataset.section : "visual";
-    return sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "nat" ? "natHome" : "home";
+    return sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "nat" ? "natHome" : sec === "test" ? "testHome" : "home";
   }
 
   function startComboProgram(def, code, key, fallbackReturnScreen) {

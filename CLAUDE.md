@@ -1,9 +1,11 @@
 # FWMC Online-Training
 
 A single-page training web app for Fabian Westermann Mentalcoaching:
-Visual Training (VT), Atemtraining (breathing), Movement, Workout, and
-NAT (neuroathletic exercises like Remember and Periphere Wahrnehmung).
-German-language product; respond to the user in German.
+Visual Training (VT), Atemtraining (breathing), Movement, Workout, NAT
+(neuroathletic exercises like Remember and Periphere Wahrnehmung), and
+Test (an ongoing, autonomously-built experimentation area - see
+"Test-Bereich (autonomous, ongoing)" at the end of this file before
+touching it). German-language product; respond to the user in German.
 
 ## Architecture: one source of truth, two deploy targets
 
@@ -208,6 +210,27 @@ unrelated to the feature being changed.
   add one `BG_SOURCES` entry for it, and wire its own Hintergrund group
   through `wireBgIntensityControl` with a `transfer` config - the
   source-list and presets both pick up the new domain automatically.
+- **Multi-tab nav bars (`.section-switch`/`.sub-switch`) need headroom for
+  their longest label, not just "however many tabs currently exist"**: both
+  are a `display:flex` row of `flex:1` tabs capped at a `max-width` - a
+  flex item's default `min-width:auto` means it can't actually shrink below
+  its content's natural min-content width, so adding one more tab (MOT-
+  Fähigkeit as NAT's 5th sub-tab, "Test" as the 6th top-level tab) was
+  enough to make the row wider than a phone's viewport in portrait, with
+  the rightmost tab clipped off-screen - the client caught this from a real
+  device. Fixed with `min-width:0` (lets a tab actually shrink and wrap on
+  whole words) + `overflow-wrap:break-word` (a defensive net for one
+  unbreakable long word, e.g. "Atemtraining", at a width where it's shrunk
+  below that word but there's no space to wrap at) + a wider `max-width`
+  (580px/560px - enough for the longest label to fit on one line at any
+  width the flex row is actually used at) for normal/wide viewports, and a
+  `@media (max-width:480px)` switch to a `display:grid;
+  grid-template-columns:repeat(3,1fr)` 3-per-row layout for phones in
+  portrait, where a single row of 5-6 German-length labels genuinely
+  doesn't fit no matter how much the font shrinks. Adding a 6th/7th tab to
+  either bar in the future should re-check this the same way (screenshot at
+  ~375-430px AND ~768px+, not just one or the other) rather than assuming
+  the existing headroom still holds. Test: `tests/nav_overflow_test.py`.
 
 ## Known open items
 
@@ -584,19 +607,40 @@ unrelated to the feature being changed.
     also clamped to `n - 2` so there are always ≥2 distractors). Best-score
     tracking (`MOT_BEST_KEY`) is keyed by mode name, same shape as Flash's
     own per-mode bests - four separate best-hints, one per featured card.
-  - **Farbe der Objekte**: one colour is rolled per ROUND (not per object -
+  - **Farbe der Objekte / Farbe des Ziels**: two independent, both
+    configurable colours, each rolled once per ROUND (not per object -
     every object must look identical to its neighbours within a round, or
     the whole point of MOT is lost; only the round-to-round palette can
-    vary), via `pickPeriphColor(motState.colors, bgHex, Math.random)` -
-    reusing the exact same swatch-picker (`buildStimColorPicker`/
-    `syncStimColorUI`) and contrast-avoidance (`pickPeriphColor`/
-    `colorsClash`) infrastructure originally built for the Zusatzaufgabe/
-    Periph "Farbe der Reize" feature. `motGradientCss(hex)` generalises the
-    3D-Optik glossy-sphere gradient (see below) from a hardcoded grey to
-    whichever colour was rolled, reusing the existing `mixHex()` helper for
-    the lighten/darken highlight/shadow. The semantic highlight/correct/
-    wrong states keep their own fixed CSS colours regardless of the rolled
-    object colour, so the round always stays readable.
+    vary): `motState.baseColorHex` for normal objects
+    (`pickPeriphColor(motState.colors, bgHex, Math.random)`, avoiding the
+    background) and `motState.targetColorHex` for the highlighted target(s)
+    during the pre-tracking "highlight" phase (`pickMotColor(motState.
+    targetColors, [bgHex, motState.baseColorHex], Math.random)` - a small
+    MOT-local variant of `pickPeriphColor` that avoids TWO colours at once,
+    since target and normal objects are on screen together and must read as
+    clearly different at a glance; `motPrefs.targetColors` defaults to
+    `["gelb"]`, matching the `#f2a900` the CSS default used before this was
+    configurable). Both reuse the exact same swatch-picker
+    (`buildStimColorPicker`/`syncStimColorUI`) and contrast-avoidance
+    (`pickPeriphColor`/`colorsClash`) infrastructure originally built for
+    the Zusatzaufgabe/Periph "Farbe der Reize" feature, wired as a second,
+    independent picker pair (main + Training screen instances, same as
+    "Farbe der Objekte"). `motGradientCss(hex)` generalises the 3D-Optik
+    glossy-sphere gradient (see below) from a hardcoded colour to whichever
+    hex is passed in, reused for both the object and target renders. The
+    "correct"/"wrong" tap-feedback states are the only colours that stay
+    fixed CSS (green/red) regardless of any of the above - those are
+    pass/fail semantics, not a look the client picks.
+  - **Mark-before-tracking and confirm/deny-on-tap were already exactly
+    what the client asked for a message later** ("die Ziele müssen
+    natürlich vorher auch markiert sein... und am Ende dann bestätigt oder
+    verneint werden beim Anklicken") when they asked for the target colour
+    to be configurable too - `motStartRound()`'s "highlight" phase already
+    marks the target(s) before movement starts, and `motTapObject()`
+    already marks a correct tap green immediately and a wrong tap red
+    (revealing the true target(s) green) immediately - both existed since
+    the very first MOT draft, verified again via `tests/mot_target_color_test.py`
+    rather than being newly built.
   - An earlier draft grew object AND target count with level instead of any
     of the above (`motObjectCount(level)`/`motTargetCount(level)`), and a
     second draft had only the single "speed" mode with an (inconsistent) 8/3
@@ -659,7 +703,8 @@ unrelated to the feature being changed.
     exercise - there's no single point to hold focus on, the whole point is
     tracking a moving target across the stage); Zusatzaufgabe/Dominanz
     (neither asked for here).
-  - Test: `tests/mot_test.py`.
+  - Test: `tests/mot_test.py` (4-mode structure), `tests/mot_target_color_test.py`
+    (Farbe des Ziels).
 
 ## Working conventions
 
@@ -668,3 +713,87 @@ unrelated to the feature being changed.
 - Every commit needs the attribution footer specified in that session's
   system prompt (model name and session link vary — don't hardcode a
   stale one from a previous session).
+
+## Test-Bereich (autonomous, ongoing)
+
+**If you were woken by the "FWMC Test-Bereich Auto-Build" Routine, this
+section is your instructions — read all of it before touching anything.**
+
+The user explicitly asked (2026-09-25) for a standing, self-directed
+process: research and build small, purposeful visual/cognitive/perceptual
+training exercises on an ongoing basis, without being re-prompted each
+time, the same way this app itself grew one exercise at a time (Visual
+Training → Atemtraining → Movement → Workout → NAT, each added when it
+made sense, not all planned upfront). A recurring Routine
+(`trig_01PhmeZCsdzf9Xewn4tb3RcX`, cron `47 7,13,19 * * *` UTC, fires a
+**fresh session** each time — no memory of previous firings, everything
+that matters must live in this file) drives this: roughly three times a
+day, spend about one focused hour researching and building ONE new
+exercise, entirely on your own judgment.
+
+**Hard rule, repeated because it is the one that must never slip**: only
+ever add to the "Test" top-level section (`#testHome`, its own nav tab
+next to NAT, and each exercise's own dedicated ready/player screens under
+it — same pattern as NAT's Remember/Blitz/Flash/MOT, NOT the shared VT
+arrow-engine's `data-exercise` dispatch). Never modify, refactor, or
+change the behaviour of anything in Visual Training, Atemtraining,
+Movement, Workout, or NAT. This is the client's own production coaching
+tool; the Test section exists precisely so experiments can't put that at
+risk. Reading those other sections for reference/reuse is fine and
+encouraged (e.g. reusing `buildStimColorPicker`, `mixHex`,
+`wireBgIntensityControl`, `pickRandomSubset`) — editing them is not.
+
+**Scaffold already in place** (built 2026-09-25, do not rebuild):
+`#testHome` screen with the standard 6-tab `section-switch` nav (now
+including a "Test" tab on every other section's nav bar too), a hero
+("Neue Ideen, direkt ausprobiert."), and an empty `#testPanel` with
+`#testEmptyHint` ("Noch keine Übung hier …") shown until the first
+exercise is added. JS wiring: `sec === "test"` in the section-switcher
+ternary, `"testHome"` in `SCREENS`, `els.testHome`/`testPanel`/
+`testEmptyHint`, and `currentHomeScreen()`'s ternary. Test:
+`tests/test_section_test.py` (scaffold/navigation only — each actual
+exercise gets its OWN test file, same convention as NAT).
+
+**Style conventions for Test exercises** — reuse what fits, skip what
+doesn't:
+- Reuse: single source `_body.html`+`app.js`+`styles.css`+`build.sh`;
+  dark-mode-safe fixed hex colours (never `var(--...)`) for anything
+  player/stage-scoped; Bei-Fehler `reset2`/`backOne`/`stay`; pause
+  cancels/replays timers with live background adjustment;
+  "Beenden"-doubles-as-Finish; a done-panel with rating + `addHistory()`.
+- Optional, explicitly per the client's own instruction — include only
+  when it's basically free (you're already touching the relevant helper
+  for another reason), skip otherwise so research+build actually fits in
+  an hour: background colour/intensity/transfer+presets, a Trainingsmodus
+  variant, multiple progression modes, a configurable object/stimulus
+  colour picker. A first version of an exercise can be simpler than
+  MOT/Flash ended up being — those grew over several client-directed
+  rounds, not in one sitting.
+- Ground new exercises in a real paradigm when one exists (name it, cite
+  what a quick web search found, same as MOT-Fähigkeit's NeuroTracker/
+  Pylyshyn grounding) rather than inventing parameters from scratch.
+- Testing/deploy checklist is NOT optional and is identical to every other
+  feature in this app: `node --check app.js` → `sh build.sh` → new
+  `tests/<name>_test.py` → full regression suite (all `tests/*_test.py` +
+  `tests/v25_pause_check.py`) clean, no concurrent edits while it runs →
+  update this section (roster + Offene Fragen below) → commit (with the
+  attribution footer your own system prompt specifies) → push to `origin
+  main` → read then republish the Claude Artifact
+  (`https://claude.ai/artifact/MXieTDSa8y6W4BeRMfAw8K`) with the changed
+  files. If the suite doesn't come back clean, do not push — fix it, or
+  revert just the files you touched and note the blocker below instead.
+
+### Roster (what's been added under Test so far)
+
+*(empty — nothing added yet as of 2026-09-25; the first autonomous firing
+adds its entry here, in the same terse-but-thorough style as the rest of
+this file: what it is, the paradigm it's grounded in if any, what
+conventions it reused vs. skipped, and its test file.)*
+
+### Offene Fragen (uncertain items for the client to weigh in on)
+
+*(empty so far. When a firing is genuinely unsure about something — does
+this fit the brand, is it too game-like, should a skipped convention
+actually apply here, does an idea overlap with something planned
+elsewhere — it goes here instead of being decided unilaterally. The
+client reviews this list when they check in on the Test section.)*

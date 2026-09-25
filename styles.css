@@ -94,8 +94,21 @@ button{font-family:inherit;color:inherit}
 }
 
 /* ---- Section switcher (Visual Training / Atemtraining) ---- */
-.section-switch{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px;margin-bottom:22px;max-width:420px}
-.section-tab{flex:1;border:1.5px solid transparent;background:none;border-radius:999px;padding:13px 4px;font-size:12.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;text-align:center}
+.section-switch{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px;margin-bottom:22px;max-width:580px}
+/* min-width:0 overrides a flex item's default min-width:auto (= its
+   content's natural min-content width) - without it, a row of several
+   equal-share (flex:1) tabs can't actually shrink to fit and pushes the
+   whole bar wider than the viewport instead, clipping the last tab off
+   the screen edge on a narrow phone. overflow-wrap is a defensive net for
+   a single unbreakable long word (e.g. "Atemtraining") at a width where
+   the tab has shrunk below it but there's no space to wrap at - without
+   it that word just overflows into the neighbouring tab instead of
+   breaking. The real fix for "too many tabs to fit one row at all" is the
+   grid layout in the media query below; max-width was widened from 420 to
+   580px alongside it so a 6th tab (added for the new "Test" section)
+   still gets enough room for the longest label ("Atemtraining") to sit on
+   one line at any width the flex row is actually used at. */
+.section-tab{flex:1;min-width:0;overflow-wrap:break-word;border:1.5px solid transparent;background:none;border-radius:999px;padding:13px 4px;font-size:12.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;text-align:center}
 .section-tab.active{background:var(--brand-pale);color:var(--brand-deep);border-color:var(--brand);box-shadow:var(--shadow)}
 
 /* ---- Sub-navigation (second level, nested directly under a top-level
@@ -103,9 +116,22 @@ button{font-family:inherit;color:inherit}
    nav, since picking a sub-item here is the one thing you must do before
    anything else on the screen makes sense). ---- */
 .subnav-label{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:8px}
-.sub-switch{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:20px;max-width:460px}
-.sub-tab{flex:1;border:1.5px solid transparent;background:none;border-radius:10px;padding:13px 6px;font-size:12.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;text-align:center}
+.sub-switch{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:20px;max-width:560px}
+.sub-tab{flex:1;min-width:0;overflow-wrap:break-word;border:1.5px solid transparent;background:none;border-radius:10px;padding:13px 6px;font-size:12.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;text-align:center}
 .sub-tab.active{background:var(--brand-pale);color:var(--brand-deep);border-color:var(--brand);box-shadow:var(--shadow)}
+/* A single flex row of 5-6 tabs (now that MOT-Fähigkeit and Test exist)
+   genuinely doesn't fit next to German-length labels on a phone in
+   portrait - shrinking font/padding just buys a few px and still forces
+   ugly mid-word breaks. Below one comfortable breakpoint covering every
+   phone in portrait (desktop/tablet/landscape keep the single-row pill,
+   which already fits fine - see the wider screenshot that prompted this),
+   switch to a 3-per-row grid instead: every label gets roughly double the
+   width of a 5-6-wide single row, wraps on whole words, and needs no font
+   shrinking. Same fix applied to both switchers for visual consistency. */
+@media (max-width:480px){
+  .section-switch, .sub-switch{display:grid;grid-template-columns:repeat(3,1fr);max-width:none;border-radius:18px}
+  .section-tab, .sub-tab{border-radius:14px}
+}
 .nat-panel-card{
   border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);
   padding:18px;box-shadow:var(--shadow);border-left:4px solid var(--brand);
@@ -520,6 +546,8 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
   cursor:default;transition:background .12s ease,transform .1s ease;
 }
 .mot-object.style-3d{box-shadow:0 3px 6px rgba(0,0,0,.25)}
+/* Target fill (flach or 3D-Optik) is likewise set inline per-round from the
+   client's chosen "Farbe des Ziels" - these are only the fallback. */
 .mot-object.target{background:#f2a900}
 .mot-object.style-3d.target{
   background:radial-gradient(circle at 34% 28%, #ffe0a3 0%, #f2a900 55%, #b87c00 100%);
