@@ -180,7 +180,11 @@ unrelated to the feature being changed.
   copy of the original inline Periph/VT pattern stopped being worth it.
   Periph/VT's own bg code has since been migrated onto this same helper
   too (`transferSelfId: "vt"`), once the transfer feature below needed
-  wiring on both sides anyway.
+  wiring on both sides anyway. Picking a colour while intensity is at 0%
+  jumps it to 50% (0% always renders plain white regardless of colour, so
+  the pick would otherwise look like it did nothing - a real client
+  confusion this surfaced); once intensity is already > 0 a colour pick
+  leaves it alone. Applies everywhere this helper is used, by construction.
 - **"Bestehende Farbgestaltung übernehmen"**: `wireBgIntensityControl`'s
   optional `refs.transfer` (array of `{sourceRow, presetGroup, presetList,
   saveBtn, form, nameInput, cancelBtn, confirmBtn}`, one per UI instance

@@ -1755,7 +1755,14 @@
       });
       renderTransfer();
     }
-    refs.pickers.forEach((el) => buildSingleSelectPicker(el, STROOP_COLOR_LIB, (key) => apply(key, null)));
+    // Picking a colour while intensity is at 0% would otherwise have no
+    // visible effect at all (0% always renders plain white regardless of
+    // colour) - looks broken, not "off". Jump to 50% in that case only, so
+    // the pick is immediately visible; once intensity is already > 0 (the
+    // client cared enough to set it), further colour picks leave it alone.
+    refs.pickers.forEach((el) => buildSingleSelectPicker(el, STROOP_COLOR_LIB, (key) => {
+      apply(key, store.bgIntensity > 0 ? null : 0.5);
+    }));
     refs.sliders.forEach((el) => el.addEventListener("input", () => apply(null, Number(el.value))));
     (refs.transfer || []).forEach((t) => {
       wirePresetSaveForm({
