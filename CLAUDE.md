@@ -62,23 +62,33 @@ a check that `pageerror`/console `error` events stay empty. Re-run the
 shared rendering code (the canvas `drawScene` dispatch, the colour-picker
 system, `hideAllPlayers()`) is touched more often than it looks.
 
-A local dev server must be running first (see above). Test scripts are
-throwaway and currently live in the session's scratchpad directory, not
-in this repo — there is no committed test suite yet. If continuing this
-project in a fresh session, consider asking whether to promote the
-regression scripts into the repo (e.g. under `tests/`) so they survive
-between sessions instead of being re-derived from conversation history.
+A local dev server must be running first (see above). The suite lives in
+`tests/` — see `tests/README.md` for how to run it and the convention for
+adding new scripts. Run it from inside `tests/` (screenshot paths are
+relative to that directory).
 
 ## Deploy checklist
 
+**Nothing here is automatic.** Editing `_body.html`/`app.js`/`styles.css`
+does not by itself reach GitHub Pages or the Artifact — both only update
+when these steps are actually run, every time, by whoever (Claude or a
+human) is driving the session:
+
 1. `node --check app.js` (syntax)
 2. `sh build.sh`
-3. Run the full Playwright regression suite against `localhost:8845`
+3. `cd tests && for f in *.py; do python3 "$f"; done` (full regression
+   suite against `localhost:8845` — a dev server must already be running)
 4. `git add` the changed files, commit with the attribution footer the
    session's system prompt specifies (varies by session — check it fresh
    rather than assuming), `git push -u origin main`
 5. Publish `artifact-body.html` (+ changed assets) via the `Artifact` tool
    to the existing Artifact URL above
+
+Once pushed, GitHub itself does auto-build Pages from the `main` branch
+(no separate "deploy" click needed on GitHub's side) — but the push in
+step 4 is still a manual, explicit action, not a background sync. The
+Artifact in step 5 is a wholly separate, always-manual publish; pushing
+to GitHub never updates it and vice versa.
 
 Never skip step 3 for "small" changes — several regressions in this
 project's history came from shared rendering/state code that looked
