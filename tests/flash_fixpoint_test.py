@@ -38,8 +38,12 @@ async def main():
         await pg.click("#flashReadyStartBtn"); await pg.wait_for_timeout(300)
         digit_color = await pg.evaluate("() => getComputedStyle(document.getElementById('flashDigitEl')).color")
         print("digit colour is dark navy even in OS dark mode:", digit_color == "rgb(22, 35, 42)")
-        input_color = await pg.evaluate("() => getComputedStyle(document.getElementById('flashTypedInput')).color")
-        print("input text colour also dark in dark mode:", input_color == "rgb(22, 35, 42)")
+        for _ in range(100):  # poll until the flash/gap sequence finishes and the answer boxes render
+            if await pg.is_visible("#flashInputPanel"):
+                break
+            await pg.wait_for_timeout(80)
+        box_color = await pg.evaluate("() => getComputedStyle(document.querySelector('#flashAnswerBoxes .flash-answer-box')).color")
+        print("answer box text colour also dark in dark mode:", box_color == "rgb(22, 35, 42)")
 
         # --- fixpoint on by default, plain grey dot ---
         print("fixpoint visible by default:", await pg.is_hidden("#flashFixpointEl") == False)

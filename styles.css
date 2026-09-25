@@ -485,12 +485,30 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
   position:absolute;transform:translate(-50%,-50%);
   font-family:"Magra",sans-serif;font-weight:700;font-size:64px;color:#16232a;
 }
-.flash-input-panel{display:flex;flex-direction:column;align-items:center;gap:14px;padding:20px}
-.flash-input-label{font-size:15px;font-weight:700;color:#4f6168}
-.flash-typed-input{
-  font-family:"Magra",sans-serif;font-size:40px;font-weight:700;letter-spacing:12px;text-align:center;
-  border:2px solid #dde6e8;border-radius:14px;padding:10px 18px;width:220px;background:#ffffff;color:#16232a;
+.flash-input-panel{display:flex;flex-direction:column;align-items:center;gap:14px;padding:20px;max-width:360px}
+.flash-input-label{font-size:15px;font-weight:700;color:#4f6168;text-align:center}
+.flash-answer-boxes{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.flash-answer-box{
+  width:42px;height:54px;border:2px solid #dde6e8;border-radius:12px;background:#ffffff;
+  display:flex;align-items:center;justify-content:center;
+  font-family:"Magra",sans-serif;font-size:24px;font-weight:700;color:#16232a;
 }
+.flash-answer-box.filled{border-color:#007094}
+.flash-keypad{
+  display:grid;grid-template-columns:repeat(var(--flash-keypad-cols,5),1fr);gap:8px;
+  width:100%;max-width:340px;
+}
+.flash-key{
+  aspect-ratio:1;border:2px solid #dde6e8;border-radius:12px;background:#ffffff;color:#16232a;
+  font-family:"Magra",sans-serif;font-size:19px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.flash-key:active{background:#e5f1f4}
+.flash-keypad-backspace{
+  border:2px solid #dde6e8;border-radius:12px;background:#ffffff;color:#16232a;
+  font-size:20px;font-weight:700;padding:10px 32px;cursor:pointer;
+}
+.flash-keypad-backspace:active{background:#e5f1f4}
 
 .movement-stage{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 14px;position:relative;overflow-y:auto}
 .movement-lane{display:flex;align-items:flex-end;justify-content:center;gap:10px;width:100%;max-width:720px}

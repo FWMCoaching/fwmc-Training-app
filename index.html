@@ -811,6 +811,15 @@
   <p class="page-sub" id="flashReadyDesc"></p>
 
   <div class="group">
+    <div class="group-label">Zeichentyp</div>
+    <div class="choice-row" id="flashKindRow">
+      <button class="choice" data-flash-kind="buchstaben">Buchstaben</button>
+      <button class="choice" data-flash-kind="zahlen">Zahlen</button>
+      <button class="choice" data-flash-kind="gemischt">Gemischt</button>
+    </div>
+  </div>
+
+  <div class="group">
     <div class="group-label">Bereich</div>
     <div class="choice-row two" id="flashFieldRow">
       <button class="choice" data-flash-axis="horizontal">Horizontal</button>
@@ -958,6 +967,15 @@
     <div class="choice-row two" id="flashTrainingProgressRow">
       <button class="choice" data-flash-progress="1">Weiter steigern<small>wie gewohnt +1</small></button>
       <button class="choice" data-flash-progress="0">Bei dieser Zahl bleiben<small>zum gezielten &Uuml;ben</small></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Zeichentyp</div>
+    <div class="choice-row" id="flashTrainingKindRow">
+      <button class="choice" data-flash-kind="buchstaben">Buchstaben</button>
+      <button class="choice" data-flash-kind="zahlen">Zahlen</button>
+      <button class="choice" data-flash-kind="gemischt">Gemischt</button>
     </div>
   </div>
 
@@ -1952,8 +1970,10 @@
     <div class="flash-fixpoint" id="flashFixpointEl" hidden></div>
     <div class="flash-digit" id="flashDigitEl" hidden></div>
     <div class="flash-input-panel" id="flashInputPanel" hidden>
-      <div class="flash-input-label">Zahlen eingeben</div>
-      <input type="tel" inputmode="numeric" pattern="[0-9]*" id="flashTypedInput" class="flash-typed-input" autocomplete="off" aria-label="Eingegebene Zahlenfolge">
+      <div class="flash-input-label" id="flashInputLabel">In der richtigen Reihenfolge eingeben</div>
+      <div class="flash-answer-boxes" id="flashAnswerBoxes"></div>
+      <div class="flash-keypad" id="flashKeypad"></div>
+      <button class="flash-keypad-backspace" id="flashBackspaceBtn" aria-label="Letztes Zeichen l&ouml;schen">&#9003;</button>
     </div>
   </div>
   <div class="pause-overlay" id="flashPauseOverlay" hidden>

@@ -1163,7 +1163,9 @@
     flashTrainingBgSaveCancelBtn: $("flashTrainingBgSaveCancelBtn"), flashTrainingBgSaveConfirmBtn: $("flashTrainingBgSaveConfirmBtn"),
     flashTrainingBestHint: $("flashTrainingBestHint"), flashTrainingStartBtn: $("flashTrainingStartBtn"),
     flashPlayer: $("flashPlayer"), flashStage: $("flashStage"), flashHint: $("flashHint"), flashDigitEl: $("flashDigitEl"),
-    flashInputPanel: $("flashInputPanel"), flashTypedInput: $("flashTypedInput"),
+    flashInputPanel: $("flashInputPanel"), flashInputLabel: $("flashInputLabel"),
+    flashAnswerBoxes: $("flashAnswerBoxes"), flashKeypad: $("flashKeypad"), flashBackspaceBtn: $("flashBackspaceBtn"),
+    flashKindRow: $("flashKindRow"), flashTrainingKindRow: $("flashTrainingKindRow"),
     flashPauseOverlay: $("flashPauseOverlay"), flashPauseBgSlider: $("flashPauseBgSlider"), flashPauseBgValue: $("flashPauseBgValue"),
     flashPauseBgColorPicker: $("flashPauseBgColorPicker"), flashResumeBtn: $("flashResumeBtn"),
     flashPlayerBar: $("flashPlayerBar"), flashBackBtn: $("flashBackBtn"), flashPauseBtn: $("flashPauseBtn"), flashLevelEl: $("flashLevelEl"),
@@ -5370,6 +5372,7 @@
   };
   const FLASH_SPEED_STEPS = 8; // ceiling for "constant" mode's speed-up steps
   const flashPrefs = {
+    kind: "zahlen",
     stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS,
     intervalS: FLASH_DIFFICULTIES.mittel.intervalS,
     errorMode: "reset2",
@@ -5391,6 +5394,7 @@
   function loadFlashPrefs() {
     const saved = readJSON(FLASH_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(flashPrefs, saved);
+    if (!["buchstaben", "zahlen", "gemischt"].includes(flashPrefs.kind)) flashPrefs.kind = "zahlen";
     if (!Array.isArray(flashPrefs.axes) || flashPrefs.axes.length === 0 || !flashPrefs.axes.every((a) => PERIPH_AXIS_KEYS.includes(a))) flashPrefs.axes = PERIPH_AXIS_KEYS.slice();
     if (!Array.isArray(flashPrefs.zones) || flashPrefs.zones.length === 0 || !flashPrefs.zones.every((z) => PERIPH_ZONE_KEYS.includes(z))) flashPrefs.zones = PERIPH_ZONE_KEYS.slice();
     if (!["reset2", "backOne", "stay"].includes(flashPrefs.errorMode)) flashPrefs.errorMode = "reset2";
@@ -5410,6 +5414,11 @@
   }
   function saveFlashPrefsToStorage() { writeJSON(FLASH_PREFS_KEY, flashPrefs); }
   loadFlashPrefs();
+  // "Zahlen"/"Buchstaben"/"Zeichen" (gemischt, since a shown sequence can
+  // contain both) - used everywhere a count needs a unit word.
+  function flashUnitLabel(kind) {
+    return kind === "buchstaben" ? "Buchstaben" : kind === "gemischt" ? "Zeichen" : "Zahlen";
+  }
 
   const FLASH_BEST_KEY = "fwmc-flash-best-v1"; // { constant: bestSpeedStep, climb: N, climbRepeat: N, training: N }
   function flashBestFor(mode) { return readJSON(FLASH_BEST_KEY, {})[mode] || 0; }
@@ -5420,10 +5429,11 @@
   }
   function renderFlashBests() {
     const c = flashBestFor("constant"), cl = flashBestFor("climb"), cr = flashBestFor("climbRepeat"), t = flashBestFor("training");
+    const unit = flashUnitLabel(flashPrefs.kind);
     els.flashBestConstant.textContent = c ? `Bestleistung: Tempo-Stufe ${c + 1}` : "";
-    els.flashBestClimb.textContent = cl ? `Bestleistung: ${cl} Zahlen` : "";
-    els.flashBestClimbRepeat.textContent = cr ? `Bestleistung: ${cr} Zahlen` : "";
-    els.flashBestTraining.textContent = t ? `Bestleistung: ${t} Zahlen` : "";
+    els.flashBestClimb.textContent = cl ? `Bestleistung: ${cl} ${unit}` : "";
+    els.flashBestClimbRepeat.textContent = cr ? `Bestleistung: ${cr} ${unit}` : "";
+    els.flashBestTraining.textContent = t ? `Bestleistung: ${t} ${unit}` : "";
   }
   renderFlashBests();
 
@@ -5528,6 +5538,22 @@
       el.style.background = color;
       el.style.borderRadius = "50%";
     }
+  }
+
+  // ---- Zeichentyp - same three-way choice as Periphere Wahrnehmung's own
+  // Zeichentyp, shared by both ready screens. "Gemischt" is per-character,
+  // not per-run: randPeriphChar() itself rolls digit-or-letter independently
+  // for each position, exactly like Periph.
+  document.querySelectorAll("#flashKindRow [data-flash-kind], #flashTrainingKindRow [data-flash-kind]").forEach((el) => {
+    el.addEventListener("click", () => {
+      flashPrefs.kind = el.dataset.flashKind;
+      saveFlashPrefsToStorage();
+      syncFlashKindUI();
+    });
+  });
+  function syncFlashKindUI() {
+    document.querySelectorAll("#flashKindRow [data-flash-kind], #flashTrainingKindRow [data-flash-kind]").forEach((el) => setActive(el, el.dataset.flashKind === flashPrefs.kind));
+    renderFlashBests();
   }
 
   // ---- Bereich (axes/zones) - same picker pattern as Periph's, mirrored
@@ -5691,7 +5717,7 @@
     syncFlashSpeedUI();
     const best = flashBestFor("training");
     els.flashTrainingBestHint.textContent = best
-      ? `Deine bisher höchste geschaffte Zahlenfolge im Trainingsmodus: ${best}.`
+      ? `Deine bisher höchste geschaffte Zeichenfolge im Trainingsmodus: ${best}.`
       : "Noch keine Bestleistung im Trainingsmodus – leg los!";
   }
 
@@ -5700,7 +5726,7 @@
   function updateFlashReadyBestHint() {
     const best = flashBestFor(flashReadyMode);
     els.flashReadyBestHint.textContent = best
-      ? (flashReadyMode === "constant" ? `Deine Bestleistung: Tempo-Stufe ${best + 1}.` : `Deine bisher höchste geschaffte Zahlenfolge: ${best}.`)
+      ? (flashReadyMode === "constant" ? `Deine Bestleistung: Tempo-Stufe ${best + 1}.` : `Deine bisher höchste geschaffte Zeichenfolge: ${best}.`)
       : "Noch keine Bestleistung bei diesem Modus – leg los!";
   }
   function openFlashReady(mode) {
@@ -5714,6 +5740,7 @@
     els.flashConstantGroup.hidden = mode !== "constant";
     els.flashStartGroup.hidden = mode === "constant";
     els.flashRepsGroup.hidden = mode !== "climbRepeat";
+    syncFlashKindUI();
     syncFlashFieldUI();
     syncFlashDifficultyUI();
     syncFlashErrorUI();
@@ -5730,6 +5757,7 @@
   els.flashOpenClimbRepeat.addEventListener("click", () => openFlashReady("climbRepeat"));
   els.flashReadyBackToHome.addEventListener("click", () => showScreen("natHome"));
   els.flashOpenTraining.addEventListener("click", () => {
+    syncFlashKindUI();
     syncFlashFieldUI();
     syncFlashTrainingUI();
     syncFlashBgUI();
@@ -5777,11 +5805,11 @@
   }
   function flashStartRound() {
     const count = flashState.mode === "constant" ? flashState.constantCount : flashState.count;
-    flashState.sequence = Array.from({ length: count }, () => String(Math.floor(Math.random() * 10)));
+    flashState.sequence = Array.from({ length: count }, () => randPeriphChar(flashState.kind, Math.random));
     flashState.shownIndex = 0;
     els.flashInputPanel.hidden = true;
     els.flashHint.textContent = "Merken …";
-    els.flashLevelEl.textContent = flashState.mode === "constant" ? `Tempo-Stufe ${flashState.speedStep + 1}` : `${flashState.count} Zahlen`;
+    els.flashLevelEl.textContent = flashState.mode === "constant" ? `Tempo-Stufe ${flashState.speedStep + 1}` : `${flashState.count} ${flashUnitLabel(flashState.kind)}`;
     flashShowDigit();
   }
   function flashShowDigit() {
@@ -5805,20 +5833,62 @@
       scheduleFlashTimer(flashShowDigit, flashEffectiveIntervalS() * 1000);
     }
   }
+  // On-screen keypad (Zahlen 0-9, Buchstaben A-Z minus I/O, or both for
+  // Gemischt) instead of the system keyboard - built once per game (the
+  // Zeichentyp doesn't change mid-run), tapping a key fills the next empty
+  // answer box, same "auto-check once full" behaviour the old text input had.
+  function renderFlashKeypad() {
+    const keys = flashState.kind === "buchstaben" ? PERIPH_LETTERS.split("")
+      : flashState.kind === "gemischt" ? [...PERIPH_DIGITS.split(""), ...PERIPH_LETTERS.split("")]
+      : PERIPH_DIGITS.split("");
+    els.flashKeypad.style.setProperty("--flash-keypad-cols", flashState.kind === "zahlen" ? "5" : "6");
+    els.flashKeypad.innerHTML = "";
+    keys.forEach((k) => {
+      const btn = document.createElement("button");
+      btn.className = "flash-key";
+      btn.type = "button";
+      btn.textContent = k;
+      btn.addEventListener("click", () => flashTypeChar(k));
+      els.flashKeypad.appendChild(btn);
+    });
+  }
+  function renderFlashAnswerBoxes() {
+    els.flashAnswerBoxes.innerHTML = "";
+    for (let i = 0; i < flashState.sequence.length; i++) {
+      const box = document.createElement("div");
+      box.className = "flash-answer-box";
+      els.flashAnswerBoxes.appendChild(box);
+    }
+    syncFlashAnswerBoxes();
+  }
+  function syncFlashAnswerBoxes() {
+    const boxes = els.flashAnswerBoxes.children;
+    for (let i = 0; i < boxes.length; i++) {
+      const ch = flashState.typed[i] || "";
+      boxes[i].textContent = ch;
+      boxes[i].classList.toggle("filled", !!ch);
+    }
+  }
+  function flashTypeChar(ch) {
+    if (!flashState || flashState.phase !== "input" || flashState.paused) return;
+    if (flashState.typed.length >= flashState.sequence.length) return;
+    flashState.typed += ch;
+    syncFlashAnswerBoxes();
+    if (flashState.typed.length >= flashState.sequence.length) flashCheckAnswer(flashState.typed);
+  }
+  function flashBackspace() {
+    if (!flashState || flashState.phase !== "input" || flashState.paused) return;
+    flashState.typed = flashState.typed.slice(0, -1);
+    syncFlashAnswerBoxes();
+  }
+  els.flashBackspaceBtn.addEventListener("click", flashBackspace);
   function flashOpenInput() {
     flashState.phase = "input";
+    flashState.typed = "";
     els.flashHint.textContent = "Jetzt in der richtigen Reihenfolge eintippen";
-    els.flashTypedInput.value = "";
+    renderFlashAnswerBoxes();
     els.flashInputPanel.hidden = false;
-    els.flashTypedInput.focus();
   }
-  els.flashTypedInput.addEventListener("input", () => {
-    if (!flashState || flashState.phase !== "input" || flashState.paused) return;
-    const digitsOnly = els.flashTypedInput.value.replace(/\D/g, "").slice(0, flashState.sequence.length);
-    els.flashTypedInput.value = digitsOnly;
-    if (digitsOnly.length < flashState.sequence.length) return;
-    flashCheckAnswer(digitsOnly);
-  });
   function flashCheckAnswer(typed) {
     flashState.phase = "checking";
     if (typed === flashState.sequence.join("")) flashSuccessTransition();
@@ -5883,13 +5953,14 @@
     flashReturnScreen = mode === "training" ? "flashTrainingReady" : "flashReady";
     const startCount = mode === "training" ? flashPrefs.trainingStart : flashPrefs.startCount;
     flashState = {
-      mode, count: startCount, constantCount: flashPrefs.constantCount, speedStep: 0, repsDone: 0, cleared: 0,
-      sequence: [], shownIndex: 0, phase: "flash", timer: null,
+      mode, kind: flashPrefs.kind, count: startCount, constantCount: flashPrefs.constantCount, speedStep: 0, repsDone: 0, cleared: 0,
+      sequence: [], shownIndex: 0, typed: "", phase: "flash", timer: null,
       stimulusS: flashPrefs.stimulusS, intervalS: flashPrefs.intervalS, errorMode: flashPrefs.errorMode,
       axes: flashPrefs.axes.slice(), zones: flashPrefs.zones.slice(), useZones: flashPrefs.useZones,
       trainingProgress: flashPrefs.trainingProgress, startLevel: flashPrefs.startCount, trainingStartLevel: flashPrefs.trainingStart,
       startTime: performance.now(), paused: false,
     };
+    renderFlashKeypad();
     applyFlashBg();
     renderFlashFixpoint();
     requestWakeLock();
@@ -5910,7 +5981,6 @@
       flashState.timer = null;
       flashState.timerRemainingMs = Math.max(0, flashState.timerFiresAt - flashState.pausedAt);
     }
-    els.flashTypedInput.blur(); // a still-focused input could otherwise keep taking keystrokes under the overlay
     syncFlashBgUI();
     els.flashPauseBtn.hidden = true;
     els.flashPauseOverlay.hidden = false;
@@ -5925,7 +5995,6 @@
     }
     els.flashPauseOverlay.hidden = true;
     els.flashPauseBtn.hidden = false;
-    if (flashState.phase === "input") els.flashTypedInput.focus();
   }
   els.flashPauseBtn.addEventListener("click", pauseFlash);
   els.flashResumeBtn.addEventListener("click", resumeFlash);
@@ -5950,7 +6019,7 @@
       renderFlashBests();
       const played = (performance.now() - state.startTime) / 1000;
       const modeTitle = state.mode === "constant" ? "Konstant" : state.mode === "climb" ? "Steigend, direkt" : state.mode === "climbRepeat" ? "Steigend, mit Wiederholung" : "Trainingsmodus";
-      const note = state.mode === "constant" ? `Tempo-Stufe ${state.cleared + 1} erreicht` : `${state.cleared} Zahlen erreicht`;
+      const note = state.mode === "constant" ? `Tempo-Stufe ${state.cleared + 1} erreicht` : `${state.cleared} ${flashUnitLabel(state.kind)} erreicht`;
       els.flashPlayerBar.hidden = true;
       els.flashDoneSummary.textContent = `${modeTitle} · ${note}` + (isRecord ? " · Neue Bestleistung!" : "");
       const id = addHistory({ kind: "flash", title: `Flash Speicher Test · ${modeTitle}`, seconds: Math.round(played), note });

@@ -30,6 +30,13 @@ async def main():
         await pg.click('#natHome .sub-tab[data-nat-sub="flash"]'); await pg.wait_for_timeout(150)
         print("flash panel visible:", await pg.is_visible("#natFlashPanel"))
 
+        # Answers are now entered by tapping the on-screen keypad (one key
+        # per shown character) rather than typing into a text field.
+        async def tap_answer(chars):
+            for c in chars:
+                await pg.click(f'#flashKeypad .flash-key:text-is("{c}")')
+                await pg.wait_for_timeout(20)
+
         # --- mode-specific field visibility on the shared ready screen ---
         await pg.click("#flashOpenConstant"); await pg.wait_for_timeout(150)
         print("constant: constantGroup visible, start/reps hidden:",
@@ -87,7 +94,7 @@ async def main():
         seq1 = await capture_sequence()
         print("round1 sequence length matches Startanzahl (3):", len(seq1) == 3)
         await pg.screenshot(path=OUT + "flash_digit.png")
-        await pg.type("#flashTypedInput", "".join(seq1))
+        await tap_answer(seq1)
         await pg.wait_for_timeout(150)
         print("hint after correct entry:", await pg.inner_text("#flashHint"))
         await pg.wait_for_timeout(950)
@@ -106,7 +113,7 @@ async def main():
             if await pg.is_visible("#flashInputPanel"):
                 break
             await pg.wait_for_timeout(80)
-        await pg.type("#flashTypedInput", "9" * expected_len)
+        await tap_answer("9" * expected_len)
         await pg.wait_for_timeout(150)
         print("hint right after wrong entry:", await pg.inner_text("#flashHint"))
         await pg.wait_for_timeout(1600)

@@ -259,13 +259,13 @@ unrelated to the feature being changed.
   Not (yet) wired into the Kombi builder - wasn't asked for.
   **Flash Speicher Test** (4th NAT sub-tab) is fully built and is a
   **third, distinct** concept from both Remember and Blitz-Raster (the
-  user was explicit about this): numbers appear ONE AT A TIME at scattered
-  positions - `randFlashPos()` mirrors Periph's own `randPeriphPos()` axis/
-  zone maths directly rather than a new positioning system, own
-  `flashPrefs.axes/useZones/zones` - each briefly, then an input field
-  (`<input inputmode="numeric">`, auto-checked once its length matches the
-  sequence) opens to type them back IN ORDER (unlike Blitz-Raster, where
-  order doesn't matter). Four modes share one `flashPrefs` object
+  user was explicit about this): characters appear ONE AT A TIME at
+  scattered positions - `randFlashPos()` mirrors Periph's own
+  `randPeriphPos()` axis/zone maths directly rather than a new positioning
+  system, own `flashPrefs.axes/useZones/zones` - each briefly, then an
+  answer panel opens to enter them back IN ORDER (unlike Blitz-Raster,
+  where order doesn't matter; see "Zeichentyp + on-screen keypad" below for
+  how entry itself works). Four modes share one `flashPrefs` object
   (mirroring `rememberPrefs`): `"constant"` (fixed count, speeds up via a
   `speedStep` that shortens `stimulusS`/`intervalS` by ~15% per step, capped
   at `FLASH_SPEED_STEPS`), `"climb"` (count +1 every success),
@@ -292,9 +292,38 @@ unrelated to the feature being changed.
   and it stays visible for the entire run regardless of flash/gap/input
   phase - `renderFlashFixpoint()` is the DOM equivalent of Periph's
   `drawFixationPoint()`.
+  **Zeichentyp + on-screen keypad** (client's own reference: a screen
+  recording of a similar app): Flash now has the same three-way
+  Buchstaben/Zahlen/Gemischt choice as Periphere Wahrnehmung
+  (`flashPrefs.kind`, `#flashKindRow`/`#flashTrainingKindRow` mirroring
+  `#periphKindRow`'s markup/wiring exactly), and `flashStartRound()`
+  generates each sequence character via `randPeriphChar(flashState.kind,
+  Math.random)` - reused directly rather than duplicated, so "gemischt"
+  means the same thing here as it does for Periph (each character
+  independently rolls digit-or-letter). The old free-text `<input
+  inputmode="numeric">` is gone; the answer panel is now `N` individual
+  `.flash-answer-box` boxes (`renderFlashAnswerBoxes()`, one per
+  `flashState.sequence.length`, rebuilt every round since the count
+  changes) plus an on-screen `.flash-key` keypad (`renderFlashKeypad()`,
+  built once per game since the Zeichentyp can't change mid-run: digits
+  0-9, the 24-letter `PERIPH_LETTERS` pool, or both for Gemischt) and a
+  backspace button. `flashState.typed` (a plain string) replaces the
+  input's `.value`; `flashTypeChar()`/`flashBackspace()` are the tap
+  handlers, auto-checking once `typed.length` reaches the sequence length
+  - same "auto-check on full length" behaviour the text input had.
+  `flashUnitLabel(kind)` ("Zahlen"/"Buchstaben"/"Zeichen") replaces the
+  hardcoded "Zahlen" in the level indicator and the done-panel note; the
+  best-hint texts were generalised to "Zeichenfolge" instead of branching
+  per kind (a hint label, not worth the extra branching). Client was
+  explicit the overall layout/flow shouldn't change much otherwise - this
+  only touches the answer-entry mechanic and adds the one new setting.
+  Test: `tests/flash_kind_keypad_test.py`; `tests/flash_test.py` and
+  `tests/flash_fixpoint_test.py` were updated to tap the keypad instead of
+  typing into the now-removed input.
 - **Dark-mode contrast bug (fixed) - a pattern to watch for**: `.flash-
-  digit`/`.flash-input-label`/`.flash-typed-input` were styled with
-  `var(--ink)`/`var(--surface)`/`var(--line)`, which switch with the OS
+  digit`/`.flash-input-label`/`.flash-typed-input` (the last since replaced
+  by `.flash-answer-box`/`.flash-key`, built fixed-hex from the start) were
+  styled with `var(--ink)`/`var(--surface)`/`var(--line)`, which switch with the OS
   colour scheme - but `.player`'s own background is hardcoded
   `#ffffff` regardless of theme (by design: every exercise's background is
   controlled by its own bgColorKey/bgIntensity, never by OS dark mode).
