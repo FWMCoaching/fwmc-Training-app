@@ -1138,6 +1138,16 @@
     testNbackFsHintOpenBtn: $("testNbackFsHintOpenBtn"), testNbackFsHintClose: $("testNbackFsHintClose"),
     testNbackDonePanel: $("testNbackDonePanel"), testNbackDoneSummary: $("testNbackDoneSummary"), testNbackRating: $("testNbackRating"),
     testNbackAgainBtn: $("testNbackAgainBtn"), testNbackDoneBackBtn: $("testNbackDoneBackBtn"),
+    trailOpenBtn: $("trailOpenBtn"), trailBestHint: $("trailBestHint"), trailReady: $("trailReady"),
+    trailReadyBackToHome: $("trailReadyBackToHome"), trailTeilRow: $("trailTeilRow"), trailDifficultyRow: $("trailDifficultyRow"),
+    trailReadyBestHint: $("trailReadyBestHint"), trailReadyStartBtn: $("trailReadyStartBtn"),
+    trailPlayer: $("trailPlayer"), trailStage: $("trailStage"), trailHint: $("trailHint"),
+    trailLinesSvg: $("trailLinesSvg"), trailMarkersLayer: $("trailMarkersLayer"),
+    trailPauseOverlay: $("trailPauseOverlay"), trailResumeBtn: $("trailResumeBtn"),
+    trailPlayerBar: $("trailPlayerBar"), trailBackBtn: $("trailBackBtn"), trailPauseBtn: $("trailPauseBtn"), trailProgressEl: $("trailProgressEl"),
+    trailFsBtn: $("trailFsBtn"), trailFsHint: $("trailFsHint"), trailFsHintOpenBtn: $("trailFsHintOpenBtn"), trailFsHintClose: $("trailFsHintClose"),
+    trailDonePanel: $("trailDonePanel"), trailDoneSummary: $("trailDoneSummary"), trailRating: $("trailRating"),
+    trailAgainBtn: $("trailAgainBtn"), trailDoneBackBtn: $("trailDoneBackBtn"),
     blitzOpenBtn: $("blitzOpenBtn"), blitzBestHint: $("blitzBestHint"), blitzReady: $("blitzReady"),
     blitzReadyBackToHome: $("blitzReadyBackToHome"), blitzGridSizeRow: $("blitzGridSizeRow"),
     blitzZoneGroup: $("blitzZoneGroup"), blitzZoneAllBtn: $("blitzZoneAllBtn"), blitzZoneGrid: $("blitzZoneGrid"), blitzZoneHint: $("blitzZoneHint"),
@@ -1334,7 +1344,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3350,6 +3360,7 @@
     els.motPlayer.hidden = true;
     els.gngPlayer.hidden = true;
     els.testNbackPlayer.hidden = true;
+    els.trailPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3727,6 +3738,7 @@
   wireFullscreen({ player: els.motPlayer, btn: els.motFsBtn, hint: els.motFsHint, hintOpen: els.motFsHintOpenBtn, hintClose: els.motFsHintClose });
   wireFullscreen({ player: els.gngPlayer, btn: els.gngFsBtn, hint: els.gngFsHint, hintOpen: els.gngFsHintOpenBtn, hintClose: els.gngFsHintClose });
   wireFullscreen({ player: els.testNbackPlayer, btn: els.testNbackFsBtn, hint: els.testNbackFsHint, hintOpen: els.testNbackFsHintOpenBtn, hintClose: els.testNbackFsHintClose });
+  wireFullscreen({ player: els.trailPlayer, btn: els.trailFsBtn, hint: els.trailFsHint, hintOpen: els.trailFsHintOpenBtn, hintClose: els.trailFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -8089,6 +8101,303 @@
   els.testNbackBackBtn.addEventListener("click", testNbackStop);
   els.testNbackAgainBtn.addEventListener("click", () => { els.testNbackDonePanel.hidden = true; startTestNbackGame(); });
   els.testNbackDoneBackBtn.addEventListener("click", () => { els.testNbackPlayer.hidden = true; els.testNbackDonePanel.hidden = true; showScreen("testHome"); });
+
+  // ==== Test-Bereich: Verbindungstest (Trail Making) ====
+  // Third exercise added under the autonomous "Test" section. Grounded in the
+  // Trail Making Test (Reitan 1958; part of the Halstead-Reitan
+  // Neuropsychological Battery) - one of the most widely used measures of
+  // visual scanning, sustained attention and processing speed, with Part B
+  // adding a cognitive-flexibility/set-shifting demand via alternating
+  // number/letter sequencing. The standard paper test uses 25 circles per
+  // part (Part A: 1-25; Part B: numbers 1-13 + letters A-L, alternating),
+  // scored primarily by completion time in seconds; it is also a standard
+  // component of sports concussion baseline/return-to-play batteries
+  // (tracking processing-speed recovery over time) - a direct fit for this
+  // app's sport-mental-coaching context. This version keeps the real scoring
+  // (time + error count, no artificial "level") and the real error handling
+  // (a wrong tap doesn't advance or reset anything - exactly like an
+  // examiner redirecting a participant back to the last correct circle
+  // without stopping the clock), but randomises the circle layout fresh
+  // every run (the paper test uses one fixed printed sheet per part) so
+  // repeat play trains genuine visual search rather than layout
+  // memorisation. "Bei-Fehler reset2/backOne/stay" does not apply - same
+  // reasoning as Go/No-Go: there is no "level" to reset, a mistake here is
+  // simply counted while the client keeps aiming for the same next target.
+  // No background colour/Zusatzaufgabe/Trainingsmodus - all explicitly
+  // optional, and none add anything to a task whose stimulus IS the
+  // scattered layout itself.
+  const TRAIL_TEILE = {
+    a: { title: "Teil A", instruction: "Tippe die Zahlen in aufsteigender Reihenfolge an: 1, 2, 3 …" },
+    b: { title: "Teil B", instruction: "Tippe abwechselnd Zahl und Buchstabe in aufsteigender Reihenfolge an: 1, A, 2, B …" },
+  };
+  const TRAIL_DIFFICULTIES = {
+    leicht: { title: "Leicht", count: 15 },
+    mittel: { title: "Mittel", count: 20 },
+    schwer: { title: "Schwer", count: 25 }, // matches the original TMT's own 25-item sheet
+  };
+  const TRAIL_LETTERS = "ABCDEFGHIJKLM";
+  const TRAIL_PREFS_KEY = "fwmc-trail-prefs-v1";
+  const trailPrefs = { teil: "a", difficulty: "mittel" };
+  (function loadTrailPrefs() {
+    const saved = readJSON(TRAIL_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(trailPrefs, saved);
+    if (!TRAIL_TEILE[trailPrefs.teil]) trailPrefs.teil = "a";
+    if (!TRAIL_DIFFICULTIES[trailPrefs.difficulty]) trailPrefs.difficulty = "mittel";
+  })();
+  function saveTrailPrefsToStorage() { writeJSON(TRAIL_PREFS_KEY, trailPrefs); }
+
+  // Best time is kept per Teil+Schwierigkeit combo (lower = better), and only
+  // ever recorded for a FULLY completed run - a partial run has no
+  // comparable "time", same reasoning as Blitz-Raster only ever counting a
+  // reached level.
+  const TRAIL_BEST_KEY = "fwmc-trail-best-v1"; // { "a-leicht": seconds, "b-schwer": seconds, ... }
+  function trailBestFor() { return readJSON(TRAIL_BEST_KEY, {})[`${trailPrefs.teil}-${trailPrefs.difficulty}`]; }
+  function saveTrailBest(seconds) {
+    const key = `${trailPrefs.teil}-${trailPrefs.difficulty}`;
+    const all = readJSON(TRAIL_BEST_KEY, {});
+    if (all[key] == null || seconds < all[key]) { all[key] = seconds; writeJSON(TRAIL_BEST_KEY, all); return true; }
+    return false;
+  }
+  function fmtTrailSeconds(s) { return s.toFixed(1).replace(".", ",") + "s"; }
+  function renderTrailBest() {
+    const best = trailBestFor();
+    const text = best != null ? `Bestzeit (${TRAIL_TEILE[trailPrefs.teil].title}, ${TRAIL_DIFFICULTIES[trailPrefs.difficulty].title}): ${fmtTrailSeconds(best)}` : "";
+    els.trailBestHint.textContent = text;
+    els.trailReadyBestHint.textContent = text;
+  }
+  function syncTrailReadyUI() {
+    els.trailTeilRow.querySelectorAll("[data-trail-teil]").forEach((btn) => setActive(btn, btn.dataset.trailTeil === trailPrefs.teil));
+    els.trailDifficultyRow.querySelectorAll("[data-trail-diff]").forEach((btn) => setActive(btn, btn.dataset.trailDiff === trailPrefs.difficulty));
+  }
+  els.trailTeilRow.querySelectorAll("[data-trail-teil]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      trailPrefs.teil = btn.dataset.trailTeil;
+      saveTrailPrefsToStorage();
+      syncTrailReadyUI();
+      renderTrailBest();
+    });
+  });
+  els.trailDifficultyRow.querySelectorAll("[data-trail-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      trailPrefs.difficulty = btn.dataset.trailDiff;
+      saveTrailPrefsToStorage();
+      syncTrailReadyUI();
+      renderTrailBest();
+    });
+  });
+  els.trailOpenBtn.addEventListener("click", () => {
+    syncTrailReadyUI();
+    renderTrailBest();
+    showScreen("trailReady");
+  });
+  els.trailReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // ---- Sequence + scatter layout ----
+  function buildTrailSequence(teil, n) {
+    const seq = [];
+    if (teil === "a") {
+      for (let i = 1; i <= n; i++) seq.push(String(i));
+    } else {
+      let num = 1, letIdx = 0;
+      for (let i = 0; i < n; i++) {
+        if (i % 2 === 0) { seq.push(String(num)); num++; }
+        else { seq.push(TRAIL_LETTERS[letIdx % TRAIL_LETTERS.length]); letIdx++; }
+      }
+    }
+    return seq;
+  }
+  // Anti-overlap scatter placement: the same rejection-sampling-then-grid-
+  // fallback approach as Remember's own buildRememberPositions/
+  // randomRememberPixelPosition, copy-adapted with Trail Making's own marker
+  // size rather than shared - per this app's established "copy-adapt when
+  // the engine differs" convention (see Blitz-Raster/Flash Speicher Test in
+  // CLAUDE.md). Trail also has no fixed/shuffle "keep" concept to share
+  // either way - every run is a fresh random layout by design (see note
+  // above on why, unlike the paper test's one fixed printed sheet).
+  const TRAIL_MARKER_PX = 54;
+  const TRAIL_MIN_CENTER_PX = TRAIL_MARKER_PX + 12;
+  function trailStageBounds() {
+    const rect = els.trailStage.getBoundingClientRect();
+    const w = rect.width || 390, h = rect.height || 600;
+    const half = TRAIL_MARKER_PX / 2;
+    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY: 92, maxY: Math.max(92, h - 16) };
+  }
+  function trailRandomPixelPosition(existingPx, bounds) {
+    for (let attempt = 0; attempt < 300; attempt++) {
+      const x = bounds.minX + Math.random() * (bounds.maxX - bounds.minX);
+      const y = bounds.minY + Math.random() * (bounds.maxY - bounds.minY);
+      if (!existingPx.some((p) => Math.hypot(p.x - x, p.y - y) < TRAIL_MIN_CENTER_PX)) return { x, y };
+    }
+    let best = null, bestDist = -1;
+    const STEPS = 24;
+    for (let gx = 0; gx <= STEPS; gx++) {
+      for (let gy = 0; gy <= STEPS; gy++) {
+        const x = bounds.minX + (gx / STEPS) * (bounds.maxX - bounds.minX);
+        const y = bounds.minY + (gy / STEPS) * (bounds.maxY - bounds.minY);
+        const dist = existingPx.length ? Math.min(...existingPx.map((p) => Math.hypot(p.x - x, p.y - y))) : Infinity;
+        if (dist > bestDist) { bestDist = dist; best = { x, y }; }
+      }
+    }
+    return best;
+  }
+  function buildTrailLayout(labels) {
+    const bounds = trailStageBounds();
+    const existingPx = [];
+    return labels.map((label, i) => {
+      const px = trailRandomPixelPosition(existingPx, bounds);
+      existingPx.push(px);
+      return { label, seqIndex: i, x: (px.x / bounds.w) * 100, y: (px.y / bounds.h) * 100 };
+    });
+  }
+
+  function renderTrailMarkers() {
+    els.trailMarkersLayer.innerHTML = "";
+    trailState.layout.forEach((m) => {
+      const el = document.createElement("button");
+      el.className = "trail-marker";
+      el.style.left = m.x + "%";
+      el.style.top = m.y + "%";
+      el.textContent = m.label;
+      el.dataset.seqIndex = m.seqIndex;
+      el.addEventListener("click", () => trailTapMarker(m.seqIndex, el));
+      els.trailMarkersLayer.appendChild(el);
+    });
+  }
+
+  function trailMarkerCenterPx(el) {
+    const mRect = el.getBoundingClientRect();
+    const sRect = els.trailStage.getBoundingClientRect();
+    return { x: mRect.left + mRect.width / 2 - sRect.left, y: mRect.top + mRect.height / 2 - sRect.top };
+  }
+
+  function trailTapMarker(seqIndex, el) {
+    if (!trailState || trailState.paused || trailState.finished || el.classList.contains("done")) return;
+    if (seqIndex === trailState.currentIndex) {
+      el.classList.add("done");
+      const px = trailMarkerCenterPx(el);
+      if (trailState.tappedPx.length) {
+        const prev = trailState.tappedPx[trailState.tappedPx.length - 1];
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", prev.x); line.setAttribute("y1", prev.y);
+        line.setAttribute("x2", px.x); line.setAttribute("y2", px.y);
+        line.setAttribute("class", "trail-line");
+        els.trailLinesSvg.appendChild(line);
+      }
+      trailState.tappedPx.push(px);
+      trailState.currentIndex++;
+      updateTrailProgress();
+      if (trailState.currentIndex >= trailState.layout.length) trailFinish();
+    } else {
+      trailState.errors++;
+      el.classList.add("wrong");
+      setTimeout(() => el.classList.remove("wrong"), 220);
+    }
+  }
+
+  function updateTrailProgress() {
+    if (!trailState) return;
+    const elapsed = (performance.now() - trailState.startTime) / 1000;
+    els.trailProgressEl.textContent = `${trailState.currentIndex}/${trailState.layout.length} · ${fmtTrailSeconds(elapsed)}`;
+  }
+
+  let trailState = null;
+  let trailTickInterval = null;
+  function startTrailGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.trailPlayer.hidden = false;
+    els.trailPlayerBar.hidden = false;
+    els.trailDonePanel.hidden = true;
+    els.trailPauseOverlay.hidden = true;
+    els.trailPauseBtn.hidden = false;
+    els.trailLinesSvg.innerHTML = "";
+    const diff = TRAIL_DIFFICULTIES[trailPrefs.difficulty];
+    const labels = buildTrailSequence(trailPrefs.teil, diff.count);
+    trailState = {
+      teil: trailPrefs.teil, diff, layout: [], currentIndex: 0, errors: 0, tappedPx: [],
+      paused: false, finished: false, startTime: performance.now(),
+    };
+    els.trailHint.textContent = TRAIL_TEILE[trailPrefs.teil].instruction;
+    requestAnimationFrame(() => {
+      // Read the stage's real rect only once it's actually visible (same
+      // "no rAF wait needed once unhidden" trick fitCanvas()/MOT's own
+      // placement rely on) so the SVG viewBox and scattered layout match the
+      // real on-screen stage size, not a stale/zero one from while hidden.
+      if (!trailState) return;
+      const bounds = trailStageBounds();
+      els.trailLinesSvg.setAttribute("viewBox", `0 0 ${bounds.w} ${bounds.h}`);
+      trailState.layout = buildTrailLayout(labels);
+      renderTrailMarkers();
+      updateTrailProgress();
+    });
+    requestWakeLock();
+    if (trailTickInterval) clearInterval(trailTickInterval);
+    trailTickInterval = setInterval(() => { if (trailState && !trailState.paused && !trailState.finished) updateTrailProgress(); }, 150);
+  }
+  els.trailReadyStartBtn.addEventListener("click", startTrailGame);
+
+  // Pause just freezes the elapsed-time display - unlike Remember/Blitz/
+  // Flash/N-Back/MOT there is no discrete scheduled setTimeout transition to
+  // cancel/replay here (the only "clock" is the continuous progress readout),
+  // so shifting startTime forward by the paused duration on resume is enough
+  // to make the stage genuinely freeze without anything left to reschedule.
+  function pauseTrail() {
+    if (!trailState || trailState.paused) return;
+    trailState.paused = true;
+    trailState.pausedAt = performance.now();
+    els.trailPauseBtn.hidden = true;
+    els.trailPauseOverlay.hidden = false;
+  }
+  function resumeTrail() {
+    if (!trailState || !trailState.paused) return;
+    trailState.startTime += performance.now() - trailState.pausedAt;
+    trailState.paused = false;
+    els.trailPauseOverlay.hidden = true;
+    els.trailPauseBtn.hidden = false;
+  }
+  els.trailPauseBtn.addEventListener("click", pauseTrail);
+  els.trailResumeBtn.addEventListener("click", resumeTrail);
+
+  function finalizeTrailRun(state, completed) {
+    if (trailTickInterval) { clearInterval(trailTickInterval); trailTickInterval = null; }
+    els.trailPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.trailPlayer) document.exitFullscreen().catch(() => {});
+    els.trailFsHint.hidden = true;
+    if (!completed) { els.trailPlayer.hidden = true; showScreen("testHome"); return; }
+    els.trailPlayerBar.hidden = true;
+    const seconds = (performance.now() - state.startTime) / 1000;
+    const isRecord = saveTrailBest(seconds);
+    renderTrailBest();
+    els.trailDoneSummary.textContent =
+      `Verbindungstest (${TRAIL_TEILE[state.teil].title}, ${state.diff.title}) · ${fmtTrailSeconds(seconds)}` +
+      ` · ${state.errors} Fehler` +
+      (isRecord ? " · Neue Bestzeit!" : "");
+    const id = addHistory({ kind: "trail", title: "Verbindungstest (Trail Making)", seconds: Math.round(seconds), note: `${TRAIL_TEILE[state.teil].title}, ${state.diff.title} · ${state.errors} Fehler` });
+    renderRating(els.trailRating, id, "Wie hat sich das visuelle Absuchen angefühlt?");
+    els.trailDonePanel.hidden = false;
+  }
+  function trailFinish() {
+    if (!trailState) return;
+    trailState.finished = true;
+    const state = trailState;
+    trailState = null;
+    finalizeTrailRun(state, true);
+  }
+  // "Beenden" mid-run has no meaningful partial "time" to report (unlike
+  // Go/No-Go's accuracy%, which stays valid over any number of resolved
+  // trials) - a Trail run is only a valid measurement once the whole
+  // sequence is complete, so quitting early just exits, same as Blitz-Raster
+  // exiting without a done-panel at level 0.
+  function trailStop() {
+    if (!trailState) return;
+    const state = trailState;
+    trailState = null;
+    finalizeTrailRun(state, false);
+  }
+  els.trailBackBtn.addEventListener("click", trailStop);
+  els.trailAgainBtn.addEventListener("click", () => { els.trailDonePanel.hidden = true; startTrailGame(); });
+  els.trailDoneBackBtn.addEventListener("click", () => { els.trailPlayer.hidden = true; els.trailDonePanel.hidden = true; showScreen("testHome"); });
 
   // ---- Start-up ----
   renderHistory();

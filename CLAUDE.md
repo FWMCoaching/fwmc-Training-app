@@ -848,6 +848,28 @@ doesn't:
   colours throughout, no `var(--...)`). Built independently alongside
   Go/No-Go with no collision or duplication - the firing correctly read
   the roster above before picking this. Test: `tests/nback_test.py`.
+- **Verbindungstest (Trail Making)** (third autonomous entry, 2026-09-26):
+  grounded in the Trail Making Test (Reitan 1958, part of the
+  Halstead-Reitan Neuropsychological Battery) - scattered circles tapped in
+  ascending order, Teil A pure numbers (1,2,3…), Teil B alternating
+  number/letter (1,A,2,B…) for an added set-shifting/cognitive-flexibility
+  demand. Also cited in-code as a standard component of sports-concussion
+  baseline/return-to-play batteries - a direct fit for this app's context.
+  Scored by real completion time + error count (`TRAIL_BEST_KEY`, lower
+  time wins, only ever recorded for a fully finished run) - no artificial
+  "level" and no Bei-Fehler reset2/backOne/stay, since a wrong tap here is
+  simply counted while the client keeps aiming at the same next target
+  (`trailTapMarker()`), exactly like an examiner redirecting a participant
+  without stopping the clock on the real paper test. Difficulty is just
+  circle count (15/20/25 - 25 matches the original test's own sheet), not
+  speed or anything else. Fresh random scatter layout every run
+  (anti-overlap rejection-sampling copy-adapted from Remember's own
+  placement helper, per this file's "copy-adapt when the engine differs"
+  convention) rather than the paper test's one fixed printed sheet, so
+  repeat play trains genuine visual search instead of layout memorisation.
+  No background colour/Zusatzaufgabe/Trainingsmodus - all correctly
+  skipped, none would add anything to a task whose stimulus is the
+  scattered layout itself. Test: `tests/trail_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
