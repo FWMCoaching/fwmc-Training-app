@@ -288,6 +288,42 @@ unrelated to the feature being changed.
   add one `BG_SOURCES` entry for it, and wire its own Hintergrund group
   through `wireBgIntensityControl` with a `transfer` config - the
   source-list and presets both pick up the new domain automatically.
+- **Background colour/intensity extended to the Test-Bereich (2026-09-27)**:
+  the client asked that every Test-Bereich exercise get the same background-
+  colour Feineinstellungen NAT's Remember/Blitz/Flash/MOT already have,
+  "alle bisherigen und alle neuen übergreifend, überall wo es Sinn macht" -
+  audited per-exercise first for whether background colour could interfere
+  with the exercise's own signal (several use colour AS the stimulus - Simon,
+  Stroop ink colour, Go/No-Go's green/red, etc. - none of those are
+  disqualifying since the background tint sits behind the coloured stimulus,
+  not on it, except **Wortfarben-Test/Stroop**, excluded on colour-naming-
+  validity grounds). First batch: **Go/No-Go**, **Positions-Gedächtnis
+  (N-Back)**, **Verbindungstest (Trail Making)** - `gngPrefs`/
+  `testNbackPrefs`/`trailPrefs` each gained `bgColorKey`/`bgIntensity`,
+  `applyGngBg()`/`applyTestNbackBg()`/`applyTrailBg()` tint `#gngStage`/
+  `#testNbackStage`/`#trailStage` (called once when the game starts and
+  again on every live edit, exactly like `applyRememberBg()`), and each got
+  a `wireBgIntensityControl` call covering both its ready-screen
+  Feineinstellungen (a new `<details class="advanced">` - none of these
+  three had one before) and its pause overlay (a new picker+slider there
+  too, copy-adapted from Flash's `flashPauseBgColorPicker`/
+  `flashPauseBgSlider`). **Deliberately DOES NOT** add these three to
+  `BG_SOURCES` or wire a `transfer`/preset-save config - extending
+  `BG_SOURCES` to 8 domains (and eventually all ~18 Test-Bereich exercises)
+  would make the "Bestehende Farbgestaltung übernehmen" source-button row
+  absurdly long on every single exercise's Feineinstellungen, a real UX
+  regression the client didn't ask for; the ask was the background-colour
+  control itself everywhere, not literally the whole preset/transfer
+  subsystem too. This is a deliberate, reversible scope narrowing versus
+  Remember/Blitz/Flash/MOT's own Feineinstellungen - if the client later
+  wants full parity (transfer + named presets) for Test-Bereich exercises
+  too, add them to `BG_SOURCES` then. Remaining Test-Bereich exercises get
+  the same treatment (minus Wortfarben-Test) in further batches - see the
+  Roster below for which already have it (Go/No-Go/N-Back/Trail Making) vs.
+  not yet. Tests extended: `tests/gng_test.py`, `tests/nback_test.py`,
+  `tests/trail_test.py` (swatch count, ready-screen colour+intensity
+  changing the stage's rendered background, and the pause overlay's own
+  picker live-updating the same background while paused).
 - **Multi-tab nav bars (`.section-switch`/`.sub-switch`) need headroom for
   their longest label, not just "however many tabs currently exist"**: both
   are a `display:flex` row of `flex:1` tabs capped at a `max-width` - a
