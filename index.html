@@ -648,6 +648,11 @@
       <span class="fc-desc">Ein blauer oder oranger Punkt erscheint links oder rechts &ndash; tippe die Taste mit der passenden FARBE, egal auf welcher Seite der Punkt auftaucht. Klassisches Paradigma zum r&auml;umlichen Reiz-Reaktions-Konflikt (Simon &amp; Rudell, 1967), trainiert visuelle Entscheidungsgeschwindigkeit unter automatischer Ablenkung.</span>
       <span class="fc-meta" id="simonBestHint"></span>
     </button>
+    <button class="featured-card" id="searchOpenBtn">
+      <span class="fc-title">Suchtest (Visuelle Suche)</span>
+      <span class="fc-desc">Ein einzelnes Zielobjekt versteckt sich zwischen mehreren &auml;hnlichen &ndash; wie schnell findest und triffst du es? Mal reicht eine einzelne auff&auml;llige Farbe, um es sofort zu sehen; mal muss die richtige KOMBINATION aus Farbe und Form gesucht werden, was deutlich l&auml;nger dauert. Klassisches Paradigma zur visuellen Suche (Treisman &amp; Gelade, 1980), zeigt den echten Unterschied zwischen sofortigem Erkennen und Punkt-f&uuml;r-Punkt-Absuchen.</span>
+      <span class="fc-meta" id="searchBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -813,6 +818,27 @@
   <div class="group-help" id="simonReadyBestHint"></div>
 
   <button class="start-btn" id="simonReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="searchReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="searchReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Suchtest (Visuelle Suche)</h1>
+  <p class="page-sub">Vor jeder Runde steht kurz, wonach du suchst, z.B. &bdquo;Ziel: Roter Kreis&ldquo;. Danach erscheinen mehrere Objekte auf der B&uuml;hne &ndash; tippe so schnell wie m&ouml;glich auf das EINE Zielobjekt. Manchmal reicht eine einzelne auff&auml;llige Farbe, um es sofort zu sehen (Merkmalssuche); manchmal ist die Farbe allein nicht eindeutig und du musst die richtige KOMBINATION aus Farbe UND Form finden (Verbindungssuche) &ndash; das dauert l&auml;nger, vor allem je mehr Objekte auf der B&uuml;hne stehen. Klassisches Paradigma zur visuellen Suche (Treisman &amp; Gelade, 1980).</p>
+
+  <div class="group">
+    <div class="group-label">L&auml;nge</div>
+    <div class="choice-row" id="searchLengthRow">
+      <button class="choice" data-search-length="kurz">Kurz<small>12 Durchg&auml;nge</small></button>
+      <button class="choice" data-search-length="mittel">Mittel<small>24 Durchg&auml;nge</small></button>
+      <button class="choice" data-search-length="lang">Lang<small>36 Durchg&auml;nge</small></button>
+    </div>
+  </div>
+
+  <div class="group-help" id="searchReadyBestHint"></div>
+
+  <button class="start-btn" id="searchReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="rotationReady" hidden>
@@ -2880,6 +2906,39 @@
     <div class="rating" id="simonRating"></div>
     <button class="again" id="simonAgainBtn">Nochmal</button>
     <button class="back" id="simonDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="searchPlayer" hidden>
+  <div class="search-stage" id="searchStage">
+    <div class="remember-hint" id="searchHint"></div>
+    <div id="searchItemsLayer"></div>
+  </div>
+  <div class="pause-overlay" id="searchPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="searchResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="searchPlayerBar">
+    <button id="searchBackBtn">&#10005; Beenden</button>
+    <button id="searchPauseBtn">Pause</button>
+    <span class="player-status" id="searchProgressEl"></span>
+    <button id="searchFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="searchFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="searchFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="searchFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="searchDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="searchDoneSummary"></p>
+    <div class="rating" id="searchRating"></div>
+    <button class="again" id="searchAgainBtn">Nochmal</button>
+    <button class="back" id="searchDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

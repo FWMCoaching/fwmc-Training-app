@@ -1196,6 +1196,15 @@
     simonFsBtn: $("simonFsBtn"), simonFsHint: $("simonFsHint"), simonFsHintOpenBtn: $("simonFsHintOpenBtn"), simonFsHintClose: $("simonFsHintClose"),
     simonDonePanel: $("simonDonePanel"), simonDoneSummary: $("simonDoneSummary"), simonRating: $("simonRating"),
     simonAgainBtn: $("simonAgainBtn"), simonDoneBackBtn: $("simonDoneBackBtn"),
+    searchOpenBtn: $("searchOpenBtn"), searchBestHint: $("searchBestHint"), searchReady: $("searchReady"),
+    searchReadyBackToHome: $("searchReadyBackToHome"), searchLengthRow: $("searchLengthRow"),
+    searchReadyBestHint: $("searchReadyBestHint"), searchReadyStartBtn: $("searchReadyStartBtn"),
+    searchPlayer: $("searchPlayer"), searchStage: $("searchStage"), searchHint: $("searchHint"), searchItemsLayer: $("searchItemsLayer"),
+    searchPauseOverlay: $("searchPauseOverlay"), searchResumeBtn: $("searchResumeBtn"),
+    searchPlayerBar: $("searchPlayerBar"), searchBackBtn: $("searchBackBtn"), searchPauseBtn: $("searchPauseBtn"), searchProgressEl: $("searchProgressEl"),
+    searchFsBtn: $("searchFsBtn"), searchFsHint: $("searchFsHint"), searchFsHintOpenBtn: $("searchFsHintOpenBtn"), searchFsHintClose: $("searchFsHintClose"),
+    searchDonePanel: $("searchDonePanel"), searchDoneSummary: $("searchDoneSummary"), searchRating: $("searchRating"),
+    searchAgainBtn: $("searchAgainBtn"), searchDoneBackBtn: $("searchDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationReadyBestHint: $("rotationReadyBestHint"), rotationReadyStartBtn: $("rotationReadyStartBtn"),
@@ -1412,7 +1421,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3435,6 +3444,7 @@
     els.rotationPlayer.hidden = true;
     els.merkPlayer.hidden = true;
     els.simonPlayer.hidden = true;
+    els.searchPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3819,6 +3829,7 @@
   wireFullscreen({ player: els.rotationPlayer, btn: els.rotationFsBtn, hint: els.rotationFsHint, hintOpen: els.rotationFsHintOpenBtn, hintClose: els.rotationFsHintClose });
   wireFullscreen({ player: els.merkPlayer, btn: els.merkFsBtn, hint: els.merkFsHint, hintOpen: els.merkFsHintOpenBtn, hintClose: els.merkFsHintClose });
   wireFullscreen({ player: els.simonPlayer, btn: els.simonFsBtn, hint: els.simonFsHint, hintOpen: els.simonFsHintOpenBtn, hintClose: els.simonFsHintClose });
+  wireFullscreen({ player: els.searchPlayer, btn: els.searchFsBtn, hint: els.searchFsHint, hintOpen: els.searchFsHintOpenBtn, hintClose: els.searchFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -10436,6 +10447,388 @@
   els.simonBackBtn.addEventListener("click", simonStop);
   els.simonAgainBtn.addEventListener("click", () => { els.simonDonePanel.hidden = true; startSimonGame(); });
   els.simonDoneBackBtn.addEventListener("click", () => { els.simonPlayer.hidden = true; els.simonDonePanel.hidden = true; showScreen("testHome"); });
+
+  // ==== Test-Bereich: Suchtest (Visuelle Suche) ====
+  // Tenth autonomous entry (see CLAUDE.md "Test-Bereich (autonomous,
+  // ongoing)"). Grounded in the classic visual-search paradigm and
+  // Treisman & Gelade's Feature Integration Theory (1980): a single target
+  // hides among several distractors; in "Merkmalssuche" (feature search)
+  // the target differs from every distractor by ONE salient feature
+  // (colour) and "pops out" instantly regardless of how many distractors
+  // are on screen (parallel processing, ~flat RT-by-set-size slope); in
+  // "Verbindungssuche" (conjunction search) the target is defined by a
+  // COMBINATION of two features (colour AND shape) that individually also
+  // appear on distractors, forcing a slower, roughly serial item-by-item
+  // scan whose reaction time rises with the number of items on screen
+  // (Treisman & Gelade's own colour-conjunction data implies a slope on the
+  // order of ~25-30ms per added item - cited as "28.7 ms" in later
+  // reanalyses). This exercise runs both conditions across three set sizes
+  // in one balanced run and reports the actual set-size SLOPE per
+  // condition (ms per added object), not just accuracy/RT - the real
+  // outcome measure this paradigm exists to surface, and a genuinely new
+  // kind of result on this Test tab (every other exercise reports a flat
+  // average or a single interference cost, not a slope). Also researched
+  // as sport-relevant: a 2026 Frontiers systematic review/meta-analysis
+  // found expert athletes show more EFFICIENT visual search than novices -
+  // fewer but more informative fixations and better foveal/peripheral
+  // coordination - a direct fit for FWMC's "visuelle
+  // Entscheidungsgeschwindigkeit" and peripheral-vision focus specifically.
+  // Genuinely distinct from every existing Test/NAT mechanic: MOT tracks
+  // moving objects that stay identical the whole time; Trail Making scans
+  // a scattered layout in a KNOWN ascending order; UFOV is a brief-glance
+  // divided-attention judgement with no active scanning at all (everything
+  // is masked before the eyes could move) - this is the only exercise
+  // whose stimulus display stays up and static while the client actively
+  // searches it, the textbook visual-search setup.
+  const SEARCH_PREFS_KEY = "fwmc-search-prefs-v1";
+  const SEARCH_LENGTHS = {
+    kurz: { title: "Kurz", reps: 2 },
+    mittel: { title: "Mittel", reps: 4 },
+    lang: { title: "Lang", reps: 6 },
+  };
+  const SEARCH_SET_SIZES = { klein: 6, mittel: 12, gross: 18 }; // total items on stage, target included
+  const SEARCH_MODES = ["feature", "conjunction"];
+  const SEARCH_CUE_MS = 700; // target-definition text shown before the array appears, so RT is measured from array onset, not from reading the cue
+  const SEARCH_ISI_MIN = 300, SEARCH_ISI_MAX = 500; // brief blank gap before the next cue
+  const SEARCH_FEEDBACK_MS = 550;
+  const SEARCH_TIMEOUT_MS = 8000; // generous safety net, not the driver of pacing - this is a self-paced "search until found" task, unlike the fixed-response-window exercises elsewhere on this tab
+  const SEARCH_MIN_RESOLVED = 4;
+  const SEARCH_ITEM_PX = 34;
+  const SEARCH_MIN_CENTER_PX = SEARCH_ITEM_PX + 12;
+  const SEARCH_COLOR_TARGET = "#d64545";
+  const SEARCH_COLOR_DISTRACTOR = "#8a97a3";
+  const searchPrefs = { length: "mittel" };
+  function loadSearchPrefs() {
+    const saved = readJSON(SEARCH_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(searchPrefs, saved);
+    if (!SEARCH_LENGTHS[searchPrefs.length]) searchPrefs.length = "mittel";
+  }
+  loadSearchPrefs();
+  function saveSearchPrefsToStorage() { writeJSON(SEARCH_PREFS_KEY, searchPrefs); }
+
+  const SEARCH_BEST_KEY = "fwmc-search-best-v1"; // { [length]: bestAccuracyPct }
+  function searchBestFor() { return readJSON(SEARCH_BEST_KEY, {})[searchPrefs.length] || 0; }
+  function saveSearchBest(accuracyPct) {
+    const all = readJSON(SEARCH_BEST_KEY, {});
+    if (accuracyPct > (all[searchPrefs.length] || 0)) { all[searchPrefs.length] = accuracyPct; writeJSON(SEARCH_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderSearchBest() {
+    const best = searchBestFor();
+    const text = best ? `Beste Genauigkeit (${SEARCH_LENGTHS[searchPrefs.length].title}): ${best}%` : "";
+    els.searchBestHint.textContent = text;
+    els.searchReadyBestHint.textContent = text;
+  }
+  function syncSearchLengthUI() {
+    els.searchLengthRow.querySelectorAll("[data-search-length]").forEach((btn) => setActive(btn, btn.dataset.searchLength === searchPrefs.length));
+  }
+  els.searchLengthRow.querySelectorAll("[data-search-length]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      searchPrefs.length = btn.dataset.searchLength;
+      saveSearchPrefsToStorage();
+      syncSearchLengthUI();
+      renderSearchBest();
+    });
+  });
+  els.searchOpenBtn.addEventListener("click", () => {
+    syncSearchLengthUI();
+    renderSearchBest();
+    showScreen("searchReady");
+  });
+  els.searchReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Single active timer, remaining-delay pause/resume - same shape as every
+  // other setTimeout-driven Test exercise. Unlike Simon/Flanker (a fixed
+  // response window that always runs its full length before advancing),
+  // this task can transition to the NEXT phase early (as soon as the
+  // client taps something), so - unlike scheduleSimonTimer - this always
+  // clears any still-pending timer first, or an old, no-longer-relevant
+  // timeout could fire later on top of an already-advanced trial.
+  function scheduleSearchTimer(fn, delayMs) {
+    if (searchState.timer) clearTimeout(searchState.timer);
+    searchState.timerFn = fn;
+    searchState.timerFiresAt = performance.now() + delayMs;
+    searchState.timer = setTimeout(() => { searchState.timer = null; fn(); }, delayMs);
+  }
+
+  function buildSearchTrials() {
+    const reps = SEARCH_LENGTHS[searchPrefs.length].reps;
+    const sizeKeys = Object.keys(SEARCH_SET_SIZES);
+    const trials = [];
+    SEARCH_MODES.forEach((mode) => {
+      sizeKeys.forEach((sizeKey) => {
+        for (let i = 0; i < reps; i++) trials.push({ mode, sizeKey, setSize: SEARCH_SET_SIZES[sizeKey] });
+      });
+    });
+    // Shuffle, then avoid more than 3 identical MODES back to back - same
+    // guard as buildSimonTrials/buildFlankerTrials/buildPosnerTrials, so a
+    // long run of "same kind of search" can't cluster by chance.
+    for (let tries = 0; tries < 200; tries++) {
+      for (let i = trials.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [trials[i], trials[j]] = [trials[j], trials[i]];
+      }
+      let ok = true, run = 1;
+      for (let i = 1; i < trials.length; i++) {
+        if (trials[i].mode === trials[i - 1].mode) { run++; if (run > 3) { ok = false; break; } }
+        else run = 1;
+      }
+      if (ok) break;
+    }
+    return trials;
+  }
+
+  // Feature search: every distractor is a plain grey circle, the target is
+  // the only RED circle - a single feature (colour) makes it pop out.
+  // Conjunction search: the target is a red SQUARE; distractors are split
+  // between red circles (share colour with the target) and grey squares
+  // (share shape with the target) - the classic Treisman construction
+  // where no single feature is unique, forcing an item-by-item scan.
+  function buildSearchItems(mode, setSize, rng) {
+    const items = [];
+    if (mode === "feature") {
+      for (let i = 0; i < setSize - 1; i++) items.push({ shape: "circle", color: SEARCH_COLOR_DISTRACTOR, isTarget: false });
+      items.push({ shape: "circle", color: SEARCH_COLOR_TARGET, isTarget: true });
+    } else {
+      const distractorCount = setSize - 1;
+      const groupA = Math.ceil(distractorCount / 2); // red circles
+      const groupB = distractorCount - groupA; // grey squares
+      for (let i = 0; i < groupA; i++) items.push({ shape: "circle", color: SEARCH_COLOR_TARGET, isTarget: false });
+      for (let i = 0; i < groupB; i++) items.push({ shape: "square", color: SEARCH_COLOR_DISTRACTOR, isTarget: false });
+      items.push({ shape: "square", color: SEARCH_COLOR_TARGET, isTarget: true });
+    }
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [items[i], items[j]] = [items[j], items[i]];
+    }
+    return items;
+  }
+  function searchTargetLabel(mode) { return mode === "feature" ? "Roter Kreis" : "Rotes Quadrat"; }
+
+  // Anti-overlap scatter placement across the whole stage - copy-adapted
+  // from Trail Making's own trailRandomPixelPosition/trailStageBounds
+  // (rejection sampling with a grid-search fallback), per this app's
+  // established "copy-adapt when the engine differs" convention, since
+  // this stage needs its own item size/margins for up to 18 items at once.
+  function searchStageBounds() {
+    const rect = els.searchStage.getBoundingClientRect();
+    const w = rect.width || 390, h = rect.height || 600;
+    const half = SEARCH_ITEM_PX / 2;
+    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY: 84, maxY: Math.max(84, h - 16) };
+  }
+  function searchRandomPixelPosition(existingPx, bounds) {
+    for (let attempt = 0; attempt < 300; attempt++) {
+      const x = bounds.minX + Math.random() * (bounds.maxX - bounds.minX);
+      const y = bounds.minY + Math.random() * (bounds.maxY - bounds.minY);
+      if (!existingPx.some((p) => Math.hypot(p.x - x, p.y - y) < SEARCH_MIN_CENTER_PX)) return { x, y };
+    }
+    let best = null, bestDist = -1;
+    const STEPS = 24;
+    for (let gx = 0; gx <= STEPS; gx++) {
+      for (let gy = 0; gy <= STEPS; gy++) {
+        const x = bounds.minX + (gx / STEPS) * (bounds.maxX - bounds.minX);
+        const y = bounds.minY + (gy / STEPS) * (bounds.maxY - bounds.minY);
+        const dist = existingPx.length ? Math.min(...existingPx.map((p) => Math.hypot(p.x - x, p.y - y))) : Infinity;
+        if (dist > bestDist) { bestDist = dist; best = { x, y }; }
+      }
+    }
+    return best;
+  }
+  function buildSearchLayout(n) {
+    const bounds = searchStageBounds();
+    const existingPx = [];
+    const positions = [];
+    for (let i = 0; i < n; i++) {
+      const px = searchRandomPixelPosition(existingPx, bounds);
+      existingPx.push(px);
+      positions.push({ x: (px.x / bounds.w) * 100, y: (px.y / bounds.h) * 100 });
+    }
+    return positions;
+  }
+  function renderSearchItems(itemDefs, positions) {
+    els.searchItemsLayer.innerHTML = "";
+    itemDefs.forEach((it, i) => {
+      const el = document.createElement("button");
+      el.className = `search-item shape-${it.shape}`;
+      el.style.left = positions[i].x + "%";
+      el.style.top = positions[i].y + "%";
+      el.style.background = it.color;
+      el.dataset.target = it.isTarget ? "1" : "0";
+      el.addEventListener("click", () => searchTapItem(it, el));
+      els.searchItemsLayer.appendChild(el);
+    });
+  }
+  function searchRevealTarget() {
+    const el = Array.from(els.searchItemsLayer.children).find((c) => c.dataset.target === "1" && !c.classList.contains("correct"));
+    if (el) el.classList.add("reveal");
+  }
+
+  function searchSlope(rtBySize) {
+    const a = avgOf(rtBySize.klein), b = avgOf(rtBySize.gross);
+    if (a == null || b == null) return null;
+    return Math.round(((b - a) / (SEARCH_SET_SIZES.gross - SEARCH_SET_SIZES.klein)) * 10) / 10;
+  }
+
+  let searchState = null;
+  function startSearchGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.searchPlayer.hidden = false;
+    els.searchPlayerBar.hidden = false;
+    els.searchDonePanel.hidden = true;
+    els.searchPauseOverlay.hidden = true;
+    els.searchPauseBtn.hidden = false;
+    els.searchItemsLayer.innerHTML = "";
+    searchState = {
+      trials: buildSearchTrials(), index: -1, phase: "gap",
+      correct: 0, incorrect: 0, timeouts: 0,
+      rtByMode: { feature: [], conjunction: [] },
+      rtByModeSize: { feature: { klein: [], mittel: [], gross: [] }, conjunction: { klein: [], mittel: [], gross: [] } },
+      paused: false, startTime: performance.now(), stimAt: null,
+      timer: null, timerFn: null, timerFiresAt: null,
+    };
+    els.searchHint.textContent = "Bereit? Gleich geht's los …";
+    els.searchProgressEl.textContent = `0/${searchState.trials.length}`;
+    requestWakeLock();
+    scheduleSearchTimer(searchNextTrial, 1000);
+  }
+  els.searchReadyStartBtn.addEventListener("click", startSearchGame);
+
+  function searchNextTrial() {
+    if (!searchState) return;
+    searchState.index++;
+    if (searchState.index >= searchState.trials.length) { searchFinish(); return; }
+    els.searchItemsLayer.innerHTML = "";
+    searchState.phase = "cue";
+    const trial = searchState.trials[searchState.index];
+    els.searchProgressEl.textContent = `${searchState.index + 1}/${searchState.trials.length}`;
+    els.searchHint.textContent = `Ziel: ${searchTargetLabel(trial.mode)}`;
+    const isi = SEARCH_ISI_MIN + Math.random() * (SEARCH_ISI_MAX - SEARCH_ISI_MIN);
+    scheduleSearchTimer(searchShowArray, SEARCH_CUE_MS + isi);
+  }
+  function searchShowArray() {
+    if (!searchState) return;
+    const trial = searchState.trials[searchState.index];
+    const itemDefs = buildSearchItems(trial.mode, trial.setSize, Math.random);
+    const positions = buildSearchLayout(itemDefs.length);
+    renderSearchItems(itemDefs, positions);
+    searchState.phase = "responding";
+    searchState.stimAt = performance.now();
+    scheduleSearchTimer(searchTimeoutTrial, SEARCH_TIMEOUT_MS);
+  }
+  function searchTimeoutTrial() {
+    if (!searchState || searchState.phase !== "responding") return;
+    searchState.incorrect++;
+    searchState.timeouts++;
+    searchState.phase = "feedback";
+    searchRevealTarget();
+    els.searchHint.textContent = "Zeit abgelaufen!";
+    scheduleSearchTimer(searchNextTrial, SEARCH_FEEDBACK_MS);
+  }
+  function searchTapItem(itemDef, el) {
+    if (!searchState || searchState.paused || searchState.phase !== "responding") return;
+    const trial = searchState.trials[searchState.index];
+    const rt = performance.now() - searchState.stimAt;
+    searchState.phase = "feedback";
+    if (itemDef.isTarget) {
+      el.classList.add("correct");
+      searchState.correct++;
+      searchState.rtByMode[trial.mode].push(rt);
+      searchState.rtByModeSize[trial.mode][trial.sizeKey].push(rt);
+    } else {
+      el.classList.add("wrong");
+      searchState.incorrect++;
+      searchRevealTarget();
+      els.searchHint.textContent = "Daneben!";
+    }
+    scheduleSearchTimer(searchNextTrial, SEARCH_FEEDBACK_MS);
+  }
+
+  function pauseSearch() {
+    if (!searchState || searchState.paused) return;
+    searchState.paused = true;
+    searchState.pausedAt = performance.now();
+    if (searchState.timer) {
+      clearTimeout(searchState.timer);
+      searchState.timer = null;
+      searchState.timerRemainingMs = Math.max(0, searchState.timerFiresAt - searchState.pausedAt);
+    }
+    els.searchPauseBtn.hidden = true;
+    els.searchPauseOverlay.hidden = false;
+  }
+  function resumeSearch() {
+    if (!searchState || !searchState.paused) return;
+    const pausedMs = performance.now() - searchState.pausedAt;
+    searchState.startTime += pausedMs;
+    if (searchState.stimAt != null) searchState.stimAt += pausedMs;
+    searchState.paused = false;
+    if (searchState.timerFn && searchState.timerRemainingMs != null) {
+      scheduleSearchTimer(searchState.timerFn, searchState.timerRemainingMs);
+      searchState.timerRemainingMs = null;
+    }
+    els.searchPauseOverlay.hidden = true;
+    els.searchPauseBtn.hidden = false;
+  }
+  els.searchPauseBtn.addEventListener("click", pauseSearch);
+  els.searchResumeBtn.addEventListener("click", resumeSearch);
+
+  function finalizeSearchRun(state, totalTrials) {
+    els.searchPauseOverlay.hidden = true;
+    els.searchPlayerBar.hidden = true;
+    const accuracyPct = Math.round(100 * state.correct / totalTrials);
+    const featAvg = avgOf(state.rtByMode.feature);
+    const conjAvg = avgOf(state.rtByMode.conjunction);
+    const featSlope = searchSlope(state.rtByModeSize.feature);
+    const conjSlope = searchSlope(state.rtByModeSize.conjunction);
+    const isRecord = saveSearchBest(accuracyPct);
+    renderSearchBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.searchDoneSummary.textContent =
+      `Suchtest (${SEARCH_LENGTHS[searchPrefs.length].title}) · ${accuracyPct}% richtig` +
+      (featAvg != null ? ` · Merkmalssuche Ø ${featAvg} ms` : "") +
+      (featSlope != null ? ` (${featSlope} ms/Objekt)` : "") +
+      (conjAvg != null ? ` · Verbindungssuche Ø ${conjAvg} ms` : "") +
+      (conjSlope != null ? ` (${conjSlope} ms/Objekt)` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${accuracyPct}% richtig` +
+      (featSlope != null ? `, Merkmalssuche ${featSlope} ms/Objekt` : "") +
+      (conjSlope != null ? `, Verbindungssuche ${conjSlope} ms/Objekt` : "");
+    const id = addHistory({ kind: "search", title: "Suchtest (Visuelle Suche)", seconds: Math.round(played), note });
+    renderRating(els.searchRating, id, "Wie hat sich das Suchen angefühlt?");
+    els.searchDonePanel.hidden = false;
+  }
+  function searchFinish() {
+    if (!searchState) return;
+    const state = searchState;
+    searchState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.searchPlayer) document.exitFullscreen().catch(() => {});
+    els.searchFsHint.hidden = true;
+    finalizeSearchRun(state, state.trials.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved.
+  function searchStop() {
+    if (!searchState) return;
+    if (searchState.timer) clearTimeout(searchState.timer);
+    const state = searchState;
+    searchState = null;
+    els.searchPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.searchPlayer) document.exitFullscreen().catch(() => {});
+    els.searchFsHint.hidden = true;
+    const resolved = state.correct + state.incorrect;
+    if (resolved >= SEARCH_MIN_RESOLVED) {
+      finalizeSearchRun(state, resolved);
+    } else {
+      els.searchPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.searchBackBtn.addEventListener("click", searchStop);
+  els.searchAgainBtn.addEventListener("click", () => { els.searchDonePanel.hidden = true; startSearchGame(); });
+  els.searchDoneBackBtn.addEventListener("click", () => { els.searchPlayer.hidden = true; els.searchDonePanel.hidden = true; showScreen("testHome"); });
 
   // ---- Start-up ----
   renderHistory();

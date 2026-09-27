@@ -1154,9 +1154,83 @@ doesn't:
   the actual measured effect (does an irrelevant stimulus location speed or
   slow the colour-based response) is unaffected by whether the mapping is
   labelled or memorised. Test: `tests/simon_test.py`.
+- **Suchtest (Visuelle Suche)** (tenth autonomous entry, 2026-09-27):
+  grounded in the classic visual-search paradigm and Treisman & Gelade's
+  Feature Integration Theory (1980) - a single target hides among several
+  distractors. "Merkmalssuche" (feature search): every distractor is a
+  plain grey circle, the target is the only RED circle - one salient
+  feature makes it "pop out" instantly, near-independent of how many
+  distractors are on screen (parallel processing). "Verbindungssuche"
+  (conjunction search): the target is a red SQUARE among red circles
+  (share colour) and grey squares (share shape) - no single feature is
+  unique, forcing a slower, roughly serial item-by-item scan whose
+  reaction time rises with set size. Both conditions run across three set
+  sizes (6/12/18 items, `SEARCH_SET_SIZES`) in one balanced run
+  (`searchPrefs.length` kurz/mittel/lang = 12/24/36 trials, reusing the
+  UFOV-style "length" setting shape since there's no natural difficulty
+  dial otherwise), and the done-panel reports the actual outcome measure
+  this paradigm exists to surface: the RT-by-set-size SLOPE per condition
+  (ms per added object, `searchSlope()` - a two-point slope between the
+  smallest/largest set size's average correct RT), not just an overall
+  average - a genuinely new kind of reported result on this Test tab
+  (every other exercise reports a flat average or a single interference
+  cost, never a slope). Treisman & Gelade's own colour-conjunction data
+  implies a slope on the order of ~25-30ms per added item (cited in later
+  reanalyses as "28.7 ms"), against feature search's near-flat slope - the
+  actual parallel-vs-serial-search contrast this exercise is built to make
+  visible. Also researched as sport-relevant: a 2026 Frontiers systematic
+  review/meta-analysis found expert athletes show more EFFICIENT visual
+  search than novices (fewer but more informative fixations, better
+  foveal/peripheral coordination) - a direct fit for FWMC's "visuelle
+  Entscheidungsgeschwindigkeit"/peripheral-vision focus. Genuinely
+  distinct from every existing Test/NAT mechanic: MOT tracks objects that
+  stay identical to each other throughout a continuous movement phase;
+  Trail Making scans a scattered layout in a KNOWN ascending order; UFOV
+  is a brief masked glance with no active scanning at all - this is the
+  only exercise whose display stays up and static while the client
+  actively searches it, the textbook visual-search setup. Unlike
+  Simon/Flanker/Posner's FIXED response window (a trial always runs its
+  full duration before advancing, whether tapped early or not), this task
+  is genuinely SELF-PACED - a trial ends the instant something is tapped,
+  only an 8s safety-net timeout (`SEARCH_TIMEOUT_MS`) advances an
+  unanswered trial - so `scheduleSearchTimer` always clears any
+  still-pending timer before scheduling the next one (an early-tap
+  transition would otherwise leave a stale timeout to fire later on top
+  of an already-advanced trial - `scheduleSimonTimer` doesn't need this
+  since Simon's own fixed-cadence design never transitions early). A
+  short pre-array text cue ("Ziel: Roter Kreis"/"Ziel: Rotes Quadrat",
+  `SEARCH_CUE_MS` + a brief ISI) names the target before the array
+  appears, so reaction time is measured from array onset, not from
+  reading the instruction - the target identity is otherwise constant per
+  condition (feature search always targets a red circle, conjunction
+  search always a red square), so the cue is a near-zero-cost categorical
+  label, not a new judgement each trial. Anti-overlap scatter placement
+  (`searchRandomPixelPosition`/`searchStageBounds`) copy-adapted from
+  Trail Making's own, sized for up to 18 simultaneous items
+  (`SEARCH_ITEM_PX = 34`). No Bei-Fehler/background colour/Zusatzaufgabe/
+  Trainingsmodus - correctly skipped per the "optional, skip what doesn't
+  fit in an hour" guidance (a fixed-trial RT/slope measure, nothing to
+  configure beyond length). New CSS is `.search-*` (fixed hex colours
+  throughout: `#d64545` target red, `#8a97a3` distractor grey, no
+  `var(--...)`); shape (circle vs. square) is a CSS class, colour an
+  inline style, matching Merkspanne-Test's own item-rendering pattern.
+  Test: `tests/search_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
+- **Suchtest safety-net timeout + "ms/Objekt" wording**: an unanswered
+  trial only times out after 8 seconds (`SEARCH_TIMEOUT_MS`) - a rough,
+  ungrounded safety net (not derived from any published visual-search
+  protocol), chosen just so a genuinely self-paced "search until found"
+  task never hard-blocks progress if the client gets stuck; on "schwer"
+  Verbindungssuche at 18 items an honest search can plausibly take several
+  seconds anyway, so this may still feel long or short in practice - not
+  tuned against real client data yet. Separately, the done-panel reports
+  a raw "ms/Objekt" slope number per search type, which is the technically
+  correct outcome measure but may read as jargon to a non-technical
+  client without a short explanatory line (something like "je niedriger,
+  desto eher siehst du es auf einen Blick") - flagging rather than
+  guessing at friendlier copy.
 - **Merkspanne-Test study-exposure duration**: shown for 500ms per the
   implementing run's choice, a compromise versus the literature's much
   shorter (~100ms) flashes, chosen for `setTimeout` reliability on phones -

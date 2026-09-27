@@ -725,6 +725,20 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .merk-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:24px 16px}
 .merk-field{position:relative;width:min(320px,86vw);height:260px;margin:0 auto;background:#eef2f3;border-radius:16px}
 .merk-item{position:absolute;width:40px;height:40px;border-radius:8px;transform:translate(-50%,-50%);box-shadow:0 2px 6px rgba(0,0,0,.2)}
+
+.search-stage{flex:1;position:relative;overflow:hidden}
+.search-item{
+  position:absolute;transform:translate(-50%,-50%);
+  width:34px;height:34px;border:none;padding:0;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.18);
+  transition:transform .1s ease;
+}
+.search-item.shape-circle{border-radius:50%}
+.search-item.shape-square{border-radius:6px}
+.search-item:active{transform:translate(-50%,-50%) scale(.9)}
+.search-item.correct{box-shadow:0 0 0 4px #2e7d32 inset,0 2px 8px rgba(0,0,0,.18)}
+.search-item.wrong{box-shadow:0 0 0 4px #d32f2f inset,0 2px 8px rgba(0,0,0,.18)}
+.search-item.reveal{box-shadow:0 0 0 4px #2e7d32 inset,0 2px 8px rgba(0,0,0,.18)}
 .merk-response-row{display:flex;gap:20px}
 .merk-response-btn{
   min-width:130px;padding:18px 20px;border-radius:14px;border:2px solid #cfd8db;
