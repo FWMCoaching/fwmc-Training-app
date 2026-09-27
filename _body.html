@@ -939,6 +939,22 @@
     </div>
   </div>
 
+  <details class="advanced" id="simonAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="simonBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="simonBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="simonBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="simonBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
+
   <div class="group-help" id="simonReadyBestHint"></div>
 
   <button class="start-btn" id="simonReadyStartBtn">Training starten</button>
@@ -980,6 +996,22 @@
       <button class="choice" data-rotation-diff="schwer">Schwer<small>kurzes Zeitfenster</small></button>
     </div>
   </div>
+
+  <details class="advanced" id="rotationAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="rotationBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="rotationBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="rotationBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="rotationBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
 
   <div class="group-help" id="rotationReadyBestHint"></div>
 
@@ -1186,6 +1218,22 @@
       <button class="choice" data-merk-diff="schwer">Schwer<small>8 Felder</small></button>
     </div>
   </div>
+
+  <details class="advanced" id="merkAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="merkBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="merkBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="merkBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="merkBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
 
   <div class="group-help" id="merkReadyBestHint"></div>
 
@@ -3248,6 +3296,14 @@
   <div class="pause-overlay" id="simonPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="simonPauseBgValue"></span></div>
+        <input type="range" id="simonPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="simonPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="simonResumeBtn">Weiter</button>
     </div>
   </div>
@@ -3320,6 +3376,14 @@
   <div class="pause-overlay" id="rotationPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="rotationPauseBgValue"></span></div>
+        <input type="range" id="rotationPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="rotationPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="rotationResumeBtn">Weiter</button>
     </div>
   </div>
@@ -3665,6 +3729,14 @@
   <div class="pause-overlay" id="merkPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="merkPauseBgValue"></span></div>
+        <input type="range" id="merkPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="merkPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="merkResumeBtn">Weiter</button>
     </div>
   </div>

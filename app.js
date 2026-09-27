@@ -1285,11 +1285,14 @@
     posnerAgainBtn: $("posnerAgainBtn"), posnerDoneBackBtn: $("posnerDoneBackBtn"),
     simonOpenBtn: $("simonOpenBtn"), simonBestHint: $("simonBestHint"), simonReady: $("simonReady"),
     simonReadyBackToHome: $("simonReadyBackToHome"), simonDifficultyRow: $("simonDifficultyRow"),
+    simonAdvanced: $("simonAdvanced"), simonBgColorPicker: $("simonBgColorPicker"), simonBgIntensitySlider: $("simonBgIntensitySlider"),
+    simonBgIntensityValue: $("simonBgIntensityValue"), simonBgContrastHint: $("simonBgContrastHint"),
     simonReadyBestHint: $("simonReadyBestHint"), simonReadyStartBtn: $("simonReadyStartBtn"),
     simonPlayer: $("simonPlayer"), simonStage: $("simonStage"), simonHint: $("simonHint"),
     simonSlotLeft: $("simonSlotLeft"), simonSlotRight: $("simonSlotRight"), simonDotLeft: $("simonDotLeft"), simonDotRight: $("simonDotRight"),
     simonLeftBtn: $("simonLeftBtn"), simonRightBtn: $("simonRightBtn"),
-    simonPauseOverlay: $("simonPauseOverlay"), simonResumeBtn: $("simonResumeBtn"),
+    simonPauseOverlay: $("simonPauseOverlay"), simonPauseBgSlider: $("simonPauseBgSlider"), simonPauseBgValue: $("simonPauseBgValue"),
+    simonPauseBgColorPicker: $("simonPauseBgColorPicker"), simonResumeBtn: $("simonResumeBtn"),
     simonPlayerBar: $("simonPlayerBar"), simonBackBtn: $("simonBackBtn"), simonPauseBtn: $("simonPauseBtn"), simonProgressEl: $("simonProgressEl"),
     simonFsBtn: $("simonFsBtn"), simonFsHint: $("simonFsHint"), simonFsHintOpenBtn: $("simonFsHintOpenBtn"), simonFsHintClose: $("simonFsHintClose"),
     simonDonePanel: $("simonDonePanel"), simonDoneSummary: $("simonDoneSummary"), simonRating: $("simonRating"),
@@ -1386,20 +1389,26 @@
     stroopAgainBtn: $("stroopAgainBtn"), stroopDoneBackBtn: $("stroopDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
+    rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
+    rotationBgIntensityValue: $("rotationBgIntensityValue"), rotationBgContrastHint: $("rotationBgContrastHint"),
     rotationReadyBestHint: $("rotationReadyBestHint"), rotationReadyStartBtn: $("rotationReadyStartBtn"),
     rotationPlayer: $("rotationPlayer"), rotationStage: $("rotationStage"), rotationHint: $("rotationHint"),
     rotationCharEl: $("rotationCharEl"), rotationNormalBtn: $("rotationNormalBtn"), rotationMirroredBtn: $("rotationMirroredBtn"),
-    rotationPauseOverlay: $("rotationPauseOverlay"), rotationResumeBtn: $("rotationResumeBtn"),
+    rotationPauseOverlay: $("rotationPauseOverlay"), rotationPauseBgSlider: $("rotationPauseBgSlider"), rotationPauseBgValue: $("rotationPauseBgValue"),
+    rotationPauseBgColorPicker: $("rotationPauseBgColorPicker"), rotationResumeBtn: $("rotationResumeBtn"),
     rotationPlayerBar: $("rotationPlayerBar"), rotationBackBtn: $("rotationBackBtn"), rotationPauseBtn: $("rotationPauseBtn"), rotationProgressEl: $("rotationProgressEl"),
     rotationFsBtn: $("rotationFsBtn"), rotationFsHint: $("rotationFsHint"), rotationFsHintOpenBtn: $("rotationFsHintOpenBtn"), rotationFsHintClose: $("rotationFsHintClose"),
     rotationDonePanel: $("rotationDonePanel"), rotationDoneSummary: $("rotationDoneSummary"), rotationRating: $("rotationRating"),
     rotationAgainBtn: $("rotationAgainBtn"), rotationDoneBackBtn: $("rotationDoneBackBtn"),
     merkOpenBtn: $("merkOpenBtn"), merkBestHint: $("merkBestHint"), merkReady: $("merkReady"),
     merkReadyBackToHome: $("merkReadyBackToHome"), merkDifficultyRow: $("merkDifficultyRow"),
+    merkAdvanced: $("merkAdvanced"), merkBgColorPicker: $("merkBgColorPicker"), merkBgIntensitySlider: $("merkBgIntensitySlider"),
+    merkBgIntensityValue: $("merkBgIntensityValue"), merkBgContrastHint: $("merkBgContrastHint"),
     merkReadyBestHint: $("merkReadyBestHint"), merkReadyStartBtn: $("merkReadyStartBtn"),
     merkPlayer: $("merkPlayer"), merkStage: $("merkStage"), merkHint: $("merkHint"), merkField: $("merkField"),
     merkSameBtn: $("merkSameBtn"), merkChangedBtn: $("merkChangedBtn"),
-    merkPauseOverlay: $("merkPauseOverlay"), merkResumeBtn: $("merkResumeBtn"),
+    merkPauseOverlay: $("merkPauseOverlay"), merkPauseBgSlider: $("merkPauseBgSlider"), merkPauseBgValue: $("merkPauseBgValue"),
+    merkPauseBgColorPicker: $("merkPauseBgColorPicker"), merkResumeBtn: $("merkResumeBtn"),
     merkPlayerBar: $("merkPlayerBar"), merkBackBtn: $("merkBackBtn"), merkPauseBtn: $("merkPauseBtn"), merkProgressEl: $("merkProgressEl"),
     merkFsBtn: $("merkFsBtn"), merkFsHint: $("merkFsHint"), merkFsHintOpenBtn: $("merkFsHintOpenBtn"), merkFsHintClose: $("merkFsHintClose"),
     merkDonePanel: $("merkDonePanel"), merkDoneSummary: $("merkDoneSummary"), merkRating: $("merkRating"),
@@ -9902,14 +9911,34 @@
   // Angular disparity from upright, 0-180 - a 200 degree rotation is just as
   // far from upright as a 160 degree one (the mind can rotate either way).
   function rotationDisparity(angle) { return Math.min(angle, 360 - angle); }
-  const rotationPrefs = { difficulty: "mittel" };
+  const rotationPrefs = { difficulty: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadRotationPrefs() {
     const saved = readJSON(ROTATION_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(rotationPrefs, saved);
     if (!ROTATION_DIFFICULTIES[rotationPrefs.difficulty]) rotationPrefs.difficulty = "mittel";
+    if (!STROOP_COLOR_BY_KEY[rotationPrefs.bgColorKey]) rotationPrefs.bgColorKey = "gruen";
+    if (typeof rotationPrefs.bgIntensity !== "number" || rotationPrefs.bgIntensity < 0 || rotationPrefs.bgIntensity > 1) rotationPrefs.bgIntensity = 0;
   }
   loadRotationPrefs();
   function saveRotationPrefsToStorage() { writeJSON(ROTATION_PREFS_KEY, rotationPrefs); }
+
+  // Background colour/intensity, added later (client asked every Test-Bereich
+  // exercise get the same background customisation NAT's Remember/Blitz/
+  // Flash/MOT already have) - see CLAUDE.md Established patterns for the
+  // scope decision (no transfer/preset-save here, unlike those four). The
+  // tint goes straight on the DOM stage that holds the rotated character,
+  // same "no canvas" approach as Remember's own applyRememberBg().
+  function applyRotationBg() {
+    els.rotationStage.style.background = rotationPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[rotationPrefs.bgColorKey].hex, rotationPrefs.bgIntensity)
+      : "";
+  }
+  const syncRotationBgUI = wireBgIntensityControl(rotationPrefs, {
+    pickers: [els.rotationBgColorPicker, els.rotationPauseBgColorPicker],
+    sliders: [els.rotationBgIntensitySlider, els.rotationPauseBgSlider],
+    valueEls: [els.rotationBgIntensityValue, els.rotationPauseBgValue],
+    hintEls: [els.rotationBgContrastHint],
+  }, () => { saveRotationPrefsToStorage(); applyRotationBg(); });
 
   const ROTATION_BEST_KEY = "fwmc-rotation-best-v1"; // { [difficulty]: bestAccuracyPct }
   function rotationBestFor() { return readJSON(ROTATION_BEST_KEY, {})[rotationPrefs.difficulty] || 0; }
@@ -9938,6 +9967,7 @@
 
   els.rotationOpenBtn.addEventListener("click", () => {
     syncRotationDifficultyUI();
+    syncRotationBgUI();
     renderRotationBest();
     showScreen("rotationReady");
   });
@@ -10011,6 +10041,7 @@
       stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
       startTime: performance.now(),
     };
+    applyRotationBg();
     rotationClearChar();
     els.rotationNormalBtn.classList.remove("correct", "wrong");
     els.rotationMirroredBtn.classList.remove("correct", "wrong");
@@ -10232,14 +10263,36 @@
   const MERK_FEEDBACK_MS = 800; // how long the tapped button's correct/wrong colour stays up before the next trial
   const MERK_ITEM_PX = 40;
   const MERK_MIN_CENTER_PX = MERK_ITEM_PX + 14;
-  const merkPrefs = { difficulty: "mittel" };
+  const merkPrefs = { difficulty: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadMerkPrefs() {
     const saved = readJSON(MERK_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(merkPrefs, saved);
     if (!MERK_DIFFICULTIES[merkPrefs.difficulty]) merkPrefs.difficulty = "mittel";
+    if (!STROOP_COLOR_BY_KEY[merkPrefs.bgColorKey]) merkPrefs.bgColorKey = "gruen";
+    if (typeof merkPrefs.bgIntensity !== "number" || merkPrefs.bgIntensity < 0 || merkPrefs.bgIntensity > 1) merkPrefs.bgIntensity = 0;
   }
   loadMerkPrefs();
   function saveMerkPrefsToStorage() { writeJSON(MERK_PREFS_KEY, merkPrefs); }
+
+  // Background colour/intensity, added later (client asked every Test-Bereich
+  // exercise get the same background customisation NAT's Remember/Blitz/
+  // Flash/MOT already have) - see CLAUDE.md Established patterns for the
+  // scope decision (no transfer/preset-save here, unlike those four). The
+  // tint goes on the outer #merkStage (which also holds the hint and the
+  // response row), NOT #merkField - the smaller sub-box where the coloured
+  // memoranda themselves render - so the background never competes with the
+  // colour-change signal being tested.
+  function applyMerkBg() {
+    els.merkStage.style.background = merkPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[merkPrefs.bgColorKey].hex, merkPrefs.bgIntensity)
+      : "";
+  }
+  const syncMerkBgUI = wireBgIntensityControl(merkPrefs, {
+    pickers: [els.merkBgColorPicker, els.merkPauseBgColorPicker],
+    sliders: [els.merkBgIntensitySlider, els.merkPauseBgSlider],
+    valueEls: [els.merkBgIntensityValue, els.merkPauseBgValue],
+    hintEls: [els.merkBgContrastHint],
+  }, () => { saveMerkPrefsToStorage(); applyMerkBg(); });
 
   const MERK_BEST_KEY = "fwmc-merk-best-v1"; // { [difficulty]: bestK (Pashler's K, one decimal) }
   function merkBestFor() { return readJSON(MERK_BEST_KEY, {})[merkPrefs.difficulty] || 0; }
@@ -10268,6 +10321,7 @@
 
   els.merkOpenBtn.addEventListener("click", () => {
     syncMerkDifficultyUI();
+    syncMerkBgUI();
     renderMerkBest();
     showScreen("merkReady");
   });
@@ -10375,6 +10429,7 @@
     els.merkDonePanel.hidden = true;
     els.merkPauseOverlay.hidden = true;
     els.merkPauseBtn.hidden = false;
+    applyMerkBg();
     merkClearField();
     els.merkSameBtn.classList.remove("correct", "wrong");
     els.merkChangedBtn.classList.remove("correct", "wrong");
@@ -10594,14 +10649,36 @@
   // enough per condition for a meaningful congruent-vs-incongruent RT
   // comparison, matching Posner-Cueing's own trial count.
   const SIMON_TRIAL_COUNT = 40;
-  const simonPrefs = { difficulty: "mittel" };
+  const simonPrefs = { difficulty: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadSimonPrefs() {
     const saved = readJSON(SIMON_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(simonPrefs, saved);
     if (!SIMON_DIFFICULTIES[simonPrefs.difficulty]) simonPrefs.difficulty = "mittel";
+    if (!STROOP_COLOR_BY_KEY[simonPrefs.bgColorKey]) simonPrefs.bgColorKey = "gruen";
+    if (typeof simonPrefs.bgIntensity !== "number" || simonPrefs.bgIntensity < 0 || simonPrefs.bgIntensity > 1) simonPrefs.bgIntensity = 0;
   }
   loadSimonPrefs();
   function saveSimonPrefsToStorage() { writeJSON(SIMON_PREFS_KEY, simonPrefs); }
+
+  // Background colour/intensity, added later (client asked every Test-Bereich
+  // exercise get the same background customisation NAT's Remember/Blitz/
+  // Flash/MOT already have) - see CLAUDE.md Established patterns for the
+  // scope decision (no transfer/preset-save here, unlike those four). The
+  // tint goes on the outer #simonStage - the blue/orange stimulus dot lives
+  // inside its own neutral, fixed-background `.simon-slot` box (already
+  // audited as safe: the background sits behind that box, never on the dot
+  // itself), so this never touches the response-mapped colour signal.
+  function applySimonBg() {
+    els.simonStage.style.background = simonPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[simonPrefs.bgColorKey].hex, simonPrefs.bgIntensity)
+      : "";
+  }
+  const syncSimonBgUI = wireBgIntensityControl(simonPrefs, {
+    pickers: [els.simonBgColorPicker, els.simonPauseBgColorPicker],
+    sliders: [els.simonBgIntensitySlider, els.simonPauseBgSlider],
+    valueEls: [els.simonBgIntensityValue, els.simonPauseBgValue],
+    hintEls: [els.simonBgContrastHint],
+  }, () => { saveSimonPrefsToStorage(); applySimonBg(); });
 
   const SIMON_BEST_KEY = "fwmc-simon-best-v1"; // { [difficulty]: bestAccuracyPct }
   function simonBestFor() { return readJSON(SIMON_BEST_KEY, {})[simonPrefs.difficulty] || 0; }
@@ -10630,6 +10707,7 @@
 
   els.simonOpenBtn.addEventListener("click", () => {
     syncSimonDifficultyUI();
+    syncSimonBgUI();
     renderSimonBest();
     showScreen("simonReady");
   });
@@ -10701,6 +10779,7 @@
       stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
       startTime: performance.now(),
     };
+    applySimonBg();
     simonClearStage();
     els.simonHint.textContent = "Bereit? Gleich geht's los …";
     els.simonProgressEl.textContent = `0/${simonState.trials.length}`;

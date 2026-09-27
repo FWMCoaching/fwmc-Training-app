@@ -10,8 +10,15 @@ URL = "http://localhost:8845/index.html"
 # exactly one square's colour changed. The client taps "Gleich"/"Veraendert"
 # for the WHOLE display. Scored with Pashler's K (whole-display capacity
 # estimate), not a "level" or accuracy alone. Fixed 20-trial run, difficulty
-# = array size (4/6/8), no "Bei Fehler"/background customisation (both
-# correctly skipped, same reasoning as Flanker/Posner/Rotation).
+# = array size (4/6/8), no "Bei Fehler" (correctly skipped, same reasoning
+# as Flanker/Posner/Rotation). Background colour/intensity (added later,
+# third batch of the same Test-Bereich effort as Go/No-Go/N-Back/Trail/
+# Flanker/UFOV/Posner/Rotation - see CLAUDE.md's Established patterns for
+# the scope decision, minus their transfer/preset-save machinery) tints the
+# OUTER #merkStage, not #merkField - the smaller sub-box where the coloured
+# memoranda themselves render - so the background never competes with the
+# colour-change signal being tested. Both the ready screen and the pause
+# overlay have their own live picker+slider sharing the same merkPrefs.
 #
 # Each trial cycles through 4 phases in #merkField's child count:
 #   gap (0 items, random ISI) -> study (N items, 500ms) -> retention
@@ -40,6 +47,13 @@ async def main():
         print("Merk card visible:", await pg.is_visible("#merkOpenBtn"))
         await pg.click("#merkOpenBtn"); await pg.wait_for_timeout(150)
         print("merkReady visible:", await pg.is_visible("#merkReady"))
+
+        # --- Feineinstellungen: background colour/intensity ---
+        await pg.click("#merkAdvanced summary"); await pg.wait_for_timeout(100)
+        print("bg swatch count:", await pg.locator("#merkBgColorPicker .color-swatch").count())
+        await pg.click('#merkBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
+        await pg.fill("#merkBgIntensitySlider", "0.6"); await pg.dispatch_event("#merkBgIntensitySlider", "input")
+        print("intensity value label updated:", "60%" in (await pg.inner_text("#merkBgIntensityValue")))
 
         async def field_count():
             return await pg.eval_on_selector("#merkField", "el => el.children.length")
@@ -86,6 +100,8 @@ async def main():
         print("merkPlayer visible:", await pg.is_visible("#merkPlayer"))
         progress = await pg.inner_text("#merkProgressEl")
         print("progress starts at 0/20:", "0/20" in progress)
+        bg_at_start = await pg.evaluate("() => document.getElementById('merkStage').style.background")
+        print("stage carries the chosen background as soon as the game starts:", bg_at_start not in ("", "rgb(255, 255, 255)"))
 
         # --- trial 1: sample array shows exactly 4 items, then the same 4
         # positions reappear for the test array before we tap ---
@@ -108,6 +124,9 @@ async def main():
         await pg.wait_for_timeout(700)
         progress_frozen_2 = await pg.inner_text("#merkProgressEl")
         print("progress frozen while paused:", progress_frozen_1 == progress_frozen_2)
+        await pg.click('#merkPauseBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
+        bg_paused = await pg.evaluate("() => document.getElementById('merkStage').style.background")
+        print("pause overlay's own picker live-updates the same stage background:", bg_paused not in ("", "rgb(255, 255, 255)"))
         await pg.click("#merkResumeBtn"); await pg.wait_for_timeout(120)
         print("pause overlay hidden after resume:", await pg.is_hidden("#merkPauseOverlay"))
 

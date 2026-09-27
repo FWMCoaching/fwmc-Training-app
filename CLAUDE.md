@@ -333,10 +333,32 @@ unrelated to the feature being changed.
   picker+slider), same scope narrowing as the first batch (no `BG_SOURCES`/
   transfer/preset-save for these three either). Tests extended:
   `tests/flanker_test.py`, `tests/ufov_test.py`, `tests/posner_test.py`.
-  Exercises with a background now: Go/No-Go, N-Back, Trail Making, Flanker,
-  UFOV, Posner-Cueing - the rest (rotation/merk/simon, search/ab/antizip,
-  hick/corsi/reakt, ts/anti) follow in further batches, still minus
-  Wortfarben-Test/Stroop.
+  **Third batch**: **Rotationstest (Mentale Rotation)**, **Merkspanne-Test
+  (Change Detection)**, **Farbkonflikt-Test (Simon-Aufgabe)** -
+  `rotationPrefs`/`merkPrefs`/`simonPrefs` each gained the same
+  `bgColorKey`/`bgIntensity` pair, `applyRotationBg()`/`applyMerkBg()`/
+  `applySimonBg()` tint `#rotationStage`/`#merkStage`/`#simonStage`, and each
+  got its own `wireBgIntensityControl` call (ready-screen `#rotationAdvanced`/
+  `#merkAdvanced`/`#simonAdvanced` + pause overlay picker+slider), same scope
+  narrowing as the first two batches (no `BG_SOURCES`/transfer/preset-save
+  for these three either). Merkspanne's tint goes on the outer `#merkStage`
+  (which also holds the hint and response row), deliberately NOT on
+  `#merkField` - the smaller sub-box where the coloured memoranda themselves
+  render - so the background never competes with the colour-change signal
+  being tested; Merkspanne also doesn't use `stageTopClearanceY()` at all
+  (confirmed by reading the code, not assumed), since its memoranda scatter
+  inside that fixed `.merk-field` sub-box rather than the full stage.
+  Simon's own stimulus colour (`.simon-dot-blue`/`.simon-dot-orange`) lives
+  inside its own neutral, fixed-background `.simon-slot` box, so the stage
+  tint sits behind that box and never touches the response-mapped colour
+  signal itself - the same "background sits behind the coloured stimulus,
+  not on it" reasoning as Simon's own entry in the audit above. Rotation
+  is a fixed-centre rotated character, also no `stageTopClearanceY()` use.
+  Tests extended: `tests/rotation_test.py`, `tests/merk_test.py`,
+  `tests/simon_test.py`. Exercises with a background now: Go/No-Go, N-Back,
+  Trail Making, Flanker, UFOV, Posner-Cueing, Rotationstest, Merkspanne-Test,
+  Farbkonflikt-Test - the rest (search/ab/antizip, hick/corsi/reakt, ts/anti)
+  follow in further batches, still minus Wortfarben-Test/Stroop.
 - **Multi-tab nav bars (`.section-switch`/`.sub-switch`) need headroom for
   their longest label, not just "however many tabs currently exist"**: both
   are a `display:flex` row of `flex:1` tabs capped at a `max-width` - a

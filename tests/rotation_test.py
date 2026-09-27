@@ -10,8 +10,12 @@ URL = "http://localhost:8845/index.html"
 # 32-trial fixed run (8 angles x normal/mirrored x 2 repeats), no "Bei
 # Fehler"/level progression - reports accuracy% + average RT near vs. far
 # from upright + their difference ("Rotations-Kosten", the actual angular-
-# disparity effect this paradigm exists to surface). No background-colour
-# customization (explicitly optional, correctly skipped here).
+# disparity effect this paradigm exists to surface). Background colour/
+# intensity (added later, third batch of the same Test-Bereich effort as
+# Go/No-Go/N-Back/Trail/Flanker/UFOV/Posner - see CLAUDE.md's Established
+# patterns for the scope decision, minus their transfer/preset-save
+# machinery) tints #rotationStage; both the ready screen and the pause
+# overlay have their own live picker+slider sharing the same rotationPrefs.
 #
 # Timing note: like Flanker/Posner, the feedback colour on the tapped
 # button stays up for the rest of diff.responseMs, so "a new trial
@@ -37,6 +41,13 @@ async def main():
         await pg.click("#rotationOpenBtn"); await pg.wait_for_timeout(150)
         print("rotationReady visible:", await pg.is_visible("#rotationReady"))
 
+        # --- Feineinstellungen: background colour/intensity ---
+        await pg.click("#rotationAdvanced summary"); await pg.wait_for_timeout(100)
+        print("bg swatch count:", await pg.locator("#rotationBgColorPicker .color-swatch").count())
+        await pg.click('#rotationBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
+        await pg.fill("#rotationBgIntensitySlider", "0.6"); await pg.dispatch_event("#rotationBgIntensitySlider", "input")
+        print("intensity value label updated:", "60%" in (await pg.inner_text("#rotationBgIntensityValue")))
+
         # "schwer" = shortest response window, so a short test window still
         # reliably samples several trials, including a timeout.
         await pg.click('#rotationDifficultyRow [data-rotation-diff="schwer"]'); await pg.wait_for_timeout(60)
@@ -44,6 +55,8 @@ async def main():
         print("rotationPlayer visible:", await pg.is_visible("#rotationPlayer"))
         progress = await pg.inner_text("#rotationProgressEl")
         print("progress starts at 0/32:", "0/32" in progress)
+        bg_at_start = await pg.evaluate("() => document.getElementById('rotationStage').style.background")
+        print("stage carries the chosen background as soon as the game starts:", bg_at_start not in ("", "rgb(255, 255, 255)"))
 
         async def wait_for_progress_change(prev, max_ms=6000, poll_ms=25):
             waited = 0
@@ -91,6 +104,9 @@ async def main():
         await pg.wait_for_timeout(700)
         progress_frozen_2 = await pg.inner_text("#rotationProgressEl")
         print("progress frozen while paused:", progress_frozen_1 == progress_frozen_2)
+        await pg.click('#rotationPauseBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
+        bg_paused = await pg.evaluate("() => document.getElementById('rotationStage').style.background")
+        print("pause overlay's own picker live-updates the same stage background:", bg_paused not in ("", "rgb(255, 255, 255)"))
         await pg.click("#rotationResumeBtn"); await pg.wait_for_timeout(120)
         print("pause overlay hidden after resume:", await pg.is_hidden("#rotationPauseOverlay"))
 

@@ -12,8 +12,15 @@ URL = "http://localhost:8845/index.html"
 # error-prone) - the classic Simon effect. Fixed 40-trial run
 # (SIMON_TRIAL_COUNT), no "Bei Fehler"/level progression - reports accuracy %
 # + average congruent/incongruent reaction time + the "Simon-Effekt" instead,
-# same shape as Flanker's Interferenz-Kosten / Posner's Umlenkungs-Kosten. No
-# background-colour customization (explicitly optional, correctly skipped).
+# same shape as Flanker's Interferenz-Kosten / Posner's Umlenkungs-Kosten.
+# Background colour/intensity (added later, third batch of the same
+# Test-Bereich effort as Go/No-Go/N-Back/Trail/Flanker/UFOV/Posner/Rotation/
+# Merkspanne - see CLAUDE.md's Established patterns for the scope decision,
+# minus their transfer/preset-save machinery) tints the outer #simonStage -
+# the blue/orange stimulus dot lives inside its own neutral, fixed-
+# background .simon-slot box, so this never touches the response-mapped
+# colour signal itself. Both the ready screen and the pause overlay have
+# their own live picker+slider sharing the same simonPrefs.
 #
 # Timing note: like Flanker/Posner, the feedback ring on a tapped button
 # stays up for the rest of diff.responseMs regardless of how fast the client
@@ -39,6 +46,13 @@ async def main():
         await pg.click("#simonOpenBtn"); await pg.wait_for_timeout(150)
         print("simonReady visible:", await pg.is_visible("#simonReady"))
 
+        # --- Feineinstellungen: background colour/intensity ---
+        await pg.click("#simonAdvanced summary"); await pg.wait_for_timeout(100)
+        print("bg swatch count:", await pg.locator("#simonBgColorPicker .color-swatch").count())
+        await pg.click('#simonBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
+        await pg.fill("#simonBgIntensitySlider", "0.6"); await pg.dispatch_event("#simonBgIntensitySlider", "input")
+        print("intensity value label updated:", "60%" in (await pg.inner_text("#simonBgIntensityValue")))
+
         # "schwer" = shortest response window/ISI, so a short test window
         # still reliably samples several trials, including a timeout.
         await pg.click('#simonDifficultyRow [data-simon-diff="schwer"]'); await pg.wait_for_timeout(60)
@@ -47,6 +61,8 @@ async def main():
         print("fixed response buttons show Blau/Orange:", "Blau" in (await pg.inner_text("#simonLeftBtn")) and "Orange" in (await pg.inner_text("#simonRightBtn")))
         progress = await pg.inner_text("#simonProgressEl")
         print("progress starts at 0/40:", "0/40" in progress)
+        bg_at_start = await pg.evaluate("() => document.getElementById('simonStage').style.background")
+        print("stage carries the chosen background as soon as the game starts:", bg_at_start not in ("", "rgb(255, 255, 255)"))
 
         async def wait_for_progress_change(prev, max_ms=6000, poll_ms=25):
             waited = 0
@@ -109,6 +125,9 @@ async def main():
         html_paused2 = await pg.inner_html("#simonStage")
         progress_paused2 = await pg.inner_text("#simonProgressEl")
         print("stage genuinely frozen while paused:", html_paused1 == html_paused2 and progress_paused1 == progress_paused2)
+        await pg.click('#simonPauseBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
+        bg_paused = await pg.evaluate("() => document.getElementById('simonStage').style.background")
+        print("pause overlay's own picker live-updates the same stage background:", bg_paused not in ("", "rgb(255, 255, 255)"))
         await pg.click("#simonResumeBtn"); await pg.wait_for_timeout(150)
         print("pause overlay hidden after resume:", await pg.is_hidden("#simonPauseOverlay"))
 
