@@ -1185,6 +1185,17 @@
     posnerFsBtn: $("posnerFsBtn"), posnerFsHint: $("posnerFsHint"), posnerFsHintOpenBtn: $("posnerFsHintOpenBtn"), posnerFsHintClose: $("posnerFsHintClose"),
     posnerDonePanel: $("posnerDonePanel"), posnerDoneSummary: $("posnerDoneSummary"), posnerRating: $("posnerRating"),
     posnerAgainBtn: $("posnerAgainBtn"), posnerDoneBackBtn: $("posnerDoneBackBtn"),
+    simonOpenBtn: $("simonOpenBtn"), simonBestHint: $("simonBestHint"), simonReady: $("simonReady"),
+    simonReadyBackToHome: $("simonReadyBackToHome"), simonDifficultyRow: $("simonDifficultyRow"),
+    simonReadyBestHint: $("simonReadyBestHint"), simonReadyStartBtn: $("simonReadyStartBtn"),
+    simonPlayer: $("simonPlayer"), simonStage: $("simonStage"), simonHint: $("simonHint"),
+    simonSlotLeft: $("simonSlotLeft"), simonSlotRight: $("simonSlotRight"), simonDotLeft: $("simonDotLeft"), simonDotRight: $("simonDotRight"),
+    simonLeftBtn: $("simonLeftBtn"), simonRightBtn: $("simonRightBtn"),
+    simonPauseOverlay: $("simonPauseOverlay"), simonResumeBtn: $("simonResumeBtn"),
+    simonPlayerBar: $("simonPlayerBar"), simonBackBtn: $("simonBackBtn"), simonPauseBtn: $("simonPauseBtn"), simonProgressEl: $("simonProgressEl"),
+    simonFsBtn: $("simonFsBtn"), simonFsHint: $("simonFsHint"), simonFsHintOpenBtn: $("simonFsHintOpenBtn"), simonFsHintClose: $("simonFsHintClose"),
+    simonDonePanel: $("simonDonePanel"), simonDoneSummary: $("simonDoneSummary"), simonRating: $("simonRating"),
+    simonAgainBtn: $("simonAgainBtn"), simonDoneBackBtn: $("simonDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationReadyBestHint: $("rotationReadyBestHint"), rotationReadyStartBtn: $("rotationReadyStartBtn"),
@@ -1401,7 +1412,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3423,6 +3434,7 @@
     els.posnerPlayer.hidden = true;
     els.rotationPlayer.hidden = true;
     els.merkPlayer.hidden = true;
+    els.simonPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3806,6 +3818,7 @@
   wireFullscreen({ player: els.posnerPlayer, btn: els.posnerFsBtn, hint: els.posnerFsHint, hintOpen: els.posnerFsHintOpenBtn, hintClose: els.posnerFsHintClose });
   wireFullscreen({ player: els.rotationPlayer, btn: els.rotationFsBtn, hint: els.rotationFsHint, hintOpen: els.rotationFsHintOpenBtn, hintClose: els.rotationFsHintClose });
   wireFullscreen({ player: els.merkPlayer, btn: els.merkFsBtn, hint: els.merkFsHint, hintOpen: els.merkFsHintOpenBtn, hintClose: els.merkFsHintClose });
+  wireFullscreen({ player: els.simonPlayer, btn: els.simonFsBtn, hint: els.simonFsHint, hintOpen: els.simonFsHintOpenBtn, hintClose: els.simonFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -10118,6 +10131,311 @@
   els.merkBackBtn.addEventListener("click", merkStop);
   els.merkAgainBtn.addEventListener("click", () => { els.merkDonePanel.hidden = true; startMerkGame(); });
   els.merkDoneBackBtn.addEventListener("click", () => { els.merkPlayer.hidden = true; els.merkDonePanel.hidden = true; showScreen("testHome"); });
+
+  // ==== Test-Bereich: Farbkonflikt-Test (Simon-Aufgabe) ====
+  // Ninth autonomous entry (see CLAUDE.md's "Test-Bereich (autonomous,
+  // ongoing)"). Grounded in the Simon task (Simon & Rudell, 1967; Simon,
+  // 1969): a stimulus's IRRELEVANT spatial position (here: which of two
+  // slots a coloured dot appears in) automatically activates a response
+  // tendency toward that same side, even though the actual instructed
+  // response is determined by something else entirely (here: the dot's
+  // colour, mapped to a fixed left/right button that never moves during a
+  // run). When the automatically-activated side and the instructed side
+  // agree ("congruent") responses are fast; when they conflict
+  // ("incongruent") responses are slower and more error-prone - the classic
+  // "Simon effect", a pure measure of resolving an automatic spatial S-R
+  // (stimulus-response) conflict. Also researched as sport-relevant before
+  // building: open-skill-sport athletes (e.g. futsal players) show reduced
+  // Simon-effect interference versus non-athletes, and action-video-game
+  // training has been shown to shrink the Simon effect too - both point to
+  // this specific kind of interference control being trainable, a good fit
+  // for FWMC's "visuelle Entscheidungsgeschwindigkeit" focus. Genuinely
+  // distinct from every existing Test/NAT mechanic: Flanker's conflict comes
+  // from simultaneous DISTRACTOR STIMULI around a central target (the
+  // target's identity itself is never in question, only what surrounds it);
+  // Posner-Cueing tests voluntarily/endogenously shifting attention between
+  // two known locations after an explicit cue; Simon's conflict instead
+  // comes from the single target STIMULUS's own task-irrelevant location
+  // automatically priming a response side, entirely without any cue,
+  // distractor, or shift instruction - a third, complementary facet of
+  // interference control alongside those two.
+  const SIMON_PREFS_KEY = "fwmc-simon-prefs-v1";
+  // Difficulty controls the response window and inter-trial gap - same
+  // shape and the same numbers as FLANKER_DIFFICULTIES (a single-stimulus,
+  // immediate-response task of comparable cognitive load).
+  const SIMON_DIFFICULTIES = {
+    leicht: { title: "Leicht", responseMs: 2200, isiMin: 900, isiMax: 1400 },
+    mittel: { title: "Mittel", responseMs: 1600, isiMin: 700, isiMax: 1100 },
+    schwer: { title: "Schwer", responseMs: 1100, isiMin: 500, isiMax: 900 },
+  };
+  // 40 trials, a full 2x2 design (colour x side) balanced 10 each way - 20
+  // congruent / 20 incongruent, 20 blue / 20 orange, 20 left / 20 right -
+  // enough per condition for a meaningful congruent-vs-incongruent RT
+  // comparison, matching Posner-Cueing's own trial count.
+  const SIMON_TRIAL_COUNT = 40;
+  const simonPrefs = { difficulty: "mittel" };
+  function loadSimonPrefs() {
+    const saved = readJSON(SIMON_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(simonPrefs, saved);
+    if (!SIMON_DIFFICULTIES[simonPrefs.difficulty]) simonPrefs.difficulty = "mittel";
+  }
+  loadSimonPrefs();
+  function saveSimonPrefsToStorage() { writeJSON(SIMON_PREFS_KEY, simonPrefs); }
+
+  const SIMON_BEST_KEY = "fwmc-simon-best-v1"; // { [difficulty]: bestAccuracyPct }
+  function simonBestFor() { return readJSON(SIMON_BEST_KEY, {})[simonPrefs.difficulty] || 0; }
+  function saveSimonBest(accuracyPct) {
+    const all = readJSON(SIMON_BEST_KEY, {});
+    if (accuracyPct > (all[simonPrefs.difficulty] || 0)) { all[simonPrefs.difficulty] = accuracyPct; writeJSON(SIMON_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderSimonBest() {
+    const best = simonBestFor();
+    const text = best ? `Beste Genauigkeit (${SIMON_DIFFICULTIES[simonPrefs.difficulty].title}): ${best}%` : "";
+    els.simonBestHint.textContent = text;
+    els.simonReadyBestHint.textContent = text;
+  }
+  function syncSimonDifficultyUI() {
+    els.simonDifficultyRow.querySelectorAll("[data-simon-diff]").forEach((btn) => setActive(btn, btn.dataset.simonDiff === simonPrefs.difficulty));
+  }
+  els.simonDifficultyRow.querySelectorAll("[data-simon-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      simonPrefs.difficulty = btn.dataset.simonDiff;
+      saveSimonPrefsToStorage();
+      syncSimonDifficultyUI();
+      renderSimonBest();
+    });
+  });
+
+  els.simonOpenBtn.addEventListener("click", () => {
+    syncSimonDifficultyUI();
+    renderSimonBest();
+    showScreen("simonReady");
+  });
+  els.simonReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Same timer-wrapping trick as scheduleFlankerTimer/schedulePosnerTimer:
+  // records what's pending and when it fires, so Pause can cancel it and
+  // Resume can replay it with its exact remaining delay.
+  function scheduleSimonTimer(fn, delayMs) {
+    simonState.timerFn = fn;
+    simonState.timerFiresAt = performance.now() + delayMs;
+    simonState.timer = setTimeout(() => { simonState.timer = null; fn(); }, delayMs);
+  }
+
+  // The fixed colour->response-side mapping for the whole run: Blau is
+  // always the LEFT button, Orange always the RIGHT button (matches
+  // simonLeftBtn/simonRightBtn's fixed on-screen position). "congruent"
+  // means the dot's on-screen SIDE happens to match that colour's button
+  // side too - the one thing this task actually varies independently of the
+  // instructed (colour) response.
+  function simonCorrectSide(color) { return color === "blue" ? "left" : "right"; }
+  function buildSimonTrials() {
+    const trials = [];
+    ["blue", "orange"].forEach((color) => {
+      ["left", "right"].forEach((side) => {
+        for (let i = 0; i < SIMON_TRIAL_COUNT / 4; i++) trials.push({ color, side });
+      });
+    });
+    // Shuffle, then avoid more than 3 identical CORRECT (colour-determined)
+    // responses back to back - same guard as buildFlankerTrials/
+    // buildPosnerTrials, so a "just keep pressing the same button" motor
+    // strategy can't pass undetected.
+    for (let tries = 0; tries < 200; tries++) {
+      for (let i = trials.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [trials[i], trials[j]] = [trials[j], trials[i]];
+      }
+      let ok = true, run = 1;
+      for (let i = 1; i < trials.length; i++) {
+        if (simonCorrectSide(trials[i].color) === simonCorrectSide(trials[i - 1].color)) { run++; if (run > 3) { ok = false; break; } }
+        else run = 1;
+      }
+      if (ok) break;
+    }
+    return trials;
+  }
+
+  function simonClearStage() {
+    els.simonDotLeft.classList.remove("show", "simon-dot-blue", "simon-dot-orange");
+    els.simonDotRight.classList.remove("show", "simon-dot-blue", "simon-dot-orange");
+    els.simonLeftBtn.classList.remove("correct", "wrong");
+    els.simonRightBtn.classList.remove("correct", "wrong");
+  }
+  function simonDotFor(side) { return side === "left" ? els.simonDotLeft : els.simonDotRight; }
+  function simonBtnFor(side) { return side === "left" ? els.simonLeftBtn : els.simonRightBtn; }
+
+  let simonState = null;
+  function startSimonGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.simonPlayer.hidden = false;
+    els.simonPlayerBar.hidden = false;
+    els.simonDonePanel.hidden = true;
+    els.simonPauseOverlay.hidden = true;
+    els.simonPauseBtn.hidden = false;
+    simonState = {
+      diff: SIMON_DIFFICULTIES[simonPrefs.difficulty], trials: buildSimonTrials(), index: -1, phase: "gap", responded: false,
+      correct: 0, incorrect: 0, timeouts: 0, rtsCongruent: [], rtsIncongruent: [],
+      stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      startTime: performance.now(),
+    };
+    simonClearStage();
+    els.simonHint.textContent = "Bereit? Gleich geht's los …";
+    els.simonProgressEl.textContent = `0/${simonState.trials.length}`;
+    requestWakeLock();
+    scheduleSimonTimer(simonNextTrial, 1200);
+  }
+  els.simonReadyStartBtn.addEventListener("click", startSimonGame);
+
+  function simonNextTrial() {
+    if (!simonState) return;
+    simonState.index++;
+    if (simonState.index >= simonState.trials.length) { simonFinish(); return; }
+    els.simonProgressEl.textContent = `${simonState.index + 1}/${simonState.trials.length}`;
+    simonState.phase = "gap";
+    simonState.responded = false;
+    simonClearStage();
+    const isi = simonState.diff.isiMin + Math.random() * (simonState.diff.isiMax - simonState.diff.isiMin);
+    scheduleSimonTimer(simonShowStimulus, isi);
+  }
+  function simonShowStimulus() {
+    if (!simonState) return;
+    const trial = simonState.trials[simonState.index];
+    simonState.phase = "responding";
+    simonState.responded = false;
+    simonState.stimAt = performance.now();
+    els.simonHint.textContent = "";
+    simonClearStage();
+    simonDotFor(trial.side).classList.add("show", `simon-dot-${trial.color}`);
+    scheduleSimonTimer(simonEndTrial, simonState.diff.responseMs);
+  }
+  function simonEndTrial() {
+    if (!simonState) return;
+    if (simonState.phase === "responding" && !simonState.responded) {
+      simonState.incorrect++;
+      simonState.timeouts++;
+      els.simonHint.textContent = "Verpasst!";
+    }
+    simonState.phase = "gap";
+    simonNextTrial();
+  }
+  function simonTap(side) {
+    if (!simonState || simonState.paused || simonState.responded) return;
+    // Taps before the dot actually appears are ignored - reaction time is
+    // measured stimulus-locked, same convention as Flanker's/Posner's own
+    // tap handlers.
+    if (simonState.phase !== "responding") return;
+    simonState.responded = true;
+    const trial = simonState.trials[simonState.index];
+    const rt = performance.now() - simonState.stimAt;
+    const correctSide = simonCorrectSide(trial.color);
+    const correct = side === correctSide;
+    const congruent = trial.side === correctSide;
+    simonBtnFor(side).classList.add(correct ? "correct" : "wrong");
+    if (correct) {
+      simonState.correct++;
+      (congruent ? simonState.rtsCongruent : simonState.rtsIncongruent).push(rt);
+    } else {
+      simonState.incorrect++;
+      els.simonHint.textContent = "Falsche Farbe!";
+    }
+    // The feedback ring stays up for whatever's left of diff.responseMs (the
+    // already-scheduled simonEndTrial fires the actual transition) - same
+    // rhythm as Flanker/Posner leaving their own tap feedback up for the
+    // rest of the response window, no separate timer needed.
+  }
+  els.simonLeftBtn.addEventListener("click", () => simonTap("left"));
+  els.simonRightBtn.addEventListener("click", () => simonTap("right"));
+
+  // Pause just stops/replays the pending timer, no live background-adjust
+  // overlay - background colour customisation was skipped for this exercise
+  // (explicitly optional per the Test-Bereich guidance) so there is nothing
+  // to adjust while paused.
+  function pauseSimon() {
+    if (!simonState || simonState.paused) return;
+    simonState.paused = true;
+    simonState.pausedAt = performance.now();
+    if (simonState.timer) {
+      clearTimeout(simonState.timer);
+      simonState.timer = null;
+      simonState.timerRemainingMs = Math.max(0, simonState.timerFiresAt - simonState.pausedAt);
+    }
+    els.simonPauseBtn.hidden = true;
+    els.simonPauseOverlay.hidden = false;
+  }
+  function resumeSimon() {
+    if (!simonState || !simonState.paused) return;
+    const pausedMs = performance.now() - simonState.pausedAt;
+    simonState.startTime += pausedMs;
+    simonState.stimAt += pausedMs;
+    simonState.paused = false;
+    if (simonState.timerFn && simonState.timerRemainingMs != null) {
+      scheduleSimonTimer(simonState.timerFn, simonState.timerRemainingMs);
+      simonState.timerRemainingMs = null;
+    }
+    els.simonPauseOverlay.hidden = true;
+    els.simonPauseBtn.hidden = false;
+  }
+  els.simonPauseBtn.addEventListener("click", pauseSimon);
+  els.simonResumeBtn.addEventListener("click", resumeSimon);
+
+  function finalizeSimonRun(state, totalTrials) {
+    els.simonPauseOverlay.hidden = true;
+    els.simonPlayerBar.hidden = true;
+    const accuracyPct = Math.round(100 * state.correct / totalTrials);
+    const avgCong = avgOf(state.rtsCongruent);
+    const avgIncong = avgOf(state.rtsIncongruent);
+    // The "Simon effect" itself: how much slower correct incongruent
+    // responses were versus correct congruent ones - the classic spatial
+    // S-R-conflict cost this paradigm exists to surface.
+    const simonEffect = (avgCong != null && avgIncong != null) ? (avgIncong - avgCong) : null;
+    const isRecord = saveSimonBest(accuracyPct);
+    renderSimonBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.simonDoneSummary.textContent =
+      `Farbkonflikt-Test (${state.diff.title}) · ${accuracyPct}% richtig` +
+      (avgCong != null ? ` · Ø kongruent ${avgCong} ms` : "") +
+      (avgIncong != null ? ` · Ø inkongruent ${avgIncong} ms` : "") +
+      (simonEffect != null ? ` · Simon-Effekt ${simonEffect} ms` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${accuracyPct}% richtig` + (simonEffect != null ? `, Simon-Effekt ${simonEffect} ms` : "");
+    const id = addHistory({ kind: "simon", title: "Farbkonflikt-Test (Simon-Aufgabe)", seconds: Math.round(played), note });
+    renderRating(els.simonRating, id, "Wie fokussiert warst du?");
+    els.simonDonePanel.hidden = false;
+  }
+  function simonFinish() {
+    if (!simonState) return;
+    const state = simonState;
+    simonState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.simonPlayer) document.exitFullscreen().catch(() => {});
+    els.simonFsHint.hidden = true;
+    finalizeSimonRun(state, state.trials.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved.
+  function simonStop() {
+    if (!simonState) return;
+    if (simonState.timer) clearTimeout(simonState.timer);
+    const state = simonState;
+    simonState = null;
+    els.simonPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.simonPlayer) document.exitFullscreen().catch(() => {});
+    els.simonFsHint.hidden = true;
+    const resolved = state.correct + state.incorrect;
+    if (resolved >= 4) {
+      finalizeSimonRun(state, resolved);
+    } else {
+      els.simonPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.simonBackBtn.addEventListener("click", simonStop);
+  els.simonAgainBtn.addEventListener("click", () => { els.simonDonePanel.hidden = true; startSimonGame(); });
+  els.simonDoneBackBtn.addEventListener("click", () => { els.simonPlayer.hidden = true; els.simonDonePanel.hidden = true; showScreen("testHome"); });
 
   // ---- Start-up ----
   renderHistory();

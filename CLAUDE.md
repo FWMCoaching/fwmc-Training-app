@@ -1104,6 +1104,56 @@ doesn't:
   that run was left going and finished cleanly (51/51 green) rather than
   being restarted, then this entry was added and the result committed+
   pushed, directly in the parent session.
+- **Farbkonflikt-Test (Simon-Aufgabe)** (ninth autonomous entry,
+  2026-09-27): grounded in the Simon task (Simon & Rudell, 1967; Simon,
+  1969) - a coloured dot (blue or orange) appears in a left or right slot;
+  the client always taps the SAME fixed-position button matching the dot's
+  COLOUR (Blau = links, Orange = rechts, this mapping never changes during
+  a run), entirely ignoring which slot the dot appeared in. When the dot's
+  on-screen side happens to match its colour's button side that's
+  "congruent" (fast, accurate); when it conflicts that's "incongruent"
+  (slower, more error-prone) - the classic Simon effect, the automatic,
+  uncued activation of a spatial response tendency by a task-irrelevant
+  stimulus location. Also researched as sport-relevant: open-skill-sport
+  athletes (e.g. futsal players) show reduced Simon-effect interference
+  versus non-athletes, and action-video-game training has been shown to
+  shrink the Simon effect too - both point to this specific interference-
+  control facet being trainable, a fit for FWMC's "visuelle
+  Entscheidungsgeschwindigkeit" focus. Genuinely distinct from every
+  existing Test/NAT mechanic: Flanker's conflict comes from simultaneous
+  DISTRACTOR stimuli surrounding an unambiguous central target; Posner-
+  Cueing tests voluntarily/endogenously shifting attention between two
+  known locations after an explicit cue; Simon's conflict instead comes
+  from the single target stimulus's own task-irrelevant location
+  automatically priming a response side, with no cue, distractor, or shift
+  instruction involved at all - a third, complementary facet of
+  interference control. Fixed 40-trial run (`SIMON_TRIAL_COUNT`, a full
+  balanced 2x2 design - colour x side, 20 congruent/20 incongruent, 20
+  blue/20 orange, 20 left/20 right), shuffled with the same same-correct-
+  side-max-3-in-a-row guard the other Test exercises use. Reports
+  accuracy% plus average congruent/incongruent RT and their difference as
+  the "Simon-Effekt" (ms) - the actual outcome measure this paradigm
+  exists to surface - tracking best accuracy% per `simonPrefs.difficulty`
+  (leicht/mittel/schwer, reusing FLANKER_DIFFICULTIES' exact response-
+  window/ISI numbers, a single-stimulus immediate-response task of
+  comparable load) via `SIMON_BEST_KEY`. No Bei-Fehler/background colour/
+  Zusatzaufgabe/Trainingsmodus - all correctly skipped per the "optional,
+  skip what doesn't fit in an hour" guidance, same reasoning as Flanker/
+  Posner/Rotationstest (a fixed-trial accuracy/RT test, nothing to
+  configure beyond difficulty). Pause/resume uses the same scheduleXTimer-
+  remaining-delay trick as Flanker/Posner/Rotation. New CSS is `.simon-*`
+  (fixed hex colours throughout, no `var(--...)`); unlike Flanker/Posner's
+  tap feedback (a solid background swap), correct/wrong here is a colour-
+  neutral ring (`box-shadow`) on top of the button's own permanent blue/
+  orange fill, deliberately, so feedback semantics never get confused with
+  the stimulus/response colour coding the whole task is built around. The
+  two response buttons show their colour name as visible text ("Blau"/
+  "Orange") rather than a silent key mapping the client must memorise
+  beforehand (the classic lab version uses unlabelled keys) - a deliberate,
+  documented touchscreen simplification, not a compromise worth flagging:
+  the actual measured effect (does an irrelevant stimulus location speed or
+  slow the colour-based response) is unaffected by whether the mapping is
+  labelled or memorised. Test: `tests/simon_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 

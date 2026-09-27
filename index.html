@@ -643,6 +643,11 @@
       <span class="fc-desc">Mehrere farbige Felder blitzen kurz auf &ndash; nach einer kurzen Pause siehst du sie erneut. Hat sich die Farbe eines Feldes ver&auml;ndert, oder ist alles gleich geblieben? Klassisches Paradigma zur Kapazit&auml;t des visuellen Arbeitsged&auml;chtnisses (Luck &amp; Vogel, 1997).</span>
       <span class="fc-meta" id="merkBestHint"></span>
     </button>
+    <button class="featured-card" id="simonOpenBtn">
+      <span class="fc-title">Farbkonflikt-Test (Simon-Aufgabe)</span>
+      <span class="fc-desc">Ein blauer oder oranger Punkt erscheint links oder rechts &ndash; tippe die Taste mit der passenden FARBE, egal auf welcher Seite der Punkt auftaucht. Klassisches Paradigma zum r&auml;umlichen Reiz-Reaktions-Konflikt (Simon &amp; Rudell, 1967), trainiert visuelle Entscheidungsgeschwindigkeit unter automatischer Ablenkung.</span>
+      <span class="fc-meta" id="simonBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -787,6 +792,27 @@
   <div class="group-help" id="posnerReadyBestHint"></div>
 
   <button class="start-btn" id="posnerReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="simonReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="simonReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Farbkonflikt-Test (Simon-Aufgabe)</h1>
+  <p class="page-sub">Unten stehen zwei feste Tasten: links Blau, rechts Orange &ndash; diese Zuordnung &auml;ndert sich w&auml;hrend des ganzen Durchlaufs nie. Oben erscheint ein Punkt in Blau oder Orange, mal links, mal rechts. Tippe immer die Taste mit der passenden FARBE, v&ouml;llig unabh&auml;ngig davon, auf welcher Seite der Punkt auftaucht. Klassisches Paradigma zum r&auml;umlichen Reiz-Reaktions-Konflikt (Simon &amp; Rudell, 1967) &ndash; die Position des Punkts ist eigentlich unwichtig, lenkt aber automatisch ab, wenn sie nicht zur richtigen Taste passt.</p>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="simonDifficultyRow">
+      <button class="choice" data-simon-diff="leicht">Leicht<small>mehr Zeit</small></button>
+      <button class="choice" data-simon-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-simon-diff="schwer">Schwer<small>knapp bemessen</small></button>
+    </div>
+  </div>
+
+  <div class="group-help" id="simonReadyBestHint"></div>
+
+  <button class="start-btn" id="simonReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="rotationReady" hidden>
@@ -2813,6 +2839,47 @@
     <div class="rating" id="posnerRating"></div>
     <button class="again" id="posnerAgainBtn">Nochmal</button>
     <button class="back" id="posnerDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="simonPlayer" hidden>
+  <div class="simon-stage" id="simonStage">
+    <div class="remember-hint" id="simonHint"></div>
+    <div class="simon-slots-row">
+      <div class="simon-slot" id="simonSlotLeft"><span class="simon-dot" id="simonDotLeft"></span></div>
+      <span class="simon-fix" aria-hidden="true">+</span>
+      <div class="simon-slot" id="simonSlotRight"><span class="simon-dot" id="simonDotRight"></span></div>
+    </div>
+    <div class="simon-response-row">
+      <button class="simon-response-btn simon-blue" id="simonLeftBtn" aria-label="Blau">Blau</button>
+      <button class="simon-response-btn simon-orange" id="simonRightBtn" aria-label="Orange">Orange</button>
+    </div>
+  </div>
+  <div class="pause-overlay" id="simonPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="simonResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="simonPlayerBar">
+    <button id="simonBackBtn">&#10005; Beenden</button>
+    <button id="simonPauseBtn">Pause</button>
+    <span class="player-status" id="simonProgressEl"></span>
+    <button id="simonFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="simonFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="simonFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="simonFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="simonDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="simonDoneSummary"></p>
+    <div class="rating" id="simonRating"></div>
+    <button class="again" id="simonAgainBtn">Nochmal</button>
+    <button class="back" id="simonDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

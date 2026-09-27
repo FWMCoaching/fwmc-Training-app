@@ -671,6 +671,36 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .posner-dot{width:36px;height:36px;border-radius:50%;background:#16232a;opacity:0}
 .posner-dot.show{opacity:1}
 
+/* Farbkonflikt-Test (Simon-Aufgabe) - fixed hex colours throughout, never
+   var(--...), same reasoning as every other player/stage-scoped visual in
+   this app. The two response buttons keep a permanent colour (Blau=links,
+   Orange=rechts) for the whole run - that fixed colour<->side mapping is
+   what creates the spatial S-R compatibility this task measures, so unlike
+   Flanker/Posner's tap feedback (a solid background swap) the correct/wrong
+   feedback here is a colour-neutral ring on top of the button's own fixed
+   fill, so it never gets confused with the stimulus/button colour itself. */
+.simon-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px;padding:24px}
+.simon-slots-row{display:flex;align-items:center;justify-content:center;gap:56px}
+.simon-fix{font-size:26px;font-weight:700;color:#16232a;line-height:1}
+.simon-slot{
+  border:3px solid #b9c6cb;border-radius:16px;background:#eef2f3;
+  width:88px;height:88px;display:flex;align-items:center;justify-content:center;
+}
+.simon-dot{width:44px;height:44px;border-radius:50%;opacity:0}
+.simon-dot.show{opacity:1}
+.simon-dot.simon-dot-blue{background:#1565c0}
+.simon-dot.simon-dot-orange{background:#e65100}
+.simon-response-row{display:flex;gap:28px}
+.simon-response-btn{
+  min-width:120px;padding:16px 22px;border-radius:16px;border:none;color:#fff;
+  font-size:18px;font-weight:700;cursor:pointer;transition:transform .08s ease,box-shadow .12s ease;
+}
+.simon-response-btn:active{transform:scale(.96)}
+.simon-response-btn.simon-blue{background:#1565c0}
+.simon-response-btn.simon-orange{background:#e65100}
+.simon-response-btn.correct{box-shadow:0 0 0 5px #2e7d32 inset}
+.simon-response-btn.wrong{box-shadow:0 0 0 5px #d32f2f inset}
+
 /* Rotationstest (Mentale Rotation) - fixed hex colours throughout, never
    var(--...), same reasoning as every other player/stage-scoped visual in
    this app (the stage's own background stays plain white regardless of OS
