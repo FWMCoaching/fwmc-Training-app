@@ -1128,6 +1128,8 @@
     tipsSheet: $("tipsSheet"), tipsBtn: $("tipsBtn"), tipsCloseBtn: $("tipsCloseBtn"),
     tipInstall: $("tipInstall"), tipInstallText: $("tipInstallText"),
     faqSheet: $("faqSheet"), faqCloseBtn: $("faqCloseBtn"),
+    masterSettingsSheet: $("masterSettingsSheet"), masterSettingsCloseBtn: $("masterSettingsCloseBtn"),
+    masterCodeHistoryGroup: $("masterCodeHistoryGroup"), masterCodeHistoryList: $("masterCodeHistoryList"),
     breathHome: $("breathHome"), breathReady: $("breathReady"), breathBackToHome: $("breathBackToHome"),
     breathReadyTitle: $("breathReadyTitle"), breathReadyGoal: $("breathReadyGoal"), patternGrid: $("patternGrid"),
     patternBreakdown: $("patternBreakdown"), phaseHelp: $("phaseHelp"),
@@ -2761,7 +2763,14 @@
   // from the NAT home instead and needs to return there.
   let readyReturnScreen = "home";
   document.querySelectorAll(".excard").forEach((card) => {
-    card.addEventListener("click", () => { readyReturnScreen = "home"; openReady(card.dataset.exercise, card.querySelector(".icon-badge,.icon-tile").outerHTML); });
+    card.addEventListener("click", () => {
+      // Greyed-out/incompatible (see Master-Einstellungen further below) -
+      // tapping it opens Settings instead of the exercise, since the card
+      // itself IS the "Verweis auf die Master-Einstellungen".
+      if (card.classList.contains("incompatible")) { openMasterSettings(); return; }
+      readyReturnScreen = "home";
+      openReady(card.dataset.exercise, card.querySelector(".icon-badge,.icon-tile").outerHTML);
+    });
   });
 
   function openReady(id, iconHtml) {
@@ -2891,6 +2900,7 @@
       return;
     }
     if (ctx.errorEl) ctx.errorEl.hidden = true;
+    recordCodeUsage(code);
     if (def.type === "bundle") { openBundleOverview(def, code); return; }
     if (def.type === "breath-bundle") { openBreathBundleOverview(def, code); return; }
     if (def.type === "breath-program") { breathOriginBundle = null; renderBreathProgramIntro(def, code, code); return; }
@@ -4134,11 +4144,154 @@
   els.faqCloseBtn.addEventListener("click", closeFaq);
   els.faqSheet.addEventListener("click", (e) => { if (e.target === els.faqSheet) closeFaq(); });
   els.faqSheet.addEventListener("keydown", (e) => trapTabKey(els.faqSheet, e));
+  // ==== Master-Einstellungen: a no-login "profile" (added 2026-09-27,
+  // client's own framing) ====
+  // Everything here lives in ONE localStorage key, same convention as every
+  // other *Prefs object in this file - just cross-cutting instead of
+  // per-exercise. Two concerns share the sheet: (1) accessibility/physical
+  // presets that would otherwise need re-setting in every exercise's own
+  // Feineinstellungen every time, and (2) a locally-remembered list of
+  // Trainings-Codes the client has typed in, so they don't have to keep
+  // retyping/re-finding one from the coach. Both are explicitly LOCAL-ONLY -
+  // the sheet's own first line says so, matching the FAQ's existing "wo
+  // werden meine Trainingsdaten gespeichert" answer.
+  const MASTER_PREFS_KEY = "fwmc-master-v1";
+  const masterPrefs = { colorVision: "normal", limb: "none", hearing: "normal" };
+  function loadMasterPrefs() {
+    const saved = readJSON(MASTER_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(masterPrefs, saved);
+    if (masterPrefs.colorVision !== "normal" && masterPrefs.colorVision !== "rotgruen") masterPrefs.colorVision = "normal";
+    if (!["none", "armL", "armR"].includes(masterPrefs.limb)) masterPrefs.limb = "none";
+    if (masterPrefs.hearing !== "normal" && masterPrefs.hearing !== "gehoerlos") masterPrefs.hearing = "normal";
+  }
+  function saveMasterPrefs() { writeJSON(MASTER_PREFS_KEY, masterPrefs); }
+  loadMasterPrefs();
+
+  // Colour-vision preset: today only Go/No-Go has a genuine red/green
+  // discrimination signal (every other exercise's colour is either neutral
+  // or already colour-blind-safe, e.g. Simon's blue/orange - see CLAUDE.md's
+  // colour-clash audit) - applied as a body class so styles.css can override
+  // just `.gng-stimulus.go/.nogo` without touching GNG's own code. Reusing
+  // Simon's own blue/orange pair keeps the app's "safe pair" consistent
+  // rather than inventing a second one.
+  function applyColorVisionMode() {
+    document.body.classList.toggle("cvd-rotgruen", masterPrefs.colorVision === "rotgruen");
+  }
+  document.querySelectorAll("[data-master-cvd]").forEach((el) => el.addEventListener("click", () => {
+    masterPrefs.colorVision = el.dataset.masterCvd; saveMasterPrefs(); applyColorVisionMode(); syncMasterCvdUI();
+  }));
+  function syncMasterCvdUI() { document.querySelectorAll("[data-master-cvd]").forEach((el) => setActive(el, el.dataset.masterCvd === masterPrefs.colorVision)); }
+  applyColorVisionMode();
+
+  document.querySelectorAll("[data-master-limb]").forEach((el) => el.addEventListener("click", () => {
+    masterPrefs.limb = el.dataset.masterLimb; saveMasterPrefs(); syncMasterLimbUI(); applyMovementLimbFilter();
+  }));
+  function syncMasterLimbUI() { document.querySelectorAll("[data-master-limb]").forEach((el) => setActive(el, el.dataset.masterLimb === masterPrefs.limb)); }
+
+  document.querySelectorAll("[data-master-hearing]").forEach((el) => el.addEventListener("click", () => {
+    masterPrefs.hearing = el.dataset.masterHearing; saveMasterPrefs(); syncMasterHearingUI(); applyExerciseCompatibility();
+  }));
+  function syncMasterHearingUI() { document.querySelectorAll("[data-master-hearing]").forEach((el) => setActive(el, el.dataset.masterHearing === masterPrefs.hearing)); }
+
+  // ---- Exercise compatibility: greyed out + marked, not hidden ----
+  // Unlike Farbsehen (which ADAPTS an exercise, e.g. Go/No-Go's colour swap)
+  // some master restrictions make an exercise genuinely unusable - today
+  // just "Gehörlos" vs any exercise tagged "ton" (VT's own existing
+  // ton/ohne-ton filter tag, reused here rather than a second parallel
+  // list - "Sehen & Hören" is the only one right now). Reusable for future
+  // exercises/restrictions: add a tag, extend the `blocked` check below.
+  function exerciseBlockedReason(card) {
+    const tags = (card.dataset.tags || "").split(/\s+/);
+    if (masterPrefs.hearing === "gehoerlos" && tags.includes("ton")) return "Benötigt Ton – in Einstellungen anpassbar";
+    return null;
+  }
+  function applyExerciseCompatibility() {
+    document.querySelectorAll(".excard").forEach((card) => {
+      const reason = exerciseBlockedReason(card);
+      card.classList.toggle("incompatible", !!reason);
+      let note = card.querySelector(".excard-blocked-note");
+      if (reason) {
+        if (!note) {
+          note = document.createElement("span");
+          note.className = "excard-blocked-note";
+          card.appendChild(note);
+        }
+        note.textContent = reason;
+      } else if (note) {
+        note.remove();
+      }
+    });
+  }
+  applyExerciseCompatibility();
+
+  const CODE_HISTORY_KEY = "fwmc-code-history-v1";
+  const CODE_HISTORY_MAX = 20;
+  function loadCodeHistory() {
+    const list = readJSON(CODE_HISTORY_KEY, []);
+    return Array.isArray(list) ? list : [];
+  }
+  function recordCodeUsage(code) {
+    const list = loadCodeHistory();
+    const today = new Date().toISOString().slice(0, 10);
+    const existing = list.find((h) => h.code === code);
+    if (existing) existing.lastUsed = today;
+    else list.push({ code, firstUsed: today, lastUsed: today });
+    list.sort((a, b) => b.lastUsed.localeCompare(a.lastUsed));
+    writeJSON(CODE_HISTORY_KEY, list.slice(0, CODE_HISTORY_MAX));
+  }
+  function renderMasterCodeHistory() {
+    const history = loadCodeHistory();
+    els.masterCodeHistoryGroup.hidden = history.length === 0;
+    els.masterCodeHistoryList.innerHTML = "";
+    history.forEach((h) => {
+      const wrap = document.createElement("div");
+      wrap.className = "bundle-item-wrap";
+      const item = document.createElement("button");
+      item.className = "bundle-item";
+      item.innerHTML = `<div class="bundle-item-head"><strong>${esc(h.code)}</strong></div>` +
+        `<span class="bundle-meta">zuerst ${formatDateDE(h.firstUsed)} &middot; zuletzt ${formatDateDE(h.lastUsed)}</span>`;
+      item.addEventListener("click", () => { closeMasterSettings(); openProgramIntro(h.code); });
+      const copyBtn = document.createElement("button");
+      copyBtn.type = "button";
+      copyBtn.className = "combo-block-remove";
+      copyBtn.setAttribute("aria-label", "Code kopieren");
+      copyBtn.textContent = "⧉";
+      copyBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        try {
+          await navigator.clipboard.writeText(h.code);
+          copyBtn.textContent = "✓";
+          setTimeout(() => { copyBtn.textContent = "⧉"; }, 1200);
+        } catch (err) { /* clipboard API unavailable/denied - silently no-op, copy just doesn't happen */ }
+      });
+      wrap.appendChild(item);
+      wrap.appendChild(copyBtn);
+      els.masterCodeHistoryList.appendChild(wrap);
+    });
+  }
+
+  let masterSettingsReturnFocus = null;
+  function openMasterSettings() {
+    masterSettingsReturnFocus = document.activeElement;
+    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); renderMasterCodeHistory();
+    els.masterSettingsSheet.hidden = false;
+    focusFirstIn(els.masterSettingsSheet);
+  }
+  function closeMasterSettings() {
+    els.masterSettingsSheet.hidden = true;
+    if (masterSettingsReturnFocus) masterSettingsReturnFocus.focus();
+  }
+  document.querySelectorAll(".master-settings-btn").forEach((btn) => btn.addEventListener("click", openMasterSettings));
+  els.masterSettingsCloseBtn.addEventListener("click", closeMasterSettings);
+  els.masterSettingsSheet.addEventListener("click", (e) => { if (e.target === els.masterSettingsSheet) closeMasterSettings(); });
+  els.masterSettingsSheet.addEventListener("keydown", (e) => trapTabKey(els.masterSettingsSheet, e));
+
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     if (!els.tipsSheet.hidden) closeTips();
     if (!els.breathTipsSheet.hidden) closeBreathTips();
     if (!els.faqSheet.hidden) closeFaq();
+    if (!els.masterSettingsSheet.hidden) closeMasterSettings();
     if (!els.videoModal.hidden) closeVideoModal();
     if (!els.setupModal.hidden) closeSetupModal();
   });
@@ -4623,9 +4776,10 @@
 
   // ==== Movement settings + engine ====
   const MOVEMENT_PREFS_KEY = "fwmc-movement-v1";
+  const MOVEMENT_DIRECTIONS = ["rechts", "links", "oben", "unten"];
   const movementPrefs = {
     movements: MOVEMENTS.map((m) => m.id),
-    preview: 3, bpm: 60, durationMin: 1, mirror: true, showLabel: true, figureStyle: "figur",
+    preview: 3, bpm: 60, durationMin: 1, mirror: true, showLabel: true, figureStyle: "figur", direction: "rechts",
   };
   function loadMovementPrefs() {
     const saved = readJSON(MOVEMENT_PREFS_KEY, null);
@@ -4634,28 +4788,55 @@
       movementPrefs.movements = MOVEMENTS.map((m) => m.id);
     }
     if (movementPrefs.figureStyle !== "figur" && movementPrefs.figureStyle !== "abstrakt") movementPrefs.figureStyle = "figur";
+    if (!MOVEMENT_DIRECTIONS.includes(movementPrefs.direction)) movementPrefs.direction = "rechts";
   }
   function saveMovementPrefs() { writeJSON(MOVEMENT_PREFS_KEY, movementPrefs); }
   loadMovementPrefs();
 
-  MOVEMENTS.forEach((m) => {
-    const chip = document.createElement("button");
-    chip.className = "movement-chip";
-    chip.dataset.moveId = m.id;
-    chip.innerHTML = figureSVG(resolveSlots([m], true), "var(--ink)") + `<span>${esc(m.label)}</span>`;
-    chip.addEventListener("click", () => {
-      const on = movementPrefs.movements.includes(m.id);
-      if (on) {
-        if (movementPrefs.movements.length <= MIN_MOVEMENTS) return;
-        movementPrefs.movements = movementPrefs.movements.filter((id) => id !== m.id);
-      } else {
-        movementPrefs.movements = MOVEMENTS.map((x) => x.id).filter((id) => id === m.id || movementPrefs.movements.includes(id));
-      }
-      saveMovementPrefs();
-      syncMvPickerUI();
+  // Master-Einstellungen's "Bewegungseinschränkung" (nur linker/rechter Arm)
+  // excludes the OTHER arm's movements everywhere Movement builds its pool
+  // from - both the picker (so a client with one usable arm never even sees
+  // a chip for the other) and the actual play pool, so it's a genuine
+  // cross-cutting default rather than something re-picked per session.
+  function movementAllowedByLimb(m) {
+    if (masterPrefs.limb === "armL" && m.limb === "armR") return false;
+    if (masterPrefs.limb === "armR" && m.limb === "armL") return false;
+    return true;
+  }
+  function renderMovementPickerChips() {
+    els.movementPicker.innerHTML = "";
+    MOVEMENTS.filter(movementAllowedByLimb).forEach((m) => {
+      const chip = document.createElement("button");
+      chip.className = "movement-chip";
+      chip.dataset.moveId = m.id;
+      chip.innerHTML = figureSVG(resolveSlots([m], true), "var(--ink)") + `<span>${esc(m.label)}</span>`;
+      chip.addEventListener("click", () => {
+        const on = movementPrefs.movements.includes(m.id);
+        if (on) {
+          if (movementPrefs.movements.length <= MIN_MOVEMENTS) return;
+          movementPrefs.movements = movementPrefs.movements.filter((id) => id !== m.id);
+        } else {
+          movementPrefs.movements = MOVEMENTS.map((x) => x.id).filter((id) => id === m.id || movementPrefs.movements.includes(id));
+        }
+        saveMovementPrefs();
+        syncMvPickerUI();
+      });
+      els.movementPicker.appendChild(chip);
     });
-    els.movementPicker.appendChild(chip);
-  });
+  }
+  // Called at load and whenever the master limb setting changes - drops any
+  // now-disallowed movement from the saved selection (falling back to
+  // "everything still allowed" if that would leave too few) and rebuilds
+  // the picker so it never offers a chip that can't actually be played.
+  function applyMovementLimbFilter() {
+    const allowedIds = MOVEMENTS.filter(movementAllowedByLimb).map((m) => m.id);
+    movementPrefs.movements = movementPrefs.movements.filter((id) => allowedIds.includes(id));
+    if (movementPrefs.movements.length < MIN_MOVEMENTS) movementPrefs.movements = allowedIds.slice();
+    saveMovementPrefs();
+    renderMovementPickerChips();
+    syncMvPickerUI();
+  }
+  applyMovementLimbFilter();
   function syncMvPickerUI() {
     els.movementPicker.querySelectorAll(".movement-chip").forEach((el) => {
       setActive(el, movementPrefs.movements.includes(el.dataset.moveId));
@@ -4694,8 +4875,11 @@
   document.querySelectorAll("[data-mv-figure]").forEach((el) => el.addEventListener("click", () => { movementPrefs.figureStyle = el.dataset.mvFigure; saveMovementPrefs(); syncMvFigureUI(); syncMvPickerUI(); }));
   function syncMvFigureUI() { document.querySelectorAll("[data-mv-figure]").forEach((el) => setActive(el, el.dataset.mvFigure === movementPrefs.figureStyle)); }
 
+  document.querySelectorAll("[data-mv-direction]").forEach((el) => el.addEventListener("click", () => { movementPrefs.direction = el.dataset.mvDirection; saveMovementPrefs(); syncMvDirectionUI(); }));
+  function syncMvDirectionUI() { document.querySelectorAll("[data-mv-direction]").forEach((el) => setActive(el, el.dataset.mvDirection === movementPrefs.direction)); }
+
   function openMovementReady() {
-    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI(); syncMvFigureUI();
+    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI(); syncMvFigureUI(); syncMvDirectionUI();
     els.movementSaveForm.hidden = true;
     els.movementSaveBtn.hidden = false;
     renderMovementSaved();
@@ -4743,9 +4927,25 @@
     const slots = resolveSlots([m], mirrored);
     return figureSVG(slots, "#16232a") + (showLabel ? `<span class="mv-label">${esc(m.label)}</span>` : "");
   }
+  // Fixed at 2 (not another Feineinstellung to expose): enough "done" tiles
+  // behind the active one that it reads as a continuous strip flowing past
+  // a fixed centre - see CLAUDE.md's Movement section for why this exists
+  // (was active-tile-first with nothing behind it, which didn't match the
+  // "runs in from one edge, whatever's centred on the beat counts" feel the
+  // client described).
+  const MOVEMENT_PAST_COUNT = 2;
   function renderMovementLaneWindow(seq, beatIdx, preview, mirrored, showLabel) {
-    els.movementLane.className = "movement-lane";
+    els.movementLane.className = "movement-lane dir-" + movementPrefs.direction;
     els.movementLane.innerHTML = "";
+    const pastStart = Math.max(0, beatIdx - MOVEMENT_PAST_COUNT);
+    for (let i = pastStart; i < beatIdx; i++) {
+      const m = seq[i];
+      if (!m) continue;
+      const tile = document.createElement("div");
+      tile.className = "movement-tile done";
+      tile.innerHTML = movementTileHTML(m, mirrored, showLabel);
+      els.movementLane.appendChild(tile);
+    }
     for (let j = 0; j < preview; j++) {
       const m = seq[beatIdx + j];
       if (!m) continue;
@@ -9438,9 +9638,6 @@
     btn.addEventListener("click", () => ufovPickPosition(Number(btn.dataset.ufovPos)));
   });
 
-  // Pause just stops/replays the pending timer, same as Flanker - no live
-  // background-adjust overlay (background customisation was skipped for
-  // this exercise, explicitly optional per the Test-Bereich guidance).
   // During the two untimed response phases there is no pending timer to
   // cancel; pause still blocks taps via the `paused` check and the overlay
   // covers the buttons, resume just hides the overlay again. Also carries a

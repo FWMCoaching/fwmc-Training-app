@@ -2,6 +2,7 @@
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
     <em class="brand-sub">FWMC Online-Training</em>
+    <button class="master-settings-btn" type="button" aria-label="Einstellungen">&#9881;&#xFE0F;</button>
   </header>
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
@@ -215,6 +216,7 @@
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
     <em class="brand-sub">FWMC Online-Training</em>
+    <button class="master-settings-btn" type="button" aria-label="Einstellungen">&#9881;&#xFE0F;</button>
   </header>
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
@@ -289,6 +291,7 @@
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
     <em class="brand-sub">FWMC Online-Training</em>
+    <button class="master-settings-btn" type="button" aria-label="Einstellungen">&#9881;&#xFE0F;</button>
   </header>
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
@@ -348,6 +351,7 @@
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
     <em class="brand-sub">FWMC Online-Training</em>
+    <button class="master-settings-btn" type="button" aria-label="Einstellungen">&#9881;&#xFE0F;</button>
   </header>
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
@@ -424,6 +428,7 @@
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
     <em class="brand-sub">FWMC Online-Training</em>
+    <button class="master-settings-btn" type="button" aria-label="Einstellungen">&#9881;&#xFE0F;</button>
   </header>
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
@@ -565,6 +570,7 @@
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
     <em class="brand-sub">FWMC Online-Training</em>
+    <button class="master-settings-btn" type="button" aria-label="Einstellungen">&#9881;&#xFE0F;</button>
   </header>
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
@@ -2486,6 +2492,15 @@
         </div>
       </div>
       <div class="group">
+        <div class="group-label">Laufrichtung<span class="group-count">nur bei &bdquo;Vorschau&ldquo; ungleich &bdquo;Ganz&ldquo;</span></div>
+        <div class="choice-row" id="movementDirectionRow">
+          <button class="choice" data-mv-direction="rechts">Von rechts<small>wie lesen: links fertig, rechts neu</small></button>
+          <button class="choice" data-mv-direction="links">Von links<small>gespiegelt</small></button>
+          <button class="choice" data-mv-direction="oben">Von oben<small>senkrecht</small></button>
+          <button class="choice" data-mv-direction="unten">Von unten<small>senkrecht, gespiegelt</small></button>
+        </div>
+      </div>
+      <div class="group">
         <div class="group-label">Darstellung</div>
         <div class="choice-row two" id="movementFigureStyleRow">
           <button class="choice" data-mv-figure="figur">Figur<small>Strichmännchen</small></button>
@@ -4070,6 +4085,48 @@
     </details>
 
     <button class="start-btn" id="faqCloseBtn">Schlie&szlig;en</button>
+  </div>
+</div>
+
+<div class="sheet" id="masterSettingsSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="masterSettingsTitle">
+    <h2 id="masterSettingsTitle">Einstellungen</h2>
+    <p class="group-help">Diese Einstellungen werden nur in diesem Browser auf diesem Ger&auml;t gespeichert &ndash; nicht in einer Cloud, nicht bei einem Server, und nicht automatisch mit deinem Coach geteilt.</p>
+
+    <div class="group">
+      <div class="group-label">Farbsehen</div>
+      <div class="choice-row two" id="masterColorVisionRow">
+        <button class="choice" data-master-cvd="normal">Normal</button>
+        <button class="choice" data-master-cvd="rotgruen">Rot-Gr&uuml;n-Schw&auml;che</button>
+      </div>
+      <div class="group-help">Wirkt sich bisher auf Go/No-Go aus (Gr&uuml;n/Rot wird zu Blau/Orange) &ndash; weitere &Uuml;bungen folgen, sobald dort die Zielfarbe einstellbar ist.</div>
+    </div>
+
+    <div class="group">
+      <div class="group-label">Bewegungseinschr&auml;nkung</div>
+      <div class="choice-row" id="masterLimbRow">
+        <button class="choice" data-master-limb="none">Keine</button>
+        <button class="choice" data-master-limb="armL">Nur linker Arm</button>
+        <button class="choice" data-master-limb="armR">Nur rechter Arm</button>
+      </div>
+      <div class="group-help">Blendet bei Movement die &Uuml;bungen f&uuml;r den jeweils anderen Arm aus &ndash; muss dann nicht mehr pro Training neu eingestellt werden.</div>
+    </div>
+
+    <div class="group">
+      <div class="group-label">H&ouml;ren</div>
+      <div class="choice-row two" id="masterHearingRow">
+        <button class="choice" data-master-hearing="normal">Normal</button>
+        <button class="choice" data-master-hearing="gehoerlos">Geh&ouml;rlos</button>
+      </div>
+      <div class="group-help">&Uuml;bungen, die zwingend Ton ben&ouml;tigen (aktuell nur &bdquo;Sehen &amp; H&ouml;ren&ldquo;), werden dann in der &Uuml;bersicht ausgegraut und markiert, statt versteckt.</div>
+    </div>
+
+    <div class="group" id="masterCodeHistoryGroup" hidden>
+      <div class="group-label">Zuletzt genutzte Trainings-Codes</div>
+      <div class="bundle-list" id="masterCodeHistoryList"></div>
+    </div>
+
+    <button class="start-btn" id="masterSettingsCloseBtn">Schlie&szlig;en</button>
   </div>
 </div>
 

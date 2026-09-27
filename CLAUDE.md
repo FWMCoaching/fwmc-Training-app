@@ -954,6 +954,98 @@ unrelated to the feature being changed.
   system prompt (model name and session link vary — don't hardcode a
   stale one from a previous session).
 
+## Master-Einstellungen (added 2026-09-27, client's own framing: "wie ein Profil, nur ohne Login")
+
+A gear button (`.master-settings-btn`, one per screen's `.brandbar`, six
+total - same "one shared overlay reachable from everywhere" convention as
+the FAQ sheet) opens `#masterSettingsSheet`, a cross-cutting settings sheet
+so the client doesn't have to re-set the same preference in every
+exercise's own Feineinstellungen. Everything lives in ONE localStorage key
+(`fwmc-master-v1`, `masterPrefs = {colorVision, limb, hearing}`) - the sheet's own
+first line states explicitly that it's local-only (matches the FAQ's
+existing "wo werden meine Trainingsdaten gespeichert" answer), since this
+is exactly the kind of setting a client would reasonably wonder is synced
+somewhere.
+
+- **Farbsehen** (`colorVision`: `normal`/`rotgruen`): today wired to exactly
+  one exercise - Go/No-Go, the only one in the whole app whose stimulus IS a
+  genuine red/green discrimination signal (every other exercise's colour is
+  either neutral or already colour-blind-safe by construction - e.g.
+  Simon's blue/orange dots sit in their own neutral slot box; see the
+  colour-clash audit under Test-Bereich). Applied via a `body.cvd-rotgruen`
+  class (`applyColorVisionMode()`) that lets `styles.css` override just
+  `.gng-stimulus.go`/`.nogo` - reuses Simon's own blue/orange pair rather
+  than inventing a second "safe" pair. **Explicitly not yet wired to every
+  colour-critical exercise** - the sheet's own help text says so
+  ("weitere Übungen folgen, sobald dort die Zielfarbe einstellbar ist").
+  This is the natural home for the "Ziel-/Signalfarbe pro Übung" feature
+  already queued elsewhere in this file (see "Geplant: Ziel-/Signalfarbe
+  pro Übung") once that's built - a colour-vision preset could then set
+  sensible per-exercise pairs automatically instead of a client
+  re-picking colours exercise by exercise.
+- **Bewegungseinschränkung** (`limb`: `none`/`armL`/`armR`, "nur linker/
+  rechter Arm"): filters Movement's `MOVEMENTS` pool everywhere it's built
+  from (`movementAllowedByLimb()`) - both the picker
+  (`renderMovementPickerChips()`, rebuilt whenever the setting changes so a
+  now-disallowed chip never even appears) and the actual play pool (reads
+  through the already-filtered `movementPrefs.movements`, so no second
+  filter needed at play time). `applyMovementLimbFilter()` also drops any
+  already-saved-but-now-disallowed movement from `movementPrefs.movements`
+  itself (falling back to "everything still allowed" if that would leave
+  fewer than `MIN_MOVEMENTS`), called on load and on every settings change.
+  Only excludes the affected ARM's movements, legs are untouched - client
+  named "nur einen Arm" specifically; whether leg-only or combined
+  variants are wanted too is an open question, not guessed at.
+- **Trainings-Code-Verlauf**: every successful code lookup
+  (`openProgramIntro()`, regardless of which of the four programme/bundle
+  types it resolves to) calls `recordCodeUsage(code)`, which upserts
+  `{code, firstUsed, lastUsed}` into its own `fwmc-code-history-v1` list
+  (capped at 20, most-recently-used first). Rendered in the sheet
+  (`renderMasterCodeHistory()`) using the same `.bundle-item`/
+  `.bundle-item-wrap` + circular action-button pattern the combo-builder's
+  own remove buttons use - tapping the item relaunches that code via
+  `openProgramIntro()` directly (closing the sheet first), a separate small
+  button copies the code to the clipboard. Hidden entirely (not just empty)
+  until at least one code has ever been entered.
+- **Exercise compatibility - greyed out + marked, not hidden** (added same
+  day, client's own follow-up: some restrictions ADAPT an exercise, like
+  Farbsehen/Go-No-Go above, but others make one genuinely unusable, and
+  those should stay visible-but-blocked with a note pointing back to
+  Settings, not disappear or silently misbehave). `exerciseBlockedReason
+  (card)` is the one general-purpose check, reusable for future exercises/
+  restrictions: today it only fires for `hearing === "gehoerlos"` against
+  any `.excard` whose EXISTING `data-tags` already includes `"ton"` - VT's
+  own long-standing ton/ohne-ton filter tag, reused rather than a second
+  parallel list, and it turns out only ONE exercise in the entire app
+  ("Sehen & Hören"/cross-modal, VT) is tagged `ton` at all, since Atemtraining's
+  spoken phase cues and Stroop's spoken RESPONSE are both optional/one-way,
+  not a hard hearing requirement. `applyExerciseCompatibility()` toggles an
+  `.incompatible` class (greys it out via CSS) and injects/removes a small
+  `.excard-blocked-note` badge reusing the blocked reason as its text - runs
+  once at load and again whenever `masterPrefs.hearing` changes. The
+  `.excard` click handler checks `classList.contains("incompatible")` FIRST
+  and opens Master-Einstellungen instead of the exercise when true - the
+  card itself doubles as the "Verweis auf die Master-Einstellungen" the
+  client asked for, rather than a separate link/tooltip. Farbsehen
+  deliberately has NO entry in `exerciseBlockedReason` - Go/No-Go adapts
+  instead of blocking, so there's currently nothing to grey out for it;
+  a future colour-critical exercise that ISN'T adaptable would need one.
+  Currently only `.excard` (VT's home grid) is wired - Movement's own
+  incompatibility (Bewegungseinschränkung) already handles itself by
+  filtering its pool/picker instead of greying a whole exercise, so it
+  didn't need this same mechanism; if a FUTURE exercise elsewhere in the
+  app (NAT, Test-Bereich) ever needs greying too, generalise
+  `applyExerciseCompatibility()`'s selector rather than duplicating it.
+
+Test: `tests/master_settings_test.py`. **Not built, genuine open
+questions** (ask before guessing further): what other "typische
+Einschränkungen" to add (client mentioned colour vision, one-arm, and
+hearing explicitly, then "oder sonst was" - other motor limitations? other
+colour-vision types beyond red/green? other sensory/output constraints,
+e.g. no speech for the spoken-response VT exercises?); whether colour-vision presets should
+extend to Search/Doppelziel/Corsi's more marginal colour cues once the
+"Ziel-/Signalfarbe pro Übung" feature exists.
+
 ## Movement
 
 Limb-cueing engine (`MOVEMENTS`/`figureSVG`/`resolveSlots`, near "==== Movement
@@ -983,7 +1075,37 @@ sharing the same `{armLeft, armRight, legLeft, legRight}` slot input:
 Both renderers are used everywhere `figureSVG()` was already called (the
 movement-picker chips AND the lane/grid tiles during play) - picking a style
 live-regenerates the already-built picker chips too (`syncMvPickerUI()`), not
-just future lane renders. Test: `tests/movement_test2.py`.
+just future lane renders.
+
+**Laufrichtung (window/"lane" mode only), added 2026-09-27**: the client
+described the lane as a flowing strip - new cues entering from one edge,
+whatever's centred "on the beat" is the one that counts, done ones fading
+out the other side - and wanted the entry edge configurable (`oben`/`unten`/
+`links`/`rechts`), not always "from the right". Two changes made this real
+rather than cosmetic:
+1. `renderMovementLaneWindow()` now also renders `MOVEMENT_PAST_COUNT` (2)
+   faded `.done` tiles BEFORE the active one, not just upcoming `.next`
+   ones - without this the active tile sat at one end with nothing behind
+   it, which doesn't read as "flowing past a centre" no matter which way
+   the row faces.
+2. `movementPrefs.direction` (`rechts` default/`links`/`oben`/`unten`,
+   Feineinstellungen → "Laufrichtung") sets `.movement-lane`'s class to
+   `dir-<direction>`, and `styles.css` maps each to a `flex-direction`
+   (`rechts`→row, `links`→row-reverse, `unten`→column, `oben`→
+   column-reverse) - with the DOM always built in the same
+   done→active→next order, `flex-direction` alone is what changes which
+   edge is "new" vs. "done": e.g. `column-reverse` puts the LAST dom child
+   (the newest "next" tile) at the top, so `oben` genuinely means new cues
+   enter from the top, not just a label.
+Grid ("Ganzes Programm") mode is unaffected - a static full-programme
+overview isn't a directional ticker, so `direction` only applies when
+`buildMovementLaneWindow` (not `buildMovementLaneGrid`) is in play; a test
+switching between grid and window modes must explicitly reset `preview` to
+a number afterward; the direction buttons stay inert while stuck on "Ganz".
+Diagonal directions and a "wechselnd" (periodically switching mid-session)
+mode were also mentioned as maybes - not built, genuine open questions on
+exact behaviour (switch how often? random or fixed rotation?), ask before
+building rather than guessing. Test: `tests/movement_test2.py`.
 
 ## Workout
 

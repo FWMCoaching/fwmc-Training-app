@@ -89,6 +89,11 @@ button{font-family:inherit;color:inherit}
   font-style:normal;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
   color:var(--brand);
 }
+.master-settings-btn{
+  margin-left:auto;width:38px;height:38px;border-radius:50%;border:none;
+  background:var(--surface-2);color:var(--ink-soft);font-size:17px;cursor:pointer;line-height:1;
+}
+.master-settings-btn:hover{color:var(--brand)}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]) .brand-logo{background:#fff;border-radius:10px;padding:6px 10px;height:52px}
 }
@@ -262,6 +267,17 @@ section{margin-bottom:26px}
 }
 .excard:hover{border-color:var(--brand-light);transform:translateY(-1px)}
 .excard:active{transform:translateY(0)}
+/* Master-Einstellungen ("Gehörlos" etc.) can make an exercise unusable
+   rather than merely adjustable (unlike Farbsehen/Go-No-Go, which adapts
+   its own colours instead) - greyed out + a small note back to Settings,
+   not just filtered away, so the exercise still visibly exists and the
+   client understands why it's blocked. */
+.excard.incompatible{opacity:.5;cursor:pointer}
+.excard.incompatible:hover{transform:none}
+.excard-blocked-note{
+  display:inline-block;font-size:10.5px;font-weight:700;color:#fff;
+  background:var(--ink-soft);padding:3px 8px;border-radius:999px;align-self:flex-start;
+}
 .icon-badge{
   width:42px;height:42px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
@@ -573,6 +589,12 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 }
 .gng-stimulus.go{background:#2e7d32;border-color:#1b5e20}
 .gng-stimulus.nogo{background:#d32f2f;border-color:#8e1c1c}
+/* Master-Einstellungen "Rot-Grün-Schwäche" preset (body.cvd-rotgruen) - the
+   one exercise in the whole app whose stimulus IS a red/green discrimination
+   signal. Reuses Simon's own blue/orange pair rather than inventing a new
+   "safe" pair, so the app has exactly one such pair, not two. */
+body.cvd-rotgruen .gng-stimulus.go{background:#1565c0;border-color:#0d47a1}
+body.cvd-rotgruen .gng-stimulus.nogo{background:#e65100;border-color:#a53d00}
 .gng-stimulus.hit{transform:scale(.86)}
 .gng-stimulus.wrong{transform:scale(1.08)}
 
@@ -925,6 +947,20 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .movement-lane.grid .movement-tile{flex:0 0 auto;width:74px;padding:8px 4px 6px;scroll-margin-block:12px}
 .movement-lane.grid .figure-svg{width:46px;height:46px}
 .movement-lane.grid .mv-label{font-size:10.5px;min-height:2.2em}
+
+/* Window ("ticker") mode's four Laufrichtung options - which edge new tiles
+   appear from. Default (no dir-* class, "rechts") keeps the base row
+   left-to-right. "links" mirrors that row; "oben"/"unten" switch to a
+   vertical column instead - the active tile is centred either way by
+   renderMovementLaneWindow() including a couple of faded "done" tiles
+   before it, not just upcoming ones, so it reads as a continuous strip
+   flowing past a fixed centre rather than a re-anchored list. */
+.movement-lane.dir-links{flex-direction:row-reverse}
+.movement-lane.dir-oben,.movement-lane.dir-unten{
+  flex-direction:column;align-items:center;width:auto;max-width:none;max-height:70vh;
+}
+.movement-lane.dir-oben{flex-direction:column-reverse}
+.movement-lane.dir-oben .movement-tile,.movement-lane.dir-unten .movement-tile{flex:0 0 auto;width:190px}
 
 .movement-finish-badge{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;

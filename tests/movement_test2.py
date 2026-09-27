@@ -122,6 +122,30 @@ async def main():
         await pg.click('#movementReady .advanced summary'); await pg.wait_for_timeout(100)
         print("Abstrakt choice persisted after reload:", "active" in (await pg.get_attribute('[data-mv-figure="abstrakt"]', "class") or ""))
 
+        # ---- Laufrichtung: window mode now shows a couple of faded "done"
+        # tiles behind the active one too (not just upcoming), and the whole
+        # lane's flex-direction switches per client choice - "rechts" (row,
+        # default), "links" (row-reverse), "oben"/"unten" (vertical column,
+        # reversed or not) - so new tiles visibly enter from whichever edge
+        # was picked instead of always from the right.
+        print("default direction is rechts:", "active" in (await pg.get_attribute('[data-mv-direction="rechts"]', "class") or ""))
+        await pg.click('[data-mv-preview="3"]'); await pg.wait_for_timeout(80)  # back out of "Ganz"/grid mode from the earlier test block
+        for direction in ["rechts", "links", "oben", "unten"]:
+            await pg.click(f'[data-mv-direction="{direction}"]'); await pg.wait_for_timeout(80)
+            await pg.click("#movementStartBtn"); await pg.wait_for_timeout(1200)
+            lane_class = await pg.get_attribute("#movementLane", "class")
+            tiles = await pg.eval_on_selector_all(
+                ".movement-tile",
+                "els => els.map(e => ({done: e.classList.contains('done'), active: e.classList.contains('active'), next: e.classList.contains('next')}))"
+            )
+            has_done = any(t["done"] for t in tiles)
+            has_active = sum(1 for t in tiles if t["active"]) == 1
+            print(f"direction {direction}: lane class has dir-{direction}:", lane_class == f"movement-lane dir-{direction}",
+                  "| a 'done' tile is shown behind active:", has_done, "| exactly one active tile:", has_active)
+            await pg.click("#movementBackBtn"); await pg.wait_for_timeout(150)
+            if not await pg.is_visible('[data-mv-direction="rechts"]'):
+                await pg.click('#movementReady .advanced summary'); await pg.wait_for_timeout(100)
+
         await b.close()
     print("ERRORS:", errors)
 
