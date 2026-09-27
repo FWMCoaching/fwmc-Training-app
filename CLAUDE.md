@@ -133,17 +133,24 @@ unrelated to the feature being changed.
   `advanceComboProgram(playedS)` when time is up, and its own "Beenden"
   handler must check `comboProgram` first and call `abortComboProgram()`
   instead of its normal single-exercise exit.
-- **FAQ accordion** (`#faqSection` on the main `#home` screen, added
-  2026-09-27, no JS needed): plain native `<details class="faq-item">`/
-  `<summary>`/`<div class="faq-body">` items, styled with the app's own
-  theme tokens (`var(--line)`/`var(--surface)`/`var(--ink)`/`var(--brand)`)
-  like `.advanced` - this is general app UI read during normal light/dark
-  browsing, NOT a player/stage element, so it correctly uses `var(--...)`
-  rather than the Test-Bereich/exercise convention of fixed hex colours.
-  Content is grounded only in things actually true of the app (no login,
-  local-only history, what a Trainings-Code is, add-to-homescreen, what
-  each section/the Test-Bereich is) - extend this list rather than adding
-  a second FAQ pattern if more questions come up. Test: `tests/faq_test.py`.
+- **FAQ accordion** (added 2026-09-27, relocated to a shared footer modal
+  the same day after user feedback that it should be reachable from
+  everywhere, not just Home): a single `<div class="sheet" id="faqSheet">`
+  reusing the exact `.sheet`/`.sheet-inner` + focus-trap/backdrop-click/
+  Escape pattern already used by `#tipsSheet`, opened by a
+  `<button class="faq-open-btn">` ("Häufige Fragen") placed as the first
+  child of all 6 `<footer class="site-footer">` blocks (home, breath,
+  movement, workout, nat, test) - so the same overlay opens from any
+  section. Items are plain native `<details class="faq-item">`/`<summary>`/
+  `<div class="faq-body">`, styled with the app's own theme tokens
+  (`var(--line)`/`var(--surface)`/`var(--ink)`/`var(--brand)`) - this is
+  general app UI read during normal light/dark browsing, NOT a player/stage
+  element, so it correctly uses `var(--...)` rather than the Test-Bereich/
+  exercise convention of fixed hex colours. Content is grounded only in
+  things actually true of the app (no login, local-only history, what a
+  Trainings-Code is, add-to-homescreen, what each section/the Test-Bereich
+  is) - extend this list rather than adding a second FAQ pattern if more
+  questions come up. Test: `tests/faq_test.py`.
 - **Fixation point + background customisation**: `drawFixationPoint()`
   and `currentBgFill()` in `app.js` apply to nearly every exercise that
   uses the shared canvas `drawScene()` pipeline. An exercise whose
@@ -410,6 +417,34 @@ unrelated to the feature being changed.
   `flashShowDigit()` calls `renderFlashFixpoint()` to restore it (or keep it
   off, if disabled) for the next flash/gap phase. Test:
   `tests/fixpoint_toggle_test.py`.
+- **Flash Speicher Test: digit/hint overlap bug (fixed 2026-09-27)** - user
+  report: "hatte das Gefühl, dass da einmal eine Zahl eingeblendet wurde,
+  direkt oben unter dem Bereich, wo auch richtig ... steht". Confirmed and
+  reproduced: `randFlashPos()` (the radial fx/fy positioning mirrored from
+  Periph, see above) has no concept of `#flashHint` (the "Merken …"/
+  "Richtig! Weiter geht's …"/error-message pill fixed near the top of the
+  stage via `.remember-hint{top:68px+safe-area}`) - at max radius and a
+  near-vertical angle, a digit's fy can be as low as ~10% of stage height,
+  which visually collides with the hint pill. Fixed with `flashSafeFy()`:
+  measures `#flashHint`'s actual rendered `getBoundingClientRect().bottom`
+  against `#flashStage`'s rect at flash time (adapts to safe-area insets/
+  device size/hint text length rather than a hardcoded percentage) and
+  clamps the digit's fy so it can never render above the hint's bottom edge
+  + 20px margin. `randPeriphPos()` itself (Periph/Blitz-Reize, which has no
+  overlaid hint text) was deliberately left untouched. Test:
+  `tests/flash_hint_overlap_test.py` (forces `Math.random()` to the values
+  that previously produced the worst-case placement, asserts no overlap).
+  Same report also asked two design questions, both confirmed by reading
+  the code, answered for the client, **not yet acted on** (needs a decision,
+  see Offene Fragen): (1) the displayed speed cap really does stop at
+  "Tempo-Stufe 9" - `FLASH_SPEED_STEPS = 8`, displayed as `speedStep + 1`,
+  by design, not a bug; (2) "Konstant" mode has no fixed rep-count or
+  duration stop condition today - once `speedStep` plateaus at the cap it
+  just keeps flashing rounds at max speed until the user taps "Beenden";
+  every other mode (climb/climbRepeat/training) has the same
+  Beenden-only ending. Whether to add a natural stopping point (fixed rep
+  count with a right/wrong tally, or a fixed duration) is an open product
+  decision, not implemented.
 - **Dark-mode contrast bug (fixed) - a pattern to watch for**: `.flash-
   digit`/`.flash-input-label`/`.flash-typed-input` (the last since replaced
   by `.flash-answer-box`/`.flash-key`, built fixed-hex from the start) were

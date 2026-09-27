@@ -2,11 +2,12 @@ import asyncio
 from playwright.async_api import async_playwright
 URL = "http://localhost:8845/index.html"
 
-# FAQ section on the main home screen, below "Einzelne Übungen" and above
-# the site footer - plain native <details>/<summary> accordion items (no
-# custom JS), styled with the app's theme tokens like .advanced (general
-# app UI read in normal light/dark browsing, unlike the fixed-hex player/
-# stage rules used during a running exercise).
+# FAQ: one shared overlay (#faqSheet), opened from a "Häufige Fragen" link
+# in EVERY section's site-footer (".faq-open-btn", six instances - home,
+# breath, movement, workout, nat, test) so it's reachable from anywhere in
+# the app, not just the main home screen. Reuses the exact .sheet/
+# .sheet-inner + focus-trap/backdrop-click/Escape pattern already used by
+# #tipsSheet - no custom modal logic of its own.
 
 async def main():
     errors = []
@@ -21,31 +22,30 @@ async def main():
         if await pg.is_visible("#tipsCloseBtn"):
             await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)
 
-        print("FAQ section visible:", await pg.is_visible("#faqSection"))
-        items = pg.locator("#faqSection .faq-item")
-        count = await items.count()
-        print("has several FAQ items:", count >= 6)
+        print("faq-open-btn count across the app (one per footer):", await pg.locator(".faq-open-btn").count())
+        print("faqSheet hidden initially:", await pg.is_hidden("#faqSheet"))
 
+        # open from the home screen's footer
+        await pg.locator("#home .faq-open-btn").click(); await pg.wait_for_timeout(150)
+        print("faqSheet visible after opening from home:", await pg.is_visible("#faqSheet"))
+        items = pg.locator("#faqSheet .faq-item")
+        print("has several FAQ items:", await items.count() >= 6)
         first = items.first
-        print("first item closed initially:", (await first.get_attribute("open")) is None)
         await first.locator("summary").click(); await pg.wait_for_timeout(100)
-        print("first item open after click:", (await first.get_attribute("open")) is not None)
+        print("first item opens:", (await first.get_attribute("open")) is not None)
         body_text = await first.locator(".faq-body").inner_text()
         print("opened item shows real body text:", len(body_text) > 20)
 
-        # each item toggles independently
-        second = items.nth(1)
-        print("second item still closed (independent toggle):", (await second.get_attribute("open")) is None)
-        await first.locator("summary").click(); await pg.wait_for_timeout(100)
-        print("first item closes again on second click:", (await first.get_attribute("open")) is None)
+        # Escape closes it
+        await pg.keyboard.press("Escape"); await pg.wait_for_timeout(150)
+        print("Escape closes the sheet:", await pg.is_hidden("#faqSheet"))
 
-        # a link inside an FAQ body is a real, absolute, new-tab link (not a stray in-app handler)
-        await second.locator("summary").click(); await pg.wait_for_timeout(100)
-        link = second.locator(".faq-body a")
-        if await link.count() > 0:
-            href = await link.get_attribute("href")
-            target = await link.get_attribute("target")
-            print("FAQ link is absolute https and opens in a new tab:", bool(href and href.startswith("https://")) and target == "_blank")
+        # switch to a different section (Test) and confirm the same FAQ opens from there too
+        await pg.click('#home .section-tab[data-section="test"]'); await pg.wait_for_timeout(150)
+        await pg.locator("#testHome .faq-open-btn").click(); await pg.wait_for_timeout(150)
+        print("faqSheet also opens from the Test section's footer:", await pg.is_visible("#faqSheet"))
+        await pg.click("#faqCloseBtn"); await pg.wait_for_timeout(150)
+        print("Schließen-Button closes it, back on testHome:", await pg.is_hidden("#faqSheet") and await pg.is_visible("#testHome"))
 
         print("FINAL ERRORS:", errors)
         await b.close()

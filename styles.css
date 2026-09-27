@@ -291,6 +291,11 @@ section{margin-bottom:26px}
 .site-footer nav{display:flex;flex-wrap:wrap;gap:6px 18px}
 .site-footer a{color:var(--ink-soft);font-weight:600;text-decoration:none}
 .site-footer a:hover{color:var(--brand);text-decoration:underline}
+.site-footer .faq-open-btn{
+  color:var(--ink-soft);font-weight:600;font-size:13px;background:none;border:none;padding:0;
+  font-family:inherit;cursor:pointer;
+}
+.site-footer .faq-open-btn:hover{color:var(--brand);text-decoration:underline}
 .beta{
   display:inline-block;margin-left:8px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
   border:1px solid var(--line);border-radius:999px;padding:1px 7px;vertical-align:1px;

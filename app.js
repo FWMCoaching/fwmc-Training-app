@@ -1051,6 +1051,7 @@
     historyMoreBtn: $("historyMoreBtn"),
     tipsSheet: $("tipsSheet"), tipsBtn: $("tipsBtn"), tipsCloseBtn: $("tipsCloseBtn"),
     tipInstall: $("tipInstall"), tipInstallText: $("tipInstallText"),
+    faqSheet: $("faqSheet"), faqCloseBtn: $("faqCloseBtn"),
     breathHome: $("breathHome"), breathReady: $("breathReady"), breathBackToHome: $("breathBackToHome"),
     breathReadyTitle: $("breathReadyTitle"), breathReadyGoal: $("breathReadyGoal"), patternGrid: $("patternGrid"),
     patternBreakdown: $("patternBreakdown"), phaseHelp: $("phaseHelp"),
@@ -3979,10 +3980,22 @@
   els.breathTipsCloseBtn.addEventListener("click", closeBreathTips);
   els.breathTipsSheet.addEventListener("click", (e) => { if (e.target === els.breathTipsSheet) closeBreathTips(); });
   els.breathTipsSheet.addEventListener("keydown", (e) => trapTabKey(els.breathTipsSheet, e));
+  // FAQ sheet: one shared overlay, reachable from every section's footer
+  // (".faq-open-btn" appears once per site-footer, six in total) - unlike
+  // the Tips sheets above this is a repeatedly-reopenable reference, not a
+  // one-time onboarding hint, so closing it never writes a "seen" flag.
+  let faqReturnFocus = null;
+  function openFaq() { faqReturnFocus = document.activeElement; els.faqSheet.hidden = false; focusFirstIn(els.faqSheet); }
+  function closeFaq() { els.faqSheet.hidden = true; if (faqReturnFocus) faqReturnFocus.focus(); }
+  document.querySelectorAll(".faq-open-btn").forEach((btn) => btn.addEventListener("click", openFaq));
+  els.faqCloseBtn.addEventListener("click", closeFaq);
+  els.faqSheet.addEventListener("click", (e) => { if (e.target === els.faqSheet) closeFaq(); });
+  els.faqSheet.addEventListener("keydown", (e) => trapTabKey(els.faqSheet, e));
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     if (!els.tipsSheet.hidden) closeTips();
     if (!els.breathTipsSheet.hidden) closeBreathTips();
+    if (!els.faqSheet.hidden) closeFaq();
     if (!els.videoModal.hidden) closeVideoModal();
     if (!els.setupModal.hidden) closeSetupModal();
   });
@@ -6124,9 +6137,22 @@
     renderFlashFixpoint(); // restores it (if enabled) after flashOpenInput() forced it off
     els.flashDigitEl.textContent = digit;
     els.flashDigitEl.style.left = pos.fx * 100 + "%";
-    els.flashDigitEl.style.top = pos.fy * 100 + "%";
+    els.flashDigitEl.style.top = flashSafeFy(pos.fy) * 100 + "%";
     els.flashDigitEl.hidden = false;
     scheduleFlashTimer(flashAfterDigit, flashEffectiveStimulusS() * 1000);
+  }
+  // randFlashPos() is shared with Periph, which has no fixed on-screen text -
+  // Flash Speicher Test always shows the "Merken …"/"Richtig!"/error hint
+  // pill near the top of the stage, so a digit placed near-vertical at a
+  // large radius can land underneath/inside it. Measure the hint's actual
+  // rendered bottom edge (adapts to safe-area insets and device size) and
+  // push the digit down below it instead of hardcoding a percentage.
+  function flashSafeFy(fy) {
+    const stageRect = els.flashStage.getBoundingClientRect();
+    if (!stageRect.height) return fy;
+    const hintRect = els.flashHint.getBoundingClientRect();
+    const minFy = (hintRect.bottom - stageRect.top + 20) / stageRect.height;
+    return Math.min(0.94, Math.max(fy, minFy));
   }
   function flashAfterDigit() {
     if (!flashState) return;
