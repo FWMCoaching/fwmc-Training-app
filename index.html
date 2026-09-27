@@ -1148,6 +1148,22 @@
     </div>
   </div>
 
+  <details class="advanced" id="hickAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="hickBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="hickBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="hickBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="hickBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
+
   <div class="group-help" id="hickReadyBestHint"></div>
 
   <button class="start-btn" id="hickReadyStartBtn">Training starten</button>
@@ -1168,6 +1184,22 @@
       <button class="choice" data-corsi-difficulty="schwer">Schwer</button>
     </div>
   </div>
+
+  <details class="advanced" id="corsiAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="corsiBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="corsiBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="corsiBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="corsiBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
 
   <div class="group-help" id="corsiReadyBestHint"></div>
 
@@ -1206,6 +1238,22 @@
       <button class="choice" data-reakt-length="lang">Lang</button>
     </div>
   </div>
+
+  <details class="advanced" id="reaktAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="reaktBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="reaktBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="reaktBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="reaktBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
 
   <div class="group-help" id="reaktReadyBestHint"></div>
 
@@ -3612,6 +3660,14 @@
   <div class="pause-overlay" id="hickPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="hickPauseBgValue"></span></div>
+        <input type="range" id="hickPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="hickPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="hickResumeBtn">Weiter</button>
     </div>
   </div>
@@ -3645,6 +3701,14 @@
   <div class="pause-overlay" id="corsiPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="corsiPauseBgValue"></span></div>
+        <input type="range" id="corsiPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="corsiPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="corsiResumeBtn">Weiter</button>
     </div>
   </div>
@@ -3678,6 +3742,14 @@
   <div class="pause-overlay" id="reaktPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="reaktPauseBgValue"></span></div>
+        <input type="range" id="reaktPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="reaktPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="reaktResumeBtn">Weiter</button>
     </div>
   </div>

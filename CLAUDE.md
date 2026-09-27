@@ -381,10 +381,47 @@ unrelated to the feature being changed.
   there; Doppelziel-Test/Antizipationstest are centred normal-flow content,
   not full-stage scatter, so `stageTopClearanceY()` doesn't apply to them at
   all. Tests extended: `tests/search_test.py`, `tests/ab_test.py`,
-  `tests/antizip_test.py`. Exercises with a background now: Go/No-Go,
-  N-Back, Trail Making, Flanker, UFOV, Posner-Cueing, Rotationstest,
-  Merkspanne-Test, Farbkonflikt-Test, Suchtest, Doppelziel-Test,
-  Antizipationstest - the rest (hick/corsi/reakt, ts/anti) follow in further
+  `tests/antizip_test.py`. **Fifth batch**: **Wahlreaktionstest (Hick's
+  Law)**, **Blockspanne-Test (Corsi)**, **Reaktionsfeld-Test** -
+  `hickPrefs`/`corsiPrefs`/`reaktPrefs` each gained the same
+  `bgColorKey`/`bgIntensity` pair, `applyHickBg()`/`applyCorsiBg()`/
+  `applyReaktBg()` tint `#hickStage`/`#corsiStage`/`#reaktStage`, and each
+  got its own `wireBgIntensityControl` call (ready-screen `#hickAdvanced`/
+  `#corsiAdvanced`/`#reaktAdvanced` + pause overlay picker+slider), same
+  scope narrowing as every earlier batch (no `BG_SOURCES`/transfer/
+  preset-save for these three either). Hick's boxes grid renders directly on
+  `#hickStage` with no neutral box around it either, approved for the same
+  reason as Suchtest/Doppelziel above (tint always mixed toward white, never
+  full saturation). Of these three, Corsi and Reaktionsfeld are full-stage
+  scatter and use `stageTopClearanceY()` (`corsiStageBounds`/
+  `reaktStageBounds`); Hick is a fixed boxes-grid layout (`renderHickGrid`),
+  not a scatter, so it doesn't call `stageTopClearanceY()` at all. Checking
+  the load-bearing hint-before-measurement order the task called out as a
+  known bug class (see `stageTopClearanceY()`'s own entry above): confirmed
+  **Reaktionsfeld is correct** - `reaktSpawnLight()` sets `els.reaktHint.
+  textContent = ""` before calling `reaktStageBounds()` a line later, same
+  order as Trail Making/Suchtest's own reference implementations. Confirmed
+  **Corsi has a pre-existing instance of the bug, NOT introduced here and
+  deliberately left unfixed per this batch's scope** - `startCorsiGame()`
+  calls `renderCorsiBoard(buildCorsiBoard())` (which calls
+  `corsiStageBounds()` -> `stageTopClearanceY(rect, els.corsiHint, ...)`,
+  measuring `#corsiHint`'s live rendered height) BEFORE the very next line
+  sets `els.corsiHint.textContent = "Gleich geht's los …"` - so the initial
+  board layout is computed against whatever hint text (usually empty, or
+  stale text left over from a previous run) happened to be in `#corsiHint`
+  at that moment, not the text about to be shown. This can only under- or
+  over-estimate the top clearance by one hint-line's worth of height on the
+  very first board layout of a run, not a crash or a hard failure, and every
+  subsequent board is rebuilt fresh each "Nochmal", so it is easy to miss in
+  normal play; a real fix would reorder those two lines (set the hint text,
+  *then* build the board) but that's out of scope for a background-colour
+  batch - flagging it here rather than silently fixing unrelated code, for
+  whoever picks up Corsi next. Tests extended: `tests/hick_test.py`,
+  `tests/corsi_test.py`, `tests/reakt_test.py`. Exercises with a background
+  now: Go/No-Go, N-Back, Trail Making, Flanker, UFOV, Posner-Cueing,
+  Rotationstest, Merkspanne-Test, Farbkonflikt-Test, Suchtest,
+  Doppelziel-Test, Antizipationstest, Wahlreaktionstest (Hick), Blockspanne-
+  Test (Corsi), Reaktionsfeld-Test - the rest (ts/anti) follow in further
   batches, still minus Wortfarben-Test/Stroop.
 - **Multi-tab nav bars (`.section-switch`/`.sub-switch`) need headroom for
   their longest label, not just "however many tabs currently exist"**: both

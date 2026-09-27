@@ -12,6 +12,12 @@ URL = "http://localhost:8845/index.html"
 # Reports accuracy% plus average RT per block size and the Hick-Steigung
 # (slope, ms/Bit) between the 2- and 8-choice blocks - the actual outcome
 # measure this paradigm exists to surface.
+# Background colour/intensity (added later, fifth batch of the same
+# Test-Bereich effort as Go/No-Go/N-Back/Trail/Flanker/UFOV/Posner/Rotation/
+# Merkspanne/Simon/Suchtest/Doppelziel/Antizip - see CLAUDE.md's Established
+# patterns for the scope decision, minus their transfer/preset-save
+# machinery) tints the outer #hickStage. Both the ready screen and the pause
+# overlay have their own live picker+slider sharing the same hickPrefs.
 
 async def main():
     errors = []
@@ -32,12 +38,21 @@ async def main():
         await pg.click("#hickOpenBtn"); await pg.wait_for_timeout(150)
         print("hickReady visible:", await pg.is_visible("#hickReady"))
 
+        # --- Feineinstellungen: background colour/intensity ---
+        await pg.click("#hickAdvanced summary"); await pg.wait_for_timeout(100)
+        print("bg swatch count:", await pg.locator("#hickBgColorPicker .color-swatch").count())
+        await pg.click('#hickBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
+        await pg.fill("#hickBgIntensitySlider", "0.6"); await pg.dispatch_event("#hickBgIntensitySlider", "input")
+        print("intensity value label updated:", "60%" in (await pg.inner_text("#hickBgIntensityValue")))
+
         # "kurz" = 3 reps * (2+4+8) = 42 trials, fast enough for a short test run.
         await pg.click('#hickLengthRow [data-hick-length="kurz"]'); await pg.wait_for_timeout(60)
         await pg.click("#hickReadyStartBtn"); await pg.wait_for_timeout(200)
         print("hickPlayer visible:", await pg.is_visible("#hickPlayer"))
         progress = await pg.inner_text("#hickProgressEl")
         print("progress starts at 0/42:", "0/42" in progress)
+        bg_at_start = await pg.evaluate("() => document.getElementById('hickStage').style.background")
+        print("stage carries the chosen background as soon as the game starts:", bg_at_start not in ("", "rgb(255, 255, 255)"))
 
         async def wait_for_progress_change(prev, max_ms=7000, poll_ms=25):
             waited = 0
@@ -117,6 +132,9 @@ async def main():
         html_paused2 = await pg.inner_html("#hickBoxesGrid")
         progress_paused2 = await pg.inner_text("#hickProgressEl")
         print("stage genuinely frozen while paused:", html_paused1 == html_paused2 and progress_paused1 == progress_paused2)
+        await pg.click('#hickPauseBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
+        bg_paused = await pg.evaluate("() => document.getElementById('hickStage').style.background")
+        print("pause overlay's own picker live-updates the same stage background:", bg_paused not in ("", "rgb(255, 255, 255)"))
         await pg.click("#hickResumeBtn"); await pg.wait_for_timeout(150)
         print("pause overlay hidden after resume:", await pg.is_hidden("#hickPauseOverlay"))
         lit_idx_r = await wait_for_lit()

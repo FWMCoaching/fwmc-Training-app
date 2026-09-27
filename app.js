@@ -1341,9 +1341,12 @@
     antizipAgainBtn: $("antizipAgainBtn"), antizipDoneBackBtn: $("antizipDoneBackBtn"),
     hickOpenBtn: $("hickOpenBtn"), hickBestHint: $("hickBestHint"), hickReady: $("hickReady"),
     hickReadyBackToHome: $("hickReadyBackToHome"), hickLengthRow: $("hickLengthRow"),
+    hickAdvanced: $("hickAdvanced"), hickBgColorPicker: $("hickBgColorPicker"), hickBgIntensitySlider: $("hickBgIntensitySlider"),
+    hickBgIntensityValue: $("hickBgIntensityValue"), hickBgContrastHint: $("hickBgContrastHint"),
     hickReadyBestHint: $("hickReadyBestHint"), hickReadyStartBtn: $("hickReadyStartBtn"),
     hickPlayer: $("hickPlayer"), hickStage: $("hickStage"), hickHint: $("hickHint"), hickBoxesGrid: $("hickBoxesGrid"),
     hickPauseOverlay: $("hickPauseOverlay"), hickResumeBtn: $("hickResumeBtn"),
+    hickPauseBgColorPicker: $("hickPauseBgColorPicker"), hickPauseBgSlider: $("hickPauseBgSlider"), hickPauseBgValue: $("hickPauseBgValue"),
     hickPlayerBar: $("hickPlayerBar"), hickBackBtn: $("hickBackBtn"), hickPauseBtn: $("hickPauseBtn"), hickProgressEl: $("hickProgressEl"),
     hickFsBtn: $("hickFsBtn"), hickFsHint: $("hickFsHint"), hickFsHintOpenBtn: $("hickFsHintOpenBtn"), hickFsHintClose: $("hickFsHintClose"),
     hickDonePanel: $("hickDonePanel"), hickDoneSummary: $("hickDoneSummary"), hickRating: $("hickRating"),
@@ -1351,9 +1354,12 @@
 
     corsiOpenBtn: $("corsiOpenBtn"), corsiBestHint: $("corsiBestHint"), corsiReady: $("corsiReady"),
     corsiReadyBackToHome: $("corsiReadyBackToHome"), corsiDifficultyRow: $("corsiDifficultyRow"),
+    corsiAdvanced: $("corsiAdvanced"), corsiBgColorPicker: $("corsiBgColorPicker"), corsiBgIntensitySlider: $("corsiBgIntensitySlider"),
+    corsiBgIntensityValue: $("corsiBgIntensityValue"), corsiBgContrastHint: $("corsiBgContrastHint"),
     corsiReadyBestHint: $("corsiReadyBestHint"), corsiReadyStartBtn: $("corsiReadyStartBtn"),
     corsiPlayer: $("corsiPlayer"), corsiStage: $("corsiStage"), corsiHint: $("corsiHint"), corsiBoard: $("corsiBoard"),
     corsiPauseOverlay: $("corsiPauseOverlay"), corsiResumeBtn: $("corsiResumeBtn"),
+    corsiPauseBgColorPicker: $("corsiPauseBgColorPicker"), corsiPauseBgSlider: $("corsiPauseBgSlider"), corsiPauseBgValue: $("corsiPauseBgValue"),
     corsiPlayerBar: $("corsiPlayerBar"), corsiBackBtn: $("corsiBackBtn"), corsiPauseBtn: $("corsiPauseBtn"), corsiProgressEl: $("corsiProgressEl"),
     corsiFsBtn: $("corsiFsBtn"), corsiFsHint: $("corsiFsHint"), corsiFsHintOpenBtn: $("corsiFsHintOpenBtn"), corsiFsHintClose: $("corsiFsHintClose"),
     corsiDonePanel: $("corsiDonePanel"), corsiDoneSummary: $("corsiDoneSummary"), corsiRating: $("corsiRating"),
@@ -1361,8 +1367,11 @@
     reaktOpenBtn: $("reaktOpenBtn"), reaktBestHint: $("reaktBestHint"), reaktReady: $("reaktReady"),
     reaktReadyBackToHome: $("reaktReadyBackToHome"), reaktModeRow: $("reaktModeRow"), reaktDifficultyRow: $("reaktDifficultyRow"),
     reaktLengthRow: $("reaktLengthRow"), reaktReadyBestHint: $("reaktReadyBestHint"), reaktReadyStartBtn: $("reaktReadyStartBtn"),
+    reaktAdvanced: $("reaktAdvanced"), reaktBgColorPicker: $("reaktBgColorPicker"), reaktBgIntensitySlider: $("reaktBgIntensitySlider"),
+    reaktBgIntensityValue: $("reaktBgIntensityValue"), reaktBgContrastHint: $("reaktBgContrastHint"),
     reaktPlayer: $("reaktPlayer"), reaktStage: $("reaktStage"), reaktHint: $("reaktHint"), reaktField: $("reaktField"),
     reaktPauseOverlay: $("reaktPauseOverlay"), reaktResumeBtn: $("reaktResumeBtn"),
+    reaktPauseBgColorPicker: $("reaktPauseBgColorPicker"), reaktPauseBgSlider: $("reaktPauseBgSlider"), reaktPauseBgValue: $("reaktPauseBgValue"),
     reaktPlayerBar: $("reaktPlayerBar"), reaktBackBtn: $("reaktBackBtn"), reaktPauseBtn: $("reaktPauseBtn"), reaktProgressEl: $("reaktProgressEl"),
     reaktFsBtn: $("reaktFsBtn"), reaktFsHint: $("reaktFsHint"), reaktFsHintOpenBtn: $("reaktFsHintOpenBtn"), reaktFsHintClose: $("reaktFsHintClose"),
     reaktDonePanel: $("reaktDonePanel"), reaktDoneSummary: $("reaktDoneSummary"), reaktRating: $("reaktRating"),
@@ -12384,14 +12393,32 @@
   const HICK_FEEDBACK_MS = 400;
   const HICK_TIMEOUT_MS = 5000; // safety net only, self-paced task like Suchtest - a trial ends the instant something is tapped
   const HICK_MIN_RESOLVED = 6;
-  const hickPrefs = { length: "mittel" };
+  const hickPrefs = { length: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadHickPrefs() {
     const saved = readJSON(HICK_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(hickPrefs, saved);
     if (!HICK_LENGTHS[hickPrefs.length]) hickPrefs.length = "mittel";
+    if (!STROOP_COLOR_BY_KEY[hickPrefs.bgColorKey]) hickPrefs.bgColorKey = "gruen";
+    if (typeof hickPrefs.bgIntensity !== "number" || hickPrefs.bgIntensity < 0 || hickPrefs.bgIntensity > 1) hickPrefs.bgIntensity = 0;
   }
   loadHickPrefs();
   function saveHickPrefsToStorage() { writeJSON(HICK_PREFS_KEY, hickPrefs); }
+
+  // Background colour/intensity, added later - see CLAUDE.md Established
+  // patterns (every Test-Bereich exercise now gets the same background
+  // control NAT's Remember/Blitz/Flash/MOT already have, minus their
+  // transfer/preset-save machinery - a deliberate scope decision, see there).
+  function applyHickBg() {
+    els.hickStage.style.background = hickPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[hickPrefs.bgColorKey].hex, hickPrefs.bgIntensity)
+      : "";
+  }
+  const syncHickBgUI = wireBgIntensityControl(hickPrefs, {
+    pickers: [els.hickBgColorPicker, els.hickPauseBgColorPicker],
+    sliders: [els.hickBgIntensitySlider, els.hickPauseBgSlider],
+    valueEls: [els.hickBgIntensityValue, els.hickPauseBgValue],
+    hintEls: [els.hickBgContrastHint],
+  }, () => { saveHickPrefsToStorage(); applyHickBg(); });
 
   const HICK_BEST_KEY = "fwmc-hick-best-v1"; // { [length]: bestSlopeMsPerBit } - lower is better
   function hickBestFor() {
@@ -12424,6 +12451,7 @@
   });
   els.hickOpenBtn.addEventListener("click", () => {
     syncHickLengthUI();
+    syncHickBgUI();
     renderHickBest();
     showScreen("hickReady");
   });
@@ -12511,6 +12539,7 @@
       paused: false, startTime: performance.now(), stimAt: null,
       timer: null, timerFn: null, timerFiresAt: null,
     };
+    applyHickBg();
     els.hickHint.textContent = "Bereit? Gleich geht's los …";
     els.hickProgressEl.textContent = `0/${hickState.totalTrials}`;
     requestWakeLock();
@@ -12706,14 +12735,32 @@
   const CORSI_FAIL_PAUSE_MS = 1300; // longer than the correct-feedback pause, so the reveal (wrong tap red / real next block green) is actually readable before the run ends
 
   const CORSI_PREFS_KEY = "fwmc-corsi-prefs-v1";
-  const corsiPrefs = { difficulty: "mittel" };
+  const corsiPrefs = { difficulty: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadCorsiPrefs() {
     const saved = readJSON(CORSI_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(corsiPrefs, saved);
     if (!CORSI_DIFFICULTIES[corsiPrefs.difficulty]) corsiPrefs.difficulty = "mittel";
+    if (!STROOP_COLOR_BY_KEY[corsiPrefs.bgColorKey]) corsiPrefs.bgColorKey = "gruen";
+    if (typeof corsiPrefs.bgIntensity !== "number" || corsiPrefs.bgIntensity < 0 || corsiPrefs.bgIntensity > 1) corsiPrefs.bgIntensity = 0;
   }
   loadCorsiPrefs();
   function saveCorsiPrefsToStorage() { writeJSON(CORSI_PREFS_KEY, corsiPrefs); }
+
+  // Background colour/intensity, added later - see CLAUDE.md Established
+  // patterns (every Test-Bereich exercise now gets the same background
+  // control NAT's Remember/Blitz/Flash/MOT already have, minus their
+  // transfer/preset-save machinery - a deliberate scope decision, see there).
+  function applyCorsiBg() {
+    els.corsiStage.style.background = corsiPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[corsiPrefs.bgColorKey].hex, corsiPrefs.bgIntensity)
+      : "";
+  }
+  const syncCorsiBgUI = wireBgIntensityControl(corsiPrefs, {
+    pickers: [els.corsiBgColorPicker, els.corsiPauseBgColorPicker],
+    sliders: [els.corsiBgIntensitySlider, els.corsiPauseBgSlider],
+    valueEls: [els.corsiBgIntensityValue, els.corsiPauseBgValue],
+    hintEls: [els.corsiBgContrastHint],
+  }, () => { saveCorsiPrefsToStorage(); applyCorsiBg(); });
 
   const CORSI_BEST_KEY = "fwmc-corsi-best-v1"; // { [difficulty]: bestSpan } - higher is better
   function corsiBestFor() {
@@ -12746,6 +12793,7 @@
   });
   els.corsiOpenBtn.addEventListener("click", () => {
     syncCorsiDifficultyUI();
+    syncCorsiBgUI();
     renderCorsiBest();
     showScreen("corsiReady");
   });
@@ -12845,6 +12893,7 @@
       blockEls: [], phase: "intro", paused: false, startTime: performance.now(),
       timer: null, timerFn: null, timerFiresAt: null,
     };
+    applyCorsiBg();
     renderCorsiBoard(buildCorsiBoard());
     els.corsiHint.textContent = "Gleich geht's los …";
     els.corsiProgressEl.textContent = `Länge ${corsiState.span}`;
@@ -13036,16 +13085,34 @@
   const REAKT_CENTRAL_RADIUS_FRAC = 0.4;
 
   const REAKT_PREFS_KEY = "fwmc-reakt-prefs-v1";
-  const reaktPrefs = { mode: "reaktiv", difficulty: "mittel", length: "mittel" };
+  const reaktPrefs = { mode: "reaktiv", difficulty: "mittel", length: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadReaktPrefs() {
     const saved = readJSON(REAKT_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(reaktPrefs, saved);
     if (!REAKT_MODES[reaktPrefs.mode]) reaktPrefs.mode = "reaktiv";
     if (!REAKT_DIFFICULTIES[reaktPrefs.difficulty]) reaktPrefs.difficulty = "mittel";
     if (!REAKT_LENGTHS[reaktPrefs.length]) reaktPrefs.length = "mittel";
+    if (!STROOP_COLOR_BY_KEY[reaktPrefs.bgColorKey]) reaktPrefs.bgColorKey = "gruen";
+    if (typeof reaktPrefs.bgIntensity !== "number" || reaktPrefs.bgIntensity < 0 || reaktPrefs.bgIntensity > 1) reaktPrefs.bgIntensity = 0;
   }
   loadReaktPrefs();
   function saveReaktPrefsToStorage() { writeJSON(REAKT_PREFS_KEY, reaktPrefs); }
+
+  // Background colour/intensity, added later - see CLAUDE.md Established
+  // patterns (every Test-Bereich exercise now gets the same background
+  // control NAT's Remember/Blitz/Flash/MOT already have, minus their
+  // transfer/preset-save machinery - a deliberate scope decision, see there).
+  function applyReaktBg() {
+    els.reaktStage.style.background = reaktPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[reaktPrefs.bgColorKey].hex, reaktPrefs.bgIntensity)
+      : "";
+  }
+  const syncReaktBgUI = wireBgIntensityControl(reaktPrefs, {
+    pickers: [els.reaktBgColorPicker, els.reaktPauseBgColorPicker],
+    sliders: [els.reaktBgIntensitySlider, els.reaktPauseBgSlider],
+    valueEls: [els.reaktBgIntensityValue, els.reaktPauseBgValue],
+    hintEls: [els.reaktBgContrastHint],
+  }, () => { saveReaktPrefsToStorage(); applyReaktBg(); });
 
   // Best score is Treffer PRO MINUTE (hits/min) - deliberately length-
   // independent (a 30s and a 90s run are directly comparable), keyed by
@@ -13088,6 +13155,7 @@
   });
   els.reaktOpenBtn.addEventListener("click", () => {
     syncReaktUI();
+    syncReaktBgUI();
     renderReaktBest();
     showScreen("reaktReady");
   });
@@ -13164,6 +13232,7 @@
       paused: false, startTime: performance.now(),
       timer: null, timerFn: null, timerFiresAt: null,
     };
+    applyReaktBg();
     els.reaktField.innerHTML = "";
     els.reaktHint.textContent = "Gleich geht's los …";
     els.reaktProgressEl.textContent = `Treffer: 0 · ${reaktState.length.title}`;

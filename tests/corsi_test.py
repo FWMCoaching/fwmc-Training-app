@@ -11,6 +11,13 @@ URL = "http://localhost:8845/index.html"
 # longest sequence recalled ("Blockspanne"). Single-trial-per-length
 # adaptive climb (no client-set level), same "no Bei-Fehler, the climb IS
 # the difficulty" shape as N-Back/Hick.
+# Background colour/intensity (added later, fifth batch of the same
+# Test-Bereich effort as Go/No-Go/N-Back/Trail/Flanker/UFOV/Posner/Rotation/
+# Merkspanne/Simon/Suchtest/Doppelziel/Antizip - see CLAUDE.md's Established
+# patterns for the scope decision, minus their transfer/preset-save
+# machinery) tints the outer #corsiStage. Both the ready screen and the
+# pause overlay have their own live picker+slider sharing the same
+# corsiPrefs.
 
 async def main():
     errors = []
@@ -31,6 +38,13 @@ async def main():
         await pg.click("#corsiOpenBtn"); await pg.wait_for_timeout(150)
         print("corsiReady visible:", await pg.is_visible("#corsiReady"))
 
+        # --- Feineinstellungen: background colour/intensity ---
+        await pg.click("#corsiAdvanced summary"); await pg.wait_for_timeout(100)
+        print("bg swatch count:", await pg.locator("#corsiBgColorPicker .color-swatch").count())
+        await pg.click('#corsiBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
+        await pg.fill("#corsiBgIntensitySlider", "0.6"); await pg.dispatch_event("#corsiBgIntensitySlider", "input")
+        print("intensity value label updated:", "60%" in (await pg.inner_text("#corsiBgIntensityValue")))
+
         # "schwer" = fastest flashes (500ms lit / 250ms gap), so the run
         # advances through several sequence lengths quickly in a test.
         await pg.click('#corsiDifficultyRow [data-corsi-difficulty="schwer"]'); await pg.wait_for_timeout(60)
@@ -39,6 +53,8 @@ async def main():
         print("board renders exactly 9 blocks:", await pg.locator("#corsiBoard .corsi-block").count() == 9)
         progress = await pg.inner_text("#corsiProgressEl")
         print("progress starts at Länge 2:", "2" in progress)
+        bg_at_start = await pg.evaluate("() => document.getElementById('corsiStage').style.background")
+        print("stage carries the chosen background as soon as the game starts:", bg_at_start not in ("", "rgb(255, 255, 255)"))
 
         async def wait_for_hint_contains(text, max_ms=6000, poll_ms=25):
             waited = 0
@@ -120,6 +136,9 @@ async def main():
         await pg.wait_for_timeout(700)
         html_paused2 = await pg.inner_html("#corsiBoard")
         print("board genuinely frozen while paused:", html_paused1 == html_paused2)
+        await pg.click('#corsiPauseBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
+        bg_paused = await pg.evaluate("() => document.getElementById('corsiStage').style.background")
+        print("pause overlay's own picker live-updates the same stage background:", bg_paused not in ("", "rgb(255, 255, 255)"))
         await pg.click("#corsiResumeBtn"); await pg.wait_for_timeout(150)
         print("pause overlay hidden after resume:", await pg.is_hidden("#corsiPauseOverlay"))
 

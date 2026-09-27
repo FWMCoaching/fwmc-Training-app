@@ -10,6 +10,13 @@ URL = "http://localhost:8845/index.html"
 # then the next one appears elsewhere immediately. Two modes mirror the real
 # device's own Mode A/Mode B: "proaktiv" (light stays lit until hit) and
 # "reaktiv" (light times out and moves on regardless).
+# Background colour/intensity (added later, fifth batch of the same
+# Test-Bereich effort as Go/No-Go/N-Back/Trail/Flanker/UFOV/Posner/Rotation/
+# Merkspanne/Simon/Suchtest/Doppelziel/Antizip - see CLAUDE.md's Established
+# patterns for the scope decision, minus their transfer/preset-save
+# machinery) tints the outer #reaktStage. Both the ready screen and the
+# pause overlay have their own live picker+slider sharing the same
+# reaktPrefs.
 
 async def main():
     errors = []
@@ -30,6 +37,13 @@ async def main():
         await pg.click("#reaktOpenBtn"); await pg.wait_for_timeout(150)
         print("reaktReady visible:", await pg.is_visible("#reaktReady"))
 
+        # --- Feineinstellungen: background colour/intensity ---
+        await pg.click("#reaktAdvanced summary"); await pg.wait_for_timeout(100)
+        print("bg swatch count:", await pg.locator("#reaktBgColorPicker .color-swatch").count())
+        await pg.click('#reaktBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
+        await pg.fill("#reaktBgIntensitySlider", "0.6"); await pg.dispatch_event("#reaktBgIntensitySlider", "input")
+        print("intensity value label updated:", "60%" in (await pg.inner_text("#reaktBgIntensityValue")))
+
         # --- proaktiv mode, kurz length, schwer difficulty (fast, but light
         # never times out - only a real tap advances it) ---
         await pg.click('#reaktModeRow [data-reakt-mode="proaktiv"]'); await pg.wait_for_timeout(60)
@@ -40,6 +54,8 @@ async def main():
         await pg.click("#reaktReadyStartBtn"); await pg.wait_for_timeout(1100)
         print("reaktPlayer visible:", await pg.is_visible("#reaktPlayer"))
         print("a light renders after the lead-in:", await pg.locator("#reaktField .reakt-light").count() == 1)
+        bg_at_start = await pg.evaluate("() => document.getElementById('reaktStage').style.background")
+        print("stage carries the chosen background as soon as the game starts:", bg_at_start not in ("", "rgb(255, 255, 255)"))
 
         # tap the light several times, each time it must land at a genuinely
         # different position (min-jump-distance rule) and progress must
@@ -69,6 +85,9 @@ async def main():
         await pg.wait_for_timeout(700)
         html2 = await pg.inner_html("#reaktField")
         print("field genuinely frozen while paused:", html1 == html2)
+        await pg.click('#reaktPauseBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
+        bg_paused = await pg.evaluate("() => document.getElementById('reaktStage').style.background")
+        print("pause overlay's own picker live-updates the same stage background:", bg_paused not in ("", "rgb(255, 255, 255)"))
         await pg.click("#reaktResumeBtn"); await pg.wait_for_timeout(150)
         print("pause overlay hidden after resume:", await pg.is_hidden("#reaktPauseOverlay"))
 
