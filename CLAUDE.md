@@ -1606,8 +1606,37 @@ doesn't:
   word-vs-colour conflict this task exists to measure (the same "point to
   the colour patch" convention used in manual Stroop adaptations in
   individual-differences research). Test: `tests/stroop_test.py`.
+  **Correction added after the fact (parent session, not the implementing
+  run):** the implementing run's "genuinely distinct from every existing
+  Test/NAT mechanic" claim above missed that Visual Training already has
+  its own "Stroop · klassisch" exercise (`stroop-classic` in `EXERCISES`,
+  app.js ~line 578 - "Sag laut die Schriftfarbe – nicht das Wort", plus a
+  "Stroop · mit Hintergrund" variant) - the ground rule to also skim other
+  sections' own exercise lists, not just the Test roster, wasn't followed
+  here. The two aren't identical: VT's version is a spoken, unscored drill
+  running for a fixed duration inside the generic timed-block engine (say
+  it out loud, no input capture, no RT/accuracy at all), while this one is
+  a self-contained, tap-scored trial-based test reporting accuracy/RT/the
+  Stroop-effect number - closer in spirit to how Simon/Flanker turn a
+  classic paradigm into a measured exercise than to VT's drill format. Real
+  enough a difference that this wasn't reverted, but real enough an
+  overlap (same paradigm, same "Stroop" name, adjacent on the same home
+  screen) that it's flagged below in Offene Fragen for the client's own
+  call rather than decided unilaterally.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
+
+- **Wortfarben-Test overlaps with Visual Training's existing "Stroop ·
+  klassisch"/"Stroop · mit Hintergrund"**: same core paradigm (colour-word
+  Stroop interference), different mechanic (VT: spoken, unscored, timed
+  drill; Test-Bereich: tapped, scored, trial-based test with an actual
+  Stroop-effect-in-ms readout) - see the correction note just above this
+  list. Worth asking directly: does a scored/quantified version add real
+  value next to the existing spoken drill, or does having "Stroop" appear
+  in two different places (Visual Training AND Test) read as redundant/
+  confusing on the home screen? If the client would rather not keep both,
+  this is the one entry in the whole Test-Bereich series to reconsider
+  removing rather than any of the others.
 
 - **Regelwechsel-Test: congruency not separately analysed**: because the
   stimuli are deliberately bivalent (every digit is a valid input to both
