@@ -1029,6 +1029,49 @@ doesn't:
   response boxes double as both the cue display and the tap targets,
   reusing the Flanker/Go-No-Go green=correct/red=wrong feedback convention.
   Test: `tests/posner_test.py`.
+- **Rotationstest (Mentale Rotation)** (seventh autonomous entry,
+  2026-09-27): grounded in the classic mental-rotation/character-rotation
+  chronometric paradigm (Cooper & Shepard, 1973) - a letter or digit
+  (`ROTATION_CHARS`, asymmetric ones only so mirrored really looks
+  different from normal) is shown rotated to one of 8 orientations
+  (`ROTATION_ANGLES`, 0-315 in 45 degree steps) around the full circle,
+  either in its normal form or mirror-reversed (mirrored FIRST, then
+  rotated, matching the real-world order these transforms are physically
+  applied and not commutative with each other except at 0/180); the client
+  judges "Normal" or "Gespiegelt" as fast as possible. Reports accuracy%
+  plus average RT for characters near upright (<=90 degrees disparity) vs.
+  far from upright (>90) and their difference as "Rotations-Kosten" - the
+  actual angular-disparity effect (RT rises with rotation distance from
+  upright) this paradigm exists to surface, tracking best accuracy% per
+  `rotationPrefs.difficulty` (leicht/mittel/schwer, controlling the
+  response window and ISI, same shape as `FLANKER_DIFFICULTIES`/
+  `POSNER_DIFFICULTIES`) via `ROTATION_BEST_KEY`. Also researched as
+  sport-relevant: a 2023 Exp Brain Res VR study and a 2024/2025
+  behavioural+fNIRS study both link athletes in high-spatial-demand/axial-
+  rotation sports to better mental-rotation performance than non-athletes
+  ("embodied cognition" from years of training) - a fit for FWMC's
+  "bewegungsnahes mentales Training" angle specifically, not just a desk
+  task. Genuinely distinct from every existing Test/NAT mechanic: none of
+  Go/No-Go (inhibition), Flanker (interference filtering), UFOV (divided
+  attention under time pressure) or Posner-Cueing (voluntary spatial-
+  attention shift) asks the client to judge a SPATIAL TRANSFORMATION of a
+  single stimulus. Fixed 32-trial run (`ROTATION_TRIAL_COUNT` = 8 angles x
+  normal/mirrored x 2 repeats, every orientation sampled equally in both
+  forms rather than an artificial near/far split, since the disparity
+  effect is continuous not binary), shuffled with the same same-answer-
+  max-3-in-a-row guard the other Test exercises use. No Bei-Fehler/
+  background colour/Zusatzaufgabe/Trainingsmodus - correctly skipped, same
+  reasoning as Flanker/Posner (a fixed-trial accuracy/RT test). Pause/
+  resume uses the same scheduleXTimer-remaining-delay trick as Flanker/
+  Posner/Go-No-Go. New CSS is `.rotation-*` (fixed hex colours throughout,
+  no `var(--...)`); the character itself is a plain styled `<span>` rotated
+  via CSS `transform`, not a canvas/SVG element. Test: `tests/rotation_test.py`.
+  Note: this run's session stalled for a long stretch after finishing the
+  implementation (files stopped changing well before the environment
+  itself appears to have restarted) and never got to testing/committing on
+  its own - recovered and finished (test written, full suite run, this
+  entry added, committed+pushed) directly in the parent session rather
+  than by a fresh autonomous firing.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 

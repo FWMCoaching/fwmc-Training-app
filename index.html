@@ -633,6 +633,11 @@
       <span class="fc-desc">Ein kurzer Hinweisreiz zeigt, wo gleich vermutlich etwas erscheint &ndash; tippe so schnell wie m&ouml;glich auf die Seite, auf der der Punkt tats&auml;chlich auftaucht. Klassisches Paradigma zur visuell-r&auml;umlichen Aufmerksamkeitslenkung, trainiert schnelle Blick-/Aufmerksamkeitswechsel.</span>
       <span class="fc-meta" id="posnerBestHint"></span>
     </button>
+    <button class="featured-card" id="rotationOpenBtn">
+      <span class="fc-title">Rotationstest (Mentale Rotation)</span>
+      <span class="fc-desc">Ein gedrehter Buchstabe oder eine Zahl erscheint &ndash; ist er normal oder spiegelverkehrt? Klassisches Paradigma der mentalen Rotation (Cooper &amp; Shepard, 1973), trainiert r&auml;umliches Vorstellungsverm&ouml;gen und visuelle Entscheidungsgeschwindigkeit.</span>
+      <span class="fc-meta" id="rotationBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -777,6 +782,27 @@
   <div class="group-help" id="posnerReadyBestHint"></div>
 
   <button class="start-btn" id="posnerReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="rotationReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="rotationReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Rotationstest (Mentale Rotation)</h1>
+  <p class="page-sub">Ein Buchstabe oder eine Zahl erscheint gedreht auf dem Bildschirm &ndash; manchmal normal, manchmal spiegelverkehrt (wie im Spiegel). Tippe so schnell wie m&ouml;glich auf &bdquo;Normal&ldquo; oder &bdquo;Gespiegelt&ldquo;. Klassisches Paradigma der mentalen Rotation (Cooper &amp; Shepard, 1973): je weiter das Zeichen aus der aufrechten Position gedreht ist, desto l&auml;nger dauert die Entscheidung &ndash; das Gehirn muss das Bild gedanklich zur&uuml;ckdrehen, um sie zu treffen. Trainiert r&auml;umliches Vorstellungsverm&ouml;gen und visuelle Entscheidungsgeschwindigkeit; r&auml;umliche Rotationsf&auml;higkeit h&auml;ngt in mehreren Sportarten mit bewegungsnahem, k&ouml;rperbezogenem Vorstellungsverm&ouml;gen zusammen.</p>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="rotationDifficultyRow">
+      <button class="choice" data-rotation-diff="leicht">Leicht<small>mehr Zeit pro Reiz</small></button>
+      <button class="choice" data-rotation-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-rotation-diff="schwer">Schwer<small>kurzes Zeitfenster</small></button>
+    </div>
+  </div>
+
+  <div class="group-help" id="rotationReadyBestHint"></div>
+
+  <button class="start-btn" id="rotationReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="rememberReady" hidden>
@@ -2761,6 +2787,45 @@
     <div class="rating" id="posnerRating"></div>
     <button class="again" id="posnerAgainBtn">Nochmal</button>
     <button class="back" id="posnerDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="rotationPlayer" hidden>
+  <div class="rotation-stage" id="rotationStage">
+    <div class="remember-hint" id="rotationHint"></div>
+    <div class="rotation-char-box">
+      <span class="rotation-char" id="rotationCharEl"></span>
+    </div>
+    <div class="rotation-response-row">
+      <button class="rotation-response-btn" id="rotationNormalBtn">Normal</button>
+      <button class="rotation-response-btn" id="rotationMirroredBtn">Gespiegelt</button>
+    </div>
+  </div>
+  <div class="pause-overlay" id="rotationPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="rotationResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="rotationPlayerBar">
+    <button id="rotationBackBtn">&#10005; Beenden</button>
+    <button id="rotationPauseBtn">Pause</button>
+    <span class="player-status" id="rotationProgressEl"></span>
+    <button id="rotationFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="rotationFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="rotationFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="rotationFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="rotationDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="rotationDoneSummary"></p>
+    <div class="rating" id="rotationRating"></div>
+    <button class="again" id="rotationAgainBtn">Nochmal</button>
+    <button class="back" id="rotationDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

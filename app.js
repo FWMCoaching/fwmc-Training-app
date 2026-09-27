@@ -1185,6 +1185,16 @@
     posnerFsBtn: $("posnerFsBtn"), posnerFsHint: $("posnerFsHint"), posnerFsHintOpenBtn: $("posnerFsHintOpenBtn"), posnerFsHintClose: $("posnerFsHintClose"),
     posnerDonePanel: $("posnerDonePanel"), posnerDoneSummary: $("posnerDoneSummary"), posnerRating: $("posnerRating"),
     posnerAgainBtn: $("posnerAgainBtn"), posnerDoneBackBtn: $("posnerDoneBackBtn"),
+    rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
+    rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
+    rotationReadyBestHint: $("rotationReadyBestHint"), rotationReadyStartBtn: $("rotationReadyStartBtn"),
+    rotationPlayer: $("rotationPlayer"), rotationStage: $("rotationStage"), rotationHint: $("rotationHint"),
+    rotationCharEl: $("rotationCharEl"), rotationNormalBtn: $("rotationNormalBtn"), rotationMirroredBtn: $("rotationMirroredBtn"),
+    rotationPauseOverlay: $("rotationPauseOverlay"), rotationResumeBtn: $("rotationResumeBtn"),
+    rotationPlayerBar: $("rotationPlayerBar"), rotationBackBtn: $("rotationBackBtn"), rotationPauseBtn: $("rotationPauseBtn"), rotationProgressEl: $("rotationProgressEl"),
+    rotationFsBtn: $("rotationFsBtn"), rotationFsHint: $("rotationFsHint"), rotationFsHintOpenBtn: $("rotationFsHintOpenBtn"), rotationFsHintClose: $("rotationFsHintClose"),
+    rotationDonePanel: $("rotationDonePanel"), rotationDoneSummary: $("rotationDoneSummary"), rotationRating: $("rotationRating"),
+    rotationAgainBtn: $("rotationAgainBtn"), rotationDoneBackBtn: $("rotationDoneBackBtn"),
     blitzOpenBtn: $("blitzOpenBtn"), blitzBestHint: $("blitzBestHint"), blitzReady: $("blitzReady"),
     blitzReadyBackToHome: $("blitzReadyBackToHome"), blitzGridSizeRow: $("blitzGridSizeRow"),
     blitzZoneGroup: $("blitzZoneGroup"), blitzZoneAllBtn: $("blitzZoneAllBtn"), blitzZoneGrid: $("blitzZoneGrid"), blitzZoneHint: $("blitzZoneHint"),
@@ -1381,7 +1391,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3401,6 +3411,7 @@
     els.flankerPlayer.hidden = true;
     els.ufovPlayer.hidden = true;
     els.posnerPlayer.hidden = true;
+    els.rotationPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3782,6 +3793,7 @@
   wireFullscreen({ player: els.flankerPlayer, btn: els.flankerFsBtn, hint: els.flankerFsHint, hintOpen: els.flankerFsHintOpenBtn, hintClose: els.flankerFsHintClose });
   wireFullscreen({ player: els.ufovPlayer, btn: els.ufovFsBtn, hint: els.ufovFsHint, hintOpen: els.ufovFsHintOpenBtn, hintClose: els.ufovFsHintClose });
   wireFullscreen({ player: els.posnerPlayer, btn: els.posnerFsBtn, hint: els.posnerFsHint, hintOpen: els.posnerFsHintOpenBtn, hintClose: els.posnerFsHintClose });
+  wireFullscreen({ player: els.rotationPlayer, btn: els.rotationFsBtn, hint: els.rotationFsHint, hintOpen: els.rotationFsHintOpenBtn, hintClose: els.rotationFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -9393,6 +9405,328 @@
   els.posnerBackBtn.addEventListener("click", posnerStop);
   els.posnerAgainBtn.addEventListener("click", () => { els.posnerDonePanel.hidden = true; startPosnerGame(); });
   els.posnerDoneBackBtn.addEventListener("click", () => { els.posnerPlayer.hidden = true; els.posnerDonePanel.hidden = true; showScreen("testHome"); });
+
+  // Rotationstest (Mentale Rotation) - grounded in the classic mental-
+  // rotation/character-rotation chronometric paradigm (Cooper & Shepard,
+  // 1973): a letter or digit is shown rotated out of its upright
+  // orientation, either in its normal form or mirror-reversed, and the
+  // participant judges "normal" or "mirrored" as fast as possible. The
+  // hallmark, endlessly-replicated finding is that reaction time rises
+  // roughly with how far the character is rotated from upright - the mind
+  // is understood to mentally "rotate the image back" toward upright
+  // before it can judge it. Genuinely distinct from every existing
+  // Test/NAT mechanic: Go/No-Go tests withholding a response, Flanker
+  // tests filtering simultaneous conflicting stimuli, Posner-Cueing tests
+  // voluntarily shifting spatial attention, UFOV tests a divided-attention
+  // glance under adaptive time pressure - none of them ask the participant
+  // to judge a SPATIAL TRANSFORMATION of a single stimulus, which is what
+  // this one adds. Also researched as sport-relevant before building:
+  // athletes in high-spatial-demand sports (e.g. rotation/aerial sports)
+  // show better mental-rotation performance than non-athletes, an
+  // "embodied cognition" effect attributed to years of training rather
+  // than innate ability - see the 2023 Exp Brain Res VR study on embodied
+  // mental rotation comparing open- vs closed-skill-sport athletes, and a
+  // 2024/2025 behavioural+fNIRS study directly linking sport training in
+  // AXIAL ROTATION to improved spatial/mental-rotation ability. A good fit
+  // for FWMC's "bewegungsnahes mentales Training" angle, not just a pure
+  // desk-cognition task.
+  const ROTATION_PREFS_KEY = "fwmc-rotation-prefs-v1";
+  // Difficulty controls the response window (the character stays up until
+  // tapped or this elapses) and the inter-trial gap - same shape as
+  // FLANKER_DIFFICULTIES/POSNER_DIFFICULTIES. Windows run longer than
+  // Flanker's own since judging a rotated/mirrored character is a genuinely
+  // slower decision than reading a simple arrow direction.
+  const ROTATION_DIFFICULTIES = {
+    leicht: { title: "Leicht", responseMs: 4000, isiMin: 900, isiMax: 1400 },
+    mittel: { title: "Mittel", responseMs: 3000, isiMin: 700, isiMax: 1100 },
+    schwer: { title: "Schwer", responseMs: 2000, isiMin: 500, isiMax: 900 },
+  };
+  // Asymmetric letters/digits only - each must look genuinely different
+  // mirrored versus normal (unlike e.g. "O"/"H"/"A"/"0"/"1"/"8", which look
+  // identical either way), the same requirement Cooper & Shepard's own
+  // letter stimuli met.
+  const ROTATION_CHARS = ["F", "G", "J", "L", "P", "R", "2", "4", "5", "7"];
+  // 8 orientations around the full circle (0-315 in 45-degree steps) x
+  // normal/mirrored x 2 repeats = 32 trials - every orientation sampled
+  // equally often in both forms, rather than forcing an artificial 50/50
+  // near/far-rotation split (the angular-disparity effect this task
+  // measures is a continuous one, not a binary category).
+  const ROTATION_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
+  const ROTATION_TRIAL_COUNT = ROTATION_ANGLES.length * 2 * 2;
+  // Angular disparity from upright, 0-180 - a 200 degree rotation is just as
+  // far from upright as a 160 degree one (the mind can rotate either way).
+  function rotationDisparity(angle) { return Math.min(angle, 360 - angle); }
+  const rotationPrefs = { difficulty: "mittel" };
+  function loadRotationPrefs() {
+    const saved = readJSON(ROTATION_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(rotationPrefs, saved);
+    if (!ROTATION_DIFFICULTIES[rotationPrefs.difficulty]) rotationPrefs.difficulty = "mittel";
+  }
+  loadRotationPrefs();
+  function saveRotationPrefsToStorage() { writeJSON(ROTATION_PREFS_KEY, rotationPrefs); }
+
+  const ROTATION_BEST_KEY = "fwmc-rotation-best-v1"; // { [difficulty]: bestAccuracyPct }
+  function rotationBestFor() { return readJSON(ROTATION_BEST_KEY, {})[rotationPrefs.difficulty] || 0; }
+  function saveRotationBest(accuracyPct) {
+    const all = readJSON(ROTATION_BEST_KEY, {});
+    if (accuracyPct > (all[rotationPrefs.difficulty] || 0)) { all[rotationPrefs.difficulty] = accuracyPct; writeJSON(ROTATION_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderRotationBest() {
+    const best = rotationBestFor();
+    const text = best ? `Beste Genauigkeit (${ROTATION_DIFFICULTIES[rotationPrefs.difficulty].title}): ${best}%` : "";
+    els.rotationBestHint.textContent = text;
+    els.rotationReadyBestHint.textContent = text;
+  }
+  function syncRotationDifficultyUI() {
+    els.rotationDifficultyRow.querySelectorAll("[data-rotation-diff]").forEach((btn) => setActive(btn, btn.dataset.rotationDiff === rotationPrefs.difficulty));
+  }
+  els.rotationDifficultyRow.querySelectorAll("[data-rotation-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      rotationPrefs.difficulty = btn.dataset.rotationDiff;
+      saveRotationPrefsToStorage();
+      syncRotationDifficultyUI();
+      renderRotationBest();
+    });
+  });
+
+  els.rotationOpenBtn.addEventListener("click", () => {
+    syncRotationDifficultyUI();
+    renderRotationBest();
+    showScreen("rotationReady");
+  });
+  els.rotationReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Same timer-wrapping trick as scheduleFlankerTimer/schedulePosnerTimer:
+  // records what's pending and when it fires, so Pause can cancel it and
+  // Resume can replay it with its exact remaining delay.
+  function scheduleRotationTimer(fn, delayMs) {
+    rotationState.timerFn = fn;
+    rotationState.timerFiresAt = performance.now() + delayMs;
+    rotationState.timer = setTimeout(() => { rotationState.timer = null; fn(); }, delayMs);
+  }
+
+  function buildRotationTrials() {
+    const trials = [];
+    ROTATION_ANGLES.forEach((angle) => {
+      [false, true].forEach((mirrored) => {
+        for (let i = 0; i < 2; i++) {
+          const char = ROTATION_CHARS[Math.floor(Math.random() * ROTATION_CHARS.length)];
+          trials.push({ angle, mirrored, char, disparity: rotationDisparity(angle) });
+        }
+      });
+    });
+    // Shuffle, then avoid more than 3 identical CORRECT answers (normal vs
+    // mirrored) back to back - same "just keep tapping the same button"
+    // motor-strategy guard as buildFlankerTrials/buildPosnerTrials.
+    for (let tries = 0; tries < 200; tries++) {
+      for (let i = trials.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [trials[i], trials[j]] = [trials[j], trials[i]];
+      }
+      let ok = true, run = 1;
+      for (let i = 1; i < trials.length; i++) {
+        if (trials[i].mirrored === trials[i - 1].mirrored) { run++; if (run > 3) { ok = false; break; } }
+        else run = 1;
+      }
+      if (ok) break;
+    }
+    return trials;
+  }
+
+  function rotationClearChar() {
+    els.rotationCharEl.textContent = "";
+    els.rotationCharEl.style.transform = "";
+  }
+  function rotationRenderTrial(trial) {
+    els.rotationCharEl.textContent = trial.char;
+    // Mirror FIRST, then rotate - matches the real paradigm (a letter is
+    // either printed normally or mirror-reversed, and that physical form is
+    // THEN rotated in the picture plane) rather than rotating first and
+    // mirroring the already-rotated result, which is a different transform
+    // (rotation and horizontal mirroring don't commute except at 0/180
+    // degrees) - CSS applies the rightmost function first, so scaleX runs
+    // before rotate here.
+    els.rotationCharEl.style.transform = `rotate(${trial.angle}deg) scaleX(${trial.mirrored ? -1 : 1})`;
+  }
+
+  let rotationState = null;
+  function startRotationGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.rotationPlayer.hidden = false;
+    els.rotationPlayerBar.hidden = false;
+    els.rotationDonePanel.hidden = true;
+    els.rotationPauseOverlay.hidden = true;
+    els.rotationPauseBtn.hidden = false;
+    rotationState = {
+      diff: ROTATION_DIFFICULTIES[rotationPrefs.difficulty], trials: buildRotationTrials(), index: -1, phase: "gap", responded: false,
+      correct: 0, incorrect: 0, timeouts: 0, rtsNear: [], rtsFar: [],
+      stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      startTime: performance.now(),
+    };
+    rotationClearChar();
+    els.rotationNormalBtn.classList.remove("correct", "wrong");
+    els.rotationMirroredBtn.classList.remove("correct", "wrong");
+    els.rotationHint.textContent = "Bereit? Gleich geht's los …";
+    els.rotationProgressEl.textContent = `0/${rotationState.trials.length}`;
+    requestWakeLock();
+    scheduleRotationTimer(rotationNextTrial, 1200);
+  }
+  els.rotationReadyStartBtn.addEventListener("click", startRotationGame);
+
+  function rotationNextTrial() {
+    if (!rotationState) return;
+    rotationState.index++;
+    if (rotationState.index >= rotationState.trials.length) { rotationFinish(); return; }
+    els.rotationProgressEl.textContent = `${rotationState.index + 1}/${rotationState.trials.length}`;
+    rotationState.phase = "gap";
+    rotationState.responded = false;
+    rotationClearChar();
+    const isi = rotationState.diff.isiMin + Math.random() * (rotationState.diff.isiMax - rotationState.diff.isiMin);
+    scheduleRotationTimer(rotationShowStimulus, isi);
+  }
+  function rotationShowStimulus() {
+    if (!rotationState) return;
+    const trial = rotationState.trials[rotationState.index];
+    rotationState.phase = "responding";
+    rotationState.responded = false;
+    rotationState.stimAt = performance.now();
+    els.rotationHint.textContent = "";
+    els.rotationNormalBtn.classList.remove("correct", "wrong");
+    els.rotationMirroredBtn.classList.remove("correct", "wrong");
+    rotationRenderTrial(trial);
+    scheduleRotationTimer(rotationEndTrial, rotationState.diff.responseMs);
+  }
+  function rotationEndTrial() {
+    if (!rotationState) return;
+    if (rotationState.phase === "responding" && !rotationState.responded) {
+      rotationState.incorrect++;
+      rotationState.timeouts++;
+      els.rotationHint.textContent = "Verpasst!";
+    }
+    rotationState.phase = "gap";
+    rotationClearChar();
+    rotationNextTrial();
+  }
+  function rotationTap(mirroredGuess) {
+    if (!rotationState || rotationState.paused || rotationState.responded) return;
+    // Taps before the character actually appears are ignored - reaction
+    // time is measured stimulus-locked, same convention as Flanker's/
+    // Posner's own tap handlers.
+    if (rotationState.phase !== "responding") return;
+    rotationState.responded = true;
+    const trial = rotationState.trials[rotationState.index];
+    const rt = performance.now() - rotationState.stimAt;
+    const correct = mirroredGuess === trial.mirrored;
+    const btn = mirroredGuess ? els.rotationMirroredBtn : els.rotationNormalBtn;
+    btn.classList.add(correct ? "correct" : "wrong");
+    if (correct) {
+      rotationState.correct++;
+      (trial.disparity <= 90 ? rotationState.rtsNear : rotationState.rtsFar).push(rt);
+    } else {
+      rotationState.incorrect++;
+      els.rotationHint.textContent = "Leider falsch!";
+    }
+    // The feedback colour on the tapped button stays up for whatever's left
+    // of diff.responseMs (the already-scheduled rotationEndTrial fires the
+    // actual transition) - same rhythm as Flanker/Posner leaving their own
+    // tap feedback up for the rest of the response window, no separate
+    // timer needed.
+  }
+  els.rotationNormalBtn.addEventListener("click", () => rotationTap(false));
+  els.rotationMirroredBtn.addEventListener("click", () => rotationTap(true));
+
+  // Pause just stops/replays the pending timer, no live background-adjust
+  // overlay - background colour customisation was skipped for this exercise
+  // (explicitly optional per the Test-Bereich guidance) so there is nothing
+  // to adjust while paused.
+  function pauseRotation() {
+    if (!rotationState || rotationState.paused) return;
+    rotationState.paused = true;
+    rotationState.pausedAt = performance.now();
+    if (rotationState.timer) {
+      clearTimeout(rotationState.timer);
+      rotationState.timer = null;
+      rotationState.timerRemainingMs = Math.max(0, rotationState.timerFiresAt - rotationState.pausedAt);
+    }
+    els.rotationPauseBtn.hidden = true;
+    els.rotationPauseOverlay.hidden = false;
+  }
+  function resumeRotation() {
+    if (!rotationState || !rotationState.paused) return;
+    const pausedMs = performance.now() - rotationState.pausedAt;
+    rotationState.startTime += pausedMs;
+    rotationState.stimAt += pausedMs;
+    rotationState.paused = false;
+    if (rotationState.timerFn && rotationState.timerRemainingMs != null) {
+      scheduleRotationTimer(rotationState.timerFn, rotationState.timerRemainingMs);
+      rotationState.timerRemainingMs = null;
+    }
+    els.rotationPauseOverlay.hidden = true;
+    els.rotationPauseBtn.hidden = false;
+  }
+  els.rotationPauseBtn.addEventListener("click", pauseRotation);
+  els.rotationResumeBtn.addEventListener("click", resumeRotation);
+
+  function finalizeRotationRun(state, totalTrials) {
+    els.rotationPauseOverlay.hidden = true;
+    els.rotationPlayerBar.hidden = true;
+    const accuracyPct = Math.round(100 * state.correct / totalTrials);
+    const avgNear = avgOf(state.rtsNear);
+    const avgFar = avgOf(state.rtsFar);
+    // The classic mental-rotation effect itself: how much slower correct
+    // responses were for characters rotated FAR from upright (>90 degrees
+    // of angular disparity) versus NEAR upright (<=90 degrees) - the
+    // signature "RT rises with rotation angle" finding this paradigm exists
+    // to surface.
+    const rotationCost = (avgNear != null && avgFar != null) ? (avgFar - avgNear) : null;
+    const isRecord = saveRotationBest(accuracyPct);
+    renderRotationBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.rotationDoneSummary.textContent =
+      `Rotationstest (${state.diff.title}) · ${accuracyPct}% richtig` +
+      (avgNear != null ? ` · Ø nah an aufrecht ${avgNear} ms` : "") +
+      (avgFar != null ? ` · Ø stark gedreht ${avgFar} ms` : "") +
+      (rotationCost != null ? ` · Rotations-Kosten ${rotationCost} ms` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${accuracyPct}% richtig` + (rotationCost != null ? `, Rotation ${rotationCost} ms` : "");
+    const id = addHistory({ kind: "rotation", title: "Rotationstest (Mentale Rotation)", seconds: Math.round(played), note });
+    renderRating(els.rotationRating, id, "Wie sicher hast du dich gefühlt?");
+    els.rotationDonePanel.hidden = false;
+  }
+  function rotationFinish() {
+    if (!rotationState) return;
+    const state = rotationState;
+    rotationState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.rotationPlayer) document.exitFullscreen().catch(() => {});
+    els.rotationFsHint.hidden = true;
+    finalizeRotationRun(state, state.trials.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved.
+  function rotationStop() {
+    if (!rotationState) return;
+    if (rotationState.timer) clearTimeout(rotationState.timer);
+    const state = rotationState;
+    rotationState = null;
+    els.rotationPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.rotationPlayer) document.exitFullscreen().catch(() => {});
+    els.rotationFsHint.hidden = true;
+    const resolved = state.correct + state.incorrect;
+    if (resolved >= 4) {
+      finalizeRotationRun(state, resolved);
+    } else {
+      els.rotationPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.rotationBackBtn.addEventListener("click", rotationStop);
+  els.rotationAgainBtn.addEventListener("click", () => { els.rotationDonePanel.hidden = true; startRotationGame(); });
+  els.rotationDoneBackBtn.addEventListener("click", () => { els.rotationPlayer.hidden = true; els.rotationDonePanel.hidden = true; showScreen("testHome"); });
 
   // ---- Start-up ----
   renderHistory();
