@@ -1265,6 +1265,17 @@
     tsFsBtn: $("tsFsBtn"), tsFsHint: $("tsFsHint"), tsFsHintOpenBtn: $("tsFsHintOpenBtn"), tsFsHintClose: $("tsFsHintClose"),
     tsDonePanel: $("tsDonePanel"), tsDoneSummary: $("tsDoneSummary"), tsRating: $("tsRating"),
     tsAgainBtn: $("tsAgainBtn"), tsDoneBackBtn: $("tsDoneBackBtn"),
+    antiOpenBtn: $("antiOpenBtn"), antiBestHint: $("antiBestHint"), antiReady: $("antiReady"),
+    antiReadyBackToHome: $("antiReadyBackToHome"), antiDifficultyRow: $("antiDifficultyRow"),
+    antiReadyBestHint: $("antiReadyBestHint"), antiReadyStartBtn: $("antiReadyStartBtn"),
+    antiPlayer: $("antiPlayer"), antiStage: $("antiStage"), antiRule: $("antiRule"), antiHint: $("antiHint"),
+    antiSlotLeft: $("antiSlotLeft"), antiDotLeft: $("antiDotLeft"), antiSlotRight: $("antiSlotRight"), antiDotRight: $("antiDotRight"),
+    antiLeftBtn: $("antiLeftBtn"), antiRightBtn: $("antiRightBtn"),
+    antiPauseOverlay: $("antiPauseOverlay"), antiResumeBtn: $("antiResumeBtn"),
+    antiPlayerBar: $("antiPlayerBar"), antiBackBtn: $("antiBackBtn"), antiPauseBtn: $("antiPauseBtn"), antiProgressEl: $("antiProgressEl"),
+    antiFsBtn: $("antiFsBtn"), antiFsHint: $("antiFsHint"), antiFsHintOpenBtn: $("antiFsHintOpenBtn"), antiFsHintClose: $("antiFsHintClose"),
+    antiDonePanel: $("antiDonePanel"), antiDoneSummary: $("antiDoneSummary"), antiRating: $("antiRating"),
+    antiAgainBtn: $("antiAgainBtn"), antiDoneBackBtn: $("antiDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationReadyBestHint: $("rotationReadyBestHint"), rotationReadyStartBtn: $("rotationReadyStartBtn"),
@@ -1481,7 +1492,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3510,6 +3521,7 @@
     els.corsiPlayer.hidden = true;
     els.reaktPlayer.hidden = true;
     els.tsPlayer.hidden = true;
+    els.antiPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3901,6 +3913,7 @@
   wireFullscreen({ player: els.corsiPlayer, btn: els.corsiFsBtn, hint: els.corsiFsHint, hintOpen: els.corsiFsHintOpenBtn, hintClose: els.corsiFsHintClose });
   wireFullscreen({ player: els.reaktPlayer, btn: els.reaktFsBtn, hint: els.reaktFsHint, hintOpen: els.reaktFsHintOpenBtn, hintClose: els.reaktFsHintClose });
   wireFullscreen({ player: els.tsPlayer, btn: els.tsFsBtn, hint: els.tsFsHint, hintOpen: els.tsFsHintOpenBtn, hintClose: els.tsFsHintClose });
+  wireFullscreen({ player: els.antiPlayer, btn: els.antiFsBtn, hint: els.antiFsHint, hintOpen: els.antiFsHintOpenBtn, hintClose: els.antiFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -12956,6 +12969,329 @@
   els.tsBackBtn.addEventListener("click", tsStop);
   els.tsAgainBtn.addEventListener("click", () => { els.tsDonePanel.hidden = true; startTsGame(); });
   els.tsDoneBackBtn.addEventListener("click", () => { els.tsPlayer.hidden = true; els.tsDonePanel.hidden = true; showScreen("testHome"); });
+
+  // ---- Gegenrichtungs-Test (Antisakkaden-Prinzip) ----
+  // Grounded in the antisaccade task (Hallett, 1978): a peripheral stimulus
+  // automatically pulls attention/gaze toward it (the "prosaccade" response)
+  // - the antisaccade variant instead instructs looking (or, here,
+  // responding) AWAY from it, which requires actively inhibiting that
+  // automatic pull rather than just reacting fast. Real eye movements can't
+  // be measured on a phone screen, so this is built as the well-established
+  // MANUAL adaptation used throughout individual-differences and applied
+  // research whenever eye-tracking hardware isn't available - a fixed-
+  // position dot appears left or right, and the client taps a button either
+  // on the SAME side ("Pro" block - the automatic/compatible response, a
+  // baseline) or the OPPOSITE side ("Anti" block - requires inhibiting that
+  // same pull), same core logic as Kane, Bleckley, Conway & Engle (2001)'s
+  // manual antisaccade task for measuring individual differences in
+  // cognitive inhibition. Deliberately BLOCKED, not mixed trial-by-trial,
+  // matching how the real paradigm (and its manual adaptations) is actually
+  // administered - genuinely distinct from Regelwechsel-Test, which mixes
+  // two classification RULES trial-by-trial on an ambiguous stimulus; here
+  // one single, unambiguous location judgment is made throughout, and only
+  // the RESPONSE MAPPING (same-side vs. opposite-side) changes, once, at
+  // the block boundary. Also distinct from Simon (an automatic, uninstructed
+  // location-vs-colour conflict baked into every trial) and Posner-Cueing
+  // (a cue that may or may not predict the real target's location) - this
+  // is the only exercise whose entire point is an EXPLICITLY INSTRUCTED
+  // override of an automatic orienting response. Also researched as sport-
+  // relevant: volleyball players showed a different interference pattern
+  // between saccadic and key-press reaction times than non-athletes on this
+  // exact manual/oculomotor contrast (Kokubu, Ando, Kida & Oda, 2006); more
+  // recent work links athletes' antisaccade performance to distinct
+  // microsaccade-preparation behaviour and shows prior high cognitive
+  // demand measurably lowers subsequent manual-antisaccade performance
+  // (2026 studies) - a fit for FWMC's inhibitory-control/visuelle-
+  // Entscheidungsgeschwindigkeit focus specifically.
+  const ANTI_DIFFICULTIES = {
+    // Self-paced (a tap ends a trial immediately) with only a generous
+    // safety-net timeout, same shape as Regelwechsel-Test/Suchtest/Hick -
+    // there's no "fixed full-duration response window" here (unlike Simon/
+    // Flanker/Posner) since direction ERRORS, not raw speed, are the classic
+    // antisaccade outcome, and truncating slower (especially Anti-block) RTs
+    // with a tight fixed window would bias the very cost this exercise
+    // measures. isiMs is the fixation-only foreperiod before each dot
+    // appears; only that foreperiod and the timeout shrink with difficulty.
+    leicht: { title: "Leicht", isiMs: 900, timeoutMs: 3000 },
+    mittel: { title: "Mittel", isiMs: 600, timeoutMs: 2200 },
+    schwer: { title: "Schwer", isiMs: 400, timeoutMs: 1600 },
+  };
+  const ANTI_TRIALS_PER_BLOCK = 16; // 16 Pro + 16 Anti = 32 total, comparable scale to Flanker/Rotationstest
+  const ANTI_FEEDBACK_MS = 400;
+  const ANTI_BLOCK_INTRO_MS = 3200; // long enough to actually read the new block's rule before the first dot
+  const ANTI_MIN_RESOLVED = 8;
+  const ANTI_PREFS_KEY = "fwmc-anti-prefs-v1";
+  const antiPrefs = { difficulty: "mittel" };
+  function loadAntiPrefs() {
+    const saved = readJSON(ANTI_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(antiPrefs, saved);
+    if (!ANTI_DIFFICULTIES[antiPrefs.difficulty]) antiPrefs.difficulty = "mittel";
+  }
+  loadAntiPrefs();
+  function saveAntiPrefsToStorage() { writeJSON(ANTI_PREFS_KEY, antiPrefs); }
+
+  const ANTI_BEST_KEY = "fwmc-anti-best-v1"; // { [difficulty]: bestHemmKostenMs } - lower is better, same shape as TS_BEST_KEY
+  function antiBestFor() {
+    const v = readJSON(ANTI_BEST_KEY, {})[antiPrefs.difficulty];
+    return typeof v === "number" ? v : null;
+  }
+  function saveAntiBest(cost) {
+    const all = readJSON(ANTI_BEST_KEY, {});
+    const cur = all[antiPrefs.difficulty];
+    if (cur == null || cost < cur) { all[antiPrefs.difficulty] = cost; writeJSON(ANTI_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderAntiBest() {
+    const best = antiBestFor();
+    const text = best != null ? `Niedrigste Hemm-Kosten (${ANTI_DIFFICULTIES[antiPrefs.difficulty].title}): ${Math.round(best)} ms` : "";
+    els.antiBestHint.textContent = text;
+    els.antiReadyBestHint.textContent = text;
+  }
+  renderAntiBest();
+  function syncAntiDifficultyUI() {
+    els.antiDifficultyRow.querySelectorAll("[data-anti-diff]").forEach((btn) => setActive(btn, btn.dataset.antiDiff === antiPrefs.difficulty));
+  }
+  els.antiDifficultyRow.querySelectorAll("[data-anti-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      antiPrefs.difficulty = btn.dataset.antiDiff;
+      saveAntiPrefsToStorage();
+      syncAntiDifficultyUI();
+      renderAntiBest();
+    });
+  });
+  els.antiOpenBtn.addEventListener("click", () => {
+    syncAntiDifficultyUI();
+    renderAntiBest();
+    showScreen("antiReady");
+  });
+  els.antiReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Single active timer, remaining-delay pause/resume - same shape as every
+  // other setTimeout-driven Test exercise.
+  function scheduleAntiTimer(fn, delayMs) {
+    if (antiState.timer) clearTimeout(antiState.timer);
+    antiState.timerFn = fn;
+    antiState.timerFiresAt = performance.now() + delayMs;
+    antiState.timer = setTimeout(() => { antiState.timer = null; fn(); }, delayMs);
+  }
+
+  // Balanced left/right side sequence with the same "no more than 3 in a
+  // row identical" guard used throughout this Test tab, so a client can't
+  // settle into "just keep tapping the same button" for a stretch.
+  function buildAntiSideSeq(n) {
+    let sides;
+    for (let tries = 0; tries < 300; tries++) {
+      sides = [];
+      for (let i = 0; i < n / 2; i++) sides.push("left", "right");
+      for (let i = sides.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [sides[i], sides[j]] = [sides[j], sides[i]];
+      }
+      let ok = true, run = 1;
+      for (let i = 1; i < sides.length; i++) {
+        if (sides[i] === sides[i - 1]) { run++; if (run > 3) { ok = false; break; } }
+        else run = 1;
+      }
+      if (ok) break;
+    }
+    return sides;
+  }
+  // Pro block always first (the automatic/compatible mapping, doubling as a
+  // baseline/practice block) then Anti - matches how the real paradigm is
+  // conventionally administered. A fixed order, not counterbalanced (see
+  // Offene Fragen), same limitation already flagged for Wahlreaktionstest's
+  // own fixed 2->4->8 block order.
+  function buildAntiTrials() {
+    const pro = buildAntiSideSeq(ANTI_TRIALS_PER_BLOCK).map((side) => ({ block: "pro", side }));
+    const anti = buildAntiSideSeq(ANTI_TRIALS_PER_BLOCK).map((side) => ({ block: "anti", side }));
+    return pro.concat(anti);
+  }
+  function antiClearDots() {
+    els.antiDotLeft.classList.remove("show");
+    els.antiDotRight.classList.remove("show");
+  }
+
+  let antiState = null;
+  function startAntiGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.antiPlayer.hidden = false;
+    els.antiPlayerBar.hidden = false;
+    els.antiDonePanel.hidden = true;
+    els.antiPauseOverlay.hidden = true;
+    els.antiPauseBtn.hidden = false;
+    const diff = ANTI_DIFFICULTIES[antiPrefs.difficulty];
+    const trials = buildAntiTrials();
+    antiState = {
+      diff, trials, index: -1,
+      phase: "isi", side: null, block: null,
+      correct: 0, incorrect: 0,
+      rtByBlock: { pro: [], anti: [] },
+      paused: false, startTime: performance.now(), stimAt: null,
+      timer: null, timerFn: null, timerFiresAt: null,
+    };
+    els.antiRule.textContent = "";
+    antiClearDots();
+    els.antiHint.textContent = "Bereit? Gleich geht's los …";
+    els.antiLeftBtn.classList.remove("correct", "wrong");
+    els.antiRightBtn.classList.remove("correct", "wrong");
+    els.antiProgressEl.textContent = `0/${trials.length}`;
+    requestWakeLock();
+    scheduleAntiTimer(antiNextTrial, 1000);
+  }
+  els.antiReadyStartBtn.addEventListener("click", startAntiGame);
+
+  function antiNextTrial() {
+    if (!antiState) return;
+    antiState.index++;
+    if (antiState.index >= antiState.trials.length) { antiFinish(); return; }
+    const trial = antiState.trials[antiState.index];
+    const blockChanged = antiState.block !== trial.block;
+    antiState.block = trial.block;
+    antiState.side = trial.side;
+    antiState.phase = "isi";
+    els.antiProgressEl.textContent = `${antiState.index + 1}/${antiState.trials.length}`;
+    antiClearDots();
+    els.antiLeftBtn.classList.remove("correct", "wrong");
+    els.antiRightBtn.classList.remove("correct", "wrong");
+    els.antiRule.textContent = trial.block === "pro" ? "Regel: GLEICHE SEITE" : "Regel: GEGENTEIL";
+    if (blockChanged) {
+      els.antiHint.textContent = trial.block === "pro"
+        ? "Block 1 von 2 — tippe auf die Seite, auf der der Punkt erscheint."
+        : "Block 2 von 2 — jetzt bewusst auf die ANDERE Seite tippen!";
+      scheduleAntiTimer(antiShowStimulus, ANTI_BLOCK_INTRO_MS);
+    } else {
+      els.antiHint.textContent = "";
+      scheduleAntiTimer(antiShowStimulus, antiState.diff.isiMs);
+    }
+  }
+  function antiShowStimulus() {
+    if (!antiState) return;
+    antiState.phase = "responding";
+    antiState.stimAt = performance.now();
+    const dot = antiState.side === "left" ? els.antiDotLeft : els.antiDotRight;
+    dot.classList.add("show");
+    scheduleAntiTimer(antiTimeoutTrial, antiState.diff.timeoutMs);
+  }
+  function antiTimeoutTrial() {
+    if (!antiState || antiState.phase !== "responding") return;
+    antiState.incorrect++;
+    antiState.phase = "feedback";
+    els.antiHint.textContent = "Verpasst!";
+    scheduleAntiTimer(antiAfterFeedback, ANTI_FEEDBACK_MS);
+  }
+  function antiAnswer(side) {
+    if (!antiState || antiState.paused || antiState.phase !== "responding") return;
+    const rt = performance.now() - antiState.stimAt;
+    antiState.phase = "feedback";
+    const correctSide = antiState.block === "pro" ? antiState.side : (antiState.side === "left" ? "right" : "left");
+    const tappedBtn = side === "left" ? els.antiLeftBtn : els.antiRightBtn;
+    const otherBtn = side === "left" ? els.antiRightBtn : els.antiLeftBtn;
+    if (side === correctSide) {
+      tappedBtn.classList.add("correct");
+      antiState.correct++;
+      antiState.rtByBlock[antiState.block].push(rt);
+    } else {
+      tappedBtn.classList.add("wrong");
+      otherBtn.classList.add("correct");
+      antiState.incorrect++;
+      els.antiHint.textContent = "Daneben!";
+    }
+    scheduleAntiTimer(antiAfterFeedback, ANTI_FEEDBACK_MS);
+  }
+  function antiAfterFeedback() {
+    if (!antiState) return;
+    antiState.phase = "isi";
+    antiClearDots();
+    els.antiHint.textContent = "";
+    els.antiLeftBtn.classList.remove("correct", "wrong");
+    els.antiRightBtn.classList.remove("correct", "wrong");
+    antiNextTrial();
+  }
+  els.antiLeftBtn.addEventListener("click", () => antiAnswer("left"));
+  els.antiRightBtn.addEventListener("click", () => antiAnswer("right"));
+
+  function pauseAnti() {
+    if (!antiState || antiState.paused) return;
+    antiState.paused = true;
+    antiState.pausedAt = performance.now();
+    if (antiState.timer) {
+      clearTimeout(antiState.timer);
+      antiState.timer = null;
+      antiState.timerRemainingMs = Math.max(0, antiState.timerFiresAt - antiState.pausedAt);
+    }
+    els.antiPauseBtn.hidden = true;
+    els.antiPauseOverlay.hidden = false;
+  }
+  function resumeAnti() {
+    if (!antiState || !antiState.paused) return;
+    const pausedMs = performance.now() - antiState.pausedAt;
+    antiState.startTime += pausedMs;
+    if (antiState.stimAt != null) antiState.stimAt += pausedMs;
+    antiState.paused = false;
+    if (antiState.timerFn && antiState.timerRemainingMs != null) {
+      scheduleAntiTimer(antiState.timerFn, antiState.timerRemainingMs);
+      antiState.timerRemainingMs = null;
+    }
+    els.antiPauseOverlay.hidden = true;
+    els.antiPauseBtn.hidden = false;
+  }
+  els.antiPauseBtn.addEventListener("click", pauseAnti);
+  els.antiResumeBtn.addEventListener("click", resumeAnti);
+
+  function finalizeAntiRun(state, totalTrials) {
+    els.antiPauseOverlay.hidden = true;
+    els.antiPlayerBar.hidden = true;
+    const accuracyPct = Math.round(100 * state.correct / totalTrials);
+    const avgPro = avgOf(state.rtByBlock.pro);
+    const avgAnti = avgOf(state.rtByBlock.anti);
+    const cost = (avgPro != null && avgAnti != null) ? Math.round(avgAnti - avgPro) : null;
+    const isRecord = cost != null ? saveAntiBest(cost) : false;
+    renderAntiBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.antiDoneSummary.textContent =
+      `Gegenrichtungs-Test (${state.diff.title}) · ${accuracyPct}% richtig` +
+      (avgPro != null ? ` · Ø gleiche Seite ${Math.round(avgPro)} ms` : "") +
+      (avgAnti != null ? ` · Ø Gegenteil ${Math.round(avgAnti)} ms` : "") +
+      (cost != null ? ` · Hemm-Kosten ${cost} ms` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${accuracyPct}% richtig` + (cost != null ? `, Hemm-Kosten ${cost} ms` : "");
+    const id = addHistory({ kind: "anti", title: "Gegenrichtungs-Test (Antisakkaden-Prinzip)", seconds: Math.round(played), note });
+    renderRating(els.antiRating, id, "Wie leicht fiel es dir, im zweiten Block bewusst gegenzusteuern?");
+    els.antiDonePanel.hidden = false;
+  }
+  function antiFinish() {
+    if (!antiState) return;
+    const state = antiState;
+    antiState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.antiPlayer) document.exitFullscreen().catch(() => {});
+    els.antiFsHint.hidden = true;
+    finalizeAntiRun(state, state.trials.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved.
+  function antiStop() {
+    if (!antiState) return;
+    if (antiState.timer) clearTimeout(antiState.timer);
+    const state = antiState;
+    antiState = null;
+    els.antiPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.antiPlayer) document.exitFullscreen().catch(() => {});
+    els.antiFsHint.hidden = true;
+    const resolved = state.correct + state.incorrect;
+    if (resolved >= ANTI_MIN_RESOLVED) {
+      finalizeAntiRun(state, resolved);
+    } else {
+      els.antiPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.antiBackBtn.addEventListener("click", antiStop);
+  els.antiAgainBtn.addEventListener("click", () => { els.antiDonePanel.hidden = true; startAntiGame(); });
+  els.antiDoneBackBtn.addEventListener("click", () => { els.antiPlayer.hidden = true; els.antiDonePanel.hidden = true; showScreen("testHome"); });
 
   // ---- Start-up ----
   renderHistory();

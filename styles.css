@@ -824,6 +824,28 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .ts-response-btn:active{transform:scale(.96)}
 .ts-response-btn.correct{background:#2e7d32}
 .ts-response-btn.wrong{background:#d32f2f}
+/* Gegenrichtungs-Test (Antisakkaden-Prinzip): same fixed-position
+   left/right slot pattern as Simon (.simon-slot/.simon-dot), reused here
+   since both need "a stimulus can appear left or right, near two fixed
+   response targets" - but plain neutral dots/buttons, not colour-coded,
+   since side (not colour) is the whole point here and nothing needs
+   protecting from feedback-colour confusion the way Simon's fixed
+   blue/orange mapping does. */
+.anti-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:24px 16px}
+.anti-rule{font-size:15px;font-weight:700;letter-spacing:.03em;color:#007094;text-transform:uppercase;min-height:20px;text-align:center}
+.anti-fix{font-size:26px;font-weight:700;color:#8a97a3;line-height:1}
+.anti-slots-row{display:flex;align-items:center;justify-content:center;gap:72px}
+.anti-slot{width:64px;height:64px;border-radius:50%;border:2px dashed #c7d0d6;display:flex;align-items:center;justify-content:center}
+.anti-dot{width:40px;height:40px;border-radius:50%;background:#16232a;opacity:0}
+.anti-dot.show{opacity:1}
+.anti-response-row{display:flex;gap:20px}
+.anti-response-btn{
+  min-width:120px;padding:16px 24px;border-radius:16px;border:none;background:#16232a;color:#fff;
+  font-size:17px;font-weight:700;cursor:pointer;transition:background .12s ease,transform .08s ease;
+}
+.anti-response-btn:active{transform:scale(.96)}
+.anti-response-btn.correct{background:#2e7d32}
+.anti-response-btn.wrong{background:#d32f2f}
 .corsi-stage{flex:1;position:relative;overflow:hidden}
 .corsi-block{
   position:absolute;transform:translate(-50%,-50%);

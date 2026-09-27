@@ -665,6 +665,11 @@
       <span class="fc-desc">Vor jeder Zahl steht kurz, welche Aufgabe gerade gilt: &bdquo;ZAHL&ldquo; (gerade/ungerade?) oder &bdquo;GR&Ouml;&Szlig;E&ldquo; (kleiner/gr&ouml;&szlig;er als 5?) &ndash; manchmal bleibt sie gleich, manchmal wechselt sie. Klassisches Paradigma zur kognitiven Flexibilit&auml;t (Task-Switching, Rogers &amp; Monsell, 1995; Meiran, 1996): allein das Umschalten zwischen zwei Regeln kostet zus&auml;tzliche Zeit, unabh&auml;ngig davon wie leicht die einzelne Entscheidung f&uuml;r sich w&auml;re.</span>
       <span class="fc-meta" id="tsBestHint"></span>
     </button>
+    <button class="featured-card" id="antiOpenBtn">
+      <span class="fc-title">Gegenrichtungs-Test (Antisakkaden-Prinzip)</span>
+      <span class="fc-desc">Ein Punkt taucht links oder rechts auf &ndash; zuerst tippst du auf die GLEICHE Seite, danach absichtlich auf die GEGENTEILIGE. Angelehnt an die Antisakkaden-Aufgabe (Hallett, 1978) in ihrer etablierten manuellen Tastendruck-Variante (u.a. Kane et al., 2001) &ndash; trainiert, den automatischen Zug zu einem auftauchenden Reiz aktiv zu unterdr&uuml;cken, statt ihm zu folgen.</span>
+      <span class="fc-meta" id="antiBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -1015,6 +1020,27 @@
   <div class="group-help" id="tsReadyBestHint"></div>
 
   <button class="start-btn" id="tsReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="antiReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="antiReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Gegenrichtungs-Test (Antisakkaden-Prinzip)</h1>
+  <p class="page-sub">Ein Punkt erscheint links oder rechts von der Mitte. Im ersten Block tippst du auf die GLEICHE Seite (die automatische, naheliegende Reaktion) &ndash; im zweiten Block sollst du bewusst auf die GEGENTEILIGE Seite tippen und damit den automatischen Zug zum Reiz aktiv unterdr&uuml;cken. Klassisches Paradigma zur Blickbewegungs-Hemmung (Antisakkaden-Aufgabe, Hallett, 1978); da echte Augenbewegungen auf dem Handy nicht gemessen werden k&ouml;nnen, nutzt diese &Uuml;bung die etablierte manuelle Tastendruck-Variante des Tests (u.a. Kane, Bleckley, Conway &amp; Engle, 2001) &ndash; der Reaktionszeit-Unterschied zwischen beiden Bl&ouml;cken (&bdquo;Hemm-Kosten&ldquo;) zeigt, wie viel zus&auml;tzliche Verarbeitung es kostet, eine automatische Reaktion zu unterdr&uuml;cken. Auch sportwissenschaftlich untersucht: Volleyballspieler:innen zeigten im direkten Vergleich von Sakkaden- und Tastendruck-Reaktionszeiten ein anderes Interferenzmuster als Nicht-Sportler:innen (Kokubu et al., 2006), und neuere Studien (2026) verkn&uuml;pfen Antisakkaden-Leistung bei Athlet:innen mit spezifischem Blickvorbereitungsverhalten sowie mit messbaren Effekten vorheriger kognitiver Belastung auf die nachfolgende Hemmleistung.</p>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="antiDifficultyRow">
+      <button class="choice" data-anti-diff="leicht">Leicht<small>mehr Zeit vor jedem Punkt</small></button>
+      <button class="choice" data-anti-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-anti-diff="schwer">Schwer<small>kaum Vorbereitungszeit</small></button>
+    </div>
+  </div>
+
+  <div class="group-help" id="antiReadyBestHint"></div>
+
+  <button class="start-btn" id="antiReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="merkReady" hidden>
@@ -3360,6 +3386,48 @@
     <div class="rating" id="tsRating"></div>
     <button class="again" id="tsAgainBtn">Nochmal</button>
     <button class="back" id="tsDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="antiPlayer" hidden>
+  <div class="anti-stage" id="antiStage">
+    <div class="anti-rule" id="antiRule"></div>
+    <div class="anti-fix" aria-hidden="true">+</div>
+    <div class="anti-slots-row">
+      <div class="anti-slot" id="antiSlotLeft"><span class="anti-dot" id="antiDotLeft"></span></div>
+      <div class="anti-slot" id="antiSlotRight"><span class="anti-dot" id="antiDotRight"></span></div>
+    </div>
+    <div class="remember-hint" id="antiHint"></div>
+    <div class="anti-response-row" id="antiResponseRow">
+      <button class="anti-response-btn" id="antiLeftBtn">Links</button>
+      <button class="anti-response-btn" id="antiRightBtn">Rechts</button>
+    </div>
+  </div>
+  <div class="pause-overlay" id="antiPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="antiResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="antiPlayerBar">
+    <button id="antiBackBtn">&#10005; Beenden</button>
+    <button id="antiPauseBtn">Pause</button>
+    <span class="player-status" id="antiProgressEl"></span>
+    <button id="antiFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="antiFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="antiFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="antiFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="antiDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="antiDoneSummary"></p>
+    <div class="rating" id="antiRating"></div>
+    <button class="again" id="antiAgainBtn">Nochmal</button>
+    <button class="back" id="antiDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

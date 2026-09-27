@@ -1502,6 +1502,58 @@ doesn't:
   Simon's colour-neutral ring, since these two buttons' LABELS themselves
   change every trial with the active rule - there's no fixed button colour
   meaning here that a solid swap could confuse. Test: `tests/ts_test.py`.
+- **Gegenrichtungs-Test (Antisakkaden-Prinzip)** (seventeenth autonomous
+  entry, 2026-09-27): grounded in the antisaccade task (Hallett, 1978) - a
+  peripheral stimulus automatically pulls attention/gaze toward it (the
+  "prosaccade" response); the antisaccade variant instead instructs
+  responding AWAY from it, requiring active inhibition of that automatic
+  pull. Real eye movements can't be measured on a phone screen, so this is
+  built as the well-established MANUAL adaptation used throughout
+  individual-differences and applied research when eye-tracking hardware
+  isn't available - a dot appears left or right of a central fixation
+  cross, and the client taps a fixed button either on the SAME side ("Pro"
+  block - the automatic/compatible response, a baseline) or the OPPOSITE
+  side ("Anti" block), directly following Kane, Bleckley, Conway & Engle
+  (2001)'s manual antisaccade task for measuring individual differences in
+  cognitive inhibition. Reports accuracy% plus average RT for the Pro vs.
+  Anti block and their difference as "Hemm-Kosten" (inhibition cost, ms) -
+  the actual outcome measure this paradigm exists to surface - tracking the
+  LOWEST cost per `antiPrefs.difficulty` (leicht/mittel/schwer, controlling
+  only the pre-stimulus foreperiod and a generous safety-net response
+  timeout, self-paced like Regelwechsel-Test/Suchtest/Hick rather than a
+  fixed full-duration response window, since direction errors - not raw
+  speed - are the classic antisaccade DV and a tight fixed window would
+  bias exactly the cost being measured) via `ANTI_BEST_KEY` (lower-is-
+  better, same shape as Regelwechsel-Test/Hick/UFOV/Antizip). Also
+  researched as sport-relevant: volleyball players showed a different
+  interference pattern between saccadic and key-press reaction times than
+  non-athletes on this exact manual/oculomotor contrast (Kokubu, Ando, Kida
+  & Oda, 2006); more recent 2026 work links athletes' antisaccade
+  performance to distinct microsaccade-preparation behaviour and shows
+  prior high cognitive demand measurably lowers subsequent manual-
+  antisaccade performance - a fit for FWMC's inhibitory-control/visuelle-
+  Entscheidungsgeschwindigkeit focus. Genuinely distinct from every existing
+  Test/NAT mechanic: Regelwechsel-Test mixes two classification RULES
+  trial-by-trial on one ambiguous stimulus (one judgment, changing rule
+  meaning every trial); Simon's location-vs-colour conflict is automatic
+  and uninstructed, never a stated rule; Posner-Cueing's cue only predicts
+  where a target MIGHT appear, never dictates the response mapping itself -
+  this is the only exercise whose entire point is an EXPLICITLY INSTRUCTED,
+  BLOCKED override of an automatic orienting response (Pro block always
+  first as a baseline, then Anti - matching how the real paradigm is
+  actually administered, a fixed, non-counterbalanced order same as
+  Wahlreaktionstest's own 2→4→8 block order). Fixed 32-trial run
+  (`ANTI_TRIALS_PER_BLOCK` = 16 per block, balanced left/right, shuffled
+  with the same max-3-in-a-row-same-side guard used elsewhere). No
+  Bei-Fehler/background colour/Zusatzaufgabe/Trainingsmodus - correctly
+  skipped per the "optional, skip what doesn't fit in an hour" guidance,
+  same reasoning as every other fixed-trial RT/cost exercise here. New CSS
+  is `.anti-*` (fixed hex colours throughout, no `var(--...)`); reuses
+  Simon's own fixed-position left/right slot layout idea
+  (`.anti-slot`/`.anti-dot`) since both need a stimulus that can appear at
+  one of two known locations near two fixed response targets, but with
+  plain neutral dots/buttons (not colour-coded) since side, not colour, is
+  the whole point here. Test: `tests/anti_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
@@ -1650,3 +1702,18 @@ doesn't:
   order should rotate across repeated sessions, or whether the done-panel
   should note the slope is "a first estimate, more stable over several
   runs" the same way Doppelziel-Test's per-lag note already does.
+- **Gegenrichtungs-Test: fixed Pro-then-Anti block order**: the Pro block
+  always runs first, then Anti, never counterbalanced - so a slower/less
+  accurate Anti block can't be cleanly separated from a plain fatigue/
+  practice-order effect within a single run (same limitation already
+  flagged for Wahlreaktionstest's own fixed 2→4→8 order, and the reason
+  real antisaccade studies sometimes counterbalance block order across
+  sessions). Chosen because Pro-first also usefully doubles as a baseline/
+  warm-up before the harder instruction, matching common manual-
+  antisaccade administration - but the reported "Hemm-Kosten" number isn't
+  perfectly clean of order effects on any single run. Not fixed - flagging
+  rather than guessing: ask the client whether block order should
+  alternate across repeated sessions (client-side, e.g. via a stored
+  toggle), or whether the done-panel should simply note the number is "an
+  estimate, most meaningful averaged over several runs" like several other
+  exercises here already do.
