@@ -613,6 +613,45 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .flanker-response-btn.correct{background:#2e7d32}
 .flanker-response-btn.wrong{background:#d32f2f}
 
+/* Blickfeld-Test (UFOV) - all player/stage-scoped colours are fixed hex,
+   never var(--...), per the Test-Bereich convention (this stage's own
+   background stays plain white regardless of OS dark mode). */
+.ufov-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:20px;padding:24px 16px;overflow-y:auto}
+.ufov-field{position:relative;width:min(300px,80vw);aspect-ratio:1/1;margin:0 auto}
+.ufov-center{position:absolute;top:50%;left:50%;width:34px;height:34px;transform:translate(-50%,-50%);background:transparent}
+.ufov-center.shape-circle{background:#16232a;border-radius:50%}
+.ufov-center.shape-square{background:#16232a;border-radius:4px}
+.ufov-center.masked{border-radius:4px;background:repeating-linear-gradient(45deg,#16232a,#16232a 3px,#e6e9ea 3px,#e6e9ea 6px)}
+.ufov-ring-pos{position:absolute;width:22px;height:22px;transform:translate(-50%,-50%);background:transparent}
+.ufov-ring-pos.dot{background:#16232a;border-radius:50%}
+.ufov-ring-pos.target{background:transparent;border:3px solid #007094;transform:translate(-50%,-50%) rotate(45deg)}
+.ufov-ring-pos.masked{border-radius:3px;background:repeating-linear-gradient(45deg,#16232a,#16232a 3px,#e6e9ea 3px,#e6e9ea 6px)}
+.ufov-p-n{top:8%;left:50%}
+.ufov-p-ne{top:20%;left:80%}
+.ufov-p-e{top:50%;left:92%}
+.ufov-p-se{top:80%;left:80%}
+.ufov-p-s{top:92%;left:50%}
+.ufov-p-sw{top:80%;left:20%}
+.ufov-p-w{top:50%;left:8%}
+.ufov-p-nw{top:20%;left:20%}
+.ufov-response{width:100%;max-width:340px;text-align:center}
+.ufov-response-q{font-weight:600;color:#16232a;margin:0 0 14px;font-size:15px}
+.ufov-shape-row{display:flex;gap:16px;justify-content:center}
+.ufov-shape-btn{
+  flex:1;max-width:140px;padding:16px 8px;border-radius:14px;border:2px solid #cfd8db;
+  background:#fff;color:#16232a;font-family:"Magra",sans-serif;font-size:16px;font-weight:700;cursor:pointer;
+}
+.ufov-shape-btn.correct{background:#2e7d32;border-color:#1b5e20;color:#fff}
+.ufov-shape-btn.wrong{background:#d32f2f;border-color:#8e1c1c;color:#fff}
+.ufov-ring-btn-field{position:relative;width:min(280px,78vw);aspect-ratio:1/1;margin:0 auto}
+.ufov-ring-btn{
+  position:absolute;width:46px;height:46px;transform:translate(-50%,-50%);border-radius:50%;
+  border:2px solid #cfd8db;background:#fff;color:#16232a;font-family:"Magra",sans-serif;
+  font-size:13px;font-weight:700;cursor:pointer;
+}
+.ufov-ring-btn.correct{background:#2e7d32;border-color:#1b5e20;color:#fff}
+.ufov-ring-btn.wrong{background:#d32f2f;border-color:#8e1c1c;color:#fff}
+
 .movement-stage{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 14px;position:relative;overflow-y:auto}
 .movement-lane{display:flex;align-items:flex-end;justify-content:center;gap:10px;width:100%;max-width:720px}
 .movement-tile{

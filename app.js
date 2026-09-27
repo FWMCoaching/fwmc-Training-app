@@ -1158,6 +1158,21 @@
     flankerFsBtn: $("flankerFsBtn"), flankerFsHint: $("flankerFsHint"), flankerFsHintOpenBtn: $("flankerFsHintOpenBtn"), flankerFsHintClose: $("flankerFsHintClose"),
     flankerDonePanel: $("flankerDonePanel"), flankerDoneSummary: $("flankerDoneSummary"), flankerRating: $("flankerRating"),
     flankerAgainBtn: $("flankerAgainBtn"), flankerDoneBackBtn: $("flankerDoneBackBtn"),
+
+    ufovOpenBtn: $("ufovOpenBtn"), ufovBestHint: $("ufovBestHint"), ufovReady: $("ufovReady"),
+    ufovReadyBackToHome: $("ufovReadyBackToHome"), ufovLengthRow: $("ufovLengthRow"),
+    ufovReadyBestHint: $("ufovReadyBestHint"), ufovReadyStartBtn: $("ufovReadyStartBtn"),
+    ufovPlayer: $("ufovPlayer"), ufovStage: $("ufovStage"), ufovHint: $("ufovHint"), ufovField: $("ufovField"),
+    ufovCenterEl: $("ufovCenterEl"),
+    ufovRing0: $("ufovRing0"), ufovRing1: $("ufovRing1"), ufovRing2: $("ufovRing2"), ufovRing3: $("ufovRing3"),
+    ufovRing4: $("ufovRing4"), ufovRing5: $("ufovRing5"), ufovRing6: $("ufovRing6"), ufovRing7: $("ufovRing7"),
+    ufovShapeBtns: $("ufovShapeBtns"), ufovShapeCircleBtn: $("ufovShapeCircleBtn"), ufovShapeSquareBtn: $("ufovShapeSquareBtn"),
+    ufovRingBtns: $("ufovRingBtns"), ufovRingBtnField: $("ufovRingBtnField"),
+    ufovPauseOverlay: $("ufovPauseOverlay"), ufovResumeBtn: $("ufovResumeBtn"),
+    ufovPlayerBar: $("ufovPlayerBar"), ufovBackBtn: $("ufovBackBtn"), ufovPauseBtn: $("ufovPauseBtn"), ufovProgressEl: $("ufovProgressEl"),
+    ufovFsBtn: $("ufovFsBtn"), ufovFsHint: $("ufovFsHint"), ufovFsHintOpenBtn: $("ufovFsHintOpenBtn"), ufovFsHintClose: $("ufovFsHintClose"),
+    ufovDonePanel: $("ufovDonePanel"), ufovDoneSummary: $("ufovDoneSummary"), ufovRating: $("ufovRating"),
+    ufovAgainBtn: $("ufovAgainBtn"), ufovDoneBackBtn: $("ufovDoneBackBtn"),
     blitzOpenBtn: $("blitzOpenBtn"), blitzBestHint: $("blitzBestHint"), blitzReady: $("blitzReady"),
     blitzReadyBackToHome: $("blitzReadyBackToHome"), blitzGridSizeRow: $("blitzGridSizeRow"),
     blitzZoneGroup: $("blitzZoneGroup"), blitzZoneAllBtn: $("blitzZoneAllBtn"), blitzZoneGrid: $("blitzZoneGrid"), blitzZoneHint: $("blitzZoneHint"),
@@ -1354,7 +1369,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3372,6 +3387,7 @@
     els.testNbackPlayer.hidden = true;
     els.trailPlayer.hidden = true;
     els.flankerPlayer.hidden = true;
+    els.ufovPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3751,6 +3767,7 @@
   wireFullscreen({ player: els.testNbackPlayer, btn: els.testNbackFsBtn, hint: els.testNbackFsHint, hintOpen: els.testNbackFsHintOpenBtn, hintClose: els.testNbackFsHintClose });
   wireFullscreen({ player: els.trailPlayer, btn: els.trailFsBtn, hint: els.trailFsHint, hintOpen: els.trailFsHintOpenBtn, hintClose: els.trailFsHintClose });
   wireFullscreen({ player: els.flankerPlayer, btn: els.flankerFsBtn, hint: els.flankerFsHint, hintOpen: els.flankerFsHintOpenBtn, hintClose: els.flankerFsHintClose });
+  wireFullscreen({ player: els.ufovPlayer, btn: els.ufovFsBtn, hint: els.ufovFsHint, hintOpen: els.ufovFsHintOpenBtn, hintClose: els.ufovFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -8705,6 +8722,347 @@
   els.flankerBackBtn.addEventListener("click", flankerStop);
   els.flankerAgainBtn.addEventListener("click", () => { els.flankerDonePanel.hidden = true; startFlankerGame(); });
   els.flankerDoneBackBtn.addEventListener("click", () => { els.flankerPlayer.hidden = true; els.flankerDonePanel.hidden = true; showScreen("testHome"); });
+
+  // ==== Test-Bereich: Blickfeld-Test (UFOV) ====
+  // Fifth autonomous entry (see CLAUDE.md's "Test-Bereich (autonomous,
+  // ongoing)"). Grounded in the Useful Field of View test (Ball & Owsley,
+  // 1987/1993): a measure of visual processing speed AND divided attention
+  // - how much information can be taken in from a cluttered display in one
+  // brief glance, without moving the eyes. The real protocol runs three
+  // subtests of rising demand (central discrimination only; central +
+  // peripheral localization; the same plus distractors); this is a single,
+  // simplified subtest combining the divided-attention and
+  // selective-attention ideas (a central shape AND a peripheral target
+  // among distractors, every trial), not a clinical replica - framed
+  // "UFOV-inspired" in the client-facing copy for that reason. Central
+  // task: identify which of two shapes flashed at fixation (circle/
+  // square, standing in for the original car/truck discrimination).
+  // Peripheral task, simultaneously: locate which of 8 positions around a
+  // ring held a diamond target among plain dot distractors. Both are
+  // followed by a pattern mask (standard in the real protocol, to wipe out
+  // any lingering afterimage/iconic memory so the score reflects genuine
+  // processing speed, not a longer look than the nominal exposure gave).
+  // The exposure duration is the dependent variable, adapted trial-by-trial
+  // via a 3-down/1-up staircase (three consecutive fully-correct trials
+  // shorten it, any error lengthens it) - the same staircase shape the real
+  // UFOV protocol itself uses to estimate a threshold. Real UFOV steps in
+  // single 60Hz frames (16.67ms, 16.67-500ms range); this uses 33ms
+  // (2-frame) steps and an equal floor instead, since setTimeout-driven
+  // browser timing can't reliably resolve single-frame differences the way
+  // calibrated lab hardware can - see the Offene Fragen note on this.
+  // Genuinely distinct from every existing Test/NAT mechanic: Periphere
+  // Wahrnehmung trains detecting/naming a single peripheral flash with no
+  // central task, no masking and no adaptive threshold; this is a DIVIDED-
+  // attention dual task (a central AND a peripheral judgement on every
+  // trial) that reports a processing-speed threshold in ms, closer in
+  // spirit to N-Back's "adaptive test with no client-set level" shape than
+  // to Periph's client-configurable one. Sport-vision relevance: UFOV
+  // performance has been linked to driving safety and, in several more
+  // recent studies, to athletic expertise (e.g. table-tennis players and
+  // action-video-game players showing UFOV advantages over untrained
+  // controls) - a good fit for FWMC's peripheral-vision/visual-processing-
+  // speed focus.
+  const UFOV_PREFS_KEY = "fwmc-ufov-prefs-v1";
+  const UFOV_LENGTHS = {
+    kurz: { title: "Kurz", trials: 20 },
+    mittel: { title: "Mittel", trials: 30 },
+    lang: { title: "Lang", trials: 40 },
+  };
+  const ufovPrefs = { length: "mittel" };
+  function loadUfovPrefs() {
+    const saved = readJSON(UFOV_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(ufovPrefs, saved);
+    if (!UFOV_LENGTHS[ufovPrefs.length]) ufovPrefs.length = "mittel";
+  }
+  loadUfovPrefs();
+  function saveUfovPrefsToStorage() { writeJSON(UFOV_PREFS_KEY, ufovPrefs); }
+
+  // Best is keyed by length, LOWER is better here (a shorter exposure the
+  // client could still solve) - the opposite direction from Go/No-Go's or
+  // Flanker's best-accuracy%, so it gets its own comparison, not a copy of
+  // saveFlankerBest/saveGngBest's ">" check.
+  const UFOV_BEST_KEY = "fwmc-ufov-best-v1"; // { [length]: bestThresholdMs }
+  function ufovBestFor() {
+    const v = readJSON(UFOV_BEST_KEY, {})[ufovPrefs.length];
+    return typeof v === "number" ? v : null;
+  }
+  function saveUfovBest(thresholdMs) {
+    const all = readJSON(UFOV_BEST_KEY, {});
+    const cur = all[ufovPrefs.length];
+    if (cur == null || thresholdMs < cur) { all[ufovPrefs.length] = thresholdMs; writeJSON(UFOV_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderUfovBest() {
+    const best = ufovBestFor();
+    const text = best != null ? `Beste Schwelle (${UFOV_LENGTHS[ufovPrefs.length].title}): ${Math.round(best)} ms` : "";
+    els.ufovBestHint.textContent = text;
+    els.ufovReadyBestHint.textContent = text;
+  }
+  renderUfovBest();
+  function syncUfovLengthUI() {
+    els.ufovLengthRow.querySelectorAll("[data-ufov-length]").forEach((btn) => setActive(btn, btn.dataset.ufovLength === ufovPrefs.length));
+  }
+  els.ufovLengthRow.querySelectorAll("[data-ufov-length]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      ufovPrefs.length = btn.dataset.ufovLength;
+      saveUfovPrefsToStorage();
+      syncUfovLengthUI();
+      renderUfovBest();
+    });
+  });
+
+  els.ufovOpenBtn.addEventListener("click", () => {
+    syncUfovLengthUI();
+    renderUfovBest();
+    showScreen("ufovReady");
+  });
+  els.ufovReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Same timer-wrapping trick as scheduleFlankerTimer/scheduleGngTimer:
+  // records what's pending and when it fires, so Pause can cancel it and
+  // Resume can replay it with its exact remaining delay. Only the
+  // fixation/stim/mask/feedback phases use this - the two response phases
+  // wait on a tap instead, with nothing to cancel/replay.
+  function scheduleUfovTimer(fn, delayMs) {
+    ufovState.timerFn = fn;
+    ufovState.timerFiresAt = performance.now() + delayMs;
+    ufovState.timer = setTimeout(() => { ufovState.timer = null; fn(); }, delayMs);
+  }
+
+  const UFOV_POS_COUNT = 8;
+  const UFOV_FIXATION_MS = 500;
+  const UFOV_MASK_MS = 400;
+  const UFOV_FEEDBACK_MS = 550;
+  const UFOV_START_MS = 500; // easiest first, same "start easy" spirit as Blitz/Flash/MOT's progression modes
+  const UFOV_MIN_MS = 33;
+  const UFOV_MAX_MS = 500;
+  const UFOV_STEP_MS = 33;
+  const UFOV_STAIRCASE_HITS_NEEDED = 3; // 3-down/1-up, matching Ball & Owsley's own UFOV staircase
+  const UFOV_SCORE_TRIALS = 10; // reported threshold = average duration of the last N trials, once the staircase has had time to settle
+
+  function ufovRingEl(i) { return els["ufovRing" + i]; }
+  function ufovSetCenter(stateClass) {
+    els.ufovCenterEl.className = "ufov-center" + (stateClass ? " " + stateClass : "");
+  }
+  const UFOV_POS_CLASSES = ["ufov-p-n", "ufov-p-ne", "ufov-p-e", "ufov-p-se", "ufov-p-s", "ufov-p-sw", "ufov-p-w", "ufov-p-nw"];
+  function ufovSetRing(i, stateClass) {
+    ufovRingEl(i).className = "ufov-ring-pos " + UFOV_POS_CLASSES[i] + (stateClass ? " " + stateClass : "");
+  }
+  function ufovClearField() {
+    ufovSetCenter(null);
+    for (let i = 0; i < UFOV_POS_COUNT; i++) ufovSetRing(i, null);
+  }
+
+  let ufovState = null;
+  function startUfovGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.ufovPlayer.hidden = false;
+    els.ufovPlayerBar.hidden = false;
+    els.ufovDonePanel.hidden = true;
+    els.ufovPauseOverlay.hidden = true;
+    els.ufovPauseBtn.hidden = false;
+    els.ufovShapeBtns.hidden = true;
+    els.ufovRingBtns.hidden = true;
+    ufovClearField();
+    const len = UFOV_LENGTHS[ufovPrefs.length];
+    ufovState = {
+      len, total: len.trials, index: -1,
+      durationMs: UFOV_START_MS, streak: 0,
+      durations: [], // one entry per COMPLETED trial, in order
+      correctTrials: 0,
+      phase: "idle", trial: null, shapeCorrect: false,
+      paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      startTime: performance.now(),
+    };
+    els.ufovHint.textContent = "Bereit? Gleich geht's los …";
+    els.ufovProgressEl.textContent = `0/${ufovState.total}`;
+    requestWakeLock();
+    scheduleUfovTimer(ufovNextTrial, 1200);
+  }
+  els.ufovReadyStartBtn.addEventListener("click", startUfovGame);
+
+  function ufovNextTrial() {
+    if (!ufovState) return;
+    ufovState.index++;
+    if (ufovState.index >= ufovState.total) { ufovFinish(); return; }
+    els.ufovProgressEl.textContent = `${ufovState.index + 1}/${ufovState.total}`;
+    ufovState.phase = "fixation";
+    els.ufovShapeBtns.hidden = true;
+    els.ufovRingBtns.hidden = true;
+    ufovClearField();
+    els.ufovHint.textContent = "+";
+    scheduleUfovTimer(ufovShowStimulus, UFOV_FIXATION_MS);
+  }
+  function ufovShowStimulus() {
+    if (!ufovState) return;
+    const shape = Math.random() < 0.5 ? "circle" : "square";
+    const pos = Math.floor(Math.random() * UFOV_POS_COUNT);
+    ufovState.trial = { shape, pos };
+    ufovState.phase = "stim";
+    els.ufovHint.textContent = "";
+    ufovSetCenter("shape-" + shape);
+    for (let i = 0; i < UFOV_POS_COUNT; i++) ufovSetRing(i, i === pos ? "target" : "dot");
+    scheduleUfovTimer(ufovShowMask, ufovState.durationMs);
+  }
+  function ufovShowMask() {
+    if (!ufovState) return;
+    ufovState.phase = "mask";
+    ufovSetCenter("masked");
+    for (let i = 0; i < UFOV_POS_COUNT; i++) ufovSetRing(i, "masked");
+    scheduleUfovTimer(ufovAskShape, UFOV_MASK_MS);
+  }
+  function ufovAskShape() {
+    if (!ufovState) return;
+    ufovState.phase = "respond-shape";
+    ufovClearField();
+    els.ufovShapeCircleBtn.classList.remove("correct", "wrong");
+    els.ufovShapeSquareBtn.classList.remove("correct", "wrong");
+    els.ufovShapeBtns.hidden = false;
+  }
+  function ufovPickShape(shape) {
+    if (!ufovState || ufovState.paused || ufovState.phase !== "respond-shape") return;
+    const correct = shape === ufovState.trial.shape;
+    const btn = shape === "circle" ? els.ufovShapeCircleBtn : els.ufovShapeSquareBtn;
+    btn.classList.add(correct ? "correct" : "wrong");
+    if (!correct) {
+      const rightBtn = ufovState.trial.shape === "circle" ? els.ufovShapeCircleBtn : els.ufovShapeSquareBtn;
+      rightBtn.classList.add("correct");
+    }
+    ufovState.shapeCorrect = correct;
+    ufovState.phase = "shape-feedback";
+    scheduleUfovTimer(ufovAskPosition, UFOV_FEEDBACK_MS);
+  }
+  els.ufovShapeCircleBtn.addEventListener("click", () => ufovPickShape("circle"));
+  els.ufovShapeSquareBtn.addEventListener("click", () => ufovPickShape("square"));
+
+  function ufovAskPosition() {
+    if (!ufovState) return;
+    els.ufovShapeBtns.hidden = true;
+    els.ufovRingBtns.querySelectorAll("[data-ufov-pos]").forEach((b) => b.classList.remove("correct", "wrong"));
+    ufovState.phase = "respond-position";
+    els.ufovRingBtns.hidden = false;
+  }
+  function ufovResolveTrial(bothCorrect) {
+    ufovState.durations.push(ufovState.durationMs);
+    if (bothCorrect) {
+      ufovState.correctTrials++;
+      ufovState.streak++;
+      if (ufovState.streak >= UFOV_STAIRCASE_HITS_NEEDED) {
+        ufovState.durationMs = Math.max(UFOV_MIN_MS, ufovState.durationMs - UFOV_STEP_MS);
+        ufovState.streak = 0;
+      }
+    } else {
+      ufovState.streak = 0;
+      ufovState.durationMs = Math.min(UFOV_MAX_MS, ufovState.durationMs + UFOV_STEP_MS);
+    }
+  }
+  function ufovPickPosition(pos) {
+    if (!ufovState || ufovState.paused || ufovState.phase !== "respond-position") return;
+    const correct = pos === ufovState.trial.pos;
+    const btns = Array.from(els.ufovRingBtns.querySelectorAll("[data-ufov-pos]"));
+    btns[pos].classList.add(correct ? "correct" : "wrong");
+    // Reveal the true target position too when wrong - same "show what it
+    // actually was" convention as MOT's wrong-tap reveal.
+    if (!correct) btns[ufovState.trial.pos].classList.add("correct");
+    ufovState.phase = "position-feedback";
+    ufovResolveTrial(ufovState.shapeCorrect && correct);
+    scheduleUfovTimer(ufovNextTrial, UFOV_FEEDBACK_MS);
+  }
+  els.ufovRingBtns.querySelectorAll("[data-ufov-pos]").forEach((btn) => {
+    btn.addEventListener("click", () => ufovPickPosition(Number(btn.dataset.ufovPos)));
+  });
+
+  // Pause just stops/replays the pending timer, same as Flanker - no live
+  // background-adjust overlay (background customisation was skipped for
+  // this exercise, explicitly optional per the Test-Bereich guidance).
+  // During the two untimed response phases there is no pending timer to
+  // cancel; pause still blocks taps via the `paused` check and the overlay
+  // covers the buttons, resume just hides the overlay again.
+  function pauseUfov() {
+    if (!ufovState || ufovState.paused) return;
+    ufovState.paused = true;
+    ufovState.pausedAt = performance.now();
+    if (ufovState.timer) {
+      clearTimeout(ufovState.timer);
+      ufovState.timer = null;
+      ufovState.timerRemainingMs = Math.max(0, ufovState.timerFiresAt - ufovState.pausedAt);
+    }
+    els.ufovPauseBtn.hidden = true;
+    els.ufovPauseOverlay.hidden = false;
+  }
+  function resumeUfov() {
+    if (!ufovState || !ufovState.paused) return;
+    const pausedMs = performance.now() - ufovState.pausedAt;
+    ufovState.startTime += pausedMs;
+    ufovState.paused = false;
+    if (ufovState.timerFn && ufovState.timerRemainingMs != null) {
+      scheduleUfovTimer(ufovState.timerFn, ufovState.timerRemainingMs);
+      ufovState.timerRemainingMs = null;
+    }
+    els.ufovPauseOverlay.hidden = true;
+    els.ufovPauseBtn.hidden = false;
+  }
+  els.ufovPauseBtn.addEventListener("click", pauseUfov);
+  els.ufovResumeBtn.addEventListener("click", resumeUfov);
+
+  function ufovThresholdMs(state) {
+    const n = Math.min(UFOV_SCORE_TRIALS, state.durations.length);
+    if (!n) return state.durationMs;
+    const slice = state.durations.slice(-n);
+    return slice.reduce((a, b) => a + b, 0) / n;
+  }
+  function finalizeUfovRun(state, totalTrials) {
+    els.ufovPauseOverlay.hidden = true;
+    els.ufovPlayerBar.hidden = true;
+    els.ufovShapeBtns.hidden = true;
+    els.ufovRingBtns.hidden = true;
+    const accuracyPct = totalTrials ? Math.round(100 * state.correctTrials / totalTrials) : 0;
+    const threshold = ufovThresholdMs(state);
+    // Needs a handful of trials before the rolling average - and a best-
+    // score comparison against it - actually means anything.
+    const isRecord = state.durations.length >= 5 ? saveUfovBest(threshold) : false;
+    renderUfovBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.ufovDoneSummary.textContent =
+      `Blickfeld-Test (${state.len.title}) · Schwelle ${Math.round(threshold)} ms · ${accuracyPct}% richtig` +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `Schwelle ${Math.round(threshold)} ms, ${accuracyPct}% richtig`;
+    const id = addHistory({ kind: "ufov", title: "Blickfeld-Test (UFOV)", seconds: Math.round(played), note });
+    renderRating(els.ufovRating, id, "Wie fokussiert warst du?");
+    els.ufovDonePanel.hidden = false;
+  }
+  function ufovFinish() {
+    if (!ufovState) return;
+    const state = ufovState;
+    ufovState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.ufovPlayer) document.exitFullscreen().catch(() => {});
+    els.ufovFsHint.hidden = true;
+    finalizeUfovRun(state, state.total);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as a
+  // few trials were actually resolved.
+  function ufovStop() {
+    if (!ufovState) return;
+    if (ufovState.timer) clearTimeout(ufovState.timer);
+    const state = ufovState;
+    ufovState = null;
+    els.ufovPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.ufovPlayer) document.exitFullscreen().catch(() => {});
+    els.ufovFsHint.hidden = true;
+    if (state.durations.length >= 4) {
+      finalizeUfovRun(state, state.durations.length);
+    } else {
+      els.ufovPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.ufovBackBtn.addEventListener("click", ufovStop);
+  els.ufovAgainBtn.addEventListener("click", () => { els.ufovDonePanel.hidden = true; startUfovGame(); });
+  els.ufovDoneBackBtn.addEventListener("click", () => { els.ufovPlayer.hidden = true; els.ufovDonePanel.hidden = true; showScreen("testHome"); });
 
   // ---- Start-up ----
   renderHistory();

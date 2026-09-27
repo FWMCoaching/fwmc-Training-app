@@ -623,6 +623,11 @@
       <span class="fc-desc">Nur der mittlere Pfeil z&auml;hlt &ndash; tippe so schnell wie m&ouml;glich seine Richtung an, auch wenn die Pfeile drumherum in die andere Richtung zeigen. Trainiert selektive Aufmerksamkeit und visuelle Entscheidungsgeschwindigkeit unter Ablenkung.</span>
       <span class="fc-meta" id="flankerBestHint"></span>
     </button>
+    <button class="featured-card" id="ufovOpenBtn">
+      <span class="fc-title">Blickfeld-Test (UFOV)</span>
+      <span class="fc-desc">Ein kurzer Blick auf die Mitte und den Rand gleichzeitig &ndash; danach meldest du, was du in beiden Bereichen gesehen hast. Trainiert peripheres Sehen und geteilte Aufmerksamkeit; die Anzeigedauer passt sich automatisch an dein Tempo an.</span>
+      <span class="fc-meta" id="ufovBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -725,6 +730,27 @@
   <div class="group-help" id="flankerReadyBestHint"></div>
 
   <button class="start-btn" id="flankerReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="ufovReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="ufovReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Blickfeld-Test (UFOV)</h1>
+  <p class="page-sub">In der Mitte blitzt kurz ein Kreis oder ein Quadrat auf &ndash; gleichzeitig irgendwo im &auml;u&szlig;eren Ring eine Raute zwischen mehreren Punkten. Nach einer kurzen &Uuml;berdeckung meldest du zuerst die Form in der Mitte, dann die Position der Raute. Angelehnt an den &bdquo;Useful Field of View&ldquo;-Test (Ball &amp; Owsley, 1987) f&uuml;r geteilte Aufmerksamkeit und Verarbeitungstempo im peripheren Sehen &ndash; die Anzeigedauer wird nach jedem Durchgang automatisch angepasst: richtig antworten macht es k&uuml;rzer und schwerer, ein Fehler macht es wieder l&auml;nger.</p>
+
+  <div class="group">
+    <div class="group-label">L&auml;nge</div>
+    <div class="choice-row" id="ufovLengthRow">
+      <button class="choice" data-ufov-length="kurz">Kurz<small>20 Durchg&auml;nge</small></button>
+      <button class="choice" data-ufov-length="mittel">Mittel<small>30 Durchg&auml;nge</small></button>
+      <button class="choice" data-ufov-length="lang">Lang<small>40 Durchg&auml;nge</small></button>
+    </div>
+  </div>
+
+  <div class="group-help" id="ufovReadyBestHint"></div>
+
+  <button class="start-btn" id="ufovReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="rememberReady" hidden>
@@ -2605,6 +2631,69 @@
     <div class="rating" id="flankerRating"></div>
     <button class="again" id="flankerAgainBtn">Nochmal</button>
     <button class="back" id="flankerDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="ufovPlayer" hidden>
+  <div class="ufov-stage" id="ufovStage">
+    <div class="remember-hint" id="ufovHint"></div>
+    <div class="ufov-field" id="ufovField">
+      <div class="ufov-center" id="ufovCenterEl"></div>
+      <div class="ufov-ring-pos ufov-p-n" id="ufovRing0"></div>
+      <div class="ufov-ring-pos ufov-p-ne" id="ufovRing1"></div>
+      <div class="ufov-ring-pos ufov-p-e" id="ufovRing2"></div>
+      <div class="ufov-ring-pos ufov-p-se" id="ufovRing3"></div>
+      <div class="ufov-ring-pos ufov-p-s" id="ufovRing4"></div>
+      <div class="ufov-ring-pos ufov-p-sw" id="ufovRing5"></div>
+      <div class="ufov-ring-pos ufov-p-w" id="ufovRing6"></div>
+      <div class="ufov-ring-pos ufov-p-nw" id="ufovRing7"></div>
+    </div>
+    <div class="ufov-response" id="ufovShapeBtns" hidden>
+      <p class="ufov-response-q">Was war in der Mitte?</p>
+      <div class="ufov-shape-row">
+        <button class="ufov-shape-btn" id="ufovShapeCircleBtn" data-ufov-shape="circle">Kreis</button>
+        <button class="ufov-shape-btn" id="ufovShapeSquareBtn" data-ufov-shape="square">Quadrat</button>
+      </div>
+    </div>
+    <div class="ufov-response" id="ufovRingBtns" hidden>
+      <p class="ufov-response-q">Wo war die Raute?</p>
+      <div class="ufov-ring-btn-field" id="ufovRingBtnField">
+        <button class="ufov-ring-btn ufov-p-n" data-ufov-pos="0">N</button>
+        <button class="ufov-ring-btn ufov-p-ne" data-ufov-pos="1">NO</button>
+        <button class="ufov-ring-btn ufov-p-e" data-ufov-pos="2">O</button>
+        <button class="ufov-ring-btn ufov-p-se" data-ufov-pos="3">SO</button>
+        <button class="ufov-ring-btn ufov-p-s" data-ufov-pos="4">S</button>
+        <button class="ufov-ring-btn ufov-p-sw" data-ufov-pos="5">SW</button>
+        <button class="ufov-ring-btn ufov-p-w" data-ufov-pos="6">W</button>
+        <button class="ufov-ring-btn ufov-p-nw" data-ufov-pos="7">NW</button>
+      </div>
+    </div>
+  </div>
+  <div class="pause-overlay" id="ufovPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="ufovResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="ufovPlayerBar">
+    <button id="ufovBackBtn">&#10005; Beenden</button>
+    <button id="ufovPauseBtn">Pause</button>
+    <span class="player-status" id="ufovProgressEl"></span>
+    <button id="ufovFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="ufovFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="ufovFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="ufovFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="ufovDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="ufovDoneSummary"></p>
+    <div class="rating" id="ufovRating"></div>
+    <button class="again" id="ufovAgainBtn">Nochmal</button>
+    <button class="back" id="ufovDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

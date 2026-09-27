@@ -911,11 +911,90 @@ doesn't:
   middle one" at a glance - this doesn't affect the paradigm's validity
   since the target position is fixed and known every trial regardless.
   Test: `tests/flanker_test.py`.
+- **Blickfeld-Test (UFOV)** (fifth autonomous entry, 2026-09-27): grounded
+  in the Useful Field of View test (Ball & Owsley, 1987/1993) - a measure
+  of visual processing speed AND divided attention, i.e. how much
+  information can be taken in from a cluttered display in one brief glance
+  without moving the eyes. The real protocol runs three subtests of rising
+  demand (central discrimination only; central+peripheral divided
+  attention; the same plus distractors) with a 3-down/1-up staircase over
+  a 16.67-500ms exposure range (16.67ms = one 60Hz frame) - this exercise
+  builds a single, simplified subtest combining the divided-attention and
+  selective-attention ideas (a central shape AND a peripheral target among
+  distractors, every trial, same staircase shape), not a clinical replica
+  - hence "UFOV-inspired" in the client-facing copy rather than claiming to
+  be the validated instrument. Also researched as linked to athletic
+  expertise in more recent work (e.g. table-tennis players and action-
+  video-game players showing UFOV divided/selective-attention advantages
+  over untrained controls), a good fit for FWMC's peripheral-vision focus.
+  Each trial: a circle or square flashes at fixation while, simultaneously,
+  one of 8 positions around a compass-style ring shows a diamond target
+  among plain-dot distractors; both are then backward-masked (a repeating-
+  stripe pattern, standard in the real protocol to wipe out any iconic-
+  memory afterimage) before the client answers first the central shape,
+  then the peripheral position (sequential taps rather than one combined
+  gesture - a UI simplification, not a change to what's actually being
+  judged). The exposure duration is the one adaptive variable: three
+  consecutive fully-correct trials shorten it, any error lengthens it
+  (`UFOV_STAIRCASE_HITS_NEEDED = 3`, matching Ball & Owsley's own staircase
+  design) - starts easy (`UFOV_START_MS = 500`, the ceiling) and steps by
+  `UFOV_STEP_MS = 33` down to a `UFOV_MIN_MS = 33` floor; the real
+  protocol's own 16.67ms-frame steps were coarsened to 33ms (2 frames)
+  since `setTimeout`-driven browser timing can't reliably resolve single-
+  frame differences the way calibrated lab hardware can (see Offene Fragen
+  below). No client-set "level"/Bei-Fehler - like N-Back, the exercise
+  itself is the adaptive difficulty; the done-panel reports the average
+  exposure duration of the last 10 trials as the "Schwelle" (threshold, ms
+  - LOWER is better here, the opposite direction from every accuracy%-based
+  best score, so `saveUfovBest`/`UFOV_BEST_KEY` do their own `<` comparison
+  rather than reusing the `>` pattern) plus overall accuracy%. `ufovPrefs.
+  length` (kurz/mittel/lang = 20/30/40 trials) is the only client-facing
+  setting - no background colour/Zusatzaufgabe/Trainingsmodus, all
+  correctly skipped per the "optional, skip what doesn't fit in an hour"
+  guidance (nothing to configure beyond the built-in adaptive difficulty).
+  Genuinely distinct from every existing Test/NAT mechanic: Periphere
+  Wahrnehmung trains detecting/naming a single peripheral flash with no
+  central task, no masking, and no adaptive threshold - this is a DIVIDED-
+  attention dual task (a central AND a peripheral judgement every trial)
+  reporting a processing-speed threshold, not a client-configurable
+  detection game. Pause/resume uses the same scheduleXTimer-remaining-
+  delay trick as Flanker/Go-No-Go/Blitz/Remember (a no-op during the two
+  untimed response phases, which just wait on a tap - pause still blocks
+  input via a `paused` flag and the overlay). A wrong answer, on either
+  sub-task, reveals the true answer alongside the wrong one (same "show
+  what it actually was" convention as MOT's wrong-tap reveal). New CSS is
+  `.ufov-*` (fixed hex colours throughout, no `var(--...)`); the 8 ring
+  positions/response buttons share one set of `.ufov-p-n/-ne/-e/-se/-s/-sw/
+  -w/-nw` placement classes between the stage and the answer screen so the
+  spatial layout stays visually consistent between "what you saw" and
+  "where you tap". Test: `tests/ufov_test.py` (staircase feedback classes,
+  the true-answer reveal on a miss, pause/resume, Beenden-doubles-as-
+  finish, length persistence - the exact numeric staircase progression
+  itself isn't unit-tested, since no internal hook exposes it; verified by
+  reading the logic plus the behavioural checks above, the same approach
+  already used for the addon colour/position logic).
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
-*(empty so far. When a firing is genuinely unsure about something — does
-this fit the brand, is it too game-like, should a skipped convention
-actually apply here, does an idea overlap with something planned
-elsewhere — it goes here instead of being decided unilaterally. The
-client reviews this list when they check in on the Test section.)*
+- **UFOV timing precision on real devices**: the exposure-duration
+  staircase steps in 33ms increments down to a 33ms floor, driven by plain
+  `setTimeout`. On a loaded/low-end phone browser, actual paint timing can
+  lag behind a `setTimeout` callback by a frame or more, so the shortest
+  exposures may run a bit longer in practice than the number shown implies
+  - the *relative* difficulty ordering (shorter requested duration = harder)
+  should still hold, but the reported "Schwelle" in ms is likely somewhat
+  optimistic versus a lab-grade, frame-locked UFOV implementation. Not
+  fixable without moving the render loop onto `requestAnimationFrame`
+  frame-counting (like MOT's physics tick) instead of `setTimeout` - felt
+  like more than an hour's scope for a first version; flagging rather than
+  silently shipping it as if it were precise. Ask the client whether this
+  matters for how the score gets presented/interpreted, or whether a future
+  pass should move it onto rAF frame-counting for real single-frame
+  precision.
+- **UFOV response order**: the real UFOV divided-attention subtest doesn't
+  mandate an answer order between its two judgements; this version always
+  asks "which shape" before "where was the target" (a fixed sequence, for a
+  simpler one-thing-at-a-time phone UI). This shouldn't change what's being
+  measured (both judgements are made from the same single glance, before
+  either question appears), but flagging in case the client would rather
+  see them combined into one screen, or the order reversed.
