@@ -973,6 +973,42 @@ doesn't:
   itself isn't unit-tested, since no internal hook exposes it; verified by
   reading the logic plus the behavioural checks above, the same approach
   already used for the addon colour/position logic).
+- **Hinweisreiz-Test (Posner-Cueing)** (sixth autonomous entry, 2026-09-27):
+  grounded in the Posner cueing task (Posner, 1980) - one of two side boxes
+  briefly lights up as a spatial cue, then a target dot appears in the cued
+  box on 80% of trials ("valid", the classic validity ratio Posner himself
+  used) or the OTHER box on the remaining 20% ("invalid"); the client taps
+  the box where the dot actually appears, not the one that merely cued.
+  Reports accuracy% plus average valid/invalid reaction time and their
+  difference as the "Umlenkungs-Kosten" (the classic cueing/validity effect
+  - the RT cost of disengaging attention from an incorrectly cued location
+  and re-orienting to the real target), tracking best accuracy% per
+  `posnerPrefs.difficulty` (leicht/mittel/schwer, controlling cue duration,
+  cue-target SOA and response window - shorter SOA = harder, same shape as
+  `FLANKER_DIFFICULTIES`/`GNG_DIFFICULTIES`) via `POSNER_BEST_KEY`. Also
+  researched as sport-relevant: a 2025 multilevel Bayesian meta-analysis
+  across 72 studies/885 athletes found cueing/benefit effects scale with cue
+  validity, and athletes in several sports (boxers, volleyball players, ...)
+  show more efficient attentional orienting (smaller valid/invalid RT gaps)
+  than non-athletes - a direct fit for FWMC's "visuelle
+  Entscheidungsgeschwindigkeit"/Aufmerksamkeit focus. Genuinely distinct
+  from every existing Test/NAT mechanic: unlike Go/No-Go (withholding a
+  response), Flanker (filtering simultaneous conflicting stimuli) and UFOV
+  (a divided-attention glance under adaptive time pressure), this is the
+  only one that isolates the cost of VOLUNTARILY SHIFTING spatial attention
+  between two known locations. Fixed 40-trial run (`POSNER_TRIAL_COUNT`, 32
+  valid/8 invalid, balanced left/right, shuffled with the same same-target-
+  side-max-3-in-a-row guard `buildFlankerTrials()` already uses, so a "just
+  tap the same side" motor strategy can't pass undetected). No Bei-Fehler/
+  background colour/Zusatzaufgabe/Trainingsmodus - all correctly skipped
+  per the "optional, skip what doesn't fit in an hour" guidance, same
+  reasoning as Flanker/Go-No-Go (a fixed-trial accuracy/RT test, nothing to
+  configure beyond difficulty). Pause/resume uses the same scheduleXTimer-
+  remaining-delay trick as Flanker/Go-No-Go/Blitz/Remember. New CSS is
+  `.posner-*` (fixed hex colours throughout, no `var(--...)`); the two
+  response boxes double as both the cue display and the tap targets,
+  reusing the Flanker/Go-No-Go green=correct/red=wrong feedback convention.
+  Test: `tests/posner_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
@@ -998,3 +1034,18 @@ doesn't:
   measured (both judgements are made from the same single glance, before
   either question appears), but flagging in case the client would rather
   see them combined into one screen, or the order reversed.
+- **Posner-Cueing SOA range at "Leicht"**: `POSNER_DIFFICULTIES.leicht` uses
+  a 450-650ms cue-target gap (SOA). Classic exogenous/peripheral-cueing
+  literature (Posner & Cohen, 1984) reports that the cueing *benefit* can
+  invert into inhibition-of-return (invalid trials becoming FASTER than
+  valid ones) once cue-target SOA passes roughly 300ms for this kind of
+  reflexive, box-brightening cue - so "Leicht" sits partly inside a range
+  where the reported "Umlenkungs-Kosten" could theoretically come out
+  negative instead of just smaller, which would read oddly in the done-
+  panel summary. "Mittel" (250-400ms) and "Schwer" (100-200ms) stay
+  comfortably inside the facilitation range where this doesn't apply. Not
+  fixed - flagging rather than guessing at a resolution: ask the client
+  whether "Leicht"'s SOA should be compressed to stay safely under ~300ms,
+  or whether an occasional negative value is fine to leave as-is (a real,
+  if initially surprising, part of how attention actually works) with just
+  a clarifying note in the UI copy.

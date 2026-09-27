@@ -628,6 +628,11 @@
       <span class="fc-desc">Ein kurzer Blick auf die Mitte und den Rand gleichzeitig &ndash; danach meldest du, was du in beiden Bereichen gesehen hast. Trainiert peripheres Sehen und geteilte Aufmerksamkeit; die Anzeigedauer passt sich automatisch an dein Tempo an.</span>
       <span class="fc-meta" id="ufovBestHint"></span>
     </button>
+    <button class="featured-card" id="posnerOpenBtn">
+      <span class="fc-title">Hinweisreiz-Test (Posner-Cueing)</span>
+      <span class="fc-desc">Ein kurzer Hinweisreiz zeigt, wo gleich vermutlich etwas erscheint &ndash; tippe so schnell wie m&ouml;glich auf die Seite, auf der der Punkt tats&auml;chlich auftaucht. Klassisches Paradigma zur visuell-r&auml;umlichen Aufmerksamkeitslenkung, trainiert schnelle Blick-/Aufmerksamkeitswechsel.</span>
+      <span class="fc-meta" id="posnerBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -751,6 +756,27 @@
   <div class="group-help" id="ufovReadyBestHint"></div>
 
   <button class="start-btn" id="ufovReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="posnerReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="posnerReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Hinweisreiz-Test (Posner-Cueing)</h1>
+  <p class="page-sub">Zwei Felder, links und rechts von einem Fixationskreuz. Kurz bevor ein Punkt erscheint, leuchtet eines der beiden Felder kurz als Hinweis auf &ndash; meistens (aber nicht immer!) erscheint der Punkt dann tats&auml;chlich dort. Tippe so schnell wie m&ouml;glich auf das Feld, in dem der Punkt wirklich auftaucht, nicht auf das Feld, das nur aufgeleuchtet ist. Klassisches Paradigma zur visuell-r&auml;umlichen Aufmerksamkeitslenkung (Posner, 1980) &ndash; trainiert, wie schnell du deine Aufmerksamkeit gezielt verschieben und bei Bedarf wieder umlenken kannst.</p>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="posnerDifficultyRow">
+      <button class="choice" data-posner-diff="leicht">Leicht<small>mehr Zeit zum Umlenken</small></button>
+      <button class="choice" data-posner-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-posner-diff="schwer">Schwer<small>Hinweis &amp; Punkt fast gleichzeitig</small></button>
+    </div>
+  </div>
+
+  <div class="group-help" id="posnerReadyBestHint"></div>
+
+  <button class="start-btn" id="posnerReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="rememberReady" hidden>
@@ -2694,6 +2720,47 @@
     <div class="rating" id="ufovRating"></div>
     <button class="again" id="ufovAgainBtn">Nochmal</button>
     <button class="back" id="ufovDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="posnerPlayer" hidden>
+  <div class="posner-stage" id="posnerStage">
+    <div class="remember-hint" id="posnerHint"></div>
+    <div class="posner-boxes-row">
+      <button class="posner-box" id="posnerLeftBtn" aria-label="Links">
+        <span class="posner-dot" id="posnerLeftDot"></span>
+      </button>
+      <span class="posner-fix" aria-hidden="true">+</span>
+      <button class="posner-box" id="posnerRightBtn" aria-label="Rechts">
+        <span class="posner-dot" id="posnerRightDot"></span>
+      </button>
+    </div>
+  </div>
+  <div class="pause-overlay" id="posnerPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="posnerResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="posnerPlayerBar">
+    <button id="posnerBackBtn">&#10005; Beenden</button>
+    <button id="posnerPauseBtn">Pause</button>
+    <span class="player-status" id="posnerProgressEl"></span>
+    <button id="posnerFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="posnerFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="posnerFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="posnerFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="posnerDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="posnerDoneSummary"></p>
+    <div class="rating" id="posnerRating"></div>
+    <button class="again" id="posnerAgainBtn">Nochmal</button>
+    <button class="back" id="posnerDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

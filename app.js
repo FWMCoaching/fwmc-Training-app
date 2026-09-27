@@ -1173,6 +1173,18 @@
     ufovFsBtn: $("ufovFsBtn"), ufovFsHint: $("ufovFsHint"), ufovFsHintOpenBtn: $("ufovFsHintOpenBtn"), ufovFsHintClose: $("ufovFsHintClose"),
     ufovDonePanel: $("ufovDonePanel"), ufovDoneSummary: $("ufovDoneSummary"), ufovRating: $("ufovRating"),
     ufovAgainBtn: $("ufovAgainBtn"), ufovDoneBackBtn: $("ufovDoneBackBtn"),
+
+    posnerOpenBtn: $("posnerOpenBtn"), posnerBestHint: $("posnerBestHint"), posnerReady: $("posnerReady"),
+    posnerReadyBackToHome: $("posnerReadyBackToHome"), posnerDifficultyRow: $("posnerDifficultyRow"),
+    posnerReadyBestHint: $("posnerReadyBestHint"), posnerReadyStartBtn: $("posnerReadyStartBtn"),
+    posnerPlayer: $("posnerPlayer"), posnerStage: $("posnerStage"), posnerHint: $("posnerHint"),
+    posnerLeftBtn: $("posnerLeftBtn"), posnerRightBtn: $("posnerRightBtn"),
+    posnerLeftDot: $("posnerLeftDot"), posnerRightDot: $("posnerRightDot"),
+    posnerPauseOverlay: $("posnerPauseOverlay"), posnerResumeBtn: $("posnerResumeBtn"),
+    posnerPlayerBar: $("posnerPlayerBar"), posnerBackBtn: $("posnerBackBtn"), posnerPauseBtn: $("posnerPauseBtn"), posnerProgressEl: $("posnerProgressEl"),
+    posnerFsBtn: $("posnerFsBtn"), posnerFsHint: $("posnerFsHint"), posnerFsHintOpenBtn: $("posnerFsHintOpenBtn"), posnerFsHintClose: $("posnerFsHintClose"),
+    posnerDonePanel: $("posnerDonePanel"), posnerDoneSummary: $("posnerDoneSummary"), posnerRating: $("posnerRating"),
+    posnerAgainBtn: $("posnerAgainBtn"), posnerDoneBackBtn: $("posnerDoneBackBtn"),
     blitzOpenBtn: $("blitzOpenBtn"), blitzBestHint: $("blitzBestHint"), blitzReady: $("blitzReady"),
     blitzReadyBackToHome: $("blitzReadyBackToHome"), blitzGridSizeRow: $("blitzGridSizeRow"),
     blitzZoneGroup: $("blitzZoneGroup"), blitzZoneAllBtn: $("blitzZoneAllBtn"), blitzZoneGrid: $("blitzZoneGrid"), blitzZoneHint: $("blitzZoneHint"),
@@ -1369,7 +1381,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3388,6 +3400,7 @@
     els.trailPlayer.hidden = true;
     els.flankerPlayer.hidden = true;
     els.ufovPlayer.hidden = true;
+    els.posnerPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3768,6 +3781,7 @@
   wireFullscreen({ player: els.trailPlayer, btn: els.trailFsBtn, hint: els.trailFsHint, hintOpen: els.trailFsHintOpenBtn, hintClose: els.trailFsHintClose });
   wireFullscreen({ player: els.flankerPlayer, btn: els.flankerFsBtn, hint: els.flankerFsHint, hintOpen: els.flankerFsHintOpenBtn, hintClose: els.flankerFsHintClose });
   wireFullscreen({ player: els.ufovPlayer, btn: els.ufovFsBtn, hint: els.ufovFsHint, hintOpen: els.ufovFsHintOpenBtn, hintClose: els.ufovFsHintClose });
+  wireFullscreen({ player: els.posnerPlayer, btn: els.posnerFsBtn, hint: els.posnerFsHint, hintOpen: els.posnerFsHintOpenBtn, hintClose: els.posnerFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -9063,6 +9077,322 @@
   els.ufovBackBtn.addEventListener("click", ufovStop);
   els.ufovAgainBtn.addEventListener("click", () => { els.ufovDonePanel.hidden = true; startUfovGame(); });
   els.ufovDoneBackBtn.addEventListener("click", () => { els.ufovPlayer.hidden = true; els.ufovDonePanel.hidden = true; showScreen("testHome"); });
+
+  // ==== Test-Bereich: Hinweisreiz-Test (Posner-Cueing) ====
+  // Sixth autonomous entry (see CLAUDE.md's "Test-Bereich (autonomous,
+  // ongoing)"). Grounded in the Posner cueing task (Posner, 1980): a
+  // symbolic/spatial cue briefly highlights one of two locations, a target
+  // then appears at the cued location on most trials ("valid") but at the
+  // other location on a minority ("invalid") - the RT cost of an invalid
+  // cue versus a valid one (the "validity effect"/"cueing effect") is the
+  // classic index of how efficiently attention gets voluntarily oriented
+  // and, when needed, disengaged and re-oriented. Also researched as sport-
+  // relevant: a 2025 multilevel Bayesian meta-analysis across 72 studies/885
+  // athletes found cueing/benefit effects scale with cue validity, and
+  // athletes in several sports (boxers, volleyball players, ...) show more
+  // efficient attentional orienting (smaller valid/invalid RT gaps) than
+  // non-athletes - a direct fit for FWMC's "visuelle
+  // Entscheidungsgeschwindigkeit"/Aufmerksamkeit focus. Genuinely distinct
+  // from every existing Test/NAT mechanic: Go/No-Go tests withholding a
+  // response (inhibition), Flanker tests filtering out simultaneous
+  // conflicting information (interference control), UFOV tests a divided-
+  // attention glance under a time pressure that adapts automatically - this
+  // is the only one that isolates the cost of VOLUNTARILY SHIFTING spatial
+  // attention from one location to another, using a fixed, clearly-signalled
+  // two-location layout rather than a whole-field glance or a central/
+  // flanking conflict.
+  const POSNER_PREFS_KEY = "fwmc-posner-prefs-v1";
+  // Difficulty controls the cue-to-target gap (SOA) - shorter SOA leaves
+  // less time to actually use the cue to shift attention before the target
+  // appears, same "less time = harder" shape as every other difficulty
+  // ladder in this app (GNG_DIFFICULTIES/FLANKER_DIFFICULTIES) - plus the
+  // response window and inter-trial gap, same idea as those too.
+  const POSNER_DIFFICULTIES = {
+    leicht: { title: "Leicht", cueMs: 200, soaMin: 450, soaMax: 650, responseMs: 2200, isiMin: 900, isiMax: 1300 },
+    mittel: { title: "Mittel", cueMs: 150, soaMin: 250, soaMax: 400, responseMs: 1600, isiMin: 700, isiMax: 1100 },
+    schwer: { title: "Schwer", cueMs: 100, soaMin: 100, soaMax: 200, responseMs: 1100, isiMin: 500, isiMax: 900 },
+  };
+  // 40 trials at the classic 80% cue validity Posner (1980) himself used -
+  // 32 valid (16 left/16 right) + 8 invalid (4 left-cued-right-target/4
+  // right-cued-left-target). Enough invalid trials for a meaningful average
+  // without making the cue so unreliable it stops being worth attending to.
+  const POSNER_TRIAL_COUNT = 40;
+  const posnerPrefs = { difficulty: "mittel" };
+  function loadPosnerPrefs() {
+    const saved = readJSON(POSNER_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(posnerPrefs, saved);
+    if (!POSNER_DIFFICULTIES[posnerPrefs.difficulty]) posnerPrefs.difficulty = "mittel";
+  }
+  loadPosnerPrefs();
+  function savePosnerPrefsToStorage() { writeJSON(POSNER_PREFS_KEY, posnerPrefs); }
+
+  const POSNER_BEST_KEY = "fwmc-posner-best-v1"; // { [difficulty]: bestAccuracyPct }
+  function posnerBestFor() { return readJSON(POSNER_BEST_KEY, {})[posnerPrefs.difficulty] || 0; }
+  function savePosnerBest(accuracyPct) {
+    const all = readJSON(POSNER_BEST_KEY, {});
+    if (accuracyPct > (all[posnerPrefs.difficulty] || 0)) { all[posnerPrefs.difficulty] = accuracyPct; writeJSON(POSNER_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderPosnerBest() {
+    const best = posnerBestFor();
+    const text = best ? `Beste Genauigkeit (${POSNER_DIFFICULTIES[posnerPrefs.difficulty].title}): ${best}%` : "";
+    els.posnerBestHint.textContent = text;
+    els.posnerReadyBestHint.textContent = text;
+  }
+  function syncPosnerDifficultyUI() {
+    els.posnerDifficultyRow.querySelectorAll("[data-posner-diff]").forEach((btn) => setActive(btn, btn.dataset.posnerDiff === posnerPrefs.difficulty));
+  }
+  els.posnerDifficultyRow.querySelectorAll("[data-posner-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      posnerPrefs.difficulty = btn.dataset.posnerDiff;
+      savePosnerPrefsToStorage();
+      syncPosnerDifficultyUI();
+      renderPosnerBest();
+    });
+  });
+
+  els.posnerOpenBtn.addEventListener("click", () => {
+    syncPosnerDifficultyUI();
+    renderPosnerBest();
+    showScreen("posnerReady");
+  });
+  els.posnerReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Same timer-wrapping trick as scheduleFlankerTimer/scheduleGngTimer:
+  // records what's pending and when it fires, so Pause can cancel it and
+  // Resume can replay it with its exact remaining delay.
+  function schedulePosnerTimer(fn, delayMs) {
+    posnerState.timerFn = fn;
+    posnerState.timerFiresAt = performance.now() + delayMs;
+    posnerState.timer = setTimeout(() => { posnerState.timer = null; fn(); }, delayMs);
+  }
+
+  function buildPosnerTrials() {
+    const trials = [];
+    ["left", "right"].forEach((side) => {
+      for (let i = 0; i < 16; i++) trials.push({ cueSide: side, targetSide: side, valid: true });
+    });
+    ["left", "right"].forEach((side) => {
+      const other = side === "left" ? "right" : "left";
+      for (let i = 0; i < 4; i++) trials.push({ cueSide: side, targetSide: other, valid: false });
+    });
+    // Shuffle, then avoid more than 3 identical TARGET sides back to back -
+    // same guard as buildFlankerTrials, so a "just keep tapping the same
+    // side" motor strategy can't pass undetected.
+    for (let tries = 0; tries < 200; tries++) {
+      for (let i = trials.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [trials[i], trials[j]] = [trials[j], trials[i]];
+      }
+      let ok = true, run = 1;
+      for (let i = 1; i < trials.length; i++) {
+        if (trials[i].targetSide === trials[i - 1].targetSide) { run++; if (run > 3) { ok = false; break; } }
+        else run = 1;
+      }
+      if (ok) break;
+    }
+    return trials;
+  }
+
+  function posnerClearBoxes() {
+    els.posnerLeftBtn.classList.remove("cued", "correct", "wrong");
+    els.posnerRightBtn.classList.remove("cued", "correct", "wrong");
+    els.posnerLeftDot.classList.remove("show");
+    els.posnerRightDot.classList.remove("show");
+  }
+  function posnerBoxFor(side) { return side === "left" ? els.posnerLeftBtn : els.posnerRightBtn; }
+  function posnerDotFor(side) { return side === "left" ? els.posnerLeftDot : els.posnerRightDot; }
+
+  let posnerState = null;
+  function startPosnerGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.posnerPlayer.hidden = false;
+    els.posnerPlayerBar.hidden = false;
+    els.posnerDonePanel.hidden = true;
+    els.posnerPauseOverlay.hidden = true;
+    els.posnerPauseBtn.hidden = false;
+    posnerState = {
+      diff: POSNER_DIFFICULTIES[posnerPrefs.difficulty], trials: buildPosnerTrials(), index: -1, phase: "gap", responded: false,
+      correct: 0, incorrect: 0, timeouts: 0, rtsValid: [], rtsInvalid: [],
+      stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      startTime: performance.now(),
+    };
+    posnerClearBoxes();
+    els.posnerHint.textContent = "Bereit? Gleich geht's los …";
+    els.posnerProgressEl.textContent = `0/${posnerState.trials.length}`;
+    requestWakeLock();
+    schedulePosnerTimer(posnerNextTrial, 1200);
+  }
+  els.posnerReadyStartBtn.addEventListener("click", startPosnerGame);
+
+  function posnerNextTrial() {
+    if (!posnerState) return;
+    posnerState.index++;
+    if (posnerState.index >= posnerState.trials.length) { posnerFinish(); return; }
+    els.posnerProgressEl.textContent = `${posnerState.index + 1}/${posnerState.trials.length}`;
+    posnerState.phase = "gap";
+    posnerState.responded = false;
+    posnerClearBoxes();
+    const isi = posnerState.diff.isiMin + Math.random() * (posnerState.diff.isiMax - posnerState.diff.isiMin);
+    schedulePosnerTimer(posnerShowCue, isi);
+  }
+  function posnerShowCue() {
+    if (!posnerState) return;
+    const trial = posnerState.trials[posnerState.index];
+    posnerState.phase = "cue";
+    // The previous trial's feedback hint ("Verpasst!"/"Falsche Seite!")
+    // deliberately stays up through the whole ISI gap and is only cleared
+    // once the NEXT trial's own visible event (the cue) actually appears -
+    // same rhythm as flankerShowStimulus clearing flankerHint only once the
+    // next arrow row appears, not immediately when the trial index advances.
+    els.posnerHint.textContent = "";
+    posnerBoxFor(trial.cueSide).classList.add("cued");
+    schedulePosnerTimer(posnerHideCue, posnerState.diff.cueMs);
+  }
+  function posnerHideCue() {
+    if (!posnerState) return;
+    els.posnerLeftBtn.classList.remove("cued");
+    els.posnerRightBtn.classList.remove("cued");
+    posnerState.phase = "soa";
+    const soa = posnerState.diff.soaMin + Math.random() * (posnerState.diff.soaMax - posnerState.diff.soaMin);
+    schedulePosnerTimer(posnerShowTarget, soa);
+  }
+  function posnerShowTarget() {
+    if (!posnerState) return;
+    const trial = posnerState.trials[posnerState.index];
+    posnerState.phase = "responding";
+    posnerState.responded = false;
+    posnerState.stimAt = performance.now();
+    posnerDotFor(trial.targetSide).classList.add("show");
+    schedulePosnerTimer(posnerEndTrial, posnerState.diff.responseMs);
+  }
+  function posnerEndTrial() {
+    if (!posnerState) return;
+    if (posnerState.phase === "responding" && !posnerState.responded) {
+      posnerState.incorrect++;
+      posnerState.timeouts++;
+      els.posnerHint.textContent = "Verpasst!";
+    }
+    posnerState.phase = "gap";
+    posnerNextTrial();
+  }
+  function posnerTap(side) {
+    if (!posnerState || posnerState.paused || posnerState.responded) return;
+    // Taps before the target actually appears (during the cue or the SOA
+    // gap) are ignored - reaction time is measured target-locked, same
+    // convention as Flanker's/Go-No-Go's own tap handlers. This also means
+    // tapping the cued box the instant it lights up scores nothing either
+    // way - only a tap once the real target is on screen counts.
+    if (posnerState.phase !== "responding") return;
+    posnerState.responded = true;
+    const trial = posnerState.trials[posnerState.index];
+    const rt = performance.now() - posnerState.stimAt;
+    const correct = side === trial.targetSide;
+    posnerBoxFor(side).classList.add(correct ? "correct" : "wrong");
+    if (correct) {
+      posnerState.correct++;
+      (trial.valid ? posnerState.rtsValid : posnerState.rtsInvalid).push(rt);
+    } else {
+      posnerState.incorrect++;
+      els.posnerHint.textContent = "Falsche Seite!";
+    }
+    // The feedback colour stays up for whatever's left of diff.responseMs
+    // (the already-scheduled posnerEndTrial fires the actual transition) -
+    // same rhythm as Flanker/Go-No-Go leaving their own tap feedback up for
+    // the rest of the response window, no separate timer needed.
+  }
+  els.posnerLeftBtn.addEventListener("click", () => posnerTap("left"));
+  els.posnerRightBtn.addEventListener("click", () => posnerTap("right"));
+
+  // Pause just stops/replays the pending timer, no live background-adjust
+  // overlay - background customisation was skipped for this exercise
+  // (explicitly optional per the Test-Bereich guidance) so there is nothing
+  // to adjust while paused.
+  function pausePosner() {
+    if (!posnerState || posnerState.paused) return;
+    posnerState.paused = true;
+    posnerState.pausedAt = performance.now();
+    if (posnerState.timer) {
+      clearTimeout(posnerState.timer);
+      posnerState.timer = null;
+      posnerState.timerRemainingMs = Math.max(0, posnerState.timerFiresAt - posnerState.pausedAt);
+    }
+    els.posnerPauseBtn.hidden = true;
+    els.posnerPauseOverlay.hidden = false;
+  }
+  function resumePosner() {
+    if (!posnerState || !posnerState.paused) return;
+    const pausedMs = performance.now() - posnerState.pausedAt;
+    posnerState.startTime += pausedMs;
+    posnerState.stimAt += pausedMs;
+    posnerState.paused = false;
+    if (posnerState.timerFn && posnerState.timerRemainingMs != null) {
+      schedulePosnerTimer(posnerState.timerFn, posnerState.timerRemainingMs);
+      posnerState.timerRemainingMs = null;
+    }
+    els.posnerPauseOverlay.hidden = true;
+    els.posnerPauseBtn.hidden = false;
+  }
+  els.posnerPauseBtn.addEventListener("click", pausePosner);
+  els.posnerResumeBtn.addEventListener("click", resumePosner);
+
+  function finalizePosnerRun(state, totalTrials) {
+    els.posnerPauseOverlay.hidden = true;
+    els.posnerPlayerBar.hidden = true;
+    const accuracyPct = Math.round(100 * state.correct / totalTrials);
+    const avgValid = avgOf(state.rtsValid);
+    const avgInvalid = avgOf(state.rtsInvalid);
+    // The "cueing effect"/"validity effect" itself: how much slower correct
+    // invalid-cue responses were versus correct valid-cue ones - the classic
+    // attentional-orienting-cost measure this whole task exists to surface.
+    const cueingEffect = (avgValid != null && avgInvalid != null) ? (avgInvalid - avgValid) : null;
+    const isRecord = savePosnerBest(accuracyPct);
+    renderPosnerBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.posnerDoneSummary.textContent =
+      `Hinweisreiz-Test (${state.diff.title}) · ${accuracyPct}% richtig` +
+      (avgValid != null ? ` · Ø gültiger Hinweis ${avgValid} ms` : "") +
+      (avgInvalid != null ? ` · Ø ungültiger Hinweis ${avgInvalid} ms` : "") +
+      (cueingEffect != null ? ` · Umlenkungs-Kosten ${cueingEffect} ms` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${accuracyPct}% richtig` + (cueingEffect != null ? `, Umlenkung ${cueingEffect} ms` : "");
+    const id = addHistory({ kind: "posner", title: "Hinweisreiz-Test (Posner-Cueing)", seconds: Math.round(played), note });
+    renderRating(els.posnerRating, id, "Wie fokussiert warst du?");
+    els.posnerDonePanel.hidden = false;
+  }
+  function posnerFinish() {
+    if (!posnerState) return;
+    const state = posnerState;
+    posnerState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.posnerPlayer) document.exitFullscreen().catch(() => {});
+    els.posnerFsHint.hidden = true;
+    finalizePosnerRun(state, state.trials.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved.
+  function posnerStop() {
+    if (!posnerState) return;
+    if (posnerState.timer) clearTimeout(posnerState.timer);
+    const state = posnerState;
+    posnerState = null;
+    els.posnerPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.posnerPlayer) document.exitFullscreen().catch(() => {});
+    els.posnerFsHint.hidden = true;
+    const resolved = state.correct + state.incorrect;
+    if (resolved >= 4) {
+      finalizePosnerRun(state, resolved);
+    } else {
+      els.posnerPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.posnerBackBtn.addEventListener("click", posnerStop);
+  els.posnerAgainBtn.addEventListener("click", () => { els.posnerDonePanel.hidden = true; startPosnerGame(); });
+  els.posnerDoneBackBtn.addEventListener("click", () => { els.posnerPlayer.hidden = true; els.posnerDonePanel.hidden = true; showScreen("testHome"); });
 
   // ---- Start-up ----
   renderHistory();
