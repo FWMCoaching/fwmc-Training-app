@@ -133,6 +133,17 @@ unrelated to the feature being changed.
   `advanceComboProgram(playedS)` when time is up, and its own "Beenden"
   handler must check `comboProgram` first and call `abortComboProgram()`
   instead of its normal single-exercise exit.
+- **FAQ accordion** (`#faqSection` on the main `#home` screen, added
+  2026-09-27, no JS needed): plain native `<details class="faq-item">`/
+  `<summary>`/`<div class="faq-body">` items, styled with the app's own
+  theme tokens (`var(--line)`/`var(--surface)`/`var(--ink)`/`var(--brand)`)
+  like `.advanced` - this is general app UI read during normal light/dark
+  browsing, NOT a player/stage element, so it correctly uses `var(--...)`
+  rather than the Test-Bereich/exercise convention of fixed hex colours.
+  Content is grounded only in things actually true of the app (no login,
+  local-only history, what a Trainings-Code is, add-to-homescreen, what
+  each section/the Test-Bereich is) - extend this list rather than adding
+  a second FAQ pattern if more questions come up. Test: `tests/faq_test.py`.
 - **Fixation point + background customisation**: `drawFixationPoint()`
   and `currentBgFill()` in `app.js` apply to nearly every exercise that
   uses the shared canvas `drawScene()` pipeline. An exercise whose
