@@ -1239,10 +1239,13 @@
     trailAgainBtn: $("trailAgainBtn"), trailDoneBackBtn: $("trailDoneBackBtn"),
     flankerOpenBtn: $("flankerOpenBtn"), flankerBestHint: $("flankerBestHint"), flankerReady: $("flankerReady"),
     flankerReadyBackToHome: $("flankerReadyBackToHome"), flankerDifficultyRow: $("flankerDifficultyRow"),
+    flankerAdvanced: $("flankerAdvanced"), flankerBgColorPicker: $("flankerBgColorPicker"), flankerBgIntensitySlider: $("flankerBgIntensitySlider"),
+    flankerBgIntensityValue: $("flankerBgIntensityValue"), flankerBgContrastHint: $("flankerBgContrastHint"),
     flankerReadyBestHint: $("flankerReadyBestHint"), flankerReadyStartBtn: $("flankerReadyStartBtn"),
     flankerPlayer: $("flankerPlayer"), flankerStage: $("flankerStage"), flankerHint: $("flankerHint"), flankerRow: $("flankerRow"),
     flankerLeftBtn: $("flankerLeftBtn"), flankerRightBtn: $("flankerRightBtn"),
     flankerPauseOverlay: $("flankerPauseOverlay"), flankerResumeBtn: $("flankerResumeBtn"),
+    flankerPauseBgColorPicker: $("flankerPauseBgColorPicker"), flankerPauseBgSlider: $("flankerPauseBgSlider"), flankerPauseBgValue: $("flankerPauseBgValue"),
     flankerPlayerBar: $("flankerPlayerBar"), flankerBackBtn: $("flankerBackBtn"), flankerPauseBtn: $("flankerPauseBtn"), flankerProgressEl: $("flankerProgressEl"),
     flankerFsBtn: $("flankerFsBtn"), flankerFsHint: $("flankerFsHint"), flankerFsHintOpenBtn: $("flankerFsHintOpenBtn"), flankerFsHintClose: $("flankerFsHintClose"),
     flankerDonePanel: $("flankerDonePanel"), flankerDoneSummary: $("flankerDoneSummary"), flankerRating: $("flankerRating"),
@@ -1250,6 +1253,8 @@
 
     ufovOpenBtn: $("ufovOpenBtn"), ufovBestHint: $("ufovBestHint"), ufovReady: $("ufovReady"),
     ufovReadyBackToHome: $("ufovReadyBackToHome"), ufovLengthRow: $("ufovLengthRow"),
+    ufovAdvanced: $("ufovAdvanced"), ufovBgColorPicker: $("ufovBgColorPicker"), ufovBgIntensitySlider: $("ufovBgIntensitySlider"),
+    ufovBgIntensityValue: $("ufovBgIntensityValue"), ufovBgContrastHint: $("ufovBgContrastHint"),
     ufovReadyBestHint: $("ufovReadyBestHint"), ufovReadyStartBtn: $("ufovReadyStartBtn"),
     ufovPlayer: $("ufovPlayer"), ufovStage: $("ufovStage"), ufovHint: $("ufovHint"), ufovField: $("ufovField"),
     ufovCenterEl: $("ufovCenterEl"),
@@ -1258,6 +1263,7 @@
     ufovShapeBtns: $("ufovShapeBtns"), ufovShapeCircleBtn: $("ufovShapeCircleBtn"), ufovShapeSquareBtn: $("ufovShapeSquareBtn"),
     ufovRingBtns: $("ufovRingBtns"), ufovRingBtnField: $("ufovRingBtnField"),
     ufovPauseOverlay: $("ufovPauseOverlay"), ufovResumeBtn: $("ufovResumeBtn"),
+    ufovPauseBgColorPicker: $("ufovPauseBgColorPicker"), ufovPauseBgSlider: $("ufovPauseBgSlider"), ufovPauseBgValue: $("ufovPauseBgValue"),
     ufovPlayerBar: $("ufovPlayerBar"), ufovBackBtn: $("ufovBackBtn"), ufovPauseBtn: $("ufovPauseBtn"), ufovProgressEl: $("ufovProgressEl"),
     ufovFsBtn: $("ufovFsBtn"), ufovFsHint: $("ufovFsHint"), ufovFsHintOpenBtn: $("ufovFsHintOpenBtn"), ufovFsHintClose: $("ufovFsHintClose"),
     ufovDonePanel: $("ufovDonePanel"), ufovDoneSummary: $("ufovDoneSummary"), ufovRating: $("ufovRating"),
@@ -1265,11 +1271,14 @@
 
     posnerOpenBtn: $("posnerOpenBtn"), posnerBestHint: $("posnerBestHint"), posnerReady: $("posnerReady"),
     posnerReadyBackToHome: $("posnerReadyBackToHome"), posnerDifficultyRow: $("posnerDifficultyRow"),
+    posnerAdvanced: $("posnerAdvanced"), posnerBgColorPicker: $("posnerBgColorPicker"), posnerBgIntensitySlider: $("posnerBgIntensitySlider"),
+    posnerBgIntensityValue: $("posnerBgIntensityValue"), posnerBgContrastHint: $("posnerBgContrastHint"),
     posnerReadyBestHint: $("posnerReadyBestHint"), posnerReadyStartBtn: $("posnerReadyStartBtn"),
     posnerPlayer: $("posnerPlayer"), posnerStage: $("posnerStage"), posnerHint: $("posnerHint"),
     posnerLeftBtn: $("posnerLeftBtn"), posnerRightBtn: $("posnerRightBtn"),
     posnerLeftDot: $("posnerLeftDot"), posnerRightDot: $("posnerRightDot"),
     posnerPauseOverlay: $("posnerPauseOverlay"), posnerResumeBtn: $("posnerResumeBtn"),
+    posnerPauseBgColorPicker: $("posnerPauseBgColorPicker"), posnerPauseBgSlider: $("posnerPauseBgSlider"), posnerPauseBgValue: $("posnerPauseBgValue"),
     posnerPlayerBar: $("posnerPlayerBar"), posnerBackBtn: $("posnerBackBtn"), posnerPauseBtn: $("posnerPauseBtn"), posnerProgressEl: $("posnerProgressEl"),
     posnerFsBtn: $("posnerFsBtn"), posnerFsHint: $("posnerFsHint"), posnerFsHintOpenBtn: $("posnerFsHintOpenBtn"), posnerFsHintClose: $("posnerFsHintClose"),
     posnerDonePanel: $("posnerDonePanel"), posnerDoneSummary: $("posnerDoneSummary"), posnerRating: $("posnerRating"),
@@ -8860,14 +8869,32 @@
   // right within each - enough per condition for a meaningful congruent-vs-
   // incongruent average RT comparison without turning this into a long test.
   const FLANKER_TRIAL_COUNT = 32;
-  const flankerPrefs = { difficulty: "mittel" };
+  const flankerPrefs = { difficulty: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadFlankerPrefs() {
     const saved = readJSON(FLANKER_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(flankerPrefs, saved);
     if (!FLANKER_DIFFICULTIES[flankerPrefs.difficulty]) flankerPrefs.difficulty = "mittel";
+    if (!STROOP_COLOR_BY_KEY[flankerPrefs.bgColorKey]) flankerPrefs.bgColorKey = "gruen";
+    if (typeof flankerPrefs.bgIntensity !== "number" || flankerPrefs.bgIntensity < 0 || flankerPrefs.bgIntensity > 1) flankerPrefs.bgIntensity = 0;
   }
   loadFlankerPrefs();
   function saveFlankerPrefsToStorage() { writeJSON(FLANKER_PREFS_KEY, flankerPrefs); }
+
+  // Background colour/intensity, added later - see CLAUDE.md Established
+  // patterns (every Test-Bereich exercise now gets the same background
+  // control NAT's Remember/Blitz/Flash/MOT already have, minus their
+  // transfer/preset-save machinery - a deliberate scope decision, see there).
+  function applyFlankerBg() {
+    els.flankerStage.style.background = flankerPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[flankerPrefs.bgColorKey].hex, flankerPrefs.bgIntensity)
+      : "";
+  }
+  const syncFlankerBgUI = wireBgIntensityControl(flankerPrefs, {
+    pickers: [els.flankerBgColorPicker, els.flankerPauseBgColorPicker],
+    sliders: [els.flankerBgIntensitySlider, els.flankerPauseBgSlider],
+    valueEls: [els.flankerBgIntensityValue, els.flankerPauseBgValue],
+    hintEls: [els.flankerBgContrastHint],
+  }, () => { saveFlankerPrefsToStorage(); applyFlankerBg(); });
 
   const FLANKER_BEST_KEY = "fwmc-flanker-best-v1"; // { [difficulty]: bestAccuracyPct }
   function flankerBestFor() { return readJSON(FLANKER_BEST_KEY, {})[flankerPrefs.difficulty] || 0; }
@@ -8896,6 +8923,7 @@
 
   els.flankerOpenBtn.addEventListener("click", () => {
     syncFlankerDifficultyUI();
+    syncFlankerBgUI();
     renderFlankerBest();
     showScreen("flankerReady");
   });
@@ -8960,6 +8988,7 @@
       stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
       startTime: performance.now(),
     };
+    applyFlankerBg();
     flankerClearRow();
     els.flankerLeftBtn.classList.remove("correct", "wrong");
     els.flankerRightBtn.classList.remove("correct", "wrong");
@@ -9030,10 +9059,10 @@
   els.flankerLeftBtn.addEventListener("click", () => flankerTap("left"));
   els.flankerRightBtn.addEventListener("click", () => flankerTap("right"));
 
-  // Pause just stops/replays the pending timer, no live background-adjust
-  // overlay - background colour customisation was skipped for this exercise
-  // (explicitly optional per the Test-Bereich guidance) so there is nothing
-  // to adjust while paused.
+  // Pause stops/replays the pending timer, same setTimeout trick as
+  // Remember/Blitz/Flash/MOT, plus a live background-adjust overlay (added
+  // later, see CLAUDE.md - every Test-Bereich exercise now gets the same
+  // background colour/intensity control NAT's own exercises have).
   function pauseFlanker() {
     if (!flankerState || flankerState.paused) return;
     flankerState.paused = true;
@@ -9043,6 +9072,7 @@
       flankerState.timer = null;
       flankerState.timerRemainingMs = Math.max(0, flankerState.timerFiresAt - flankerState.pausedAt);
     }
+    syncFlankerBgUI();
     els.flankerPauseBtn.hidden = true;
     els.flankerPauseOverlay.hidden = false;
   }
@@ -9165,14 +9195,32 @@
     mittel: { title: "Mittel", trials: 30 },
     lang: { title: "Lang", trials: 40 },
   };
-  const ufovPrefs = { length: "mittel" };
+  const ufovPrefs = { length: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadUfovPrefs() {
     const saved = readJSON(UFOV_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(ufovPrefs, saved);
     if (!UFOV_LENGTHS[ufovPrefs.length]) ufovPrefs.length = "mittel";
+    if (!STROOP_COLOR_BY_KEY[ufovPrefs.bgColorKey]) ufovPrefs.bgColorKey = "gruen";
+    if (typeof ufovPrefs.bgIntensity !== "number" || ufovPrefs.bgIntensity < 0 || ufovPrefs.bgIntensity > 1) ufovPrefs.bgIntensity = 0;
   }
   loadUfovPrefs();
   function saveUfovPrefsToStorage() { writeJSON(UFOV_PREFS_KEY, ufovPrefs); }
+
+  // Background colour/intensity, added later - see CLAUDE.md Established
+  // patterns (every Test-Bereich exercise now gets the same background
+  // control NAT's Remember/Blitz/Flash/MOT already have, minus their
+  // transfer/preset-save machinery - a deliberate scope decision, see there).
+  function applyUfovBg() {
+    els.ufovStage.style.background = ufovPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[ufovPrefs.bgColorKey].hex, ufovPrefs.bgIntensity)
+      : "";
+  }
+  const syncUfovBgUI = wireBgIntensityControl(ufovPrefs, {
+    pickers: [els.ufovBgColorPicker, els.ufovPauseBgColorPicker],
+    sliders: [els.ufovBgIntensitySlider, els.ufovPauseBgSlider],
+    valueEls: [els.ufovBgIntensityValue, els.ufovPauseBgValue],
+    hintEls: [els.ufovBgContrastHint],
+  }, () => { saveUfovPrefsToStorage(); applyUfovBg(); });
 
   // Best is keyed by length, LOWER is better here (a shorter exposure the
   // client could still solve) - the opposite direction from Go/No-Go's or
@@ -9210,6 +9258,7 @@
 
   els.ufovOpenBtn.addEventListener("click", () => {
     syncUfovLengthUI();
+    syncUfovBgUI();
     renderUfovBest();
     showScreen("ufovReady");
   });
@@ -9272,6 +9321,7 @@
       paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
       startTime: performance.now(),
     };
+    applyUfovBg();
     els.ufovHint.textContent = "Bereit? Gleich geht's los …";
     els.ufovProgressEl.textContent = `0/${ufovState.total}`;
     requestWakeLock();
@@ -9375,7 +9425,10 @@
   // this exercise, explicitly optional per the Test-Bereich guidance).
   // During the two untimed response phases there is no pending timer to
   // cancel; pause still blocks taps via the `paused` check and the overlay
-  // covers the buttons, resume just hides the overlay again.
+  // covers the buttons, resume just hides the overlay again. Also carries a
+  // live background-adjust overlay (added later, see CLAUDE.md - every
+  // Test-Bereich exercise now gets the same background colour/intensity
+  // control NAT's own exercises have).
   function pauseUfov() {
     if (!ufovState || ufovState.paused) return;
     ufovState.paused = true;
@@ -9385,6 +9438,7 @@
       ufovState.timer = null;
       ufovState.timerRemainingMs = Math.max(0, ufovState.timerFiresAt - ufovState.pausedAt);
     }
+    syncUfovBgUI();
     els.ufovPauseBtn.hidden = true;
     els.ufovPauseOverlay.hidden = false;
   }
@@ -9500,14 +9554,32 @@
   // right-cued-left-target). Enough invalid trials for a meaningful average
   // without making the cue so unreliable it stops being worth attending to.
   const POSNER_TRIAL_COUNT = 40;
-  const posnerPrefs = { difficulty: "mittel" };
+  const posnerPrefs = { difficulty: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadPosnerPrefs() {
     const saved = readJSON(POSNER_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(posnerPrefs, saved);
     if (!POSNER_DIFFICULTIES[posnerPrefs.difficulty]) posnerPrefs.difficulty = "mittel";
+    if (!STROOP_COLOR_BY_KEY[posnerPrefs.bgColorKey]) posnerPrefs.bgColorKey = "gruen";
+    if (typeof posnerPrefs.bgIntensity !== "number" || posnerPrefs.bgIntensity < 0 || posnerPrefs.bgIntensity > 1) posnerPrefs.bgIntensity = 0;
   }
   loadPosnerPrefs();
   function savePosnerPrefsToStorage() { writeJSON(POSNER_PREFS_KEY, posnerPrefs); }
+
+  // Background colour/intensity, added later - see CLAUDE.md Established
+  // patterns (every Test-Bereich exercise now gets the same background
+  // control NAT's Remember/Blitz/Flash/MOT already have, minus their
+  // transfer/preset-save machinery - a deliberate scope decision, see there).
+  function applyPosnerBg() {
+    els.posnerStage.style.background = posnerPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[posnerPrefs.bgColorKey].hex, posnerPrefs.bgIntensity)
+      : "";
+  }
+  const syncPosnerBgUI = wireBgIntensityControl(posnerPrefs, {
+    pickers: [els.posnerBgColorPicker, els.posnerPauseBgColorPicker],
+    sliders: [els.posnerBgIntensitySlider, els.posnerPauseBgSlider],
+    valueEls: [els.posnerBgIntensityValue, els.posnerPauseBgValue],
+    hintEls: [els.posnerBgContrastHint],
+  }, () => { savePosnerPrefsToStorage(); applyPosnerBg(); });
 
   const POSNER_BEST_KEY = "fwmc-posner-best-v1"; // { [difficulty]: bestAccuracyPct }
   function posnerBestFor() { return readJSON(POSNER_BEST_KEY, {})[posnerPrefs.difficulty] || 0; }
@@ -9536,6 +9608,7 @@
 
   els.posnerOpenBtn.addEventListener("click", () => {
     syncPosnerDifficultyUI();
+    syncPosnerBgUI();
     renderPosnerBest();
     showScreen("posnerReady");
   });
@@ -9601,6 +9674,7 @@
       stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
       startTime: performance.now(),
     };
+    applyPosnerBg();
     posnerClearBoxes();
     els.posnerHint.textContent = "Bereit? Gleich geht's los …";
     els.posnerProgressEl.textContent = `0/${posnerState.trials.length}`;
@@ -9688,10 +9762,10 @@
   els.posnerLeftBtn.addEventListener("click", () => posnerTap("left"));
   els.posnerRightBtn.addEventListener("click", () => posnerTap("right"));
 
-  // Pause just stops/replays the pending timer, no live background-adjust
-  // overlay - background customisation was skipped for this exercise
-  // (explicitly optional per the Test-Bereich guidance) so there is nothing
-  // to adjust while paused.
+  // Pause stops/replays the pending timer, same setTimeout trick as
+  // Remember/Blitz/Flash/MOT, plus a live background-adjust overlay (added
+  // later, see CLAUDE.md - every Test-Bereich exercise now gets the same
+  // background colour/intensity control NAT's own exercises have).
   function pausePosner() {
     if (!posnerState || posnerState.paused) return;
     posnerState.paused = true;
@@ -9701,6 +9775,7 @@
       posnerState.timer = null;
       posnerState.timerRemainingMs = Math.max(0, posnerState.timerFiresAt - posnerState.pausedAt);
     }
+    syncPosnerBgUI();
     els.posnerPauseBtn.hidden = true;
     els.posnerPauseOverlay.hidden = false;
   }

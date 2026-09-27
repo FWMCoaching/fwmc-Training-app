@@ -828,6 +828,22 @@
     </div>
   </div>
 
+  <details class="advanced" id="flankerAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="flankerBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="flankerBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="flankerBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="flankerBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
+
   <div class="group-help" id="flankerReadyBestHint"></div>
 
   <button class="start-btn" id="flankerReadyStartBtn">Training starten</button>
@@ -849,6 +865,22 @@
     </div>
   </div>
 
+  <details class="advanced" id="ufovAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="ufovBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="ufovBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="ufovBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="ufovBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
+
   <div class="group-help" id="ufovReadyBestHint"></div>
 
   <button class="start-btn" id="ufovReadyStartBtn">Training starten</button>
@@ -869,6 +901,22 @@
       <button class="choice" data-posner-diff="schwer">Schwer<small>Hinweis &amp; Punkt fast gleichzeitig</small></button>
     </div>
   </div>
+
+  <details class="advanced" id="posnerAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="posnerBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="posnerBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="posnerBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="posnerBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
 
   <div class="group-help" id="posnerReadyBestHint"></div>
 
@@ -3031,6 +3079,14 @@
   <div class="pause-overlay" id="flankerPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="flankerPauseBgValue"></span></div>
+        <input type="range" id="flankerPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="flankerPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="flankerResumeBtn">Weiter</button>
     </div>
   </div>
@@ -3094,6 +3150,14 @@
   <div class="pause-overlay" id="ufovPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="ufovPauseBgValue"></span></div>
+        <input type="range" id="ufovPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="ufovPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="ufovResumeBtn">Weiter</button>
     </div>
   </div>
@@ -3135,6 +3199,14 @@
   <div class="pause-overlay" id="posnerPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="posnerPauseBgValue"></span></div>
+        <input type="range" id="posnerPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="posnerPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="posnerResumeBtn">Weiter</button>
     </div>
   </div>

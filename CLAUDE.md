@@ -319,11 +319,24 @@ unrelated to the feature being changed.
   wants full parity (transfer + named presets) for Test-Bereich exercises
   too, add them to `BG_SOURCES` then. Remaining Test-Bereich exercises get
   the same treatment (minus Wortfarben-Test) in further batches - see the
-  Roster below for which already have it (Go/No-Go/N-Back/Trail Making) vs.
-  not yet. Tests extended: `tests/gng_test.py`, `tests/nback_test.py`,
-  `tests/trail_test.py` (swatch count, ready-screen colour+intensity
-  changing the stage's rendered background, and the pause overlay's own
-  picker live-updating the same background while paused).
+  Roster below for which already have it vs. not yet. Tests extended:
+  `tests/gng_test.py`, `tests/nback_test.py`, `tests/trail_test.py` (swatch
+  count, ready-screen colour+intensity changing the stage's rendered
+  background, and the pause overlay's own picker live-updating the same
+  background while paused). **Second batch**: **Ablenkungstest (Flanker)**,
+  **Blickfeld-Test (UFOV)**, **Hinweisreiz-Test (Posner-Cueing)** -
+  `flankerPrefs`/`ufovPrefs`/`posnerPrefs` each gained the same
+  `bgColorKey`/`bgIntensity` pair, `applyFlankerBg()`/`applyUfovBg()`/
+  `applyPosnerBg()` tint `#flankerStage`/`#ufovStage`/`#posnerStage`, and
+  each got its own `wireBgIntensityControl` call (ready-screen
+  `#flankerAdvanced`/`#ufovAdvanced`/`#posnerAdvanced` + pause overlay
+  picker+slider), same scope narrowing as the first batch (no `BG_SOURCES`/
+  transfer/preset-save for these three either). Tests extended:
+  `tests/flanker_test.py`, `tests/ufov_test.py`, `tests/posner_test.py`.
+  Exercises with a background now: Go/No-Go, N-Back, Trail Making, Flanker,
+  UFOV, Posner-Cueing - the rest (rotation/merk/simon, search/ab/antizip,
+  hick/corsi/reakt, ts/anti) follow in further batches, still minus
+  Wortfarben-Test/Stroop.
 - **Multi-tab nav bars (`.section-switch`/`.sub-switch`) need headroom for
   their longest label, not just "however many tabs currently exist"**: both
   are a `display:flex` row of `flex:1` tabs capped at a `max-width` - a

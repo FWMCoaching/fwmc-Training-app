@@ -10,9 +10,12 @@ URL = "http://localhost:8845/index.html"
 # 32-trial run (FLANKER_TRIAL_COUNT), no "Bei Fehler"/level progression -
 # this task reports accuracy % + average congruent/incongruent reaction time
 # + the interference cost ("flanker effect") instead, the actual outcome
-# measures for this paradigm. No background-colour customization
-# (explicitly optional, correctly skipped - nothing to configure on a task
-# whose whole point is a fixed black-on-white arrow row).
+# measures for this paradigm. Background colour/intensity (added later, so
+# every Test-Bereich exercise gets the same Feineinstellungen control NAT's
+# Remember/Blitz/Flash/MOT already have - see CLAUDE.md's Established
+# patterns for the scope decision, minus their transfer/preset-save
+# machinery) tints #flankerStage; both the ready screen and the pause
+# overlay have their own live picker+slider sharing the same flankerPrefs.
 #
 # Timing note: the arrows stay on screen (feedback colour and all) for the
 # FULL diff.responseMs window regardless of how fast the client answers -
@@ -39,6 +42,13 @@ async def main():
         await pg.click("#flankerOpenBtn"); await pg.wait_for_timeout(150)
         print("flankerReady visible:", await pg.is_visible("#flankerReady"))
 
+        # --- Feineinstellungen: background colour/intensity ---
+        await pg.click("#flankerAdvanced summary"); await pg.wait_for_timeout(100)
+        print("bg swatch count:", await pg.locator("#flankerBgColorPicker .color-swatch").count())
+        await pg.click('#flankerBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
+        await pg.fill("#flankerBgIntensitySlider", "0.6"); await pg.dispatch_event("#flankerBgIntensitySlider", "input")
+        print("intensity value label updated:", "60%" in (await pg.inner_text("#flankerBgIntensityValue")))
+
         # "schwer" = shortest response window/ISI, so a short test window
         # still reliably samples several trials, including a timeout.
         await pg.click('#flankerDifficultyRow [data-flanker-diff="schwer"]'); await pg.wait_for_timeout(60)
@@ -46,6 +56,8 @@ async def main():
         print("flankerPlayer visible:", await pg.is_visible("#flankerPlayer"))
         progress = await pg.inner_text("#flankerProgressEl")
         print("progress starts at 0/32:", "0/32" in progress)
+        bg_at_start = await pg.evaluate("() => document.getElementById('flankerStage').style.background")
+        print("stage carries the chosen background as soon as the game starts:", bg_at_start not in ("", "rgb(255, 255, 255)"))
 
         async def wait_for_progress_change(prev, max_ms=6000, poll_ms=25):
             waited = 0
@@ -110,6 +122,9 @@ async def main():
         row_paused2 = await pg.inner_html("#flankerRow")
         progress_paused2 = await pg.inner_text("#flankerProgressEl")
         print("stage genuinely frozen while paused:", row_paused1 == row_paused2 and progress_paused1 == progress_paused2)
+        await pg.click('#flankerPauseBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
+        bg_paused = await pg.evaluate("() => document.getElementById('flankerStage').style.background")
+        print("pause overlay's own picker live-updates the same stage background:", bg_paused not in ("", "rgb(255, 255, 255)"))
         await pg.click("#flankerResumeBtn"); await pg.wait_for_timeout(150)
         print("pause overlay hidden after resume:", await pg.is_hidden("#flankerPauseOverlay"))
 

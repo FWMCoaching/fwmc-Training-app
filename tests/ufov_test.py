@@ -17,7 +17,12 @@ URL = "http://localhost:8845/index.html"
 # the stage, Beenden-doubles-as-finish, persistence) rather than the exact
 # duration progression, the same "verified by reading + behavioural
 # checks" approach used for the addon colour/position logic elsewhere in
-# this suite.
+# this suite. Background colour/intensity (added later, so every
+# Test-Bereich exercise gets the same Feineinstellungen control NAT's
+# Remember/Blitz/Flash/MOT already have - see CLAUDE.md's Established
+# patterns for the scope decision, minus their transfer/preset-save
+# machinery) tints #ufovStage; both the ready screen and the pause overlay
+# have their own live picker+slider sharing the same ufovPrefs.
 
 async def main():
     errors = []
@@ -38,12 +43,21 @@ async def main():
         await pg.click("#ufovOpenBtn"); await pg.wait_for_timeout(150)
         print("ufovReady visible:", await pg.is_visible("#ufovReady"))
 
+        # --- Feineinstellungen: background colour/intensity ---
+        await pg.click("#ufovAdvanced summary"); await pg.wait_for_timeout(100)
+        print("bg swatch count:", await pg.locator("#ufovBgColorPicker .color-swatch").count())
+        await pg.click('#ufovBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
+        await pg.fill("#ufovBgIntensitySlider", "0.6"); await pg.dispatch_event("#ufovBgIntensitySlider", "input")
+        print("intensity value label updated:", "60%" in (await pg.inner_text("#ufovBgIntensityValue")))
+
         # "kurz" = 20 trials, enough to exercise the staircase without a long test run.
         await pg.click('#ufovLengthRow [data-ufov-length="kurz"]'); await pg.wait_for_timeout(60)
         await pg.click("#ufovReadyStartBtn"); await pg.wait_for_timeout(200)
         print("ufovPlayer visible:", await pg.is_visible("#ufovPlayer"))
         progress = await pg.inner_text("#ufovProgressEl")
         print("progress starts at 0/20:", "0/20" in progress)
+        bg_at_start = await pg.evaluate("() => document.getElementById('ufovStage').style.background")
+        print("stage carries the chosen background as soon as the game starts:", bg_at_start not in ("", "rgb(255, 255, 255)"))
 
         async def wait_for_progress_change(prev, max_ms=4000, poll_ms=25):
             waited = 0
@@ -114,6 +128,9 @@ async def main():
         await pg.wait_for_timeout(700)
         progress_paused2 = await pg.inner_text("#ufovProgressEl")
         print("progress frozen while paused:", progress_paused1 == progress_paused2)
+        await pg.click('#ufovPauseBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
+        bg_paused = await pg.evaluate("() => document.getElementById('ufovStage').style.background")
+        print("pause overlay's own picker live-updates the same stage background:", bg_paused not in ("", "rgb(255, 255, 255)"))
         await pg.click("#ufovResumeBtn"); await pg.wait_for_timeout(150)
         print("pause overlay hidden after resume:", await pg.is_hidden("#ufovPauseOverlay"))
 
