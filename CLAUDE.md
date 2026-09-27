@@ -252,26 +252,31 @@ unrelated to the feature being changed.
   signals** that get "perceived and processed with some rules or other" -
   explicitly a later idea, not to build until asked ("das merkst du dir
   mal bitte").
-- **App icon redesign, approved but not yet built** ("Merken wir uns
-  erstmal", 2026-09-27): `icon-192.png`/`icon-512.png` currently show the
-  brand circle with the signature clipped by the circular crop (the
-  circle's transparent-cornered PNG is marked `"purpose":"maskable"` in
-  `manifest.json`, so OS icon-masking crops it further, which is likely
-  why it looked "off" on the home screen). Client wants to KEEP the round
-  badge look (worried a full-bleed square would hurt brand recognition),
-  not switch to a full-bleed square. Fix decided: keep the exact same
-  circle/signature scale+position as today, but fill the square canvas's
-  corners with the same brand teal (#007094) instead of leaving them
-  transparent - same look, no more transparent corners for the OS mask to
-  chew on. The client supplied the isolated signet (signature only, no
-  circle, no wordmark) separately; that file was used - via pixel
-  alignment against the current icon-512.png (86% line-pixel IoU match) -
-  to reconstruct the exact current scale/position and extend the fill.
-  Approved candidate is saved in the session scratchpad as
-  `E_same_position_v2.png` (also on the icon-proposals artifact,
-  https://claude.ai/artifact/8upP6M7NPpjuHzio82LG1t, "Update 2" section) -
-  not yet copied into the repo as the real `icon-192.png`/`icon-512.png`
-  or committed. Do this only when asked.
+- **App icon redesign, shipped 2026-09-27** ("Wir nehmen erstmal E neu"):
+  `icon-192.png`/`icon-512.png` used to show the brand circle clipped by a
+  transparent-cornered circular crop marked `"purpose":"maskable"` in
+  `manifest.json`, which OS icon-masking then cropped further - likely why
+  it looked "off" on the home screen. Several directions were explored
+  (full-bleed square with the complete signet, the original clipped circle
+  at various paddings/proportions incl. a Spotify-ratio comparison) on an
+  icon-proposals artifact (https://claude.ai/artifact/8upP6M7NPpjuHzio82LG1t,
+  "Update 1-4") before the client picked **candidate E**: keep the exact
+  same circle/signature scale+position as the original (pixel-aligned via
+  86% line-pixel IoU match against the old icon-512.png, using a separately
+  supplied isolated signet), but fill the square canvas's corners with the
+  same brand teal (#007094) instead of leaving them transparent - same
+  visual footprint as before, no more transparent corners for the OS mask
+  to chew on. Shipped as the actual `icon-192.png`/`icon-512.png` in this
+  commit (built from the session's `E_same_position_v2.png`). Note traded
+  off deliberately: this keeps the original's edge-to-edge visual scale
+  rather than adding Android's recommended maskable safe-zone padding, so
+  an aggressive OS mask shape could still clip a sliver at the very edges
+  on some launchers - same residual risk the original always had, not a
+  regression, and explicitly the trade-off the client chose (brand-
+  recognition continuity over maximal mask-safety). Other explored
+  directions (full-bleed complete-signet variants B/F1/F2, Spotify-ratio
+  original-circle variants G at 80%/90%) remain on the artifact if this
+  needs revisiting.
 - **NAT status**: Remember is fully built (Feste/Bewegte Positionen +
   Trainingsmodus), now including background colour/intensity (pre-settable
   in each mode's Feineinstellungen) plus a mid-exercise Pause with live
