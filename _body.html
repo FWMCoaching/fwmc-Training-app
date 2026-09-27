@@ -620,6 +620,11 @@
       <span class="fc-desc">Ein gedrehter Buchstabe oder eine Zahl erscheint &ndash; ist er normal oder spiegelverkehrt? Klassisches Paradigma der mentalen Rotation (Cooper &amp; Shepard, 1973), trainiert r&auml;umliches Vorstellungsverm&ouml;gen und visuelle Entscheidungsgeschwindigkeit.</span>
       <span class="fc-meta" id="rotationBestHint"></span>
     </button>
+    <button class="featured-card" id="merkOpenBtn">
+      <span class="fc-title">Merkspanne-Test (Change Detection)</span>
+      <span class="fc-desc">Mehrere farbige Felder blitzen kurz auf &ndash; nach einer kurzen Pause siehst du sie erneut. Hat sich die Farbe eines Feldes ver&auml;ndert, oder ist alles gleich geblieben? Klassisches Paradigma zur Kapazit&auml;t des visuellen Arbeitsged&auml;chtnisses (Luck &amp; Vogel, 1997).</span>
+      <span class="fc-meta" id="merkBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -785,6 +790,27 @@
   <div class="group-help" id="rotationReadyBestHint"></div>
 
   <button class="start-btn" id="rotationReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="merkReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="merkReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Merkspanne-Test (Change Detection)</h1>
+  <p class="page-sub">Mehrere farbige Felder erscheinen gleichzeitig f&uuml;r einen kurzen Moment. Nach einer kurzen Pause siehst du dieselben Felder an denselben Stellen noch einmal &ndash; manchmal identisch, manchmal hat genau eines seine Farbe ge&auml;ndert. Tippe &bdquo;Gleich&ldquo; oder &bdquo;Ver&auml;ndert&ldquo;. Klassisches Change-Detection-Paradigma (Luck &amp; Vogel, 1997) zur Messung der Kapazit&auml;t des visuellen Arbeitsged&auml;chtnisses &ndash; wie viele Objekte kannst du dir aus einem einzigen kurzen Blick merken?</p>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="merkDifficultyRow">
+      <button class="choice" data-merk-diff="leicht">Leicht<small>4 Felder</small></button>
+      <button class="choice" data-merk-diff="mittel">Mittel<small>6 Felder</small></button>
+      <button class="choice" data-merk-diff="schwer">Schwer<small>8 Felder</small></button>
+    </div>
+  </div>
+
+  <div class="group-help" id="merkReadyBestHint"></div>
+
+  <button class="start-btn" id="merkReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="rememberReady" hidden>
@@ -2808,6 +2834,43 @@
     <div class="rating" id="rotationRating"></div>
     <button class="again" id="rotationAgainBtn">Nochmal</button>
     <button class="back" id="rotationDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="merkPlayer" hidden>
+  <div class="merk-stage" id="merkStage">
+    <div class="remember-hint" id="merkHint"></div>
+    <div class="merk-field" id="merkField"></div>
+    <div class="merk-response-row">
+      <button class="merk-response-btn" id="merkSameBtn">Gleich</button>
+      <button class="merk-response-btn" id="merkChangedBtn">Ver&auml;ndert</button>
+    </div>
+  </div>
+  <div class="pause-overlay" id="merkPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="merkResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="merkPlayerBar">
+    <button id="merkBackBtn">&#10005; Beenden</button>
+    <button id="merkPauseBtn">Pause</button>
+    <span class="player-status" id="merkProgressEl"></span>
+    <button id="merkFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="merkFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="merkFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="merkFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="merkDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="merkDoneSummary"></p>
+    <div class="rating" id="merkRating"></div>
+    <button class="again" id="merkAgainBtn">Nochmal</button>
+    <button class="back" id="merkDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

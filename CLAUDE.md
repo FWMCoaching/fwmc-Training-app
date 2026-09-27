@@ -1072,8 +1072,46 @@ doesn't:
   its own - recovered and finished (test written, full suite run, this
   entry added, committed+pushed) directly in the parent session rather
   than by a fresh autonomous firing.
+- **Merkspanne-Test (Change Detection)** (eighth autonomous entry,
+  2026-09-27): grounded in the classic visual working-memory change-
+  detection paradigm (Phillips, 1974; popularised by Luck & Vogel, 1997,
+  Nature 390:279-281) - a sample array of N scattered, non-overlapping
+  coloured squares (N=4/6/8 for leicht/mittel/schwer) briefly appears,
+  then after a blank retention interval reappears at the same positions,
+  either unchanged or with exactly one square's colour changed; the client
+  judges "Gleich" or "Verändert" for the WHOLE display at once. Scored
+  with Pashler's K = N x (hitRate - falseAlarmRate) / (1 - falseAlarmRate)
+  - the correct capacity-correction formula for this whole-display method
+  (Cowan's simpler K applies only to the single-item-probe variant, which
+  this is not), tracking best K per difficulty. Also researched as sport-
+  relevant: a 2026 Frontiers study links visuospatial working-memory
+  capacity to faster/more efficient tactical decisions in soccer players -
+  flagged honestly alongside a PLOS ONE finding that evidence for athlete/
+  non-athlete differences on this specific RT-free paradigm is mixed
+  (reported both ways in the roster rather than only the flattering one).
+  Genuinely distinct from every existing Test/NAT memory mechanic: N-Back
+  is sequential match-back, Remember/Blitz-Raster tests recalling WHICH
+  positions were shown, Flash is digit-sequence recall - this is the only
+  one holding a whole array and probing a single FEATURE via a global
+  same/different judgment. Anti-overlap scatter placement adapted from
+  Trail Making's own. No Bei-Fehler/background colour/Zusatzaufgabe/
+  Trainingsmodus - correctly skipped (a fixed-trial capacity test, nothing
+  to configure beyond difficulty). New CSS is `.merk-*` (fixed hex colours
+  throughout, no `var(--...)`). Test: `tests/merk_test.py`. Note: this
+  run's own session was also forced to hand back before finishing (see
+  the Rotationstest note above for the pattern) - it had already reported
+  its full regression-suite run as still in progress when it handed back;
+  that run was left going and finished cleanly (51/51 green) rather than
+  being restarted, then this entry was added and the result committed+
+  pushed, directly in the parent session.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
+
+- **Merkspanne-Test study-exposure duration**: shown for 500ms per the
+  implementing run's choice, a compromise versus the literature's much
+  shorter (~100ms) flashes, chosen for `setTimeout` reliability on phones -
+  same reasoning already documented below for UFOV's timing precision.
+  Not fixed, just flagged.
 
 - **UFOV timing precision on real devices**: the exposure-duration
   staircase steps in 33ms increments down to a 33ms floor, driven by plain

@@ -1195,6 +1195,16 @@
     rotationFsBtn: $("rotationFsBtn"), rotationFsHint: $("rotationFsHint"), rotationFsHintOpenBtn: $("rotationFsHintOpenBtn"), rotationFsHintClose: $("rotationFsHintClose"),
     rotationDonePanel: $("rotationDonePanel"), rotationDoneSummary: $("rotationDoneSummary"), rotationRating: $("rotationRating"),
     rotationAgainBtn: $("rotationAgainBtn"), rotationDoneBackBtn: $("rotationDoneBackBtn"),
+    merkOpenBtn: $("merkOpenBtn"), merkBestHint: $("merkBestHint"), merkReady: $("merkReady"),
+    merkReadyBackToHome: $("merkReadyBackToHome"), merkDifficultyRow: $("merkDifficultyRow"),
+    merkReadyBestHint: $("merkReadyBestHint"), merkReadyStartBtn: $("merkReadyStartBtn"),
+    merkPlayer: $("merkPlayer"), merkStage: $("merkStage"), merkHint: $("merkHint"), merkField: $("merkField"),
+    merkSameBtn: $("merkSameBtn"), merkChangedBtn: $("merkChangedBtn"),
+    merkPauseOverlay: $("merkPauseOverlay"), merkResumeBtn: $("merkResumeBtn"),
+    merkPlayerBar: $("merkPlayerBar"), merkBackBtn: $("merkBackBtn"), merkPauseBtn: $("merkPauseBtn"), merkProgressEl: $("merkProgressEl"),
+    merkFsBtn: $("merkFsBtn"), merkFsHint: $("merkFsHint"), merkFsHintOpenBtn: $("merkFsHintOpenBtn"), merkFsHintClose: $("merkFsHintClose"),
+    merkDonePanel: $("merkDonePanel"), merkDoneSummary: $("merkDoneSummary"), merkRating: $("merkRating"),
+    merkAgainBtn: $("merkAgainBtn"), merkDoneBackBtn: $("merkDoneBackBtn"),
     blitzOpenBtn: $("blitzOpenBtn"), blitzBestHint: $("blitzBestHint"), blitzReady: $("blitzReady"),
     blitzReadyBackToHome: $("blitzReadyBackToHome"), blitzGridSizeRow: $("blitzGridSizeRow"),
     blitzZoneGroup: $("blitzZoneGroup"), blitzZoneAllBtn: $("blitzZoneAllBtn"), blitzZoneGrid: $("blitzZoneGrid"), blitzZoneHint: $("blitzZoneHint"),
@@ -1391,7 +1401,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3412,6 +3422,7 @@
     els.ufovPlayer.hidden = true;
     els.posnerPlayer.hidden = true;
     els.rotationPlayer.hidden = true;
+    els.merkPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3794,6 +3805,7 @@
   wireFullscreen({ player: els.ufovPlayer, btn: els.ufovFsBtn, hint: els.ufovFsHint, hintOpen: els.ufovFsHintOpenBtn, hintClose: els.ufovFsHintClose });
   wireFullscreen({ player: els.posnerPlayer, btn: els.posnerFsBtn, hint: els.posnerFsHint, hintOpen: els.posnerFsHintOpenBtn, hintClose: els.posnerFsHintClose });
   wireFullscreen({ player: els.rotationPlayer, btn: els.rotationFsBtn, hint: els.rotationFsHint, hintOpen: els.rotationFsHintOpenBtn, hintClose: els.rotationFsHintClose });
+  wireFullscreen({ player: els.merkPlayer, btn: els.merkFsBtn, hint: els.merkFsHint, hintOpen: els.merkFsHintOpenBtn, hintClose: els.merkFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -9727,6 +9739,385 @@
   els.rotationBackBtn.addEventListener("click", rotationStop);
   els.rotationAgainBtn.addEventListener("click", () => { els.rotationDonePanel.hidden = true; startRotationGame(); });
   els.rotationDoneBackBtn.addEventListener("click", () => { els.rotationPlayer.hidden = true; els.rotationDonePanel.hidden = true; showScreen("testHome"); });
+
+  // Merkspanne-Test (Change Detection) - grounded in the classic visual
+  // working-memory change-detection paradigm (Phillips, 1974; popularised by
+  // Luck & Vogel, 1997, Nature 390:279-281): a brief sample array of coloured
+  // squares is shown, followed by a blank retention interval, then a test
+  // array at the SAME positions that is either identical or has exactly one
+  // square's colour changed - the participant reports whether anything
+  // changed anywhere in the whole display. This whole-display "has anything
+  // changed" judgment (as opposed to a single cued/probed item) is scored
+  // with Pashler's K = N x (hitRate - falseAlarmRate) / (1 - falseAlarmRate)
+  // - the capacity-correction formula for exactly this whole-display method
+  // (Pashler, 1988; Cowan's simpler K = N x (hitRate - falseAlarmRate) is the
+  // right formula for a single-item-probe variant instead, which this isn't -
+  // see Rouder et al. 2011/Cowan 2001 on the distinction). Typical human
+  // capacity for simple single-feature (colour) arrays is roughly 3-4 items
+  // (Luck & Vogel's own headline finding), which is why "Schwer" (8 items) is
+  // deliberately set well above that ceiling - there's supposed to be a real
+  // capacity limit to bump into, not just a task everyone maxes out. Also
+  // researched as sport-relevant before building: a 2026 Frontiers study
+  // found visuospatial working-memory capacity predicts faster, more
+  // efficient tactical decision-making in soccer players' 3v2 offensive
+  // scenarios - a good fit for FWMC's "Gedächtnis" focus - though flagging
+  // honestly that evidence specifically for THIS RT-free change-detection
+  // paradigm distinguishing athletes from non-athletes is mixed (e.g. one
+  // PLOS ONE study found volleyball players showed advantages on iconic
+  // memory/attentional alerting but not on change-detection RT itself); the
+  // paradigm is included for its capacity-measurement value regardless.
+  // Genuinely distinct from every existing Test/NAT memory mechanic:
+  // Positions-Gedächtnis (N-Back) is a SEQUENTIAL trial-by-trial match-back
+  // task with no set "array" held at once; Remember and Blitz-Raster both
+  // test recalling WHICH positions were shown (spatial location memory,
+  // reproduced by tapping); Flash Speicher Test is a digit SEQUENCE recall
+  // task. This is the only one that holds a whole array in memory
+  // simultaneously and probes a single FEATURE (colour) of it via a global
+  // same/different judgment - the classic visual-working-memory-STORAGE
+  // paradigm, a different construct from all of the above.
+  const MERK_PREFS_KEY = "fwmc-merk-prefs-v1";
+  // Difficulty is array size (N) - the actual experimental manipulation in
+  // the real paradigm (Luck & Vogel varied set size, not exposure timing).
+  // Exposure/retention timing stays fixed across difficulties, same idea as
+  // UFOV's own "the built-in task IS the difficulty axis" shape, just here
+  // it's client-picked rather than adaptive.
+  const MERK_DIFFICULTIES = {
+    leicht: { title: "Leicht", n: 4 },
+    mittel: { title: "Mittel", n: 6 },
+    schwer: { title: "Schwer", n: 8 },
+  };
+  // Fixed, dark-mode-safe hex colours - never var(--...), per the
+  // Test-Bereich convention. 9 entries so even "Schwer" (8 shown at once)
+  // always leaves at least one unused colour available to swap in as an
+  // unambiguous "changed" colour.
+  const MERK_PALETTE = ["#e53935", "#1e88e5", "#43a047", "#fdd835", "#8e24aa", "#fb8c00", "#00acc1", "#d81b60", "#6d4c41"];
+  const MERK_TRIAL_COUNT = 20; // balanced 10 changed / 10 unchanged, see buildMerkTrials
+  const MERK_STUDY_MS = 500; // sample-array exposure
+  const MERK_RETENTION_MS = 900; // blank retention interval - same order of magnitude as Luck & Vogel's own design
+  const MERK_ISI_MIN = 700, MERK_ISI_MAX = 1000; // gap before the next trial's sample array
+  const MERK_FEEDBACK_MS = 800; // how long the tapped button's correct/wrong colour stays up before the next trial
+  const MERK_ITEM_PX = 40;
+  const MERK_MIN_CENTER_PX = MERK_ITEM_PX + 14;
+  const merkPrefs = { difficulty: "mittel" };
+  function loadMerkPrefs() {
+    const saved = readJSON(MERK_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(merkPrefs, saved);
+    if (!MERK_DIFFICULTIES[merkPrefs.difficulty]) merkPrefs.difficulty = "mittel";
+  }
+  loadMerkPrefs();
+  function saveMerkPrefsToStorage() { writeJSON(MERK_PREFS_KEY, merkPrefs); }
+
+  const MERK_BEST_KEY = "fwmc-merk-best-v1"; // { [difficulty]: bestK (Pashler's K, one decimal) }
+  function merkBestFor() { return readJSON(MERK_BEST_KEY, {})[merkPrefs.difficulty] || 0; }
+  function saveMerkBest(k) {
+    const all = readJSON(MERK_BEST_KEY, {});
+    if (k > (all[merkPrefs.difficulty] || 0)) { all[merkPrefs.difficulty] = k; writeJSON(MERK_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderMerkBest() {
+    const best = merkBestFor();
+    const text = best ? `Beste Kapazität (${MERK_DIFFICULTIES[merkPrefs.difficulty].title}): K ${best}` : "";
+    els.merkBestHint.textContent = text;
+    els.merkReadyBestHint.textContent = text;
+  }
+  function syncMerkDifficultyUI() {
+    els.merkDifficultyRow.querySelectorAll("[data-merk-diff]").forEach((btn) => setActive(btn, btn.dataset.merkDiff === merkPrefs.difficulty));
+  }
+  els.merkDifficultyRow.querySelectorAll("[data-merk-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      merkPrefs.difficulty = btn.dataset.merkDiff;
+      saveMerkPrefsToStorage();
+      syncMerkDifficultyUI();
+      renderMerkBest();
+    });
+  });
+
+  els.merkOpenBtn.addEventListener("click", () => {
+    syncMerkDifficultyUI();
+    renderMerkBest();
+    showScreen("merkReady");
+  });
+  els.merkReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Same timer-wrapping trick as scheduleRotationTimer/scheduleFlankerTimer:
+  // records what's pending and when it fires, so Pause can cancel it and
+  // Resume can replay it with its exact remaining delay. During the
+  // untimed "responding" phase (waiting on a tap) no timer is pending at
+  // all, which pause/resume below handle the same way UFOV's own untimed
+  // response phases do - there's simply nothing to cancel/replay then.
+  function scheduleMerkTimer(fn, delayMs) {
+    merkState.timerFn = fn;
+    merkState.timerFiresAt = performance.now() + delayMs;
+    merkState.timer = setTimeout(() => { merkState.timer = null; fn(); }, delayMs);
+  }
+
+  function buildMerkTrials() {
+    const trials = [];
+    for (let i = 0; i < MERK_TRIAL_COUNT / 2; i++) { trials.push({ changed: true }); trials.push({ changed: false }); }
+    // Shuffle, then avoid more than 3 identical answers back to back - same
+    // "just keep tapping the same button" motor-strategy guard as
+    // buildFlankerTrials/buildPosnerTrials/buildRotationTrials.
+    for (let tries = 0; tries < 200; tries++) {
+      for (let i = trials.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [trials[i], trials[j]] = [trials[j], trials[i]];
+      }
+      let ok = true, run = 1;
+      for (let i = 1; i < trials.length; i++) {
+        if (trials[i].changed === trials[i - 1].changed) { run++; if (run > 3) { ok = false; break; } }
+        else run = 1;
+      }
+      if (ok) break;
+    }
+    return trials;
+  }
+
+  // Anti-overlap scatter placement inside the fixed merk-field box -
+  // copy-adapted from Trail Making's own trailRandomPixelPosition (rejection
+  // sampling with a grid-search fallback), per this app's established
+  // "copy-adapt when the engine differs" convention, since here the box is
+  // a small fixed rectangle rather than the whole stage.
+  function merkFieldBounds() {
+    const rect = els.merkField.getBoundingClientRect();
+    const w = rect.width || 320, h = rect.height || 260;
+    const half = MERK_ITEM_PX / 2;
+    return { w, h, minX: half + 4, maxX: Math.max(half + 4, w - half - 4), minY: half + 4, maxY: Math.max(half + 4, h - half - 4) };
+  }
+  function merkRandomPixelPosition(existingPx, bounds) {
+    for (let attempt = 0; attempt < 300; attempt++) {
+      const x = bounds.minX + Math.random() * (bounds.maxX - bounds.minX);
+      const y = bounds.minY + Math.random() * (bounds.maxY - bounds.minY);
+      if (!existingPx.some((p) => Math.hypot(p.x - x, p.y - y) < MERK_MIN_CENTER_PX)) return { x, y };
+    }
+    let best = null, bestDist = -1;
+    const STEPS = 20;
+    for (let gx = 0; gx <= STEPS; gx++) {
+      for (let gy = 0; gy <= STEPS; gy++) {
+        const x = bounds.minX + (gx / STEPS) * (bounds.maxX - bounds.minX);
+        const y = bounds.minY + (gy / STEPS) * (bounds.maxY - bounds.minY);
+        const dist = existingPx.length ? Math.min(...existingPx.map((p) => Math.hypot(p.x - x, p.y - y))) : Infinity;
+        if (dist > bestDist) { bestDist = dist; best = { x, y }; }
+      }
+    }
+    return best;
+  }
+  function buildMerkLayout(n, bounds) {
+    const existingPx = [];
+    const positions = [];
+    for (let i = 0; i < n; i++) {
+      const px = merkRandomPixelPosition(existingPx, bounds);
+      existingPx.push(px);
+      positions.push({ x: (px.x / bounds.w) * 100, y: (px.y / bounds.h) * 100 });
+    }
+    return positions;
+  }
+  function shuffledPalette() {
+    const arr = MERK_PALETTE.slice();
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  function merkRenderItems(items) {
+    els.merkField.innerHTML = "";
+    items.forEach((it) => {
+      const el = document.createElement("div");
+      el.className = "merk-item";
+      el.style.left = it.x + "%";
+      el.style.top = it.y + "%";
+      el.style.background = it.color;
+      els.merkField.appendChild(el);
+    });
+  }
+  function merkClearField() { els.merkField.innerHTML = ""; }
+
+  let merkState = null;
+  function startMerkGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.merkPlayer.hidden = false;
+    els.merkPlayerBar.hidden = false;
+    els.merkDonePanel.hidden = true;
+    els.merkPauseOverlay.hidden = true;
+    els.merkPauseBtn.hidden = false;
+    merkClearField();
+    els.merkSameBtn.classList.remove("correct", "wrong");
+    els.merkChangedBtn.classList.remove("correct", "wrong");
+    merkState = {
+      diff: MERK_DIFFICULTIES[merkPrefs.difficulty], trials: buildMerkTrials(), index: -1, phase: "gap", responded: false,
+      hits: 0, misses: 0, falseAlarms: 0, correctRejections: 0,
+      items: null, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      startTime: performance.now(),
+    };
+    els.merkHint.textContent = "Bereit? Gleich geht's los …";
+    els.merkProgressEl.textContent = `0/${merkState.trials.length}`;
+    requestWakeLock();
+    // Measure the field's real box only once it's actually visible (same
+    // "no rAF wait needed once unhidden" trick Trail/MOT rely on), then keep
+    // reusing those bounds for every trial's fresh layout - the box itself
+    // never resizes mid-run.
+    requestAnimationFrame(() => {
+      if (!merkState) return;
+      merkState.bounds = merkFieldBounds();
+      scheduleMerkTimer(merkNextTrial, 1200);
+    });
+  }
+  els.merkReadyStartBtn.addEventListener("click", startMerkGame);
+
+  function merkNextTrial() {
+    if (!merkState) return;
+    merkState.index++;
+    if (merkState.index >= merkState.trials.length) { merkFinish(); return; }
+    els.merkProgressEl.textContent = `${merkState.index + 1}/${merkState.trials.length}`;
+    merkState.phase = "gap";
+    merkState.responded = false;
+    merkClearField();
+    els.merkHint.textContent = "";
+    els.merkSameBtn.classList.remove("correct", "wrong");
+    els.merkChangedBtn.classList.remove("correct", "wrong");
+    const isi = MERK_ISI_MIN + Math.random() * (MERK_ISI_MAX - MERK_ISI_MIN);
+    scheduleMerkTimer(merkShowStudy, isi);
+  }
+  function merkShowStudy() {
+    if (!merkState) return;
+    const n = merkState.diff.n;
+    const positions = buildMerkLayout(n, merkState.bounds);
+    const colors = shuffledPalette().slice(0, n);
+    merkState.items = positions.map((p, i) => ({ x: p.x, y: p.y, color: colors[i] }));
+    merkState.phase = "study";
+    merkRenderItems(merkState.items);
+    scheduleMerkTimer(merkShowRetention, MERK_STUDY_MS);
+  }
+  function merkShowRetention() {
+    if (!merkState) return;
+    merkState.phase = "retention";
+    merkClearField();
+    scheduleMerkTimer(merkShowTest, MERK_RETENTION_MS);
+  }
+  function merkShowTest() {
+    if (!merkState) return;
+    const trial = merkState.trials[merkState.index];
+    let testItems = merkState.items.map((it) => ({ x: it.x, y: it.y, color: it.color }));
+    if (trial.changed) {
+      const idx = Math.floor(Math.random() * testItems.length);
+      const usedColors = merkState.items.map((it) => it.color);
+      const spare = MERK_PALETTE.filter((c) => !usedColors.includes(c));
+      testItems[idx].color = spare[Math.floor(Math.random() * spare.length)];
+    }
+    merkState.phase = "responding";
+    merkState.responded = false;
+    merkState.stimAt = performance.now();
+    merkRenderItems(testItems);
+  }
+  function merkTap(saidChanged) {
+    if (!merkState || merkState.paused || merkState.responded) return;
+    if (merkState.phase !== "responding") return;
+    merkState.responded = true;
+    const trial = merkState.trials[merkState.index];
+    const correct = saidChanged === trial.changed;
+    if (trial.changed) { if (correct) merkState.hits++; else merkState.misses++; }
+    else { if (correct) merkState.correctRejections++; else merkState.falseAlarms++; }
+    const btn = saidChanged ? els.merkChangedBtn : els.merkSameBtn;
+    btn.classList.add(correct ? "correct" : "wrong");
+    if (!correct) els.merkHint.textContent = "Leider falsch!";
+    scheduleMerkTimer(merkNextTrial, MERK_FEEDBACK_MS);
+  }
+  els.merkSameBtn.addEventListener("click", () => merkTap(false));
+  els.merkChangedBtn.addEventListener("click", () => merkTap(true));
+
+  // Pause just stops/replays the pending timer, no live background-adjust
+  // overlay - background colour customisation was skipped for this exercise
+  // (explicitly optional per the Test-Bereich guidance) so there is nothing
+  // to adjust while paused. Pausing during the untimed "responding" phase
+  // works too - merkState.timer is simply null then (nothing pending), same
+  // as UFOV's own untimed response-phase pause.
+  function pauseMerk() {
+    if (!merkState || merkState.paused) return;
+    merkState.paused = true;
+    merkState.pausedAt = performance.now();
+    if (merkState.timer) {
+      clearTimeout(merkState.timer);
+      merkState.timer = null;
+      merkState.timerRemainingMs = Math.max(0, merkState.timerFiresAt - merkState.pausedAt);
+    }
+    els.merkPauseBtn.hidden = true;
+    els.merkPauseOverlay.hidden = false;
+  }
+  function resumeMerk() {
+    if (!merkState || !merkState.paused) return;
+    const pausedMs = performance.now() - merkState.pausedAt;
+    merkState.startTime += pausedMs;
+    if (merkState.stimAt) merkState.stimAt += pausedMs;
+    merkState.paused = false;
+    if (merkState.timerFn && merkState.timerRemainingMs != null) {
+      scheduleMerkTimer(merkState.timerFn, merkState.timerRemainingMs);
+      merkState.timerRemainingMs = null;
+    }
+    els.merkPauseOverlay.hidden = true;
+    els.merkPauseBtn.hidden = false;
+  }
+  els.merkPauseBtn.addEventListener("click", pauseMerk);
+  els.merkResumeBtn.addEventListener("click", resumeMerk);
+
+  function finalizeMerkRun(state, totalTrials) {
+    els.merkPauseOverlay.hidden = true;
+    els.merkPlayerBar.hidden = true;
+    const changeTrials = state.hits + state.misses;
+    const noChangeTrials = state.falseAlarms + state.correctRejections;
+    const hitRate = changeTrials ? state.hits / changeTrials : 0;
+    const faRate = noChangeTrials ? state.falseAlarms / noChangeTrials : 0;
+    const n = state.diff.n;
+    // Pashler's K - the capacity estimate for a whole-display "did anything
+    // change" judgment (Pashler, 1988), clamped to [0, n] since a poor-enough
+    // false-alarm rate can otherwise push the raw formula negative or above
+    // the array size at these small trial counts.
+    const rawK = faRate >= 1 ? 0 : n * (hitRate - faRate) / (1 - faRate);
+    const k = Math.max(0, Math.min(n, Math.round(rawK * 10) / 10));
+    const accuracyPct = Math.round(100 * (state.hits + state.correctRejections) / totalTrials);
+    const isRecord = saveMerkBest(k);
+    renderMerkBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.merkDoneSummary.textContent =
+      `Merkspanne-Test (${state.diff.title}) · ${accuracyPct}% richtig · Kapazität (K) ${k} von ${n} Objekten` +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${accuracyPct}% richtig, K ${k}/${n}`;
+    const id = addHistory({ kind: "merk", title: "Merkspanne-Test (Change Detection)", seconds: Math.round(played), note });
+    renderRating(els.merkRating, id, "Wie sicher hast du dich gefühlt?");
+    els.merkDonePanel.hidden = false;
+  }
+  function merkFinish() {
+    if (!merkState) return;
+    const state = merkState;
+    merkState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.merkPlayer) document.exitFullscreen().catch(() => {});
+    els.merkFsHint.hidden = true;
+    finalizeMerkRun(state, state.trials.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved.
+  function merkStop() {
+    if (!merkState) return;
+    if (merkState.timer) clearTimeout(merkState.timer);
+    const state = merkState;
+    merkState = null;
+    els.merkPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.merkPlayer) document.exitFullscreen().catch(() => {});
+    els.merkFsHint.hidden = true;
+    const resolved = state.hits + state.misses + state.falseAlarms + state.correctRejections;
+    if (resolved >= 4) {
+      finalizeMerkRun(state, resolved);
+    } else {
+      els.merkPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.merkBackBtn.addEventListener("click", merkStop);
+  els.merkAgainBtn.addEventListener("click", () => { els.merkDonePanel.hidden = true; startMerkGame(); });
+  els.merkDoneBackBtn.addEventListener("click", () => { els.merkPlayer.hidden = true; els.merkDonePanel.hidden = true; showScreen("testHome"); });
 
   // ---- Start-up ----
   renderHistory();

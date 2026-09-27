@@ -687,6 +687,23 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .rotation-response-btn.correct{background:#2e7d32;border-color:#1b5e20;color:#fff}
 .rotation-response-btn.wrong{background:#d32f2f;border-color:#8e1c1c;color:#fff}
 
+/* Merkspanne-Test (Change Detection) - fixed hex colours throughout, never
+   var(--...), same reasoning as every other player/stage-scoped visual in
+   this app (the stage's own background stays plain light-grey regardless of
+   OS dark mode - the item colours themselves are set inline from the fixed
+   MERK_PALETTE hex list in app.js, not via CSS classes). */
+.merk-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:24px 16px}
+.merk-field{position:relative;width:min(320px,86vw);height:260px;margin:0 auto;background:#eef2f3;border-radius:16px}
+.merk-item{position:absolute;width:40px;height:40px;border-radius:8px;transform:translate(-50%,-50%);box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.merk-response-row{display:flex;gap:20px}
+.merk-response-btn{
+  min-width:130px;padding:18px 20px;border-radius:14px;border:2px solid #cfd8db;
+  background:#fff;color:#16232a;font-family:"Magra",sans-serif;font-size:17px;font-weight:700;cursor:pointer;
+}
+.merk-response-btn:active{transform:scale(.96)}
+.merk-response-btn.correct{background:#2e7d32;border-color:#1b5e20;color:#fff}
+.merk-response-btn.wrong{background:#d32f2f;border-color:#8e1c1c;color:#fff}
+
 .movement-stage{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 14px;position:relative;overflow-y:auto}
 .movement-lane{display:flex;align-items:flex-end;justify-content:center;gap:10px;width:100%;max-width:720px}
 .movement-tile{
