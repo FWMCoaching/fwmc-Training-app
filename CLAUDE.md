@@ -1451,7 +1451,74 @@ doesn't:
   other exercise's own stimulus colour on this tab, no `var(--...)`). Test:
   `tests/reakt_test.py`.
 
+- **Regelwechsel-Test (Task-Switching)** (sixteenth autonomous entry,
+  2026-09-27): grounded in the task-switching paradigm (Jersild, 1927;
+  popularised by Rogers & Monsell, 1995's "alternating runs" design; the
+  cued variant used here follows Meiran, 1996) - the same simple, ambiguous
+  digit can be classified by one of two rules ("Zahl": gerade/ungerade, or
+  "Größe": kleiner/größer als 5), and a cue names which rule applies THIS
+  trial; the rule sometimes stays the same as the previous trial ("repeat")
+  and sometimes changes ("switch"). Reports accuracy% plus average RT after
+  a repeat vs. after a switch and their difference as the "Wechselkosten"
+  (switch cost, ms) - the actual, endlessly-replicated outcome measure this
+  paradigm exists to surface: even though the decision itself is equally
+  simple either way, a switch trial is reliably slower (and often less
+  accurate), because reconfiguring which rule is active costs real time,
+  not the individual decision being harder. Bivalent bare-digit stimuli
+  (every digit 1-4/6-9, excluding neutral 5, is a valid input to BOTH
+  rules) copy the classic Rogers & Monsell/Meiran stimulus design directly.
+  `tsPrefs.difficulty` (leicht/mittel/schwer) controls only the
+  cue-stimulus interval (`csiMs`, the task-preparation time Meiran 1996
+  showed actually shrinks the switch cost - generous on Leicht, almost none
+  on Schwer) plus response window/ISI, tracking the LOWEST switch cost per
+  difficulty as best (`TS_BEST_KEY`, lower-is-better, same shape as
+  Hick/UFOV/Antizip). Also researched as sport-relevant: skilled/expert
+  athletes show more flexible attentional-resource allocation and better
+  task-switching accuracy than non-athletes under dual-task load (a 2024
+  postural-control/cognitive-flexibility study), while task-switching
+  accuracy specifically drops under mental fatigue in athletes (a 2026
+  soccer-player ERP study) - a fit for FWMC's "visuelle
+  Entscheidungsgeschwindigkeit" focus, this time the facet of adapting the
+  decision RULE itself rather than filtering/inhibiting/timing an
+  already-fixed one. Genuinely distinct from every existing Test/NAT
+  mechanic: none of the fifteen exercises already on this tab ever changes
+  WHICH RULE governs the same response mid-run - Simon/Flanker/Posner/
+  Rotationstest all apply one constant rule to a changing stimulus, Hick
+  varies the NUMBER of alternatives but never their meaning, Suchtest
+  varies the target definition only across whole BLOCKS (feature vs.
+  conjunction), never trial-by-trial with a real switch-vs-repeat contrast
+  within one run. Fixed 44-trial run (`TS_TRIAL_COUNT`; trial 0 is an
+  unclassified "warm-up" with no previous task to compare against, the
+  other 43 split roughly evenly between switch/repeat via the same
+  max-3-in-a-row-same-type guard used elsewhere). No Bei-Fehler/background
+  colour/Zusatzaufgabe/Trainingsmodus/length setting - correctly skipped
+  per the "optional, skip what doesn't fit in an hour" guidance, same
+  reasoning as every other fixed-trial RT exercise here. Self-paced per
+  trial with a safety-net timeout (`scheduleTsTimer`, same always-clear-
+  pending-timer pattern as Hick/Suchtest) and the usual remaining-delay
+  pause/resume. New CSS is `.ts-*` (fixed hex colours throughout, no
+  `var(--...)`); correct/wrong is a plain solid background swap on the
+  tapped response button (Flanker/Posner/Hick's convention) rather than
+  Simon's colour-neutral ring, since these two buttons' LABELS themselves
+  change every trial with the active rule - there's no fixed button colour
+  meaning here that a solid swap could confuse. Test: `tests/ts_test.py`.
+
 ### Offene Fragen (uncertain items for the client to weigh in on)
+
+- **Regelwechsel-Test: congruency not separately analysed**: because the
+  stimuli are deliberately bivalent (every digit is a valid input to both
+  rules, the classic design), some trials are "congruent" (both rules
+  would point to the same response side for that digit) and some
+  "incongruent" (the two rules disagree) - real task-switching studies
+  often find congruency effects layered on top of the pure switch cost,
+  and an unbalanced sample of congruent vs. incongruent trials within
+  switch/repeat could shift the reported "Wechselkosten" number somewhat
+  either way on a given run. Not tracked or balanced here - a genuine
+  simplification versus the full Rogers & Monsell/Meiran design, kept out
+  to fit the build in an hour. Flagging rather than guessing: ask the
+  client whether a future pass should track/report congruency separately,
+  or whether the current single switch-cost number is good enough for a
+  training tool (as opposed to a lab-grade measurement).
 
 - **Blockspanne-Test single-trial-per-length scoring**: this version ends a
   run on the very first wrong tap at any given sequence length, so the

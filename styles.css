@@ -804,6 +804,26 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .hick-box.lit{background:#cfe8f0;border-color:#007094}
 .hick-box.correct{background:#2e7d32;border-color:#1b5e20}
 .hick-box.wrong{background:#d32f2f;border-color:#8e1c1c}
+
+/* Regelwechsel-Test (Task-Switching) - fixed hex colours throughout, never
+   var(--...), same reasoning as every other player/stage-scoped visual in
+   this app. Unlike Simon's permanently-coloured response buttons (whose
+   colour IS the fixed response mapping being measured), here the two
+   buttons' LABELS themselves change every trial with the active task - so
+   there is no fixed button colour meaning to protect, and a plain solid
+   correct/wrong background swap (same convention as Flanker/Posner/Hick)
+   is used instead of Simon's colour-neutral ring. */
+.ts-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px 16px}
+.ts-cue{font-size:15px;font-weight:700;letter-spacing:.03em;color:#007094;text-transform:uppercase;min-height:20px}
+.ts-stimulus{font-size:72px;font-weight:700;color:#16232a;line-height:1;min-height:88px;display:flex;align-items:center;justify-content:center}
+.ts-response-row{display:flex;gap:20px}
+.ts-response-btn{
+  min-width:130px;padding:16px 20px;border-radius:16px;border:none;background:#16232a;color:#fff;
+  font-size:17px;font-weight:700;cursor:pointer;transition:background .12s ease,transform .08s ease;
+}
+.ts-response-btn:active{transform:scale(.96)}
+.ts-response-btn.correct{background:#2e7d32}
+.ts-response-btn.wrong{background:#d32f2f}
 .corsi-stage{flex:1;position:relative;overflow:hidden}
 .corsi-block{
   position:absolute;transform:translate(-50%,-50%);

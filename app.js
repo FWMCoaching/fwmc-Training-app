@@ -1255,6 +1255,16 @@
     reaktFsBtn: $("reaktFsBtn"), reaktFsHint: $("reaktFsHint"), reaktFsHintOpenBtn: $("reaktFsHintOpenBtn"), reaktFsHintClose: $("reaktFsHintClose"),
     reaktDonePanel: $("reaktDonePanel"), reaktDoneSummary: $("reaktDoneSummary"), reaktRating: $("reaktRating"),
     reaktAgainBtn: $("reaktAgainBtn"), reaktDoneBackBtn: $("reaktDoneBackBtn"),
+    tsOpenBtn: $("tsOpenBtn"), tsBestHint: $("tsBestHint"), tsReady: $("tsReady"),
+    tsReadyBackToHome: $("tsReadyBackToHome"), tsDifficultyRow: $("tsDifficultyRow"),
+    tsReadyBestHint: $("tsReadyBestHint"), tsReadyStartBtn: $("tsReadyStartBtn"),
+    tsPlayer: $("tsPlayer"), tsStage: $("tsStage"), tsCue: $("tsCue"), tsStimulus: $("tsStimulus"), tsHint: $("tsHint"),
+    tsLeftBtn: $("tsLeftBtn"), tsRightBtn: $("tsRightBtn"),
+    tsPauseOverlay: $("tsPauseOverlay"), tsResumeBtn: $("tsResumeBtn"),
+    tsPlayerBar: $("tsPlayerBar"), tsBackBtn: $("tsBackBtn"), tsPauseBtn: $("tsPauseBtn"), tsProgressEl: $("tsProgressEl"),
+    tsFsBtn: $("tsFsBtn"), tsFsHint: $("tsFsHint"), tsFsHintOpenBtn: $("tsFsHintOpenBtn"), tsFsHintClose: $("tsFsHintClose"),
+    tsDonePanel: $("tsDonePanel"), tsDoneSummary: $("tsDoneSummary"), tsRating: $("tsRating"),
+    tsAgainBtn: $("tsAgainBtn"), tsDoneBackBtn: $("tsDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationReadyBestHint: $("rotationReadyBestHint"), rotationReadyStartBtn: $("rotationReadyStartBtn"),
@@ -1471,7 +1481,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3499,6 +3509,7 @@
     els.hickPlayer.hidden = true;
     els.corsiPlayer.hidden = true;
     els.reaktPlayer.hidden = true;
+    els.tsPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3889,6 +3900,7 @@
   wireFullscreen({ player: els.hickPlayer, btn: els.hickFsBtn, hint: els.hickFsHint, hintOpen: els.hickFsHintOpenBtn, hintClose: els.hickFsHintClose });
   wireFullscreen({ player: els.corsiPlayer, btn: els.corsiFsBtn, hint: els.corsiFsHint, hintOpen: els.corsiFsHintOpenBtn, hintClose: els.corsiFsHintClose });
   wireFullscreen({ player: els.reaktPlayer, btn: els.reaktFsBtn, hint: els.reaktFsHint, hintOpen: els.reaktFsHintOpenBtn, hintClose: els.reaktFsHintClose });
+  wireFullscreen({ player: els.tsPlayer, btn: els.tsFsBtn, hint: els.tsFsHint, hintOpen: els.tsFsHintOpenBtn, hintClose: els.tsFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -12607,6 +12619,343 @@
   els.reaktBackBtn.addEventListener("click", reaktStop);
   els.reaktAgainBtn.addEventListener("click", () => { els.reaktDonePanel.hidden = true; startReaktGame(); });
   els.reaktDoneBackBtn.addEventListener("click", () => { els.reaktPlayer.hidden = true; els.reaktDonePanel.hidden = true; showScreen("testHome"); });
+
+  // ---- Regelwechsel-Test (Task-Switching) ----
+  // Grounded in the task-switching paradigm (Jersild, 1927; popularised by
+  // Rogers & Monsell, 1995's "alternating runs" design, and Meiran, 1996's
+  // CUED task-switching variant, the shape used here) - the very same
+  // simple, ambiguous stimulus (a digit) can be classified by one of two
+  // rules ("Zahl": gerade/ungerade, or "Größe": kleiner/größer als 5), and
+  // a cue names which rule applies THIS trial; the rule sometimes stays
+  // the same as the previous trial ("repeat") and sometimes changes
+  // ("switch"). The classic, endlessly replicated finding this paradigm
+  // exists to surface: even though the DECISION itself is equally simple
+  // either way, a SWITCH trial is reliably slower (and often less
+  // accurate) than a REPEAT trial - the "switch cost", the actual cost of
+  // reconfiguring which rule is currently active, not of any single
+  // decision being harder. Meiran (1996) showed this switch cost shrinks
+  // the longer the cue is shown before the stimulus (the cue-stimulus
+  // interval, CSI - more time to prepare the new rule) but never fully
+  // disappears even with a long CSI (a "residual" switch cost) - reflected
+  // here by `csiMs` varying with difficulty (generous prep time on Leicht,
+  // almost none on Schwer) as the one thing difficulty actually changes,
+  // rather than trial count or response window alone. Also researched as
+  // sport-relevant: skilled/expert athletes show more flexible allocation
+  // of attentional resources and better task-switching accuracy than
+  // non-athletes under dual-task load (e.g. a 2024 postural-control/
+  // cognitive-flexibility study), while task-switching accuracy specifically
+  // drops under mental fatigue in athletes (a 2026 soccer-player ERP
+  // study) - a fit for FWMC's "visuelle Entscheidungsgeschwindigkeit"
+  // focus, this time the specific facet of adapting the decision RULE
+  // itself rather than filtering/inhibiting/timing an already-fixed one.
+  // Genuinely distinct from every existing Test/NAT mechanic: none of the
+  // fifteen exercises already on this tab ever changes WHICH RULE governs
+  // the same response mid-run - Simon/Flanker/Posner/Rotationstest all
+  // apply one constant rule to a changing stimulus, Hick varies the NUMBER
+  // of alternatives but never their meaning, Suchtest varies the target
+  // definition only across whole BLOCKS (feature vs. conjunction), never
+  // trial-by-trial with a real switch-vs-repeat contrast within one run.
+  // Bivalent bare-digit stimuli (every digit from 1-4/6-9, excluding the
+  // neutral 5, is a valid input to BOTH rules) copy the classic Rogers &
+  // Monsell/Meiran stimulus design directly, rather than inventing an
+  // artificial two-task pair from scratch. No Bei-Fehler/background
+  // colour/Zusatzaufgabe/Trainingsmodus/length setting - correctly skipped
+  // per the "optional, skip what doesn't fit in an hour" guidance, same
+  // reasoning as every other fixed-trial RT exercise here (a fixed-count
+  // switch-cost measure, nothing to configure beyond difficulty). Pause/
+  // resume and the self-paced tap-ends-trial-immediately/safety-net-timeout
+  // shape both reuse the same scheduleXTimer-remaining-delay pattern as
+  // Hick/Suchtest. New CSS is `.ts-*` (fixed hex colours throughout, no
+  // `var(--...)`); correct/wrong is a plain solid background swap on the
+  // tapped response button (Flanker/Posner/Hick's convention), not Simon's
+  // colour-neutral ring, since these buttons' LABELS themselves change
+  // every trial with the active rule - there's no fixed button colour
+  // meaning here that a solid swap could confuse.
+  const TS_DIFFICULTIES = {
+    // csiMs = cue-stimulus interval (task preparation time) - the one
+    // variable Meiran (1996) showed actually shrinks the switch cost, so
+    // it's what "difficulty" means here rather than a shorter response
+    // window on its own. isiMs = gap between one trial's feedback and the
+    // next cue (keeps overall pace brisk at higher difficulty too).
+    leicht: { title: "Leicht", csiMs: 800, isiMs: 500, timeoutMs: 3000 },
+    mittel: { title: "Mittel", csiMs: 400, isiMs: 400, timeoutMs: 2200 },
+    schwer: { title: "Schwer", csiMs: 150, isiMs: 350, timeoutMs: 1600 },
+  };
+  const TS_TASKS = [
+    { key: "zahl", cueLabel: "Aufgabe: ZAHL", leftLabel: "Gerade", rightLabel: "Ungerade", answerSide: (d) => (d % 2 === 0 ? "left" : "right") },
+    { key: "groesse", cueLabel: "Aufgabe: GRÖSSE", leftLabel: "Klein (<5)", rightLabel: "Groß (>5)", answerSide: (d) => (d < 5 ? "left" : "right") },
+  ];
+  // Excludes 5 (neutral for the "Größe" rule) - every remaining digit is a
+  // valid, unambiguous input to BOTH rules at once (classic bivalent
+  // stimulus design), so the cue alone determines which answer is correct.
+  const TS_DIGITS = [1, 2, 3, 4, 6, 7, 8, 9];
+  // Trial 0 is an unclassified "warm-up" - there's no previous task yet to
+  // compare it against, so it can't be a switch or a repeat trial; the
+  // other 43 trials split roughly evenly between the two by chance (with
+  // the same max-3-in-a-row guard used elsewhere), giving a workable
+  // per-type sample comparable to Flanker's own 16-per-condition split.
+  const TS_TRIAL_COUNT = 44;
+  const TS_FEEDBACK_MS = 400;
+  const TS_MIN_RESOLVED = 8;
+  const TS_PREFS_KEY = "fwmc-ts-prefs-v1";
+  const tsPrefs = { difficulty: "mittel" };
+  function loadTsPrefs() {
+    const saved = readJSON(TS_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(tsPrefs, saved);
+    if (!TS_DIFFICULTIES[tsPrefs.difficulty]) tsPrefs.difficulty = "mittel";
+  }
+  loadTsPrefs();
+  function saveTsPrefsToStorage() { writeJSON(TS_PREFS_KEY, tsPrefs); }
+
+  const TS_BEST_KEY = "fwmc-ts-best-v1"; // { [difficulty]: bestSwitchCostMs } - lower is better
+  function tsBestFor() {
+    const v = readJSON(TS_BEST_KEY, {})[tsPrefs.difficulty];
+    return typeof v === "number" ? v : null;
+  }
+  function saveTsBest(cost) {
+    const all = readJSON(TS_BEST_KEY, {});
+    const cur = all[tsPrefs.difficulty];
+    if (cur == null || cost < cur) { all[tsPrefs.difficulty] = cost; writeJSON(TS_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderTsBest() {
+    const best = tsBestFor();
+    const text = best != null ? `Niedrigste Wechselkosten (${TS_DIFFICULTIES[tsPrefs.difficulty].title}): ${Math.round(best)} ms` : "";
+    els.tsBestHint.textContent = text;
+    els.tsReadyBestHint.textContent = text;
+  }
+  renderTsBest();
+  function syncTsDifficultyUI() {
+    els.tsDifficultyRow.querySelectorAll("[data-ts-diff]").forEach((btn) => setActive(btn, btn.dataset.tsDiff === tsPrefs.difficulty));
+  }
+  els.tsDifficultyRow.querySelectorAll("[data-ts-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      tsPrefs.difficulty = btn.dataset.tsDiff;
+      saveTsPrefsToStorage();
+      syncTsDifficultyUI();
+      renderTsBest();
+    });
+  });
+  els.tsOpenBtn.addEventListener("click", () => {
+    syncTsDifficultyUI();
+    renderTsBest();
+    showScreen("tsReady");
+  });
+  els.tsReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Single active timer, remaining-delay pause/resume - same shape as every
+  // other setTimeout-driven Test exercise. Self-paced like Hick/Suchtest
+  // (a trial's response phase can end early the instant a button is
+  // tapped), so this always clears any still-pending timer first.
+  function scheduleTsTimer(fn, delayMs) {
+    if (tsState.timer) clearTimeout(tsState.timer);
+    tsState.timerFn = fn;
+    tsState.timerFiresAt = performance.now() + delayMs;
+    tsState.timer = setTimeout(() => { tsState.timer = null; fn(); }, delayMs);
+  }
+
+  // Random binary task sequence, regenerated whole until no run of more
+  // than 3 identical trial TYPES (switch/repeat) in a row - same guard
+  // convention as buildHickBlockTrials/buildFlankerTrials, so a client
+  // can't settle into "just keep expecting the same thing" for a stretch.
+  function buildTsTaskSeq(count) {
+    let tasks, types;
+    for (let tries = 0; tries < 300; tries++) {
+      tasks = [];
+      for (let i = 0; i < count; i++) tasks.push(Math.random() < 0.5 ? 0 : 1);
+      types = [];
+      for (let i = 1; i < tasks.length; i++) types.push(tasks[i] === tasks[i - 1] ? "repeat" : "switch");
+      let ok = true, run = 1;
+      for (let i = 1; i < types.length; i++) {
+        if (types[i] === types[i - 1]) { run++; if (run > 3) { ok = false; break; } }
+        else run = 1;
+      }
+      if (ok) break;
+    }
+    return tasks;
+  }
+  function tsRandomDigit() { return TS_DIGITS[Math.floor(Math.random() * TS_DIGITS.length)]; }
+
+  let tsState = null;
+  function startTsGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.tsPlayer.hidden = false;
+    els.tsPlayerBar.hidden = false;
+    els.tsDonePanel.hidden = true;
+    els.tsPauseOverlay.hidden = true;
+    els.tsPauseBtn.hidden = false;
+    const diff = TS_DIFFICULTIES[tsPrefs.difficulty];
+    const taskSeq = buildTsTaskSeq(TS_TRIAL_COUNT);
+    tsState = {
+      diff, taskSeq, index: -1,
+      phase: "gap", digit: null, task: null, type: null,
+      correct: 0, incorrect: 0,
+      rtByType: { repeat: [], switch: [] },
+      paused: false, startTime: performance.now(), stimAt: null,
+      timer: null, timerFn: null, timerFiresAt: null,
+    };
+    els.tsCue.textContent = "";
+    els.tsStimulus.textContent = "";
+    els.tsHint.textContent = "Bereit? Gleich geht's los …";
+    els.tsLeftBtn.textContent = "";
+    els.tsRightBtn.textContent = "";
+    els.tsLeftBtn.classList.remove("correct", "wrong");
+    els.tsRightBtn.classList.remove("correct", "wrong");
+    els.tsProgressEl.textContent = `0/${taskSeq.length}`;
+    requestWakeLock();
+    scheduleTsTimer(tsNextTrial, 1000);
+  }
+  els.tsReadyStartBtn.addEventListener("click", startTsGame);
+
+  function tsNextTrial() {
+    if (!tsState) return;
+    tsState.index++;
+    if (tsState.index >= tsState.taskSeq.length) { tsFinish(); return; }
+    els.tsProgressEl.textContent = `${tsState.index + 1}/${tsState.taskSeq.length}`;
+    tsState.phase = "cue";
+    tsState.digit = tsRandomDigit();
+    const task = TS_TASKS[tsState.taskSeq[tsState.index]];
+    tsState.task = task;
+    tsState.type = tsState.index === 0 ? null : (tsState.taskSeq[tsState.index] === tsState.taskSeq[tsState.index - 1] ? "repeat" : "switch");
+    els.tsStimulus.textContent = "";
+    els.tsHint.textContent = "";
+    els.tsLeftBtn.textContent = task.leftLabel;
+    els.tsRightBtn.textContent = task.rightLabel;
+    els.tsLeftBtn.classList.remove("correct", "wrong");
+    els.tsRightBtn.classList.remove("correct", "wrong");
+    els.tsCue.textContent = task.cueLabel;
+    scheduleTsTimer(tsShowStimulus, tsState.diff.csiMs);
+  }
+  function tsShowStimulus() {
+    if (!tsState) return;
+    tsState.phase = "responding";
+    tsState.stimAt = performance.now();
+    els.tsStimulus.textContent = String(tsState.digit);
+    scheduleTsTimer(tsTimeoutTrial, tsState.diff.timeoutMs);
+  }
+  function tsTimeoutTrial() {
+    if (!tsState || tsState.phase !== "responding") return;
+    tsState.incorrect++;
+    tsState.phase = "feedback";
+    els.tsHint.textContent = "Verpasst!";
+    scheduleTsTimer(tsAfterFeedback, TS_FEEDBACK_MS);
+  }
+  function tsAnswer(side) {
+    if (!tsState || tsState.paused || tsState.phase !== "responding") return;
+    const rt = performance.now() - tsState.stimAt;
+    tsState.phase = "feedback";
+    const correctSide = tsState.task.answerSide(tsState.digit);
+    const tappedBtn = side === "left" ? els.tsLeftBtn : els.tsRightBtn;
+    const otherBtn = side === "left" ? els.tsRightBtn : els.tsLeftBtn;
+    if (side === correctSide) {
+      tappedBtn.classList.add("correct");
+      tsState.correct++;
+      if (tsState.type) tsState.rtByType[tsState.type].push(rt);
+    } else {
+      tappedBtn.classList.add("wrong");
+      otherBtn.classList.add("correct");
+      tsState.incorrect++;
+      els.tsHint.textContent = "Daneben!";
+    }
+    scheduleTsTimer(tsAfterFeedback, TS_FEEDBACK_MS);
+  }
+  function tsAfterFeedback() {
+    if (!tsState) return;
+    tsState.phase = "gap";
+    els.tsCue.textContent = "";
+    els.tsStimulus.textContent = "";
+    els.tsHint.textContent = "";
+    els.tsLeftBtn.textContent = "";
+    els.tsRightBtn.textContent = "";
+    els.tsLeftBtn.classList.remove("correct", "wrong");
+    els.tsRightBtn.classList.remove("correct", "wrong");
+    scheduleTsTimer(tsNextTrial, tsState.diff.isiMs);
+  }
+  els.tsLeftBtn.addEventListener("click", () => tsAnswer("left"));
+  els.tsRightBtn.addEventListener("click", () => tsAnswer("right"));
+
+  function pauseTs() {
+    if (!tsState || tsState.paused) return;
+    tsState.paused = true;
+    tsState.pausedAt = performance.now();
+    if (tsState.timer) {
+      clearTimeout(tsState.timer);
+      tsState.timer = null;
+      tsState.timerRemainingMs = Math.max(0, tsState.timerFiresAt - tsState.pausedAt);
+    }
+    els.tsPauseBtn.hidden = true;
+    els.tsPauseOverlay.hidden = false;
+  }
+  function resumeTs() {
+    if (!tsState || !tsState.paused) return;
+    const pausedMs = performance.now() - tsState.pausedAt;
+    tsState.startTime += pausedMs;
+    if (tsState.stimAt != null) tsState.stimAt += pausedMs;
+    tsState.paused = false;
+    if (tsState.timerFn && tsState.timerRemainingMs != null) {
+      scheduleTsTimer(tsState.timerFn, tsState.timerRemainingMs);
+      tsState.timerRemainingMs = null;
+    }
+    els.tsPauseOverlay.hidden = true;
+    els.tsPauseBtn.hidden = false;
+  }
+  els.tsPauseBtn.addEventListener("click", pauseTs);
+  els.tsResumeBtn.addEventListener("click", resumeTs);
+
+  function finalizeTsRun(state, totalTrials) {
+    els.tsPauseOverlay.hidden = true;
+    els.tsPlayerBar.hidden = true;
+    const accuracyPct = Math.round(100 * state.correct / totalTrials);
+    const avgRepeat = avgOf(state.rtByType.repeat);
+    const avgSwitch = avgOf(state.rtByType.switch);
+    const cost = (avgRepeat != null && avgSwitch != null) ? Math.round(avgSwitch - avgRepeat) : null;
+    const isRecord = cost != null ? saveTsBest(cost) : false;
+    renderTsBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.tsDoneSummary.textContent =
+      `Regelwechsel-Test (${state.diff.title}) · ${accuracyPct}% richtig` +
+      (avgRepeat != null ? ` · Ø gleiche Regel ${Math.round(avgRepeat)} ms` : "") +
+      (avgSwitch != null ? ` · Ø nach Wechsel ${Math.round(avgSwitch)} ms` : "") +
+      (cost != null ? ` · Wechselkosten ${cost} ms` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${accuracyPct}% richtig` + (cost != null ? `, Wechselkosten ${cost} ms` : "");
+    const id = addHistory({ kind: "ts", title: "Regelwechsel-Test (Task-Switching)", seconds: Math.round(played), note });
+    renderRating(els.tsRating, id, "Wie klar war dir jeweils, welche Regel gerade gilt?");
+    els.tsDonePanel.hidden = false;
+  }
+  function tsFinish() {
+    if (!tsState) return;
+    const state = tsState;
+    tsState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.tsPlayer) document.exitFullscreen().catch(() => {});
+    els.tsFsHint.hidden = true;
+    finalizeTsRun(state, state.taskSeq.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved.
+  function tsStop() {
+    if (!tsState) return;
+    if (tsState.timer) clearTimeout(tsState.timer);
+    const state = tsState;
+    tsState = null;
+    els.tsPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.tsPlayer) document.exitFullscreen().catch(() => {});
+    els.tsFsHint.hidden = true;
+    const resolved = state.correct + state.incorrect;
+    if (resolved >= TS_MIN_RESOLVED) {
+      finalizeTsRun(state, resolved);
+    } else {
+      els.tsPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.tsBackBtn.addEventListener("click", tsStop);
+  els.tsAgainBtn.addEventListener("click", () => { els.tsDonePanel.hidden = true; startTsGame(); });
+  els.tsDoneBackBtn.addEventListener("click", () => { els.tsPlayer.hidden = true; els.tsDonePanel.hidden = true; showScreen("testHome"); });
 
   // ---- Start-up ----
   renderHistory();

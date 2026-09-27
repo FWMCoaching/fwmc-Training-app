@@ -660,6 +660,11 @@
       <span class="fc-desc">Ein einzelnes Licht springt &uuml;ber ein gro&szlig;es Feld &ndash; von der Mitte bis weit in den Rand hinein &ndash; tippe es so schnell wie m&ouml;glich an, dann springt das n&auml;chste sofort weiter. Angelehnt an Reaktions-Lichttafeln wie das Dynavision D2, wie sie in der sportwissenschaftlichen Vision-Trainings- und Return-to-Play-Forschung eingesetzt werden. Trainiert Reaktionszeit und peripheres Sehen gemeinsam &uuml;ber das ganze Blickfeld.</span>
       <span class="fc-meta" id="reaktBestHint"></span>
     </button>
+    <button class="featured-card" id="tsOpenBtn">
+      <span class="fc-title">Regelwechsel-Test (Task-Switching)</span>
+      <span class="fc-desc">Vor jeder Zahl steht kurz, welche Aufgabe gerade gilt: &bdquo;ZAHL&ldquo; (gerade/ungerade?) oder &bdquo;GR&Ouml;&Szlig;E&ldquo; (kleiner/gr&ouml;&szlig;er als 5?) &ndash; manchmal bleibt sie gleich, manchmal wechselt sie. Klassisches Paradigma zur kognitiven Flexibilit&auml;t (Task-Switching, Rogers &amp; Monsell, 1995; Meiran, 1996): allein das Umschalten zwischen zwei Regeln kostet zus&auml;tzliche Zeit, unabh&auml;ngig davon wie leicht die einzelne Entscheidung f&uuml;r sich w&auml;re.</span>
+      <span class="fc-meta" id="tsBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -989,6 +994,27 @@
   <div class="group-help" id="reaktReadyBestHint"></div>
 
   <button class="start-btn" id="reaktReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="tsReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="tsReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Regelwechsel-Test (Task-Switching)</h1>
+  <p class="page-sub">Vor jeder Zahl steht kurz, welche Aufgabe gerade gilt: &bdquo;ZAHL&ldquo; (gerade oder ungerade?) oder &bdquo;GR&Ouml;&Szlig;E&ldquo; (kleiner oder gr&ouml;&szlig;er als 5?). Manchmal bleibt die Aufgabe zwischen zwei Zahlen gleich, manchmal wechselt sie &ndash; die beiden Tasten unten zeigen dir immer, was gerade gefragt ist. Klassisches Paradigma zur kognitiven Flexibilit&auml;t (Task-Switching, Rogers &amp; Monsell, 1995; Meiran, 1996): allein das Umschalten zwischen zwei Regeln kostet zus&auml;tzliche Zeit &ndash; die sogenannten &bdquo;Wechselkosten&ldquo;, unabh&auml;ngig davon, wie leicht die einzelne Aufgabe f&uuml;r sich genommen w&auml;re.</p>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="tsDifficultyRow">
+      <button class="choice" data-ts-diff="leicht">Leicht<small>mehr Zeit zum Vorbereiten</small></button>
+      <button class="choice" data-ts-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-ts-diff="schwer">Schwer<small>kaum Vorbereitungszeit</small></button>
+    </div>
+  </div>
+
+  <div class="group-help" id="tsReadyBestHint"></div>
+
+  <button class="start-btn" id="tsReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="merkReady" hidden>
@@ -3296,6 +3322,44 @@
     <div class="rating" id="reaktRating"></div>
     <button class="again" id="reaktAgainBtn">Nochmal</button>
     <button class="back" id="reaktDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="tsPlayer" hidden>
+  <div class="ts-stage" id="tsStage">
+    <div class="ts-cue" id="tsCue"></div>
+    <div class="ts-stimulus" id="tsStimulus"></div>
+    <div class="remember-hint" id="tsHint"></div>
+    <div class="ts-response-row" id="tsResponseRow">
+      <button class="ts-response-btn" id="tsLeftBtn"></button>
+      <button class="ts-response-btn" id="tsRightBtn"></button>
+    </div>
+  </div>
+  <div class="pause-overlay" id="tsPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="tsResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="tsPlayerBar">
+    <button id="tsBackBtn">&#10005; Beenden</button>
+    <button id="tsPauseBtn">Pause</button>
+    <span class="player-status" id="tsProgressEl"></span>
+    <button id="tsFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="tsFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="tsFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="tsFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="tsDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="tsDoneSummary"></p>
+    <div class="rating" id="tsRating"></div>
+    <button class="again" id="tsAgainBtn">Nochmal</button>
+    <button class="back" id="tsDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 
