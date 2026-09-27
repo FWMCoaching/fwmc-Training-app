@@ -14,6 +14,13 @@ URL = "http://localhost:8845/index.html"
 # cost, ms) - the actual outcome measure this paradigm exists to surface.
 # Self-paced per trial (like Hick/Suchtest), only a short safety-net
 # timeout advances an unanswered trial.
+# Background colour/intensity (added later, sixth and final batch of the
+# same Test-Bereich effort as Go/No-Go/N-Back/Trail/Flanker/UFOV/Posner/
+# Rotation/Merkspanne/Simon/Suchtest/Doppelziel/Antizipationstest/Hick/
+# Corsi/Reaktionsfeld - see CLAUDE.md's Established patterns for the scope
+# decision, minus their transfer/preset-save machinery) tints the outer
+# #tsStage. Both the ready screen and the pause overlay have their own
+# live picker+slider sharing the same tsPrefs.
 
 async def main():
     errors = []
@@ -34,12 +41,21 @@ async def main():
         await pg.click("#tsOpenBtn"); await pg.wait_for_timeout(150)
         print("tsReady visible:", await pg.is_visible("#tsReady"))
 
+        # --- Feineinstellungen: background colour/intensity ---
+        await pg.click("#tsAdvanced summary"); await pg.wait_for_timeout(100)
+        print("bg swatch count:", await pg.locator("#tsBgColorPicker .color-swatch").count())
+        await pg.click('#tsBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
+        await pg.fill("#tsBgIntensitySlider", "0.6"); await pg.dispatch_event("#tsBgIntensitySlider", "input")
+        print("intensity value label updated:", "60%" in (await pg.inner_text("#tsBgIntensityValue")))
+
         # "schwer" = shortest CSI/ISI/timeout, fastest test run.
         await pg.click('#tsDifficultyRow [data-ts-diff="schwer"]'); await pg.wait_for_timeout(60)
         print("'schwer' selected:", "active" in (await pg.get_attribute('#tsDifficultyRow [data-ts-diff="schwer"]', "class") or ""))
         await pg.click("#tsReadyStartBtn"); await pg.wait_for_timeout(150)
         print("tsPlayer visible:", await pg.is_visible("#tsPlayer"))
         print("progress starts at 0/44:", "0/44" in (await pg.inner_text("#tsProgressEl")))
+        bg_at_start = await pg.evaluate("() => document.getElementById('tsStage').style.background")
+        print("stage carries the chosen background as soon as the game starts:", bg_at_start not in ("", "rgb(255, 255, 255)"))
 
         VALID_LEFT_LABELS = {"Gerade", "Klein (<5)"}
         VALID_RIGHT_LABELS = {"Ungerade", "Groß (>5)"}
@@ -151,6 +167,9 @@ async def main():
         stim_paused2 = await pg.inner_text("#tsStimulus")
         progress_paused2 = await pg.inner_text("#tsProgressEl")
         print("stage genuinely frozen while paused:", stim_paused1 == stim_paused2 and progress_paused1 == progress_paused2)
+        await pg.click('#tsPauseBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
+        bg_paused = await pg.evaluate("() => document.getElementById('tsStage').style.background")
+        print("pause overlay's own picker live-updates the same stage background:", bg_paused not in ("", "rgb(255, 255, 255)"))
         await pg.click("#tsResumeBtn"); await pg.wait_for_timeout(150)
         print("pause overlay hidden after resume:", await pg.is_hidden("#tsPauseOverlay"))
 

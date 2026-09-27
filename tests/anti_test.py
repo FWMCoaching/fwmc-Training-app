@@ -13,6 +13,14 @@ URL = "http://localhost:8845/index.html"
 # Self-paced per trial (like Regelwechsel-Test/Suchtest/Hick), only a
 # generous safety-net timeout advances an unanswered trial. 16 Pro + 16
 # Anti = 32 trials total.
+# Background colour/intensity (added later, sixth and final batch of the
+# same Test-Bereich effort as Go/No-Go/N-Back/Trail/Flanker/UFOV/Posner/
+# Rotation/Merkspanne/Simon/Suchtest/Doppelziel/Antizipationstest/Hick/
+# Corsi/Reaktionsfeld/Regelwechsel-Test - see CLAUDE.md's Established
+# patterns for the scope decision, minus their transfer/preset-save
+# machinery) tints the outer #antiStage. Both the ready screen and the
+# pause overlay have their own live picker+slider sharing the same
+# antiPrefs.
 
 async def main():
     errors = []
@@ -33,6 +41,13 @@ async def main():
         await pg.click("#antiOpenBtn"); await pg.wait_for_timeout(150)
         print("antiReady visible:", await pg.is_visible("#antiReady"))
 
+        # --- Feineinstellungen: background colour/intensity ---
+        await pg.click("#antiAdvanced summary"); await pg.wait_for_timeout(100)
+        print("bg swatch count:", await pg.locator("#antiBgColorPicker .color-swatch").count())
+        await pg.click('#antiBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
+        await pg.fill("#antiBgIntensitySlider", "0.6"); await pg.dispatch_event("#antiBgIntensitySlider", "input")
+        print("intensity value label updated:", "60%" in (await pg.inner_text("#antiBgIntensityValue")))
+
         # "schwer" = shortest ISI/timeout, fastest test run (block-intro
         # delay is fixed regardless of difficulty, see ANTI_BLOCK_INTRO_MS).
         await pg.click('#antiDifficultyRow [data-anti-diff="schwer"]'); await pg.wait_for_timeout(60)
@@ -40,6 +55,8 @@ async def main():
         await pg.click("#antiReadyStartBtn"); await pg.wait_for_timeout(150)
         print("antiPlayer visible:", await pg.is_visible("#antiPlayer"))
         print("progress starts at 0/32:", "0/32" in (await pg.inner_text("#antiProgressEl")))
+        bg_at_start = await pg.evaluate("() => document.getElementById('antiStage').style.background")
+        print("stage carries the chosen background as soon as the game starts:", bg_at_start not in ("", "rgb(255, 255, 255)"))
 
         async def wait_for_progress_change(prev, max_ms=6000, poll_ms=25):
             waited = 0
@@ -139,6 +156,9 @@ async def main():
         left_paused2 = await pg.get_attribute("#antiDotLeft", "class")
         right_paused2 = await pg.get_attribute("#antiDotRight", "class")
         print("stage genuinely frozen while paused:", progress_paused1 == progress_paused2 and left_paused1 == left_paused2 and right_paused1 == right_paused2)
+        await pg.click('#antiPauseBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
+        bg_paused = await pg.evaluate("() => document.getElementById('antiStage').style.background")
+        print("pause overlay's own picker live-updates the same stage background:", bg_paused not in ("", "rgb(255, 255, 255)"))
         await pg.click("#antiResumeBtn"); await pg.wait_for_timeout(150)
         print("pause overlay hidden after resume:", await pg.is_hidden("#antiPauseOverlay"))
 

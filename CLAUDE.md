@@ -417,12 +417,30 @@ unrelated to the feature being changed.
   *then* build the board) but that's out of scope for a background-colour
   batch - flagging it here rather than silently fixing unrelated code, for
   whoever picks up Corsi next. Tests extended: `tests/hick_test.py`,
-  `tests/corsi_test.py`, `tests/reakt_test.py`. Exercises with a background
-  now: Go/No-Go, N-Back, Trail Making, Flanker, UFOV, Posner-Cueing,
-  Rotationstest, Merkspanne-Test, Farbkonflikt-Test, Suchtest,
-  Doppelziel-Test, Antizipationstest, Wahlreaktionstest (Hick), Blockspanne-
-  Test (Corsi), Reaktionsfeld-Test - the rest (ts/anti) follow in further
-  batches, still minus Wortfarben-Test/Stroop.
+  `tests/corsi_test.py`, `tests/reakt_test.py`. **Sixth batch (final)**:
+  **Regelwechsel-Test (Task-Switching)**, **Gegenrichtungs-Test
+  (Antisakkaden-Prinzip)** - `tsPrefs`/`antiPrefs` each gained the same
+  `bgColorKey`/`bgIntensity` pair, `applyTsBg()`/`applyAntiBg()` tint
+  `#tsStage`/`#antiStage`, and each got its own `wireBgIntensityControl`
+  call (ready-screen `#tsAdvanced`/`#antiAdvanced` + pause overlay
+  picker+slider), same scope narrowing as every earlier batch (no
+  `BG_SOURCES`/transfer/preset-save for either). Regelwechsel-Test's own
+  design comment previously claimed "no background colour" was in scope
+  for this exercise (a leftover from before this rollout existed) - updated
+  to stop contradicting the code. Neither exercise uses
+  `stageTopClearanceY()` at all (confirmed by reading the code, not
+  assumed): Regelwechsel-Test is a fixed-centre cue/digit/response-row
+  layout, Gegenrichtungs-Test a fixed left/right dot-slot layout - neither
+  is a full-stage scatter, so the hint-before-measurement bug class the
+  task called out doesn't apply to either. Tests extended: `tests/ts_test.py`,
+  `tests/anti_test.py`. Exercises with a background now: Go/No-Go, N-Back,
+  Trail Making, Flanker, UFOV, Posner-Cueing, Rotationstest, Merkspanne-Test,
+  Farbkonflikt-Test, Suchtest, Doppelziel-Test, Antizipationstest,
+  Wahlreaktionstest (Hick), Blockspanne-Test (Corsi), Reaktionsfeld-Test,
+  Regelwechsel-Test, Gegenrichtungs-Test - that's all 17 planned non-Stroop
+  Test-Bereich exercises (Wortfarben-Test/Stroop remains the sole,
+  deliberate exclusion). The background-colour/intensity rollout across
+  the Test-Bereich is now complete.
 - **Multi-tab nav bars (`.section-switch`/`.sub-switch`) need headroom for
   their longest label, not just "however many tabs currently exist"**: both
   are a `display:flex` row of `flex:1` tabs capped at a `max-width` - a

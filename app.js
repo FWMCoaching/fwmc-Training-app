@@ -1378,21 +1378,27 @@
     reaktAgainBtn: $("reaktAgainBtn"), reaktDoneBackBtn: $("reaktDoneBackBtn"),
     tsOpenBtn: $("tsOpenBtn"), tsBestHint: $("tsBestHint"), tsReady: $("tsReady"),
     tsReadyBackToHome: $("tsReadyBackToHome"), tsDifficultyRow: $("tsDifficultyRow"),
+    tsAdvanced: $("tsAdvanced"), tsBgColorPicker: $("tsBgColorPicker"), tsBgIntensitySlider: $("tsBgIntensitySlider"),
+    tsBgIntensityValue: $("tsBgIntensityValue"), tsBgContrastHint: $("tsBgContrastHint"),
     tsReadyBestHint: $("tsReadyBestHint"), tsReadyStartBtn: $("tsReadyStartBtn"),
     tsPlayer: $("tsPlayer"), tsStage: $("tsStage"), tsCue: $("tsCue"), tsStimulus: $("tsStimulus"), tsHint: $("tsHint"),
     tsLeftBtn: $("tsLeftBtn"), tsRightBtn: $("tsRightBtn"),
     tsPauseOverlay: $("tsPauseOverlay"), tsResumeBtn: $("tsResumeBtn"),
+    tsPauseBgColorPicker: $("tsPauseBgColorPicker"), tsPauseBgSlider: $("tsPauseBgSlider"), tsPauseBgValue: $("tsPauseBgValue"),
     tsPlayerBar: $("tsPlayerBar"), tsBackBtn: $("tsBackBtn"), tsPauseBtn: $("tsPauseBtn"), tsProgressEl: $("tsProgressEl"),
     tsFsBtn: $("tsFsBtn"), tsFsHint: $("tsFsHint"), tsFsHintOpenBtn: $("tsFsHintOpenBtn"), tsFsHintClose: $("tsFsHintClose"),
     tsDonePanel: $("tsDonePanel"), tsDoneSummary: $("tsDoneSummary"), tsRating: $("tsRating"),
     tsAgainBtn: $("tsAgainBtn"), tsDoneBackBtn: $("tsDoneBackBtn"),
     antiOpenBtn: $("antiOpenBtn"), antiBestHint: $("antiBestHint"), antiReady: $("antiReady"),
     antiReadyBackToHome: $("antiReadyBackToHome"), antiDifficultyRow: $("antiDifficultyRow"),
+    antiAdvanced: $("antiAdvanced"), antiBgColorPicker: $("antiBgColorPicker"), antiBgIntensitySlider: $("antiBgIntensitySlider"),
+    antiBgIntensityValue: $("antiBgIntensityValue"), antiBgContrastHint: $("antiBgContrastHint"),
     antiReadyBestHint: $("antiReadyBestHint"), antiReadyStartBtn: $("antiReadyStartBtn"),
     antiPlayer: $("antiPlayer"), antiStage: $("antiStage"), antiRule: $("antiRule"), antiHint: $("antiHint"),
     antiSlotLeft: $("antiSlotLeft"), antiDotLeft: $("antiDotLeft"), antiSlotRight: $("antiSlotRight"), antiDotRight: $("antiDotRight"),
     antiLeftBtn: $("antiLeftBtn"), antiRightBtn: $("antiRightBtn"),
     antiPauseOverlay: $("antiPauseOverlay"), antiResumeBtn: $("antiResumeBtn"),
+    antiPauseBgColorPicker: $("antiPauseBgColorPicker"), antiPauseBgSlider: $("antiPauseBgSlider"), antiPauseBgValue: $("antiPauseBgValue"),
     antiPlayerBar: $("antiPlayerBar"), antiBackBtn: $("antiBackBtn"), antiPauseBtn: $("antiPauseBtn"), antiProgressEl: $("antiProgressEl"),
     antiFsBtn: $("antiFsBtn"), antiFsHint: $("antiFsHint"), antiFsHintOpenBtn: $("antiFsHintOpenBtn"), antiFsHintClose: $("antiFsHintClose"),
     antiDonePanel: $("antiDonePanel"), antiDoneSummary: $("antiDoneSummary"), antiRating: $("antiRating"),
@@ -13424,11 +13430,13 @@
   // Bivalent bare-digit stimuli (every digit from 1-4/6-9, excluding the
   // neutral 5, is a valid input to BOTH rules) copy the classic Rogers &
   // Monsell/Meiran stimulus design directly, rather than inventing an
-  // artificial two-task pair from scratch. No Bei-Fehler/background
-  // colour/Zusatzaufgabe/Trainingsmodus/length setting - correctly skipped
-  // per the "optional, skip what doesn't fit in an hour" guidance, same
-  // reasoning as every other fixed-trial RT exercise here (a fixed-count
-  // switch-cost measure, nothing to configure beyond difficulty). Pause/
+  // artificial two-task pair from scratch. No Bei-Fehler/Zusatzaufgabe/
+  // Trainingsmodus/length setting - correctly skipped per the "optional,
+  // skip what doesn't fit in an hour" guidance, same reasoning as every
+  // other fixed-trial RT exercise here (a fixed-count switch-cost measure,
+  // nothing to configure beyond difficulty, plus the background-colour
+  // Feineinstellungen every Test-Bereich exercise gets, see CLAUDE.md).
+  // Pause/
   // resume and the self-paced tap-ends-trial-immediately/safety-net-timeout
   // shape both reuse the same scheduleXTimer-remaining-delay pattern as
   // Hick/Suchtest. New CSS is `.ts-*` (fixed hex colours throughout, no
@@ -13464,14 +13472,32 @@
   const TS_FEEDBACK_MS = 400;
   const TS_MIN_RESOLVED = 8;
   const TS_PREFS_KEY = "fwmc-ts-prefs-v1";
-  const tsPrefs = { difficulty: "mittel" };
+  const tsPrefs = { difficulty: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadTsPrefs() {
     const saved = readJSON(TS_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(tsPrefs, saved);
     if (!TS_DIFFICULTIES[tsPrefs.difficulty]) tsPrefs.difficulty = "mittel";
+    if (!STROOP_COLOR_BY_KEY[tsPrefs.bgColorKey]) tsPrefs.bgColorKey = "gruen";
+    if (typeof tsPrefs.bgIntensity !== "number" || tsPrefs.bgIntensity < 0 || tsPrefs.bgIntensity > 1) tsPrefs.bgIntensity = 0;
   }
   loadTsPrefs();
   function saveTsPrefsToStorage() { writeJSON(TS_PREFS_KEY, tsPrefs); }
+
+  // Background colour/intensity, added later - see CLAUDE.md Established
+  // patterns (every Test-Bereich exercise now gets the same background
+  // control NAT's Remember/Blitz/Flash/MOT already have, minus their
+  // transfer/preset-save machinery - a deliberate scope decision, see there).
+  function applyTsBg() {
+    els.tsStage.style.background = tsPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[tsPrefs.bgColorKey].hex, tsPrefs.bgIntensity)
+      : "";
+  }
+  const syncTsBgUI = wireBgIntensityControl(tsPrefs, {
+    pickers: [els.tsBgColorPicker, els.tsPauseBgColorPicker],
+    sliders: [els.tsBgIntensitySlider, els.tsPauseBgSlider],
+    valueEls: [els.tsBgIntensityValue, els.tsPauseBgValue],
+    hintEls: [els.tsBgContrastHint],
+  }, () => { saveTsPrefsToStorage(); applyTsBg(); });
 
   const TS_BEST_KEY = "fwmc-ts-best-v1"; // { [difficulty]: bestSwitchCostMs } - lower is better
   function tsBestFor() {
@@ -13504,6 +13530,7 @@
   });
   els.tsOpenBtn.addEventListener("click", () => {
     syncTsDifficultyUI();
+    syncTsBgUI();
     renderTsBest();
     showScreen("tsReady");
   });
@@ -13561,6 +13588,7 @@
       paused: false, startTime: performance.now(), stimAt: null,
       timer: null, timerFn: null, timerFiresAt: null,
     };
+    applyTsBg();
     els.tsCue.textContent = "";
     els.tsStimulus.textContent = "";
     els.tsHint.textContent = "Bereit? Gleich geht's los …";
@@ -13650,6 +13678,7 @@
       tsState.timer = null;
       tsState.timerRemainingMs = Math.max(0, tsState.timerFiresAt - tsState.pausedAt);
     }
+    syncTsBgUI();
     els.tsPauseBtn.hidden = true;
     els.tsPauseOverlay.hidden = false;
   }
@@ -13774,14 +13803,32 @@
   const ANTI_BLOCK_INTRO_MS = 3200; // long enough to actually read the new block's rule before the first dot
   const ANTI_MIN_RESOLVED = 8;
   const ANTI_PREFS_KEY = "fwmc-anti-prefs-v1";
-  const antiPrefs = { difficulty: "mittel" };
+  const antiPrefs = { difficulty: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadAntiPrefs() {
     const saved = readJSON(ANTI_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(antiPrefs, saved);
     if (!ANTI_DIFFICULTIES[antiPrefs.difficulty]) antiPrefs.difficulty = "mittel";
+    if (!STROOP_COLOR_BY_KEY[antiPrefs.bgColorKey]) antiPrefs.bgColorKey = "gruen";
+    if (typeof antiPrefs.bgIntensity !== "number" || antiPrefs.bgIntensity < 0 || antiPrefs.bgIntensity > 1) antiPrefs.bgIntensity = 0;
   }
   loadAntiPrefs();
   function saveAntiPrefsToStorage() { writeJSON(ANTI_PREFS_KEY, antiPrefs); }
+
+  // Background colour/intensity, added later - see CLAUDE.md Established
+  // patterns (every Test-Bereich exercise now gets the same background
+  // control NAT's Remember/Blitz/Flash/MOT already have, minus their
+  // transfer/preset-save machinery - a deliberate scope decision, see there).
+  function applyAntiBg() {
+    els.antiStage.style.background = antiPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[antiPrefs.bgColorKey].hex, antiPrefs.bgIntensity)
+      : "";
+  }
+  const syncAntiBgUI = wireBgIntensityControl(antiPrefs, {
+    pickers: [els.antiBgColorPicker, els.antiPauseBgColorPicker],
+    sliders: [els.antiBgIntensitySlider, els.antiPauseBgSlider],
+    valueEls: [els.antiBgIntensityValue, els.antiPauseBgValue],
+    hintEls: [els.antiBgContrastHint],
+  }, () => { saveAntiPrefsToStorage(); applyAntiBg(); });
 
   const ANTI_BEST_KEY = "fwmc-anti-best-v1"; // { [difficulty]: bestHemmKostenMs } - lower is better, same shape as TS_BEST_KEY
   function antiBestFor() {
@@ -13814,6 +13861,7 @@
   });
   els.antiOpenBtn.addEventListener("click", () => {
     syncAntiDifficultyUI();
+    syncAntiBgUI();
     renderAntiBest();
     showScreen("antiReady");
   });
@@ -13883,6 +13931,7 @@
       paused: false, startTime: performance.now(), stimAt: null,
       timer: null, timerFn: null, timerFiresAt: null,
     };
+    applyAntiBg();
     els.antiRule.textContent = "";
     antiClearDots();
     els.antiHint.textContent = "Bereit? Gleich geht's los …";
@@ -13973,6 +14022,7 @@
       antiState.timer = null;
       antiState.timerRemainingMs = Math.max(0, antiState.timerFiresAt - antiState.pausedAt);
     }
+    syncAntiBgUI();
     els.antiPauseBtn.hidden = true;
     els.antiPauseOverlay.hidden = false;
   }

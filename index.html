@@ -1276,6 +1276,22 @@
     </div>
   </div>
 
+  <details class="advanced" id="tsAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="tsBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="tsBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="tsBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="tsBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
+
   <div class="group-help" id="tsReadyBestHint"></div>
 
   <button class="start-btn" id="tsReadyStartBtn">Training starten</button>
@@ -1296,6 +1312,22 @@
       <button class="choice" data-anti-diff="schwer">Schwer<small>kaum Vorbereitungszeit</small></button>
     </div>
   </div>
+
+  <details class="advanced" id="antiAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="antiBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="antiBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="antiBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="antiBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
 
   <div class="group-help" id="antiReadyBestHint"></div>
 
@@ -3788,6 +3820,14 @@
   <div class="pause-overlay" id="tsPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="tsPauseBgValue"></span></div>
+        <input type="range" id="tsPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="tsPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="tsResumeBtn">Weiter</button>
     </div>
   </div>
@@ -3830,6 +3870,14 @@
   <div class="pause-overlay" id="antiPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="antiPauseBgValue"></span></div>
+        <input type="range" id="antiPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="antiPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="antiResumeBtn">Weiter</button>
     </div>
   </div>
