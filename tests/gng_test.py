@@ -9,9 +9,12 @@ URL = "http://localhost:8845/index.html"
 # 24-trial run (GNG_TRIAL_COUNT), no "Bei Fehler"/level progression like
 # Remember/Blitz/Flash/MOT - this task reports accuracy % + average
 # reaction time instead, which is the actual outcome measure for this
-# paradigm. No background-colour customization (explicitly optional for a
-# Test exercise, correctly skipped here - nothing to configure on a task
-# whose whole point is a plain green/red circle).
+# paradigm. Background colour/intensity (added later, so every Test-Bereich
+# exercise gets the same Feineinstellungen control NAT's Remember/Blitz/
+# Flash/MOT already have - see CLAUDE.md's Established patterns for the
+# scope decision, minus their transfer/preset-save machinery) tints
+# #gngStage; both the ready screen and the pause overlay have their own
+# live picker+slider sharing the same gngPrefs.
 
 async def main():
     errors = []
@@ -33,6 +36,13 @@ async def main():
         await pg.click("#gngOpenBtn"); await pg.wait_for_timeout(150)
         print("gngReady visible:", await pg.is_visible("#gngReady"))
 
+        # --- Feineinstellungen: background colour/intensity ---
+        await pg.click("#gngAdvanced summary"); await pg.wait_for_timeout(100)
+        print("bg swatch count:", await pg.locator("#gngBgColorPicker .color-swatch").count())
+        await pg.click('#gngBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
+        await pg.fill("#gngBgIntensitySlider", "0.6"); await pg.dispatch_event("#gngBgIntensitySlider", "input")
+        print("intensity value label updated:", "60%" in (await pg.inner_text("#gngBgIntensityValue")))
+
         # "schwer" = shortest ISI/stimulus duration, so a short test window
         # still reliably samples several trials (needed to actually observe
         # a No-Go trial, ~20% of 24 total).
@@ -40,6 +50,8 @@ async def main():
         await pg.click("#gngReadyStartBtn"); await pg.wait_for_timeout(200)
         print("gngPlayer visible:", await pg.is_visible("#gngPlayer"))
         print("progress starts at 0/24:", "0/24" in (await pg.inner_text("#gngProgressEl")))
+        bg_at_start = await pg.evaluate("() => document.getElementById('gngStage').style.background")
+        print("stage carries the chosen background as soon as the game starts:", bg_at_start not in ("", "rgb(255, 255, 255)"))
 
         async def wait_for_class(token, max_ms=25000, poll_ms=25):
             waited = 0
@@ -75,6 +87,9 @@ async def main():
         await pg.wait_for_timeout(600)
         cls_paused2 = await pg.get_attribute("#gngStimulus", "class")
         print("stage genuinely frozen while paused:", cls_paused1 == cls_paused2)
+        await pg.click('#gngPauseBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
+        bg_paused = await pg.evaluate("() => document.getElementById('gngStage').style.background")
+        print("pause overlay's own picker live-updates the same stage background:", bg_paused not in ("", "rgb(255, 255, 255)"))
         await pg.click("#gngResumeBtn"); await pg.wait_for_timeout(150)
         print("pause overlay hidden after resume:", await pg.is_hidden("#gngPauseOverlay"))
 

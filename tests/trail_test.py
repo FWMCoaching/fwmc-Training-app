@@ -11,7 +11,10 @@ URL = "http://localhost:8845/index.html"
 # redirecting a participant without stopping the clock. Fresh random
 # scatter layout every run (the paper test uses one fixed printed sheet
 # per part) so repeat play trains genuine visual search, not layout
-# memorisation.
+# memorisation. Background colour/intensity (added later, same Test-
+# Bereich-wide Feineinstellungen pattern as Go/No-Go/N-Back - see
+# CLAUDE.md) tints #trailStage; ready screen and pause overlay each have
+# their own live picker+slider.
 
 async def main():
     errors = []
@@ -32,12 +35,21 @@ async def main():
         await pg.click("#trailOpenBtn"); await pg.wait_for_timeout(150)
         print("trailReady visible:", await pg.is_visible("#trailReady"))
 
+        # --- Feineinstellungen: background colour/intensity ---
+        await pg.click("#trailAdvanced summary"); await pg.wait_for_timeout(100)
+        print("bg swatch count:", await pg.locator("#trailBgColorPicker .color-swatch").count())
+        await pg.click('#trailBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
+        await pg.fill("#trailBgIntensitySlider", "0.6"); await pg.dispatch_event("#trailBgIntensitySlider", "input")
+        print("intensity value label updated:", "60%" in (await pg.inner_text("#trailBgIntensityValue")))
+
         # --- Teil A, full completion in correct order ---
         await pg.click('#trailTeilRow [data-trail-teil="a"]'); await pg.wait_for_timeout(60)
         await pg.click('#trailDifficultyRow [data-trail-diff="leicht"]'); await pg.wait_for_timeout(60)
         await pg.click("#trailReadyStartBtn"); await pg.wait_for_timeout(300)
         print("trailPlayer visible:", await pg.is_visible("#trailPlayer"))
         print("15 markers rendered (Leicht):", await pg.locator("#trailMarkersLayer .trail-marker").count() == 15)
+        bg_at_start = await pg.evaluate("() => document.getElementById('trailStage').style.background")
+        print("stage carries the chosen background as soon as the game starts:", bg_at_start not in ("", "rgb(255, 255, 255)"))
 
         for i in range(1, 16):
             await pg.locator(f'#trailMarkersLayer .trail-marker:text-is("{i}")').click()
@@ -78,6 +90,9 @@ async def main():
         await pg.wait_for_timeout(700)
         txt2 = await pg.inner_text("#trailProgressEl")
         print("elapsed-time readout frozen while paused:", txt1 == txt2)
+        await pg.click('#trailPauseBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
+        bg_paused = await pg.evaluate("() => document.getElementById('trailStage').style.background")
+        print("pause overlay's own picker live-updates the same stage background:", bg_paused not in ("", "rgb(255, 255, 255)"))
         await pg.click("#trailResumeBtn"); await pg.wait_for_timeout(150)
         print("pause overlay hidden after resume:", await pg.is_hidden("#trailPauseOverlay"))
 

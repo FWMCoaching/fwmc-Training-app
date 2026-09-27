@@ -856,6 +856,37 @@ unrelated to the feature being changed.
   system prompt (model name and session link vary — don't hardcode a
   stale one from a previous session).
 
+## Movement
+
+Limb-cueing engine (`MOVEMENTS`/`figureSVG`/`resolveSlots`, near "==== Movement
+(placeholder name) ====" in app.js): a beat-paced sequence of single-limb cues
+(`{limb: armL/armR/legL/legR, type: heben/strecken}`), shown one at a time in
+either a sliding "lane" window (`renderMovementLaneWindow`) or a full "grid"
+(`buildMovementLaneGrid`), the client physically performs whichever one is
+active.
+
+**Pictogram style, replaced 2026-09-27**: the original design was a single
+abstract four-spoke pictogram (no head/body outline at all, by deliberate
+choice - see the code comment history) - in real use it read as neither a
+proper figure nor a clean abstract symbol ("weit genug weg vom Original...
+aber nichts halbes und nichts ganzes"). Replaced with **two full
+alternatives**, chosen per client via `movementPrefs.figureStyle`
+("figur"/"abstrakt", Feineinstellungen → "Darstellung"), each a complete
+renderer (`figureSVGFigur`/`figureSVGAbstrakt`, dispatched by `figureSVG()`)
+sharing the same `{armLeft, armRight, legLeft, legRight}` slot input:
+- **"figur"** (default): an actual stick figure - head circle, torso line,
+  four limbs anchored at shoulder/hip points, each swinging up for "heben" or
+  extending outward for "strecken", the active one in `FIG_HIGHLIGHT` orange.
+- **"abstrakt"**: a 2×2 grid of independent circular tiles (arms top row,
+  legs bottom row) - neutral = outlined circle with a small dot, active =
+  filled orange circle with a white arrow (up for "heben", outward for
+  "strecken"). Deliberately NOT a body silhouette at all, so it can't land in
+  the old design's same awkward middle ground.
+Both renderers are used everywhere `figureSVG()` was already called (the
+movement-picker chips AND the lane/grid tiles during play) - picking a style
+live-regenerates the already-built picker chips too (`syncMvPickerUI()`), not
+just future lane renders. Test: `tests/movement_test2.py`.
+
 ## Workout
 
 `WORKOUT_EXERCISES` (app.js, near `WORKOUT_ICONS`) is the built-in exercise

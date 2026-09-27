@@ -727,6 +727,22 @@
     </div>
   </div>
 
+  <details class="advanced" id="gngAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="gngBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="gngBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="gngBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="gngBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
+
   <div class="group-help" id="gngReadyBestHint"></div>
 
   <button class="start-btn" id="gngReadyStartBtn">Training starten</button>
@@ -747,6 +763,22 @@
       <button class="choice" data-nback-start="3">Schwer<small>3-Back</small></button>
     </div>
   </div>
+
+  <details class="advanced" id="testNbackAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="testNbackBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="testNbackBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="testNbackBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="testNbackBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
 
   <div class="group-help" id="testNbackReadyBestHint"></div>
 
@@ -776,6 +808,22 @@
       <button class="choice" data-trail-diff="schwer">Schwer<small>25 Felder (Originaltest)</small></button>
     </div>
   </div>
+
+  <details class="advanced" id="trailAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="trailBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="trailBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="trailBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="trailBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
 
   <div class="group-help" id="trailReadyBestHint"></div>
 
@@ -2311,6 +2359,13 @@
           <button class="choice" data-mv-label="0">Nur Symbol</button>
         </div>
       </div>
+      <div class="group">
+        <div class="group-label">Darstellung</div>
+        <div class="choice-row two" id="movementFigureStyleRow">
+          <button class="choice" data-mv-figure="figur">Figur<small>Strichmännchen</small></button>
+          <button class="choice" data-mv-figure="abstrakt">Abstrakt<small>Symbol-Raster</small></button>
+        </div>
+      </div>
     </div>
   </details>
 
@@ -2865,6 +2920,14 @@
   <div class="pause-overlay" id="gngPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="gngPauseBgValue"></span></div>
+        <input type="range" id="gngPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="gngPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="gngResumeBtn">Weiter</button>
     </div>
   </div>
@@ -2899,6 +2962,14 @@
   <div class="pause-overlay" id="testNbackPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="testNbackPauseBgValue"></span></div>
+        <input type="range" id="testNbackPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="testNbackPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="testNbackResumeBtn">Weiter</button>
     </div>
   </div>
@@ -2933,6 +3004,14 @@
   <div class="pause-overlay" id="trailPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="trailPauseBgValue"></span></div>
+        <input type="range" id="trailPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="trailPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="trailResumeBtn">Weiter</button>
     </div>
   </div>

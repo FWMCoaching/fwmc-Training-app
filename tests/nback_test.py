@@ -14,7 +14,10 @@ URL = "http://localhost:8845/index.html"
 # window (testNbackEndTrial), not shown immediately on tap. Level adapts
 # per Jaeggi et al. 2008's rule: <=2 errors in a block -> N goes up, >5 ->
 # N goes down, otherwise unchanged - so this reports "highest N reached"
-# rather than a fixed level like Remember/Blitz/Flash/MOT use.
+# rather than a fixed level like Remember/Blitz/Flash/MOT use. Background
+# colour/intensity (added later, same Test-Bereich-wide Feineinstellungen
+# pattern as Go/No-Go/Trail Making - see CLAUDE.md) tints #testNbackStage;
+# ready screen and pause overlay each have their own live picker+slider.
 
 async def main():
     errors = []
@@ -35,11 +38,20 @@ async def main():
         await pg.click("#testNbackOpenBtn"); await pg.wait_for_timeout(150)
         print("testNbackReady visible:", await pg.is_visible("#testNbackReady"))
 
+        # --- Feineinstellungen: background colour/intensity ---
+        await pg.click("#testNbackAdvanced summary"); await pg.wait_for_timeout(100)
+        print("bg swatch count:", await pg.locator("#testNbackBgColorPicker .color-swatch").count())
+        await pg.click('#testNbackBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
+        await pg.fill("#testNbackBgIntensitySlider", "0.6"); await pg.dispatch_event("#testNbackBgIntensitySlider", "input")
+        print("intensity value label updated:", "60%" in (await pg.inner_text("#testNbackBgIntensityValue")))
+
         await pg.click('#testNbackStartRow [data-nback-start="1"]'); await pg.wait_for_timeout(60)
         await pg.click("#testNbackReadyStartBtn"); await pg.wait_for_timeout(200)
         print("testNbackPlayer visible:", await pg.is_visible("#testNbackPlayer"))
         print("3x3 grid rendered:", await pg.locator("#testNbackGrid .nback-cell").count() == 9)
         print("level label shows Stufe 1:", "Stufe 1" in (await pg.inner_text("#testNbackLevelEl")))
+        bg_at_start = await pg.evaluate("() => document.getElementById('testNbackStage').style.background")
+        print("stage carries the chosen background as soon as the game starts:", bg_at_start not in ("", "rgb(255, 255, 255)"))
 
         # a cell actually lights up during the "show" phase
         lit_seen = False
@@ -71,6 +83,9 @@ async def main():
         await pg.wait_for_timeout(600)
         lit_after = await pg.locator("#testNbackGrid .nback-cell.lit").count()
         print("grid state frozen while paused:", lit_before == lit_after)
+        await pg.click('#testNbackPauseBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
+        bg_paused = await pg.evaluate("() => document.getElementById('testNbackStage').style.background")
+        print("pause overlay's own picker live-updates the same stage background:", bg_paused not in ("", "rgb(255, 255, 255)"))
         await pg.click("#testNbackResumeBtn"); await pg.wait_for_timeout(150)
         print("pause overlay hidden after resume:", await pg.is_hidden("#testNbackPauseOverlay"))
 

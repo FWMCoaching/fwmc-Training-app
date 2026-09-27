@@ -759,42 +759,78 @@
   const MOVEMENT_BY_ID = Object.fromEntries(MOVEMENTS.map((m) => [m.id, m]));
   const MIN_MOVEMENTS = 2;
 
-  // An abstract four-spoke pictogram - deliberately NOT a little figure with
-  // a head, since the closest known reference (Life Kinetik's "Bocobrain"
-  // sheets, seen after this was first designed) already owns that visual
-  // territory: a stick body topped with a smiley head, with triangles and
-  // squares placed beside it to mark arms/legs. This version has no body
-  // outline and no face at all - four short bars radiate from a plain hub,
-  // one per limb; the active one turns the highlight colour and swings
-  // toward vertical and short ("heben") or toward horizontal and long
-  // ("strecken"). `baseColor` lets the same renderer sit on a themed
-  // background (settings screen, follows dark mode) or the always-light
-  // player stage (fixed dark ink, matching the visual-training canvas).
+  // Two pictogram styles, picked per client via movementPrefs.figureStyle
+  // (Feineinstellungen → "Darstellung"). The original single design (four
+  // spokes off a plain hub, no head/body outline - deliberately not a
+  // little figure, since the closest known reference, Life Kinetik's
+  // "Bocobrain" sheets, already owns that visual territory) turned out to
+  // read as neither a clear figure nor a clean abstract symbol once Fabian
+  // saw it in real use ("weit genug weg vom Original... aber nichts halbes
+  // und nichts ganzes") - replaced 2026-09-27 with two new, more
+  // committed alternatives instead of one compromise:
+  // - "figur": an actual stick figure (head/torso/four limbs) - the
+  //   "richtige Darstellung" option.
+  // - "abstrakt": a 2x2 grid of independent symbol tiles (one per limb,
+  //   arm row above leg row), each just an up-arrow ("heben") or an
+  //   outward arrow ("strecken") on a neutral dot otherwise - not a body
+  //   silhouette at all, so it can't land in that same awkward middle
+  //   ground the old spokes did.
+  // `baseColor` lets either renderer sit on a themed background (settings
+  // screen, follows dark mode) or the always-light player stage (fixed
+  // dark ink, matching the visual-training canvas).
   const FIG_HIGHLIGHT = "#ff9110";
-  const SPOKE_NEUTRAL_DIR = {
-    armLeft: [-0.7071, -0.7071], armRight: [0.7071, -0.7071],
-    legLeft: [-0.7071, 0.7071], legRight: [0.7071, 0.7071],
-  };
-  const SPOKE_ACTIVE_DIR = {
-    heben: { armLeft: [-0.5, -0.87], armRight: [0.5, -0.87], legLeft: [-0.5, 0.87], legRight: [0.5, 0.87] },
-    strecken: { armLeft: [-0.97, -0.26], armRight: [0.97, -0.26], legLeft: [-0.97, 0.26], legRight: [0.97, 0.26] },
-  };
-  const SPOKE_LEN = { neutral: 15, heben: 30, strecken: 43 };
-  const SPOKE_START_R = 8;
   // slots: { armLeft, armRight, legLeft, legRight } - each holds a pose
   // name ("heben"/"strecken") when that screen-side limb is the active one.
-  function figureSVG(slots, baseColor) {
+  const FIGURE_LIMB = {
+    armLeft: { x0: 41, y0: 30, neutral: [31, 50], heben: [21, 15], strecken: [6, 27] },
+    armRight: { x0: 59, y0: 30, neutral: [69, 50], heben: [79, 15], strecken: [94, 27] },
+    legLeft: { x0: 45, y0: 60, neutral: [35, 93], heben: [26, 63], strecken: [10, 85] },
+    legRight: { x0: 55, y0: 60, neutral: [65, 93], heben: [74, 63], strecken: [90, 85] },
+  };
+  function figureSVGFigur(slots, baseColor) {
     baseColor = baseColor || "#16232a";
-    const parts = ["armLeft", "armRight", "legLeft", "legRight"].map((key) => {
+    const limbs = ["armLeft", "armRight", "legLeft", "legRight"].map((key) => {
       const type = slots[key];
-      const dir = type ? SPOKE_ACTIVE_DIR[type][key] : SPOKE_NEUTRAL_DIR[key];
-      const len = SPOKE_LEN[type || "neutral"];
+      const def = FIGURE_LIMB[key];
+      const [x2, y2] = def[type || "neutral"];
       const color = type ? FIG_HIGHLIGHT : baseColor;
-      const x1 = (50 + dir[0] * SPOKE_START_R).toFixed(1), y1 = (50 + dir[1] * SPOKE_START_R).toFixed(1);
-      const x2 = (50 + dir[0] * len).toFixed(1), y2 = (50 + dir[1] * len).toFixed(1);
-      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="11" stroke-linecap="round"/>`;
+      const width = type ? 10 : 8;
+      return `<line x1="${def.x0}" y1="${def.y0}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${width}" stroke-linecap="round"/>`;
     }).join("");
-    return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">${parts}<circle cx="50" cy="50" r="7" fill="${baseColor}"/></svg>`;
+    return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">` +
+      `<line x1="50" y1="30" x2="50" y2="60" stroke="${baseColor}" stroke-width="9" stroke-linecap="round"/>` +
+      limbs +
+      `<circle cx="50" cy="16" r="10" fill="${baseColor}"/></svg>`;
+  }
+  const ABSTRACT_CELL = {
+    armLeft: { cx: 25, cy: 25, out: 180 }, armRight: { cx: 75, cy: 25, out: 0 },
+    legLeft: { cx: 25, cy: 75, out: 180 }, legRight: { cx: 75, cy: 75, out: 0 },
+  };
+  function arrowPolygon(cx, cy, angleDeg, size) {
+    const rad = (angleDeg * Math.PI) / 180;
+    const tip = [cx + Math.cos(rad) * size, cy + Math.sin(rad) * size];
+    const b1 = [cx + Math.cos(rad + 2.4) * size * 0.55, cy + Math.sin(rad + 2.4) * size * 0.55];
+    const b2 = [cx + Math.cos(rad - 2.4) * size * 0.55, cy + Math.sin(rad - 2.4) * size * 0.55];
+    return [tip, b1, b2].map((p) => p.map((n) => n.toFixed(1)).join(",")).join(" ");
+  }
+  function figureSVGAbstrakt(slots, baseColor) {
+    baseColor = baseColor || "#16232a";
+    const cells = ["armLeft", "armRight", "legLeft", "legRight"].map((key) => {
+      const type = slots[key];
+      const def = ABSTRACT_CELL[key];
+      const active = !!type;
+      const ring = active ? FIG_HIGHLIGHT : baseColor;
+      const fill = active ? FIG_HIGHLIGHT : "none";
+      let mark;
+      if (type === "heben") mark = `<polygon points="${arrowPolygon(def.cx, def.cy, -90, 13)}" fill="#fff"/>`;
+      else if (type === "strecken") mark = `<polygon points="${arrowPolygon(def.cx, def.cy, def.out, 13)}" fill="#fff"/>`;
+      else mark = `<circle cx="${def.cx}" cy="${def.cy}" r="3" fill="${baseColor}"/>`;
+      return `<circle cx="${def.cx}" cy="${def.cy}" r="19" fill="${fill}" stroke="${ring}" stroke-width="3"/>${mark}`;
+    }).join("");
+    return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">${cells}</svg>`;
+  }
+  function figureSVG(slots, baseColor) {
+    return movementPrefs.figureStyle === "abstrakt" ? figureSVGAbstrakt(slots, baseColor) : figureSVGFigur(slots, baseColor);
   }
   // Resolves which SCREEN side each anatomical limb is drawn on. Mirrored
   // (default): the client's left appears on-screen left, like copying a
@@ -842,6 +878,38 @@
       name: "Bergsteiger", icon: "mountainclimber",
       note: "Rücken flach wie im Unterarmstütz, Knie zügig und kontrolliert zur Brust ziehen.",
     },
+    burpee: {
+      name: "Burpees", icon: "burpee",
+      note: "In die Hocke, Hände auf den Boden, Beine nach hinten in den Stütz, zurück in die Hocke, hochspringen.",
+    },
+    situp: {
+      name: "Sit-ups", icon: "situp",
+      note: "Füße aufgestellt, Hände locker an den Schläfen. Aus dem Bauch aufrollen, nicht am Nacken ziehen.",
+    },
+    superman: {
+      name: "Superman", icon: "superman",
+      note: "Bauchlage, Arme und Beine gleichzeitig anheben, kurz halten, kontrolliert absenken.",
+    },
+    huefthebe: {
+      name: "Hüftheben (Brücke)", icon: "gluebridge",
+      note: "Rückenlage, Füße hüftbreit aufgestellt. Gesäß anspannen und die Hüfte gerade nach oben schieben.",
+    },
+    kniehebelauf: {
+      name: "Kniehebelauf", icon: "highknees",
+      note: "Auf der Stelle laufen, Knie abwechselnd zügig bis auf Hüfthöhe anheben, Arme mitschwingen.",
+    },
+    wandsitz: {
+      name: "Wandsitz", icon: "wallsit",
+      note: "Rücken flach an der Wand, Knie im rechten Winkel wie auf einem unsichtbaren Stuhl. Ruhig durchatmen.",
+    },
+    trizepsdip: {
+      name: "Trizeps-Dips", icon: "dip",
+      note: "Hände am Stuhl-/Bankrand, Beine gestreckt nach vorne. Ellbogen zeigen nach hinten, Gesäß dicht an der Kante absenken.",
+    },
+    sprungkniebeuge: {
+      name: "Sprungkniebeugen", icon: "squatjump",
+      note: "Wie eine normale Kniebeuge, aus der unteren Position aber explosiv nach oben abspringen, weich landen.",
+    },
   };
   // Small abstract stick-figure pictograms - generic exercise iconography
   // (the same kind of simple figure used everywhere from safety signage to
@@ -853,6 +921,14 @@
     plank: `<circle cx="4" cy="9" r="2" fill="#fff"/><path d="M6 10 L20 14" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M9 10.7 L9 16" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M20 14 L17 18" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
     jumpingjack: `<circle cx="12" cy="4" r="2" fill="#fff"/><path d="M12 6 L12 13" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M12 7 L5 2 M12 7 L19 2" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M12 13 L6 20 M12 13 L18 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
     mountainclimber: `<circle cx="4" cy="9" r="2" fill="#fff"/><path d="M6 10 L18 15 L21 19" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 12 L8 13 L6 16" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 10.6 L9 16" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    burpee: `<circle cx="5" cy="15" r="2" fill="#fff"/><path d="M7 15 L12 9 L19 11" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9 L15 16 L19 19" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    situp: `<circle cx="4" cy="16" r="2" fill="#fff"/><path d="M6 16 Q11 9 14 13" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M14 13 L13 18 L18 18" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 18 L17 14" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    superman: `<circle cx="19" cy="7" r="2" fill="#fff"/><path d="M17 8 Q11 12 6 8" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    gluebridge: `<circle cx="19" cy="14" r="2" fill="#fff"/><path d="M17 14 L10 14" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M10 14 L13 9 L16 14" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    highknees: `<circle cx="12" cy="4" r="2" fill="#fff"/><path d="M12 6 L11 13" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M12 8 L8 6 M12 8 L17 10" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M11 13 L7 11 L7 17" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 13 L15 17 L15 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    wallsit: `<circle cx="15" cy="4" r="2" fill="#fff"/><path d="M15 6 L15 11" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M15 7 L11 9" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M15 11 L9 11 L9 18" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 2 L17 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    dip: `<circle cx="17" cy="8" r="2" fill="#fff"/><path d="M17 10 L14 14" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M17 11 L20 13" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M14 14 L6 14" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M20 13 L20 18" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    squatjump: `<circle cx="12" cy="4" r="2" fill="#fff"/><path d="M12 6 L12 11" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M12 7 L8 3 M12 7 L16 3" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M12 11 L9 15 L9 19 M12 11 L15 15 L15 19" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20 L8 20 M16 20 L19 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
     custom: `<circle cx="7" cy="12" r="2.4" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="17" cy="12" r="2.4" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M9.4 12 L14.6 12" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>`,
   };
   function workoutIconSVG(key) {
@@ -1120,20 +1196,29 @@
     testHome: $("testHome"), testPanel: $("testPanel"), testEmptyHint: $("testEmptyHint"),
     gngOpenBtn: $("gngOpenBtn"), gngBestHint: $("gngBestHint"), gngReady: $("gngReady"),
     gngReadyBackToHome: $("gngReadyBackToHome"), gngDifficultyRow: $("gngDifficultyRow"),
+    gngAdvanced: $("gngAdvanced"), gngBgColorPicker: $("gngBgColorPicker"), gngBgIntensitySlider: $("gngBgIntensitySlider"),
+    gngBgIntensityValue: $("gngBgIntensityValue"), gngBgContrastHint: $("gngBgContrastHint"),
     gngReadyBestHint: $("gngReadyBestHint"), gngReadyStartBtn: $("gngReadyStartBtn"),
     gngPlayer: $("gngPlayer"), gngStage: $("gngStage"), gngHint: $("gngHint"), gngStimulus: $("gngStimulus"),
     gngPauseOverlay: $("gngPauseOverlay"), gngResumeBtn: $("gngResumeBtn"),
+    gngPauseBgColorPicker: $("gngPauseBgColorPicker"), gngPauseBgSlider: $("gngPauseBgSlider"), gngPauseBgValue: $("gngPauseBgValue"),
     gngPlayerBar: $("gngPlayerBar"), gngBackBtn: $("gngBackBtn"), gngPauseBtn: $("gngPauseBtn"), gngProgressEl: $("gngProgressEl"),
     gngFsBtn: $("gngFsBtn"), gngFsHint: $("gngFsHint"), gngFsHintOpenBtn: $("gngFsHintOpenBtn"), gngFsHintClose: $("gngFsHintClose"),
     gngDonePanel: $("gngDonePanel"), gngDoneSummary: $("gngDoneSummary"), gngRating: $("gngRating"),
     gngAgainBtn: $("gngAgainBtn"), gngDoneBackBtn: $("gngDoneBackBtn"),
     testNbackOpenBtn: $("testNbackOpenBtn"), testNbackBestHint: $("testNbackBestHint"),
     testNbackReady: $("testNbackReady"), testNbackReadyBackToHome: $("testNbackReadyBackToHome"),
-    testNbackStartRow: $("testNbackStartRow"), testNbackReadyBestHint: $("testNbackReadyBestHint"),
+    testNbackStartRow: $("testNbackStartRow"),
+    testNbackAdvanced: $("testNbackAdvanced"), testNbackBgColorPicker: $("testNbackBgColorPicker"),
+    testNbackBgIntensitySlider: $("testNbackBgIntensitySlider"), testNbackBgIntensityValue: $("testNbackBgIntensityValue"),
+    testNbackBgContrastHint: $("testNbackBgContrastHint"),
+    testNbackReadyBestHint: $("testNbackReadyBestHint"),
     testNbackReadyStartBtn: $("testNbackReadyStartBtn"),
     testNbackPlayer: $("testNbackPlayer"), testNbackStage: $("testNbackStage"), testNbackHint: $("testNbackHint"),
     testNbackGrid: $("testNbackGrid"), testNbackMatchBtn: $("testNbackMatchBtn"),
     testNbackPauseOverlay: $("testNbackPauseOverlay"), testNbackResumeBtn: $("testNbackResumeBtn"),
+    testNbackPauseBgColorPicker: $("testNbackPauseBgColorPicker"), testNbackPauseBgSlider: $("testNbackPauseBgSlider"),
+    testNbackPauseBgValue: $("testNbackPauseBgValue"),
     testNbackPlayerBar: $("testNbackPlayerBar"), testNbackBackBtn: $("testNbackBackBtn"), testNbackPauseBtn: $("testNbackPauseBtn"),
     testNbackLevelEl: $("testNbackLevelEl"), testNbackFsBtn: $("testNbackFsBtn"), testNbackFsHint: $("testNbackFsHint"),
     testNbackFsHintOpenBtn: $("testNbackFsHintOpenBtn"), testNbackFsHintClose: $("testNbackFsHintClose"),
@@ -1141,10 +1226,13 @@
     testNbackAgainBtn: $("testNbackAgainBtn"), testNbackDoneBackBtn: $("testNbackDoneBackBtn"),
     trailOpenBtn: $("trailOpenBtn"), trailBestHint: $("trailBestHint"), trailReady: $("trailReady"),
     trailReadyBackToHome: $("trailReadyBackToHome"), trailTeilRow: $("trailTeilRow"), trailDifficultyRow: $("trailDifficultyRow"),
+    trailAdvanced: $("trailAdvanced"), trailBgColorPicker: $("trailBgColorPicker"), trailBgIntensitySlider: $("trailBgIntensitySlider"),
+    trailBgIntensityValue: $("trailBgIntensityValue"), trailBgContrastHint: $("trailBgContrastHint"),
     trailReadyBestHint: $("trailReadyBestHint"), trailReadyStartBtn: $("trailReadyStartBtn"),
     trailPlayer: $("trailPlayer"), trailStage: $("trailStage"), trailHint: $("trailHint"),
     trailLinesSvg: $("trailLinesSvg"), trailMarkersLayer: $("trailMarkersLayer"),
     trailPauseOverlay: $("trailPauseOverlay"), trailResumeBtn: $("trailResumeBtn"),
+    trailPauseBgColorPicker: $("trailPauseBgColorPicker"), trailPauseBgSlider: $("trailPauseBgSlider"), trailPauseBgValue: $("trailPauseBgValue"),
     trailPlayerBar: $("trailPlayerBar"), trailBackBtn: $("trailBackBtn"), trailPauseBtn: $("trailPauseBtn"), trailProgressEl: $("trailProgressEl"),
     trailFsBtn: $("trailFsBtn"), trailFsHint: $("trailFsHint"), trailFsHintOpenBtn: $("trailFsHintOpenBtn"), trailFsHintClose: $("trailFsHintClose"),
     trailDonePanel: $("trailDonePanel"), trailDoneSummary: $("trailDoneSummary"), trailRating: $("trailRating"),
@@ -4510,7 +4598,7 @@
   const MOVEMENT_PREFS_KEY = "fwmc-movement-v1";
   const movementPrefs = {
     movements: MOVEMENTS.map((m) => m.id),
-    preview: 3, bpm: 60, durationMin: 1, mirror: true, showLabel: true,
+    preview: 3, bpm: 60, durationMin: 1, mirror: true, showLabel: true, figureStyle: "figur",
   };
   function loadMovementPrefs() {
     const saved = readJSON(MOVEMENT_PREFS_KEY, null);
@@ -4518,6 +4606,7 @@
     if (!Array.isArray(movementPrefs.movements) || movementPrefs.movements.length < MIN_MOVEMENTS) {
       movementPrefs.movements = MOVEMENTS.map((m) => m.id);
     }
+    if (movementPrefs.figureStyle !== "figur" && movementPrefs.figureStyle !== "abstrakt") movementPrefs.figureStyle = "figur";
   }
   function saveMovementPrefs() { writeJSON(MOVEMENT_PREFS_KEY, movementPrefs); }
   loadMovementPrefs();
@@ -4543,6 +4632,9 @@
   function syncMvPickerUI() {
     els.movementPicker.querySelectorAll(".movement-chip").forEach((el) => {
       setActive(el, movementPrefs.movements.includes(el.dataset.moveId));
+      const m = MOVEMENT_BY_ID[el.dataset.moveId];
+      const svg = el.querySelector(".figure-svg");
+      if (svg) svg.outerHTML = figureSVG(resolveSlots([m], true), "var(--ink)");
     });
     els.movementCount.textContent = `${movementPrefs.movements.length} gewählt`;
   }
@@ -4572,8 +4664,11 @@
   document.querySelectorAll("[data-mv-label]").forEach((el) => el.addEventListener("click", () => { movementPrefs.showLabel = el.dataset.mvLabel === "1"; saveMovementPrefs(); syncMvLabelUI(); }));
   function syncMvLabelUI() { document.querySelectorAll("[data-mv-label]").forEach((el) => setActive(el, (el.dataset.mvLabel === "1") === movementPrefs.showLabel)); }
 
+  document.querySelectorAll("[data-mv-figure]").forEach((el) => el.addEventListener("click", () => { movementPrefs.figureStyle = el.dataset.mvFigure; saveMovementPrefs(); syncMvFigureUI(); syncMvPickerUI(); }));
+  function syncMvFigureUI() { document.querySelectorAll("[data-mv-figure]").forEach((el) => setActive(el, el.dataset.mvFigure === movementPrefs.figureStyle)); }
+
   function openMovementReady() {
-    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI();
+    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI(); syncMvFigureUI();
     els.movementSaveForm.hidden = true;
     els.movementSaveBtn.hidden = false;
     renderMovementSaved();
@@ -7887,14 +7982,34 @@
   };
   const GNG_TRIAL_COUNT = 24;
   const GNG_NOGO_RATIO = 0.2;
-  const gngPrefs = { difficulty: "mittel" };
+  const gngPrefs = { difficulty: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadGngPrefs() {
     const saved = readJSON(GNG_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(gngPrefs, saved);
     if (!GNG_DIFFICULTIES[gngPrefs.difficulty]) gngPrefs.difficulty = "mittel";
+    if (!STROOP_COLOR_BY_KEY[gngPrefs.bgColorKey]) gngPrefs.bgColorKey = "gruen";
+    if (typeof gngPrefs.bgIntensity !== "number" || gngPrefs.bgIntensity < 0 || gngPrefs.bgIntensity > 1) gngPrefs.bgIntensity = 0;
   }
   loadGngPrefs();
   function saveGngPrefsToStorage() { writeJSON(GNG_PREFS_KEY, gngPrefs); }
+
+  // Background colour/intensity, added later (client asked every Test-Bereich
+  // exercise get the same background customisation NAT's Remember/Blitz/
+  // Flash/MOT already have) - see CLAUDE.md Established patterns for the
+  // scope decision (no transfer/preset-save here, unlike those four). The
+  // tint goes straight on the DOM stage that holds the go/no-go circle, same
+  // "no canvas" approach as Remember's own applyRememberBg().
+  function applyGngBg() {
+    els.gngStage.style.background = gngPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[gngPrefs.bgColorKey].hex, gngPrefs.bgIntensity)
+      : "";
+  }
+  const syncGngBgUI = wireBgIntensityControl(gngPrefs, {
+    pickers: [els.gngBgColorPicker, els.gngPauseBgColorPicker],
+    sliders: [els.gngBgIntensitySlider, els.gngPauseBgSlider],
+    valueEls: [els.gngBgIntensityValue, els.gngPauseBgValue],
+    hintEls: [els.gngBgContrastHint],
+  }, () => { saveGngPrefsToStorage(); applyGngBg(); });
 
   const GNG_BEST_KEY = "fwmc-gng-best-v1"; // { [difficulty]: bestAccuracyPct }
   function gngBestFor() { return readJSON(GNG_BEST_KEY, {})[gngPrefs.difficulty] || 0; }
@@ -7923,6 +8038,7 @@
 
   els.gngOpenBtn.addEventListener("click", () => {
     syncGngDifficultyUI();
+    syncGngBgUI();
     renderGngBest();
     showScreen("gngReady");
   });
@@ -7972,6 +8088,7 @@
       stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
       startTime: performance.now(),
     };
+    applyGngBg();
     els.gngStimulus.className = "gng-stimulus";
     els.gngHint.textContent = "Bereit? Gleich geht's los …";
     els.gngProgressEl.textContent = `0/${gngState.trials.length}`;
@@ -8028,10 +8145,10 @@
   }
   els.gngStage.addEventListener("click", gngTap);
 
-  // Pause just stops/replays the pending timer, no live background-adjust
-  // overlay - background colour customisation was skipped for this first
-  // Test-Bereich exercise (explicitly optional per the client's own
-  // instruction) so there is nothing to adjust while paused.
+  // Pause stops/replays the pending timer, same setTimeout trick as
+  // Remember/Blitz/Flash/MOT, plus a live background-adjust overlay (added
+  // later, see CLAUDE.md - every Test-Bereich exercise now gets the same
+  // background colour/intensity control NAT's own exercises have).
   function pauseGng() {
     if (!gngState || gngState.paused) return;
     gngState.paused = true;
@@ -8041,6 +8158,7 @@
       gngState.timer = null;
       gngState.timerRemainingMs = Math.max(0, gngState.timerFiresAt - gngState.pausedAt);
     }
+    syncGngBgUI();
     els.gngPauseBtn.hidden = true;
     els.gngPauseOverlay.hidden = false;
   }
@@ -8145,13 +8263,31 @@
   const NBACK_BLOCK_BASE_TRIALS = 20; // block length = 20 + N, per Jaeggi et al. 2008
 
   const TEST_NBACK_PREFS_KEY = "fwmc-test-nback-prefs-v1";
-  const testNbackPrefs = { startLevel: 2 }; // Jaeggi's own studies start every participant at 2-back
+  const testNbackPrefs = { startLevel: 2, bgColorKey: "gruen", bgIntensity: 0 }; // Jaeggi's own studies start every participant at 2-back
   (function loadTestNbackPrefs() {
     const saved = readJSON(TEST_NBACK_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(testNbackPrefs, saved);
     if (![1, 2, 3].includes(testNbackPrefs.startLevel)) testNbackPrefs.startLevel = 2;
+    if (!STROOP_COLOR_BY_KEY[testNbackPrefs.bgColorKey]) testNbackPrefs.bgColorKey = "gruen";
+    if (typeof testNbackPrefs.bgIntensity !== "number" || testNbackPrefs.bgIntensity < 0 || testNbackPrefs.bgIntensity > 1) testNbackPrefs.bgIntensity = 0;
   })();
   function saveTestNbackPrefsToStorage() { writeJSON(TEST_NBACK_PREFS_KEY, testNbackPrefs); }
+
+  // Background colour/intensity, added later - see CLAUDE.md Established
+  // patterns (every Test-Bereich exercise now gets the same background
+  // control NAT's Remember/Blitz/Flash/MOT already have, minus their
+  // transfer/preset-save machinery - a deliberate scope decision, see there).
+  function applyTestNbackBg() {
+    els.testNbackStage.style.background = testNbackPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[testNbackPrefs.bgColorKey].hex, testNbackPrefs.bgIntensity)
+      : "";
+  }
+  const syncTestNbackBgUI = wireBgIntensityControl(testNbackPrefs, {
+    pickers: [els.testNbackBgColorPicker, els.testNbackPauseBgColorPicker],
+    sliders: [els.testNbackBgIntensitySlider, els.testNbackPauseBgSlider],
+    valueEls: [els.testNbackBgIntensityValue, els.testNbackPauseBgValue],
+    hintEls: [els.testNbackBgContrastHint],
+  }, () => { saveTestNbackPrefsToStorage(); applyTestNbackBg(); });
 
   const TEST_NBACK_BEST_KEY = "fwmc-test-nback-best-v1"; // plain number: highest N level ever played to the end of a block
   function testNbackBest() { return readJSON(TEST_NBACK_BEST_KEY, 0); }
@@ -8181,6 +8317,7 @@
   });
   els.testNbackOpenBtn.addEventListener("click", () => {
     syncTestNbackStartUI();
+    syncTestNbackBgUI();
     renderTestNbackBest();
     showScreen("testNbackReady");
   });
@@ -8302,14 +8439,15 @@
       phase: "idle", responded: false, errors: 0, timer: null, timerFn: null, timerFiresAt: null,
       timerRemainingMs: null, paused: false, startTime: performance.now(),
     };
+    applyTestNbackBg();
     requestWakeLock();
     testNbackStartBlock();
   }
   els.testNbackReadyStartBtn.addEventListener("click", startTestNbackGame);
 
   // ---- Pause: cancel/replay the pending timer, same setTimeout trick as
-  // Remember/Blitz/Flash/MOT - no live background adjustment here since this
-  // exercise has no background setting to adjust (see note above). ----
+  // Remember/Blitz/Flash/MOT, plus a live background-adjust overlay (added
+  // later, see CLAUDE.md Established patterns). ----
   function pauseTestNback() {
     if (!testNbackState || testNbackState.paused) return;
     testNbackState.paused = true;
@@ -8319,6 +8457,7 @@
       testNbackState.timer = null;
       testNbackState.timerRemainingMs = Math.max(0, testNbackState.timerFiresAt - testNbackState.pausedAt);
     }
+    syncTestNbackBgUI();
     els.testNbackPauseBtn.hidden = true;
     els.testNbackPauseOverlay.hidden = false;
   }
@@ -8400,14 +8539,34 @@
   };
   const TRAIL_LETTERS = "ABCDEFGHIJKLM";
   const TRAIL_PREFS_KEY = "fwmc-trail-prefs-v1";
-  const trailPrefs = { teil: "a", difficulty: "mittel" };
+  const trailPrefs = { teil: "a", difficulty: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   (function loadTrailPrefs() {
     const saved = readJSON(TRAIL_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(trailPrefs, saved);
     if (!TRAIL_TEILE[trailPrefs.teil]) trailPrefs.teil = "a";
     if (!TRAIL_DIFFICULTIES[trailPrefs.difficulty]) trailPrefs.difficulty = "mittel";
+    if (!STROOP_COLOR_BY_KEY[trailPrefs.bgColorKey]) trailPrefs.bgColorKey = "gruen";
+    if (typeof trailPrefs.bgIntensity !== "number" || trailPrefs.bgIntensity < 0 || trailPrefs.bgIntensity > 1) trailPrefs.bgIntensity = 0;
   })();
   function saveTrailPrefsToStorage() { writeJSON(TRAIL_PREFS_KEY, trailPrefs); }
+
+  // Background colour/intensity, added later - see CLAUDE.md Established
+  // patterns (every Test-Bereich exercise now gets the same background
+  // control NAT's Remember/Blitz/Flash/MOT already have, minus their
+  // transfer/preset-save machinery - a deliberate scope decision, see there).
+  // The tint goes on the same #trailStage the scattered markers/SVG lines
+  // sit on top of.
+  function applyTrailBg() {
+    els.trailStage.style.background = trailPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[trailPrefs.bgColorKey].hex, trailPrefs.bgIntensity)
+      : "";
+  }
+  const syncTrailBgUI = wireBgIntensityControl(trailPrefs, {
+    pickers: [els.trailBgColorPicker, els.trailPauseBgColorPicker],
+    sliders: [els.trailBgIntensitySlider, els.trailPauseBgSlider],
+    valueEls: [els.trailBgIntensityValue, els.trailPauseBgValue],
+    hintEls: [els.trailBgContrastHint],
+  }, () => { saveTrailPrefsToStorage(); applyTrailBg(); });
 
   // Best time is kept per Teil+Schwierigkeit combo (lower = better), and only
   // ever recorded for a FULLY completed run - a partial run has no
@@ -8450,6 +8609,7 @@
   });
   els.trailOpenBtn.addEventListener("click", () => {
     syncTrailReadyUI();
+    syncTrailBgUI();
     renderTrailBest();
     showScreen("trailReady");
   });
@@ -8581,6 +8741,7 @@
       teil: trailPrefs.teil, diff, layout: [], currentIndex: 0, errors: 0, tappedPx: [],
       paused: false, finished: false, startTime: performance.now(),
     };
+    applyTrailBg();
     els.trailHint.textContent = TRAIL_TEILE[trailPrefs.teil].instruction;
     requestAnimationFrame(() => {
       // Read the stage's real rect only once it's actually visible (same
@@ -8609,6 +8770,7 @@
     if (!trailState || trailState.paused) return;
     trailState.paused = true;
     trailState.pausedAt = performance.now();
+    syncTrailBgUI();
     els.trailPauseBtn.hidden = true;
     els.trailPauseOverlay.hidden = false;
   }

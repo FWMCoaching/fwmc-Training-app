@@ -93,6 +93,35 @@ async def main():
         await pg.click("#movementBackBtn"); await pg.wait_for_timeout(150)
         print("abort ok, back at ready:", await pg.is_visible("#movementReady"))
 
+        # ---- Darstellung: "Figur" (real stick figure) vs "Abstrakt" (2x2
+        # symbol grid) - replaced the old single four-spoke-hub pictogram,
+        # which read as neither a clear figure nor a clean abstract symbol.
+        # Both must render a genuinely different SVG shape, both in the
+        # picker chips (live re-render on toggle) and in the lane during
+        # play, and the choice must persist.
+        print("still at movementReady after abort:", await pg.is_visible("#movementReady"))
+        await pg.click('#movementReady .advanced summary'); await pg.wait_for_timeout(100)
+        print("default style is Figur:", await pg.get_attribute('[data-mv-figure="figur"]', "class") and "active" in await pg.get_attribute('[data-mv-figure="figur"]', "class"))
+        figur_svg = await pg.eval_on_selector(".movement-chip svg", "el => el.outerHTML")
+        print("Figur style has a head circle:", "circle" in figur_svg and 'r="10"' in figur_svg)
+
+        await pg.click('[data-mv-figure="abstrakt"]'); await pg.wait_for_timeout(100)
+        abstrakt_svg = await pg.eval_on_selector(".movement-chip svg", "el => el.outerHTML")
+        print("Abstrakt style is a different shape (grid of circles):", abstrakt_svg != figur_svg and abstrakt_svg.count("<circle") >= 4)
+
+        await pg.click("#movementStartBtn"); await pg.wait_for_timeout(300)
+        lane_svg = await pg.eval_on_selector(".movement-tile svg", "el => el.outerHTML")
+        print("lane reflects Abstrakt style too:", lane_svg.count("<circle") >= 4 and "polygon" in lane_svg)
+        await pg.click("#movementBackBtn"); await pg.wait_for_timeout(150)
+
+        await pg.reload(); await pg.wait_for_timeout(400)
+        if await pg.is_visible("#tipsCloseBtn"):
+            await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)
+        await pg.click('.section-tab[data-section="movement"]'); await pg.wait_for_timeout(150)
+        await pg.click("#movementStartCard"); await pg.wait_for_timeout(150)
+        await pg.click('#movementReady .advanced summary'); await pg.wait_for_timeout(100)
+        print("Abstrakt choice persisted after reload:", "active" in (await pg.get_attribute('[data-mv-figure="abstrakt"]', "class") or ""))
+
         await b.close()
     print("ERRORS:", errors)
 
