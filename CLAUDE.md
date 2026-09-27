@@ -252,6 +252,26 @@ unrelated to the feature being changed.
   signals** that get "perceived and processed with some rules or other" -
   explicitly a later idea, not to build until asked ("das merkst du dir
   mal bitte").
+- **App icon redesign, approved but not yet built** ("Merken wir uns
+  erstmal", 2026-09-27): `icon-192.png`/`icon-512.png` currently show the
+  brand circle with the signature clipped by the circular crop (the
+  circle's transparent-cornered PNG is marked `"purpose":"maskable"` in
+  `manifest.json`, so OS icon-masking crops it further, which is likely
+  why it looked "off" on the home screen). Client wants to KEEP the round
+  badge look (worried a full-bleed square would hurt brand recognition),
+  not switch to a full-bleed square. Fix decided: keep the exact same
+  circle/signature scale+position as today, but fill the square canvas's
+  corners with the same brand teal (#007094) instead of leaving them
+  transparent - same look, no more transparent corners for the OS mask to
+  chew on. The client supplied the isolated signet (signature only, no
+  circle, no wordmark) separately; that file was used - via pixel
+  alignment against the current icon-512.png (86% line-pixel IoU match) -
+  to reconstruct the exact current scale/position and extend the fill.
+  Approved candidate is saved in the session scratchpad as
+  `E_same_position_v2.png` (also on the icon-proposals artifact,
+  https://claude.ai/artifact/8upP6M7NPpjuHzio82LG1t, "Update 2" section) -
+  not yet copied into the repo as the real `icon-192.png`/`icon-512.png`
+  or committed. Do this only when asked.
 - **NAT status**: Remember is fully built (Feste/Bewegte Positionen +
   Trainingsmodus), now including background colour/intensity (pre-settable
   in each mode's Feineinstellungen) plus a mid-exercise Pause with live
