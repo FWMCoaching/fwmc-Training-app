@@ -1276,6 +1276,16 @@
     antiFsBtn: $("antiFsBtn"), antiFsHint: $("antiFsHint"), antiFsHintOpenBtn: $("antiFsHintOpenBtn"), antiFsHintClose: $("antiFsHintClose"),
     antiDonePanel: $("antiDonePanel"), antiDoneSummary: $("antiDoneSummary"), antiRating: $("antiRating"),
     antiAgainBtn: $("antiAgainBtn"), antiDoneBackBtn: $("antiDoneBackBtn"),
+    stroopOpenBtn: $("stroopOpenBtn"), stroopBestHint: $("stroopBestHint"), stroopReady: $("stroopReady"),
+    stroopReadyBackToHome: $("stroopReadyBackToHome"), stroopDifficultyRow: $("stroopDifficultyRow"),
+    stroopReadyBestHint: $("stroopReadyBestHint"), stroopReadyStartBtn: $("stroopReadyStartBtn"),
+    stroopPlayer: $("stroopPlayer"), stroopStage: $("stroopStage"), stroopHint: $("stroopHint"), stroopWord: $("stroopWord"),
+    stroopResponseRow: $("stroopResponseRow"),
+    stroopPauseOverlay: $("stroopPauseOverlay"), stroopResumeBtn: $("stroopResumeBtn"),
+    stroopPlayerBar: $("stroopPlayerBar"), stroopBackBtn: $("stroopBackBtn"), stroopPauseBtn: $("stroopPauseBtn"), stroopProgressEl: $("stroopProgressEl"),
+    stroopFsBtn: $("stroopFsBtn"), stroopFsHint: $("stroopFsHint"), stroopFsHintOpenBtn: $("stroopFsHintOpenBtn"), stroopFsHintClose: $("stroopFsHintClose"),
+    stroopDonePanel: $("stroopDonePanel"), stroopDoneSummary: $("stroopDoneSummary"), stroopRating: $("stroopRating"),
+    stroopAgainBtn: $("stroopAgainBtn"), stroopDoneBackBtn: $("stroopDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationReadyBestHint: $("rotationReadyBestHint"), rotationReadyStartBtn: $("rotationReadyStartBtn"),
@@ -1492,7 +1502,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3522,6 +3532,7 @@
     els.reaktPlayer.hidden = true;
     els.tsPlayer.hidden = true;
     els.antiPlayer.hidden = true;
+    els.stroopPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -13292,6 +13303,324 @@
   els.antiBackBtn.addEventListener("click", antiStop);
   els.antiAgainBtn.addEventListener("click", () => { els.antiDonePanel.hidden = true; startAntiGame(); });
   els.antiDoneBackBtn.addEventListener("click", () => { els.antiPlayer.hidden = true; els.antiDonePanel.hidden = true; showScreen("testHome"); });
+
+  // ---- Wortfarben-Test (Stroop-Aufgabe) ----
+  // Eighteenth autonomous entry (see CLAUDE.md's "Test-Bereich (autonomous,
+  // ongoing)"). Grounded in the classic Stroop colour-word task (Stroop,
+  // 1935, "Studies of interference in serial verbal reactions", Journal of
+  // Experimental Psychology 18(6), 643-662): a colour NAME ("ROT"/"BLAU"/
+  // "GRÜN"/"GELB") is printed in one of four ink colours, and the client
+  // must name the INK colour, ignoring the word's meaning. Reading a
+  // familiar word is a fast, automatic process that keeps happening
+  // whether or not it's wanted, so when the word's meaning conflicts with
+  // its own ink colour ("incongruent" - e.g. "ROT" printed in blue) that
+  // automatic reading response competes with the instructed colour-naming
+  // response, and correct answers come slower and less accurately than
+  // when word and ink agree ("congruent") - the classic Stroop effect, one
+  // of the most replicated findings in cognitive psychology. Also
+  // researched as sport-relevant before building: "Enhanced Cognitive
+  // Inhibition in Table Tennis Athletes: Insights from Color-Word and
+  // Spatial Stroop Tasks" (2024, PMC11117886) found table-tennis athletes
+  // showed a SMALLER Stroop effect (faster, more stable colour-naming
+  // despite the word conflict) than non-athletes on both the classic
+  // colour-word Stroop task and a spatial Stroop variant - a fit for
+  // FWMC's "visuelle Entscheidungsgeschwindigkeit" focus. Genuinely
+  // distinct from every existing Test/NAT mechanic: Simon's conflict comes
+  // from a stimulus's task-IRRELEVANT spatial location automatically
+  // priming a response side, with no verbal/reading component at all;
+  // Flanker's conflict comes from simultaneous DISTRACTOR stimuli
+  // surrounding an unambiguous central target; Regelwechsel-Test mixes two
+  // classification RULES on one ambiguous stimulus, but the stimulus
+  // itself (a bare digit) has no automatic reading response competing with
+  // anything - this is the only exercise whose interference comes from
+  // WITHIN a single stimulus, between its automatically-read verbal
+  // identity and the separate perceptual dimension (colour) actually being
+  // judged.
+  const STROOP_PREFS_KEY = "fwmc-stroop-prefs-v1";
+  // Difficulty controls the response window and inter-trial gap - same
+  // shape and the same numbers as SIMON_DIFFICULTIES/FLANKER_DIFFICULTIES
+  // (a single-stimulus, immediate-response task of comparable load).
+  const STROOP_DIFFICULTIES = {
+    leicht: { title: "Leicht", responseMs: 2200, isiMin: 900, isiMax: 1400 },
+    mittel: { title: "Mittel", responseMs: 1600, isiMin: 700, isiMax: 1100 },
+    schwer: { title: "Schwer", responseMs: 1100, isiMin: 500, isiMax: 900 },
+  };
+  // Four colours, fixed hex throughout (never var(--...)). "gruen"/"gelb"
+  // are plain ASCII keys internally; the displayed word/button text uses
+  // the proper German spelling.
+  const STROOP_COLORS = {
+    rot: { title: "Rot", word: "ROT", hex: "#d6373c" },
+    blau: { title: "Blau", word: "BLAU", hex: "#2f6fed" },
+    gruen: { title: "Grün", word: "GRÜN", hex: "#1f9d55" },
+    gelb: { title: "Gelb", word: "GELB", hex: "#e0a300" },
+  };
+  const STROOP_COLOR_KEYS = Object.keys(STROOP_COLORS);
+  // 48 trials: 24 congruent (6 per colour, word == ink) + 24 incongruent
+  // (2 reps of each of the 12 word≠ink combinations) - a balanced 50/50
+  // congruent/incongruent split, same "enough per condition for a
+  // meaningful RT comparison" reasoning as Simon's own 20/20 split, with
+  // every colour appearing equally often as the correct (ink) answer.
+  const STROOP_MIN_RESOLVED = 4;
+  const stroopPrefs = { difficulty: "mittel" };
+  function loadStroopPrefs() {
+    const saved = readJSON(STROOP_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(stroopPrefs, saved);
+    if (!STROOP_DIFFICULTIES[stroopPrefs.difficulty]) stroopPrefs.difficulty = "mittel";
+  }
+  loadStroopPrefs();
+  function saveStroopPrefsToStorage() { writeJSON(STROOP_PREFS_KEY, stroopPrefs); }
+
+  const STROOP_BEST_KEY = "fwmc-stroop-best-v1"; // { [difficulty]: bestAccuracyPct }
+  function stroopBestFor() { return readJSON(STROOP_BEST_KEY, {})[stroopPrefs.difficulty] || 0; }
+  function saveStroopBest(accuracyPct) {
+    const all = readJSON(STROOP_BEST_KEY, {});
+    if (accuracyPct > (all[stroopPrefs.difficulty] || 0)) { all[stroopPrefs.difficulty] = accuracyPct; writeJSON(STROOP_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderStroopBest() {
+    const best = stroopBestFor();
+    const text = best ? `Beste Genauigkeit (${STROOP_DIFFICULTIES[stroopPrefs.difficulty].title}): ${best}%` : "";
+    els.stroopBestHint.textContent = text;
+    els.stroopReadyBestHint.textContent = text;
+  }
+  function syncStroopDifficultyUI() {
+    els.stroopDifficultyRow.querySelectorAll("[data-stroop-diff]").forEach((btn) => setActive(btn, btn.dataset.stroopDiff === stroopPrefs.difficulty));
+  }
+  els.stroopDifficultyRow.querySelectorAll("[data-stroop-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      stroopPrefs.difficulty = btn.dataset.stroopDiff;
+      saveStroopPrefsToStorage();
+      syncStroopDifficultyUI();
+      renderStroopBest();
+    });
+  });
+
+  els.stroopOpenBtn.addEventListener("click", () => {
+    syncStroopDifficultyUI();
+    renderStroopBest();
+    showScreen("stroopReady");
+  });
+  els.stroopReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Same timer-wrapping trick as scheduleSimonTimer/scheduleFlankerTimer:
+  // records what's pending and when it fires, so Pause can cancel it and
+  // Resume can replay it with its exact remaining delay.
+  function scheduleStroopTimer(fn, delayMs) {
+    stroopState.timerFn = fn;
+    stroopState.timerFiresAt = performance.now() + delayMs;
+    stroopState.timer = setTimeout(() => { stroopState.timer = null; fn(); }, delayMs);
+  }
+
+  function buildStroopTrials() {
+    const trials = [];
+    STROOP_COLOR_KEYS.forEach((color) => {
+      for (let i = 0; i < 6; i++) trials.push({ ink: color, word: color });
+    });
+    STROOP_COLOR_KEYS.forEach((ink) => {
+      STROOP_COLOR_KEYS.forEach((word) => {
+        if (word === ink) return;
+        for (let i = 0; i < 2; i++) trials.push({ ink, word });
+      });
+    });
+    // Shuffle, then avoid more than 3 identical correct (ink-determined)
+    // responses back to back - same guard as buildSimonTrials/
+    // buildFlankerTrials, so a "just keep tapping the same button" motor
+    // strategy can't pass undetected.
+    for (let tries = 0; tries < 200; tries++) {
+      for (let i = trials.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [trials[i], trials[j]] = [trials[j], trials[i]];
+      }
+      let ok = true, run = 1;
+      for (let i = 1; i < trials.length; i++) {
+        if (trials[i].ink === trials[i - 1].ink) { run++; if (run > 3) { ok = false; break; } }
+        else run = 1;
+      }
+      if (ok) break;
+    }
+    return trials;
+  }
+
+  function stroopBtnFor(color) { return els.stroopResponseRow.querySelector(`[data-stroop-color="${color}"]`); }
+  function stroopClearStage() {
+    els.stroopWord.textContent = "";
+    els.stroopWord.style.color = "";
+    els.stroopResponseRow.querySelectorAll("[data-stroop-color]").forEach((btn) => btn.classList.remove("correct", "wrong"));
+  }
+
+  let stroopState = null;
+  function startStroopGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.stroopPlayer.hidden = false;
+    els.stroopPlayerBar.hidden = false;
+    els.stroopDonePanel.hidden = true;
+    els.stroopPauseOverlay.hidden = true;
+    els.stroopPauseBtn.hidden = false;
+    stroopState = {
+      diff: STROOP_DIFFICULTIES[stroopPrefs.difficulty], trials: buildStroopTrials(), index: -1, phase: "gap", responded: false,
+      correct: 0, incorrect: 0, timeouts: 0, rtsCongruent: [], rtsIncongruent: [],
+      stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      startTime: performance.now(),
+    };
+    stroopClearStage();
+    els.stroopHint.textContent = "Bereit? Gleich geht's los …";
+    els.stroopProgressEl.textContent = `0/${stroopState.trials.length}`;
+    requestWakeLock();
+    scheduleStroopTimer(stroopNextTrial, 1200);
+  }
+  els.stroopReadyStartBtn.addEventListener("click", startStroopGame);
+
+  function stroopNextTrial() {
+    if (!stroopState) return;
+    stroopState.index++;
+    if (stroopState.index >= stroopState.trials.length) { stroopFinish(); return; }
+    els.stroopProgressEl.textContent = `${stroopState.index + 1}/${stroopState.trials.length}`;
+    stroopState.phase = "gap";
+    stroopState.responded = false;
+    stroopClearStage();
+    const isi = stroopState.diff.isiMin + Math.random() * (stroopState.diff.isiMax - stroopState.diff.isiMin);
+    scheduleStroopTimer(stroopShowStimulus, isi);
+  }
+  function stroopShowStimulus() {
+    if (!stroopState) return;
+    const trial = stroopState.trials[stroopState.index];
+    stroopState.phase = "responding";
+    stroopState.responded = false;
+    stroopState.stimAt = performance.now();
+    els.stroopHint.textContent = "";
+    stroopClearStage();
+    els.stroopWord.textContent = STROOP_COLORS[trial.word].word;
+    els.stroopWord.style.color = STROOP_COLORS[trial.ink].hex;
+    scheduleStroopTimer(stroopEndTrial, stroopState.diff.responseMs);
+  }
+  function stroopEndTrial() {
+    if (!stroopState) return;
+    if (stroopState.phase === "responding" && !stroopState.responded) {
+      stroopState.incorrect++;
+      stroopState.timeouts++;
+      els.stroopHint.textContent = "Verpasst!";
+    }
+    stroopState.phase = "gap";
+    stroopNextTrial();
+  }
+  function stroopTap(color) {
+    if (!stroopState || stroopState.paused || stroopState.responded) return;
+    // Taps before the word actually appears are ignored - reaction time is
+    // measured stimulus-locked, same convention as Simon's/Flanker's own
+    // tap handlers.
+    if (stroopState.phase !== "responding") return;
+    stroopState.responded = true;
+    const trial = stroopState.trials[stroopState.index];
+    const rt = performance.now() - stroopState.stimAt;
+    const isCorrect = color === trial.ink;
+    const congruent = trial.word === trial.ink;
+    stroopBtnFor(color).classList.add(isCorrect ? "correct" : "wrong");
+    if (isCorrect) {
+      stroopState.correct++;
+      (congruent ? stroopState.rtsCongruent : stroopState.rtsIncongruent).push(rt);
+    } else {
+      stroopState.incorrect++;
+      els.stroopHint.textContent = "Falsche Farbe!";
+    }
+    // The feedback ring stays up for whatever's left of diff.responseMs
+    // (the already-scheduled stroopEndTrial fires the actual transition) -
+    // same rhythm as Simon/Flanker leaving their own tap feedback up for
+    // the rest of the response window, no separate timer needed.
+  }
+  els.stroopResponseRow.querySelectorAll("[data-stroop-color]").forEach((btn) => {
+    btn.addEventListener("click", () => stroopTap(btn.dataset.stroopColor));
+  });
+
+  // Pause just stops/replays the pending timer, no live background-adjust
+  // overlay - background colour customisation was skipped for this
+  // exercise (explicitly optional per the Test-Bereich guidance) so there
+  // is nothing to adjust while paused.
+  function pauseStroop() {
+    if (!stroopState || stroopState.paused) return;
+    stroopState.paused = true;
+    stroopState.pausedAt = performance.now();
+    if (stroopState.timer) {
+      clearTimeout(stroopState.timer);
+      stroopState.timer = null;
+      stroopState.timerRemainingMs = Math.max(0, stroopState.timerFiresAt - stroopState.pausedAt);
+    }
+    els.stroopPauseBtn.hidden = true;
+    els.stroopPauseOverlay.hidden = false;
+  }
+  function resumeStroop() {
+    if (!stroopState || !stroopState.paused) return;
+    const pausedMs = performance.now() - stroopState.pausedAt;
+    stroopState.startTime += pausedMs;
+    stroopState.stimAt += pausedMs;
+    stroopState.paused = false;
+    if (stroopState.timerFn && stroopState.timerRemainingMs != null) {
+      scheduleStroopTimer(stroopState.timerFn, stroopState.timerRemainingMs);
+      stroopState.timerRemainingMs = null;
+    }
+    els.stroopPauseOverlay.hidden = true;
+    els.stroopPauseBtn.hidden = false;
+  }
+  els.stroopPauseBtn.addEventListener("click", pauseStroop);
+  els.stroopResumeBtn.addEventListener("click", resumeStroop);
+
+  function finalizeStroopRun(state, totalTrials) {
+    els.stroopPauseOverlay.hidden = true;
+    els.stroopPlayerBar.hidden = true;
+    const accuracyPct = Math.round(100 * state.correct / totalTrials);
+    const avgCong = avgOf(state.rtsCongruent);
+    const avgIncong = avgOf(state.rtsIncongruent);
+    // The Stroop effect itself: how much slower correct incongruent
+    // responses were versus correct congruent ones - the classic
+    // word-colour interference cost this paradigm exists to surface.
+    const stroopEffect = (avgCong != null && avgIncong != null) ? (avgIncong - avgCong) : null;
+    const isRecord = saveStroopBest(accuracyPct);
+    renderStroopBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.stroopDoneSummary.textContent =
+      `Wortfarben-Test (${state.diff.title}) · ${accuracyPct}% richtig` +
+      (avgCong != null ? ` · Ø kongruent ${avgCong} ms` : "") +
+      (avgIncong != null ? ` · Ø inkongruent ${avgIncong} ms` : "") +
+      (stroopEffect != null ? ` · Stroop-Effekt ${stroopEffect} ms` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${accuracyPct}% richtig` + (stroopEffect != null ? `, Stroop-Effekt ${stroopEffect} ms` : "");
+    const id = addHistory({ kind: "stroop", title: "Wortfarben-Test (Stroop-Aufgabe)", seconds: Math.round(played), note });
+    renderRating(els.stroopRating, id, "Wie fokussiert warst du?");
+    els.stroopDonePanel.hidden = false;
+  }
+  function stroopFinish() {
+    if (!stroopState) return;
+    const state = stroopState;
+    stroopState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.stroopPlayer) document.exitFullscreen().catch(() => {});
+    els.stroopFsHint.hidden = true;
+    finalizeStroopRun(state, state.trials.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved.
+  function stroopStop() {
+    if (!stroopState) return;
+    if (stroopState.timer) clearTimeout(stroopState.timer);
+    const state = stroopState;
+    stroopState = null;
+    els.stroopPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.stroopPlayer) document.exitFullscreen().catch(() => {});
+    els.stroopFsHint.hidden = true;
+    const resolved = state.correct + state.incorrect;
+    if (resolved >= STROOP_MIN_RESOLVED) {
+      finalizeStroopRun(state, resolved);
+    } else {
+      els.stroopPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.stroopBackBtn.addEventListener("click", stroopStop);
+  els.stroopAgainBtn.addEventListener("click", () => { els.stroopDonePanel.hidden = true; startStroopGame(); });
+  els.stroopDoneBackBtn.addEventListener("click", () => { els.stroopPlayer.hidden = true; els.stroopDonePanel.hidden = true; showScreen("testHome"); });
+  wireFullscreen({ player: els.stroopPlayer, btn: els.stroopFsBtn, hint: els.stroopFsHint, hintOpen: els.stroopFsHintOpenBtn, hintClose: els.stroopFsHintClose });
 
   // ---- Start-up ----
   renderHistory();

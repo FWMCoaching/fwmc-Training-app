@@ -1554,6 +1554,58 @@ doesn't:
   one of two known locations near two fixed response targets, but with
   plain neutral dots/buttons (not colour-coded) since side, not colour, is
   the whole point here. Test: `tests/anti_test.py`.
+- **Wortfarben-Test (Stroop-Aufgabe)** (eighteenth autonomous entry,
+  2026-09-27): grounded in the classic Stroop colour-word task (Stroop,
+  1935, "Studies of interference in serial verbal reactions", Journal of
+  Experimental Psychology 18(6), 643-662) - a colour name ("ROT"/"BLAU"/
+  "GRÜN"/"GELB") is printed in one of four ink colours, and the client
+  must tap the colour PATCH matching the actual ink colour, ignoring the
+  word's meaning entirely. Reading a familiar word is fast and automatic
+  and keeps happening whether or not it's wanted, so when the word's
+  meaning conflicts with its own ink colour ("inkongruent", e.g. "ROT"
+  printed in blue) that automatic reading response competes with the
+  instructed colour-naming response - correct answers come slower and
+  less accurately than when word and ink agree ("kongruent"), the classic
+  Stroop effect, one of the most replicated findings in cognitive
+  psychology. Reports accuracy% plus average congruent/incongruent RT and
+  their difference as the "Stroop-Effekt" (ms) - the actual outcome
+  measure this paradigm exists to surface - tracking best accuracy% per
+  `stroopPrefs.difficulty` (leicht/mittel/schwer, reusing
+  SIMON_DIFFICULTIES/FLANKER_DIFFICULTIES' exact response-window/ISI
+  numbers, a single-stimulus immediate-response task of comparable load)
+  via `STROOP_BEST_KEY`. Also researched as sport-relevant: "Enhanced
+  Cognitive Inhibition in Table Tennis Athletes: Insights from Color-Word
+  and Spatial Stroop Tasks" (2024, PMC11117886) found table-tennis
+  athletes showed a SMALLER Stroop effect (faster, more stable
+  colour-naming despite the word conflict) than non-athletes on both the
+  classic colour-word Stroop task and a spatial Stroop variant - a fit for
+  FWMC's "visuelle Entscheidungsgeschwindigkeit" focus. Genuinely distinct
+  from every existing Test/NAT mechanic: Simon's conflict comes from a
+  stimulus's task-IRRELEVANT spatial location automatically priming a
+  response side, with no verbal/reading component at all; Flanker's
+  conflict comes from simultaneous DISTRACTOR stimuli surrounding an
+  unambiguous central target; Regelwechsel-Test mixes two classification
+  RULES on one ambiguous stimulus, but that stimulus (a bare digit) has no
+  automatic reading response competing with anything - this is the only
+  exercise whose interference arises WITHIN a single stimulus, between its
+  automatically-read verbal identity and the separate perceptual dimension
+  (colour) actually being judged. Fixed 48-trial run (24 congruent, 6 per
+  colour + 24 incongruent, 2 reps of each of the 12 word≠ink combinations -
+  a balanced 50/50 split with every colour equally often the correct
+  answer), shuffled with the same same-correct-colour-max-3-in-a-row guard
+  used elsewhere. No Bei-Fehler/background colour/Zusatzaufgabe/
+  Trainingsmodus - all correctly skipped per the "optional, skip what
+  doesn't fit in an hour" guidance, same reasoning as Simon/Flanker (a
+  fixed-trial accuracy/RT test, nothing to configure beyond difficulty).
+  Pause/resume uses the same scheduleXTimer-remaining-delay trick as
+  Simon/Flanker/Posner. New CSS is `.stroop-*` (fixed hex colours
+  throughout, no `var(--...)`); the four response buttons are plain colour
+  swatches with NO text label - deliberately, unlike Simon's own labelled
+  blue/orange buttons, since a text-labelled colour button here would
+  itself need to be read, adding a second reading step on top of the exact
+  word-vs-colour conflict this task exists to measure (the same "point to
+  the colour patch" convention used in manual Stroop adaptations in
+  individual-differences research). Test: `tests/stroop_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 

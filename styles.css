@@ -846,6 +846,28 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .anti-response-btn:active{transform:scale(.96)}
 .anti-response-btn.correct{background:#2e7d32}
 .anti-response-btn.wrong{background:#d32f2f}
+
+/* Wortfarben-Test (Stroop-Aufgabe): fixed hex colours throughout, never
+   var(--...). The four response buttons are plain colour swatches with no
+   text label - deliberately, unlike Simon's own labelled blue/orange
+   buttons, since a text-labelled colour button here would itself need to
+   be read, adding a second reading step on top of the exact word-vs-colour
+   conflict this task exists to measure. Correct/wrong feedback is a
+   colour-neutral ring on top of each button's own permanent fill, same
+   "don't confuse feedback colour with stimulus/response colour" reasoning
+   as Simon's own convention. */
+.stroop-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px;padding:24px}
+.stroop-word{font-family:"Magra",sans-serif;font-weight:800;font-size:60px;line-height:1;letter-spacing:.02em;user-select:none;min-height:70px}
+.stroop-response-row{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;max-width:340px}
+.stroop-response-btn{width:80px;height:80px;border-radius:50%;border:none;cursor:pointer;transition:transform .08s ease,box-shadow .12s ease}
+.stroop-response-btn:active{transform:scale(.96)}
+.stroop-response-btn.stroop-color-rot{background:#d6373c}
+.stroop-response-btn.stroop-color-blau{background:#2f6fed}
+.stroop-response-btn.stroop-color-gruen{background:#1f9d55}
+.stroop-response-btn.stroop-color-gelb{background:#e0a300}
+.stroop-response-btn.correct{box-shadow:0 0 0 5px #2e7d32 inset}
+.stroop-response-btn.wrong{box-shadow:0 0 0 5px #d32f2f inset}
+
 .corsi-stage{flex:1;position:relative;overflow:hidden}
 .corsi-block{
   position:absolute;transform:translate(-50%,-50%);
