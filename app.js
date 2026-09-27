@@ -1666,6 +1666,34 @@
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   }
 
+  // ---- Shared top-clearance measurement for every full-stage exercise
+  // (Remember/Blitz-Raster/Flash/Trail/Search/Corsi/Reaktionsfeld etc.) -
+  // their stage fills the whole player from y=0, with the instruction hint
+  // (".remember-hint", short status blips OR - since Trail Making Test's
+  // real bug report - a much longer, wrapping instruction sentence) and the
+  // player-bar floating on top via z-index. A hardcoded pixel minY can't
+  // account for wrapped-hint height (varies with instruction length) or
+  // safe-area notch size (varies per device), so every exercise that
+  // scatters markers/targets across its whole stage should measure the
+  // hint's and bar's real rendered bottom edge instead. Falls back to
+  // fallbackMinY only while the stage isn't actually laid out yet
+  // (rect.height === 0, e.g. read before the player is unhidden).
+  // IMPORTANT: the returned value is meant to be used as a constraint on a
+  // marker's CENTRE y - every caller positions markers via translate(-50%,
+  // -50%), so the marker's own rendered TOP edge sits `halfSizePx` above its
+  // centre. Without adding halfSizePx here, a centre placed exactly at the
+  // hint's measured bottom edge would still visually overlap it by
+  // (halfSizePx - marginPx); this bit past every caller the first time
+  // (caught via a repeated Playwright run, not a single deterministic one -
+  // the overlap only happens for markers whose random draw lands near this
+  // boundary, so a single-shot test can easily miss it).
+  function stageTopClearanceY(stageRect, hintEl, barEl, fallbackMinY, halfSizePx = 0, marginPx = 16) {
+    if (!stageRect.height) return fallbackMinY;
+    const hintRect = hintEl.getBoundingClientRect();
+    const barRect = barEl.getBoundingClientRect();
+    return Math.max(fallbackMinY, Math.max(hintRect.bottom, barRect.bottom) - stageRect.top + halfSizePx + marginPx);
+  }
+
   // ---- Swipe navigation: lets a left/right swipe trigger the same action as
   // an existing prev/next button, wherever paging through a fixed sequence
   // (slides, chapters) makes sense. Reuses the button's own .click() so
@@ -4921,7 +4949,8 @@
     const w = rect.width || 390;
     const h = rect.height || 600;
     const half = REMEMBER_MARKER_PX / 2;
-    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY: 112, maxY: Math.max(112, h - 16) };
+    const minY = stageTopClearanceY(rect, els.rememberHint, els.rememberPlayerBar, 112, half);
+    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY, maxY: Math.max(minY, h - 16) };
   }
   function randomRememberPixelPosition(existingPx, bounds) {
     for (let attempt = 0; attempt < 300; attempt++) {
@@ -5000,11 +5029,16 @@
     rememberState.timer = setTimeout(fn, delayMs);
   }
   function startRememberLevel() {
+    // Hint/level text set BEFORE buildRememberPositions() - rememberStageBounds()
+    // measures #rememberHint's live rendered height (see stageTopClearanceY),
+    // which only reflects whatever text is in the DOM at that moment; reading
+    // it before updating the text would still see the PREVIOUS round's
+    // (possibly shorter, e.g. empty on the very first round) hint.
+    els.rememberHint.textContent = "Merken …";
+    els.rememberLevelEl.textContent = `${rememberState.level} Zahlen`;
     rememberState.positions = buildRememberPositions(rememberState.level, rememberState.keepPositions);
     rememberState.phase = "reveal";
     rememberState.nextExpected = 1;
-    els.rememberHint.textContent = "Merken …";
-    els.rememberLevelEl.textContent = `${rememberState.level} Zahlen`;
     renderRememberMarkers();
     const extra = Math.max(0, rememberState.level - 2) * rememberState.revealStepS;
     const revealMs = Math.min(6000, Math.max(300, (rememberState.revealBaseS + extra) * 1000));
@@ -5688,7 +5722,7 @@
     mittel: { title: "Mittel", stimulusS: 0.8, intervalS: 0.4 },
     schwer: { title: "Schwer", stimulusS: 0.5, intervalS: 0.25 },
   };
-  const FLASH_SPEED_STEPS = 8; // ceiling for "constant" mode's speed-up steps
+  const FLASH_SPEED_STEPS = 20; // ceiling for "constant" mode's speed-up steps
   const flashPrefs = {
     kind: "zahlen",
     stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS,
@@ -6115,11 +6149,11 @@
   }
   function flashEffectiveStimulusS() {
     if (flashState.mode !== "constant") return flashState.stimulusS;
-    return Math.max(0.25, flashState.stimulusS * Math.pow(0.85, flashState.speedStep));
+    return Math.max(0.12, flashState.stimulusS * Math.pow(0.85, flashState.speedStep));
   }
   function flashEffectiveIntervalS() {
     if (flashState.mode !== "constant") return flashState.intervalS;
-    return Math.max(0.15, flashState.intervalS * Math.pow(0.85, flashState.speedStep));
+    return Math.max(0.08, flashState.intervalS * Math.pow(0.85, flashState.speedStep));
   }
   function flashStartRound() {
     const count = flashState.mode === "constant" ? flashState.constantCount : flashState.count;
@@ -6760,14 +6794,14 @@
   // retry a candidate spot a handful of times if it lands too close to an
   // already-placed object, else just accept it - a rare, brief overlap at
   // high object counts is a much smaller problem than an infinite loop.
-  function motPlaceObjects(n, stageW, stageH, radius) {
+  function motPlaceObjects(n, stageW, stageH, radius, topMinY) {
     const objs = [];
     const minDist = radius * MOT_MIN_DIST_FACTOR;
     for (let i = 0; i < n; i++) {
       let x, y, tries = 0;
       do {
         x = radius + Math.random() * Math.max(1, stageW - 2 * radius);
-        y = radius + Math.random() * Math.max(1, stageH - 2 * radius);
+        y = topMinY + Math.random() * Math.max(1, stageH - radius - topMinY);
         tries++;
       } while (tries < 30 && objs.some((o) => Math.hypot(o.x - x, o.y - y) < minDist));
       const angle = Math.random() * Math.PI * 2;
@@ -6782,7 +6816,11 @@
       o.y += o.vy * speedPx * dt;
       if (o.x < motState.radius) { o.x = motState.radius; o.vx = Math.abs(o.vx); }
       if (o.x > motState.stageW - motState.radius) { o.x = motState.stageW - motState.radius; o.vx = -Math.abs(o.vx); }
-      if (o.y < motState.radius) { o.y = motState.radius; o.vy = Math.abs(o.vy); }
+      // The whole stage's y=0 sits under the instruction hint/player-bar
+      // (see stageTopClearanceY) - objects bounce continuously throughout
+      // the tracking phase, not just at initial placement, so the top
+      // boundary itself needs to stay below that fixed UI, not just y=0.
+      if (o.y < motState.topMinY) { o.y = motState.topMinY; o.vy = Math.abs(o.vy); }
       if (o.y > motState.stageH - motState.radius) { o.y = motState.stageH - motState.radius; o.vy = -Math.abs(o.vy); }
     });
     motSeparateObjects();
@@ -6809,7 +6847,12 @@
     }
     objs.forEach((o) => {
       o.x = Math.min(motState.stageW - motState.radius, Math.max(motState.radius, o.x));
-      o.y = Math.min(motState.stageH - motState.radius, Math.max(motState.radius, o.y));
+      // Must match motMoveObjects()'s own top boundary (topMinY, not just
+      // radius) - this second clamp exists only to undo overlap from the
+      // pairwise push-apart above, but re-clamping against the plain radius
+      // here would silently push an object back past the hint/player-bar
+      // clearance whenever separation happens to shove it upward.
+      o.y = Math.min(motState.stageH - motState.radius, Math.max(motState.topMinY, o.y));
     });
   }
   // Generalises the fixed-gray "3D-Optik" gradient to whichever colour was
@@ -6900,11 +6943,21 @@
   function motStartRound() {
     const { n, k, speedStep } = motCountsForRound();
     motState.speedStep = speedStep;
+    // Hint/level text must be set BEFORE measuring stageTopClearanceY() below -
+    // motLevelLabel() can be long enough to wrap the player-bar onto two
+    // lines (see .player-bar flex-wrap fix), and getBoundingClientRect()
+    // only reflects whatever text is in the DOM at the moment it's called.
+    // Measuring first (old order) captured the previous round's/short
+    // leftover text and produced a topMinY too small for THIS round's
+    // actual (possibly wrapped) bar height.
+    els.motHint.textContent = k > 1 ? "Merke dir die markierten Objekte" : "Merke dir das markierte Objekt";
+    els.motLevelEl.textContent = motLevelLabel();
     const rect = els.motObjectsLayer.getBoundingClientRect();
     motState.stageW = rect.width;
     motState.stageH = rect.height;
     motState.radius = MOT_RADIUS;
-    motState.objects = motPlaceObjects(n, motState.stageW, motState.stageH, motState.radius);
+    motState.topMinY = Math.max(motState.radius, stageTopClearanceY(rect, els.motHint, els.motPlayerBar, motState.radius, motState.radius));
+    motState.objects = motPlaceObjects(n, motState.stageW, motState.stageH, motState.radius, motState.topMinY);
     motState.targetIds = pickRandomSubset(motState.objects.map((o) => o.id), k);
     motState.tapped = new Set();
     motState.wrongId = null;
@@ -6916,8 +6969,6 @@
     const bgHex = motPrefs.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[motPrefs.bgColorKey].hex, motPrefs.bgIntensity) : "#ffffff";
     motState.baseColorHex = pickPeriphColor(motState.colors, bgHex, Math.random);
     motState.targetColorHex = pickMotColor(motState.targetColors, [bgHex, motState.baseColorHex], Math.random);
-    els.motHint.textContent = k > 1 ? "Merke dir die markierten Objekte" : "Merke dir das markierte Objekt";
-    els.motLevelEl.textContent = motLevelLabel();
     renderMotObjects();
     scheduleMotTimer(motBeginTracking, motState.highlightS * 1000);
   }
@@ -8432,7 +8483,8 @@
     const rect = els.trailStage.getBoundingClientRect();
     const w = rect.width || 390, h = rect.height || 600;
     const half = TRAIL_MARKER_PX / 2;
-    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY: 92, maxY: Math.max(92, h - 16) };
+    const minY = stageTopClearanceY(rect, els.trailHint, els.trailPlayerBar, 92, half);
+    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY, maxY: Math.max(minY, h - 16) };
   }
   function trailRandomPixelPosition(existingPx, bounds) {
     for (let attempt = 0; attempt < 300; attempt++) {
@@ -10735,7 +10787,8 @@
     const rect = els.searchStage.getBoundingClientRect();
     const w = rect.width || 390, h = rect.height || 600;
     const half = SEARCH_ITEM_PX / 2;
-    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY: 84, maxY: Math.max(84, h - 16) };
+    const minY = stageTopClearanceY(rect, els.searchHint, els.searchPlayerBar, 84, half);
+    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY, maxY: Math.max(minY, h - 16) };
   }
   function searchRandomPixelPosition(existingPx, bounds) {
     for (let attempt = 0; attempt < 300; attempt++) {
@@ -12123,7 +12176,8 @@
     const rect = els.corsiStage.getBoundingClientRect();
     const w = rect.width || 390, h = rect.height || 600;
     const half = CORSI_ITEM_PX / 2;
-    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY: 84, maxY: Math.max(84, h - 16) };
+    const minY = stageTopClearanceY(rect, els.corsiHint, els.corsiPlayerBar, 84, half);
+    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY, maxY: Math.max(minY, h - 16) };
   }
   function corsiRandomPixelPosition(existingPx, bounds) {
     for (let attempt = 0; attempt < 300; attempt++) {
@@ -12464,7 +12518,8 @@
     const rect = els.reaktStage.getBoundingClientRect();
     const w = rect.width || 390, h = rect.height || 600;
     const half = REAKT_ITEM_PX / 2;
-    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY: 70, maxY: Math.max(70, h - 16) };
+    const minY = stageTopClearanceY(rect, els.reaktHint, els.reaktPlayerBar, 70, half);
+    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY, maxY: Math.max(minY, h - 16) };
   }
   // Picks a random point at least `minJumpPx` away from the previous light's
   // position (null previous = anywhere) - forces genuine eye/hand travel

@@ -105,6 +105,66 @@ unrelated to the feature being changed.
 
 ## Established patterns worth reusing
 
+- **`stageTopClearanceY()` - shared top-clearance for full-stage exercises
+  (added 2026-09-27)**: real bug report (screenshot: Trail Making's
+  instruction text clipped off both edges of an iPhone screen, with
+  markers rendered right up against the top bar). Every exercise whose
+  stage fills the WHOLE player from y=0 (`.remember-stage/.trail-stage/
+  .search-stage/.corsi-stage/.reakt-stage/.mot-objects{inset:0}`, all
+  `flex:1;position:relative`, as opposed to Merkspanne's/Blitz-Raster's/
+  Anti's smaller normal-flow sub-box that's centred well clear of the top
+  by construction) has the instruction hint (`.remember-hint`) and the
+  player-bar floating on top via z-index - their own `*StageBounds()`
+  functions each had a hardcoded pixel `minY` that couldn't account for
+  wrapped-hint height (varies with instruction length) or safe-area notch
+  size (varies per device). Fixed with a shared helper, `stageTopClearanceY
+  (stageRect, hintEl, barEl, fallbackMinY, halfSizePx, marginPx=16)`
+  (defined near `focusFirstIn`/`trapTabKey`): measures the hint's AND
+  bar's actual live `getBoundingClientRect().bottom`, adds the marker's own
+  `halfSizePx` (it's centred via `translate(-50%,-50%)`, so its rendered
+  top edge sits `halfSizePx` above whatever "centre" constraint you clamp
+  to - **forgetting this `halfSizePx` term was the bug's second, sneakier
+  half**: markers still visually overlapped the hint by exactly
+  `halfSizePx - marginPx` even after switching to live measurement, and
+  since it only happens for markers whose random draw lands near that
+  boundary, a single Playwright run easily missed it - caught only by
+  re-running the same test many times) plus a safety margin, and returns
+  that as the exercise's `minY`. Applied to `rememberStageBounds`,
+  `trailStageBounds`, `searchStageBounds`, `corsiStageBounds`,
+  `reaktStageBounds` (all now one-liners: `stageTopClearanceY(rect, els.X
+  Hint, els.XPlayerBar, oldFallbackConstant, half)`), and to MOT's
+  continuous bounce physics (`motState.topMinY` - objects there drift for
+  the WHOLE tracking phase via `requestAnimationFrame`, not just at
+  initial placement, so both the edge-bounce clamp in `motMoveObjects()`
+  AND the separate post-separation clamp in `motSeparateObjects()` had to
+  use `topMinY` - the second one still used the plain `radius` and was a
+  **third** bug, silently undoing the fix whenever two objects got pushed
+  apart near the top edge). **A fourth bug, also real and also only
+  visible under repeated runs**: `motStartRound()`/`startRememberLevel()`
+  originally computed bounds/built the layout BEFORE setting that round's
+  hint/level text - `getBoundingClientRect()` only reflects whatever text
+  is in the DOM at the exact call moment, so measuring first captured the
+  PREVIOUS round's (often shorter, sometimes empty on the very first
+  round) text and produced a `minY` too small for the text about to be
+  shown. **Any new exercise added to this scatter-layout family must set
+  its hint/status text before calling its `*StageBounds()`/layout-builder,
+  not after.** New exercise built the same "full-stage scatter" way should
+  call this helper from day one rather than inventing a hardcoded minY.
+  Flash Speicher Test predates this helper and has its own equivalent,
+  `flashSafeFy()` (see its NAT entry below) - not worth merging, since it
+  clamps a single already-computed `fy` fraction rather than being a whole
+  bounds function.
+- **`.player-bar` can also overflow off-screen on a narrow phone (fixed
+  2026-09-27, found while investigating the above)**: the bar's 4 items
+  (Beenden/Pause/status pill/Vollbild) are `display:flex;justify-content:
+  space-between` with no wrap - MOT's status label ("8 Objekte · 4 Ziele ·
+  Tempo-Stufe 3") is long enough that on a 390px-wide viewport the row
+  doesn't fit, and since there was no wrap, "Vollbild" got pushed
+  completely off the right edge of the screen - present but unreachable,
+  not just visually cramped. Fixed with `.player-bar{flex-wrap:wrap}` and
+  `.player-status{white-space:normal;max-width:78vw}` (was `nowrap`) -
+  `stageTopClearanceY()` above already measures the bar live, so a
+  now-2-line bar is automatically accounted for with no further change.
 - **Multi-select with a "select all" shortcut**: individual toggle
   buttons plus one convenience button that (a) selects/deselects
   everything at once and (b) shows itself as "active" automatically
@@ -435,16 +495,27 @@ unrelated to the feature being changed.
   `tests/flash_hint_overlap_test.py` (forces `Math.random()` to the values
   that previously produced the worst-case placement, asserts no overlap).
   Same report also asked two design questions, both confirmed by reading
-  the code, answered for the client, **not yet acted on** (needs a decision,
-  see Offene Fragen): (1) the displayed speed cap really does stop at
-  "Tempo-Stufe 9" - `FLASH_SPEED_STEPS = 8`, displayed as `speedStep + 1`,
-  by design, not a bug; (2) "Konstant" mode has no fixed rep-count or
-  duration stop condition today - once `speedStep` plateaus at the cap it
-  just keeps flashing rounds at max speed until the user taps "Beenden";
-  every other mode (climb/climbRepeat/training) has the same
+  the code and answered for the client: (1) the displayed speed cap really
+  did stop at "Tempo-Stufe 9" (`FLASH_SPEED_STEPS = 8`, displayed as
+  `speedStep + 1`) - by design, not a bug, but the client then explicitly
+  asked for more headroom ("darf ruhig noch höher und schneller gehen als
+  Stufe 9"), so **raised 2026-09-27**: `FLASH_SPEED_STEPS` is now `20`
+  (displayed ceiling "Tempo-Stufe 21"), and the per-step floors in
+  `flashEffectiveStimulusS()`/`flashEffectiveIntervalS()` were lowered from
+  0.25s/0.15s to 0.12s/0.08s - raising the step ceiling alone would have
+  been cosmetic without this, since at the OLD floors "mittel"/"schwer"
+  difficulty already plateaus at or before step 8 (0.85^step decay simply
+  has nothing left to shrink); the new floors keep genuine speed increase
+  going noticeably further for every starting difficulty, not just
+  "leicht". Same 0.85 per-step decay rate kept - only the ceiling/floor
+  moved, not the ramp-up feel. (2) "Konstant" mode has no fixed rep-count
+  or duration stop condition today - once `speedStep` plateaus at the cap
+  it just keeps flashing rounds at max speed until the user taps
+  "Beenden"; every other mode (climb/climbRepeat/training) has the same
   Beenden-only ending. Whether to add a natural stopping point (fixed rep
-  count with a right/wrong tally, or a fixed duration) is an open product
-  decision, not implemented.
+  count with a right/wrong tally, or a fixed duration) is still an open
+  product decision, not implemented (client hasn't weighed in on this part
+  yet - see Offene Fragen).
 - **Dark-mode contrast bug (fixed) - a pattern to watch for**: `.flash-
   digit`/`.flash-input-label`/`.flash-typed-input` (the last since replaced
   by `.flash-answer-box`/`.flash-key`, built fixed-hex from the start) were
