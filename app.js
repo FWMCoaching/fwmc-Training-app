@@ -1148,6 +1148,16 @@
     trailFsBtn: $("trailFsBtn"), trailFsHint: $("trailFsHint"), trailFsHintOpenBtn: $("trailFsHintOpenBtn"), trailFsHintClose: $("trailFsHintClose"),
     trailDonePanel: $("trailDonePanel"), trailDoneSummary: $("trailDoneSummary"), trailRating: $("trailRating"),
     trailAgainBtn: $("trailAgainBtn"), trailDoneBackBtn: $("trailDoneBackBtn"),
+    flankerOpenBtn: $("flankerOpenBtn"), flankerBestHint: $("flankerBestHint"), flankerReady: $("flankerReady"),
+    flankerReadyBackToHome: $("flankerReadyBackToHome"), flankerDifficultyRow: $("flankerDifficultyRow"),
+    flankerReadyBestHint: $("flankerReadyBestHint"), flankerReadyStartBtn: $("flankerReadyStartBtn"),
+    flankerPlayer: $("flankerPlayer"), flankerStage: $("flankerStage"), flankerHint: $("flankerHint"), flankerRow: $("flankerRow"),
+    flankerLeftBtn: $("flankerLeftBtn"), flankerRightBtn: $("flankerRightBtn"),
+    flankerPauseOverlay: $("flankerPauseOverlay"), flankerResumeBtn: $("flankerResumeBtn"),
+    flankerPlayerBar: $("flankerPlayerBar"), flankerBackBtn: $("flankerBackBtn"), flankerPauseBtn: $("flankerPauseBtn"), flankerProgressEl: $("flankerProgressEl"),
+    flankerFsBtn: $("flankerFsBtn"), flankerFsHint: $("flankerFsHint"), flankerFsHintOpenBtn: $("flankerFsHintOpenBtn"), flankerFsHintClose: $("flankerFsHintClose"),
+    flankerDonePanel: $("flankerDonePanel"), flankerDoneSummary: $("flankerDoneSummary"), flankerRating: $("flankerRating"),
+    flankerAgainBtn: $("flankerAgainBtn"), flankerDoneBackBtn: $("flankerDoneBackBtn"),
     blitzOpenBtn: $("blitzOpenBtn"), blitzBestHint: $("blitzBestHint"), blitzReady: $("blitzReady"),
     blitzReadyBackToHome: $("blitzReadyBackToHome"), blitzGridSizeRow: $("blitzGridSizeRow"),
     blitzZoneGroup: $("blitzZoneGroup"), blitzZoneAllBtn: $("blitzZoneAllBtn"), blitzZoneGrid: $("blitzZoneGrid"), blitzZoneHint: $("blitzZoneHint"),
@@ -1344,7 +1354,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3361,6 +3371,7 @@
     els.gngPlayer.hidden = true;
     els.testNbackPlayer.hidden = true;
     els.trailPlayer.hidden = true;
+    els.flankerPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3739,6 +3750,7 @@
   wireFullscreen({ player: els.gngPlayer, btn: els.gngFsBtn, hint: els.gngFsHint, hintOpen: els.gngFsHintOpenBtn, hintClose: els.gngFsHintClose });
   wireFullscreen({ player: els.testNbackPlayer, btn: els.testNbackFsBtn, hint: els.testNbackFsHint, hintOpen: els.testNbackFsHintOpenBtn, hintClose: els.testNbackFsHintClose });
   wireFullscreen({ player: els.trailPlayer, btn: els.trailFsBtn, hint: els.trailFsHint, hintOpen: els.trailFsHintOpenBtn, hintClose: els.trailFsHintClose });
+  wireFullscreen({ player: els.flankerPlayer, btn: els.flankerFsBtn, hint: els.flankerFsHint, hintOpen: els.flankerFsHintOpenBtn, hintClose: els.flankerFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -8398,6 +8410,301 @@
   els.trailBackBtn.addEventListener("click", trailStop);
   els.trailAgainBtn.addEventListener("click", () => { els.trailDonePanel.hidden = true; startTrailGame(); });
   els.trailDoneBackBtn.addEventListener("click", () => { els.trailPlayer.hidden = true; els.trailDonePanel.hidden = true; showScreen("testHome"); });
+
+  // ==== Test-Bereich: Ablenkungstest (Flanker) ====
+  // Fourth autonomous entry (see CLAUDE.md's "Test-Bereich (autonomous,
+  // ongoing)"). Grounded in the Eriksen flanker task (Eriksen & Eriksen,
+  // 1974): a central target arrow is flanked by four distractor arrows that
+  // either point the same way ("congruent") or the opposite way
+  // ("incongruent"). The client must respond to the CENTRE arrow only and
+  // ignore the flankers. Incongruent flankers reliably slow reaction time
+  // and raise error rate versus congruent ones - the "flanker effect" /
+  // interference cost - a well-replicated measure of selective attention
+  // and interference control, including in sport-specific research (e.g.
+  // collegiate football players showing smaller interference costs than
+  // controls in a flanker variant, PMC5811505). This is a genuinely
+  // distinct mechanic from every existing Test/NAT exercise: Go/No-Go tests
+  // withholding a response to a single stimulus (response inhibition),
+  // while Flanker always demands the SAME central response every trial and
+  // instead tests filtering out simultaneous conflicting visual
+  // information (selective attention / interference control) - a
+  // complementary, not overlapping, executive-function facet. The existing
+  // VT "4/8 Pfeile" exercises are direction-cue reaction tasks with a
+  // single unambiguous arrow, not an interference paradigm, so there is no
+  // overlap there either.
+  const FLANKER_PREFS_KEY = "fwmc-flanker-prefs-v1";
+  // Difficulty controls the response window (arrows stay up until tapped or
+  // this elapses - both the "how long you have" AND, mirroring Go/No-Go's
+  // stimMs, how long any tap/timeout feedback colour stays visible before
+  // the next trial) and the gap between trials, same shape as GNG_DIFFICULTIES.
+  const FLANKER_DIFFICULTIES = {
+    leicht: { title: "Leicht", responseMs: 2200, isiMin: 900, isiMax: 1400 },
+    mittel: { title: "Mittel", responseMs: 1600, isiMin: 700, isiMax: 1100 },
+    schwer: { title: "Schwer", responseMs: 1100, isiMin: 500, isiMax: 900 },
+  };
+  // 32 trials, balanced 16 congruent / 16 incongruent and 16 left / 16
+  // right within each - enough per condition for a meaningful congruent-vs-
+  // incongruent average RT comparison without turning this into a long test.
+  const FLANKER_TRIAL_COUNT = 32;
+  const flankerPrefs = { difficulty: "mittel" };
+  function loadFlankerPrefs() {
+    const saved = readJSON(FLANKER_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(flankerPrefs, saved);
+    if (!FLANKER_DIFFICULTIES[flankerPrefs.difficulty]) flankerPrefs.difficulty = "mittel";
+  }
+  loadFlankerPrefs();
+  function saveFlankerPrefsToStorage() { writeJSON(FLANKER_PREFS_KEY, flankerPrefs); }
+
+  const FLANKER_BEST_KEY = "fwmc-flanker-best-v1"; // { [difficulty]: bestAccuracyPct }
+  function flankerBestFor() { return readJSON(FLANKER_BEST_KEY, {})[flankerPrefs.difficulty] || 0; }
+  function saveFlankerBest(accuracyPct) {
+    const all = readJSON(FLANKER_BEST_KEY, {});
+    if (accuracyPct > (all[flankerPrefs.difficulty] || 0)) { all[flankerPrefs.difficulty] = accuracyPct; writeJSON(FLANKER_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderFlankerBest() {
+    const best = flankerBestFor();
+    const text = best ? `Beste Genauigkeit (${FLANKER_DIFFICULTIES[flankerPrefs.difficulty].title}): ${best}%` : "";
+    els.flankerBestHint.textContent = text;
+    els.flankerReadyBestHint.textContent = text;
+  }
+  function syncFlankerDifficultyUI() {
+    els.flankerDifficultyRow.querySelectorAll("[data-flanker-diff]").forEach((btn) => setActive(btn, btn.dataset.flankerDiff === flankerPrefs.difficulty));
+  }
+  els.flankerDifficultyRow.querySelectorAll("[data-flanker-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      flankerPrefs.difficulty = btn.dataset.flankerDiff;
+      saveFlankerPrefsToStorage();
+      syncFlankerDifficultyUI();
+      renderFlankerBest();
+    });
+  });
+
+  els.flankerOpenBtn.addEventListener("click", () => {
+    syncFlankerDifficultyUI();
+    renderFlankerBest();
+    showScreen("flankerReady");
+  });
+  els.flankerReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Same timer-wrapping trick as scheduleGngTimer/scheduleBlitzTimer: records
+  // what's pending and when it fires, so Pause can cancel it and Resume can
+  // replay it with its exact remaining delay.
+  function scheduleFlankerTimer(fn, delayMs) {
+    flankerState.timerFn = fn;
+    flankerState.timerFiresAt = performance.now() + delayMs;
+    flankerState.timer = setTimeout(() => { flankerState.timer = null; fn(); }, delayMs);
+  }
+
+  function buildFlankerTrials() {
+    const perGroup = FLANKER_TRIAL_COUNT / 2; // 16 congruent, 16 incongruent
+    const trials = [];
+    [true, false].forEach((congruent) => {
+      for (let i = 0; i < perGroup; i++) trials.push({ congruent, dir: i < perGroup / 2 ? "left" : "right" });
+    });
+    // Shuffle, then avoid more than 3 identical CORRECT directions back to
+    // back - a long run of "the answer is always left" would let a simple
+    // "just keep pressing the same button" motor strategy pass undetected,
+    // masking the very interference effect this test exists to measure.
+    for (let tries = 0; tries < 200; tries++) {
+      for (let i = trials.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [trials[i], trials[j]] = [trials[j], trials[i]];
+      }
+      let ok = true, run = 1;
+      for (let i = 1; i < trials.length; i++) {
+        if (trials[i].dir === trials[i - 1].dir) { run++; if (run > 3) { ok = false; break; } }
+        else run = 1;
+      }
+      if (ok) break;
+    }
+    return trials;
+  }
+
+  function flankerArrowChar(dir) { return dir === "left" ? "←" : "→"; }
+  function flankerClearRow() { els.flankerRow.innerHTML = ""; }
+  function flankerRenderTrial(trial) {
+    const flankDir = trial.congruent ? trial.dir : (trial.dir === "left" ? "right" : "left");
+    const dirs = [flankDir, flankDir, trial.dir, flankDir, flankDir];
+    els.flankerRow.innerHTML = dirs.map((d, i) =>
+      `<span class="flanker-arrow${i === 2 ? " flanker-target" : ""}">${flankerArrowChar(d)}</span>`
+    ).join("");
+  }
+
+  let flankerState = null;
+  function startFlankerGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.flankerPlayer.hidden = false;
+    els.flankerPlayerBar.hidden = false;
+    els.flankerDonePanel.hidden = true;
+    els.flankerPauseOverlay.hidden = true;
+    els.flankerPauseBtn.hidden = false;
+    flankerState = {
+      diff: FLANKER_DIFFICULTIES[flankerPrefs.difficulty], trials: buildFlankerTrials(), index: -1, phase: "gap", responded: false,
+      correct: 0, incorrect: 0, timeouts: 0, rtsCongruent: [], rtsIncongruent: [],
+      stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      startTime: performance.now(),
+    };
+    flankerClearRow();
+    els.flankerLeftBtn.classList.remove("correct", "wrong");
+    els.flankerRightBtn.classList.remove("correct", "wrong");
+    els.flankerHint.textContent = "Bereit? Gleich geht's los …";
+    els.flankerProgressEl.textContent = `0/${flankerState.trials.length}`;
+    requestWakeLock();
+    scheduleFlankerTimer(flankerNextTrial, 1200);
+  }
+  els.flankerReadyStartBtn.addEventListener("click", startFlankerGame);
+
+  function flankerNextTrial() {
+    if (!flankerState) return;
+    flankerState.index++;
+    if (flankerState.index >= flankerState.trials.length) { flankerFinish(); return; }
+    els.flankerProgressEl.textContent = `${flankerState.index + 1}/${flankerState.trials.length}`;
+    flankerState.phase = "gap";
+    flankerState.responded = false;
+    flankerClearRow();
+    const isi = flankerState.diff.isiMin + Math.random() * (flankerState.diff.isiMax - flankerState.diff.isiMin);
+    scheduleFlankerTimer(flankerShowStimulus, isi);
+  }
+  function flankerShowStimulus() {
+    if (!flankerState) return;
+    const trial = flankerState.trials[flankerState.index];
+    flankerState.phase = "responding";
+    flankerState.responded = false;
+    flankerState.stimAt = performance.now();
+    els.flankerHint.textContent = "";
+    els.flankerLeftBtn.classList.remove("correct", "wrong");
+    els.flankerRightBtn.classList.remove("correct", "wrong");
+    flankerRenderTrial(trial);
+    scheduleFlankerTimer(flankerEndTrial, flankerState.diff.responseMs);
+  }
+  function flankerEndTrial() {
+    if (!flankerState) return;
+    if (flankerState.phase === "responding" && !flankerState.responded) {
+      flankerState.incorrect++;
+      flankerState.timeouts++;
+      els.flankerHint.textContent = "Verpasst!";
+    }
+    flankerState.phase = "gap";
+    flankerClearRow();
+    flankerNextTrial();
+  }
+  function flankerTap(dir) {
+    if (!flankerState || flankerState.paused || flankerState.responded) return;
+    // Taps before the arrows actually appear are ignored - reaction time is
+    // measured stimulus-locked, same convention as Go/No-Go's gngTap.
+    if (flankerState.phase !== "responding") return;
+    flankerState.responded = true;
+    const trial = flankerState.trials[flankerState.index];
+    const rt = performance.now() - flankerState.stimAt;
+    const correct = dir === trial.dir;
+    const btn = dir === "left" ? els.flankerLeftBtn : els.flankerRightBtn;
+    btn.classList.add(correct ? "correct" : "wrong");
+    if (correct) {
+      flankerState.correct++;
+      (trial.congruent ? flankerState.rtsCongruent : flankerState.rtsIncongruent).push(rt);
+    } else {
+      flankerState.incorrect++;
+      els.flankerHint.textContent = "Falsche Richtung!";
+    }
+    // The feedback colour on the tapped button stays up for whatever's left
+    // of diff.responseMs (the already-scheduled flankerEndTrial fires the
+    // actual transition) - same rhythm as GNG leaving its stimulus's
+    // hit/wrong colour up for the rest of stimMs, no separate timer needed.
+  }
+  els.flankerLeftBtn.addEventListener("click", () => flankerTap("left"));
+  els.flankerRightBtn.addEventListener("click", () => flankerTap("right"));
+
+  // Pause just stops/replays the pending timer, no live background-adjust
+  // overlay - background colour customisation was skipped for this exercise
+  // (explicitly optional per the Test-Bereich guidance) so there is nothing
+  // to adjust while paused.
+  function pauseFlanker() {
+    if (!flankerState || flankerState.paused) return;
+    flankerState.paused = true;
+    flankerState.pausedAt = performance.now();
+    if (flankerState.timer) {
+      clearTimeout(flankerState.timer);
+      flankerState.timer = null;
+      flankerState.timerRemainingMs = Math.max(0, flankerState.timerFiresAt - flankerState.pausedAt);
+    }
+    els.flankerPauseBtn.hidden = true;
+    els.flankerPauseOverlay.hidden = false;
+  }
+  function resumeFlanker() {
+    if (!flankerState || !flankerState.paused) return;
+    const pausedMs = performance.now() - flankerState.pausedAt;
+    flankerState.startTime += pausedMs;
+    flankerState.stimAt += pausedMs;
+    flankerState.paused = false;
+    if (flankerState.timerFn && flankerState.timerRemainingMs != null) {
+      scheduleFlankerTimer(flankerState.timerFn, flankerState.timerRemainingMs);
+      flankerState.timerRemainingMs = null;
+    }
+    els.flankerPauseOverlay.hidden = true;
+    els.flankerPauseBtn.hidden = false;
+  }
+  els.flankerPauseBtn.addEventListener("click", pauseFlanker);
+  els.flankerResumeBtn.addEventListener("click", resumeFlanker);
+
+  function avgOf(arr) { return arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null; }
+  function finalizeFlankerRun(state, totalTrials) {
+    els.flankerPauseOverlay.hidden = true;
+    els.flankerPlayerBar.hidden = true;
+    const accuracyPct = Math.round(100 * state.correct / totalTrials);
+    const avgCong = avgOf(state.rtsCongruent);
+    const avgIncong = avgOf(state.rtsIncongruent);
+    // The "flanker effect" itself: how much slower correct incongruent
+    // responses were versus correct congruent ones - the classic
+    // interference-cost measure this whole task is built to surface.
+    const interference = (avgCong != null && avgIncong != null) ? (avgIncong - avgCong) : null;
+    const isRecord = saveFlankerBest(accuracyPct);
+    renderFlankerBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.flankerDoneSummary.textContent =
+      `Ablenkungstest (${state.diff.title}) · ${accuracyPct}% richtig` +
+      (avgCong != null ? ` · Ø kongruent ${avgCong} ms` : "") +
+      (avgIncong != null ? ` · Ø inkongruent ${avgIncong} ms` : "") +
+      (interference != null ? ` · Interferenz-Kosten ${interference} ms` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${accuracyPct}% richtig` + (interference != null ? `, Interferenz ${interference} ms` : "");
+    const id = addHistory({ kind: "flanker", title: "Ablenkungstest (Flanker)", seconds: Math.round(played), note });
+    renderRating(els.flankerRating, id, "Wie fokussiert warst du?");
+    els.flankerDonePanel.hidden = false;
+  }
+  function flankerFinish() {
+    if (!flankerState) return;
+    const state = flankerState;
+    flankerState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.flankerPlayer) document.exitFullscreen().catch(() => {});
+    els.flankerFsHint.hidden = true;
+    finalizeFlankerRun(state, state.trials.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as Go/No-Go/
+  // Remember/Blitz/Flash/MOT - quitting early still shows a summary as long
+  // as at least a few trials were actually resolved.
+  function flankerStop() {
+    if (!flankerState) return;
+    if (flankerState.timer) clearTimeout(flankerState.timer);
+    const state = flankerState;
+    flankerState = null;
+    els.flankerPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.flankerPlayer) document.exitFullscreen().catch(() => {});
+    els.flankerFsHint.hidden = true;
+    const resolved = state.correct + state.incorrect;
+    if (resolved >= 4) {
+      finalizeFlankerRun(state, resolved);
+    } else {
+      els.flankerPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.flankerBackBtn.addEventListener("click", flankerStop);
+  els.flankerAgainBtn.addEventListener("click", () => { els.flankerDonePanel.hidden = true; startFlankerGame(); });
+  els.flankerDoneBackBtn.addEventListener("click", () => { els.flankerPlayer.hidden = true; els.flankerDonePanel.hidden = true; showScreen("testHome"); });
 
   // ---- Start-up ----
   renderHistory();

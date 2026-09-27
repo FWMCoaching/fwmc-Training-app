@@ -870,6 +870,47 @@ doesn't:
   No background colour/Zusatzaufgabe/Trainingsmodus - all correctly
   skipped, none would add anything to a task whose stimulus is the
   scattered layout itself. Test: `tests/trail_test.py`.
+- **Ablenkungstest (Flanker)** (fourth autonomous entry, 2026-09-27):
+  grounded in the Eriksen flanker task (Eriksen & Eriksen, 1974) - a
+  central target arrow flanked by four distractor arrows that either point
+  the same way ("kongruent") or the opposite way ("inkongruent"); the
+  client responds only to the CENTRE arrow's direction (tapping one of two
+  big on-screen `←`/`→` buttons) as fast as possible, ignoring the
+  flankers. Also researched and cited in-code as an established measure of
+  selective attention/interference control in sport-science research (e.g.
+  a collegiate-football variant, PMC5811505, where players showed smaller
+  interference costs than non-player controls) - a good fit for FWMC's
+  "visuelle Entscheidungsgeschwindigkeit" focus. Deliberately distinct from
+  every existing Test/NAT mechanic: Go/No-Go tests withholding a response
+  to a single stimulus (response inhibition), Flanker always demands the
+  SAME central response every trial and instead tests filtering out
+  simultaneous conflicting visual information alongside it (selective
+  attention/interference control) - a complementary, not overlapping,
+  executive-function facet; the existing VT "4/8 Pfeile" exercises are
+  plain direction-cue reaction tasks with one unambiguous arrow, not an
+  interference paradigm, so no overlap there either. Fixed 32-trial run
+  (`FLANKER_TRIAL_COUNT`, balanced 16 kongruent/16 inkongruent and 16
+  links/16 rechts, shuffled with a same-direction-max-3-in-a-row guard so a
+  "just keep pressing the same button" motor strategy can't pass
+  undetected), no artificial "level"/Bei-Fehler - reports accuracy% plus
+  average correct RT split by kongruent/inkongruent, and their difference
+  as the actual "Interferenz-Kosten" (the classic flanker effect, the real
+  outcome measure this paradigm exists to surface), tracking best accuracy%
+  per `flankerPrefs.difficulty` (leicht/mittel/schwer, controlling the
+  response time window + ISI, same shape as `GNG_DIFFICULTIES`) via
+  `FLANKER_BEST_KEY` - same "fixed-trial accuracy test" shape as Go/No-Go,
+  for the same reason (no natural level to progress). No background
+  colour/Zusatzaufgabe/Trainingsmodus - all correctly skipped per the
+  "optional, skip what doesn't fit in an hour" guidance, none would add
+  anything to a task whose whole point is a fixed black-on-white arrow row.
+  Pause/resume uses the same scheduleXTimer-remaining-delay trick as
+  Go/No-Go/Blitz/Remember. New CSS is `.flanker-stage`/`.flanker-row`/
+  `.flanker-arrow`/`.flanker-response-row`/`.flanker-response-btn` (fixed
+  hex colours throughout, no `var(--...)`); the target arrow gets a plain
+  underline marker (`.flanker-target`) so a first-time client can find "the
+  middle one" at a glance - this doesn't affect the paradigm's validity
+  since the target position is fixed and known every trial regardless.
+  Test: `tests/flanker_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 

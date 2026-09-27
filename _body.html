@@ -600,6 +600,11 @@
       <span class="fc-desc">Verstreute Felder in aufsteigender Reihenfolge antippen &ndash; Zahlen allein oder abwechselnd mit Buchstaben. Klassischer Test f&uuml;r visuelles Absuchen, Aufmerksamkeit und Verarbeitungstempo.</span>
       <span class="fc-meta" id="trailBestHint"></span>
     </button>
+    <button class="featured-card" id="flankerOpenBtn">
+      <span class="fc-title">Ablenkungstest (Flanker)</span>
+      <span class="fc-desc">Nur der mittlere Pfeil z&auml;hlt &ndash; tippe so schnell wie m&ouml;glich seine Richtung an, auch wenn die Pfeile drumherum in die andere Richtung zeigen. Trainiert selektive Aufmerksamkeit und visuelle Entscheidungsgeschwindigkeit unter Ablenkung.</span>
+      <span class="fc-meta" id="flankerBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -681,6 +686,27 @@
   <div class="group-help" id="trailReadyBestHint"></div>
 
   <button class="start-btn" id="trailReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="flankerReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="flankerReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Ablenkungstest (Flanker)</h1>
+  <p class="page-sub">Fünf Pfeile erscheinen in einer Reihe &ndash; tippe so schnell wie m&ouml;glich die Richtung des <strong>mittleren</strong> Pfeils an (unten links/rechts), egal wohin die vier &auml;u&szlig;eren Pfeile zeigen. Klassisches Flanker-Paradigma (Eriksen &amp; Eriksen, 1974) f&uuml;r selektive Aufmerksamkeit und Interferenzkontrolle.</p>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="flankerDifficultyRow">
+      <button class="choice" data-flanker-diff="leicht">Leicht<small>mehr Zeit pro Reiz</small></button>
+      <button class="choice" data-flanker-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-flanker-diff="schwer">Schwer<small>kurzes Zeitfenster</small></button>
+    </div>
+  </div>
+
+  <div class="group-help" id="flankerReadyBestHint"></div>
+
+  <button class="start-btn" id="flankerReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="rememberReady" hidden>
@@ -2524,6 +2550,43 @@
     <div class="rating" id="trailRating"></div>
     <button class="again" id="trailAgainBtn">Nochmal</button>
     <button class="back" id="trailDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="flankerPlayer" hidden>
+  <div class="flanker-stage" id="flankerStage">
+    <div class="remember-hint" id="flankerHint"></div>
+    <div class="flanker-row" id="flankerRow"></div>
+    <div class="flanker-response-row">
+      <button class="flanker-response-btn" id="flankerLeftBtn" aria-label="Links">&larr;</button>
+      <button class="flanker-response-btn" id="flankerRightBtn" aria-label="Rechts">&rarr;</button>
+    </div>
+  </div>
+  <div class="pause-overlay" id="flankerPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="flankerResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="flankerPlayerBar">
+    <button id="flankerBackBtn">&#10005; Beenden</button>
+    <button id="flankerPauseBtn">Pause</button>
+    <span class="player-status" id="flankerProgressEl"></span>
+    <button id="flankerFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="flankerFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="flankerFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="flankerFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="flankerDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="flankerDoneSummary"></p>
+    <div class="rating" id="flankerRating"></div>
+    <button class="again" id="flankerAgainBtn">Nochmal</button>
+    <button class="back" id="flankerDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 
