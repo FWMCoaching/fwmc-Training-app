@@ -13,6 +13,14 @@ URL = "http://localhost:8845/index.html"
 # T2-given-T1-correct accuracy per lag and the "Aufmerksamkeitslücke"
 # (lag 8 minus lag 3) as the actual dip-and-recovery effect this paradigm
 # exists to surface.
+# Background colour/intensity (added later, fourth batch of the same
+# Test-Bereich effort as Go/No-Go/N-Back/Trail/Flanker/UFOV/Posner/Rotation/
+# Merkspanne/Simon - see CLAUDE.md's Established patterns for the scope
+# decision, minus their transfer/preset-save machinery) tints the outer
+# #abStage - the T1 accent colour (#007094 teal) sits directly on it too
+# (audited and approved: the tint is always mixed toward white, never full
+# saturation, keeping contrast usable). Both the ready screen and the pause
+# overlay have their own live picker+slider sharing the same abPrefs.
 
 async def main():
     errors = []
@@ -32,6 +40,13 @@ async def main():
         print("Doppelziel-Test card visible:", await pg.is_visible("#abOpenBtn"))
         await pg.click("#abOpenBtn"); await pg.wait_for_timeout(150)
         print("abReady visible:", await pg.is_visible("#abReady"))
+
+        # --- Feineinstellungen: background colour/intensity ---
+        await pg.click("#abAdvanced summary"); await pg.wait_for_timeout(100)
+        print("bg swatch count:", await pg.locator("#abBgColorPicker .color-swatch").count())
+        await pg.click('#abBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
+        await pg.fill("#abBgIntensitySlider", "0.6"); await pg.dispatch_event("#abBgIntensitySlider", "input")
+        print("intensity value label updated:", "60%" in (await pg.inner_text("#abBgIntensityValue")))
 
         async def wait_for_visible(sel, max_ms=6000, poll_ms=25):
             waited = 0
@@ -59,6 +74,8 @@ async def main():
         print("abPlayer visible:", await pg.is_visible("#abPlayer"))
         progress = await pg.inner_text("#abProgressEl")
         print("progress starts at 0/24:", "0/24" in progress)
+        bg_at_start = await pg.evaluate("() => document.getElementById('abStage').style.background")
+        print("stage carries the chosen background as soon as the game starts:", bg_at_start not in ("", "rgb(255, 255, 255)"))
 
         saw_t1_color = False
         saw_plain_color = False
@@ -108,6 +125,9 @@ async def main():
         await pg.wait_for_timeout(600)
         frozen2 = await pg.inner_text("#abProgressEl")
         print("progress frozen while paused:", frozen1 == frozen2)
+        await pg.click('#abPauseBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
+        bg_paused = await pg.evaluate("() => document.getElementById('abStage').style.background")
+        print("pause overlay's own picker live-updates the same stage background:", bg_paused not in ("", "rgb(255, 255, 255)"))
         await pg.click("#abResumeBtn"); await pg.wait_for_timeout(120)
         print("pause overlay hidden after resume:", await pg.is_hidden("#abPauseOverlay"))
 

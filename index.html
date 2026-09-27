@@ -994,6 +994,22 @@
     </div>
   </div>
 
+  <details class="advanced" id="searchAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="searchBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="searchBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="searchBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="searchBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
+
   <div class="group-help" id="searchReadyBestHint"></div>
 
   <button class="start-btn" id="searchReadyStartBtn">Training starten</button>
@@ -1052,6 +1068,22 @@
     </div>
   </div>
 
+  <details class="advanced" id="abAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="abBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="abBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="abBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="abBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
+
   <div class="group-help" id="abReadyBestHint"></div>
 
   <button class="start-btn" id="abReadyStartBtn">Training starten</button>
@@ -1072,6 +1104,22 @@
       <button class="choice" data-antizip-diff="schwer">Schwer<small>schneller Ball</small></button>
     </div>
   </div>
+
+  <details class="advanced" id="antizipAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="antizipBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="antizipBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="antizipBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="antizipBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
 
   <div class="group-help" id="antizipReadyBestHint"></div>
 
@@ -3355,6 +3403,14 @@
   <div class="pause-overlay" id="searchPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="searchPauseBgValue"></span></div>
+        <input type="range" id="searchPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="searchPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="searchResumeBtn">Weiter</button>
     </div>
   </div>
@@ -3454,6 +3510,14 @@
   <div class="pause-overlay" id="abPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="abPauseBgValue"></span></div>
+        <input type="range" id="abPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="abPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="abResumeBtn">Weiter</button>
     </div>
   </div>
@@ -3492,6 +3556,14 @@
   <div class="pause-overlay" id="antizipPauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="antizipPauseBgValue"></span></div>
+        <input type="range" id="antizipPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="antizipPauseBgColorPicker"></div>
+      </div>
       <button class="start-btn" id="antizipResumeBtn">Weiter</button>
     </div>
   </div>

@@ -1299,31 +1299,40 @@
     simonAgainBtn: $("simonAgainBtn"), simonDoneBackBtn: $("simonDoneBackBtn"),
     searchOpenBtn: $("searchOpenBtn"), searchBestHint: $("searchBestHint"), searchReady: $("searchReady"),
     searchReadyBackToHome: $("searchReadyBackToHome"), searchLengthRow: $("searchLengthRow"),
+    searchAdvanced: $("searchAdvanced"), searchBgColorPicker: $("searchBgColorPicker"), searchBgIntensitySlider: $("searchBgIntensitySlider"),
+    searchBgIntensityValue: $("searchBgIntensityValue"), searchBgContrastHint: $("searchBgContrastHint"),
     searchReadyBestHint: $("searchReadyBestHint"), searchReadyStartBtn: $("searchReadyStartBtn"),
     searchPlayer: $("searchPlayer"), searchStage: $("searchStage"), searchHint: $("searchHint"), searchItemsLayer: $("searchItemsLayer"),
-    searchPauseOverlay: $("searchPauseOverlay"), searchResumeBtn: $("searchResumeBtn"),
+    searchPauseOverlay: $("searchPauseOverlay"), searchPauseBgSlider: $("searchPauseBgSlider"), searchPauseBgValue: $("searchPauseBgValue"),
+    searchPauseBgColorPicker: $("searchPauseBgColorPicker"), searchResumeBtn: $("searchResumeBtn"),
     searchPlayerBar: $("searchPlayerBar"), searchBackBtn: $("searchBackBtn"), searchPauseBtn: $("searchPauseBtn"), searchProgressEl: $("searchProgressEl"),
     searchFsBtn: $("searchFsBtn"), searchFsHint: $("searchFsHint"), searchFsHintOpenBtn: $("searchFsHintOpenBtn"), searchFsHintClose: $("searchFsHintClose"),
     searchDonePanel: $("searchDonePanel"), searchDoneSummary: $("searchDoneSummary"), searchRating: $("searchRating"),
     searchAgainBtn: $("searchAgainBtn"), searchDoneBackBtn: $("searchDoneBackBtn"),
     abOpenBtn: $("abOpenBtn"), abBestHint: $("abBestHint"), abReady: $("abReady"),
     abReadyBackToHome: $("abReadyBackToHome"), abDifficultyRow: $("abDifficultyRow"),
+    abAdvanced: $("abAdvanced"), abBgColorPicker: $("abBgColorPicker"), abBgIntensitySlider: $("abBgIntensitySlider"),
+    abBgIntensityValue: $("abBgIntensityValue"), abBgContrastHint: $("abBgContrastHint"),
     abReadyBestHint: $("abReadyBestHint"), abReadyStartBtn: $("abReadyStartBtn"),
     abPlayer: $("abPlayer"), abStage: $("abStage"), abHint: $("abHint"), abStreamChar: $("abStreamChar"),
     abT1Panel: $("abT1Panel"), abT1Btn0: $("abT1Btn0"), abT1Btn1: $("abT1Btn1"), abT1Btn2: $("abT1Btn2"), abT1Btn3: $("abT1Btn3"),
     abT2Panel: $("abT2Panel"), abT2JaBtn: $("abT2JaBtn"), abT2NeinBtn: $("abT2NeinBtn"), abRevealHint: $("abRevealHint"),
-    abPauseOverlay: $("abPauseOverlay"), abResumeBtn: $("abResumeBtn"),
+    abPauseOverlay: $("abPauseOverlay"), abPauseBgSlider: $("abPauseBgSlider"), abPauseBgValue: $("abPauseBgValue"),
+    abPauseBgColorPicker: $("abPauseBgColorPicker"), abResumeBtn: $("abResumeBtn"),
     abPlayerBar: $("abPlayerBar"), abBackBtn: $("abBackBtn"), abPauseBtn: $("abPauseBtn"), abProgressEl: $("abProgressEl"),
     abFsBtn: $("abFsBtn"), abFsHint: $("abFsHint"), abFsHintOpenBtn: $("abFsHintOpenBtn"), abFsHintClose: $("abFsHintClose"),
     abDonePanel: $("abDonePanel"), abDoneSummary: $("abDoneSummary"), abRating: $("abRating"),
     abAgainBtn: $("abAgainBtn"), abDoneBackBtn: $("abDoneBackBtn"),
     antizipOpenBtn: $("antizipOpenBtn"), antizipBestHint: $("antizipBestHint"), antizipReady: $("antizipReady"),
     antizipReadyBackToHome: $("antizipReadyBackToHome"), antizipDifficultyRow: $("antizipDifficultyRow"),
+    antizipAdvanced: $("antizipAdvanced"), antizipBgColorPicker: $("antizipBgColorPicker"), antizipBgIntensitySlider: $("antizipBgIntensitySlider"),
+    antizipBgIntensityValue: $("antizipBgIntensityValue"), antizipBgContrastHint: $("antizipBgContrastHint"),
     antizipReadyBestHint: $("antizipReadyBestHint"), antizipReadyStartBtn: $("antizipReadyStartBtn"),
     antizipPlayer: $("antizipPlayer"), antizipStage: $("antizipStage"), antizipHint: $("antizipHint"),
     antizipTrack: $("antizipTrack"), antizipTargetZone: $("antizipTargetZone"), antizipBall: $("antizipBall"),
     antizipFeedback: $("antizipFeedback"), antizipTapBtn: $("antizipTapBtn"),
-    antizipPauseOverlay: $("antizipPauseOverlay"), antizipResumeBtn: $("antizipResumeBtn"),
+    antizipPauseOverlay: $("antizipPauseOverlay"), antizipPauseBgSlider: $("antizipPauseBgSlider"), antizipPauseBgValue: $("antizipPauseBgValue"),
+    antizipPauseBgColorPicker: $("antizipPauseBgColorPicker"), antizipResumeBtn: $("antizipResumeBtn"),
     antizipPlayerBar: $("antizipPlayerBar"), antizipBackBtn: $("antizipBackBtn"), antizipPauseBtn: $("antizipPauseBtn"), antizipProgressEl: $("antizipProgressEl"),
     antizipFsBtn: $("antizipFsBtn"), antizipFsHint: $("antizipFsHint"), antizipFsHintOpenBtn: $("antizipFsHintOpenBtn"), antizipFsHintClose: $("antizipFsHintClose"),
     antizipDonePanel: $("antizipDonePanel"), antizipDoneSummary: $("antizipDoneSummary"), antizipRating: $("antizipRating"),
@@ -10986,14 +10995,35 @@
   const SEARCH_MIN_CENTER_PX = SEARCH_ITEM_PX + 12;
   const SEARCH_COLOR_TARGET = "#d64545";
   const SEARCH_COLOR_DISTRACTOR = "#8a97a3";
-  const searchPrefs = { length: "mittel" };
+  const searchPrefs = { length: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadSearchPrefs() {
     const saved = readJSON(SEARCH_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(searchPrefs, saved);
     if (!SEARCH_LENGTHS[searchPrefs.length]) searchPrefs.length = "mittel";
+    if (!STROOP_COLOR_BY_KEY[searchPrefs.bgColorKey]) searchPrefs.bgColorKey = "gruen";
+    if (typeof searchPrefs.bgIntensity !== "number" || searchPrefs.bgIntensity < 0 || searchPrefs.bgIntensity > 1) searchPrefs.bgIntensity = 0;
   }
   loadSearchPrefs();
   function saveSearchPrefsToStorage() { writeJSON(SEARCH_PREFS_KEY, searchPrefs); }
+
+  // Background colour/intensity, added later (client asked every Test-Bereich
+  // exercise get the same background customisation NAT's Remember/Blitz/
+  // Flash/MOT already have) - see CLAUDE.md Established patterns for the
+  // scope decision (no transfer/preset-save here, unlike those four). The
+  // target/distractor items sit directly on #searchStage with no neutral box
+  // around them (audited and approved - the tint is always mixed toward
+  // white, per mixHex, never full saturation, keeping contrast usable).
+  function applySearchBg() {
+    els.searchStage.style.background = searchPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[searchPrefs.bgColorKey].hex, searchPrefs.bgIntensity)
+      : "";
+  }
+  const syncSearchBgUI = wireBgIntensityControl(searchPrefs, {
+    pickers: [els.searchBgColorPicker, els.searchPauseBgColorPicker],
+    sliders: [els.searchBgIntensitySlider, els.searchPauseBgSlider],
+    valueEls: [els.searchBgIntensityValue, els.searchPauseBgValue],
+    hintEls: [els.searchBgContrastHint],
+  }, () => { saveSearchPrefsToStorage(); applySearchBg(); });
 
   const SEARCH_BEST_KEY = "fwmc-search-best-v1"; // { [length]: bestAccuracyPct }
   function searchBestFor() { return readJSON(SEARCH_BEST_KEY, {})[searchPrefs.length] || 0; }
@@ -11021,6 +11051,7 @@
   });
   els.searchOpenBtn.addEventListener("click", () => {
     syncSearchLengthUI();
+    syncSearchBgUI();
     renderSearchBest();
     showScreen("searchReady");
   });
@@ -11177,6 +11208,7 @@
       paused: false, startTime: performance.now(), stimAt: null,
       timer: null, timerFn: null, timerFiresAt: null,
     };
+    applySearchBg();
     els.searchHint.textContent = "Bereit? Gleich geht's los …";
     els.searchProgressEl.textContent = `0/${searchState.trials.length}`;
     requestWakeLock();
@@ -11385,14 +11417,36 @@
   // "Ja" would score 100% on the T2 question) - same false-alarm-guard
   // logic as every accuracy-scored yes/no judgement in this app.
   const AB_TRIAL_COUNT = AB_LAGS.length * 8;
-  const abPrefs = { difficulty: "mittel" };
+  const abPrefs = { difficulty: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadAbPrefs() {
     const saved = readJSON(AB_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(abPrefs, saved);
     if (!AB_DIFFICULTIES[abPrefs.difficulty]) abPrefs.difficulty = "mittel";
+    if (!STROOP_COLOR_BY_KEY[abPrefs.bgColorKey]) abPrefs.bgColorKey = "gruen";
+    if (typeof abPrefs.bgIntensity !== "number" || abPrefs.bgIntensity < 0 || abPrefs.bgIntensity > 1) abPrefs.bgIntensity = 0;
   }
   loadAbPrefs();
   function saveAbPrefsToStorage() { writeJSON(AB_PREFS_KEY, abPrefs); }
+
+  // Background colour/intensity, added later (client asked every Test-Bereich
+  // exercise get the same background customisation NAT's Remember/Blitz/
+  // Flash/MOT already have) - see CLAUDE.md Established patterns for the
+  // scope decision (no transfer/preset-save here, unlike those four). The
+  // T1 accent colour (#007094 teal, see .ab-stream-char.is-t1) sits directly
+  // on #abStage with no neutral box around it (audited and approved - the
+  // tint is always mixed toward white, per mixHex, never full saturation,
+  // keeping contrast usable).
+  function applyAbBg() {
+    els.abStage.style.background = abPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[abPrefs.bgColorKey].hex, abPrefs.bgIntensity)
+      : "";
+  }
+  const syncAbBgUI = wireBgIntensityControl(abPrefs, {
+    pickers: [els.abBgColorPicker, els.abPauseBgColorPicker],
+    sliders: [els.abBgIntensitySlider, els.abPauseBgSlider],
+    valueEls: [els.abBgIntensityValue, els.abPauseBgValue],
+    hintEls: [els.abBgContrastHint],
+  }, () => { saveAbPrefsToStorage(); applyAbBg(); });
 
   const AB_BEST_KEY = "fwmc-ab-best-v1"; // { [difficulty]: bestOverallAccuracyPct }
   function abBestFor() { return readJSON(AB_BEST_KEY, {})[abPrefs.difficulty] || 0; }
@@ -11421,6 +11475,7 @@
 
   els.abOpenBtn.addEventListener("click", () => {
     syncAbDifficultyUI();
+    syncAbBgUI();
     renderAbBest();
     showScreen("abReady");
   });
@@ -11526,6 +11581,7 @@
     els.abRevealHint.textContent = "";
     els.abStreamChar.textContent = "";
     els.abStreamChar.classList.remove("is-t1");
+    applyAbBg();
     els.abHint.textContent = "Bereit? Gleich geht's los …";
     els.abProgressEl.textContent = `0/${abState.trials.length}`;
     requestWakeLock();
@@ -11774,14 +11830,35 @@
   // 32, Simon's 40) since each trial here already takes several real seconds
   // (the ball's full travel plus a short gap), not a sub-second flash.
   const ANTIZIP_TRIAL_COUNT = 20;
-  const antizipPrefs = { difficulty: "mittel" };
+  const antizipPrefs = { difficulty: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadAntizipPrefs() {
     const saved = readJSON(ANTIZIP_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(antizipPrefs, saved);
     if (!ANTIZIP_DIFFICULTIES[antizipPrefs.difficulty]) antizipPrefs.difficulty = "mittel";
+    if (!STROOP_COLOR_BY_KEY[antizipPrefs.bgColorKey]) antizipPrefs.bgColorKey = "gruen";
+    if (typeof antizipPrefs.bgIntensity !== "number" || antizipPrefs.bgIntensity < 0 || antizipPrefs.bgIntensity > 1) antizipPrefs.bgIntensity = 0;
   }
   loadAntizipPrefs();
   function saveAntizipPrefsToStorage() { writeJSON(ANTIZIP_PREFS_KEY, antizipPrefs); }
+
+  // Background colour/intensity, added later (client asked every Test-Bereich
+  // exercise get the same background customisation NAT's Remember/Blitz/
+  // Flash/MOT already have) - see CLAUDE.md Established patterns for the
+  // scope decision (no transfer/preset-save here, unlike those four). The
+  // target zone (#ffe0b2/#e65100 dashed border) lives in its own fixed-colour
+  // .antizip-track sub-element, not directly on the raw stage - lower-risk
+  // by construction, same reasoning as Merkspanne's .merk-field.
+  function applyAntizipBg() {
+    els.antizipStage.style.background = antizipPrefs.bgIntensity > 0
+      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[antizipPrefs.bgColorKey].hex, antizipPrefs.bgIntensity)
+      : "";
+  }
+  const syncAntizipBgUI = wireBgIntensityControl(antizipPrefs, {
+    pickers: [els.antizipBgColorPicker, els.antizipPauseBgColorPicker],
+    sliders: [els.antizipBgIntensitySlider, els.antizipPauseBgSlider],
+    valueEls: [els.antizipBgIntensityValue, els.antizipPauseBgValue],
+    hintEls: [els.antizipBgContrastHint],
+  }, () => { saveAntizipPrefsToStorage(); applyAntizipBg(); });
 
   // "Lower is better" (a timing-error score, same shape as UFOV's exposure-
   // duration threshold) - tracks the lowest average Absolute Error (AE, ms)
@@ -11817,6 +11894,7 @@
 
   els.antizipOpenBtn.addEventListener("click", () => {
     syncAntizipDifficultyUI();
+    syncAntizipBgUI();
     renderAntizipBest();
     showScreen("antizipReady");
   });
@@ -11868,6 +11946,7 @@
       paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
       startTime: performance.now(),
     };
+    applyAntizipBg();
     els.antizipHint.textContent = "Bereit? Gleich geht's los …";
     els.antizipProgressEl.textContent = `0/${antizipState.trials.length}`;
     requestWakeLock();

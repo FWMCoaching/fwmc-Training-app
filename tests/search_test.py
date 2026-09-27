@@ -17,6 +17,15 @@ URL = "http://localhost:8845/index.html"
 # SLOPE (ms/object) per search type - the actual outcome measure this
 # paradigm exists to surface (near-flat for feature search, clearly positive
 # for conjunction search).
+# Background colour/intensity (added later, fourth batch of the same
+# Test-Bereich effort as Go/No-Go/N-Back/Trail/Flanker/UFOV/Posner/Rotation/
+# Merkspanne/Simon - see CLAUDE.md's Established patterns for the scope
+# decision, minus their transfer/preset-save machinery) tints the outer
+# #searchStage - the target/distractor items sit directly on it with no
+# neutral box around them (audited and approved: the tint is always mixed
+# toward white, never full saturation, keeping contrast usable). Both the
+# ready screen and the pause overlay have their own live picker+slider
+# sharing the same searchPrefs.
 
 async def main():
     errors = []
@@ -37,12 +46,21 @@ async def main():
         await pg.click("#searchOpenBtn"); await pg.wait_for_timeout(150)
         print("searchReady visible:", await pg.is_visible("#searchReady"))
 
+        # --- Feineinstellungen: background colour/intensity ---
+        await pg.click("#searchAdvanced summary"); await pg.wait_for_timeout(100)
+        print("bg swatch count:", await pg.locator("#searchBgColorPicker .color-swatch").count())
+        await pg.click('#searchBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
+        await pg.fill("#searchBgIntensitySlider", "0.6"); await pg.dispatch_event("#searchBgIntensitySlider", "input")
+        print("intensity value label updated:", "60%" in (await pg.inner_text("#searchBgIntensityValue")))
+
         # "kurz" = 12 trials, fast enough for a short test run.
         await pg.click('#searchLengthRow [data-search-length="kurz"]'); await pg.wait_for_timeout(60)
         await pg.click("#searchReadyStartBtn"); await pg.wait_for_timeout(200)
         print("searchPlayer visible:", await pg.is_visible("#searchPlayer"))
         progress = await pg.inner_text("#searchProgressEl")
         print("progress starts at 0/12:", "0/12" in progress)
+        bg_at_start = await pg.evaluate("() => document.getElementById('searchStage').style.background")
+        print("stage carries the chosen background as soon as the game starts:", bg_at_start not in ("", "rgb(255, 255, 255)"))
 
         async def wait_for_progress_change(prev, max_ms=9500, poll_ms=25):
             waited = 0
@@ -119,6 +137,9 @@ async def main():
         html_paused2 = await pg.inner_html("#searchItemsLayer")
         progress_paused2 = await pg.inner_text("#searchProgressEl")
         print("stage genuinely frozen while paused:", html_paused1 == html_paused2 and progress_paused1 == progress_paused2)
+        await pg.click('#searchPauseBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
+        bg_paused = await pg.evaluate("() => document.getElementById('searchStage').style.background")
+        print("pause overlay's own picker live-updates the same stage background:", bg_paused not in ("", "rgb(255, 255, 255)"))
         await pg.click("#searchResumeBtn"); await pg.wait_for_timeout(150)
         print("pause overlay hidden after resume:", await pg.is_hidden("#searchPauseOverlay"))
         # tapping the target should still work correctly right after a resume

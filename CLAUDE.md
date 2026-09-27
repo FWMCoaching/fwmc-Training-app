@@ -355,10 +355,37 @@ unrelated to the feature being changed.
   not on it" reasoning as Simon's own entry in the audit above. Rotation
   is a fixed-centre rotated character, also no `stageTopClearanceY()` use.
   Tests extended: `tests/rotation_test.py`, `tests/merk_test.py`,
-  `tests/simon_test.py`. Exercises with a background now: Go/No-Go, N-Back,
-  Trail Making, Flanker, UFOV, Posner-Cueing, Rotationstest, Merkspanne-Test,
-  Farbkonflikt-Test - the rest (search/ab/antizip, hick/corsi/reakt, ts/anti)
-  follow in further batches, still minus Wortfarben-Test/Stroop.
+  `tests/simon_test.py`. **Fourth batch**: **Suchtest (Visuelle Suche)**,
+  **Doppelziel-Test (Attentional Blink)**, **Antizipationstest
+  (Coincidence-Anticipation Timing)** - `searchPrefs`/`abPrefs`/
+  `antizipPrefs` each gained the same `bgColorKey`/`bgIntensity` pair,
+  `applySearchBg()`/`applyAbBg()`/`applyAntizipBg()` tint `#searchStage`/
+  `#abStage`/`#antizipStage`, and each got its own `wireBgIntensityControl`
+  call (ready-screen `#searchAdvanced`/`#abAdvanced`/`#antizipAdvanced` +
+  pause overlay picker+slider), same scope narrowing as every earlier batch
+  (no `BG_SOURCES`/transfer/preset-save for these three either). Two of
+  these three were flagged during the per-exercise colour-clash audit as
+  having their trained signal sit DIRECTLY on the raw stage with no neutral
+  box around it - Suchtest's target/distractor items
+  (`SEARCH_COLOR_TARGET`/`SEARCH_COLOR_DISTRACTOR`, red vs grey) and
+  Doppelziel-Test's T1 accent colour (`#007094` teal vs `#16232a` dark navy
+  distractors) - and approved anyway, since this app's background tint is
+  always mixed toward white (`mixHex("#ffffff", colorHex, intensity)`, never
+  full saturation), which keeps contrast usable regardless. Antizipationstest's
+  target zone (`#ffe0b2`/`#e65100` dashed border) lives in its own
+  fixed-colour `.antizip-track` sub-element instead, so it's lower-risk by
+  construction (same reasoning as Merkspanne's `.merk-field`).
+  `stageTopClearanceY()` applies to Suchtest's own `searchStageBounds()`
+  (full-stage scatter, like Trail Making/Corsi/Reaktionsfeld) - already
+  correctly called after that round's hint text is set, so no change needed
+  there; Doppelziel-Test/Antizipationstest are centred normal-flow content,
+  not full-stage scatter, so `stageTopClearanceY()` doesn't apply to them at
+  all. Tests extended: `tests/search_test.py`, `tests/ab_test.py`,
+  `tests/antizip_test.py`. Exercises with a background now: Go/No-Go,
+  N-Back, Trail Making, Flanker, UFOV, Posner-Cueing, Rotationstest,
+  Merkspanne-Test, Farbkonflikt-Test, Suchtest, Doppelziel-Test,
+  Antizipationstest - the rest (hick/corsi/reakt, ts/anti) follow in further
+  batches, still minus Wortfarben-Test/Stroop.
 - **Multi-tab nav bars (`.section-switch`/`.sub-switch`) need headroom for
   their longest label, not just "however many tabs currently exist"**: both
   are a `display:flex` row of `flex:1` tabs capped at a `max-width` - a

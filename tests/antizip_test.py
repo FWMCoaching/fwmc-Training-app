@@ -16,6 +16,15 @@ URL = "http://localhost:8845/index.html"
 # "schwer", is ~950ms away), which this test uses as a robust, non-flaky way
 # to exercise the error-classification logic without needing to land inside
 # a tight tolerance window under Playwright's own timing jitter.
+# Background colour/intensity (added later, fourth batch of the same
+# Test-Bereich effort as Go/No-Go/N-Back/Trail/Flanker/UFOV/Posner/Rotation/
+# Merkspanne/Simon - see CLAUDE.md's Established patterns for the scope
+# decision, minus their transfer/preset-save machinery) tints the outer
+# #antizipStage - the target zone (#ffe0b2/#e65100 dashed border) lives in
+# its own fixed-colour .antizip-track sub-element, not directly on the raw
+# stage, so this is lower-risk by construction (same reasoning as
+# Merkspanne's .merk-field). Both the ready screen and the pause overlay
+# have their own live picker+slider sharing the same antizipPrefs.
 
 async def main():
     errors = []
@@ -36,6 +45,13 @@ async def main():
         await pg.click("#antizipOpenBtn"); await pg.wait_for_timeout(150)
         print("antizipReady visible:", await pg.is_visible("#antizipReady"))
 
+        # --- Feineinstellungen: background colour/intensity ---
+        await pg.click("#antizipAdvanced summary"); await pg.wait_for_timeout(100)
+        print("bg swatch count:", await pg.locator("#antizipBgColorPicker .color-swatch").count())
+        await pg.click('#antizipBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
+        await pg.fill("#antizipBgIntensitySlider", "0.6"); await pg.dispatch_event("#antizipBgIntensitySlider", "input")
+        print("intensity value label updated:", "60%" in (await pg.inner_text("#antizipBgIntensityValue")))
+
         # "schwer" = shortest travel/tail time, so a short test window still
         # reliably samples several trials, including a timeout.
         await pg.click('#antizipDifficultyRow [data-antizip-diff="schwer"]'); await pg.wait_for_timeout(60)
@@ -43,6 +59,8 @@ async def main():
         print("antizipPlayer visible:", await pg.is_visible("#antizipPlayer"))
         progress = await pg.inner_text("#antizipProgressEl")
         print("progress starts at 0/20:", "0/20" in progress)
+        bg_at_start = await pg.evaluate("() => document.getElementById('antizipStage').style.background")
+        print("stage carries the chosen background as soon as the game starts:", bg_at_start not in ("", "rgb(255, 255, 255)"))
 
         async def wait_for_progress_change(prev, max_ms=6000, poll_ms=25):
             waited = 0
@@ -122,6 +140,9 @@ async def main():
         html_paused2 = await pg.inner_html("#antizipTrack")
         progress_paused2 = await pg.inner_text("#antizipProgressEl")
         print("stage genuinely frozen while paused:", html_paused1 == html_paused2 and progress_paused1 == progress_paused2)
+        await pg.click('#antizipPauseBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
+        bg_paused = await pg.evaluate("() => document.getElementById('antizipStage').style.background")
+        print("pause overlay's own picker live-updates the same stage background:", bg_paused not in ("", "rgb(255, 255, 255)"))
         await pg.click("#antizipResumeBtn"); await pg.wait_for_timeout(150)
         print("pause overlay hidden after resume:", await pg.is_hidden("#antizipPauseOverlay"))
 
