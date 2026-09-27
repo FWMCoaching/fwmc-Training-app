@@ -785,6 +785,25 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
   background:#007094;color:#fff;font-family:"Magra",sans-serif;font-size:22px;font-weight:800;letter-spacing:.03em;cursor:pointer;
 }
 .antizip-tap-btn:active{transform:scale(.97)}
+
+/* Wahlreaktionstest (Hick's Law) - fixed hex colours throughout, never
+   var(--...), same reasoning as every other player/stage-scoped visual in
+   this app. Boxes are generated dynamically per block (N=2/4/8), so the
+   grid's column count is set inline per block (data-n) rather than fixed
+   in markup like Posner's two static boxes; box size shrinks a step for
+   N=8 so eight boxes still fit comfortably on a phone screen. */
+.hick-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:24px 16px}
+.hick-boxes-grid{display:grid;gap:16px;justify-content:center;align-content:center}
+.hick-box{
+  border:3px solid #16232a;border-radius:16px;background:#eef2f3;
+  width:84px;height:84px;padding:0;cursor:pointer;
+  transition:background .1s ease,border-color .1s ease,transform .08s ease;
+}
+.hick-boxes-grid[data-n="8"] .hick-box{width:64px;height:64px;border-radius:12px}
+.hick-box:active{transform:scale(.94)}
+.hick-box.lit{background:#cfe8f0;border-color:#007094}
+.hick-box.correct{background:#2e7d32;border-color:#1b5e20}
+.hick-box.wrong{background:#d32f2f;border-color:#8e1c1c}
 .merk-response-row{display:flex;gap:20px}
 .merk-response-btn{
   min-width:130px;padding:18px 20px;border-radius:14px;border:2px solid #cfd8db;

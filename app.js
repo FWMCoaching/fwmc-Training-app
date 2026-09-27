@@ -1227,6 +1227,15 @@
     antizipFsBtn: $("antizipFsBtn"), antizipFsHint: $("antizipFsHint"), antizipFsHintOpenBtn: $("antizipFsHintOpenBtn"), antizipFsHintClose: $("antizipFsHintClose"),
     antizipDonePanel: $("antizipDonePanel"), antizipDoneSummary: $("antizipDoneSummary"), antizipRating: $("antizipRating"),
     antizipAgainBtn: $("antizipAgainBtn"), antizipDoneBackBtn: $("antizipDoneBackBtn"),
+    hickOpenBtn: $("hickOpenBtn"), hickBestHint: $("hickBestHint"), hickReady: $("hickReady"),
+    hickReadyBackToHome: $("hickReadyBackToHome"), hickLengthRow: $("hickLengthRow"),
+    hickReadyBestHint: $("hickReadyBestHint"), hickReadyStartBtn: $("hickReadyStartBtn"),
+    hickPlayer: $("hickPlayer"), hickStage: $("hickStage"), hickHint: $("hickHint"), hickBoxesGrid: $("hickBoxesGrid"),
+    hickPauseOverlay: $("hickPauseOverlay"), hickResumeBtn: $("hickResumeBtn"),
+    hickPlayerBar: $("hickPlayerBar"), hickBackBtn: $("hickBackBtn"), hickPauseBtn: $("hickPauseBtn"), hickProgressEl: $("hickProgressEl"),
+    hickFsBtn: $("hickFsBtn"), hickFsHint: $("hickFsHint"), hickFsHintOpenBtn: $("hickFsHintOpenBtn"), hickFsHintClose: $("hickFsHintClose"),
+    hickDonePanel: $("hickDonePanel"), hickDoneSummary: $("hickDoneSummary"), hickRating: $("hickRating"),
+    hickAgainBtn: $("hickAgainBtn"), hickDoneBackBtn: $("hickDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationReadyBestHint: $("rotationReadyBestHint"), rotationReadyStartBtn: $("rotationReadyStartBtn"),
@@ -1443,7 +1452,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3468,6 +3477,7 @@
     els.simonPlayer.hidden = true;
     els.searchPlayer.hidden = true;
     els.abPlayer.hidden = true;
+    els.hickPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3855,6 +3865,7 @@
   wireFullscreen({ player: els.searchPlayer, btn: els.searchFsBtn, hint: els.searchFsHint, hintOpen: els.searchFsHintOpenBtn, hintClose: els.searchFsHintClose });
   wireFullscreen({ player: els.abPlayer, btn: els.abFsBtn, hint: els.abFsHint, hintOpen: els.abFsHintOpenBtn, hintClose: els.abFsHintClose });
   wireFullscreen({ player: els.antizipPlayer, btn: els.antizipFsBtn, hint: els.antizipFsHint, hintOpen: els.antizipFsHintOpenBtn, hintClose: els.antizipFsHintClose });
+  wireFullscreen({ player: els.hickPlayer, btn: els.hickFsBtn, hint: els.hickFsHint, hintOpen: els.hickFsHintOpenBtn, hintClose: els.hickFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -11588,6 +11599,338 @@
   els.antizipBackBtn.addEventListener("click", antizipStop);
   els.antizipAgainBtn.addEventListener("click", () => { els.antizipDonePanel.hidden = true; startAntizipGame(); });
   els.antizipDoneBackBtn.addEventListener("click", () => { els.antizipPlayer.hidden = true; els.antizipDonePanel.hidden = true; showScreen("testHome"); });
+
+  // Wahlreaktionstest (Hick's Law) - grounded in Hick's Law (Hick, 1952,
+  // "On the rate of gain of information", Quarterly Journal of Experimental
+  // Psychology; reviewed in Proctor & Schneider, 2018, QJEP): choice
+  // reaction time rises LINEARLY with log2(N), the number of possible
+  // stimulus-response alternatives (RT = a + b·log2(N)) - one of the few
+  // widely-replicated quantitative laws in experimental psychology. A block
+  // of N boxes is shown (N=2, then 4, then 8, always ascending - a fixed
+  // block design, matching how Hick studies are actually run: the client
+  // has to learn the current layout/mapping before a block of trials makes
+  // sense, so set size can't be randomised trial-to-trial the way Suchtest
+  // randomises its DISPLAY set size); each trial one box lights up and the
+  // client taps that SAME box as fast as possible - a spatially-compatible
+  // stimulus=response-target mapping (the lit box IS the tap target),
+  // deliberately the same convention as Posner-Cueing's boxes, so the
+  // measured RT reflects choice complexity alone, not an added
+  // S-R-compatibility cost from a separate mapping. Reports average RT per
+  // block size plus the actual outcome measure this paradigm exists to
+  // surface: the Hick-Steigung (slope) in ms/Bit = (RT@8 - RT@2) /
+  // (log2(8) - log2(2)) - tracking the LOWEST slope per length as the best
+  // score (lower slope = more efficient information processing under
+  // rising choice complexity, the theoretically "better" direction here,
+  // same lower-is-better shape as UFOV's threshold/Antizip's AE). Also
+  // researched as sport-relevant: sports-science explanations of elite
+  // athletes' fast in-game decisions invoke Hick's own formula directly -
+  // deliberate practice ingrains a "most likely" response, collapsing
+  // effective choice complexity and lowering the informational load - and
+  // studies comparing athletes/non-athletes on simple vs. choice RT
+  // consistently find athletes pull further ahead as the number of
+  // alternatives rises. Genuinely distinct from every existing Test/NAT
+  // mechanic: none of the twelve exercises above this one systematically
+  // varies the NUMBER OF RESPONSE ALTERNATIVES as the independent variable
+  // (Go/No-Go is 1-vs-withhold; Flanker/Simon/Posner are always exactly 2
+  // responses with a conflict/cue layered on top; Suchtest varies DISPLAY
+  // set size, not response count) - this is the only exercise whose entire
+  // point is the RT-vs-choice-count relationship itself. No Bei-Fehler/
+  // background colour/Zusatzaufgabe/Trainingsmodus - correctly skipped,
+  // same reasoning as every other fixed-trial RT exercise on this tab
+  // (nothing to configure beyond length, since the difficulty ladder IS
+  // the fixed 2->4->8 block structure, not something client-configurable).
+  const HICK_PREFS_KEY = "fwmc-hick-prefs-v1";
+  // "Length" = repeats per box position per block (no natural difficulty
+  // dial otherwise, same "length setting" shape as Suchtest/UFOV) - total
+  // trials = reps * (2+4+8) = reps*14.
+  const HICK_LENGTHS = {
+    kurz: { title: "Kurz", reps: 3 },
+    mittel: { title: "Mittel", reps: 5 },
+    lang: { title: "Lang", reps: 7 },
+  };
+  const HICK_SET_SIZES = [2, 4, 8]; // always ascending - see comment above
+  const HICK_ISI_MIN = 500, HICK_ISI_MAX = 800;
+  const HICK_BLOCK_INTRO_MS = 1400; // brief "Block x: N Möglichkeiten" pause before a block's first trial
+  const HICK_FEEDBACK_MS = 400;
+  const HICK_TIMEOUT_MS = 5000; // safety net only, self-paced task like Suchtest - a trial ends the instant something is tapped
+  const HICK_MIN_RESOLVED = 6;
+  const hickPrefs = { length: "mittel" };
+  function loadHickPrefs() {
+    const saved = readJSON(HICK_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(hickPrefs, saved);
+    if (!HICK_LENGTHS[hickPrefs.length]) hickPrefs.length = "mittel";
+  }
+  loadHickPrefs();
+  function saveHickPrefsToStorage() { writeJSON(HICK_PREFS_KEY, hickPrefs); }
+
+  const HICK_BEST_KEY = "fwmc-hick-best-v1"; // { [length]: bestSlopeMsPerBit } - lower is better
+  function hickBestFor() {
+    const v = readJSON(HICK_BEST_KEY, {})[hickPrefs.length];
+    return typeof v === "number" ? v : null;
+  }
+  function saveHickBest(slope) {
+    const all = readJSON(HICK_BEST_KEY, {});
+    const cur = all[hickPrefs.length];
+    if (cur == null || slope < cur) { all[hickPrefs.length] = slope; writeJSON(HICK_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderHickBest() {
+    const best = hickBestFor();
+    const text = best != null ? `Beste Hick-Steigung (${HICK_LENGTHS[hickPrefs.length].title}): ${best} ms/Bit` : "";
+    els.hickBestHint.textContent = text;
+    els.hickReadyBestHint.textContent = text;
+  }
+  renderHickBest();
+  function syncHickLengthUI() {
+    els.hickLengthRow.querySelectorAll("[data-hick-length]").forEach((btn) => setActive(btn, btn.dataset.hickLength === hickPrefs.length));
+  }
+  els.hickLengthRow.querySelectorAll("[data-hick-length]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      hickPrefs.length = btn.dataset.hickLength;
+      saveHickPrefsToStorage();
+      syncHickLengthUI();
+      renderHickBest();
+    });
+  });
+  els.hickOpenBtn.addEventListener("click", () => {
+    syncHickLengthUI();
+    renderHickBest();
+    showScreen("hickReady");
+  });
+  els.hickReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Single active timer, remaining-delay pause/resume - same shape as every
+  // other setTimeout-driven Test exercise. Like scheduleSearchTimer (and
+  // unlike scheduleSimonTimer's fixed full-duration window), this always
+  // clears any still-pending timer first, since a trial here can transition
+  // early the instant a box is tapped.
+  function scheduleHickTimer(fn, delayMs) {
+    if (hickState.timer) clearTimeout(hickState.timer);
+    hickState.timerFn = fn;
+    hickState.timerFiresAt = performance.now() + delayMs;
+    hickState.timer = setTimeout(() => { hickState.timer = null; fn(); }, delayMs);
+  }
+
+  function buildHickBlockTrials(n, reps) {
+    const trials = [];
+    for (let p = 0; p < n; p++) for (let i = 0; i < reps; i++) trials.push(p);
+    // Shuffle, then avoid more than 3 identical POSITIONS back to back -
+    // same guard as buildSearchTrials/buildPosnerTrials/buildSimonTrials, so
+    // a long run of "it's always the same box" can't cluster by chance.
+    for (let tries = 0; tries < 200; tries++) {
+      for (let i = trials.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [trials[i], trials[j]] = [trials[j], trials[i]];
+      }
+      let ok = true, run = 1;
+      for (let i = 1; i < trials.length; i++) {
+        if (trials[i] === trials[i - 1]) { run++; if (run > 3) { ok = false; break; } }
+        else run = 1;
+      }
+      if (ok) break;
+    }
+    return trials;
+  }
+  function buildHickBlocks(reps) {
+    return HICK_SET_SIZES.map((n) => ({ n, trials: buildHickBlockTrials(n, reps) }));
+  }
+
+  function hickSlope(avg2, avg8) {
+    if (avg2 == null || avg8 == null) return null;
+    return Math.round(((avg8 - avg2) / (Math.log2(8) - Math.log2(2))) * 10) / 10;
+  }
+
+  // Boxes are generated dynamically per block (unlike Posner's two fixed
+  // HTML boxes) since N varies across the run - a plain CSS grid, 2/4
+  // columns for N=2/4, 4 columns (2 rows) for N=8.
+  function renderHickGrid(n) {
+    els.hickBoxesGrid.innerHTML = "";
+    els.hickBoxesGrid.dataset.n = String(n);
+    els.hickBoxesGrid.style.gridTemplateColumns = `repeat(${Math.min(n, 4)}, 1fr)`;
+    hickState.boxEls = [];
+    for (let i = 0; i < n; i++) {
+      const btn = document.createElement("button");
+      btn.className = "hick-box";
+      btn.setAttribute("aria-label", `Feld ${i + 1}`);
+      btn.addEventListener("click", () => hickTap(i));
+      els.hickBoxesGrid.appendChild(btn);
+      hickState.boxEls.push(btn);
+    }
+  }
+  function hickClearBoxes() {
+    hickState.boxEls.forEach((el) => el.classList.remove("lit", "correct", "wrong"));
+  }
+
+  let hickState = null;
+  function startHickGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.hickPlayer.hidden = false;
+    els.hickPlayerBar.hidden = false;
+    els.hickDonePanel.hidden = true;
+    els.hickPauseOverlay.hidden = true;
+    els.hickPauseBtn.hidden = false;
+    const reps = HICK_LENGTHS[hickPrefs.length].reps;
+    const blocks = buildHickBlocks(reps);
+    hickState = {
+      length: HICK_LENGTHS[hickPrefs.length], blocks, blockIndex: -1, trialIndexInBlock: -1, overallIndex: -1,
+      totalTrials: blocks.reduce((s, b) => s + b.trials.length, 0),
+      phase: "gap", boxEls: [], targetPos: null,
+      correct: 0, incorrect: 0, timeouts: 0,
+      rtByN: { 2: [], 4: [], 8: [] },
+      paused: false, startTime: performance.now(), stimAt: null,
+      timer: null, timerFn: null, timerFiresAt: null,
+    };
+    els.hickHint.textContent = "Bereit? Gleich geht's los …";
+    els.hickProgressEl.textContent = `0/${hickState.totalTrials}`;
+    requestWakeLock();
+    scheduleHickTimer(hickStartBlock, 1000);
+  }
+  els.hickReadyStartBtn.addEventListener("click", startHickGame);
+
+  function hickStartBlock() {
+    if (!hickState) return;
+    hickState.blockIndex++;
+    if (hickState.blockIndex >= hickState.blocks.length) { hickFinish(); return; }
+    hickState.trialIndexInBlock = -1;
+    hickState.phase = "blockintro";
+    const block = hickState.blocks[hickState.blockIndex];
+    renderHickGrid(block.n);
+    els.hickHint.textContent = `Block ${hickState.blockIndex + 1} von ${hickState.blocks.length}: ${block.n} Möglichkeiten`;
+    scheduleHickTimer(hickNextTrial, HICK_BLOCK_INTRO_MS);
+  }
+  function hickNextTrial() {
+    if (!hickState) return;
+    hickState.trialIndexInBlock++;
+    const block = hickState.blocks[hickState.blockIndex];
+    if (hickState.trialIndexInBlock >= block.trials.length) { hickStartBlock(); return; }
+    hickState.overallIndex++;
+    els.hickProgressEl.textContent = `${hickState.overallIndex + 1}/${hickState.totalTrials}`;
+    hickState.phase = "gap";
+    hickClearBoxes();
+    els.hickHint.textContent = "";
+    const isi = HICK_ISI_MIN + Math.random() * (HICK_ISI_MAX - HICK_ISI_MIN);
+    scheduleHickTimer(hickShowTarget, isi);
+  }
+  function hickShowTarget() {
+    if (!hickState) return;
+    const block = hickState.blocks[hickState.blockIndex];
+    const pos = block.trials[hickState.trialIndexInBlock];
+    hickState.targetPos = pos;
+    hickState.phase = "responding";
+    hickState.stimAt = performance.now();
+    hickState.boxEls[pos].classList.add("lit");
+    scheduleHickTimer(hickTimeoutTrial, HICK_TIMEOUT_MS);
+  }
+  function hickTimeoutTrial() {
+    if (!hickState || hickState.phase !== "responding") return;
+    hickState.incorrect++;
+    hickState.timeouts++;
+    hickState.phase = "feedback";
+    els.hickHint.textContent = "Verpasst!";
+    scheduleHickTimer(hickNextTrial, HICK_FEEDBACK_MS);
+  }
+  function hickTap(pos) {
+    if (!hickState || hickState.paused || hickState.phase !== "responding") return;
+    const block = hickState.blocks[hickState.blockIndex];
+    const rt = performance.now() - hickState.stimAt;
+    hickState.phase = "feedback";
+    if (pos === hickState.targetPos) {
+      hickState.boxEls[pos].classList.add("correct");
+      hickState.correct++;
+      hickState.rtByN[block.n].push(rt);
+    } else {
+      hickState.boxEls[pos].classList.add("wrong");
+      hickState.boxEls[hickState.targetPos].classList.add("correct");
+      hickState.incorrect++;
+      els.hickHint.textContent = "Daneben!";
+    }
+    scheduleHickTimer(hickNextTrial, HICK_FEEDBACK_MS);
+  }
+
+  function pauseHick() {
+    if (!hickState || hickState.paused) return;
+    hickState.paused = true;
+    hickState.pausedAt = performance.now();
+    if (hickState.timer) {
+      clearTimeout(hickState.timer);
+      hickState.timer = null;
+      hickState.timerRemainingMs = Math.max(0, hickState.timerFiresAt - hickState.pausedAt);
+    }
+    els.hickPauseBtn.hidden = true;
+    els.hickPauseOverlay.hidden = false;
+  }
+  function resumeHick() {
+    if (!hickState || !hickState.paused) return;
+    const pausedMs = performance.now() - hickState.pausedAt;
+    hickState.startTime += pausedMs;
+    if (hickState.stimAt != null) hickState.stimAt += pausedMs;
+    hickState.paused = false;
+    if (hickState.timerFn && hickState.timerRemainingMs != null) {
+      scheduleHickTimer(hickState.timerFn, hickState.timerRemainingMs);
+      hickState.timerRemainingMs = null;
+    }
+    els.hickPauseOverlay.hidden = true;
+    els.hickPauseBtn.hidden = false;
+  }
+  els.hickPauseBtn.addEventListener("click", pauseHick);
+  els.hickResumeBtn.addEventListener("click", resumeHick);
+
+  function finalizeHickRun(state, totalTrials) {
+    els.hickPauseOverlay.hidden = true;
+    els.hickPlayerBar.hidden = true;
+    const accuracyPct = Math.round(100 * state.correct / totalTrials);
+    const avg2 = avgOf(state.rtByN[2]);
+    const avg4 = avgOf(state.rtByN[4]);
+    const avg8 = avgOf(state.rtByN[8]);
+    const slope = hickSlope(avg2, avg8);
+    const isRecord = slope != null ? saveHickBest(slope) : false;
+    renderHickBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.hickDoneSummary.textContent =
+      `Wahlreaktionstest (${state.length.title}) · ${accuracyPct}% richtig` +
+      (avg2 != null ? ` · Ø 2 Möglichkeiten ${avg2} ms` : "") +
+      (avg4 != null ? ` · Ø 4 Möglichkeiten ${avg4} ms` : "") +
+      (avg8 != null ? ` · Ø 8 Möglichkeiten ${avg8} ms` : "") +
+      (slope != null ? ` · Hick-Steigung ${slope} ms/Bit` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${accuracyPct}% richtig` + (slope != null ? `, Hick-Steigung ${slope} ms/Bit` : "");
+    const id = addHistory({ kind: "hick", title: "Wahlreaktionstest (Hick's Law)", seconds: Math.round(played), note });
+    renderRating(els.hickRating, id, "Wie klar fielen dir die Entscheidungen?");
+    els.hickDonePanel.hidden = false;
+  }
+  function hickFinish() {
+    if (!hickState) return;
+    const state = hickState;
+    hickState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.hickPlayer) document.exitFullscreen().catch(() => {});
+    els.hickFsHint.hidden = true;
+    finalizeHickRun(state, state.totalTrials);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved.
+  function hickStop() {
+    if (!hickState) return;
+    if (hickState.timer) clearTimeout(hickState.timer);
+    const state = hickState;
+    hickState = null;
+    els.hickPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.hickPlayer) document.exitFullscreen().catch(() => {});
+    els.hickFsHint.hidden = true;
+    const resolved = state.correct + state.incorrect;
+    if (resolved >= HICK_MIN_RESOLVED) {
+      finalizeHickRun(state, resolved);
+    } else {
+      els.hickPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.hickBackBtn.addEventListener("click", hickStop);
+  els.hickAgainBtn.addEventListener("click", () => { els.hickDonePanel.hidden = true; startHickGame(); });
+  els.hickDoneBackBtn.addEventListener("click", () => { els.hickPlayer.hidden = true; els.hickDonePanel.hidden = true; showScreen("testHome"); });
 
   // ---- Start-up ----
   renderHistory();

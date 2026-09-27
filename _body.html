@@ -645,6 +645,11 @@
       <span class="fc-desc">Ein Ball bewegt sich gleichm&auml;&szlig;ig auf eine Ziel-Zone zu &ndash; tippe die Taste GENAU in dem Moment, in dem er sie erreicht, nicht fr&uuml;her und nicht sp&auml;ter. Klassisches sportwissenschaftliches Paradigma (Coincidence-Anticipation Timing, u.a. mit dem &bdquo;Bassin Anticipation Timer&ldquo; gemessen), trainiert die pr&auml;zise zeitliche Antizipation bewegter Objekte &ndash; zentral f&uuml;r jede Sportart mit Ball, Gegner oder Ger&auml;t.</span>
       <span class="fc-meta" id="antizipBestHint"></span>
     </button>
+    <button class="featured-card" id="hickOpenBtn">
+      <span class="fc-title">Wahlreaktionstest (Hick's Law)</span>
+      <span class="fc-desc">Ein Feld aus mehreren Feldern leuchtet auf &ndash; tippe genau dieses Feld so schnell wie m&ouml;glich an. Erst mit 2, dann mit 4, dann mit 8 m&ouml;glichen Feldern. Klassisches Gesetz der Entscheidungsgeschwindigkeit (Hick, 1952): je mehr M&ouml;glichkeiten, desto l&auml;nger die Reaktionszeit &ndash; zeigt, wie effizient du Entscheidungen unter steigender Komplexit&auml;t triffst.</span>
+      <span class="fc-meta" id="hickBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -894,6 +899,27 @@
   <div class="group-help" id="antizipReadyBestHint"></div>
 
   <button class="start-btn" id="antizipReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="hickReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="hickReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Wahlreaktionstest (Hick's Law)</h1>
+  <p class="page-sub">Mehrere Felder erscheinen nebeneinander &ndash; eines davon leuchtet kurz auf, du tippst genau dieses Feld so schnell wie m&ouml;glich an. Der Test l&auml;uft in drei Runden mit steigender Anzahl an Feldern: erst 2, dann 4, dann 8 m&ouml;gliche Felder. Klassisches Gesetz der Entscheidungsgeschwindigkeit (Hick, 1952): die Reaktionszeit steigt mit der Anzahl der M&ouml;glichkeiten &ndash; wer schneller entscheidet, je mehr Optionen offen sind, hat effizientere visuelle Entscheidungsgeschwindigkeit.</p>
+
+  <div class="group">
+    <div class="group-label">L&auml;nge</div>
+    <div class="choice-row" id="hickLengthRow">
+      <button class="choice" data-hick-length="kurz">Kurz<small>42 Durchg&auml;nge</small></button>
+      <button class="choice" data-hick-length="mittel">Mittel<small>70 Durchg&auml;nge</small></button>
+      <button class="choice" data-hick-length="lang">Lang<small>98 Durchg&auml;nge</small></button>
+    </div>
+  </div>
+
+  <div class="group-help" id="hickReadyBestHint"></div>
+
+  <button class="start-btn" id="hickReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="merkReady" hidden>
@@ -3102,6 +3128,39 @@
     <div class="rating" id="antizipRating"></div>
     <button class="again" id="antizipAgainBtn">Nochmal</button>
     <button class="back" id="antizipDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="hickPlayer" hidden>
+  <div class="hick-stage" id="hickStage">
+    <div class="remember-hint" id="hickHint"></div>
+    <div class="hick-boxes-grid" id="hickBoxesGrid"></div>
+  </div>
+  <div class="pause-overlay" id="hickPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="hickResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="hickPlayerBar">
+    <button id="hickBackBtn">&#10005; Beenden</button>
+    <button id="hickPauseBtn">Pause</button>
+    <span class="player-status" id="hickProgressEl"></span>
+    <button id="hickFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="hickFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="hickFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="hickFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="hickDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="hickDoneSummary"></p>
+    <div class="rating" id="hickRating"></div>
+    <button class="again" id="hickAgainBtn">Nochmal</button>
+    <button class="back" id="hickDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

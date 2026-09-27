@@ -1302,6 +1302,57 @@ doesn't:
   correctly skipped (a fixed-trial timing-accuracy test, nothing to
   configure beyond difficulty). New CSS is `.antizip-*` (fixed hex colours
   throughout, no `var(--...)`). Test: `tests/antizip_test.py`.
+- **Wahlreaktionstest (Hick's Law)** (thirteenth autonomous entry,
+  2026-09-27): grounded in Hick's Law (Hick, 1952, "On the rate of gain of
+  information", Quarterly Journal of Experimental Psychology; reviewed in
+  Proctor & Schneider, 2018, QJEP) - choice reaction time rises linearly
+  with the log2 of the number of stimulus-response alternatives (RT = a +
+  b·log2(N)), the foundational quantitative law of decision speed. A
+  block of N boxes is shown (N=2, then 4, then 8, always in that ascending
+  order - a fixed block design, matching how Hick studies are actually run,
+  since the client needs to learn the current mapping before a block
+  starts); each trial one box lights up and the client taps that SAME box
+  as fast as possible (a spatially-compatible stimulus=response-target
+  mapping, same "the lit box IS the tap target" convention as
+  Posner-Cueing's boxes, deliberately avoiding any separate S-R-compatibility
+  confound layered on top of the choice-count manipulation itself). Reports
+  average RT per block size plus the actual outcome measure this paradigm
+  exists to surface: the Hick-Steigung (slope) in ms/Bit = (RT@8 - RT@2) /
+  (log2(8) - log2(2)) - tracking the LOWEST slope per `hickPrefs.length` as
+  the best score (`HICK_BEST_KEY`, lower-is-better, same `<`-comparison
+  shape as UFOV's threshold/Antizip's AE, since a flatter slope = more
+  efficient information processing, the theoretically "better" direction
+  here). Also researched as sport-relevant: sports-science literature
+  explains elite athletes' fast in-game decisions partly via deliberate
+  practice collapsing effective choice complexity (an ingrained "most
+  likely" response lowers the informational load per Hick's own formula),
+  and studies comparing athletes/non-athletes on simple vs. choice RT
+  consistently find athletes faster particularly as alternatives increase -
+  a direct fit for FWMC's "visuelle Entscheidungsgeschwindigkeit" focus,
+  and genuinely distinct from every existing Test/NAT mechanic: none of the
+  twelve exercises above systematically varies the NUMBER OF RESPONSE
+  ALTERNATIVES itself as the independent variable (Go/No-Go is 1-vs-withhold,
+  Flanker/Simon/Posner are always exactly 2 responses with a conflict/cue
+  layered on top, Suchtest varies DISPLAY set size not response count) -
+  this is the only exercise whose entire point is the RT-vs-choice-count
+  relationship. `hickPrefs.length` (kurz/mittel/lang = 3/5/7 reps per
+  position per block, so total trials = reps·(2+4+8) = reps·14, same
+  "length setting, no natural difficulty dial" shape as Suchtest/UFOV, since
+  the difficulty ladder IS the fixed 2→4→8 block structure, not something
+  client-configurable). Self-paced per trial (tap ends it immediately, only
+  a `HICK_TIMEOUT_MS` = 5000ms safety net advances an unanswered trial,
+  same `scheduleSearchTimer`-style always-clear-pending-timer pattern as
+  Suchtest, since - unlike Simon/Flanker/Posner's fixed full-duration
+  response window - this can transition early). Boxes are generated
+  dynamically per block (`renderHickGrid(n)`, a CSS grid with 2/4/4-col
+  layouts for N=2/4/8) rather than fixed HTML markup like Posner's two
+  static boxes, since N varies across the run. No Bei-Fehler/background
+  colour/Zusatzaufgabe/Trainingsmodus - correctly skipped, same reasoning as
+  every other fixed-trial RT exercise on this tab (nothing to configure
+  beyond length). Pause/resume uses the same scheduleXTimer-remaining-delay
+  trick as Suchtest/Simon/Posner. New CSS is `.hick-*` (fixed hex colours
+  throughout, no `var(--...)`); correct/wrong feedback reuses the
+  green/red-box convention from Posner/Simon. Test: `tests/hick_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
@@ -1376,3 +1427,17 @@ doesn't:
   ein paar Mal für ein stabileres Bild" instead of presenting the numbers
   as if a single run were conclusive, or whether trial count should simply
   go up (at the cost of a longer session).
+- **Wahlreaktionstest block order + slope sample size**: blocks always run
+  ascending 2→4→8, never randomised/counterbalanced - real Hick's Law
+  studies sometimes counterbalance block order across sessions to separate
+  the choice-count effect from a plain practice/warm-up effect (RT often
+  drops a little just from getting into rhythm, independent of N); this
+  version can't distinguish "harder because more choices" from "harder
+  because it's later in the run" within a single sitting. Separately, on
+  "Kurz" (3 reps/position) the slope rests on only 6 correct RTs at N=2 and
+  24 at N=8 - workable but not a lot, so an unlucky/lucky handful of trials
+  can shift the reported ms/Bit number more than a longer "Lang" run would.
+  Not fixed - flagging rather than guessing: ask the client whether block
+  order should rotate across repeated sessions, or whether the done-panel
+  should note the slope is "a first estimate, more stable over several
+  runs" the same way Doppelziel-Test's per-lag note already does.
