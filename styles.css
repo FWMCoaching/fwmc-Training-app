@@ -739,6 +739,34 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .search-item.correct{box-shadow:0 0 0 4px #2e7d32 inset,0 2px 8px rgba(0,0,0,.18)}
 .search-item.wrong{box-shadow:0 0 0 4px #d32f2f inset,0 2px 8px rgba(0,0,0,.18)}
 .search-item.reveal{box-shadow:0 0 0 4px #2e7d32 inset,0 2px 8px rgba(0,0,0,.18)}
+
+/* Doppelziel-Test (Attentional Blink) - fixed hex colours throughout, never
+   var(--...), same reasoning as every other player/stage-scoped visual in
+   this app (the stage's own background stays plain white regardless of OS
+   dark mode). The T1 colour (#007094) reuses the app's own brand teal
+   accent, already used elsewhere for a "this is the one that matters"
+   highlight (Flanker's target underline, Posner's cued-box tint). */
+.ab-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px 16px}
+.ab-stream-box{width:150px;height:150px;display:flex;align-items:center;justify-content:center}
+.ab-stream-char{font-size:88px;line-height:1;font-weight:800;color:#16232a;font-family:"Magra",sans-serif;user-select:none}
+.ab-stream-char.is-t1{color:#007094}
+.ab-panel{width:100%;max-width:340px;text-align:center}
+.ab-question{font-weight:600;color:#16232a;margin:0 0 16px;font-size:16px}
+.ab-t1-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ab-t1-btn{
+  padding:18px 8px;border-radius:14px;border:2px solid #cfd8db;
+  background:#fff;color:#16232a;font-family:"Magra",sans-serif;font-size:26px;font-weight:800;cursor:pointer;
+}
+.ab-t1-btn.correct{background:#2e7d32;border-color:#1b5e20;color:#fff}
+.ab-t1-btn.wrong{background:#d32f2f;border-color:#8e1c1c;color:#fff}
+.ab-t2-row{display:flex;gap:20px;justify-content:center}
+.ab-t2-btn{
+  min-width:110px;padding:16px 20px;border-radius:14px;border:2px solid #cfd8db;
+  background:#fff;color:#16232a;font-family:"Magra",sans-serif;font-size:18px;font-weight:700;cursor:pointer;
+}
+.ab-t2-btn.correct{background:#2e7d32;border-color:#1b5e20;color:#fff}
+.ab-t2-btn.wrong{background:#d32f2f;border-color:#8e1c1c;color:#fff}
+.ab-reveal{margin:14px 0 0;font-size:14px;color:#5c6a6d;min-height:18px}
 .merk-response-row{display:flex;gap:20px}
 .merk-response-btn{
   min-width:130px;padding:18px 20px;border-radius:14px;border:2px solid #cfd8db;

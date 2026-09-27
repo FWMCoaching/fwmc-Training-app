@@ -1205,6 +1205,17 @@
     searchFsBtn: $("searchFsBtn"), searchFsHint: $("searchFsHint"), searchFsHintOpenBtn: $("searchFsHintOpenBtn"), searchFsHintClose: $("searchFsHintClose"),
     searchDonePanel: $("searchDonePanel"), searchDoneSummary: $("searchDoneSummary"), searchRating: $("searchRating"),
     searchAgainBtn: $("searchAgainBtn"), searchDoneBackBtn: $("searchDoneBackBtn"),
+    abOpenBtn: $("abOpenBtn"), abBestHint: $("abBestHint"), abReady: $("abReady"),
+    abReadyBackToHome: $("abReadyBackToHome"), abDifficultyRow: $("abDifficultyRow"),
+    abReadyBestHint: $("abReadyBestHint"), abReadyStartBtn: $("abReadyStartBtn"),
+    abPlayer: $("abPlayer"), abStage: $("abStage"), abHint: $("abHint"), abStreamChar: $("abStreamChar"),
+    abT1Panel: $("abT1Panel"), abT1Btn0: $("abT1Btn0"), abT1Btn1: $("abT1Btn1"), abT1Btn2: $("abT1Btn2"), abT1Btn3: $("abT1Btn3"),
+    abT2Panel: $("abT2Panel"), abT2JaBtn: $("abT2JaBtn"), abT2NeinBtn: $("abT2NeinBtn"), abRevealHint: $("abRevealHint"),
+    abPauseOverlay: $("abPauseOverlay"), abResumeBtn: $("abResumeBtn"),
+    abPlayerBar: $("abPlayerBar"), abBackBtn: $("abBackBtn"), abPauseBtn: $("abPauseBtn"), abProgressEl: $("abProgressEl"),
+    abFsBtn: $("abFsBtn"), abFsHint: $("abFsHint"), abFsHintOpenBtn: $("abFsHintOpenBtn"), abFsHintClose: $("abFsHintClose"),
+    abDonePanel: $("abDonePanel"), abDoneSummary: $("abDoneSummary"), abRating: $("abRating"),
+    abAgainBtn: $("abAgainBtn"), abDoneBackBtn: $("abDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationReadyBestHint: $("rotationReadyBestHint"), rotationReadyStartBtn: $("rotationReadyStartBtn"),
@@ -1421,7 +1432,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3445,6 +3456,7 @@
     els.merkPlayer.hidden = true;
     els.simonPlayer.hidden = true;
     els.searchPlayer.hidden = true;
+    els.abPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3830,6 +3842,7 @@
   wireFullscreen({ player: els.merkPlayer, btn: els.merkFsBtn, hint: els.merkFsHint, hintOpen: els.merkFsHintOpenBtn, hintClose: els.merkFsHintClose });
   wireFullscreen({ player: els.simonPlayer, btn: els.simonFsBtn, hint: els.simonFsHint, hintOpen: els.simonFsHintOpenBtn, hintClose: els.simonFsHintClose });
   wireFullscreen({ player: els.searchPlayer, btn: els.searchFsBtn, hint: els.searchFsHint, hintOpen: els.searchFsHintOpenBtn, hintClose: els.searchFsHintClose });
+  wireFullscreen({ player: els.abPlayer, btn: els.abFsBtn, hint: els.abFsHint, hintOpen: els.abFsHintOpenBtn, hintClose: els.abFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -10829,6 +10842,413 @@
   els.searchBackBtn.addEventListener("click", searchStop);
   els.searchAgainBtn.addEventListener("click", () => { els.searchDonePanel.hidden = true; startSearchGame(); });
   els.searchDoneBackBtn.addEventListener("click", () => { els.searchPlayer.hidden = true; els.searchDonePanel.hidden = true; showScreen("testHome"); });
+
+  // Doppelziel-Test (Attentional Blink) - grounded in the classic RSVP
+  // (rapid serial visual presentation) attentional-blink paradigm (Raymond,
+  // Shapiro & Arnell, 1992): a stream of single letters flashes one at a
+  // time at fixation; one letter is coloured (T1, the first target, its
+  // colour the only thing that marks it - identity must still be read and
+  // remembered) and, at a variable "lag" (number of items) afterwards, the
+  // letter X may or may not appear (T2, a fixed, uncoloured target). The
+  // hallmark finding: correctly reporting T1 measurably impairs detecting
+  // T2 for a brief window afterwards (roughly lag 2-3, ~200-300ms into the
+  // stream) even though the eyes see it just fine - attention needs a
+  // moment to "recover" and re-engage. Performance is spared at lag 1 (the
+  // very next item) and recovers again by lag ~8, so this exercise samples
+  // exactly those three points (1/3/8) to make the dip visible rather than
+  // sampling every lag in between. Sport-relevant: Enhanced Temporal but
+  // Not Attentional Processing in Expert Tennis Players (Overney, Blanke &
+  // Herzog, 2008, PLOS ONE) used this exact white-letter-T1/X-as-T2 RSVP
+  // design and found expert tennis players process the temporal stream
+  // itself faster than novices (though, honestly, not a smaller blink
+  // magnitude specifically) - flagged both ways rather than only the
+  // flattering half, same spirit as Merkspanne-Test's mixed-evidence note.
+  // Separately, a 2012 PNAS study (Choi, Lisberger et al.) found the blink
+  // itself can shrink substantially and durably with repeated RSVP
+  // practice - the actual rationale for treating this as a trainable
+  // exercise rather than a fixed trait. Genuinely distinct from every
+  // existing Test/NAT mechanic: every other exercise here presents its
+  // stimuli either continuously visible (Merkspanne/Suchtest), one at a
+  // time with a real gap between items (Go/No-Go, Flanker, Posner, Simon,
+  // Rotationstest), or as a spatial layout (Trail Making, N-Back, Remember,
+  // Blitz-Raster) - none of them is a fast, gapless TEMPORAL stream where
+  // the very act of recognising one target costs attention needed for the
+  // next. Both response questions are asked untimed, after the stream ends
+  // (same "wait for a tap, no countdown" convention as UFOV's two
+  // post-glance questions) - the whole point is measuring what got through
+  // DURING the rapid stream, not adding a second speed pressure on top of
+  // it. No Bei-Fehler/background colour/Zusatzaufgabe/Trainingsmodus - all
+  // correctly skipped per the "optional, skip what doesn't fit in an hour"
+  // guidance (a fixed-trial accuracy test, nothing to configure beyond
+  // stream speed).
+  const AB_PREFS_KEY = "fwmc-ab-prefs-v1";
+  // Difficulty controls the RSVP rate (ms per letter) and the inter-trial
+  // gap - same "less time = harder" shape as every other difficulty ladder
+  // in this app. 100ms/item (mittel) matches the classic ~10 items/sec RSVP
+  // rate used in the original paradigm.
+  const AB_DIFFICULTIES = {
+    leicht: { title: "Leicht", itemMs: 140, isiMin: 900, isiMax: 1300 },
+    mittel: { title: "Mittel", itemMs: 100, isiMin: 700, isiMax: 1100 },
+    schwer: { title: "Schwer", itemMs: 70, isiMin: 500, isiMax: 900 },
+  };
+  // Consonants only (no vowels, no X - X is reserved as the fixed T2
+  // identity, never used as a distractor or as T1, so its appearance is
+  // always meaningful).
+  const AB_LETTERS = ["B", "C", "D", "F", "G", "H", "J", "K", "L", "M", "N", "P", "R", "S", "T", "V", "W", "Z"];
+  // The three lags this exercise samples - lag 1 (sparing: the very next
+  // item, usually still detected fine), lag 3 (deep in the blink window,
+  // the hardest), lag 8 (fully recovered) - rather than the full lag 1-8
+  // range real AB studies use, to keep the trial count practical while
+  // still making the dip-and-recovery shape visible in the result.
+  const AB_LAGS = [1, 3, 8];
+  const AB_LEAD_IN = 4; // distractors before T1, so the stream is under way before the coloured target appears
+  const AB_TAIL = 3; // distractors after the T2 slot, backward-masking it the same way the real paradigm does
+  // 3 lags x (6 T2-present + 2 T2-absent) = 24 trials. The ~25% T2-absent
+  // trials are a signal-detection control (without them, always answering
+  // "Ja" would score 100% on the T2 question) - same false-alarm-guard
+  // logic as every accuracy-scored yes/no judgement in this app.
+  const AB_TRIAL_COUNT = AB_LAGS.length * 8;
+  const abPrefs = { difficulty: "mittel" };
+  function loadAbPrefs() {
+    const saved = readJSON(AB_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(abPrefs, saved);
+    if (!AB_DIFFICULTIES[abPrefs.difficulty]) abPrefs.difficulty = "mittel";
+  }
+  loadAbPrefs();
+  function saveAbPrefsToStorage() { writeJSON(AB_PREFS_KEY, abPrefs); }
+
+  const AB_BEST_KEY = "fwmc-ab-best-v1"; // { [difficulty]: bestOverallAccuracyPct }
+  function abBestFor() { return readJSON(AB_BEST_KEY, {})[abPrefs.difficulty] || 0; }
+  function saveAbBest(accuracyPct) {
+    const all = readJSON(AB_BEST_KEY, {});
+    if (accuracyPct > (all[abPrefs.difficulty] || 0)) { all[abPrefs.difficulty] = accuracyPct; writeJSON(AB_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderAbBest() {
+    const best = abBestFor();
+    const text = best ? `Beste Gesamtgenauigkeit (${AB_DIFFICULTIES[abPrefs.difficulty].title}): ${best}%` : "";
+    els.abBestHint.textContent = text;
+    els.abReadyBestHint.textContent = text;
+  }
+  function syncAbDifficultyUI() {
+    els.abDifficultyRow.querySelectorAll("[data-ab-diff]").forEach((btn) => setActive(btn, btn.dataset.abDiff === abPrefs.difficulty));
+  }
+  els.abDifficultyRow.querySelectorAll("[data-ab-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      abPrefs.difficulty = btn.dataset.abDiff;
+      saveAbPrefsToStorage();
+      syncAbDifficultyUI();
+      renderAbBest();
+    });
+  });
+
+  els.abOpenBtn.addEventListener("click", () => {
+    syncAbDifficultyUI();
+    renderAbBest();
+    showScreen("abReady");
+  });
+  els.abReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  function abShuffled(arr) {
+    const copy = arr.slice();
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  // Same timer-wrapping trick as scheduleRotationTimer/scheduleUfovTimer:
+  // records what's pending and when it fires, so Pause can cancel it and
+  // Resume can replay it with its exact remaining delay.
+  function scheduleAbTimer(fn, delayMs) {
+    abState.timerFn = fn;
+    abState.timerFiresAt = performance.now() + delayMs;
+    abState.timer = setTimeout(() => { abState.timer = null; fn(); }, delayMs);
+  }
+
+  // Builds the actual RSVP letter sequence for one trial: AB_LEAD_IN
+  // distractors, then T1 (coloured), then (lag-1) filler distractors, then
+  // the T2 slot (the letter X if this trial is T2-present, one more plain
+  // distractor otherwise), then AB_TAIL trailing distractors. Every letter
+  // in the sequence is distinct (sampled without replacement from
+  // AB_LETTERS, 18 letters - comfortably enough for the longest possible
+  // sequence, lag 8's 16 items) so a repeated letter never gets mistaken
+  // for T1 or for X.
+  function buildAbSequence(trial) {
+    const len = AB_LEAD_IN + 1 + (trial.lag - 1) + 1 + AB_TAIL;
+    const t1Index = AB_LEAD_IN;
+    const t2Index = t1Index + trial.lag;
+    const pool = abShuffled(AB_LETTERS);
+    let pi = 0;
+    const frames = [];
+    for (let i = 0; i < len; i++) {
+      if (i === t1Index) {
+        const ch = pool[pi++];
+        frames.push({ char: ch, role: "t1" });
+        trial.t1Char = ch;
+      } else if (i === t2Index) {
+        frames.push(trial.t2Present ? { char: "X", role: "t2" } : { char: pool[pi++], role: "distractor" });
+      } else {
+        frames.push({ char: pool[pi++], role: "distractor" });
+      }
+    }
+    trial.frames = frames;
+  }
+
+  function buildAbTrials() {
+    const trials = [];
+    AB_LAGS.forEach((lag) => {
+      for (let i = 0; i < 6; i++) trials.push({ lag, t2Present: true });
+      for (let i = 0; i < 2; i++) trials.push({ lag, t2Present: false });
+    });
+    // Shuffle, then avoid more than 3 identical lags back to back - same
+    // guard as buildFlankerTrials/buildPosnerTrials, so the lag pattern
+    // itself can't become predictable enough to game.
+    for (let tries = 0; tries < 200; tries++) {
+      const shuffled = abShuffled(trials);
+      let ok = true, run = 1;
+      for (let i = 1; i < shuffled.length; i++) {
+        if (shuffled[i].lag === shuffled[i - 1].lag) { run++; if (run > 3) { ok = false; break; } }
+        else run = 1;
+      }
+      if (ok) { trials.length = 0; trials.push(...shuffled); break; }
+    }
+    trials.forEach(buildAbSequence);
+    return trials;
+  }
+
+  // Picks the 4 multiple-choice options for "which letter was blue": the
+  // real T1 letter plus 3 distinct foils, shuffled into a random order (so
+  // the correct answer's position isn't learnable across trials).
+  function abT1Options(trial) {
+    const foils = abShuffled(AB_LETTERS.filter((l) => l !== trial.t1Char)).slice(0, 3);
+    return abShuffled([trial.t1Char, ...foils]);
+  }
+
+  const AB_T1_BTNS = [];
+  let abState = null;
+  function startAbGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.abPlayer.hidden = false;
+    els.abPlayerBar.hidden = false;
+    els.abDonePanel.hidden = true;
+    els.abPauseOverlay.hidden = true;
+    els.abPauseBtn.hidden = false;
+    if (!AB_T1_BTNS.length) AB_T1_BTNS.push(els.abT1Btn0, els.abT1Btn1, els.abT1Btn2, els.abT1Btn3);
+    abState = {
+      diff: AB_DIFFICULTIES[abPrefs.difficulty], trials: buildAbTrials(), index: -1, phase: "gap",
+      frameIdx: 0, t1Options: [], pendingT1Correct: false,
+      records: [], // { lag, t2Present, t1Correct, t2Correct }
+      paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      startTime: performance.now(),
+    };
+    els.abT1Panel.hidden = true;
+    els.abT2Panel.hidden = true;
+    els.abRevealHint.textContent = "";
+    els.abStreamChar.textContent = "";
+    els.abStreamChar.classList.remove("is-t1");
+    els.abHint.textContent = "Bereit? Gleich geht's los …";
+    els.abProgressEl.textContent = `0/${abState.trials.length}`;
+    requestWakeLock();
+    scheduleAbTimer(abNextTrial, 1200);
+  }
+  els.abReadyStartBtn.addEventListener("click", startAbGame);
+
+  function abNextTrial() {
+    if (!abState) return;
+    abState.index++;
+    if (abState.index >= abState.trials.length) { abFinish(); return; }
+    els.abProgressEl.textContent = `${abState.index + 1}/${abState.trials.length}`;
+    abState.phase = "gap";
+    els.abHint.textContent = "";
+    els.abT1Panel.hidden = true;
+    els.abT2Panel.hidden = true;
+    els.abRevealHint.textContent = "";
+    els.abStreamChar.textContent = "";
+    els.abStreamChar.classList.remove("is-t1");
+    const isi = abState.diff.isiMin + Math.random() * (abState.diff.isiMax - abState.diff.isiMin);
+    scheduleAbTimer(abStartStream, isi);
+  }
+  function abStartStream() {
+    if (!abState) return;
+    abState.phase = "stream";
+    abState.frameIdx = 0;
+    abShowFrame();
+  }
+  function abShowFrame() {
+    if (!abState) return;
+    const trial = abState.trials[abState.index];
+    if (abState.frameIdx >= trial.frames.length) {
+      els.abStreamChar.textContent = "";
+      els.abStreamChar.classList.remove("is-t1");
+      abAskT1();
+      return;
+    }
+    const frame = trial.frames[abState.frameIdx];
+    els.abStreamChar.textContent = frame.char;
+    els.abStreamChar.classList.toggle("is-t1", frame.role === "t1");
+    scheduleAbTimer(() => { abState.frameIdx++; abShowFrame(); }, abState.diff.itemMs);
+  }
+  function abAskT1() {
+    if (!abState) return;
+    abState.phase = "askT1";
+    const trial = abState.trials[abState.index];
+    abState.t1Options = abT1Options(trial);
+    AB_T1_BTNS.forEach((btn, i) => {
+      btn.textContent = abState.t1Options[i];
+      btn.classList.remove("correct", "wrong");
+    });
+    els.abT1Panel.hidden = false;
+  }
+  function abT1Tap(i) {
+    if (!abState || abState.paused || abState.phase !== "askT1") return;
+    abState.phase = "t1-feedback";
+    const trial = abState.trials[abState.index];
+    const guess = abState.t1Options[i];
+    const correct = guess === trial.t1Char;
+    abState.pendingT1Correct = correct;
+    AB_T1_BTNS[i].classList.add(correct ? "correct" : "wrong");
+    if (!correct) {
+      const rightIdx = abState.t1Options.indexOf(trial.t1Char);
+      if (rightIdx >= 0) AB_T1_BTNS[rightIdx].classList.add("correct");
+    }
+    scheduleAbTimer(abAskT2, 900);
+  }
+  els.abT1Btn0.addEventListener("click", () => abT1Tap(0));
+  els.abT1Btn1.addEventListener("click", () => abT1Tap(1));
+  els.abT1Btn2.addEventListener("click", () => abT1Tap(2));
+  els.abT1Btn3.addEventListener("click", () => abT1Tap(3));
+
+  function abAskT2() {
+    if (!abState) return;
+    els.abT1Panel.hidden = true;
+    abState.phase = "askT2";
+    els.abT2JaBtn.classList.remove("correct", "wrong");
+    els.abT2NeinBtn.classList.remove("correct", "wrong");
+    els.abRevealHint.textContent = "";
+    els.abT2Panel.hidden = false;
+  }
+  function abT2Tap(guessPresent) {
+    if (!abState || abState.paused || abState.phase !== "askT2") return;
+    abState.phase = "t2-feedback";
+    const trial = abState.trials[abState.index];
+    const correct = guessPresent === trial.t2Present;
+    const btn = guessPresent ? els.abT2JaBtn : els.abT2NeinBtn;
+    btn.classList.add(correct ? "correct" : "wrong");
+    if (!correct) {
+      els.abRevealHint.textContent = trial.t2Present ? "Es war doch ein X dabei." : "Es war kein X dabei.";
+    }
+    abState.records.push({ lag: trial.lag, t2Present: trial.t2Present, t1Correct: abState.pendingT1Correct, t2Correct: correct });
+    scheduleAbTimer(abNextTrial, correct ? 700 : 1300);
+  }
+  els.abT2JaBtn.addEventListener("click", () => abT2Tap(true));
+  els.abT2NeinBtn.addEventListener("click", () => abT2Tap(false));
+
+  // Pause just stops/replays the pending timer (a no-op during the two
+  // untimed response phases, which just wait on a tap - pause still blocks
+  // input via the phase check in abT1Tap/abT2Tap plus the overlay), same
+  // convention as pauseUfov/pausePosner.
+  function pauseAb() {
+    if (!abState || abState.paused) return;
+    abState.paused = true;
+    abState.pausedAt = performance.now();
+    if (abState.timer) {
+      clearTimeout(abState.timer);
+      abState.timer = null;
+      abState.timerRemainingMs = Math.max(0, abState.timerFiresAt - abState.pausedAt);
+    }
+    els.abPauseBtn.hidden = true;
+    els.abPauseOverlay.hidden = false;
+  }
+  function resumeAb() {
+    if (!abState || !abState.paused) return;
+    const pausedMs = performance.now() - abState.pausedAt;
+    abState.startTime += pausedMs;
+    abState.paused = false;
+    if (abState.timerFn && abState.timerRemainingMs != null) {
+      scheduleAbTimer(abState.timerFn, abState.timerRemainingMs);
+      abState.timerRemainingMs = null;
+    }
+    els.abPauseOverlay.hidden = true;
+    els.abPauseBtn.hidden = false;
+  }
+  els.abPauseBtn.addEventListener("click", pauseAb);
+  els.abResumeBtn.addEventListener("click", resumeAb);
+
+  // Accuracy of the T2 ("was X there?") judgement, counted only among
+  // trials where T1 was ALSO correctly identified - the standard AB scoring
+  // convention (Raymond, Shapiro & Arnell themselves score it this way):
+  // the blink is specifically about what happens to T2 when attention was
+  // actually engaged by T1, not about trials where T1 was missed entirely.
+  function abT2AccuracyForLag(records, lag) {
+    const relevant = records.filter((r) => r.lag === lag && r.t1Correct);
+    if (!relevant.length) return null;
+    const hits = relevant.filter((r) => r.t2Correct).length;
+    return Math.round((100 * hits) / relevant.length);
+  }
+
+  function finalizeAbRun(state, totalTrials) {
+    els.abPauseOverlay.hidden = true;
+    els.abPlayerBar.hidden = true;
+    const t1Hits = state.records.filter((r) => r.t1Correct).length;
+    const t2Hits = state.records.filter((r) => r.t2Correct).length;
+    const accuracyPct = Math.round((100 * (t1Hits + t2Hits)) / (2 * totalTrials));
+    const accLag1 = abT2AccuracyForLag(state.records, 1);
+    const accLag3 = abT2AccuracyForLag(state.records, 3);
+    const accLag8 = abT2AccuracyForLag(state.records, 8);
+    // The attentional-blink effect itself: how much worse T2 detection is
+    // deep in the blink window (lag 3) than once it's fully recovered
+    // (lag 8) - the actual signature dip-and-recovery shape this paradigm
+    // exists to surface. Only meaningful once both sides have data.
+    const blinkEffect = (accLag3 != null && accLag8 != null) ? (accLag8 - accLag3) : null;
+    const isRecord = saveAbBest(accuracyPct);
+    renderAbBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.abDoneSummary.textContent =
+      `Doppelziel-Test (${state.diff.title}) · ${accuracyPct}% Gesamtgenauigkeit` +
+      (accLag1 != null ? ` · T2 bei Lag 1: ${accLag1}%` : "") +
+      (accLag3 != null ? ` · Lag 3: ${accLag3}%` : "") +
+      (accLag8 != null ? ` · Lag 8: ${accLag8}%` : "") +
+      (blinkEffect != null ? ` · Aufmerksamkeitslücke: ${blinkEffect} Punkte` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${accuracyPct}% gesamt` + (blinkEffect != null ? `, Lücke ${blinkEffect} Punkte` : "");
+    const id = addHistory({ kind: "ab", title: "Doppelziel-Test (Attentional Blink)", seconds: Math.round(played), note });
+    renderRating(els.abRating, id, "Wie konzentriert warst du?");
+    els.abDonePanel.hidden = false;
+  }
+  function abFinish() {
+    if (!abState) return;
+    const state = abState;
+    abState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.abPlayer) document.exitFullscreen().catch(() => {});
+    els.abFsHint.hidden = true;
+    finalizeAbRun(state, state.trials.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved (both T1 and T2 answered).
+  function abStop() {
+    if (!abState) return;
+    if (abState.timer) clearTimeout(abState.timer);
+    const state = abState;
+    abState = null;
+    els.abPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.abPlayer) document.exitFullscreen().catch(() => {});
+    els.abFsHint.hidden = true;
+    if (state.records.length >= 4) {
+      finalizeAbRun(state, state.records.length);
+    } else {
+      els.abPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.abBackBtn.addEventListener("click", abStop);
+  els.abAgainBtn.addEventListener("click", () => { els.abDonePanel.hidden = true; startAbGame(); });
+  els.abDoneBackBtn.addEventListener("click", () => { els.abPlayer.hidden = true; els.abDonePanel.hidden = true; showScreen("testHome"); });
 
   // ---- Start-up ----
   renderHistory();

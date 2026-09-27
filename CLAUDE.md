@@ -1215,6 +1215,59 @@ doesn't:
   `var(--...)`); shape (circle vs. square) is a CSS class, colour an
   inline style, matching Merkspanne-Test's own item-rendering pattern.
   Test: `tests/search_test.py`.
+- **Doppelziel-Test (Attentional Blink)** (eleventh autonomous entry,
+  2026-09-27): grounded in the classic RSVP (rapid serial visual
+  presentation) attentional-blink paradigm (Raymond, Shapiro & Arnell,
+  1992) - a fast stream of single letters flashes one at a time at
+  fixation; one letter is coloured (T1, the first target - only its colour
+  marks it, identity must still be read and remembered) and, at a variable
+  "lag" (number of items later), the fixed letter X may or may not appear
+  (T2). The hallmark, endlessly-replicated finding this paradigm exists to
+  surface: correctly registering T1 measurably impairs detecting T2 for a
+  brief window afterwards (deepest around lag 2-3, spared at lag 1, fully
+  recovered by roughly lag 8) even though the eyes see it just fine -
+  attention needs a moment to disengage and re-engage. This exercise
+  samples exactly those three points (`AB_LAGS = [1, 3, 8]`) rather than
+  every lag in between, to make the dip-and-recovery shape visible within a
+  practical trial count. Also researched as sport-relevant: Overney,
+  Blanke & Herzog (2008, PLOS ONE), "Enhanced Temporal but Not Attentional
+  Processing in Expert Tennis Players", used this exact white-letter-T1/
+  X-as-T2 RSVP design and found expert tennis players process the temporal
+  stream itself faster than novices - though, honestly, NOT a smaller
+  attentional-blink magnitude specifically, flagged both ways rather than
+  only the flattering half (same spirit as Merkspanne-Test's own mixed-
+  evidence note). Separately, a 2012 PNAS study (Choi et al.) found the
+  blink itself can shrink substantially and durably with repeated RSVP
+  practice - the actual rationale for treating this as a trainable
+  exercise rather than a fixed trait. Genuinely distinct from every
+  existing Test/NAT mechanic: every other exercise here presents stimuli
+  either continuously visible (Merkspanne/Suchtest), one at a time with a
+  real gap between items (Go/No-Go, Flanker, Posner, Simon, Rotationstest),
+  or as a spatial layout (Trail Making, N-Back, Remember, Blitz-Raster) -
+  none is a fast, gapless TEMPORAL stream where recognising one target
+  costs attention needed for the next. 24 fixed trials (3 lags x
+  6-T2-present + 2-T2-absent each, the absent trials a signal-detection
+  false-alarm control, shuffled with the same same-lag-max-3-in-a-row
+  guard used elsewhere), `abPrefs.difficulty` (leicht/mittel/schwer)
+  controlling only the RSVP rate (`itemMs`: 140/100/70ms - 100ms matches
+  the classic ~10 items/sec rate) and inter-trial gap. Both response
+  questions are asked UNTIMED after the stream ends (same "wait for a tap,
+  no countdown" convention as UFOV's own two post-glance questions) -
+  deliberately no second speed pressure on top of the fast stream itself,
+  since the whole point is measuring what got through DURING it. T2
+  accuracy is scored only among trials where T1 was ALSO correctly
+  identified (the standard AB scoring convention - the blink is
+  specifically about attention actually being engaged by T1), reported per
+  lag in the done-panel plus "Aufmerksamkeitslücke" = lag-8 accuracy minus
+  lag-3 accuracy, the actual dip magnitude; overall tracked best is a
+  combined T1+T2 accuracy% (`AB_BEST_KEY`), same `>`-is-better shape as
+  most other fixed-trial exercises. No Bei-Fehler/background colour/
+  Zusatzaufgabe/Trainingsmodus - correctly skipped per the "optional, skip
+  what doesn't fit in an hour" guidance. New CSS is `.ab-*` (fixed hex
+  colours throughout; the T1 colour reuses the app's own brand teal
+  `#007094`, already used elsewhere as a "this one matters" highlight -
+  Flanker's target underline, Posner's cued-box tint). Test:
+  `tests/ab_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
@@ -1274,3 +1327,18 @@ doesn't:
   or whether an occasional negative value is fine to leave as-is (a real,
   if initially surprising, part of how attention actually works) with just
   a clarifying note in the UI copy.
+- **Doppelziel-Test per-lag sample size**: each lag (1/3/8) only gets 6
+  T2-present trials per run, and the reported per-lag T2 accuracy is
+  further restricted to the subset where T1 was also correctly identified
+  - so a single run's per-lag percentages (and therefore the
+  "Aufmerksamkeitslücke" difference) rest on a genuinely small, sometimes
+  very small (occasionally 2-3, once in a while 0) number of trials, and
+  can look noisy or even point the "wrong" direction by chance on any one
+  run. Kept small deliberately so a full run stays quick, matching this
+  app's "test, not a 20-minute lab session" shape - but not validated
+  against repeated real-client runs to see how stable the numbers actually
+  are in practice. Flagging rather than guessing at a fix: ask the client
+  whether the done-panel should say something like "vorläufig, spielt es
+  ein paar Mal für ein stabileres Bild" instead of presenting the numbers
+  as if a single run were conclusive, or whether trial count should simply
+  go up (at the cost of a longer session).
