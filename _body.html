@@ -655,6 +655,11 @@
       <span class="fc-desc">Mehrere Bl&ouml;cke blitzen nacheinander in einer Reihenfolge auf &ndash; tippe sie danach in GENAU dieser Reihenfolge nochmal an. Nach jeder richtigen Runde wird die Folge um einen Block l&auml;nger. Klassisches Paradigma zur r&auml;umlichen Merkspanne (Corsi, 1972; standardisiert von Kessels et al., 2000), trainiert visuell-r&auml;umliches Arbeitsged&auml;chtnis.</span>
       <span class="fc-meta" id="corsiBestHint"></span>
     </button>
+    <button class="featured-card" id="reaktOpenBtn">
+      <span class="fc-title">Reaktionsfeld-Test</span>
+      <span class="fc-desc">Ein einzelnes Licht springt &uuml;ber ein gro&szlig;es Feld &ndash; von der Mitte bis weit in den Rand hinein &ndash; tippe es so schnell wie m&ouml;glich an, dann springt das n&auml;chste sofort weiter. Angelehnt an Reaktions-Lichttafeln wie das Dynavision D2, wie sie in der sportwissenschaftlichen Vision-Trainings- und Return-to-Play-Forschung eingesetzt werden. Trainiert Reaktionszeit und peripheres Sehen gemeinsam &uuml;ber das ganze Blickfeld.</span>
+      <span class="fc-meta" id="reaktBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -946,6 +951,44 @@
   <div class="group-help" id="corsiReadyBestHint"></div>
 
   <button class="start-btn" id="corsiReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="reaktReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="reaktReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Reaktionsfeld-Test</h1>
+  <p class="page-sub">Ein einzelnes Licht erscheint irgendwo auf dem Feld &ndash; mal in der Mitte, mal weit drau&szlig;en am Rand. Tippe es so schnell wie m&ouml;glich an, dann erscheint sofort das n&auml;chste an einer anderen Stelle. Angelehnt an Reaktions-Lichttafeln (z.&nbsp;B. Dynavision D2), wie sie in Sport-Vision-Training und Return-to-Play-Programmen zur Messung von Reaktionszeit und peripherer Wahrnehmung eingesetzt werden.</p>
+
+  <div class="group">
+    <div class="group-label">Modus</div>
+    <div class="choice-row two" id="reaktModeRow">
+      <button class="choice" data-reakt-mode="proaktiv">Proaktiv<small>Licht bleibt an, bis du triffst</small></button>
+      <button class="choice" data-reakt-mode="reaktiv">Reaktiv<small>Licht springt automatisch weiter</small></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Tempo</div>
+    <div class="choice-row" id="reaktDifficultyRow">
+      <button class="choice" data-reakt-difficulty="leicht">Leicht</button>
+      <button class="choice" data-reakt-difficulty="mittel">Mittel</button>
+      <button class="choice" data-reakt-difficulty="schwer">Schwer</button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Dauer</div>
+    <div class="choice-row" id="reaktLengthRow">
+      <button class="choice" data-reakt-length="kurz">Kurz</button>
+      <button class="choice" data-reakt-length="mittel">Mittel</button>
+      <button class="choice" data-reakt-length="lang">Lang</button>
+    </div>
+  </div>
+
+  <div class="group-help" id="reaktReadyBestHint"></div>
+
+  <button class="start-btn" id="reaktReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="merkReady" hidden>
@@ -3220,6 +3263,39 @@
     <div class="rating" id="corsiRating"></div>
     <button class="again" id="corsiAgainBtn">Nochmal</button>
     <button class="back" id="corsiDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="reaktPlayer" hidden>
+  <div class="reakt-stage" id="reaktStage">
+    <div class="remember-hint" id="reaktHint"></div>
+    <div id="reaktField"></div>
+  </div>
+  <div class="pause-overlay" id="reaktPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="reaktResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="reaktPlayerBar">
+    <button id="reaktBackBtn">&#10005; Beenden</button>
+    <button id="reaktPauseBtn">Pause</button>
+    <span class="player-status" id="reaktProgressEl"></span>
+    <button id="reaktFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="reaktFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="reaktFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="reaktFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="reaktDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="reaktDoneSummary"></p>
+    <div class="rating" id="reaktRating"></div>
+    <button class="again" id="reaktAgainBtn">Nochmal</button>
+    <button class="back" id="reaktDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

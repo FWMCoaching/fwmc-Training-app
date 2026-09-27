@@ -1398,6 +1398,58 @@ doesn't:
   guidance (backward Corsi is a real, well-known variant but explicitly a
   later extension, same "start with the forward version first" spirit as
   every other exercise here). Test: `tests/corsi_test.py`.
+- **Reaktionsfeld-Test** (fifteenth autonomous entry, 2026-09-27): grounded
+  in reaction-light-board training devices such as the Dynavision D2 (a
+  64-light board across five concentric rings from centre to periphery,
+  reaction time + hit-count recorded, used in sport-vision training and
+  concussion/return-to-play research - e.g. a University of Cincinnati
+  football-player preseason study measuring reaction time with it, cited
+  in-code). A single light appears somewhere across the whole field - mostly
+  central, sometimes far out toward the edge - the client taps it as fast as
+  possible, then the next one appears elsewhere immediately, for a fixed
+  duration (`reaktPrefs.length` kurz/mittel/lang = 30/60/90s, `REAKT_BEST_KEY`
+  tracks Treffer/Min, deliberately length-independent so a 30s and a 90s run
+  are directly comparable - unlike Corsi/N-Back's own single climb-based
+  score, this needed a rate, not a raw count, to be comparable across the
+  three duration settings). Two modes mirror the real device's own Mode
+  A/Mode B exactly, both offered rather than picking one (same "don't force
+  a single mode when the source paradigm defines several" spirit as MOT's
+  speed/count/both): `"proaktiv"` (light stays lit until hit, untimed) and
+  `"reaktiv"` (light times out after `REAKT_DIFFICULTIES[difficulty]
+  .exposureMs` and moves on regardless, counted as "Verpasst"). Difficulty
+  (leicht/mittel/schwer) sets both that exposure window AND
+  `minJumpFrac` - how far (as a fraction of the stage's half-diagonal) the
+  NEXT light must appear from the current one, in BOTH modes - so higher
+  difficulty always means more ground to cover across the whole field, not
+  just faster taps in one spot, matching the real device's own full-board-
+  scanning emphasis. Every light's landing position is silently classified
+  "zentral" vs. "peripher" (`REAKT_CENTRAL_RADIUS_FRAC = 0.4` of the stage's
+  half-diagonal from centre - nothing is drawn to mark this boundary, same
+  invisible-split convention as UFOV's own centre/peripheral categorisation)
+  purely for reporting - the done-panel breaks out hit-rate/average RT per
+  zone separately, mirroring the Dynavision literature's own central-vs-
+  peripheral-ring hit-data breakdown, a direct fit for FWMC's "peripheres
+  Sehen" focus specifically (not just reaction time in the abstract).
+  Genuinely distinct from every existing Test/NAT mechanic: this is the only
+  exercise whose stimulus can land ANYWHERE across a continuous field (not
+  fixed grid cells like Blitz-Raster/N-Back/Corsi, not framed compass
+  positions like UFOV/Posner) and whose whole point is raw speeded motor
+  reaction to wherever it appears next, one at a time, for a sustained
+  stretch of real time rather than a fixed trial count - UFOV measures a
+  masked GLANCE under adaptive exposure with no motor race at all, Blitz-
+  Raster shows several cells simultaneously then asks for delayed recall,
+  MOT tracks objects that stay identical and keep moving continuously
+  instead of appearing/disappearing at discrete points. No Bei-Fehler/
+  background colour/Zusatzaufgabe/Trainingsmodus - correctly skipped per the
+  "optional, skip what doesn't fit in an hour" guidance (a continuous
+  reaction-rate test, nothing to configure beyond mode/difficulty/length).
+  Pause/resume is a no-op beyond blocking input in "proaktiv" mode (no timer
+  to shift, same shape as UFOV's own untimed response phases) and uses the
+  usual scheduleXTimer-remaining-delay trick for "reaktiv" mode's exposure
+  timeout. New CSS is `.reakt-*` (fixed hex colours throughout - a warm
+  amber/gold light, `#f2a900`/`#ffe27a`, deliberately distinct from every
+  other exercise's own stimulus colour on this tab, no `var(--...)`). Test:
+  `tests/reakt_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
@@ -1492,6 +1544,31 @@ doesn't:
   ein paar Mal für ein stabileres Bild" instead of presenting the numbers
   as if a single run were conclusive, or whether trial count should simply
   go up (at the cost of a longer session).
+- **Reaktionsfeld-Test: three simplifications versus the real Dynavision
+  D2 protocol**: (1) the real device places lights at 64 FIXED physical
+  positions across 5 concentric rings with known, published radii; this
+  phone version instead lets a light land at any continuous point and uses
+  a single guessed threshold (`REAKT_CENTRAL_RADIUS_FRAC = 0.4` of the
+  stage's half-diagonal) to call it "zentral" vs. "peripher" - not derived
+  from the device's actual ring-size proportions, since that geometry wasn't
+  looked up. (2) The "next light must land at least `minJumpFrac` away from
+  the current one" rule is this app's own addition (to force genuine
+  scanning across the whole field), not something the source literature
+  describes the device itself enforcing - the real board just lights a
+  random one of its 64 positions, which could occasionally repeat a nearby
+  spot. Both are reasonable-seeming design choices but genuinely invented,
+  not verified against the published device geometry - flagging rather than
+  presenting either number as device-accurate. (3) The done-panel's
+  "Treffer/Min" rate is computed from actual played time with only a 1-
+  second floor (`Math.max(1000, ...)`), so a run stopped (Beenden) after
+  just one or two very fast hits can show an inflated, unrepresentative
+  rate (e.g. "60 Treffer/Min" from a single 1-second hit) that could
+  overwrite a genuinely earned best score. Not fixed - flagging rather than
+  guessing at a minimum-played-time gate: ask the client whether an early
+  Beenden should require some minimum played time (e.g. 10s) before it's
+  allowed to count toward the best score, or whether the done-panel should
+  just avoid emphasising the rate number this prominently on a very short
+  stopped run.
 - **Wahlreaktionstest block order + slope sample size**: blocks always run
   ascending 2→4→8, never randomised/counterbalanced - real Hick's Law
   studies sometimes counterbalance block order across sessions to separate

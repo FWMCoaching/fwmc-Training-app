@@ -1246,6 +1246,15 @@
     corsiFsBtn: $("corsiFsBtn"), corsiFsHint: $("corsiFsHint"), corsiFsHintOpenBtn: $("corsiFsHintOpenBtn"), corsiFsHintClose: $("corsiFsHintClose"),
     corsiDonePanel: $("corsiDonePanel"), corsiDoneSummary: $("corsiDoneSummary"), corsiRating: $("corsiRating"),
     corsiAgainBtn: $("corsiAgainBtn"), corsiDoneBackBtn: $("corsiDoneBackBtn"),
+    reaktOpenBtn: $("reaktOpenBtn"), reaktBestHint: $("reaktBestHint"), reaktReady: $("reaktReady"),
+    reaktReadyBackToHome: $("reaktReadyBackToHome"), reaktModeRow: $("reaktModeRow"), reaktDifficultyRow: $("reaktDifficultyRow"),
+    reaktLengthRow: $("reaktLengthRow"), reaktReadyBestHint: $("reaktReadyBestHint"), reaktReadyStartBtn: $("reaktReadyStartBtn"),
+    reaktPlayer: $("reaktPlayer"), reaktStage: $("reaktStage"), reaktHint: $("reaktHint"), reaktField: $("reaktField"),
+    reaktPauseOverlay: $("reaktPauseOverlay"), reaktResumeBtn: $("reaktResumeBtn"),
+    reaktPlayerBar: $("reaktPlayerBar"), reaktBackBtn: $("reaktBackBtn"), reaktPauseBtn: $("reaktPauseBtn"), reaktProgressEl: $("reaktProgressEl"),
+    reaktFsBtn: $("reaktFsBtn"), reaktFsHint: $("reaktFsHint"), reaktFsHintOpenBtn: $("reaktFsHintOpenBtn"), reaktFsHintClose: $("reaktFsHintClose"),
+    reaktDonePanel: $("reaktDonePanel"), reaktDoneSummary: $("reaktDoneSummary"), reaktRating: $("reaktRating"),
+    reaktAgainBtn: $("reaktAgainBtn"), reaktDoneBackBtn: $("reaktDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationReadyBestHint: $("rotationReadyBestHint"), rotationReadyStartBtn: $("rotationReadyStartBtn"),
@@ -1462,7 +1471,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3489,6 +3498,7 @@
     els.abPlayer.hidden = true;
     els.hickPlayer.hidden = true;
     els.corsiPlayer.hidden = true;
+    els.reaktPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3878,6 +3888,7 @@
   wireFullscreen({ player: els.antizipPlayer, btn: els.antizipFsBtn, hint: els.antizipFsHint, hintOpen: els.antizipFsHintOpenBtn, hintClose: els.antizipFsHintClose });
   wireFullscreen({ player: els.hickPlayer, btn: els.hickFsBtn, hint: els.hickFsHint, hintOpen: els.hickFsHintOpenBtn, hintClose: els.hickFsHintClose });
   wireFullscreen({ player: els.corsiPlayer, btn: els.corsiFsBtn, hint: els.corsiFsHint, hintOpen: els.corsiFsHintOpenBtn, hintClose: els.corsiFsHintClose });
+  wireFullscreen({ player: els.reaktPlayer, btn: els.reaktFsBtn, hint: els.reaktFsHint, hintOpen: els.reaktFsHintOpenBtn, hintClose: els.reaktFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -12264,6 +12275,338 @@
   els.corsiBackBtn.addEventListener("click", corsiStop);
   els.corsiAgainBtn.addEventListener("click", () => { els.corsiDonePanel.hidden = true; startCorsiGame(); });
   els.corsiDoneBackBtn.addEventListener("click", () => { els.corsiPlayer.hidden = true; els.corsiDonePanel.hidden = true; showScreen("testHome"); });
+
+  // Reaktionsfeld-Test (fifteenth autonomous Test entry): grounded in
+  // reaction-light-board training devices such as the Dynavision D2 (a
+  // 64-light board across five concentric rings from centre to periphery,
+  // used in sport-vision training, concussion/return-to-play protocols and
+  // OT rehab research) - a single light appears somewhere across the whole
+  // field, the client taps it as fast as possible, and the next light
+  // appears elsewhere immediately. The real device runs two distinct modes:
+  // "Mode A" (proactive) leaves a light on until it's hit, "Mode B"
+  // (reactive) times each light out after a preset duration and moves on
+  // regardless - both are offered here (`reaktPrefs.mode`) rather than
+  // picking just one, same "don't force a single mode when the source
+  // paradigm itself defines several" spirit as MOT's speed/count/both.
+  // Genuinely distinct from every existing Test/NAT mechanic: this is the
+  // only exercise whose stimulus can land ANYWHERE across a continuous
+  // field (not fixed grid cells like Blitz-Raster/N-Back/Corsi, not framed
+  // compass positions like UFOV/Posner) and whose whole point is raw
+  // speeded motor reaction to wherever it appears next, one at a time, for
+  // a sustained stretch of time rather than a fixed trial count - UFOV
+  // measures a masked GLANCE under adaptive exposure with no motor race,
+  // Blitz-Raster shows several cells AT ONCE then asks for delayed recall,
+  // MOT tracks objects that stay put in identity but move continuously.
+  const REAKT_MODES = {
+    proaktiv: { title: "Proaktiv" },
+    reaktiv: { title: "Reaktiv" },
+  };
+  const REAKT_DIFFICULTIES = {
+    // exposureMs only matters in "reaktiv" mode (how long an unhit light
+    // stays on before it moves anyway); minJumpFrac (as a fraction of the
+    // stage's own half-diagonal) sets how far the NEXT light must appear
+    // from the current one in BOTH modes, so higher difficulty always means
+    // more ground to cover with eyes/hand across the whole field, matching
+    // the real device's emphasis on scanning the full board, not just
+    // reacting fast in one spot.
+    leicht: { title: "Leicht", exposureMs: 1500, minJumpFrac: 0.15 },
+    mittel: { title: "Mittel", exposureMs: 1000, minJumpFrac: 0.22 },
+    schwer: { title: "Schwer", exposureMs: 650, minJumpFrac: 0.30 },
+  };
+  const REAKT_LENGTHS = {
+    kurz: { title: "Kurz (30 Sek.)", durationS: 30 },
+    mittel: { title: "Mittel (60 Sek.)", durationS: 60 },
+    lang: { title: "Lang (90 Sek.)", durationS: 90 },
+  };
+  const REAKT_ITEM_PX = 66;
+  const REAKT_LEAD_IN_MS = 900;
+  // A light landing within this fraction of the stage's half-diagonal from
+  // its centre counts as "zentral", further out as "peripher" - a pure
+  // reporting/analysis split (nothing is drawn to mark the boundary, same as
+  // UFOV's own invisible centre/peripheral split), mirroring the Dynavision
+  // literature's own central-vs-peripheral-ring breakdown of hit data.
+  const REAKT_CENTRAL_RADIUS_FRAC = 0.4;
+
+  const REAKT_PREFS_KEY = "fwmc-reakt-prefs-v1";
+  const reaktPrefs = { mode: "reaktiv", difficulty: "mittel", length: "mittel" };
+  function loadReaktPrefs() {
+    const saved = readJSON(REAKT_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(reaktPrefs, saved);
+    if (!REAKT_MODES[reaktPrefs.mode]) reaktPrefs.mode = "reaktiv";
+    if (!REAKT_DIFFICULTIES[reaktPrefs.difficulty]) reaktPrefs.difficulty = "mittel";
+    if (!REAKT_LENGTHS[reaktPrefs.length]) reaktPrefs.length = "mittel";
+  }
+  loadReaktPrefs();
+  function saveReaktPrefsToStorage() { writeJSON(REAKT_PREFS_KEY, reaktPrefs); }
+
+  // Best score is Treffer PRO MINUTE (hits/min) - deliberately length-
+  // independent (a 30s and a 90s run are directly comparable), keyed by
+  // mode+difficulty (a "Lang" run isn't a harder difficulty, just more of
+  // the same rate) - higher is better, mirroring the real device's own
+  // "number of hits" / hits-per-minute outcome measure.
+  const REAKT_BEST_KEY = "fwmc-reakt-best-v1";
+  function reaktBestKeyFor() { return `${reaktPrefs.mode}_${reaktPrefs.difficulty}`; }
+  function reaktBestFor() {
+    const v = readJSON(REAKT_BEST_KEY, {})[reaktBestKeyFor()];
+    return typeof v === "number" ? v : 0;
+  }
+  function saveReaktBest(hitsPerMin) {
+    const all = readJSON(REAKT_BEST_KEY, {});
+    const key = reaktBestKeyFor();
+    const cur = all[key] || 0;
+    if (hitsPerMin > cur) { all[key] = hitsPerMin; writeJSON(REAKT_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderReaktBest() {
+    const best = reaktBestFor();
+    const text = best ? `Beste Trefferquote (${REAKT_MODES[reaktPrefs.mode].title}, ${REAKT_DIFFICULTIES[reaktPrefs.difficulty].title}): ${best.toFixed(0)} Treffer/Min` : "";
+    els.reaktBestHint.textContent = text;
+    els.reaktReadyBestHint.textContent = text;
+  }
+  renderReaktBest();
+  function syncReaktUI() {
+    els.reaktModeRow.querySelectorAll("[data-reakt-mode]").forEach((btn) => setActive(btn, btn.dataset.reaktMode === reaktPrefs.mode));
+    els.reaktDifficultyRow.querySelectorAll("[data-reakt-difficulty]").forEach((btn) => setActive(btn, btn.dataset.reaktDifficulty === reaktPrefs.difficulty));
+    els.reaktLengthRow.querySelectorAll("[data-reakt-length]").forEach((btn) => setActive(btn, btn.dataset.reaktLength === reaktPrefs.length));
+  }
+  els.reaktModeRow.querySelectorAll("[data-reakt-mode]").forEach((btn) => {
+    btn.addEventListener("click", () => { reaktPrefs.mode = btn.dataset.reaktMode; saveReaktPrefsToStorage(); syncReaktUI(); renderReaktBest(); });
+  });
+  els.reaktDifficultyRow.querySelectorAll("[data-reakt-difficulty]").forEach((btn) => {
+    btn.addEventListener("click", () => { reaktPrefs.difficulty = btn.dataset.reaktDifficulty; saveReaktPrefsToStorage(); syncReaktUI(); renderReaktBest(); });
+  });
+  els.reaktLengthRow.querySelectorAll("[data-reakt-length]").forEach((btn) => {
+    btn.addEventListener("click", () => { reaktPrefs.length = btn.dataset.reaktLength; saveReaktPrefsToStorage(); syncReaktUI(); });
+  });
+  els.reaktOpenBtn.addEventListener("click", () => {
+    syncReaktUI();
+    renderReaktBest();
+    showScreen("reaktReady");
+  });
+  els.reaktReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Single active timer, remaining-delay pause/resume - same shape as every
+  // other setTimeout-driven Test exercise. Only ever actually armed in
+  // "reaktiv" mode (the exposure timeout) or during the lead-in; "proaktiv"
+  // mode's lights have no timer of their own (they wait indefinitely for a
+  // tap), same "pause is a no-op beyond blocking input" shape UFOV's own
+  // untimed response phases already use.
+  function scheduleReaktTimer(fn, delayMs) {
+    if (reaktState.timer) clearTimeout(reaktState.timer);
+    reaktState.timerFn = fn;
+    reaktState.timerFiresAt = performance.now() + delayMs;
+    reaktState.timer = setTimeout(() => { reaktState.timer = null; fn(); }, delayMs);
+  }
+
+  function reaktStageBounds() {
+    const rect = els.reaktStage.getBoundingClientRect();
+    const w = rect.width || 390, h = rect.height || 600;
+    const half = REAKT_ITEM_PX / 2;
+    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY: 70, maxY: Math.max(70, h - 16) };
+  }
+  // Picks a random point at least `minJumpPx` away from the previous light's
+  // position (null previous = anywhere) - forces genuine eye/hand travel
+  // across the whole field every step rather than letting two consecutive
+  // lights land right next to each other. Falls back to the single farthest
+  // point from the previous one if 200 random tries can't satisfy the
+  // minimum (can happen on a very small/narrow viewport at "schwer").
+  function reaktRandomPosition(prevPx, bounds, minJumpPx) {
+    for (let attempt = 0; attempt < 200; attempt++) {
+      const x = bounds.minX + Math.random() * (bounds.maxX - bounds.minX);
+      const y = bounds.minY + Math.random() * (bounds.maxY - bounds.minY);
+      if (!prevPx || Math.hypot(prevPx.x - x, prevPx.y - y) >= minJumpPx) return { x, y };
+    }
+    if (!prevPx) return { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2 };
+    let best = null, bestDist = -1;
+    const STEPS = 20;
+    for (let gx = 0; gx <= STEPS; gx++) {
+      for (let gy = 0; gy <= STEPS; gy++) {
+        const x = bounds.minX + (gx / STEPS) * (bounds.maxX - bounds.minX);
+        const y = bounds.minY + (gy / STEPS) * (bounds.maxY - bounds.minY);
+        const dist = Math.hypot(prevPx.x - x, prevPx.y - y);
+        if (dist > bestDist) { bestDist = dist; best = { x, y }; }
+      }
+    }
+    return best;
+  }
+  function reaktZoneFor(px, bounds) {
+    const cx = (bounds.minX + bounds.maxX) / 2, cy = (bounds.minY + bounds.maxY) / 2;
+    const halfDiag = Math.hypot(bounds.maxX - cx, bounds.maxY - cy) || 1;
+    const dist = Math.hypot(px.x - cx, px.y - cy);
+    return (dist / halfDiag) <= REAKT_CENTRAL_RADIUS_FRAC ? "zentral" : "peripher";
+  }
+  function reaktNewZoneStat() { return { hits: 0, misses: 0, rtSum: 0, rtCount: 0 }; }
+
+  let reaktState = null;
+  function startReaktGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.reaktPlayer.hidden = false;
+    els.reaktPlayerBar.hidden = false;
+    els.reaktDonePanel.hidden = true;
+    els.reaktPauseOverlay.hidden = true;
+    els.reaktPauseBtn.hidden = false;
+    reaktState = {
+      mode: reaktPrefs.mode, diff: REAKT_DIFFICULTIES[reaktPrefs.difficulty], length: REAKT_LENGTHS[reaktPrefs.length],
+      durationMs: REAKT_LENGTHS[reaktPrefs.length].durationS * 1000,
+      hits: 0, misses: 0, rtSum: 0, rtCount: 0,
+      zoneStats: { zentral: reaktNewZoneStat(), peripher: reaktNewZoneStat() },
+      prevPx: null, lightEl: null, onsetAt: 0, curZone: null,
+      paused: false, startTime: performance.now(),
+      timer: null, timerFn: null, timerFiresAt: null,
+    };
+    els.reaktField.innerHTML = "";
+    els.reaktHint.textContent = "Gleich geht's los …";
+    els.reaktProgressEl.textContent = `Treffer: 0 · ${reaktState.length.title}`;
+    requestWakeLock();
+    scheduleReaktTimer(reaktSpawnLight, REAKT_LEAD_IN_MS);
+  }
+  els.reaktReadyStartBtn.addEventListener("click", startReaktGame);
+
+  function reaktSpawnLight() {
+    if (!reaktState) return;
+    const elapsedMs = performance.now() - reaktState.startTime - REAKT_LEAD_IN_MS;
+    if (elapsedMs >= reaktState.durationMs) { reaktFinish(); return; }
+    els.reaktHint.textContent = "";
+    const bounds = reaktStageBounds();
+    const minJumpPx = reaktState.diff.minJumpFrac * Math.hypot(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY);
+    const px = reaktRandomPosition(reaktState.prevPx, bounds, minJumpPx);
+    reaktState.prevPx = px;
+    reaktState.curZone = reaktZoneFor(px, bounds);
+    const el = document.createElement("button");
+    el.className = "reakt-light";
+    el.style.left = ((px.x / bounds.w) * 100) + "%";
+    el.style.top = ((px.y / bounds.h) * 100) + "%";
+    el.setAttribute("aria-label", "Reaktionsfeld-Licht");
+    el.addEventListener("click", reaktTap);
+    els.reaktField.innerHTML = "";
+    els.reaktField.appendChild(el);
+    reaktState.lightEl = el;
+    reaktState.onsetAt = performance.now();
+    if (reaktState.mode === "reaktiv") {
+      scheduleReaktTimer(reaktMiss, reaktState.diff.exposureMs);
+    }
+  }
+  function reaktAdvance() {
+    if (!reaktState) return;
+    els.reaktProgressEl.textContent = `Treffer: ${reaktState.hits}` + (reaktState.misses ? ` · Verpasst: ${reaktState.misses}` : "") + ` · ${reaktState.length.title}`;
+    reaktSpawnLight();
+  }
+  function reaktTap() {
+    if (!reaktState || reaktState.paused || !reaktState.lightEl) return;
+    const rt = performance.now() - reaktState.onsetAt;
+    reaktState.lightEl = null;
+    reaktState.hits++;
+    reaktState.rtSum += rt; reaktState.rtCount++;
+    const zs = reaktState.zoneStats[reaktState.curZone];
+    zs.hits++; zs.rtSum += rt; zs.rtCount++;
+    reaktAdvance();
+  }
+  // Reaktiv-mode-only: the light wasn't tapped within its exposure window,
+  // so it moves on regardless - same "Mode B" behaviour the real Dynavision
+  // device uses (illuminate for a preset time, then automatically jump to a
+  // new location whether hit or not).
+  function reaktMiss() {
+    if (!reaktState) return;
+    reaktState.lightEl = null;
+    reaktState.misses++;
+    reaktState.zoneStats[reaktState.curZone].misses++;
+    reaktAdvance();
+  }
+
+  function pauseReakt() {
+    if (!reaktState || reaktState.paused) return;
+    reaktState.paused = true;
+    reaktState.pausedAt = performance.now();
+    if (reaktState.timer) {
+      clearTimeout(reaktState.timer);
+      reaktState.timer = null;
+      reaktState.timerRemainingMs = Math.max(0, reaktState.timerFiresAt - reaktState.pausedAt);
+    }
+    els.reaktPauseBtn.hidden = true;
+    els.reaktPauseOverlay.hidden = false;
+  }
+  function resumeReakt() {
+    if (!reaktState || !reaktState.paused) return;
+    const pausedMs = performance.now() - reaktState.pausedAt;
+    reaktState.startTime += pausedMs;
+    reaktState.onsetAt += pausedMs;
+    reaktState.paused = false;
+    if (reaktState.timerFn && reaktState.timerRemainingMs != null) {
+      scheduleReaktTimer(reaktState.timerFn, reaktState.timerRemainingMs);
+      reaktState.timerRemainingMs = null;
+    }
+    els.reaktPauseOverlay.hidden = true;
+    els.reaktPauseBtn.hidden = false;
+  }
+  els.reaktPauseBtn.addEventListener("click", pauseReakt);
+  els.reaktResumeBtn.addEventListener("click", resumeReakt);
+
+  function reaktZoneSummary(state, zone, label) {
+    const zs = state.zoneStats[zone];
+    const avgRt = zs.rtCount ? Math.round(zs.rtSum / zs.rtCount) : null;
+    const total = zs.hits + zs.misses;
+    if (!total) return `${label}: keine Reize`;
+    const parts = [`${label}: ${zs.hits}/${total} getroffen`];
+    if (avgRt != null) parts.push(`Ø ${avgRt} ms`);
+    return parts.join(", ");
+  }
+  function finalizeReaktRun(state) {
+    els.reaktPauseOverlay.hidden = true;
+    els.reaktPlayerBar.hidden = true;
+    const playedMs = Math.max(1000, Math.min(state.durationMs, performance.now() - state.startTime - REAKT_LEAD_IN_MS));
+    const playedS = playedMs / 1000;
+    const hitsPerMin = state.hits / (playedS / 60);
+    const isRecord = state.hits > 0 ? saveReaktBest(hitsPerMin) : false;
+    renderReaktBest();
+    const avgRt = state.rtCount ? Math.round(state.rtSum / state.rtCount) : null;
+    els.reaktDoneSummary.textContent =
+      `Reaktionsfeld-Test (${REAKT_MODES[state.mode].title}, ${state.diff.title}) · ${state.hits} Treffer` +
+      (state.misses ? ` · ${state.misses} verpasst` : "") +
+      (avgRt != null ? ` · Ø Reaktionszeit ${avgRt} ms` : "") +
+      ` · ${hitsPerMin.toFixed(0)} Treffer/Min` +
+      (isRecord ? " · Neue Bestleistung!" : "") +
+      ` · ${reaktZoneSummary(state, "zentral", "Zentral")} · ${reaktZoneSummary(state, "peripher", "Peripher")}`;
+    const note = `${state.hits} Treffer, ${hitsPerMin.toFixed(0)}/Min`;
+    const id = addHistory({ kind: "reakt", title: "Reaktionsfeld-Test", seconds: Math.round(playedS), note });
+    renderRating(els.reaktRating, id, "Wie gut konntest du dich auch auf den Rand deines Blickfelds konzentrieren?");
+    els.reaktDonePanel.hidden = false;
+  }
+  function reaktFinish() {
+    if (!reaktState) return;
+    const state = reaktState;
+    reaktState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.reaktPlayer) document.exitFullscreen().catch(() => {});
+    els.reaktFsHint.hidden = true;
+    els.reaktField.innerHTML = "";
+    finalizeReaktRun(state);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - but with nothing hit yet (state.hits === 0) there's
+  // nothing meaningful to report, so that case just returns home quietly,
+  // same threshold spirit as Corsi/Trail Making's own "only real progress
+  // records" guard.
+  function reaktStop() {
+    if (!reaktState) return;
+    if (reaktState.timer) clearTimeout(reaktState.timer);
+    const state = reaktState;
+    reaktState = null;
+    els.reaktPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.reaktPlayer) document.exitFullscreen().catch(() => {});
+    els.reaktFsHint.hidden = true;
+    els.reaktField.innerHTML = "";
+    if (state.hits > 0 || state.misses > 0) {
+      finalizeReaktRun(state);
+    } else {
+      els.reaktPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.reaktBackBtn.addEventListener("click", reaktStop);
+  els.reaktAgainBtn.addEventListener("click", () => { els.reaktDonePanel.hidden = true; startReaktGame(); });
+  els.reaktDoneBackBtn.addEventListener("click", () => { els.reaktPlayer.hidden = true; els.reaktDonePanel.hidden = true; showScreen("testHome"); });
 
   // ---- Start-up ----
   renderHistory();
