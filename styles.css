@@ -804,6 +804,17 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .hick-box.lit{background:#cfe8f0;border-color:#007094}
 .hick-box.correct{background:#2e7d32;border-color:#1b5e20}
 .hick-box.wrong{background:#d32f2f;border-color:#8e1c1c}
+.corsi-stage{flex:1;position:relative;overflow:hidden}
+.corsi-block{
+  position:absolute;transform:translate(-50%,-50%);
+  width:56px;height:56px;border:3px solid #16232a;border-radius:12px;background:#eef2f3;
+  padding:0;cursor:pointer;
+  transition:background .1s ease,border-color .1s ease,transform .08s ease;
+}
+.corsi-block:active{transform:translate(-50%,-50%) scale(.94)}
+.corsi-block.lit{background:#cfe8f0;border-color:#007094}
+.corsi-block.correct{background:#2e7d32;border-color:#1b5e20}
+.corsi-block.wrong{background:#d32f2f;border-color:#8e1c1c}
 .merk-response-row{display:flex;gap:20px}
 .merk-response-btn{
   min-width:130px;padding:18px 20px;border-radius:14px;border:2px solid #cfd8db;

@@ -650,6 +650,11 @@
       <span class="fc-desc">Ein Feld aus mehreren Feldern leuchtet auf &ndash; tippe genau dieses Feld so schnell wie m&ouml;glich an. Erst mit 2, dann mit 4, dann mit 8 m&ouml;glichen Feldern. Klassisches Gesetz der Entscheidungsgeschwindigkeit (Hick, 1952): je mehr M&ouml;glichkeiten, desto l&auml;nger die Reaktionszeit &ndash; zeigt, wie effizient du Entscheidungen unter steigender Komplexit&auml;t triffst.</span>
       <span class="fc-meta" id="hickBestHint"></span>
     </button>
+    <button class="featured-card" id="corsiOpenBtn">
+      <span class="fc-title">Blockspanne-Test (Corsi)</span>
+      <span class="fc-desc">Mehrere Bl&ouml;cke blitzen nacheinander in einer Reihenfolge auf &ndash; tippe sie danach in GENAU dieser Reihenfolge nochmal an. Nach jeder richtigen Runde wird die Folge um einen Block l&auml;nger. Klassisches Paradigma zur r&auml;umlichen Merkspanne (Corsi, 1972; standardisiert von Kessels et al., 2000), trainiert visuell-r&auml;umliches Arbeitsged&auml;chtnis.</span>
+      <span class="fc-meta" id="corsiBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -920,6 +925,27 @@
   <div class="group-help" id="hickReadyBestHint"></div>
 
   <button class="start-btn" id="hickReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="corsiReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="corsiReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Blockspanne-Test (Corsi)</h1>
+  <p class="page-sub">Neun Bl&ouml;cke sind verstreut &ndash; einige davon leuchten nacheinander in einer bestimmten Reihenfolge auf. Merke dir die Reihenfolge und tippe die Bl&ouml;cke danach genau in dieser Reihenfolge nochmal an. Nach jeder richtig erinnerten Folge wird sie um einen Block l&auml;nger, bis ein Tipp daneben geht. Klassisches Paradigma zur visuell-r&auml;umlichen Merkspanne (Corsi, 1972), h&auml;ufig eingesetzt zur Messung des r&auml;umlichen Arbeitsged&auml;chtnisses.</p>
+
+  <div class="group">
+    <div class="group-label">Tempo</div>
+    <div class="choice-row" id="corsiDifficultyRow">
+      <button class="choice" data-corsi-difficulty="leicht">Leicht</button>
+      <button class="choice" data-corsi-difficulty="mittel">Mittel</button>
+      <button class="choice" data-corsi-difficulty="schwer">Schwer</button>
+    </div>
+  </div>
+
+  <div class="group-help" id="corsiReadyBestHint"></div>
+
+  <button class="start-btn" id="corsiReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="merkReady" hidden>
@@ -3161,6 +3187,39 @@
     <div class="rating" id="hickRating"></div>
     <button class="again" id="hickAgainBtn">Nochmal</button>
     <button class="back" id="hickDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="corsiPlayer" hidden>
+  <div class="corsi-stage" id="corsiStage">
+    <div class="remember-hint" id="corsiHint"></div>
+    <div id="corsiBoard"></div>
+  </div>
+  <div class="pause-overlay" id="corsiPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="corsiResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="corsiPlayerBar">
+    <button id="corsiBackBtn">&#10005; Beenden</button>
+    <button id="corsiPauseBtn">Pause</button>
+    <span class="player-status" id="corsiProgressEl"></span>
+    <button id="corsiFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="corsiFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="corsiFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="corsiFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="corsiDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="corsiDoneSummary"></p>
+    <div class="rating" id="corsiRating"></div>
+    <button class="again" id="corsiAgainBtn">Nochmal</button>
+    <button class="back" id="corsiDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

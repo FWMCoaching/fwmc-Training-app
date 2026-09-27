@@ -1236,6 +1236,16 @@
     hickFsBtn: $("hickFsBtn"), hickFsHint: $("hickFsHint"), hickFsHintOpenBtn: $("hickFsHintOpenBtn"), hickFsHintClose: $("hickFsHintClose"),
     hickDonePanel: $("hickDonePanel"), hickDoneSummary: $("hickDoneSummary"), hickRating: $("hickRating"),
     hickAgainBtn: $("hickAgainBtn"), hickDoneBackBtn: $("hickDoneBackBtn"),
+
+    corsiOpenBtn: $("corsiOpenBtn"), corsiBestHint: $("corsiBestHint"), corsiReady: $("corsiReady"),
+    corsiReadyBackToHome: $("corsiReadyBackToHome"), corsiDifficultyRow: $("corsiDifficultyRow"),
+    corsiReadyBestHint: $("corsiReadyBestHint"), corsiReadyStartBtn: $("corsiReadyStartBtn"),
+    corsiPlayer: $("corsiPlayer"), corsiStage: $("corsiStage"), corsiHint: $("corsiHint"), corsiBoard: $("corsiBoard"),
+    corsiPauseOverlay: $("corsiPauseOverlay"), corsiResumeBtn: $("corsiResumeBtn"),
+    corsiPlayerBar: $("corsiPlayerBar"), corsiBackBtn: $("corsiBackBtn"), corsiPauseBtn: $("corsiPauseBtn"), corsiProgressEl: $("corsiProgressEl"),
+    corsiFsBtn: $("corsiFsBtn"), corsiFsHint: $("corsiFsHint"), corsiFsHintOpenBtn: $("corsiFsHintOpenBtn"), corsiFsHintClose: $("corsiFsHintClose"),
+    corsiDonePanel: $("corsiDonePanel"), corsiDoneSummary: $("corsiDoneSummary"), corsiRating: $("corsiRating"),
+    corsiAgainBtn: $("corsiAgainBtn"), corsiDoneBackBtn: $("corsiDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationReadyBestHint: $("rotationReadyBestHint"), rotationReadyStartBtn: $("rotationReadyStartBtn"),
@@ -1452,7 +1462,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3478,6 +3488,7 @@
     els.searchPlayer.hidden = true;
     els.abPlayer.hidden = true;
     els.hickPlayer.hidden = true;
+    els.corsiPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -3866,6 +3877,7 @@
   wireFullscreen({ player: els.abPlayer, btn: els.abFsBtn, hint: els.abFsHint, hintOpen: els.abFsHintOpenBtn, hintClose: els.abFsHintClose });
   wireFullscreen({ player: els.antizipPlayer, btn: els.antizipFsBtn, hint: els.antizipFsHint, hintOpen: els.antizipFsHintOpenBtn, hintClose: els.antizipFsHintClose });
   wireFullscreen({ player: els.hickPlayer, btn: els.hickFsBtn, hint: els.hickFsHint, hintOpen: els.hickFsHintOpenBtn, hintClose: els.hickFsHintClose });
+  wireFullscreen({ player: els.corsiPlayer, btn: els.corsiFsBtn, hint: els.corsiFsHint, hintOpen: els.corsiFsHintOpenBtn, hintClose: els.corsiFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -11931,6 +11943,327 @@
   els.hickBackBtn.addEventListener("click", hickStop);
   els.hickAgainBtn.addEventListener("click", () => { els.hickDonePanel.hidden = true; startHickGame(); });
   els.hickDoneBackBtn.addEventListener("click", () => { els.hickPlayer.hidden = true; els.hickDonePanel.hidden = true; showScreen("testHome"); });
+
+  // ---- Blockspanne-Test (Corsi Block-Tapping Task) ----
+  // Grounded in the Corsi block-tapping task (Corsi, 1972; standardised
+  // administration/scoring in Kessels et al., 2000, "The Corsi Block-Tapping
+  // Task: standardization and normative data") - nine identical blocks are
+  // scattered on a board; a subset lights up ONE AT A TIME in a specific
+  // order, then the client reproduces that exact order by tapping the same
+  // blocks. Forward version only (no backward recall) - a deliberate first-
+  // version scope, same "don't build everything at once" spirit as every
+  // other Test exercise. Simplified to a single-trial-per-length adaptive
+  // climb (sequence length +1 after every correct recall, ends on the first
+  // wrong tap) rather than Kessels' own 2-trials-per-length protocol - the
+  // same simplification several digital adaptations use (e.g. PsyToolkit's
+  // own Corsi implementation climbs the same way) - so "Blockspanne erreicht"
+  // here means "the longest sequence recalled" (a client-facing analogue of
+  // the standard Corsi span score), not a lab-grade psychometric span; see
+  // Offene Fragen for this scope note. Genuinely distinct from every existing
+  // Test/NAT memory mechanic: N-Back is a continuous match-N-back-trials-ago
+  // stream; Remember/Blitz-Raster show several positions SIMULTANEOUSLY and
+  // probe recall of WHICH ones (unordered for Blitz, positions only for
+  // Remember); Flash Speicher Test recalls a sequence of CHARACTER IDENTITIES
+  // in order, at scattered but visually irrelevant positions; Merkspanne-Test
+  // is a single global same/different feature judgment over a whole array -
+  // this is the only exercise where the client must reproduce an ORDERED
+  // SEQUENCE OF SPATIAL LOCATIONS, the defining feature of the Corsi task and
+  // a genuinely different visuospatial-working-memory demand (holding both
+  // "where" and "in what order" at once) from all of the above.
+  const CORSI_BLOCK_COUNT = 9; // the classic Corsi board's block count
+  const CORSI_START_SPAN = 2; // classic starting sequence length
+  const CORSI_ITEM_PX = 56;
+  const CORSI_MIN_CENTER_PX = CORSI_ITEM_PX + 20;
+  // "Tempo" is the one client-facing setting - how fast the to-be-remembered
+  // sequence flashes, not a level the client climbs themselves (the climb
+  // itself is the adaptive difficulty, same shape as N-Back/Hick's own
+  // "no client-set level" exercises).
+  const CORSI_DIFFICULTIES = {
+    leicht: { title: "Leicht", litMs: 900, gapMs: 450 },
+    mittel: { title: "Mittel", litMs: 700, gapMs: 350 },
+    schwer: { title: "Schwer", litMs: 500, gapMs: 250 },
+  };
+  const CORSI_PRE_SEQUENCE_MS = 900; // brief "Merken ..." lead-in before each sequence's first flash
+  const CORSI_FEEDBACK_MS = 550;
+  const CORSI_FAIL_PAUSE_MS = 1300; // longer than the correct-feedback pause, so the reveal (wrong tap red / real next block green) is actually readable before the run ends
+
+  const CORSI_PREFS_KEY = "fwmc-corsi-prefs-v1";
+  const corsiPrefs = { difficulty: "mittel" };
+  function loadCorsiPrefs() {
+    const saved = readJSON(CORSI_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(corsiPrefs, saved);
+    if (!CORSI_DIFFICULTIES[corsiPrefs.difficulty]) corsiPrefs.difficulty = "mittel";
+  }
+  loadCorsiPrefs();
+  function saveCorsiPrefsToStorage() { writeJSON(CORSI_PREFS_KEY, corsiPrefs); }
+
+  const CORSI_BEST_KEY = "fwmc-corsi-best-v1"; // { [difficulty]: bestSpan } - higher is better
+  function corsiBestFor() {
+    const v = readJSON(CORSI_BEST_KEY, {})[corsiPrefs.difficulty];
+    return typeof v === "number" ? v : 0;
+  }
+  function saveCorsiBest(span) {
+    const all = readJSON(CORSI_BEST_KEY, {});
+    const cur = all[corsiPrefs.difficulty] || 0;
+    if (span > cur) { all[corsiPrefs.difficulty] = span; writeJSON(CORSI_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderCorsiBest() {
+    const best = corsiBestFor();
+    const text = best ? `Beste Blockspanne (${CORSI_DIFFICULTIES[corsiPrefs.difficulty].title}): ${best}` : "";
+    els.corsiBestHint.textContent = text;
+    els.corsiReadyBestHint.textContent = text;
+  }
+  renderCorsiBest();
+  function syncCorsiDifficultyUI() {
+    els.corsiDifficultyRow.querySelectorAll("[data-corsi-difficulty]").forEach((btn) => setActive(btn, btn.dataset.corsiDifficulty === corsiPrefs.difficulty));
+  }
+  els.corsiDifficultyRow.querySelectorAll("[data-corsi-difficulty]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      corsiPrefs.difficulty = btn.dataset.corsiDifficulty;
+      saveCorsiPrefsToStorage();
+      syncCorsiDifficultyUI();
+      renderCorsiBest();
+    });
+  });
+  els.corsiOpenBtn.addEventListener("click", () => {
+    syncCorsiDifficultyUI();
+    renderCorsiBest();
+    showScreen("corsiReady");
+  });
+  els.corsiReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Single active timer, remaining-delay pause/resume - same shape as every
+  // other setTimeout-driven Test exercise.
+  function scheduleCorsiTimer(fn, delayMs) {
+    if (corsiState.timer) clearTimeout(corsiState.timer);
+    corsiState.timerFn = fn;
+    corsiState.timerFiresAt = performance.now() + delayMs;
+    corsiState.timer = setTimeout(() => { corsiState.timer = null; fn(); }, delayMs);
+  }
+
+  // Anti-overlap scatter placement, copy-adapted from Trail Making/Suchtest's
+  // own (rejection sampling with a grid-search fallback), per this app's
+  // established "copy-adapt when the engine differs" convention - this
+  // board needs its own item size/margins for exactly 9 fixed blocks.
+  function corsiStageBounds() {
+    const rect = els.corsiStage.getBoundingClientRect();
+    const w = rect.width || 390, h = rect.height || 600;
+    const half = CORSI_ITEM_PX / 2;
+    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY: 84, maxY: Math.max(84, h - 16) };
+  }
+  function corsiRandomPixelPosition(existingPx, bounds) {
+    for (let attempt = 0; attempt < 300; attempt++) {
+      const x = bounds.minX + Math.random() * (bounds.maxX - bounds.minX);
+      const y = bounds.minY + Math.random() * (bounds.maxY - bounds.minY);
+      if (!existingPx.some((p) => Math.hypot(p.x - x, p.y - y) < CORSI_MIN_CENTER_PX)) return { x, y };
+    }
+    let best = null, bestDist = -1;
+    const STEPS = 24;
+    for (let gx = 0; gx <= STEPS; gx++) {
+      for (let gy = 0; gy <= STEPS; gy++) {
+        const x = bounds.minX + (gx / STEPS) * (bounds.maxX - bounds.minX);
+        const y = bounds.minY + (gy / STEPS) * (bounds.maxY - bounds.minY);
+        const dist = existingPx.length ? Math.min(...existingPx.map((p) => Math.hypot(p.x - x, p.y - y))) : Infinity;
+        if (dist > bestDist) { bestDist = dist; best = { x, y }; }
+      }
+    }
+    return best;
+  }
+  // The board's 9 positions are fixed for the whole game (one scattered
+  // layout per run, regenerated on "Nochmal") - unlike a fresh scatter every
+  // trial, this task needs one stable board the client can actually build a
+  // spatial memory of across the whole climb.
+  function buildCorsiBoard() {
+    const bounds = corsiStageBounds();
+    const existingPx = [];
+    const positions = [];
+    for (let i = 0; i < CORSI_BLOCK_COUNT; i++) {
+      const px = corsiRandomPixelPosition(existingPx, bounds);
+      existingPx.push(px);
+      positions.push({ x: (px.x / bounds.w) * 100, y: (px.y / bounds.h) * 100 });
+    }
+    return positions;
+  }
+  function renderCorsiBoard(positions) {
+    els.corsiBoard.innerHTML = "";
+    corsiState.blockEls = positions.map((pos, i) => {
+      const el = document.createElement("button");
+      el.className = "corsi-block";
+      el.style.left = pos.x + "%";
+      el.style.top = pos.y + "%";
+      el.setAttribute("aria-label", `Block ${i + 1}`);
+      el.addEventListener("click", () => corsiTap(i));
+      els.corsiBoard.appendChild(el);
+      return el;
+    });
+  }
+  function corsiClearBlocks() {
+    corsiState.blockEls.forEach((el) => el.classList.remove("lit", "correct", "wrong"));
+  }
+  function corsiRandomSequence(len) {
+    const idx = Array.from({ length: CORSI_BLOCK_COUNT }, (_, i) => i);
+    for (let i = idx.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [idx[i], idx[j]] = [idx[j], idx[i]];
+    }
+    return idx.slice(0, len);
+  }
+
+  let corsiState = null;
+  function startCorsiGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.corsiPlayer.hidden = false;
+    els.corsiPlayerBar.hidden = false;
+    els.corsiDonePanel.hidden = true;
+    els.corsiPauseOverlay.hidden = true;
+    els.corsiPauseBtn.hidden = false;
+    corsiState = {
+      diff: CORSI_DIFFICULTIES[corsiPrefs.difficulty],
+      span: CORSI_START_SPAN, reachedSpan: 0,
+      sequence: [], sequenceIndexShown: -1, tapIndex: 0,
+      blockEls: [], phase: "intro", paused: false, startTime: performance.now(),
+      timer: null, timerFn: null, timerFiresAt: null,
+    };
+    renderCorsiBoard(buildCorsiBoard());
+    els.corsiHint.textContent = "Gleich geht's los …";
+    els.corsiProgressEl.textContent = `Länge ${corsiState.span}`;
+    requestWakeLock();
+    scheduleCorsiTimer(corsiStartLevel, 1000);
+  }
+  els.corsiReadyStartBtn.addEventListener("click", startCorsiGame);
+
+  function corsiStartLevel() {
+    if (!corsiState) return;
+    corsiState.sequence = corsiRandomSequence(corsiState.span);
+    corsiState.sequenceIndexShown = -1;
+    corsiState.tapIndex = 0;
+    corsiState.phase = "showing";
+    corsiClearBlocks();
+    els.corsiProgressEl.textContent = `Länge ${corsiState.span}`;
+    els.corsiHint.textContent = "Merken …";
+    scheduleCorsiTimer(corsiShowNext, CORSI_PRE_SEQUENCE_MS);
+  }
+  function corsiShowNext() {
+    if (!corsiState) return;
+    corsiClearBlocks();
+    corsiState.sequenceIndexShown++;
+    if (corsiState.sequenceIndexShown >= corsiState.sequence.length) {
+      corsiState.phase = "responding";
+      els.corsiHint.textContent = "Jetzt in der gleichen Reihenfolge antippen!";
+      return;
+    }
+    const pos = corsiState.sequence[corsiState.sequenceIndexShown];
+    corsiState.blockEls[pos].classList.add("lit");
+    scheduleCorsiTimer(corsiHideCurrent, corsiState.diff.litMs);
+  }
+  function corsiHideCurrent() {
+    if (!corsiState) return;
+    corsiClearBlocks();
+    scheduleCorsiTimer(corsiShowNext, corsiState.diff.gapMs);
+  }
+  function corsiTap(pos) {
+    if (!corsiState || corsiState.paused || corsiState.phase !== "responding") return;
+    const expected = corsiState.sequence[corsiState.tapIndex];
+    if (pos === expected) {
+      corsiState.blockEls[pos].classList.add("correct");
+      corsiState.tapIndex++;
+      if (corsiState.tapIndex >= corsiState.sequence.length) {
+        corsiState.reachedSpan = corsiState.span;
+        corsiState.phase = "feedback";
+        els.corsiHint.textContent = "Richtig! Eine Länge weiter …";
+        corsiState.span++;
+        scheduleCorsiTimer(corsiStartLevel, CORSI_FEEDBACK_MS);
+      }
+    } else {
+      // Same "show what it actually was" reveal convention as Hick/MOT/UFOV:
+      // the wrongly-tapped block turns red, the block that was actually next
+      // in the sequence turns green.
+      corsiState.blockEls[pos].classList.add("wrong");
+      corsiState.blockEls[expected].classList.add("correct");
+      corsiState.phase = "feedback";
+      els.corsiHint.textContent = "Leider daneben.";
+      scheduleCorsiTimer(corsiFinish, CORSI_FAIL_PAUSE_MS);
+    }
+  }
+
+  function pauseCorsi() {
+    if (!corsiState || corsiState.paused) return;
+    corsiState.paused = true;
+    corsiState.pausedAt = performance.now();
+    if (corsiState.timer) {
+      clearTimeout(corsiState.timer);
+      corsiState.timer = null;
+      corsiState.timerRemainingMs = Math.max(0, corsiState.timerFiresAt - corsiState.pausedAt);
+    }
+    els.corsiPauseBtn.hidden = true;
+    els.corsiPauseOverlay.hidden = false;
+  }
+  function resumeCorsi() {
+    if (!corsiState || !corsiState.paused) return;
+    const pausedMs = performance.now() - corsiState.pausedAt;
+    corsiState.startTime += pausedMs;
+    corsiState.paused = false;
+    if (corsiState.timerFn && corsiState.timerRemainingMs != null) {
+      scheduleCorsiTimer(corsiState.timerFn, corsiState.timerRemainingMs);
+      corsiState.timerRemainingMs = null;
+    }
+    els.corsiPauseOverlay.hidden = true;
+    els.corsiPauseBtn.hidden = false;
+  }
+  els.corsiPauseBtn.addEventListener("click", pauseCorsi);
+  els.corsiResumeBtn.addEventListener("click", resumeCorsi);
+
+  function finalizeCorsiRun(state) {
+    els.corsiPauseOverlay.hidden = true;
+    els.corsiPlayerBar.hidden = true;
+    const span = state.reachedSpan;
+    const isRecord = span > 0 ? saveCorsiBest(span) : false;
+    renderCorsiBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.corsiDoneSummary.textContent =
+      `Blockspanne-Test (${state.diff.title}) · Blockspanne erreicht: ${span}` +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `Blockspanne ${span}`;
+    const id = addHistory({ kind: "corsi", title: "Blockspanne-Test (Corsi)", seconds: Math.round(played), note });
+    renderRating(els.corsiRating, id, "Wie klar konntest du dir die Reihenfolge merken?");
+    els.corsiDonePanel.hidden = false;
+  }
+  function corsiFinish() {
+    if (!corsiState) return;
+    const state = corsiState;
+    corsiState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.corsiPlayer) document.exitFullscreen().catch(() => {});
+    els.corsiFsHint.hidden = true;
+    finalizeCorsiRun(state);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - but unlike a fixed-trial exercise, quitting before
+  // even one sequence was correctly recalled (reachedSpan still 0) has
+  // nothing meaningful to report, so that case just returns home quietly,
+  // same threshold spirit as Trail Making's own "only a completed run
+  // records" guard.
+  function corsiStop() {
+    if (!corsiState) return;
+    if (corsiState.timer) clearTimeout(corsiState.timer);
+    const state = corsiState;
+    corsiState = null;
+    els.corsiPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.corsiPlayer) document.exitFullscreen().catch(() => {});
+    els.corsiFsHint.hidden = true;
+    if (state.reachedSpan > 0) {
+      finalizeCorsiRun(state);
+    } else {
+      els.corsiPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.corsiBackBtn.addEventListener("click", corsiStop);
+  els.corsiAgainBtn.addEventListener("click", () => { els.corsiDonePanel.hidden = true; startCorsiGame(); });
+  els.corsiDoneBackBtn.addEventListener("click", () => { els.corsiPlayer.hidden = true; els.corsiDonePanel.hidden = true; showScreen("testHome"); });
 
   // ---- Start-up ----
   renderHistory();

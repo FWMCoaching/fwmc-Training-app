@@ -1358,8 +1358,68 @@ doesn't:
   trick as Suchtest/Simon/Posner. New CSS is `.hick-*` (fixed hex colours
   throughout, no `var(--...)`); correct/wrong feedback reuses the
   green/red-box convention from Posner/Simon. Test: `tests/hick_test.py`.
+- **Blockspanne-Test (Corsi Block-Tapping Task)** (fourteenth autonomous
+  entry, 2026-09-27): grounded in the Corsi block-tapping task (Corsi,
+  1972) - nine identical blocks are scattered on a board; a subset lights
+  up ONE AT A TIME in a specific order, then the client reproduces that
+  exact order by tapping the same blocks back. Standardised administration/
+  scoring cited in-code from Kessels et al. (2000, "The Corsi Block-Tapping
+  Task: Standardization and Normative Data" - healthy adults averaged a
+  block span of 6.2, SD 1.3). Genuinely distinct from every existing
+  Test/NAT memory mechanic: N-Back is a continuous match-N-trials-back
+  stream; Remember/Blitz-Raster show several positions SIMULTANEOUSLY and
+  probe recall of WHICH ones (unordered for Blitz-Raster, positions only
+  for Remember); Flash Speicher Test recalls a sequence of CHARACTER
+  IDENTITIES in order, at positions that are visually irrelevant to the
+  recall itself; Merkspanne-Test is a single global same/different feature
+  judgment over a whole array shown at once - this is the only exercise
+  where the client must reproduce an ORDERED SEQUENCE OF SPATIAL LOCATIONS,
+  the Corsi task's defining feature (holding both "where" and "in what
+  order" at once). Simplified to a single-trial-per-length adaptive climb
+  (sequence length +1 after every correct recall, ends on the first wrong
+  tap) rather than Kessels' own 2-trials-per-length stop rule - the same
+  simplification several digital adaptations use (e.g. PsyToolkit's own
+  Corsi implementation climbs the same way); flagged below since this means
+  "Blockspanne erreicht" here is the longest sequence recalled in ONE
+  climb, not the more forgiving lab-standard score. No client-set
+  "level"/Bei-Fehler - like N-Back/Hick, the climb itself is the adaptive
+  difficulty; `corsiPrefs.difficulty` (leicht/mittel/schwer) controls only
+  the flash speed (lit/gap duration), tracking best span reached per
+  difficulty via `CORSI_BEST_KEY` (higher is better, same shape as
+  N-Back/Antizip's own best-hint). The board's 9 positions are scattered
+  fresh per run (anti-overlap placement copy-adapted from Trail Making/
+  Suchtest's own) but held FIXED for the whole game, unlike a per-trial
+  reshuffle, since the client needs one stable board to actually build
+  spatial memory of across the climb. A wrong tap reveals the block that
+  was actually next in the sequence (green) alongside the wrong one (red) -
+  same "show what it actually was" convention as Hick/MOT/UFOV. No
+  background colour/Zusatzaufgabe/Trainingsmodus/backward-recall variant -
+  correctly skipped per the "optional, skip what doesn't fit in an hour"
+  guidance (backward Corsi is a real, well-known variant but explicitly a
+  later extension, same "start with the forward version first" spirit as
+  every other exercise here). Test: `tests/corsi_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
+
+- **Blockspanne-Test single-trial-per-length scoring**: this version ends a
+  run on the very first wrong tap at any given sequence length, so the
+  reported "Blockspanne erreicht" is the longest sequence recalled in one
+  unbroken climb - a simplification of Kessels et al. (2000)'s own
+  standardised protocol, which gives 2 trials per length and only stops
+  after BOTH fail (more forgiving of one unlucky mis-tap, and closer to a
+  clinically comparable span score). Chosen to keep a run quick and the
+  build within scope, matching a pattern some digital Corsi adaptations
+  also use - but the number this app reports isn't directly comparable to
+  a published Corsi-span norm (e.g. Kessels' own 6.2 average). Not fixed -
+  flagging rather than guessing: ask the client whether the done-panel
+  should note this ("dein Ergebnis aus einem einzigen Durchlauf, nicht der
+  Standard-Testwert"), or whether a future pass should move to the
+  2-trials-per-length stop rule for a more directly comparable number. A
+  backward-recall variant (client reproduces the sequence in REVERSE
+  order, the classic paired variant of this task, thought to load more on
+  active manipulation than pure storage) was also not built - flagging as
+  a natural next step if this exercise is well received, not built without
+  being asked given the "one exercise per hour" pace this section runs at.
 
 - **Suchtest safety-net timeout + "ms/Objekt" wording**: an unanswered
   trial only times out after 8 seconds (`SEARCH_TIMEOUT_MS`) - a rough,
