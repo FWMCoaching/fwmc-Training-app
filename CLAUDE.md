@@ -1268,6 +1268,40 @@ doesn't:
   `#007094`, already used elsewhere as a "this one matters" highlight -
   Flanker's target underline, Posner's cued-box tint). Test:
   `tests/ab_test.py`.
+- **Antizipationstest (Coincidence-Anticipation Timing)** (twelfth
+  autonomous entry, 2026-09-27): grounded in the Coincidence-Anticipation
+  Timing (CAT) paradigm from sport science - predicting WHEN a moving
+  object will arrive at a target location and timing a response to
+  coincide exactly, rather than simply reacting after the fact. Classically
+  measured with the "Bassin Anticipation Timer" (a runway of sequentially-
+  lit LEDs simulating an approaching object), widely used across soccer/
+  tennis/volleyball/baseball/racket-sport research; scored via the standard
+  three-way error decomposition (Schutz & Roy, 1973/1977) - Absolute Error
+  (AE, overall timing accuracy), Constant Error (CE, signed early/late
+  bias), Variable Error (VE, consistency). Reimplemented on a phone screen:
+  a ball moves at constant speed across a horizontal track toward a marked
+  target zone; the client taps once, at the moment they believe the ball
+  arrives, and the trial reports how early/late that tap actually was.
+  `ANTIZIP_DIFFICULTIES` (leicht/mittel/schwer) sets both the ball's travel
+  time (jittered per trial within a range so a client can't just count
+  seconds instead of watching) and the "Treffer" tolerance window - the
+  same slow/moderate/fast speed manipulation the real CAT literature uses.
+  Best score tracked as lowest mean Absolute Error in ms (`ANTIZIP_BEST_KEY`,
+  lower-is-better, same shape as UFOV's own exposure-duration threshold).
+  Genuinely distinct from every existing Test/NAT mechanic: MOT tracks
+  continuously-moving objects but never needs a precisely-timed response
+  (only an eventual identification tap after motion has already stopped);
+  every RT-based exercise (Go/No-Go, Flanker, Posner, Simon, Rotationstest)
+  measures how FAST a client responds to an already-present or just-
+  appeared stimulus - this is the only one where the stimulus stays
+  continuously visible and moving, and being precisely ACCURATE in timing
+  (neither too early nor too late) is the entire point, not speed. A direct
+  fit for FWMC's "bewegungsnahes mentales Training" angle - the same skill
+  needed to time a strike, catch, or interception of a moving ball or
+  opponent. No Bei-Fehler/background colour/Zusatzaufgabe/Trainingsmodus -
+  correctly skipped (a fixed-trial timing-accuracy test, nothing to
+  configure beyond difficulty). New CSS is `.antizip-*` (fixed hex colours
+  throughout, no `var(--...)`). Test: `tests/antizip_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 

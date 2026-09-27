@@ -767,6 +767,24 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .ab-t2-btn.correct{background:#2e7d32;border-color:#1b5e20;color:#fff}
 .ab-t2-btn.wrong{background:#d32f2f;border-color:#8e1c1c;color:#fff}
 .ab-reveal{margin:14px 0 0;font-size:14px;color:#5c6a6d;min-height:18px}
+/* Antizipationstest (Coincidence-Anticipation Timing) - fixed hex colours
+   throughout, same reason as every other player/stage-scoped visual in this
+   app (the stage's own background stays plain white regardless of OS dark
+   mode). The ball/track use the app's own brand teal (#007094) since this
+   is the trained signal itself, not a pass/fail state. */
+.antizip-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:24px 16px}
+.antizip-track{position:relative;width:100%;max-width:420px;height:64px;background:#eef2f4;border-radius:14px;overflow:hidden}
+.antizip-target-zone{position:absolute;top:0;height:100%;width:14%;background:#ffe0b2;border-left:3px dashed #e65100;border-right:3px dashed #e65100}
+.antizip-ball{position:absolute;top:50%;left:0;width:34px;height:34px;transform:translate(-50%,-50%);border-radius:50%;background:#007094;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.antizip-feedback{min-height:26px;margin:0;font-size:17px;font-weight:700;color:#3c4a52;text-align:center}
+.antizip-feedback.good{color:#2e7d32}
+.antizip-feedback.early{color:#1565c0}
+.antizip-feedback.late{color:#e65100}
+.antizip-tap-btn{
+  width:100%;max-width:420px;padding:22px;border:none;border-radius:16px;
+  background:#007094;color:#fff;font-family:"Magra",sans-serif;font-size:22px;font-weight:800;letter-spacing:.03em;cursor:pointer;
+}
+.antizip-tap-btn:active{transform:scale(.97)}
 .merk-response-row{display:flex;gap:20px}
 .merk-response-btn{
   min-width:130px;padding:18px 20px;border-radius:14px;border:2px solid #cfd8db;

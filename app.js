@@ -1216,6 +1216,17 @@
     abFsBtn: $("abFsBtn"), abFsHint: $("abFsHint"), abFsHintOpenBtn: $("abFsHintOpenBtn"), abFsHintClose: $("abFsHintClose"),
     abDonePanel: $("abDonePanel"), abDoneSummary: $("abDoneSummary"), abRating: $("abRating"),
     abAgainBtn: $("abAgainBtn"), abDoneBackBtn: $("abDoneBackBtn"),
+    antizipOpenBtn: $("antizipOpenBtn"), antizipBestHint: $("antizipBestHint"), antizipReady: $("antizipReady"),
+    antizipReadyBackToHome: $("antizipReadyBackToHome"), antizipDifficultyRow: $("antizipDifficultyRow"),
+    antizipReadyBestHint: $("antizipReadyBestHint"), antizipReadyStartBtn: $("antizipReadyStartBtn"),
+    antizipPlayer: $("antizipPlayer"), antizipStage: $("antizipStage"), antizipHint: $("antizipHint"),
+    antizipTrack: $("antizipTrack"), antizipTargetZone: $("antizipTargetZone"), antizipBall: $("antizipBall"),
+    antizipFeedback: $("antizipFeedback"), antizipTapBtn: $("antizipTapBtn"),
+    antizipPauseOverlay: $("antizipPauseOverlay"), antizipResumeBtn: $("antizipResumeBtn"),
+    antizipPlayerBar: $("antizipPlayerBar"), antizipBackBtn: $("antizipBackBtn"), antizipPauseBtn: $("antizipPauseBtn"), antizipProgressEl: $("antizipProgressEl"),
+    antizipFsBtn: $("antizipFsBtn"), antizipFsHint: $("antizipFsHint"), antizipFsHintOpenBtn: $("antizipFsHintOpenBtn"), antizipFsHintClose: $("antizipFsHintClose"),
+    antizipDonePanel: $("antizipDonePanel"), antizipDoneSummary: $("antizipDoneSummary"), antizipRating: $("antizipRating"),
+    antizipAgainBtn: $("antizipAgainBtn"), antizipDoneBackBtn: $("antizipDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationReadyBestHint: $("rotationReadyBestHint"), rotationReadyStartBtn: $("rotationReadyStartBtn"),
@@ -1432,7 +1443,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3843,6 +3854,7 @@
   wireFullscreen({ player: els.simonPlayer, btn: els.simonFsBtn, hint: els.simonFsHint, hintOpen: els.simonFsHintOpenBtn, hintClose: els.simonFsHintClose });
   wireFullscreen({ player: els.searchPlayer, btn: els.searchFsBtn, hint: els.searchFsHint, hintOpen: els.searchFsHintOpenBtn, hintClose: els.searchFsHintClose });
   wireFullscreen({ player: els.abPlayer, btn: els.abFsBtn, hint: els.abFsHint, hintOpen: els.abFsHintOpenBtn, hintClose: els.abFsHintClose });
+  wireFullscreen({ player: els.antizipPlayer, btn: els.antizipFsBtn, hint: els.antizipFsHint, hintOpen: els.antizipFsHintOpenBtn, hintClose: els.antizipFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
@@ -11249,6 +11261,333 @@
   els.abBackBtn.addEventListener("click", abStop);
   els.abAgainBtn.addEventListener("click", () => { els.abDonePanel.hidden = true; startAbGame(); });
   els.abDoneBackBtn.addEventListener("click", () => { els.abPlayer.hidden = true; els.abDonePanel.hidden = true; showScreen("testHome"); });
+
+  // ==== Test-Bereich: Antizipationstest (Coincidence-Anticipation Timing) ====
+  // Twelfth autonomous entry (see CLAUDE.md "Test-Bereich (autonomous,
+  // ongoing)"). Grounded in the classic Coincidence-Anticipation Timing (CAT)
+  // paradigm from sport science - the ability to precisely predict WHEN a
+  // moving object will arrive at a target location and time a response to
+  // coincide with that exact moment, rather than simply reacting to it after
+  // the fact. Historically measured with the "Bassin Anticipation Timer"
+  // (Bassin, Cal Poly Pomona): a linear runway of sequentially-illuminated
+  // LEDs simulating an approaching object, widely used across sport-science
+  // research (soccer, tennis, volleyball, baseball/softball, racket sports).
+  // Performance is scored via Absolute Error (AE, overall timing accuracy),
+  // Constant Error (CE, the signed early/late bias) and Variable Error (VE,
+  // response consistency) - the standard three-way error decomposition for
+  // this paradigm (Schutz & Roy, 1973/1977). This exercise reimplements the
+  // same idea on a phone screen: a ball moves at constant speed across a
+  // horizontal track toward a marked target zone; the client taps a single
+  // button at the moment they believe the ball arrives. Genuinely distinct
+  // from every existing Test/NAT mechanic: MOT tracks objects that move
+  // continuously but never need a precisely-TIMED response (only an eventual
+  // identification tap after motion has already stopped); every RT-based
+  // exercise here (Go/No-Go, Flanker, Posner, Simon, Rotationstest) measures
+  // how FAST a client responds to an already-present or just-appeared
+  // stimulus - this is the only one where the stimulus is continuously
+  // visible and moving, and being precisely ACCURATE in timing (neither too
+  // early nor too late) is the entire point, not speed. A direct fit for
+  // FWMC's "bewegungsnahes mentales Training" angle - the same skill needed
+  // to time a strike, catch, or interception of a moving ball or opponent.
+  const ANTIZIP_PREFS_KEY = "fwmc-antizip-prefs-v1";
+  // Difficulty sets how long the ball takes to reach the target zone
+  // (jittered per trial within this range so a client can't just count
+  // seconds instead of actually watching the ball - the real risk with a
+  // screen-based, rhythmic-motion task like this one) and how tight the
+  // "Treffer" tolerance window is - matching the real CAT literature's use
+  // of different simulated stimulus speeds (slow/moderate/fast) as the main
+  // difficulty manipulation. tailMs is how much further the ball keeps
+  // moving past the target zone before an unanswered trial times out - a
+  // generous window so a late-but-real tap still gets scored precisely
+  // rather than being cut off.
+  const ANTIZIP_DIFFICULTIES = {
+    leicht: { title: "Leicht", preMsMin: 2200, preMsMax: 2600, tailMs: 1300, toleranceMs: 150 },
+    mittel: { title: "Mittel", preMsMin: 1500, preMsMax: 1900, tailMs: 950, toleranceMs: 110 },
+    schwer: { title: "Schwer", preMsMin: 950, preMsMax: 1250, tailMs: 700, toleranceMs: 80 },
+  };
+  // 20 trials - shorter than the fixed-response-window exercises (Flanker's
+  // 32, Simon's 40) since each trial here already takes several real seconds
+  // (the ball's full travel plus a short gap), not a sub-second flash.
+  const ANTIZIP_TRIAL_COUNT = 20;
+  const antizipPrefs = { difficulty: "mittel" };
+  function loadAntizipPrefs() {
+    const saved = readJSON(ANTIZIP_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(antizipPrefs, saved);
+    if (!ANTIZIP_DIFFICULTIES[antizipPrefs.difficulty]) antizipPrefs.difficulty = "mittel";
+  }
+  loadAntizipPrefs();
+  function saveAntizipPrefsToStorage() { writeJSON(ANTIZIP_PREFS_KEY, antizipPrefs); }
+
+  // "Lower is better" (a timing-error score, same shape as UFOV's exposure-
+  // duration threshold) - tracks the lowest average Absolute Error (AE, ms)
+  // achieved per difficulty.
+  const ANTIZIP_BEST_KEY = "fwmc-antizip-best-v1"; // { [difficulty]: bestAeMs }
+  function antizipBestFor() {
+    const v = readJSON(ANTIZIP_BEST_KEY, {})[antizipPrefs.difficulty];
+    return (typeof v === "number") ? v : null;
+  }
+  function saveAntizipBest(aeMs) {
+    const all = readJSON(ANTIZIP_BEST_KEY, {});
+    const cur = all[antizipPrefs.difficulty];
+    if (cur == null || aeMs < cur) { all[antizipPrefs.difficulty] = aeMs; writeJSON(ANTIZIP_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderAntizipBest() {
+    const best = antizipBestFor();
+    const text = (best != null) ? `Bester mittlerer Fehler (${ANTIZIP_DIFFICULTIES[antizipPrefs.difficulty].title}): ${best} ms` : "";
+    els.antizipBestHint.textContent = text;
+    els.antizipReadyBestHint.textContent = text;
+  }
+  function syncAntizipDifficultyUI() {
+    els.antizipDifficultyRow.querySelectorAll("[data-antizip-diff]").forEach((btn) => setActive(btn, btn.dataset.antizipDiff === antizipPrefs.difficulty));
+  }
+  els.antizipDifficultyRow.querySelectorAll("[data-antizip-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      antizipPrefs.difficulty = btn.dataset.antizipDiff;
+      saveAntizipPrefsToStorage();
+      syncAntizipDifficultyUI();
+      renderAntizipBest();
+    });
+  });
+
+  els.antizipOpenBtn.addEventListener("click", () => {
+    syncAntizipDifficultyUI();
+    renderAntizipBest();
+    showScreen("antizipReady");
+  });
+  els.antizipReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Same timer-wrapping trick as scheduleSimonTimer/scheduleSearchTimer for
+  // the (setTimeout-driven) inter-trial gap; the ball's own motion phase is
+  // driven by requestAnimationFrame instead (see antizipTick below) since it
+  // needs a continuously-updating position, not a single delayed callback -
+  // its pause/resume instead shifts the trial's own start timestamp forward
+  // by the paused duration, the same trick VT/Periphere Wahrnehmung use for
+  // their own rAF schedules (simpler than MOT's "cancel outright" approach
+  // since a single elapsed-time-since-start calculation, unlike MOT's
+  // per-frame position accumulator, tolerates a shifted origin with no extra
+  // bookkeeping).
+  function scheduleAntizipTimer(fn, delayMs) {
+    antizipState.timerFn = fn;
+    antizipState.timerFiresAt = performance.now() + delayMs;
+    antizipState.timer = setTimeout(() => { antizipState.timer = null; fn(); }, delayMs);
+  }
+
+  function buildAntizipTrials(diff) {
+    const trials = [];
+    for (let i = 0; i < ANTIZIP_TRIAL_COUNT; i++) {
+      const preMs = diff.preMsMin + Math.random() * (diff.preMsMax - diff.preMsMin);
+      trials.push({ preMs, tailMs: diff.tailMs });
+    }
+    return trials;
+  }
+
+  let antizipState = null;
+  function startAntizipGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.antizipPlayer.hidden = false;
+    els.antizipPlayerBar.hidden = false;
+    els.antizipDonePanel.hidden = true;
+    els.antizipPauseOverlay.hidden = true;
+    els.antizipPauseBtn.hidden = false;
+    els.antizipBall.hidden = true;
+    els.antizipFeedback.textContent = "";
+    els.antizipFeedback.className = "antizip-feedback";
+    const diff = ANTIZIP_DIFFICULTIES[antizipPrefs.difficulty];
+    antizipState = {
+      diff, trials: buildAntizipTrials(diff),
+      index: -1, phase: "gap", tapped: false, raf: null,
+      errors: [], hits: 0, timeouts: 0,
+      trialStartAt: 0, preMs: 0, total: 0,
+      paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      startTime: performance.now(),
+    };
+    els.antizipHint.textContent = "Bereit? Gleich geht's los …";
+    els.antizipProgressEl.textContent = `0/${antizipState.trials.length}`;
+    requestWakeLock();
+    scheduleAntizipTimer(antizipNextTrial, 1200);
+  }
+  els.antizipReadyStartBtn.addEventListener("click", startAntizipGame);
+
+  function antizipNextTrial() {
+    if (!antizipState) return;
+    antizipState.index++;
+    if (antizipState.index >= antizipState.trials.length) { antizipFinish(); return; }
+    els.antizipProgressEl.textContent = `${antizipState.index + 1}/${antizipState.trials.length}`;
+    antizipState.phase = "gap";
+    antizipState.tapped = false;
+    els.antizipBall.hidden = true;
+    els.antizipFeedback.textContent = "";
+    els.antizipFeedback.className = "antizip-feedback";
+    els.antizipHint.textContent = "Bereit …";
+    const isi = 700 + Math.random() * 500;
+    scheduleAntizipTimer(antizipStartMove, isi);
+  }
+  function antizipStartMove() {
+    if (!antizipState) return;
+    const trial = antizipState.trials[antizipState.index];
+    antizipState.phase = "moving";
+    antizipState.tapped = false;
+    antizipState.trialStartAt = performance.now();
+    antizipState.total = trial.preMs + trial.tailMs;
+    antizipState.preMs = trial.preMs;
+    els.antizipHint.textContent = "";
+    els.antizipBall.hidden = false;
+    els.antizipBall.style.left = "0%";
+    const targetFraction = trial.preMs / antizipState.total;
+    els.antizipTargetZone.style.left = `${Math.min(86, Math.max(0, targetFraction * 100 - 7))}%`;
+    antizipState.raf = requestAnimationFrame(antizipTick);
+  }
+  function antizipTick() {
+    if (!antizipState || antizipState.phase !== "moving") return;
+    const elapsed = performance.now() - antizipState.trialStartAt;
+    if (elapsed >= antizipState.total) {
+      // Never tapped at all within the ball's full travel - a genuine miss,
+      // not scored into the timing-error stats (there's no meaningful
+      // "how early/late" for a response that never happened), same
+      // convention as Simon/Flanker's own timeout handling.
+      antizipState.timeouts++;
+      antizipState.phase = "gap";
+      els.antizipBall.hidden = true;
+      els.antizipFeedback.textContent = "Verpasst!";
+      els.antizipFeedback.className = "antizip-feedback late";
+      scheduleAntizipTimer(antizipNextTrial, 900);
+      return;
+    }
+    els.antizipBall.style.left = `${(elapsed / antizipState.total) * 100}%`;
+    antizipState.raf = requestAnimationFrame(antizipTick);
+  }
+  function antizipTap() {
+    if (!antizipState || antizipState.paused || antizipState.tapped) return;
+    if (antizipState.phase !== "moving") return;
+    antizipState.tapped = true;
+    antizipState.phase = "gap";
+    if (antizipState.raf) { cancelAnimationFrame(antizipState.raf); antizipState.raf = null; }
+    const elapsed = performance.now() - antizipState.trialStartAt;
+    const error = Math.round(elapsed - antizipState.preMs); // + = zu spät, - = zu früh
+    antizipState.errors.push(error);
+    const isHit = Math.abs(error) <= antizipState.diff.toleranceMs;
+    if (isHit) {
+      antizipState.hits++;
+      els.antizipFeedback.textContent = `Super! (${error >= 0 ? "+" : ""}${error} ms)`;
+      els.antizipFeedback.className = "antizip-feedback good";
+    } else if (error < 0) {
+      els.antizipFeedback.textContent = `Zu früh (${error} ms)`;
+      els.antizipFeedback.className = "antizip-feedback early";
+    } else {
+      els.antizipFeedback.textContent = `Zu spät (+${error} ms)`;
+      els.antizipFeedback.className = "antizip-feedback late";
+    }
+    els.antizipBall.hidden = true;
+    scheduleAntizipTimer(antizipNextTrial, 900);
+  }
+  els.antizipTapBtn.addEventListener("click", antizipTap);
+
+  // Pause: the moving phase (rAF-driven) cancels the frame loop outright and,
+  // on resume, shifts trialStartAt forward by exactly the paused duration -
+  // the ball reappears at precisely the position/timing it would have
+  // reached had the pause never happened. The gap phase (setTimeout-driven)
+  // uses the standard remaining-delay replay trick instead, same as every
+  // other Test exercise.
+  function pauseAntizip() {
+    if (!antizipState || antizipState.paused) return;
+    antizipState.paused = true;
+    antizipState.pausedAt = performance.now();
+    if (antizipState.raf) { cancelAnimationFrame(antizipState.raf); antizipState.raf = null; }
+    if (antizipState.timer) {
+      clearTimeout(antizipState.timer);
+      antizipState.timer = null;
+      antizipState.timerRemainingMs = Math.max(0, antizipState.timerFiresAt - antizipState.pausedAt);
+    }
+    els.antizipPauseBtn.hidden = true;
+    els.antizipPauseOverlay.hidden = false;
+  }
+  function resumeAntizip() {
+    if (!antizipState || !antizipState.paused) return;
+    const pausedMs = performance.now() - antizipState.pausedAt;
+    antizipState.startTime += pausedMs;
+    antizipState.paused = false;
+    if (antizipState.phase === "moving") {
+      antizipState.trialStartAt += pausedMs;
+      antizipState.raf = requestAnimationFrame(antizipTick);
+    }
+    if (antizipState.timerFn && antizipState.timerRemainingMs != null) {
+      scheduleAntizipTimer(antizipState.timerFn, antizipState.timerRemainingMs);
+      antizipState.timerRemainingMs = null;
+    }
+    els.antizipPauseOverlay.hidden = true;
+    els.antizipPauseBtn.hidden = false;
+  }
+  els.antizipPauseBtn.addEventListener("click", pauseAntizip);
+  els.antizipResumeBtn.addEventListener("click", resumeAntizip);
+
+  // Population-free sample standard deviation of the signed timing errors -
+  // the "Variable Error" (VE) leg of the classic AE/CE/VE decomposition
+  // (Schutz & Roy, 1973/1977) this paradigm is scored with; no shared helper
+  // for this exists elsewhere in the app yet (nothing else here reports a
+  // spread, only averages/slopes), so it's local to this exercise.
+  function antizipStdDev(arr) {
+    if (arr.length < 2) return null;
+    const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+    const variance = arr.reduce((a, b) => a + (b - mean) * (b - mean), 0) / (arr.length - 1);
+    return Math.round(Math.sqrt(variance));
+  }
+  function finalizeAntizipRun(state, totalTrials) {
+    els.antizipPauseOverlay.hidden = true;
+    els.antizipPlayerBar.hidden = true;
+    const trefferPct = Math.round(100 * state.hits / totalTrials);
+    const ae = state.errors.length ? Math.round(state.errors.reduce((a, b) => a + Math.abs(b), 0) / state.errors.length) : null;
+    const ce = state.errors.length ? avgOf(state.errors) : null;
+    const ve = antizipStdDev(state.errors);
+    const isRecord = (ae != null) ? saveAntizipBest(ae) : false;
+    renderAntizipBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    const ceText = (ce == null) ? "" : (ce === 0 ? "genau im Schnitt getroffen" : (ce > 0 ? `im Schnitt ${ce} ms zu spät` : `im Schnitt ${Math.abs(ce)} ms zu früh`));
+    els.antizipDoneSummary.textContent =
+      `Antizipationstest (${state.diff.title}) · Trefferquote ${trefferPct}%` +
+      (ae != null ? ` · mittlerer Fehler (AE) ${ae} ms` : "") +
+      (ceText ? ` · ${ceText} (CE)` : "") +
+      (ve != null ? ` · Streuung (VE) ${ve} ms` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${trefferPct}% Treffer` + (ae != null ? `, AE ${ae} ms` : "");
+    const id = addHistory({ kind: "antizip", title: "Antizipationstest (Coincidence-Anticipation Timing)", seconds: Math.round(played), note });
+    renderRating(els.antizipRating, id, "Wie gut hast du den Ball getroffen?");
+    els.antizipDonePanel.hidden = false;
+  }
+  function antizipFinish() {
+    if (!antizipState) return;
+    const state = antizipState;
+    antizipState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.antizipPlayer) document.exitFullscreen().catch(() => {});
+    els.antizipFsHint.hidden = true;
+    finalizeAntizipRun(state, state.trials.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved.
+  function antizipStop() {
+    if (!antizipState) return;
+    if (antizipState.timer) clearTimeout(antizipState.timer);
+    if (antizipState.raf) cancelAnimationFrame(antizipState.raf);
+    const state = antizipState;
+    antizipState = null;
+    els.antizipPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.antizipPlayer) document.exitFullscreen().catch(() => {});
+    els.antizipFsHint.hidden = true;
+    const resolved = state.errors.length + state.timeouts;
+    if (resolved >= 4) {
+      finalizeAntizipRun(state, resolved);
+    } else {
+      els.antizipPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.antizipBackBtn.addEventListener("click", antizipStop);
+  els.antizipAgainBtn.addEventListener("click", () => { els.antizipDonePanel.hidden = true; startAntizipGame(); });
+  els.antizipDoneBackBtn.addEventListener("click", () => { els.antizipPlayer.hidden = true; els.antizipDonePanel.hidden = true; showScreen("testHome"); });
 
   // ---- Start-up ----
   renderHistory();

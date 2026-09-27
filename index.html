@@ -658,6 +658,11 @@
       <span class="fc-desc">Eine schnelle Buchstabenfolge rauscht vorbei &ndash; ein Buchstabe ist BLAU eingef&auml;rbt (dein erstes Ziel, merke ihn dir), danach achtest du darauf, ob irgendwo noch ein X auftaucht. Klassisches Paradigma zur zeitlichen Aufmerksamkeit (Raymond, Shapiro &amp; Arnell, 1992) &ndash; zeigt die kurze &bdquo;Bewusstseinsl&uuml;cke&ldquo; nach einem erkannten Reiz und trainiert, wie schnell die Aufmerksamkeit danach wieder bereit ist.</span>
       <span class="fc-meta" id="abBestHint"></span>
     </button>
+    <button class="featured-card" id="antizipOpenBtn">
+      <span class="fc-title">Antizipationstest (Coincidence-Anticipation Timing)</span>
+      <span class="fc-desc">Ein Ball bewegt sich gleichm&auml;&szlig;ig auf eine Ziel-Zone zu &ndash; tippe die Taste GENAU in dem Moment, in dem er sie erreicht, nicht fr&uuml;her und nicht sp&auml;ter. Klassisches sportwissenschaftliches Paradigma (Coincidence-Anticipation Timing, u.a. mit dem &bdquo;Bassin Anticipation Timer&ldquo; gemessen), trainiert die pr&auml;zise zeitliche Antizipation bewegter Objekte &ndash; zentral f&uuml;r jede Sportart mit Ball, Gegner oder Ger&auml;t.</span>
+      <span class="fc-meta" id="antizipBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -886,6 +891,27 @@
   <div class="group-help" id="abReadyBestHint"></div>
 
   <button class="start-btn" id="abReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="antizipReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="antizipReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Antizipationstest (Coincidence-Anticipation Timing)</h1>
+  <p class="page-sub">Ein Ball bewegt sich gleichm&auml;&szlig;ig von links nach rechts auf eine markierte Ziel-Zone zu. Tippe die Taste GENAU in dem Moment, in dem der Ball die Ziel-Zone erreicht &ndash; nicht fr&uuml;her, nicht sp&auml;ter. Klassisches Paradigma der Sportwissenschaft (Coincidence-Anticipation Timing, oft mit dem &bdquo;Bassin Anticipation Timer&ldquo; gemessen): die F&auml;higkeit, die Bewegung eines Objekts pr&auml;zise vorherzusehen und die eigene Reaktion exakt darauf abzustimmen &ndash; zentral f&uuml;r jede Sportart, in der ein bewegtes Objekt (Ball, Gegner, Ger&auml;t) im richtigen Moment getroffen oder abgefangen werden muss.</p>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="antizipDifficultyRow">
+      <button class="choice" data-antizip-diff="leicht">Leicht<small>langsamer Ball</small></button>
+      <button class="choice" data-antizip-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-antizip-diff="schwer">Schwer<small>schneller Ball</small></button>
+    </div>
+  </div>
+
+  <div class="group-help" id="antizipReadyBestHint"></div>
+
+  <button class="start-btn" id="antizipReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="merkReady" hidden>
@@ -3056,6 +3082,44 @@
     <div class="rating" id="abRating"></div>
     <button class="again" id="abAgainBtn">Nochmal</button>
     <button class="back" id="abDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="antizipPlayer" hidden>
+  <div class="antizip-stage" id="antizipStage">
+    <div class="remember-hint" id="antizipHint"></div>
+    <div class="antizip-track" id="antizipTrack">
+      <div class="antizip-target-zone" id="antizipTargetZone"></div>
+      <div class="antizip-ball" id="antizipBall" hidden></div>
+    </div>
+    <p class="antizip-feedback" id="antizipFeedback"></p>
+    <button class="antizip-tap-btn" id="antizipTapBtn">JETZT!</button>
+  </div>
+  <div class="pause-overlay" id="antizipPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="antizipResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="antizipPlayerBar">
+    <button id="antizipBackBtn">&#10005; Beenden</button>
+    <button id="antizipPauseBtn">Pause</button>
+    <span class="player-status" id="antizipProgressEl"></span>
+    <button id="antizipFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="antizipFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="antizipFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="antizipFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="antizipDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="antizipDoneSummary"></p>
+    <div class="rating" id="antizipRating"></div>
+    <button class="again" id="antizipAgainBtn">Nochmal</button>
+    <button class="back" id="antizipDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 
