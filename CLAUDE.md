@@ -2338,7 +2338,9 @@ with others).
   on. And the client must be able to set a persistent "skip this
   video" checkbox/flag, so a returning client using the same code
   doesn't have to sit through or manually skip the same video every
-  single time.
+  single time - but this must stay reversible: the checkbox can be
+  unticked again at any point if the client decides they want to watch
+  the video after all, it's not a permanent one-way opt-out.
 - Step 4 (later, explicitly separate): video upload from a file/photo
   library AND in-browser camera recording (`getUserMedia`/
   `MediaRecorder`) directly from the dashboard, once R2 storage exists.
