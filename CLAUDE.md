@@ -2002,6 +2002,95 @@ the client).
     genuinely different "level of processing" question, not a rule or a
     search. *Zuhause*: Test.
 
+## Coach-Dashboard & Worker-Repo (2026-09-28)
+
+Client's ask: a way to programme Trainings-Codes and see which client
+(Kürzel only) got which code and when, without needing me in the loop every
+time, plus concerns that (a) code creation so far only ever happened "mit
+mir zusammen, testweise" with no tool of its own, (b) no repo existed for
+whatever serves the codes, and (c) a client-history log should live
+somewhere more professional than just one browser's localStorage.
+
+Investigated via the Cloudflare MCP connector (this session has read/D1
+access to the client's Cloudflare account) and found the actual live setup
+the app's `CODE_API` (`app.js`, `lookupProgram()`) has been calling all
+along: a Worker named `online-training` (serves
+`online-training.fwmc.workers.dev`, exactly the URL baked into `app.js`)
+backed by a D1 database `fwmc-training-codes` with one table, `programs`
+(`code`, `active`, `config` JSON, `created_at`, `updated_at`). It already
+held the three real codes in production use (`dig01`, `dig02`, `xppbsp-1`)
+- these were inserted by hand via direct D1 queries in earlier sessions,
+confirming there was genuinely no write endpoint and no repo, exactly as
+the client suspected. The `config` JSON shape already matches the app's own
+local `PROGRAMS`/bundle format (a `blocks` array of
+`{exercise,palette,duration,stimulusS,intervalMin,intervalMax,sequence}`,
+or `{type:"bundle",programs:[...]}` for a programme overview) - no new
+schema was invented, the dashboard just authors the same shape by hand.
+
+Built, in `worker/` (the Worker's source now lives in this repo -
+`worker/README.md` has full first-time-deploy steps) and `dashboard.html`
+(a new, separate static page, not part of `build.sh`'s pipeline):
+
+- **`worker/src/index.js`**: keeps the existing public `GET /program`
+  lookup unchanged (still no auth - the client app itself calls it), and
+  adds an admin API gated by `Authorization: Bearer <ADMIN_TOKEN>` (a
+  secret set once via `wrangler secret put ADMIN_TOKEN`, never committed):
+  `GET/POST /admin/programs` (list all codes incl. full config, or upsert
+  one), `GET/POST /admin/client-history` (list, optionally filtered by
+  `?client=`, or log a new `{clientCode, programCode, note}` entry).
+- **New D1 table `client_history`** (`id`, `client_code`, `program_code`,
+  `note`, `created_at`), added directly to the *same* production database
+  the app already depends on - this is the "somewhere more professional"
+  the client asked for: shared and device-independent, not
+  localStorage-only (that already exists separately as the *client-side*
+  Trainings-Code-Verlauf in Master-Einstellungen, which is a different,
+  intentionally-local thing: what codes *this browser* has opened, not
+  what the coach assigned to which Kürzel).
+- **`dashboard.html`**: a small standalone page (dark theme, no build step,
+  deliberately not wired into `build.sh`/`index.html` - it's a separate
+  coach-only tool, not part of the client-facing app). Gate screen asks for
+  the admin token once (stored in this browser's localStorage only,
+  exactly like every other preference in the app); once past it: a
+  Kunden-Verlauf panel (Kürzel + Code + optional Notiz → logs to
+  `client_history`, with a filter-by-Kürzel table beneath) and a
+  Trainings-Codes panel (table of existing codes with an active/inactive
+  toggle, click a row to load its config into an editable JSON textarea,
+  paste/edit and save to create or update a code). Deliberately a JSON
+  textarea rather than a full visual block-builder for v1 - the config
+  shape is exactly what `dig01`/`dig02`/`xppbsp-1` already use, so copying
+  and adapting one is realistic, and a guided form can follow later once
+  this baseline is confirmed useful. Tested end-to-end against a fully
+  mocked Worker API (Playwright route interception standing in for the
+  live endpoints, since deploying the new Worker code needs a step outside
+  this session - see below) - auth gate, wrong-token rejection, listing,
+  logging, filtering, edit-existing-code, toggle active/inactive,
+  create-new-code, invalid-JSON handling, logout, and reload-with-
+  stored-token all verified.
+
+**Not yet live - one manual step outside this repo is required**: this
+session's Cloudflare access (via MCP) can read Workers and read/write D1
+directly, but cannot deploy Worker *code* - there's no deploy tool exposed,
+and no Cloudflare API token/CLI credentials in this sandbox to drive
+`wrangler` from here. So the new `worker/src/index.js` (with the admin
+routes) is not deployed yet; the live Worker still only serves the original
+public lookup. To go live: either run the four commands in
+`worker/README.md` once (needs a terminal), or add a Cloudflare API token
+to this Claude Code environment's secrets so a future session can run
+`wrangler deploy` autonomously - either way, `ADMIN_TOKEN` must be set via
+`wrangler secret put ADMIN_TOKEN` and that same value entered once into
+`dashboard.html`'s gate screen. `dashboard.html` itself needs no deploy step
+of its own once pushed - it's served by GitHub Pages like the rest of the
+repo, just not linked from the client-facing app's own navigation.
+
+**Not built, explicitly out of scope for this pass**: a visual
+block-builder (drag/drop or form-based) for `config` instead of raw JSON;
+client history beyond Kürzel/code/note/date (e.g. richer client
+records - the client only asked for "welches Kürzel hat was bekommen", not
+names or other PII, and D1 access is already client-only via the admin
+token, but nothing here does more than that minimum); any auth beyond a
+single shared bearer token (fine for a single coach, would need real
+per-user auth if ever shared with others).
+
 ## Test-Bereich (autonomous, ongoing)
 
 **If you were woken by the "FWMC Test-Bereich Auto-Build" Routine, this

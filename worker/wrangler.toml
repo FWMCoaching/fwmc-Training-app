@@ -1,0 +1,12 @@
+name = "online-training"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "fwmc-training-codes"
+database_id = "ccb90ea8-7d96-4779-bfb4-f93860905f81"
+
+# The admin token is set once via:
+#   npx wrangler secret put ADMIN_TOKEN
+# Never commit its value - only the binding name is declared here.

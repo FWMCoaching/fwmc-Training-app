@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FWMC Coach-Dashboard</title>
+<meta name="robots" content="noindex, nofollow" />
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --border: #2a2f3a;
+    --text: #e8ebf2; --muted: #9099ab; --accent: #4f8cff; --accent2: #3cc27a;
+    --danger: #e5584f; --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text); padding: 20px;
+  }
+  h1 { font-size: 1.3rem; margin: 0 0 4px; }
+  h2 { font-size: 1.05rem; margin: 0 0 12px; }
+  .sub { color: var(--muted); font-size: 0.85rem; margin: 0 0 20px; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 20px;
+  }
+  label { display: block; font-size: 0.8rem; color: var(--muted); margin: 10px 0 4px; }
+  input, textarea, select {
+    width: 100%; background: var(--panel2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 9px 10px; font-size: 0.95rem; font-family: inherit;
+  }
+  textarea { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.82rem; min-height: 160px; resize: vertical; }
+  button {
+    background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 9px 16px;
+    font-size: 0.9rem; cursor: pointer; margin-top: 12px;
+  }
+  button.secondary { background: var(--panel2); border: 1px solid var(--border); color: var(--text); }
+  button.danger { background: var(--danger); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > * { flex: 1; min-width: 140px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover { background: var(--panel2); }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; }
+  .pill.on { background: rgba(60,194,122,0.18); color: var(--accent2); }
+  .pill.off { background: rgba(229,88,79,0.18); color: var(--danger); }
+  .msg { font-size: 0.85rem; margin-top: 10px; }
+  .msg.err { color: var(--danger); }
+  .msg.ok { color: var(--accent2); }
+  .hint { color: var(--muted); font-size: 0.78rem; margin-top: 6px; }
+  #gate { max-width: 420px; margin: 80px auto 0; text-align: center; }
+  #gate .panel { text-align: left; }
+  #app { display: none; }
+  a.copy-link { color: var(--accent); cursor: pointer; font-size: 0.8rem; }
+  .top-actions { display: flex; justify-content: space-between; align-items: baseline; }
+</style>
+</head>
+<body>
+
+  <div id="gate">
+    <div class="panel">
+      <h2>Coach-Dashboard</h2>
+      <p class="sub">Einmalig den Admin-Token deines Workers eintragen. Er wird nur in diesem Browser gespeichert (localStorage), nirgendwo sonst.</p>
+      <label for="tokenInput">Admin-Token</label>
+      <input id="tokenInput" type="password" autocomplete="off" placeholder="…" />
+      <button id="connectBtn">Verbinden</button>
+      <div id="gateMsg" class="msg"></div>
+    </div>
+  </div>
+
+  <div id="app" class="wrap">
+    <div class="top-actions">
+      <div>
+        <h1>FWMC Coach-Dashboard</h1>
+        <p class="sub">Trainings-Codes verwalten &amp; Kunden-Verlauf - alles liegt in der Cloudflare-Datenbank, geräteübergreifend abrufbar.</p>
+      </div>
+      <button class="secondary" id="logoutBtn">Abmelden</button>
+    </div>
+
+    <div class="panel">
+      <h2>Kunden-Verlauf</h2>
+      <div class="row">
+        <div>
+          <label for="chClient">Kürzel</label>
+          <input id="chClient" placeholder="z.B. MK" />
+        </div>
+        <div>
+          <label for="chCode">Trainings-Code</label>
+          <input id="chCode" list="codeList" placeholder="z.B. dig01" />
+        </div>
+        <div>
+          <label for="chNote">Notiz (optional)</label>
+          <input id="chNote" placeholder="z.B. 2. Woche" />
+        </div>
+      </div>
+      <datalist id="codeList"></datalist>
+      <button id="chSaveBtn">Eintragen</button>
+      <div id="chMsg" class="msg"></div>
+
+      <label for="chFilter" style="margin-top:20px">Filtern nach Kürzel (leer = alle, letzte 500)</label>
+      <input id="chFilter" placeholder="z.B. MK" />
+      <table id="chTable">
+        <thead><tr><th>Kürzel</th><th>Code</th><th>Notiz</th><th>Datum</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>Trainings-Codes</h2>
+      <table id="progTable">
+        <thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Geändert</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <label for="pCode" style="margin-top:20px">Code (neu anlegen oder bestehenden Code eintippen zum Bearbeiten)</label>
+      <input id="pCode" placeholder="z.B. dig03" />
+      <label for="pConfig">Konfiguration (JSON - gleiche Struktur wie dig01/dig02/xppbsp-1)</label>
+      <textarea id="pConfig" placeholder='{"name":"Dig03 · …","pauseS":15,"blocks":[{"exercise":"vt-color","palette":"ORL","duration":60,"stimulusS":1,"intervalMin":3,"intervalMax":5,"sequence":"S01"}]}'></textarea>
+      <p class="hint">Gültige <code>exercise</code>-Werte: vt-color, vrw-original, 4-straight, 4-diag, 8-solo, 8-vrw, stroop-classic, stroop-bg, cross-modal, cone-tap (weitere in app.js unter EXERCISES). Für eine Programmübersicht mit mehreren Programmen: <code>{"type":"bundle","name":"…","programs":[{"label":"…","blocks":[…]}, …]}</code>.</p>
+      <div class="row">
+        <label style="display:flex;align-items:center;gap:6px;margin-top:20px"><input type="checkbox" id="pActive" checked style="width:auto" /> Aktiv</label>
+      </div>
+      <button id="pSaveBtn">Speichern</button>
+      <div id="pMsg" class="msg"></div>
+    </div>
+  </div>
+
+<script>
+  const TOKEN_KEY = "fwmc-admin-token";
+  const API_BASE = "https://online-training.fwmc.workers.dev";
+
+  const gate = document.getElementById("gate");
+  const app = document.getElementById("app");
+  let token = localStorage.getItem(TOKEN_KEY) || "";
+
+  function showGate(msg) {
+    gate.style.display = "block"; app.style.display = "none";
+    document.getElementById("gateMsg").textContent = msg || "";
+    document.getElementById("gateMsg").className = "msg" + (msg ? " err" : "");
+  }
+  function showApp() { gate.style.display = "none"; app.style.display = "block"; }
+
+  async function api(path, opts) {
+    opts = opts || {};
+    const res = await fetch(API_BASE + path, {
+      method: opts.method || "GET",
+      headers: Object.assign({ "Authorization": "Bearer " + token }, opts.body ? { "Content-Type": "application/json" } : {}),
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+    if (res.status === 401) {
+      localStorage.removeItem(TOKEN_KEY); token = "";
+      showGate("Token abgelehnt - bitte erneut eintragen.");
+      throw new Error("unauthorized");
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || ("http_" + res.status));
+    return data;
+  }
+
+  document.getElementById("connectBtn").addEventListener("click", async () => {
+    const v = document.getElementById("tokenInput").value.trim();
+    if (!v) return;
+    token = v;
+    try {
+      await api("/admin/programs");
+      localStorage.setItem(TOKEN_KEY, token);
+      showApp();
+      loadEverything();
+    } catch (e) {
+      showGate("Token abgelehnt - bitte prüfen.");
+    }
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    localStorage.removeItem(TOKEN_KEY); token = "";
+    showGate("");
+    document.getElementById("tokenInput").value = "";
+  });
+
+  function fmtDate(iso) {
+    try { return new Date(iso).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" }); }
+    catch (e) { return iso; }
+  }
+
+  // ---- client history ----
+
+  async function loadHistory() {
+    const client = document.getElementById("chFilter").value.trim();
+    const data = await api("/admin/client-history" + (client ? "?client=" + encodeURIComponent(client) : ""));
+    const tbody = document.querySelector("#chTable tbody");
+    tbody.innerHTML = "";
+    (data.entries || []).forEach((e) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${escapeHtml(e.client_code)}</td><td>${escapeHtml(e.program_code)}</td><td>${escapeHtml(e.note || "")}</td><td>${fmtDate(e.created_at)}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById("chSaveBtn").addEventListener("click", async () => {
+    const clientCode = document.getElementById("chClient").value.trim();
+    const programCode = document.getElementById("chCode").value.trim();
+    const note = document.getElementById("chNote").value.trim();
+    const msg = document.getElementById("chMsg");
+    if (!clientCode || !programCode) { msg.textContent = "Kürzel und Code sind Pflicht."; msg.className = "msg err"; return; }
+    try {
+      await api("/admin/client-history", { method: "POST", body: { clientCode, programCode, note } });
+      msg.textContent = "Eingetragen."; msg.className = "msg ok";
+      document.getElementById("chClient").value = ""; document.getElementById("chCode").value = ""; document.getElementById("chNote").value = "";
+      loadHistory();
+    } catch (e) { msg.textContent = "Fehler: " + e.message; msg.className = "msg err"; }
+  });
+
+  document.getElementById("chFilter").addEventListener("input", debounce(loadHistory, 300));
+
+  // ---- training codes ----
+
+  let programsCache = [];
+
+  async function loadPrograms() {
+    const data = await api("/admin/programs");
+    programsCache = data.programs || [];
+    const tbody = document.querySelector("#progTable tbody");
+    tbody.innerHTML = "";
+    const codeList = document.getElementById("codeList");
+    codeList.innerHTML = "";
+    programsCache.forEach((p) => {
+      const tr = document.createElement("tr");
+      tr.className = "clickable";
+      tr.innerHTML = `<td>${escapeHtml(p.code)}</td><td>${escapeHtml(p.name)}</td>` +
+        `<td><span class="pill ${p.active ? "on" : "off"}">${p.active ? "aktiv" : "inaktiv"}</span></td>` +
+        `<td>${fmtDate(p.updatedAt)}</td><td><a class="copy-link" data-toggle="${p.code}">${p.active ? "deaktivieren" : "aktivieren"}</a></td>`;
+      tr.addEventListener("click", (ev) => {
+        if (ev.target.dataset.toggle) return;
+        editProgram(p.code);
+      });
+      tbody.appendChild(tr);
+      const opt = document.createElement("option"); opt.value = p.code; codeList.appendChild(opt);
+    });
+    tbody.querySelectorAll("[data-toggle]").forEach((el) => {
+      el.addEventListener("click", async (ev) => {
+        ev.stopPropagation();
+        const code = el.dataset.toggle;
+        const p = programsCache.find((x) => x.code === code);
+        await toggleActive(code, !p.active);
+      });
+    });
+  }
+
+  function editProgram(code) {
+    const full = programsCache.find((p) => p.code === code);
+    if (!full) return;
+    document.getElementById("pCode").value = code;
+    document.getElementById("pActive").checked = full.active;
+    document.getElementById("pConfig").value = JSON.stringify(full.config, null, 2);
+    document.getElementById("pConfig").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  async function toggleActive(code, nextActive) {
+    const full = programsCache.find((p) => p.code === code);
+    if (!full) return;
+    await api("/admin/program", { method: "POST", body: { code, config: full.config, active: nextActive } });
+    loadPrograms();
+  }
+
+  document.getElementById("pSaveBtn").addEventListener("click", async () => {
+    const code = document.getElementById("pCode").value.trim();
+    const active = document.getElementById("pActive").checked;
+    const msg = document.getElementById("pMsg");
+    let config;
+    try { config = JSON.parse(document.getElementById("pConfig").value); }
+    catch (e) { msg.textContent = "Ungültiges JSON: " + e.message; msg.className = "msg err"; return; }
+    if (!code) { msg.textContent = "Code fehlt."; msg.className = "msg err"; return; }
+    try {
+      const data = await api("/admin/program", { method: "POST", body: { code, config, active } });
+      msg.textContent = data.created ? "Neu angelegt." : "Gespeichert."; msg.className = "msg ok";
+      loadPrograms();
+    } catch (e) { msg.textContent = "Fehler: " + e.message; msg.className = "msg err"; }
+  });
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+  function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+
+  function loadEverything() { loadPrograms(); loadHistory(); }
+
+  if (token) {
+    showApp();
+    api("/admin/programs").then(() => loadEverything()).catch(() => {});
+  } else {
+    showGate("");
+  }
+</script>
+</body>
+</html>
