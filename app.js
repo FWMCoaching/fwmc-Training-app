@@ -1130,6 +1130,9 @@
     faqSheet: $("faqSheet"), faqCloseBtn: $("faqCloseBtn"),
     masterSettingsSheet: $("masterSettingsSheet"), masterSettingsCloseBtn: $("masterSettingsCloseBtn"),
     masterCodeHistoryGroup: $("masterCodeHistoryGroup"), masterCodeHistoryList: $("masterCodeHistoryList"),
+    workoutExerciseInfoSheet: $("workoutExerciseInfoSheet"), workoutExerciseInfoIcon: $("workoutExerciseInfoIcon"),
+    workoutExerciseInfoTitle: $("workoutExerciseInfoTitle"), workoutExerciseInfoNote: $("workoutExerciseInfoNote"),
+    workoutExerciseInfoCloseBtn: $("workoutExerciseInfoCloseBtn"),
     breathHome: $("breathHome"), breathReady: $("breathReady"), breathBackToHome: $("breathBackToHome"),
     breathReadyTitle: $("breathReadyTitle"), breathReadyGoal: $("breathReadyGoal"), patternGrid: $("patternGrid"),
     patternBreakdown: $("patternBreakdown"), phaseHelp: $("phaseHelp"),
@@ -4159,6 +4162,26 @@
   els.faqCloseBtn.addEventListener("click", closeFaq);
   els.faqSheet.addEventListener("click", (e) => { if (e.target === els.faqSheet) closeFaq(); });
   els.faqSheet.addEventListener("keydown", (e) => trapTabKey(els.faqSheet, e));
+  // Workout-exercise info sheet: tapping an exercise's icon/name in the
+  // Tabata/Workout picker (not the "+") opens this instead of adding it -
+  // same technique-cue text (ex.note) already shown live during the workout,
+  // now available up front so the client can check form before committing.
+  let workoutExerciseInfoReturnFocus = null;
+  function openWorkoutExerciseInfo(ex) {
+    workoutExerciseInfoReturnFocus = document.activeElement;
+    els.workoutExerciseInfoIcon.innerHTML = workoutIconSVG(ex.icon);
+    els.workoutExerciseInfoTitle.textContent = ex.name;
+    els.workoutExerciseInfoNote.textContent = ex.note || "Keine Ausführungshinweise hinterlegt.";
+    els.workoutExerciseInfoSheet.hidden = false;
+    focusFirstIn(els.workoutExerciseInfoSheet);
+  }
+  function closeWorkoutExerciseInfo() {
+    els.workoutExerciseInfoSheet.hidden = true;
+    if (workoutExerciseInfoReturnFocus) workoutExerciseInfoReturnFocus.focus();
+  }
+  els.workoutExerciseInfoCloseBtn.addEventListener("click", closeWorkoutExerciseInfo);
+  els.workoutExerciseInfoSheet.addEventListener("click", (e) => { if (e.target === els.workoutExerciseInfoSheet) closeWorkoutExerciseInfo(); });
+  els.workoutExerciseInfoSheet.addEventListener("keydown", (e) => trapTabKey(els.workoutExerciseInfoSheet, e));
   // ==== Master-Einstellungen: a no-login "profile" (added 2026-09-27,
   // client's own framing) ====
   // Everything here lives in ONE localStorage key, same convention as every
@@ -7793,19 +7816,26 @@
       const count = workoutCircuitPrefs.items.filter((it) => it.exercise === id).length;
       const wrap = document.createElement("div");
       wrap.className = "custom-exercise-add-row";
-      const btn = document.createElement("button");
-      btn.className = "combo-add-btn";
-      btn.innerHTML = `<span class="ca-icon">${workoutIconSVG(ex.icon)}</span>` +
+      const infoBtn = document.createElement("button");
+      infoBtn.className = "combo-add-btn";
+      infoBtn.setAttribute("aria-label", `Erklärung: ${ex.name}`);
+      infoBtn.innerHTML = `<span class="ca-icon">${workoutIconSVG(ex.icon)}</span>` +
         `<span class="ca-text"><span class="ca-title">${esc(ex.name)}</span>` +
-        (count ? `<br><span class="ca-meta">${count}× im Zirkel</span>` : "") + `</span><span class="ca-plus">+</span>`;
-      btn.addEventListener("click", () => {
+        (count ? `<br><span class="ca-meta">${count}× im Zirkel</span>` : "") + `</span>`;
+      infoBtn.addEventListener("click", () => openWorkoutExerciseInfo(ex));
+      wrap.appendChild(infoBtn);
+      const addBtn = document.createElement("button");
+      addBtn.className = "ca-plus-btn";
+      addBtn.setAttribute("aria-label", `${ex.name} zum Zirkel hinzufügen`);
+      addBtn.innerHTML = `<span class="ca-plus">+</span>`;
+      addBtn.addEventListener("click", () => {
         workoutCircuitPrefs.items.push({ exercise: id, workS: workoutCircuitPrefs.defaultWorkS, note: "" });
         saveWorkoutCircuitPrefs();
         renderWorkoutCircuitAddGrid();
         renderWorkoutCircuitList();
         syncWorkoutCircuitUI();
       });
-      wrap.appendChild(btn);
+      wrap.appendChild(addBtn);
       if (isCustom) {
         const rm = document.createElement("button");
         rm.className = "combo-block-remove";

@@ -1267,6 +1267,18 @@ body.cvd-rotgruen .gng-stimulus.nogo{background:#e65100;border-color:#a53d00}
 .chapter-row .ca-icon svg{width:15px;height:15px}
 .custom-exercise-add-row{display:flex;align-items:center;gap:8px}
 .custom-exercise-add-row .combo-add-btn{flex:1}
+.ca-plus-btn{
+  flex:none;width:38px;height:38px;border-radius:12px;border:1px solid var(--line);
+  background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  box-shadow:var(--shadow);
+}
+.ca-plus-btn:hover{border-color:var(--brand-light)}
+.ca-plus-btn .ca-plus{font-size:20px;font-weight:700;color:var(--brand);line-height:1}
+.workout-info-icon{
+  width:56px;height:56px;border-radius:50%;background:var(--brand);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 12px;
+}
+.workout-info-icon svg{width:34px;height:34px}
 .custom-exercise-form{
   display:flex;flex-direction:column;gap:8px;margin-top:10px;padding:12px;
   border:1px dashed var(--line);border-radius:12px;background:var(--surface-2);

@@ -46,8 +46,8 @@ async def main():
 
         # ---- Standalone Tabata (self-built circuit) ----
         await pg.click("#workoutTabataStartCard"); await pg.wait_for_timeout(150)
-        await pg.locator("#workoutCircuitAddGrid .combo-add-btn").nth(4).click(); await pg.wait_for_timeout(80)  # Hampelmann
-        await pg.locator("#workoutCircuitAddGrid .combo-add-btn").nth(0).click(); await pg.wait_for_timeout(80)  # Kniebeugen
+        await pg.locator("#workoutCircuitAddGrid .ca-plus-btn").nth(4).click(); await pg.wait_for_timeout(80)  # Hampelmann
+        await pg.locator("#workoutCircuitAddGrid .ca-plus-btn").nth(0).click(); await pg.wait_for_timeout(80)  # Kniebeugen
         await pg.click('[data-wo-rest="5"]')
         await pg.evaluate("""() => {
             const raw = localStorage.getItem('fwmc-workout-circuit-v1');

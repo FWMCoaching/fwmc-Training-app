@@ -19,7 +19,7 @@ async def main():
         await pg.click('[data-section="workout"]'); await pg.wait_for_timeout(200)
         await pg.click("#workoutTabataStartCard"); await pg.wait_for_timeout(200)
         # add one built-in exercise (has a general note)
-        await pg.locator("#workoutCircuitAddGrid .combo-add-btn").nth(0).click(); await pg.wait_for_timeout(150)
+        await pg.locator("#workoutCircuitAddGrid .ca-plus-btn").nth(0).click(); await pg.wait_for_timeout(150)
         # set a custom personal note on it
         await pg.fill(".circuit-item-note", "Heute langsamer wegen Knie")
         await pg.locator(".circuit-item-note").dispatch_event("change")

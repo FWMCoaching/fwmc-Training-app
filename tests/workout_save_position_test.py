@@ -35,7 +35,7 @@ async def main():
         }""")
         print("save button shares the 'Dein Zirkel' group with the list:", same_group)
 
-        add_btns = pg.locator("#workoutCircuitAddGrid .combo-add-btn")
+        add_btns = pg.locator("#workoutCircuitAddGrid .ca-plus-btn")
         await add_btns.nth(0).click(); await pg.wait_for_timeout(100)
         await add_btns.nth(1).click(); await pg.wait_for_timeout(100)
         await pg.click("#workoutCircuitSaveBtn")

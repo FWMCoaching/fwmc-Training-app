@@ -22,7 +22,7 @@ async def main():
         print("saved group hidden initially:", await pg.is_hidden("#workoutCircuitSavedGroup"))
 
         # Build a tiny 2-exercise circuit
-        add_btns = pg.locator("#workoutCircuitAddGrid .combo-add-btn")
+        add_btns = pg.locator("#workoutCircuitAddGrid .ca-plus-btn")
         await add_btns.nth(0).click(); await pg.wait_for_timeout(100)
         await add_btns.nth(1).click(); await pg.wait_for_timeout(100)
         print("circuit count text:", await pg.inner_text("#workoutCircuitCount"))

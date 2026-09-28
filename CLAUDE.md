@@ -1185,6 +1185,26 @@ inserted anywhere among them, since `tests/workout_combo_test.py` picks
 exercises from the picker grid by fixed index (`.nth(0)`/`.nth(4)`) and
 would have broken silently otherwise.
 
+**Split-tap picker row (added 2026-09-28)**: the client liked that tapping
+an exercise in the Tabata/Zirkel picker (`#workoutCircuitAddGrid`,
+`renderWorkoutCircuitAddGrid()`) adds it straight to the circuit, but
+wanted a way to read the exercise's form cue (`ex.note`) first without
+committing to adding it. Split each row's single `.combo-add-btn` into two
+separate `<button>`s (can't nest a button in a button) inside the same
+`.custom-exercise-add-row`: the icon+name area keeps the `.combo-add-btn`
+class/look and now opens a new `#workoutExerciseInfoSheet` (icon, name,
+`ex.note`, same `.sheet`/`.sheet-inner` overlay + focus-trap pattern as the
+FAQ/Master-Einstellungen sheets) via `openWorkoutExerciseInfo(ex)`; a new
+adjacent `.ca-plus-btn` (just the "+") keeps the original add-to-circuit
+behaviour. Updated the four pre-existing tests that clicked
+`#workoutCircuitAddGrid .combo-add-btn` to add an exercise (they now open
+the info sheet instead, which then blocked further clicks as an overlay) -
+`workout_combo_test.py`, `workout_save_position_test.py`,
+`workout_saved_test.py`, `note_distinction_test.py` all now target
+`.ca-plus-btn` for that. The general Kombi-builder's own `.combo-add-btn`
+grid (`#comboScreen`, a different function/screen) is untouched - still a
+single button that adds directly, no info-vs-add split there.
+
 ## Geplant: Ziel-/Signalfarbe pro Übung (noch nicht gebaut, 2026-09-27)
 
 Client request, queued to start once the background-colour Feineinstellungen
