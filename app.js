@@ -1606,6 +1606,9 @@
     workoutCircuitAddGrid: $("workoutCircuitAddGrid"), workoutCircuitCount: $("workoutCircuitCount"),
     workoutCircuitEmptyHint: $("workoutCircuitEmptyHint"), workoutCircuitList: $("workoutCircuitList"),
     workoutCircuitSetRestGroup: $("workoutCircuitSetRestGroup"),
+    workoutCircuitSetRestSlider: $("workoutCircuitSetRestSlider"), workoutCircuitSetRestValue: $("workoutCircuitSetRestValue"),
+    workoutCircuitPrepSlider: $("workoutCircuitPrepSlider"), workoutCircuitPrepValue: $("workoutCircuitPrepValue"),
+    workoutCircuitCooldownSlider: $("workoutCircuitCooldownSlider"), workoutCircuitCooldownValue: $("workoutCircuitCooldownValue"),
     workoutCircuitDefaultWorkSlider: $("workoutCircuitDefaultWorkSlider"), workoutCircuitDefaultWorkValue: $("workoutCircuitDefaultWorkValue"),
     workoutCircuitAddCustomBtn: $("workoutCircuitAddCustomBtn"), workoutCircuitCustomForm: $("workoutCircuitCustomForm"),
     workoutCircuitCustomName: $("workoutCircuitCustomName"), workoutCircuitCustomNote: $("workoutCircuitCustomNote"),
@@ -4194,12 +4197,19 @@
   // the sheet's own first line says so, matching the FAQ's existing "wo
   // werden meine Trainingsdaten gespeichert" answer.
   const MASTER_PREFS_KEY = "fwmc-master-v1";
-  const masterPrefs = { colorVision: "normal", limb: "none", hearing: "normal" };
+  const masterPrefs = { colorVision: "normal", armLimb: "none", legLimb: "none", hearing: "normal" };
   function loadMasterPrefs() {
     const saved = readJSON(MASTER_PREFS_KEY, null);
-    if (saved && typeof saved === "object") Object.assign(masterPrefs, saved);
+    if (saved && typeof saved === "object") {
+      Object.assign(masterPrefs, saved);
+      // migrate the old single `limb` field (only ever armL/armR/none, from
+      // before legs had their own restriction) into the new armLimb split.
+      if (saved.armLimb === undefined && (saved.limb === "armL" || saved.limb === "armR")) masterPrefs.armLimb = saved.limb;
+    }
+    delete masterPrefs.limb;
     if (masterPrefs.colorVision !== "normal" && masterPrefs.colorVision !== "rotgruen") masterPrefs.colorVision = "normal";
-    if (!["none", "armL", "armR"].includes(masterPrefs.limb)) masterPrefs.limb = "none";
+    if (!["none", "armL", "armR"].includes(masterPrefs.armLimb)) masterPrefs.armLimb = "none";
+    if (!["none", "legL", "legR"].includes(masterPrefs.legLimb)) masterPrefs.legLimb = "none";
     if (masterPrefs.hearing !== "normal" && masterPrefs.hearing !== "gehoerlos") masterPrefs.hearing = "normal";
   }
   function saveMasterPrefs() { writeJSON(MASTER_PREFS_KEY, masterPrefs); }
@@ -4221,10 +4231,16 @@
   function syncMasterCvdUI() { document.querySelectorAll("[data-master-cvd]").forEach((el) => setActive(el, el.dataset.masterCvd === masterPrefs.colorVision)); }
   applyColorVisionMode();
 
-  document.querySelectorAll("[data-master-limb]").forEach((el) => el.addEventListener("click", () => {
-    masterPrefs.limb = el.dataset.masterLimb; saveMasterPrefs(); syncMasterLimbUI(); applyMovementLimbFilter();
+  document.querySelectorAll("[data-master-arm-limb]").forEach((el) => el.addEventListener("click", () => {
+    masterPrefs.armLimb = el.dataset.masterArmLimb; saveMasterPrefs(); syncMasterLimbUI(); applyMovementLimbFilter();
   }));
-  function syncMasterLimbUI() { document.querySelectorAll("[data-master-limb]").forEach((el) => setActive(el, el.dataset.masterLimb === masterPrefs.limb)); }
+  document.querySelectorAll("[data-master-leg-limb]").forEach((el) => el.addEventListener("click", () => {
+    masterPrefs.legLimb = el.dataset.masterLegLimb; saveMasterPrefs(); syncMasterLimbUI(); applyMovementLimbFilter();
+  }));
+  function syncMasterLimbUI() {
+    document.querySelectorAll("[data-master-arm-limb]").forEach((el) => setActive(el, el.dataset.masterArmLimb === masterPrefs.armLimb));
+    document.querySelectorAll("[data-master-leg-limb]").forEach((el) => setActive(el, el.dataset.masterLegLimb === masterPrefs.legLimb));
+  }
 
   document.querySelectorAll("[data-master-hearing]").forEach((el) => el.addEventListener("click", () => {
     masterPrefs.hearing = el.dataset.masterHearing; saveMasterPrefs(); syncMasterHearingUI(); applyExerciseCompatibility();
@@ -4831,14 +4847,19 @@
   function saveMovementPrefs() { writeJSON(MOVEMENT_PREFS_KEY, movementPrefs); }
   loadMovementPrefs();
 
-  // Master-Einstellungen's "Bewegungseinschränkung" (nur linker/rechter Arm)
-  // excludes the OTHER arm's movements everywhere Movement builds its pool
-  // from - both the picker (so a client with one usable arm never even sees
-  // a chip for the other) and the actual play pool, so it's a genuine
-  // cross-cutting default rather than something re-picked per session.
+  // Master-Einstellungen's "Bewegungseinschränkung" excludes the opposite
+  // limb's movements everywhere Movement builds its pool from - both the
+  // picker (so a client with one usable arm/leg never even sees a chip for
+  // the other) and the actual play pool, so it's a genuine cross-cutting
+  // default rather than something re-picked per session. Arm and leg are
+  // two independent settings (armLimb/legLimb, added 2026-09-28 alongside
+  // the leg options - originally just one shared `limb` field covering only
+  // arms), so e.g. "nur rechter Arm" + "nur linkes Bein" can combine.
   function movementAllowedByLimb(m) {
-    if (masterPrefs.limb === "armL" && m.limb === "armR") return false;
-    if (masterPrefs.limb === "armR" && m.limb === "armL") return false;
+    if (masterPrefs.armLimb === "armL" && m.limb === "armR") return false;
+    if (masterPrefs.armLimb === "armR" && m.limb === "armL") return false;
+    if (masterPrefs.legLimb === "legL" && m.limb === "legR") return false;
+    if (masterPrefs.legLimb === "legR" && m.limb === "legL") return false;
     return true;
   }
   function renderMovementPickerChips() {
@@ -7580,11 +7601,17 @@
   // works for free via workoutState.startTime, and jumping to a given
   // point is just moving that one timestamp.
   const TABATA_PREP_S = 5;
-  function buildCircuitSchedule(block) {
+  // prepS/cooldownS are optional - coach-authored blocks (startTabataBlock)
+  // always use the fixed defaults below (a coach already chose those
+  // timings deliberately), while the client's own self-built circuit
+  // (startCircuitBlock) passes its own Feineinstellungen values.
+  function buildCircuitSchedule(block, prepS, cooldownS) {
+    if (!Number.isFinite(prepS)) prepS = TABATA_PREP_S;
+    if (!Number.isFinite(cooldownS)) cooldownS = 0;
     const schedule = [];
     let t = 0;
-    schedule.push({ t0: t, t1: t + TABATA_PREP_S, type: "prep" });
-    t += TABATA_PREP_S;
+    schedule.push({ t0: t, t1: t + prepS, type: "prep" });
+    t += prepS;
     for (let set = 1; set <= block.sets; set++) {
       block.items.forEach((item, i) => {
         schedule.push({ t0: t, t1: t + item.workS, type: "work", set, itemIdx: i, exercise: item.exercise, note: item.note });
@@ -7599,10 +7626,14 @@
         t += block.setRestS;
       }
     }
+    if (cooldownS > 0) {
+      schedule.push({ t0: t, t1: t + cooldownS, type: "cooldown" });
+      t += cooldownS;
+    }
     return { schedule, total: t };
   }
   function startCircuitBlock(block) {
-    const built = buildCircuitSchedule(block);
+    const built = buildCircuitSchedule(block, workoutCircuitPrefs.prepS, workoutCircuitPrefs.cooldownS);
     workoutState = { kind: "circuit", block, ex: { name: circuitSummaryLabel(block) }, schedule: built.schedule, total: built.total, startTime: performance.now() };
     requestWakeLock();
     workoutRaf = requestAnimationFrame(circuitTick);
@@ -7656,6 +7687,11 @@
         showExercise(items[0].exercise, items[0].note);
         els.tabataPhaseLabel.textContent = "Satzpause";
         els.tabataRoundLabel.textContent = single ? `Runde ${frame.set + 1} von ${totalSets} beginnt gleich` : `Satz ${frame.set + 1} von ${totalSets} beginnt gleich`;
+        els.workoutTabataView.classList.add("phase-rest");
+      } else if (frame.type === "cooldown") {
+        showExercise(items[items.length - 1].exercise, null);
+        els.tabataPhaseLabel.textContent = "Cool-down";
+        els.tabataRoundLabel.textContent = "Gleich geschafft";
         els.workoutTabataView.classList.add("phase-rest");
       }
     }
@@ -7800,11 +7836,13 @@
   // own work time, then sets how many sets to repeat and the rests. Mirrors
   // the combo builder's add-grid/draft-list pattern.
   const WORKOUT_CIRCUIT_KEY = "fwmc-workout-circuit-v1";
-  const workoutCircuitPrefs = { items: [], restS: 10, sets: 1, setRestS: 30, defaultWorkS: 15 };
+  const workoutCircuitPrefs = { items: [], restS: 10, sets: 1, setRestS: 30, defaultWorkS: 15, prepS: TABATA_PREP_S, cooldownS: 0 };
   function loadWorkoutCircuitPrefs() {
     const saved = readJSON(WORKOUT_CIRCUIT_KEY, null);
     if (saved && typeof saved === "object") Object.assign(workoutCircuitPrefs, saved);
     if (!Array.isArray(workoutCircuitPrefs.items)) workoutCircuitPrefs.items = [];
+    if (!Number.isFinite(workoutCircuitPrefs.prepS) || workoutCircuitPrefs.prepS < 3 || workoutCircuitPrefs.prepS > 30) workoutCircuitPrefs.prepS = TABATA_PREP_S;
+    if (!Number.isFinite(workoutCircuitPrefs.cooldownS) || workoutCircuitPrefs.cooldownS < 0 || workoutCircuitPrefs.cooldownS > 120) workoutCircuitPrefs.cooldownS = 0;
   }
   function saveWorkoutCircuitPrefs() { writeJSON(WORKOUT_CIRCUIT_KEY, workoutCircuitPrefs); }
   loadWorkoutCircuitPrefs();
@@ -7926,21 +7964,38 @@
   document.querySelectorAll("[data-wo-sets]").forEach((el) => el.addEventListener("click", () => {
     workoutCircuitPrefs.sets = Number(el.dataset.woSets); saveWorkoutCircuitPrefs(); syncWorkoutCircuitUI();
   }));
-  document.querySelectorAll("[data-wo-setrest]").forEach((el) => el.addEventListener("click", () => {
-    workoutCircuitPrefs.setRestS = Number(el.dataset.woSetrest); saveWorkoutCircuitPrefs(); syncWorkoutCircuitUI();
-  }));
   function syncWorkoutCircuitUI() {
     document.querySelectorAll("[data-wo-rest]").forEach((el) => setActive(el, Number(el.dataset.woRest) === workoutCircuitPrefs.restS));
     document.querySelectorAll("[data-wo-sets]").forEach((el) => setActive(el, Number(el.dataset.woSets) === workoutCircuitPrefs.sets));
-    document.querySelectorAll("[data-wo-setrest]").forEach((el) => setActive(el, Number(el.dataset.woSetrest) === workoutCircuitPrefs.setRestS));
     els.workoutCircuitSetRestGroup.hidden = workoutCircuitPrefs.sets <= 1;
+    els.workoutCircuitSetRestSlider.value = workoutCircuitPrefs.setRestS;
+    els.workoutCircuitSetRestValue.textContent = `${workoutCircuitPrefs.setRestS} s`;
     els.workoutCircuitDefaultWorkSlider.value = workoutCircuitPrefs.defaultWorkS;
     els.workoutCircuitDefaultWorkValue.textContent = `${workoutCircuitPrefs.defaultWorkS} s`;
+    els.workoutCircuitPrepSlider.value = workoutCircuitPrefs.prepS;
+    els.workoutCircuitPrepValue.textContent = `${workoutCircuitPrefs.prepS} s`;
+    els.workoutCircuitCooldownSlider.value = workoutCircuitPrefs.cooldownS;
+    els.workoutCircuitCooldownValue.textContent = workoutCircuitPrefs.cooldownS > 0 ? `${workoutCircuitPrefs.cooldownS} s` : "Aus";
     els.workoutTabataStartBtn.disabled = workoutCircuitPrefs.items.length === 0;
     els.workoutTabataStartBtn.textContent = workoutCircuitPrefs.items.length ? "Zirkel starten" : "Mindestens eine Übung hinzufügen";
   }
   els.workoutCircuitDefaultWorkSlider.addEventListener("input", () => {
     workoutCircuitPrefs.defaultWorkS = Number(els.workoutCircuitDefaultWorkSlider.value);
+    saveWorkoutCircuitPrefs();
+    syncWorkoutCircuitUI();
+  });
+  els.workoutCircuitSetRestSlider.addEventListener("input", () => {
+    workoutCircuitPrefs.setRestS = Number(els.workoutCircuitSetRestSlider.value);
+    saveWorkoutCircuitPrefs();
+    syncWorkoutCircuitUI();
+  });
+  els.workoutCircuitPrepSlider.addEventListener("input", () => {
+    workoutCircuitPrefs.prepS = Number(els.workoutCircuitPrepSlider.value);
+    saveWorkoutCircuitPrefs();
+    syncWorkoutCircuitUI();
+  });
+  els.workoutCircuitCooldownSlider.addEventListener("input", () => {
+    workoutCircuitPrefs.cooldownS = Number(els.workoutCircuitCooldownSlider.value);
     saveWorkoutCircuitPrefs();
     syncWorkoutCircuitUI();
   });

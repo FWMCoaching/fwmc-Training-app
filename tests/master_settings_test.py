@@ -73,11 +73,12 @@ async def main():
         await pg.locator(".master-settings-btn:visible").first.click(); await pg.wait_for_timeout(150)
         await pg.click('[data-master-cvd="normal"]'); await pg.wait_for_timeout(100)
 
-        # ---- Bewegungseinschränkung: "nur linker Arm" hides armR-* chips ----
+        # ---- Bewegungseinschränkung: arms and legs are independent settings,
+        # all 4 extremities are offered, and both can combine at once ----
         chip_count_before = await pg.locator("#movementPicker .movement-chip").count() if await pg.locator("#movementPicker").count() else None
         print("chip count before limb restriction (via sheet, no movement screen open yet):", chip_count_before)
-        await pg.click('[data-master-limb="armL"]'); await pg.wait_for_timeout(150)
-        print("limb now armL:", "active" in (await pg.get_attribute('[data-master-limb="armL"]', "class") or ""))
+        await pg.click('[data-master-arm-limb="armL"]'); await pg.wait_for_timeout(150)
+        print("arm limb now armL:", "active" in (await pg.get_attribute('[data-master-arm-limb="armL"]', "class") or ""))
         await pg.click("#masterSettingsCloseBtn"); await pg.wait_for_timeout(150)
 
         await pg.click('.section-tab[data-section="movement"]:visible'); await pg.wait_for_timeout(150)
@@ -87,13 +88,27 @@ async def main():
         print("armL/leg chips still present:", any("Linker Arm" in t for t in chip_labels) and any("Bein" in t for t in chip_labels))
         print("total chip count now 6 (8 minus 2 armR ones):", len(chip_labels) == 6)
 
-        # reset limb back to none
+        # also restrict legs -> combines with the arm restriction already set
         await pg.click("#movementBackToHome"); await pg.wait_for_timeout(150)
         await pg.locator(".master-settings-btn:visible").first.click(); await pg.wait_for_timeout(150)
-        await pg.click('[data-master-limb="none"]'); await pg.wait_for_timeout(150)
+        await pg.click('[data-master-leg-limb="legR"]'); await pg.wait_for_timeout(150)
+        print("leg limb now legR:", "active" in (await pg.get_attribute('[data-master-leg-limb="legR"]', "class") or ""))
+        print("arm limb still armL (independent settings):", "active" in (await pg.get_attribute('[data-master-arm-limb="armL"]', "class") or ""))
+        await pg.click("#masterSettingsCloseBtn"); await pg.wait_for_timeout(150)
+        await pg.click('.section-tab[data-section="movement"]:visible'); await pg.wait_for_timeout(150)
+        await pg.click("#movementStartCard"); await pg.wait_for_timeout(150)
+        chip_labels_both = await pg.locator("#movementPicker .movement-chip span").all_inner_texts()
+        print("armR AND legL chips both hidden now (combined restriction):", not any("Rechter Arm" in t for t in chip_labels_both) and not any("Linkes Bein" in t for t in chip_labels_both))
+        print("total chip count now 4 (8 minus 2 armR minus 2 legL):", len(chip_labels_both) == 4)
+
+        # reset both back to none
+        await pg.click("#movementBackToHome"); await pg.wait_for_timeout(150)
+        await pg.locator(".master-settings-btn:visible").first.click(); await pg.wait_for_timeout(150)
+        await pg.click('[data-master-arm-limb="none"]'); await pg.wait_for_timeout(100)
+        await pg.click('[data-master-leg-limb="none"]'); await pg.wait_for_timeout(150)
         await pg.click("#masterSettingsCloseBtn"); await pg.wait_for_timeout(150)
         chip_labels_after = await pg.locator("#movementPicker .movement-chip span").all_inner_texts()
-        print("all 8 chips back once limb restriction cleared:", len(chip_labels_after) == 8)
+        print("all 8 chips back once both limb restrictions cleared:", len(chip_labels_after) == 8)
 
         # ---- Trainings-Code-Verlauf: entering a code records it, shows up
         # in the sheet with first/last-used, and tapping it relaunches ----

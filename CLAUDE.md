@@ -1038,19 +1038,28 @@ somewhere.
   pro Übung") once that's built - a colour-vision preset could then set
   sensible per-exercise pairs automatically instead of a client
   re-picking colours exercise by exercise.
-- **Bewegungseinschränkung** (`limb`: `none`/`armL`/`armR`, "nur linker/
-  rechter Arm"): filters Movement's `MOVEMENTS` pool everywhere it's built
-  from (`movementAllowedByLimb()`) - both the picker
-  (`renderMovementPickerChips()`, rebuilt whenever the setting changes so a
-  now-disallowed chip never even appears) and the actual play pool (reads
-  through the already-filtered `movementPrefs.movements`, so no second
-  filter needed at play time). `applyMovementLimbFilter()` also drops any
-  already-saved-but-now-disallowed movement from `movementPrefs.movements`
-  itself (falling back to "everything still allowed" if that would leave
-  fewer than `MIN_MOVEMENTS`), called on load and on every settings change.
-  Only excludes the affected ARM's movements, legs are untouched - client
-  named "nur einen Arm" specifically; whether leg-only or combined
-  variants are wanted too is an open question, not guessed at.
+- **Bewegungseinschränkung** (`armLimb`: `none`/`armL`/`armR`, `legLimb`:
+  `none`/`legL`/`legR` - two INDEPENDENT settings, added 2026-09-28 as a
+  split of what was originally one shared `limb` field covering only arms;
+  the client asked directly for all 4 extremities to be named, and
+  `MOVEMENTS` already had `legL-heben`/`legL-strecken`/`legR-heben`/
+  `legR-strecken` entries and full pictogram support (`FIGURE_LIMB`'s
+  `legLeft`/`legRight` slots) sitting unused for exactly this - so this was
+  wiring up an existing gap, not building new exercises. Splitting into two
+  fields rather than one shared 4-way choice lets arm and leg restrictions
+  combine (e.g. "nur rechter Arm" + "nur linkes Bein" at the same time),
+  which a single field couldn't express. `loadMasterPrefs()` migrates a
+  pre-existing saved `limb` value into `armLimb` on first load after the
+  update, then discards the old key. Both filter Movement's `MOVEMENTS`
+  pool everywhere it's built from (`movementAllowedByLimb()`) - both the
+  picker (`renderMovementPickerChips()`, rebuilt whenever either setting
+  changes so a now-disallowed chip never even appears) and the actual play
+  pool (reads through the already-filtered `movementPrefs.movements`, so no
+  second filter needed at play time). `applyMovementLimbFilter()` also
+  drops any already-saved-but-now-disallowed movement from
+  `movementPrefs.movements` itself (falling back to "everything still
+  allowed" if that would leave fewer than `MIN_MOVEMENTS`), called on load
+  and on every settings change.
 - **Trainings-Code-Verlauf**: every successful code lookup
   (`openProgramIntro()`, regardless of which of the four programme/bundle
   types it resolves to) calls `recordCodeUsage(code)`, which upserts
@@ -1204,6 +1213,42 @@ the info sheet instead, which then blocked further clicks as an overlay) -
 `.ca-plus-btn` for that. The general Kombi-builder's own `.combo-add-btn`
 grid (`#comboScreen`, a different function/screen) is untouched - still a
 single button that adds directly, no info-vs-add split there.
+
+**Vorbereitungszeit, Cool-down, Pause-zwischen-Sätzen as Feineinstellungen
+(added 2026-09-28)**: all three now live in `#workoutCircuitAdvanced` as
+sliders, for the client's own self-built Zirkel only (`workoutCircuitPrefs`
+- coach-authored `tabata`/`reps` plan blocks are untouched, see below).
+- **Vorbereitungszeit** (`workoutCircuitPrefs.prepS`, 3-30s, default 5):
+  the length of the "Bereit machen" start countdown before the first
+  exercise. `buildCircuitSchedule(block, prepS, cooldownS)` gained two
+  optional parameters (both default when omitted) instead of hardcoding
+  the pre-existing `TABATA_PREP_S` constant into the schedule - so
+  `startCircuitBlock()` (the self-built Zirkel's own start path) passes
+  `workoutCircuitPrefs.prepS`/`.cooldownS`, while `startTabataBlock()`
+  (coach-authored single-exercise `tabata` blocks, a separate call site)
+  calls it with no third/fourth argument and gets the original fixed
+  5s/0s behaviour - a coach already chose those timings deliberately,
+  they're not meant to be client-adjustable.
+- **Cool-down** (`workoutCircuitPrefs.cooldownS`, 0-120s step 5, default 0
+  = "Aus"/no cooldown at all): an optional quiet phase appended after the
+  very last set, before the done panel. `buildCircuitSchedule` only pushes
+  a `type: "cooldown"` schedule frame when `cooldownS > 0`; `circuitTick`
+  shows the last exercise's icon/name (for a calm reference point, not as
+  something to actively perform) under a "Cool-down" / "Gleich geschafft"
+  label, reusing the existing `phase-rest` styling.
+- **Pause zwischen Sätzen** (`workoutCircuitPrefs.setRestS`): existed
+  already as a 3-choice row (20/30/60s) directly on the main ready screen;
+  moved into Feineinstellungen as a slider (10-120s step 5) instead, for
+  finer control alongside the two new settings above and consistent with
+  how "Standard-Dauer für neu hinzugefügte Übungen" already works there.
+  Still hidden whenever `sets <= 1` (unchanged behaviour, just relocated)
+  - `#workoutCircuitSetRestGroup` moved bodily into
+  `#workoutCircuitAdvanced .advanced-body`. The old `data-wo-setrest`
+  choice buttons are gone; `#workoutCircuitSetRestSlider` replaces them.
+
+None of prepS/cooldownS/setRestS are saved per named preset ("gespeicherter
+Zirkel") - like `defaultWorkS`, they're one shared preference across every
+self-built circuit, not part of a saved circuit's own identity.
 
 ## Geplant: Ziel-/Signalfarbe pro Übung (noch nicht gebaut, 2026-09-27)
 

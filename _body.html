@@ -2686,15 +2686,6 @@
     </div>
   </div>
 
-  <div class="group" id="workoutCircuitSetRestGroup" hidden>
-    <div class="group-label">Pause zwischen S&auml;tzen</div>
-    <div class="choice-row" id="workoutCircuitSetRestRow">
-      <button class="choice" data-wo-setrest="20">20 s</button>
-      <button class="choice" data-wo-setrest="30">30 s</button>
-      <button class="choice" data-wo-setrest="60">60 s</button>
-    </div>
-  </div>
-
   <details class="advanced" id="workoutCircuitAdvanced">
     <summary>Feineinstellungen</summary>
     <div class="advanced-body">
@@ -2705,6 +2696,32 @@
           <span class="slider-value" id="workoutCircuitDefaultWorkValue">15 s</span>
         </div>
         <div class="group-help">Gilt nur f&uuml;r neue &Uuml;bungen &ndash; schon hinzugef&uuml;gte &auml;nderst du einzeln mit den +/&minus;-Kn&ouml;pfen.</div>
+      </div>
+
+      <div class="group" id="workoutCircuitSetRestGroup" hidden>
+        <div class="group-label">Pause zwischen S&auml;tzen</div>
+        <div class="slider-row">
+          <input type="range" id="workoutCircuitSetRestSlider" min="10" max="120" step="5" aria-label="Pause zwischen S&auml;tzen">
+          <span class="slider-value" id="workoutCircuitSetRestValue">30 s</span>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-label">Vorbereitungszeit (Start-Countdown)</div>
+        <div class="slider-row">
+          <input type="range" id="workoutCircuitPrepSlider" min="3" max="30" step="1" aria-label="Vorbereitungszeit">
+          <span class="slider-value" id="workoutCircuitPrepValue">5 s</span>
+        </div>
+        <div class="group-help">So lange z&auml;hlt der Countdown &bdquo;Bereit machen&ldquo;, bevor die erste &Uuml;bung losgeht.</div>
+      </div>
+
+      <div class="group">
+        <div class="group-label">Cool-down</div>
+        <div class="slider-row">
+          <input type="range" id="workoutCircuitCooldownSlider" min="0" max="120" step="5" aria-label="Cool-down">
+          <span class="slider-value" id="workoutCircuitCooldownValue">Aus</span>
+        </div>
+        <div class="group-help">Optionale ruhige Phase ganz am Ende, nach dem letzten Satz. Bei 0 s entf&auml;llt sie.</div>
       </div>
     </div>
   </details>
@@ -4223,13 +4240,22 @@
     </div>
 
     <div class="group">
-      <div class="group-label">Bewegungseinschr&auml;nkung</div>
-      <div class="choice-row" id="masterLimbRow">
-        <button class="choice" data-master-limb="none">Keine</button>
-        <button class="choice" data-master-limb="armL">Nur linker Arm</button>
-        <button class="choice" data-master-limb="armR">Nur rechter Arm</button>
+      <div class="group-label">Bewegungseinschr&auml;nkung &ndash; Arme</div>
+      <div class="choice-row" id="masterArmLimbRow">
+        <button class="choice" data-master-arm-limb="none">Keine</button>
+        <button class="choice" data-master-arm-limb="armL">Nur linker Arm</button>
+        <button class="choice" data-master-arm-limb="armR">Nur rechter Arm</button>
       </div>
-      <div class="group-help">Blendet bei Movement die &Uuml;bungen f&uuml;r den jeweils anderen Arm aus &ndash; muss dann nicht mehr pro Training neu eingestellt werden.</div>
+    </div>
+
+    <div class="group">
+      <div class="group-label">Bewegungseinschr&auml;nkung &ndash; Beine</div>
+      <div class="choice-row" id="masterLegLimbRow">
+        <button class="choice" data-master-leg-limb="none">Keine</button>
+        <button class="choice" data-master-leg-limb="legL">Nur linkes Bein</button>
+        <button class="choice" data-master-leg-limb="legR">Nur rechtes Bein</button>
+      </div>
+      <div class="group-help">Blendet bei Movement die &Uuml;bungen f&uuml;r die jeweils andere Seite aus &ndash; muss dann nicht mehr pro Training neu eingestellt werden. Arme und Beine lassen sich unabh&auml;ngig voneinander einschr&auml;nken.</div>
     </div>
 
     <div class="group">
