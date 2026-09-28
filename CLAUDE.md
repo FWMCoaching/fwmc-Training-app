@@ -3374,6 +3374,71 @@ doesn't:
   controlled scientific variable this task exists to isolate). Pause/resume
   uses the same scheduleXTimer-remaining-delay trick as Posner/Flanker/
   Go-No-Go. Test: `tests/alarm_test.py`.
+- **Vorlaufzeit-Test (Foreperiod-Effekt)** (twenty-first autonomous entry,
+  2026-09-28): built from the "Recherche-Backlog: 20 Kandidaten" list
+  (candidate #18) rather than fresh research this round. Grounded in Niemi
+  & Näätänen (1981, Psychological Bulletin, "Foreperiod and simple reaction
+  time" - the "expectancy hypothesis": across a trial-to-trial VARYING
+  wait, a person builds a moment-by-moment expectancy of when the stimulus
+  will arrive, and RT typically drops as the foreperiod stretches on
+  without the stimulus yet appearing, since the conditional probability of
+  "it's about to happen NOW" keeps rising the longer the wait has already
+  lasted). A single, always-present warning cue (the centre dot turning
+  from a hollow outline to a steady "armed" border) is followed by the
+  actual go signal (the dot filling in solid green) after a foreperiod that
+  varies randomly trial-to-trial across five fixed steps spanning the
+  classic 500-4000ms range (`VORLAUF_FOREPERIODS_MS = [500, 1000, 1750,
+  2750, 4000]`); the client taps anywhere on the stage the instant the dot
+  fills in - a single, plain reaction, no categorisation of any kind.
+  Reports the mean RT per foreperiod bin plus the actual outcome measure
+  this paradigm exists to surface: the "Erwartungseffekt" (Ø RT at the two
+  shortest foreperiods minus Ø RT at the two longest), expected positive
+  per the expectancy hypothesis - responses should get FASTER the longer
+  the wait has already lasted, not slower. A tap during the "armed" wait
+  itself (before the dot actually fills in) is the classic foreperiod
+  anticipation/false-start error, tracked and excluded from the RT
+  averages rather than scored as an implausibly fast hit.
+  `vorlaufPrefs.length` (kurz/mittel/lang = 4/6/8 reps per foreperiod, so
+  20/30/40 total trials) is the only client-facing setting, same "length,
+  no natural difficulty dial" shape as Suchtest/UFOV/Hick, since the
+  foreperiod range itself is the fixed scientific manipulation, not
+  something to make easier/harder. `VORLAUF_BEST_KEY` tracks the LOWEST
+  overall mean RT per length (lower-is-better, same shape as UFOV/Hick/
+  Regelwechsel-Test/Gegenrichtungs-Test). Background colour/intensity WAS
+  included (`vorlaufPrefs.bgColorKey`/`bgIntensity`, `makeBgApplier`/
+  `wireBgIntensityControl` on both the ready screen and the pause overlay)
+  - basically free, and unlike Subitizing-Test's plain-dot-count judgment,
+  a background tint sitting behind this task's own colour-coded dot states
+  doesn't compete with anything being judged. Genuinely distinct from the
+  just-built Alarmierungs-Test despite both being foreperiod-based: Alarm's
+  foreperiod is held FIXED (500ms) and the manipulated variable is whether
+  a non-spatial warning cue occurs AT ALL (cued vs. uncued, isolating the
+  alerting network's benefit); here the SAME warning cue is present on
+  every single trial and the manipulated variable is instead the LENGTH of
+  the wait itself, varied continuously across five steps - this is the
+  only exercise on the whole tab whose independent variable is a
+  continuously-varying TIME INTERVAL, reported as a mean-RT-per-interval
+  curve rather than a single cued/uncued difference score (the same
+  distinction already anticipated in this candidate's own backlog
+  write-up). No Bei-Fehler/Zusatzaufgabe/Trainingsmodus - correctly
+  skipped per the "optional, skip what doesn't fit in an hour" guidance,
+  same reasoning as every other fixed-trial RT/effect exercise on this
+  tab. Self-paced per trial (tap ends it immediately once the target
+  appears) with a `VORLAUF_RESPONSE_TIMEOUT_MS = 2000` safety-net timeout
+  for an unanswered trial, same shape as Suchtest/Hick/Regelwechsel-Test's
+  own always-clear-pending-timer pattern; a real bug caught and fixed
+  during testing (not shipped broken): the first draft advanced to the
+  next trial SYNCHRONOUSLY on tap, which cleared the dot's just-set
+  feedback class (`falsestart`/`missed`) in the very same tick before it
+  could ever actually render - fixed with a `VORLAUF_FEEDBACK_MS = 400`
+  pause before advancing, the same lesson Suchtest's own
+  `SEARCH_FEEDBACK_MS` already encodes for exactly this class of
+  self-paced-task bug. Pause/resume uses the same scheduleXTimer-
+  remaining-delay trick as every other Test entry. New CSS is
+  `.vorlauf-*` (fixed hex colours throughout, no `var(--...)`); a single
+  circular dot with four visual states (base/armed/target/falsestart/
+  missed) rather than Alarm/Posner/Simon's two-box layout, since there's
+  only ever one response location here. Test: `tests/vorlauf_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 

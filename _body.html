@@ -696,6 +696,11 @@
       <span class="fc-desc">Manchmal blitzt das Fadenkreuz kurz auf, bevor links oder rechts ein Punkt erscheint &ndash; manchmal auch nicht. Tippe so schnell wie m&ouml;glich auf die Seite, auf der der Punkt auftaucht. Misst, wie sehr ein einfacher Warnreiz deine Reaktion beschleunigt (Alerting-Netzwerk, Attention Network Test).</span>
       <span class="fc-meta" id="alarmBestHint"></span>
     </button>
+    <button class="featured-card" id="vorlaufOpenBtn">
+      <span class="fc-title">Vorlaufzeit-Test</span>
+      <span class="fc-desc">Ein Punkt in der Mitte wird zuerst nur umrandet (Achtung, gleich geht's los), dann f&uuml;llt er sich &ndash; die Wartezeit dazwischen ist jedes Mal anders, mal kurz, mal lang. Tippe, sobald sich der Punkt f&uuml;llt, aber nicht fr&uuml;her. Misst, wie sich deine Erwartung mit l&auml;ngerem Warten aufbaut (Foreperiod-Effekt, Niemi &amp; N&auml;&auml;t&auml;nen 1981).</span>
+      <span class="fc-meta" id="vorlaufBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -974,6 +979,43 @@
   <div class="group-help" id="alarmReadyBestHint"></div>
 
   <button class="start-btn" id="alarmReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="vorlaufReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="vorlaufReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Vorlaufzeit-Test</h1>
+  <p class="page-sub">Ein Punkt in der Mitte zeigt zuerst nur einen festen Rand (Achtung-Signal), dann f&uuml;llt er sich komplett &ndash; das ist dein Zeichen, sofort irgendwo auf den Bildschirm zu tippen. Die Wartezeit zwischen Achtung-Signal und F&uuml;llung wechselt von Durchgang zu Durchgang zuf&auml;llig zwischen kurz und lang. Tippe NICHT, solange der Punkt nur umrandet ist &ndash; das z&auml;hlt als Fehlstart. Grundlage: der Vorlaufzeit-Effekt (Foreperiod-Effekt, Niemi &amp; N&auml;&auml;t&auml;nen, 1981) &ndash; je l&auml;nger die Wartezeit schon dauert, desto mehr Erwartung baut sich auf und desto schneller f&auml;llt die Reaktion meist aus.</p>
+
+  <div class="group">
+    <div class="group-label">L&auml;nge</div>
+    <div class="choice-row" id="vorlaufLengthRow">
+      <button class="choice" data-vorlauf-length="kurz">Kurz<small>20 Durchg&auml;nge</small></button>
+      <button class="choice" data-vorlauf-length="mittel">Mittel<small>30 Durchg&auml;nge</small></button>
+      <button class="choice" data-vorlauf-length="lang">Lang<small>40 Durchg&auml;nge</small></button>
+    </div>
+  </div>
+
+  <details class="advanced" id="vorlaufAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="vorlaufBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="vorlaufBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="vorlaufBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="vorlaufBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
+
+  <div class="group-help" id="vorlaufReadyBestHint"></div>
+
+  <button class="start-btn" id="vorlaufReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="simonReady" hidden>
@@ -3571,6 +3613,49 @@
     <div class="rating" id="alarmRating"></div>
     <button class="again" id="alarmAgainBtn">Nochmal</button>
     <button class="back" id="alarmDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="vorlaufPlayer" hidden>
+  <div class="vorlauf-stage" id="vorlaufStage">
+    <div class="remember-hint" id="vorlaufHint"></div>
+    <button class="vorlauf-tapzone" id="vorlaufTapzone" aria-label="Tippen, sobald sich der Punkt f&uuml;llt">
+      <span class="vorlauf-dot" id="vorlaufDot"></span>
+    </button>
+  </div>
+  <div class="pause-overlay" id="vorlaufPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="vorlaufPauseBgValue"></span></div>
+        <input type="range" id="vorlaufPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="vorlaufPauseBgColorPicker"></div>
+      </div>
+      <button class="start-btn" id="vorlaufResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="vorlaufPlayerBar">
+    <button id="vorlaufBackBtn">&#10005; Beenden</button>
+    <button id="vorlaufPauseBtn">Pause</button>
+    <span class="player-status" id="vorlaufProgressEl"></span>
+    <button id="vorlaufFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="vorlaufFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="vorlaufFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="vorlaufFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="vorlaufDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="vorlaufDoneSummary"></p>
+    <div class="rating" id="vorlaufRating"></div>
+    <button class="again" id="vorlaufAgainBtn">Nochmal</button>
+    <button class="back" id="vorlaufDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

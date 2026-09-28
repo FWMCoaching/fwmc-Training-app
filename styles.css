@@ -917,6 +917,17 @@ body.cvd-rotgruen .gng-stimulus.nogo{background:#e65100;border-color:#a53d00}
 .subitize-key.correct{background:#2e7d32;color:#fff}
 .subitize-key.wrong{background:#d32f2f;color:#fff}
 
+.vorlauf-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px}
+.vorlauf-tapzone{width:220px;height:220px;border-radius:50%;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.vorlauf-dot{
+  width:90px;height:90px;border-radius:50%;background:#e5f1f4;border:5px solid #8a97a3;
+  transition:background .08s ease,border-color .08s ease,transform .08s ease;
+}
+.vorlauf-dot.armed{border-color:#16232a}
+.vorlauf-dot.target{background:#2e7d32;border-color:#1b5e20;transform:scale(1.15)}
+.vorlauf-dot.falsestart{background:#d32f2f;border-color:#8e1c1c}
+.vorlauf-dot.missed{background:#8a97a3;border-color:#5b6670}
+
 .corsi-stage{flex:1;position:relative;overflow:hidden}
 .corsi-block{
   position:absolute;transform:translate(-50%,-50%);

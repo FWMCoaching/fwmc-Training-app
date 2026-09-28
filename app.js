@@ -1443,6 +1443,19 @@
     alarmFsBtn: $("alarmFsBtn"), alarmFsHint: $("alarmFsHint"), alarmFsHintOpenBtn: $("alarmFsHintOpenBtn"), alarmFsHintClose: $("alarmFsHintClose"),
     alarmDonePanel: $("alarmDonePanel"), alarmDoneSummary: $("alarmDoneSummary"), alarmRating: $("alarmRating"),
     alarmAgainBtn: $("alarmAgainBtn"), alarmDoneBackBtn: $("alarmDoneBackBtn"),
+    vorlaufOpenBtn: $("vorlaufOpenBtn"), vorlaufBestHint: $("vorlaufBestHint"), vorlaufReady: $("vorlaufReady"),
+    vorlaufReadyBackToHome: $("vorlaufReadyBackToHome"), vorlaufLengthRow: $("vorlaufLengthRow"),
+    vorlaufBgColorPicker: $("vorlaufBgColorPicker"), vorlaufBgIntensitySlider: $("vorlaufBgIntensitySlider"),
+    vorlaufBgIntensityValue: $("vorlaufBgIntensityValue"), vorlaufBgContrastHint: $("vorlaufBgContrastHint"),
+    vorlaufReadyBestHint: $("vorlaufReadyBestHint"), vorlaufReadyStartBtn: $("vorlaufReadyStartBtn"),
+    vorlaufPlayer: $("vorlaufPlayer"), vorlaufStage: $("vorlaufStage"), vorlaufHint: $("vorlaufHint"),
+    vorlaufTapzone: $("vorlaufTapzone"), vorlaufDot: $("vorlaufDot"),
+    vorlaufPauseOverlay: $("vorlaufPauseOverlay"), vorlaufResumeBtn: $("vorlaufResumeBtn"),
+    vorlaufPauseBgSlider: $("vorlaufPauseBgSlider"), vorlaufPauseBgValue: $("vorlaufPauseBgValue"), vorlaufPauseBgColorPicker: $("vorlaufPauseBgColorPicker"),
+    vorlaufPlayerBar: $("vorlaufPlayerBar"), vorlaufBackBtn: $("vorlaufBackBtn"), vorlaufPauseBtn: $("vorlaufPauseBtn"), vorlaufProgressEl: $("vorlaufProgressEl"),
+    vorlaufFsBtn: $("vorlaufFsBtn"), vorlaufFsHint: $("vorlaufFsHint"), vorlaufFsHintOpenBtn: $("vorlaufFsHintOpenBtn"), vorlaufFsHintClose: $("vorlaufFsHintClose"),
+    vorlaufDonePanel: $("vorlaufDonePanel"), vorlaufDoneSummary: $("vorlaufDoneSummary"), vorlaufRating: $("vorlaufRating"),
+    vorlaufAgainBtn: $("vorlaufAgainBtn"), vorlaufDoneBackBtn: $("vorlaufDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
@@ -1669,7 +1682,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3793,6 +3806,7 @@
     els.stroopPlayer.hidden = true;
     els.subitizePlayer.hidden = true;
     els.alarmPlayer.hidden = true;
+    els.vorlaufPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.programVideoPlayer.hidden = true;
     els.programVideoEl.pause();
@@ -10704,6 +10718,332 @@
   els.alarmAgainBtn.addEventListener("click", () => { els.alarmDonePanel.hidden = true; startAlarmGame(); });
   els.alarmDoneBackBtn.addEventListener("click", () => { els.alarmPlayer.hidden = true; els.alarmDonePanel.hidden = true; showScreen("testHome"); });
   wireFullscreen({ player: els.alarmPlayer, btn: els.alarmFsBtn, hint: els.alarmFsHint, hintOpen: els.alarmFsHintOpenBtn, hintClose: els.alarmFsHintClose });
+
+  // ==== Test-Bereich: Vorlaufzeit-Test (Foreperiod-Effekt) ====
+  // Twenty-first autonomous entry, picked from the "Recherche-Backlog: 20
+  // Kandidaten" list (candidate #18) rather than fresh research this round.
+  // Grounded in the foreperiod effect in simple reaction time (Niemi &
+  // Näätänen, 1981, Psychological Bulletin, "Foreperiod and simple reaction
+  // time" - the "expectancy hypothesis": across a trial-to-trial VARYING
+  // wait, a person builds a moment-by-moment expectancy of when the
+  // stimulus will arrive, and RT typically drops as the foreperiod
+  // stretches on without the stimulus yet appearing, since the conditional
+  // probability of "it's about to happen NOW" keeps rising the longer the
+  // wait has already lasted).
+  // A single, always-present warning cue (the centre dot turning from a
+  // hollow outline to a steady, solid-bordered "armed" look) is followed by
+  // the actual go signal (the dot filling in) after a foreperiod that
+  // varies randomly trial-to-trial across five fixed steps spanning the
+  // classic 500-4000ms range (`VORLAUF_FOREPERIODS_MS`); the client taps
+  // anywhere on the stage the instant the dot fills in - a single, plain
+  // reaction, no categorisation of any kind. Reports the mean RT per
+  // foreperiod bin plus the actual outcome measure this paradigm exists to
+  // surface: the "Erwartungseffekt" (Ø RT at the two shortest foreperiods
+  // minus Ø RT at the two longest), expected positive per the expectancy
+  // hypothesis - responses should get FASTER the longer the wait has
+  // already lasted, not slower. A tap during the "armed" wait itself
+  // (before the dot actually fills in) is a classic anticipation/false
+  // start, tracked and excluded from the RT averages rather than scored as
+  // a fast response.
+  // Genuinely distinct from every existing Test/NAT mechanic, including the
+  // just-built Alarmierungs-Test just above: Alarm's foreperiod is held
+  // FIXED (500ms) and the manipulated variable is whether a non-spatial
+  // warning cue occurs AT ALL (cued vs. uncued, isolating the alerting
+  // network's benefit); here the SAME warning cue is present on every
+  // single trial and the manipulated variable is instead the length of the
+  // wait itself, varied continuously across five steps - this is the only
+  // exercise on the whole tab whose independent variable is a continuously-
+  // varying TIME INTERVAL, reported as a mean-RT-per-interval curve rather
+  // than a single cued/uncued difference score.
+  const VORLAUF_PREFS_KEY = "fwmc-vorlauf-prefs-v1";
+  const VORLAUF_FOREPERIODS_MS = [500, 1000, 1750, 2750, 4000];
+  const VORLAUF_LENGTHS = {
+    kurz: { title: "Kurz", repsPerFp: 4 },
+    mittel: { title: "Mittel", repsPerFp: 6 },
+    lang: { title: "Lang", repsPerFp: 8 },
+  };
+  const VORLAUF_ISI_MIN = 700;
+  const VORLAUF_ISI_MAX = 1200;
+  const VORLAUF_RESPONSE_TIMEOUT_MS = 2000;
+  // A brief pause after each trial's outcome (hit/false start/missed) so the
+  // dot's feedback colour is actually visible before the next trial clears
+  // it - without this, a self-paced immediate advance would clear the
+  // just-set class in the same tick, same lesson already learned building
+  // Suchtest's own SEARCH_FEEDBACK_MS.
+  const VORLAUF_FEEDBACK_MS = 400;
+  const vorlaufPrefs = { length: "mittel", bgColorKey: "blau", bgIntensity: 0 };
+  function loadVorlaufPrefs() {
+    const saved = readJSON(VORLAUF_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(vorlaufPrefs, saved);
+    if (!VORLAUF_LENGTHS[vorlaufPrefs.length]) vorlaufPrefs.length = "mittel";
+    if (!STROOP_COLOR_BY_KEY[vorlaufPrefs.bgColorKey]) vorlaufPrefs.bgColorKey = "blau";
+    if (typeof vorlaufPrefs.bgIntensity !== "number" || vorlaufPrefs.bgIntensity < 0 || vorlaufPrefs.bgIntensity > 1) vorlaufPrefs.bgIntensity = 0;
+  }
+  loadVorlaufPrefs();
+  function saveVorlaufPrefsToStorage() { writeJSON(VORLAUF_PREFS_KEY, vorlaufPrefs); }
+
+  const applyVorlaufBg = makeBgApplier(els.vorlaufStage, vorlaufPrefs);
+  const syncVorlaufBgUI = wireBgIntensityControl(vorlaufPrefs, {
+    pickers: [els.vorlaufBgColorPicker, els.vorlaufPauseBgColorPicker],
+    sliders: [els.vorlaufBgIntensitySlider, els.vorlaufPauseBgSlider],
+    valueEls: [els.vorlaufBgIntensityValue, els.vorlaufPauseBgValue],
+    hintEls: [els.vorlaufBgContrastHint],
+  }, () => { saveVorlaufPrefsToStorage(); applyVorlaufBg(); });
+
+  const VORLAUF_BEST_KEY = "fwmc-vorlauf-best-v1"; // { [length]: bestMeanRtMs } - lower is better
+  function vorlaufBestFor() { return readJSON(VORLAUF_BEST_KEY, {})[vorlaufPrefs.length] || null; }
+  function saveVorlaufBest(meanRt) {
+    const all = readJSON(VORLAUF_BEST_KEY, {});
+    if (all[vorlaufPrefs.length] == null || meanRt < all[vorlaufPrefs.length]) { all[vorlaufPrefs.length] = meanRt; writeJSON(VORLAUF_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderVorlaufBest() {
+    const best = vorlaufBestFor();
+    const text = best ? `Beste Ø-Reaktionszeit (${VORLAUF_LENGTHS[vorlaufPrefs.length].title}): ${best} ms` : "";
+    els.vorlaufBestHint.textContent = text;
+    els.vorlaufReadyBestHint.textContent = text;
+  }
+  function syncVorlaufLengthUI() {
+    els.vorlaufLengthRow.querySelectorAll("[data-vorlauf-length]").forEach((btn) => setActive(btn, btn.dataset.vorlaufLength === vorlaufPrefs.length));
+  }
+  els.vorlaufLengthRow.querySelectorAll("[data-vorlauf-length]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      vorlaufPrefs.length = btn.dataset.vorlaufLength;
+      saveVorlaufPrefsToStorage();
+      syncVorlaufLengthUI();
+      renderVorlaufBest();
+    });
+  });
+
+  els.vorlaufOpenBtn.addEventListener("click", () => {
+    syncVorlaufLengthUI();
+    syncVorlaufBgUI();
+    renderVorlaufBest();
+    showScreen("vorlaufReady");
+  });
+  els.vorlaufReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Same timer-wrapping trick as scheduleAlarmTimer/schedulePosnerTimer.
+  function scheduleVorlaufTimer(fn, delayMs) {
+    vorlaufState.timerFn = fn;
+    vorlaufState.timerFiresAt = performance.now() + delayMs;
+    vorlaufState.timer = setTimeout(() => { vorlaufState.timer = null; fn(); }, delayMs);
+  }
+
+  function buildVorlaufTrials(repsPerFp) {
+    const trials = [];
+    VORLAUF_FOREPERIODS_MS.forEach((fp) => { for (let i = 0; i < repsPerFp; i++) trials.push({ fp }); });
+    // Shuffle, then avoid more than 2 identical foreperiods back to back -
+    // with 5 discrete levels a short run is unremarkable, but a longer one
+    // would let the client settle into a single-interval rhythm instead of
+    // genuinely re-forming an expectancy each trial.
+    for (let tries = 0; tries < 200; tries++) {
+      for (let i = trials.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [trials[i], trials[j]] = [trials[j], trials[i]];
+      }
+      let ok = true, run = 1;
+      for (let i = 1; i < trials.length; i++) {
+        run = trials[i].fp === trials[i - 1].fp ? run + 1 : 1;
+        if (run > 2) { ok = false; break; }
+      }
+      if (ok) break;
+    }
+    return trials;
+  }
+
+  function vorlaufClearDot() {
+    els.vorlaufDot.classList.remove("armed", "target", "falsestart", "missed");
+  }
+
+  let vorlaufState = null;
+  function startVorlaufGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.vorlaufPlayer.hidden = false;
+    els.vorlaufPlayerBar.hidden = false;
+    els.vorlaufDonePanel.hidden = true;
+    els.vorlaufPauseOverlay.hidden = true;
+    els.vorlaufPauseBtn.hidden = false;
+    const lengthCfg = VORLAUF_LENGTHS[vorlaufPrefs.length];
+    vorlaufState = {
+      length: vorlaufPrefs.length, trials: buildVorlaufTrials(lengthCfg.repsPerFp), index: -1, phase: "gap", responded: false,
+      results: [], falseStarts: 0, missed: 0,
+      stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      startTime: performance.now(),
+    };
+    applyVorlaufBg();
+    vorlaufClearDot();
+    els.vorlaufHint.textContent = "Bereit? Gleich geht's los …";
+    els.vorlaufProgressEl.textContent = `0/${vorlaufState.trials.length}`;
+    requestWakeLock();
+    scheduleVorlaufTimer(vorlaufNextTrial, 1200);
+  }
+  els.vorlaufReadyStartBtn.addEventListener("click", startVorlaufGame);
+
+  function vorlaufNextTrial() {
+    if (!vorlaufState) return;
+    vorlaufState.index++;
+    if (vorlaufState.index >= vorlaufState.trials.length) { vorlaufFinish(); return; }
+    els.vorlaufProgressEl.textContent = `${vorlaufState.index + 1}/${vorlaufState.trials.length}`;
+    vorlaufState.phase = "gap";
+    vorlaufState.responded = false;
+    vorlaufClearDot();
+    const isi = VORLAUF_ISI_MIN + Math.random() * (VORLAUF_ISI_MAX - VORLAUF_ISI_MIN);
+    scheduleVorlaufTimer(vorlaufArmTrial, isi);
+  }
+  function vorlaufArmTrial() {
+    if (!vorlaufState) return;
+    const trial = vorlaufState.trials[vorlaufState.index];
+    vorlaufState.phase = "armed";
+    els.vorlaufHint.textContent = "";
+    els.vorlaufDot.classList.add("armed");
+    scheduleVorlaufTimer(vorlaufShowTarget, trial.fp);
+  }
+  function vorlaufShowTarget() {
+    if (!vorlaufState) return;
+    vorlaufState.phase = "responding";
+    vorlaufState.responded = false;
+    vorlaufState.stimAt = performance.now();
+    els.vorlaufDot.classList.remove("armed");
+    els.vorlaufDot.classList.add("target");
+    scheduleVorlaufTimer(vorlaufEndTrial, VORLAUF_RESPONSE_TIMEOUT_MS);
+  }
+  function vorlaufEndTrial() {
+    if (!vorlaufState) return;
+    if (vorlaufState.phase === "responding" && !vorlaufState.responded) {
+      vorlaufState.missed++;
+      els.vorlaufDot.classList.remove("target");
+      els.vorlaufDot.classList.add("missed");
+      els.vorlaufHint.textContent = "Verpasst!";
+    }
+    vorlaufState.phase = "gap";
+    // A short feedback pause before clearing the dot's state - see
+    // VORLAUF_FEEDBACK_MS above.
+    scheduleVorlaufTimer(vorlaufNextTrial, VORLAUF_FEEDBACK_MS);
+  }
+  function vorlaufTap() {
+    if (!vorlaufState || vorlaufState.paused) return;
+    if (vorlaufState.phase === "armed") {
+      // A tap during the wait itself, before the dot actually fills in -
+      // the classic foreperiod anticipation/false-start error. Excluded
+      // from the RT averages rather than scored as an implausibly fast hit.
+      if (vorlaufState.timer) clearTimeout(vorlaufState.timer);
+      vorlaufState.falseStarts++;
+      vorlaufState.phase = "gap";
+      els.vorlaufDot.classList.remove("armed");
+      els.vorlaufDot.classList.add("falsestart");
+      els.vorlaufHint.textContent = "Zu früh!";
+      scheduleVorlaufTimer(vorlaufNextTrial, VORLAUF_FEEDBACK_MS);
+      return;
+    }
+    if (vorlaufState.phase !== "responding" || vorlaufState.responded) return;
+    if (vorlaufState.timer) clearTimeout(vorlaufState.timer);
+    vorlaufState.responded = true;
+    const rt = performance.now() - vorlaufState.stimAt;
+    const trial = vorlaufState.trials[vorlaufState.index];
+    vorlaufState.results.push({ fp: trial.fp, rt });
+    vorlaufState.phase = "gap";
+    scheduleVorlaufTimer(vorlaufNextTrial, VORLAUF_FEEDBACK_MS);
+  }
+  els.vorlaufTapzone.addEventListener("click", vorlaufTap);
+
+  // Pause stops/replays the pending timer, same setTimeout trick as
+  // Alarm/Posner/Flanker, plus a live background-adjust overlay.
+  function pauseVorlauf() {
+    if (!vorlaufState || vorlaufState.paused) return;
+    vorlaufState.paused = true;
+    vorlaufState.pausedAt = performance.now();
+    if (vorlaufState.timer) {
+      clearTimeout(vorlaufState.timer);
+      vorlaufState.timer = null;
+      vorlaufState.timerRemainingMs = Math.max(0, vorlaufState.timerFiresAt - vorlaufState.pausedAt);
+    }
+    syncVorlaufBgUI();
+    els.vorlaufPauseBtn.hidden = true;
+    els.vorlaufPauseOverlay.hidden = false;
+  }
+  function resumeVorlauf() {
+    if (!vorlaufState || !vorlaufState.paused) return;
+    const pausedMs = performance.now() - vorlaufState.pausedAt;
+    vorlaufState.startTime += pausedMs;
+    vorlaufState.stimAt += pausedMs;
+    vorlaufState.paused = false;
+    if (vorlaufState.timerFn && vorlaufState.timerRemainingMs != null) {
+      scheduleVorlaufTimer(vorlaufState.timerFn, vorlaufState.timerRemainingMs);
+      vorlaufState.timerRemainingMs = null;
+    }
+    els.vorlaufPauseOverlay.hidden = true;
+    els.vorlaufPauseBtn.hidden = false;
+  }
+  els.vorlaufPauseBtn.addEventListener("click", pauseVorlauf);
+  els.vorlaufResumeBtn.addEventListener("click", resumeVorlauf);
+
+  function finalizeVorlaufRun(state, totalTrials) {
+    els.vorlaufPauseOverlay.hidden = true;
+    els.vorlaufPlayerBar.hidden = true;
+    const rtsByFp = {};
+    VORLAUF_FOREPERIODS_MS.forEach((fp) => { rtsByFp[fp] = []; });
+    state.results.forEach((r) => { if (rtsByFp[r.fp]) rtsByFp[r.fp].push(r.rt); });
+    const avgByFp = {};
+    VORLAUF_FOREPERIODS_MS.forEach((fp) => { avgByFp[fp] = avgOf(rtsByFp[fp]); });
+    const shortFps = VORLAUF_FOREPERIODS_MS.slice(0, 2);
+    const longFps = VORLAUF_FOREPERIODS_MS.slice(-2);
+    const avgShort = avgOf(shortFps.flatMap((fp) => rtsByFp[fp]));
+    const avgLong = avgOf(longFps.flatMap((fp) => rtsByFp[fp]));
+    // The "Erwartungseffekt" itself: how much faster responses got once the
+    // wait had already lasted longer - the actual outcome measure this
+    // paradigm exists to surface.
+    const expectancyEffect = (avgShort != null && avgLong != null) ? (avgShort - avgLong) : null;
+    const overallAvg = avgOf(state.results.map((r) => r.rt));
+    const isRecord = overallAvg != null && saveVorlaufBest(overallAvg);
+    renderVorlaufBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    const fpLine = VORLAUF_FOREPERIODS_MS.map((fp) => `${fp}ms: ${avgByFp[fp] != null ? avgByFp[fp] + "ms" : "–"}`).join(" · ");
+    els.vorlaufDoneSummary.textContent =
+      `Vorlaufzeit-Test (${VORLAUF_LENGTHS[state.length].title}) · Ø ${overallAvg != null ? overallAvg + " ms" : "–"}` +
+      (expectancyEffect != null ? ` · Erwartungseffekt ${expectancyEffect} ms` : "") +
+      (state.falseStarts ? ` · ${state.falseStarts}× zu früh` : "") +
+      (state.missed ? ` · ${state.missed}× verpasst` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "") +
+      ` · ${fpLine}`;
+    const note = `Ø ${overallAvg != null ? overallAvg + " ms" : "–"}` + (expectancyEffect != null ? `, Erwartungseffekt ${expectancyEffect} ms` : "");
+    const id = addHistory({ kind: "vorlauf", title: "Vorlaufzeit-Test", seconds: Math.round(played), note });
+    renderRating(els.vorlaufRating, id, "Wie konzentriert warst du?");
+    els.vorlaufDonePanel.hidden = false;
+  }
+  function vorlaufFinish() {
+    if (!vorlaufState) return;
+    const state = vorlaufState;
+    vorlaufState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.vorlaufPlayer) document.exitFullscreen().catch(() => {});
+    els.vorlaufFsHint.hidden = true;
+    finalizeVorlaufRun(state, state.trials.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise.
+  function vorlaufStop() {
+    if (!vorlaufState) return;
+    if (vorlaufState.timer) clearTimeout(vorlaufState.timer);
+    const state = vorlaufState;
+    vorlaufState = null;
+    els.vorlaufPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.vorlaufPlayer) document.exitFullscreen().catch(() => {});
+    els.vorlaufFsHint.hidden = true;
+    const resolved = state.results.length + state.falseStarts + state.missed;
+    if (resolved >= 4) {
+      finalizeVorlaufRun(state, resolved);
+    } else {
+      els.vorlaufPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.vorlaufBackBtn.addEventListener("click", vorlaufStop);
+  els.vorlaufAgainBtn.addEventListener("click", () => { els.vorlaufDonePanel.hidden = true; startVorlaufGame(); });
+  els.vorlaufDoneBackBtn.addEventListener("click", () => { els.vorlaufPlayer.hidden = true; els.vorlaufDonePanel.hidden = true; showScreen("testHome"); });
+  wireFullscreen({ player: els.vorlaufPlayer, btn: els.vorlaufFsBtn, hint: els.vorlaufFsHint, hintOpen: els.vorlaufFsHintOpenBtn, hintClose: els.vorlaufFsHintClose });
 
   // Rotationstest (Mentale Rotation) - grounded in the classic mental-
   // rotation/character-rotation chronometric paradigm (Cooper & Shepard,
