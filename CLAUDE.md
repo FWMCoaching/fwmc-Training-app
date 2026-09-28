@@ -1025,55 +1025,99 @@ unrelated to the feature being changed.
 
 ## Master-Einstellungen (added 2026-09-27, client's own framing: "wie ein Profil, nur ohne Login")
 
-A gear button (`.master-settings-btn`, one per screen's `.brandbar`, six
-total - same "one shared overlay reachable from everywhere" convention as
-the FAQ sheet) opens `#masterSettingsSheet`, a cross-cutting settings sheet
-so the client doesn't have to re-set the same preference in every
-exercise's own Feineinstellungen. Everything lives in ONE localStorage key
-(`fwmc-master-v1`, `masterPrefs = {colorVision, limb, hearing}`) - the sheet's own
-first line states explicitly that it's local-only (matches the FAQ's
-existing "wo werden meine Trainingsdaten gespeichert" answer), since this
-is exactly the kind of setting a client would reasonably wonder is synced
-somewhere.
+A gear button (`.master-settings-btn`, one per screen's `.brandbar`, seven
+total since Cardio added its own home screen - same "one shared overlay
+reachable from everywhere" convention as the FAQ sheet) opens
+`#masterSettingsSheet`, a cross-cutting settings sheet so the client
+doesn't have to re-set the same preference in every exercise's own
+Feineinstellungen. Everything lives in ONE localStorage key
+(`fwmc-master-v1`) - the sheet's own first line states explicitly that
+it's local-only (matches the FAQ's existing "wo werden meine
+Trainingsdaten gespeichert" answer), since this is exactly the kind of
+setting a client would reasonably wonder is synced somewhere.
 
-- **Farbsehen** (`colorVision`: `normal`/`rotgruen`): today wired to exactly
-  one exercise - Go/No-Go, the only one in the whole app whose stimulus IS a
-  genuine red/green discrimination signal (every other exercise's colour is
-  either neutral or already colour-blind-safe by construction - e.g.
-  Simon's blue/orange dots sit in their own neutral slot box; see the
-  colour-clash audit under Test-Bereich). Applied via a `body.cvd-rotgruen`
-  class (`applyColorVisionMode()`) that lets `styles.css` override just
-  `.gng-stimulus.go`/`.nogo` - reuses Simon's own blue/orange pair rather
-  than inventing a second "safe" pair. **Explicitly not yet wired to every
-  colour-critical exercise** - the sheet's own help text says so
-  ("weitere Übungen folgen, sobald dort die Zielfarbe einstellbar ist").
-  This is the natural home for the "Ziel-/Signalfarbe pro Übung" feature
-  already queued elsewhere in this file (see "Geplant: Ziel-/Signalfarbe
-  pro Übung") once that's built - a colour-vision preset could then set
-  sensible per-exercise pairs automatically instead of a client
-  re-picking colours exercise by exercise.
-- **Bewegungseinschränkung** (`armLimb`: `none`/`armL`/`armR`, `legLimb`:
-  `none`/`legL`/`legR` - two INDEPENDENT settings, added 2026-09-28 as a
-  split of what was originally one shared `limb` field covering only arms;
-  the client asked directly for all 4 extremities to be named, and
-  `MOVEMENTS` already had `legL-heben`/`legL-strecken`/`legR-heben`/
-  `legR-strecken` entries and full pictogram support (`FIGURE_LIMB`'s
-  `legLeft`/`legRight` slots) sitting unused for exactly this - so this was
-  wiring up an existing gap, not building new exercises. Splitting into two
-  fields rather than one shared 4-way choice lets arm and leg restrictions
-  combine (e.g. "nur rechter Arm" + "nur linkes Bein" at the same time),
-  which a single field couldn't express. `loadMasterPrefs()` migrates a
-  pre-existing saved `limb` value into `armLimb` on first load after the
-  update, then discards the old key. Both filter Movement's `MOVEMENTS`
-  pool everywhere it's built from (`movementAllowedByLimb()`) - both the
-  picker (`renderMovementPickerChips()`, rebuilt whenever either setting
-  changes so a now-disallowed chip never even appears) and the actual play
-  pool (reads through the already-filtered `movementPrefs.movements`, so no
-  second filter needed at play time). `applyMovementLimbFilter()` also
-  drops any already-saved-but-now-disallowed movement from
-  `movementPrefs.movements` itself (falling back to "everything still
-  allowed" if that would leave fewer than `MIN_MOVEMENTS`), called on load
-  and on every settings change.
+**"Vorhandene Einschränkungen" redesign (2026-09-28)**: the whole sheet was
+reworked around one explicit client concern - the original single-select
+shape (`colorVision: "normal"/"rotgruen"`, `hearing: "normal"/"gehoerlos"`)
+put a clickable **"Normal" button** next to each restriction, which reads
+as "is having this need not normal" once you sit with the wording - the
+client's own example was pointed: "sind Leute die rot-grün-schwäche haben
+nicht normal?". Fixed by removing the concept entirely, not just the
+label - there is no "Normal"/"Keine" value anywhere in the data model any
+more, no matching UI ever rendered, in either language. Empty selection
+(nothing ticked, `false`) already means "no restriction" on its own, with
+no separate state or button needed to say so. Everything now lives under
+one umbrella group-label, "Vorhandene Einschränkungen", with each category
+below it. The client also asked explicitly for multi-select everywhere
+more than one thing can genuinely apply at once ("genau so wie bei
+mehreren Farbeinschränkungen" - i.e. once colour vision itself became a
+list, extremities needed the same treatment):
+- `masterPrefs = { colorVision: [], restrictedLimbs: [], hearing: false }`.
+  `colorVision` and `restrictedLimbs` are arrays (any combination
+  selected); `hearing` stays a plain boolean (see below for why it wasn't
+  turned into a list too).
+- **Farbsehen** (`colorVision`, `CVD_KEYS = ["rotgruen","blaugelb","voll"]`,
+  `.choice` buttons, click toggles array membership): Rot-Grün-Schwäche
+  already existed; Blau-Gelb-Schwäche (Tritanopie/Tritanomalie) and
+  vollständige Farbenblindheit (Achromatopsie) were added after the client
+  asked to research what else belongs in this category - these three are
+  the standard clinically-recognised groupings; Protanopie/Deuteranomalie
+  etc. are deliberately lumped into the one "Rot-Grün" checkbox since
+  nothing in this app needs to tell protan/deutan apart. Still wired to
+  exactly one exercise - Go/No-Go (`applyColorVisionMode()`, a
+  `body.cvd-rotgruen` class, `styles.css`'s `.gng-stimulus.go`/`.nogo`
+  override, reusing Simon's blue/orange pair) - the two new categories are
+  honestly **collected but not wired to anything yet**, matching the
+  sheet's own pre-existing "weitere Übungen folgen, sobald dort die
+  Zielfarbe einstellbar ist" framing, which now literally applies to two
+  more categories rather than zero.
+  **Follow-up research surfaced a real backlog, not yet acted on**: a
+  focused audit (asked "which exercises have a fixed, non-picker colour
+  pair carrying their actual signal, beyond Go/No-Go") found five more -
+  **Simon-Test** (fixed blue `#1565c0`/orange `#e65100` - notably the SAME
+  pair Go/No-Go's own rotgruen-safe swap reuses, which would itself need a
+  different swap if Blau-Gelb support is ever actually wired up, not just
+  collected), **Stroop · klassisch** (fixed 4-colour set incl. a red/green
+  AND a blue/yellow-ish pair, both the word ink and the 4 answer buttons -
+  not user-configurable, unlike the VT/Zusatzaufgabe colour picker),
+  **Merkspanne-Test** (a fixed 9-colour palette, change-detection is
+  100% colour, any two of the 9 can pair as changed/unchanged by chance),
+  **Suchtest** feature-search mode (red target vs grey distractors,
+  colour-alone pop-out by design), and **Attentional-Blink-Test** (T1's
+  only marker is brand-teal vs ink colour). Plus a systemic pattern
+  spanning nearly every exercise: fixed green `#2e7d32`/red `#d32f2f`
+  correct/wrong feedback after a response, colour-alone with no icon.
+  None of this was touched tonight - it's a real, separately-scoped design
+  problem (choosing genuinely safe replacement palettes across three CVD
+  axes, six-plus exercises) that deserves its own pass, not a rushed
+  addition on top of an already-large night; flagging it here so it isn't
+  lost.
+- **Bewegungseinschränkung** (`restrictedLimbs`, one SHARED multi-select
+  array of `"armL"/"armR"/"legL"/"legR"` tags - was two independent
+  single-select fields, `armLimb`/`legLimb`, before this redesign, itself a
+  split of an even older single shared `limb` field covering only arms).
+  The semantic direction flipped along with the data shape: the old
+  `armLimb: "armL"` meant "only the left arm is usable" (indirect); the new
+  `restrictedLimbs: ["armL"]` means "the left arm is restricted" directly -
+  the client's ask ("Mehrfachauswahl muss auch bei den Extremitäten möglich
+  sein") only makes sense under the direct framing, since "only usable"
+  and "multi-select" contradict each other (you can't have two different
+  arms be the ONE exclusively-usable one). Because `MOVEMENTS`' own
+  `m.limb` tags already use exactly these four strings,
+  `movementAllowedByLimb(m)` collapsed to one membership check
+  (`!masterPrefs.restrictedLimbs.includes(m.limb)`) instead of four
+  separate arm/leg comparisons - unifying the field turned out to simplify
+  the filter, not just the settings UI. Still filters Movement's pool
+  everywhere it's built from (picker + play pool), same as before.
+- **Hören** (`hearing: false`, a single `.checkbox-row` checkbox, no longer
+  a two-value choice): deliberately NOT turned into a multi-select list of
+  hearing-restriction types the way colour vision was - the app's own
+  behaviour never differentiated Schwerhörigkeit from Gehörlosigkeit, it
+  only ever gates "this exercise needs sound" (`exerciseBlockedReason()`),
+  so a list of types would be inert UI, not a real feature; one honest
+  yes/no is what actually does something. Checkbox label deliberately
+  spans both ("Gehörlosigkeit oder eingeschränktes Hören") so a client
+  doesn't have to self-diagnose which exact category before ticking it.
 - **Trainings-Code-Verlauf**: every successful code lookup
   (`openProgramIntro()`, regardless of which of the four programme/bundle
   types it resolves to) calls `recordCodeUsage(code)`, which upserts
@@ -1085,44 +1129,52 @@ somewhere.
   `openProgramIntro()` directly (closing the sheet first), a separate small
   button copies the code to the clipboard. Hidden entirely (not just empty)
   until at least one code has ever been entered.
-- **Exercise compatibility - greyed out + marked, not hidden** (added same
-  day, client's own follow-up: some restrictions ADAPT an exercise, like
-  Farbsehen/Go-No-Go above, but others make one genuinely unusable, and
-  those should stay visible-but-blocked with a note pointing back to
-  Settings, not disappear or silently misbehave). `exerciseBlockedReason
-  (card)` is the one general-purpose check, reusable for future exercises/
-  restrictions: today it only fires for `hearing === "gehoerlos"` against
-  any `.excard` whose EXISTING `data-tags` already includes `"ton"` - VT's
-  own long-standing ton/ohne-ton filter tag, reused rather than a second
-  parallel list, and it turns out only ONE exercise in the entire app
-  ("Sehen & Hören"/cross-modal, VT) is tagged `ton` at all, since Atemtraining's
-  spoken phase cues and Stroop's spoken RESPONSE are both optional/one-way,
-  not a hard hearing requirement. `applyExerciseCompatibility()` toggles an
-  `.incompatible` class (greys it out via CSS) and injects/removes a small
+- **Exercise compatibility - greyed out + marked, not hidden** (client's
+  own follow-up: some restrictions ADAPT an exercise, like Farbsehen/
+  Go-No-Go above, but others make one genuinely unusable, and those should
+  stay visible-but-blocked with a note pointing back to Settings, not
+  disappear or silently misbehave). `exerciseBlockedReason(card)` is the
+  one general-purpose check, reusable for future exercises/restrictions:
+  today it only fires for `masterPrefs.hearing` (now a plain boolean check,
+  no string comparison) against any `.excard` whose EXISTING `data-tags`
+  already includes `"ton"` - VT's own long-standing ton/ohne-ton filter
+  tag, reused rather than a second parallel list, and it turns out only ONE
+  exercise in the entire app ("Sehen & Hören"/cross-modal, VT) is tagged
+  `ton` at all. `applyExerciseCompatibility()` toggles an `.incompatible`
+  class (greys it out via CSS) and injects/removes a small
   `.excard-blocked-note` badge reusing the blocked reason as its text - runs
   once at load and again whenever `masterPrefs.hearing` changes. The
   `.excard` click handler checks `classList.contains("incompatible")` FIRST
   and opens Master-Einstellungen instead of the exercise when true - the
   card itself doubles as the "Verweis auf die Master-Einstellungen" the
-  client asked for, rather than a separate link/tooltip. Farbsehen
-  deliberately has NO entry in `exerciseBlockedReason` - Go/No-Go adapts
-  instead of blocking, so there's currently nothing to grey out for it;
-  a future colour-critical exercise that ISN'T adaptable would need one.
-  Currently only `.excard` (VT's home grid) is wired - Movement's own
-  incompatibility (Bewegungseinschränkung) already handles itself by
-  filtering its pool/picker instead of greying a whole exercise, so it
-  didn't need this same mechanism; if a FUTURE exercise elsewhere in the
-  app (NAT, Test-Bereich) ever needs greying too, generalise
-  `applyExerciseCompatibility()`'s selector rather than duplicating it.
+  client asked for, rather than a separate link/tooltip. Currently only
+  `.excard` (VT's home grid) is wired - Movement's own incompatibility
+  (Bewegungseinschränkung) already handles itself by filtering its
+  pool/picker instead of greying a whole exercise.
+- **Migration**: `loadMasterPrefs()` reads every earlier saved shape
+  (single-string `colorVision`/`hearing`, split `armLimb`/`legLimb`, or the
+  oldest shared `limb` field) and converts each into the new arrays/
+  boolean, then calls `saveMasterPrefs()` immediately at the end of load -
+  a migrated shape lands on disk right away rather than silently staying
+  in the old shape in storage until the client happens to touch some
+  toggle (caught by a Playwright assertion checking `localStorage`
+  directly after a fresh load with old-shape seed data, not by eye - the
+  in-memory state and UI were already correct without this, only the
+  persisted copy was stale).
 
-Test: `tests/master_settings_test.py`. **Not built, genuine open
-questions** (ask before guessing further): what other "typische
-Einschränkungen" to add (client mentioned colour vision, one-arm, and
-hearing explicitly, then "oder sonst was" - other motor limitations? other
-colour-vision types beyond red/green? other sensory/output constraints,
-e.g. no speech for the spoken-response VT exercises?); whether colour-vision presets should
-extend to Search/Doppelziel/Corsi's more marginal colour cues once the
-"Ziel-/Signalfarbe pro Übung" feature exists.
+Test: `tests/master_settings_test.py` (42 assertions: the no-"Normal"
+wording check, multi-select colour vision incl. an actual GNG-colour-
+change proof, the unified multi-select limb list including a combined
+restriction, the hearing checkbox, code history, migration of all three
+old shapes - the last one via a separate inline script, not the main test
+file, since it needs to seed localStorage before the page's first load).
+
+**Not built, genuine open question**: whether the Blau-Gelb/vollständige
+Farbenblindheit categories (and the five-exercise + systemic-feedback
+backlog above) get wired up at all, and on what timeline - ask before
+starting that pass, since it's a real design effort (safe replacement
+palettes across three CVD axes), not a quick follow-on to tonight's
+settings-sheet redesign.
 
 ## Movement
 
@@ -2432,6 +2484,152 @@ solid bars, matching what proved immune) unless asked again.
   another `wrangler deploy` cycle. Client confirmed reusing the same
   `CLOUDFLARE_API_TOKEN`/session setup is fine for this, no new token
   needed.
+
+## Cardio + dual-task "Zusatzübung" windows (2026-09-28)
+
+Client's ask, in the order it actually arrived: a separate Cardio area
+(general and interval-configurable) that could later couple into Kombi;
+then, refined - an exercise-selection-style picker of cardio activities
+(Joggen/Rad fahren/Crosstrainer/...), each block its own duration and an
+optional free-text label (Warm-up/Cooldown/anything, not position-locked),
+each block optionally itself structured as an interval (Belastung/
+Erholung); then, further extended - cardio activities are a natural fit
+for dual-task training, reusing "wie auch die Zahlen peripher einblenden
+Geschichte bei anderen Übungen" (the existing Zusatzaufgabe) as the
+model, but not limited to that one stimulus - "auch andere sinnvolle
+Übungen" should be combinable too, each individually fine-tunable and
+saved under its own position so switching which ones are enabled never
+overwrites another's settings. Presented as a small/large fork (extend
+the existing addon vs. a generic "exercise window" host); client chose
+**large**, explicitly confirming it should work automatically for the
+client (a settings toggle they set for themselves, like the existing
+Zusatzaufgabe, not something a coach has to author into a training code)
+and should support multiple simultaneously-eligible guest exercise types,
+not just the flash.
+
+**New top-level domain**: a 7th `section-tab`/`SCREENS` entry (`cardio`
+→ `cardioHome`), inserted into all 6 existing nav-bar copies between
+Workout and NAT (`_body.html` repeats this nav verbatim per screen -
+there is no shared partial). `cardioHome` → `cardioReady` (the builder,
+reached via `#cardioStartCard`, structurally a close mirror of
+`workoutTabataReady`: `combo-add-grid` picker, `circuit-item-row` block
+list, `wirePresetSaveForm`/`makePresetStore`/`renderPresetList` for named
+presets - all reused verbatim, not reinvented) → `cardioPlayer` (the
+running timer) → `cardioDonePanel`. **No coach-authored Cardio codes and
+no custom/own activities yet** - `CARDIO_ACTIVITIES` is a fixed 7-item
+catalog (Joggen/Rad fahren/Crosstrainer/Rudergerät/Walking/
+Treppensteigen/Schwimmen); both are easy to add later the same way
+Workout's own custom-exercise form and `lookupProgram()` dispatch work,
+skipped tonight to keep scope honest rather than half-build either.
+
+**Cardio block** (`cardioPrefs.items[]`, `fwmc-cardio-v1`): `{activity,
+durationS, label, interval: null|{onS,offS}}`. Duration steps in whole
+minutes (60s increments, 1-60 min) since Cardio blocks are naturally much
+longer than a bodyweight-exercise rep; interval on/off phases step in
+5s increments separately (5-300s) since those are the short sub-cycle.
+Deliberately **no "Sätze"/repeat-the-whole-sequence concept** like
+Workout circuits have - the client's own example ("10 min joggen, dann
+10 min radfahren, dann 10 min crosstrainer") is a straight one-pass
+sequence, and no inter-block rest screen either (switching cardio
+machines isn't a rest the way switching bodyweight exercises is) -
+`cardioTick()` just updates the activity name/label/countdown/phase
+continuously as `cardioState.index` advances, no transition screen.
+
+**Dual-task engine** (`cardioAddonPrefs`, `fwmc-cardio-addon-v1`):
+`{enabled, pool:[...ids], intervalMinS, intervalMaxS, perType:{[id]:cfg}}`.
+Client-facing exactly like the existing Zusatzaufgabe - one on/off toggle,
+works during ANY cardio run (self-built today; automatically also for a
+future coach-authored one, since it's read from the client's own prefs,
+not from the programme). `CARDIO_GUEST_TYPES` is a **deliberately curated
+pool**, not "every exercise in the app": the existing peripheral flash,
+plus VT-Farbe, Stroop-klassisch, 4-Pfeile-gerade - short, single-glance,
+quick-reaction tasks that suit a brief look mid-cardio. Explicitly
+excluded: anything needing several seconds of *sustained* uninterrupted
+attention (Corsi/Change-Detection/N-Back-style delayed recall, MOT) - a
+glance mid-jog can't sustain that, so it was never a small-vs-large
+question, just a "what's actually usable here" one. Each pool member gets
+its own fine-tune panel (`renderCardioAddonFineTune()`) - Dauer/Reiz-Dauer/
+Pause-min/-max/Farben, plus a Zeichentyp choice for the flash - stored
+separately per type under `perType`, so enabling/disabling pool members
+never touches another member's remembered settings. The flash's own
+Bereich/Zonen/Größenmodus controls (real, rich options on Periphere
+Wahrnehmung's own ready screen and the normal per-exercise Zusatzaufgabe)
+are **deliberately not exposed here** - fixed sensible defaults
+(`addonDefaultOwn()`) instead, to keep the settings surface buildable in
+one pass; easy to add later the same way the per-exercise version already
+has it, if ever wanted.
+
+**How a guest window actually plays** (`triggerCardioGuest()`/
+`returnFromCardioGuest()`, `app.js`): reuses the real
+`runSession()`/`finishSession()`/`session`/`raf` exercise lifecycle
+as-is for real exercise types (`vt-color`/`stroop-classic`/`4-straight`),
+*and* for the flash - via a synthetic `EXERCISES["cardio-flash-host"]`
+entry (`type:"flash-host"`) whose schedule is one giant `"blank"` frame
+spanning the window (`buildFlashHostSchedule` - reuses `drawScene`'s
+existing "blank" case: neutral background + fixation point, no new
+drawing code), with the *real* Zusatzaufgabe engine
+(`buildAddonSchedule`/`drawAddonOverlay`/`drawPeriphChar`) doing the
+actual flashing on top of it via one special-case branch at the top of
+`buildAddonSchedule` that sources config from `cardioAddonPrefs.perType
+["addon-flash"]` instead of the normal per-exercise `ADDON_KEY` store.
+This means "port the peripheral flash onto Cardio" and "add three more
+exercise types as options" turned out to be **the same mechanism** once
+the flash was wrapped in a fake host exercise - worth remembering if this
+pattern is ever wanted for another non-canvas timer screen.
+`applyCardioGuestToState()` mirrors `startSession()`'s own colour-active
+setup (`usesColors`/`usesArrowColors`/`usesStroopColors` branch to
+`active.colors`/`.arrowColors`/`.stroopColors`) since a guest run is more
+"standalone single exercise" than "coach programme block". Nothing here
+needs to restore `state` afterward - `openReady()` already
+unconditionally does `loadPrefs()` before setting `state.exercise` on
+its own next visit (a pre-existing idiom, the same one `program` blocks
+already relied on), so a guest's transient mutation is self-healing.
+
+**The one real structural trap, hit and fixed here too** (same shape as
+the Step-3 video-player bug above): `cardioPlayer` is a "player" overlay
+like `els.player`/`workoutPlayer`, not a `SCREENS` member - `showScreen()`
+never hides or shows it. `triggerCardioGuest()` correctly relies on
+`runSession()`'s own `hideAllPlayers()` call to hide it (full-screen
+takeover is exactly what's wanted for a guest window), and
+`returnFromCardioGuest()` correctly re-shows it after its own
+`hideAllPlayers()`. But `abortCardio()` - reached from the plain
+"Beenden" button on the Cardio *timer* screen itself, no guest involved -
+originally only called `showScreen("cardioReady")` and forgot
+`cardioPlayer` needs an explicit hide too; caught by a Playwright
+assertion (`tests/cardio_test.py`), not by eye. `abortTraining()` also
+gained a `cardioGuestActive` branch (checked before it mutates the flag
+via `leavePlayer()`), mirroring the existing `comboProgram`/`program`
+branches exactly, so the shared player bar's "Beenden" mid-guest-window
+correctly tears down the whole Cardio session, not just the guest.
+
+**Wake lock & backgrounding**: `finishSession()` skips `releaseWakeLock()`
+when `cardioGuestActive` (mirrors the `program`/`comboProgram` branches -
+Cardio's own `finishCardio()` releases it once, at the very end of the
+whole sequence, not per guest window). The `visibilitychange` handler
+**deliberately does not** shift `cardioState.blockStartTime` forward the
+way it does for `session`/`workoutState`/etc. - those pause-and-resume on
+backgrounding by design (a reaction-time exercise shouldn't silently
+count down with the phone screen off), but a Cardio activity is real
+physical exertion that keeps happening regardless of screen state, so its
+countdown should keep counting through a backgrounded phone. It still
+needs the same wake-lock recovery on return, so `cardioState` was added
+to that one OR-chain only.
+
+**Own state, deliberately**: `cardioState`/`cardioRaf` are Cardio's own
+module-level globals, never `workoutState`/`session` - so a nested guest
+exercise (which only ever touches `session`/`raf`) genuinely cannot
+collide with a running Cardio sequence, the same isolation Workout's
+`workoutState`/`workoutRaf` already relies on next to the visual engine's
+own `session`/`raf`.
+
+Tested end to end in `tests/cardio_test.py` (33 assertions): builder UI
+(picker, duration/label/interval editing, saved presets, all persisted
+across reload), the dual-task settings UI (toggle, pool multi-select,
+timing, per-type fine-tune, persisted), a full run (multi-block
+sequencing via skip, the interval phase label, an actual dual-task guest
+window triggering and full-exercise takeover and returning correctly),
+completion (done panel, history entry), and both abort paths (mid-cardio,
+mid-guest-window) with the fix above confirmed.
 
 ## Test-Bereich (autonomous, ongoing)
 

@@ -1369,6 +1369,41 @@ body.cvd-rotgruen .gng-stimulus.nogo{background:#e65100;border-color:#a53d00}
   font-family:inherit;color:var(--ink);background:var(--surface-2);width:100%;
 }
 
+/* ---- Cardio ---- */
+.cardio-interval-toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-soft)}
+.cardio-interval-toggle input{width:auto}
+.cardio-interval-fields{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--ink-soft)}
+.cardio-interval-phase-row{display:flex;align-items:center;gap:6px}
+.cardio-interval-phase-row span:first-child{min-width:64px}
+
+.checkbox-row{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--ink)}
+.checkbox-row input{width:auto}
+.cardio-pool-check{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink);padding:6px 0}
+.cardio-pool-check input{width:auto}
+
+.cardio-guest-panel{border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-top:10px;background:var(--surface)}
+.cardio-guest-panel-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:8px}
+.cardio-guest-field-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:10px}
+.cardio-guest-field-row label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:3px}
+.cardio-guest-field-row input{width:100%;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--surface-2)}
+.cardio-guest-colors{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.cardio-guest-colors label{
+  display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink);
+  background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px 10px 4px 8px;cursor:pointer;
+}
+.cardio-guest-colors input{width:auto;margin:0}
+.cardio-guest-color-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+.cardio-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px 18px;text-align:center}
+.cardio-block-progress{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--brand)}
+.cardio-activity-title{font-family:"Magra",sans-serif;font-weight:700;font-size:28px;color:var(--ink);margin:0}
+.cardio-activity-label{font-size:14px;color:var(--ink-soft)}
+.cardio-countdown{font-family:"Magra",sans-serif;font-weight:700;font-size:64px;color:var(--ink);font-variant-numeric:tabular-nums}
+.cardio-phase-label{
+  font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  padding:4px 14px;border-radius:999px;background:var(--brand-pale);color:var(--brand-deep);
+}
+
 /* ---- Workout ---- */
 .workout-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px 18px;overflow-y:auto}
 .workout-reps-view,.workout-tabata-view{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:420px}

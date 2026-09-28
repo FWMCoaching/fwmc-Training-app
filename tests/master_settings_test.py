@@ -4,10 +4,18 @@ URL = "http://localhost:8845/index.html"
 
 # Master-Einstellungen: a no-login "profile" (client's own framing) reachable
 # via a gear button top-right of every section's brandbar - accessibility
-# presets (colour vision, a physical/motor limitation) that would otherwise
-# need re-setting in every exercise's own Feineinstellungen, plus a locally
-# remembered history of Trainings-Codes. Explicitly local-only (localStorage),
-# same as every other preference in this app - the sheet says so up top.
+# presets (colour vision, a physical/motor limitation, hearing) that would
+# otherwise need re-setting in every exercise's own Feineinstellungen, plus a
+# locally remembered history of Trainings-Codes. Explicitly local-only
+# (localStorage), same as every other preference in this app - the sheet
+# says so up top.
+#
+# 2026-09-28 redesign: everything under "Vorhandene Einschränkungen" - no
+# "Normal"/"Keine" button anywhere (nothing selected already means no
+# restriction), multi-select throughout (colour vision can have more than
+# one type ticked, arm/leg restrictions share one multi-select list so any
+# combination of the 4 extremities can be restricted at once), and Hören is
+# a plain checkbox instead of a normal/gehörlos choice.
 
 async def main():
     errors = []
@@ -29,10 +37,15 @@ async def main():
         print("sheet open:", await pg.is_visible("#masterSettingsSheet"))
         privacy_text = await pg.inner_text("#masterSettingsSheet .group-help >> nth=0")
         print("privacy note mentions local-only:", "Browser" in privacy_text and "Cloud" in privacy_text)
+        print("umbrella heading present:", "Vorhandene Einschränkungen" in await pg.inner_text("#masterSettingsSheet"))
+        print("no 'Normal' button anywhere in the sheet:", "Normal" not in await pg.inner_text("#masterSettingsSheet"))
+        print("no 'Keine' button anywhere in the sheet:", "Keine" not in await pg.inner_text("#masterSettingsSheet"))
         print("code history hidden when empty:", await pg.is_hidden("#masterCodeHistoryGroup"))
 
-        # ---- Farbsehen: default normal, GNG stimulus is the classic green ----
-        print("cvd default is normal:", "active" in (await pg.get_attribute('[data-master-cvd="normal"]', "class") or ""))
+        # ---- Farbsehen: 3 options now (rotgruen/blaugelb/voll), all unticked
+        # by default, multi-select ----
+        print("3 colour-vision options offered:", await pg.locator("#masterColorVisionRow [data-master-cvd]").count() == 3)
+        print("none active by default:", await pg.locator("#masterColorVisionRow .choice.active").count() == 0)
         await pg.click("#masterSettingsCloseBtn"); await pg.wait_for_timeout(150)
 
         await pg.click('#home .section-tab[data-section="test"]'); await pg.wait_for_timeout(150)
@@ -54,13 +67,18 @@ async def main():
 
         cls_before = await wait_stimulus_phase()
         bg_before = await pg.eval_on_selector("#gngStimulus", "el => getComputedStyle(el).backgroundColor")
-        print("GNG stimulus phase reached, normal-mode colour captured:", bool(cls_before), bg_before)
+        print("GNG stimulus phase reached, default colour captured:", bool(cls_before), bg_before)
         await exit_gng()
 
-        # switch to Rot-Grün-Schwäche and confirm GNG's colour actually changes
+        # tick Rot-Grün-Schwäche (and, to prove multi-select, Blau-Gelb too)
+        # and confirm GNG's colour actually changes
         await pg.locator(".master-settings-btn:visible").first.click(); await pg.wait_for_timeout(150)
         await pg.click('[data-master-cvd="rotgruen"]'); await pg.wait_for_timeout(100)
-        print("cvd now rotgruen:", "active" in (await pg.get_attribute('[data-master-cvd="rotgruen"]', "class") or ""))
+        await pg.click('[data-master-cvd="blaugelb"]'); await pg.wait_for_timeout(100)
+        print("cvd rotgruen active:", "active" in (await pg.get_attribute('[data-master-cvd="rotgruen"]', "class") or ""))
+        print("cvd blaugelb ALSO active (multi-select):", "active" in (await pg.get_attribute('[data-master-cvd="blaugelb"]', "class") or ""))
+        stored = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-master-v1')||'{}').colorVision")
+        print("both stored in colorVision array:", sorted(stored) == ["blaugelb", "rotgruen"])
         await pg.click("#masterSettingsCloseBtn"); await pg.wait_for_timeout(150)
         await pg.click("#gngOpenBtn"); await pg.wait_for_timeout(150)
         await pg.click("#gngReadyStartBtn")
@@ -69,43 +87,46 @@ async def main():
         print("GNG stimulus colour changed under Rot-Grün-Schwäche:", bg_after != bg_before, bg_after)
         await exit_gng()
 
-        # reset cvd back to normal for a clean slate before the limb test
+        # untick both again for a clean slate before the limb test
         await pg.locator(".master-settings-btn:visible").first.click(); await pg.wait_for_timeout(150)
-        await pg.click('[data-master-cvd="normal"]'); await pg.wait_for_timeout(100)
+        await pg.click('[data-master-cvd="rotgruen"]'); await pg.wait_for_timeout(100)
+        await pg.click('[data-master-cvd="blaugelb"]'); await pg.wait_for_timeout(100)
+        print("both cvd options cleared:", await pg.locator("#masterColorVisionRow .choice.active").count() == 0)
 
-        # ---- Bewegungseinschränkung: arms and legs are independent settings,
-        # all 4 extremities are offered, and both can combine at once ----
-        chip_count_before = await pg.locator("#movementPicker .movement-chip").count() if await pg.locator("#movementPicker").count() else None
-        print("chip count before limb restriction (via sheet, no movement screen open yet):", chip_count_before)
-        await pg.click('[data-master-arm-limb="armL"]'); await pg.wait_for_timeout(150)
-        print("arm limb now armL:", "active" in (await pg.get_attribute('[data-master-arm-limb="armL"]', "class") or ""))
+        # ---- Bewegungseinschränkung: one shared multi-select set of 4
+        # extremity tags, any combination can be ticked at once ----
+        print("2 arm options, 2 leg options offered:", await pg.locator("#masterArmLimbRow [data-master-limb]").count() == 2 and await pg.locator("#masterLegLimbRow [data-master-limb]").count() == 2)
+        await pg.click('[data-master-limb="armL"]'); await pg.wait_for_timeout(150)
+        print("arm limb armL active:", "active" in (await pg.get_attribute('[data-master-limb="armL"]', "class") or ""))
         await pg.click("#masterSettingsCloseBtn"); await pg.wait_for_timeout(150)
 
         await pg.click('.section-tab[data-section="movement"]:visible'); await pg.wait_for_timeout(150)
         await pg.click("#movementStartCard"); await pg.wait_for_timeout(150)
         chip_labels = await pg.locator("#movementPicker .movement-chip span").all_inner_texts()
-        print("armR chips hidden under 'nur linker Arm':", not any("Rechter Arm" in t for t in chip_labels))
-        print("armL/leg chips still present:", any("Linker Arm" in t for t in chip_labels) and any("Bein" in t for t in chip_labels))
-        print("total chip count now 6 (8 minus 2 armR ones):", len(chip_labels) == 6)
+        print("armL chips hidden under 'linker Arm eingeschränkt':", not any("Linker Arm" in t for t in chip_labels))
+        print("armR/leg chips still present:", any("Rechter Arm" in t for t in chip_labels) and any("Bein" in t for t in chip_labels))
+        print("total chip count now 6 (8 minus 2 armL ones):", len(chip_labels) == 6)
 
-        # also restrict legs -> combines with the arm restriction already set
+        # also restrict a leg -> combines with the arm restriction already set
         await pg.click("#movementBackToHome"); await pg.wait_for_timeout(150)
         await pg.locator(".master-settings-btn:visible").first.click(); await pg.wait_for_timeout(150)
-        await pg.click('[data-master-leg-limb="legR"]'); await pg.wait_for_timeout(150)
-        print("leg limb now legR:", "active" in (await pg.get_attribute('[data-master-leg-limb="legR"]', "class") or ""))
-        print("arm limb still armL (independent settings):", "active" in (await pg.get_attribute('[data-master-arm-limb="armL"]', "class") or ""))
+        await pg.click('[data-master-limb="legR"]'); await pg.wait_for_timeout(150)
+        print("leg limb legR active:", "active" in (await pg.get_attribute('[data-master-limb="legR"]', "class") or ""))
+        print("arm limb still armL (both restrictions coexist):", "active" in (await pg.get_attribute('[data-master-limb="armL"]', "class") or ""))
+        stored_limbs = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-master-v1')||'{}').restrictedLimbs")
+        print("both stored together in restrictedLimbs:", sorted(stored_limbs) == ["armL", "legR"])
         await pg.click("#masterSettingsCloseBtn"); await pg.wait_for_timeout(150)
         await pg.click('.section-tab[data-section="movement"]:visible'); await pg.wait_for_timeout(150)
         await pg.click("#movementStartCard"); await pg.wait_for_timeout(150)
         chip_labels_both = await pg.locator("#movementPicker .movement-chip span").all_inner_texts()
-        print("armR AND legL chips both hidden now (combined restriction):", not any("Rechter Arm" in t for t in chip_labels_both) and not any("Linkes Bein" in t for t in chip_labels_both))
-        print("total chip count now 4 (8 minus 2 armR minus 2 legL):", len(chip_labels_both) == 4)
+        print("armL AND legR chips both hidden now (combined restriction):", not any("Linker Arm" in t for t in chip_labels_both) and not any("Rechtes Bein" in t for t in chip_labels_both))
+        print("total chip count now 4 (8 minus 2 armL minus 2 legR):", len(chip_labels_both) == 4)
 
-        # reset both back to none
+        # untick both to reset
         await pg.click("#movementBackToHome"); await pg.wait_for_timeout(150)
         await pg.locator(".master-settings-btn:visible").first.click(); await pg.wait_for_timeout(150)
-        await pg.click('[data-master-arm-limb="none"]'); await pg.wait_for_timeout(100)
-        await pg.click('[data-master-leg-limb="none"]'); await pg.wait_for_timeout(150)
+        await pg.click('[data-master-limb="armL"]'); await pg.wait_for_timeout(100)
+        await pg.click('[data-master-limb="legR"]'); await pg.wait_for_timeout(150)
         await pg.click("#masterSettingsCloseBtn"); await pg.wait_for_timeout(150)
         chip_labels_after = await pg.locator("#movementPicker .movement-chip span").all_inner_texts()
         print("all 8 chips back once both limb restrictions cleared:", len(chip_labels_after) == 8)
@@ -129,18 +150,19 @@ async def main():
         print("sheet closed itself on relaunch:", await pg.is_hidden("#masterSettingsSheet"))
         await pg.click("#programBackToHome"); await pg.wait_for_timeout(150)
 
-        # ---- Hören: "Gehörlos" greys out (not hides) VT's "Sehen & Hören",
-        # the one exercise in the app that's tagged data-tags="ton" and
-        # genuinely can't be adapted (unlike Go/No-Go's colour, which just
-        # swaps instead of blocking) - tapping the greyed card should open
-        # Settings again rather than the exercise, since the card itself is
-        # the "Verweis auf die Master-Einstellungen".
+        # ---- Hören: a plain checkbox now (ticked = restriction present),
+        # greys out (not hides) VT's "Sehen & Hören", the one exercise in
+        # the app that's tagged data-tags="ton" and genuinely can't be
+        # adapted (unlike Go/No-Go's colour, which just swaps instead of
+        # blocking) - tapping the greyed card should open Settings again
+        # rather than the exercise.
         await pg.click('.section-tab[data-section="visual"]:visible'); await pg.wait_for_timeout(150)
         cross_card = pg.locator('.excard[data-exercise="cross-modal"]')
         print("Sehen & Hören not incompatible by default:", "incompatible" not in (await cross_card.get_attribute("class") or ""))
         await pg.locator(".master-settings-btn:visible").first.click(); await pg.wait_for_timeout(150)
-        await pg.click('[data-master-hearing="gehoerlos"]'); await pg.wait_for_timeout(100)
-        print("hearing now gehoerlos:", "active" in (await pg.get_attribute('[data-master-hearing="gehoerlos"]', "class") or ""))
+        print("hearing checkbox unticked by default:", not await pg.is_checked("#masterHearingCheck"))
+        await pg.check("#masterHearingCheck"); await pg.wait_for_timeout(100)
+        print("hearing checkbox now ticked:", await pg.is_checked("#masterHearingCheck"))
         await pg.click("#masterSettingsCloseBtn"); await pg.wait_for_timeout(150)
         print("Sehen & Hören now greyed:", "incompatible" in (await cross_card.get_attribute("class") or ""))
         print("blocked note references Einstellungen:", "Einstellungen" in await cross_card.locator(".excard-blocked-note").inner_text())
@@ -154,9 +176,9 @@ async def main():
         await pg.click("#backToHome"); await pg.wait_for_timeout(150)
 
         await pg.locator(".master-settings-btn:visible").first.click(); await pg.wait_for_timeout(150)
-        await pg.click('[data-master-hearing="normal"]'); await pg.wait_for_timeout(100)
+        await pg.uncheck("#masterHearingCheck"); await pg.wait_for_timeout(100)
         await pg.click("#masterSettingsCloseBtn"); await pg.wait_for_timeout(150)
-        print("Sehen & Hören usable again after resetting hearing:", "incompatible" not in (await cross_card.get_attribute("class") or ""))
+        print("Sehen & Hören usable again after unticking hearing:", "incompatible" not in (await cross_card.get_attribute("class") or ""))
         await cross_card.click(); await pg.wait_for_timeout(150)
         print("Sehen & Hören opens normally once reset:", await pg.is_visible("#ready"))
 

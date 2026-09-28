@@ -28,6 +28,7 @@
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
     <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
     <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Cardio</button>
     <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
     <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
   </nav>
@@ -242,6 +243,7 @@
     <button class="section-tab active" data-section="breath" role="tab" aria-selected="true">Atemtraining</button>
     <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
     <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Cardio</button>
     <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
     <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
   </nav>
@@ -317,6 +319,7 @@
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
     <button class="section-tab active" data-section="movement" role="tab" aria-selected="true">Movement</button>
     <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Cardio</button>
     <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
     <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
   </nav>
@@ -377,6 +380,7 @@
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
     <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
     <button class="section-tab active" data-section="workout" role="tab" aria-selected="true">Workout</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Cardio</button>
     <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
     <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
   </nav>
@@ -442,6 +446,138 @@
   </footer>
 </div>
 
+<div class="screen" id="cardioHome" hidden>
+  <header class="brandbar">
+    <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC Online-Training</em>
+    <button class="master-settings-btn" type="button" aria-label="Einstellungen">&#9881;&#xFE0F;</button>
+  </header>
+
+  <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
+    <button class="section-tab active" data-section="cardio" role="tab" aria-selected="true">Cardio</button>
+    <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
+    <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-kicker">Cardio <span class="placeholder-tag">Name noch offen</span></div>
+    <h1 class="hero-title">Ausdauer. In Bewegung bleiben.</h1>
+    <p class="hero-text">Stelle dir deine eigene Cardio-Einheit zusammen &ndash; mehrere Aktivit&auml;ten hintereinander, mit eigener Dauer und optionalem Intervall.</p>
+  </section>
+
+  <section class="patterns">
+    <div class="section-head">
+      <h2>Eigene Cardio-Einheit</h2>
+      <span class="section-note">frei einstellbar, ohne Plan</span>
+    </div>
+    <button class="featured-card" id="cardioStartCard">
+      <span class="fc-title">Cardio zusammenstellen</span>
+      <span class="fc-desc">W&auml;hle deine Aktivit&auml;ten, Dauer und optional Intervalle &ndash; l&auml;uft dann automatisch durch.</span>
+    </button>
+  </section>
+
+  <footer class="site-footer">
+    <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong><span class="beta">Beta</span></p>
+    <nav>
+      <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
+      <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
+      <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a>
+      <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutz</a>
+    </nav>
+  </footer>
+</div>
+
+<div class="screen" id="cardioReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="cardioBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Cardio</h1>
+  <p class="page-sub">Stelle deine Aktivit&auml;ten in der Reihenfolge zusammen, in der du sie machen willst.</p>
+
+  <div class="group" id="cardioSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Cardio-Einheiten</div>
+    <div class="bundle-list" id="cardioSavedList"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Aktivit&auml;t hinzuf&uuml;gen</div>
+    <div class="combo-add-grid" id="cardioAddGrid"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Deine Cardio-Einheit <span class="group-count" id="cardioCount"></span></div>
+    <p class="group-help" id="cardioEmptyHint">Noch keine Aktivit&auml;t hinzugef&uuml;gt &ndash; tippe oben eine an.</p>
+    <div class="chapter-list" id="cardioList"></div>
+    <button class="text-link small" id="cardioSaveBtn">Aktuelle Einheit speichern</button>
+    <div class="custom-exercise-form" id="cardioSaveForm" hidden>
+      <input type="text" id="cardioSaveNameInput" placeholder="Name (z.B. &bdquo;Montag Ausdauer&ldquo;)" maxlength="40">
+      <div class="custom-exercise-form-actions">
+        <button class="start-btn secondary" id="cardioSaveCancelBtn">Abbrechen</button>
+        <button class="start-btn" id="cardioSaveConfirmBtn">Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <details class="advanced" id="cardioAddonAdvanced">
+    <summary>Zusatzaufgabe w&auml;hrend Cardio</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <label class="checkbox-row"><input type="checkbox" id="cardioAddonEnableToggle"> Zusatz&uuml;bungen w&auml;hrend Cardio aktivieren</label>
+        <div class="group-help">Ein Ein/Aus-Schalter wie bei der Zusatzaufgabe sonst auch &ndash; gilt f&uuml;r jede Cardio-Einheit, egal ob selbst gebaut oder von deinem Coach zugewiesen.</div>
+      </div>
+      <div id="cardioAddonBody" hidden>
+        <div class="group">
+          <div class="group-label">Welche Zusatz&uuml;bungen d&uuml;rfen aufblitzen? <span class="group-count">bei mehreren wird zuf&auml;llig gew&auml;hlt</span></div>
+          <div id="cardioAddonPoolGrid"></div>
+        </div>
+        <div class="group">
+          <div class="group-label">Abstand zwischen Zusatz&uuml;bungen</div>
+          <div class="slider-row">
+            <span>min.</span>
+            <input type="range" id="cardioAddonIntervalMinSlider" min="20" max="600" step="10" aria-label="Minimaler Abstand">
+            <span class="slider-value" id="cardioAddonIntervalMinValue">90s</span>
+          </div>
+          <div class="slider-row">
+            <span>max.</span>
+            <input type="range" id="cardioAddonIntervalMaxSlider" min="20" max="600" step="10" aria-label="Maximaler Abstand">
+            <span class="slider-value" id="cardioAddonIntervalMaxValue">180s</span>
+          </div>
+        </div>
+        <div id="cardioAddonPerType"></div>
+      </div>
+    </div>
+  </details>
+
+  <button class="start-btn" id="cardioStartBtn" disabled>Mindestens eine Aktivit&auml;t hinzuf&uuml;gen</button>
+</div>
+
+<div class="player" id="cardioPlayer" hidden>
+  <div class="cardio-stage">
+    <div class="cardio-block-progress" id="cardioBlockProgress"></div>
+    <h2 class="cardio-activity-title" id="cardioActivityTitle"></h2>
+    <div class="cardio-activity-label" id="cardioActivityLabel" hidden></div>
+    <div class="cardio-countdown" id="cardioCountdown">0:00</div>
+    <div class="cardio-phase-label" id="cardioPhaseLabel" hidden></div>
+    <button class="pause-skip" id="cardioSkipBtn">N&auml;chste Aktivit&auml;t &raquo;</button>
+  </div>
+  <div class="player-bar" id="cardioPlayerBar">
+    <button id="cardioBackBtn">&#10005; Beenden</button>
+  </div>
+</div>
+
+<div class="done-panel" id="cardioDonePanel" hidden>
+  <div class="done-check">&#10003;</div>
+  <h2>Geschafft!</h2>
+  <p class="done-summary" id="cardioDoneSummary"></p>
+  <div class="rating" id="cardioRating"></div>
+  <button class="again" id="cardioAgainBtn">Nochmal</button>
+  <button class="back" id="cardioDoneBackBtn">Zur &Uuml;bersicht</button>
+</div>
+
 <div class="screen" id="natHome" hidden>
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
@@ -454,6 +590,7 @@
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
     <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
     <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Cardio</button>
     <button class="section-tab active" data-section="nat" role="tab" aria-selected="true">NAT</button>
     <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
   </nav>
@@ -596,6 +733,7 @@
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
     <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
     <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Cardio</button>
     <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
     <button class="section-tab active" data-section="test" role="tab" aria-selected="true">Test</button>
   </nav>
@@ -4503,39 +4641,40 @@
     <p class="group-help">Diese Einstellungen werden nur in diesem Browser auf diesem Ger&auml;t gespeichert &ndash; nicht in einer Cloud, nicht bei einem Server, und nicht automatisch mit deinem Coach geteilt.</p>
 
     <div class="group">
+      <div class="group-label">Vorhandene Einschr&auml;nkungen</div>
+      <div class="group-help">Nichts ausgew&auml;hlt = keine Einschr&auml;nkung. Mehrfachauswahl ist &uuml;berall m&ouml;glich, wo mehrere gleichzeitig zutreffen k&ouml;nnen.</div>
+    </div>
+
+    <div class="group">
       <div class="group-label">Farbsehen</div>
-      <div class="choice-row two" id="masterColorVisionRow">
-        <button class="choice" data-master-cvd="normal">Normal</button>
+      <div class="choice-row" id="masterColorVisionRow">
         <button class="choice" data-master-cvd="rotgruen">Rot-Gr&uuml;n-Schw&auml;che</button>
+        <button class="choice" data-master-cvd="blaugelb">Blau-Gelb-Schw&auml;che</button>
+        <button class="choice" data-master-cvd="voll">Vollst&auml;ndige Farbenblindheit</button>
       </div>
       <div class="group-help">Wirkt sich bisher auf Go/No-Go aus (Gr&uuml;n/Rot wird zu Blau/Orange) &ndash; weitere &Uuml;bungen folgen, sobald dort die Zielfarbe einstellbar ist.</div>
     </div>
 
     <div class="group">
       <div class="group-label">Bewegungseinschr&auml;nkung &ndash; Arme</div>
-      <div class="choice-row" id="masterArmLimbRow">
-        <button class="choice" data-master-arm-limb="none">Keine</button>
-        <button class="choice" data-master-arm-limb="armL">Nur linker Arm</button>
-        <button class="choice" data-master-arm-limb="armR">Nur rechter Arm</button>
+      <div class="choice-row two" id="masterArmLimbRow">
+        <button class="choice" data-master-limb="armL">Linker Arm</button>
+        <button class="choice" data-master-limb="armR">Rechter Arm</button>
       </div>
     </div>
 
     <div class="group">
       <div class="group-label">Bewegungseinschr&auml;nkung &ndash; Beine</div>
-      <div class="choice-row" id="masterLegLimbRow">
-        <button class="choice" data-master-leg-limb="none">Keine</button>
-        <button class="choice" data-master-leg-limb="legL">Nur linkes Bein</button>
-        <button class="choice" data-master-leg-limb="legR">Nur rechtes Bein</button>
+      <div class="choice-row two" id="masterLegLimbRow">
+        <button class="choice" data-master-limb="legL">Linkes Bein</button>
+        <button class="choice" data-master-limb="legR">Rechtes Bein</button>
       </div>
-      <div class="group-help">Blendet bei Movement die &Uuml;bungen f&uuml;r die jeweils andere Seite aus &ndash; muss dann nicht mehr pro Training neu eingestellt werden. Arme und Beine lassen sich unabh&auml;ngig voneinander einschr&auml;nken.</div>
+      <div class="group-help">Blendet bei Movement die &Uuml;bungen f&uuml;r die jeweils betroffene Seite aus &ndash; muss dann nicht mehr pro Training neu eingestellt werden. Arme und Beine lassen sich unabh&auml;ngig voneinander einschr&auml;nken, auch beide Seiten gleichzeitig.</div>
     </div>
 
     <div class="group">
       <div class="group-label">H&ouml;ren</div>
-      <div class="choice-row two" id="masterHearingRow">
-        <button class="choice" data-master-hearing="normal">Normal</button>
-        <button class="choice" data-master-hearing="gehoerlos">Geh&ouml;rlos</button>
-      </div>
+      <label class="checkbox-row"><input type="checkbox" id="masterHearingCheck"> Geh&ouml;rlosigkeit oder eingeschr&auml;nktes H&ouml;ren</label>
       <div class="group-help">&Uuml;bungen, die zwingend Ton ben&ouml;tigen (aktuell nur &bdquo;Sehen &amp; H&ouml;ren&ldquo;), werden dann in der &Uuml;bersicht ausgegraut und markiert, statt versteckt.</div>
     </div>
 

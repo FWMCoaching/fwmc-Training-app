@@ -611,6 +611,15 @@
       trains: "Peripheres Sehen bei stabiler Fixierung",
       rules: "Visuelles Training ist anstrengend – vor allem für Augen und Nervensystem. Achte auf ausreichend Pausen. Merkst du, dass dein System stark gefordert ist oder droht zu überlasten, reduziere Tempo/Dauer oder sprich im Zweifel mit deinem Trainer.",
     },
+    // Synthetic, never shown in any picker/menu - only ever reached via
+    // state.exercise = "cardio-flash-host" from triggerCardioGuest(). Its
+    // "flash-host" type builds one blank frame spanning the whole window
+    // (buildFlashHostSchedule), and the Zusatzaufgabe add-on mechanism does
+    // the actual work on top of it (see buildAddonSchedule's cardio-flash-
+    // host special case) - this entry exists purely so the existing
+    // runSession()/finishSession() exercise lifecycle (hideAllPlayers,
+    // wake lock, duration timer, ...) can be reused as-is for it.
+    "cardio-flash-host": { title: "Zusatzaufgabe", type: "flash-host" },
   };
 
   // ---- Programmes: coach-authored multi-block sessions. Real client
@@ -1133,6 +1142,7 @@
     tipInstall: $("tipInstall"), tipInstallText: $("tipInstallText"),
     faqSheet: $("faqSheet"), faqCloseBtn: $("faqCloseBtn"),
     masterSettingsSheet: $("masterSettingsSheet"), masterSettingsCloseBtn: $("masterSettingsCloseBtn"),
+    masterHearingCheck: $("masterHearingCheck"),
     masterCodeHistoryGroup: $("masterCodeHistoryGroup"), masterCodeHistoryList: $("masterCodeHistoryList"),
     workoutExerciseInfoSheet: $("workoutExerciseInfoSheet"), workoutExerciseInfoIcon: $("workoutExerciseInfoIcon"),
     workoutExerciseInfoTitle: $("workoutExerciseInfoTitle"), workoutExerciseInfoNote: $("workoutExerciseInfoNote"),
@@ -1654,6 +1664,24 @@
     workoutCircuitAddCustomBtn: $("workoutCircuitAddCustomBtn"), workoutCircuitCustomForm: $("workoutCircuitCustomForm"),
     workoutCircuitCustomName: $("workoutCircuitCustomName"), workoutCircuitCustomNote: $("workoutCircuitCustomNote"),
     workoutCircuitCustomCancelBtn: $("workoutCircuitCustomCancelBtn"), workoutCircuitCustomSaveBtn: $("workoutCircuitCustomSaveBtn"),
+    cardioHome: $("cardioHome"), cardioStartCard: $("cardioStartCard"),
+    cardioReady: $("cardioReady"), cardioBackToHome: $("cardioBackToHome"),
+    cardioSavedGroup: $("cardioSavedGroup"), cardioSavedList: $("cardioSavedList"),
+    cardioAddGrid: $("cardioAddGrid"), cardioCount: $("cardioCount"),
+    cardioEmptyHint: $("cardioEmptyHint"), cardioList: $("cardioList"),
+    cardioSaveBtn: $("cardioSaveBtn"), cardioSaveForm: $("cardioSaveForm"),
+    cardioSaveNameInput: $("cardioSaveNameInput"), cardioSaveCancelBtn: $("cardioSaveCancelBtn"), cardioSaveConfirmBtn: $("cardioSaveConfirmBtn"),
+    cardioStartBtn: $("cardioStartBtn"),
+    cardioAddonEnableToggle: $("cardioAddonEnableToggle"), cardioAddonBody: $("cardioAddonBody"),
+    cardioAddonPoolGrid: $("cardioAddonPoolGrid"),
+    cardioAddonIntervalMinSlider: $("cardioAddonIntervalMinSlider"), cardioAddonIntervalMinValue: $("cardioAddonIntervalMinValue"),
+    cardioAddonIntervalMaxSlider: $("cardioAddonIntervalMaxSlider"), cardioAddonIntervalMaxValue: $("cardioAddonIntervalMaxValue"),
+    cardioAddonPerType: $("cardioAddonPerType"),
+    cardioPlayer: $("cardioPlayer"), cardioBackBtn: $("cardioBackBtn"), cardioSkipBtn: $("cardioSkipBtn"),
+    cardioActivityTitle: $("cardioActivityTitle"), cardioActivityLabel: $("cardioActivityLabel"),
+    cardioCountdown: $("cardioCountdown"), cardioPhaseLabel: $("cardioPhaseLabel"), cardioBlockProgress: $("cardioBlockProgress"),
+    cardioDonePanel: $("cardioDonePanel"), cardioDoneSummary: $("cardioDoneSummary"), cardioRating: $("cardioRating"),
+    cardioAgainBtn: $("cardioAgainBtn"), cardioDoneBackBtn: $("cardioDoneBackBtn"),
     workoutPlayer: $("workoutPlayer"), workoutRepsView: $("workoutRepsView"), workoutExerciseName: $("workoutExerciseName"),
     workoutSetInfo: $("workoutSetInfo"), workoutRepsBig: $("workoutRepsBig"), workoutNote: $("workoutNote"),
     workoutSetDoneBtn: $("workoutSetDoneBtn"), workoutRestBox: $("workoutRestBox"), workoutRestCountdown: $("workoutRestCountdown"),
@@ -1682,7 +1710,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "cardioReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -1701,7 +1729,7 @@
         b.classList.toggle("active", on);
         b.setAttribute("aria-selected", on ? "true" : "false");
       });
-      showScreen(sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "nat" ? "natHome" : sec === "test" ? "testHome" : "home");
+      showScreen(sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "cardio" ? "cardioHome" : sec === "nat" ? "natHome" : sec === "test" ? "testHome" : "home");
     });
   });
 
@@ -3494,7 +3522,16 @@
       cfg.type === "color" ? buildColorSchedule(cfg, rng) :
       cfg.type === "vrw-real" ? buildVRWRealSchedule(cfg, rng) :
       cfg.type === "periph" ? buildPeriphSchedule(cfg, rng) :
+      cfg.type === "flash-host" ? buildFlashHostSchedule(cfg, rng) :
       buildArrowSchedule(cfg, rng);
+  }
+  // Synthetic host for the Cardio dual-task "Zusatzaufgabe" guest type - a
+  // single blank frame spanning the whole window, onto which the Zusatzaufgabe
+  // add-on mechanism (buildAddonSchedule's own cardio-flash-host special
+  // case) draws the actual flashes. Reuses drawScene's existing "blank" case
+  // (neutral background + fixation point) as-is, no new draw code needed.
+  function buildFlashHostSchedule(cfg, rng) {
+    return { schedule: [{ t0: 0, t1: state.duration, kind: "blank", payload: {} }], total: state.duration };
   }
   const PERIPH_LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // I/O left out - too easily confused with 1/0
   const PERIPH_DIGITS = "0123456789";
@@ -3650,10 +3687,21 @@
   // on top of it.
   function buildAddonSchedule(ex, exId, hostSchedule, rng) {
     if (!ex || ex.type === "color-tap" || ex.type === "periph") return { schedule: [], sizeMode: "gleich" };
-    const entry = getAddonEntry(exId);
-    if (!entry.phases.length) return { schedule: [], sizeMode: "gleich" };
-    const cfg = entry.mode === "eigen" ? entry.own : addonConfigFromState();
-    const phaseSet = new Set(entry.phases);
+    let cfg, phaseSet;
+    // The Cardio dual-task "Zusatzaufgabe" guest type sources its config
+    // from cardioAddonPrefs instead of the normal per-exercise ADDON_KEY
+    // store, and its single synthetic "blank" frame is always active -
+    // everything past this branch (the actual flash placement/timing) is
+    // the exact same logic every other exercise's own add-on uses.
+    if (exId === "cardio-flash-host") {
+      cfg = cardioAddonPrefs.perType["addon-flash"] || cardioGuestDefaultCfg("addon-flash");
+      phaseSet = new Set(["pause"]);
+    } else {
+      const entry = getAddonEntry(exId);
+      if (!entry.phases.length) return { schedule: [], sizeMode: "gleich" };
+      cfg = entry.mode === "eigen" ? entry.own : addonConfigFromState();
+      phaseSet = new Set(entry.phases);
+    }
     const cw = canvas.width, ch = canvas.height;
     const schedule = [];
     hostSchedule.forEach((frame) => {
@@ -3716,7 +3764,7 @@
     // is always type "exercise" here and its exIdx is the plain block index
     // the exercise-count label/progress dots are keyed on.
     const exOrd = program ? program.steps[program.chapterIndex].exIdx : 0;
-    els.timeEl.textContent = program ? `Übung ${exOrd + 1}/${program.def.blocks.length} · ${remaining}` : remaining;
+    els.timeEl.textContent = cardioGuestActive ? `Zusatzübung · ${remaining}` : program ? `Übung ${exOrd + 1}/${program.def.blocks.length} · ${remaining}` : remaining;
     setProgress(program ? exOrd : 0, elapsed / session.total);
     raf = requestAnimationFrame(tick);
   }
@@ -3808,6 +3856,7 @@
     els.alarmPlayer.hidden = true;
     els.vorlaufPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
+    els.cardioPlayer.hidden = true;
     els.programVideoPlayer.hidden = true;
     els.programVideoEl.pause();
     els.breathTransition.hidden = true;
@@ -4117,6 +4166,7 @@
     els.liveNav.hidden = true;
     if (program) { advanceProgramStep(); return; }
     if (comboProgram) { coneTap = null; advanceComboProgram(spent); return; }
+    if (cardioGuestActive) { coneTap = null; returnFromCardioGuest(); return; }
     releaseWakeLock();
     setProgress(1, 0);
     const ex = EXERCISES[state.exercise];
@@ -4141,6 +4191,7 @@
     session = null;
     coneTap = null;
     program = null;
+    cardioGuestActive = false;
     stopPauseTimers();
     releaseWakeLock();
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
@@ -4160,6 +4211,7 @@
   // "Beenden" mid-training: back to where the training was started from.
   function abortTraining() {
     if (comboProgram) { leavePlayer(); abortComboProgram(); return; }
+    if (cardioGuestActive) { leavePlayer(); abortCardio(); return; }
     const wasProgram = !!program;
     leavePlayer();
     if (wasProgram) showScreen("programIntro");
@@ -4308,7 +4360,13 @@
         }
       }
     }
-    if ((session || breathSession || wimhofState || movementSession || workoutState) && wakeLock === null) requestWakeLock();
+    // cardioState is deliberately NOT shifted forward like the other engines
+    // above - a Cardio activity is real-world physical exertion that keeps
+    // going while the screen is off, unlike a reaction-time exercise, so its
+    // countdown should genuinely keep counting through a backgrounded phone
+    // rather than pause-and-resume like everything else here. It still needs
+    // the same wake-lock recovery on return, though.
+    if ((session || breathSession || wimhofState || movementSession || workoutState || cardioState) && wakeLock === null) requestWakeLock();
   });
 
   // ---- Tips sheet (shown once on first visit, reopenable) ----
@@ -4374,55 +4432,104 @@
   // the sheet's own first line says so, matching the FAQ's existing "wo
   // werden meine Trainingsdaten gespeichert" answer.
   const MASTER_PREFS_KEY = "fwmc-master-v1";
-  const masterPrefs = { colorVision: "normal", armLimb: "none", legLimb: "none", hearing: "normal" };
+  // "Vorhandene Einschränkungen" (2026-09-28 redesign, client's explicit
+  // ask): every field here defaults to "nothing selected", and that empty
+  // state itself IS "no restriction" - it's never phrased or shown as its
+  // own clickable "Normal"/"Keine" option. The client was specific about
+  // why: framing an accessibility need as the alternative to a labelled
+  // "Normal" button reads as "is having this need not normal" - so there is
+  // no such button anywhere in this sheet any more, not even in translation.
+  // Also: mehrfachauswahl throughout - colorVision is an array (someone can
+  // have more than one colour-vision deficiency type), restrictedLimbs is
+  // one shared array of "armL"/"armR"/"legL"/"legR" tags (any combination,
+  // e.g. both arms plus one leg), hearing is a plain boolean (the app's own
+  // behaviour never differentiated degrees/types of hearing restriction -
+  // it only ever gates "needs sound" exercises - so a single yes/no is
+  // genuinely all that does anything here; splitting it into types would
+  // be an inert checkbox list, not a real feature).
+  const CVD_KEYS = ["rotgruen", "blaugelb", "voll"];
+  const LIMB_KEYS = ["armL", "armR", "legL", "legR"];
+  const masterPrefs = { colorVision: [], restrictedLimbs: [], hearing: false };
   function loadMasterPrefs() {
     const saved = readJSON(MASTER_PREFS_KEY, null);
     if (saved && typeof saved === "object") {
       Object.assign(masterPrefs, saved);
-      // migrate the old single `limb` field (only ever armL/armR/none, from
-      // before legs had their own restriction) into the new armLimb split.
-      if (saved.armLimb === undefined && (saved.limb === "armL" || saved.limb === "armR")) masterPrefs.armLimb = saved.limb;
+      // migrate every older single-select shape: colorVision was
+      // "normal"/"rotgruen"; armLimb/legLimb (or, older still, one shared
+      // `limb` field for arms only) were "none"/"armL"/"armR"/"legL"/"legR"
+      // and meant "only THIS side is usable" (the inverse of the new
+      // "this side is restricted" meaning - migrated values still land
+      // correctly since "nur linker Arm" and "linker Arm eingeschränkt"
+      // both resolve to the same stored tag, armL); hearing was
+      // "normal"/"gehoerlos".
+      if (typeof saved.colorVision === "string") masterPrefs.colorVision = saved.colorVision === "rotgruen" ? ["rotgruen"] : [];
+      if (!Array.isArray(saved.restrictedLimbs)) {
+        const migrated = [];
+        if (saved.armLimb === "armL" || saved.armLimb === "armR") migrated.push(saved.armLimb);
+        if (saved.legLimb === "legL" || saved.legLimb === "legR") migrated.push(saved.legLimb);
+        if (!migrated.length && (saved.limb === "armL" || saved.limb === "armR")) migrated.push(saved.limb);
+        masterPrefs.restrictedLimbs = migrated;
+      }
+      if (typeof saved.hearing === "string") masterPrefs.hearing = saved.hearing === "gehoerlos";
     }
     delete masterPrefs.limb;
-    if (masterPrefs.colorVision !== "normal" && masterPrefs.colorVision !== "rotgruen") masterPrefs.colorVision = "normal";
-    if (!["none", "armL", "armR"].includes(masterPrefs.armLimb)) masterPrefs.armLimb = "none";
-    if (!["none", "legL", "legR"].includes(masterPrefs.legLimb)) masterPrefs.legLimb = "none";
-    if (masterPrefs.hearing !== "normal" && masterPrefs.hearing !== "gehoerlos") masterPrefs.hearing = "normal";
+    delete masterPrefs.armLimb;
+    delete masterPrefs.legLimb;
+    if (!Array.isArray(masterPrefs.colorVision)) masterPrefs.colorVision = [];
+    masterPrefs.colorVision = masterPrefs.colorVision.filter((k) => CVD_KEYS.includes(k));
+    if (!Array.isArray(masterPrefs.restrictedLimbs)) masterPrefs.restrictedLimbs = [];
+    masterPrefs.restrictedLimbs = [...new Set(masterPrefs.restrictedLimbs.filter((k) => LIMB_KEYS.includes(k)))];
+    if (typeof masterPrefs.hearing !== "boolean") masterPrefs.hearing = false;
+    // Persist immediately so a migrated (or just-cleaned-up) shape actually
+    // lands on disk right away, rather than silently staying in the old
+    // shape in storage until the client happens to touch some toggle -
+    // idempotent/cheap either way, so no harm running it every load.
+    saveMasterPrefs();
   }
   function saveMasterPrefs() { writeJSON(MASTER_PREFS_KEY, masterPrefs); }
   loadMasterPrefs();
 
-  // Colour-vision preset: today only Go/No-Go has a genuine red/green
-  // discrimination signal (every other exercise's colour is either neutral
-  // or already colour-blind-safe, e.g. Simon's blue/orange - see CLAUDE.md's
-  // colour-clash audit) - applied as a body class so styles.css can override
-  // just `.gng-stimulus.go/.nogo` without touching GNG's own code. Reusing
+  // Colour-vision presets: today only Go/No-Go has a genuine red/green
+  // discrimination signal (every other exercise's colour is either neutral,
+  // user-chosen via its own colour picker, or already colour-blind-safe,
+  // e.g. Simon's blue/orange - see CLAUDE.md's colour-clash audit) -
+  // applied as a body class so styles.css can override just
+  // `.gng-stimulus.go/.nogo` without touching GNG's own code. Reusing
   // Simon's own blue/orange pair keeps the app's "safe pair" consistent
-  // rather than inventing a second one.
+  // rather than inventing a second one. Blau-Gelb-Schwäche and vollständige
+  // Farbenblindheit are offered (researched and added alongside Rot-Grün as
+  // the standard clinically-recognised categories - Protanopie/Deuteranopie
+  // are lumped into one "Rot-Grün" checkbox since nothing in this app needs
+  // to tell them apart) but have no exercise wired to them yet - same
+  // "collect it now, adapt exercises as their target colour becomes
+  // configurable" pattern the client already approved for Rot-Grün.
   function applyColorVisionMode() {
-    document.body.classList.toggle("cvd-rotgruen", masterPrefs.colorVision === "rotgruen");
+    document.body.classList.toggle("cvd-rotgruen", masterPrefs.colorVision.includes("rotgruen"));
   }
   document.querySelectorAll("[data-master-cvd]").forEach((el) => el.addEventListener("click", () => {
-    masterPrefs.colorVision = el.dataset.masterCvd; saveMasterPrefs(); applyColorVisionMode(); syncMasterCvdUI();
+    const key = el.dataset.masterCvd;
+    if (masterPrefs.colorVision.includes(key)) masterPrefs.colorVision = masterPrefs.colorVision.filter((k) => k !== key);
+    else masterPrefs.colorVision.push(key);
+    saveMasterPrefs(); applyColorVisionMode(); syncMasterCvdUI();
   }));
-  function syncMasterCvdUI() { document.querySelectorAll("[data-master-cvd]").forEach((el) => setActive(el, el.dataset.masterCvd === masterPrefs.colorVision)); }
+  function syncMasterCvdUI() { document.querySelectorAll("[data-master-cvd]").forEach((el) => setActive(el, masterPrefs.colorVision.includes(el.dataset.masterCvd))); }
   applyColorVisionMode();
 
-  document.querySelectorAll("[data-master-arm-limb]").forEach((el) => el.addEventListener("click", () => {
-    masterPrefs.armLimb = el.dataset.masterArmLimb; saveMasterPrefs(); syncMasterLimbUI(); applyMovementLimbFilter();
-  }));
-  document.querySelectorAll("[data-master-leg-limb]").forEach((el) => el.addEventListener("click", () => {
-    masterPrefs.legLimb = el.dataset.masterLegLimb; saveMasterPrefs(); syncMasterLimbUI(); applyMovementLimbFilter();
+  document.querySelectorAll("[data-master-limb]").forEach((el) => el.addEventListener("click", () => {
+    const key = el.dataset.masterLimb;
+    if (masterPrefs.restrictedLimbs.includes(key)) masterPrefs.restrictedLimbs = masterPrefs.restrictedLimbs.filter((k) => k !== key);
+    else masterPrefs.restrictedLimbs.push(key);
+    saveMasterPrefs(); syncMasterLimbUI(); applyMovementLimbFilter();
   }));
   function syncMasterLimbUI() {
-    document.querySelectorAll("[data-master-arm-limb]").forEach((el) => setActive(el, el.dataset.masterArmLimb === masterPrefs.armLimb));
-    document.querySelectorAll("[data-master-leg-limb]").forEach((el) => setActive(el, el.dataset.masterLegLimb === masterPrefs.legLimb));
+    document.querySelectorAll("[data-master-limb]").forEach((el) => setActive(el, masterPrefs.restrictedLimbs.includes(el.dataset.masterLimb)));
   }
 
-  document.querySelectorAll("[data-master-hearing]").forEach((el) => el.addEventListener("click", () => {
-    masterPrefs.hearing = el.dataset.masterHearing; saveMasterPrefs(); syncMasterHearingUI(); applyExerciseCompatibility();
-  }));
-  function syncMasterHearingUI() { document.querySelectorAll("[data-master-hearing]").forEach((el) => setActive(el, el.dataset.masterHearing === masterPrefs.hearing)); }
+  els.masterHearingCheck.addEventListener("change", () => {
+    masterPrefs.hearing = els.masterHearingCheck.checked;
+    saveMasterPrefs(); applyExerciseCompatibility();
+  });
+  function syncMasterHearingUI() { els.masterHearingCheck.checked = masterPrefs.hearing; }
 
   // ---- Exercise compatibility: greyed out + marked, not hidden ----
   // Unlike Farbsehen (which ADAPTS an exercise, e.g. Go/No-Go's colour swap)
@@ -4433,7 +4540,7 @@
   // exercises/restrictions: add a tag, extend the `blocked` check below.
   function exerciseBlockedReason(card) {
     const tags = (card.dataset.tags || "").split(/\s+/);
-    if (masterPrefs.hearing === "gehoerlos" && tags.includes("ton")) return "Benötigt Ton – in Einstellungen anpassbar";
+    if (masterPrefs.hearing && tags.includes("ton")) return "Benötigt Ton – in Einstellungen anpassbar";
     return null;
   }
   function applyExerciseCompatibility() {
@@ -5024,19 +5131,19 @@
   function saveMovementPrefs() { writeJSON(MOVEMENT_PREFS_KEY, movementPrefs); }
   loadMovementPrefs();
 
-  // Master-Einstellungen's "Bewegungseinschränkung" excludes the opposite
-  // limb's movements everywhere Movement builds its pool from - both the
-  // picker (so a client with one usable arm/leg never even sees a chip for
-  // the other) and the actual play pool, so it's a genuine cross-cutting
-  // default rather than something re-picked per session. Arm and leg are
-  // two independent settings (armLimb/legLimb, added 2026-09-28 alongside
-  // the leg options - originally just one shared `limb` field covering only
-  // arms), so e.g. "nur rechter Arm" + "nur linkes Bein" can combine.
+  // Master-Einstellungen's "Bewegungseinschränkung" excludes a restricted
+  // limb's own movements everywhere Movement builds its pool from - both
+  // the picker (so a client never even sees a chip for a side they can't
+  // use) and the actual play pool, so it's a genuine cross-cutting default
+  // rather than something re-picked per session. masterPrefs.restrictedLimbs
+  // is one shared multi-select array (2026-09-28 redesign - was two
+  // independent single-select fields, armLimb/legLimb, before that a single
+  // `limb` field covering only arms) - m.limb's own tags ("armL"/"armR"/
+  // "legL"/"legR") are exactly the values that array can contain, so this
+  // is a plain membership check, no arm/leg branching needed. Any
+  // combination works, e.g. both arms plus one leg restricted at once.
   function movementAllowedByLimb(m) {
-    if (masterPrefs.armLimb === "armL" && m.limb === "armR") return false;
-    if (masterPrefs.armLimb === "armR" && m.limb === "armL") return false;
-    if (masterPrefs.legLimb === "legL" && m.limb === "legR") return false;
-    if (masterPrefs.legLimb === "legR" && m.limb === "legL") return false;
+    if (m.limb && masterPrefs.restrictedLimbs.includes(m.limb)) return false;
     return true;
   }
   function renderMovementPickerChips() {
@@ -8309,6 +8416,483 @@
     },
   });
 
+  // ==== Cardio: self-built sequence of physical activities (Joggen, Rad
+  // fahren, Crosstrainer, ...), each block with its own duration and an
+  // optional free-text label (Warm-up/Cooldown/anything - not position-
+  // locked) and an optional on/off interval structure within the block.
+  // No coach-authored codes for this domain yet, and no custom/own
+  // activities - the built-in catalog covers what was actually asked for;
+  // both are easy to add later the same way Workout's custom-exercise
+  // form works, if ever wanted. ====
+  const CARDIO_ACTIVITIES = {
+    joggen: { name: "Joggen" },
+    rad: { name: "Rad fahren" },
+    cross: { name: "Crosstrainer" },
+    rudern: { name: "Rudergerät" },
+    walking: { name: "Walking" },
+    treppe: { name: "Treppensteigen" },
+    schwimmen: { name: "Schwimmen" },
+  };
+  function findCardioActivity(id) { return CARDIO_ACTIVITIES[id] || { name: id }; }
+
+  const CARDIO_KEY = "fwmc-cardio-v1";
+  // items: [{ activity: <id>, durationS, label: "", interval: null | {onS, offS} }]
+  const cardioPrefs = { items: [], defaultDurationS: 600 };
+  function loadCardioPrefs() {
+    const saved = readJSON(CARDIO_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(cardioPrefs, saved);
+    if (!Array.isArray(cardioPrefs.items)) cardioPrefs.items = [];
+    cardioPrefs.items.forEach((it) => {
+      if (!Number.isFinite(it.durationS) || it.durationS < 60 || it.durationS > 3600) it.durationS = 600;
+      if (typeof it.label !== "string") it.label = "";
+      if (it.interval && (!Number.isFinite(it.interval.onS) || !Number.isFinite(it.interval.offS) || it.interval.onS < 5 || it.interval.offS < 5)) it.interval = null;
+    });
+    if (!Number.isFinite(cardioPrefs.defaultDurationS) || cardioPrefs.defaultDurationS < 60 || cardioPrefs.defaultDurationS > 3600) cardioPrefs.defaultDurationS = 600;
+  }
+  function saveCardioPrefs() { writeJSON(CARDIO_KEY, cardioPrefs); }
+  loadCardioPrefs();
+
+  function fmtCardioDuration(s) {
+    const m = Math.round(s / 60);
+    return `${m} Min.`;
+  }
+
+  function renderCardioAddGrid() {
+    els.cardioAddGrid.innerHTML = "";
+    Object.entries(CARDIO_ACTIVITIES).forEach(([id, act]) => {
+      const btn = document.createElement("button");
+      btn.className = "combo-add-btn";
+      btn.innerHTML = `<span><span class="ca-title">${esc(act.name)}</span></span><span class="ca-plus">+</span>`;
+      btn.addEventListener("click", () => {
+        cardioPrefs.items.push({ activity: id, durationS: cardioPrefs.defaultDurationS, label: "", interval: null });
+        saveCardioPrefs();
+        renderCardioList();
+        syncCardioUI();
+      });
+      els.cardioAddGrid.appendChild(btn);
+    });
+  }
+
+  function renderCardioList() {
+    const items = cardioPrefs.items;
+    els.cardioCount.textContent = items.length ? `${items.length} Aktivität${items.length === 1 ? "" : "en"}` : "";
+    els.cardioEmptyHint.hidden = items.length > 0;
+    els.cardioList.innerHTML = "";
+    items.forEach((item, i) => {
+      const act = findCardioActivity(item.activity);
+      const row = document.createElement("div");
+      row.className = "circuit-item-row";
+      row.innerHTML =
+        `<div class="circuit-item-main">` +
+        `<span class="chapter-main" style="cursor:default"><span class="num">${i + 1}</span><span class="info"><strong>${esc(act.name)}</strong></span></span>` +
+        `<div class="circuit-duration">` +
+        `<button class="circuit-step" data-i="${i}" data-dir="-1" aria-label="kürzer">&minus;</button>` +
+        `<span class="circuit-duration-value">${fmtCardioDuration(item.durationS)}</span>` +
+        `<button class="circuit-step" data-i="${i}" data-dir="1" aria-label="länger">+</button>` +
+        `</div>` +
+        `<button class="combo-block-remove" data-i="${i}" title="Entfernen">&#10005;</button>` +
+        `</div>` +
+        `<input type="text" class="circuit-item-note" data-i="${i}" placeholder="Label (optional, z. B. Warm-up)" maxlength="40" value="${esc(item.label || "")}">` +
+        `<label class="cardio-interval-toggle"><input type="checkbox" data-i="${i}" ${item.interval ? "checked" : ""}> Intervall in diesem Block (Belastung/Erholung)</label>` +
+        (item.interval ? `<div class="cardio-interval-fields">` +
+          `<div class="cardio-interval-phase-row"><span>Belastung</span><button class="circuit-step" data-int="${i}" data-field="onS" data-dir="-1" aria-label="kürzer">&minus;</button>` +
+          `<span class="circuit-duration-value">${item.interval.onS}s</span>` +
+          `<button class="circuit-step" data-int="${i}" data-field="onS" data-dir="1" aria-label="länger">+</button></div>` +
+          `<div class="cardio-interval-phase-row"><span>Erholung</span><button class="circuit-step" data-int="${i}" data-field="offS" data-dir="-1" aria-label="kürzer">&minus;</button>` +
+          `<span class="circuit-duration-value">${item.interval.offS}s</span>` +
+          `<button class="circuit-step" data-int="${i}" data-field="offS" data-dir="1" aria-label="länger">+</button></div>` +
+          `</div>` : "");
+      els.cardioList.appendChild(row);
+    });
+    els.cardioList.querySelectorAll(".circuit-step[data-i]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const item = cardioPrefs.items[Number(btn.dataset.i)];
+        item.durationS = Math.max(60, Math.min(3600, item.durationS + Number(btn.dataset.dir) * 60));
+        saveCardioPrefs();
+        renderCardioList();
+      });
+    });
+    els.cardioList.querySelectorAll(".circuit-step[data-int]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const item = cardioPrefs.items[Number(btn.dataset.int)];
+        const field = btn.dataset.field;
+        item.interval[field] = Math.max(5, Math.min(300, item.interval[field] + Number(btn.dataset.dir) * 5));
+        saveCardioPrefs();
+        renderCardioList();
+      });
+    });
+    els.cardioList.querySelectorAll(".combo-block-remove").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        cardioPrefs.items.splice(Number(btn.dataset.i), 1);
+        saveCardioPrefs();
+        renderCardioList();
+        syncCardioUI();
+      });
+    });
+    els.cardioList.querySelectorAll(".circuit-item-note").forEach((input) => {
+      input.addEventListener("change", () => {
+        cardioPrefs.items[Number(input.dataset.i)].label = input.value.trim();
+        saveCardioPrefs();
+      });
+    });
+    els.cardioList.querySelectorAll(".cardio-interval-toggle input").forEach((cb) => {
+      cb.addEventListener("change", () => {
+        const item = cardioPrefs.items[Number(cb.dataset.i)];
+        item.interval = cb.checked ? { onS: 30, offS: 30 } : null;
+        saveCardioPrefs();
+        renderCardioList();
+      });
+    });
+  }
+
+  function syncCardioUI() {
+    els.cardioStartBtn.disabled = cardioPrefs.items.length === 0;
+    els.cardioStartBtn.textContent = cardioPrefs.items.length ? "Cardio starten" : "Mindestens eine Aktivität hinzufügen";
+  }
+
+  const CARDIO_SAVED_KEY = "fwmc-cardio-saved-v1";
+  const cardioSavedStore = makePresetStore(CARDIO_SAVED_KEY);
+  function renderCardioSaved() {
+    renderPresetList(cardioSavedStore, els.cardioSavedList, els.cardioSavedGroup, null,
+      (e) => `${e.items.length} Aktivität${e.items.length === 1 ? "" : "en"} · ca. ${fmtCardioDuration(e.items.reduce((s, it) => s + it.durationS, 0))}`,
+      (entry) => {
+        cardioPrefs.items = entry.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null }));
+        saveCardioPrefs();
+        startCardioNow();
+      });
+  }
+  wirePresetSaveForm({
+    saveBtn: els.cardioSaveBtn, form: els.cardioSaveForm, nameInput: els.cardioSaveNameInput,
+    cancelBtn: els.cardioSaveCancelBtn, confirmBtn: els.cardioSaveConfirmBtn,
+    defaultName: () => `Eigenes Cardio ${new Date().toLocaleDateString("de-DE")}`,
+    onSave: (name) => {
+      const list = cardioSavedStore.load();
+      list.push({ id: String(Date.now()), name, items: cardioPrefs.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null })) });
+      cardioSavedStore.save(list);
+      renderCardioSaved();
+    },
+  });
+
+  function openCardioReady() {
+    renderCardioAddGrid();
+    renderCardioList();
+    syncCardioUI();
+    els.cardioSaveForm.hidden = true;
+    els.cardioSaveBtn.hidden = false;
+    renderCardioSaved();
+    renderCardioAddonUI();
+    showScreen("cardioReady");
+  }
+  els.cardioStartCard.addEventListener("click", openCardioReady);
+  els.cardioBackToHome.addEventListener("click", () => showScreen("cardioHome"));
+
+  // ---- Cardio dual-task: an optional "Zusatzübung" window pops up during
+  // a running Cardio block, either the app's existing peripheral flash
+  // (ported onto a synthetic blank-canvas "host" exercise, see the
+  // "cardio-flash-host" EXERCISES entry + the special case at the top of
+  // buildAddonSchedule) or a short real round of one of a few quick,
+  // single-glance exercises (VT-Farbe, Stroop, 4 Pfeile) - deliberately
+  // NOT the sustained-attention Test-Bereich/NAT exercises, which need
+  // continuous focus that doesn't suit a brief glance mid-cardio.
+  // Client-controlled, like the existing Zusatzaufgabe: an on/off toggle
+  // the client sets for themselves, works during ANY cardio run (self-
+  // built or, later, coach-authored), no coach programming required.
+  const CARDIO_GUEST_TYPES = [
+    { id: "addon-flash", title: "Zusatzaufgabe · Zahlen/Buchstaben" },
+    { id: "vt-color", title: "VT · Farbe & Seite" },
+    { id: "stroop-classic", title: "Stroop · klassisch" },
+    { id: "4-straight", title: "4 Pfeile · gerade" },
+  ];
+  function cardioGuestColorLib(guestId) {
+    return guestId === "addon-flash" || guestId === "stroop-classic" ? STROOP_COLOR_LIB : COLOR_LIB;
+  }
+  function cardioGuestDefaultCfg(guestId) {
+    if (guestId === "addon-flash") return { duration: 20, ...addonDefaultOwn() };
+    if (guestId === "vt-color") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"] };
+    if (guestId === "stroop-classic") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "blau", "gruen"] };
+    return { duration: 20, stimulusS: 1, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"] };
+  }
+  const CARDIO_ADDON_KEY = "fwmc-cardio-addon-v1";
+  const cardioAddonPrefs = { enabled: false, pool: [], intervalMinS: 90, intervalMaxS: 180, perType: {} };
+  function loadCardioAddonPrefs() {
+    const saved = readJSON(CARDIO_ADDON_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(cardioAddonPrefs, saved);
+    if (typeof cardioAddonPrefs.enabled !== "boolean") cardioAddonPrefs.enabled = false;
+    if (!Array.isArray(cardioAddonPrefs.pool)) cardioAddonPrefs.pool = [];
+    cardioAddonPrefs.pool = cardioAddonPrefs.pool.filter((id) => CARDIO_GUEST_TYPES.some((t) => t.id === id));
+    if (!Number.isFinite(cardioAddonPrefs.intervalMinS) || cardioAddonPrefs.intervalMinS < 20 || cardioAddonPrefs.intervalMinS > 600) cardioAddonPrefs.intervalMinS = 90;
+    if (!Number.isFinite(cardioAddonPrefs.intervalMaxS) || cardioAddonPrefs.intervalMaxS < cardioAddonPrefs.intervalMinS || cardioAddonPrefs.intervalMaxS > 600) cardioAddonPrefs.intervalMaxS = Math.max(cardioAddonPrefs.intervalMinS, 180);
+    if (!cardioAddonPrefs.perType || typeof cardioAddonPrefs.perType !== "object") cardioAddonPrefs.perType = {};
+    CARDIO_GUEST_TYPES.forEach((t) => {
+      const d = cardioGuestDefaultCfg(t.id);
+      let p = cardioAddonPrefs.perType[t.id];
+      if (!p || typeof p !== "object") { cardioAddonPrefs.perType[t.id] = d; return; }
+      if (!Number.isFinite(p.duration) || p.duration < 5 || p.duration > 120) p.duration = d.duration;
+      if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
+      if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
+      if (!Number.isFinite(p.intervalMax) || p.intervalMax < 0.5 || p.intervalMax > 15) p.intervalMax = d.intervalMax;
+      const lib = cardioGuestColorLib(t.id);
+      if (!Array.isArray(p.colors) || !p.colors.length || !p.colors.every((k) => lib.some((c) => c.key === k))) p.colors = d.colors.slice();
+      if (t.id === "addon-flash") {
+        if (!["buchstaben", "zahlen", "gemischt"].includes(p.kind)) p.kind = d.kind;
+        if (!["gleich", "wachsend"].includes(p.sizeMode)) p.sizeMode = d.sizeMode;
+        if (!Array.isArray(p.axes) || !p.axes.length) p.axes = d.axes.slice();
+        if (typeof p.useZones !== "boolean") p.useZones = d.useZones;
+        if (!Array.isArray(p.zones) || !p.zones.length) p.zones = d.zones.slice();
+      }
+    });
+  }
+  function saveCardioAddonPrefs() { writeJSON(CARDIO_ADDON_KEY, cardioAddonPrefs); }
+  loadCardioAddonPrefs();
+
+  function renderCardioAddonUI() {
+    els.cardioAddonEnableToggle.checked = cardioAddonPrefs.enabled;
+    els.cardioAddonBody.hidden = !cardioAddonPrefs.enabled;
+    els.cardioAddonIntervalMinSlider.value = cardioAddonPrefs.intervalMinS;
+    els.cardioAddonIntervalMinValue.textContent = `${cardioAddonPrefs.intervalMinS}s`;
+    els.cardioAddonIntervalMaxSlider.value = cardioAddonPrefs.intervalMaxS;
+    els.cardioAddonIntervalMaxValue.textContent = `${cardioAddonPrefs.intervalMaxS}s`;
+    els.cardioAddonPoolGrid.innerHTML = "";
+    CARDIO_GUEST_TYPES.forEach((t) => {
+      const label = document.createElement("label");
+      label.className = "cardio-pool-check";
+      const checked = cardioAddonPrefs.pool.includes(t.id);
+      label.innerHTML = `<input type="checkbox" data-pool="${t.id}" ${checked ? "checked" : ""}> ${esc(t.title)}`;
+      els.cardioAddonPoolGrid.appendChild(label);
+    });
+    els.cardioAddonPoolGrid.querySelectorAll("[data-pool]").forEach((cb) => {
+      cb.addEventListener("change", () => {
+        const id = cb.dataset.pool;
+        if (cb.checked) { if (!cardioAddonPrefs.pool.includes(id)) cardioAddonPrefs.pool.push(id); }
+        else cardioAddonPrefs.pool = cardioAddonPrefs.pool.filter((x) => x !== id);
+        saveCardioAddonPrefs();
+        renderCardioAddonFineTune();
+      });
+    });
+    renderCardioAddonFineTune();
+  }
+  els.cardioAddonEnableToggle.addEventListener("change", () => {
+    cardioAddonPrefs.enabled = els.cardioAddonEnableToggle.checked;
+    els.cardioAddonBody.hidden = !cardioAddonPrefs.enabled;
+    saveCardioAddonPrefs();
+  });
+  els.cardioAddonIntervalMinSlider.addEventListener("input", () => {
+    cardioAddonPrefs.intervalMinS = Number(els.cardioAddonIntervalMinSlider.value);
+    if (cardioAddonPrefs.intervalMaxS < cardioAddonPrefs.intervalMinS) cardioAddonPrefs.intervalMaxS = cardioAddonPrefs.intervalMinS;
+    saveCardioAddonPrefs();
+    renderCardioAddonUI();
+  });
+  els.cardioAddonIntervalMaxSlider.addEventListener("input", () => {
+    cardioAddonPrefs.intervalMaxS = Math.max(cardioAddonPrefs.intervalMinS, Number(els.cardioAddonIntervalMaxSlider.value));
+    saveCardioAddonPrefs();
+    renderCardioAddonUI();
+  });
+
+  // One fine-tune panel per pool-selected guest type - same shape
+  // (Dauer/Reiz-Dauer/Pause/Farben) for all four, saved independently per
+  // type under cardioAddonPrefs.perType so switching which types are
+  // enabled never overwrites another type's own remembered settings.
+  function renderCardioAddonFineTune() {
+    els.cardioAddonPerType.innerHTML = "";
+    CARDIO_GUEST_TYPES.filter((t) => cardioAddonPrefs.pool.includes(t.id)).forEach((t) => {
+      const cfg = cardioAddonPrefs.perType[t.id];
+      const lib = cardioGuestColorLib(t.id);
+      const panel = document.createElement("div");
+      panel.className = "cardio-guest-panel";
+      let html = `<div class="cardio-guest-panel-title">${esc(t.title)}</div>`;
+      html += `<div class="cardio-guest-field-row">
+        <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
+        <div><label>Reiz-Dauer (Sek.)</label><input type="number" min="0.3" max="3" step="0.1" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"></div>
+        <div><label>Pause min (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${t.id}" data-f="intervalMin" value="${cfg.intervalMin}"></div>
+        <div><label>Pause max (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${t.id}" data-f="intervalMax" value="${cfg.intervalMax}"></div>
+      </div>`;
+      if (t.id === "addon-flash") {
+        html += `<div class="choice-row" data-kind-row="${t.id}">` +
+          ["buchstaben", "zahlen", "gemischt"].map((k) => `<button class="choice${cfg.kind === k ? " active" : ""}" data-type="${t.id}" data-kind="${k}">${k === "buchstaben" ? "Buchstaben" : k === "zahlen" ? "Zahlen" : "Gemischt"}</button>`).join("") +
+          `</div>`;
+      }
+      html += `<div class="cardio-guest-colors" data-colors="${t.id}">` +
+        lib.map((c) => `<label><input type="checkbox" data-type="${t.id}" data-color="${c.key}" ${cfg.colors.includes(c.key) ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
+        `</div>`;
+      panel.innerHTML = html;
+      els.cardioAddonPerType.appendChild(panel);
+    });
+    els.cardioAddonPerType.querySelectorAll("input[data-f]").forEach((input) => {
+      input.addEventListener("input", () => {
+        cardioAddonPrefs.perType[input.dataset.type][input.dataset.f] = Number(input.value);
+        saveCardioAddonPrefs();
+      });
+    });
+    els.cardioAddonPerType.querySelectorAll("[data-kind]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        cardioAddonPrefs.perType[btn.dataset.type].kind = btn.dataset.kind;
+        saveCardioAddonPrefs();
+        renderCardioAddonFineTune();
+      });
+    });
+    els.cardioAddonPerType.querySelectorAll("input[data-color]").forEach((cb) => {
+      cb.addEventListener("change", () => {
+        const cfg = cardioAddonPrefs.perType[cb.dataset.type];
+        const key = cb.dataset.color;
+        if (cb.checked) { if (!cfg.colors.includes(key)) cfg.colors.push(key); }
+        else {
+          if (cfg.colors.length <= 1) { cb.checked = true; return; }
+          cfg.colors = cfg.colors.filter((k) => k !== key);
+        }
+        saveCardioAddonPrefs();
+      });
+    });
+  }
+
+  // ---- Cardio timer engine: its own state/raf globals (never workoutState/
+  // session) so a nested guest exercise (which only ever touches session/
+  // raf) genuinely can't collide with a running Cardio sequence - see the
+  // research note in CLAUDE.md if this needs revisiting. ----
+  let cardioState = null; // { items, index, blockStartTime, nextGuestAt }
+  let cardioRaf = null;
+  let cardioGuestActive = false;
+
+  function scheduleNextCardioGuest() {
+    if (!cardioAddonPrefs.enabled || !cardioAddonPrefs.pool.length) { cardioState.nextGuestAt = null; return; }
+    const { intervalMinS, intervalMaxS } = cardioAddonPrefs;
+    cardioState.nextGuestAt = performance.now() + (intervalMinS + Math.random() * (intervalMaxS - intervalMinS)) * 1000;
+  }
+
+  function startStandaloneCardio(items) {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.cardioPlayer.hidden = false;
+    lastCardioItems = items;
+    cardioState = { items, index: 0, blockStartTime: performance.now(), nextGuestAt: null };
+    scheduleNextCardioGuest();
+    requestWakeLock();
+    cardioRaf = requestAnimationFrame(cardioTick);
+  }
+  function startCardioNow() {
+    if (!cardioPrefs.items.length) return;
+    startStandaloneCardio(cardioPrefs.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null })));
+  }
+  els.cardioStartBtn.addEventListener("click", startCardioNow);
+
+  function cardioPhaseFor(block, blockElapsed) {
+    if (!block.interval) return null;
+    const { onS, offS } = block.interval;
+    const t = blockElapsed % (onS + offS);
+    return t < onS ? "on" : "off";
+  }
+
+  function cardioTick(now) {
+    if (!cardioState) return;
+    const block = cardioState.items[cardioState.index];
+    if (!block) { finishCardio(); return; }
+    const blockElapsed = (now - cardioState.blockStartTime) / 1000;
+    if (blockElapsed >= block.durationS) {
+      cardioState.index++;
+      cardioState.blockStartTime = now;
+      cardioRaf = requestAnimationFrame(cardioTick);
+      return;
+    }
+    const act = findCardioActivity(block.activity);
+    els.cardioActivityTitle.textContent = act.name;
+    els.cardioActivityLabel.textContent = block.label || "";
+    els.cardioActivityLabel.hidden = !block.label;
+    els.cardioCountdown.textContent = fmtClock(block.durationS - blockElapsed);
+    els.cardioBlockProgress.textContent = `Aktivität ${cardioState.index + 1} von ${cardioState.items.length}`;
+    const phase = cardioPhaseFor(block, blockElapsed);
+    els.cardioPhaseLabel.hidden = !phase;
+    if (phase) els.cardioPhaseLabel.textContent = phase === "on" ? "Belastung" : "Erholung";
+    if (cardioAddonPrefs.enabled && cardioAddonPrefs.pool.length && cardioState.nextGuestAt !== null && now >= cardioState.nextGuestAt) {
+      triggerCardioGuest();
+      return;
+    }
+    cardioRaf = requestAnimationFrame(cardioTick);
+  }
+
+  function applyCardioGuestToState(guestId, cfg) {
+    state.exercise = guestId;
+    state.duration = cfg.duration;
+    state.stimulusS = cfg.stimulusS;
+    state.intervalMin = cfg.intervalMin;
+    state.intervalMax = cfg.intervalMax;
+    const ex = EXERCISES[guestId];
+    active = { colors: [], arrowColors: [], stroopColors: [] };
+    if (ex.usesColors) active.colors = keysToColors(cfg.colors);
+    else if (ex.usesArrowColors) active.arrowColors = keysToColors(cfg.colors);
+    else if (ex.usesStroopColors) active.stroopColors = keysToColors(cfg.colors, STROOP_COLOR_LIB);
+  }
+
+  function triggerCardioGuest() {
+    if (cardioRaf) cancelAnimationFrame(cardioRaf);
+    cardioRaf = null;
+    const guestId = cardioAddonPrefs.pool[Math.floor(Math.random() * cardioAddonPrefs.pool.length)];
+    const realId = guestId === "addon-flash" ? "cardio-flash-host" : guestId;
+    const cfg = cardioAddonPrefs.perType[guestId];
+    cardioGuestActive = true;
+    applyCardioGuestToState(realId, cfg);
+    runSession();
+  }
+
+  // Called from finishSession() instead of the normal done-panel path
+  // whenever a guest window (triggerCardioGuest) finishes on its own -
+  // re-shows the still-running Cardio view (hideAllPlayers()/runSession()
+  // hid it, exactly like it hides everything else) and resumes the timer;
+  // real elapsed time for the current block never paused underneath
+  // (blockStartTime is a wall-clock reference, not an accumulator), so no
+  // catch-up logic is needed here.
+  function returnFromCardioGuest() {
+    cardioGuestActive = false;
+    hideAllPlayers();
+    els.cardioPlayer.hidden = false;
+    if (!wakeLock) requestWakeLock();
+    if (cardioState) {
+      scheduleNextCardioGuest();
+      cardioRaf = requestAnimationFrame(cardioTick);
+    }
+  }
+
+  els.cardioSkipBtn.addEventListener("click", () => {
+    if (!cardioState) return;
+    cardioState.index++;
+    cardioState.blockStartTime = performance.now();
+  });
+  function abortCardio() {
+    if (cardioRaf) cancelAnimationFrame(cardioRaf);
+    cardioRaf = null;
+    cardioState = null;
+    cardioGuestActive = false;
+    releaseWakeLock();
+    // cardioPlayer is a "player" overlay, not a SCREENS member (same as
+    // workoutPlayer/els.player/...) - showScreen() alone never hides it.
+    hideAllPlayers();
+    showScreen("cardioReady");
+  }
+  els.cardioBackBtn.addEventListener("click", abortCardio);
+
+  function finishCardio() {
+    if (cardioRaf) cancelAnimationFrame(cardioRaf);
+    cardioRaf = null;
+    const items = cardioState.items;
+    const totalS = items.reduce((s, b) => s + b.durationS, 0);
+    releaseWakeLock();
+    els.cardioPlayer.hidden = true;
+    const names = [...new Set(items.map((b) => findCardioActivity(b.activity).name))].join(", ");
+    const id = addHistory({ kind: "cardio", title: "Cardio", seconds: Math.round(totalS), note: names });
+    renderRating(els.cardioRating, id);
+    els.cardioDoneSummary.textContent = `${exerciseCountLabel(items.length)} · ${fmtMinutes(totalS)} Training`;
+    els.cardioDonePanel.hidden = false;
+    cardioState = null;
+  }
+  els.cardioAgainBtn.addEventListener("click", () => {
+    if (!lastCardioItems) return;
+    els.cardioDonePanel.hidden = true;
+    startStandaloneCardio(lastCardioItems.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null })));
+  });
+  els.cardioDoneBackBtn.addEventListener("click", () => {
+    els.cardioDonePanel.hidden = true;
+    showScreen("cardioReady");
+  });
+  let lastCardioItems = null;
+
   // ==== Cross-section combo programmes ====
   let comboProgram = null; // { def, blockIndex, code, key, title, totalPlayedS }
   let comboOriginBundle = null; // { def, code } - set when opened from a combo-bundle code
@@ -8319,7 +8903,7 @@
   function currentHomeScreen() {
     const active = document.querySelector(".section-tab.active");
     const sec = active ? active.dataset.section : "visual";
-    return sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "nat" ? "natHome" : sec === "test" ? "testHome" : "home";
+    return sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "cardio" ? "cardioHome" : sec === "nat" ? "natHome" : sec === "test" ? "testHome" : "home";
   }
 
   function startComboProgram(def, code, key, fallbackReturnScreen) {
