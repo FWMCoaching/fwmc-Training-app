@@ -704,6 +704,11 @@
       <span class="fc-desc">Ein Farbwort (ROT/BLAU/GR&Uuml;N/GELB) erscheint in einer Schriftfarbe, die oft NICHT zum Wort passt &ndash; tippe so schnell wie m&ouml;glich auf das Farbfeld, das der tats&auml;chlichen SCHRIFTFARBE entspricht, nicht dem Wort selbst. Klassisches Paradigma zum Wort-Farb-Konflikt (Stroop, 1935), trainiert visuelle Entscheidungsgeschwindigkeit unter automatischer Lese-Ablenkung.</span>
       <span class="fc-meta" id="stroopBestHint"></span>
     </button>
+    <button class="featured-card" id="subitizeOpenBtn">
+      <span class="fc-title">Sofortmengen-Test (Subitizing)</span>
+      <span class="fc-desc">Ein paar Punkte blitzen kurz auf &ndash; tippe sofort die Anzahl, die du gesehen hast. Bis etwa vier Punkte erkennst du auf einen Blick, bei mehr musst du z&auml;hlen. Trainiert die schnelle, automatische Mengenerfassung (Subitizing), die auch beim &Uuml;berblicken von Spielsituationen gefragt ist.</span>
+      <span class="fc-meta" id="subitizeBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -1353,6 +1358,27 @@
   <div class="group-help" id="stroopReadyBestHint"></div>
 
   <button class="start-btn" id="stroopReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="subitizeReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="subitizeReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Sofortmengen-Test (Subitizing)</h1>
+  <p class="page-sub">Eine Handvoll Punkte blitzt kurz auf der Fl&auml;che auf, dann verschwinden sie wieder. Tippe sofort auf dem Ziffernfeld darunter, wie viele Punkte du gesehen hast. Bis etwa vier Punkte erfasst das Auge auf einen Blick, ohne bewusst zu z&auml;hlen (&bdquo;Subitizing&ldquo;, Kaufman, Lord, Reese &amp; Volkmann, 1949) &ndash; bei mehr Punkten wird es sp&uuml;rbar langsamer, weil dann tats&auml;chlich gez&auml;hlt werden muss. Dieser Umschlagpunkt ist das eigentlich Interessante an diesem Test, nicht nur ob du richtig liegst.</p>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="subitizeDifficultyRow">
+      <button class="choice" data-subitize-diff="leicht">Leicht<small>l&auml;nger sichtbar</small></button>
+      <button class="choice" data-subitize-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-subitize-diff="schwer">Schwer<small>ganz kurz</small></button>
+    </div>
+  </div>
+
+  <div class="group-help" id="subitizeReadyBestHint"></div>
+
+  <button class="start-btn" id="subitizeReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="merkReady" hidden>
@@ -3957,6 +3983,40 @@
     <div class="rating" id="stroopRating"></div>
     <button class="again" id="stroopAgainBtn">Nochmal</button>
     <button class="back" id="stroopDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="subitizePlayer" hidden>
+  <div class="subitize-stage" id="subitizeStage">
+    <div class="remember-hint" id="subitizeHint"></div>
+    <div class="subitize-dots" id="subitizeDots"></div>
+    <div class="subitize-keypad" id="subitizeKeypad"></div>
+  </div>
+  <div class="pause-overlay" id="subitizePauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="subitizeResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="subitizePlayerBar">
+    <button id="subitizeBackBtn">&#10005; Beenden</button>
+    <button id="subitizePauseBtn">Pause</button>
+    <span class="player-status" id="subitizeProgressEl"></span>
+    <button id="subitizeFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="subitizeFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="subitizeFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="subitizeFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="subitizeDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="subitizeDoneSummary"></p>
+    <div class="rating" id="subitizeRating"></div>
+    <button class="again" id="subitizeAgainBtn">Nochmal</button>
+    <button class="back" id="subitizeDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

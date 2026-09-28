@@ -1416,6 +1416,16 @@
     stroopFsBtn: $("stroopFsBtn"), stroopFsHint: $("stroopFsHint"), stroopFsHintOpenBtn: $("stroopFsHintOpenBtn"), stroopFsHintClose: $("stroopFsHintClose"),
     stroopDonePanel: $("stroopDonePanel"), stroopDoneSummary: $("stroopDoneSummary"), stroopRating: $("stroopRating"),
     stroopAgainBtn: $("stroopAgainBtn"), stroopDoneBackBtn: $("stroopDoneBackBtn"),
+    subitizeOpenBtn: $("subitizeOpenBtn"), subitizeBestHint: $("subitizeBestHint"), subitizeReady: $("subitizeReady"),
+    subitizeReadyBackToHome: $("subitizeReadyBackToHome"), subitizeDifficultyRow: $("subitizeDifficultyRow"),
+    subitizeReadyBestHint: $("subitizeReadyBestHint"), subitizeReadyStartBtn: $("subitizeReadyStartBtn"),
+    subitizePlayer: $("subitizePlayer"), subitizeStage: $("subitizeStage"), subitizeHint: $("subitizeHint"),
+    subitizeDots: $("subitizeDots"), subitizeKeypad: $("subitizeKeypad"),
+    subitizePauseOverlay: $("subitizePauseOverlay"), subitizeResumeBtn: $("subitizeResumeBtn"),
+    subitizePlayerBar: $("subitizePlayerBar"), subitizeBackBtn: $("subitizeBackBtn"), subitizePauseBtn: $("subitizePauseBtn"), subitizeProgressEl: $("subitizeProgressEl"),
+    subitizeFsBtn: $("subitizeFsBtn"), subitizeFsHint: $("subitizeFsHint"), subitizeFsHintOpenBtn: $("subitizeFsHintOpenBtn"), subitizeFsHintClose: $("subitizeFsHintClose"),
+    subitizeDonePanel: $("subitizeDonePanel"), subitizeDoneSummary: $("subitizeDoneSummary"), subitizeRating: $("subitizeRating"),
+    subitizeAgainBtn: $("subitizeAgainBtn"), subitizeDoneBackBtn: $("subitizeDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
@@ -1642,7 +1652,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3709,6 +3719,7 @@
     els.tsPlayer.hidden = true;
     els.antiPlayer.hidden = true;
     els.stroopPlayer.hidden = true;
+    els.subitizePlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -14591,6 +14602,310 @@
   els.stroopAgainBtn.addEventListener("click", () => { els.stroopDonePanel.hidden = true; startStroopGame(); });
   els.stroopDoneBackBtn.addEventListener("click", () => { els.stroopPlayer.hidden = true; els.stroopDonePanel.hidden = true; showScreen("testHome"); });
   wireFullscreen({ player: els.stroopPlayer, btn: els.stroopFsBtn, hint: els.stroopFsHint, hintOpen: els.stroopFsHintOpenBtn, hintClose: els.stroopFsHintClose });
+
+  // ==== Test-Bereich: Sofortmengen-Test (Subitizing-Aufgabe) ====
+  // Nineteenth autonomous entry (picked from the "Recherche-Backlog: 20
+  // Kandidaten" list rather than fresh research - see that section for the
+  // full write-up this build is based on). Grounded in "subitizing":
+  // Kaufman, Lord, Reese & Volkmann (1949) first documented that people
+  // enumerate up to ~4 items instantly and accurately with FLAT reaction
+  // time, but fall back to slower, roughly linearly-rising RT when serially
+  // counting beyond that; Trick & Pylyshyn (1994) tie the small-number/
+  // large-number break to a limited-capacity preattentive individuation
+  // mechanism ("FINST" - the same visual-indexing idea underlying this
+  // app's own MOT-Fähigkeit). A scatter of 1-9 identical dots flashes
+  // briefly; the client taps the matching count on a 1-9 keypad. Genuinely
+  // distinct from every existing Test/NAT exercise: nothing else measures a
+  // QUANTITY judgment at all - Merkspanne-Test judges a colour CHANGE,
+  // Suchtest judges presence/absence of one target, Corsi/Remember/
+  // Blitz-Raster judge WHICH positions - this is the only one whose whole
+  // point is "how many," with the subitizing/counting RT break itself as
+  // the outcome measure, not just a plain accuracy%. Directly relevant to
+  // FWMC's sport-coaching context too: quickly gauging how many
+  // teammates/opponents/objects are in view without consciously counting
+  // is the same perceptual skill.
+  const SUBITIZE_PREFS_KEY = "fwmc-subitize-prefs-v1";
+  const SUBITIZE_DIFFICULTIES = {
+    leicht: { title: "Leicht", flashMs: 700 },
+    mittel: { title: "Mittel", flashMs: 450 },
+    schwer: { title: "Schwer", flashMs: 280 },
+  };
+  const SUBITIZE_MIN_COUNT = 1;
+  const SUBITIZE_MAX_COUNT = 9;
+  const SUBITIZE_REPS_PER_COUNT = 3; // × 9 counts = 27 trials/run
+  const SUBITIZE_SUBITIZING_MAX = 4; // ≤4 = classic "instant" range, ≥5 = counting range
+  const subitizePrefs = { difficulty: "mittel" };
+  function loadSubitizePrefs() {
+    const saved = readJSON(SUBITIZE_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(subitizePrefs, saved);
+    if (!SUBITIZE_DIFFICULTIES[subitizePrefs.difficulty]) subitizePrefs.difficulty = "mittel";
+  }
+  loadSubitizePrefs();
+  function saveSubitizePrefsToStorage() { writeJSON(SUBITIZE_PREFS_KEY, subitizePrefs); }
+
+  // Best score tracks the lowest (fastest) average RT within the
+  // SUBITIZING range itself (≤4 dots) per difficulty - the actual
+  // "instant perception" speed this paradigm exists to measure, not the
+  // slower serial-counting RT - gated to runs with ≥80% overall accuracy so
+  // a fast-random-tap run can't fake a record through noise.
+  const SUBITIZE_BEST_KEY = "fwmc-subitize-best-v1"; // { [difficulty]: bestSubitizeRtMs }
+  function subitizeBestFor() {
+    const v = readJSON(SUBITIZE_BEST_KEY, {})[subitizePrefs.difficulty];
+    return typeof v === "number" ? v : null;
+  }
+  function saveSubitizeBest(subitizeRtMs, accuracyPct) {
+    if (accuracyPct < 80) return false;
+    const all = readJSON(SUBITIZE_BEST_KEY, {});
+    const cur = all[subitizePrefs.difficulty];
+    if (cur == null || subitizeRtMs < cur) { all[subitizePrefs.difficulty] = subitizeRtMs; writeJSON(SUBITIZE_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderSubitizeBest() {
+    const best = subitizeBestFor();
+    const text = best != null ? `Beste Sofort-Erkennung (${SUBITIZE_DIFFICULTIES[subitizePrefs.difficulty].title}): ${best} ms` : "";
+    els.subitizeBestHint.textContent = text;
+    els.subitizeReadyBestHint.textContent = text;
+  }
+  function syncSubitizeDifficultyUI() {
+    els.subitizeDifficultyRow.querySelectorAll("[data-subitize-diff]").forEach((btn) => setActive(btn, btn.dataset.subitizeDiff === subitizePrefs.difficulty));
+  }
+  els.subitizeDifficultyRow.querySelectorAll("[data-subitize-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      subitizePrefs.difficulty = btn.dataset.subitizeDiff;
+      saveSubitizePrefsToStorage();
+      syncSubitizeDifficultyUI();
+      renderSubitizeBest();
+    });
+  });
+
+  els.subitizeOpenBtn.addEventListener("click", () => {
+    syncSubitizeDifficultyUI();
+    renderSubitizeBest();
+    showScreen("subitizeReady");
+  });
+  els.subitizeReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Same timer-wrapping trick as scheduleGngTimer/scheduleFlankerTimer -
+  // records what's pending and when it fires, so Pause can cancel it and
+  // Resume can replay it with its exact remaining delay.
+  function scheduleSubitizeTimer(fn, delayMs) {
+    subitizeState.timerFn = fn;
+    subitizeState.timerFiresAt = performance.now() + delayMs;
+    subitizeState.timer = setTimeout(() => { subitizeState.timer = null; fn(); }, delayMs);
+  }
+
+  function buildSubitizeTrials() {
+    const trials = [];
+    for (let c = SUBITIZE_MIN_COUNT; c <= SUBITIZE_MAX_COUNT; c++) {
+      for (let i = 0; i < SUBITIZE_REPS_PER_COUNT; i++) trials.push(c);
+    }
+    for (let tries = 0; tries < 200; tries++) {
+      for (let i = trials.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [trials[i], trials[j]] = [trials[j], trials[i]];
+      }
+      let ok = true;
+      for (let i = 1; i < trials.length; i++) if (trials[i] === trials[i - 1]) { ok = false; break; }
+      if (ok) break;
+    }
+    return trials;
+  }
+
+  // Random scatter with simple rejection-sampling minimum spacing (same
+  // idea as motPlaceObjects, adapted for static dots rather than moving
+  // objects - visual separability is all that matters here, there's no
+  // tap target on the dots themselves to protect from overlap).
+  function subitizePlaceDots(n, w, h, radius) {
+    const pts = [];
+    const minDist = radius * 2.4;
+    for (let i = 0; i < n; i++) {
+      let x, y, tries = 0;
+      do {
+        x = radius + Math.random() * Math.max(1, w - 2 * radius);
+        y = radius + Math.random() * Math.max(1, h - 2 * radius);
+        tries++;
+      } while (tries < 40 && pts.some((p) => Math.hypot(p.x - x, p.y - y) < minDist));
+      pts.push({ x, y });
+    }
+    return pts;
+  }
+  function renderSubitizeDots(count) {
+    els.subitizeDots.innerHTML = "";
+    const rect = els.subitizeDots.getBoundingClientRect();
+    const radius = 14;
+    subitizePlaceDots(count, rect.width, rect.height, radius).forEach((p) => {
+      const dot = document.createElement("div");
+      dot.className = "subitize-dot";
+      dot.style.left = p.x + "px";
+      dot.style.top = p.y + "px";
+      els.subitizeDots.appendChild(dot);
+    });
+  }
+  function renderSubitizeKeypad() {
+    els.subitizeKeypad.innerHTML = "";
+    for (let n = SUBITIZE_MIN_COUNT; n <= SUBITIZE_MAX_COUNT; n++) {
+      const btn = document.createElement("button");
+      btn.className = "subitize-key";
+      btn.textContent = String(n);
+      btn.addEventListener("click", () => subitizeTap(n));
+      els.subitizeKeypad.appendChild(btn);
+    }
+  }
+
+  let subitizeState = null;
+  function startSubitizeGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.subitizePlayer.hidden = false;
+    els.subitizePlayerBar.hidden = false;
+    els.subitizeDonePanel.hidden = true;
+    els.subitizePauseOverlay.hidden = true;
+    els.subitizePauseBtn.hidden = false;
+    subitizeState = {
+      diff: SUBITIZE_DIFFICULTIES[subitizePrefs.difficulty], trials: buildSubitizeTrials(), index: -1, phase: "gap", responded: false,
+      correct: 0, wrong: 0, subRts: [], countRts: [],
+      stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      startTime: performance.now(),
+    };
+    renderSubitizeKeypad();
+    els.subitizeDots.innerHTML = "";
+    els.subitizeHint.textContent = "Bereit? Gleich geht's los …";
+    els.subitizeProgressEl.textContent = `0/${subitizeState.trials.length}`;
+    requestWakeLock();
+    scheduleSubitizeTimer(subitizeNextTrial, 1200);
+  }
+  els.subitizeReadyStartBtn.addEventListener("click", startSubitizeGame);
+
+  function subitizeNextTrial() {
+    if (!subitizeState) return;
+    subitizeState.index++;
+    if (subitizeState.index >= subitizeState.trials.length) { subitizeFinish(); return; }
+    els.subitizeProgressEl.textContent = `${subitizeState.index + 1}/${subitizeState.trials.length}`;
+    subitizeState.phase = "gap";
+    subitizeState.responded = false;
+    els.subitizeDots.innerHTML = "";
+    els.subitizeHint.textContent = "";
+    els.subitizeKeypad.querySelectorAll(".subitize-key").forEach((b) => b.classList.remove("correct", "wrong"));
+    const isi = 500 + Math.random() * 400;
+    scheduleSubitizeTimer(subitizeShowStimulus, isi);
+  }
+  function subitizeShowStimulus() {
+    if (!subitizeState) return;
+    const count = subitizeState.trials[subitizeState.index];
+    subitizeState.phase = "flash";
+    subitizeState.stimAt = performance.now();
+    renderSubitizeDots(count);
+    scheduleSubitizeTimer(subitizeEndFlash, subitizeState.diff.flashMs);
+  }
+  function subitizeEndFlash() {
+    if (!subitizeState) return;
+    els.subitizeDots.innerHTML = "";
+    subitizeState.phase = "answer";
+    els.subitizeHint.textContent = "Wie viele?";
+  }
+  function subitizeTap(n) {
+    if (!subitizeState || subitizeState.paused || subitizeState.phase !== "answer" || subitizeState.responded) return;
+    subitizeState.responded = true;
+    const count = subitizeState.trials[subitizeState.index];
+    const rt = performance.now() - subitizeState.stimAt;
+    const btn = Array.from(els.subitizeKeypad.querySelectorAll(".subitize-key")).find((b) => b.textContent === String(n));
+    if (n === count) {
+      subitizeState.correct++;
+      (count <= SUBITIZE_SUBITIZING_MAX ? subitizeState.subRts : subitizeState.countRts).push(rt);
+      if (btn) btn.classList.add("correct");
+    } else {
+      subitizeState.wrong++;
+      if (btn) btn.classList.add("wrong");
+      els.subitizeHint.textContent = `Waren ${count}`;
+    }
+    scheduleSubitizeTimer(subitizeNextTrial, 700);
+  }
+
+  // Pause just stops/replays the pending timer, same as Go/No-Go/Flanker -
+  // no live background-adjust overlay since there is no background setting
+  // here.
+  function pauseSubitize() {
+    if (!subitizeState || subitizeState.paused) return;
+    subitizeState.paused = true;
+    subitizeState.pausedAt = performance.now();
+    if (subitizeState.timer) {
+      clearTimeout(subitizeState.timer);
+      subitizeState.timer = null;
+      subitizeState.timerRemainingMs = Math.max(0, subitizeState.timerFiresAt - subitizeState.pausedAt);
+    }
+    els.subitizePauseBtn.hidden = true;
+    els.subitizePauseOverlay.hidden = false;
+  }
+  function resumeSubitize() {
+    if (!subitizeState || !subitizeState.paused) return;
+    const pausedMs = performance.now() - subitizeState.pausedAt;
+    subitizeState.startTime += pausedMs;
+    subitizeState.stimAt += pausedMs;
+    subitizeState.paused = false;
+    if (subitizeState.timerFn && subitizeState.timerRemainingMs != null) {
+      scheduleSubitizeTimer(subitizeState.timerFn, subitizeState.timerRemainingMs);
+      subitizeState.timerRemainingMs = null;
+    }
+    els.subitizePauseOverlay.hidden = true;
+    els.subitizePauseBtn.hidden = false;
+  }
+  els.subitizePauseBtn.addEventListener("click", pauseSubitize);
+  els.subitizeResumeBtn.addEventListener("click", resumeSubitize);
+
+  function finalizeSubitizeRun(state, totalTrials) {
+    els.subitizePauseOverlay.hidden = true;
+    els.subitizePlayerBar.hidden = true;
+    const accuracyPct = totalTrials ? Math.round(100 * state.correct / totalTrials) : 0;
+    const avgSub = avgOf(state.subRts);
+    const avgCount = avgOf(state.countRts);
+    const advantage = (avgSub != null && avgCount != null) ? (avgCount - avgSub) : null;
+    const isRecord = avgSub != null ? saveSubitizeBest(avgSub, accuracyPct) : false;
+    renderSubitizeBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.subitizeDoneSummary.textContent =
+      `Sofortmengen-Test (${state.diff.title}) · ${accuracyPct}% richtig` +
+      (avgSub != null ? ` · Ø bis 4: ${avgSub} ms` : "") +
+      (avgCount != null ? ` · Ø ab 5: ${avgCount} ms` : "") +
+      (advantage != null ? ` · Unterschied ${advantage} ms` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${accuracyPct}% richtig` + (avgSub != null ? `, Ø bis 4: ${avgSub} ms` : "");
+    const id = addHistory({ kind: "subitize", title: "Sofortmengen-Test (Subitizing)", seconds: Math.round(played), note });
+    renderRating(els.subitizeRating, id, "Wie fokussiert warst du?");
+    els.subitizeDonePanel.hidden = false;
+  }
+  function subitizeFinish() {
+    if (!subitizeState) return;
+    const state = subitizeState;
+    subitizeState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.subitizePlayer) document.exitFullscreen().catch(() => {});
+    els.subitizeFsHint.hidden = true;
+    finalizeSubitizeRun(state, state.trials.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved.
+  function subitizeStop() {
+    if (!subitizeState) return;
+    if (subitizeState.timer) clearTimeout(subitizeState.timer);
+    const state = subitizeState;
+    subitizeState = null;
+    els.subitizePauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.subitizePlayer) document.exitFullscreen().catch(() => {});
+    els.subitizeFsHint.hidden = true;
+    const resolved = state.correct + state.wrong;
+    if (resolved >= 4) {
+      finalizeSubitizeRun(state, resolved);
+    } else {
+      els.subitizePlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.subitizeBackBtn.addEventListener("click", subitizeStop);
+  els.subitizeAgainBtn.addEventListener("click", () => { els.subitizeDonePanel.hidden = true; startSubitizeGame(); });
+  els.subitizeDoneBackBtn.addEventListener("click", () => { els.subitizePlayer.hidden = true; els.subitizeDonePanel.hidden = true; showScreen("testHome"); });
+  wireFullscreen({ player: els.subitizePlayer, btn: els.subitizeFsBtn, hint: els.subitizeFsHint, hintOpen: els.subitizeFsHintOpenBtn, hintClose: els.subitizeFsHintClose });
 
   // ---- Start-up ----
   renderHistory();

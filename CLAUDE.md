@@ -3094,6 +3094,65 @@ doesn't:
   overlap (same paradigm, same "Stroop" name, adjacent on the same home
   screen) that it's flagged below in Offene Fragen for the client's own
   call rather than decided unilaterally.
+- **Sofortmengen-Test (Subitizing-Aufgabe)** (nineteenth autonomous entry,
+  2026-09-28): built from the "Recherche-Backlog: 20 Kandidaten" list above
+  rather than fresh research this round (candidate #1 there was Iconic-
+  Speicher/Partial-Report - not built - this is candidate #2, Sofortmengen/
+  Subitizing). Grounded in Kaufman, Lord, Reese & Volkmann (1949), who
+  coined "subitizing" - instant, accurate enumeration of up to ~4 items
+  with flat reaction time, versus slower, roughly linearly-rising RT when
+  serially counting beyond that - and Trick & Pylyshyn (1994), tying the
+  small-number/large-number RT break to a limited-capacity preattentive
+  individuation mechanism ("FINST," the same visual-indexing idea
+  underlying this app's own MOT-Fähigkeit). A scatter of 1-9 identical
+  dots (random positions, simple rejection-sampling min-spacing, adapted
+  from `motPlaceObjects`' approach for static rather than moving points)
+  flashes for `SUBITIZE_DIFFICULTIES[difficulty].flashMs`
+  (leicht/mittel/schwer: 700/450/280ms), then the client taps the matching
+  count on a 1-9 keypad (`.subitize-key`, styled like Flash's `.flash-key`/
+  N-Back's `.nback-match-btn`). Fixed 27-trial run (`SUBITIZE_REPS_PER_
+  COUNT = 3` × counts 1-9), shuffled avoiding identical consecutive counts.
+  Genuinely distinct from every existing Test/NAT exercise: nothing else
+  measures a QUANTITY judgment at all - Merkspanne-Test judges a colour
+  CHANGE, Suchtest judges presence/absence of one target, Corsi/Remember/
+  Blitz-Raster judge WHICH positions - this is the only one whose whole
+  point is "how many." Reports accuracy% plus the actual outcome measure
+  this paradigm exists to reveal: average RT for the "instant" range (≤4
+  dots, `SUBITIZE_SUBITIZING_MAX`) versus the "counting" range (≥5 dots),
+  and their difference. `SUBITIZE_BEST_KEY` tracks the lowest (fastest)
+  subitizing-range RT per difficulty, gated to ≥80% accuracy so a
+  fast-random-tap run can't fake a record. Unlike every RT exercise built
+  so far, this task is deliberately self-paced with NO answer timeout (the
+  literature doesn't force a response deadline here, and forcing one would
+  conflate "how fast can you glance-count" with "how fast can you also
+  physically tap in time") - trials only advance once tapped, so an idle
+  run simply waits at the keypad rather than silently accumulating misses.
+  No Bei-Fehler/background colour/Zusatzaufgabe/Trainingsmodus - all
+  correctly skipped per the "optional, skip what doesn't fit in an hour"
+  guidance; a tinted background would work against the plain-dot-on-plain-
+  background contrast the count judgment itself depends on, unlike the
+  conflict-paradigm exercises where a background tint is cosmetic. Pause/
+  resume uses the same scheduleXTimer-remaining-delay trick as every other
+  Test entry. Test: `tests/subitize_test.py`.
+  **Process note**: this run's FIRST attempt independently built a
+  Flanker-task exercise (Pfeil-Konflikttest) using the exact same Eriksen &
+  Eriksen (1974) grounding already shipped as "Ablenkungstest (Flanker)"
+  (fourth entry above, 2026-09-27) - a genuine duplicate, caught only after
+  the full regression suite had already passed locally, when `git push`
+  was rejected as non-fast-forward and a fetch revealed 32 commits had
+  landed on `origin/main` from other concurrent sessions while this one
+  was building (this repo now has multiple sessions racing on the same
+  branch, not the single-session-at-a-time model this file's "Hard rule"
+  section was written for). The duplicate work was never pushed - it was
+  moved to a local-only `backup-duplicate-flanker-work` branch instead
+  (not on `origin`, so a future session won't see or need it) - and
+  `origin/main` was fetched fresh before picking a genuinely new idea from
+  the (much longer than remembered) live roster and the research backlog
+  above. Take-away for future runs: given how fast this roster now moves,
+  re-fetch and re-read the roster (or the backlog above) immediately
+  before committing to an idea, not just at the start of the session - and
+  expect `git push` to occasionally need a rebase onto commits that landed
+  mid-run.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
