@@ -2354,6 +2354,22 @@ keeping semantic status colour separate from the brand accent, so a
 future brand-colour change doesn't have to relitigate what counts as
 "success green".
 
+**iOS dark/tinted home-screen icon quirk (found while testing the
+above)**: on-device, the new teal icon showed up solid black instead
+of teal once added to the home screen. Ruled out a file bug first (the
+PNG is opaque RGB, confirmed teal at every pixel checked). Root cause,
+confirmed by the client A/B-testing both icons live against the
+Darstellung (Hell/Dunkel/Getönt/Automatisch) toggle: iOS recolours a
+web-clip icon that reads as a simple two-tone "template" (flat solid
+background + a few solid geometric shapes - exactly what icon "A"'s
+three bars are) when the device's icon appearance is Dunkel/Getönt,
+but leaves an icon with organic, hand-drawn linework (the trainings-
+app's signature scribble) untouched in every mode. This is Apple's
+call, not something a `<meta>` tag can opt out of. **Client's decision:
+leave icon "A" as-is** - do not silently swap it to the signature-style
+"C" variant that was offered as the fix (organic linework instead of
+solid bars, matching what proved immune) unless asked again.
+
 **Roadmap: video support**
 - Step 2 (done): simple video-link URL fields in the dashboard
   Baukasten (no upload) - `introVideo`/`endVideo` at the programme
