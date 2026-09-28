@@ -2196,20 +2196,25 @@ Built, in `worker/` (the Worker's source now lives in this repo -
   create-new-code, invalid-JSON handling, logout, and reload-with-
   stored-token all verified.
 
-**Not yet live - one manual step outside this repo is required**: this
-session's Cloudflare access (via MCP) can read Workers and read/write D1
-directly, but cannot deploy Worker *code* - there's no deploy tool exposed,
-and no Cloudflare API token/CLI credentials in this sandbox to drive
-`wrangler` from here. So the new `worker/src/index.js` (with the admin
-routes) is not deployed yet; the live Worker still only serves the original
-public lookup. To go live: either run the four commands in
-`worker/README.md` once (needs a terminal), or add a Cloudflare API token
-to this Claude Code environment's secrets so a future session can run
-`wrangler deploy` autonomously - either way, `ADMIN_TOKEN` must be set via
-`wrangler secret put ADMIN_TOKEN` and that same value entered once into
-`dashboard.html`'s gate screen. `dashboard.html` itself needs no deploy step
-of its own once pushed - it's served by GitHub Pages like the rest of the
-repo, just not linked from the client-facing app's own navigation.
+**Live since 2026-09-28**: this session's own Cloudflare access (via MCP)
+can read Workers and read/write D1 directly, but cannot deploy Worker
+*code* - there's no deploy tool exposed here. The client added a
+`CLOUDFLARE_API_TOKEN` to a separate Claude Code session's environment
+secrets (walked through interactively, iPad → Cloudflare dashboard for the
+token itself, then the environment's own settings; had to switch that
+environment's network access from "Vertraut" to "Voll" since `wrangler`
+needs `api.cloudflare.com`, blocked in this repo's own environment's
+network policy is a separate, unrelated setting) - that session ran
+`wrangler deploy` and `wrangler secret put ADMIN_TOKEN`, then live-verified
+all three routes (public lookup still works, admin without token 401s,
+admin with token returns real data) before reporting the `ADMIN_TOKEN`
+value back. Its one incidental commit (ignoring `worker/.wrangler/`'s local
+cache) landed on a side branch, fast-forwarded into `main` from here.
+`dashboard.html` needs no deploy step of its own - it's served by GitHub
+Pages like the rest of the repo, just not linked from the client-facing
+app's own navigation. The client still needs to enter the `ADMIN_TOKEN`
+once into `dashboard.html`'s gate screen (treated like a password - it
+grants full read/write on every training code and the client-history log).
 
 **Not built, explicitly out of scope for this pass**: a visual
 block-builder (drag/drop or form-based) for `config` instead of raw JSON;
