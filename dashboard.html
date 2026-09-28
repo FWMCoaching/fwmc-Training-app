@@ -213,6 +213,8 @@
         <input id="pDesc" placeholder="z.B. Kurzes Aufmerksamkeitstraining, 3 Übungen" />
         <label for="pPauseS">Pause zwischen den Übungen (Sekunden)</label>
         <input id="pPauseS" type="number" min="0" step="5" value="15" style="max-width:140px" />
+        <label for="pIntroVideo">Intro-Video (URL, optional - läuft bevor das Programm startet)</label>
+        <input id="pIntroVideo" type="url" placeholder="https://…" />
 
         <label style="margin-top:16px">Übung hinzufügen - antippen fügt sie ans Ende der Liste an</label>
         <div class="ex-grid" id="exGrid"></div>
@@ -229,12 +231,15 @@
         <label style="margin-top:16px">Dein Programm <span id="blockCount" class="hint"></span></label>
         <div id="blockList"></div>
         <p class="empty-hint" id="blockEmptyHint">Noch keine Übung hinzugefügt - oben eine antippen.</p>
+
+        <label for="pEndVideo" style="margin-top:16px">Abschluss-Video (URL, optional - läuft nach der letzten Übung)</label>
+        <input id="pEndVideo" type="url" placeholder="https://…" />
       </div>
 
       <div id="jsonView" hidden>
         <label for="pConfig" style="margin-top:14px">Konfiguration (JSON - gleiche Struktur wie dig01/dig02/xppbsp-1)</label>
         <textarea id="pConfig" placeholder='{"name":"Dig03 · …","pauseS":15,"blocks":[{"exercise":"vt-color","colors":["orange","rot","lila"],"duration":60,"stimulusS":1,"intervalMin":3,"intervalMax":5}]}'></textarea>
-        <p class="hint">Gültige <code>exercise</code>-Werte im Baukasten: vt-color, vrw-original, 4-straight, 4-diag, 8-solo, 8-vrw, stroop-classic, stroop-bg. Weitere Typen (cross-modal, cone-tap, …) und Programmübersichten mit mehreren Programmen (<code>{"type":"bundle","name":"…","programs":[{"label":"…","blocks":[…]}, …]}</code>) nur hier im JSON-Tab.</p>
+        <p class="hint">Gültige <code>exercise</code>-Werte im Baukasten: vt-color, vrw-original, 4-straight, 4-diag, 8-solo, 8-vrw, stroop-classic, stroop-bg. Weitere Typen (cross-modal, cone-tap, …) und Programmübersichten mit mehreren Programmen (<code>{"type":"bundle","name":"…","programs":[{"label":"…","blocks":[…]}, …]}</code>) nur hier im JSON-Tab. Optionale Video-Links: <code>introVideo</code> (Programmebene, vor Start), <code>endVideo</code> (Programmebene, nach der letzten Übung), <code>videoAfter</code> (pro Block, läuft nach dieser Übung) - reine URL-Strings, Abspielung in der App folgt noch.</p>
       </div>
 
       <div class="row">
@@ -471,7 +476,7 @@
       const known = EXERCISE_BY_ID[b.exercise];
       const title = known ? known.title : b.exercise;
       row.innerHTML = `<div><div class="lib-block-title">${escapeHtml(title)}</div>` +
-        `<div class="lib-block-meta">${b.duration ?? "?"}s · Reiz ${b.stimulusS ?? "?"}s · Pause ${b.intervalMin ?? "?"}-${b.intervalMax ?? "?"}s</div></div>` +
+        `<div class="lib-block-meta">${b.duration ?? "?"}s · Reiz ${b.stimulusS ?? "?"}s · Pause ${b.intervalMin ?? "?"}-${b.intervalMax ?? "?"}s${b.videoAfter ? " · 🎬 Video" : ""}</div></div>` +
         `<button class="secondary" data-copy="${i}" ${known ? "" : "disabled"}>${known ? "Übernehmen" : "nicht unterstützt"}</button>`;
       list.appendChild(row);
     });
@@ -484,6 +489,7 @@
           colors: Array.isArray(clone.colors) && clone.colors.length >= MIN_COLORS ? clone.colors : DEFAULT_BLOCK_COLORS.slice(),
           duration: clone.duration ?? 60, stimulusS: clone.stimulusS ?? 1,
           intervalMin: clone.intervalMin ?? 2, intervalMax: clone.intervalMax ?? 4,
+          videoAfter: clone.videoAfter || "",
         });
         renderBlockList();
         btn.textContent = "✓ kopiert"; btn.classList.add("copied");
@@ -522,7 +528,7 @@
   let builderUsable = true; // false when an edited code's config doesn't fit this builder's shape
 
   function newBlock(exerciseId) {
-    return { exercise: exerciseId, colors: DEFAULT_BLOCK_COLORS.slice(), duration: 60, stimulusS: 1, intervalMin: 2, intervalMax: 4 };
+    return { exercise: exerciseId, colors: DEFAULT_BLOCK_COLORS.slice(), duration: 60, stimulusS: 1, intervalMin: 2, intervalMax: 4, videoAfter: "" };
   }
 
   function renderExGrid() {
@@ -573,10 +579,17 @@
         colorRow.appendChild(lbl);
       });
       card.appendChild(colorRow);
+      const videoWrap = document.createElement("div");
+      videoWrap.innerHTML = `<label style="margin-top:8px">Video danach (URL, optional - läuft nach dieser Übung)</label>
+        <input type="url" data-fs="videoAfter" value="${escapeHtml(block.videoAfter || "")}" placeholder="https://…" />`;
+      card.appendChild(videoWrap);
       list.appendChild(card);
 
       card.querySelectorAll("[data-f]").forEach((input) => {
         input.addEventListener("input", () => { block[input.dataset.f] = Number(input.value); });
+      });
+      card.querySelectorAll("[data-fs]").forEach((input) => {
+        input.addEventListener("input", () => { block[input.dataset.fs] = input.value.trim(); });
       });
       card.querySelectorAll("[data-color]").forEach((input) => {
         input.addEventListener("change", () => {
@@ -610,9 +623,12 @@
       name: document.getElementById("pName").value.trim(),
       description: document.getElementById("pDesc").value.trim() || undefined,
       pauseS: Number(document.getElementById("pPauseS").value) || 0,
+      introVideo: document.getElementById("pIntroVideo").value.trim() || undefined,
+      endVideo: document.getElementById("pEndVideo").value.trim() || undefined,
       blocks: builderBlocks.map((b) => ({
         exercise: b.exercise, colors: b.colors.slice(), duration: b.duration,
         stimulusS: b.stimulusS, intervalMin: b.intervalMin, intervalMax: b.intervalMax,
+        videoAfter: b.videoAfter ? b.videoAfter : undefined,
       })),
     };
   }
@@ -631,10 +647,13 @@
     document.getElementById("pName").value = config.name || "";
     document.getElementById("pDesc").value = config.description || "";
     document.getElementById("pPauseS").value = config.pauseS ?? 15;
+    document.getElementById("pIntroVideo").value = config.introVideo || "";
+    document.getElementById("pEndVideo").value = config.endVideo || "";
     builderBlocks = config.blocks.map((b) => ({
       exercise: b.exercise,
       colors: Array.isArray(b.colors) && b.colors.length >= MIN_COLORS ? b.colors.slice() : DEFAULT_BLOCK_COLORS.slice(),
       duration: b.duration ?? 60, stimulusS: b.stimulusS ?? 1, intervalMin: b.intervalMin ?? 2, intervalMax: b.intervalMax ?? 4,
+      videoAfter: b.videoAfter || "",
     }));
     renderBlockList();
   }
@@ -643,6 +662,8 @@
     document.getElementById("pName").value = "";
     document.getElementById("pDesc").value = "";
     document.getElementById("pPauseS").value = 15;
+    document.getElementById("pIntroVideo").value = "";
+    document.getElementById("pEndVideo").value = "";
     builderBlocks = [];
     builderUsable = true;
     document.getElementById("builderFallbackHint").hidden = true;
