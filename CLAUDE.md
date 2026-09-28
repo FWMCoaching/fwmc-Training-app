@@ -2323,6 +2323,30 @@ does more than that minimum); any auth beyond a single shared bearer token
 (fine for a single coach, would need real per-user auth if ever shared
 with others).
 
+**Roadmap: video support (not started, planned in this order)**
+- Step 2: simple video-link URL fields in the dashboard Baukasten (no
+  upload) - positions: before a program starts (intro), between
+  individual exercise blocks, and at the end. Just a URL string stored
+  per position/block, nothing else.
+- Step 3: app-side (app.js) rendering of those videos during a
+  coach-authored program run. **Client-facing playback requirements
+  (given by the client ahead of time, must hold when this is built):**
+  the client must be able to end the video early (skip), and to seek
+  both forward and backward in it - not just play straight through.
+  Like chapter/exercise navigation elsewhere in the app, the client
+  must also be able to go back and re-watch a video after having moved
+  on. And the client must be able to set a persistent "skip this
+  video" checkbox/flag, so a returning client using the same code
+  doesn't have to sit through or manually skip the same video every
+  single time.
+- Step 4 (later, explicitly separate): video upload from a file/photo
+  library AND in-browser camera recording (`getUserMedia`/
+  `MediaRecorder`) directly from the dashboard, once R2 storage exists.
+  Requires a new R2 bucket, a new Worker upload/serve endpoint, and
+  another `wrangler deploy` cycle. Client confirmed reusing the same
+  `CLOUDFLARE_API_TOKEN`/session setup is fine for this, no new token
+  needed.
+
 ## Test-Bereich (autonomous, ongoing)
 
 **If you were woken by the "FWMC Test-Bereich Auto-Build" Routine, this
