@@ -691,6 +691,11 @@
       <span class="fc-desc">Ein paar Punkte blitzen kurz auf &ndash; tippe sofort die Anzahl, die du gesehen hast. Bis etwa vier Punkte erkennst du auf einen Blick, bei mehr musst du z&auml;hlen. Trainiert die schnelle, automatische Mengenerfassung (Subitizing), die auch beim &Uuml;berblicken von Spielsituationen gefragt ist.</span>
       <span class="fc-meta" id="subitizeBestHint"></span>
     </button>
+    <button class="featured-card" id="alarmOpenBtn">
+      <span class="fc-title">Alarmierungs-Test</span>
+      <span class="fc-desc">Manchmal blitzt das Fadenkreuz kurz auf, bevor links oder rechts ein Punkt erscheint &ndash; manchmal auch nicht. Tippe so schnell wie m&ouml;glich auf die Seite, auf der der Punkt auftaucht. Misst, wie sehr ein einfacher Warnreiz deine Reaktion beschleunigt (Alerting-Netzwerk, Attention Network Test).</span>
+      <span class="fc-meta" id="alarmBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -932,6 +937,43 @@
   <div class="group-help" id="posnerReadyBestHint"></div>
 
   <button class="start-btn" id="posnerReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="alarmReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="alarmReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Alarmierungs-Test</h1>
+  <p class="page-sub">Ein Fadenkreuz sitzt zwischen zwei Feldern. Auf manchen Durchg&auml;ngen blitzt das Fadenkreuz kurz auf, bevor links oder rechts ein Punkt erscheint &ndash; auf anderen erscheint der Punkt ohne jede Vorwarnung. Tippe so schnell wie m&ouml;glich auf das Feld, in dem der Punkt tats&auml;chlich auftaucht. Der Blitz verr&auml;t NICHT, auf welcher Seite der Punkt erscheint - er signalisiert nur, dass gleich etwas passiert. Angelehnt an das Alerting-Netzwerk im Attention Network Test (Fan, McCandliss, Sommer, Raz &amp; Posner, 2002, aufbauend auf Posner &amp; Petersens Drei-Netzwerk-Modell der Aufmerksamkeit von 1990) &ndash; misst, wie sehr ein einfacher Warnreiz deine Reaktionszeit verk&uuml;rzt.</p>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="alarmDifficultyRow">
+      <button class="choice" data-alarm-diff="leicht">Leicht<small>mehr Zeit</small></button>
+      <button class="choice" data-alarm-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-alarm-diff="schwer">Schwer<small>knapp bemessen</small></button>
+    </div>
+  </div>
+
+  <details class="advanced" id="alarmAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="alarmBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="alarmBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="alarmBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="alarmBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
+
+  <div class="group-help" id="alarmReadyBestHint"></div>
+
+  <button class="start-btn" id="alarmReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="simonReady" hidden>
@@ -3464,6 +3506,55 @@
     <div class="rating" id="posnerRating"></div>
     <button class="again" id="posnerAgainBtn">Nochmal</button>
     <button class="back" id="posnerDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="alarmPlayer" hidden>
+  <div class="posner-stage" id="alarmStage">
+    <div class="remember-hint" id="alarmHint"></div>
+    <div class="posner-boxes-row">
+      <button class="posner-box" id="alarmLeftBtn" aria-label="Links">
+        <span class="posner-dot" id="alarmLeftDot"></span>
+      </button>
+      <span class="posner-fix" id="alarmFix" aria-hidden="true">+</span>
+      <button class="posner-box" id="alarmRightBtn" aria-label="Rechts">
+        <span class="posner-dot" id="alarmRightDot"></span>
+      </button>
+    </div>
+  </div>
+  <div class="pause-overlay" id="alarmPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="alarmPauseBgValue"></span></div>
+        <input type="range" id="alarmPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="alarmPauseBgColorPicker"></div>
+      </div>
+      <button class="start-btn" id="alarmResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="alarmPlayerBar">
+    <button id="alarmBackBtn">&#10005; Beenden</button>
+    <button id="alarmPauseBtn">Pause</button>
+    <span class="player-status" id="alarmProgressEl"></span>
+    <button id="alarmFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="alarmFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="alarmFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="alarmFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="alarmDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="alarmDoneSummary"></p>
+    <div class="rating" id="alarmRating"></div>
+    <button class="again" id="alarmAgainBtn">Nochmal</button>
+    <button class="back" id="alarmDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

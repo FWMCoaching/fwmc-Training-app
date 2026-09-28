@@ -3163,6 +3163,51 @@ doesn't:
   before committing to an idea, not just at the start of the session - and
   expect `git push` to occasionally need a rebase onto commits that landed
   mid-run.
+- **Alarmierungs-Test (Alerting-Netzwerk)** (twentieth autonomous entry,
+  2026-09-28): built from the "Recherche-Backlog: 20 Kandidaten" list
+  (candidate #17) rather than fresh research this round. Grounded in the
+  Attention Network Test framework (Fan, McCandliss, Sommer, Raz & Posner,
+  2002, "Testing the efficiency and independence of attentional networks",
+  Journal of Cognitive Neuroscience 14(3):340-347), building on Posner &
+  Petersen's 1990 theory of three separable attentional networks -
+  alerting, orienting, executive. This exercise isolates the ALERTING
+  network: on half the trials the fixation cross itself briefly flashes (a
+  plain, centred, non-directional warning - it carries no location
+  information at all), then after a FIXED total foreperiod (identical
+  whether cued or not, `ALARM_FOREPERIOD_MS = 500`) a target dot appears in
+  a left or right box; the client taps that same box as fast as possible.
+  Reports accuracy% plus average RT with/without the warning and their
+  difference as the "Alarmierungs-Effekt" - how much a simple readiness cue
+  speeds responding, the network's efficiency, the actual outcome measure
+  this paradigm exists to surface. Genuinely distinct from the already-
+  built Hinweisreiz-Test (Posner-Cueing) despite sharing the exact same
+  two-box `.posner-*` CSS/layout (reused directly, not duplicated - only a
+  new `.posner-fix.flash` modifier was added for the alerting flash itself):
+  Posner's cue is spatially INFORMATIVE (predicts WHERE the target will
+  appear, testing voluntarily shifting/re-orienting attention between two
+  known locations); this cue carries ZERO location information and only
+  tests WHETHER a generic warning speeds readiness at all - the ANT
+  literature treats alerting and orienting as explicitly separable,
+  independent networks, so this fills a real gap rather than duplicating
+  Posner-Cueing. Fixed 32-trial run (`ALARM_TRIAL_COUNT`, balanced 16
+  cued/16 uncued and 16 links/16 rechts), shuffled with a guard against
+  more than 3 identical target sides OR more than 3 identical cued/uncued
+  trials back to back (same shape as `buildPosnerTrials`/`buildFlankerTrials`,
+  extended to cover both manipulated variables at once here). No Bei-
+  Fehler/Zusatzaufgabe/Trainingsmodus - correctly skipped per the "optional,
+  skip what doesn't fit in an hour" guidance, same reasoning as every other
+  fixed-trial RT/effect exercise on this tab; background colour/intensity
+  WAS included (`alarmPrefs.bgColorKey`/`bgIntensity`, `makeBgApplier`/
+  `wireBgIntensityControl` on both the ready screen and the pause overlay) -
+  basically free since it's the exact same three-line wiring as every
+  sibling exercise, unlike Subitizing-Test where a tint would have worked
+  against the task's own contrast requirement. `ALARM_BEST_KEY` tracks best
+  accuracy% per `alarmPrefs.difficulty` (leicht/mittel/schwer - controlling
+  only the response window and inter-trial gap, deliberately NOT the
+  foreperiod itself, which stays constant across difficulty since it's the
+  controlled scientific variable this task exists to isolate). Pause/resume
+  uses the same scheduleXTimer-remaining-delay trick as Posner/Flanker/
+  Go-No-Go. Test: `tests/alarm_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 

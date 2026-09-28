@@ -1426,6 +1426,19 @@
     subitizeFsBtn: $("subitizeFsBtn"), subitizeFsHint: $("subitizeFsHint"), subitizeFsHintOpenBtn: $("subitizeFsHintOpenBtn"), subitizeFsHintClose: $("subitizeFsHintClose"),
     subitizeDonePanel: $("subitizeDonePanel"), subitizeDoneSummary: $("subitizeDoneSummary"), subitizeRating: $("subitizeRating"),
     subitizeAgainBtn: $("subitizeAgainBtn"), subitizeDoneBackBtn: $("subitizeDoneBackBtn"),
+    alarmOpenBtn: $("alarmOpenBtn"), alarmBestHint: $("alarmBestHint"), alarmReady: $("alarmReady"),
+    alarmReadyBackToHome: $("alarmReadyBackToHome"), alarmDifficultyRow: $("alarmDifficultyRow"),
+    alarmBgColorPicker: $("alarmBgColorPicker"), alarmBgIntensitySlider: $("alarmBgIntensitySlider"),
+    alarmBgIntensityValue: $("alarmBgIntensityValue"), alarmBgContrastHint: $("alarmBgContrastHint"),
+    alarmReadyBestHint: $("alarmReadyBestHint"), alarmReadyStartBtn: $("alarmReadyStartBtn"),
+    alarmPlayer: $("alarmPlayer"), alarmStage: $("alarmStage"), alarmHint: $("alarmHint"), alarmFix: $("alarmFix"),
+    alarmLeftBtn: $("alarmLeftBtn"), alarmRightBtn: $("alarmRightBtn"), alarmLeftDot: $("alarmLeftDot"), alarmRightDot: $("alarmRightDot"),
+    alarmPauseOverlay: $("alarmPauseOverlay"), alarmResumeBtn: $("alarmResumeBtn"),
+    alarmPauseBgSlider: $("alarmPauseBgSlider"), alarmPauseBgValue: $("alarmPauseBgValue"), alarmPauseBgColorPicker: $("alarmPauseBgColorPicker"),
+    alarmPlayerBar: $("alarmPlayerBar"), alarmBackBtn: $("alarmBackBtn"), alarmPauseBtn: $("alarmPauseBtn"), alarmProgressEl: $("alarmProgressEl"),
+    alarmFsBtn: $("alarmFsBtn"), alarmFsHint: $("alarmFsHint"), alarmFsHintOpenBtn: $("alarmFsHintOpenBtn"), alarmFsHintClose: $("alarmFsHintClose"),
+    alarmDonePanel: $("alarmDonePanel"), alarmDoneSummary: $("alarmDoneSummary"), alarmRating: $("alarmRating"),
+    alarmAgainBtn: $("alarmAgainBtn"), alarmDoneBackBtn: $("alarmDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
@@ -1652,7 +1665,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3732,6 +3745,7 @@
     els.antiPlayer.hidden = true;
     els.stroopPlayer.hidden = true;
     els.subitizePlayer.hidden = true;
+    els.alarmPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
@@ -10242,6 +10256,329 @@
   els.posnerBackBtn.addEventListener("click", posnerStop);
   els.posnerAgainBtn.addEventListener("click", () => { els.posnerDonePanel.hidden = true; startPosnerGame(); });
   els.posnerDoneBackBtn.addEventListener("click", () => { els.posnerPlayer.hidden = true; els.posnerDonePanel.hidden = true; showScreen("testHome"); });
+
+  // ==== Test-Bereich: Alarmierungs-Test (Alerting-Netzwerk) ====
+  // Twentieth autonomous entry, picked from the "Recherche-Backlog: 20
+  // Kandidaten" list (candidate #17) rather than fresh research this round.
+  // Grounded in the Attention Network Test framework (Fan, McCandliss,
+  // Sommer, Raz & Posner, 2002, "Testing the efficiency and independence of
+  // attentional networks", Journal of Cognitive Neuroscience 14(3):340-347),
+  // building on Posner & Petersen's 1990 theory of three separable
+  // attentional networks - alerting, orienting, executive. This exercise
+  // isolates the ALERTING network specifically: on half the trials a plain,
+  // centred, non-directional warning flash (the fixation cross itself
+  // briefly brightening) precedes a left/right target by a FIXED total
+  // foreperiod; on the other half, no warning precedes the same target,
+  // waiting the identical total foreperiod. The client responds to the
+  // target's side as fast as possible either way. Reports the
+  // "Alarmierungs-Effekt" (Ø RT ohne Warnung minus Ø RT mit Warnung) as the
+  // outcome measure - how much a simple readiness cue speeds responding,
+  // the network's efficiency.
+  // Genuinely distinct from Hinweisreiz-Test (Posner-Cueing) just above,
+  // even though both use the same two-box layout: Posner's cue is
+  // spatially INFORMATIVE (predicts WHERE the target will appear, testing
+  // the ORIENTING network - voluntarily shifting attention between two
+  // known locations); this cue carries ZERO location information and only
+  // tests WHETHER a generic warning speeds readiness at all. The ANT
+  // literature treats alerting and orienting as explicitly separable,
+  // independent networks - this fills a real gap rather than duplicating
+  // Posner-Cueing. Also distinct from every other Test/NAT mechanic: unlike
+  // Flanker (interference filtering) or Simon (an automatic spatial
+  // response bias), the manipulated variable here is purely TEMPORAL - the
+  // presence or absence of an advance warning, with identical target
+  // timing either way.
+  const ALARM_PREFS_KEY = "fwmc-alarm-prefs-v1";
+  // The foreperiod (trial-start/cue to target) is held FIXED across
+  // difficulty - it's the controlled scientific variable this task exists
+  // to isolate, not something that should vary with difficulty. Difficulty
+  // only controls the response window and inter-trial gap, same shape as
+  // every other fixed-trial Test exercise.
+  const ALARM_FOREPERIOD_MS = 500;
+  const ALARM_CUE_MS = 120;
+  const ALARM_DIFFICULTIES = {
+    leicht: { title: "Leicht", responseMs: 1800, isiMin: 900, isiMax: 1400 },
+    mittel: { title: "Mittel", responseMs: 1300, isiMin: 700, isiMax: 1100 },
+    schwer: { title: "Schwer", responseMs: 900, isiMin: 500, isiMax: 900 },
+  };
+  const ALARM_TRIAL_COUNT = 32; // 8 per (cued/uncued × links/rechts)
+  const alarmPrefs = { difficulty: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
+  function loadAlarmPrefs() {
+    const saved = readJSON(ALARM_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(alarmPrefs, saved);
+    if (!ALARM_DIFFICULTIES[alarmPrefs.difficulty]) alarmPrefs.difficulty = "mittel";
+    if (!STROOP_COLOR_BY_KEY[alarmPrefs.bgColorKey]) alarmPrefs.bgColorKey = "gruen";
+    if (typeof alarmPrefs.bgIntensity !== "number" || alarmPrefs.bgIntensity < 0 || alarmPrefs.bgIntensity > 1) alarmPrefs.bgIntensity = 0;
+  }
+  loadAlarmPrefs();
+  function saveAlarmPrefsToStorage() { writeJSON(ALARM_PREFS_KEY, alarmPrefs); }
+
+  const applyAlarmBg = makeBgApplier(els.alarmStage, alarmPrefs);
+  const syncAlarmBgUI = wireBgIntensityControl(alarmPrefs, {
+    pickers: [els.alarmBgColorPicker, els.alarmPauseBgColorPicker],
+    sliders: [els.alarmBgIntensitySlider, els.alarmPauseBgSlider],
+    valueEls: [els.alarmBgIntensityValue, els.alarmPauseBgValue],
+    hintEls: [els.alarmBgContrastHint],
+  }, () => { saveAlarmPrefsToStorage(); applyAlarmBg(); });
+
+  const ALARM_BEST_KEY = "fwmc-alarm-best-v1"; // { [difficulty]: bestAccuracyPct }
+  function alarmBestFor() { return readJSON(ALARM_BEST_KEY, {})[alarmPrefs.difficulty] || 0; }
+  function saveAlarmBest(accuracyPct) {
+    const all = readJSON(ALARM_BEST_KEY, {});
+    if (accuracyPct > (all[alarmPrefs.difficulty] || 0)) { all[alarmPrefs.difficulty] = accuracyPct; writeJSON(ALARM_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderAlarmBest() {
+    const best = alarmBestFor();
+    const text = best ? `Beste Genauigkeit (${ALARM_DIFFICULTIES[alarmPrefs.difficulty].title}): ${best}%` : "";
+    els.alarmBestHint.textContent = text;
+    els.alarmReadyBestHint.textContent = text;
+  }
+  function syncAlarmDifficultyUI() {
+    els.alarmDifficultyRow.querySelectorAll("[data-alarm-diff]").forEach((btn) => setActive(btn, btn.dataset.alarmDiff === alarmPrefs.difficulty));
+  }
+  els.alarmDifficultyRow.querySelectorAll("[data-alarm-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      alarmPrefs.difficulty = btn.dataset.alarmDiff;
+      saveAlarmPrefsToStorage();
+      syncAlarmDifficultyUI();
+      renderAlarmBest();
+    });
+  });
+
+  els.alarmOpenBtn.addEventListener("click", () => {
+    syncAlarmDifficultyUI();
+    syncAlarmBgUI();
+    renderAlarmBest();
+    showScreen("alarmReady");
+  });
+  els.alarmReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Same timer-wrapping trick as schedulePosnerTimer/scheduleFlankerTimer.
+  function scheduleAlarmTimer(fn, delayMs) {
+    alarmState.timerFn = fn;
+    alarmState.timerFiresAt = performance.now() + delayMs;
+    alarmState.timer = setTimeout(() => { alarmState.timer = null; fn(); }, delayMs);
+  }
+
+  function buildAlarmTrials() {
+    const trials = [];
+    [true, false].forEach((cued) => {
+      ["left", "right"].forEach((side) => {
+        for (let i = 0; i < 8; i++) trials.push({ cued, targetSide: side });
+      });
+    });
+    // Shuffle, then avoid more than 3 identical target sides OR more than 3
+    // identical cued/uncued trials back to back - same guard shape as
+    // buildPosnerTrials/buildFlankerTrials, so neither a motor-repeat
+    // strategy nor an easy-to-notice cued/uncued run can pass undetected.
+    for (let tries = 0; tries < 200; tries++) {
+      for (let i = trials.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [trials[i], trials[j]] = [trials[j], trials[i]];
+      }
+      let ok = true, sideRun = 1, cuedRun = 1;
+      for (let i = 1; i < trials.length; i++) {
+        sideRun = trials[i].targetSide === trials[i - 1].targetSide ? sideRun + 1 : 1;
+        cuedRun = trials[i].cued === trials[i - 1].cued ? cuedRun + 1 : 1;
+        if (sideRun > 3 || cuedRun > 3) { ok = false; break; }
+      }
+      if (ok) break;
+    }
+    return trials;
+  }
+
+  function alarmClearBoxes() {
+    els.alarmLeftBtn.classList.remove("correct", "wrong");
+    els.alarmRightBtn.classList.remove("correct", "wrong");
+    els.alarmLeftDot.classList.remove("show");
+    els.alarmRightDot.classList.remove("show");
+    els.alarmFix.classList.remove("flash");
+  }
+  function alarmBoxFor(side) { return side === "left" ? els.alarmLeftBtn : els.alarmRightBtn; }
+  function alarmDotFor(side) { return side === "left" ? els.alarmLeftDot : els.alarmRightDot; }
+
+  let alarmState = null;
+  function startAlarmGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.alarmPlayer.hidden = false;
+    els.alarmPlayerBar.hidden = false;
+    els.alarmDonePanel.hidden = true;
+    els.alarmPauseOverlay.hidden = true;
+    els.alarmPauseBtn.hidden = false;
+    alarmState = {
+      diff: ALARM_DIFFICULTIES[alarmPrefs.difficulty], trials: buildAlarmTrials(), index: -1, phase: "gap", responded: false,
+      correct: 0, incorrect: 0, rtsCued: [], rtsUncued: [],
+      stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      startTime: performance.now(),
+    };
+    applyAlarmBg();
+    alarmClearBoxes();
+    els.alarmHint.textContent = "Bereit? Gleich geht's los …";
+    els.alarmProgressEl.textContent = `0/${alarmState.trials.length}`;
+    requestWakeLock();
+    scheduleAlarmTimer(alarmNextTrial, 1200);
+  }
+  els.alarmReadyStartBtn.addEventListener("click", startAlarmGame);
+
+  function alarmNextTrial() {
+    if (!alarmState) return;
+    alarmState.index++;
+    if (alarmState.index >= alarmState.trials.length) { alarmFinish(); return; }
+    els.alarmProgressEl.textContent = `${alarmState.index + 1}/${alarmState.trials.length}`;
+    alarmState.phase = "gap";
+    alarmState.responded = false;
+    alarmClearBoxes();
+    const isi = alarmState.diff.isiMin + Math.random() * (alarmState.diff.isiMax - alarmState.diff.isiMin);
+    scheduleAlarmTimer(alarmStartForeperiod, isi);
+  }
+  function alarmStartForeperiod() {
+    if (!alarmState) return;
+    const trial = alarmState.trials[alarmState.index];
+    alarmState.phase = "foreperiod";
+    els.alarmHint.textContent = "";
+    if (trial.cued) {
+      els.alarmFix.classList.add("flash");
+      scheduleAlarmTimer(alarmHideCue, ALARM_CUE_MS);
+    } else {
+      scheduleAlarmTimer(alarmShowTarget, ALARM_FOREPERIOD_MS);
+    }
+  }
+  function alarmHideCue() {
+    if (!alarmState) return;
+    els.alarmFix.classList.remove("flash");
+    scheduleAlarmTimer(alarmShowTarget, ALARM_FOREPERIOD_MS - ALARM_CUE_MS);
+  }
+  function alarmShowTarget() {
+    if (!alarmState) return;
+    const trial = alarmState.trials[alarmState.index];
+    alarmState.phase = "responding";
+    alarmState.responded = false;
+    alarmState.stimAt = performance.now();
+    alarmDotFor(trial.targetSide).classList.add("show");
+    scheduleAlarmTimer(alarmEndTrial, alarmState.diff.responseMs);
+  }
+  function alarmEndTrial() {
+    if (!alarmState) return;
+    if (alarmState.phase === "responding" && !alarmState.responded) {
+      alarmState.incorrect++;
+      els.alarmHint.textContent = "Verpasst!";
+    }
+    alarmState.phase = "gap";
+    alarmNextTrial();
+  }
+  function alarmTap(side) {
+    if (!alarmState || alarmState.paused || alarmState.responded) return;
+    // Taps before the target actually appears (during the foreperiod, cued
+    // or not) are ignored - reaction time is measured target-locked, same
+    // convention as Posner/Flanker/Go-No-Go.
+    if (alarmState.phase !== "responding") return;
+    alarmState.responded = true;
+    const trial = alarmState.trials[alarmState.index];
+    const rt = performance.now() - alarmState.stimAt;
+    const correct = side === trial.targetSide;
+    alarmBoxFor(side).classList.add(correct ? "correct" : "wrong");
+    if (correct) {
+      alarmState.correct++;
+      (trial.cued ? alarmState.rtsCued : alarmState.rtsUncued).push(rt);
+    } else {
+      alarmState.incorrect++;
+      els.alarmHint.textContent = "Falsche Seite!";
+    }
+  }
+  els.alarmLeftBtn.addEventListener("click", () => alarmTap("left"));
+  els.alarmRightBtn.addEventListener("click", () => alarmTap("right"));
+
+  // Pause stops/replays the pending timer, same setTimeout trick as
+  // Posner/Flanker/Go-No-Go, plus a live background-adjust overlay (every
+  // Test-Bereich exercise now gets the same control NAT's own exercises
+  // have).
+  function pauseAlarm() {
+    if (!alarmState || alarmState.paused) return;
+    alarmState.paused = true;
+    alarmState.pausedAt = performance.now();
+    if (alarmState.timer) {
+      clearTimeout(alarmState.timer);
+      alarmState.timer = null;
+      alarmState.timerRemainingMs = Math.max(0, alarmState.timerFiresAt - alarmState.pausedAt);
+    }
+    syncAlarmBgUI();
+    els.alarmPauseBtn.hidden = true;
+    els.alarmPauseOverlay.hidden = false;
+  }
+  function resumeAlarm() {
+    if (!alarmState || !alarmState.paused) return;
+    const pausedMs = performance.now() - alarmState.pausedAt;
+    alarmState.startTime += pausedMs;
+    alarmState.stimAt += pausedMs;
+    alarmState.paused = false;
+    if (alarmState.timerFn && alarmState.timerRemainingMs != null) {
+      scheduleAlarmTimer(alarmState.timerFn, alarmState.timerRemainingMs);
+      alarmState.timerRemainingMs = null;
+    }
+    els.alarmPauseOverlay.hidden = true;
+    els.alarmPauseBtn.hidden = false;
+  }
+  els.alarmPauseBtn.addEventListener("click", pauseAlarm);
+  els.alarmResumeBtn.addEventListener("click", resumeAlarm);
+
+  function finalizeAlarmRun(state, totalTrials) {
+    els.alarmPauseOverlay.hidden = true;
+    els.alarmPlayerBar.hidden = true;
+    const accuracyPct = Math.round(100 * state.correct / totalTrials);
+    const avgCued = avgOf(state.rtsCued);
+    const avgUncued = avgOf(state.rtsUncued);
+    // The "Alarmierungs-Effekt" itself: how much faster correct responses
+    // were with a warning versus without one - the alerting network's
+    // efficiency, the actual outcome measure this task exists to surface.
+    const alertingEffect = (avgCued != null && avgUncued != null) ? (avgUncued - avgCued) : null;
+    const isRecord = saveAlarmBest(accuracyPct);
+    renderAlarmBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.alarmDoneSummary.textContent =
+      `Alarmierungs-Test (${state.diff.title}) · ${accuracyPct}% richtig` +
+      (avgCued != null ? ` · Ø mit Warnung ${avgCued} ms` : "") +
+      (avgUncued != null ? ` · Ø ohne Warnung ${avgUncued} ms` : "") +
+      (alertingEffect != null ? ` · Alarmierungs-Effekt ${alertingEffect} ms` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${accuracyPct}% richtig` + (alertingEffect != null ? `, Effekt ${alertingEffect} ms` : "");
+    const id = addHistory({ kind: "alarm", title: "Alarmierungs-Test", seconds: Math.round(played), note });
+    renderRating(els.alarmRating, id, "Wie fokussiert warst du?");
+    els.alarmDonePanel.hidden = false;
+  }
+  function alarmFinish() {
+    if (!alarmState) return;
+    const state = alarmState;
+    alarmState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.alarmPlayer) document.exitFullscreen().catch(() => {});
+    els.alarmFsHint.hidden = true;
+    finalizeAlarmRun(state, state.trials.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved.
+  function alarmStop() {
+    if (!alarmState) return;
+    if (alarmState.timer) clearTimeout(alarmState.timer);
+    const state = alarmState;
+    alarmState = null;
+    els.alarmPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.alarmPlayer) document.exitFullscreen().catch(() => {});
+    els.alarmFsHint.hidden = true;
+    const resolved = state.correct + state.incorrect;
+    if (resolved >= 4) {
+      finalizeAlarmRun(state, resolved);
+    } else {
+      els.alarmPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.alarmBackBtn.addEventListener("click", alarmStop);
+  els.alarmAgainBtn.addEventListener("click", () => { els.alarmDonePanel.hidden = true; startAlarmGame(); });
+  els.alarmDoneBackBtn.addEventListener("click", () => { els.alarmPlayer.hidden = true; els.alarmDonePanel.hidden = true; showScreen("testHome"); });
+  wireFullscreen({ player: els.alarmPlayer, btn: els.alarmFsBtn, hint: els.alarmFsHint, hintOpen: els.alarmFsHintOpenBtn, hintClose: els.alarmFsHintClose });
 
   // Rotationstest (Mentale Rotation) - grounded in the classic mental-
   // rotation/character-rotation chronometric paradigm (Cooper & Shepard,
