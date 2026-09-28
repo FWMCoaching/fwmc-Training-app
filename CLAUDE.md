@@ -2323,26 +2323,63 @@ does more than that minimum); any auth beyond a single shared bearer token
 (fine for a single coach, would need real per-user auth if ever shared
 with others).
 
-**Roadmap: video support (not started, planned in this order)**
-- Step 2: simple video-link URL fields in the dashboard Baukasten (no
-  upload) - positions: before a program starts (intro), between
-  individual exercise blocks, and at the end. Just a URL string stored
-  per position/block, nothing else.
-- Step 3: app-side (app.js) rendering of those videos during a
-  coach-authored program run. **Client-facing playback requirements
-  (given by the client ahead of time, must hold when this is built):**
-  the client must be able to end the video early (skip), and to seek
-  both forward and backward in it - not just play straight through.
-  Like chapter/exercise navigation elsewhere in the app, the client
-  must also be able to go back and re-watch a video after having moved
-  on. And the client must be able to set a persistent "skip this
-  video" checkbox/flag, so a returning client using the same code
-  doesn't have to sit through or manually skip the same video every
-  single time - but this must stay reversible: the checkbox can be
-  unticked again at any point if the client decides they want to watch
-  the video after all, it's not a permanent one-way opt-out.
-- Step 4 (later, explicitly separate): video upload from a file/photo
-  library AND in-browser camera recording (`getUserMedia`/
+**Roadmap: video support**
+- Step 2 (done): simple video-link URL fields in the dashboard
+  Baukasten (no upload) - `introVideo`/`endVideo` at the programme
+  level and `videoAfter` per block, all plain URL strings. See the
+  Baukasten section above.
+- Step 3 (done): app-side (app.js) rendering of those videos during a
+  coach-authored programme run. A programme's runtime steps are no
+  longer just `def.blocks` - `buildProgramSteps(def)` interleaves an
+  `{type:"exercise"}` step per block with an `{type:"video"}` step
+  wherever `videoAfter`/`endVideo` is set, and `program.chapterIndex`
+  now indexes this `program.steps` array instead of `def.blocks`
+  directly (every call site - `tick()`, `playChapter()`, `startPause()`,
+  the pause-screen buttons, `finishSession()` - was updated together;
+  search "program.chapterIndex indexes program.steps" if touching any
+  of them again). `introVideo` itself was untouched - it still shows on
+  the pre-start intro screen with native controls, was never part of
+  this ask, and needs no chapter-nav treatment since nothing gates
+  moving past it.
+  Video steps play in a new `#programVideoPlayer` screen
+  (`playProgramVideo()`), a real `<video controls>` (native seek both
+  directions, no custom scrubber needed) with its own small nav ("«"
+  restart/prev, "Weiter »", a skip checkbox) - **not** the existing
+  `videoModal`/`openVideoModal()`, which is the older, separate
+  "explainer video" feature (an on-demand how-to clip opened from the
+  intro screen's chapter list, dismiss-and-return, no programme-flow
+  role at all - the two must stay distinct).
+  One structural trap worth remembering if another screen ever nests
+  inside `#player` the way `#pauseScreen` already did: `#player` closes
+  its own `<div>` *after* `#pauseScreen` and `#programVideoPlayer` in
+  `_body.html`, so both are DOM children of `#player`, not siblings of
+  it. `playProgramVideo()` first called the generic `hideAllPlayers()`
+  (which sets `#player.hidden = true`) and the video silently rendered
+  at 0x0 - `hidden` was correctly `false` on the video panel itself,
+  but its own now-hidden ancestor collapsed it. Fixed by following
+  `startPause()`'s existing pattern instead: hide `#player`'s *sibling
+  panels* (stageWrap/progressTrack/playerBar/liveNav), never `#player`
+  itself, while a step nested inside it is showing.
+  Client requirements, all covered: end early (the "Weiter" button/the
+  video's own `ended` event calls `advanceProgramStep()`); seek both
+  directions (native `<video controls>`); return to a watched/skipped
+  video via the same chapter navigation used for exercises (any direct
+  `playChapter(idx)` call - chapter list, prev/next, restart - always
+  lands exactly on the requested step, video or not, regardless of its
+  skip flag; only the *automatic* forward path, `advanceProgramStep()`,
+  auto-skips a flagged video); persistent-but-reversible per-video skip
+  flag (`fwmc-program-video-skip-v1` in localStorage, keyed by program
+  code + a stable `videoId` like `after-2`/`end` - ticking/unticking
+  the checkbox on the video's own screen sets/clears it immediately).
+  One semantic decision worth remembering: on the pause screen between
+  exercises, "previous"/"restart" always act on the exercise that
+  actually just ran, **never** on a video that got silently auto-skipped
+  right before it - otherwise "restart" would force-replay a video the
+  client deliberately chose to skip. A skipped video is still reachable
+  once the *next* exercise is reached, through its own previous-chapter
+  navigation (confirmed in `tests/program_video_steps_test.py`).
+- Step 4 (later, explicitly separate, not started): video upload from a
+  file/photo library AND in-browser camera recording (`getUserMedia`/
   `MediaRecorder`) directly from the dashboard, once R2 storage exists.
   Requires a new R2 bucket, a new Worker upload/serve endpoint, and
   another `wrangler deploy` cycle. Client confirmed reusing the same

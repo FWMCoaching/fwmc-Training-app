@@ -2946,6 +2946,22 @@
     </div>
   </div>
 
+  <div class="program-video-player" id="programVideoPlayer" hidden>
+    <div class="program-video-top">
+      <button id="programVideoBackBtn">&#10005; Beenden</button>
+    </div>
+    <video class="program-video-el" id="programVideoEl" controls playsinline></video>
+    <label class="program-video-skip-row">
+      <input type="checkbox" id="programVideoSkipCheck" />
+      Dieses Video künftig automatisch überspringen
+    </label>
+    <div class="program-video-nav">
+      <button id="programVideoPrevBtn" title="Zur&uuml;ck" aria-label="Zur&uuml;ck">&laquo;</button>
+      <button id="programVideoRestartBtn" title="Video neu starten" aria-label="Video neu starten">&#8635;</button>
+      <button id="programVideoNextBtn">Weiter &raquo;</button>
+    </div>
+  </div>
+
   <div class="done-panel" id="programDonePanel" hidden>
     <div class="done-check">&#10003;</div>
     <h2>Programm geschafft!</h2>

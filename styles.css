@@ -1129,6 +1129,30 @@ body.cvd-rotgruen .gng-stimulus.nogo{background:#e65100;border-color:#a53d00}
 .live-nav #livePrevBtn,.live-nav #liveNextBtn,.live-nav #liveRestartBtn{width:42px;height:42px;border-radius:50%;font-size:17px}
 .live-nav #liveEndBtn{height:42px;padding:0 16px;border-radius:999px;font-size:14px;white-space:nowrap}
 
+/* Video step between/after programme exercises (dashboard "videoAfter"/
+   "endVideo") - a full player screen so it's a chapter in its own right,
+   navigable like any exercise, not a dismiss-and-forget modal. */
+.program-video-player{
+  position:fixed;inset:0;background:#0f1115;z-index:20;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;
+}
+.program-video-top{position:absolute;top:0;left:0;right:0;padding:14px 16px;z-index:2}
+.program-video-top button{
+  border:none;border-radius:999px;background:rgba(255,255,255,.12);color:#fff;
+  padding:8px 14px;font-size:13px;cursor:pointer;
+}
+.program-video-el{width:100%;max-width:640px;max-height:70vh;border-radius:14px;background:#000;display:block}
+.program-video-skip-row{
+  color:#c7ccd6;font-size:13.5px;display:flex;align-items:center;gap:8px;cursor:pointer;
+}
+.program-video-skip-row input{width:auto;margin:0}
+.program-video-nav{display:flex;align-items:center;gap:8px}
+.program-video-nav button{
+  border:none;border-radius:999px;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-weight:700;
+}
+.program-video-nav #programVideoPrevBtn,.program-video-nav #programVideoRestartBtn{width:42px;height:42px;font-size:17px}
+.program-video-nav #programVideoNextBtn{height:42px;padding:0 20px;font-size:14px;background:#007094;white-space:nowrap}
+
 /* Finish screens */
 .done-panel{
   position:absolute;inset:0;background:#f6f8f9;display:flex;flex-direction:column;

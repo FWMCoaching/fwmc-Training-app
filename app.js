@@ -1118,6 +1118,10 @@
     programDonePanel: $("programDonePanel"), programDoneSummary: $("programDoneSummary"), programRating: $("programRating"),
     programAgainBtn: $("programAgainBtn"), programDoneBackBtn: $("programDoneBackBtn"),
     introVideo: $("introVideo"), explainerBtn: $("explainerBtn"),
+    programVideoPlayer: $("programVideoPlayer"), programVideoEl: $("programVideoEl"),
+    programVideoBackBtn: $("programVideoBackBtn"), programVideoSkipCheck: $("programVideoSkipCheck"),
+    programVideoPrevBtn: $("programVideoPrevBtn"), programVideoRestartBtn: $("programVideoRestartBtn"),
+    programVideoNextBtn: $("programVideoNextBtn"),
     videoModal: $("videoModal"), videoModalPlayer: $("videoModalPlayer"), videoModalClose: $("videoModalClose"),
     setupBtn: $("setupBtn"), setupThumb: $("setupThumb"),
     setupModal: $("setupModal"), setupModalClose: $("setupModalClose"),
@@ -2919,7 +2923,7 @@
   });
 
   // ---- Programme lookup + overview screens ----
-  let program = null; // { def, chapterIndex, code, key, title, playedS }
+  let program = null; // { def, steps, chapterIndex, code, key, title, playedS } - chapterIndex indexes steps, not def.blocks directly (see buildProgramSteps)
 
   function normCode(s) { return s.trim().toLowerCase().replace(/\s+/g, "-"); }
 
@@ -3004,6 +3008,42 @@
     showScreen("bundleOverview");
   }
 
+  // ---- Video steps within a coach-authored programme (dashboard's
+  // "videoAfter"/"endVideo" fields) - each becomes its own step in
+  // program.steps, interleaved with the exercise blocks, so it's a full
+  // chapter you can navigate to/from just like an exercise (client
+  // requirement: end it early, seek in it, and go back to it later).
+  // introVideo stays exactly as it was (the pre-start intro screen) -
+  // that one already existed and wasn't part of this ask.
+  const PROGRAM_VIDEO_SKIP_KEY = "fwmc-program-video-skip-v1"; // { [code]: { [videoId]: true } }
+  function isVideoSkipped(code, videoId) {
+    const map = readJSON(PROGRAM_VIDEO_SKIP_KEY, {});
+    return !!(map[code] && map[code][videoId]);
+  }
+  // Reversible by design (client requirement): unchecking the "skip"
+  // box just deletes the flag again, so a client who wants to watch a
+  // previously-skipped video only has to navigate back to it and untick it.
+  function setVideoSkipped(code, videoId, skip) {
+    const map = readJSON(PROGRAM_VIDEO_SKIP_KEY, {});
+    if (skip) {
+      map[code] = map[code] || {};
+      map[code][videoId] = true;
+    } else if (map[code]) {
+      delete map[code][videoId];
+      if (!Object.keys(map[code]).length) delete map[code];
+    }
+    writeJSON(PROGRAM_VIDEO_SKIP_KEY, map);
+  }
+  function buildProgramSteps(def) {
+    const steps = [];
+    def.blocks.forEach((block, i) => {
+      steps.push({ type: "exercise", block, exIdx: i });
+      if (block.videoAfter) steps.push({ type: "video", url: block.videoAfter, videoId: `after-${i}`, exIdx: i });
+    });
+    if (def.endVideo) steps.push({ type: "video", url: def.endVideo, videoId: "end", exIdx: def.blocks.length - 1 });
+    return steps;
+  }
+
   function renderProgramIntro(def, code, key) {
     const title = def.name || def.label || "Dein Programm";
     els.programTitle.textContent = title;
@@ -3017,9 +3057,11 @@
       els.introVideo.hidden = true;
       els.introVideo.removeAttribute("src");
     }
+    const steps = buildProgramSteps(def);
     const start = (i) => {
-      program = { def, chapterIndex: i, code, key, title, playedS: 0 };
-      playChapter(i);
+      const stepIdx = steps.findIndex((s) => s.type === "exercise" && s.exIdx === i);
+      program = { def, steps, chapterIndex: stepIdx, code, key, title, playedS: 0 };
+      playChapter(stepIdx);
     };
     els.chapterList.innerHTML = "";
     def.blocks.forEach((block, i) => {
@@ -3656,8 +3698,13 @@
       return;
     }
     const remaining = fmtClock(session.total - elapsed);
-    els.timeEl.textContent = program ? `Übung ${program.chapterIndex + 1}/${program.def.blocks.length} · ${remaining}` : remaining;
-    setProgress(program ? program.chapterIndex : 0, elapsed / session.total);
+    // program.chapterIndex indexes program.steps (exercises + video steps);
+    // tick() only ever runs during an exercise session, so the current step
+    // is always type "exercise" here and its exIdx is the plain block index
+    // the exercise-count label/progress dots are keyed on.
+    const exOrd = program ? program.steps[program.chapterIndex].exIdx : 0;
+    els.timeEl.textContent = program ? `Übung ${exOrd + 1}/${program.def.blocks.length} · ${remaining}` : remaining;
+    setProgress(program ? exOrd : 0, elapsed / session.total);
     raf = requestAnimationFrame(tick);
   }
 
@@ -3747,6 +3794,8 @@
     els.subitizePlayer.hidden = true;
     els.alarmPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
+    els.programVideoPlayer.hidden = true;
+    els.programVideoEl.pause();
     els.breathTransition.hidden = true;
     els.workoutTransition.hidden = true;
     els.workoutProgramDonePanel.hidden = true;
@@ -3842,6 +3891,12 @@
   }
   els.coneOrderStage.addEventListener("click", () => coneTapAdvance());
 
+  // idx indexes program.steps (exercises and video steps interleaved).
+  // Used for every direct/manual chapter jump (chapter list, prev/next,
+  // restart) - these always land exactly on the requested step, video or
+  // not, even if that video is flagged "skip": a deliberate jump back to
+  // a video is exactly how the client re-enables one (untick it there).
+  // Only the automatic forward flow (advanceProgramStep) honours the flag.
   function playChapter(idx) {
     if (!program) return;
     if (idx < 0) idx = 0;
@@ -3849,12 +3904,61 @@
     accountSession();
     if (window.speechSynthesis) speechSynthesis.cancel();
     hideOverlays();
-    if (idx >= program.def.blocks.length) { finishProgram(); return; }
+    if (idx >= program.steps.length) { finishProgram(); return; }
     program.chapterIndex = idx;
-    applyBlockToState(program.def.blocks[idx]);
+    const step = program.steps[idx];
+    if (step.type === "video") { playProgramVideo(step); return; }
+    applyBlockToState(step.block);
     buildProgressTrack(program.def.blocks.length);
     els.liveNav.hidden = false;
     runSession();
+  }
+
+  // Like the pause screen, programVideoPlayer lives INSIDE #player (not as
+  // a sibling overlay) - so this hides #player's other panels rather than
+  // calling hideAllPlayers(), which would hide #player itself, its own
+  // ancestor, and collapse everything nested in it (this bit us once: the
+  // video showed as "visible" via its own hidden flag but rendered at 0x0
+  // because the parent had display:none). #player is already guaranteed
+  // visible by the time any video step is reachable, since steps[0] is
+  // always an exercise and runSession() shows #player before any video
+  // step can occur.
+  function playProgramVideo(step) {
+    els.stageWrap.hidden = true;
+    els.coneOrderStage.hidden = true;
+    els.progressTrack.hidden = true;
+    els.playerBar.hidden = true;
+    els.liveNav.hidden = true;
+    els.programVideoPlayer.hidden = false;
+    els.programVideoEl.src = step.url;
+    els.programVideoEl.currentTime = 0;
+    els.programVideoEl.play().catch(() => {});
+    els.programVideoSkipCheck.checked = isVideoSkipped(program.code, step.videoId);
+    requestWakeLock();
+  }
+
+  // The "natural" forward step after an exercise or video finishes on its
+  // own (as opposed to a manual chapter jump) - skips over any video step
+  // the client has flagged for auto-skip, then either shows the rest pause
+  // (next step is an exercise) or plays straight into the next video.
+  function advanceProgramStep() {
+    if (!program) return;
+    let nextIdx = program.chapterIndex + 1;
+    while (program.steps[nextIdx] && program.steps[nextIdx].type === "video" && isVideoSkipped(program.code, program.steps[nextIdx].videoId)) {
+      nextIdx++;
+    }
+    const nextStep = program.steps[nextIdx];
+    if (!nextStep) { finishProgram(); return; }
+    if (nextStep.type === "video") { playChapter(nextIdx); return; }
+    // Deliberately leaves program.chapterIndex pointing at whatever just
+    // actually played (an exercise - never a silently auto-skipped video),
+    // so "restart"/"previous" on the pause screen still redo/precede that
+    // real exercise rather than replaying a video the client chose to
+    // skip. A skipped video sitting between it and the next exercise is
+    // still reachable once that next exercise is reached: its own
+    // previous-chapter navigation steps back through the plain steps
+    // order and lands on it, honouring the flag's checkbox there.
+    startPause(nextIdx);
   }
 
   els.liveRestartBtn.addEventListener("click", () => { if (program) playChapter(program.chapterIndex); });
@@ -3862,11 +3966,24 @@
   els.livePrevBtn.addEventListener("click", () => { if (program) playChapter(program.chapterIndex - 1); });
   els.liveNextBtn.addEventListener("click", () => { if (program) playChapter(program.chapterIndex + 1); });
 
+  els.programVideoBackBtn.addEventListener("click", abortTraining);
+  els.programVideoPrevBtn.addEventListener("click", () => { if (program) playChapter(program.chapterIndex - 1); });
+  els.programVideoRestartBtn.addEventListener("click", () => { if (program) playChapter(program.chapterIndex); });
+  els.programVideoNextBtn.addEventListener("click", () => advanceProgramStep());
+  els.programVideoEl.addEventListener("ended", () => advanceProgramStep());
+  els.programVideoSkipCheck.addEventListener("change", () => {
+    if (!program) return;
+    const step = program.steps[program.chapterIndex];
+    if (!step || step.type !== "video") return;
+    setVideoSkipped(program.code, step.videoId, els.programVideoSkipCheck.checked);
+  });
+
   // ---- Pause between programme exercises ----
   let pauseTimer = null;
   let breathTimer = null;
   let pauseRemaining = 0;
   let pausePaused = false;
+  let pauseNextIdx = 0; // steps-index to advance to once the pause countdown ends
 
   function stopPauseTimers() {
     if (pauseTimer) clearTimeout(pauseTimer);
@@ -3875,21 +3992,27 @@
     els.breath.classList.remove("run");
   }
 
-  function startPause() {
+  function startPause(nextIdx) {
     const def = program.def;
-    const nextBlock = def.blocks[program.chapterIndex + 1];
-    if (!nextBlock) { finishProgram(); return; }
+    const nextStep = program.steps[nextIdx];
+    if (!nextStep) { finishProgram(); return; }
+    const nextBlock = nextStep.block;
+    pauseNextIdx = nextIdx;
     pauseRemaining = nextBlock.pauseS ?? def.pauseS ?? 15;
     pausePaused = false;
     els.pauseToggleBtn.textContent = "Pause verlängern";
-    els.pauseProgress.textContent = `Übung ${program.chapterIndex + 1} von ${def.blocks.length} geschafft`;
+    // The step that just finished (exercise or video) tells us how many
+    // exercises are done so far - a video step's exIdx is the exercise it
+    // followed, so this reads right in both cases.
+    const doneCount = program.steps[program.chapterIndex].exIdx + 1;
+    els.pauseProgress.textContent = `Übung ${doneCount} von ${def.blocks.length} geschafft`;
     const ex = EXERCISES[nextBlock.exercise];
     els.nextTitle.textContent = ex.title;
     els.nextTask.textContent = ex.task || "";
     els.pauseScreen.hidden = false;
     els.playerBar.hidden = true;
     els.liveNav.hidden = true;
-    setProgress(program.chapterIndex + 1, 0);
+    setProgress(doneCount, 0);
     // Breathing guide: 4 s in, 4 s out, synced with the CSS animation.
     let inhale = true;
     els.breathLabel.textContent = "Einatmen";
@@ -3907,7 +4030,7 @@
     els.pauseCountdown.textContent = Math.max(0, Math.ceil(pauseRemaining));
     if (pausePaused) return;
     if (pauseRemaining <= 0) {
-      playChapter(program.chapterIndex + 1);
+      playChapter(pauseNextIdx);
       return;
     }
     pauseTimer = setTimeout(() => { pauseRemaining -= 1; tickPause(); }, 1000);
@@ -3917,10 +4040,10 @@
     els.pauseToggleBtn.textContent = pausePaused ? "Countdown fortsetzen" : "Pause verlängern";
     if (!pausePaused) tickPause();
   });
-  els.pauseSkipBtn.addEventListener("click", () => playChapter(program.chapterIndex + 1));
+  els.pauseSkipBtn.addEventListener("click", () => playChapter(pauseNextIdx));
   els.prevChapterBtn.addEventListener("click", () => playChapter(program.chapterIndex - 1));
   els.restartChapterBtn.addEventListener("click", () => playChapter(program.chapterIndex));
-  els.nextChapterBtn.addEventListener("click", () => playChapter(program.chapterIndex + 1));
+  els.nextChapterBtn.addEventListener("click", () => playChapter(pauseNextIdx));
   els.pauseAbortBtn.addEventListener("click", () => abortTraining());
   wireSwipeNav(els.pauseScreen, {
     onLeft: () => els.nextChapterBtn.click(),
@@ -3978,7 +4101,7 @@
     const spent = accountSession();
     if (window.speechSynthesis) speechSynthesis.cancel();
     els.liveNav.hidden = true;
-    if (program) { startPause(); return; }
+    if (program) { advanceProgramStep(); return; }
     if (comboProgram) { coneTap = null; advanceComboProgram(spent); return; }
     releaseWakeLock();
     setProgress(1, 0);
@@ -4011,6 +4134,8 @@
     els.liveNav.hidden = true;
     if (window.speechSynthesis) speechSynthesis.cancel();
     els.player.hidden = true;
+    els.programVideoPlayer.hidden = true;
+    els.programVideoEl.pause();
     hideOverlays();
   }
   function stopToHome() {
