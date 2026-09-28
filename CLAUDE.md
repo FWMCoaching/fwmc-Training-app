@@ -1250,6 +1250,58 @@ None of prepS/cooldownS/setRestS are saved per named preset ("gespeicherter
 Zirkel") - like `defaultWorkS`, they're one shared preference across every
 self-built circuit, not part of a saved circuit's own identity.
 
+**Hinweistöne (added 2026-09-28)**: client asked for start/end audio cues
+for every exercise interval - "kurz kurz kurz lang" (3-2-1-GO), explicitly
+NOT as a hearing-based exclusion mechanism (unlike `exerciseBlockedReason`'s
+`data-tags="ton"` system for exercises that genuinely NEED sound - Tabata
+never gets tagged `ton` and stays fully playable muted), with a toggle
+reachable both from the ready screen ("in der Übersicht") and during the
+live player ("während dem laufenden Training"). Lives with the rest of the
+Tabata schedule/tick machinery since both entry points (self-built circuit
+AND coach-authored single-exercise blocks) share `circuitTick`:
+- `workoutSoundPrefs.enabled` (own `fwmc-workout-sound-v1` key, default
+  `true`) is a standalone pref, not part of `workoutCircuitPrefs` -
+  coach-authored `tabata` blocks never read that object, but should still
+  respect the same mute toggle.
+- Two buttons write/read the same flag: `#workoutTabataSoundToggleBtn` on
+  `workoutTabataReady` (top of the ready screen, always visible, not
+  tucked into Feineinstellungen - sound is more discoverable-worthy than a
+  timing tweak) and `#tabataSoundToggleBtn` on the live `workoutTabataView`
+  itself. Both call the same `toggleWorkoutSound()`/`syncWorkoutSoundUI()`
+  pair, swapping a speaker/muted-speaker emoji (🔊/🔇) and an `.is-off` CSS
+  class - same "emoji as icon" convention the gear/master-settings button
+  already uses.
+- `playWorkoutBeep(long)` is plain Web Audio (`OscillatorNode` + `GainNode`,
+  no audio file assets) - short beep 110ms/880Hz for the 3-2-1 countdown,
+  long beep 350ms/1180Hz marking the actual start/end instant. Audio
+  unlocks on the same tap that starts the circuit (`AudioContext` is only
+  ever created lazily inside `playWorkoutBeep`, and browsers count a click
+  a few function calls upstream of that as the unlocking gesture).
+- Scheduling lives in `circuitTick`, keyed off the existing flat schedule
+  frames rather than a second timer: `workoutBeepFrame`/`workoutBeepedSeconds`
+  (reset via `resetWorkoutBeepTracking()` in both `startCircuitBlock`/
+  `startTabataBlock`) track which frame is current and which of its
+  3/2/1-second marks already fired, so a beep fires exactly once even
+  though `circuitTick` itself runs every animation frame (~60/s). A frame
+  change where either the outgoing or incoming frame is `type: "work"`
+  fires the long beep - since `buildCircuitSchedule` always interleaves
+  work frames with exactly one gap frame (rest/setrest/prep/cooldown)
+  between them, EVERY transition boundary in the schedule is a work
+  start or end, so this one condition naturally covers "Start und Ende
+  einer Übung" everywhere without needing to special-case rest vs. setrest
+  vs. prep. Short beeps fire during the final 3 seconds of any frame that
+  either IS `work` (counting down to its end) or is immediately followed
+  by one (counting down to its start) - which excludes cool-down, correctly,
+  since nothing ever follows it and it isn't itself a work interval. The
+  very last work interval's own end (when there's no cool-down to absorb
+  the "transition") needed a small special case: `circuitTick`'s normal
+  finish path (`elapsed >= workoutState.total`) returns before ever seeing
+  a "new frame", so it fires that final long beep itself, right before
+  calling `finishWorkoutBlock()`.
+- Not built: per-beep pitch/volume Feineinstellung, a distinct sound for
+  "last rep" vs. a normal one - not asked for, and the base cue already
+  reuses the same short/long shape the client specifically requested.
+
 ## Geplant: Ziel-/Signalfarbe pro Übung (noch nicht gebaut, 2026-09-27)
 
 Client request, queued to start once the background-colour Feineinstellungen

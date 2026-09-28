@@ -94,6 +94,13 @@ button{font-family:inherit;color:inherit}
   background:var(--surface-2);color:var(--ink-soft);font-size:17px;cursor:pointer;line-height:1;
 }
 .master-settings-btn:hover{color:var(--brand)}
+.sound-toggle-btn{
+  margin-left:auto;width:38px;height:38px;border-radius:50%;border:none;
+  background:var(--surface-2);color:var(--ink-soft);font-size:17px;cursor:pointer;line-height:1;
+}
+.sound-toggle-btn:hover{color:var(--brand)}
+.sound-toggle-btn.is-off{opacity:.5}
+.tabata-sound-toggle{margin:10px auto 0;display:block}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]) .brand-logo{background:#fff;border-radius:10px;padding:6px 10px;height:52px}
 }

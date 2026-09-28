@@ -1598,6 +1598,7 @@
     workoutProgramTitle: $("workoutProgramTitle"), workoutProgramMeta: $("workoutProgramMeta"), workoutProgramDesc: $("workoutProgramDesc"),
     workoutChapterList: $("workoutChapterList"), workoutProgramStartBtn: $("workoutProgramStartBtn"),
     workoutTabataReady: $("workoutTabataReady"), workoutTabataBackToHome: $("workoutTabataBackToHome"),
+    workoutTabataSoundToggleBtn: $("workoutTabataSoundToggleBtn"), tabataSoundToggleBtn: $("tabataSoundToggleBtn"),
     workoutTabataStartBtn: $("workoutTabataStartBtn"),
     workoutCircuitSavedGroup: $("workoutCircuitSavedGroup"), workoutCircuitSavedList: $("workoutCircuitSavedList"),
     workoutCircuitSaveBtn: $("workoutCircuitSaveBtn"), workoutCircuitSaveForm: $("workoutCircuitSaveForm"),
@@ -7600,6 +7601,72 @@
   // backgrounding compensation (see the shared visibilitychange handler)
   // works for free via workoutState.startTime, and jumping to a given
   // point is just moving that one timestamp.
+
+  // ---- Hinweistöne: short-short-short-long (3-2-1-GO) cue counting down to
+  // every exercise's start AND end - added 2026-09-28. Deliberately just a
+  // convenience toggle, never a hearing-based exclusion: Tabata itself
+  // stays fully playable with sound off (default ON, but nothing here ever
+  // greys out or blocks the exercise the way `exerciseBlockedReason` does
+  // for genuinely sound-dependent exercises). Shared by both the self-built
+  // circuit AND coach-authored single-exercise "tabata" blocks, since both
+  // run through the same circuitTick - so it's its own small pref rather
+  // than living inside workoutCircuitPrefs (which coach-authored blocks
+  // never read). Two toggle buttons (ready screen + live player) write the
+  // same flag; requires a user gesture to unlock audio, satisfied by the
+  // "Zirkel starten"/plan-start tap that always precedes any beep.
+  const WORKOUT_SOUND_KEY = "fwmc-workout-sound-v1";
+  const workoutSoundPrefs = { enabled: true };
+  function loadWorkoutSoundPrefs() {
+    const saved = readJSON(WORKOUT_SOUND_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(workoutSoundPrefs, saved);
+  }
+  function saveWorkoutSoundPrefs() { writeJSON(WORKOUT_SOUND_KEY, workoutSoundPrefs); }
+  loadWorkoutSoundPrefs();
+  function syncWorkoutSoundUI() {
+    [els.workoutTabataSoundToggleBtn, els.tabataSoundToggleBtn].forEach((btn) => {
+      if (!btn) return;
+      btn.textContent = workoutSoundPrefs.enabled ? "\u{1F50A}" : "\u{1F507}";
+      btn.classList.toggle("is-off", !workoutSoundPrefs.enabled);
+    });
+  }
+  function toggleWorkoutSound() {
+    workoutSoundPrefs.enabled = !workoutSoundPrefs.enabled;
+    saveWorkoutSoundPrefs();
+    syncWorkoutSoundUI();
+  }
+  els.workoutTabataSoundToggleBtn.addEventListener("click", toggleWorkoutSound);
+  els.tabataSoundToggleBtn.addEventListener("click", toggleWorkoutSound);
+  syncWorkoutSoundUI();
+
+  let workoutAudioCtx = null;
+  function playWorkoutBeep(long) {
+    if (!workoutSoundPrefs.enabled) return;
+    try {
+      if (!workoutAudioCtx) workoutAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = workoutAudioCtx;
+      if (ctx.state === "suspended") ctx.resume();
+      const durationS = long ? 0.35 : 0.11;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = long ? 1180 : 880;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.3, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + durationS);
+      osc.start(now);
+      osc.stop(now + durationS + 0.02);
+    } catch (e) {}
+  }
+  // Tracks which schedule frame we last saw and which whole-second
+  // countdown marks (3/2/1) already beeped within it, so circuitTick (runs
+  // every animation frame) fires each cue exactly once. Reset whenever a
+  // fresh circuit/tabata block starts.
+  let workoutBeepFrame = null;
+  let workoutBeepedSeconds = null;
+  function resetWorkoutBeepTracking() { workoutBeepFrame = null; workoutBeepedSeconds = new Set(); }
+
   const TABATA_PREP_S = 5;
   // prepS/cooldownS are optional - coach-authored blocks (startTabataBlock)
   // always use the fixed defaults below (a coach already chose those
@@ -7635,6 +7702,7 @@
   function startCircuitBlock(block) {
     const built = buildCircuitSchedule(block, workoutCircuitPrefs.prepS, workoutCircuitPrefs.cooldownS);
     workoutState = { kind: "circuit", block, ex: { name: circuitSummaryLabel(block) }, schedule: built.schedule, total: built.total, startTime: performance.now() };
+    resetWorkoutBeepTracking();
     requestWakeLock();
     workoutRaf = requestAnimationFrame(circuitTick);
   }
@@ -7642,17 +7710,42 @@
     const circuitBlock = { items: [{ exercise: block.exercise, workS: block.workS }], restS: 0, sets: block.rounds, setRestS: block.restS };
     const built = buildCircuitSchedule(circuitBlock);
     workoutState = { kind: "circuit", block: circuitBlock, ex: findWorkoutExercise(block.exercise), schedule: built.schedule, total: built.total, startTime: performance.now() };
+    resetWorkoutBeepTracking();
     requestWakeLock();
     workoutRaf = requestAnimationFrame(circuitTick);
   }
   function circuitTick(now) {
     if (!workoutState || workoutState.kind !== "circuit") return;
     const elapsed = (now - workoutState.startTime) / 1000;
-    if (elapsed >= workoutState.total) { finishWorkoutBlock(); return; }
+    if (elapsed >= workoutState.total) {
+      // the very last work interval's own "end" cue, for the (common) case
+      // with no cool-down - every other work start/end already got its long
+      // beep below, from the "frame changed" check as the NEXT frame began.
+      if (workoutBeepFrame && workoutBeepFrame.type === "work") playWorkoutBeep(true);
+      finishWorkoutBlock();
+      return;
+    }
     els.workoutTimeEl.textContent = fmtClock(workoutState.total - elapsed);
     const frame = workoutState.schedule.find((f) => elapsed >= f.t0 && elapsed < f.t1);
     if (frame) {
       const remain = frame.t1 - elapsed;
+      if (frame !== workoutBeepFrame) {
+        const prevFrame = workoutBeepFrame;
+        workoutBeepFrame = frame;
+        workoutBeepedSeconds = new Set();
+        // a long beep marks the instant of every work start AND end
+        if (prevFrame && (frame.type === "work" || prevFrame.type === "work")) playWorkoutBeep(true);
+      }
+      const frameIdx = workoutState.schedule.indexOf(frame);
+      const nextFrame = workoutState.schedule[frameIdx + 1];
+      const countingToWork = frame.type === "work" || (nextFrame && nextFrame.type === "work");
+      if (countingToWork) {
+        const wholeRemain = Math.ceil(remain);
+        if (wholeRemain >= 1 && wholeRemain <= 3 && !workoutBeepedSeconds.has(wholeRemain)) {
+          workoutBeepedSeconds.add(wholeRemain);
+          playWorkoutBeep(false);
+        }
+      }
       const totalSets = workoutState.block.sets;
       const items = workoutState.block.items;
       const itemCount = items.length;
