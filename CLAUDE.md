@@ -2220,14 +2220,64 @@ app's own navigation. The client still needs to enter the `ADMIN_TOKEN`
 once into `dashboard.html`'s gate screen (treated like a password - it
 grants full read/write on every training code and the client-history log).
 
-**Not built, explicitly out of scope for this pass**: a visual
-block-builder (drag/drop or form-based) for `config` instead of raw JSON;
-client history beyond Kürzel/code/note/date (e.g. richer client
-records - the client only asked for "welches Kürzel hat was bekommen", not
-names or other PII, and D1 access is already client-only via the admin
-token, but nothing here does more than that minimum); any auth beyond a
-single shared bearer token (fine for a single coach, would need real
-per-user auth if ever shared with others).
+**Baukasten (visual block-builder, added 2026-09-28)**: the client tried
+the dashboard live, found the JSON textarea confusing ("wo kann ich denn
+da jetzt die Übungen zusammenklicken?") and asked for a real click-together
+UI. Added as a `dashboard.html`-only feature (no Worker/API changes needed
+- it just constructs the same JSON the API already accepted):
+- Two tabs, `#tabBuilderBtn`/`#tabJsonBtn`, toggled by `switchTab()`.
+  Switching FROM json TO builder re-parses whatever's in the JSON textarea
+  first (`configToBuilder(JSON.parse(...))`, silently keeping prior builder
+  state on invalid JSON) so manual JSON edits aren't lost if the coach
+  flips tabs; switching the other way serializes the current builder state
+  into the textarea - either tab can be the one that's actually saved.
+- Deliberately covers only the 8 canvas-timed exercise types dig01/dig02/
+  xppbsp-1's blocks already use (`EXERCISE_CATALOG`: vt-color, vrw-original,
+  4-straight, 4-diag, 8-solo, 8-vrw, stroop-classic, stroop-bg) - all share
+  the exact same block shape. Colour choice uses `colors: [...]` (a
+  multi-select of the app's own 7-colour `COLOR_BY_KEY` library, min 2 -
+  `blockColors()`'s "free selection" path in app.js) rather than the
+  legacy 3-letter `palette` codes (`"ORL"` etc.) - functionally identical,
+  far more legible for a coach than memorising palette codes.
+- `configToBuilder(config)` decides per-edit whether the builder can
+  represent a code's saved config: only a plain `blocks` array (no
+  `type:"bundle"`) whose every `exercise` id is in `EXERCISE_CATALOG`
+  "fits". A code that doesn't (a bundle like `xppbsp-1`, or any future
+  exercise type outside the 8) disables the Baukasten tab and shows
+  `#builderFallbackHint` explaining why, falling back to the JSON tab -
+  note this hint element lives as a sibling of both tab panels, NOT inside
+  `#builderView`, specifically because `switchTab` hides that whole
+  container when the JSON tab is active and the hint needs to stay visible
+  exactly then; got this wrong once (nested inside `#builderView`, so the
+  explanation was invisible right when it mattered) and caught it via the
+  Playwright mock test before it shipped.
+- A block's `palette`-only legacy shape (no `colors` array, e.g. editing
+  `dig01` itself) falls back to a sensible default 3-colour set on load -
+  close to but not byte-identical to the exact ORL hex shades, acceptable
+  since editing and re-saving in the builder naturally normalises it to the
+  `colors` shape going forward.
+- "Neuer Code" button (`resetBuilder()`) clears the whole form for a fresh
+  code, since there was previously no explicit way to back out of editing
+  an existing one.
+- Tested against a mocked Worker API: adding/reordering/removing blocks,
+  the colour-count floor, tab round-tripping (builder → JSON → builder
+  preserves state), saving posts the right `config` shape, editing a
+  simple existing code populates the builder, editing a bundle correctly
+  falls back to JSON-only with the hint visible, "Neuer Code" resets
+  everything.
+- **Not built**: multi-program bundles (`xppbsp-1`'s shape) in the
+  builder - still JSON-only; the other 4 `EXERCISES` types (`cross-modal`,
+  `cone-tap`, `cone-compass`, `periph-flash`) aren't offered in the picker,
+  since their config shape isn't confirmed to match the simple block form
+  used here; drag-and-drop reordering (up/down buttons only).
+
+**Not built, explicitly out of scope for this pass**: client history
+beyond Kürzel/code/note/date (e.g. richer client records - the client only
+asked for "welches Kürzel hat was bekommen", not names or other PII, and
+D1 access is already client-only via the admin token, but nothing here
+does more than that minimum); any auth beyond a single shared bearer token
+(fine for a single coach, would need real per-user auth if ever shared
+with others).
 
 ## Test-Bereich (autonomous, ongoing)
 

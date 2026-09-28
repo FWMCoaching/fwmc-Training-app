@@ -56,6 +56,38 @@
   #app { display: none; }
   a.copy-link { color: var(--accent); cursor: pointer; font-size: 0.8rem; }
   .top-actions { display: flex; justify-content: space-between; align-items: baseline; }
+  .tabs { display: flex; gap: 6px; margin: 14px 0 4px; }
+  .tab-btn {
+    background: var(--panel2); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 8px 8px 0 0; padding: 8px 14px; font-size: 0.85rem; cursor: pointer; margin: 0;
+  }
+  .tab-btn.active { background: var(--panel); color: var(--text); border-bottom-color: var(--panel); }
+  .ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 10px; }
+  .ex-btn {
+    background: var(--panel2); border: 1px solid var(--border); color: var(--text); border-radius: 8px;
+    padding: 10px; font-size: 0.82rem; text-align: left; cursor: pointer; margin: 0; line-height: 1.3;
+  }
+  .ex-btn:hover { border-color: var(--accent); }
+  .block-card { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-top: 10px; }
+  .block-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .block-head strong { font-size: 0.9rem; }
+  .block-actions { display: flex; gap: 4px; }
+  .icon-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 6px;
+    width: 28px; height: 28px; padding: 0; font-size: 0.85rem; cursor: pointer; margin: 0; line-height: 1;
+  }
+  .icon-btn:hover { color: var(--text); }
+  .block-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-top: 10px; }
+  .block-fields label { margin: 0 0 3px; }
+  .block-fields input { padding: 6px 8px; font-size: 0.85rem; }
+  .color-check { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .color-check label {
+    display: flex; align-items: center; gap: 5px; margin: 0; font-size: 0.8rem; color: var(--text);
+    background: var(--panel); border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px 4px 8px; cursor: pointer;
+  }
+  .color-check input { width: auto; margin: 0; }
+  .color-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .empty-hint { color: var(--muted); font-size: 0.85rem; margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -115,15 +147,44 @@
         <tbody></tbody>
       </table>
 
-      <label for="pCode" style="margin-top:20px">Code (neu anlegen oder bestehenden Code eintippen zum Bearbeiten)</label>
+      <label for="pCode" style="margin-top:20px">Code (neu anlegen oder bestehenden Code eintippen bzw. anklicken zum Bearbeiten)</label>
       <input id="pCode" placeholder="z.B. dig03" />
-      <label for="pConfig">Konfiguration (JSON - gleiche Struktur wie dig01/dig02/xppbsp-1)</label>
-      <textarea id="pConfig" placeholder='{"name":"Dig03 · …","pauseS":15,"blocks":[{"exercise":"vt-color","palette":"ORL","duration":60,"stimulusS":1,"intervalMin":3,"intervalMax":5,"sequence":"S01"}]}'></textarea>
-      <p class="hint">Gültige <code>exercise</code>-Werte: vt-color, vrw-original, 4-straight, 4-diag, 8-solo, 8-vrw, stroop-classic, stroop-bg, cross-modal, cone-tap (weitere in app.js unter EXERCISES). Für eine Programmübersicht mit mehreren Programmen: <code>{"type":"bundle","name":"…","programs":[{"label":"…","blocks":[…]}, …]}</code>.</p>
+
+      <div class="tabs">
+        <button class="tab-btn active" id="tabBuilderBtn" type="button">Baukasten</button>
+        <button class="tab-btn" id="tabJsonBtn" type="button">JSON</button>
+      </div>
+      <p class="hint" id="builderFallbackHint" hidden>Dieser Code nutzt eine Programmübersicht (mehrere Programme) oder ein Format, das der Baukasten noch nicht abbildet - bitte über den JSON-Tab bearbeiten.</p>
+
+      <div id="builderView">
+        <label for="pName" style="margin-top:14px">Name des Programms</label>
+        <input id="pName" placeholder="z.B. Dig03 · Fokus-Training" />
+        <label for="pDesc">Beschreibung (optional)</label>
+        <input id="pDesc" placeholder="z.B. Kurzes Aufmerksamkeitstraining, 3 Übungen" />
+        <label for="pPauseS">Pause zwischen den Übungen (Sekunden)</label>
+        <input id="pPauseS" type="number" min="0" step="5" value="15" style="max-width:140px" />
+
+        <label style="margin-top:16px">Übung hinzufügen - antippen fügt sie ans Ende der Liste an</label>
+        <div class="ex-grid" id="exGrid"></div>
+
+        <label style="margin-top:16px">Dein Programm <span id="blockCount" class="hint"></span></label>
+        <div id="blockList"></div>
+        <p class="empty-hint" id="blockEmptyHint">Noch keine Übung hinzugefügt - oben eine antippen.</p>
+      </div>
+
+      <div id="jsonView" hidden>
+        <label for="pConfig" style="margin-top:14px">Konfiguration (JSON - gleiche Struktur wie dig01/dig02/xppbsp-1)</label>
+        <textarea id="pConfig" placeholder='{"name":"Dig03 · …","pauseS":15,"blocks":[{"exercise":"vt-color","colors":["orange","rot","lila"],"duration":60,"stimulusS":1,"intervalMin":3,"intervalMax":5}]}'></textarea>
+        <p class="hint">Gültige <code>exercise</code>-Werte im Baukasten: vt-color, vrw-original, 4-straight, 4-diag, 8-solo, 8-vrw, stroop-classic, stroop-bg. Weitere Typen (cross-modal, cone-tap, …) und Programmübersichten mit mehreren Programmen (<code>{"type":"bundle","name":"…","programs":[{"label":"…","blocks":[…]}, …]}</code>) nur hier im JSON-Tab.</p>
+      </div>
+
       <div class="row">
         <label style="display:flex;align-items:center;gap:6px;margin-top:20px"><input type="checkbox" id="pActive" checked style="width:auto" /> Aktiv</label>
       </div>
-      <button id="pSaveBtn">Speichern</button>
+      <div class="row" style="margin-top:12px">
+        <button id="pSaveBtn" style="margin-top:0">Speichern</button>
+        <button id="pNewBtn" class="secondary" style="margin-top:0" type="button">Neuer Code</button>
+      </div>
       <div id="pMsg" class="msg"></div>
     </div>
   </div>
@@ -249,13 +310,195 @@
     });
   }
 
+  // ---- Baukasten: click-together builder for a single program's blocks.
+  // Deliberately covers only the 8 canvas-timed exercise types that
+  // dig01/dig02/xppbsp-1 already use (same {exercise,colors,duration,
+  // stimulusS,intervalMin,intervalMax} shape) - other exercise types and
+  // multi-program bundles stay JSON-only, see the hint text in that tab.
+  const EXERCISE_CATALOG = [
+    { id: "vt-color", title: "VT · Farbe & Seite" },
+    { id: "vrw-original", title: "VRW · Direkt & Umgekehrt" },
+    { id: "4-straight", title: "4 Pfeile · gerade" },
+    { id: "4-diag", title: "4 Pfeile · diagonal" },
+    { id: "8-solo", title: "8 Pfeile" },
+    { id: "8-vrw", title: "8 Pfeile · Rot/Grün" },
+    { id: "stroop-classic", title: "Stroop · klassisch" },
+    { id: "stroop-bg", title: "Stroop · mit Hintergrund" },
+  ];
+  const EXERCISE_BY_ID = Object.fromEntries(EXERCISE_CATALOG.map((e) => [e.id, e]));
+  const COLOR_LIB = [
+    { key: "rot", name: "Rot", hex: "#d32f2f" }, { key: "gelb", name: "Gelb", hex: "#f2a900" },
+    { key: "gruen", name: "Grün", hex: "#2e7d32" }, { key: "blau", name: "Blau", hex: "#1565c0" },
+    { key: "orange", name: "Orange", hex: "#ff9110" }, { key: "lila", name: "Lila", hex: "#7e4fbe" },
+    { key: "pink", name: "Pink", hex: "#e6399b" },
+  ];
+  const MIN_COLORS = 2;
+  const DEFAULT_BLOCK_COLORS = ["orange", "rot", "lila"];
+
+  let builderBlocks = [];
+  let builderUsable = true; // false when an edited code's config doesn't fit this builder's shape
+
+  function newBlock(exerciseId) {
+    return { exercise: exerciseId, colors: DEFAULT_BLOCK_COLORS.slice(), duration: 60, stimulusS: 1, intervalMin: 2, intervalMax: 4 };
+  }
+
+  function renderExGrid() {
+    const grid = document.getElementById("exGrid");
+    grid.innerHTML = "";
+    EXERCISE_CATALOG.forEach((ex) => {
+      const btn = document.createElement("button");
+      btn.className = "ex-btn"; btn.type = "button";
+      btn.textContent = ex.title;
+      btn.addEventListener("click", () => {
+        builderBlocks.push(newBlock(ex.id));
+        renderBlockList();
+      });
+      grid.appendChild(btn);
+    });
+  }
+
+  function renderBlockList() {
+    const list = document.getElementById("blockList");
+    list.innerHTML = "";
+    document.getElementById("blockCount").textContent = builderBlocks.length ? `(${builderBlocks.length})` : "";
+    document.getElementById("blockEmptyHint").hidden = builderBlocks.length > 0;
+    builderBlocks.forEach((block, i) => {
+      const card = document.createElement("div");
+      card.className = "block-card";
+      const title = (EXERCISE_BY_ID[block.exercise] || { title: block.exercise }).title;
+      card.innerHTML = `<div class="block-head"><strong>${i + 1}. ${escapeHtml(title)}</strong>
+        <div class="block-actions">
+          <button class="icon-btn" data-act="up" title="Nach oben" ${i === 0 ? "disabled" : ""}>&uarr;</button>
+          <button class="icon-btn" data-act="down" title="Nach unten" ${i === builderBlocks.length - 1 ? "disabled" : ""}>&darr;</button>
+          <button class="icon-btn" data-act="remove" title="Entfernen">&times;</button>
+        </div></div>`;
+      const fields = document.createElement("div");
+      fields.className = "block-fields";
+      fields.innerHTML = `
+        <div><label>Dauer (Sek.)</label><input type="number" min="5" step="5" data-f="duration" value="${block.duration}" /></div>
+        <div><label>Reiz-Dauer (Sek.)</label><input type="number" min="0.1" step="0.1" data-f="stimulusS" value="${block.stimulusS}" /></div>
+        <div><label>Pause min (Sek.)</label><input type="number" min="0" step="0.5" data-f="intervalMin" value="${block.intervalMin}" /></div>
+        <div><label>Pause max (Sek.)</label><input type="number" min="0" step="0.5" data-f="intervalMax" value="${block.intervalMax}" /></div>
+      `;
+      card.appendChild(fields);
+      const colorRow = document.createElement("div");
+      colorRow.className = "color-check";
+      COLOR_LIB.forEach((c) => {
+        const lbl = document.createElement("label");
+        const checked = block.colors.includes(c.key);
+        lbl.innerHTML = `<input type="checkbox" data-color="${c.key}" ${checked ? "checked" : ""} /><span class="color-dot" style="background:${c.hex}"></span>${c.name}`;
+        colorRow.appendChild(lbl);
+      });
+      card.appendChild(colorRow);
+      list.appendChild(card);
+
+      card.querySelectorAll("[data-f]").forEach((input) => {
+        input.addEventListener("input", () => { block[input.dataset.f] = Number(input.value); });
+      });
+      card.querySelectorAll("[data-color]").forEach((input) => {
+        input.addEventListener("change", () => {
+          const key = input.dataset.color;
+          if (input.checked) { if (!block.colors.includes(key)) block.colors.push(key); }
+          else {
+            if (block.colors.length <= MIN_COLORS) { input.checked = true; return; } // keep at least 2
+            block.colors = block.colors.filter((k) => k !== key);
+          }
+        });
+      });
+      card.querySelector('[data-act="up"]').addEventListener("click", () => {
+        if (i === 0) return;
+        [builderBlocks[i - 1], builderBlocks[i]] = [builderBlocks[i], builderBlocks[i - 1]];
+        renderBlockList();
+      });
+      card.querySelector('[data-act="down"]').addEventListener("click", () => {
+        if (i === builderBlocks.length - 1) return;
+        [builderBlocks[i + 1], builderBlocks[i]] = [builderBlocks[i], builderBlocks[i + 1]];
+        renderBlockList();
+      });
+      card.querySelector('[data-act="remove"]').addEventListener("click", () => {
+        builderBlocks.splice(i, 1);
+        renderBlockList();
+      });
+    });
+  }
+
+  function builderToConfig() {
+    return {
+      name: document.getElementById("pName").value.trim(),
+      description: document.getElementById("pDesc").value.trim() || undefined,
+      pauseS: Number(document.getElementById("pPauseS").value) || 0,
+      blocks: builderBlocks.map((b) => ({
+        exercise: b.exercise, colors: b.colors.slice(), duration: b.duration,
+        stimulusS: b.stimulusS, intervalMin: b.intervalMin, intervalMax: b.intervalMax,
+      })),
+    };
+  }
+
+  // Loads a config into the builder if its shape fits (a plain program with
+  // only known exercise ids, no bundle type); otherwise switches to the
+  // JSON tab and disables the builder tab for this edit, rather than
+  // silently dropping fields the builder doesn't understand.
+  function configToBuilder(config) {
+    const fits = config && typeof config === "object" && !config.type
+      && Array.isArray(config.blocks) && config.blocks.every((b) => EXERCISE_BY_ID[b.exercise]);
+    document.getElementById("builderFallbackHint").hidden = !!fits;
+    document.getElementById("tabBuilderBtn").disabled = !fits;
+    builderUsable = !!fits;
+    if (!fits) { builderBlocks = []; switchTab("json"); return; }
+    document.getElementById("pName").value = config.name || "";
+    document.getElementById("pDesc").value = config.description || "";
+    document.getElementById("pPauseS").value = config.pauseS ?? 15;
+    builderBlocks = config.blocks.map((b) => ({
+      exercise: b.exercise,
+      colors: Array.isArray(b.colors) && b.colors.length >= MIN_COLORS ? b.colors.slice() : DEFAULT_BLOCK_COLORS.slice(),
+      duration: b.duration ?? 60, stimulusS: b.stimulusS ?? 1, intervalMin: b.intervalMin ?? 2, intervalMax: b.intervalMax ?? 4,
+    }));
+    renderBlockList();
+  }
+
+  function resetBuilder() {
+    document.getElementById("pName").value = "";
+    document.getElementById("pDesc").value = "";
+    document.getElementById("pPauseS").value = 15;
+    builderBlocks = [];
+    builderUsable = true;
+    document.getElementById("builderFallbackHint").hidden = true;
+    document.getElementById("tabBuilderBtn").disabled = false;
+    renderBlockList();
+  }
+
+  function switchTab(which) {
+    const builderActive = which === "builder";
+    if (builderActive && builderUsable) {
+      // moving from JSON to builder: pick up any manual edits made there,
+      // rather than silently discarding them on the next Save. Invalid
+      // JSON or a shape the builder can't represent just keeps whatever
+      // the builder already had - the JSON tab's own Save still validates.
+      try { configToBuilder(JSON.parse(document.getElementById("pConfig").value)); }
+      catch (e) { /* leave builder state as-is */ }
+    } else if (!builderActive && builderUsable) {
+      // moving from builder to JSON: reflect the current builder state
+      document.getElementById("pConfig").value = JSON.stringify(builderToConfig(), null, 2);
+    }
+    document.getElementById("builderView").hidden = !builderActive;
+    document.getElementById("jsonView").hidden = builderActive;
+    document.getElementById("tabBuilderBtn").classList.toggle("active", builderActive);
+    document.getElementById("tabJsonBtn").classList.toggle("active", !builderActive);
+  }
+  document.getElementById("tabBuilderBtn").addEventListener("click", () => switchTab("builder"));
+  document.getElementById("tabJsonBtn").addEventListener("click", () => switchTab("json"));
+  renderExGrid();
+  renderBlockList();
+
   function editProgram(code) {
     const full = programsCache.find((p) => p.code === code);
     if (!full) return;
     document.getElementById("pCode").value = code;
     document.getElementById("pActive").checked = full.active;
     document.getElementById("pConfig").value = JSON.stringify(full.config, null, 2);
-    document.getElementById("pConfig").scrollIntoView({ behavior: "smooth", block: "center" });
+    configToBuilder(full.config);
+    if (builderUsable) switchTab("builder");
+    document.getElementById("pCode").scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   async function toggleActive(code, nextActive) {
@@ -265,19 +508,38 @@
     loadPrograms();
   }
 
+  function currentTabIsBuilder() { return !document.getElementById("builderView").hidden; }
+
   document.getElementById("pSaveBtn").addEventListener("click", async () => {
     const code = document.getElementById("pCode").value.trim();
     const active = document.getElementById("pActive").checked;
     const msg = document.getElementById("pMsg");
     let config;
-    try { config = JSON.parse(document.getElementById("pConfig").value); }
-    catch (e) { msg.textContent = "Ungültiges JSON: " + e.message; msg.className = "msg err"; return; }
+    if (currentTabIsBuilder() && builderUsable) {
+      config = builderToConfig();
+      if (!config.blocks.length) { msg.textContent = "Mindestens eine Übung hinzufügen."; msg.className = "msg err"; return; }
+      document.getElementById("pConfig").value = JSON.stringify(config, null, 2); // keep JSON tab in sync
+    } else {
+      try { config = JSON.parse(document.getElementById("pConfig").value); }
+      catch (e) { msg.textContent = "Ungültiges JSON: " + e.message; msg.className = "msg err"; return; }
+    }
+    if (!config.name) { msg.textContent = "Name fehlt."; msg.className = "msg err"; return; }
     if (!code) { msg.textContent = "Code fehlt."; msg.className = "msg err"; return; }
     try {
       const data = await api("/admin/program", { method: "POST", body: { code, config, active } });
       msg.textContent = data.created ? "Neu angelegt." : "Gespeichert."; msg.className = "msg ok";
       loadPrograms();
     } catch (e) { msg.textContent = "Fehler: " + e.message; msg.className = "msg err"; }
+  });
+
+  document.getElementById("pNewBtn").addEventListener("click", () => {
+    document.getElementById("pCode").value = "";
+    document.getElementById("pConfig").value = "";
+    document.getElementById("pActive").checked = true;
+    resetBuilder();
+    switchTab("builder");
+    document.getElementById("pMsg").textContent = ""; document.getElementById("pMsg").className = "msg";
+    document.getElementById("pCode").focus();
   });
 
   function escapeHtml(s) {
