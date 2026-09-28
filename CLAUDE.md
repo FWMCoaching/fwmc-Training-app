@@ -1158,9 +1158,11 @@ overview isn't a directional ticker, so `direction` only applies when
 switching between grid and window modes must explicitly reset `preview` to
 a number afterward; the direction buttons stay inert while stuck on "Ganz".
 Diagonal directions and a "wechselnd" (periodically switching mid-session)
-mode were also mentioned as maybes - not built, genuine open questions on
-exact behaviour (switch how often? random or fixed rotation?), ask before
-building rather than guessing. Test: `tests/movement_test2.py`.
+mode were also mentioned as maybes. Client's decision (2026-09-28): leave
+both out for now, but keep them on the backlog - if picked up later, still
+genuine open questions on exact behaviour (switch how often? random or
+fixed rotation?), ask before building rather than guessing. Test:
+`tests/movement_test2.py`.
 
 ## Workout
 
