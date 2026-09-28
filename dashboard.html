@@ -102,6 +102,28 @@
   .color-check input { width: auto; margin: 0; }
   .color-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
   .empty-hint { color: var(--muted); font-size: 0.85rem; margin-top: 10px; }
+  details.lib { margin-top: 16px; border: 1px solid var(--border); border-radius: 8px; padding: 4px 12px; background: var(--panel2); }
+  details.lib summary { cursor: pointer; padding: 8px 0; font-size: 0.85rem; color: var(--text); }
+  details.lib[open] summary { border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+  .lib-source-row { display: flex; gap: 8px; align-items: center; margin: 10px 0; }
+  .lib-source-row select { flex: 1; }
+  .lib-block-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin-top: 6px;
+  }
+  .lib-block-row .lib-block-title { font-size: 0.85rem; }
+  .lib-block-row .lib-block-meta { color: var(--muted); font-size: 0.75rem; }
+  .lib-block-row button { margin: 0; padding: 5px 10px; font-size: 0.78rem; }
+  .lib-block-row button.copied { background: var(--accent2); }
+  .lib-unavailable { color: var(--muted); font-size: 0.78rem; font-style: italic; padding: 4px 0; }
+  .overview-domain { margin-top: 14px; }
+  .overview-domain h3 { font-size: 0.85rem; margin: 0 0 6px; color: var(--text); }
+  .overview-items { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ov-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 0.76rem; padding: 3px 9px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--border); color: var(--muted); }
+  .ov-pill .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .ov-pill.full .dot { background: var(--accent2); }
+  .ov-pill.json .dot { background: #d9a441; }
+  .ov-pill.none .dot { background: #556; }
 </style>
 </head>
 <body>
@@ -133,6 +155,12 @@
       </div>
       <button class="secondary" id="logoutBtn">Abmelden</button>
     </div>
+
+    <details class="panel" id="overviewDetails" style="padding:16px">
+      <summary style="cursor:pointer;list-style:none"><h2 style="display:inline">Alle Übungen im Überblick</h2></summary>
+      <p class="hint">Stand: 28.09.2026 · von Hand gepflegt, kein Live-Abgleich mit der App - bei Fragen zu neuen Übungen einfach fragen. <span class="ov-pill full"><span class="dot"></span>im Baukasten nutzbar</span> <span class="ov-pill json"><span class="dot"></span>nur über den JSON-Tab</span> <span class="ov-pill none"><span class="dot"></span>noch nicht im Dashboard, nur in der App</span></p>
+      <div id="overviewBody"></div>
+    </details>
 
     <div class="panel">
       <h2>Kunden-Verlauf</h2>
@@ -188,6 +216,15 @@
 
         <label style="margin-top:16px">Übung hinzufügen - antippen fügt sie ans Ende der Liste an</label>
         <div class="ex-grid" id="exGrid"></div>
+
+        <details class="lib" id="libDetails">
+          <summary>Aus einem bestehenden Code kopieren (Bausteine-Bibliothek)</summary>
+          <p class="hint" style="margin-top:0">Übernimmt eine Übung 1:1 mit allen Einstellungen in dieses Programm - komplett unabhängige Kopie, Änderungen hier wirken sich nie auf den Ursprungs-Code aus.</p>
+          <div class="lib-source-row">
+            <select id="libSourceSelect"><option value="">Code wählen…</option></select>
+          </div>
+          <div id="libBlockList"></div>
+        </details>
 
         <label style="margin-top:16px">Dein Programm <span id="blockCount" class="hint"></span></label>
         <div id="blockList"></div>
@@ -330,7 +367,131 @@
         await toggleActive(code, !p.active);
       });
     });
+    renderLibSourceSelect();
   }
+
+  // ---- Alle Übungen im Überblick: a hand-maintained reference, not a live
+  // read of app.js - the client explicitly chose a periodic (roughly
+  // weekly) manual sync over trying to keep this auto-generated, so the
+  // "Stand: <date>" note above is load-bearing, not decorative. Update it
+  // whenever this list is refreshed.
+  const OVERVIEW = [
+    { domain: "Visual Training", items: [
+      ["VT · Farbe & Seite", "full"], ["VRW · Direkt & Umgekehrt", "full"],
+      ["4 Pfeile · gerade", "full"], ["4 Pfeile · diagonal", "full"],
+      ["8 Pfeile", "full"], ["8 Pfeile · Rot/Grün", "full"],
+      ["Stroop · klassisch", "full"], ["Stroop · mit Hintergrund", "full"],
+      ["Sehen & Hören", "json"], ["Hütchen sortieren", "json"],
+      ["Hütchen · Kompass-Aufbau", "json"], ["Periphere Wahrnehmung", "json"],
+    ]},
+    { domain: "NAT (neuroathletisch)", items: [
+      ["Remember", "none"], ["Blitz-Raster", "none"],
+      ["Flash Speicher Test", "none"], ["MOT-Fähigkeit", "none"],
+    ]},
+    { domain: "Atemtraining", items: [
+      ["Box-Atmung", "none"], ["Ruhige Atmung (Kohärenz)", "none"],
+      ["4-7-8 / Relax", "none"], ["Wim Hof", "none"], ["Eigenes Muster", "none"],
+    ]},
+    { domain: "Movement", items: [["Ganzkörper-Reaktion (Limb-Cueing)", "none"]] },
+    { domain: "Workout", items: [
+      ["Kniebeugen", "none"], ["Liegestütze", "none"], ["Ausfallschritte", "none"],
+      ["Unterarmstütz (Plank)", "none"], ["Hampelmann", "none"], ["Bergsteiger", "none"],
+      ["Burpees", "none"], ["Sit-ups", "none"], ["Superman", "none"], ["Hüftheben (Brücke)", "none"],
+      ["Kniehebelauf", "none"], ["Wandsitz", "none"], ["Trizeps-Dips", "none"], ["Sprungkniebeugen", "none"],
+      ["Tabata/Zirkel-Intervall-Timer (Mechanik, keine einzelne Übung)", "none"],
+    ]},
+    { domain: "Test-Bereich (wächst laufend)", items: [
+      ["Go/No-Go Reaktionstest", "none"], ["Positions-Gedächtnis (N-Back)", "none"],
+      ["Verbindungstest (Trail Making)", "none"], ["Ablenkungstest (Flanker)", "none"],
+      ["Blickfeld-Test (UFOV)", "none"], ["Hinweisreiz-Test (Posner-Cueing)", "none"],
+      ["Rotationstest (Mentale Rotation)", "none"], ["Merkspanne-Test (Change Detection)", "none"],
+      ["Farbkonflikt-Test (Simon-Aufgabe)", "none"], ["Suchtest (Visuelle Suche)", "none"],
+      ["Doppelziel-Test (Attentional Blink)", "none"], ["Antizipationstest (Coincidence-Anticipation)", "none"],
+      ["Wahlreaktionstest (Hick's Law)", "none"], ["Blockspanne-Test (Corsi)", "none"],
+      ["Reaktionsfeld-Test", "none"], ["Regelwechsel-Test (Task-Switching)", "none"],
+      ["Gegenrichtungs-Test (Antisakkaden)", "none"], ["Wortfarben-Test (Stroop-Aufgabe)", "none"],
+      ["Sofortmengen-Test (Subitizing)", "none"], ["Alarmierungs-Test (Alerting-Netzwerk)", "none"],
+    ]},
+  ];
+  function renderOverview() {
+    const body = document.getElementById("overviewBody");
+    body.innerHTML = "";
+    OVERVIEW.forEach((group) => {
+      const wrap = document.createElement("div");
+      wrap.className = "overview-domain";
+      wrap.innerHTML = `<h3>${escapeHtml(group.domain)}</h3>`;
+      const items = document.createElement("div");
+      items.className = "overview-items";
+      group.items.forEach(([name, status]) => {
+        const pill = document.createElement("span");
+        pill.className = `ov-pill ${status}`;
+        pill.innerHTML = `<span class="dot"></span>${escapeHtml(name)}`;
+        items.appendChild(pill);
+      });
+      wrap.appendChild(items);
+      body.appendChild(wrap);
+    });
+  }
+  renderOverview();
+
+  // ---- Bausteine-Bibliothek: copy a block from ANY existing code (a
+  // deliberately reused code kept around as a template counts too - no
+  // separate "template" flag needed) into the program currently being
+  // built. Always a deep clone (JSON round-trip) so editing the copy in
+  // this draft can never mutate the source code still sitting in
+  // programsCache/on the server - the client was explicit about this.
+  function renderLibSourceSelect() {
+    const sel = document.getElementById("libSourceSelect");
+    const prevValue = sel.value;
+    sel.innerHTML = '<option value="">Code wählen…</option>';
+    programsCache.forEach((p) => {
+      const opt = document.createElement("option");
+      opt.value = p.code; opt.textContent = `${p.code} · ${p.name}`;
+      sel.appendChild(opt);
+    });
+    if (programsCache.some((p) => p.code === prevValue)) sel.value = prevValue;
+    renderLibBlockList();
+  }
+  function renderLibBlockList() {
+    const list = document.getElementById("libBlockList");
+    list.innerHTML = "";
+    const code = document.getElementById("libSourceSelect").value;
+    if (!code) return;
+    const source = programsCache.find((p) => p.code === code);
+    if (!source) return;
+    const config = source.config;
+    const blocks = Array.isArray(config?.blocks) ? config.blocks : null;
+    if (!blocks) {
+      list.innerHTML = '<p class="lib-unavailable">Dieser Code ist eine Programmübersicht (mehrere Programme) - Kopieren einzelner Übungen daraus ist noch nicht unterstützt.</p>';
+      return;
+    }
+    blocks.forEach((b, i) => {
+      const row = document.createElement("div");
+      row.className = "lib-block-row";
+      const known = EXERCISE_BY_ID[b.exercise];
+      const title = known ? known.title : b.exercise;
+      row.innerHTML = `<div><div class="lib-block-title">${escapeHtml(title)}</div>` +
+        `<div class="lib-block-meta">${b.duration ?? "?"}s · Reiz ${b.stimulusS ?? "?"}s · Pause ${b.intervalMin ?? "?"}-${b.intervalMax ?? "?"}s</div></div>` +
+        `<button class="secondary" data-copy="${i}" ${known ? "" : "disabled"}>${known ? "Übernehmen" : "nicht unterstützt"}</button>`;
+      list.appendChild(row);
+    });
+    list.querySelectorAll("[data-copy]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const b = blocks[Number(btn.dataset.copy)];
+        const clone = JSON.parse(JSON.stringify(b)); // deep clone - fully independent from the source
+        builderBlocks.push({
+          exercise: clone.exercise,
+          colors: Array.isArray(clone.colors) && clone.colors.length >= MIN_COLORS ? clone.colors : DEFAULT_BLOCK_COLORS.slice(),
+          duration: clone.duration ?? 60, stimulusS: clone.stimulusS ?? 1,
+          intervalMin: clone.intervalMin ?? 2, intervalMax: clone.intervalMax ?? 4,
+        });
+        renderBlockList();
+        btn.textContent = "✓ kopiert"; btn.classList.add("copied");
+        setTimeout(() => { btn.textContent = "Übernehmen"; btn.classList.remove("copied"); }, 1200);
+      });
+    });
+  }
+  document.getElementById("libSourceSelect").addEventListener("change", renderLibBlockList);
 
   // ---- Baukasten: click-together builder for a single program's blocks.
   // Deliberately covers only the 8 canvas-timed exercise types that

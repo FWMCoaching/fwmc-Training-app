@@ -2271,6 +2271,50 @@ UI. Added as a `dashboard.html`-only feature (no Worker/API changes needed
   since their config shape isn't confirmed to match the simple block form
   used here; drag-and-drop reordering (up/down buttons only).
 
+**Bausteine-Bibliothek + "Alle Übungen im Überblick" (added 2026-09-28)**:
+client tried the dashboard live and pushed back hard on my first
+"reuse-the-app-itself" architecture idea for keeping the dashboard
+auto-synced with new exercises - not because it was wrong, but because
+the dashboard needs things the app itself has no concept of at all
+(named reusable cross-client building blocks, video links, an
+at-a-glance overview) - so a live-auto-synced-with-the-app approach
+wasn't actually the right fit regardless of the sync question. Agreed
+instead: separate dashboard stays, sync happens in periodic (roughly
+weekly) manual reviews, not automatically - a real, deliberate scope
+narrowing from what "Not yet built" implied before, not a stopgap.
+- **"Alle Übungen im Überblick"**: a collapsed-by-default `<details>`
+  panel, `OVERVIEW` - a hand-maintained array grouped by domain (Visual
+  Training, NAT, Atemtraining, Movement, Workout, Test-Bereich), each
+  exercise tagged `full` (Baukasten-fähig) / `json` (JSON-Tab only) /
+  `none` (only in the app, not in the dashboard at all yet) rendered as
+  coloured pills. Carries an explicit "Stand: <date>" note - this is
+  the load-bearing part, not decoration, since the whole point is that
+  it's a manual snapshot, never claiming to be live. Update the date and
+  the list itself at each periodic review; don't let it go stale silently.
+- **Bausteine-Bibliothek**: the client's own insight (unprompted) was
+  that "a library of reusable templates" and "copy from an existing
+  client's code" are the same feature - a `<details>` inside the
+  Baukasten tab lets the coach pick ANY existing code from a dropdown
+  (`renderLibSourceSelect()`, repopulated whenever `loadPrograms()`
+  runs) and see its blocks (`renderLibBlockList()`); each block with a
+  known `exercise` id gets an "Übernehmen" button. No separate "is this a
+  template" flag exists or is needed - a code the coach deliberately
+  keeps around under a clear name (e.g. `vorlage-warmup`) just IS a
+  reusable template by virtue of being a normal code someone can browse
+  and copy from; a real client's code works exactly the same way.
+  **Deep-copy correctness was an explicit client requirement** ("ohne
+  dass es im alten Code... automatisch gespeichert wird") - the copy
+  button does `JSON.parse(JSON.stringify(block))` before pushing into
+  `builderBlocks`, never pushes the source object by reference, so
+  editing the copy in the new draft can never mutate `programsCache`'s
+  copy of the source code (verified in the Playwright test: copy a
+  block, edit its duration in the new draft, re-open the source in the
+  library and confirm its own duration is unchanged). A source whose
+  config isn't a plain `blocks` array (a bundle, or anything the
+  builder doesn't understand) shows a `.lib-unavailable` message instead
+  of a block list, same "don't guess, say what's missing" pattern as the
+  Baukasten-vs-JSON fallback.
+
 **Not built, explicitly out of scope for this pass**: client history
 beyond Kürzel/code/note/date (e.g. richer client records - the client only
 asked for "welches Kürzel hat was bekommen", not names or other PII, and
