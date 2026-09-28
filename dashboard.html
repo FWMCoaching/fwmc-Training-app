@@ -5,11 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>FWMC Coach-Dashboard</title>
 <meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#007094" />
+<link rel="manifest" href="./dashboard-manifest.json" />
+<link rel="icon" href="./dashboard-icon-192.png" />
+<link rel="apple-touch-icon" href="./dashboard-icon-512.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Coach-Dashboard" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <style>
   :root {
     --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --border: #2a2f3a;
-    --text: #e8ebf2; --muted: #9099ab; --accent: #39a7cc; --accent2: #3cc27a;
-    --danger: #e5584f; --radius: 10px;
+    --text: #e8ebf2; --muted: #9099ab; --accent: #007094;
+    --good: #3cc27a; --danger: #e5584f; --radius: 10px;
   }
   * { box-sizing: border-box; }
   html { background: var(--bg); }
@@ -19,7 +26,7 @@
   }
   .top-bar {
     height: 5px; margin: 0 -20px 20px;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    background: var(--accent);
   }
   h1 { font-size: 1.3rem; margin: 0 0 4px; }
   h2 { font-size: 1.05rem; margin: 0 0 12px; }
@@ -59,11 +66,11 @@
   tr.clickable { cursor: pointer; }
   tr.clickable:hover { background: var(--panel2); }
   .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; }
-  .pill.on { background: rgba(60,194,122,0.18); color: var(--accent2); }
+  .pill.on { background: rgba(60,194,122,0.18); color: var(--good); }
   .pill.off { background: rgba(229,88,79,0.18); color: var(--danger); }
   .msg { font-size: 0.85rem; margin-top: 10px; }
   .msg.err { color: var(--danger); }
-  .msg.ok { color: var(--accent2); }
+  .msg.ok { color: var(--good); }
   .hint { color: var(--muted); font-size: 0.78rem; margin-top: 6px; }
   #gate { max-width: 420px; margin: 80px auto 0; text-align: center; }
   #gate .panel { text-align: left; }
@@ -114,14 +121,14 @@
   .lib-block-row .lib-block-title { font-size: 0.85rem; }
   .lib-block-row .lib-block-meta { color: var(--muted); font-size: 0.75rem; }
   .lib-block-row button { margin: 0; padding: 5px 10px; font-size: 0.78rem; }
-  .lib-block-row button.copied { background: var(--accent2); }
+  .lib-block-row button.copied { background: var(--good); }
   .lib-unavailable { color: var(--muted); font-size: 0.78rem; font-style: italic; padding: 4px 0; }
   .overview-domain { margin-top: 14px; }
   .overview-domain h3 { font-size: 0.85rem; margin: 0 0 6px; color: var(--text); }
   .overview-items { display: flex; flex-wrap: wrap; gap: 6px; }
   .ov-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 0.76rem; padding: 3px 9px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--border); color: var(--muted); }
   .ov-pill .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
-  .ov-pill.full .dot { background: var(--accent2); }
+  .ov-pill.full .dot { background: var(--good); }
   .ov-pill.json .dot { background: #d9a441; }
   .ov-pill.none .dot { background: #556; }
 </style>

@@ -2323,6 +2323,37 @@ does more than that minimum); any auth beyond a single shared bearer token
 (fine for a single coach, would need real per-user auth if ever shared
 with others).
 
+**Home-screen icon + colour refresh (2026-09-28)**: the client uses
+`dashboard.html` "add to home screen" style, and its icon fell back to
+an auto-generated letter (`dashboard.html` had no `apple-touch-icon` at
+all) - hard to tell apart from the trainings-app's own icon in a
+folder. Fixed by giving the dashboard its own icon pair
+(`dashboard-icon-192.png`/`dashboard-icon-512.png`, plain full-bleed
+squares - iOS applies its own rounding, don't pre-round the corners,
+same convention as the main app's `icon-192.png`/`icon-512.png`) plus a
+small `dashboard-manifest.json` and the matching `<head>` tags
+(`apple-touch-icon`, `manifest`, `theme-color`), mirroring exactly what
+`build.sh`'s template already does for `index.html`. Four icon concepts
+and three colour-scheme options were mocked up first as a throwaway
+Artifact (icons rendered as real PNGs via a tiny Playwright-rendered
+HTML page, not hand-drawn) so the client could pick without guessing -
+client picked icon "A" (solid brand teal `#007094`, three white
+rounded bars - a deliberately different glyph from the trainings-app's
+signature-scribble icon, same colour family so the two read as related
+apps) and colour option "1" (flat brand teal, no gradient).
+That same colour choice also replaced the dashboard's top-bar/button
+accent, which had been an invented teal→green gradient with no real
+tie to the brand. `--accent2` is gone; `--accent` is now the true brand
+teal (`#007094`, the same value as the main app's `theme-color` and
+icon background - no longer the lighter `#39a7cc`). The old
+`--accent2` uses were genuinely semantic (the "aktiv" pill, success
+messages, "kopiert" button feedback, the Overview's "full support"
+dot) rather than brand colour, so they moved to a new `--good` token
+(`#3cc27a`, same value as before) instead of just being deleted -
+keeping semantic status colour separate from the brand accent, so a
+future brand-colour change doesn't have to relitigate what counts as
+"success green".
+
 **Roadmap: video support**
 - Step 2 (done): simple video-link URL fields in the dashboard
   Baukasten (no upload) - `introVideo`/`endVideo` at the programme
