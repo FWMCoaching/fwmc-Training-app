@@ -441,6 +441,16 @@ unrelated to the feature being changed.
   Test-Bereich exercises (Wortfarben-Test/Stroop remains the sole,
   deliberate exclusion). The background-colour/intensity rollout across
   the Test-Bereich is now complete.
+- **`makeBgApplier(stageEl, prefs)` factory (cleanup, 2026-09-28)**: every
+  exercise's own `applyXBg()` from the rollout above - all 21 of them,
+  Remember/Blitz/Flash/MOT plus the 17 Test-Bereich ones - had become the
+  exact same four lines, copy-pasted, differing only in which stage element
+  and which prefs object they closed over. Replaced every
+  `function applyXBg() { ... }` with `const applyXBg = makeBgApplier(els.
+  xStage, xPrefs);` - pure mechanical dedup (a Python regex over the whole
+  file, verified all 21 matches first), zero behaviour change, full
+  regression suite confirmed clean after. One shared place to change the
+  tinting formula itself from now on, instead of 21.
 - **Multi-tab nav bars (`.section-switch`/`.sub-switch`) need headroom for
   their longest label, not just "however many tabs currently exist"**: both
   are a `display:flex` row of `flex:1` tabs capped at a `max-width` - a

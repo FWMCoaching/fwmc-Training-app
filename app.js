@@ -2349,6 +2349,18 @@
   ];
   const BG_PRESETS_KEY = "fwmc-bg-presets-v1"; // [{ id, name, colorKey, intensity }] - not scoped to a domain, any saved combo applies anywhere
   const bgPresetStore = makePresetStore(BG_PRESETS_KEY);
+  // Every exercise's own `applyXBg()` (Remember, Blitz, Flash, MOT, and all
+  // 17 Test-Bereich exercises) was the exact same four lines with only the
+  // stage element and prefs object differing - `makeBgApplier` replaces
+  // that copy-paste with one shared factory (2026-09-28 cleanup, no
+  // behaviour change).
+  function makeBgApplier(stageEl, prefs) {
+    return () => {
+      stageEl.style.background = prefs.bgIntensity > 0
+        ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[prefs.bgColorKey].hex, prefs.bgIntensity)
+        : "";
+    };
+  }
   function wireBgIntensityControl(store, refs, onChange, transferSelfId) {
     function apply(colorKey, intensity) {
       if (colorKey != null) store.bgColorKey = colorKey;
@@ -5224,11 +5236,7 @@
   // holds the number markers, applied fresh whenever a game starts (in
   // case the prefs changed since the stage was last shown) and again on
   // every live edit (ready screen or the mid-game pause overlay).
-  function applyRememberBg() {
-    els.rememberStage.style.background = rememberPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[rememberPrefs.bgColorKey].hex, rememberPrefs.bgIntensity)
-      : "";
-  }
+  const applyRememberBg = makeBgApplier(els.rememberStage, rememberPrefs);
   const syncRememberBgUI = wireBgIntensityControl(rememberPrefs, {
     pickers: [els.rememberBgColorPicker, els.rememberTrainingBgColorPicker, els.rememberPauseBgColorPicker],
     sliders: [els.rememberBgIntensitySlider, els.rememberTrainingBgIntensitySlider, els.rememberPauseBgSlider],
@@ -5809,11 +5817,7 @@
     return Math.max(2, Math.min(BLITZ_MAX_LEVEL_CAP, eligible.length - 1));
   }
 
-  function applyBlitzBg() {
-    els.blitzStage.style.background = blitzPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[blitzPrefs.bgColorKey].hex, blitzPrefs.bgIntensity)
-      : "";
-  }
+  const applyBlitzBg = makeBgApplier(els.blitzStage, blitzPrefs);
   const syncBlitzBgUI = wireBgIntensityControl(blitzPrefs, {
     pickers: [els.blitzBgColorPicker, els.blitzPauseBgColorPicker],
     sliders: [els.blitzBgIntensitySlider, els.blitzPauseBgSlider],
@@ -6182,11 +6186,7 @@
   }
   renderFlashBests();
 
-  function applyFlashBg() {
-    els.flashStage.style.background = flashPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[flashPrefs.bgColorKey].hex, flashPrefs.bgIntensity)
-      : "";
-  }
+  const applyFlashBg = makeBgApplier(els.flashStage, flashPrefs);
   const syncFlashBgUI = wireBgIntensityControl(flashPrefs, {
     pickers: [els.flashBgColorPicker, els.flashTrainingBgColorPicker, els.flashPauseBgColorPicker],
     sliders: [els.flashBgIntensitySlider, els.flashTrainingBgIntensitySlider, els.flashPauseBgSlider],
@@ -6930,11 +6930,7 @@
   }
   renderMotBests();
 
-  function applyMotBg() {
-    els.motStage.style.background = motPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[motPrefs.bgColorKey].hex, motPrefs.bgIntensity)
-      : "";
-  }
+  const applyMotBg = makeBgApplier(els.motStage, motPrefs);
   const syncMotBgUI = wireBgIntensityControl(motPrefs, {
     pickers: [els.motBgColorPicker, els.motTrainingBgColorPicker, els.motPauseBgColorPicker],
     sliders: [els.motBgIntensitySlider, els.motTrainingBgIntensitySlider, els.motPauseBgSlider],
@@ -8430,11 +8426,7 @@
   // scope decision (no transfer/preset-save here, unlike those four). The
   // tint goes straight on the DOM stage that holds the go/no-go circle, same
   // "no canvas" approach as Remember's own applyRememberBg().
-  function applyGngBg() {
-    els.gngStage.style.background = gngPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[gngPrefs.bgColorKey].hex, gngPrefs.bgIntensity)
-      : "";
-  }
+  const applyGngBg = makeBgApplier(els.gngStage, gngPrefs);
   const syncGngBgUI = wireBgIntensityControl(gngPrefs, {
     pickers: [els.gngBgColorPicker, els.gngPauseBgColorPicker],
     sliders: [els.gngBgIntensitySlider, els.gngPauseBgSlider],
@@ -8708,11 +8700,7 @@
   // patterns (every Test-Bereich exercise now gets the same background
   // control NAT's Remember/Blitz/Flash/MOT already have, minus their
   // transfer/preset-save machinery - a deliberate scope decision, see there).
-  function applyTestNbackBg() {
-    els.testNbackStage.style.background = testNbackPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[testNbackPrefs.bgColorKey].hex, testNbackPrefs.bgIntensity)
-      : "";
-  }
+  const applyTestNbackBg = makeBgApplier(els.testNbackStage, testNbackPrefs);
   const syncTestNbackBgUI = wireBgIntensityControl(testNbackPrefs, {
     pickers: [els.testNbackBgColorPicker, els.testNbackPauseBgColorPicker],
     sliders: [els.testNbackBgIntensitySlider, els.testNbackPauseBgSlider],
@@ -8987,11 +8975,7 @@
   // transfer/preset-save machinery - a deliberate scope decision, see there).
   // The tint goes on the same #trailStage the scattered markers/SVG lines
   // sit on top of.
-  function applyTrailBg() {
-    els.trailStage.style.background = trailPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[trailPrefs.bgColorKey].hex, trailPrefs.bgIntensity)
-      : "";
-  }
+  const applyTrailBg = makeBgApplier(els.trailStage, trailPrefs);
   const syncTrailBgUI = wireBgIntensityControl(trailPrefs, {
     pickers: [els.trailBgColorPicker, els.trailPauseBgColorPicker],
     sliders: [els.trailBgIntensitySlider, els.trailPauseBgSlider],
@@ -9306,11 +9290,7 @@
   // patterns (every Test-Bereich exercise now gets the same background
   // control NAT's Remember/Blitz/Flash/MOT already have, minus their
   // transfer/preset-save machinery - a deliberate scope decision, see there).
-  function applyFlankerBg() {
-    els.flankerStage.style.background = flankerPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[flankerPrefs.bgColorKey].hex, flankerPrefs.bgIntensity)
-      : "";
-  }
+  const applyFlankerBg = makeBgApplier(els.flankerStage, flankerPrefs);
   const syncFlankerBgUI = wireBgIntensityControl(flankerPrefs, {
     pickers: [els.flankerBgColorPicker, els.flankerPauseBgColorPicker],
     sliders: [els.flankerBgIntensitySlider, els.flankerPauseBgSlider],
@@ -9632,11 +9612,7 @@
   // patterns (every Test-Bereich exercise now gets the same background
   // control NAT's Remember/Blitz/Flash/MOT already have, minus their
   // transfer/preset-save machinery - a deliberate scope decision, see there).
-  function applyUfovBg() {
-    els.ufovStage.style.background = ufovPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[ufovPrefs.bgColorKey].hex, ufovPrefs.bgIntensity)
-      : "";
-  }
+  const applyUfovBg = makeBgApplier(els.ufovStage, ufovPrefs);
   const syncUfovBgUI = wireBgIntensityControl(ufovPrefs, {
     pickers: [els.ufovBgColorPicker, els.ufovPauseBgColorPicker],
     sliders: [els.ufovBgIntensitySlider, els.ufovPauseBgSlider],
@@ -9988,11 +9964,7 @@
   // patterns (every Test-Bereich exercise now gets the same background
   // control NAT's Remember/Blitz/Flash/MOT already have, minus their
   // transfer/preset-save machinery - a deliberate scope decision, see there).
-  function applyPosnerBg() {
-    els.posnerStage.style.background = posnerPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[posnerPrefs.bgColorKey].hex, posnerPrefs.bgIntensity)
-      : "";
-  }
+  const applyPosnerBg = makeBgApplier(els.posnerStage, posnerPrefs);
   const syncPosnerBgUI = wireBgIntensityControl(posnerPrefs, {
     pickers: [els.posnerBgColorPicker, els.posnerPauseBgColorPicker],
     sliders: [els.posnerBgIntensitySlider, els.posnerPauseBgSlider],
@@ -10338,11 +10310,7 @@
   // scope decision (no transfer/preset-save here, unlike those four). The
   // tint goes straight on the DOM stage that holds the rotated character,
   // same "no canvas" approach as Remember's own applyRememberBg().
-  function applyRotationBg() {
-    els.rotationStage.style.background = rotationPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[rotationPrefs.bgColorKey].hex, rotationPrefs.bgIntensity)
-      : "";
-  }
+  const applyRotationBg = makeBgApplier(els.rotationStage, rotationPrefs);
   const syncRotationBgUI = wireBgIntensityControl(rotationPrefs, {
     pickers: [els.rotationBgColorPicker, els.rotationPauseBgColorPicker],
     sliders: [els.rotationBgIntensitySlider, els.rotationPauseBgSlider],
@@ -10692,11 +10660,7 @@
   // response row), NOT #merkField - the smaller sub-box where the coloured
   // memoranda themselves render - so the background never competes with the
   // colour-change signal being tested.
-  function applyMerkBg() {
-    els.merkStage.style.background = merkPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[merkPrefs.bgColorKey].hex, merkPrefs.bgIntensity)
-      : "";
-  }
+  const applyMerkBg = makeBgApplier(els.merkStage, merkPrefs);
   const syncMerkBgUI = wireBgIntensityControl(merkPrefs, {
     pickers: [els.merkBgColorPicker, els.merkPauseBgColorPicker],
     sliders: [els.merkBgIntensitySlider, els.merkPauseBgSlider],
@@ -11078,11 +11042,7 @@
   // inside its own neutral, fixed-background `.simon-slot` box (already
   // audited as safe: the background sits behind that box, never on the dot
   // itself), so this never touches the response-mapped colour signal.
-  function applySimonBg() {
-    els.simonStage.style.background = simonPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[simonPrefs.bgColorKey].hex, simonPrefs.bgIntensity)
-      : "";
-  }
+  const applySimonBg = makeBgApplier(els.simonStage, simonPrefs);
   const syncSimonBgUI = wireBgIntensityControl(simonPrefs, {
     pickers: [els.simonBgColorPicker, els.simonPauseBgColorPicker],
     sliders: [els.simonBgIntensitySlider, els.simonPauseBgSlider],
@@ -11414,11 +11374,7 @@
   // target/distractor items sit directly on #searchStage with no neutral box
   // around them (audited and approved - the tint is always mixed toward
   // white, per mixHex, never full saturation, keeping contrast usable).
-  function applySearchBg() {
-    els.searchStage.style.background = searchPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[searchPrefs.bgColorKey].hex, searchPrefs.bgIntensity)
-      : "";
-  }
+  const applySearchBg = makeBgApplier(els.searchStage, searchPrefs);
   const syncSearchBgUI = wireBgIntensityControl(searchPrefs, {
     pickers: [els.searchBgColorPicker, els.searchPauseBgColorPicker],
     sliders: [els.searchBgIntensitySlider, els.searchPauseBgSlider],
@@ -11837,11 +11793,7 @@
   // on #abStage with no neutral box around it (audited and approved - the
   // tint is always mixed toward white, per mixHex, never full saturation,
   // keeping contrast usable).
-  function applyAbBg() {
-    els.abStage.style.background = abPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[abPrefs.bgColorKey].hex, abPrefs.bgIntensity)
-      : "";
-  }
+  const applyAbBg = makeBgApplier(els.abStage, abPrefs);
   const syncAbBgUI = wireBgIntensityControl(abPrefs, {
     pickers: [els.abBgColorPicker, els.abPauseBgColorPicker],
     sliders: [els.abBgIntensitySlider, els.abPauseBgSlider],
@@ -12249,11 +12201,7 @@
   // target zone (#ffe0b2/#e65100 dashed border) lives in its own fixed-colour
   // .antizip-track sub-element, not directly on the raw stage - lower-risk
   // by construction, same reasoning as Merkspanne's .merk-field.
-  function applyAntizipBg() {
-    els.antizipStage.style.background = antizipPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[antizipPrefs.bgColorKey].hex, antizipPrefs.bgIntensity)
-      : "";
-  }
+  const applyAntizipBg = makeBgApplier(els.antizipStage, antizipPrefs);
   const syncAntizipBgUI = wireBgIntensityControl(antizipPrefs, {
     pickers: [els.antizipBgColorPicker, els.antizipPauseBgColorPicker],
     sliders: [els.antizipBgIntensitySlider, els.antizipPauseBgSlider],
@@ -12603,11 +12551,7 @@
   // patterns (every Test-Bereich exercise now gets the same background
   // control NAT's Remember/Blitz/Flash/MOT already have, minus their
   // transfer/preset-save machinery - a deliberate scope decision, see there).
-  function applyHickBg() {
-    els.hickStage.style.background = hickPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[hickPrefs.bgColorKey].hex, hickPrefs.bgIntensity)
-      : "";
-  }
+  const applyHickBg = makeBgApplier(els.hickStage, hickPrefs);
   const syncHickBgUI = wireBgIntensityControl(hickPrefs, {
     pickers: [els.hickBgColorPicker, els.hickPauseBgColorPicker],
     sliders: [els.hickBgIntensitySlider, els.hickPauseBgSlider],
@@ -12945,11 +12889,7 @@
   // patterns (every Test-Bereich exercise now gets the same background
   // control NAT's Remember/Blitz/Flash/MOT already have, minus their
   // transfer/preset-save machinery - a deliberate scope decision, see there).
-  function applyCorsiBg() {
-    els.corsiStage.style.background = corsiPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[corsiPrefs.bgColorKey].hex, corsiPrefs.bgIntensity)
-      : "";
-  }
+  const applyCorsiBg = makeBgApplier(els.corsiStage, corsiPrefs);
   const syncCorsiBgUI = wireBgIntensityControl(corsiPrefs, {
     pickers: [els.corsiBgColorPicker, els.corsiPauseBgColorPicker],
     sliders: [els.corsiBgIntensitySlider, els.corsiPauseBgSlider],
@@ -13297,11 +13237,7 @@
   // patterns (every Test-Bereich exercise now gets the same background
   // control NAT's Remember/Blitz/Flash/MOT already have, minus their
   // transfer/preset-save machinery - a deliberate scope decision, see there).
-  function applyReaktBg() {
-    els.reaktStage.style.background = reaktPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[reaktPrefs.bgColorKey].hex, reaktPrefs.bgIntensity)
-      : "";
-  }
+  const applyReaktBg = makeBgApplier(els.reaktStage, reaktPrefs);
   const syncReaktBgUI = wireBgIntensityControl(reaktPrefs, {
     pickers: [els.reaktBgColorPicker, els.reaktPauseBgColorPicker],
     sliders: [els.reaktBgIntensitySlider, els.reaktPauseBgSlider],
@@ -13676,11 +13612,7 @@
   // patterns (every Test-Bereich exercise now gets the same background
   // control NAT's Remember/Blitz/Flash/MOT already have, minus their
   // transfer/preset-save machinery - a deliberate scope decision, see there).
-  function applyTsBg() {
-    els.tsStage.style.background = tsPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[tsPrefs.bgColorKey].hex, tsPrefs.bgIntensity)
-      : "";
-  }
+  const applyTsBg = makeBgApplier(els.tsStage, tsPrefs);
   const syncTsBgUI = wireBgIntensityControl(tsPrefs, {
     pickers: [els.tsBgColorPicker, els.tsPauseBgColorPicker],
     sliders: [els.tsBgIntensitySlider, els.tsPauseBgSlider],
@@ -14007,11 +13939,7 @@
   // patterns (every Test-Bereich exercise now gets the same background
   // control NAT's Remember/Blitz/Flash/MOT already have, minus their
   // transfer/preset-save machinery - a deliberate scope decision, see there).
-  function applyAntiBg() {
-    els.antiStage.style.background = antiPrefs.bgIntensity > 0
-      ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[antiPrefs.bgColorKey].hex, antiPrefs.bgIntensity)
-      : "";
-  }
+  const applyAntiBg = makeBgApplier(els.antiStage, antiPrefs);
   const syncAntiBgUI = wireBgIntensityControl(antiPrefs, {
     pickers: [els.antiBgColorPicker, els.antiPauseBgColorPicker],
     sliders: [els.antiBgIntensitySlider, els.antiPauseBgSlider],
