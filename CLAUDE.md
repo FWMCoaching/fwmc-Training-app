@@ -3063,15 +3063,72 @@ with a short duration runs Remember and finishes automatically. Fixed
 screen's own start button, same fix pattern applied to every other
 domain's tests earlier in this rebuild).
 
-**Still open, explicit backlog for the rest of this rebuild**:
-Blitz-Raster/Flash Speicher Test/MOT Fähigkeit are also endless/
-progressive with no fixed end, so each needs the same `comboDurationS`-
-style duration cutoff Remember just got before they can join a combo at
-all - Remember's implementation above is the template to copy. Workout's
+**Blitz-Raster/Flash Speicher Test/MOT-Fähigkeit, done (2026-09-29)**:
+turned out to be bigger than the backlog note above suggested - Flash and
+MOT each have 4 modes (not 1), so this was really 9 modes total across
+3 domains, not "wire up 3 settings screens". Each got the exact template
+Remember established: a combo-only duration slider (`comboBlitzDurationS`/
+`comboFlashDurationS`/`comboMotDurationS`, plain in-memory vars, never
+persisted to that domain's own prefs), a `finishXCombo()` that mirrors
+`finishRememberCombo()` (clear the pending game timer, compute played
+seconds, null the state, tear down fullscreen/wake-lock, call
+`advanceComboProgram()`), and the same pause/resume symmetry (the
+combo-duration timer is cancelled and its exact remaining delay captured
+on pause, rescheduled on resume - copied from Remember's
+`comboDurationFiresAt`/`comboRemainingMs` pair verbatim for each domain).
+One new wrinkle MOT's engine has that the others don't: its tracking
+phase runs on `requestAnimationFrame` rather than `setTimeout` alone, but
+the combo-duration timer itself is still a plain independent
+`setTimeout`, so `finishMotCombo()`/pause/resume just additionally
+cancel/leave alone the `raf` handle exactly where the existing pause/
+resume code already did for the non-combo case - no new mechanism needed.
+- **Blitz-Raster**: single mode, so the capture UI is the simplest of the
+  three - straight copy of Remember's fixed/shuffle shape without the
+  "training has its own screen" split. Needed the LEAST scaffolding since
+  `blitzStop()` had never gained a `comboProgram` abort branch before
+  (Blitz was never combo-integrated at all pre-tonight) - added the same
+  "Beenden mid-Kombi aborts the whole Kombi" branch Remember already had.
+  Block shape carries its own `gridSize`/`zones`/`startCount` snapshot
+  (not just `duration`), matching Movement's block-is-self-contained
+  precedent rather than relying on `blitzPrefs` still holding the right
+  values whenever the block eventually plays.
+- **Flash Speicher Test** and **MOT-Fähigkeit**: both have the exact same
+  shape as Remember - 3 modes sharing one ready screen (`flashReady`/
+  `motReady`, both already had dynamic `*ReadyTitle`/`*ReadyDesc` elements
+  from their own pre-existing multi-mode support) plus a 4th
+  "Trainingsmodus" with its own separate static-heading screen
+  (`flashTrainingReady`/`motTrainingReady`). `flashModeTitle(mode)`/
+  `motModeTitle(mode)` extracted as small helpers (mirroring logic that
+  already existed inline in `openFlashReady()`/`flashStop()` and
+  `openMotReady()`/`motStop()`) so `comboBlockLabel()` could reuse the
+  same title strings rather than a 4th copy of the same ternary chain.
+  Block shape is the same `{domain, mode, duration}` shape as Remember's
+  `nat` blocks - deliberately NOT reusing the `"nat"` domain key itself
+  (that stays Remember-only, since `startComboBlock()`'s `nat` branch is
+  hardcoded to `startRememberGame`) - `"blitz"`/`"flash"`/`"mot"` are new
+  domain keys, grouped for DISPLAY under the same `COMBO_CAPTURE_ENTRIES.nat`
+  array (all 4 are NAT sub-exercises from the client's perspective) but
+  each block still carries its own real `domain` for dispatch.
+
+Tests: `tests/blitz_combo_test.py`, `tests/flash_combo_test.py`,
+`tests/mot_combo_test.py` - same shape as `remember_combo_test.py` for
+each (capture opens the right screen with the duration slider visible
+only there, duration carries over on re-edit, cancel discards, standalone
+entry unaffected, a short-duration combo run finishes automatically,
+mid-block pause/resume). `tests/nat_combo_test.py` now correctly reports
+4 NAT presets in the add-grid (3 Remember + Blitz-Raster, since the other
+9 modes render as capture buttons alongside them, not counted by that
+test's own `.combo-add-btn` locator scoping - unaffected by this change,
+verified by rerunning it, not a regression).
+
+**Still open, explicit backlog for the rest of this rebuild**: Workout's
 "reps" mode needs its own client-facing settings screen before it can
 rejoin the combo builder (see above - a larger, separate product
 decision, not just wiring). Pause markers between blocks (a
-`{domain:"pause", seconds:…}` pseudo-block) also not started.
+`{domain:"pause", seconds:…}` pseudo-block) also not started. With
+Remember/Blitz/Flash/MOT all done, every exercise across every domain
+except Test-Bereich (by original design - see the client's own scope
+decision) can now be added to a combo with its own full fine-tuning.
 
 ## Master-Einstellungen: cascading default background colour (added 2026-09-29)
 

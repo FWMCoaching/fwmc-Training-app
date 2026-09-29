@@ -1985,8 +1985,16 @@
   <div class="readyhead">
     <button class="back-link" id="blitzReadyBackToHome">&larr; Zur&uuml;ck</button>
   </div>
-  <h1 class="page-title">Blitz-Raster</h1>
-  <p class="page-sub">Mehrere Felder leuchten gleichzeitig kurz auf. Merke dir, welche es waren, und tippe sie danach an &ndash; die Reihenfolge spielt keine Rolle.</p>
+  <h1 class="page-title" id="blitzReadyTitle">Blitz-Raster</h1>
+  <p class="page-sub" id="blitzReadyDesc">Mehrere Felder leuchten gleichzeitig kurz auf. Merke dir, welche es waren, und tippe sie danach an &ndash; die Reihenfolge spielt keine Rolle.</p>
+
+  <div class="group" id="blitzComboDurationGroup" hidden>
+    <div class="group-label">Dauer dieses Bausteins</div>
+    <div class="slider-row">
+      <input type="range" id="blitzComboDurationSlider" min="15" max="300" step="5" aria-label="Dauer dieses Bausteins">
+      <span class="slider-value" id="blitzComboDurationValue"></span>
+    </div>
+  </div>
 
   <div class="group">
     <div class="group-label">Rastergr&ouml;&szlig;e</div>
@@ -2090,6 +2098,14 @@
   </div>
   <h1 class="page-title" id="flashReadyTitle">&nbsp;</h1>
   <p class="page-sub" id="flashReadyDesc"></p>
+
+  <div class="group" id="flashComboDurationGroup" hidden>
+    <div class="group-label">Dauer dieses Bausteins</div>
+    <div class="slider-row">
+      <input type="range" id="flashComboDurationSlider" min="15" max="300" step="5" aria-label="Dauer dieses Bausteins">
+      <span class="slider-value" id="flashComboDurationValue"></span>
+    </div>
+  </div>
 
   <div class="group">
     <div class="group-label">Zeichentyp</div>
@@ -2236,6 +2252,14 @@
   <h1 class="page-title">Trainingsmodus</h1>
   <p class="page-sub">Starte direkt bei einer bestimmten Zahlenanzahl, statt dich immer erst hochzuarbeiten.</p>
 
+  <div class="group" id="flashTrainingComboDurationGroup" hidden>
+    <div class="group-label">Dauer dieses Bausteins</div>
+    <div class="slider-row">
+      <input type="range" id="flashTrainingComboDurationSlider" min="15" max="300" step="5" aria-label="Dauer dieses Bausteins">
+      <span class="slider-value" id="flashTrainingComboDurationValue"></span>
+    </div>
+  </div>
+
   <div class="group">
     <div class="group-label">Startzahl <span class="group-count" id="flashTrainingStartValue"></span></div>
     <div class="slider-row">
@@ -2356,6 +2380,14 @@
   <h1 class="page-title" id="motReadyTitle">&nbsp;</h1>
   <p class="page-sub" id="motReadyDesc"></p>
 
+  <div class="group" id="motComboDurationGroup" hidden>
+    <div class="group-label">Dauer dieses Bausteins</div>
+    <div class="slider-row">
+      <input type="range" id="motComboDurationSlider" min="15" max="300" step="5" aria-label="Dauer dieses Bausteins">
+      <span class="slider-value" id="motComboDurationValue"></span>
+    </div>
+  </div>
+
   <div class="group">
     <div class="group-label">Darstellung</div>
     <div class="choice-row two" id="motStyleRow">
@@ -2475,6 +2507,14 @@
   </div>
   <h1 class="page-title">Trainingsmodus</h1>
   <p class="page-sub">Starte direkt bei einer bestimmten Anzahl, Ziel-Anzahl und Geschwindigkeit, statt dich immer erst hochzuarbeiten.</p>
+
+  <div class="group" id="motTrainingComboDurationGroup" hidden>
+    <div class="group-label">Dauer dieses Bausteins</div>
+    <div class="slider-row">
+      <input type="range" id="motTrainingComboDurationSlider" min="15" max="300" step="5" aria-label="Dauer dieses Bausteins">
+      <span class="slider-value" id="motTrainingComboDurationValue"></span>
+    </div>
+  </div>
 
   <div class="group">
     <div class="group-label">Start-Anzahl Objekte <span class="group-count" id="motTrainingObjectsValue"></span></div>
