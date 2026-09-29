@@ -1038,10 +1038,6 @@
   // full settings depth of each section's own screen, but enough to build a
   // useful cross-section session without reimplementing every settings UI.
   const COMBO_PRESETS = {
-    workout: [
-      { domain: "workout", kind: "reps", exercise: "kniebeuge", sets: 3, reps: 12, restS: 30 },
-      { domain: "workout", kind: "tabata", exercise: "hampelmann", workS: 20, restS: 10, rounds: 8 },
-    ],
     nat: [
       { domain: "nat", mode: "fixed", duration: 60 },
       { domain: "nat", mode: "shuffle", duration: 60 },
@@ -1068,6 +1064,16 @@
     cardio: [
       { label: "Cardio-Einheit", meta: "eigene Aktivitäten zusammenstellen", open: () => openCardioComboCapture(null, null) },
     ],
+    // Only "Zirkel" (circuit) mode joins the combo builder for now - "reps"
+    // mode (feste Sätze/Wiederholungen) has no client-facing settings
+    // screen at all yet (coach-plan-only today), so there's nothing to
+    // reopen in capture mode; see the backlog note in CLAUDE.md. The old
+    // 2 curated reps/tabata presets were removed rather than left as a
+    // non-editable leftover, to keep one invariant everywhere in this
+    // rebuild: anything you can add to a combo, you can also re-edit.
+    workout: [
+      { label: "Eigener Zirkel", meta: "mehrere Übungen mit Sätzen & Pausen zusammenstellen", open: () => openWorkoutComboCapture(null, null) },
+    ],
     // Visual has too many exercises (and its own client-side "incompatible"
     // masking from Master-Einstellungen) for a static list - resolved fresh
     // on every render by comboVisualCaptureEntries() instead. Any value in
@@ -1081,6 +1087,7 @@
     breath: (block, i) => openBreathComboCapture(block.pattern, block, i),
     wimhof: (block, i) => openWimhofComboCapture(block, i),
     visual: (block, i) => openVisualComboCapture(block.exercise, null, block, i),
+    workout: (block, i) => openWorkoutComboCapture(block, i),
   };
 
   // ---- Elements ----
@@ -1689,6 +1696,7 @@
     workoutProgramTitle: $("workoutProgramTitle"), workoutProgramMeta: $("workoutProgramMeta"), workoutProgramDesc: $("workoutProgramDesc"),
     workoutChapterList: $("workoutChapterList"), workoutProgramStartBtn: $("workoutProgramStartBtn"),
     workoutTabataReady: $("workoutTabataReady"), workoutTabataBackToHome: $("workoutTabataBackToHome"),
+    workoutTabataReadyTitle: $("workoutTabataReadyTitle"), workoutTabataReadyHint: $("workoutTabataReadyHint"),
     workoutTabataSoundToggleBtn: $("workoutTabataSoundToggleBtn"), tabataSoundToggleBtn: $("tabataSoundToggleBtn"),
     workoutTabataStartBtn: $("workoutTabataStartBtn"),
     workoutCircuitSavedGroup: $("workoutCircuitSavedGroup"), workoutCircuitSavedList: $("workoutCircuitSavedList"),
@@ -8768,7 +8776,9 @@
     els.workoutCircuitCooldownSlider.value = workoutCircuitPrefs.cooldownS;
     els.workoutCircuitCooldownValue.textContent = workoutCircuitPrefs.cooldownS > 0 ? `${workoutCircuitPrefs.cooldownS} s` : "Aus";
     els.workoutTabataStartBtn.disabled = workoutCircuitPrefs.items.length === 0;
-    els.workoutTabataStartBtn.textContent = workoutCircuitPrefs.items.length ? "Zirkel starten" : "Mindestens eine Übung hinzufügen";
+    els.workoutTabataStartBtn.textContent = workoutCircuitPrefs.items.length
+      ? (comboWorkoutCaptureOriginal ? "Baustein übernehmen" : "Zirkel starten")
+      : "Mindestens eine Übung hinzufügen";
   }
   els.workoutCircuitDefaultWorkSlider.addEventListener("input", () => {
     workoutCircuitPrefs.defaultWorkS = Number(els.workoutCircuitDefaultWorkSlider.value);
@@ -8801,7 +8811,63 @@
     showScreen("workoutTabataReady");
   }
   els.workoutTabataStartCard.addEventListener("click", openWorkoutTabataReady);
-  els.workoutTabataBackToHome.addEventListener("click", () => showScreen("workoutHome"));
+
+  // ---- Kombi-Baukasten capture, same pattern as Cardio's own (also a
+  // whole self-built multi-item sequence, not a single field): reopen this
+  // exact circuit builder instead of a second settings UI. A combo
+  // "workout" block already supports `kind: "circuit"` with zero further
+  // engine changes - runWorkoutBlock()/workoutBlockLabel()/Meta()/Seconds()
+  // all already dispatch on `block.kind`, built for the standalone circuit
+  // quick-start below before this rebuild ever touched Workout.
+  let comboWorkoutCaptureOriginal = null;
+  let comboWorkoutEditIndex = null;
+  function openWorkoutComboCapture(existingBlock, editIndex) {
+    comboWorkoutCaptureOriginal = {
+      items: workoutCircuitPrefs.items.map((it) => ({ ...it })),
+      restS: workoutCircuitPrefs.restS, sets: workoutCircuitPrefs.sets, setRestS: workoutCircuitPrefs.setRestS,
+    };
+    if (existingBlock) {
+      workoutCircuitPrefs.items = (existingBlock.items || []).map((it) => ({ ...it }));
+      workoutCircuitPrefs.restS = existingBlock.restS ?? workoutCircuitPrefs.restS;
+      workoutCircuitPrefs.sets = existingBlock.sets ?? workoutCircuitPrefs.sets;
+      workoutCircuitPrefs.setRestS = existingBlock.setRestS ?? workoutCircuitPrefs.setRestS;
+    } else {
+      workoutCircuitPrefs.items = [];
+    }
+    comboWorkoutEditIndex = editIndex ?? null;
+    els.workoutTabataReadyTitle.textContent = "Baustein: Zirkel";
+    els.workoutTabataReadyHint.textContent = "Stelle die Übungen für diesen Kombi-Baustein zusammen.";
+    openWorkoutTabataReady();
+  }
+  function exitWorkoutComboCapture() {
+    if (comboWorkoutCaptureOriginal) {
+      workoutCircuitPrefs.items = comboWorkoutCaptureOriginal.items;
+      workoutCircuitPrefs.restS = comboWorkoutCaptureOriginal.restS;
+      workoutCircuitPrefs.sets = comboWorkoutCaptureOriginal.sets;
+      workoutCircuitPrefs.setRestS = comboWorkoutCaptureOriginal.setRestS;
+      saveWorkoutCircuitPrefs();
+      comboWorkoutCaptureOriginal = null;
+    }
+    comboWorkoutEditIndex = null;
+    els.workoutTabataReadyTitle.textContent = "Tabata / Intervalltraining";
+    els.workoutTabataReadyHint.textContent = "Baue dir deinen eigenen Zirkel: tippe Übungen in der Reihenfolge an, in der du sie machen willst – auch mehrfach.";
+  }
+  function commitWorkoutComboCapture() {
+    if (!workoutCircuitPrefs.items.length) return;
+    const block = {
+      domain: "workout", kind: "circuit", items: workoutCircuitPrefs.items.map((it) => ({ ...it })),
+      restS: workoutCircuitPrefs.restS, sets: workoutCircuitPrefs.sets, setRestS: workoutCircuitPrefs.setRestS,
+    };
+    if (comboWorkoutEditIndex != null) comboDraftBlocks[comboWorkoutEditIndex] = block;
+    else comboDraftBlocks.push(block);
+    exitWorkoutComboCapture();
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+  els.workoutTabataBackToHome.addEventListener("click", () => {
+    if (comboWorkoutCaptureOriginal) { exitWorkoutComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("workoutHome");
+  });
   function startWorkoutCircuitNow() {
     if (!workoutCircuitPrefs.items.length) return;
     startStandaloneWorkoutBlock({
@@ -8812,7 +8878,10 @@
       setRestS: workoutCircuitPrefs.setRestS,
     });
   }
-  els.workoutTabataStartBtn.addEventListener("click", startWorkoutCircuitNow);
+  els.workoutTabataStartBtn.addEventListener("click", () => {
+    if (comboWorkoutCaptureOriginal) { commitWorkoutComboCapture(); return; }
+    startWorkoutCircuitNow();
+  });
 
   // ---- Saved workout circuits: same "save under a name, tap to reuse"
   // pattern as Kombi/Visual Training/Atemtraining/Movement. One flat list -
@@ -8828,6 +8897,12 @@
         workoutCircuitPrefs.sets = entry.sets;
         workoutCircuitPrefs.setRestS = entry.setRestS;
         saveWorkoutCircuitPrefs();
+        // While capturing a Kombi-Baustein, loading a saved circuit should
+        // just fill the draft for review, not immediately start a session.
+        if (comboWorkoutCaptureOriginal) {
+          renderWorkoutCircuitAddGrid(); renderWorkoutCircuitList(); syncWorkoutCircuitUI();
+          return;
+        }
         startWorkoutCircuitNow();
       });
   }
@@ -9669,7 +9744,11 @@
     els.comboEmptyHint.hidden = comboDraftBlocks.length > 0;
     els.comboBlockList.innerHTML = "";
     comboDraftBlocks.forEach((block, i) => {
-      const editOpener = COMBO_EDIT_OPENERS[block.domain];
+      // A workout block predating this rebuild (or coach-authored) can
+      // still be "reps"/"tabata" kind, which has no settings screen to
+      // reopen - only "circuit" blocks (the only kind addable from the
+      // combo builder now) are edit-in-place.
+      const editOpener = block.domain === "workout" && block.kind !== "circuit" ? null : COMBO_EDIT_OPENERS[block.domain];
       const row = document.createElement("div");
       row.className = "chapter-row";
       const main = document.createElement(editOpener ? "button" : "span");

@@ -2744,7 +2744,7 @@ all this ctx-threading. Uses Playwright route interception on the
 `CODE_API` URL to serve fake defs for each new type, since none of this
 can be exercised via `dashboard.html` without a live Worker deploy.
 
-## Kombi-Baukasten rebuild (started 2026-09-29, Cardio + Movement + Breath/Wim Hof + Visual slices done)
+## Kombi-Baukasten rebuild (started 2026-09-29, Cardio + Movement + Breath/Wim Hof + Visual + Workout slices done)
 
 Client's ask, in one big message: Cardio needs the "Komplett-Programm aus
 mehreren Bereichen" entry it was missing (a scope gap from the night
@@ -2971,21 +2971,70 @@ colour-kind bugfix actually stores/replays `usesStroopColors`, not just
 Master-Einstellungen hearing-restriction interaction (cross-modal's combo
 button greys out and opens Master-Einstellungen instead of capture, same
 as its home-grid card). Fixed the Visual-related steps in
-`tests/combo_reveal_test.py` (switched to Workout's presets, since that
-test is about the save-form behaviour, not exercise-specific logic) and
-`tests/workout_combo_test.py` (added the same capture-then-commit step
-the other domains needed), both broken the same way the breath fix was -
-clicking a Visual exercise no longer adds a block, it opens capture mode.
+`tests/combo_reveal_test.py` (originally switched to Workout's presets,
+then to NAT's once Workout's own presets were removed too in the very
+next slice - see below) and `tests/workout_combo_test.py` (added the same
+capture-then-commit step the other domains needed), both broken the same
+way the breath fix was - clicking a Visual exercise no longer adds a
+block, it opens capture mode.
 
-**Not done yet, explicit backlog for the rest of this rebuild**: the same
-capture-mode pattern still needs to reach Workout (all exercises, both
-reps and Tabata mode), and NAT's Remember (already combo-capable via
-`comboDurationS`, needs the same UI treatment) plus Blitz-Raster/Flash
-Speicher Test/MOT Fähigkeit - those three are endless/progressive with no
-fixed end, so each needs the same `comboDurationS`-style duration cutoff
-Remember already got before they can join a combo at all. Pause markers
-between blocks (a `{domain:"pause", seconds:…}` pseudo-block) also not
-started.
+**Workout slice**: reuses the existing Tabata **circuit** builder
+(`workoutTabataReady`/`workoutCircuitPrefs`) exactly like Cardio's own
+slice - a combo "workout" block can already be a whole multi-exercise
+circuit, not a single exercise, since `runWorkoutBlock()`/
+`workoutBlockLabel()`/`Meta()`/`Seconds()` already dispatch on
+`block.kind` and already handle `"circuit"` (built for the standalone
+quick-start before this rebuild ever touched Workout) - so this slice
+needed *zero* engine changes, only the capture UI:
+- `comboWorkoutCaptureOriginal` snapshots `workoutCircuitPrefs`'s
+  `items`/`restS`/`sets`/`setRestS` (not `defaultWorkS`/`prepS`/
+  `cooldownS` - those are builder-UI defaults, not part of a saved
+  circuit's own identity, matching exactly what
+  `renderWorkoutCircuitSaved()`'s own preset loader already touches).
+- `workoutTabataReadyTitle`/`workoutTabataReadyHint` (new ids) swap to
+  "Baustein: Zirkel" during capture; `workoutTabataStartBtn`'s label
+  swaps to "Baustein übernehmen" (`syncWorkoutCircuitUI()` made
+  capture-aware, same as Cardio's `syncCardioUI()`).
+- **Scope decision, made explicitly rather than silently**: only
+  **circuit** mode joins the combo builder. "Reps" mode (feste Sätze/
+  Wiederholungen, e.g. 3×12 Kniebeugen) has *no client-facing settings
+  screen at all* - it's coach-plan-only today (`workoutOverview`/
+  `workoutRepsView` only ever run from a `workout-plan` def) - so there
+  is nothing to reopen in capture mode, the same category of gap as
+  Blitz-Raster/Flash/MOT below. Rather than leave the 2 old curated
+  presets (one reps, one tabata) in place as a non-editable leftover,
+  both were removed - keeps one invariant true everywhere in this
+  rebuild: anything addable to a combo is also re-editable.
+  `renderComboBlockList()` also gained a guard for a workout block
+  predating this change (or coach-authored) that's still `"reps"`/
+  `"tabata"` kind: it's shown but deliberately not made clickable/
+  editable, since there's no screen to reopen it into and naively
+  reusing the circuit capture on it would silently discard its real
+  config.
+- `renderWorkoutCircuitSaved()`'s "load a saved circuit" callback made
+  capture-aware, same pattern as every other domain's saved-preset
+  callback so far.
+
+Tested in `tests/workout_circuit_combo_test.py` (same shape as Cardio's:
+capture opens blank/pre-filled correctly, commit, re-edit adding a 3rd
+exercise, cancel discards and leaves the standalone circuit untouched, a
+full combo run through a circuit block, mid-block abort routing). Fixed
+`tests/combo_reveal_test.py` again (NAT's Remember presets are now the
+*only* plain one-click-add domain left) and the Workout section of
+`tests/workout_combo_test.py` (its own add-grid uses a separate info
+button + `.ca-plus-btn` per exercise, not one clickable card like every
+other domain's add-grid - a real, pre-existing UI inconsistency worth
+knowing about even though this rebuild didn't set out to fix it).
+
+**Not done yet, explicit backlog for the rest of this rebuild**: NAT's
+Remember (already combo-capable via `comboDurationS`, needs the same UI
+treatment) plus Blitz-Raster/Flash Speicher Test/MOT Fähigkeit - those
+three are endless/progressive with no fixed end, so each needs the same
+`comboDurationS`-style duration cutoff Remember already got before they
+can join a combo at all. Workout's "reps" mode needs its own client-facing
+settings screen before it can rejoin the combo builder (see above - a
+larger, separate product decision, not just wiring). Pause markers between
+blocks (a `{domain:"pause", seconds:…}` pseudo-block) also not started.
 Also flagged, separately, from the same client message: a Master-level
 default background colour that cascades into every exercise's own
 background-colour Feineinstellung (auto-excluding exercises like Stroop

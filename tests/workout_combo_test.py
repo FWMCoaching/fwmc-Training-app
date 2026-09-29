@@ -108,14 +108,26 @@ async def main():
         await pg.click("#movementStartBtn"); await pg.wait_for_timeout(200)
         await pg.click('#comboAddGrid >> text="VT · Farbe & Seite"'); await pg.wait_for_timeout(200)
         await pg.click("#startBtn"); await pg.wait_for_timeout(200)
-        await pg.click('#comboAddGrid >> text="Kniebeugen"'); await pg.wait_for_timeout(100)
+        # Workout's own curated reps/tabata presets were removed in favour
+        # of "Eigener Zirkel" (full capture mode, workout_circuit_combo_test.py
+        # covers it in depth) - add one exercise the normal way here. Each
+        # add-grid row is an info button (opens a description) plus a
+        # separate ".ca-plus-btn" that actually adds it - not one clickable card.
+        async def add_kniebeugen():
+            await pg.click('#workoutCircuitAddGrid .ca-plus-btn[aria-label="Kniebeugen zum Zirkel hinzufügen"]')
+
+        await pg.click('#comboAddGrid >> text="Eigener Zirkel"'); await pg.wait_for_timeout(200)
+        await add_kniebeugen(); await pg.wait_for_timeout(150)
+        await pg.click("#workoutTabataStartBtn"); await pg.wait_for_timeout(200)
         print("block count text:", await pg.inner_text("#comboBlockCount"))
         rows = await pg.eval_on_selector_all("#comboBlockList .chapter-main strong", "els => els.map(e => e.textContent)")
         print("blocks added:", rows)
-        # remove last (Kniebeugen), re-add
+        # remove last (the circuit), re-add
         await pg.click("#comboScreen .combo-block-remove >> nth=3"); await pg.wait_for_timeout(100)
         print("after remove, count:", await pg.inner_text("#comboBlockCount"))
-        await pg.click('#comboAddGrid >> text="Kniebeugen"'); await pg.wait_for_timeout(100)
+        await pg.click('#comboAddGrid >> text="Eigener Zirkel"'); await pg.wait_for_timeout(200)
+        await add_kniebeugen(); await pg.wait_for_timeout(150)
+        await pg.click("#workoutTabataStartBtn"); await pg.wait_for_timeout(200)
         await pg.click("#comboSaveBtn"); await pg.wait_for_timeout(100)
         await pg.fill("#comboNameInput", "Testkombi")
         await pg.screenshot(path=OUT + "06_combo_builder.png", full_page=True)
