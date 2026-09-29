@@ -315,6 +315,16 @@
     <button class="text-link" id="movementTipsBtn">Wie funktioniert das? &rarr;</button>
   </section>
 
+  <section class="code-card">
+    <h2>Dein pers&ouml;nliches Bewegungsprogramm</h2>
+    <p>Du hast einen Trainings-Code von deinem Coach? Gib ihn hier ein.</p>
+    <div class="program-entry-row">
+      <input type="text" id="movementProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <button id="movementProgramGoBtn">&Ouml;ffnen</button>
+    </div>
+    <div class="program-error" id="movementProgramError" role="alert" hidden>Zu diesem Code wurde kein Bewegungsprogramm gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
+  </section>
+
   <section class="history" id="movementHistorySection" hidden>
     <div class="section-head">
       <h2>Gesamter Trainingsverlauf</h2>
@@ -348,6 +358,25 @@
       <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutz</a>
     </nav>
   </footer>
+</div>
+
+<div class="screen" id="movementBundleOverview" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="movementBundleBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="movementBundleTitle">&nbsp;</h1>
+  <p class="page-sub">W&auml;hle eines deiner Bewegungsprogramme aus. Das neueste steht oben.</p>
+  <div class="bundle-list" id="movementBundleList"></div>
+</div>
+
+<div class="screen" id="movementProgramIntro" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="movementProgramBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="movementProgramTitle">&nbsp;</h1>
+  <div class="program-meta" id="movementProgramMeta"></div>
+  <p class="page-sub" id="movementProgramDesc"></p>
+  <button class="start-btn" id="movementProgramStartBtn">Programm starten</button>
 </div>
 
 <div class="screen" id="workoutHome" hidden>
@@ -451,6 +480,16 @@
     <p class="hero-text">Stelle dir deine eigene Cardio-Einheit zusammen &ndash; mehrere Aktivit&auml;ten hintereinander, mit eigener Dauer und optionalem Intervall.</p>
   </section>
 
+  <section class="code-card">
+    <h2>Deine pers&ouml;nliche Cardio-Einheit</h2>
+    <p>Du hast einen Trainings-Code von deinem Coach? Gib ihn hier ein.</p>
+    <div class="program-entry-row">
+      <input type="text" id="cardioProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <button id="cardioProgramGoBtn">&Ouml;ffnen</button>
+    </div>
+    <div class="program-error" id="cardioProgramError" role="alert" hidden>Zu diesem Code wurde keine Cardio-Einheit gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
+  </section>
+
   <section class="patterns">
     <div class="section-head">
       <h2>Eigene Cardio-Einheit</h2>
@@ -471,6 +510,26 @@
       <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutz</a>
     </nav>
   </footer>
+</div>
+
+<div class="screen" id="cardioBundleOverview" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="cardioBundleBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="cardioBundleTitle">&nbsp;</h1>
+  <p class="page-sub">W&auml;hle eine deiner Cardio-Einheiten aus. Die neueste steht oben.</p>
+  <div class="bundle-list" id="cardioBundleList"></div>
+</div>
+
+<div class="screen" id="cardioProgramIntro" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="cardioProgramBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="cardioProgramTitle">&nbsp;</h1>
+  <div class="program-meta" id="cardioProgramMeta"></div>
+  <p class="page-sub" id="cardioProgramDesc"></p>
+  <div class="chapter-list" id="cardioProgramChapterList"></div>
+  <button class="start-btn" id="cardioProgramStartBtn">Cardio starten</button>
 </div>
 
 <div class="screen" id="cardioReady" hidden>
@@ -591,6 +650,16 @@
   <section class="hero">
     <div class="hero-kicker">NAT <span class="placeholder-tag">Name noch offen</span></div>
     <h1 class="hero-title">Wahrnehmung. Ged&auml;chtnis. Reaktion.</h1>
+  </section>
+
+  <section class="code-card">
+    <h2>Dein pers&ouml;nliches NAT-Programm</h2>
+    <p>Du hast einen Trainings-Code von deinem Coach? Gib ihn hier ein.</p>
+    <div class="program-entry-row">
+      <input type="text" id="natProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <button id="natProgramGoBtn">&Ouml;ffnen</button>
+    </div>
+    <div class="program-error" id="natProgramError" role="alert" hidden>Zu diesem Code wurde kein Programm gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
   </section>
 
   <section class="nat-panel" id="natPeripherPanel">
