@@ -1205,6 +1205,10 @@
     movementFsHintOpenBtn: $("movementFsHintOpenBtn"), movementFsHintClose: $("movementFsHintClose"),
     movementDonePanel: $("movementDonePanel"), movementDoneSummary: $("movementDoneSummary"), movementRating: $("movementRating"),
     movementAgainBtn: $("movementAgainBtn"), movementDoneBackBtn: $("movementDoneBackBtn"),
+    movementProgramCodeInput: $("movementProgramCodeInput"), movementProgramGoBtn: $("movementProgramGoBtn"), movementProgramError: $("movementProgramError"),
+    movementBundleOverview: $("movementBundleOverview"), movementBundleBackToHome: $("movementBundleBackToHome"), movementBundleTitle: $("movementBundleTitle"), movementBundleList: $("movementBundleList"),
+    movementProgramIntro: $("movementProgramIntro"), movementProgramBackToHome: $("movementProgramBackToHome"), movementProgramTitle: $("movementProgramTitle"),
+    movementProgramMeta: $("movementProgramMeta"), movementProgramDesc: $("movementProgramDesc"), movementProgramStartBtn: $("movementProgramStartBtn"),
 
     workoutHome: $("workoutHome"), workoutProgramCodeInput: $("workoutProgramCodeInput"), workoutProgramGoBtn: $("workoutProgramGoBtn"),
     workoutProgramError: $("workoutProgramError"), workoutHistorySection: $("workoutHistorySection"),
@@ -1212,6 +1216,7 @@
     workoutFeaturedPrograms: $("workoutFeaturedPrograms"), workoutFeaturedGrid: $("workoutFeaturedGrid"),
     workoutTabataStartCard: $("workoutTabataStartCard"),
     natHome: $("natHome"), natPeripherPanel: $("natPeripherPanel"), natRememberPanel: $("natRememberPanel"), natBlitzPanel: $("natBlitzPanel"), natFlashPanel: $("natFlashPanel"), natMotPanel: $("natMotPanel"),
+    natProgramCodeInput: $("natProgramCodeInput"), natProgramGoBtn: $("natProgramGoBtn"), natProgramError: $("natProgramError"),
     testHome: $("testHome"), testPanel: $("testPanel"), testEmptyHint: $("testEmptyHint"),
     gngOpenBtn: $("gngOpenBtn"), gngBestHint: $("gngBestHint"), gngReady: $("gngReady"),
     gngReadyBackToHome: $("gngReadyBackToHome"), gngDifficultyRow: $("gngDifficultyRow"),
@@ -1665,6 +1670,10 @@
     workoutCircuitCustomName: $("workoutCircuitCustomName"), workoutCircuitCustomNote: $("workoutCircuitCustomNote"),
     workoutCircuitCustomCancelBtn: $("workoutCircuitCustomCancelBtn"), workoutCircuitCustomSaveBtn: $("workoutCircuitCustomSaveBtn"),
     cardioHome: $("cardioHome"), cardioStartCard: $("cardioStartCard"),
+    cardioProgramCodeInput: $("cardioProgramCodeInput"), cardioProgramGoBtn: $("cardioProgramGoBtn"), cardioProgramError: $("cardioProgramError"),
+    cardioBundleOverview: $("cardioBundleOverview"), cardioBundleBackToHome: $("cardioBundleBackToHome"), cardioBundleTitle: $("cardioBundleTitle"), cardioBundleList: $("cardioBundleList"),
+    cardioProgramIntro: $("cardioProgramIntro"), cardioProgramBackToHome: $("cardioProgramBackToHome"), cardioProgramTitle: $("cardioProgramTitle"),
+    cardioProgramMeta: $("cardioProgramMeta"), cardioProgramDesc: $("cardioProgramDesc"), cardioProgramChapterList: $("cardioProgramChapterList"), cardioProgramStartBtn: $("cardioProgramStartBtn"),
     cardioReady: $("cardioReady"), cardioBackToHome: $("cardioBackToHome"),
     cardioSavedGroup: $("cardioSavedGroup"), cardioSavedList: $("cardioSavedList"),
     cardioAddGrid: $("cardioAddGrid"), cardioCount: $("cardioCount"),
@@ -1710,13 +1719,16 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "cardioReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
     if (name !== "home") els.programError.hidden = true;
     if (name !== "breathHome") els.breathProgramError.hidden = true;
+    if (name !== "movementHome") els.movementProgramError.hidden = true;
     if (name !== "workoutHome") els.workoutProgramError.hidden = true;
+    if (name !== "cardioHome") els.cardioProgramError.hidden = true;
+    if (name !== "natHome") els.natProgramError.hidden = true;
     window.scrollTo(0, 0);
   }
 
@@ -2989,7 +3001,10 @@
   // branching on the shape the API/local table returns.
   const VISUAL_CODE_CTX = { goBtn: els.programGoBtn, errorEl: els.programError, homeScreen: "home" };
   const BREATH_CODE_CTX = { goBtn: els.breathProgramGoBtn, errorEl: els.breathProgramError, homeScreen: "breathHome" };
+  const MOVEMENT_CODE_CTX = { goBtn: els.movementProgramGoBtn, errorEl: els.movementProgramError, homeScreen: "movementHome" };
   const WORKOUT_CODE_CTX = { goBtn: els.workoutProgramGoBtn, errorEl: els.workoutProgramError, homeScreen: "workoutHome" };
+  const CARDIO_CODE_CTX = { goBtn: els.cardioProgramGoBtn, errorEl: els.cardioProgramError, homeScreen: "cardioHome" };
+  const NAT_CODE_CTX = { goBtn: els.natProgramGoBtn, errorEl: els.natProgramError, homeScreen: "natHome" };
 
   async function openProgramIntro(code, ctx) {
     ctx = ctx || VISUAL_CODE_CTX;
@@ -3003,15 +3018,19 @@
     }
     if (ctx.errorEl) ctx.errorEl.hidden = true;
     recordCodeUsage(code);
-    if (def.type === "bundle") { openBundleOverview(def, code); return; }
+    if (def.type === "bundle") { openBundleOverview(def, code, ctx); return; }
     if (def.type === "breath-bundle") { openBreathBundleOverview(def, code); return; }
     if (def.type === "breath-program") { breathOriginBundle = null; renderBreathProgramIntro(def, code, code); return; }
+    if (def.type === "movement-bundle") { openMovementBundleOverview(def, code); return; }
+    if (def.type === "movement-plan") { movementOriginBundle = null; renderMovementProgramIntro(def, code, code); return; }
     if (def.type === "workout-bundle") { openWorkoutBundleOverview(def, code); return; }
     if (def.type === "workout-plan") { workoutOriginBundle = null; renderWorkoutProgramIntro(def, code, code); return; }
+    if (def.type === "cardio-bundle") { openCardioBundleOverview(def, code); return; }
+    if (def.type === "cardio-plan") { cardioOriginBundle = null; renderCardioProgramIntro(def, code, code); return; }
     if (def.type === "combo-bundle") { openComboBundleOverview(def, code); return; }
     if (def.type === "combo-program") { comboOriginBundle = null; startComboProgram(def, code, code, ctx.homeScreen); return; }
     originBundle = null;
-    renderProgramIntro(def, code, code);
+    renderProgramIntro(def, code, code, ctx);
   }
 
   function formatDateDE(iso) {
@@ -3021,7 +3040,16 @@
     return `${d}.${m}.${y}`;
   }
 
-  function openBundleOverview(bundleDef, code) {
+  // bundleCtx/programIntroHomeScreen remember which home screen (Visual/NAT/…)
+  // a bundle overview or programme intro was opened from, so their back
+  // buttons return to the right place instead of always assuming Visual
+  // Training - a plain module var rather than reading it off `program`,
+  // since that's only set once playback actually starts (not while just
+  // viewing the intro screen).
+  let bundleCtx = VISUAL_CODE_CTX;
+  let programIntroHomeScreen = "home";
+  function openBundleOverview(bundleDef, code, ctx) {
+    bundleCtx = ctx || VISUAL_CODE_CTX;
     els.bundleTitle.textContent = bundleDef.name || "Deine Programme";
     els.bundleList.innerHTML = "";
     const sorted = bundleDef.programs
@@ -3041,8 +3069,8 @@
         `<span class="bundle-meta">${exerciseCountLabel(p.blocks.length)} · ca. ${fmtMinutes(programSeconds({ pauseS: bundleDef.pauseS, ...p }))}</span>` +
         (p.description ? `<span class="bundle-desc">${esc(p.description)}</span>` : "");
       item.addEventListener("click", () => {
-        originBundle = { def: bundleDef, code };
-        renderProgramIntro({ pauseS: bundleDef.pauseS, ...p }, code, key);
+        originBundle = { def: bundleDef, code, ctx: bundleCtx };
+        renderProgramIntro({ pauseS: bundleDef.pauseS, ...p }, code, key, bundleCtx);
       });
       els.bundleList.appendChild(item);
     });
@@ -3085,7 +3113,9 @@
     return steps;
   }
 
-  function renderProgramIntro(def, code, key) {
+  function renderProgramIntro(def, code, key, ctx) {
+    const homeScreen = (ctx || VISUAL_CODE_CTX).homeScreen;
+    programIntroHomeScreen = homeScreen;
     const title = def.name || def.label || "Dein Programm";
     els.programTitle.textContent = title;
     els.programMeta.textContent = `${exerciseCountLabel(def.blocks.length)} · ca. ${fmtMinutes(programSeconds(def))}`;
@@ -3142,10 +3172,10 @@
   els.programCodeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") els.programGoBtn.click(); });
   els.programCodeInput.addEventListener("input", () => { els.programError.hidden = true; });
   els.programBackToHome.addEventListener("click", () => {
-    if (originBundle) openBundleOverview(originBundle.def, originBundle.code);
-    else showScreen("home");
+    if (originBundle) openBundleOverview(originBundle.def, originBundle.code, originBundle.ctx);
+    else showScreen(programIntroHomeScreen);
   });
-  els.bundleBackToHome.addEventListener("click", () => { originBundle = null; showScreen("home"); });
+  els.bundleBackToHome.addEventListener("click", () => { originBundle = null; showScreen(bundleCtx.homeScreen); });
 
   els.breathProgramGoBtn.addEventListener("click", () => {
     const code = normCode(els.breathProgramCodeInput.value || "");
@@ -3153,6 +3183,18 @@
   });
   els.breathProgramCodeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") els.breathProgramGoBtn.click(); });
   els.breathProgramCodeInput.addEventListener("input", () => { els.breathProgramError.hidden = true; });
+
+  // NAT's code box reuses this exact same "visual programme" pipeline (only
+  // its own sub-exercise, Periphere Wahrnehmung, actually lives in EXERCISES
+  // and runs through it - Remember/Blitz-Raster/Flash Speicher Test/MOT each
+  // have their own bespoke engine and aren't reachable from a coach code yet,
+  // see CLAUDE.md's NAT section).
+  els.natProgramGoBtn.addEventListener("click", () => {
+    const code = normCode(els.natProgramCodeInput.value || "");
+    if (code) openProgramIntro(code, NAT_CODE_CTX);
+  });
+  els.natProgramCodeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") els.natProgramGoBtn.click(); });
+  els.natProgramCodeInput.addEventListener("input", () => { els.natProgramError.hidden = true; });
 
   // A #code in the link (…/fwmc-Training-app/#abc123) opens that programme
   // directly - no typing needed. Also reacts when only the hash changes.
@@ -4140,8 +4182,8 @@
   });
   els.programDoneBackBtn.addEventListener("click", () => {
     leavePlayer();
-    if (originBundle) openBundleOverview(originBundle.def, originBundle.code);
-    else showScreen("home");
+    if (originBundle) openBundleOverview(originBundle.def, originBundle.code, originBundle.ctx);
+    else showScreen(programIntroHomeScreen);
   });
 
   // ---- Single exercise ----
@@ -5231,6 +5273,87 @@
   els.movementStartCard.addEventListener("click", openMovementReady);
   els.movementBackToHome.addEventListener("click", () => showScreen("movementHome"));
 
+  // ---- Coach-assigned Movement programme ("movement-plan"/"movement-
+  // bundle"): a single fixed configuration (movements/tempo/duration/
+  // preview/mirror/label), applied the same way loading a saved preset
+  // already works - overwrite movementPrefs, persist, start - since there's
+  // only one Movement engine to target (see renderMovementSaved's onStart
+  // a bit further up for the precedent this follows). ----
+  let movementProgram = null; // { def, code, key, title } - set for a coach-authored run
+  let movementOriginBundle = null; // { def, code } - set when opened from a bundle overview
+  function movementProgramSeconds(def) { return (def.durationMin || 0) * 60; }
+
+  // A coach-authored movement list is filtered through the client's own
+  // current limb restriction the same way the manual picker already is -
+  // falls back to the full list if that would leave too few to run with.
+  function movementAllowedIds(ids) {
+    const filtered = ids.filter((id) => {
+      const m = MOVEMENTS.find((x) => x.id === id);
+      return m && movementAllowedByLimb(m);
+    });
+    return filtered.length >= MIN_MOVEMENTS ? filtered : ids.filter((id) => MOVEMENTS.some((m) => m.id === id));
+  }
+
+  function openMovementBundleOverview(bundleDef, code) {
+    els.movementBundleTitle.textContent = bundleDef.name || "Deine Bewegungsprogramme";
+    els.movementBundleList.innerHTML = "";
+    const sorted = bundleDef.programs
+      .map((p, i) => ({ p, i }))
+      .sort((a, b) => (b.p.createdAt || "").localeCompare(a.p.createdAt || "") || (a.i - b.i));
+    sorted.forEach(({ p, i }, pos) => {
+      const key = `movement:${code}#${i}`;
+      const done = isCompleted(key);
+      const isNew = pos === 0 && sorted.length > 1 && p.createdAt;
+      const item = document.createElement("button");
+      item.className = "bundle-item";
+      const dateLabel = formatDateDE(p.createdAt);
+      const badges = (isNew ? `<span class="badge badge-new">Neu</span>` : "") + (done ? `<span class="badge badge-done">&#10003; Erledigt</span>` : "");
+      item.innerHTML =
+        `<div class="bundle-item-head"><strong>${esc(p.label || ("Programm " + (i + 1)))}</strong>${dateLabel ? `<span class="bundle-date">${dateLabel}</span>` : ""}</div>` +
+        (badges ? `<div class="badges">${badges}</div>` : "") +
+        `<span class="bundle-meta">${p.movements.length} Bewegungen · ca. ${fmtMinutes(movementProgramSeconds(p))}</span>` +
+        (p.description ? `<span class="bundle-desc">${esc(p.description)}</span>` : "");
+      item.addEventListener("click", () => {
+        movementOriginBundle = { def: bundleDef, code };
+        renderMovementProgramIntro(p, code, key);
+      });
+      els.movementBundleList.appendChild(item);
+    });
+    showScreen("movementBundleOverview");
+  }
+
+  function renderMovementProgramIntro(def, code, key) {
+    const title = def.name || def.label || "Dein Bewegungsprogramm";
+    els.movementProgramTitle.textContent = title;
+    els.movementProgramMeta.textContent = `${def.movements.length} Bewegungen · ${def.durationMin} Min · ${def.bpm} BPM`;
+    els.movementProgramDesc.textContent = def.description || "";
+    els.movementProgramDesc.hidden = !def.description;
+    els.movementProgramStartBtn.onclick = () => {
+      movementProgram = { def, code, key, title };
+      movementPrefs.movements = movementAllowedIds(def.movements.slice());
+      if (Number.isFinite(def.preview)) movementPrefs.preview = def.preview;
+      if (Number.isFinite(def.bpm)) movementPrefs.bpm = def.bpm;
+      if (Number.isFinite(def.durationMin)) movementPrefs.durationMin = def.durationMin;
+      if (typeof def.mirror === "boolean") movementPrefs.mirror = def.mirror;
+      if (typeof def.showLabel === "boolean") movementPrefs.showLabel = def.showLabel;
+      saveMovementPrefs();
+      startMovementSession();
+    };
+    showScreen("movementProgramIntro");
+  }
+
+  els.movementProgramGoBtn.addEventListener("click", () => {
+    const code = normCode(els.movementProgramCodeInput.value || "");
+    if (code) openProgramIntro(code, MOVEMENT_CODE_CTX);
+  });
+  els.movementProgramCodeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") els.movementProgramGoBtn.click(); });
+  els.movementProgramCodeInput.addEventListener("input", () => { els.movementProgramError.hidden = true; });
+  els.movementProgramBackToHome.addEventListener("click", () => {
+    if (movementOriginBundle) openMovementBundleOverview(movementOriginBundle.def, movementOriginBundle.code);
+    else showScreen("movementHome");
+  });
+  els.movementBundleBackToHome.addEventListener("click", () => { movementOriginBundle = null; showScreen("movementHome"); });
+
   let movementTipsReturnFocus = null;
   function openMovementTips() { movementTipsReturnFocus = document.activeElement; els.movementTipsSheet.hidden = false; focusFirstIn(els.movementTipsSheet); }
   function closeMovementTips() { els.movementTipsSheet.hidden = true; if (movementTipsReturnFocus) movementTipsReturnFocus.focus(); }
@@ -5416,8 +5539,11 @@
     if (comboProgram) { advanceComboProgram(played); return; }
     els.movementPlayerBar.hidden = true;
     els.movementDoneSummary.textContent = `Ganzkörper-Reaktion · ${fmtMinutes(played)}`;
-    const id = addHistory({ kind: "movement", title: "Ganzkörper-Reaktion", seconds: Math.round(played) });
+    const id = movementProgram
+      ? addHistory({ kind: "movement-plan", title: movementProgram.title, progKey: movementProgram.key, seconds: Math.round(played) })
+      : addHistory({ kind: "movement", title: "Ganzkörper-Reaktion", seconds: Math.round(played) });
     renderRating(els.movementRating, id, "Wie gut hast du mitgehalten?");
+    els.movementDoneBackBtn.textContent = movementProgram && movementOriginBundle ? "Zurück zu meinen Programmen" : "Zur Startseite";
     els.movementDonePanel.hidden = false;
   }
   function movementLeavePlayer() {
@@ -5434,12 +5560,24 @@
   }
   function movementAbort() {
     if (comboProgram) { movementLeavePlayer(); abortComboProgram(); return; }
+    const wasProgram = !!movementProgram;
+    movementProgram = null;
     movementLeavePlayer();
-    showScreen("movementReady");
+    showScreen(wasProgram ? "movementProgramIntro" : "movementReady");
   }
   els.movementBackBtn.addEventListener("click", movementAbort);
   els.movementAgainBtn.addEventListener("click", () => { movementLeavePlayer(); startMovementSession(); });
-  els.movementDoneBackBtn.addEventListener("click", () => { movementLeavePlayer(); showScreen("movementHome"); });
+  els.movementDoneBackBtn.addEventListener("click", () => {
+    movementLeavePlayer();
+    if (movementProgram) {
+      const wasBundle = movementOriginBundle;
+      movementProgram = null;
+      if (wasBundle) openMovementBundleOverview(wasBundle.def, wasBundle.code);
+      else showScreen("movementHome");
+    } else {
+      showScreen("movementHome");
+    }
+  });
 
   // ==== NAT · Remember: spatial sequence memory game ====
   // A number appears somewhere on screen and stays there; more numbers get
@@ -8586,6 +8724,79 @@
   els.cardioStartCard.addEventListener("click", openCardioReady);
   els.cardioBackToHome.addEventListener("click", () => showScreen("cardioHome"));
 
+  // ---- Coach-assigned Cardio programme ("cardio-plan"/"cardio-bundle"):
+  // its `items` array is exactly the same shape startStandaloneCardio()
+  // already runs (self-built or coach-authored, cardioTick doesn't care) -
+  // so this only needs its own intro/bundle screens plus a bit of
+  // bookkeeping for history and back-routing, not a second playback engine.
+  // The client's own dual-task addon settings (cardioAddonPrefs) keep
+  // applying automatically, same as for a self-built run - no coach-side
+  // addon config needed (see the note further down at CARDIO_GUEST_TYPES). ----
+  let cardioProgram = null; // { def, code, key, title } - set for a coach-authored run
+  let cardioOriginBundle = null; // { def, code } - set when opened from a bundle overview
+  function cardioItemsSeconds(items) { return items.reduce((s, b) => s + b.durationS, 0); }
+
+  function openCardioBundleOverview(bundleDef, code) {
+    els.cardioBundleTitle.textContent = bundleDef.name || "Deine Cardio-Einheiten";
+    els.cardioBundleList.innerHTML = "";
+    const sorted = bundleDef.programs
+      .map((p, i) => ({ p, i }))
+      .sort((a, b) => (b.p.createdAt || "").localeCompare(a.p.createdAt || "") || (a.i - b.i));
+    sorted.forEach(({ p, i }, pos) => {
+      const key = `cardio:${code}#${i}`;
+      const done = isCompleted(key);
+      const isNew = pos === 0 && sorted.length > 1 && p.createdAt;
+      const item = document.createElement("button");
+      item.className = "bundle-item";
+      const dateLabel = formatDateDE(p.createdAt);
+      const badges = (isNew ? `<span class="badge badge-new">Neu</span>` : "") + (done ? `<span class="badge badge-done">&#10003; Erledigt</span>` : "");
+      item.innerHTML =
+        `<div class="bundle-item-head"><strong>${esc(p.label || ("Einheit " + (i + 1)))}</strong>${dateLabel ? `<span class="bundle-date">${dateLabel}</span>` : ""}</div>` +
+        (badges ? `<div class="badges">${badges}</div>` : "") +
+        `<span class="bundle-meta">${exerciseCountLabel(p.items.length)} · ca. ${fmtMinutes(cardioItemsSeconds(p.items))}</span>` +
+        (p.description ? `<span class="bundle-desc">${esc(p.description)}</span>` : "");
+      item.addEventListener("click", () => {
+        cardioOriginBundle = { def: bundleDef, code };
+        renderCardioProgramIntro(p, code, key);
+      });
+      els.cardioBundleList.appendChild(item);
+    });
+    showScreen("cardioBundleOverview");
+  }
+
+  function renderCardioProgramIntro(def, code, key) {
+    const title = def.name || def.label || "Deine Cardio-Einheit";
+    els.cardioProgramTitle.textContent = title;
+    els.cardioProgramMeta.textContent = `${exerciseCountLabel(def.items.length)} · ca. ${fmtMinutes(cardioItemsSeconds(def.items))}`;
+    els.cardioProgramDesc.textContent = def.description || "";
+    els.cardioProgramDesc.hidden = !def.description;
+    els.cardioProgramChapterList.innerHTML = "";
+    def.items.forEach((item, i) => {
+      const act = findCardioActivity(item.activity);
+      const row = document.createElement("div");
+      row.className = "chapter-row";
+      row.innerHTML = `<span class="chapter-main" style="cursor:default"><span class="num">${i + 1}</span><span class="info"><strong>${esc(act.name)}</strong><span>${fmtCardioDuration(item.durationS)}${item.label ? " · " + esc(item.label) : ""}</span></span></span>`;
+      els.cardioProgramChapterList.appendChild(row);
+    });
+    els.cardioProgramStartBtn.onclick = () => {
+      cardioProgram = { def, code, key, title };
+      startStandaloneCardio(def.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null })));
+    };
+    showScreen("cardioProgramIntro");
+  }
+
+  els.cardioProgramGoBtn.addEventListener("click", () => {
+    const code = normCode(els.cardioProgramCodeInput.value || "");
+    if (code) openProgramIntro(code, CARDIO_CODE_CTX);
+  });
+  els.cardioProgramCodeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") els.cardioProgramGoBtn.click(); });
+  els.cardioProgramCodeInput.addEventListener("input", () => { els.cardioProgramError.hidden = true; });
+  els.cardioProgramBackToHome.addEventListener("click", () => {
+    if (cardioOriginBundle) openCardioBundleOverview(cardioOriginBundle.def, cardioOriginBundle.code);
+    else showScreen("cardioHome");
+  });
+  els.cardioBundleBackToHome.addEventListener("click", () => { cardioOriginBundle = null; showScreen("cardioHome"); });
+
   // ---- Cardio dual-task: an optional "Zusatzübung" window pops up during
   // a running Cardio block, either the app's existing peripheral flash
   // (ported onto a synthetic blank-canvas "host" exercise, see the
@@ -8864,7 +9075,9 @@
     // cardioPlayer is a "player" overlay, not a SCREENS member (same as
     // workoutPlayer/els.player/...) - showScreen() alone never hides it.
     hideAllPlayers();
-    showScreen("cardioReady");
+    const wasProgram = !!cardioProgram;
+    cardioProgram = null;
+    showScreen(wasProgram ? "cardioProgramIntro" : "cardioReady");
   }
   els.cardioBackBtn.addEventListener("click", abortCardio);
 
@@ -8876,9 +9089,12 @@
     releaseWakeLock();
     els.cardioPlayer.hidden = true;
     const names = [...new Set(items.map((b) => findCardioActivity(b.activity).name))].join(", ");
-    const id = addHistory({ kind: "cardio", title: "Cardio", seconds: Math.round(totalS), note: names });
+    const id = cardioProgram
+      ? addHistory({ kind: "cardio-plan", title: cardioProgram.title, progKey: cardioProgram.key, seconds: Math.round(totalS), note: names })
+      : addHistory({ kind: "cardio", title: "Cardio", seconds: Math.round(totalS), note: names });
     renderRating(els.cardioRating, id);
     els.cardioDoneSummary.textContent = `${exerciseCountLabel(items.length)} · ${fmtMinutes(totalS)} Training`;
+    els.cardioDoneBackBtn.textContent = cardioProgram && cardioOriginBundle ? "Zurück zu meinen Einheiten" : "Zur Übersicht";
     els.cardioDonePanel.hidden = false;
     cardioState = null;
   }
@@ -8889,7 +9105,14 @@
   });
   els.cardioDoneBackBtn.addEventListener("click", () => {
     els.cardioDonePanel.hidden = true;
-    showScreen("cardioReady");
+    if (cardioProgram) {
+      const wasBundle = cardioOriginBundle;
+      cardioProgram = null;
+      if (wasBundle) openCardioBundleOverview(wasBundle.def, wasBundle.code);
+      else showScreen("cardioHome");
+    } else {
+      showScreen("cardioReady");
+    }
   });
   let lastCardioItems = null;
 
