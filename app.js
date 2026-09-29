@@ -130,6 +130,22 @@
     const r = parseInt(h.substr(0, 2), 16), g = parseInt(h.substr(2, 2), 16), b = parseInt(h.substr(4, 2), 16);
     return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   }
+  // Non-blocking contrast-safety check for a chosen background colour/
+  // intensity combo, shared by every background-colour picker in the app
+  // (each exercise's own Feineinstellung AND the Master-Einstellungen
+  // default) - never blocks starting or training, purely informational:
+  // "wer das Risiko eingehen will oder bewusst mit knappem Kontrast
+  // trainieren will, ok" was the explicit client instruction. Returns the
+  // hint text to show, or null when the resulting background is light
+  // enough that the app's fixed dark (INK) stimulus/text colour stays
+  // comfortably readable on it.
+  function bgContrastHintText(colorKey, intensity) {
+    if (!(intensity > 0) || !STROOP_COLOR_BY_KEY[colorKey]) return null;
+    const mixed = mixHex("#ffffff", STROOP_COLOR_BY_KEY[colorKey].hex, intensity);
+    return relLuma(mixed) < 0.45
+      ? "Tipp: Bei dieser Hintergrundfarbe ist weißer Text/eine weiße Form oft besser lesbar als Schwarz."
+      : null;
+  }
   // Blends two "#rrggbb" colours - used for the background "Intensität"
   // slider (white at 0 .. the full chosen colour at 1).
   function mixHex(hexA, hexB, t) {
@@ -1135,7 +1151,7 @@
     bgSaveCancelBtn: $("bgSaveCancelBtn"), bgSaveConfirmBtn: $("bgSaveConfirmBtn"),
     periphPauseBtn: $("periphPauseBtn"), periphPauseOverlay: $("periphPauseOverlay"),
     periphPauseBgSlider: $("periphPauseBgSlider"), periphPauseBgValue: $("periphPauseBgValue"),
-    periphPauseBgColorPicker: $("periphPauseBgColorPicker"), periphPauseFixColorPicker: $("periphPauseFixColorPicker"),
+    periphPauseBgColorPicker: $("periphPauseBgColorPicker"), periphPauseBgContrastHint: $("periphPauseBgContrastHint"), periphPauseFixColorPicker: $("periphPauseFixColorPicker"),
     periphPauseFixSizeSlider: $("periphPauseFixSizeSlider"), periphPauseFixSizeValue: $("periphPauseFixSizeValue"),
     periphResumeBtn: $("periphResumeBtn"),
     durationGroup: $("durationGroup"), tempoGroup: $("tempoGroup"), advanced: $("advanced"),
@@ -1174,6 +1190,7 @@
     masterHearingCheck: $("masterHearingCheck"),
     masterBgColorPicker: $("masterBgColorPicker"), masterBgNoneBtn: $("masterBgNoneBtn"),
     masterBgIntensityRow: $("masterBgIntensityRow"), masterBgIntensitySlider: $("masterBgIntensitySlider"), masterBgIntensityValue: $("masterBgIntensityValue"),
+    masterBgContrastHint: $("masterBgContrastHint"),
     masterCodeHistoryGroup: $("masterCodeHistoryGroup"), masterCodeHistoryList: $("masterCodeHistoryList"),
     workoutExerciseInfoSheet: $("workoutExerciseInfoSheet"), workoutExerciseInfoIcon: $("workoutExerciseInfoIcon"),
     workoutExerciseInfoTitle: $("workoutExerciseInfoTitle"), workoutExerciseInfoNote: $("workoutExerciseInfoNote"),
@@ -1257,7 +1274,7 @@
     gngReadyBestHint: $("gngReadyBestHint"), gngReadyStartBtn: $("gngReadyStartBtn"),
     gngPlayer: $("gngPlayer"), gngStage: $("gngStage"), gngHint: $("gngHint"), gngStimulus: $("gngStimulus"),
     gngPauseOverlay: $("gngPauseOverlay"), gngResumeBtn: $("gngResumeBtn"),
-    gngPauseBgColorPicker: $("gngPauseBgColorPicker"), gngPauseBgSlider: $("gngPauseBgSlider"), gngPauseBgValue: $("gngPauseBgValue"),
+    gngPauseBgColorPicker: $("gngPauseBgColorPicker"), gngPauseBgContrastHint: $("gngPauseBgContrastHint"), gngPauseBgSlider: $("gngPauseBgSlider"), gngPauseBgValue: $("gngPauseBgValue"),
     gngPlayerBar: $("gngPlayerBar"), gngBackBtn: $("gngBackBtn"), gngPauseBtn: $("gngPauseBtn"), gngProgressEl: $("gngProgressEl"),
     gngFsBtn: $("gngFsBtn"), gngFsHint: $("gngFsHint"), gngFsHintOpenBtn: $("gngFsHintOpenBtn"), gngFsHintClose: $("gngFsHintClose"),
     gngDonePanel: $("gngDonePanel"), gngDoneSummary: $("gngDoneSummary"), gngRating: $("gngRating"),
@@ -1273,7 +1290,7 @@
     testNbackPlayer: $("testNbackPlayer"), testNbackStage: $("testNbackStage"), testNbackHint: $("testNbackHint"),
     testNbackGrid: $("testNbackGrid"), testNbackMatchBtn: $("testNbackMatchBtn"),
     testNbackPauseOverlay: $("testNbackPauseOverlay"), testNbackResumeBtn: $("testNbackResumeBtn"),
-    testNbackPauseBgColorPicker: $("testNbackPauseBgColorPicker"), testNbackPauseBgSlider: $("testNbackPauseBgSlider"),
+    testNbackPauseBgColorPicker: $("testNbackPauseBgColorPicker"), testNbackPauseBgContrastHint: $("testNbackPauseBgContrastHint"), testNbackPauseBgSlider: $("testNbackPauseBgSlider"),
     testNbackPauseBgValue: $("testNbackPauseBgValue"),
     testNbackPlayerBar: $("testNbackPlayerBar"), testNbackBackBtn: $("testNbackBackBtn"), testNbackPauseBtn: $("testNbackPauseBtn"),
     testNbackLevelEl: $("testNbackLevelEl"), testNbackFsBtn: $("testNbackFsBtn"), testNbackFsHint: $("testNbackFsHint"),
@@ -1288,7 +1305,7 @@
     trailPlayer: $("trailPlayer"), trailStage: $("trailStage"), trailHint: $("trailHint"),
     trailLinesSvg: $("trailLinesSvg"), trailMarkersLayer: $("trailMarkersLayer"),
     trailPauseOverlay: $("trailPauseOverlay"), trailResumeBtn: $("trailResumeBtn"),
-    trailPauseBgColorPicker: $("trailPauseBgColorPicker"), trailPauseBgSlider: $("trailPauseBgSlider"), trailPauseBgValue: $("trailPauseBgValue"),
+    trailPauseBgColorPicker: $("trailPauseBgColorPicker"), trailPauseBgContrastHint: $("trailPauseBgContrastHint"), trailPauseBgSlider: $("trailPauseBgSlider"), trailPauseBgValue: $("trailPauseBgValue"),
     trailPlayerBar: $("trailPlayerBar"), trailBackBtn: $("trailBackBtn"), trailPauseBtn: $("trailPauseBtn"), trailProgressEl: $("trailProgressEl"),
     trailFsBtn: $("trailFsBtn"), trailFsHint: $("trailFsHint"), trailFsHintOpenBtn: $("trailFsHintOpenBtn"), trailFsHintClose: $("trailFsHintClose"),
     trailDonePanel: $("trailDonePanel"), trailDoneSummary: $("trailDoneSummary"), trailRating: $("trailRating"),
@@ -1301,7 +1318,7 @@
     flankerPlayer: $("flankerPlayer"), flankerStage: $("flankerStage"), flankerHint: $("flankerHint"), flankerRow: $("flankerRow"),
     flankerLeftBtn: $("flankerLeftBtn"), flankerRightBtn: $("flankerRightBtn"),
     flankerPauseOverlay: $("flankerPauseOverlay"), flankerResumeBtn: $("flankerResumeBtn"),
-    flankerPauseBgColorPicker: $("flankerPauseBgColorPicker"), flankerPauseBgSlider: $("flankerPauseBgSlider"), flankerPauseBgValue: $("flankerPauseBgValue"),
+    flankerPauseBgColorPicker: $("flankerPauseBgColorPicker"), flankerPauseBgContrastHint: $("flankerPauseBgContrastHint"), flankerPauseBgSlider: $("flankerPauseBgSlider"), flankerPauseBgValue: $("flankerPauseBgValue"),
     flankerPlayerBar: $("flankerPlayerBar"), flankerBackBtn: $("flankerBackBtn"), flankerPauseBtn: $("flankerPauseBtn"), flankerProgressEl: $("flankerProgressEl"),
     flankerFsBtn: $("flankerFsBtn"), flankerFsHint: $("flankerFsHint"), flankerFsHintOpenBtn: $("flankerFsHintOpenBtn"), flankerFsHintClose: $("flankerFsHintClose"),
     flankerDonePanel: $("flankerDonePanel"), flankerDoneSummary: $("flankerDoneSummary"), flankerRating: $("flankerRating"),
@@ -1319,7 +1336,7 @@
     ufovShapeBtns: $("ufovShapeBtns"), ufovShapeCircleBtn: $("ufovShapeCircleBtn"), ufovShapeSquareBtn: $("ufovShapeSquareBtn"),
     ufovRingBtns: $("ufovRingBtns"), ufovRingBtnField: $("ufovRingBtnField"),
     ufovPauseOverlay: $("ufovPauseOverlay"), ufovResumeBtn: $("ufovResumeBtn"),
-    ufovPauseBgColorPicker: $("ufovPauseBgColorPicker"), ufovPauseBgSlider: $("ufovPauseBgSlider"), ufovPauseBgValue: $("ufovPauseBgValue"),
+    ufovPauseBgColorPicker: $("ufovPauseBgColorPicker"), ufovPauseBgContrastHint: $("ufovPauseBgContrastHint"), ufovPauseBgSlider: $("ufovPauseBgSlider"), ufovPauseBgValue: $("ufovPauseBgValue"),
     ufovPlayerBar: $("ufovPlayerBar"), ufovBackBtn: $("ufovBackBtn"), ufovPauseBtn: $("ufovPauseBtn"), ufovProgressEl: $("ufovProgressEl"),
     ufovFsBtn: $("ufovFsBtn"), ufovFsHint: $("ufovFsHint"), ufovFsHintOpenBtn: $("ufovFsHintOpenBtn"), ufovFsHintClose: $("ufovFsHintClose"),
     ufovDonePanel: $("ufovDonePanel"), ufovDoneSummary: $("ufovDoneSummary"), ufovRating: $("ufovRating"),
@@ -1334,7 +1351,7 @@
     posnerLeftBtn: $("posnerLeftBtn"), posnerRightBtn: $("posnerRightBtn"),
     posnerLeftDot: $("posnerLeftDot"), posnerRightDot: $("posnerRightDot"),
     posnerPauseOverlay: $("posnerPauseOverlay"), posnerResumeBtn: $("posnerResumeBtn"),
-    posnerPauseBgColorPicker: $("posnerPauseBgColorPicker"), posnerPauseBgSlider: $("posnerPauseBgSlider"), posnerPauseBgValue: $("posnerPauseBgValue"),
+    posnerPauseBgColorPicker: $("posnerPauseBgColorPicker"), posnerPauseBgContrastHint: $("posnerPauseBgContrastHint"), posnerPauseBgSlider: $("posnerPauseBgSlider"), posnerPauseBgValue: $("posnerPauseBgValue"),
     posnerPlayerBar: $("posnerPlayerBar"), posnerBackBtn: $("posnerBackBtn"), posnerPauseBtn: $("posnerPauseBtn"), posnerProgressEl: $("posnerProgressEl"),
     posnerFsBtn: $("posnerFsBtn"), posnerFsHint: $("posnerFsHint"), posnerFsHintOpenBtn: $("posnerFsHintOpenBtn"), posnerFsHintClose: $("posnerFsHintClose"),
     posnerDonePanel: $("posnerDonePanel"), posnerDoneSummary: $("posnerDoneSummary"), posnerRating: $("posnerRating"),
@@ -1348,7 +1365,7 @@
     simonSlotLeft: $("simonSlotLeft"), simonSlotRight: $("simonSlotRight"), simonDotLeft: $("simonDotLeft"), simonDotRight: $("simonDotRight"),
     simonLeftBtn: $("simonLeftBtn"), simonRightBtn: $("simonRightBtn"),
     simonPauseOverlay: $("simonPauseOverlay"), simonPauseBgSlider: $("simonPauseBgSlider"), simonPauseBgValue: $("simonPauseBgValue"),
-    simonPauseBgColorPicker: $("simonPauseBgColorPicker"), simonResumeBtn: $("simonResumeBtn"),
+    simonPauseBgColorPicker: $("simonPauseBgColorPicker"), simonPauseBgContrastHint: $("simonPauseBgContrastHint"), simonResumeBtn: $("simonResumeBtn"),
     simonPlayerBar: $("simonPlayerBar"), simonBackBtn: $("simonBackBtn"), simonPauseBtn: $("simonPauseBtn"), simonProgressEl: $("simonProgressEl"),
     simonFsBtn: $("simonFsBtn"), simonFsHint: $("simonFsHint"), simonFsHintOpenBtn: $("simonFsHintOpenBtn"), simonFsHintClose: $("simonFsHintClose"),
     simonDonePanel: $("simonDonePanel"), simonDoneSummary: $("simonDoneSummary"), simonRating: $("simonRating"),
@@ -1360,7 +1377,7 @@
     searchReadyBestHint: $("searchReadyBestHint"), searchReadyStartBtn: $("searchReadyStartBtn"),
     searchPlayer: $("searchPlayer"), searchStage: $("searchStage"), searchHint: $("searchHint"), searchItemsLayer: $("searchItemsLayer"),
     searchPauseOverlay: $("searchPauseOverlay"), searchPauseBgSlider: $("searchPauseBgSlider"), searchPauseBgValue: $("searchPauseBgValue"),
-    searchPauseBgColorPicker: $("searchPauseBgColorPicker"), searchResumeBtn: $("searchResumeBtn"),
+    searchPauseBgColorPicker: $("searchPauseBgColorPicker"), searchPauseBgContrastHint: $("searchPauseBgContrastHint"), searchResumeBtn: $("searchResumeBtn"),
     searchPlayerBar: $("searchPlayerBar"), searchBackBtn: $("searchBackBtn"), searchPauseBtn: $("searchPauseBtn"), searchProgressEl: $("searchProgressEl"),
     searchFsBtn: $("searchFsBtn"), searchFsHint: $("searchFsHint"), searchFsHintOpenBtn: $("searchFsHintOpenBtn"), searchFsHintClose: $("searchFsHintClose"),
     searchDonePanel: $("searchDonePanel"), searchDoneSummary: $("searchDoneSummary"), searchRating: $("searchRating"),
@@ -1374,7 +1391,7 @@
     abT1Panel: $("abT1Panel"), abT1Btn0: $("abT1Btn0"), abT1Btn1: $("abT1Btn1"), abT1Btn2: $("abT1Btn2"), abT1Btn3: $("abT1Btn3"),
     abT2Panel: $("abT2Panel"), abT2JaBtn: $("abT2JaBtn"), abT2NeinBtn: $("abT2NeinBtn"), abRevealHint: $("abRevealHint"),
     abPauseOverlay: $("abPauseOverlay"), abPauseBgSlider: $("abPauseBgSlider"), abPauseBgValue: $("abPauseBgValue"),
-    abPauseBgColorPicker: $("abPauseBgColorPicker"), abResumeBtn: $("abResumeBtn"),
+    abPauseBgColorPicker: $("abPauseBgColorPicker"), abPauseBgContrastHint: $("abPauseBgContrastHint"), abResumeBtn: $("abResumeBtn"),
     abPlayerBar: $("abPlayerBar"), abBackBtn: $("abBackBtn"), abPauseBtn: $("abPauseBtn"), abProgressEl: $("abProgressEl"),
     abFsBtn: $("abFsBtn"), abFsHint: $("abFsHint"), abFsHintOpenBtn: $("abFsHintOpenBtn"), abFsHintClose: $("abFsHintClose"),
     abDonePanel: $("abDonePanel"), abDoneSummary: $("abDoneSummary"), abRating: $("abRating"),
@@ -1388,7 +1405,7 @@
     antizipTrack: $("antizipTrack"), antizipTargetZone: $("antizipTargetZone"), antizipBall: $("antizipBall"),
     antizipFeedback: $("antizipFeedback"), antizipTapBtn: $("antizipTapBtn"),
     antizipPauseOverlay: $("antizipPauseOverlay"), antizipPauseBgSlider: $("antizipPauseBgSlider"), antizipPauseBgValue: $("antizipPauseBgValue"),
-    antizipPauseBgColorPicker: $("antizipPauseBgColorPicker"), antizipResumeBtn: $("antizipResumeBtn"),
+    antizipPauseBgColorPicker: $("antizipPauseBgColorPicker"), antizipPauseBgContrastHint: $("antizipPauseBgContrastHint"), antizipResumeBtn: $("antizipResumeBtn"),
     antizipPlayerBar: $("antizipPlayerBar"), antizipBackBtn: $("antizipBackBtn"), antizipPauseBtn: $("antizipPauseBtn"), antizipProgressEl: $("antizipProgressEl"),
     antizipFsBtn: $("antizipFsBtn"), antizipFsHint: $("antizipFsHint"), antizipFsHintOpenBtn: $("antizipFsHintOpenBtn"), antizipFsHintClose: $("antizipFsHintClose"),
     antizipDonePanel: $("antizipDonePanel"), antizipDoneSummary: $("antizipDoneSummary"), antizipRating: $("antizipRating"),
@@ -1400,7 +1417,7 @@
     hickReadyBestHint: $("hickReadyBestHint"), hickReadyStartBtn: $("hickReadyStartBtn"),
     hickPlayer: $("hickPlayer"), hickStage: $("hickStage"), hickHint: $("hickHint"), hickBoxesGrid: $("hickBoxesGrid"),
     hickPauseOverlay: $("hickPauseOverlay"), hickResumeBtn: $("hickResumeBtn"),
-    hickPauseBgColorPicker: $("hickPauseBgColorPicker"), hickPauseBgSlider: $("hickPauseBgSlider"), hickPauseBgValue: $("hickPauseBgValue"),
+    hickPauseBgColorPicker: $("hickPauseBgColorPicker"), hickPauseBgContrastHint: $("hickPauseBgContrastHint"), hickPauseBgSlider: $("hickPauseBgSlider"), hickPauseBgValue: $("hickPauseBgValue"),
     hickPlayerBar: $("hickPlayerBar"), hickBackBtn: $("hickBackBtn"), hickPauseBtn: $("hickPauseBtn"), hickProgressEl: $("hickProgressEl"),
     hickFsBtn: $("hickFsBtn"), hickFsHint: $("hickFsHint"), hickFsHintOpenBtn: $("hickFsHintOpenBtn"), hickFsHintClose: $("hickFsHintClose"),
     hickDonePanel: $("hickDonePanel"), hickDoneSummary: $("hickDoneSummary"), hickRating: $("hickRating"),
@@ -1413,7 +1430,7 @@
     corsiReadyBestHint: $("corsiReadyBestHint"), corsiReadyStartBtn: $("corsiReadyStartBtn"),
     corsiPlayer: $("corsiPlayer"), corsiStage: $("corsiStage"), corsiHint: $("corsiHint"), corsiBoard: $("corsiBoard"),
     corsiPauseOverlay: $("corsiPauseOverlay"), corsiResumeBtn: $("corsiResumeBtn"),
-    corsiPauseBgColorPicker: $("corsiPauseBgColorPicker"), corsiPauseBgSlider: $("corsiPauseBgSlider"), corsiPauseBgValue: $("corsiPauseBgValue"),
+    corsiPauseBgColorPicker: $("corsiPauseBgColorPicker"), corsiPauseBgContrastHint: $("corsiPauseBgContrastHint"), corsiPauseBgSlider: $("corsiPauseBgSlider"), corsiPauseBgValue: $("corsiPauseBgValue"),
     corsiPlayerBar: $("corsiPlayerBar"), corsiBackBtn: $("corsiBackBtn"), corsiPauseBtn: $("corsiPauseBtn"), corsiProgressEl: $("corsiProgressEl"),
     corsiFsBtn: $("corsiFsBtn"), corsiFsHint: $("corsiFsHint"), corsiFsHintOpenBtn: $("corsiFsHintOpenBtn"), corsiFsHintClose: $("corsiFsHintClose"),
     corsiDonePanel: $("corsiDonePanel"), corsiDoneSummary: $("corsiDoneSummary"), corsiRating: $("corsiRating"),
@@ -1425,7 +1442,7 @@
     reaktBgIntensityValue: $("reaktBgIntensityValue"), reaktBgContrastHint: $("reaktBgContrastHint"),
     reaktPlayer: $("reaktPlayer"), reaktStage: $("reaktStage"), reaktHint: $("reaktHint"), reaktField: $("reaktField"),
     reaktPauseOverlay: $("reaktPauseOverlay"), reaktResumeBtn: $("reaktResumeBtn"),
-    reaktPauseBgColorPicker: $("reaktPauseBgColorPicker"), reaktPauseBgSlider: $("reaktPauseBgSlider"), reaktPauseBgValue: $("reaktPauseBgValue"),
+    reaktPauseBgColorPicker: $("reaktPauseBgColorPicker"), reaktPauseBgContrastHint: $("reaktPauseBgContrastHint"), reaktPauseBgSlider: $("reaktPauseBgSlider"), reaktPauseBgValue: $("reaktPauseBgValue"),
     reaktPlayerBar: $("reaktPlayerBar"), reaktBackBtn: $("reaktBackBtn"), reaktPauseBtn: $("reaktPauseBtn"), reaktProgressEl: $("reaktProgressEl"),
     reaktFsBtn: $("reaktFsBtn"), reaktFsHint: $("reaktFsHint"), reaktFsHintOpenBtn: $("reaktFsHintOpenBtn"), reaktFsHintClose: $("reaktFsHintClose"),
     reaktDonePanel: $("reaktDonePanel"), reaktDoneSummary: $("reaktDoneSummary"), reaktRating: $("reaktRating"),
@@ -1438,7 +1455,7 @@
     tsPlayer: $("tsPlayer"), tsStage: $("tsStage"), tsCue: $("tsCue"), tsStimulus: $("tsStimulus"), tsHint: $("tsHint"),
     tsLeftBtn: $("tsLeftBtn"), tsRightBtn: $("tsRightBtn"),
     tsPauseOverlay: $("tsPauseOverlay"), tsResumeBtn: $("tsResumeBtn"),
-    tsPauseBgColorPicker: $("tsPauseBgColorPicker"), tsPauseBgSlider: $("tsPauseBgSlider"), tsPauseBgValue: $("tsPauseBgValue"),
+    tsPauseBgColorPicker: $("tsPauseBgColorPicker"), tsPauseBgContrastHint: $("tsPauseBgContrastHint"), tsPauseBgSlider: $("tsPauseBgSlider"), tsPauseBgValue: $("tsPauseBgValue"),
     tsPlayerBar: $("tsPlayerBar"), tsBackBtn: $("tsBackBtn"), tsPauseBtn: $("tsPauseBtn"), tsProgressEl: $("tsProgressEl"),
     tsFsBtn: $("tsFsBtn"), tsFsHint: $("tsFsHint"), tsFsHintOpenBtn: $("tsFsHintOpenBtn"), tsFsHintClose: $("tsFsHintClose"),
     tsDonePanel: $("tsDonePanel"), tsDoneSummary: $("tsDoneSummary"), tsRating: $("tsRating"),
@@ -1452,7 +1469,7 @@
     antiSlotLeft: $("antiSlotLeft"), antiDotLeft: $("antiDotLeft"), antiSlotRight: $("antiSlotRight"), antiDotRight: $("antiDotRight"),
     antiLeftBtn: $("antiLeftBtn"), antiRightBtn: $("antiRightBtn"),
     antiPauseOverlay: $("antiPauseOverlay"), antiResumeBtn: $("antiResumeBtn"),
-    antiPauseBgColorPicker: $("antiPauseBgColorPicker"), antiPauseBgSlider: $("antiPauseBgSlider"), antiPauseBgValue: $("antiPauseBgValue"),
+    antiPauseBgColorPicker: $("antiPauseBgColorPicker"), antiPauseBgContrastHint: $("antiPauseBgContrastHint"), antiPauseBgSlider: $("antiPauseBgSlider"), antiPauseBgValue: $("antiPauseBgValue"),
     antiPlayerBar: $("antiPlayerBar"), antiBackBtn: $("antiBackBtn"), antiPauseBtn: $("antiPauseBtn"), antiProgressEl: $("antiProgressEl"),
     antiFsBtn: $("antiFsBtn"), antiFsHint: $("antiFsHint"), antiFsHintOpenBtn: $("antiFsHintOpenBtn"), antiFsHintClose: $("antiFsHintClose"),
     antiDonePanel: $("antiDonePanel"), antiDoneSummary: $("antiDoneSummary"), antiRating: $("antiRating"),
@@ -1485,7 +1502,7 @@
     alarmPlayer: $("alarmPlayer"), alarmStage: $("alarmStage"), alarmHint: $("alarmHint"), alarmFix: $("alarmFix"),
     alarmLeftBtn: $("alarmLeftBtn"), alarmRightBtn: $("alarmRightBtn"), alarmLeftDot: $("alarmLeftDot"), alarmRightDot: $("alarmRightDot"),
     alarmPauseOverlay: $("alarmPauseOverlay"), alarmResumeBtn: $("alarmResumeBtn"),
-    alarmPauseBgSlider: $("alarmPauseBgSlider"), alarmPauseBgValue: $("alarmPauseBgValue"), alarmPauseBgColorPicker: $("alarmPauseBgColorPicker"),
+    alarmPauseBgSlider: $("alarmPauseBgSlider"), alarmPauseBgValue: $("alarmPauseBgValue"), alarmPauseBgColorPicker: $("alarmPauseBgColorPicker"), alarmPauseBgContrastHint: $("alarmPauseBgContrastHint"),
     alarmPlayerBar: $("alarmPlayerBar"), alarmBackBtn: $("alarmBackBtn"), alarmPauseBtn: $("alarmPauseBtn"), alarmProgressEl: $("alarmProgressEl"),
     alarmFsBtn: $("alarmFsBtn"), alarmFsHint: $("alarmFsHint"), alarmFsHintOpenBtn: $("alarmFsHintOpenBtn"), alarmFsHintClose: $("alarmFsHintClose"),
     alarmDonePanel: $("alarmDonePanel"), alarmDoneSummary: $("alarmDoneSummary"), alarmRating: $("alarmRating"),
@@ -1498,7 +1515,7 @@
     vorlaufPlayer: $("vorlaufPlayer"), vorlaufStage: $("vorlaufStage"), vorlaufHint: $("vorlaufHint"),
     vorlaufTapzone: $("vorlaufTapzone"), vorlaufDot: $("vorlaufDot"),
     vorlaufPauseOverlay: $("vorlaufPauseOverlay"), vorlaufResumeBtn: $("vorlaufResumeBtn"),
-    vorlaufPauseBgSlider: $("vorlaufPauseBgSlider"), vorlaufPauseBgValue: $("vorlaufPauseBgValue"), vorlaufPauseBgColorPicker: $("vorlaufPauseBgColorPicker"),
+    vorlaufPauseBgSlider: $("vorlaufPauseBgSlider"), vorlaufPauseBgValue: $("vorlaufPauseBgValue"), vorlaufPauseBgColorPicker: $("vorlaufPauseBgColorPicker"), vorlaufPauseBgContrastHint: $("vorlaufPauseBgContrastHint"),
     vorlaufPlayerBar: $("vorlaufPlayerBar"), vorlaufBackBtn: $("vorlaufBackBtn"), vorlaufPauseBtn: $("vorlaufPauseBtn"), vorlaufProgressEl: $("vorlaufProgressEl"),
     vorlaufFsBtn: $("vorlaufFsBtn"), vorlaufFsHint: $("vorlaufFsHint"), vorlaufFsHintOpenBtn: $("vorlaufFsHintOpenBtn"), vorlaufFsHintClose: $("vorlaufFsHintClose"),
     vorlaufDonePanel: $("vorlaufDonePanel"), vorlaufDoneSummary: $("vorlaufDoneSummary"), vorlaufRating: $("vorlaufRating"),
@@ -1511,7 +1528,7 @@
     stopPlayer: $("stopPlayer"), stopStage: $("stopStage"), stopHint: $("stopHint"), stopArrow: $("stopArrow"),
     stopLeftBtn: $("stopLeftBtn"), stopRightBtn: $("stopRightBtn"),
     stopPauseOverlay: $("stopPauseOverlay"), stopResumeBtn: $("stopResumeBtn"),
-    stopPauseBgSlider: $("stopPauseBgSlider"), stopPauseBgValue: $("stopPauseBgValue"), stopPauseBgColorPicker: $("stopPauseBgColorPicker"),
+    stopPauseBgSlider: $("stopPauseBgSlider"), stopPauseBgValue: $("stopPauseBgValue"), stopPauseBgColorPicker: $("stopPauseBgColorPicker"), stopPauseBgContrastHint: $("stopPauseBgContrastHint"),
     stopPlayerBar: $("stopPlayerBar"), stopBackBtn: $("stopBackBtn"), stopPauseBtn: $("stopPauseBtn"), stopProgressEl: $("stopProgressEl"),
     stopFsBtn: $("stopFsBtn"), stopFsHint: $("stopFsHint"), stopFsHintOpenBtn: $("stopFsHintOpenBtn"), stopFsHintClose: $("stopFsHintClose"),
     stopDonePanel: $("stopDonePanel"), stopDoneSummary: $("stopDoneSummary"), stopRating: $("stopRating"),
@@ -1524,7 +1541,7 @@
     dsstPlayer: $("dsstPlayer"), dsstStage: $("dsstStage"), dsstHint: $("dsstHint"),
     dsstKeyRow: $("dsstKeyRow"), dsstDigit: $("dsstDigit"), dsstKeypad: $("dsstKeypad"),
     dsstPauseOverlay: $("dsstPauseOverlay"), dsstResumeBtn: $("dsstResumeBtn"),
-    dsstPauseBgSlider: $("dsstPauseBgSlider"), dsstPauseBgValue: $("dsstPauseBgValue"), dsstPauseBgColorPicker: $("dsstPauseBgColorPicker"),
+    dsstPauseBgSlider: $("dsstPauseBgSlider"), dsstPauseBgValue: $("dsstPauseBgValue"), dsstPauseBgColorPicker: $("dsstPauseBgColorPicker"), dsstPauseBgContrastHint: $("dsstPauseBgContrastHint"),
     dsstPlayerBar: $("dsstPlayerBar"), dsstBackBtn: $("dsstBackBtn"), dsstPauseBtn: $("dsstPauseBtn"), dsstProgressEl: $("dsstProgressEl"),
     dsstFsBtn: $("dsstFsBtn"), dsstFsHint: $("dsstFsHint"), dsstFsHintOpenBtn: $("dsstFsHintOpenBtn"), dsstFsHintClose: $("dsstFsHintClose"),
     dsstDonePanel: $("dsstDonePanel"), dsstDoneSummary: $("dsstDoneSummary"), dsstRating: $("dsstRating"),
@@ -1537,7 +1554,7 @@
     rotationPlayer: $("rotationPlayer"), rotationStage: $("rotationStage"), rotationHint: $("rotationHint"),
     rotationCharEl: $("rotationCharEl"), rotationNormalBtn: $("rotationNormalBtn"), rotationMirroredBtn: $("rotationMirroredBtn"),
     rotationPauseOverlay: $("rotationPauseOverlay"), rotationPauseBgSlider: $("rotationPauseBgSlider"), rotationPauseBgValue: $("rotationPauseBgValue"),
-    rotationPauseBgColorPicker: $("rotationPauseBgColorPicker"), rotationResumeBtn: $("rotationResumeBtn"),
+    rotationPauseBgColorPicker: $("rotationPauseBgColorPicker"), rotationPauseBgContrastHint: $("rotationPauseBgContrastHint"), rotationResumeBtn: $("rotationResumeBtn"),
     rotationPlayerBar: $("rotationPlayerBar"), rotationBackBtn: $("rotationBackBtn"), rotationPauseBtn: $("rotationPauseBtn"), rotationProgressEl: $("rotationProgressEl"),
     rotationFsBtn: $("rotationFsBtn"), rotationFsHint: $("rotationFsHint"), rotationFsHintOpenBtn: $("rotationFsHintOpenBtn"), rotationFsHintClose: $("rotationFsHintClose"),
     rotationDonePanel: $("rotationDonePanel"), rotationDoneSummary: $("rotationDoneSummary"), rotationRating: $("rotationRating"),
@@ -1550,7 +1567,7 @@
     merkPlayer: $("merkPlayer"), merkStage: $("merkStage"), merkHint: $("merkHint"), merkField: $("merkField"),
     merkSameBtn: $("merkSameBtn"), merkChangedBtn: $("merkChangedBtn"),
     merkPauseOverlay: $("merkPauseOverlay"), merkPauseBgSlider: $("merkPauseBgSlider"), merkPauseBgValue: $("merkPauseBgValue"),
-    merkPauseBgColorPicker: $("merkPauseBgColorPicker"), merkResumeBtn: $("merkResumeBtn"),
+    merkPauseBgColorPicker: $("merkPauseBgColorPicker"), merkPauseBgContrastHint: $("merkPauseBgContrastHint"), merkResumeBtn: $("merkResumeBtn"),
     merkPlayerBar: $("merkPlayerBar"), merkBackBtn: $("merkBackBtn"), merkPauseBtn: $("merkPauseBtn"), merkProgressEl: $("merkProgressEl"),
     merkFsBtn: $("merkFsBtn"), merkFsHint: $("merkFsHint"), merkFsHintOpenBtn: $("merkFsHintOpenBtn"), merkFsHintClose: $("merkFsHintClose"),
     merkDonePanel: $("merkDonePanel"), merkDoneSummary: $("merkDoneSummary"), merkRating: $("merkRating"),
@@ -1569,7 +1586,7 @@
     blitzReadyBestHint: $("blitzReadyBestHint"), blitzReadyStartBtn: $("blitzReadyStartBtn"),
     blitzPlayer: $("blitzPlayer"), blitzStage: $("blitzStage"), blitzHint: $("blitzHint"), blitzGrid: $("blitzGrid"),
     blitzPauseOverlay: $("blitzPauseOverlay"), blitzPauseBgSlider: $("blitzPauseBgSlider"), blitzPauseBgValue: $("blitzPauseBgValue"),
-    blitzPauseBgColorPicker: $("blitzPauseBgColorPicker"), blitzResumeBtn: $("blitzResumeBtn"),
+    blitzPauseBgColorPicker: $("blitzPauseBgColorPicker"), blitzPauseBgContrastHint: $("blitzPauseBgContrastHint"), blitzResumeBtn: $("blitzResumeBtn"),
     blitzPlayerBar: $("blitzPlayerBar"), blitzBackBtn: $("blitzBackBtn"), blitzPauseBtn: $("blitzPauseBtn"), blitzLevelEl: $("blitzLevelEl"),
     blitzFsBtn: $("blitzFsBtn"), blitzFsHint: $("blitzFsHint"), blitzFsHintOpenBtn: $("blitzFsHintOpenBtn"), blitzFsHintClose: $("blitzFsHintClose"),
     blitzDonePanel: $("blitzDonePanel"), blitzDoneSummary: $("blitzDoneSummary"), blitzRating: $("blitzRating"),
@@ -1608,7 +1625,7 @@
     flashAnswerBoxes: $("flashAnswerBoxes"), flashKeypad: $("flashKeypad"), flashBackspaceBtn: $("flashBackspaceBtn"),
     flashKindRow: $("flashKindRow"), flashTrainingKindRow: $("flashTrainingKindRow"),
     flashPauseOverlay: $("flashPauseOverlay"), flashPauseBgSlider: $("flashPauseBgSlider"), flashPauseBgValue: $("flashPauseBgValue"),
-    flashPauseBgColorPicker: $("flashPauseBgColorPicker"), flashResumeBtn: $("flashResumeBtn"),
+    flashPauseBgColorPicker: $("flashPauseBgColorPicker"), flashPauseBgContrastHint: $("flashPauseBgContrastHint"), flashResumeBtn: $("flashResumeBtn"),
     flashPlayerBar: $("flashPlayerBar"), flashBackBtn: $("flashBackBtn"), flashPauseBtn: $("flashPauseBtn"), flashLevelEl: $("flashLevelEl"),
     flashFsBtn: $("flashFsBtn"), flashFsHint: $("flashFsHint"), flashFsHintOpenBtn: $("flashFsHintOpenBtn"), flashFsHintClose: $("flashFsHintClose"),
     flashDonePanel: $("flashDonePanel"), flashDoneSummary: $("flashDoneSummary"), flashRating: $("flashRating"),
@@ -1667,7 +1684,7 @@
     motTrainingBestHint: $("motTrainingBestHint"), motTrainingStartBtn: $("motTrainingStartBtn"),
     motPlayer: $("motPlayer"), motStage: $("motStage"), motHint: $("motHint"), motObjectsLayer: $("motObjectsLayer"),
     motPauseOverlay: $("motPauseOverlay"), motPauseBgSlider: $("motPauseBgSlider"), motPauseBgValue: $("motPauseBgValue"),
-    motPauseBgColorPicker: $("motPauseBgColorPicker"), motResumeBtn: $("motResumeBtn"),
+    motPauseBgColorPicker: $("motPauseBgColorPicker"), motPauseBgContrastHint: $("motPauseBgContrastHint"), motResumeBtn: $("motResumeBtn"),
     motPlayerBar: $("motPlayerBar"), motBackBtn: $("motBackBtn"), motPauseBtn: $("motPauseBtn"), motLevelEl: $("motLevelEl"),
     motFsBtn: $("motFsBtn"), motFsHint: $("motFsHint"), motFsHintOpenBtn: $("motFsHintOpenBtn"), motFsHintClose: $("motFsHintClose"),
     motDonePanel: $("motDonePanel"), motDoneSummary: $("motDoneSummary"), motRating: $("motRating"),
@@ -1700,7 +1717,7 @@
     rememberPlayerBar: $("rememberPlayerBar"), rememberBackBtn: $("rememberBackBtn"), rememberLevelEl: $("rememberLevelEl"),
     rememberPauseBtn: $("rememberPauseBtn"), rememberPauseOverlay: $("rememberPauseOverlay"),
     rememberPauseBgSlider: $("rememberPauseBgSlider"), rememberPauseBgValue: $("rememberPauseBgValue"),
-    rememberPauseBgColorPicker: $("rememberPauseBgColorPicker"), rememberResumeBtn: $("rememberResumeBtn"),
+    rememberPauseBgColorPicker: $("rememberPauseBgColorPicker"), rememberPauseBgContrastHint: $("rememberPauseBgContrastHint"), rememberResumeBtn: $("rememberResumeBtn"),
     rememberFsBtn: $("rememberFsBtn"), rememberFsHint: $("rememberFsHint"),
     rememberFsHintOpenBtn: $("rememberFsHintOpenBtn"), rememberFsHintClose: $("rememberFsHintClose"),
     rememberDonePanel: $("rememberDonePanel"), rememberDoneSummary: $("rememberDoneSummary"), rememberRating: $("rememberRating"),
@@ -2607,11 +2624,10 @@
       refs.sliders.forEach((el) => { el.value = store.bgIntensity; });
       const pct = Math.round(store.bgIntensity * 100) + "%";
       refs.valueEls.forEach((el) => { el.textContent = pct; });
-      const mixed = mixHex("#ffffff", STROOP_COLOR_BY_KEY[store.bgColorKey].hex, store.bgIntensity);
-      const showTip = store.bgIntensity > 0 && relLuma(mixed) < 0.45;
+      const tip = bgContrastHintText(store.bgColorKey, store.bgIntensity);
       (refs.hintEls || []).forEach((el) => {
-        el.hidden = !showTip;
-        el.textContent = showTip ? "Tipp: Bei dieser Hintergrundfarbe ist weißer Text/eine weiße Form oft besser lesbar als Schwarz." : "";
+        el.hidden = !tip;
+        el.textContent = tip || "";
       });
       renderTransfer();
     }
@@ -2958,7 +2974,7 @@
     pickers: [els.bgColorPicker, els.periphPauseBgColorPicker],
     sliders: [els.bgIntensitySlider, els.periphPauseBgSlider],
     valueEls: [els.bgIntensityValue, els.periphPauseBgValue],
-    hintEls: [els.bgContrastHint],
+    hintEls: [els.bgContrastHint, els.periphPauseBgContrastHint],
     transfer: [{
       sourceRow: els.bgSourceRow, presetGroup: els.bgPresetGroup, presetList: els.bgPresetList,
       saveBtn: els.bgSaveBtn, form: els.bgSaveForm, nameInput: els.bgSaveNameInput,
@@ -4848,6 +4864,9 @@
     els.masterBgIntensityRow.hidden = !masterPrefs.defaultBgColorKey;
     els.masterBgIntensitySlider.value = masterPrefs.defaultBgIntensity;
     els.masterBgIntensityValue.textContent = `${Math.round(masterPrefs.defaultBgIntensity * 100)}%`;
+    const tip = masterPrefs.defaultBgColorKey ? bgContrastHintText(masterPrefs.defaultBgColorKey, masterPrefs.defaultBgIntensity) : null;
+    els.masterBgContrastHint.hidden = !tip;
+    els.masterBgContrastHint.textContent = tip || "";
   }
 
   // ---- Exercise compatibility: greyed out + marked, not hidden ----
@@ -6077,7 +6096,7 @@
     pickers: [els.rememberBgColorPicker, els.rememberTrainingBgColorPicker, els.rememberPauseBgColorPicker],
     sliders: [els.rememberBgIntensitySlider, els.rememberTrainingBgIntensitySlider, els.rememberPauseBgSlider],
     valueEls: [els.rememberBgIntensityValue, els.rememberTrainingBgIntensityValue, els.rememberPauseBgValue],
-    hintEls: [els.rememberBgContrastHint, els.rememberTrainingBgContrastHint],
+    hintEls: [els.rememberBgContrastHint, els.rememberTrainingBgContrastHint, els.rememberPauseBgContrastHint],
     transfer: [
       {
         sourceRow: els.rememberBgSourceRow, presetGroup: els.rememberBgPresetGroup, presetList: els.rememberBgPresetList,
@@ -6658,7 +6677,7 @@
     pickers: [els.blitzBgColorPicker, els.blitzPauseBgColorPicker],
     sliders: [els.blitzBgIntensitySlider, els.blitzPauseBgSlider],
     valueEls: [els.blitzBgIntensityValue, els.blitzPauseBgValue],
-    hintEls: [els.blitzBgContrastHint],
+    hintEls: [els.blitzBgContrastHint, els.blitzPauseBgContrastHint],
     transfer: [{
       sourceRow: els.blitzBgSourceRow, presetGroup: els.blitzBgPresetGroup, presetList: els.blitzBgPresetList,
       saveBtn: els.blitzBgSaveBtn, form: els.blitzBgSaveForm, nameInput: els.blitzBgSaveNameInput,
@@ -7027,7 +7046,7 @@
     pickers: [els.flashBgColorPicker, els.flashTrainingBgColorPicker, els.flashPauseBgColorPicker],
     sliders: [els.flashBgIntensitySlider, els.flashTrainingBgIntensitySlider, els.flashPauseBgSlider],
     valueEls: [els.flashBgIntensityValue, els.flashTrainingBgIntensityValue, els.flashPauseBgValue],
-    hintEls: [els.flashBgContrastHint, els.flashTrainingBgContrastHint],
+    hintEls: [els.flashBgContrastHint, els.flashTrainingBgContrastHint, els.flashPauseBgContrastHint],
     transfer: [
       {
         sourceRow: els.flashBgSourceRow, presetGroup: els.flashBgPresetGroup, presetList: els.flashBgPresetList,
@@ -7771,7 +7790,7 @@
     pickers: [els.motBgColorPicker, els.motTrainingBgColorPicker, els.motPauseBgColorPicker],
     sliders: [els.motBgIntensitySlider, els.motTrainingBgIntensitySlider, els.motPauseBgSlider],
     valueEls: [els.motBgIntensityValue, els.motTrainingBgIntensityValue, els.motPauseBgValue],
-    hintEls: [els.motBgContrastHint, els.motTrainingBgContrastHint],
+    hintEls: [els.motBgContrastHint, els.motTrainingBgContrastHint, els.motPauseBgContrastHint],
     transfer: [
       {
         sourceRow: els.motBgSourceRow, presetGroup: els.motBgPresetGroup, presetList: els.motBgPresetList,
@@ -9990,7 +10009,7 @@
     pickers: [els.gngBgColorPicker, els.gngPauseBgColorPicker],
     sliders: [els.gngBgIntensitySlider, els.gngPauseBgSlider],
     valueEls: [els.gngBgIntensityValue, els.gngPauseBgValue],
-    hintEls: [els.gngBgContrastHint],
+    hintEls: [els.gngBgContrastHint, els.gngPauseBgContrastHint],
   }, () => { saveGngPrefsToStorage(); applyGngBg(); });
 
   const GNG_BEST_KEY = "fwmc-gng-best-v1"; // { [difficulty]: bestAccuracyPct }
@@ -10264,7 +10283,7 @@
     pickers: [els.testNbackBgColorPicker, els.testNbackPauseBgColorPicker],
     sliders: [els.testNbackBgIntensitySlider, els.testNbackPauseBgSlider],
     valueEls: [els.testNbackBgIntensityValue, els.testNbackPauseBgValue],
-    hintEls: [els.testNbackBgContrastHint],
+    hintEls: [els.testNbackBgContrastHint, els.testNbackPauseBgContrastHint],
   }, () => { saveTestNbackPrefsToStorage(); applyTestNbackBg(); });
 
   const TEST_NBACK_BEST_KEY = "fwmc-test-nback-best-v1"; // plain number: highest N level ever played to the end of a block
@@ -10539,7 +10558,7 @@
     pickers: [els.trailBgColorPicker, els.trailPauseBgColorPicker],
     sliders: [els.trailBgIntensitySlider, els.trailPauseBgSlider],
     valueEls: [els.trailBgIntensityValue, els.trailPauseBgValue],
-    hintEls: [els.trailBgContrastHint],
+    hintEls: [els.trailBgContrastHint, els.trailPauseBgContrastHint],
   }, () => { saveTrailPrefsToStorage(); applyTrailBg(); });
 
   // Best time is kept per Teil+Schwierigkeit combo (lower = better), and only
@@ -10854,7 +10873,7 @@
     pickers: [els.flankerBgColorPicker, els.flankerPauseBgColorPicker],
     sliders: [els.flankerBgIntensitySlider, els.flankerPauseBgSlider],
     valueEls: [els.flankerBgIntensityValue, els.flankerPauseBgValue],
-    hintEls: [els.flankerBgContrastHint],
+    hintEls: [els.flankerBgContrastHint, els.flankerPauseBgContrastHint],
   }, () => { saveFlankerPrefsToStorage(); applyFlankerBg(); });
 
   const FLANKER_BEST_KEY = "fwmc-flanker-best-v1"; // { [difficulty]: bestAccuracyPct }
@@ -11176,7 +11195,7 @@
     pickers: [els.ufovBgColorPicker, els.ufovPauseBgColorPicker],
     sliders: [els.ufovBgIntensitySlider, els.ufovPauseBgSlider],
     valueEls: [els.ufovBgIntensityValue, els.ufovPauseBgValue],
-    hintEls: [els.ufovBgContrastHint],
+    hintEls: [els.ufovBgContrastHint, els.ufovPauseBgContrastHint],
   }, () => { saveUfovPrefsToStorage(); applyUfovBg(); });
 
   // Best is keyed by length, LOWER is better here (a shorter exposure the
@@ -11528,7 +11547,7 @@
     pickers: [els.posnerBgColorPicker, els.posnerPauseBgColorPicker],
     sliders: [els.posnerBgIntensitySlider, els.posnerPauseBgSlider],
     valueEls: [els.posnerBgIntensityValue, els.posnerPauseBgValue],
-    hintEls: [els.posnerBgContrastHint],
+    hintEls: [els.posnerBgContrastHint, els.posnerPauseBgContrastHint],
   }, () => { savePosnerPrefsToStorage(); applyPosnerBg(); });
 
   const POSNER_BEST_KEY = "fwmc-posner-best-v1"; // { [difficulty]: bestAccuracyPct }
@@ -11862,7 +11881,7 @@
     pickers: [els.alarmBgColorPicker, els.alarmPauseBgColorPicker],
     sliders: [els.alarmBgIntensitySlider, els.alarmPauseBgSlider],
     valueEls: [els.alarmBgIntensityValue, els.alarmPauseBgValue],
-    hintEls: [els.alarmBgContrastHint],
+    hintEls: [els.alarmBgContrastHint, els.alarmPauseBgContrastHint],
   }, () => { saveAlarmPrefsToStorage(); applyAlarmBg(); });
 
   const ALARM_BEST_KEY = "fwmc-alarm-best-v1"; // { [difficulty]: bestAccuracyPct }
@@ -12193,7 +12212,7 @@
     pickers: [els.vorlaufBgColorPicker, els.vorlaufPauseBgColorPicker],
     sliders: [els.vorlaufBgIntensitySlider, els.vorlaufPauseBgSlider],
     valueEls: [els.vorlaufBgIntensityValue, els.vorlaufPauseBgValue],
-    hintEls: [els.vorlaufBgContrastHint],
+    hintEls: [els.vorlaufBgContrastHint, els.vorlaufPauseBgContrastHint],
   }, () => { saveVorlaufPrefsToStorage(); applyVorlaufBg(); });
 
   const VORLAUF_BEST_KEY = "fwmc-vorlauf-best-v1"; // { [length]: bestMeanRtMs } - lower is better
@@ -12511,7 +12530,7 @@
     pickers: [els.stopBgColorPicker, els.stopPauseBgColorPicker],
     sliders: [els.stopBgIntensitySlider, els.stopPauseBgSlider],
     valueEls: [els.stopBgIntensityValue, els.stopPauseBgValue],
-    hintEls: [els.stopBgContrastHint],
+    hintEls: [els.stopBgContrastHint, els.stopPauseBgContrastHint],
   }, () => { saveStopPrefsToStorage(); applyStopBg(); });
 
   const STOP_BEST_KEY = "fwmc-stop-best-v1"; // { [difficulty]: bestSsrtMs } - lower is better
@@ -12859,7 +12878,7 @@
     pickers: [els.dsstBgColorPicker, els.dsstPauseBgColorPicker],
     sliders: [els.dsstBgIntensitySlider, els.dsstPauseBgSlider],
     valueEls: [els.dsstBgIntensityValue, els.dsstPauseBgValue],
-    hintEls: [els.dsstBgContrastHint],
+    hintEls: [els.dsstBgContrastHint, els.dsstPauseBgContrastHint],
   }, () => { saveDsstPrefsToStorage(); applyDsstBg(); });
 
   const DSST_BEST_KEY = "fwmc-dsst-best-v1"; // { [length]: bestCorrectCount } - higher is better
@@ -13141,7 +13160,7 @@
     pickers: [els.rotationBgColorPicker, els.rotationPauseBgColorPicker],
     sliders: [els.rotationBgIntensitySlider, els.rotationPauseBgSlider],
     valueEls: [els.rotationBgIntensityValue, els.rotationPauseBgValue],
-    hintEls: [els.rotationBgContrastHint],
+    hintEls: [els.rotationBgContrastHint, els.rotationPauseBgContrastHint],
   }, () => { saveRotationPrefsToStorage(); applyRotationBg(); });
 
   const ROTATION_BEST_KEY = "fwmc-rotation-best-v1"; // { [difficulty]: bestAccuracyPct }
@@ -13491,7 +13510,7 @@
     pickers: [els.merkBgColorPicker, els.merkPauseBgColorPicker],
     sliders: [els.merkBgIntensitySlider, els.merkPauseBgSlider],
     valueEls: [els.merkBgIntensityValue, els.merkPauseBgValue],
-    hintEls: [els.merkBgContrastHint],
+    hintEls: [els.merkBgContrastHint, els.merkPauseBgContrastHint],
   }, () => { saveMerkPrefsToStorage(); applyMerkBg(); });
 
   const MERK_BEST_KEY = "fwmc-merk-best-v1"; // { [difficulty]: bestK (Pashler's K, one decimal) }
@@ -13873,7 +13892,7 @@
     pickers: [els.simonBgColorPicker, els.simonPauseBgColorPicker],
     sliders: [els.simonBgIntensitySlider, els.simonPauseBgSlider],
     valueEls: [els.simonBgIntensityValue, els.simonPauseBgValue],
-    hintEls: [els.simonBgContrastHint],
+    hintEls: [els.simonBgContrastHint, els.simonPauseBgContrastHint],
   }, () => { saveSimonPrefsToStorage(); applySimonBg(); });
 
   const SIMON_BEST_KEY = "fwmc-simon-best-v1"; // { [difficulty]: bestAccuracyPct }
@@ -14205,7 +14224,7 @@
     pickers: [els.searchBgColorPicker, els.searchPauseBgColorPicker],
     sliders: [els.searchBgIntensitySlider, els.searchPauseBgSlider],
     valueEls: [els.searchBgIntensityValue, els.searchPauseBgValue],
-    hintEls: [els.searchBgContrastHint],
+    hintEls: [els.searchBgContrastHint, els.searchPauseBgContrastHint],
   }, () => { saveSearchPrefsToStorage(); applySearchBg(); });
 
   const SEARCH_BEST_KEY = "fwmc-search-best-v1"; // { [length]: bestAccuracyPct }
@@ -14624,7 +14643,7 @@
     pickers: [els.abBgColorPicker, els.abPauseBgColorPicker],
     sliders: [els.abBgIntensitySlider, els.abPauseBgSlider],
     valueEls: [els.abBgIntensityValue, els.abPauseBgValue],
-    hintEls: [els.abBgContrastHint],
+    hintEls: [els.abBgContrastHint, els.abPauseBgContrastHint],
   }, () => { saveAbPrefsToStorage(); applyAbBg(); });
 
   const AB_BEST_KEY = "fwmc-ab-best-v1"; // { [difficulty]: bestOverallAccuracyPct }
@@ -15032,7 +15051,7 @@
     pickers: [els.antizipBgColorPicker, els.antizipPauseBgColorPicker],
     sliders: [els.antizipBgIntensitySlider, els.antizipPauseBgSlider],
     valueEls: [els.antizipBgIntensityValue, els.antizipPauseBgValue],
-    hintEls: [els.antizipBgContrastHint],
+    hintEls: [els.antizipBgContrastHint, els.antizipPauseBgContrastHint],
   }, () => { saveAntizipPrefsToStorage(); applyAntizipBg(); });
 
   // "Lower is better" (a timing-error score, same shape as UFOV's exposure-
@@ -15382,7 +15401,7 @@
     pickers: [els.hickBgColorPicker, els.hickPauseBgColorPicker],
     sliders: [els.hickBgIntensitySlider, els.hickPauseBgSlider],
     valueEls: [els.hickBgIntensityValue, els.hickPauseBgValue],
-    hintEls: [els.hickBgContrastHint],
+    hintEls: [els.hickBgContrastHint, els.hickPauseBgContrastHint],
   }, () => { saveHickPrefsToStorage(); applyHickBg(); });
 
   const HICK_BEST_KEY = "fwmc-hick-best-v1"; // { [length]: bestSlopeMsPerBit } - lower is better
@@ -15720,7 +15739,7 @@
     pickers: [els.corsiBgColorPicker, els.corsiPauseBgColorPicker],
     sliders: [els.corsiBgIntensitySlider, els.corsiPauseBgSlider],
     valueEls: [els.corsiBgIntensityValue, els.corsiPauseBgValue],
-    hintEls: [els.corsiBgContrastHint],
+    hintEls: [els.corsiBgContrastHint, els.corsiPauseBgContrastHint],
   }, () => { saveCorsiPrefsToStorage(); applyCorsiBg(); });
 
   const CORSI_BEST_KEY = "fwmc-corsi-best-v1"; // { [difficulty]: bestSpan } - higher is better
@@ -16068,7 +16087,7 @@
     pickers: [els.reaktBgColorPicker, els.reaktPauseBgColorPicker],
     sliders: [els.reaktBgIntensitySlider, els.reaktPauseBgSlider],
     valueEls: [els.reaktBgIntensityValue, els.reaktPauseBgValue],
-    hintEls: [els.reaktBgContrastHint],
+    hintEls: [els.reaktBgContrastHint, els.reaktPauseBgContrastHint],
   }, () => { saveReaktPrefsToStorage(); applyReaktBg(); });
 
   // Best score is Treffer PRO MINUTE (hits/min) - deliberately length-
@@ -16443,7 +16462,7 @@
     pickers: [els.tsBgColorPicker, els.tsPauseBgColorPicker],
     sliders: [els.tsBgIntensitySlider, els.tsPauseBgSlider],
     valueEls: [els.tsBgIntensityValue, els.tsPauseBgValue],
-    hintEls: [els.tsBgContrastHint],
+    hintEls: [els.tsBgContrastHint, els.tsPauseBgContrastHint],
   }, () => { saveTsPrefsToStorage(); applyTsBg(); });
 
   const TS_BEST_KEY = "fwmc-ts-best-v1"; // { [difficulty]: bestSwitchCostMs } - lower is better
@@ -16770,7 +16789,7 @@
     pickers: [els.antiBgColorPicker, els.antiPauseBgColorPicker],
     sliders: [els.antiBgIntensitySlider, els.antiPauseBgSlider],
     valueEls: [els.antiBgIntensityValue, els.antiPauseBgValue],
-    hintEls: [els.antiBgContrastHint],
+    hintEls: [els.antiBgContrastHint, els.antiPauseBgContrastHint],
   }, () => { saveAntiPrefsToStorage(); applyAntiBg(); });
 
   const ANTI_BEST_KEY = "fwmc-anti-best-v1"; // { [difficulty]: bestHemmKostenMs } - lower is better, same shape as TS_BEST_KEY
