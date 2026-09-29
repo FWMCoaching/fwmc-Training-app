@@ -2744,7 +2744,7 @@ all this ctx-threading. Uses Playwright route interception on the
 `CODE_API` URL to serve fake defs for each new type, since none of this
 can be exercised via `dashboard.html` without a live Worker deploy.
 
-## Kombi-Baukasten rebuild (started 2026-09-29, Cardio slice done)
+## Kombi-Baukasten rebuild (started 2026-09-29, Cardio + Movement slices done)
 
 Client's ask, in one big message: Cardio needs the "Komplett-Programm aus
 mehreren Bereichen" entry it was missing (a scope gap from the night
@@ -2830,12 +2830,49 @@ Einheit" count badge now on Cardio's activity add-grid (mirrors
 `renderWorkoutCircuitAddGrid`'s badge exactly, re-renders the grid on
 every add/remove so the count stays live).
 
+**Movement slice**, the same pattern applied to `movementReady` (its
+single-config settings screen):
+- `comboMovementCaptureOriginal` (module var) saves off the client's whole
+  `movementPrefs` object (deep-cloned) the moment capture starts, restored
+  via `Object.assign` + `saveMovementPrefs()` the moment it ends - same
+  "must never clobber the standalone setup" requirement as Cardio, just
+  against a flat prefs object instead of an items array.
+  `comboMovementEditIndex` mirrors Cardio's edit-in-place tracking.
+- `movementReadyTitle`/`movementReadyHint` (new ids, `movementReady`'s
+  `<h1>`/`<p class="page-sub">` previously had none) swap to "Baustein:
+  Movement" during capture; `movementStartBtn`'s label swaps to "Baustein
+  übernehmen".
+- `renderMovementSaved()`'s "load a saved setting" callback made capture-
+  aware the same way Cardio's was: fills the draft and re-syncs the picker
+  UI without starting a session when capturing.
+- No changes needed to `comboBlockLabel`/`Meta`/`Seconds` or
+  `startComboBlock()`'s `"movement"` case - both already existed from the
+  original curated-preset version and already read exactly the fields this
+  capture flow writes.
+- The 2 old canned `COMBO_PRESETS.movement` entries were removed entirely
+  (superseded by the capture button) - `renderComboAddGrid()` now renders
+  Cardio and Movement's capture-entry buttons from one small generic loop
+  instead of two near-duplicate blocks, so a third domain joining this
+  pattern is a one-line addition to that array, not copy-pasted markup.
+
+Tested in `tests/movement_combo_test.py` (same shape as Cardio's own
+combo test: capture opens blank/pre-filled correctly, commit, re-edit,
+cancel discards and leaves the standalone setting untouched, a full combo
+run through a Movement block, mid-block abort routing). Fixed
+`tests/workout_combo_test.py`'s combo-builder section along the way - it
+picked add-grid buttons by raw position (`.nth(4)` commented "// movement",
+etc.), which silently broke (added the wrong exercises with no assertion
+ever going red) once Cardio/Movement's buttons moved to the end of the
+grid; switched it to text-based selectors, the same convention the new
+combo tests use, so a future reshuffle of the grid can't silently degrade
+it the same way again.
+
 **Not done yet, explicit backlog for the rest of this rebuild**: the same
 capture-mode pattern still needs to reach Visual (all `EXERCISES`, via
 `openReady()`), Breath (already covers its patterns, could still gain
-full fine-tune + saved-preset reuse in capture mode), Movement (single
-config, straightforward), Workout (all exercises, both reps and Tabata
-mode), and NAT's Remember (already combo-capable via `comboDurationS`,
+full fine-tune + saved-preset reuse in capture mode), Workout (all
+exercises, both reps and Tabata mode), and NAT's Remember (already
+combo-capable via `comboDurationS`,
 needs the same UI treatment) plus Blitz-Raster/Flash Speicher Test/MOT
 Fähigkeit - those three are endless/progressive with no fixed end, so
 each needs the same `comboDurationS`-style duration cutoff Remember

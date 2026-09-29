@@ -96,18 +96,25 @@ async def main():
         print("combo screen visible:", await pg.is_visible("#comboScreen"))
         add_btns = pg.locator("#comboScreen .combo-add-btn")
         print("preset add buttons:", await add_btns.count())
-        await add_btns.nth(0).click()  # breath box
-        await add_btns.nth(4).click()  # movement
-        await add_btns.nth(6).click()  # visual vt
-        await add_btns.nth(9).click()  # workout reps
-        await pg.wait_for_timeout(100)
+        # Text-based rather than positional (.nth) selectors: Cardio/Movement
+        # moved from fixed-position preset buttons to capture-mode buttons at
+        # the end of the grid (see the Kombi-Baukasten rebuild in CLAUDE.md),
+        # which shifts every later domain's button index.
+        await pg.click('#comboAddGrid >> text="Box-Atmung"'); await pg.wait_for_timeout(100)
+        # Movement now opens its own settings screen in capture mode instead
+        # of a one-click add - movement_combo_test.py covers that in depth,
+        # here just add one the normal way.
+        await pg.click('#comboAddGrid >> text="Ganzkörper-Reaktion"'); await pg.wait_for_timeout(200)
+        await pg.click("#movementStartBtn"); await pg.wait_for_timeout(200)
+        await pg.click('#comboAddGrid >> text="VT · Farbe & Seite"'); await pg.wait_for_timeout(100)
+        await pg.click('#comboAddGrid >> text="Kniebeugen"'); await pg.wait_for_timeout(100)
         print("block count text:", await pg.inner_text("#comboBlockCount"))
         rows = await pg.eval_on_selector_all("#comboBlockList .chapter-main strong", "els => els.map(e => e.textContent)")
         print("blocks added:", rows)
-        # remove last, re-add
+        # remove last (Kniebeugen), re-add
         await pg.click("#comboScreen .combo-block-remove >> nth=3"); await pg.wait_for_timeout(100)
         print("after remove, count:", await pg.inner_text("#comboBlockCount"))
-        await add_btns.nth(9).click(); await pg.wait_for_timeout(100)
+        await pg.click('#comboAddGrid >> text="Kniebeugen"'); await pg.wait_for_timeout(100)
         await pg.click("#comboSaveBtn"); await pg.wait_for_timeout(100)
         await pg.fill("#comboNameInput", "Testkombi")
         await pg.screenshot(path=OUT + "06_combo_builder.png", full_page=True)
