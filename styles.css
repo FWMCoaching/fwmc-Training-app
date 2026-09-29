@@ -1352,6 +1352,15 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
   margin-left:auto;flex:none;width:30px;height:30px;border-radius:50%;border:none;
   background:var(--surface-2);color:var(--ink-soft);font-size:16px;cursor:pointer;
 }
+/* A slim, secondary strip between two block cards (not its own card) -
+   the gap-to-next-exercise pause, editable inline, never shown after the
+   last block. */
+.combo-pause-row{
+  display:flex;align-items:center;gap:10px;min-width:0;
+  padding:2px 14px 2px 44px;margin-top:-6px;
+}
+.combo-pause-row .slider-label{flex:none;font-size:12.5px;color:var(--ink-soft)}
+.combo-pause-row .slider-value{flex:none;font-size:12.5px;color:var(--ink-soft);min-width:34px;text-align:right}
 
 /* ---- Workout circuit builder: per-exercise duration stepper, icons, notes,
    and custom exercises ---- */

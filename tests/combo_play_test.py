@@ -41,20 +41,33 @@ async def main():
         print("breath block running:", await pg.is_visible("#breathPlayer"))
         await pg.screenshot(path=OUT + "01_combo_breath.png")
 
+        # Each block transition now waits on masterPrefs.defaultPauseS (a
+        # real, client-adjustable rest, default 20s) instead of the old
+        # fixed silent 4s - always skippable via #comboTransitionBtn
+        # ("Überspringen"), which these waits use to keep this test fast
+        # rather than actually waiting out the pause each time.
+        await pg.wait_for_selector("#comboTransition:not([hidden])", timeout=8000)
+        await pg.click("#comboTransitionBtn")
         await pg.wait_for_function("() => !document.getElementById('movementPlayer').hidden", timeout=8000)
         print("advanced to movement block")
         await pg.screenshot(path=OUT + "02_combo_movement.png")
 
+        await pg.wait_for_selector("#comboTransition:not([hidden])", timeout=8000)
+        await pg.click("#comboTransitionBtn")
         await pg.wait_for_function("() => !document.getElementById('player').hidden", timeout=8000)
         print("advanced to visual block")
         await pg.screenshot(path=OUT + "03_combo_visual.png")
 
+        await pg.wait_for_selector("#comboTransition:not([hidden])", timeout=8000)
+        await pg.click("#comboTransitionBtn")
         await pg.wait_for_function("() => !document.getElementById('workoutPlayer').hidden", timeout=8000)
         print("advanced to workout block, reps view:", await pg.is_visible("#workoutRepsView"))
         await pg.screenshot(path=OUT + "04_combo_workout.png")
         await pg.click("#workoutSetDoneBtn"); await pg.wait_for_timeout(300)
 
         # wimhof block should require the safety screen, not auto-play
+        await pg.wait_for_selector("#comboTransition:not([hidden])", timeout=8000)
+        await pg.click("#comboTransitionBtn")
         await pg.wait_for_function("() => !document.getElementById('wimhofReady').hidden", timeout=6000)
         print("wimhof safety gate shown mid-combo:", await pg.is_visible("#wimhofReady"))
         print("start disabled before ack:", await pg.get_attribute("#wimhofStartBtn", "disabled") is not None)
@@ -75,9 +88,11 @@ async def main():
         print("history has combo entry:", "Gesamt-Session" in (await pg.inner_text("#historyList")))
 
         # ---- Abort mid-combo ----
+        # First block is breath; its own Beenden id is breathBackBtn (not
+        # the shared VT #backBtn used elsewhere in this file - that only
+        # applies once the combo has actually reached the visual block).
         await pg.fill("#programCodeInput", "comboprog"); await pg.click("#programGoBtn"); await pg.wait_for_timeout(500)
-        await pg.click("#backBtn"); await pg.wait_for_timeout(200)  # visual's Beenden isn't first block though; use breath's
-        # first block is breath; its Beenden id is breathBackBtn
+        await pg.click("#breathBackBtn"); await pg.wait_for_timeout(200)
         print("aborted -> home:", await pg.is_visible("#home"), "any player visible:", await pg.is_visible("#breathPlayer") or await pg.is_visible("#player"))
 
         # ---- Combo via bundle code ----

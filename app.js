@@ -1180,7 +1180,7 @@
     addonSaveBtn: $("addonSaveBtn"), addonSaveForm: $("addonSaveForm"), addonSaveNameInput: $("addonSaveNameInput"),
     addonSaveCancelBtn: $("addonSaveCancelBtn"), addonSaveConfirmBtn: $("addonSaveConfirmBtn"),
     bgGroup: $("bgGroup"), bgColorPicker: $("bgColorPicker"), bgIntensitySlider: $("bgIntensitySlider"),
-    bgIntensityValue: $("bgIntensityValue"), bgContrastHint: $("bgContrastHint"),
+    bgIntensityValue: $("bgIntensityValue"), bgContrastHint: $("bgContrastHint"), bgMasterStatus: $("bgMasterStatus"),
     bgSourceRow: $("bgSourceRow"), bgPresetGroup: $("bgPresetGroup"), bgPresetList: $("bgPresetList"),
     bgSaveBtn: $("bgSaveBtn"), bgSaveForm: $("bgSaveForm"), bgSaveNameInput: $("bgSaveNameInput"),
     bgSaveCancelBtn: $("bgSaveCancelBtn"), bgSaveConfirmBtn: $("bgSaveConfirmBtn"),
@@ -1225,7 +1225,8 @@
     masterHearingCheck: $("masterHearingCheck"),
     masterBgColorPicker: $("masterBgColorPicker"), masterBgNoneBtn: $("masterBgNoneBtn"),
     masterBgIntensityRow: $("masterBgIntensityRow"), masterBgIntensitySlider: $("masterBgIntensitySlider"), masterBgIntensityValue: $("masterBgIntensityValue"),
-    masterBgContrastHint: $("masterBgContrastHint"),
+    masterBgContrastHint: $("masterBgContrastHint"), masterBgResetAllBtn: $("masterBgResetAllBtn"),
+    masterPauseSlider: $("masterPauseSlider"), masterPauseValue: $("masterPauseValue"),
     masterCodeHistoryGroup: $("masterCodeHistoryGroup"), masterCodeHistoryList: $("masterCodeHistoryList"),
     workoutExerciseInfoSheet: $("workoutExerciseInfoSheet"), workoutExerciseInfoIcon: $("workoutExerciseInfoIcon"),
     workoutExerciseInfoTitle: $("workoutExerciseInfoTitle"), workoutExerciseInfoNote: $("workoutExerciseInfoNote"),
@@ -1305,7 +1306,7 @@
     gngOpenBtn: $("gngOpenBtn"), gngBestHint: $("gngBestHint"), gngReady: $("gngReady"),
     gngReadyBackToHome: $("gngReadyBackToHome"), gngDifficultyRow: $("gngDifficultyRow"),
     gngAdvanced: $("gngAdvanced"), gngBgColorPicker: $("gngBgColorPicker"), gngBgIntensitySlider: $("gngBgIntensitySlider"),
-    gngBgIntensityValue: $("gngBgIntensityValue"), gngBgContrastHint: $("gngBgContrastHint"),
+    gngBgIntensityValue: $("gngBgIntensityValue"), gngBgContrastHint: $("gngBgContrastHint"), gngBgMasterStatus: $("gngBgMasterStatus"),
     gngReadyBestHint: $("gngReadyBestHint"), gngReadyStartBtn: $("gngReadyStartBtn"),
     gngPlayer: $("gngPlayer"), gngStage: $("gngStage"), gngHint: $("gngHint"), gngStimulus: $("gngStimulus"),
     gngPauseOverlay: $("gngPauseOverlay"), gngResumeBtn: $("gngResumeBtn"),
@@ -1319,7 +1320,7 @@
     testNbackStartRow: $("testNbackStartRow"),
     testNbackAdvanced: $("testNbackAdvanced"), testNbackBgColorPicker: $("testNbackBgColorPicker"),
     testNbackBgIntensitySlider: $("testNbackBgIntensitySlider"), testNbackBgIntensityValue: $("testNbackBgIntensityValue"),
-    testNbackBgContrastHint: $("testNbackBgContrastHint"),
+    testNbackBgContrastHint: $("testNbackBgContrastHint"), testNbackBgMasterStatus: $("testNbackBgMasterStatus"),
     testNbackReadyBestHint: $("testNbackReadyBestHint"),
     testNbackReadyStartBtn: $("testNbackReadyStartBtn"),
     testNbackPlayer: $("testNbackPlayer"), testNbackStage: $("testNbackStage"), testNbackHint: $("testNbackHint"),
@@ -1335,7 +1336,7 @@
     trailOpenBtn: $("trailOpenBtn"), trailBestHint: $("trailBestHint"), trailReady: $("trailReady"),
     trailReadyBackToHome: $("trailReadyBackToHome"), trailTeilRow: $("trailTeilRow"), trailDifficultyRow: $("trailDifficultyRow"),
     trailAdvanced: $("trailAdvanced"), trailBgColorPicker: $("trailBgColorPicker"), trailBgIntensitySlider: $("trailBgIntensitySlider"),
-    trailBgIntensityValue: $("trailBgIntensityValue"), trailBgContrastHint: $("trailBgContrastHint"),
+    trailBgIntensityValue: $("trailBgIntensityValue"), trailBgContrastHint: $("trailBgContrastHint"), trailBgMasterStatus: $("trailBgMasterStatus"),
     trailReadyBestHint: $("trailReadyBestHint"), trailReadyStartBtn: $("trailReadyStartBtn"),
     trailPlayer: $("trailPlayer"), trailStage: $("trailStage"), trailHint: $("trailHint"),
     trailLinesSvg: $("trailLinesSvg"), trailMarkersLayer: $("trailMarkersLayer"),
@@ -1348,7 +1349,7 @@
     flankerOpenBtn: $("flankerOpenBtn"), flankerBestHint: $("flankerBestHint"), flankerReady: $("flankerReady"),
     flankerReadyBackToHome: $("flankerReadyBackToHome"), flankerDifficultyRow: $("flankerDifficultyRow"),
     flankerAdvanced: $("flankerAdvanced"), flankerBgColorPicker: $("flankerBgColorPicker"), flankerBgIntensitySlider: $("flankerBgIntensitySlider"),
-    flankerBgIntensityValue: $("flankerBgIntensityValue"), flankerBgContrastHint: $("flankerBgContrastHint"),
+    flankerBgIntensityValue: $("flankerBgIntensityValue"), flankerBgContrastHint: $("flankerBgContrastHint"), flankerBgMasterStatus: $("flankerBgMasterStatus"),
     flankerReadyBestHint: $("flankerReadyBestHint"), flankerReadyStartBtn: $("flankerReadyStartBtn"),
     flankerPlayer: $("flankerPlayer"), flankerStage: $("flankerStage"), flankerHint: $("flankerHint"), flankerRow: $("flankerRow"),
     flankerLeftBtn: $("flankerLeftBtn"), flankerRightBtn: $("flankerRightBtn"),
@@ -1362,7 +1363,7 @@
     ufovOpenBtn: $("ufovOpenBtn"), ufovBestHint: $("ufovBestHint"), ufovReady: $("ufovReady"),
     ufovReadyBackToHome: $("ufovReadyBackToHome"), ufovLengthRow: $("ufovLengthRow"),
     ufovAdvanced: $("ufovAdvanced"), ufovBgColorPicker: $("ufovBgColorPicker"), ufovBgIntensitySlider: $("ufovBgIntensitySlider"),
-    ufovBgIntensityValue: $("ufovBgIntensityValue"), ufovBgContrastHint: $("ufovBgContrastHint"),
+    ufovBgIntensityValue: $("ufovBgIntensityValue"), ufovBgContrastHint: $("ufovBgContrastHint"), ufovBgMasterStatus: $("ufovBgMasterStatus"),
     ufovReadyBestHint: $("ufovReadyBestHint"), ufovReadyStartBtn: $("ufovReadyStartBtn"),
     ufovPlayer: $("ufovPlayer"), ufovStage: $("ufovStage"), ufovHint: $("ufovHint"), ufovField: $("ufovField"),
     ufovCenterEl: $("ufovCenterEl"),
@@ -1380,7 +1381,7 @@
     posnerOpenBtn: $("posnerOpenBtn"), posnerBestHint: $("posnerBestHint"), posnerReady: $("posnerReady"),
     posnerReadyBackToHome: $("posnerReadyBackToHome"), posnerDifficultyRow: $("posnerDifficultyRow"),
     posnerAdvanced: $("posnerAdvanced"), posnerBgColorPicker: $("posnerBgColorPicker"), posnerBgIntensitySlider: $("posnerBgIntensitySlider"),
-    posnerBgIntensityValue: $("posnerBgIntensityValue"), posnerBgContrastHint: $("posnerBgContrastHint"),
+    posnerBgIntensityValue: $("posnerBgIntensityValue"), posnerBgContrastHint: $("posnerBgContrastHint"), posnerBgMasterStatus: $("posnerBgMasterStatus"),
     posnerReadyBestHint: $("posnerReadyBestHint"), posnerReadyStartBtn: $("posnerReadyStartBtn"),
     posnerPlayer: $("posnerPlayer"), posnerStage: $("posnerStage"), posnerHint: $("posnerHint"),
     posnerLeftBtn: $("posnerLeftBtn"), posnerRightBtn: $("posnerRightBtn"),
@@ -1394,7 +1395,7 @@
     simonOpenBtn: $("simonOpenBtn"), simonBestHint: $("simonBestHint"), simonReady: $("simonReady"),
     simonReadyBackToHome: $("simonReadyBackToHome"), simonDifficultyRow: $("simonDifficultyRow"),
     simonAdvanced: $("simonAdvanced"), simonBgColorPicker: $("simonBgColorPicker"), simonBgIntensitySlider: $("simonBgIntensitySlider"),
-    simonBgIntensityValue: $("simonBgIntensityValue"), simonBgContrastHint: $("simonBgContrastHint"),
+    simonBgIntensityValue: $("simonBgIntensityValue"), simonBgContrastHint: $("simonBgContrastHint"), simonBgMasterStatus: $("simonBgMasterStatus"),
     simonReadyBestHint: $("simonReadyBestHint"), simonReadyStartBtn: $("simonReadyStartBtn"),
     simonPlayer: $("simonPlayer"), simonStage: $("simonStage"), simonHint: $("simonHint"),
     simonSlotLeft: $("simonSlotLeft"), simonSlotRight: $("simonSlotRight"), simonDotLeft: $("simonDotLeft"), simonDotRight: $("simonDotRight"),
@@ -1408,7 +1409,7 @@
     searchOpenBtn: $("searchOpenBtn"), searchBestHint: $("searchBestHint"), searchReady: $("searchReady"),
     searchReadyBackToHome: $("searchReadyBackToHome"), searchLengthRow: $("searchLengthRow"),
     searchAdvanced: $("searchAdvanced"), searchBgColorPicker: $("searchBgColorPicker"), searchBgIntensitySlider: $("searchBgIntensitySlider"),
-    searchBgIntensityValue: $("searchBgIntensityValue"), searchBgContrastHint: $("searchBgContrastHint"),
+    searchBgIntensityValue: $("searchBgIntensityValue"), searchBgContrastHint: $("searchBgContrastHint"), searchBgMasterStatus: $("searchBgMasterStatus"),
     searchReadyBestHint: $("searchReadyBestHint"), searchReadyStartBtn: $("searchReadyStartBtn"),
     searchPlayer: $("searchPlayer"), searchStage: $("searchStage"), searchHint: $("searchHint"), searchItemsLayer: $("searchItemsLayer"),
     searchPauseOverlay: $("searchPauseOverlay"), searchPauseBgSlider: $("searchPauseBgSlider"), searchPauseBgValue: $("searchPauseBgValue"),
@@ -1420,7 +1421,7 @@
     abOpenBtn: $("abOpenBtn"), abBestHint: $("abBestHint"), abReady: $("abReady"),
     abReadyBackToHome: $("abReadyBackToHome"), abDifficultyRow: $("abDifficultyRow"),
     abAdvanced: $("abAdvanced"), abBgColorPicker: $("abBgColorPicker"), abBgIntensitySlider: $("abBgIntensitySlider"),
-    abBgIntensityValue: $("abBgIntensityValue"), abBgContrastHint: $("abBgContrastHint"),
+    abBgIntensityValue: $("abBgIntensityValue"), abBgContrastHint: $("abBgContrastHint"), abBgMasterStatus: $("abBgMasterStatus"),
     abReadyBestHint: $("abReadyBestHint"), abReadyStartBtn: $("abReadyStartBtn"),
     abPlayer: $("abPlayer"), abStage: $("abStage"), abHint: $("abHint"), abStreamChar: $("abStreamChar"),
     abT1Panel: $("abT1Panel"), abT1Btn0: $("abT1Btn0"), abT1Btn1: $("abT1Btn1"), abT1Btn2: $("abT1Btn2"), abT1Btn3: $("abT1Btn3"),
@@ -1434,7 +1435,7 @@
     antizipOpenBtn: $("antizipOpenBtn"), antizipBestHint: $("antizipBestHint"), antizipReady: $("antizipReady"),
     antizipReadyBackToHome: $("antizipReadyBackToHome"), antizipDifficultyRow: $("antizipDifficultyRow"),
     antizipAdvanced: $("antizipAdvanced"), antizipBgColorPicker: $("antizipBgColorPicker"), antizipBgIntensitySlider: $("antizipBgIntensitySlider"),
-    antizipBgIntensityValue: $("antizipBgIntensityValue"), antizipBgContrastHint: $("antizipBgContrastHint"),
+    antizipBgIntensityValue: $("antizipBgIntensityValue"), antizipBgContrastHint: $("antizipBgContrastHint"), antizipBgMasterStatus: $("antizipBgMasterStatus"),
     antizipReadyBestHint: $("antizipReadyBestHint"), antizipReadyStartBtn: $("antizipReadyStartBtn"),
     antizipPlayer: $("antizipPlayer"), antizipStage: $("antizipStage"), antizipHint: $("antizipHint"),
     antizipTrack: $("antizipTrack"), antizipTargetZone: $("antizipTargetZone"), antizipBall: $("antizipBall"),
@@ -1448,7 +1449,7 @@
     hickOpenBtn: $("hickOpenBtn"), hickBestHint: $("hickBestHint"), hickReady: $("hickReady"),
     hickReadyBackToHome: $("hickReadyBackToHome"), hickLengthRow: $("hickLengthRow"),
     hickAdvanced: $("hickAdvanced"), hickBgColorPicker: $("hickBgColorPicker"), hickBgIntensitySlider: $("hickBgIntensitySlider"),
-    hickBgIntensityValue: $("hickBgIntensityValue"), hickBgContrastHint: $("hickBgContrastHint"),
+    hickBgIntensityValue: $("hickBgIntensityValue"), hickBgContrastHint: $("hickBgContrastHint"), hickBgMasterStatus: $("hickBgMasterStatus"),
     hickReadyBestHint: $("hickReadyBestHint"), hickReadyStartBtn: $("hickReadyStartBtn"),
     hickPlayer: $("hickPlayer"), hickStage: $("hickStage"), hickHint: $("hickHint"), hickBoxesGrid: $("hickBoxesGrid"),
     hickPauseOverlay: $("hickPauseOverlay"), hickResumeBtn: $("hickResumeBtn"),
@@ -1461,7 +1462,7 @@
     corsiOpenBtn: $("corsiOpenBtn"), corsiBestHint: $("corsiBestHint"), corsiReady: $("corsiReady"),
     corsiReadyBackToHome: $("corsiReadyBackToHome"), corsiDifficultyRow: $("corsiDifficultyRow"),
     corsiAdvanced: $("corsiAdvanced"), corsiBgColorPicker: $("corsiBgColorPicker"), corsiBgIntensitySlider: $("corsiBgIntensitySlider"),
-    corsiBgIntensityValue: $("corsiBgIntensityValue"), corsiBgContrastHint: $("corsiBgContrastHint"),
+    corsiBgIntensityValue: $("corsiBgIntensityValue"), corsiBgContrastHint: $("corsiBgContrastHint"), corsiBgMasterStatus: $("corsiBgMasterStatus"),
     corsiReadyBestHint: $("corsiReadyBestHint"), corsiReadyStartBtn: $("corsiReadyStartBtn"),
     corsiPlayer: $("corsiPlayer"), corsiStage: $("corsiStage"), corsiHint: $("corsiHint"), corsiBoard: $("corsiBoard"),
     corsiPauseOverlay: $("corsiPauseOverlay"), corsiResumeBtn: $("corsiResumeBtn"),
@@ -1474,7 +1475,7 @@
     reaktReadyBackToHome: $("reaktReadyBackToHome"), reaktModeRow: $("reaktModeRow"), reaktDifficultyRow: $("reaktDifficultyRow"),
     reaktLengthRow: $("reaktLengthRow"), reaktReadyBestHint: $("reaktReadyBestHint"), reaktReadyStartBtn: $("reaktReadyStartBtn"),
     reaktAdvanced: $("reaktAdvanced"), reaktBgColorPicker: $("reaktBgColorPicker"), reaktBgIntensitySlider: $("reaktBgIntensitySlider"),
-    reaktBgIntensityValue: $("reaktBgIntensityValue"), reaktBgContrastHint: $("reaktBgContrastHint"),
+    reaktBgIntensityValue: $("reaktBgIntensityValue"), reaktBgContrastHint: $("reaktBgContrastHint"), reaktBgMasterStatus: $("reaktBgMasterStatus"),
     reaktPlayer: $("reaktPlayer"), reaktStage: $("reaktStage"), reaktHint: $("reaktHint"), reaktField: $("reaktField"),
     reaktPauseOverlay: $("reaktPauseOverlay"), reaktResumeBtn: $("reaktResumeBtn"),
     reaktPauseBgColorPicker: $("reaktPauseBgColorPicker"), reaktPauseBgContrastHint: $("reaktPauseBgContrastHint"), reaktPauseBgSlider: $("reaktPauseBgSlider"), reaktPauseBgValue: $("reaktPauseBgValue"),
@@ -1485,7 +1486,7 @@
     tsOpenBtn: $("tsOpenBtn"), tsBestHint: $("tsBestHint"), tsReady: $("tsReady"),
     tsReadyBackToHome: $("tsReadyBackToHome"), tsDifficultyRow: $("tsDifficultyRow"),
     tsAdvanced: $("tsAdvanced"), tsBgColorPicker: $("tsBgColorPicker"), tsBgIntensitySlider: $("tsBgIntensitySlider"),
-    tsBgIntensityValue: $("tsBgIntensityValue"), tsBgContrastHint: $("tsBgContrastHint"),
+    tsBgIntensityValue: $("tsBgIntensityValue"), tsBgContrastHint: $("tsBgContrastHint"), tsBgMasterStatus: $("tsBgMasterStatus"),
     tsReadyBestHint: $("tsReadyBestHint"), tsReadyStartBtn: $("tsReadyStartBtn"),
     tsPlayer: $("tsPlayer"), tsStage: $("tsStage"), tsCue: $("tsCue"), tsStimulus: $("tsStimulus"), tsHint: $("tsHint"),
     tsLeftBtn: $("tsLeftBtn"), tsRightBtn: $("tsRightBtn"),
@@ -1498,7 +1499,7 @@
     antiOpenBtn: $("antiOpenBtn"), antiBestHint: $("antiBestHint"), antiReady: $("antiReady"),
     antiReadyBackToHome: $("antiReadyBackToHome"), antiDifficultyRow: $("antiDifficultyRow"),
     antiAdvanced: $("antiAdvanced"), antiBgColorPicker: $("antiBgColorPicker"), antiBgIntensitySlider: $("antiBgIntensitySlider"),
-    antiBgIntensityValue: $("antiBgIntensityValue"), antiBgContrastHint: $("antiBgContrastHint"),
+    antiBgIntensityValue: $("antiBgIntensityValue"), antiBgContrastHint: $("antiBgContrastHint"), antiBgMasterStatus: $("antiBgMasterStatus"),
     antiReadyBestHint: $("antiReadyBestHint"), antiReadyStartBtn: $("antiReadyStartBtn"),
     antiPlayer: $("antiPlayer"), antiStage: $("antiStage"), antiRule: $("antiRule"), antiHint: $("antiHint"),
     antiSlotLeft: $("antiSlotLeft"), antiDotLeft: $("antiDotLeft"), antiSlotRight: $("antiSlotRight"), antiDotRight: $("antiDotRight"),
@@ -1532,7 +1533,7 @@
     alarmOpenBtn: $("alarmOpenBtn"), alarmBestHint: $("alarmBestHint"), alarmReady: $("alarmReady"),
     alarmReadyBackToHome: $("alarmReadyBackToHome"), alarmDifficultyRow: $("alarmDifficultyRow"),
     alarmBgColorPicker: $("alarmBgColorPicker"), alarmBgIntensitySlider: $("alarmBgIntensitySlider"),
-    alarmBgIntensityValue: $("alarmBgIntensityValue"), alarmBgContrastHint: $("alarmBgContrastHint"),
+    alarmBgIntensityValue: $("alarmBgIntensityValue"), alarmBgContrastHint: $("alarmBgContrastHint"), alarmBgMasterStatus: $("alarmBgMasterStatus"),
     alarmReadyBestHint: $("alarmReadyBestHint"), alarmReadyStartBtn: $("alarmReadyStartBtn"),
     alarmPlayer: $("alarmPlayer"), alarmStage: $("alarmStage"), alarmHint: $("alarmHint"), alarmFix: $("alarmFix"),
     alarmLeftBtn: $("alarmLeftBtn"), alarmRightBtn: $("alarmRightBtn"), alarmLeftDot: $("alarmLeftDot"), alarmRightDot: $("alarmRightDot"),
@@ -1545,7 +1546,7 @@
     vorlaufOpenBtn: $("vorlaufOpenBtn"), vorlaufBestHint: $("vorlaufBestHint"), vorlaufReady: $("vorlaufReady"),
     vorlaufReadyBackToHome: $("vorlaufReadyBackToHome"), vorlaufLengthRow: $("vorlaufLengthRow"),
     vorlaufBgColorPicker: $("vorlaufBgColorPicker"), vorlaufBgIntensitySlider: $("vorlaufBgIntensitySlider"),
-    vorlaufBgIntensityValue: $("vorlaufBgIntensityValue"), vorlaufBgContrastHint: $("vorlaufBgContrastHint"),
+    vorlaufBgIntensityValue: $("vorlaufBgIntensityValue"), vorlaufBgContrastHint: $("vorlaufBgContrastHint"), vorlaufBgMasterStatus: $("vorlaufBgMasterStatus"),
     vorlaufReadyBestHint: $("vorlaufReadyBestHint"), vorlaufReadyStartBtn: $("vorlaufReadyStartBtn"),
     vorlaufPlayer: $("vorlaufPlayer"), vorlaufStage: $("vorlaufStage"), vorlaufHint: $("vorlaufHint"),
     vorlaufTapzone: $("vorlaufTapzone"), vorlaufDot: $("vorlaufDot"),
@@ -1558,7 +1559,7 @@
     stopOpenBtn: $("stopOpenBtn"), stopBestHint: $("stopBestHint"), stopReady: $("stopReady"),
     stopReadyBackToHome: $("stopReadyBackToHome"), stopDifficultyRow: $("stopDifficultyRow"),
     stopBgColorPicker: $("stopBgColorPicker"), stopBgIntensitySlider: $("stopBgIntensitySlider"),
-    stopBgIntensityValue: $("stopBgIntensityValue"), stopBgContrastHint: $("stopBgContrastHint"),
+    stopBgIntensityValue: $("stopBgIntensityValue"), stopBgContrastHint: $("stopBgContrastHint"), stopBgMasterStatus: $("stopBgMasterStatus"),
     stopReadyBestHint: $("stopReadyBestHint"), stopReadyStartBtn: $("stopReadyStartBtn"),
     stopPlayer: $("stopPlayer"), stopStage: $("stopStage"), stopHint: $("stopHint"), stopArrow: $("stopArrow"),
     stopLeftBtn: $("stopLeftBtn"), stopRightBtn: $("stopRightBtn"),
@@ -1571,7 +1572,7 @@
     dsstOpenBtn: $("dsstOpenBtn"), dsstBestHint: $("dsstBestHint"), dsstReady: $("dsstReady"),
     dsstReadyBackToHome: $("dsstReadyBackToHome"), dsstLengthRow: $("dsstLengthRow"),
     dsstBgColorPicker: $("dsstBgColorPicker"), dsstBgIntensitySlider: $("dsstBgIntensitySlider"),
-    dsstBgIntensityValue: $("dsstBgIntensityValue"), dsstBgContrastHint: $("dsstBgContrastHint"),
+    dsstBgIntensityValue: $("dsstBgIntensityValue"), dsstBgContrastHint: $("dsstBgContrastHint"), dsstBgMasterStatus: $("dsstBgMasterStatus"),
     dsstReadyBestHint: $("dsstReadyBestHint"), dsstReadyStartBtn: $("dsstReadyStartBtn"),
     dsstPlayer: $("dsstPlayer"), dsstStage: $("dsstStage"), dsstHint: $("dsstHint"),
     dsstKeyRow: $("dsstKeyRow"), dsstDigit: $("dsstDigit"), dsstKeypad: $("dsstKeypad"),
@@ -1594,7 +1595,7 @@
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
-    rotationBgIntensityValue: $("rotationBgIntensityValue"), rotationBgContrastHint: $("rotationBgContrastHint"),
+    rotationBgIntensityValue: $("rotationBgIntensityValue"), rotationBgContrastHint: $("rotationBgContrastHint"), rotationBgMasterStatus: $("rotationBgMasterStatus"),
     rotationReadyBestHint: $("rotationReadyBestHint"), rotationReadyStartBtn: $("rotationReadyStartBtn"),
     rotationPlayer: $("rotationPlayer"), rotationStage: $("rotationStage"), rotationHint: $("rotationHint"),
     rotationCharEl: $("rotationCharEl"), rotationNormalBtn: $("rotationNormalBtn"), rotationMirroredBtn: $("rotationMirroredBtn"),
@@ -1607,7 +1608,7 @@
     merkOpenBtn: $("merkOpenBtn"), merkBestHint: $("merkBestHint"), merkReady: $("merkReady"),
     merkReadyBackToHome: $("merkReadyBackToHome"), merkDifficultyRow: $("merkDifficultyRow"),
     merkAdvanced: $("merkAdvanced"), merkBgColorPicker: $("merkBgColorPicker"), merkBgIntensitySlider: $("merkBgIntensitySlider"),
-    merkBgIntensityValue: $("merkBgIntensityValue"), merkBgContrastHint: $("merkBgContrastHint"),
+    merkBgIntensityValue: $("merkBgIntensityValue"), merkBgContrastHint: $("merkBgContrastHint"), merkBgMasterStatus: $("merkBgMasterStatus"),
     merkReadyBestHint: $("merkReadyBestHint"), merkReadyStartBtn: $("merkReadyStartBtn"),
     merkPlayer: $("merkPlayer"), merkStage: $("merkStage"), merkHint: $("merkHint"), merkField: $("merkField"),
     merkSameBtn: $("merkSameBtn"), merkChangedBtn: $("merkChangedBtn"),
@@ -1626,7 +1627,7 @@
     blitzAdvanced: $("blitzAdvanced"), blitzFlashSlider: $("blitzFlashSlider"), blitzFlashValue: $("blitzFlashValue"),
     blitzStartSlider: $("blitzStartSlider"), blitzStartValue: $("blitzStartValue"),
     blitzBgColorPicker: $("blitzBgColorPicker"), blitzBgIntensitySlider: $("blitzBgIntensitySlider"),
-    blitzBgIntensityValue: $("blitzBgIntensityValue"), blitzBgContrastHint: $("blitzBgContrastHint"),
+    blitzBgIntensityValue: $("blitzBgIntensityValue"), blitzBgContrastHint: $("blitzBgContrastHint"), blitzBgMasterStatus: $("blitzBgMasterStatus"),
     blitzBgSourceRow: $("blitzBgSourceRow"), blitzBgPresetGroup: $("blitzBgPresetGroup"), blitzBgPresetList: $("blitzBgPresetList"),
     blitzBgSaveBtn: $("blitzBgSaveBtn"), blitzBgSaveForm: $("blitzBgSaveForm"), blitzBgSaveNameInput: $("blitzBgSaveNameInput"),
     blitzBgSaveCancelBtn: $("blitzBgSaveCancelBtn"), blitzBgSaveConfirmBtn: $("blitzBgSaveConfirmBtn"),
@@ -1650,7 +1651,7 @@
     flashAdvanced: $("flashAdvanced"), flashStimulusSlider: $("flashStimulusSlider"), flashStimulusValue: $("flashStimulusValue"),
     flashIntervalSlider: $("flashIntervalSlider"), flashIntervalValue: $("flashIntervalValue"),
     flashBgColorPicker: $("flashBgColorPicker"), flashBgIntensitySlider: $("flashBgIntensitySlider"),
-    flashBgIntensityValue: $("flashBgIntensityValue"), flashBgContrastHint: $("flashBgContrastHint"),
+    flashBgIntensityValue: $("flashBgIntensityValue"), flashBgContrastHint: $("flashBgContrastHint"), flashBgMasterStatus: $("flashBgMasterStatus"),
     flashBgSourceRow: $("flashBgSourceRow"), flashBgPresetGroup: $("flashBgPresetGroup"), flashBgPresetList: $("flashBgPresetList"),
     flashBgSaveBtn: $("flashBgSaveBtn"), flashBgSaveForm: $("flashBgSaveForm"), flashBgSaveNameInput: $("flashBgSaveNameInput"),
     flashBgSaveCancelBtn: $("flashBgSaveCancelBtn"), flashBgSaveConfirmBtn: $("flashBgSaveConfirmBtn"),
@@ -1664,7 +1665,7 @@
     flashTrainingAdvanced: $("flashTrainingAdvanced"), flashTrainingStimulusSlider: $("flashTrainingStimulusSlider"), flashTrainingStimulusValue: $("flashTrainingStimulusValue"),
     flashTrainingIntervalSlider: $("flashTrainingIntervalSlider"), flashTrainingIntervalValue: $("flashTrainingIntervalValue"),
     flashTrainingBgColorPicker: $("flashTrainingBgColorPicker"), flashTrainingBgIntensitySlider: $("flashTrainingBgIntensitySlider"),
-    flashTrainingBgIntensityValue: $("flashTrainingBgIntensityValue"), flashTrainingBgContrastHint: $("flashTrainingBgContrastHint"),
+    flashTrainingBgIntensityValue: $("flashTrainingBgIntensityValue"), flashTrainingBgContrastHint: $("flashTrainingBgContrastHint"), flashTrainingBgMasterStatus: $("flashTrainingBgMasterStatus"),
     flashTrainingBgSourceRow: $("flashTrainingBgSourceRow"), flashTrainingBgPresetGroup: $("flashTrainingBgPresetGroup"), flashTrainingBgPresetList: $("flashTrainingBgPresetList"),
     flashTrainingBgSaveBtn: $("flashTrainingBgSaveBtn"), flashTrainingBgSaveForm: $("flashTrainingBgSaveForm"), flashTrainingBgSaveNameInput: $("flashTrainingBgSaveNameInput"),
     flashTrainingBgSaveCancelBtn: $("flashTrainingBgSaveCancelBtn"), flashTrainingBgSaveConfirmBtn: $("flashTrainingBgSaveConfirmBtn"),
@@ -1709,7 +1710,7 @@
     motTrackSlider: $("motTrackSlider"), motTrackValue: $("motTrackValue"),
     motHighlightSlider: $("motHighlightSlider"), motHighlightValue: $("motHighlightValue"),
     motBgColorPicker: $("motBgColorPicker"), motBgIntensitySlider: $("motBgIntensitySlider"),
-    motBgIntensityValue: $("motBgIntensityValue"), motBgContrastHint: $("motBgContrastHint"),
+    motBgIntensityValue: $("motBgIntensityValue"), motBgContrastHint: $("motBgContrastHint"), motBgMasterStatus: $("motBgMasterStatus"),
     motBgSourceRow: $("motBgSourceRow"), motBgPresetGroup: $("motBgPresetGroup"), motBgPresetList: $("motBgPresetList"),
     motBgSaveBtn: $("motBgSaveBtn"), motBgSaveForm: $("motBgSaveForm"), motBgSaveNameInput: $("motBgSaveNameInput"),
     motBgSaveCancelBtn: $("motBgSaveCancelBtn"), motBgSaveConfirmBtn: $("motBgSaveConfirmBtn"),
@@ -1728,7 +1729,7 @@
     motTrainingTrackSlider: $("motTrainingTrackSlider"), motTrainingTrackValue: $("motTrainingTrackValue"),
     motTrainingHighlightSlider: $("motTrainingHighlightSlider"), motTrainingHighlightValue: $("motTrainingHighlightValue"),
     motTrainingBgColorPicker: $("motTrainingBgColorPicker"), motTrainingBgIntensitySlider: $("motTrainingBgIntensitySlider"),
-    motTrainingBgIntensityValue: $("motTrainingBgIntensityValue"), motTrainingBgContrastHint: $("motTrainingBgContrastHint"),
+    motTrainingBgIntensityValue: $("motTrainingBgIntensityValue"), motTrainingBgContrastHint: $("motTrainingBgContrastHint"), motTrainingBgMasterStatus: $("motTrainingBgMasterStatus"),
     motTrainingBgSourceRow: $("motTrainingBgSourceRow"), motTrainingBgPresetGroup: $("motTrainingBgPresetGroup"), motTrainingBgPresetList: $("motTrainingBgPresetList"),
     motTrainingBgSaveBtn: $("motTrainingBgSaveBtn"), motTrainingBgSaveForm: $("motTrainingBgSaveForm"), motTrainingBgSaveNameInput: $("motTrainingBgSaveNameInput"),
     motTrainingBgSaveCancelBtn: $("motTrainingBgSaveCancelBtn"), motTrainingBgSaveConfirmBtn: $("motTrainingBgSaveConfirmBtn"),
@@ -1756,12 +1757,12 @@
     rememberTrainingStepSlider: $("rememberTrainingStepSlider"), rememberTrainingStepValue: $("rememberTrainingStepValue"),
     rememberTrainingBestHint: $("rememberTrainingBestHint"), rememberTrainingStartBtn: $("rememberTrainingStartBtn"),
     rememberBgColorPicker: $("rememberBgColorPicker"), rememberBgIntensitySlider: $("rememberBgIntensitySlider"),
-    rememberBgIntensityValue: $("rememberBgIntensityValue"), rememberBgContrastHint: $("rememberBgContrastHint"),
+    rememberBgIntensityValue: $("rememberBgIntensityValue"), rememberBgContrastHint: $("rememberBgContrastHint"), rememberBgMasterStatus: $("rememberBgMasterStatus"),
     rememberBgSourceRow: $("rememberBgSourceRow"), rememberBgPresetGroup: $("rememberBgPresetGroup"), rememberBgPresetList: $("rememberBgPresetList"),
     rememberBgSaveBtn: $("rememberBgSaveBtn"), rememberBgSaveForm: $("rememberBgSaveForm"), rememberBgSaveNameInput: $("rememberBgSaveNameInput"),
     rememberBgSaveCancelBtn: $("rememberBgSaveCancelBtn"), rememberBgSaveConfirmBtn: $("rememberBgSaveConfirmBtn"),
     rememberTrainingBgColorPicker: $("rememberTrainingBgColorPicker"), rememberTrainingBgIntensitySlider: $("rememberTrainingBgIntensitySlider"),
-    rememberTrainingBgIntensityValue: $("rememberTrainingBgIntensityValue"), rememberTrainingBgContrastHint: $("rememberTrainingBgContrastHint"),
+    rememberTrainingBgIntensityValue: $("rememberTrainingBgIntensityValue"), rememberTrainingBgContrastHint: $("rememberTrainingBgContrastHint"), rememberTrainingBgMasterStatus: $("rememberTrainingBgMasterStatus"),
     rememberTrainingBgSourceRow: $("rememberTrainingBgSourceRow"), rememberTrainingBgPresetGroup: $("rememberTrainingBgPresetGroup"), rememberTrainingBgPresetList: $("rememberTrainingBgPresetList"),
     rememberTrainingBgSaveBtn: $("rememberTrainingBgSaveBtn"), rememberTrainingBgSaveForm: $("rememberTrainingBgSaveForm"), rememberTrainingBgSaveNameInput: $("rememberTrainingBgSaveNameInput"),
     rememberTrainingBgSaveCancelBtn: $("rememberTrainingBgSaveCancelBtn"), rememberTrainingBgSaveConfirmBtn: $("rememberTrainingBgSaveConfirmBtn"),
@@ -1844,7 +1845,7 @@
     comboNameInput: $("comboNameInput"), comboAddGrid: $("comboAddGrid"), comboBlockCount: $("comboBlockCount"),
     comboBlockList: $("comboBlockList"), comboEmptyHint: $("comboEmptyHint"), comboStartBtn: $("comboStartBtn"), comboSaveBtn: $("comboSaveBtn"),
     comboSaveForm: $("comboSaveForm"), comboSaveCancelBtn: $("comboSaveCancelBtn"), comboSaveConfirmBtn: $("comboSaveConfirmBtn"),
-    comboTransition: $("comboTransition"), comboTransitionTitle: $("comboTransitionTitle"), comboTransitionMeta: $("comboTransitionMeta"), comboTransitionBtn: $("comboTransitionBtn"),
+    comboTransition: $("comboTransition"), comboTransitionTitle: $("comboTransitionTitle"), comboTransitionMeta: $("comboTransitionMeta"), comboTransitionBtn: $("comboTransitionBtn"), comboTransitionCountdown: $("comboTransitionCountdown"),
     comboDonePanel: $("comboDonePanel"), comboDoneSummary: $("comboDoneSummary"), comboRating: $("comboRating"),
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
@@ -2589,26 +2590,53 @@
     () => ({ prefs: antiPrefs, key: ANTI_PREFS_KEY, save: saveAntiPrefsToStorage }),
     () => ({ prefs: dsstPrefs, key: DSST_PREFS_KEY, save: saveDsstPrefsToStorage }),
   ];
-  // Applies the Master default to every target above whose OWN raw saved
-  // data never had a bgColorKey at all (a true "never customized" check -
-  // re-reads storage directly rather than trusting the in-memory prefs
-  // object, which already carries its own built-in fallback colour by the
-  // time this could ever run). Never touches a target that already has its
-  // own explicit choice. Safe/cheap to call repeatedly - called once at
-  // load (covers exercises added since the client last set this) and again
-  // every time the client changes the Master default itself.
+  // Applies the Master default to every target above that's still
+  // "following" it (target.prefs.bgCustom !== true) - never touches a
+  // target the client explicitly customized. Safe/cheap to call
+  // repeatedly - called once at load (covers exercises added since the
+  // client last set this) and again every time the client changes the
+  // Master default, resets a single exercise, or resets all of them.
+  //
+  // bgCustom itself is migrated here, once per target, the first time
+  // this ever runs on it: a save from before bgCustom existed is treated
+  // as customized if it already had an explicit colour in raw storage
+  // (preserves the pre-existing "never silently override a real choice"
+  // guarantee for anyone who set a colour before this flag existed),
+  // otherwise as still-following. Re-reading raw storage only for this
+  // one-time migration, not on every call, is why bgCustom lives on the
+  // in-memory prefs object afterwards rather than being re-derived from
+  // storage each time - storage alone can't tell a customization apart
+  // from an old seeded value once one has ever been written into it.
   function applyMasterBgDefaultEverywhere() {
-    if (!masterPrefs.defaultBgColorKey || !STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey]) return;
     MASTER_BG_TARGETS.forEach((factory) => {
       let target;
       try { target = factory(); } catch (e) { return; }
-      let raw;
-      try { raw = readJSON(target.key, null); } catch (e) { return; }
-      if (raw && raw.bgColorKey != null) return;
+      if (typeof target.prefs.bgCustom !== "boolean") {
+        let raw;
+        try { raw = readJSON(target.key, null); } catch (e) { raw = null; }
+        target.prefs.bgCustom = !!(raw && raw.bgColorKey != null);
+      }
+      if (target.prefs.bgCustom) return;
+      if (!masterPrefs.defaultBgColorKey || !STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey]) return;
       target.prefs.bgColorKey = masterPrefs.defaultBgColorKey;
       target.prefs.bgIntensity = masterPrefs.defaultBgIntensity;
       try { target.save(); } catch (e) {}
     });
+  }
+  // Global "Alle eigenen Hintergrundfarben zurücksetzen" (Master-
+  // Einstellungen): clears bgCustom and drops intensity to 0 for every
+  // target, then re-seeds from the live Master default via the function
+  // above - same effect as tapping "Auf Standard zurücksetzen" on every
+  // exercise at once.
+  function resetAllBgToMasterDefault() {
+    MASTER_BG_TARGETS.forEach((factory) => {
+      let target;
+      try { target = factory(); } catch (e) { return; }
+      target.prefs.bgCustom = false;
+      target.prefs.bgIntensity = 0;
+      try { target.save(); } catch (e) {}
+    });
+    applyMasterBgDefaultEverywhere();
   }
   // Every exercise's own `applyXBg()` (Remember, Blitz, Flash, MOT, and all
   // 17 Test-Bereich exercises) was the exact same four lines with only the
@@ -2623,9 +2651,34 @@
     };
   }
   function wireBgIntensityControl(store, refs, onChange, transferSelfId) {
-    function apply(colorKey, intensity) {
+    // bgCustom marks whether the CLIENT explicitly chose this exercise's
+    // current colour/intensity (true - a real pick, a "Wie bei X"/saved-
+    // preset transfer) vs it's still following the Master-Einstellungen
+    // cascade (false - never touched here, or explicitly reset back to
+    // following via "Auf Standard zurücksetzen"/"Wie in den Master-
+    // Einstellungen"). Every existing call to apply() below is a genuine
+    // customization, so custom defaults to true; only the Master-transfer
+    // button passes false. This is what both applyMasterBgDefaultEverywhere()
+    // (never re-seeds a bgCustom target) and the "Master aktiv" hint below
+    // key off - see the client's own ask in CLAUDE.md for why a boolean
+    // flag replaced the earlier "raw storage has no bgColorKey" check
+    // (that signal is destroyed the moment a value is ever seeded/written).
+    function apply(colorKey, intensity, custom) {
       if (colorKey != null) store.bgColorKey = colorKey;
       if (intensity != null) store.bgIntensity = intensity;
+      store.bgCustom = custom !== false;
+      onChange();
+      sync();
+    }
+    // "Auf Standard zurücksetzen": clears the customization and drops
+    // intensity back to 0 (no background - the shipped default for every
+    // exercise; the client's own words: "auch wenn der Hintergrund meist
+    // weiß sein wird"). applyMasterBgDefaultEverywhere() then immediately
+    // re-seeds it from the live Master default, if one is set.
+    function resetToDefault() {
+      store.bgCustom = false;
+      store.bgIntensity = 0;
+      applyMasterBgDefaultEverywhere();
       onChange();
       sync();
     }
@@ -2663,7 +2716,7 @@
             const btn = document.createElement("button");
             btn.className = "choice";
             btn.innerHTML = `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${hex};margin-right:6px;vertical-align:-1px"></span>Wie in den Master-Einstellungen`;
-            btn.addEventListener("click", () => apply(masterPrefs.defaultBgColorKey, masterPrefs.defaultBgIntensity));
+            btn.addEventListener("click", () => apply(masterPrefs.defaultBgColorKey, masterPrefs.defaultBgIntensity, false));
             t.sourceRow.appendChild(btn);
           }
         } catch (e) {}
@@ -2681,6 +2734,44 @@
       (refs.hintEls || []).forEach((el) => {
         el.hidden = !tip;
         el.textContent = tip || "";
+      });
+      // "Master aktiv" / "Zurücksetzen" - mutually exclusive, rendered into
+      // the same slot: whether this exercise currently has its own
+      // explicit choice (offer a reset) or is following the Master
+      // default (say so, with a shortcut back to Master-Einstellungen).
+      // Built via createElement rather than innerHTML - this exact string
+      // shape (a "data-foo" boolean attribute on a <button>, inside a
+      // wrapping element, past certain preceding text) tripped a genuine
+      // Chromium HTML-parser quirk during testing (reproduced even on a
+      // blank page with no app code involved - it mangled the attribute
+      // into `data-foo"=""`, breaking the querySelector right after), so
+      // side-stepping innerHTML here entirely is the robust fix, not a
+      // workaround for anything in this codebase. Wrapped in try/catch
+      // for the same early-module-init TDZ reason as the "Wie in den
+      // Master-Einstellungen" button above.
+      (refs.masterStatusEls || []).forEach((el) => {
+        try {
+          el.innerHTML = "";
+          if (store.bgCustom) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "text-link small";
+            btn.textContent = "Auf Standard zurücksetzen";
+            btn.addEventListener("click", resetToDefault);
+            el.appendChild(btn);
+          } else if (masterPrefs.defaultBgColorKey) {
+            const wrap = document.createElement("div");
+            wrap.className = "group-help";
+            wrap.appendChild(document.createTextNode("Master-Einstellungen aktiv – "));
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "text-link small";
+            btn.textContent = "zu den Einstellungen";
+            btn.addEventListener("click", () => openMasterSettings());
+            wrap.appendChild(btn);
+            el.appendChild(wrap);
+          }
+        } catch (e) { el.innerHTML = ""; }
       });
       renderTransfer();
     }
@@ -3028,6 +3119,7 @@
     sliders: [els.bgIntensitySlider, els.periphPauseBgSlider],
     valueEls: [els.bgIntensityValue, els.periphPauseBgValue],
     hintEls: [els.bgContrastHint, els.periphPauseBgContrastHint],
+    masterStatusEls: [els.bgMasterStatus],
     transfer: [{
       sourceRow: els.bgSourceRow, presetGroup: els.bgPresetGroup, presetList: els.bgPresetList,
       saveBtn: els.bgSaveBtn, form: els.bgSaveForm, nameInput: els.bgSaveNameInput,
@@ -4798,7 +4890,7 @@
   // be an inert checkbox list, not a real feature).
   const CVD_KEYS = ["rotgruen", "blaugelb", "voll"];
   const LIMB_KEYS = ["armL", "armR", "legL", "legR"];
-  const masterPrefs = { colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0 };
+  const masterPrefs = { colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20 };
   function loadMasterPrefs() {
     const saved = readJSON(MASTER_PREFS_KEY, null);
     if (saved && typeof saved === "object") {
@@ -4831,6 +4923,7 @@
     if (typeof masterPrefs.hearing !== "boolean") masterPrefs.hearing = false;
     if (masterPrefs.defaultBgColorKey != null && !STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey]) masterPrefs.defaultBgColorKey = null;
     if (!Number.isFinite(masterPrefs.defaultBgIntensity) || masterPrefs.defaultBgIntensity < 0 || masterPrefs.defaultBgIntensity > 1) masterPrefs.defaultBgIntensity = 0;
+    if (!Number.isFinite(masterPrefs.defaultPauseS) || masterPrefs.defaultPauseS < 0 || masterPrefs.defaultPauseS > 180) masterPrefs.defaultPauseS = 20;
     // Persist immediately so a migrated (or just-cleaned-up) shape actually
     // lands on disk right away, rather than silently staying in the old
     // shape in storage until the client happens to touch some toggle -
@@ -4843,7 +4936,21 @@
   // Feineinstellung that was never explicitly customized - also covers an
   // exercise added since the client last touched this default (e.g. by the
   // autonomous Test-Bereich routine), not just ones visited right now.
-  applyMasterBgDefaultEverywhere();
+  // Deferred (not called synchronously here) because MASTER_BG_TARGETS'
+  // lazy factories for every domain declared later in this file (which is
+  // most of them - Test-Bereich, Blitz/Flash/MOT) would still throw a TDZ
+  // error this early, well before module init has run that far down the
+  // file - applyMasterBgDefaultEverywhere() already tolerates that
+  // per-target (skips and retries whenever it's next called), but this
+  // was the ONLY call guaranteed to happen before the client ever opens
+  // anything, so those domains' bgCustom migration was silently skipped
+  // for an entire session unless something else (e.g. touching the
+  // Master default itself) happened to call this again first - a
+  // setTimeout(...,0) defers just long enough for every const below this
+  // line to finish being declared (synchronous module-init always
+  // completes before any deferred callback runs), so this one call
+  // reaches every domain correctly on every single page load.
+  setTimeout(applyMasterBgDefaultEverywhere, 0);
 
   // Colour-vision presets: today only Go/No-Go has a genuine red/green
   // discrimination signal (every other exercise's colour is either neutral,
@@ -4906,6 +5013,14 @@
     saveMasterPrefs();
     syncMasterBgUI();
   });
+  // Bulk version of the per-exercise "Auf Standard zurücksetzen" button -
+  // confirmed first, same as clearHistory()'s "Verlauf löschen", since it
+  // touches every exercise's customization at once.
+  els.masterBgResetAllBtn.addEventListener("click", () => {
+    if (!confirm("Alle eigenen Hintergrundfarben zurücksetzen? Jede Übung folgt danach wieder der Master-Vorgabe (bzw. hat keinen Hintergrund, falls keine Master-Vorgabe gesetzt ist).")) return;
+    resetAllBgToMasterDefault();
+    syncMasterBgUI();
+  });
   els.masterBgIntensitySlider.addEventListener("input", () => {
     masterPrefs.defaultBgIntensity = Number(els.masterBgIntensitySlider.value);
     saveMasterPrefs();
@@ -4921,6 +5036,29 @@
     const tip = masterPrefs.defaultBgColorKey ? bgContrastHintText(masterPrefs.defaultBgColorKey, masterPrefs.defaultBgIntensity) : null;
     els.masterBgContrastHint.hidden = !tip;
     els.masterBgContrastHint.textContent = tip || "";
+  }
+
+  // ---- Standard-Pause zwischen Übungen: a starting value only (not a
+  // silent cascade like the bg-colour default above) - every place that
+  // actually uses a pause (Kombi-Baukasten block transitions, Cardio's
+  // "Pause danach" per Aktivität) reads masterPrefs.defaultPauseS live as
+  // its own fallback whenever it has no explicit value of its own, rather
+  // than this writing into every existing pause value the way
+  // applyMasterBgDefaultEverywhere() does - there's no pre-existing
+  // "never touched" state to migrate (a combo draft/Cardio item either
+  // has its own explicit pauseAfterS or it doesn't), so a live fallback
+  // read is simpler and just as correct. Client's own reasoning: pause
+  // length genuinely depends on the exercise (changing equipment, getting
+  // into position), so this is a starting point per new pause, always
+  // freely overridable, never forced.
+  els.masterPauseSlider.addEventListener("input", () => {
+    masterPrefs.defaultPauseS = Number(els.masterPauseSlider.value);
+    saveMasterPrefs();
+    syncMasterPauseUI();
+  });
+  function syncMasterPauseUI() {
+    els.masterPauseSlider.value = masterPrefs.defaultPauseS;
+    els.masterPauseValue.textContent = fmtSeconds(masterPrefs.defaultPauseS);
   }
 
   // ---- Exercise compatibility: greyed out + marked, not hidden ----
@@ -5003,7 +5141,7 @@
   let masterSettingsReturnFocus = null;
   function openMasterSettings() {
     masterSettingsReturnFocus = document.activeElement;
-    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); syncMasterBgUI(); renderMasterCodeHistory();
+    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); syncMasterBgUI(); syncMasterPauseUI(); renderMasterCodeHistory();
     els.masterSettingsSheet.hidden = false;
     focusFirstIn(els.masterSettingsSheet);
   }
@@ -6151,6 +6289,7 @@
     sliders: [els.rememberBgIntensitySlider, els.rememberTrainingBgIntensitySlider, els.rememberPauseBgSlider],
     valueEls: [els.rememberBgIntensityValue, els.rememberTrainingBgIntensityValue, els.rememberPauseBgValue],
     hintEls: [els.rememberBgContrastHint, els.rememberTrainingBgContrastHint, els.rememberPauseBgContrastHint],
+    masterStatusEls: [els.rememberBgMasterStatus, els.rememberTrainingBgMasterStatus],
     transfer: [
       {
         sourceRow: els.rememberBgSourceRow, presetGroup: els.rememberBgPresetGroup, presetList: els.rememberBgPresetList,
@@ -6811,6 +6950,7 @@
     sliders: [els.blitzBgIntensitySlider, els.blitzPauseBgSlider],
     valueEls: [els.blitzBgIntensityValue, els.blitzPauseBgValue],
     hintEls: [els.blitzBgContrastHint, els.blitzPauseBgContrastHint],
+    masterStatusEls: [els.blitzBgMasterStatus],
     transfer: [{
       sourceRow: els.blitzBgSourceRow, presetGroup: els.blitzBgPresetGroup, presetList: els.blitzBgPresetList,
       saveBtn: els.blitzBgSaveBtn, form: els.blitzBgSaveForm, nameInput: els.blitzBgSaveNameInput,
@@ -7269,6 +7409,7 @@
     sliders: [els.flashBgIntensitySlider, els.flashTrainingBgIntensitySlider, els.flashPauseBgSlider],
     valueEls: [els.flashBgIntensityValue, els.flashTrainingBgIntensityValue, els.flashPauseBgValue],
     hintEls: [els.flashBgContrastHint, els.flashTrainingBgContrastHint, els.flashPauseBgContrastHint],
+    masterStatusEls: [els.flashBgMasterStatus, els.flashTrainingBgMasterStatus],
     transfer: [
       {
         sourceRow: els.flashBgSourceRow, presetGroup: els.flashBgPresetGroup, presetList: els.flashBgPresetList,
@@ -8122,6 +8263,7 @@
     sliders: [els.motBgIntensitySlider, els.motTrainingBgIntensitySlider, els.motPauseBgSlider],
     valueEls: [els.motBgIntensityValue, els.motTrainingBgIntensityValue, els.motPauseBgValue],
     hintEls: [els.motBgContrastHint, els.motTrainingBgContrastHint, els.motPauseBgContrastHint],
+    masterStatusEls: [els.motBgMasterStatus, els.motTrainingBgMasterStatus],
     transfer: [
       {
         sourceRow: els.motBgSourceRow, presetGroup: els.motBgPresetGroup, presetList: els.motBgPresetList,
@@ -9607,6 +9749,27 @@
           `<button class="circuit-step" data-int="${i}" data-field="offS" data-dir="1" aria-label="länger">+</button></div>` +
           `</div>` : "");
       els.cardioList.appendChild(row);
+      // Pause after this activity, before the next one - not shown after
+      // the last item. Same fallback-to-Master-default + explicit-once-
+      // touched behaviour as the Kombi-Baukasten's own pause rows (and
+      // reuses the same CSS classes for a consistent look).
+      if (i < items.length - 1) {
+        const pauseS = item.pauseAfterS ?? masterPrefs.defaultPauseS;
+        const pauseRow = document.createElement("div");
+        pauseRow.className = "combo-pause-row";
+        pauseRow.innerHTML =
+          `<span class="slider-label">Pause danach</span>` +
+          `<input type="range" class="combo-pause-slider" min="0" max="180" step="5" value="${pauseS}" aria-label="Pause nach Aktivität ${i + 1}">` +
+          `<span class="slider-value">${esc(fmtSeconds(pauseS))}</span>`;
+        const slider = pauseRow.querySelector(".combo-pause-slider");
+        const valueEl = pauseRow.querySelector(".slider-value");
+        slider.addEventListener("input", () => {
+          item.pauseAfterS = Number(slider.value);
+          valueEl.textContent = fmtSeconds(item.pauseAfterS);
+        });
+        slider.addEventListener("change", () => saveCardioPrefs());
+        els.cardioList.appendChild(pauseRow);
+      }
     });
     els.cardioList.querySelectorAll(".circuit-step[data-i]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -9661,7 +9824,7 @@
   const cardioSavedStore = makePresetStore(CARDIO_SAVED_KEY);
   function renderCardioSaved() {
     renderPresetList(cardioSavedStore, els.cardioSavedList, els.cardioSavedGroup, null,
-      (e) => `${e.items.length} Aktivität${e.items.length === 1 ? "" : "en"} · ca. ${fmtCardioDuration(e.items.reduce((s, it) => s + it.durationS, 0))}`,
+      (e) => `${e.items.length} Aktivität${e.items.length === 1 ? "" : "en"} · ca. ${fmtCardioDuration(cardioItemsSeconds(e.items))}`,
       (entry) => {
         cardioPrefs.items = entry.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null }));
         saveCardioPrefs();
@@ -9749,7 +9912,13 @@
   // addon config needed (see the note further down at CARDIO_GUEST_TYPES). ----
   let cardioProgram = null; // { def, code, key, title } - set for a coach-authored run
   let cardioOriginBundle = null; // { def, code } - set when opened from a bundle overview
-  function cardioItemsSeconds(items) { return items.reduce((s, b) => s + b.durationS, 0); }
+  // Includes the interleaved pauses in the estimate (same convention as
+  // Workout's own restS/setRestS total-seconds calculations) - matches
+  // what withCardioPauses()/finishCardio() actually add up to at playback
+  // time, so "ca. X Min" previews stay accurate.
+  function cardioItemsSeconds(items) {
+    return items.reduce((s, b, i) => s + b.durationS + (i < items.length - 1 ? (b.pauseAfterS ?? masterPrefs.defaultPauseS) : 0), 0);
+  }
 
   function openCardioBundleOverview(bundleDef, code) {
     els.cardioBundleTitle.textContent = bundleDef.name || "Deine Cardio-Einheiten";
@@ -9984,15 +10153,40 @@
     cardioState.nextGuestAt = performance.now() + (intervalMinS + Math.random() * (intervalMaxS - intervalMinS)) * 1000;
   }
 
+  // Interleaves a pause pseudo-item ({ pause: true, durationS }) after
+  // every activity except the last, so cardioTick()'s existing "advance
+  // once durationS elapses" loop handles pauses for free - no separate
+  // state machine needed. Falls back to the Master default whenever an
+  // activity has no explicit pauseAfterS of its own (same as the Kombi-
+  // Baukasten's per-block pauses); a pause of 0s is simply left out.
+  function withCardioPauses(items) {
+    const out = [];
+    items.forEach((it, i) => {
+      out.push(it);
+      if (i < items.length - 1) {
+        const pauseS = it.pauseAfterS ?? masterPrefs.defaultPauseS;
+        if (pauseS > 0) out.push({ pause: true, durationS: pauseS });
+      }
+    });
+    return out;
+  }
   function startStandaloneCardio(items) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.cardioPlayer.hidden = false;
     lastCardioItems = items;
-    cardioState = { items, index: 0, blockStartTime: performance.now(), nextGuestAt: null };
+    cardioState = { items: withCardioPauses(items), realCount: items.length, index: 0, blockStartTime: performance.now(), nextGuestAt: null };
     scheduleNextCardioGuest();
     requestWakeLock();
     cardioRaf = requestAnimationFrame(cardioTick);
+  }
+  // 1-based count of REAL (non-pause) activities reached by position idx
+  // in an interleaved items array - used for the "Aktivität N von M"
+  // progress label, which must count only real activities, not pauses.
+  function cardioRealPos(items, idx) {
+    let n = 0;
+    for (let i = 0; i <= idx && i < items.length; i++) { if (!items[i].pause) n++; }
+    return n;
   }
   function startCardioNow() {
     if (!cardioPrefs.items.length) return;
@@ -10021,12 +10215,26 @@
       cardioRaf = requestAnimationFrame(cardioTick);
       return;
     }
+    if (block.pause) {
+      const nextBlock = cardioState.items[cardioState.index + 1];
+      const nextAct = nextBlock ? findCardioActivity(nextBlock.activity) : null;
+      els.cardioActivityTitle.textContent = "Pause";
+      els.cardioActivityLabel.textContent = nextAct ? `Als Nächstes: ${nextAct.name}` : "";
+      els.cardioActivityLabel.hidden = !nextAct;
+      els.cardioCountdown.textContent = fmtClock(block.durationS - blockElapsed);
+      els.cardioBlockProgress.textContent = nextAct ? `vor Aktivität ${cardioRealPos(cardioState.items, cardioState.index + 1)} von ${cardioState.realCount}` : "";
+      els.cardioPhaseLabel.hidden = true;
+      els.cardioSkipBtn.textContent = "Pause überspringen »";
+      cardioRaf = requestAnimationFrame(cardioTick);
+      return;
+    }
+    els.cardioSkipBtn.textContent = "Nächste Aktivität »";
     const act = findCardioActivity(block.activity);
     els.cardioActivityTitle.textContent = act.name;
     els.cardioActivityLabel.textContent = block.label || "";
     els.cardioActivityLabel.hidden = !block.label;
     els.cardioCountdown.textContent = fmtClock(block.durationS - blockElapsed);
-    els.cardioBlockProgress.textContent = `Aktivität ${cardioState.index + 1} von ${cardioState.items.length}`;
+    els.cardioBlockProgress.textContent = `Aktivität ${cardioRealPos(cardioState.items, cardioState.index)} von ${cardioState.realCount}`;
     const phase = cardioPhaseFor(block, blockElapsed);
     els.cardioPhaseLabel.hidden = !phase;
     if (phase) els.cardioPhaseLabel.textContent = phase === "on" ? "Belastung" : "Erholung";
@@ -10082,6 +10290,13 @@
   els.cardioSkipBtn.addEventListener("click", () => {
     if (!cardioState) return;
     cardioState.index++;
+    // "Nächste Aktivität" pressed DURING a real activity should land on
+    // the next REAL activity, not on the pause marker now inserted right
+    // before it - a client explicitly skipping ahead clearly doesn't want
+    // a pause first either. Pressed during the pause itself ("Pause
+    // überspringen"), this is a no-op: a pause is never followed by
+    // another pause, so index already points at a real activity.
+    if (cardioState.items[cardioState.index] && cardioState.items[cardioState.index].pause) cardioState.index++;
     cardioState.blockStartTime = performance.now();
   });
   function abortCardio() {
@@ -10104,17 +10319,24 @@
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
     cardioRaf = null;
     const items = cardioState.items;
+    const realCount = cardioState.realCount;
+    // totalS deliberately includes the interleaved pause durations too
+    // (same convention Workout's own restS/setRestS already uses for its
+    // total-seconds calculations) - the pause is real session time, not
+    // discounted. Everything else below needs the REAL activities only,
+    // not the pause pseudo-items mixed in.
     const totalS = items.reduce((s, b) => s + b.durationS, 0);
+    const realItems = items.filter((b) => !b.pause);
     releaseWakeLock();
     cardioState = null;
     if (comboProgram) { advanceComboProgram(totalS); return; }
     els.cardioPlayer.hidden = true;
-    const names = [...new Set(items.map((b) => findCardioActivity(b.activity).name))].join(", ");
+    const names = [...new Set(realItems.map((b) => findCardioActivity(b.activity).name))].join(", ");
     const id = cardioProgram
       ? addHistory({ kind: "cardio-plan", title: cardioProgram.title, progKey: cardioProgram.key, seconds: Math.round(totalS), note: names })
       : addHistory({ kind: "cardio", title: "Cardio", seconds: Math.round(totalS), note: names });
     renderRating(els.cardioRating, id);
-    els.cardioDoneSummary.textContent = `${exerciseCountLabel(items.length)} · ${fmtMinutes(totalS)} Training`;
+    els.cardioDoneSummary.textContent = `${exerciseCountLabel(realCount)} · ${fmtMinutes(totalS)} Training`;
     els.cardioDoneBackBtn.textContent = cardioProgram && cardioOriginBundle ? "Zurück zu meinen Einheiten" : "Zur Übersicht";
     els.cardioDonePanel.hidden = false;
   }
@@ -10223,22 +10445,47 @@
       startComboBlock(idx + 1); // unknown domain - skip rather than get stuck
     }
   }
-  function showComboTransition(nextBlock, onContinue) {
+  // The pause between two blocks - a real rest period (change equipment,
+  // get into position for the next exercise), not just a cosmetic beat.
+  // Length comes from the block that just finished (pauseAfterS, set per
+  // block in the Kombi-Baukasten's own block list), falling back to the
+  // Master-Einstellungen default whenever that block has no explicit
+  // value of its own. Always skippable via the same button that already
+  // existed here (previously a fixed, silent 4s delay with no visible
+  // countdown) - a genuinely long rest needs a visible countdown so the
+  // client can see how much is actually left, not just an unlabelled wait.
+  let comboTransitionInterval = null;
+  function showComboTransition(nextBlock, pauseS, onContinue) {
     hideAllPlayers();
+    if (comboTransitionTimer) clearTimeout(comboTransitionTimer);
+    if (comboTransitionInterval) clearInterval(comboTransitionInterval);
+    if (!(pauseS > 0)) { onContinue(); return; }
     els.comboTransitionTitle.textContent = comboBlockLabel(nextBlock);
     els.comboTransitionMeta.textContent = comboBlockMeta(nextBlock);
     els.comboTransition.hidden = false;
-    if (comboTransitionTimer) clearTimeout(comboTransitionTimer);
-    const go = () => { if (comboTransitionTimer) clearTimeout(comboTransitionTimer); els.comboTransition.hidden = true; onContinue(); };
+    let remaining = pauseS;
+    els.comboTransitionCountdown.textContent = fmtClock(remaining);
+    const go = () => {
+      clearTimeout(comboTransitionTimer);
+      clearInterval(comboTransitionInterval);
+      els.comboTransition.hidden = true;
+      onContinue();
+    };
     els.comboTransitionBtn.onclick = go;
-    comboTransitionTimer = setTimeout(go, 4000);
+    comboTransitionInterval = setInterval(() => {
+      remaining -= 1;
+      els.comboTransitionCountdown.textContent = fmtClock(remaining);
+    }, 1000);
+    comboTransitionTimer = setTimeout(go, pauseS * 1000);
   }
   function advanceComboProgram(playedS) {
     if (!comboProgram) return;
     comboProgram.totalPlayedS += playedS;
+    const finishedBlock = comboProgram.def.blocks[comboProgram.blockIndex];
     const nextIdx = comboProgram.blockIndex + 1;
     if (nextIdx >= comboProgram.def.blocks.length) { finishComboProgram(); return; }
-    showComboTransition(comboProgram.def.blocks[nextIdx], () => startComboBlock(nextIdx));
+    const pauseS = finishedBlock.pauseAfterS ?? masterPrefs.defaultPauseS;
+    showComboTransition(comboProgram.def.blocks[nextIdx], pauseS, () => startComboBlock(nextIdx));
   }
   function finishComboProgram() {
     hideAllPlayers();
@@ -10367,6 +10614,29 @@
       rm.addEventListener("click", () => { comboDraftBlocks.splice(i, 1); renderComboBlockList(); });
       row.appendChild(rm);
       els.comboBlockList.appendChild(row);
+      // Pause after this block, before the next one - not shown after the
+      // very last block (nothing follows it). Falls back live to the
+      // Master default whenever this block has no explicit value of its
+      // own yet; dragging the slider sets an explicit value on the block,
+      // which then never falls back again, matching the client's own
+      // reasoning that the right length genuinely depends on the exercise
+      // (changing equipment, getting into position).
+      if (i < comboDraftBlocks.length - 1) {
+        const pauseS = block.pauseAfterS ?? masterPrefs.defaultPauseS;
+        const pauseRow = document.createElement("div");
+        pauseRow.className = "combo-pause-row";
+        pauseRow.innerHTML =
+          `<span class="slider-label">Pause danach</span>` +
+          `<input type="range" class="combo-pause-slider" min="0" max="180" step="5" value="${pauseS}" aria-label="Pause nach Baustein ${i + 1}">` +
+          `<span class="slider-value">${esc(fmtSeconds(pauseS))}</span>`;
+        const slider = pauseRow.querySelector(".combo-pause-slider");
+        const valueEl = pauseRow.querySelector(".slider-value");
+        slider.addEventListener("input", () => {
+          block.pauseAfterS = Number(slider.value);
+          valueEl.textContent = fmtSeconds(block.pauseAfterS);
+        });
+        els.comboBlockList.appendChild(pauseRow);
+      }
     });
   }
   function renderComboSaved() {
@@ -10457,6 +10727,7 @@
     sliders: [els.gngBgIntensitySlider, els.gngPauseBgSlider],
     valueEls: [els.gngBgIntensityValue, els.gngPauseBgValue],
     hintEls: [els.gngBgContrastHint, els.gngPauseBgContrastHint],
+    masterStatusEls: [els.gngBgMasterStatus],
   }, () => { saveGngPrefsToStorage(); applyGngBg(); });
 
   const GNG_BEST_KEY = "fwmc-gng-best-v1"; // { [difficulty]: bestAccuracyPct }
@@ -10731,6 +11002,7 @@
     sliders: [els.testNbackBgIntensitySlider, els.testNbackPauseBgSlider],
     valueEls: [els.testNbackBgIntensityValue, els.testNbackPauseBgValue],
     hintEls: [els.testNbackBgContrastHint, els.testNbackPauseBgContrastHint],
+    masterStatusEls: [els.testNbackBgMasterStatus],
   }, () => { saveTestNbackPrefsToStorage(); applyTestNbackBg(); });
 
   const TEST_NBACK_BEST_KEY = "fwmc-test-nback-best-v1"; // plain number: highest N level ever played to the end of a block
@@ -11006,6 +11278,7 @@
     sliders: [els.trailBgIntensitySlider, els.trailPauseBgSlider],
     valueEls: [els.trailBgIntensityValue, els.trailPauseBgValue],
     hintEls: [els.trailBgContrastHint, els.trailPauseBgContrastHint],
+    masterStatusEls: [els.trailBgMasterStatus],
   }, () => { saveTrailPrefsToStorage(); applyTrailBg(); });
 
   // Best time is kept per Teil+Schwierigkeit combo (lower = better), and only
@@ -11321,6 +11594,7 @@
     sliders: [els.flankerBgIntensitySlider, els.flankerPauseBgSlider],
     valueEls: [els.flankerBgIntensityValue, els.flankerPauseBgValue],
     hintEls: [els.flankerBgContrastHint, els.flankerPauseBgContrastHint],
+    masterStatusEls: [els.flankerBgMasterStatus],
   }, () => { saveFlankerPrefsToStorage(); applyFlankerBg(); });
 
   const FLANKER_BEST_KEY = "fwmc-flanker-best-v1"; // { [difficulty]: bestAccuracyPct }
@@ -11643,6 +11917,7 @@
     sliders: [els.ufovBgIntensitySlider, els.ufovPauseBgSlider],
     valueEls: [els.ufovBgIntensityValue, els.ufovPauseBgValue],
     hintEls: [els.ufovBgContrastHint, els.ufovPauseBgContrastHint],
+    masterStatusEls: [els.ufovBgMasterStatus],
   }, () => { saveUfovPrefsToStorage(); applyUfovBg(); });
 
   // Best is keyed by length, LOWER is better here (a shorter exposure the
@@ -11995,6 +12270,7 @@
     sliders: [els.posnerBgIntensitySlider, els.posnerPauseBgSlider],
     valueEls: [els.posnerBgIntensityValue, els.posnerPauseBgValue],
     hintEls: [els.posnerBgContrastHint, els.posnerPauseBgContrastHint],
+    masterStatusEls: [els.posnerBgMasterStatus],
   }, () => { savePosnerPrefsToStorage(); applyPosnerBg(); });
 
   const POSNER_BEST_KEY = "fwmc-posner-best-v1"; // { [difficulty]: bestAccuracyPct }
@@ -12329,6 +12605,7 @@
     sliders: [els.alarmBgIntensitySlider, els.alarmPauseBgSlider],
     valueEls: [els.alarmBgIntensityValue, els.alarmPauseBgValue],
     hintEls: [els.alarmBgContrastHint, els.alarmPauseBgContrastHint],
+    masterStatusEls: [els.alarmBgMasterStatus],
   }, () => { saveAlarmPrefsToStorage(); applyAlarmBg(); });
 
   const ALARM_BEST_KEY = "fwmc-alarm-best-v1"; // { [difficulty]: bestAccuracyPct }
@@ -12660,6 +12937,7 @@
     sliders: [els.vorlaufBgIntensitySlider, els.vorlaufPauseBgSlider],
     valueEls: [els.vorlaufBgIntensityValue, els.vorlaufPauseBgValue],
     hintEls: [els.vorlaufBgContrastHint, els.vorlaufPauseBgContrastHint],
+    masterStatusEls: [els.vorlaufBgMasterStatus],
   }, () => { saveVorlaufPrefsToStorage(); applyVorlaufBg(); });
 
   const VORLAUF_BEST_KEY = "fwmc-vorlauf-best-v1"; // { [length]: bestMeanRtMs } - lower is better
@@ -12978,6 +13256,7 @@
     sliders: [els.stopBgIntensitySlider, els.stopPauseBgSlider],
     valueEls: [els.stopBgIntensityValue, els.stopPauseBgValue],
     hintEls: [els.stopBgContrastHint, els.stopPauseBgContrastHint],
+    masterStatusEls: [els.stopBgMasterStatus],
   }, () => { saveStopPrefsToStorage(); applyStopBg(); });
 
   const STOP_BEST_KEY = "fwmc-stop-best-v1"; // { [difficulty]: bestSsrtMs } - lower is better
@@ -13326,6 +13605,7 @@
     sliders: [els.dsstBgIntensitySlider, els.dsstPauseBgSlider],
     valueEls: [els.dsstBgIntensityValue, els.dsstPauseBgValue],
     hintEls: [els.dsstBgContrastHint, els.dsstPauseBgContrastHint],
+    masterStatusEls: [els.dsstBgMasterStatus],
   }, () => { saveDsstPrefsToStorage(); applyDsstBg(); });
 
   const DSST_BEST_KEY = "fwmc-dsst-best-v1"; // { [length]: bestCorrectCount } - higher is better
@@ -13894,6 +14174,7 @@
     sliders: [els.rotationBgIntensitySlider, els.rotationPauseBgSlider],
     valueEls: [els.rotationBgIntensityValue, els.rotationPauseBgValue],
     hintEls: [els.rotationBgContrastHint, els.rotationPauseBgContrastHint],
+    masterStatusEls: [els.rotationBgMasterStatus],
   }, () => { saveRotationPrefsToStorage(); applyRotationBg(); });
 
   const ROTATION_BEST_KEY = "fwmc-rotation-best-v1"; // { [difficulty]: bestAccuracyPct }
@@ -14244,6 +14525,7 @@
     sliders: [els.merkBgIntensitySlider, els.merkPauseBgSlider],
     valueEls: [els.merkBgIntensityValue, els.merkPauseBgValue],
     hintEls: [els.merkBgContrastHint, els.merkPauseBgContrastHint],
+    masterStatusEls: [els.merkBgMasterStatus],
   }, () => { saveMerkPrefsToStorage(); applyMerkBg(); });
 
   const MERK_BEST_KEY = "fwmc-merk-best-v1"; // { [difficulty]: bestK (Pashler's K, one decimal) }
@@ -14626,6 +14908,7 @@
     sliders: [els.simonBgIntensitySlider, els.simonPauseBgSlider],
     valueEls: [els.simonBgIntensityValue, els.simonPauseBgValue],
     hintEls: [els.simonBgContrastHint, els.simonPauseBgContrastHint],
+    masterStatusEls: [els.simonBgMasterStatus],
   }, () => { saveSimonPrefsToStorage(); applySimonBg(); });
 
   const SIMON_BEST_KEY = "fwmc-simon-best-v1"; // { [difficulty]: bestAccuracyPct }
@@ -14958,6 +15241,7 @@
     sliders: [els.searchBgIntensitySlider, els.searchPauseBgSlider],
     valueEls: [els.searchBgIntensityValue, els.searchPauseBgValue],
     hintEls: [els.searchBgContrastHint, els.searchPauseBgContrastHint],
+    masterStatusEls: [els.searchBgMasterStatus],
   }, () => { saveSearchPrefsToStorage(); applySearchBg(); });
 
   const SEARCH_BEST_KEY = "fwmc-search-best-v1"; // { [length]: bestAccuracyPct }
@@ -15377,6 +15661,7 @@
     sliders: [els.abBgIntensitySlider, els.abPauseBgSlider],
     valueEls: [els.abBgIntensityValue, els.abPauseBgValue],
     hintEls: [els.abBgContrastHint, els.abPauseBgContrastHint],
+    masterStatusEls: [els.abBgMasterStatus],
   }, () => { saveAbPrefsToStorage(); applyAbBg(); });
 
   const AB_BEST_KEY = "fwmc-ab-best-v1"; // { [difficulty]: bestOverallAccuracyPct }
@@ -15785,6 +16070,7 @@
     sliders: [els.antizipBgIntensitySlider, els.antizipPauseBgSlider],
     valueEls: [els.antizipBgIntensityValue, els.antizipPauseBgValue],
     hintEls: [els.antizipBgContrastHint, els.antizipPauseBgContrastHint],
+    masterStatusEls: [els.antizipBgMasterStatus],
   }, () => { saveAntizipPrefsToStorage(); applyAntizipBg(); });
 
   // "Lower is better" (a timing-error score, same shape as UFOV's exposure-
@@ -16135,6 +16421,7 @@
     sliders: [els.hickBgIntensitySlider, els.hickPauseBgSlider],
     valueEls: [els.hickBgIntensityValue, els.hickPauseBgValue],
     hintEls: [els.hickBgContrastHint, els.hickPauseBgContrastHint],
+    masterStatusEls: [els.hickBgMasterStatus],
   }, () => { saveHickPrefsToStorage(); applyHickBg(); });
 
   const HICK_BEST_KEY = "fwmc-hick-best-v1"; // { [length]: bestSlopeMsPerBit } - lower is better
@@ -16473,6 +16760,7 @@
     sliders: [els.corsiBgIntensitySlider, els.corsiPauseBgSlider],
     valueEls: [els.corsiBgIntensityValue, els.corsiPauseBgValue],
     hintEls: [els.corsiBgContrastHint, els.corsiPauseBgContrastHint],
+    masterStatusEls: [els.corsiBgMasterStatus],
   }, () => { saveCorsiPrefsToStorage(); applyCorsiBg(); });
 
   const CORSI_BEST_KEY = "fwmc-corsi-best-v1"; // { [difficulty]: bestSpan } - higher is better
@@ -16821,6 +17109,7 @@
     sliders: [els.reaktBgIntensitySlider, els.reaktPauseBgSlider],
     valueEls: [els.reaktBgIntensityValue, els.reaktPauseBgValue],
     hintEls: [els.reaktBgContrastHint, els.reaktPauseBgContrastHint],
+    masterStatusEls: [els.reaktBgMasterStatus],
   }, () => { saveReaktPrefsToStorage(); applyReaktBg(); });
 
   // Best score is Treffer PRO MINUTE (hits/min) - deliberately length-
@@ -17196,6 +17485,7 @@
     sliders: [els.tsBgIntensitySlider, els.tsPauseBgSlider],
     valueEls: [els.tsBgIntensityValue, els.tsPauseBgValue],
     hintEls: [els.tsBgContrastHint, els.tsPauseBgContrastHint],
+    masterStatusEls: [els.tsBgMasterStatus],
   }, () => { saveTsPrefsToStorage(); applyTsBg(); });
 
   const TS_BEST_KEY = "fwmc-ts-best-v1"; // { [difficulty]: bestSwitchCostMs } - lower is better
@@ -17523,6 +17813,7 @@
     sliders: [els.antiBgIntensitySlider, els.antiPauseBgSlider],
     valueEls: [els.antiBgIntensityValue, els.antiPauseBgValue],
     hintEls: [els.antiBgContrastHint, els.antiPauseBgContrastHint],
+    masterStatusEls: [els.antiBgMasterStatus],
   }, () => { saveAntiPrefsToStorage(); applyAntiBg(); });
 
   const ANTI_BEST_KEY = "fwmc-anti-best-v1"; // { [difficulty]: bestHemmKostenMs } - lower is better, same shape as TS_BEST_KEY
