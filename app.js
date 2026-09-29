@@ -1027,6 +1027,9 @@
     if (block.domain === "workout") return workoutBlockLabel(block);
     if (block.domain === "visual") return EXERCISES[block.exercise] ? EXERCISES[block.exercise].title : block.exercise;
     if (block.domain === "nat") return `Remember · ${REMEMBER_MODES[block.mode] ? REMEMBER_MODES[block.mode].title : block.mode}`;
+    if (block.domain === "blitz") return "Blitz-Raster";
+    if (block.domain === "flash") return `Flash · ${flashModeTitle(block.mode)}`;
+    if (block.domain === "mot") return `MOT · ${motModeTitle(block.mode)}`;
     if (block.domain === "cardio") return `Cardio · ${exerciseCountLabel(block.items.length)}`;
     return block.domain;
   }
@@ -1037,6 +1040,9 @@
     if (block.domain === "workout") return workoutBlockMeta(block);
     if (block.domain === "visual") return fmtMinutes((block.duration ?? 60));
     if (block.domain === "nat") return fmtMinutes((block.duration ?? 60));
+    if (block.domain === "blitz") return fmtMinutes((block.duration ?? 60));
+    if (block.domain === "flash") return fmtMinutes((block.duration ?? 60));
+    if (block.domain === "mot") return fmtMinutes((block.duration ?? 60));
     if (block.domain === "cardio") return fmtMinutes(cardioItemsSeconds(block.items));
     return "";
   }
@@ -1047,6 +1053,9 @@
     if (block.domain === "workout") return workoutBlockSeconds(block);
     if (block.domain === "visual") return block.duration ?? 60;
     if (block.domain === "nat") return block.duration ?? 60;
+    if (block.domain === "blitz") return block.duration ?? 60;
+    if (block.domain === "flash") return block.duration ?? 60;
+    if (block.domain === "mot") return block.duration ?? 60;
     if (block.domain === "cardio") return cardioItemsSeconds(block.items);
     return 0;
   }
@@ -1060,6 +1069,11 @@
   const COMBO_PRESETS = {};
   const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Movement", visual: "Visual Training", workout: "Workout", cardio: "Cardio", nat: "NAT" };
   const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat"];
+  // Blitz-Raster/Flash Speicher Test/MOT-Fähigkeit render inside the same
+  // "NAT" group as Remember (all 4 are NAT sub-exercises) but need their
+  // own domain KEY for the block dispatch, since "nat" is Remember's alone
+  // - COMBO_DOMAIN_ORDER stays unchanged, these just add more entries to
+  // COMBO_CAPTURE_ENTRIES.nat below.
   // Domains (or, for Atemtraining, individual patterns within one domain)
   // with no fixed preset list - each "block" is captured by briefly
   // reopening that domain's own real settings screen (full fine-tune UI +
@@ -1087,6 +1101,15 @@
       { label: "Remember · Feste Positionen", meta: "Schwierigkeit & Dauer einstellen", open: () => openRememberComboCapture("fixed", null, null) },
       { label: "Remember · Bewegte Positionen", meta: "Schwierigkeit & Dauer einstellen", open: () => openRememberComboCapture("shuffle", null, null) },
       { label: "Remember · Trainingsmodus", meta: "gezielt bei einer Zahlenanzahl üben", open: () => openRememberComboCapture("training", null, null) },
+      { label: "Blitz-Raster", meta: "Raster, Bereiche & Dauer einstellen", open: () => openBlitzComboCapture(null, null) },
+      { label: "Flash · Konstant", meta: "Schwierigkeit & Dauer einstellen", open: () => openFlashComboCapture("constant", null, null) },
+      { label: "Flash · Steigend, direkt", meta: "Schwierigkeit & Dauer einstellen", open: () => openFlashComboCapture("climb", null, null) },
+      { label: "Flash · Steigend, mit Wiederholung", meta: "Schwierigkeit & Dauer einstellen", open: () => openFlashComboCapture("climbRepeat", null, null) },
+      { label: "Flash · Trainingsmodus", meta: "gezielt bei einer Zeichenfolge üben", open: () => openFlashComboCapture("training", null, null) },
+      { label: "MOT · Tempo steigt", meta: "Schwierigkeit & Dauer einstellen", open: () => openMotComboCapture("speed", null, null) },
+      { label: "MOT · Anzahl steigt", meta: "Schwierigkeit & Dauer einstellen", open: () => openMotComboCapture("count", null, null) },
+      { label: "MOT · Beides steigt", meta: "Schwierigkeit & Dauer einstellen", open: () => openMotComboCapture("both", null, null) },
+      { label: "MOT · Trainingsmodus", meta: "gezielt bei einer Stufe üben", open: () => openMotComboCapture("training", null, null) },
     ],
     // Only "Zirkel" (circuit) mode joins the combo builder for now - "reps"
     // mode (feste Sätze/Wiederholungen) has no client-facing settings
@@ -1113,6 +1136,9 @@
     visual: (block, i) => openVisualComboCapture(block.exercise, null, block, i),
     workout: (block, i) => openWorkoutComboCapture(block, i),
     nat: (block, i) => openRememberComboCapture(block.mode, block, i),
+    blitz: (block, i) => openBlitzComboCapture(block, i),
+    flash: (block, i) => openFlashComboCapture(block.mode, block, i),
+    mot: (block, i) => openMotComboCapture(block.mode, block, i),
   };
 
   // ---- Elements ----
@@ -1582,6 +1608,8 @@
     merkDonePanel: $("merkDonePanel"), merkDoneSummary: $("merkDoneSummary"), merkRating: $("merkRating"),
     merkAgainBtn: $("merkAgainBtn"), merkDoneBackBtn: $("merkDoneBackBtn"),
     blitzOpenBtn: $("blitzOpenBtn"), blitzBestHint: $("blitzBestHint"), blitzReady: $("blitzReady"),
+    blitzReadyTitle: $("blitzReadyTitle"), blitzReadyDesc: $("blitzReadyDesc"),
+    blitzComboDurationGroup: $("blitzComboDurationGroup"), blitzComboDurationSlider: $("blitzComboDurationSlider"), blitzComboDurationValue: $("blitzComboDurationValue"),
     blitzReadyBackToHome: $("blitzReadyBackToHome"), blitzGridSizeRow: $("blitzGridSizeRow"),
     blitzZoneGroup: $("blitzZoneGroup"), blitzZoneAllBtn: $("blitzZoneAllBtn"), blitzZoneGrid: $("blitzZoneGrid"), blitzZoneHint: $("blitzZoneHint"),
     blitzDifficultyRow: $("blitzDifficultyRow"), blitzDiffCustom: $("blitzDiffCustom"), blitzErrorRow: $("blitzErrorRow"),
@@ -1603,6 +1631,7 @@
     flashOpenConstant: $("flashOpenConstant"), flashOpenClimb: $("flashOpenClimb"), flashOpenClimbRepeat: $("flashOpenClimbRepeat"), flashOpenTraining: $("flashOpenTraining"),
     flashBestConstant: $("flashBestConstant"), flashBestClimb: $("flashBestClimb"), flashBestClimbRepeat: $("flashBestClimbRepeat"), flashBestTraining: $("flashBestTraining"),
     flashReady: $("flashReady"), flashReadyBackToHome: $("flashReadyBackToHome"), flashReadyTitle: $("flashReadyTitle"), flashReadyDesc: $("flashReadyDesc"),
+    flashComboDurationGroup: $("flashComboDurationGroup"), flashComboDurationSlider: $("flashComboDurationSlider"), flashComboDurationValue: $("flashComboDurationValue"),
     flashFieldRow: $("flashFieldRow"), flashAllBtn: $("flashAllBtn"), flashFieldHint: $("flashFieldHint"), flashZonesBtn: $("flashZonesBtn"), flashZoneGrid: $("flashZoneGrid"),
     flashDifficultyRow: $("flashDifficultyRow"), flashDiffCustom: $("flashDiffCustom"), flashErrorRow: $("flashErrorRow"),
     flashConstantGroup: $("flashConstantGroup"), flashConstantSlider: $("flashConstantSlider"), flashConstantValue: $("flashConstantValue"),
@@ -1617,6 +1646,7 @@
     flashBgSaveCancelBtn: $("flashBgSaveCancelBtn"), flashBgSaveConfirmBtn: $("flashBgSaveConfirmBtn"),
     flashReadyBestHint: $("flashReadyBestHint"), flashReadyStartBtn: $("flashReadyStartBtn"),
     flashTrainingReady: $("flashTrainingReady"), flashTrainingBackToHome: $("flashTrainingBackToHome"),
+    flashTrainingComboDurationGroup: $("flashTrainingComboDurationGroup"), flashTrainingComboDurationSlider: $("flashTrainingComboDurationSlider"), flashTrainingComboDurationValue: $("flashTrainingComboDurationValue"),
     flashTrainingStartSlider: $("flashTrainingStartSlider"), flashTrainingStartValue: $("flashTrainingStartValue"),
     flashTrainingProgressRow: $("flashTrainingProgressRow"),
     flashTrainingFieldRow: $("flashTrainingFieldRow"), flashTrainingAllBtn: $("flashTrainingAllBtn"), flashTrainingFieldHint: $("flashTrainingFieldHint"),
@@ -1653,6 +1683,7 @@
     motOpenTraining: $("motOpenTraining"), motBestTraining: $("motBestTraining"),
     motReady: $("motReady"), motReadyBackToHome: $("motReadyBackToHome"),
     motReadyTitle: $("motReadyTitle"), motReadyDesc: $("motReadyDesc"),
+    motComboDurationGroup: $("motComboDurationGroup"), motComboDurationSlider: $("motComboDurationSlider"), motComboDurationValue: $("motComboDurationValue"),
     motStyleRow: $("motStyleRow"), motColorPicker: $("motColorPicker"), motColorHint: $("motColorHint"),
     motTargetColorPicker: $("motTargetColorPicker"), motTargetColorHint: $("motTargetColorHint"),
     motDifficultyRow: $("motDifficultyRow"), motDiffCustom: $("motDiffCustom"),
@@ -1674,6 +1705,7 @@
     motBgSaveCancelBtn: $("motBgSaveCancelBtn"), motBgSaveConfirmBtn: $("motBgSaveConfirmBtn"),
     motReadyBestHint: $("motReadyBestHint"), motReadyStartBtn: $("motReadyStartBtn"),
     motTrainingReady: $("motTrainingReady"), motTrainingBackToHome: $("motTrainingBackToHome"),
+    motTrainingComboDurationGroup: $("motTrainingComboDurationGroup"), motTrainingComboDurationSlider: $("motTrainingComboDurationSlider"), motTrainingComboDurationValue: $("motTrainingComboDurationValue"),
     motTrainingObjectsSlider: $("motTrainingObjectsSlider"), motTrainingObjectsValue: $("motTrainingObjectsValue"),
     motTrainingTargetsSlider: $("motTrainingTargetsSlider"), motTrainingTargetsValue: $("motTrainingTargetsValue"),
     motTrainingSpeedStepSlider: $("motTrainingSpeedStepSlider"), motTrainingSpeedStepValue: $("motTrainingSpeedStepValue"),
@@ -6863,7 +6895,7 @@
       ? `Deine Bestleistung bei dieser Schwierigkeit: ${best}.`
       : "Noch keine Bestleistung bei dieser Schwierigkeit – leg los!";
   }
-  els.blitzOpenBtn.addEventListener("click", () => {
+  function openBlitzReady() {
     syncBlitzGridSizeUI();
     syncBlitzZoneUI();
     syncBlitzDifficultyUI();
@@ -6871,8 +6903,62 @@
     syncBlitzStartUI();
     syncBlitzBgUI();
     showScreen("blitzReady");
+  }
+  els.blitzOpenBtn.addEventListener("click", openBlitzReady);
+  els.blitzReadyBackToHome.addEventListener("click", () => {
+    if (comboBlitzCaptureOriginal) { exitBlitzComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("natHome");
   });
-  els.blitzReadyBackToHome.addEventListener("click", () => showScreen("natHome"));
+
+  // ---- Kombi-Baukasten capture, same pattern as Remember: Blitz-Raster
+  // has no natural end either (endless/progressive, only ever stops via
+  // "Beenden"), so a duration slider is added here too, visible only
+  // during capture. Blitz has just the one mode, so the capture UI is
+  // simpler than Remember's - one ready screen, one title override. ----
+  let comboBlitzCaptureOriginal = null;
+  let comboBlitzEditIndex = null;
+  let comboBlitzDurationS = 60;
+  function openBlitzComboCapture(existingBlock, editIndex) {
+    comboBlitzCaptureOriginal = { ...blitzPrefs, zones: blitzPrefs.zones.slice() };
+    comboBlitzEditIndex = editIndex ?? null;
+    comboBlitzDurationS = existingBlock ? (existingBlock.duration ?? 60) : 60;
+    if (existingBlock) {
+      blitzPrefs.gridSize = existingBlock.gridSize ?? blitzPrefs.gridSize;
+      blitzPrefs.zones = existingBlock.zones ? existingBlock.zones.slice() : blitzPrefs.zones;
+      blitzPrefs.startCount = existingBlock.startCount ?? blitzPrefs.startCount;
+    }
+    openBlitzReady();
+    els.blitzReadyTitle.textContent = "Baustein: Blitz-Raster";
+    els.blitzReadyDesc.textContent = "Stelle Raster, Bereiche und Dauer für diesen Kombi-Baustein ein.";
+    els.blitzComboDurationGroup.hidden = false;
+    els.blitzComboDurationSlider.value = comboBlitzDurationS;
+    els.blitzComboDurationValue.textContent = fmtSeconds(comboBlitzDurationS);
+    els.blitzReadyStartBtn.textContent = "Baustein übernehmen";
+  }
+  function exitBlitzComboCapture() {
+    if (comboBlitzCaptureOriginal) {
+      Object.assign(blitzPrefs, comboBlitzCaptureOriginal);
+      saveBlitzPrefsToStorage();
+      comboBlitzCaptureOriginal = null;
+    }
+    comboBlitzEditIndex = null;
+    els.blitzComboDurationGroup.hidden = true;
+    els.blitzReadyTitle.textContent = "Blitz-Raster";
+    els.blitzReadyDesc.textContent = "Mehrere Felder leuchten gleichzeitig kurz auf. Merke dir, welche es waren, und tippe sie danach an – die Reihenfolge spielt keine Rolle.";
+    els.blitzReadyStartBtn.textContent = "Training starten";
+  }
+  function commitBlitzComboCapture() {
+    const block = { domain: "blitz", duration: comboBlitzDurationS, gridSize: blitzPrefs.gridSize, zones: blitzPrefs.zones.slice(), startCount: blitzPrefs.startCount };
+    if (comboBlitzEditIndex != null) comboDraftBlocks[comboBlitzEditIndex] = block;
+    else comboDraftBlocks.push(block);
+    exitBlitzComboCapture();
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+  els.blitzComboDurationSlider.addEventListener("input", () => {
+    comboBlitzDurationS = Number(els.blitzComboDurationSlider.value);
+    els.blitzComboDurationValue.textContent = fmtSeconds(comboBlitzDurationS);
+  });
 
   // ---- Grid rendering + gameplay ----
   function pickRandomSubset(pool, count) {
@@ -6966,7 +7052,7 @@
     }
   }
   let blitzState = null;
-  function startBlitzGame() {
+  function startBlitzGame(opts) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.blitzPlayer.hidden = false;
@@ -6976,14 +7062,35 @@
     els.blitzPauseBtn.hidden = false;
     blitzState = {
       level: blitzPrefs.startCount, cleared: 0, phase: "reveal", lit: new Set(), tapped: new Set(), eligible: new Set(),
-      startTime: performance.now(), timer: null, gridSize: blitzPrefs.gridSize, zones: blitzPrefs.zones.slice(),
+      startTime: performance.now(), timer: null, comboDurationTimer: null, gridSize: blitzPrefs.gridSize, zones: blitzPrefs.zones.slice(),
       flashS: blitzPrefs.flashS, errorMode: blitzPrefs.errorMode, paused: false,
     };
     applyBlitzBg();
     requestWakeLock();
     blitzStartRound();
+    // Kombi block: Blitz-Raster has no natural end of its own, same as
+    // Remember - a Kombi block gives it a duration and cuts over to the
+    // next block when time is up.
+    if (opts && opts.comboDurationS) {
+      blitzState.comboDurationFiresAt = performance.now() + opts.comboDurationS * 1000;
+      blitzState.comboDurationTimer = setTimeout(finishBlitzCombo, opts.comboDurationS * 1000);
+    }
   }
-  els.blitzReadyStartBtn.addEventListener("click", startBlitzGame);
+  function finishBlitzCombo() {
+    if (!blitzState) return;
+    if (blitzState.timer) clearTimeout(blitzState.timer);
+    const playedS = (performance.now() - blitzState.startTime) / 1000;
+    blitzState = null;
+    els.blitzPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.blitzPlayer) document.exitFullscreen().catch(() => {});
+    els.blitzFsHint.hidden = true;
+    if (comboProgram) advanceComboProgram(playedS);
+  }
+  els.blitzReadyStartBtn.addEventListener("click", () => {
+    if (comboBlitzCaptureOriginal) { commitBlitzComboCapture(); return; }
+    startBlitzGame();
+  });
 
   // ---- Pause mid-game, live-adjust the background - same trick as
   // Remember's pause (cancel the pending timer, replay it with its exact
@@ -6997,6 +7104,11 @@
       blitzState.timer = null;
       blitzState.timerRemainingMs = Math.max(0, blitzState.timerFiresAt - blitzState.pausedAt);
     }
+    if (blitzState.comboDurationTimer) {
+      clearTimeout(blitzState.comboDurationTimer);
+      blitzState.comboDurationTimer = null;
+      blitzState.comboRemainingMs = Math.max(0, blitzState.comboDurationFiresAt - blitzState.pausedAt);
+    }
     syncBlitzBgUI();
     els.blitzPauseBtn.hidden = true;
     els.blitzPauseOverlay.hidden = false;
@@ -7009,6 +7121,11 @@
       scheduleBlitzTimer(blitzState.timerFn, blitzState.timerRemainingMs);
       blitzState.timerRemainingMs = null;
     }
+    if (blitzState.comboRemainingMs != null) {
+      blitzState.comboDurationFiresAt = performance.now() + blitzState.comboRemainingMs;
+      blitzState.comboDurationTimer = setTimeout(finishBlitzCombo, blitzState.comboRemainingMs);
+      blitzState.comboRemainingMs = null;
+    }
     els.blitzPauseOverlay.hidden = true;
     els.blitzPauseBtn.hidden = false;
   }
@@ -7020,12 +7137,16 @@
   function blitzStop() {
     if (!blitzState) return;
     if (blitzState.timer) clearTimeout(blitzState.timer);
+    if (blitzState.comboDurationTimer) clearTimeout(blitzState.comboDurationTimer);
     const state = blitzState;
     blitzState = null;
     els.blitzPauseOverlay.hidden = true;
     releaseWakeLock();
     if (document.fullscreenElement === els.blitzPlayer) document.exitFullscreen().catch(() => {});
     els.blitzFsHint.hidden = true;
+    // "Beenden" mid-Kombi quits the whole Kombi programme, not just this
+    // block - matches Remember's (and every other domain's) behaviour.
+    if (comboProgram) { abortComboProgram(); return; }
     if (state.cleared > 0) {
       const isRecord = saveBlitzBest(state.cleared);
       renderBlitzBest();
@@ -7445,16 +7566,85 @@
   els.flashOpenConstant.addEventListener("click", () => openFlashReady("constant"));
   els.flashOpenClimb.addEventListener("click", () => openFlashReady("climb"));
   els.flashOpenClimbRepeat.addEventListener("click", () => openFlashReady("climbRepeat"));
-  els.flashReadyBackToHome.addEventListener("click", () => showScreen("natHome"));
-  els.flashOpenTraining.addEventListener("click", () => {
+  els.flashReadyBackToHome.addEventListener("click", () => {
+    if (comboFlashCaptureOriginal) { exitFlashComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("natHome");
+  });
+  function openFlashTrainingReady() {
     syncFlashKindUI();
     syncFlashFieldUI();
     syncFlashTrainingUI();
     syncFlashBgUI();
     syncFlashFixUI();
     showScreen("flashTrainingReady");
+  }
+  els.flashOpenTraining.addEventListener("click", openFlashTrainingReady);
+  els.flashTrainingBackToHome.addEventListener("click", () => {
+    if (comboFlashCaptureOriginal) { exitFlashComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("natHome");
   });
-  els.flashTrainingBackToHome.addEventListener("click", () => showScreen("natHome"));
+
+  // ---- Kombi-Baukasten capture, same pattern as Remember: Flash Speicher
+  // Test has no natural end either (endless/progressive), so a duration
+  // slider is added here too, visible only during capture. 4 modes, same
+  // "shared ready screen for 3 + its own for training" split as Remember. ----
+  function flashModeTitle(mode) {
+    return mode === "constant" ? "Konstant" : mode === "climb" ? "Steigend, direkt" : mode === "climbRepeat" ? "Steigend, mit Wiederholung" : "Trainingsmodus";
+  }
+  let comboFlashCaptureOriginal = null;
+  let comboFlashEditIndex = null;
+  let comboFlashCaptureMode = null;
+  let comboFlashDurationS = 60;
+  function openFlashComboCapture(mode, existingBlock, editIndex) {
+    comboFlashCaptureOriginal = { ...flashPrefs, axes: flashPrefs.axes.slice(), zones: flashPrefs.zones.slice() };
+    comboFlashCaptureMode = mode;
+    comboFlashEditIndex = editIndex ?? null;
+    comboFlashDurationS = existingBlock ? (existingBlock.duration ?? 60) : 60;
+    if (mode === "training") {
+      openFlashTrainingReady();
+      els.flashTrainingComboDurationGroup.hidden = false;
+      els.flashTrainingComboDurationSlider.value = comboFlashDurationS;
+      els.flashTrainingComboDurationValue.textContent = fmtSeconds(comboFlashDurationS);
+      els.flashTrainingStartBtn.textContent = "Baustein übernehmen";
+    } else {
+      openFlashReady(mode);
+      els.flashReadyTitle.textContent = `Baustein: Flash · ${flashModeTitle(mode)}`;
+      els.flashReadyDesc.textContent = "Stelle Schwierigkeit und Dauer für diesen Kombi-Baustein ein.";
+      els.flashComboDurationGroup.hidden = false;
+      els.flashComboDurationSlider.value = comboFlashDurationS;
+      els.flashComboDurationValue.textContent = fmtSeconds(comboFlashDurationS);
+      els.flashReadyStartBtn.textContent = "Baustein übernehmen";
+    }
+  }
+  function exitFlashComboCapture() {
+    if (comboFlashCaptureOriginal) {
+      Object.assign(flashPrefs, comboFlashCaptureOriginal);
+      saveFlashPrefsToStorage();
+      comboFlashCaptureOriginal = null;
+    }
+    comboFlashEditIndex = null;
+    comboFlashCaptureMode = null;
+    els.flashComboDurationGroup.hidden = true;
+    els.flashTrainingComboDurationGroup.hidden = true;
+    els.flashReadyStartBtn.textContent = "Training starten";
+    els.flashTrainingStartBtn.textContent = "Training starten";
+  }
+  function commitFlashComboCapture() {
+    const block = { domain: "flash", mode: comboFlashCaptureMode, duration: comboFlashDurationS };
+    if (comboFlashEditIndex != null) comboDraftBlocks[comboFlashEditIndex] = block;
+    else comboDraftBlocks.push(block);
+    exitFlashComboCapture();
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+  els.flashComboDurationSlider.addEventListener("input", () => {
+    comboFlashDurationS = Number(els.flashComboDurationSlider.value);
+    els.flashComboDurationValue.textContent = fmtSeconds(comboFlashDurationS);
+  });
+  els.flashTrainingComboDurationSlider.addEventListener("input", () => {
+    comboFlashDurationS = Number(els.flashTrainingComboDurationSlider.value);
+    els.flashTrainingComboDurationValue.textContent = fmtSeconds(comboFlashDurationS);
+  });
 
   // ---- Round engine ----
   // Same {fx,fy} fractional positioning as Periph, so a number already
@@ -7649,7 +7839,7 @@
   let flashState = null;
   let lastFlashMode = null;
   let flashReturnScreen = "natHome";
-  function startFlashGame(mode) {
+  function startFlashGame(mode, opts) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.flashPlayer.hidden = false;
@@ -7664,7 +7854,7 @@
     const startCount = mode === "training" ? flashPrefs.trainingStart : flashPrefs.startCount;
     flashState = {
       mode, kind: flashPrefs.kind, count: startCount, constantCount: flashPrefs.constantCount, speedStep: 0, repsDone: 0, cleared: 0,
-      sequence: [], shownIndex: 0, typed: "", phase: "flash", timer: null,
+      sequence: [], shownIndex: 0, typed: "", phase: "flash", timer: null, comboDurationTimer: null,
       stimulusS: flashPrefs.stimulusS, intervalS: flashPrefs.intervalS, errorMode: flashPrefs.errorMode,
       axes: flashPrefs.axes.slice(), zones: flashPrefs.zones.slice(), useZones: flashPrefs.useZones,
       trainingProgress: flashPrefs.trainingProgress, startLevel: flashPrefs.startCount, trainingStartLevel: flashPrefs.trainingStart,
@@ -7675,9 +7865,35 @@
     renderFlashFixpoint();
     requestWakeLock();
     flashStartRound();
+    // Kombi block: Flash Speicher Test has no natural end of its own, same
+    // as Remember/Blitz-Raster.
+    if (opts && opts.comboDurationS) {
+      flashState.comboDurationFiresAt = performance.now() + opts.comboDurationS * 1000;
+      flashState.comboDurationTimer = setTimeout(finishFlashCombo, opts.comboDurationS * 1000);
+    }
   }
-  els.flashReadyStartBtn.addEventListener("click", () => startFlashGame(flashReadyMode));
-  els.flashTrainingStartBtn.addEventListener("click", () => startFlashGame("training"));
+  function finishFlashCombo() {
+    if (!flashState) return;
+    if (flashState.timer) clearTimeout(flashState.timer);
+    const playedS = (performance.now() - flashState.startTime) / 1000;
+    flashState = null;
+    els.flashPauseOverlay.hidden = true;
+    els.flashDigitEl.hidden = true;
+    els.flashInputPanel.hidden = true;
+    els.flashFixpointEl.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.flashPlayer) document.exitFullscreen().catch(() => {});
+    els.flashFsHint.hidden = true;
+    if (comboProgram) advanceComboProgram(playedS);
+  }
+  els.flashReadyStartBtn.addEventListener("click", () => {
+    if (comboFlashCaptureOriginal) { commitFlashComboCapture(); return; }
+    startFlashGame(flashReadyMode);
+  });
+  els.flashTrainingStartBtn.addEventListener("click", () => {
+    if (comboFlashCaptureOriginal) { commitFlashComboCapture(); return; }
+    startFlashGame("training");
+  });
 
   // ---- Pause mid-game, live-adjust the background - same trick as
   // Remember/Blitz-Raster's pause (cancel the pending timer, replay it
@@ -7691,6 +7907,11 @@
       flashState.timer = null;
       flashState.timerRemainingMs = Math.max(0, flashState.timerFiresAt - flashState.pausedAt);
     }
+    if (flashState.comboDurationTimer) {
+      clearTimeout(flashState.comboDurationTimer);
+      flashState.comboDurationTimer = null;
+      flashState.comboRemainingMs = Math.max(0, flashState.comboDurationFiresAt - flashState.pausedAt);
+    }
     syncFlashBgUI();
     els.flashPauseBtn.hidden = true;
     els.flashPauseOverlay.hidden = false;
@@ -7702,6 +7923,11 @@
     if (flashState.timerFn && flashState.timerRemainingMs != null) {
       scheduleFlashTimer(flashState.timerFn, flashState.timerRemainingMs);
       flashState.timerRemainingMs = null;
+    }
+    if (flashState.comboRemainingMs != null) {
+      flashState.comboDurationFiresAt = performance.now() + flashState.comboRemainingMs;
+      flashState.comboDurationTimer = setTimeout(finishFlashCombo, flashState.comboRemainingMs);
+      flashState.comboRemainingMs = null;
     }
     els.flashPauseOverlay.hidden = true;
     els.flashPauseBtn.hidden = false;
@@ -7715,6 +7941,7 @@
   function flashStop() {
     if (!flashState) return;
     if (flashState.timer) clearTimeout(flashState.timer);
+    if (flashState.comboDurationTimer) clearTimeout(flashState.comboDurationTimer);
     const state = flashState;
     flashState = null;
     els.flashPauseOverlay.hidden = true;
@@ -7724,6 +7951,9 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.flashPlayer) document.exitFullscreen().catch(() => {});
     els.flashFsHint.hidden = true;
+    // "Beenden" mid-Kombi quits the whole Kombi programme, not just this
+    // block - matches Remember/Blitz-Raster's behaviour.
+    if (comboProgram) { abortComboProgram(); return; }
     if (state.cleared > 0) {
       const isRecord = saveFlashBest(state.mode, state.cleared);
       renderFlashBests();
@@ -8102,15 +8332,84 @@
   els.motOpenSpeed.addEventListener("click", () => openMotReady("speed"));
   els.motOpenCount.addEventListener("click", () => openMotReady("count"));
   els.motOpenBoth.addEventListener("click", () => openMotReady("both"));
-  els.motReadyBackToHome.addEventListener("click", () => showScreen("natHome"));
-  els.motOpenTraining.addEventListener("click", () => {
+  els.motReadyBackToHome.addEventListener("click", () => {
+    if (comboMotCaptureOriginal) { exitMotComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("natHome");
+  });
+  function openMotTrainingReady() {
     syncMotStyleUI();
     syncMotColorUI();
     syncMotTrainingUI();
     syncMotBgUI();
     showScreen("motTrainingReady");
+  }
+  els.motOpenTraining.addEventListener("click", openMotTrainingReady);
+  els.motTrainingBackToHome.addEventListener("click", () => {
+    if (comboMotCaptureOriginal) { exitMotComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("natHome");
   });
-  els.motTrainingBackToHome.addEventListener("click", () => showScreen("natHome"));
+
+  // ---- Kombi-Baukasten capture, same pattern as Remember/Flash: MOT-
+  // Fähigkeit has no natural end either, so a duration slider is added
+  // here too, visible only during capture. Same "3 modes share a ready
+  // screen, training has its own" split. ----
+  function motModeTitle(mode) {
+    return mode === "speed" ? "Tempo steigt" : mode === "count" ? "Anzahl steigt" : mode === "both" ? "Beides steigt" : "Trainingsmodus";
+  }
+  let comboMotCaptureOriginal = null;
+  let comboMotEditIndex = null;
+  let comboMotCaptureMode = null;
+  let comboMotDurationS = 60;
+  function openMotComboCapture(mode, existingBlock, editIndex) {
+    comboMotCaptureOriginal = { ...motPrefs, colors: motPrefs.colors.slice(), targetColors: motPrefs.targetColors.slice() };
+    comboMotCaptureMode = mode;
+    comboMotEditIndex = editIndex ?? null;
+    comboMotDurationS = existingBlock ? (existingBlock.duration ?? 60) : 60;
+    if (mode === "training") {
+      openMotTrainingReady();
+      els.motTrainingComboDurationGroup.hidden = false;
+      els.motTrainingComboDurationSlider.value = comboMotDurationS;
+      els.motTrainingComboDurationValue.textContent = fmtSeconds(comboMotDurationS);
+      els.motTrainingStartBtn.textContent = "Baustein übernehmen";
+    } else {
+      openMotReady(mode);
+      els.motReadyTitle.textContent = `Baustein: MOT · ${motModeTitle(mode)}`;
+      els.motReadyDesc.textContent = "Stelle Schwierigkeit und Dauer für diesen Kombi-Baustein ein.";
+      els.motComboDurationGroup.hidden = false;
+      els.motComboDurationSlider.value = comboMotDurationS;
+      els.motComboDurationValue.textContent = fmtSeconds(comboMotDurationS);
+      els.motReadyStartBtn.textContent = "Baustein übernehmen";
+    }
+  }
+  function exitMotComboCapture() {
+    if (comboMotCaptureOriginal) {
+      Object.assign(motPrefs, comboMotCaptureOriginal);
+      saveMotPrefsToStorage();
+      comboMotCaptureOriginal = null;
+    }
+    comboMotEditIndex = null;
+    comboMotCaptureMode = null;
+    els.motComboDurationGroup.hidden = true;
+    els.motTrainingComboDurationGroup.hidden = true;
+    els.motReadyStartBtn.textContent = "Training starten";
+    els.motTrainingStartBtn.textContent = "Training starten";
+  }
+  function commitMotComboCapture() {
+    const block = { domain: "mot", mode: comboMotCaptureMode, duration: comboMotDurationS };
+    if (comboMotEditIndex != null) comboDraftBlocks[comboMotEditIndex] = block;
+    else comboDraftBlocks.push(block);
+    exitMotComboCapture();
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+  els.motComboDurationSlider.addEventListener("input", () => {
+    comboMotDurationS = Number(els.motComboDurationSlider.value);
+    els.motComboDurationValue.textContent = fmtSeconds(comboMotDurationS);
+  });
+  els.motTrainingComboDurationSlider.addEventListener("input", () => {
+    comboMotDurationS = Number(els.motTrainingComboDurationSlider.value);
+    els.motTrainingComboDurationValue.textContent = fmtSeconds(comboMotDurationS);
+  });
 
   // ---- Round engine ----
   function motEffectiveSpeed() { return motState.speed * Math.pow(MOT_SPEED_STEP_FACTOR, motState.speedStep); }
@@ -8365,7 +8664,7 @@
   let motState = null;
   let lastMotMode = null;
   let motReturnScreen = "natHome";
-  function startMotGame(mode) {
+  function startMotGame(mode, opts) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.motPlayer.hidden = false;
@@ -8386,14 +8685,38 @@
       trainingProgress: motPrefs.trainingProgress,
       speed: motPrefs.speed, trackS: motPrefs.trackS, highlightS: motPrefs.highlightS,
       errorMode: motPrefs.errorMode, style: motPrefs.style, colors: motPrefs.colors.slice(), targetColors: motPrefs.targetColors.slice(),
-      startTime: performance.now(), timer: null, raf: null, paused: false,
+      startTime: performance.now(), timer: null, comboDurationTimer: null, raf: null, paused: false,
     };
     applyMotBg();
     requestWakeLock();
     motStartRound();
+    // Kombi block: MOT-Fähigkeit has no natural end of its own, same as
+    // Remember/Blitz-Raster/Flash.
+    if (opts && opts.comboDurationS) {
+      motState.comboDurationFiresAt = performance.now() + opts.comboDurationS * 1000;
+      motState.comboDurationTimer = setTimeout(finishMotCombo, opts.comboDurationS * 1000);
+    }
   }
-  els.motReadyStartBtn.addEventListener("click", () => startMotGame(motReadyMode));
-  els.motTrainingStartBtn.addEventListener("click", () => startMotGame("training"));
+  function finishMotCombo() {
+    if (!motState) return;
+    if (motState.timer) clearTimeout(motState.timer);
+    if (motState.raf) cancelAnimationFrame(motState.raf);
+    const playedS = (performance.now() - motState.startTime) / 1000;
+    motState = null;
+    els.motPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.motPlayer) document.exitFullscreen().catch(() => {});
+    els.motFsHint.hidden = true;
+    if (comboProgram) advanceComboProgram(playedS);
+  }
+  els.motReadyStartBtn.addEventListener("click", () => {
+    if (comboMotCaptureOriginal) { commitMotComboCapture(); return; }
+    startMotGame(motReadyMode);
+  });
+  els.motTrainingStartBtn.addEventListener("click", () => {
+    if (comboMotCaptureOriginal) { commitMotComboCapture(); return; }
+    startMotGame("training");
+  });
 
   // ---- Pause mid-game, live-adjust the background - same trick as
   // Remember/Blitz/Flash's for the highlight/checking delays; the tracking
@@ -8410,6 +8733,11 @@
       motState.timer = null;
       motState.timerRemainingMs = Math.max(0, motState.timerFiresAt - motState.pausedAt);
     }
+    if (motState.comboDurationTimer) {
+      clearTimeout(motState.comboDurationTimer);
+      motState.comboDurationTimer = null;
+      motState.comboRemainingMs = Math.max(0, motState.comboDurationFiresAt - motState.pausedAt);
+    }
     syncMotBgUI();
     els.motPauseBtn.hidden = true;
     els.motPauseOverlay.hidden = false;
@@ -8423,6 +8751,11 @@
       scheduleMotTimer(motState.timerFn, motState.timerRemainingMs);
       motState.timerRemainingMs = null;
     }
+    if (motState.comboRemainingMs != null) {
+      motState.comboDurationFiresAt = performance.now() + motState.comboRemainingMs;
+      motState.comboDurationTimer = setTimeout(finishMotCombo, motState.comboRemainingMs);
+      motState.comboRemainingMs = null;
+    }
     els.motPauseOverlay.hidden = true;
     els.motPauseBtn.hidden = false;
   }
@@ -8434,6 +8767,7 @@
   function motStop() {
     if (!motState) return;
     if (motState.timer) clearTimeout(motState.timer);
+    if (motState.comboDurationTimer) clearTimeout(motState.comboDurationTimer);
     if (motState.raf) cancelAnimationFrame(motState.raf);
     const state = motState;
     motState = null;
@@ -8441,6 +8775,9 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.motPlayer) document.exitFullscreen().catch(() => {});
     els.motFsHint.hidden = true;
+    // "Beenden" mid-Kombi quits the whole Kombi programme, not just this
+    // block - matches Remember/Blitz/Flash's behaviour.
+    if (comboProgram) { abortComboProgram(); return; }
     if (state.cleared > 0) {
       const isRecord = saveMotBest(state.mode, state.cleared);
       renderMotBests();
@@ -9859,6 +10196,15 @@
       runWorkoutBlock(block);
     } else if (block.domain === "nat") {
       startRememberGame(block.mode || "fixed", { comboDurationS: block.duration ?? 60 });
+    } else if (block.domain === "blitz") {
+      blitzPrefs.gridSize = block.gridSize ?? blitzPrefs.gridSize;
+      blitzPrefs.zones = block.zones ? block.zones.slice() : blitzPrefs.zones;
+      blitzPrefs.startCount = block.startCount ?? blitzPrefs.startCount;
+      startBlitzGame({ comboDurationS: block.duration ?? 60 });
+    } else if (block.domain === "flash") {
+      startFlashGame(block.mode || "constant", { comboDurationS: block.duration ?? 60 });
+    } else if (block.domain === "mot") {
+      startMotGame(block.mode || "speed", { comboDurationS: block.duration ?? 60 });
     } else if (block.domain === "cardio") {
       cardioProgram = null;
       startStandaloneCardio(block.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null })));
