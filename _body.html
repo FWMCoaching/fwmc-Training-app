@@ -4905,6 +4905,22 @@
       <div class="group-help">&Uuml;bungen, die zwingend Ton ben&ouml;tigen (aktuell nur &bdquo;Sehen &amp; H&ouml;ren&ldquo;), werden dann in der &Uuml;bersicht ausgegraut und markiert, statt versteckt.</div>
     </div>
 
+    <div class="group">
+      <div class="group-label">Feineinstellungen</div>
+      <div class="group-help">Gilt f&uuml;r alle &Uuml;bungen mit eigener Hintergrundfarbe. Neue Vorgabe wirkt sofort als Startwert &uuml;berall dort, wo noch keine eigene Hintergrundfarbe gew&auml;hlt wurde &ndash; einmal pro &Uuml;bung selbst ge&auml;ndert, bleibt diese eigene Wahl bestehen. In jeder &Uuml;bung steht dazu au&szlig;erdem ein &bdquo;Wie in den Master-Einstellungen&ldquo;-Button bereit, um jederzeit zur&uuml;ckzuwechseln.</div>
+    </div>
+
+    <div class="group">
+      <div class="group-label">Standard-Hintergrundfarbe</div>
+      <div class="color-picker" id="masterBgColorPicker"></div>
+      <button class="text-link small" id="masterBgNoneBtn">Keinen Standard vorgeben</button>
+      <div class="slider-row" id="masterBgIntensityRow" hidden>
+        <span class="slider-label">Intensit&auml;t</span>
+        <input type="range" id="masterBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Standard-Hintergrundfarbe">
+        <span class="slider-value" id="masterBgIntensityValue"></span>
+      </div>
+    </div>
+
     <div class="group" id="masterCodeHistoryGroup" hidden>
       <div class="group-label">Zuletzt genutzte Trainings-Codes</div>
       <div class="bundle-list" id="masterCodeHistoryList"></div>

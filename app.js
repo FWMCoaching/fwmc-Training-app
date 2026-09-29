@@ -1172,6 +1172,8 @@
     faqSheet: $("faqSheet"), faqCloseBtn: $("faqCloseBtn"),
     masterSettingsSheet: $("masterSettingsSheet"), masterSettingsCloseBtn: $("masterSettingsCloseBtn"),
     masterHearingCheck: $("masterHearingCheck"),
+    masterBgColorPicker: $("masterBgColorPicker"), masterBgNoneBtn: $("masterBgNoneBtn"),
+    masterBgIntensityRow: $("masterBgIntensityRow"), masterBgIntensitySlider: $("masterBgIntensitySlider"), masterBgIntensityValue: $("masterBgIntensityValue"),
     masterCodeHistoryGroup: $("masterCodeHistoryGroup"), masterCodeHistoryList: $("masterCodeHistoryList"),
     workoutExerciseInfoSheet: $("workoutExerciseInfoSheet"), workoutExerciseInfoIcon: $("workoutExerciseInfoIcon"),
     workoutExerciseInfoTitle: $("workoutExerciseInfoTitle"), workoutExerciseInfoNote: $("workoutExerciseInfoNote"),
@@ -2477,6 +2479,67 @@
   ];
   const BG_PRESETS_KEY = "fwmc-bg-presets-v1"; // [{ id, name, colorKey, intensity }] - not scoped to a domain, any saved combo applies anywhere
   const bgPresetStore = makePresetStore(BG_PRESETS_KEY);
+  // Master-Einstellungen's "Standard-Hintergrundfarbe" cascade target list -
+  // every exercise with its own background-colour Feineinstellung (Visual/
+  // NAT via `state`, Remember/Blitz/Flash/MOT, and all Test-Bereich
+  // exercises). Each entry is a lazy factory (not a direct object/key
+  // reference) for the same reason BG_SOURCES's `get()` is lazy above: this
+  // array sits early in the file, long before most of these prefs objects
+  // and their *_PREFS_KEY constants are themselves declared - a plain
+  // object literal here would throw (TDZ) at module-init time. Wrapped in
+  // try/catch in applyMasterBgDefaultEverywhere() below purely as a second
+  // safety net; that function is only ever called well after full module
+  // init (from loadMasterPrefs() and from the Master-Einstellungen UI), by
+  // which point every factory here resolves fine.
+  const MASTER_BG_TARGETS = [
+    () => ({ prefs: state, key: PREFS_KEY, save: savePrefs }),
+    () => ({ prefs: rememberPrefs, key: REMEMBER_PREFS_KEY, save: saveRememberPrefsToStorage }),
+    () => ({ prefs: blitzPrefs, key: BLITZ_PREFS_KEY, save: saveBlitzPrefsToStorage }),
+    () => ({ prefs: flashPrefs, key: FLASH_PREFS_KEY, save: saveFlashPrefsToStorage }),
+    () => ({ prefs: motPrefs, key: MOT_PREFS_KEY, save: saveMotPrefsToStorage }),
+    () => ({ prefs: gngPrefs, key: GNG_PREFS_KEY, save: saveGngPrefsToStorage }),
+    () => ({ prefs: testNbackPrefs, key: TEST_NBACK_PREFS_KEY, save: saveTestNbackPrefsToStorage }),
+    () => ({ prefs: trailPrefs, key: TRAIL_PREFS_KEY, save: saveTrailPrefsToStorage }),
+    () => ({ prefs: flankerPrefs, key: FLANKER_PREFS_KEY, save: saveFlankerPrefsToStorage }),
+    () => ({ prefs: ufovPrefs, key: UFOV_PREFS_KEY, save: saveUfovPrefsToStorage }),
+    () => ({ prefs: posnerPrefs, key: POSNER_PREFS_KEY, save: savePosnerPrefsToStorage }),
+    () => ({ prefs: alarmPrefs, key: ALARM_PREFS_KEY, save: saveAlarmPrefsToStorage }),
+    () => ({ prefs: vorlaufPrefs, key: VORLAUF_PREFS_KEY, save: saveVorlaufPrefsToStorage }),
+    () => ({ prefs: stopPrefs, key: STOP_PREFS_KEY, save: saveStopPrefsToStorage }),
+    () => ({ prefs: rotationPrefs, key: ROTATION_PREFS_KEY, save: saveRotationPrefsToStorage }),
+    () => ({ prefs: merkPrefs, key: MERK_PREFS_KEY, save: saveMerkPrefsToStorage }),
+    () => ({ prefs: simonPrefs, key: SIMON_PREFS_KEY, save: saveSimonPrefsToStorage }),
+    () => ({ prefs: searchPrefs, key: SEARCH_PREFS_KEY, save: saveSearchPrefsToStorage }),
+    () => ({ prefs: abPrefs, key: AB_PREFS_KEY, save: saveAbPrefsToStorage }),
+    () => ({ prefs: antizipPrefs, key: ANTIZIP_PREFS_KEY, save: saveAntizipPrefsToStorage }),
+    () => ({ prefs: hickPrefs, key: HICK_PREFS_KEY, save: saveHickPrefsToStorage }),
+    () => ({ prefs: corsiPrefs, key: CORSI_PREFS_KEY, save: saveCorsiPrefsToStorage }),
+    () => ({ prefs: reaktPrefs, key: REAKT_PREFS_KEY, save: saveReaktPrefsToStorage }),
+    () => ({ prefs: tsPrefs, key: TS_PREFS_KEY, save: saveTsPrefsToStorage }),
+    () => ({ prefs: antiPrefs, key: ANTI_PREFS_KEY, save: saveAntiPrefsToStorage }),
+    () => ({ prefs: dsstPrefs, key: DSST_PREFS_KEY, save: saveDsstPrefsToStorage }),
+  ];
+  // Applies the Master default to every target above whose OWN raw saved
+  // data never had a bgColorKey at all (a true "never customized" check -
+  // re-reads storage directly rather than trusting the in-memory prefs
+  // object, which already carries its own built-in fallback colour by the
+  // time this could ever run). Never touches a target that already has its
+  // own explicit choice. Safe/cheap to call repeatedly - called once at
+  // load (covers exercises added since the client last set this) and again
+  // every time the client changes the Master default itself.
+  function applyMasterBgDefaultEverywhere() {
+    if (!masterPrefs.defaultBgColorKey || !STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey]) return;
+    MASTER_BG_TARGETS.forEach((factory) => {
+      let target;
+      try { target = factory(); } catch (e) { return; }
+      let raw;
+      try { raw = readJSON(target.key, null); } catch (e) { return; }
+      if (raw && raw.bgColorKey != null) return;
+      target.prefs.bgColorKey = masterPrefs.defaultBgColorKey;
+      target.prefs.bgIntensity = masterPrefs.defaultBgIntensity;
+      try { target.save(); } catch (e) {}
+    });
+  }
   // Every exercise's own `applyXBg()` (Remember, Blitz, Flash, MOT, and all
   // 17 Test-Bereich exercises) was the exact same four lines with only the
   // stage element and prefs object differing - `makeBgApplier` replaces
@@ -2514,6 +2577,26 @@
           btn.addEventListener("click", () => apply(v.colorKey, v.intensity));
           t.sourceRow.appendChild(btn);
         });
+        // One-click override back to the Master-Einstellungen default,
+        // whenever one is set - alongside the "Wie bei X" buttons above,
+        // not instead of them, so a client can always get back to the
+        // Master colour after picking a per-exercise override. Wrapped in
+        // try/catch for the same reason the BG_SOURCES loop above is:
+        // Visual's own bg picker wires up (and calls sync()/renderTransfer()
+        // immediately) at module-init time, well before masterPrefs itself
+        // is declared further down the file - a real TDZ error, not
+        // theoretical. Renders fine from the second call on (any later
+        // sync(), e.g. once the client actually opens a settings screen).
+        try {
+          if (masterPrefs.defaultBgColorKey && STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey]) {
+            const hex = STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey].hex;
+            const btn = document.createElement("button");
+            btn.className = "choice";
+            btn.innerHTML = `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${hex};margin-right:6px;vertical-align:-1px"></span>Wie in den Master-Einstellungen`;
+            btn.addEventListener("click", () => apply(masterPrefs.defaultBgColorKey, masterPrefs.defaultBgIntensity));
+            t.sourceRow.appendChild(btn);
+          }
+        } catch (e) {}
         renderPresetList(bgPresetStore, t.presetList, t.presetGroup, null,
           (p) => `${STROOP_COLOR_BY_KEY[p.colorKey].name} · ${Math.round(p.intensity * 100)}%`,
           (p) => apply(p.colorKey, p.intensity));
@@ -4645,7 +4728,7 @@
   // be an inert checkbox list, not a real feature).
   const CVD_KEYS = ["rotgruen", "blaugelb", "voll"];
   const LIMB_KEYS = ["armL", "armR", "legL", "legR"];
-  const masterPrefs = { colorVision: [], restrictedLimbs: [], hearing: false };
+  const masterPrefs = { colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0 };
   function loadMasterPrefs() {
     const saved = readJSON(MASTER_PREFS_KEY, null);
     if (saved && typeof saved === "object") {
@@ -4676,6 +4759,8 @@
     if (!Array.isArray(masterPrefs.restrictedLimbs)) masterPrefs.restrictedLimbs = [];
     masterPrefs.restrictedLimbs = [...new Set(masterPrefs.restrictedLimbs.filter((k) => LIMB_KEYS.includes(k)))];
     if (typeof masterPrefs.hearing !== "boolean") masterPrefs.hearing = false;
+    if (masterPrefs.defaultBgColorKey != null && !STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey]) masterPrefs.defaultBgColorKey = null;
+    if (!Number.isFinite(masterPrefs.defaultBgIntensity) || masterPrefs.defaultBgIntensity < 0 || masterPrefs.defaultBgIntensity > 1) masterPrefs.defaultBgIntensity = 0;
     // Persist immediately so a migrated (or just-cleaned-up) shape actually
     // lands on disk right away, rather than silently staying in the old
     // shape in storage until the client happens to touch some toggle -
@@ -4684,6 +4769,11 @@
   }
   function saveMasterPrefs() { writeJSON(MASTER_PREFS_KEY, masterPrefs); }
   loadMasterPrefs();
+  // Retroactively seed every exercise's own background-colour
+  // Feineinstellung that was never explicitly customized - also covers an
+  // exercise added since the client last touched this default (e.g. by the
+  // autonomous Test-Bereich routine), not just ones visited right now.
+  applyMasterBgDefaultEverywhere();
 
   // Colour-vision presets: today only Go/No-Go has a genuine red/green
   // discrimination signal (every other exercise's colour is either neutral,
@@ -4726,6 +4816,39 @@
     saveMasterPrefs(); applyExerciseCompatibility();
   });
   function syncMasterHearingUI() { els.masterHearingCheck.checked = masterPrefs.hearing; }
+
+  // "Standard-Hintergrundfarbe": a cascading default, not a lock - see
+  // applyMasterBgDefaultEverywhere() above for the seeding logic, and
+  // renderTransfer()'s "Wie in den Master-Einstellungen" button for the
+  // one-tap way back to it from any single exercise. Same swatch-picker
+  // widget every exercise's own bg picker already uses.
+  buildSingleSelectPicker(els.masterBgColorPicker, STROOP_COLOR_LIB, (key) => {
+    masterPrefs.defaultBgColorKey = key;
+    // Same "jump to 50% so the pick is immediately visible" convenience as
+    // every per-exercise bg picker (wireBgIntensityControl) already has.
+    if (masterPrefs.defaultBgIntensity <= 0) masterPrefs.defaultBgIntensity = 0.5;
+    saveMasterPrefs();
+    applyMasterBgDefaultEverywhere();
+    syncMasterBgUI();
+  });
+  els.masterBgNoneBtn.addEventListener("click", () => {
+    masterPrefs.defaultBgColorKey = null;
+    saveMasterPrefs();
+    syncMasterBgUI();
+  });
+  els.masterBgIntensitySlider.addEventListener("input", () => {
+    masterPrefs.defaultBgIntensity = Number(els.masterBgIntensitySlider.value);
+    saveMasterPrefs();
+    applyMasterBgDefaultEverywhere();
+    syncMasterBgUI();
+  });
+  function syncMasterBgUI() {
+    syncSingleSelectPicker(els.masterBgColorPicker, masterPrefs.defaultBgColorKey);
+    els.masterBgNoneBtn.hidden = !masterPrefs.defaultBgColorKey;
+    els.masterBgIntensityRow.hidden = !masterPrefs.defaultBgColorKey;
+    els.masterBgIntensitySlider.value = masterPrefs.defaultBgIntensity;
+    els.masterBgIntensityValue.textContent = `${Math.round(masterPrefs.defaultBgIntensity * 100)}%`;
+  }
 
   // ---- Exercise compatibility: greyed out + marked, not hidden ----
   // Unlike Farbsehen (which ADAPTS an exercise, e.g. Go/No-Go's colour swap)
@@ -4807,7 +4930,7 @@
   let masterSettingsReturnFocus = null;
   function openMasterSettings() {
     masterSettingsReturnFocus = document.activeElement;
-    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); renderMasterCodeHistory();
+    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); syncMasterBgUI(); renderMasterCodeHistory();
     els.masterSettingsSheet.hidden = false;
     focusFirstIn(els.masterSettingsSheet);
   }
