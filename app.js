@@ -1011,6 +1011,7 @@
     if (block.domain === "workout") return workoutBlockLabel(block);
     if (block.domain === "visual") return EXERCISES[block.exercise] ? EXERCISES[block.exercise].title : block.exercise;
     if (block.domain === "nat") return `Remember · ${REMEMBER_MODES[block.mode] ? REMEMBER_MODES[block.mode].title : block.mode}`;
+    if (block.domain === "cardio") return `Cardio · ${exerciseCountLabel(block.items.length)}`;
     return block.domain;
   }
   function comboBlockMeta(block) {
@@ -1020,6 +1021,7 @@
     if (block.domain === "workout") return workoutBlockMeta(block);
     if (block.domain === "visual") return fmtMinutes((block.duration ?? 60));
     if (block.domain === "nat") return fmtMinutes((block.duration ?? 60));
+    if (block.domain === "cardio") return fmtMinutes(cardioItemsSeconds(block.items));
     return "";
   }
   function comboBlockSeconds(block) {
@@ -1029,6 +1031,7 @@
     if (block.domain === "workout") return workoutBlockSeconds(block);
     if (block.domain === "visual") return block.duration ?? 60;
     if (block.domain === "nat") return block.duration ?? 60;
+    if (block.domain === "cardio") return cardioItemsSeconds(block.items);
     return 0;
   }
   // Curated quick-add presets the combo builder offers per section - not the
@@ -1688,6 +1691,7 @@
     cardioProgramIntro: $("cardioProgramIntro"), cardioProgramBackToHome: $("cardioProgramBackToHome"), cardioProgramTitle: $("cardioProgramTitle"),
     cardioProgramMeta: $("cardioProgramMeta"), cardioProgramDesc: $("cardioProgramDesc"), cardioProgramChapterList: $("cardioProgramChapterList"), cardioProgramStartBtn: $("cardioProgramStartBtn"),
     cardioReady: $("cardioReady"), cardioBackToHome: $("cardioBackToHome"),
+    cardioReadyTitle: $("cardioReadyTitle"), cardioReadyHint: $("cardioReadyHint"),
     cardioSavedGroup: $("cardioSavedGroup"), cardioSavedList: $("cardioSavedList"),
     cardioAddGrid: $("cardioAddGrid"), cardioCount: $("cardioCount"),
     cardioEmptyHint: $("cardioEmptyHint"), cardioList: $("cardioList"),
@@ -8612,12 +8616,16 @@
   function renderCardioAddGrid() {
     els.cardioAddGrid.innerHTML = "";
     Object.entries(CARDIO_ACTIVITIES).forEach(([id, act]) => {
+      const count = cardioPrefs.items.filter((it) => it.activity === id).length;
       const btn = document.createElement("button");
       btn.className = "combo-add-btn";
-      btn.innerHTML = `<span><span class="ca-title">${esc(act.name)}</span></span><span class="ca-plus">+</span>`;
+      btn.innerHTML = `<span><span class="ca-title">${esc(act.name)}</span>` +
+        (count ? `<br><span class="ca-meta">${count}× in der Einheit</span>` : "") +
+        `</span><span class="ca-plus">+</span>`;
       btn.addEventListener("click", () => {
         cardioPrefs.items.push({ activity: id, durationS: cardioPrefs.defaultDurationS, label: "", interval: null });
         saveCardioPrefs();
+        renderCardioAddGrid();
         renderCardioList();
         syncCardioUI();
       });
@@ -8677,6 +8685,7 @@
       btn.addEventListener("click", () => {
         cardioPrefs.items.splice(Number(btn.dataset.i), 1);
         saveCardioPrefs();
+        renderCardioAddGrid();
         renderCardioList();
         syncCardioUI();
       });
@@ -8699,7 +8708,9 @@
 
   function syncCardioUI() {
     els.cardioStartBtn.disabled = cardioPrefs.items.length === 0;
-    els.cardioStartBtn.textContent = cardioPrefs.items.length ? "Cardio starten" : "Mindestens eine Aktivität hinzufügen";
+    els.cardioStartBtn.textContent = cardioPrefs.items.length
+      ? (comboCardioCaptureOriginal ? "Baustein übernehmen" : "Cardio starten")
+      : "Mindestens eine Aktivität hinzufügen";
   }
 
   const CARDIO_SAVED_KEY = "fwmc-cardio-saved-v1";
@@ -8710,6 +8721,10 @@
       (entry) => {
         cardioPrefs.items = entry.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null }));
         saveCardioPrefs();
+        // While capturing a Kombi-Baustein, loading a saved unit should
+        // just fill the draft for review/adjustment, not immediately start
+        // a live session.
+        if (comboCardioCaptureOriginal) { renderCardioAddGrid(); renderCardioList(); syncCardioUI(); return; }
         startCardioNow();
       });
   }
@@ -8736,7 +8751,49 @@
     showScreen("cardioReady");
   }
   els.cardioStartCard.addEventListener("click", openCardioReady);
-  els.cardioBackToHome.addEventListener("click", () => showScreen("cardioHome"));
+
+  // ---- Kombi-Baukasten capture: a "Cardio"-domain combo block is a whole
+  // mini Cardio-Einheit (possibly several activities, possibly with the
+  // dual-task addon on), not a single field like Movement/Workout/Visual -
+  // so rather than building a second, smaller settings UI just for combo
+  // blocks, the combo picker reopens this exact same cardioReady builder in
+  // "capture" mode: cardioPrefs.items becomes the block being built, the
+  // start button becomes "Baustein übernehmen", and finishing (commit or
+  // cancel) restores the client's own standalone Cardio-Einheit exactly as
+  // it was before - capturing a combo block must never clobber it.
+  let comboCardioCaptureOriginal = null; // saved standalone cardioPrefs.items while capturing
+  let comboCardioEditIndex = null; // set when editing an existing combo block instead of adding a new one
+  function openCardioComboCapture(existingBlock, editIndex) {
+    comboCardioCaptureOriginal = cardioPrefs.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null }));
+    cardioPrefs.items = existingBlock ? existingBlock.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null })) : [];
+    comboCardioEditIndex = editIndex ?? null;
+    els.cardioReadyTitle.textContent = "Baustein: Cardio";
+    els.cardioReadyHint.textContent = "Stelle die Aktivitäten für diesen Kombi-Baustein zusammen.";
+    openCardioReady();
+  }
+  function exitCardioComboCapture() {
+    if (comboCardioCaptureOriginal) {
+      cardioPrefs.items = comboCardioCaptureOriginal;
+      saveCardioPrefs();
+      comboCardioCaptureOriginal = null;
+    }
+    comboCardioEditIndex = null;
+    els.cardioReadyTitle.textContent = "Cardio";
+    els.cardioReadyHint.textContent = "Stelle deine Aktivitäten in der Reihenfolge zusammen, in der du sie machen willst.";
+  }
+  function commitCardioComboCapture() {
+    if (!cardioPrefs.items.length) return;
+    const block = { domain: "cardio", items: cardioPrefs.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null })) };
+    if (comboCardioEditIndex != null) comboDraftBlocks[comboCardioEditIndex] = block;
+    else comboDraftBlocks.push(block);
+    exitCardioComboCapture();
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+  els.cardioBackToHome.addEventListener("click", () => {
+    if (comboCardioCaptureOriginal) { exitCardioComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("cardioHome");
+  });
 
   // ---- Coach-assigned Cardio programme ("cardio-plan"/"cardio-bundle"):
   // its `items` array is exactly the same shape startStandaloneCardio()
@@ -8997,7 +9054,10 @@
     if (!cardioPrefs.items.length) return;
     startStandaloneCardio(cardioPrefs.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null })));
   }
-  els.cardioStartBtn.addEventListener("click", startCardioNow);
+  els.cardioStartBtn.addEventListener("click", () => {
+    if (comboCardioCaptureOriginal) { commitCardioComboCapture(); return; }
+    startCardioNow();
+  });
 
   function cardioPhaseFor(block, blockElapsed) {
     if (!block.interval) return null;
@@ -9089,6 +9149,7 @@
     // cardioPlayer is a "player" overlay, not a SCREENS member (same as
     // workoutPlayer/els.player/...) - showScreen() alone never hides it.
     hideAllPlayers();
+    if (comboProgram) { abortComboProgram(); return; }
     const wasProgram = !!cardioProgram;
     cardioProgram = null;
     showScreen(wasProgram ? "cardioProgramIntro" : "cardioReady");
@@ -9101,6 +9162,8 @@
     const items = cardioState.items;
     const totalS = items.reduce((s, b) => s + b.durationS, 0);
     releaseWakeLock();
+    cardioState = null;
+    if (comboProgram) { advanceComboProgram(totalS); return; }
     els.cardioPlayer.hidden = true;
     const names = [...new Set(items.map((b) => findCardioActivity(b.activity).name))].join(", ");
     const id = cardioProgram
@@ -9110,7 +9173,6 @@
     els.cardioDoneSummary.textContent = `${exerciseCountLabel(items.length)} · ${fmtMinutes(totalS)} Training`;
     els.cardioDoneBackBtn.textContent = cardioProgram && cardioOriginBundle ? "Zurück zu meinen Einheiten" : "Zur Übersicht";
     els.cardioDonePanel.hidden = false;
-    cardioState = null;
   }
   els.cardioAgainBtn.addEventListener("click", () => {
     if (!lastCardioItems) return;
@@ -9192,6 +9254,9 @@
       runWorkoutBlock(block);
     } else if (block.domain === "nat") {
       startRememberGame(block.mode || "fixed", { comboDurationS: block.duration ?? 60 });
+    } else if (block.domain === "cardio") {
+      cardioProgram = null;
+      startStandaloneCardio(block.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null })));
     } else {
       startComboBlock(idx + 1); // unknown domain - skip rather than get stuck
     }
@@ -9296,18 +9361,35 @@
       group.appendChild(opts);
       els.comboAddGrid.appendChild(group);
     });
+    // Cardio has no fixed preset list (its "block" is a whole self-built
+    // Cardio-Einheit, possibly several activities long) - one button opens
+    // the real cardioReady builder in capture mode instead.
+    const cardioGroup = document.createElement("div");
+    cardioGroup.className = "combo-domain-group";
+    cardioGroup.innerHTML = `<div class="combo-domain-title">Cardio</div>`;
+    const cardioOpts = document.createElement("div");
+    cardioOpts.className = "combo-domain-options";
+    const cardioBtn = document.createElement("button");
+    cardioBtn.className = "combo-add-btn";
+    cardioBtn.innerHTML = `<span><span class="ca-title">Cardio-Einheit</span><br><span class="ca-meta">eigene Aktivitäten zusammenstellen</span></span><span class="ca-plus">+</span>`;
+    cardioBtn.addEventListener("click", () => openCardioComboCapture(null, null));
+    cardioOpts.appendChild(cardioBtn);
+    cardioGroup.appendChild(cardioOpts);
+    els.comboAddGrid.appendChild(cardioGroup);
   }
   function renderComboBlockList() {
     els.comboBlockCount.textContent = comboDraftBlocks.length ? `${comboDraftBlocks.length} Baustein${comboDraftBlocks.length === 1 ? "" : "e"}` : "";
     els.comboEmptyHint.hidden = comboDraftBlocks.length > 0;
     els.comboBlockList.innerHTML = "";
     comboDraftBlocks.forEach((block, i) => {
+      const editable = block.domain === "cardio";
       const row = document.createElement("div");
       row.className = "chapter-row";
-      const main = document.createElement("span");
+      const main = document.createElement(editable ? "button" : "span");
       main.className = "chapter-main";
-      main.style.cursor = "default";
+      if (!editable) main.style.cursor = "default";
       main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(comboBlockLabel(block))}</strong><span>${esc(comboBlockMeta(block))}</span></span>`;
+      if (editable) main.addEventListener("click", () => openCardioComboCapture(block, i));
       row.appendChild(main);
       const rm = document.createElement("button");
       rm.className = "combo-block-remove";

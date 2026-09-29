@@ -2744,6 +2744,112 @@ all this ctx-threading. Uses Playwright route interception on the
 `CODE_API` URL to serve fake defs for each new type, since none of this
 can be exercised via `dashboard.html` without a live Worker deploy.
 
+## Kombi-Baukasten rebuild (started 2026-09-29, Cardio slice done)
+
+Client's ask, in one big message: Cardio needs the "Komplett-Programm aus
+mehreren Bereichen" entry it was missing (a scope gap from the night
+Cardio was built), and - much bigger - the cross-section combo builder
+itself needs to grow from "a fixed, curated list of ~15 sample presets"
+(`COMBO_PRESETS`, one comment literally says "not the full settings depth
+of each section's own screen") into: every exercise from every domain
+except Test-Bereich selectable, full fine-tuning per block (not the
+canned defaults), access to the client's own saved presets per exercise
+so a favourite setup can be dropped in without reconfiguring, and pause
+markers between blocks. Explicitly asked to "go through everything
+independently" rather than checking in after each piece.
+
+**Architecture decision, before writing anything**: every domain's combo
+block is already just *a snapshot of that domain's own settings, replayed
+through its own existing start function* - `startComboBlock()`'s
+`visual`/`movement`/`workout`/`breath`/`wimhof` branches all overwrite
+`state`/`movementPrefs`/`workoutPlan`/`breathPrefs`/`wimhofSettings` from
+the block's stored fields and call the domain's own unchanged
+`start…Session()`. That's the exact same mechanism a saved preset's own
+"load" button already uses. So instead of building a second, smaller
+settings UI just for combo blocks, **a combo block should be captured by
+briefly reopening that domain's own real settings screen** - which
+already has the full fine-tune UI and the saved-preset list "for free" -
+with its own start button doing "commit this configuration as a block and
+return to the combo builder" instead of actually starting a session. This
+is the pattern for every future domain in this rebuild, not just Cardio.
+
+**Cardio slice, built as the first (and simplest) proof of this pattern**,
+since Cardio's own builder (`cardioReady`) already IS a full multi-
+activity settings screen with its own saved-preset list and dual-task
+addon config - reusing it needed no new UI at all, just a capture-mode
+branch:
+- `comboCardioCaptureOriginal` (module var): the client's OWN standalone
+  `cardioPrefs.items`, saved off the moment capture starts and restored
+  (with `saveCardioPrefs()`) the moment it ends (commit or cancel) -
+  capturing a combo block must never clobber the separate, persisted
+  "Eigene Cardio-Einheit" on Cardio's own home screen. `cardioPrefs.items`
+  itself becomes the block being built in between (blank for a new block,
+  or the existing block's items when re-editing one already in the combo
+  draft) - the exact same object every other Cardio UI function
+  (`renderCardioList`, the add-grid, the interval steppers, …) already
+  reads and writes, so none of them needed to change.
+  `comboCardioEditIndex` tracks whether "commit" should push a new block
+  or overwrite one already in `comboDraftBlocks` (tap an existing Cardio
+  block in the combo list to re-edit it - the only domain in the list
+  that's clickable so far; every other domain's block is still add-once,
+  not yet re-editable, until this rebuild reaches them too).
+- `cardioReadyTitle`/`cardioReadyHint` (new ids) swap text to "Baustein:
+  Cardio" during capture; `cardioStartBtn`'s label swaps to "Baustein
+  übernehmen" (`syncCardioUI()` made capture-aware); `cardioBackToHome`
+  branches to exit capture (restore + `showScreen("comboScreen")`) instead
+  of going to `cardioHome`.
+- `renderCardioSaved()`'s "load a saved unit" callback had to become
+  capture-aware too: outside capture it starts a live session immediately
+  (existing behaviour), but during capture it must only fill the draft for
+  review, never auto-start a session out from under the combo builder.
+- `finishCardio()`/`abortCardio()` gained the same `if (comboProgram) {…}`
+  hook every other domain's finish/abort function already has (Cardio was
+  built before combo integration was ever a requirement, so it had none) -
+  placed *before* the done-panel/history code, same position as Workout's,
+  since a combo block never gets its own history entry, only
+  `finishComboProgram()` records one for the whole run.
+- `comboBlockLabel`/`Meta`/`Seconds` and `startComboBlock()` gained a
+  `"cardio"` case; a Cardio combo block stores `{domain:"cardio",
+  items:[...]}` - literally the same `items` shape `startStandaloneCardio()`
+  already takes, so playing one back is a two-line addition, not a new
+  engine.
+- Cardio's own dual-task addon settings (`cardioAddonPrefs`) are
+  deliberately untouched by any of this - they're the client's own
+  standing setting that already applies to "ANY cardio run", combo
+  included, exactly as designed the night Cardio was built.
+
+Tested in `tests/cardio_combo_test.py`: the combo-entry-link now on
+`cardioHome`, opening capture (blank, not the standalone unit), adding
+activities, committing, re-editing an already-added Cardio block,
+cancelling a capture (discarded, standalone unit still untouched
+throughout all of this), and a full combo run through a Cardio block
+(shows in the normal `cardioPlayer`, no per-block done panel, aborting
+mid-block returns to the combo's own return screen). Also added
+`tests/cardio_extras_test.py` for the small Tabata-style "N× in der
+Einheit" count badge now on Cardio's activity add-grid (mirrors
+`renderWorkoutCircuitAddGrid`'s badge exactly, re-renders the grid on
+every add/remove so the count stays live).
+
+**Not done yet, explicit backlog for the rest of this rebuild**: the same
+capture-mode pattern still needs to reach Visual (all `EXERCISES`, via
+`openReady()`), Breath (already covers its patterns, could still gain
+full fine-tune + saved-preset reuse in capture mode), Movement (single
+config, straightforward), Workout (all exercises, both reps and Tabata
+mode), and NAT's Remember (already combo-capable via `comboDurationS`,
+needs the same UI treatment) plus Blitz-Raster/Flash Speicher Test/MOT
+Fähigkeit - those three are endless/progressive with no fixed end, so
+each needs the same `comboDurationS`-style duration cutoff Remember
+already got before they can join a combo at all. Pause markers between
+blocks (a `{domain:"pause", seconds:…}` pseudo-block) also not started.
+Also flagged, separately, from the same client message: a Master-level
+default background colour that cascades into every exercise's own
+background-colour Feineinstellung (auto-excluding exercises like Stroop
+where background IS the stimulus), and non-blocking contrast-safety
+warnings wherever colours are picked (shown in settings before starting
+and live during the exercise if adjusted mid-session) - explicit client
+instruction: never block, someone may deliberately train with tight
+contrast, just warn.
+
 ## Test-Bereich (autonomous, ongoing)
 
 **If you were woken by the "FWMC Test-Bereich Auto-Build" Routine, this
