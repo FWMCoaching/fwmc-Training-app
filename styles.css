@@ -960,6 +960,22 @@ body.cvd-rotgruen .gng-stimulus.nogo{background:#e65100;border-color:#a53d00}
 .dsst-key.correct{background:#2e7d32;color:#fff}
 .dsst-key.wrong{background:#d32f2f;color:#fff}
 
+.wcst-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:16px;background:#ffffff}
+.wcst-ref-row{display:flex;gap:8px;justify-content:center;width:100%;max-width:440px}
+.wcst-card{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px;
+  border:2px solid #8a97a3;border-radius:10px;background:#f5f5f5;padding:10px 4px;min-height:64px;flex-shrink:0;
+}
+.wcst-ref-row .wcst-card{flex:1;min-width:0}
+button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
+.wcst-card.wcst-ref{cursor:pointer;transition:box-shadow .12s ease,transform .08s ease}
+.wcst-card.wcst-ref:active{transform:scale(.97)}
+.wcst-card.wcst-ref.correct{box-shadow:0 0 0 5px #2e7d32 inset}
+.wcst-card.wcst-ref.wrong{box-shadow:0 0 0 5px #d32f2f inset}
+.wcst-shape{font-size:20px;line-height:1}
+.wcst-card.wcst-stimulus{width:100%;max-width:220px;min-height:80px;border-style:dashed}
+.wcst-card.wcst-stimulus .wcst-shape{font-size:30px}
+
 .corsi-stage{flex:1;position:relative;overflow:hidden}
 .corsi-block{
   position:absolute;transform:translate(-50%,-50%);

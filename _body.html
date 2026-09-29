@@ -920,6 +920,11 @@
       <span class="fc-desc">Oben steht ein Schl&uuml;ssel: jede Ziffer 1-9 hat ihr eigenes Symbol. Unten erscheint eine Ziffer &ndash; tippe so schnell wie m&ouml;glich das passende Symbol an. Der Schl&uuml;ssel wird bei jedem Durchlauf neu gemischt. Klassischer Test f&uuml;r allgemeine Verarbeitungsgeschwindigkeit (Digit Symbol Substitution Test, Wechsler-Intelligenztest) &ndash; wie viele Zuordnungen schaffst du in der Zeit?</span>
       <span class="fc-meta" id="dsstBestHint"></span>
     </button>
+    <button class="featured-card" id="wcstOpenBtn">
+      <span class="fc-title">Kartensortier-Test</span>
+      <span class="fc-desc">Vier Karten liegen oben fest &ndash; eine neue Karte erscheint darunter, du tippst, zu welcher der vier sie passt. Die Regel (Farbe, Form oder Anzahl) wird dir nicht gesagt, nur ob deine Wahl richtig oder falsch war. Und die Regel &auml;ndert sich irgendwann, ohne Vorwarnung. Klassischer Test f&uuml;r Regel-Lernen und kognitive Flexibilit&auml;t (Wisconsin Card Sorting Test).</span>
+      <span class="fc-meta" id="wcstBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -1309,6 +1314,27 @@
   <div class="group-help" id="dsstReadyBestHint"></div>
 
   <button class="start-btn" id="dsstReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="wcstReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="wcstReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Kartensortier-Test</h1>
+  <p class="page-sub">Oben liegen vier feste Karten, jede mit einer eigenen Kombination aus Form, Farbe und Anzahl. Unten erscheint eine neue Karte &ndash; tippe die Karte oben an, zu der sie deiner Meinung nach passt. Du bekommst nur R&uuml;ckmeldung, ob deine Wahl richtig oder falsch war, nie warum &ndash; die Regel (Farbe, Form oder Anzahl) musst du selbst aus dieser R&uuml;ckmeldung herausfinden. Und wenn du die Regel einige Male hintereinander richtig triffst, &auml;ndert sie sich &ndash; ohne Vorwarnung. Klassischer Test f&uuml;r Regel-Lernen und kognitive Flexibilit&auml;t (Wisconsin Card Sorting Test).</p>
+
+  <div class="group">
+    <div class="group-label">L&auml;nge</div>
+    <div class="choice-row" id="wcstLengthRow">
+      <button class="choice" data-wcst-length="kurz">Kurz<small>32 Karten</small></button>
+      <button class="choice" data-wcst-length="mittel">Mittel<small>48 Karten</small></button>
+      <button class="choice" data-wcst-length="lang">Lang<small>64 Karten</small></button>
+    </div>
+  </div>
+
+  <div class="group-help" id="wcstReadyBestHint"></div>
+
+  <button class="start-btn" id="wcstReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="simonReady" hidden>
@@ -4070,6 +4096,45 @@
     <div class="rating" id="dsstRating"></div>
     <button class="again" id="dsstAgainBtn">Nochmal</button>
     <button class="back" id="dsstDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="wcstPlayer" hidden>
+  <div class="wcst-stage" id="wcstStage">
+    <div class="remember-hint" id="wcstHint"></div>
+    <div class="wcst-ref-row" id="wcstRefRow">
+      <button class="wcst-card wcst-ref" data-ref-idx="0" aria-label="Referenzkarte 1: ein rotes Dreieck"><span class="wcst-shape" style="color:#d64545">&#9650;</span></button>
+      <button class="wcst-card wcst-ref" data-ref-idx="1" aria-label="Referenzkarte 2: zwei gr&uuml;ne Sterne"><span class="wcst-shape" style="color:#2e7d32">&#9733;</span><span class="wcst-shape" style="color:#2e7d32">&#9733;</span></button>
+      <button class="wcst-card wcst-ref" data-ref-idx="2" aria-label="Referenzkarte 3: drei gelbe Quadrate"><span class="wcst-shape" style="color:#f4c430">&#9632;</span><span class="wcst-shape" style="color:#f4c430">&#9632;</span><span class="wcst-shape" style="color:#f4c430">&#9632;</span></button>
+      <button class="wcst-card wcst-ref" data-ref-idx="3" aria-label="Referenzkarte 4: vier blaue Kreise"><span class="wcst-shape" style="color:#1565c0">&#9679;</span><span class="wcst-shape" style="color:#1565c0">&#9679;</span><span class="wcst-shape" style="color:#1565c0">&#9679;</span><span class="wcst-shape" style="color:#1565c0">&#9679;</span></button>
+    </div>
+    <div class="wcst-card wcst-stimulus" id="wcstStimulusCard"></div>
+  </div>
+  <div class="pause-overlay" id="wcstPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="wcstResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="wcstPlayerBar">
+    <button id="wcstBackBtn">&#10005; Beenden</button>
+    <button id="wcstPauseBtn">Pause</button>
+    <span class="player-status" id="wcstProgressEl"></span>
+    <button id="wcstFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="wcstFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="wcstFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="wcstFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="wcstDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="wcstDoneSummary"></p>
+    <div class="rating" id="wcstRating"></div>
+    <button class="again" id="wcstAgainBtn">Nochmal</button>
+    <button class="back" id="wcstDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

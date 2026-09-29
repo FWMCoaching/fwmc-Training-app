@@ -1555,6 +1555,16 @@
     dsstFsBtn: $("dsstFsBtn"), dsstFsHint: $("dsstFsHint"), dsstFsHintOpenBtn: $("dsstFsHintOpenBtn"), dsstFsHintClose: $("dsstFsHintClose"),
     dsstDonePanel: $("dsstDonePanel"), dsstDoneSummary: $("dsstDoneSummary"), dsstRating: $("dsstRating"),
     dsstAgainBtn: $("dsstAgainBtn"), dsstDoneBackBtn: $("dsstDoneBackBtn"),
+    wcstOpenBtn: $("wcstOpenBtn"), wcstBestHint: $("wcstBestHint"), wcstReady: $("wcstReady"),
+    wcstReadyBackToHome: $("wcstReadyBackToHome"), wcstLengthRow: $("wcstLengthRow"),
+    wcstReadyBestHint: $("wcstReadyBestHint"), wcstReadyStartBtn: $("wcstReadyStartBtn"),
+    wcstPlayer: $("wcstPlayer"), wcstStage: $("wcstStage"), wcstHint: $("wcstHint"),
+    wcstRefRow: $("wcstRefRow"), wcstStimulusCard: $("wcstStimulusCard"),
+    wcstPauseOverlay: $("wcstPauseOverlay"), wcstResumeBtn: $("wcstResumeBtn"),
+    wcstPlayerBar: $("wcstPlayerBar"), wcstBackBtn: $("wcstBackBtn"), wcstPauseBtn: $("wcstPauseBtn"), wcstProgressEl: $("wcstProgressEl"),
+    wcstFsBtn: $("wcstFsBtn"), wcstFsHint: $("wcstFsHint"), wcstFsHintOpenBtn: $("wcstFsHintOpenBtn"), wcstFsHintClose: $("wcstFsHintClose"),
+    wcstDonePanel: $("wcstDonePanel"), wcstDoneSummary: $("wcstDoneSummary"), wcstRating: $("wcstRating"),
+    wcstAgainBtn: $("wcstAgainBtn"), wcstDoneBackBtn: $("wcstDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
@@ -1807,7 +1817,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -4152,6 +4162,7 @@
     els.vorlaufPlayer.hidden = true;
     els.stopPlayer.hidden = true;
     els.dsstPlayer.hidden = true;
+    els.wcstPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.cardioPlayer.hidden = true;
     els.programVideoPlayer.hidden = true;
@@ -13177,6 +13188,292 @@
   els.dsstAgainBtn.addEventListener("click", () => { els.dsstDonePanel.hidden = true; startDsstGame(); });
   els.dsstDoneBackBtn.addEventListener("click", () => { els.dsstPlayer.hidden = true; els.dsstDonePanel.hidden = true; showScreen("testHome"); });
   wireFullscreen({ player: els.dsstPlayer, btn: els.dsstFsBtn, hint: els.dsstFsHint, hintOpen: els.dsstFsHintOpenBtn, hintClose: els.dsstFsHintClose });
+
+  // ==== Test-Bereich: Kartensortier-Test ====
+  // Twenty-fourth autonomous entry, picked from the "Recherche-Backlog: 20
+  // Kandidaten" list (candidate #7). Grounded in the Wisconsin Card Sorting
+  // Test (WCST; Grant & Berg, 1948; Milner, 1963, tying perseverative
+  // errors to dorsolateral-prefrontal damage) - four reference cards sit
+  // fixed on screen, each unique on three dimensions at once (shape,
+  // colour, count); a new stimulus card appears and the client taps
+  // whichever reference card it "matches" - but the matching RULE (Farbe/
+  // Form/Anzahl) is never told, only right/wrong feedback is given after
+  // each tap, and the client must infer it purely from that feedback. Once
+  // `WCST_STREAK_NEEDED` consecutive correct matches accumulate under the
+  // current rule, it silently switches to the next one in the classic
+  // Farbe→Form→Anzahl cycle, with no warning - the client has to notice
+  // their strategy stopped working and re-derive a new one. Genuinely
+  // distinct from every existing Test/NAT mechanic: Regelwechsel-Test
+  // explicitly CUES which of two rules applies every single trial (a
+  // switch-cost paradigm over a known rule); this is the only exercise
+  // where the rule is never told at all and must be discovered - and
+  // re-discovered after every silent switch - from feedback alone, testing
+  // rule learning and perseveration (clinging to an outdated rule) rather
+  // than the cost of switching between two already-known ones. Stimulus
+  // cards are generated with all three dimension-indices pairwise distinct
+  // (`wcstRandomCard`) so every card points unambiguously to three
+  // DIFFERENT reference cards depending on which rule is active - the
+  // same "unambiguous card" simplification several digital WCST
+  // adaptations use, since the real deck's occasional ambiguous cards
+  // (two or three dimensions pointing at the same reference card) are
+  // excluded from scoring in the standard protocol anyway. Reports
+  // categories completed (rule blocks fully solved) and perseverative
+  // errors (a wrong tap that matches the PREVIOUS rule instead of the
+  // current one - the classic WCST error-type distinction) alongside plain
+  // accuracy%, tracking best categories-completed per `wcstPrefs.length`
+  // (kurz/mittel/lang = 32/48/64 cards, the only client-facing setting,
+  // same "length, no natural difficulty dial" shape as Suchtest/UFOV/
+  // Hick/DSST, since the real WCST has no difficulty knob either - one
+  // fixed deck, one fixed rule cycle) via `WCST_BEST_KEY`. No background
+  // colour Feineinstellung, deliberately, unlike most other Test-Bereich
+  // exercises: colour identity of the four reference/stimulus colours IS
+  // literally one of the three sorting rules here, the same category of
+  // concern that kept Wortfarben-Test/Stroop excluded from the background-
+  // colour rollout - a tinted stage risks competing with exactly the
+  // dimension being judged when "Farbe" is the active (hidden) rule, so
+  // this exercise was left out of that rollout rather than silently
+  // deciding it's fine. No Bei-Fehler/Zusatzaufgabe/Trainingsmodus -
+  // correctly skipped, same reasoning as every other fixed-trial Test
+  // entry. Feedback reuses Simon-Test's own "colour-neutral ring" idea
+  // (a box-shadow ring, not a solid fill swap) precisely because the
+  // tapped card's own colour is part of the signal being judged, not
+  // something feedback should repaint over.
+  const WCST_SHAPES = ["▲", "★", "■", "●"];
+  const WCST_COLOR_HEX = ["#d64545", "#2e7d32", "#f4c430", "#1565c0"];
+  const WCST_RULE_CYCLE = ["farbe", "form", "anzahl"];
+  const WCST_STREAK_NEEDED = 6; // simplified from the classic WCST's 10-consecutive-correct criterion, same "shorter for a quick training run" trade-off as Blockspanne-Test's own single-trial-per-length simplification
+  const WCST_MAX_CATEGORIES = 6; // matches the real WCST's own stopping rule
+  const WCST_LENGTHS = {
+    kurz: { title: "Kurz (32 Karten)", maxTrials: 32 },
+    mittel: { title: "Mittel (48 Karten)", maxTrials: 48 },
+    lang: { title: "Lang (64 Karten)", maxTrials: 64 },
+  };
+  const WCST_FEEDBACK_MS = 550;
+  const WCST_PREFS_KEY = "fwmc-wcst-prefs-v1";
+  const wcstPrefs = { length: "mittel" };
+  function loadWcstPrefs() {
+    const saved = readJSON(WCST_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(wcstPrefs, saved);
+    if (!WCST_LENGTHS[wcstPrefs.length]) wcstPrefs.length = "mittel";
+  }
+  loadWcstPrefs();
+  function saveWcstPrefsToStorage() { writeJSON(WCST_PREFS_KEY, wcstPrefs); }
+
+  const WCST_BEST_KEY = "fwmc-wcst-best-v1"; // { [length]: bestCategoriesCompleted } - higher is better
+  function wcstBestFor() { return readJSON(WCST_BEST_KEY, {})[wcstPrefs.length] || 0; }
+  function saveWcstBest(categories) {
+    const all = readJSON(WCST_BEST_KEY, {});
+    if (categories > (all[wcstPrefs.length] || 0)) { all[wcstPrefs.length] = categories; writeJSON(WCST_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderWcstBest() {
+    const best = wcstBestFor();
+    const text = best ? `Beste Kategorien (${WCST_LENGTHS[wcstPrefs.length].title}): ${best}` : "";
+    els.wcstBestHint.textContent = text;
+    els.wcstReadyBestHint.textContent = text;
+  }
+  function syncWcstLengthUI() {
+    els.wcstLengthRow.querySelectorAll("[data-wcst-length]").forEach((btn) => setActive(btn, btn.dataset.wcstLength === wcstPrefs.length));
+  }
+  els.wcstLengthRow.querySelectorAll("[data-wcst-length]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      wcstPrefs.length = btn.dataset.wcstLength;
+      saveWcstPrefsToStorage();
+      syncWcstLengthUI();
+      renderWcstBest();
+    });
+  });
+
+  els.wcstOpenBtn.addEventListener("click", () => {
+    syncWcstLengthUI();
+    renderWcstBest();
+    showScreen("wcstReady");
+  });
+  els.wcstReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  function scheduleWcstTimer(fn, delayMs) {
+    wcstState.timerFn = fn;
+    wcstState.timerFiresAt = performance.now() + delayMs;
+    wcstState.timer = setTimeout(() => { wcstState.timer = null; fn(); }, delayMs);
+  }
+
+  // Rejection-sampled so shapeIdx/colorIdx/countIdx are pairwise distinct -
+  // every card then points unambiguously to three different reference
+  // cards depending on which rule is active, matching the "unambiguous
+  // card" subset the standard WCST protocol itself scores on.
+  function wcstRandomCard(rng) {
+    let s, c, n, tries = 0;
+    do { s = Math.floor(rng() * 4); c = Math.floor(rng() * 4); n = Math.floor(rng() * 4); tries++; }
+    while (tries < 50 && (s === c || s === n || c === n));
+    return { shapeIdx: s, colorIdx: c, countIdx: n };
+  }
+  function wcstMatchIdxForRule(card, rule) {
+    if (rule === "farbe") return card.colorIdx;
+    if (rule === "form") return card.shapeIdx;
+    return card.countIdx;
+  }
+  function wcstRenderStimulus(card) {
+    els.wcstStimulusCard.innerHTML = "";
+    const hex = WCST_COLOR_HEX[card.colorIdx];
+    const shape = WCST_SHAPES[card.shapeIdx];
+    for (let i = 0; i < card.countIdx + 1; i++) {
+      const span = document.createElement("span");
+      span.className = "wcst-shape";
+      span.style.color = hex;
+      span.textContent = shape;
+      els.wcstStimulusCard.appendChild(span);
+    }
+  }
+
+  let wcstState = null;
+  function startWcstGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.wcstPlayer.hidden = false;
+    els.wcstPlayerBar.hidden = false;
+    els.wcstDonePanel.hidden = true;
+    els.wcstPauseOverlay.hidden = true;
+    els.wcstPauseBtn.hidden = false;
+    wcstState = {
+      length: wcstPrefs.length, maxTrials: WCST_LENGTHS[wcstPrefs.length].maxTrials,
+      trials: 0, correct: 0, wrong: 0, consecutiveCorrect: 0,
+      ruleIdx: 0, prevRule: null, categoriesCompleted: 0, perseverative: 0,
+      card: null, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      startTime: performance.now(),
+    };
+    els.wcstRefRow.querySelectorAll(".wcst-ref").forEach((b) => b.classList.remove("correct", "wrong"));
+    els.wcstStimulusCard.innerHTML = "";
+    els.wcstHint.textContent = "Ordne die Karte unten einer der vier oben zu. Du bekommst nur eine Rückmeldung, ob es richtig oder falsch war – die Regel musst du selbst herausfinden.";
+    els.wcstProgressEl.textContent = `0/${wcstState.maxTrials} · 0 Kategorien`;
+    requestWakeLock();
+    scheduleWcstTimer(wcstNextTrial, 900);
+  }
+  els.wcstReadyStartBtn.addEventListener("click", startWcstGame);
+
+  function wcstNextTrial() {
+    if (!wcstState) return;
+    if (wcstState.trials >= wcstState.maxTrials || wcstState.categoriesCompleted >= WCST_MAX_CATEGORIES) { wcstFinish(); return; }
+    wcstState.card = wcstRandomCard(Math.random);
+    wcstRenderStimulus(wcstState.card);
+    els.wcstRefRow.querySelectorAll(".wcst-ref").forEach((b) => b.classList.remove("correct", "wrong"));
+  }
+  function wcstTap(idx) {
+    if (!wcstState || wcstState.paused || !wcstState.card) return;
+    const rule = WCST_RULE_CYCLE[wcstState.ruleIdx];
+    const correctIdx = wcstMatchIdxForRule(wcstState.card, rule);
+    const isCorrect = idx === correctIdx;
+    const btn = els.wcstRefRow.querySelector(`.wcst-ref[data-ref-idx="${idx}"]`);
+    if (btn) btn.classList.add(isCorrect ? "correct" : "wrong");
+    wcstState.trials++;
+    if (isCorrect) {
+      wcstState.correct++;
+      wcstState.consecutiveCorrect++;
+    } else {
+      wcstState.wrong++;
+      wcstState.consecutiveCorrect = 0;
+      if (wcstState.prevRule) {
+        const prevCorrectIdx = wcstMatchIdxForRule(wcstState.card, wcstState.prevRule);
+        if (idx === prevCorrectIdx && prevCorrectIdx !== correctIdx) wcstState.perseverative++;
+      }
+    }
+    let switched = false;
+    if (isCorrect && wcstState.consecutiveCorrect >= WCST_STREAK_NEEDED) {
+      wcstState.categoriesCompleted++;
+      wcstState.prevRule = rule;
+      wcstState.ruleIdx = (wcstState.ruleIdx + 1) % WCST_RULE_CYCLE.length;
+      wcstState.consecutiveCorrect = 0;
+      switched = true;
+    }
+    els.wcstProgressEl.textContent = `${wcstState.trials}/${wcstState.maxTrials} · ${wcstState.categoriesCompleted} Kategorien`;
+    wcstState.card = null;
+    if (switched) els.wcstHint.textContent = "Kategorie geschafft! Weiter geht's – die Regel kann sich jetzt geändert haben.";
+    const delay = switched ? WCST_FEEDBACK_MS + 550 : WCST_FEEDBACK_MS;
+    scheduleWcstTimer(() => {
+      if (switched && wcstState) els.wcstHint.textContent = "Ordne die Karte unten einer der vier oben zu.";
+      wcstNextTrial();
+    }, delay);
+  }
+  els.wcstRefRow.querySelectorAll(".wcst-ref").forEach((btn) => {
+    btn.addEventListener("click", () => wcstTap(Number(btn.dataset.refIdx)));
+  });
+
+  // Pause just stops/replays the pending feedback timer, same as
+  // Go/No-Go/Flanker/Subitizing-Test - no live background-adjust overlay
+  // since there is no background setting here (see the write-up above).
+  function pauseWcst() {
+    if (!wcstState || wcstState.paused) return;
+    wcstState.paused = true;
+    wcstState.pausedAt = performance.now();
+    if (wcstState.timer) {
+      clearTimeout(wcstState.timer);
+      wcstState.timer = null;
+      wcstState.timerRemainingMs = Math.max(0, wcstState.timerFiresAt - wcstState.pausedAt);
+    }
+    els.wcstPauseBtn.hidden = true;
+    els.wcstPauseOverlay.hidden = false;
+  }
+  function resumeWcst() {
+    if (!wcstState || !wcstState.paused) return;
+    const pausedMs = performance.now() - wcstState.pausedAt;
+    wcstState.startTime += pausedMs;
+    wcstState.paused = false;
+    if (wcstState.timerFn && wcstState.timerRemainingMs != null) {
+      scheduleWcstTimer(wcstState.timerFn, wcstState.timerRemainingMs);
+      wcstState.timerRemainingMs = null;
+    }
+    els.wcstPauseOverlay.hidden = true;
+    els.wcstPauseBtn.hidden = false;
+  }
+  els.wcstPauseBtn.addEventListener("click", pauseWcst);
+  els.wcstResumeBtn.addEventListener("click", resumeWcst);
+
+  function finalizeWcstRun(state) {
+    els.wcstPauseOverlay.hidden = true;
+    els.wcstPlayerBar.hidden = true;
+    const accuracyPct = state.trials ? Math.round(100 * state.correct / state.trials) : 0;
+    const isRecord = saveWcstBest(state.categoriesCompleted);
+    renderWcstBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.wcstDoneSummary.textContent =
+      `Kartensortier-Test (${WCST_LENGTHS[state.length].title}) · ${state.trials} Karten · ${accuracyPct}% richtig · ${state.categoriesCompleted} Kategorien geschafft · ${state.perseverative} perseverative Fehler` +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${state.categoriesCompleted} Kategorien, ${accuracyPct}% richtig`;
+    const id = addHistory({ kind: "wcst", title: "Kartensortier-Test", seconds: Math.round(played), note });
+    renderRating(els.wcstRating, id, "Wie klar war dir die Regel jeweils?");
+    els.wcstDonePanel.hidden = false;
+  }
+  function wcstFinish() {
+    if (!wcstState) return;
+    const state = wcstState;
+    wcstState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.wcstPlayer) document.exitFullscreen().catch(() => {});
+    els.wcstFsHint.hidden = true;
+    finalizeWcstRun(state);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few cards were actually resolved.
+  function wcstStop() {
+    if (!wcstState) return;
+    if (wcstState.timer) clearTimeout(wcstState.timer);
+    const state = wcstState;
+    wcstState = null;
+    els.wcstPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.wcstPlayer) document.exitFullscreen().catch(() => {});
+    els.wcstFsHint.hidden = true;
+    if (state.trials >= 4) {
+      finalizeWcstRun(state);
+    } else {
+      els.wcstPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.wcstBackBtn.addEventListener("click", wcstStop);
+  els.wcstAgainBtn.addEventListener("click", () => { els.wcstDonePanel.hidden = true; startWcstGame(); });
+  els.wcstDoneBackBtn.addEventListener("click", () => { els.wcstPlayer.hidden = true; els.wcstDonePanel.hidden = true; showScreen("testHome"); });
+  wireFullscreen({ player: els.wcstPlayer, btn: els.wcstFsBtn, hint: els.wcstFsHint, hintOpen: els.wcstFsHintOpenBtn, hintClose: els.wcstFsHintClose });
 
   // Rotationstest (Mentale Rotation) - grounded in the classic mental-
   // rotation/character-rotation chronometric paradigm (Cooper & Shepard,

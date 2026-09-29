@@ -4467,9 +4467,101 @@ doesn't:
   throughout, no `var(--...)`); the key row and keypad are both plain flex
   rows of 9 equal-width cells so their columns visually line up on a
   phone-width screen. Test: `tests/dsst_test.py`.
+- **Kartensortier-Test** (twenty-fourth autonomous entry, 2026-09-29):
+  built from the "Recherche-Backlog: 20 Kandidaten" list (candidate #7)
+  rather than fresh research this round. Grounded in the Wisconsin Card
+  Sorting Test (WCST; Grant & Berg, 1948; Milner, 1963, tying perseverative
+  errors to dorsolateral-prefrontal damage). Four reference cards sit fixed
+  on screen (1 red triangle, 2 green stars, 3 yellow squares, 4 blue
+  circles - each unique on all three dimensions at once, the classic WCST
+  reference-card design); a new stimulus card appears below and the client
+  taps whichever reference card it "matches" - but the matching RULE
+  (Farbe/Form/Anzahl) is never shown, only right/wrong feedback after each
+  tap, and the client must infer it purely from that feedback. Once
+  `WCST_STREAK_NEEDED` (6, simplified from the classic protocol's 10-in-a-
+  row criterion - same "shorter for a quick training run" trade-off already
+  made for Blockspanne-Test's single-trial-per-length simplification)
+  consecutive correct matches accumulate under the current rule, it
+  silently switches to the next one in the classic Farbe→Form→Anzahl cycle
+  with no warning - the client has to notice their strategy stopped
+  working and re-derive a new one. Genuinely distinct from every existing
+  Test/NAT mechanic: Regelwechsel-Test explicitly CUES which of two known
+  rules applies every single trial (a pure switch-cost paradigm); this is
+  the only exercise where the rule is never told at all and must be
+  discovered - and re-discovered after every silent switch - from feedback
+  alone, testing rule LEARNING and perseveration (clinging to an outdated
+  rule) rather than the cost of switching between two already-known rules.
+  Stimulus cards are generated with all three dimension-indices pairwise
+  distinct (`wcstRandomCard`, simple rejection sampling) so every card
+  points unambiguously to three DIFFERENT reference cards depending on
+  which rule is active - the same "unambiguous card" simplification
+  several digital WCST adaptations use, since the real deck's occasional
+  ambiguous cards (two or three dimensions pointing at the same reference
+  card) are excluded from scoring in the standard protocol anyway. Reports
+  categories completed (rule blocks fully solved, capped at
+  `WCST_MAX_CATEGORIES = 6`, matching the real WCST's own stopping rule)
+  and perseverative errors (a wrong tap that matches the PREVIOUS rule
+  instead of the current one - the classic WCST error-type distinction)
+  alongside plain accuracy%, tracking best categories-completed per
+  `wcstPrefs.length` (kurz/mittel/lang = 32/48/64 cards, the only client-
+  facing setting, same "length, no natural difficulty dial" shape as
+  Suchtest/UFOV/Hick/DSST, since the real WCST has no difficulty knob
+  either - one fixed deck, one fixed rule cycle) via `WCST_BEST_KEY`.
+  **Deliberately no background-colour Feineinstellung**, unlike most other
+  Test-Bereich exercises: colour identity of the four reference/stimulus
+  colours IS literally one of the three sorting rules here, the same
+  category of concern that kept Wortfarben-Test/Stroop excluded from the
+  background-colour rollout entirely - a tinted stage risks competing with
+  exactly the dimension being judged whenever "Farbe" is the active
+  (hidden) rule, so this exercise was left out of that rollout rather than
+  silently deciding it's fine; also correctly excluded from
+  `MASTER_BG_TARGETS` (the Master-Einstellungen cascading-default-
+  background registry another session built the same day) for the same
+  reason - it has no `bgColorKey` field to seed. No Bei-Fehler/
+  Zusatzaufgabe/Trainingsmodus - correctly skipped, same reasoning as every
+  other fixed-trial Test entry. Feedback reuses Simon-Test's own "colour-
+  neutral ring" idea (a `box-shadow` ring, not a solid fill swap) precisely
+  because the tapped card's own colour is part of the signal being judged,
+  not something feedback should repaint over. Pause/resume uses the same
+  scheduleXTimer-remaining-delay trick as every other Test entry (a no-op
+  beyond blocking input and cancelling/replaying the brief post-tap
+  feedback timer, since there's no background/timing state to freeze
+  otherwise). New CSS is `.wcst-*` (fixed hex colours throughout, no
+  `var(--...)`); a real layout bug caught and fixed before shipping (not by
+  the test, by a screenshot check during manual verification): the shared
+  `.wcst-card` base rule originally carried `flex:1`, intended only for the
+  four reference cards sitting side-by-side in `.wcst-ref-row` - but the
+  stimulus card below reuses the same `.wcst-card` class and, as the sole
+  non-`flex:1`-intended flex child of the column-direction `.wcst-stage`,
+  inherited that `flex:1` too and ballooned to fill nearly the entire
+  remaining stage height (confirmed via `getBoundingClientRect`/a
+  screenshot, not guessed) - fixed by moving `flex:1;min-width:0` to a
+  `.wcst-ref-row .wcst-card` scoped rule instead of the shared base class.
+  Test: `tests/wcst_test.py` (since the active rule is deliberately never
+  exposed in the DOM by design, the test drives many trials cycling
+  through all four reference cards and asserts on mechanics that ARE
+  observable - both correct and wrong feedback occur, progress advances,
+  pause/resume freezes the stage, the done-panel reports categories/
+  perseverative-errors/accuracy - rather than asserting the hidden rule
+  logic itself, which was verified by reading the code).
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
+- **Kartensortier-Test: streak threshold and "unambiguous card" scoring
+  are both simplifications versus the standardised WCST protocol**: the
+  real test requires 10 consecutive correct matches per category (this
+  version uses 6, so "Kategorien geschafft" here isn't directly comparable
+  to a published WCST category count), and it deliberately never generates
+  a card where two or three dimensions point at the same reference card
+  (the real deck contains some of these; the standard protocol scores them
+  too, just treats them as informative rather than diagnostic in a
+  slightly different way) - both chosen to keep a run genuinely playable
+  in a training-app session rather than the real test's much longer
+  administration. Not fixed - flagging rather than guessing: ask the
+  client whether the done-panel should note "vereinfachte Fassung, nicht
+  direkt mit dem klinischen WCST vergleichbar", or whether a future pass
+  should move closer to the standard 10-in-a-row criterion for a more
+  directly comparable category count.
 - **Wortfarben-Test overlaps with Visual Training's existing "Stroop ·
   klassisch"/"Stroop · mit Hintergrund"**: same core paradigm (colour-word
   Stroop interference), different mechanic (VT: spoken, unscored, timed
