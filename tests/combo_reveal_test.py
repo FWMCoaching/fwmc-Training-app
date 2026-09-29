@@ -17,9 +17,13 @@ async def main():
             await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)
 
         await pg.click('#home [data-open-combo="1"]'); await pg.wait_for_timeout(150)
-        add_btns = pg.locator(".combo-add-btn")
-        await add_btns.nth(0).click(); await pg.wait_for_timeout(100)
-        await add_btns.nth(1).click(); await pg.wait_for_timeout(100)
+        # Text-based rather than positional selectors, and Visual presets
+        # specifically (still a plain one-click add) - Atemtraining/Cardio/
+        # Movement moved to capture-mode buttons that navigate to their own
+        # settings screen instead of adding instantly, see the Kombi-
+        # Baukasten rebuild note in CLAUDE.md.
+        await pg.click('#comboAddGrid >> text="VT · Farbe & Seite"'); await pg.wait_for_timeout(100)
+        await pg.click('#comboAddGrid >> text="VRW · Direkt & Umgekehrt"'); await pg.wait_for_timeout(100)
 
         # name form should be hidden before clicking save
         print("save form hidden before click:", await pg.is_hidden("#comboSaveForm"))
@@ -49,7 +53,7 @@ async def main():
         print("saved group hidden after delete:", await pg.is_hidden("#comboSavedGroup"))
 
         # cancel flow
-        await add_btns.nth(0).click(); await pg.wait_for_timeout(100)
+        await pg.click('#comboAddGrid >> text="VT · Farbe & Seite"'); await pg.wait_for_timeout(100)
         await pg.click("#comboSaveBtn"); await pg.wait_for_timeout(100)
         await pg.click("#comboSaveCancelBtn"); await pg.wait_for_timeout(100)
         print("form hidden after cancel:", await pg.is_hidden("#comboSaveForm"))

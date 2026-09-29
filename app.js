@@ -1038,12 +1038,6 @@
   // full settings depth of each section's own screen, but enough to build a
   // useful cross-section session without reimplementing every settings UI.
   const COMBO_PRESETS = {
-    breath: [
-      { domain: "breath", pattern: "box", durationMin: 3 },
-      { domain: "breath", pattern: "coherent", durationMin: 5 },
-      { domain: "breath", pattern: "relax478", durationMin: 3 },
-      { domain: "wimhof", breaths: 30, rounds: 3, breathPaceS: 1.7, recoveryHoldS: 15 },
-    ],
     visual: [
       { domain: "visual", exercise: "vt-color", duration: 60, colors: ["orange", "rot", "lila"] },
       { domain: "visual", exercise: "vrw-original", duration: 60, colors: ["orange", "rot", "lila"] },
@@ -1058,7 +1052,34 @@
       { domain: "nat", mode: "shuffle", duration: 60 },
     ],
   };
-  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Movement", visual: "Visual Training", workout: "Workout", nat: "NAT" };
+  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Movement", visual: "Visual Training", workout: "Workout", cardio: "Cardio", nat: "NAT" };
+  const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat"];
+  // Domains (or, for Atemtraining, individual patterns within one domain)
+  // with no fixed preset list - each "block" is captured by briefly
+  // reopening that domain's own real settings screen (full fine-tune UI +
+  // saved presets "for free") instead of a second, smaller settings UI just
+  // for combo blocks. See the Kombi-Baukasten rebuild note in CLAUDE.md.
+  const COMBO_CAPTURE_ENTRIES = {
+    breath: [
+      { label: "Ruhige Atmung (Kohärenz)", meta: "Tempo, Dauer & Ton einstellen", open: () => openBreathComboCapture("coherent", null, null) },
+      { label: "Box-Atmung", meta: "Tempo, Dauer & Ton einstellen", open: () => openBreathComboCapture("box", null, null) },
+      { label: "4-7-8 (angelehnter Takt)", meta: "Tempo, Dauer & Ton einstellen", open: () => openBreathComboCapture("relax478", null, null) },
+      { label: "Eigenes Muster", meta: "jede Phase frei einstellen", open: () => openBreathComboCapture("custom", null, null) },
+      { label: WIMHOF_INFO.name, meta: "Atemzüge, Runden & Tempo einstellen", open: () => openWimhofComboCapture(null, null) },
+    ],
+    movement: [
+      { label: "Ganzkörper-Reaktion", meta: "Bewegungen, Tempo & Dauer einstellen", open: () => openMovementComboCapture(null, null) },
+    ],
+    cardio: [
+      { label: "Cardio-Einheit", meta: "eigene Aktivitäten zusammenstellen", open: () => openCardioComboCapture(null, null) },
+    ],
+  };
+  const COMBO_EDIT_OPENERS = {
+    cardio: (block, i) => openCardioComboCapture(block, i),
+    movement: (block, i) => openMovementComboCapture(block, i),
+    breath: (block, i) => openBreathComboCapture(block.pattern, block, i),
+    wimhof: (block, i) => openWimhofComboCapture(block, i),
+  };
 
   // ---- Elements ----
   const $ = (id) => document.getElementById(id);
@@ -4793,7 +4814,52 @@
     renderBreathSaved();
     showScreen("breathReady");
   }
-  els.breathBackToHome.addEventListener("click", () => showScreen("breathHome"));
+  // ---- Kombi-Baukasten capture, same pattern as Cardio/Movement above:
+  // reopen this exact breathReady screen instead of a second settings UI.
+  // breathPrefs.durationMin/sound are global across every pattern (only
+  // breathPrefs.custom is pattern-specific) - those are what get saved off
+  // and restored; breathWorking/breathPatternKey aren't persisted
+  // standalone state, openBreathReady() always sets them fresh regardless
+  // of capture mode, so nothing there needs snapshotting.
+  let comboBreathCaptureOriginal = null;
+  let comboBreathEditIndex = null;
+  function openBreathComboCapture(patternKey, existingBlock, editIndex) {
+    comboBreathCaptureOriginal = { durationMin: breathPrefs.durationMin, sound: breathPrefs.sound, custom: { ...breathPrefs.custom } };
+    const key = existingBlock ? existingBlock.pattern : patternKey;
+    openBreathReady(key);
+    if (existingBlock) {
+      if (existingBlock.phases) breathWorking = { ...existingBlock.phases };
+      breathPrefs.durationMin = existingBlock.durationMin ?? breathPrefs.durationMin;
+      breathPrefs.sound = existingBlock.sound !== false;
+      syncPhaseUI(); syncBreathDurationUI(); syncBreathSoundUI();
+    }
+    comboBreathEditIndex = editIndex ?? null;
+    els.breathReadyTitle.textContent = "Baustein: " + BREATH_PATTERNS[key].name;
+    els.breathStartBtn.textContent = "Baustein übernehmen";
+  }
+  function exitBreathComboCapture() {
+    if (comboBreathCaptureOriginal) {
+      breathPrefs.durationMin = comboBreathCaptureOriginal.durationMin;
+      breathPrefs.sound = comboBreathCaptureOriginal.sound;
+      breathPrefs.custom = comboBreathCaptureOriginal.custom;
+      saveBreathPrefs();
+      comboBreathCaptureOriginal = null;
+    }
+    comboBreathEditIndex = null;
+    els.breathStartBtn.textContent = "Atemtraining starten";
+  }
+  function commitBreathComboCapture() {
+    const block = { domain: "breath", pattern: breathPatternKey, durationMin: breathPrefs.durationMin, phases: { ...breathWorking }, sound: breathPrefs.sound };
+    if (comboBreathEditIndex != null) comboDraftBlocks[comboBreathEditIndex] = block;
+    else comboDraftBlocks.push(block);
+    exitBreathComboCapture();
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+  els.breathBackToHome.addEventListener("click", () => {
+    if (comboBreathCaptureOriginal) { exitBreathComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("breathHome");
+  });
 
   // ---- Breathing session engine ----
   let breathRaf = null;
@@ -4856,7 +4922,10 @@
     requestWakeLock();
     breathRaf = requestAnimationFrame(breathTick);
   }
-  els.breathStartBtn.addEventListener("click", startBreathSession);
+  els.breathStartBtn.addEventListener("click", () => {
+    if (comboBreathCaptureOriginal) { commitBreathComboCapture(); return; }
+    startBreathSession();
+  });
 
   // Pause/Fortsetzen: the tips sheet tells clients to pause if they feel
   // unwell, so the breath player needs an actual pause, not just "Beenden".
@@ -4934,6 +5003,12 @@
         breathPrefs.durationMin = entry.durationMin;
         breathPrefs.sound = entry.sound;
         saveBreathPrefs();
+        // While capturing a Kombi-Baustein, loading a saved setting should
+        // just fill the draft for review, not immediately start a session.
+        if (comboBreathCaptureOriginal) {
+          syncPhaseUI(); syncBreathDurationUI(); syncBreathSoundUI();
+          return;
+        }
         startBreathSession();
       });
   }
@@ -5048,17 +5123,59 @@
   function syncWimhofStartBtn() {
     const ok = els.wimhofAckCheck.checked;
     els.wimhofStartBtn.disabled = !ok;
-    els.wimhofStartBtn.textContent = ok ? "Kraftvolle Atmung starten" : "Bitte oben bestätigen";
+    els.wimhofStartBtn.textContent = ok ? (comboWimhofCaptureOriginal ? "Baustein übernehmen" : "Kraftvolle Atmung starten") : "Bitte oben bestätigen";
   }
   els.wimhofAckCheck.addEventListener("change", syncWimhofStartBtn);
 
   function openWimhofReady() {
-    els.wimhofAckCheck.checked = false; // the safety notes are re-confirmed every visit, not just once
+    els.wimhofAckCheck.checked = false; // the safety notes are re-confirmed every visit, not just once - capture/edit included
     syncWimhofStartBtn();
     syncWimhofUI();
     showScreen("wimhofReady");
   }
-  els.wimhofBackToHome.addEventListener("click", () => showScreen("breathHome"));
+
+  // ---- Kombi-Baukasten capture for Wim-Hof-style breathing: same pattern
+  // as the cycle patterns above, reopening wimhofReady. The safety
+  // acknowledgement is still required every time, capture/edit included -
+  // "Safety first, always" already applied to combo *playback* (see
+  // startComboBlock's wimhof branch), so requiring it at authoring time too
+  // is consistent, not a new restriction.
+  let comboWimhofCaptureOriginal = null;
+  let comboWimhofEditIndex = null;
+  function openWimhofComboCapture(existingBlock, editIndex) {
+    comboWimhofCaptureOriginal = { ...wimhofSettings };
+    if (existingBlock) {
+      wimhofSettings.breaths = existingBlock.breaths ?? wimhofSettings.breaths;
+      wimhofSettings.rounds = existingBlock.rounds ?? wimhofSettings.rounds;
+      wimhofSettings.breathPaceS = existingBlock.breathPaceS ?? wimhofSettings.breathPaceS;
+      wimhofSettings.recoveryHoldS = existingBlock.recoveryHoldS ?? wimhofSettings.recoveryHoldS;
+    }
+    comboWimhofEditIndex = editIndex ?? null;
+    openWimhofReady();
+  }
+  function exitWimhofComboCapture() {
+    if (comboWimhofCaptureOriginal) {
+      Object.assign(wimhofSettings, comboWimhofCaptureOriginal);
+      saveWimhofSettings();
+      comboWimhofCaptureOriginal = null;
+    }
+    comboWimhofEditIndex = null;
+  }
+  function commitWimhofComboCapture() {
+    const block = {
+      domain: "wimhof", breaths: wimhofSettings.breaths, rounds: wimhofSettings.rounds,
+      breathPaceS: wimhofSettings.breathPaceS, recoveryHoldS: wimhofSettings.recoveryHoldS,
+    };
+    if (comboWimhofEditIndex != null) comboDraftBlocks[comboWimhofEditIndex] = block;
+    else comboDraftBlocks.push(block);
+    exitWimhofComboCapture();
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+  els.wimhofBackToHome.addEventListener("click", () => {
+    if (comboWimhofCaptureOriginal) { exitWimhofComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("breathHome");
+  });
 
   let wimhofRaf = null;
   let wimhofState = null; // { round, phase: "power"|"retention"|"recovery", phaseStart, sessionStart, retentions }
@@ -5075,7 +5192,10 @@
     requestWakeLock();
     wimhofRaf = requestAnimationFrame(wimhofTick);
   }
-  els.wimhofStartBtn.addEventListener("click", startWimhofSession);
+  els.wimhofStartBtn.addEventListener("click", () => {
+    if (comboWimhofCaptureOriginal) { commitWimhofComboCapture(); return; }
+    startWimhofSession();
+  });
 
   function wimhofTick(now) {
     if (!wimhofState) return;
@@ -9404,7 +9524,10 @@
   let comboDraftBlocks = [];
   function renderComboAddGrid() {
     els.comboAddGrid.innerHTML = "";
-    Object.entries(COMBO_PRESETS).forEach(([domain, presets]) => {
+    COMBO_DOMAIN_ORDER.forEach((domain) => {
+      const presets = COMBO_PRESETS[domain] || [];
+      const captures = COMBO_CAPTURE_ENTRIES[domain] || [];
+      if (!presets.length && !captures.length) return;
       const group = document.createElement("div");
       group.className = "combo-domain-group";
       group.innerHTML = `<div class="combo-domain-title">${esc(COMBO_DOMAIN_TITLE[domain])}</div>`;
@@ -9417,29 +9540,16 @@
         btn.addEventListener("click", () => { comboDraftBlocks.push({ ...preset }); renderComboBlockList(); });
         opts.appendChild(btn);
       });
-      group.appendChild(opts);
-      els.comboAddGrid.appendChild(group);
-    });
-    // Domains without a fixed preset list - their "block" is captured by
-    // briefly reopening that domain's own real settings screen (full
-    // fine-tune + saved presets "for free"), see openCardioComboCapture/
-    // openMovementComboCapture. More domains join this list as the rebuild
-    // reaches them; COMBO_PRESETS above is the (shrinking) set that still
-    // only offers a few curated, non-editable defaults.
-    [
-      { title: "Cardio", label: "Cardio-Einheit", meta: "eigene Aktivitäten zusammenstellen", open: () => openCardioComboCapture(null, null) },
-      { title: "Movement", label: "Ganzkörper-Reaktion", meta: "Bewegungen, Tempo & Dauer einstellen", open: () => openMovementComboCapture(null, null) },
-    ].forEach(({ title, label, meta, open }) => {
-      const group = document.createElement("div");
-      group.className = "combo-domain-group";
-      group.innerHTML = `<div class="combo-domain-title">${esc(title)}</div>`;
-      const opts = document.createElement("div");
-      opts.className = "combo-domain-options";
-      const btn = document.createElement("button");
-      btn.className = "combo-add-btn";
-      btn.innerHTML = `<span><span class="ca-title">${esc(label)}</span><br><span class="ca-meta">${esc(meta)}</span></span><span class="ca-plus">+</span>`;
-      btn.addEventListener("click", open);
-      opts.appendChild(btn);
+      // Presets are add-and-done (fixed config); capture entries instead
+      // reopen that domain's own real settings screen - see
+      // COMBO_CAPTURE_ENTRIES's comment above for why.
+      captures.forEach(({ label, meta, open }) => {
+        const btn = document.createElement("button");
+        btn.className = "combo-add-btn";
+        btn.innerHTML = `<span><span class="ca-title">${esc(label)}</span><br><span class="ca-meta">${esc(meta)}</span></span><span class="ca-plus">+</span>`;
+        btn.addEventListener("click", open);
+        opts.appendChild(btn);
+      });
       group.appendChild(opts);
       els.comboAddGrid.appendChild(group);
     });
@@ -9448,7 +9558,6 @@
     els.comboBlockCount.textContent = comboDraftBlocks.length ? `${comboDraftBlocks.length} Baustein${comboDraftBlocks.length === 1 ? "" : "e"}` : "";
     els.comboEmptyHint.hidden = comboDraftBlocks.length > 0;
     els.comboBlockList.innerHTML = "";
-    const COMBO_EDIT_OPENERS = { cardio: openCardioComboCapture, movement: openMovementComboCapture };
     comboDraftBlocks.forEach((block, i) => {
       const editOpener = COMBO_EDIT_OPENERS[block.domain];
       const row = document.createElement("div");

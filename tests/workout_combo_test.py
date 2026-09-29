@@ -96,14 +96,14 @@ async def main():
         print("combo screen visible:", await pg.is_visible("#comboScreen"))
         add_btns = pg.locator("#comboScreen .combo-add-btn")
         print("preset add buttons:", await add_btns.count())
-        # Text-based rather than positional (.nth) selectors: Cardio/Movement
-        # moved from fixed-position preset buttons to capture-mode buttons at
-        # the end of the grid (see the Kombi-Baukasten rebuild in CLAUDE.md),
-        # which shifts every later domain's button index.
-        await pg.click('#comboAddGrid >> text="Box-Atmung"'); await pg.wait_for_timeout(100)
-        # Movement now opens its own settings screen in capture mode instead
-        # of a one-click add - movement_combo_test.py covers that in depth,
-        # here just add one the normal way.
+        # Text-based rather than positional (.nth) selectors: Breath/Cardio/
+        # Movement moved from fixed-position preset buttons to capture-mode
+        # buttons that reopen their own settings screen (see the Kombi-
+        # Baukasten rebuild in CLAUDE.md) - breath_combo_test.py and
+        # movement_combo_test.py cover those flows in depth, here just add
+        # one of each the normal way.
+        await pg.click('#comboAddGrid >> text="Box-Atmung"'); await pg.wait_for_timeout(200)
+        await pg.click("#breathStartBtn"); await pg.wait_for_timeout(200)
         await pg.click('#comboAddGrid >> text="Ganzkörper-Reaktion"'); await pg.wait_for_timeout(200)
         await pg.click("#movementStartBtn"); await pg.wait_for_timeout(200)
         await pg.click('#comboAddGrid >> text="VT · Farbe & Seite"'); await pg.wait_for_timeout(100)

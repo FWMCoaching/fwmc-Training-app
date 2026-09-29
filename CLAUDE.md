@@ -2744,7 +2744,7 @@ all this ctx-threading. Uses Playwright route interception on the
 `CODE_API` URL to serve fake defs for each new type, since none of this
 can be exercised via `dashboard.html` without a live Worker deploy.
 
-## Kombi-Baukasten rebuild (started 2026-09-29, Cardio + Movement slices done)
+## Kombi-Baukasten rebuild (started 2026-09-29, Cardio + Movement + Breath/Wim Hof slices done)
 
 Client's ask, in one big message: Cardio needs the "Komplett-Programm aus
 mehreren Bereichen" entry it was missing (a scope gap from the night
@@ -2867,17 +2867,66 @@ grid; switched it to text-based selectors, the same convention the new
 combo tests use, so a future reshuffle of the grid can't silently degrade
 it the same way again.
 
+**Breath + Wim Hof slice**: Breath already had combo *playback* hooks
+(`breathFinishSession()`/`breathAbort()` already checked `comboProgram`,
+since Breath was one of the 5 original curated-preset domains, unlike
+Cardio) - only capture UI was missing, same as Movement.
+- Breath's 4 cycle patterns (coherent/box/relax478/custom) share one
+  `openBreathComboCapture(patternKey, existingBlock, editIndex)`, since
+  they share one settings screen (`breathReady`, already keyed by
+  `breathPatternKey`). `comboBreathCaptureOriginal` only needs to snapshot
+  `breathPrefs.durationMin`/`sound`/`custom` - `breathWorking` and
+  `breathPatternKey` aren't persisted standalone state (`openBreathReady()`
+  always sets them fresh), so there's nothing else to save off. The block
+  shape gained one thing the old canned presets never had: `phases` is now
+  always captured (not just for `"custom"`), so even a quick ad-hoc tweak
+  to Box-Atmung's timing for one combo flows through, not just its fixed
+  default.
+- Wim Hof got its own `openWimhofComboCapture`/`exitWimhofComboCapture`/
+  `commitWimhofComboCapture`, reusing `wimhofReady` - the safety
+  acknowledgement checkbox is still required every time, capture/edit
+  included ("Safety first, always" already applied to combo *playback*
+  via `startComboBlock`'s wimhof branch forcing its own settings screen
+  mid-run; requiring it at authoring time too is the same principle, not
+  a new restriction). `syncWimhofStartBtn()`'s label became capture-aware
+  the same way Cardio/Movement's start buttons did.
+- `renderBreathSaved()`'s "load a saved setting" callback made capture-
+  aware (fills the draft, doesn't auto-start), same pattern as Cardio's
+  and Movement's saved-preset callbacks.
+- `COMBO_PRESETS.breath` removed entirely (all 5 options - 4 patterns +
+  Wim Hof - now come from `COMBO_CAPTURE_ENTRIES.breath`, up from 3 fixed
+  patterns + 1 fixed Wim Hof preset before, and `"custom"` wasn't reachable
+  from the combo builder at all previously).
+- `renderComboAddGrid()`/`renderComboBlockList()` generalized further: a
+  module-level `COMBO_CAPTURE_ENTRIES` (per domain, a list of
+  `{label, meta, open}`) and `COMBO_EDIT_OPENERS` (per domain, an
+  edit-in-place opener) replace the growing pile of near-duplicate
+  per-domain blocks from the Cardio/Movement slices - adding the next
+  domain to this rebuild is now a few lines in these two tables, not new
+  rendering code. `COMBO_DOMAIN_ORDER` keeps the add-grid's section order
+  stable now that domains can contribute presets, captures, both, or (once
+  a domain fully migrates) neither.
+
+Tested in `tests/breath_combo_test.py`: all 4 patterns + Wim Hof present
+in the add grid, cycle-pattern capture (including an ad-hoc duration
+tweak surviving into the block, re-editing it, cancelling leaves the
+standalone pattern setting untouched), and Wim Hof capture (ack required
+before the button enables/reads "Baustein übernehmen", commits, standalone
+entry still demands a fresh ack afterward). Fixed the breath-related steps
+in `tests/combo_reveal_test.py` and `tests/workout_combo_test.py`, which
+assumed clicking a breath preset instantly added a block - true before
+this slice, not anymore now that breath also opens its settings screen in
+capture mode.
+
 **Not done yet, explicit backlog for the rest of this rebuild**: the same
 capture-mode pattern still needs to reach Visual (all `EXERCISES`, via
-`openReady()`), Breath (already covers its patterns, could still gain
-full fine-tune + saved-preset reuse in capture mode), Workout (all
-exercises, both reps and Tabata mode), and NAT's Remember (already
-combo-capable via `comboDurationS`,
-needs the same UI treatment) plus Blitz-Raster/Flash Speicher Test/MOT
-Fähigkeit - those three are endless/progressive with no fixed end, so
-each needs the same `comboDurationS`-style duration cutoff Remember
-already got before they can join a combo at all. Pause markers between
-blocks (a `{domain:"pause", seconds:…}` pseudo-block) also not started.
+`openReady()`) and Workout (all exercises, both reps and Tabata mode), and
+NAT's Remember (already combo-capable via `comboDurationS`, needs the same
+UI treatment) plus Blitz-Raster/Flash Speicher Test/MOT Fähigkeit - those
+three are endless/progressive with no fixed end, so each needs the same
+`comboDurationS`-style duration cutoff Remember already got before they
+can join a combo at all. Pause markers between blocks (a
+`{domain:"pause", seconds:…}` pseudo-block) also not started.
 Also flagged, separately, from the same client message: a Master-level
 default background colour that cascades into every exercise's own
 background-colour Feineinstellung (auto-excluding exercises like Stroop
