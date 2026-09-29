@@ -1514,6 +1514,19 @@
     stopFsBtn: $("stopFsBtn"), stopFsHint: $("stopFsHint"), stopFsHintOpenBtn: $("stopFsHintOpenBtn"), stopFsHintClose: $("stopFsHintClose"),
     stopDonePanel: $("stopDonePanel"), stopDoneSummary: $("stopDoneSummary"), stopRating: $("stopRating"),
     stopAgainBtn: $("stopAgainBtn"), stopDoneBackBtn: $("stopDoneBackBtn"),
+    dsstOpenBtn: $("dsstOpenBtn"), dsstBestHint: $("dsstBestHint"), dsstReady: $("dsstReady"),
+    dsstReadyBackToHome: $("dsstReadyBackToHome"), dsstLengthRow: $("dsstLengthRow"),
+    dsstBgColorPicker: $("dsstBgColorPicker"), dsstBgIntensitySlider: $("dsstBgIntensitySlider"),
+    dsstBgIntensityValue: $("dsstBgIntensityValue"), dsstBgContrastHint: $("dsstBgContrastHint"),
+    dsstReadyBestHint: $("dsstReadyBestHint"), dsstReadyStartBtn: $("dsstReadyStartBtn"),
+    dsstPlayer: $("dsstPlayer"), dsstStage: $("dsstStage"), dsstHint: $("dsstHint"),
+    dsstKeyRow: $("dsstKeyRow"), dsstDigit: $("dsstDigit"), dsstKeypad: $("dsstKeypad"),
+    dsstPauseOverlay: $("dsstPauseOverlay"), dsstResumeBtn: $("dsstResumeBtn"),
+    dsstPauseBgSlider: $("dsstPauseBgSlider"), dsstPauseBgValue: $("dsstPauseBgValue"), dsstPauseBgColorPicker: $("dsstPauseBgColorPicker"),
+    dsstPlayerBar: $("dsstPlayerBar"), dsstBackBtn: $("dsstBackBtn"), dsstPauseBtn: $("dsstPauseBtn"), dsstProgressEl: $("dsstProgressEl"),
+    dsstFsBtn: $("dsstFsBtn"), dsstFsHint: $("dsstFsHint"), dsstFsHintOpenBtn: $("dsstFsHintOpenBtn"), dsstFsHintClose: $("dsstFsHintClose"),
+    dsstDonePanel: $("dsstDonePanel"), dsstDoneSummary: $("dsstDoneSummary"), dsstRating: $("dsstRating"),
+    dsstAgainBtn: $("dsstAgainBtn"), dsstDoneBackBtn: $("dsstDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
@@ -1764,7 +1777,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -4028,6 +4041,7 @@
     els.alarmPlayer.hidden = true;
     els.vorlaufPlayer.hidden = true;
     els.stopPlayer.hidden = true;
+    els.dsstPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.cardioPlayer.hidden = true;
     els.programVideoPlayer.hidden = true;
@@ -12660,6 +12674,277 @@
   els.stopAgainBtn.addEventListener("click", () => { els.stopDonePanel.hidden = true; startStopGame(); });
   els.stopDoneBackBtn.addEventListener("click", () => { els.stopPlayer.hidden = true; els.stopDonePanel.hidden = true; showScreen("testHome"); });
   wireFullscreen({ player: els.stopPlayer, btn: els.stopFsBtn, hint: els.stopFsHint, hintOpen: els.stopFsHintOpenBtn, hintClose: els.stopFsHintClose });
+
+  // ==== Test-Bereich: Zeichen-Zuordnungs-Test ====
+  // Twenty-third autonomous entry, picked from the "Recherche-Backlog: 20
+  // Kandidaten" list (candidate #9). Grounded in the Digit Symbol
+  // Substitution Test (DSST, the "Coding" subtest of the Wechsler Adult
+  // Intelligence Scale) - a widely-used general processing-speed measure:
+  // a key maps each digit 1-9 to an abstract symbol; the client converts
+  // as many digits to symbols as possible within a fixed time. A fresh,
+  // randomly-shuffled digit→symbol key (`DSST_SYMBOLS`, 9 simple geometric
+  // Unicode glyphs) is generated at the start of every run and stays
+  // visible the whole time (`#dsstKeyRow`) - re-shuffled per run rather
+  // than using one fixed standard key, deliberately, so repeat play trains
+  // genuine key-lookup speed rather than eventually memorising one fixed
+  // mapping; a single random digit 1-9 (no immediate repeat) is shown
+  // large, and the client taps the matching symbol from a keypad
+  // (`#dsstKeypad`) built in the SAME left-to-right order as the key row,
+  // so the correct answer is always at the same visual column the client
+  // just looked up. Runs continuously for a fixed duration
+  // (`dsstPrefs.length`, kurz/mittel/lang = 60/90/120s - same "length
+  // setting, no natural difficulty dial" shape as Suchtest/UFOV/Hick,
+  // since the real DSST has no difficulty knob either: one fixed key, one
+  // fixed digit range, raced against the clock) - self-paced per trial
+  // (a tap advances immediately after a brief feedback pause, no per-item
+  // timeout, since the real test's whole point is throughput against the
+  // OVERALL time limit, not per-item speed) - `dsstNextTrial()` checks
+  // elapsed time itself and ends the run instead of showing a new digit
+  // once the duration is up, the same "duration-checked-at-spawn-time"
+  // shape Reaktionsfeld-Test already uses, so no second, competing timer
+  // is ever needed alongside the brief post-tap feedback timer.
+  // Reports total correct substitutions (the DSST's own standard score,
+  // tracked as best via `DSST_BEST_KEY`, higher is better) plus accuracy%
+  // and a wrong-tap count. Genuinely distinct from every existing Test/NAT
+  // mechanic: Hick-Test varies the NUMBER of response alternatives with a
+  // spatially-compatible mapping (the lit box IS the target, no lookup
+  // needed); this instead demands constantly CONSULTING an arbitrary,
+  // freshly-learned key and re-mapping symbol identity every single trial
+  // - a genuinely different (coding/psychomotor translation) facet of
+  // processing speed that nothing else on this tab touches.
+  const DSST_SYMBOLS = ["△", "○", "□", "◇", "☆", "✚", "▽", "●", "✦"];
+  const DSST_LENGTHS = {
+    kurz: { title: "Kurz (60 Sek.)", durationS: 60 },
+    mittel: { title: "Mittel (90 Sek.)", durationS: 90 },
+    lang: { title: "Lang (120 Sek.)", durationS: 120 },
+  };
+  const DSST_FEEDBACK_MS = 250;
+  const DSST_PREFS_KEY = "fwmc-dsst-prefs-v1";
+  const dsstPrefs = { length: "mittel", bgColorKey: "gelb", bgIntensity: 0 };
+  function loadDsstPrefs() {
+    const saved = readJSON(DSST_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(dsstPrefs, saved);
+    if (!DSST_LENGTHS[dsstPrefs.length]) dsstPrefs.length = "mittel";
+    if (!STROOP_COLOR_BY_KEY[dsstPrefs.bgColorKey]) dsstPrefs.bgColorKey = "gelb";
+    if (typeof dsstPrefs.bgIntensity !== "number" || dsstPrefs.bgIntensity < 0 || dsstPrefs.bgIntensity > 1) dsstPrefs.bgIntensity = 0;
+  }
+  loadDsstPrefs();
+  function saveDsstPrefsToStorage() { writeJSON(DSST_PREFS_KEY, dsstPrefs); }
+
+  const applyDsstBg = makeBgApplier(els.dsstStage, dsstPrefs);
+  const syncDsstBgUI = wireBgIntensityControl(dsstPrefs, {
+    pickers: [els.dsstBgColorPicker, els.dsstPauseBgColorPicker],
+    sliders: [els.dsstBgIntensitySlider, els.dsstPauseBgSlider],
+    valueEls: [els.dsstBgIntensityValue, els.dsstPauseBgValue],
+    hintEls: [els.dsstBgContrastHint],
+  }, () => { saveDsstPrefsToStorage(); applyDsstBg(); });
+
+  const DSST_BEST_KEY = "fwmc-dsst-best-v1"; // { [length]: bestCorrectCount } - higher is better
+  function dsstBestFor() { return readJSON(DSST_BEST_KEY, {})[dsstPrefs.length] || 0; }
+  function saveDsstBest(correct) {
+    const all = readJSON(DSST_BEST_KEY, {});
+    if (correct > (all[dsstPrefs.length] || 0)) { all[dsstPrefs.length] = correct; writeJSON(DSST_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderDsstBest() {
+    const best = dsstBestFor();
+    const text = best ? `Beste Zuordnungen (${DSST_LENGTHS[dsstPrefs.length].title}): ${best}` : "";
+    els.dsstBestHint.textContent = text;
+    els.dsstReadyBestHint.textContent = text;
+  }
+  function syncDsstLengthUI() {
+    els.dsstLengthRow.querySelectorAll("[data-dsst-length]").forEach((btn) => setActive(btn, btn.dataset.dsstLength === dsstPrefs.length));
+  }
+  els.dsstLengthRow.querySelectorAll("[data-dsst-length]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      dsstPrefs.length = btn.dataset.dsstLength;
+      saveDsstPrefsToStorage();
+      syncDsstLengthUI();
+      renderDsstBest();
+    });
+  });
+
+  els.dsstOpenBtn.addEventListener("click", () => {
+    syncDsstLengthUI();
+    syncDsstBgUI();
+    renderDsstBest();
+    showScreen("dsstReady");
+  });
+  els.dsstReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Same timer-wrapping trick as every other Test entry - here it's only
+  // ever armed for the brief post-tap feedback pause, since the run itself
+  // is self-paced and its own end is checked at trial-spawn time (see
+  // dsstNextTrial), never a second competing timer.
+  function scheduleDsstTimer(fn, delayMs) {
+    if (dsstState.timer) clearTimeout(dsstState.timer);
+    dsstState.timerFn = fn;
+    dsstState.timerFiresAt = performance.now() + delayMs;
+    dsstState.timer = setTimeout(() => { dsstState.timer = null; fn(); }, delayMs);
+  }
+
+  function dsstShuffledKey() {
+    const key = DSST_SYMBOLS.slice();
+    for (let i = key.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [key[i], key[j]] = [key[j], key[i]];
+    }
+    return key;
+  }
+  function dsstRandomDigit(lastDigit) {
+    let d = 1 + Math.floor(Math.random() * 9);
+    if (d === lastDigit) d = 1 + ((d) % 9); // simple, cheap "avoid immediate repeat" bump
+    return d;
+  }
+  function dsstRenderKeyRow() {
+    els.dsstKeyRow.innerHTML = dsstState.key.map((sym, i) =>
+      `<div class="dsst-key-cell"><span class="dsst-key-digit">${i + 1}</span><span class="dsst-key-symbol">${sym}</span></div>`
+    ).join("");
+  }
+  function dsstRenderKeypad() {
+    els.dsstKeypad.innerHTML = dsstState.key.map((sym, i) =>
+      `<button class="dsst-key" data-idx="${i}">${sym}</button>`
+    ).join("");
+    Array.from(els.dsstKeypad.children).forEach((btn, i) => btn.addEventListener("click", () => dsstTap(i)));
+  }
+  function dsstClearKeypadFeedback() {
+    Array.from(els.dsstKeypad.children).forEach((btn) => btn.classList.remove("correct", "wrong"));
+  }
+
+  let dsstState = null;
+  function startDsstGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.dsstPlayer.hidden = false;
+    els.dsstPlayerBar.hidden = false;
+    els.dsstDonePanel.hidden = true;
+    els.dsstPauseOverlay.hidden = true;
+    els.dsstPauseBtn.hidden = false;
+    dsstState = {
+      length: DSST_LENGTHS[dsstPrefs.length], durationMs: DSST_LENGTHS[dsstPrefs.length].durationS * 1000,
+      key: dsstShuffledKey(), currentDigit: 0, lastDigit: 0, correct: 0, wrong: 0,
+      paused: false, startTime: performance.now(), timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+    };
+    applyDsstBg();
+    dsstRenderKeyRow();
+    dsstRenderKeypad();
+    els.dsstHint.textContent = "";
+    els.dsstProgressEl.textContent = `0 richtig · ${dsstState.length.title}`;
+    requestWakeLock();
+    dsstNextTrial();
+  }
+  els.dsstReadyStartBtn.addEventListener("click", startDsstGame);
+
+  function dsstNextTrial() {
+    if (!dsstState) return;
+    const elapsedMs = performance.now() - dsstState.startTime;
+    if (elapsedMs >= dsstState.durationMs) { dsstFinish(); return; }
+    dsstState.currentDigit = dsstRandomDigit(dsstState.lastDigit);
+    dsstState.lastDigit = dsstState.currentDigit;
+    els.dsstDigit.textContent = dsstState.currentDigit;
+    dsstClearKeypadFeedback();
+  }
+  function dsstTap(idx) {
+    if (!dsstState || dsstState.paused) return;
+    const btn = els.dsstKeypad.children[idx];
+    if (!btn || btn.classList.contains("correct") || btn.classList.contains("wrong")) return;
+    const correctIdx = dsstState.currentDigit - 1;
+    if (idx === correctIdx) {
+      btn.classList.add("correct");
+      dsstState.correct++;
+    } else {
+      btn.classList.add("wrong");
+      dsstState.wrong++;
+    }
+    els.dsstProgressEl.textContent = `${dsstState.correct} richtig · ${dsstState.length.title}`;
+    scheduleDsstTimer(dsstNextTrial, DSST_FEEDBACK_MS);
+  }
+
+  // Pause stops/replays the pending feedback timer (if any - most of the
+  // time there's nothing pending, since the run just waits on a tap, same
+  // shape as Suchtest/Subitizing's own self-paced pause), plus a live
+  // background-adjust overlay. The overall duration is elapsed-time-based
+  // (see dsstNextTrial), so resume must shift startTime forward by the
+  // paused span, same trick as Reaktionsfeld-Test's own resumeReakt.
+  function pauseDsst() {
+    if (!dsstState || dsstState.paused) return;
+    dsstState.paused = true;
+    dsstState.pausedAt = performance.now();
+    if (dsstState.timer) {
+      clearTimeout(dsstState.timer);
+      dsstState.timer = null;
+      dsstState.timerRemainingMs = Math.max(0, dsstState.timerFiresAt - dsstState.pausedAt);
+    }
+    syncDsstBgUI();
+    els.dsstPauseBtn.hidden = true;
+    els.dsstPauseOverlay.hidden = false;
+  }
+  function resumeDsst() {
+    if (!dsstState || !dsstState.paused) return;
+    const pausedMs = performance.now() - dsstState.pausedAt;
+    dsstState.startTime += pausedMs;
+    dsstState.paused = false;
+    if (dsstState.timerFn && dsstState.timerRemainingMs != null) {
+      scheduleDsstTimer(dsstState.timerFn, dsstState.timerRemainingMs);
+      dsstState.timerRemainingMs = null;
+    }
+    els.dsstPauseOverlay.hidden = true;
+    els.dsstPauseBtn.hidden = false;
+  }
+  els.dsstPauseBtn.addEventListener("click", pauseDsst);
+  els.dsstResumeBtn.addEventListener("click", resumeDsst);
+
+  function finalizeDsstRun(state) {
+    els.dsstPauseOverlay.hidden = true;
+    els.dsstPlayerBar.hidden = true;
+    const attempted = state.correct + state.wrong;
+    const accuracyPct = attempted ? Math.round(100 * state.correct / attempted) : 0;
+    const isRecord = state.correct > 0 && saveDsstBest(state.correct);
+    renderDsstBest();
+    const playedS = Math.max(1, Math.min(state.durationMs, performance.now() - state.startTime) / 1000);
+    els.dsstDoneSummary.textContent =
+      `Zeichen-Zuordnungs-Test (${state.length.title}) · ${state.correct} richtige Zuordnungen` +
+      (state.wrong ? ` · ${state.wrong} falsch` : "") +
+      (attempted ? ` · ${accuracyPct}% Genauigkeit` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${state.correct} richtig` + (attempted ? `, ${accuracyPct}% Genauigkeit` : "");
+    const id = addHistory({ kind: "dsst", title: "Zeichen-Zuordnungs-Test", seconds: Math.round(playedS), note });
+    renderRating(els.dsstRating, id, "Wie gut kamst du mit dem Schlüssel zurecht?");
+    els.dsstDonePanel.hidden = false;
+  }
+  function dsstFinish() {
+    if (!dsstState) return;
+    const state = dsstState;
+    dsstState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.dsstPlayer) document.exitFullscreen().catch(() => {});
+    els.dsstFsHint.hidden = true;
+    finalizeDsstRun(state);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - but with nothing attempted yet there's nothing
+  // meaningful to report, same "only real progress records" guard as
+  // Reaktionsfeld-Test/Corsi/Trail Making.
+  function dsstStop() {
+    if (!dsstState) return;
+    if (dsstState.timer) clearTimeout(dsstState.timer);
+    const state = dsstState;
+    dsstState = null;
+    els.dsstPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.dsstPlayer) document.exitFullscreen().catch(() => {});
+    els.dsstFsHint.hidden = true;
+    if (state.correct > 0 || state.wrong > 0) {
+      finalizeDsstRun(state);
+    } else {
+      els.dsstPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.dsstBackBtn.addEventListener("click", dsstStop);
+  els.dsstAgainBtn.addEventListener("click", () => { els.dsstDonePanel.hidden = true; startDsstGame(); });
+  els.dsstDoneBackBtn.addEventListener("click", () => { els.dsstPlayer.hidden = true; els.dsstDonePanel.hidden = true; showScreen("testHome"); });
+  wireFullscreen({ player: els.dsstPlayer, btn: els.dsstFsBtn, hint: els.dsstFsHint, hintOpen: els.dsstFsHintOpenBtn, hintClose: els.dsstFsHintClose });
 
   // Rotationstest (Mentale Rotation) - grounded in the classic mental-
   // rotation/character-rotation chronometric paradigm (Cooper & Shepard,

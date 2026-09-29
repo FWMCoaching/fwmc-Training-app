@@ -4153,6 +4153,66 @@ doesn't:
   reusing Flanker's own left/right response-button layout idea but with
   just one (non-flanked) arrow, since only one stimulus is ever shown at
   once here. Test: `tests/stop_test.py`.
+- **Zeichen-Zuordnungs-Test** (twenty-third autonomous entry, 2026-09-29):
+  built from the "Recherche-Backlog: 20 Kandidaten" list (candidate #9)
+  rather than fresh research this round. Grounded in the Digit Symbol
+  Substitution Test (DSST, the "Coding" subtest of the Wechsler Adult
+  Intelligence Scale) - a widely-used general processing-speed measure: a
+  key maps each digit 1-9 to an abstract symbol, and the client converts
+  as many digits to symbols as possible within a fixed time. A fresh,
+  randomly-shuffled digit→symbol key (`DSST_SYMBOLS`, 9 simple geometric
+  Unicode glyphs: △○□◇☆✚▽●✦) is generated at the START of every run and
+  stays visible the whole time (`#dsstKeyRow`) - re-shuffled per run
+  rather than one fixed standard key, deliberately, so repeat play trains
+  genuine key-lookup speed rather than eventually memorising one fixed
+  mapping (the real DSST's own repeat-testing use case, form A/B, made the
+  same choice for the same reason). A single random digit 1-9 (a cheap
+  "avoid immediate repeat" reroll, not a full shuffle-array, since the run
+  length is open-ended rather than a fixed trial count) is shown large,
+  and the client taps the matching symbol from a keypad (`#dsstKeypad`)
+  built in the SAME left-to-right order as the key row, so the correct
+  answer is always at the same visual column just looked up above. Runs
+  continuously for a fixed duration (`dsstPrefs.length`, kurz/mittel/lang
+  = 60/90/120s - same "length setting, no natural difficulty dial" shape
+  as Suchtest/UFOV/Hick, since the real DSST has no difficulty knob
+  either: one fixed key, one fixed digit range, raced against the clock)
+  - self-paced per trial (a tap advances immediately after a brief
+  `DSST_FEEDBACK_MS = 250` feedback pause, no per-item timeout, since the
+  real test's whole point is throughput against the OVERALL time limit,
+  not per-item speed) - `dsstNextTrial()` checks elapsed time itself and
+  ends the run instead of showing a new digit once the duration is up, the
+  same "duration-checked-at-spawn-time" shape Reaktionsfeld-Test already
+  uses, so no second, competing timer is ever needed alongside the brief
+  post-tap feedback timer (a real, deliberate design choice this time, not
+  a bug found during testing - the Vorlaufzeit-Test/Suchtest lesson about
+  needing SOME feedback delay before a self-paced advance was already
+  known going in). Reports total correct substitutions (the DSST's own
+  standard score, tracked as best via `DSST_BEST_KEY` per length, higher
+  is better) plus accuracy% and a wrong-tap count. Background colour/
+  intensity WAS included (`dsstPrefs.bgColorKey`/`bgIntensity`,
+  `makeBgApplier`/`wireBgIntensityControl` on both the ready screen and
+  the pause overlay) - basically free, and unlike Subitizing-Test's plain-
+  dot-count judgment, a tint behind a fixed, known inventory of 9 shapes
+  the client keeps re-checking against a legend doesn't compete with a
+  subtle contrast judgment the way a pop-out/colour task would. No Bei-
+  Fehler/Zusatzaufgabe/Trainingsmodus - correctly skipped per the
+  "optional, skip what doesn't fit in an hour" guidance, same reasoning as
+  every other fixed-duration/fixed-trial Test entry (nothing to configure
+  beyond length, no natural "level" to progress). Genuinely distinct from
+  every existing Test/NAT mechanic: Hick-Test varies the NUMBER of
+  response alternatives with a spatially-compatible mapping (the lit box
+  IS the tap target, no lookup needed); this instead demands constantly
+  CONSULTING an arbitrary, freshly-learned key and re-mapping symbol
+  identity every single trial - a genuinely different (coding/psychomotor
+  translation) facet of processing speed nothing else on this tab touches.
+  Pause/resume mirrors Reaktionsfeld-Test's own elapsed-time-based shape
+  (shift `startTime` forward by the paused span on resume) rather than the
+  usual single-pending-timer replay, since most of a self-paced run has NO
+  pending timer at all (waiting on a tap) - same shape Suchtest/Subitizing
+  already use for the same reason. New CSS is `.dsst-*` (fixed hex colours
+  throughout, no `var(--...)`); the key row and keypad are both plain flex
+  rows of 9 equal-width cells so their columns visually line up on a
+  phone-width screen. Test: `tests/dsst_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
