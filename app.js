@@ -1044,10 +1044,6 @@
       { domain: "breath", pattern: "relax478", durationMin: 3 },
       { domain: "wimhof", breaths: 30, rounds: 3, breathPaceS: 1.7, recoveryHoldS: 15 },
     ],
-    movement: [
-      { domain: "movement", durationMin: 2, bpm: 60, preview: 3, mirror: true, showLabel: true },
-      { domain: "movement", durationMin: 3, bpm: 80, preview: "all", mirror: true, showLabel: true },
-    ],
     visual: [
       { domain: "visual", exercise: "vt-color", duration: 60, colors: ["orange", "rot", "lila"] },
       { domain: "visual", exercise: "vrw-original", duration: 60, colors: ["orange", "rot", "lila"] },
@@ -1196,6 +1192,7 @@
     movementHistoryClearBtn: $("movementHistoryClearBtn"), movementHistoryMoreBtn: $("movementHistoryMoreBtn"), movementStartCard: $("movementStartCard"),
     movementTipsBtn: $("movementTipsBtn"), movementTipsSheet: $("movementTipsSheet"), movementTipsCloseBtn: $("movementTipsCloseBtn"),
     movementReady: $("movementReady"), movementBackToHome: $("movementBackToHome"),
+    movementReadyTitle: $("movementReadyTitle"), movementReadyHint: $("movementReadyHint"),
     movementPicker: $("movementPicker"), movementCount: $("movementCount"),
     movementStartBtn: $("movementStartBtn"),
     movementSavedGroup: $("movementSavedGroup"), movementSavedList: $("movementSavedList"), movementSaveBtn: $("movementSaveBtn"),
@@ -5289,7 +5286,59 @@
     showScreen("movementReady");
   }
   els.movementStartCard.addEventListener("click", openMovementReady);
-  els.movementBackToHome.addEventListener("click", () => showScreen("movementHome"));
+
+  // ---- Kombi-Baukasten capture, same pattern as Cardio's above: reopen
+  // this exact settings screen instead of building a second one, with the
+  // client's own standalone movementPrefs saved off and restored around it
+  // so capturing a combo block never overwrites their day-to-day Movement
+  // setup. Movement's block shape (movements/preview/bpm/durationMin/
+  // mirror/showLabel) already existed in startComboBlock()/comboBlockLabel()
+  // etc. from the original curated-preset version of the combo builder -
+  // only the capture UI is new. ----
+  let comboMovementCaptureOriginal = null;
+  let comboMovementEditIndex = null;
+  function openMovementComboCapture(existingBlock, editIndex) {
+    comboMovementCaptureOriginal = { ...movementPrefs, movements: movementPrefs.movements.slice() };
+    if (existingBlock) {
+      movementPrefs.movements = movementAllowedIds((existingBlock.movements || MOVEMENTS.map((m) => m.id)).slice());
+      movementPrefs.preview = existingBlock.preview ?? movementPrefs.preview;
+      movementPrefs.bpm = existingBlock.bpm ?? movementPrefs.bpm;
+      movementPrefs.durationMin = existingBlock.durationMin ?? movementPrefs.durationMin;
+      movementPrefs.mirror = existingBlock.mirror ?? movementPrefs.mirror;
+      movementPrefs.showLabel = existingBlock.showLabel ?? movementPrefs.showLabel;
+    }
+    comboMovementEditIndex = editIndex ?? null;
+    els.movementReadyTitle.textContent = "Baustein: Movement";
+    els.movementReadyHint.textContent = "Stelle die Bewegungen für diesen Kombi-Baustein ein.";
+    els.movementStartBtn.textContent = "Baustein übernehmen";
+    openMovementReady();
+  }
+  function exitMovementComboCapture() {
+    if (comboMovementCaptureOriginal) {
+      Object.assign(movementPrefs, comboMovementCaptureOriginal);
+      saveMovementPrefs();
+      comboMovementCaptureOriginal = null;
+    }
+    comboMovementEditIndex = null;
+    els.movementReadyTitle.textContent = "Ganzkörper-Reaktion";
+    els.movementReadyHint.textContent = "Ein Symbol zeigt die nächste Bewegung. Stell ein, wie viele Bewegungen du im Voraus sehen willst.";
+    els.movementStartBtn.textContent = "Training starten";
+  }
+  function commitMovementComboCapture() {
+    const block = {
+      domain: "movement", movements: movementPrefs.movements.slice(), preview: movementPrefs.preview,
+      bpm: movementPrefs.bpm, durationMin: movementPrefs.durationMin, mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel,
+    };
+    if (comboMovementEditIndex != null) comboDraftBlocks[comboMovementEditIndex] = block;
+    else comboDraftBlocks.push(block);
+    exitMovementComboCapture();
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+  els.movementBackToHome.addEventListener("click", () => {
+    if (comboMovementCaptureOriginal) { exitMovementComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("movementHome");
+  });
 
   // ---- Coach-assigned Movement programme ("movement-plan"/"movement-
   // bundle"): a single fixed configuration (movements/tempo/duration/
@@ -5486,7 +5535,10 @@
     requestWakeLock();
     movementRaf = requestAnimationFrame(movementTick);
   }
-  els.movementStartBtn.addEventListener("click", startMovementSession);
+  els.movementStartBtn.addEventListener("click", () => {
+    if (comboMovementCaptureOriginal) { commitMovementComboCapture(); return; }
+    startMovementSession();
+  });
 
   // ---- Saved movement settings: same "save under a name, tap to reuse"
   // pattern as Kombi/Visual Training/Atemtraining. One flat list - there's
@@ -5504,6 +5556,13 @@
         movementPrefs.mirror = entry.mirror;
         movementPrefs.showLabel = entry.showLabel;
         saveMovementPrefs();
+        // While capturing a Kombi-Baustein, loading a saved setting should
+        // just fill the draft for review/adjustment, not immediately start
+        // a live session.
+        if (comboMovementCaptureOriginal) {
+          syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI();
+          return;
+        }
         startMovementSession();
       });
   }
@@ -9361,35 +9420,44 @@
       group.appendChild(opts);
       els.comboAddGrid.appendChild(group);
     });
-    // Cardio has no fixed preset list (its "block" is a whole self-built
-    // Cardio-Einheit, possibly several activities long) - one button opens
-    // the real cardioReady builder in capture mode instead.
-    const cardioGroup = document.createElement("div");
-    cardioGroup.className = "combo-domain-group";
-    cardioGroup.innerHTML = `<div class="combo-domain-title">Cardio</div>`;
-    const cardioOpts = document.createElement("div");
-    cardioOpts.className = "combo-domain-options";
-    const cardioBtn = document.createElement("button");
-    cardioBtn.className = "combo-add-btn";
-    cardioBtn.innerHTML = `<span><span class="ca-title">Cardio-Einheit</span><br><span class="ca-meta">eigene Aktivitäten zusammenstellen</span></span><span class="ca-plus">+</span>`;
-    cardioBtn.addEventListener("click", () => openCardioComboCapture(null, null));
-    cardioOpts.appendChild(cardioBtn);
-    cardioGroup.appendChild(cardioOpts);
-    els.comboAddGrid.appendChild(cardioGroup);
+    // Domains without a fixed preset list - their "block" is captured by
+    // briefly reopening that domain's own real settings screen (full
+    // fine-tune + saved presets "for free"), see openCardioComboCapture/
+    // openMovementComboCapture. More domains join this list as the rebuild
+    // reaches them; COMBO_PRESETS above is the (shrinking) set that still
+    // only offers a few curated, non-editable defaults.
+    [
+      { title: "Cardio", label: "Cardio-Einheit", meta: "eigene Aktivitäten zusammenstellen", open: () => openCardioComboCapture(null, null) },
+      { title: "Movement", label: "Ganzkörper-Reaktion", meta: "Bewegungen, Tempo & Dauer einstellen", open: () => openMovementComboCapture(null, null) },
+    ].forEach(({ title, label, meta, open }) => {
+      const group = document.createElement("div");
+      group.className = "combo-domain-group";
+      group.innerHTML = `<div class="combo-domain-title">${esc(title)}</div>`;
+      const opts = document.createElement("div");
+      opts.className = "combo-domain-options";
+      const btn = document.createElement("button");
+      btn.className = "combo-add-btn";
+      btn.innerHTML = `<span><span class="ca-title">${esc(label)}</span><br><span class="ca-meta">${esc(meta)}</span></span><span class="ca-plus">+</span>`;
+      btn.addEventListener("click", open);
+      opts.appendChild(btn);
+      group.appendChild(opts);
+      els.comboAddGrid.appendChild(group);
+    });
   }
   function renderComboBlockList() {
     els.comboBlockCount.textContent = comboDraftBlocks.length ? `${comboDraftBlocks.length} Baustein${comboDraftBlocks.length === 1 ? "" : "e"}` : "";
     els.comboEmptyHint.hidden = comboDraftBlocks.length > 0;
     els.comboBlockList.innerHTML = "";
+    const COMBO_EDIT_OPENERS = { cardio: openCardioComboCapture, movement: openMovementComboCapture };
     comboDraftBlocks.forEach((block, i) => {
-      const editable = block.domain === "cardio";
+      const editOpener = COMBO_EDIT_OPENERS[block.domain];
       const row = document.createElement("div");
       row.className = "chapter-row";
-      const main = document.createElement(editable ? "button" : "span");
+      const main = document.createElement(editOpener ? "button" : "span");
       main.className = "chapter-main";
-      if (!editable) main.style.cursor = "default";
+      if (!editOpener) main.style.cursor = "default";
       main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(comboBlockLabel(block))}</strong><span>${esc(comboBlockMeta(block))}</span></span>`;
-      if (editable) main.addEventListener("click", () => openCardioComboCapture(block, i));
+      if (editOpener) main.addEventListener("click", () => editOpener(block, i));
       row.appendChild(main);
       const rm = document.createElement("button");
       rm.className = "combo-block-remove";
