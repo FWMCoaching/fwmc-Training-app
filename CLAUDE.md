@@ -2744,7 +2744,7 @@ all this ctx-threading. Uses Playwright route interception on the
 `CODE_API` URL to serve fake defs for each new type, since none of this
 can be exercised via `dashboard.html` without a live Worker deploy.
 
-## Kombi-Baukasten rebuild (started 2026-09-29, Cardio + Movement + Breath/Wim Hof slices done)
+## Kombi-Baukasten rebuild (started 2026-09-29, Cardio + Movement + Breath/Wim Hof + Visual slices done)
 
 Client's ask, in one big message: Cardio needs the "Komplett-Programm aus
 mehreren Bereichen" entry it was missing (a scope gap from the night
@@ -2918,15 +2918,74 @@ assumed clicking a breath preset instantly added a block - true before
 this slice, not anymore now that breath also opens its settings screen in
 capture mode.
 
+**Visual slice** - the biggest exercise count (11 home-grid exercises,
+`vt-color` through `cone-compass`), reusing the shared `ready` screen
+(`openReady()`, already the one settings screen every Visual exercise
+funnels through) exactly like Breath's `breathReady`. Both playback hooks
+(`finishSession()`/`abortTraining()`) already checked `comboProgram` -
+Visual was an original curated-preset domain like Breath, so again only
+capture UI was missing.
+- `openReady()` calls `loadPrefs()` internally, which reloads `state`
+  wholesale from localStorage - so, unlike Cardio/Movement/Breath where the
+  existing-block override could happen inline, `openVisualComboCapture()`
+  must call `openReady()` *first* and only then apply an existing block's
+  field overrides, followed by a manual re-sync
+  (`renderColorSwatches()`/`syncColorUI()`/`syncDurationUI()`/
+  `syncTempoUI()`) - applying them before would just get wiped.
+- Real bug fixed along the way, not just new capture UI: `startComboBlock()`'s
+  `"visual"` branch only ever copied `block.colors` onto `state.colors`,
+  gated on `usesColors` - the 3 old curated presets never happened to need
+  `usesArrowColors`/`usesStroopColors` (Stroop's preset carried no colour
+  override at all), so a Stroop or arrow-based combo block silently ignored
+  any captured colour choice and played back whatever `state.stroopColors`/
+  `state.arrowColors` happened to currently hold. Generalized to check all
+  3 colour kinds via the exercise's own `usesColors`/`usesArrowColors`/
+  `usesStroopColors` flags, matching the pattern already used elsewhere
+  (`applyCardioGuestToState`). `commitVisualComboCapture()` captures
+  whichever colour array the exercise actually uses the same way.
+- `comboVisualCaptureEntries()` builds its add-grid entries *from the live
+  DOM* (`document.querySelectorAll(".excard")`) on every render rather than
+  a static list, and reuses `exerciseBlockedReason(card)` - the exact same
+  check the home grid's cards already run for Master-Einstellungen's
+  hearing restriction. A blocked exercise's combo button gets the same
+  `.incompatible` greyed-out treatment (new: `.combo-add-btn.incompatible`
+  in `styles.css`, same opacity rule as `.excard.incompatible`) and opens
+  Master-Einstellungen on tap instead of capture - never a way to route
+  around a restriction the home grid itself enforces.
+- `COMBO_CAPTURE_ENTRIES`/`COMBO_EDIT_OPENERS` extended to allow a
+  **function** value (resolved fresh on every `renderComboAddGrid()` call),
+  not just a static array - Visual is the first, and so far only, domain
+  that needs this (its "incompatible" state can change at runtime; every
+  other domain's capture button is unaffected by anything Master-
+  Einstellungen currently controls).
+- `renderVTSaved()`'s "load a saved setting" callback made capture-aware,
+  same pattern as every other domain's saved-preset callback so far.
+- All 3 old curated `COMBO_PRESETS.visual` entries removed (superseded -
+  same exercises, now with full fine-tuning and saved-preset access).
+
+Tested in `tests/visual_combo_test.py`: all 11 exercises present in the
+add grid, VT-Farbe capture (commit, re-edit, cancel leaves the standalone
+exercise setting untouched), a Stroop-classic capture (proves the
+colour-kind bugfix actually stores/replays `usesStroopColors`, not just
+`usesColors`), a full combo run through a Visual block, and the
+Master-Einstellungen hearing-restriction interaction (cross-modal's combo
+button greys out and opens Master-Einstellungen instead of capture, same
+as its home-grid card). Fixed the Visual-related steps in
+`tests/combo_reveal_test.py` (switched to Workout's presets, since that
+test is about the save-form behaviour, not exercise-specific logic) and
+`tests/workout_combo_test.py` (added the same capture-then-commit step
+the other domains needed), both broken the same way the breath fix was -
+clicking a Visual exercise no longer adds a block, it opens capture mode.
+
 **Not done yet, explicit backlog for the rest of this rebuild**: the same
-capture-mode pattern still needs to reach Visual (all `EXERCISES`, via
-`openReady()`) and Workout (all exercises, both reps and Tabata mode), and
-NAT's Remember (already combo-capable via `comboDurationS`, needs the same
-UI treatment) plus Blitz-Raster/Flash Speicher Test/MOT Fähigkeit - those
-three are endless/progressive with no fixed end, so each needs the same
-`comboDurationS`-style duration cutoff Remember already got before they
-can join a combo at all. Pause markers between blocks (a
-`{domain:"pause", seconds:…}` pseudo-block) also not started.
+capture-mode pattern still needs to reach Workout (all exercises, both
+reps and Tabata mode), and NAT's Remember (already combo-capable via
+`comboDurationS`, needs the same UI treatment) plus Blitz-Raster/Flash
+Speicher Test/MOT Fähigkeit - those three are endless/progressive with no
+fixed end, so each needs the same `comboDurationS`-style duration cutoff
+Remember already got before they can join a combo at all. Pause markers
+between blocks (a `{domain:"pause", seconds:…}` pseudo-block) also not
+started.
 Also flagged, separately, from the same client message: a Master-level
 default background colour that cascades into every exercise's own
 background-colour Feineinstellung (auto-excluding exercises like Stroop

@@ -1038,11 +1038,6 @@
   // full settings depth of each section's own screen, but enough to build a
   // useful cross-section session without reimplementing every settings UI.
   const COMBO_PRESETS = {
-    visual: [
-      { domain: "visual", exercise: "vt-color", duration: 60, colors: ["orange", "rot", "lila"] },
-      { domain: "visual", exercise: "vrw-original", duration: 60, colors: ["orange", "rot", "lila"] },
-      { domain: "visual", exercise: "stroop-classic", duration: 60 },
-    ],
     workout: [
       { domain: "workout", kind: "reps", exercise: "kniebeuge", sets: 3, reps: 12, restS: 30 },
       { domain: "workout", kind: "tabata", exercise: "hampelmann", workS: 20, restS: 10, rounds: 8 },
@@ -1073,12 +1068,19 @@
     cardio: [
       { label: "Cardio-Einheit", meta: "eigene Aktivitäten zusammenstellen", open: () => openCardioComboCapture(null, null) },
     ],
+    // Visual has too many exercises (and its own client-side "incompatible"
+    // masking from Master-Einstellungen) for a static list - resolved fresh
+    // on every render by comboVisualCaptureEntries() instead. Any value in
+    // this map may be a function like this one; renderComboAddGrid() calls
+    // it to get the current list.
+    visual: () => comboVisualCaptureEntries(),
   };
   const COMBO_EDIT_OPENERS = {
     cardio: (block, i) => openCardioComboCapture(block, i),
     movement: (block, i) => openMovementComboCapture(block, i),
     breath: (block, i) => openBreathComboCapture(block.pattern, block, i),
     wimhof: (block, i) => openWimhofComboCapture(block, i),
+    visual: (block, i) => openVisualComboCapture(block.exercise, null, block, i),
   };
 
   // ---- Elements ----
@@ -2971,7 +2973,92 @@
     renderVTSaved();
     showScreen("ready");
   }
-  els.backToHome.addEventListener("click", () => showScreen(readyReturnScreen));
+
+  // ---- Kombi-Baukasten capture, same pattern as Cardio/Movement/Breath
+  // above: reopen this exact "ready" screen (already reused across every
+  // Visual exercise via openReady()) instead of a second settings UI.
+  // Only the fields a combo block actually stores need snapshotting -
+  // everything else on `state` (periph settings, addon config, ...) is
+  // untouched by a visual combo block, same set renderVTSaved()'s own
+  // preset loader touches. openReady() itself calls loadPrefs(), which
+  // reloads `state` wholesale from localStorage - so an existing block's
+  // field overrides must be applied AFTER calling it, not before, and the
+  // affected UI re-synced manually, exactly like Cardio/Movement/Breath's
+  // own "load an existing block" path.
+  // One entry per home-grid exercise card, resolved fresh on every combo
+  // add-grid render (not a static list) so a client-side restriction
+  // change in Master-Einstellungen is reflected immediately, same as the
+  // home grid's own cards.
+  function comboVisualCaptureEntries() {
+    return Array.from(document.querySelectorAll(".excard")).map((card) => {
+      const exId = card.dataset.exercise;
+      const ex = EXERCISES[exId];
+      const blocked = exerciseBlockedReason(card);
+      const iconEl = card.querySelector(".icon-badge, .icon-tile");
+      return {
+        label: ex.title,
+        meta: blocked || "Feineinstellungen & eigene Varianten",
+        disabled: !!blocked,
+        open: () => openVisualComboCapture(exId, iconEl ? iconEl.outerHTML : "", null, null),
+      };
+    });
+  }
+  let comboVisualCaptureOriginal = null;
+  let comboVisualEditIndex = null;
+  function openVisualComboCapture(exId, iconHtml, existingBlock, editIndex) {
+    comboVisualCaptureOriginal = {
+      exercise: state.exercise, colors: state.colors.slice(), arrowColors: state.arrowColors.slice(),
+      stroopColors: state.stroopColors.slice(), duration: state.duration, stimulusS: state.stimulusS,
+      intervalMin: state.intervalMin, intervalMax: state.intervalMax,
+    };
+    const id = existingBlock ? existingBlock.exercise : exId;
+    const ex = EXERCISES[id];
+    const icon = iconHtml || document.querySelector(`.excard[data-exercise="${id}"] .icon-badge, .excard[data-exercise="${id}"] .icon-tile`)?.outerHTML || "";
+    openReady(id, icon);
+    if (existingBlock) {
+      if (existingBlock.colors) {
+        if (ex.usesColors) state.colors = existingBlock.colors.slice();
+        else if (ex.usesArrowColors) state.arrowColors = existingBlock.colors.slice();
+        else if (ex.usesStroopColors) state.stroopColors = existingBlock.colors.slice();
+      }
+      state.duration = existingBlock.duration ?? state.duration;
+      state.stimulusS = existingBlock.stimulusS ?? state.stimulusS;
+      state.intervalMin = existingBlock.intervalMin ?? state.intervalMin;
+      state.intervalMax = existingBlock.intervalMax ?? state.intervalMax;
+      renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
+    }
+    comboVisualEditIndex = editIndex ?? null;
+    els.readyTitle.textContent = "Baustein: " + ex.title;
+    els.startBtn.textContent = "Baustein übernehmen";
+  }
+  function exitVisualComboCapture() {
+    if (comboVisualCaptureOriginal) {
+      Object.assign(state, comboVisualCaptureOriginal);
+      savePrefs();
+      comboVisualCaptureOriginal = null;
+    }
+    comboVisualEditIndex = null;
+    els.startBtn.textContent = "Training starten";
+  }
+  function commitVisualComboCapture() {
+    const ex = EXERCISES[state.exercise];
+    const block = {
+      domain: "visual", exercise: state.exercise, duration: state.duration,
+      stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax,
+    };
+    if (ex.usesColors) block.colors = state.colors.slice();
+    else if (ex.usesArrowColors) block.colors = state.arrowColors.slice();
+    else if (ex.usesStroopColors) block.colors = state.stroopColors.slice();
+    if (comboVisualEditIndex != null) comboDraftBlocks[comboVisualEditIndex] = block;
+    else comboDraftBlocks.push(block);
+    exitVisualComboCapture();
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+  els.backToHome.addEventListener("click", () => {
+    if (comboVisualCaptureOriginal) { exitVisualComboCapture(); showScreen("comboScreen"); return; }
+    showScreen(readyReturnScreen);
+  });
 
   // ---- Exercise filter chips (multi-select "typ", exclusive "ton") ----
   const activeFilters = { ton: null, typ: new Set() };
@@ -4296,7 +4383,10 @@
     else openReady(state.exercise, els.readyIcon.innerHTML);
   }
 
-  els.startBtn.addEventListener("click", startSession);
+  els.startBtn.addEventListener("click", () => {
+    if (comboVisualCaptureOriginal) { commitVisualComboCapture(); return; }
+    startSession();
+  });
   els.backBtn.addEventListener("click", abortTraining);
   els.doneBack.addEventListener("click", stopToHome);
 
@@ -4344,6 +4434,12 @@
         state.intervalMin = entry.intervalMin;
         state.intervalMax = entry.intervalMax;
         savePrefs();
+        // While capturing a Kombi-Baustein, loading a saved setting should
+        // just fill the draft for review, not immediately start a session.
+        if (comboVisualCaptureOriginal) {
+          renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
+          return;
+        }
         active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors), stroopColors: keysToColors(state.stroopColors, STROOP_COLOR_LIB) };
         startSession();
       });
@@ -9421,12 +9517,21 @@
     } else if (block.domain === "visual") {
       program = null;
       state.exercise = block.exercise;
-      if (block.colors && EXERCISES[block.exercise].usesColors) state.colors = block.colors;
+      const visEx = EXERCISES[block.exercise];
+      // Generalized from a visual-only "usesColors" check (the sole shape
+      // the original 3 curated presets ever needed) to all 3 colour kinds,
+      // now that capture mode lets any exercise's block carry its own
+      // colours, arrow-colours or Stroop-colours.
+      if (block.colors) {
+        if (visEx.usesColors) state.colors = block.colors;
+        else if (visEx.usesArrowColors) state.arrowColors = block.colors;
+        else if (visEx.usesStroopColors) state.stroopColors = block.colors;
+      }
       state.duration = block.duration ?? 60;
       state.stimulusS = block.stimulusS ?? 1.5;
       state.intervalMin = block.intervalMin ?? 3;
       state.intervalMax = block.intervalMax ?? 6;
-        active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors), stroopColors: keysToColors(state.stroopColors, STROOP_COLOR_LIB) };
+      active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors), stroopColors: keysToColors(state.stroopColors, STROOP_COLOR_LIB) };
       startSession();
     } else if (block.domain === "workout") {
       workoutPlan = null;
@@ -9526,7 +9631,8 @@
     els.comboAddGrid.innerHTML = "";
     COMBO_DOMAIN_ORDER.forEach((domain) => {
       const presets = COMBO_PRESETS[domain] || [];
-      const captures = COMBO_CAPTURE_ENTRIES[domain] || [];
+      const captureSource = COMBO_CAPTURE_ENTRIES[domain];
+      const captures = typeof captureSource === "function" ? captureSource() : (captureSource || []);
       if (!presets.length && !captures.length) return;
       const group = document.createElement("div");
       group.className = "combo-domain-group";
@@ -9542,12 +9648,16 @@
       });
       // Presets are add-and-done (fixed config); capture entries instead
       // reopen that domain's own real settings screen - see
-      // COMBO_CAPTURE_ENTRIES's comment above for why.
-      captures.forEach(({ label, meta, open }) => {
+      // COMBO_CAPTURE_ENTRIES's comment above for why. A `disabled` entry
+      // (currently only Visual, mirroring its home grid's own check) opens
+      // Master-Einstellungen instead, same as tapping a greyed-out exercise
+      // card there - never a silent no-op, and never a way to route around
+      // the client's own restriction.
+      captures.forEach(({ label, meta, open, disabled }) => {
         const btn = document.createElement("button");
-        btn.className = "combo-add-btn";
+        btn.className = "combo-add-btn" + (disabled ? " incompatible" : "");
         btn.innerHTML = `<span><span class="ca-title">${esc(label)}</span><br><span class="ca-meta">${esc(meta)}</span></span><span class="ca-plus">+</span>`;
-        btn.addEventListener("click", open);
+        btn.addEventListener("click", disabled ? () => openMasterSettings() : open);
         opts.appendChild(btn);
       });
       group.appendChild(opts);

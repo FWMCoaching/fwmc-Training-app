@@ -281,6 +281,10 @@ section{margin-bottom:26px}
    client understands why it's blocked. */
 .excard.incompatible{opacity:.5;cursor:pointer}
 .excard.incompatible:hover{transform:none}
+/* Same treatment for the Kombi-Baukasten's own Visual add-grid, which
+   mirrors this exercise-level check rather than filtering blocked
+   exercises away silently. */
+.combo-add-btn.incompatible{opacity:.5}
 .excard-blocked-note{
   display:inline-block;font-size:10.5px;font-weight:700;color:#fff;
   background:var(--ink-soft);padding:3px 8px;border-radius:999px;align-self:flex-start;
