@@ -839,6 +839,11 @@
       <span class="fc-desc">Ein Punkt in der Mitte wird zuerst nur umrandet (Achtung, gleich geht's los), dann f&uuml;llt er sich &ndash; die Wartezeit dazwischen ist jedes Mal anders, mal kurz, mal lang. Tippe, sobald sich der Punkt f&uuml;llt, aber nicht fr&uuml;her. Misst, wie sich deine Erwartung mit l&auml;ngerem Warten aufbaut (Foreperiod-Effekt, Niemi &amp; N&auml;&auml;t&auml;nen 1981).</span>
       <span class="fc-meta" id="vorlaufBestHint"></span>
     </button>
+    <button class="featured-card" id="stopOpenBtn">
+      <span class="fc-title">Stopp-Signal-Test</span>
+      <span class="fc-desc">Meistens zeigt ein Pfeil links oder rechts &ndash; tippe so schnell wie m&ouml;glich die passende Richtung. Manchmal wird der Pfeil aber kurz danach ROT &ndash; dann musst du dich stoppen und NICHT tippen. Misst, wie gut du eine bereits eingeleitete Reaktion noch abbrechen kannst (Stop-Signal-Paradigma, Logan, Cowan &amp; Davis 1984).</span>
+      <span class="fc-meta" id="stopBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -1154,6 +1159,43 @@
   <div class="group-help" id="vorlaufReadyBestHint"></div>
 
   <button class="start-btn" id="vorlaufReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="stopReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="stopReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Stopp-Signal-Test</h1>
+  <p class="page-sub">Ein Pfeil erscheint links oder rechts &ndash; tippe so schnell wie m&ouml;glich die passende Richtungstaste an. Bei einem Teil der Durchg&auml;nge wird der Pfeil aber kurz nach dem Erscheinen ROT: dann sollst du dich stoppen und NICHT tippen. Klassisches Paradigma zur Reaktionshemmung (Stop-Signal-Aufgabe, Logan, Cowan &amp; Davis, 1984) &ndash; anders als beim Go/No-Go-Test siehst du hier bei JEDEM Durchgang zuerst den normalen Pfeil, das Stopp-Signal kommt erst danach und du musst eine bereits eingeleitete Reaktion noch abbrechen. Wie schwer das Stoppen f&auml;llt, passt sich automatisch an deine Leistung an.</p>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="stopDifficultyRow">
+      <button class="choice" data-stop-diff="leicht">Leicht<small>mehr Zeit</small></button>
+      <button class="choice" data-stop-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-stop-diff="schwer">Schwer<small>knapp bemessen</small></button>
+    </div>
+  </div>
+
+  <details class="advanced" id="stopAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="stopBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="stopBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="stopBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="stopBgContrastHint" hidden></div>
+      </div>
+    </div>
+  </details>
+
+  <div class="group-help" id="stopReadyBestHint"></div>
+
+  <button class="start-btn" id="stopReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="simonReady" hidden>
@@ -3794,6 +3836,53 @@
     <div class="rating" id="vorlaufRating"></div>
     <button class="again" id="vorlaufAgainBtn">Nochmal</button>
     <button class="back" id="vorlaufDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="stopPlayer" hidden>
+  <div class="stop-stage" id="stopStage">
+    <div class="remember-hint" id="stopHint"></div>
+    <div class="stop-row">
+      <span class="stop-arrow" id="stopArrow"></span>
+    </div>
+    <div class="stop-response-row">
+      <button class="stop-response-btn" id="stopLeftBtn" aria-label="Links">&larr;</button>
+      <button class="stop-response-btn" id="stopRightBtn" aria-label="Rechts">&rarr;</button>
+    </div>
+  </div>
+  <div class="pause-overlay" id="stopPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="stopPauseBgValue"></span></div>
+        <input type="range" id="stopPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="stopPauseBgColorPicker"></div>
+      </div>
+      <button class="start-btn" id="stopResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="stopPlayerBar">
+    <button id="stopBackBtn">&#10005; Beenden</button>
+    <button id="stopPauseBtn">Pause</button>
+    <span class="player-status" id="stopProgressEl"></span>
+    <button id="stopFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="stopFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="stopFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="stopFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="stopDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="stopDoneSummary"></p>
+    <div class="rating" id="stopRating"></div>
+    <button class="again" id="stopAgainBtn">Nochmal</button>
+    <button class="back" id="stopDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

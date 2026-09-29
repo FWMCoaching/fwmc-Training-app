@@ -1466,6 +1466,19 @@
     vorlaufFsBtn: $("vorlaufFsBtn"), vorlaufFsHint: $("vorlaufFsHint"), vorlaufFsHintOpenBtn: $("vorlaufFsHintOpenBtn"), vorlaufFsHintClose: $("vorlaufFsHintClose"),
     vorlaufDonePanel: $("vorlaufDonePanel"), vorlaufDoneSummary: $("vorlaufDoneSummary"), vorlaufRating: $("vorlaufRating"),
     vorlaufAgainBtn: $("vorlaufAgainBtn"), vorlaufDoneBackBtn: $("vorlaufDoneBackBtn"),
+    stopOpenBtn: $("stopOpenBtn"), stopBestHint: $("stopBestHint"), stopReady: $("stopReady"),
+    stopReadyBackToHome: $("stopReadyBackToHome"), stopDifficultyRow: $("stopDifficultyRow"),
+    stopBgColorPicker: $("stopBgColorPicker"), stopBgIntensitySlider: $("stopBgIntensitySlider"),
+    stopBgIntensityValue: $("stopBgIntensityValue"), stopBgContrastHint: $("stopBgContrastHint"),
+    stopReadyBestHint: $("stopReadyBestHint"), stopReadyStartBtn: $("stopReadyStartBtn"),
+    stopPlayer: $("stopPlayer"), stopStage: $("stopStage"), stopHint: $("stopHint"), stopArrow: $("stopArrow"),
+    stopLeftBtn: $("stopLeftBtn"), stopRightBtn: $("stopRightBtn"),
+    stopPauseOverlay: $("stopPauseOverlay"), stopResumeBtn: $("stopResumeBtn"),
+    stopPauseBgSlider: $("stopPauseBgSlider"), stopPauseBgValue: $("stopPauseBgValue"), stopPauseBgColorPicker: $("stopPauseBgColorPicker"),
+    stopPlayerBar: $("stopPlayerBar"), stopBackBtn: $("stopBackBtn"), stopPauseBtn: $("stopPauseBtn"), stopProgressEl: $("stopProgressEl"),
+    stopFsBtn: $("stopFsBtn"), stopFsHint: $("stopFsHint"), stopFsHintOpenBtn: $("stopFsHintOpenBtn"), stopFsHintClose: $("stopFsHintClose"),
+    stopDonePanel: $("stopDonePanel"), stopDoneSummary: $("stopDoneSummary"), stopRating: $("stopRating"),
+    stopAgainBtn: $("stopAgainBtn"), stopDoneBackBtn: $("stopDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
@@ -1710,7 +1723,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "cardioReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "cardioReady", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3855,6 +3868,7 @@
     els.subitizePlayer.hidden = true;
     els.alarmPlayer.hidden = true;
     els.vorlaufPlayer.hidden = true;
+    els.stopPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.cardioPlayer.hidden = true;
     els.programVideoPlayer.hidden = true;
@@ -11628,6 +11642,353 @@
   els.vorlaufAgainBtn.addEventListener("click", () => { els.vorlaufDonePanel.hidden = true; startVorlaufGame(); });
   els.vorlaufDoneBackBtn.addEventListener("click", () => { els.vorlaufPlayer.hidden = true; els.vorlaufDonePanel.hidden = true; showScreen("testHome"); });
   wireFullscreen({ player: els.vorlaufPlayer, btn: els.vorlaufFsBtn, hint: els.vorlaufFsHint, hintOpen: els.vorlaufFsHintOpenBtn, hintClose: els.vorlaufFsHintClose });
+
+  // ==== Test-Bereich: Stopp-Signal-Test ====
+  // Twenty-second autonomous entry, picked from the "Recherche-Backlog: 20
+  // Kandidaten" list (candidate #6). Grounded in the stop-signal paradigm
+  // (Logan, Cowan & Davis, 1984, Journal of Experimental Psychology: Human
+  // Perception and Performance - the independent race-model method for
+  // estimating Stop-Signal Reaction Time, SSRT; Verbruggen & Logan, 2008,
+  // Trends in Cognitive Sciences, review its use as a purer measure of
+  // response inhibition than simple go/no-go). Most trials ("Go") show a
+  // single black arrow - tap the matching ←/→ button as fast as possible.
+  // On a minority of trials ("Stopp", ~25%), the arrow turns RED after a
+  // short, adaptively-tracked delay (the Stop-Signal-Delay, SSD) - the
+  // client must try to withhold the already-initiated response and NOT
+  // tap. SSD rises after a successful stop (harder to inhibit next time)
+  // and falls after a failed one (easier next time), staircasing toward
+  // ~50% stopping success - the standard design so SSRT can be estimated
+  // via the race model: SSRT ≈ mean Go-RT - converged SSD.
+  // Genuinely distinct from Go/No-Go (already on this tab): Go/No-Go's
+  // stimulus itself signals "don't go" BEFORE any motor programme starts
+  // (the colour is known from the first frame); here every trial starts
+  // identically as a normal Go arrow, and the stop signal - when it comes -
+  // arrives AFTER the response has typically already been initiated,
+  // testing CANCELLING a response in flight rather than deciding not to
+  // start one. This is a distinct and, per the inhibition literature, more
+  // sensitive construct (SSRT) than Go/No-Go's simple accuracy%. Also
+  // distinct from Flanker/Simon/Posner/Alarm/Vorlaufzeit-Test, none of
+  // which ever ask the client to withhold an already-cued response.
+  const STOP_PREFS_KEY = "fwmc-stop-prefs-v1";
+  // Difficulty controls only the response window/ISI, same shape as every
+  // other fixed-trial RT exercise - the SSD staircase itself (see below)
+  // is the actual adaptive difficulty, deliberately not client-set.
+  const STOP_DIFFICULTIES = {
+    leicht: { title: "Leicht", responseMs: 1400, isiMin: 900, isiMax: 1400 },
+    mittel: { title: "Mittel", responseMs: 1000, isiMin: 700, isiMax: 1100 },
+    schwer: { title: "Schwer", responseMs: 700, isiMin: 500, isiMax: 900 },
+  };
+  // 64 trials, 25% stop-trials (16 of 64) - the classic stop-signal ratio;
+  // any more and "just wait to see if it turns red" becomes a viable
+  // strategy, any fewer and the staircase never gets enough stop trials to
+  // converge.
+  const STOP_TRIAL_COUNT = 64;
+  const STOP_RATIO = 0.25;
+  const STOP_SSD_START_MS = 250;
+  const STOP_SSD_STEP_MS = 50;
+  const STOP_SSD_MIN_MS = 0;
+  const stopPrefs = { difficulty: "mittel", bgColorKey: "orange", bgIntensity: 0 };
+  function loadStopPrefs() {
+    const saved = readJSON(STOP_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(stopPrefs, saved);
+    if (!STOP_DIFFICULTIES[stopPrefs.difficulty]) stopPrefs.difficulty = "mittel";
+    if (!STROOP_COLOR_BY_KEY[stopPrefs.bgColorKey]) stopPrefs.bgColorKey = "orange";
+    if (typeof stopPrefs.bgIntensity !== "number" || stopPrefs.bgIntensity < 0 || stopPrefs.bgIntensity > 1) stopPrefs.bgIntensity = 0;
+  }
+  loadStopPrefs();
+  function saveStopPrefsToStorage() { writeJSON(STOP_PREFS_KEY, stopPrefs); }
+
+  const applyStopBg = makeBgApplier(els.stopStage, stopPrefs);
+  const syncStopBgUI = wireBgIntensityControl(stopPrefs, {
+    pickers: [els.stopBgColorPicker, els.stopPauseBgColorPicker],
+    sliders: [els.stopBgIntensitySlider, els.stopPauseBgSlider],
+    valueEls: [els.stopBgIntensityValue, els.stopPauseBgValue],
+    hintEls: [els.stopBgContrastHint],
+  }, () => { saveStopPrefsToStorage(); applyStopBg(); });
+
+  const STOP_BEST_KEY = "fwmc-stop-best-v1"; // { [difficulty]: bestSsrtMs } - lower is better
+  function stopBestFor() { return readJSON(STOP_BEST_KEY, {})[stopPrefs.difficulty] || null; }
+  function saveStopBest(ssrt) {
+    const all = readJSON(STOP_BEST_KEY, {});
+    if (all[stopPrefs.difficulty] == null || ssrt < all[stopPrefs.difficulty]) { all[stopPrefs.difficulty] = ssrt; writeJSON(STOP_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderStopBest() {
+    const best = stopBestFor();
+    const text = best ? `Bestes SSRT (${STOP_DIFFICULTIES[stopPrefs.difficulty].title}): ${best} ms` : "";
+    els.stopBestHint.textContent = text;
+    els.stopReadyBestHint.textContent = text;
+  }
+  function syncStopDifficultyUI() {
+    els.stopDifficultyRow.querySelectorAll("[data-stop-diff]").forEach((btn) => setActive(btn, btn.dataset.stopDiff === stopPrefs.difficulty));
+  }
+  els.stopDifficultyRow.querySelectorAll("[data-stop-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      stopPrefs.difficulty = btn.dataset.stopDiff;
+      saveStopPrefsToStorage();
+      syncStopDifficultyUI();
+      renderStopBest();
+    });
+  });
+
+  els.stopOpenBtn.addEventListener("click", () => {
+    syncStopDifficultyUI();
+    syncStopBgUI();
+    renderStopBest();
+    showScreen("stopReady");
+  });
+  els.stopReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Same timer-wrapping trick as scheduleFlankerTimer/scheduleAlarmTimer -
+  // only ONE timer is ever pending at a time (a stop trial chains through
+  // it twice: show → arm signal → end, never two timers in flight at once),
+  // so Pause/Resume's single timerFn/timerFiresAt slot still works exactly
+  // like every other Test entry.
+  function scheduleStopTimer(fn, delayMs) {
+    stopState.timerFn = fn;
+    stopState.timerFiresAt = performance.now() + delayMs;
+    stopState.timer = setTimeout(() => { stopState.timer = null; fn(); }, delayMs);
+  }
+
+  function buildStopTrials() {
+    const stopCount = Math.round(STOP_TRIAL_COUNT * STOP_RATIO); // 16
+    const goCount = STOP_TRIAL_COUNT - stopCount; // 48
+    const trials = [];
+    for (let i = 0; i < goCount; i++) trials.push({ type: "go", dir: i < goCount / 2 ? "left" : "right" });
+    for (let i = 0; i < stopCount; i++) trials.push({ type: "stop", dir: i < stopCount / 2 ? "left" : "right" });
+    // Shuffle, then avoid more than 3 identical directions back to back -
+    // same guard shape as buildFlankerTrials/buildPosnerTrials, so a motor
+    // strategy can't exploit a long same-direction run.
+    for (let tries = 0; tries < 200; tries++) {
+      for (let i = trials.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [trials[i], trials[j]] = [trials[j], trials[i]];
+      }
+      let ok = true, run = 1;
+      for (let i = 1; i < trials.length; i++) {
+        run = trials[i].dir === trials[i - 1].dir ? run + 1 : 1;
+        if (run > 3) { ok = false; break; }
+      }
+      if (ok) break;
+    }
+    return trials;
+  }
+
+  function stopArrowChar(dir) { return dir === "left" ? "←" : "→"; }
+  function stopClearFeedback() {
+    els.stopLeftBtn.classList.remove("correct", "wrong");
+    els.stopRightBtn.classList.remove("correct", "wrong");
+    els.stopArrow.classList.remove("stop-signal");
+  }
+
+  let stopState = null;
+  function startStopGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.stopPlayer.hidden = false;
+    els.stopPlayerBar.hidden = false;
+    els.stopDonePanel.hidden = true;
+    els.stopPauseOverlay.hidden = true;
+    els.stopPauseBtn.hidden = false;
+    stopState = {
+      diff: STOP_DIFFICULTIES[stopPrefs.difficulty], trials: buildStopTrials(), index: -1, phase: "gap", responded: false,
+      goCorrect: 0, goIncorrect: 0, goRts: [], stopSuccess: 0, stopFail: 0, ssdHistory: [],
+      ssd: STOP_SSD_START_MS,
+      stimAt: 0, paused: false, timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      startTime: performance.now(),
+    };
+    applyStopBg();
+    stopClearFeedback();
+    els.stopArrow.textContent = "";
+    els.stopHint.textContent = "Bereit? Gleich geht's los …";
+    els.stopProgressEl.textContent = `0/${stopState.trials.length}`;
+    requestWakeLock();
+    scheduleStopTimer(stopNextTrial, 1200);
+  }
+  els.stopReadyStartBtn.addEventListener("click", startStopGame);
+
+  function stopNextTrial() {
+    if (!stopState) return;
+    stopState.index++;
+    if (stopState.index >= stopState.trials.length) { stopFinish(); return; }
+    els.stopProgressEl.textContent = `${stopState.index + 1}/${stopState.trials.length}`;
+    stopState.phase = "gap";
+    stopState.responded = false;
+    stopClearFeedback();
+    els.stopArrow.textContent = "";
+    const isi = stopState.diff.isiMin + Math.random() * (stopState.diff.isiMax - stopState.diff.isiMin);
+    scheduleStopTimer(stopShowStimulus, isi);
+  }
+  function stopShowStimulus() {
+    if (!stopState) return;
+    const trial = stopState.trials[stopState.index];
+    stopState.phase = "responding";
+    stopState.responded = false;
+    stopState.stimAt = performance.now();
+    els.stopHint.textContent = "";
+    els.stopArrow.textContent = stopArrowChar(trial.dir);
+    if (trial.type === "stop") {
+      // Cap SSD so a stop signal can always still arrive with enough
+      // display time left before the response window itself closes,
+      // whatever difficulty (and therefore responseMs) is active.
+      const maxSsd = Math.max(STOP_SSD_MIN_MS, stopState.diff.responseMs - 200);
+      stopState.ssd = Math.min(stopState.ssd, maxSsd);
+      trial.ssdUsed = stopState.ssd;
+      scheduleStopTimer(stopArmSignal, trial.ssdUsed);
+    } else {
+      scheduleStopTimer(stopEndTrial, stopState.diff.responseMs);
+    }
+  }
+  function stopArmSignal() {
+    if (!stopState) return;
+    const trial = stopState.trials[stopState.index];
+    els.stopArrow.classList.add("stop-signal");
+    const remaining = Math.max(50, stopState.diff.responseMs - trial.ssdUsed);
+    scheduleStopTimer(stopEndTrial, remaining);
+  }
+  function stopEndTrial() {
+    if (!stopState) return;
+    const trial = stopState.trials[stopState.index];
+    if (!stopState.responded) {
+      if (trial.type === "go") {
+        stopState.goIncorrect++;
+        els.stopHint.textContent = "Verpasst!";
+      } else {
+        // Successfully withheld the response - the stop signal wins the
+        // race. Make it harder next time (longer SSD).
+        stopState.stopSuccess++;
+        stopState.ssdHistory.push(trial.ssdUsed);
+        stopState.ssd = trial.ssdUsed + STOP_SSD_STEP_MS;
+        els.stopHint.textContent = "Gestoppt! Gut gemacht.";
+      }
+    }
+    stopState.phase = "gap";
+    stopNextTrial();
+  }
+  function stopTap(dir) {
+    if (!stopState || stopState.paused || stopState.responded) return;
+    if (stopState.phase !== "responding") return;
+    stopState.responded = true;
+    const trial = stopState.trials[stopState.index];
+    const rt = performance.now() - stopState.stimAt;
+    const btn = dir === "left" ? els.stopLeftBtn : els.stopRightBtn;
+    if (trial.type === "go") {
+      const correct = dir === trial.dir;
+      btn.classList.add(correct ? "correct" : "wrong");
+      if (correct) {
+        stopState.goCorrect++;
+        stopState.goRts.push(rt);
+      } else {
+        stopState.goIncorrect++;
+        els.stopHint.textContent = "Falsche Richtung!";
+      }
+    } else {
+      // Any tap on a stop trial - whatever the direction, whenever it
+      // happened - means the response wasn't withheld. Make the NEXT stop
+      // trial easier (shorter SSD) so success/fail keeps staircasing
+      // toward ~50%.
+      btn.classList.add("wrong");
+      stopState.stopFail++;
+      stopState.ssdHistory.push(trial.ssdUsed);
+      stopState.ssd = Math.max(STOP_SSD_MIN_MS, trial.ssdUsed - STOP_SSD_STEP_MS);
+      els.stopHint.textContent = "Nicht tippen bei Rot!";
+    }
+  }
+  els.stopLeftBtn.addEventListener("click", () => stopTap("left"));
+  els.stopRightBtn.addEventListener("click", () => stopTap("right"));
+
+  // Pause stops/replays the pending timer, same setTimeout trick as every
+  // other Test entry, plus a live background-adjust overlay.
+  function pauseStop() {
+    if (!stopState || stopState.paused) return;
+    stopState.paused = true;
+    stopState.pausedAt = performance.now();
+    if (stopState.timer) {
+      clearTimeout(stopState.timer);
+      stopState.timer = null;
+      stopState.timerRemainingMs = Math.max(0, stopState.timerFiresAt - stopState.pausedAt);
+    }
+    syncStopBgUI();
+    els.stopPauseBtn.hidden = true;
+    els.stopPauseOverlay.hidden = false;
+  }
+  function resumeStop() {
+    if (!stopState || !stopState.paused) return;
+    const pausedMs = performance.now() - stopState.pausedAt;
+    stopState.startTime += pausedMs;
+    stopState.stimAt += pausedMs;
+    stopState.paused = false;
+    if (stopState.timerFn && stopState.timerRemainingMs != null) {
+      scheduleStopTimer(stopState.timerFn, stopState.timerRemainingMs);
+      stopState.timerRemainingMs = null;
+    }
+    els.stopPauseOverlay.hidden = true;
+    els.stopPauseBtn.hidden = false;
+  }
+  els.stopPauseBtn.addEventListener("click", pauseStop);
+  els.stopResumeBtn.addEventListener("click", resumeStop);
+
+  function finalizeStopRun(state, totalGoTrials, totalStopTrials) {
+    els.stopPauseOverlay.hidden = true;
+    els.stopPlayerBar.hidden = true;
+    const goAccuracyPct = totalGoTrials ? Math.round(100 * state.goCorrect / totalGoTrials) : 0;
+    const avgGoRt = avgOf(state.goRts);
+    const stopTotal = state.stopSuccess + state.stopFail;
+    const stopSuccessPct = stopTotal ? Math.round(100 * state.stopSuccess / stopTotal) : null;
+    // A "converged" SSD estimate from the last several stop trials only -
+    // the staircase needs a few trials to settle, same spirit as UFOV's
+    // own last-10-trials threshold average.
+    const convergedSsd = avgOf(state.ssdHistory.slice(-8));
+    const ssrt = (avgGoRt != null && convergedSsd != null) ? Math.round(avgGoRt - convergedSsd) : null;
+    const isRecord = ssrt != null && saveStopBest(ssrt);
+    renderStopBest();
+    const played = (performance.now() - state.startTime) / 1000;
+    els.stopDoneSummary.textContent =
+      `Stopp-Signal-Test (${state.diff.title}) · Go-Genauigkeit ${goAccuracyPct}%` +
+      (avgGoRt != null ? ` · Ø Go-RT ${avgGoRt} ms` : "") +
+      (stopSuccessPct != null ? ` · ${stopSuccessPct}% erfolgreich gestoppt` : "") +
+      (ssrt != null ? ` · SSRT ${ssrt} ms` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `Go ${goAccuracyPct}%` + (ssrt != null ? `, SSRT ${ssrt} ms` : "");
+    const id = addHistory({ kind: "stop", title: "Stopp-Signal-Test", seconds: Math.round(played), note });
+    renderRating(els.stopRating, id, "Wie gut konntest du dich stoppen?");
+    els.stopDonePanel.hidden = false;
+  }
+  function stopFinish() {
+    if (!stopState) return;
+    const state = stopState;
+    stopState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.stopPlayer) document.exitFullscreen().catch(() => {});
+    els.stopFsHint.hidden = true;
+    const totalGo = state.trials.filter((t) => t.type === "go").length;
+    const totalStop = state.trials.filter((t) => t.type === "stop").length;
+    finalizeStopRun(state, totalGo, totalStop);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise.
+  function stopStop() {
+    if (!stopState) return;
+    if (stopState.timer) clearTimeout(stopState.timer);
+    const state = stopState;
+    stopState = null;
+    els.stopPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.stopPlayer) document.exitFullscreen().catch(() => {});
+    els.stopFsHint.hidden = true;
+    const resolvedGo = state.goCorrect + state.goIncorrect;
+    const resolvedStop = state.stopSuccess + state.stopFail;
+    if (resolvedGo + resolvedStop >= 4) {
+      finalizeStopRun(state, resolvedGo, resolvedStop);
+    } else {
+      els.stopPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.stopBackBtn.addEventListener("click", stopStop);
+  els.stopAgainBtn.addEventListener("click", () => { els.stopDonePanel.hidden = true; startStopGame(); });
+  els.stopDoneBackBtn.addEventListener("click", () => { els.stopPlayer.hidden = true; els.stopDonePanel.hidden = true; showScreen("testHome"); });
+  wireFullscreen({ player: els.stopPlayer, btn: els.stopFsBtn, hint: els.stopFsHint, hintOpen: els.stopFsHintOpenBtn, hintClose: els.stopFsHintClose });
 
   // Rotationstest (Mentale Rotation) - grounded in the classic mental-
   // rotation/character-rotation chronometric paradigm (Cooper & Shepard,

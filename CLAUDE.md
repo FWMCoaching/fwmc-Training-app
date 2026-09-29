@@ -3684,6 +3684,62 @@ doesn't:
   circular dot with four visual states (base/armed/target/falsestart/
   missed) rather than Alarm/Posner/Simon's two-box layout, since there's
   only ever one response location here. Test: `tests/vorlauf_test.py`.
+- **Stopp-Signal-Test** (twenty-second autonomous entry, 2026-09-29): built
+  from the "Recherche-Backlog: 20 Kandidaten" list (candidate #6) rather
+  than fresh research this round. Grounded in the stop-signal paradigm
+  (Logan, Cowan & Davis, 1984, Journal of Experimental Psychology: Human
+  Perception and Performance - the independent race-model method for
+  estimating Stop-Signal Reaction Time, SSRT; Verbruggen & Logan, 2008,
+  Trends in Cognitive Sciences, reviewing its use as a purer measure of
+  response inhibition than simple go/no-go). Most trials show a single
+  black arrow (left/right) - tap the matching `.stop-response-btn` as fast
+  as possible. On `STOP_RATIO = 0.25` of trials (16 of `STOP_TRIAL_COUNT =
+  64`, the classic stop-signal ratio), the arrow turns red after a short,
+  adaptively-tracked delay (the Stop-Signal-Delay, SSD, starting at
+  `STOP_SSD_START_MS = 250`) - the client must withhold the already-
+  initiated tap. `STOP_SSD_STEP_MS = 50` staircases the SSD: a successful
+  stop (no tap before the response window closes) lengthens SSD (harder to
+  inhibit next time), a failed stop (any tap on a stop trial, whatever the
+  direction or timing) shortens it (easier next time) - the standard
+  design so the staircase converges toward ~50% stopping success and SSRT
+  can be estimated via the race model. Reports Go-trial accuracy% plus
+  average Go-RT, % of stop trials successfully withheld, and the actual
+  outcome measure this paradigm exists to surface: SSRT ≈ mean Go-RT minus
+  the converged SSD (averaged over the last 8 stop trials only, the same
+  "let the staircase settle first" idea as UFOV's own last-10-trials
+  threshold average) - tracking the LOWEST SSRT per `stopPrefs.difficulty`
+  (leicht/mittel/schwer, controlling only the response window/ISI, same
+  shape as every other fixed-trial RT exercise - the SSD staircase itself
+  is the actual adaptive difficulty, deliberately not client-set) via
+  `STOP_BEST_KEY` (lower-is-better, same shape as UFOV/Hick/Regelwechsel-
+  Test/Gegenrichtungs-Test/Vorlaufzeit-Test). Genuinely distinct from
+  Go/No-Go, already on this tab: Go/No-Go's stimulus signals "don't go"
+  from the very first frame, before any motor programme starts; here
+  EVERY trial begins as an identical Go arrow, and the stop signal - when
+  it comes - typically arrives after the response has already begun,
+  testing CANCELLING a response in flight rather than deciding not to
+  start one, a distinct and (per the inhibition literature) more sensitive
+  construct than Go/No-Go's simple accuracy%. Also distinct from every
+  other Test-Bereich exercise: none of Flanker/Simon/Posner/Alarm/
+  Vorlaufzeit-Test ever asks the client to withhold an already-cued
+  response. Background colour/intensity WAS included (`stopPrefs.
+  bgColorKey`/`bgIntensity`, `makeBgApplier`/`wireBgIntensityControl` on
+  both the ready screen and the pause overlay) - basically free, and the
+  single black/red arrow's own contrast is unaffected by a tint sitting
+  behind it. No Bei-Fehler/Zusatzaufgabe/Trainingsmodus - correctly
+  skipped per the "optional, skip what doesn't fit in an hour" guidance,
+  same reasoning as every other fixed-trial RT/effect exercise on this
+  tab (the SSD staircase already IS the adaptive mechanism, a second one
+  would be redundant). Pause/resume uses the same scheduleXTimer-
+  remaining-delay trick as every other Test entry - a stop trial's own
+  two-step schedule (show arrow → arm the red signal at SSD → end at the
+  remaining response time) still only ever has ONE timer pending at once,
+  so the existing single-slot `timerFn`/`timerFiresAt` pause mechanism
+  needed no changes. New CSS is `.stop-*` (fixed hex colours throughout,
+  no `var(--...)`); a single centred arrow plus two response buttons,
+  reusing Flanker's own left/right response-button layout idea but with
+  just one (non-flanked) arrow, since only one stimulus is ever shown at
+  once here. Test: `tests/stop_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 

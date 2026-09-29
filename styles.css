@@ -928,6 +928,19 @@ body.cvd-rotgruen .gng-stimulus.nogo{background:#e65100;border-color:#a53d00}
 .vorlauf-dot.falsestart{background:#d32f2f;border-color:#8e1c1c}
 .vorlauf-dot.missed{background:#8a97a3;border-color:#5b6670}
 
+.stop-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:36px;padding:24px}
+.stop-row{display:flex;align-items:center;justify-content:center;min-height:72px}
+.stop-arrow{font-size:56px;line-height:1;color:#16232a;font-weight:700}
+.stop-arrow.stop-signal{color:#d32f2f}
+.stop-response-row{display:flex;gap:28px}
+.stop-response-btn{
+  width:88px;height:64px;border:none;border-radius:16px;background:#e5f1f4;color:#16232a;
+  font-size:30px;font-weight:700;cursor:pointer;transition:background .1s ease,transform .08s ease;
+}
+.stop-response-btn:active{transform:scale(.94)}
+.stop-response-btn.correct{background:#2e7d32;color:#fff}
+.stop-response-btn.wrong{background:#d32f2f;color:#fff}
+
 .corsi-stage{flex:1;position:relative;overflow:hidden}
 .corsi-block{
   position:absolute;transform:translate(-50%,-50%);
