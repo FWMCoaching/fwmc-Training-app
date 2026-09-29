@@ -1784,6 +1784,14 @@
   <h1 class="page-title" id="rememberReadyTitle">&nbsp;</h1>
   <p class="page-sub" id="rememberReadyDesc"></p>
 
+  <div class="group" id="rememberComboDurationGroup" hidden>
+    <div class="group-label">Dauer dieses Bausteins</div>
+    <div class="slider-row">
+      <input type="range" id="rememberComboDurationSlider" min="15" max="300" step="5" aria-label="Dauer dieses Bausteins">
+      <span class="slider-value" id="rememberComboDurationValue"></span>
+    </div>
+  </div>
+
   <div class="group">
     <div class="group-label">Schwierigkeit</div>
     <div class="choice-row" id="rememberDifficultyRow">
@@ -1857,6 +1865,14 @@
   </div>
   <h1 class="page-title">Trainingsmodus</h1>
   <p class="page-sub">Starte direkt bei einer bestimmten Zahlenanzahl, statt dich immer erst von 2 an hochzuarbeiten.</p>
+
+  <div class="group" id="rememberTrainingComboDurationGroup" hidden>
+    <div class="group-label">Dauer dieses Bausteins</div>
+    <div class="slider-row">
+      <input type="range" id="rememberTrainingComboDurationSlider" min="15" max="300" step="5" aria-label="Dauer dieses Bausteins">
+      <span class="slider-value" id="rememberTrainingComboDurationValue"></span>
+    </div>
+  </div>
 
   <div class="group">
     <div class="group-label">Startzahl <span class="group-count" id="rememberStartValue"></span></div>

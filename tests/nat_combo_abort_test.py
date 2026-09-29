@@ -20,9 +20,14 @@ async def main():
         await pg.click('#natHome [data-open-combo="1"]'); await pg.wait_for_timeout(200)
         print("combo screen visible (from NAT):", await pg.is_visible("#comboScreen"))
 
+        # Remember is capture-mode (see Kombi-Baukasten rebuild note in
+        # CLAUDE.md) - each add-grid tap reopens Remember's own ready
+        # screen, committed via its own start button.
         nat_btns = pg.locator('.combo-domain-group:has(.combo-domain-title:text-is("NAT")) .combo-add-btn')
-        await nat_btns.nth(0).click(); await pg.wait_for_timeout(100)
-        await nat_btns.nth(1).click(); await pg.wait_for_timeout(100)
+        await nat_btns.nth(0).click(); await pg.wait_for_timeout(150)
+        await pg.click("#rememberReadyStartBtn"); await pg.wait_for_timeout(100)
+        await nat_btns.nth(1).click(); await pg.wait_for_timeout(150)
+        await pg.click("#rememberReadyStartBtn"); await pg.wait_for_timeout(100)
         print("block count text (should be 2 Bausteine):", await pg.inner_text("#comboBlockCount"))
 
         await pg.click("#comboStartBtn"); await pg.wait_for_timeout(300)

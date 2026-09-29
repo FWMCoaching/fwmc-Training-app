@@ -1053,12 +1053,11 @@
   // Curated quick-add presets the combo builder offers per section - not the
   // full settings depth of each section's own screen, but enough to build a
   // useful cross-section session without reimplementing every settings UI.
-  const COMBO_PRESETS = {
-    nat: [
-      { domain: "nat", mode: "fixed", duration: 60 },
-      { domain: "nat", mode: "shuffle", duration: 60 },
-    ],
-  };
+  // Empty now - Remember (the last domain still using this) moved to
+  // capture mode below, same as everywhere else in this rebuild. Left in
+  // place (rather than removing the mechanism) in case a future domain
+  // ever wants a plain one-click preset again.
+  const COMBO_PRESETS = {};
   const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Movement", visual: "Visual Training", workout: "Workout", cardio: "Cardio", nat: "NAT" };
   const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat"];
   // Domains (or, for Atemtraining, individual patterns within one domain)
@@ -1079,6 +1078,15 @@
     ],
     cardio: [
       { label: "Cardio-Einheit", meta: "eigene Aktivitäten zusammenstellen", open: () => openCardioComboCapture(null, null) },
+    ],
+    // Remember has no natural end (all 3 modes run until "Beenden") - the
+    // capture UI adds a duration slider that only exists in combo mode
+    // (comboRememberDurationS), matching the comboDurationS cutoff
+    // startComboBlock() already used for the old fixed-preset version.
+    nat: [
+      { label: "Remember · Feste Positionen", meta: "Schwierigkeit & Dauer einstellen", open: () => openRememberComboCapture("fixed", null, null) },
+      { label: "Remember · Bewegte Positionen", meta: "Schwierigkeit & Dauer einstellen", open: () => openRememberComboCapture("shuffle", null, null) },
+      { label: "Remember · Trainingsmodus", meta: "gezielt bei einer Zahlenanzahl üben", open: () => openRememberComboCapture("training", null, null) },
     ],
     // Only "Zirkel" (circuit) mode joins the combo builder for now - "reps"
     // mode (feste Sätze/Wiederholungen) has no client-facing settings
@@ -1104,6 +1112,7 @@
     wimhof: (block, i) => openWimhofComboCapture(block, i),
     visual: (block, i) => openVisualComboCapture(block.exercise, null, block, i),
     workout: (block, i) => openWorkoutComboCapture(block, i),
+    nat: (block, i) => openRememberComboCapture(block.mode, block, i),
   };
 
   // ---- Elements ----
@@ -1693,10 +1702,12 @@
     rememberBestFixed: $("rememberBestFixed"), rememberBestShuffle: $("rememberBestShuffle"), rememberBestTraining: $("rememberBestTraining"),
     rememberReady: $("rememberReady"), rememberReadyBackToHome: $("rememberReadyBackToHome"),
     rememberReadyTitle: $("rememberReadyTitle"), rememberReadyDesc: $("rememberReadyDesc"),
+    rememberComboDurationGroup: $("rememberComboDurationGroup"), rememberComboDurationSlider: $("rememberComboDurationSlider"), rememberComboDurationValue: $("rememberComboDurationValue"),
     rememberDiffCustom: $("rememberDiffCustom"), rememberRevealSlider: $("rememberRevealSlider"), rememberRevealValue: $("rememberRevealValue"),
     rememberStepSlider: $("rememberStepSlider"), rememberStepValue: $("rememberStepValue"),
     rememberReadyBestHint: $("rememberReadyBestHint"), rememberReadyStartBtn: $("rememberReadyStartBtn"),
     rememberTrainingReady: $("rememberTrainingReady"), rememberTrainingBackToHome: $("rememberTrainingBackToHome"),
+    rememberTrainingComboDurationGroup: $("rememberTrainingComboDurationGroup"), rememberTrainingComboDurationSlider: $("rememberTrainingComboDurationSlider"), rememberTrainingComboDurationValue: $("rememberTrainingComboDurationValue"),
     rememberStartSlider: $("rememberStartSlider"), rememberStartValue: $("rememberStartValue"),
     rememberTrainingDiffCustom: $("rememberTrainingDiffCustom"),
     rememberTrainingRevealSlider: $("rememberTrainingRevealSlider"), rememberTrainingRevealValue: $("rememberTrainingRevealValue"),
@@ -6498,7 +6509,77 @@
   wireRememberDifficultyUI(rememberReadyCfg);
   els.rememberOpenFixed.addEventListener("click", () => openRememberReady("fixed"));
   els.rememberOpenShuffle.addEventListener("click", () => openRememberReady("shuffle"));
-  els.rememberReadyBackToHome.addEventListener("click", () => showScreen("natHome"));
+  els.rememberReadyBackToHome.addEventListener("click", () => {
+    if (comboRememberCaptureOriginal) { exitRememberComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("natHome");
+  });
+
+  // ---- Kombi-Baukasten capture, same pattern as every other domain: reopen
+  // this exact settings screen with the start button repurposed to "commit
+  // this block". Remember is different from every domain capture-fied so
+  // far in one way: none of its 3 modes (fixed/shuffle/training) have a
+  // natural end on their own - they only ever stop via "Beenden" - so there
+  // is no existing duration setting to reuse (unlike Movement's
+  // durationMin, which already existed standalone). A duration slider is
+  // added here, visible ONLY during capture (comboRememberDurationS, not
+  // persisted to rememberPrefs - it belongs to the combo block, not to the
+  // client's day-to-day Remember setup), reusing the same 15-300s/step 5
+  // range VT/Periph's own "Gesamtdauer" slider already uses. ----
+  let comboRememberCaptureOriginal = null;
+  let comboRememberEditIndex = null;
+  let comboRememberCaptureMode = null;
+  let comboRememberDurationS = 60;
+  function openRememberComboCapture(mode, existingBlock, editIndex) {
+    comboRememberCaptureOriginal = { ...rememberPrefs };
+    comboRememberCaptureMode = mode;
+    comboRememberEditIndex = editIndex ?? null;
+    comboRememberDurationS = existingBlock ? (existingBlock.duration ?? 60) : 60;
+    if (mode === "training") {
+      syncRememberTrainingUI();
+      showScreen("rememberTrainingReady");
+      els.rememberTrainingComboDurationGroup.hidden = false;
+      els.rememberTrainingComboDurationSlider.value = comboRememberDurationS;
+      els.rememberTrainingComboDurationValue.textContent = fmtSeconds(comboRememberDurationS);
+      els.rememberTrainingStartBtn.textContent = "Baustein übernehmen";
+    } else {
+      openRememberReady(mode);
+      els.rememberReadyTitle.textContent = `Baustein: Remember · ${REMEMBER_MODES[mode].title}`;
+      els.rememberReadyDesc.textContent = "Stelle Schwierigkeit und Dauer für diesen Kombi-Baustein ein.";
+      els.rememberComboDurationGroup.hidden = false;
+      els.rememberComboDurationSlider.value = comboRememberDurationS;
+      els.rememberComboDurationValue.textContent = fmtSeconds(comboRememberDurationS);
+      els.rememberReadyStartBtn.textContent = "Baustein übernehmen";
+    }
+  }
+  function exitRememberComboCapture() {
+    if (comboRememberCaptureOriginal) {
+      Object.assign(rememberPrefs, comboRememberCaptureOriginal);
+      saveRememberPrefsToStorage();
+      comboRememberCaptureOriginal = null;
+    }
+    comboRememberEditIndex = null;
+    comboRememberCaptureMode = null;
+    els.rememberComboDurationGroup.hidden = true;
+    els.rememberTrainingComboDurationGroup.hidden = true;
+    els.rememberReadyStartBtn.textContent = "Training starten";
+    els.rememberTrainingStartBtn.textContent = "Training starten";
+  }
+  function commitRememberComboCapture() {
+    const block = { domain: "nat", mode: comboRememberCaptureMode, duration: comboRememberDurationS };
+    if (comboRememberEditIndex != null) comboDraftBlocks[comboRememberEditIndex] = block;
+    else comboDraftBlocks.push(block);
+    exitRememberComboCapture();
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+  els.rememberComboDurationSlider.addEventListener("input", () => {
+    comboRememberDurationS = Number(els.rememberComboDurationSlider.value);
+    els.rememberComboDurationValue.textContent = fmtSeconds(comboRememberDurationS);
+  });
+  els.rememberTrainingComboDurationSlider.addEventListener("input", () => {
+    comboRememberDurationS = Number(els.rememberTrainingComboDurationSlider.value);
+    els.rememberTrainingComboDurationValue.textContent = fmtSeconds(comboRememberDurationS);
+  });
 
   // ---- Periphere Wahrnehmung: reuses the shared VT ready/player screens
   // (same flashing-stimulus mechanic, just centred on a fixation point)
@@ -6507,7 +6588,10 @@
     readyReturnScreen = "natHome";
     openReady("periph-flash", '<div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg></div>');
   });
-  els.rememberReadyStartBtn.addEventListener("click", () => startRememberGame(rememberReadyMode));
+  els.rememberReadyStartBtn.addEventListener("click", () => {
+    if (comboRememberCaptureOriginal) { commitRememberComboCapture(); return; }
+    startRememberGame(rememberReadyMode);
+  });
 
   function syncRememberTrainingUI() {
     els.rememberStartSlider.value = rememberPrefs.trainingStart;
@@ -6553,8 +6637,14 @@
     });
   });
   els.rememberOpenTraining.addEventListener("click", () => { syncRememberTrainingUI(); showScreen("rememberTrainingReady"); });
-  els.rememberTrainingBackToHome.addEventListener("click", () => showScreen("natHome"));
-  els.rememberTrainingStartBtn.addEventListener("click", () => startRememberGame("training"));
+  els.rememberTrainingBackToHome.addEventListener("click", () => {
+    if (comboRememberCaptureOriginal) { exitRememberComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("natHome");
+  });
+  els.rememberTrainingStartBtn.addEventListener("click", () => {
+    if (comboRememberCaptureOriginal) { commitRememberComboCapture(); return; }
+    startRememberGame("training");
+  });
 
   // "Beenden" doubles as the finish action here (see comment above) - only
   // shows a summary once at least one round has actually been cleared;

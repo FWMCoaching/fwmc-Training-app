@@ -3026,23 +3026,52 @@ button + `.ca-plus-btn` per exercise, not one clickable card like every
 other domain's add-grid - a real, pre-existing UI inconsistency worth
 knowing about even though this rebuild didn't set out to fix it).
 
-**Not done yet, explicit backlog for the rest of this rebuild**: NAT's
-Remember (already combo-capable via `comboDurationS`, needs the same UI
-treatment) plus Blitz-Raster/Flash Speicher Test/MOT Fähigkeit - those
-three are endless/progressive with no fixed end, so each needs the same
-`comboDurationS`-style duration cutoff Remember already got before they
-can join a combo at all. Workout's "reps" mode needs its own client-facing
-settings screen before it can rejoin the combo builder (see above - a
-larger, separate product decision, not just wiring). Pause markers between
-blocks (a `{domain:"pause", seconds:…}` pseudo-block) also not started.
-Also flagged, separately, from the same client message: a Master-level
-default background colour that cascades into every exercise's own
-background-colour Feineinstellung (auto-excluding exercises like Stroop
-where background IS the stimulus), and non-blocking contrast-safety
-warnings wherever colours are picked (shown in settings before starting
-and live during the exercise if adjusted mid-session) - explicit client
-instruction: never block, someone may deliberately train with tight
-contrast, just warn.
+**NAT's Remember, done (2026-09-29)**: the last domain on the original
+backlog list to move from a fixed one-click preset to full capture mode.
+Unlike every other domain capture-fied so far, none of Remember's 3 modes
+(fixed/shuffle/training) has a natural end on its own - they only ever
+stop via "Beenden" - so unlike Movement's `durationMin` (already a real
+standalone setting, just reused), there was no existing duration control
+to piggyback on. Added one from scratch, visible ONLY during capture
+(`comboRememberDurationS`, a plain in-memory variable - never written to
+`rememberPrefs`, since it belongs to the combo block, not the client's
+day-to-day Remember setup): a `rememberComboDurationGroup` slider next to
+the fixed/shuffle ready screen and a second `rememberTrainingComboDurationGroup`
+next to the training-mode ready screen, both reusing VT/Periph's own
+15-300s/step-5 "Gesamtdauer" range for consistency. `openRememberComboCapture(mode, existingBlock, editIndex)`
+picks the right screen for the given mode the same way the standalone
+open buttons already do; `commitRememberComboCapture()` produces the exact
+same `{domain:"nat", mode, duration}` block shape the old fixed presets
+already used (so old saved combos need no migration), and `startComboBlock()`'s
+existing `nat` dispatch (`startRememberGame(block.mode || "fixed", {comboDurationS})`)
+needed no changes at all - it was always mode-agnostic. `COMBO_PRESETS.nat`'s
+2 old one-click entries were removed (now `COMBO_PRESETS = {}` - nothing
+left uses the mechanism, kept in place rather than deleted in case a
+future domain wants a plain preset again) and replaced with 3 capture
+entries (fixed/shuffle/training - training was never offered as a preset
+at all before tonight, since a fixed 60s preset made little sense for a
+mode about deliberately starting at a chosen difficulty).
+
+Test: `tests/remember_combo_test.py` - all 3 modes open the right capture
+screen with the duration slider visible only in capture mode (hidden
+again on a normal standalone open), duration carries over correctly on
+re-edit, cancel discards a not-yet-committed block, and a fresh combo
+with a short duration runs Remember and finishes automatically. Fixed
+3 pre-existing tests that clicked the old one-click NAT presets directly:
+`tests/combo_reveal_test.py`, `tests/nat_combo_test.py`,
+`tests/nat_combo_abort_test.py` (each now clicks through the capture
+screen's own start button, same fix pattern applied to every other
+domain's tests earlier in this rebuild).
+
+**Still open, explicit backlog for the rest of this rebuild**:
+Blitz-Raster/Flash Speicher Test/MOT Fähigkeit are also endless/
+progressive with no fixed end, so each needs the same `comboDurationS`-
+style duration cutoff Remember just got before they can join a combo at
+all - Remember's implementation above is the template to copy. Workout's
+"reps" mode needs its own client-facing settings screen before it can
+rejoin the combo builder (see above - a larger, separate product
+decision, not just wiring). Pause markers between blocks (a
+`{domain:"pause", seconds:…}` pseudo-block) also not started.
 
 ## Master-Einstellungen: cascading default background colour (added 2026-09-29)
 

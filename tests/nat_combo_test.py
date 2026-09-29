@@ -31,7 +31,13 @@ async def main():
         print("NAT preset 1 label:", await nat_btns.nth(0).inner_text())
         print("NAT preset 2 label:", await nat_btns.nth(1).inner_text())
 
-        await nat_btns.nth(0).click(); await pg.wait_for_timeout(150)
+        # Remember is now capture-mode (see the Kombi-Baukasten rebuild note
+        # in CLAUDE.md) - the add-grid button reopens Remember's own ready
+        # screen instead of adding a block instantly; commit via its own
+        # start button, now repurposed to "Baustein übernehmen".
+        await nat_btns.nth(0).click(); await pg.wait_for_timeout(200)
+        print("capture opens rememberReady:", await pg.is_visible("#rememberReady"))
+        await pg.click("#rememberReadyStartBtn"); await pg.wait_for_timeout(150)
         print("block count text:", await pg.inner_text("#comboBlockCount"))
         block_row_text = await pg.inner_text("#comboBlockList")
         print("block list mentions Remember:", "Remember" in block_row_text)

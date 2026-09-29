@@ -17,15 +17,16 @@ async def main():
             await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)
 
         await pg.click('#home [data-open-combo="1"]'); await pg.wait_for_timeout(150)
-        # Text-based rather than positional selectors, and NAT's 2 Remember
-        # presets specifically (this test is about the save-form behaviour,
-        # not exercise-specific logic) - they're the only domain still a
-        # plain one-click add. Atemtraining/Movement/Cardio/Visual/Workout
-        # all moved to capture-mode buttons that navigate to their own
-        # settings screen instead of adding instantly, see the Kombi-
+        # Text-based rather than positional selectors (this test is about
+        # the save-form behaviour, not exercise-specific logic). Every
+        # domain, including NAT's Remember, is now capture-mode - adding a
+        # block means briefly reopening that domain's own settings screen
+        # and committing, not a plain one-click add. See the Kombi-
         # Baukasten rebuild note in CLAUDE.md.
-        await pg.click('#comboAddGrid >> text="Remember · Feste Positionen"'); await pg.wait_for_timeout(100)
-        await pg.click('#comboAddGrid >> text="Remember · Bewegte Positionen"'); await pg.wait_for_timeout(100)
+        await pg.click('#comboAddGrid >> text="Remember · Feste Positionen"'); await pg.wait_for_timeout(150)
+        await pg.click("#rememberReadyStartBtn"); await pg.wait_for_timeout(150)
+        await pg.click('#comboAddGrid >> text="Remember · Bewegte Positionen"'); await pg.wait_for_timeout(150)
+        await pg.click("#rememberReadyStartBtn"); await pg.wait_for_timeout(150)
 
         # name form should be hidden before clicking save
         print("save form hidden before click:", await pg.is_hidden("#comboSaveForm"))
@@ -55,7 +56,8 @@ async def main():
         print("saved group hidden after delete:", await pg.is_hidden("#comboSavedGroup"))
 
         # cancel flow
-        await pg.click('#comboAddGrid >> text="Remember · Feste Positionen"'); await pg.wait_for_timeout(100)
+        await pg.click('#comboAddGrid >> text="Remember · Feste Positionen"'); await pg.wait_for_timeout(150)
+        await pg.click("#rememberReadyStartBtn"); await pg.wait_for_timeout(150)
         await pg.click("#comboSaveBtn"); await pg.wait_for_timeout(100)
         await pg.click("#comboSaveCancelBtn"); await pg.wait_for_timeout(100)
         print("form hidden after cancel:", await pg.is_hidden("#comboSaveForm"))
