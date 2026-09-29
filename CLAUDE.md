@@ -3521,6 +3521,58 @@ the reset button on the very first visit, no prior interaction needed;
 the global reset button reaches it too, clearing `bgCustom` and
 re-adopting the Master colour, after which it also shows "Master aktiv".
 
+## Periphere Wahrnehmung: Transparenz, Reizfarbe-Pause, Alle-Button (added 2026-09-29)
+
+Four client asks about Periphere Wahrnehmung ("Blitzreize"), all landing
+together since they touch the same ready/pause screens:
+
+1. **Transparenter Hintergrund** (`state.bgTransparent`, VT-instance only
+   - deliberately not part of `wireBgIntensityControl`, since it's a
+   canvas-only concern the 25 CSS-background domains have no use for): a
+   "Farbe"/"Transparent" two-choice toggle (`#bgModeRow` on the ready
+   screen, `#periphPauseBgModeRow` on the pause overlay) that hides the
+   colour/intensity controls entirely while active. `currentBgFill()`
+   returns `null` instead of a fill colour when transparent; `drawScene()`'s
+   new `paintBg()` helper calls `ctx.clearRect()` instead of `fillRect()`
+   whenever it gets `null`. Clearing the canvas alone isn't enough for a
+   beamer to show nothing, though - `.player`'s own CSS background is a
+   hardcoded opaque `#ffffff` (styles.css), so a `.player.bg-transparent`
+   class (toggled by `bgTransparentActive()`, which also re-checks the
+   same "does this exercise even allow a background" guard `currentBgFill`
+   uses) drops that too. Toggled in three places: `syncBgTransparentUI()`
+   (ready/pause screens, on every mode click), `openReady()` (screen open),
+   and `runSession()` (session start) - belt and suspenders, since the
+   exercise can only actually change between the first two anyway.
+2. **"Farbe der Reize" im Pause-Overlay**: `buildStimColorPicker`/
+   `syncPeriphColorUI()` now wire up a *second* picker instance
+   (`#periphPauseColorPicker`), sharing the same `state.periphColors`
+   backing store as the ready-screen one; its `onChange` additionally calls
+   `redrawFrozenFrame()` so a colour picked mid-pause is visible the moment
+   you resume, same pattern as the existing pause fixpoint-colour picker.
+3. **"Alle Farben"** (`buildStimColorAllBtn`, generalized into
+   `buildStimColorPicker` itself): a rainbow conic-gradient swatch, same
+   idiom as the unrelated arrow/Stroop `buildColorAllBtn`, appended to
+   *every* `buildStimColorPicker` call - so this reaches Periph's own
+   picker (ready + pause), the Zusatzaufgabe's `addonColorPicker`, and all
+   4 of MOT's colour pickers in one change, not just Periph's. Toggling
+   "Alle" off drops to a single colour (`lib[0]`, i.e. "rot") rather than
+   zero, since this picker (unlike the standard arrow/Stroop one) never
+   allows an empty selection.
+4. **"Blick auf die Mitte richten" entfernt**: the `barCaption(...)` call
+   in `drawScene()`'s `"periph"` branch is gone - the client found it
+   distracting, showing on every single flash.
+
+Test: `tests/periph_transparency_test.py` - stimulus-colour picker has
+10 swatches (9 colours + Alle) on both ready and pause instances, "Alle"
+selects/deselects correctly (down to 1, never 0); Transparent mode hides
+the colour controls, persists across reload, gives `.player` the
+`bg-transparent` class during a real run, and leaves the canvas's own
+pixels fully alpha-0 (`getImageData` on an untouched corner) rather than
+filled; switching back to "Farbe" from the pause overlay mid-session
+restores both the CSS class and the canvas fill immediately; a colour
+picked via the pause overlay's picker shows up on the (hidden) ready-
+screen picker too, confirming the shared backing store.
+
 ## Test-Bereich (autonomous, ongoing)
 
 **If you were woken by the "FWMC Test-Bereich Auto-Build" Routine, this

@@ -1099,6 +1099,10 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 /* ---- Player (always light: stimuli are designed on white) ---- */
 .player{position:fixed;inset:0;background:#ffffff;display:flex;flex-direction:column;z-index:20;color:#16232a}
 .player.calm{background:var(--brand-pale)}
+/* Periphere Wahrnehmung's "Transparent" background mode - drops this
+   overlay's own opaque backdrop too, so a beamer/projector shows only the
+   stimulus itself and not a colored/white rectangle on the wall. */
+.player.bg-transparent{background:transparent}
 .stage-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
 #stage{width:100%;height:100%;display:block}
 
@@ -1165,11 +1169,23 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .stage-wrap{position:relative}
 .pause-overlay{
   position:absolute;inset:0;z-index:22;background:rgba(10,16,19,.72);
-  display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;
+  display:flex;justify-content:center;overflow-y:auto;
+  /* Extra top clearance keeps a tall panel's own top from ever landing
+     under the fixed player-bar (Beenden/Pause/timer, z-index 24, still
+     clickable above this overlay's backdrop so "Beenden" works while
+     paused) - a real, reproduced bug once Periphere Wahrnehmung's pause
+     panel grew past one screen's height (see periph_pause_test.py). */
+  padding:calc(90px + env(safe-area-inset-top,0px)) 20px 20px;
 }
 .pause-panel{
   background:var(--surface);border-radius:16px;padding:20px;width:100%;max-width:340px;
   display:flex;flex-direction:column;gap:4px;
+  /* margin:auto (not align-items:center on the parent) centers this
+     vertically when it fits, but - unlike align-items:center - never
+     clips/hides the panel's own top edge above the scrollable area once
+     it's taller than the viewport; it simply sits flush at the top,
+     fully reachable by scrolling down. */
+  margin:auto 0;
 }
 .pause-panel h3{margin:0 0 8px;font-size:17px;color:var(--ink);text-align:center}
 .pause-panel .group{margin-bottom:14px}

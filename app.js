@@ -451,9 +451,16 @@
   // whose background already carries the trained signal itself (VT's
   // colour, VRW, Kompass-Aufbau, Stroop mit Hintergrund) or when the
   // intensity slider is still at 0 (nothing to blend).
+  // Returns null (rather than a fill colour) when the client set the
+  // background to "Transparent" - the caller then clears instead of
+  // filling, so a beamer/projector shows nothing but the stimulus itself
+  // (see the .player.bg-transparent CSS rule, which also drops the
+  // overlay's own opaque white behind the canvas).
   function currentBgFill(fallback) {
     const ex = EXERCISES[state.exercise];
-    if (!ex || ex.type === "color-tap" || ex.bgIsStimulus || state.bgIntensity <= 0) return fallback;
+    if (!ex || ex.type === "color-tap" || ex.bgIsStimulus) return fallback;
+    if (state.bgTransparent) return null;
+    if (state.bgIntensity <= 0) return fallback;
     return mixHex("#ffffff", (STROOP_COLOR_BY_KEY[state.bgColorKey] || STROOP_COLOR_BY_KEY.gruen).hex, state.bgIntensity);
   }
 
@@ -461,19 +468,20 @@
     const cw = canvas.width, ch = canvas.height;
     const cx = cw / 2, cy = ch / 2;
     const unit = Math.min(cw, ch) / 2;
-    ctx.fillStyle = currentBgFill("#ffffff");
-    ctx.fillRect(0, 0, cw, ch);
+    function paintBg(fallback) {
+      const fill = currentBgFill(fallback);
+      if (fill === null) { ctx.clearRect(0, 0, cw, ch); }
+      else { ctx.fillStyle = fill; ctx.fillRect(0, 0, cw, ch); }
+    }
+    paintBg("#ffffff");
 
     if (kind === "blank") {
-      ctx.fillStyle = currentBgFill(NEUTRAL);
-      ctx.fillRect(0, 0, cw, ch);
+      paintBg(NEUTRAL);
       drawFixationPoint(cx, cy, unit);
     } else if (kind === "periph") {
-      ctx.fillStyle = currentBgFill(NEUTRAL);
-      ctx.fillRect(0, 0, cw, ch);
+      paintBg(NEUTRAL);
       drawFixationPoint(cx, cy, unit);
       drawPeriphChar(cw, ch, unit, payload.fx, payload.fy, payload.char, state.periphSizeMode, payload.color);
-      barCaption(cw, ch, "Blick auf die Mitte richten", false);
     } else if (kind === "count") {
       drawCountdown(cw, ch, payload);
     } else if (kind === "cue") {
@@ -1184,10 +1192,13 @@
     bgSourceRow: $("bgSourceRow"), bgPresetGroup: $("bgPresetGroup"), bgPresetList: $("bgPresetList"),
     bgSaveBtn: $("bgSaveBtn"), bgSaveForm: $("bgSaveForm"), bgSaveNameInput: $("bgSaveNameInput"),
     bgSaveCancelBtn: $("bgSaveCancelBtn"), bgSaveConfirmBtn: $("bgSaveConfirmBtn"),
+    bgColorOptions: $("bgColorOptions"), bgTransparentHint: $("bgTransparentHint"),
     periphPauseBtn: $("periphPauseBtn"), periphPauseOverlay: $("periphPauseOverlay"),
     periphPauseBgSlider: $("periphPauseBgSlider"), periphPauseBgValue: $("periphPauseBgValue"),
     periphPauseBgColorPicker: $("periphPauseBgColorPicker"), periphPauseBgContrastHint: $("periphPauseBgContrastHint"), periphPauseFixColorPicker: $("periphPauseFixColorPicker"),
+    periphPauseBgColorOptions: $("periphPauseBgColorOptions"), periphPauseBgTransparentHint: $("periphPauseBgTransparentHint"),
     periphPauseFixSizeSlider: $("periphPauseFixSizeSlider"), periphPauseFixSizeValue: $("periphPauseFixSizeValue"),
+    periphPauseColorPicker: $("periphPauseColorPicker"), periphPauseColorHint: $("periphPauseColorHint"),
     periphResumeBtn: $("periphResumeBtn"),
     durationGroup: $("durationGroup"), tempoGroup: $("tempoGroup"), advanced: $("advanced"),
     vtSavedGroup: $("vtSavedGroup"), vtSavedList: $("vtSavedList"), vtSaveBtn: $("vtSaveBtn"),
@@ -2216,6 +2227,7 @@
     periphColors: ["schwarz"],
     bgColorKey: "gruen",
     bgIntensity: 0,
+    bgTransparent: false,
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -2241,6 +2253,7 @@
     if (!Array.isArray(state.periphColors) || !state.periphColors.length || !state.periphColors.every((k) => STROOP_COLOR_BY_KEY[k])) state.periphColors = DEFAULTS.periphColors.slice();
     if (!STROOP_COLOR_BY_KEY[state.bgColorKey]) state.bgColorKey = "gruen";
     if (typeof state.bgIntensity !== "number" || state.bgIntensity < 0 || state.bgIntensity > 1) state.bgIntensity = 0;
+    if (typeof state.bgTransparent !== "boolean") state.bgTransparent = false;
   }
   function savePrefs() { writeJSON(PREFS_KEY, state); }
   loadPrefs();
@@ -2469,9 +2482,30 @@
     });
     return btn;
   }
+  // "Alle Farben" shortcut for the stimulus-colour picker above, same
+  // rainbow-swatch idiom as buildColorAllBtn (the unrelated arrow/Stroop
+  // colour picker) - selecting it picks every colour in STROOP_COLOR_LIB at
+  // once instead of clicking each swatch by hand. Toggling it back off
+  // drops to a single colour rather than zero, since this picker (unlike
+  // the standard one) never allows an empty selection.
+  function buildStimColorAllBtn(getKeys, setKeys, onChange) {
+    const btn = document.createElement("button");
+    btn.className = "color-swatch";
+    btn.setAttribute("aria-pressed", "false");
+    const lib = STROOP_COLOR_LIB;
+    const wedges = lib.map((c, i) => `${c.hex} ${(i / lib.length * 100).toFixed(2)}% ${((i + 1) / lib.length * 100).toFixed(2)}%`).join(",");
+    btn.innerHTML = `<span class="swatch" style="background:conic-gradient(${wedges})"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">Alle Farben</span>`;
+    btn.addEventListener("click", () => {
+      const allSelected = getKeys().length === lib.length;
+      setKeys(allSelected ? [lib[0].key] : lib.map((c) => c.key));
+      onChange();
+    });
+    return btn;
+  }
   function buildStimColorPicker(container, getKeys, setKeys, onChange) {
     container.innerHTML = "";
     STROOP_COLOR_LIB.forEach((c) => container.appendChild(buildStimColorSwatch(c, getKeys, setKeys, onChange)));
+    container.appendChild(buildStimColorAllBtn(getKeys, setKeys, onChange));
   }
   function syncStimColorUI(container, getKeys, hintEl) {
     const keys = getKeys();
@@ -2480,13 +2514,23 @@
       el.classList.toggle("active", on);
       el.setAttribute("aria-pressed", on ? "true" : "false");
     });
+    const allBtn = container.querySelector(".color-swatch:not([data-color])");
+    if (allBtn) {
+      const allOn = keys.length === STROOP_COLOR_LIB.length;
+      allBtn.classList.toggle("active", allOn);
+      allBtn.setAttribute("aria-pressed", allOn ? "true" : "false");
+    }
     if (!hintEl) return;
     hintEl.textContent = keys.length > 1
       ? "Gemischt – bei jedem Reiz wird automatisch eine Farbe aus deiner Auswahl gewählt, die sich vom Hintergrund abhebt."
       : "Nur eine Farbe gewählt – wähle mehr als eine, damit automatisch ausgewichen werden kann, falls sie einmal zum Hintergrund passt.";
   }
   buildStimColorPicker(els.periphColorPicker, () => state.periphColors, (keys) => { state.periphColors = keys; }, () => { savePrefs(); syncPeriphColorUI(); });
-  function syncPeriphColorUI() { syncStimColorUI(els.periphColorPicker, () => state.periphColors, els.periphColorHint); }
+  buildStimColorPicker(els.periphPauseColorPicker, () => state.periphColors, (keys) => { state.periphColors = keys; }, () => { savePrefs(); syncPeriphColorUI(); redrawFrozenFrame(); });
+  function syncPeriphColorUI() {
+    syncStimColorUI(els.periphColorPicker, () => state.periphColors, els.periphColorHint);
+    syncStimColorUI(els.periphPauseColorPicker, () => state.periphColors, els.periphPauseColorHint);
+  }
 
   // ---- Periphere Wahrnehmung: Zeichentyp + Fixpunkt Feineinstellungen ----
   document.querySelectorAll("#periphKindRow [data-periph-kind]").forEach((el) => {
@@ -3127,6 +3171,35 @@
     }],
   }, () => { savePrefs(); redrawFrozenFrame(); }, "vt");
 
+  // ---- Background "Transparent" mode (for a beamer/projector, so it
+  // shows only the stimulus and not a colored rectangle on the wall) -
+  // deliberately separate from wireBgIntensityControl above, since it's
+  // a canvas-only concern (drops the .player container's own opaque white
+  // CSS background too, see styles.css) that doesn't apply to the 25 other,
+  // CSS-background domains that function reuses. ----
+  function bgTransparentActive() {
+    const ex = EXERCISES[state.exercise];
+    return !!(ex && ex.type !== "color-tap" && !ex.bgIsStimulus && state.bgTransparent);
+  }
+  document.querySelectorAll("#bgModeRow [data-bg-mode], #periphPauseBgModeRow [data-bg-mode]").forEach((el) => {
+    el.addEventListener("click", () => {
+      state.bgTransparent = el.dataset.bgMode === "transparent";
+      savePrefs();
+      syncBgTransparentUI();
+      redrawFrozenFrame();
+    });
+  });
+  function syncBgTransparentUI() {
+    document.querySelectorAll("#bgModeRow [data-bg-mode], #periphPauseBgModeRow [data-bg-mode]").forEach((el) => {
+      setActive(el, (el.dataset.bgMode === "transparent") === state.bgTransparent);
+    });
+    els.bgColorOptions.hidden = state.bgTransparent;
+    els.bgTransparentHint.hidden = !state.bgTransparent;
+    els.periphPauseBgColorOptions.hidden = state.bgTransparent;
+    els.periphPauseBgTransparentHint.hidden = !state.bgTransparent;
+    els.player.classList.toggle("bg-transparent", bgTransparentActive());
+  }
+
   // ---- Duration / tempo / sliders ----
   document.querySelectorAll("[data-dur]").forEach((el) => {
     el.addEventListener("click", () => { state.duration = Number(el.dataset.dur); savePrefs(); syncDurationUI(); });
@@ -3229,7 +3302,7 @@
     // two checks are independent and both need to hold.
     if (!isConeTap) syncPeriphFixUI();
     if (isPeriph) { syncPeriphKindUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); syncPeriphColorUI(); }
-    if (bgAllowed) syncBgUI();
+    if (bgAllowed) { syncBgUI(); syncBgTransparentUI(); }
     if (!isConeTap && !isPeriph) syncAddonUI();
     syncDurationUI();
     syncTempoUI();
@@ -4308,6 +4381,7 @@
     els.coneOrderStage.hidden = true;
     els.stageWrap.hidden = false;
     els.periphPauseBtn.hidden = EXERCISES[state.exercise].type !== "periph";
+    els.player.classList.toggle("bg-transparent", bgTransparentActive());
     fitCanvas();
     ensureAudioCtx();
     const built = buildScheduleFor(EXERCISES[state.exercise], Math.random);
@@ -4669,7 +4743,9 @@
     raf = null;
     periphPausedAt = performance.now();
     syncBgUI();
+    syncBgTransparentUI();
     syncPeriphFixUI();
+    syncPeriphColorUI();
     els.periphPauseBtn.hidden = true;
     els.periphPauseOverlay.hidden = false;
   });
