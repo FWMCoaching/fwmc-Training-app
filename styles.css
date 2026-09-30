@@ -976,6 +976,19 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .wcst-card.wcst-stimulus{width:100%;max-width:220px;min-height:80px;border-style:dashed}
 .wcst-card.wcst-stimulus .wcst-shape{font-size:30px}
 
+.navon-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:16px;background:#ffffff}
+.navon-cue{font-size:22px;font-weight:700;color:#16232a;letter-spacing:1px;min-height:28px}
+.navon-grid{display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(7,1fr);width:175px;height:245px;gap:1px}
+.navon-cell{display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#16232a;line-height:1}
+.navon-response-row{display:flex;gap:24px}
+.navon-response-btn{
+  width:76px;height:76px;border-radius:50%;border:none;background:#e5f1f4;color:#16232a;
+  font-size:28px;font-weight:700;cursor:pointer;transition:background .1s ease,color .1s ease,transform .08s ease;
+}
+.navon-response-btn:active{transform:scale(.96)}
+.navon-response-btn.correct{background:#2e7d32;color:#fff}
+.navon-response-btn.wrong{background:#d32f2f;color:#fff}
+
 .corsi-stage{flex:1;position:relative;overflow:hidden}
 .corsi-block{
   position:absolute;transform:translate(-50%,-50%);

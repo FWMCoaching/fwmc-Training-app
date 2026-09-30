@@ -4874,9 +4874,84 @@ doesn't:
   pause/resume freezes the stage, the done-panel reports categories/
   perseverative-errors/accuracy - rather than asserting the hidden rule
   logic itself, which was verified by reading the code).
+- **Ganzheit-Detail-Test (Navon-Aufgabe)** (twenty-fifth autonomous entry,
+  2026-09-30): built from the "Recherche-Backlog: 20 Kandidaten" list
+  (candidate #20) rather than fresh research this round. Grounded in the
+  Navon task (Navon, 1977, "Forest before the trees") - a large ("global")
+  letter is itself built out of many small ("local") letters; a cue
+  ("GROSS"/"KLEIN") names which level to judge THIS trial, and the client
+  taps H or S for that level's identity, ignoring the other one. When both
+  levels happen to be the same letter that's "kongruent" (fast, accurate);
+  when they conflict that's "inkongruent" (slower, more error-prone) - and
+  the classic, endlessly-replicated finding this paradigm exists to
+  surface is an ASYMMETRY ("global precedence"): an incongruent LOCAL
+  level typically slows GLOBAL responses less than an incongruent GLOBAL
+  level slows LOCAL responses - the visual system processes the overall
+  shape before it processes the fine detail inside it. The big letter
+  renders as a 5x7 dot-matrix grid (`NAVON_SHAPES`, hand-encoded bitmaps
+  for H and S) with small letter glyphs placed only at the "on" cells -
+  every glyph inside one trial shares the SAME local identity (that's what
+  makes it read as one coherent shape at a glance), so a trial is fully
+  described by `{globalLetter, localLetter, cuedLevel}`. Genuinely
+  distinct from every existing Test/NAT mechanic: Suchtest varies feature
+  vs. conjunction search across SEPARATE items on a display; Regelwechsel-
+  Test switches between two semantic classification RULES applied to one
+  bivalent digit; this is the only exercise where a SINGLE object carries
+  the SAME kind of information (a letter identity) at two different
+  perceptual SCALES at once, and the question is which scale gets
+  processed more automatically - a genuinely different "level of
+  processing" construct, not a rule-switch or a search. Fixed 32-trial run
+  (`NAVON_TRIAL_COUNT`, the full 2 levels x 2 letters x 2 congruency
+  factorial x 4 reps), shuffled with a guard against more than 3 identical
+  cued levels OR more than 3 identical correct answers in a row (same
+  shape as `buildTsTaskSeq`/`buildFlankerTrials`, extended to cover both
+  variables at once here). Reports accuracy% plus average RT for each of
+  the four cells (global/lokal x kongruent/inkongruent) and both
+  interference costs (inkongruent minus kongruent RT, per level) as
+  "Interferenz gro&szlig;"/"Interferenz klein" - the actual outcome
+  measures this paradigm exists to reveal - plus a one-line note on which
+  one came out bigger this particular run, tracking best accuracy% per
+  `navonPrefs.difficulty` (leicht/mittel/schwer, controlling only the
+  cue-stimulus interval and response window, same "preparation time is
+  what matters" shape as Regelwechsel-Test's own `csiMs`-as-difficulty
+  design) via `NAVON_BEST_KEY`. Background colour/intensity WAS included
+  (`navonPrefs.bgColorKey`/`bgIntensity`, `makeBgApplier`/
+  `wireBgIntensityControl` on both the ready screen and the pause overlay,
+  plus a new `MASTER_BG_TARGETS` registry entry so the Master-
+  Einstellungen cascading default reaches this exercise too, and a
+  `bg-master-status` element on the ready screen matching every other
+  Test-Bereich exercise's now-current shape) - basically free, and unlike
+  the immediately-preceding Kartensortier-Test (where colour identity IS
+  one of the sorting rules), colour plays no role in the Navon task at
+  all, so a background tint behind the plain dark letter grid doesn't
+  compete with anything being judged. No Bei-Fehler/Zusatzaufgabe/
+  Trainingsmodus - correctly skipped, same reasoning as every other
+  fixed-trial Test entry. Self-paced per trial with a safety-net timeout
+  (`scheduleNavonTimer`, same always-clear-pending-timer pattern as
+  Regelwechsel-Test/Suchtest/Hick) and the usual remaining-delay pause/
+  resume. New CSS is `.navon-*` (fixed hex colours throughout, no
+  `var(--...)`); correct/wrong feedback is a plain solid background swap
+  on the tapped H/S button (Flanker/Posner/Regelwechsel-Test's
+  convention), since these two buttons have fixed, never-changing labels
+  with no colour-coding of their own to protect (unlike Simon-Test/
+  Kartensortier-Test's colour-neutral ring, needed there because the
+  tapped element's OWN colour is part of the judged signal). Test:
+  `tests/navon_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
+- **Ganzheit-Detail-Test: small per-cell sample size**: 32 trials split
+  across 4 cells (global/lokal x kongruent/inkongruent) means only ~8
+  trials feed each cell's average RT, so both interference-cost numbers
+  (and the "which one is bigger" note) rest on a genuinely small sample
+  and can look noisy - or even point the "wrong" direction by chance - on
+  any single run, the same category of caveat already flagged for
+  Doppelziel-Test's per-lag sample size. Kept small deliberately so a run
+  stays quick, matching this app's "test, not a 20-minute lab session"
+  shape. Not fixed - flagging rather than guessing: ask the client whether
+  the done-panel should note this is "ein erster Hinweis, über mehrere
+  Durchläufe stabiler" the same way Doppelziel-Test's own note already
+  does, or whether the trial count should simply go up.
 - **Kartensortier-Test: streak threshold and "unambiguous card" scoring
   are both simplifications versus the standardised WCST protocol**: the
   real test requires 10 consecutive correct matches per category (this
