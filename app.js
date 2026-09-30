@@ -10407,15 +10407,22 @@
   // Client-controlled, like the existing Zusatzaufgabe: an on/off toggle
   // the client sets for themselves, works during ANY cardio run (self-
   // built or, later, coach-authored), no coach programming required.
-  // "addon-flash" is NOT Periphere Wahrnehmung's own Blitzreiz exercise -
-  // it's the "Zusatzaufgabe" dual-task mechanism (a single number/letter
-  // flashed centrally, normally an add-on ON TOP OF another exercise)
-  // repurposed as its own standalone guest exercise (a blank host frame,
-  // see EXERCISES["cardio-flash-host"]/buildFlashHostSchedule). Title
-  // renamed (2026-09-30) to say what it actually is, after the client
-  // asked whether it was the peripheral Blitzreiz exercise - it isn't.
+  // "addon-flash" IS the same Blitzreiz mechanic as Periphere Wahrnehmung's
+  // own "periph" stimulus - both draw through the exact same drawPeriphChar()
+  // (fixation point, a coloured digit/letter flashing briefly at a random
+  // peripheral position). It's the "Zusatzaufgabe" dual-task mechanism,
+  // normally an add-on layered ON TOP OF another exercise, here repurposed
+  // as its own standalone guest exercise (a blank host frame with the
+  // addon drawn on it, see EXERCISES["cardio-flash-host"]/
+  // buildFlashHostSchedule/buildAddonSchedule's cardio-flash-host branch).
+  // Title corrected (2026-09-30) back to "Zusatzaufgabe" - the name this
+  // exact mechanism already carries everywhere else in the app (every
+  // other exercise's own "Zusatzaufgabe" add-on section) - after an
+  // earlier rename here mistakenly claimed it was a different thing from
+  // Blitzreiz. Client's ask: one consistent name for one mechanism,
+  // wherever it shows up.
   const CARDIO_GUEST_TYPES = [
-    { id: "addon-flash", title: "Ziffer/Buchstabe lesen · kurzer Reiz" },
+    { id: "addon-flash", title: "Zusatzaufgabe · Ziffer/Buchstabe" },
     { id: "vt-color", title: "VT · Farbe & Seite" },
     { id: "stroop-classic", title: "Stroop · klassisch" },
     { id: "4-straight", title: "4 Pfeile · gerade" },

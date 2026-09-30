@@ -3903,22 +3903,33 @@ Trying the Tier 2 picker surfaced three concrete gaps, all fixed together:
    Zusatzimpuls" picker - that's the client's own in-the-moment choice,
    meant to work any time, which is exactly what they asked for when they
    first clarified the Tier 2 ask.
-3. **Renamed** `addon-flash`'s title from "Zusatzaufgabe · Zahlen/
-   Buchstaben" to "Ziffer/Buchstabe lesen · kurzer Reiz" - the client
-   asked whether this was actually Periphere Wahrnehmung's own Blitzreiz
-   exercise. It isn't: it's the "Zusatzaufgabe" dual-task mechanism (a
-   single character flashed centrally, normally an add-on ON TOP of
-   another exercise) repurposed as its own standalone guest exercise via
-   a blank host frame (`EXERCISES["cardio-flash-host"]`) - a real,
-   different thing from Blitzreiz, just easy to conflate by name.
+3. **Naming, corrected twice in one session.** The client asked whether
+   `addon-flash` was actually Periphere Wahrnehmung's own Blitzreiz
+   exercise - it was first renamed from "Zusatzaufgabe · Zahlen/
+   Buchstaben" to "Ziffer/Buchstabe lesen · kurzer Reiz" on the mistaken
+   assumption that it was a *different* thing from Blitzreiz. It isn't:
+   checked against the actual rendering code, both draw through the exact
+   same `drawPeriphChar()` (fixation point, a coloured digit/letter
+   flashing briefly at a random peripheral position, same
+   `PERIPH_AXIS_KEYS`/`PERIPH_ZONE_KEYS` positioning) - `addon-flash` IS
+   the Blitzreiz mechanic, just running through the "Zusatzaufgabe"
+   dual-task system (normally an add-on layered ON TOP of another
+   exercise, see `buildAddonSchedule`) standalone on a blank host frame
+   (`EXERCISES["cardio-flash-host"]`) instead of on top of a host
+   exercise. Corrected back to **"Zusatzaufgabe · Ziffer/Buchstabe"** -
+   the name this mechanism already carries everywhere else in the app
+   (every other exercise's own "Zusatzaufgabe" add-on section uses this
+   exact word) - per the client's explicit ask: one consistent name for
+   one mechanism, wherever it shows up, rather than inventing a new one
+   just for this Cardio context.
 
-Test: `tests/cardio_addon_settings_test.py` - renamed label appears (old
-one doesn't); background controls appear for addon-flash but not
-vt-color; colour + intensity choices persist across reload; window
-toggle/sliders sync, clamp (dragging start past end pulls end along),
-and persist; functionally, a due automatic-trigger interval is
-correctly blocked by an already-closed window and correctly still fires
-inside an open one.
+Test: `tests/cardio_addon_settings_test.py` - pool grid shows the
+settled "Zusatzaufgabe · Ziffer/Buchstabe" label; background controls
+appear for addon-flash but not vt-color; colour + intensity choices
+persist across reload; window toggle/sliders sync, clamp (dragging
+start past end pulls end along), and persist; functionally, a due
+automatic-trigger interval is correctly blocked by an already-closed
+window and correctly still fires inside an open one.
 
 ### Follow-up: "Beenden" inside a guest exercise no longer ends the whole session (2026-09-30)
 

@@ -15,9 +15,16 @@ URL = "http://localhost:8845/index.html"
 #    trigger to a client-chosen sub-range of the session ("in diesem
 #    Zeitraum sollen die gesetzt werden"). The manual picker is
 #    unaffected - always available, any time, by design.
-# 3. Renamed "Zusatzaufgabe · Zahlen/Buchstaben" (confusingly similar-
-#    sounding to Periphere Wahrnehmung's own Blitzreiz exercise, which it
-#    is NOT) to "Ziffer/Buchstabe lesen · kurzer Reiz".
+# 3. Title text settled as "Zusatzaufgabe · Ziffer/Buchstabe" - it went
+#    through two names in one session: first "Zusatzaufgabe · Zahlen/
+#    Buchstaben" (the client asked whether this was actually Periphere
+#    Wahrnehmung's Blitzreiz exercise), briefly renamed to something that
+#    implied it was NOT Blitzreiz (wrong - it IS the same drawPeriphChar()
+#    mechanic, just running through the "Zusatzaufgabe" add-on system
+#    standalone instead of layered on a host exercise), then corrected
+#    back to "Zusatzaufgabe" - the name this exact mechanism already
+#    carries everywhere else in the app, which is what "one consistent
+#    name, wherever it shows up" actually calls for.
 
 async def main():
     errors = []
@@ -33,11 +40,10 @@ async def main():
         await pg.click("#cardioStartCard"); await pg.wait_for_timeout(200)
         await pg.click('#cardioAddGrid >> text="Joggen"'); await pg.wait_for_timeout(100)
 
-        # ==== 1. Rename ====
+        # ==== 1. Naming, settled ====
         await pg.click("#cardioAddonAdvanced summary"); await pg.wait_for_timeout(150)
         await pg.check("#cardioAddonEnableToggle"); await pg.wait_for_timeout(150)
-        print("pool grid shows the renamed label:", "Ziffer/Buchstabe lesen" in await pg.inner_text("#cardioAddonPoolGrid"))
-        print("no more confusing 'Zusatzaufgabe · Zahlen/Buchstaben' label:", "Zahlen/Buchstaben" not in await pg.inner_text("#cardioAddonPoolGrid"))
+        print("pool grid uses the app-wide 'Zusatzaufgabe' name:", "Zusatzaufgabe · Ziffer/Buchstabe" in await pg.inner_text("#cardioAddonPoolGrid"))
 
         # ==== 2. Background colour + intensity per type ====
         await pg.check('#cardioAddonPoolGrid input[data-pool="addon-flash"]'); await pg.wait_for_timeout(150)
