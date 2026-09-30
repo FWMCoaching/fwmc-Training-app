@@ -89,7 +89,7 @@ async def main():
         # runSession()-engine exercises) + periph-flash + blitz-raster, not
         # just the automatic system's own configured pool - see
         # cardio_addon_phase1_test.py / cardio_addon_nat_batch1_test.py.
-        print("all 14 exercise choices offered (not just the addon pool):", await choices.count() == 14)
+        print("all 17 exercise choices offered (not just the addon pool):", await choices.count() == 17)
         print("first type pre-selected by default:", "active" in (await choices.nth(0).get_attribute("class")))
         print("default duration shown as 0:20:", (await pg.inner_text("#cardioAddonPickerDurationValue")) == "0:20")
 

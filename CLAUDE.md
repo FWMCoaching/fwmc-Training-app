@@ -4126,6 +4126,95 @@ all re-verified passing unchanged - the `prefsOverride` parameter and
 the two `cardioGuestActive` branches don't alter normal (non-Cardio)
 behaviour.
 
+### NAT batch 2: Remember, Flash Speicher Test, MOT-Fähigkeit (2026-09-30)
+
+Closes out the NAT domain in the Cardio "+ Zusatzaufgabe" system -
+`CARDIO_GUEST_TYPES` now has all 17 entries (12 Visual Training + 5 NAT).
+These three share a shape batch 1 didn't need to handle yet: each has
+several distinct **starting modes** (Remember: feste/bewegte Positionen,
+Trainingsmodus; Flash: Konstant, Steigend-direkt, Steigend-mit-
+Wiederholung, Trainingsmodus; MOT: Tempo/Anzahl/Beides steigt,
+Trainingsmodus) - the client's explicit ask from the original request:
+"muss natürlich dann auch die Möglichkeit bestehen, in diese Untermenüs zu
+gehen, wie man diese Übung dann starten will".
+
+- **`CARDIO_GUEST_MODE_LISTS`/`cardioGuestModeList(guestId)`**: one entry
+  per domain, titles matching each domain's own mode names exactly. Used
+  in two places - the live picker (a new sub-step, `cardioAddonPickerModeGroup`/
+  `cardioAddonPickerModeRow`, shown only once a mode-bearing type is
+  selected) and the Feineinstellungen panel (a persisted `perType[id].mode`
+  default for the *automatic* randomized-interval trigger, which never
+  goes through the picker at all).
+- **`prefsOverride`, same pattern as Blitz-Raster in batch 1**:
+  `startRememberGame`/`startFlashGame`/`startMotGame` all gained a third
+  parameter; when set, the game reads every setting through it instead of
+  the client's own saved `rememberPrefs`/`flashPrefs`/`motPrefs` and never
+  touches them. `finishRememberCombo`/`rememberStop`,
+  `finishFlashCombo`/`flashStop`, `finishMotCombo`/`motStop` each gained a
+  `cardioGuestActive` branch calling `returnFromCardioGuest()` instead of
+  their normal finish/abort path - no history entry, no best-score write
+  for a guest burst, same as every other guest type.
+- **Proportionate scope, same principle as every earlier batch**: the
+  Cardio panel exposes Dauer, the mode choice, a difficulty row
+  (Remember/Flash/MOT's own Leicht/Mittel/Schwer presets), a "Bei Fehler"
+  row, and (Flash/MOT only) their own field particular to that domain
+  (Flash: Buchstaben/Zahlen/Gemischt; MOT: Objektfarbe) plus the standard
+  background row - deliberately not exposing each mode's own numeric
+  starting parameters (`trainingStart`/`startCount`/`growStartObjects`/
+  etc.), consistent with skipping Blitz's zones and periph-flash's
+  axes/zone-weights earlier.
+- Synthetic `EXERCISES["remember"/"flash"/"mot"]` entries, same purpose as
+  `blitz-raster`'s in batch 1 (`cardioGuestBgAllowed()`/
+  `cardioGuestNeedsColors()` lookups only, never shown in a real picker).
+
+Test: `tests/cardio_addon_nat_batch2_test.py` - pool grid at 17 types; all
+three panels show mode-row/difficulty-row/error-row (plus Flash's kind-row,
+MOT's colour-row) and nothing from the generic stimulus/interval field set;
+live picker's mode sub-step appears only for these three and offers the
+right mode count each; all three take over full-screen via their own
+players and return to the still-running Cardio session on Beenden; the
+client's own real Remember best score is untouched by the guest bursts.
+`cardio_addon_phase1_test.py`/`cardio_addon_picker_test.py`/
+`cardio_addon_nat_batch1_test.py`'s exercise-choice counts updated to 17
+(the last one had been missed in an earlier pass and briefly regressed to
+"False" before this fix).
+
+### Cardio-Zusatzaufgabe: Zeitfenster-Slider auf Plan-Gesamtzeit begrenzt (2026-09-30)
+
+Client-reported bug: the "nur in einem bestimmten Zeitfenster"
+ab/bis-sliders could be dragged out to a fixed 60 Min. regardless of how
+much time the client had actually put together in the Cardio-Einheit
+itself ("Ich kann jetzt gerade bis über 25 Minuten schieben, aber habe nur
+10 Minuten Joggen ausgewählt"). Fixed by capping both sliders' `max`
+attribute live to `cardioItemsSeconds(cardioPrefs.items)` (the same total-
+including-interleaved-pauses helper the "ca. X Min." previews already use)
+via a new `syncCardioAddonWindowBounds()`, re-run whenever that total can
+have changed (activity added/removed/resized, pause adjusted).
+
+Deliberately **display-only** - it never overwrites the stored
+`windowStartS`/`windowEndS` themselves, only what's shown/draggable right
+now. An early version did persist the clamp and broke on the very first
+render: `openCardioReady()` renders this panel before the client has
+picked any activity yet (`cardioPrefs.items` still empty, total 0), so the
+cap would have permanently shrunk the default 600s (10 Min.) down to
+almost nothing and saved that - exactly backwards from the client's own
+follow-up requirement ("Sollte ich jetzt was Zweites hinzufügen, muss das
+untere dann halt auch in der Skala weiterspringen, dass ich dann die
+Möglichkeit habe, weiterzuziehen"). With the display-only fix, adding time
+back simply raises the max again and the client's last actual choice
+reappears - nothing was ever destroyed, it was just temporarily
+unreachable while the plan was smaller.
+
+Test: `tests/cardio_addon_window_bounds_test.py` - one 10 Min. activity
+caps both sliders at 10 and a programmatic drag past it is pulled back;
+adding a second activity raises the cap and dragging out to the new max
+actually works; removing that activity again shrinks the cap back down to
+10 without leaving the displayed value stranded above it.
+`cardio_addon_settings_test.py`'s "ab" sweeps past "bis" case updated
+from its old arbitrary 15 Min. (now unreachable with only one 10 Min.
+activity in that test) to first lowering "bis" to 5 and then dragging "ab"
+to 8, inside the new 10 Min. cap.
+
 ## Test-Bereich (autonomous, ongoing)
 
 **If you were woken by the "FWMC Test-Bereich Auto-Build" Routine, this

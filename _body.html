@@ -625,7 +625,11 @@
     <div class="cardio-activity-label" id="cardioActivityLabel" hidden></div>
     <div class="cardio-countdown" id="cardioCountdown">0:00</div>
     <div class="cardio-phase-label" id="cardioPhaseLabel" hidden></div>
-    <button class="pause-skip" id="cardioSkipBtn">N&auml;chste Aktivit&auml;t &raquo;</button>
+    <div class="chapter-nav">
+      <button id="cardioPrevBtn" title="Vorherige Aktivit&auml;t" aria-label="Vorherige Aktivit&auml;t">&laquo;</button>
+      <button id="cardioRestartBtn" title="Aktivit&auml;t neu starten" aria-label="Aktivit&auml;t neu starten">&#8635;</button>
+      <button id="cardioSkipBtn" title="Weiter zur n&auml;chsten Aktivit&auml;t" aria-label="Weiter zur n&auml;chsten Aktivit&auml;t">&raquo;</button>
+    </div>
   </div>
   <div class="player-bar" id="cardioPlayerBar">
     <button id="cardioBackBtn">&#10005; Beenden</button>
@@ -637,6 +641,10 @@
       <div class="group">
         <div class="group-label">&Uuml;bung</div>
         <div class="choice-row two" id="cardioAddonPickerTypeRow"></div>
+      </div>
+      <div class="group" id="cardioAddonPickerModeGroup" hidden>
+        <div class="group-label">Modus</div>
+        <div class="choice-row" id="cardioAddonPickerModeRow"></div>
       </div>
       <div class="group">
         <div class="group-label">Dauer</div>

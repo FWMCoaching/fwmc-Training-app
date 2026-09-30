@@ -643,6 +643,14 @@
     // the same uniform way as every real catalog exercise, instead of a
     // one-off special case in each of those helpers.
     "blitz-raster": { title: "Blitz-Raster", type: "blitz-raster" },
+    // Same synthetic idea, NAT batch 2: Remember/Flash/MOT each have their
+    // own separate engine AND their own multiple starting modes - a sub-
+    // mode picker step in the Cardio picker (see cardioGuestModeList()) is
+    // this batch's new piece, proven on top of the Blitz-Raster pattern
+    // (prefsOverride/cardioGuestActive branches) from batch 1.
+    "remember": { title: "Remember", type: "remember" },
+    "flash": { title: "Flash Speicher Test", type: "flash" },
+    "mot": { title: "MOT-Fähigkeit", type: "mot" },
   };
 
   // ---- Programmes: coach-authored multi-block sessions. Real client
@@ -1882,6 +1890,7 @@
     cardioAddonTriggerBtn: $("cardioAddonTriggerBtn"),
     cardioAddonPicker: $("cardioAddonPicker"), cardioAddonPickerTypeRow: $("cardioAddonPickerTypeRow"),
     cardioAddonPickerDurationValue: $("cardioAddonPickerDurationValue"),
+    cardioAddonPickerModeGroup: $("cardioAddonPickerModeGroup"), cardioAddonPickerModeRow: $("cardioAddonPickerModeRow"),
     cardioAddonPickerDurationMinus: $("cardioAddonPickerDurationMinus"), cardioAddonPickerDurationPlus: $("cardioAddonPickerDurationPlus"),
     cardioAddonPickerStartBtn: $("cardioAddonPickerStartBtn"), cardioAddonPickerCancelBtn: $("cardioAddonPickerCancelBtn"),
     cardioGuestBadge: $("cardioGuestBadge"),
@@ -6665,7 +6674,13 @@
     }
   }
   let lastRememberMode = null;
-  function startRememberGame(mode, opts) {
+  // prefsOverride (Cardio guest bursts only, see triggerCardioGuest()):
+  // same idea as startBlitzGame()'s - never reads or mutates the client's
+  // own saved rememberPrefs. Training-mode-specific fields
+  // (trainingStart/trainingPositionMode) stay at rememberPrefs' own
+  // defaults even under an override - the Cardio panel doesn't expose
+  // them, same proportionate-scope call as elsewhere in this batch.
+  function startRememberGame(mode, opts, prefsOverride) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.rememberPlayer.hidden = false;
@@ -6674,6 +6689,7 @@
     els.rememberNav.hidden = mode !== "training";
     els.rememberPauseOverlay.hidden = true;
     els.rememberPauseBtn.hidden = false;
+    const p = prefsOverride || rememberPrefs;
     lastRememberMode = mode;
     rememberReturnScreen = mode === "training" ? "rememberTrainingReady" : "rememberReady";
     const startLevel = mode === "training" ? rememberPrefs.trainingStart : 2;
@@ -6681,12 +6697,12 @@
     rememberState = {
       mode, level: startLevel, cleared: 0, positions: [], phase: "reveal", nextExpected: 1,
       startTime: performance.now(), timer: null, comboDurationTimer: null, positionCache: {}, keepPositions,
-      revealBaseS: rememberPrefs.revealBaseS, revealStepS: rememberPrefs.revealStepS,
-      errorMode: rememberPrefs.errorMode,
+      revealBaseS: p.revealBaseS, revealStepS: p.revealStepS,
+      errorMode: p.errorMode,
       trainingStart: rememberPrefs.trainingStart, trainingProgress: rememberPrefs.trainingProgress,
       paused: false,
     };
-    applyRememberBg();
+    els.rememberStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
     requestWakeLock();
     startRememberLevel();
     // Kombi block: Remember has no natural end of its own (unlike VT's
@@ -6707,6 +6723,9 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.rememberPlayer) document.exitFullscreen().catch(() => {});
     els.rememberFsHint.hidden = true;
+    // Doubles as the Cardio guest-burst's own auto-finish, same as Blitz-
+    // Raster's finishBlitzCombo().
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
     if (comboProgram) advanceComboProgram(playedS);
   }
 
@@ -6955,6 +6974,7 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.rememberPlayer) document.exitFullscreen().catch(() => {});
     els.rememberFsHint.hidden = true;
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
     // "Beenden" mid-Kombi quits the whole Kombi programme, not just this
     // block - matches every other domain's "Beenden" behaviour.
     if (comboProgram) { abortComboProgram(); return; }
@@ -8122,7 +8142,12 @@
   let flashState = null;
   let lastFlashMode = null;
   let flashReturnScreen = "natHome";
-  function startFlashGame(mode, opts) {
+  // prefsOverride (Cardio guest bursts only): same idea as
+  // startBlitzGame()/startRememberGame()'s - never reads or mutates the
+  // client's own saved flashPrefs. axes/zones/fixation point stay at
+  // flashPrefs' own defaults even under an override (not exposed in the
+  // Cardio panel, same call as periph-flash/addon-flash).
+  function startFlashGame(mode, opts, prefsOverride) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.flashPlayer.hidden = false;
@@ -8132,19 +8157,20 @@
     els.flashPauseBtn.hidden = false;
     els.flashInputPanel.hidden = true;
     els.flashDigitEl.hidden = true;
+    const p = prefsOverride || flashPrefs;
     lastFlashMode = mode;
     flashReturnScreen = mode === "training" ? "flashTrainingReady" : "flashReady";
     const startCount = mode === "training" ? flashPrefs.trainingStart : flashPrefs.startCount;
     flashState = {
-      mode, kind: flashPrefs.kind, count: startCount, constantCount: flashPrefs.constantCount, speedStep: 0, repsDone: 0, cleared: 0,
+      mode, kind: p.kind, count: startCount, constantCount: flashPrefs.constantCount, speedStep: 0, repsDone: 0, cleared: 0,
       sequence: [], shownIndex: 0, typed: "", phase: "flash", timer: null, comboDurationTimer: null,
-      stimulusS: flashPrefs.stimulusS, intervalS: flashPrefs.intervalS, errorMode: flashPrefs.errorMode,
+      stimulusS: p.stimulusS, intervalS: p.intervalS, errorMode: p.errorMode,
       axes: flashPrefs.axes.slice(), zones: flashPrefs.zones.slice(), useZones: flashPrefs.useZones,
       trainingProgress: flashPrefs.trainingProgress, startLevel: flashPrefs.startCount, trainingStartLevel: flashPrefs.trainingStart,
       startTime: performance.now(), paused: false,
     };
     renderFlashKeypad();
-    applyFlashBg();
+    els.flashStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
     renderFlashFixpoint();
     requestWakeLock();
     flashStartRound();
@@ -8167,6 +8193,7 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.flashPlayer) document.exitFullscreen().catch(() => {});
     els.flashFsHint.hidden = true;
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
     if (comboProgram) advanceComboProgram(playedS);
   }
   els.flashReadyStartBtn.addEventListener("click", () => {
@@ -8234,6 +8261,7 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.flashPlayer) document.exitFullscreen().catch(() => {});
     els.flashFsHint.hidden = true;
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
     // "Beenden" mid-Kombi quits the whole Kombi programme, not just this
     // block - matches Remember/Blitz-Raster's behaviour.
     if (comboProgram) { abortComboProgram(); return; }
@@ -8948,7 +8976,12 @@
   let motState = null;
   let lastMotMode = null;
   let motReturnScreen = "natHome";
-  function startMotGame(mode, opts) {
+  // prefsOverride (Cardio guest bursts only): same idea as the other
+  // domains' - never reads or mutates the client's own saved motPrefs.
+  // targetColors/style/objectCount/targetCount stay at motPrefs' own
+  // defaults even under an override (not exposed in the Cardio panel -
+  // see cardioGuestNeedsColors()'s note on why only "Objektfarbe" is).
+  function startMotGame(mode, opts, prefsOverride) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.motPlayer.hidden = false;
@@ -8956,6 +8989,7 @@
     els.motDonePanel.hidden = true;
     els.motPauseOverlay.hidden = true;
     els.motPauseBtn.hidden = false;
+    const p = prefsOverride || motPrefs;
     lastMotMode = mode;
     motReturnScreen = mode === "training" ? "motTrainingReady" : "motReady";
     const startObjects = mode === "training" ? motPrefs.trainingObjects : motPrefs.growStartObjects;
@@ -8967,11 +9001,11 @@
       objectCount: motPrefs.objectCount, targetCount: motPrefs.targetCount,
       startObjects, startTargets, startSpeedStep,
       trainingProgress: motPrefs.trainingProgress,
-      speed: motPrefs.speed, trackS: motPrefs.trackS, highlightS: motPrefs.highlightS,
-      errorMode: motPrefs.errorMode, style: motPrefs.style, colors: motPrefs.colors.slice(), targetColors: motPrefs.targetColors.slice(),
+      speed: p.speed, trackS: p.trackS, highlightS: p.highlightS,
+      errorMode: p.errorMode, style: motPrefs.style, colors: p.colors.slice(), targetColors: motPrefs.targetColors.slice(),
       startTime: performance.now(), timer: null, comboDurationTimer: null, raf: null, paused: false,
     };
-    applyMotBg();
+    els.motStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
     requestWakeLock();
     motStartRound();
     // Kombi block: MOT-Fähigkeit has no natural end of its own, same as
@@ -8991,6 +9025,7 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.motPlayer) document.exitFullscreen().catch(() => {});
     els.motFsHint.hidden = true;
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
     if (comboProgram) advanceComboProgram(playedS);
   }
   els.motReadyStartBtn.addEventListener("click", () => {
@@ -9059,6 +9094,7 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.motPlayer) document.exitFullscreen().catch(() => {});
     els.motFsHint.hidden = true;
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
     // "Beenden" mid-Kombi quits the whole Kombi programme, not just this
     // block - matches Remember/Blitz/Flash's behaviour.
     if (comboProgram) { abortComboProgram(); return; }
@@ -10222,7 +10258,7 @@
           item.pauseAfterS = Number(slider.value);
           valueEl.textContent = fmtSeconds(item.pauseAfterS);
         });
-        slider.addEventListener("change", () => saveCardioPrefs());
+        slider.addEventListener("change", () => { saveCardioPrefs(); syncCardioAddonWindowBounds(); });
         els.cardioList.appendChild(pauseRow);
       }
     });
@@ -10266,6 +10302,10 @@
         renderCardioList();
       });
     });
+    // Total planned session time (activities + interleaved pauses) just
+    // changed - the addon "Zeitfenster" sliders below must never let the
+    // client drag past time that isn't actually there yet.
+    syncCardioAddonWindowBounds();
   }
 
   function syncCardioUI() {
@@ -10514,6 +10554,9 @@
     { id: "cone-tap", title: "Hütchen sortieren", group: "vt" },
     { id: "periph-flash", title: "Periphere Wahrnehmung", group: "nat" },
     { id: "blitz-raster", title: "Blitz-Raster", group: "nat" },
+    { id: "remember", title: "Remember", group: "nat" },
+    { id: "flash", title: "Flash Speicher Test", group: "nat" },
+    { id: "mot", title: "MOT-Fähigkeit", group: "nat" },
   ];
   // "addon-flash" and "periph-flash" both flash a coloured digit/letter at
   // a random peripheral position (the former as a Zusatzaufgabe overlay on
@@ -10522,7 +10565,7 @@
   // useZones/zones/sizeMode/colors) as a result - "periph-like" below.
   function cardioGuestIsPeriphLike(guestId) { return guestId === "addon-flash" || guestId === "periph-flash"; }
   function cardioGuestColorLib(guestId) {
-    return cardioGuestIsPeriphLike(guestId) || guestId === "stroop-classic" || guestId === "stroop-bg" ? STROOP_COLOR_LIB : COLOR_LIB;
+    return cardioGuestIsPeriphLike(guestId) || guestId === "stroop-classic" || guestId === "stroop-bg" || guestId === "mot" ? STROOP_COLOR_LIB : COLOR_LIB;
   }
   function cardioGuestRealId(guestId) { return guestId === "addon-flash" ? "cardio-flash-host" : guestId; }
   // Mirrors currentBgFill()'s own exclusion exactly (ex.type === "color-tap"
@@ -10541,17 +10584,47 @@
   // a different, older mechanism (state.periphColors, not active.*) that
   // predates those flags - needs its own check rather than a 4th flag.
   function cardioGuestNeedsColors(guestId) {
-    if (cardioGuestIsPeriphLike(guestId)) return true;
+    // MOT's own "Objektfarbe" only - its separate "Zielfarbe" (targetColors)
+    // stays at the app default (gelb), same proportionate-scope call as
+    // periph-flash's axes/zones and Blitz-Raster's zones: a second colour
+    // picker just for the target objects would double this one field's
+    // complexity for a client who's already just grabbing a quick guest
+    // exercise mid-Cardio, not tuning MOT for its own dedicated session.
+    if (cardioGuestIsPeriphLike(guestId) || guestId === "mot") return true;
     const ex = EXERCISES[cardioGuestRealId(guestId)];
     return !!(ex.usesColors || ex.usesArrowColors || ex.usesStroopColors);
   }
   function cardioGuestIsConeTap(guestId) { return EXERCISES[cardioGuestRealId(guestId)].type === "color-tap"; }
   function cardioGuestIsBlitz(guestId) { return guestId === "blitz-raster"; }
+  function cardioGuestIsRemember(guestId) { return guestId === "remember"; }
+  function cardioGuestIsFlash(guestId) { return guestId === "flash"; }
+  function cardioGuestIsMot(guestId) { return guestId === "mot"; }
+  // Any type with more than one starting mode (Remember/Flash/MOT each
+  // have several - training vs. fixed vs. shuffle vs. ...) needs an extra
+  // mode-choice step, both in the live picker (renderCardioAddonPicker())
+  // and as a persisted per-type default (perType[id].mode, used by the
+  // automatic randomized-interval trigger, which never goes through the
+  // picker at all). Titles match each domain's own mode names exactly
+  // (see rememberStop()/flashStop()/motStop()'s own modeTitle logic).
+  const CARDIO_GUEST_MODE_LISTS = {
+    remember: [{ id: "fixed", title: "Feste Positionen" }, { id: "shuffle", title: "Bewegte Positionen" }, { id: "training", title: "Trainingsmodus" }],
+    flash: [{ id: "constant", title: "Konstant" }, { id: "climb", title: "Steigend, direkt" }, { id: "climbRepeat", title: "Steigend, mit Wiederholung" }, { id: "training", title: "Trainingsmodus" }],
+    mot: [{ id: "speed", title: "Tempo steigt" }, { id: "count", title: "Anzahl steigt" }, { id: "both", title: "Beides steigt" }, { id: "training", title: "Trainingsmodus" }],
+  };
+  function cardioGuestModeList(guestId) { return CARDIO_GUEST_MODE_LISTS[guestId] || null; }
   function cardioGuestDefaultCfg(guestId) {
     const bg = cardioGuestBgAllowed(guestId) ? { bgColorKey: "gruen", bgIntensity: 0 } : {};
     if (cardioGuestIsPeriphLike(guestId)) return { duration: 20, ...addonDefaultOwn(), ...bg };
     if (guestId === "cone-tap") return { duration: 20 };
     if (guestId === "blitz-raster") return { duration: 20, flashS: BLITZ_DIFFICULTIES.mittel.flashS, errorMode: "reset2", gridSize: 4, startCount: 3, ...bg };
+    // Remember/Flash/MOT: mode-specific starting counts (trainingStart,
+    // startCount, growStartObjects/Targets, ...) deliberately stay at
+    // each domain's own built-in default rather than being exposed here
+    // too - same "keep this panel's depth proportionate" call already
+    // made for periph-flash's axes/zones and Blitz-Raster's zones.
+    if (guestId === "remember") return { duration: 20, mode: "fixed", revealBaseS: REMEMBER_DIFFICULTIES.mittel.revealBaseS, revealStepS: REMEMBER_DIFFICULTIES.mittel.revealStepS, errorMode: "reset2", ...bg };
+    if (guestId === "flash") return { duration: 20, mode: "constant", kind: "zahlen", stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS, intervalS: FLASH_DIFFICULTIES.mittel.intervalS, errorMode: "reset2", ...bg };
+    if (guestId === "mot") return { duration: 20, mode: "speed", speed: MOT_DIFFICULTIES.mittel.speed, trackS: MOT_DIFFICULTIES.mittel.trackS, highlightS: MOT_DIFFICULTIES.mittel.highlightS, errorMode: "reset2", colors: ["schwarz"], ...bg };
     if (guestId === "vt-color" || guestId === "vrw-original") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg };
     if (guestId === "stroop-classic" || guestId === "stroop-bg") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "blau", "gruen"], ...bg };
     if (guestId === "8-vrw" || guestId === "cross-modal") return { duration: 20, stimulusS: 1, intervalMin: 2, intervalMax: 4, ...bg };
@@ -10576,7 +10649,11 @@
       let p = cardioAddonPrefs.perType[t.id];
       if (!p || typeof p !== "object") { cardioAddonPrefs.perType[t.id] = d; return; }
       if (!Number.isFinite(p.duration) || p.duration < 5 || p.duration > 120) p.duration = d.duration;
-      if (!cardioGuestIsConeTap(t.id) && !cardioGuestIsBlitz(t.id)) {
+      const modeList = cardioGuestModeList(t.id);
+      if (modeList) {
+        if (!modeList.some((m) => m.id === p.mode)) p.mode = d.mode;
+      }
+      if (!cardioGuestIsConeTap(t.id) && !cardioGuestIsBlitz(t.id) && !modeList) {
         if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
         if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
         if (!Number.isFinite(p.intervalMax) || p.intervalMax < 0.5 || p.intervalMax > 15) p.intervalMax = d.intervalMax;
@@ -10602,10 +10679,59 @@
         if (![3, 4, 5, 6, 7, 8].includes(p.gridSize)) p.gridSize = d.gridSize;
         if (!Number.isFinite(p.startCount) || p.startCount < 1) p.startCount = d.startCount;
       }
+      if (cardioGuestIsRemember(t.id)) {
+        if (!Number.isFinite(p.revealBaseS) || p.revealBaseS < 0.5 || p.revealBaseS > 3) p.revealBaseS = d.revealBaseS;
+        if (!Number.isFinite(p.revealStepS) || p.revealStepS < 0.1 || p.revealStepS > 1) p.revealStepS = d.revealStepS;
+        if (!["reset2", "backOne", "stay"].includes(p.errorMode)) p.errorMode = d.errorMode;
+      }
+      if (cardioGuestIsFlash(t.id)) {
+        if (!["buchstaben", "zahlen", "gemischt"].includes(p.kind)) p.kind = d.kind;
+        if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 2) p.stimulusS = d.stimulusS;
+        if (!Number.isFinite(p.intervalS) || p.intervalS < 0.1 || p.intervalS > 2) p.intervalS = d.intervalS;
+        if (!["reset2", "backOne", "stay"].includes(p.errorMode)) p.errorMode = d.errorMode;
+      }
+      if (cardioGuestIsMot(t.id)) {
+        if (!Number.isFinite(p.speed) || p.speed < 0.05 || p.speed > 0.4) p.speed = d.speed;
+        if (!Number.isFinite(p.trackS) || p.trackS < 3 || p.trackS > 15) p.trackS = d.trackS;
+        if (!Number.isFinite(p.highlightS) || p.highlightS < 1 || p.highlightS > 4) p.highlightS = d.highlightS;
+        if (!["reset2", "backOne", "stay"].includes(p.errorMode)) p.errorMode = d.errorMode;
+      }
     });
   }
   function saveCardioAddonPrefs() { writeJSON(CARDIO_ADDON_KEY, cardioAddonPrefs); }
   loadCardioAddonPrefs();
+
+  // The "Zeitfenster" sliders (ab/bis) must never reach further than the
+  // Cardio-Einheit the client has actually put together so far (activities +
+  // interleaved pauses, cardioItemsSeconds() - same total the "ca. X Min."
+  // previews elsewhere already use). Re-run whenever that total can have
+  // changed (item added/removed/resized, pause adjusted) so the slider's
+  // reachable range grows the moment there's more time to place it in, and
+  // shrinks (clamping any now-too-large stored value down) the moment
+  // there's less - never a silently-unreachable stored preference.
+  function cardioAddonWindowMaxMin() {
+    return Math.max(1, Math.floor(cardioItemsSeconds(cardioPrefs.items) / 60));
+  }
+  // Deliberately never overwrites the stored windowStartS/windowEndS here -
+  // only the displayed/draggable range. Before any activity is picked yet
+  // (cardioPrefs.items still empty, right when openCardioReady() first
+  // renders this panel) the total is 0 and the cap would otherwise clamp the
+  // client's saved preference down to almost nothing and persist that,
+  // permanently forgetting it even once activities are added back - exactly
+  // the "muss dann wieder weiterziehen können" case the client asked for.
+  // Persisting a change only happens when the client actually drags a
+  // slider themselves (the existing input listeners below, unaffected).
+  function syncCardioAddonWindowBounds() {
+    const maxMin = cardioAddonWindowMaxMin();
+    els.cardioAddonWindowStartSlider.max = String(maxMin);
+    els.cardioAddonWindowEndSlider.max = String(maxMin);
+    const startMin = Math.min(Math.round(cardioAddonPrefs.windowStartS / 60), maxMin);
+    const endMin = Math.max(startMin, Math.min(Math.round(cardioAddonPrefs.windowEndS / 60), maxMin));
+    els.cardioAddonWindowStartSlider.value = startMin;
+    els.cardioAddonWindowStartValue.textContent = `${startMin} Min.`;
+    els.cardioAddonWindowEndSlider.value = endMin;
+    els.cardioAddonWindowEndValue.textContent = `${endMin} Min.`;
+  }
 
   function renderCardioAddonUI() {
     els.cardioAddonEnableToggle.checked = cardioAddonPrefs.enabled;
@@ -10616,10 +10742,7 @@
     els.cardioAddonIntervalMaxValue.textContent = `${cardioAddonPrefs.intervalMaxS}s`;
     els.cardioAddonWindowToggle.checked = cardioAddonPrefs.windowEnabled;
     els.cardioAddonWindowBody.hidden = !cardioAddonPrefs.windowEnabled;
-    els.cardioAddonWindowStartSlider.value = Math.round(cardioAddonPrefs.windowStartS / 60);
-    els.cardioAddonWindowStartValue.textContent = `${Math.round(cardioAddonPrefs.windowStartS / 60)} Min.`;
-    els.cardioAddonWindowEndSlider.value = Math.round(cardioAddonPrefs.windowEndS / 60);
-    els.cardioAddonWindowEndValue.textContent = `${Math.round(cardioAddonPrefs.windowEndS / 60)} Min.`;
+    syncCardioAddonWindowBounds();
     els.cardioAddonPoolGrid.innerHTML = "";
     let lastPoolGroup = null;
     CARDIO_GUEST_TYPES.forEach((t) => {
@@ -10724,6 +10847,38 @@
         html += `<div class="cardio-guest-field-row">
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
       </div>`;
+      } else if (cardioGuestIsRemember(t.id) || cardioGuestIsFlash(t.id) || cardioGuestIsMot(t.id)) {
+        // Remember/Flash/MOT have several starting modes - shown first so
+        // the rest of the panel reads as "for whichever mode gets picked
+        // live". Same "Bei Fehler" 3-option idiom as Blitz-Raster, wording
+        // matched to each domain's own Ready screen.
+        const modeList = cardioGuestModeList(t.id);
+        html += `<div class="choice-row" data-mode-row="${t.id}">` +
+          modeList.map((m) => `<button class="choice${cfg.mode === m.id ? " active" : ""}" data-type="${t.id}" data-mode="${m.id}">${esc(m.title)}</button>`).join("") +
+          `</div>`;
+        html += `<div class="cardio-guest-field-row">
+        <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
+      </div>`;
+        if (cardioGuestIsRemember(t.id)) {
+          html += `<div class="choice-row" data-diff-row="${t.id}">` +
+            Object.entries(REMEMBER_DIFFICULTIES).map(([k, d]) => `<button class="choice${Math.abs(cfg.revealBaseS - d.revealBaseS) < 0.001 ? " active" : ""}" data-type="${t.id}" data-diff="${k}">${esc(d.title)}</button>`).join("") +
+            `</div>`;
+        } else if (cardioGuestIsFlash(t.id)) {
+          html += `<div class="choice-row" data-diff-row="${t.id}">` +
+            Object.entries(FLASH_DIFFICULTIES).map(([k, d]) => `<button class="choice${Math.abs(cfg.stimulusS - d.stimulusS) < 0.001 ? " active" : ""}" data-type="${t.id}" data-diff="${k}">${esc(d.title)}</button>`).join("") +
+            `</div>`;
+        } else {
+          html += `<div class="choice-row" data-diff-row="${t.id}">` +
+            Object.entries(MOT_DIFFICULTIES).map(([k, d]) => `<button class="choice${Math.abs(cfg.speed - d.speed) < 0.001 ? " active" : ""}" data-type="${t.id}" data-diff="${k}">${esc(d.title)}</button>`).join("") +
+            `</div>`;
+        }
+        const errorLabels = cardioGuestIsRemember(t.id)
+          ? [["reset2", "Zurück auf 2", "ganz von vorne"], ["backOne", "Eine Zahl zurück", "eine Stufe runter"], ["stay", "Gleiche Zahl", "so lange, bis es klappt"]]
+          : [["reset2", "Ganz von vorne", "zurück auf den Start"], ["backOne", "Eine Stufe zurück", "eine runter"], ["stay", "Gleiche Stufe", "so lange, bis es klappt"]];
+        html += `<div class="group-label">Bei Fehler</div>` +
+          `<div class="choice-row" data-error-row="${t.id}">` +
+          errorLabels.map(([k, title, hint]) => `<button class="choice${cfg.errorMode === k ? " active" : ""}" data-type="${t.id}" data-error="${k}">${esc(title)}<small>${esc(hint)}</small></button>`).join("") +
+          `</div>`;
       } else {
         html += `<div class="cardio-guest-field-row">
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
@@ -10732,7 +10887,7 @@
         <div><label>Pause max (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${t.id}" data-f="intervalMax" value="${cfg.intervalMax}"></div>
       </div>`;
       }
-      if (cardioGuestIsPeriphLike(t.id)) {
+      if (cardioGuestIsPeriphLike(t.id) || cardioGuestIsFlash(t.id)) {
         html += `<div class="choice-row" data-kind-row="${t.id}">` +
           ["buchstaben", "zahlen", "gemischt"].map((k) => `<button class="choice${cfg.kind === k ? " active" : ""}" data-type="${t.id}" data-kind="${k}">${k === "buchstaben" ? "Buchstaben" : k === "zahlen" ? "Zahlen" : "Gemischt"}</button>`).join("") +
           `</div>`;
@@ -10798,6 +10953,32 @@
     els.cardioAddonPerType.querySelectorAll("[data-blitzerror]").forEach((btn) => {
       btn.addEventListener("click", () => {
         cardioAddonPrefs.perType[btn.dataset.type].errorMode = btn.dataset.blitzerror;
+        saveCardioAddonPrefs();
+        renderCardioAddonFineTune();
+      });
+    });
+    els.cardioAddonPerType.querySelectorAll("[data-mode]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        cardioAddonPrefs.perType[btn.dataset.type].mode = btn.dataset.mode;
+        saveCardioAddonPrefs();
+        renderCardioAddonFineTune();
+      });
+    });
+    els.cardioAddonPerType.querySelectorAll("[data-diff]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const type = btn.dataset.type;
+        const cfg = cardioAddonPrefs.perType[type];
+        const k = btn.dataset.diff;
+        if (cardioGuestIsRemember(type)) Object.assign(cfg, { revealBaseS: REMEMBER_DIFFICULTIES[k].revealBaseS, revealStepS: REMEMBER_DIFFICULTIES[k].revealStepS });
+        else if (cardioGuestIsFlash(type)) Object.assign(cfg, { stimulusS: FLASH_DIFFICULTIES[k].stimulusS, intervalS: FLASH_DIFFICULTIES[k].intervalS });
+        else Object.assign(cfg, { speed: MOT_DIFFICULTIES[k].speed, trackS: MOT_DIFFICULTIES[k].trackS, highlightS: MOT_DIFFICULTIES[k].highlightS });
+        saveCardioAddonPrefs();
+        renderCardioAddonFineTune();
+      });
+    });
+    els.cardioAddonPerType.querySelectorAll("[data-error]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        cardioAddonPrefs.perType[btn.dataset.type].errorMode = btn.dataset.error;
         saveCardioAddonPrefs();
         renderCardioAddonFineTune();
       });
@@ -10990,20 +11171,27 @@
   // specific choice made right now); left undefined for the automatic
   // randomized-interval path in cardioTick(), which still picks randomly
   // from the configured pool at the configured duration, unchanged.
-  function triggerCardioGuest(explicitId, explicitDurationS) {
+  function triggerCardioGuest(explicitId, explicitDurationS, explicitMode) {
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
     cardioRaf = null;
     const guestId = explicitId || cardioAddonPrefs.pool[Math.floor(Math.random() * cardioAddonPrefs.pool.length)];
     const realId = cardioGuestRealId(guestId);
-    const cfg = explicitDurationS != null ? { ...cardioAddonPrefs.perType[guestId], duration: explicitDurationS } : cardioAddonPrefs.perType[guestId];
+    const overrides = {};
+    if (explicitDurationS != null) overrides.duration = explicitDurationS;
+    if (explicitMode != null) overrides.mode = explicitMode;
+    const cfg = Object.keys(overrides).length ? { ...cardioAddonPrefs.perType[guestId], ...overrides } : cardioAddonPrefs.perType[guestId];
     cardioGuestActive = true;
-    // Blitz-Raster doesn't touch state.exercise/runSession() at all - its
-    // own engine, started with this cfg as a prefsOverride so the client's
-    // own saved blitzPrefs are never read or mutated by a guest burst (see
-    // startBlitzGame()'s prefsOverride parameter).
-    if (cardioGuestIsBlitz(guestId)) {
-      startBlitzGame({ comboDurationS: cfg.duration }, cfg);
-    } else {
+    const comboOpts = { comboDurationS: cfg.duration };
+    // Blitz-Raster/Remember/Flash/MOT don't touch state.exercise/
+    // runSession() at all - each its own engine, started with this cfg as
+    // a prefsOverride so the client's own saved *Prefs are never read or
+    // mutated by a guest burst (see startBlitzGame()'s prefsOverride
+    // parameter and its Remember/Flash/MOT equivalents).
+    if (cardioGuestIsBlitz(guestId)) startBlitzGame(comboOpts, cfg);
+    else if (cardioGuestIsRemember(guestId)) startRememberGame(cfg.mode, comboOpts, cfg);
+    else if (cardioGuestIsFlash(guestId)) startFlashGame(cfg.mode, comboOpts, cfg);
+    else if (cardioGuestIsMot(guestId)) startMotGame(cfg.mode, comboOpts, cfg);
+    else {
       applyCardioGuestToState(realId, cfg);
       // "Hütchen sortieren" (cone-tap) is the one type here with its own
       // separate playback engine (tap-paced counting, not a canvas flash
@@ -11027,6 +11215,7 @@
   // ich machen muss" ask, satisfied for the choosing step for free.
   let cardioAddonPickerType = null;
   let cardioAddonPickerDuration = 20;
+  let cardioAddonPickerMode = null;
   const CARDIO_ADDON_PICKER_DURATION_MIN = 15;
   const CARDIO_ADDON_PICKER_DURATION_MAX = 180;
   function renderCardioAddonPicker() {
@@ -11048,15 +11237,37 @@
       btn.addEventListener("click", () => {
         cardioAddonPickerType = t.id;
         cardioAddonPickerDuration = Math.min(CARDIO_ADDON_PICKER_DURATION_MAX, Math.max(CARDIO_ADDON_PICKER_DURATION_MIN, cardioAddonPrefs.perType[t.id].duration));
+        cardioAddonPickerMode = cardioGuestModeList(t.id) ? cardioAddonPrefs.perType[t.id].mode : null;
         renderCardioAddonPicker();
       });
       els.cardioAddonPickerTypeRow.appendChild(btn);
     });
+    // Sub-mode step (Remember/Flash/MOT only, see cardioGuestModeList()) -
+    // the client's own explicit ask: reaching these domains' own starting-
+    // mode choice from inside the Cardio picker too, not just their normal
+    // Ready screen.
+    const modeList = cardioGuestModeList(cardioAddonPickerType);
+    els.cardioAddonPickerModeGroup.hidden = !modeList;
+    if (modeList) {
+      els.cardioAddonPickerModeRow.innerHTML = "";
+      modeList.forEach((m) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "choice" + (m.id === cardioAddonPickerMode ? " active" : "");
+        btn.textContent = m.title;
+        btn.addEventListener("click", () => {
+          cardioAddonPickerMode = m.id;
+          renderCardioAddonPicker();
+        });
+        els.cardioAddonPickerModeRow.appendChild(btn);
+      });
+    }
     els.cardioAddonPickerDurationValue.textContent = fmtClock(cardioAddonPickerDuration);
   }
   function openCardioAddonPicker() {
     cardioAddonPickerType = CARDIO_GUEST_TYPES[0].id;
     cardioAddonPickerDuration = Math.min(CARDIO_ADDON_PICKER_DURATION_MAX, Math.max(CARDIO_ADDON_PICKER_DURATION_MIN, cardioAddonPrefs.perType[cardioAddonPickerType].duration));
+    cardioAddonPickerMode = cardioGuestModeList(cardioAddonPickerType) ? cardioAddonPrefs.perType[cardioAddonPickerType].mode : null;
     renderCardioAddonPicker();
     els.cardioAddonPicker.hidden = false;
   }
@@ -11073,8 +11284,9 @@
   els.cardioAddonPickerStartBtn.addEventListener("click", () => {
     const id = cardioAddonPickerType;
     const durationS = cardioAddonPickerDuration;
+    const mode = cardioAddonPickerMode;
     closeCardioAddonPicker();
-    triggerCardioGuest(id, durationS);
+    triggerCardioGuest(id, durationS, mode);
   });
   els.cardioAddonTriggerBtn.addEventListener("click", () => {
     if (!cardioState || cardioGuestActive) return;

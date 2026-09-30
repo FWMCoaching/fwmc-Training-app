@@ -76,12 +76,22 @@ async def main():
         print("default window shown as 0 Min. - 10 Min.:",
               (await pg.inner_text("#cardioAddonWindowStartValue")) == "0 Min." and (await pg.inner_text("#cardioAddonWindowEndValue")) == "10 Min.")
 
-        # dragging "ab" past "bis" pulls "bis" along with it
-        await pg.fill("#cardioAddonWindowStartSlider", "15")
+        # lower "bis" below the max first - the default already sits at the
+        # 10 Min. cap (single Joggen activity), leaving no room above it to
+        # demonstrate "ab" dragging past "bis" without this step
+        await pg.fill("#cardioAddonWindowEndSlider", "5")
+        await pg.dispatch_event("#cardioAddonWindowEndSlider", "input")
+        await pg.wait_for_timeout(150)
+
+        # dragging "ab" past "bis" pulls "bis" along with it - capped at 8
+        # rather than the old arbitrary 15, since the slider's reachable
+        # range is now bounded by the single 10 Min. Joggen activity in this
+        # session (see cardio_addon_window_bounds_test.py for that cap itself)
+        await pg.fill("#cardioAddonWindowStartSlider", "8")
         await pg.dispatch_event("#cardioAddonWindowStartSlider", "input")
         await pg.wait_for_timeout(150)
         print("end clamped up to match a later start:",
-              (await pg.inner_text("#cardioAddonWindowStartValue")) == "15 Min." and (await pg.inner_text("#cardioAddonWindowEndValue")) == "15 Min.")
+              (await pg.inner_text("#cardioAddonWindowStartValue")) == "8 Min." and (await pg.inner_text("#cardioAddonWindowEndValue")) == "8 Min.")
 
         # reload, confirm persistence
         await pg.goto(URL); await pg.wait_for_timeout(500)
@@ -89,8 +99,8 @@ async def main():
         await pg.click("#cardioStartCard"); await pg.wait_for_timeout(200)
         await pg.click("#cardioAddonAdvanced summary"); await pg.wait_for_timeout(150)
         print("window toggle persisted checked:", await pg.is_checked("#cardioAddonWindowToggle"))
-        print("window bounds persisted (15/15 Min.):",
-              (await pg.inner_text("#cardioAddonWindowStartValue")) == "15 Min." and (await pg.inner_text("#cardioAddonWindowEndValue")) == "15 Min.")
+        print("window bounds persisted (8/8 Min.):",
+              (await pg.inner_text("#cardioAddonWindowStartValue")) == "8 Min." and (await pg.inner_text("#cardioAddonWindowEndValue")) == "8 Min.")
 
         # ---- functional: a window that has already closed blocks the
         # automatic trigger even though the interval is due ----
