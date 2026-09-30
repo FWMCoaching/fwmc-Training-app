@@ -3781,6 +3781,51 @@ prefilled and persists changes; a range-mode reps block plays back
 correctly (right range, live timer, reps-input default) when reached
 mid-combo-run, and aborting mid-block during a combo still works.
 
+## Cardio: manual "+ Zusatzimpuls" trigger (added 2026-09-30)
+
+The client's ask ("während einer Cardio-Einheit aktiv etwas zuschalten
+können, in dem Moment") turned out to already have almost all its
+infrastructure built: Cardio has had a full dual-task add-on system for a
+while (`cardioAddonPrefs`, `CARDIO_GUEST_TYPES`, a pool of guest
+exercises with per-type Feineinstellungen, `triggerCardioGuest()`) - but
+it only ever fired automatically, on a randomized interval
+(`scheduleNextCardioGuest()`/the `cardioTick()` check against
+`cardioState.nextGuestAt`). The client specifically wanted *active,
+in-the-moment* control instead of only ever waiting on the random timer.
+
+Added a single button, `#cardioAddonTriggerBtn` ("+ Zusatzimpuls") in
+`cardioPlayer`'s player-bar, that calls the exact same
+`triggerCardioGuest()` the automatic path already used - same random pick
+from the same configured pool, same fine-tuned duration/colours/etc. per
+type. No new guest-selection or rendering logic needed at all; the only
+genuinely new thing is *when* it can fire.
+
+- **Visibility** (`syncCardioAddonTriggerBtn()`, called from
+  `startStandaloneCardio()` and `returnFromCardioGuest()`): only shown
+  when the client has actually configured something for it to trigger
+  (`cardioAddonPrefs.enabled && cardioAddonPrefs.pool.length`) - Cardio's
+  player has no pause/settings overlay, so this can't change mid-run
+  anyway; hidden entirely rather than shown-but-disabled when nothing is
+  configured, matching the app's usual "don't show a button that would
+  just no-op" convention.
+- **Guard**: the click handler itself checks `cardioState &&
+  !cardioGuestActive` before calling `triggerCardioGuest()` - belt and
+  suspenders, since the button is naturally unreachable via real UI
+  interaction while a guest window is active anyway (`cardioPlayer`,
+  the button's own parent, is hidden then by `hideAllPlayers()`).
+- Available during both a real activity block and a "Pause" block
+  between activities - no reason to restrict it to one or the other.
+
+Test: `tests/cardio_addon_manual_test.py` - button hidden with the add-on
+off; visible once configured; a manual tap switches to the guest exercise
+immediately (not waiting for any interval); returns cleanly to the same
+still-running activity afterward (not reset); repeatable (triggered
+twice, works both times); a direct `.click()` on the button while a
+guest window is genuinely active (bypassing the real-UI unreachability)
+correctly no-ops rather than starting a second, overlapping guest
+window. `tests/cardio_test.py` (existing, unmodified) continues to cover
+the automatic randomized-interval path, untouched by this change.
+
 ## Test-Bereich (autonomous, ongoing)
 
 **If you were woken by the "FWMC Test-Bereich Auto-Build" Routine, this

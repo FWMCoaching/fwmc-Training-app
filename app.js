@@ -1846,6 +1846,7 @@
     cardioAddonIntervalMaxSlider: $("cardioAddonIntervalMaxSlider"), cardioAddonIntervalMaxValue: $("cardioAddonIntervalMaxValue"),
     cardioAddonPerType: $("cardioAddonPerType"),
     cardioPlayer: $("cardioPlayer"), cardioBackBtn: $("cardioBackBtn"), cardioSkipBtn: $("cardioSkipBtn"),
+    cardioAddonTriggerBtn: $("cardioAddonTriggerBtn"),
     cardioActivityTitle: $("cardioActivityTitle"), cardioActivityLabel: $("cardioActivityLabel"),
     cardioCountdown: $("cardioCountdown"), cardioPhaseLabel: $("cardioPhaseLabel"), cardioBlockProgress: $("cardioBlockProgress"),
     cardioDonePanel: $("cardioDonePanel"), cardioDoneSummary: $("cardioDoneSummary"), cardioRating: $("cardioRating"),
@@ -10556,6 +10557,14 @@
     });
     return out;
   }
+  // Shows the manual "+ Zusatzimpuls" trigger only when the client has
+  // actually configured something for it to trigger (a Feineinstellungen
+  // decision made before starting, not changeable mid-run since Cardio's
+  // player has no pause/settings overlay) - same guard triggerCardioGuest()
+  // itself relies on (a non-empty pool), so tapping it can never no-op.
+  function syncCardioAddonTriggerBtn() {
+    els.cardioAddonTriggerBtn.hidden = !(cardioAddonPrefs.enabled && cardioAddonPrefs.pool.length);
+  }
   function startStandaloneCardio(items) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
@@ -10563,6 +10572,7 @@
     lastCardioItems = items;
     cardioState = { items: withCardioPauses(items), realCount: items.length, index: 0, blockStartTime: performance.now(), nextGuestAt: null };
     scheduleNextCardioGuest();
+    syncCardioAddonTriggerBtn();
     requestWakeLock();
     cardioRaf = requestAnimationFrame(cardioTick);
   }
@@ -10654,6 +10664,17 @@
     applyCardioGuestToState(realId, cfg);
     runSession();
   }
+  // Manual "+ Zusatzimpuls" - the client's own ask: rather than only ever
+  // waiting for the randomized auto-interval (scheduleNextCardioGuest()),
+  // actively switch one on right now, mid-activity, whenever they feel
+  // like it. Reuses triggerCardioGuest() as-is (same random pick from the
+  // same configured pool) - the only actual new behaviour is *when* it
+  // fires, not what fires.
+  els.cardioAddonTriggerBtn.addEventListener("click", () => {
+    if (!cardioState || cardioGuestActive) return;
+    if (!cardioAddonPrefs.enabled || !cardioAddonPrefs.pool.length) return;
+    triggerCardioGuest();
+  });
 
   // Called from finishSession() instead of the normal done-panel path
   // whenever a guest window (triggerCardioGuest) finishes on its own -
@@ -10666,6 +10687,7 @@
     cardioGuestActive = false;
     hideAllPlayers();
     els.cardioPlayer.hidden = false;
+    syncCardioAddonTriggerBtn();
     if (!wakeLock) requestWakeLock();
     if (cardioState) {
       scheduleNextCardioGuest();
