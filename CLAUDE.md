@@ -3959,6 +3959,66 @@ session as before. `tests/cardio_test.py`'s own "abort mid-guest"
 section was updated in place - it had encoded the old (buggy) behaviour
 as its expected outcome.
 
+### Phase 1: guest-type pool extended to the rest of the VT catalog (2026-09-30)
+
+The client asked to start Phase 1 (the "gestuft, VT/NAT zuerst" plan from
+the earlier tier-2-vs-tier-3 discussion). Investigating turned up a
+correction to that plan worth recording: "VT and NAT share the same
+engine" was only half true.
+
+- **Visual Training** (the `EXERCISES` catalog `runSession()`/`tick()`/
+  `state.exercise` shares) really is one engine end to end - confirmed by
+  checking that `applyCardioGuestToState()` needed **zero** changes to
+  support 8 more types, since it already dispatches purely off each
+  exercise's own `usesColors`/`usesArrowColors`/`usesStroopColors`/
+  `bgIsStimulus`/`type` flags. Added: `vrw-original`, `stroop-bg`,
+  `4-diag`, `8-solo`, `8-vrw`, `cross-modal`, `cone-compass` (all trivial:
+  same shape as the existing 4), and `cone-tap` ("Hütchen sortieren" -
+  turned out easy too: its own `startConeTap()` engine already goes
+  through the exact same shared `finishSession()`/`abortTraining()`
+  lifecycle cardio-guest mode already depends on, so
+  `triggerCardioGuest()` only needed one extra branch - call
+  `startConeTap()` instead of `runSession()` when
+  `EXERCISES[realId].type === "color-tap"`, mirroring the same dispatch
+  `startSession()` itself already uses). `CARDIO_GUEST_TYPES` is now 12
+  entries.
+  - New gating helpers used throughout (`cardioGuestNeedsColors()`,
+    `cardioGuestIsConeTap()`) so the Feineinstellungen panel only shows a
+    colour row / stimulus-interval fields / background row for a type
+    that actually uses them - `cardioGuestBgAllowed()` was tightened to
+    match `currentBgFill()`'s real exclusion (`type === "color-tap" ||
+    bgIsStimulus`, not just the latter) so cone-tap's background row
+    (which would have had zero visible effect - its stage is hard-coded
+    white in CSS) is correctly left out too.
+  - **Not yet added**, deliberately: `periph-flash` (Periphere
+    Wahrnehmung) - technically the same engine, but its settings surface
+    (fixation point, zones, zone weights, ...) is much larger than a
+    quick addition; own follow-up.
+- **NAT domain** (Periphere Wahrnehmung aside) does **not** share this
+  engine at all, despite the original "gestuft" assessment assuming it
+  did. Checked directly: `EXERCISES` only ever contained the 13 VT-style
+  entries; every NAT exercise (Merkspanne, Blitz-Raster, Flash, MOT, Go/
+  No-Go, N-Back, Trail Making, Flanker, UFOV, Posner, Rotation, Simon,
+  Suchtest, Doppelziel, Antizipationstest, Hick, Corsi, Reaktionsfeld, TS,
+  Anti, Subitize, Alarm, Vorlauf, Stop, DSST, WCST, Navon, Iconic - ~25 in
+  total) has its own dedicated player/prefs/finish path (see
+  `hideAllPlayers()`'s long explicit list). Bridging each into
+  `triggerCardioGuest()`/`returnFromCardioGuest()` individually is real,
+  separate work - closer in size to the already-deferred Atemtraining/
+  Movement/Workout lift than to "mechanical". Left for its own future
+  phase rather than silently expanding this one; told to the client
+  before proceeding rather than after.
+
+Test: `tests/cardio_addon_phase1_test.py` - pool grid offers all 12;
+fine-tune panels correctly show/hide their colour row, background row,
+and stimulus/interval fields per type (checked on `vrw-original`,
+`cross-modal`, `cone-tap` as representative cases); the live picker
+offers all 12; each of the 8 new types actually takes over full-screen
+(cone-tap via `#coneOrderStage`, the rest via the canvas `#player`) and
+returns cleanly to the still-running Cardio session via Beenden.
+`tests/cardio_addon_picker_test.py`'s own "4 exercise choices" count was
+updated to 12.
+
 ## Test-Bereich (autonomous, ongoing)
 
 **If you were woken by the "FWMC Test-Bereich Auto-Build" Routine, this

@@ -85,7 +85,10 @@ async def main():
 
         # ---- default selection + duration ----
         choices = pg.locator("#cardioAddonPickerTypeRow .choice")
-        print("4 exercise choices offered (not just the addon pool):", await choices.count() == 4)
+        # 12 as of Phase 1 (2026-09-30) - all remaining runSession()-engine
+        # exercises, not just the automatic system's own configured pool -
+        # see cardio_addon_phase1_test.py for the 8 added that round.
+        print("all 12 exercise choices offered (not just the addon pool):", await choices.count() == 12)
         print("first type pre-selected by default:", "active" in (await choices.nth(0).get_attribute("class")))
         print("default duration shown as 0:20:", (await pg.inner_text("#cardioAddonPickerDurationValue")) == "0:20")
 

@@ -10421,27 +10421,71 @@
   // earlier rename here mistakenly claimed it was a different thing from
   // Blitzreiz. Client's ask: one consistent name for one mechanism,
   // wherever it shows up.
+  // Phase 1 (2026-09-30): extended from the original 4 to every remaining
+  // exercise in the shared EXERCISES catalog that already runs through
+  // runSession()/tick()/state.exercise - genuinely mechanical, since
+  // applyCardioGuestToState() below already dispatches purely off each
+  // exercise's own usesColors/usesArrowColors/usesStroopColors/
+  // bgIsStimulus/type flags and needed zero changes. Two exercises from
+  // that same catalog are deliberately NOT here yet: "periph-flash"
+  // (Periphere Wahrnehmung) has its own much larger settings surface
+  // (fixation point, zones, zone weights - not a quick addition, its own
+  // follow-up); "cone-tap" (Hütchen sortieren) IS included since it turned
+  // out trivial (just calls startConeTap() instead of runSession(), no
+  // colours/stimulus/interval concept at all).
+  //
+  // The NAT domain (Periphere Wahrnehmung aside) turned out NOT to share
+  // this engine at all, despite looking like it should - every NAT
+  // exercise (Merkspanne, Blitz-Raster, Flash, MOT, Go/No-Go, N-Back, Trail
+  // Making, ... ~25 in total) has its own dedicated player/prefs/finish
+  // path (see hideAllPlayers()'s long list), not the shared #player/state.
+  // Each would need its own individual bridge into triggerCardioGuest()/
+  // returnFromCardioGuest() - a real, separate piece of work, much closer
+  // in size to the deferred Atemtraining/Movement/Workout lift than to
+  // this batch. Left for its own follow-up rather than silently expanding
+  // this "mechanical" batch to cover it too.
   const CARDIO_GUEST_TYPES = [
     { id: "addon-flash", title: "Zusatzaufgabe · Ziffer/Buchstabe" },
     { id: "vt-color", title: "VT · Farbe & Seite" },
+    { id: "vrw-original", title: "VRW · Direkt & Umgekehrt" },
     { id: "stroop-classic", title: "Stroop · klassisch" },
+    { id: "stroop-bg", title: "Stroop · mit Hintergrund" },
     { id: "4-straight", title: "4 Pfeile · gerade" },
+    { id: "4-diag", title: "4 Pfeile · diagonal" },
+    { id: "8-solo", title: "8 Pfeile" },
+    { id: "8-vrw", title: "8 Pfeile · Rot/Grün" },
+    { id: "cross-modal", title: "Sehen & Hören" },
+    { id: "cone-compass", title: "Hütchen · Kompass-Aufbau" },
+    { id: "cone-tap", title: "Hütchen sortieren" },
   ];
   function cardioGuestColorLib(guestId) {
-    return guestId === "addon-flash" || guestId === "stroop-classic" ? STROOP_COLOR_LIB : COLOR_LIB;
+    return ["addon-flash", "stroop-classic", "stroop-bg"].includes(guestId) ? STROOP_COLOR_LIB : COLOR_LIB;
   }
-  // "vt-color" (and, once it can ever join this pool, "cone-compass") has
-  // bgIsStimulus: true - its background IS the trained signal, so a
-  // background tint on top would be meaningless (see currentBgFill()) and
-  // the Feineinstellungen panel below skips offering one for it.
   function cardioGuestRealId(guestId) { return guestId === "addon-flash" ? "cardio-flash-host" : guestId; }
-  function cardioGuestBgAllowed(guestId) { return !EXERCISES[cardioGuestRealId(guestId)].bgIsStimulus; }
+  // Mirrors currentBgFill()'s own exclusion exactly (ex.type === "color-tap"
+  // || ex.bgIsStimulus): cone-tap's stage is plain hard-coded white in CSS
+  // (never reads state.bgColorKey/bgIntensity) and vt-color/vrw-original/
+  // stroop-bg/cone-compass have bgIsStimulus - their background already IS
+  // the trained signal, so a tint on top would be meaningless either way.
+  // The Feineinstellungen panel below skips offering a background control
+  // for any of these.
+  function cardioGuestBgAllowed(guestId) {
+    const ex = EXERCISES[cardioGuestRealId(guestId)];
+    return ex.type !== "color-tap" && !ex.bgIsStimulus;
+  }
+  function cardioGuestNeedsColors(guestId) {
+    const ex = EXERCISES[cardioGuestRealId(guestId)];
+    return !!(ex.usesColors || ex.usesArrowColors || ex.usesStroopColors);
+  }
+  function cardioGuestIsConeTap(guestId) { return EXERCISES[cardioGuestRealId(guestId)].type === "color-tap"; }
   function cardioGuestDefaultCfg(guestId) {
-    const bg = { bgColorKey: "gruen", bgIntensity: 0 };
+    const bg = cardioGuestBgAllowed(guestId) ? { bgColorKey: "gruen", bgIntensity: 0 } : {};
     if (guestId === "addon-flash") return { duration: 20, ...addonDefaultOwn(), ...bg };
-    if (guestId === "vt-color") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"] };
-    if (guestId === "stroop-classic") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "blau", "gruen"], ...bg };
-    return { duration: 20, stimulusS: 1, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg };
+    if (guestId === "cone-tap") return { duration: 20 };
+    if (guestId === "vt-color" || guestId === "vrw-original") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg };
+    if (guestId === "stroop-classic" || guestId === "stroop-bg") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "blau", "gruen"], ...bg };
+    if (guestId === "8-vrw" || guestId === "cross-modal") return { duration: 20, stimulusS: 1, intervalMin: 2, intervalMax: 4, ...bg };
+    return { duration: 20, stimulusS: 1, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg }; // 4-straight/4-diag/8-solo/cone-compass
   }
   const CARDIO_ADDON_KEY = "fwmc-cardio-addon-v1";
   const cardioAddonPrefs = { enabled: false, pool: [], intervalMinS: 90, intervalMaxS: 180, windowEnabled: false, windowStartS: 0, windowEndS: 600, perType: {} };
@@ -10462,11 +10506,15 @@
       let p = cardioAddonPrefs.perType[t.id];
       if (!p || typeof p !== "object") { cardioAddonPrefs.perType[t.id] = d; return; }
       if (!Number.isFinite(p.duration) || p.duration < 5 || p.duration > 120) p.duration = d.duration;
-      if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
-      if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
-      if (!Number.isFinite(p.intervalMax) || p.intervalMax < 0.5 || p.intervalMax > 15) p.intervalMax = d.intervalMax;
-      const lib = cardioGuestColorLib(t.id);
-      if (!Array.isArray(p.colors) || !p.colors.length || !p.colors.every((k) => lib.some((c) => c.key === k))) p.colors = d.colors.slice();
+      if (!cardioGuestIsConeTap(t.id)) {
+        if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
+        if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
+        if (!Number.isFinite(p.intervalMax) || p.intervalMax < 0.5 || p.intervalMax > 15) p.intervalMax = d.intervalMax;
+      }
+      if (cardioGuestNeedsColors(t.id)) {
+        const lib = cardioGuestColorLib(t.id);
+        if (!Array.isArray(p.colors) || !p.colors.length || !p.colors.every((k) => lib.some((c) => c.key === k))) p.colors = d.colors.slice();
+      }
       if (cardioGuestBgAllowed(t.id)) {
         if (!STROOP_COLOR_BY_KEY[p.bgColorKey]) p.bgColorKey = d.bgColorKey;
         if (!Number.isFinite(p.bgIntensity) || p.bgIntensity < 0 || p.bgIntensity > 1) p.bgIntensity = d.bgIntensity;
@@ -10566,7 +10614,15 @@
       const panel = document.createElement("div");
       panel.className = "cardio-guest-panel";
       let html = `<div class="cardio-guest-panel-title">${esc(t.title)}</div>`;
-      html += `<div class="cardio-guest-field-row">
+      // cone-tap ("Hütchen sortieren") has no stimulus/interval concept at
+      // all (it's tap-paced, not a flash schedule) - showing those sliders
+      // for it would adjust something with zero visible effect, so they're
+      // simply left out rather than shown-but-inert.
+      html += cardioGuestIsConeTap(t.id)
+        ? `<div class="cardio-guest-field-row">
+        <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
+      </div>`
+        : `<div class="cardio-guest-field-row">
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
         <div><label>Reiz-Dauer (Sek.)</label><input type="number" min="0.3" max="3" step="0.1" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"></div>
         <div><label>Pause min (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${t.id}" data-f="intervalMin" value="${cfg.intervalMin}"></div>
@@ -10577,9 +10633,15 @@
           ["buchstaben", "zahlen", "gemischt"].map((k) => `<button class="choice${cfg.kind === k ? " active" : ""}" data-type="${t.id}" data-kind="${k}">${k === "buchstaben" ? "Buchstaben" : k === "zahlen" ? "Zahlen" : "Gemischt"}</button>`).join("") +
           `</div>`;
       }
-      html += `<div class="cardio-guest-colors" data-colors="${t.id}">` +
-        lib.map((c) => `<label><input type="checkbox" data-type="${t.id}" data-color="${c.key}" ${cfg.colors.includes(c.key) ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
-        `</div>`;
+      // No colours to pick for a type that doesn't use them at all
+      // (8-vrw's direction colours are fixed rot/grün by rule, cross-modal
+      // and cone-tap have none) - same rule EXERCISES[...].usesColors/
+      // usesArrowColors/usesStroopColors already governs everywhere else.
+      if (cardioGuestNeedsColors(t.id)) {
+        html += `<div class="cardio-guest-colors" data-colors="${t.id}">` +
+          lib.map((c) => `<label><input type="checkbox" data-type="${t.id}" data-color="${c.key}" ${cfg.colors.includes(c.key) ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
+          `</div>`;
+      }
       // Background colour + intensity - skipped for a type whose background
       // already carries the trained signal itself (vt-color: bgIsStimulus),
       // same rule the exercise's own standalone Feineinstellungen follows
@@ -10793,11 +10855,15 @@
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
     cardioRaf = null;
     const guestId = explicitId || cardioAddonPrefs.pool[Math.floor(Math.random() * cardioAddonPrefs.pool.length)];
-    const realId = guestId === "addon-flash" ? "cardio-flash-host" : guestId;
+    const realId = cardioGuestRealId(guestId);
     const cfg = explicitDurationS != null ? { ...cardioAddonPrefs.perType[guestId], duration: explicitDurationS } : cardioAddonPrefs.perType[guestId];
     cardioGuestActive = true;
     applyCardioGuestToState(realId, cfg);
-    runSession();
+    // "Hütchen sortieren" (cone-tap) is the one type here with its own
+    // separate playback engine (tap-paced counting, not a canvas flash
+    // schedule) - same dispatch startSession() itself already uses.
+    if (EXERCISES[realId].type === "color-tap") startConeTap();
+    else runSession();
     showCardioGuestBadge();
   }
 
