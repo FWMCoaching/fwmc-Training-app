@@ -5090,9 +5090,96 @@ doesn't:
   Kartensortier-Test's colour-neutral ring, needed there because the
   tapped element's OWN colour is part of the judged signal). Test:
   `tests/navon_test.py`.
+- **Iconic-Speicher-Test (Partial-Report-Aufgabe)** (twenty-sixth
+  autonomous entry, 2026-09-30): built from the "Recherche-Backlog: 20
+  Kandidaten" list (candidate #1) rather than fresh research this round.
+  Grounded in Sperling (1960) - the classic partial-report paradigm
+  establishing iconic (sensory) visual memory: a grid of characters
+  flashes for a very brief, near-subliminal duration, then after a
+  variable post-stimulus delay a cue marks which portion to report; the
+  hallmark finding is that partial-report accuracy at short delays is far
+  higher than whole-report accuracy would predict, but decays sharply as
+  the delay grows - revealing a large-capacity sensory store that fades
+  within roughly a second. This exercise reproduces exactly that: a 3x3
+  grid of digits (`ICONIC_GRID_ROWS`/`ICONIC_GRID_COLS`, a full 1-9
+  permutation into the 9 cells so every recall is unambiguous) flashes for
+  `ICONIC_DIFFICULTIES[difficulty].flashMs` (leicht/mittel/schwer =
+  300/200/120ms - only the flash duration is difficulty-adjustable, since
+  the post-stimulus delay itself is the fixed scientific manipulation,
+  same "difficulty controls encoding, not the independent variable" shape
+  as Vorlaufzeit-Test's own foreperiods), then blanks; after
+  `ICONIC_DELAYS_MS = [0, 300, 700, 1000]` (Sperling's own tested range,
+  stepped across trials, 6 reps each = 24 total, shuffled with a
+  same-delay-max-3-in-a-row guard) one of the three rows gets a border
+  outline, and the client taps that row's three digits (only, the other
+  six are irrelevant) via a 9-key keypad + 3 answer boxes (mirroring
+  Flash Speicher Test/DSST's own answer-box+keypad convention). Reports
+  overall accuracy% plus, critically, accuracy BROKEN OUT PER DELAY in the
+  done-panel (`finalizeIconicRun`'s `perDelayText`, e.g. "0ms: 82% ·
+  300ms: 61% · 700ms: 45% · 1000ms: 38%") - the actual decay curve this
+  paradigm exists to reveal, not a single average; scored per-trial as a
+  SET match (how many of the 3 typed digits belong to the cued row's true
+  3, order-independent, `hits/3` as a fraction averaged within each delay
+  bin) rather than requiring exact left-right positional order, matching
+  Sperling's own "number of items correctly reported" metric more closely
+  than a strict-sequence convention would. `ICONIC_BEST_KEY` tracks best
+  OVERALL accuracy% per difficulty (higher is better, standard shape).
+  **One deliberate, disclosed adaptation from the original**: Sperling's
+  own experiments cued the row with an auditory TONE (high/mid/low pitch)
+  specifically so a second visual event never disturbs the fading icon;
+  this version instead highlights the cued row's own on-screen border (a
+  plain teal outline, `.iconic-row.cued`, no colour semantics involved) -
+  a well-established modern-replication substitute for a tone in a
+  quiet-audio-unfriendly coaching/gym setting, called out honestly in the
+  client-facing ready-screen copy rather than silently claiming an
+  auditory cue that isn't actually there. Genuinely distinct from every
+  existing Test/NAT memory mechanic: Merkspanne-Test (Luck & Vogel
+  change-detection) shows its array at NORMAL, non-subliminal speed and
+  asks one global same/different judgment; Flash Speicher Test recalls a
+  SEQUENTIAL stream of individually-flashed characters, one at a time;
+  Blitz-Raster/Remember show several simultaneous positions with no time-
+  pressure decay curve at all - this is the only exercise flashing a
+  WHOLE array at once for a near-subliminal duration and probing raw
+  sensory-store DECAY via a post-hoc partial cue, a genuinely earlier
+  stage of visual memory (iconic/pre-attentive, decaying within ~1
+  second) than anything else built so far, which all operate on working
+  memory (holding items for many seconds to make a decision). Deliberately
+  no background-colour Feineinstellung: the study flash is shown for as
+  little as 120ms, the same "legibility during a brief flash matters more
+  than usual" reasoning that already kept Sofortmengen-Test/Subitizing out
+  of the background-colour rollout - a tint would work against the
+  flash's own contrast exactly when it matters most. No Bei-Fehler/
+  Zusatzaufgabe/Trainingsmodus - correctly skipped, same reasoning as
+  every other fixed-trial Test entry. Self-paced answer phase (typing
+  advances the instant 3 digits are entered) with a generous
+  `ICONIC_ANSWER_TIMEOUT_MS = 7000` safety-net timeout for an unanswered
+  trial, same always-clear-pending-timer pattern as every other self-paced
+  Test entry; pause/resume uses the standard remaining-delay replay trick.
+  New CSS is `.iconic-*` (fixed hex colours throughout, no `var(--...)`);
+  the grid/answer-boxes/keypad are all built dynamically via JS
+  (`iconicRenderGrid`/`iconicRenderAnswerBoxes`/`iconicRenderKeypad`)
+  rather than static HTML, since which cells show digits and which row is
+  outlined both change every phase of every trial. Test:
+  `tests/iconic_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
+- **Iconic-Speicher-Test: only 6 trials feed each delay bin**: 24 trials
+  split across 4 delays (0/300/700/1000ms) means each reported per-delay
+  accuracy% rests on just 6 trials - a genuinely small sample that can
+  look noisy on any single run, the same category of caveat already
+  flagged for Doppelziel-Test's per-lag sample size and Ganzheit-Detail-
+  Test's per-cell sample size just above. Kept small deliberately so a run
+  stays quick. Separately, unlike Sperling's own classic scoring, this
+  version credits a typed digit as correct whenever it belongs to the
+  cued row's set at all, regardless of which of the 3 positions it was
+  typed into (a set match, not a left-right positional match) - a
+  simplification chosen since order was never the point of THIS
+  paradigm's classic finding (the decay curve), but worth flagging as a
+  deliberate scoring choice rather than an oversight. Not fixed - flagging
+  rather than guessing: ask the client whether the done-panel should note
+  either of these ("kleine Stichprobe pro Wartezeit" / "Zahlen zählen auch
+  bei anderer Reihenfolge"), or whether trial count should go up.
 - **Ganzheit-Detail-Test: small per-cell sample size**: 32 trials split
   across 4 cells (global/lokal x kongruent/inkongruent) means only ~8
   trials feed each cell's average RT, so both interference-cost numbers

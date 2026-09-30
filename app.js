@@ -1620,6 +1620,16 @@
     navonFsBtn: $("navonFsBtn"), navonFsHint: $("navonFsHint"), navonFsHintOpenBtn: $("navonFsHintOpenBtn"), navonFsHintClose: $("navonFsHintClose"),
     navonDonePanel: $("navonDonePanel"), navonDoneSummary: $("navonDoneSummary"), navonRating: $("navonRating"),
     navonAgainBtn: $("navonAgainBtn"), navonDoneBackBtn: $("navonDoneBackBtn"),
+    iconicOpenBtn: $("iconicOpenBtn"), iconicBestHint: $("iconicBestHint"), iconicReady: $("iconicReady"),
+    iconicReadyBackToHome: $("iconicReadyBackToHome"), iconicDifficultyRow: $("iconicDifficultyRow"),
+    iconicReadyBestHint: $("iconicReadyBestHint"), iconicReadyStartBtn: $("iconicReadyStartBtn"),
+    iconicPlayer: $("iconicPlayer"), iconicStage: $("iconicStage"), iconicHint: $("iconicHint"),
+    iconicGrid: $("iconicGrid"), iconicAnswerRow: $("iconicAnswerRow"), iconicKeypad: $("iconicKeypad"),
+    iconicPauseOverlay: $("iconicPauseOverlay"), iconicResumeBtn: $("iconicResumeBtn"),
+    iconicPlayerBar: $("iconicPlayerBar"), iconicBackBtn: $("iconicBackBtn"), iconicPauseBtn: $("iconicPauseBtn"), iconicProgressEl: $("iconicProgressEl"),
+    iconicFsBtn: $("iconicFsBtn"), iconicFsHint: $("iconicFsHint"), iconicFsHintOpenBtn: $("iconicFsHintOpenBtn"), iconicFsHintClose: $("iconicFsHintClose"),
+    iconicDonePanel: $("iconicDonePanel"), iconicDoneSummary: $("iconicDoneSummary"), iconicRating: $("iconicRating"),
+    iconicAgainBtn: $("iconicAgainBtn"), iconicDoneBackBtn: $("iconicDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
@@ -1878,7 +1888,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -4348,6 +4358,7 @@
     els.dsstPlayer.hidden = true;
     els.wcstPlayer.hidden = true;
     els.navonPlayer.hidden = true;
+    els.iconicPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.cardioPlayer.hidden = true;
     els.programVideoPlayer.hidden = true;
@@ -14865,6 +14876,385 @@
   els.navonAgainBtn.addEventListener("click", () => { els.navonDonePanel.hidden = true; startNavonGame(); });
   els.navonDoneBackBtn.addEventListener("click", () => { els.navonPlayer.hidden = true; els.navonDonePanel.hidden = true; showScreen("testHome"); });
   wireFullscreen({ player: els.navonPlayer, btn: els.navonFsBtn, hint: els.navonFsHint, hintOpen: els.navonFsHintOpenBtn, hintClose: els.navonFsHintClose });
+
+  // ==== Test-Bereich: Iconic-Speicher-Test (Partial-Report-Aufgabe) ====
+  // Twenty-sixth autonomous entry, picked from the "Recherche-Backlog: 20
+  // Kandidaten" list (candidate #1). Grounded in Sperling (1960) - the
+  // classic partial-report paradigm establishing iconic (sensory) visual
+  // memory: a 3x3 grid of digits flashes for a very brief, near-subliminal
+  // duration, then vanishes; after a variable delay, a cue marks exactly
+  // ONE row, and the client reports only THAT row's three digits. Sperling's
+  // own finding: partial-report accuracy at zero delay is dramatically
+  // higher than whole-report accuracy would predict, but decays sharply as
+  // the post-stimulus delay grows - revealing a large-capacity but
+  // fast-decaying sensory store that whole-report methods alone couldn't
+  // detect (by the time someone finishes naming everything they saw, the
+  // rest has already faded). This exercise reproduces exactly that curve:
+  // `ICONIC_DELAYS_MS = [0, 300, 700, 1000]` (Sperling's own tested range),
+  // reporting PER-DELAY accuracy in the done-panel - the actual outcome
+  // measure this paradigm exists to reveal, not a single average. One
+  // deliberate, disclosed adaptation: Sperling's own experiments cued the
+  // row with a TONE (high/mid/low pitch), specifically so the visual array
+  // stays undisturbed by a second visual event - this version instead
+  // highlights the cued row's own on-screen border (a plain rectangle
+  // outline, no colour meaning since colour isn't involved), a common
+  // modern-replication substitute for a tone when a quiet coaching/gym
+  // setting can't rely on audio - client-facing copy calls this out
+  // honestly rather than claiming an auditory cue that isn't there.
+  // Genuinely distinct from every existing Test/NAT memory mechanic:
+  // Merkspanne-Test (Luck & Vogel change-detection) asks one global same/
+  // different judgment over an array shown at NORMAL (not near-
+  // subliminal) speed; Flash Speicher Test recalls a SEQUENTIAL stream of
+  // individually-shown characters, one at a time; Blitz-Raster/Remember
+  // show several positions simultaneously with no time-pressure decay
+  // curve at all - this is the only exercise flashing a WHOLE array at
+  // once for a near-subliminal duration and probing raw sensory-store
+  // DECAY via a post-hoc partial cue, a genuinely earlier stage of visual
+  // memory (iconic/pre-attentive) than anything else built so far.
+  const ICONIC_GRID_ROWS = 3;
+  const ICONIC_GRID_COLS = 3;
+  const ICONIC_DELAYS_MS = [0, 300, 700, 1000];
+  const ICONIC_REPS_PER_DELAY = 6; // × 4 delays = 24 trials
+  const ICONIC_DIFFICULTIES = {
+    // Only the STUDY flash duration varies with difficulty - the delay
+    // range itself is the fixed scientific manipulation (like Vorlaufzeit-
+    // Test's own foreperiods), not something to make easier/harder.
+    leicht: { title: "Leicht", flashMs: 300 },
+    mittel: { title: "Mittel", flashMs: 200 },
+    schwer: { title: "Schwer", flashMs: 120 },
+  };
+  const ICONIC_ISI_MS = 700;
+  const ICONIC_FEEDBACK_MS = 900;
+  const ICONIC_ANSWER_TIMEOUT_MS = 7000;
+  const ICONIC_MIN_RESOLVED = 4;
+  const ICONIC_PREFS_KEY = "fwmc-iconic-prefs-v1";
+  const iconicPrefs = { difficulty: "mittel" };
+  function loadIconicPrefs() {
+    const saved = readJSON(ICONIC_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(iconicPrefs, saved);
+    if (!ICONIC_DIFFICULTIES[iconicPrefs.difficulty]) iconicPrefs.difficulty = "mittel";
+  }
+  loadIconicPrefs();
+  function saveIconicPrefsToStorage() { writeJSON(ICONIC_PREFS_KEY, iconicPrefs); }
+  // No background colour Feineinstellung, deliberately: the study array is
+  // shown for a genuinely near-subliminal duration (as low as 120ms), the
+  // same "legibility during a brief flash matters more than usual" concern
+  // that already kept Sofortmengen-Test/Subitizing out of the background-
+  // colour rollout - a tint would work against the flash's own contrast
+  // exactly when it matters most.
+
+  const ICONIC_BEST_KEY = "fwmc-iconic-best-v1"; // { [difficulty]: bestAccuracyPct } - higher is better
+  function iconicBestFor() { return readJSON(ICONIC_BEST_KEY, {})[iconicPrefs.difficulty] || 0; }
+  function saveIconicBest(accuracyPct) {
+    const all = readJSON(ICONIC_BEST_KEY, {});
+    if (accuracyPct > (all[iconicPrefs.difficulty] || 0)) { all[iconicPrefs.difficulty] = accuracyPct; writeJSON(ICONIC_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderIconicBest() {
+    const best = iconicBestFor();
+    const text = best ? `Beste Genauigkeit (${ICONIC_DIFFICULTIES[iconicPrefs.difficulty].title}): ${best}%` : "";
+    els.iconicBestHint.textContent = text;
+    els.iconicReadyBestHint.textContent = text;
+  }
+  function syncIconicDifficultyUI() {
+    els.iconicDifficultyRow.querySelectorAll("[data-iconic-diff]").forEach((btn) => setActive(btn, btn.dataset.iconicDiff === iconicPrefs.difficulty));
+  }
+  els.iconicDifficultyRow.querySelectorAll("[data-iconic-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      iconicPrefs.difficulty = btn.dataset.iconicDiff;
+      saveIconicPrefsToStorage();
+      syncIconicDifficultyUI();
+      renderIconicBest();
+    });
+  });
+  els.iconicOpenBtn.addEventListener("click", () => {
+    syncIconicDifficultyUI();
+    renderIconicBest();
+    showScreen("iconicReady");
+  });
+  els.iconicReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Single active timer, remaining-delay pause/resume - same shape as
+  // every other setTimeout-driven Test exercise.
+  function scheduleIconicTimer(fn, delayMs) {
+    if (iconicState.timer) clearTimeout(iconicState.timer);
+    iconicState.timerFn = fn;
+    iconicState.timerFiresAt = performance.now() + delayMs;
+    iconicState.timer = setTimeout(() => { iconicState.timer = null; fn(); }, delayMs);
+  }
+
+  // Fisher-Yates shuffle of digits 1-9 into the grid's 9 cells (a full
+  // permutation, no repeats) - guarantees the cued row's 3 digits are
+  // always unambiguous to score. Trials are built as delay×reps, shuffled
+  // with a guard against more than 3 identical delays in a row (same
+  // convention as buildTsTaskSeq/buildFlankerTrials).
+  function iconicShuffledDigits() {
+    const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    for (let i = digits.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [digits[i], digits[j]] = [digits[j], digits[i]];
+    }
+    return digits;
+  }
+  function buildIconicTrials() {
+    const combos = [];
+    ICONIC_DELAYS_MS.forEach((delayMs) => {
+      for (let i = 0; i < ICONIC_REPS_PER_DELAY; i++) combos.push(delayMs);
+    });
+    for (let tries = 0; tries < 300; tries++) {
+      for (let i = combos.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [combos[i], combos[j]] = [combos[j], combos[i]];
+      }
+      let ok = true, run = 1;
+      for (let i = 1; i < combos.length; i++) {
+        run = combos[i] === combos[i - 1] ? run + 1 : 1;
+        if (run > 3) { ok = false; break; }
+      }
+      if (ok) break;
+    }
+    return combos.map((delayMs) => ({
+      delayMs,
+      row: Math.floor(Math.random() * ICONIC_GRID_ROWS),
+      digits: iconicShuffledDigits(),
+    }));
+  }
+  function iconicRowDigits(trial) {
+    return trial.digits.slice(trial.row * ICONIC_GRID_COLS, trial.row * ICONIC_GRID_COLS + ICONIC_GRID_COLS);
+  }
+  // Built once per grid state change (not per trial) - the 3x3 structure
+  // never changes, only which cells show a digit and which row (if any)
+  // carries the cued-row outline.
+  function iconicRenderGrid(digits, opts) {
+    opts = opts || {};
+    els.iconicGrid.innerHTML = "";
+    for (let r = 0; r < ICONIC_GRID_ROWS; r++) {
+      const rowEl = document.createElement("div");
+      rowEl.className = "iconic-row" + (opts.cuedRow === r ? " cued" : "");
+      for (let c = 0; c < ICONIC_GRID_COLS; c++) {
+        const cell = document.createElement("div");
+        cell.className = "iconic-cell";
+        if (opts.showDigits && digits) cell.textContent = String(digits[r * ICONIC_GRID_COLS + c]);
+        rowEl.appendChild(cell);
+      }
+      els.iconicGrid.appendChild(rowEl);
+    }
+  }
+  function iconicRenderAnswerBoxes(typed) {
+    els.iconicAnswerRow.innerHTML = "";
+    for (let i = 0; i < ICONIC_GRID_COLS; i++) {
+      const box = document.createElement("div");
+      box.className = "iconic-answer-box";
+      if (typed[i]) box.textContent = typed[i];
+      els.iconicAnswerRow.appendChild(box);
+    }
+  }
+  function iconicRenderKeypad() {
+    els.iconicKeypad.innerHTML = "";
+    for (let d = 1; d <= 9; d++) {
+      const btn = document.createElement("button");
+      btn.className = "iconic-key";
+      btn.textContent = String(d);
+      btn.addEventListener("click", () => iconicTypeDigit(d));
+      els.iconicKeypad.appendChild(btn);
+    }
+  }
+
+  let iconicState = null;
+  function startIconicGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.iconicPlayer.hidden = false;
+    els.iconicPlayerBar.hidden = false;
+    els.iconicDonePanel.hidden = true;
+    els.iconicPauseOverlay.hidden = true;
+    els.iconicPauseBtn.hidden = false;
+    const diff = ICONIC_DIFFICULTIES[iconicPrefs.difficulty];
+    const trials = buildIconicTrials();
+    iconicState = {
+      diff, trials, index: -1, phase: "gap", trial: null, typed: [],
+      resolved: 0, totalScore: 0,
+      perDelayScores: Object.fromEntries(ICONIC_DELAYS_MS.map((d) => [d, []])),
+      paused: false, startTime: performance.now(),
+      timer: null, timerFn: null, timerFiresAt: null,
+    };
+    iconicRenderKeypad();
+    iconicRenderAnswerBoxes([]);
+    els.iconicAnswerRow.hidden = true;
+    els.iconicKeypad.hidden = true;
+    iconicRenderGrid(null, {});
+    els.iconicHint.textContent = "Bereit? Gleich geht's los …";
+    els.iconicProgressEl.textContent = `0/${trials.length}`;
+    requestWakeLock();
+    scheduleIconicTimer(iconicNextTrial, 1000);
+  }
+  els.iconicReadyStartBtn.addEventListener("click", startIconicGame);
+
+  function iconicNextTrial() {
+    if (!iconicState) return;
+    iconicState.index++;
+    if (iconicState.index >= iconicState.trials.length) { iconicFinish(); return; }
+    els.iconicProgressEl.textContent = `${iconicState.index + 1}/${iconicState.trials.length}`;
+    iconicState.phase = "gap";
+    iconicState.trial = iconicState.trials[iconicState.index];
+    iconicState.typed = [];
+    els.iconicHint.textContent = "";
+    els.iconicAnswerRow.hidden = true;
+    els.iconicKeypad.hidden = true;
+    iconicRenderGrid(iconicState.trial.digits, {});
+    scheduleIconicTimer(iconicShowFlash, ICONIC_ISI_MS);
+  }
+  function iconicShowFlash() {
+    if (!iconicState) return;
+    iconicState.phase = "flash";
+    iconicRenderGrid(iconicState.trial.digits, { showDigits: true });
+    scheduleIconicTimer(iconicHideFlash, iconicState.diff.flashMs);
+  }
+  function iconicHideFlash() {
+    if (!iconicState) return;
+    iconicState.phase = "delayWait";
+    iconicRenderGrid(iconicState.trial.digits, {});
+    scheduleIconicTimer(iconicShowCue, iconicState.trial.delayMs);
+  }
+  function iconicShowCue() {
+    if (!iconicState) return;
+    iconicState.phase = "answer";
+    iconicRenderGrid(iconicState.trial.digits, { cuedRow: iconicState.trial.row });
+    iconicState.typed = [];
+    iconicRenderAnswerBoxes(iconicState.typed);
+    els.iconicAnswerRow.hidden = false;
+    els.iconicKeypad.hidden = false;
+    els.iconicHint.textContent = "Welche Zahlen standen in der markierten Reihe?";
+    scheduleIconicTimer(iconicTimeoutTrial, ICONIC_ANSWER_TIMEOUT_MS);
+  }
+  function iconicTypeDigit(d) {
+    if (!iconicState || iconicState.paused || iconicState.phase !== "answer") return;
+    if (iconicState.typed.length >= ICONIC_GRID_COLS) return;
+    iconicState.typed.push(d);
+    iconicRenderAnswerBoxes(iconicState.typed);
+    if (iconicState.typed.length >= ICONIC_GRID_COLS) iconicCheckAnswer();
+  }
+  function iconicCheckAnswer() {
+    if (!iconicState) return;
+    const trial = iconicState.trial;
+    const correctDigits = iconicRowDigits(trial);
+    let hits = 0;
+    iconicState.typed.forEach((d) => { if (correctDigits.includes(d)) hits++; });
+    const fraction = hits / ICONIC_GRID_COLS;
+    iconicState.perDelayScores[trial.delayMs].push(fraction);
+    iconicState.resolved++;
+    iconicState.totalScore += fraction;
+    iconicFinishTrial(hits, correctDigits);
+  }
+  function iconicTimeoutTrial() {
+    if (!iconicState || iconicState.phase !== "answer") return;
+    const trial = iconicState.trial;
+    const correctDigits = iconicRowDigits(trial);
+    iconicState.perDelayScores[trial.delayMs].push(0);
+    iconicState.resolved++;
+    els.iconicHint.textContent = `Verpasst! Richtig war: ${correctDigits.join(", ")}`;
+    iconicState.phase = "feedback";
+    scheduleIconicTimer(iconicAfterFeedback, ICONIC_FEEDBACK_MS);
+  }
+  function iconicFinishTrial(hits, correctDigits) {
+    iconicState.phase = "feedback";
+    Array.from(els.iconicAnswerRow.children).forEach((box, i) => {
+      box.classList.add(correctDigits.includes(iconicState.typed[i]) ? "correct" : "wrong");
+    });
+    els.iconicHint.textContent = `${hits}/${ICONIC_GRID_COLS} richtig · Richtig war: ${correctDigits.join(", ")}`;
+    scheduleIconicTimer(iconicAfterFeedback, ICONIC_FEEDBACK_MS);
+  }
+  function iconicAfterFeedback() {
+    if (!iconicState) return;
+    iconicState.phase = "gap";
+    els.iconicHint.textContent = "";
+    els.iconicAnswerRow.hidden = true;
+    els.iconicKeypad.hidden = true;
+    iconicRenderGrid(null, {});
+    scheduleIconicTimer(iconicNextTrial, ICONIC_ISI_MS);
+  }
+
+  function pauseIconic() {
+    if (!iconicState || iconicState.paused) return;
+    iconicState.paused = true;
+    iconicState.pausedAt = performance.now();
+    if (iconicState.timer) {
+      clearTimeout(iconicState.timer);
+      iconicState.timer = null;
+      iconicState.timerRemainingMs = Math.max(0, iconicState.timerFiresAt - iconicState.pausedAt);
+    }
+    els.iconicPauseBtn.hidden = true;
+    els.iconicPauseOverlay.hidden = false;
+  }
+  function resumeIconic() {
+    if (!iconicState || !iconicState.paused) return;
+    const pausedMs = performance.now() - iconicState.pausedAt;
+    iconicState.startTime += pausedMs;
+    iconicState.paused = false;
+    if (iconicState.timerFn && iconicState.timerRemainingMs != null) {
+      scheduleIconicTimer(iconicState.timerFn, iconicState.timerRemainingMs);
+      iconicState.timerRemainingMs = null;
+    }
+    els.iconicPauseOverlay.hidden = true;
+    els.iconicPauseBtn.hidden = false;
+  }
+  els.iconicPauseBtn.addEventListener("click", pauseIconic);
+  els.iconicResumeBtn.addEventListener("click", resumeIconic);
+
+  function finalizeIconicRun(state) {
+    els.iconicPauseOverlay.hidden = true;
+    els.iconicPlayerBar.hidden = true;
+    const accuracyPct = state.resolved ? Math.round(100 * state.totalScore / state.resolved) : 0;
+    const isRecord = saveIconicBest(accuracyPct);
+    renderIconicBest();
+    const perDelayText = ICONIC_DELAYS_MS.map((d) => {
+      const scores = state.perDelayScores[d];
+      if (!scores.length) return null;
+      const pct = Math.round(100 * avgOf(scores));
+      return `${d}ms: ${pct}%`;
+    }).filter(Boolean).join(" · ");
+    const played = (performance.now() - state.startTime) / 1000;
+    els.iconicDoneSummary.textContent =
+      `Iconic-Speicher-Test (${state.diff.title}) · ${accuracyPct}% richtig gesamt` +
+      (perDelayText ? ` · ${perDelayText}` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${accuracyPct}% richtig` + (perDelayText ? `, ${perDelayText}` : "");
+    const id = addHistory({ kind: "iconic", title: "Iconic-Speicher-Test", seconds: Math.round(played), note });
+    renderRating(els.iconicRating, id, "Wie klar war dir jeweils, welche Reihe gefragt war?");
+    els.iconicDonePanel.hidden = false;
+  }
+  function iconicFinish() {
+    if (!iconicState) return;
+    const state = iconicState;
+    iconicState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.iconicPlayer) document.exitFullscreen().catch(() => {});
+    els.iconicFsHint.hidden = true;
+    finalizeIconicRun(state);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved.
+  function iconicStop() {
+    if (!iconicState) return;
+    if (iconicState.timer) clearTimeout(iconicState.timer);
+    const state = iconicState;
+    iconicState = null;
+    els.iconicPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.iconicPlayer) document.exitFullscreen().catch(() => {});
+    els.iconicFsHint.hidden = true;
+    if (state.resolved >= ICONIC_MIN_RESOLVED) {
+      finalizeIconicRun(state);
+    } else {
+      els.iconicPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.iconicBackBtn.addEventListener("click", iconicStop);
+  els.iconicAgainBtn.addEventListener("click", () => { els.iconicDonePanel.hidden = true; startIconicGame(); });
+  els.iconicDoneBackBtn.addEventListener("click", () => { els.iconicPlayer.hidden = true; els.iconicDonePanel.hidden = true; showScreen("testHome"); });
+  wireFullscreen({ player: els.iconicPlayer, btn: els.iconicFsBtn, hint: els.iconicFsHint, hintOpen: els.iconicFsHintOpenBtn, hintClose: els.iconicFsHintClose });
 
   // Rotationstest (Mentale Rotation) - grounded in the classic mental-
   // rotation/character-rotation chronometric paradigm (Cooper & Shepard,
