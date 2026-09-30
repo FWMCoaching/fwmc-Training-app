@@ -3649,6 +3649,103 @@ when the rest of the Transparent work was reverted, since it's a real,
 generally-applicable bugfix unrelated to the beamer-transparency idea
 that exposed it.
 
+## Workout: Kraft-/Wiederholungstraining self-service builder (added 2026-09-30)
+
+Closes a backlog item from the Kombi-Baukasten rebuild: Workout's "reps"
+block (`{kind:"reps", exercise, sets, reps, restS}`) was, until now,
+coach-plan-only - a client could run a fixed sets×reps block a coach set
+up for them, but had no client-facing screen of their own for it (unlike
+every other domain, and unlike Workout's own Tabata/circuit mode, which
+already had `workoutTabataReady`). The client explicitly asked to close
+that gap with real, researched rep-range guidance rather than just a bare
+number picker - see the exercise-science research summary earlier in this
+session (rep-range literature, time-under-tension research, double
+progression) for the sources this is built on. Short version of what that
+research actually says, since it shapes the design below:
+
+- The classic strength/hypertrophy/endurance rep-range split (1-6 / 6-12 /
+  15-20+) is still a reasonable rule of thumb, but Schoenfeld & Grgic's
+  2021 "repetition continuum" re-examination shows proximity to failure
+  matters more than the exact rep count - hence these are offered as
+  presets with an explanatory hint, not hard-enforced boundaries.
+- Time under tension is NOT an independent lever (Schoenfeld et al. 2015
+  meta-analysis: 0.5-8s per rep gave similar hypertrophy) - it's really
+  reps×tempo. So the new live set-timer is **informational only** and
+  never gates anything; only reps actually achieved feed progression.
+- "Double progression" (reps up to the top of the range, then increase
+  load, drop back to the bottom) is the standard, well-supported practical
+  method for progressive overload - that's what the suggestion nudge
+  below implements.
+
+**New client-facing screen** (`workoutRepsReady`, opened from a new
+"Kraft-/Wiederholungstraining starten" card on `workoutHome`, parallel to
+the existing "Intervall-Timer starten" card):
+- Exercise picker (`workoutRepsExerciseGrid`) - single-select cards
+  reusing the same `WORKOUT_EXERCISES`/`customWorkoutExercises` catalog
+  and icon set the Tabata circuit builder already uses (shared "+ Eigene
+  Übung hinzufügen" list - an exercise added from either screen appears in
+  both). `.combo-add-btn.active` is a new CSS state added for this single-
+  select use; every other use of that class (the circuit builder's "add to
+  list" cards) has no selected state of its own.
+- Rep-range presets (`REP_RANGE_PRESETS`: Kraft 1-6, Muskelaufbau 6-12,
+  Kraftausdauer 15-20) each with a one-line research-backed hint text, plus
+  a fourth "Eigener Bereich" choice with its own min/max sliders
+  (`repRangeFor()` resolves whichever is active to a concrete `{min, max}`).
+- Sets (2-5) and rest-between-sets (15-180s) choice-row/slider, same
+  pattern as everywhere else in the app.
+
+**Player-side additions** (all gated behind `block.rangeMin != null`, so
+an existing fixed-`reps` coach-plan block - see `workout_combo_test.py` -
+renders exactly as before, byte-for-byte): `renderRepsView()` shows the
+range ("6–12 Wiederholungen") instead of a single number, starts a live
+per-set stopwatch (`startWorkoutSetTimer()`/`stopWorkoutSetTimer()`,
+`#workoutSetTimer`, informational per the research above), and shows a
+"Geschafft" -/+ stepper (`#workoutRepsInputRow`) defaulting to the TOP of
+the range - "aim to make the last rep genuinely hard" - instead of the
+old blind "Satz erledigt". `workoutState.achieved` collects what was
+logged each set.
+
+**Double progression** (`recordWorkoutRepsProgress()`, keyed by exercise
+id in `fwmc-workout-reps-progress-v1`): once a standalone (not coach-plan,
+not combo - those have their own next-block flow with no natural place to
+interrupt) reps-range block finishes, if EVERY set's logged reps reached
+the top of the range, the done screen shows a "stark - nächstes Mal
+schwerer machen?" suggestion (`#workoutDoneSuggestion`), and the same
+exercise's ready screen shows the same nudge on the next visit
+(`#workoutRepsSuggestionHint`) until the client trains it again.
+
+**Two small pre-existing-pattern fixes needed along the way**:
+`workoutAbort()`'s "Beenden" used to hardcode `showScreen("...
+workoutTabataReady")` for every standalone (non-plan) block - fine when
+Tabata/circuit was the only standalone mode, wrong for this one. Replaced
+with `workoutStandaloneReturnScreen`, a variable each standalone start
+function sets before calling `startStandaloneWorkoutBlock()`. And
+`workoutBlockMeta()`'s "reps" branch now shows `sets×min–max` when
+`rangeMin` is present, `sets×reps` otherwise (used by the coach-plan
+overview list and the combo-transition screen).
+
+Test: `tests/workout_reps_builder_test.py` - presets show their research
+hint text and swap correctly to/from the custom range; the exercise grid
+single-select and its "eigene Übung" flow both work; a 2-set run shows
+the correct range, an advancing live timer, and a reps-input defaulting
+to (and resetting to, each set) the top of the range; hitting the top on
+every set produces the done-screen suggestion, which then persists onto
+the ready screen's own hint on the next visit; "Beenden" mid-set returns
+to `workoutRepsReady` specifically, not Tabata's ready screen; the new
+elements stay fully hidden/inert on a fresh page load with no session
+active. `workout_combo_test.py`/`workout_circuit_combo_test.py` (existing,
+unmodified) confirm the coach-plan fixed-reps path and Tabata/circuit are
+both untouched.
+
+**Not built (possible follow-up, not asked for yet)**: Kombi-Baukasten
+integration - every other domain's combo block reopens that domain's own
+settings screen in a "capture mode" (see Workout's own circuit block for
+the exact pattern, `openWorkoutComboCapture()`/`commitWorkoutComboCapture()`
+around `openWorkoutTabataReady()`); the reps builder above could join the
+same way with a small, low-risk addition once/if wanted, since it already
+follows the identical shape (its own prefs object, its own ready screen,
+its own "start now" function).
+
 ## Test-Bereich (autonomous, ongoing)
 
 **If you were woken by the "FWMC Test-Bereich Auto-Build" Routine, this

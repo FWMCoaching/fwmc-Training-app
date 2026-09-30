@@ -986,6 +986,7 @@
   function workoutBlockMeta(block) {
     if (block.kind === "tabata") return `${block.rounds} Runden à ${block.workS}s/${block.restS}s`;
     if (block.kind === "circuit") return `${block.items.length} Übungen × ${block.sets} Sätze`;
+    if (block.rangeMin != null) return `${block.sets}×${block.rangeMin}–${block.rangeMax}`;
     return `${block.sets}×${block.reps}`;
   }
   function workoutBlockSeconds(block) {
@@ -1300,6 +1301,17 @@
     workoutHistoryStats: $("workoutHistoryStats"), workoutHistoryList: $("workoutHistoryList"), workoutHistoryClearBtn: $("workoutHistoryClearBtn"), workoutHistoryMoreBtn: $("workoutHistoryMoreBtn"),
     workoutFeaturedPrograms: $("workoutFeaturedPrograms"), workoutFeaturedGrid: $("workoutFeaturedGrid"),
     workoutTabataStartCard: $("workoutTabataStartCard"),
+    workoutRepsStartCard: $("workoutRepsStartCard"), workoutRepsReady: $("workoutRepsReady"), workoutRepsBackToHome: $("workoutRepsBackToHome"),
+    workoutRepsExerciseGrid: $("workoutRepsExerciseGrid"), workoutRepsCustomBtn: $("workoutRepsCustomBtn"), workoutRepsCustomForm: $("workoutRepsCustomForm"),
+    workoutRepsCustomName: $("workoutRepsCustomName"), workoutRepsCustomNote: $("workoutRepsCustomNote"),
+    workoutRepsCustomCancelBtn: $("workoutRepsCustomCancelBtn"), workoutRepsCustomSaveBtn: $("workoutRepsCustomSaveBtn"),
+    workoutRepsRangeRow: $("workoutRepsRangeRow"), workoutRepsRangeHint: $("workoutRepsRangeHint"),
+    workoutRepsCustomRangeRow: $("workoutRepsCustomRangeRow"), workoutRepsCustomMinSlider: $("workoutRepsCustomMinSlider"),
+    workoutRepsCustomMaxSlider: $("workoutRepsCustomMaxSlider"), workoutRepsCustomRangeValue: $("workoutRepsCustomRangeValue"),
+    workoutRepsSetsRow: $("workoutRepsSetsRow"), workoutRepsRestSlider: $("workoutRepsRestSlider"), workoutRepsRestValue: $("workoutRepsRestValue"),
+    workoutRepsSuggestionHint: $("workoutRepsSuggestionHint"), workoutRepsStartBtn: $("workoutRepsStartBtn"),
+    workoutSetTimer: $("workoutSetTimer"), workoutRepsInputRow: $("workoutRepsInputRow"), workoutRepsInputValue: $("workoutRepsInputValue"),
+    workoutRepsInputMinus: $("workoutRepsInputMinus"), workoutRepsInputPlus: $("workoutRepsInputPlus"),
     natHome: $("natHome"), natPeripherPanel: $("natPeripherPanel"), natRememberPanel: $("natRememberPanel"), natBlitzPanel: $("natBlitzPanel"), natFlashPanel: $("natFlashPanel"), natMotPanel: $("natMotPanel"),
     natProgramCodeInput: $("natProgramCodeInput"), natProgramGoBtn: $("natProgramGoBtn"), natProgramError: $("natProgramError"),
     testHome: $("testHome"), testPanel: $("testPanel"), testEmptyHint: $("testEmptyHint"),
@@ -1846,7 +1858,7 @@
     workoutOverview: $("workoutOverview"), workoutProgressTrack: $("workoutProgressTrack"), workoutPlayerBar: $("workoutPlayerBar"),
     workoutBackBtn: $("workoutBackBtn"), workoutTimeEl: $("workoutTimeEl"), workoutFsBtn: $("workoutFsBtn"), workoutFsHint: $("workoutFsHint"),
     workoutFsHintOpenBtn: $("workoutFsHintOpenBtn"), workoutFsHintClose: $("workoutFsHintClose"),
-    workoutDonePanel: $("workoutDonePanel"), workoutDoneSummary: $("workoutDoneSummary"), workoutRating: $("workoutRating"),
+    workoutDonePanel: $("workoutDonePanel"), workoutDoneSummary: $("workoutDoneSummary"), workoutDoneSuggestion: $("workoutDoneSuggestion"), workoutRating: $("workoutRating"),
     workoutAgainBtn: $("workoutAgainBtn"), workoutDoneBackBtn: $("workoutDoneBackBtn"),
     workoutTransition: $("workoutTransition"), workoutTransitionTitle: $("workoutTransitionTitle"),
     workoutTransitionMeta: $("workoutTransitionMeta"), workoutTransitionBtn: $("workoutTransitionBtn"),
@@ -1863,7 +1875,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -9012,6 +9024,13 @@
   let workoutTransitionTimer = null;
   let lastWorkoutPlan = null;
   let lastStandaloneWorkoutBlock = null;
+  // Which ready screen a standalone (non-plan, non-combo) block came from -
+  // "Beenden" needs to return there, and Tabata/circuit and the reps
+  // builder each have their own. Defaults to Tabata's for backward
+  // compatibility (it existed first); startWorkoutRepsNow() below sets it
+  // to "workoutRepsReady" before starting.
+  let workoutStandaloneReturnScreen = "workoutTabataReady";
+  let workoutSetTimerInterval = null;
 
   function runWorkoutBlock(block) {
     hideAllPlayers();
@@ -9040,21 +9059,65 @@
   // ---- Reps mode: manual "Satz erledigt", optional rest countdown ----
   function startRepsBlock(block) {
     const ex = findWorkoutExercise(block.exercise);
-    workoutState = { kind: "reps", block, ex, setIndex: 1, startTime: performance.now() };
+    workoutState = { kind: "reps", block, ex, setIndex: 1, startTime: performance.now(), achieved: [] };
     renderRepsView();
     requestWakeLock();
   }
+  // Live per-set stopwatch - informational only (see CLAUDE.md's "Kraft-/
+  // Wiederholungstraining" note on why time-under-tension isn't used to
+  // gate anything: the research shows it tracks reps×tempo rather than
+  // being an independent lever). Only shown for range-mode blocks; a
+  // classic fixed coach-plan "reps" block never touches this.
+  function startWorkoutSetTimer() {
+    stopWorkoutSetTimer();
+    els.workoutSetTimer.hidden = false;
+    const t0 = performance.now();
+    const update = () => { els.workoutSetTimer.textContent = fmtClock(Math.floor((performance.now() - t0) / 1000)); };
+    update();
+    workoutSetTimerInterval = setInterval(update, 500);
+  }
+  function stopWorkoutSetTimer() {
+    if (workoutSetTimerInterval) clearInterval(workoutSetTimerInterval);
+    workoutSetTimerInterval = null;
+  }
   function renderRepsView() {
     const { block, ex, setIndex } = workoutState;
+    const isRange = block.rangeMin != null;
     els.workoutExerciseName.textContent = ex.name;
     els.workoutSetInfo.textContent = `Satz ${setIndex} von ${block.sets}`;
-    els.workoutRepsBig.textContent = `${block.reps} Wiederholungen`;
+    els.workoutRepsBig.textContent = isRange ? `${block.rangeMin}–${block.rangeMax} Wiederholungen` : `${block.reps} Wiederholungen`;
     els.workoutNote.textContent = block.note || ex.note || "";
     els.workoutSetDoneBtn.hidden = false;
     els.workoutRestBox.hidden = true;
+    els.workoutRepsInputRow.hidden = !isRange;
+    if (isRange) {
+      // Defaults to the top of the range - "aim for the last one to be
+      // genuinely hard" (the client's own words on progressive overload) -
+      // the client dials it down with -/+ only if they fell short.
+      workoutState.currentInput = block.rangeMax;
+      els.workoutRepsInputValue.textContent = workoutState.currentInput;
+      startWorkoutSetTimer();
+    } else {
+      stopWorkoutSetTimer();
+      els.workoutSetTimer.hidden = true;
+    }
   }
+  els.workoutRepsInputMinus.addEventListener("click", () => {
+    if (!workoutState) return;
+    workoutState.currentInput = Math.max(0, workoutState.currentInput - 1);
+    els.workoutRepsInputValue.textContent = workoutState.currentInput;
+  });
+  els.workoutRepsInputPlus.addEventListener("click", () => {
+    if (!workoutState) return;
+    workoutState.currentInput = Math.min(99, workoutState.currentInput + 1);
+    els.workoutRepsInputValue.textContent = workoutState.currentInput;
+  });
   els.workoutSetDoneBtn.addEventListener("click", () => {
     if (!workoutState || workoutState.kind !== "reps") return;
+    if (workoutState.block.rangeMin != null) {
+      workoutState.achieved.push(workoutState.currentInput);
+      stopWorkoutSetTimer();
+    }
     if (workoutState.setIndex >= workoutState.block.sets) { finishWorkoutBlock(); return; }
     startRepsRest(workoutState.block.restS ?? 30);
   });
@@ -9314,12 +9377,24 @@
     workoutRaf = null;
     if (workoutRestTimer) clearTimeout(workoutRestTimer);
     workoutRestTimer = null;
+    stopWorkoutSetTimer();
     const st = workoutState;
     const played = st ? (performance.now() - (st.sessionStart || st.startTime)) / 1000 : 0;
+    // Double-progression check (see the Kraft-/Wiederholungstraining note
+    // in CLAUDE.md): only meaningful for a range-mode block that actually
+    // finished a full set of sets, and only worth showing on the plain
+    // standalone done screen below - a coach plan or combo run keeps
+    // going straight to its own next block/summary, no natural place to
+    // show it without interrupting that flow.
+    let suggestion = null;
+    if (st && st.kind === "reps" && st.block.rangeMin != null && st.achieved.length && !workoutPlan && !comboProgram) {
+      const hitTop = recordWorkoutRepsProgress(st.block.exercise, st.block.rangeMin, st.block.rangeMax, st.achieved);
+      if (hitTop) suggestion = `Stark – du hast in jedem Satz ${st.block.rangeMax}+ Wiederholungen geschafft. Nächstes Mal schwerer machen (mehr Gewicht, schwerere Variante, oder die Übung tauschen)?`;
+    }
     workoutState = null;
-    onWorkoutBlockDone(played, st ? st.ex : null);
+    onWorkoutBlockDone(played, st ? st.ex : null, suggestion);
   }
-  function onWorkoutBlockDone(playedS, ex) {
+  function onWorkoutBlockDone(playedS, ex, suggestion) {
     releaseWakeLock();
     if (workoutPlan) {
       workoutPlan.totalPlayedS += playedS;
@@ -9331,6 +9406,8 @@
     if (comboProgram) { advanceComboProgram(playedS); return; }
     els.workoutPlayerBar.hidden = true;
     els.workoutDoneSummary.textContent = `${ex ? ex.name : "Training"} · ${fmtMinutes(playedS)}`;
+    els.workoutDoneSuggestion.hidden = !suggestion;
+    els.workoutDoneSuggestion.textContent = suggestion || "";
     const id = addHistory({ kind: "workout", title: ex ? ex.name : "Workout", seconds: Math.round(playedS) });
     renderRating(els.workoutRating, id, "Wie gut hast du durchgehalten?");
     els.workoutDonePanel.hidden = false;
@@ -9396,7 +9473,7 @@
     const wasPlan = !!workoutPlan;
     workoutPlan = null;
     workoutLeavePlayer();
-    showScreen(wasPlan ? "workoutProgramIntro" : "workoutTabataReady");
+    showScreen(wasPlan ? "workoutProgramIntro" : workoutStandaloneReturnScreen);
   }
   els.workoutBackBtn.addEventListener("click", workoutAbort);
   els.workoutAgainBtn.addEventListener("click", () => {
@@ -9653,6 +9730,7 @@
   });
   function startWorkoutCircuitNow() {
     if (!workoutCircuitPrefs.items.length) return;
+    workoutStandaloneReturnScreen = "workoutTabataReady";
     startStandaloneWorkoutBlock({
       kind: "circuit",
       items: workoutCircuitPrefs.items.map((it) => ({ ...it })),
@@ -9704,6 +9782,206 @@
       renderWorkoutCircuitSaved();
     },
   });
+
+  // ==== Workout: Kraft-/Wiederholungstraining (self-service reps builder) ====
+  // Client-facing counterpart to the coach-plan-only "reps" block above -
+  // until now a client could only ever run a fixed sets×reps block a coach
+  // set up for them (see CLAUDE.md's "Kraft-/Wiederholungstraining" note
+  // for the client's own request and the rep-range/time-under-tension
+  // research this is built on). Picks its own exercise from the same
+  // catalog Tabata's circuit builder uses, plus a rep-range preset backed
+  // by real strength-training literature, and tracks per-exercise
+  // progress so a "you hit the top of your range every set last time"
+  // double-progression nudge can show up on the next visit.
+  const REP_RANGE_PRESETS = [
+    { key: "kraft", label: "Kraft", min: 1, max: 6, hint: "Maximalkraft: schwer, wenige Wiederholungen (ca. 85 %+ deines Maximalgewichts)." },
+    { key: "muskelaufbau", label: "Muskelaufbau", min: 6, max: 12, hint: "Klassischer Hypertrophie-Bereich (ca. 65–85 % deines Maximalgewichts)." },
+    { key: "kraftausdauer", label: "Kraftausdauer", min: 15, max: 20, hint: "Viele Wiederholungen, leichteres Gewicht (unter ca. 65 % deines Maximalgewichts)." },
+  ];
+  function repRangeFor(prefs) {
+    if (prefs.rangeKey === "custom") return { min: prefs.customMin, max: prefs.customMax };
+    const preset = REP_RANGE_PRESETS.find((p) => p.key === prefs.rangeKey) || REP_RANGE_PRESETS[1];
+    return { min: preset.min, max: preset.max };
+  }
+
+  const WORKOUT_REPS_KEY = "fwmc-workout-reps-builder-v1";
+  const workoutRepsPrefs = { exercise: null, rangeKey: "muskelaufbau", customMin: 8, customMax: 12, sets: 3, restS: 60 };
+  function loadWorkoutRepsPrefs() {
+    const saved = readJSON(WORKOUT_REPS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(workoutRepsPrefs, saved);
+    if (workoutRepsPrefs.rangeKey !== "custom" && !REP_RANGE_PRESETS.some((p) => p.key === workoutRepsPrefs.rangeKey)) workoutRepsPrefs.rangeKey = "muskelaufbau";
+    if (!Number.isFinite(workoutRepsPrefs.customMin) || workoutRepsPrefs.customMin < 1 || workoutRepsPrefs.customMin > 30) workoutRepsPrefs.customMin = 8;
+    if (!Number.isFinite(workoutRepsPrefs.customMax) || workoutRepsPrefs.customMax < workoutRepsPrefs.customMin || workoutRepsPrefs.customMax > 30) workoutRepsPrefs.customMax = 12;
+    if (![2, 3, 4, 5].includes(workoutRepsPrefs.sets)) workoutRepsPrefs.sets = 3;
+    if (!Number.isFinite(workoutRepsPrefs.restS) || workoutRepsPrefs.restS < 15 || workoutRepsPrefs.restS > 180) workoutRepsPrefs.restS = 60;
+  }
+  function saveWorkoutRepsPrefs() { writeJSON(WORKOUT_REPS_KEY, workoutRepsPrefs); }
+  loadWorkoutRepsPrefs();
+
+  // Double progression (see legionathletics.com/double-progression and the
+  // wider CLAUDE.md note): remember, per exercise, whether the client
+  // reached the TOP of their chosen range in every set - if so, the next
+  // visit nudges towards making it harder rather than just repeating the
+  // same load forever.
+  const WORKOUT_REPS_PROGRESS_KEY = "fwmc-workout-reps-progress-v1";
+  function loadWorkoutRepsProgress() {
+    const data = readJSON(WORKOUT_REPS_PROGRESS_KEY, {});
+    return data && typeof data === "object" ? data : {};
+  }
+  function saveWorkoutRepsProgress(data) { writeJSON(WORKOUT_REPS_PROGRESS_KEY, data); }
+  function recordWorkoutRepsProgress(exerciseId, min, max, achieved) {
+    const data = loadWorkoutRepsProgress();
+    const hitTopEverySet = achieved.length > 0 && achieved.every((r) => r >= max);
+    data[exerciseId] = { min, max, achieved: achieved.slice(), suggestIncrease: hitTopEverySet, date: Date.now() };
+    saveWorkoutRepsProgress(data);
+    return hitTopEverySet;
+  }
+
+  function renderWorkoutRepsExerciseGrid() {
+    els.workoutRepsExerciseGrid.innerHTML = "";
+    allWorkoutExerciseEntries().forEach(([id, ex]) => {
+      const isCustom = !WORKOUT_EXERCISES[id];
+      const wrap = document.createElement("div");
+      wrap.className = "custom-exercise-add-row";
+      const btn = document.createElement("button");
+      btn.className = "combo-add-btn";
+      setActive(btn, workoutRepsPrefs.exercise === id);
+      btn.innerHTML = `<span class="ca-icon">${workoutIconSVG(ex.icon)}</span><span class="ca-text"><span class="ca-title">${esc(ex.name)}</span></span>`;
+      btn.addEventListener("click", () => {
+        workoutRepsPrefs.exercise = id;
+        saveWorkoutRepsPrefs();
+        renderWorkoutRepsExerciseGrid();
+        syncWorkoutRepsUI();
+      });
+      wrap.appendChild(btn);
+      if (isCustom) {
+        const rm = document.createElement("button");
+        rm.className = "combo-block-remove";
+        rm.title = "Eigene Übung löschen";
+        rm.textContent = "✕";
+        rm.addEventListener("click", () => {
+          customWorkoutExercises = customWorkoutExercises.filter((c) => c.id !== id);
+          saveCustomWorkoutExercises(customWorkoutExercises);
+          if (workoutRepsPrefs.exercise === id) { workoutRepsPrefs.exercise = null; saveWorkoutRepsPrefs(); }
+          renderWorkoutRepsExerciseGrid();
+          syncWorkoutRepsUI();
+        });
+        wrap.appendChild(rm);
+      }
+      els.workoutRepsExerciseGrid.appendChild(wrap);
+    });
+  }
+  function openWorkoutRepsCustomForm() {
+    els.workoutRepsCustomForm.hidden = false;
+    els.workoutRepsCustomBtn.hidden = true;
+    els.workoutRepsCustomName.value = "";
+    els.workoutRepsCustomNote.value = "";
+    els.workoutRepsCustomName.focus();
+  }
+  function closeWorkoutRepsCustomForm() {
+    els.workoutRepsCustomForm.hidden = true;
+    els.workoutRepsCustomBtn.hidden = false;
+  }
+  els.workoutRepsCustomBtn.addEventListener("click", openWorkoutRepsCustomForm);
+  els.workoutRepsCustomCancelBtn.addEventListener("click", closeWorkoutRepsCustomForm);
+  els.workoutRepsCustomSaveBtn.addEventListener("click", () => {
+    const name = els.workoutRepsCustomName.value.trim();
+    if (!name) { els.workoutRepsCustomName.focus(); return; }
+    const note = els.workoutRepsCustomNote.value.trim();
+    const id = `custom-${Date.now()}`;
+    customWorkoutExercises.push({ id, name, note, icon: "custom" });
+    saveCustomWorkoutExercises(customWorkoutExercises);
+    workoutRepsPrefs.exercise = id;
+    saveWorkoutRepsPrefs();
+    closeWorkoutRepsCustomForm();
+    renderWorkoutRepsExerciseGrid();
+    syncWorkoutRepsUI();
+  });
+
+  document.querySelectorAll("#workoutRepsRangeRow [data-reps-range]").forEach((el) => {
+    el.addEventListener("click", () => {
+      workoutRepsPrefs.rangeKey = el.dataset.repsRange;
+      saveWorkoutRepsPrefs();
+      syncWorkoutRepsUI();
+    });
+  });
+  els.workoutRepsCustomMinSlider.addEventListener("input", () => {
+    workoutRepsPrefs.customMin = Math.min(Number(els.workoutRepsCustomMinSlider.value), workoutRepsPrefs.customMax);
+    saveWorkoutRepsPrefs();
+    syncWorkoutRepsUI();
+  });
+  els.workoutRepsCustomMaxSlider.addEventListener("input", () => {
+    workoutRepsPrefs.customMax = Math.max(Number(els.workoutRepsCustomMaxSlider.value), workoutRepsPrefs.customMin);
+    saveWorkoutRepsPrefs();
+    syncWorkoutRepsUI();
+  });
+  document.querySelectorAll("#workoutRepsSetsRow [data-reps-sets]").forEach((el) => {
+    el.addEventListener("click", () => {
+      workoutRepsPrefs.sets = Number(el.dataset.repsSets);
+      saveWorkoutRepsPrefs();
+      syncWorkoutRepsUI();
+    });
+  });
+  els.workoutRepsRestSlider.addEventListener("input", () => {
+    workoutRepsPrefs.restS = Number(els.workoutRepsRestSlider.value);
+    saveWorkoutRepsPrefs();
+    syncWorkoutRepsUI();
+  });
+
+  function syncWorkoutRepsUI() {
+    document.querySelectorAll("#workoutRepsRangeRow [data-reps-range]").forEach((el) => setActive(el, el.dataset.repsRange === workoutRepsPrefs.rangeKey));
+    const isCustom = workoutRepsPrefs.rangeKey === "custom";
+    els.workoutRepsCustomRangeRow.hidden = !isCustom;
+    const { min, max } = repRangeFor(workoutRepsPrefs);
+    if (isCustom) {
+      els.workoutRepsCustomMinSlider.value = workoutRepsPrefs.customMin;
+      els.workoutRepsCustomMaxSlider.value = workoutRepsPrefs.customMax;
+      els.workoutRepsCustomRangeValue.textContent = `${min}–${max} Wiederholungen`;
+      els.workoutRepsRangeHint.textContent = "Eigener Bereich – stelle Minimum und Maximum selbst ein.";
+    } else {
+      const preset = REP_RANGE_PRESETS.find((p) => p.key === workoutRepsPrefs.rangeKey);
+      els.workoutRepsRangeHint.textContent = preset ? preset.hint : "";
+    }
+    document.querySelectorAll("#workoutRepsSetsRow [data-reps-sets]").forEach((el) => setActive(el, Number(el.dataset.repsSets) === workoutRepsPrefs.sets));
+    els.workoutRepsRestSlider.value = workoutRepsPrefs.restS;
+    els.workoutRepsRestValue.textContent = fmtSeconds(workoutRepsPrefs.restS);
+    const hasExercise = !!workoutRepsPrefs.exercise;
+    els.workoutRepsStartBtn.disabled = !hasExercise;
+    els.workoutRepsStartBtn.textContent = hasExercise ? "Training starten" : "Bitte eine Übung wählen";
+    const progress = hasExercise ? loadWorkoutRepsProgress()[workoutRepsPrefs.exercise] : null;
+    if (progress && progress.suggestIncrease) {
+      const ex = findWorkoutExercise(workoutRepsPrefs.exercise);
+      els.workoutRepsSuggestionHint.hidden = false;
+      els.workoutRepsSuggestionHint.textContent = `Letztes Mal hast du bei ${ex.name} in jedem Satz ${progress.max}+ Wiederholungen geschafft – heute schwerer probieren (mehr Gewicht, schwerere Variante, oder die Übung tauschen)?`;
+    } else {
+      els.workoutRepsSuggestionHint.hidden = true;
+    }
+  }
+
+  function openWorkoutRepsReady() {
+    closeWorkoutRepsCustomForm();
+    renderWorkoutRepsExerciseGrid();
+    syncWorkoutRepsUI();
+    showScreen("workoutRepsReady");
+  }
+  els.workoutRepsStartCard.addEventListener("click", openWorkoutRepsReady);
+  els.workoutRepsBackToHome.addEventListener("click", () => showScreen("workoutHome"));
+
+  function startWorkoutRepsNow() {
+    if (!workoutRepsPrefs.exercise) return;
+    const { min, max } = repRangeFor(workoutRepsPrefs);
+    workoutStandaloneReturnScreen = "workoutRepsReady";
+    startStandaloneWorkoutBlock({
+      kind: "reps",
+      exercise: workoutRepsPrefs.exercise,
+      sets: workoutRepsPrefs.sets,
+      reps: max,
+      rangeMin: min,
+      rangeMax: max,
+      restS: workoutRepsPrefs.restS,
+    });
+  }
+  els.workoutRepsStartBtn.addEventListener("click", startWorkoutRepsNow);
 
   // ==== Cardio: self-built sequence of physical activities (Joggen, Rad
   // fahren, Crosstrainer, ...), each block with its own duration and an
