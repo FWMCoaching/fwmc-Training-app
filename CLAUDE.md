@@ -5411,6 +5411,79 @@ doesn't:
   rather than static HTML, since which cells show digits and which row is
   outlined both change every phase of every trial. Test:
   `tests/iconic_test.py`.
+- **Daueraufmerksamkeits-Test (Psychomotor Vigilance Task)** (twenty-
+  seventh autonomous entry, 2026-09-30): built from the "Recherche-
+  Backlog: 20 Kandidaten" list (candidate #14) rather than fresh research
+  this round. Grounded in the Psychomotor Vigilance Task (PVT; Dinges &
+  Powell, 1985) - the gold-standard sustained-attention/fatigue measure
+  used throughout sleep-deprivation and vigilance research: a simple
+  stimulus appears at pseudo-random 2-10s intervals with NO warning cue of
+  any kind, over a sustained run; the client taps as fast as possible each
+  time. "Lapses" (RT > 500ms, `PVT_LAPSE_THRESHOLD_MS`) accumulate
+  measurably as time-on-task and fatigue build, and mean RT typically
+  rises across the run (the "vigilance decrement") - famously sensitive to
+  sleep loss, but also to plain sustained boredom/fatigue in an otherwise-
+  rested person, which is the relevant read for a training-app context.
+  The classic display is a millisecond counter that starts at the
+  stimulus and counts up until stopped - reproduced exactly (`.pvt-
+  display`, driven by `requestAnimationFrame`, not a colour change or
+  shape), since the counting number itself is part of what makes the real
+  PVT so simple and distraction-free. Durations offered (`PVT_LENGTHS`,
+  kurz/mittel/lang = 3/5/10 Min) span the full classic 10-minute protocol
+  down to genuinely validated ABBREVIATED versions - Basner, Mollicone &
+  Dinges (2011, Acta Astronautica) validated 3- and 5-minute PVT-B forms
+  against the full 10-minute original specifically for time-constrained/
+  field use, so "Kurz"/"Mittel" aren't arbitrary shortenings, they're an
+  established, cited protocol in their own right. Genuinely distinct from
+  every existing Test/NAT mechanic: every other RT-based exercise here
+  (Go/No-Go, Flanker, Posner, Simon, Rotationstest, Stopp-Signal-Test, ...)
+  is a short, fixed-trial block (24-64 trials, a few minutes) measuring a
+  momentary cognitive facet (inhibition/conflict/switching); this is the
+  only one whose entire point is a SUSTAINED, MANY-MINUTE run measuring
+  attentional DECAY over time-on-task itself - directly relevant to
+  fatigue/overtraining monitoring in a coaching context, and a genuinely
+  different construct (vigilance, not decision speed) from anything else
+  on this tab. A tap during the "waiting" phase (before the counter
+  starts) is a false start/anticipation, logged separately and never
+  cancels the already-scheduled, genuinely random stimulus onset - a
+  client "gaming" the wait can't shorten it. Reports overall mean RT,
+  lapse count/rate, false-start count, and the actual outcome measure this
+  paradigm exists to reveal: the "Vigilanz-Abfall" (mean RT of the second
+  half of the run's trials minus the first half) - positive means
+  responses genuinely slowed as the run went on, the classic decrement.
+  `PVT_BEST_KEY` tracks the LOWEST overall mean RT per length (lower is
+  better), but ONLY for a run that reached the FULL selected duration (not
+  an early "Beenden") - a short stopped run could otherwise report an
+  unrepresentatively fast mean RT and overwrite a genuinely earned record,
+  the same class of concern already flagged for Reaktionsfeld-Test's own
+  rate metric in Offene Fragen; this exercise avoids it outright by gating
+  on a full finish rather than flagging it as a known gap. No Bei-Fehler/
+  Zusatzaufgabe/Trainingsmodus/difficulty dial - correctly skipped, same
+  reasoning as every other fixed-duration Test entry (the ISI range and
+  lapse threshold are the fixed scientific protocol, not something to make
+  easier/harder). Background colour/intensity WAS included (`pvtPrefs.
+  bgColorKey`/`bgIntensity`, `makeBgApplier`/`wireBgIntensityControl` on
+  both the ready screen and the pause overlay, plus a `MASTER_BG_TARGETS`
+  registry entry) - basically free, and a tint behind the plain counting
+  number doesn't compete with anything being judged (unlike Subitizing-
+  Test/Iconic-Speicher-Test, where a near-subliminal flash's own contrast
+  is what's at stake). Pause needs two different resume tricks depending
+  on which phase was active, unlike every earlier self-paced Test entry:
+  pausing during the "waiting" phase uses the usual `scheduleXTimer`-
+  remaining-delay replay (there's a pending ISI timer); pausing during the
+  "target" phase (the counter is actively running) additionally cancels
+  the `raf` loop and shifts `targetShownAt` forward by the paused span on
+  resume - the same "shift the timestamp, not the elapsed reading" trick
+  used elsewhere in this app for a mid-flight measurement (MOT's physics
+  tick, Periph's `session.startTime` shift) - so a pause mid-count never
+  corrupts the eventual reaction time. Test: `tests/pvt_test.py` (the
+  actual full-duration finish path and its best-score gate aren't
+  exercised by real-time waiting - a 3/5/10-minute wait is impractical in
+  a Playwright run, the same "verified by reading the logic" approach
+  already used for UFOV's own staircase numerics - the test instead
+  exercises every other mechanic: the counting display, the false-start
+  handling, pause/resume across both phases, Beenden-doubles-as-finish,
+  and length persistence).
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
@@ -5430,6 +5503,27 @@ doesn't:
   rather than guessing: ask the client whether the done-panel should note
   either of these ("kleine Stichprobe pro Wartezeit" / "Zahlen zählen auch
   bei anderer Reihenfolge"), or whether trial count should go up.
+- **Daueraufmerksamkeits-Test: invented response-timeout + browser timing
+  precision**: `PVT_RESPONSE_TIMEOUT_MS = 10000` (a stimulus that's never
+  tapped within 10s counts as a "Verpasst" lapse and the run moves on) is
+  this app's own safety net, not derived from the PVT literature - the
+  real protocol's own convention for an extremely delayed/absent response
+  is a "sleep episode" at the 30s mark, and doesn't otherwise force a move
+  on. 10s was chosen so the exercise can never get stuck waiting forever
+  on a distracted client, but it's an invented number, not a validated
+  one - flagging rather than presenting it as protocol-accurate. Separately,
+  like UFOV's own flagged timing-precision caveat, the counting display
+  and the tap that stops it are both ordinary browser events
+  (`requestAnimationFrame`/`click`), not calibrated lab hardware - real
+  touchscreen input lag (commonly cited in the 50-100ms range depending on
+  device) sits on top of every recorded RT here, so the ABSOLUTE numbers
+  this exercise reports likely run a bit slower than a lab-grade PVT
+  instrument would show for the same person; the RELATIVE pattern within
+  one run (the vigilance decrement, lapses accumulating over time) should
+  still be meaningful, since that same lag affects every trial equally.
+  Not fixed - flagging rather than guessing: ask the client whether this
+  matters for how the numbers get presented, or whether the response
+  timeout should be lengthened toward the real protocol's 30s convention.
 - **Ganzheit-Detail-Test: small per-cell sample size**: 32 trials split
   across 4 cells (global/lokal x kongruent/inkongruent) means only ~8
   trials feed each cell's average RT, so both interference-cost numbers
