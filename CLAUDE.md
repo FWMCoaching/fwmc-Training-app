@@ -4215,6 +4215,52 @@ from its old arbitrary 15 Min. (now unreachable with only one 10 Min.
 activity in that test) to first lowering "bis" to 5 and then dragging "ab"
 to 8, inside the new 10 Min. cap.
 
+### Cardio: bidirectional chapter-nav (vor/zurück/neu starten) + größerer Abbrechen-Button (2026-09-30)
+
+Client's own comparison to Tabata: "Nächste Aktivität" during a running
+Cardio session used to be one-directional (forward-only, dynamic text
+label swap). Now matches Tabata's own `.chapter-nav` triple (« vorherige /
+↻ neu starten / weiter »), plus swipe left/right, plus the ability to
+restart just the current activity's clock without moving position.
+
+- **`cardioJumpToIndex(idx, dir)`**: Cardio's own engine is index-based
+  (`cardioState.index`/`blockStartTime`), unlike Tabata's frame-schedule-
+  offset one (`circuitJumpToWorkIndex()`) - jumping is direct index
+  arithmetic + a `blockStartTime` reset rather than recomputing a
+  `startTime` offset. `dir` says which way a landed-on pause pseudo-item
+  gets skipped past (a pause is never adjacent to another pause, so one
+  extra step in the same direction always lands back on a real activity) -
+  mirrors the existing forward-skip's own pause-skipping logic exactly,
+  just made symmetric for `cardioPrevBtn` too. Skipping past the last
+  activity (or index goes negative at the very first one, clamped to 0)
+  reaches the same `finishCardio()`/no-op-restart edges a natural run would.
+- **`cardioRestartBtn`**: just resets `blockStartTime`, no index change.
+- The markup swap to icon-only buttons (from `.pause-skip` text buttons)
+  had shipped a commit ahead of this JS wiring by an oversight - caught
+  before it reached a client-visible state, since `cardioTick()` was still
+  overwriting the icon with a full text string
+  (`"Pause überspringen »"`/`"Nächste Aktivität »"`) on every phase
+  change. Fixed alongside: those two lines now update `.title`/
+  `aria-label` instead, leaving the icon itself untouched.
+- **Abbrechen button** in the Cardio "+ Zusatzaufgabe" live picker was
+  effectively browser-default-sized (`.pause-skip` alone carries no
+  padding/font-size of its own) - client-reported as too small next to
+  "Jetzt starten". Given its own ID-scoped rule instead of enlarging
+  `.pause-skip` itself, which is shared with `pauseSkipBtn`/
+  `wimhofHoldDoneBtn`/`workoutRestSkipBtn` elsewhere - none of those were
+  part of the report and shouldn't resize just because this one needed to
+  grow. Sits visibly between the old tiny default and the full `.start-btn`
+  size, matching the client's own "nicht ganz so groß, aber jeweils
+  größer" framing.
+
+Test: `tests/cardio_chapter_nav_test.py` - all three buttons present;
+skip/prev correctly hop over the interleaved pause onto the next/previous
+REAL activity in both directions; restart keeps the same activity but
+visibly resets its countdown; prev at the first activity is a safe no-op;
+skipping past the last activity finishes the session same as running out
+the clock. `cardio_addon_picker_test.py` gained a size check confirming
+Abbrechen sits strictly between the old default and "Jetzt starten".
+
 ## Test-Bereich (autonomous, ongoing)
 
 **If you were woken by the "FWMC Test-Bereich Auto-Build" Routine, this

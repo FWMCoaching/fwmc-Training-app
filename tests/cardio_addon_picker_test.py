@@ -107,6 +107,12 @@ async def main():
         print("duration +15s -> 0:30:", (await pg.inner_text("#cardioAddonPickerDurationValue")) == "0:30")
         await pg.click("#cardioAddonPickerDurationMinus"); await pg.wait_for_timeout(80)
 
+        # ---- Abbrechen big enough to comfortably tap, but still visibly
+        # smaller than "Jetzt starten" (client-reported: was default-tiny) ----
+        cancel_h = await pg.eval_on_selector("#cardioAddonPickerCancelBtn", "el => el.getBoundingClientRect().height")
+        start_h = await pg.eval_on_selector("#cardioAddonPickerStartBtn", "el => el.getBoundingClientRect().height")
+        print("Abbrechen bigger than the old browser-default size but smaller than Jetzt starten:", 35 < cancel_h < start_h)
+
         # ---- cancel: bails out cleanly, nothing started ----
         await pg.click("#cardioAddonPickerCancelBtn"); await pg.wait_for_timeout(200)
         print("cancel closes the picker without starting anything:",

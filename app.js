@@ -1887,6 +1887,7 @@
     cardioAddonWindowEndSlider: $("cardioAddonWindowEndSlider"), cardioAddonWindowEndValue: $("cardioAddonWindowEndValue"),
     cardioAddonPerType: $("cardioAddonPerType"),
     cardioPlayer: $("cardioPlayer"), cardioBackBtn: $("cardioBackBtn"), cardioSkipBtn: $("cardioSkipBtn"),
+    cardioPrevBtn: $("cardioPrevBtn"), cardioRestartBtn: $("cardioRestartBtn"),
     cardioAddonTriggerBtn: $("cardioAddonTriggerBtn"),
     cardioAddonPicker: $("cardioAddonPicker"), cardioAddonPickerTypeRow: $("cardioAddonPickerTypeRow"),
     cardioAddonPickerDurationValue: $("cardioAddonPickerDurationValue"),
@@ -11111,11 +11112,13 @@
       els.cardioCountdown.textContent = fmtClock(block.durationS - blockElapsed);
       els.cardioBlockProgress.textContent = nextAct ? `vor Aktivität ${cardioRealPos(cardioState.items, cardioState.index + 1)} von ${cardioState.realCount}` : "";
       els.cardioPhaseLabel.hidden = true;
-      els.cardioSkipBtn.textContent = "Pause überspringen »";
+      els.cardioSkipBtn.title = "Pause überspringen";
+      els.cardioSkipBtn.setAttribute("aria-label", "Pause überspringen");
       cardioRaf = requestAnimationFrame(cardioTick);
       return;
     }
-    els.cardioSkipBtn.textContent = "Nächste Aktivität »";
+    els.cardioSkipBtn.title = "Weiter zur nächsten Aktivität";
+    els.cardioSkipBtn.setAttribute("aria-label", "Weiter zur nächsten Aktivität");
     const act = findCardioActivity(block.activity);
     els.cardioActivityTitle.textContent = act.name;
     els.cardioActivityLabel.textContent = block.label || "";
@@ -11343,17 +11346,32 @@
     }
   }
 
-  els.cardioSkipBtn.addEventListener("click", () => {
+  // Bidirectional chapter-nav for the running Cardio session, matching
+  // Tabata's own prev/restart/skip pattern (circuitJumpToWorkIndex) -
+  // Cardio's own engine is index-based rather than Tabata's frame-schedule-
+  // offset one, so jumping is direct index arithmetic + a blockStartTime
+  // reset instead of recomputing a startTime offset. `dir` says which way
+  // a landed-on pause pseudo-item gets skipped past (a pause is never
+  // adjacent to another pause, so a single extra step in the same
+  // direction always lands back on a real activity) - the client
+  // explicitly skipping/rewinding past an activity clearly doesn't want to
+  // land on a pause either way.
+  function cardioJumpToIndex(idx, dir) {
     if (!cardioState) return;
-    cardioState.index++;
-    // "Nächste Aktivität" pressed DURING a real activity should land on
-    // the next REAL activity, not on the pause marker now inserted right
-    // before it - a client explicitly skipping ahead clearly doesn't want
-    // a pause first either. Pressed during the pause itself ("Pause
-    // überspringen"), this is a no-op: a pause is never followed by
-    // another pause, so index already points at a real activity.
-    if (cardioState.items[cardioState.index] && cardioState.items[cardioState.index].pause) cardioState.index++;
+    if (idx < 0) idx = 0;
+    if (idx >= cardioState.items.length) { finishCardio(); return; }
+    if (cardioState.items[idx] && cardioState.items[idx].pause) idx += dir;
+    if (idx < 0) idx = 0;
+    if (idx >= cardioState.items.length) { finishCardio(); return; }
+    cardioState.index = idx;
     cardioState.blockStartTime = performance.now();
+  }
+  els.cardioPrevBtn.addEventListener("click", () => cardioJumpToIndex(cardioState ? cardioState.index - 1 : 0, -1));
+  els.cardioRestartBtn.addEventListener("click", () => { if (cardioState) cardioState.blockStartTime = performance.now(); });
+  els.cardioSkipBtn.addEventListener("click", () => cardioJumpToIndex(cardioState ? cardioState.index + 1 : 0, 1));
+  wireSwipeNav(els.cardioPlayer, {
+    onLeft: () => els.cardioSkipBtn.click(),
+    onRight: () => els.cardioPrevBtn.click(),
   });
   function abortCardio() {
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
