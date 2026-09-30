@@ -943,6 +943,11 @@
       <span class="fc-desc">Vier Karten liegen oben fest &ndash; eine neue Karte erscheint darunter, du tippst, zu welcher der vier sie passt. Die Regel (Farbe, Form oder Anzahl) wird dir nicht gesagt, nur ob deine Wahl richtig oder falsch war. Und die Regel &auml;ndert sich irgendwann, ohne Vorwarnung. Klassischer Test f&uuml;r Regel-Lernen und kognitive Flexibilit&auml;t (Wisconsin Card Sorting Test).</span>
       <span class="fc-meta" id="wcstBestHint"></span>
     </button>
+    <button class="featured-card" id="navonOpenBtn">
+      <span class="fc-title">Ganzheit-Detail-Test (Navon-Aufgabe)</span>
+      <span class="fc-desc">Ein gro&szlig;er Buchstabe ist selbst aus vielen kleinen Buchstaben zusammengesetzt. Vorher steht, ob du den GROSSEN oder den KLEINEN Buchstaben nennen sollst &ndash; manchmal stimmen beide &uuml;berein, manchmal nicht. Klassisches Paradigma zur Verarbeitung von Ganzheit vs. Detail (Navon, 1977, &bdquo;Forest before the trees&ldquo;), zeigt wie stark sich die beiden Ebenen gegenseitig st&ouml;ren.</span>
+      <span class="fc-meta" id="navonBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -1363,6 +1368,44 @@
   <div class="group-help" id="wcstReadyBestHint"></div>
 
   <button class="start-btn" id="wcstReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="navonReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="navonReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Ganzheit-Detail-Test (Navon-Aufgabe)</h1>
+  <p class="page-sub">Ein gro&szlig;er Buchstabe (H oder S) ist selbst aus vielen kleinen Buchstaben (ebenfalls H oder S) zusammengesetzt. Vorher steht kurz &bdquo;GROSS&ldquo; oder &bdquo;KLEIN&ldquo; &ndash; das sagt dir, ob du den gro&szlig;en Gesamtbuchstaben oder die kleinen Einzelbuchstaben nennen sollst, und tippe dann unten H oder S. Manchmal stimmen beide Ebenen &uuml;berein, manchmal nicht. Klassisches Paradigma zur Verarbeitung von Ganzheit vs. Detail (Navon, 1977) &ndash; zeigt, wie stark sich die beiden Ebenen gegenseitig ablenken.</p>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="navonDifficultyRow">
+      <button class="choice" data-navon-diff="leicht">Leicht<small>mehr Vorbereitungszeit</small></button>
+      <button class="choice" data-navon-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-navon-diff="schwer">Schwer<small>kaum Vorbereitungszeit</small></button>
+    </div>
+  </div>
+
+  <details class="advanced" id="navonAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="navonBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="navonBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="navonBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="navonBgContrastHint" hidden></div>
+        <div class="bg-master-status" id="navonBgMasterStatus"></div>
+      </div>
+    </div>
+  </details>
+
+  <div class="group-help" id="navonReadyBestHint"></div>
+
+  <button class="start-btn" id="navonReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="simonReady" hidden>
@@ -4242,6 +4285,53 @@
     <div class="rating" id="wcstRating"></div>
     <button class="again" id="wcstAgainBtn">Nochmal</button>
     <button class="back" id="wcstDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="navonPlayer" hidden>
+  <div class="navon-stage" id="navonStage">
+    <div class="navon-cue" id="navonCue"></div>
+    <div class="navon-grid" id="navonGrid"></div>
+    <div class="remember-hint" id="navonHint"></div>
+    <div class="navon-response-row" id="navonResponseRow">
+      <button class="navon-response-btn" id="navonHBtn">H</button>
+      <button class="navon-response-btn" id="navonSBtn">S</button>
+    </div>
+  </div>
+  <div class="pause-overlay" id="navonPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="navonPauseBgValue"></span></div>
+        <input type="range" id="navonPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="navonPauseBgColorPicker"></div>
+        <div class="group-help" id="navonPauseBgContrastHint" hidden></div>
+      </div>
+      <button class="start-btn" id="navonResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="navonPlayerBar">
+    <button id="navonBackBtn">&#10005; Beenden</button>
+    <button id="navonPauseBtn">Pause</button>
+    <span class="player-status" id="navonProgressEl"></span>
+    <button id="navonFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="navonFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="navonFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="navonFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="navonDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="navonDoneSummary"></p>
+    <div class="rating" id="navonRating"></div>
+    <button class="again" id="navonAgainBtn">Nochmal</button>
+    <button class="back" id="navonDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

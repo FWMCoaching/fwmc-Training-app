@@ -1603,6 +1603,19 @@
     wcstFsBtn: $("wcstFsBtn"), wcstFsHint: $("wcstFsHint"), wcstFsHintOpenBtn: $("wcstFsHintOpenBtn"), wcstFsHintClose: $("wcstFsHintClose"),
     wcstDonePanel: $("wcstDonePanel"), wcstDoneSummary: $("wcstDoneSummary"), wcstRating: $("wcstRating"),
     wcstAgainBtn: $("wcstAgainBtn"), wcstDoneBackBtn: $("wcstDoneBackBtn"),
+    navonOpenBtn: $("navonOpenBtn"), navonBestHint: $("navonBestHint"), navonReady: $("navonReady"),
+    navonReadyBackToHome: $("navonReadyBackToHome"), navonDifficultyRow: $("navonDifficultyRow"),
+    navonAdvanced: $("navonAdvanced"), navonBgColorPicker: $("navonBgColorPicker"), navonBgIntensitySlider: $("navonBgIntensitySlider"),
+    navonBgIntensityValue: $("navonBgIntensityValue"), navonBgContrastHint: $("navonBgContrastHint"), navonBgMasterStatus: $("navonBgMasterStatus"),
+    navonReadyBestHint: $("navonReadyBestHint"), navonReadyStartBtn: $("navonReadyStartBtn"),
+    navonPlayer: $("navonPlayer"), navonStage: $("navonStage"), navonCue: $("navonCue"), navonGrid: $("navonGrid"), navonHint: $("navonHint"),
+    navonResponseRow: $("navonResponseRow"), navonHBtn: $("navonHBtn"), navonSBtn: $("navonSBtn"),
+    navonPauseOverlay: $("navonPauseOverlay"), navonResumeBtn: $("navonResumeBtn"),
+    navonPauseBgSlider: $("navonPauseBgSlider"), navonPauseBgValue: $("navonPauseBgValue"), navonPauseBgColorPicker: $("navonPauseBgColorPicker"), navonPauseBgContrastHint: $("navonPauseBgContrastHint"),
+    navonPlayerBar: $("navonPlayerBar"), navonBackBtn: $("navonBackBtn"), navonPauseBtn: $("navonPauseBtn"), navonProgressEl: $("navonProgressEl"),
+    navonFsBtn: $("navonFsBtn"), navonFsHint: $("navonFsHint"), navonFsHintOpenBtn: $("navonFsHintOpenBtn"), navonFsHintClose: $("navonFsHintClose"),
+    navonDonePanel: $("navonDonePanel"), navonDoneSummary: $("navonDoneSummary"), navonRating: $("navonRating"),
+    navonAgainBtn: $("navonAgainBtn"), navonDoneBackBtn: $("navonDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
@@ -1861,7 +1874,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -2633,6 +2646,7 @@
     () => ({ prefs: tsPrefs, key: TS_PREFS_KEY, save: saveTsPrefsToStorage }),
     () => ({ prefs: antiPrefs, key: ANTI_PREFS_KEY, save: saveAntiPrefsToStorage }),
     () => ({ prefs: dsstPrefs, key: DSST_PREFS_KEY, save: saveDsstPrefsToStorage }),
+    () => ({ prefs: navonPrefs, key: NAVON_PREFS_KEY, save: saveNavonPrefsToStorage }),
   ];
   // Applies the Master default to every target above that's still
   // "following" it (target.prefs.bgCustom !== true) - never touches a
@@ -4360,6 +4374,7 @@
     els.stopPlayer.hidden = true;
     els.dsstPlayer.hidden = true;
     els.wcstPlayer.hidden = true;
+    els.navonPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.cardioPlayer.hidden = true;
     els.programVideoPlayer.hidden = true;
@@ -14176,6 +14191,383 @@
   els.wcstAgainBtn.addEventListener("click", () => { els.wcstDonePanel.hidden = true; startWcstGame(); });
   els.wcstDoneBackBtn.addEventListener("click", () => { els.wcstPlayer.hidden = true; els.wcstDonePanel.hidden = true; showScreen("testHome"); });
   wireFullscreen({ player: els.wcstPlayer, btn: els.wcstFsBtn, hint: els.wcstFsHint, hintOpen: els.wcstFsHintOpenBtn, hintClose: els.wcstFsHintClose });
+
+  // ==== Test-Bereich: Ganzheit-Detail-Test (Navon-Aufgabe) ====
+  // Twenty-fifth autonomous entry, picked from the "Recherche-Backlog: 20
+  // Kandidaten" list (candidate #20). Grounded in the Navon task (Navon,
+  // 1977, "Forest before the trees") - a large ("global") letter is itself
+  // built out of many small ("local") letters; a cue names which LEVEL to
+  // judge that trial (the global letter, or the local letters), and the
+  // client taps H or S for the letter's identity at that level, ignoring
+  // the other one. When both levels happen to be the same letter that's
+  // "congruent" (fast, accurate); when they conflict that's "incongruent"
+  // (slower, more error-prone) - and the classic, endlessly-replicated
+  // finding this paradigm exists to surface is an ASYMMETRY: an
+  // incongruent local level slows GLOBAL responses less than an
+  // incongruent global level slows LOCAL responses ("global precedence") -
+  // the visual system processes the overall shape before it processes the
+  // fine detail inside it. Genuinely distinct from every existing Test/NAT
+  // mechanic: Suchtest varies feature vs. conjunction search across
+  // SEPARATE items on a display; Regelwechsel-Test switches between two
+  // semantic classification RULES applied to one bivalent digit; this is
+  // the only exercise where a SINGLE object carries the SAME kind of
+  // information (a letter identity) at two different perceptual SCALES at
+  // once, and the question is which scale gets processed more
+  // automatically - a genuinely different "level of processing" construct,
+  // not a rule-switch or a search. The big letter is rendered as a 5x7
+  // dot-matrix grid (`NAVON_SHAPES`) with small letter glyphs placed only
+  // at the "on" cells - all glyphs inside one trial's grid share the SAME
+  // local identity (that's what makes it a coherent global shape at a
+  // glance), so a trial is fully described by {globalLetter, localLetter,
+  // cuedLevel}. Fixed 32-trial run (`NAVON_TRIAL_COUNT`, the full 2 levels
+  // x 2 letters x 2 congruency factorial x 4 reps), shuffled with a guard
+  // against more than 3 identical cued levels OR more than 3 identical
+  // correct answers in a row (same shape as `buildTsTaskSeq`/
+  // `buildFlankerTrials`, extended to cover both variables at once here).
+  // Reports accuracy% plus average RT for each of the four cells (global/
+  // lokal x kongruent/inkongruent) and both interference costs
+  // (inkongruent minus kongruent RT, per level) as "Interferenz global"/
+  // "Interferenz lokal" - the actual outcome measures this paradigm exists
+  // to reveal, with a one-line note on which one came out bigger this run
+  // (the classic prediction: global > lokal), tracking best accuracy% per
+  // `navonPrefs.difficulty` (leicht/mittel/schwer, controlling only the
+  // cue-stimulus interval and response window, same shape as Regelwechsel-
+  // Test's own `csiMs`-as-difficulty design, since preparation time is
+  // what actually matters for how well the cue can be used) via
+  // `NAVON_BEST_KEY`. Background colour/intensity WAS included
+  // (`navonPrefs.bgColorKey`/`bgIntensity`, `makeBgApplier`/
+  // `wireBgIntensityControl` on both the ready screen and the pause
+  // overlay, plus a `MASTER_BG_TARGETS` registry entry so the Master-
+  // Einstellungen cascading default reaches this exercise too) - basically
+  // free, and unlike Kartensortier-Test (where colour identity IS one of
+  // the sorting rules), colour plays no role in the Navon task at all, so
+  // a background tint sitting behind the plain dark letter grid doesn't
+  // compete with anything being judged. No Bei-Fehler/Zusatzaufgabe/
+  // Trainingsmodus - correctly skipped, same reasoning as every other
+  // fixed-trial Test entry. Self-paced per trial with a safety-net timeout
+  // (`scheduleNavonTimer`, same always-clear-pending-timer pattern as
+  // Regelwechsel-Test/Suchtest/Hick) and the usual remaining-delay pause/
+  // resume. New CSS is `.navon-*` (fixed hex colours throughout, no
+  // `var(--...)`); correct/wrong feedback is a plain solid background swap
+  // on the tapped H/S button (Flanker/Posner/Regelwechsel-Test's
+  // convention), since these two buttons have fixed, never-changing labels
+  // with no colour-coding of their own to protect (unlike Simon/
+  // Kartensortier-Test's colour-neutral ring).
+  const NAVON_SHAPES = {
+    H: ["10001", "10001", "10001", "11111", "10001", "10001", "10001"],
+    S: ["01111", "10000", "10000", "01110", "00001", "00001", "11110"],
+  };
+  const NAVON_LETTERS = ["H", "S"];
+  const NAVON_DIFFICULTIES = {
+    // cueMs = how long the "GROSS"/"KLEIN" cue is shown alone before the
+    // stimulus appears (task-preparation time, the variable that actually
+    // matters here, same idea as Regelwechsel-Test's own csiMs) - the cue
+    // stays visible once the stimulus appears too, since the client needs
+    // to keep remembering which level to judge while looking at it.
+    leicht: { title: "Leicht", cueMs: 800, isiMs: 500, timeoutMs: 4000 },
+    mittel: { title: "Mittel", cueMs: 500, isiMs: 400, timeoutMs: 3200 },
+    schwer: { title: "Schwer", cueMs: 250, isiMs: 300, timeoutMs: 2500 },
+  };
+  const NAVON_TRIAL_COUNT = 32;
+  const NAVON_FEEDBACK_MS = 400;
+  const NAVON_MIN_RESOLVED = 8;
+  const NAVON_PREFS_KEY = "fwmc-navon-prefs-v1";
+  const navonPrefs = { difficulty: "mittel", bgColorKey: "blau", bgIntensity: 0 };
+  function loadNavonPrefs() {
+    const saved = readJSON(NAVON_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(navonPrefs, saved);
+    if (!NAVON_DIFFICULTIES[navonPrefs.difficulty]) navonPrefs.difficulty = "mittel";
+    if (!STROOP_COLOR_BY_KEY[navonPrefs.bgColorKey]) navonPrefs.bgColorKey = "blau";
+    if (typeof navonPrefs.bgIntensity !== "number" || navonPrefs.bgIntensity < 0 || navonPrefs.bgIntensity > 1) navonPrefs.bgIntensity = 0;
+  }
+  loadNavonPrefs();
+  function saveNavonPrefsToStorage() { writeJSON(NAVON_PREFS_KEY, navonPrefs); }
+
+  const applyNavonBg = makeBgApplier(els.navonStage, navonPrefs);
+  const syncNavonBgUI = wireBgIntensityControl(navonPrefs, {
+    pickers: [els.navonBgColorPicker, els.navonPauseBgColorPicker],
+    sliders: [els.navonBgIntensitySlider, els.navonPauseBgSlider],
+    valueEls: [els.navonBgIntensityValue, els.navonPauseBgValue],
+    hintEls: [els.navonBgContrastHint, els.navonPauseBgContrastHint],
+    masterStatusEls: [els.navonBgMasterStatus],
+  }, () => { saveNavonPrefsToStorage(); applyNavonBg(); });
+
+  const NAVON_BEST_KEY = "fwmc-navon-best-v1"; // { [difficulty]: bestAccuracyPct } - higher is better
+  function navonBestFor() { return readJSON(NAVON_BEST_KEY, {})[navonPrefs.difficulty] || 0; }
+  function saveNavonBest(accuracyPct) {
+    const all = readJSON(NAVON_BEST_KEY, {});
+    if (accuracyPct > (all[navonPrefs.difficulty] || 0)) { all[navonPrefs.difficulty] = accuracyPct; writeJSON(NAVON_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderNavonBest() {
+    const best = navonBestFor();
+    const text = best ? `Beste Genauigkeit (${NAVON_DIFFICULTIES[navonPrefs.difficulty].title}): ${best}%` : "";
+    els.navonBestHint.textContent = text;
+    els.navonReadyBestHint.textContent = text;
+  }
+  function syncNavonDifficultyUI() {
+    els.navonDifficultyRow.querySelectorAll("[data-navon-diff]").forEach((btn) => setActive(btn, btn.dataset.navonDiff === navonPrefs.difficulty));
+  }
+  els.navonDifficultyRow.querySelectorAll("[data-navon-diff]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      navonPrefs.difficulty = btn.dataset.navonDiff;
+      saveNavonPrefsToStorage();
+      syncNavonDifficultyUI();
+      renderNavonBest();
+    });
+  });
+  els.navonOpenBtn.addEventListener("click", () => {
+    syncNavonDifficultyUI();
+    syncNavonBgUI();
+    renderNavonBest();
+    showScreen("navonReady");
+  });
+  els.navonReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Single active timer, remaining-delay pause/resume - same shape as every
+  // other setTimeout-driven Test exercise. Self-paced like Regelwechsel-
+  // Test/Hick/Suchtest (a trial's response phase can end early the instant
+  // a button is tapped), so this always clears any still-pending timer
+  // first.
+  function scheduleNavonTimer(fn, delayMs) {
+    if (navonState.timer) clearTimeout(navonState.timer);
+    navonState.timerFn = fn;
+    navonState.timerFiresAt = performance.now() + delayMs;
+    navonState.timer = setTimeout(() => { navonState.timer = null; fn(); }, delayMs);
+  }
+
+  // Full 2(level)x2(letter)x2(congruent) factorial, repeated to fill
+  // NAVON_TRIAL_COUNT and shuffled until no run of more than 3 identical
+  // cued levels or more than 3 identical correct answers in a row - same
+  // "can't settle into a motor strategy" guard convention as
+  // buildTsTaskSeq/buildFlankerTrials, extended to cover both variables.
+  function buildNavonTrials(count) {
+    const combos = [];
+    ["global", "lokal"].forEach((level) => {
+      NAVON_LETTERS.forEach((globalLetter) => {
+        [true, false].forEach((congruent) => {
+          const localLetter = congruent ? globalLetter : (globalLetter === "H" ? "S" : "H");
+          const correctLetter = level === "global" ? globalLetter : localLetter;
+          combos.push({ level, globalLetter, localLetter, congruent, correctLetter });
+        });
+      });
+    });
+    const reps = Math.ceil(count / combos.length);
+    let pool;
+    for (let tries = 0; tries < 300; tries++) {
+      pool = [];
+      for (let i = 0; i < reps; i++) pool = pool.concat(combos.map((c) => ({ ...c })));
+      pool = pool.slice(0, count);
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      let ok = true, runLevel = 1, runLetter = 1;
+      for (let i = 1; i < pool.length; i++) {
+        runLevel = pool[i].level === pool[i - 1].level ? runLevel + 1 : 1;
+        runLetter = pool[i].correctLetter === pool[i - 1].correctLetter ? runLetter + 1 : 1;
+        if (runLevel > 3 || runLetter > 3) { ok = false; break; }
+      }
+      if (ok) break;
+    }
+    return pool;
+  }
+  function navonRenderStimulus(globalLetter, localLetter) {
+    els.navonGrid.innerHTML = "";
+    const shape = NAVON_SHAPES[globalLetter];
+    for (let r = 0; r < shape.length; r++) {
+      for (let c = 0; c < shape[r].length; c++) {
+        const cell = document.createElement("div");
+        cell.className = "navon-cell";
+        if (shape[r][c] === "1") cell.textContent = localLetter;
+        els.navonGrid.appendChild(cell);
+      }
+    }
+  }
+  function navonCellKey(trial) { return trial.level + (trial.congruent ? "Congruent" : "Incongruent"); }
+
+  let navonState = null;
+  function startNavonGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.navonPlayer.hidden = false;
+    els.navonPlayerBar.hidden = false;
+    els.navonDonePanel.hidden = true;
+    els.navonPauseOverlay.hidden = true;
+    els.navonPauseBtn.hidden = false;
+    const diff = NAVON_DIFFICULTIES[navonPrefs.difficulty];
+    const trials = buildNavonTrials(NAVON_TRIAL_COUNT);
+    navonState = {
+      diff, trials, index: -1, phase: "gap", trial: null,
+      correct: 0, incorrect: 0,
+      rtByCell: { globalCongruent: [], globalIncongruent: [], lokalCongruent: [], lokalIncongruent: [] },
+      paused: false, startTime: performance.now(), stimAt: null,
+      timer: null, timerFn: null, timerFiresAt: null,
+    };
+    applyNavonBg();
+    els.navonCue.textContent = "";
+    els.navonGrid.innerHTML = "";
+    els.navonHint.textContent = "Bereit? Gleich geht's los …";
+    els.navonHBtn.classList.remove("correct", "wrong");
+    els.navonSBtn.classList.remove("correct", "wrong");
+    els.navonProgressEl.textContent = `0/${trials.length}`;
+    requestWakeLock();
+    scheduleNavonTimer(navonNextTrial, 1000);
+  }
+  els.navonReadyStartBtn.addEventListener("click", startNavonGame);
+
+  function navonNextTrial() {
+    if (!navonState) return;
+    navonState.index++;
+    if (navonState.index >= navonState.trials.length) { navonFinish(); return; }
+    els.navonProgressEl.textContent = `${navonState.index + 1}/${navonState.trials.length}`;
+    navonState.phase = "cue";
+    navonState.trial = navonState.trials[navonState.index];
+    els.navonGrid.innerHTML = "";
+    els.navonHint.textContent = "";
+    els.navonHBtn.classList.remove("correct", "wrong");
+    els.navonSBtn.classList.remove("correct", "wrong");
+    els.navonCue.textContent = navonState.trial.level === "global" ? "GROSS" : "KLEIN";
+    scheduleNavonTimer(navonShowStimulus, navonState.diff.cueMs);
+  }
+  function navonShowStimulus() {
+    if (!navonState) return;
+    navonState.phase = "responding";
+    navonState.stimAt = performance.now();
+    navonRenderStimulus(navonState.trial.globalLetter, navonState.trial.localLetter);
+    scheduleNavonTimer(navonTimeoutTrial, navonState.diff.timeoutMs);
+  }
+  function navonTimeoutTrial() {
+    if (!navonState || navonState.phase !== "responding") return;
+    navonState.incorrect++;
+    navonState.phase = "feedback";
+    els.navonHint.textContent = "Verpasst!";
+    scheduleNavonTimer(navonAfterFeedback, NAVON_FEEDBACK_MS);
+  }
+  function navonAnswer(letter) {
+    if (!navonState || navonState.paused || navonState.phase !== "responding") return;
+    const rt = performance.now() - navonState.stimAt;
+    navonState.phase = "feedback";
+    const trial = navonState.trial;
+    const tappedBtn = letter === "H" ? els.navonHBtn : els.navonSBtn;
+    const otherBtn = letter === "H" ? els.navonSBtn : els.navonHBtn;
+    if (letter === trial.correctLetter) {
+      tappedBtn.classList.add("correct");
+      navonState.correct++;
+      navonState.rtByCell[navonCellKey(trial)].push(rt);
+    } else {
+      tappedBtn.classList.add("wrong");
+      otherBtn.classList.add("correct");
+      navonState.incorrect++;
+      els.navonHint.textContent = "Daneben!";
+    }
+    scheduleNavonTimer(navonAfterFeedback, NAVON_FEEDBACK_MS);
+  }
+  function navonAfterFeedback() {
+    if (!navonState) return;
+    navonState.phase = "gap";
+    els.navonCue.textContent = "";
+    els.navonGrid.innerHTML = "";
+    els.navonHint.textContent = "";
+    els.navonHBtn.classList.remove("correct", "wrong");
+    els.navonSBtn.classList.remove("correct", "wrong");
+    scheduleNavonTimer(navonNextTrial, navonState.diff.isiMs);
+  }
+  els.navonHBtn.addEventListener("click", () => navonAnswer("H"));
+  els.navonSBtn.addEventListener("click", () => navonAnswer("S"));
+
+  function pauseNavon() {
+    if (!navonState || navonState.paused) return;
+    navonState.paused = true;
+    navonState.pausedAt = performance.now();
+    if (navonState.timer) {
+      clearTimeout(navonState.timer);
+      navonState.timer = null;
+      navonState.timerRemainingMs = Math.max(0, navonState.timerFiresAt - navonState.pausedAt);
+    }
+    syncNavonBgUI();
+    els.navonPauseBtn.hidden = true;
+    els.navonPauseOverlay.hidden = false;
+  }
+  function resumeNavon() {
+    if (!navonState || !navonState.paused) return;
+    const pausedMs = performance.now() - navonState.pausedAt;
+    navonState.startTime += pausedMs;
+    if (navonState.stimAt != null) navonState.stimAt += pausedMs;
+    navonState.paused = false;
+    if (navonState.timerFn && navonState.timerRemainingMs != null) {
+      scheduleNavonTimer(navonState.timerFn, navonState.timerRemainingMs);
+      navonState.timerRemainingMs = null;
+    }
+    els.navonPauseOverlay.hidden = true;
+    els.navonPauseBtn.hidden = false;
+  }
+  els.navonPauseBtn.addEventListener("click", pauseNavon);
+  els.navonResumeBtn.addEventListener("click", resumeNavon);
+
+  function finalizeNavonRun(state, totalTrials) {
+    els.navonPauseOverlay.hidden = true;
+    els.navonPlayerBar.hidden = true;
+    const accuracyPct = Math.round(100 * state.correct / totalTrials);
+    const avgGC = avgOf(state.rtByCell.globalCongruent);
+    const avgGI = avgOf(state.rtByCell.globalIncongruent);
+    const avgLC = avgOf(state.rtByCell.lokalCongruent);
+    const avgLI = avgOf(state.rtByCell.lokalIncongruent);
+    const costGlobal = (avgGC != null && avgGI != null) ? Math.round(avgGI - avgGC) : null;
+    const costLokal = (avgLC != null && avgLI != null) ? Math.round(avgLI - avgLC) : null;
+    const isRecord = saveNavonBest(accuracyPct);
+    renderNavonBest();
+    let asymNote = "";
+    if (costGlobal != null && costLokal != null) {
+      if (costGlobal > costLokal) asymNote = " · Die große Form lenkt stärker ab";
+      else if (costLokal > costGlobal) asymNote = " · Die kleinen Buchstaben lenken stärker ab";
+      else asymNote = " · Beide Ebenen lenken gleich stark ab";
+    }
+    const played = (performance.now() - state.startTime) / 1000;
+    els.navonDoneSummary.textContent =
+      `Ganzheit-Detail-Test (${state.diff.title}) · ${accuracyPct}% richtig` +
+      (costGlobal != null ? ` · Interferenz groß ${costGlobal} ms` : "") +
+      (costLokal != null ? ` · Interferenz klein ${costLokal} ms` : "") +
+      asymNote +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = `${accuracyPct}% richtig` + (costGlobal != null && costLokal != null ? `, Interferenz groß ${costGlobal} ms, klein ${costLokal} ms` : "");
+    const id = addHistory({ kind: "navon", title: "Ganzheit-Detail-Test (Navon-Aufgabe)", seconds: Math.round(played), note });
+    renderRating(els.navonRating, id, "Wie klar war dir jeweils, welche Ebene gerade gefragt war?");
+    els.navonDonePanel.hidden = false;
+  }
+  function navonFinish() {
+    if (!navonState) return;
+    const state = navonState;
+    navonState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.navonPlayer) document.exitFullscreen().catch(() => {});
+    els.navonFsHint.hidden = true;
+    finalizeNavonRun(state, state.trials.length);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved.
+  function navonStop() {
+    if (!navonState) return;
+    if (navonState.timer) clearTimeout(navonState.timer);
+    const state = navonState;
+    navonState = null;
+    els.navonPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.navonPlayer) document.exitFullscreen().catch(() => {});
+    els.navonFsHint.hidden = true;
+    const resolved = state.correct + state.incorrect;
+    if (resolved >= NAVON_MIN_RESOLVED) {
+      finalizeNavonRun(state, resolved);
+    } else {
+      els.navonPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.navonBackBtn.addEventListener("click", navonStop);
+  els.navonAgainBtn.addEventListener("click", () => { els.navonDonePanel.hidden = true; startNavonGame(); });
+  els.navonDoneBackBtn.addEventListener("click", () => { els.navonPlayer.hidden = true; els.navonDonePanel.hidden = true; showScreen("testHome"); });
+  wireFullscreen({ player: els.navonPlayer, btn: els.navonFsBtn, hint: els.navonFsHint, hintOpen: els.navonFsHintOpenBtn, hintClose: els.navonFsHintClose });
 
   // Rotationstest (Mentale Rotation) - grounded in the classic mental-
   // rotation/character-rotation chronometric paradigm (Cooper & Shepard,
