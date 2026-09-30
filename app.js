@@ -1866,8 +1866,17 @@
     cardioAddonPoolGrid: $("cardioAddonPoolGrid"),
     cardioAddonIntervalMinSlider: $("cardioAddonIntervalMinSlider"), cardioAddonIntervalMinValue: $("cardioAddonIntervalMinValue"),
     cardioAddonIntervalMaxSlider: $("cardioAddonIntervalMaxSlider"), cardioAddonIntervalMaxValue: $("cardioAddonIntervalMaxValue"),
+    cardioAddonWindowToggle: $("cardioAddonWindowToggle"), cardioAddonWindowBody: $("cardioAddonWindowBody"),
+    cardioAddonWindowStartSlider: $("cardioAddonWindowStartSlider"), cardioAddonWindowStartValue: $("cardioAddonWindowStartValue"),
+    cardioAddonWindowEndSlider: $("cardioAddonWindowEndSlider"), cardioAddonWindowEndValue: $("cardioAddonWindowEndValue"),
     cardioAddonPerType: $("cardioAddonPerType"),
     cardioPlayer: $("cardioPlayer"), cardioBackBtn: $("cardioBackBtn"), cardioSkipBtn: $("cardioSkipBtn"),
+    cardioAddonTriggerBtn: $("cardioAddonTriggerBtn"),
+    cardioAddonPicker: $("cardioAddonPicker"), cardioAddonPickerTypeRow: $("cardioAddonPickerTypeRow"),
+    cardioAddonPickerDurationValue: $("cardioAddonPickerDurationValue"),
+    cardioAddonPickerDurationMinus: $("cardioAddonPickerDurationMinus"), cardioAddonPickerDurationPlus: $("cardioAddonPickerDurationPlus"),
+    cardioAddonPickerStartBtn: $("cardioAddonPickerStartBtn"), cardioAddonPickerCancelBtn: $("cardioAddonPickerCancelBtn"),
+    cardioGuestBadge: $("cardioGuestBadge"),
     cardioActivityTitle: $("cardioActivityTitle"), cardioActivityLabel: $("cardioActivityLabel"),
     cardioCountdown: $("cardioCountdown"), cardioPhaseLabel: $("cardioPhaseLabel"), cardioBlockProgress: $("cardioBlockProgress"),
     cardioDonePanel: $("cardioDonePanel"), cardioDoneSummary: $("cardioDoneSummary"), cardioRating: $("cardioRating"),
@@ -4727,9 +4736,18 @@
     showScreen(readyReturnScreen);
   }
   // "Beenden" mid-training: back to where the training was started from.
+  // For a Cardio guest exercise (Zusatzimpuls) specifically, "back to
+  // where it was started from" means back to the still-running Cardio
+  // session, NOT ending the whole training - a client who's had enough
+  // of the guest exercise (or picked the wrong one, or just wants to get
+  // back to their main activity) needs a way to bail out of just that
+  // without losing their Cardio progress. Previously this fell through to
+  // abortCardio() (ending the entire session) - a real, reported bug, not
+  // a deliberate choice: nobody wants "Beenden" on a 20-second dual-task
+  // detour to also blow away the 10-minute Cardio run underneath it.
   function abortTraining() {
     if (comboProgram) { leavePlayer(); abortComboProgram(); return; }
-    if (cardioGuestActive) { leavePlayer(); abortCardio(); return; }
+    if (cardioGuestActive) { leavePlayer(); returnFromCardioGuest(); return; }
     const wasProgram = !!program;
     leavePlayer();
     if (wasProgram) showScreen("programIntro");
@@ -10403,23 +10421,88 @@
   // Client-controlled, like the existing Zusatzaufgabe: an on/off toggle
   // the client sets for themselves, works during ANY cardio run (self-
   // built or, later, coach-authored), no coach programming required.
+  // "addon-flash" IS the same Blitzreiz mechanic as Periphere Wahrnehmung's
+  // own "periph" stimulus - both draw through the exact same drawPeriphChar()
+  // (fixation point, a coloured digit/letter flashing briefly at a random
+  // peripheral position). It's the "Zusatzaufgabe" dual-task mechanism,
+  // normally an add-on layered ON TOP OF another exercise, here repurposed
+  // as its own standalone guest exercise (a blank host frame with the
+  // addon drawn on it, see EXERCISES["cardio-flash-host"]/
+  // buildFlashHostSchedule/buildAddonSchedule's cardio-flash-host branch).
+  // Title corrected (2026-09-30) back to "Zusatzaufgabe" - the name this
+  // exact mechanism already carries everywhere else in the app (every
+  // other exercise's own "Zusatzaufgabe" add-on section) - after an
+  // earlier rename here mistakenly claimed it was a different thing from
+  // Blitzreiz. Client's ask: one consistent name for one mechanism,
+  // wherever it shows up.
+  // Phase 1 (2026-09-30): extended from the original 4 to every remaining
+  // exercise in the shared EXERCISES catalog that already runs through
+  // runSession()/tick()/state.exercise - genuinely mechanical, since
+  // applyCardioGuestToState() below already dispatches purely off each
+  // exercise's own usesColors/usesArrowColors/usesStroopColors/
+  // bgIsStimulus/type flags and needed zero changes. Two exercises from
+  // that same catalog are deliberately NOT here yet: "periph-flash"
+  // (Periphere Wahrnehmung) has its own much larger settings surface
+  // (fixation point, zones, zone weights - not a quick addition, its own
+  // follow-up); "cone-tap" (Hütchen sortieren) IS included since it turned
+  // out trivial (just calls startConeTap() instead of runSession(), no
+  // colours/stimulus/interval concept at all).
+  //
+  // The NAT domain (Periphere Wahrnehmung aside) turned out NOT to share
+  // this engine at all, despite looking like it should - every NAT
+  // exercise (Merkspanne, Blitz-Raster, Flash, MOT, Go/No-Go, N-Back, Trail
+  // Making, ... ~25 in total) has its own dedicated player/prefs/finish
+  // path (see hideAllPlayers()'s long list), not the shared #player/state.
+  // Each would need its own individual bridge into triggerCardioGuest()/
+  // returnFromCardioGuest() - a real, separate piece of work, much closer
+  // in size to the deferred Atemtraining/Movement/Workout lift than to
+  // this batch. Left for its own follow-up rather than silently expanding
+  // this "mechanical" batch to cover it too.
   const CARDIO_GUEST_TYPES = [
-    { id: "addon-flash", title: "Zusatzaufgabe · Zahlen/Buchstaben" },
+    { id: "addon-flash", title: "Zusatzaufgabe · Ziffer/Buchstabe" },
     { id: "vt-color", title: "VT · Farbe & Seite" },
+    { id: "vrw-original", title: "VRW · Direkt & Umgekehrt" },
     { id: "stroop-classic", title: "Stroop · klassisch" },
+    { id: "stroop-bg", title: "Stroop · mit Hintergrund" },
     { id: "4-straight", title: "4 Pfeile · gerade" },
+    { id: "4-diag", title: "4 Pfeile · diagonal" },
+    { id: "8-solo", title: "8 Pfeile" },
+    { id: "8-vrw", title: "8 Pfeile · Rot/Grün" },
+    { id: "cross-modal", title: "Sehen & Hören" },
+    { id: "cone-compass", title: "Hütchen · Kompass-Aufbau" },
+    { id: "cone-tap", title: "Hütchen sortieren" },
   ];
   function cardioGuestColorLib(guestId) {
-    return guestId === "addon-flash" || guestId === "stroop-classic" ? STROOP_COLOR_LIB : COLOR_LIB;
+    return ["addon-flash", "stroop-classic", "stroop-bg"].includes(guestId) ? STROOP_COLOR_LIB : COLOR_LIB;
   }
+  function cardioGuestRealId(guestId) { return guestId === "addon-flash" ? "cardio-flash-host" : guestId; }
+  // Mirrors currentBgFill()'s own exclusion exactly (ex.type === "color-tap"
+  // || ex.bgIsStimulus): cone-tap's stage is plain hard-coded white in CSS
+  // (never reads state.bgColorKey/bgIntensity) and vt-color/vrw-original/
+  // stroop-bg/cone-compass have bgIsStimulus - their background already IS
+  // the trained signal, so a tint on top would be meaningless either way.
+  // The Feineinstellungen panel below skips offering a background control
+  // for any of these.
+  function cardioGuestBgAllowed(guestId) {
+    const ex = EXERCISES[cardioGuestRealId(guestId)];
+    return ex.type !== "color-tap" && !ex.bgIsStimulus;
+  }
+  function cardioGuestNeedsColors(guestId) {
+    const ex = EXERCISES[cardioGuestRealId(guestId)];
+    return !!(ex.usesColors || ex.usesArrowColors || ex.usesStroopColors);
+  }
+  function cardioGuestIsConeTap(guestId) { return EXERCISES[cardioGuestRealId(guestId)].type === "color-tap"; }
   function cardioGuestDefaultCfg(guestId) {
-    if (guestId === "addon-flash") return { duration: 20, ...addonDefaultOwn() };
-    if (guestId === "vt-color") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"] };
-    if (guestId === "stroop-classic") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "blau", "gruen"] };
-    return { duration: 20, stimulusS: 1, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"] };
+    const bg = cardioGuestBgAllowed(guestId) ? { bgColorKey: "gruen", bgIntensity: 0 } : {};
+    if (guestId === "addon-flash") return { duration: 20, ...addonDefaultOwn(), ...bg };
+    if (guestId === "cone-tap") return { duration: 20 };
+    if (guestId === "vt-color" || guestId === "vrw-original") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg };
+    if (guestId === "stroop-classic" || guestId === "stroop-bg") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "blau", "gruen"], ...bg };
+    if (guestId === "8-vrw" || guestId === "cross-modal") return { duration: 20, stimulusS: 1, intervalMin: 2, intervalMax: 4, ...bg };
+    return { duration: 20, stimulusS: 1, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg }; // 4-straight/4-diag/8-solo/cone-compass
   }
   const CARDIO_ADDON_KEY = "fwmc-cardio-addon-v1";
-  const cardioAddonPrefs = { enabled: false, pool: [], intervalMinS: 90, intervalMaxS: 180, perType: {} };
+  const cardioAddonPrefs = { enabled: false, pool: [], intervalMinS: 90, intervalMaxS: 180, windowEnabled: false, windowStartS: 0, windowEndS: 600, perType: {} };
   function loadCardioAddonPrefs() {
     const saved = readJSON(CARDIO_ADDON_KEY, null);
     if (saved && typeof saved === "object") Object.assign(cardioAddonPrefs, saved);
@@ -10428,17 +10511,28 @@
     cardioAddonPrefs.pool = cardioAddonPrefs.pool.filter((id) => CARDIO_GUEST_TYPES.some((t) => t.id === id));
     if (!Number.isFinite(cardioAddonPrefs.intervalMinS) || cardioAddonPrefs.intervalMinS < 20 || cardioAddonPrefs.intervalMinS > 600) cardioAddonPrefs.intervalMinS = 90;
     if (!Number.isFinite(cardioAddonPrefs.intervalMaxS) || cardioAddonPrefs.intervalMaxS < cardioAddonPrefs.intervalMinS || cardioAddonPrefs.intervalMaxS > 600) cardioAddonPrefs.intervalMaxS = Math.max(cardioAddonPrefs.intervalMinS, 180);
+    if (typeof cardioAddonPrefs.windowEnabled !== "boolean") cardioAddonPrefs.windowEnabled = false;
+    if (!Number.isFinite(cardioAddonPrefs.windowStartS) || cardioAddonPrefs.windowStartS < 0 || cardioAddonPrefs.windowStartS > 3600) cardioAddonPrefs.windowStartS = 0;
+    if (!Number.isFinite(cardioAddonPrefs.windowEndS) || cardioAddonPrefs.windowEndS < cardioAddonPrefs.windowStartS || cardioAddonPrefs.windowEndS > 3600) cardioAddonPrefs.windowEndS = Math.max(cardioAddonPrefs.windowStartS, 600);
     if (!cardioAddonPrefs.perType || typeof cardioAddonPrefs.perType !== "object") cardioAddonPrefs.perType = {};
     CARDIO_GUEST_TYPES.forEach((t) => {
       const d = cardioGuestDefaultCfg(t.id);
       let p = cardioAddonPrefs.perType[t.id];
       if (!p || typeof p !== "object") { cardioAddonPrefs.perType[t.id] = d; return; }
       if (!Number.isFinite(p.duration) || p.duration < 5 || p.duration > 120) p.duration = d.duration;
-      if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
-      if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
-      if (!Number.isFinite(p.intervalMax) || p.intervalMax < 0.5 || p.intervalMax > 15) p.intervalMax = d.intervalMax;
-      const lib = cardioGuestColorLib(t.id);
-      if (!Array.isArray(p.colors) || !p.colors.length || !p.colors.every((k) => lib.some((c) => c.key === k))) p.colors = d.colors.slice();
+      if (!cardioGuestIsConeTap(t.id)) {
+        if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
+        if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
+        if (!Number.isFinite(p.intervalMax) || p.intervalMax < 0.5 || p.intervalMax > 15) p.intervalMax = d.intervalMax;
+      }
+      if (cardioGuestNeedsColors(t.id)) {
+        const lib = cardioGuestColorLib(t.id);
+        if (!Array.isArray(p.colors) || !p.colors.length || !p.colors.every((k) => lib.some((c) => c.key === k))) p.colors = d.colors.slice();
+      }
+      if (cardioGuestBgAllowed(t.id)) {
+        if (!STROOP_COLOR_BY_KEY[p.bgColorKey]) p.bgColorKey = d.bgColorKey;
+        if (!Number.isFinite(p.bgIntensity) || p.bgIntensity < 0 || p.bgIntensity > 1) p.bgIntensity = d.bgIntensity;
+      }
       if (t.id === "addon-flash") {
         if (!["buchstaben", "zahlen", "gemischt"].includes(p.kind)) p.kind = d.kind;
         if (!["gleich", "wachsend"].includes(p.sizeMode)) p.sizeMode = d.sizeMode;
@@ -10458,6 +10552,12 @@
     els.cardioAddonIntervalMinValue.textContent = `${cardioAddonPrefs.intervalMinS}s`;
     els.cardioAddonIntervalMaxSlider.value = cardioAddonPrefs.intervalMaxS;
     els.cardioAddonIntervalMaxValue.textContent = `${cardioAddonPrefs.intervalMaxS}s`;
+    els.cardioAddonWindowToggle.checked = cardioAddonPrefs.windowEnabled;
+    els.cardioAddonWindowBody.hidden = !cardioAddonPrefs.windowEnabled;
+    els.cardioAddonWindowStartSlider.value = Math.round(cardioAddonPrefs.windowStartS / 60);
+    els.cardioAddonWindowStartValue.textContent = `${Math.round(cardioAddonPrefs.windowStartS / 60)} Min.`;
+    els.cardioAddonWindowEndSlider.value = Math.round(cardioAddonPrefs.windowEndS / 60);
+    els.cardioAddonWindowEndValue.textContent = `${Math.round(cardioAddonPrefs.windowEndS / 60)} Min.`;
     els.cardioAddonPoolGrid.innerHTML = "";
     CARDIO_GUEST_TYPES.forEach((t) => {
       const label = document.createElement("label");
@@ -10493,6 +10593,28 @@
     saveCardioAddonPrefs();
     renderCardioAddonUI();
   });
+  // Restricts the AUTOMATIC randomized-interval trigger to a client-chosen
+  // sub-range of the total Cardio session time ("in diesem Zeitraum sollen
+  // die gesetzt werden") - the manual "+ Zusatzimpuls" picker is
+  // deliberately unaffected (that one is the client's own in-the-moment
+  // choice, any time). Enforced in cardioTick() against
+  // cardioState.sessionStartTime (see startStandaloneCardio()).
+  els.cardioAddonWindowToggle.addEventListener("change", () => {
+    cardioAddonPrefs.windowEnabled = els.cardioAddonWindowToggle.checked;
+    els.cardioAddonWindowBody.hidden = !cardioAddonPrefs.windowEnabled;
+    saveCardioAddonPrefs();
+  });
+  els.cardioAddonWindowStartSlider.addEventListener("input", () => {
+    cardioAddonPrefs.windowStartS = Number(els.cardioAddonWindowStartSlider.value) * 60;
+    if (cardioAddonPrefs.windowEndS < cardioAddonPrefs.windowStartS) cardioAddonPrefs.windowEndS = cardioAddonPrefs.windowStartS;
+    saveCardioAddonPrefs();
+    renderCardioAddonUI();
+  });
+  els.cardioAddonWindowEndSlider.addEventListener("input", () => {
+    cardioAddonPrefs.windowEndS = Math.max(cardioAddonPrefs.windowStartS, Number(els.cardioAddonWindowEndSlider.value) * 60);
+    saveCardioAddonPrefs();
+    renderCardioAddonUI();
+  });
 
   // One fine-tune panel per pool-selected guest type - same shape
   // (Dauer/Reiz-Dauer/Pause/Farben) for all four, saved independently per
@@ -10506,7 +10628,15 @@
       const panel = document.createElement("div");
       panel.className = "cardio-guest-panel";
       let html = `<div class="cardio-guest-panel-title">${esc(t.title)}</div>`;
-      html += `<div class="cardio-guest-field-row">
+      // cone-tap ("Hütchen sortieren") has no stimulus/interval concept at
+      // all (it's tap-paced, not a flash schedule) - showing those sliders
+      // for it would adjust something with zero visible effect, so they're
+      // simply left out rather than shown-but-inert.
+      html += cardioGuestIsConeTap(t.id)
+        ? `<div class="cardio-guest-field-row">
+        <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
+      </div>`
+        : `<div class="cardio-guest-field-row">
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
         <div><label>Reiz-Dauer (Sek.)</label><input type="number" min="0.3" max="3" step="0.1" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"></div>
         <div><label>Pause min (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${t.id}" data-f="intervalMin" value="${cfg.intervalMin}"></div>
@@ -10517,9 +10647,34 @@
           ["buchstaben", "zahlen", "gemischt"].map((k) => `<button class="choice${cfg.kind === k ? " active" : ""}" data-type="${t.id}" data-kind="${k}">${k === "buchstaben" ? "Buchstaben" : k === "zahlen" ? "Zahlen" : "Gemischt"}</button>`).join("") +
           `</div>`;
       }
-      html += `<div class="cardio-guest-colors" data-colors="${t.id}">` +
-        lib.map((c) => `<label><input type="checkbox" data-type="${t.id}" data-color="${c.key}" ${cfg.colors.includes(c.key) ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
-        `</div>`;
+      // No colours to pick for a type that doesn't use them at all
+      // (8-vrw's direction colours are fixed rot/grün by rule, cross-modal
+      // and cone-tap have none) - same rule EXERCISES[...].usesColors/
+      // usesArrowColors/usesStroopColors already governs everywhere else.
+      if (cardioGuestNeedsColors(t.id)) {
+        html += `<div class="cardio-guest-colors" data-colors="${t.id}">` +
+          lib.map((c) => `<label><input type="checkbox" data-type="${t.id}" data-color="${c.key}" ${cfg.colors.includes(c.key) ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
+          `</div>`;
+      }
+      // Background colour + intensity - skipped for a type whose background
+      // already carries the trained signal itself (vt-color: bgIsStimulus),
+      // same rule the exercise's own standalone Feineinstellungen follows
+      // (see cardioGuestBgAllowed()/currentBgFill()). Deliberately its own
+      // lightweight control here rather than wireBgIntensityControl()'s full
+      // Master-Einstellungen-cascade/preset machinery: this panel is torn
+      // down and rebuilt from scratch on every pool-selection change, which
+      // doesn't fit that system's assumption of stable, always-present DOM.
+      if (cardioGuestBgAllowed(t.id)) {
+        html += `<div class="group-label">Hintergrund</div>` +
+          `<div class="cardio-guest-colors" data-bgcolors="${t.id}">` +
+          STROOP_COLOR_LIB.map((c) => `<label><input type="radio" name="cardioGuestBg-${t.id}" data-bgtype="${t.id}" data-bgcolor="${c.key}" ${cfg.bgColorKey === c.key ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
+          `</div>` +
+          `<div class="slider-row">
+            <span>Intensität</span>
+            <input type="range" min="0" max="1" step="0.05" data-bgintensity="${t.id}" value="${cfg.bgIntensity}">
+            <span class="slider-value" data-bgintensityvalue="${t.id}">${Math.round(cfg.bgIntensity * 100)}%</span>
+          </div>`;
+      }
       panel.innerHTML = html;
       els.cardioAddonPerType.appendChild(panel);
     });
@@ -10546,6 +10701,22 @@
           cfg.colors = cfg.colors.filter((k) => k !== key);
         }
         saveCardioAddonPrefs();
+      });
+    });
+    els.cardioAddonPerType.querySelectorAll("input[data-bgcolor]").forEach((radio) => {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        cardioAddonPrefs.perType[radio.dataset.bgtype].bgColorKey = radio.dataset.bgcolor;
+        saveCardioAddonPrefs();
+      });
+    });
+    els.cardioAddonPerType.querySelectorAll("input[data-bgintensity]").forEach((slider) => {
+      slider.addEventListener("input", () => {
+        const cfg = cardioAddonPrefs.perType[slider.dataset.bgintensity];
+        cfg.bgIntensity = Number(slider.value);
+        saveCardioAddonPrefs();
+        const valueEl = els.cardioAddonPerType.querySelector(`[data-bgintensityvalue="${slider.dataset.bgintensity}"]`);
+        if (valueEl) valueEl.textContent = `${Math.round(cfg.bgIntensity * 100)}%`;
       });
     });
   }
@@ -10581,13 +10752,26 @@
     });
     return out;
   }
+  // The manual "+ Zusatzimpuls" trigger is always available during a
+  // running Cardio session - unlike the automatic randomized-interval
+  // system below (still gated on cardioAddonPrefs.enabled/pool, configured
+  // in Feineinstellungen), the client picks the guest exercise AND its
+  // duration live, in the moment, via openCardioAddonPicker() - no advance
+  // configuration needed. Kept as its own function (rather than setting
+  // "hidden" once) so every call site stays symmetric and it stays the one
+  // place that decides this, in case a future reason to hide it appears.
+  function syncCardioAddonTriggerBtn() {
+    els.cardioAddonTriggerBtn.hidden = false;
+  }
   function startStandaloneCardio(items) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.cardioPlayer.hidden = false;
+    els.cardioAddonPicker.hidden = true;
     lastCardioItems = items;
-    cardioState = { items: withCardioPauses(items), realCount: items.length, index: 0, blockStartTime: performance.now(), nextGuestAt: null };
+    cardioState = { items: withCardioPauses(items), realCount: items.length, index: 0, blockStartTime: performance.now(), sessionStartTime: performance.now(), nextGuestAt: null };
     scheduleNextCardioGuest();
+    syncCardioAddonTriggerBtn();
     requestWakeLock();
     cardioRaf = requestAnimationFrame(cardioTick);
   }
@@ -10649,7 +10833,9 @@
     const phase = cardioPhaseFor(block, blockElapsed);
     els.cardioPhaseLabel.hidden = !phase;
     if (phase) els.cardioPhaseLabel.textContent = phase === "on" ? "Belastung" : "Erholung";
-    if (cardioAddonPrefs.enabled && cardioAddonPrefs.pool.length && cardioState.nextGuestAt !== null && now >= cardioState.nextGuestAt) {
+    const sessionElapsedS = (now - cardioState.sessionStartTime) / 1000;
+    const withinAddonWindow = !cardioAddonPrefs.windowEnabled || (sessionElapsedS >= cardioAddonPrefs.windowStartS && sessionElapsedS <= cardioAddonPrefs.windowEndS);
+    if (cardioAddonPrefs.enabled && cardioAddonPrefs.pool.length && withinAddonWindow && cardioState.nextGuestAt !== null && now >= cardioState.nextGuestAt) {
       triggerCardioGuest();
       return;
     }
@@ -10662,6 +10848,12 @@
     state.stimulusS = cfg.stimulusS;
     state.intervalMin = cfg.intervalMin;
     state.intervalMax = cfg.intervalMax;
+    // Only set when the type actually carries bg fields (cardioGuestBgAllowed()
+    // skips them for vt-color, whose background IS the trained signal) -
+    // currentBgFill() itself also re-checks bgIsStimulus at read time, so
+    // leaving state.bgColorKey/bgIntensity untouched here for that case is
+    // just tidier, not load-bearing.
+    if (cfg.bgColorKey) { state.bgColorKey = cfg.bgColorKey; state.bgIntensity = cfg.bgIntensity ?? 0; }
     const ex = EXERCISES[guestId];
     active = { colors: [], arrowColors: [], stroopColors: [] };
     if (ex.usesColors) active.colors = keysToColors(cfg.colors);
@@ -10669,15 +10861,113 @@
     else if (ex.usesStroopColors) active.stroopColors = keysToColors(cfg.colors, STROOP_COLOR_LIB);
   }
 
-  function triggerCardioGuest() {
+  // explicitId/explicitDurationS: set by the manual live picker below (a
+  // specific choice made right now); left undefined for the automatic
+  // randomized-interval path in cardioTick(), which still picks randomly
+  // from the configured pool at the configured duration, unchanged.
+  function triggerCardioGuest(explicitId, explicitDurationS) {
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
     cardioRaf = null;
-    const guestId = cardioAddonPrefs.pool[Math.floor(Math.random() * cardioAddonPrefs.pool.length)];
-    const realId = guestId === "addon-flash" ? "cardio-flash-host" : guestId;
-    const cfg = cardioAddonPrefs.perType[guestId];
+    const guestId = explicitId || cardioAddonPrefs.pool[Math.floor(Math.random() * cardioAddonPrefs.pool.length)];
+    const realId = cardioGuestRealId(guestId);
+    const cfg = explicitDurationS != null ? { ...cardioAddonPrefs.perType[guestId], duration: explicitDurationS } : cardioAddonPrefs.perType[guestId];
     cardioGuestActive = true;
     applyCardioGuestToState(realId, cfg);
-    runSession();
+    // "Hütchen sortieren" (cone-tap) is the one type here with its own
+    // separate playback engine (tap-paced counting, not a canvas flash
+    // schedule) - same dispatch startSession() itself already uses.
+    if (EXERCISES[realId].type === "color-tap") startConeTap();
+    else runSession();
+    showCardioGuestBadge();
+  }
+
+  // ---- Manual "+ Zusatzimpuls": live picker ----
+  // The client's clarified ask (beyond the first pool+random version):
+  // actively CHOOSE which guest exercise AND for how long, right now, mid-
+  // Cardio-activity - "ich mache jetzt zwei Minuten
+  // Blitzreiz-Reaktionstraining". Offers all CARDIO_GUEST_TYPES regardless
+  // of the automatic system's own pool selection (that pool only governs
+  // the randomized auto-interval): "jede andere Übung" is the point. The
+  // picker sheet sits INSIDE #cardioPlayer as a .pause-overlay, so Cardio's
+  // own countdown keeps ticking (cardioRaf untouched) visibly behind it
+  // while choosing - the "ich sehe im Hintergrund trotzdem noch, wie lange
+  // ich machen muss" ask, satisfied for the choosing step for free.
+  let cardioAddonPickerType = null;
+  let cardioAddonPickerDuration = 20;
+  const CARDIO_ADDON_PICKER_DURATION_MIN = 15;
+  const CARDIO_ADDON_PICKER_DURATION_MAX = 180;
+  function renderCardioAddonPicker() {
+    els.cardioAddonPickerTypeRow.innerHTML = "";
+    CARDIO_GUEST_TYPES.forEach((t) => {
+      const [main, sub] = t.title.split(" · ");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "choice" + (t.id === cardioAddonPickerType ? " active" : "");
+      btn.innerHTML = `${esc(main)}${sub ? `<small>${esc(sub)}</small>` : ""}`;
+      btn.addEventListener("click", () => {
+        cardioAddonPickerType = t.id;
+        cardioAddonPickerDuration = Math.min(CARDIO_ADDON_PICKER_DURATION_MAX, Math.max(CARDIO_ADDON_PICKER_DURATION_MIN, cardioAddonPrefs.perType[t.id].duration));
+        renderCardioAddonPicker();
+      });
+      els.cardioAddonPickerTypeRow.appendChild(btn);
+    });
+    els.cardioAddonPickerDurationValue.textContent = fmtClock(cardioAddonPickerDuration);
+  }
+  function openCardioAddonPicker() {
+    cardioAddonPickerType = CARDIO_GUEST_TYPES[0].id;
+    cardioAddonPickerDuration = Math.min(CARDIO_ADDON_PICKER_DURATION_MAX, Math.max(CARDIO_ADDON_PICKER_DURATION_MIN, cardioAddonPrefs.perType[cardioAddonPickerType].duration));
+    renderCardioAddonPicker();
+    els.cardioAddonPicker.hidden = false;
+  }
+  function closeCardioAddonPicker() { els.cardioAddonPicker.hidden = true; }
+  els.cardioAddonPickerDurationMinus.addEventListener("click", () => {
+    cardioAddonPickerDuration = Math.max(CARDIO_ADDON_PICKER_DURATION_MIN, cardioAddonPickerDuration - 15);
+    renderCardioAddonPicker();
+  });
+  els.cardioAddonPickerDurationPlus.addEventListener("click", () => {
+    cardioAddonPickerDuration = Math.min(CARDIO_ADDON_PICKER_DURATION_MAX, cardioAddonPickerDuration + 15);
+    renderCardioAddonPicker();
+  });
+  els.cardioAddonPickerCancelBtn.addEventListener("click", closeCardioAddonPicker);
+  els.cardioAddonPickerStartBtn.addEventListener("click", () => {
+    const id = cardioAddonPickerType;
+    const durationS = cardioAddonPickerDuration;
+    closeCardioAddonPicker();
+    triggerCardioGuest(id, durationS);
+  });
+  els.cardioAddonTriggerBtn.addEventListener("click", () => {
+    if (!cardioState || cardioGuestActive) return;
+    openCardioAddonPicker();
+  });
+
+  // ---- Floating "Cardio: noch M:SS" badge while a guest exercise has
+  // taken over the screen (#player) - lives outside every player element
+  // (see .cardio-guest-badge in styles.css) so hideAllPlayers() never
+  // touches it, and reads cardioState directly (blockStartTime is a
+  // wall-clock reference that keeps advancing underneath, not an
+  // accumulator paused by the guest exercise) rather than depending on
+  // cardioTick, which isn't running right now. Turns to .warn once the
+  // current Cardio block is close to changing - "sag mir Bescheid, wenn
+  // ich die Übung gleich wechseln muss". ----
+  let cardioGuestBadgeInterval = null;
+  const CARDIO_GUEST_BADGE_WARN_S = 15;
+  function updateCardioGuestBadge() {
+    if (!cardioState) { hideCardioGuestBadge(); return; }
+    const block = cardioState.items[cardioState.index];
+    if (!block) { hideCardioGuestBadge(); return; }
+    const remaining = Math.max(0, block.durationS - (performance.now() - cardioState.blockStartTime) / 1000);
+    els.cardioGuestBadge.textContent = `Cardio: noch ${fmtClock(remaining)}`;
+    els.cardioGuestBadge.classList.toggle("warn", remaining <= CARDIO_GUEST_BADGE_WARN_S);
+  }
+  function showCardioGuestBadge() {
+    updateCardioGuestBadge();
+    els.cardioGuestBadge.hidden = false;
+    if (cardioGuestBadgeInterval) clearInterval(cardioGuestBadgeInterval);
+    cardioGuestBadgeInterval = setInterval(updateCardioGuestBadge, 1000);
+  }
+  function hideCardioGuestBadge() {
+    if (cardioGuestBadgeInterval) { clearInterval(cardioGuestBadgeInterval); cardioGuestBadgeInterval = null; }
+    els.cardioGuestBadge.hidden = true;
   }
 
   // Called from finishSession() instead of the normal done-panel path
@@ -10689,8 +10979,10 @@
   // catch-up logic is needed here.
   function returnFromCardioGuest() {
     cardioGuestActive = false;
+    hideCardioGuestBadge();
     hideAllPlayers();
     els.cardioPlayer.hidden = false;
+    syncCardioAddonTriggerBtn();
     if (!wakeLock) requestWakeLock();
     if (cardioState) {
       scheduleNextCardioGuest();
@@ -10715,6 +11007,7 @@
     cardioRaf = null;
     cardioState = null;
     cardioGuestActive = false;
+    hideCardioGuestBadge();
     releaseWakeLock();
     // cardioPlayer is a "player" overlay, not a SCREENS member (same as
     // workoutPlayer/els.player/...) - showScreen() alone never hides it.

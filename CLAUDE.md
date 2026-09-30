@@ -3781,6 +3781,244 @@ prefilled and persists changes; a range-mode reps block plays back
 correctly (right range, live timer, reps-input default) when reached
 mid-combo-run, and aborting mid-block during a combo still works.
 
+## Cardio: manual "+ Zusatzimpuls" live picker (Tier 2, added 2026-09-30)
+
+First shipped as a single button that fired the existing automatic
+dual-task system's `triggerCardioGuest()` on demand (same random pick
+from the client's pre-configured `cardioAddonPrefs.pool`, same
+per-type-configured duration) - see git history for that first version.
+The client then clarified the actual ask was bigger: not just "trigger
+whatever's pre-configured", but actively **choose** which guest exercise
+**and** for how long, right now, mid-Cardio-activity - "ich mache jetzt
+zwei Minuten Blitzreiz-Reaktionstraining" - plus a way to still see
+Cardio's own status while doing the guest exercise, including a warning
+before Cardio needs the client back.
+
+Before building, worked through three tiers of how "reachable while
+Cardio keeps running" could actually be implemented:
+1. What already existed: full takeover, no live choice, no visible Cardio
+   status at all during the guest exercise.
+2. **Built** (this section): full-screen takeover of the *chosen* guest
+   exercise (still only one real "Player" active at a time - the app's
+   pervasive single-active-player assumption, see the note at
+   `hideAllPlayers()`, is untouched), with a small independent floating
+   badge reading Cardio's still-ticking state layered on top. "Bild-im-
+   Bild", not two interactive screens.
+3. True simultaneous split-screen (two independently interactive
+   Players at once) - would need that single-active-player assumption
+   reworked everywhere it's assumed (fullscreen API, wake-lock,
+   pause overlays, back/abort-button logic). Assessed and explicitly
+   **not** built: Tier 2's own UI flow (the picker, the "return to
+   Cardio afterward" mechanics) is additive groundwork for Tier 3, not
+   a dead end that would need reworking if Tier 3 is ever wanted later -
+   so there is no real future-proofing cost to starting with Tier 2.
+
+**The picker** (`openCardioAddonPicker()`/`renderCardioAddonPicker()`,
+the `#cardioAddonPicker` sheet, a `.pause-overlay` nested *inside*
+`#cardioPlayer`): offers all `CARDIO_GUEST_TYPES`, not just the
+automatic system's own configured pool - "jede andere Übung" was the
+explicit ask, and every type already has valid defaults in
+`cardioAddonPrefs.perType` regardless of pool membership (see
+`loadCardioAddonPrefs()`, which initialises all of them unconditionally).
+A duration stepper (15s steps, 15s-180s, defaulting to that type's own
+configured duration but never writing back to it - a live in-the-moment
+choice, not a settings change) sits below it. Because opening the picker
+never touches `cardioRaf`, Cardio's own countdown keeps visibly ticking
+behind the semi-transparent overlay while choosing - the "ich sehe im
+Hintergrund trotzdem noch, wie lange ich machen muss" ask, satisfied for
+free during the choosing step by reusing the existing `.pause-overlay`
+pattern. "Abbrechen" just hides the sheet again, no side effects.
+`triggerCardioGuest(explicitId, explicitDurationS)` now takes optional
+overrides - called with both from the picker's "Jetzt starten", called
+with neither (unchanged) from the automatic interval path in
+`cardioTick()`, which still picks randomly from the configured pool at
+the configured duration.
+
+**The status badge** (`#cardioGuestBadge`, a small fixed-position pill
+OUTSIDE every `.player` element - deliberately not nested inside
+`#cardioPlayer` or `#player`, so `hideAllPlayers()` never hides it):
+shown for the guest exercise's whole duration once it starts
+(`showCardioGuestBadge()`/`hideCardioGuestBadge()`), reading
+`cardioState` directly (`block.durationS - (performance.now() -
+cardioState.blockStartTime) / 1000`, clamped to 0) once a second rather
+than depending on `cardioTick` (which isn't running during the guest
+exercise). Turns to a pulsing `.warn` state once that remaining time
+drops to 15s or under - the "sagt mir auch Bescheid, wenn ich die Übung
+gleich wechseln muss" ask.
+
+- **Visibility** (`syncCardioAddonTriggerBtn()`): the trigger button is
+  now always shown whenever a Cardio session is running, independent of
+  the automatic system's own `cardioAddonPrefs.enabled`/`pool` - those
+  now only govern the *automatic* randomized-interval path; the client
+  picks live, so no advance configuration is needed for the manual path
+  at all. A deliberate behaviour change from the first version.
+- Reuses `applyCardioGuestToState()`/`runSession()`/
+  `returnFromCardioGuest()` exactly as the automatic path does - the
+  picker only changes *what* gets passed in and *when* it fires, not the
+  playback mechanism itself.
+
+Test: `tests/cardio_addon_picker_test.py` (replaces the deleted
+`tests/cardio_addon_manual_test.py`) - trigger button visible with zero
+addon configuration; picker offers all 4 types with Cardio's own
+countdown still ticking visibly behind it; switching the selected type,
+the duration stepper's floor clamp, and Abbrechen all work; starting
+takes over full-screen; the badge appears, reads and counts down
+correctly, is not yet warning early in a block but is already warning if
+opened late in a block; returns cleanly to the same still-running
+activity afterward (not reset), badge and trigger button state reset
+correctly. `tests/cardio_test.py` (existing, unmodified) continues to
+cover the automatic randomized-interval path, untouched by this change.
+
+### Follow-up: per-type background colour, trigger time window, rename (2026-09-30)
+
+Trying the Tier 2 picker surfaced three concrete gaps, all fixed together:
+
+1. **Background colour + intensity per guest type was simply missing.**
+   `applyCardioGuestToState()` never touched `state.bgColorKey`/
+   `state.bgIntensity` at all, so a guest exercise's background was
+   whatever was left over from the last standalone use of that exercise -
+   not a real setting. Added `bgColorKey`/`bgIntensity` to
+   `cardioAddonPrefs.perType` (validated in `loadCardioAddonPrefs()` like
+   every other field there) and a swatch-row + intensity slider per type
+   in `renderCardioAddonFineTune()`, gated by `cardioGuestBgAllowed()`
+   (`!EXERCISES[realId].bgIsStimulus` - skipped for vt-color, whose
+   background already IS the trained colour, same rule the standalone
+   Feineinstellungen already follows for it via `currentBgFill()`).
+   Deliberately its own lightweight control, NOT wired into
+   `wireBgIntensityControl()`'s Master-Einstellungen-cascade/preset-
+   transfer machinery: that system assumes stable, always-present DOM,
+   and this panel is torn down and rebuilt (`innerHTML = ""`) on every
+   pool-selection change - a real architectural mismatch, not a shortcut
+   taken for convenience. Consequence: these 3 background settings don't
+   follow the app-wide Master default and have no "Auf Standard
+   zurücksetzen" - a client who wants those specifically should say so
+   and it can be added as a dedicated follow-up.
+2. **Time window for the AUTOMATIC trigger** (`cardioAddonPrefs.windowEnabled`/
+   `windowStartS`/`windowEndS`, `#cardioAddonWindowToggle` +two minute
+   sliders): restricts `cardioTick()`'s existing randomized-interval check
+   to a client-chosen sub-range of the total session time, measured
+   against `cardioState.sessionStartTime` (new - separate from
+   `blockStartTime`, which is per-activity and resets on every block/
+   pause transition). Deliberately does NOT apply to the manual "+
+   Zusatzimpuls" picker - that's the client's own in-the-moment choice,
+   meant to work any time, which is exactly what they asked for when they
+   first clarified the Tier 2 ask.
+3. **Naming, corrected twice in one session.** The client asked whether
+   `addon-flash` was actually Periphere Wahrnehmung's own Blitzreiz
+   exercise - it was first renamed from "Zusatzaufgabe · Zahlen/
+   Buchstaben" to "Ziffer/Buchstabe lesen · kurzer Reiz" on the mistaken
+   assumption that it was a *different* thing from Blitzreiz. It isn't:
+   checked against the actual rendering code, both draw through the exact
+   same `drawPeriphChar()` (fixation point, a coloured digit/letter
+   flashing briefly at a random peripheral position, same
+   `PERIPH_AXIS_KEYS`/`PERIPH_ZONE_KEYS` positioning) - `addon-flash` IS
+   the Blitzreiz mechanic, just running through the "Zusatzaufgabe"
+   dual-task system (normally an add-on layered ON TOP of another
+   exercise, see `buildAddonSchedule`) standalone on a blank host frame
+   (`EXERCISES["cardio-flash-host"]`) instead of on top of a host
+   exercise. Corrected back to **"Zusatzaufgabe · Ziffer/Buchstabe"** -
+   the name this mechanism already carries everywhere else in the app
+   (every other exercise's own "Zusatzaufgabe" add-on section uses this
+   exact word) - per the client's explicit ask: one consistent name for
+   one mechanism, wherever it shows up, rather than inventing a new one
+   just for this Cardio context.
+
+Test: `tests/cardio_addon_settings_test.py` - pool grid shows the
+settled "Zusatzaufgabe · Ziffer/Buchstabe" label; background controls
+appear for addon-flash but not vt-color; colour + intensity choices
+persist across reload; window toggle/sliders sync, clamp (dragging
+start past end pulls end along), and persist; functionally, a due
+automatic-trigger interval is correctly blocked by an already-closed
+window and correctly still fires inside an open one.
+
+### Follow-up: "Beenden" inside a guest exercise no longer ends the whole session (2026-09-30)
+
+Reported bug, found by the client trying the picker: pressing "Beenden"
+(`#backBtn`, the shared player-bar's exit button) *inside* a running
+guest exercise ended the entire Cardio session, not just the guest
+exercise - clearly not what anyone wants from a 20-second dual-task
+detour. Root cause: `abortTraining()`'s `cardioGuestActive` branch called
+`abortCardio()` (ends everything) instead of `returnFromCardioGuest()`
+(back to the still-running Cardio session, same as a guest exercise
+finishing on its own). One-line fix - `returnFromCardioGuest()` was
+already exactly the right function, just not the one being called here.
+`leavePlayer()` still runs first either way (cancels the guest's own
+raf, releases its wake lock, exits fullscreen, etc.) before handing off.
+
+This also directly covers the client's "wechseln" (switch guest
+exercise) ask: end the current one via Beenden (now correctly returns to
+Cardio without losing progress), then tap "+ Zusatzimpuls" again and
+pick a different one - no separate "switch" affordance was needed.
+
+Test: `tests/cardio_addon_abort_test.py` - Beenden mid-guest-exercise
+returns to the still-running `cardioPlayer` (not `cardioReady`/
+`cardioHome`), badge and trigger button reset correctly, same activity
+continues (not restarted); repeatable; Cardio's own `#cardioBackBtn`
+(when NOT inside a guest exercise) still correctly ends the whole
+session as before. `tests/cardio_test.py`'s own "abort mid-guest"
+section was updated in place - it had encoded the old (buggy) behaviour
+as its expected outcome.
+
+### Phase 1: guest-type pool extended to the rest of the VT catalog (2026-09-30)
+
+The client asked to start Phase 1 (the "gestuft, VT/NAT zuerst" plan from
+the earlier tier-2-vs-tier-3 discussion). Investigating turned up a
+correction to that plan worth recording: "VT and NAT share the same
+engine" was only half true.
+
+- **Visual Training** (the `EXERCISES` catalog `runSession()`/`tick()`/
+  `state.exercise` shares) really is one engine end to end - confirmed by
+  checking that `applyCardioGuestToState()` needed **zero** changes to
+  support 8 more types, since it already dispatches purely off each
+  exercise's own `usesColors`/`usesArrowColors`/`usesStroopColors`/
+  `bgIsStimulus`/`type` flags. Added: `vrw-original`, `stroop-bg`,
+  `4-diag`, `8-solo`, `8-vrw`, `cross-modal`, `cone-compass` (all trivial:
+  same shape as the existing 4), and `cone-tap` ("Hütchen sortieren" -
+  turned out easy too: its own `startConeTap()` engine already goes
+  through the exact same shared `finishSession()`/`abortTraining()`
+  lifecycle cardio-guest mode already depends on, so
+  `triggerCardioGuest()` only needed one extra branch - call
+  `startConeTap()` instead of `runSession()` when
+  `EXERCISES[realId].type === "color-tap"`, mirroring the same dispatch
+  `startSession()` itself already uses). `CARDIO_GUEST_TYPES` is now 12
+  entries.
+  - New gating helpers used throughout (`cardioGuestNeedsColors()`,
+    `cardioGuestIsConeTap()`) so the Feineinstellungen panel only shows a
+    colour row / stimulus-interval fields / background row for a type
+    that actually uses them - `cardioGuestBgAllowed()` was tightened to
+    match `currentBgFill()`'s real exclusion (`type === "color-tap" ||
+    bgIsStimulus`, not just the latter) so cone-tap's background row
+    (which would have had zero visible effect - its stage is hard-coded
+    white in CSS) is correctly left out too.
+  - **Not yet added**, deliberately: `periph-flash` (Periphere
+    Wahrnehmung) - technically the same engine, but its settings surface
+    (fixation point, zones, zone weights, ...) is much larger than a
+    quick addition; own follow-up.
+- **NAT domain** (Periphere Wahrnehmung aside) does **not** share this
+  engine at all, despite the original "gestuft" assessment assuming it
+  did. Checked directly: `EXERCISES` only ever contained the 13 VT-style
+  entries; every NAT exercise (Merkspanne, Blitz-Raster, Flash, MOT, Go/
+  No-Go, N-Back, Trail Making, Flanker, UFOV, Posner, Rotation, Simon,
+  Suchtest, Doppelziel, Antizipationstest, Hick, Corsi, Reaktionsfeld, TS,
+  Anti, Subitize, Alarm, Vorlauf, Stop, DSST, WCST, Navon, Iconic - ~25 in
+  total) has its own dedicated player/prefs/finish path (see
+  `hideAllPlayers()`'s long explicit list). Bridging each into
+  `triggerCardioGuest()`/`returnFromCardioGuest()` individually is real,
+  separate work - closer in size to the already-deferred Atemtraining/
+  Movement/Workout lift than to "mechanical". Left for its own future
+  phase rather than silently expanding this one; told to the client
+  before proceeding rather than after.
+
+Test: `tests/cardio_addon_phase1_test.py` - pool grid offers all 12;
+fine-tune panels correctly show/hide their colour row, background row,
+and stimulus/interval fields per type (checked on `vrw-original`,
+`cross-modal`, `cone-tap` as representative cases); the live picker
+offers all 12; each of the 8 new types actually takes over full-screen
+(cone-tap via `#coneOrderStage`, the rest via the canvas `#player`) and
+returns cleanly to the still-running Cardio session via Beenden.
+`tests/cardio_addon_picker_test.py`'s own "4 exercise choices" count was
+updated to 12.
+
 ## Test-Bereich (autonomous, ongoing)
 
 **If you were woken by the "FWMC Test-Bereich Auto-Build" Routine, this

@@ -594,6 +594,22 @@
             <span class="slider-value" id="cardioAddonIntervalMaxValue">180s</span>
           </div>
         </div>
+        <div class="group">
+          <label class="checkbox-row"><input type="checkbox" id="cardioAddonWindowToggle"> Nur in einem bestimmten Zeitfenster</label>
+          <div class="group-help">Ohne Zeitfenster kann eine Zusatz&uuml;bung jederzeit w&auml;hrend der ganzen Cardio-Einheit aufblitzen.</div>
+          <div id="cardioAddonWindowBody" hidden>
+            <div class="slider-row">
+              <span>ab</span>
+              <input type="range" id="cardioAddonWindowStartSlider" min="0" max="60" step="1" aria-label="Fenster-Beginn">
+              <span class="slider-value" id="cardioAddonWindowStartValue">0 Min.</span>
+            </div>
+            <div class="slider-row">
+              <span>bis</span>
+              <input type="range" id="cardioAddonWindowEndSlider" min="0" max="60" step="1" aria-label="Fenster-Ende">
+              <span class="slider-value" id="cardioAddonWindowEndValue">10 Min.</span>
+            </div>
+          </div>
+        </div>
         <div id="cardioAddonPerType"></div>
       </div>
     </div>
@@ -613,8 +629,30 @@
   </div>
   <div class="player-bar" id="cardioPlayerBar">
     <button id="cardioBackBtn">&#10005; Beenden</button>
+    <button id="cardioAddonTriggerBtn" hidden>+ Zusatzimpuls</button>
+  </div>
+  <div class="pause-overlay" id="cardioAddonPicker" hidden>
+    <div class="pause-panel">
+      <h3>Zusatzimpuls jetzt w&auml;hlen</h3>
+      <div class="group">
+        <div class="group-label">&Uuml;bung</div>
+        <div class="choice-row two" id="cardioAddonPickerTypeRow"></div>
+      </div>
+      <div class="group">
+        <div class="group-label">Dauer</div>
+        <div class="workout-reps-input" id="cardioAddonPickerDurationRow">
+          <button type="button" class="circuit-step" id="cardioAddonPickerDurationMinus" aria-label="k&uuml;rzer">&minus;</button>
+          <span class="circuit-duration-value" id="cardioAddonPickerDurationValue"></span>
+          <button type="button" class="circuit-step" id="cardioAddonPickerDurationPlus" aria-label="l&auml;nger">+</button>
+        </div>
+      </div>
+      <button class="start-btn" id="cardioAddonPickerStartBtn">Jetzt starten</button>
+      <button class="pause-skip" id="cardioAddonPickerCancelBtn">Abbrechen</button>
+    </div>
   </div>
 </div>
+
+<div class="cardio-guest-badge" id="cardioGuestBadge" hidden></div>
 
 <div class="done-panel" id="cardioDonePanel" hidden>
   <div class="done-check">&#10003;</div>
@@ -5322,7 +5360,7 @@
 
     <details class="faq-item">
       <summary>Wo werden meine Trainingsdaten gespeichert?</summary>
-      <div class="faq-body">Ausschlie&szlig;lich lokal in diesem Browser auf diesem Ger&auml;t &ndash; nicht in einer Cloud und nicht bei einem Server. Wechselst du das Ger&auml;t oder l&ouml;schst du die Browserdaten, geht der Verlauf verloren. Details in der <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutzerkl&auml;rung</a>.</div>
+      <div class="faq-body">Ausschlie&szlig;lich lokal in diesem Browser auf diesem Ger&auml;t &ndash; nicht in einer Cloud und nicht bei einem Server. Das gilt auch f&uuml;r einen Trainings-Code von deinem Coach: Der liefert dir nur ein fertiges Programm zum Abrufen, das funktioniert ausschlie&szlig;lich in diese eine Richtung &ndash; es flie&szlig;en dabei nie Daten zur&uuml;ck. Dein Coach sieht weder deine Ergebnisse noch deinen Trainingsverlauf noch sonst etwas von deinem Training. Wechselst du das Ger&auml;t oder l&ouml;schst du die Browserdaten, geht der Verlauf verloren. Details in der <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutzerkl&auml;rung</a>.</div>
     </details>
 
     <details class="faq-item">
