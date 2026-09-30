@@ -4722,9 +4722,18 @@
     showScreen(readyReturnScreen);
   }
   // "Beenden" mid-training: back to where the training was started from.
+  // For a Cardio guest exercise (Zusatzimpuls) specifically, "back to
+  // where it was started from" means back to the still-running Cardio
+  // session, NOT ending the whole training - a client who's had enough
+  // of the guest exercise (or picked the wrong one, or just wants to get
+  // back to their main activity) needs a way to bail out of just that
+  // without losing their Cardio progress. Previously this fell through to
+  // abortCardio() (ending the entire session) - a real, reported bug, not
+  // a deliberate choice: nobody wants "Beenden" on a 20-second dual-task
+  // detour to also blow away the 10-minute Cardio run underneath it.
   function abortTraining() {
     if (comboProgram) { leavePlayer(); abortComboProgram(); return; }
-    if (cardioGuestActive) { leavePlayer(); abortCardio(); return; }
+    if (cardioGuestActive) { leavePlayer(); returnFromCardioGuest(); return; }
     const wasProgram = !!program;
     leavePlayer();
     if (wasProgram) showScreen("programIntro");

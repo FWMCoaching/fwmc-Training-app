@@ -3920,6 +3920,34 @@ and persist; functionally, a due automatic-trigger interval is
 correctly blocked by an already-closed window and correctly still fires
 inside an open one.
 
+### Follow-up: "Beenden" inside a guest exercise no longer ends the whole session (2026-09-30)
+
+Reported bug, found by the client trying the picker: pressing "Beenden"
+(`#backBtn`, the shared player-bar's exit button) *inside* a running
+guest exercise ended the entire Cardio session, not just the guest
+exercise - clearly not what anyone wants from a 20-second dual-task
+detour. Root cause: `abortTraining()`'s `cardioGuestActive` branch called
+`abortCardio()` (ends everything) instead of `returnFromCardioGuest()`
+(back to the still-running Cardio session, same as a guest exercise
+finishing on its own). One-line fix - `returnFromCardioGuest()` was
+already exactly the right function, just not the one being called here.
+`leavePlayer()` still runs first either way (cancels the guest's own
+raf, releases its wake lock, exits fullscreen, etc.) before handing off.
+
+This also directly covers the client's "wechseln" (switch guest
+exercise) ask: end the current one via Beenden (now correctly returns to
+Cardio without losing progress), then tap "+ Zusatzimpuls" again and
+pick a different one - no separate "switch" affordance was needed.
+
+Test: `tests/cardio_addon_abort_test.py` - Beenden mid-guest-exercise
+returns to the still-running `cardioPlayer` (not `cardioReady`/
+`cardioHome`), badge and trigger button reset correctly, same activity
+continues (not restarted); repeatable; Cardio's own `#cardioBackBtn`
+(when NOT inside a guest exercise) still correctly ends the whole
+session as before. `tests/cardio_test.py`'s own "abort mid-guest"
+section was updated in place - it had encoded the old (buggy) behaviour
+as its expected outcome.
+
 ## Test-Bereich (autonomous, ongoing)
 
 **If you were woken by the "FWMC Test-Bereich Auto-Build" Routine, this

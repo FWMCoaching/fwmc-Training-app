@@ -133,14 +133,20 @@ async def main():
         print("abort mid-cardio: cardioPlayer hidden:", not await pg.is_visible("#cardioPlayer"))
 
         # abort DURING a guest window - shared player bar's Beenden button
-        # -> abortTraining()'s cardioGuestActive branch -> abortCardio()
+        # now returns to the still-running Cardio session rather than
+        # ending the whole thing (abortTraining()'s cardioGuestActive
+        # branch calls returnFromCardioGuest(), not abortCardio() - a
+        # reported bug fix, see cardio_addon_abort_test.py for full
+        # coverage). Ending the whole session from here needs the normal
+        # follow-up cardioBackBtn tap, same as any other point mid-Cardio.
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(400)
         await pg.wait_for_timeout(21000)
         print("guest window active before abort:", await pg.is_visible("#player"))
         await pg.click("#backBtn"); await pg.wait_for_timeout(400)
-        print("abort mid-guest: back at cardioReady:", await pg.is_visible("#cardioReady"))
-        print("abort mid-guest: no lingering guest player:", not await pg.is_visible("#player"))
-        print("abort mid-guest: no lingering cardio player:", not await pg.is_visible("#cardioPlayer"))
+        print("Beenden mid-guest returns to the still-running cardioPlayer, not cardioReady:",
+              await pg.is_visible("#cardioPlayer") and not await pg.is_visible("#player") and not await pg.is_visible("#cardioReady"))
+        await pg.click("#cardioBackBtn"); await pg.wait_for_timeout(300)
+        print("cardioBackBtn from there still ends the whole session as normal:", await pg.is_visible("#cardioReady"))
 
         # state is clean afterward - a fresh run starts normally
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(400)
