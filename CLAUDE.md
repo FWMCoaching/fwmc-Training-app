@@ -7,6 +7,27 @@ Test (an ongoing, autonomously-built experimentation area - see
 "Test-Bereich (autonomous, ongoing)" at the end of this file before
 touching it). German-language product; respond to the user in German.
 
+## Push notifications to the client (added 2026-09-30)
+
+The client explicitly asked for a fixed, scannable prefix convention on
+every push notification (`PushNotification` tool), so a glance at the
+phone tells him whether he needs to act or can safely go use the app
+without interrupting anything:
+
+- **🟢** (green circle) as the first thing in the message - sent whenever
+  a stretch of work is genuinely finished and there's nothing pending
+  that needs him first (a natural stopping point, at "full capacity" for
+  the next input - not after every small step).
+- **❗🟢** (red exclamation mark, then the green circle) - sent whenever
+  continuing needs a decision only he can make (an `AskUserQuestion`-
+  shaped situation, an ambiguous judgment call, anything blocking).
+
+Plain-text push notifications can't carry an actual logo/icon image -
+these two emoji are the closest equivalent and render in color on iOS/
+Android notification banners, which is what he actually wanted ("ganz
+klar sehen... wann muss ich, wann kann ich"). Keep using this prefix
+consistently going forward, in every session, not just this one.
+
 ## Architecture: one source of truth, two deploy targets
 
 The whole app is one shared body, expanded into two output files by `build.sh`:
