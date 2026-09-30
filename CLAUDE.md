@@ -3781,6 +3781,18 @@ prefilled and persists changes; a range-mode reps block plays back
 correctly (right range, live timer, reps-input default) when reached
 mid-combo-run, and aborting mid-block during a combo still works.
 
+### Interval phase wording corrected (2026-09-30)
+
+"Belastung"/"Erholung" (both the setup-screen phase labels and the live
+`#cardioPhaseLabel` during playback) renamed to "Intensive Belastung"/
+"Leichtere Belastung" - client's point: the interval's "off" phase is
+still active Cardio work at a lower intensity (e.g. still cycling, just
+slower), not a stop-and-rest pause, and "Erholung" reads like the
+latter. Widened `.cardio-interval-phase-row span:first-child`'s
+min-width (64px → 122px) for the longer label. The "lohnende Pause"
+sports-science term was considered and explicitly rejected by the
+client as too jargon-heavy for someone without training background.
+
 ## Cardio: manual "+ Zusatzimpuls" live picker (Tier 2, added 2026-09-30)
 
 First shipped as a single button that fired the existing automatic

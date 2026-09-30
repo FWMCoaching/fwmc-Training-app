@@ -10154,12 +10154,12 @@
         `<button class="combo-block-remove" data-i="${i}" title="Entfernen">&#10005;</button>` +
         `</div>` +
         `<input type="text" class="circuit-item-note" data-i="${i}" placeholder="Label (optional, z. B. Warm-up)" maxlength="40" value="${esc(item.label || "")}">` +
-        `<label class="cardio-interval-toggle"><input type="checkbox" data-i="${i}" ${item.interval ? "checked" : ""}> Intervall in diesem Block (Belastung/Erholung)</label>` +
+        `<label class="cardio-interval-toggle"><input type="checkbox" data-i="${i}" ${item.interval ? "checked" : ""}> Intervall in diesem Block (intensive/leichtere Belastung)</label>` +
         (item.interval ? `<div class="cardio-interval-fields">` +
-          `<div class="cardio-interval-phase-row"><span>Belastung</span><button class="circuit-step" data-int="${i}" data-field="onS" data-dir="-1" aria-label="kürzer">&minus;</button>` +
+          `<div class="cardio-interval-phase-row"><span>Intensive Belastung</span><button class="circuit-step" data-int="${i}" data-field="onS" data-dir="-1" aria-label="kürzer">&minus;</button>` +
           `<span class="circuit-duration-value">${item.interval.onS}s</span>` +
           `<button class="circuit-step" data-int="${i}" data-field="onS" data-dir="1" aria-label="länger">+</button></div>` +
-          `<div class="cardio-interval-phase-row"><span>Erholung</span><button class="circuit-step" data-int="${i}" data-field="offS" data-dir="-1" aria-label="kürzer">&minus;</button>` +
+          `<div class="cardio-interval-phase-row"><span>Leichtere Belastung</span><button class="circuit-step" data-int="${i}" data-field="offS" data-dir="-1" aria-label="kürzer">&minus;</button>` +
           `<span class="circuit-duration-value">${item.interval.offS}s</span>` +
           `<button class="circuit-step" data-int="${i}" data-field="offS" data-dir="1" aria-label="länger">+</button></div>` +
           `</div>` : "");
@@ -10818,7 +10818,7 @@
     els.cardioBlockProgress.textContent = `Aktivität ${cardioRealPos(cardioState.items, cardioState.index)} von ${cardioState.realCount}`;
     const phase = cardioPhaseFor(block, blockElapsed);
     els.cardioPhaseLabel.hidden = !phase;
-    if (phase) els.cardioPhaseLabel.textContent = phase === "on" ? "Belastung" : "Erholung";
+    if (phase) els.cardioPhaseLabel.textContent = phase === "on" ? "Intensive Belastung" : "Leichtere Belastung";
     const sessionElapsedS = (now - cardioState.sessionStartTime) / 1000;
     const withinAddonWindow = !cardioAddonPrefs.windowEnabled || (sessionElapsedS >= cardioAddonPrefs.windowStartS && sessionElapsedS <= cardioAddonPrefs.windowEndS);
     if (cardioAddonPrefs.enabled && cardioAddonPrefs.pool.length && withinAddonWindow && cardioState.nextGuestAt !== null && now >= cardioState.nextGuestAt) {
