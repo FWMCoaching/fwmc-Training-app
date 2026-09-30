@@ -3869,6 +3869,57 @@ activity afterward (not reset), badge and trigger button state reset
 correctly. `tests/cardio_test.py` (existing, unmodified) continues to
 cover the automatic randomized-interval path, untouched by this change.
 
+### Follow-up: per-type background colour, trigger time window, rename (2026-09-30)
+
+Trying the Tier 2 picker surfaced three concrete gaps, all fixed together:
+
+1. **Background colour + intensity per guest type was simply missing.**
+   `applyCardioGuestToState()` never touched `state.bgColorKey`/
+   `state.bgIntensity` at all, so a guest exercise's background was
+   whatever was left over from the last standalone use of that exercise -
+   not a real setting. Added `bgColorKey`/`bgIntensity` to
+   `cardioAddonPrefs.perType` (validated in `loadCardioAddonPrefs()` like
+   every other field there) and a swatch-row + intensity slider per type
+   in `renderCardioAddonFineTune()`, gated by `cardioGuestBgAllowed()`
+   (`!EXERCISES[realId].bgIsStimulus` - skipped for vt-color, whose
+   background already IS the trained colour, same rule the standalone
+   Feineinstellungen already follows for it via `currentBgFill()`).
+   Deliberately its own lightweight control, NOT wired into
+   `wireBgIntensityControl()`'s Master-Einstellungen-cascade/preset-
+   transfer machinery: that system assumes stable, always-present DOM,
+   and this panel is torn down and rebuilt (`innerHTML = ""`) on every
+   pool-selection change - a real architectural mismatch, not a shortcut
+   taken for convenience. Consequence: these 3 background settings don't
+   follow the app-wide Master default and have no "Auf Standard
+   zurücksetzen" - a client who wants those specifically should say so
+   and it can be added as a dedicated follow-up.
+2. **Time window for the AUTOMATIC trigger** (`cardioAddonPrefs.windowEnabled`/
+   `windowStartS`/`windowEndS`, `#cardioAddonWindowToggle` +two minute
+   sliders): restricts `cardioTick()`'s existing randomized-interval check
+   to a client-chosen sub-range of the total session time, measured
+   against `cardioState.sessionStartTime` (new - separate from
+   `blockStartTime`, which is per-activity and resets on every block/
+   pause transition). Deliberately does NOT apply to the manual "+
+   Zusatzimpuls" picker - that's the client's own in-the-moment choice,
+   meant to work any time, which is exactly what they asked for when they
+   first clarified the Tier 2 ask.
+3. **Renamed** `addon-flash`'s title from "Zusatzaufgabe · Zahlen/
+   Buchstaben" to "Ziffer/Buchstabe lesen · kurzer Reiz" - the client
+   asked whether this was actually Periphere Wahrnehmung's own Blitzreiz
+   exercise. It isn't: it's the "Zusatzaufgabe" dual-task mechanism (a
+   single character flashed centrally, normally an add-on ON TOP of
+   another exercise) repurposed as its own standalone guest exercise via
+   a blank host frame (`EXERCISES["cardio-flash-host"]`) - a real,
+   different thing from Blitzreiz, just easy to conflate by name.
+
+Test: `tests/cardio_addon_settings_test.py` - renamed label appears (old
+one doesn't); background controls appear for addon-flash but not
+vt-color; colour + intensity choices persist across reload; window
+toggle/sliders sync, clamp (dragging start past end pulls end along),
+and persist; functionally, a due automatic-trigger interval is
+correctly blocked by an already-closed window and correctly still fires
+inside an open one.
+
 ## Test-Bereich (autonomous, ongoing)
 
 **If you were woken by the "FWMC Test-Bereich Auto-Build" Routine, this
