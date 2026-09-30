@@ -2873,34 +2873,27 @@
       </div>
       <div class="group" id="bgGroup" hidden>
         <div class="group-label">Hintergrund</div>
-        <div class="choice-row two" id="bgModeRow">
-          <button class="choice" data-bg-mode="color">Farbe</button>
-          <button class="choice" data-bg-mode="transparent">Transparent<small>f&uuml;r Beamer/Projektion</small></button>
+        <div class="color-picker" id="bgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="bgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="bgIntensityValue"></span>
         </div>
-        <div id="bgColorOptions">
-          <div class="color-picker" id="bgColorPicker"></div>
-          <div class="slider-row">
-            <span class="slider-label">Intensit&auml;t</span>
-            <input type="range" id="bgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
-            <span class="slider-value" id="bgIntensityValue"></span>
-          </div>
-          <div class="group-help" id="bgContrastHint" hidden></div>
-          <div class="bg-master-status" id="bgMasterStatus"></div>
-          <div class="choice-row" id="bgSourceRow"></div>
-          <div class="group" id="bgPresetGroup" hidden>
-            <div class="group-label">Gespeicherte Farbgestaltungen</div>
-            <div class="bundle-list" id="bgPresetList"></div>
-          </div>
-          <button class="text-link small" id="bgSaveBtn">Aktuelle Farbgestaltung speichern</button>
-          <div class="custom-exercise-form" id="bgSaveForm" hidden>
-            <input type="text" id="bgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
-            <div class="custom-exercise-form-actions">
-              <button class="start-btn secondary" id="bgSaveCancelBtn">Abbrechen</button>
-              <button class="start-btn" id="bgSaveConfirmBtn">Speichern</button>
-            </div>
+        <div class="group-help" id="bgContrastHint" hidden></div>
+        <div class="bg-master-status" id="bgMasterStatus"></div>
+        <div class="choice-row" id="bgSourceRow"></div>
+        <div class="group" id="bgPresetGroup" hidden>
+          <div class="group-label">Gespeicherte Farbgestaltungen</div>
+          <div class="bundle-list" id="bgPresetList"></div>
+        </div>
+        <button class="text-link small" id="bgSaveBtn">Aktuelle Farbgestaltung speichern</button>
+        <div class="custom-exercise-form" id="bgSaveForm" hidden>
+          <input type="text" id="bgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <div class="custom-exercise-form-actions">
+            <button class="start-btn secondary" id="bgSaveCancelBtn">Abbrechen</button>
+            <button class="start-btn" id="bgSaveConfirmBtn">Speichern</button>
           </div>
         </div>
-        <div class="group-help" id="bgTransparentHint" hidden>Kein farbiger Hintergrund &ndash; ideal f&uuml;r einen Beamer, der sonst eine Fl&auml;che an die Wand wirft.</div>
       </div>
       <div class="group" id="periphFixGroup" hidden>
         <div class="group-label">Fixpunkt in der Mitte</div>
@@ -3319,21 +3312,13 @@
       <div class="pause-panel">
         <h3>Pausiert</h3>
         <div class="group">
-          <div class="group-label">Hintergrund</div>
-          <div class="choice-row two" id="periphPauseBgModeRow">
-            <button class="choice" data-bg-mode="color">Farbe</button>
-            <button class="choice" data-bg-mode="transparent">Transparent<small>f&uuml;r Beamer/Projektion</small></button>
-          </div>
-          <div id="periphPauseBgColorOptions">
-            <div class="slider-row">
-              <span class="slider-label">Intensit&auml;t</span>
-              <input type="range" id="periphPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
-              <span class="slider-value" id="periphPauseBgValue"></span>
-            </div>
-            <div class="color-picker" id="periphPauseBgColorPicker"></div>
-            <div class="group-help" id="periphPauseBgContrastHint" hidden></div>
-          </div>
-          <div class="group-help" id="periphPauseBgTransparentHint" hidden>Kein farbiger Hintergrund.</div>
+          <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="periphPauseBgValue"></span></div>
+          <input type="range" id="periphPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+        </div>
+        <div class="group">
+          <div class="group-label">Hintergrundfarbe</div>
+          <div class="color-picker" id="periphPauseBgColorPicker"></div>
+          <div class="group-help" id="periphPauseBgContrastHint" hidden></div>
         </div>
         <div class="group">
           <div class="group-label">Fixpunkt-Farbe</div>

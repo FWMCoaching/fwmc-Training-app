@@ -1,0 +1,36 @@
+#!/bin/sh
+# Catches two mistakes nothing else in this repo guards against (there's
+# no CI here): a JS syntax error slipping into a commit, and index.html
+# drifting out of sync with _body.html/app.js/styles.css because someone
+# (human or Claude) forgot to run `sh build.sh` before committing. Both
+# are cheap to check and both have actually happened during this app's
+# development.
+#
+# Installed via `git config core.hooksPath .githooks` (one-time per
+# clone - .git/hooks/ itself is never tracked by git, so this file alone
+# does nothing until that's set; see CLAUDE.md's "Local development").
+set -e
+cd "$(git rev-parse --show-toplevel)"
+
+# Only pay the rebuild cost when a commit actually touches something that
+# affects index.html's content or app.js's syntax - most commits (tests,
+# docs, CLAUDE.md) touch neither.
+if ! git diff --cached --name-only | grep -qE '^(_body\.html|app\.js|styles\.css|build\.sh)$'; then
+  exit 0
+fi
+
+if ! node --check app.js; then
+  echo "pre-commit: app.js has a syntax error - fix it before committing." >&2
+  exit 1
+fi
+
+sh build.sh > /dev/null
+
+if ! git diff --quiet -- index.html; then
+  echo "pre-commit: index.html is out of date relative to _body.html/app.js/styles.css." >&2
+  echo "  sh build.sh just refreshed it in your working tree - review the diff, then:" >&2
+  echo "    git add index.html && git commit" >&2
+  exit 1
+fi
+
+exit 0

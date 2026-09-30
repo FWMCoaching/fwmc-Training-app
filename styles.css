@@ -1099,10 +1099,6 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 /* ---- Player (always light: stimuli are designed on white) ---- */
 .player{position:fixed;inset:0;background:#ffffff;display:flex;flex-direction:column;z-index:20;color:#16232a}
 .player.calm{background:var(--brand-pale)}
-/* Periphere Wahrnehmung's "Transparent" background mode - drops this
-   overlay's own opaque backdrop too, so a beamer/projector shows only the
-   stimulus itself and not a colored/white rectangle on the wall. */
-.player.bg-transparent{background:transparent}
 .stage-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
 #stage{width:100%;height:100%;display:block}
 

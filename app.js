@@ -451,16 +451,9 @@
   // whose background already carries the trained signal itself (VT's
   // colour, VRW, Kompass-Aufbau, Stroop mit Hintergrund) or when the
   // intensity slider is still at 0 (nothing to blend).
-  // Returns null (rather than a fill colour) when the client set the
-  // background to "Transparent" - the caller then clears instead of
-  // filling, so a beamer/projector shows nothing but the stimulus itself
-  // (see the .player.bg-transparent CSS rule, which also drops the
-  // overlay's own opaque white behind the canvas).
   function currentBgFill(fallback) {
     const ex = EXERCISES[state.exercise];
-    if (!ex || ex.type === "color-tap" || ex.bgIsStimulus) return fallback;
-    if (state.bgTransparent) return null;
-    if (state.bgIntensity <= 0) return fallback;
+    if (!ex || ex.type === "color-tap" || ex.bgIsStimulus || state.bgIntensity <= 0) return fallback;
     return mixHex("#ffffff", (STROOP_COLOR_BY_KEY[state.bgColorKey] || STROOP_COLOR_BY_KEY.gruen).hex, state.bgIntensity);
   }
 
@@ -468,18 +461,16 @@
     const cw = canvas.width, ch = canvas.height;
     const cx = cw / 2, cy = ch / 2;
     const unit = Math.min(cw, ch) / 2;
-    function paintBg(fallback) {
-      const fill = currentBgFill(fallback);
-      if (fill === null) { ctx.clearRect(0, 0, cw, ch); }
-      else { ctx.fillStyle = fill; ctx.fillRect(0, 0, cw, ch); }
-    }
-    paintBg("#ffffff");
+    ctx.fillStyle = currentBgFill("#ffffff");
+    ctx.fillRect(0, 0, cw, ch);
 
     if (kind === "blank") {
-      paintBg(NEUTRAL);
+      ctx.fillStyle = currentBgFill(NEUTRAL);
+      ctx.fillRect(0, 0, cw, ch);
       drawFixationPoint(cx, cy, unit);
     } else if (kind === "periph") {
-      paintBg(NEUTRAL);
+      ctx.fillStyle = currentBgFill(NEUTRAL);
+      ctx.fillRect(0, 0, cw, ch);
       drawFixationPoint(cx, cy, unit);
       drawPeriphChar(cw, ch, unit, payload.fx, payload.fy, payload.char, state.periphSizeMode, payload.color);
     } else if (kind === "count") {
@@ -1192,11 +1183,9 @@
     bgSourceRow: $("bgSourceRow"), bgPresetGroup: $("bgPresetGroup"), bgPresetList: $("bgPresetList"),
     bgSaveBtn: $("bgSaveBtn"), bgSaveForm: $("bgSaveForm"), bgSaveNameInput: $("bgSaveNameInput"),
     bgSaveCancelBtn: $("bgSaveCancelBtn"), bgSaveConfirmBtn: $("bgSaveConfirmBtn"),
-    bgColorOptions: $("bgColorOptions"), bgTransparentHint: $("bgTransparentHint"),
     periphPauseBtn: $("periphPauseBtn"), periphPauseOverlay: $("periphPauseOverlay"),
     periphPauseBgSlider: $("periphPauseBgSlider"), periphPauseBgValue: $("periphPauseBgValue"),
     periphPauseBgColorPicker: $("periphPauseBgColorPicker"), periphPauseBgContrastHint: $("periphPauseBgContrastHint"), periphPauseFixColorPicker: $("periphPauseFixColorPicker"),
-    periphPauseBgColorOptions: $("periphPauseBgColorOptions"), periphPauseBgTransparentHint: $("periphPauseBgTransparentHint"),
     periphPauseFixSizeSlider: $("periphPauseFixSizeSlider"), periphPauseFixSizeValue: $("periphPauseFixSizeValue"),
     periphPauseColorPicker: $("periphPauseColorPicker"), periphPauseColorHint: $("periphPauseColorHint"),
     periphResumeBtn: $("periphResumeBtn"),
@@ -2227,7 +2216,6 @@
     periphColors: ["schwarz"],
     bgColorKey: "gruen",
     bgIntensity: 0,
-    bgTransparent: false,
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -2253,7 +2241,6 @@
     if (!Array.isArray(state.periphColors) || !state.periphColors.length || !state.periphColors.every((k) => STROOP_COLOR_BY_KEY[k])) state.periphColors = DEFAULTS.periphColors.slice();
     if (!STROOP_COLOR_BY_KEY[state.bgColorKey]) state.bgColorKey = "gruen";
     if (typeof state.bgIntensity !== "number" || state.bgIntensity < 0 || state.bgIntensity > 1) state.bgIntensity = 0;
-    if (typeof state.bgTransparent !== "boolean") state.bgTransparent = false;
   }
   function savePrefs() { writeJSON(PREFS_KEY, state); }
   loadPrefs();
@@ -3171,35 +3158,6 @@
     }],
   }, () => { savePrefs(); redrawFrozenFrame(); }, "vt");
 
-  // ---- Background "Transparent" mode (for a beamer/projector, so it
-  // shows only the stimulus and not a colored rectangle on the wall) -
-  // deliberately separate from wireBgIntensityControl above, since it's
-  // a canvas-only concern (drops the .player container's own opaque white
-  // CSS background too, see styles.css) that doesn't apply to the 25 other,
-  // CSS-background domains that function reuses. ----
-  function bgTransparentActive() {
-    const ex = EXERCISES[state.exercise];
-    return !!(ex && ex.type !== "color-tap" && !ex.bgIsStimulus && state.bgTransparent);
-  }
-  document.querySelectorAll("#bgModeRow [data-bg-mode], #periphPauseBgModeRow [data-bg-mode]").forEach((el) => {
-    el.addEventListener("click", () => {
-      state.bgTransparent = el.dataset.bgMode === "transparent";
-      savePrefs();
-      syncBgTransparentUI();
-      redrawFrozenFrame();
-    });
-  });
-  function syncBgTransparentUI() {
-    document.querySelectorAll("#bgModeRow [data-bg-mode], #periphPauseBgModeRow [data-bg-mode]").forEach((el) => {
-      setActive(el, (el.dataset.bgMode === "transparent") === state.bgTransparent);
-    });
-    els.bgColorOptions.hidden = state.bgTransparent;
-    els.bgTransparentHint.hidden = !state.bgTransparent;
-    els.periphPauseBgColorOptions.hidden = state.bgTransparent;
-    els.periphPauseBgTransparentHint.hidden = !state.bgTransparent;
-    els.player.classList.toggle("bg-transparent", bgTransparentActive());
-  }
-
   // ---- Duration / tempo / sliders ----
   document.querySelectorAll("[data-dur]").forEach((el) => {
     el.addEventListener("click", () => { state.duration = Number(el.dataset.dur); savePrefs(); syncDurationUI(); });
@@ -3302,7 +3260,7 @@
     // two checks are independent and both need to hold.
     if (!isConeTap) syncPeriphFixUI();
     if (isPeriph) { syncPeriphKindUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); syncPeriphColorUI(); }
-    if (bgAllowed) { syncBgUI(); syncBgTransparentUI(); }
+    if (bgAllowed) syncBgUI();
     if (!isConeTap && !isPeriph) syncAddonUI();
     syncDurationUI();
     syncTempoUI();
@@ -4381,7 +4339,6 @@
     els.coneOrderStage.hidden = true;
     els.stageWrap.hidden = false;
     els.periphPauseBtn.hidden = EXERCISES[state.exercise].type !== "periph";
-    els.player.classList.toggle("bg-transparent", bgTransparentActive());
     fitCanvas();
     ensureAudioCtx();
     const built = buildScheduleFor(EXERCISES[state.exercise], Math.random);
@@ -4743,7 +4700,6 @@
     raf = null;
     periphPausedAt = performance.now();
     syncBgUI();
-    syncBgTransparentUI();
     syncPeriphFixUI();
     syncPeriphColorUI();
     els.periphPauseBtn.hidden = true;

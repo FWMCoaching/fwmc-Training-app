@@ -54,7 +54,10 @@ python3 serve_utf8.py   # serves this directory on :8845 with correct charset he
 ```
 Then open `http://localhost:8845/index.html`. Restart it if a session's
 server has died (`curl -s -o /dev/null -w "%{http_code}" http://localhost:8845/index.html`
-to check).
+to check). It's a `ThreadingTCPServer` (not the plain single-threaded
+`TCPServer` this started as) specifically so several Playwright/Chromium
+instances can hit it concurrently without queuing behind each other one
+request at a time - see `run_full_suite_parallel.sh` below.
 
 ## Testing convention
 
@@ -72,6 +75,42 @@ A local dev server must be running first (see above). The suite lives in
 `tests/` — see `tests/README.md` for how to run it and the convention for
 adding new scripts. Run it from inside `tests/` (screenshot paths are
 relative to that directory).
+
+**`run_full_suite_parallel.sh [concurrency]`** (default concurrency 6,
+repo root) runs the same suite several files at a time instead of one at
+a time - each test is I/O-bound (waiting on its own isolated Chromium
+instance/browser context), not CPU-bound, so this cuts wall-clock time
+roughly by the concurrency factor instead of leaving every run serialized
+end to end. Same log format as the sequential loop (one `=== file ===`
+section per test, in filename order), so it's a drop-in for the run-in-
+background-and-poll pattern below. Needs the dev server's
+`ThreadingTCPServer` (see above) to not just move the bottleneck from
+"one test at a time" to "one HTTP request at a time" - if a session's
+server predates that change, restart it. Prefer this over the plain
+sequential `run_full_suite.sh` whenever CPU/RAM headroom allows; drop the
+concurrency argument down (e.g. `sh run_full_suite_parallel.sh 3`) if
+tests start flaking under load rather than reaching for the sequential
+version as the default.
+
+**Running the full suite without blocking the session on it** (either
+script - this is about how it's invoked, not which one): pipe it to a log
+file in the background, then poll for completion instead of waiting
+synchronously, since a full run can take several minutes:
+```
+nohup sh run_full_suite_parallel.sh > /tmp/suite.log 2>&1 &
+# in a separate background shell call:
+total=$(ls tests/*.py | wc -l)
+until [ "$(grep -c '^=== ' /tmp/suite.log 2>/dev/null)" -ge "$total" ]; do sleep 20; done
+echo "SUITE COMPLETE"
+```
+The second command is itself launched in the background (not foregrounded
+and not polled with repeated manual checks) so its completion arrives as
+a single notification once every file's `=== name ===` marker has shown
+up in the log - then grep the log for `[Tt]raceback`/`Error:` and any
+unexpected `: False` result before treating it as clean. Never edit
+`app.js`/`_body.html`/`styles.css` while a run against the current build
+is in flight - a mid-run edit means some tests ran the old code and some
+the new, and the log won't tell you which is which.
 
 ## Deploy checklist
 
@@ -3521,35 +3560,20 @@ the reset button on the very first visit, no prior interaction needed;
 the global reset button reaches it too, clearing `bgCustom` and
 re-adopting the Master colour, after which it also shows "Master aktiv".
 
-## Periphere Wahrnehmung: Transparenz, Reizfarbe-Pause, Alle-Button (added 2026-09-29)
+## Periphere Wahrnehmung: Reizfarbe-Pause, Alle-Button (added 2026-09-29)
 
-Four client asks about Periphere Wahrnehmung ("Blitzreize"), all landing
-together since they touch the same ready/pause screens:
+Three client asks about Periphere Wahrnehmung ("Blitzreize"), all landing
+together since they touch the same ready/pause screens (a fourth ask,
+"Transparenter Hintergrund" for beamer/projector use, was built the same
+day and then deliberately reverted - see the note at the end):
 
-1. **Transparenter Hintergrund** (`state.bgTransparent`, VT-instance only
-   - deliberately not part of `wireBgIntensityControl`, since it's a
-   canvas-only concern the 25 CSS-background domains have no use for): a
-   "Farbe"/"Transparent" two-choice toggle (`#bgModeRow` on the ready
-   screen, `#periphPauseBgModeRow` on the pause overlay) that hides the
-   colour/intensity controls entirely while active. `currentBgFill()`
-   returns `null` instead of a fill colour when transparent; `drawScene()`'s
-   new `paintBg()` helper calls `ctx.clearRect()` instead of `fillRect()`
-   whenever it gets `null`. Clearing the canvas alone isn't enough for a
-   beamer to show nothing, though - `.player`'s own CSS background is a
-   hardcoded opaque `#ffffff` (styles.css), so a `.player.bg-transparent`
-   class (toggled by `bgTransparentActive()`, which also re-checks the
-   same "does this exercise even allow a background" guard `currentBgFill`
-   uses) drops that too. Toggled in three places: `syncBgTransparentUI()`
-   (ready/pause screens, on every mode click), `openReady()` (screen open),
-   and `runSession()` (session start) - belt and suspenders, since the
-   exercise can only actually change between the first two anyway.
-2. **"Farbe der Reize" im Pause-Overlay**: `buildStimColorPicker`/
+1. **"Farbe der Reize" im Pause-Overlay**: `buildStimColorPicker`/
    `syncPeriphColorUI()` now wire up a *second* picker instance
    (`#periphPauseColorPicker`), sharing the same `state.periphColors`
    backing store as the ready-screen one; its `onChange` additionally calls
    `redrawFrozenFrame()` so a colour picked mid-pause is visible the moment
    you resume, same pattern as the existing pause fixpoint-colour picker.
-3. **"Alle Farben"** (`buildStimColorAllBtn`, generalized into
+2. **"Alle Farben"** (`buildStimColorAllBtn`, generalized into
    `buildStimColorPicker` itself): a rainbow conic-gradient swatch, same
    idiom as the unrelated arrow/Stroop `buildColorAllBtn`, appended to
    *every* `buildStimColorPicker` call - so this reaches Periph's own
@@ -3558,20 +3582,51 @@ together since they touch the same ready/pause screens:
    "Alle" off drops to a single colour (`lib[0]`, i.e. "rot") rather than
    zero, since this picker (unlike the standard arrow/Stroop one) never
    allows an empty selection.
-4. **"Blick auf die Mitte richten" entfernt**: the `barCaption(...)` call
+3. **"Blick auf die Mitte richten" entfernt**: the `barCaption(...)` call
    in `drawScene()`'s `"periph"` branch is gone - the client found it
    distracting, showing on every single flash.
 
-Test: `tests/periph_transparency_test.py` - stimulus-colour picker has
-10 swatches (9 colours + Alle) on both ready and pause instances, "Alle"
-selects/deselects correctly (down to 1, never 0); Transparent mode hides
-the colour controls, persists across reload, gives `.player` the
-`bg-transparent` class during a real run, and leaves the canvas's own
-pixels fully alpha-0 (`getImageData` on an untouched corner) rather than
-filled; switching back to "Farbe" from the pause overlay mid-session
-restores both the CSS class and the canvas fill immediately; a colour
-picked via the pause overlay's picker shows up on the (hidden) ready-
-screen picker too, confirming the shared backing store.
+Test: `tests/periph_stimcolor_test.py` - stimulus-colour picker has 10
+swatches (9 colours + Alle) on both ready and pause instances, "Alle"
+selects/deselects correctly (down to 1, never 0); a colour picked via the
+pause overlay's picker shows up on the (hidden) ready-screen picker too,
+confirming the shared backing store; the pre-existing pause bg-colour
+picker still works alongside the new stimulus-colour one.
+
+**"Transparenter Hintergrund" was built, then reverted the same day.**
+The original idea: a "Farbe"/"Transparent" toggle that cleared the canvas
+(`ctx.clearRect()` instead of `fillRect()`) and dropped `.player`'s own
+opaque CSS background, so a beamer would show only the stimulus. On
+review with the client this turned out to add risk without a real
+benefit: a projector can only ever *add* light to the wall, never
+subtract it - the physical floor is always "a dark colour", never
+"nothing". The already-existing "Schwarz" colour at 100% intensity
+already produces exactly that floor, reliably and device-independently.
+"Transparent", by contrast, composited down to `body`'s own `--bg` colour
+- light grey (`#f6f8f9`) in normal/light mode, near-black (`#0f1a1e`) only
+if the client's device happened to be in OS Dark Mode - so it was
+strictly *less* predictable than just picking "Schwarz" directly, for no
+upside. Removed again in full: `state.bgTransparent`, `currentBgFill()`'s
+`null`-return branch, `drawScene()`'s `paintBg()` helper (reverted to the
+plain inline `fillStyle`/`fillRect()` it replaced), `bgTransparentActive()`/
+`syncBgTransparentUI()`, the `#bgModeRow`/`#periphPauseBgModeRow` toggles
+and their `#bgColorOptions`/`#periphPauseBgColorOptions` wrapper divs, and
+the `.player.bg-transparent` CSS rule. `tests/periph_transparency_test.py`
+(which covered it) was deleted; its still-relevant assertions (the "Alle
+Farben" button, the pause stimulus-colour picker) live on in
+`tests/periph_stimcolor_test.py` above.
+
+The one *kept* side effect of that detour: while testing "Transparent",
+a real, unrelated layout bug surfaced in the shared `.pause-overlay`/
+`.pause-panel` CSS (used by ~30 domains' own pause screens, not just
+Periph's) - a panel taller than the viewport had its own top edge
+clipped/unreachable by CSS flexbox centering, intercepted by the fixed
+player-bar above it. Fixed via `margin:auto` on `.pause-panel` (instead
+of `align-items:center` on `.pause-overlay`) plus extra top padding to
+clear the player-bar - see the CSS comment there. This fix stayed in
+when the rest of the Transparent work was reverted, since it's a real,
+generally-applicable bugfix unrelated to the beamer-transparency idea
+that exposed it.
 
 ## Test-Bereich (autonomous, ongoing)
 
