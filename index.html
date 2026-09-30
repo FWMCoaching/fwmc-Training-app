@@ -953,6 +953,11 @@
       <span class="fc-desc">Ein gro&szlig;er Buchstabe ist selbst aus vielen kleinen Buchstaben zusammengesetzt. Vorher steht, ob du den GROSSEN oder den KLEINEN Buchstaben nennen sollst &ndash; manchmal stimmen beide &uuml;berein, manchmal nicht. Klassisches Paradigma zur Verarbeitung von Ganzheit vs. Detail (Navon, 1977, &bdquo;Forest before the trees&ldquo;), zeigt wie stark sich die beiden Ebenen gegenseitig st&ouml;ren.</span>
       <span class="fc-meta" id="navonBestHint"></span>
     </button>
+    <button class="featured-card" id="iconicOpenBtn">
+      <span class="fc-title">Iconic-Speicher-Test</span>
+      <span class="fc-desc">Ein 3&times;3-Raster mit Zahlen blitzt ganz kurz auf, dann ist es weg. Kurz danach markiert das Programm genau EINE Reihe &ndash; nur deren drei Zahlen musst du eintippen. Klassisches Paradigma zum sensorischen (&bdquo;ikonischen&ldquo;) Bildspeicher (Sperling, 1960): zeigt, wie schnell dieser extrem kurzlebige Speicher wieder verblasst.</span>
+      <span class="fc-meta" id="iconicBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -1411,6 +1416,27 @@
   <div class="group-help" id="navonReadyBestHint"></div>
 
   <button class="start-btn" id="navonReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="iconicReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="iconicReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Iconic-Speicher-Test</h1>
+  <p class="page-sub">Ein 3&times;3-Raster aus Zahlen blitzt ganz kurz auf, dann verschwindet es. Kurz danach wird genau EINE Reihe umrandet markiert &ndash; nur deren drei Zahlen musst du &uuml;ber das Tastenfeld eintippen, die anderen sind egal. Die Wartezeit zwischen Aufblitzen und Markierung ist jedes Mal unterschiedlich. Klassisches Paradigma zum sensorischen (&bdquo;ikonischen&ldquo;) Bildspeicher (Sperling, 1960, Partial-Report-Aufgabe) &ndash; zeigt, wie schnell dieser extrem kurzlebige, aber sehr detailreiche Speicher wieder verblasst. Hinweis: das Original nutzt einen Ton zur Markierung, hier &uuml;bernimmt das die Umrandung der Reihe.</p>
+
+  <div class="group">
+    <div class="group-label">Schwierigkeit</div>
+    <div class="choice-row" id="iconicDifficultyRow">
+      <button class="choice" data-iconic-diff="leicht">Leicht<small>l&auml;nger sichtbar</small></button>
+      <button class="choice" data-iconic-diff="mittel">Mittel<small>ausgewogen</small></button>
+      <button class="choice" data-iconic-diff="schwer">Schwer<small>ganz kurz</small></button>
+    </div>
+  </div>
+
+  <div class="group-help" id="iconicReadyBestHint"></div>
+
+  <button class="start-btn" id="iconicReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="simonReady" hidden>
@@ -4382,6 +4408,41 @@
     <div class="rating" id="navonRating"></div>
     <button class="again" id="navonAgainBtn">Nochmal</button>
     <button class="back" id="navonDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="iconicPlayer" hidden>
+  <div class="iconic-stage" id="iconicStage">
+    <div class="iconic-grid" id="iconicGrid"></div>
+    <div class="remember-hint" id="iconicHint"></div>
+    <div class="iconic-answer-row" id="iconicAnswerRow" hidden></div>
+    <div class="iconic-keypad" id="iconicKeypad" hidden></div>
+  </div>
+  <div class="pause-overlay" id="iconicPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <button class="start-btn" id="iconicResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="iconicPlayerBar">
+    <button id="iconicBackBtn">&#10005; Beenden</button>
+    <button id="iconicPauseBtn">Pause</button>
+    <span class="player-status" id="iconicProgressEl"></span>
+    <button id="iconicFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="iconicFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="iconicFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="iconicFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="iconicDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="iconicDoneSummary"></p>
+    <div class="rating" id="iconicRating"></div>
+    <button class="again" id="iconicAgainBtn">Nochmal</button>
+    <button class="back" id="iconicDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 
