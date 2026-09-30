@@ -635,6 +635,14 @@
     // runSession()/finishSession() exercise lifecycle (hideAllPlayers,
     // wake lock, duration timer, ...) can be reused as-is for it.
     "cardio-flash-host": { title: "Zusatzaufgabe", type: "flash-host" },
+    // Synthetic too, same reason as cardio-flash-host above: never shown in
+    // any picker/menu, never set as state.exercise (Blitz-Raster has its
+    // own entirely separate engine/state - see the "==== Blitz-Raster
+    // engine ====" section) - exists purely so the generic cardioGuestBgAllowed()/
+    // cardioGuestNeedsColors()/etc. helpers can look up its type/bgIsStimulus
+    // the same uniform way as every real catalog exercise, instead of a
+    // one-off special case in each of those helpers.
+    "blitz-raster": { title: "Blitz-Raster", type: "blitz-raster" },
   };
 
   // ---- Programmes: coach-authored multi-block sessions. Real client
@@ -7308,7 +7316,14 @@
     }
   }
   let blitzState = null;
-  function startBlitzGame(opts) {
+  // prefsOverride (Cardio guest bursts only, see triggerCardioGuest()):
+  // runs the game with a client-chosen Cardio-specific config instead of
+  // the normal blitzPrefs - NEVER reads or mutates the client's own saved
+  // Blitz-Raster preferences. zones stays at blitzPrefs' own default
+  // (PERIPH_ZONE_KEYS, i.e. all of them) even under an override - the
+  // Cardio Feineinstellungen panel doesn't offer a zones picker, same
+  // simplification addon-flash/periph-flash's panels already made.
+  function startBlitzGame(opts, prefsOverride) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.blitzPlayer.hidden = false;
@@ -7316,12 +7331,13 @@
     els.blitzDonePanel.hidden = true;
     els.blitzPauseOverlay.hidden = true;
     els.blitzPauseBtn.hidden = false;
+    const p = prefsOverride || blitzPrefs;
     blitzState = {
-      level: blitzPrefs.startCount, cleared: 0, phase: "reveal", lit: new Set(), tapped: new Set(), eligible: new Set(),
-      startTime: performance.now(), timer: null, comboDurationTimer: null, gridSize: blitzPrefs.gridSize, zones: blitzPrefs.zones.slice(),
-      flashS: blitzPrefs.flashS, errorMode: blitzPrefs.errorMode, paused: false,
+      level: p.startCount, cleared: 0, phase: "reveal", lit: new Set(), tapped: new Set(), eligible: new Set(),
+      startTime: performance.now(), timer: null, comboDurationTimer: null, gridSize: p.gridSize, zones: (prefsOverride ? PERIPH_ZONE_KEYS : p.zones).slice(),
+      flashS: p.flashS, errorMode: p.errorMode, paused: false,
     };
-    applyBlitzBg();
+    els.blitzStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
     requestWakeLock();
     blitzStartRound();
     // Kombi block: Blitz-Raster has no natural end of its own, same as
@@ -7341,6 +7357,11 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.blitzPlayer) document.exitFullscreen().catch(() => {});
     els.blitzFsHint.hidden = true;
+    // Doubles as the Cardio guest-burst's own auto-finish (triggerCardioGuest()
+    // calls startBlitzGame() with { comboDurationS: cfg.duration } - same
+    // setTimeout mechanism, not an actual Kombi run) - back to the still-
+    // running Cardio session, same as every other guest type's natural finish.
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
     if (comboProgram) advanceComboProgram(playedS);
   }
   els.blitzReadyStartBtn.addEventListener("click", () => {
@@ -7400,6 +7421,11 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.blitzPlayer) document.exitFullscreen().catch(() => {});
     els.blitzFsHint.hidden = true;
+    // Early-exit mid-Cardio-guest-burst: back to the still-running Cardio
+    // session (same as every other guest type's Beenden), and - like every
+    // other guest type - no best-score/history entry recorded for a quick
+    // guest burst, only the overall Cardio session gets one.
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
     // "Beenden" mid-Kombi quits the whole Kombi programme, not just this
     // block - matches Remember's (and every other domain's) behaviour.
     if (comboProgram) { abortComboProgram(); return; }
@@ -10440,40 +10466,63 @@
   // runSession()/tick()/state.exercise - genuinely mechanical, since
   // applyCardioGuestToState() below already dispatches purely off each
   // exercise's own usesColors/usesArrowColors/usesStroopColors/
-  // bgIsStimulus/type flags and needed zero changes. Two exercises from
-  // that same catalog are deliberately NOT here yet: "periph-flash"
-  // (Periphere Wahrnehmung) has its own much larger settings surface
-  // (fixation point, zones, zone weights - not a quick addition, its own
-  // follow-up); "cone-tap" (Hütchen sortieren) IS included since it turned
-  // out trivial (just calls startConeTap() instead of runSession(), no
-  // colours/stimulus/interval concept at all).
+  // bgIsStimulus/type flags and needed zero changes. "cone-tap" (Hütchen
+  // sortieren) IS included since it turned out trivial (just calls
+  // startConeTap() instead of runSession(), no colours/stimulus/interval
+  // concept at all).
   //
-  // The NAT domain (Periphere Wahrnehmung aside) turned out NOT to share
-  // this engine at all, despite looking like it should - every NAT
-  // exercise (Merkspanne, Blitz-Raster, Flash, MOT, Go/No-Go, N-Back, Trail
-  // Making, ... ~25 in total) has its own dedicated player/prefs/finish
-  // path (see hideAllPlayers()'s long list), not the shared #player/state.
-  // Each would need its own individual bridge into triggerCardioGuest()/
-  // returnFromCardioGuest() - a real, separate piece of work, much closer
-  // in size to the deferred Atemtraining/Movement/Workout lift than to
-  // this batch. Left for its own follow-up rather than silently expanding
-  // this "mechanical" batch to cover it too.
+  // Correction to that Phase 1 note: it claimed the whole NAT domain (~25
+  // exercises) shared none of this engine, wrongly lumping NAT together
+  // with the separately-excluded Test domain. Checked the actual nav
+  // structure: NAT is only FIVE things - Periphere Wahrnehmung, Remember,
+  // Blitz-Raster, Flash Speicher Test, MOT-Fähigkeit. The ~25-exercise
+  // list (Go/No-Go, N-Back, Trail Making, ...) is the Test domain
+  // (`testHome`), which the client explicitly wants left out, still.
+  //
+  // NAT batch 1 (2026-09-30): "periph-flash" (Periphere Wahrnehmung) turns
+  // out to be the SAME engine as everything above (`buildPeriphSchedule`
+  // dispatches through the identical runSession()/tick()) - it was only
+  // held back in Phase 1 for its larger settings surface, now added with
+  // the same depth of configurability addon-flash already has (kind +
+  // colours + duration + background; axes/zones/zone-weights stay at
+  // their default, same pre-existing simplification addon-flash's own
+  // panel already has - not a new gap introduced here). "blitz-raster" is
+  // the first of the genuinely separate-engine NAT exercises bridged in -
+  // see the cardioGuestActive branches added to blitzStop()/
+  // finishBlitzCombo() and startBlitzGame()'s new prefsOverride parameter
+  // (never mutates the client's own saved blitzPrefs). Remember/Flash/
+  // MOT are next - each also needs a sub-mode picker step (training vs.
+  // fixed vs. ... ) that doesn't exist here yet, real additional work, not
+  // silently folded into this batch either.
+  //
+  // `group` sorts both the Feineinstellungen pool grid and the live
+  // picker into their parent domain, so the list stays legible as it
+  // grows instead of one long flat run of choices.
+  const CARDIO_GUEST_GROUPS = { vt: "Visual Training", nat: "Neuroathletik (NAT)" };
   const CARDIO_GUEST_TYPES = [
-    { id: "addon-flash", title: "Zusatzaufgabe · Ziffer/Buchstabe" },
-    { id: "vt-color", title: "VT · Farbe & Seite" },
-    { id: "vrw-original", title: "VRW · Direkt & Umgekehrt" },
-    { id: "stroop-classic", title: "Stroop · klassisch" },
-    { id: "stroop-bg", title: "Stroop · mit Hintergrund" },
-    { id: "4-straight", title: "4 Pfeile · gerade" },
-    { id: "4-diag", title: "4 Pfeile · diagonal" },
-    { id: "8-solo", title: "8 Pfeile" },
-    { id: "8-vrw", title: "8 Pfeile · Rot/Grün" },
-    { id: "cross-modal", title: "Sehen & Hören" },
-    { id: "cone-compass", title: "Hütchen · Kompass-Aufbau" },
-    { id: "cone-tap", title: "Hütchen sortieren" },
+    { id: "addon-flash", title: "Zusatzaufgabe · Ziffer/Buchstabe", group: "vt" },
+    { id: "vt-color", title: "VT · Farbe & Seite", group: "vt" },
+    { id: "vrw-original", title: "VRW · Direkt & Umgekehrt", group: "vt" },
+    { id: "stroop-classic", title: "Stroop · klassisch", group: "vt" },
+    { id: "stroop-bg", title: "Stroop · mit Hintergrund", group: "vt" },
+    { id: "4-straight", title: "4 Pfeile · gerade", group: "vt" },
+    { id: "4-diag", title: "4 Pfeile · diagonal", group: "vt" },
+    { id: "8-solo", title: "8 Pfeile", group: "vt" },
+    { id: "8-vrw", title: "8 Pfeile · Rot/Grün", group: "vt" },
+    { id: "cross-modal", title: "Sehen & Hören", group: "vt" },
+    { id: "cone-compass", title: "Hütchen · Kompass-Aufbau", group: "vt" },
+    { id: "cone-tap", title: "Hütchen sortieren", group: "vt" },
+    { id: "periph-flash", title: "Periphere Wahrnehmung", group: "nat" },
+    { id: "blitz-raster", title: "Blitz-Raster", group: "nat" },
   ];
+  // "addon-flash" and "periph-flash" both flash a coloured digit/letter at
+  // a random peripheral position (the former as a Zusatzaufgabe overlay on
+  // a blank host, the latter as the actual Periphere Wahrnehmung exercise)
+  // and share the exact same addonDefaultOwn()-shaped config (kind/axes/
+  // useZones/zones/sizeMode/colors) as a result - "periph-like" below.
+  function cardioGuestIsPeriphLike(guestId) { return guestId === "addon-flash" || guestId === "periph-flash"; }
   function cardioGuestColorLib(guestId) {
-    return ["addon-flash", "stroop-classic", "stroop-bg"].includes(guestId) ? STROOP_COLOR_LIB : COLOR_LIB;
+    return cardioGuestIsPeriphLike(guestId) || guestId === "stroop-classic" || guestId === "stroop-bg" ? STROOP_COLOR_LIB : COLOR_LIB;
   }
   function cardioGuestRealId(guestId) { return guestId === "addon-flash" ? "cardio-flash-host" : guestId; }
   // Mirrors currentBgFill()'s own exclusion exactly (ex.type === "color-tap"
@@ -10487,15 +10536,22 @@
     const ex = EXERCISES[cardioGuestRealId(guestId)];
     return ex.type !== "color-tap" && !ex.bgIsStimulus;
   }
+  // EXERCISES[...].usesColors/usesArrowColors/usesStroopColors covers every
+  // real catalog exercise, but periph-like types pick their colours through
+  // a different, older mechanism (state.periphColors, not active.*) that
+  // predates those flags - needs its own check rather than a 4th flag.
   function cardioGuestNeedsColors(guestId) {
+    if (cardioGuestIsPeriphLike(guestId)) return true;
     const ex = EXERCISES[cardioGuestRealId(guestId)];
     return !!(ex.usesColors || ex.usesArrowColors || ex.usesStroopColors);
   }
   function cardioGuestIsConeTap(guestId) { return EXERCISES[cardioGuestRealId(guestId)].type === "color-tap"; }
+  function cardioGuestIsBlitz(guestId) { return guestId === "blitz-raster"; }
   function cardioGuestDefaultCfg(guestId) {
     const bg = cardioGuestBgAllowed(guestId) ? { bgColorKey: "gruen", bgIntensity: 0 } : {};
-    if (guestId === "addon-flash") return { duration: 20, ...addonDefaultOwn(), ...bg };
+    if (cardioGuestIsPeriphLike(guestId)) return { duration: 20, ...addonDefaultOwn(), ...bg };
     if (guestId === "cone-tap") return { duration: 20 };
+    if (guestId === "blitz-raster") return { duration: 20, flashS: BLITZ_DIFFICULTIES.mittel.flashS, errorMode: "reset2", gridSize: 4, startCount: 3, ...bg };
     if (guestId === "vt-color" || guestId === "vrw-original") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg };
     if (guestId === "stroop-classic" || guestId === "stroop-bg") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "blau", "gruen"], ...bg };
     if (guestId === "8-vrw" || guestId === "cross-modal") return { duration: 20, stimulusS: 1, intervalMin: 2, intervalMax: 4, ...bg };
@@ -10520,7 +10576,7 @@
       let p = cardioAddonPrefs.perType[t.id];
       if (!p || typeof p !== "object") { cardioAddonPrefs.perType[t.id] = d; return; }
       if (!Number.isFinite(p.duration) || p.duration < 5 || p.duration > 120) p.duration = d.duration;
-      if (!cardioGuestIsConeTap(t.id)) {
+      if (!cardioGuestIsConeTap(t.id) && !cardioGuestIsBlitz(t.id)) {
         if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
         if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
         if (!Number.isFinite(p.intervalMax) || p.intervalMax < 0.5 || p.intervalMax > 15) p.intervalMax = d.intervalMax;
@@ -10533,12 +10589,18 @@
         if (!STROOP_COLOR_BY_KEY[p.bgColorKey]) p.bgColorKey = d.bgColorKey;
         if (!Number.isFinite(p.bgIntensity) || p.bgIntensity < 0 || p.bgIntensity > 1) p.bgIntensity = d.bgIntensity;
       }
-      if (t.id === "addon-flash") {
+      if (cardioGuestIsPeriphLike(t.id)) {
         if (!["buchstaben", "zahlen", "gemischt"].includes(p.kind)) p.kind = d.kind;
         if (!["gleich", "wachsend"].includes(p.sizeMode)) p.sizeMode = d.sizeMode;
         if (!Array.isArray(p.axes) || !p.axes.length) p.axes = d.axes.slice();
         if (typeof p.useZones !== "boolean") p.useZones = d.useZones;
         if (!Array.isArray(p.zones) || !p.zones.length) p.zones = d.zones.slice();
+      }
+      if (cardioGuestIsBlitz(t.id)) {
+        if (!Number.isFinite(p.flashS) || p.flashS < 0.3 || p.flashS > 2) p.flashS = d.flashS;
+        if (!["reset2", "backOne", "stay"].includes(p.errorMode)) p.errorMode = d.errorMode;
+        if (![3, 4, 5, 6, 7, 8].includes(p.gridSize)) p.gridSize = d.gridSize;
+        if (!Number.isFinite(p.startCount) || p.startCount < 1) p.startCount = d.startCount;
       }
     });
   }
@@ -10559,7 +10621,15 @@
     els.cardioAddonWindowEndSlider.value = Math.round(cardioAddonPrefs.windowEndS / 60);
     els.cardioAddonWindowEndValue.textContent = `${Math.round(cardioAddonPrefs.windowEndS / 60)} Min.`;
     els.cardioAddonPoolGrid.innerHTML = "";
+    let lastPoolGroup = null;
     CARDIO_GUEST_TYPES.forEach((t) => {
+      if (t.group !== lastPoolGroup) {
+        lastPoolGroup = t.group;
+        const heading = document.createElement("div");
+        heading.className = "group-label cardio-pool-group-label";
+        heading.textContent = CARDIO_GUEST_GROUPS[t.group];
+        els.cardioAddonPoolGrid.appendChild(heading);
+      }
       const label = document.createElement("label");
       label.className = "cardio-pool-check";
       const checked = cardioAddonPrefs.pool.includes(t.id);
@@ -10631,18 +10701,38 @@
       // cone-tap ("Hütchen sortieren") has no stimulus/interval concept at
       // all (it's tap-paced, not a flash schedule) - showing those sliders
       // for it would adjust something with zero visible effect, so they're
-      // simply left out rather than shown-but-inert.
-      html += cardioGuestIsConeTap(t.id)
-        ? `<div class="cardio-guest-field-row">
+      // simply left out rather than shown-but-inert. Blitz-Raster has its
+      // own entirely different field set (see below), not this one at all.
+      if (cardioGuestIsBlitz(t.id)) {
+        html += `<div class="cardio-guest-field-row">
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
-      </div>`
-        : `<div class="cardio-guest-field-row">
+        <div><label>Startanzahl</label><input type="number" min="2" max="12" step="1" data-type="${t.id}" data-f="startCount" value="${cfg.startCount}"></div>
+      </div>`;
+        html += `<div class="choice-row" data-blitzdiff-row="${t.id}">` +
+          Object.entries(BLITZ_DIFFICULTIES).map(([k, d]) => `<button class="choice${Math.abs(cfg.flashS - d.flashS) < 0.001 ? " active" : ""}" data-type="${t.id}" data-blitzdiff="${k}">${esc(d.title)}</button>`).join("") +
+          `</div>`;
+        html += `<div class="choice-row" data-blitzgrid-row="${t.id}">` +
+          [3, 4, 5, 6, 7, 8].map((n) => `<button class="choice${cfg.gridSize === n ? " active" : ""}" data-type="${t.id}" data-blitzgrid="${n}">${n}&times;${n}</button>`).join("") +
+          `</div>`;
+        html += `<div class="group-label">Bei Fehler</div>` +
+          `<div class="choice-row" data-blitzerror-row="${t.id}">` +
+          `<button class="choice${cfg.errorMode === "reset2" ? " active" : ""}" data-type="${t.id}" data-blitzerror="reset2">Zurück auf 2<small>ganz von vorne</small></button>` +
+          `<button class="choice${cfg.errorMode === "backOne" ? " active" : ""}" data-type="${t.id}" data-blitzerror="backOne">Ein Feld weniger<small>eine Stufe runter</small></button>` +
+          `<button class="choice${cfg.errorMode === "stay" ? " active" : ""}" data-type="${t.id}" data-blitzerror="stay">Gleiche Anzahl<small>so lange, bis es klappt</small></button>` +
+          `</div>`;
+      } else if (cardioGuestIsConeTap(t.id)) {
+        html += `<div class="cardio-guest-field-row">
+        <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
+      </div>`;
+      } else {
+        html += `<div class="cardio-guest-field-row">
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
         <div><label>Reiz-Dauer (Sek.)</label><input type="number" min="0.3" max="3" step="0.1" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"></div>
         <div><label>Pause min (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${t.id}" data-f="intervalMin" value="${cfg.intervalMin}"></div>
         <div><label>Pause max (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${t.id}" data-f="intervalMax" value="${cfg.intervalMax}"></div>
       </div>`;
-      if (t.id === "addon-flash") {
+      }
+      if (cardioGuestIsPeriphLike(t.id)) {
         html += `<div class="choice-row" data-kind-row="${t.id}">` +
           ["buchstaben", "zahlen", "gemischt"].map((k) => `<button class="choice${cfg.kind === k ? " active" : ""}" data-type="${t.id}" data-kind="${k}">${k === "buchstaben" ? "Buchstaben" : k === "zahlen" ? "Zahlen" : "Gemischt"}</button>`).join("") +
           `</div>`;
@@ -10687,6 +10777,27 @@
     els.cardioAddonPerType.querySelectorAll("[data-kind]").forEach((btn) => {
       btn.addEventListener("click", () => {
         cardioAddonPrefs.perType[btn.dataset.type].kind = btn.dataset.kind;
+        saveCardioAddonPrefs();
+        renderCardioAddonFineTune();
+      });
+    });
+    els.cardioAddonPerType.querySelectorAll("[data-blitzdiff]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        cardioAddonPrefs.perType[btn.dataset.type].flashS = BLITZ_DIFFICULTIES[btn.dataset.blitzdiff].flashS;
+        saveCardioAddonPrefs();
+        renderCardioAddonFineTune();
+      });
+    });
+    els.cardioAddonPerType.querySelectorAll("[data-blitzgrid]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        cardioAddonPrefs.perType[btn.dataset.type].gridSize = Number(btn.dataset.blitzgrid);
+        saveCardioAddonPrefs();
+        renderCardioAddonFineTune();
+      });
+    });
+    els.cardioAddonPerType.querySelectorAll("[data-blitzerror]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        cardioAddonPrefs.perType[btn.dataset.type].errorMode = btn.dataset.blitzerror;
         saveCardioAddonPrefs();
         renderCardioAddonFineTune();
       });
@@ -10854,6 +10965,20 @@
     // leaving state.bgColorKey/bgIntensity untouched here for that case is
     // just tidier, not load-bearing.
     if (cfg.bgColorKey) { state.bgColorKey = cfg.bgColorKey; state.bgIntensity = cfg.bgIntensity ?? 0; }
+    // Periphere Wahrnehmung reads its stimulus config from its own
+    // state.periph* fields (buildPeriphSchedule()/randPeriphPos()), a
+    // different, older mechanism than the usesColors/usesArrowColors/
+    // usesStroopColors one below - same addonDefaultOwn()-shaped cfg as
+    // addon-flash (cardioGuestIsPeriphLike()), just written into these
+    // fields instead of active.*.
+    if (guestId === "periph-flash") {
+      state.periphKind = cfg.kind;
+      state.periphAxes = cfg.axes;
+      state.periphUseZones = cfg.useZones;
+      state.periphZones = cfg.zones;
+      state.periphSizeMode = cfg.sizeMode;
+      state.periphColors = cfg.colors;
+    }
     const ex = EXERCISES[guestId];
     active = { colors: [], arrowColors: [], stroopColors: [] };
     if (ex.usesColors) active.colors = keysToColors(cfg.colors);
@@ -10872,12 +10997,20 @@
     const realId = cardioGuestRealId(guestId);
     const cfg = explicitDurationS != null ? { ...cardioAddonPrefs.perType[guestId], duration: explicitDurationS } : cardioAddonPrefs.perType[guestId];
     cardioGuestActive = true;
-    applyCardioGuestToState(realId, cfg);
-    // "Hütchen sortieren" (cone-tap) is the one type here with its own
-    // separate playback engine (tap-paced counting, not a canvas flash
-    // schedule) - same dispatch startSession() itself already uses.
-    if (EXERCISES[realId].type === "color-tap") startConeTap();
-    else runSession();
+    // Blitz-Raster doesn't touch state.exercise/runSession() at all - its
+    // own engine, started with this cfg as a prefsOverride so the client's
+    // own saved blitzPrefs are never read or mutated by a guest burst (see
+    // startBlitzGame()'s prefsOverride parameter).
+    if (cardioGuestIsBlitz(guestId)) {
+      startBlitzGame({ comboDurationS: cfg.duration }, cfg);
+    } else {
+      applyCardioGuestToState(realId, cfg);
+      // "Hütchen sortieren" (cone-tap) is the one type here with its own
+      // separate playback engine (tap-paced counting, not a canvas flash
+      // schedule) - same dispatch startSession() itself already uses.
+      if (EXERCISES[realId].type === "color-tap") startConeTap();
+      else runSession();
+    }
     showCardioGuestBadge();
   }
 
@@ -10898,7 +11031,15 @@
   const CARDIO_ADDON_PICKER_DURATION_MAX = 180;
   function renderCardioAddonPicker() {
     els.cardioAddonPickerTypeRow.innerHTML = "";
+    let lastPickerGroup = null;
     CARDIO_GUEST_TYPES.forEach((t) => {
+      if (t.group !== lastPickerGroup) {
+        lastPickerGroup = t.group;
+        const heading = document.createElement("div");
+        heading.className = "group-label cardio-addon-picker-group-label";
+        heading.textContent = CARDIO_GUEST_GROUPS[t.group];
+        els.cardioAddonPickerTypeRow.appendChild(heading);
+      }
       const [main, sub] = t.title.split(" · ");
       const btn = document.createElement("button");
       btn.type = "button";

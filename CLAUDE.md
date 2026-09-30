@@ -4021,15 +4021,110 @@ engine" was only half true.
   phase rather than silently expanding this one; told to the client
   before proceeding rather than after.
 
-Test: `tests/cardio_addon_phase1_test.py` - pool grid offers all 12;
-fine-tune panels correctly show/hide their colour row, background row,
-and stimulus/interval fields per type (checked on `vrw-original`,
-`cross-modal`, `cone-tap` as representative cases); the live picker
-offers all 12; each of the 8 new types actually takes over full-screen
-(cone-tap via `#coneOrderStage`, the rest via the canvas `#player`) and
-returns cleanly to the still-running Cardio session via Beenden.
-`tests/cardio_addon_picker_test.py`'s own "4 exercise choices" count was
-updated to 12.
+Test: `tests/cardio_addon_phase1_test.py` - pool grid offers all (now 14,
+updated again in the NAT batch below); fine-tune panels correctly show/
+hide their colour row, background row, and stimulus/interval fields per
+type (checked on `vrw-original`, `cross-modal`, `cone-tap` as
+representative cases); the live picker offers all; each of the 8 new
+types actually takes over full-screen (cone-tap via `#coneOrderStage`,
+the rest via the canvas `#player`) and returns cleanly to the still-
+running Cardio session via Beenden. `tests/cardio_addon_picker_test.py`'s
+own exercise-choice count was updated alongside each batch that changes it.
+
+### NAT batch 1: Periphere Wahrnehmung + Blitz-Raster (2026-09-30)
+
+The client asked for "leg eine Reihenfolge fest und mach" (decide an
+order and just do it) after the Phase-1 NAT-vs-Test mix-up was
+explained. Investigating the actual nav markup (`data-nat-sub` tabs)
+turned up a second correction: the NAT domain isn't ~25 exercises at
+all - it's exactly **five**: Periphere Wahrnehmung, Remember,
+Blitz-Raster, Flash Speicher Test, MOT-Fähigkeit. The ~25-exercise list
+from the Phase-1 note (Go/No-Go, N-Back, Trail Making, ...) all belongs
+to the separately-excluded Test domain (`testHome`) - confirmed by
+checking `_body.html` directly (every one of those `OpenBtn` ids sits
+inside `#testHome`, none inside `#natHome`). Corrected in the Phase 1
+comment block in `app.js` alongside this batch.
+
+Chose to start with the two NAT exercises that don't need a sub-mode
+picker (Remember/Flash/MOT each have multiple starting modes - training
+vs. fixed vs. shuffle vs. ... - and adding a mode-choice step to the
+Cardio picker is real, separate UI work saved for the next batch):
+
+- **`periph-flash`** (Periphere Wahrnehmung) turned out to be the exact
+  same `runSession()`/`tick()` engine as everything in Phase 1 -
+  `buildPeriphSchedule()` dispatches through the identical path. Only
+  held back in Phase 1 because it reads its stimulus config from its own
+  `state.periph*` fields (`periphKind`/`periphAxes`/`periphUseZones`/
+  `periphZones`/`periphSizeMode`/`periphColors`) rather than the
+  `active.colors`/etc. mechanism the `usesColors`/`usesArrowColors`/
+  `usesStroopColors` flags drive - `applyCardioGuestToState()` got one
+  new branch writing into those fields instead. Its cfg reuses the exact
+  same `addonDefaultOwn()` shape as `addon-flash` (`cardioGuestIsPeriphLike()`
+  now covers both) - same depth of configurability (kind, colours,
+  duration, background), deliberately not adding axes/zones/zone-weight
+  controls here either, matching addon-flash's own existing
+  simplification rather than introducing new inconsistency between the two.
+- **`blitz-raster`** (Blitz-Raster) is the first genuinely separate-
+  engine NAT exercise bridged in, proving the harder pattern before
+  Remember/Flash/MOT reuse it:
+  - `startBlitzGame()` gained a second parameter, `prefsOverride` -
+    when set (only from `triggerCardioGuest()`), the game runs with that
+    config instead of the client's own saved `blitzPrefs`, and **never
+    reads or writes `blitzPrefs`** - verified directly in
+    `cardio_addon_nat_batch1_test.py` (grid size changed in Cardio's
+    panel, client's own Blitz-Raster grid size and best-score checked
+    unchanged afterward). `zones` stays at `PERIPH_ZONE_KEYS` (all of
+    them) under an override, matching the "no zones picker in this
+    panel" simplification used elsewhere.
+  - `blitzStop()` (the "Beenden" handler) and `finishBlitzCombo()` (the
+    existing duration-driven auto-finish Blitz-Raster already uses for
+    Kombi blocks - reused as-is for the Cardio guest burst, passing
+    `{ comboDurationS: cfg.duration }`) both got a
+    `cardioGuestActive` branch calling `returnFromCardioGuest()`, mirroring
+    the pattern already used for `comboProgram`. No best-score/history
+    entry is recorded for a guest burst, matching how no other guest
+    type gets its own history entry either.
+  - A synthetic `EXERCISES["blitz-raster"]` entry (same idea as
+    `cardio-flash-host`, never shown in any real picker) lets the
+    generic `cardioGuestBgAllowed()`/`cardioGuestNeedsColors()` helpers
+    look it up the same uniform way as a real catalog exercise.
+  - Its Feineinstellungen panel is its own distinct field set (no
+    stimulus/interval/colour fields at all - see `cardioGuestIsBlitz()`):
+    Dauer, Startanzahl, a Leicht/Mittel/Schwer difficulty row (maps to
+    `BLITZ_DIFFICULTIES`), a 3×3–8×8 grid-size row, a "Bei Fehler" row,
+    and the standard background row - same labels/options as Blitz-
+    Raster's own Ready screen for consistency.
+- **Category grouping**: `CARDIO_GUEST_TYPES` entries now carry a
+  `group: "vt" | "nat"` field (`CARDIO_GUEST_GROUPS` holds the display
+  names); both the Feineinstellungen pool grid and the live picker
+  render a heading before each new group, sorted Visual Training then
+  Neuroathletik (NAT) - unprompted request from the client ("in diesem
+  Auswahlmodus das auch nach den übergeordneten Themen sortieren"), done
+  now since there's finally a second real group to show.
+
+Deferred to the next batch, not silently folded in: **Remember, Flash
+Speicher Test, MOT-Fähigkeit** - each needs the `prefsOverride` pattern
+proven above AND a new sub-mode-picker step in the Cardio picker flow
+(the client's explicit ask: "muss natürlich dann auch die Möglichkeit
+bestehen, in diese Untermenüs zu gehen, wie man diese Übung dann starten
+will").
+
+Test: `tests/cardio_addon_nat_batch1_test.py` - pool grid and live picker
+both grouped correctly; `periph-flash`'s panel has the same field depth
+as `addon-flash`; `blitz-raster`'s panel shows only its own field set
+(no colour row, no generic stimulus/interval fields) plus the background
+row; both types actually take over full-screen and return to the still-
+running Cardio session on Beenden (blitz-raster checked both via its own
+duration running out AND an early Beenden mid-round); the client's own
+real Blitz-Raster best score and grid-size setting are provably
+untouched by a Cardio guest burst that used different settings.
+`tests/cardio_addon_picker_test.py`/`cardio_addon_phase1_test.py`'s
+exercise-choice counts updated to 14. Existing `blitz_test.py`/
+`blitz_combo_test.py`/`blitz_grid_size_test.py`/`periph_test.py`/
+`addon_periph_test.py`/`periph_pause_test.py`/`periph_stimcolor_test.py`
+all re-verified passing unchanged - the `prefsOverride` parameter and
+the two `cardioGuestActive` branches don't alter normal (non-Cardio)
+behaviour.
 
 ## Test-Bereich (autonomous, ongoing)
 

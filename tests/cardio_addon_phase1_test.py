@@ -41,7 +41,9 @@ async def main():
         # ---- Feineinstellungen: pool grid + fine-tune gating ----
         await pg.click("#cardioAddonAdvanced summary"); await pg.wait_for_timeout(150)
         await pg.check("#cardioAddonEnableToggle"); await pg.wait_for_timeout(150)
-        print("pool grid now offers 12 types:", await pg.locator("#cardioAddonPoolGrid [data-pool]").count() == 12)
+        # 14 as of NAT batch 1 (2026-09-30): the 12 from this file's own
+        # batch + periph-flash + blitz-raster (see cardio_addon_nat_batch1_test.py)
+        print("pool grid now offers 14 types:", await pg.locator("#cardioAddonPoolGrid [data-pool]").count() == 14)
         for _, t in NEW_TYPES:
             await pg.check(f'#cardioAddonPoolGrid input[data-pool="{t}"]')
         await pg.wait_for_timeout(200)
@@ -64,7 +66,7 @@ async def main():
         # ---- live picker offers all 12 ----
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(400)
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        print("picker offers all 12 types:", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 12)
+        print("picker offers all 14 types:", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 14)
         await pg.click("#cardioAddonPickerCancelBtn"); await pg.wait_for_timeout(150)
 
         # ---- each new type actually takes over and returns cleanly ----
