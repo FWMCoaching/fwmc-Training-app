@@ -1005,6 +1005,14 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 }
 .iconic-key:active{transform:scale(.94)}
 
+.pvt-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pvt-display{font-size:64px;font-weight:700;color:#8a97a3;line-height:1;min-height:76px;transition:color .1s ease,transform .08s ease}
+.pvt-display.active{color:#007094}
+.pvt-display.feedback.fast{color:#2e7d32}
+.pvt-display.feedback.lapse{color:#e65100}
+.pvt-display.feedback.timeout{color:#d32f2f;font-size:28px}
+.pvt-display.falsestart{color:#d32f2f;transform:scale(1.15)}
+
 .corsi-stage{flex:1;position:relative;overflow:hidden}
 .corsi-block{
   position:absolute;transform:translate(-50%,-50%);

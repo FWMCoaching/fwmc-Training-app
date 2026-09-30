@@ -1630,6 +1630,18 @@
     iconicFsBtn: $("iconicFsBtn"), iconicFsHint: $("iconicFsHint"), iconicFsHintOpenBtn: $("iconicFsHintOpenBtn"), iconicFsHintClose: $("iconicFsHintClose"),
     iconicDonePanel: $("iconicDonePanel"), iconicDoneSummary: $("iconicDoneSummary"), iconicRating: $("iconicRating"),
     iconicAgainBtn: $("iconicAgainBtn"), iconicDoneBackBtn: $("iconicDoneBackBtn"),
+    pvtOpenBtn: $("pvtOpenBtn"), pvtBestHint: $("pvtBestHint"), pvtReady: $("pvtReady"),
+    pvtReadyBackToHome: $("pvtReadyBackToHome"), pvtLengthRow: $("pvtLengthRow"),
+    pvtAdvanced: $("pvtAdvanced"), pvtBgColorPicker: $("pvtBgColorPicker"), pvtBgIntensitySlider: $("pvtBgIntensitySlider"),
+    pvtBgIntensityValue: $("pvtBgIntensityValue"), pvtBgContrastHint: $("pvtBgContrastHint"), pvtBgMasterStatus: $("pvtBgMasterStatus"),
+    pvtReadyBestHint: $("pvtReadyBestHint"), pvtReadyStartBtn: $("pvtReadyStartBtn"),
+    pvtPlayer: $("pvtPlayer"), pvtStage: $("pvtStage"), pvtHint: $("pvtHint"), pvtDisplay: $("pvtDisplay"),
+    pvtPauseOverlay: $("pvtPauseOverlay"), pvtResumeBtn: $("pvtResumeBtn"),
+    pvtPauseBgSlider: $("pvtPauseBgSlider"), pvtPauseBgValue: $("pvtPauseBgValue"), pvtPauseBgColorPicker: $("pvtPauseBgColorPicker"), pvtPauseBgContrastHint: $("pvtPauseBgContrastHint"),
+    pvtPlayerBar: $("pvtPlayerBar"), pvtBackBtn: $("pvtBackBtn"), pvtPauseBtn: $("pvtPauseBtn"), pvtProgressEl: $("pvtProgressEl"),
+    pvtFsBtn: $("pvtFsBtn"), pvtFsHint: $("pvtFsHint"), pvtFsHintOpenBtn: $("pvtFsHintOpenBtn"), pvtFsHintClose: $("pvtFsHintClose"),
+    pvtDonePanel: $("pvtDonePanel"), pvtDoneSummary: $("pvtDoneSummary"), pvtRating: $("pvtRating"),
+    pvtAgainBtn: $("pvtAgainBtn"), pvtDoneBackBtn: $("pvtDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
@@ -1888,7 +1900,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -2659,6 +2671,7 @@
     () => ({ prefs: antiPrefs, key: ANTI_PREFS_KEY, save: saveAntiPrefsToStorage }),
     () => ({ prefs: dsstPrefs, key: DSST_PREFS_KEY, save: saveDsstPrefsToStorage }),
     () => ({ prefs: navonPrefs, key: NAVON_PREFS_KEY, save: saveNavonPrefsToStorage }),
+    () => ({ prefs: pvtPrefs, key: PVT_PREFS_KEY, save: savePvtPrefsToStorage }),
   ];
   // Applies the Master default to every target above that's still
   // "following" it (target.prefs.bgCustom !== true) - never touches a
@@ -4359,6 +4372,7 @@
     els.wcstPlayer.hidden = true;
     els.navonPlayer.hidden = true;
     els.iconicPlayer.hidden = true;
+    els.pvtPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.cardioPlayer.hidden = true;
     els.programVideoPlayer.hidden = true;
@@ -15255,6 +15269,337 @@
   els.iconicAgainBtn.addEventListener("click", () => { els.iconicDonePanel.hidden = true; startIconicGame(); });
   els.iconicDoneBackBtn.addEventListener("click", () => { els.iconicPlayer.hidden = true; els.iconicDonePanel.hidden = true; showScreen("testHome"); });
   wireFullscreen({ player: els.iconicPlayer, btn: els.iconicFsBtn, hint: els.iconicFsHint, hintOpen: els.iconicFsHintOpenBtn, hintClose: els.iconicFsHintClose });
+
+  // ==== Test-Bereich: Daueraufmerksamkeits-Test (Psychomotor Vigilance Task) ====
+  // Twenty-seventh autonomous entry, picked from the "Recherche-Backlog: 20
+  // Kandidaten" list (candidate #14) rather than fresh research this round.
+  // Grounded in the Psychomotor Vigilance Task (PVT; Dinges & Powell, 1985)
+  // - the gold-standard sustained-attention/fatigue measure used throughout
+  // sleep-deprivation and vigilance research: a simple stimulus appears at
+  // pseudo-random 2-10s intervals with NO warning cue of any kind, over a
+  // SUSTAINED run; the client taps as fast as possible each time. "Lapses"
+  // (RT > 500ms) accumulate measurably as time-on-task and fatigue build,
+  // and mean RT typically rises across the run (the "vigilance decrement")
+  // - famously sensitive to sleep loss, but also to plain sustained boredom/
+  // fatigue in an otherwise-rested person, which is the relevant read for a
+  // training-app context. The classic display is a millisecond counter that
+  // starts at the stimulus and counts up until stopped - reproduced exactly
+  // here (`.pvt-display`, driven by `requestAnimationFrame`, not a colour
+  // change or shape), since the counting-number itself is part of what
+  // makes the real PVT so simple and distraction-free. Durations offered
+  // (`PVT_LENGTHS`, kurz/mittel/lang = 3/5/10 Min) span the full classic
+  // 10-minute protocol down to genuinely validated ABBREVIATED versions -
+  // Basner, Mollicone & Dinges (2011, Acta Astronautica) validated 3- and
+  // 5-minute PVT-B forms against the full 10-minute original specifically
+  // for time-constrained/field use, so "Kurz"/"Mittel" aren't arbitrary
+  // shortenings, they're an established, cited protocol in their own right.
+  // Genuinely distinct from every existing Test/NAT mechanic: every other
+  // RT-based exercise here (Go/No-Go, Flanker, Posner, Simon, Rotationstest,
+  // Stopp-Signal-Test, ...) is a short, fixed-trial block (24-64 trials, a
+  // few minutes) measuring a momentary cognitive facet (inhibition/
+  // conflict/switching); this is the only one whose entire point is a
+  // SUSTAINED, MANY-MINUTE run measuring attentional DECAY over time-on-
+  // task itself - directly relevant to fatigue/overtraining monitoring in a
+  // coaching context, and a genuinely different construct (vigilance, not
+  // decision speed) from anything else on this tab. No categorisation, no
+  // conflict, no memory - the simplest possible response, which is exactly
+  // the point: any slowing over the run reflects attention lapsing, not a
+  // harder decision. A tap during the "waiting" phase (before the counter
+  // starts) is a false start/anticipation, logged separately and never
+  // cancels the already-scheduled, genuinely random stimulus onset - a
+  // client "gaming" the wait can't shorten it. Reports overall mean RT,
+  // lapse count/rate (RT > `PVT_LAPSE_THRESHOLD_MS` = 500ms, the standard
+  // PVT threshold), false-start count, and the actual outcome measure this
+  // paradigm exists to reveal: the "Vigilanz-Abfall" (mean RT of the second
+  // half of the run's trials minus the first half) - positive means
+  // responses genuinely slowed as the run went on, the classic decrement.
+  // `PVT_BEST_KEY` tracks the LOWEST overall mean RT per length (lower is
+  // better, same shape as UFOV/Hick/Regelwechsel-Test), but ONLY for a run
+  // that reached the FULL selected duration (not an early "Beenden") - a
+  // short stopped run could otherwise report an unrepresentatively fast
+  // mean RT and overwrite a genuinely earned record, the same class of
+  // concern already flagged for Reaktionsfeld-Test's own rate metric in
+  // Offene Fragen; this exercise avoids it outright by gating on a full
+  // finish rather than flagging it as a known gap. No Bei-Fehler/
+  // Zusatzaufgabe/Trainingsmodus/difficulty dial - correctly skipped, same
+  // reasoning as every other fixed-duration Test entry (the ISI range and
+  // lapse threshold are the fixed scientific protocol, not something to
+  // make easier/harder). Background colour/intensity WAS included
+  // (`pvtPrefs.bgColorKey`/`bgIntensity`, `makeBgApplier`/
+  // `wireBgIntensityControl` on both the ready screen and the pause
+  // overlay, plus a `MASTER_BG_TARGETS` registry entry) - basically free,
+  // and a tint behind the plain counting number doesn't compete with
+  // anything being judged (unlike Subitizing-Test/Iconic-Speicher-Test,
+  // where a near-subliminal flash's own contrast is what's at stake).
+  // Pause needs two different resume tricks depending on WHICH phase was
+  // active, unlike every earlier self-paced Test entry: pausing during the
+  // "waiting" phase uses the usual `scheduleXTimer`-remaining-delay replay
+  // (there's a pending ISI timer); pausing during the "target" phase (the
+  // counter is actively running) additionally cancels the `raf` loop and
+  // shifts `targetShownAt` forward by the paused span on resume - the same
+  // "shift the timestamp, not the elapsed reading" trick used everywhere
+  // else in this app for a mid-flight measurement (MOT's physics tick,
+  // Periph's `session.startTime` shift) - so a pause mid-count never
+  // corrupts the eventual reaction time.
+  const PVT_LENGTHS = {
+    kurz: { title: "Kurz", durationS: 180 },
+    mittel: { title: "Mittel", durationS: 300 },
+    lang: { title: "Lang", durationS: 600 },
+  };
+  const PVT_ISI_MIN_MS = 2000;
+  const PVT_ISI_MAX_MS = 10000;
+  const PVT_LAPSE_THRESHOLD_MS = 500;
+  const PVT_RESPONSE_TIMEOUT_MS = 10000; // safety net if a stimulus is somehow never tapped
+  const PVT_FEEDBACK_MS = 700;
+  const PVT_MIN_RESOLVED = 5;
+  const PVT_PREFS_KEY = "fwmc-pvt-prefs-v1";
+  const pvtPrefs = { length: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
+  function loadPvtPrefs() {
+    const saved = readJSON(PVT_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(pvtPrefs, saved);
+    if (!PVT_LENGTHS[pvtPrefs.length]) pvtPrefs.length = "mittel";
+    if (!STROOP_COLOR_BY_KEY[pvtPrefs.bgColorKey]) pvtPrefs.bgColorKey = "gruen";
+    if (typeof pvtPrefs.bgIntensity !== "number" || pvtPrefs.bgIntensity < 0 || pvtPrefs.bgIntensity > 1) pvtPrefs.bgIntensity = 0;
+  }
+  loadPvtPrefs();
+  function savePvtPrefsToStorage() { writeJSON(PVT_PREFS_KEY, pvtPrefs); }
+
+  const applyPvtBg = makeBgApplier(els.pvtStage, pvtPrefs);
+  const syncPvtBgUI = wireBgIntensityControl(pvtPrefs, {
+    pickers: [els.pvtBgColorPicker, els.pvtPauseBgColorPicker],
+    sliders: [els.pvtBgIntensitySlider, els.pvtPauseBgSlider],
+    valueEls: [els.pvtBgIntensityValue, els.pvtPauseBgValue],
+    hintEls: [els.pvtBgContrastHint, els.pvtPauseBgContrastHint],
+    masterStatusEls: [els.pvtBgMasterStatus],
+  }, () => { savePvtPrefsToStorage(); applyPvtBg(); });
+
+  const PVT_BEST_KEY = "fwmc-pvt-best-v1"; // { [length]: bestMeanRtMs } - lower is better, only a fully-finished run counts
+  function pvtBestFor() { return readJSON(PVT_BEST_KEY, {})[pvtPrefs.length] || 0; }
+  function savePvtBest(meanRt) {
+    const all = readJSON(PVT_BEST_KEY, {});
+    const cur = all[pvtPrefs.length];
+    if (!cur || meanRt < cur) { all[pvtPrefs.length] = meanRt; writeJSON(PVT_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderPvtBest() {
+    const best = pvtBestFor();
+    const text = best ? `Beste Ø-Reaktionszeit (${PVT_LENGTHS[pvtPrefs.length].title}): ${best} ms` : "";
+    els.pvtBestHint.textContent = text;
+    els.pvtReadyBestHint.textContent = text;
+  }
+  function syncPvtLengthUI() {
+    els.pvtLengthRow.querySelectorAll("[data-pvt-length]").forEach((btn) => setActive(btn, btn.dataset.pvtLength === pvtPrefs.length));
+  }
+  els.pvtLengthRow.querySelectorAll("[data-pvt-length]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      pvtPrefs.length = btn.dataset.pvtLength;
+      savePvtPrefsToStorage();
+      syncPvtLengthUI();
+      renderPvtBest();
+    });
+  });
+  els.pvtOpenBtn.addEventListener("click", () => {
+    syncPvtLengthUI();
+    syncPvtBgUI();
+    renderPvtBest();
+    showScreen("pvtReady");
+  });
+  els.pvtReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Single active timer, remaining-delay pause/resume - same shape as every
+  // other setTimeout-driven Test exercise.
+  function schedulePvtTimer(fn, delayMs) {
+    if (pvtState.timer) clearTimeout(pvtState.timer);
+    pvtState.timerFn = fn;
+    pvtState.timerFiresAt = performance.now() + delayMs;
+    pvtState.timer = setTimeout(() => { pvtState.timer = null; fn(); }, delayMs);
+  }
+
+  let pvtState = null;
+  function startPvtGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.pvtPlayer.hidden = false;
+    els.pvtPlayerBar.hidden = false;
+    els.pvtDonePanel.hidden = true;
+    els.pvtPauseOverlay.hidden = true;
+    els.pvtPauseBtn.hidden = false;
+    const length = PVT_LENGTHS[pvtPrefs.length];
+    pvtState = {
+      length, durationMs: length.durationS * 1000,
+      phase: "waiting", trials: [], falseStarts: 0,
+      targetShownAt: null, raf: null,
+      paused: false, startTime: performance.now(),
+      timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+    };
+    applyPvtBg();
+    els.pvtDisplay.textContent = "";
+    els.pvtDisplay.className = "pvt-display";
+    els.pvtHint.textContent = "Bereit halten … das Signal kommt ohne Vorwarnung.";
+    els.pvtProgressEl.textContent = `0 Reaktionen · ${length.title}`;
+    requestWakeLock();
+    schedulePvtTimer(pvtNextTrial, 1500);
+  }
+  els.pvtReadyStartBtn.addEventListener("click", startPvtGame);
+
+  function pvtNextTrial() {
+    if (!pvtState) return;
+    const elapsedMs = performance.now() - pvtState.startTime;
+    if (elapsedMs >= pvtState.durationMs) { pvtFinish(); return; }
+    pvtState.phase = "waiting";
+    els.pvtDisplay.textContent = "";
+    els.pvtDisplay.className = "pvt-display";
+    els.pvtHint.textContent = "";
+    const isi = PVT_ISI_MIN_MS + Math.random() * (PVT_ISI_MAX_MS - PVT_ISI_MIN_MS);
+    schedulePvtTimer(pvtShowTarget, isi);
+  }
+  function pvtShowTarget() {
+    if (!pvtState) return;
+    const elapsedMs = performance.now() - pvtState.startTime;
+    if (elapsedMs >= pvtState.durationMs) { pvtFinish(); return; }
+    pvtState.phase = "target";
+    pvtState.targetShownAt = performance.now();
+    els.pvtDisplay.className = "pvt-display active";
+    pvtTickCounter();
+    schedulePvtTimer(pvtTimeoutTrial, PVT_RESPONSE_TIMEOUT_MS);
+  }
+  function pvtTickCounter() {
+    if (!pvtState || pvtState.phase !== "target") return;
+    els.pvtDisplay.textContent = Math.round(performance.now() - pvtState.targetShownAt);
+    pvtState.raf = requestAnimationFrame(pvtTickCounter);
+  }
+  function pvtStopCounter() {
+    if (pvtState && pvtState.raf) { cancelAnimationFrame(pvtState.raf); pvtState.raf = null; }
+  }
+  function pvtRegisterResponse(rt, timedOut) {
+    const lapse = timedOut || rt > PVT_LAPSE_THRESHOLD_MS;
+    pvtState.trials.push({ rt: timedOut ? null : rt, lapse, timedOut });
+    pvtState.phase = "feedback";
+    pvtStopCounter();
+    els.pvtDisplay.textContent = timedOut ? "Verpasst" : Math.round(rt);
+    els.pvtDisplay.className = "pvt-display feedback " + (timedOut ? "timeout" : lapse ? "lapse" : "fast");
+    els.pvtHint.textContent = timedOut ? "Verpasst!" : (lapse ? "Etwas langsam" : "Schnell reagiert!");
+    const answered = pvtState.trials.filter((t) => !t.timedOut).length;
+    els.pvtProgressEl.textContent = `${answered} Reaktion${answered === 1 ? "" : "en"} · ${pvtState.length.title}`;
+    schedulePvtTimer(pvtNextTrial, PVT_FEEDBACK_MS);
+  }
+  function pvtTimeoutTrial() {
+    if (!pvtState || pvtState.phase !== "target") return;
+    pvtStopCounter();
+    pvtRegisterResponse(PVT_RESPONSE_TIMEOUT_MS, true);
+  }
+  function pvtTapStage() {
+    if (!pvtState || pvtState.paused) return;
+    if (pvtState.phase === "waiting") {
+      pvtState.falseStarts++;
+      els.pvtHint.textContent = "Zu früh – warte auf das Signal!";
+      els.pvtDisplay.classList.add("falsestart");
+      setTimeout(() => { if (pvtState) els.pvtDisplay.classList.remove("falsestart"); }, 250);
+      return;
+    }
+    if (pvtState.phase !== "target") return;
+    if (pvtState.timer) clearTimeout(pvtState.timer);
+    pvtRegisterResponse(performance.now() - pvtState.targetShownAt, false);
+  }
+  els.pvtStage.addEventListener("click", pvtTapStage);
+
+  // Pause during "target" additionally stops the rAF counter loop and, on
+  // resume, shifts targetShownAt forward by the paused span (rather than
+  // replaying a remaining delay, since there's no fixed endpoint to
+  // replay towards - the counter just keeps counting once resumed).
+  function pausePvt() {
+    if (!pvtState || pvtState.paused) return;
+    pvtState.paused = true;
+    pvtState.pausedAt = performance.now();
+    if (pvtState.timer) {
+      clearTimeout(pvtState.timer);
+      pvtState.timer = null;
+      pvtState.timerRemainingMs = Math.max(0, pvtState.timerFiresAt - pvtState.pausedAt);
+    }
+    if (pvtState.phase === "target") pvtStopCounter();
+    syncPvtBgUI();
+    els.pvtPauseBtn.hidden = true;
+    els.pvtPauseOverlay.hidden = false;
+  }
+  function resumePvt() {
+    if (!pvtState || !pvtState.paused) return;
+    const pausedMs = performance.now() - pvtState.pausedAt;
+    pvtState.startTime += pausedMs;
+    if (pvtState.targetShownAt != null) pvtState.targetShownAt += pausedMs;
+    pvtState.paused = false;
+    if (pvtState.timerFn && pvtState.timerRemainingMs != null) {
+      schedulePvtTimer(pvtState.timerFn, pvtState.timerRemainingMs);
+      pvtState.timerRemainingMs = null;
+    }
+    if (pvtState.phase === "target") pvtTickCounter();
+    els.pvtPauseOverlay.hidden = true;
+    els.pvtPauseBtn.hidden = false;
+  }
+  els.pvtPauseBtn.addEventListener("click", pausePvt);
+  els.pvtResumeBtn.addEventListener("click", resumePvt);
+
+  function finalizePvtRun(state) {
+    els.pvtPauseOverlay.hidden = true;
+    els.pvtPlayerBar.hidden = true;
+    const answered = state.trials.filter((t) => !t.timedOut);
+    const rts = answered.map((t) => t.rt);
+    const meanRt = avgOf(rts);
+    const lapses = state.trials.filter((t) => t.lapse).length;
+    const lapseRatePct = state.trials.length ? Math.round(100 * lapses / state.trials.length) : 0;
+    const half = Math.floor(rts.length / 2);
+    const firstHalfRt = half ? avgOf(rts.slice(0, half)) : null;
+    const secondHalfRt = half ? avgOf(rts.slice(rts.length - half)) : null;
+    const decrement = (firstHalfRt != null && secondHalfRt != null) ? (secondHalfRt - firstHalfRt) : null;
+    const playedS = (performance.now() - state.startTime) / 1000;
+    const finished = playedS >= state.durationMs / 1000 - 1;
+    const isRecord = (finished && meanRt != null) ? savePvtBest(meanRt) : false;
+    renderPvtBest();
+    els.pvtDoneSummary.textContent =
+      `Daueraufmerksamkeits-Test (${state.length.title}) · ${state.trials.length} Reize` +
+      (meanRt != null ? ` · Ø ${meanRt} ms` : "") +
+      ` · ${lapses} Ausfall${lapses === 1 ? "" : "e"} (${lapseRatePct}%)` +
+      (state.falseStarts ? ` · ${state.falseStarts} zu früh` : "") +
+      (decrement != null ? ` · Vigilanz-Abfall ${decrement >= 0 ? "+" : ""}${decrement} ms` : "") +
+      (isRecord ? " · Neue Bestleistung!" : "");
+    const note = (meanRt != null ? `Ø ${meanRt} ms, ` : "") + `${lapses} Ausfälle` + (decrement != null ? `, Abfall ${decrement} ms` : "");
+    const id = addHistory({ kind: "pvt", title: "Daueraufmerksamkeits-Test", seconds: Math.round(playedS), note });
+    renderRating(els.pvtRating, id, "Wie schwer ist es dir gefallen, die ganze Zeit konzentriert zu bleiben?");
+    els.pvtDonePanel.hidden = false;
+  }
+  function pvtFinish() {
+    if (!pvtState) return;
+    const state = pvtState;
+    pvtState = null;
+    pvtStopCounter();
+    releaseWakeLock();
+    if (document.fullscreenElement === els.pvtPlayer) document.exitFullscreen().catch(() => {});
+    els.pvtFsHint.hidden = true;
+    finalizePvtRun(state);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few reactions were actually recorded.
+  function pvtStop() {
+    if (!pvtState) return;
+    if (pvtState.timer) clearTimeout(pvtState.timer);
+    pvtStopCounter();
+    const state = pvtState;
+    pvtState = null;
+    els.pvtPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.pvtPlayer) document.exitFullscreen().catch(() => {});
+    els.pvtFsHint.hidden = true;
+    if (state.trials.length >= PVT_MIN_RESOLVED) {
+      finalizePvtRun(state);
+    } else {
+      els.pvtPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.pvtBackBtn.addEventListener("click", pvtStop);
+  els.pvtAgainBtn.addEventListener("click", () => { els.pvtDonePanel.hidden = true; startPvtGame(); });
+  els.pvtDoneBackBtn.addEventListener("click", () => { els.pvtPlayer.hidden = true; els.pvtDonePanel.hidden = true; showScreen("testHome"); });
+  wireFullscreen({ player: els.pvtPlayer, btn: els.pvtFsBtn, hint: els.pvtFsHint, hintOpen: els.pvtFsHintOpenBtn, hintClose: els.pvtFsHintClose });
 
   // Rotationstest (Mentale Rotation) - grounded in the classic mental-
   // rotation/character-rotation chronometric paradigm (Cooper & Shepard,
