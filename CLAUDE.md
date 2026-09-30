@@ -103,15 +103,20 @@ a time - each test is I/O-bound (waiting on its own isolated Chromium
 instance/browser context), not CPU-bound, so this cuts wall-clock time
 roughly by the concurrency factor instead of leaving every run serialized
 end to end. Same log format as the sequential loop (one `=== file ===`
-section per test, in filename order), so it's a drop-in for the run-in-
-background-and-poll pattern below. Needs the dev server's
-`ThreadingTCPServer` (see above) to not just move the bottleneck from
-"one test at a time" to "one HTTP request at a time" - if a session's
-server predates that change, restart it. Prefer this over the plain
-sequential `run_full_suite.sh` whenever CPU/RAM headroom allows; drop the
-concurrency argument down (e.g. `sh run_full_suite_parallel.sh 3`) if
-tests start flaking under load rather than reaching for the sequential
-version as the default.
+section per test), appended incrementally as each test actually finishes
+(not buffered until the whole run is done - an earlier version of this
+script did that, which defeated the point of polling `grep -c` for live
+progress) - just in COMPLETION order rather than filename order, since
+whichever of the concurrent workers finishes first writes first. Still a
+drop-in for the run-in-background-and-poll pattern below either way, since
+that only counts `=== ` markers rather than caring what order they're in.
+Needs the dev server's `ThreadingTCPServer` (see above) to not just move
+the bottleneck from "one test at a time" to "one HTTP request at a time" -
+if a session's server predates that change, restart it. Prefer this over
+the plain sequential `run_full_suite.sh` whenever CPU/RAM headroom allows;
+drop the concurrency argument down (e.g. `sh run_full_suite_parallel.sh
+3`) if tests start flaking under load rather than reaching for the
+sequential version as the default.
 
 **Running the full suite without blocking the session on it** (either
 script - this is about how it's invoked, not which one): pipe it to a log
@@ -3737,14 +3742,44 @@ active. `workout_combo_test.py`/`workout_circuit_combo_test.py` (existing,
 unmodified) confirm the coach-plan fixed-reps path and Tabata/circuit are
 both untouched.
 
-**Not built (possible follow-up, not asked for yet)**: Kombi-Baukasten
-integration - every other domain's combo block reopens that domain's own
-settings screen in a "capture mode" (see Workout's own circuit block for
-the exact pattern, `openWorkoutComboCapture()`/`commitWorkoutComboCapture()`
-around `openWorkoutTabataReady()`); the reps builder above could join the
-same way with a small, low-risk addition once/if wanted, since it already
-follows the identical shape (its own prefs object, its own ready screen,
-its own "start now" function).
+**Kombi-Baukasten integration** (added same day, once the client asked
+whether Tabata/Wiederholungstraining/Cardio blocks could be freely mixed
+and repeated within one combo): built via `openWorkoutRepsComboCapture()`/
+`exitWorkoutRepsComboCapture()`/`commitWorkoutRepsComboCapture()`, the
+exact same "reopen this domain's own ready screen" pattern as the circuit
+block's own `openWorkoutComboCapture()` - added as a second entry in
+`COMBO_CAPTURE_ENTRIES.workout` (`"Kraft-/Wiederholungstraining"`,
+alongside `"Eigener Zirkel"`), with `COMBO_EDIT_OPENERS.workout` now
+dispatching on `block.kind` to reopen the right one. A captured block
+always stores an explicit `rangeMin`/`rangeMax` (never a preset key) - re-
+editing lands on "Eigener Bereich" with those exact numbers prefilled,
+not a guess at which named preset (if any) they came from. No runtime
+engine changes were needed at all: `runWorkoutBlock()`/`workoutBlockLabel()`
+/`Meta()`/`Seconds()` already dispatched on `block.kind`, and the range-
+mode reps view only ever checks `block.rangeMin != null`, so a `kind:
+"reps"` combo block just works.
+
+The general answer this unblocks: **the Kombi-Baukasten draft is a plain
+ordered array** (`comboDraftBlocks`) - every domain's "add" entry pushes
+one block onto it, with no cap and no dedup, so any block type (Tabata/
+circuit, Kraft-/Wiederholungstraining, Cardio, or anything from any other
+domain) can be added any number of times, in any order, freely
+interspersed with anything else. This was already true for Tabata and
+Cardio before today; only the reps builder was missing a capture-mode
+entry to join them. `renderComboBlockList()`'s `editOpener` guard still
+excludes one thing: a plain fixed-number `kind:"reps"`/`kind:"tabata"`
+block with no `rangeMin` (coach-authored, or predating this rebuild) has
+no settings screen to reopen and stays non-editable - every block a
+client can *add* through the builder is always editable.
+
+Test: `tests/workout_reps_combo_test.py` - the entry is offered and
+opens retitled ("Baustein: ..."); 6 interspersed blocks (Zirkel/Kraft-
+Wdh./Zirkel/Cardio/Kraft-Wdh./Cardio) can be added in one draft, each
+reopening fresh (no leftover state bleeding from one capture session to
+the next); editing an already-added reps block reopens it correctly
+prefilled and persists changes; a range-mode reps block plays back
+correctly (right range, live timer, reps-input default) when reached
+mid-combo-run, and aborting mid-block during a combo still works.
 
 ## Test-Bereich (autonomous, ongoing)
 

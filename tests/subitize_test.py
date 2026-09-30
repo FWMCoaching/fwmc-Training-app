@@ -73,7 +73,16 @@ async def main():
         print("tapped correct key marked correct:", "correct" in (await pg.get_attribute(f'.subitize-key:has-text("{count1}")', "class") or ""))
 
         # --- wrong response: deliberately tap a different number ---
-        await pg.wait_for_timeout(1500)
+        # No fixed pre-wait here (there used to be one, wait_for_timeout(1500)):
+        # after a correct tap the app waits 700ms, then a random 500-900ms
+        # gap before the next flash, which on "schwer" only stays up for
+        # 280ms - so the flash can start and end anywhere in a ~1200-1880ms
+        # window after the tap. A 1500ms fixed wait landed AFTER that
+        # window closed whenever the random gap came out short (~30% of
+        # the time - matches the flakiness actually observed), missing the
+        # flash entirely. wait_for_dot_count() already polls from right
+        # after the tap up to 6s, which safely spans the whole window on
+        # its own with no fixed wait needed in front of it.
         count2 = await wait_for_dot_count()
         print("a second dot flash appeared:", 1 <= count2 <= 9)
         await wait_for_answer_phase()

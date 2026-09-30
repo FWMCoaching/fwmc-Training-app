@@ -1111,15 +1111,17 @@
       { label: "MOT · Beides steigt", meta: "Schwierigkeit & Dauer einstellen", open: () => openMotComboCapture("both", null, null) },
       { label: "MOT · Trainingsmodus", meta: "gezielt bei einer Stufe üben", open: () => openMotComboCapture("training", null, null) },
     ],
-    // Only "Zirkel" (circuit) mode joins the combo builder for now - "reps"
-    // mode (feste Sätze/Wiederholungen) has no client-facing settings
-    // screen at all yet (coach-plan-only today), so there's nothing to
-    // reopen in capture mode; see the backlog note in CLAUDE.md. The old
-    // 2 curated reps/tabata presets were removed rather than left as a
-    // non-editable leftover, to keep one invariant everywhere in this
-    // rebuild: anything you can add to a combo, you can also re-edit.
+    // "Zirkel" (circuit/Tabata) and "Kraft-/Wiederholungstraining" (reps,
+    // with a real rep-range picker - see the CLAUDE.md note) both have a
+    // client-facing settings screen to reopen in capture mode, so both can
+    // be added - and each any number of times, interspersed with anything
+    // else, exactly like every other domain here. Plain fixed-number
+    // "reps"/"tabata" blocks (coach-authored or predating this rebuild)
+    // still have no screen to reopen; see the `editOpener` guard in
+    // renderComboBlockList() below.
     workout: [
       { label: "Eigener Zirkel", meta: "mehrere Übungen mit Sätzen & Pausen zusammenstellen", open: () => openWorkoutComboCapture(null, null) },
+      { label: "Kraft-/Wiederholungstraining", meta: "Übung & Wiederholungsbereich einstellen", open: () => openWorkoutRepsComboCapture(null, null) },
     ],
     // Visual has too many exercises (and its own client-side "incompatible"
     // masking from Master-Einstellungen) for a static list - resolved fresh
@@ -1134,7 +1136,7 @@
     breath: (block, i) => openBreathComboCapture(block.pattern, block, i),
     wimhof: (block, i) => openWimhofComboCapture(block, i),
     visual: (block, i) => openVisualComboCapture(block.exercise, null, block, i),
-    workout: (block, i) => openWorkoutComboCapture(block, i),
+    workout: (block, i) => (block.kind === "reps" ? openWorkoutRepsComboCapture(block, i) : openWorkoutComboCapture(block, i)),
     nat: (block, i) => openRememberComboCapture(block.mode, block, i),
     blitz: (block, i) => openBlitzComboCapture(block, i),
     flash: (block, i) => openFlashComboCapture(block.mode, block, i),
@@ -1302,6 +1304,7 @@
     workoutFeaturedPrograms: $("workoutFeaturedPrograms"), workoutFeaturedGrid: $("workoutFeaturedGrid"),
     workoutTabataStartCard: $("workoutTabataStartCard"),
     workoutRepsStartCard: $("workoutRepsStartCard"), workoutRepsReady: $("workoutRepsReady"), workoutRepsBackToHome: $("workoutRepsBackToHome"),
+    workoutRepsReadyTitle: $("workoutRepsReadyTitle"), workoutRepsReadyHint: $("workoutRepsReadyHint"),
     workoutRepsExerciseGrid: $("workoutRepsExerciseGrid"), workoutRepsCustomBtn: $("workoutRepsCustomBtn"), workoutRepsCustomForm: $("workoutRepsCustomForm"),
     workoutRepsCustomName: $("workoutRepsCustomName"), workoutRepsCustomNote: $("workoutRepsCustomNote"),
     workoutRepsCustomCancelBtn: $("workoutRepsCustomCancelBtn"), workoutRepsCustomSaveBtn: $("workoutRepsCustomSaveBtn"),
@@ -9965,7 +9968,62 @@
     showScreen("workoutRepsReady");
   }
   els.workoutRepsStartCard.addEventListener("click", openWorkoutRepsReady);
-  els.workoutRepsBackToHome.addEventListener("click", () => showScreen("workoutHome"));
+
+  // ---- Kombi-Baukasten capture, same pattern as the circuit builder's own
+  // (openWorkoutComboCapture) - reopen this exact ready screen instead of a
+  // second settings UI. A combo "workout" block with kind:"reps" already
+  // plays back with zero further engine changes (runWorkoutBlock()/
+  // workoutBlockLabel()/Meta()/Seconds() all dispatch on block.kind, and
+  // the range-mode reps view built above only checks block.rangeMin).
+  let comboWorkoutRepsCaptureOriginal = null;
+  let comboWorkoutRepsEditIndex = null;
+  function openWorkoutRepsComboCapture(existingBlock, editIndex) {
+    comboWorkoutRepsCaptureOriginal = { ...workoutRepsPrefs };
+    if (existingBlock) {
+      workoutRepsPrefs.exercise = existingBlock.exercise;
+      // The combo block only ever stores an explicit min/max (see
+      // commitWorkoutRepsComboCapture below), never one of the named
+      // presets - re-editing always lands on "Eigener Bereich" with those
+      // exact numbers prefilled, rather than guessing which preset (if
+      // any) they happened to match.
+      workoutRepsPrefs.rangeKey = "custom";
+      workoutRepsPrefs.customMin = existingBlock.rangeMin;
+      workoutRepsPrefs.customMax = existingBlock.rangeMax;
+      workoutRepsPrefs.sets = existingBlock.sets;
+      workoutRepsPrefs.restS = existingBlock.restS;
+    }
+    comboWorkoutRepsEditIndex = editIndex ?? null;
+    els.workoutRepsReadyTitle.textContent = "Baustein: Kraft-/Wiederholungstraining";
+    els.workoutRepsReadyHint.textContent = "Stelle Übung, Wiederholungsbereich, Sätze und Pause für diesen Kombi-Baustein ein.";
+    openWorkoutRepsReady();
+  }
+  function exitWorkoutRepsComboCapture() {
+    if (comboWorkoutRepsCaptureOriginal) {
+      Object.assign(workoutRepsPrefs, comboWorkoutRepsCaptureOriginal);
+      saveWorkoutRepsPrefs();
+      comboWorkoutRepsCaptureOriginal = null;
+    }
+    comboWorkoutRepsEditIndex = null;
+    els.workoutRepsReadyTitle.textContent = "Kraft-/Wiederholungstraining";
+    els.workoutRepsReadyHint.textContent = "Wähle eine Übung und einen Wiederholungsbereich – die App merkt sich deine letzten Sätze und schlägt vor, wann du steigern kannst.";
+  }
+  function commitWorkoutRepsComboCapture() {
+    if (!workoutRepsPrefs.exercise) return;
+    const { min, max } = repRangeFor(workoutRepsPrefs);
+    const block = {
+      domain: "workout", kind: "reps", exercise: workoutRepsPrefs.exercise,
+      sets: workoutRepsPrefs.sets, reps: max, rangeMin: min, rangeMax: max, restS: workoutRepsPrefs.restS,
+    };
+    if (comboWorkoutRepsEditIndex != null) comboDraftBlocks[comboWorkoutRepsEditIndex] = block;
+    else comboDraftBlocks.push(block);
+    exitWorkoutRepsComboCapture();
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+  els.workoutRepsBackToHome.addEventListener("click", () => {
+    if (comboWorkoutRepsCaptureOriginal) { exitWorkoutRepsComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("workoutHome");
+  });
 
   function startWorkoutRepsNow() {
     if (!workoutRepsPrefs.exercise) return;
@@ -9981,7 +10039,10 @@
       restS: workoutRepsPrefs.restS,
     });
   }
-  els.workoutRepsStartBtn.addEventListener("click", startWorkoutRepsNow);
+  els.workoutRepsStartBtn.addEventListener("click", () => {
+    if (comboWorkoutRepsCaptureOriginal) { commitWorkoutRepsComboCapture(); return; }
+    startWorkoutRepsNow();
+  });
 
   // ==== Cardio: self-built sequence of physical activities (Joggen, Rad
   // fahren, Crosstrainer, ...), each block with its own duration and an
@@ -10920,10 +10981,12 @@
     els.comboBlockList.innerHTML = "";
     comboDraftBlocks.forEach((block, i) => {
       // A workout block predating this rebuild (or coach-authored) can
-      // still be "reps"/"tabata" kind, which has no settings screen to
-      // reopen - only "circuit" blocks (the only kind addable from the
-      // combo builder now) are edit-in-place.
-      const editOpener = block.domain === "workout" && block.kind !== "circuit" ? null : COMBO_EDIT_OPENERS[block.domain];
+      // still be a plain fixed-number "reps"/"tabata" block with no
+      // rangeMin - no settings screen exists to reopen for those. Both
+      // "circuit" and range-mode "reps" (rangeMin set - always true for
+      // one built via openWorkoutRepsComboCapture) are edit-in-place.
+      const workoutNotEditable = block.domain === "workout" && block.kind !== "circuit" && block.rangeMin == null;
+      const editOpener = workoutNotEditable ? null : COMBO_EDIT_OPENERS[block.domain];
       const row = document.createElement("div");
       row.className = "chapter-row";
       const main = document.createElement(editOpener ? "button" : "span");

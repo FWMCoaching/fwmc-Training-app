@@ -1,0 +1,110 @@
+import asyncio
+from playwright.async_api import async_playwright
+URL = "http://localhost:8845/index.html"
+
+# Kombi-Baukasten integration for the new Kraft-/Wiederholungstraining
+# builder (workout_reps_builder_test.py covers the standalone screen
+# itself). Client's exact ask: mix several Tabata blocks, several
+# Wiederholungstraining blocks, and several Cardio blocks, in any order,
+# interspersed with anything else - the combo draft is just a plain
+# ordered list, so this was already possible for Tabata/circuit and
+# Cardio; this test confirms the new reps builder now joins them the same
+# way (both add-multiple-times and edit-in-place).
+
+async def main():
+    errors = []
+    async with async_playwright() as p:
+        b = await p.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args=["--no-sandbox"])
+        ctx = await b.new_context(viewport={"width": 390, "height": 844}, service_workers="block")
+        pg = await ctx.new_page()
+        pg.on("pageerror", lambda e: errors.append("pageerror: " + str(e)))
+        pg.on("console", lambda m: errors.append("console: " + m.text) if m.type == "error" else None)
+
+        await pg.goto(URL); await pg.wait_for_timeout(300)
+        if await pg.is_visible("#tipsCloseBtn"):
+            await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)
+
+        await pg.click('#home [data-open-combo="1"]'); await pg.wait_for_timeout(150)
+        print("comboScreen open:", await pg.is_visible("#comboScreen"))
+        print("'Kraft-/Wiederholungstraining' entry present in add grid:",
+              await pg.locator('#comboAddGrid >> text="Kraft-/Wiederholungstraining"').count() > 0)
+
+        # ---- block 1: Zirkel (Tabata), short so it finishes fast below ----
+        await pg.click('#comboAddGrid >> text="Eigener Zirkel"'); await pg.wait_for_timeout(200)
+        await pg.click('#workoutCircuitAddGrid .custom-exercise-add-row:has-text("Liegestütze") .ca-plus-btn'); await pg.wait_for_timeout(80)
+        # shorten the item down to the 5s floor (two "-" clicks from the 15s
+        # default) so the transition to block 2 below happens quickly
+        await pg.click('#workoutCircuitList .circuit-step[data-dir="-1"]'); await pg.wait_for_timeout(60)
+        await pg.click('#workoutCircuitList .circuit-step[data-dir="-1"]'); await pg.wait_for_timeout(60)
+        await pg.click("#workoutTabataStartBtn"); await pg.wait_for_timeout(200)
+        print("block 1 (Zirkel) committed, back at comboScreen:", await pg.is_visible("#comboScreen"))
+
+        # ---- block 2: Kraft-/Wiederholungstraining, Kniebeugen, Kraft preset ----
+        await pg.click('#comboAddGrid >> text="Kraft-/Wiederholungstraining"'); await pg.wait_for_timeout(200)
+        print("capture screen retitled for combo:", "Baustein" in await pg.inner_text("#workoutRepsReadyTitle"))
+        await pg.click('[data-reps-range="kraft"]'); await pg.wait_for_timeout(60)
+        await pg.click('#workoutRepsExerciseGrid .combo-add-btn >> text="Kniebeugen"'); await pg.wait_for_timeout(80)
+        await pg.click('[data-reps-sets="2"]'); await pg.wait_for_timeout(60)
+        await pg.click("#workoutRepsStartBtn"); await pg.wait_for_timeout(200)
+        print("block 2 (Kraft/Wdh.) committed, back at comboScreen:", await pg.is_visible("#comboScreen"))
+        print("title/hint reset after commit:", await pg.inner_text("#workoutRepsReadyTitle") == "Kraft-/Wiederholungstraining")
+
+        # ---- block 3: a second, different Zirkel ----
+        await pg.click('#comboAddGrid >> text="Eigener Zirkel"'); await pg.wait_for_timeout(200)
+        print("re-opening 'Eigener Zirkel' starts a fresh (empty) circuit, not block 1's leftover:",
+              await pg.locator("#workoutCircuitList .circuit-item-row").count() == 0)
+        await pg.click('#workoutCircuitAddGrid .custom-exercise-add-row:has-text("Burpees") .ca-plus-btn'); await pg.wait_for_timeout(80)
+        await pg.click("#workoutTabataStartBtn"); await pg.wait_for_timeout(200)
+
+        # ---- block 4: Cardio ----
+        await pg.click('#comboAddGrid >> text="Cardio-Einheit"'); await pg.wait_for_timeout(200)
+        await pg.click('#cardioAddGrid .combo-add-btn >> text="Joggen"'); await pg.wait_for_timeout(80)
+        await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(200)
+        print("block 4 (Cardio) committed, back at comboScreen:", await pg.is_visible("#comboScreen"))
+
+        # ---- block 5: a second Kraft-/Wiederholungstraining, Muskelaufbau, Liegestütze ----
+        await pg.click('#comboAddGrid >> text="Kraft-/Wiederholungstraining"'); await pg.wait_for_timeout(200)
+        print("re-opening reps builder starts fresh (no exercise carried over from block 2):",
+              await pg.locator("#workoutRepsExerciseGrid .combo-add-btn.active").count() == 0)
+        await pg.click('#workoutRepsExerciseGrid .combo-add-btn >> text="Liegestütze"'); await pg.wait_for_timeout(80)
+        await pg.click("#workoutRepsStartBtn"); await pg.wait_for_timeout(200)
+
+        # ---- block 6: a second Cardio ----
+        await pg.click('#comboAddGrid >> text="Cardio-Einheit"'); await pg.wait_for_timeout(200)
+        await pg.click('#cardioAddGrid .combo-add-btn >> text="Rad fahren"'); await pg.wait_for_timeout(80)
+        await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(200)
+
+        count = await pg.locator("#comboBlockList .chapter-row").count()
+        print("all 6 interspersed blocks present, in order (Zirkel/Kraft/Zirkel/Cardio/Kraft/Cardio):", count == 6)
+        labels = await pg.locator("#comboBlockList .chapter-main .ca-title, #comboBlockList .chapter-main strong").all_inner_texts()
+        print("block order:", labels)
+
+        # ---- edit block 2 (index 1) in place - should reopen prefilled ----
+        await pg.click("#comboBlockList .chapter-row >> nth=1 >> .chapter-main"); await pg.wait_for_timeout(200)
+        print("editing block 2 reopens the reps builder:", await pg.is_visible("#workoutRepsReady"))
+        print("Kniebeugen still marked active on re-edit:",
+              "active" in (await pg.get_attribute('#workoutRepsExerciseGrid .combo-add-btn:has-text("Kniebeugen")', "class") or ""))
+        print("range shows as 'Eigener Bereich' with Kraft's 1–6 prefilled (combo blocks store an explicit range, not the preset name):",
+              "active" in (await pg.get_attribute('[data-reps-range="custom"]', "class") or "") and "1–6" in await pg.inner_text("#workoutRepsCustomRangeValue"))
+        await pg.click('[data-reps-sets="3"]'); await pg.wait_for_timeout(60)
+        await pg.click("#workoutRepsStartBtn"); await pg.wait_for_timeout(200)
+        print("edited block persisted (now 3 sets):", "3×" in await pg.locator("#comboBlockList .chapter-row >> nth=1 >> .info span").inner_text())
+
+        # ---- run the combo: block 1 (Zirkel) -> transition -> block 2
+        # (Kraft/Wdh., now range-mode) plays correctly inside a combo ----
+        await pg.click("#comboStartBtn"); await pg.wait_for_timeout(300)
+        print("workout player visible (block 1, Zirkel):", await pg.is_visible("#workoutPlayer"))
+        await pg.wait_for_selector("#comboTransition:not([hidden])", timeout=15000)
+        await pg.click("#comboTransitionBtn"); await pg.wait_for_timeout(300)
+        print("reps view visible (block 2, Kraft/Wdh.):", await pg.is_visible("#workoutRepsView"))
+        print("range shown correctly inside the combo run (1–6 Wiederholungen):", "1–6" in await pg.inner_text("#workoutRepsBig"))
+        print("live set timer running inside the combo too:", await pg.is_visible("#workoutSetTimer"))
+        print("reps-input defaults to top of range (6):", await pg.inner_text("#workoutRepsInputValue") == "6")
+
+        await pg.click("#workoutBackBtn"); await pg.wait_for_timeout(200)
+        print("aborting mid-combo (during the reps block) lands back at home:", await pg.is_visible("#home"))
+
+        await b.close()
+    print("FINAL ERRORS:", errors)
+
+asyncio.run(main())
