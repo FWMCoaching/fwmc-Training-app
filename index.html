@@ -633,7 +633,28 @@
     <button id="cardioBackBtn">&#10005; Beenden</button>
     <button id="cardioAddonTriggerBtn" hidden>+ Zusatzimpuls</button>
   </div>
+  <div class="pause-overlay" id="cardioAddonPicker" hidden>
+    <div class="pause-panel">
+      <h3>Zusatzimpuls jetzt w&auml;hlen</h3>
+      <div class="group">
+        <div class="group-label">&Uuml;bung</div>
+        <div class="choice-row two" id="cardioAddonPickerTypeRow"></div>
+      </div>
+      <div class="group">
+        <div class="group-label">Dauer</div>
+        <div class="workout-reps-input" id="cardioAddonPickerDurationRow">
+          <button type="button" class="circuit-step" id="cardioAddonPickerDurationMinus" aria-label="k&uuml;rzer">&minus;</button>
+          <span class="circuit-duration-value" id="cardioAddonPickerDurationValue"></span>
+          <button type="button" class="circuit-step" id="cardioAddonPickerDurationPlus" aria-label="l&auml;nger">+</button>
+        </div>
+      </div>
+      <button class="start-btn" id="cardioAddonPickerStartBtn">Jetzt starten</button>
+      <button class="pause-skip" id="cardioAddonPickerCancelBtn">Abbrechen</button>
+    </div>
+  </div>
 </div>
+
+<div class="cardio-guest-badge" id="cardioGuestBadge" hidden></div>
 
 <div class="done-panel" id="cardioDonePanel" hidden>
   <div class="done-check">&#10003;</div>

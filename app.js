@@ -1857,6 +1857,11 @@
     cardioAddonPerType: $("cardioAddonPerType"),
     cardioPlayer: $("cardioPlayer"), cardioBackBtn: $("cardioBackBtn"), cardioSkipBtn: $("cardioSkipBtn"),
     cardioAddonTriggerBtn: $("cardioAddonTriggerBtn"),
+    cardioAddonPicker: $("cardioAddonPicker"), cardioAddonPickerTypeRow: $("cardioAddonPickerTypeRow"),
+    cardioAddonPickerDurationValue: $("cardioAddonPickerDurationValue"),
+    cardioAddonPickerDurationMinus: $("cardioAddonPickerDurationMinus"), cardioAddonPickerDurationPlus: $("cardioAddonPickerDurationPlus"),
+    cardioAddonPickerStartBtn: $("cardioAddonPickerStartBtn"), cardioAddonPickerCancelBtn: $("cardioAddonPickerCancelBtn"),
+    cardioGuestBadge: $("cardioGuestBadge"),
     cardioActivityTitle: $("cardioActivityTitle"), cardioActivityLabel: $("cardioActivityLabel"),
     cardioCountdown: $("cardioCountdown"), cardioPhaseLabel: $("cardioPhaseLabel"), cardioBlockProgress: $("cardioBlockProgress"),
     cardioDonePanel: $("cardioDonePanel"), cardioDoneSummary: $("cardioDoneSummary"), cardioRating: $("cardioRating"),
@@ -10568,18 +10573,22 @@
     });
     return out;
   }
-  // Shows the manual "+ Zusatzimpuls" trigger only when the client has
-  // actually configured something for it to trigger (a Feineinstellungen
-  // decision made before starting, not changeable mid-run since Cardio's
-  // player has no pause/settings overlay) - same guard triggerCardioGuest()
-  // itself relies on (a non-empty pool), so tapping it can never no-op.
+  // The manual "+ Zusatzimpuls" trigger is always available during a
+  // running Cardio session - unlike the automatic randomized-interval
+  // system below (still gated on cardioAddonPrefs.enabled/pool, configured
+  // in Feineinstellungen), the client picks the guest exercise AND its
+  // duration live, in the moment, via openCardioAddonPicker() - no advance
+  // configuration needed. Kept as its own function (rather than setting
+  // "hidden" once) so every call site stays symmetric and it stays the one
+  // place that decides this, in case a future reason to hide it appears.
   function syncCardioAddonTriggerBtn() {
-    els.cardioAddonTriggerBtn.hidden = !(cardioAddonPrefs.enabled && cardioAddonPrefs.pool.length);
+    els.cardioAddonTriggerBtn.hidden = false;
   }
   function startStandaloneCardio(items) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.cardioPlayer.hidden = false;
+    els.cardioAddonPicker.hidden = true;
     lastCardioItems = items;
     cardioState = { items: withCardioPauses(items), realCount: items.length, index: 0, blockStartTime: performance.now(), nextGuestAt: null };
     scheduleNextCardioGuest();
@@ -10665,27 +10674,110 @@
     else if (ex.usesStroopColors) active.stroopColors = keysToColors(cfg.colors, STROOP_COLOR_LIB);
   }
 
-  function triggerCardioGuest() {
+  // explicitId/explicitDurationS: set by the manual live picker below (a
+  // specific choice made right now); left undefined for the automatic
+  // randomized-interval path in cardioTick(), which still picks randomly
+  // from the configured pool at the configured duration, unchanged.
+  function triggerCardioGuest(explicitId, explicitDurationS) {
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
     cardioRaf = null;
-    const guestId = cardioAddonPrefs.pool[Math.floor(Math.random() * cardioAddonPrefs.pool.length)];
+    const guestId = explicitId || cardioAddonPrefs.pool[Math.floor(Math.random() * cardioAddonPrefs.pool.length)];
     const realId = guestId === "addon-flash" ? "cardio-flash-host" : guestId;
-    const cfg = cardioAddonPrefs.perType[guestId];
+    const cfg = explicitDurationS != null ? { ...cardioAddonPrefs.perType[guestId], duration: explicitDurationS } : cardioAddonPrefs.perType[guestId];
     cardioGuestActive = true;
     applyCardioGuestToState(realId, cfg);
     runSession();
+    showCardioGuestBadge();
   }
-  // Manual "+ Zusatzimpuls" - the client's own ask: rather than only ever
-  // waiting for the randomized auto-interval (scheduleNextCardioGuest()),
-  // actively switch one on right now, mid-activity, whenever they feel
-  // like it. Reuses triggerCardioGuest() as-is (same random pick from the
-  // same configured pool) - the only actual new behaviour is *when* it
-  // fires, not what fires.
+
+  // ---- Manual "+ Zusatzimpuls": live picker ----
+  // The client's clarified ask (beyond the first pool+random version):
+  // actively CHOOSE which guest exercise AND for how long, right now, mid-
+  // Cardio-activity - "ich mache jetzt zwei Minuten
+  // Blitzreiz-Reaktionstraining". Offers all CARDIO_GUEST_TYPES regardless
+  // of the automatic system's own pool selection (that pool only governs
+  // the randomized auto-interval): "jede andere Übung" is the point. The
+  // picker sheet sits INSIDE #cardioPlayer as a .pause-overlay, so Cardio's
+  // own countdown keeps ticking (cardioRaf untouched) visibly behind it
+  // while choosing - the "ich sehe im Hintergrund trotzdem noch, wie lange
+  // ich machen muss" ask, satisfied for the choosing step for free.
+  let cardioAddonPickerType = null;
+  let cardioAddonPickerDuration = 20;
+  const CARDIO_ADDON_PICKER_DURATION_MIN = 15;
+  const CARDIO_ADDON_PICKER_DURATION_MAX = 180;
+  function renderCardioAddonPicker() {
+    els.cardioAddonPickerTypeRow.innerHTML = "";
+    CARDIO_GUEST_TYPES.forEach((t) => {
+      const [main, sub] = t.title.split(" · ");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "choice" + (t.id === cardioAddonPickerType ? " active" : "");
+      btn.innerHTML = `${esc(main)}${sub ? `<small>${esc(sub)}</small>` : ""}`;
+      btn.addEventListener("click", () => {
+        cardioAddonPickerType = t.id;
+        cardioAddonPickerDuration = Math.min(CARDIO_ADDON_PICKER_DURATION_MAX, Math.max(CARDIO_ADDON_PICKER_DURATION_MIN, cardioAddonPrefs.perType[t.id].duration));
+        renderCardioAddonPicker();
+      });
+      els.cardioAddonPickerTypeRow.appendChild(btn);
+    });
+    els.cardioAddonPickerDurationValue.textContent = fmtClock(cardioAddonPickerDuration);
+  }
+  function openCardioAddonPicker() {
+    cardioAddonPickerType = CARDIO_GUEST_TYPES[0].id;
+    cardioAddonPickerDuration = Math.min(CARDIO_ADDON_PICKER_DURATION_MAX, Math.max(CARDIO_ADDON_PICKER_DURATION_MIN, cardioAddonPrefs.perType[cardioAddonPickerType].duration));
+    renderCardioAddonPicker();
+    els.cardioAddonPicker.hidden = false;
+  }
+  function closeCardioAddonPicker() { els.cardioAddonPicker.hidden = true; }
+  els.cardioAddonPickerDurationMinus.addEventListener("click", () => {
+    cardioAddonPickerDuration = Math.max(CARDIO_ADDON_PICKER_DURATION_MIN, cardioAddonPickerDuration - 15);
+    renderCardioAddonPicker();
+  });
+  els.cardioAddonPickerDurationPlus.addEventListener("click", () => {
+    cardioAddonPickerDuration = Math.min(CARDIO_ADDON_PICKER_DURATION_MAX, cardioAddonPickerDuration + 15);
+    renderCardioAddonPicker();
+  });
+  els.cardioAddonPickerCancelBtn.addEventListener("click", closeCardioAddonPicker);
+  els.cardioAddonPickerStartBtn.addEventListener("click", () => {
+    const id = cardioAddonPickerType;
+    const durationS = cardioAddonPickerDuration;
+    closeCardioAddonPicker();
+    triggerCardioGuest(id, durationS);
+  });
   els.cardioAddonTriggerBtn.addEventListener("click", () => {
     if (!cardioState || cardioGuestActive) return;
-    if (!cardioAddonPrefs.enabled || !cardioAddonPrefs.pool.length) return;
-    triggerCardioGuest();
+    openCardioAddonPicker();
   });
+
+  // ---- Floating "Cardio: noch M:SS" badge while a guest exercise has
+  // taken over the screen (#player) - lives outside every player element
+  // (see .cardio-guest-badge in styles.css) so hideAllPlayers() never
+  // touches it, and reads cardioState directly (blockStartTime is a
+  // wall-clock reference that keeps advancing underneath, not an
+  // accumulator paused by the guest exercise) rather than depending on
+  // cardioTick, which isn't running right now. Turns to .warn once the
+  // current Cardio block is close to changing - "sag mir Bescheid, wenn
+  // ich die Übung gleich wechseln muss". ----
+  let cardioGuestBadgeInterval = null;
+  const CARDIO_GUEST_BADGE_WARN_S = 15;
+  function updateCardioGuestBadge() {
+    if (!cardioState) { hideCardioGuestBadge(); return; }
+    const block = cardioState.items[cardioState.index];
+    if (!block) { hideCardioGuestBadge(); return; }
+    const remaining = Math.max(0, block.durationS - (performance.now() - cardioState.blockStartTime) / 1000);
+    els.cardioGuestBadge.textContent = `Cardio: noch ${fmtClock(remaining)}`;
+    els.cardioGuestBadge.classList.toggle("warn", remaining <= CARDIO_GUEST_BADGE_WARN_S);
+  }
+  function showCardioGuestBadge() {
+    updateCardioGuestBadge();
+    els.cardioGuestBadge.hidden = false;
+    if (cardioGuestBadgeInterval) clearInterval(cardioGuestBadgeInterval);
+    cardioGuestBadgeInterval = setInterval(updateCardioGuestBadge, 1000);
+  }
+  function hideCardioGuestBadge() {
+    if (cardioGuestBadgeInterval) { clearInterval(cardioGuestBadgeInterval); cardioGuestBadgeInterval = null; }
+    els.cardioGuestBadge.hidden = true;
+  }
 
   // Called from finishSession() instead of the normal done-panel path
   // whenever a guest window (triggerCardioGuest) finishes on its own -
@@ -10696,6 +10788,7 @@
   // catch-up logic is needed here.
   function returnFromCardioGuest() {
     cardioGuestActive = false;
+    hideCardioGuestBadge();
     hideAllPlayers();
     els.cardioPlayer.hidden = false;
     syncCardioAddonTriggerBtn();
@@ -10723,6 +10816,7 @@
     cardioRaf = null;
     cardioState = null;
     cardioGuestActive = false;
+    hideCardioGuestBadge();
     releaseWakeLock();
     // cardioPlayer is a "player" overlay, not a SCREENS member (same as
     // workoutPlayer/els.player/...) - showScreen() alone never hides it.

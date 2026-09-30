@@ -1483,6 +1483,22 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .checkbox-row input{width:auto}
 .cardio-pool-check{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink);padding:6px 0}
 .cardio-pool-check input{width:auto}
+/* Floating status while a Cardio-triggered guest exercise (Zusatzimpuls)
+   has taken over the screen - lives outside every .player element so
+   hideAllPlayers() never hides it, reading cardioState (which keeps
+   ticking underneath, blockStartTime being a wall-clock reference) to
+   show the still-running Cardio block's remaining time. Turns to .warn
+   once that block is about to end, the "sag mir Bescheid, wenn ich
+   wechseln muss" ask - deliberately just a read-only badge (Tier 2: one
+   real Player active at a time), not a second interactive Player. */
+.cardio-guest-badge{
+  position:fixed;top:calc(14px + env(safe-area-inset-top,0px));right:14px;z-index:40;
+  background:rgba(255,255,255,.94);color:#16232a;border-radius:999px;padding:8px 14px;
+  font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;box-shadow:0 1px 3px rgba(16,40,48,.16);
+  pointer-events:none;
+}
+.cardio-guest-badge.warn{background:#c0392b;color:#fff;animation:cardioGuestBadgePulse 1s ease-in-out infinite}
+@keyframes cardioGuestBadgePulse{0%,100%{opacity:1}50%{opacity:.55}}
 
 .cardio-guest-panel{border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-top:10px;background:var(--surface)}
 .cardio-guest-panel-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:8px}

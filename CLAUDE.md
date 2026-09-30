@@ -3781,50 +3781,93 @@ prefilled and persists changes; a range-mode reps block plays back
 correctly (right range, live timer, reps-input default) when reached
 mid-combo-run, and aborting mid-block during a combo still works.
 
-## Cardio: manual "+ Zusatzimpuls" trigger (added 2026-09-30)
+## Cardio: manual "+ Zusatzimpuls" live picker (Tier 2, added 2026-09-30)
 
-The client's ask ("während einer Cardio-Einheit aktiv etwas zuschalten
-können, in dem Moment") turned out to already have almost all its
-infrastructure built: Cardio has had a full dual-task add-on system for a
-while (`cardioAddonPrefs`, `CARDIO_GUEST_TYPES`, a pool of guest
-exercises with per-type Feineinstellungen, `triggerCardioGuest()`) - but
-it only ever fired automatically, on a randomized interval
-(`scheduleNextCardioGuest()`/the `cardioTick()` check against
-`cardioState.nextGuestAt`). The client specifically wanted *active,
-in-the-moment* control instead of only ever waiting on the random timer.
+First shipped as a single button that fired the existing automatic
+dual-task system's `triggerCardioGuest()` on demand (same random pick
+from the client's pre-configured `cardioAddonPrefs.pool`, same
+per-type-configured duration) - see git history for that first version.
+The client then clarified the actual ask was bigger: not just "trigger
+whatever's pre-configured", but actively **choose** which guest exercise
+**and** for how long, right now, mid-Cardio-activity - "ich mache jetzt
+zwei Minuten Blitzreiz-Reaktionstraining" - plus a way to still see
+Cardio's own status while doing the guest exercise, including a warning
+before Cardio needs the client back.
 
-Added a single button, `#cardioAddonTriggerBtn` ("+ Zusatzimpuls") in
-`cardioPlayer`'s player-bar, that calls the exact same
-`triggerCardioGuest()` the automatic path already used - same random pick
-from the same configured pool, same fine-tuned duration/colours/etc. per
-type. No new guest-selection or rendering logic needed at all; the only
-genuinely new thing is *when* it can fire.
+Before building, worked through three tiers of how "reachable while
+Cardio keeps running" could actually be implemented:
+1. What already existed: full takeover, no live choice, no visible Cardio
+   status at all during the guest exercise.
+2. **Built** (this section): full-screen takeover of the *chosen* guest
+   exercise (still only one real "Player" active at a time - the app's
+   pervasive single-active-player assumption, see the note at
+   `hideAllPlayers()`, is untouched), with a small independent floating
+   badge reading Cardio's still-ticking state layered on top. "Bild-im-
+   Bild", not two interactive screens.
+3. True simultaneous split-screen (two independently interactive
+   Players at once) - would need that single-active-player assumption
+   reworked everywhere it's assumed (fullscreen API, wake-lock,
+   pause overlays, back/abort-button logic). Assessed and explicitly
+   **not** built: Tier 2's own UI flow (the picker, the "return to
+   Cardio afterward" mechanics) is additive groundwork for Tier 3, not
+   a dead end that would need reworking if Tier 3 is ever wanted later -
+   so there is no real future-proofing cost to starting with Tier 2.
 
-- **Visibility** (`syncCardioAddonTriggerBtn()`, called from
-  `startStandaloneCardio()` and `returnFromCardioGuest()`): only shown
-  when the client has actually configured something for it to trigger
-  (`cardioAddonPrefs.enabled && cardioAddonPrefs.pool.length`) - Cardio's
-  player has no pause/settings overlay, so this can't change mid-run
-  anyway; hidden entirely rather than shown-but-disabled when nothing is
-  configured, matching the app's usual "don't show a button that would
-  just no-op" convention.
-- **Guard**: the click handler itself checks `cardioState &&
-  !cardioGuestActive` before calling `triggerCardioGuest()` - belt and
-  suspenders, since the button is naturally unreachable via real UI
-  interaction while a guest window is active anyway (`cardioPlayer`,
-  the button's own parent, is hidden then by `hideAllPlayers()`).
-- Available during both a real activity block and a "Pause" block
-  between activities - no reason to restrict it to one or the other.
+**The picker** (`openCardioAddonPicker()`/`renderCardioAddonPicker()`,
+the `#cardioAddonPicker` sheet, a `.pause-overlay` nested *inside*
+`#cardioPlayer`): offers all `CARDIO_GUEST_TYPES`, not just the
+automatic system's own configured pool - "jede andere Übung" was the
+explicit ask, and every type already has valid defaults in
+`cardioAddonPrefs.perType` regardless of pool membership (see
+`loadCardioAddonPrefs()`, which initialises all of them unconditionally).
+A duration stepper (15s steps, 15s-180s, defaulting to that type's own
+configured duration but never writing back to it - a live in-the-moment
+choice, not a settings change) sits below it. Because opening the picker
+never touches `cardioRaf`, Cardio's own countdown keeps visibly ticking
+behind the semi-transparent overlay while choosing - the "ich sehe im
+Hintergrund trotzdem noch, wie lange ich machen muss" ask, satisfied for
+free during the choosing step by reusing the existing `.pause-overlay`
+pattern. "Abbrechen" just hides the sheet again, no side effects.
+`triggerCardioGuest(explicitId, explicitDurationS)` now takes optional
+overrides - called with both from the picker's "Jetzt starten", called
+with neither (unchanged) from the automatic interval path in
+`cardioTick()`, which still picks randomly from the configured pool at
+the configured duration.
 
-Test: `tests/cardio_addon_manual_test.py` - button hidden with the add-on
-off; visible once configured; a manual tap switches to the guest exercise
-immediately (not waiting for any interval); returns cleanly to the same
-still-running activity afterward (not reset); repeatable (triggered
-twice, works both times); a direct `.click()` on the button while a
-guest window is genuinely active (bypassing the real-UI unreachability)
-correctly no-ops rather than starting a second, overlapping guest
-window. `tests/cardio_test.py` (existing, unmodified) continues to cover
-the automatic randomized-interval path, untouched by this change.
+**The status badge** (`#cardioGuestBadge`, a small fixed-position pill
+OUTSIDE every `.player` element - deliberately not nested inside
+`#cardioPlayer` or `#player`, so `hideAllPlayers()` never hides it):
+shown for the guest exercise's whole duration once it starts
+(`showCardioGuestBadge()`/`hideCardioGuestBadge()`), reading
+`cardioState` directly (`block.durationS - (performance.now() -
+cardioState.blockStartTime) / 1000`, clamped to 0) once a second rather
+than depending on `cardioTick` (which isn't running during the guest
+exercise). Turns to a pulsing `.warn` state once that remaining time
+drops to 15s or under - the "sagt mir auch Bescheid, wenn ich die Übung
+gleich wechseln muss" ask.
+
+- **Visibility** (`syncCardioAddonTriggerBtn()`): the trigger button is
+  now always shown whenever a Cardio session is running, independent of
+  the automatic system's own `cardioAddonPrefs.enabled`/`pool` - those
+  now only govern the *automatic* randomized-interval path; the client
+  picks live, so no advance configuration is needed for the manual path
+  at all. A deliberate behaviour change from the first version.
+- Reuses `applyCardioGuestToState()`/`runSession()`/
+  `returnFromCardioGuest()` exactly as the automatic path does - the
+  picker only changes *what* gets passed in and *when* it fires, not the
+  playback mechanism itself.
+
+Test: `tests/cardio_addon_picker_test.py` (replaces the deleted
+`tests/cardio_addon_manual_test.py`) - trigger button visible with zero
+addon configuration; picker offers all 4 types with Cardio's own
+countdown still ticking visibly behind it; switching the selected type,
+the duration stepper's floor clamp, and Abbrechen all work; starting
+takes over full-screen; the badge appears, reads and counts down
+correctly, is not yet warning early in a block but is already warning if
+opened late in a block; returns cleanly to the same still-running
+activity afterward (not reset), badge and trigger button state reset
+correctly. `tests/cardio_test.py` (existing, unmodified) continues to
+cover the automatic randomized-interval path, untouched by this change.
 
 ## Test-Bereich (autonomous, ongoing)
 
