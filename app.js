@@ -3521,6 +3521,10 @@
   // word sits in this public JS file same as everything else here). To
   // change the word, just edit this constant.
   const TEST_UNLOCK_WORD = "testbereich-frei";
+  // The opposite: typing TEST_LOCK_WORD hides the tab (and every Test teaser)
+  // again on this browser and lands on the home screen of whichever
+  // section's code box it was typed into (client request, 2026-10-01).
+  const TEST_LOCK_WORD = "testbereich-aus";
   const TEST_UNLOCK_KEY = "fwmc-test-unlocked";
   function isTestUnlocked() { return readJSON(TEST_UNLOCK_KEY, false) === true; }
   function applyTestTabVisibility() {
@@ -3569,6 +3573,15 @@
       applyTestTabVisibility();
       activateSectionTab("test");
       showScreen("testHome");
+      return;
+    }
+    if (normCode(code) === TEST_LOCK_WORD) {
+      try { localStorage.removeItem(TEST_UNLOCK_KEY); } catch (e) {}
+      applyTestTabVisibility();
+      if (ctx.errorEl) ctx.errorEl.hidden = true;
+      const homeToSec = { home: "visual", breathHome: "breath", movementHome: "movement", workoutHome: "workout", cardioHome: "cardio", natHome: "nat" };
+      activateSectionTab(homeToSec[ctx.homeScreen] || "visual");
+      showScreen(ctx.homeScreen);
       return;
     }
     if (ctx.goBtn) { ctx.goBtn.disabled = true; ctx.goBtn.textContent = "Lädt …"; }

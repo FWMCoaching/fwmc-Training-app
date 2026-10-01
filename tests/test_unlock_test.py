@@ -72,6 +72,18 @@ async def main():
         kicker_color = await pg.evaluate("() => getComputedStyle(document.querySelector('#testHome .hero-kicker')).color")
         print("testHome's accent colour is amber (#b45309), not the teal brand colour:", kicker_color == "rgb(180, 83, 9)")
 
+        # ---- the lock word hides it all again (typed into NAT's own box) ----
+        await pg.click('#testHome .section-tab[data-section="nat"]'); await pg.wait_for_timeout(150)
+        await pg.fill("#natProgramCodeInput", "testbereich-aus")
+        await pg.click("#natProgramGoBtn"); await pg.wait_for_timeout(400)
+        print("lock word lands back on natHome:", await pg.is_visible("#natHome"))
+        print("no not-found error for the lock word:", await pg.is_hidden("#natProgramError"))
+        print("Test tab hidden again after lock word:", await pg.is_hidden('#natHome .section-tab[data-section="test"]'))
+        print("unlock flag removed:", await pg.evaluate("() => localStorage.getItem('fwmc-test-unlocked')") is None)
+        print("welcome-text Test mention hidden again:", await pg.get_attribute("#tipsWelcome .test-teaser", "hidden") is not None)
+        await pg.reload(); await pg.wait_for_timeout(400)
+        print("still hidden after reload:", await pg.is_hidden('#home .section-tab[data-section="test"]'))
+
         print("FINAL ERRORS:", errors)
         await b.close()
 

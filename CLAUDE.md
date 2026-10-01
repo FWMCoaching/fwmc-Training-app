@@ -4866,7 +4866,8 @@ it via `.hidden` unless `localStorage['fwmc-test-unlocked']` is set.
 Typing the word `testbereich-frei` into ANY section's existing training-
 code box sets that flag (through `openProgramIntro()`'s own intercept,
 before the real code lookup) and reveals the tab permanently on that
-browser - see "Client security/product review (2026-10-01)" further below
+browser (typing `testbereich-aus` the same way hides it again and
+removes the flag) - see "Client security/product review (2026-10-01)" further below
 for the full rationale. **This does not change anything about how you
 build here**: keep developing exercises exactly as before, the scaffold
 and every existing Test-Bereich test still works because `tests/*_test.py`
