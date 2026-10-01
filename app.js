@@ -68,6 +68,11 @@
   };
   const PERIPH_ZONE_KEYS = Object.keys(PERIPH_ZONES);
   const PERIPH_AXIS_KEYS = ["horizontal", "vertikal", "diagonal"];
+  const PERIPH_ZONE_LABELS = {
+    tl: "Oben links", tm: "Oben Mitte", tr: "Oben rechts", ml: "Mitte links",
+    mr: "Mitte rechts", bl: "Unten links", bm: "Unten Mitte", br: "Unten rechts",
+  };
+  const PERIPH_AXIS_LABELS = { horizontal: "Horizontal", vertikal: "Vertikal", diagonal: "Diagonal" };
 
   // Fixed four-colour set for "Hütchen antippen" (cone order sorting) -
   // this exercise is always about four cones, so it skips the free colour
@@ -10563,6 +10568,12 @@
   // and share the exact same addonDefaultOwn()-shaped config (kind/axes/
   // useZones/zones/sizeMode/colors) as a result - "periph-like" below.
   function cardioGuestIsPeriphLike(guestId) { return guestId === "addon-flash" || guestId === "periph-flash"; }
+  // Zone-dominance weighting ("Dominanz") only exists on periph-flash's own
+  // Ready screen (state.periphZoneWeights) - addon-flash's own standalone
+  // settings (the "Zusatzaufgabe" panel layered on another VT exercise,
+  // #addonGroup) never had this control at all, so "genau so als wenn man
+  // die Übung einzeln machen würde" means NOT adding it there either.
+  function cardioGuestHasZoneWeights(guestId) { return guestId === "periph-flash"; }
   function cardioGuestColorLib(guestId) {
     return cardioGuestIsPeriphLike(guestId) || guestId === "stroop-classic" || guestId === "stroop-bg" || guestId === "mot" ? STROOP_COLOR_LIB : COLOR_LIB;
   }
@@ -10613,14 +10624,19 @@
   function cardioGuestModeList(guestId) { return CARDIO_GUEST_MODE_LISTS[guestId] || null; }
   function cardioGuestDefaultCfg(guestId) {
     const bg = cardioGuestBgAllowed(guestId) ? { bgColorKey: "gruen", bgIntensity: 0 } : {};
-    if (cardioGuestIsPeriphLike(guestId)) return { duration: 20, ...addonDefaultOwn(), ...bg };
+    // zoneWeights only actually gets rendered/used for periph-flash
+    // (cardioGuestHasZoneWeights) - included here for both periph-like
+    // types anyway just so the cfg shape stays uniform; harmless unused
+    // data for addon-flash, which never had this control standalone either.
+    if (cardioGuestIsPeriphLike(guestId)) return { duration: 20, ...addonDefaultOwn(), zoneWeights: { tl: 1, tm: 1, tr: 1, ml: 1, mr: 1, bl: 1, bm: 1, br: 1 }, ...bg };
     if (guestId === "cone-tap") return { duration: 20 };
     if (guestId === "blitz-raster") return { duration: 20, flashS: BLITZ_DIFFICULTIES.mittel.flashS, errorMode: "reset2", gridSize: 4, startCount: 3, ...bg };
     // Remember/Flash/MOT: mode-specific starting counts (trainingStart,
     // startCount, growStartObjects/Targets, ...) deliberately stay at
     // each domain's own built-in default rather than being exposed here
-    // too - same "keep this panel's depth proportionate" call already
-    // made for periph-flash's axes/zones and Blitz-Raster's zones.
+    // too (for now - see Batch D in CLAUDE.md) - same "keep this panel's
+    // depth proportionate" call already made for Blitz-Raster's zones
+    // (Batch B).
     if (guestId === "remember") return { duration: 20, mode: "fixed", revealBaseS: REMEMBER_DIFFICULTIES.mittel.revealBaseS, revealStepS: REMEMBER_DIFFICULTIES.mittel.revealStepS, errorMode: "reset2", ...bg };
     if (guestId === "flash") return { duration: 20, mode: "constant", kind: "zahlen", stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS, intervalS: FLASH_DIFFICULTIES.mittel.intervalS, errorMode: "reset2", ...bg };
     if (guestId === "mot") return { duration: 20, mode: "speed", speed: MOT_DIFFICULTIES.mittel.speed, trackS: MOT_DIFFICULTIES.mittel.trackS, highlightS: MOT_DIFFICULTIES.mittel.highlightS, errorMode: "reset2", colors: ["schwarz"], ...bg };
@@ -10671,6 +10687,11 @@
         if (!Array.isArray(p.axes) || !p.axes.length) p.axes = d.axes.slice();
         if (typeof p.useZones !== "boolean") p.useZones = d.useZones;
         if (!Array.isArray(p.zones) || !p.zones.length) p.zones = d.zones.slice();
+        if (!p.zoneWeights || typeof p.zoneWeights !== "object") p.zoneWeights = { ...d.zoneWeights };
+        else PERIPH_ZONE_KEYS.forEach((z) => {
+          const w = p.zoneWeights[z];
+          p.zoneWeights[z] = typeof w === "number" && w >= 1 && w <= 3 ? w : 1;
+        });
       }
       if (cardioGuestIsBlitz(t.id)) {
         if (!Number.isFinite(p.flashS) || p.flashS < 0.3 || p.flashS > 2) p.flashS = d.flashS;
@@ -10894,6 +10915,46 @@
           ["buchstaben", "zahlen", "gemischt"].map((k) => `<button class="choice${cfg.kind === k ? " active" : ""}" data-type="${t.id}" data-kind="${k}">${k === "buchstaben" ? "Buchstaben" : k === "zahlen" ? "Zahlen" : "Gemischt"}</button>`).join("") +
           `</div>`;
       }
+      // "Bereich" (axes/zones) + "Größe der Reize" - same controls and
+      // mutually-exclusive axis-row/zone-grid toggle as the standalone
+      // Periphere Wahrnehmung Ready screen (periphFieldRow/periphZoneGrid)
+      // and addon-flash's own "Zusatzaufgabe" panel (addonFieldRow/
+      // addonZoneGrid) - both already had this live field-for-field, Cardio's
+      // Zusatzimpuls just didn't expose it yet. Zone-dominance weighting is
+      // periph-flash-only (see cardioGuestHasZoneWeights()) and nested under
+      // its own collapsible "Feineinstellungen", per the client's own call
+      // on how deep this should go without flattening the whole panel.
+      if (cardioGuestIsPeriphLike(t.id)) {
+        html += `<div class="group-label">Bereich</div>`;
+        if (!cfg.useZones) {
+          html += `<div class="choice-row two" data-axis-row="${t.id}">` +
+            PERIPH_AXIS_KEYS.map((a) => `<button class="choice${cfg.axes.includes(a) ? " active" : ""}" data-type="${t.id}" data-axis="${a}">${PERIPH_AXIS_LABELS[a]}</button>`).join("") +
+            `<button class="choice${cfg.axes.length === PERIPH_AXIS_KEYS.length ? " active" : ""}" data-type="${t.id}" data-axis-all="1">Überall</button>` +
+            `</div>`;
+          if (cfg.axes.length === 0) html += `<div class="color-hint warn">Wähle mindestens einen Bereich.</div>`;
+        }
+        html += `<div class="choice-row" style="grid-template-columns:1fr;margin-top:4px">` +
+          `<button class="choice${cfg.useZones ? " active" : ""}" data-type="${t.id}" data-zones-toggle="1">Eigene Auswahl (3&times;3-Raster)</button>` +
+          `</div>`;
+        if (cfg.useZones) {
+          const gridCells = PERIPH_ZONE_KEYS.slice(0, 4).map((z) => `<button class="periph-zone${cfg.zones.includes(z) ? " active" : ""}" data-type="${t.id}" data-zone="${z}" aria-label="${PERIPH_ZONE_LABELS[z]}"></button>`).join("") +
+            `<div class="periph-zone periph-zone-center" aria-hidden="true"></div>` +
+            PERIPH_ZONE_KEYS.slice(4).map((z) => `<button class="periph-zone${cfg.zones.includes(z) ? " active" : ""}" data-type="${t.id}" data-zone="${z}" aria-label="${PERIPH_ZONE_LABELS[z]}"></button>`).join("");
+          html += `<div class="periph-zone-grid" data-zone-grid="${t.id}">${gridCells}</div>`;
+          if (cardioGuestHasZoneWeights(t.id) && cfg.zones.length > 1) {
+            html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` +
+              `<div class="periph-zone-weights">` +
+              `<div class="group-label">Dominanz <span class="group-count">wie oft eine Zone im Vergleich zu den anderen drankommt</span></div>` +
+              cfg.zones.map((z) => `<div class="slider-row"><span class="slider-label">${PERIPH_ZONE_LABELS[z]}</span><input type="range" min="1" max="3" step="1" data-type="${t.id}" data-zoneweight="${z}" value="${cfg.zoneWeights[z]}" aria-label="Dominanz ${PERIPH_ZONE_LABELS[z]}"><span class="slider-value" data-zoneweightvalue="${t.id}-${z}">${cfg.zoneWeights[z]}&times;</span></div>`).join("") +
+              `</div></div></details>`;
+          }
+        }
+        html += `<div class="group-label">Größe der Reize</div>` +
+          `<div class="choice-row two" data-size-row="${t.id}">` +
+          `<button class="choice${cfg.sizeMode === "gleich" ? " active" : ""}" data-type="${t.id}" data-sizemode="gleich">Gleich groß<small>überall gleich</small></button>` +
+          `<button class="choice${cfg.sizeMode === "wachsend" ? " active" : ""}" data-type="${t.id}" data-sizemode="wachsend">Nach außen größer<small>je weiter vom Punkt entfernt</small></button>` +
+          `</div>`;
+      }
       // No colours to pick for a type that doesn't use them at all
       // (8-vrw's direction colours are fixed rot/grün by rule, cross-modal
       // and cone-tap have none) - same rule EXERCISES[...].usesColors/
@@ -10960,6 +11021,52 @@
     });
     container.querySelectorAll("[data-mode]").forEach((btn) => {
       btn.addEventListener("click", () => { getCfg(btn.dataset.type).mode = btn.dataset.mode; select(); });
+    });
+    // Periphere Wahrnehmung's "Bereich"/"Größe der Reize" - axes are a
+    // multi-select set ("Überall" toggles all on/off together, same pattern
+    // as the standalone Ready screen's own periphAllBtn - allowed to reach
+    // zero, with a warning hint, rather than snapping back to some
+    // arbitrary one), zones enforce a minimum of one selected (same "don't
+    // let the last one go" rule as the standard colour picker).
+    container.querySelectorAll("[data-axis]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const cfg = getCfg(btn.dataset.type);
+        const axis = btn.dataset.axis;
+        cfg.axes = cfg.axes.includes(axis) ? cfg.axes.filter((a) => a !== axis) : [...cfg.axes, axis];
+        select();
+      });
+    });
+    container.querySelectorAll("[data-axis-all]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const cfg = getCfg(btn.dataset.type);
+        cfg.axes = cfg.axes.length === PERIPH_AXIS_KEYS.length ? [] : PERIPH_AXIS_KEYS.slice();
+        select();
+      });
+    });
+    container.querySelectorAll("[data-zones-toggle]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).useZones = !getCfg(btn.dataset.type).useZones; select(); });
+    });
+    container.querySelectorAll(".periph-zone[data-zone]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const cfg = getCfg(btn.dataset.type);
+        const z = btn.dataset.zone;
+        if (cfg.zones.includes(z) && cfg.zones.length <= 1) return;
+        cfg.zones = cfg.zones.includes(z) ? cfg.zones.filter((k) => k !== z) : [...cfg.zones, z];
+        select();
+      });
+    });
+    container.querySelectorAll("[data-sizemode]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).sizeMode = btn.dataset.sizemode; select(); });
+    });
+    container.querySelectorAll("input[data-zoneweight]").forEach((slider) => {
+      slider.addEventListener("input", () => {
+        const cfg = getCfg(slider.dataset.type);
+        const z = slider.dataset.zoneweight;
+        cfg.zoneWeights[z] = Number(slider.value);
+        persist();
+        const valueEl = container.querySelector(`[data-zoneweightvalue="${slider.dataset.type}-${z}"]`);
+        if (valueEl) valueEl.textContent = `${cfg.zoneWeights[z]}×`;
+      });
     });
     container.querySelectorAll("[data-diff]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -11169,6 +11276,7 @@
       state.periphAxes = cfg.axes;
       state.periphUseZones = cfg.useZones;
       state.periphZones = cfg.zones;
+      state.periphZoneWeights = cfg.zoneWeights;
       state.periphSizeMode = cfg.sizeMode;
       state.periphColors = cfg.colors;
     }

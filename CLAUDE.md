@@ -4321,18 +4321,59 @@ check for duration specifically. `cardio_addon_nat_batch2_test.py`'s mode-
 group assertions updated to the unified `[data-mode-row]` selector inside
 `#cardioAddonPickerDetail`.
 
-**Not yet done** (explicitly re-opened by the client's "genau so..." ask,
-superseding the "proportionate scope" simplification noted in every
-earlier batch above - client confirmed via follow-up: include the deeper
-settings too, each nested under its own collapsible "Feineinstellungen"
-sub-section rather than flattened into the main field list): Periphere
-Wahrnehmung/addon-flash's axes/zone-selection/zone-dominance-weights/
-size-mode; Blitz-Raster's own zone selection (currently hardcoded to all
-zones under a Cardio guest burst); Flash Speicher Test's and MOT's own
-remaining settings beyond kind/colour/difficulty/error-mode; and, for
-Remember/Flash/MOT, each mode's own further numeric fine-tuning fields
-(training-mode start values, climb/growth rates, ...). To be done batch by
-batch, same discipline as the NAT batches above.
+Client confirmed via follow-up how deep this should go on the two points
+that genuinely needed asking about (zone-dominance weighting; each mode's
+own further numeric fields): include them too, each nested under its own
+collapsible "Feineinstellungen" sub-section rather than flattened into the
+main field list - "mit rein, aber ... weggeklappt, ausklappbar" for both.
+Proceeding batch by batch, same discipline as the NAT batches above.
+
+### Full-Parität Batch A: Periphere Wahrnehmung/addon-flash - Achsen, Zonen, Dominanz, Größe (2026-10-01)
+
+`buildCardioGuestFieldsHtml()` gained, for both periph-like types
+(`cardioGuestIsPeriphLike()`): the "Bereich" axis row (Horizontal/Vertikal/
+Diagonal + "Überall", multi-select, can reach zero with a warning hint -
+`data-axis`/`data-axis-all`) with a mutually-exclusive toggle to a 3×3
+zone-selection grid (`data-zones-toggle`/`data-zone`, minimum one zone
+enforced, same rules as the standalone Ready screen's own `periphFieldRow`/
+`periphZoneGrid`/`periphAllBtn`), and "Größe der Reize" (`data-sizemode`:
+gleich/wachsend). `cardioGuestDefaultCfg()`'s periph-like branch already
+carried `axes`/`useZones`/`zones`/`sizeMode` in its cfg shape via
+`addonDefaultOwn()` - genuinely new here was only the UI to reach them, not
+new data fields.
+
+**Zone-dominance weighting is periph-flash-only**
+(`cardioGuestHasZoneWeights()`): addon-flash's own standalone "Zusatzaufgabe"
+panel (`#addonGroup`) never had this control either, so giving it to
+addon-flash here would be LESS "genau so wie einzeln", not more. Added
+`zoneWeights` to the periph-like cfg shape (harmless unused data for
+addon-flash) and to `loadCardioAddonPrefs()`'s validation, and
+`applyCardioGuestToState()` now also writes `state.periphZoneWeights` (it
+didn't before - the actual gameplay reads it via `randPosFromCfg()`, not
+just the display). Rendered only when `cfg.zones.length > 1` (weighting one
+zone against nothing is meaningless, matching `renderPeriphZoneWeights()`'s
+own `show` condition), inside a `<details class="advanced">` reusing the
+same collapsible styling/plus-minus icon as `#cardioAddonAdvanced` itself,
+one `Dominanz` slider per currently-selected zone.
+
+Test: `tests/cardio_addon_picker_periph_fields_test.py` - both periph-like
+types show the new rows pre-start and live; axis multi-select/"Überall"
+(including the "only reaches zero from an already-fully-on state, not from
+a partial one" nuance) and the zone grid's minimum-one-zone rule behave
+exactly like the standalone Ready screen; periph-flash's own "Feineinstel-
+lungen" collapsible appears only when it has >1 zone selected and
+addon-flash never shows it at all; a live zone-weight/axis/size edit is
+provably never written back to the saved per-type default, including after
+actually starting the live-edited burst.
+
+**Still not done** (Batches B-D, same "genau so als wenn man die Übung
+einzeln machen würde" ask): Blitz-Raster's own zone selection (currently
+hardcoded to all zones under a Cardio guest burst); Flash Speicher Test's
+and MOT's own remaining settings beyond kind/colour/difficulty/error-mode
+(Flash also has its own axes/zones/fixation-point settings, same family as
+this batch); and, for Remember/Flash/MOT, each mode's own further numeric
+fine-tuning fields (training-mode start values, climb/growth rates, ...),
+nested under their own collapsible "Feineinstellungen" the same way.
 
 ## Test-Bereich (autonomous, ongoing)
 
