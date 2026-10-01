@@ -11670,6 +11670,24 @@
   // ich die Übung gleich wechseln muss". ----
   let cardioGuestBadgeInterval = null;
   const CARDIO_GUEST_BADGE_WARN_S = 15;
+  // The badge's own fixed top offset (styles.css) assumed every guest
+  // player's own top-right "Vollbild" button lived further down than it -
+  // true for most, but not for the ones whose own .player-bar actually
+  // sits exactly where the badge does, so the two visibly overlapped
+  // (client-reported, screenshots showing "Vollbild" peeking out from
+  // behind the badge). Measures whichever .player-bar is actually rendered
+  // right now (0-height for every hidden one, cardioPlayerBar itself
+  // excluded - it sits behind the guest, out of view) and sits just below
+  // its real bottom edge instead of guessing a fixed offset.
+  function cardioGuestBadgeTop() {
+    let maxBottom = 0;
+    document.querySelectorAll(".player-bar").forEach((bar) => {
+      if (bar.id === "cardioPlayerBar") return;
+      const r = bar.getBoundingClientRect();
+      if (r.height > 0 && r.bottom > maxBottom) maxBottom = r.bottom;
+    });
+    return maxBottom > 0 ? maxBottom + 8 : null;
+  }
   function updateCardioGuestBadge() {
     if (!cardioState) { hideCardioGuestBadge(); return; }
     const block = cardioState.items[cardioState.index];
@@ -11677,6 +11695,8 @@
     const remaining = Math.max(0, block.durationS - (performance.now() - cardioState.blockStartTime) / 1000);
     els.cardioGuestBadge.textContent = `Cardio: noch ${fmtClock(remaining)}`;
     els.cardioGuestBadge.classList.toggle("warn", remaining <= CARDIO_GUEST_BADGE_WARN_S);
+    const top = cardioGuestBadgeTop();
+    els.cardioGuestBadge.style.top = top == null ? "" : top + "px";
   }
   function showCardioGuestBadge() {
     updateCardioGuestBadge();
@@ -19422,8 +19442,14 @@
       timer: null, timerFn: null, timerFiresAt: null,
     };
     applyCorsiBg();
-    renderCorsiBoard(buildCorsiBoard());
+    // Hint text must be set BEFORE the board is built - corsiStageBounds()
+    // reads els.corsiHint's actual rendered height (via stageTopClearanceY())
+    // to keep blocks clear of it, so building the board against the hint's
+    // still-empty pre-round height let a block land somewhere the hint's
+    // real text then covered once set right after (the Corsi overlap flake
+    // in stage_hint_overlap_audit_test.py).
     els.corsiHint.textContent = "Gleich geht's los …";
+    renderCorsiBoard(buildCorsiBoard());
     els.corsiProgressEl.textContent = `Länge ${corsiState.span}`;
     requestWakeLock();
     scheduleCorsiTimer(corsiStartLevel, 1000);

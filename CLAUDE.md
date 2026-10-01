@@ -4429,6 +4429,61 @@ pre-start Feineinstellungen panel are now field-for-field identical for
 every one of the 17 guest types - the client's "genau so als wenn man die
 Übung einzeln machen würde" ask, fully closed.
 
+### Drei Probleme behoben (2026-10-01, client: "Beseitige die Probleme")
+
+The first two are pre-existing and unrelated to Cardio, surfaced
+incidentally while running full regression suites around the Batch A-D
+work above (confirmed via `git stash` at the time not to be caused by any
+of it). The third is Cardio's own, reported with screenshots right after.
+
+- **Corsi block occasionally overlapping the hint/player-bar**
+  (`stage_hint_overlap_audit_test.py`, RNG-dependent - only showed up with
+  certain random layouts). Root cause: `startCorsiGame()` called
+  `renderCorsiBoard(buildCorsiBoard())` BEFORE setting
+  `els.corsiHint.textContent`, so `corsiStageBounds()`'s own
+  `stageTopClearanceY()` call measured the hint element's still-empty
+  pre-round height, not the "Gleich geht's los …" text's real rendered
+  height that appears moments later - letting a block land in the gap
+  between the two. Fixed by setting the hint text first, so the collision-
+  avoidance math sees the real clearance it needs to avoid from the start.
+  Confirmed with 10 consecutive runs of the audit test (previously failed
+  intermittently) plus `corsi_test.py`, both clean.
+- **`flash_fixpoint_test.py`'s "fixpoint visible by default" check was
+  stale**, not flaky (reproduced deterministically every run). The test's
+  own polling loop waits for `#flashInputPanel` to become visible before
+  reaching that assertion - but `flashOpenInput()` deliberately hides the
+  fixpoint the moment the answer-input phase begins (it would otherwise
+  cover the keypad), restoring it only for the next round's own flash/gap
+  phase. By the time the assertion ran, it was therefore always checking
+  the wrong phase, regardless of the actual setting. Fixed by moving the
+  assertion (and its companion grey-dot-colour check) to right after
+  starting the round, before that polling loop - still well within the
+  flash/gap sequence, which is what the check was always meant to cover.
+  `flash_test.py`/`flash_combo_test.py` re-verified passing unchanged.
+- **The floating "Cardio: noch M:SS" guest badge covered the "Vollbild"
+  button** of several guest players (screenshots: a cone-tap-style guest
+  and an arrow exercise, both showing "Vollbild" peeking out from behind
+  the badge in the top-right corner). `.cardio-guest-badge`'s `top` was a
+  single hardcoded offset, assuming every guest player's own top-right
+  button lived further down than it - true for the generic VT player's
+  `#fsBtn`, not for several of the separate-engine domains' own
+  `.player-bar` (which can wrap to two rows on a narrow phone, same note
+  already on `.player-bar button,.player-status` elsewhere in this file).
+  New `cardioGuestBadgeTop()` measures whichever `.player-bar` is actually
+  rendered right now (0-height for every hidden one, `cardioPlayerBar`
+  itself excluded - it sits behind the guest, out of view) and positions
+  the badge just below its real bottom edge, recomputed on every 1s tick
+  (`updateCardioGuestBadge()`) so it stays correct even if that bar's own
+  height changes mid-run.
+
+  Test: `tests/cardio_guest_badge_overlap_test.py` - checks real
+  bounding-rect overlap between the badge and each guest player's own
+  Vollbild button, across the generic VT player (both an arrow exercise
+  and cone-tap, matching the two screenshots) and all four separate-engine
+  domains. `cardio_addon_picker_test.py`/`cardio_test.py`/
+  `cardio_addon_nat_batch1_test.py`/`cardio_addon_nat_batch2_test.py`
+  re-verified passing unchanged.
+
 ### Full-Parität Batch C: Flash Speicher Test und MOT - restliche Felder (2026-10-01)
 
 **Flash Speicher Test** reuses the exact same "Bereich" (axes/zones)
