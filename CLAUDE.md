@@ -4366,14 +4366,48 @@ addon-flash never shows it at all; a live zone-weight/axis/size edit is
 provably never written back to the saved per-type default, including after
 actually starting the live-edited burst.
 
-**Still not done** (Batches B-D, same "genau so als wenn man die Übung
-einzeln machen würde" ask): Blitz-Raster's own zone selection (currently
-hardcoded to all zones under a Cardio guest burst); Flash Speicher Test's
-and MOT's own remaining settings beyond kind/colour/difficulty/error-mode
-(Flash also has its own axes/zones/fixation-point settings, same family as
-this batch); and, for Remember/Flash/MOT, each mode's own further numeric
-fine-tuning fields (training-mode start values, climb/growth rates, ...),
-nested under their own collapsible "Feineinstellungen" the same way.
+**Still not done** (Batches C-D, same "genau so als wenn man die Übung
+einzeln machen würde" ask): Flash Speicher Test's and MOT's own remaining
+settings beyond kind/colour/difficulty/error-mode (Flash also has its own
+axes/zones/fixation-point settings, same family as Batches A/B); and, for
+Remember/Flash/MOT, each mode's own further numeric fine-tuning fields
+(training-mode start values, climb/growth rates, ...), nested under their
+own collapsible "Feineinstellungen" the same way.
+
+### Full-Parität Batch B: Blitz-Raster - eigene Zonen-Auswahl (2026-10-01)
+
+Blitz-Raster's own "Bereich" is simpler than Periphere Wahrnehmung's
+(Batch A): no axes concept at all, no `useZones` toggle - the 3×3-Zonen-
+Raster directly restricts which grid cells can light up, always on, same
+as the standalone Ready screen's own `blitzZoneGroup`/`blitzZoneGrid`/
+`blitzZoneAllBtn`. No dominance-weighting either - `blitzPrefs` never had
+that concept. Added `zones` to the cfg shape (`cardioGuestDefaultCfg()`'s
+blitz-raster branch, `loadCardioAddonPrefs()`'s validation - same "forces
+non-empty on load" rule `loadBlitzPrefs()` itself already applies) and new
+`[data-blitzzone]`/`[data-blitzzone-all]` markup/wiring (kept distinct from
+Periph's `[data-zone]`/`[data-axis-all]` since the two domains' zero-
+reachability rules differ: Blitz's own "Überall" can reach zero from a
+fully-on state, same as Periph's axis "Überall", but Blitz's INDIVIDUAL
+zone clicks enforce a minimum of one, unlike Periph's zones which also
+enforce that minimum - cross-wiring them would have been wrong for neither
+domain, so they stay separate).
+
+Fixed a real, previously-undetected bug while at it: `startBlitzGame()`'s
+`prefsOverride` path had `zones: (prefsOverride ? PERIPH_ZONE_KEYS :
+p.zones).slice()` - under ANY Cardio guest burst, zones were silently
+forced to "all of them" regardless of what the (until now nonexistent)
+panel said, because the override branch never looked at `p.zones` at all.
+Now reads `p.zones` directly (falling back to all only if genuinely
+missing), so a live zone edit actually restricts gameplay instead of being
+silently discarded.
+
+Test: `tests/cardio_addon_picker_blitz_zones_test.py` - zone grid present
+pre-start and live; "Überall"'s partial-state-vs-fully-on nuance and the
+minimum-one-zone rule behave exactly like the standalone Ready screen; a
+live zone edit is provably never written back to the saved default, even
+after actually running the live-edited burst. `blitz_test.py`/
+`blitz_combo_test.py`/`blitz_grid_size_test.py`/
+`cardio_addon_nat_batch1_test.py` re-verified passing unchanged.
 
 ## Test-Bereich (autonomous, ongoing)
 

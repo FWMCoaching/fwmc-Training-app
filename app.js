@@ -7343,10 +7343,10 @@
   // prefsOverride (Cardio guest bursts only, see triggerCardioGuest()):
   // runs the game with a client-chosen Cardio-specific config instead of
   // the normal blitzPrefs - NEVER reads or mutates the client's own saved
-  // Blitz-Raster preferences. zones stays at blitzPrefs' own default
-  // (PERIPH_ZONE_KEYS, i.e. all of them) even under an override - the
-  // Cardio Feineinstellungen panel doesn't offer a zones picker, same
-  // simplification addon-flash/periph-flash's panels already made.
+  // Blitz-Raster preferences. p.zones now comes from the Cardio panel's own
+  // zone picker (see buildCardioGuestFieldsHtml()'s Blitz-Raster branch,
+  // Batch B) same as blitzPrefs.zones would for a standalone run - falls
+  // back to "all of them" only if somehow missing entirely.
   function startBlitzGame(opts, prefsOverride) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
@@ -7358,7 +7358,7 @@
     const p = prefsOverride || blitzPrefs;
     blitzState = {
       level: p.startCount, cleared: 0, phase: "reveal", lit: new Set(), tapped: new Set(), eligible: new Set(),
-      startTime: performance.now(), timer: null, comboDurationTimer: null, gridSize: p.gridSize, zones: (prefsOverride ? PERIPH_ZONE_KEYS : p.zones).slice(),
+      startTime: performance.now(), timer: null, comboDurationTimer: null, gridSize: p.gridSize, zones: (p.zones && p.zones.length ? p.zones : PERIPH_ZONE_KEYS).slice(),
       flashS: p.flashS, errorMode: p.errorMode, paused: false,
     };
     els.blitzStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
@@ -10630,7 +10630,7 @@
     // data for addon-flash, which never had this control standalone either.
     if (cardioGuestIsPeriphLike(guestId)) return { duration: 20, ...addonDefaultOwn(), zoneWeights: { tl: 1, tm: 1, tr: 1, ml: 1, mr: 1, bl: 1, bm: 1, br: 1 }, ...bg };
     if (guestId === "cone-tap") return { duration: 20 };
-    if (guestId === "blitz-raster") return { duration: 20, flashS: BLITZ_DIFFICULTIES.mittel.flashS, errorMode: "reset2", gridSize: 4, startCount: 3, ...bg };
+    if (guestId === "blitz-raster") return { duration: 20, flashS: BLITZ_DIFFICULTIES.mittel.flashS, errorMode: "reset2", gridSize: 4, startCount: 3, zones: PERIPH_ZONE_KEYS.slice(), ...bg };
     // Remember/Flash/MOT: mode-specific starting counts (trainingStart,
     // startCount, growStartObjects/Targets, ...) deliberately stay at
     // each domain's own built-in default rather than being exposed here
@@ -10698,6 +10698,7 @@
         if (!["reset2", "backOne", "stay"].includes(p.errorMode)) p.errorMode = d.errorMode;
         if (![3, 4, 5, 6, 7, 8].includes(p.gridSize)) p.gridSize = d.gridSize;
         if (!Number.isFinite(p.startCount) || p.startCount < 1) p.startCount = d.startCount;
+        if (!Array.isArray(p.zones) || !p.zones.length || !p.zones.every((z) => PERIPH_ZONE_KEYS.includes(z))) p.zones = d.zones.slice();
       }
       if (cardioGuestIsRemember(t.id)) {
         if (!Number.isFinite(p.revealBaseS) || p.revealBaseS < 0.5 || p.revealBaseS > 3) p.revealBaseS = d.revealBaseS;
@@ -10854,6 +10855,22 @@
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
         <div><label>Startanzahl</label><input type="number" min="2" max="12" step="1" data-type="${t.id}" data-f="startCount" value="${cfg.startCount}"></div>
       </div>`;
+        // "Bereich" - Blitz-Raster's own version is simpler than Periphere
+        // Wahrnehmung's (no axes concept at all, no useZones toggle - the
+        // 3x3-Zonen-Raster directly restricts which grid cells can light
+        // up, always on, same as the standalone Ready screen's own
+        // blitzZoneGroup/blitzZoneGrid/blitzZoneAllBtn). No dominance-
+        // weighting here either - blitzPrefs never had that concept.
+        html += `<div class="group-label">Bereich</div>` +
+          `<div class="choice-row" style="grid-template-columns:1fr">` +
+          `<button class="choice${cfg.zones.length === PERIPH_ZONE_KEYS.length ? " active" : ""}" data-type="${t.id}" data-blitzzone-all="1">Überall</button>` +
+          `</div>`;
+        html += `<div class="periph-zone-grid" data-blitzzone-grid="${t.id}">` +
+          PERIPH_ZONE_KEYS.slice(0, 4).map((z) => `<button class="periph-zone${cfg.zones.includes(z) ? " active" : ""}" data-type="${t.id}" data-blitzzone="${z}" aria-label="${PERIPH_ZONE_LABELS[z]}"></button>`).join("") +
+          `<div class="periph-zone periph-zone-center" aria-hidden="true"></div>` +
+          PERIPH_ZONE_KEYS.slice(4).map((z) => `<button class="periph-zone${cfg.zones.includes(z) ? " active" : ""}" data-type="${t.id}" data-blitzzone="${z}" aria-label="${PERIPH_ZONE_LABELS[z]}"></button>`).join("") +
+          `</div>`;
+        if (cfg.zones.length === 0) html += `<div class="color-hint warn">Wähle mindestens einen Bereich.</div>`;
         html += `<div class="choice-row" data-blitzdiff-row="${t.id}">` +
           Object.entries(BLITZ_DIFFICULTIES).map(([k, d]) => `<button class="choice${Math.abs(cfg.flashS - d.flashS) < 0.001 ? " active" : ""}" data-type="${t.id}" data-blitzdiff="${k}">${esc(d.title)}</button>`).join("") +
           `</div>`;
@@ -11018,6 +11035,28 @@
     });
     container.querySelectorAll("[data-blitzerror]").forEach((btn) => {
       btn.addEventListener("click", () => { getCfg(btn.dataset.type).errorMode = btn.dataset.blitzerror; select(); });
+    });
+    // Blitz-Raster's own zone picker - individual zones enforce a minimum
+    // of one (same rule as Periphere Wahrnehmung's), but "Überall" can
+    // still force it all the way to zero (same all-on/all-off toggle as
+    // the standalone Ready screen's own blitzZoneAllBtn - zero is a valid,
+    // if degenerate, state there too, just warned about rather than blocked
+    // in this panel).
+    container.querySelectorAll("[data-blitzzone]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const cfg = getCfg(btn.dataset.type);
+        const z = btn.dataset.blitzzone;
+        if (cfg.zones.includes(z) && cfg.zones.length <= 1) return;
+        cfg.zones = cfg.zones.includes(z) ? cfg.zones.filter((k) => k !== z) : [...cfg.zones, z];
+        select();
+      });
+    });
+    container.querySelectorAll("[data-blitzzone-all]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const cfg = getCfg(btn.dataset.type);
+        cfg.zones = cfg.zones.length === PERIPH_ZONE_KEYS.length ? [] : PERIPH_ZONE_KEYS.slice();
+        select();
+      });
     });
     container.querySelectorAll("[data-mode]").forEach((btn) => {
       btn.addEventListener("click", () => { getCfg(btn.dataset.type).mode = btn.dataset.mode; select(); });
