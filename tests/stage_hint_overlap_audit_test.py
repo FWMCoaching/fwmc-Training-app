@@ -44,6 +44,7 @@ async def main():
         # Remember (fixed, 9 markers is the largest static grid)
         ctx = await b.new_context(viewport={"width": 390, "height": 844}, service_workers="block")
         pg = await ctx.new_page()
+        await pg.add_init_script("localStorage.setItem('fwmc-test-unlocked', 'true')")
         await pg.goto(URL); await pg.wait_for_timeout(300)
         if await pg.is_visible("#tipsCloseBtn"):
             await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)
@@ -57,6 +58,7 @@ async def main():
         # Search (Suchtest)
         ctx = await b.new_context(viewport={"width": 390, "height": 844}, service_workers="block")
         pg = await ctx.new_page()
+        await pg.add_init_script("localStorage.setItem('fwmc-test-unlocked', 'true')")
         await pg.goto(URL); await pg.wait_for_timeout(300)
         if await pg.is_visible("#tipsCloseBtn"):
             await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)
@@ -73,6 +75,7 @@ async def main():
         # Corsi (Blockspanne)
         ctx = await b.new_context(viewport={"width": 390, "height": 844}, service_workers="block")
         pg = await ctx.new_page()
+        await pg.add_init_script("localStorage.setItem('fwmc-test-unlocked', 'true')")
         await pg.goto(URL); await pg.wait_for_timeout(300)
         if await pg.is_visible("#tipsCloseBtn"):
             await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)
@@ -85,6 +88,7 @@ async def main():
         # Reaktionsfeld (Dynavision-style)
         ctx = await b.new_context(viewport={"width": 390, "height": 844}, service_workers="block")
         pg = await ctx.new_page()
+        await pg.add_init_script("localStorage.setItem('fwmc-test-unlocked', 'true')")
         await pg.goto(URL); await pg.wait_for_timeout(300)
         if await pg.is_visible("#tipsCloseBtn"):
             await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)
@@ -99,6 +103,7 @@ async def main():
         # positions repeatedly rather than checking just the initial layout.
         ctx = await b.new_context(viewport={"width": 390, "height": 844}, service_workers="block")
         pg = await ctx.new_page()
+        await pg.add_init_script("localStorage.setItem('fwmc-test-unlocked', 'true')")
         await pg.goto(URL); await pg.wait_for_timeout(300)
         if await pg.is_visible("#tipsCloseBtn"):
             await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)

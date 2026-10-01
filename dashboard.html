@@ -205,7 +205,11 @@
       </table>
 
       <label for="pCode" style="margin-top:20px">Code (neu anlegen oder bestehenden Code eintippen bzw. anklicken zum Bearbeiten)</label>
-      <input id="pCode" placeholder="z.B. dig03" />
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="pCode" placeholder="z.B. dig03" style="flex:1" />
+        <button id="pCodeRandomBtn" class="secondary" type="button" style="margin-top:0;white-space:nowrap">Zufällig ergänzen</button>
+      </div>
+      <p class="hint" style="margin-top:4px">Für neue Codes an Kunden: ein eigenes Kürzel eintippen (optional) und dann auf "Zufällig ergänzen" tippen - hängt automatisch unerratbare Zeichen an, damit niemand fremde Trainings-Codes durchprobieren kann.</p>
 
       <div class="tabs">
         <button class="tab-btn active" id="tabBuilderBtn" type="button">Baukasten</button>
@@ -744,6 +748,24 @@
       msg.textContent = data.created ? "Neu angelegt." : "Gespeichert."; msg.className = "msg ok";
       loadPrograms();
     } catch (e) { msg.textContent = "Fehler: " + e.message; msg.className = "msg err"; }
+  });
+
+  // Random suffix so a public training-code can't be guessed/enumerated
+  // (e.g. "dig01", "dig02", ...) by anyone hitting the public, unauthenticated
+  // GET /program?code=... lookup the app itself uses - an optional, still
+  // human-chosen prefix stays for the coach's own bookkeeping/order, the
+  // random tail is what actually has to resist guessing. Excludes visually
+  // ambiguous characters (0/o, 1/l/i) since codes get read/typed by hand.
+  function randomCodeSuffix(len) {
+    const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
+    const bytes = new Uint8Array(len);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
+  }
+  document.getElementById("pCodeRandomBtn").addEventListener("click", () => {
+    const input = document.getElementById("pCode");
+    const prefix = input.value.trim().toLowerCase().replace(/\s+/g, "-");
+    input.value = (prefix ? prefix + "-" : "") + randomCodeSuffix(10);
   });
 
   document.getElementById("pNewBtn").addEventListener("click", () => {

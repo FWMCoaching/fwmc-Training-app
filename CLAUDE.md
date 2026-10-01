@@ -4429,6 +4429,25 @@ pre-start Feineinstellungen panel are now field-for-field identical for
 every one of the 17 guest types - the client's "genau so als wenn man die
 Übung einzeln machen würde" ask, fully closed.
 
+**Standing convention going forward (client, 2026-10-01)**: this parity is
+not a one-time backfill, it's now a permanent requirement for anything
+added to `CARDIO_GUEST_TYPES`'s two groups (`vt`/`nat`) from here on -
+whether it's a brand-new Visual-Training/NAT exercise built directly, or a
+Test-Bereich exercise the client later decides is good enough to promote
+out of Test (see "Test-Bereich (autonomous, ongoing)" below). Whoever adds
+such an exercise must, in the same piece of work: add it to
+`CARDIO_GUEST_TYPES`, give `cardioGuestDefaultCfg()` a full default config
+for it, extend `buildCardioGuestFieldsHtml()`/`wireCardioGuestFields()`
+with whatever fields that exercise's own Ready screen exposes (mode-
+conditional where relevant, deep/exotic ones nested under a collapsible
+`<details class="advanced">`), and double-check its own `start*Game()`
+reads every one of those fields from `prefsOverride` (`p`), never straight
+from the real saved prefs object - that exact isolation-leak mistake was
+made and caught seven separate times during Batches B-D (see each batch's
+own section above). The client does not want to be asked about this each
+time; treat it as implied scope on any new exercise, the same way a new
+screen is implied to need its own test file.
+
 ### Drei Probleme behoben (2026-10-01, client: "Beseitige die Probleme")
 
 The first two are pre-existing and unrelated to Cardio, surfaced
@@ -4589,6 +4608,147 @@ after actually running the live-edited burst. `blitz_test.py`/
 `blitz_combo_test.py`/`blitz_grid_size_test.py`/
 `cardio_addon_nat_batch1_test.py` re-verified passing unchanged.
 
+## Client security/product review follow-ups (2026-10-01)
+
+The client asked for an intensive, wide-angle review ("recherchiere
+intensiv... 60 Minuten lang") covering everything open across the whole
+app, backend included - not just Cardio. That review surfaced several
+things outside anything previously tracked in this file, mainly because
+they live outside app.js (the Cloudflare Worker, dashboard.html) or are
+product/content decisions rather than bugs. The client then worked through
+the findings point by point; this section records what was decided/built
+and, per the client's own instruction ("alles andere... musst du mir
+danach nochmal vorlegen"), what is still open for a future round.
+
+**Training-code guessability (worker/src/index.js's public, unauthenticated
+`GET /program?code=...`)**: the review flagged that codes are free-text
+coach-chosen strings (dashboard placeholder: `dig01`) with no rate-limiting
+on that endpoint, so a plausible/sequential code could be guessed/
+enumerated and would hand back a stranger's full personalised programme
+`config` - a privacy issue between the client's own customers, not a
+theoretical one. The client's own proposed fix - keep a short recognisable
+prefix (their own bookkeeping, e.g. a date or sequence) but make the rest
+of the code enough random characters that it can't be guessed - is correct
+and is the standard shape for this problem (a public-but-unguessable
+token, with human-friendly metadata kept separately). Two things worth
+being explicit about, agreed with the client: (1) the *order*/*date* a
+code was issued should NOT be encoded into the code text itself (e.g. a
+literal running number) - that leaks exactly the kind of structure that
+makes guessing easier (seeing `...-003` tells an attacker `...-001` and
+`...-002` likely exist too); it already lives for free in the `programs`
+table's own `created_at`/`updated_at` columns and the dashboard's "Trainings-
+Codes" table, sorted by `Geändert`. (2) The actual secret-facing value
+(`program_code`, what's typed into the app and sent to `/program`) and the
+coach's own per-customer bookkeeping label (`client_code`/"Kürzel" in
+`client_history`, never sent to that public endpoint, already behind the
+admin token) are two different fields in the existing schema - only the
+first one needs to be unguessable, the second can stay human-readable with
+zero privacy exposure, since only the coach, authenticated, ever sees it.
+
+Implemented: `dashboard.html`'s "Trainings-Codes" panel, next to `#pCode`,
+got a new "Zufällig ergänzen" button (`randomCodeSuffix()`, 10 characters,
+`crypto.getRandomValues`, an alphabet with visually ambiguous characters
+removed - no `0`/`o`, `1`/`l`/`i` - since a human still has to read/type
+these by hand) that appends a random, unguessable tail to whatever prefix
+the coach optionally typed first. This is a pure dashboard UI change - the
+Worker API already accepts any string as `code`, so there was no schema or
+backend change needed, and nothing about already-issued codes changes
+automatically. **Left open, needs the client's own call**: existing
+already-issued codes are NOT retrofitted with a random suffix (that would
+break them for whoever already has them) - purely a going-forward
+improvement for codes created from now on, unless the client decides some
+or all existing clients should be migrated to a new, longer code (their
+own relationship to manage, not something to do silently). Also still
+open, lower urgency now that codes themselves resist guessing: the
+Worker's CORS header is `*` on every route including the admin ones (could
+be narrowed to the dashboard's actual origin), the admin-token comparison
+is a plain `!==` (not constant-time; low real-world risk over HTTPS/
+Cloudflare's own network jitter), and there is still no server-side rate-
+limiting on `/program` at all (now a much smaller risk with a ~10-character
+random tail - 32^10 combinations - but not zero, e.g. against a very high
+request-volume scripted attempt). None of these three were touched this
+round.
+
+**Test-Bereich visibility**: implemented as described in "Test-Bereich
+(autonomous, ongoing)" below - hidden-by-default nav tab, revealed
+permanently on a browser by typing `testbereich-frei` into any section's
+existing training-code box. This is a client-side-only, obscurity-not-
+security gate (the word sits in the same public `app.js` as everything
+else) - appropriate for what the client actually asked for ("nicht jedem
+sofort sichtbar"), not meant to withstand someone actually inspecting the
+page source. Caught one real regression from hiding the tab while running
+the full suite afterwards: `nav_overflow_test.py`'s 768px overlap check
+queried every `.section-tab` including the now-hidden "Test" one, whose
+collapsed `(0,0,0,0)` rect read as a false overlap against the real last
+tab's right edge - fixed by scoping that one query to `:not([hidden])`
+(the other checks in that file measure `scrollWidth`/`clientWidth` on the
+container, which a `display:none` child never affects, so only this one
+rect-based query needed it). **Left open**: confirm `testbereich-frei` is
+an acceptable
+word to hand out to testers, or ask for a different one (it's a one-line
+constant, `TEST_UNLOCK_WORD` near `CODE_API` in app.js, trivial to
+change).
+
+**Removed the Test-Bereich's own public mentions**: now that the tab is
+hidden by default, two FAQ entries and the "So trainierst du richtig"
+welcome paragraph's area list previously described/promoted an
+"experimenteller Test-Bereich" to every visitor, including a dedicated
+"Was ist der Test-Bereich?" entry inviting people to "schau ruhig öfter
+vorbei" - directly working against "soll nirgendwo auftauchen". Removed
+that dedicated FAQ entry outright and trimmed the "Test" mentions out of
+"Was ist FWMC Online-Training?", "Was ist der Unterschied zwischen den
+Bereichen oben?", and `#tipsWelcome`'s area list. **Left open**: this was
+my own judgment call reading "soll nirgendwo auftauchen" literally as
+covering descriptive text too, not just the nav tab itself - flag it back
+if a softer, access-method-free teaser ("we're always testing new things")
+would have been preferred instead of a clean removal.
+
+**Epilepsy/photosensitivity note for fast-flashing exercises**: the
+existing Epilepsie warning (`#wimhofSheet`'s "Bitte vorher lesen" box) only
+covers "Kraftvolle Atmung"'s own hyperventilation/fainting risk - nothing
+anywhere mentioned visual flash/strobe risk for the fast-cycling visual
+exercises (Blitz-Raster, UFOV down to a 33ms exposure floor, Flash
+Speicher Test, Posner-Cueing, MOT). Client's own instinct (no per-exercise
+badge, too noisy/alarming on every single exercise card; belongs in the
+extended welcome text, possibly the FAQ too) matches what the review
+recommended. Implemented as a 5th bullet in `#tipsSheet`'s practical-tips
+list ("Schnelle Lichtreize...") - seen by everyone on first visit and
+recallable any time via "So trainierst du richtig" - plus a new FAQ entry
+("Gibt es Übungen, bei denen ich besonders vorsichtig sein sollte?"),
+generic (no technical exercise names) rather than per-exercise, cross-
+referencing the existing Wim-Hof warning rather than duplicating it. No
+further action needed unless the client wants per-exercise flagging after
+all for specific high-intensity settings.
+
+**Everything else the review raised, not acted on this round (carried
+forward, client's own words: "musst du mir danach nochmal vorlegen")**:
+- Silent data loss: `writeJSON()`'s `localStorage.setItem` call swallows
+  every error (`catch (e) {}`) - a full/blocked/private-mode storage fails
+  with zero user-facing warning, and there is no export/backup path at
+  all, so a lost device or cleared browser data means the training history
+  is gone for good. Not addressed.
+- The whole Playwright suite only ever runs against Chromium, while the
+  app is clearly built for iPhone PWA use (apple-touch-icon, standalone
+  display, `apple-mobile-web-app-capable`) - iOS Safari's own service-
+  worker/fullscreen/audio-autoplay quirks have never been exercised by any
+  test here. Not addressed.
+- The regression suite's 8 standing "known-benign" always-False lines
+  (`arrow_colors_test.py` ×2, `combo_play_test.py`,
+  `nat_combo_abort_test.py`, `nat_combo_test.py`, `note_distinction_test.py`,
+  `remember_error_test.py`, `test_section_test.py`, `trail_hint_overlap_test.py`)
+  keep growing as an allow-list that has to be mentally filtered out of
+  every suite run rather than actually fixed or formally retired. Not
+  addressed.
+- The 15 scientific-validity/UX caveats already tracked in "Offene Fragen"
+  at the end of this file (small per-run sample sizes, `setTimeout` timing
+  precision, simplifications vs. published clinical protocols, fixed block
+  order, the Wortfarben-Test/Stroop redundancy question) - unchanged,
+  still waiting on the client's own read-through.
+- No app-level lint/type-checking/bundler at all (`node --check` is syntax-
+  only) over a 21k+-line single `app.js` - not a bug, just a standing
+  maintainability risk that grows with every future batch of work. Not
+  addressed, no action proposed unless the client wants to discuss it.
+
 ## Test-Bereich (autonomous, ongoing)
 
 **If you were woken by the "FWMC Test-Bereich Auto-Build" Routine, this
@@ -4616,6 +4776,44 @@ Movement, Workout, or NAT. This is the client's own production coaching
 tool; the Test section exists precisely so experiments can't put that at
 risk. Reading those other sections for reference/reuse is fine and
 encouraged (e.g. reusing `buildStimColorPicker`, `mixHex`,
+`wireBgIntensityControl`, `pickRandomSubset`) — editing them is not.
+
+**The "Test" tab is hidden by default as of 2026-10-01 (client security/
+product review) — this is intentional, do not "fix" it.** Every section's
+nav bar still has the `<button class="section-tab" data-section="test">`
+markup (untouched, still there for this Routine's own build/test work to
+target), but `applyTestTabVisibility()` in app.js (near `CODE_API`) hides
+it via `.hidden` unless `localStorage['fwmc-test-unlocked']` is set.
+Typing the word `testbereich-frei` into ANY section's existing training-
+code box sets that flag (through `openProgramIntro()`'s own intercept,
+before the real code lookup) and reveals the tab permanently on that
+browser - see "Client security/product review (2026-10-01)" further below
+for the full rationale. **This does not change anything about how you
+build here**: keep developing exercises exactly as before, the scaffold
+and every existing Test-Bereich test still works because `tests/*_test.py`
+files for this section pre-seed that same localStorage flag via
+`page.add_init_script(...)` before navigating - add that same one line to
+any new Test exercise's test file (copy it from `tests/gng_test.py` or any
+other existing one in this section). The tab being hidden from ordinary
+visitors is a reason to keep building here, not a sign something broke.
+
+**Promoting an exercise OUT of Test** (client's own call, done in a
+regular session, never by the autonomous Routine itself): once the client
+says a Test exercise is good enough, it moves to its natural home (NAT for
+anything neuroathletic-perception-shaped, Visual Training for anything
+arrow/colour/reaction-shaped) - relocate its screens/state/wiring from the
+Test pattern to that section's own existing pattern (its own nav/tab
+placement, not `#testHome`), remove it from the Test roster below, and -
+per the standing convention in the Cardio-Zusatzaufgabe section above -
+give it full Cardio-"+ Zusatzaufgabe" parity in the same pass, exactly as
+if it had been built there from scratch. Until that happens, a Test
+exercise stays Test-only: it is deliberately NOT in `CARDIO_GUEST_TYPES`
+and NOT in `COMBO_DOMAIN_ORDER`'s domains, since this section's exercises
+are plain fixed-trial-count paradigms (see "Offene Fragen" at the end of
+this file) whose scoring would be meaningless if cut short mid-run by
+Cardio's own duration/time-window - and because the Test section was built
+specifically to be low-risk/disposable, not wired into every other feature
+by default.
 `wireBgIntensityControl`, `pickRandomSubset`) — editing them is not.
 
 **Scaffold already in place** (built 2026-09-25, do not rebuild):

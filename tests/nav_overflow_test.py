@@ -51,7 +51,12 @@ async def main():
         print("wide viewport keeps the single-row pill (flex, not grid):", display == "flex")
         r = await no_overflow(768, 1024)
         print("768px - no overflow:", all(r.values()))
-        rects = await pg.evaluate("""() => [...document.querySelectorAll('#natHome .section-switch .section-tab')].map(el => el.getBoundingClientRect())""")
+        # :not([hidden]) - the "Test" tab is hidden-by-default (client
+        # request, 2026-10-01, see CLAUDE.md), so this bar can legitimately
+        # render fewer than 6 tabs; a hidden element's rect collapses to
+        # (0,0,0,0), which would otherwise read as a false "overlap"
+        # against the real last tab's right edge.
+        rects = await pg.evaluate("""() => [...document.querySelectorAll('#natHome .section-switch .section-tab:not([hidden])')].map(el => el.getBoundingClientRect())""")
         overlaps = any(rects[i]["right"] > rects[i + 1]["left"] for i in range(len(rects) - 1))
         print("no tab overlaps its neighbour at 768px:", not overlaps)
 

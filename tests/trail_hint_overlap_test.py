@@ -20,6 +20,7 @@ async def main():
         b = await p.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args=["--no-sandbox"])
         ctx = await b.new_context(viewport={"width": 390, "height": 844}, service_workers="block")
         pg = await ctx.new_page()
+        await pg.add_init_script("localStorage.setItem('fwmc-test-unlocked', 'true')")
         await pg.goto(URL); await pg.wait_for_timeout(300)
         if await pg.is_visible("#tipsCloseBtn"):
             await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)

@@ -31,6 +31,7 @@ async def main():
         b = await p.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args=["--no-sandbox"])
         ctx = await b.new_context(viewport={"width": 390, "height": 844}, service_workers="block")
         pg = await ctx.new_page()
+        await pg.add_init_script("localStorage.setItem('fwmc-test-unlocked', 'true')")
         pg.on("pageerror", lambda e: errors.append("pageerror: " + str(e)))
         pg.on("console", lambda m: errors.append("console: " + m.text) if m.type == "error" else None)
 

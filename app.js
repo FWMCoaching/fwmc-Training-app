@@ -1944,14 +1944,17 @@
   }
 
   // ---- Section switcher (Visual Training / Atemtraining) ----
+  function activateSectionTab(sec) {
+    document.querySelectorAll(".section-tab").forEach((b) => {
+      const on = b.dataset.section === sec;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+  }
   document.querySelectorAll(".section-tab").forEach((btn) => {
     btn.addEventListener("click", () => {
       const sec = btn.dataset.section;
-      document.querySelectorAll(".section-tab").forEach((b) => {
-        const on = b.dataset.section === sec;
-        b.classList.toggle("active", on);
-        b.setAttribute("aria-selected", on ? "true" : "false");
-      });
+      activateSectionTab(sec);
       showScreen(sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "cardio" ? "cardioHome" : sec === "nat" ? "natHome" : sec === "test" ? "testHome" : "home");
     });
   });
@@ -3482,6 +3485,24 @@
 
   const CODE_API = "https://online-training.fwmc.workers.dev/program";
 
+  // "Test" is hidden from the section nav by default (client request,
+  // 2026-10-01: new/unfinished exercises shouldn't surface anywhere until
+  // explicitly shown to someone). Typing TEST_UNLOCK_WORD into ANY
+  // section's existing code box (they all funnel through
+  // openProgramIntro() below) reveals the tab permanently on this
+  // browser - no server round-trip, purely a local localStorage flag, so
+  // this is obscurity for a soft rollout, not a real access control (the
+  // word sits in this public JS file same as everything else here). To
+  // change the word, just edit this constant.
+  const TEST_UNLOCK_WORD = "testbereich-frei";
+  const TEST_UNLOCK_KEY = "fwmc-test-unlocked";
+  function isTestUnlocked() { return readJSON(TEST_UNLOCK_KEY, false) === true; }
+  function applyTestTabVisibility() {
+    const unlocked = isTestUnlocked();
+    document.querySelectorAll('.section-tab[data-section="test"]').forEach((b) => { b.hidden = !unlocked; });
+  }
+  applyTestTabVisibility();
+
   async function lookupProgram(code) {
     if (PROGRAMS[code]) return PROGRAMS[code];
     if (BREATH_PROGRAMS[code]) return BREATH_PROGRAMS[code];
@@ -3508,6 +3529,13 @@
 
   async function openProgramIntro(code, ctx) {
     ctx = ctx || VISUAL_CODE_CTX;
+    if (normCode(code) === TEST_UNLOCK_WORD) {
+      writeJSON(TEST_UNLOCK_KEY, true);
+      applyTestTabVisibility();
+      activateSectionTab("test");
+      showScreen("testHome");
+      return;
+    }
     if (ctx.goBtn) { ctx.goBtn.disabled = true; ctx.goBtn.textContent = "Lädt …"; }
     const def = await lookupProgram(code);
     if (ctx.goBtn) { ctx.goBtn.disabled = false; ctx.goBtn.textContent = "Öffnen"; }

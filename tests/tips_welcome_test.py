@@ -32,8 +32,11 @@ async def main():
         coach_text = await pg.inner_text("#tipsCoachHint")
         print("coach hint mentions Coach:", "Coach" in coach_text)
         print("coach hint has a contact link:", await pg.locator('#tipsCoachHint a[href="https://www.fabian-westermann.de/"]').count() == 1)
-        # existing practical tips list still intact, unchanged
-        print("existing practical tips list still has 4 items:", await pg.locator("#tipsSheet .tips li").count() == 4)
+        # existing practical tips list still intact, plus the epilepsy/
+        # photosensitivity flash-stimuli note added after the client's
+        # security review request (2026-10-01) - see CLAUDE.md
+        print("practical tips list now has 5 items (incl. flash-stimuli note):", await pg.locator("#tipsSheet .tips li").count() == 5)
+        print("welcome list mentions epilepsy caution:", "Epilepsie" in (await pg.inner_text("#tipsSheet .tips")))
 
         # ---- dismiss: marks fwmc-tips-seen, sheet closes ----
         await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)

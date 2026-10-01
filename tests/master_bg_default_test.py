@@ -8,6 +8,7 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args=["--no-sandbox"])
         pg = await b.new_page(viewport={"width": 390, "height": 844})
+        await pg.add_init_script("localStorage.setItem('fwmc-test-unlocked', 'true')")
         pg.on("pageerror", lambda e: errors.append("pageerror: " + str(e)))
         pg.on("console", lambda m: errors.append("console: " + m.text) if m.type == "error" else None)
 
