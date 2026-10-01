@@ -4261,6 +4261,79 @@ skipping past the last activity finishes the session same as running out
 the clock. `cardio_addon_picker_test.py` gained a size check confirming
 Abbrechen sits strictly between the old default and "Jetzt starten".
 
+### Cardio-Zusatzaufgabe: volle Feineinstellungen auch live im Picker (2026-09-30/10-01)
+
+Client's follow-up, using Periphere Wahrnehmung and Blitz-Raster as the
+illustrating example: pre-start Feineinstellungen lets you configure every
+field of a guest type ("alle Details einstellen"), but triggering the SAME
+exercise live from inside a running Cardio session only ever offered the
+exercise pick itself - every "Unterpunkt" was missing. Generalized
+immediately afterward to all 17 types ("bei allen Übungen die gleichen
+Einstellungsmöglichkeiten... überall volle Kontrolle"), then once more to
+mean truly the same depth as the standalone exercise itself ("genau so als
+wenn man die Übung einzeln machen würde"), not the "proportionate scope"
+simplification this file had documented as a conscious choice in every
+earlier batch.
+
+- **`buildCardioGuestFieldsHtml(t, cfg)`**: the markup-only half of what
+  used to be inline in `renderCardioAddonFineTune()`, now shared verbatim
+  between it and the live picker. Takes a type and a cfg object, returns
+  the same field HTML either caller renders.
+- **`wireCardioGuestFields(container, getCfg, { onSelect, onPersist })`**:
+  the wiring half, parameterized over where the mutable cfg comes from
+  (`getCfg`) and what happens after a change - `onSelect` (full rebuild,
+  for a button-style choice whose "active" class has to move) vs.
+  `onPersist` (no rebuild, for a plain value/checkbox/slider edit, matching
+  the original code's own distinction - a full rebuild on every pixel of a
+  dragged bg-intensity slider would be janky).
+- **Pre-start panel** (`renderCardioAddonFineTune`): unchanged behaviour,
+  `getCfg` resolves `cardioAddonPrefs.perType[type]`, `onSelect`/`onPersist`
+  both call `saveCardioAddonPrefs()` as before.
+- **Live picker** (`renderCardioAddonPickerDetail`, new): `cardioAddonPickerCfg`
+  is an EPHEMERAL deep copy of the selected type's saved `perType` entry -
+  seeded fresh every time a type is (re-)selected
+  (`cardioAddonPickerSelectType()`), and never written back
+  (`onPersist` is a no-op there) - this is still the in-the-moment "just for
+  this once" choice, not a settings change, same principle the duration-only
+  override already followed before this. `triggerCardioGuest()`'s signature
+  simplified from `(explicitId, explicitDurationS, explicitMode)` to
+  `(explicitId, explicitCfg)` - the picker now hands over a complete,
+  already-fully-configured cfg object instead of two narrow overrides
+  layered onto the saved default.
+- The old dedicated duration-stepper markup (`cardioAddonPickerDurationRow`/
+  `Minus`/`Plus`/`Value`, 15-180s floor/ceiling) and mode-group markup
+  (`cardioAddonPickerModeGroup`/`Row`) are gone - both are now just part of
+  whichever type's shared field markup renders into
+  `#cardioAddonPickerDetail` (Dauer: the same 5-120s range the pre-start
+  panel already used; mode-row: already built into
+  `buildCardioGuestFieldsHtml()`'s Remember/Flash/MOT branch).
+
+Test: `tests/cardio_addon_picker_full_settings_test.py` (new) - a plain
+generic type, Periphere Wahrnehmung and Blitz-Raster each show the exact
+field rows their own Feineinstellungen panel would; a live kind/grid-size
+edit visibly takes effect (Blitz-Raster's rendered cell count actually
+changes, 16 -> 36 for a live 4x4 -> 6x6 edit) while the saved per-type
+default stays untouched throughout, including after actually starting the
+live-edited burst - the central guarantee restated for the new flow.
+`cardio_addon_picker_test.py` updated for the new Dauer field (replacing
+its old stepper assertions) plus the same persisted-default-untouched
+check for duration specifically. `cardio_addon_nat_batch2_test.py`'s mode-
+group assertions updated to the unified `[data-mode-row]` selector inside
+`#cardioAddonPickerDetail`.
+
+**Not yet done** (explicitly re-opened by the client's "genau so..." ask,
+superseding the "proportionate scope" simplification noted in every
+earlier batch above - client confirmed via follow-up: include the deeper
+settings too, each nested under its own collapsible "Feineinstellungen"
+sub-section rather than flattened into the main field list): Periphere
+Wahrnehmung/addon-flash's axes/zone-selection/zone-dominance-weights/
+size-mode; Blitz-Raster's own zone selection (currently hardcoded to all
+zones under a Cardio guest burst); Flash Speicher Test's and MOT's own
+remaining settings beyond kind/colour/difficulty/error-mode; and, for
+Remember/Flash/MOT, each mode's own further numeric fine-tuning fields
+(training-mode start values, climb/growth rates, ...). To be done batch by
+batch, same discipline as the NAT batches above.
+
 ## Test-Bereich (autonomous, ongoing)
 
 **If you were woken by the "FWMC Test-Bereich Auto-Build" Routine, this

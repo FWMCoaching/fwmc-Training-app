@@ -1890,9 +1890,7 @@
     cardioPrevBtn: $("cardioPrevBtn"), cardioRestartBtn: $("cardioRestartBtn"),
     cardioAddonTriggerBtn: $("cardioAddonTriggerBtn"),
     cardioAddonPicker: $("cardioAddonPicker"), cardioAddonPickerTypeRow: $("cardioAddonPickerTypeRow"),
-    cardioAddonPickerDurationValue: $("cardioAddonPickerDurationValue"),
-    cardioAddonPickerModeGroup: $("cardioAddonPickerModeGroup"), cardioAddonPickerModeRow: $("cardioAddonPickerModeRow"),
-    cardioAddonPickerDurationMinus: $("cardioAddonPickerDurationMinus"), cardioAddonPickerDurationPlus: $("cardioAddonPickerDurationPlus"),
+    cardioAddonPickerDetail: $("cardioAddonPickerDetail"),
     cardioAddonPickerStartBtn: $("cardioAddonPickerStartBtn"), cardioAddonPickerCancelBtn: $("cardioAddonPickerCancelBtn"),
     cardioGuestBadge: $("cardioGuestBadge"),
     cardioActivityTitle: $("cardioActivityTitle"), cardioActivityLabel: $("cardioActivityLabel"),
@@ -10810,19 +10808,22 @@
     renderCardioAddonUI();
   });
 
-  // One fine-tune panel per pool-selected guest type - same shape
-  // (Dauer/Reiz-Dauer/Pause/Farben) for all four, saved independently per
-  // type under cardioAddonPrefs.perType so switching which types are
-  // enabled never overwrites another type's own remembered settings.
-  function renderCardioAddonFineTune() {
-    els.cardioAddonPerType.innerHTML = "";
-    CARDIO_GUEST_TYPES.filter((t) => cardioAddonPrefs.pool.includes(t.id)).forEach((t) => {
-      const cfg = cardioAddonPrefs.perType[t.id];
-      const lib = cardioGuestColorLib(t.id);
-      const panel = document.createElement("div");
-      panel.className = "cardio-guest-panel";
-      let html = `<div class="cardio-guest-panel-title">${esc(t.title)}</div>`;
-      // cone-tap ("Hütchen sortieren") has no stimulus/interval concept at
+  // Builds one guest type's full settings-field markup - shared verbatim
+  // between the pre-start Feineinstellungen panel (renderCardioAddonFineTune,
+  // one cfg per pool-selected type, persisted to cardioAddonPrefs.perType)
+  // and the live "+ Zusatzaufgabe" picker's detail panel
+  // (renderCardioAddonPickerDetail, one ephemeral cfg for whichever single
+  // type is currently selected there). The client's explicit ask: identical
+  // depth of configurability in both places - "Die Rahmenbedingungen für
+  // die Übung müssen immer gleich sein, gleich einstellbar sein" (originally
+  // about standalone vs. Cardio guest use, reiterated afterward to cover
+  // "vorher einstellen" vs. "während des laufenden Trainings live wählen"
+  // too). Returns markup only - wireCardioGuestFields() below does the
+  // corresponding event wiring, kept as its own function for the same reason.
+  function buildCardioGuestFieldsHtml(t, cfg) {
+    const lib = cardioGuestColorLib(t.id);
+    let html = "";
+    // cone-tap ("Hütchen sortieren") has no stimulus/interval concept at
       // all (it's tap-paced, not a flash schedule) - showing those sliders
       // for it would adjust something with zero visible effect, so they're
       // simply left out rather than shown-but-inert. Blitz-Raster has its
@@ -10921,96 +10922,104 @@
             <span class="slider-value" data-bgintensityvalue="${t.id}">${Math.round(cfg.bgIntensity * 100)}%</span>
           </div>`;
       }
-      panel.innerHTML = html;
-      els.cardioAddonPerType.appendChild(panel);
-    });
-    els.cardioAddonPerType.querySelectorAll("input[data-f]").forEach((input) => {
+    return html;
+  }
+
+  // Wires every field kind buildCardioGuestFieldsHtml() can produce, against
+  // whichever container holds them - getCfg(type) resolves the mutable cfg
+  // object for a given data-type (the advanced panel's container holds
+  // several types' panels at once, so it matters there; the live picker's
+  // detail container only ever holds the one currently-selected type, so its
+  // getCfg simply ignores the argument and returns its one ephemeral cfg).
+  // onSelect fires after a button-style choice changes (kind/diff/error/mode/
+  // blitz*) - the "active" class has to move, so the caller re-renders.
+  // onPersist fires after a plain value edit (number input/colour checkbox/
+  // bg radio/bg slider) - native input state already reflects the change, so
+  // no re-render is forced (matters most for the bg-intensity slider: a full
+  // rebuild on every "input" tick while dragging would be janky).
+  function wireCardioGuestFields(container, getCfg, { onSelect, onPersist } = {}) {
+    const select = onSelect || (() => {});
+    const persist = onPersist || (() => {});
+    container.querySelectorAll("input[data-f]").forEach((input) => {
       input.addEventListener("input", () => {
-        cardioAddonPrefs.perType[input.dataset.type][input.dataset.f] = Number(input.value);
-        saveCardioAddonPrefs();
+        getCfg(input.dataset.type)[input.dataset.f] = Number(input.value);
+        persist();
       });
     });
-    els.cardioAddonPerType.querySelectorAll("[data-kind]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        cardioAddonPrefs.perType[btn.dataset.type].kind = btn.dataset.kind;
-        saveCardioAddonPrefs();
-        renderCardioAddonFineTune();
-      });
+    container.querySelectorAll("[data-kind]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).kind = btn.dataset.kind; select(); });
     });
-    els.cardioAddonPerType.querySelectorAll("[data-blitzdiff]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        cardioAddonPrefs.perType[btn.dataset.type].flashS = BLITZ_DIFFICULTIES[btn.dataset.blitzdiff].flashS;
-        saveCardioAddonPrefs();
-        renderCardioAddonFineTune();
-      });
+    container.querySelectorAll("[data-blitzdiff]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).flashS = BLITZ_DIFFICULTIES[btn.dataset.blitzdiff].flashS; select(); });
     });
-    els.cardioAddonPerType.querySelectorAll("[data-blitzgrid]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        cardioAddonPrefs.perType[btn.dataset.type].gridSize = Number(btn.dataset.blitzgrid);
-        saveCardioAddonPrefs();
-        renderCardioAddonFineTune();
-      });
+    container.querySelectorAll("[data-blitzgrid]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).gridSize = Number(btn.dataset.blitzgrid); select(); });
     });
-    els.cardioAddonPerType.querySelectorAll("[data-blitzerror]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        cardioAddonPrefs.perType[btn.dataset.type].errorMode = btn.dataset.blitzerror;
-        saveCardioAddonPrefs();
-        renderCardioAddonFineTune();
-      });
+    container.querySelectorAll("[data-blitzerror]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).errorMode = btn.dataset.blitzerror; select(); });
     });
-    els.cardioAddonPerType.querySelectorAll("[data-mode]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        cardioAddonPrefs.perType[btn.dataset.type].mode = btn.dataset.mode;
-        saveCardioAddonPrefs();
-        renderCardioAddonFineTune();
-      });
+    container.querySelectorAll("[data-mode]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).mode = btn.dataset.mode; select(); });
     });
-    els.cardioAddonPerType.querySelectorAll("[data-diff]").forEach((btn) => {
+    container.querySelectorAll("[data-diff]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const type = btn.dataset.type;
-        const cfg = cardioAddonPrefs.perType[type];
+        const cfg = getCfg(type);
         const k = btn.dataset.diff;
         if (cardioGuestIsRemember(type)) Object.assign(cfg, { revealBaseS: REMEMBER_DIFFICULTIES[k].revealBaseS, revealStepS: REMEMBER_DIFFICULTIES[k].revealStepS });
         else if (cardioGuestIsFlash(type)) Object.assign(cfg, { stimulusS: FLASH_DIFFICULTIES[k].stimulusS, intervalS: FLASH_DIFFICULTIES[k].intervalS });
         else Object.assign(cfg, { speed: MOT_DIFFICULTIES[k].speed, trackS: MOT_DIFFICULTIES[k].trackS, highlightS: MOT_DIFFICULTIES[k].highlightS });
-        saveCardioAddonPrefs();
-        renderCardioAddonFineTune();
+        select();
       });
     });
-    els.cardioAddonPerType.querySelectorAll("[data-error]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        cardioAddonPrefs.perType[btn.dataset.type].errorMode = btn.dataset.error;
-        saveCardioAddonPrefs();
-        renderCardioAddonFineTune();
-      });
+    container.querySelectorAll("[data-error]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).errorMode = btn.dataset.error; select(); });
     });
-    els.cardioAddonPerType.querySelectorAll("input[data-color]").forEach((cb) => {
+    container.querySelectorAll("input[data-color]").forEach((cb) => {
       cb.addEventListener("change", () => {
-        const cfg = cardioAddonPrefs.perType[cb.dataset.type];
+        const cfg = getCfg(cb.dataset.type);
         const key = cb.dataset.color;
         if (cb.checked) { if (!cfg.colors.includes(key)) cfg.colors.push(key); }
         else {
           if (cfg.colors.length <= 1) { cb.checked = true; return; }
           cfg.colors = cfg.colors.filter((k) => k !== key);
         }
-        saveCardioAddonPrefs();
+        persist();
       });
     });
-    els.cardioAddonPerType.querySelectorAll("input[data-bgcolor]").forEach((radio) => {
+    container.querySelectorAll("input[data-bgcolor]").forEach((radio) => {
       radio.addEventListener("change", () => {
         if (!radio.checked) return;
-        cardioAddonPrefs.perType[radio.dataset.bgtype].bgColorKey = radio.dataset.bgcolor;
-        saveCardioAddonPrefs();
+        getCfg(radio.dataset.bgtype).bgColorKey = radio.dataset.bgcolor;
+        persist();
       });
     });
-    els.cardioAddonPerType.querySelectorAll("input[data-bgintensity]").forEach((slider) => {
+    container.querySelectorAll("input[data-bgintensity]").forEach((slider) => {
       slider.addEventListener("input", () => {
-        const cfg = cardioAddonPrefs.perType[slider.dataset.bgintensity];
+        const cfg = getCfg(slider.dataset.bgintensity);
         cfg.bgIntensity = Number(slider.value);
-        saveCardioAddonPrefs();
-        const valueEl = els.cardioAddonPerType.querySelector(`[data-bgintensityvalue="${slider.dataset.bgintensity}"]`);
+        persist();
+        const valueEl = container.querySelector(`[data-bgintensityvalue="${slider.dataset.bgintensity}"]`);
         if (valueEl) valueEl.textContent = `${Math.round(cfg.bgIntensity * 100)}%`;
       });
+    });
+  }
+
+  // One fine-tune panel per pool-selected guest type - same shape for all,
+  // saved independently per type under cardioAddonPrefs.perType so switching
+  // which types are enabled never overwrites another type's own remembered
+  // settings.
+  function renderCardioAddonFineTune() {
+    els.cardioAddonPerType.innerHTML = "";
+    CARDIO_GUEST_TYPES.filter((t) => cardioAddonPrefs.pool.includes(t.id)).forEach((t) => {
+      const panel = document.createElement("div");
+      panel.className = "cardio-guest-panel";
+      panel.innerHTML = `<div class="cardio-guest-panel-title">${esc(t.title)}</div>` + buildCardioGuestFieldsHtml(t, cardioAddonPrefs.perType[t.id]);
+      els.cardioAddonPerType.appendChild(panel);
+    });
+    wireCardioGuestFields(els.cardioAddonPerType, (type) => cardioAddonPrefs.perType[type], {
+      onSelect: () => { saveCardioAddonPrefs(); renderCardioAddonFineTune(); },
+      onPersist: () => saveCardioAddonPrefs(),
     });
   }
 
@@ -11170,19 +11179,16 @@
     else if (ex.usesStroopColors) active.stroopColors = keysToColors(cfg.colors, STROOP_COLOR_LIB);
   }
 
-  // explicitId/explicitDurationS: set by the manual live picker below (a
-  // specific choice made right now); left undefined for the automatic
-  // randomized-interval path in cardioTick(), which still picks randomly
-  // from the configured pool at the configured duration, unchanged.
-  function triggerCardioGuest(explicitId, explicitDurationS, explicitMode) {
+  // explicitId/explicitCfg: set by the manual live picker below (a specific
+  // choice, fully configured, made right now); left undefined for the
+  // automatic randomized-interval path in cardioTick(), which still picks
+  // randomly from the configured pool at its own saved settings, unchanged.
+  function triggerCardioGuest(explicitId, explicitCfg) {
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
     cardioRaf = null;
     const guestId = explicitId || cardioAddonPrefs.pool[Math.floor(Math.random() * cardioAddonPrefs.pool.length)];
     const realId = cardioGuestRealId(guestId);
-    const overrides = {};
-    if (explicitDurationS != null) overrides.duration = explicitDurationS;
-    if (explicitMode != null) overrides.mode = explicitMode;
-    const cfg = Object.keys(overrides).length ? { ...cardioAddonPrefs.perType[guestId], ...overrides } : cardioAddonPrefs.perType[guestId];
+    const cfg = explicitCfg || cardioAddonPrefs.perType[guestId];
     cardioGuestActive = true;
     const comboOpts = { comboDurationS: cfg.duration };
     // Blitz-Raster/Remember/Flash/MOT don't touch state.exercise/
@@ -11205,22 +11211,39 @@
     showCardioGuestBadge();
   }
 
-  // ---- Manual "+ Zusatzimpuls": live picker ----
+  // ---- Manual "+ Zusatzaufgabe": live picker ----
   // The client's clarified ask (beyond the first pool+random version):
-  // actively CHOOSE which guest exercise AND for how long, right now, mid-
-  // Cardio-activity - "ich mache jetzt zwei Minuten
-  // Blitzreiz-Reaktionstraining". Offers all CARDIO_GUEST_TYPES regardless
-  // of the automatic system's own pool selection (that pool only governs
-  // the randomized auto-interval): "jede andere Übung" is the point. The
-  // picker sheet sits INSIDE #cardioPlayer as a .pause-overlay, so Cardio's
-  // own countdown keeps ticking (cardioRaf untouched) visibly behind it
-  // while choosing - the "ich sehe im Hintergrund trotzdem noch, wie lange
-  // ich machen muss" ask, satisfied for the choosing step for free.
+  // actively CHOOSE which guest exercise, right now, mid-Cardio-activity -
+  // "ich mache jetzt zwei Minuten Blitzreiz-Reaktionstraining". Offers all
+  // CARDIO_GUEST_TYPES regardless of the automatic system's own pool
+  // selection (that pool only governs the randomized auto-interval): "jede
+  // andere Übung" is the point. The picker sheet sits INSIDE #cardioPlayer
+  // as a .pause-overlay, so Cardio's own countdown keeps ticking (cardioRaf
+  // untouched) visibly behind it while choosing - the "ich sehe im
+  // Hintergrund trotzdem noch, wie lange ich machen muss" ask, satisfied for
+  // the choosing step for free.
+  //
+  // Full detail panel, not just exercise+duration: a follow-up client ask,
+  // using Periphere Wahrnehmung/Blitz-Raster as the example - pre-start
+  // Feineinstellungen lets you configure every field ("alle Details
+  // einstellen"), but triggering the SAME exercise live only offered the
+  // exercise pick itself, missing every "Unterpunkt". cardioAddonPickerCfg
+  // is an EPHEMERAL deep copy of the type's saved cardioAddonPrefs.perType
+  // entry - rendered and wired through the exact same
+  // buildCardioGuestFieldsHtml()/wireCardioGuestFields() the pre-start panel
+  // uses, so it is provably the same depth of control, field for field. It
+  // starts from the client's own remembered settings for that type and is
+  // thrown away the moment the picker closes - deliberately never written
+  // back to cardioAddonPrefs.perType (persist() is a no-op here): this is
+  // still the in-the-moment "just for this once" choice, not a settings
+  // change, exactly as the duration-only override already was before this.
   let cardioAddonPickerType = null;
-  let cardioAddonPickerDuration = 20;
-  let cardioAddonPickerMode = null;
-  const CARDIO_ADDON_PICKER_DURATION_MIN = 15;
-  const CARDIO_ADDON_PICKER_DURATION_MAX = 180;
+  let cardioAddonPickerCfg = null;
+  function cardioAddonPickerSelectType(id) {
+    cardioAddonPickerType = id;
+    cardioAddonPickerCfg = JSON.parse(JSON.stringify(cardioAddonPrefs.perType[id]));
+    renderCardioAddonPicker();
+  }
   function renderCardioAddonPicker() {
     els.cardioAddonPickerTypeRow.innerHTML = "";
     let lastPickerGroup = null;
@@ -11237,59 +11260,27 @@
       btn.type = "button";
       btn.className = "choice" + (t.id === cardioAddonPickerType ? " active" : "");
       btn.innerHTML = `${esc(main)}${sub ? `<small>${esc(sub)}</small>` : ""}`;
-      btn.addEventListener("click", () => {
-        cardioAddonPickerType = t.id;
-        cardioAddonPickerDuration = Math.min(CARDIO_ADDON_PICKER_DURATION_MAX, Math.max(CARDIO_ADDON_PICKER_DURATION_MIN, cardioAddonPrefs.perType[t.id].duration));
-        cardioAddonPickerMode = cardioGuestModeList(t.id) ? cardioAddonPrefs.perType[t.id].mode : null;
-        renderCardioAddonPicker();
-      });
+      btn.addEventListener("click", () => cardioAddonPickerSelectType(t.id));
       els.cardioAddonPickerTypeRow.appendChild(btn);
     });
-    // Sub-mode step (Remember/Flash/MOT only, see cardioGuestModeList()) -
-    // the client's own explicit ask: reaching these domains' own starting-
-    // mode choice from inside the Cardio picker too, not just their normal
-    // Ready screen.
-    const modeList = cardioGuestModeList(cardioAddonPickerType);
-    els.cardioAddonPickerModeGroup.hidden = !modeList;
-    if (modeList) {
-      els.cardioAddonPickerModeRow.innerHTML = "";
-      modeList.forEach((m) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "choice" + (m.id === cardioAddonPickerMode ? " active" : "");
-        btn.textContent = m.title;
-        btn.addEventListener("click", () => {
-          cardioAddonPickerMode = m.id;
-          renderCardioAddonPicker();
-        });
-        els.cardioAddonPickerModeRow.appendChild(btn);
-      });
-    }
-    els.cardioAddonPickerDurationValue.textContent = fmtClock(cardioAddonPickerDuration);
+    renderCardioAddonPickerDetail();
+  }
+  function renderCardioAddonPickerDetail() {
+    const t = CARDIO_GUEST_TYPES.find((x) => x.id === cardioAddonPickerType);
+    els.cardioAddonPickerDetail.innerHTML = buildCardioGuestFieldsHtml(t, cardioAddonPickerCfg);
+    wireCardioGuestFields(els.cardioAddonPickerDetail, () => cardioAddonPickerCfg, { onSelect: renderCardioAddonPickerDetail });
   }
   function openCardioAddonPicker() {
-    cardioAddonPickerType = CARDIO_GUEST_TYPES[0].id;
-    cardioAddonPickerDuration = Math.min(CARDIO_ADDON_PICKER_DURATION_MAX, Math.max(CARDIO_ADDON_PICKER_DURATION_MIN, cardioAddonPrefs.perType[cardioAddonPickerType].duration));
-    cardioAddonPickerMode = cardioGuestModeList(cardioAddonPickerType) ? cardioAddonPrefs.perType[cardioAddonPickerType].mode : null;
-    renderCardioAddonPicker();
+    cardioAddonPickerSelectType(CARDIO_GUEST_TYPES[0].id);
     els.cardioAddonPicker.hidden = false;
   }
   function closeCardioAddonPicker() { els.cardioAddonPicker.hidden = true; }
-  els.cardioAddonPickerDurationMinus.addEventListener("click", () => {
-    cardioAddonPickerDuration = Math.max(CARDIO_ADDON_PICKER_DURATION_MIN, cardioAddonPickerDuration - 15);
-    renderCardioAddonPicker();
-  });
-  els.cardioAddonPickerDurationPlus.addEventListener("click", () => {
-    cardioAddonPickerDuration = Math.min(CARDIO_ADDON_PICKER_DURATION_MAX, cardioAddonPickerDuration + 15);
-    renderCardioAddonPicker();
-  });
   els.cardioAddonPickerCancelBtn.addEventListener("click", closeCardioAddonPicker);
   els.cardioAddonPickerStartBtn.addEventListener("click", () => {
     const id = cardioAddonPickerType;
-    const durationS = cardioAddonPickerDuration;
-    const mode = cardioAddonPickerMode;
+    const cfg = cardioAddonPickerCfg;
     closeCardioAddonPicker();
-    triggerCardioGuest(id, durationS, mode);
+    triggerCardioGuest(id, cfg);
   });
   els.cardioAddonTriggerBtn.addEventListener("click", () => {
     if (!cardioState || cardioGuestActive) return;

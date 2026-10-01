@@ -55,18 +55,22 @@ async def main():
         print("mot: has a colour row (Objektfarbe):", await mot_panel.locator("[data-colors]").count() == 1)
         print("mot: difficulty row present:", await mot_panel.locator("[data-diff-row]").count() == 1)
 
-        # ---- live picker: sub-mode step appears only for these 3 ----
+        # ---- live picker: full detail panel (same field set as the pre-
+        # start Feineinstellungen panel), sub-mode step appears only for
+        # these 3 ----
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(400)
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        print("mode group hidden for the first (VT) type by default:", await pg.is_hidden("#cardioAddonPickerModeGroup"))
+        print("no mode-row for the first (VT) type by default:", await pg.locator("#cardioAddonPickerDetail [data-mode-row]").count() == 0)
         print("picker offers 17 choices total:", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 17)
 
         # index 14 = remember (12 VT + periph-flash + blitz-raster + remember)
         await pg.locator("#cardioAddonPickerTypeRow .choice").nth(14).click(); await pg.wait_for_timeout(80)
-        print("mode group visible once Remember is selected:", await pg.is_visible("#cardioAddonPickerModeGroup"))
-        print("3 mode choices shown for Remember:", await pg.locator("#cardioAddonPickerModeRow .choice").count() == 3)
-        await pg.locator("#cardioAddonPickerModeRow .choice").nth(1).click(); await pg.wait_for_timeout(80)
-        print("second mode ('Bewegte Positionen') now active:", "active" in (await pg.locator("#cardioAddonPickerModeRow .choice").nth(1).get_attribute("class")))
+        print("mode-row appears once Remember is selected:", await pg.locator("#cardioAddonPickerDetail [data-mode-row]").count() == 1)
+        print("3 mode choices shown for Remember:", await pg.locator("#cardioAddonPickerDetail [data-mode-row] .choice").count() == 3)
+        print("Remember's difficulty/error rows also present live (same depth as pre-start):",
+              await pg.locator("#cardioAddonPickerDetail [data-diff-row]").count() == 1 and await pg.locator("#cardioAddonPickerDetail [data-error-row]").count() == 1)
+        await pg.locator("#cardioAddonPickerDetail [data-mode-row] .choice").nth(1).click(); await pg.wait_for_timeout(80)
+        print("second mode ('Bewegte Positionen') now active:", "active" in (await pg.locator("#cardioAddonPickerDetail [data-mode-row] .choice").nth(1).get_attribute("class")))
 
         await pg.click("#cardioAddonPickerStartBtn"); await pg.wait_for_timeout(400)
         print("remember takes over full-screen (own #rememberPlayer):",
