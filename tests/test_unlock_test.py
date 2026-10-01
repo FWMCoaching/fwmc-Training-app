@@ -32,6 +32,16 @@ async def main():
         unlocked = await pg.evaluate("() => localStorage.getItem('fwmc-test-unlocked')")
         print("no unlock flag stored yet:", unlocked is None)
 
+        # ---- every public FAQ/welcome-text mention of Test is ALSO hidden
+        # until unlocked (client, 2026-10-01: promoting a hidden feature in
+        # public copy defeats "soll nirgendwo auftauchen") ----
+        print("welcome-text Test mention hidden:", await pg.get_attribute("#tipsWelcome .test-teaser", "hidden") is not None)
+        await pg.click("#home .faq-open-btn"); await pg.wait_for_timeout(150)
+        teaser_count = await pg.locator("#faqSheet .test-teaser").count()
+        hidden_count = sum(1 for h in await pg.eval_on_selector_all("#faqSheet .test-teaser", "els => els.map(e => e.hidden)") if h)
+        print(f"all {teaser_count} FAQ Test-teaser spots hidden:", teaser_count == hidden_count and teaser_count > 0)
+        await pg.click("#faqCloseBtn"); await pg.wait_for_timeout(150)
+
         # ---- a WRONG code behaves like any other unknown code, tab stays hidden ----
         await pg.fill("#programCodeInput", "definitely-not-a-real-code")
         await pg.click("#programGoBtn"); await pg.wait_for_timeout(400)
@@ -51,6 +61,16 @@ async def main():
         print("Test tab visible again after reload:", await pg.is_visible('#home .section-tab[data-section="test"]'))
         await pg.click('#home .section-tab[data-section="nat"]'); await pg.wait_for_timeout(150)
         print("also visible from another section's own tab bar:", await pg.is_visible('#natHome .section-tab[data-section="test"]'))
+
+        # ---- once unlocked: the teaser copy comes back, and testHome itself
+        # carries a "Mit Code freigeschaltet" badge + a visibly different
+        # accent colour (not --brand) so it never reads as a regular,
+        # permanent part of the app ----
+        print("welcome-text Test mention now shown:", await pg.get_attribute("#tipsWelcome .test-teaser", "hidden") is None)
+        await pg.click('#natHome .section-tab[data-section="test"]'); await pg.wait_for_timeout(150)
+        print("'Mit Code freigeschaltet' badge visible on testHome:", await pg.is_visible(".test-unlock-badge"))
+        kicker_color = await pg.evaluate("() => getComputedStyle(document.querySelector('#testHome .hero-kicker')).color")
+        print("testHome's accent colour is amber (#b45309), not the teal brand colour:", kicker_color == "rgb(180, 83, 9)")
 
         print("FINAL ERRORS:", errors)
         await b.close()

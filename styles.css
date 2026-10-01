@@ -9,6 +9,9 @@
   --brand-deep:#005973;
   --brand-light:#2f95b8;
   --brand-pale:#e5f1f4;
+  --test-accent:#b45309;
+  --test-accent-deep:#92400e;
+  --test-accent-pale:#fef3c7;
   --ink:#16232a;
   --ink-soft:#4f6168;
   --bg:#f6f8f9;
@@ -27,6 +30,9 @@
     --brand-deep:#69c2e0;
     --brand-light:#69c2e0;
     --brand-pale:#122b32;
+    --test-accent:#fbbf24;
+    --test-accent-deep:#fde68a;
+    --test-accent-pale:#453211;
     --ink:#e9f0f2;
     --ink-soft:#a9bbc0;
     --bg:#0f1a1e;
@@ -44,6 +50,9 @@
   --brand-deep:#69c2e0;
   --brand-light:#69c2e0;
   --brand-pale:#122b32;
+  --test-accent:#fbbf24;
+  --test-accent-deep:#fde68a;
+  --test-accent-pale:#453211;
   --ink:#e9f0f2;
   --ink-soft:#a9bbc0;
   --bg:#0f1a1e;
@@ -107,6 +116,12 @@ button{font-family:inherit;color:inherit}
 
 /* ---- Section switcher (Visual Training / Atemtraining) ---- */
 .section-switch{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px;margin-bottom:22px;max-width:580px}
+/* 580px was sized for 6 tabs (see the comment below) - with "Test" shown
+   too (7 tabs, client-unlocked via the code word), the same cap leaves too
+   little room per tab again and "Atemtraining" mid-word-breaks on a tablet-
+   width screen (client screenshot, iPad). body.nav-test-unlocked is toggled
+   by applyTestTabVisibility() in app.js, in lockstep with the tab itself. */
+body.nav-test-unlocked .section-switch{max-width:680px}
 /* min-width:0 overrides a flex item's default min-width:auto (= its
    content's natural min-content width) - without it, a row of several
    equal-share (flex:1) tabs can't actually shrink to fit and pushes the
@@ -163,6 +178,23 @@ button{font-family:inherit;color:inherit}
   vertical-align:1px;
 }
 .hero-title{font-size:clamp(28px,7vw,40px);line-height:1.05;margin:0 0 10px;text-wrap:balance}
+
+/* ---- Test-Bereich: distinct accent colour throughout, so this area never
+   reads as a regular, permanent part of the app once someone's used to
+   seeing it (client request, 2026-10-01 - "Test" is hidden by default and
+   only shown after typing the unlock word, see TEST_UNLOCK_WORD in app.js).
+   Same component classes as everywhere else (.featured-card/.hero-kicker/
+   the active tab), just re-pointed from --brand to --test-accent while
+   inside #testHome specifically - NAT's own use of e.g. .nat-panel-card
+   elsewhere is untouched. ---- */
+.test-unlock-badge{
+  text-transform:none;letter-spacing:0;font-weight:700;font-size:11px;color:var(--test-accent-deep);
+  background:var(--test-accent-pale);border:1px solid var(--test-accent);border-radius:999px;padding:2px 9px;margin-left:4px;
+  vertical-align:1px;
+}
+#testHome .hero-kicker{color:var(--test-accent)}
+#testHome .featured-card{border-left-color:var(--test-accent)}
+#testHome .section-tab[data-section="test"].active{background:var(--test-accent-pale);color:var(--test-accent-deep);border-color:var(--test-accent)}
 .hero-text{color:var(--ink-soft);font-size:16px;margin:0 0 10px;max-width:52ch}
 .text-link{
   border:none;background:none;padding:6px 0;cursor:pointer;

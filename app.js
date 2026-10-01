@@ -3513,6 +3513,15 @@
   function applyTestTabVisibility() {
     const unlocked = isTestUnlocked();
     document.querySelectorAll('.section-tab[data-section="test"]').forEach((b) => { b.hidden = !unlocked; });
+    // 7 tabs instead of 6 needs more room in the nav bar's single-row-pill
+    // mode (see .section-switch/body.nav-test-unlocked in styles.css) -
+    // without this, "Atemtraining" mid-word-breaks on a tablet-width screen.
+    document.body.classList.toggle("nav-test-unlocked", unlocked);
+    // Every FAQ/welcome-text mention of the Test-Bereich (client, 2026-10-01:
+    // promoting a hidden feature in public copy defeats "soll nirgendwo
+    // auftauchen") - only load/show these once someone has actually typed
+    // the unlock word, same gate as the tab itself.
+    document.querySelectorAll(".test-teaser").forEach((el) => { el.hidden = !unlocked; });
   }
   applyTestTabVisibility();
 

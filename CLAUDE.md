@@ -97,6 +97,25 @@ A local dev server must be running first (see above). The suite lives in
 adding new scripts. Run it from inside `tests/` (screenshot paths are
 relative to that directory).
 
+**Chromium only — no real cross-browser coverage** (client asked 2026-10-01
+how this could be tested on other platforms): `/opt/pw-browsers/` in this
+environment only ever has Chromium installed, never WebKit (Safari's own
+engine) or Firefox, and there's no iOS/Android device or simulator access
+either — checked directly, not assumed. So every test in this suite, and
+every screenshot in this file, reflects Chromium's rendering only. This
+matters concretely for an app built for iPhone PWA use (apple-touch-icon,
+`apple-mobile-web-app-capable`, see `index.html`'s `<head>`): Safari/
+WebKit differs from Chromium in service-worker behaviour, the Fullscreen
+API, audio autoplay restrictions, and viewport-height handling around the
+home-bar/notch — none of that has ever been exercised here. If a future
+session has access to a different installed browser engine, prefer it for
+at least a spot-check on anything viewport/fullscreen/audio-related before
+telling the client it works on iPhone; failing that, say so plainly rather
+than implying Chromium-only testing covers Safari too. Real-device
+testing (the client's own iPhone/iPad) remains the only way to catch
+what this sandbox genuinely cannot — flag specific things worth them
+checking by hand rather than claiming coverage this suite doesn't have.
+
 **`run_full_suite_parallel.sh [concurrency]`** (default concurrency 6,
 repo root) runs the same suite several files at a time instead of one at
 a time - each test is I/O-bound (waiting on its own isolated Chromium
@@ -1087,6 +1106,15 @@ unrelated to the feature being changed.
 - Every commit needs the attribution footer specified in that session's
   system prompt (model name and session link vary — don't hardcode a
   stale one from a previous session).
+- **Standing rule, client's own words (2026-10-01): "Diese Aussagen gilt
+  generell immer übrigens, wenn ich auf Sachen nicht eingehe."** When a
+  reply lists several open points/questions and the client's next message
+  only responds to some of them, silence on the rest is NOT approval,
+  agreement, or "proceed as proposed" - it just means "not yet addressed,
+  keep it on file." Carry anything not explicitly addressed forward
+  (the "Wiedervorlage" pattern already used in several sections below)
+  rather than assuming a green light and building/changing it. This
+  applies to every session going forward, not just the one it was said in.
 
 ## Master-Einstellungen (added 2026-09-27, client's own framing: "wie ein Profil, nur ohne Login")
 
@@ -4658,7 +4686,13 @@ already-issued codes are NOT retrofitted with a random suffix (that would
 break them for whoever already has them) - purely a going-forward
 improvement for codes created from now on, unless the client decides some
 or all existing clients should be migrated to a new, longer code (their
-own relationship to manage, not something to do silently). Also still
+own relationship to manage, not something to do silently). Client asked to
+be SHOWN the existing codes before deciding - this session has no access
+to the Cloudflare D1 database or the `ADMIN_TOKEN` (`wrangler secret`,
+never in this repo), so that list can't be pulled from here; it already
+lives in the coach's own dashboard's "Trainings-Codes" table. Still open
+until the client either looks there themselves or pastes the list here.
+Also still
 open, lower urgency now that codes themselves resist guessing: the
 Worker's CORS header is `*` on every route including the admin ones (could
 be narrowed to the dashboard's actual origin), the admin-token comparison
@@ -4683,25 +4717,46 @@ collapsed `(0,0,0,0)` rect read as a false overlap against the real last
 tab's right edge - fixed by scoping that one query to `:not([hidden])`
 (the other checks in that file measure `scrollWidth`/`clientWidth` on the
 container, which a `display:none` child never affects, so only this one
-rect-based query needed it). **Left open**: confirm `testbereich-frei` is
-an acceptable
-word to hand out to testers, or ask for a different one (it's a one-line
-constant, `TEST_UNLOCK_WORD` near `CODE_API` in app.js, trivial to
-change).
+rect-based query needed it). Client confirmed `testbereich-frei` is fine
+as the unlock word (2026-10-01) - no change needed, still a one-line
+constant (`TEST_UNLOCK_WORD` near `CODE_API` in app.js) if that ever
+changes.
 
-**Removed the Test-Bereich's own public mentions**: now that the tab is
-hidden by default, two FAQ entries and the "So trainierst du richtig"
-welcome paragraph's area list previously described/promoted an
-"experimenteller Test-Bereich" to every visitor, including a dedicated
-"Was ist der Test-Bereich?" entry inviting people to "schau ruhig öfter
-vorbei" - directly working against "soll nirgendwo auftauchen". Removed
-that dedicated FAQ entry outright and trimmed the "Test" mentions out of
-"Was ist FWMC Online-Training?", "Was ist der Unterschied zwischen den
-Bereichen oben?", and `#tipsWelcome`'s area list. **Left open**: this was
-my own judgment call reading "soll nirgendwo auftauchen" literally as
-covering descriptive text too, not just the nav tab itself - flag it back
-if a softer, access-method-free teaser ("we're always testing new things")
-would have been preferred instead of a clean removal.
+**Test-Bereich's own public mentions - load conditionally, not remove
+(resolved 2026-10-01, client follow-up)**: the first pass removed every
+FAQ/welcome-text mention of the Test-Bereich outright (flagged above as a
+judgment call). Client's actual ask once asked directly: don't delete the
+copy, just gate it the same way as the tab itself - "Test teaser usw dann
+mit reinladen, wenn jemand den Code eingeloggt hat." Implemented by
+wrapping each mention in `<span class="test-teaser" hidden>`/
+`<details class="faq-item test-teaser" hidden>` (the dedicated "Was ist
+der Test-Bereich?" FAQ entry came back verbatim, plus the two trimmed
+sentences in "Was ist FWMC Online-Training?"/"Was ist der Unterschied..."
+and `#tipsWelcome`'s area list) and having `applyTestTabVisibility()`
+toggle every `.test-teaser`'s `hidden` attribute in lockstep with the tab
+itself - one state, one function, nothing to keep in sync by hand.
+
+**Test-Bereich now has its own visual identity, separate from the rest of
+the app** (same client follow-up: "sollte dann irgendwie nochmal einen
+'mit Code aktiviert' Hinweis haben und farblich bisschen abgehoben sein,
+damit niemand später denkt, der würde regulär dazu gehören"). Two parts:
+(1) a `.test-unlock-badge` ("Mit Code freigeschaltet") next to the
+existing "Experimentierbereich" tag in `#testHome`'s hero - always
+visible there (reaching `#testHome` at all already implies unlocked, no
+extra gating needed); (2) a dedicated `--test-accent`/`--test-accent-deep`/
+`--test-accent-pale` colour triple (amber, both light- and dark-mode
+variants, same 3-block pattern as `--brand`/`--brand-deep`/`--brand-pale`
+in styles.css's `:root`) that `#testHome`'s own hero-kicker, active nav
+tab, and `.featured-card`s (the exercise-entry cards, same class NAT/VT
+use elsewhere - only re-pointed from `--brand` to `--test-accent` while
+scoped under `#testHome`) all pick up instead of the app's normal teal
+brand colour. The effect: once you're actually inside Test, everything
+about it visibly reads as "a different, temporary area" rather than just
+another permanent tab among equals.
+
+Test: `tests/test_unlock_test.py` extended with both pieces (all
+`.test-teaser` spots hidden before/shown after unlock, badge visibility,
+exact accent colour `rgb(180, 83, 9)`).
 
 **Epilepsy/photosensitivity note for fast-flashing exercises**: the
 existing Epilepsie warning (`#wimhofSheet`'s "Bitte vorher lesen" box) only
@@ -4719,6 +4774,30 @@ generic (no technical exercise names) rather than per-exercise, cross-
 referencing the existing Wim-Hof warning rather than duplicating it. No
 further action needed unless the client wants per-exercise flagging after
 all for specific high-intensity settings.
+
+**iPad: "Atemtraining" mid-word-broke in the top-level nav (client
+screenshot, reported 2026-10-01)**: root cause confirmed, NOT a one-off -
+`.section-switch{max-width:580px}` (styles.css) was explicitly sized for 6
+tabs (its own comment: "widened from 420 to 580px... so a 6th tab (added
+for the new Test section) still gets enough room"), but the client's
+screenshot shows all 7 (Test included) - a 7th tab past what that cap was
+tuned for leaves too little width for "Atemtraining" (one unbreakable
+compound word, `overflow-wrap:break-word` has no space to break at, so it
+cuts mid-word into "Atemtraini"/"ng") on a tablet-width screen. Reproduced
+with Playwright at 768/810/834px: 6 tabs (Test hidden, the new default) -
+fine; 7 tabs (Test unlocked) - reproduces exactly. So hiding Test by
+default already incidentally fixed this for every ordinary visitor, but
+not for the client themselves or any tester who unlocks it, which is
+exactly who'd actually see it. Fixed at the root rather than patched
+around: `body.nav-test-unlocked .section-switch{max-width:680px}`, toggled
+by `applyTestTabVisibility()` in lockstep with the tab itself, so the cap
+always matches the actual tab count instead of a number baked in for
+whatever the count happened to be at the time. Test: `nav_overflow_test.py`
+extended - a container-level `scrollWidth<=clientWidth` check (what the
+file already did) can't catch this at all, since the container itself
+never overflows, only one tab's own text wraps inside it, so the new check
+compares "Atemtraining"'s rendered height against "Movement"'s (same font/
+padding, short enough to never wrap) at 768px with Test unlocked.
 
 **Everything else the review raised, not acted on this round (carried
 forward, client's own words: "musst du mir danach nochmal vorlegen")**:

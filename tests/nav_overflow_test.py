@@ -65,6 +65,33 @@ async def main():
         display_narrow = await pg.evaluate("() => getComputedStyle(document.querySelector('#natHome .section-switch')).display")
         print("narrow viewport uses the 3-per-row grid:", display_narrow == "grid")
 
+        # --- client-reported (iPad screenshot): with "Test" unlocked, the
+        # TOP-LEVEL section-switch goes from 6 to 7 tabs, and the old 580px
+        # cap (sized for 6, see styles.css's own comment) left too little
+        # room per tab - "Atemtraining" (one unbreakable compound word, no
+        # space to wrap at) got cut mid-word into "Atemtraini"/"ng" on a
+        # tablet-width screen. body.nav-test-unlocked widens the cap to
+        # 680px whenever applyTestTabVisibility() finds the unlock flag.
+        # A container-level scrollWidth<=clientWidth check (like no_overflow()
+        # above) can't catch this - the container itself never overflows,
+        # only one tab's own text wraps inside it - so this compares
+        # "Atemtraining"'s rendered height against "Movement"'s (same font/
+        # padding, short enough to never wrap): equal height = one line = no
+        # mid-word break; taller = it wrapped, and since it has no space to
+        # break at, that always means the bad case.
+        await pg.evaluate("() => localStorage.setItem('fwmc-test-unlocked', 'true')")
+        await pg.reload(); await pg.wait_for_timeout(300)
+        if await pg.is_visible("#tipsCloseBtn"):
+            await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)
+        await pg.set_viewport_size({"width": 768, "height": 1024}); await pg.wait_for_timeout(150)
+        tab_count = await pg.locator('#home .section-switch .section-tab:not([hidden])').count()
+        print("Test unlocked -> 7 tabs now shown:", tab_count == 7)
+        heights = await pg.evaluate("""() => ({
+            atem: document.querySelector('#home .section-tab[data-section="breath"]').getBoundingClientRect().height,
+            movement: document.querySelector('#home .section-tab[data-section="movement"]').getBoundingClientRect().height,
+        })""")
+        print("'Atemtraining' stays one line (no mid-word break) at 768px with Test unlocked:", abs(heights["atem"] - heights["movement"]) < 2)
+
         print("FINAL ERRORS:", errors)
         await b.close()
 
