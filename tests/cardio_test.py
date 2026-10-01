@@ -90,7 +90,7 @@ async def main():
         await pg.click("#cardioSkipBtn"); await pg.wait_for_timeout(300)
         print("second activity name shown after skip:", "Rad fahren" in await pg.inner_text("#cardioActivityTitle"))
         print("block progress shows 2 von 2:", "2 von 2" in (await pg.inner_text("#cardioBlockProgress")).lower())
-        print("interval phase label visible (Belastung/Erholung):", await pg.is_visible("#cardioPhaseLabel"))
+        print("interval phase label visible (Intensive/Leichtere Belastung):", await pg.is_visible("#cardioPhaseLabel"))
 
         # ==== Wait ~21s for the dual-task guest window to trigger ====
         await pg.wait_for_timeout(21000)

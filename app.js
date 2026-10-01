@@ -68,6 +68,11 @@
   };
   const PERIPH_ZONE_KEYS = Object.keys(PERIPH_ZONES);
   const PERIPH_AXIS_KEYS = ["horizontal", "vertikal", "diagonal"];
+  const PERIPH_ZONE_LABELS = {
+    tl: "Oben links", tm: "Oben Mitte", tr: "Oben rechts", ml: "Mitte links",
+    mr: "Mitte rechts", bl: "Unten links", bm: "Unten Mitte", br: "Unten rechts",
+  };
+  const PERIPH_AXIS_LABELS = { horizontal: "Horizontal", vertikal: "Vertikal", diagonal: "Diagonal" };
 
   // Fixed four-colour set for "Hütchen antippen" (cone order sorting) -
   // this exercise is always about four cones, so it skips the free colour
@@ -635,6 +640,22 @@
     // runSession()/finishSession() exercise lifecycle (hideAllPlayers,
     // wake lock, duration timer, ...) can be reused as-is for it.
     "cardio-flash-host": { title: "Zusatzaufgabe", type: "flash-host" },
+    // Synthetic too, same reason as cardio-flash-host above: never shown in
+    // any picker/menu, never set as state.exercise (Blitz-Raster has its
+    // own entirely separate engine/state - see the "==== Blitz-Raster
+    // engine ====" section) - exists purely so the generic cardioGuestBgAllowed()/
+    // cardioGuestNeedsColors()/etc. helpers can look up its type/bgIsStimulus
+    // the same uniform way as every real catalog exercise, instead of a
+    // one-off special case in each of those helpers.
+    "blitz-raster": { title: "Blitz-Raster", type: "blitz-raster" },
+    // Same synthetic idea, NAT batch 2: Remember/Flash/MOT each have their
+    // own separate engine AND their own multiple starting modes - a sub-
+    // mode picker step in the Cardio picker (see cardioGuestModeList()) is
+    // this batch's new piece, proven on top of the Blitz-Raster pattern
+    // (prefsOverride/cardioGuestActive branches) from batch 1.
+    "remember": { title: "Remember", type: "remember" },
+    "flash": { title: "Flash Speicher Test", type: "flash" },
+    "mot": { title: "MOT-Fähigkeit", type: "mot" },
   };
 
   // ---- Programmes: coach-authored multi-block sessions. Real client
@@ -1883,10 +1904,10 @@
     cardioAddonWindowEndSlider: $("cardioAddonWindowEndSlider"), cardioAddonWindowEndValue: $("cardioAddonWindowEndValue"),
     cardioAddonPerType: $("cardioAddonPerType"),
     cardioPlayer: $("cardioPlayer"), cardioBackBtn: $("cardioBackBtn"), cardioSkipBtn: $("cardioSkipBtn"),
+    cardioPrevBtn: $("cardioPrevBtn"), cardioRestartBtn: $("cardioRestartBtn"),
     cardioAddonTriggerBtn: $("cardioAddonTriggerBtn"),
     cardioAddonPicker: $("cardioAddonPicker"), cardioAddonPickerTypeRow: $("cardioAddonPickerTypeRow"),
-    cardioAddonPickerDurationValue: $("cardioAddonPickerDurationValue"),
-    cardioAddonPickerDurationMinus: $("cardioAddonPickerDurationMinus"), cardioAddonPickerDurationPlus: $("cardioAddonPickerDurationPlus"),
+    cardioAddonPickerDetail: $("cardioAddonPickerDetail"),
     cardioAddonPickerStartBtn: $("cardioAddonPickerStartBtn"), cardioAddonPickerCancelBtn: $("cardioAddonPickerCancelBtn"),
     cardioGuestBadge: $("cardioGuestBadge"),
     cardioActivityTitle: $("cardioActivityTitle"), cardioActivityLabel: $("cardioActivityLabel"),
@@ -6671,7 +6692,14 @@
     }
   }
   let lastRememberMode = null;
-  function startRememberGame(mode, opts) {
+  // prefsOverride (Cardio guest bursts only, see triggerCardioGuest()):
+  // same idea as startBlitzGame()'s - never reads or mutates the client's
+  // own saved rememberPrefs. Training-mode-specific fields
+  // (trainingStart/trainingProgress/trainingPositionMode) now come from the
+  // Cardio panel's own cfg too (Batch D) - fixed an isolation bug the same
+  // batch turned up: they used to read rememberPrefs directly regardless of
+  // prefsOverride.
+  function startRememberGame(mode, opts, prefsOverride) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.rememberPlayer.hidden = false;
@@ -6680,19 +6708,20 @@
     els.rememberNav.hidden = mode !== "training";
     els.rememberPauseOverlay.hidden = true;
     els.rememberPauseBtn.hidden = false;
+    const p = prefsOverride || rememberPrefs;
     lastRememberMode = mode;
     rememberReturnScreen = mode === "training" ? "rememberTrainingReady" : "rememberReady";
-    const startLevel = mode === "training" ? rememberPrefs.trainingStart : 2;
-    const keepPositions = mode === "training" ? rememberPrefs.trainingPositionMode === "fixed" : REMEMBER_MODES[mode].keepPositions;
+    const startLevel = mode === "training" ? p.trainingStart : 2;
+    const keepPositions = mode === "training" ? p.trainingPositionMode === "fixed" : REMEMBER_MODES[mode].keepPositions;
     rememberState = {
       mode, level: startLevel, cleared: 0, positions: [], phase: "reveal", nextExpected: 1,
       startTime: performance.now(), timer: null, comboDurationTimer: null, positionCache: {}, keepPositions,
-      revealBaseS: rememberPrefs.revealBaseS, revealStepS: rememberPrefs.revealStepS,
-      errorMode: rememberPrefs.errorMode,
-      trainingStart: rememberPrefs.trainingStart, trainingProgress: rememberPrefs.trainingProgress,
+      revealBaseS: p.revealBaseS, revealStepS: p.revealStepS,
+      errorMode: p.errorMode,
+      trainingStart: p.trainingStart, trainingProgress: p.trainingProgress,
       paused: false,
     };
-    applyRememberBg();
+    els.rememberStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
     requestWakeLock();
     startRememberLevel();
     // Kombi block: Remember has no natural end of its own (unlike VT's
@@ -6713,6 +6742,9 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.rememberPlayer) document.exitFullscreen().catch(() => {});
     els.rememberFsHint.hidden = true;
+    // Doubles as the Cardio guest-burst's own auto-finish, same as Blitz-
+    // Raster's finishBlitzCombo().
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
     if (comboProgram) advanceComboProgram(playedS);
   }
 
@@ -6961,6 +6993,7 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.rememberPlayer) document.exitFullscreen().catch(() => {});
     els.rememberFsHint.hidden = true;
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
     // "Beenden" mid-Kombi quits the whole Kombi programme, not just this
     // block - matches every other domain's "Beenden" behaviour.
     if (comboProgram) { abortComboProgram(); return; }
@@ -7322,7 +7355,14 @@
     }
   }
   let blitzState = null;
-  function startBlitzGame(opts) {
+  // prefsOverride (Cardio guest bursts only, see triggerCardioGuest()):
+  // runs the game with a client-chosen Cardio-specific config instead of
+  // the normal blitzPrefs - NEVER reads or mutates the client's own saved
+  // Blitz-Raster preferences. p.zones now comes from the Cardio panel's own
+  // zone picker (see buildCardioGuestFieldsHtml()'s Blitz-Raster branch,
+  // Batch B) same as blitzPrefs.zones would for a standalone run - falls
+  // back to "all of them" only if somehow missing entirely.
+  function startBlitzGame(opts, prefsOverride) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.blitzPlayer.hidden = false;
@@ -7330,12 +7370,13 @@
     els.blitzDonePanel.hidden = true;
     els.blitzPauseOverlay.hidden = true;
     els.blitzPauseBtn.hidden = false;
+    const p = prefsOverride || blitzPrefs;
     blitzState = {
-      level: blitzPrefs.startCount, cleared: 0, phase: "reveal", lit: new Set(), tapped: new Set(), eligible: new Set(),
-      startTime: performance.now(), timer: null, comboDurationTimer: null, gridSize: blitzPrefs.gridSize, zones: blitzPrefs.zones.slice(),
-      flashS: blitzPrefs.flashS, errorMode: blitzPrefs.errorMode, paused: false,
+      level: p.startCount, cleared: 0, phase: "reveal", lit: new Set(), tapped: new Set(), eligible: new Set(),
+      startTime: performance.now(), timer: null, comboDurationTimer: null, gridSize: p.gridSize, zones: (p.zones && p.zones.length ? p.zones : PERIPH_ZONE_KEYS).slice(),
+      flashS: p.flashS, errorMode: p.errorMode, paused: false,
     };
-    applyBlitzBg();
+    els.blitzStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
     requestWakeLock();
     blitzStartRound();
     // Kombi block: Blitz-Raster has no natural end of its own, same as
@@ -7355,6 +7396,11 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.blitzPlayer) document.exitFullscreen().catch(() => {});
     els.blitzFsHint.hidden = true;
+    // Doubles as the Cardio guest-burst's own auto-finish (triggerCardioGuest()
+    // calls startBlitzGame() with { comboDurationS: cfg.duration } - same
+    // setTimeout mechanism, not an actual Kombi run) - back to the still-
+    // running Cardio session, same as every other guest type's natural finish.
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
     if (comboProgram) advanceComboProgram(playedS);
   }
   els.blitzReadyStartBtn.addEventListener("click", () => {
@@ -7414,6 +7460,11 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.blitzPlayer) document.exitFullscreen().catch(() => {});
     els.blitzFsHint.hidden = true;
+    // Early-exit mid-Cardio-guest-burst: back to the still-running Cardio
+    // session (same as every other guest type's Beenden), and - like every
+    // other guest type - no best-score/history entry recorded for a quick
+    // guest burst, only the overall Cardio session gets one.
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
     // "Beenden" mid-Kombi quits the whole Kombi programme, not just this
     // block - matches Remember's (and every other domain's) behaviour.
     if (comboProgram) { abortComboProgram(); return; }
@@ -7597,16 +7648,22 @@
     if (flashState) renderFlashFixpoint();
   }
   // Mirrors Periph's drawFixationPoint(): a custom character (sized text,
-  // no background) if one is set, otherwise a plain coloured dot.
+  // no background) if one is set, otherwise a plain coloured dot. Prefers
+  // flashState's own fix* fields (set from the Cardio guest cfg, see
+  // startFlashGame()) once a round is actually running, so a live Cardio
+  // override is reflected here too - falls back to the client's own real
+  // flashPrefs only in the Ready-screen preview context, before flashState
+  // exists.
   function renderFlashFixpoint() {
     const el = els.flashFixpointEl;
-    if (!flashPrefs.fixEnabled) { el.hidden = true; return; }
+    const src = flashState || flashPrefs;
+    if (!src.fixEnabled) { el.hidden = true; return; }
     el.hidden = false;
-    const color = (FIX_COLOR_BY_KEY[flashPrefs.fixColor] || FIX_COLOR_BY_KEY.grau).hex;
-    const char = flashPrefs.fixChar.trim();
+    const color = (FIX_COLOR_BY_KEY[src.fixColor] || FIX_COLOR_BY_KEY.grau).hex;
+    const char = src.fixChar.trim();
     if (char) {
       el.textContent = char;
-      el.style.fontSize = Math.round(28 * flashPrefs.fixSize) + "px";
+      el.style.fontSize = Math.round(28 * src.fixSize) + "px";
       el.style.color = color;
       el.style.background = "transparent";
       el.style.width = "auto";
@@ -7614,7 +7671,7 @@
       el.style.borderRadius = "0";
     } else {
       el.textContent = "";
-      const size = Math.round(12 * flashPrefs.fixSize);
+      const size = Math.round(12 * src.fixSize);
       el.style.width = size + "px";
       el.style.height = size + "px";
       el.style.background = color;
@@ -8110,7 +8167,18 @@
   let flashState = null;
   let lastFlashMode = null;
   let flashReturnScreen = "natHome";
-  function startFlashGame(mode, opts) {
+  // prefsOverride (Cardio guest bursts only): same idea as
+  // startBlitzGame()/startRememberGame()'s - never reads or mutates the
+  // client's own saved flashPrefs. All mode-specific starting counts now
+  // come from the Cardio panel's own cfg too (Batch D) - fixed the same
+  // isolation leak Batch D turned up elsewhere (these used to read
+  // flashPrefs directly regardless of prefsOverride). Also fixes a real,
+  // pre-existing standalone bug found while at it: flashState never
+  // actually carried its own repsPerLevel at all (only flashPrefs.
+  // repsPerLevel existed) - "climbRepeat"'s own repsDone>=repsPerLevel
+  // check at flashSuccessTransition() compared against undefined, so it
+  // could never actually advance past the first count.
+  function startFlashGame(mode, opts, prefsOverride) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.flashPlayer.hidden = false;
@@ -8120,19 +8188,21 @@
     els.flashPauseBtn.hidden = false;
     els.flashInputPanel.hidden = true;
     els.flashDigitEl.hidden = true;
+    const p = prefsOverride || flashPrefs;
     lastFlashMode = mode;
     flashReturnScreen = mode === "training" ? "flashTrainingReady" : "flashReady";
-    const startCount = mode === "training" ? flashPrefs.trainingStart : flashPrefs.startCount;
+    const startCount = mode === "training" ? p.trainingStart : p.startCount;
     flashState = {
-      mode, kind: flashPrefs.kind, count: startCount, constantCount: flashPrefs.constantCount, speedStep: 0, repsDone: 0, cleared: 0,
+      mode, kind: p.kind, count: startCount, constantCount: p.constantCount, speedStep: 0, repsDone: 0, repsPerLevel: p.repsPerLevel, cleared: 0,
       sequence: [], shownIndex: 0, typed: "", phase: "flash", timer: null, comboDurationTimer: null,
-      stimulusS: flashPrefs.stimulusS, intervalS: flashPrefs.intervalS, errorMode: flashPrefs.errorMode,
-      axes: flashPrefs.axes.slice(), zones: flashPrefs.zones.slice(), useZones: flashPrefs.useZones,
-      trainingProgress: flashPrefs.trainingProgress, startLevel: flashPrefs.startCount, trainingStartLevel: flashPrefs.trainingStart,
+      stimulusS: p.stimulusS, intervalS: p.intervalS, errorMode: p.errorMode,
+      axes: p.axes.slice(), zones: p.zones.slice(), useZones: p.useZones,
+      fixEnabled: p.fixEnabled, fixChar: p.fixChar, fixColor: p.fixColor, fixSize: p.fixSize,
+      trainingProgress: p.trainingProgress, startLevel: p.startCount, trainingStartLevel: p.trainingStart,
       startTime: performance.now(), paused: false,
     };
     renderFlashKeypad();
-    applyFlashBg();
+    els.flashStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
     renderFlashFixpoint();
     requestWakeLock();
     flashStartRound();
@@ -8155,6 +8225,7 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.flashPlayer) document.exitFullscreen().catch(() => {});
     els.flashFsHint.hidden = true;
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
     if (comboProgram) advanceComboProgram(playedS);
   }
   els.flashReadyStartBtn.addEventListener("click", () => {
@@ -8222,6 +8293,7 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.flashPlayer) document.exitFullscreen().catch(() => {});
     els.flashFsHint.hidden = true;
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
     // "Beenden" mid-Kombi quits the whole Kombi programme, not just this
     // block - matches Remember/Blitz-Raster's behaviour.
     if (comboProgram) { abortComboProgram(); return; }
@@ -8936,7 +9008,13 @@
   let motState = null;
   let lastMotMode = null;
   let motReturnScreen = "natHome";
-  function startMotGame(mode, opts) {
+  // prefsOverride (Cardio guest bursts only): same idea as the other
+  // domains' - never reads or mutates the client's own saved motPrefs. All
+  // mode-specific counts now come from the Cardio panel's own cfg too
+  // (Batch D) - fixed the same isolation leak Batch C already fixed for
+  // style/targetColors (these used to read motPrefs directly regardless of
+  // prefsOverride).
+  function startMotGame(mode, opts, prefsOverride) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.motPlayer.hidden = false;
@@ -8944,22 +9022,23 @@
     els.motDonePanel.hidden = true;
     els.motPauseOverlay.hidden = true;
     els.motPauseBtn.hidden = false;
+    const p = prefsOverride || motPrefs;
     lastMotMode = mode;
     motReturnScreen = mode === "training" ? "motTrainingReady" : "motReady";
-    const startObjects = mode === "training" ? motPrefs.trainingObjects : motPrefs.growStartObjects;
-    const startTargets = mode === "training" ? motPrefs.trainingTargets : motPrefs.growStartTargets;
-    const startSpeedStep = mode === "training" ? motPrefs.trainingSpeedStep : 0;
+    const startObjects = mode === "training" ? p.trainingObjects : p.growStartObjects;
+    const startTargets = mode === "training" ? p.trainingTargets : p.growStartTargets;
+    const startSpeedStep = mode === "training" ? p.trainingSpeedStep : 0;
     motState = {
       mode, level: 1, cleared: 0, phase: "highlight",
       objects: [], targetIds: new Set(), tapped: new Set(), wrongId: null,
-      objectCount: motPrefs.objectCount, targetCount: motPrefs.targetCount,
+      objectCount: p.objectCount, targetCount: p.targetCount,
       startObjects, startTargets, startSpeedStep,
-      trainingProgress: motPrefs.trainingProgress,
-      speed: motPrefs.speed, trackS: motPrefs.trackS, highlightS: motPrefs.highlightS,
-      errorMode: motPrefs.errorMode, style: motPrefs.style, colors: motPrefs.colors.slice(), targetColors: motPrefs.targetColors.slice(),
+      trainingProgress: p.trainingProgress,
+      speed: p.speed, trackS: p.trackS, highlightS: p.highlightS,
+      errorMode: p.errorMode, style: p.style, colors: p.colors.slice(), targetColors: p.targetColors.slice(),
       startTime: performance.now(), timer: null, comboDurationTimer: null, raf: null, paused: false,
     };
-    applyMotBg();
+    els.motStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
     requestWakeLock();
     motStartRound();
     // Kombi block: MOT-Fähigkeit has no natural end of its own, same as
@@ -8979,6 +9058,7 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.motPlayer) document.exitFullscreen().catch(() => {});
     els.motFsHint.hidden = true;
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
     if (comboProgram) advanceComboProgram(playedS);
   }
   els.motReadyStartBtn.addEventListener("click", () => {
@@ -9047,6 +9127,7 @@
     releaseWakeLock();
     if (document.fullscreenElement === els.motPlayer) document.exitFullscreen().catch(() => {});
     els.motFsHint.hidden = true;
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
     // "Beenden" mid-Kombi quits the whole Kombi programme, not just this
     // block - matches Remember/Blitz/Flash's behaviour.
     if (comboProgram) { abortComboProgram(); return; }
@@ -10182,12 +10263,12 @@
         `<button class="combo-block-remove" data-i="${i}" title="Entfernen">&#10005;</button>` +
         `</div>` +
         `<input type="text" class="circuit-item-note" data-i="${i}" placeholder="Label (optional, z. B. Warm-up)" maxlength="40" value="${esc(item.label || "")}">` +
-        `<label class="cardio-interval-toggle"><input type="checkbox" data-i="${i}" ${item.interval ? "checked" : ""}> Intervall in diesem Block (Belastung/Erholung)</label>` +
+        `<label class="cardio-interval-toggle"><input type="checkbox" data-i="${i}" ${item.interval ? "checked" : ""}> Intervall in diesem Block (intensive/leichtere Belastung)</label>` +
         (item.interval ? `<div class="cardio-interval-fields">` +
-          `<div class="cardio-interval-phase-row"><span>Belastung</span><button class="circuit-step" data-int="${i}" data-field="onS" data-dir="-1" aria-label="kürzer">&minus;</button>` +
+          `<div class="cardio-interval-phase-row"><span>Intensive Belastung</span><button class="circuit-step" data-int="${i}" data-field="onS" data-dir="-1" aria-label="kürzer">&minus;</button>` +
           `<span class="circuit-duration-value">${item.interval.onS}s</span>` +
           `<button class="circuit-step" data-int="${i}" data-field="onS" data-dir="1" aria-label="länger">+</button></div>` +
-          `<div class="cardio-interval-phase-row"><span>Erholung</span><button class="circuit-step" data-int="${i}" data-field="offS" data-dir="-1" aria-label="kürzer">&minus;</button>` +
+          `<div class="cardio-interval-phase-row"><span>Leichtere Belastung</span><button class="circuit-step" data-int="${i}" data-field="offS" data-dir="-1" aria-label="kürzer">&minus;</button>` +
           `<span class="circuit-duration-value">${item.interval.offS}s</span>` +
           `<button class="circuit-step" data-int="${i}" data-field="offS" data-dir="1" aria-label="länger">+</button></div>` +
           `</div>` : "");
@@ -10210,7 +10291,7 @@
           item.pauseAfterS = Number(slider.value);
           valueEl.textContent = fmtSeconds(item.pauseAfterS);
         });
-        slider.addEventListener("change", () => saveCardioPrefs());
+        slider.addEventListener("change", () => { saveCardioPrefs(); syncCardioAddonWindowBounds(); });
         els.cardioList.appendChild(pauseRow);
       }
     });
@@ -10254,6 +10335,10 @@
         renderCardioList();
       });
     });
+    // Total planned session time (activities + interleaved pauses) just
+    // changed - the addon "Zeitfenster" sliders below must never let the
+    // client drag past time that isn't actually there yet.
+    syncCardioAddonWindowBounds();
   }
 
   function syncCardioUI() {
@@ -10454,40 +10539,72 @@
   // runSession()/tick()/state.exercise - genuinely mechanical, since
   // applyCardioGuestToState() below already dispatches purely off each
   // exercise's own usesColors/usesArrowColors/usesStroopColors/
-  // bgIsStimulus/type flags and needed zero changes. Two exercises from
-  // that same catalog are deliberately NOT here yet: "periph-flash"
-  // (Periphere Wahrnehmung) has its own much larger settings surface
-  // (fixation point, zones, zone weights - not a quick addition, its own
-  // follow-up); "cone-tap" (Hütchen sortieren) IS included since it turned
-  // out trivial (just calls startConeTap() instead of runSession(), no
-  // colours/stimulus/interval concept at all).
+  // bgIsStimulus/type flags and needed zero changes. "cone-tap" (Hütchen
+  // sortieren) IS included since it turned out trivial (just calls
+  // startConeTap() instead of runSession(), no colours/stimulus/interval
+  // concept at all).
   //
-  // The NAT domain (Periphere Wahrnehmung aside) turned out NOT to share
-  // this engine at all, despite looking like it should - every NAT
-  // exercise (Merkspanne, Blitz-Raster, Flash, MOT, Go/No-Go, N-Back, Trail
-  // Making, ... ~25 in total) has its own dedicated player/prefs/finish
-  // path (see hideAllPlayers()'s long list), not the shared #player/state.
-  // Each would need its own individual bridge into triggerCardioGuest()/
-  // returnFromCardioGuest() - a real, separate piece of work, much closer
-  // in size to the deferred Atemtraining/Movement/Workout lift than to
-  // this batch. Left for its own follow-up rather than silently expanding
-  // this "mechanical" batch to cover it too.
+  // Correction to that Phase 1 note: it claimed the whole NAT domain (~25
+  // exercises) shared none of this engine, wrongly lumping NAT together
+  // with the separately-excluded Test domain. Checked the actual nav
+  // structure: NAT is only FIVE things - Periphere Wahrnehmung, Remember,
+  // Blitz-Raster, Flash Speicher Test, MOT-Fähigkeit. The ~25-exercise
+  // list (Go/No-Go, N-Back, Trail Making, ...) is the Test domain
+  // (`testHome`), which the client explicitly wants left out, still.
+  //
+  // NAT batch 1 (2026-09-30): "periph-flash" (Periphere Wahrnehmung) turns
+  // out to be the SAME engine as everything above (`buildPeriphSchedule`
+  // dispatches through the identical runSession()/tick()) - it was only
+  // held back in Phase 1 for its larger settings surface, now added with
+  // the same depth of configurability addon-flash already has (kind +
+  // colours + duration + background; axes/zones/zone-weights stay at
+  // their default, same pre-existing simplification addon-flash's own
+  // panel already has - not a new gap introduced here). "blitz-raster" is
+  // the first of the genuinely separate-engine NAT exercises bridged in -
+  // see the cardioGuestActive branches added to blitzStop()/
+  // finishBlitzCombo() and startBlitzGame()'s new prefsOverride parameter
+  // (never mutates the client's own saved blitzPrefs). Remember/Flash/
+  // MOT are next - each also needs a sub-mode picker step (training vs.
+  // fixed vs. ... ) that doesn't exist here yet, real additional work, not
+  // silently folded into this batch either.
+  //
+  // `group` sorts both the Feineinstellungen pool grid and the live
+  // picker into their parent domain, so the list stays legible as it
+  // grows instead of one long flat run of choices.
+  const CARDIO_GUEST_GROUPS = { vt: "Visual Training", nat: "Neuroathletik (NAT)" };
   const CARDIO_GUEST_TYPES = [
-    { id: "addon-flash", title: "Zusatzaufgabe · Ziffer/Buchstabe" },
-    { id: "vt-color", title: "VT · Farbe & Seite" },
-    { id: "vrw-original", title: "VRW · Direkt & Umgekehrt" },
-    { id: "stroop-classic", title: "Stroop · klassisch" },
-    { id: "stroop-bg", title: "Stroop · mit Hintergrund" },
-    { id: "4-straight", title: "4 Pfeile · gerade" },
-    { id: "4-diag", title: "4 Pfeile · diagonal" },
-    { id: "8-solo", title: "8 Pfeile" },
-    { id: "8-vrw", title: "8 Pfeile · Rot/Grün" },
-    { id: "cross-modal", title: "Sehen & Hören" },
-    { id: "cone-compass", title: "Hütchen · Kompass-Aufbau" },
-    { id: "cone-tap", title: "Hütchen sortieren" },
+    { id: "addon-flash", title: "Zusatzaufgabe · Ziffer/Buchstabe", group: "vt" },
+    { id: "vt-color", title: "VT · Farbe & Seite", group: "vt" },
+    { id: "vrw-original", title: "VRW · Direkt & Umgekehrt", group: "vt" },
+    { id: "stroop-classic", title: "Stroop · klassisch", group: "vt" },
+    { id: "stroop-bg", title: "Stroop · mit Hintergrund", group: "vt" },
+    { id: "4-straight", title: "4 Pfeile · gerade", group: "vt" },
+    { id: "4-diag", title: "4 Pfeile · diagonal", group: "vt" },
+    { id: "8-solo", title: "8 Pfeile", group: "vt" },
+    { id: "8-vrw", title: "8 Pfeile · Rot/Grün", group: "vt" },
+    { id: "cross-modal", title: "Sehen & Hören", group: "vt" },
+    { id: "cone-compass", title: "Hütchen · Kompass-Aufbau", group: "vt" },
+    { id: "cone-tap", title: "Hütchen sortieren", group: "vt" },
+    { id: "periph-flash", title: "Periphere Wahrnehmung", group: "nat" },
+    { id: "blitz-raster", title: "Blitz-Raster", group: "nat" },
+    { id: "remember", title: "Remember", group: "nat" },
+    { id: "flash", title: "Flash Speicher Test", group: "nat" },
+    { id: "mot", title: "MOT-Fähigkeit", group: "nat" },
   ];
+  // "addon-flash" and "periph-flash" both flash a coloured digit/letter at
+  // a random peripheral position (the former as a Zusatzaufgabe overlay on
+  // a blank host, the latter as the actual Periphere Wahrnehmung exercise)
+  // and share the exact same addonDefaultOwn()-shaped config (kind/axes/
+  // useZones/zones/sizeMode/colors) as a result - "periph-like" below.
+  function cardioGuestIsPeriphLike(guestId) { return guestId === "addon-flash" || guestId === "periph-flash"; }
+  // Zone-dominance weighting ("Dominanz") only exists on periph-flash's own
+  // Ready screen (state.periphZoneWeights) - addon-flash's own standalone
+  // settings (the "Zusatzaufgabe" panel layered on another VT exercise,
+  // #addonGroup) never had this control at all, so "genau so als wenn man
+  // die Übung einzeln machen würde" means NOT adding it there either.
+  function cardioGuestHasZoneWeights(guestId) { return guestId === "periph-flash"; }
   function cardioGuestColorLib(guestId) {
-    return ["addon-flash", "stroop-classic", "stroop-bg"].includes(guestId) ? STROOP_COLOR_LIB : COLOR_LIB;
+    return cardioGuestIsPeriphLike(guestId) || guestId === "stroop-classic" || guestId === "stroop-bg" || guestId === "mot" ? STROOP_COLOR_LIB : COLOR_LIB;
   }
   function cardioGuestRealId(guestId) { return guestId === "addon-flash" ? "cardio-flash-host" : guestId; }
   // Mirrors currentBgFill()'s own exclusion exactly (ex.type === "color-tap"
@@ -10501,15 +10618,52 @@
     const ex = EXERCISES[cardioGuestRealId(guestId)];
     return ex.type !== "color-tap" && !ex.bgIsStimulus;
   }
+  // EXERCISES[...].usesColors/usesArrowColors/usesStroopColors covers every
+  // real catalog exercise, but periph-like types pick their colours through
+  // a different, older mechanism (state.periphColors, not active.*) that
+  // predates those flags - needs its own check rather than a 4th flag.
   function cardioGuestNeedsColors(guestId) {
+    // MOT's own "Objektfarbe" - see cardioGuestNeedsTargetColor() just below
+    // for its separate "Zielfarbe" (targetColors).
+    if (cardioGuestIsPeriphLike(guestId) || guestId === "mot") return true;
     const ex = EXERCISES[cardioGuestRealId(guestId)];
     return !!(ex.usesColors || ex.usesArrowColors || ex.usesStroopColors);
   }
+  function cardioGuestNeedsTargetColor(guestId) { return guestId === "mot"; }
   function cardioGuestIsConeTap(guestId) { return EXERCISES[cardioGuestRealId(guestId)].type === "color-tap"; }
+  function cardioGuestIsBlitz(guestId) { return guestId === "blitz-raster"; }
+  function cardioGuestIsRemember(guestId) { return guestId === "remember"; }
+  function cardioGuestIsFlash(guestId) { return guestId === "flash"; }
+  function cardioGuestIsMot(guestId) { return guestId === "mot"; }
+  // Any type with more than one starting mode (Remember/Flash/MOT each
+  // have several - training vs. fixed vs. shuffle vs. ...) needs an extra
+  // mode-choice step, both in the live picker (renderCardioAddonPicker())
+  // and as a persisted per-type default (perType[id].mode, used by the
+  // automatic randomized-interval trigger, which never goes through the
+  // picker at all). Titles match each domain's own mode names exactly
+  // (see rememberStop()/flashStop()/motStop()'s own modeTitle logic).
+  const CARDIO_GUEST_MODE_LISTS = {
+    remember: [{ id: "fixed", title: "Feste Positionen" }, { id: "shuffle", title: "Bewegte Positionen" }, { id: "training", title: "Trainingsmodus" }],
+    flash: [{ id: "constant", title: "Konstant" }, { id: "climb", title: "Steigend, direkt" }, { id: "climbRepeat", title: "Steigend, mit Wiederholung" }, { id: "training", title: "Trainingsmodus" }],
+    mot: [{ id: "speed", title: "Tempo steigt" }, { id: "count", title: "Anzahl steigt" }, { id: "both", title: "Beides steigt" }, { id: "training", title: "Trainingsmodus" }],
+  };
+  function cardioGuestModeList(guestId) { return CARDIO_GUEST_MODE_LISTS[guestId] || null; }
   function cardioGuestDefaultCfg(guestId) {
     const bg = cardioGuestBgAllowed(guestId) ? { bgColorKey: "gruen", bgIntensity: 0 } : {};
-    if (guestId === "addon-flash") return { duration: 20, ...addonDefaultOwn(), ...bg };
+    // zoneWeights only actually gets rendered/used for periph-flash
+    // (cardioGuestHasZoneWeights) - included here for both periph-like
+    // types anyway just so the cfg shape stays uniform; harmless unused
+    // data for addon-flash, which never had this control standalone either.
+    if (cardioGuestIsPeriphLike(guestId)) return { duration: 20, ...addonDefaultOwn(), zoneWeights: { tl: 1, tm: 1, tr: 1, ml: 1, mr: 1, bl: 1, bm: 1, br: 1 }, ...bg };
     if (guestId === "cone-tap") return { duration: 20 };
+    if (guestId === "blitz-raster") return { duration: 20, flashS: BLITZ_DIFFICULTIES.mittel.flashS, errorMode: "reset2", gridSize: 4, startCount: 3, zones: PERIPH_ZONE_KEYS.slice(), ...bg };
+    // Remember/Flash/MOT: training-mode start values added here (Batch D) -
+    // the OTHER modes' own numeric fields (Flash's constantCount/startCount/
+    // repsPerLevel, MOT's fixed-count/grow-start objects+targets) still
+    // deliberately stay at each domain's own built-in default for now.
+    if (guestId === "remember") return { duration: 20, mode: "fixed", revealBaseS: REMEMBER_DIFFICULTIES.mittel.revealBaseS, revealStepS: REMEMBER_DIFFICULTIES.mittel.revealStepS, errorMode: "reset2", trainingStart: 8, trainingProgress: true, trainingPositionMode: "shuffle", ...bg };
+    if (guestId === "flash") return { duration: 20, mode: "constant", kind: "zahlen", stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS, intervalS: FLASH_DIFFICULTIES.mittel.intervalS, errorMode: "reset2", axes: PERIPH_AXIS_KEYS.slice(), useZones: false, zones: PERIPH_ZONE_KEYS.slice(), fixEnabled: true, fixChar: "", fixColor: "grau", fixSize: 1, constantCount: 3, startCount: 3, repsPerLevel: 2, trainingStart: 5, trainingProgress: true, ...bg };
+    if (guestId === "mot") return { duration: 20, mode: "speed", style: "flach", speed: MOT_DIFFICULTIES.mittel.speed, trackS: MOT_DIFFICULTIES.mittel.trackS, highlightS: MOT_DIFFICULTIES.mittel.highlightS, errorMode: "reset2", colors: ["schwarz"], targetColors: ["gelb"], objectCount: 8, targetCount: 4, growStartObjects: 4, growStartTargets: 1, trainingObjects: 6, trainingTargets: 2, trainingSpeedStep: 0, trainingProgress: true, ...bg };
     if (guestId === "vt-color" || guestId === "vrw-original") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg };
     if (guestId === "stroop-classic" || guestId === "stroop-bg") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "blau", "gruen"], ...bg };
     if (guestId === "8-vrw" || guestId === "cross-modal") return { duration: 20, stimulusS: 1, intervalMin: 2, intervalMax: 4, ...bg };
@@ -10534,7 +10688,11 @@
       let p = cardioAddonPrefs.perType[t.id];
       if (!p || typeof p !== "object") { cardioAddonPrefs.perType[t.id] = d; return; }
       if (!Number.isFinite(p.duration) || p.duration < 5 || p.duration > 120) p.duration = d.duration;
-      if (!cardioGuestIsConeTap(t.id)) {
+      const modeList = cardioGuestModeList(t.id);
+      if (modeList) {
+        if (!modeList.some((m) => m.id === p.mode)) p.mode = d.mode;
+      }
+      if (!cardioGuestIsConeTap(t.id) && !cardioGuestIsBlitz(t.id) && !modeList) {
         if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
         if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
         if (!Number.isFinite(p.intervalMax) || p.intervalMax < 0.5 || p.intervalMax > 15) p.intervalMax = d.intervalMax;
@@ -10547,17 +10705,103 @@
         if (!STROOP_COLOR_BY_KEY[p.bgColorKey]) p.bgColorKey = d.bgColorKey;
         if (!Number.isFinite(p.bgIntensity) || p.bgIntensity < 0 || p.bgIntensity > 1) p.bgIntensity = d.bgIntensity;
       }
-      if (t.id === "addon-flash") {
+      if (cardioGuestIsPeriphLike(t.id)) {
         if (!["buchstaben", "zahlen", "gemischt"].includes(p.kind)) p.kind = d.kind;
         if (!["gleich", "wachsend"].includes(p.sizeMode)) p.sizeMode = d.sizeMode;
         if (!Array.isArray(p.axes) || !p.axes.length) p.axes = d.axes.slice();
         if (typeof p.useZones !== "boolean") p.useZones = d.useZones;
         if (!Array.isArray(p.zones) || !p.zones.length) p.zones = d.zones.slice();
+        if (!p.zoneWeights || typeof p.zoneWeights !== "object") p.zoneWeights = { ...d.zoneWeights };
+        else PERIPH_ZONE_KEYS.forEach((z) => {
+          const w = p.zoneWeights[z];
+          p.zoneWeights[z] = typeof w === "number" && w >= 1 && w <= 3 ? w : 1;
+        });
+      }
+      if (cardioGuestIsBlitz(t.id)) {
+        if (!Number.isFinite(p.flashS) || p.flashS < 0.3 || p.flashS > 2) p.flashS = d.flashS;
+        if (!["reset2", "backOne", "stay"].includes(p.errorMode)) p.errorMode = d.errorMode;
+        if (![3, 4, 5, 6, 7, 8].includes(p.gridSize)) p.gridSize = d.gridSize;
+        if (!Number.isFinite(p.startCount) || p.startCount < 1) p.startCount = d.startCount;
+        if (!Array.isArray(p.zones) || !p.zones.length || !p.zones.every((z) => PERIPH_ZONE_KEYS.includes(z))) p.zones = d.zones.slice();
+      }
+      if (cardioGuestIsRemember(t.id)) {
+        if (!Number.isFinite(p.revealBaseS) || p.revealBaseS < 0.5 || p.revealBaseS > 3) p.revealBaseS = d.revealBaseS;
+        if (!Number.isFinite(p.revealStepS) || p.revealStepS < 0.1 || p.revealStepS > 1) p.revealStepS = d.revealStepS;
+        if (!["reset2", "backOne", "stay"].includes(p.errorMode)) p.errorMode = d.errorMode;
+        if (!Number.isFinite(p.trainingStart) || p.trainingStart < 2 || p.trainingStart > 16) p.trainingStart = d.trainingStart;
+        if (typeof p.trainingProgress !== "boolean") p.trainingProgress = d.trainingProgress;
+        if (!["fixed", "shuffle"].includes(p.trainingPositionMode)) p.trainingPositionMode = d.trainingPositionMode;
+      }
+      if (cardioGuestIsFlash(t.id)) {
+        if (!["buchstaben", "zahlen", "gemischt"].includes(p.kind)) p.kind = d.kind;
+        if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 2) p.stimulusS = d.stimulusS;
+        if (!Number.isFinite(p.intervalS) || p.intervalS < 0.1 || p.intervalS > 2) p.intervalS = d.intervalS;
+        if (!["reset2", "backOne", "stay"].includes(p.errorMode)) p.errorMode = d.errorMode;
+        if (!Array.isArray(p.axes) || !p.axes.every((a) => PERIPH_AXIS_KEYS.includes(a))) p.axes = d.axes.slice();
+        if (typeof p.useZones !== "boolean") p.useZones = d.useZones;
+        if (!Array.isArray(p.zones) || !p.zones.length || !p.zones.every((z) => PERIPH_ZONE_KEYS.includes(z))) p.zones = d.zones.slice();
+        if (typeof p.fixEnabled !== "boolean") p.fixEnabled = d.fixEnabled;
+        if (typeof p.fixChar !== "string") p.fixChar = d.fixChar;
+        if (!FIX_COLOR_BY_KEY[p.fixColor]) p.fixColor = d.fixColor;
+        if (!Number.isFinite(p.fixSize) || p.fixSize < 0.6 || p.fixSize > 2) p.fixSize = d.fixSize;
+        if (!Number.isFinite(p.constantCount) || p.constantCount < 2 || p.constantCount > 6) p.constantCount = d.constantCount;
+        if (!Number.isFinite(p.startCount) || p.startCount < 2 || p.startCount > 9) p.startCount = d.startCount;
+        if (![2, 3].includes(p.repsPerLevel)) p.repsPerLevel = d.repsPerLevel;
+        if (!Number.isFinite(p.trainingStart) || p.trainingStart < 2 || p.trainingStart > 9) p.trainingStart = d.trainingStart;
+        if (typeof p.trainingProgress !== "boolean") p.trainingProgress = d.trainingProgress;
+      }
+      if (cardioGuestIsMot(t.id)) {
+        if (!Number.isFinite(p.speed) || p.speed < 0.05 || p.speed > 0.4) p.speed = d.speed;
+        if (!Number.isFinite(p.trackS) || p.trackS < 3 || p.trackS > 15) p.trackS = d.trackS;
+        if (!Number.isFinite(p.highlightS) || p.highlightS < 1 || p.highlightS > 4) p.highlightS = d.highlightS;
+        if (!["reset2", "backOne", "stay"].includes(p.errorMode)) p.errorMode = d.errorMode;
+        if (!["flach", "3d"].includes(p.style)) p.style = d.style;
+        if (!Array.isArray(p.targetColors) || !p.targetColors.length || !p.targetColors.every((k) => STROOP_COLOR_BY_KEY[k])) p.targetColors = d.targetColors.slice();
+        if (!Number.isFinite(p.objectCount) || p.objectCount < 4 || p.objectCount > 12) p.objectCount = d.objectCount;
+        if (!Number.isFinite(p.targetCount) || p.targetCount < 1 || p.targetCount > 4) p.targetCount = d.targetCount;
+        if (!Number.isFinite(p.growStartObjects) || p.growStartObjects < 3 || p.growStartObjects > 8) p.growStartObjects = d.growStartObjects;
+        if (!Number.isFinite(p.growStartTargets) || p.growStartTargets < 1 || p.growStartTargets > 3) p.growStartTargets = d.growStartTargets;
+        if (!Number.isFinite(p.trainingObjects) || p.trainingObjects < 3 || p.trainingObjects > 12) p.trainingObjects = d.trainingObjects;
+        if (!Number.isFinite(p.trainingTargets) || p.trainingTargets < 1 || p.trainingTargets > 4) p.trainingTargets = d.trainingTargets;
+        if (!Number.isFinite(p.trainingSpeedStep) || p.trainingSpeedStep < 0 || p.trainingSpeedStep > 20) p.trainingSpeedStep = d.trainingSpeedStep;
+        if (typeof p.trainingProgress !== "boolean") p.trainingProgress = d.trainingProgress;
       }
     });
   }
   function saveCardioAddonPrefs() { writeJSON(CARDIO_ADDON_KEY, cardioAddonPrefs); }
   loadCardioAddonPrefs();
+
+  // The "Zeitfenster" sliders (ab/bis) must never reach further than the
+  // Cardio-Einheit the client has actually put together so far (activities +
+  // interleaved pauses, cardioItemsSeconds() - same total the "ca. X Min."
+  // previews elsewhere already use). Re-run whenever that total can have
+  // changed (item added/removed/resized, pause adjusted) so the slider's
+  // reachable range grows the moment there's more time to place it in, and
+  // shrinks (clamping any now-too-large stored value down) the moment
+  // there's less - never a silently-unreachable stored preference.
+  function cardioAddonWindowMaxMin() {
+    return Math.max(1, Math.floor(cardioItemsSeconds(cardioPrefs.items) / 60));
+  }
+  // Deliberately never overwrites the stored windowStartS/windowEndS here -
+  // only the displayed/draggable range. Before any activity is picked yet
+  // (cardioPrefs.items still empty, right when openCardioReady() first
+  // renders this panel) the total is 0 and the cap would otherwise clamp the
+  // client's saved preference down to almost nothing and persist that,
+  // permanently forgetting it even once activities are added back - exactly
+  // the "muss dann wieder weiterziehen können" case the client asked for.
+  // Persisting a change only happens when the client actually drags a
+  // slider themselves (the existing input listeners below, unaffected).
+  function syncCardioAddonWindowBounds() {
+    const maxMin = cardioAddonWindowMaxMin();
+    els.cardioAddonWindowStartSlider.max = String(maxMin);
+    els.cardioAddonWindowEndSlider.max = String(maxMin);
+    const startMin = Math.min(Math.round(cardioAddonPrefs.windowStartS / 60), maxMin);
+    const endMin = Math.max(startMin, Math.min(Math.round(cardioAddonPrefs.windowEndS / 60), maxMin));
+    els.cardioAddonWindowStartSlider.value = startMin;
+    els.cardioAddonWindowStartValue.textContent = `${startMin} Min.`;
+    els.cardioAddonWindowEndSlider.value = endMin;
+    els.cardioAddonWindowEndValue.textContent = `${endMin} Min.`;
+  }
 
   function renderCardioAddonUI() {
     els.cardioAddonEnableToggle.checked = cardioAddonPrefs.enabled;
@@ -10568,12 +10812,17 @@
     els.cardioAddonIntervalMaxValue.textContent = `${cardioAddonPrefs.intervalMaxS}s`;
     els.cardioAddonWindowToggle.checked = cardioAddonPrefs.windowEnabled;
     els.cardioAddonWindowBody.hidden = !cardioAddonPrefs.windowEnabled;
-    els.cardioAddonWindowStartSlider.value = Math.round(cardioAddonPrefs.windowStartS / 60);
-    els.cardioAddonWindowStartValue.textContent = `${Math.round(cardioAddonPrefs.windowStartS / 60)} Min.`;
-    els.cardioAddonWindowEndSlider.value = Math.round(cardioAddonPrefs.windowEndS / 60);
-    els.cardioAddonWindowEndValue.textContent = `${Math.round(cardioAddonPrefs.windowEndS / 60)} Min.`;
+    syncCardioAddonWindowBounds();
     els.cardioAddonPoolGrid.innerHTML = "";
+    let lastPoolGroup = null;
     CARDIO_GUEST_TYPES.forEach((t) => {
+      if (t.group !== lastPoolGroup) {
+        lastPoolGroup = t.group;
+        const heading = document.createElement("div");
+        heading.className = "group-label cardio-pool-group-label";
+        heading.textContent = CARDIO_GUEST_GROUPS[t.group];
+        els.cardioAddonPoolGrid.appendChild(heading);
+      }
       const label = document.createElement("label");
       label.className = "cardio-pool-check";
       const checked = cardioAddonPrefs.pool.includes(t.id);
@@ -10630,44 +10879,287 @@
     renderCardioAddonUI();
   });
 
-  // One fine-tune panel per pool-selected guest type - same shape
-  // (Dauer/Reiz-Dauer/Pause/Farben) for all four, saved independently per
-  // type under cardioAddonPrefs.perType so switching which types are
-  // enabled never overwrites another type's own remembered settings.
-  function renderCardioAddonFineTune() {
-    els.cardioAddonPerType.innerHTML = "";
-    CARDIO_GUEST_TYPES.filter((t) => cardioAddonPrefs.pool.includes(t.id)).forEach((t) => {
-      const cfg = cardioAddonPrefs.perType[t.id];
-      const lib = cardioGuestColorLib(t.id);
-      const panel = document.createElement("div");
-      panel.className = "cardio-guest-panel";
-      let html = `<div class="cardio-guest-panel-title">${esc(t.title)}</div>`;
-      // cone-tap ("Hütchen sortieren") has no stimulus/interval concept at
+  // Builds one guest type's full settings-field markup - shared verbatim
+  // between the pre-start Feineinstellungen panel (renderCardioAddonFineTune,
+  // one cfg per pool-selected type, persisted to cardioAddonPrefs.perType)
+  // and the live "+ Zusatzaufgabe" picker's detail panel
+  // (renderCardioAddonPickerDetail, one ephemeral cfg for whichever single
+  // type is currently selected there). The client's explicit ask: identical
+  // depth of configurability in both places - "Die Rahmenbedingungen für
+  // die Übung müssen immer gleich sein, gleich einstellbar sein" (originally
+  // about standalone vs. Cardio guest use, reiterated afterward to cover
+  // "vorher einstellen" vs. "während des laufenden Trainings live wählen"
+  // too). Returns markup only - wireCardioGuestFields() below does the
+  // corresponding event wiring, kept as its own function for the same reason.
+  function buildCardioGuestFieldsHtml(t, cfg) {
+    const lib = cardioGuestColorLib(t.id);
+    let html = "";
+    // cone-tap ("Hütchen sortieren") has no stimulus/interval concept at
       // all (it's tap-paced, not a flash schedule) - showing those sliders
       // for it would adjust something with zero visible effect, so they're
-      // simply left out rather than shown-but-inert.
-      html += cardioGuestIsConeTap(t.id)
-        ? `<div class="cardio-guest-field-row">
+      // simply left out rather than shown-but-inert. Blitz-Raster has its
+      // own entirely different field set (see below), not this one at all.
+      if (cardioGuestIsBlitz(t.id)) {
+        html += `<div class="cardio-guest-field-row">
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
-      </div>`
-        : `<div class="cardio-guest-field-row">
+        <div><label>Startanzahl</label><input type="number" min="2" max="12" step="1" data-type="${t.id}" data-f="startCount" value="${cfg.startCount}"></div>
+      </div>`;
+        // "Bereich" - Blitz-Raster's own version is simpler than Periphere
+        // Wahrnehmung's (no axes concept at all, no useZones toggle - the
+        // 3x3-Zonen-Raster directly restricts which grid cells can light
+        // up, always on, same as the standalone Ready screen's own
+        // blitzZoneGroup/blitzZoneGrid/blitzZoneAllBtn). No dominance-
+        // weighting here either - blitzPrefs never had that concept.
+        html += `<div class="group-label">Bereich</div>` +
+          `<div class="choice-row" style="grid-template-columns:1fr">` +
+          `<button class="choice${cfg.zones.length === PERIPH_ZONE_KEYS.length ? " active" : ""}" data-type="${t.id}" data-blitzzone-all="1">Überall</button>` +
+          `</div>`;
+        html += `<div class="periph-zone-grid" data-blitzzone-grid="${t.id}">` +
+          PERIPH_ZONE_KEYS.slice(0, 4).map((z) => `<button class="periph-zone${cfg.zones.includes(z) ? " active" : ""}" data-type="${t.id}" data-blitzzone="${z}" aria-label="${PERIPH_ZONE_LABELS[z]}"></button>`).join("") +
+          `<div class="periph-zone periph-zone-center" aria-hidden="true"></div>` +
+          PERIPH_ZONE_KEYS.slice(4).map((z) => `<button class="periph-zone${cfg.zones.includes(z) ? " active" : ""}" data-type="${t.id}" data-blitzzone="${z}" aria-label="${PERIPH_ZONE_LABELS[z]}"></button>`).join("") +
+          `</div>`;
+        if (cfg.zones.length === 0) html += `<div class="color-hint warn">Wähle mindestens einen Bereich.</div>`;
+        html += `<div class="choice-row" data-blitzdiff-row="${t.id}">` +
+          Object.entries(BLITZ_DIFFICULTIES).map(([k, d]) => `<button class="choice${Math.abs(cfg.flashS - d.flashS) < 0.001 ? " active" : ""}" data-type="${t.id}" data-blitzdiff="${k}">${esc(d.title)}</button>`).join("") +
+          `</div>`;
+        html += `<div class="choice-row" data-blitzgrid-row="${t.id}">` +
+          [3, 4, 5, 6, 7, 8].map((n) => `<button class="choice${cfg.gridSize === n ? " active" : ""}" data-type="${t.id}" data-blitzgrid="${n}">${n}&times;${n}</button>`).join("") +
+          `</div>`;
+        html += `<div class="group-label">Bei Fehler</div>` +
+          `<div class="choice-row" data-blitzerror-row="${t.id}">` +
+          `<button class="choice${cfg.errorMode === "reset2" ? " active" : ""}" data-type="${t.id}" data-blitzerror="reset2">Zurück auf 2<small>ganz von vorne</small></button>` +
+          `<button class="choice${cfg.errorMode === "backOne" ? " active" : ""}" data-type="${t.id}" data-blitzerror="backOne">Ein Feld weniger<small>eine Stufe runter</small></button>` +
+          `<button class="choice${cfg.errorMode === "stay" ? " active" : ""}" data-type="${t.id}" data-blitzerror="stay">Gleiche Anzahl<small>so lange, bis es klappt</small></button>` +
+          `</div>`;
+      } else if (cardioGuestIsConeTap(t.id)) {
+        html += `<div class="cardio-guest-field-row">
+        <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
+      </div>`;
+      } else if (cardioGuestIsRemember(t.id) || cardioGuestIsFlash(t.id) || cardioGuestIsMot(t.id)) {
+        // Remember/Flash/MOT have several starting modes - shown first so
+        // the rest of the panel reads as "for whichever mode gets picked
+        // live". Same "Bei Fehler" 3-option idiom as Blitz-Raster, wording
+        // matched to each domain's own Ready screen.
+        const modeList = cardioGuestModeList(t.id);
+        html += `<div class="choice-row" data-mode-row="${t.id}">` +
+          modeList.map((m) => `<button class="choice${cfg.mode === m.id ? " active" : ""}" data-type="${t.id}" data-mode="${m.id}">${esc(m.title)}</button>`).join("") +
+          `</div>`;
+        html += `<div class="cardio-guest-field-row">
+        <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
+      </div>`;
+        if (cardioGuestIsRemember(t.id)) {
+          html += `<div class="choice-row" data-diff-row="${t.id}">` +
+            Object.entries(REMEMBER_DIFFICULTIES).map(([k, d]) => `<button class="choice${Math.abs(cfg.revealBaseS - d.revealBaseS) < 0.001 ? " active" : ""}" data-type="${t.id}" data-diff="${k}">${esc(d.title)}</button>`).join("") +
+            `</div>`;
+          // Raw revealBaseS/revealStepS sliders, same as Remember's own
+          // Ready screen nests them under its own Feineinstellungen
+          // (#rememberAdvanced) - the difficulty presets above are just
+          // three fixed points on the same two fields these sliders cover
+          // continuously.
+          html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` +
+            `<div class="group-label">Einblenddauer bei 2 Zahlen</div>` +
+            `<div class="slider-row"><input type="range" min="0.4" max="3" step="0.1" data-type="${t.id}" data-f="revealBaseS" value="${cfg.revealBaseS}"><span class="slider-value" data-fvalue="${t.id}-revealBaseS">${cfg.revealBaseS}</span></div>` +
+            `<div class="group-label">Zusätzliche Zeit je weiterer Zahl</div>` +
+            `<div class="slider-row"><input type="range" min="0.05" max="0.6" step="0.05" data-type="${t.id}" data-f="revealStepS" value="${cfg.revealStepS}"><span class="slider-value" data-fvalue="${t.id}-revealStepS">${cfg.revealStepS}</span></div>` +
+            // Trainingsmodus-eigene Startwerte - nur relevant, wenn der
+            // Modus oben auch tatsächlich auf Trainingsmodus steht.
+            (cfg.mode === "training" ? (
+              `<div class="group-label">Startzahl <span class="group-count">${cfg.trainingStart}</span></div>` +
+              `<div class="slider-row"><input type="range" min="2" max="16" step="1" data-type="${t.id}" data-f="trainingStart" value="${cfg.trainingStart}"><span class="slider-value" data-fvalue="${t.id}-trainingStart">${cfg.trainingStart}</span></div>` +
+              `<div class="group-label">Positionsart</div>` +
+              `<div class="choice-row two">` +
+              `<button class="choice${cfg.trainingPositionMode === "fixed" ? " active" : ""}" data-type="${t.id}" data-posmode="fixed">Feste Positionen<small>bisherige bleiben</small></button>` +
+              `<button class="choice${cfg.trainingPositionMode === "shuffle" ? " active" : ""}" data-type="${t.id}" data-posmode="shuffle">Bewegte Positionen<small>immer neu gemischt</small></button>` +
+              `</div>` +
+              `<div class="group-label">Nach Erfolg</div>` +
+              `<div class="choice-row two">` +
+              `<button class="choice${cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="1">Weiter steigern<small>wie gewohnt +1</small></button>` +
+              `<button class="choice${!cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="0">Bei dieser Zahl bleiben<small>zum gezielten Üben</small></button>` +
+              `</div>`
+            ) : "") +
+            `</div></details>`;
+        } else if (cardioGuestIsFlash(t.id)) {
+          html += `<div class="choice-row" data-diff-row="${t.id}">` +
+            Object.entries(FLASH_DIFFICULTIES).map(([k, d]) => `<button class="choice${Math.abs(cfg.stimulusS - d.stimulusS) < 0.001 ? " active" : ""}" data-type="${t.id}" data-diff="${k}">${esc(d.title)}</button>`).join("") +
+            `</div>`;
+          // Raw stimulusS/intervalS sliders + the fixation-point controls,
+          // same as Flash's own Ready screen nests both under its own
+          // Feineinstellungen (#flashAdvanced).
+          html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` +
+            `<div class="group-label">Einblenddauer je Zahl</div>` +
+            `<div class="slider-row"><input type="range" min="0.3" max="2" step="0.1" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"><span class="slider-value" data-fvalue="${t.id}-stimulusS">${cfg.stimulusS}</span></div>` +
+            `<div class="group-label">Pause zwischen den Zahlen</div>` +
+            `<div class="slider-row"><input type="range" min="0.2" max="2" step="0.1" data-type="${t.id}" data-f="intervalS" value="${cfg.intervalS}"><span class="slider-value" data-fvalue="${t.id}-intervalS">${cfg.intervalS}</span></div>` +
+            `<div class="group-label">Fixpunkt in der Mitte</div>` +
+            `<div class="choice-row two" data-fixtoggle-row="${t.id}">` +
+            `<button class="choice${cfg.fixEnabled ? " active" : ""}" data-type="${t.id}" data-fixtoggle="1">Anzeigen</button>` +
+            `<button class="choice${!cfg.fixEnabled ? " active" : ""}" data-type="${t.id}" data-fixtoggle="0">Ausblenden</button>` +
+            `</div>` +
+            (cfg.fixEnabled ? (
+              `<input type="text" maxlength="3" data-type="${t.id}" data-fixchar="1" value="${esc(cfg.fixChar)}" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen für den Fixpunkt (leer lassen für den Standardpunkt)">` +
+              `<div class="cardio-guest-colors" data-fixcolors="${t.id}">` +
+              FIX_COLOR_LIB.map((c) => `<label><input type="radio" name="cardioGuestFix-${t.id}" data-fixtype="${t.id}" data-fixcolor="${c.key}" ${cfg.fixColor === c.key ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
+              `</div>` +
+              `<div class="slider-row"><span class="slider-label">Größe</span><input type="range" min="0.6" max="2" step="0.1" data-type="${t.id}" data-f="fixSize" value="${cfg.fixSize}"><span class="slider-value" data-fvalue="${t.id}-fixSize">${cfg.fixSize}</span></div>`
+            ) : "") +
+            // Modus-eigene Startwerte - welches Feld gezeigt wird, hängt
+            // vom oben gewählten Modus ab, genau wie auf den jeweils
+            // eigenen Ready-Seiten (flashConstantGroup/flashStartGroup/
+            // flashRepsGroup/flashTrainingReady).
+            (cfg.mode === "constant" ? (
+              `<div class="group-label">Anzahl der Zahlen <span class="group-count">${cfg.constantCount}</span></div>` +
+              `<div class="slider-row"><input type="range" min="2" max="6" step="1" data-type="${t.id}" data-f="constantCount" value="${cfg.constantCount}"><span class="slider-value" data-fvalue="${t.id}-constantCount">${cfg.constantCount}</span></div>`
+            ) : cfg.mode === "climb" || cfg.mode === "climbRepeat" ? (
+              `<div class="group-label">Startanzahl <span class="group-count">${cfg.startCount}</span></div>` +
+              `<div class="slider-row"><input type="range" min="2" max="9" step="1" data-type="${t.id}" data-f="startCount" value="${cfg.startCount}"><span class="slider-value" data-fvalue="${t.id}-startCount">${cfg.startCount}</span></div>` +
+              (cfg.mode === "climbRepeat" ? (
+                `<div class="group-label">Wiederholungen je Stufe</div>` +
+                `<div class="choice-row two">` +
+                [2, 3].map((n) => `<button class="choice${cfg.repsPerLevel === n ? " active" : ""}" data-type="${t.id}" data-repsperlevel="${n}">${n}&times;</button>`).join("") +
+                `</div>`
+              ) : "")
+            ) : cfg.mode === "training" ? (
+              `<div class="group-label">Startzahl <span class="group-count">${cfg.trainingStart}</span></div>` +
+              `<div class="slider-row"><input type="range" min="2" max="9" step="1" data-type="${t.id}" data-f="trainingStart" value="${cfg.trainingStart}"><span class="slider-value" data-fvalue="${t.id}-trainingStart">${cfg.trainingStart}</span></div>` +
+              `<div class="group-label">Nach Erfolg</div>` +
+              `<div class="choice-row two">` +
+              `<button class="choice${cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="1">Weiter steigern<small>wie gewohnt +1</small></button>` +
+              `<button class="choice${!cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="0">Bei dieser Zahl bleiben<small>zum gezielten Üben</small></button>` +
+              `</div>`
+            ) : "") +
+            `</div></details>`;
+        } else {
+          html += `<div class="choice-row" data-diff-row="${t.id}">` +
+            Object.entries(MOT_DIFFICULTIES).map(([k, d]) => `<button class="choice${Math.abs(cfg.speed - d.speed) < 0.001 ? " active" : ""}" data-type="${t.id}" data-diff="${k}">${esc(d.title)}</button>`).join("") +
+            `</div>`;
+          // Raw speed/trackS/highlightS sliders, same as MOT's own Ready
+          // screen nests them under its own Feineinstellungen (#motAdvanced).
+          html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` +
+            `<div class="group-label">Geschwindigkeit</div>` +
+            `<div class="slider-row"><input type="range" min="0.05" max="0.4" step="0.01" data-type="${t.id}" data-f="speed" value="${cfg.speed}"><span class="slider-value" data-fvalue="${t.id}-speed">${cfg.speed}</span></div>` +
+            `<div class="group-label">Verfolgungsdauer</div>` +
+            `<div class="slider-row"><input type="range" min="3" max="15" step="0.5" data-type="${t.id}" data-f="trackS" value="${cfg.trackS}"><span class="slider-value" data-fvalue="${t.id}-trackS">${cfg.trackS}</span></div>` +
+            `<div class="group-label">Markierdauer</div>` +
+            `<div class="slider-row"><input type="range" min="1" max="4" step="0.1" data-type="${t.id}" data-f="highlightS" value="${cfg.highlightS}"><span class="slider-value" data-fvalue="${t.id}-highlightS">${cfg.highlightS}</span></div>` +
+            // Modus-eigene Objekt-/Ziel-Anzahlen - welches Feldpaar gezeigt
+            // wird, hängt vom oben gewählten Modus ab, genau wie auf den
+            // jeweils eigenen Ready-Seiten (motFixedCountGroup/
+            // motGrowStartGroup/motTrainingReady).
+            (cfg.mode === "speed" ? (
+              `<div class="group-label">Anzahl Objekte <span class="group-count">${cfg.objectCount}</span></div>` +
+              `<div class="slider-row"><input type="range" min="4" max="12" step="1" data-type="${t.id}" data-f="objectCount" value="${cfg.objectCount}"><span class="slider-value" data-fvalue="${t.id}-objectCount">${cfg.objectCount}</span></div>` +
+              `<div class="group-label">Anzahl Ziele <span class="group-count">${cfg.targetCount}</span></div>` +
+              `<div class="slider-row"><input type="range" min="1" max="4" step="1" data-type="${t.id}" data-f="targetCount" value="${cfg.targetCount}"><span class="slider-value" data-fvalue="${t.id}-targetCount">${cfg.targetCount}</span></div>`
+            ) : cfg.mode === "count" || cfg.mode === "both" ? (
+              `<div class="group-label">Start-Anzahl Objekte <span class="group-count">${cfg.growStartObjects}</span></div>` +
+              `<div class="slider-row"><input type="range" min="3" max="8" step="1" data-type="${t.id}" data-f="growStartObjects" value="${cfg.growStartObjects}"><span class="slider-value" data-fvalue="${t.id}-growStartObjects">${cfg.growStartObjects}</span></div>` +
+              `<div class="group-label">Start-Anzahl Ziele <span class="group-count">${cfg.growStartTargets}</span></div>` +
+              `<div class="slider-row"><input type="range" min="1" max="3" step="1" data-type="${t.id}" data-f="growStartTargets" value="${cfg.growStartTargets}"><span class="slider-value" data-fvalue="${t.id}-growStartTargets">${cfg.growStartTargets}</span></div>`
+            ) : cfg.mode === "training" ? (
+              `<div class="group-label">Start-Anzahl Objekte <span class="group-count">${cfg.trainingObjects}</span></div>` +
+              `<div class="slider-row"><input type="range" min="3" max="12" step="1" data-type="${t.id}" data-f="trainingObjects" value="${cfg.trainingObjects}"><span class="slider-value" data-fvalue="${t.id}-trainingObjects">${cfg.trainingObjects}</span></div>` +
+              `<div class="group-label">Start-Anzahl Ziele <span class="group-count">${cfg.trainingTargets}</span></div>` +
+              `<div class="slider-row"><input type="range" min="1" max="4" step="1" data-type="${t.id}" data-f="trainingTargets" value="${cfg.trainingTargets}"><span class="slider-value" data-fvalue="${t.id}-trainingTargets">${cfg.trainingTargets}</span></div>` +
+              `<div class="group-label">Start-Tempo-Stufe <span class="group-count">${cfg.trainingSpeedStep}</span></div>` +
+              `<div class="slider-row"><input type="range" min="0" max="20" step="1" data-type="${t.id}" data-f="trainingSpeedStep" value="${cfg.trainingSpeedStep}"><span class="slider-value" data-fvalue="${t.id}-trainingSpeedStep">${cfg.trainingSpeedStep}</span></div>` +
+              `<div class="group-label">Nach Erfolg</div>` +
+              `<div class="choice-row two">` +
+              `<button class="choice${cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="1">Weiter steigern<small>wie gewohnt</small></button>` +
+              `<button class="choice${!cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="0">Bei dieser Stufe bleiben<small>zum gezielten Üben</small></button>` +
+              `</div>`
+            ) : "") +
+            `</div></details>`;
+        }
+        const errorLabels = cardioGuestIsRemember(t.id)
+          ? [["reset2", "Zurück auf 2", "ganz von vorne"], ["backOne", "Eine Zahl zurück", "eine Stufe runter"], ["stay", "Gleiche Zahl", "so lange, bis es klappt"]]
+          : [["reset2", "Ganz von vorne", "zurück auf den Start"], ["backOne", "Eine Stufe zurück", "eine runter"], ["stay", "Gleiche Stufe", "so lange, bis es klappt"]];
+        html += `<div class="group-label">Bei Fehler</div>` +
+          `<div class="choice-row" data-error-row="${t.id}">` +
+          errorLabels.map(([k, title, hint]) => `<button class="choice${cfg.errorMode === k ? " active" : ""}" data-type="${t.id}" data-error="${k}">${esc(title)}<small>${esc(hint)}</small></button>`).join("") +
+          `</div>`;
+        if (cardioGuestIsMot(t.id)) {
+          html += `<div class="group-label">Darstellung</div>` +
+            `<div class="choice-row two" data-style-row="${t.id}">` +
+            `<button class="choice${cfg.style === "flach" ? " active" : ""}" data-type="${t.id}" data-motstyle="flach">Flach<small>einfache Kreise</small></button>` +
+            `<button class="choice${cfg.style === "3d" ? " active" : ""}" data-type="${t.id}" data-motstyle="3d">3D-Optik<small>wirken räumlich</small></button>` +
+            `</div>`;
+        }
+      } else {
+        html += `<div class="cardio-guest-field-row">
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
         <div><label>Reiz-Dauer (Sek.)</label><input type="number" min="0.3" max="3" step="0.1" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"></div>
         <div><label>Pause min (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${t.id}" data-f="intervalMin" value="${cfg.intervalMin}"></div>
         <div><label>Pause max (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${t.id}" data-f="intervalMax" value="${cfg.intervalMax}"></div>
       </div>`;
-      if (t.id === "addon-flash") {
+      }
+      if (cardioGuestIsPeriphLike(t.id) || cardioGuestIsFlash(t.id)) {
         html += `<div class="choice-row" data-kind-row="${t.id}">` +
           ["buchstaben", "zahlen", "gemischt"].map((k) => `<button class="choice${cfg.kind === k ? " active" : ""}" data-type="${t.id}" data-kind="${k}">${k === "buchstaben" ? "Buchstaben" : k === "zahlen" ? "Zahlen" : "Gemischt"}</button>`).join("") +
           `</div>`;
+      }
+      // "Bereich" (axes/zones) + "Größe der Reize" - same controls and
+      // mutually-exclusive axis-row/zone-grid toggle as the standalone
+      // Periphere Wahrnehmung Ready screen (periphFieldRow/periphZoneGrid)
+      // and addon-flash's own "Zusatzaufgabe" panel (addonFieldRow/
+      // addonZoneGrid) - both already had this live field-for-field, Cardio's
+      // Zusatzimpuls just didn't expose it yet. Zone-dominance weighting is
+      // periph-flash-only (see cardioGuestHasZoneWeights()) and nested under
+      // its own collapsible "Feineinstellungen", per the client's own call
+      // on how deep this should go without flattening the whole panel.
+      if (cardioGuestIsPeriphLike(t.id) || cardioGuestIsFlash(t.id)) {
+        html += `<div class="group-label">Bereich</div>`;
+        if (!cfg.useZones) {
+          html += `<div class="choice-row two" data-axis-row="${t.id}">` +
+            PERIPH_AXIS_KEYS.map((a) => `<button class="choice${cfg.axes.includes(a) ? " active" : ""}" data-type="${t.id}" data-axis="${a}">${PERIPH_AXIS_LABELS[a]}</button>`).join("") +
+            `<button class="choice${cfg.axes.length === PERIPH_AXIS_KEYS.length ? " active" : ""}" data-type="${t.id}" data-axis-all="1">Überall</button>` +
+            `</div>`;
+          if (cfg.axes.length === 0) html += `<div class="color-hint warn">Wähle mindestens einen Bereich.</div>`;
+        }
+        html += `<div class="choice-row" style="grid-template-columns:1fr;margin-top:4px">` +
+          `<button class="choice${cfg.useZones ? " active" : ""}" data-type="${t.id}" data-zones-toggle="1">Eigene Auswahl (3&times;3-Raster)</button>` +
+          `</div>`;
+        if (cfg.useZones) {
+          const gridCells = PERIPH_ZONE_KEYS.slice(0, 4).map((z) => `<button class="periph-zone${cfg.zones.includes(z) ? " active" : ""}" data-type="${t.id}" data-zone="${z}" aria-label="${PERIPH_ZONE_LABELS[z]}"></button>`).join("") +
+            `<div class="periph-zone periph-zone-center" aria-hidden="true"></div>` +
+            PERIPH_ZONE_KEYS.slice(4).map((z) => `<button class="periph-zone${cfg.zones.includes(z) ? " active" : ""}" data-type="${t.id}" data-zone="${z}" aria-label="${PERIPH_ZONE_LABELS[z]}"></button>`).join("");
+          html += `<div class="periph-zone-grid" data-zone-grid="${t.id}">${gridCells}</div>`;
+          if (cardioGuestHasZoneWeights(t.id) && cfg.zones.length > 1) {
+            html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` +
+              `<div class="periph-zone-weights">` +
+              `<div class="group-label">Dominanz <span class="group-count">wie oft eine Zone im Vergleich zu den anderen drankommt</span></div>` +
+              cfg.zones.map((z) => `<div class="slider-row"><span class="slider-label">${PERIPH_ZONE_LABELS[z]}</span><input type="range" min="1" max="3" step="1" data-type="${t.id}" data-zoneweight="${z}" value="${cfg.zoneWeights[z]}" aria-label="Dominanz ${PERIPH_ZONE_LABELS[z]}"><span class="slider-value" data-zoneweightvalue="${t.id}-${z}">${cfg.zoneWeights[z]}&times;</span></div>`).join("") +
+              `</div></div></details>`;
+          }
+        }
+        // "Größe der Reize" is periph-like only - flashPrefs has no
+        // sizeMode concept at all on its own Ready screen either.
+        if (cardioGuestIsPeriphLike(t.id)) {
+          html += `<div class="group-label">Größe der Reize</div>` +
+            `<div class="choice-row two" data-size-row="${t.id}">` +
+            `<button class="choice${cfg.sizeMode === "gleich" ? " active" : ""}" data-type="${t.id}" data-sizemode="gleich">Gleich groß<small>überall gleich</small></button>` +
+            `<button class="choice${cfg.sizeMode === "wachsend" ? " active" : ""}" data-type="${t.id}" data-sizemode="wachsend">Nach außen größer<small>je weiter vom Punkt entfernt</small></button>` +
+            `</div>`;
+        }
       }
       // No colours to pick for a type that doesn't use them at all
       // (8-vrw's direction colours are fixed rot/grün by rule, cross-modal
       // and cone-tap have none) - same rule EXERCISES[...].usesColors/
       // usesArrowColors/usesStroopColors already governs everywhere else.
       if (cardioGuestNeedsColors(t.id)) {
+        if (cardioGuestIsMot(t.id)) html += `<div class="group-label">Farbe der Objekte</div>`;
         html += `<div class="cardio-guest-colors" data-colors="${t.id}">` +
           lib.map((c) => `<label><input type="checkbox" data-type="${t.id}" data-color="${c.key}" ${cfg.colors.includes(c.key) ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
+          `</div>`;
+      }
+      // MOT's second, independent colour picker for the target object(s) -
+      // same STROOP_COLOR_LIB, same multi-select mechanism, just its own
+      // cfg field (targetColors) and its own data-targetcolor attribute so
+      // wireCardioGuestFields() can tell the two checkbox groups apart.
+      if (cardioGuestNeedsTargetColor(t.id)) {
+        html += `<div class="group-label">Farbe des Ziels</div>` +
+          `<div class="cardio-guest-colors" data-targetcolors="${t.id}">` +
+          lib.map((c) => `<label><input type="checkbox" data-type="${t.id}" data-targetcolor="${c.key}" ${cfg.targetColors.includes(c.key) ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
           `</div>`;
       }
       // Background colour + intensity - skipped for a type whose background
@@ -10689,49 +11181,230 @@
             <span class="slider-value" data-bgintensityvalue="${t.id}">${Math.round(cfg.bgIntensity * 100)}%</span>
           </div>`;
       }
-      panel.innerHTML = html;
-      els.cardioAddonPerType.appendChild(panel);
-    });
-    els.cardioAddonPerType.querySelectorAll("input[data-f]").forEach((input) => {
+    return html;
+  }
+
+  // Wires every field kind buildCardioGuestFieldsHtml() can produce, against
+  // whichever container holds them - getCfg(type) resolves the mutable cfg
+  // object for a given data-type (the advanced panel's container holds
+  // several types' panels at once, so it matters there; the live picker's
+  // detail container only ever holds the one currently-selected type, so its
+  // getCfg simply ignores the argument and returns its one ephemeral cfg).
+  // onSelect fires after a button-style choice changes (kind/diff/error/mode/
+  // blitz*) - the "active" class has to move, so the caller re-renders.
+  // onPersist fires after a plain value edit (number input/colour checkbox/
+  // bg radio/bg slider) - native input state already reflects the change, so
+  // no re-render is forced (matters most for the bg-intensity slider: a full
+  // rebuild on every "input" tick while dragging would be janky).
+  function wireCardioGuestFields(container, getCfg, { onSelect, onPersist } = {}) {
+    const select = onSelect || (() => {});
+    const persist = onPersist || (() => {});
+    container.querySelectorAll("input[data-f]").forEach((input) => {
       input.addEventListener("input", () => {
-        cardioAddonPrefs.perType[input.dataset.type][input.dataset.f] = Number(input.value);
-        saveCardioAddonPrefs();
+        getCfg(input.dataset.type)[input.dataset.f] = Number(input.value);
+        persist();
+        // Range sliders (the raw-value fine-tune fields nested under each
+        // type's own "Feineinstellungen", e.g. revealBaseS/speed/stimulusS)
+        // carry a companion value label - number inputs (Dauer etc.) show
+        // their own value natively and never have one, so this is a no-op
+        // for those.
+        if (input.type === "range") {
+          const valueEl = container.querySelector(`[data-fvalue="${input.dataset.type}-${input.dataset.f}"]`);
+          if (valueEl) valueEl.textContent = input.value;
+        }
       });
     });
-    els.cardioAddonPerType.querySelectorAll("[data-kind]").forEach((btn) => {
+    container.querySelectorAll("[data-kind]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).kind = btn.dataset.kind; select(); });
+    });
+    container.querySelectorAll("[data-blitzdiff]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).flashS = BLITZ_DIFFICULTIES[btn.dataset.blitzdiff].flashS; select(); });
+    });
+    container.querySelectorAll("[data-blitzgrid]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).gridSize = Number(btn.dataset.blitzgrid); select(); });
+    });
+    container.querySelectorAll("[data-blitzerror]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).errorMode = btn.dataset.blitzerror; select(); });
+    });
+    // Blitz-Raster's own zone picker - individual zones enforce a minimum
+    // of one (same rule as Periphere Wahrnehmung's), but "Überall" can
+    // still force it all the way to zero (same all-on/all-off toggle as
+    // the standalone Ready screen's own blitzZoneAllBtn - zero is a valid,
+    // if degenerate, state there too, just warned about rather than blocked
+    // in this panel).
+    container.querySelectorAll("[data-blitzzone]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        cardioAddonPrefs.perType[btn.dataset.type].kind = btn.dataset.kind;
-        saveCardioAddonPrefs();
-        renderCardioAddonFineTune();
+        const cfg = getCfg(btn.dataset.type);
+        const z = btn.dataset.blitzzone;
+        if (cfg.zones.includes(z) && cfg.zones.length <= 1) return;
+        cfg.zones = cfg.zones.includes(z) ? cfg.zones.filter((k) => k !== z) : [...cfg.zones, z];
+        select();
       });
     });
-    els.cardioAddonPerType.querySelectorAll("input[data-color]").forEach((cb) => {
+    container.querySelectorAll("[data-blitzzone-all]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const cfg = getCfg(btn.dataset.type);
+        cfg.zones = cfg.zones.length === PERIPH_ZONE_KEYS.length ? [] : PERIPH_ZONE_KEYS.slice();
+        select();
+      });
+    });
+    container.querySelectorAll("[data-mode]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).mode = btn.dataset.mode; select(); });
+    });
+    // Periphere Wahrnehmung's "Bereich"/"Größe der Reize" - axes are a
+    // multi-select set ("Überall" toggles all on/off together, same pattern
+    // as the standalone Ready screen's own periphAllBtn - allowed to reach
+    // zero, with a warning hint, rather than snapping back to some
+    // arbitrary one), zones enforce a minimum of one selected (same "don't
+    // let the last one go" rule as the standard colour picker).
+    container.querySelectorAll("[data-axis]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const cfg = getCfg(btn.dataset.type);
+        const axis = btn.dataset.axis;
+        cfg.axes = cfg.axes.includes(axis) ? cfg.axes.filter((a) => a !== axis) : [...cfg.axes, axis];
+        select();
+      });
+    });
+    container.querySelectorAll("[data-axis-all]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const cfg = getCfg(btn.dataset.type);
+        cfg.axes = cfg.axes.length === PERIPH_AXIS_KEYS.length ? [] : PERIPH_AXIS_KEYS.slice();
+        select();
+      });
+    });
+    container.querySelectorAll("[data-zones-toggle]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).useZones = !getCfg(btn.dataset.type).useZones; select(); });
+    });
+    container.querySelectorAll(".periph-zone[data-zone]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const cfg = getCfg(btn.dataset.type);
+        const z = btn.dataset.zone;
+        if (cfg.zones.includes(z) && cfg.zones.length <= 1) return;
+        cfg.zones = cfg.zones.includes(z) ? cfg.zones.filter((k) => k !== z) : [...cfg.zones, z];
+        select();
+      });
+    });
+    container.querySelectorAll("[data-sizemode]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).sizeMode = btn.dataset.sizemode; select(); });
+    });
+    container.querySelectorAll("input[data-zoneweight]").forEach((slider) => {
+      slider.addEventListener("input", () => {
+        const cfg = getCfg(slider.dataset.type);
+        const z = slider.dataset.zoneweight;
+        cfg.zoneWeights[z] = Number(slider.value);
+        persist();
+        const valueEl = container.querySelector(`[data-zoneweightvalue="${slider.dataset.type}-${z}"]`);
+        if (valueEl) valueEl.textContent = `${cfg.zoneWeights[z]}×`;
+      });
+    });
+    container.querySelectorAll("[data-diff]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const type = btn.dataset.type;
+        const cfg = getCfg(type);
+        const k = btn.dataset.diff;
+        if (cardioGuestIsRemember(type)) Object.assign(cfg, { revealBaseS: REMEMBER_DIFFICULTIES[k].revealBaseS, revealStepS: REMEMBER_DIFFICULTIES[k].revealStepS });
+        else if (cardioGuestIsFlash(type)) Object.assign(cfg, { stimulusS: FLASH_DIFFICULTIES[k].stimulusS, intervalS: FLASH_DIFFICULTIES[k].intervalS });
+        else Object.assign(cfg, { speed: MOT_DIFFICULTIES[k].speed, trackS: MOT_DIFFICULTIES[k].trackS, highlightS: MOT_DIFFICULTIES[k].highlightS });
+        select();
+      });
+    });
+    container.querySelectorAll("[data-error]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).errorMode = btn.dataset.error; select(); });
+    });
+    container.querySelectorAll("input[data-color]").forEach((cb) => {
       cb.addEventListener("change", () => {
-        const cfg = cardioAddonPrefs.perType[cb.dataset.type];
+        const cfg = getCfg(cb.dataset.type);
         const key = cb.dataset.color;
         if (cb.checked) { if (!cfg.colors.includes(key)) cfg.colors.push(key); }
         else {
           if (cfg.colors.length <= 1) { cb.checked = true; return; }
           cfg.colors = cfg.colors.filter((k) => k !== key);
         }
-        saveCardioAddonPrefs();
+        persist();
       });
     });
-    els.cardioAddonPerType.querySelectorAll("input[data-bgcolor]").forEach((radio) => {
+    container.querySelectorAll("input[data-targetcolor]").forEach((cb) => {
+      cb.addEventListener("change", () => {
+        const cfg = getCfg(cb.dataset.type);
+        const key = cb.dataset.targetcolor;
+        if (cb.checked) { if (!cfg.targetColors.includes(key)) cfg.targetColors.push(key); }
+        else {
+          if (cfg.targetColors.length <= 1) { cb.checked = true; return; }
+          cfg.targetColors = cfg.targetColors.filter((k) => k !== key);
+        }
+        persist();
+      });
+    });
+    container.querySelectorAll("[data-motstyle]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).style = btn.dataset.motstyle; select(); });
+    });
+    // Flash's fixation point - toggle rebuilds (the sub-options appear/
+    // disappear, same as flashFixOptions.hidden on the standalone Ready
+    // screen), the text/colour/size edits don't need to.
+    container.querySelectorAll("[data-fixtoggle]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).fixEnabled = btn.dataset.fixtoggle === "1"; select(); });
+    });
+    container.querySelectorAll("input[data-fixchar]").forEach((input) => {
+      input.addEventListener("input", () => { getCfg(input.dataset.type).fixChar = input.value.slice(0, 3); persist(); });
+    });
+    container.querySelectorAll("input[data-fixcolor]").forEach((radio) => {
       radio.addEventListener("change", () => {
         if (!radio.checked) return;
-        cardioAddonPrefs.perType[radio.dataset.bgtype].bgColorKey = radio.dataset.bgcolor;
-        saveCardioAddonPrefs();
+        getCfg(radio.dataset.fixtype).fixColor = radio.dataset.fixcolor;
+        persist();
       });
     });
-    els.cardioAddonPerType.querySelectorAll("input[data-bgintensity]").forEach((slider) => {
+    // Training-mode-specific fields (Batch D) - one shared boolean-toggle
+    // handler covers Remember's/Flash's/MOT's own "Nach Erfolg" choice
+    // (field name given via data-progressfield so the one handler can set
+    // any of them), plus Remember's own "Positionsart" and Flash's own
+    // "Wiederholungen je Stufe", neither of which exists in the other
+    // domains.
+    container.querySelectorAll("[data-progressfield]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        getCfg(btn.dataset.type)[btn.dataset.progressfield] = btn.dataset.progressval === "1";
+        select();
+      });
+    });
+    container.querySelectorAll("[data-posmode]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).trainingPositionMode = btn.dataset.posmode; select(); });
+    });
+    container.querySelectorAll("[data-repsperlevel]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).repsPerLevel = Number(btn.dataset.repsperlevel); select(); });
+    });
+    container.querySelectorAll("input[data-bgcolor]").forEach((radio) => {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        getCfg(radio.dataset.bgtype).bgColorKey = radio.dataset.bgcolor;
+        persist();
+      });
+    });
+    container.querySelectorAll("input[data-bgintensity]").forEach((slider) => {
       slider.addEventListener("input", () => {
-        const cfg = cardioAddonPrefs.perType[slider.dataset.bgintensity];
+        const cfg = getCfg(slider.dataset.bgintensity);
         cfg.bgIntensity = Number(slider.value);
-        saveCardioAddonPrefs();
-        const valueEl = els.cardioAddonPerType.querySelector(`[data-bgintensityvalue="${slider.dataset.bgintensity}"]`);
+        persist();
+        const valueEl = container.querySelector(`[data-bgintensityvalue="${slider.dataset.bgintensity}"]`);
         if (valueEl) valueEl.textContent = `${Math.round(cfg.bgIntensity * 100)}%`;
       });
+    });
+  }
+
+  // One fine-tune panel per pool-selected guest type - same shape for all,
+  // saved independently per type under cardioAddonPrefs.perType so switching
+  // which types are enabled never overwrites another type's own remembered
+  // settings.
+  function renderCardioAddonFineTune() {
+    els.cardioAddonPerType.innerHTML = "";
+    CARDIO_GUEST_TYPES.filter((t) => cardioAddonPrefs.pool.includes(t.id)).forEach((t) => {
+      const panel = document.createElement("div");
+      panel.className = "cardio-guest-panel";
+      panel.innerHTML = `<div class="cardio-guest-panel-title">${esc(t.title)}</div>` + buildCardioGuestFieldsHtml(t, cardioAddonPrefs.perType[t.id]);
+      els.cardioAddonPerType.appendChild(panel);
+    });
+    wireCardioGuestFields(els.cardioAddonPerType, (type) => cardioAddonPrefs.perType[type], {
+      onSelect: () => { saveCardioAddonPrefs(); renderCardioAddonFineTune(); },
+      onPersist: () => saveCardioAddonPrefs(),
     });
   }
 
@@ -10833,11 +11506,13 @@
       els.cardioCountdown.textContent = fmtClock(block.durationS - blockElapsed);
       els.cardioBlockProgress.textContent = nextAct ? `vor Aktivität ${cardioRealPos(cardioState.items, cardioState.index + 1)} von ${cardioState.realCount}` : "";
       els.cardioPhaseLabel.hidden = true;
-      els.cardioSkipBtn.textContent = "Pause überspringen »";
+      els.cardioSkipBtn.title = "Pause überspringen";
+      els.cardioSkipBtn.setAttribute("aria-label", "Pause überspringen");
       cardioRaf = requestAnimationFrame(cardioTick);
       return;
     }
-    els.cardioSkipBtn.textContent = "Nächste Aktivität »";
+    els.cardioSkipBtn.title = "Weiter zur nächsten Aktivität";
+    els.cardioSkipBtn.setAttribute("aria-label", "Weiter zur nächsten Aktivität");
     const act = findCardioActivity(block.activity);
     els.cardioActivityTitle.textContent = act.name;
     els.cardioActivityLabel.textContent = block.label || "";
@@ -10846,7 +11521,7 @@
     els.cardioBlockProgress.textContent = `Aktivität ${cardioRealPos(cardioState.items, cardioState.index)} von ${cardioState.realCount}`;
     const phase = cardioPhaseFor(block, blockElapsed);
     els.cardioPhaseLabel.hidden = !phase;
-    if (phase) els.cardioPhaseLabel.textContent = phase === "on" ? "Belastung" : "Erholung";
+    if (phase) els.cardioPhaseLabel.textContent = phase === "on" ? "Intensive Belastung" : "Leichtere Belastung";
     const sessionElapsedS = (now - cardioState.sessionStartTime) / 1000;
     const withinAddonWindow = !cardioAddonPrefs.windowEnabled || (sessionElapsedS >= cardioAddonPrefs.windowStartS && sessionElapsedS <= cardioAddonPrefs.windowEndS);
     if (cardioAddonPrefs.enabled && cardioAddonPrefs.pool.length && withinAddonWindow && cardioState.nextGuestAt !== null && now >= cardioState.nextGuestAt) {
@@ -10868,6 +11543,21 @@
     // leaving state.bgColorKey/bgIntensity untouched here for that case is
     // just tidier, not load-bearing.
     if (cfg.bgColorKey) { state.bgColorKey = cfg.bgColorKey; state.bgIntensity = cfg.bgIntensity ?? 0; }
+    // Periphere Wahrnehmung reads its stimulus config from its own
+    // state.periph* fields (buildPeriphSchedule()/randPeriphPos()), a
+    // different, older mechanism than the usesColors/usesArrowColors/
+    // usesStroopColors one below - same addonDefaultOwn()-shaped cfg as
+    // addon-flash (cardioGuestIsPeriphLike()), just written into these
+    // fields instead of active.*.
+    if (guestId === "periph-flash") {
+      state.periphKind = cfg.kind;
+      state.periphAxes = cfg.axes;
+      state.periphUseZones = cfg.useZones;
+      state.periphZones = cfg.zones;
+      state.periphZoneWeights = cfg.zoneWeights;
+      state.periphSizeMode = cfg.sizeMode;
+      state.periphColors = cfg.colors;
+    }
     const ex = EXERCISES[guestId];
     active = { colors: [], arrowColors: [], stroopColors: [] };
     if (ex.usesColors) active.colors = keysToColors(cfg.colors);
@@ -10875,79 +11565,108 @@
     else if (ex.usesStroopColors) active.stroopColors = keysToColors(cfg.colors, STROOP_COLOR_LIB);
   }
 
-  // explicitId/explicitDurationS: set by the manual live picker below (a
-  // specific choice made right now); left undefined for the automatic
-  // randomized-interval path in cardioTick(), which still picks randomly
-  // from the configured pool at the configured duration, unchanged.
-  function triggerCardioGuest(explicitId, explicitDurationS) {
+  // explicitId/explicitCfg: set by the manual live picker below (a specific
+  // choice, fully configured, made right now); left undefined for the
+  // automatic randomized-interval path in cardioTick(), which still picks
+  // randomly from the configured pool at its own saved settings, unchanged.
+  function triggerCardioGuest(explicitId, explicitCfg) {
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
     cardioRaf = null;
     const guestId = explicitId || cardioAddonPrefs.pool[Math.floor(Math.random() * cardioAddonPrefs.pool.length)];
     const realId = cardioGuestRealId(guestId);
-    const cfg = explicitDurationS != null ? { ...cardioAddonPrefs.perType[guestId], duration: explicitDurationS } : cardioAddonPrefs.perType[guestId];
+    const cfg = explicitCfg || cardioAddonPrefs.perType[guestId];
     cardioGuestActive = true;
-    applyCardioGuestToState(realId, cfg);
-    // "Hütchen sortieren" (cone-tap) is the one type here with its own
-    // separate playback engine (tap-paced counting, not a canvas flash
-    // schedule) - same dispatch startSession() itself already uses.
-    if (EXERCISES[realId].type === "color-tap") startConeTap();
-    else runSession();
+    const comboOpts = { comboDurationS: cfg.duration };
+    // Blitz-Raster/Remember/Flash/MOT don't touch state.exercise/
+    // runSession() at all - each its own engine, started with this cfg as
+    // a prefsOverride so the client's own saved *Prefs are never read or
+    // mutated by a guest burst (see startBlitzGame()'s prefsOverride
+    // parameter and its Remember/Flash/MOT equivalents).
+    if (cardioGuestIsBlitz(guestId)) startBlitzGame(comboOpts, cfg);
+    else if (cardioGuestIsRemember(guestId)) startRememberGame(cfg.mode, comboOpts, cfg);
+    else if (cardioGuestIsFlash(guestId)) startFlashGame(cfg.mode, comboOpts, cfg);
+    else if (cardioGuestIsMot(guestId)) startMotGame(cfg.mode, comboOpts, cfg);
+    else {
+      applyCardioGuestToState(realId, cfg);
+      // "Hütchen sortieren" (cone-tap) is the one type here with its own
+      // separate playback engine (tap-paced counting, not a canvas flash
+      // schedule) - same dispatch startSession() itself already uses.
+      if (EXERCISES[realId].type === "color-tap") startConeTap();
+      else runSession();
+    }
     showCardioGuestBadge();
   }
 
-  // ---- Manual "+ Zusatzimpuls": live picker ----
+  // ---- Manual "+ Zusatzaufgabe": live picker ----
   // The client's clarified ask (beyond the first pool+random version):
-  // actively CHOOSE which guest exercise AND for how long, right now, mid-
-  // Cardio-activity - "ich mache jetzt zwei Minuten
-  // Blitzreiz-Reaktionstraining". Offers all CARDIO_GUEST_TYPES regardless
-  // of the automatic system's own pool selection (that pool only governs
-  // the randomized auto-interval): "jede andere Übung" is the point. The
-  // picker sheet sits INSIDE #cardioPlayer as a .pause-overlay, so Cardio's
-  // own countdown keeps ticking (cardioRaf untouched) visibly behind it
-  // while choosing - the "ich sehe im Hintergrund trotzdem noch, wie lange
-  // ich machen muss" ask, satisfied for the choosing step for free.
+  // actively CHOOSE which guest exercise, right now, mid-Cardio-activity -
+  // "ich mache jetzt zwei Minuten Blitzreiz-Reaktionstraining". Offers all
+  // CARDIO_GUEST_TYPES regardless of the automatic system's own pool
+  // selection (that pool only governs the randomized auto-interval): "jede
+  // andere Übung" is the point. The picker sheet sits INSIDE #cardioPlayer
+  // as a .pause-overlay, so Cardio's own countdown keeps ticking (cardioRaf
+  // untouched) visibly behind it while choosing - the "ich sehe im
+  // Hintergrund trotzdem noch, wie lange ich machen muss" ask, satisfied for
+  // the choosing step for free.
+  //
+  // Full detail panel, not just exercise+duration: a follow-up client ask,
+  // using Periphere Wahrnehmung/Blitz-Raster as the example - pre-start
+  // Feineinstellungen lets you configure every field ("alle Details
+  // einstellen"), but triggering the SAME exercise live only offered the
+  // exercise pick itself, missing every "Unterpunkt". cardioAddonPickerCfg
+  // is an EPHEMERAL deep copy of the type's saved cardioAddonPrefs.perType
+  // entry - rendered and wired through the exact same
+  // buildCardioGuestFieldsHtml()/wireCardioGuestFields() the pre-start panel
+  // uses, so it is provably the same depth of control, field for field. It
+  // starts from the client's own remembered settings for that type and is
+  // thrown away the moment the picker closes - deliberately never written
+  // back to cardioAddonPrefs.perType (persist() is a no-op here): this is
+  // still the in-the-moment "just for this once" choice, not a settings
+  // change, exactly as the duration-only override already was before this.
   let cardioAddonPickerType = null;
-  let cardioAddonPickerDuration = 20;
-  const CARDIO_ADDON_PICKER_DURATION_MIN = 15;
-  const CARDIO_ADDON_PICKER_DURATION_MAX = 180;
+  let cardioAddonPickerCfg = null;
+  function cardioAddonPickerSelectType(id) {
+    cardioAddonPickerType = id;
+    cardioAddonPickerCfg = JSON.parse(JSON.stringify(cardioAddonPrefs.perType[id]));
+    renderCardioAddonPicker();
+  }
   function renderCardioAddonPicker() {
     els.cardioAddonPickerTypeRow.innerHTML = "";
+    let lastPickerGroup = null;
     CARDIO_GUEST_TYPES.forEach((t) => {
+      if (t.group !== lastPickerGroup) {
+        lastPickerGroup = t.group;
+        const heading = document.createElement("div");
+        heading.className = "group-label cardio-addon-picker-group-label";
+        heading.textContent = CARDIO_GUEST_GROUPS[t.group];
+        els.cardioAddonPickerTypeRow.appendChild(heading);
+      }
       const [main, sub] = t.title.split(" · ");
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "choice" + (t.id === cardioAddonPickerType ? " active" : "");
       btn.innerHTML = `${esc(main)}${sub ? `<small>${esc(sub)}</small>` : ""}`;
-      btn.addEventListener("click", () => {
-        cardioAddonPickerType = t.id;
-        cardioAddonPickerDuration = Math.min(CARDIO_ADDON_PICKER_DURATION_MAX, Math.max(CARDIO_ADDON_PICKER_DURATION_MIN, cardioAddonPrefs.perType[t.id].duration));
-        renderCardioAddonPicker();
-      });
+      btn.addEventListener("click", () => cardioAddonPickerSelectType(t.id));
       els.cardioAddonPickerTypeRow.appendChild(btn);
     });
-    els.cardioAddonPickerDurationValue.textContent = fmtClock(cardioAddonPickerDuration);
+    renderCardioAddonPickerDetail();
+  }
+  function renderCardioAddonPickerDetail() {
+    const t = CARDIO_GUEST_TYPES.find((x) => x.id === cardioAddonPickerType);
+    els.cardioAddonPickerDetail.innerHTML = buildCardioGuestFieldsHtml(t, cardioAddonPickerCfg);
+    wireCardioGuestFields(els.cardioAddonPickerDetail, () => cardioAddonPickerCfg, { onSelect: renderCardioAddonPickerDetail });
   }
   function openCardioAddonPicker() {
-    cardioAddonPickerType = CARDIO_GUEST_TYPES[0].id;
-    cardioAddonPickerDuration = Math.min(CARDIO_ADDON_PICKER_DURATION_MAX, Math.max(CARDIO_ADDON_PICKER_DURATION_MIN, cardioAddonPrefs.perType[cardioAddonPickerType].duration));
-    renderCardioAddonPicker();
+    cardioAddonPickerSelectType(CARDIO_GUEST_TYPES[0].id);
     els.cardioAddonPicker.hidden = false;
   }
   function closeCardioAddonPicker() { els.cardioAddonPicker.hidden = true; }
-  els.cardioAddonPickerDurationMinus.addEventListener("click", () => {
-    cardioAddonPickerDuration = Math.max(CARDIO_ADDON_PICKER_DURATION_MIN, cardioAddonPickerDuration - 15);
-    renderCardioAddonPicker();
-  });
-  els.cardioAddonPickerDurationPlus.addEventListener("click", () => {
-    cardioAddonPickerDuration = Math.min(CARDIO_ADDON_PICKER_DURATION_MAX, cardioAddonPickerDuration + 15);
-    renderCardioAddonPicker();
-  });
   els.cardioAddonPickerCancelBtn.addEventListener("click", closeCardioAddonPicker);
   els.cardioAddonPickerStartBtn.addEventListener("click", () => {
     const id = cardioAddonPickerType;
-    const durationS = cardioAddonPickerDuration;
+    const cfg = cardioAddonPickerCfg;
     closeCardioAddonPicker();
-    triggerCardioGuest(id, durationS);
+    triggerCardioGuest(id, cfg);
   });
   els.cardioAddonTriggerBtn.addEventListener("click", () => {
     if (!cardioState || cardioGuestActive) return;
@@ -10965,6 +11684,24 @@
   // ich die Übung gleich wechseln muss". ----
   let cardioGuestBadgeInterval = null;
   const CARDIO_GUEST_BADGE_WARN_S = 15;
+  // The badge's own fixed top offset (styles.css) assumed every guest
+  // player's own top-right "Vollbild" button lived further down than it -
+  // true for most, but not for the ones whose own .player-bar actually
+  // sits exactly where the badge does, so the two visibly overlapped
+  // (client-reported, screenshots showing "Vollbild" peeking out from
+  // behind the badge). Measures whichever .player-bar is actually rendered
+  // right now (0-height for every hidden one, cardioPlayerBar itself
+  // excluded - it sits behind the guest, out of view) and sits just below
+  // its real bottom edge instead of guessing a fixed offset.
+  function cardioGuestBadgeTop() {
+    let maxBottom = 0;
+    document.querySelectorAll(".player-bar").forEach((bar) => {
+      if (bar.id === "cardioPlayerBar") return;
+      const r = bar.getBoundingClientRect();
+      if (r.height > 0 && r.bottom > maxBottom) maxBottom = r.bottom;
+    });
+    return maxBottom > 0 ? maxBottom + 8 : null;
+  }
   function updateCardioGuestBadge() {
     if (!cardioState) { hideCardioGuestBadge(); return; }
     const block = cardioState.items[cardioState.index];
@@ -10972,6 +11709,8 @@
     const remaining = Math.max(0, block.durationS - (performance.now() - cardioState.blockStartTime) / 1000);
     els.cardioGuestBadge.textContent = `Cardio: noch ${fmtClock(remaining)}`;
     els.cardioGuestBadge.classList.toggle("warn", remaining <= CARDIO_GUEST_BADGE_WARN_S);
+    const top = cardioGuestBadgeTop();
+    els.cardioGuestBadge.style.top = top == null ? "" : top + "px";
   }
   function showCardioGuestBadge() {
     updateCardioGuestBadge();
@@ -11004,17 +11743,32 @@
     }
   }
 
-  els.cardioSkipBtn.addEventListener("click", () => {
+  // Bidirectional chapter-nav for the running Cardio session, matching
+  // Tabata's own prev/restart/skip pattern (circuitJumpToWorkIndex) -
+  // Cardio's own engine is index-based rather than Tabata's frame-schedule-
+  // offset one, so jumping is direct index arithmetic + a blockStartTime
+  // reset instead of recomputing a startTime offset. `dir` says which way
+  // a landed-on pause pseudo-item gets skipped past (a pause is never
+  // adjacent to another pause, so a single extra step in the same
+  // direction always lands back on a real activity) - the client
+  // explicitly skipping/rewinding past an activity clearly doesn't want to
+  // land on a pause either way.
+  function cardioJumpToIndex(idx, dir) {
     if (!cardioState) return;
-    cardioState.index++;
-    // "Nächste Aktivität" pressed DURING a real activity should land on
-    // the next REAL activity, not on the pause marker now inserted right
-    // before it - a client explicitly skipping ahead clearly doesn't want
-    // a pause first either. Pressed during the pause itself ("Pause
-    // überspringen"), this is a no-op: a pause is never followed by
-    // another pause, so index already points at a real activity.
-    if (cardioState.items[cardioState.index] && cardioState.items[cardioState.index].pause) cardioState.index++;
+    if (idx < 0) idx = 0;
+    if (idx >= cardioState.items.length) { finishCardio(); return; }
+    if (cardioState.items[idx] && cardioState.items[idx].pause) idx += dir;
+    if (idx < 0) idx = 0;
+    if (idx >= cardioState.items.length) { finishCardio(); return; }
+    cardioState.index = idx;
     cardioState.blockStartTime = performance.now();
+  }
+  els.cardioPrevBtn.addEventListener("click", () => cardioJumpToIndex(cardioState ? cardioState.index - 1 : 0, -1));
+  els.cardioRestartBtn.addEventListener("click", () => { if (cardioState) cardioState.blockStartTime = performance.now(); });
+  els.cardioSkipBtn.addEventListener("click", () => cardioJumpToIndex(cardioState ? cardioState.index + 1 : 0, 1));
+  wireSwipeNav(els.cardioPlayer, {
+    onLeft: () => els.cardioSkipBtn.click(),
+    onRight: () => els.cardioPrevBtn.click(),
   });
   function abortCardio() {
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
@@ -19030,8 +19784,14 @@
       timer: null, timerFn: null, timerFiresAt: null,
     };
     applyCorsiBg();
-    renderCorsiBoard(buildCorsiBoard());
+    // Hint text must be set BEFORE the board is built - corsiStageBounds()
+    // reads els.corsiHint's actual rendered height (via stageTopClearanceY())
+    // to keep blocks clear of it, so building the board against the hint's
+    // still-empty pre-round height let a block land somewhere the hint's
+    // real text then covered once set right after (the Corsi overlap flake
+    // in stage_hint_overlap_audit_test.py).
     els.corsiHint.textContent = "Gleich geht's los …";
+    renderCorsiBoard(buildCorsiBoard());
     els.corsiProgressEl.textContent = `Länge ${corsiState.span}`;
     requestWakeLock();
     scheduleCorsiTimer(corsiStartLevel, 1000);

@@ -88,11 +88,14 @@ async def main():
         await pg.wait_for_timeout(4000)  # activity 1's 60s (virtual) elapses
         print("pause phase shown after activity 1:", await pg.inner_text("#cardioActivityTitle") == "Pause")
         print("pause shows what's next:", "Rad fahren" in await pg.inner_text("#cardioActivityLabel"))
-        print("skip button relabelled during pause:", "Pause überspringen" in await pg.inner_text("#cardioSkipBtn"))
+        # icon-only chapter-nav button now (cardioTick() swaps its
+        # title/aria-label instead of textContent, see
+        # cardio_chapter_nav_test.py) - the icon itself never changes
+        print("skip button relabelled during pause:", (await pg.get_attribute("#cardioSkipBtn", "title")) == "Pause überspringen")
 
         await pg.click("#cardioSkipBtn"); await pg.wait_for_timeout(300)
         print("skip jumps straight into activity 2:", await pg.inner_text("#cardioActivityTitle") == "Rad fahren")
-        print("skip button label back to normal:", "Nächste Aktivität" in await pg.inner_text("#cardioSkipBtn"))
+        print("skip button label back to normal:", (await pg.get_attribute("#cardioSkipBtn", "title")) == "Weiter zur nächsten Aktivität")
 
         await pg.wait_for_timeout(4000)  # activity 2's 60s (virtual) elapses
         print("no pause screen shown (0s pause) - goes straight to activity 3:", await pg.inner_text("#cardioActivityTitle") == "Crosstrainer")

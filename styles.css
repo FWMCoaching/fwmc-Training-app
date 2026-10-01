@@ -1336,6 +1336,13 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .pause-actions{display:flex;gap:8px;width:100%}
 .pause-actions button{flex:1;border-radius:14px;cursor:pointer;font-weight:700;font-size:15px;padding:14px 10px}
 .pause-skip{border:none;background:#007094;color:#fff}
+/* ID-scoped, not folded into .pause-skip itself - that class is shared
+   with pauseSkipBtn/wimhofHoldDoneBtn/workoutRestSkipBtn, which weren't
+   part of the client's "Abbrechen zu klein" report and shouldn't change
+   size just because this one button needs to grow. Bigger than the bare
+   .pause-skip default (effectively browser-default button padding) but
+   still visibly smaller than the "Jetzt starten" .start-btn above it. */
+#cardioAddonPickerCancelBtn{margin-top:4px;border-radius:14px;font-family:"Magra",sans-serif;font-weight:700;font-size:16px;padding:13px}
 .pause-toggle{border:1.5px solid #dde6e8;background:#fff;color:#16232a}
 .breath-pause-btn{border-radius:14px;font-weight:700;font-size:14px;padding:11px 26px;cursor:pointer}
 .chapter-nav{display:flex;align-items:center;justify-content:center;gap:8px}
@@ -1490,12 +1497,16 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .cardio-interval-toggle input{width:auto}
 .cardio-interval-fields{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--ink-soft)}
 .cardio-interval-phase-row{display:flex;align-items:center;gap:6px}
-.cardio-interval-phase-row span:first-child{min-width:64px}
+.cardio-interval-phase-row span:first-child{min-width:122px}
 
 .checkbox-row{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--ink)}
 .checkbox-row input{width:auto}
 .cardio-pool-check{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink);padding:6px 0}
 .cardio-pool-check input{width:auto}
+.cardio-pool-group-label{margin-top:10px}
+.cardio-pool-group-label:first-child{margin-top:0}
+.cardio-addon-picker-group-label{grid-column:1 / -1;margin-top:10px}
+.cardio-addon-picker-group-label:first-child{margin-top:0}
 /* Floating status while a Cardio-triggered guest exercise (Zusatzimpuls)
    has taken over the screen - lives outside every .player element so
    hideAllPlayers() never hides it, reading cardioState (which keeps

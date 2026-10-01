@@ -38,18 +38,24 @@ async def main():
         await pg.click("#flashReadyStartBtn"); await pg.wait_for_timeout(300)
         digit_color = await pg.evaluate("() => getComputedStyle(document.getElementById('flashDigitEl')).color")
         print("digit colour is dark navy even in OS dark mode:", digit_color == "rgb(22, 35, 42)")
+
+        # --- fixpoint on by default, plain grey dot - checked here, still
+        # within the flash/gap sequence, since flashOpenInput() deliberately
+        # hides the fixpoint once the answer-input phase begins (it would
+        # cover the keypad) and restores it only for the next round's own
+        # flash/gap phase - checking after waiting for the input phase below
+        # would therefore always see it hidden, regardless of the setting ---
+        print("fixpoint visible by default:", await pg.is_hidden("#flashFixpointEl") == False)
+        fix_bg = await pg.evaluate("() => getComputedStyle(document.getElementById('flashFixpointEl')).backgroundColor")
+        print("default fixpoint is the standard grey dot:", fix_bg == "rgb(143, 162, 168)")
+        await pg.screenshot(path=OUT + "flash_fixpoint_default.png")
+
         for _ in range(100):  # poll until the flash/gap sequence finishes and the answer boxes render
             if await pg.is_visible("#flashInputPanel"):
                 break
             await pg.wait_for_timeout(80)
         box_color = await pg.evaluate("() => getComputedStyle(document.querySelector('#flashAnswerBoxes .flash-answer-box')).color")
         print("answer box text colour also dark in dark mode:", box_color == "rgb(22, 35, 42)")
-
-        # --- fixpoint on by default, plain grey dot ---
-        print("fixpoint visible by default:", await pg.is_hidden("#flashFixpointEl") == False)
-        fix_bg = await pg.evaluate("() => getComputedStyle(document.getElementById('flashFixpointEl')).backgroundColor")
-        print("default fixpoint is the standard grey dot:", fix_bg == "rgb(143, 162, 168)")
-        await pg.screenshot(path=OUT + "flash_fixpoint_default.png")
         await pg.click("#flashBackBtn"); await pg.wait_for_timeout(150)
 
         # --- toggle off -> hidden in player, options collapse in settings ---
