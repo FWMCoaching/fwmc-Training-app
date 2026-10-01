@@ -7633,16 +7633,22 @@
     if (flashState) renderFlashFixpoint();
   }
   // Mirrors Periph's drawFixationPoint(): a custom character (sized text,
-  // no background) if one is set, otherwise a plain coloured dot.
+  // no background) if one is set, otherwise a plain coloured dot. Prefers
+  // flashState's own fix* fields (set from the Cardio guest cfg, see
+  // startFlashGame()) once a round is actually running, so a live Cardio
+  // override is reflected here too - falls back to the client's own real
+  // flashPrefs only in the Ready-screen preview context, before flashState
+  // exists.
   function renderFlashFixpoint() {
     const el = els.flashFixpointEl;
-    if (!flashPrefs.fixEnabled) { el.hidden = true; return; }
+    const src = flashState || flashPrefs;
+    if (!src.fixEnabled) { el.hidden = true; return; }
     el.hidden = false;
-    const color = (FIX_COLOR_BY_KEY[flashPrefs.fixColor] || FIX_COLOR_BY_KEY.grau).hex;
-    const char = flashPrefs.fixChar.trim();
+    const color = (FIX_COLOR_BY_KEY[src.fixColor] || FIX_COLOR_BY_KEY.grau).hex;
+    const char = src.fixChar.trim();
     if (char) {
       el.textContent = char;
-      el.style.fontSize = Math.round(28 * flashPrefs.fixSize) + "px";
+      el.style.fontSize = Math.round(28 * src.fixSize) + "px";
       el.style.color = color;
       el.style.background = "transparent";
       el.style.width = "auto";
@@ -7650,7 +7656,7 @@
       el.style.borderRadius = "0";
     } else {
       el.textContent = "";
-      const size = Math.round(12 * flashPrefs.fixSize);
+      const size = Math.round(12 * src.fixSize);
       el.style.width = size + "px";
       el.style.height = size + "px";
       el.style.background = color;
@@ -8169,7 +8175,8 @@
       mode, kind: p.kind, count: startCount, constantCount: flashPrefs.constantCount, speedStep: 0, repsDone: 0, cleared: 0,
       sequence: [], shownIndex: 0, typed: "", phase: "flash", timer: null, comboDurationTimer: null,
       stimulusS: p.stimulusS, intervalS: p.intervalS, errorMode: p.errorMode,
-      axes: flashPrefs.axes.slice(), zones: flashPrefs.zones.slice(), useZones: flashPrefs.useZones,
+      axes: p.axes.slice(), zones: p.zones.slice(), useZones: p.useZones,
+      fixEnabled: p.fixEnabled, fixChar: p.fixChar, fixColor: p.fixColor, fixSize: p.fixSize,
       trainingProgress: flashPrefs.trainingProgress, startLevel: flashPrefs.startCount, trainingStartLevel: flashPrefs.trainingStart,
       startTime: performance.now(), paused: false,
     };
@@ -8982,9 +8989,16 @@
   let motReturnScreen = "natHome";
   // prefsOverride (Cardio guest bursts only): same idea as the other
   // domains' - never reads or mutates the client's own saved motPrefs.
-  // targetColors/style/objectCount/targetCount stay at motPrefs' own
-  // defaults even under an override (not exposed in the Cardio panel -
-  // see cardioGuestNeedsColors()'s note on why only "Objektfarbe" is).
+  // style/targetColors now come from the Cardio panel's own cfg under a
+  // guest burst too (Batch C, see buildCardioGuestFieldsHtml()'s MOT
+  // branch) - fixed alongside a real isolation bug this turned up: both
+  // used to read motPrefs directly even under prefsOverride, silently
+  // using the client's own real saved values instead of the (until now
+  // nonexistent) panel's. objectCount/targetCount/growStart*/training*
+  // stay at motPrefs' own values for now (mode-specific fields, not yet
+  // exposed in the Cardio panel - Batch D) - same open isolation gap,
+  // tracked in CLAUDE.md, not fixed until that batch gives them a real
+  // cfg home to read from instead.
   function startMotGame(mode, opts, prefsOverride) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
@@ -9006,7 +9020,7 @@
       startObjects, startTargets, startSpeedStep,
       trainingProgress: motPrefs.trainingProgress,
       speed: p.speed, trackS: p.trackS, highlightS: p.highlightS,
-      errorMode: p.errorMode, style: motPrefs.style, colors: p.colors.slice(), targetColors: motPrefs.targetColors.slice(),
+      errorMode: p.errorMode, style: p.style, colors: p.colors.slice(), targetColors: p.targetColors.slice(),
       startTime: performance.now(), timer: null, comboDurationTimer: null, raf: null, paused: false,
     };
     els.motStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
@@ -10594,16 +10608,13 @@
   // a different, older mechanism (state.periphColors, not active.*) that
   // predates those flags - needs its own check rather than a 4th flag.
   function cardioGuestNeedsColors(guestId) {
-    // MOT's own "Objektfarbe" only - its separate "Zielfarbe" (targetColors)
-    // stays at the app default (gelb), same proportionate-scope call as
-    // periph-flash's axes/zones and Blitz-Raster's zones: a second colour
-    // picker just for the target objects would double this one field's
-    // complexity for a client who's already just grabbing a quick guest
-    // exercise mid-Cardio, not tuning MOT for its own dedicated session.
+    // MOT's own "Objektfarbe" - see cardioGuestNeedsTargetColor() just below
+    // for its separate "Zielfarbe" (targetColors).
     if (cardioGuestIsPeriphLike(guestId) || guestId === "mot") return true;
     const ex = EXERCISES[cardioGuestRealId(guestId)];
     return !!(ex.usesColors || ex.usesArrowColors || ex.usesStroopColors);
   }
+  function cardioGuestNeedsTargetColor(guestId) { return guestId === "mot"; }
   function cardioGuestIsConeTap(guestId) { return EXERCISES[cardioGuestRealId(guestId)].type === "color-tap"; }
   function cardioGuestIsBlitz(guestId) { return guestId === "blitz-raster"; }
   function cardioGuestIsRemember(guestId) { return guestId === "remember"; }
@@ -10638,8 +10649,8 @@
     // depth proportionate" call already made for Blitz-Raster's zones
     // (Batch B).
     if (guestId === "remember") return { duration: 20, mode: "fixed", revealBaseS: REMEMBER_DIFFICULTIES.mittel.revealBaseS, revealStepS: REMEMBER_DIFFICULTIES.mittel.revealStepS, errorMode: "reset2", ...bg };
-    if (guestId === "flash") return { duration: 20, mode: "constant", kind: "zahlen", stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS, intervalS: FLASH_DIFFICULTIES.mittel.intervalS, errorMode: "reset2", ...bg };
-    if (guestId === "mot") return { duration: 20, mode: "speed", speed: MOT_DIFFICULTIES.mittel.speed, trackS: MOT_DIFFICULTIES.mittel.trackS, highlightS: MOT_DIFFICULTIES.mittel.highlightS, errorMode: "reset2", colors: ["schwarz"], ...bg };
+    if (guestId === "flash") return { duration: 20, mode: "constant", kind: "zahlen", stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS, intervalS: FLASH_DIFFICULTIES.mittel.intervalS, errorMode: "reset2", axes: PERIPH_AXIS_KEYS.slice(), useZones: false, zones: PERIPH_ZONE_KEYS.slice(), fixEnabled: true, fixChar: "", fixColor: "grau", fixSize: 1, ...bg };
+    if (guestId === "mot") return { duration: 20, mode: "speed", style: "flach", speed: MOT_DIFFICULTIES.mittel.speed, trackS: MOT_DIFFICULTIES.mittel.trackS, highlightS: MOT_DIFFICULTIES.mittel.highlightS, errorMode: "reset2", colors: ["schwarz"], targetColors: ["gelb"], ...bg };
     if (guestId === "vt-color" || guestId === "vrw-original") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg };
     if (guestId === "stroop-classic" || guestId === "stroop-bg") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "blau", "gruen"], ...bg };
     if (guestId === "8-vrw" || guestId === "cross-modal") return { duration: 20, stimulusS: 1, intervalMin: 2, intervalMax: 4, ...bg };
@@ -10710,12 +10721,21 @@
         if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 2) p.stimulusS = d.stimulusS;
         if (!Number.isFinite(p.intervalS) || p.intervalS < 0.1 || p.intervalS > 2) p.intervalS = d.intervalS;
         if (!["reset2", "backOne", "stay"].includes(p.errorMode)) p.errorMode = d.errorMode;
+        if (!Array.isArray(p.axes) || !p.axes.every((a) => PERIPH_AXIS_KEYS.includes(a))) p.axes = d.axes.slice();
+        if (typeof p.useZones !== "boolean") p.useZones = d.useZones;
+        if (!Array.isArray(p.zones) || !p.zones.length || !p.zones.every((z) => PERIPH_ZONE_KEYS.includes(z))) p.zones = d.zones.slice();
+        if (typeof p.fixEnabled !== "boolean") p.fixEnabled = d.fixEnabled;
+        if (typeof p.fixChar !== "string") p.fixChar = d.fixChar;
+        if (!FIX_COLOR_BY_KEY[p.fixColor]) p.fixColor = d.fixColor;
+        if (!Number.isFinite(p.fixSize) || p.fixSize < 0.6 || p.fixSize > 2) p.fixSize = d.fixSize;
       }
       if (cardioGuestIsMot(t.id)) {
         if (!Number.isFinite(p.speed) || p.speed < 0.05 || p.speed > 0.4) p.speed = d.speed;
         if (!Number.isFinite(p.trackS) || p.trackS < 3 || p.trackS > 15) p.trackS = d.trackS;
         if (!Number.isFinite(p.highlightS) || p.highlightS < 1 || p.highlightS > 4) p.highlightS = d.highlightS;
         if (!["reset2", "backOne", "stay"].includes(p.errorMode)) p.errorMode = d.errorMode;
+        if (!["flach", "3d"].includes(p.style)) p.style = d.style;
+        if (!Array.isArray(p.targetColors) || !p.targetColors.length || !p.targetColors.every((k) => STROOP_COLOR_BY_KEY[k])) p.targetColors = d.targetColors.slice();
       }
     });
   }
@@ -10903,14 +10923,56 @@
           html += `<div class="choice-row" data-diff-row="${t.id}">` +
             Object.entries(REMEMBER_DIFFICULTIES).map(([k, d]) => `<button class="choice${Math.abs(cfg.revealBaseS - d.revealBaseS) < 0.001 ? " active" : ""}" data-type="${t.id}" data-diff="${k}">${esc(d.title)}</button>`).join("") +
             `</div>`;
+          // Raw revealBaseS/revealStepS sliders, same as Remember's own
+          // Ready screen nests them under its own Feineinstellungen
+          // (#rememberAdvanced) - the difficulty presets above are just
+          // three fixed points on the same two fields these sliders cover
+          // continuously.
+          html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` +
+            `<div class="group-label">Einblenddauer bei 2 Zahlen</div>` +
+            `<div class="slider-row"><input type="range" min="0.4" max="3" step="0.1" data-type="${t.id}" data-f="revealBaseS" value="${cfg.revealBaseS}"><span class="slider-value" data-fvalue="${t.id}-revealBaseS">${cfg.revealBaseS}</span></div>` +
+            `<div class="group-label">Zusätzliche Zeit je weiterer Zahl</div>` +
+            `<div class="slider-row"><input type="range" min="0.05" max="0.6" step="0.05" data-type="${t.id}" data-f="revealStepS" value="${cfg.revealStepS}"><span class="slider-value" data-fvalue="${t.id}-revealStepS">${cfg.revealStepS}</span></div>` +
+            `</div></details>`;
         } else if (cardioGuestIsFlash(t.id)) {
           html += `<div class="choice-row" data-diff-row="${t.id}">` +
             Object.entries(FLASH_DIFFICULTIES).map(([k, d]) => `<button class="choice${Math.abs(cfg.stimulusS - d.stimulusS) < 0.001 ? " active" : ""}" data-type="${t.id}" data-diff="${k}">${esc(d.title)}</button>`).join("") +
             `</div>`;
+          // Raw stimulusS/intervalS sliders + the fixation-point controls,
+          // same as Flash's own Ready screen nests both under its own
+          // Feineinstellungen (#flashAdvanced).
+          html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` +
+            `<div class="group-label">Einblenddauer je Zahl</div>` +
+            `<div class="slider-row"><input type="range" min="0.3" max="2" step="0.1" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"><span class="slider-value" data-fvalue="${t.id}-stimulusS">${cfg.stimulusS}</span></div>` +
+            `<div class="group-label">Pause zwischen den Zahlen</div>` +
+            `<div class="slider-row"><input type="range" min="0.2" max="2" step="0.1" data-type="${t.id}" data-f="intervalS" value="${cfg.intervalS}"><span class="slider-value" data-fvalue="${t.id}-intervalS">${cfg.intervalS}</span></div>` +
+            `<div class="group-label">Fixpunkt in der Mitte</div>` +
+            `<div class="choice-row two" data-fixtoggle-row="${t.id}">` +
+            `<button class="choice${cfg.fixEnabled ? " active" : ""}" data-type="${t.id}" data-fixtoggle="1">Anzeigen</button>` +
+            `<button class="choice${!cfg.fixEnabled ? " active" : ""}" data-type="${t.id}" data-fixtoggle="0">Ausblenden</button>` +
+            `</div>` +
+            (cfg.fixEnabled ? (
+              `<input type="text" maxlength="3" data-type="${t.id}" data-fixchar="1" value="${esc(cfg.fixChar)}" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen für den Fixpunkt (leer lassen für den Standardpunkt)">` +
+              `<div class="cardio-guest-colors" data-fixcolors="${t.id}">` +
+              FIX_COLOR_LIB.map((c) => `<label><input type="radio" name="cardioGuestFix-${t.id}" data-fixtype="${t.id}" data-fixcolor="${c.key}" ${cfg.fixColor === c.key ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
+              `</div>` +
+              `<div class="slider-row"><span class="slider-label">Größe</span><input type="range" min="0.6" max="2" step="0.1" data-type="${t.id}" data-f="fixSize" value="${cfg.fixSize}"><span class="slider-value" data-fvalue="${t.id}-fixSize">${cfg.fixSize}</span></div>`
+            ) : "") +
+            `</div></details>`;
         } else {
           html += `<div class="choice-row" data-diff-row="${t.id}">` +
             Object.entries(MOT_DIFFICULTIES).map(([k, d]) => `<button class="choice${Math.abs(cfg.speed - d.speed) < 0.001 ? " active" : ""}" data-type="${t.id}" data-diff="${k}">${esc(d.title)}</button>`).join("") +
             `</div>`;
+          // Raw speed/trackS/highlightS sliders, same as MOT's own Ready
+          // screen nests them under its own Feineinstellungen (#motAdvanced).
+          html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` +
+            `<div class="group-label">Geschwindigkeit</div>` +
+            `<div class="slider-row"><input type="range" min="0.05" max="0.4" step="0.01" data-type="${t.id}" data-f="speed" value="${cfg.speed}"><span class="slider-value" data-fvalue="${t.id}-speed">${cfg.speed}</span></div>` +
+            `<div class="group-label">Verfolgungsdauer</div>` +
+            `<div class="slider-row"><input type="range" min="3" max="15" step="0.5" data-type="${t.id}" data-f="trackS" value="${cfg.trackS}"><span class="slider-value" data-fvalue="${t.id}-trackS">${cfg.trackS}</span></div>` +
+            `<div class="group-label">Markierdauer</div>` +
+            `<div class="slider-row"><input type="range" min="1" max="4" step="0.1" data-type="${t.id}" data-f="highlightS" value="${cfg.highlightS}"><span class="slider-value" data-fvalue="${t.id}-highlightS">${cfg.highlightS}</span></div>` +
+            `</div></details>`;
         }
         const errorLabels = cardioGuestIsRemember(t.id)
           ? [["reset2", "Zurück auf 2", "ganz von vorne"], ["backOne", "Eine Zahl zurück", "eine Stufe runter"], ["stay", "Gleiche Zahl", "so lange, bis es klappt"]]
@@ -10919,6 +10981,13 @@
           `<div class="choice-row" data-error-row="${t.id}">` +
           errorLabels.map(([k, title, hint]) => `<button class="choice${cfg.errorMode === k ? " active" : ""}" data-type="${t.id}" data-error="${k}">${esc(title)}<small>${esc(hint)}</small></button>`).join("") +
           `</div>`;
+        if (cardioGuestIsMot(t.id)) {
+          html += `<div class="group-label">Darstellung</div>` +
+            `<div class="choice-row two" data-style-row="${t.id}">` +
+            `<button class="choice${cfg.style === "flach" ? " active" : ""}" data-type="${t.id}" data-motstyle="flach">Flach<small>einfache Kreise</small></button>` +
+            `<button class="choice${cfg.style === "3d" ? " active" : ""}" data-type="${t.id}" data-motstyle="3d">3D-Optik<small>wirken räumlich</small></button>` +
+            `</div>`;
+        }
       } else {
         html += `<div class="cardio-guest-field-row">
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
@@ -10941,7 +11010,7 @@
       // periph-flash-only (see cardioGuestHasZoneWeights()) and nested under
       // its own collapsible "Feineinstellungen", per the client's own call
       // on how deep this should go without flattening the whole panel.
-      if (cardioGuestIsPeriphLike(t.id)) {
+      if (cardioGuestIsPeriphLike(t.id) || cardioGuestIsFlash(t.id)) {
         html += `<div class="group-label">Bereich</div>`;
         if (!cfg.useZones) {
           html += `<div class="choice-row two" data-axis-row="${t.id}">` +
@@ -10966,19 +11035,34 @@
               `</div></div></details>`;
           }
         }
-        html += `<div class="group-label">Größe der Reize</div>` +
-          `<div class="choice-row two" data-size-row="${t.id}">` +
-          `<button class="choice${cfg.sizeMode === "gleich" ? " active" : ""}" data-type="${t.id}" data-sizemode="gleich">Gleich groß<small>überall gleich</small></button>` +
-          `<button class="choice${cfg.sizeMode === "wachsend" ? " active" : ""}" data-type="${t.id}" data-sizemode="wachsend">Nach außen größer<small>je weiter vom Punkt entfernt</small></button>` +
-          `</div>`;
+        // "Größe der Reize" is periph-like only - flashPrefs has no
+        // sizeMode concept at all on its own Ready screen either.
+        if (cardioGuestIsPeriphLike(t.id)) {
+          html += `<div class="group-label">Größe der Reize</div>` +
+            `<div class="choice-row two" data-size-row="${t.id}">` +
+            `<button class="choice${cfg.sizeMode === "gleich" ? " active" : ""}" data-type="${t.id}" data-sizemode="gleich">Gleich groß<small>überall gleich</small></button>` +
+            `<button class="choice${cfg.sizeMode === "wachsend" ? " active" : ""}" data-type="${t.id}" data-sizemode="wachsend">Nach außen größer<small>je weiter vom Punkt entfernt</small></button>` +
+            `</div>`;
+        }
       }
       // No colours to pick for a type that doesn't use them at all
       // (8-vrw's direction colours are fixed rot/grün by rule, cross-modal
       // and cone-tap have none) - same rule EXERCISES[...].usesColors/
       // usesArrowColors/usesStroopColors already governs everywhere else.
       if (cardioGuestNeedsColors(t.id)) {
+        if (cardioGuestIsMot(t.id)) html += `<div class="group-label">Farbe der Objekte</div>`;
         html += `<div class="cardio-guest-colors" data-colors="${t.id}">` +
           lib.map((c) => `<label><input type="checkbox" data-type="${t.id}" data-color="${c.key}" ${cfg.colors.includes(c.key) ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
+          `</div>`;
+      }
+      // MOT's second, independent colour picker for the target object(s) -
+      // same STROOP_COLOR_LIB, same multi-select mechanism, just its own
+      // cfg field (targetColors) and its own data-targetcolor attribute so
+      // wireCardioGuestFields() can tell the two checkbox groups apart.
+      if (cardioGuestNeedsTargetColor(t.id)) {
+        html += `<div class="group-label">Farbe des Ziels</div>` +
+          `<div class="cardio-guest-colors" data-targetcolors="${t.id}">` +
+          lib.map((c) => `<label><input type="checkbox" data-type="${t.id}" data-targetcolor="${c.key}" ${cfg.targetColors.includes(c.key) ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
           `</div>`;
       }
       // Background colour + intensity - skipped for a type whose background
@@ -11022,6 +11106,15 @@
       input.addEventListener("input", () => {
         getCfg(input.dataset.type)[input.dataset.f] = Number(input.value);
         persist();
+        // Range sliders (the raw-value fine-tune fields nested under each
+        // type's own "Feineinstellungen", e.g. revealBaseS/speed/stimulusS)
+        // carry a companion value label - number inputs (Dauer etc.) show
+        // their own value natively and never have one, so this is a no-op
+        // for those.
+        if (input.type === "range") {
+          const valueEl = container.querySelector(`[data-fvalue="${input.dataset.type}-${input.dataset.f}"]`);
+          if (valueEl) valueEl.textContent = input.value;
+        }
       });
     });
     container.querySelectorAll("[data-kind]").forEach((btn) => {
@@ -11130,6 +11223,37 @@
           if (cfg.colors.length <= 1) { cb.checked = true; return; }
           cfg.colors = cfg.colors.filter((k) => k !== key);
         }
+        persist();
+      });
+    });
+    container.querySelectorAll("input[data-targetcolor]").forEach((cb) => {
+      cb.addEventListener("change", () => {
+        const cfg = getCfg(cb.dataset.type);
+        const key = cb.dataset.targetcolor;
+        if (cb.checked) { if (!cfg.targetColors.includes(key)) cfg.targetColors.push(key); }
+        else {
+          if (cfg.targetColors.length <= 1) { cb.checked = true; return; }
+          cfg.targetColors = cfg.targetColors.filter((k) => k !== key);
+        }
+        persist();
+      });
+    });
+    container.querySelectorAll("[data-motstyle]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).style = btn.dataset.motstyle; select(); });
+    });
+    // Flash's fixation point - toggle rebuilds (the sub-options appear/
+    // disappear, same as flashFixOptions.hidden on the standalone Ready
+    // screen), the text/colour/size edits don't need to.
+    container.querySelectorAll("[data-fixtoggle]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).fixEnabled = btn.dataset.fixtoggle === "1"; select(); });
+    });
+    container.querySelectorAll("input[data-fixchar]").forEach((input) => {
+      input.addEventListener("input", () => { getCfg(input.dataset.type).fixChar = input.value.slice(0, 3); persist(); });
+    });
+    container.querySelectorAll("input[data-fixcolor]").forEach((radio) => {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        getCfg(radio.dataset.fixtype).fixColor = radio.dataset.fixcolor;
         persist();
       });
     });

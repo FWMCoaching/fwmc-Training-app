@@ -4366,13 +4366,81 @@ addon-flash never shows it at all; a live zone-weight/axis/size edit is
 provably never written back to the saved per-type default, including after
 actually starting the live-edited burst.
 
-**Still not done** (Batches C-D, same "genau so als wenn man die Übung
-einzeln machen würde" ask): Flash Speicher Test's and MOT's own remaining
-settings beyond kind/colour/difficulty/error-mode (Flash also has its own
-axes/zones/fixation-point settings, same family as Batches A/B); and, for
-Remember/Flash/MOT, each mode's own further numeric fine-tuning fields
-(training-mode start values, climb/growth rates, ...), nested under their
-own collapsible "Feineinstellungen" the same way.
+**Still not done** (Batch D, same "genau so..." ask): for Remember/Flash/
+MOT, each mode's own further numeric fine-tuning fields (training-mode
+start values, climb/growth rates, MOT's fixed-count/grow-start object and
+target counts, ...), nested under their own collapsible "Feineinstellungen"
+the same way.
+
+### Full-Parität Batch C: Flash Speicher Test und MOT - restliche Felder (2026-10-01)
+
+**Flash Speicher Test** reuses the exact same "Bereich" (axes/zones)
+mechanism Batch A built for Periphere Wahrnehmung - same
+`PERIPH_AXIS_KEYS`/`PERIPH_ZONE_KEYS`, same generic `data-axis`/`data-zone`
+wiring already in `wireCardioGuestFields()` (no new handlers needed, it
+already works for any type whose cfg carries `axes`/`zones`/`useZones` -
+the widened gate is just `cardioGuestIsPeriphLike(t.id) ||
+cardioGuestIsFlash(t.id)`), no dominance-weighting (flashPrefs never had
+that) and no "Größe der Reize" (kept periph-only - flashPrefs has no
+`sizeMode` concept at all). Plus its own **Fixpunkt** (fixation point)
+nested under a new "Feineinstellungen" (`#flashAdvanced`'s own grouping):
+enable/disable toggle, character text input (`data-fixchar`), a single-
+select colour row reusing `FIX_COLOR_LIB` (grey + the Stroop palette,
+radio-based like the background colour picker) and a size slider - plus
+raw Einblenddauer/Pause sliders (`stimulusS`/`intervalS`) for the same
+"go beyond the three difficulty presets" reason Batch A's zone-weighting
+nests under a collapsible.
+
+**MOT-Fähigkeit** gets "Darstellung" (flach/3D-Optik, `style`) and a
+second, independent colour picker "Farbe des Ziels" (`targetColors`,
+same `STROOP_COLOR_LIB` multi-select mechanism as the existing "Farbe der
+Objekte", just its own cfg field and `data-targetcolor` attribute so
+`wireCardioGuestFields()` can tell the two checkbox groups apart), plus
+raw Geschwindigkeit/Verfolgungsdauer/Markierdauer sliders under its own
+Feineinstellungen.
+
+**Real isolation bugs found and fixed** (same class as Batch B's Blitz-
+zones fix - reading straight from the client's own real prefs object even
+under a `prefsOverride`, silently ignoring the override entirely):
+`startFlashGame()`'s state construction read `axes`/`zones`/`useZones` from
+`flashPrefs` unconditionally; `renderFlashFixpoint()` read `fixEnabled`/
+`fixChar`/`fixColor`/`fixSize` from `flashPrefs` with no override path at
+all (now prefers `flashState`'s own captured fix* fields once a round is
+running, falling back to `flashPrefs` only in the Ready-screen preview
+context before `flashState` exists); `startMotGame()`'s state construction
+read `style`/`targetColors` from `motPrefs` unconditionally. All three are
+fixed now that the Cardio panel actually carries these fields to read
+instead. `objectCount`/`targetCount`/`growStart*`/`training*` still read
+from `motPrefs`/`flashPrefs` directly - same open gap, left for Batch D
+(not exposed in the Cardio panel yet, so there is nothing else to read
+from).
+
+Also generalized the shared `input[data-f]` handler in
+`wireCardioGuestFields()`: it now updates a companion
+`[data-fvalue="type-field"]` label for any range-slider field (not just
+the one-off `data-bgintensity` case), which is what lets Remember's
+`revealBaseS`/`revealStepS`, Flash's `stimulusS`/`intervalS`/`fixSize` and
+MOT's `speed`/`trackS`/`highlightS` all reuse the exact same generic
+wiring as sliders instead of each needing its own bespoke handler.
+
+Test: `tests/cardio_addon_picker_flash_mot_fields_test.py` - all new rows
+present pre-start and live for both types; a live fixation-disable and
+zone-narrowing on Flash is provably reflected in the running game
+(`#flashFixpointEl` actually hidden, not the untouched real default) and
+never written back to the saved default; a live MOT style edit actually
+renders (`.mot-object.style-3d` present), same isolation guarantee
+afterward. `flash_test.py`/`flash_combo_test.py`/`mot_test.py`/
+`mot_combo_test.py`/`remember_test.py`/`remember_combo_test.py`/
+`cardio_addon_nat_batch2_test.py` re-verified passing unchanged. Two pre-
+existing, unrelated issues surfaced incidentally while running the full
+suite around this batch (confirmed via `git stash` that they reproduce
+identically without any of this batch's changes, so out of scope here):
+`stage_hint_overlap_audit_test.py`'s Corsi block placement is RNG-flaky
+(occasionally overlaps the hint/bar depending on the random layout drawn);
+`flash_fixpoint_test.py`'s "fixpoint visible by default" check is stale -
+by the time its polling loop reaches that assertion, Flash's own input
+phase has already begun, which deliberately hides the fixpoint regardless
+of settings (`flashOpenInput()`'s own comment: "Always hide it here...").
 
 ### Full-Parität Batch B: Blitz-Raster - eigene Zonen-Auswahl (2026-10-01)
 
