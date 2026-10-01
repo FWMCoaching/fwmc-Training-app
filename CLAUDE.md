@@ -4366,11 +4366,68 @@ addon-flash never shows it at all; a live zone-weight/axis/size edit is
 provably never written back to the saved per-type default, including after
 actually starting the live-edited burst.
 
-**Still not done** (Batch D, same "genau so..." ask): for Remember/Flash/
-MOT, each mode's own further numeric fine-tuning fields (training-mode
-start values, climb/growth rates, MOT's fixed-count/grow-start object and
-target counts, ...), nested under their own collapsible "Feineinstellungen"
-the same way.
+### Full-Parität Batch D: Modus-Feinwerte Remember/Flash/MOT (2026-10-01)
+
+Closes out the "genau so als wenn man die Übung einzeln machen würde" arc
+started by Batches A-C: each mode's own further numeric fields, nested
+inside the type's existing "Feineinstellungen" collapsible (client's own
+confirmed answer to the clarifying question) and shown/hidden purely based
+on `cfg.mode` - exactly which fields a mode needs mirrors each domain's own
+dedicated Ready screens field-for-field:
+
+- **Remember** - "Trainingsmodus" only: Startzahl (`trainingStart`, 2-16),
+  Positionsart (`trainingPositionMode`: fest/bewegt) and Nach Erfolg
+  (`trainingProgress`). "Feste Positionen"/"Bewegte Positionen" modes need
+  nothing extra - their own behaviour is fully determined by the mode
+  choice itself (`REMEMBER_MODES[mode].keepPositions`).
+- **Flash** - all three non-training modes differ: "Konstant" shows
+  Anzahl der Zahlen (`constantCount`, 2-6); "Steigend" (climb/climbRepeat)
+  shows Startanzahl (`startCount`, 2-9), with "Steigend, mit Wiederholung"
+  additionally showing Wiederholungen je Stufe (`repsPerLevel`, 2 or 3);
+  "Trainingsmodus" shows its own Startzahl (2-9, a different range than
+  Remember's) + Nach Erfolg.
+- **MOT** - "Tempo steigt" shows the FIXED Anzahl Objekte/Ziele
+  (`objectCount`/`targetCount`); "Anzahl steigt"/"Beides steigt" show the
+  GROWING Start-Anzahl pair (`growStartObjects`/`growStartTargets`);
+  "Trainingsmodus" shows its own Start-Anzahl pair plus Start-Tempo-Stufe
+  (`trainingSpeedStep`) and Nach Erfolg.
+- A single shared `[data-progressfield]` click handler covers all three
+  domains' own "Nach Erfolg" boolean toggle (the field name to set comes
+  from the button's own `data-progressfield` attribute) - Remember's
+  `data-posmode` and Flash's `data-repsperlevel` have no equivalent in the
+  other domains, so those stay their own small handlers.
+
+**Real isolation bugs fixed** (same class as every earlier batch):
+`startRememberGame()` read `trainingStart`/`trainingProgress`/
+`trainingPositionMode` straight from `rememberPrefs`; `startFlashGame()`
+did the same for `constantCount`/`startCount`/`trainingProgress`/
+`startLevel`/`trainingStartLevel`; `startMotGame()` did the same for
+`objectCount`/`targetCount`/`growStart*`/`training*`. All now read `p`
+(the override when one is given) instead.
+
+**Real pre-existing standalone bug fixed as a side effect**: `flashState`
+never actually carried its own `repsPerLevel` field at all (only
+`flashPrefs.repsPerLevel` existed) - `flashSuccessTransition()`'s own
+"climbRepeat" branch does `flashState.repsDone >= flashState.repsPerLevel`,
+which compared against `undefined` and could therefore never actually
+advance past the first count, in standalone play too, not just under a
+Cardio override. Threading `p.repsPerLevel` through for the Cardio
+isolation fix fixed this for real play as a direct byproduct.
+
+Test: `tests/cardio_addon_picker_mode_fields_test.py` - for all three
+domains, switching through every mode shows exactly the right field(s) and
+hides the others (Flash's climb-vs-climbRepeat distinction and MOT's three
+distinct field-pairs both explicitly checked); a live edit to each new
+field type is proven to move independently; the saved per-type default is
+untouched by any of it, including after cancelling out of the picker.
+`remember_test.py`/`remember_combo_test.py`/`flash_test.py`/
+`flash_combo_test.py`/`mot_test.py`/`mot_combo_test.py` re-verified passing
+unchanged.
+
+With Batch D done, the Cardio "+ Zusatzaufgabe" live picker and the
+pre-start Feineinstellungen panel are now field-for-field identical for
+every one of the 17 guest types - the client's "genau so als wenn man die
+Übung einzeln machen würde" ask, fully closed.
 
 ### Full-Parität Batch C: Flash Speicher Test und MOT - restliche Felder (2026-10-01)
 

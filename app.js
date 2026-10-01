@@ -6681,9 +6681,10 @@
   // prefsOverride (Cardio guest bursts only, see triggerCardioGuest()):
   // same idea as startBlitzGame()'s - never reads or mutates the client's
   // own saved rememberPrefs. Training-mode-specific fields
-  // (trainingStart/trainingPositionMode) stay at rememberPrefs' own
-  // defaults even under an override - the Cardio panel doesn't expose
-  // them, same proportionate-scope call as elsewhere in this batch.
+  // (trainingStart/trainingProgress/trainingPositionMode) now come from the
+  // Cardio panel's own cfg too (Batch D) - fixed an isolation bug the same
+  // batch turned up: they used to read rememberPrefs directly regardless of
+  // prefsOverride.
   function startRememberGame(mode, opts, prefsOverride) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
@@ -6696,14 +6697,14 @@
     const p = prefsOverride || rememberPrefs;
     lastRememberMode = mode;
     rememberReturnScreen = mode === "training" ? "rememberTrainingReady" : "rememberReady";
-    const startLevel = mode === "training" ? rememberPrefs.trainingStart : 2;
-    const keepPositions = mode === "training" ? rememberPrefs.trainingPositionMode === "fixed" : REMEMBER_MODES[mode].keepPositions;
+    const startLevel = mode === "training" ? p.trainingStart : 2;
+    const keepPositions = mode === "training" ? p.trainingPositionMode === "fixed" : REMEMBER_MODES[mode].keepPositions;
     rememberState = {
       mode, level: startLevel, cleared: 0, positions: [], phase: "reveal", nextExpected: 1,
       startTime: performance.now(), timer: null, comboDurationTimer: null, positionCache: {}, keepPositions,
       revealBaseS: p.revealBaseS, revealStepS: p.revealStepS,
       errorMode: p.errorMode,
-      trainingStart: rememberPrefs.trainingStart, trainingProgress: rememberPrefs.trainingProgress,
+      trainingStart: p.trainingStart, trainingProgress: p.trainingProgress,
       paused: false,
     };
     els.rememberStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
@@ -8154,9 +8155,15 @@
   let flashReturnScreen = "natHome";
   // prefsOverride (Cardio guest bursts only): same idea as
   // startBlitzGame()/startRememberGame()'s - never reads or mutates the
-  // client's own saved flashPrefs. axes/zones/fixation point stay at
-  // flashPrefs' own defaults even under an override (not exposed in the
-  // Cardio panel, same call as periph-flash/addon-flash).
+  // client's own saved flashPrefs. All mode-specific starting counts now
+  // come from the Cardio panel's own cfg too (Batch D) - fixed the same
+  // isolation leak Batch D turned up elsewhere (these used to read
+  // flashPrefs directly regardless of prefsOverride). Also fixes a real,
+  // pre-existing standalone bug found while at it: flashState never
+  // actually carried its own repsPerLevel at all (only flashPrefs.
+  // repsPerLevel existed) - "climbRepeat"'s own repsDone>=repsPerLevel
+  // check at flashSuccessTransition() compared against undefined, so it
+  // could never actually advance past the first count.
   function startFlashGame(mode, opts, prefsOverride) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
@@ -8170,14 +8177,14 @@
     const p = prefsOverride || flashPrefs;
     lastFlashMode = mode;
     flashReturnScreen = mode === "training" ? "flashTrainingReady" : "flashReady";
-    const startCount = mode === "training" ? flashPrefs.trainingStart : flashPrefs.startCount;
+    const startCount = mode === "training" ? p.trainingStart : p.startCount;
     flashState = {
-      mode, kind: p.kind, count: startCount, constantCount: flashPrefs.constantCount, speedStep: 0, repsDone: 0, cleared: 0,
+      mode, kind: p.kind, count: startCount, constantCount: p.constantCount, speedStep: 0, repsDone: 0, repsPerLevel: p.repsPerLevel, cleared: 0,
       sequence: [], shownIndex: 0, typed: "", phase: "flash", timer: null, comboDurationTimer: null,
       stimulusS: p.stimulusS, intervalS: p.intervalS, errorMode: p.errorMode,
       axes: p.axes.slice(), zones: p.zones.slice(), useZones: p.useZones,
       fixEnabled: p.fixEnabled, fixChar: p.fixChar, fixColor: p.fixColor, fixSize: p.fixSize,
-      trainingProgress: flashPrefs.trainingProgress, startLevel: flashPrefs.startCount, trainingStartLevel: flashPrefs.trainingStart,
+      trainingProgress: p.trainingProgress, startLevel: p.startCount, trainingStartLevel: p.trainingStart,
       startTime: performance.now(), paused: false,
     };
     renderFlashKeypad();
@@ -8988,17 +8995,11 @@
   let lastMotMode = null;
   let motReturnScreen = "natHome";
   // prefsOverride (Cardio guest bursts only): same idea as the other
-  // domains' - never reads or mutates the client's own saved motPrefs.
-  // style/targetColors now come from the Cardio panel's own cfg under a
-  // guest burst too (Batch C, see buildCardioGuestFieldsHtml()'s MOT
-  // branch) - fixed alongside a real isolation bug this turned up: both
-  // used to read motPrefs directly even under prefsOverride, silently
-  // using the client's own real saved values instead of the (until now
-  // nonexistent) panel's. objectCount/targetCount/growStart*/training*
-  // stay at motPrefs' own values for now (mode-specific fields, not yet
-  // exposed in the Cardio panel - Batch D) - same open isolation gap,
-  // tracked in CLAUDE.md, not fixed until that batch gives them a real
-  // cfg home to read from instead.
+  // domains' - never reads or mutates the client's own saved motPrefs. All
+  // mode-specific counts now come from the Cardio panel's own cfg too
+  // (Batch D) - fixed the same isolation leak Batch C already fixed for
+  // style/targetColors (these used to read motPrefs directly regardless of
+  // prefsOverride).
   function startMotGame(mode, opts, prefsOverride) {
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
@@ -9010,15 +9011,15 @@
     const p = prefsOverride || motPrefs;
     lastMotMode = mode;
     motReturnScreen = mode === "training" ? "motTrainingReady" : "motReady";
-    const startObjects = mode === "training" ? motPrefs.trainingObjects : motPrefs.growStartObjects;
-    const startTargets = mode === "training" ? motPrefs.trainingTargets : motPrefs.growStartTargets;
-    const startSpeedStep = mode === "training" ? motPrefs.trainingSpeedStep : 0;
+    const startObjects = mode === "training" ? p.trainingObjects : p.growStartObjects;
+    const startTargets = mode === "training" ? p.trainingTargets : p.growStartTargets;
+    const startSpeedStep = mode === "training" ? p.trainingSpeedStep : 0;
     motState = {
       mode, level: 1, cleared: 0, phase: "highlight",
       objects: [], targetIds: new Set(), tapped: new Set(), wrongId: null,
-      objectCount: motPrefs.objectCount, targetCount: motPrefs.targetCount,
+      objectCount: p.objectCount, targetCount: p.targetCount,
       startObjects, startTargets, startSpeedStep,
-      trainingProgress: motPrefs.trainingProgress,
+      trainingProgress: p.trainingProgress,
       speed: p.speed, trackS: p.trackS, highlightS: p.highlightS,
       errorMode: p.errorMode, style: p.style, colors: p.colors.slice(), targetColors: p.targetColors.slice(),
       startTime: performance.now(), timer: null, comboDurationTimer: null, raf: null, paused: false,
@@ -10642,15 +10643,13 @@
     if (cardioGuestIsPeriphLike(guestId)) return { duration: 20, ...addonDefaultOwn(), zoneWeights: { tl: 1, tm: 1, tr: 1, ml: 1, mr: 1, bl: 1, bm: 1, br: 1 }, ...bg };
     if (guestId === "cone-tap") return { duration: 20 };
     if (guestId === "blitz-raster") return { duration: 20, flashS: BLITZ_DIFFICULTIES.mittel.flashS, errorMode: "reset2", gridSize: 4, startCount: 3, zones: PERIPH_ZONE_KEYS.slice(), ...bg };
-    // Remember/Flash/MOT: mode-specific starting counts (trainingStart,
-    // startCount, growStartObjects/Targets, ...) deliberately stay at
-    // each domain's own built-in default rather than being exposed here
-    // too (for now - see Batch D in CLAUDE.md) - same "keep this panel's
-    // depth proportionate" call already made for Blitz-Raster's zones
-    // (Batch B).
-    if (guestId === "remember") return { duration: 20, mode: "fixed", revealBaseS: REMEMBER_DIFFICULTIES.mittel.revealBaseS, revealStepS: REMEMBER_DIFFICULTIES.mittel.revealStepS, errorMode: "reset2", ...bg };
-    if (guestId === "flash") return { duration: 20, mode: "constant", kind: "zahlen", stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS, intervalS: FLASH_DIFFICULTIES.mittel.intervalS, errorMode: "reset2", axes: PERIPH_AXIS_KEYS.slice(), useZones: false, zones: PERIPH_ZONE_KEYS.slice(), fixEnabled: true, fixChar: "", fixColor: "grau", fixSize: 1, ...bg };
-    if (guestId === "mot") return { duration: 20, mode: "speed", style: "flach", speed: MOT_DIFFICULTIES.mittel.speed, trackS: MOT_DIFFICULTIES.mittel.trackS, highlightS: MOT_DIFFICULTIES.mittel.highlightS, errorMode: "reset2", colors: ["schwarz"], targetColors: ["gelb"], ...bg };
+    // Remember/Flash/MOT: training-mode start values added here (Batch D) -
+    // the OTHER modes' own numeric fields (Flash's constantCount/startCount/
+    // repsPerLevel, MOT's fixed-count/grow-start objects+targets) still
+    // deliberately stay at each domain's own built-in default for now.
+    if (guestId === "remember") return { duration: 20, mode: "fixed", revealBaseS: REMEMBER_DIFFICULTIES.mittel.revealBaseS, revealStepS: REMEMBER_DIFFICULTIES.mittel.revealStepS, errorMode: "reset2", trainingStart: 8, trainingProgress: true, trainingPositionMode: "shuffle", ...bg };
+    if (guestId === "flash") return { duration: 20, mode: "constant", kind: "zahlen", stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS, intervalS: FLASH_DIFFICULTIES.mittel.intervalS, errorMode: "reset2", axes: PERIPH_AXIS_KEYS.slice(), useZones: false, zones: PERIPH_ZONE_KEYS.slice(), fixEnabled: true, fixChar: "", fixColor: "grau", fixSize: 1, constantCount: 3, startCount: 3, repsPerLevel: 2, trainingStart: 5, trainingProgress: true, ...bg };
+    if (guestId === "mot") return { duration: 20, mode: "speed", style: "flach", speed: MOT_DIFFICULTIES.mittel.speed, trackS: MOT_DIFFICULTIES.mittel.trackS, highlightS: MOT_DIFFICULTIES.mittel.highlightS, errorMode: "reset2", colors: ["schwarz"], targetColors: ["gelb"], objectCount: 8, targetCount: 4, growStartObjects: 4, growStartTargets: 1, trainingObjects: 6, trainingTargets: 2, trainingSpeedStep: 0, trainingProgress: true, ...bg };
     if (guestId === "vt-color" || guestId === "vrw-original") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg };
     if (guestId === "stroop-classic" || guestId === "stroop-bg") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "blau", "gruen"], ...bg };
     if (guestId === "8-vrw" || guestId === "cross-modal") return { duration: 20, stimulusS: 1, intervalMin: 2, intervalMax: 4, ...bg };
@@ -10715,6 +10714,9 @@
         if (!Number.isFinite(p.revealBaseS) || p.revealBaseS < 0.5 || p.revealBaseS > 3) p.revealBaseS = d.revealBaseS;
         if (!Number.isFinite(p.revealStepS) || p.revealStepS < 0.1 || p.revealStepS > 1) p.revealStepS = d.revealStepS;
         if (!["reset2", "backOne", "stay"].includes(p.errorMode)) p.errorMode = d.errorMode;
+        if (!Number.isFinite(p.trainingStart) || p.trainingStart < 2 || p.trainingStart > 16) p.trainingStart = d.trainingStart;
+        if (typeof p.trainingProgress !== "boolean") p.trainingProgress = d.trainingProgress;
+        if (!["fixed", "shuffle"].includes(p.trainingPositionMode)) p.trainingPositionMode = d.trainingPositionMode;
       }
       if (cardioGuestIsFlash(t.id)) {
         if (!["buchstaben", "zahlen", "gemischt"].includes(p.kind)) p.kind = d.kind;
@@ -10728,6 +10730,11 @@
         if (typeof p.fixChar !== "string") p.fixChar = d.fixChar;
         if (!FIX_COLOR_BY_KEY[p.fixColor]) p.fixColor = d.fixColor;
         if (!Number.isFinite(p.fixSize) || p.fixSize < 0.6 || p.fixSize > 2) p.fixSize = d.fixSize;
+        if (!Number.isFinite(p.constantCount) || p.constantCount < 2 || p.constantCount > 6) p.constantCount = d.constantCount;
+        if (!Number.isFinite(p.startCount) || p.startCount < 2 || p.startCount > 9) p.startCount = d.startCount;
+        if (![2, 3].includes(p.repsPerLevel)) p.repsPerLevel = d.repsPerLevel;
+        if (!Number.isFinite(p.trainingStart) || p.trainingStart < 2 || p.trainingStart > 9) p.trainingStart = d.trainingStart;
+        if (typeof p.trainingProgress !== "boolean") p.trainingProgress = d.trainingProgress;
       }
       if (cardioGuestIsMot(t.id)) {
         if (!Number.isFinite(p.speed) || p.speed < 0.05 || p.speed > 0.4) p.speed = d.speed;
@@ -10736,6 +10743,14 @@
         if (!["reset2", "backOne", "stay"].includes(p.errorMode)) p.errorMode = d.errorMode;
         if (!["flach", "3d"].includes(p.style)) p.style = d.style;
         if (!Array.isArray(p.targetColors) || !p.targetColors.length || !p.targetColors.every((k) => STROOP_COLOR_BY_KEY[k])) p.targetColors = d.targetColors.slice();
+        if (!Number.isFinite(p.objectCount) || p.objectCount < 4 || p.objectCount > 12) p.objectCount = d.objectCount;
+        if (!Number.isFinite(p.targetCount) || p.targetCount < 1 || p.targetCount > 4) p.targetCount = d.targetCount;
+        if (!Number.isFinite(p.growStartObjects) || p.growStartObjects < 3 || p.growStartObjects > 8) p.growStartObjects = d.growStartObjects;
+        if (!Number.isFinite(p.growStartTargets) || p.growStartTargets < 1 || p.growStartTargets > 3) p.growStartTargets = d.growStartTargets;
+        if (!Number.isFinite(p.trainingObjects) || p.trainingObjects < 3 || p.trainingObjects > 12) p.trainingObjects = d.trainingObjects;
+        if (!Number.isFinite(p.trainingTargets) || p.trainingTargets < 1 || p.trainingTargets > 4) p.trainingTargets = d.trainingTargets;
+        if (!Number.isFinite(p.trainingSpeedStep) || p.trainingSpeedStep < 0 || p.trainingSpeedStep > 20) p.trainingSpeedStep = d.trainingSpeedStep;
+        if (typeof p.trainingProgress !== "boolean") p.trainingProgress = d.trainingProgress;
       }
     });
   }
@@ -10933,6 +10948,22 @@
             `<div class="slider-row"><input type="range" min="0.4" max="3" step="0.1" data-type="${t.id}" data-f="revealBaseS" value="${cfg.revealBaseS}"><span class="slider-value" data-fvalue="${t.id}-revealBaseS">${cfg.revealBaseS}</span></div>` +
             `<div class="group-label">Zusätzliche Zeit je weiterer Zahl</div>` +
             `<div class="slider-row"><input type="range" min="0.05" max="0.6" step="0.05" data-type="${t.id}" data-f="revealStepS" value="${cfg.revealStepS}"><span class="slider-value" data-fvalue="${t.id}-revealStepS">${cfg.revealStepS}</span></div>` +
+            // Trainingsmodus-eigene Startwerte - nur relevant, wenn der
+            // Modus oben auch tatsächlich auf Trainingsmodus steht.
+            (cfg.mode === "training" ? (
+              `<div class="group-label">Startzahl <span class="group-count">${cfg.trainingStart}</span></div>` +
+              `<div class="slider-row"><input type="range" min="2" max="16" step="1" data-type="${t.id}" data-f="trainingStart" value="${cfg.trainingStart}"><span class="slider-value" data-fvalue="${t.id}-trainingStart">${cfg.trainingStart}</span></div>` +
+              `<div class="group-label">Positionsart</div>` +
+              `<div class="choice-row two">` +
+              `<button class="choice${cfg.trainingPositionMode === "fixed" ? " active" : ""}" data-type="${t.id}" data-posmode="fixed">Feste Positionen<small>bisherige bleiben</small></button>` +
+              `<button class="choice${cfg.trainingPositionMode === "shuffle" ? " active" : ""}" data-type="${t.id}" data-posmode="shuffle">Bewegte Positionen<small>immer neu gemischt</small></button>` +
+              `</div>` +
+              `<div class="group-label">Nach Erfolg</div>` +
+              `<div class="choice-row two">` +
+              `<button class="choice${cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="1">Weiter steigern<small>wie gewohnt +1</small></button>` +
+              `<button class="choice${!cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="0">Bei dieser Zahl bleiben<small>zum gezielten Üben</small></button>` +
+              `</div>`
+            ) : "") +
             `</div></details>`;
         } else if (cardioGuestIsFlash(t.id)) {
           html += `<div class="choice-row" data-diff-row="${t.id}">` +
@@ -10958,6 +10989,31 @@
               `</div>` +
               `<div class="slider-row"><span class="slider-label">Größe</span><input type="range" min="0.6" max="2" step="0.1" data-type="${t.id}" data-f="fixSize" value="${cfg.fixSize}"><span class="slider-value" data-fvalue="${t.id}-fixSize">${cfg.fixSize}</span></div>`
             ) : "") +
+            // Modus-eigene Startwerte - welches Feld gezeigt wird, hängt
+            // vom oben gewählten Modus ab, genau wie auf den jeweils
+            // eigenen Ready-Seiten (flashConstantGroup/flashStartGroup/
+            // flashRepsGroup/flashTrainingReady).
+            (cfg.mode === "constant" ? (
+              `<div class="group-label">Anzahl der Zahlen <span class="group-count">${cfg.constantCount}</span></div>` +
+              `<div class="slider-row"><input type="range" min="2" max="6" step="1" data-type="${t.id}" data-f="constantCount" value="${cfg.constantCount}"><span class="slider-value" data-fvalue="${t.id}-constantCount">${cfg.constantCount}</span></div>`
+            ) : cfg.mode === "climb" || cfg.mode === "climbRepeat" ? (
+              `<div class="group-label">Startanzahl <span class="group-count">${cfg.startCount}</span></div>` +
+              `<div class="slider-row"><input type="range" min="2" max="9" step="1" data-type="${t.id}" data-f="startCount" value="${cfg.startCount}"><span class="slider-value" data-fvalue="${t.id}-startCount">${cfg.startCount}</span></div>` +
+              (cfg.mode === "climbRepeat" ? (
+                `<div class="group-label">Wiederholungen je Stufe</div>` +
+                `<div class="choice-row two">` +
+                [2, 3].map((n) => `<button class="choice${cfg.repsPerLevel === n ? " active" : ""}" data-type="${t.id}" data-repsperlevel="${n}">${n}&times;</button>`).join("") +
+                `</div>`
+              ) : "")
+            ) : cfg.mode === "training" ? (
+              `<div class="group-label">Startzahl <span class="group-count">${cfg.trainingStart}</span></div>` +
+              `<div class="slider-row"><input type="range" min="2" max="9" step="1" data-type="${t.id}" data-f="trainingStart" value="${cfg.trainingStart}"><span class="slider-value" data-fvalue="${t.id}-trainingStart">${cfg.trainingStart}</span></div>` +
+              `<div class="group-label">Nach Erfolg</div>` +
+              `<div class="choice-row two">` +
+              `<button class="choice${cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="1">Weiter steigern<small>wie gewohnt +1</small></button>` +
+              `<button class="choice${!cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="0">Bei dieser Zahl bleiben<small>zum gezielten Üben</small></button>` +
+              `</div>`
+            ) : "") +
             `</div></details>`;
         } else {
           html += `<div class="choice-row" data-diff-row="${t.id}">` +
@@ -10972,6 +11028,33 @@
             `<div class="slider-row"><input type="range" min="3" max="15" step="0.5" data-type="${t.id}" data-f="trackS" value="${cfg.trackS}"><span class="slider-value" data-fvalue="${t.id}-trackS">${cfg.trackS}</span></div>` +
             `<div class="group-label">Markierdauer</div>` +
             `<div class="slider-row"><input type="range" min="1" max="4" step="0.1" data-type="${t.id}" data-f="highlightS" value="${cfg.highlightS}"><span class="slider-value" data-fvalue="${t.id}-highlightS">${cfg.highlightS}</span></div>` +
+            // Modus-eigene Objekt-/Ziel-Anzahlen - welches Feldpaar gezeigt
+            // wird, hängt vom oben gewählten Modus ab, genau wie auf den
+            // jeweils eigenen Ready-Seiten (motFixedCountGroup/
+            // motGrowStartGroup/motTrainingReady).
+            (cfg.mode === "speed" ? (
+              `<div class="group-label">Anzahl Objekte <span class="group-count">${cfg.objectCount}</span></div>` +
+              `<div class="slider-row"><input type="range" min="4" max="12" step="1" data-type="${t.id}" data-f="objectCount" value="${cfg.objectCount}"><span class="slider-value" data-fvalue="${t.id}-objectCount">${cfg.objectCount}</span></div>` +
+              `<div class="group-label">Anzahl Ziele <span class="group-count">${cfg.targetCount}</span></div>` +
+              `<div class="slider-row"><input type="range" min="1" max="4" step="1" data-type="${t.id}" data-f="targetCount" value="${cfg.targetCount}"><span class="slider-value" data-fvalue="${t.id}-targetCount">${cfg.targetCount}</span></div>`
+            ) : cfg.mode === "count" || cfg.mode === "both" ? (
+              `<div class="group-label">Start-Anzahl Objekte <span class="group-count">${cfg.growStartObjects}</span></div>` +
+              `<div class="slider-row"><input type="range" min="3" max="8" step="1" data-type="${t.id}" data-f="growStartObjects" value="${cfg.growStartObjects}"><span class="slider-value" data-fvalue="${t.id}-growStartObjects">${cfg.growStartObjects}</span></div>` +
+              `<div class="group-label">Start-Anzahl Ziele <span class="group-count">${cfg.growStartTargets}</span></div>` +
+              `<div class="slider-row"><input type="range" min="1" max="3" step="1" data-type="${t.id}" data-f="growStartTargets" value="${cfg.growStartTargets}"><span class="slider-value" data-fvalue="${t.id}-growStartTargets">${cfg.growStartTargets}</span></div>`
+            ) : cfg.mode === "training" ? (
+              `<div class="group-label">Start-Anzahl Objekte <span class="group-count">${cfg.trainingObjects}</span></div>` +
+              `<div class="slider-row"><input type="range" min="3" max="12" step="1" data-type="${t.id}" data-f="trainingObjects" value="${cfg.trainingObjects}"><span class="slider-value" data-fvalue="${t.id}-trainingObjects">${cfg.trainingObjects}</span></div>` +
+              `<div class="group-label">Start-Anzahl Ziele <span class="group-count">${cfg.trainingTargets}</span></div>` +
+              `<div class="slider-row"><input type="range" min="1" max="4" step="1" data-type="${t.id}" data-f="trainingTargets" value="${cfg.trainingTargets}"><span class="slider-value" data-fvalue="${t.id}-trainingTargets">${cfg.trainingTargets}</span></div>` +
+              `<div class="group-label">Start-Tempo-Stufe <span class="group-count">${cfg.trainingSpeedStep}</span></div>` +
+              `<div class="slider-row"><input type="range" min="0" max="20" step="1" data-type="${t.id}" data-f="trainingSpeedStep" value="${cfg.trainingSpeedStep}"><span class="slider-value" data-fvalue="${t.id}-trainingSpeedStep">${cfg.trainingSpeedStep}</span></div>` +
+              `<div class="group-label">Nach Erfolg</div>` +
+              `<div class="choice-row two">` +
+              `<button class="choice${cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="1">Weiter steigern<small>wie gewohnt</small></button>` +
+              `<button class="choice${!cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="0">Bei dieser Stufe bleiben<small>zum gezielten Üben</small></button>` +
+              `</div>`
+            ) : "") +
             `</div></details>`;
         }
         const errorLabels = cardioGuestIsRemember(t.id)
@@ -11256,6 +11339,24 @@
         getCfg(radio.dataset.fixtype).fixColor = radio.dataset.fixcolor;
         persist();
       });
+    });
+    // Training-mode-specific fields (Batch D) - one shared boolean-toggle
+    // handler covers Remember's/Flash's/MOT's own "Nach Erfolg" choice
+    // (field name given via data-progressfield so the one handler can set
+    // any of them), plus Remember's own "Positionsart" and Flash's own
+    // "Wiederholungen je Stufe", neither of which exists in the other
+    // domains.
+    container.querySelectorAll("[data-progressfield]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        getCfg(btn.dataset.type)[btn.dataset.progressfield] = btn.dataset.progressval === "1";
+        select();
+      });
+    });
+    container.querySelectorAll("[data-posmode]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).trainingPositionMode = btn.dataset.posmode; select(); });
+    });
+    container.querySelectorAll("[data-repsperlevel]").forEach((btn) => {
+      btn.addEventListener("click", () => { getCfg(btn.dataset.type).repsPerLevel = Number(btn.dataset.repsperlevel); select(); });
     });
     container.querySelectorAll("input[data-bgcolor]").forEach((radio) => {
       radio.addEventListener("change", () => {
