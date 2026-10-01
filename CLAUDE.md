@@ -242,6 +242,19 @@ unrelated to the feature being changed.
   `flashSafeFy()` (see its NAT entry below) - not worth merging, since it
   clamps a single already-computed `fy` fraction rather than being a whole
   bounds function.
+- **Hard rule: nothing on a stage may ever sit under the hint or a
+  player-bar button (client, 2026-10-01, after an iPad screenshot of
+  Linienhalbierungs-Test drawing its line right next to "Tippe auf die
+  Mitte der Linie")**: applies to every exercise, present and future, in
+  every section. Fixed then: `bisectRenderLine()` and `renderSubitizeDots()`
+  now clamp their top edge via `stageTopClearanceY()`, and `.ufov-stage`
+  got a top padding clearing hint + bar. `tests/hint_overlap_all_test.py`
+  starts every Test-Bereich and NAT exercise at 390px and 1000px width,
+  samples the stage repeatedly and fails on any visible element
+  overlapping the hint or a bar item (plus a `Math.random=()=>0`
+  worst-case run for Linienhalbierung). **Any new exercise must be added to
+  that test's `TEST`/`NAT` lists in the same commit**, and must place its
+  content below the measured hint/bar, never at a hardcoded y.
 - **`.player-bar` can also overflow off-screen on a narrow phone (fixed
   2026-09-27, found while investigating the above)**: the bar's 4 items
   (Beenden/Pause/status pill/Vollbild) are `display:flex;justify-content:

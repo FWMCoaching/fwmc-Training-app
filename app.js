@@ -16901,8 +16901,13 @@
     const maxStartX = Math.max(margin, rect.width - lengthPx - margin);
     const startX = margin + Math.random() * Math.max(0, maxStartX - margin);
     const lineH = 4;
-    const maxStartY = Math.max(0, rect.height - lineH);
-    const startY = Math.random() * maxStartY;
+    // Keep the line (and the 28px tap mark centred on it) clear of the
+    // floating hint and player-bar - .bisect-area starts at the top of the
+    // stage, underneath both (client report: line drawn right next to the
+    // "Tippe auf die Mitte der Linie" text on an iPad).
+    const minY = stageTopClearanceY(rect, els.bisectHint, els.bisectPlayerBar, 0, 14);
+    const maxStartY = Math.max(minY, rect.height - lineH - margin);
+    const startY = minY + Math.random() * (maxStartY - minY);
     els.bisectLine.style.left = startX + "px";
     els.bisectLine.style.top = startY + "px";
     els.bisectLine.style.width = lengthPx + "px";
@@ -21743,11 +21748,13 @@
     els.subitizeDots.innerHTML = "";
     const rect = els.subitizeDots.getBoundingClientRect();
     const radius = 14;
-    subitizePlaceDots(count, rect.width, rect.height, radius).forEach((p) => {
+    // Dots must never land under the floating hint or player-bar.
+    const minY = Math.max(0, stageTopClearanceY(rect, els.subitizeHint, els.subitizePlayerBar, 0, 0, 8));
+    subitizePlaceDots(count, rect.width, Math.max(2 * radius, rect.height - minY), radius).forEach((p) => {
       const dot = document.createElement("div");
       dot.className = "subitize-dot";
       dot.style.left = p.x + "px";
-      dot.style.top = p.y + "px";
+      dot.style.top = (p.y + minY) + "px";
       els.subitizeDots.appendChild(dot);
     });
   }
