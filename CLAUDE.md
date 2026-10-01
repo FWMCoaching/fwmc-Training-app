@@ -4863,7 +4863,8 @@ nav bar still has the `<button class="section-tab" data-section="test">`
 markup (untouched, still there for this Routine's own build/test work to
 target), but `applyTestTabVisibility()` in app.js (near `CODE_API`) hides
 it via `.hidden` unless `localStorage['fwmc-test-unlocked']` is set.
-Typing the word `testbereich-frei` into ANY section's existing training-
+Typing the word `testbereich-ein` (older word `testbereich-frei` still
+accepted) into ANY section's existing training-
 code box sets that flag (through `openProgramIntro()`'s own intercept,
 before the real code lookup) and reveals the tab permanently on that
 browser (typing `testbereich-aus` the same way hides it again and

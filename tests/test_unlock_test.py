@@ -49,7 +49,7 @@ async def main():
         print("Test tab still hidden after a wrong code:", await pg.is_hidden('#home .section-tab[data-section="test"]'))
 
         # ---- the real unlock word, typed into Visual Training's own code box ----
-        await pg.fill("#programCodeInput", "testbereich-frei")
+        await pg.fill("#programCodeInput", "Testbereich-ein")
         await pg.click("#programGoBtn"); await pg.wait_for_timeout(400)
         print("jumps straight into testHome:", await pg.is_visible("#testHome"))
         print("Test tab now visible + active:", "active" in (await pg.get_attribute('#testHome .section-tab[data-section="test"]', "class") or ""))
@@ -83,6 +83,11 @@ async def main():
         print("welcome-text Test mention hidden again:", await pg.get_attribute("#tipsWelcome .test-teaser", "hidden") is not None)
         await pg.reload(); await pg.wait_for_timeout(400)
         print("still hidden after reload:", await pg.is_hidden('#home .section-tab[data-section="test"]'))
+
+        # ---- old unlock word still works ----
+        await pg.fill("#programCodeInput", "testbereich-frei")
+        await pg.click("#programGoBtn"); await pg.wait_for_timeout(400)
+        print("legacy word testbereich-frei still unlocks:", await pg.is_visible("#testHome"))
 
         print("FINAL ERRORS:", errors)
         await b.close()
