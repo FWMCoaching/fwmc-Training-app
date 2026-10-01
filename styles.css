@@ -1050,6 +1050,11 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .bisect-line{position:absolute;height:4px;border-radius:2px;background:#16232a}
 .bisect-mark{position:absolute;width:2px;height:28px;background:#007094;transform:translate(-50%,-50%)}
 
+.kippbild-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;background:#ffffff}
+.kippbild-area{flex:1;display:flex;align-items:center;justify-content:center;width:100%;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.kippbild-cube{width:min(62vw,260px);height:min(62vw,260px)}
+.kippbild-cube polygon,.kippbild-cube line{fill:none;stroke:#16232a;stroke-width:3;stroke-linecap:round}
+
 .corsi-stage{flex:1;position:relative;overflow:hidden}
 .corsi-block{
   position:absolute;transform:translate(-50%,-50%);

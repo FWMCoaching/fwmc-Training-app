@@ -6387,6 +6387,81 @@ doesn't:
   convention already used for Merkspanne's `.merk-field`, so
   `stageTopClearanceY()` doesn't apply here either, by the same
   reasoning. Test: `tests/bisect_test.py`.
+- **Kippbild-Test (Necker-Würfel)** (twenty-ninth autonomous entry,
+  2026-10-01): grounded in the classic multistable-perception paradigm
+  around the Necker cube (Necker, L.A., 1832, "Observations on some
+  remarkable phaenomena seen in Switzerland..." - the first documented
+  description of a line drawing whose perceived 3D orientation
+  spontaneously flips under completely unchanged visual input) and the
+  broader bistable-perception literature studying how such reversals occur
+  over time (e.g. Borsellino et al., 1972, finding reversal timing follows
+  a roughly random process rather than a fixed rhythm). A plain wireframe
+  cube - two offset squares connected by four diagonal edges, every line
+  drawn identically, with no shading or occlusion cue favouring either
+  interpretation - is shown continuously for the whole run; the image
+  itself never changes at all. The client simply taps once every time
+  their own perceived orientation of the cube flips. Two modes are offered
+  (`kippbildPrefs.mode`): "Neutral beobachten" (just observe and tap) and
+  "Bewusst verlangsamen" (deliberately try to slow the reversals down) -
+  research following up on Necker's own observation that attention/
+  intention can bias reversal rate to some degree (though never fully
+  suppress it) treats voluntary control as a genuine, separate condition
+  worth comparing against a neutral baseline, not just a label change.
+  Genuinely distinct from every existing Test/NAT mechanic, in fact the
+  single most distinct entry on this whole tab: this is the ONLY exercise
+  whose physical stimulus never changes at all for the entire run - every
+  other exercise's "event" is something appearing, moving, lighting up, or
+  changing on screen; here the event being counted is a purely internal,
+  spontaneous perceptual switch with no external trigger whatsoever.
+  `kippbildPrefs.length` (kurz/mittel/lang = 45/60/90s) is the only other
+  client-facing setting. Reports total reversals and reversals/minute (a
+  rate, not a raw count, so different lengths stay comparable - same
+  reasoning as Reaktionsfeld-Test's own Treffer/Min). **Deliberately NO
+  best-score tracking, unlike every other Test exercise** - the featured
+  card has no `.fc-meta` element at all: a reversal rate is a measure of
+  an individual, largely involuntary perceptual trait, not a skill with a
+  "better" direction, and a client could trivially "win" a tracked record
+  with a flurry of fast meaningless taps while actually defeating the
+  whole point of the measurement - the same concern Linienhalbierungs-
+  Test's own Offene-Fragen entry already raised about forcing a best-score
+  onto a trait measurement, resolved here by simply not building one
+  rather than building one and then flagging doubt about it. No Bei-Fehler
+  (there is no wrong answer - every tap is simply logged), no
+  Zusatzaufgabe/Trainingsmodus - correctly skipped per the "optional, skip
+  what doesn't fit in an hour" guidance. Background colour/intensity WAS
+  included (`kippbildPrefs.bgColorKey`/`bgIntensity`, `makeBgApplier`/
+  `wireBgIntensityControl` on both the ready screen and the pause overlay,
+  plus a `MASTER_BG_TARGETS` registry entry) - basically free, and a tint
+  behind the cube's own fixed-hex outline doesn't compete with anything
+  being judged (the task is about perceived 3D orientation, not colour or
+  contrast). Uses a single duration-based end timer (the same
+  `scheduleXTimer`-remaining-delay pause/resume trick as every other Test
+  entry) rather than per-trial scheduling, since there are no trials at
+  all - just one continuous observation window; a live status line ("N
+  Wechsel · Ms") updates 4x/second via a plain `setInterval` that simply
+  skips its own update while paused, freezing the display for free with no
+  extra pause-specific logic needed. "Beenden" doubles as Finish once at
+  least `KIPPBILD_MIN_PLAYED_S` (8s) have actually elapsed - below that
+  there usually hasn't been enough time to notice even one natural
+  reversal, so an accidental immediate Beenden doesn't produce a
+  misleadingly empty "0 Wechsel" result. **A real layout bug caught and
+  fixed during manual verification, not by the test (the test was written
+  afterward to cover it)**: at 390px width the player-bar's four items
+  (Beenden/Pause/the status pill/Vollbild) don't fit on one row and wrap to
+  two, the same class of bug this file already documents for MOT's own
+  status pill - but unlike a brief per-trial instruction, this exercise's
+  hint stays visible for the ENTIRE run, and `.remember-hint`'s fixed CSS
+  `top:68px` offset (sized for a one-row bar) left it rendering partially
+  underneath/behind the wrapped second row for the whole exercise, not
+  just briefly. Fixed with `kippbildPositionHint()`, which reads the bar's
+  own live `getBoundingClientRect().bottom` and sets the hint's inline
+  `top` just below it - recomputed on every status tick (not just once at
+  start), since the shrinking "remaining seconds" text can itself un-wrap
+  the bar from two rows back to one as a run winds down toward single
+  digits, and the hint needs to track that back upward too, not just move
+  down once. `tests/kippbild_test.py` asserts the two elements' rendered
+  rects never actually overlap, rather than trusting a fixed offset.
+  Test: `tests/kippbild_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 

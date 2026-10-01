@@ -1675,6 +1675,18 @@
     bisectFsBtn: $("bisectFsBtn"), bisectFsHint: $("bisectFsHint"), bisectFsHintOpenBtn: $("bisectFsHintOpenBtn"), bisectFsHintClose: $("bisectFsHintClose"),
     bisectDonePanel: $("bisectDonePanel"), bisectDoneSummary: $("bisectDoneSummary"), bisectRating: $("bisectRating"),
     bisectAgainBtn: $("bisectAgainBtn"), bisectDoneBackBtn: $("bisectDoneBackBtn"),
+    kippbildOpenBtn: $("kippbildOpenBtn"), kippbildReady: $("kippbildReady"),
+    kippbildReadyBackToHome: $("kippbildReadyBackToHome"), kippbildLengthRow: $("kippbildLengthRow"), kippbildModeRow: $("kippbildModeRow"),
+    kippbildAdvanced: $("kippbildAdvanced"), kippbildBgColorPicker: $("kippbildBgColorPicker"), kippbildBgIntensitySlider: $("kippbildBgIntensitySlider"),
+    kippbildBgIntensityValue: $("kippbildBgIntensityValue"), kippbildBgContrastHint: $("kippbildBgContrastHint"), kippbildBgMasterStatus: $("kippbildBgMasterStatus"),
+    kippbildReadyStartBtn: $("kippbildReadyStartBtn"),
+    kippbildPlayer: $("kippbildPlayer"), kippbildStage: $("kippbildStage"), kippbildHint: $("kippbildHint"), kippbildArea: $("kippbildArea"), kippbildCubeSvg: $("kippbildCubeSvg"),
+    kippbildPauseOverlay: $("kippbildPauseOverlay"), kippbildResumeBtn: $("kippbildResumeBtn"),
+    kippbildPauseBgSlider: $("kippbildPauseBgSlider"), kippbildPauseBgValue: $("kippbildPauseBgValue"), kippbildPauseBgColorPicker: $("kippbildPauseBgColorPicker"), kippbildPauseBgContrastHint: $("kippbildPauseBgContrastHint"),
+    kippbildPlayerBar: $("kippbildPlayerBar"), kippbildBackBtn: $("kippbildBackBtn"), kippbildPauseBtn: $("kippbildPauseBtn"), kippbildProgressEl: $("kippbildProgressEl"),
+    kippbildFsBtn: $("kippbildFsBtn"), kippbildFsHint: $("kippbildFsHint"), kippbildFsHintOpenBtn: $("kippbildFsHintOpenBtn"), kippbildFsHintClose: $("kippbildFsHintClose"),
+    kippbildDonePanel: $("kippbildDonePanel"), kippbildDoneSummary: $("kippbildDoneSummary"), kippbildRating: $("kippbildRating"),
+    kippbildAgainBtn: $("kippbildAgainBtn"), kippbildDoneBackBtn: $("kippbildDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
@@ -1942,7 +1954,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -2718,6 +2730,7 @@
     () => ({ prefs: navonPrefs, key: NAVON_PREFS_KEY, save: saveNavonPrefsToStorage }),
     () => ({ prefs: pvtPrefs, key: PVT_PREFS_KEY, save: savePvtPrefsToStorage }),
     () => ({ prefs: bisectPrefs, key: BISECT_PREFS_KEY, save: saveBisectPrefsToStorage }),
+    () => ({ prefs: kippbildPrefs, key: KIPPBILD_PREFS_KEY, save: saveKippbildPrefsToStorage }),
   ];
   // Applies the Master default to every target above that's still
   // "following" it (target.prefs.bgCustom !== true) - never touches a
@@ -4454,6 +4467,7 @@
     els.iconicPlayer.hidden = true;
     els.pvtPlayer.hidden = true;
     els.bisectPlayer.hidden = true;
+    els.kippbildPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.cardioPlayer.hidden = true;
     els.programVideoPlayer.hidden = true;
@@ -17026,6 +17040,257 @@
   els.bisectAgainBtn.addEventListener("click", () => { els.bisectDonePanel.hidden = true; startBisectGame(); });
   els.bisectDoneBackBtn.addEventListener("click", () => { els.bisectPlayer.hidden = true; els.bisectDonePanel.hidden = true; showScreen("testHome"); });
   wireFullscreen({ player: els.bisectPlayer, btn: els.bisectFsBtn, hint: els.bisectFsHint, hintOpen: els.bisectFsHintOpenBtn, hintClose: els.bisectFsHintClose });
+
+  // Kippbild-Test (Necker-Wuerfel) - grounded in the classic multistable-
+  // perception paradigm around the Necker cube (Necker, L.A., 1832,
+  // "Observations on some remarkable phaenomena seen in Switzerland..." -
+  // the first documented description of a line drawing whose perceived 3D
+  // orientation spontaneously flips under completely unchanged visual
+  // input) and the broader bistable-perception literature studying how
+  // reversals occur over time (e.g. Borsellino et al., 1972, finding
+  // reversal timing follows a roughly random, not strictly rhythmic,
+  // process). A plain wireframe cube - two offset squares connected by
+  // four diagonal edges, every line drawn identically, with no shading or
+  // occlusion cue favouring either interpretation - is shown continuously
+  // for the whole run; nothing about the image itself ever changes. The
+  // client simply taps once every time their own perceived orientation of
+  // the cube flips. Two modes are offered (`kippbildPrefs.mode`): "neutral"
+  // (just observe and tap) and "verlangsamen" (deliberately try to slow the
+  // reversals down) - research following up on Necker's own observation
+  // that attention/intention can bias reversal rate to some degree (though
+  // never fully suppress it) treats voluntary control as a genuine,
+  // separate condition worth comparing against a neutral baseline, not
+  // just a label change. Genuinely distinct from every existing Test/NAT
+  // mechanic, in fact the single most distinct entry on this whole tab:
+  // this is the ONLY exercise whose physical stimulus never changes at all
+  // for the entire run - every other exercise's "event" is something
+  // appearing, moving, lighting up, or changing on screen; here the event
+  // being counted is a purely internal, spontaneous perceptual switch with
+  // no external trigger whatsoever. `kippbildPrefs.length` (kurz/mittel/
+  // lang = 45/60/90s) is the only other client-facing setting. Reports
+  // total reversals and reversals/minute (a rate, not a raw count, so
+  // different lengths stay comparable - same reasoning as Reaktionsfeld-
+  // Test's own Treffer/Min). Deliberately NO best-score tracking, unlike
+  // every other Test exercise: a reversal rate is a measure of an
+  // individual, largely involuntary perceptual trait, not a skill with a
+  // "better" direction - a client could trivially "win" a tracked record
+  // with a flurry of fast meaningless taps while actually defeating the
+  // whole point of the measurement, the same concern this file's own
+  // Offene Fragen entry for Linienhalbierungs-Test already raised about
+  // forcing a best-score onto a trait measurement; a deliberate design
+  // decision here, not an oversight. No Bei-Fehler (there is no wrong
+  // answer - every tap is simply logged), no Zusatzaufgabe/Trainingsmodus -
+  // correctly skipped per the "optional, skip what doesn't fit in an hour"
+  // guidance. Background colour/intensity WAS included (`kippbildPrefs.
+  // bgColorKey`/`bgIntensity`, `makeBgApplier`/`wireBgIntensityControl` on
+  // both the ready screen and the pause overlay, plus a `MASTER_BG_TARGETS`
+  // registry entry) - basically free, and a tint behind the cube's own
+  // fixed-hex outline doesn't compete with anything being judged (the task
+  // is about perceived 3D orientation, not colour or contrast). Uses a
+  // single duration-based end timer (the same `scheduleXTimer`-remaining-
+  // delay pause/resume trick as every other Test entry) rather than
+  // per-trial scheduling, since there are no trials at all - just one
+  // continuous observation window; a live status line ("N Wechsel ·
+  // Ms") updates roughly 4x/second via a plain `setInterval` that simply
+  // skips its own update while paused, which freezes the display for free
+  // with no extra pause-specific logic needed. "Beenden" doubles as Finish
+  // once at least `KIPPBILD_MIN_PLAYED_S` (8s) have actually elapsed -
+  // below that there usually hasn't been enough time to notice even one
+  // natural reversal, so an accidental immediate Beenden doesn't produce a
+  // misleadingly empty "0 Wechsel" result.
+  const KIPPBILD_LENGTHS = {
+    kurz: { title: "Kurz", seconds: 45 },
+    mittel: { title: "Mittel", seconds: 60 },
+    lang: { title: "Lang", seconds: 90 },
+  };
+  const KIPPBILD_MODES = {
+    neutral: { title: "Neutral", hint: "Tippe, sobald sich die Ausrichtung des Würfels für dich ändert" },
+    verlangsamen: { title: "Bewusst verlangsamen", hint: "Versuche bewusst, die Wechsel zu verlangsamen – tippe trotzdem, sobald es doch passiert" },
+  };
+  const KIPPBILD_MIN_PLAYED_S = 8;
+  const KIPPBILD_PREFS_KEY = "fwmc-kippbild-prefs-v1";
+  const kippbildPrefs = { length: "mittel", mode: "neutral", bgColorKey: "blau", bgIntensity: 0 };
+  function loadKippbildPrefs() {
+    const saved = readJSON(KIPPBILD_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(kippbildPrefs, saved);
+    if (!KIPPBILD_LENGTHS[kippbildPrefs.length]) kippbildPrefs.length = "mittel";
+    if (!KIPPBILD_MODES[kippbildPrefs.mode]) kippbildPrefs.mode = "neutral";
+    if (!STROOP_COLOR_BY_KEY[kippbildPrefs.bgColorKey]) kippbildPrefs.bgColorKey = "blau";
+    if (typeof kippbildPrefs.bgIntensity !== "number" || kippbildPrefs.bgIntensity < 0 || kippbildPrefs.bgIntensity > 1) kippbildPrefs.bgIntensity = 0;
+  }
+  loadKippbildPrefs();
+  function saveKippbildPrefsToStorage() { writeJSON(KIPPBILD_PREFS_KEY, kippbildPrefs); }
+
+  const applyKippbildBg = makeBgApplier(els.kippbildStage, kippbildPrefs);
+  const syncKippbildBgUI = wireBgIntensityControl(kippbildPrefs, {
+    pickers: [els.kippbildBgColorPicker, els.kippbildPauseBgColorPicker],
+    sliders: [els.kippbildBgIntensitySlider, els.kippbildPauseBgSlider],
+    valueEls: [els.kippbildBgIntensityValue, els.kippbildPauseBgValue],
+    hintEls: [els.kippbildBgContrastHint, els.kippbildPauseBgContrastHint],
+    masterStatusEls: [els.kippbildBgMasterStatus],
+  }, () => { saveKippbildPrefsToStorage(); applyKippbildBg(); });
+
+  function syncKippbildLengthUI() {
+    els.kippbildLengthRow.querySelectorAll("[data-kippbild-length]").forEach((btn) => setActive(btn, btn.dataset.kippbildLength === kippbildPrefs.length));
+  }
+  function syncKippbildModeUI() {
+    els.kippbildModeRow.querySelectorAll("[data-kippbild-mode]").forEach((btn) => setActive(btn, btn.dataset.kippbildMode === kippbildPrefs.mode));
+  }
+  els.kippbildLengthRow.querySelectorAll("[data-kippbild-length]").forEach((btn) => {
+    btn.addEventListener("click", () => { kippbildPrefs.length = btn.dataset.kippbildLength; saveKippbildPrefsToStorage(); syncKippbildLengthUI(); });
+  });
+  els.kippbildModeRow.querySelectorAll("[data-kippbild-mode]").forEach((btn) => {
+    btn.addEventListener("click", () => { kippbildPrefs.mode = btn.dataset.kippbildMode; saveKippbildPrefsToStorage(); syncKippbildModeUI(); });
+  });
+  els.kippbildOpenBtn.addEventListener("click", () => {
+    syncKippbildLengthUI();
+    syncKippbildModeUI();
+    syncKippbildBgUI();
+    showScreen("kippbildReady");
+  });
+  els.kippbildReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Single active timer, remaining-delay pause/resume - same shape as
+  // every other setTimeout-driven Test exercise.
+  function scheduleKippbildTimer(fn, delayMs) {
+    if (kippbildState.timer) clearTimeout(kippbildState.timer);
+    kippbildState.timerFn = fn;
+    kippbildState.timerFiresAt = performance.now() + delayMs;
+    kippbildState.timer = setTimeout(() => { kippbildState.timer = null; fn(); }, delayMs);
+  }
+
+  // The player-bar can wrap to two rows on a narrow phone once the status
+  // text is wide enough (same class of bug CLAUDE.md documents for MOT's
+  // own status pill) - unlike a full-stage scatter exercise, this hint
+  // isn't just a brief instruction, it stays visible for the whole run, so
+  // a fixed CSS top offset would leave it permanently hidden behind a
+  // wrapped bar instead of just briefly. Reposition it live against the
+  // bar's own actually-rendered bottom edge instead of guessing a fixed
+  // offset - the remaining-seconds text can itself shrink from two digits
+  // to one as the run winds down, which can un-wrap the bar mid-run, so
+  // this is recomputed on every status tick, not just once at start.
+  function kippbildPositionHint() {
+    const barBottom = els.kippbildPlayerBar.getBoundingClientRect().bottom;
+    els.kippbildHint.style.top = Math.round(barBottom + 8) + "px";
+  }
+
+  function kippbildRenderStatus() {
+    if (!kippbildState || kippbildState.paused) return;
+    const elapsedS = (performance.now() - kippbildState.startTime) / 1000;
+    const remainingS = Math.max(0, Math.ceil(kippbildState.totalS - elapsedS));
+    els.kippbildProgressEl.textContent = `${kippbildState.reversals.length} Wechsel · ${remainingS}s`;
+    kippbildPositionHint();
+  }
+
+  let kippbildState = null;
+  function startKippbildGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.kippbildPlayer.hidden = false;
+    els.kippbildPlayerBar.hidden = false;
+    els.kippbildDonePanel.hidden = true;
+    els.kippbildPauseOverlay.hidden = true;
+    els.kippbildPauseBtn.hidden = false;
+    els.kippbildHint.style.top = "";
+    const length = KIPPBILD_LENGTHS[kippbildPrefs.length];
+    const mode = KIPPBILD_MODES[kippbildPrefs.mode];
+    kippbildState = {
+      length, mode, totalS: length.seconds, reversals: [], paused: false,
+      startTime: performance.now(), timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+      displayInterval: null,
+    };
+    applyKippbildBg();
+    els.kippbildHint.textContent = mode.hint;
+    els.kippbildProgressEl.textContent = `0 Wechsel · ${length.seconds}s`;
+    requestWakeLock();
+    kippbildPositionHint();
+    kippbildState.displayInterval = setInterval(kippbildRenderStatus, 250);
+    scheduleKippbildTimer(kippbildFinish, length.seconds * 1000);
+  }
+  els.kippbildReadyStartBtn.addEventListener("click", startKippbildGame);
+
+  function kippbildTap() {
+    if (!kippbildState || kippbildState.paused) return;
+    kippbildState.reversals.push(performance.now() - kippbildState.startTime);
+    kippbildRenderStatus();
+  }
+  els.kippbildArea.addEventListener("click", kippbildTap);
+
+  function pauseKippbild() {
+    if (!kippbildState || kippbildState.paused) return;
+    kippbildState.paused = true;
+    kippbildState.pausedAt = performance.now();
+    if (kippbildState.timer) {
+      clearTimeout(kippbildState.timer);
+      kippbildState.timer = null;
+      kippbildState.timerRemainingMs = Math.max(0, kippbildState.timerFiresAt - kippbildState.pausedAt);
+    }
+    syncKippbildBgUI();
+    els.kippbildPauseBtn.hidden = true;
+    els.kippbildPauseOverlay.hidden = false;
+  }
+  function resumeKippbild() {
+    if (!kippbildState || !kippbildState.paused) return;
+    const pausedMs = performance.now() - kippbildState.pausedAt;
+    kippbildState.startTime += pausedMs;
+    kippbildState.paused = false;
+    if (kippbildState.timerFn && kippbildState.timerRemainingMs != null) {
+      scheduleKippbildTimer(kippbildState.timerFn, kippbildState.timerRemainingMs);
+      kippbildState.timerRemainingMs = null;
+    }
+    els.kippbildPauseOverlay.hidden = true;
+    els.kippbildPauseBtn.hidden = false;
+  }
+  els.kippbildPauseBtn.addEventListener("click", pauseKippbild);
+  els.kippbildResumeBtn.addEventListener("click", resumeKippbild);
+
+  function finalizeKippbildRun(state, playedS) {
+    els.kippbildPauseOverlay.hidden = true;
+    els.kippbildPlayerBar.hidden = true;
+    const count = state.reversals.length;
+    const perMin = playedS > 0 ? Math.round((count / playedS) * 60 * 10) / 10 : 0;
+    els.kippbildDoneSummary.textContent =
+      `Kippbild-Test (${state.length.title}, ${state.mode.title}) · ${count} Wechsel in ${Math.round(playedS)}s (≈ ${perMin} Wechsel/Min)`;
+    const note = `${state.mode.title}: ${count} Wechsel in ${Math.round(playedS)}s, ≈ ${perMin}/Min`;
+    const id = addHistory({ kind: "kippbild", title: "Kippbild-Test", seconds: Math.round(playedS), note });
+    renderRating(els.kippbildRating, id, "Wie klar hast du die Wechsel jeweils wahrgenommen?");
+    els.kippbildDonePanel.hidden = false;
+  }
+  function kippbildFinish() {
+    if (!kippbildState) return;
+    const state = kippbildState;
+    kippbildState = null;
+    if (state.displayInterval) clearInterval(state.displayInterval);
+    releaseWakeLock();
+    if (document.fullscreenElement === els.kippbildPlayer) document.exitFullscreen().catch(() => {});
+    els.kippbildFsHint.hidden = true;
+    finalizeKippbildRun(state, state.totalS);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as the
+  // run lasted at least KIPPBILD_MIN_PLAYED_S.
+  function kippbildStop() {
+    if (!kippbildState) return;
+    if (kippbildState.timer) clearTimeout(kippbildState.timer);
+    const state = kippbildState;
+    const playedS = (performance.now() - state.startTime) / 1000;
+    kippbildState = null;
+    if (state.displayInterval) clearInterval(state.displayInterval);
+    els.kippbildPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.kippbildPlayer) document.exitFullscreen().catch(() => {});
+    els.kippbildFsHint.hidden = true;
+    if (playedS >= KIPPBILD_MIN_PLAYED_S) {
+      finalizeKippbildRun(state, playedS);
+    } else {
+      els.kippbildPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.kippbildBackBtn.addEventListener("click", kippbildStop);
+  els.kippbildAgainBtn.addEventListener("click", () => { els.kippbildDonePanel.hidden = true; startKippbildGame(); });
+  els.kippbildDoneBackBtn.addEventListener("click", () => { els.kippbildPlayer.hidden = true; els.kippbildDonePanel.hidden = true; showScreen("testHome"); });
+  wireFullscreen({ player: els.kippbildPlayer, btn: els.kippbildFsBtn, hint: els.kippbildFsHint, hintOpen: els.kippbildFsHintOpenBtn, hintClose: els.kippbildFsHintClose });
 
   // Rotationstest (Mentale Rotation) - grounded in the classic mental-
   // rotation/character-rotation chronometric paradigm (Cooper & Shepard,

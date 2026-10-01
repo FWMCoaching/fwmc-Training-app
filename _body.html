@@ -984,6 +984,10 @@
       <span class="fc-desc">Eine Linie erscheint an wechselnder Position und L&auml;nge &ndash; tippe auf die Stelle, die du als genaue Mitte wahrnimmst. Keine Zeitvorgabe, keine R&uuml;ckmeldung pro Durchgang. Klassisches neuropsychologisches Verfahren zur r&auml;umlichen Aufmerksamkeit (Line-Bisection-Test, Schenkenberg et al. 1980) &ndash; zeigt eine leichte Tendenz nach links oder rechts, die bei fast jedem Menschen vorhanden ist.</span>
       <span class="fc-meta" id="bisectBestHint"></span>
     </button>
+    <button class="featured-card" id="kippbildOpenBtn">
+      <span class="fc-title">Kippbild-Test</span>
+      <span class="fc-desc">Ein einfacher Drahtw&uuml;rfel (Necker-W&uuml;rfel) wird dauerhaft angezeigt &ndash; das Bild selbst &auml;ndert sich nie, aber deine Wahrnehmung seiner Ausrichtung kippt von selbst immer wieder um. Tippe jedes Mal, wenn du so einen Wechsel bemerkst. Klassisches Verfahren zur multistabilen Wahrnehmung (Necker-W&uuml;rfel, Necker 1832) &ndash; wie oft das kippt, ist von Mensch zu Mensch sehr unterschiedlich und weder Erfolg noch Misserfolg.</span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -1539,6 +1543,50 @@
   <div class="group-help" id="bisectReadyBestHint"></div>
 
   <button class="start-btn" id="bisectReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="kippbildReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="kippbildReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Kippbild-Test</h1>
+  <p class="page-sub">Ein einfacher Drahtw&uuml;rfel wird dir dauerhaft angezeigt &ndash; die Zeichnung selbst &auml;ndert sich nie. Trotzdem wird deine Wahrnehmung seiner r&auml;umlichen Ausrichtung von selbst immer wieder umkippen (mal wirkt eine Fl&auml;che vorne, mal die andere). Tippe jedes Mal, sobald du einen solchen Wechsel bemerkst. Klassisches Verfahren zur multistabilen Wahrnehmung (Necker-W&uuml;rfel, Necker 1832) &ndash; wie h&auml;ufig die Wahrnehmung kippt, unterscheidet sich stark von Mensch zu Mensch und ist weder gut noch schlecht, sondern einfach eine pers&ouml;nliche Eigenheit deiner eigenen Wahrnehmung.</p>
+
+  <div class="group">
+    <div class="group-label">Dauer</div>
+    <div class="choice-row" id="kippbildLengthRow">
+      <button class="choice" data-kippbild-length="kurz">Kurz<small>45s</small></button>
+      <button class="choice" data-kippbild-length="mittel">Mittel<small>60s</small></button>
+      <button class="choice" data-kippbild-length="lang">Lang<small>90s</small></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Modus</div>
+    <div class="choice-row" id="kippbildModeRow">
+      <button class="choice" data-kippbild-mode="neutral">Neutral beobachten<small>Einfach wahrnehmen lassen</small></button>
+      <button class="choice" data-kippbild-mode="verlangsamen">Bewusst verlangsamen<small>Versuche, die Wechsel zu verz&ouml;gern</small></button>
+    </div>
+  </div>
+
+  <details class="advanced" id="kippbildAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="kippbildBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="kippbildBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="kippbildBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="kippbildBgContrastHint" hidden></div>
+        <div class="bg-master-status" id="kippbildBgMasterStatus"></div>
+      </div>
+    </div>
+  </details>
+
+  <button class="start-btn" id="kippbildReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="simonReady" hidden>
@@ -4632,6 +4680,57 @@
     <div class="rating" id="bisectRating"></div>
     <button class="again" id="bisectAgainBtn">Nochmal</button>
     <button class="back" id="bisectDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="kippbildPlayer" hidden>
+  <div class="kippbild-stage" id="kippbildStage">
+    <div class="remember-hint" id="kippbildHint"></div>
+    <div class="kippbild-area" id="kippbildArea">
+      <svg class="kippbild-cube" id="kippbildCubeSvg" viewBox="0 0 200 200" aria-hidden="true">
+        <polygon points="50,80 150,80 150,180 50,180"></polygon>
+        <polygon points="90,40 190,40 190,140 90,140"></polygon>
+        <line x1="50" y1="80" x2="90" y2="40"></line>
+        <line x1="150" y1="80" x2="190" y2="40"></line>
+        <line x1="150" y1="180" x2="190" y2="140"></line>
+        <line x1="50" y1="180" x2="90" y2="140"></line>
+      </svg>
+    </div>
+  </div>
+  <div class="pause-overlay" id="kippbildPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="kippbildPauseBgValue"></span></div>
+        <input type="range" id="kippbildPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="kippbildPauseBgColorPicker"></div>
+        <div class="group-help" id="kippbildPauseBgContrastHint" hidden></div>
+      </div>
+      <button class="start-btn" id="kippbildResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="kippbildPlayerBar">
+    <button id="kippbildBackBtn">&#10005; Beenden</button>
+    <button id="kippbildPauseBtn">Pause</button>
+    <span class="player-status" id="kippbildProgressEl"></span>
+    <button id="kippbildFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="kippbildFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="kippbildFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="kippbildFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="kippbildDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="kippbildDoneSummary"></p>
+    <div class="rating" id="kippbildRating"></div>
+    <button class="again" id="kippbildAgainBtn">Nochmal</button>
+    <button class="back" id="kippbildDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 
