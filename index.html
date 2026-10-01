@@ -997,6 +997,11 @@
       <span class="fc-desc">Ein einfaches Signal (eine hochz&auml;hlende Zahl) erscheint in unregelm&auml;&szlig;igen Abst&auml;nden zwischen 2 und 10 Sekunden &ndash; ganz ohne Vorwarnung. Tippe jedes Mal so schnell wie m&ouml;glich, mehrere Minuten am St&uuml;ck. Wissenschaftlicher Goldstandard f&uuml;r Daueraufmerksamkeit und Erm&uuml;dung (Psychomotor Vigilance Task, Dinges &amp; Powell, 1985) &ndash; zeigt, ob deine Reaktionen mit der Zeit langsamer werden.</span>
       <span class="fc-meta" id="pvtBestHint"></span>
     </button>
+    <button class="featured-card" id="bisectOpenBtn">
+      <span class="fc-title">Linienhalbierungs-Test</span>
+      <span class="fc-desc">Eine Linie erscheint an wechselnder Position und L&auml;nge &ndash; tippe auf die Stelle, die du als genaue Mitte wahrnimmst. Keine Zeitvorgabe, keine R&uuml;ckmeldung pro Durchgang. Klassisches neuropsychologisches Verfahren zur r&auml;umlichen Aufmerksamkeit (Line-Bisection-Test, Schenkenberg et al. 1980) &ndash; zeigt eine leichte Tendenz nach links oder rechts, die bei fast jedem Menschen vorhanden ist.</span>
+      <span class="fc-meta" id="bisectBestHint"></span>
+    </button>
   </section>
 
   <footer class="site-footer">
@@ -1514,6 +1519,44 @@
   <div class="group-help" id="pvtReadyBestHint"></div>
 
   <button class="start-btn" id="pvtReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="bisectReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="bisectReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Linienhalbierungs-Test</h1>
+  <p class="page-sub">Eine waagerechte Linie erscheint &ndash; wechselnd kurz oder lang, mal links, mal rechts, mal mittig auf der B&uuml;hne. Tippe auf die Stelle, die du als genaue Mitte der Linie wahrnimmst. Es gibt kein Zeitlimit und keine R&uuml;ckmeldung, ob du richtig oder falsch lagst &ndash; das ist Absicht: das Verfahren misst eine automatische, meist unbewusste Tendenz, nicht wie schnell oder &bdquo;richtig&ldquo; du tippst. Klassisches neuropsychologisches Verfahren zur r&auml;umlichen Aufmerksamkeit (Line-Bisection-Test, Schenkenberg, Bradford &amp; Ajax, 1980) &ndash; fast jeder Mensch zeigt im Mittel eine leichte Tendenz nach links oder rechts (Bowers &amp; Heilman, 1980).</p>
+
+  <div class="group">
+    <div class="group-label">L&auml;nge</div>
+    <div class="choice-row" id="bisectLengthRow">
+      <button class="choice" data-bisect-length="kurz">Kurz<small>9 Durchg&auml;nge</small></button>
+      <button class="choice" data-bisect-length="mittel">Mittel<small>12 Durchg&auml;nge</small></button>
+      <button class="choice" data-bisect-length="lang">Lang<small>18 Durchg&auml;nge</small></button>
+    </div>
+  </div>
+
+  <details class="advanced" id="bisectAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="bisectBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="bisectBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="bisectBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="bisectBgContrastHint" hidden></div>
+        <div class="bg-master-status" id="bisectBgMasterStatus"></div>
+      </div>
+    </div>
+  </details>
+
+  <div class="group-help" id="bisectReadyBestHint"></div>
+
+  <button class="start-btn" id="bisectReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="simonReady" hidden>
@@ -4562,6 +4605,51 @@
     <div class="rating" id="pvtRating"></div>
     <button class="again" id="pvtAgainBtn">Nochmal</button>
     <button class="back" id="pvtDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player" id="bisectPlayer" hidden>
+  <div class="bisect-stage" id="bisectStage">
+    <div class="remember-hint" id="bisectHint"></div>
+    <div class="bisect-area" id="bisectArea">
+      <div class="bisect-line" id="bisectLine" style="display:none"></div>
+      <div class="bisect-mark" id="bisectMark" style="display:none"></div>
+    </div>
+  </div>
+  <div class="pause-overlay" id="bisectPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="bisectPauseBgValue"></span></div>
+        <input type="range" id="bisectPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="bisectPauseBgColorPicker"></div>
+        <div class="group-help" id="bisectPauseBgContrastHint" hidden></div>
+      </div>
+      <button class="start-btn" id="bisectResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="bisectPlayerBar">
+    <button id="bisectBackBtn">&#10005; Beenden</button>
+    <button id="bisectPauseBtn">Pause</button>
+    <span class="player-status" id="bisectProgressEl"></span>
+    <button id="bisectFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="bisectFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="bisectFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="bisectFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="bisectDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="bisectDoneSummary"></p>
+    <div class="rating" id="bisectRating"></div>
+    <button class="again" id="bisectAgainBtn">Nochmal</button>
+    <button class="back" id="bisectDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 

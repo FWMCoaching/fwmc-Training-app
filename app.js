@@ -1663,6 +1663,18 @@
     pvtFsBtn: $("pvtFsBtn"), pvtFsHint: $("pvtFsHint"), pvtFsHintOpenBtn: $("pvtFsHintOpenBtn"), pvtFsHintClose: $("pvtFsHintClose"),
     pvtDonePanel: $("pvtDonePanel"), pvtDoneSummary: $("pvtDoneSummary"), pvtRating: $("pvtRating"),
     pvtAgainBtn: $("pvtAgainBtn"), pvtDoneBackBtn: $("pvtDoneBackBtn"),
+    bisectOpenBtn: $("bisectOpenBtn"), bisectBestHint: $("bisectBestHint"), bisectReady: $("bisectReady"),
+    bisectReadyBackToHome: $("bisectReadyBackToHome"), bisectLengthRow: $("bisectLengthRow"),
+    bisectAdvanced: $("bisectAdvanced"), bisectBgColorPicker: $("bisectBgColorPicker"), bisectBgIntensitySlider: $("bisectBgIntensitySlider"),
+    bisectBgIntensityValue: $("bisectBgIntensityValue"), bisectBgContrastHint: $("bisectBgContrastHint"), bisectBgMasterStatus: $("bisectBgMasterStatus"),
+    bisectReadyBestHint: $("bisectReadyBestHint"), bisectReadyStartBtn: $("bisectReadyStartBtn"),
+    bisectPlayer: $("bisectPlayer"), bisectStage: $("bisectStage"), bisectHint: $("bisectHint"), bisectArea: $("bisectArea"), bisectLine: $("bisectLine"), bisectMark: $("bisectMark"),
+    bisectPauseOverlay: $("bisectPauseOverlay"), bisectResumeBtn: $("bisectResumeBtn"),
+    bisectPauseBgSlider: $("bisectPauseBgSlider"), bisectPauseBgValue: $("bisectPauseBgValue"), bisectPauseBgColorPicker: $("bisectPauseBgColorPicker"), bisectPauseBgContrastHint: $("bisectPauseBgContrastHint"),
+    bisectPlayerBar: $("bisectPlayerBar"), bisectBackBtn: $("bisectBackBtn"), bisectPauseBtn: $("bisectPauseBtn"), bisectProgressEl: $("bisectProgressEl"),
+    bisectFsBtn: $("bisectFsBtn"), bisectFsHint: $("bisectFsHint"), bisectFsHintOpenBtn: $("bisectFsHintOpenBtn"), bisectFsHintClose: $("bisectFsHintClose"),
+    bisectDonePanel: $("bisectDonePanel"), bisectDoneSummary: $("bisectDoneSummary"), bisectRating: $("bisectRating"),
+    bisectAgainBtn: $("bisectAgainBtn"), bisectDoneBackBtn: $("bisectDoneBackBtn"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
@@ -1930,7 +1942,7 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady"];
+  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -2705,6 +2717,7 @@
     () => ({ prefs: dsstPrefs, key: DSST_PREFS_KEY, save: saveDsstPrefsToStorage }),
     () => ({ prefs: navonPrefs, key: NAVON_PREFS_KEY, save: saveNavonPrefsToStorage }),
     () => ({ prefs: pvtPrefs, key: PVT_PREFS_KEY, save: savePvtPrefsToStorage }),
+    () => ({ prefs: bisectPrefs, key: BISECT_PREFS_KEY, save: saveBisectPrefsToStorage }),
   ];
   // Applies the Master default to every target above that's still
   // "following" it (target.prefs.bgCustom !== true) - never touches a
@@ -4431,6 +4444,7 @@
     els.navonPlayer.hidden = true;
     els.iconicPlayer.hidden = true;
     els.pvtPlayer.hidden = true;
+    els.bisectPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.cardioPlayer.hidden = true;
     els.programVideoPlayer.hidden = true;
@@ -16675,6 +16689,334 @@
   els.pvtAgainBtn.addEventListener("click", () => { els.pvtDonePanel.hidden = true; startPvtGame(); });
   els.pvtDoneBackBtn.addEventListener("click", () => { els.pvtPlayer.hidden = true; els.pvtDonePanel.hidden = true; showScreen("testHome"); });
   wireFullscreen({ player: els.pvtPlayer, btn: els.pvtFsBtn, hint: els.pvtFsHint, hintOpen: els.pvtFsHintOpenBtn, hintClose: els.pvtFsHintClose });
+
+  // ==== Test-Bereich: Linienhalbierungs-Test (Line Bisection) ====
+  // Twenty-eighth autonomous entry, picked from the "Recherche-Backlog: 20
+  // Kandidaten" list (candidate #3) rather than fresh research this round.
+  // Grounded in the line bisection test (Schenkenberg, Bradford & Ajax,
+  // 1980, Neurology - standardised neuropsychological scoring for the
+  // classic clinical task) and the "pseudoneglect" literature in healthy
+  // people (Bowers & Heilman, 1980, Neuropsychologia - normal, non-
+  // brain-damaged individuals reliably bisect slightly LEFT of true
+  // centre on average, attributed to right-hemisphere dominance for
+  // spatial attention; the bias is also known to be sensitive to
+  // attentional load and fatigue, not just a fixed trait). Mechanic: a
+  // plain horizontal line of varying length and varying screen position
+  // appears; the client taps where they judge its exact centre to be - no
+  // further instruction, no right/wrong feedback per trial (classic
+  // bisection tests never correct the client mid-session, since knowing
+  // the true centre would let them consciously override the very
+  // automatic/implicit bias being measured, destroying the point of a
+  // multi-trial average). Scored as the standard literature metric:
+  // deviation as a percentage of HALF the line's length
+  // (`((tapX - trueCenterX) / (lengthPx / 2)) * 100`), so trials of
+  // different lengths stay comparable - negative = tapped left of centre,
+  // positive = tapped right, a sign convention lifted directly from the
+  // bisection literature itself, not invented here.
+  // Genuinely distinct from every existing Test/NAT mechanic, in two
+  // ways at once: (1) it is the ONLY exercise on this whole tab that
+  // collects NO reaction time at all - every other exercise's outcome is
+  // either an accuracy/correctness judgment or a speed measurement
+  // (occasionally both at once), this one is a pure SPATIAL ACCURACY/
+  // BIAS measurement with the stimulus staying up indefinitely until
+  // tapped; and (2) its outcome is a SIGNED spatial bias (which direction
+  // a client tends to misjudge toward), not a reaction time, an
+  // accuracy%, or a recalled set - no other exercise reports a directional
+  // tendency like this. `BISECT_LENGTHS_PX = [140, 220, 300]` (three
+  // distinct lengths, matching the real test's own multi-length protocol)
+  // combined with a RANDOMISED horizontal start position within the
+  // display area every trial (not always centred on the screen) - a
+  // deliberate anti-strategy measure: if the line were always centred on
+  // the stage, "tap the middle of the screen" would trivially solve the
+  // task without the client ever needing to actually look at the line's
+  // two endpoints, which would make the whole measurement meaningless.
+  // `bisectPrefs.length` (kurz/mittel/lang = 9/12/18 trials, 3/4/6 reps of
+  // each of the 3 line lengths) is the only client-facing setting, same
+  // "length, no natural difficulty dial" shape as Suchtest/UFOV/Hick/DSST
+  // - there's no sensible "harder" version of this task beyond a longer
+  // session for a more stable average. Reports the mean signed deviation%
+  // (the actual "Aufmerksamkeits-Tendenz" this paradigm exists to reveal,
+  // with a plain-language direction note: "eher nach links" / "eher nach
+  // rechts" / "sehr ausgeglichen" under a small ±2% dead zone) plus the
+  // mean ABSOLUTE deviation% as a measure of overall precision regardless
+  // of direction. `BISECT_BEST_KEY` tracks the LOWEST mean absolute
+  // deviation% per length (lower is better, i.e. "most balanced attempt
+  // so far" - phrased in the UI as exactly that, not as a skill score,
+  // since this is a bias measurement, not a trainable high-score game).
+  // No Bei-Fehler/Zusatzaufgabe/Trainingsmodus - correctly skipped, same
+  // reasoning as every other fixed-trial Test entry; there is also no
+  // "wrong answer" concept at all here for Bei-Fehler to apply to. Self-
+  // paced per trial with no response timeout of any kind (unlike every
+  // other self-paced exercise on this tab) - the real bisection test
+  // never pressures the client to hurry, since rushing would itself
+  // introduce a confound into a task that's supposed to measure automatic
+  // spatial perception, not decision speed under pressure. Background
+  // colour/intensity WAS included (`bisectPrefs.bgColorKey`/`bgIntensity`,
+  // `makeBgApplier`/`wireBgIntensityControl` on both the ready screen and
+  // the pause overlay, plus a `MASTER_BG_TARGETS` registry entry) -
+  // basically free, and a tint behind a plain line doesn't compete with
+  // the purely positional judgment being made. The line/tap-mark render
+  // inside `.bisect-area`, a fixed-height `position:relative` sub-box
+  // (not a full-stage absolute overlay) - same "smaller sub-box, well
+  // clear of the top hint by construction" convention already used for
+  // Merkspanne's `.merk-field`, so `stageTopClearanceY()` doesn't apply
+  // here either, by the same reasoning. Test: `tests/bisect_test.py`.
+  const BISECT_LENGTHS_PX = [140, 220, 300];
+  const BISECT_LENGTHS = {
+    kurz: { title: "Kurz", trials: 9 },
+    mittel: { title: "Mittel", trials: 12 },
+    lang: { title: "Lang", trials: 18 },
+  };
+  const BISECT_FEEDBACK_MS = 500;
+  const BISECT_MIN_RESOLVED = 4;
+  const BISECT_PREFS_KEY = "fwmc-bisect-prefs-v1";
+  const bisectPrefs = { length: "mittel", bgColorKey: "blau", bgIntensity: 0 };
+  function loadBisectPrefs() {
+    const saved = readJSON(BISECT_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(bisectPrefs, saved);
+    if (!BISECT_LENGTHS[bisectPrefs.length]) bisectPrefs.length = "mittel";
+    if (!STROOP_COLOR_BY_KEY[bisectPrefs.bgColorKey]) bisectPrefs.bgColorKey = "blau";
+    if (typeof bisectPrefs.bgIntensity !== "number" || bisectPrefs.bgIntensity < 0 || bisectPrefs.bgIntensity > 1) bisectPrefs.bgIntensity = 0;
+  }
+  loadBisectPrefs();
+  function saveBisectPrefsToStorage() { writeJSON(BISECT_PREFS_KEY, bisectPrefs); }
+
+  const applyBisectBg = makeBgApplier(els.bisectStage, bisectPrefs);
+  const syncBisectBgUI = wireBgIntensityControl(bisectPrefs, {
+    pickers: [els.bisectBgColorPicker, els.bisectPauseBgColorPicker],
+    sliders: [els.bisectBgIntensitySlider, els.bisectPauseBgSlider],
+    valueEls: [els.bisectBgIntensityValue, els.bisectPauseBgValue],
+    hintEls: [els.bisectBgContrastHint, els.bisectPauseBgContrastHint],
+    masterStatusEls: [els.bisectBgMasterStatus],
+  }, () => { saveBisectPrefsToStorage(); applyBisectBg(); });
+
+  const BISECT_BEST_KEY = "fwmc-bisect-best-v1"; // { [length]: bestMeanAbsPct } - lower is better (most balanced)
+  function bisectBestFor() { return readJSON(BISECT_BEST_KEY, {})[bisectPrefs.length] || 0; }
+  function saveBisectBest(meanAbsPct) {
+    const all = readJSON(BISECT_BEST_KEY, {});
+    const cur = all[bisectPrefs.length];
+    if (!cur || meanAbsPct < cur) { all[bisectPrefs.length] = meanAbsPct; writeJSON(BISECT_BEST_KEY, all); return true; }
+    return false;
+  }
+  function renderBisectBest() {
+    const best = bisectBestFor();
+    const text = best ? `Ausgeglichenster Wert (${BISECT_LENGTHS[bisectPrefs.length].title}): Ø ${best}% Abweichung` : "";
+    els.bisectBestHint.textContent = text;
+    els.bisectReadyBestHint.textContent = text;
+  }
+  function syncBisectLengthUI() {
+    els.bisectLengthRow.querySelectorAll("[data-bisect-length]").forEach((btn) => setActive(btn, btn.dataset.bisectLength === bisectPrefs.length));
+  }
+  els.bisectLengthRow.querySelectorAll("[data-bisect-length]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      bisectPrefs.length = btn.dataset.bisectLength;
+      saveBisectPrefsToStorage();
+      syncBisectLengthUI();
+      renderBisectBest();
+    });
+  });
+  els.bisectOpenBtn.addEventListener("click", () => {
+    syncBisectLengthUI();
+    syncBisectBgUI();
+    renderBisectBest();
+    showScreen("bisectReady");
+  });
+  els.bisectReadyBackToHome.addEventListener("click", () => showScreen("testHome"));
+
+  // Single active timer, remaining-delay pause/resume - same shape as
+  // every other setTimeout-driven Test exercise.
+  function scheduleBisectTimer(fn, delayMs) {
+    if (bisectState.timer) clearTimeout(bisectState.timer);
+    bisectState.timerFn = fn;
+    bisectState.timerFiresAt = performance.now() + delayMs;
+    bisectState.timer = setTimeout(() => { bisectState.timer = null; fn(); }, delayMs);
+  }
+
+  // Full set of 3 lengths repeated to fill the chosen trial count and
+  // shuffled with a guard against more than 3 identical lengths in a
+  // row - same "can't settle into a lazy pattern" convention as every
+  // other Test exercise's own trial-sequence builder.
+  function buildBisectTrials(count) {
+    const reps = Math.ceil(count / BISECT_LENGTHS_PX.length);
+    let pool;
+    for (let tries = 0; tries < 200; tries++) {
+      pool = [];
+      for (let i = 0; i < reps; i++) pool = pool.concat(BISECT_LENGTHS_PX);
+      pool = pool.slice(0, count);
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      let ok = true, run = 1;
+      for (let i = 1; i < pool.length; i++) {
+        run = pool[i] === pool[i - 1] ? run + 1 : 1;
+        if (run > 3) { ok = false; break; }
+      }
+      if (ok) break;
+    }
+    return pool;
+  }
+  function bisectRenderLine(lengthPx) {
+    const rect = els.bisectArea.getBoundingClientRect();
+    const margin = 16;
+    const maxStartX = Math.max(margin, rect.width - lengthPx - margin);
+    const startX = margin + Math.random() * Math.max(0, maxStartX - margin);
+    const lineH = 4;
+    const maxStartY = Math.max(0, rect.height - lineH);
+    const startY = Math.random() * maxStartY;
+    els.bisectLine.style.left = startX + "px";
+    els.bisectLine.style.top = startY + "px";
+    els.bisectLine.style.width = lengthPx + "px";
+    els.bisectMark.style.display = "none";
+    return { lengthPx, startX, centerY: startY + lineH / 2 };
+  }
+
+  let bisectState = null;
+  function startBisectGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.bisectPlayer.hidden = false;
+    els.bisectPlayerBar.hidden = false;
+    els.bisectDonePanel.hidden = true;
+    els.bisectPauseOverlay.hidden = true;
+    els.bisectPauseBtn.hidden = false;
+    const length = BISECT_LENGTHS[bisectPrefs.length];
+    bisectState = {
+      length, trials: buildBisectTrials(length.trials), index: -1, phase: "gap", results: [],
+      paused: false, startTime: performance.now(),
+      timer: null, timerFn: null, timerFiresAt: 0, timerRemainingMs: null,
+    };
+    applyBisectBg();
+    els.bisectLine.style.display = "none";
+    els.bisectMark.style.display = "none";
+    els.bisectHint.textContent = "Bereit? Gleich geht's los …";
+    els.bisectProgressEl.textContent = `0/${bisectState.trials.length}`;
+    requestWakeLock();
+    scheduleBisectTimer(bisectNextTrial, 1000);
+  }
+  els.bisectReadyStartBtn.addEventListener("click", startBisectGame);
+
+  function bisectNextTrial() {
+    if (!bisectState) return;
+    bisectState.index++;
+    if (bisectState.index >= bisectState.trials.length) { bisectFinish(); return; }
+    els.bisectProgressEl.textContent = `${bisectState.index + 1}/${bisectState.trials.length}`;
+    bisectState.phase = "waiting";
+    bisectState.hint = "Tippe auf die Mitte der Linie";
+    els.bisectHint.textContent = bisectState.hint;
+    els.bisectLine.style.display = "";
+    bisectState.trialGeom = bisectRenderLine(bisectState.trials[bisectState.index]);
+  }
+  function bisectTap(evt) {
+    if (!bisectState || bisectState.paused || bisectState.phase !== "waiting") return;
+    const rect = els.bisectArea.getBoundingClientRect();
+    const tapX = evt.clientX - rect.left;
+    const geom = bisectState.trialGeom;
+    const trueCenterX = geom.startX + geom.lengthPx / 2;
+    const deviationPx = tapX - trueCenterX;
+    const pct = (deviationPx / (geom.lengthPx / 2)) * 100;
+    bisectState.results.push({ lengthPx: geom.lengthPx, pct });
+    bisectState.phase = "feedback";
+    els.bisectMark.style.left = Math.max(0, Math.min(rect.width, tapX)) + "px";
+    els.bisectMark.style.top = geom.centerY + "px";
+    els.bisectMark.style.display = "";
+    els.bisectHint.textContent = "";
+    scheduleBisectTimer(bisectAfterFeedback, BISECT_FEEDBACK_MS);
+  }
+  function bisectAfterFeedback() {
+    if (!bisectState) return;
+    bisectState.phase = "gap";
+    els.bisectLine.style.display = "none";
+    els.bisectMark.style.display = "none";
+    scheduleBisectTimer(bisectNextTrial, 300);
+  }
+  els.bisectArea.addEventListener("click", bisectTap);
+
+  function pauseBisect() {
+    if (!bisectState || bisectState.paused) return;
+    bisectState.paused = true;
+    bisectState.pausedAt = performance.now();
+    if (bisectState.timer) {
+      clearTimeout(bisectState.timer);
+      bisectState.timer = null;
+      bisectState.timerRemainingMs = Math.max(0, bisectState.timerFiresAt - bisectState.pausedAt);
+    }
+    syncBisectBgUI();
+    els.bisectPauseBtn.hidden = true;
+    els.bisectPauseOverlay.hidden = false;
+  }
+  function resumeBisect() {
+    if (!bisectState || !bisectState.paused) return;
+    const pausedMs = performance.now() - bisectState.pausedAt;
+    bisectState.startTime += pausedMs;
+    bisectState.paused = false;
+    if (bisectState.timerFn && bisectState.timerRemainingMs != null) {
+      scheduleBisectTimer(bisectState.timerFn, bisectState.timerRemainingMs);
+      bisectState.timerRemainingMs = null;
+    }
+    els.bisectPauseOverlay.hidden = true;
+    els.bisectPauseBtn.hidden = false;
+  }
+  els.bisectPauseBtn.addEventListener("click", pauseBisect);
+  els.bisectResumeBtn.addEventListener("click", resumeBisect);
+
+  function finalizeBisectRun(state) {
+    els.bisectPauseOverlay.hidden = true;
+    els.bisectPlayerBar.hidden = true;
+    const pcts = state.results.map((r) => r.pct);
+    const meanPct = avgOf(pcts);
+    const meanAbsPct = avgOf(pcts.map(Math.abs));
+    const isRecord = meanAbsPct != null ? saveBisectBest(meanAbsPct) : false;
+    renderBisectBest();
+    let directionNote = "";
+    if (meanPct != null) {
+      if (Math.abs(meanPct) < 2) directionNote = "sehr ausgeglichen";
+      else if (meanPct < 0) directionNote = `eher nach links (Ø ${meanPct}%)`;
+      else directionNote = `eher nach rechts (Ø +${meanPct}%)`;
+    }
+    const played = (performance.now() - state.startTime) / 1000;
+    els.bisectDoneSummary.textContent =
+      `Linienhalbierungs-Test (${state.length.title}) · ${state.results.length} Durchgänge` +
+      (directionNote ? ` · Tendenz: ${directionNote}` : "") +
+      (meanAbsPct != null ? ` · Ø Abweichung ${meanAbsPct}%` : "") +
+      (isRecord ? " · Ausgeglichenster Wert bisher!" : "");
+    const note = (directionNote ? `Tendenz: ${directionNote}` : "") + (meanAbsPct != null ? `, Ø Abweichung ${meanAbsPct}%` : "");
+    const id = addHistory({ kind: "bisect", title: "Linienhalbierungs-Test", seconds: Math.round(played), note });
+    renderRating(els.bisectRating, id, "Wie sicher warst du dir jeweils bei der Mitte der Linie?");
+    els.bisectDonePanel.hidden = false;
+  }
+  function bisectFinish() {
+    if (!bisectState) return;
+    const state = bisectState;
+    bisectState = null;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.bisectPlayer) document.exitFullscreen().catch(() => {});
+    els.bisectFsHint.hidden = true;
+    finalizeBisectRun(state);
+  }
+  // "Beenden" doubles as the finish action, same convention as every other
+  // Test/NAT exercise - quitting early still shows a summary as long as at
+  // least a few trials were actually resolved.
+  function bisectStop() {
+    if (!bisectState) return;
+    if (bisectState.timer) clearTimeout(bisectState.timer);
+    const state = bisectState;
+    bisectState = null;
+    els.bisectPauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === els.bisectPlayer) document.exitFullscreen().catch(() => {});
+    els.bisectFsHint.hidden = true;
+    if (state.results.length >= BISECT_MIN_RESOLVED) {
+      finalizeBisectRun(state);
+    } else {
+      els.bisectPlayer.hidden = true;
+      showScreen("testHome");
+    }
+  }
+  els.bisectBackBtn.addEventListener("click", bisectStop);
+  els.bisectAgainBtn.addEventListener("click", () => { els.bisectDonePanel.hidden = true; startBisectGame(); });
+  els.bisectDoneBackBtn.addEventListener("click", () => { els.bisectPlayer.hidden = true; els.bisectDonePanel.hidden = true; showScreen("testHome"); });
+  wireFullscreen({ player: els.bisectPlayer, btn: els.bisectFsBtn, hint: els.bisectFsHint, hintOpen: els.bisectFsHintOpenBtn, hintClose: els.bisectFsHintClose });
 
   // Rotationstest (Mentale Rotation) - grounded in the classic mental-
   // rotation/character-rotation chronometric paradigm (Cooper & Shepard,
