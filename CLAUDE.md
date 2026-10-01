@@ -5472,9 +5472,97 @@ doesn't:
   exercises every other mechanic: the counting display, the false-start
   handling, pause/resume across both phases, Beenden-doubles-as-finish,
   and length persistence).
+- **Linienhalbierungs-Test (Line Bisection)** (twenty-eighth autonomous
+  entry, 2026-10-01): built from the "Recherche-Backlog: 20 Kandidaten"
+  list (candidate #3) rather than fresh research this round. Grounded in
+  the line bisection test (Schenkenberg, Bradford & Ajax, 1980, Neurology
+  - standardised neuropsychological scoring for the classic clinical
+  task) and the "pseudoneglect" literature in healthy people (Bowers &
+  Heilman, 1980, Neuropsychologia - normal, non-brain-damaged individuals
+  reliably bisect slightly LEFT of true centre on average, attributed to
+  right-hemisphere dominance for spatial attention; the bias is also
+  known to be sensitive to attentional load and fatigue, not just a fixed
+  trait). A plain horizontal line of varying length and varying screen
+  position appears; the client taps where they judge its exact centre to
+  be - no further instruction, no right/wrong feedback per trial (classic
+  bisection tests never correct the client mid-session, since revealing
+  the true centre would let them consciously override the very automatic/
+  implicit bias being measured, destroying the point of a multi-trial
+  average). Scored as the standard literature metric: deviation as a
+  percentage of HALF the line's length, so trials of different lengths
+  stay comparable - negative = tapped left of centre, positive = tapped
+  right, a sign convention lifted directly from the bisection literature
+  itself, not invented here. Genuinely distinct from every existing Test/
+  NAT mechanic in two ways at once: (1) it is the ONLY exercise on this
+  whole tab that collects NO reaction time at all - every other exercise's
+  outcome is either an accuracy/correctness judgment or a speed
+  measurement (occasionally both), this one is a pure spatial accuracy/
+  bias measurement with the stimulus staying up indefinitely until
+  tapped; and (2) its outcome is a SIGNED spatial bias (which direction a
+  client tends to misjudge toward), not a reaction time, an accuracy%, or
+  a recalled set - no other exercise reports a directional tendency like
+  this. `BISECT_LENGTHS_PX = [140, 220, 300]` (three distinct lengths,
+  matching the real test's own multi-length protocol) combined with a
+  RANDOMISED horizontal start position every trial (not always centred on
+  the screen) - a deliberate anti-strategy measure: if the line were
+  always centred on the stage, "tap the middle of the screen" would
+  trivially solve the task without the client ever needing to actually
+  look at the line's two endpoints, which would make the whole
+  measurement meaningless. `bisectPrefs.length` (kurz/mittel/lang =
+  9/12/18 trials, 3/4/6 reps of each of the 3 line lengths) is the only
+  client-facing setting, same "length, no natural difficulty dial" shape
+  as Suchtest/UFOV/Hick/DSST - there's no sensible "harder" version of
+  this task beyond a longer session for a more stable average. Reports
+  the mean signed deviation% (the actual "Aufmerksamkeits-Tendenz" this
+  paradigm exists to reveal, with a plain-language direction note: "eher
+  nach links" / "eher nach rechts" / "sehr ausgeglichen" under a small
+  ±2% dead zone) plus the mean ABSOLUTE deviation% as a measure of overall
+  precision regardless of direction. `BISECT_BEST_KEY` tracks the LOWEST
+  mean absolute deviation% per length (lower is better, i.e. "most
+  balanced attempt so far" - phrased in the UI as exactly that, not as a
+  skill score, since this is a bias measurement, not a trainable
+  high-score game). No Bei-Fehler/Zusatzaufgabe/Trainingsmodus -
+  correctly skipped, same reasoning as every other fixed-trial Test
+  entry; there is also no "wrong answer" concept at all here for Bei-
+  Fehler to apply to. Self-paced per trial with NO response timeout of
+  any kind (unlike every other self-paced exercise on this tab) - the
+  real bisection test never pressures the client to hurry, since rushing
+  would itself introduce a confound into a task that's supposed to
+  measure automatic spatial perception, not decision speed under
+  pressure. Background colour/intensity WAS included (`bisectPrefs.
+  bgColorKey`/`bgIntensity`, `makeBgApplier`/`wireBgIntensityControl` on
+  both the ready screen and the pause overlay, plus a `MASTER_BG_TARGETS`
+  registry entry) - basically free, and a tint behind a plain line
+  doesn't compete with the purely positional judgment being made. The
+  line/tap-mark render inside `.bisect-area`, a fixed-height
+  `position:relative` sub-box (not a full-stage absolute overlay) - same
+  "smaller sub-box, well clear of the top hint by construction"
+  convention already used for Merkspanne's `.merk-field`, so
+  `stageTopClearanceY()` doesn't apply here either, by the same
+  reasoning. Test: `tests/bisect_test.py`.
 
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
+- **Linienhalbierungs-Test: no "best" concept really fits a bias
+  measurement, and the trial count is modest**: `BISECT_BEST_KEY` tracks
+  the lowest mean ABSOLUTE deviation% as "ausgeglichenster Wert" - a
+  reasonable "most balanced attempt" framing, but genuinely debatable
+  whether a bias-measurement task should have a trackable "best" at all
+  (a client could, in principle, learn to deliberately aim slightly off
+  from their own natural bias to "beat" their own record, which would
+  undermine the whole point of measuring an automatic tendency - the same
+  category of worry the real clinical version avoids entirely by never
+  gamifying it). Kept it anyway for consistency with every other Test
+  entry's own best-score convention, and because a client curious about
+  genuinely IMPROVING their spatial balance over time is a legitimate use
+  case too, not just a diagnostic one-off. Separately, at 9/12/18 trials
+  split across 3 line lengths, each length only gets 3-6 reps - enough for
+  a readable OVERALL mean but not really enough to say anything reliable
+  about whether the bias changes with line length specifically (not
+  currently broken out per length in the done-panel at all). Not fixed -
+  flagging rather than guessing: ask the client whether the "Bestleistung"
+  framing should be dropped entirely in favour of just showing trend
+  history, or whether a per-length breakdown would be worth adding.
 - **Iconic-Speicher-Test: only 6 trials feed each delay bin**: 24 trials
   split across 4 delays (0/300/700/1000ms) means each reported per-delay
   accuracy% rests on just 6 trials - a genuinely small sample that can

@@ -1013,6 +1013,11 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .pvt-display.feedback.timeout{color:#d32f2f;font-size:28px}
 .pvt-display.falsestart{color:#d32f2f;transform:scale(1.15)}
 
+.bisect-stage{flex:1;display:flex;flex-direction:column;padding:16px;gap:16px;background:#ffffff}
+.bisect-area{flex:1;min-height:220px;position:relative;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.bisect-line{position:absolute;height:4px;border-radius:2px;background:#16232a}
+.bisect-mark{position:absolute;width:2px;height:28px;background:#007094;transform:translate(-50%,-50%)}
+
 .corsi-stage{flex:1;position:relative;overflow:hidden}
 .corsi-block{
   position:absolute;transform:translate(-50%,-50%);
