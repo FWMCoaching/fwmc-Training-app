@@ -1151,6 +1151,10 @@ the same piece of work must cover, without being asked:
    colours), restriction filters.
 6. **Cardio-Zusatzaufgabe** parity for Visual Training/NAT (see the
    Cardio section).
+**Test-Bereich exercises are exempt** (client, same day: "Außer die
+Übungen in Test. Da muss das erst gehen, wenn sie aus Test woanders hin
+gepackt werden") - the rule and the test apply the moment an exercise is
+promoted out of Test into a regular section, as part of that promotion.
 Before calling any such work done, compare it against an existing,
 complete sibling (e.g. a new Workout mode against Tabata) item by item,
 rather than only against the ask's literal wording.
