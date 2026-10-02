@@ -1661,3 +1661,12 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .strength-item-row.in-superset{border-left:4px solid var(--brand)}
 .strength-tempo{flex:1;min-width:0;max-width:150px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
 .strength-hint{font-size:12px;margin:-2px 0 2px}
+
+/* "Alle entfernen" next to a built list's title (2026-10-02) */
+.list-clear-btn{float:right;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);font:inherit;font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;border-radius:999px;padding:3px 10px;cursor:pointer}
+.list-clear-btn:hover{color:#c62828;border-color:#c62828}
+/* Töne & Ansagen controls (Master + each area's Feineinstellungen) */
+.cue-domain .checkbox-row,.cue-master .checkbox-row{margin-top:8px;font-weight:500}
+.cue-sub-label{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin:12px 0 6px}
+.checkbox-row.cue-indent{margin-left:26px}
+.cue-domain .choice-row,.cue-master .choice-row{flex-wrap:wrap}

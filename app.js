@@ -5118,7 +5118,35 @@
   // be an inert checkbox list, not a real feature).
   const CVD_KEYS = ["rotgruen", "blaugelb", "voll"];
   const LIMB_KEYS = ["armL", "armR", "legL", "legR"];
-  const masterPrefs = { colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20 };
+  // ---- Töne & Ansagen: shared config (2026-10-02, Fabian) ----
+  // One central setting in Master-Einstellungen (masterPrefs.cues) that
+  // every timed area follows by default; each area (Tabata-Zirkel,
+  // Kraftplan, Cardio, Kombi) can switch to its own deviating setting in
+  // its Feineinstellungen (cueOverrides[domain]). Playback/UI lives next to
+  // playWorkoutBeep() further down.
+  const CUE_COUNT_CHOICES = [0, 3, 5];
+  const CUE_TICK_CHOICES = [0, 10, 15, 30, 60];
+  const CUE_BOOL_KEYS = ["countStart", "countEnd", "announceNext", "announceNote", "announceHalf", "announceLastRound", "announceLastSet"];
+  const CUE_DEFAULTS = { countdownS: 3, countStart: true, countEnd: true, tickS: 0, announceNext: false, announceNote: false, announceHalf: false, announceLastRound: false, announceLastSet: false };
+  const CUE_DOMAIN_KEYS = ["tabata", "strength", "cardio", "kombi"];
+  function normalizeCueCfg(c) {
+    const out = { ...CUE_DEFAULTS };
+    if (c && typeof c === "object") {
+      if (CUE_COUNT_CHOICES.includes(c.countdownS)) out.countdownS = c.countdownS;
+      if (CUE_TICK_CHOICES.includes(c.tickS)) out.tickS = c.tickS;
+      CUE_BOOL_KEYS.forEach((k) => { if (typeof c[k] === "boolean") out[k] = c[k]; });
+    }
+    return out;
+  }
+  const CUE_OVERRIDES_KEY = "fwmc-cue-overrides-v1";
+  const cueOverrides = {};
+  (() => {
+    const saved = readJSON(CUE_OVERRIDES_KEY, null);
+    if (saved && typeof saved === "object") CUE_DOMAIN_KEYS.forEach((d) => { if (saved[d]) cueOverrides[d] = normalizeCueCfg(saved[d]); });
+  })();
+  function saveCueOverrides() { writeJSON(CUE_OVERRIDES_KEY, cueOverrides); }
+
+  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20 };
   function loadMasterPrefs() {
     const saved = readJSON(MASTER_PREFS_KEY, null);
     if (saved && typeof saved === "object") {
@@ -5152,6 +5180,8 @@
     if (masterPrefs.defaultBgColorKey != null && !STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey]) masterPrefs.defaultBgColorKey = null;
     if (!Number.isFinite(masterPrefs.defaultBgIntensity) || masterPrefs.defaultBgIntensity < 0 || masterPrefs.defaultBgIntensity > 1) masterPrefs.defaultBgIntensity = 0;
     if (!Number.isFinite(masterPrefs.defaultPauseS) || masterPrefs.defaultPauseS < 0 || masterPrefs.defaultPauseS > 180) masterPrefs.defaultPauseS = 20;
+    masterPrefs.cues = normalizeCueCfg(masterPrefs.cues);
+    if (typeof masterPrefs.cuesIgnoreSilent !== "boolean") masterPrefs.cuesIgnoreSilent = false;
     // Persist immediately so a migrated (or just-cleaned-up) shape actually
     // lands on disk right away, rather than silently staying in the old
     // shape in storage until the client happens to touch some toggle -
@@ -5615,7 +5645,7 @@
   let masterSettingsReturnFocus = null;
   function openMasterSettings() {
     masterSettingsReturnFocus = document.activeElement;
-    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); syncMasterBgUI(); syncMasterPauseUI(); renderMasterCodeHistory();
+    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); syncMasterBgUI(); syncMasterPauseUI(); renderMasterCues(); renderMasterCodeHistory();
     els.masterSettingsSheet.hidden = false;
     focusFirstIn(els.masterSettingsSheet);
   }
@@ -9723,13 +9753,15 @@
     st.holding = { t0, total };
     els.workoutSetTimer.hidden = false;
     els.workoutSetDoneBtn.textContent = "Fertig";
-    let beeped = {};
+    const beeped = new Set();
+    const cfg = cueCfg("strength");
     const update = () => {
-      const left = Math.max(0, total - (performance.now() - t0) / 1000);
+      const inS = (performance.now() - t0) / 1000;
+      const left = Math.max(0, total - inS);
       els.workoutSetTimer.textContent = `${Math.ceil(left)} s`;
-      const whole = Math.ceil(left);
-      if (whole <= 3 && whole >= 1 && !beeped[whole]) { beeped[whole] = true; playWorkoutBeep(false); }
-      if (left <= 0) { playWorkoutBeep(true); completeWorkoutSet(); }
+      if (cfg.countEnd && cfg.countdownS > 0) cueCountdownBeep(beeped, left, cfg.countdownS);
+      cueTickCheck(beeped, inS, left, cfg);
+      if (left <= 0) { if (cfg.countEnd && cfg.countdownS > 0) playWorkoutBeep(true); completeWorkoutSet(); }
     };
     update();
     workoutSetTimerInterval = setInterval(update, 200);
@@ -9842,13 +9874,44 @@
     els.workoutRestNext.hidden = !nextText;
     els.workoutRestNext.textContent = nextText;
     els.workoutRestSkipBtn.textContent = mode === "start" ? "Sofort starten" : "Jetzt weiter";
+    const cfg = cueCfg("strength");
+    cueStrengthRestStart(mode, restS, cfg);
+    const countOn = cfg.countStart && cfg.countdownS > 0;
     let remaining = restS;
     const tick = () => {
       els.workoutRestCountdown.textContent = Math.max(0, Math.ceil(remaining));
-      if (remaining <= 0) { advanceRepsSet(); return; }
+      if (countOn && remaining >= 1 && remaining <= cfg.countdownS) playWorkoutBeep(false);
+      if (remaining <= 0) { if (countOn) playWorkoutBeep(true); advanceRepsSet(); return; }
       workoutRestTimer = setTimeout(() => { remaining -= 1; tick(); }, 1000);
     };
     tick();
+  }
+  // Spoken cues at the start of a Kraftplan pause: "Halbzeit", "Letzter
+  // Satz", the coming exercise (only when it changes) or a side switch,
+  // and its note when the pause is long enough to listen.
+  function cueStrengthRestStart(mode, restS, cfg) {
+    const st = workoutState;
+    if (!st || !st.strength) return;
+    const cur = mode === "start" ? null : st.steps[st.stepIndex];
+    const next = mode === "start" ? st.steps[st.stepIndex] : st.steps[st.stepIndex + 1];
+    if (!next) return;
+    const parts = [];
+    if (cfg.announceHalf && !st.cueHalfDone && cur && st.steps.length >= 4 && st.stepIndex + 1 >= st.steps.length / 2) { st.cueHalfDone = true; parts.push("Halbzeit."); }
+    const sameSetOtherSide = cur && cur.itemIndex === next.itemIndex && cur.set === next.set && cur.kind === next.kind;
+    if (cfg.announceLastSet && next.kind === "work" && next.sets > 1 && next.set === next.sets && !sameSetOtherSide) parts.push("Letzter Satz.");
+    if (cfg.announceNext) {
+      const it = st.strength.items[next.itemIndex];
+      const ex = findWorkoutExercise(it.exercise);
+      const changed = !cur || next.itemIndex !== cur.itemIndex;
+      if (changed) {
+        parts.push(mode === "start" ? `Los geht's mit ${ex.name}.` : `Als Nächstes: ${ex.name}.`);
+        const note = it.note || ex.note;
+        if (cfg.announceNote && note && restS >= 8) parts.push(note);
+      } else if (next.side && next.side !== cur.side) {
+        parts.push(`Seitenwechsel, jetzt ${sideWord(next.side)}.`);
+      }
+    }
+    if (parts.length) cueSay(parts.join(" "));
   }
   function advanceRepsSet(modeOverride) {
     if (workoutRestTimer) clearTimeout(workoutRestTimer);
@@ -9916,21 +9979,32 @@
   syncWorkoutSoundUI();
 
   let workoutAudioCtx = null;
-  function playWorkoutBeep(long) {
+  function playWorkoutBeep(long) { playCueTone(long ? 1180 : 880, long ? 0.35 : 0.11, 0.3); }
+  // The soft, short "Takt-Ton" - lower and quieter than the countdown
+  // beeps so the two never get confused.
+  function playCueTickTone() { playCueTone(620, 0.07, 0.16); }
+  // iOS routes web audio into the "ambient" session, which the ring/silent
+  // switch mutes on the speaker (not on headphones). "playback" plays
+  // through the switch but pauses other music, so it's an explicit opt-in
+  // in Master-Einstellungen (masterPrefs.cuesIgnoreSilent).
+  function applyCueAudioSession() {
+    try { if (navigator.audioSession) navigator.audioSession.type = masterPrefs.cuesIgnoreSilent ? "playback" : "auto"; } catch (e) {}
+  }
+  function playCueTone(freq, durationS, peak) {
     if (!workoutSoundPrefs.enabled) return;
     try {
+      applyCueAudioSession();
       if (!workoutAudioCtx) workoutAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const ctx = workoutAudioCtx;
       if (ctx.state === "suspended") ctx.resume();
-      const durationS = long ? 0.35 : 0.11;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.frequency.value = long ? 1180 : 880;
+      osc.frequency.value = freq;
       osc.connect(gain);
       gain.connect(ctx.destination);
       const now = ctx.currentTime;
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.3, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(peak, now + 0.01);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + durationS);
       osc.start(now);
       osc.stop(now + durationS + 0.02);
@@ -9943,6 +10017,150 @@
   let workoutBeepFrame = null;
   let workoutBeepedSeconds = null;
   function resetWorkoutBeepTracking() { workoutBeepFrame = null; workoutBeepedSeconds = new Set(); }
+
+  // ---- Töne & Ansagen: playback + settings UI (2026-10-02, Fabian) ----
+  // Effective setting for an area: its own deviating setting if one is
+  // switched on in that area's Feineinstellungen, otherwise the Master.
+  function cueCfg(domain) { return cueOverrides[domain] || masterPrefs.cues; }
+  function cueTransitionBeeps(cfg) { return cfg.countdownS > 0 && (cfg.countStart || cfg.countEnd); }
+  // Spoken announcement via the device's own speech output (no audio files).
+  // Muted together with the beeps by the speaker toggle.
+  function cueSay(text) {
+    if (!text || !workoutSoundPrefs.enabled) return;
+    window.__cueLog = window.__cueLog || [];
+    window.__cueLog.push(text);
+    if (!window.speechSynthesis) return;
+    try {
+      applyCueAudioSession();
+      // queued, not cancelled: "Halbzeit" must not cut off a running note
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "de-DE";
+      if (deVoice) u.voice = deVoice;
+      u.rate = 1.05;
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  // Short beep at each of the last n whole seconds of a phase, once each.
+  function cueCountdownBeep(tracker, remain, n) {
+    const whole = Math.ceil(remain);
+    if (whole >= 1 && whole <= n && !tracker.has(whole)) { tracker.add(whole); playWorkoutBeep(false); }
+  }
+  // "Takt-Ton" every tickS seconds of a phase, but never inside the final
+  // countdown (would collide with its beeps).
+  function cueTickCheck(tracker, inPhaseS, remain, cfg) {
+    if (!(cfg.tickS > 0)) return;
+    const k = Math.floor(inPhaseS / cfg.tickS);
+    if (k >= 1 && remain > cfg.countdownS + 0.5 && !tracker.has("t" + k)) { tracker.add("t" + k); playCueTickTone(); }
+  }
+
+  // Which settings each area offers, and how they're worded there.
+  const CUE_FIELD_LABELS = {
+    master: {
+      countStart: "Countdown vor dem Start (Ende einer Pause)",
+      countEnd: "Countdown vor dem Ende einer Übung bzw. Aktivität",
+      tick: "Takt-Ton während einer Übung",
+      announceNext: "Nächste Übung ansagen",
+      announceNote: "mit Notiz bzw. Hinweis (wenn vorhanden)",
+      announceHalf: "„Halbzeit“ ansagen",
+      announceLastRound: "„Letzte Runde“ ansagen",
+      announceLastSet: "„Letzter Satz“ ansagen (Kraftplan)",
+    },
+    tabata: { countStart: "Countdown vor dem Start jeder Übung", countEnd: "Countdown vor dem Ende jeder Übung", tick: "Takt-Ton während der Übung", announceNext: "Nächste Übung in der Pause ansagen", announceNote: "mit Notiz bzw. Hinweis (wenn vorhanden)", announceHalf: "„Halbzeit“ ansagen", announceLastRound: "„Letzte Runde“ ansagen" },
+    strength: { countStart: "Countdown am Ende jeder Pause", countEnd: "Countdown vor dem Ende einer Halteübung", tick: "Takt-Ton während Halteübungen", announceNext: "Nächste Übung in der Pause ansagen", announceNote: "mit Notiz bzw. Hinweis (wenn vorhanden)", announceHalf: "„Halbzeit“ ansagen", announceLastSet: "„Letzter Satz“ ansagen" },
+    cardio: { countStart: "Countdown am Ende jeder Pause", countEnd: "Countdown vor dem Ende jeder Aktivität und jedes Intervall-Wechsels", tick: "Takt-Ton während der Aktivität", announceNext: "Nächste Aktivität ansagen", announceNote: "mit Beschriftung (wenn vorhanden)", announceHalf: "„Halbzeit“ ansagen", announceLastRound: "„Letzte Aktivität“ ansagen" },
+    kombi: { countStart: "Countdown am Ende der Pause zwischen Bausteinen", announceNext: "Nächsten Baustein ansagen", announceLastRound: "„Letzter Baustein“ ansagen" },
+  };
+  function cueControlsHtml(cfg, labels) {
+    const has = (k) => k in labels;
+    const choice = (attr, v, cur, text) => `<button type="button" class="choice${v === cur ? " active" : ""}" ${attr}="${v}">${text}</button>`;
+    const check = (k, extraClass = "") => has(k) ? `<label class="checkbox-row${extraClass}"><input type="checkbox" data-cue-key="${k}"${cfg[k] ? " checked" : ""}> ${labels[k]}</label>` : "";
+    let h = `<div class="cue-sub-label">Countdown-Töne</div><div class="choice-row">` +
+      CUE_COUNT_CHOICES.map((v) => choice("data-cue-count", v, cfg.countdownS, v ? `${v} Sek.` : "Aus")).join("") + `</div>`;
+    if (cfg.countdownS > 0) h += check("countStart") + check("countEnd");
+    if (has("tick")) {
+      h += `<div class="cue-sub-label">${labels.tick}</div><div class="choice-row">` +
+        CUE_TICK_CHOICES.map((v) => choice("data-cue-tick", v, cfg.tickS, v === 0 ? "Aus" : v === 60 ? "jede Min." : `alle ${v} s`)).join("") + `</div>`;
+    }
+    const anns = ["announceNext", "announceHalf", "announceLastRound", "announceLastSet"].filter(has);
+    if (anns.length) {
+      h += `<div class="cue-sub-label">Ansagen (Sprachausgabe)</div>` + check("announceNext");
+      if (has("announceNote") && cfg.announceNext) h += check("announceNote", " cue-indent");
+      h += check("announceHalf") + check("announceLastRound") + check("announceLastSet");
+    }
+    return h;
+  }
+  // One delegated handler per container; `getCfg` returns the object to
+  // mutate, `onChange` persists + re-renders.
+  function wireCueControls(container, getCfg, onChange) {
+    container.addEventListener("click", (e) => {
+      const cfg = getCfg();
+      if (!cfg) return;
+      const c = e.target.closest("[data-cue-count]"), t = e.target.closest("[data-cue-tick]");
+      if (c) { cfg.countdownS = Number(c.dataset.cueCount); onChange(); }
+      else if (t) { cfg.tickS = Number(t.dataset.cueTick); onChange(); }
+    });
+    container.addEventListener("change", (e) => {
+      const cb = e.target.closest("[data-cue-key]");
+      const cfg = getCfg();
+      if (!cb || !cfg) return;
+      cfg[cb.dataset.cueKey] = cb.checked;
+      onChange();
+    });
+  }
+
+  function renderMasterCues() {
+    const el = document.getElementById("masterCuesGroup");
+    if (!el) return;
+    el.innerHTML =
+      `<div class="group-label">Töne &amp; Ansagen</div>` +
+      `<div class="group-help">Gilt für Tabata-Zirkel, Kraftplan, Cardio und die Pausen im Kombi-Baukasten. In den Feineinstellungen jedes Bereichs kannst du davon abweichen.</div>` +
+      cueControlsHtml(masterPrefs.cues, CUE_FIELD_LABELS.master) +
+      `<div class="cue-sub-label">iPhone/iPad</div>` +
+      `<label class="checkbox-row"><input type="checkbox" data-cue-silent${masterPrefs.cuesIgnoreSilent ? " checked" : ""}> Töne auch bei eingeschaltetem Stummschalter</label>` +
+      `<div class="group-help">Ohne Haken spielt das iPhone Töne über den Lautsprecher nur, wenn der Stummschalter aus ist (mit Kopfhörern immer). Mit Haken klingen sie trotzdem, dafür pausiert iOS dann meist deine Musik.</div>`;
+  }
+  (() => {
+    const el = document.getElementById("masterCuesGroup");
+    if (!el) return;
+    wireCueControls(el, () => masterPrefs.cues, () => { saveMasterPrefs(); renderMasterCues(); renderAllCueDomains(); });
+    el.addEventListener("change", (e) => {
+      if (!e.target.matches("[data-cue-silent]")) return;
+      masterPrefs.cuesIgnoreSilent = e.target.checked;
+      saveMasterPrefs();
+    });
+  })();
+
+  function renderCueDomain(domain) {
+    const el = document.getElementById("cueDomain_" + domain);
+    if (!el) return;
+    const own = !!cueOverrides[domain];
+    el.innerHTML =
+      `<div class="group-label">Töne &amp; Ansagen</div>` +
+      `<div class="choice-row two">` +
+      `<button type="button" class="choice${own ? "" : " active"}" data-cue-mode="master">Wie Master-Einstellungen</button>` +
+      `<button type="button" class="choice${own ? " active" : ""}" data-cue-mode="own">Eigene Einstellung</button></div>` +
+      (own ? cueControlsHtml(cueOverrides[domain], CUE_FIELD_LABELS[domain])
+        : `<div class="group-help">Folgt den Master-Einstellungen. <button type="button" class="text-link small" data-cue-open-master>Zu den Einstellungen</button></div>`);
+  }
+  function renderAllCueDomains() { CUE_DOMAIN_KEYS.forEach(renderCueDomain); }
+  CUE_DOMAIN_KEYS.forEach((domain) => {
+    const el = document.getElementById("cueDomain_" + domain);
+    if (!el) return;
+    el.addEventListener("click", (e) => {
+      const m = e.target.closest("[data-cue-mode]");
+      if (m) {
+        // Switching to "own" starts from the current Master values.
+        if (m.dataset.cueMode === "own") { if (!cueOverrides[domain]) cueOverrides[domain] = normalizeCueCfg(masterPrefs.cues); }
+        else delete cueOverrides[domain];
+        saveCueOverrides();
+        renderCueDomain(domain);
+        return;
+      }
+      if (e.target.closest("[data-cue-open-master]")) openMasterSettings();
+    });
+    wireCueControls(el, () => cueOverrides[domain], () => { saveCueOverrides(); renderCueDomain(domain); });
+  });
+  renderAllCueDomains();
 
   const TABATA_PREP_S = 5;
   // prepS/cooldownS are optional - coach-authored blocks (startTabataBlock)
@@ -9998,7 +10216,7 @@
       // the very last work interval's own "end" cue, for the (common) case
       // with no cool-down - every other work start/end already got its long
       // beep below, from the "frame changed" check as the NEXT frame began.
-      if (workoutBeepFrame && workoutBeepFrame.type === "work") playWorkoutBeep(true);
+      if (workoutBeepFrame && workoutBeepFrame.type === "work" && cueTransitionBeeps(cueCfg("tabata"))) playWorkoutBeep(true);
       finishWorkoutBlock();
       return;
     }
@@ -10006,22 +10224,25 @@
     const frame = workoutState.schedule.find((f) => elapsed >= f.t0 && elapsed < f.t1);
     if (frame) {
       const remain = frame.t1 - elapsed;
+      const cfg = cueCfg("tabata");
+      const frameIdx = workoutState.schedule.indexOf(frame);
+      const nextFrame = workoutState.schedule[frameIdx + 1];
       if (frame !== workoutBeepFrame) {
         const prevFrame = workoutBeepFrame;
         workoutBeepFrame = frame;
         workoutBeepedSeconds = new Set();
         // a long beep marks the instant of every work start AND end
-        if (prevFrame && (frame.type === "work" || prevFrame.type === "work")) playWorkoutBeep(true);
+        if (prevFrame && (frame.type === "work" || prevFrame.type === "work") && cueTransitionBeeps(cfg)) playWorkoutBeep(true);
+        cueTabataFrameStart(frame, frameIdx, cfg);
       }
-      const frameIdx = workoutState.schedule.indexOf(frame);
-      const nextFrame = workoutState.schedule[frameIdx + 1];
-      const countingToWork = frame.type === "work" || (nextFrame && nextFrame.type === "work");
-      if (countingToWork) {
-        const wholeRemain = Math.ceil(remain);
-        if (wholeRemain >= 1 && wholeRemain <= 3 && !workoutBeepedSeconds.has(wholeRemain)) {
-          workoutBeepedSeconds.add(wholeRemain);
-          playWorkoutBeep(false);
-        }
+      // Countdown (Töne & Ansagen, default 3 s) to every work start and end.
+      const countEnd = frame.type === "work" && cfg.countEnd;
+      const countStart = frame.type !== "work" && nextFrame && nextFrame.type === "work" && cfg.countStart;
+      if (cfg.countdownS > 0 && (countEnd || countStart)) cueCountdownBeep(workoutBeepedSeconds, remain, cfg.countdownS);
+      if (frame.type === "work") cueTickCheck(workoutBeepedSeconds, elapsed - frame.t0, remain, cfg);
+      if (cfg.announceHalf && !workoutState.cueHalfDone && workoutState.total >= 60 && elapsed >= workoutState.total / 2) {
+        workoutState.cueHalfDone = true;
+        cueSay("Halbzeit");
       }
       const totalSets = workoutState.block.sets;
       const items = workoutState.block.items;
@@ -10066,6 +10287,30 @@
       }
     }
     workoutRaf = requestAnimationFrame(circuitTick);
+  }
+
+  // Spoken cues when a Tabata phase begins: in a pause (or the start
+  // countdown) the coming exercise, optionally with its note when the pause
+  // is long enough to listen; "Letzte Runde" before the last pass.
+  function cueTabataFrameStart(frame, idx, cfg) {
+    const st = workoutState;
+    const sets = st.block.sets;
+    const isLastRoundStart = (f) => f && sets > 1 && f.set === sets && f.itemIdx === 0;
+    if (frame.type === "work") {
+      if (cfg.announceLastRound && isLastRoundStart(frame) && !st.cueLastRoundDone) { st.cueLastRoundDone = true; cueSay("Letzte Runde"); }
+      return;
+    }
+    if (frame.type === "cooldown") return;
+    const nextWork = st.schedule.slice(idx + 1).find((f) => f.type === "work");
+    const parts = [];
+    if (cfg.announceLastRound && isLastRoundStart(nextWork) && !st.cueLastRoundDone) { st.cueLastRoundDone = true; parts.push("Letzte Runde."); }
+    if (cfg.announceNext && nextWork) {
+      const ex = findWorkoutExercise(nextWork.exercise);
+      parts.push(frame.type === "prep" ? `Los geht's mit ${ex.name}.` : `Als Nächstes: ${ex.name}.`);
+      const note = nextWork.note || ex.note;
+      if (cfg.announceNote && note && frame.t1 - frame.t0 >= 8) parts.push(note);
+    }
+    if (parts.length) cueSay(parts.join(" "));
   }
 
   // ---- Skip back/restart/forward through the exercises, like the visual
@@ -10290,6 +10535,7 @@
   function renderWorkoutCircuitList() {
     const items = workoutCircuitPrefs.items;
     els.workoutCircuitCount.textContent = items.length ? `${items.length} Übung${items.length === 1 ? "" : "en"}` : "";
+    document.getElementById("workoutCircuitClearBtn").hidden = items.length === 0;
     els.workoutCircuitEmptyHint.hidden = items.length > 0;
     els.workoutCircuitList.innerHTML = "";
     items.forEach((item, i) => {
@@ -10759,6 +11005,7 @@
   function renderWorkoutRepsList() {
     const items = workoutRepsPrefs.items;
     els.workoutRepsCount.textContent = items.length ? `${items.length} Übung${items.length === 1 ? "" : "en"}` : "";
+    document.getElementById("workoutRepsClearBtn").hidden = items.length === 0;
     els.workoutRepsEmptyHint.hidden = items.length > 0;
     els.workoutRepsSaveBtn.hidden = items.length === 0 || !els.workoutRepsSaveForm.hidden;
     els.workoutRepsList.innerHTML = "";
@@ -11193,6 +11440,7 @@
   function renderCardioList() {
     const items = cardioPrefs.items;
     els.cardioCount.textContent = items.length ? `${items.length} Aktivität${items.length === 1 ? "" : "en"}` : "";
+    document.getElementById("cardioClearBtn").hidden = items.length === 0;
     els.cardioEmptyHint.hidden = items.length > 0;
     els.cardioList.innerHTML = "";
     items.forEach((item, i) => {
@@ -12444,6 +12692,7 @@
       cardioRaf = requestAnimationFrame(cardioTick);
       return;
     }
+    cueCardioTick(block, blockElapsed);
     if (block.pause) {
       const nextBlock = cardioState.items[cardioState.index + 1];
       const nextAct = nextBlock ? findCardioActivity(nextBlock.activity) : null;
@@ -12476,6 +12725,71 @@
       return;
     }
     cardioRaf = requestAnimationFrame(cardioTick);
+  }
+
+  // Töne & Ansagen for Cardio: a long beep at every activity/pause change
+  // and interval-phase change, countdowns before them, an optional
+  // "Takt-Ton", and spoken cues (next activity, "Halbzeit", "Letzte
+  // Aktivität"). Tracking lives on cardioState.cue so each fires once.
+  function cueCardioTick(block, blockElapsed) {
+    const cs = cardioState;
+    const cfg = cueCfg("cardio");
+    const c = cs.cue || (cs.cue = { idx: -1, beeped: new Set(), phaseKey: null, phaseBeeped: new Set() });
+    const n = cfg.countdownS;
+    const beeps = cueTransitionBeeps(cfg);
+    if (c.idx !== cs.index) {
+      if (c.idx >= 0 && beeps) playWorkoutBeep(true);
+      c.idx = cs.index;
+      c.beeped = new Set();
+      c.phaseKey = null;
+      cueCardioAnnounce(block, cfg);
+    }
+    const remain = block.durationS - blockElapsed;
+    if (n > 0 && (block.pause ? cfg.countStart : cfg.countEnd)) cueCountdownBeep(c.beeped, remain, n);
+    if (block.pause) return;
+    if (block.interval) {
+      const { onS, offS } = block.interval;
+      const cyc = onS + offS;
+      const t = blockElapsed % cyc;
+      const inOn = t < onS;
+      const key = Math.floor(blockElapsed / cyc) + (inOn ? "on" : "off");
+      const phaseRemain = inOn ? onS - t : cyc - t;
+      if (c.phaseKey !== key) {
+        if (c.phaseKey !== null && beeps) playWorkoutBeep(true);
+        c.phaseKey = key;
+        c.phaseBeeped = new Set();
+      }
+      if (n > 0 && cfg.countEnd && phaseRemain < remain - 0.5) cueCountdownBeep(c.phaseBeeped, phaseRemain, n);
+      cueTickCheck(c.phaseBeeped, inOn ? t : t - onS, Math.min(phaseRemain, remain), cfg);
+    } else {
+      cueTickCheck(c.beeped, blockElapsed, remain, cfg);
+    }
+    if (cfg.announceHalf && !c.halfDone) {
+      const total = cs.items.reduce((sum, it) => sum + it.durationS, 0);
+      const pos = cs.items.slice(0, cs.index).reduce((sum, it) => sum + it.durationS, 0) + blockElapsed;
+      if (total >= 120 && pos >= total / 2) { c.halfDone = true; cueSay("Halbzeit"); }
+    }
+  }
+  function cueCardioAnnounce(block, cfg) {
+    const cs = cardioState;
+    let lastReal = -1;
+    cs.items.forEach((it, i) => { if (!it.pause) lastReal = i; });
+    const parts = [];
+    const describe = (it) => {
+      const act = findCardioActivity(it.activity);
+      return act.name + "." + (cfg.announceNote && it.label ? ` ${it.label}.` : "");
+    };
+    if (block.pause) {
+      const nb = cs.items[cs.index + 1];
+      if (!nb) return;
+      if (cfg.announceLastRound && cs.index + 1 === lastReal && cs.realCount > 1) { cs.cue.lastDone = true; parts.push("Letzte Aktivität."); }
+      if (cfg.announceNext) parts.push("Als Nächstes: " + describe(nb));
+    } else {
+      if (cfg.announceLastRound && cs.index === lastReal && cs.realCount > 1 && !cs.cue.lastDone) { cs.cue.lastDone = true; parts.push("Letzte Aktivität."); }
+      const prev = cs.items[cs.index - 1];
+      if (cfg.announceNext && (!prev || !prev.pause)) parts.push((prev ? "Jetzt: " : "Los geht's mit ") + describe(block));
+    }
+    if (parts.length) cueSay(parts.join(" "));
   }
 
   function applyCardioGuestToState(guestId, cfg) {
@@ -12711,7 +13025,11 @@
     cardioState.blockStartTime = performance.now();
   }
   els.cardioPrevBtn.addEventListener("click", () => cardioJumpToIndex(cardioState ? cardioState.index - 1 : 0, -1));
-  els.cardioRestartBtn.addEventListener("click", () => { if (cardioState) cardioState.blockStartTime = performance.now(); });
+  els.cardioRestartBtn.addEventListener("click", () => {
+    if (!cardioState) return;
+    cardioState.blockStartTime = performance.now();
+    if (cardioState.cue) { cardioState.cue.beeped = new Set(); cardioState.cue.phaseKey = null; }
+  });
   els.cardioSkipBtn.addEventListener("click", () => cardioJumpToIndex(cardioState ? cardioState.index + 1 : 0, 1));
   wireSwipeNav(els.cardioPlayer, {
     onLeft: () => els.cardioSkipBtn.click(),
@@ -12882,6 +13200,13 @@
     els.comboTransitionTitle.textContent = comboBlockLabel(nextBlock);
     els.comboTransitionMeta.textContent = comboBlockMeta(nextBlock);
     els.comboTransition.hidden = false;
+    const cfg = cueCfg("kombi");
+    const parts = [];
+    const blocks = comboProgram ? comboProgram.def.blocks : [];
+    if (cfg.announceLastRound && blocks.length > 1 && blocks.indexOf(nextBlock) === blocks.length - 1) parts.push("Letzter Baustein.");
+    if (cfg.announceNext) parts.push(`Als Nächstes: ${comboBlockLabel(nextBlock)}.`);
+    if (parts.length) cueSay(parts.join(" "));
+    const countOn = cfg.countStart && cfg.countdownS > 0;
     let remaining = pauseS;
     els.comboTransitionCountdown.textContent = fmtClock(remaining);
     const go = () => {
@@ -12894,8 +13219,9 @@
     comboTransitionInterval = setInterval(() => {
       remaining -= 1;
       els.comboTransitionCountdown.textContent = fmtClock(remaining);
+      if (countOn && remaining >= 1 && remaining <= cfg.countdownS) playWorkoutBeep(false);
     }, 1000);
-    comboTransitionTimer = setTimeout(go, pauseS * 1000);
+    comboTransitionTimer = setTimeout(() => { if (countOn) playWorkoutBeep(true); go(); }, pauseS * 1000);
   }
   function advanceComboProgram(playedS) {
     if (!comboProgram) return;
@@ -12971,6 +13297,58 @@
   const comboSavedStore = makePresetStore(COMBO_SAVED_KEY);
 
   let comboDraftBlocks = [];
+
+  // ---- "Alle entfernen" (2026-10-02, Fabian): clears a whole built list in
+  // one go, after an in-app "Bist du sicher?" Ja/Nein - never the browser's
+  // own confirm(), which looks foreign in the installed app.
+  let confirmYesFn = null, confirmReturnFocus = null;
+  function confirmDialog(text, onYes) {
+    const sheet = document.getElementById("confirmSheet");
+    document.getElementById("confirmText").textContent = text;
+    confirmYesFn = onYes;
+    confirmReturnFocus = document.activeElement;
+    sheet.hidden = false;
+    document.getElementById("confirmNoBtn").focus();
+  }
+  function closeConfirmDialog(yes) {
+    document.getElementById("confirmSheet").hidden = true;
+    const fn = confirmYesFn;
+    confirmYesFn = null;
+    if (confirmReturnFocus && document.body.contains(confirmReturnFocus) && !confirmReturnFocus.hidden) confirmReturnFocus.focus();
+    if (yes && fn) fn();
+  }
+  (() => {
+    const sheet = document.getElementById("confirmSheet");
+    document.getElementById("confirmYesBtn").addEventListener("click", () => closeConfirmDialog(true));
+    document.getElementById("confirmNoBtn").addEventListener("click", () => closeConfirmDialog(false));
+    sheet.addEventListener("click", (e) => { if (e.target === sheet) closeConfirmDialog(false); });
+    sheet.addEventListener("keydown", (e) => { if (e.key === "Escape") closeConfirmDialog(false); else trapTabKey(sheet, e); });
+  })();
+  document.getElementById("workoutCircuitClearBtn").addEventListener("click", () => confirmDialog("Willst du alle Übungen aus deinem Zirkel entfernen?", () => {
+    workoutCircuitPrefs.items = [];
+    saveWorkoutCircuitPrefs();
+    renderWorkoutCircuitAddGrid();
+    renderWorkoutCircuitList();
+    syncWorkoutCircuitUI();
+  }));
+  document.getElementById("workoutRepsClearBtn").addEventListener("click", () => confirmDialog("Willst du alle Übungen aus deinem Kraftplan entfernen?", () => {
+    workoutRepsPrefs.items = [];
+    strengthOpenOptions.clear();
+    strengthOpenMore.clear();
+    saveWorkoutRepsPrefs();
+    refreshWorkoutRepsBuilder();
+  }));
+  document.getElementById("cardioClearBtn").addEventListener("click", () => confirmDialog("Willst du alle Aktivitäten aus deiner Cardio-Einheit entfernen?", () => {
+    cardioPrefs.items = [];
+    saveCardioPrefs();
+    renderCardioAddGrid();
+    renderCardioList();
+    syncCardioUI();
+  }));
+  document.getElementById("comboClearBtn").addEventListener("click", () => confirmDialog("Willst du alle Bausteine aus deiner Abfolge entfernen?", () => {
+    comboDraftBlocks = [];
+    renderComboBlockList();
+  }));
   function renderComboAddGrid() {
     els.comboAddGrid.innerHTML = "";
     COMBO_DOMAIN_ORDER.forEach((domain) => {
@@ -13010,6 +13388,7 @@
   }
   function renderComboBlockList() {
     els.comboBlockCount.textContent = comboDraftBlocks.length ? `${comboDraftBlocks.length} Baustein${comboDraftBlocks.length === 1 ? "" : "e"}` : "";
+    document.getElementById("comboClearBtn").hidden = comboDraftBlocks.length === 0;
     els.comboEmptyHint.hidden = comboDraftBlocks.length > 0;
     els.comboBlockList.innerHTML = "";
     comboDraftBlocks.forEach((block, i) => {

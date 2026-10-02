@@ -3993,6 +3993,57 @@ and Aufwärmsätze (fixed reps or just a placeholder) - "muss clean aussehen".
 - EMOM (every minute on the minute) deliberately not built.
 Test: `tests/strength_extras_test.py`.
 
+### Töne & Ansagen + "Alle entfernen" (2026-10-02)
+
+Fabian: an X to empty a whole built list (with "Bist du sicher? Ja/Nein"),
+and configurable sounds/announcements, Master first, each area able to
+deviate in its own Feineinstellungen.
+- **"Alle entfernen"**: `.list-clear-btn` in the list title of Tabata-Zirkel
+  (`#workoutCircuitClearBtn`), Kraftplan (`#workoutRepsClearBtn`), Cardio
+  (`#cardioClearBtn`) and Kombi (`#comboClearBtn`), hidden while empty.
+  Asks through the in-app `#confirmSheet` (`confirmDialog(text, onYes)`),
+  never the browser's `confirm()`. Reuse `confirmDialog` for any new
+  destructive one-tap action.
+- **Settings shape**: `masterPrefs.cues` = `{countdownS 0|3|5, countStart,
+  countEnd, tickS 0|10|15|30|60, announceNext, announceNote, announceHalf,
+  announceLastRound, announceLastSet}` (`normalizeCueCfg`), plus
+  `masterPrefs.cuesIgnoreSilent`. Per area (`tabata`/`strength`/`cardio`/
+  `kombi`) an optional full copy in `fwmc-cue-overrides-v1`; `cueCfg(domain)`
+  returns the override or the Master. UI is rendered by JS into
+  `#masterCuesGroup` and each `#cueDomain_<domain>` (choice "Wie Master-
+  Einstellungen" / "Eigene Einstellung", the latter seeded from the Master;
+  `CUE_FIELD_LABELS` decides which options an area shows and their wording).
+  Cardio and Kombi got a new "Feineinstellungen" `<details>` for this.
+- **Playback**: `playCueTone()` (beeps 880 Hz short / 1180 Hz long, Takt-Ton
+  620 Hz soft), `cueSay()` (device speech synthesis, queued, de-DE), both
+  muted by the existing speaker toggle (`workoutSoundPrefs.enabled`).
+  `cueCountdownBeep`/`cueTickCheck` fire each mark once per phase. Countdown
+  "Aus" also drops the long transition beep (`cueTransitionBeeps`).
+  - Tabata (`circuitTick`, `cueTabataFrameStart`): countdown to every work
+    start/end, Takt-Ton in work phases, in each pause the next exercise
+    (+ note if the pause is ≥ 8 s), "Letzte Runde" before the last pass,
+    "Halbzeit" at half the total time (≥ 60 s).
+  - Kraftplan (`startRepsRest`, `cueStrengthRestStart`, `startWorkoutHold`):
+    countdown at the end of every pause (incl. "Bereit machen"), countdown +
+    Takt-Ton in holds, at pause start "Halbzeit" (half the steps), "Letzter
+    Satz" (once, not again for the second side), next exercise only when it
+    changes, else "Seitenwechsel".
+  - Cardio (`cueCardioTick`/`cueCardioAnnounce`): long beep at every
+    activity/pause/interval-phase change with countdowns before them, Takt-
+    Ton, next activity (+ its label as the "note"), "Letzte Aktivität",
+    "Halbzeit".
+  - Kombi (`showComboTransition`): next Baustein, "Letzter Baustein",
+    countdown at the end of the pause.
+- **iPhone silent switch** (checked 2026-10-02, not on a device): iOS puts
+  web audio in the "ambient" session, which the switch mutes on the speaker
+  (not on headphones); media volume alone doesn't help. The opt-in "Töne
+  auch bei eingeschaltetem Stummschalter" sets `navigator.audioSession.type
+  = "playback"` (Safari 17+), which plays through the switch but usually
+  pauses other music. Needs a real-device check by Fabian.
+- Vibration: parked until there is a native app (iPhone web apps can't).
+Test: `tests/cues_test.py` (fake AudioContext records tones, `window.__cueLog`
+records spoken texts).
+
 ### Interval phase wording corrected (2026-09-30)
 
 "Belastung"/"Erholung" (both the setup-screen phase labels and the live
