@@ -1,0 +1,1 @@
+{"app": "fwmc-training", "version": 1, "data": {"fwmc-cardio-v1": "{\"items\": [{\"activity\": \"walking\", \"durationS\": 900}]}", "fwmc-unknown-future-v9": "{\"a\": 1}", "other-app": "\"x2\"", "fwmc-broken-v1": "{nope"}}

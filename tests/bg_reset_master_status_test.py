@@ -37,11 +37,11 @@ async def main():
         await pg.click("#masterSettingsCloseBtn"); await pg.wait_for_timeout(150)
         await pg.click("#gngOpenBtn"); await pg.wait_for_timeout(150)
         await pg.evaluate("document.querySelector('#gngAdvanced').open = true"); await pg.wait_for_timeout(100)
-        print("master hint now visible:", "Master-Einstellungen aktiv" in await pg.inner_text("#gngBgMasterStatus"))
+        print("master hint now visible:", "Grundeinstellungen aktiv" in await pg.inner_text("#gngBgMasterStatus"))
         print("gng picker shows rot as active (following master):", "active" in (await pg.get_attribute('#gngBgColorPicker [data-key="rot"]', "class") or ""))
 
         # ---- click the master-hint's link -> jumps to Master-Einstellungen ----
-        await pg.click('#gngBgMasterStatus button:has-text("zu den Einstellungen")'); await pg.wait_for_timeout(200)
+        await pg.click('#gngBgMasterStatus button:has-text("zu den Grundeinstellungen")'); await pg.wait_for_timeout(200)
         print("link opens Master-Einstellungen:", await pg.is_visible("#masterSettingsSheet"))
         await pg.click("#masterSettingsCloseBtn"); await pg.wait_for_timeout(150)
 
@@ -49,14 +49,14 @@ async def main():
         # a reset button ----
         await pg.click('#gngBgColorPicker [data-key="gelb"]'); await pg.wait_for_timeout(100)
         print("reset button shown after customizing:", "Auf Standard zurücksetzen" in await pg.inner_text("#gngBgMasterStatus"))
-        print("master hint gone after customizing:", "Master-Einstellungen aktiv" not in await pg.inner_text("#gngBgMasterStatus"))
+        print("master hint gone after customizing:", "Grundeinstellungen aktiv" not in await pg.inner_text("#gngBgMasterStatus"))
         raw_gng = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-gng-prefs-v1') || '{}')")
         print("customization persisted (gelb):", raw_gng.get("bgColorKey") == "gelb")
 
         # ---- reset it: back to following Master (rot) ----
         await pg.click('#gngBgMasterStatus button:has-text("Auf Standard zurücksetzen")'); await pg.wait_for_timeout(150)
         print("picker shows rot again after reset:", "active" in (await pg.get_attribute('#gngBgColorPicker [data-key="rot"]', "class") or ""))
-        print("master hint shown again after reset:", "Master-Einstellungen aktiv" in await pg.inner_text("#gngBgMasterStatus"))
+        print("master hint shown again after reset:", "Grundeinstellungen aktiv" in await pg.inner_text("#gngBgMasterStatus"))
         raw_gng2 = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-gng-prefs-v1') || '{}')")
         print("reset persisted (rot, following master again):", raw_gng2.get("bgColorKey") == "rot")
 
@@ -87,7 +87,7 @@ async def main():
 
         await pg.click("#simonOpenBtn"); await pg.wait_for_timeout(150)
         await pg.evaluate("document.querySelector('#simonAdvanced').open = true"); await pg.wait_for_timeout(100)
-        print("Simon-Test shows master hint after global reset:", "Master-Einstellungen aktiv" in await pg.inner_text("#simonBgMasterStatus"))
+        print("Simon-Test shows master hint after global reset:", "Grundeinstellungen aktiv" in await pg.inner_text("#simonBgMasterStatus"))
 
         print("FINAL ERRORS:", errors)
         await b.close()

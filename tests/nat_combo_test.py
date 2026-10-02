@@ -40,7 +40,7 @@ async def main():
         await pg.click("#rememberReadyStartBtn"); await pg.wait_for_timeout(150)
         print("block count text:", await pg.inner_text("#comboBlockCount"))
         block_row_text = await pg.inner_text("#comboBlockList")
-        print("block list mentions Remember:", "Remember" in block_row_text)
+        print("block list mentions Remember:", "Positionen merken" in block_row_text)
 
         await pg.click("#comboStartBtn"); await pg.wait_for_timeout(300)
         print("remember player visible:", await pg.is_visible("#rememberPlayer"))

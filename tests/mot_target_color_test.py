@@ -2,7 +2,7 @@ import asyncio
 from playwright.async_api import async_playwright
 URL = "http://localhost:8845/index.html"
 
-# MOT-Fähigkeit's target highlight colour ("Farbe des Ziels") is now
+# Objektverfolgung (MOT)'s target highlight colour ("Farbe des Ziels") is now
 # configurable too, same swatch-picker pattern as "Farbe der Objekte" -
 # default "gelb" (#f2a900, the exact colour the CSS default used before
 # this was configurable). Picked once per round via pickMotColor(), which

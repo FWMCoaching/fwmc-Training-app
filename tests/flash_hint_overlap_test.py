@@ -4,7 +4,7 @@ URL = "http://localhost:8845/index.html"
 
 # Regression test for a real bug report: a flashed digit's random position
 # (fx,fy) is shared with Periph's radial layout, which has no fixed on-screen
-# text. Flash Speicher Test always shows a "Merken …"/"Richtig!"/error hint
+# text. Flash-Speicher-Test always shows a "Merken …"/"Richtig!"/error hint
 # pill near the top of the stage (#flashHint), so a digit placed near-vertical
 # at a large radius could land inside/under it. flashSafeFy() in app.js now
 # measures the hint's actual rendered bottom edge at flash time and pushes the
@@ -18,7 +18,7 @@ async def check_no_overlap(pg, forced_random):
     if await pg.is_visible("#tipsCloseBtn"):
         await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)
     await pg.click('#home .section-tab[data-section="nat"]'); await pg.wait_for_timeout(150)
-    await pg.click('#natHome :text("Flash Speicher Test")'); await pg.wait_for_timeout(200)
+    await pg.click('#natHome :text("Flash-Speicher-Test")'); await pg.wait_for_timeout(200)
     await pg.click('#flashOpenConstant'); await pg.wait_for_timeout(200)
     await pg.click('#flashReadyStartBtn'); await pg.wait_for_timeout(150)
     return await pg.evaluate("""

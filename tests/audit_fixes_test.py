@@ -155,7 +155,7 @@ with sync_playwright() as p:
     before = pg.evaluate("JSON.parse(localStorage.getItem('fwmc-remember-prefs-v1')).revealBaseS")
     pg.evaluate("document.querySelector('[data-open-combo]').click()")
     pg.wait_for_timeout(200)
-    pg.evaluate("[...document.querySelectorAll('#comboScreen .combo-add-btn')].find(b => b.textContent.includes('Remember')).click()")
+    pg.evaluate("[...document.querySelectorAll('#comboScreen .combo-add-btn')].find(b => b.textContent.includes('Positionen merken')).click()")
     pg.wait_for_timeout(200)
     pg.evaluate("document.querySelector('#rememberReady [data-remember-diff=\"schwer\"]').click()")
     pg.evaluate("document.getElementById('rememberReadyStartBtn').click()")

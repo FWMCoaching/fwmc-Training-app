@@ -3,7 +3,7 @@ from playwright.async_api import async_playwright
 URL = "http://localhost:8845/index.html"
 
 # Batch C of the "genau so als wenn man die Übung einzeln machen würde"
-# follow-up: Flash Speicher Test's and MOT-Fähigkeit's own remaining
+# follow-up: Flash-Speicher-Test's and Objektverfolgung (MOT)'s own remaining
 # settings beyond kind/colour/difficulty/error-mode.
 #
 # Flash gets the exact same "Bereich" (axes/zones) mechanism as Periphere

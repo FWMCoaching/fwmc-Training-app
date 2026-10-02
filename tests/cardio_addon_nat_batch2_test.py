@@ -3,7 +3,7 @@ from playwright.async_api import async_playwright
 URL = "http://localhost:8845/index.html"
 
 # NAT batch 2: Cardio "+ Zusatzimpuls" extended with the remaining three NAT
-# exercises - Remember, Flash Speicher Test, MOT-Fähigkeit. Each has several
+# exercises - Remember, Flash-Speicher-Test, Objektverfolgung (MOT). Each has several
 # starting modes (training vs. fixed vs. shuffle vs. ...), so this batch adds
 # the new sub-mode-picker step to the live picker (cardioGuestModeList()) on
 # top of the prefsOverride/cardioGuestActive pattern proven in batch 1

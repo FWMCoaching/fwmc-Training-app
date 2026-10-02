@@ -33,11 +33,11 @@ async def main():
         # mid-block via "Beenden" aborts the whole Kombi instead of
         # advancing, so a natural finish is needed to reach the pause) ----
         await pg.click('#home [data-open-combo="1"]'); await pg.wait_for_timeout(150)
-        await pg.click('#comboAddGrid >> text="Remember · Feste Positionen"'); await pg.wait_for_timeout(300)
+        await pg.click('#comboAddGrid >> text="Positionen merken · Feste Positionen"'); await pg.wait_for_timeout(300)
         await pg.fill("#rememberComboDurationSlider", "15")
         await pg.dispatch_event("#rememberComboDurationSlider", "input")
         await pg.click("#rememberReadyStartBtn"); await pg.wait_for_timeout(300)
-        await pg.click('#comboAddGrid >> text="Remember · Bewegte Positionen"'); await pg.wait_for_timeout(300)
+        await pg.click('#comboAddGrid >> text="Positionen merken · Bewegte Positionen"'); await pg.wait_for_timeout(300)
         await pg.fill("#rememberComboDurationSlider", "15")
         await pg.dispatch_event("#rememberComboDurationSlider", "input")
         await pg.click("#rememberReadyStartBtn"); await pg.wait_for_timeout(300)

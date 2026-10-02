@@ -5,9 +5,9 @@ URL = "http://localhost:8845/index.html"
 # Two fixes: (1) the shared VT-canvas fixation point (Periphere Wahrnehmung
 # and every other VT exercise via drawFixationPoint()) could be recoloured/
 # resized but never fully switched off - now has the same "Anzeigen"/
-# "Ausblenden" toggle Flash Speicher Test already had (state.periphFixEnabled,
+# "Ausblenden" toggle Flash-Speicher-Test already had (state.periphFixEnabled,
 # one shared setting, so switching it off applies "übergreifend" to every
-# exercise that shows the dot). (2) Flash Speicher Test's own fixpoint sat
+# exercise that shows the dot). (2) Flash-Speicher-Test's own fixpoint sat
 # absolutely centred on the whole stage, which - once the answer panel
 # (boxes + keypad) filled that space - landed right on top of a keypad key;
 # it must now always be hidden while that panel is open, regardless of the
@@ -63,7 +63,7 @@ async def main():
         print("re-enabled:", "active" in (await pg.get_attribute('#periphFixToggleRow [data-periph-fix="1"]', "class") or ""))
         await pg.click("#backToHome"); await pg.wait_for_timeout(100)
 
-        # --- Flash Speicher Test: fixpoint always hidden once the answer panel opens ---
+        # --- Flash-Speicher-Test: fixpoint always hidden once the answer panel opens ---
         await pg.click('#home .section-tab[data-section="nat"]'); await pg.wait_for_timeout(150)
         await pg.click('#natHome .sub-tab[data-nat-sub="flash"]'); await pg.wait_for_timeout(150)
         await pg.click("#flashOpenClimb"); await pg.wait_for_timeout(150)

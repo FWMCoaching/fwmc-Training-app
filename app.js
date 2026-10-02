@@ -653,9 +653,9 @@
     // mode picker step in the Cardio picker (see cardioGuestModeList()) is
     // this batch's new piece, proven on top of the Blitz-Raster pattern
     // (prefsOverride/cardioGuestActive branches) from batch 1.
-    "remember": { title: "Remember", type: "remember" },
-    "flash": { title: "Flash Speicher Test", type: "flash" },
-    "mot": { title: "MOT-Fähigkeit", type: "mot" },
+    "remember": { title: "Positionen merken", type: "remember" },
+    "flash": { title: "Flash-Speicher-Test", type: "flash" },
+    "mot": { title: "Objektverfolgung (MOT)", type: "mot" },
   };
 
   // ---- Programmes: coach-authored multi-block sessions. Real client
@@ -1059,10 +1059,10 @@
     if (block.domain === "movement") return "Movement · Ganzkörper-Reaktion";
     if (block.domain === "workout") return workoutBlockLabel(block);
     if (block.domain === "visual") return EXERCISES[block.exercise] ? EXERCISES[block.exercise].title : block.exercise;
-    if (block.domain === "nat") return `Remember · ${REMEMBER_MODES[block.mode] ? REMEMBER_MODES[block.mode].title : block.mode}`;
+    if (block.domain === "nat") return `Positionen merken · ${REMEMBER_MODES[block.mode] ? REMEMBER_MODES[block.mode].title : block.mode}`;
     if (block.domain === "blitz") return "Blitz-Raster";
-    if (block.domain === "flash") return `Flash · ${flashModeTitle(block.mode)}`;
-    if (block.domain === "mot") return `MOT · ${motModeTitle(block.mode)}`;
+    if (block.domain === "flash") return `Flash-Speicher-Test · ${flashModeTitle(block.mode)}`;
+    if (block.domain === "mot") return `Objektverfolgung (MOT) · ${motModeTitle(block.mode)}`;
     if (block.domain === "cardio") return `Cardio · ${exerciseCountLabel(block.items.length)}`;
     return block.domain;
   }
@@ -1103,7 +1103,7 @@
   const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Movement", visual: "Visual Training", workout: "Workout", cardio: "Cardio", nat: "NAT" };
   const PERIPH_ICON_HTML = '<div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg></div>';
   const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat"];
-  // Blitz-Raster/Flash Speicher Test/MOT-Fähigkeit render inside the same
+  // Blitz-Raster/Flash-Speicher-Test/Objektverfolgung (MOT) render inside the same
   // "NAT" group as Remember (all 4 are NAT sub-exercises) but need their
   // own domain KEY for the block dispatch, since "nat" is Remember's alone
   // - COMBO_DOMAIN_ORDER stays unchanged, these just add more entries to
@@ -1132,19 +1132,19 @@
     // (comboRememberDurationS), matching the comboDurationS cutoff
     // startComboBlock() already used for the old fixed-preset version.
     nat: [
-      { label: "Remember · Feste Positionen", meta: "Schwierigkeit & Dauer einstellen", open: () => openRememberComboCapture("fixed", null, null) },
-      { label: "Remember · Bewegte Positionen", meta: "Schwierigkeit & Dauer einstellen", open: () => openRememberComboCapture("shuffle", null, null) },
-      { label: "Remember · Trainingsmodus", meta: "gezielt bei einer Zahlenanzahl üben", open: () => openRememberComboCapture("training", null, null) },
+      { label: "Positionen merken · Feste Positionen", meta: "Schwierigkeit & Dauer einstellen", open: () => openRememberComboCapture("fixed", null, null) },
+      { label: "Positionen merken · Bewegte Positionen", meta: "Schwierigkeit & Dauer einstellen", open: () => openRememberComboCapture("shuffle", null, null) },
+      { label: "Positionen merken · Trainingsmodus", meta: "gezielt bei einer Zahlenanzahl üben", open: () => openRememberComboCapture("training", null, null) },
       { label: "Periphere Wahrnehmung", meta: "Zeichen, Bereich, Tempo & Dauer einstellen", open: () => openVisualComboCapture("periph-flash", PERIPH_ICON_HTML, null, null) },
       { label: "Blitz-Raster", meta: "Raster, Bereiche & Dauer einstellen", open: () => openBlitzComboCapture(null, null) },
-      { label: "Flash · Konstant", meta: "Schwierigkeit & Dauer einstellen", open: () => openFlashComboCapture("constant", null, null) },
-      { label: "Flash · Steigend, direkt", meta: "Schwierigkeit & Dauer einstellen", open: () => openFlashComboCapture("climb", null, null) },
-      { label: "Flash · Steigend, mit Wiederholung", meta: "Schwierigkeit & Dauer einstellen", open: () => openFlashComboCapture("climbRepeat", null, null) },
-      { label: "Flash · Trainingsmodus", meta: "gezielt bei einer Zeichenfolge üben", open: () => openFlashComboCapture("training", null, null) },
-      { label: "MOT · Tempo steigt", meta: "Schwierigkeit & Dauer einstellen", open: () => openMotComboCapture("speed", null, null) },
-      { label: "MOT · Anzahl steigt", meta: "Schwierigkeit & Dauer einstellen", open: () => openMotComboCapture("count", null, null) },
-      { label: "MOT · Beides steigt", meta: "Schwierigkeit & Dauer einstellen", open: () => openMotComboCapture("both", null, null) },
-      { label: "MOT · Trainingsmodus", meta: "gezielt bei einer Stufe üben", open: () => openMotComboCapture("training", null, null) },
+      { label: "Flash-Speicher-Test · Konstant", meta: "Schwierigkeit & Dauer einstellen", open: () => openFlashComboCapture("constant", null, null) },
+      { label: "Flash-Speicher-Test · Steigend, direkt", meta: "Schwierigkeit & Dauer einstellen", open: () => openFlashComboCapture("climb", null, null) },
+      { label: "Flash-Speicher-Test · Steigend, mit Wiederholung", meta: "Schwierigkeit & Dauer einstellen", open: () => openFlashComboCapture("climbRepeat", null, null) },
+      { label: "Flash-Speicher-Test · Trainingsmodus", meta: "gezielt bei einer Zeichenfolge üben", open: () => openFlashComboCapture("training", null, null) },
+      { label: "Objektverfolgung (MOT) · Tempo steigt", meta: "Schwierigkeit & Dauer einstellen", open: () => openMotComboCapture("speed", null, null) },
+      { label: "Objektverfolgung (MOT) · Anzahl steigt", meta: "Schwierigkeit & Dauer einstellen", open: () => openMotComboCapture("count", null, null) },
+      { label: "Objektverfolgung (MOT) · Beides steigt", meta: "Schwierigkeit & Dauer einstellen", open: () => openMotComboCapture("both", null, null) },
+      { label: "Objektverfolgung (MOT) · Trainingsmodus", meta: "gezielt bei einer Stufe üben", open: () => openMotComboCapture("training", null, null) },
     ],
     // "Zirkel" (circuit/Tabata) and "Kraft-/Wiederholungstraining" (reps,
     // with a real rep-range picker - see the CLAUDE.md note) both have a
@@ -2056,7 +2056,7 @@
     box.id = "storageWarning";
     box.setAttribute("role", "alert");
     const text = document.createElement("p");
-    text.textContent = "Der Speicher dieses Browsers ist voll. Neue Einstellungen und Verlaufseinträge werden gerade nicht gespeichert. Tipp: Motivationsbilder im Cardio-Bereich entfernen und unter Einstellungen eine Datensicherung exportieren.";
+    text.textContent = "Der Speicher dieses Browsers ist voll. Neue Einstellungen und Verlaufseinträge werden gerade nicht gespeichert. Tipp: Motivationsbilder im Cardio-Bereich entfernen und unter Grundeinstellungen eine Datensicherung exportieren.";
     const btn = document.createElement("button");
     btn.type = "button";
     btn.textContent = "Verstanden";
@@ -2181,7 +2181,7 @@
   }
 
   // ---- Shared top-clearance measurement for every full-stage exercise
-  // (Remember/Blitz-Raster/Flash/Trail/Search/Corsi/Reaktionsfeld etc.) -
+  // (Positionen merken/Blitz-Raster/Flash/Trail/Search/Corsi/Reaktionsfeld etc.) -
   // their stage fills the whole player from y=0, with the instruction hint
   // (".remember-hint", short status blips OR - since Trail Making Test's
   // real bug report - a much longer, wrapping instruction sentence) and the
@@ -2741,7 +2741,7 @@
     });
   }
   // Generic "background colour + intensity" control for exercises outside
-  // the shared VT/Periph canvas pipeline (Remember; Flash Speicher Test
+  // the shared VT/Periph canvas pipeline (Remember; Flash-Speicher-Test
   // will reuse it once it exists) that still want the same customisable
   // tint. Wires as many synced picker/slider instances as given against a
   // single prefs object (e.g. one per ready screen plus one in a pause
@@ -2756,14 +2756,14 @@
   // (every non-"bgIsStimulus" VT/Periph exercise reads state.bgColorKey/
   // bgIntensity - it isn't exclusive to Periph, that's just where the
   // control first got built) and Remember has its own
-  // (rememberPrefs.bgColorKey/bgIntensity). Flash Speicher Test will be a
+  // (rememberPrefs.bgColorKey/bgIntensity). Flash-Speicher-Test will be a
   // third once it exists and gets its own background setting.
   const BG_SOURCES = [
     { id: "vt", label: "Visual Training / NAT", get: () => ({ colorKey: state.bgColorKey, intensity: state.bgIntensity }) },
-    { id: "remember", label: "Remember", get: () => ({ colorKey: rememberPrefs.bgColorKey, intensity: rememberPrefs.bgIntensity }) },
+    { id: "remember", label: "Positionen merken", get: () => ({ colorKey: rememberPrefs.bgColorKey, intensity: rememberPrefs.bgIntensity }) },
     { id: "blitz", label: "Blitz-Raster", get: () => ({ colorKey: blitzPrefs.bgColorKey, intensity: blitzPrefs.bgIntensity }) },
-    { id: "flash", label: "Flash Speicher Test", get: () => ({ colorKey: flashPrefs.bgColorKey, intensity: flashPrefs.bgIntensity }) },
-    { id: "mot", label: "MOT-Fähigkeit", get: () => ({ colorKey: motPrefs.bgColorKey, intensity: motPrefs.bgIntensity }) },
+    { id: "flash", label: "Flash-Speicher-Test", get: () => ({ colorKey: flashPrefs.bgColorKey, intensity: flashPrefs.bgIntensity }) },
+    { id: "mot", label: "Objektverfolgung (MOT)", get: () => ({ colorKey: motPrefs.bgColorKey, intensity: motPrefs.bgIntensity }) },
   ];
   const BG_PRESETS_KEY = "fwmc-bg-presets-v1"; // [{ id, name, colorKey, intensity }] - not scoped to a domain, any saved combo applies anywhere
   const bgPresetStore = makePresetStore(BG_PRESETS_KEY);
@@ -2937,7 +2937,7 @@
             const hex = STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey].hex;
             const btn = document.createElement("button");
             btn.className = "choice";
-            btn.innerHTML = `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${hex};margin-right:6px;vertical-align:-1px"></span>Wie in den Master-Einstellungen`;
+            btn.innerHTML = `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${hex};margin-right:6px;vertical-align:-1px"></span>Wie in den Grundeinstellungen`;
             btn.addEventListener("click", () => apply(masterPrefs.defaultBgColorKey, masterPrefs.defaultBgIntensity, false));
             t.sourceRow.appendChild(btn);
           }
@@ -2984,11 +2984,11 @@
           } else if (masterPrefs.defaultBgColorKey) {
             const wrap = document.createElement("div");
             wrap.className = "group-help";
-            wrap.appendChild(document.createTextNode("Master-Einstellungen aktiv – "));
+            wrap.appendChild(document.createTextNode("Grundeinstellungen aktiv – "));
             const btn = document.createElement("button");
             btn.type = "button";
             btn.className = "text-link small";
-            btn.textContent = "zu den Einstellungen";
+            btn.textContent = "zu den Grundeinstellungen";
             btn.addEventListener("click", () => openMasterSettings());
             wrap.appendChild(btn);
             el.appendChild(wrap);
@@ -3023,7 +3023,7 @@
     return sync;
   }
   // On/off toggle for the fixation point itself - same "Anzeigen"/
-  // "Ausblenden" pattern as Flash Speicher Test's, added so it can be fully
+  // "Ausblenden" pattern as Flash-Speicher-Test's, added so it can be fully
   // removed (not just recoloured/resized) for every exercise that shows it
   // (Periphere Wahrnehmung and, since drawFixationPoint() is shared, every
   // other VT-canvas exercise too - one shared state.periphFixEnabled, no
@@ -3890,7 +3890,7 @@
 
   // NAT's code box reuses this exact same "visual programme" pipeline (only
   // its own sub-exercise, Periphere Wahrnehmung, actually lives in EXERCISES
-  // and runs through it - Remember/Blitz-Raster/Flash Speicher Test/MOT each
+  // and runs through it - Positionen merken/Blitz-Raster/Flash-Speicher-Test/MOT each
   // have their own bespoke engine and aren't reachable from a coach code yet,
   // see CLAUDE.md's NAT section).
   els.natProgramGoBtn.addEventListener("click", () => {
@@ -5542,14 +5542,14 @@
       const [ex, kind] = el.dataset.cvdStatus.split(":");
       el.textContent = "";
       if (cvdOverride(ex, kind) == null) {
-        el.textContent = cvdMasterOn() ? "Folgt den Master-Einstellungen (Farbsehen ausgewählt)." : "Folgt den Master-Einstellungen.";
+        el.textContent = cvdMasterOn() ? "Folgt den Grundeinstellungen (Farbsehen ausgewählt)." : "Folgt den Grundeinstellungen.";
       } else {
         el.append("Eigene Einstellung für diese Übung. ");
         const link = document.createElement("button");
         link.className = "text-link";
         link.type = "button";
         link.dataset.cvdReset = `${ex}:${kind}`;
-        link.textContent = "Wieder den Master-Einstellungen folgen";
+        link.textContent = "Wieder den Grundeinstellungen folgen";
         el.appendChild(link);
       }
     });
@@ -5596,7 +5596,7 @@
   }));
   function syncMasterCvdUI() { document.querySelectorAll("[data-master-cvd]").forEach((el) => setActive(el, masterPrefs.colorVision.includes(el.dataset.masterCvd))); }
   document.getElementById("masterCvdResetBtn").addEventListener("click", () => {
-    confirmDialog("Eigene Farbschwäche-Einstellungen aller Übungen zurücksetzen? Danach folgen alle wieder den Master-Einstellungen.", resetAllCvdOverrides);
+    confirmDialog("Eigene Farbschwäche-Einstellungen aller Übungen zurücksetzen? Danach folgen alle wieder den Grundeinstellungen.", resetAllCvdOverrides);
   });
   applyColorVisionMode();
 
@@ -5639,7 +5639,7 @@
   // confirmed first, same as clearHistory()'s "Verlauf löschen", since it
   // touches every exercise's customization at once.
   els.masterBgResetAllBtn.addEventListener("click", () => {
-    confirmDialog("Alle eigenen Hintergrundfarben zurücksetzen? Jede Übung folgt danach wieder der Master-Vorgabe (bzw. hat keinen Hintergrund, falls keine Master-Vorgabe gesetzt ist).", () => {
+    confirmDialog("Alle eigenen Hintergrundfarben zurücksetzen? Jede Übung folgt danach wieder der Vorgabe aus den Grundeinstellungen (bzw. hat keinen Hintergrund, falls dort keine gesetzt ist).", () => {
       resetAllBgToMasterDefault();
       syncMasterBgUI();
     });
@@ -5693,7 +5693,7 @@
   // exercises/restrictions: add a tag, extend the `blocked` check below.
   function exerciseBlockedReason(card) {
     const tags = (card.dataset.tags || "").split(/\s+/);
-    if (masterPrefs.hearing && tags.includes("ton")) return "Benötigt Ton – in Einstellungen anpassbar";
+    if (masterPrefs.hearing && tags.includes("ton")) return "Benötigt Ton – in Grundeinstellungen anpassbar";
     return null;
   }
   function applyExerciseCompatibility() {
@@ -7369,7 +7369,7 @@
       els.rememberTrainingStartBtn.textContent = "Baustein übernehmen";
     } else {
       openRememberReady(mode);
-      els.rememberReadyTitle.textContent = `Baustein: Remember · ${REMEMBER_MODES[mode].title}`;
+      els.rememberReadyTitle.textContent = `Baustein: Positionen merken · ${REMEMBER_MODES[mode].title}`;
       els.rememberReadyDesc.textContent = "Stelle Schwierigkeit und Dauer für diesen Baustein ein.";
       els.rememberComboDurationGroup.hidden = false;
       els.rememberComboDurationSlider.value = comboRememberDurationS;
@@ -7497,7 +7497,7 @@
       const modeTitle = REMEMBER_MODES[state.mode].title;
       els.rememberPlayerBar.hidden = true;
       els.rememberDoneSummary.textContent = `${modeTitle} · Zahl ${state.cleared} erreicht` + (isRecord ? " · Neue Bestleistung!" : "");
-      const id = addHistory({ kind: "remember", title: `Remember · ${modeTitle}`, seconds: Math.round(played), note: `Zahl ${state.cleared} erreicht` });
+      const id = addHistory({ kind: "remember", title: `Positionen merken · ${modeTitle}`, seconds: Math.round(played), note: `Zahl ${state.cleared} erreicht` });
       renderRating(els.rememberRating, id, "Wie war deine Konzentration?");
       els.rememberDonePanel.hidden = false;
     } else {
@@ -7980,7 +7980,7 @@
   els.blitzAgainBtn.addEventListener("click", () => { els.blitzDonePanel.hidden = true; startBlitzGame(); });
   els.blitzDoneBackBtn.addEventListener("click", () => { els.blitzPlayer.hidden = true; els.blitzDonePanel.hidden = true; showScreen("natHome"); });
 
-  // ==== Flash Speicher Test engine ====
+  // ==== Flash-Speicher-Test engine ====
   // A THIRD distinct NAT memory mechanic (the user was explicit this isn't
   // "Remember but faster" nor "Blitz-Raster"): numbers appear ONE AT A TIME
   // at scattered positions - reusing Periph's own axis/zone "Bereich" maths
@@ -8431,7 +8431,7 @@
       els.flashTrainingStartBtn.textContent = "Baustein übernehmen";
     } else {
       openFlashReady(mode);
-      els.flashReadyTitle.textContent = `Baustein: Flash · ${flashModeTitle(mode)}`;
+      els.flashReadyTitle.textContent = `Baustein: Flash-Speicher-Test · ${flashModeTitle(mode)}`;
       els.flashReadyDesc.textContent = "Stelle Schwierigkeit und Dauer für diesen Baustein ein.";
       els.flashComboDurationGroup.hidden = false;
       els.flashComboDurationSlider.value = comboFlashDurationS;
@@ -8527,7 +8527,7 @@
     scheduleFlashTimer(flashAfterDigit, flashEffectiveStimulusS() * 1000);
   }
   // randFlashPos() is shared with Periph, which has no fixed on-screen text -
-  // Flash Speicher Test always shows the "Merken …"/"Richtig!"/error hint
+  // Flash-Speicher-Test always shows the "Merken …"/"Richtig!"/error hint
   // pill near the top of the stage, so a digit placed near-vertical at a
   // large radius can land underneath/inside it. Measure the hint's actual
   // rendered bottom edge (adapts to safe-area insets and device size) and
@@ -8706,7 +8706,7 @@
     renderFlashFixpoint();
     requestWakeLock();
     flashStartRound();
-    // Kombi block: Flash Speicher Test has no natural end of its own, same
+    // Kombi block: Flash-Speicher-Test has no natural end of its own, same
     // as Remember/Blitz-Raster.
     if (opts && opts.comboDurationS) {
       flashState.comboDurationFiresAt = performance.now() + opts.comboDurationS * 1000;
@@ -8778,7 +8778,7 @@
   els.flashResumeBtn.addEventListener("click", resumeFlash);
 
   // "Beenden" doubles as the finish action, same convention as Remember/
-  // Blitz-Raster - Flash Speicher Test is endless/progressive with no
+  // Blitz-Raster - Flash-Speicher-Test is endless/progressive with no
   // fixed end of its own.
   function flashStop() {
     if (!flashState) return;
@@ -8805,7 +8805,7 @@
       const note = state.mode === "constant" ? `Tempo-Stufe ${state.cleared + 1} erreicht` : `${state.cleared} ${flashUnitLabel(state.kind)} erreicht`;
       els.flashPlayerBar.hidden = true;
       els.flashDoneSummary.textContent = `${modeTitle} · ${note}` + (isRecord ? " · Neue Bestleistung!" : "");
-      const id = addHistory({ kind: "flash", title: `Flash Speicher Test · ${modeTitle}`, seconds: Math.round(played), note });
+      const id = addHistory({ kind: "flash", title: `Flash-Speicher-Test · ${modeTitle}`, seconds: Math.round(played), note });
       renderRating(els.flashRating, id, "Wie war deine Konzentration?");
       els.flashDonePanel.hidden = false;
     } else {
@@ -8817,7 +8817,7 @@
   els.flashAgainBtn.addEventListener("click", () => { els.flashDonePanel.hidden = true; startFlashGame(lastFlashMode); });
   els.flashDoneBackBtn.addEventListener("click", () => { els.flashPlayer.hidden = true; els.flashDonePanel.hidden = true; showScreen("natHome"); });
 
-  // ==== MOT-Fähigkeit engine ====
+  // ==== Objektverfolgung (MOT) engine ====
   // Multiple Object Tracking: N identical-looking objects drift around the
   // stage; K of them are briefly highlighted as "targets", then everything
   // looks the same again and keeps moving for a while - the client has to
@@ -8839,7 +8839,7 @@
   // slow down by the same ratio. An initial draft only offered that one
   // "Tempo steigt" shape; the client then asked for the other two obvious
   // axes too - "Anzahl steigt" (count grows, speed fixed) and "Beides
-  // steigt" - plus a Trainingsmodus, mirroring how Flash Speicher Test
+  // steigt" - plus a Trainingsmodus, mirroring how Flash-Speicher-Test
   // itself grew from one mode to four. So there are now FOUR modes sharing
   // one `motPrefs` object (mirroring `flashPrefs`): "speed" (fixed count,
   // Tempo-Stufe rises), "count" (fixed speed, count rises), "both" (both
@@ -9218,7 +9218,7 @@
       els.motTrainingStartBtn.textContent = "Baustein übernehmen";
     } else {
       openMotReady(mode);
-      els.motReadyTitle.textContent = `Baustein: MOT · ${motModeTitle(mode)}`;
+      els.motReadyTitle.textContent = `Baustein: Objektverfolgung (MOT) · ${motModeTitle(mode)}`;
       els.motReadyDesc.textContent = "Stelle Schwierigkeit und Dauer für diesen Baustein ein.";
       els.motComboDurationGroup.hidden = false;
       els.motComboDurationSlider.value = comboMotDurationS;
@@ -9542,8 +9542,8 @@
     els.motStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
     requestWakeLock();
     motStartRound();
-    // Kombi block: MOT-Fähigkeit has no natural end of its own, same as
-    // Remember/Blitz-Raster/Flash.
+    // Kombi block: Objektverfolgung (MOT) has no natural end of its own, same as
+    // Positionen merken/Blitz-Raster/Flash.
     if (opts && opts.comboDurationS) {
       motState.comboDurationFiresAt = performance.now() + opts.comboDurationS * 1000;
       motState.comboDurationTimer = setTimeout(finishMotCombo, opts.comboDurationS * 1000);
@@ -9616,7 +9616,7 @@
   els.motResumeBtn.addEventListener("click", resumeMot);
 
   // "Beenden" doubles as the finish action, same convention as Remember/
-  // Blitz/Flash - MOT-Fähigkeit is endless/progressive with no fixed end.
+  // Blitz/Flash - Objektverfolgung (MOT) is endless/progressive with no fixed end.
   function motStop() {
     if (!motState) return;
     if (motState.timer) clearTimeout(motState.timer);
@@ -9639,8 +9639,8 @@
       const modeTitle = state.mode === "speed" ? "Tempo steigt" : state.mode === "count" ? "Anzahl steigt" : state.mode === "both" ? "Beides steigt" : "Trainingsmodus";
       const note = state.mode === "speed" ? `Tempo-Stufe ${state.cleared + 1} erreicht` : `Stufe ${state.cleared} erreicht`;
       els.motPlayerBar.hidden = true;
-      els.motDoneSummary.textContent = `MOT-Fähigkeit · ${modeTitle} · ${note}` + (isRecord ? " · Neue Bestleistung!" : "");
-      const id = addHistory({ kind: "mot", title: `MOT-Fähigkeit · ${modeTitle}`, seconds: Math.round(played), note });
+      els.motDoneSummary.textContent = `Objektverfolgung (MOT) · ${modeTitle} · ${note}` + (isRecord ? " · Neue Bestleistung!" : "");
+      const id = addHistory({ kind: "mot", title: `Objektverfolgung (MOT) · ${modeTitle}`, seconds: Math.round(played), note });
       renderRating(els.motRating, id, "Wie war deine Konzentration?");
       els.motDonePanel.hidden = false;
     } else {
@@ -10317,10 +10317,10 @@
     el.innerHTML =
       `<div class="group-label">Töne &amp; Ansagen</div>` +
       `<div class="choice-row two">` +
-      `<button type="button" class="choice${own ? "" : " active"}" data-cue-mode="master">Wie Master-Einstellungen</button>` +
+      `<button type="button" class="choice${own ? "" : " active"}" data-cue-mode="master">Wie Grundeinstellungen</button>` +
       `<button type="button" class="choice${own ? " active" : ""}" data-cue-mode="own">Eigene Einstellung</button></div>` +
       (own ? cueControlsHtml(cueOverrides[domain], CUE_FIELD_LABELS[domain])
-        : `<div class="group-help">Folgt den Master-Einstellungen. <button type="button" class="text-link small" data-cue-open-master>Zu den Einstellungen</button></div>`);
+        : `<div class="group-help">Folgt den Grundeinstellungen. <button type="button" class="text-link small" data-cue-open-master>Zu den Grundeinstellungen</button></div>`);
   }
   function renderAllCueDomains() { CUE_DOMAIN_KEYS.forEach(renderCueDomain); }
   CUE_DOMAIN_KEYS.forEach((domain) => {
@@ -12146,7 +12146,7 @@
   // exercises) shared none of this engine, wrongly lumping NAT together
   // with the separately-excluded Test domain. Checked the actual nav
   // structure: NAT is only FIVE things - Periphere Wahrnehmung, Remember,
-  // Blitz-Raster, Flash Speicher Test, MOT-Fähigkeit. The ~25-exercise
+  // Blitz-Raster, Flash-Speicher-Test, Objektverfolgung (MOT). The ~25-exercise
   // list (Go/No-Go, N-Back, Trail Making, ...) is the Test domain
   // (`testHome`), which the client explicitly wants left out, still.
   //
@@ -12185,9 +12185,9 @@
     { id: "cone-tap", title: "Hütchen sortieren", group: "vt" },
     { id: "periph-flash", title: "Periphere Wahrnehmung", group: "nat" },
     { id: "blitz-raster", title: "Blitz-Raster", group: "nat" },
-    { id: "remember", title: "Remember", group: "nat" },
-    { id: "flash", title: "Flash Speicher Test", group: "nat" },
-    { id: "mot", title: "MOT-Fähigkeit", group: "nat" },
+    { id: "remember", title: "Positionen merken", group: "nat" },
+    { id: "flash", title: "Flash-Speicher-Test", group: "nat" },
+    { id: "mot", title: "Objektverfolgung (MOT)", group: "nat" },
   ];
   // "addon-flash" and "periph-flash" both flash a coloured digit/letter at
   // a random peripheral position (the former as a Zusatzaufgabe overlay on
@@ -14254,6 +14254,49 @@
     sheet.hidden = false;
     document.getElementById("confirmNoBtn").focus();
   }
+  // ---- "Wirklich beenden?" (2026-10-02, Fabian): once a training run has
+  // lasted at least END_CONFIRM_MIN_MS, every player's "✕ Beenden" button
+  // asks first, so a stray tap can't throw away a long session. A run starts
+  // when any player's Beenden button (or a between-blocks transition) becomes
+  // visible and ends once none is; sampled once a second with Date.now(), so
+  // blocks of a Kombi/Plan count as one run. A Cardio Zusatzübung's own
+  // Beenden only returns to Cardio and is never asked about.
+  const END_CONFIRM_MIN_MS = 60000;
+  let trainingRunStartedAt = null;
+  let endConfirmBypass = false;
+  function isEndTrainingBtn(el) {
+    return !!el && el.tagName === "BUTTON" && /[bB]ackBtn$/.test(el.id) && el.textContent.includes("Beenden");
+  }
+  function trainingRunVisible() {
+    const btns = document.querySelectorAll("button[id$='ackBtn']");
+    for (const b of btns) if (isEndTrainingBtn(b) && b.getClientRects().length) return true;
+    return ["comboTransition", "workoutTransition", "breathTransition"].some((id) => {
+      const el = document.getElementById(id);
+      return el && !el.hidden && el.getClientRects().length > 0;
+    });
+  }
+  function updateTrainingRunClock() {
+    if (trainingRunVisible()) { if (trainingRunStartedAt == null) trainingRunStartedAt = Date.now(); }
+    else trainingRunStartedAt = null;
+  }
+  setInterval(updateTrainingRunClock, 1000);
+  document.addEventListener("click", (e) => {
+    if (endConfirmBypass) return;
+    const btn = e.target && e.target.closest ? e.target.closest("button") : null;
+    if (!isEndTrainingBtn(btn)) return;
+    if (cardioGuestActive && btn.id !== "cardioBackBtn") return;
+    updateTrainingRunClock();
+    if (trainingRunStartedAt == null || Date.now() - trainingRunStartedAt < END_CONFIRM_MIN_MS) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const sheet = document.getElementById("confirmSheet");
+    const fs = document.fullscreenElement;
+    if (fs && !fs.contains(sheet)) fs.appendChild(sheet);
+    confirmDialog("Möchtest du das Training wirklich beenden?", () => {
+      endConfirmBypass = true;
+      try { btn.click(); } finally { endConfirmBypass = false; }
+    });
+  }, true);
   // ---- Datensicherung (2026-10-02, Fabian): export every "fwmc-" key into
   // one JSON file and import it again. Import only writes the keys that are
   // in the file (anything newer keeps its default), skips unknown/invalid
@@ -14324,7 +14367,11 @@
     });
   })();
   function closeConfirmDialog(yes) {
-    document.getElementById("confirmSheet").hidden = true;
+    const confirmSheetEl = document.getElementById("confirmSheet");
+    confirmSheetEl.hidden = true;
+    // The end-of-training question may have moved the sheet into a
+    // fullscreen player; put it back so later questions stay visible.
+    if (confirmSheetEl.parentNode !== document.body) document.body.appendChild(confirmSheetEl);
     const fn = confirmYesFn;
     confirmYesFn = null;
     if (confirmReturnFocus && document.body.contains(confirmReturnFocus) && !confirmReturnFocus.hidden) confirmReturnFocus.focus();
@@ -14771,7 +14818,7 @@
   // a time in a 3×3 grid; the client reports whether the CURRENT position
   // matches the one exactly N steps back. This is a genuinely distinct
   // mechanic from every existing NAT memory exercise - Remember/Blitz-Raster/
-  // Flash Speicher Test all show a set/sequence ONCE and then ask for pure
+  // Flash-Speicher-Test all show a set/sequence ONCE and then ask for pure
   // recall afterwards, whereas n-back is continuous *updating*: every single
   // trial is simultaneously a probe on the last one and new material to hold
   // for the next. Only the visuospatial half of Jaeggi's DUAL n-back was
@@ -15159,7 +15206,7 @@
   // fallback approach as Remember's own buildRememberPositions/
   // randomRememberPixelPosition, copy-adapted with Trail Making's own marker
   // size rather than shared - per this app's established "copy-adapt when
-  // the engine differs" convention (see Blitz-Raster/Flash Speicher Test in
+  // the engine differs" convention (see Blitz-Raster/Flash-Speicher-Test in
   // CLAUDE.md). Trail also has no fixed/shuffle "keep" concept to share
   // either way - every run is a fresh random layout by design (see note
   // above on why, unlike the paper test's one fixed printed sheet).
@@ -18321,7 +18368,7 @@
   // Genuinely distinct from every existing Test/NAT memory mechanic:
   // Merkspanne-Test (Luck & Vogel change-detection) asks one global same/
   // different judgment over an array shown at NORMAL (not near-
-  // subliminal) speed; Flash Speicher Test recalls a SEQUENTIAL stream of
+  // subliminal) speed; Flash-Speicher-Test recalls a SEQUENTIAL stream of
   // individually-shown characters, one at a time; Blitz-Raster/Remember
   // show several positions simultaneously with no time-pressure decay
   // curve at all - this is the only exercise flashing a WHOLE array at
@@ -19959,7 +20006,7 @@
   // Positions-Gedächtnis (N-Back) is a SEQUENTIAL trial-by-trial match-back
   // task with no set "array" held at once; Remember and Blitz-Raster both
   // test recalling WHICH positions were shown (spatial location memory,
-  // reproduced by tapping); Flash Speicher Test is a digit SEQUENCE recall
+  // reproduced by tapping); Flash-Speicher-Test is a digit SEQUENCE recall
   // task. This is the only one that holds a whole array in memory
   // simultaneously and probes a single FEATURE (colour) of it via a global
   // same/different judgment - the classic visual-working-memory-STORAGE
@@ -22210,7 +22257,7 @@
   // Test/NAT memory mechanic: N-Back is a continuous match-N-back-trials-ago
   // stream; Remember/Blitz-Raster show several positions SIMULTANEOUSLY and
   // probe recall of WHICH ones (unordered for Blitz, positions only for
-  // Remember); Flash Speicher Test recalls a sequence of CHARACTER IDENTITIES
+  // Remember); Flash-Speicher-Test recalls a sequence of CHARACTER IDENTITIES
   // in order, at scattered but visually irrelevant positions; Merkspanne-Test
   // is a single global same/different feature judgment over a whole array -
   // this is the only exercise where the client must reproduce an ORDERED
@@ -23912,7 +23959,7 @@
   // counting beyond that; Trick & Pylyshyn (1994) tie the small-number/
   // large-number break to a limited-capacity preattentive individuation
   // mechanism ("FINST" - the same visual-indexing idea underlying this
-  // app's own MOT-Fähigkeit). A scatter of 1-9 identical dots flashes
+  // app's own Objektverfolgung (MOT)). A scatter of 1-9 identical dots flashes
   // briefly; the client taps the matching count on a 1-9 keypad. Genuinely
   // distinct from every existing Test/NAT exercise: nothing else measures a
   // QUANTITY judgment at all - Merkspanne-Test judges a colour CHANGE,
