@@ -14072,6 +14072,71 @@
     sheet.hidden = false;
     document.getElementById("confirmNoBtn").focus();
   }
+  // ---- Datensicherung (2026-10-02, Fabian): export every "fwmc-" key into
+  // one JSON file and import it again. Import only writes the keys that are
+  // in the file (anything newer keeps its default), skips unknown/invalid
+  // entries instead of failing, then reloads so every load*Prefs() migrates
+  // older shapes the same way it does on a normal start.
+  const BACKUP_APP = "fwmc-training", BACKUP_VERSION = 1;
+  // version -> function(data) returning data in the next version's shape
+  const BACKUP_MIGRATIONS = {};
+  function buildBackup() {
+    const data = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("fwmc-")) data[k] = localStorage.getItem(k);
+    }
+    return { app: BACKUP_APP, version: BACKUP_VERSION, exportedAt: new Date().toISOString(), data };
+  }
+  function applyBackup(obj) {
+    if (!obj || obj.app !== BACKUP_APP || !obj.data || typeof obj.data !== "object") {
+      return { ok: false, msg: "Das ist keine Sicherungsdatei dieser App." };
+    }
+    let v = Number(obj.version) || 1, data = obj.data;
+    if (v > BACKUP_VERSION) return { ok: false, msg: "Diese Sicherung stammt aus einer neueren App-Version. Bitte zuerst die App neu laden." };
+    while (v < BACKUP_VERSION) { if (BACKUP_MIGRATIONS[v]) data = BACKUP_MIGRATIONS[v](data); v++; }
+    let written = 0, skipped = 0;
+    for (const [k, raw] of Object.entries(data)) {
+      if (!k.startsWith("fwmc-") || typeof raw !== "string") { skipped++; continue; }
+      try { JSON.parse(raw); } catch (e) { skipped++; continue; }
+      try { localStorage.setItem(k, raw); written++; }
+      catch (e) { return { ok: false, msg: "Der Speicher dieses Browsers ist voll. " + written + " Einträge wurden übernommen." }; }
+    }
+    return { ok: true, written, skipped };
+  }
+  (() => {
+    const msg = document.getElementById("masterBackupMsg");
+    const say = (t) => { msg.textContent = t; msg.hidden = false; };
+    document.getElementById("masterBackupExportBtn").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(buildBackup())], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "fwmc-sicherung-" + new Date().toISOString().slice(0, 10) + ".json";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      say("Sicherung wurde als Datei gespeichert.");
+    });
+    const file = document.getElementById("masterBackupFile");
+    document.getElementById("masterBackupImportBtn").addEventListener("click", () => { file.value = ""; file.click(); });
+    file.addEventListener("change", () => {
+      const f = file.files && file.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        let obj = null;
+        try { obj = JSON.parse(reader.result); } catch (e) {}
+        if (!obj || obj.app !== BACKUP_APP) { say("Das ist keine Sicherungsdatei dieser App."); return; }
+        if (Number(obj.version) > BACKUP_VERSION) { say(applyBackup(obj).msg); return; }
+        confirmDialog("Die Einstellungen aus der Sicherung ersetzen die gleichen Einstellungen auf diesem Gerät. Danach lädt die App neu.", () => {
+          const r = applyBackup(obj);
+          if (!r.ok) { say(r.msg); return; }
+          say(r.written + " Einträge übernommen" + (r.skipped ? ", " + r.skipped + " übersprungen" : "") + ". Die App lädt neu …");
+          setTimeout(() => location.reload(), 600);
+        });
+      };
+      reader.readAsText(f);
+    });
+  })();
   function closeConfirmDialog(yes) {
     document.getElementById("confirmSheet").hidden = true;
     const fn = confirmYesFn;

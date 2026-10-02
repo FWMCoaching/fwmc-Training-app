@@ -4123,6 +4123,22 @@ on its own. Cardio only - in other areas the field would be in the way.
   stays a full takeover.
 Test: `tests/cardio_motiv_test.py`.
 
+### Datensicherung: Export/Import (2026-10-02)
+
+Master-Einstellungen, group `#masterBackupGroup`. "Sicherung exportieren"
+downloads `fwmc-sicherung-YYYY-MM-DD.json` = `{app:"fwmc-training",
+version, exportedAt, data:{key: rawString}}` with EVERY localStorage key
+starting with `fwmc-` (so a new feature's key is included automatically -
+keep the `fwmc-` prefix for every new key). "Sicherung importieren"
+(`applyBackup()`): wrong `app` or a newer `version` is rejected before
+asking; otherwise `confirmDialog`, then only the keys in the file are
+written (keys not in the file stay as they are, Fabian: "nur die Sachen
+eingestellt, die bisher gespeichert wurden"), non-`fwmc-` keys and invalid
+JSON are skipped and counted, a full storage stops with a message, then the
+page reloads so every `load*Prefs()` migrates old shapes. A future change
+to the file format bumps `BACKUP_VERSION` and adds a step to
+`BACKUP_MIGRATIONS[oldVersion]`. Test: `tests/backup_test.py`.
+
 ### Interval phase wording corrected (2026-09-30)
 
 "Belastung"/"Erholung" (both the setup-screen phase labels and the live
@@ -5117,9 +5133,9 @@ padding, short enough to never wrap) at 768px with Test unlocked.
 forward, client's own words: "musst du mir danach nochmal vorlegen")**:
 - Silent data loss: `writeJSON()`'s `localStorage.setItem` call swallows
   every error (`catch (e) {}`) - a full/blocked/private-mode storage fails
-  with zero user-facing warning, and there is no export/backup path at
-  all, so a lost device or cleared browser data means the training history
-  is gone for good. Not addressed.
+  with zero user-facing warning. An export/import backup now exists
+  (Datensicherung, 2026-10-02); the silent write failure itself is not
+  addressed.
 - The whole Playwright suite only ever runs against Chromium, while the
   app is clearly built for iPhone PWA use (apple-touch-icon, standalone
   display, `apple-mobile-web-app-capable`) - iOS Safari's own service-
