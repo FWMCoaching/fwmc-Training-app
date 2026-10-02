@@ -1942,6 +1942,17 @@
     cardioAddonPickerDetail: $("cardioAddonPickerDetail"),
     cardioAddonPickerStartBtn: $("cardioAddonPickerStartBtn"), cardioAddonPickerCancelBtn: $("cardioAddonPickerCancelBtn"),
     cardioGuestBadge: $("cardioGuestBadge"),
+    cardioBgColorPicker: $("cardioBgColorPicker"), cardioBgIntensitySlider: $("cardioBgIntensitySlider"),
+    cardioBgIntensityValue: $("cardioBgIntensityValue"), cardioBgContrastHint: $("cardioBgContrastHint"), cardioBgMasterStatus: $("cardioBgMasterStatus"),
+    cardioPauseBgGroup: $("cardioPauseBgGroup"), cardioPauseBgColorPicker: $("cardioPauseBgColorPicker"), cardioPauseBgContrastHint: $("cardioPauseBgContrastHint"),
+    cardioPauseBgSlider: $("cardioPauseBgSlider"), cardioPauseBgValue: $("cardioPauseBgValue"),
+    cardioGalleryList: $("cardioGalleryList"), cardioGalleryEmpty: $("cardioGalleryEmpty"),
+    cardioGalleryTextInput: $("cardioGalleryTextInput"), cardioGalleryAddTextBtn: $("cardioGalleryAddTextBtn"),
+    cardioGalleryImgInput: $("cardioGalleryImgInput"), cardioImgError: $("cardioImgError"),
+    cardioGalleryChangeSlider: $("cardioGalleryChangeSlider"), cardioGalleryChangeValue: $("cardioGalleryChangeValue"),
+    cardioGalleryOrderRow: $("cardioGalleryOrderRow"),
+    cardioMotiv: $("cardioMotiv"), cardioMotivImg: $("cardioMotivImg"), cardioMotivText: $("cardioMotivText"),
+    cardioFlashLayer: $("cardioFlashLayer"),
     cardioActivityTitle: $("cardioActivityTitle"), cardioActivityLabel: $("cardioActivityLabel"),
     cardioCountdown: $("cardioCountdown"), cardioPhaseLabel: $("cardioPhaseLabel"), cardioBlockProgress: $("cardioBlockProgress"),
     cardioDonePanel: $("cardioDonePanel"), cardioDoneSummary: $("cardioDoneSummary"), cardioRating: $("cardioRating"),
@@ -2752,6 +2763,7 @@
     () => ({ prefs: pvtPrefs, key: PVT_PREFS_KEY, save: savePvtPrefsToStorage }),
     () => ({ prefs: bisectPrefs, key: BISECT_PREFS_KEY, save: saveBisectPrefsToStorage }),
     () => ({ prefs: kippbildPrefs, key: KIPPBILD_PREFS_KEY, save: saveKippbildPrefsToStorage }),
+    () => ({ prefs: cardioPrefs, key: CARDIO_KEY, save: saveCardioPrefs }),
   ];
   // Applies the Master default to every target above that's still
   // "following" it (target.prefs.bgCustom !== true) - never touches a
@@ -11409,8 +11421,15 @@
   function findCardioActivity(id) { return CARDIO_ACTIVITIES[id] || { name: id }; }
 
   const CARDIO_KEY = "fwmc-cardio-v1";
-  // items: [{ activity: <id>, durationS, label: "", interval: null | {onS, offS} }]
-  const cardioPrefs = { items: [], defaultDurationS: 600 };
+  // items: [{ activity: <id>, durationS, label: "", interval: null | {onS, offS},
+  //           motiv?: { mode: "keine"|"spruch"|"bild"|"galerie", text, imageId } }]
+  // bgColorKey/bgIntensity/bgCustom: Cardio's own background (same shape as
+  // every other domain, so MASTER_BG_TARGETS/wireBgIntensityControl apply).
+  // gallery: [{ id, text } | { id, imageId }], shown for items whose motiv
+  // mode is "galerie", changing every galleryChangeS (zufall/reihe).
+  const cardioPrefs = { items: [], defaultDurationS: 600, bgColorKey: "gruen", bgIntensity: 0,
+    gallery: [], galleryChangeS: 60, galleryOrder: "zufall" };
+  const CARDIO_MOTIV_MODES = ["keine", "spruch", "bild", "galerie"];
   function loadCardioPrefs() {
     const saved = readJSON(CARDIO_KEY, null);
     if (saved && typeof saved === "object") Object.assign(cardioPrefs, saved);
@@ -11419,11 +11438,150 @@
       if (!Number.isFinite(it.durationS) || it.durationS < 60 || it.durationS > 3600) it.durationS = 600;
       if (typeof it.label !== "string") it.label = "";
       if (it.interval && (!Number.isFinite(it.interval.onS) || !Number.isFinite(it.interval.offS) || it.interval.onS < 5 || it.interval.offS < 5)) it.interval = null;
+      if (it.motiv && (typeof it.motiv !== "object" || !CARDIO_MOTIV_MODES.includes(it.motiv.mode))) delete it.motiv;
     });
+    if (!STROOP_COLOR_BY_KEY[cardioPrefs.bgColorKey]) cardioPrefs.bgColorKey = "gruen";
+    if (typeof cardioPrefs.bgIntensity !== "number" || cardioPrefs.bgIntensity < 0 || cardioPrefs.bgIntensity > 1) cardioPrefs.bgIntensity = 0;
+    if (!Array.isArray(cardioPrefs.gallery)) cardioPrefs.gallery = [];
+    cardioPrefs.gallery = cardioPrefs.gallery.filter((g) => g && typeof g === "object" && g.id && (typeof g.text === "string" || typeof g.imageId === "string"));
+    if (!Number.isFinite(cardioPrefs.galleryChangeS) || cardioPrefs.galleryChangeS < 15 || cardioPrefs.galleryChangeS > 600) cardioPrefs.galleryChangeS = 60;
+    if (!["zufall", "reihe"].includes(cardioPrefs.galleryOrder)) cardioPrefs.galleryOrder = "zufall";
     if (!Number.isFinite(cardioPrefs.defaultDurationS) || cardioPrefs.defaultDurationS < 60 || cardioPrefs.defaultDurationS > 3600) cardioPrefs.defaultDurationS = 600;
   }
   function saveCardioPrefs() { writeJSON(CARDIO_KEY, cardioPrefs); }
   loadCardioPrefs();
+  function copyCardioItem(it) {
+    return { ...it, interval: it.interval ? { ...it.interval } : null, ...(it.motiv ? { motiv: { ...it.motiv } } : {}) };
+  }
+
+  // Cardio background (client, 2026-10-02): tints the whole Cardio player,
+  // editable on the ready screen and live in the pause sheet.
+  const applyCardioBg = makeBgApplier(els.cardioPlayer, cardioPrefs);
+  const syncCardioBgUI = wireBgIntensityControl(cardioPrefs, {
+    pickers: [els.cardioBgColorPicker, els.cardioPauseBgColorPicker],
+    sliders: [els.cardioBgIntensitySlider, els.cardioPauseBgSlider],
+    valueEls: [els.cardioBgIntensityValue, els.cardioPauseBgValue],
+    hintEls: [els.cardioBgContrastHint, els.cardioPauseBgContrastHint],
+    masterStatusEls: [els.cardioBgMasterStatus],
+  }, () => { saveCardioPrefs(); applyCardioBg(); });
+  applyCardioBg();
+  function cardioBgHex() {
+    return cardioPrefs.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[cardioPrefs.bgColorKey].hex, cardioPrefs.bgIntensity) : "#ffffff";
+  }
+
+  // ---- Motivation images: compressed to JPEG via a canvas and kept in
+  // their own localStorage key (never uploaded). Items/gallery entries
+  // only hold the id. An image is deleted only once no saved value in
+  // localStorage mentions its id any more (covers saved Cardio units and
+  // Kombis that copied an item, without tracking every place by hand). ----
+  const CARDIO_IMAGES_KEY = "fwmc-cardio-images-v1";
+  function cardioImages() { return readJSON(CARDIO_IMAGES_KEY, {}); }
+  function cardioImageUrl(id) { return id ? cardioImages()[id] || "" : ""; }
+  function cardioImageFromFile(file, onDone) {
+    els.cardioImgError.hidden = true;
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 900;
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(img.width * scale));
+        c.height = Math.max(1, Math.round(img.height * scale));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        const url = c.toDataURL("image/jpeg", 0.8);
+        const all = cardioImages();
+        const id = "img" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+        all[id] = url;
+        try { localStorage.setItem(CARDIO_IMAGES_KEY, JSON.stringify(all)); }
+        catch (e) {
+          els.cardioImgError.textContent = "Der Speicher auf diesem Gerät ist voll. Bitte entferne zuerst ein anderes Bild.";
+          els.cardioImgError.hidden = false;
+          return;
+        }
+        onDone(id);
+      };
+      img.onerror = () => { els.cardioImgError.textContent = "Dieses Bild konnte nicht gelesen werden."; els.cardioImgError.hidden = false; };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  function pruneCardioImage(id) {
+    if (!id) return;
+    try { if (JSON.stringify([comboCardioCaptureOriginal, comboDraftBlocks]).includes(id)) return; } catch (e) {}
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k === CARDIO_IMAGES_KEY) continue;
+      const v = localStorage.getItem(k);
+      if (v && v.includes(id)) return;
+    }
+    const all = cardioImages();
+    delete all[id];
+    writeJSON(CARDIO_IMAGES_KEY, all);
+  }
+
+  function renderCardioGallery() {
+    const list = cardioPrefs.gallery;
+    els.cardioGalleryList.innerHTML = "";
+    els.cardioGalleryEmpty.hidden = list.length > 0;
+    list.forEach((g, i) => {
+      const row = document.createElement("div");
+      row.className = "cardio-gallery-item";
+      if (g.imageId) {
+        const img = document.createElement("img");
+        img.src = cardioImageUrl(g.imageId);
+        img.alt = "";
+        row.appendChild(img);
+      }
+      const span = document.createElement("span");
+      span.textContent = g.imageId ? "Bild" : g.text;
+      row.appendChild(span);
+      const rm = document.createElement("button");
+      rm.type = "button";
+      rm.className = "combo-block-remove";
+      rm.title = "Entfernen";
+      rm.innerHTML = "&#10005;";
+      rm.addEventListener("click", () => {
+        const [removed] = cardioPrefs.gallery.splice(i, 1);
+        saveCardioPrefs();
+        if (removed && removed.imageId) pruneCardioImage(removed.imageId);
+        renderCardioGallery();
+      });
+      row.appendChild(rm);
+      els.cardioGalleryList.appendChild(row);
+    });
+    els.cardioGalleryChangeSlider.value = cardioPrefs.galleryChangeS;
+    els.cardioGalleryChangeValue.textContent = fmtSeconds(cardioPrefs.galleryChangeS);
+    els.cardioGalleryOrderRow.querySelectorAll("[data-order]").forEach((b) => b.classList.toggle("active", b.dataset.order === cardioPrefs.galleryOrder));
+  }
+  els.cardioGalleryAddTextBtn.addEventListener("click", () => {
+    const text = els.cardioGalleryTextInput.value.trim();
+    if (!text) return;
+    cardioPrefs.gallery.push({ id: "g" + Date.now().toString(36), text });
+    els.cardioGalleryTextInput.value = "";
+    saveCardioPrefs();
+    renderCardioGallery();
+  });
+  els.cardioGalleryImgInput.addEventListener("change", () => {
+    const file = els.cardioGalleryImgInput.files[0];
+    els.cardioGalleryImgInput.value = "";
+    cardioImageFromFile(file, (imageId) => {
+      cardioPrefs.gallery.push({ id: "g" + Date.now().toString(36), imageId });
+      saveCardioPrefs();
+      renderCardioGallery();
+    });
+  });
+  els.cardioGalleryChangeSlider.addEventListener("input", () => {
+    cardioPrefs.galleryChangeS = Number(els.cardioGalleryChangeSlider.value);
+    els.cardioGalleryChangeValue.textContent = fmtSeconds(cardioPrefs.galleryChangeS);
+  });
+  els.cardioGalleryChangeSlider.addEventListener("change", saveCardioPrefs);
+  els.cardioGalleryOrderRow.querySelectorAll("[data-order]").forEach((b) => b.addEventListener("click", () => {
+    cardioPrefs.galleryOrder = b.dataset.order;
+    saveCardioPrefs();
+    renderCardioGallery();
+  }));
 
   function fmtCardioDuration(s) {
     const m = Math.round(s / 60);
@@ -11480,6 +11638,7 @@
           `<span class="circuit-duration-value">${item.interval.offS}s</span>` +
           `<button class="circuit-step" data-int="${i}" data-field="offS" data-dir="1" aria-label="länger">+</button></div>` +
           `</div>` : "");
+      row.appendChild(buildCardioMotivEditor(item));
       els.cardioList.appendChild(row);
       // Pause after this activity, before the next one - not shown after
       // the last item. Same fallback-to-Master-default + explicit-once-
@@ -11549,6 +11708,80 @@
     syncCardioAddonWindowBounds();
   }
 
+  // Per-activity "Motivation": nothing, an own quote, an own image or the
+  // shared gallery. Shown big on the stage while that activity runs.
+  function buildCardioMotivEditor(item) {
+    const m = item.motiv || { mode: "keine" };
+    const wrap = document.createElement("div");
+    wrap.className = "cardio-motiv-edit";
+    const row = document.createElement("label");
+    row.className = "cardio-motiv-row";
+    row.innerHTML = `<span class="slider-label">Motivation</span>`;
+    const sel = document.createElement("select");
+    sel.className = "cardio-motiv-select";
+    [["keine", "Keine"], ["spruch", "Eigener Spruch"], ["bild", "Eigenes Bild"], ["galerie", "Aus der Galerie"]].forEach(([v, t]) => {
+      const o = document.createElement("option");
+      o.value = v; o.textContent = t; if (m.mode === v) o.selected = true;
+      sel.appendChild(o);
+    });
+    row.appendChild(sel);
+    wrap.appendChild(row);
+    sel.addEventListener("change", () => {
+      const old = item.motiv;
+      item.motiv = { mode: sel.value, text: old && old.text || "", imageId: old && old.imageId || "" };
+      if (sel.value === "keine") delete item.motiv;
+      saveCardioPrefs();
+      if (old && old.imageId && (!item.motiv || item.motiv.mode !== "bild")) {
+        if (item.motiv) item.motiv.imageId = "";
+        saveCardioPrefs();
+        pruneCardioImage(old.imageId);
+      }
+      renderCardioList();
+    });
+    if (m.mode === "spruch") {
+      const ta = document.createElement("input");
+      ta.type = "text";
+      ta.className = "cardio-motiv-text";
+      ta.maxLength = 160;
+      ta.placeholder = "Dein Spruch für diese Aktivität";
+      ta.value = m.text || "";
+      ta.addEventListener("change", () => { item.motiv.text = ta.value.trim(); saveCardioPrefs(); });
+      wrap.appendChild(ta);
+    } else if (m.mode === "bild") {
+      const r = document.createElement("div");
+      r.className = "cardio-motiv-row";
+      if (m.imageId && cardioImageUrl(m.imageId)) {
+        const img = document.createElement("img");
+        img.className = "cardio-motiv-thumb";
+        img.src = cardioImageUrl(m.imageId);
+        img.alt = "";
+        r.appendChild(img);
+      }
+      const pick = document.createElement("label");
+      pick.className = "cardio-img-pick";
+      pick.innerHTML = `<input type="file" accept="image/*" hidden><span>${m.imageId ? "Anderes Bild wählen" : "Bild wählen"}</span>`;
+      const input = pick.querySelector("input");
+      input.addEventListener("change", () => {
+        const file = input.files[0];
+        cardioImageFromFile(file, (imageId) => {
+          const old = item.motiv.imageId;
+          item.motiv.imageId = imageId;
+          saveCardioPrefs();
+          if (old) pruneCardioImage(old);
+          renderCardioList();
+        });
+      });
+      r.appendChild(pick);
+      wrap.appendChild(r);
+    } else if (m.mode === "galerie" && !cardioPrefs.gallery.length) {
+      const h = document.createElement("div");
+      h.className = "group-help";
+      h.textContent = "Die Galerie ist noch leer. Füge unter „Hintergrund & Motivation“ Sprüche oder Bilder hinzu.";
+      wrap.appendChild(h);
+    }
+    return wrap;
+  }
+
   function syncCardioUI() {
     els.cardioStartBtn.disabled = cardioPrefs.items.length === 0;
     els.cardioStartBtn.textContent = cardioPrefs.items.length
@@ -11562,7 +11795,7 @@
     renderPresetList(cardioSavedStore, els.cardioSavedList, els.cardioSavedGroup, null,
       (e) => `${e.items.length} Aktivität${e.items.length === 1 ? "" : "en"} · ca. ${fmtCardioDuration(cardioItemsSeconds(e.items))}`,
       (entry) => {
-        cardioPrefs.items = entry.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null }));
+        cardioPrefs.items = entry.items.map(copyCardioItem);
         saveCardioPrefs();
         // While capturing a Kombi-Baustein, loading a saved unit should
         // just fill the draft for review/adjustment, not immediately start
@@ -11577,7 +11810,7 @@
     defaultName: () => `Eigenes Cardio ${new Date().toLocaleDateString("de-DE")}`,
     onSave: (name) => {
       const list = cardioSavedStore.load();
-      list.push({ id: String(Date.now()), name, items: cardioPrefs.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null })) });
+      list.push({ id: String(Date.now()), name, items: cardioPrefs.items.map(copyCardioItem) });
       cardioSavedStore.save(list);
       renderCardioSaved();
     },
@@ -11591,6 +11824,8 @@
     els.cardioSaveBtn.hidden = false;
     renderCardioSaved();
     renderCardioAddonUI();
+    renderCardioGallery();
+    syncCardioBgUI();
     showScreen("cardioReady");
   }
   els.cardioStartCard.addEventListener("click", openCardioReady);
@@ -11607,8 +11842,8 @@
   let comboCardioCaptureOriginal = null; // saved standalone cardioPrefs.items while capturing
   let comboCardioEditIndex = null; // set when editing an existing combo block instead of adding a new one
   function openCardioComboCapture(existingBlock, editIndex) {
-    comboCardioCaptureOriginal = cardioPrefs.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null }));
-    cardioPrefs.items = existingBlock ? existingBlock.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null })) : [];
+    comboCardioCaptureOriginal = cardioPrefs.items.map(copyCardioItem);
+    cardioPrefs.items = existingBlock ? existingBlock.items.map(copyCardioItem) : [];
     comboCardioEditIndex = editIndex ?? null;
     els.cardioReadyTitle.textContent = "Baustein: Cardio";
     els.cardioReadyHint.textContent = "Stelle die Aktivitäten für diesen Kombi-Baustein zusammen.";
@@ -11626,7 +11861,7 @@
   }
   function commitCardioComboCapture() {
     if (!cardioPrefs.items.length) return;
-    const block = { domain: "cardio", items: cardioPrefs.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null })) };
+    const block = { domain: "cardio", items: cardioPrefs.items.map(copyCardioItem) };
     if (comboCardioEditIndex != null) comboDraftBlocks[comboCardioEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitCardioComboCapture();
@@ -11700,7 +11935,7 @@
     });
     els.cardioProgramStartBtn.onclick = () => {
       cardioProgram = { def, code, key, title };
-      startStandaloneCardio(def.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null })));
+      startStandaloneCardio(def.items.map(copyCardioItem));
     };
     showScreen("cardioProgramIntro");
   }
@@ -12664,7 +12899,10 @@
     els.cardioPlayer.hidden = false;
     els.cardioAddonPicker.hidden = true;
     lastCardioItems = items;
-    cardioState = { items: withCardioPauses(items), realCount: items.length, index: 0, blockStartTime: performance.now(), sessionStartTime: performance.now(), nextGuestAt: null };
+    cardioState = { items: withCardioPauses(items), realCount: items.length, index: 0, blockStartTime: performance.now(), sessionStartTime: performance.now(), nextGuestAt: null, gallery: null, motivKey: null };
+    stopCardioInlineFlash();
+    els.cardioMotiv.hidden = true;
+    applyCardioBg();
     scheduleNextCardioGuest();
     syncCardioAddonTriggerBtn();
     requestWakeLock();
@@ -12680,7 +12918,7 @@
   }
   function startCardioNow() {
     if (!cardioPrefs.items.length) return;
-    startStandaloneCardio(cardioPrefs.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null })));
+    startStandaloneCardio(cardioPrefs.items.map(copyCardioItem));
   }
   els.cardioStartBtn.addEventListener("click", () => {
     if (comboCardioCaptureOriginal) { commitCardioComboCapture(); return; }
@@ -12692,6 +12930,50 @@
     const { onS, offS } = block.interval;
     const t = blockElapsed % (onS + offS);
     return t < onS ? "on" : "off";
+  }
+
+  // ---- Motivation box on the Cardio stage: an own quote/image per
+  // activity, or the shared gallery that changes every galleryChangeS
+  // (random order without an immediate repeat, or in list order). The DOM
+  // is only touched when the shown entry changes. ----
+  function cardioGalleryOrder(n, avoidFirst) {
+    const idx = Array.from({ length: n }, (_, i) => i);
+    if (cardioPrefs.galleryOrder !== "zufall") return idx;
+    for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+    if (n > 1 && idx[0] === avoidFirst) [idx[0], idx[1]] = [idx[1], idx[0]];
+    return idx;
+  }
+  function cardioMotivContent(block, now) {
+    const m = block && !block.pause && block.motiv;
+    if (!m) return null;
+    if (m.mode === "spruch") return m.text ? { text: m.text } : null;
+    if (m.mode === "bild") return m.imageId ? { imageId: m.imageId } : null;
+    if (m.mode !== "galerie") return null;
+    const gal = cardioPrefs.gallery;
+    if (!gal.length) return null;
+    const cs = cardioState;
+    let g = cs.gallery;
+    if (!g || g.len !== gal.length) {
+      g = cs.gallery = { order: cardioGalleryOrder(gal.length, -1), pos: 0, changedAt: now, len: gal.length };
+    } else if (now - g.changedAt >= cardioPrefs.galleryChangeS * 1000) {
+      g.pos++;
+      if (g.pos >= g.order.length) { g.order = cardioGalleryOrder(gal.length, g.order[g.order.length - 1]); g.pos = 0; }
+      g.changedAt = now;
+    }
+    const e = gal[g.order[g.pos]];
+    return e.imageId ? { imageId: e.imageId } : { text: e.text };
+  }
+  function renderCardioMotiv(block, now) {
+    const c = cardioMotivContent(block, now);
+    const key = !c ? "" : c.imageId ? "i:" + c.imageId : "t:" + c.text;
+    if (key === cardioState.motivKey) return;
+    cardioState.motivKey = key;
+    const url = c && c.imageId ? cardioImageUrl(c.imageId) : "";
+    els.cardioMotivImg.hidden = !url;
+    if (url) els.cardioMotivImg.src = url; else els.cardioMotivImg.removeAttribute("src");
+    els.cardioMotivText.hidden = !(c && c.text);
+    els.cardioMotivText.textContent = c && c.text ? c.text : "";
+    els.cardioMotiv.hidden = !(url || (c && c.text));
   }
 
   function cardioTick(now) {
@@ -12715,6 +12997,7 @@
       els.cardioCountdown.textContent = fmtClock(block.durationS - blockElapsed);
       els.cardioBlockProgress.textContent = nextAct ? `vor Aktivität ${cardioRealPos(cardioState.items, cardioState.index + 1)} von ${cardioState.realCount}` : "";
       els.cardioPhaseLabel.hidden = true;
+      renderCardioMotiv(null, now);
       els.cardioSkipBtn.title = "Pause überspringen";
       els.cardioSkipBtn.setAttribute("aria-label", "Pause überspringen");
       cardioRaf = requestAnimationFrame(cardioTick);
@@ -12731,6 +13014,7 @@
     const phase = cardioPhaseFor(block, blockElapsed);
     els.cardioPhaseLabel.hidden = !phase;
     if (phase) els.cardioPhaseLabel.textContent = phase === "on" ? "Intensive Belastung" : "Leichtere Belastung";
+    renderCardioMotiv(block, now);
     const sessionElapsedS = (now - cardioState.sessionStartTime) / 1000;
     const withinAddonWindow = !cardioAddonPrefs.windowEnabled || (sessionElapsedS >= cardioAddonPrefs.windowStartS && sessionElapsedS <= cardioAddonPrefs.windowEndS);
     if (cardioAddonPrefs.enabled && cardioAddonPrefs.pool.length && withinAddonWindow && cardioState.nextGuestAt !== null && now >= cardioState.nextGuestAt) {
@@ -12843,12 +13127,141 @@
   // choice, fully configured, made right now); left undefined for the
   // automatic randomized-interval path in cardioTick(), which still picks
   // randomly from the configured pool at its own saved settings, unchanged.
+  // ---- Inline Zusatzreiz (client, 2026-10-02): while a quote or image is
+  // on the Cardio stage, the peripheral letter/digit flash (Zusatzaufgabe ·
+  // Ziffer/Buchstabe, Periphere Wahrnehmung) does NOT take over the screen.
+  // Cardio keeps running and the characters flash on top of the stage, but
+  // only where nothing is drawn: never on a letter of the quote (each glyph
+  // is measured on its own, so the gaps between lines and words stay free
+  // to use), never on the image, the timer, the buttons or the bars. Every
+  // other guest exercise stays a full-screen takeover. ----
+  let cardioInline = null;
+  function cardioInlineSchedule(fn, ms) {
+    const ci = cardioInline;
+    clearTimeout(ci.timer);
+    ci.timerFn = fn;
+    ci.firesAt = performance.now() + ms;
+    ci.timer = setTimeout(fn, ms);
+  }
+  function stopCardioInlineFlash() {
+    if (cardioInline) clearTimeout(cardioInline.timer);
+    cardioInline = null;
+    els.cardioFlashLayer.innerHTML = "";
+  }
+  function pauseCardioInlineFlash() {
+    const ci = cardioInline;
+    if (!ci || ci.pausedAt) return;
+    clearTimeout(ci.timer);
+    ci.pausedAt = performance.now();
+    ci.remainMs = Math.max(0, ci.firesAt - ci.pausedAt);
+  }
+  function resumeCardioInlineFlash() {
+    const ci = cardioInline;
+    if (!ci || !ci.pausedAt) return;
+    ci.endsAt += performance.now() - ci.pausedAt;
+    ci.pausedAt = null;
+    cardioInlineSchedule(ci.timerFn, ci.remainMs);
+  }
+  function cardioInlineObstacles() {
+    const rects = [];
+    const add = (el) => {
+      if (!el || el.hidden) return;
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) rects.push(r);
+    };
+    [els.cardioBlockProgress, els.cardioActivityTitle, els.cardioActivityLabel, els.cardioCountdown,
+      els.cardioPhaseLabel, els.cardioMotivImg, els.cardioPlayer.querySelector(".chapter-nav")].forEach(add);
+    els.cardioPlayer.querySelectorAll("#cardioPlayerBar button").forEach(add);
+    if (!els.cardioMotiv.hidden && !els.cardioMotivText.hidden) {
+      const range = document.createRange();
+      const walker = document.createTreeWalker(els.cardioMotivText, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) {
+        for (let i = 0; i < node.length; i++) {
+          if (/\s/.test(node.data[i])) continue;
+          range.setStart(node, i);
+          range.setEnd(node, i + 1);
+          Array.from(range.getClientRects()).forEach((r) => { if (r.width > 0 && r.height > 0) rects.push(r); });
+        }
+      }
+    }
+    return rects;
+  }
+  function cardioInlineShow() {
+    const ci = cardioInline;
+    if (!ci) return;
+    if (performance.now() >= ci.endsAt) { stopCardioInlineFlash(); return; }
+    const cfg = ci.cfg;
+    const W = window.innerWidth, H = window.innerHeight;
+    const bar = document.getElementById("cardioPlayerBar").getBoundingClientRect();
+    const top = Math.max(0, bar.bottom) + 8, left = 8, right = W - 8, bottom = H - 8;
+    const obstacles = cardioInlineObstacles();
+    const base = Math.max(28, Math.min(56, Math.round(Math.min(W, H) * 0.085)));
+    const span = document.createElement("span");
+    span.className = "cardio-flash-char";
+    span.textContent = randPeriphChar(cfg.kind, Math.random);
+    span.style.color = pickPeriphColor(cfg.colors, cardioBgHex(), Math.random);
+    span.style.visibility = "hidden";
+    els.cardioFlashLayer.innerHTML = "";
+    els.cardioFlashLayer.appendChild(span);
+    const fits = (x, y, size) => {
+      span.style.fontSize = size + "px";
+      const w = span.offsetWidth, h = span.offsetHeight;
+      const box = { l: x - w / 2 - 3, t: y - h / 2 - 3, r: x + w / 2 + 3, b: y + h / 2 + 3 };
+      if (box.l < left || box.r > right || box.t < top || box.b > bottom) return null;
+      if (obstacles.some((o) => box.l < o.right && box.r > o.left && box.t < o.bottom && box.b > o.top)) return null;
+      return { x: box.l + 3, y: box.t + 3 };
+    };
+    const sizeFor = (x, y) => {
+      if (cfg.sizeMode !== "wachsend") return base;
+      const d = Math.hypot(x - W / 2, y - H / 2) / Math.hypot(W / 2, H / 2);
+      return Math.round(base * (0.75 + 0.75 * d));
+    };
+    let pos = null;
+    for (let i = 0; i < 160 && !pos; i++) {
+      const p = i < 60 ? randPosFromCfg(cfg, Math.random) : { fx: Math.random(), fy: Math.random() };
+      const x = left + p.fx * (right - left), y = top + p.fy * (bottom - top);
+      pos = fits(x, y, sizeFor(x, y));
+    }
+    if (pos) {
+      span.style.left = pos.x + "px";
+      span.style.top = pos.y + "px";
+      span.style.visibility = "";
+    } else {
+      els.cardioFlashLayer.innerHTML = "";
+    }
+    cardioInlineSchedule(cardioInlineGap, Math.max(100, (cfg.stimulusS || 1) * 1000));
+  }
+  function cardioInlineGap() {
+    const ci = cardioInline;
+    if (!ci) return;
+    els.cardioFlashLayer.innerHTML = "";
+    if (performance.now() >= ci.endsAt) { stopCardioInlineFlash(); return; }
+    const min = ci.cfg.intervalMin ?? 2, max = Math.max(min, ci.cfg.intervalMax ?? 4);
+    cardioInlineSchedule(cardioInlineShow, (min + Math.random() * (max - min)) * 1000);
+  }
+  function startCardioInlineFlash(cfg) {
+    stopCardioInlineFlash();
+    cardioInline = { cfg: JSON.parse(JSON.stringify(cfg)), endsAt: performance.now() + (cfg.duration || 30) * 1000, timer: null };
+    cardioInlineSchedule(cardioInlineShow, 600);
+  }
+
   function triggerCardioGuest(explicitId, explicitCfg) {
+    const guestId = explicitId || cardioAddonPrefs.pool[Math.floor(Math.random() * cardioAddonPrefs.pool.length)];
+    const cfg = explicitCfg || cardioAddonPrefs.perType[guestId];
+    stopCardioInlineFlash();
+    if (cardioGuestIsPeriphLike(guestId) && cardioState && !els.cardioMotiv.hidden) {
+      startCardioInlineFlash(cfg);
+      scheduleNextCardioGuest();
+      // Called from cardioTick (its frame already fired) or from the live
+      // picker (a frame pending): either way exactly one frame next.
+      if (cardioRaf) cancelAnimationFrame(cardioRaf);
+      cardioRaf = requestAnimationFrame(cardioTick);
+      return;
+    }
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
     cardioRaf = null;
-    const guestId = explicitId || cardioAddonPrefs.pool[Math.floor(Math.random() * cardioAddonPrefs.pool.length)];
     const realId = cardioGuestRealId(guestId);
-    const cfg = explicitCfg || cardioAddonPrefs.perType[guestId];
     cardioGuestActive = true;
     const comboOpts = { comboDurationS: cfg.duration };
     // Blitz-Raster/Remember/Flash/MOT don't touch state.exercise/
@@ -13049,6 +13462,7 @@
     onRight: () => els.cardioPrevBtn.click(),
   });
   function abortCardio() {
+    stopCardioInlineFlash();
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
     cardioRaf = null;
     cardioState = null;
@@ -13066,6 +13480,7 @@
   els.cardioBackBtn.addEventListener("click", abortCardio);
 
   function finishCardio() {
+    stopCardioInlineFlash();
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
     cardioRaf = null;
     const items = cardioState.items;
@@ -13093,7 +13508,7 @@
   els.cardioAgainBtn.addEventListener("click", () => {
     if (!lastCardioItems) return;
     els.cardioDonePanel.hidden = true;
-    startStandaloneCardio(lastCardioItems.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null })));
+    startStandaloneCardio(lastCardioItems.map(copyCardioItem));
   });
   els.cardioDoneBackBtn.addEventListener("click", () => {
     els.cardioDonePanel.hidden = true;
@@ -13190,7 +13605,7 @@
       startMotGame(block.mode || "speed", { comboDurationS: block.duration ?? 60 });
     } else if (block.domain === "cardio") {
       cardioProgram = null;
-      startStandaloneCardio(block.items.map((it) => ({ ...it, interval: it.interval ? { ...it.interval } : null })));
+      startStandaloneCardio(block.items.map(copyCardioItem));
     } else {
       startComboBlock(idx + 1); // unknown domain - skip rather than get stuck
     }
@@ -13316,6 +13731,7 @@
     adapter.pause();
     adapter.host.appendChild(trainPauseEl);
     trainPauseListEl.hidden = true;
+    els.cardioPauseBgGroup.hidden = adapter.bgGroup !== els.cardioPauseBgGroup;
     trainPauseOverviewBtn.textContent = "Alle Pausen anzeigen";
     renderTrainPause();
     trainPauseEl.hidden = false;
@@ -13503,10 +13919,13 @@
     const inS = () => (cs.pausedAt - cs.blockStartTime) / 1000;
     return {
       host: els.cardioPlayer,
+      bgGroup: els.cardioPauseBgGroup,
       pause() {
         cs.pausedAt = performance.now();
         if (cardioRaf) cancelAnimationFrame(cardioRaf);
         cardioRaf = null;
+        pauseCardioInlineFlash();
+        syncCardioBgUI();
       },
       resume() {
         if (cardioState !== cs) return;
@@ -13515,6 +13934,8 @@
         cs.blockStartTime += d;
         cs.sessionStartTime += d;
         if (cs.nextGuestAt != null) cs.nextGuestAt += d;
+        if (cs.gallery) cs.gallery.changedAt += d;
+        resumeCardioInlineFlash();
         cardioRaf = requestAnimationFrame(cardioTick);
       },
       current() {
