@@ -3962,9 +3962,36 @@ circuits with reps goes through Kombi.
   `strengthItemBlock()` precomputes `repsList` because its `sets` is the
   already-expanded pyramid count - recomputing from it doubled the pyramid
   (real bug, caught by the test).
-- Open idea list given to Fabian (AMRAP, Dropsatz, Seitenwechsel; Tempo,
-  EMOM, Aufwärmsatz as later) - not built until he picks.
+- Fabian picked from the idea list: everything except EMOM (left out).
 Test: `tests/strength_modes_test.py`.
+
+### Kraftplan v4: Maximal, Seite, Tempo, Aufwärm- und Dropsätze (2026-10-02)
+
+Same day, Fabian: offer "Maximal", build Dropsatz, Seitenwechsel "sehr
+wichtig" (one arm/leg, also on machines, neuroathletic relevance), Tempo
+and Aufwärmsätze (fixed reps or just a placeholder) - "muss clean aussehen".
+- New Art `"amrap"` ("Maximal (so viele wie möglich)"): sets only; the
+  reps input starts at this exercise's last logged number (10 at first).
+  No double progression (range items only).
+- Per item, folded in a second `<details class="strength-more">` ("Mehr
+  Optionen", summary lists what is active, open state in
+  `strengthOpenMore`), on every item incl. the last: `side` (both/lr/rl/
+  l/r, `STRENGTH_SIDE_LABELS`) + `sideGapS` (0-60, default 5, only for
+  lr/rl), `tempo` (free text ≤12, hidden for holds, shown in the player's
+  note line as "Tempo …"), `warmupSets` 0-3 + `warmupReps` (0 = "frei")
+  + `warmupRestS` (0-180, default 30), `dropSets` 0-3 (hidden for holds).
+- Engine: `strengthExpandSet()` turns each set into one sub-set per side;
+  the last working set of an item is followed on each side by its drop
+  sets (rest 0, mode "drop" - straight on); between sides a "Seitenwechsel"
+  pause; only the final sub-set carries the set's real pause. Warm-ups of
+  all group members come before the group's first round. Steps carry
+  `kind` (work/warmup/drop), `side`, `dropIdx`/`dropTotal`.
+  `currentRepsMode()` returns "warmup"/"drop" for those steps (no reps
+  logging, never progression), the item's mode otherwise.
+  `strengthStepLabel()` feeds the "Als Nächstes" line (also on a side or
+  warm-up -> work change within one exercise).
+- EMOM (every minute on the minute) deliberately not built.
+Test: `tests/strength_extras_test.py`.
 
 ### Interval phase wording corrected (2026-09-30)
 

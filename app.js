@@ -1021,7 +1021,8 @@
       const items = block.items || [];
       return (block.prepS || 0) + buildStrengthSteps(block).reduce((t, step) => {
         const it = items[step.itemIndex];
-        return t + (strengthItemMode(it) === "time" ? it.holdS : 30) + (step.rest ? step.rest.s : 0);
+        const setS = step.kind === "drop" ? 20 : step.kind === "work" && strengthItemMode(it) === "time" ? it.holdS : 30;
+        return t + setS + (step.rest ? step.rest.s : 0);
       }, 0);
     }
     return block.sets * 30 + (block.sets - 1) * (block.restS ?? 30); // 30s/set is a rough estimate for the "ca." total
@@ -9555,7 +9556,19 @@
   // null = the plan's exerciseRestS), supersetNext/supersetGapS (alternate
   // set by set with the next exercise, gap between the two). Items from
   // before modes existed have no `mode` and are plain range items.
-  function strengthItemMode(it) { return it.mode === "pyramid" || it.mode === "time" ? it.mode : "range"; }
+  // v4 (2026-10-02, same day): mode "amrap" (so viele wie möglich) plus
+  // per-item extras - side ("both" | "lr" | "rl" | "l" | "r", one-sided
+  // work with sideGapS between the sides), tempo (free text like
+  // "3-1-1-0", shown during the set), warmupSets/warmupReps (0 = frei)/
+  // warmupRestS before the exercise's first working set, and dropSets
+  // straight after its last working set (lighter weight, max reps).
+  const STRENGTH_MODES = ["range", "pyramid", "time", "amrap"];
+  const STRENGTH_SIDES = ["both", "lr", "rl", "l", "r"];
+  const STRENGTH_SIDE_LABELS = { both: "Beidseitig / ohne Seite", lr: "Erst links, dann rechts", rl: "Erst rechts, dann links", l: "Nur links", r: "Nur rechts" };
+  function strengthItemMode(it) { return STRENGTH_MODES.includes(it.mode) ? it.mode : "range"; }
+  function strengthItemSideList(it) {
+    return it.side === "lr" ? ["l", "r"] : it.side === "rl" ? ["r", "l"] : it.side === "l" ? ["l"] : it.side === "r" ? ["r"] : [null];
+  }
   function strengthPyramidReps(it) {
     const n = Math.max(1, it.sets || 1);
     const a = it.pyrFrom ?? 12, b = it.pyrTo ?? 6;
@@ -9570,20 +9583,40 @@
     const mode = strengthItemMode(it);
     if (mode === "time") return `${it.holdS} s halten`;
     if (mode === "pyramid") return `${(it.repsList || strengthPyramidReps(it))[set - 1]} Wiederholungen`;
+    if (mode === "amrap") return "So viele wie möglich";
     return `${it.rangeMin}–${it.rangeMax} Wiederholungen`;
   }
   function strengthItemTargetText(it) {
     const mode = strengthItemMode(it);
     if (mode === "time") return `${it.sets}× ${it.holdS} s halten`;
-    if (mode === "pyramid") return `Pyramide ${strengthPyramidReps(it).join("–")}`;
-    return `${it.sets}×${it.rangeMin}–${it.rangeMax}`;
+    let text = mode === "pyramid" ? `Pyramide ${strengthPyramidReps(it).join("–")}`
+      : mode === "amrap" ? `${it.sets}× maximal`
+      : `${it.sets}×${it.rangeMin}–${it.rangeMax}`;
+    if (it.side === "l" || it.side === "r") text += ` · nur ${it.side === "l" ? "links" : "rechts"}`;
+    else if (it.side === "lr" || it.side === "rl") text += " · je Seite";
+    if (it.warmupSets > 0) text += ` · ${it.warmupSets} ${it.warmupSets > 1 ? "Aufwärmsätze" : "Aufwärmsatz"}`;
+    if (it.dropSets > 0 && mode !== "time") text += ` · ${it.dropSets} ${it.dropSets > 1 ? "Dropsätze" : "Dropsatz"}`;
+    return text;
   }
   // The whole plan as a flat list of sets, each knowing the pause that
   // follows it. A run of items linked by supersetNext forms one group that
   // is played round by round (A1 B1, A2 B2, ...): the gap between members
   // is the member's own supersetGapS, the pause after a round is the
   // group's first item's set rest, and after the last round comes the
-  // last member's pause-after (or the plan default).
+  // last member's pause-after (or the plan default). Warm-up sets of every
+  // member come before the group's first round; each set is split per
+  // side (see strengthExpandSet) and an item's last working set is
+  // followed directly by its drop sets.
+  function strengthExpandSet(items, k, base, rest, steps) {
+    const it = items[k];
+    const sides = strengthItemSideList(it);
+    const drops = base.kind === "work" && base.set === base.sets && strengthItemMode(it) !== "time" ? (it.dropSets || 0) : 0;
+    sides.forEach((side, si) => {
+      steps.push({ ...base, itemIndex: k, side, rest: { s: 0, mode: "drop" } });
+      for (let d = 1; d <= drops; d++) steps.push({ ...base, itemIndex: k, side, kind: "drop", dropIdx: d, dropTotal: drops, rest: { s: 0, mode: "drop" } });
+      steps[steps.length - 1].rest = si < sides.length - 1 ? { s: it.sideGapS ?? 5, mode: "side" } : rest;
+    });
+  }
   function buildStrengthSteps(plan) {
     const items = plan.items || [];
     const steps = [];
@@ -9592,6 +9625,10 @@
       let j = i;
       while (j < items.length - 1 && items[j].supersetNext) j += 1;
       const isGroup = j > i;
+      for (let k = i; k <= j; k++) {
+        const warm = items[k].warmupSets || 0;
+        for (let w = 1; w <= warm; w++) strengthExpandSet(items, k, { kind: "warmup", set: w, sets: warm, superset: false }, { s: items[k].warmupRestS ?? 30, mode: "warmup" }, steps);
+      }
       const rounds = Math.max(...items.slice(i, j + 1).map(strengthItemSets));
       for (let r = 1; r <= rounds; r++) {
         const members = [];
@@ -9601,7 +9638,7 @@
           if (mi < members.length - 1) rest = { s: items[k].supersetGapS ?? 0, mode: "superset" };
           else if (r < rounds) rest = { s: items[isGroup ? i : k].restS ?? 60, mode: "set" };
           else rest = { s: items[j].restAfterS ?? plan.exerciseRestS ?? 0, mode: "item" };
-          steps.push({ itemIndex: k, set: r, sets: strengthItemSets(items[k]), superset: isGroup, rest });
+          strengthExpandSet(items, k, { kind: "work", set: r, sets: strengthItemSets(items[k]), superset: isGroup }, rest, steps);
         });
       }
       i = j + 1;
@@ -9618,7 +9655,25 @@
       // there-and-back pyramid, so it must not be expanded a second time.
       repsList: strengthItemMode(item) === "pyramid" ? strengthPyramidReps(item) : null,
       restS: item.restS, note: item.note || "",
+      side: item.side || "both", tempo: item.tempo || "", warmupReps: item.warmupReps || 0,
     };
+  }
+  // What the current set actually is: a warm-up or drop set of a Kraftplan
+  // step overrides the item's own mode; a classic coach "reps" block
+  // without a range is "fixed".
+  function currentRepsMode() {
+    const st = workoutState;
+    const step = st.strength ? st.steps[st.stepIndex] : null;
+    if (step && (step.kind === "warmup" || step.kind === "drop")) return step.kind;
+    return st.block.mode || (st.block.rangeMin != null ? "range" : "fixed");
+  }
+  const sideWord = (side) => (side === "l" ? "links" : "rechts");
+  function strengthStepLabel(step) {
+    const blk = strengthItemBlock(workoutState.strength.items[step.itemIndex]);
+    const side = step.side ? ` (${sideWord(step.side)})` : "";
+    if (step.kind === "warmup") return `Aufwärmsatz${side}`;
+    if (step.kind === "drop") return `Dropsatz${side}`;
+    return strengthSetTargetText(blk, step.set) + side;
   }
   function strengthApplyStep(idx) {
     const st = workoutState;
@@ -9681,29 +9736,46 @@
   }
   function renderRepsView() {
     const { block, ex, setIndex } = workoutState;
-    const mode = block.mode || (block.rangeMin != null ? "range" : "fixed");
+    const mode = currentRepsMode();
     els.workoutExerciseName.textContent = ex.name;
     const plan = workoutState.strength;
     const step = plan ? workoutState.steps[workoutState.stepIndex] : null;
+    const setText = mode === "warmup" ? `Aufwärmsatz ${step.set} von ${step.sets}`
+      : mode === "drop" ? `Dropsatz${step.dropTotal > 1 ? ` ${step.dropIdx} von ${step.dropTotal}` : ""}`
+      : `Satz ${setIndex} von ${step ? step.sets : block.sets}`;
     els.workoutSetInfo.textContent = (plan && plan.items.length > 1 ? `Übung ${workoutState.itemIndex + 1} von ${plan.items.length} · ` : "") +
-      `Satz ${setIndex} von ${block.sets}` + (step && step.superset ? " · Supersatz" : "");
-    els.workoutRepsBig.textContent = mode === "fixed" ? `${block.reps} Wiederholungen` : strengthSetTargetText(block, setIndex);
-    els.workoutNote.textContent = block.note || ex.note || "";
+      setText + (step && step.superset && mode !== "warmup" ? " · Supersatz" : "") + (step && step.side ? ` · ${sideWord(step.side)}` : "");
+    els.workoutRepsBig.textContent = mode === "fixed" ? `${block.reps} Wiederholungen`
+      : mode === "warmup" ? (block.warmupReps > 0 ? `${block.warmupReps} Wiederholungen, leicht` : "Locker aufwärmen, Wiederholungen nach Gefühl")
+      : mode === "drop" ? "Gewicht reduzieren, so viele wie möglich"
+      : strengthSetTargetText(block, setIndex);
+    const tempo = block.tempo && mode !== "time" && mode !== "warmup" ? `Tempo ${block.tempo}` : "";
+    els.workoutNote.textContent = [tempo, block.note || ex.note || ""].filter(Boolean).join(" · ");
     els.workoutSetDoneBtn.hidden = false;
     els.workoutSetDoneBtn.textContent = mode === "time" ? "Halten starten" : "Satz erledigt";
     els.workoutRestBox.hidden = true;
     workoutState.holding = null;
-    els.workoutRepsInputRow.hidden = !(mode === "range" || mode === "pyramid");
-    if (mode === "range" || mode === "pyramid") {
+    const logs = mode === "range" || mode === "pyramid" || mode === "amrap";
+    els.workoutRepsInputRow.hidden = !logs;
+    if (logs) {
       // Defaults to the target (top of the range - "aim for the last one
-      // to be genuinely hard"); dialled down with -/+ only if they fell short.
-      workoutState.currentInput = mode === "pyramid" ? block.repsList[setIndex - 1] : block.rangeMax;
+      // to be genuinely hard"); dialled down with -/+ only if they fell
+      // short. "Maximal" starts at the last logged number of this exercise.
+      const prev = plan ? workoutState.achievedByItem[workoutState.itemIndex] : null;
+      workoutState.currentInput = mode === "pyramid" ? block.repsList[setIndex - 1]
+        : mode === "amrap" ? (prev && prev.length ? prev[prev.length - 1] : 10)
+        : block.rangeMax;
       els.workoutRepsInputValue.textContent = workoutState.currentInput;
-      startWorkoutSetTimer();
-    } else {
+    }
+    if (mode === "time") {
       stopWorkoutSetTimer();
-      els.workoutSetTimer.hidden = mode !== "time";
-      if (mode === "time") els.workoutSetTimer.textContent = `${block.holdS} s`;
+      els.workoutSetTimer.hidden = false;
+      els.workoutSetTimer.textContent = `${block.holdS} s`;
+    } else if (mode === "fixed") {
+      stopWorkoutSetTimer();
+      els.workoutSetTimer.hidden = true;
+    } else {
+      startWorkoutSetTimer();
     }
   }
   els.workoutRepsInputMinus.addEventListener("click", () => {
@@ -9719,9 +9791,9 @@
   function completeWorkoutSet() {
     const st = workoutState;
     if (!st || st.kind !== "reps") return;
-    const mode = st.block.mode || (st.block.rangeMin != null ? "range" : "fixed");
+    const mode = currentRepsMode();
     let value = null;
-    if (mode === "range" || mode === "pyramid") value = st.currentInput;
+    if (mode === "range" || mode === "pyramid" || mode === "amrap") value = st.currentInput;
     else if (mode === "time" && st.holding) value = Math.round(Math.min(st.holding.total, (performance.now() - st.holding.t0) / 1000));
     stopWorkoutSetTimer();
     st.holding = null;
@@ -9739,7 +9811,7 @@
   }
   els.workoutSetDoneBtn.addEventListener("click", () => {
     if (!workoutState || workoutState.kind !== "reps") return;
-    if (workoutState.block.mode === "time" && !workoutState.holding) { startWorkoutHold(); return; }
+    if (currentRepsMode() === "time" && !workoutState.holding) { startWorkoutHold(); return; }
     completeWorkoutSet();
   });
   // `mode` says what the countdown leads into: "set" (next set), "superset"
@@ -9752,14 +9824,17 @@
     stopWorkoutSetTimer();
     els.workoutSetTimer.hidden = true;
     els.workoutRestBox.hidden = false;
-    els.workoutRestLabel.textContent = mode === "start" ? "Bereit machen" : mode === "item" ? "Pause – Übungswechsel" : mode === "superset" ? "Supersatz – Wechsel" : "Pause";
+    els.workoutRestLabel.textContent = mode === "start" ? "Bereit machen" : mode === "item" ? "Pause – Übungswechsel" : mode === "superset" ? "Supersatz – Wechsel" : mode === "side" ? "Seitenwechsel" : "Pause";
     let nextText = "";
     const st = workoutState;
     if (st.strength && mode !== "start") {
+      const cur = st.steps[st.stepIndex];
       const next = st.steps[st.stepIndex + 1];
       if (next && next.itemIndex !== st.itemIndex) {
         const it = st.strength.items[next.itemIndex];
-        nextText = `Als Nächstes: ${findWorkoutExercise(it.exercise).name} · ${strengthSetTargetText(strengthItemBlock(it), next.set)}`;
+        nextText = `Als Nächstes: ${findWorkoutExercise(it.exercise).name} · ${strengthStepLabel(next)}`;
+      } else if (next && (next.side !== cur.side || next.kind !== cur.kind)) {
+        nextText = `Als Nächstes: ${strengthStepLabel(next)}`;
       }
     } else if (mode === "start") {
       nextText = `Los geht's mit: ${st.ex.name}`;
@@ -10488,7 +10563,7 @@
       restS: clampInt(it.restS, 15, 300, 60),
       note: typeof it.note === "string" ? it.note : "",
       // Added 2026-10-02: Art der Übung, Pause danach, Supersatz.
-      mode: it.mode === "pyramid" || it.mode === "time" ? it.mode : "range",
+      mode: STRENGTH_MODES.includes(it.mode) ? it.mode : "range",
       pyrFrom: clampInt(it.pyrFrom, 1, 30, 12),
       pyrTo: clampInt(it.pyrTo, 1, 30, 6),
       pyrBack: !!it.pyrBack,
@@ -10496,6 +10571,14 @@
       restAfterS: it.restAfterS == null ? null : clampInt(it.restAfterS, 0, 180, null),
       supersetNext: !!it.supersetNext,
       supersetGapS: clampInt(it.supersetGapS, 0, 60, 0),
+      // v4: Seite, Tempo, Aufwärmsätze, Dropsätze ("Mehr Optionen").
+      side: STRENGTH_SIDES.includes(it.side) ? it.side : "both",
+      sideGapS: clampInt(it.sideGapS, 0, 60, 5),
+      tempo: typeof it.tempo === "string" ? it.tempo.trim().slice(0, 12) : "",
+      warmupSets: clampInt(it.warmupSets, 0, 3, 0),
+      warmupReps: clampInt(it.warmupReps, 0, 30, 0),
+      warmupRestS: clampInt(it.warmupRestS, 0, 180, 30),
+      dropSets: clampInt(it.dropSets, 0, 3, 0),
     };
     if (out.customMax < out.customMin) out.customMax = out.customMin;
     return out;
@@ -10559,6 +10642,8 @@
           exercise: it.exercise, mode: it.mode, rangeMin: min, rangeMax: max, sets: it.sets, restS: it.restS,
           pyrFrom: it.pyrFrom, pyrTo: it.pyrTo, pyrBack: it.pyrBack, holdS: it.holdS,
           restAfterS: it.restAfterS, supersetNext: it.supersetNext && i < all.length - 1, supersetGapS: it.supersetGapS,
+          side: it.side, sideGapS: it.sideGapS, tempo: it.tempo, warmupSets: it.warmupSets, warmupReps: it.warmupReps,
+          warmupRestS: it.warmupRestS, dropSets: it.dropSets,
           note: it.note || "",
         };
       }),
@@ -10575,6 +10660,8 @@
       customMin: it.rangeMin, customMax: it.rangeMax, sets: it.sets, restS: it.restS, note: it.note || "",
       mode: it.mode, pyrFrom: it.pyrFrom, pyrTo: it.pyrTo, pyrBack: it.pyrBack, holdS: it.holdS,
       restAfterS: it.restAfterS, supersetNext: it.supersetNext, supersetGapS: it.supersetGapS,
+      side: it.side, sideGapS: it.sideGapS, tempo: it.tempo, warmupSets: it.warmupSets, warmupReps: it.warmupReps,
+      warmupRestS: it.warmupRestS, dropSets: it.dropSets,
     });
   }
   function refreshWorkoutRepsBuilder() {
@@ -10642,8 +10729,23 @@
     holdS: { lo: 5, hi: 300, step: 5 },
     restAfterS: { lo: 0, hi: 180, step: 5 },
     supersetGapS: { lo: 0, hi: 60, step: 5 },
+    sideGapS: { lo: 0, hi: 60, step: 5 },
+    warmupSets: { lo: 0, hi: 3, step: 1 },
+    warmupReps: { lo: 0, hi: 30, step: 1 },
+    warmupRestS: { lo: 0, hi: 180, step: 15 },
+    dropSets: { lo: 0, hi: 3, step: 1 },
   };
-  const STRENGTH_MODE_LABELS = { range: "Wiederholungen (Bereich)", pyramid: "Pyramide", time: "Halten auf Zeit" };
+  const STRENGTH_MODE_LABELS = { range: "Wiederholungen (Bereich)", pyramid: "Pyramide", time: "Halten auf Zeit", amrap: "Maximal (so viele wie möglich)" };
+  // Which items have "Mehr Optionen" unfolded (same idea as strengthOpenOptions).
+  const strengthOpenMore = new Set();
+  function strengthMoreSummary(item) {
+    const parts = [];
+    if (item.side !== "both") parts.push(STRENGTH_SIDE_LABELS[item.side]);
+    if (item.tempo && item.mode !== "time") parts.push(`Tempo ${item.tempo}`);
+    if (item.warmupSets > 0) parts.push(`${item.warmupSets} ${item.warmupSets > 1 ? "Aufwärmsätze" : "Aufwärmsatz"}`);
+    if (item.dropSets > 0 && item.mode !== "time") parts.push(`${item.dropSets} ${item.dropSets > 1 ? "Dropsätze" : "Dropsatz"}`);
+    return parts.length ? `Mehr: ${parts.join(" · ")}` : "Mehr Optionen (Seite, Tempo, Aufwärmen, Dropsatz)";
+  }
   // Which items have their "Pause & Supersatz" options unfolded - UI state
   // only, kept across re-renders so a tap on a stepper doesn't fold it shut.
   const strengthOpenOptions = new Set();
@@ -10679,9 +10781,23 @@
         modeFields = strengthStepper(i, "pyrFrom", "Von Wdh.", item.pyrFrom) + strengthStepper(i, "pyrTo", "Bis Wdh.", item.pyrTo) +
           strengthStepper(i, "sets", "Stufen", item.sets) +
           `<label class="checkbox-row strength-check"><input type="checkbox" class="strength-pyrback" data-si="${i}" ${item.pyrBack ? "checked" : ""}> und wieder zurück (z. B. 12–10–8–10–12)</label>`;
+      } else if (item.mode === "amrap") {
+        modeFields = strengthStepper(i, "sets", "Sätze", item.sets);
       } else {
         modeFields = strengthStepper(i, "holdS", "Haltezeit", `${item.holdS}s`) + strengthStepper(i, "sets", "Sätze", item.sets);
       }
+      const isHold = item.mode === "time";
+      const more = `<details class="strength-more" data-mi="${i}" ${strengthOpenMore.has(i) ? "open" : ""}><summary>${esc(strengthMoreSummary(item))}</summary><div class="strength-options-body">` +
+        `<div class="cardio-interval-phase-row strength-field-row"><span>Seite</span><select class="strength-side-select" data-si="${i}" aria-label="Seite">` +
+        STRENGTH_SIDES.map((k) => `<option value="${k}" ${item.side === k ? "selected" : ""}>${STRENGTH_SIDE_LABELS[k]}</option>`).join("") + `</select></div>` +
+        (item.side === "lr" || item.side === "rl" ? strengthStepper(i, "sideGapS", "Seitenwechsel", `${item.sideGapS}s`) : "") +
+        (isHold ? "" : `<div class="cardio-interval-phase-row strength-field-row"><span>Tempo</span><input type="text" class="strength-tempo" data-si="${i}" maxlength="12" placeholder="z. B. 3-1-1-0" value="${esc(item.tempo)}" aria-label="Tempo"></div>` +
+          `<div class="group-help strength-hint">Sekunden: ablassen – unten halten – hoch – oben halten.</div>`) +
+        strengthStepper(i, "warmupSets", "Aufwärmsätze", item.warmupSets) +
+        (item.warmupSets > 0 ? strengthStepper(i, "warmupReps", "Aufwärm-Wdh.", item.warmupReps > 0 ? item.warmupReps : "frei") +
+          strengthStepper(i, "warmupRestS", "Aufwärmpause", `${item.warmupRestS}s`) : "") +
+        (isHold ? "" : strengthStepper(i, "dropSets", "Dropsätze am Ende", item.dropSets)) +
+        `</div></details>`;
       const isLast = i === items.length - 1;
       const open = strengthOpenOptions.has(i);
       let options = "";
@@ -10711,7 +10827,7 @@
           ? `<div class="group-help strength-round-hint">Rundenpause wie bei der ersten Übung des Supersatzes</div>`
           : strengthStepper(i, "restS", item.supersetNext ? "Rundenpause" : "Satzpause", `${item.restS}s`)) +
         `</div>` +
-        options +
+        more + options +
         `<input type="text" class="circuit-item-note" data-i="${i}" placeholder="Eigene Notiz (optional, z. B. Gewicht)" maxlength="80" value="${esc(item.note || "")}">`;
       els.workoutRepsList.appendChild(row);
     });
@@ -10755,6 +10871,18 @@
     els.workoutRepsList.querySelectorAll(".strength-rest-default").forEach((btn) => {
       btn.addEventListener("click", () => { itemOf(btn).restAfterS = null; rerender(); });
     });
+    els.workoutRepsList.querySelectorAll(".strength-side-select").forEach((sel) => {
+      sel.addEventListener("change", () => { itemOf(sel).side = sel.value; rerender(); });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-tempo").forEach((input) => {
+      input.addEventListener("change", () => { itemOf(input).tempo = input.value.trim().slice(0, 12); rerender(); });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-more").forEach((d) => {
+      d.addEventListener("toggle", () => {
+        if (d.open) strengthOpenMore.add(Number(d.dataset.mi));
+        else strengthOpenMore.delete(Number(d.dataset.mi));
+      });
+    });
     els.workoutRepsList.querySelectorAll(".strength-options").forEach((d) => {
       d.addEventListener("toggle", () => {
         if (d.open) strengthOpenOptions.add(Number(d.dataset.oi));
@@ -10767,6 +10895,7 @@
         const list = workoutRepsPrefs.items;
         [list[i - 1], list[i]] = [list[i], list[i - 1]];
         strengthOpenOptions.clear();
+        strengthOpenMore.clear();
         saveWorkoutRepsPrefs();
         renderWorkoutRepsList();
       });
@@ -10775,6 +10904,7 @@
       btn.addEventListener("click", () => {
         workoutRepsPrefs.items.splice(Number(btn.dataset.i), 1);
         strengthOpenOptions.clear();
+        strengthOpenMore.clear();
         saveWorkoutRepsPrefs();
         refreshWorkoutRepsBuilder();
       });
