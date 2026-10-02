@@ -446,7 +446,7 @@
     </button>
     <button class="featured-card" id="workoutRepsStartCard">
       <span class="fc-title">Kraft-/Wiederholungstraining starten</span>
-      <span class="fc-desc">W&auml;hle eine &Uuml;bung und einen Wiederholungsbereich (Kraft, Muskelaufbau oder Kraftausdauer) &ndash; mit Satz-Timer und Steigerungsvorschlag.</span>
+      <span class="fc-desc">Stell dir einen Plan aus mehreren &Uuml;bungen zusammen, jede mit eigenem Wiederholungsbereich (Kraft, Muskelaufbau oder Kraftausdauer), S&auml;tzen und Pausen &ndash; mit Satz-Timer und Steigerungsvorschlag.</span>
     </button>
   </section>
 
@@ -3491,10 +3491,15 @@
     <button class="back-link" id="workoutRepsBackToHome">&larr; Zur&uuml;ck</button>
   </div>
   <h1 class="page-title" id="workoutRepsReadyTitle">Kraft-/Wiederholungstraining</h1>
-  <p class="page-sub" id="workoutRepsReadyHint">W&auml;hle eine &Uuml;bung und einen Wiederholungsbereich &ndash; die App merkt sich deine letzten S&auml;tze und schl&auml;gt vor, wann du steigern kannst.</p>
+  <p class="page-sub" id="workoutRepsReadyHint">Stell dir deinen Kraftplan zusammen: tippe &Uuml;bungen in der Reihenfolge an, in der du sie machen willst &ndash; jede mit eigenem Wiederholungsbereich, eigenen S&auml;tzen und eigener Satzpause.</p>
+
+  <div class="group" id="workoutRepsSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Kraftpl&auml;ne</div>
+    <div class="bundle-list" id="workoutRepsSavedList"></div>
+  </div>
 
   <div class="group">
-    <div class="group-label">&Uuml;bung</div>
+    <div class="group-label">&Uuml;bung hinzuf&uuml;gen</div>
     <div class="combo-add-grid" id="workoutRepsExerciseGrid"></div>
     <button class="text-link small" id="workoutRepsCustomBtn">+ Eigene &Uuml;bung hinzuf&uuml;gen</button>
     <div class="custom-exercise-form" id="workoutRepsCustomForm" hidden>
@@ -3508,42 +3513,80 @@
   </div>
 
   <div class="group">
-    <div class="group-label">Wiederholungsbereich</div>
-    <div class="choice-row" id="workoutRepsRangeRow">
-      <button class="choice" data-reps-range="kraft">Kraft<small>1&ndash;6</small></button>
-      <button class="choice" data-reps-range="muskelaufbau">Muskelaufbau<small>6&ndash;12</small></button>
-      <button class="choice" data-reps-range="kraftausdauer">Kraftausdauer<small>15&ndash;20</small></button>
-      <button class="choice" data-reps-range="custom">Eigener Bereich</button>
-    </div>
-    <div class="group-help" id="workoutRepsRangeHint"></div>
-    <div class="slider-row two-line" id="workoutRepsCustomRangeRow" hidden>
-      <div class="slider-line"><span class="slider-label">Min</span><input type="range" id="workoutRepsCustomMinSlider" min="1" max="30" step="1" aria-label="Wiederholungen minimal"></div>
-      <div class="slider-line"><span class="slider-label">Max</span><input type="range" id="workoutRepsCustomMaxSlider" min="1" max="30" step="1" aria-label="Wiederholungen maximal"></div>
-      <span class="slider-value" id="workoutRepsCustomRangeValue"></span>
+    <div class="group-label">Dein Kraftplan <span class="group-count" id="workoutRepsCount"></span></div>
+    <p class="group-help" id="workoutRepsEmptyHint">Noch keine &Uuml;bung ausgew&auml;hlt &ndash; tippe oben auf das &bdquo;+&ldquo; neben einer &Uuml;bung.</p>
+    <div class="chapter-list" id="workoutRepsList"></div>
+    <button class="text-link small" id="workoutRepsSaveBtn">Aktuellen Kraftplan speichern</button>
+    <div class="custom-exercise-form" id="workoutRepsSaveForm" hidden>
+      <input type="text" id="workoutRepsSaveNameInput" placeholder="Name (z.B. &bdquo;Beine &amp; Rumpf&ldquo;)" maxlength="40">
+      <div class="custom-exercise-form-actions">
+        <button class="start-btn secondary" id="workoutRepsSaveCancelBtn">Abbrechen</button>
+        <button class="start-btn" id="workoutRepsSaveConfirmBtn">Speichern</button>
+      </div>
     </div>
   </div>
 
   <div class="group">
-    <div class="group-label">S&auml;tze</div>
-    <div class="choice-row" id="workoutRepsSetsRow">
-      <button class="choice" data-reps-sets="2">2</button>
-      <button class="choice" data-reps-sets="3">3</button>
-      <button class="choice" data-reps-sets="4">4</button>
-      <button class="choice" data-reps-sets="5">5</button>
-    </div>
-  </div>
-
-  <div class="group">
-    <div class="group-label">Pause zwischen S&auml;tzen</div>
+    <div class="group-label">Pause zwischen &Uuml;bungen</div>
     <div class="slider-row">
-      <input type="range" id="workoutRepsRestSlider" min="15" max="180" step="15" aria-label="Pause zwischen S&auml;tzen">
-      <span class="slider-value" id="workoutRepsRestValue"></span>
+      <input type="range" id="workoutRepsExerciseRestSlider" min="0" max="300" step="15" aria-label="Pause zwischen &Uuml;bungen">
+      <span class="slider-value" id="workoutRepsExerciseRestValue"></span>
     </div>
+    <div class="group-help">Wechselpause nach dem letzten Satz einer &Uuml;bung, bevor die n&auml;chste beginnt. Bei 0 s geht es direkt weiter.</div>
   </div>
+
+  <details class="advanced" id="workoutRepsAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Standard f&uuml;r neu hinzugef&uuml;gte &Uuml;bungen</div>
+        <div class="group-help">Gilt nur f&uuml;r neue &Uuml;bungen &ndash; schon hinzugef&uuml;gte stellst du direkt im Plan ein.</div>
+      </div>
+      <div class="group">
+        <div class="group-label">Wiederholungsbereich</div>
+        <div class="choice-row" id="workoutRepsRangeRow">
+          <button class="choice" data-reps-range="kraft">Kraft<small>1&ndash;6</small></button>
+          <button class="choice" data-reps-range="muskelaufbau">Muskelaufbau<small>6&ndash;12</small></button>
+          <button class="choice" data-reps-range="kraftausdauer">Kraftausdauer<small>15&ndash;20</small></button>
+          <button class="choice" data-reps-range="custom">Eigener Bereich</button>
+        </div>
+        <div class="group-help" id="workoutRepsRangeHint"></div>
+        <div class="slider-row two-line" id="workoutRepsCustomRangeRow" hidden>
+          <div class="slider-line"><span class="slider-label">Min</span><input type="range" id="workoutRepsCustomMinSlider" min="1" max="30" step="1" aria-label="Wiederholungen minimal"></div>
+          <div class="slider-line"><span class="slider-label">Max</span><input type="range" id="workoutRepsCustomMaxSlider" min="1" max="30" step="1" aria-label="Wiederholungen maximal"></div>
+          <span class="slider-value" id="workoutRepsCustomRangeValue"></span>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">S&auml;tze</div>
+        <div class="choice-row" id="workoutRepsSetsRow">
+          <button class="choice" data-reps-sets="2">2</button>
+          <button class="choice" data-reps-sets="3">3</button>
+          <button class="choice" data-reps-sets="4">4</button>
+          <button class="choice" data-reps-sets="5">5</button>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Pause zwischen S&auml;tzen</div>
+        <div class="slider-row">
+          <input type="range" id="workoutRepsRestSlider" min="15" max="300" step="15" aria-label="Pause zwischen S&auml;tzen">
+          <span class="slider-value" id="workoutRepsRestValue"></span>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-label">Vorbereitungszeit (Start-Countdown)</div>
+        <div class="slider-row">
+          <input type="range" id="workoutRepsPrepSlider" min="0" max="30" step="1" aria-label="Vorbereitungszeit">
+          <span class="slider-value" id="workoutRepsPrepValue"></span>
+        </div>
+        <div class="group-help">So lange z&auml;hlt der Countdown &bdquo;Bereit machen&ldquo;, bevor die erste &Uuml;bung losgeht. Bei 0 s geht es sofort los.</div>
+      </div>
+    </div>
+  </details>
 
   <div class="color-hint warn" id="workoutRepsSuggestionHint" hidden></div>
 
-  <button class="start-btn" id="workoutRepsStartBtn" disabled>Bitte eine &Uuml;bung w&auml;hlen</button>
+  <button class="start-btn" id="workoutRepsStartBtn" disabled>Mindestens eine &Uuml;bung hinzuf&uuml;gen</button>
 </div>
 
 <div class="screen" id="wimhofReady" hidden>
@@ -5354,8 +5397,9 @@
       </div>
       <button class="start-btn" id="workoutSetDoneBtn">Satz erledigt</button>
       <div class="workout-rest" id="workoutRestBox" hidden>
-        <div class="pause-label">Pause</div>
+        <div class="pause-label" id="workoutRestLabel">Pause</div>
         <div class="pause-countdown" id="workoutRestCountdown">30</div>
+        <div class="workout-rest-next" id="workoutRestNext" hidden></div>
         <button class="pause-skip" id="workoutRestSkipBtn">Jetzt weiter</button>
       </div>
     </div>

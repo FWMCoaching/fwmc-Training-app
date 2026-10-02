@@ -3853,6 +3853,44 @@ prefilled and persists changes; a range-mode reps block plays back
 correctly (right range, live timer, reps-input default) when reached
 mid-combo-run, and aborting mid-block during a combo still works.
 
+### Kraftplan: several exercises stacked, like Tabata (2026-10-02)
+
+Client report: "Die Kraftübungen können nicht gestackt werden" - the
+reps builder above only ever held ONE exercise, standalone and as a
+Kombi-Baustein (several single-exercise Bausteine were possible, but not
+one plan). Rebuilt `workoutRepsReady` into a Kraftplan builder that
+mirrors the Tabata Zirkel builder: add-grid with info button + "+" and
+a "N× im Plan" badge, an ordered item list, saved plans
+(`fwmc-workout-reps-saved-v1`), and a "↑" button to reorder (Tabata has
+none - cheap here and useful for strength order).
+- **Per item** (`workoutRepsPrefs.items[]`: `{exercise, rangeKey,
+  customMin, customMax, sets 1-10, restS 15-300, note}`): own range
+  (select: the 3 presets or "Eigener Bereich" with min/max steppers),
+  own sets, own Satzpause, own note (e.g. the weight used).
+- **Plan-level pauses**: "Pause zwischen Übungen" (`exerciseRestS`,
+  0-300s, default 90, 0 = straight on) and, in Feineinstellungen, a
+  "Vorbereitungszeit" start countdown (`prepS`, 0-30s, default 10). The
+  old range/sets/set-rest controls moved into Feineinstellungen as the
+  **defaults for newly added exercises** (set-rest range widened to
+  15-300s). No cool-down: a reps plan has no timed phase to append one to.
+- **Block shape** played by the engine: `{kind:"strength", items:[{exercise,
+  rangeMin, rangeMax, sets, restS, note}], exerciseRestS, prepS}`, built by
+  `buildStrengthPlanBlock()`. `startStrengthBlock()` runs it on the same
+  reps view/state as a single "reps" block (`workoutState.block` = current
+  item, `workoutState.strength` = whole plan); `startRepsRest(s, mode)`
+  takes `"set"`/`"item"`/`"start"` and labels the countdown accordingly
+  ("Pause", "Pause – Übungswechsel" + "Als Nächstes: …", "Bereit machen").
+  Set info reads "Übung 2 von 3 · Satz 1 von 4". Double progression is
+  recorded per item at the end (standalone only, as before).
+- **Kombi**: the whole Kraftplan is ONE Baustein (`kind:"strength"`),
+  edit-in-place; re-editing maps an explicit min/max back to its preset
+  when it matches one. An older single-exercise range-mode `kind:"reps"`
+  combo block still plays and reopens as a 1-item plan (saved back as
+  `strength`). Plain fixed coach "reps" blocks are untouched.
+- **Migration**: an old saved single `exercise` becomes a 1-item plan.
+Tests: `tests/workout_reps_builder_test.py`, `tests/workout_reps_combo_test.py`
+(both rewritten for the plan builder).
+
 ### Interval phase wording corrected (2026-09-30)
 
 "Belastung"/"Erholung" (both the setup-screen phase labels and the live

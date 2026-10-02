@@ -39,15 +39,24 @@ async def main():
         await pg.click("#workoutTabataStartBtn"); await pg.wait_for_timeout(200)
         print("block 1 (Zirkel) committed, back at comboScreen:", await pg.is_visible("#comboScreen"))
 
-        # ---- block 2: Kraft-/Wiederholungstraining, Kniebeugen, Kraft preset ----
+        # ---- block 2: a whole Kraftplan as ONE Baustein - Kniebeugen (Kraft,
+        # 2 sets) + Liegestütze stacked in the same block ----
         await pg.click('#comboAddGrid >> text="Kraft-/Wiederholungstraining"'); await pg.wait_for_timeout(200)
         print("capture screen retitled for combo:", "Baustein" in await pg.inner_text("#workoutRepsReadyTitle"))
-        await pg.click('[data-reps-range="kraft"]'); await pg.wait_for_timeout(60)
-        await pg.click('#workoutRepsExerciseGrid .combo-add-btn >> text="Kniebeugen"'); await pg.wait_for_timeout(80)
-        await pg.click('[data-reps-sets="2"]'); await pg.wait_for_timeout(60)
+        print("capture starts with an empty plan:", await pg.locator("#workoutRepsList .strength-item-row").count() == 0)
+        await pg.click('#workoutRepsExerciseGrid .custom-exercise-add-row:has-text("Kniebeugen") .ca-plus-btn'); await pg.wait_for_timeout(80)
+        await pg.click('#workoutRepsExerciseGrid .custom-exercise-add-row:has-text("Liegestütze") .ca-plus-btn'); await pg.wait_for_timeout(80)
+        r0 = pg.locator("#workoutRepsList .strength-item-row").nth(0)
+        await r0.locator(".strength-range-select").select_option("kraft"); await pg.wait_for_timeout(60)
+        r0 = pg.locator("#workoutRepsList .strength-item-row").nth(0)
+        await r0.locator('[data-sfield="sets"][data-dir="-1"]').click(); await pg.wait_for_timeout(60)
+        print("two exercises stacked in one Baustein:", await pg.locator("#workoutRepsList .strength-item-row").count() == 2)
+        print("start button reads 'Baustein übernehmen':", (await pg.inner_text("#workoutRepsStartBtn")).strip() == "Baustein übernehmen")
         await pg.click("#workoutRepsStartBtn"); await pg.wait_for_timeout(200)
-        print("block 2 (Kraft/Wdh.) committed, back at comboScreen:", await pg.is_visible("#comboScreen"))
+        print("block 2 (Kraftplan) committed, back at comboScreen:", await pg.is_visible("#comboScreen"))
         print("title/hint reset after commit:", await pg.inner_text("#workoutRepsReadyTitle") == "Kraft-/Wiederholungstraining")
+        print("standalone plan untouched by the capture (still empty):",
+              await pg.evaluate("() => (JSON.parse(localStorage.getItem('fwmc-workout-reps-builder-v1')||'{}').items||[]).length") == 0)
 
         # ---- block 3: a second, different Zirkel ----
         await pg.click('#comboAddGrid >> text="Eigener Zirkel"'); await pg.wait_for_timeout(200)
@@ -64,9 +73,9 @@ async def main():
 
         # ---- block 5: a second Kraft-/Wiederholungstraining, Muskelaufbau, Liegestütze ----
         await pg.click('#comboAddGrid >> text="Kraft-/Wiederholungstraining"'); await pg.wait_for_timeout(200)
-        print("re-opening reps builder starts fresh (no exercise carried over from block 2):",
-              await pg.locator("#workoutRepsExerciseGrid .combo-add-btn.active").count() == 0)
-        await pg.click('#workoutRepsExerciseGrid .combo-add-btn >> text="Liegestütze"'); await pg.wait_for_timeout(80)
+        print("re-opening reps builder starts fresh (nothing carried over from block 2):",
+              await pg.locator("#workoutRepsList .strength-item-row").count() == 0)
+        await pg.click('#workoutRepsExerciseGrid .custom-exercise-add-row:has-text("Liegestütze") .ca-plus-btn'); await pg.wait_for_timeout(80)
         await pg.click("#workoutRepsStartBtn"); await pg.wait_for_timeout(200)
 
         # ---- block 6: a second Cardio ----
@@ -82,13 +91,15 @@ async def main():
         # ---- edit block 2 (index 1) in place - should reopen prefilled ----
         await pg.click("#comboBlockList .chapter-row >> nth=1 >> .chapter-main"); await pg.wait_for_timeout(200)
         print("editing block 2 reopens the reps builder:", await pg.is_visible("#workoutRepsReady"))
-        print("Kniebeugen still marked active on re-edit:",
-              "active" in (await pg.get_attribute('#workoutRepsExerciseGrid .combo-add-btn:has-text("Kniebeugen")', "class") or ""))
-        print("range shows as 'Eigener Bereich' with Kraft's 1–6 prefilled (combo blocks store an explicit range, not the preset name):",
-              "active" in (await pg.get_attribute('[data-reps-range="custom"]', "class") or "") and "1–6" in await pg.inner_text("#workoutRepsCustomRangeValue"))
-        await pg.click('[data-reps-sets="3"]'); await pg.wait_for_timeout(60)
+        rows = pg.locator("#workoutRepsList .strength-item-row")
+        print("both exercises reopen prefilled on re-edit:", await rows.count() == 2 and "Kniebeugen" in await rows.nth(0).inner_text() and "Liegestütze" in await rows.nth(1).inner_text())
+        print("Kraft range maps back to its preset (1×1–6... shown as 2×1–6):", "2×1–6" in await rows.nth(0).inner_text()
+              and await rows.nth(0).locator(".strength-range-select").input_value() == "kraft")
+        await pg.click('#workoutRepsExerciseGrid .custom-exercise-add-row:has-text("Plank") .ca-plus-btn'); await pg.wait_for_timeout(80)
+        await rows.nth(0).locator('[data-sfield="sets"][data-dir="1"]').click(); await pg.wait_for_timeout(60)
         await pg.click("#workoutRepsStartBtn"); await pg.wait_for_timeout(200)
-        print("edited block persisted (now 3 sets):", "3×" in await pg.locator("#comboBlockList .chapter-row >> nth=1 >> .info span").inner_text())
+        meta = await pg.locator("#comboBlockList .chapter-row >> nth=1 >> .info span").inner_text()
+        print("edited block persisted (3 exercises, Kniebeugen now 3×1–6):", "3 Übungen" in await pg.locator("#comboBlockList .chapter-row >> nth=1 >> .info strong").inner_text() and "Kniebeugen 3×1–6" in meta)
 
         # ---- run the combo: block 1 (Zirkel) -> transition -> block 2
         # (Kraft/Wdh., now range-mode) plays correctly inside a combo ----
@@ -97,6 +108,9 @@ async def main():
         await pg.wait_for_selector("#comboTransition:not([hidden])", timeout=15000)
         await pg.click("#comboTransitionBtn"); await pg.wait_for_timeout(300)
         print("reps view visible (block 2, Kraft/Wdh.):", await pg.is_visible("#workoutRepsView"))
+        print("Kraftplan prep countdown shown inside the combo:", await pg.is_visible("#workoutRestBox"))
+        await pg.click("#workoutRestSkipBtn"); await pg.wait_for_timeout(200)
+        print("set info shows Übung 1 von 3:", "ÜBUNG 1 VON 3" in (await pg.inner_text("#workoutSetInfo")).upper())
         print("range shown correctly inside the combo run (1–6 Wiederholungen):", "1–6" in await pg.inner_text("#workoutRepsBig"))
         print("live set timer running inside the combo too:", await pg.is_visible("#workoutSetTimer"))
         print("reps-input defaults to top of range (6):", await pg.inner_text("#workoutRepsInputValue") == "6")

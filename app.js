@@ -1002,17 +1002,26 @@
   }
   function workoutBlockLabel(block) {
     if (block.kind === "circuit") return circuitSummaryLabel(block);
+    if (block.kind === "strength") return block.items.length === 1 ? findWorkoutExercise(block.items[0].exercise).name : `Kraftplan · ${block.items.length} Übungen`;
     return findWorkoutExercise(block.exercise).name;
   }
   function workoutBlockMeta(block) {
     if (block.kind === "tabata") return `${block.rounds} Runden à ${block.workS}s/${block.restS}s`;
     if (block.kind === "circuit") return `${block.items.length} Übungen × ${block.sets} Sätze`;
+    if (block.kind === "strength") return block.items.map((it) => `${findWorkoutExercise(it.exercise).name} ${it.sets}×${it.rangeMin}–${it.rangeMax}`).join(" · ");
     if (block.rangeMin != null) return `${block.sets}×${block.rangeMin}–${block.rangeMax}`;
     return `${block.sets}×${block.reps}`;
   }
   function workoutBlockSeconds(block) {
     if (block.kind === "tabata") return block.rounds * (block.workS + block.restS);
     if (block.kind === "circuit") return buildCircuitSchedule(block).total;
+    if (block.kind === "strength") {
+      // Same rough 30s/set estimate as a single reps block, plus every set
+      // rest, every exercise-change rest and the start countdown.
+      const items = block.items || [];
+      return (block.prepS || 0) + items.reduce((t, it) => t + it.sets * 30 + (it.sets - 1) * (it.restS ?? 60), 0)
+        + Math.max(0, items.length - 1) * (block.exerciseRestS ?? 0);
+    }
     return block.sets * 30 + (block.sets - 1) * (block.restS ?? 30); // 30s/set is a rough estimate for the "ca." total
   }
   // ---- Coach-authored / self-built workout plans (mirrors the breath and
@@ -1142,7 +1151,7 @@
     // renderComboBlockList() below.
     workout: [
       { label: "Eigener Zirkel", meta: "mehrere Übungen mit Sätzen & Pausen zusammenstellen", open: () => openWorkoutComboCapture(null, null) },
-      { label: "Kraft-/Wiederholungstraining", meta: "Übung & Wiederholungsbereich einstellen", open: () => openWorkoutRepsComboCapture(null, null) },
+      { label: "Kraft-/Wiederholungstraining", meta: "Kraftplan aus mehreren Übungen mit Sätzen & Pausen", open: () => openWorkoutRepsComboCapture(null, null) },
     ],
     // Visual has too many exercises (and its own client-side "incompatible"
     // masking from Master-Einstellungen) for a static list - resolved fresh
@@ -1157,7 +1166,7 @@
     breath: (block, i) => openBreathComboCapture(block.pattern, block, i),
     wimhof: (block, i) => openWimhofComboCapture(block, i),
     visual: (block, i) => openVisualComboCapture(block.exercise, null, block, i),
-    workout: (block, i) => (block.kind === "reps" ? openWorkoutRepsComboCapture(block, i) : openWorkoutComboCapture(block, i)),
+    workout: (block, i) => (block.kind === "reps" || block.kind === "strength" ? openWorkoutRepsComboCapture(block, i) : openWorkoutComboCapture(block, i)),
     nat: (block, i) => openRememberComboCapture(block.mode, block, i),
     blitz: (block, i) => openBlitzComboCapture(block, i),
     flash: (block, i) => openFlashComboCapture(block.mode, block, i),
@@ -1334,6 +1343,12 @@
     workoutRepsCustomMaxSlider: $("workoutRepsCustomMaxSlider"), workoutRepsCustomRangeValue: $("workoutRepsCustomRangeValue"),
     workoutRepsSetsRow: $("workoutRepsSetsRow"), workoutRepsRestSlider: $("workoutRepsRestSlider"), workoutRepsRestValue: $("workoutRepsRestValue"),
     workoutRepsSuggestionHint: $("workoutRepsSuggestionHint"), workoutRepsStartBtn: $("workoutRepsStartBtn"),
+    workoutRepsSavedGroup: $("workoutRepsSavedGroup"), workoutRepsSavedList: $("workoutRepsSavedList"),
+    workoutRepsCount: $("workoutRepsCount"), workoutRepsEmptyHint: $("workoutRepsEmptyHint"), workoutRepsList: $("workoutRepsList"),
+    workoutRepsSaveBtn: $("workoutRepsSaveBtn"), workoutRepsSaveForm: $("workoutRepsSaveForm"), workoutRepsSaveNameInput: $("workoutRepsSaveNameInput"),
+    workoutRepsSaveCancelBtn: $("workoutRepsSaveCancelBtn"), workoutRepsSaveConfirmBtn: $("workoutRepsSaveConfirmBtn"),
+    workoutRepsExerciseRestSlider: $("workoutRepsExerciseRestSlider"), workoutRepsExerciseRestValue: $("workoutRepsExerciseRestValue"),
+    workoutRepsPrepSlider: $("workoutRepsPrepSlider"), workoutRepsPrepValue: $("workoutRepsPrepValue"),
     workoutSetTimer: $("workoutSetTimer"), workoutRepsInputRow: $("workoutRepsInputRow"), workoutRepsInputValue: $("workoutRepsInputValue"),
     workoutRepsInputMinus: $("workoutRepsInputMinus"), workoutRepsInputPlus: $("workoutRepsInputPlus"),
     natHome: $("natHome"), natPeripherPanel: $("natPeripherPanel"), natRememberPanel: $("natRememberPanel"), natBlitzPanel: $("natBlitzPanel"), natFlashPanel: $("natFlashPanel"), natMotPanel: $("natMotPanel"),
@@ -1929,6 +1944,7 @@
     workoutPlayer: $("workoutPlayer"), workoutRepsView: $("workoutRepsView"), workoutExerciseName: $("workoutExerciseName"),
     workoutSetInfo: $("workoutSetInfo"), workoutRepsBig: $("workoutRepsBig"), workoutNote: $("workoutNote"),
     workoutSetDoneBtn: $("workoutSetDoneBtn"), workoutRestBox: $("workoutRestBox"), workoutRestCountdown: $("workoutRestCountdown"),
+    workoutRestLabel: $("workoutRestLabel"), workoutRestNext: $("workoutRestNext"),
     workoutRestSkipBtn: $("workoutRestSkipBtn"), workoutTabataView: $("workoutTabataView"), tabataPhaseLabel: $("tabataPhaseLabel"),
     tabataCountdown: $("tabataCountdown"), tabataExerciseName: $("tabataExerciseName"), tabataRoundLabel: $("tabataRoundLabel"),
     tabataExerciseIcon: $("tabataExerciseIcon"), tabataExerciseNote: $("tabataExerciseNote"),
@@ -9499,6 +9515,7 @@
     renderWorkoutOverview();
     if (block.kind === "tabata") startTabataBlock(block);
     else if (block.kind === "circuit") startCircuitBlock(block);
+    else if (block.kind === "strength") startStrengthBlock(block);
     else startRepsBlock(block);
   }
   function renderWorkoutOverview() {
@@ -9516,6 +9533,46 @@
     workoutState = { kind: "reps", block, ex, setIndex: 1, startTime: performance.now(), achieved: [] };
     renderRepsView();
     requestWakeLock();
+  }
+  // ---- Kraftplan ("strength"): several reps exercises in a row, each
+  // with its own range/sets/set-rest (added 2026-10-02 - the client's ask:
+  // stack strength exercises into one plan like Tabata, standalone AND as a
+  // single Kombi-Baustein). Runs on the exact same reps view/state as a
+  // single "reps" block - workoutState.block is always the CURRENT item
+  // (shaped like a range-mode reps block), workoutState.strength the whole
+  // plan - so renderRepsView()/the set-done button/the rest countdown need
+  // only small, item-aware additions rather than a second engine.
+  function strengthItemBlock(item) {
+    return { kind: "reps", exercise: item.exercise, sets: item.sets, reps: item.rangeMax, rangeMin: item.rangeMin, rangeMax: item.rangeMax, restS: item.restS, note: item.note || "" };
+  }
+  function startStrengthBlock(plan) {
+    const first = strengthItemBlock(plan.items[0]);
+    const now = performance.now();
+    workoutState = {
+      kind: "reps", strength: plan, itemIndex: 0, block: first, ex: findWorkoutExercise(first.exercise),
+      setIndex: 1, startTime: now, sessionStart: now, achieved: [], results: [],
+    };
+    requestWakeLock();
+    if ((plan.prepS || 0) > 0) {
+      renderRepsView();
+      startRepsRest(plan.prepS, "start");
+    } else {
+      renderRepsView();
+    }
+  }
+  function strengthNextItemIndex() {
+    const st = workoutState;
+    return st && st.strength && st.itemIndex + 1 < st.strength.items.length ? st.itemIndex + 1 : -1;
+  }
+  function advanceStrengthItem() {
+    const st = workoutState;
+    st.results.push({ exercise: st.block.exercise, rangeMin: st.block.rangeMin, rangeMax: st.block.rangeMax, achieved: st.achieved.slice() });
+    st.itemIndex += 1;
+    st.block = strengthItemBlock(st.strength.items[st.itemIndex]);
+    st.ex = findWorkoutExercise(st.block.exercise);
+    st.setIndex = 1;
+    st.achieved = [];
+    renderRepsView();
   }
   // Live per-set stopwatch - informational only (see CLAUDE.md's "Kraft-/
   // Wiederholungstraining" note on why time-under-tension isn't used to
@@ -9538,7 +9595,8 @@
     const { block, ex, setIndex } = workoutState;
     const isRange = block.rangeMin != null;
     els.workoutExerciseName.textContent = ex.name;
-    els.workoutSetInfo.textContent = `Satz ${setIndex} von ${block.sets}`;
+    const plan = workoutState.strength;
+    els.workoutSetInfo.textContent = (plan && plan.items.length > 1 ? `Übung ${workoutState.itemIndex + 1} von ${plan.items.length} · ` : "") + `Satz ${setIndex} von ${block.sets}`;
     els.workoutRepsBig.textContent = isRange ? `${block.rangeMin}–${block.rangeMax} Wiederholungen` : `${block.reps} Wiederholungen`;
     els.workoutNote.textContent = block.note || ex.note || "";
     els.workoutSetDoneBtn.hidden = false;
@@ -9572,12 +9630,36 @@
       workoutState.achieved.push(workoutState.currentInput);
       stopWorkoutSetTimer();
     }
-    if (workoutState.setIndex >= workoutState.block.sets) { finishWorkoutBlock(); return; }
-    startRepsRest(workoutState.block.restS ?? 30);
+    if (workoutState.setIndex >= workoutState.block.sets) {
+      if (strengthNextItemIndex() < 0) { finishWorkoutBlock(); return; }
+      const changeS = workoutState.strength.exerciseRestS ?? 0;
+      if (changeS > 0) startRepsRest(changeS, "item");
+      else advanceStrengthItem();
+      return;
+    }
+    startRepsRest(workoutState.block.restS ?? 30, "set");
   });
-  function startRepsRest(restS) {
+  // `mode` says what the countdown leads into: "set" (next set of the same
+  // exercise), "item" (next exercise of a Kraftplan) or "start" (the
+  // Kraftplan's own start countdown, before its very first set).
+  function startRepsRest(restS, mode = "set") {
+    workoutState.restMode = mode;
     els.workoutSetDoneBtn.hidden = true;
+    els.workoutRepsInputRow.hidden = true;
+    stopWorkoutSetTimer();
+    els.workoutSetTimer.hidden = true;
     els.workoutRestBox.hidden = false;
+    els.workoutRestLabel.textContent = mode === "start" ? "Bereit machen" : mode === "item" ? "Pause – Übungswechsel" : "Pause";
+    let nextText = "";
+    if (mode === "item") {
+      const next = workoutState.strength.items[strengthNextItemIndex()];
+      nextText = `Als Nächstes: ${findWorkoutExercise(next.exercise).name} · ${next.sets}×${next.rangeMin}–${next.rangeMax}`;
+    } else if (mode === "start") {
+      nextText = `Los geht's mit: ${workoutState.ex.name}`;
+    }
+    els.workoutRestNext.hidden = !nextText;
+    els.workoutRestNext.textContent = nextText;
+    els.workoutRestSkipBtn.textContent = mode === "start" ? "Sofort starten" : "Jetzt weiter";
     let remaining = restS;
     const tick = () => {
       els.workoutRestCountdown.textContent = Math.max(0, Math.ceil(remaining));
@@ -9589,7 +9671,11 @@
   function advanceRepsSet() {
     if (workoutRestTimer) clearTimeout(workoutRestTimer);
     workoutRestTimer = null;
-    workoutState.setIndex += 1;
+    if (!workoutState) return;
+    const mode = workoutState.restMode || "set";
+    workoutState.restMode = null;
+    if (mode === "item") { advanceStrengthItem(); return; }
+    if (mode === "set") workoutState.setIndex += 1;
     renderRepsView();
   }
   els.workoutRestSkipBtn.addEventListener("click", () => advanceRepsSet());
@@ -9841,12 +9927,22 @@
     // going straight to its own next block/summary, no natural place to
     // show it without interrupting that flow.
     let suggestion = null;
-    if (st && st.kind === "reps" && st.block.rangeMin != null && st.achieved.length && !workoutPlan && !comboProgram) {
+    let doneEx = st ? st.ex : null;
+    if (st && st.strength) {
+      if (st.achieved.length) st.results.push({ exercise: st.block.exercise, rangeMin: st.block.rangeMin, rangeMax: st.block.rangeMax, achieved: st.achieved.slice() });
+      if (st.strength.items.length > 1) doneEx = { name: workoutBlockLabel(st.strength) };
+      if (!workoutPlan && !comboProgram) {
+        const topNames = st.results
+          .filter((r) => r.achieved.length && recordWorkoutRepsProgress(r.exercise, r.rangeMin, r.rangeMax, r.achieved))
+          .map((r) => findWorkoutExercise(r.exercise).name);
+        if (topNames.length) suggestion = `Stark – bei ${topNames.join(", ")} hast du in jedem Satz das obere Ende deines Bereichs geschafft. Nächstes Mal schwerer machen (mehr Gewicht, schwerere Variante, oder die Übung tauschen)?`;
+      }
+    } else if (st && st.kind === "reps" && st.block.rangeMin != null && st.achieved.length && !workoutPlan && !comboProgram) {
       const hitTop = recordWorkoutRepsProgress(st.block.exercise, st.block.rangeMin, st.block.rangeMax, st.achieved);
       if (hitTop) suggestion = `Stark – du hast in jedem Satz ${st.block.rangeMax}+ Wiederholungen geschafft. Nächstes Mal schwerer machen (mehr Gewicht, schwerere Variante, oder die Übung tauschen)?`;
     }
     workoutState = null;
-    onWorkoutBlockDone(played, st ? st.ex : null, suggestion);
+    onWorkoutBlockDone(played, doneEx, suggestion);
   }
   function onWorkoutBlockDone(playedS, ex, suggestion) {
     releaseWakeLock();
@@ -10258,8 +10354,28 @@
     return { min: preset.min, max: preset.max };
   }
 
+  // v2 (2026-10-02): a whole Kraftplan - an ordered list of exercises, each
+  // with its own range/sets/set-rest, plus a rest between exercises and a
+  // start countdown - instead of the original single exercise. The old
+  // flat fields (rangeKey/customMin/customMax/sets/restS) now act as the
+  // defaults for newly added exercises; an old saved single `exercise` is
+  // migrated into a one-item plan on load.
   const WORKOUT_REPS_KEY = "fwmc-workout-reps-builder-v1";
-  const workoutRepsPrefs = { exercise: null, rangeKey: "muskelaufbau", customMin: 8, customMax: 12, sets: 3, restS: 60 };
+  const workoutRepsPrefs = { items: [], rangeKey: "muskelaufbau", customMin: 8, customMax: 12, sets: 3, restS: 60, exerciseRestS: 90, prepS: 10 };
+  function clampInt(v, lo, hi, dflt) { return Number.isFinite(v) && v >= lo && v <= hi ? Math.round(v) : dflt; }
+  function normalizeStrengthItem(it) {
+    const out = {
+      exercise: it.exercise,
+      rangeKey: it.rangeKey === "custom" || REP_RANGE_PRESETS.some((p) => p.key === it.rangeKey) ? it.rangeKey : "muskelaufbau",
+      customMin: clampInt(it.customMin, 1, 30, 8),
+      customMax: clampInt(it.customMax, 1, 30, 12),
+      sets: clampInt(it.sets, 1, 10, 3),
+      restS: clampInt(it.restS, 15, 300, 60),
+      note: typeof it.note === "string" ? it.note : "",
+    };
+    if (out.customMax < out.customMin) out.customMax = out.customMin;
+    return out;
+  }
   function loadWorkoutRepsPrefs() {
     const saved = readJSON(WORKOUT_REPS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(workoutRepsPrefs, saved);
@@ -10267,7 +10383,16 @@
     if (!Number.isFinite(workoutRepsPrefs.customMin) || workoutRepsPrefs.customMin < 1 || workoutRepsPrefs.customMin > 30) workoutRepsPrefs.customMin = 8;
     if (!Number.isFinite(workoutRepsPrefs.customMax) || workoutRepsPrefs.customMax < workoutRepsPrefs.customMin || workoutRepsPrefs.customMax > 30) workoutRepsPrefs.customMax = 12;
     if (![2, 3, 4, 5].includes(workoutRepsPrefs.sets)) workoutRepsPrefs.sets = 3;
-    if (!Number.isFinite(workoutRepsPrefs.restS) || workoutRepsPrefs.restS < 15 || workoutRepsPrefs.restS > 180) workoutRepsPrefs.restS = 60;
+    if (!Number.isFinite(workoutRepsPrefs.restS) || workoutRepsPrefs.restS < 15 || workoutRepsPrefs.restS > 300) workoutRepsPrefs.restS = 60;
+    workoutRepsPrefs.exerciseRestS = clampInt(workoutRepsPrefs.exerciseRestS, 0, 300, 90);
+    workoutRepsPrefs.prepS = clampInt(workoutRepsPrefs.prepS, 0, 30, 10);
+    if (!Array.isArray(workoutRepsPrefs.items)) workoutRepsPrefs.items = [];
+    // Migration from the single-exercise builder.
+    if (workoutRepsPrefs.exercise && !workoutRepsPrefs.items.length) {
+      workoutRepsPrefs.items.push({ exercise: workoutRepsPrefs.exercise, rangeKey: workoutRepsPrefs.rangeKey, customMin: workoutRepsPrefs.customMin, customMax: workoutRepsPrefs.customMax, sets: workoutRepsPrefs.sets, restS: workoutRepsPrefs.restS, note: "" });
+    }
+    delete workoutRepsPrefs.exercise;
+    workoutRepsPrefs.items = workoutRepsPrefs.items.filter((it) => it && it.exercise).map(normalizeStrengthItem);
   }
   function saveWorkoutRepsPrefs() { writeJSON(WORKOUT_REPS_KEY, workoutRepsPrefs); }
   loadWorkoutRepsPrefs();
@@ -10291,23 +10416,64 @@
     return hitTopEverySet;
   }
 
+  function newStrengthItem(exerciseId) {
+    return normalizeStrengthItem({
+      exercise: exerciseId, rangeKey: workoutRepsPrefs.rangeKey, customMin: workoutRepsPrefs.customMin,
+      customMax: workoutRepsPrefs.customMax, sets: workoutRepsPrefs.sets, restS: workoutRepsPrefs.restS, note: "",
+    });
+  }
+  // Plain block shape the engine plays (explicit min/max, no preset keys).
+  function buildStrengthPlanBlock() {
+    return {
+      kind: "strength",
+      items: workoutRepsPrefs.items.map((it) => {
+        const { min, max } = repRangeFor(it);
+        return { exercise: it.exercise, rangeMin: min, rangeMax: max, sets: it.sets, restS: it.restS, note: it.note || "" };
+      }),
+      exerciseRestS: workoutRepsPrefs.exerciseRestS,
+      prepS: workoutRepsPrefs.prepS,
+    };
+  }
+  // Reverse: a stored plan item (explicit min/max) back into an editable
+  // builder item, mapping to a named preset when the numbers match one.
+  function strengthItemFromBlockItem(it) {
+    const preset = REP_RANGE_PRESETS.find((p) => p.min === it.rangeMin && p.max === it.rangeMax);
+    return normalizeStrengthItem({
+      exercise: it.exercise, rangeKey: preset ? preset.key : "custom",
+      customMin: it.rangeMin, customMax: it.rangeMax, sets: it.sets, restS: it.restS, note: it.note || "",
+    });
+  }
+  function refreshWorkoutRepsBuilder() {
+    renderWorkoutRepsExerciseGrid();
+    renderWorkoutRepsList();
+    syncWorkoutRepsUI();
+  }
+
   function renderWorkoutRepsExerciseGrid() {
     els.workoutRepsExerciseGrid.innerHTML = "";
     allWorkoutExerciseEntries().forEach(([id, ex]) => {
       const isCustom = !WORKOUT_EXERCISES[id];
+      const count = workoutRepsPrefs.items.filter((it) => it.exercise === id).length;
       const wrap = document.createElement("div");
       wrap.className = "custom-exercise-add-row";
-      const btn = document.createElement("button");
-      btn.className = "combo-add-btn";
-      setActive(btn, workoutRepsPrefs.exercise === id);
-      btn.innerHTML = `<span class="ca-icon">${workoutIconSVG(ex.icon)}</span><span class="ca-text"><span class="ca-title">${esc(ex.name)}</span></span>`;
-      btn.addEventListener("click", () => {
-        workoutRepsPrefs.exercise = id;
+      const infoBtn = document.createElement("button");
+      infoBtn.className = "combo-add-btn";
+      infoBtn.setAttribute("aria-label", `Erklärung: ${ex.name}`);
+      infoBtn.innerHTML = `<span class="ca-icon">${workoutIconSVG(ex.icon)}</span>` +
+        `<span class="ca-text"><span class="ca-title">${esc(ex.name)}</span>` +
+        (count ? `<br><span class="ca-meta">${count}× im Plan</span>` : "") + `</span>`;
+      infoBtn.addEventListener("click", () => openWorkoutExerciseInfo(ex));
+      wrap.appendChild(infoBtn);
+      const addBtn = document.createElement("button");
+      addBtn.className = "ca-plus-btn";
+      addBtn.setAttribute("aria-label", `${ex.name} zum Kraftplan hinzufügen`);
+      addBtn.innerHTML = `<span class="ca-plus">+</span>`;
+      addBtn.addEventListener("click", () => {
+        workoutRepsPrefs.items.push(newStrengthItem(id));
         saveWorkoutRepsPrefs();
-        renderWorkoutRepsExerciseGrid();
-        syncWorkoutRepsUI();
+        refreshWorkoutRepsBuilder();
       });
-      wrap.appendChild(btn);
+      wrap.appendChild(addBtn);
       if (isCustom) {
         const rm = document.createElement("button");
         rm.className = "combo-block-remove";
@@ -10316,15 +10482,107 @@
         rm.addEventListener("click", () => {
           customWorkoutExercises = customWorkoutExercises.filter((c) => c.id !== id);
           saveCustomWorkoutExercises(customWorkoutExercises);
-          if (workoutRepsPrefs.exercise === id) { workoutRepsPrefs.exercise = null; saveWorkoutRepsPrefs(); }
-          renderWorkoutRepsExerciseGrid();
-          syncWorkoutRepsUI();
+          workoutRepsPrefs.items = workoutRepsPrefs.items.filter((it) => it.exercise !== id);
+          saveWorkoutRepsPrefs();
+          refreshWorkoutRepsBuilder();
         });
         wrap.appendChild(rm);
       }
       els.workoutRepsExerciseGrid.appendChild(wrap);
     });
   }
+
+  function strengthStepper(i, field, label, value) {
+    return `<div class="cardio-interval-phase-row strength-field-row"><span>${label}</span>` +
+      `<button class="circuit-step" data-si="${i}" data-sfield="${field}" data-dir="-1" aria-label="${label} weniger">&minus;</button>` +
+      `<span class="circuit-duration-value" data-svalue="${field}">${value}</span>` +
+      `<button class="circuit-step" data-si="${i}" data-sfield="${field}" data-dir="1" aria-label="${label} mehr">+</button></div>`;
+  }
+  const STRENGTH_FIELD_LIMITS = {
+    sets: { lo: 1, hi: 10, step: 1 },
+    restS: { lo: 15, hi: 300, step: 15 },
+    customMin: { lo: 1, hi: 30, step: 1 },
+    customMax: { lo: 1, hi: 30, step: 1 },
+  };
+  function renderWorkoutRepsList() {
+    const items = workoutRepsPrefs.items;
+    els.workoutRepsCount.textContent = items.length ? `${items.length} Übung${items.length === 1 ? "" : "en"}` : "";
+    els.workoutRepsEmptyHint.hidden = items.length > 0;
+    els.workoutRepsSaveBtn.hidden = items.length === 0 || !els.workoutRepsSaveForm.hidden;
+    els.workoutRepsList.innerHTML = "";
+    items.forEach((item, i) => {
+      const ex = findWorkoutExercise(item.exercise);
+      const { min, max } = repRangeFor(item);
+      const row = document.createElement("div");
+      row.className = "circuit-item-row strength-item-row";
+      const rangeOptions = REP_RANGE_PRESETS.map((p) => `<option value="${p.key}" ${item.rangeKey === p.key ? "selected" : ""}>${p.label} (${p.min}–${p.max})</option>`).join("") +
+        `<option value="custom" ${item.rangeKey === "custom" ? "selected" : ""}>Eigener Bereich</option>`;
+      row.innerHTML =
+        `<div class="circuit-item-main">` +
+        `<span class="chapter-main" style="cursor:default"><span class="num">${i + 1}</span><span class="ca-icon">${workoutIconSVG(ex.icon)}</span><span class="info"><strong>${esc(ex.name)}</strong><span>${item.sets}×${min}–${max} · ${fmtSeconds(item.restS)} Satzpause</span></span></span>` +
+        (i > 0 ? `<button class="circuit-step strength-move" data-move="${i}" title="Nach oben" aria-label="Nach oben">&uarr;</button>` : "") +
+        `<button class="combo-block-remove" data-i="${i}" title="Entfernen">&#10005;</button>` +
+        `</div>` +
+        `<div class="cardio-interval-fields">` +
+        `<div class="cardio-interval-phase-row strength-field-row"><span>Bereich</span><select class="strength-range-select" data-si="${i}" aria-label="Wiederholungsbereich">${rangeOptions}</select></div>` +
+        (item.rangeKey === "custom" ? strengthStepper(i, "customMin", "Min. Wdh.", item.customMin) + strengthStepper(i, "customMax", "Max. Wdh.", item.customMax) : "") +
+        strengthStepper(i, "sets", "Sätze", item.sets) +
+        strengthStepper(i, "restS", "Satzpause", `${item.restS}s`) +
+        `</div>` +
+        `<input type="text" class="circuit-item-note" data-i="${i}" placeholder="Eigene Notiz (optional, z. B. Gewicht)" maxlength="80" value="${esc(item.note || "")}">`;
+      els.workoutRepsList.appendChild(row);
+    });
+    els.workoutRepsList.querySelectorAll("[data-sfield]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const item = workoutRepsPrefs.items[Number(btn.dataset.si)];
+        const f = btn.dataset.sfield;
+        const lim = STRENGTH_FIELD_LIMITS[f];
+        item[f] = Math.max(lim.lo, Math.min(lim.hi, item[f] + Number(btn.dataset.dir) * lim.step));
+        if (f === "customMin" && item.customMax < item.customMin) item.customMax = item.customMin;
+        if (f === "customMax" && item.customMin > item.customMax) item.customMin = item.customMax;
+        saveWorkoutRepsPrefs();
+        renderWorkoutRepsList();
+        syncWorkoutRepsUI();
+      });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-range-select").forEach((sel) => {
+      sel.addEventListener("change", () => {
+        const item = workoutRepsPrefs.items[Number(sel.dataset.si)];
+        if (sel.value === "custom" && item.rangeKey !== "custom") {
+          // Start "Eigener Bereich" from whatever range was showing.
+          const { min, max } = repRangeFor(item);
+          item.customMin = min; item.customMax = max;
+        }
+        item.rangeKey = sel.value;
+        saveWorkoutRepsPrefs();
+        renderWorkoutRepsList();
+        syncWorkoutRepsUI();
+      });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-move").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.dataset.move);
+        const list = workoutRepsPrefs.items;
+        [list[i - 1], list[i]] = [list[i], list[i - 1]];
+        saveWorkoutRepsPrefs();
+        renderWorkoutRepsList();
+      });
+    });
+    els.workoutRepsList.querySelectorAll(".combo-block-remove").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        workoutRepsPrefs.items.splice(Number(btn.dataset.i), 1);
+        saveWorkoutRepsPrefs();
+        refreshWorkoutRepsBuilder();
+      });
+    });
+    els.workoutRepsList.querySelectorAll(".circuit-item-note").forEach((input) => {
+      input.addEventListener("change", () => {
+        workoutRepsPrefs.items[Number(input.dataset.i)].note = input.value.trim();
+        saveWorkoutRepsPrefs();
+      });
+    });
+  }
+
   function openWorkoutRepsCustomForm() {
     els.workoutRepsCustomForm.hidden = false;
     els.workoutRepsCustomBtn.hidden = true;
@@ -10345,13 +10603,13 @@
     const id = `custom-${Date.now()}`;
     customWorkoutExercises.push({ id, name, note, icon: "custom" });
     saveCustomWorkoutExercises(customWorkoutExercises);
-    workoutRepsPrefs.exercise = id;
+    workoutRepsPrefs.items.push(newStrengthItem(id));
     saveWorkoutRepsPrefs();
     closeWorkoutRepsCustomForm();
-    renderWorkoutRepsExerciseGrid();
-    syncWorkoutRepsUI();
+    refreshWorkoutRepsBuilder();
   });
 
+  // Defaults for newly added exercises (Feineinstellungen).
   document.querySelectorAll("#workoutRepsRangeRow [data-reps-range]").forEach((el) => {
     el.addEventListener("click", () => {
       workoutRepsPrefs.rangeKey = el.dataset.repsRange;
@@ -10381,6 +10639,16 @@
     saveWorkoutRepsPrefs();
     syncWorkoutRepsUI();
   });
+  els.workoutRepsExerciseRestSlider.addEventListener("input", () => {
+    workoutRepsPrefs.exerciseRestS = Number(els.workoutRepsExerciseRestSlider.value);
+    saveWorkoutRepsPrefs();
+    syncWorkoutRepsUI();
+  });
+  els.workoutRepsPrepSlider.addEventListener("input", () => {
+    workoutRepsPrefs.prepS = Number(els.workoutRepsPrepSlider.value);
+    saveWorkoutRepsPrefs();
+    syncWorkoutRepsUI();
+  });
 
   function syncWorkoutRepsUI() {
     document.querySelectorAll("#workoutRepsRangeRow [data-reps-range]").forEach((el) => setActive(el, el.dataset.repsRange === workoutRepsPrefs.rangeKey));
@@ -10399,14 +10667,22 @@
     document.querySelectorAll("#workoutRepsSetsRow [data-reps-sets]").forEach((el) => setActive(el, Number(el.dataset.repsSets) === workoutRepsPrefs.sets));
     els.workoutRepsRestSlider.value = workoutRepsPrefs.restS;
     els.workoutRepsRestValue.textContent = fmtSeconds(workoutRepsPrefs.restS);
-    const hasExercise = !!workoutRepsPrefs.exercise;
-    els.workoutRepsStartBtn.disabled = !hasExercise;
-    els.workoutRepsStartBtn.textContent = hasExercise ? "Training starten" : "Bitte eine Übung wählen";
-    const progress = hasExercise ? loadWorkoutRepsProgress()[workoutRepsPrefs.exercise] : null;
-    if (progress && progress.suggestIncrease) {
-      const ex = findWorkoutExercise(workoutRepsPrefs.exercise);
+    els.workoutRepsExerciseRestSlider.value = workoutRepsPrefs.exerciseRestS;
+    els.workoutRepsExerciseRestValue.textContent = workoutRepsPrefs.exerciseRestS > 0 ? fmtSeconds(workoutRepsPrefs.exerciseRestS) : "Keine";
+    els.workoutRepsPrepSlider.value = workoutRepsPrefs.prepS;
+    els.workoutRepsPrepValue.textContent = workoutRepsPrefs.prepS > 0 ? `${workoutRepsPrefs.prepS} s` : "Aus";
+    const hasItems = workoutRepsPrefs.items.length > 0;
+    els.workoutRepsStartBtn.disabled = !hasItems;
+    els.workoutRepsStartBtn.textContent = hasItems
+      ? (comboWorkoutRepsCaptureOriginal ? "Baustein übernehmen" : "Training starten")
+      : "Mindestens eine Übung hinzufügen";
+    const progress = loadWorkoutRepsProgress();
+    const nudge = [...new Set(workoutRepsPrefs.items.map((it) => it.exercise))]
+      .filter((id) => progress[id] && progress[id].suggestIncrease)
+      .map((id) => findWorkoutExercise(id).name);
+    if (nudge.length) {
       els.workoutRepsSuggestionHint.hidden = false;
-      els.workoutRepsSuggestionHint.textContent = `Letztes Mal hast du bei ${ex.name} in jedem Satz ${progress.max}+ Wiederholungen geschafft – heute schwerer probieren (mehr Gewicht, schwerere Variante, oder die Übung tauschen)?`;
+      els.workoutRepsSuggestionHint.textContent = `Letztes Mal hast du bei ${nudge.join(", ")} in jedem Satz das obere Ende deines Bereichs geschafft – heute schwerer probieren (mehr Gewicht, schwerere Variante, oder die Übung tauschen)?`;
     } else {
       els.workoutRepsSuggestionHint.hidden = true;
     }
@@ -10414,57 +10690,55 @@
 
   function openWorkoutRepsReady() {
     closeWorkoutRepsCustomForm();
-    renderWorkoutRepsExerciseGrid();
-    syncWorkoutRepsUI();
+    renderWorkoutRepsSaved();
+    refreshWorkoutRepsBuilder();
     showScreen("workoutRepsReady");
   }
   els.workoutRepsStartCard.addEventListener("click", openWorkoutRepsReady);
 
   // ---- Kombi-Baukasten capture, same pattern as the circuit builder's own
   // (openWorkoutComboCapture) - reopen this exact ready screen instead of a
-  // second settings UI. A combo "workout" block with kind:"reps" already
-  // plays back with zero further engine changes (runWorkoutBlock()/
-  // workoutBlockLabel()/Meta()/Seconds() all dispatch on block.kind, and
-  // the range-mode reps view built above only checks block.rangeMin).
+  // second settings UI. The whole Kraftplan becomes ONE combo block
+  // (kind:"strength"), exactly like a whole Zirkel is one block; it plays
+  // back through runWorkoutBlock() like any other workout block. An older
+  // single-exercise range-mode "reps" combo block reopens as a one-item
+  // plan and is saved back as a "strength" block.
   let comboWorkoutRepsCaptureOriginal = null;
   let comboWorkoutRepsEditIndex = null;
   function openWorkoutRepsComboCapture(existingBlock, editIndex) {
-    comboWorkoutRepsCaptureOriginal = { ...workoutRepsPrefs };
-    if (existingBlock) {
-      workoutRepsPrefs.exercise = existingBlock.exercise;
-      // The combo block only ever stores an explicit min/max (see
-      // commitWorkoutRepsComboCapture below), never one of the named
-      // presets - re-editing always lands on "Eigener Bereich" with those
-      // exact numbers prefilled, rather than guessing which preset (if
-      // any) they happened to match.
-      workoutRepsPrefs.rangeKey = "custom";
-      workoutRepsPrefs.customMin = existingBlock.rangeMin;
-      workoutRepsPrefs.customMax = existingBlock.rangeMax;
-      workoutRepsPrefs.sets = existingBlock.sets;
-      workoutRepsPrefs.restS = existingBlock.restS;
+    comboWorkoutRepsCaptureOriginal = JSON.parse(JSON.stringify(workoutRepsPrefs));
+    if (existingBlock && existingBlock.kind === "strength") {
+      workoutRepsPrefs.items = existingBlock.items.map(strengthItemFromBlockItem);
+      workoutRepsPrefs.exerciseRestS = existingBlock.exerciseRestS ?? workoutRepsPrefs.exerciseRestS;
+      workoutRepsPrefs.prepS = existingBlock.prepS ?? workoutRepsPrefs.prepS;
+    } else if (existingBlock) {
+      workoutRepsPrefs.items = [strengthItemFromBlockItem({
+        exercise: existingBlock.exercise, rangeMin: existingBlock.rangeMin, rangeMax: existingBlock.rangeMax,
+        sets: existingBlock.sets, restS: existingBlock.restS, note: existingBlock.note,
+      })];
+      workoutRepsPrefs.prepS = 0;
+    } else {
+      workoutRepsPrefs.items = [];
     }
     comboWorkoutRepsEditIndex = editIndex ?? null;
     els.workoutRepsReadyTitle.textContent = "Baustein: Kraft-/Wiederholungstraining";
-    els.workoutRepsReadyHint.textContent = "Stelle Übung, Wiederholungsbereich, Sätze und Pause für diesen Kombi-Baustein ein.";
+    els.workoutRepsReadyHint.textContent = "Stell den Kraftplan für diesen Kombi-Baustein zusammen – mehrere Übungen, jede mit eigenem Bereich, Sätzen und Pausen.";
     openWorkoutRepsReady();
   }
   function exitWorkoutRepsComboCapture() {
     if (comboWorkoutRepsCaptureOriginal) {
+      Object.keys(workoutRepsPrefs).forEach((k) => delete workoutRepsPrefs[k]);
       Object.assign(workoutRepsPrefs, comboWorkoutRepsCaptureOriginal);
       saveWorkoutRepsPrefs();
       comboWorkoutRepsCaptureOriginal = null;
     }
     comboWorkoutRepsEditIndex = null;
     els.workoutRepsReadyTitle.textContent = "Kraft-/Wiederholungstraining";
-    els.workoutRepsReadyHint.textContent = "Wähle eine Übung und einen Wiederholungsbereich – die App merkt sich deine letzten Sätze und schlägt vor, wann du steigern kannst.";
+    els.workoutRepsReadyHint.textContent = "Stell dir deinen Kraftplan zusammen: tippe Übungen in der Reihenfolge an, in der du sie machen willst – jede mit eigenem Wiederholungsbereich, eigenen Sätzen und eigener Satzpause.";
   }
   function commitWorkoutRepsComboCapture() {
-    if (!workoutRepsPrefs.exercise) return;
-    const { min, max } = repRangeFor(workoutRepsPrefs);
-    const block = {
-      domain: "workout", kind: "reps", exercise: workoutRepsPrefs.exercise,
-      sets: workoutRepsPrefs.sets, reps: max, rangeMin: min, rangeMax: max, restS: workoutRepsPrefs.restS,
-    };
+    if (!workoutRepsPrefs.items.length) return;
+    const block = { domain: "workout", ...buildStrengthPlanBlock() };
     if (comboWorkoutRepsEditIndex != null) comboDraftBlocks[comboWorkoutRepsEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitWorkoutRepsComboCapture();
@@ -10477,22 +10751,47 @@
   });
 
   function startWorkoutRepsNow() {
-    if (!workoutRepsPrefs.exercise) return;
-    const { min, max } = repRangeFor(workoutRepsPrefs);
+    if (!workoutRepsPrefs.items.length) return;
     workoutStandaloneReturnScreen = "workoutRepsReady";
-    startStandaloneWorkoutBlock({
-      kind: "reps",
-      exercise: workoutRepsPrefs.exercise,
-      sets: workoutRepsPrefs.sets,
-      reps: max,
-      rangeMin: min,
-      rangeMax: max,
-      restS: workoutRepsPrefs.restS,
-    });
+    startStandaloneWorkoutBlock(buildStrengthPlanBlock());
   }
   els.workoutRepsStartBtn.addEventListener("click", () => {
     if (comboWorkoutRepsCaptureOriginal) { commitWorkoutRepsComboCapture(); return; }
     startWorkoutRepsNow();
+  });
+
+  // ---- Saved Kraftpläne: same "save under a name, tap to reuse" pattern
+  // as the saved Zirkel. ----
+  const WORKOUT_REPS_SAVED_KEY = "fwmc-workout-reps-saved-v1";
+  const workoutRepsSavedStore = makePresetStore(WORKOUT_REPS_SAVED_KEY);
+  function renderWorkoutRepsSaved() {
+    renderPresetList(workoutRepsSavedStore, els.workoutRepsSavedList, els.workoutRepsSavedGroup, null,
+      (e) => `${e.items.length} Übung${e.items.length === 1 ? "" : "en"} · ${e.items.reduce((t, it) => t + it.sets, 0)} Sätze`,
+      (entry) => {
+        workoutRepsPrefs.items = entry.items.map(normalizeStrengthItem);
+        workoutRepsPrefs.exerciseRestS = clampInt(entry.exerciseRestS, 0, 300, workoutRepsPrefs.exerciseRestS);
+        workoutRepsPrefs.prepS = clampInt(entry.prepS, 0, 30, workoutRepsPrefs.prepS);
+        saveWorkoutRepsPrefs();
+        // While capturing a Kombi-Baustein, loading a saved plan only fills
+        // the draft for review, never starts a session.
+        if (comboWorkoutRepsCaptureOriginal) { refreshWorkoutRepsBuilder(); return; }
+        startWorkoutRepsNow();
+      });
+  }
+  wirePresetSaveForm({
+    saveBtn: els.workoutRepsSaveBtn, form: els.workoutRepsSaveForm, nameInput: els.workoutRepsSaveNameInput,
+    cancelBtn: els.workoutRepsSaveCancelBtn, confirmBtn: els.workoutRepsSaveConfirmBtn,
+    defaultName: () => `Eigener Kraftplan ${new Date().toLocaleDateString("de-DE")}`,
+    onSave: (name) => {
+      const list = workoutRepsSavedStore.load();
+      list.push({
+        id: String(Date.now()), name,
+        items: workoutRepsPrefs.items.map((it) => ({ ...it })),
+        exerciseRestS: workoutRepsPrefs.exerciseRestS, prepS: workoutRepsPrefs.prepS,
+      });
+      workoutRepsSavedStore.save(list);
+      renderWorkoutRepsSaved();
+    },
   });
 
   // ==== Cardio: self-built sequence of physical activities (Joggen, Rad
@@ -12384,7 +12683,7 @@
       // rangeMin - no settings screen exists to reopen for those. Both
       // "circuit" and range-mode "reps" (rangeMin set - always true for
       // one built via openWorkoutRepsComboCapture) are edit-in-place.
-      const workoutNotEditable = block.domain === "workout" && block.kind !== "circuit" && block.rangeMin == null;
+      const workoutNotEditable = block.domain === "workout" && block.kind !== "circuit" && block.kind !== "strength" && block.rangeMin == null;
       const editOpener = workoutNotEditable ? null : COMBO_EDIT_OPENERS[block.domain];
       const row = document.createElement("div");
       row.className = "chapter-row";
