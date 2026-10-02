@@ -4510,7 +4510,7 @@
     // is always type "exercise" here and its exIdx is the plain block index
     // the exercise-count label/progress dots are keyed on.
     const exOrd = program ? program.steps[program.chapterIndex].exIdx : 0;
-    els.timeEl.textContent = cardioGuestActive ? `Zusatzübung · ${remaining}` : program ? `Übung ${exOrd + 1}/${program.def.blocks.length} · ${remaining}` : remaining;
+    els.timeEl.textContent = cardioGuestActive ? `Zusatzaufgabe · ${remaining}` : program ? `Übung ${exOrd + 1}/${program.def.blocks.length} · ${remaining}` : remaining;
     setProgress(program ? exOrd : 0, elapsed / session.total);
     raf = requestAnimationFrame(tick);
   }
@@ -5921,7 +5921,7 @@
       comboBreathCaptureOriginal = null;
     }
     comboBreathEditIndex = null;
-    els.breathStartBtn.textContent = "Atemtraining starten";
+    els.breathStartBtn.textContent = "Training starten";
   }
   function commitBreathComboCapture() {
     const block = { domain: "breath", pattern: breathPatternKey, durationMin: breathPrefs.durationMin, phases: { ...breathWorking }, sound: breathPrefs.sound };
@@ -6198,7 +6198,7 @@
   function syncWimhofStartBtn() {
     const ok = els.wimhofAckCheck.checked;
     els.wimhofStartBtn.disabled = !ok;
-    els.wimhofStartBtn.textContent = ok ? (comboWimhofCaptureOriginal ? "Baustein übernehmen" : "Kraftvolle Atmung starten") : "Bitte oben bestätigen";
+    els.wimhofStartBtn.textContent = ok ? (comboWimhofCaptureOriginal ? "Baustein übernehmen" : "Training starten") : "Bitte oben bestätigen";
   }
   els.wimhofAckCheck.addEventListener("change", syncWimhofStartBtn);
 
@@ -11940,7 +11940,7 @@
   function syncCardioUI() {
     els.cardioStartBtn.disabled = cardioPrefs.items.length === 0;
     els.cardioStartBtn.textContent = cardioPrefs.items.length
-      ? (comboCardioCaptureOriginal ? "Baustein übernehmen" : "Cardio starten")
+      ? (comboCardioCaptureOriginal ? "Baustein übernehmen" : "Training starten")
       : "Mindestens eine Aktivität hinzufügen";
   }
 

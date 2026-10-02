@@ -52,7 +52,7 @@ async def main():
         await pg.click("#comboBackToHome"); await pg.wait_for_timeout(200)
         await pg.locator("#patternGrid .fc-title", has_text="Box-Atmung").click(); await pg.wait_for_timeout(200)
         print("standalone open shows plain pattern title:", "Baustein:" not in await pg.inner_text("#breathReadyTitle"))
-        print("standalone open shows normal start label:", "Atemtraining starten" in await pg.inner_text("#breathStartBtn"))
+        print("standalone open shows normal start label:", "Training starten" in await pg.inner_text("#breathStartBtn"))
         print("standalone duration back to the original 5 Min (not the capture's 10):", "5 Min" in await pg.inner_text("#breathDurationValue"))
         await pg.click("#breathBackToHome"); await pg.wait_for_timeout(200)
 
@@ -75,7 +75,7 @@ async def main():
         await pg.locator("#patternGrid .fc-title", has_text="Kraftvolle Atmung").click(); await pg.wait_for_timeout(200)
         print("standalone Wim Hof ack unchecked again:", not await pg.is_checked("#wimhofAckCheck"))
         await pg.click("#wimhofAckCheck"); await pg.wait_for_timeout(100)
-        print("standalone start label normal (not 'Baustein übernehmen'):", "Kraftvolle Atmung starten" in await pg.inner_text("#wimhofStartBtn"))
+        print("standalone start label normal (not 'Baustein übernehmen'):", "Training starten" in await pg.inner_text("#wimhofStartBtn"))
 
         print("FINAL ERRORS:", errors)
         await b.close()

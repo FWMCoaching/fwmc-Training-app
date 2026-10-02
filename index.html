@@ -394,7 +394,7 @@
   <h1 class="page-title" id="movementProgramTitle">&nbsp;</h1>
   <div class="program-meta" id="movementProgramMeta"></div>
   <p class="page-sub" id="movementProgramDesc"></p>
-  <button class="start-btn" id="movementProgramStartBtn">Programm starten</button>
+  <button class="start-btn" id="movementProgramStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="workoutHome" hidden>
@@ -560,7 +560,7 @@
   <div class="program-meta" id="cardioProgramMeta"></div>
   <p class="page-sub" id="cardioProgramDesc"></p>
   <div class="chapter-list" id="cardioProgramChapterList"></div>
-  <button class="start-btn" id="cardioProgramStartBtn">Cardio starten</button>
+  <button class="start-btn" id="cardioProgramStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="cardioReady" hidden>
@@ -649,16 +649,16 @@
     <summary>Zusatzaufgabe w&auml;hrend Cardio</summary>
     <div class="advanced-body">
       <div class="group">
-        <label class="checkbox-row"><input type="checkbox" id="cardioAddonEnableToggle"> Zusatz&uuml;bungen w&auml;hrend Cardio aktivieren</label>
+        <label class="checkbox-row"><input type="checkbox" id="cardioAddonEnableToggle"> Zusatzaufgaben w&auml;hrend Cardio aktivieren</label>
         <div class="group-help">Ein Ein/Aus-Schalter wie bei der Zusatzaufgabe sonst auch &ndash; gilt f&uuml;r jede Cardio-Einheit, egal ob selbst gebaut oder von deinem Coach zugewiesen.</div>
       </div>
       <div id="cardioAddonBody" hidden>
         <div class="group">
-          <div class="group-label">Welche Zusatz&uuml;bungen d&uuml;rfen aufblitzen? <span class="group-count">bei mehreren wird zuf&auml;llig gew&auml;hlt</span></div>
+          <div class="group-label">Welche Zusatzaufgaben d&uuml;rfen aufblitzen? <span class="group-count">bei mehreren wird zuf&auml;llig gew&auml;hlt</span></div>
           <div id="cardioAddonPoolGrid"></div>
         </div>
         <div class="group">
-          <div class="group-label">Abstand zwischen Zusatz&uuml;bungen</div>
+          <div class="group-label">Abstand zwischen Zusatzaufgaben</div>
           <div class="slider-row">
             <span>min.</span>
             <input type="range" id="cardioAddonIntervalMinSlider" min="20" max="600" step="10" aria-label="Minimaler Abstand">
@@ -672,7 +672,7 @@
         </div>
         <div class="group">
           <label class="checkbox-row"><input type="checkbox" id="cardioAddonWindowToggle"> Nur in einem bestimmten Zeitfenster</label>
-          <div class="group-help">Ohne Zeitfenster kann eine Zusatz&uuml;bung jederzeit w&auml;hrend der ganzen Cardio-Einheit aufblitzen.</div>
+          <div class="group-help">Ohne Zeitfenster kann eine Zusatzaufgabe jederzeit w&auml;hrend der ganzen Cardio-Einheit aufblitzen.</div>
           <div id="cardioAddonWindowBody" hidden>
             <div class="slider-row">
               <span>ab</span>
@@ -715,17 +715,17 @@
   <div class="player-bar" id="cardioPlayerBar">
     <button id="cardioBackBtn">&#10005; Beenden</button>
     <button id="cardioPauseBtn">Pause</button>
-    <button id="cardioAddonTriggerBtn" hidden>+ Zusatzimpuls</button>
+    <button id="cardioAddonTriggerBtn" hidden>+ Zusatzaufgabe</button>
   </div>
   <div class="pause-overlay" id="cardioAddonPicker" hidden>
     <div class="pause-panel">
-      <h3>Zusatzimpuls jetzt w&auml;hlen</h3>
+      <h3>Zusatzaufgabe jetzt w&auml;hlen</h3>
       <div class="group">
         <div class="group-label">&Uuml;bung</div>
         <div class="choice-row two" id="cardioAddonPickerTypeRow"></div>
       </div>
       <div id="cardioAddonPickerDetail"></div>
-      <button class="start-btn" id="cardioAddonPickerStartBtn">Jetzt starten</button>
+      <button class="start-btn" id="cardioAddonPickerStartBtn">Training starten</button>
       <button class="pause-skip" id="cardioAddonPickerCancelBtn">Abbrechen</button>
     </div>
   </div>
@@ -2982,7 +2982,7 @@
   <video class="intro-video" id="introVideo" hidden controls playsinline></video>
   <div class="chapter-list" id="chapterList"></div>
   <p class="program-hint">Das Programm l&auml;uft automatisch durch alle &Uuml;bungen, mit kurzer Pause dazwischen. Tippe auf eine &Uuml;bung, um direkt dort einzusteigen.</p>
-  <button class="start-btn" id="programStartBtn">Programm starten</button>
+  <button class="start-btn" id="programStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="ready" hidden>
@@ -3318,7 +3318,7 @@
     </div>
   </div>
 
-  <button class="start-btn" id="breathStartBtn">Atemtraining starten</button>
+  <button class="start-btn" id="breathStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="breathBundleOverview" hidden>
@@ -3339,7 +3339,7 @@
   <p class="page-sub" id="breathProgramDesc"></p>
   <div class="chapter-list" id="breathChapterList"></div>
   <p class="program-hint">Das Programm l&auml;uft automatisch durch alle &Uuml;bungen, mit kurzem &Uuml;bergang dazwischen. Tippe auf eine &Uuml;bung, um direkt dort einzusteigen.</p>
-  <button class="start-btn" id="breathProgramStartBtn">Programm starten</button>
+  <button class="start-btn" id="breathProgramStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="movementReady" hidden>
@@ -3462,7 +3462,7 @@
   <p class="page-sub" id="workoutProgramDesc"></p>
   <div class="chapter-list" id="workoutChapterList"></div>
   <p class="program-hint">Der Plan l&auml;uft der Reihe nach durch, mit kurzem &Uuml;bergang dazwischen. Tippe auf eine &Uuml;bung, um direkt dort einzusteigen.</p>
-  <button class="start-btn" id="workoutProgramStartBtn">Plan starten</button>
+  <button class="start-btn" id="workoutProgramStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="workoutTabataReady" hidden>
@@ -5598,7 +5598,7 @@
     </div>
   </details>
 
-  <button class="start-btn" id="comboStartBtn">Programm starten</button>
+  <button class="start-btn" id="comboStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="comboBundleOverview" hidden>
