@@ -10,31 +10,58 @@
 // D1 schema (database: fwmc-training-codes):
 //   programs(code TEXT PRIMARY KEY, active INTEGER, config TEXT, created_at TEXT, updated_at TEXT)
 //   client_history(id INTEGER PRIMARY KEY, client_code TEXT, program_code TEXT, note TEXT, created_at TEXT)
+//
+// Hardening (Fabian, 2026-10-02 - nothing changes for clients):
+// - Admin routes answer CORS only for the dashboard's own origin
+//   (ADMIN_ORIGINS); the public lookup stays open to any origin.
+// - The admin token is compared in constant time.
+// - GET /program is rate limited per IP through the LOOKUP_LIMITER binding
+//   (wrangler.toml, [[ratelimits]]): 30 lookups per minute is far above what
+//   a client typing a code ever needs, but makes guessing codes impractical.
+//   If the binding is missing (old wrangler, local dev) the lookup still works.
+
+const ADMIN_ORIGINS = [
+  "https://fwmcoaching.github.io",
+  "http://localhost:8845",
+];
 
 export default {
   async fetch(request, env) {
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders() });
-    }
-
     const url = new URL(request.url);
+    const isAdmin = url.pathname.startsWith("/admin/");
+    const origin = request.headers.get("Origin") || "";
+    const cors = isAdmin ? adminCorsHeaders(origin) : corsHeaders();
 
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: cors });
+    }
+    // A browser on a foreign site may not use the admin API at all.
+    if (isAdmin && origin && !ADMIN_ORIGINS.includes(origin)) {
+      return json({ error: "forbidden_origin" }, 403, cors);
+    }
+
+    let res;
     if (url.pathname === "/program") {
-      return handleProgramLookup(request, env);
+      res = await handleProgramLookup(request, env);
+    } else if (url.pathname === "/admin/programs") {
+      res = await withAuth(request, env, () => handleAdminPrograms(request, env));
+    } else if (url.pathname === "/admin/program") {
+      res = await withAuth(request, env, () => handleAdminProgramUpsert(request, env));
+    } else if (url.pathname === "/admin/client-history") {
+      res = request.method === "POST"
+        ? await withAuth(request, env, () => handleClientHistoryCreate(request, env))
+        : await withAuth(request, env, () => handleClientHistoryList(request, env));
+    } else {
+      res = json({ error: "not_found" }, 404);
     }
-    if (url.pathname === "/admin/programs") {
-      return withAuth(request, env, () => handleAdminPrograms(request, env));
+    // Admin responses carry the narrowed CORS headers instead of "*".
+    if (isAdmin) {
+      const headers = new Headers(res.headers);
+      headers.delete("Access-Control-Allow-Origin");
+      for (const [k, v] of Object.entries(cors)) headers.set(k, v);
+      res = new Response(res.body, { status: res.status, headers });
     }
-    if (url.pathname === "/admin/program") {
-      return withAuth(request, env, () => handleAdminProgramUpsert(request, env));
-    }
-    if (url.pathname === "/admin/client-history") {
-      return request.method === "POST"
-        ? withAuth(request, env, () => handleClientHistoryCreate(request, env))
-        : withAuth(request, env, () => handleClientHistoryList(request, env));
-    }
-
-    return json({ error: "not_found" }, 404);
+    return res;
   },
 };
 
@@ -44,6 +71,13 @@ async function handleProgramLookup(request, env) {
   const url = new URL(request.url);
   const code = (url.searchParams.get("code") || "").trim().toLowerCase();
   if (!code) return json({ error: "missing_code" }, 400);
+  if (code.length > 64) return json({ error: "not_found" }, 404);
+
+  if (env.LOOKUP_LIMITER) {
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const { success } = await env.LOOKUP_LIMITER.limit({ key: ip });
+    if (!success) return json({ error: "rate_limited" }, 429, { ...corsHeaders(), "Retry-After": "60" });
+  }
 
   const row = await env.DB.prepare("SELECT active, config FROM programs WHERE code = ?").bind(code).first();
   if (!row || row.active !== 1) return json({ error: "not_found" }, 404);
@@ -55,7 +89,7 @@ async function handleProgramLookup(request, env) {
 async function withAuth(request, env, handler) {
   const header = request.headers.get("Authorization") || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : "";
-  if (!env.ADMIN_TOKEN || !token || token !== env.ADMIN_TOKEN) {
+  if (!env.ADMIN_TOKEN || !token || !timingSafeEqual(token, env.ADMIN_TOKEN)) {
     return json({ error: "unauthorized" }, 401);
   }
   return handler();
@@ -147,9 +181,31 @@ function corsHeaders() {
   };
 }
 
-function json(data, status) {
+function adminCorsHeaders(origin) {
+  const headers = {
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Vary": "Origin",
+  };
+  if (ADMIN_ORIGINS.includes(origin)) headers["Access-Control-Allow-Origin"] = origin;
+  return headers;
+}
+
+// Constant-time string compare, so response timing never hints at how many
+// leading characters of a guessed token were right.
+function timingSafeEqual(a, b) {
+  const enc = new TextEncoder();
+  const x = enc.encode(String(a));
+  const y = enc.encode(String(b));
+  let diff = x.length ^ y.length;
+  const len = Math.max(x.length, y.length);
+  for (let i = 0; i < len; i++) diff |= (x[i] || 0) ^ (y[i] || 0);
+  return diff === 0;
+}
+
+function json(data, status, headers) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json; charset=utf-8", ...corsHeaders() },
+    headers: { "Content-Type": "application/json; charset=utf-8", ...(headers || corsHeaders()) },
   });
 }

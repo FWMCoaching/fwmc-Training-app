@@ -1761,6 +1761,7 @@
     flashFieldRow: $("flashFieldRow"), flashAllBtn: $("flashAllBtn"), flashFieldHint: $("flashFieldHint"), flashZonesBtn: $("flashZonesBtn"), flashZoneGrid: $("flashZoneGrid"),
     flashDifficultyRow: $("flashDifficultyRow"), flashDiffCustom: $("flashDiffCustom"), flashErrorRow: $("flashErrorRow"),
     flashConstantGroup: $("flashConstantGroup"), flashConstantSlider: $("flashConstantSlider"), flashConstantValue: $("flashConstantValue"),
+    flashRoundsSlider: $("flashRoundsSlider"), flashRoundsValue: $("flashRoundsValue"),
     flashStartGroup: $("flashStartGroup"), flashStartSlider: $("flashStartSlider"), flashStartValue: $("flashStartValue"),
     flashRepsGroup: $("flashRepsGroup"), flashRepsSlider: $("flashRepsSlider"), flashRepsValue: $("flashRepsValue"),
     flashAdvanced: $("flashAdvanced"), flashStimulusSlider: $("flashStimulusSlider"), flashStimulusValue: $("flashStimulusValue"),
@@ -2071,6 +2072,16 @@
   function loadHistory() {
     const h = readJSON(HISTORY_KEY, []);
     return Array.isArray(h) ? h : [];
+  }
+  // A done panel shows either "geschafft" (check mark + its own heading) or
+  // "beendet" when the client skipped past the end (Fabian, 2026-10-02:
+  // skipping to the end counts as aborted, not completed).
+  function setDonePanelAborted(panel, aborted, abortedTitle) {
+    const check = panel.querySelector(".done-check");
+    const h = panel.querySelector("h2");
+    if (h && h.dataset.doneTitle == null) h.dataset.doneTitle = h.textContent;
+    if (check) check.hidden = !!aborted;
+    if (h) h.textContent = aborted ? abortedTitle : h.dataset.doneTitle;
   }
   function addHistory(entry) {
     const list = loadHistory();
@@ -4737,7 +4748,10 @@
     accountSession();
     if (window.speechSynthesis) speechSynthesis.cancel();
     hideOverlays();
-    if (idx >= program.steps.length) { finishProgram(); return; }
+    // Only a manual "»" past the last step lands here - skipping to the end
+    // counts as an aborted programme, not a completed one (Fabian,
+    // 2026-10-02). The natural end goes through advanceProgramStep().
+    if (idx >= program.steps.length) { finishProgram(true); return; }
     program.chapterIndex = idx;
     const step = program.steps[idx];
     if (step.type === "video") { playProgramVideo(step); return; }
@@ -4887,7 +4901,7 @@
     if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
   }
 
-  function finishProgram() {
+  function finishProgram(aborted) {
     if (raf) cancelAnimationFrame(raf);
     accountSession();
     releaseWakeLock();
@@ -4897,8 +4911,11 @@
     els.playerBar.hidden = true;
     setProgress(program.def.blocks.length, 0);
     const played = program.playedS;
-    els.programDoneSummary.textContent = `${exerciseCountLabel(program.def.blocks.length)} · ${fmtMinutes(played)} Training`;
-    const id = addHistory({ kind: "program", title: program.title, progKey: program.key, seconds: Math.round(played) });
+    setDonePanelAborted(els.programDonePanel, aborted, "Programm beendet");
+    els.programDoneSummary.textContent = aborted
+      ? `Abgebrochen · ${fmtMinutes(played)} Training`
+      : `${exerciseCountLabel(program.def.blocks.length)} · ${fmtMinutes(played)} Training`;
+    const id = addHistory({ kind: "program", title: program.title, progKey: program.key, seconds: Math.round(played), note: aborted ? "abgebrochen" : undefined, aborted: !!aborted });
     renderRating(els.programRating, id);
     els.programDoneBackBtn.textContent = originBundle ? "Zurück zu meinen Programmen" : "Zur Startseite";
     els.programDonePanel.hidden = false;
@@ -8031,6 +8048,7 @@
     useZones: false,
     zones: PERIPH_ZONE_KEYS.slice(),
     constantCount: 3,
+    constantRounds: 20,
     startCount: 3,
     repsPerLevel: 2,
     trainingStart: 5,
@@ -8052,6 +8070,7 @@
     if (typeof flashPrefs.stimulusS !== "number" || flashPrefs.stimulusS < 0.3 || flashPrefs.stimulusS > 2) flashPrefs.stimulusS = FLASH_DIFFICULTIES.mittel.stimulusS;
     if (typeof flashPrefs.intervalS !== "number" || flashPrefs.intervalS < 0.2 || flashPrefs.intervalS > 2) flashPrefs.intervalS = FLASH_DIFFICULTIES.mittel.intervalS;
     if (typeof flashPrefs.constantCount !== "number" || flashPrefs.constantCount < 2) flashPrefs.constantCount = 3;
+    if (typeof flashPrefs.constantRounds !== "number" || flashPrefs.constantRounds < 5 || flashPrefs.constantRounds > 50) flashPrefs.constantRounds = 20;
     if (typeof flashPrefs.startCount !== "number" || flashPrefs.startCount < 2) flashPrefs.startCount = 3;
     if (![2, 3].includes(flashPrefs.repsPerLevel)) flashPrefs.repsPerLevel = 2;
     if (typeof flashPrefs.trainingStart !== "number" || flashPrefs.trainingStart < 2) flashPrefs.trainingStart = 5;
@@ -8333,7 +8352,14 @@
   function syncFlashConstantUI() {
     els.flashConstantSlider.value = flashPrefs.constantCount;
     els.flashConstantValue.textContent = String(flashPrefs.constantCount);
+    els.flashRoundsSlider.value = flashPrefs.constantRounds;
+    els.flashRoundsValue.textContent = String(flashPrefs.constantRounds);
   }
+  els.flashRoundsSlider.addEventListener("input", () => {
+    flashPrefs.constantRounds = Number(els.flashRoundsSlider.value);
+    saveFlashPrefsToStorage();
+    syncFlashConstantUI();
+  });
   els.flashStartSlider.addEventListener("input", () => {
     flashPrefs.startCount = Number(els.flashStartSlider.value);
     saveFlashPrefsToStorage();
@@ -8533,7 +8559,9 @@
     flashState.shownIndex = 0;
     els.flashInputPanel.hidden = true;
     els.flashHint.textContent = "Merken …";
-    els.flashLevelEl.textContent = flashState.mode === "constant" ? `Tempo-Stufe ${flashState.speedStep + 1}` : `${flashState.count} ${flashUnitLabel(flashState.kind)}`;
+    els.flashLevelEl.textContent = flashState.mode === "constant"
+      ? (flashState.roundLimit ? `Runde ${flashState.roundsPlayed + 1}/${flashState.roundLimit} · ` : "") + `Tempo-Stufe ${flashState.speedStep + 1}`
+      : `${flashState.count} ${flashUnitLabel(flashState.kind)}`;
     flashShowDigit();
   }
   function flashShowDigit() {
@@ -8640,7 +8668,22 @@
   }
   function flashCheckAnswer(typed) {
     flashState.phase = "checking";
-    if (typed === flashState.sequence.join("")) flashSuccessTransition();
+    const ok = typed === flashState.sequence.join("");
+    // "Konstant" runs a fixed number of rounds with a hit tally (Fabian,
+    // 2026-10-02) - standalone only; Kombi/Cardio blocks keep their own
+    // duration as the end.
+    if (flashState.mode === "constant") {
+      flashState.roundsPlayed += 1;
+      if (ok) flashState.hits += 1;
+      if (flashState.roundLimit && flashState.roundsPlayed >= flashState.roundLimit) {
+        if (ok && flashState.speedStep > flashState.cleared) flashState.cleared = flashState.speedStep;
+        els.flashInputPanel.hidden = true;
+        els.flashHint.textContent = ok ? "Richtig! Geschafft." : "Leider falsch – das war die letzte Runde.";
+        scheduleFlashTimer(() => flashStop(true), 900);
+        return;
+      }
+    }
+    if (ok) flashSuccessTransition();
     else flashWrongTransition();
   }
   function flashSuccessTransition() {
@@ -8714,7 +8757,9 @@
     flashReturnScreen = mode === "training" ? "flashTrainingReady" : "flashReady";
     const startCount = mode === "training" ? p.trainingStart : p.startCount;
     flashState = {
-      mode, kind: p.kind, count: startCount, constantCount: p.constantCount, speedStep: 0, repsDone: 0, repsPerLevel: p.repsPerLevel, cleared: 0,
+      mode, kind: p.kind, count: startCount, constantCount: p.constantCount, speedStep: 0,
+      roundLimit: mode === "constant" && !prefsOverride && !(opts && opts.comboDurationS) ? (p.constantRounds || 20) : 0,
+      roundsPlayed: 0, hits: 0, repsDone: 0, repsPerLevel: p.repsPerLevel, cleared: 0,
       sequence: [], shownIndex: 0, typed: "", phase: "flash", timer: null, comboDurationTimer: null,
       stimulusS: p.stimulusS, intervalS: p.intervalS, errorMode: p.errorMode,
       axes: p.axes.slice(), zones: p.zones.slice(), useZones: p.useZones,
@@ -8801,7 +8846,7 @@
   // "Beenden" doubles as the finish action, same convention as Remember/
   // Blitz-Raster - Flash-Speicher-Test is endless/progressive with no
   // fixed end of its own.
-  function flashStop() {
+  function flashStop(completed) {
     if (!flashState) return;
     if (flashState.timer) clearTimeout(flashState.timer);
     if (flashState.comboDurationTimer) clearTimeout(flashState.comboDurationTimer);
@@ -8818,12 +8863,15 @@
     // "Beenden" mid-Kombi quits the whole Kombi programme, not just this
     // block - matches Remember/Blitz-Raster's behaviour.
     if (comboProgram) { abortComboProgram(); return; }
-    if (state.cleared > 0) {
-      const isRecord = saveFlashBest(state.mode, state.cleared);
+    const tally = state.mode === "constant" && state.roundsPlayed > 0;
+    if (state.cleared > 0 || tally) {
+      const isRecord = state.cleared > 0 && saveFlashBest(state.mode, state.cleared);
       renderFlashBests();
       const played = (performance.now() - state.startTime) / 1000;
       const modeTitle = state.mode === "constant" ? "Konstant" : state.mode === "climb" ? "Steigend, direkt" : state.mode === "climbRepeat" ? "Steigend, mit Wiederholung" : "Trainingsmodus";
-      const note = state.mode === "constant" ? `Tempo-Stufe ${state.cleared + 1} erreicht` : `${state.cleared} ${flashUnitLabel(state.kind)} erreicht`;
+      const note = state.mode === "constant"
+        ? `${state.hits} von ${state.roundsPlayed} Runden richtig` + (completed === true ? "" : " (vorzeitig beendet)") + ` · Tempo-Stufe ${state.cleared + 1} erreicht`
+        : `${state.cleared} ${flashUnitLabel(state.kind)} erreicht`;
       els.flashPlayerBar.hidden = true;
       els.flashDoneSummary.textContent = `${modeTitle} · ${note}` + (isRecord ? " · Neue Bestleistung!" : "");
       const id = addHistory({ kind: "flash", title: `Flash-Speicher-Test · ${modeTitle}`, seconds: Math.round(played), note });
@@ -10530,7 +10578,7 @@
   function circuitJumpToWorkIndex(idx) {
     if (!workoutState || workoutState.kind !== "circuit") return;
     const frames = circuitWorkFrames();
-    if (idx >= frames.length) { finishWorkoutBlock(); return; }
+    if (idx >= frames.length) { workoutState.aborted = true; finishWorkoutBlock(); return; }
     const targetT = frames[Math.max(0, idx)].t0;
     workoutState.startTime = performance.now() - targetT * 1000;
   }
@@ -10575,24 +10623,26 @@
       const hitTop = recordWorkoutRepsProgress(st.block.exercise, st.block.rangeMin, st.block.rangeMax, st.achieved);
       if (hitTop) suggestion = `Stark – du hast in jedem Satz ${st.block.rangeMax}+ Wiederholungen geschafft. Nächstes Mal schwerer machen (mehr Gewicht, schwerere Variante, oder die Übung tauschen)?`;
     }
+    const aborted = !!(st && st.aborted);
     workoutState = null;
-    onWorkoutBlockDone(played, doneEx, suggestion);
+    onWorkoutBlockDone(played, doneEx, aborted ? null : suggestion, aborted);
   }
-  function onWorkoutBlockDone(playedS, ex, suggestion) {
+  function onWorkoutBlockDone(playedS, ex, suggestion, aborted) {
     releaseWakeLock();
     if (workoutPlan) {
       workoutPlan.totalPlayedS += playedS;
       const next = workoutPlan.blockIndex + 1;
-      if (next >= workoutPlan.def.blocks.length) { finishWorkoutPlan(); return; }
+      if (next >= workoutPlan.def.blocks.length) { finishWorkoutPlan(aborted); return; }
       showWorkoutTransition(workoutPlan.def.blocks[next], () => startWorkoutPlanBlock(next));
       return;
     }
     if (comboProgram) { advanceComboProgram(playedS); return; }
     els.workoutPlayerBar.hidden = true;
-    els.workoutDoneSummary.textContent = `${ex ? ex.name : "Training"} · ${fmtMinutes(playedS)}`;
+    setDonePanelAborted(els.workoutDonePanel, aborted, "Training beendet");
+    els.workoutDoneSummary.textContent = `${aborted ? "Abgebrochen · " : ""}${ex ? ex.name : "Training"} · ${fmtMinutes(playedS)}`;
     els.workoutDoneSuggestion.hidden = !suggestion;
     els.workoutDoneSuggestion.textContent = suggestion || "";
-    const id = addHistory({ kind: "workout", title: ex ? ex.name : "Workout", seconds: Math.round(playedS) });
+    const id = addHistory({ kind: "workout", title: ex ? ex.name : "Workout", seconds: Math.round(playedS), note: aborted ? "abgebrochen" : undefined, aborted: !!aborted });
     renderRating(els.workoutRating, id, "Wie gut hast du durchgehalten?");
     els.workoutDonePanel.hidden = false;
   }
@@ -10613,12 +10663,15 @@
     els.workoutTransitionBtn.onclick = go;
     workoutTransitionTimer = setTimeout(go, 4000);
   }
-  function finishWorkoutPlan() {
+  function finishWorkoutPlan(aborted) {
     hideAllPlayers();
     const played = workoutPlan.totalPlayedS;
     const title = workoutPlan.title;
-    els.workoutProgramDoneSummary.textContent = `${exerciseCountLabel(workoutPlan.def.blocks.length)} · ${fmtMinutes(played)} Training`;
-    const id = addHistory({ kind: "workout-plan", title, progKey: workoutPlan.key, seconds: Math.round(played) });
+    setDonePanelAborted(els.workoutProgramDonePanel, aborted, "Plan beendet");
+    els.workoutProgramDoneSummary.textContent = aborted
+      ? `Abgebrochen · ${fmtMinutes(played)} Training`
+      : `${exerciseCountLabel(workoutPlan.def.blocks.length)} · ${fmtMinutes(played)} Training`;
+    const id = addHistory({ kind: "workout-plan", title, progKey: workoutPlan.key, seconds: Math.round(played), note: aborted ? "abgebrochen" : undefined, aborted: !!aborted });
     renderRating(els.workoutProgramRating, id, "Wie gut hast du durchgehalten?");
     els.workoutProgramDoneBackBtn.textContent = workoutOriginBundle ? "Zurück zu meinen Plänen" : "Zur Startseite";
     els.workoutProgramDonePanel.hidden = false;
@@ -13619,10 +13672,10 @@
   function cardioJumpToIndex(idx, dir) {
     if (!cardioState) return;
     if (idx < 0) idx = 0;
-    if (idx >= cardioState.items.length) { finishCardio(); return; }
+    if (idx >= cardioState.items.length) { finishCardio(true); return; }
     if (cardioState.items[idx] && cardioState.items[idx].pause) idx += dir;
     if (idx < 0) idx = 0;
-    if (idx >= cardioState.items.length) { finishCardio(); return; }
+    if (idx >= cardioState.items.length) { finishCardio(true); return; }
     cardioState.index = idx;
     cardioState.blockStartTime = performance.now();
   }
@@ -13655,7 +13708,7 @@
   }
   els.cardioBackBtn.addEventListener("click", abortCardio);
 
-  function finishCardio() {
+  function finishCardio(aborted) {
     stopCardioInlineFlash();
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
     cardioRaf = null;
@@ -13666,7 +13719,9 @@
     // total-seconds calculations) - the pause is real session time, not
     // discounted. Everything else below needs the REAL activities only,
     // not the pause pseudo-items mixed in.
-    const totalS = items.reduce((s, b) => s + b.durationS, 0);
+    const plannedS = items.reduce((s, b) => s + b.durationS, 0);
+    // Skipped to the end: count the time actually trained, not the plan.
+    const totalS = aborted ? Math.min(plannedS, (performance.now() - cardioState.sessionStartTime) / 1000) : plannedS;
     const realItems = items.filter((b) => !b.pause);
     releaseWakeLock();
     cardioState = null;
@@ -13675,10 +13730,13 @@
     if (document.fullscreenElement === els.cardioPlayer) document.exitFullscreen().catch(() => {});
     const names = [...new Set(realItems.map((b) => findCardioActivity(b.activity).name))].join(", ");
     const id = cardioProgram
-      ? addHistory({ kind: "cardio-plan", title: cardioProgram.title, progKey: cardioProgram.key, seconds: Math.round(totalS), note: names })
-      : addHistory({ kind: "cardio", title: "Cardio", seconds: Math.round(totalS), note: names });
+      ? addHistory({ kind: "cardio-plan", title: cardioProgram.title, progKey: cardioProgram.key, seconds: Math.round(totalS), note: aborted ? `abgebrochen · ${names}` : names, aborted: !!aborted })
+      : addHistory({ kind: "cardio", title: "Cardio", seconds: Math.round(totalS), note: aborted ? `abgebrochen · ${names}` : names, aborted: !!aborted });
     renderRating(els.cardioRating, id);
-    els.cardioDoneSummary.textContent = `${exerciseCountLabel(realCount)} · ${fmtMinutes(totalS)} Training`;
+    setDonePanelAborted(els.cardioDonePanel, aborted, "Training beendet");
+    els.cardioDoneSummary.textContent = aborted
+      ? `Abgebrochen · ${fmtMinutes(totalS)} Training`
+      : `${exerciseCountLabel(realCount)} · ${fmtMinutes(totalS)} Training`;
     els.cardioDoneBackBtn.textContent = cardioProgram && cardioOriginBundle ? "Zurück zu meinen Einheiten" : "Zur Übersicht";
     els.cardioDonePanel.hidden = false;
   }
@@ -14489,6 +14547,23 @@
       main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(comboBlockLabel(block))}</strong><span>${esc(comboBlockMeta(block))}</span></span>`;
       if (editOpener) main.addEventListener("click", () => editOpener(block, i));
       row.appendChild(main);
+      // Reorder: swap with the neighbour (its own "Pause danach" travels
+      // with the block). Only shown where a move is possible.
+      [["up", -1, "\u2191", "Nach oben"], ["down", 1, "\u2193", "Nach unten"]].forEach(([dir, d, sym, label]) => {
+        const j = i + d;
+        if (j < 0 || j >= comboDraftBlocks.length) return;
+        const mv = document.createElement("button");
+        mv.className = "combo-block-remove combo-block-move";
+        mv.dataset.move = dir;
+        mv.textContent = sym;
+        mv.title = label;
+        mv.setAttribute("aria-label", label);
+        mv.addEventListener("click", () => {
+          [comboDraftBlocks[i], comboDraftBlocks[j]] = [comboDraftBlocks[j], comboDraftBlocks[i]];
+          renderComboBlockList();
+        });
+        row.appendChild(mv);
+      });
       const rm = document.createElement("button");
       rm.className = "combo-block-remove";
       rm.textContent = "✕";
@@ -22455,6 +22530,10 @@
     corsiState = {
       diff: CORSI_DIFFICULTIES[corsiPrefs.difficulty],
       span: CORSI_START_SPAN, reachedSpan: 0,
+      // Kessels et al. (2000) standard: two sequences per length; the run
+      // goes on as long as at least one of the two is recalled correctly
+      // and stops once both fail (Fabian, 2026-10-02: "wie Standard").
+      attempt: 1, lengthHits: 0, totalCorrect: 0,
       sequence: [], sequenceIndexShown: -1, tapIndex: 0,
       blockEls: [], phase: "intro", paused: false, startTime: performance.now(),
       timer: null, timerFn: null, timerFiresAt: null,
@@ -22468,7 +22547,7 @@
     // in stage_hint_overlap_audit_test.py).
     els.corsiHint.textContent = "Gleich geht's los …";
     renderCorsiBoard(buildCorsiBoard());
-    els.corsiProgressEl.textContent = `Länge ${corsiState.span}`;
+    els.corsiProgressEl.textContent = `Länge ${corsiState.span} · Versuch 1/2`;
     requestWakeLock();
     scheduleCorsiTimer(corsiStartLevel, 1000);
   }
@@ -22481,7 +22560,7 @@
     corsiState.tapIndex = 0;
     corsiState.phase = "showing";
     corsiClearBlocks();
-    els.corsiProgressEl.textContent = `Länge ${corsiState.span}`;
+    els.corsiProgressEl.textContent = `Länge ${corsiState.span} · Versuch ${corsiState.attempt}/2`;
     els.corsiHint.textContent = "Merken …";
     scheduleCorsiTimer(corsiShowNext, CORSI_PRE_SEQUENCE_MS);
   }
@@ -22511,10 +22590,10 @@
       corsiState.tapIndex++;
       if (corsiState.tapIndex >= corsiState.sequence.length) {
         corsiState.reachedSpan = corsiState.span;
+        corsiState.lengthHits++;
+        corsiState.totalCorrect++;
         corsiState.phase = "feedback";
-        els.corsiHint.textContent = "Richtig! Eine Länge weiter …";
-        corsiState.span++;
-        scheduleCorsiTimer(corsiStartLevel, CORSI_FEEDBACK_MS);
+        corsiAfterAttempt(true);
       }
     } else {
       // Same "show what it actually was" reveal convention as Hick/MOT/UFOV:
@@ -22523,9 +22602,27 @@
       corsiState.blockEls[pos].classList.add("wrong");
       corsiState.blockEls[expected].classList.add("correct");
       corsiState.phase = "feedback";
-      els.corsiHint.textContent = "Leider daneben.";
-      scheduleCorsiTimer(corsiFinish, CORSI_FAIL_PAUSE_MS);
+      corsiAfterAttempt(false);
     }
+  }
+  function corsiAfterAttempt(ok) {
+    const st = corsiState;
+    if (st.attempt === 1) {
+      st.attempt = 2;
+      els.corsiHint.textContent = ok ? "Richtig! Noch eine Folge dieser Länge …" : "Leider daneben – noch ein Versuch mit dieser Länge.";
+      scheduleCorsiTimer(corsiStartLevel, ok ? CORSI_FEEDBACK_MS : CORSI_FAIL_PAUSE_MS);
+      return;
+    }
+    if (st.lengthHits > 0) {
+      st.span++;
+      st.attempt = 1;
+      st.lengthHits = 0;
+      els.corsiHint.textContent = ok ? "Richtig! Eine Länge weiter …" : "Daneben – aber eine von zwei hat gepasst. Eine Länge weiter …";
+      scheduleCorsiTimer(corsiStartLevel, ok ? CORSI_FEEDBACK_MS : CORSI_FAIL_PAUSE_MS);
+      return;
+    }
+    els.corsiHint.textContent = "Leider beide Versuche daneben.";
+    scheduleCorsiTimer(corsiFinish, CORSI_FAIL_PAUSE_MS);
   }
 
   function pauseCorsi() {
@@ -22563,7 +22660,7 @@
     renderCorsiBest();
     const played = (performance.now() - state.startTime) / 1000;
     els.corsiDoneSummary.textContent =
-      `Blockspanne-Test (${state.diff.title}) · Blockspanne erreicht: ${span}` +
+      `Blockspanne-Test (${state.diff.title}) · Blockspanne erreicht: ${span} · ${state.totalCorrect} Folgen richtig` +
       (isRecord ? " · Neue Bestleistung!" : "");
     const note = `Blockspanne ${span}`;
     const id = addHistory({ kind: "corsi", title: "Blockspanne-Test (Corsi)", seconds: Math.round(played), note });

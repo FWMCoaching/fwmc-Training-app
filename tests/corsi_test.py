@@ -80,53 +80,68 @@ async def main():
         async def wait_for_responding(max_ms=6000, poll_ms=25):
             return await wait_for_hint_contains("Jetzt in der gleichen Reihenfolge", max_ms, poll_ms)
 
+        async def observe(n):
+            seq = []
+            for _ in range(n):
+                idx = await wait_for_lit_index()
+                seq.append(idx)
+                waited = 0
+                while waited < 2000:
+                    still_lit = await pg.eval_on_selector_all("#corsiBoard .corsi-block", "(els) => els.some(e => e.classList.contains('lit'))")
+                    if not still_lit:
+                        break
+                    await pg.wait_for_timeout(20); waited += 20
+            return seq
+
+        async def recall(n):
+            seq = await observe(n)
+            await wait_for_responding()
+            for i in seq:
+                await pg.locator("#corsiBoard .corsi-block").nth(i).click()
+                await pg.wait_for_timeout(80)
+            return seq
+
         # --- observe the first (length-2) sequence flash, in order ---
         merken_shown = await wait_for_hint_contains("Merken")
         print("'Merken' hint shown before the sequence flashes:", merken_shown)
-        seq = []
-        for _ in range(2):
-            idx = await wait_for_lit_index()
-            seq.append(idx)
-            # wait for it to go dark again before the next one lights up
-            waited = 0
-            while waited < 2000:
-                still_lit = await pg.eval_on_selector_all("#corsiBoard .corsi-block", "(els) => els.some(e => e.classList.contains('lit'))")
-                if not still_lit:
-                    break
-                await pg.wait_for_timeout(20); waited += 20
+        print("progress shows attempt 1 of 2:", "Versuch 1/2" in await pg.inner_text("#corsiProgressEl"))
+        seq = await observe(2)
         print("two distinct blocks flashed for the length-2 sequence:", len(set(seq)) == 2 and -1 not in seq)
 
         responding = await wait_for_responding()
         print("'Jetzt antippen' hint shown once the sequence finished flashing:", responding)
 
-        # --- tap the sequence back correctly -> span advances to 3 ---
+        # --- tap the sequence back correctly -> second attempt at the same length (Kessels standard) ---
         for i in seq:
             await pg.locator("#corsiBoard .corsi-block").nth(i).click()
             await pg.wait_for_timeout(80)
         print("last correct tap marks its block 'correct':",
               "correct" in (await pg.locator("#corsiBoard .corsi-block").nth(seq[-1]).get_attribute("class") or ""))
-        progress = await wait_for_hint_contains("Merken", 3000)
+        await wait_for_hint_contains("Merken", 3000)
         progress_text = await pg.inner_text("#corsiProgressEl")
-        print("progress advances to Länge 3 after a correct recall:", "3" in progress_text)
+        print("after a correct first attempt: same length, attempt 2/2:", "Länge 2" in progress_text and "Versuch 2/2" in progress_text)
 
-        # --- observe and correctly recall the length-3 sequence too, so the best-score / done-panel checks below have real progress (span >= 3) ---
-        seq3 = []
-        for _ in range(3):
-            idx = await wait_for_lit_index()
-            seq3.append(idx)
-            waited = 0
-            while waited < 2000:
-                still_lit = await pg.eval_on_selector_all("#corsiBoard .corsi-block", "(els) => els.some(e => e.classList.contains('lit'))")
-                if not still_lit:
-                    break
-                await pg.wait_for_timeout(20); waited += 20
+        # --- fail attempt 2 at length 2 on purpose: one of two was right, so it still advances ---
+        seq_b = await observe(2)
         await wait_for_responding()
-        for i in seq3:
-            await pg.locator("#corsiBoard .corsi-block").nth(i).click()
-            await pg.wait_for_timeout(80)
+        wrong_block = next(i for i in range(9) if i != seq_b[0])
+        await pg.locator("#corsiBoard .corsi-block").nth(wrong_block).click()
+        print("a miss after one success keeps going:", await wait_for_hint_contains("eine von zwei", 1500))
+        await wait_for_hint_contains("Merken", 4000)
+        print("progress advances to Länge 3 after one of two correct:", "Länge 3" in await pg.inner_text("#corsiProgressEl"))
+
+        # --- length 3: miss attempt 1, then get attempt 2 right -> still advances ---
+        seq3a = await observe(3)
+        await wait_for_responding()
+        wrong_block = next(i for i in range(9) if i != seq3a[0])
+        await pg.locator("#corsiBoard .corsi-block").nth(wrong_block).click()
+        print("a first miss gives a second attempt:", await wait_for_hint_contains("noch ein Versuch", 1500))
+        await wait_for_hint_contains("Merken", 4000)
+        print("still Länge 3, attempt 2/2:", "Versuch 2/2" in await pg.inner_text("#corsiProgressEl"))
+        await recall(3)
         await wait_for_hint_contains("Merken", 3000)
         progress_text2 = await pg.inner_text("#corsiProgressEl")
-        print("progress advances to Länge 4 after a second correct recall:", "4" in progress_text2)
+        print("progress advances to Länge 4 after a second correct recall:", "Länge 4" in progress_text2)
 
         # --- pause/resume freezes the board mid-flash ---
         await wait_for_lit_index()
@@ -143,33 +158,33 @@ async def main():
         await pg.click("#corsiResumeBtn"); await pg.wait_for_timeout(150)
         print("pause overlay hidden after resume:", await pg.is_hidden("#corsiPauseOverlay"))
 
-        # --- fail the length-4 sequence on purpose (tap a block that's
-        # definitely NOT first in the sequence) to reach the done panel ---
+        # --- fail BOTH attempts at length 4 -> the run ends ---
         await wait_for_responding(max_ms=8000)
-        seq4_first = await pg.eval_on_selector_all("#corsiBoard .corsi-block", "() => null") or None
-        # tap block 0 or 1, whichever isn't the actual first-expected one is
-        # unknown to us here, so just tap ALL blocks in a fixed order until
-        # one registers wrong (a correct one just advances tapIndex, which is
-        # harmless) - simplest: tap every block 0..8 in order, guaranteeing a
-        # mismatch appears well before block 8 for a length-4 sequence.
-        wrong_seen = False
-        for i in range(9):
-            await pg.locator("#corsiBoard .corsi-block").nth(i).click()
-            await pg.wait_for_timeout(100)
-            cls = await pg.locator("#corsiBoard .corsi-block").nth(i).get_attribute("class") or ""
-            if "wrong" in cls:
-                wrong_seen = True
-                break
-            if await pg.is_visible("#corsiDonePanel"):
-                break
-        print("a wrong tap eventually ends the run:", wrong_seen or await pg.is_visible("#corsiDonePanel"))
-
-        done_shown = await wait_for_hint_contains("Leider daneben", 2000) or await pg.is_visible("#corsiDonePanel")
+        seq4 = None
+        for attempt in range(2):
+            if attempt == 1:
+                seq4 = await observe(4)
+                await wait_for_responding()
+            # the first block expected is unknown for attempt 1 (we were paused mid-flash), so tap
+            # blocks in order until one turns red
+            for i in range(9):
+                if seq4 and i == seq4[0]:
+                    continue
+                await pg.locator("#corsiBoard .corsi-block").nth(i).click()
+                await pg.wait_for_timeout(100)
+                cls = await pg.locator("#corsiBoard .corsi-block").nth(i).get_attribute("class") or ""
+                if "wrong" in cls:
+                    break
+            if attempt == 0:
+                print("first miss at length 4 does not end the run:", await wait_for_hint_contains("noch ein Versuch", 1500))
+                await wait_for_hint_contains("Merken", 4000)
+        print("two misses at one length end the run:", await wait_for_hint_contains("beide Versuche", 2000))
         await pg.wait_for_timeout(1600)
         print("done panel visible after failing a sequence:", await pg.is_visible("#corsiDonePanel"))
         summary = await pg.inner_text("#corsiDoneSummary")
         print("done summary mentions Blockspanne-Test and erreichte Länge:", "Blockspanne-Test" in summary and "Blockspanne erreicht" in summary)
-        print("done summary reports a span of at least 3:", any(f"erreicht: {n}" in summary for n in (3, 4, 5, 6, 7, 8, 9)))
+        print("done summary reports a span of 3:", "erreicht: 3" in summary)
+        print("done summary counts correct sequences:", "2 Folgen richtig" in summary)
         await pg.click("#corsiDoneBackBtn"); await pg.wait_for_timeout(150)
         print("back at testHome:", await pg.is_visible("#testHome"))
 
