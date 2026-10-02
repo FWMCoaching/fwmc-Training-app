@@ -53,7 +53,7 @@ async def main():
         await pg.click("#gngOpenBtn"); await pg.wait_for_timeout(200)
         await pg.click("#gngAdvanced summary"); await pg.wait_for_timeout(150)
         print("Go/No-Go bg picker shows rot as active:", "active" in (await pg.get_attribute('#gngBgColorPicker [data-key="rot"]', "class") or ""))
-        print("Go/No-Go has no transfer row (expected - Test-Bereich scope decision):", "Wie in den Master-Einstellungen" not in await pg.inner_text("#gngAdvanced"))
+        print("Go/No-Go has no transfer row (expected - Test-Bereich scope decision):", "Wie in den Grundeinstellungen" not in await pg.inner_text("#gngAdvanced"))
         await pg.click("#gngReadyBackToHome"); await pg.wait_for_timeout(200)
 
         # ---- Remember (one of the 4 richer NAT domains that already had a
@@ -63,8 +63,8 @@ async def main():
         await pg.click('[data-nat-sub="remember"]'); await pg.wait_for_timeout(150)
         await pg.click("#rememberOpenFixed"); await pg.wait_for_timeout(200)
         await pg.click("#rememberAdvanced summary"); await pg.wait_for_timeout(150)
-        print("Remember offers the Master transfer button:", "Wie in den Master-Einstellungen" in await pg.inner_text("#rememberAdvanced"))
-        await pg.click('#rememberAdvanced >> text="Wie in den Master-Einstellungen"'); await pg.wait_for_timeout(150)
+        print("Remember offers the Master transfer button:", "Wie in den Grundeinstellungen" in await pg.inner_text("#rememberAdvanced"))
+        await pg.click('#rememberAdvanced >> text="Wie in den Grundeinstellungen"'); await pg.wait_for_timeout(150)
         print("Remember switched to rot after tapping the Master button:", "active" in (await pg.get_attribute('#rememberBgColorPicker [data-key="rot"]', "class") or ""))
 
         # ---- clearing the Master default doesn't retroactively undo

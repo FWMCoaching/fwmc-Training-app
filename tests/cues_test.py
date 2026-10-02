@@ -72,7 +72,7 @@ async def main():
         await pg.click("#workoutTabataStartCard"); await pg.wait_for_timeout(150)
         await pg.click("#workoutCircuitAdvanced summary"); await pg.wait_for_timeout(80)
         d = pg.locator("#cueDomain_tabata")
-        print("tabata follows master by default:", "Folgt den Master" in await d.inner_text())
+        print("tabata follows master by default:", "Folgt den Grundeinstellungen" in await d.inner_text())
         await d.locator('[data-cue-mode="own"]').click(); await pg.wait_for_timeout(60)
         print("own setting seeded from master (5 s active):", "active" in (await d.locator('[data-cue-count="5"]').get_attribute("class")))
         await d.locator('[data-cue-count="3"]').click(); await pg.wait_for_timeout(60)

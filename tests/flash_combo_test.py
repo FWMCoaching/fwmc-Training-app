@@ -3,7 +3,7 @@ from playwright.async_api import async_playwright
 
 URL = "http://localhost:8845/index.html"
 
-# Flash Speicher Test's Kombi-Baukasten capture mode - same shape as
+# Flash-Speicher-Test's Kombi-Baukasten capture mode - same shape as
 # Remember (3 modes share a ready screen, "training" has its own), plus
 # the endless/progressive duration-cutoff Blitz-Raster just got.
 
@@ -22,14 +22,14 @@ async def main():
         await pg.click('.section-tab[data-section="nat"]'); await pg.wait_for_timeout(200)
         await pg.click('#natHome .combo-entry-link'); await pg.wait_for_timeout(300)
         grid_text = await pg.inner_text("#comboAddGrid")
-        print("Flash Konstant entry present:", "Flash · Konstant" in grid_text)
-        print("Flash climb entry present:", "Flash · Steigend, direkt" in grid_text)
-        print("Flash climbRepeat entry present:", "Flash · Steigend, mit Wiederholung" in grid_text)
-        print("Flash training entry present:", "Flash · Trainingsmodus" in grid_text)
+        print("Flash Konstant entry present:", "Flash-Speicher-Test · Konstant" in grid_text)
+        print("Flash climb entry present:", "Flash-Speicher-Test · Steigend, direkt" in grid_text)
+        print("Flash climbRepeat entry present:", "Flash-Speicher-Test · Steigend, mit Wiederholung" in grid_text)
+        print("Flash training entry present:", "Flash-Speicher-Test · Trainingsmodus" in grid_text)
 
-        await pg.click('#comboAddGrid >> text="Flash · Konstant"'); await pg.wait_for_timeout(300)
+        await pg.click('#comboAddGrid >> text="Flash-Speicher-Test · Konstant"'); await pg.wait_for_timeout(300)
         print("capture mode opens flashReady:", await pg.is_visible("#flashReady"))
-        print("title swapped to capture mode:", "Baustein: Flash · Konstant" in await pg.inner_text("#flashReadyTitle"))
+        print("title swapped to capture mode:", "Baustein: Flash-Speicher-Test · Konstant" in await pg.inner_text("#flashReadyTitle"))
         print("duration slider visible only in capture mode:", await pg.is_visible("#flashComboDurationGroup"))
         print("duration defaults to 60s:", await pg.input_value("#flashComboDurationSlider") == "60")
         print("start button reads 'Baustein übernehmen':", "Baustein übernehmen" in await pg.inner_text("#flashReadyStartBtn"))
@@ -52,7 +52,7 @@ async def main():
         print("still exactly 1 block after re-edit+commit:", await pg.locator("#comboBlockList .chapter-row").count() == 1)
 
         # ---- cancel path ----
-        await pg.click('#comboAddGrid >> text="Flash · Konstant"'); await pg.wait_for_timeout(300)
+        await pg.click('#comboAddGrid >> text="Flash-Speicher-Test · Konstant"'); await pg.wait_for_timeout(300)
         await pg.click("#flashReadyBackToHome"); await pg.wait_for_timeout(300)
         print("cancel returns to comboScreen:", await pg.is_visible("#comboScreen"))
         print("still exactly 1 block (cancelled add discarded):", await pg.locator("#comboBlockList .chapter-row").count() == 1)
@@ -69,7 +69,7 @@ async def main():
 
         # ==== training mode: separate screen, separate duration slider ====
         await pg.click('#natHome .combo-entry-link'); await pg.wait_for_timeout(200)
-        await pg.click('#comboAddGrid >> text="Flash · Trainingsmodus"'); await pg.wait_for_timeout(300)
+        await pg.click('#comboAddGrid >> text="Flash-Speicher-Test · Trainingsmodus"'); await pg.wait_for_timeout(300)
         print("training capture opens flashTrainingReady:", await pg.is_visible("#flashTrainingReady"))
         print("training duration slider visible:", await pg.is_visible("#flashTrainingComboDurationGroup"))
         print("training start button reads 'Baustein übernehmen':", "Baustein übernehmen" in await pg.inner_text("#flashTrainingStartBtn"))
@@ -85,7 +85,7 @@ async def main():
 
         # ==== run a fresh combo end-to-end with a short duration ====
         await pg.click('#natHome .combo-entry-link'); await pg.wait_for_timeout(200)
-        await pg.click('#comboAddGrid >> text="Flash · Steigend, direkt"'); await pg.wait_for_timeout(300)
+        await pg.click('#comboAddGrid >> text="Flash-Speicher-Test · Steigend, direkt"'); await pg.wait_for_timeout(300)
         await pg.fill("#flashComboDurationSlider", "15")
         await pg.dispatch_event("#flashComboDurationSlider", "input")
         await pg.click("#flashReadyStartBtn"); await pg.wait_for_timeout(300)

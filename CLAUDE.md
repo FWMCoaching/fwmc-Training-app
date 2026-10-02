@@ -1183,6 +1183,20 @@ Test: `tests/audit_fixes_test.py`.
 "Kombi-Baukasten"); its parts are **Bausteine**. NAT's home heading reads
 "NAT – Neuroathletik", the nav tab stays "NAT". The "Name noch offen" tags
 stay until Fabian decides (he wants to settle it soon).
+Same day, round 2: the gear sheet is called **Grundeinstellungen** in
+every client-facing text (never "Master-Einstellungen"/"Einstellungen";
+code names like `masterPrefs` stay). NAT exercises are **Positionen merken**
+(was Remember), **Flash-Speicher-Test**, **Objektverfolgung (MOT)** (was
+MOT-Fähigkeit) - sub-tabs, cards, Kombi labels, history titles, Cardio
+picker alike. **"Wirklich beenden?"**: once a training run has lasted 60 s
+(`END_CONFIRM_MIN_MS`), every player's "✕ Beenden" (any `button` whose id
+ends in `ackBtn` and whose text has "Beenden") asks via `confirmDialog()`
+first - one capture-phase click listener near `confirmDialog`, no per-player
+code. A run = any such button or a between-blocks transition visible
+(sampled each second with `Date.now()`), so a Kombi/Plan counts as one run.
+In fullscreen the sheet is moved into the fullscreen element and back to
+`body` on close. A new player needs nothing extra as long as its exit
+button follows that id/text convention. Test: `tests/end_confirm_test.py`.
 
 ## Hard rule: every exercise works everywhere (client, 2026-10-02)
 

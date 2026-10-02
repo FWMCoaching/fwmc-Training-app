@@ -3,7 +3,7 @@ from playwright.async_api import async_playwright
 URL = "http://localhost:8845/index.html"
 
 # The top-level section-switch (6 tabs since "Test" was added) and NAT's own
-# sub-switch (5 tabs since MOT-Fähigkeit was added) are flex rows of
+# sub-switch (5 tabs since Objektverfolgung (MOT) was added) are flex rows of
 # flex:1 tabs. Without min-width:0, a flex item can't shrink below its
 # content's natural min-content width, so once enough tabs share the row a
 # German-length label (esp. one unbreakable compound word like

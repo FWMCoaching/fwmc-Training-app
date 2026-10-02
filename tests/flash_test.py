@@ -3,7 +3,7 @@ from playwright.async_api import async_playwright
 URL = "http://localhost:8845/index.html"
 OUT = "screenshots/"
 
-# Flash Speicher Test: a THIRD distinct NAT memory mechanic (explicitly not
+# Flash-Speicher-Test: a THIRD distinct NAT memory mechanic (explicitly not
 # Remember, not Blitz-Raster). Numbers appear one at a time at scattered
 # (Periph-style) positions, then an input box opens to type them back IN
 # ORDER. Four modes: constant (speeds up), climb (count grows), climbRepeat

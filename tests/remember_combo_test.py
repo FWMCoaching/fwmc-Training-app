@@ -26,13 +26,13 @@ async def main():
         # ==== fixed mode: capture, duration slider, commit ====
         await pg.click('#natHome .combo-entry-link'); await pg.wait_for_timeout(300)
         print("comboScreen open:", await pg.is_visible("#comboScreen"))
-        print("Remember fixed entry present:", "Remember · Feste Positionen" in await pg.inner_text("#comboAddGrid"))
-        print("Remember shuffle entry present:", "Remember · Bewegte Positionen" in await pg.inner_text("#comboAddGrid"))
-        print("Remember training entry present:", "Remember · Trainingsmodus" in await pg.inner_text("#comboAddGrid"))
+        print("Remember fixed entry present:", "Positionen merken · Feste Positionen" in await pg.inner_text("#comboAddGrid"))
+        print("Remember shuffle entry present:", "Positionen merken · Bewegte Positionen" in await pg.inner_text("#comboAddGrid"))
+        print("Remember training entry present:", "Positionen merken · Trainingsmodus" in await pg.inner_text("#comboAddGrid"))
 
-        await pg.click('#comboAddGrid >> text="Remember · Feste Positionen"'); await pg.wait_for_timeout(300)
+        await pg.click('#comboAddGrid >> text="Positionen merken · Feste Positionen"'); await pg.wait_for_timeout(300)
         print("capture mode opens rememberReady:", await pg.is_visible("#rememberReady"))
-        print("title swapped to capture mode:", "Baustein: Remember · Feste Positionen" in await pg.inner_text("#rememberReadyTitle"))
+        print("title swapped to capture mode:", "Baustein: Positionen merken · Feste Positionen" in await pg.inner_text("#rememberReadyTitle"))
         print("duration slider visible only in capture mode:", await pg.is_visible("#rememberComboDurationGroup"))
         print("duration defaults to 60s:", await pg.input_value("#rememberComboDurationSlider") == "60")
         print("start button reads 'Baustein übernehmen':", "Baustein übernehmen" in await pg.inner_text("#rememberReadyStartBtn"))
@@ -57,7 +57,7 @@ async def main():
 
         # ---- cancel path (back-link) must restore normal title/button and
         # hide the duration slider again ----
-        await pg.click('#comboAddGrid >> text="Remember · Feste Positionen"'); await pg.wait_for_timeout(300)
+        await pg.click('#comboAddGrid >> text="Positionen merken · Feste Positionen"'); await pg.wait_for_timeout(300)
         await pg.click("#rememberReadyBackToHome"); await pg.wait_for_timeout(300)
         print("cancel returns to comboScreen:", await pg.is_visible("#comboScreen"))
         print("still exactly 1 block (cancelled add discarded):", await pg.locator("#comboBlockList .chapter-row").count() == 1)
@@ -74,7 +74,7 @@ async def main():
 
         # ==== training mode: separate screen, separate duration slider ====
         await pg.click('#natHome .combo-entry-link'); await pg.wait_for_timeout(200)
-        await pg.click('#comboAddGrid >> text="Remember · Trainingsmodus"'); await pg.wait_for_timeout(300)
+        await pg.click('#comboAddGrid >> text="Positionen merken · Trainingsmodus"'); await pg.wait_for_timeout(300)
         print("training capture opens rememberTrainingReady:", await pg.is_visible("#rememberTrainingReady"))
         print("training duration slider visible:", await pg.is_visible("#rememberTrainingComboDurationGroup"))
         print("training start button reads 'Baustein übernehmen':", "Baustein übernehmen" in await pg.inner_text("#rememberTrainingStartBtn"))
@@ -91,7 +91,7 @@ async def main():
 
         # ==== run a fresh combo end-to-end with a short duration ====
         await pg.click('#natHome .combo-entry-link'); await pg.wait_for_timeout(200)
-        await pg.click('#comboAddGrid >> text="Remember · Bewegte Positionen"'); await pg.wait_for_timeout(300)
+        await pg.click('#comboAddGrid >> text="Positionen merken · Bewegte Positionen"'); await pg.wait_for_timeout(300)
         await pg.fill("#rememberComboDurationSlider", "15")
         await pg.dispatch_event("#rememberComboDurationSlider", "input")
         await pg.click("#rememberReadyStartBtn"); await pg.wait_for_timeout(300)

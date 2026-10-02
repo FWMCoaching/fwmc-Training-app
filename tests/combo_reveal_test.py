@@ -23,9 +23,9 @@ async def main():
         # block means briefly reopening that domain's own settings screen
         # and committing, not a plain one-click add. See the Kombi-
         # Baukasten rebuild note in CLAUDE.md.
-        await pg.click('#comboAddGrid >> text="Remember · Feste Positionen"'); await pg.wait_for_timeout(150)
+        await pg.click('#comboAddGrid >> text="Positionen merken · Feste Positionen"'); await pg.wait_for_timeout(150)
         await pg.click("#rememberReadyStartBtn"); await pg.wait_for_timeout(150)
-        await pg.click('#comboAddGrid >> text="Remember · Bewegte Positionen"'); await pg.wait_for_timeout(150)
+        await pg.click('#comboAddGrid >> text="Positionen merken · Bewegte Positionen"'); await pg.wait_for_timeout(150)
         await pg.click("#rememberReadyStartBtn"); await pg.wait_for_timeout(150)
 
         # name form should be hidden before clicking save
@@ -56,7 +56,7 @@ async def main():
         print("saved group hidden after delete:", await pg.is_hidden("#comboSavedGroup"))
 
         # cancel flow
-        await pg.click('#comboAddGrid >> text="Remember · Feste Positionen"'); await pg.wait_for_timeout(150)
+        await pg.click('#comboAddGrid >> text="Positionen merken · Feste Positionen"'); await pg.wait_for_timeout(150)
         await pg.click("#rememberReadyStartBtn"); await pg.wait_for_timeout(150)
         await pg.click("#comboSaveBtn"); await pg.wait_for_timeout(100)
         await pg.click("#comboSaveCancelBtn"); await pg.wait_for_timeout(100)

@@ -2,7 +2,7 @@ import asyncio
 from playwright.async_api import async_playwright
 URL = "http://localhost:8845/index.html"
 
-# MOT-Fähigkeit (Multiple Object Tracking): several identical-looking objects
+# Objektverfolgung (MOT) (Multiple Object Tracking): several identical-looking objects
 # drift around the stage; one or more are briefly highlighted as "targets",
 # then everything looks the same again and keeps moving for a while - the
 # client tracks the target(s) with their eyes, then taps them back once
@@ -14,7 +14,7 @@ URL = "http://localhost:8845/index.html"
 # Difficulty progression mirrors the researched MOT literature (classic
 # paradigm + NeuroTracker's 3D-MOT: 8 objects / 4 targets, speed on a
 # ±0.05-log staircase) but - per explicit user request - is now FOUR modes,
-# mirroring Flash Speicher Test's own multi-mode shape: "speed" (fixed
+# mirroring Flash-Speicher-Test's own multi-mode shape: "speed" (fixed
 # object/target count, only speedStep rises - the literature-accurate mode
 # and the one whose defaults must match 8/4), "count" (fixed speed, object/
 # target count rises from a configurable start), "both" (both rise together),

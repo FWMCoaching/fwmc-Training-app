@@ -3,7 +3,7 @@ from playwright.async_api import async_playwright
 
 URL = "http://localhost:8845/index.html"
 
-# MOT-Fähigkeit's Kombi-Baukasten capture mode - same shape as Remember/
+# Objektverfolgung (MOT)'s Kombi-Baukasten capture mode - same shape as Remember/
 # Flash (3 modes share a ready screen, "training" has its own), plus the
 # endless/progressive duration-cutoff the other 3 NAT sub-exercises got.
 
@@ -22,14 +22,14 @@ async def main():
         await pg.click('.section-tab[data-section="nat"]'); await pg.wait_for_timeout(200)
         await pg.click('#natHome .combo-entry-link'); await pg.wait_for_timeout(300)
         grid_text = await pg.inner_text("#comboAddGrid")
-        print("MOT speed entry present:", "MOT · Tempo steigt" in grid_text)
-        print("MOT count entry present:", "MOT · Anzahl steigt" in grid_text)
-        print("MOT both entry present:", "MOT · Beides steigt" in grid_text)
-        print("MOT training entry present:", "MOT · Trainingsmodus" in grid_text)
+        print("MOT speed entry present:", "Objektverfolgung (MOT) · Tempo steigt" in grid_text)
+        print("MOT count entry present:", "Objektverfolgung (MOT) · Anzahl steigt" in grid_text)
+        print("MOT both entry present:", "Objektverfolgung (MOT) · Beides steigt" in grid_text)
+        print("MOT training entry present:", "Objektverfolgung (MOT) · Trainingsmodus" in grid_text)
 
-        await pg.click('#comboAddGrid >> text="MOT · Tempo steigt"'); await pg.wait_for_timeout(300)
+        await pg.click('#comboAddGrid >> text="Objektverfolgung (MOT) · Tempo steigt"'); await pg.wait_for_timeout(300)
         print("capture mode opens motReady:", await pg.is_visible("#motReady"))
-        print("title swapped to capture mode:", "Baustein: MOT · Tempo steigt" in await pg.inner_text("#motReadyTitle"))
+        print("title swapped to capture mode:", "Baustein: Objektverfolgung (MOT) · Tempo steigt" in await pg.inner_text("#motReadyTitle"))
         print("duration slider visible only in capture mode:", await pg.is_visible("#motComboDurationGroup"))
         print("duration defaults to 60s:", await pg.input_value("#motComboDurationSlider") == "60")
         print("start button reads 'Baustein übernehmen':", "Baustein übernehmen" in await pg.inner_text("#motReadyStartBtn"))
@@ -52,7 +52,7 @@ async def main():
         print("still exactly 1 block after re-edit+commit:", await pg.locator("#comboBlockList .chapter-row").count() == 1)
 
         # ---- cancel path ----
-        await pg.click('#comboAddGrid >> text="MOT · Tempo steigt"'); await pg.wait_for_timeout(300)
+        await pg.click('#comboAddGrid >> text="Objektverfolgung (MOT) · Tempo steigt"'); await pg.wait_for_timeout(300)
         await pg.click("#motReadyBackToHome"); await pg.wait_for_timeout(300)
         print("cancel returns to comboScreen:", await pg.is_visible("#comboScreen"))
         print("still exactly 1 block (cancelled add discarded):", await pg.locator("#comboBlockList .chapter-row").count() == 1)
@@ -69,7 +69,7 @@ async def main():
 
         # ==== training mode: separate screen, separate duration slider ====
         await pg.click('#natHome .combo-entry-link'); await pg.wait_for_timeout(200)
-        await pg.click('#comboAddGrid >> text="MOT · Trainingsmodus"'); await pg.wait_for_timeout(300)
+        await pg.click('#comboAddGrid >> text="Objektverfolgung (MOT) · Trainingsmodus"'); await pg.wait_for_timeout(300)
         print("training capture opens motTrainingReady:", await pg.is_visible("#motTrainingReady"))
         print("training duration slider visible:", await pg.is_visible("#motTrainingComboDurationGroup"))
         print("training start button reads 'Baustein übernehmen':", "Baustein übernehmen" in await pg.inner_text("#motTrainingStartBtn"))
@@ -85,7 +85,7 @@ async def main():
 
         # ==== run a fresh combo end-to-end with a short duration ====
         await pg.click('#natHome .combo-entry-link'); await pg.wait_for_timeout(200)
-        await pg.click('#comboAddGrid >> text="MOT · Anzahl steigt"'); await pg.wait_for_timeout(300)
+        await pg.click('#comboAddGrid >> text="Objektverfolgung (MOT) · Anzahl steigt"'); await pg.wait_for_timeout(300)
         await pg.fill("#motComboDurationSlider", "15")
         await pg.dispatch_event("#motComboDurationSlider", "input")
         await pg.click("#motReadyStartBtn"); await pg.wait_for_timeout(300)

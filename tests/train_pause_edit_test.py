@@ -116,7 +116,7 @@ async def main():
         pg = await new_page(b, errors)
         await pg.click('#home [data-open-combo="1"]'); await pg.wait_for_timeout(150)
         for _ in range(3):
-            await pg.click('#comboAddGrid >> text="Remember · Feste Positionen"'); await pg.wait_for_timeout(300)
+            await pg.click('#comboAddGrid >> text="Positionen merken · Feste Positionen"'); await pg.wait_for_timeout(300)
             await pg.fill("#rememberComboDurationSlider", "15")
             await pg.dispatch_event("#rememberComboDurationSlider", "input")
             await pg.click("#rememberReadyStartBtn"); await pg.wait_for_timeout(300)

@@ -192,6 +192,9 @@ async def main():
         # ---- let it finish, then end the session cleanly ----
         print("back at cardioPlayer once more:", await wait_for_visible("#cardioPlayer"))
         await pg.click("#cardioBackBtn"); await pg.wait_for_timeout(200)
+        # a run past one minute asks "Wirklich beenden?" first
+        if await pg.is_visible("#confirmSheet"):
+            await pg.click("#confirmYesBtn"); await pg.wait_for_timeout(200)
         print("abort back at cardioReady:", await pg.is_visible("#cardioReady"))
         print("badge stays hidden after aborting:", await pg.is_hidden("#cardioGuestBadge"))
 

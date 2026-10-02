@@ -43,7 +43,7 @@ async def main():
         await pg.click("#flankerAdvanced summary"); await pg.wait_for_timeout(80)
         grp = '#flankerReady .cvd-group'
         print("Flanker shows only the symbol switch (no fixed palette):", await pg.locator(f"{grp} [data-cvd-kind='fb']").count() == 2 and await pg.locator(f"{grp} [data-cvd-kind='pal']").count() == 0)
-        print("'An' active, following Master:", "active" in (await pg.get_attribute(f"{grp} [data-cvd-val='1']", "class") or "") and "Master" in await pg.inner_text(f"{grp} .cvd-status"))
+        print("'An' active, following Master:", "active" in (await pg.get_attribute(f"{grp} [data-cvd-val='1']", "class") or "") and "Grundeinstellungen" in await pg.inner_text(f"{grp} .cvd-status"))
 
         # Badge appears on real feedback
         await pg.click("#flankerReadyStartBtn"); await pg.wait_for_timeout(200)
