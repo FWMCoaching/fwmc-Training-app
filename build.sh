@@ -4,6 +4,11 @@
 set -e
 cd "$(dirname "$0")"
 
+# "Stand: <Datum, Uhrzeit>" in every footer (Fabian, 2026-10-02), so it's
+# easy to see whether the newest version is open. Stamped at build time.
+STAND=$(TZ=Europe/Berlin date "+%d.%m.%Y, %H:%M")
+body() { sed "s|__APP_STAND__|$STAND|g" _body.html; }
+
 {
 cat <<'EOF'
 <!doctype html>
@@ -25,7 +30,7 @@ cat <<'EOF'
 </head>
 <body>
 EOF
-cat _body.html
+body
 cat <<'EOF'
 
 <script src="./app.js" defer></script>
@@ -38,7 +43,7 @@ EOF
 echo '<title>FWMC Online-Training</title>'
 echo '<link rel="stylesheet" href="styles.css">'
 echo
-cat _body.html
+body
 echo
 echo '<script src="app.js" defer></script>'
 } > artifact-body.html

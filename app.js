@@ -1935,7 +1935,8 @@
     cardioAddonWindowStartSlider: $("cardioAddonWindowStartSlider"), cardioAddonWindowStartValue: $("cardioAddonWindowStartValue"),
     cardioAddonWindowEndSlider: $("cardioAddonWindowEndSlider"), cardioAddonWindowEndValue: $("cardioAddonWindowEndValue"),
     cardioAddonPerType: $("cardioAddonPerType"),
-    cardioPlayer: $("cardioPlayer"), cardioBackBtn: $("cardioBackBtn"), cardioSkipBtn: $("cardioSkipBtn"),
+    cardioPlayer: $("cardioPlayer"), cardioBackBtn: $("cardioBackBtn"),
+    cardioFsBtn: $("cardioFsBtn"), cardioFsHint: $("cardioFsHint"), cardioFsHintOpenBtn: $("cardioFsHintOpenBtn"), cardioFsHintClose: $("cardioFsHintClose"), cardioSkipBtn: $("cardioSkipBtn"),
     cardioPrevBtn: $("cardioPrevBtn"), cardioRestartBtn: $("cardioRestartBtn"),
     cardioAddonTriggerBtn: $("cardioAddonTriggerBtn"),
     cardioAddonPicker: $("cardioAddonPicker"), cardioAddonPickerTypeRow: $("cardioAddonPickerTypeRow"),
@@ -4631,6 +4632,9 @@
     els.comboTransition.hidden = true;
     els.comboDonePanel.hidden = true;
     els.breathProgramDonePanel.hidden = true;
+    // A player that was just hidden can't stay the fullscreen element
+    // (Cardio's guest takeover, its finish/abort, any other exit).
+    if (document.fullscreenElement && document.fullscreenElement.hidden) document.exitFullscreen().catch(() => {});
   }
 
   function runSession() {
@@ -5115,6 +5119,7 @@
   wireFullscreen({ player: els.tsPlayer, btn: els.tsFsBtn, hint: els.tsFsHint, hintOpen: els.tsFsHintOpenBtn, hintClose: els.tsFsHintClose });
   wireFullscreen({ player: els.antiPlayer, btn: els.antiFsBtn, hint: els.antiFsHint, hintOpen: els.antiFsHintOpenBtn, hintClose: els.antiFsHintClose });
   wireFullscreen({ player: els.workoutPlayer, btn: els.workoutFsBtn, hint: els.workoutFsHint, hintOpen: els.workoutFsHintOpenBtn, hintClose: els.workoutFsHintClose });
+  wireFullscreen({ player: els.cardioPlayer, btn: els.cardioFsBtn, hint: els.cardioFsHint, hintOpen: els.cardioFsHintOpenBtn, hintClose: els.cardioFsHintClose });
   window.addEventListener("resize", () => { if (!els.player.hidden && !coneTap) fitCanvas(); });
   // All the exercise engines compute "elapsed" as performance.now() minus a
   // startTime captured when they began. Backgrounding the tab (switching
@@ -5124,9 +5129,25 @@
   // if no time passed while away, instead of building a separate pause/
   // resume UI for each engine.
   let hiddenAt = null;
+  // Auto-Pause (Fabian, 2026-10-02): leaving the app mid-training (a call,
+  // switching apps) presses that player's own visible "Pause" button, so
+  // the client comes back to its pause screen instead of a run that kept
+  // going or silently jumped. Cardio is deliberately left running - the
+  // client keeps moving while the phone is away. Players without a pause
+  // button keep the timestamp shift below.
+  function autoPauseOnLeave() {
+    if (cardioState) return;
+    const visible = (el) => el && !el.hidden && el.getClientRects().length > 0;
+    const openOverlay = [...document.querySelectorAll(".pause-overlay")].some(visible);
+    if (openOverlay) return;
+    const btn = [...document.querySelectorAll("button[id$='PauseBtn']")]
+      .find((b) => visible(b) && !b.disabled && b.textContent.trim().startsWith("Pause"));
+    if (btn) btn.click();
+  }
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {
       hiddenAt = performance.now();
+      autoPauseOnLeave();
       return;
     }
     if (document.visibilityState !== "visible") return;
@@ -13651,6 +13672,7 @@
     cardioState = null;
     if (comboProgram) { advanceComboProgram(totalS); return; }
     els.cardioPlayer.hidden = true;
+    if (document.fullscreenElement === els.cardioPlayer) document.exitFullscreen().catch(() => {});
     const names = [...new Set(realItems.map((b) => findCardioActivity(b.activity).name))].join(", ");
     const id = cardioProgram
       ? addHistory({ kind: "cardio-plan", title: cardioProgram.title, progKey: cardioProgram.key, seconds: Math.round(totalS), note: names })
