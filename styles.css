@@ -1155,7 +1155,7 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .slider-row input[type="range"]{flex:1;min-width:0;accent-color:var(--brand);height:28px}
 .slider-row.two-line{flex-direction:column;align-items:stretch;gap:4px}
 .slider-line{display:flex;align-items:center;gap:10px;min-width:0}
-.slider-label{font-size:12.5px;color:var(--ink-soft);flex:none;width:30px}
+.slider-label{font-size:12.5px;color:var(--ink-soft);flex:none;min-width:30px;white-space:nowrap}
 .slider-value{
   font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;
   color:var(--brand-deep);text-align:right;align-self:flex-end;min-width:56px;
@@ -1643,9 +1643,30 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 /* ---- Kraftplan (multi-exercise strength builder, 2026-10-02) ---- */
 .strength-item-row .chapter-main .info span{display:block;font-size:12px;color:var(--ink-soft);font-weight:400}
 .strength-field-row span:first-child{min-width:86px}
-.strength-range-select{
+.strength-range-select,.strength-mode-select,.strength-side-select{
   flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-size:13px;
   font-family:inherit;color:var(--ink);background:var(--surface);
 }
 .strength-move{font-size:14px}
 .workout-rest-next{font-size:14px;color:#4f6168;text-align:center;max-width:90%}
+/* Kraftplan per-item options: Art, Pause danach, Supersatz (2026-10-02) */
+.strength-check{font-weight:400;font-size:13px;padding:4px 0}
+.strength-options,.strength-more{margin-top:6px;border-top:1px dashed var(--line);padding-top:6px}
+.strength-options summary,.strength-more summary{cursor:pointer;font-size:13px;color:var(--brand);font-weight:600;list-style:none}
+.strength-options summary::-webkit-details-marker,.strength-more summary::-webkit-details-marker{display:none}
+.strength-options summary::before,.strength-more summary::before{content:"\25B8  "}
+.strength-options[open] summary::before,.strength-more[open] summary::before{content:"\25BE  "}
+.strength-options-body{display:flex;flex-direction:column;gap:6px;padding-top:6px;font-size:12.5px;color:var(--ink-soft)}
+.strength-options .link-btn{background:none;border:none;padding:4px 0;color:var(--brand);font-size:13px;text-align:left;text-decoration:underline;cursor:pointer;font-family:inherit}
+.strength-item-row.in-superset{border-left:4px solid var(--brand)}
+.strength-tempo{flex:1;min-width:0;max-width:150px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
+.strength-hint{font-size:12px;margin:-2px 0 2px}
+
+/* "Alle entfernen" next to a built list's title (2026-10-02) */
+.list-clear-btn{float:right;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);font:inherit;font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;border-radius:999px;padding:3px 10px;cursor:pointer}
+.list-clear-btn:hover{color:#c62828;border-color:#c62828}
+/* Töne & Ansagen controls (Master + each area's Feineinstellungen) */
+.cue-domain .checkbox-row,.cue-master .checkbox-row{margin-top:8px;font-weight:500}
+.cue-sub-label{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin:12px 0 6px}
+.checkbox-row.cue-indent{margin-left:26px}
+.cue-domain .choice-row,.cue-master .choice-row{flex-wrap:wrap}

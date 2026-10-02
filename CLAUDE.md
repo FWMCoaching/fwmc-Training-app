@@ -574,6 +574,18 @@ unrelated to the feature being changed.
   ~375-430px AND ~768px+, not just one or the other) rather than assuming
   the existing headroom still holds. Test: `tests/nav_overflow_test.py`.
 
+
+- **No overlaps in settings UI either (client, 2026-10-02, after "Intensität"
+  was covered by its slider in Master-Einstellungen)**: the no-overlap rule
+  for stages applies to every settings screen too. `.slider-label` had a
+  fixed `width:30px`, so any label longer than "Min"/"Max" ran under the
+  range input; it is now `min-width:30px;white-space:nowrap`. Never give a
+  text label a fixed width. `tests/no_overlap_settings_test.py` clones every
+  `.slider-row` into a 280px box and checks the Master sheet and several
+  ready screens live (all `<details>` open), measuring the TEXT extent
+  (a Range rect), not just the element box - overflowing text doesn't grow
+  the box, which is why a plain rect check missed this bug.
+
 ## Known open items
 
 - **Remember overlap edge case**: at the maximum density (24 markers,
@@ -3937,6 +3949,112 @@ none - cheap here and useful for strength order).
 - **Migration**: an old saved single `exercise` becomes a 1-item plan.
 Tests: `tests/workout_reps_builder_test.py`, `tests/workout_reps_combo_test.py`
 (both rewritten for the plan builder).
+
+### Kraftplan v3: Art, Pause danach, Supersatz (2026-10-02)
+
+Fabian: a base pause for the whole plan, but every exercise may deviate
+("ohne dass es unübersichtlich wird"), plus Supersätze, Pyramide and
+isometric holds inside the reps plan. Tabata stays Tabata; mixing timed
+circuits with reps goes through Kombi.
+- **Art** per item (`mode`): `"range"` (as before, the only one with
+  double progression), `"pyramid"` (`pyrFrom` -> `pyrTo` over `sets`
+  steps, `pyrBack` adds the way back: 10-8-6-8-10), `"time"` (`holdS`,
+  5-300 s; player shows "Halten starten", counts down with 3-2-1 beeps and
+  completes the set itself, "Fertig" ends early). Plank/Wandsitz
+  (`STRENGTH_HOLD_EXERCISES`) start as `"time"`.
+- **Pause danach** (`restAfterS`, null = plan's `exerciseRestS`, 0-180 s)
+  and **Supersatz** (`supersetNext` + `supersetGapS` 0-60 s) live in a
+  folded "Pause danach / Supersatz" `<details>` per item (none on the last
+  item); open state survives re-renders (`strengthOpenOptions`).
+- **Engine**: `buildStrengthSteps(plan)` flattens the plan into sets, each
+  with the pause that follows it. Linked items form a group played round
+  by round (A1 B1 A2 B2; 3+ linked items = Zirkelsatz); the round pause is
+  the group's FIRST item's `restS` (partners show a hint instead of their
+  own stepper), after the last round comes the last member's pause-after.
+  `strengthItemBlock()` precomputes `repsList` because its `sets` is the
+  already-expanded pyramid count - recomputing from it doubled the pyramid
+  (real bug, caught by the test).
+- Fabian picked from the idea list: everything except EMOM (left out).
+Test: `tests/strength_modes_test.py`.
+
+### Kraftplan v4: Maximal, Seite, Tempo, Aufwärm- und Dropsätze (2026-10-02)
+
+Same day, Fabian: offer "Maximal", build Dropsatz, Seitenwechsel "sehr
+wichtig" (one arm/leg, also on machines, neuroathletic relevance), Tempo
+and Aufwärmsätze (fixed reps or just a placeholder) - "muss clean aussehen".
+- New Art `"amrap"` ("Maximal (so viele wie möglich)"): sets only; the
+  reps input starts at this exercise's last logged number (10 at first).
+  No double progression (range items only).
+- Per item, folded in a second `<details class="strength-more">` ("Mehr
+  Optionen", summary lists what is active, open state in
+  `strengthOpenMore`), on every item incl. the last: `side` (both/lr/rl/
+  l/r, `STRENGTH_SIDE_LABELS`) + `sideGapS` (0-60, default 5, only for
+  lr/rl), `tempo` (free text ≤12, hidden for holds, shown in the player's
+  note line as "Tempo …"), `warmupSets` 0-3 + `warmupReps` (0 = "frei")
+  + `warmupRestS` (0-180, default 30), `dropSets` 0-3 (hidden for holds).
+- Engine: `strengthExpandSet()` turns each set into one sub-set per side;
+  the last working set of an item is followed on each side by its drop
+  sets (rest 0, mode "drop" - straight on); between sides a "Seitenwechsel"
+  pause; only the final sub-set carries the set's real pause. Warm-ups of
+  all group members come before the group's first round. Steps carry
+  `kind` (work/warmup/drop), `side`, `dropIdx`/`dropTotal`.
+  `currentRepsMode()` returns "warmup"/"drop" for those steps (no reps
+  logging, never progression), the item's mode otherwise.
+  `strengthStepLabel()` feeds the "Als Nächstes" line (also on a side or
+  warm-up -> work change within one exercise).
+- EMOM (every minute on the minute) deliberately not built.
+Test: `tests/strength_extras_test.py`.
+
+### Töne & Ansagen + "Alle entfernen" (2026-10-02)
+
+Fabian: an X to empty a whole built list (with "Bist du sicher? Ja/Nein"),
+and configurable sounds/announcements, Master first, each area able to
+deviate in its own Feineinstellungen.
+- **"Alle entfernen"**: `.list-clear-btn` in the list title of Tabata-Zirkel
+  (`#workoutCircuitClearBtn`), Kraftplan (`#workoutRepsClearBtn`), Cardio
+  (`#cardioClearBtn`) and Kombi (`#comboClearBtn`), hidden while empty.
+  Asks through the in-app `#confirmSheet` (`confirmDialog(text, onYes)`),
+  never the browser's `confirm()`. Reuse `confirmDialog` for any new
+  destructive one-tap action.
+- **Settings shape**: `masterPrefs.cues` = `{countdownS 0|3|5, countStart,
+  countEnd, tickS 0|10|15|30|60, announceNext, announceNote, announceHalf,
+  announceLastRound, announceLastSet}` (`normalizeCueCfg`), plus
+  `masterPrefs.cuesIgnoreSilent`. Per area (`tabata`/`strength`/`cardio`/
+  `kombi`) an optional full copy in `fwmc-cue-overrides-v1`; `cueCfg(domain)`
+  returns the override or the Master. UI is rendered by JS into
+  `#masterCuesGroup` and each `#cueDomain_<domain>` (choice "Wie Master-
+  Einstellungen" / "Eigene Einstellung", the latter seeded from the Master;
+  `CUE_FIELD_LABELS` decides which options an area shows and their wording).
+  Cardio and Kombi got a new "Feineinstellungen" `<details>` for this.
+- **Playback**: `playCueTone()` (beeps 880 Hz short / 1180 Hz long, Takt-Ton
+  620 Hz soft), `cueSay()` (device speech synthesis, queued, de-DE), both
+  muted by the existing speaker toggle (`workoutSoundPrefs.enabled`).
+  `cueCountdownBeep`/`cueTickCheck` fire each mark once per phase. Countdown
+  "Aus" also drops the long transition beep (`cueTransitionBeeps`).
+  - Tabata (`circuitTick`, `cueTabataFrameStart`): countdown to every work
+    start/end, Takt-Ton in work phases, in each pause the next exercise
+    (+ note if the pause is ≥ 8 s), "Letzte Runde" before the last pass,
+    "Halbzeit" at half the total time (≥ 60 s).
+  - Kraftplan (`startRepsRest`, `cueStrengthRestStart`, `startWorkoutHold`):
+    countdown at the end of every pause (incl. "Bereit machen"), countdown +
+    Takt-Ton in holds, at pause start "Halbzeit" (half the steps), "Letzter
+    Satz" (once, not again for the second side), next exercise only when it
+    changes, else "Seitenwechsel".
+  - Cardio (`cueCardioTick`/`cueCardioAnnounce`): long beep at every
+    activity/pause/interval-phase change with countdowns before them, Takt-
+    Ton, next activity (+ its label as the "note"), "Letzte Aktivität",
+    "Halbzeit".
+  - Kombi (`showComboTransition`): next Baustein, "Letzter Baustein",
+    countdown at the end of the pause.
+- **iPhone silent switch** (checked 2026-10-02, not on a device): iOS puts
+  web audio in the "ambient" session, which the switch mutes on the speaker
+  (not on headphones); media volume alone doesn't help. The opt-in "Töne
+  auch bei eingeschaltetem Stummschalter" sets `navigator.audioSession.type
+  = "playback"` (Safari 17+), which plays through the switch but usually
+  pauses other music. Needs a real-device check by Fabian.
+- Vibration: parked until there is a native app (iPhone web apps can't).
+Test: `tests/cues_test.py` (fake AudioContext records tones, `window.__cueLog`
+records spoken texts).
 
 ### Interval phase wording corrected (2026-09-30)
 

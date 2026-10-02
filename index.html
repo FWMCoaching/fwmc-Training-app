@@ -574,7 +574,7 @@
   </div>
 
   <div class="group">
-    <div class="group-label">Deine Cardio-Einheit <span class="group-count" id="cardioCount"></span></div>
+    <div class="group-label">Deine Cardio-Einheit <span class="group-count" id="cardioCount"></span><button class="list-clear-btn" type="button" id="cardioClearBtn" hidden aria-label="Ganze Liste leeren">&#10005; Alle entfernen</button></div>
     <p class="group-help" id="cardioEmptyHint">Noch keine Aktivit&auml;t hinzugef&uuml;gt &ndash; tippe oben eine an.</p>
     <div class="chapter-list" id="cardioList"></div>
     <button class="text-link small" id="cardioSaveBtn">Aktuelle Einheit speichern</button>
@@ -586,6 +586,13 @@
       </div>
     </div>
   </div>
+
+  <details class="advanced" id="cardioCueAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group cue-domain" id="cueDomain_cardio" data-cue-domain="cardio"></div>
+    </div>
+  </details>
 
   <details class="advanced" id="cardioAddonAdvanced">
     <summary>Zusatzaufgabe w&auml;hrend Cardio</summary>
@@ -3429,7 +3436,7 @@
   </div>
 
   <div class="group">
-    <div class="group-label">Dein Zirkel <span class="group-count" id="workoutCircuitCount"></span></div>
+    <div class="group-label">Dein Zirkel <span class="group-count" id="workoutCircuitCount"></span><button class="list-clear-btn" type="button" id="workoutCircuitClearBtn" hidden aria-label="Ganze Liste leeren">&#10005; Alle entfernen</button></div>
     <p class="group-help" id="workoutCircuitEmptyHint">Noch keine &Uuml;bung ausgew&auml;hlt &ndash; tippe oben eine an.</p>
     <div class="chapter-list" id="workoutCircuitList"></div>
     <button class="text-link small" id="workoutCircuitSaveBtn">Aktuellen Zirkel speichern</button>
@@ -3498,6 +3505,7 @@
         </div>
         <div class="group-help">Optionale ruhige Phase ganz am Ende, nach dem letzten Satz. Bei 0 s entf&auml;llt sie.</div>
       </div>
+      <div class="group cue-domain" id="cueDomain_tabata" data-cue-domain="tabata"></div>
     </div>
   </details>
 
@@ -3531,7 +3539,7 @@
   </div>
 
   <div class="group">
-    <div class="group-label">Dein Kraftplan <span class="group-count" id="workoutRepsCount"></span></div>
+    <div class="group-label">Dein Kraftplan <span class="group-count" id="workoutRepsCount"></span><button class="list-clear-btn" type="button" id="workoutRepsClearBtn" hidden aria-label="Ganze Liste leeren">&#10005; Alle entfernen</button></div>
     <p class="group-help" id="workoutRepsEmptyHint">Noch keine &Uuml;bung ausgew&auml;hlt &ndash; tippe oben auf das &bdquo;+&ldquo; neben einer &Uuml;bung.</p>
     <div class="chapter-list" id="workoutRepsList"></div>
     <button class="text-link small" id="workoutRepsSaveBtn">Aktuellen Kraftplan speichern</button>
@@ -3545,12 +3553,12 @@
   </div>
 
   <div class="group">
-    <div class="group-label">Pause zwischen &Uuml;bungen</div>
+    <div class="group-label">Pause zwischen &Uuml;bungen (Standard)</div>
     <div class="slider-row">
       <input type="range" id="workoutRepsExerciseRestSlider" min="0" max="180" step="5" aria-label="Pause zwischen &Uuml;bungen">
       <span class="slider-value" id="workoutRepsExerciseRestValue"></span>
     </div>
-    <div class="group-help">Wechselpause nach dem letzten Satz einer &Uuml;bung, bevor die n&auml;chste beginnt. Bei 0 s geht es direkt weiter.</div>
+    <div class="group-help">Standard-Wechselpause nach dem letzten Satz einer &Uuml;bung, bevor die n&auml;chste beginnt. Bei 0 s geht es direkt weiter. Unter &bdquo;Pause danach&ldquo; an jeder &Uuml;bung kannst du davon abweichen oder einen Supersatz mit der n&auml;chsten &Uuml;bung einstellen.</div>
   </div>
 
   <details class="advanced" id="workoutRepsAdvanced">
@@ -3599,6 +3607,7 @@
         </div>
         <div class="group-help">So lange z&auml;hlt der Countdown &bdquo;Bereit machen&ldquo;, bevor die erste &Uuml;bung losgeht. Bei 0 s geht es sofort los.</div>
       </div>
+      <div class="group cue-domain" id="cueDomain_strength" data-cue-domain="strength"></div>
     </div>
   </details>
 
@@ -5511,7 +5520,7 @@
   </div>
 
   <div class="group">
-    <div class="group-label">Deine Abfolge <span class="group-count" id="comboBlockCount"></span></div>
+    <div class="group-label">Deine Abfolge <span class="group-count" id="comboBlockCount"></span><button class="list-clear-btn" type="button" id="comboClearBtn" hidden aria-label="Ganze Liste leeren">&#10005; Alle entfernen</button></div>
     <div class="chapter-list" id="comboBlockList"></div>
     <div class="group-help" id="comboEmptyHint">Noch keine Bausteine hinzugef&uuml;gt.</div>
     <button class="text-link small" id="comboSaveBtn">Aktuelles Programm speichern</button>
@@ -5523,6 +5532,13 @@
       </div>
     </div>
   </div>
+
+  <details class="advanced" id="comboCueAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group cue-domain" id="cueDomain_kombi" data-cue-domain="kombi"></div>
+    </div>
+  </details>
 
   <button class="start-btn" id="comboStartBtn">Programm starten</button>
 </div>
@@ -5715,12 +5731,25 @@
       </div>
     </div>
 
+    <div class="group cue-master" id="masterCuesGroup"></div>
+
     <div class="group" id="masterCodeHistoryGroup" hidden>
       <div class="group-label">Zuletzt genutzte Trainings-Codes</div>
       <div class="bundle-list" id="masterCodeHistoryList"></div>
     </div>
 
     <button class="start-btn" id="masterSettingsCloseBtn">Schlie&szlig;en</button>
+  </div>
+</div>
+
+<div class="sheet" id="confirmSheet" hidden>
+  <div class="sheet-inner" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <h2 id="confirmTitle">Bist du sicher?</h2>
+    <p class="group-help" id="confirmText"></p>
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="confirmNoBtn">Nein</button>
+      <button class="start-btn" id="confirmYesBtn">Ja</button>
+    </div>
   </div>
 </div>
 

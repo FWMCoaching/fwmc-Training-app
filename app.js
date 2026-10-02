@@ -1008,7 +1008,7 @@
   function workoutBlockMeta(block) {
     if (block.kind === "tabata") return `${block.rounds} Runden à ${block.workS}s/${block.restS}s`;
     if (block.kind === "circuit") return `${block.items.length} Übungen × ${block.sets} Sätze`;
-    if (block.kind === "strength") return block.items.map((it) => `${findWorkoutExercise(it.exercise).name} ${it.sets}×${it.rangeMin}–${it.rangeMax}`).join(" · ");
+    if (block.kind === "strength") return block.items.map((it) => `${findWorkoutExercise(it.exercise).name} ${strengthItemTargetText(it)}${it.supersetNext ? " (Supersatz mit nächster)" : ""}`).join(" · ");
     if (block.rangeMin != null) return `${block.sets}×${block.rangeMin}–${block.rangeMax}`;
     return `${block.sets}×${block.reps}`;
   }
@@ -1016,11 +1016,14 @@
     if (block.kind === "tabata") return block.rounds * (block.workS + block.restS);
     if (block.kind === "circuit") return buildCircuitSchedule(block).total;
     if (block.kind === "strength") {
-      // Same rough 30s/set estimate as a single reps block, plus every set
-      // rest, every exercise-change rest and the start countdown.
+      // Rough 30s per reps set (a hold counts its own time), plus every
+      // pause that follows a set and the start countdown.
       const items = block.items || [];
-      return (block.prepS || 0) + items.reduce((t, it) => t + it.sets * 30 + (it.sets - 1) * (it.restS ?? 60), 0)
-        + Math.max(0, items.length - 1) * (block.exerciseRestS ?? 0);
+      return (block.prepS || 0) + buildStrengthSteps(block).reduce((t, step) => {
+        const it = items[step.itemIndex];
+        const setS = step.kind === "drop" ? 20 : step.kind === "work" && strengthItemMode(it) === "time" ? it.holdS : 30;
+        return t + setS + (step.rest ? step.rest.s : 0);
+      }, 0);
     }
     return block.sets * 30 + (block.sets - 1) * (block.restS ?? 30); // 30s/set is a rough estimate for the "ca." total
   }
@@ -5115,7 +5118,35 @@
   // be an inert checkbox list, not a real feature).
   const CVD_KEYS = ["rotgruen", "blaugelb", "voll"];
   const LIMB_KEYS = ["armL", "armR", "legL", "legR"];
-  const masterPrefs = { colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20 };
+  // ---- Töne & Ansagen: shared config (2026-10-02, Fabian) ----
+  // One central setting in Master-Einstellungen (masterPrefs.cues) that
+  // every timed area follows by default; each area (Tabata-Zirkel,
+  // Kraftplan, Cardio, Kombi) can switch to its own deviating setting in
+  // its Feineinstellungen (cueOverrides[domain]). Playback/UI lives next to
+  // playWorkoutBeep() further down.
+  const CUE_COUNT_CHOICES = [0, 3, 5];
+  const CUE_TICK_CHOICES = [0, 10, 15, 30, 60];
+  const CUE_BOOL_KEYS = ["countStart", "countEnd", "announceNext", "announceNote", "announceHalf", "announceLastRound", "announceLastSet"];
+  const CUE_DEFAULTS = { countdownS: 3, countStart: true, countEnd: true, tickS: 0, announceNext: false, announceNote: false, announceHalf: false, announceLastRound: false, announceLastSet: false };
+  const CUE_DOMAIN_KEYS = ["tabata", "strength", "cardio", "kombi"];
+  function normalizeCueCfg(c) {
+    const out = { ...CUE_DEFAULTS };
+    if (c && typeof c === "object") {
+      if (CUE_COUNT_CHOICES.includes(c.countdownS)) out.countdownS = c.countdownS;
+      if (CUE_TICK_CHOICES.includes(c.tickS)) out.tickS = c.tickS;
+      CUE_BOOL_KEYS.forEach((k) => { if (typeof c[k] === "boolean") out[k] = c[k]; });
+    }
+    return out;
+  }
+  const CUE_OVERRIDES_KEY = "fwmc-cue-overrides-v1";
+  const cueOverrides = {};
+  (() => {
+    const saved = readJSON(CUE_OVERRIDES_KEY, null);
+    if (saved && typeof saved === "object") CUE_DOMAIN_KEYS.forEach((d) => { if (saved[d]) cueOverrides[d] = normalizeCueCfg(saved[d]); });
+  })();
+  function saveCueOverrides() { writeJSON(CUE_OVERRIDES_KEY, cueOverrides); }
+
+  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20 };
   function loadMasterPrefs() {
     const saved = readJSON(MASTER_PREFS_KEY, null);
     if (saved && typeof saved === "object") {
@@ -5149,6 +5180,8 @@
     if (masterPrefs.defaultBgColorKey != null && !STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey]) masterPrefs.defaultBgColorKey = null;
     if (!Number.isFinite(masterPrefs.defaultBgIntensity) || masterPrefs.defaultBgIntensity < 0 || masterPrefs.defaultBgIntensity > 1) masterPrefs.defaultBgIntensity = 0;
     if (!Number.isFinite(masterPrefs.defaultPauseS) || masterPrefs.defaultPauseS < 0 || masterPrefs.defaultPauseS > 180) masterPrefs.defaultPauseS = 20;
+    masterPrefs.cues = normalizeCueCfg(masterPrefs.cues);
+    if (typeof masterPrefs.cuesIgnoreSilent !== "boolean") masterPrefs.cuesIgnoreSilent = false;
     // Persist immediately so a migrated (or just-cleaned-up) shape actually
     // lands on disk right away, rather than silently staying in the old
     // shape in storage until the client happens to touch some toggle -
@@ -5612,7 +5645,7 @@
   let masterSettingsReturnFocus = null;
   function openMasterSettings() {
     masterSettingsReturnFocus = document.activeElement;
-    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); syncMasterBgUI(); syncMasterPauseUI(); renderMasterCodeHistory();
+    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); syncMasterBgUI(); syncMasterPauseUI(); renderMasterCues(); renderMasterCodeHistory();
     els.masterSettingsSheet.hidden = false;
     focusFirstIn(els.masterSettingsSheet);
   }
@@ -9544,42 +9577,158 @@
   // (shaped like a range-mode reps block), workoutState.strength the whole
   // plan - so renderRepsView()/the set-done button/the rest countdown need
   // only small, item-aware additions rather than a second engine.
+  // Item shapes (block items, explicit numbers, no preset keys):
+  //   mode "range"   - rangeMin/rangeMax per set (double progression)
+  //   mode "pyramid" - pyrFrom -> pyrTo over `sets` steps, optional pyrBack
+  //                    (back up again: 12-10-8-10-12)
+  //   mode "time"    - holdS per set (isometric hold, counted down)
+  // plus restS (between sets), restAfterS (pause after this exercise,
+  // null = the plan's exerciseRestS), supersetNext/supersetGapS (alternate
+  // set by set with the next exercise, gap between the two). Items from
+  // before modes existed have no `mode` and are plain range items.
+  // v4 (2026-10-02, same day): mode "amrap" (so viele wie möglich) plus
+  // per-item extras - side ("both" | "lr" | "rl" | "l" | "r", one-sided
+  // work with sideGapS between the sides), tempo (free text like
+  // "3-1-1-0", shown during the set), warmupSets/warmupReps (0 = frei)/
+  // warmupRestS before the exercise's first working set, and dropSets
+  // straight after its last working set (lighter weight, max reps).
+  const STRENGTH_MODES = ["range", "pyramid", "time", "amrap"];
+  const STRENGTH_SIDES = ["both", "lr", "rl", "l", "r"];
+  const STRENGTH_SIDE_LABELS = { both: "Beidseitig / ohne Seite", lr: "Erst links, dann rechts", rl: "Erst rechts, dann links", l: "Nur links", r: "Nur rechts" };
+  function strengthItemMode(it) { return STRENGTH_MODES.includes(it.mode) ? it.mode : "range"; }
+  function strengthItemSideList(it) {
+    return it.side === "lr" ? ["l", "r"] : it.side === "rl" ? ["r", "l"] : it.side === "l" ? ["l"] : it.side === "r" ? ["r"] : [null];
+  }
+  function strengthPyramidReps(it) {
+    const n = Math.max(1, it.sets || 1);
+    const a = it.pyrFrom ?? 12, b = it.pyrTo ?? 6;
+    const down = Array.from({ length: n }, (_, k) => (n === 1 ? a : Math.round(a + (b - a) * k / (n - 1))));
+    return it.pyrBack && n > 1 ? down.concat(down.slice(0, -1).reverse()) : down;
+  }
+  // Effective number of sets (a "back up again" pyramid adds sets).
+  function strengthItemSets(it) {
+    return strengthItemMode(it) === "pyramid" ? strengthPyramidReps(it).length : it.sets;
+  }
+  function strengthSetTargetText(it, set) {
+    const mode = strengthItemMode(it);
+    if (mode === "time") return `${it.holdS} s halten`;
+    if (mode === "pyramid") return `${(it.repsList || strengthPyramidReps(it))[set - 1]} Wiederholungen`;
+    if (mode === "amrap") return "So viele wie möglich";
+    return `${it.rangeMin}–${it.rangeMax} Wiederholungen`;
+  }
+  function strengthItemTargetText(it) {
+    const mode = strengthItemMode(it);
+    if (mode === "time") return `${it.sets}× ${it.holdS} s halten`;
+    let text = mode === "pyramid" ? `Pyramide ${strengthPyramidReps(it).join("–")}`
+      : mode === "amrap" ? `${it.sets}× maximal`
+      : `${it.sets}×${it.rangeMin}–${it.rangeMax}`;
+    if (it.side === "l" || it.side === "r") text += ` · nur ${it.side === "l" ? "links" : "rechts"}`;
+    else if (it.side === "lr" || it.side === "rl") text += " · je Seite";
+    if (it.warmupSets > 0) text += ` · ${it.warmupSets} ${it.warmupSets > 1 ? "Aufwärmsätze" : "Aufwärmsatz"}`;
+    if (it.dropSets > 0 && mode !== "time") text += ` · ${it.dropSets} ${it.dropSets > 1 ? "Dropsätze" : "Dropsatz"}`;
+    return text;
+  }
+  // The whole plan as a flat list of sets, each knowing the pause that
+  // follows it. A run of items linked by supersetNext forms one group that
+  // is played round by round (A1 B1, A2 B2, ...): the gap between members
+  // is the member's own supersetGapS, the pause after a round is the
+  // group's first item's set rest, and after the last round comes the
+  // last member's pause-after (or the plan default). Warm-up sets of every
+  // member come before the group's first round; each set is split per
+  // side (see strengthExpandSet) and an item's last working set is
+  // followed directly by its drop sets.
+  function strengthExpandSet(items, k, base, rest, steps) {
+    const it = items[k];
+    const sides = strengthItemSideList(it);
+    const drops = base.kind === "work" && base.set === base.sets && strengthItemMode(it) !== "time" ? (it.dropSets || 0) : 0;
+    sides.forEach((side, si) => {
+      steps.push({ ...base, itemIndex: k, side, rest: { s: 0, mode: "drop" } });
+      for (let d = 1; d <= drops; d++) steps.push({ ...base, itemIndex: k, side, kind: "drop", dropIdx: d, dropTotal: drops, rest: { s: 0, mode: "drop" } });
+      steps[steps.length - 1].rest = si < sides.length - 1 ? { s: it.sideGapS ?? 5, mode: "side" } : rest;
+    });
+  }
+  function buildStrengthSteps(plan) {
+    const items = plan.items || [];
+    const steps = [];
+    let i = 0;
+    while (i < items.length) {
+      let j = i;
+      while (j < items.length - 1 && items[j].supersetNext) j += 1;
+      const isGroup = j > i;
+      for (let k = i; k <= j; k++) {
+        const warm = items[k].warmupSets || 0;
+        for (let w = 1; w <= warm; w++) strengthExpandSet(items, k, { kind: "warmup", set: w, sets: warm, superset: false }, { s: items[k].warmupRestS ?? 30, mode: "warmup" }, steps);
+      }
+      const rounds = Math.max(...items.slice(i, j + 1).map(strengthItemSets));
+      for (let r = 1; r <= rounds; r++) {
+        const members = [];
+        for (let k = i; k <= j; k++) if (strengthItemSets(items[k]) >= r) members.push(k);
+        members.forEach((k, mi) => {
+          let rest;
+          if (mi < members.length - 1) rest = { s: items[k].supersetGapS ?? 0, mode: "superset" };
+          else if (r < rounds) rest = { s: items[isGroup ? i : k].restS ?? 60, mode: "set" };
+          else rest = { s: items[j].restAfterS ?? plan.exerciseRestS ?? 0, mode: "item" };
+          strengthExpandSet(items, k, { kind: "work", set: r, sets: strengthItemSets(items[k]), superset: isGroup }, rest, steps);
+        });
+      }
+      i = j + 1;
+    }
+    if (steps.length) steps[steps.length - 1].rest = null;
+    return steps;
+  }
   function strengthItemBlock(item) {
-    return { kind: "reps", exercise: item.exercise, sets: item.sets, reps: item.rangeMax, rangeMin: item.rangeMin, rangeMax: item.rangeMax, restS: item.restS, note: item.note || "" };
+    return {
+      kind: "reps", mode: strengthItemMode(item), exercise: item.exercise, sets: strengthItemSets(item),
+      reps: item.rangeMax, rangeMin: item.rangeMin, rangeMax: item.rangeMax,
+      pyrFrom: item.pyrFrom, pyrTo: item.pyrTo, pyrBack: item.pyrBack, holdS: item.holdS,
+      // Precomputed: `sets` above is already the expanded count of a
+      // there-and-back pyramid, so it must not be expanded a second time.
+      repsList: strengthItemMode(item) === "pyramid" ? strengthPyramidReps(item) : null,
+      restS: item.restS, note: item.note || "",
+      side: item.side || "both", tempo: item.tempo || "", warmupReps: item.warmupReps || 0,
+    };
+  }
+  // What the current set actually is: a warm-up or drop set of a Kraftplan
+  // step overrides the item's own mode; a classic coach "reps" block
+  // without a range is "fixed".
+  function currentRepsMode() {
+    const st = workoutState;
+    const step = st.strength ? st.steps[st.stepIndex] : null;
+    if (step && (step.kind === "warmup" || step.kind === "drop")) return step.kind;
+    return st.block.mode || (st.block.rangeMin != null ? "range" : "fixed");
+  }
+  const sideWord = (side) => (side === "l" ? "links" : "rechts");
+  function strengthStepLabel(step) {
+    const blk = strengthItemBlock(workoutState.strength.items[step.itemIndex]);
+    const side = step.side ? ` (${sideWord(step.side)})` : "";
+    if (step.kind === "warmup") return `Aufwärmsatz${side}`;
+    if (step.kind === "drop") return `Dropsatz${side}`;
+    return strengthSetTargetText(blk, step.set) + side;
+  }
+  function strengthApplyStep(idx) {
+    const st = workoutState;
+    st.stepIndex = idx;
+    const step = st.steps[idx];
+    st.itemIndex = step.itemIndex;
+    st.block = strengthItemBlock(st.strength.items[step.itemIndex]);
+    st.ex = findWorkoutExercise(st.block.exercise);
+    st.setIndex = step.set;
   }
   function startStrengthBlock(plan) {
-    const first = strengthItemBlock(plan.items[0]);
     const now = performance.now();
     workoutState = {
-      kind: "reps", strength: plan, itemIndex: 0, block: first, ex: findWorkoutExercise(first.exercise),
-      setIndex: 1, startTime: now, sessionStart: now, achieved: [], results: [],
+      kind: "reps", strength: plan, steps: buildStrengthSteps(plan), stepIndex: 0,
+      startTime: now, sessionStart: now, achievedByItem: {},
     };
+    strengthApplyStep(0);
     requestWakeLock();
-    if ((plan.prepS || 0) > 0) {
-      renderRepsView();
-      startRepsRest(plan.prepS, "start");
-    } else {
-      renderRepsView();
-    }
-  }
-  function strengthNextItemIndex() {
-    const st = workoutState;
-    return st && st.strength && st.itemIndex + 1 < st.strength.items.length ? st.itemIndex + 1 : -1;
-  }
-  function advanceStrengthItem() {
-    const st = workoutState;
-    st.results.push({ exercise: st.block.exercise, rangeMin: st.block.rangeMin, rangeMax: st.block.rangeMax, achieved: st.achieved.slice() });
-    st.itemIndex += 1;
-    st.block = strengthItemBlock(st.strength.items[st.itemIndex]);
-    st.ex = findWorkoutExercise(st.block.exercise);
-    st.setIndex = 1;
-    st.achieved = [];
     renderRepsView();
+    if ((plan.prepS || 0) > 0) startRepsRest(plan.prepS, "start");
   }
   // Live per-set stopwatch - informational only (see CLAUDE.md's "Kraft-/
   // Wiederholungstraining" note on why time-under-tension isn't used to
   // gate anything: the research shows it tracks reps×tempo rather than
-  // being an independent lever). Only shown for range-mode blocks; a
+  // being an independent lever). Only shown for range/pyramid sets; a
   // classic fixed coach-plan "reps" block never touches this.
   function startWorkoutSetTimer() {
     stopWorkoutSetTimer();
@@ -9593,27 +9742,72 @@
     if (workoutSetTimerInterval) clearInterval(workoutSetTimerInterval);
     workoutSetTimerInterval = null;
   }
+  // Isometric hold: "Halten starten" counts holdS down (3-2-1 beeps at the
+  // end), then completes the set by itself; "Fertig" ends it early.
+  function startWorkoutHold() {
+    const st = workoutState;
+    if (!st) return;
+    stopWorkoutSetTimer();
+    const total = st.block.holdS || 30;
+    const t0 = performance.now();
+    st.holding = { t0, total };
+    els.workoutSetTimer.hidden = false;
+    els.workoutSetDoneBtn.textContent = "Fertig";
+    const beeped = new Set();
+    const cfg = cueCfg("strength");
+    const update = () => {
+      const inS = (performance.now() - t0) / 1000;
+      const left = Math.max(0, total - inS);
+      els.workoutSetTimer.textContent = `${Math.ceil(left)} s`;
+      if (cfg.countEnd && cfg.countdownS > 0) cueCountdownBeep(beeped, left, cfg.countdownS);
+      cueTickCheck(beeped, inS, left, cfg);
+      if (left <= 0) { if (cfg.countEnd && cfg.countdownS > 0) playWorkoutBeep(true); completeWorkoutSet(); }
+    };
+    update();
+    workoutSetTimerInterval = setInterval(update, 200);
+  }
   function renderRepsView() {
     const { block, ex, setIndex } = workoutState;
-    const isRange = block.rangeMin != null;
+    const mode = currentRepsMode();
     els.workoutExerciseName.textContent = ex.name;
     const plan = workoutState.strength;
-    els.workoutSetInfo.textContent = (plan && plan.items.length > 1 ? `Übung ${workoutState.itemIndex + 1} von ${plan.items.length} · ` : "") + `Satz ${setIndex} von ${block.sets}`;
-    els.workoutRepsBig.textContent = isRange ? `${block.rangeMin}–${block.rangeMax} Wiederholungen` : `${block.reps} Wiederholungen`;
-    els.workoutNote.textContent = block.note || ex.note || "";
+    const step = plan ? workoutState.steps[workoutState.stepIndex] : null;
+    const setText = mode === "warmup" ? `Aufwärmsatz ${step.set} von ${step.sets}`
+      : mode === "drop" ? `Dropsatz${step.dropTotal > 1 ? ` ${step.dropIdx} von ${step.dropTotal}` : ""}`
+      : `Satz ${setIndex} von ${step ? step.sets : block.sets}`;
+    els.workoutSetInfo.textContent = (plan && plan.items.length > 1 ? `Übung ${workoutState.itemIndex + 1} von ${plan.items.length} · ` : "") +
+      setText + (step && step.superset && mode !== "warmup" ? " · Supersatz" : "") + (step && step.side ? ` · ${sideWord(step.side)}` : "");
+    els.workoutRepsBig.textContent = mode === "fixed" ? `${block.reps} Wiederholungen`
+      : mode === "warmup" ? (block.warmupReps > 0 ? `${block.warmupReps} Wiederholungen, leicht` : "Locker aufwärmen, Wiederholungen nach Gefühl")
+      : mode === "drop" ? "Gewicht reduzieren, so viele wie möglich"
+      : strengthSetTargetText(block, setIndex);
+    const tempo = block.tempo && mode !== "time" && mode !== "warmup" ? `Tempo ${block.tempo}` : "";
+    els.workoutNote.textContent = [tempo, block.note || ex.note || ""].filter(Boolean).join(" · ");
     els.workoutSetDoneBtn.hidden = false;
+    els.workoutSetDoneBtn.textContent = mode === "time" ? "Halten starten" : "Satz erledigt";
     els.workoutRestBox.hidden = true;
-    els.workoutRepsInputRow.hidden = !isRange;
-    if (isRange) {
-      // Defaults to the top of the range - "aim for the last one to be
-      // genuinely hard" (the client's own words on progressive overload) -
-      // the client dials it down with -/+ only if they fell short.
-      workoutState.currentInput = block.rangeMax;
+    workoutState.holding = null;
+    const logs = mode === "range" || mode === "pyramid" || mode === "amrap";
+    els.workoutRepsInputRow.hidden = !logs;
+    if (logs) {
+      // Defaults to the target (top of the range - "aim for the last one
+      // to be genuinely hard"); dialled down with -/+ only if they fell
+      // short. "Maximal" starts at the last logged number of this exercise.
+      const prev = plan ? workoutState.achievedByItem[workoutState.itemIndex] : null;
+      workoutState.currentInput = mode === "pyramid" ? block.repsList[setIndex - 1]
+        : mode === "amrap" ? (prev && prev.length ? prev[prev.length - 1] : 10)
+        : block.rangeMax;
       els.workoutRepsInputValue.textContent = workoutState.currentInput;
-      startWorkoutSetTimer();
-    } else {
+    }
+    if (mode === "time") {
+      stopWorkoutSetTimer();
+      els.workoutSetTimer.hidden = false;
+      els.workoutSetTimer.textContent = `${block.holdS} s`;
+    } else if (mode === "fixed") {
       stopWorkoutSetTimer();
       els.workoutSetTimer.hidden = true;
+    } else {
+      startWorkoutSetTimer();
     }
   }
   els.workoutRepsInputMinus.addEventListener("click", () => {
@@ -9626,24 +9820,35 @@
     workoutState.currentInput = Math.min(99, workoutState.currentInput + 1);
     els.workoutRepsInputValue.textContent = workoutState.currentInput;
   });
-  els.workoutSetDoneBtn.addEventListener("click", () => {
-    if (!workoutState || workoutState.kind !== "reps") return;
-    if (workoutState.block.rangeMin != null) {
-      workoutState.achieved.push(workoutState.currentInput);
-      stopWorkoutSetTimer();
-    }
-    if (workoutState.setIndex >= workoutState.block.sets) {
-      if (strengthNextItemIndex() < 0) { finishWorkoutBlock(); return; }
-      const changeS = workoutState.strength.exerciseRestS ?? 0;
-      if (changeS > 0) startRepsRest(changeS, "item");
-      else advanceStrengthItem();
+  function completeWorkoutSet() {
+    const st = workoutState;
+    if (!st || st.kind !== "reps") return;
+    const mode = currentRepsMode();
+    let value = null;
+    if (mode === "range" || mode === "pyramid" || mode === "amrap") value = st.currentInput;
+    else if (mode === "time" && st.holding) value = Math.round(Math.min(st.holding.total, (performance.now() - st.holding.t0) / 1000));
+    stopWorkoutSetTimer();
+    st.holding = null;
+    if (st.strength) {
+      if (value != null) (st.achievedByItem[st.itemIndex] = st.achievedByItem[st.itemIndex] || []).push(value);
+      const rest = st.steps[st.stepIndex].rest;
+      if (!rest) { finishWorkoutBlock(); return; }
+      if (rest.s > 0) startRepsRest(rest.s, rest.mode);
+      else advanceRepsSet(rest.mode);
       return;
     }
-    startRepsRest(workoutState.block.restS ?? 30, "set");
+    if (value != null) (st.achieved = st.achieved || []).push(value);
+    if (st.setIndex >= st.block.sets) { finishWorkoutBlock(); return; }
+    startRepsRest(st.block.restS ?? 30, "set");
+  }
+  els.workoutSetDoneBtn.addEventListener("click", () => {
+    if (!workoutState || workoutState.kind !== "reps") return;
+    if (currentRepsMode() === "time" && !workoutState.holding) { startWorkoutHold(); return; }
+    completeWorkoutSet();
   });
-  // `mode` says what the countdown leads into: "set" (next set of the same
-  // exercise), "item" (next exercise of a Kraftplan) or "start" (the
-  // Kraftplan's own start countdown, before its very first set).
+  // `mode` says what the countdown leads into: "set" (next set), "superset"
+  // (the partner exercise of a Supersatz), "item" (next exercise of a
+  // Kraftplan) or "start" (the Kraftplan's own start countdown).
   function startRepsRest(restS, mode = "set") {
     workoutState.restMode = mode;
     els.workoutSetDoneBtn.hidden = true;
@@ -9651,33 +9856,74 @@
     stopWorkoutSetTimer();
     els.workoutSetTimer.hidden = true;
     els.workoutRestBox.hidden = false;
-    els.workoutRestLabel.textContent = mode === "start" ? "Bereit machen" : mode === "item" ? "Pause – Übungswechsel" : "Pause";
+    els.workoutRestLabel.textContent = mode === "start" ? "Bereit machen" : mode === "item" ? "Pause – Übungswechsel" : mode === "superset" ? "Supersatz – Wechsel" : mode === "side" ? "Seitenwechsel" : "Pause";
     let nextText = "";
-    if (mode === "item") {
-      const next = workoutState.strength.items[strengthNextItemIndex()];
-      nextText = `Als Nächstes: ${findWorkoutExercise(next.exercise).name} · ${next.sets}×${next.rangeMin}–${next.rangeMax}`;
+    const st = workoutState;
+    if (st.strength && mode !== "start") {
+      const cur = st.steps[st.stepIndex];
+      const next = st.steps[st.stepIndex + 1];
+      if (next && next.itemIndex !== st.itemIndex) {
+        const it = st.strength.items[next.itemIndex];
+        nextText = `Als Nächstes: ${findWorkoutExercise(it.exercise).name} · ${strengthStepLabel(next)}`;
+      } else if (next && (next.side !== cur.side || next.kind !== cur.kind)) {
+        nextText = `Als Nächstes: ${strengthStepLabel(next)}`;
+      }
     } else if (mode === "start") {
-      nextText = `Los geht's mit: ${workoutState.ex.name}`;
+      nextText = `Los geht's mit: ${st.ex.name}`;
     }
     els.workoutRestNext.hidden = !nextText;
     els.workoutRestNext.textContent = nextText;
     els.workoutRestSkipBtn.textContent = mode === "start" ? "Sofort starten" : "Jetzt weiter";
+    const cfg = cueCfg("strength");
+    cueStrengthRestStart(mode, restS, cfg);
+    const countOn = cfg.countStart && cfg.countdownS > 0;
     let remaining = restS;
     const tick = () => {
       els.workoutRestCountdown.textContent = Math.max(0, Math.ceil(remaining));
-      if (remaining <= 0) { advanceRepsSet(); return; }
+      if (countOn && remaining >= 1 && remaining <= cfg.countdownS) playWorkoutBeep(false);
+      if (remaining <= 0) { if (countOn) playWorkoutBeep(true); advanceRepsSet(); return; }
       workoutRestTimer = setTimeout(() => { remaining -= 1; tick(); }, 1000);
     };
     tick();
   }
-  function advanceRepsSet() {
+  // Spoken cues at the start of a Kraftplan pause: "Halbzeit", "Letzter
+  // Satz", the coming exercise (only when it changes) or a side switch,
+  // and its note when the pause is long enough to listen.
+  function cueStrengthRestStart(mode, restS, cfg) {
+    const st = workoutState;
+    if (!st || !st.strength) return;
+    const cur = mode === "start" ? null : st.steps[st.stepIndex];
+    const next = mode === "start" ? st.steps[st.stepIndex] : st.steps[st.stepIndex + 1];
+    if (!next) return;
+    const parts = [];
+    if (cfg.announceHalf && !st.cueHalfDone && cur && st.steps.length >= 4 && st.stepIndex + 1 >= st.steps.length / 2) { st.cueHalfDone = true; parts.push("Halbzeit."); }
+    const sameSetOtherSide = cur && cur.itemIndex === next.itemIndex && cur.set === next.set && cur.kind === next.kind;
+    if (cfg.announceLastSet && next.kind === "work" && next.sets > 1 && next.set === next.sets && !sameSetOtherSide) parts.push("Letzter Satz.");
+    if (cfg.announceNext) {
+      const it = st.strength.items[next.itemIndex];
+      const ex = findWorkoutExercise(it.exercise);
+      const changed = !cur || next.itemIndex !== cur.itemIndex;
+      if (changed) {
+        parts.push(mode === "start" ? `Los geht's mit ${ex.name}.` : `Als Nächstes: ${ex.name}.`);
+        const note = it.note || ex.note;
+        if (cfg.announceNote && note && restS >= 8) parts.push(note);
+      } else if (next.side && next.side !== cur.side) {
+        parts.push(`Seitenwechsel, jetzt ${sideWord(next.side)}.`);
+      }
+    }
+    if (parts.length) cueSay(parts.join(" "));
+  }
+  function advanceRepsSet(modeOverride) {
     if (workoutRestTimer) clearTimeout(workoutRestTimer);
     workoutRestTimer = null;
     if (!workoutState) return;
-    const mode = workoutState.restMode || "set";
+    const mode = modeOverride || workoutState.restMode || "set";
     workoutState.restMode = null;
-    if (mode === "item") { advanceStrengthItem(); return; }
-    if (mode === "set") workoutState.setIndex += 1;
+    if (workoutState.strength) {
+      if (mode !== "start") strengthApplyStep(workoutState.stepIndex + 1);
+    } else if (mode === "set") {
+      workoutState.setIndex += 1;
+    }
     renderRepsView();
   }
   els.workoutRestSkipBtn.addEventListener("click", () => advanceRepsSet());
@@ -9733,21 +9979,32 @@
   syncWorkoutSoundUI();
 
   let workoutAudioCtx = null;
-  function playWorkoutBeep(long) {
+  function playWorkoutBeep(long) { playCueTone(long ? 1180 : 880, long ? 0.35 : 0.11, 0.3); }
+  // The soft, short "Takt-Ton" - lower and quieter than the countdown
+  // beeps so the two never get confused.
+  function playCueTickTone() { playCueTone(620, 0.07, 0.16); }
+  // iOS routes web audio into the "ambient" session, which the ring/silent
+  // switch mutes on the speaker (not on headphones). "playback" plays
+  // through the switch but pauses other music, so it's an explicit opt-in
+  // in Master-Einstellungen (masterPrefs.cuesIgnoreSilent).
+  function applyCueAudioSession() {
+    try { if (navigator.audioSession) navigator.audioSession.type = masterPrefs.cuesIgnoreSilent ? "playback" : "auto"; } catch (e) {}
+  }
+  function playCueTone(freq, durationS, peak) {
     if (!workoutSoundPrefs.enabled) return;
     try {
+      applyCueAudioSession();
       if (!workoutAudioCtx) workoutAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const ctx = workoutAudioCtx;
       if (ctx.state === "suspended") ctx.resume();
-      const durationS = long ? 0.35 : 0.11;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.frequency.value = long ? 1180 : 880;
+      osc.frequency.value = freq;
       osc.connect(gain);
       gain.connect(ctx.destination);
       const now = ctx.currentTime;
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.3, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(peak, now + 0.01);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + durationS);
       osc.start(now);
       osc.stop(now + durationS + 0.02);
@@ -9760,6 +10017,150 @@
   let workoutBeepFrame = null;
   let workoutBeepedSeconds = null;
   function resetWorkoutBeepTracking() { workoutBeepFrame = null; workoutBeepedSeconds = new Set(); }
+
+  // ---- Töne & Ansagen: playback + settings UI (2026-10-02, Fabian) ----
+  // Effective setting for an area: its own deviating setting if one is
+  // switched on in that area's Feineinstellungen, otherwise the Master.
+  function cueCfg(domain) { return cueOverrides[domain] || masterPrefs.cues; }
+  function cueTransitionBeeps(cfg) { return cfg.countdownS > 0 && (cfg.countStart || cfg.countEnd); }
+  // Spoken announcement via the device's own speech output (no audio files).
+  // Muted together with the beeps by the speaker toggle.
+  function cueSay(text) {
+    if (!text || !workoutSoundPrefs.enabled) return;
+    window.__cueLog = window.__cueLog || [];
+    window.__cueLog.push(text);
+    if (!window.speechSynthesis) return;
+    try {
+      applyCueAudioSession();
+      // queued, not cancelled: "Halbzeit" must not cut off a running note
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "de-DE";
+      if (deVoice) u.voice = deVoice;
+      u.rate = 1.05;
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  // Short beep at each of the last n whole seconds of a phase, once each.
+  function cueCountdownBeep(tracker, remain, n) {
+    const whole = Math.ceil(remain);
+    if (whole >= 1 && whole <= n && !tracker.has(whole)) { tracker.add(whole); playWorkoutBeep(false); }
+  }
+  // "Takt-Ton" every tickS seconds of a phase, but never inside the final
+  // countdown (would collide with its beeps).
+  function cueTickCheck(tracker, inPhaseS, remain, cfg) {
+    if (!(cfg.tickS > 0)) return;
+    const k = Math.floor(inPhaseS / cfg.tickS);
+    if (k >= 1 && remain > cfg.countdownS + 0.5 && !tracker.has("t" + k)) { tracker.add("t" + k); playCueTickTone(); }
+  }
+
+  // Which settings each area offers, and how they're worded there.
+  const CUE_FIELD_LABELS = {
+    master: {
+      countStart: "Countdown vor dem Start (Ende einer Pause)",
+      countEnd: "Countdown vor dem Ende einer Übung bzw. Aktivität",
+      tick: "Takt-Ton während einer Übung",
+      announceNext: "Nächste Übung ansagen",
+      announceNote: "mit Notiz bzw. Hinweis (wenn vorhanden)",
+      announceHalf: "„Halbzeit“ ansagen",
+      announceLastRound: "„Letzte Runde“ ansagen",
+      announceLastSet: "„Letzter Satz“ ansagen (Kraftplan)",
+    },
+    tabata: { countStart: "Countdown vor dem Start jeder Übung", countEnd: "Countdown vor dem Ende jeder Übung", tick: "Takt-Ton während der Übung", announceNext: "Nächste Übung in der Pause ansagen", announceNote: "mit Notiz bzw. Hinweis (wenn vorhanden)", announceHalf: "„Halbzeit“ ansagen", announceLastRound: "„Letzte Runde“ ansagen" },
+    strength: { countStart: "Countdown am Ende jeder Pause", countEnd: "Countdown vor dem Ende einer Halteübung", tick: "Takt-Ton während Halteübungen", announceNext: "Nächste Übung in der Pause ansagen", announceNote: "mit Notiz bzw. Hinweis (wenn vorhanden)", announceHalf: "„Halbzeit“ ansagen", announceLastSet: "„Letzter Satz“ ansagen" },
+    cardio: { countStart: "Countdown am Ende jeder Pause", countEnd: "Countdown vor dem Ende jeder Aktivität und jedes Intervall-Wechsels", tick: "Takt-Ton während der Aktivität", announceNext: "Nächste Aktivität ansagen", announceNote: "mit Beschriftung (wenn vorhanden)", announceHalf: "„Halbzeit“ ansagen", announceLastRound: "„Letzte Aktivität“ ansagen" },
+    kombi: { countStart: "Countdown am Ende der Pause zwischen Bausteinen", announceNext: "Nächsten Baustein ansagen", announceLastRound: "„Letzter Baustein“ ansagen" },
+  };
+  function cueControlsHtml(cfg, labels) {
+    const has = (k) => k in labels;
+    const choice = (attr, v, cur, text) => `<button type="button" class="choice${v === cur ? " active" : ""}" ${attr}="${v}">${text}</button>`;
+    const check = (k, extraClass = "") => has(k) ? `<label class="checkbox-row${extraClass}"><input type="checkbox" data-cue-key="${k}"${cfg[k] ? " checked" : ""}> ${labels[k]}</label>` : "";
+    let h = `<div class="cue-sub-label">Countdown-Töne</div><div class="choice-row">` +
+      CUE_COUNT_CHOICES.map((v) => choice("data-cue-count", v, cfg.countdownS, v ? `${v} Sek.` : "Aus")).join("") + `</div>`;
+    if (cfg.countdownS > 0) h += check("countStart") + check("countEnd");
+    if (has("tick")) {
+      h += `<div class="cue-sub-label">${labels.tick}</div><div class="choice-row">` +
+        CUE_TICK_CHOICES.map((v) => choice("data-cue-tick", v, cfg.tickS, v === 0 ? "Aus" : v === 60 ? "jede Min." : `alle ${v} s`)).join("") + `</div>`;
+    }
+    const anns = ["announceNext", "announceHalf", "announceLastRound", "announceLastSet"].filter(has);
+    if (anns.length) {
+      h += `<div class="cue-sub-label">Ansagen (Sprachausgabe)</div>` + check("announceNext");
+      if (has("announceNote") && cfg.announceNext) h += check("announceNote", " cue-indent");
+      h += check("announceHalf") + check("announceLastRound") + check("announceLastSet");
+    }
+    return h;
+  }
+  // One delegated handler per container; `getCfg` returns the object to
+  // mutate, `onChange` persists + re-renders.
+  function wireCueControls(container, getCfg, onChange) {
+    container.addEventListener("click", (e) => {
+      const cfg = getCfg();
+      if (!cfg) return;
+      const c = e.target.closest("[data-cue-count]"), t = e.target.closest("[data-cue-tick]");
+      if (c) { cfg.countdownS = Number(c.dataset.cueCount); onChange(); }
+      else if (t) { cfg.tickS = Number(t.dataset.cueTick); onChange(); }
+    });
+    container.addEventListener("change", (e) => {
+      const cb = e.target.closest("[data-cue-key]");
+      const cfg = getCfg();
+      if (!cb || !cfg) return;
+      cfg[cb.dataset.cueKey] = cb.checked;
+      onChange();
+    });
+  }
+
+  function renderMasterCues() {
+    const el = document.getElementById("masterCuesGroup");
+    if (!el) return;
+    el.innerHTML =
+      `<div class="group-label">Töne &amp; Ansagen</div>` +
+      `<div class="group-help">Gilt für Tabata-Zirkel, Kraftplan, Cardio und die Pausen im Kombi-Baukasten. In den Feineinstellungen jedes Bereichs kannst du davon abweichen.</div>` +
+      cueControlsHtml(masterPrefs.cues, CUE_FIELD_LABELS.master) +
+      `<div class="cue-sub-label">iPhone/iPad</div>` +
+      `<label class="checkbox-row"><input type="checkbox" data-cue-silent${masterPrefs.cuesIgnoreSilent ? " checked" : ""}> Töne auch bei eingeschaltetem Stummschalter</label>` +
+      `<div class="group-help">Ohne Haken spielt das iPhone Töne über den Lautsprecher nur, wenn der Stummschalter aus ist (mit Kopfhörern immer). Mit Haken klingen sie trotzdem, dafür pausiert iOS dann meist deine Musik.</div>`;
+  }
+  (() => {
+    const el = document.getElementById("masterCuesGroup");
+    if (!el) return;
+    wireCueControls(el, () => masterPrefs.cues, () => { saveMasterPrefs(); renderMasterCues(); renderAllCueDomains(); });
+    el.addEventListener("change", (e) => {
+      if (!e.target.matches("[data-cue-silent]")) return;
+      masterPrefs.cuesIgnoreSilent = e.target.checked;
+      saveMasterPrefs();
+    });
+  })();
+
+  function renderCueDomain(domain) {
+    const el = document.getElementById("cueDomain_" + domain);
+    if (!el) return;
+    const own = !!cueOverrides[domain];
+    el.innerHTML =
+      `<div class="group-label">Töne &amp; Ansagen</div>` +
+      `<div class="choice-row two">` +
+      `<button type="button" class="choice${own ? "" : " active"}" data-cue-mode="master">Wie Master-Einstellungen</button>` +
+      `<button type="button" class="choice${own ? " active" : ""}" data-cue-mode="own">Eigene Einstellung</button></div>` +
+      (own ? cueControlsHtml(cueOverrides[domain], CUE_FIELD_LABELS[domain])
+        : `<div class="group-help">Folgt den Master-Einstellungen. <button type="button" class="text-link small" data-cue-open-master>Zu den Einstellungen</button></div>`);
+  }
+  function renderAllCueDomains() { CUE_DOMAIN_KEYS.forEach(renderCueDomain); }
+  CUE_DOMAIN_KEYS.forEach((domain) => {
+    const el = document.getElementById("cueDomain_" + domain);
+    if (!el) return;
+    el.addEventListener("click", (e) => {
+      const m = e.target.closest("[data-cue-mode]");
+      if (m) {
+        // Switching to "own" starts from the current Master values.
+        if (m.dataset.cueMode === "own") { if (!cueOverrides[domain]) cueOverrides[domain] = normalizeCueCfg(masterPrefs.cues); }
+        else delete cueOverrides[domain];
+        saveCueOverrides();
+        renderCueDomain(domain);
+        return;
+      }
+      if (e.target.closest("[data-cue-open-master]")) openMasterSettings();
+    });
+    wireCueControls(el, () => cueOverrides[domain], () => { saveCueOverrides(); renderCueDomain(domain); });
+  });
+  renderAllCueDomains();
 
   const TABATA_PREP_S = 5;
   // prepS/cooldownS are optional - coach-authored blocks (startTabataBlock)
@@ -9815,7 +10216,7 @@
       // the very last work interval's own "end" cue, for the (common) case
       // with no cool-down - every other work start/end already got its long
       // beep below, from the "frame changed" check as the NEXT frame began.
-      if (workoutBeepFrame && workoutBeepFrame.type === "work") playWorkoutBeep(true);
+      if (workoutBeepFrame && workoutBeepFrame.type === "work" && cueTransitionBeeps(cueCfg("tabata"))) playWorkoutBeep(true);
       finishWorkoutBlock();
       return;
     }
@@ -9823,22 +10224,25 @@
     const frame = workoutState.schedule.find((f) => elapsed >= f.t0 && elapsed < f.t1);
     if (frame) {
       const remain = frame.t1 - elapsed;
+      const cfg = cueCfg("tabata");
+      const frameIdx = workoutState.schedule.indexOf(frame);
+      const nextFrame = workoutState.schedule[frameIdx + 1];
       if (frame !== workoutBeepFrame) {
         const prevFrame = workoutBeepFrame;
         workoutBeepFrame = frame;
         workoutBeepedSeconds = new Set();
         // a long beep marks the instant of every work start AND end
-        if (prevFrame && (frame.type === "work" || prevFrame.type === "work")) playWorkoutBeep(true);
+        if (prevFrame && (frame.type === "work" || prevFrame.type === "work") && cueTransitionBeeps(cfg)) playWorkoutBeep(true);
+        cueTabataFrameStart(frame, frameIdx, cfg);
       }
-      const frameIdx = workoutState.schedule.indexOf(frame);
-      const nextFrame = workoutState.schedule[frameIdx + 1];
-      const countingToWork = frame.type === "work" || (nextFrame && nextFrame.type === "work");
-      if (countingToWork) {
-        const wholeRemain = Math.ceil(remain);
-        if (wholeRemain >= 1 && wholeRemain <= 3 && !workoutBeepedSeconds.has(wholeRemain)) {
-          workoutBeepedSeconds.add(wholeRemain);
-          playWorkoutBeep(false);
-        }
+      // Countdown (Töne & Ansagen, default 3 s) to every work start and end.
+      const countEnd = frame.type === "work" && cfg.countEnd;
+      const countStart = frame.type !== "work" && nextFrame && nextFrame.type === "work" && cfg.countStart;
+      if (cfg.countdownS > 0 && (countEnd || countStart)) cueCountdownBeep(workoutBeepedSeconds, remain, cfg.countdownS);
+      if (frame.type === "work") cueTickCheck(workoutBeepedSeconds, elapsed - frame.t0, remain, cfg);
+      if (cfg.announceHalf && !workoutState.cueHalfDone && workoutState.total >= 60 && elapsed >= workoutState.total / 2) {
+        workoutState.cueHalfDone = true;
+        cueSay("Halbzeit");
       }
       const totalSets = workoutState.block.sets;
       const items = workoutState.block.items;
@@ -9883,6 +10287,30 @@
       }
     }
     workoutRaf = requestAnimationFrame(circuitTick);
+  }
+
+  // Spoken cues when a Tabata phase begins: in a pause (or the start
+  // countdown) the coming exercise, optionally with its note when the pause
+  // is long enough to listen; "Letzte Runde" before the last pass.
+  function cueTabataFrameStart(frame, idx, cfg) {
+    const st = workoutState;
+    const sets = st.block.sets;
+    const isLastRoundStart = (f) => f && sets > 1 && f.set === sets && f.itemIdx === 0;
+    if (frame.type === "work") {
+      if (cfg.announceLastRound && isLastRoundStart(frame) && !st.cueLastRoundDone) { st.cueLastRoundDone = true; cueSay("Letzte Runde"); }
+      return;
+    }
+    if (frame.type === "cooldown") return;
+    const nextWork = st.schedule.slice(idx + 1).find((f) => f.type === "work");
+    const parts = [];
+    if (cfg.announceLastRound && isLastRoundStart(nextWork) && !st.cueLastRoundDone) { st.cueLastRoundDone = true; parts.push("Letzte Runde."); }
+    if (cfg.announceNext && nextWork) {
+      const ex = findWorkoutExercise(nextWork.exercise);
+      parts.push(frame.type === "prep" ? `Los geht's mit ${ex.name}.` : `Als Nächstes: ${ex.name}.`);
+      const note = nextWork.note || ex.note;
+      if (cfg.announceNote && note && frame.t1 - frame.t0 >= 8) parts.push(note);
+    }
+    if (parts.length) cueSay(parts.join(" "));
   }
 
   // ---- Skip back/restart/forward through the exercises, like the visual
@@ -9931,12 +10359,15 @@
     let suggestion = null;
     let doneEx = st ? st.ex : null;
     if (st && st.strength) {
-      if (st.achieved.length) st.results.push({ exercise: st.block.exercise, rangeMin: st.block.rangeMin, rangeMax: st.block.rangeMax, achieved: st.achieved.slice() });
       if (st.strength.items.length > 1) doneEx = { name: workoutBlockLabel(st.strength) };
       if (!workoutPlan && !comboProgram) {
-        const topNames = st.results
-          .filter((r) => r.achieved.length && recordWorkoutRepsProgress(r.exercise, r.rangeMin, r.rangeMax, r.achieved))
-          .map((r) => findWorkoutExercise(r.exercise).name);
+        // Double progression only makes sense for range items (a pyramid
+        // or a hold has its own fixed target per set).
+        const topNames = st.strength.items
+          .map((it, idx) => ({ it, achieved: st.achievedByItem[idx] || [] }))
+          .filter(({ it, achieved }) => strengthItemMode(it) === "range" && achieved.length
+            && recordWorkoutRepsProgress(it.exercise, it.rangeMin, it.rangeMax, achieved))
+          .map(({ it }) => findWorkoutExercise(it.exercise).name);
         if (topNames.length) suggestion = `Stark – bei ${topNames.join(", ")} hast du in jedem Satz das obere Ende deines Bereichs geschafft. Nächstes Mal schwerer machen (mehr Gewicht, schwerere Variante, oder die Übung tauschen)?`;
       }
     } else if (st && st.kind === "reps" && st.block.rangeMin != null && st.achieved.length && !workoutPlan && !comboProgram) {
@@ -10104,6 +10535,7 @@
   function renderWorkoutCircuitList() {
     const items = workoutCircuitPrefs.items;
     els.workoutCircuitCount.textContent = items.length ? `${items.length} Übung${items.length === 1 ? "" : "en"}` : "";
+    document.getElementById("workoutCircuitClearBtn").hidden = items.length === 0;
     els.workoutCircuitEmptyHint.hidden = items.length > 0;
     els.workoutCircuitList.innerHTML = "";
     items.forEach((item, i) => {
@@ -10376,6 +10808,23 @@
       sets: clampInt(it.sets, 1, 10, 3),
       restS: clampInt(it.restS, 15, 300, 60),
       note: typeof it.note === "string" ? it.note : "",
+      // Added 2026-10-02: Art der Übung, Pause danach, Supersatz.
+      mode: STRENGTH_MODES.includes(it.mode) ? it.mode : "range",
+      pyrFrom: clampInt(it.pyrFrom, 1, 30, 12),
+      pyrTo: clampInt(it.pyrTo, 1, 30, 6),
+      pyrBack: !!it.pyrBack,
+      holdS: clampInt(it.holdS, 5, 300, 30),
+      restAfterS: it.restAfterS == null ? null : clampInt(it.restAfterS, 0, 180, null),
+      supersetNext: !!it.supersetNext,
+      supersetGapS: clampInt(it.supersetGapS, 0, 60, 0),
+      // v4: Seite, Tempo, Aufwärmsätze, Dropsätze ("Mehr Optionen").
+      side: STRENGTH_SIDES.includes(it.side) ? it.side : "both",
+      sideGapS: clampInt(it.sideGapS, 0, 60, 5),
+      tempo: typeof it.tempo === "string" ? it.tempo.trim().slice(0, 12) : "",
+      warmupSets: clampInt(it.warmupSets, 0, 3, 0),
+      warmupReps: clampInt(it.warmupReps, 0, 30, 0),
+      warmupRestS: clampInt(it.warmupRestS, 0, 180, 30),
+      dropSets: clampInt(it.dropSets, 0, 3, 0),
     };
     if (out.customMax < out.customMin) out.customMax = out.customMin;
     return out;
@@ -10420,19 +10869,29 @@
     return hitTopEverySet;
   }
 
+  const STRENGTH_HOLD_EXERCISES = ["plank", "wandsitz"];
   function newStrengthItem(exerciseId) {
     return normalizeStrengthItem({
       exercise: exerciseId, rangeKey: workoutRepsPrefs.rangeKey, customMin: workoutRepsPrefs.customMin,
       customMax: workoutRepsPrefs.customMax, sets: workoutRepsPrefs.sets, restS: workoutRepsPrefs.restS, note: "",
+      // Static holds start as "Halten auf Zeit"; changeable via "Art".
+      mode: STRENGTH_HOLD_EXERCISES.includes(exerciseId) ? "time" : "range",
     });
   }
   // Plain block shape the engine plays (explicit min/max, no preset keys).
   function buildStrengthPlanBlock() {
     return {
       kind: "strength",
-      items: workoutRepsPrefs.items.map((it) => {
+      items: workoutRepsPrefs.items.map((it, i, all) => {
         const { min, max } = repRangeFor(it);
-        return { exercise: it.exercise, rangeMin: min, rangeMax: max, sets: it.sets, restS: it.restS, note: it.note || "" };
+        return {
+          exercise: it.exercise, mode: it.mode, rangeMin: min, rangeMax: max, sets: it.sets, restS: it.restS,
+          pyrFrom: it.pyrFrom, pyrTo: it.pyrTo, pyrBack: it.pyrBack, holdS: it.holdS,
+          restAfterS: it.restAfterS, supersetNext: it.supersetNext && i < all.length - 1, supersetGapS: it.supersetGapS,
+          side: it.side, sideGapS: it.sideGapS, tempo: it.tempo, warmupSets: it.warmupSets, warmupReps: it.warmupReps,
+          warmupRestS: it.warmupRestS, dropSets: it.dropSets,
+          note: it.note || "",
+        };
       }),
       exerciseRestS: workoutRepsPrefs.exerciseRestS,
       prepS: workoutRepsPrefs.prepS,
@@ -10445,6 +10904,10 @@
     return normalizeStrengthItem({
       exercise: it.exercise, rangeKey: preset ? preset.key : "custom",
       customMin: it.rangeMin, customMax: it.rangeMax, sets: it.sets, restS: it.restS, note: it.note || "",
+      mode: it.mode, pyrFrom: it.pyrFrom, pyrTo: it.pyrTo, pyrBack: it.pyrBack, holdS: it.holdS,
+      restAfterS: it.restAfterS, supersetNext: it.supersetNext, supersetGapS: it.supersetGapS,
+      side: it.side, sideGapS: it.sideGapS, tempo: it.tempo, warmupSets: it.warmupSets, warmupReps: it.warmupReps,
+      warmupRestS: it.warmupRestS, dropSets: it.dropSets,
     });
   }
   function refreshWorkoutRepsBuilder() {
@@ -10507,60 +10970,170 @@
     restS: { lo: 15, hi: 300, step: 15 },
     customMin: { lo: 1, hi: 30, step: 1 },
     customMax: { lo: 1, hi: 30, step: 1 },
+    pyrFrom: { lo: 1, hi: 30, step: 1 },
+    pyrTo: { lo: 1, hi: 30, step: 1 },
+    holdS: { lo: 5, hi: 300, step: 5 },
+    restAfterS: { lo: 0, hi: 180, step: 5 },
+    supersetGapS: { lo: 0, hi: 60, step: 5 },
+    sideGapS: { lo: 0, hi: 60, step: 5 },
+    warmupSets: { lo: 0, hi: 3, step: 1 },
+    warmupReps: { lo: 0, hi: 30, step: 1 },
+    warmupRestS: { lo: 0, hi: 180, step: 15 },
+    dropSets: { lo: 0, hi: 3, step: 1 },
   };
+  const STRENGTH_MODE_LABELS = { range: "Wiederholungen (Bereich)", pyramid: "Pyramide", time: "Halten auf Zeit", amrap: "Maximal (so viele wie möglich)" };
+  // Which items have "Mehr Optionen" unfolded (same idea as strengthOpenOptions).
+  const strengthOpenMore = new Set();
+  function strengthMoreSummary(item) {
+    const parts = [];
+    if (item.side !== "both") parts.push(STRENGTH_SIDE_LABELS[item.side]);
+    if (item.tempo && item.mode !== "time") parts.push(`Tempo ${item.tempo}`);
+    if (item.warmupSets > 0) parts.push(`${item.warmupSets} ${item.warmupSets > 1 ? "Aufwärmsätze" : "Aufwärmsatz"}`);
+    if (item.dropSets > 0 && item.mode !== "time") parts.push(`${item.dropSets} ${item.dropSets > 1 ? "Dropsätze" : "Dropsatz"}`);
+    return parts.length ? `Mehr: ${parts.join(" · ")}` : "Mehr Optionen (Seite, Tempo, Aufwärmen, Dropsatz)";
+  }
+  // Which items have their "Pause & Supersatz" options unfolded - UI state
+  // only, kept across re-renders so a tap on a stepper doesn't fold it shut.
+  const strengthOpenOptions = new Set();
+  function strengthPauseSummary(item, i, items) {
+    if (i >= items.length - 1) return "Letzte Übung";
+    if (item.supersetNext) return `Supersatz mit Übung ${i + 2}` + (item.supersetGapS > 0 ? ` · ${item.supersetGapS} s Wechsel` : "");
+    return item.restAfterS == null
+      ? `Pause danach: ${workoutRepsPrefs.exerciseRestS > 0 ? fmtSeconds(workoutRepsPrefs.exerciseRestS) : "keine"} (Standard)`
+      : `Pause danach: ${item.restAfterS > 0 ? fmtSeconds(item.restAfterS) : "keine"} (eigene)`;
+  }
   function renderWorkoutRepsList() {
     const items = workoutRepsPrefs.items;
     els.workoutRepsCount.textContent = items.length ? `${items.length} Übung${items.length === 1 ? "" : "en"}` : "";
+    document.getElementById("workoutRepsClearBtn").hidden = items.length === 0;
     els.workoutRepsEmptyHint.hidden = items.length > 0;
     els.workoutRepsSaveBtn.hidden = items.length === 0 || !els.workoutRepsSaveForm.hidden;
     els.workoutRepsList.innerHTML = "";
     items.forEach((item, i) => {
       const ex = findWorkoutExercise(item.exercise);
       const { min, max } = repRangeFor(item);
+      const target = strengthItemTargetText({ ...item, rangeMin: min, rangeMax: max });
+      const inSuperset = item.supersetNext || (i > 0 && items[i - 1].supersetNext);
       const row = document.createElement("div");
-      row.className = "circuit-item-row strength-item-row";
+      row.className = "circuit-item-row strength-item-row" + (inSuperset ? " in-superset" : "");
+      const modeOptions = Object.entries(STRENGTH_MODE_LABELS).map(([k, l]) => `<option value="${k}" ${item.mode === k ? "selected" : ""}>${l}</option>`).join("");
       const rangeOptions = REP_RANGE_PRESETS.map((p) => `<option value="${p.key}" ${item.rangeKey === p.key ? "selected" : ""}>${p.label} (${p.min}–${p.max})</option>`).join("") +
         `<option value="custom" ${item.rangeKey === "custom" ? "selected" : ""}>Eigener Bereich</option>`;
+      let modeFields = "";
+      if (item.mode === "range") {
+        modeFields = `<div class="cardio-interval-phase-row strength-field-row"><span>Bereich</span><select class="strength-range-select" data-si="${i}" aria-label="Wiederholungsbereich">${rangeOptions}</select></div>` +
+          (item.rangeKey === "custom" ? strengthStepper(i, "customMin", "Min. Wdh.", item.customMin) + strengthStepper(i, "customMax", "Max. Wdh.", item.customMax) : "") +
+          strengthStepper(i, "sets", "Sätze", item.sets);
+      } else if (item.mode === "pyramid") {
+        modeFields = strengthStepper(i, "pyrFrom", "Von Wdh.", item.pyrFrom) + strengthStepper(i, "pyrTo", "Bis Wdh.", item.pyrTo) +
+          strengthStepper(i, "sets", "Stufen", item.sets) +
+          `<label class="checkbox-row strength-check"><input type="checkbox" class="strength-pyrback" data-si="${i}" ${item.pyrBack ? "checked" : ""}> und wieder zurück (z. B. 12–10–8–10–12)</label>`;
+      } else if (item.mode === "amrap") {
+        modeFields = strengthStepper(i, "sets", "Sätze", item.sets);
+      } else {
+        modeFields = strengthStepper(i, "holdS", "Haltezeit", `${item.holdS}s`) + strengthStepper(i, "sets", "Sätze", item.sets);
+      }
+      const isHold = item.mode === "time";
+      const more = `<details class="strength-more" data-mi="${i}" ${strengthOpenMore.has(i) ? "open" : ""}><summary>${esc(strengthMoreSummary(item))}</summary><div class="strength-options-body">` +
+        `<div class="cardio-interval-phase-row strength-field-row"><span>Seite</span><select class="strength-side-select" data-si="${i}" aria-label="Seite">` +
+        STRENGTH_SIDES.map((k) => `<option value="${k}" ${item.side === k ? "selected" : ""}>${STRENGTH_SIDE_LABELS[k]}</option>`).join("") + `</select></div>` +
+        (item.side === "lr" || item.side === "rl" ? strengthStepper(i, "sideGapS", "Seitenwechsel", `${item.sideGapS}s`) : "") +
+        (isHold ? "" : `<div class="cardio-interval-phase-row strength-field-row"><span>Tempo</span><input type="text" class="strength-tempo" data-si="${i}" maxlength="12" placeholder="z. B. 3-1-1-0" value="${esc(item.tempo)}" aria-label="Tempo"></div>` +
+          `<div class="group-help strength-hint">Sekunden: ablassen – unten halten – hoch – oben halten.</div>`) +
+        strengthStepper(i, "warmupSets", "Aufwärmsätze", item.warmupSets) +
+        (item.warmupSets > 0 ? strengthStepper(i, "warmupReps", "Aufwärm-Wdh.", item.warmupReps > 0 ? item.warmupReps : "frei") +
+          strengthStepper(i, "warmupRestS", "Aufwärmpause", `${item.warmupRestS}s`) : "") +
+        (isHold ? "" : strengthStepper(i, "dropSets", "Dropsätze am Ende", item.dropSets)) +
+        `</div></details>`;
+      const isLast = i === items.length - 1;
+      const open = strengthOpenOptions.has(i);
+      let options = "";
+      if (!isLast) {
+        options = `<details class="strength-options" data-oi="${i}" ${open ? "open" : ""}><summary>${esc(strengthPauseSummary(item, i, items))}</summary><div class="strength-options-body">` +
+          `<label class="checkbox-row strength-check"><input type="checkbox" class="strength-superset" data-si="${i}" ${item.supersetNext ? "checked" : ""}> Supersatz mit der nächsten Übung (Sätze abwechselnd)</label>` +
+          (item.supersetNext
+            ? strengthStepper(i, "supersetGapS", "Wechselpause", `${item.supersetGapS}s`)
+            : (item.restAfterS == null
+              ? `<button type="button" class="link-btn strength-rest-custom" data-si="${i}">Eigene Pause nach dieser Übung einstellen</button>`
+              : strengthStepper(i, "restAfterS", "Pause danach", `${item.restAfterS}s`) +
+                `<button type="button" class="link-btn strength-rest-default" data-si="${i}">Wieder Standard verwenden (${fmtSeconds(workoutRepsPrefs.exerciseRestS)})</button>`)) +
+          `</div></details>`;
+      }
       row.innerHTML =
         `<div class="circuit-item-main">` +
-        `<span class="chapter-main" style="cursor:default"><span class="num">${i + 1}</span><span class="ca-icon">${workoutIconSVG(ex.icon)}</span><span class="info"><strong>${esc(ex.name)}</strong><span>${item.sets}×${min}–${max} · ${fmtSeconds(item.restS)} Satzpause</span></span></span>` +
+        `<span class="chapter-main" style="cursor:default"><span class="num">${i + 1}</span><span class="ca-icon">${workoutIconSVG(ex.icon)}</span><span class="info"><strong>${esc(ex.name)}</strong><span>${esc(target)}${i > 0 && items[i - 1].supersetNext ? "" : ` · ${fmtSeconds(item.restS)} ${item.supersetNext ? "Rundenpause" : "Satzpause"}`}${inSuperset ? " · Supersatz" : ""}</span></span></span>` +
         (i > 0 ? `<button class="circuit-step strength-move" data-move="${i}" title="Nach oben" aria-label="Nach oben">&uarr;</button>` : "") +
         `<button class="combo-block-remove" data-i="${i}" title="Entfernen">&#10005;</button>` +
         `</div>` +
         `<div class="cardio-interval-fields">` +
-        `<div class="cardio-interval-phase-row strength-field-row"><span>Bereich</span><select class="strength-range-select" data-si="${i}" aria-label="Wiederholungsbereich">${rangeOptions}</select></div>` +
-        (item.rangeKey === "custom" ? strengthStepper(i, "customMin", "Min. Wdh.", item.customMin) + strengthStepper(i, "customMax", "Max. Wdh.", item.customMax) : "") +
-        strengthStepper(i, "sets", "Sätze", item.sets) +
-        strengthStepper(i, "restS", "Satzpause", `${item.restS}s`) +
+        `<div class="cardio-interval-phase-row strength-field-row"><span>Art</span><select class="strength-mode-select" data-si="${i}" aria-label="Art der Übung">${modeOptions}</select></div>` +
+        modeFields +
+        // In a Supersatz the pause after each round belongs to the group's
+        // first exercise; the partners only show where it is set.
+        (i > 0 && items[i - 1].supersetNext
+          ? `<div class="group-help strength-round-hint">Rundenpause wie bei der ersten Übung des Supersatzes</div>`
+          : strengthStepper(i, "restS", item.supersetNext ? "Rundenpause" : "Satzpause", `${item.restS}s`)) +
         `</div>` +
+        more + options +
         `<input type="text" class="circuit-item-note" data-i="${i}" placeholder="Eigene Notiz (optional, z. B. Gewicht)" maxlength="80" value="${esc(item.note || "")}">`;
       els.workoutRepsList.appendChild(row);
     });
+    const rerender = () => { saveWorkoutRepsPrefs(); renderWorkoutRepsList(); syncWorkoutRepsUI(); };
+    const itemOf = (el) => workoutRepsPrefs.items[Number(el.dataset.si)];
     els.workoutRepsList.querySelectorAll("[data-sfield]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const item = workoutRepsPrefs.items[Number(btn.dataset.si)];
+        const item = itemOf(btn);
         const f = btn.dataset.sfield;
         const lim = STRENGTH_FIELD_LIMITS[f];
-        item[f] = Math.max(lim.lo, Math.min(lim.hi, item[f] + Number(btn.dataset.dir) * lim.step));
+        item[f] = Math.max(lim.lo, Math.min(lim.hi, (item[f] ?? 0) + Number(btn.dataset.dir) * lim.step));
         if (f === "customMin" && item.customMax < item.customMin) item.customMax = item.customMin;
         if (f === "customMax" && item.customMin > item.customMax) item.customMin = item.customMax;
-        saveWorkoutRepsPrefs();
-        renderWorkoutRepsList();
-        syncWorkoutRepsUI();
+        rerender();
       });
     });
     els.workoutRepsList.querySelectorAll(".strength-range-select").forEach((sel) => {
       sel.addEventListener("change", () => {
-        const item = workoutRepsPrefs.items[Number(sel.dataset.si)];
+        const item = itemOf(sel);
         if (sel.value === "custom" && item.rangeKey !== "custom") {
           // Start "Eigener Bereich" from whatever range was showing.
           const { min, max } = repRangeFor(item);
           item.customMin = min; item.customMax = max;
         }
         item.rangeKey = sel.value;
-        saveWorkoutRepsPrefs();
-        renderWorkoutRepsList();
-        syncWorkoutRepsUI();
+        rerender();
+      });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-mode-select").forEach((sel) => {
+      sel.addEventListener("change", () => { itemOf(sel).mode = sel.value; rerender(); });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-pyrback").forEach((cb) => {
+      cb.addEventListener("change", () => { itemOf(cb).pyrBack = cb.checked; rerender(); });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-superset").forEach((cb) => {
+      cb.addEventListener("change", () => { itemOf(cb).supersetNext = cb.checked; rerender(); });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-rest-custom").forEach((btn) => {
+      btn.addEventListener("click", () => { itemOf(btn).restAfterS = workoutRepsPrefs.exerciseRestS; rerender(); });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-rest-default").forEach((btn) => {
+      btn.addEventListener("click", () => { itemOf(btn).restAfterS = null; rerender(); });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-side-select").forEach((sel) => {
+      sel.addEventListener("change", () => { itemOf(sel).side = sel.value; rerender(); });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-tempo").forEach((input) => {
+      input.addEventListener("change", () => { itemOf(input).tempo = input.value.trim().slice(0, 12); rerender(); });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-more").forEach((d) => {
+      d.addEventListener("toggle", () => {
+        if (d.open) strengthOpenMore.add(Number(d.dataset.mi));
+        else strengthOpenMore.delete(Number(d.dataset.mi));
+      });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-options").forEach((d) => {
+      d.addEventListener("toggle", () => {
+        if (d.open) strengthOpenOptions.add(Number(d.dataset.oi));
+        else strengthOpenOptions.delete(Number(d.dataset.oi));
       });
     });
     els.workoutRepsList.querySelectorAll(".strength-move").forEach((btn) => {
@@ -10568,6 +11141,8 @@
         const i = Number(btn.dataset.move);
         const list = workoutRepsPrefs.items;
         [list[i - 1], list[i]] = [list[i], list[i - 1]];
+        strengthOpenOptions.clear();
+        strengthOpenMore.clear();
         saveWorkoutRepsPrefs();
         renderWorkoutRepsList();
       });
@@ -10575,6 +11150,8 @@
     els.workoutRepsList.querySelectorAll(".combo-block-remove").forEach((btn) => {
       btn.addEventListener("click", () => {
         workoutRepsPrefs.items.splice(Number(btn.dataset.i), 1);
+        strengthOpenOptions.clear();
+        strengthOpenMore.clear();
         saveWorkoutRepsPrefs();
         refreshWorkoutRepsBuilder();
       });
@@ -10646,6 +11223,7 @@
   els.workoutRepsExerciseRestSlider.addEventListener("input", () => {
     workoutRepsPrefs.exerciseRestS = Number(els.workoutRepsExerciseRestSlider.value);
     saveWorkoutRepsPrefs();
+    renderWorkoutRepsList();
     syncWorkoutRepsUI();
   });
   els.workoutRepsPrepSlider.addEventListener("input", () => {
@@ -10862,6 +11440,7 @@
   function renderCardioList() {
     const items = cardioPrefs.items;
     els.cardioCount.textContent = items.length ? `${items.length} Aktivität${items.length === 1 ? "" : "en"}` : "";
+    document.getElementById("cardioClearBtn").hidden = items.length === 0;
     els.cardioEmptyHint.hidden = items.length > 0;
     els.cardioList.innerHTML = "";
     items.forEach((item, i) => {
@@ -12113,6 +12692,7 @@
       cardioRaf = requestAnimationFrame(cardioTick);
       return;
     }
+    cueCardioTick(block, blockElapsed);
     if (block.pause) {
       const nextBlock = cardioState.items[cardioState.index + 1];
       const nextAct = nextBlock ? findCardioActivity(nextBlock.activity) : null;
@@ -12145,6 +12725,71 @@
       return;
     }
     cardioRaf = requestAnimationFrame(cardioTick);
+  }
+
+  // Töne & Ansagen for Cardio: a long beep at every activity/pause change
+  // and interval-phase change, countdowns before them, an optional
+  // "Takt-Ton", and spoken cues (next activity, "Halbzeit", "Letzte
+  // Aktivität"). Tracking lives on cardioState.cue so each fires once.
+  function cueCardioTick(block, blockElapsed) {
+    const cs = cardioState;
+    const cfg = cueCfg("cardio");
+    const c = cs.cue || (cs.cue = { idx: -1, beeped: new Set(), phaseKey: null, phaseBeeped: new Set() });
+    const n = cfg.countdownS;
+    const beeps = cueTransitionBeeps(cfg);
+    if (c.idx !== cs.index) {
+      if (c.idx >= 0 && beeps) playWorkoutBeep(true);
+      c.idx = cs.index;
+      c.beeped = new Set();
+      c.phaseKey = null;
+      cueCardioAnnounce(block, cfg);
+    }
+    const remain = block.durationS - blockElapsed;
+    if (n > 0 && (block.pause ? cfg.countStart : cfg.countEnd)) cueCountdownBeep(c.beeped, remain, n);
+    if (block.pause) return;
+    if (block.interval) {
+      const { onS, offS } = block.interval;
+      const cyc = onS + offS;
+      const t = blockElapsed % cyc;
+      const inOn = t < onS;
+      const key = Math.floor(blockElapsed / cyc) + (inOn ? "on" : "off");
+      const phaseRemain = inOn ? onS - t : cyc - t;
+      if (c.phaseKey !== key) {
+        if (c.phaseKey !== null && beeps) playWorkoutBeep(true);
+        c.phaseKey = key;
+        c.phaseBeeped = new Set();
+      }
+      if (n > 0 && cfg.countEnd && phaseRemain < remain - 0.5) cueCountdownBeep(c.phaseBeeped, phaseRemain, n);
+      cueTickCheck(c.phaseBeeped, inOn ? t : t - onS, Math.min(phaseRemain, remain), cfg);
+    } else {
+      cueTickCheck(c.beeped, blockElapsed, remain, cfg);
+    }
+    if (cfg.announceHalf && !c.halfDone) {
+      const total = cs.items.reduce((sum, it) => sum + it.durationS, 0);
+      const pos = cs.items.slice(0, cs.index).reduce((sum, it) => sum + it.durationS, 0) + blockElapsed;
+      if (total >= 120 && pos >= total / 2) { c.halfDone = true; cueSay("Halbzeit"); }
+    }
+  }
+  function cueCardioAnnounce(block, cfg) {
+    const cs = cardioState;
+    let lastReal = -1;
+    cs.items.forEach((it, i) => { if (!it.pause) lastReal = i; });
+    const parts = [];
+    const describe = (it) => {
+      const act = findCardioActivity(it.activity);
+      return act.name + "." + (cfg.announceNote && it.label ? ` ${it.label}.` : "");
+    };
+    if (block.pause) {
+      const nb = cs.items[cs.index + 1];
+      if (!nb) return;
+      if (cfg.announceLastRound && cs.index + 1 === lastReal && cs.realCount > 1) { cs.cue.lastDone = true; parts.push("Letzte Aktivität."); }
+      if (cfg.announceNext) parts.push("Als Nächstes: " + describe(nb));
+    } else {
+      if (cfg.announceLastRound && cs.index === lastReal && cs.realCount > 1 && !cs.cue.lastDone) { cs.cue.lastDone = true; parts.push("Letzte Aktivität."); }
+      const prev = cs.items[cs.index - 1];
+      if (cfg.announceNext && (!prev || !prev.pause)) parts.push((prev ? "Jetzt: " : "Los geht's mit ") + describe(block));
+    }
+    if (parts.length) cueSay(parts.join(" "));
   }
 
   function applyCardioGuestToState(guestId, cfg) {
@@ -12380,7 +13025,11 @@
     cardioState.blockStartTime = performance.now();
   }
   els.cardioPrevBtn.addEventListener("click", () => cardioJumpToIndex(cardioState ? cardioState.index - 1 : 0, -1));
-  els.cardioRestartBtn.addEventListener("click", () => { if (cardioState) cardioState.blockStartTime = performance.now(); });
+  els.cardioRestartBtn.addEventListener("click", () => {
+    if (!cardioState) return;
+    cardioState.blockStartTime = performance.now();
+    if (cardioState.cue) { cardioState.cue.beeped = new Set(); cardioState.cue.phaseKey = null; }
+  });
   els.cardioSkipBtn.addEventListener("click", () => cardioJumpToIndex(cardioState ? cardioState.index + 1 : 0, 1));
   wireSwipeNav(els.cardioPlayer, {
     onLeft: () => els.cardioSkipBtn.click(),
@@ -12551,6 +13200,13 @@
     els.comboTransitionTitle.textContent = comboBlockLabel(nextBlock);
     els.comboTransitionMeta.textContent = comboBlockMeta(nextBlock);
     els.comboTransition.hidden = false;
+    const cfg = cueCfg("kombi");
+    const parts = [];
+    const blocks = comboProgram ? comboProgram.def.blocks : [];
+    if (cfg.announceLastRound && blocks.length > 1 && blocks.indexOf(nextBlock) === blocks.length - 1) parts.push("Letzter Baustein.");
+    if (cfg.announceNext) parts.push(`Als Nächstes: ${comboBlockLabel(nextBlock)}.`);
+    if (parts.length) cueSay(parts.join(" "));
+    const countOn = cfg.countStart && cfg.countdownS > 0;
     let remaining = pauseS;
     els.comboTransitionCountdown.textContent = fmtClock(remaining);
     const go = () => {
@@ -12563,8 +13219,9 @@
     comboTransitionInterval = setInterval(() => {
       remaining -= 1;
       els.comboTransitionCountdown.textContent = fmtClock(remaining);
+      if (countOn && remaining >= 1 && remaining <= cfg.countdownS) playWorkoutBeep(false);
     }, 1000);
-    comboTransitionTimer = setTimeout(go, pauseS * 1000);
+    comboTransitionTimer = setTimeout(() => { if (countOn) playWorkoutBeep(true); go(); }, pauseS * 1000);
   }
   function advanceComboProgram(playedS) {
     if (!comboProgram) return;
@@ -12640,6 +13297,58 @@
   const comboSavedStore = makePresetStore(COMBO_SAVED_KEY);
 
   let comboDraftBlocks = [];
+
+  // ---- "Alle entfernen" (2026-10-02, Fabian): clears a whole built list in
+  // one go, after an in-app "Bist du sicher?" Ja/Nein - never the browser's
+  // own confirm(), which looks foreign in the installed app.
+  let confirmYesFn = null, confirmReturnFocus = null;
+  function confirmDialog(text, onYes) {
+    const sheet = document.getElementById("confirmSheet");
+    document.getElementById("confirmText").textContent = text;
+    confirmYesFn = onYes;
+    confirmReturnFocus = document.activeElement;
+    sheet.hidden = false;
+    document.getElementById("confirmNoBtn").focus();
+  }
+  function closeConfirmDialog(yes) {
+    document.getElementById("confirmSheet").hidden = true;
+    const fn = confirmYesFn;
+    confirmYesFn = null;
+    if (confirmReturnFocus && document.body.contains(confirmReturnFocus) && !confirmReturnFocus.hidden) confirmReturnFocus.focus();
+    if (yes && fn) fn();
+  }
+  (() => {
+    const sheet = document.getElementById("confirmSheet");
+    document.getElementById("confirmYesBtn").addEventListener("click", () => closeConfirmDialog(true));
+    document.getElementById("confirmNoBtn").addEventListener("click", () => closeConfirmDialog(false));
+    sheet.addEventListener("click", (e) => { if (e.target === sheet) closeConfirmDialog(false); });
+    sheet.addEventListener("keydown", (e) => { if (e.key === "Escape") closeConfirmDialog(false); else trapTabKey(sheet, e); });
+  })();
+  document.getElementById("workoutCircuitClearBtn").addEventListener("click", () => confirmDialog("Willst du alle Übungen aus deinem Zirkel entfernen?", () => {
+    workoutCircuitPrefs.items = [];
+    saveWorkoutCircuitPrefs();
+    renderWorkoutCircuitAddGrid();
+    renderWorkoutCircuitList();
+    syncWorkoutCircuitUI();
+  }));
+  document.getElementById("workoutRepsClearBtn").addEventListener("click", () => confirmDialog("Willst du alle Übungen aus deinem Kraftplan entfernen?", () => {
+    workoutRepsPrefs.items = [];
+    strengthOpenOptions.clear();
+    strengthOpenMore.clear();
+    saveWorkoutRepsPrefs();
+    refreshWorkoutRepsBuilder();
+  }));
+  document.getElementById("cardioClearBtn").addEventListener("click", () => confirmDialog("Willst du alle Aktivitäten aus deiner Cardio-Einheit entfernen?", () => {
+    cardioPrefs.items = [];
+    saveCardioPrefs();
+    renderCardioAddGrid();
+    renderCardioList();
+    syncCardioUI();
+  }));
+  document.getElementById("comboClearBtn").addEventListener("click", () => confirmDialog("Willst du alle Bausteine aus deiner Abfolge entfernen?", () => {
+    comboDraftBlocks = [];
+    renderComboBlockList();
+  }));
   function renderComboAddGrid() {
     els.comboAddGrid.innerHTML = "";
     COMBO_DOMAIN_ORDER.forEach((domain) => {
@@ -12679,6 +13388,7 @@
   }
   function renderComboBlockList() {
     els.comboBlockCount.textContent = comboDraftBlocks.length ? `${comboDraftBlocks.length} Baustein${comboDraftBlocks.length === 1 ? "" : "e"}` : "";
+    document.getElementById("comboClearBtn").hidden = comboDraftBlocks.length === 0;
     els.comboEmptyHint.hidden = comboDraftBlocks.length > 0;
     els.comboBlockList.innerHTML = "";
     comboDraftBlocks.forEach((block, i) => {
