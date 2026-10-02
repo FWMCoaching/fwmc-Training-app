@@ -1275,12 +1275,43 @@ restriction, the hearing checkbox, code history, migration of all three
 old shapes - the last one via a separate inline script, not the main test
 file, since it needs to seed localStorage before the page's first load).
 
-**Not built, genuine open question**: whether the Blau-Gelb/vollständige
-Farbenblindheit categories (and the five-exercise + systemic-feedback
-backlog above) get wired up at all, and on what timeline - ask before
-starting that pass, since it's a real design effort (safe replacement
-palettes across three CVD axes), not a quick follow-on to tonight's
-settings-sheet redesign.
+**Built 2026-10-02 (client approved both parts): Farbschwäche-Unterstützung.**
+Any Farbsehen option ticked in Master now switches on, for every exercise
+that has it, two independent aids (one shared block in app.js,
+`CVD_EXERCISES`/`CVD_FB_SELECTORS`, next to `applyColorVisionMode()`):
+- **Haken & Kreuz** (`fb`): a tick/cross badge on every right/wrong
+  feedback state, so green/red no longer carries the meaning alone.
+  Implemented as a generated stylesheet (`#cvdFeedbackStyles`, built from
+  `CVD_FB_SELECTORS`) that adds an SVG `background-image` badge, centred at
+  the top, scoped per exercise via `body.fbs-<ex>` - no positioning or
+  layout change, so it's safe on absolutely-positioned markers and static
+  buttons alike (a corner badge got clipped away on round buttons, hence
+  centre-top). MOT's 3D look keeps its gradient under the badge (special
+  rule). 26 exercises: Remember/Blitz/MOT plus every Test-Bereich exercise
+  with right/wrong feedback.
+- **Farbsichere Farben** (`pal`): `body.cvdp-<ex>` plus render-time reads
+  (`cvdPalOn(ex)`) swap the fixed colours of Go/No-Go, Simon, Stopp-Signal,
+  Doppelziel (T1), Suchtest, Wortfarben-Test, Kartensortier-Test and
+  Merkspanne. Pairs are dark blue `#0b3d91` vs. amber `#f5a300` (apart by
+  brightness, ~4.9:1, so they survive every CVD type incl. full colour
+  blindness); 4-colour tasks use a brightness ladder Schwarz/Blau/Orange/
+  Gelb (words and button labels change with it); Merkspanne uses
+  Okabe-Ito + grey (9 colours, same count). Instruction texts that name a
+  colour swap via `<span data-cvdp-ex data-cvdp-show="on|off">` pairs.
+  Honest limit: for full colour blindness the 4-colour/9-colour tasks rest
+  on brightness steps alone - better, not perfect.
+Each exercise's Feineinstellungen gets a "Farbschwäche-Unterstützung" group
+(injected by JS into every ready screen; a new `details.advanced` is
+created where a screen had none) with An/Aus per aid. Pressing either
+stores an override (`fwmc-cvd-overrides-v1`, `{ex:{fb,pal}}`) that wins
+over Master in both directions; the status line offers "Wieder den
+Master-Einstellungen folgen", and Master-Einstellungen has a global reset
+(`#masterCvdResetBtn`, shown only while overrides exist). The old
+`body.cvd-rotgruen` GNG-only swap is gone (replaced by `cvdp-gng`). VT's
+Stroop exercises are untouched - they already have a free colour picker.
+**Any new exercise with right/wrong feedback or a fixed colour pair must
+be added to `CVD_EXERCISES`/`CVD_FB_SELECTORS` (and palette reads) in the
+same commit.** Test: `tests/cvd_support_test.py`.
 
 ## Movement
 

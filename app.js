@@ -5173,9 +5173,252 @@
   // to tell them apart) but have no exercise wired to them yet - same
   // "collect it now, adapt exercises as their target colour becomes
   // configurable" pattern the client already approved for Rot-Grün.
-  function applyColorVisionMode() {
-    document.body.classList.toggle("cvd-rotgruen", masterPrefs.colorVision.includes("rotgruen"));
+  // ---- Farbschwäche-Unterstützung (client, 2026-10-02) ----
+  // Two independent aids per exercise:
+  //  - "fb": a tick/cross symbol on every right/wrong feedback state, so the
+  //    green/red feedback no longer relies on colour alone.
+  //  - "pal": a colour-safe replacement for an exercise's FIXED colour pair/
+  //    palette (Go/No-Go, Simon, Stopp-Signal, Doppelziel, Suchtest,
+  //    Wortfarben-Test, Kartensortier-Test, Merkspanne). The safe colours
+  //    differ in BRIGHTNESS as well as hue (dark blue vs. amber, a black/
+  //    blue/orange/yellow brightness ladder, Okabe-Ito for Merkspanne), so
+  //    they stay apart for Rot-Grün, Blau-Gelb and - as far as brightness
+  //    alone allows - full colour blindness too.
+  // Both follow Master-Einstellungen by default (any Farbsehen option ticked
+  // = on); each exercise's own Feineinstellungen can switch either one on or
+  // off independently, which is stored as an override until reset. One
+  // shared store, never part of the exercises' own prefs objects.
+  const CVD_OVERRIDE_KEY = "fwmc-cvd-overrides-v1";
+  const cvdOverrides = (() => {
+    const saved = readJSON(CVD_OVERRIDE_KEY, {});
+    return saved && typeof saved === "object" ? saved : {};
+  })();
+  function saveCvdOverrides() { writeJSON(CVD_OVERRIDE_KEY, cvdOverrides); }
+  // ex id -> ready screens that get the controls, whether it has right/
+  // wrong feedback (fb) and/or a fixed palette (pal).
+  const CVD_EXERCISES = {
+    remember: { screens: ["rememberReady", "rememberTrainingReady"], fb: true },
+    blitz: { screens: ["blitzReady"], fb: true },
+    mot: { screens: ["motReady", "motTrainingReady"], fb: true },
+    gng: { screens: ["gngReady"], fb: true, pal: true },
+    testNback: { screens: ["testNbackReady"], fb: true },
+    trail: { screens: ["trailReady"], fb: true },
+    flanker: { screens: ["flankerReady"], fb: true },
+    ufov: { screens: ["ufovReady"], fb: true },
+    posner: { screens: ["posnerReady"], fb: true },
+    simon: { screens: ["simonReady"], fb: true, pal: true },
+    rotation: { screens: ["rotationReady"], fb: true },
+    merk: { screens: ["merkReady"], fb: true, pal: true },
+    search: { screens: ["searchReady"], fb: true, pal: true },
+    ab: { screens: ["abReady"], fb: true, pal: true },
+    hick: { screens: ["hickReady"], fb: true },
+    corsi: { screens: ["corsiReady"], fb: true },
+    ts: { screens: ["tsReady"], fb: true },
+    anti: { screens: ["antiReady"], fb: true },
+    stroop: { screens: ["stroopReady"], fb: true, pal: true },
+    subitize: { screens: ["subitizeReady"], fb: true },
+    vorlauf: { screens: ["vorlaufReady"], fb: true },
+    stop: { screens: ["stopReady"], fb: true, pal: true },
+    dsst: { screens: ["dsstReady"], fb: true },
+    wcst: { screens: ["wcstReady"], fb: true, pal: true },
+    navon: { screens: ["navonReady"], fb: true },
+    iconic: { screens: ["iconicReady"], fb: true },
+  };
+  // Feedback selectors per exercise: [okSelectors, badSelectors].
+  const CVD_FB_SELECTORS = {
+    remember: [".remember-marker.correct", ".remember-marker.wrong"],
+    blitz: [".blitz-cell.correct", ".blitz-cell.wrong"],
+    mot: [".mot-object.correct", ".mot-object.wrong"],
+    gng: [".gng-stimulus.hit", ".gng-stimulus.wrong"],
+    testNback: [".nback-match-btn.correct", ".nback-match-btn.wrong"],
+    trail: [null, ".trail-marker.wrong"],
+    flanker: [".flanker-response-btn.correct", ".flanker-response-btn.wrong"],
+    ufov: [".ufov-shape-btn.correct, .ufov-ring-btn.correct", ".ufov-shape-btn.wrong, .ufov-ring-btn.wrong"],
+    posner: [".posner-box.correct", ".posner-box.wrong"],
+    simon: [".simon-response-btn.correct", ".simon-response-btn.wrong"],
+    rotation: [".rotation-response-btn.correct", ".rotation-response-btn.wrong"],
+    merk: [".merk-response-btn.correct", ".merk-response-btn.wrong"],
+    search: [".search-item.correct, .search-item.reveal", ".search-item.wrong"],
+    ab: [".ab-t1-btn.correct, .ab-t2-btn.correct", ".ab-t1-btn.wrong, .ab-t2-btn.wrong"],
+    hick: [".hick-box.correct", ".hick-box.wrong"],
+    corsi: [".corsi-block.correct", ".corsi-block.wrong"],
+    ts: [".ts-response-btn.correct", ".ts-response-btn.wrong"],
+    anti: [".anti-response-btn.correct", ".anti-response-btn.wrong"],
+    stroop: [".stroop-response-btn.correct", ".stroop-response-btn.wrong"],
+    subitize: [".subitize-key.correct", ".subitize-key.wrong"],
+    vorlauf: [null, ".vorlauf-dot.falsestart"],
+    stop: [".stop-response-btn.correct", ".stop-response-btn.wrong"],
+    dsst: [".dsst-key.correct", ".dsst-key.wrong"],
+    wcst: [".wcst-card.wcst-ref.correct", ".wcst-card.wcst-ref.wrong"],
+    navon: [".navon-response-btn.correct", ".navon-response-btn.wrong"],
+    iconic: [".iconic-answer-box.correct", ".iconic-answer-box.wrong"],
+  };
+  // Safe palettes. Two-colour pairs: dark blue vs. amber (brightness
+  // contrast ~4.9:1, so they stay apart even without any colour vision).
+  const CVD_DARK = "#0b3d91";
+  const CVD_LIGHT = "#f5a300";
+  // Four-colour ladder for Wortfarben-/Kartensortier-Test, same order as
+  // their own keys (rot, blau, gruen, gelb), brightness ~0.01/0.18/0.42/0.74.
+  const CVD_FOUR = [
+    { key: "rot", title: "Schwarz", word: "SCHWARZ", hex: "#16232a" },
+    { key: "blau", title: "Blau", word: "BLAU", hex: "#2f6fed" },
+    { key: "gruen", title: "Orange", word: "ORANGE", hex: "#e69f00" },
+    { key: "gelb", title: "Gelb", word: "GELB", hex: "#f0e442" },
+  ];
+  // Okabe-Ito (the standard colour-blind-safe qualitative palette) + grey.
+  const CVD_MERK_PALETTE = ["#000000", "#e69f00", "#56b4e9", "#009e73", "#f0e442", "#0072b2", "#d55e00", "#cc79a7", "#999999"];
+
+  function cvdMasterOn() { return masterPrefs.colorVision.length > 0; }
+  function cvdOverride(ex, kind) {
+    const o = cvdOverrides[ex];
+    return o && typeof o[kind] === "boolean" ? o[kind] : null;
   }
+  function cvdFbOn(ex) { const o = cvdOverride(ex, "fb"); return o == null ? cvdMasterOn() : o; }
+  function cvdPalOn(ex) { const o = cvdOverride(ex, "pal"); return o == null ? cvdMasterOn() : o; }
+  function cvdSetOverride(ex, kind, value) {
+    if (value == null) {
+      if (cvdOverrides[ex]) delete cvdOverrides[ex][kind];
+      if (cvdOverrides[ex] && !Object.keys(cvdOverrides[ex]).length) delete cvdOverrides[ex];
+    } else {
+      cvdOverrides[ex] = cvdOverrides[ex] || {};
+      cvdOverrides[ex][kind] = value;
+    }
+    saveCvdOverrides();
+    applyCvdState();
+  }
+  function resetAllCvdOverrides() {
+    Object.keys(cvdOverrides).forEach((k) => delete cvdOverrides[k]);
+    saveCvdOverrides();
+    applyCvdState();
+  }
+
+  // One generated stylesheet for every tick/cross rule, so the selector map
+  // above is the single source of truth. Each rule is scoped to its own
+  // body class (fbs-<ex>), so one exercise's setting never leaks into
+  // another. A background-image badge needs no positioning and changes no
+  // layout - safe on absolutely-positioned markers and static buttons alike.
+  const CVD_OK_IMG = `url("data:image/svg+xml,${encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='#ffffff' stroke='#16232a' stroke-width='1.5'/><path d='M6.5 12.5l3.6 3.6 7.4-8' fill='none' stroke='#16232a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>")}")`;
+  const CVD_BAD_IMG = `url("data:image/svg+xml,${encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='#ffffff' stroke='#16232a' stroke-width='1.5'/><path d='M7.5 7.5l9 9M16.5 7.5l-9 9' fill='none' stroke='#16232a' stroke-width='3' stroke-linecap='round'/></svg>")}")`;
+  (function buildCvdStyles() {
+    const badge = "background-repeat:no-repeat;background-position:center top 4px;background-size:20px 20px";
+    const scope = (ex, sel) => sel.split(",").map((s) => `body.fbs-${ex} ${s.trim()}`).join(",");
+    let css = "";
+    Object.entries(CVD_FB_SELECTORS).forEach(([ex, [ok, bad]]) => {
+      if (ok) css += `${scope(ex, ok)}{background-image:${CVD_OK_IMG};${badge}}\n`;
+      if (bad) css += `${scope(ex, bad)}{background-image:${CVD_BAD_IMG};${badge}}\n`;
+    });
+    // MOT's 3D look draws its sphere as a background-image gradient - keep
+    // it underneath the badge instead of replacing it.
+    css += `body.fbs-mot .mot-object.style-3d.correct{background-image:${CVD_OK_IMG},radial-gradient(circle at 34% 28%, #a8e0ac 0%, #2e7d32 55%, #1b5e20 100%);background-repeat:no-repeat,no-repeat;background-position:center top 4px,center;background-size:20px 20px,cover}\n`;
+    css += `body.fbs-mot .mot-object.style-3d.wrong{background-image:${CVD_BAD_IMG},radial-gradient(circle at 34% 28%, #f3a6a6 0%, #d32f2f 55%, #941f1f 100%);background-repeat:no-repeat,no-repeat;background-position:center top 4px,center;background-size:20px 20px,cover}\n`;
+    const style = document.createElement("style");
+    style.id = "cvdFeedbackStyles";
+    style.textContent = css;
+    document.head.appendChild(style);
+  })();
+
+  // Per-exercise controls, injected into each ready screen's own
+  // Feineinstellungen (a new one is added where a screen has none yet).
+  function cvdControlsHost(screenId) {
+    const screen = document.getElementById(screenId);
+    if (!screen) return null;
+    let body = screen.querySelector("details.advanced .advanced-body");
+    if (!body) {
+      const det = document.createElement("details");
+      det.className = "advanced";
+      det.innerHTML = '<summary>Feineinstellungen</summary><div class="advanced-body"></div>';
+      const anchor = screen.querySelector(".start-btn");
+      const best = anchor && anchor.previousElementSibling && anchor.previousElementSibling.classList.contains("group-help") ? anchor.previousElementSibling : anchor;
+      screen.insertBefore(det, best || null);
+      body = det.querySelector(".advanced-body");
+    }
+    return body;
+  }
+  function cvdToggleRow(ex, kind, label) {
+    const row = document.createElement("div");
+    row.className = "cvd-row";
+    row.innerHTML = `<div class="cvd-row-label">${label}</div><div class="choice-row"><button class="choice" data-cvd-ex="${ex}" data-cvd-kind="${kind}" data-cvd-val="1">An</button><button class="choice" data-cvd-ex="${ex}" data-cvd-kind="${kind}" data-cvd-val="0">Aus</button></div><div class="group-help cvd-status" data-cvd-status="${ex}:${kind}"></div>`;
+    return row;
+  }
+  Object.entries(CVD_EXERCISES).forEach(([ex, cfg]) => {
+    cfg.screens.forEach((screenId) => {
+      const host = cvdControlsHost(screenId);
+      if (!host) return;
+      const group = document.createElement("div");
+      group.className = "group cvd-group";
+      group.dataset.cvdGroup = ex;
+      group.innerHTML = '<div class="group-label">Farbschw&auml;che-Unterst&uuml;tzung</div>';
+      if (cfg.fb) group.appendChild(cvdToggleRow(ex, "fb", "Haken &amp; Kreuz bei richtig/falsch"));
+      if (cfg.pal) group.appendChild(cvdToggleRow(ex, "pal", "Farbsichere Farben"));
+      host.appendChild(group);
+    });
+  });
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-cvd-ex]");
+    if (btn) { cvdSetOverride(btn.dataset.cvdEx, btn.dataset.cvdKind, btn.dataset.cvdVal === "1"); return; }
+    const reset = e.target.closest("[data-cvd-reset]");
+    if (reset) { const [ex, kind] = reset.dataset.cvdReset.split(":"); cvdSetOverride(ex, kind, null); }
+  });
+
+  function applyCvdState() {
+    Object.entries(CVD_EXERCISES).forEach(([ex, cfg]) => {
+      if (cfg.fb) document.body.classList.toggle(`fbs-${ex}`, cvdFbOn(ex));
+      if (cfg.pal) document.body.classList.toggle(`cvdp-${ex}`, cvdPalOn(ex));
+    });
+    document.querySelectorAll("[data-cvd-ex]").forEach((b) => {
+      const on = b.dataset.cvdKind === "fb" ? cvdFbOn(b.dataset.cvdEx) : cvdPalOn(b.dataset.cvdEx);
+      setActive(b, (b.dataset.cvdVal === "1") === on);
+    });
+    document.querySelectorAll("[data-cvd-status]").forEach((el) => {
+      const [ex, kind] = el.dataset.cvdStatus.split(":");
+      el.textContent = "";
+      if (cvdOverride(ex, kind) == null) {
+        el.textContent = cvdMasterOn() ? "Folgt den Master-Einstellungen (Farbsehen ausgewählt)." : "Folgt den Master-Einstellungen.";
+      } else {
+        el.append("Eigene Einstellung für diese Übung. ");
+        const link = document.createElement("button");
+        link.className = "text-link";
+        link.type = "button";
+        link.dataset.cvdReset = `${ex}:${kind}`;
+        link.textContent = "Wieder den Master-Einstellungen folgen";
+        el.appendChild(link);
+      }
+    });
+    // Texts that name a colour (instructions, cues) swap with the palette.
+    document.querySelectorAll("[data-cvdp-ex]").forEach((el) => {
+      el.hidden = (el.dataset.cvdpShow === "on") !== cvdPalOn(el.dataset.cvdpEx);
+    });
+    syncWcstRefColors();
+    const stroopNames = { rot: "Rot", blau: "Blau", gruen: "Grün", gelb: "Gelb" };
+    document.querySelectorAll("[data-stroop-color]").forEach((b) => {
+      const safe = cvdStroopColor(b.dataset.stroopColor);
+      b.setAttribute("aria-label", safe ? safe.title : stroopNames[b.dataset.stroopColor]);
+    });
+    const resetBtn = document.getElementById("masterCvdResetBtn");
+    if (resetBtn) resetBtn.hidden = !Object.keys(cvdOverrides).length;
+  }
+  // Colour-dependent helpers the exercises read at render time.
+  function cvdStroopColor(key) {
+    return cvdPalOn("stroop") ? CVD_FOUR.find((c) => c.key === key) : null;
+  }
+  function cvdWcstHex(idx, normalHex) { return cvdPalOn("wcst") ? CVD_FOUR[idx].hex : normalHex; }
+  function syncWcstRefColors() {
+    const row = document.getElementById("wcstRefRow");
+    if (!row) return;
+    const normal = ["#d64545", "#2e7d32", "#f4c430", "#1565c0"];
+    const normalNames = ["rot", "grün", "gelb", "blau"];
+    const counts = ["ein", "zwei", "drei", "vier"];
+    const shapes = [["Dreieck", "Dreiecke"], ["Stern", "Sterne"], ["Quadrat", "Quadrate"], ["Kreis", "Kreise"]];
+    const safeNames = ["schwarz", "blau", "orange", "gelb"];
+    row.querySelectorAll(".wcst-ref").forEach((btn) => {
+      const i = Number(btn.dataset.refIdx);
+      btn.querySelectorAll(".wcst-shape").forEach((s) => { s.style.color = cvdWcstHex(i, normal[i]); });
+      const name = (cvdPalOn("wcst") ? safeNames : normalNames)[i];
+      const adj = i === 0 ? `${name}es` : `${name}e`;
+      btn.setAttribute("aria-label", `Referenzkarte ${i + 1}: ${counts[i]} ${adj} ${shapes[i][i === 0 ? 0 : 1]}`);
+    });
+  }
+  function applyColorVisionMode() { applyCvdState(); }
   document.querySelectorAll("[data-master-cvd]").forEach((el) => el.addEventListener("click", () => {
     const key = el.dataset.masterCvd;
     if (masterPrefs.colorVision.includes(key)) masterPrefs.colorVision = masterPrefs.colorVision.filter((k) => k !== key);
@@ -5183,6 +5426,9 @@
     saveMasterPrefs(); applyColorVisionMode(); syncMasterCvdUI();
   }));
   function syncMasterCvdUI() { document.querySelectorAll("[data-master-cvd]").forEach((el) => setActive(el, masterPrefs.colorVision.includes(el.dataset.masterCvd))); }
+  document.getElementById("masterCvdResetBtn").addEventListener("click", () => {
+    if (confirm("Eigene Farbschwäche-Einstellungen aller Übungen zurücksetzen? Danach folgen alle wieder den Master-Einstellungen.")) resetAllCvdOverrides();
+  });
   applyColorVisionMode();
 
   document.querySelectorAll("[data-master-limb]").forEach((el) => el.addEventListener("click", () => {
@@ -15481,7 +15727,7 @@
   }
   function wcstRenderStimulus(card) {
     els.wcstStimulusCard.innerHTML = "";
-    const hex = WCST_COLOR_HEX[card.colorIdx];
+    const hex = cvdWcstHex(card.colorIdx, WCST_COLOR_HEX[card.colorIdx]);
     const shape = WCST_SHAPES[card.shapeIdx];
     for (let i = 0; i < card.countIdx + 1; i++) {
       const span = document.createElement("span");
@@ -17705,6 +17951,8 @@
   // always leaves at least one unused colour available to swap in as an
   // unambiguous "changed" colour.
   const MERK_PALETTE = ["#e53935", "#1e88e5", "#43a047", "#fdd835", "#8e24aa", "#fb8c00", "#00acc1", "#d81b60", "#6d4c41"];
+  // Farbschwäche-Unterstützung: Okabe-Ito + grey instead (same count of 9).
+  function merkPalette() { return cvdPalOn("merk") ? CVD_MERK_PALETTE : MERK_PALETTE; }
   const MERK_TRIAL_COUNT = 20; // balanced 10 changed / 10 unchanged, see buildMerkTrials
   const MERK_STUDY_MS = 500; // sample-array exposure
   const MERK_RETENTION_MS = 900; // blank retention interval - same order of magnitude as Luck & Vogel's own design
@@ -17846,7 +18094,7 @@
     return positions;
   }
   function shuffledPalette() {
-    const arr = MERK_PALETTE.slice();
+    const arr = merkPalette().slice();
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
@@ -17937,7 +18185,7 @@
     if (trial.changed) {
       const idx = Math.floor(Math.random() * testItems.length);
       const usedColors = merkState.items.map((it) => it.color);
-      const spare = MERK_PALETTE.filter((c) => !usedColors.includes(c));
+      const spare = merkPalette().filter((c) => !usedColors.includes(c));
       testItems[idx].color = spare[Math.floor(Math.random() * spare.length)];
     }
     merkState.phase = "responding";
@@ -18427,8 +18675,8 @@
   const SEARCH_MIN_RESOLVED = 4;
   const SEARCH_ITEM_PX = 34;
   const SEARCH_MIN_CENTER_PX = SEARCH_ITEM_PX + 12;
-  const SEARCH_COLOR_TARGET = "#d64545";
-  const SEARCH_COLOR_DISTRACTOR = "#8a97a3";
+  const SEARCH_COLOR_TARGET_NORMAL = "#d64545";
+  const SEARCH_COLOR_DISTRACTOR_NORMAL = "#8a97a3";
   const searchPrefs = { length: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadSearchPrefs() {
     const saved = readJSON(SEARCH_PREFS_KEY, null);
@@ -18537,6 +18785,10 @@
   // where no single feature is unique, forcing an item-by-item scan.
   function buildSearchItems(mode, setSize, rng) {
     const items = [];
+    // Farbschwäche-Unterstützung: dark blue target colour vs. light grey
+    // distractors - apart by brightness, not just hue.
+    const SEARCH_COLOR_TARGET = cvdPalOn("search") ? CVD_DARK : SEARCH_COLOR_TARGET_NORMAL;
+    const SEARCH_COLOR_DISTRACTOR = cvdPalOn("search") ? "#c3ccd4" : SEARCH_COLOR_DISTRACTOR_NORMAL;
     if (mode === "feature") {
       for (let i = 0; i < setSize - 1; i++) items.push({ shape: "circle", color: SEARCH_COLOR_DISTRACTOR, isTarget: false });
       items.push({ shape: "circle", color: SEARCH_COLOR_TARGET, isTarget: true });
@@ -18554,7 +18806,10 @@
     }
     return items;
   }
-  function searchTargetLabel(mode) { return mode === "feature" ? "Roter Kreis" : "Rotes Quadrat"; }
+  function searchTargetLabel(mode) {
+    if (cvdPalOn("search")) return mode === "feature" ? "Blauer Kreis" : "Blaues Quadrat";
+    return mode === "feature" ? "Roter Kreis" : "Rotes Quadrat";
+  }
 
   // Anti-overlap scatter placement across the whole stage - copy-adapted
   // from Trail Making's own trailRandomPixelPosition/trailStageBounds
@@ -21486,8 +21741,8 @@
     stroopState.stimAt = performance.now();
     els.stroopHint.textContent = "";
     stroopClearStage();
-    els.stroopWord.textContent = STROOP_COLORS[trial.word].word;
-    els.stroopWord.style.color = STROOP_COLORS[trial.ink].hex;
+    els.stroopWord.textContent = (cvdStroopColor(trial.word) || STROOP_COLORS[trial.word]).word;
+    els.stroopWord.style.color = (cvdStroopColor(trial.ink) || STROOP_COLORS[trial.ink]).hex;
     scheduleStroopTimer(stroopEndTrial, stroopState.diff.responseMs);
   }
   function stroopEndTrial() {
