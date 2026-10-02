@@ -115,6 +115,7 @@ async def main():
         print("reset button shown once overrides exist:", await pg.is_visible("#masterCvdResetBtn"))
         pg.once("dialog", lambda d: asyncio.ensure_future(d.accept()))
         await pg.click("#masterCvdResetBtn"); await pg.wait_for_timeout(120)
+        await pg.click("#confirmYesBtn"); await pg.wait_for_timeout(120)
         print("reset: Flanker follows Master again:", await body_has("fbs-flanker") and await pg.evaluate("() => localStorage.getItem('fwmc-cvd-overrides-v1')") == "{}")
         await pg.click('[data-master-cvd="blaugelb"]'); await pg.wait_for_timeout(80)
         print("Master off: everything off again:", not await body_has("fbs-flanker") and not await body_has("cvdp-gng"))

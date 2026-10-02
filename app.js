@@ -2042,7 +2042,27 @@
     try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch (e) { return fallback; }
   }
   function writeJSON(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+    try { localStorage.setItem(key, JSON.stringify(value)); }
+    catch (e) { if (e && (e.name === "QuotaExceededError" || e.code === 22 || e.code === 1014)) showStorageFullWarning(); }
+  }
+  // A full storage used to fail silently (settings and history simply
+  // stopped saving). Tell the client once per page load what happened.
+  let storageWarningShown = false;
+  function showStorageFullWarning() {
+    if (storageWarningShown || !document.body) return;
+    storageWarningShown = true;
+    const box = document.createElement("div");
+    box.className = "storage-warning";
+    box.id = "storageWarning";
+    box.setAttribute("role", "alert");
+    const text = document.createElement("p");
+    text.textContent = "Der Speicher dieses Browsers ist voll. Neue Einstellungen und Verlaufseinträge werden gerade nicht gespeichert. Tipp: Motivationsbilder im Cardio-Bereich entfernen und unter Einstellungen eine Datensicherung exportieren.";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "Verstanden";
+    btn.addEventListener("click", () => box.remove());
+    box.append(text, btn);
+    document.body.appendChild(box);
   }
 
   // ---- Training history ----
@@ -2063,7 +2083,7 @@
     const item = list.find((e) => e.id === id);
     if (item) { item.rating = rating; writeJSON(HISTORY_KEY, list); }
   }
-  const PROGRAM_HISTORY_KINDS = ["program", "breath-program", "workout-plan", "combo"];
+  const PROGRAM_HISTORY_KINDS = ["program", "breath-program", "workout-plan", "movement-plan", "cardio-plan", "combo"];
   function isCompleted(progKey) {
     return loadHistory().some((e) => PROGRAM_HISTORY_KINDS.includes(e.kind) && e.progKey === progKey);
   }
@@ -2107,9 +2127,10 @@
     renderHistoryInto(els.workoutHistorySection, els.workoutHistoryStats, els.workoutHistoryList, els.workoutHistoryMoreBtn, list);
   }
   function clearHistory() {
-    if (!confirm("Deinen Trainingsverlauf auf diesem Gerät löschen?")) return;
-    writeJSON(HISTORY_KEY, []);
-    renderHistory();
+    confirmDialog("Deinen Trainingsverlauf auf diesem Gerät löschen?", () => {
+      writeJSON(HISTORY_KEY, []);
+      renderHistory();
+    });
   }
   els.historyClearBtn.addEventListener("click", clearHistory);
   els.breathHistoryClearBtn.addEventListener("click", clearHistory);
@@ -2144,7 +2165,11 @@
   const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
   function focusFirstIn(sheetEl) {
     const f = sheetEl.querySelector(FOCUSABLE);
-    if (f) f.focus();
+    // preventScroll: focusing a control far down a long sheet (e.g. a link
+    // in the tips list) used to open the sheet scrolled past its heading.
+    if (f) f.focus({ preventScroll: true });
+    sheetEl.scrollTop = 0;
+    sheetEl.querySelectorAll(".sheet-inner").forEach((el) => { el.scrollTop = 0; });
   }
   function trapTabKey(sheetEl, e) {
     if (e.key !== "Tab" || sheetEl.hidden) return;
@@ -2176,7 +2201,29 @@
   // (caught via a repeated Playwright run, not a single deterministic one -
   // the overlap only happens for markers whose random draw lands near this
   // boundary, so a single-shot test can easily miss it).
+  // On a narrow phone the player bar can wrap to two rows and then covered
+  // the on-stage hint (fixed CSS top:68px). This moves a hint just below
+  // the bar's real bottom edge whenever needed, and back to its CSS
+  // position when the bar is one row again.
+  function placeHintBelowBar(hintEl, barEl) {
+    if (!hintEl || !barEl) return;
+    hintEl.style.top = "";
+    const barBottom = barEl.getBoundingClientRect().bottom;
+    const hintTop = hintEl.getBoundingClientRect().top;
+    if (!barBottom || !hintEl.offsetParent || hintTop >= barBottom + 6) return;
+    const parentTop = hintEl.offsetParent.getBoundingClientRect().top;
+    hintEl.style.top = Math.round(barBottom + 8 - parentTop) + "px";
+  }
+  if (typeof ResizeObserver !== "undefined") {
+    document.querySelectorAll(".player").forEach((player) => {
+      const bar = player.querySelector(".player-bar");
+      const hints = player.querySelectorAll(".remember-hint");
+      if (!bar || !hints.length) return;
+      new ResizeObserver(() => hints.forEach((h) => placeHintBelowBar(h, bar))).observe(bar);
+    });
+  }
   function stageTopClearanceY(stageRect, hintEl, barEl, fallbackMinY, halfSizePx = 0, marginPx = 16) {
+    placeHintBelowBar(hintEl, barEl);
     if (!stageRect.height) return fallbackMinY;
     const hintRect = hintEl.getBoundingClientRect();
     const barRect = barEl.getBoundingClientRect();
@@ -3446,11 +3493,9 @@
   let comboVisualCaptureOriginal = null;
   let comboVisualEditIndex = null;
   function openVisualComboCapture(exId, iconHtml, existingBlock, editIndex) {
-    comboVisualCaptureOriginal = {
-      exercise: state.exercise, colors: state.colors.slice(), arrowColors: state.arrowColors.slice(),
-      stroopColors: state.stroopColors.slice(), duration: state.duration, stimulusS: state.stimulusS,
-      intervalMin: state.intervalMin, intervalMax: state.intervalMax,
-    };
+    // Full snapshot: Periphere Wahrnehmung's own periph* settings are edited
+    // on this screen too and used to leak into the client's own setup.
+    comboVisualCaptureOriginal = JSON.parse(JSON.stringify(state));
     const id = existingBlock ? existingBlock.exercise : exId;
     const ex = EXERCISES[id];
     const icon = iconHtml || document.querySelector(`.excard[data-exercise="${id}"] .icon-badge, .excard[data-exercise="${id}"] .icon-tile`)?.outerHTML || "";
@@ -3465,11 +3510,18 @@
       state.stimulusS = existingBlock.stimulusS ?? state.stimulusS;
       state.intervalMin = existingBlock.intervalMin ?? state.intervalMin;
       state.intervalMax = existingBlock.intervalMax ?? state.intervalMax;
+      if (existingBlock.periph) Object.assign(state, JSON.parse(JSON.stringify(existingBlock.periph)));
       renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
+      if (ex.type === "periph") { syncPeriphFixUI(); syncPeriphKindUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); syncPeriphColorUI(); }
     }
     comboVisualEditIndex = editIndex ?? null;
     els.readyTitle.textContent = "Baustein: " + ex.title;
     els.startBtn.textContent = "Baustein übernehmen";
+  }
+  function periphStateSnapshot() {
+    const out = {};
+    Object.keys(state).forEach((k) => { if (k.startsWith("periph")) out[k] = JSON.parse(JSON.stringify(state[k])); });
+    return out;
   }
   function exitVisualComboCapture() {
     if (comboVisualCaptureOriginal) {
@@ -3489,6 +3541,7 @@
     if (ex.usesColors) block.colors = state.colors.slice();
     else if (ex.usesArrowColors) block.colors = state.arrowColors.slice();
     else if (ex.usesStroopColors) block.colors = state.stroopColors.slice();
+    if (ex.type === "periph") block.periph = periphStateSnapshot();
     if (comboVisualEditIndex != null) comboDraftBlocks[comboVisualEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitVisualComboCapture();
@@ -3582,11 +3635,45 @@
     if (PROGRAMS[code]) return PROGRAMS[code];
     if (BREATH_PROGRAMS[code]) return BREATH_PROGRAMS[code];
     if (WORKOUT_PLANS[code]) return WORKOUT_PLANS[code];
+    // A network failure or server error must not read as "code not found"
+    // (the client would retype a correct code) - return a marker instead.
+    // 12 s timeout so a dead connection doesn't leave "Lädt …" forever.
     try {
-      const res = await fetch(`${CODE_API}?code=${encodeURIComponent(code)}`);
+      const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), 12000) : null;
+      const res = await fetch(`${CODE_API}?code=${encodeURIComponent(code)}`, ctrl ? { signal: ctrl.signal } : undefined);
+      if (timer) clearTimeout(timer);
       if (res.ok) return await res.json();
-    } catch (e) {}
+      if (res.status >= 500) return { __lookupError: "network" };
+    } catch (e) {
+      return { __lookupError: "network" };
+    }
     return null;
+  }
+
+  // Light shape check for coach-authored configs (dashboard JSON is free
+  // text) - a broken config must show a message, not crash the app.
+  function codeDefProblem(def) {
+    if (!def || typeof def !== "object") return true;
+    const t = def.type;
+    const nonEmpty = (a) => Array.isArray(a) && a.length > 0;
+    if (t === "bundle" || /-bundle$/.test(t || "")) return !nonEmpty(def.programs) || def.programs.some((p) => !p || typeof p !== "object");
+    if (t === "movement-plan") return !nonEmpty(def.movements);
+    if (t === "cardio-plan") return !nonEmpty(def.items);
+    if (t === "breath-program" || t === "workout-plan" || t === "combo-program") return !nonEmpty(def.blocks);
+    if (t) return true;
+    return !nonEmpty(def.blocks) || def.blocks.some((b) => !b || !EXERCISES[b.exercise]);
+  }
+  function showCodeError(ctx, kind) {
+    const el = ctx.errorEl;
+    if (!el) return;
+    if (!el.dataset.defaultText) el.dataset.defaultText = el.textContent;
+    el.textContent = kind === "network"
+      ? "Keine Verbindung zum Server. Bitte prüfe deine Internetverbindung und versuche es noch einmal."
+      : kind === "broken"
+        ? "Dieses Training konnte nicht geöffnet werden. Bitte gib deinem Coach kurz Bescheid."
+        : el.dataset.defaultText;
+    el.hidden = false;
   }
 
   let originBundle = null; // { def, code } - set when a programme was opened from a bundle overview
@@ -3623,26 +3710,31 @@
     if (ctx.goBtn) { ctx.goBtn.disabled = true; ctx.goBtn.textContent = "Lädt …"; }
     const def = await lookupProgram(code);
     if (ctx.goBtn) { ctx.goBtn.disabled = false; ctx.goBtn.textContent = "Öffnen"; }
-    if (!def) {
-      if (ctx.errorEl) ctx.errorEl.hidden = false;
+    if (!def || def.__lookupError || codeDefProblem(def)) {
+      showCodeError(ctx, !def ? "notfound" : def.__lookupError ? "network" : "broken");
       showScreen(ctx.homeScreen);
       return;
     }
     if (ctx.errorEl) ctx.errorEl.hidden = true;
     recordCodeUsage(code);
-    if (def.type === "bundle") { openBundleOverview(def, code, ctx); return; }
-    if (def.type === "breath-bundle") { openBreathBundleOverview(def, code); return; }
-    if (def.type === "breath-program") { breathOriginBundle = null; renderBreathProgramIntro(def, code, code); return; }
-    if (def.type === "movement-bundle") { openMovementBundleOverview(def, code); return; }
-    if (def.type === "movement-plan") { movementOriginBundle = null; renderMovementProgramIntro(def, code, code); return; }
-    if (def.type === "workout-bundle") { openWorkoutBundleOverview(def, code); return; }
-    if (def.type === "workout-plan") { workoutOriginBundle = null; renderWorkoutProgramIntro(def, code, code); return; }
-    if (def.type === "cardio-bundle") { openCardioBundleOverview(def, code); return; }
-    if (def.type === "cardio-plan") { cardioOriginBundle = null; renderCardioProgramIntro(def, code, code); return; }
-    if (def.type === "combo-bundle") { openComboBundleOverview(def, code); return; }
-    if (def.type === "combo-program") { comboOriginBundle = null; startComboProgram(def, code, code, ctx.homeScreen); return; }
-    originBundle = null;
-    renderProgramIntro(def, code, code, ctx);
+    try {
+      if (def.type === "bundle") { openBundleOverview(def, code, ctx); return; }
+      if (def.type === "breath-bundle") { openBreathBundleOverview(def, code); return; }
+      if (def.type === "breath-program") { breathOriginBundle = null; renderBreathProgramIntro(def, code, code); return; }
+      if (def.type === "movement-bundle") { openMovementBundleOverview(def, code); return; }
+      if (def.type === "movement-plan") { movementOriginBundle = null; renderMovementProgramIntro(def, code, code); return; }
+      if (def.type === "workout-bundle") { openWorkoutBundleOverview(def, code); return; }
+      if (def.type === "workout-plan") { workoutOriginBundle = null; renderWorkoutProgramIntro(def, code, code); return; }
+      if (def.type === "cardio-bundle") { openCardioBundleOverview(def, code); return; }
+      if (def.type === "cardio-plan") { cardioOriginBundle = null; renderCardioProgramIntro(def, code, code); return; }
+      if (def.type === "combo-bundle") { openComboBundleOverview(def, code); return; }
+      if (def.type === "combo-program") { comboOriginBundle = null; startComboProgram(def, code, code, ctx.homeScreen); return; }
+      originBundle = null;
+      renderProgramIntro(def, code, code, ctx);
+    } catch (e) {
+      showCodeError(ctx, "broken");
+      showScreen(ctx.homeScreen);
+    }
   }
 
   function formatDateDE(iso) {
@@ -4464,7 +4556,16 @@
   }
 
   async function requestWakeLock() {
-    try { if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {}
+    // The browser drops the lock itself when the page is hidden (screen
+    // lock, app switch); the "release" listener resets our handle so the
+    // visibilitychange handler below can request a fresh one on return.
+    try {
+      if ("wakeLock" in navigator) {
+        const lock = await navigator.wakeLock.request("screen");
+        wakeLock = lock;
+        lock.addEventListener("release", () => { if (wakeLock === lock) wakeLock = null; });
+      }
+    } catch (e) {}
   }
 
   function hideOverlays() {
@@ -5033,7 +5134,7 @@
       const hiddenMs = performance.now() - hiddenAt;
       hiddenAt = null;
       if (hiddenMs > 500) {
-        if (session) session.startTime += hiddenMs;
+        if (session && !periphPausedAt) session.startTime += hiddenMs;
         if (breathSession && !breathPaused) breathSession.startTime += hiddenMs;
         if (wimhofState) { wimhofState.phaseStart += hiddenMs; wimhofState.sessionStart += hiddenMs; }
         if (movementSession) movementSession.startTime += hiddenMs;
@@ -5103,7 +5204,9 @@
   }
   els.workoutExerciseInfoCloseBtn.addEventListener("click", closeWorkoutExerciseInfo);
   els.workoutExerciseInfoSheet.addEventListener("click", (e) => { if (e.target === els.workoutExerciseInfoSheet) closeWorkoutExerciseInfo(); });
-  els.workoutExerciseInfoSheet.addEventListener("keydown", (e) => trapTabKey(els.workoutExerciseInfoSheet, e));
+  els.workoutExerciseInfoSheet.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeWorkoutExerciseInfo(); else trapTabKey(els.workoutExerciseInfoSheet, e);
+  });
   // ==== Master-Einstellungen: a no-login "profile" (added 2026-09-27,
   // client's own framing) ====
   // Everything here lives in ONE localStorage key, same convention as every
@@ -5493,7 +5596,7 @@
   }));
   function syncMasterCvdUI() { document.querySelectorAll("[data-master-cvd]").forEach((el) => setActive(el, masterPrefs.colorVision.includes(el.dataset.masterCvd))); }
   document.getElementById("masterCvdResetBtn").addEventListener("click", () => {
-    if (confirm("Eigene Farbschwäche-Einstellungen aller Übungen zurücksetzen? Danach folgen alle wieder den Master-Einstellungen.")) resetAllCvdOverrides();
+    confirmDialog("Eigene Farbschwäche-Einstellungen aller Übungen zurücksetzen? Danach folgen alle wieder den Master-Einstellungen.", resetAllCvdOverrides);
   });
   applyColorVisionMode();
 
@@ -5536,9 +5639,10 @@
   // confirmed first, same as clearHistory()'s "Verlauf löschen", since it
   // touches every exercise's customization at once.
   els.masterBgResetAllBtn.addEventListener("click", () => {
-    if (!confirm("Alle eigenen Hintergrundfarben zurücksetzen? Jede Übung folgt danach wieder der Master-Vorgabe (bzw. hat keinen Hintergrund, falls keine Master-Vorgabe gesetzt ist).")) return;
-    resetAllBgToMasterDefault();
-    syncMasterBgUI();
+    confirmDialog("Alle eigenen Hintergrundfarben zurücksetzen? Jede Übung folgt danach wieder der Master-Vorgabe (bzw. hat keinen Hintergrund, falls keine Master-Vorgabe gesetzt ist).", () => {
+      resetAllBgToMasterDefault();
+      syncMasterBgUI();
+    });
   });
   els.masterBgIntensitySlider.addEventListener("input", () => {
     masterPrefs.defaultBgIntensity = Number(els.masterBgIntensitySlider.value);
@@ -6397,6 +6501,8 @@
       movementPrefs.durationMin = existingBlock.durationMin ?? movementPrefs.durationMin;
       movementPrefs.mirror = existingBlock.mirror ?? movementPrefs.mirror;
       movementPrefs.showLabel = existingBlock.showLabel ?? movementPrefs.showLabel;
+      if (MOVEMENT_DIRECTIONS.includes(existingBlock.direction)) movementPrefs.direction = existingBlock.direction;
+      if (existingBlock.figureStyle === "figur" || existingBlock.figureStyle === "abstrakt") movementPrefs.figureStyle = existingBlock.figureStyle;
     }
     comboMovementEditIndex = editIndex ?? null;
     els.movementReadyTitle.textContent = "Baustein: Movement";
@@ -6419,6 +6525,7 @@
     const block = {
       domain: "movement", movements: movementPrefs.movements.slice(), preview: movementPrefs.preview,
       bpm: movementPrefs.bpm, durationMin: movementPrefs.durationMin, mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel,
+      direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle,
     };
     if (comboMovementEditIndex != null) comboDraftBlocks[comboMovementEditIndex] = block;
     else comboDraftBlocks.push(block);
@@ -6646,7 +6753,10 @@
         movementPrefs.durationMin = entry.durationMin;
         movementPrefs.mirror = entry.mirror;
         movementPrefs.showLabel = entry.showLabel;
+        if (MOVEMENT_DIRECTIONS.includes(entry.direction)) movementPrefs.direction = entry.direction;
+        if (entry.figureStyle === "figur" || entry.figureStyle === "abstrakt") movementPrefs.figureStyle = entry.figureStyle;
         saveMovementPrefs();
+        syncMvDirectionUI(); syncMvFigureUI();
         // While capturing a Kombi-Baustein, loading a saved setting should
         // just fill the draft for review/adjustment, not immediately start
         // a live session.
@@ -6667,6 +6777,7 @@
         id: String(Date.now()), name,
         movements: movementPrefs.movements.slice(), preview: movementPrefs.preview, bpm: movementPrefs.bpm,
         durationMin: movementPrefs.durationMin, mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel,
+        direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle,
       });
       movementSavedStore.save(list);
       renderMovementSaved();
@@ -7246,6 +7357,9 @@
     comboRememberCaptureMode = mode;
     comboRememberEditIndex = editIndex ?? null;
     comboRememberDurationS = existingBlock ? (existingBlock.duration ?? 60) : 60;
+    // A block carries a full snapshot of the exercise's own settings
+    // (difficulty, start level, ...), restored here for re-editing.
+    if (existingBlock && existingBlock.prefs) Object.assign(rememberPrefs, JSON.parse(JSON.stringify(existingBlock.prefs)));
     if (mode === "training") {
       syncRememberTrainingUI();
       showScreen("rememberTrainingReady");
@@ -7277,7 +7391,7 @@
     els.rememberTrainingStartBtn.textContent = "Training starten";
   }
   function commitRememberComboCapture() {
-    const block = { domain: "nat", mode: comboRememberCaptureMode, duration: comboRememberDurationS };
+    const block = { domain: "nat", mode: comboRememberCaptureMode, duration: comboRememberDurationS, prefs: JSON.parse(JSON.stringify(rememberPrefs)) };
     if (comboRememberEditIndex != null) comboDraftBlocks[comboRememberEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitRememberComboCapture();
@@ -7608,6 +7722,7 @@
       blitzPrefs.gridSize = existingBlock.gridSize ?? blitzPrefs.gridSize;
       blitzPrefs.zones = existingBlock.zones ? existingBlock.zones.slice() : blitzPrefs.zones;
       blitzPrefs.startCount = existingBlock.startCount ?? blitzPrefs.startCount;
+      if (existingBlock.prefs) Object.assign(blitzPrefs, JSON.parse(JSON.stringify(existingBlock.prefs)));
     }
     openBlitzReady();
     els.blitzReadyTitle.textContent = "Baustein: Blitz-Raster";
@@ -7630,7 +7745,7 @@
     els.blitzReadyStartBtn.textContent = "Training starten";
   }
   function commitBlitzComboCapture() {
-    const block = { domain: "blitz", duration: comboBlitzDurationS, gridSize: blitzPrefs.gridSize, zones: blitzPrefs.zones.slice(), startCount: blitzPrefs.startCount };
+    const block = { domain: "blitz", duration: comboBlitzDurationS, gridSize: blitzPrefs.gridSize, zones: blitzPrefs.zones.slice(), startCount: blitzPrefs.startCount, prefs: JSON.parse(JSON.stringify(blitzPrefs)) };
     if (comboBlitzEditIndex != null) comboDraftBlocks[comboBlitzEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitBlitzComboCapture();
@@ -8307,6 +8422,7 @@
     comboFlashCaptureMode = mode;
     comboFlashEditIndex = editIndex ?? null;
     comboFlashDurationS = existingBlock ? (existingBlock.duration ?? 60) : 60;
+    if (existingBlock && existingBlock.prefs) Object.assign(flashPrefs, JSON.parse(JSON.stringify(existingBlock.prefs)));
     if (mode === "training") {
       openFlashTrainingReady();
       els.flashTrainingComboDurationGroup.hidden = false;
@@ -8337,7 +8453,7 @@
     els.flashTrainingStartBtn.textContent = "Training starten";
   }
   function commitFlashComboCapture() {
-    const block = { domain: "flash", mode: comboFlashCaptureMode, duration: comboFlashDurationS };
+    const block = { domain: "flash", mode: comboFlashCaptureMode, duration: comboFlashDurationS, prefs: JSON.parse(JSON.stringify(flashPrefs)) };
     if (comboFlashEditIndex != null) comboDraftBlocks[comboFlashEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitFlashComboCapture();
@@ -9093,6 +9209,7 @@
     comboMotCaptureMode = mode;
     comboMotEditIndex = editIndex ?? null;
     comboMotDurationS = existingBlock ? (existingBlock.duration ?? 60) : 60;
+    if (existingBlock && existingBlock.prefs) Object.assign(motPrefs, JSON.parse(JSON.stringify(existingBlock.prefs)));
     if (mode === "training") {
       openMotTrainingReady();
       els.motTrainingComboDurationGroup.hidden = false;
@@ -9123,7 +9240,7 @@
     els.motTrainingStartBtn.textContent = "Training starten";
   }
   function commitMotComboCapture() {
-    const block = { domain: "mot", mode: comboMotCaptureMode, duration: comboMotDurationS };
+    const block = { domain: "mot", mode: comboMotCaptureMode, duration: comboMotDurationS, prefs: JSON.parse(JSON.stringify(motPrefs)) };
     if (comboMotEditIndex != null) comboDraftBlocks[comboMotEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitMotComboCapture();
@@ -10026,7 +10143,7 @@
       applyCueAudioSession();
       if (!workoutAudioCtx) workoutAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const ctx = workoutAudioCtx;
-      if (ctx.state === "suspended") ctx.resume();
+      if (ctx.state !== "running") ctx.resume().catch(() => {});
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.frequency.value = freq;
@@ -10040,6 +10157,39 @@
       osc.stop(now + durationS + 0.02);
     } catch (e) {}
   }
+  // iOS only lets web audio (and speech) start from inside a user gesture.
+  // The first cue tones fire seconds after the Start tap, from the timer
+  // loop, so on iPhone they could stay silent. Create/resume the context
+  // and play one silent sample on every tap (also recovers the
+  // "interrupted" state after a phone call), and prime speech once.
+  let cueAudioPrimed = false, cueSpeechPrimed = false;
+  function unlockCueAudio() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      applyCueAudioSession();
+      if (!workoutAudioCtx) workoutAudioCtx = new AC();
+      const ctx = workoutAudioCtx;
+      if (ctx.state !== "running") ctx.resume().catch(() => {});
+      if (!cueAudioPrimed) {
+        const src = ctx.createBufferSource();
+        src.buffer = ctx.createBuffer(1, 1, 22050);
+        src.connect(ctx.destination);
+        src.start(0);
+        cueAudioPrimed = true;
+      }
+    } catch (e) {}
+    try {
+      if (!cueSpeechPrimed && window.speechSynthesis && window.SpeechSynthesisUtterance) {
+        const u = new SpeechSynthesisUtterance(" ");
+        u.volume = 0;
+        window.speechSynthesis.speak(u);
+        cueSpeechPrimed = true;
+      }
+    } catch (e) {}
+  }
+  document.addEventListener("pointerdown", unlockCueAudio, { capture: true, passive: true });
+  document.addEventListener("touchend", unlockCueAudio, { capture: true, passive: true });
   // Tracks which schedule frame we last saw and which whole-second
   // countdown marks (3/2/1) already beeped within it, so circuitTick (runs
   // every animation frame) fires each cue exactly once. Reset whenever a
@@ -10726,7 +10876,7 @@
     }
     comboWorkoutEditIndex = null;
     els.workoutTabataReadyTitle.textContent = "Tabata / Intervalltraining";
-    els.workoutTabataReadyHint.textContent = "Baue dir deinen eigenen Zirkel: tippe Übungen in der Reihenfolge an, in der du sie machen willst – auch mehrfach.";
+    els.workoutTabataReadyHint.textContent = "Baue dir deinen eigenen Zirkel: füge Übungen mit „+“ in der Reihenfolge hinzu, in der du sie machen willst (ein Tipp auf den Namen zeigt die Ausführung) – auch mehrfach.";
   }
   function commitWorkoutComboCapture() {
     if (!workoutCircuitPrefs.items.length) return;
@@ -11346,7 +11496,7 @@
     }
     comboWorkoutRepsEditIndex = null;
     els.workoutRepsReadyTitle.textContent = "Kraft-/Wiederholungstraining";
-    els.workoutRepsReadyHint.textContent = "Stell dir deinen Kraftplan zusammen: tippe Übungen in der Reihenfolge an, in der du sie machen willst – jede mit eigenem Wiederholungsbereich, eigenen Sätzen und eigener Satzpause.";
+    els.workoutRepsReadyHint.textContent = "Stell dir deinen Kraftplan zusammen: füge Übungen mit „+“ in der Reihenfolge hinzu, in der du sie machen willst (ein Tipp auf den Namen zeigt die Ausführung) – jede mit eigenem Wiederholungsbereich, eigenen Sätzen und eigener Satzpause.";
   }
   function commitWorkoutRepsComboCapture() {
     if (!workoutRepsPrefs.items.length) return;
@@ -13551,6 +13701,14 @@
     if (idx >= comboProgram.def.blocks.length) { finishComboProgram(); return; }
     comboProgram.blockIndex = idx;
     const block = comboProgram.def.blocks[idx];
+    // Blocks write their settings into the shared Breath/Movement/Wim-Hof
+    // objects. Keep the client's own values and put them back when the
+    // Kombi ends, so a later save of their own setup can't pick up a block's.
+    if (!comboPrefsBackup) comboPrefsBackup = {
+      breath: JSON.parse(JSON.stringify(breathPrefs)),
+      movement: JSON.parse(JSON.stringify(movementPrefs)),
+      wimhof: JSON.parse(JSON.stringify(wimhofSettings)),
+    };
     if (block.domain === "wimhof") {
       // Safety first, always: even inside a combo, Wim-Hof-style breathing
       // stops on its own settings screen so the safety checkbox is never
@@ -13574,11 +13732,14 @@
       movementPrefs.durationMin = block.durationMin ?? 2;
       movementPrefs.mirror = block.mirror ?? movementPrefs.mirror;
       movementPrefs.showLabel = block.showLabel ?? movementPrefs.showLabel;
+      if (MOVEMENT_DIRECTIONS.includes(block.direction)) movementPrefs.direction = block.direction;
+      if (block.figureStyle === "figur" || block.figureStyle === "abstrakt") movementPrefs.figureStyle = block.figureStyle;
       startMovementSession();
     } else if (block.domain === "visual") {
       program = null;
       state.exercise = block.exercise;
       const visEx = EXERCISES[block.exercise];
+      if (block.periph) Object.assign(state, JSON.parse(JSON.stringify(block.periph)));
       // Generalized from a visual-only "usesColors" check (the sole shape
       // the original 3 curated presets ever needed) to all 3 colour kinds,
       // now that capture mode lets any exercise's block carry its own
@@ -13598,16 +13759,22 @@
       workoutPlan = null;
       runWorkoutBlock(block);
     } else if (block.domain === "nat") {
-      startRememberGame(block.mode || "fixed", { comboDurationS: block.duration ?? 60 });
+      // Blocks saved before 2026-10-02 carry no prefs snapshot and fall
+      // back to the client's own current settings (old behaviour). A
+      // snapshot is merged over the current prefs so fields added later
+      // still have a value.
+      const snap = (own, b) => (b.prefs ? { ...JSON.parse(JSON.stringify(own)), ...JSON.parse(JSON.stringify(b.prefs)) } : undefined);
+      startRememberGame(block.mode || "fixed", { comboDurationS: block.duration ?? 60 }, snap(rememberPrefs, block));
     } else if (block.domain === "blitz") {
-      blitzPrefs.gridSize = block.gridSize ?? blitzPrefs.gridSize;
-      blitzPrefs.zones = block.zones ? block.zones.slice() : blitzPrefs.zones;
-      blitzPrefs.startCount = block.startCount ?? blitzPrefs.startCount;
-      startBlitzGame({ comboDurationS: block.duration ?? 60 });
+      const p = block.prefs ? { ...JSON.parse(JSON.stringify(blitzPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : { ...blitzPrefs };
+      p.gridSize = block.gridSize ?? p.gridSize;
+      p.zones = block.zones ? block.zones.slice() : (p.zones || []).slice();
+      p.startCount = block.startCount ?? p.startCount;
+      startBlitzGame({ comboDurationS: block.duration ?? 60 }, p);
     } else if (block.domain === "flash") {
-      startFlashGame(block.mode || "constant", { comboDurationS: block.duration ?? 60 });
+      startFlashGame(block.mode || "constant", { comboDurationS: block.duration ?? 60 }, block.prefs ? { ...JSON.parse(JSON.stringify(flashPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : undefined);
     } else if (block.domain === "mot") {
-      startMotGame(block.mode || "speed", { comboDurationS: block.duration ?? 60 });
+      startMotGame(block.mode || "speed", { comboDurationS: block.duration ?? 60 }, block.prefs ? { ...JSON.parse(JSON.stringify(motPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : undefined);
     } else if (block.domain === "cardio") {
       cardioProgram = null;
       startStandaloneCardio(block.items.map(copyCardioItem));
@@ -13999,8 +14166,17 @@
     const pauseS = finishedBlock.pauseAfterS ?? masterPrefs.defaultPauseS;
     showComboTransition(comboProgram.def.blocks[nextIdx], pauseS, () => startComboBlock(nextIdx));
   }
+  let comboPrefsBackup = null;
+  function restoreComboPrefs() {
+    if (!comboPrefsBackup) return;
+    Object.assign(breathPrefs, comboPrefsBackup.breath);
+    Object.assign(movementPrefs, comboPrefsBackup.movement);
+    Object.assign(wimhofSettings, comboPrefsBackup.wimhof);
+    comboPrefsBackup = null;
+  }
   function finishComboProgram() {
     hideAllPlayers();
+    restoreComboPrefs();
     const played = comboProgram.totalPlayedS;
     const title = comboProgram.title;
     const key = comboProgram.key;
@@ -14014,6 +14190,7 @@
   }
   function abortComboProgram() {
     hideAllPlayers();
+    restoreComboPrefs();
     comboProgram = null;
     showScreen(comboReturnScreen);
   }
@@ -14085,11 +14262,15 @@
   const BACKUP_APP = "fwmc-training", BACKUP_VERSION = 1;
   // version -> function(data) returning data in the next version's shape
   const BACKUP_MIGRATIONS = {};
+  // Keys that must never travel in a client backup file: the coach
+  // dashboard (dashboard.html, same origin) keeps its admin token under an
+  // fwmc- key in this same localStorage.
+  const BACKUP_EXCLUDE = ["fwmc-admin-token"];
   function buildBackup() {
     const data = {};
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith("fwmc-")) data[k] = localStorage.getItem(k);
+      if (k && k.startsWith("fwmc-") && !BACKUP_EXCLUDE.includes(k)) data[k] = localStorage.getItem(k);
     }
     return { app: BACKUP_APP, version: BACKUP_VERSION, exportedAt: new Date().toISOString(), data };
   }
@@ -14102,7 +14283,7 @@
     while (v < BACKUP_VERSION) { if (BACKUP_MIGRATIONS[v]) data = BACKUP_MIGRATIONS[v](data); v++; }
     let written = 0, skipped = 0;
     for (const [k, raw] of Object.entries(data)) {
-      if (!k.startsWith("fwmc-") || typeof raw !== "string") { skipped++; continue; }
+      if (!k.startsWith("fwmc-") || BACKUP_EXCLUDE.includes(k) || typeof raw !== "string") { skipped++; continue; }
       try { JSON.parse(raw); } catch (e) { skipped++; continue; }
       try { localStorage.setItem(k, raw); written++; }
       catch (e) { return { ok: false, msg: "Der Speicher dieses Browsers ist voll. " + written + " Einträge wurden übernommen." }; }
@@ -15094,6 +15275,9 @@
       // placement rely on) so the SVG viewBox and scattered layout match the
       // real on-screen stage size, not a stale/zero one from while hidden.
       if (!trailState) return;
+      // Status text first: it can wrap the player bar to two rows, which
+      // moves the hint down (placeHintBelowBar) - measure after that.
+      els.trailProgressEl.textContent = `0/${labels.length} · ${fmtTrailSeconds(0)}`;
       const bounds = trailStageBounds();
       els.trailLinesSvg.setAttribute("viewBox", `0 0 ${bounds.w} ${bounds.h}`);
       trailState.layout = buildTrailLayout(labels);

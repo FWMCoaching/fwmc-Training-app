@@ -8,6 +8,9 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args=["--no-sandbox"])
         ctx = await b.new_context(viewport={"width": 390, "height": 900})
+        # Fake AudioContext from page start: every tap unlocks (creates) the
+        # cue audio context, so patching later would leave a real one in place.
+        await ctx.add_init_script("""(""" + "() => {\n            window.__beepLog = [];\n            const OrigCtx = window.AudioContext || window.webkitAudioContext;\n            class FakeGain { constructor(){ this.gain = { setValueAtTime(){}, exponentialRampToValueAtTime(){} }; } connect(){} }\n            class FakeOsc {\n                constructor(){ this.frequency = { value: 0 }; }\n                connect(){}\n                start(){}\n                stop(t){ window.__beepLog.push({ freq: this.frequency.value }); }\n            }\n            class FakeCtx {\n                constructor(){ this.state = 'running'; this.currentTime = 0; this.destination = {}; }\n                createOscillator(){ return new FakeOsc(); }\n                createGain(){ return new FakeGain(); }\n                resume(){}\n            }\n            window.AudioContext = FakeCtx;\n            window.webkitAudioContext = FakeCtx;\n        }" + """)();""")
         pg = await ctx.new_page()
         pg.on("pageerror", lambda e: errors.append("pageerror: " + str(e)))
         pg.on("console", lambda m: errors.append("console: " + m.text) if m.type == "error" else None)
