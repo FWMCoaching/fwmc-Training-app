@@ -4056,6 +4056,34 @@ deviate in its own Feineinstellungen.
 Test: `tests/cues_test.py` (fake AudioContext records tones, `window.__cueLog`
 records spoken texts).
 
+### Pause während des Trainings: Pausen live bearbeiten (2026-10-02)
+
+Fabian: while training, tap "Pause", change the pause running now (or the
+one after the current exercise), open an overview to change every later
+pause, then carry on exactly where it stopped. One shared sheet,
+`#trainPauseOverlay` (`openTrainPause(adapter)` / `closeTrainPause()`,
+next to `showComboTransition`), which JS moves into the running player.
+Each domain passes an adapter `{host, pause(), resume(), current(),
+list()}`; rows are `{title?, label, sub, get(), set(v)}`, ±5 s steps
+snapped to the 5 s grid, 0-600 s.
+- Tabata/Zirkel (`#workoutPauseBtn`, `circuitPauseAdapter`): pause frames
+  are `prep`/`rest`/`setrest`; `circuitSetFrameDur()` shifts every later
+  frame and `total`. While paused `workoutState.pausedAt` is set and the
+  visibilitychange handler leaves `startTime` alone (no double shift).
+- Kraftplan (same button, `repsPauseAdapter`): the rest countdown now
+  lives in `workoutState.restRemaining`/`restTick`; hold timers read
+  `st.holding.t0`, the set stopwatch keeps `workoutSetTimerT0`, so both
+  resume without losing time. Later pauses = each step's `rest` (drop
+  sets excluded).
+- Cardio (`#cardioPauseBtn`, `cardioPauseAdapter`): edits the pause
+  pseudo-items; a missing pause (0 s) can be added (spliced in).
+- Kombi (`#comboTransitionPauseBtn` on the pause screen): the countdown is
+  `comboTransitionState {remaining, run, stop}`. Every adapter's overview
+  also lists the Kombi pauses still ahead when running inside a Kombi
+  (`comboPauseRows`, edits a per-run copy of the def, saved Kombis stay).
+- `hideAllPlayers()` closes the sheet, so Beenden while paused is safe.
+Test: `tests/train_pause_edit_test.py`.
+
 ### Interval phase wording corrected (2026-09-30)
 
 "Belastung"/"Erholung" (both the setup-screen phase labels and the live
