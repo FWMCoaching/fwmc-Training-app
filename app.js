@@ -8406,8 +8406,8 @@
     renderFlashFixpoint(); // restores it (if enabled) after flashOpenInput() forced it off
     els.flashDigitEl.textContent = digit;
     els.flashDigitEl.style.left = pos.fx * 100 + "%";
-    els.flashDigitEl.style.top = flashSafeFy(pos.fy) * 100 + "%";
     els.flashDigitEl.hidden = false;
+    els.flashDigitEl.style.top = flashSafeFy(pos.fy) * 100 + "%";
     scheduleFlashTimer(flashAfterDigit, flashEffectiveStimulusS() * 1000);
   }
   // randFlashPos() is shared with Periph, which has no fixed on-screen text -
@@ -8416,12 +8416,17 @@
   // large radius can land underneath/inside it. Measure the hint's actual
   // rendered bottom edge (adapts to safe-area insets and device size) and
   // push the digit down below it instead of hardcoding a percentage.
+  // The digit is centred on fy (translate -50%), so its own half height must
+  // be added, and the player bar can sit lower than the hint (2-row wrap) -
+  // same rules as stageTopClearanceY(). Called with the digit already
+  // visible, so its real rendered height is measured.
   function flashSafeFy(fy) {
     const stageRect = els.flashStage.getBoundingClientRect();
     if (!stageRect.height) return fy;
-    const hintRect = els.flashHint.getBoundingClientRect();
-    const minFy = (hintRect.bottom - stageRect.top + 20) / stageRect.height;
-    return Math.min(0.94, Math.max(fy, minFy));
+    const half = (els.flashDigitEl.getBoundingClientRect().height || 64) / 2;
+    const minY = stageTopClearanceY(stageRect, els.flashHint, els.flashPlayerBar, 0, half, 16);
+    const maxFy = Math.max(0, (stageRect.height - half) / stageRect.height);
+    return Math.min(maxFy, Math.max(fy, minY / stageRect.height));
   }
   function flashAfterDigit() {
     if (!flashState) return;
