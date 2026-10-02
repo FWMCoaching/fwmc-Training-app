@@ -588,10 +588,11 @@ unrelated to the feature being changed.
 
 ## Known open items
 
-- **Remember overlap edge case**: at the maximum density (24 markers,
-  the training-mode cap), the anti-overlap placement algorithm still
-  produces occasional overlaps (~77-80px apart vs. the ~82px guarantee)
-  in roughly 2 of 3 runs. Pre-existing, not yet fixed.
+- **Remember overlap edge case - fixed 2026-10-02**: `relaxedRememberLayout()`
+  places a whole layout, pushes too-close pairs apart, and on a small phone
+  falls back to random picks from a staggered (hex) slot set. Fixed
+  positions pre-lay out all 24 numbers once. Test:
+  `tests/remember_density_test.py` (390x844 and 375x667, both modes).
 - **Deferred/parked, not yet actioned**: a lock-code gate for the NAT
   section and a "Kids-Training" mode concept (both re-confirmed "weiter
   parken" by Fabian 2026-10-02); Stroop's colour palette gets NO grey
@@ -828,11 +829,29 @@ unrelated to the feature being changed.
   gets confirmed for those too, reuse `weightedPick()` rather than
   reimplementing the ratio math - it's already generic over "the pool" and
   "how weight for the pool" get read.
-- **Live-pause-adjust, remaining scope decision**: now built for Periphere
-  Wahrnehmung and Remember. Not yet decided/built: extending it to other
-  domains — Atemtraining "wird Sinn machen", Movement "kann auch Sinn
-  machen", VT-Videos explicitly "macht keinen Sinn" per the user. Ask
-  before assuming it should spread further.
+- **Live-pause-adjust, extended 2026-10-02 (audit point 20, Fabian: "Das
+  passt so")**: every exercise on the VT canvas engine now has the Pause
+  button (`#periphPauseBtn`, shown in `runSession()`; Hütchen sortieren
+  never goes through it). The overlay shows only what applies: tempo
+  (`#vtPauseTempoGroup`: Einblenddauer + Pause min/max) always, background
+  unless `bgIsStimulus`, fixation point only while `periphFixEnabled`,
+  stimulus colours only for Periph. A tempo change is applied on "Weiter"
+  by `rebuildVtScheduleFrom(elapsed)`: past frames stay, the current frame
+  ends now, the exercise's own builder fills the rest (built with
+  `state.duration = 3 + remaining`, count frames dropped, shifted by
+  `elapsed - 3`), add-on schedule rebuilt; it is saved to the client's VT
+  settings only when standalone (not in a programme/Kombi/Cardio guest).
+  **Atemtraining**: "Pause" opens `#breathPauseOverlay` (Atemtempo 0.5-2×
+  scales every phase of `breathSession.basePhases`, Restdauer 1-30 min,
+  Sprachansage an/aus); a change starts a fresh cycle on resume
+  (`breathSession.cycleBase`); nothing is saved. **Movement**: new
+  `#movementPauseBtn` + `#movementPauseOverlay` (BPM 20-160, Vorschau incl.
+  "Ganz"); beat count stays, the current beat restarts on the new tempo,
+  `movementSession.preview` (not `movementPrefs`) drives the lane; nothing
+  is saved. Not given a live pause on purpose: Wim Hof (guided breathing
+  with safety holds), programme videos (native controls), Hütchen
+  sortieren. Domains that already had their own pause (NAT, Test,
+  Workout, Cardio, Kombi) are unchanged. Test: `tests/live_pause_test.py`.
 - **Zusatzaufgabe** (peripheral flashes as an add-on inside other
   exercises): any exercise that goes through the shared VT canvas
   engine - `buildScheduleFor`/`drawScene`, i.e. every `EXERCISES` entry

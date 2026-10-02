@@ -3740,24 +3740,32 @@
     <div class="pause-overlay" id="periphPauseOverlay" hidden>
       <div class="pause-panel">
         <h3>Pausiert</h3>
-        <div class="group">
+        <div class="group" id="vtPauseTempoGroup">
+          <div class="group-label">Einblenddauer <span class="slider-value" id="vtPauseStimulusValue"></span></div>
+          <input type="range" id="vtPauseStimulusSlider" min="0.5" max="3" step="0.1" aria-label="Einblenddauer">
+          <div class="group-label">Pause zwischen den Reizen <span class="slider-value" id="vtPauseIntervalValue"></span></div>
+          <div class="slider-line"><span class="slider-label">Min</span><input type="range" id="vtPauseIntervalMinSlider" min="1" max="30" step="1" aria-label="Pause minimal"></div>
+          <div class="slider-line"><span class="slider-label">Max</span><input type="range" id="vtPauseIntervalMaxSlider" min="1" max="30" step="1" aria-label="Pause maximal"></div>
+          <div class="group-help">Gilt ab &bdquo;Weiter&ldquo; f&uuml;r den Rest dieser &Uuml;bung.</div>
+        </div>
+        <div class="group" id="vtPauseBgIntensityGroup">
           <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="periphPauseBgValue"></span></div>
           <input type="range" id="periphPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
         </div>
-        <div class="group">
+        <div class="group" id="vtPauseBgColorGroup">
           <div class="group-label">Hintergrundfarbe</div>
           <div class="color-picker" id="periphPauseBgColorPicker"></div>
           <div class="group-help" id="periphPauseBgContrastHint" hidden></div>
         </div>
-        <div class="group">
+        <div class="group" id="vtPauseFixColorGroup">
           <div class="group-label">Fixpunkt-Farbe</div>
           <div class="color-picker" id="periphPauseFixColorPicker"></div>
         </div>
-        <div class="group">
+        <div class="group" id="vtPauseFixSizeGroup">
           <div class="group-label">Fixpunkt-Gr&ouml;&szlig;e <span class="slider-value" id="periphPauseFixSizeValue"></span></div>
           <input type="range" id="periphPauseFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Fixpunkt-Gr&ouml;&szlig;e">
         </div>
-        <div class="group">
+        <div class="group" id="vtPauseStimColorGroup">
           <div class="group-label">Farbe der Reize</div>
           <div class="color-picker" id="periphPauseColorPicker"></div>
           <div class="color-hint" id="periphPauseColorHint"></div>
@@ -3862,6 +3870,29 @@
     <div class="breath-phase-label" id="breathPhaseLabel">Einatmen</div>
     <button class="breath-pause-btn pause-toggle" id="breathPauseBtn">Pause</button>
   </div>
+  <div class="pause-overlay" id="breathPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Atemtempo <span class="slider-value" id="breathPauseTempoValue"></span></div>
+        <input type="range" id="breathPauseTempoSlider" min="0.5" max="2" step="0.1" aria-label="Atemtempo">
+        <div class="group-help" id="breathPausePhases"></div>
+      </div>
+      <div class="group">
+        <div class="group-label">Restdauer <span class="slider-value" id="breathPauseRestValue"></span></div>
+        <input type="range" id="breathPauseRestSlider" min="1" max="30" step="1" aria-label="Restdauer">
+      </div>
+      <div class="group">
+        <div class="group-label">Sprachansage</div>
+        <div class="choice-row" id="breathPauseSoundRow">
+          <button class="choice" data-breath-pause-sound="on">An</button>
+          <button class="choice" data-breath-pause-sound="off">Aus</button>
+        </div>
+        <div class="group-help">Gilt f&uuml;r dieses Training. Nach &bdquo;Weiter&ldquo; beginnt ein neuer Atemzyklus.</div>
+      </div>
+      <button class="start-btn" id="breathResumeBtn">Weiter</button>
+    </div>
+  </div>
   <div class="player-bar" id="breathPlayerBar">
     <button id="breathBackBtn">&#10005; Beenden</button>
     <span class="player-status" id="breathTimeEl">5:00</span>
@@ -3919,9 +3950,32 @@
     <div class="movement-lane" id="movementLane"></div>
     <div class="movement-finish-badge" id="movementFinishBadge" hidden>Fertig!</div>
   </div>
+  <div class="pause-overlay" id="movementPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Tempo <span class="slider-value" id="movementPauseBpmValue"></span></div>
+        <input type="range" id="movementPauseBpmSlider" min="20" max="160" step="1" aria-label="Tempo in Beats pro Minute">
+        <div class="group-help">Die Anzahl der Bewegungen bleibt gleich, die Restzeit passt sich an.</div>
+      </div>
+      <div class="group">
+        <div class="group-label">Vorschau</div>
+        <div class="choice-row" id="movementPausePreviewRow">
+          <button class="choice" data-mv-pause-preview="1">Keine</button>
+          <button class="choice" data-mv-pause-preview="2">Kurz</button>
+          <button class="choice" data-mv-pause-preview="3">Mittel</button>
+          <button class="choice" data-mv-pause-preview="4">Weit</button>
+          <button class="choice" data-mv-pause-preview="all">Ganz</button>
+        </div>
+        <div class="group-help">Gilt f&uuml;r dieses Training. Nach &bdquo;Weiter&ldquo; beginnt die aktuelle Bewegung neu.</div>
+      </div>
+      <button class="start-btn" id="movementResumeBtn">Weiter</button>
+    </div>
+  </div>
   <div class="progress-track" id="movementProgressTrack"></div>
   <div class="player-bar" id="movementPlayerBar">
     <button id="movementBackBtn">&#10005; Beenden</button>
+    <button id="movementPauseBtn">Pause</button>
     <span class="player-status" id="movementTimeEl">0:00</span>
     <button id="movementFsBtn">Vollbild</button>
   </div>

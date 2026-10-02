@@ -1227,6 +1227,10 @@
     periphPauseFixSizeSlider: $("periphPauseFixSizeSlider"), periphPauseFixSizeValue: $("periphPauseFixSizeValue"),
     periphPauseColorPicker: $("periphPauseColorPicker"), periphPauseColorHint: $("periphPauseColorHint"),
     periphResumeBtn: $("periphResumeBtn"),
+    vtPauseTempoGroup: $("vtPauseTempoGroup"), vtPauseStimulusSlider: $("vtPauseStimulusSlider"), vtPauseStimulusValue: $("vtPauseStimulusValue"),
+    vtPauseIntervalMinSlider: $("vtPauseIntervalMinSlider"), vtPauseIntervalMaxSlider: $("vtPauseIntervalMaxSlider"), vtPauseIntervalValue: $("vtPauseIntervalValue"),
+    vtPauseBgIntensityGroup: $("vtPauseBgIntensityGroup"), vtPauseBgColorGroup: $("vtPauseBgColorGroup"),
+    vtPauseFixColorGroup: $("vtPauseFixColorGroup"), vtPauseFixSizeGroup: $("vtPauseFixSizeGroup"), vtPauseStimColorGroup: $("vtPauseStimColorGroup"),
     durationGroup: $("durationGroup"), tempoGroup: $("tempoGroup"), advanced: $("advanced"),
     vtSavedGroup: $("vtSavedGroup"), vtSavedList: $("vtSavedList"), vtSaveBtn: $("vtSaveBtn"),
     vtSaveForm: $("vtSaveForm"), vtSaveNameInput: $("vtSaveNameInput"),
@@ -1285,6 +1289,9 @@
     breathPhaseCount: $("breathPhaseCount"), breathPhaseLabel: $("breathPhaseLabel"), breathTimeEl: $("breathTimeEl"),
     breathBackBtn: $("breathBackBtn"), breathFsBtn: $("breathFsBtn"), breathFsHint: $("breathFsHint"),
     breathPauseBtn: $("breathPauseBtn"),
+    breathPauseOverlay: $("breathPauseOverlay"), breathPauseTempoSlider: $("breathPauseTempoSlider"), breathPauseTempoValue: $("breathPauseTempoValue"),
+    breathPausePhases: $("breathPausePhases"), breathPauseRestSlider: $("breathPauseRestSlider"), breathPauseRestValue: $("breathPauseRestValue"),
+    breathResumeBtn: $("breathResumeBtn"),
     breathFsHintOpenBtn: $("breathFsHintOpenBtn"), breathFsHintClose: $("breathFsHintClose"),
     breathDonePanel: $("breathDonePanel"), breathDoneSummary: $("breathDoneSummary"), breathRating: $("breathRating"),
     breathAgainBtn: $("breathAgainBtn"), breathDoneBackBtn: $("breathDoneBackBtn"),
@@ -1323,7 +1330,8 @@
     movementSaveCancelBtn: $("movementSaveCancelBtn"), movementSaveConfirmBtn: $("movementSaveConfirmBtn"),
     movementPlayer: $("movementPlayer"), movementLane: $("movementLane"), movementProgressTrack: $("movementProgressTrack"),
     movementFinishBadge: $("movementFinishBadge"), movementBpmSlider: $("movementBpmSlider"), movementBpmValue: $("movementBpmValue"),
-    movementPlayerBar: $("movementPlayerBar"), movementBackBtn: $("movementBackBtn"), movementTimeEl: $("movementTimeEl"),
+    movementPlayerBar: $("movementPlayerBar"), movementPauseBtn: $("movementPauseBtn"), movementPauseOverlay: $("movementPauseOverlay"), movementPauseBpmSlider: $("movementPauseBpmSlider"), movementPauseBpmValue: $("movementPauseBpmValue"), movementResumeBtn: $("movementResumeBtn"),
+    movementBackBtn: $("movementBackBtn"), movementTimeEl: $("movementTimeEl"),
     movementFsBtn: $("movementFsBtn"), movementFsHint: $("movementFsHint"),
     movementFsHintOpenBtn: $("movementFsHintOpenBtn"), movementFsHintClose: $("movementFsHintClose"),
     movementDonePanel: $("movementDonePanel"), movementDoneSummary: $("movementDoneSummary"), movementRating: $("movementRating"),
@@ -4656,7 +4664,10 @@
     els.progressTrack.hidden = false;
     els.coneOrderStage.hidden = true;
     els.stageWrap.hidden = false;
-    els.periphPauseBtn.hidden = EXERCISES[state.exercise].type !== "periph";
+    // Pause with live adjustment for every exercise on this canvas engine
+    // (Fabian, 2026-10-02, audit point 20) - not just Periphere Wahrnehmung.
+    // Hütchen sortieren never comes through here (startConeTap()).
+    els.periphPauseBtn.hidden = false;
     fitCanvas();
     ensureAudioCtx();
     const built = buildScheduleFor(EXERCISES[state.exercise], Math.random);
@@ -5027,11 +5038,76 @@
   // gap: elapsed time is always (now - session.startTime), so shifting
   // startTime forward by exactly the paused duration on resume makes the
   // pause invisible to the stimulus timing.
+  // The overlay shows only what applies to the running exercise: tempo for
+  // every schedule-driven one, background unless the background IS the
+  // stimulus, the fixation point while it is switched on, stimulus colours
+  // only for Periphere Wahrnehmung's own characters.
+  let vtPauseTempoAtStart = null;
+  function syncVtPauseTempoUI() {
+    els.vtPauseStimulusSlider.value = state.stimulusS;
+    els.vtPauseStimulusValue.textContent = fmtSeconds(state.stimulusS);
+    els.vtPauseIntervalMinSlider.value = state.intervalMin;
+    els.vtPauseIntervalMaxSlider.value = state.intervalMax;
+    els.vtPauseIntervalValue.textContent = `${Math.round(state.intervalMin)}–${Math.round(state.intervalMax)} s`;
+  }
+  // A tempo change inside a coach programme, Kombi or Cardio guest only
+  // applies to that run - the client's own saved VT settings stay as they are.
+  function vtPauseTempoPersist() {
+    if (!program && !comboProgram && !cardioGuestActive) { savePrefs(); syncTempoUI(); }
+  }
+  els.vtPauseStimulusSlider.addEventListener("input", () => {
+    state.stimulusS = Number(els.vtPauseStimulusSlider.value); syncVtPauseTempoUI(); vtPauseTempoPersist();
+  });
+  els.vtPauseIntervalMinSlider.addEventListener("input", () => {
+    state.intervalMin = Math.min(Number(els.vtPauseIntervalMinSlider.value), state.intervalMax); syncVtPauseTempoUI(); vtPauseTempoPersist();
+  });
+  els.vtPauseIntervalMaxSlider.addEventListener("input", () => {
+    state.intervalMax = Math.max(Number(els.vtPauseIntervalMaxSlider.value), state.intervalMin); syncVtPauseTempoUI(); vtPauseTempoPersist();
+  });
+
+  // Rebuilds everything after the paused moment with the new tempo: past
+  // frames stay, the frame on screen ends now, and a fresh schedule (built by
+  // the exercise's own builder, minus its 3-2-1 lead-in) fills the remaining
+  // time up to the same end as before.
+  function rebuildVtScheduleFrom(elapsed) {
+    const ex = EXERCISES[state.exercise];
+    if (elapsed < 3) {
+      const built = buildScheduleFor(ex, Math.random);
+      session.schedule = built.schedule; session.total = built.total;
+    } else {
+      const remaining = state.duration - elapsed;
+      const kept = session.schedule.filter((f) => f.t0 < elapsed).map((f) => (f.t1 > elapsed ? { ...f, t1: elapsed } : f));
+      let fresh = [], freshEnd = elapsed;
+      if (remaining > 0) {
+        const savedDuration = state.duration;
+        state.duration = 3 + remaining;
+        try {
+          const built = buildScheduleFor(ex, Math.random);
+          const shift = elapsed - 3;
+          fresh = built.schedule.filter((f) => f.kind !== "count").map((f) => ({ ...f, t0: f.t0 + shift, t1: f.t1 + shift }));
+          freshEnd = built.total + shift;
+        } finally { state.duration = savedDuration; }
+      }
+      session.schedule = kept.concat(fresh);
+      session.total = Math.max(freshEnd, elapsed);
+      session.lastIndex = Math.min(session.lastIndex, kept.length - 1);
+    }
+    const addon = buildAddonSchedule(ex, state.exercise, session.schedule, Math.random);
+    session.addonSchedule = addon.schedule; session.addonSizeMode = addon.sizeMode;
+  }
+
   els.periphPauseBtn.addEventListener("click", () => {
     if (!session || periphPausedAt) return;
     if (raf) cancelAnimationFrame(raf);
     raf = null;
     periphPausedAt = performance.now();
+    const ex = EXERCISES[state.exercise] || {};
+    els.vtPauseTempoGroup.hidden = ex.type === "flash-host";
+    els.vtPauseBgIntensityGroup.hidden = els.vtPauseBgColorGroup.hidden = !!ex.bgIsStimulus;
+    els.vtPauseFixColorGroup.hidden = els.vtPauseFixSizeGroup.hidden = !state.periphFixEnabled;
+    els.vtPauseStimColorGroup.hidden = ex.type !== "periph";
+    vtPauseTempoAtStart = { stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax };
+    syncVtPauseTempoUI();
     syncBgUI();
     syncPeriphFixUI();
     syncPeriphColorUI();
@@ -5040,6 +5116,12 @@
   });
   els.periphResumeBtn.addEventListener("click", () => {
     if (!session || !periphPausedAt) return;
+    const t0 = vtPauseTempoAtStart;
+    const elapsed = (periphPausedAt - session.startTime) / 1000;
+    if (t0 && (t0.stimulusS !== state.stimulusS || t0.intervalMin !== state.intervalMin || t0.intervalMax !== state.intervalMax)) {
+      rebuildVtScheduleFrom(elapsed);
+    }
+    vtPauseTempoAtStart = null;
     session.startTime += performance.now() - periphPausedAt;
     periphPausedAt = null;
     els.periphPauseOverlay.hidden = true;
@@ -5997,10 +6079,13 @@
   function breathTick(now) {
     if (!breathSession) return;
     const elapsed = Math.min((now - breathSession.startTime) / 1000, breathSession.plannedTotal);
-    const inCycle = elapsed % breathSession.cycleLen;
-    const cycleNum = Math.floor(elapsed / breathSession.cycleLen);
+    // cycleBase: where the current run of cycles started (moves when the
+    // tempo/duration was changed in the pause sheet, so a fresh cycle begins).
+    const sinceBase = Math.max(0, elapsed - (breathSession.cycleBase || 0));
+    const inCycle = sinceBase % breathSession.cycleLen;
+    const cycleNum = Math.floor(sinceBase / breathSession.cycleLen);
     const frame = breathSession.schedule.find((f) => inCycle >= f.t0 && inCycle < f.t1) || breathSession.schedule[breathSession.schedule.length - 1];
-    const frameKey = cycleNum + ":" + frame.key;
+    const frameKey = (breathSession.cycleBase || 0) + ":" + cycleNum + ":" + frame.key;
     if (frameKey !== breathSession.lastKey) {
       breathSession.lastKey = frameKey;
       if (breathSession.sound) speakWord(frame.label);
@@ -6029,9 +6114,12 @@
     els.breathPlayer.hidden = false;
     els.breathPlayerBar.hidden = false;
     els.breathDonePanel.hidden = true;
-    breathSession = { schedule: built.schedule, cycleLen: built.cycleLen, plannedTotal: cycles * built.cycleLen, startTime: performance.now(), lastKey: null, sound: breathPrefs.sound };
+    breathSession = { schedule: built.schedule, cycleLen: built.cycleLen, plannedTotal: cycles * built.cycleLen, startTime: performance.now(), lastKey: null, sound: breathPrefs.sound,
+      basePhases: { ...breathWorking }, tempo: 1, cycleBase: 0 };
     breathPaused = false;
-    els.breathPauseBtn.textContent = "Pause";
+    breathPauseDraft = null;
+    els.breathPauseBtn.hidden = false;
+    els.breathPauseOverlay.hidden = true;
     requestWakeLock();
     breathRaf = requestAnimationFrame(breathTick);
   }
@@ -6040,33 +6128,85 @@
     startBreathSession();
   });
 
-  // Pause/Fortsetzen: the tips sheet tells clients to pause if they feel
-  // unwell, so the breath player needs an actual pause, not just "Beenden".
+  // Pause: the tips sheet tells clients to pause if they feel unwell, so the
+  // breath player needs an actual pause, not just "Beenden". The pause sheet
+  // also adjusts tempo, remaining duration and the spoken cues for the rest
+  // of this run (Fabian, 2026-10-02, audit point 20). Nothing is saved to the
+  // client's own settings.
   let breathPaused = false;
   let breathPauseTime = 0;
-  function toggleBreathPause() {
-    if (!breathSession) return;
-    if (breathPaused) {
-      breathPaused = false;
-      breathSession.startTime += performance.now() - breathPauseTime;
-      els.breathPauseBtn.textContent = "Pause";
-      breathRaf = requestAnimationFrame(breathTick);
-    } else {
-      breathPaused = true;
-      breathPauseTime = performance.now();
-      if (breathRaf) cancelAnimationFrame(breathRaf);
-      breathRaf = null;
-      els.breathPauseBtn.textContent = "Fortsetzen";
-      els.breathPhaseLabel.textContent = "Pausiert";
-    }
+  let breathPauseDraft = null; // { tempo, restMin, sound } while the sheet is open
+  function breathScaledPhases(base, tempo) {
+    const out = {};
+    Object.keys(base).forEach((k) => { out[k] = base[k] > 0 ? Math.max(1, Math.round(base[k] * tempo * 10) / 10) : 0; });
+    return out;
   }
-  els.breathPauseBtn.addEventListener("click", toggleBreathPause);
+  function syncBreathPauseUI() {
+    const d = breathPauseDraft;
+    els.breathPauseTempoSlider.value = d.tempo;
+    els.breathPauseTempoValue.textContent = d.tempo === 1 ? "wie eingestellt" : d.tempo > 1 ? `${d.tempo.toFixed(1).replace(".", ",")}× langsamer` : `${(1 / d.tempo).toFixed(1).replace(".", ",")}× schneller`;
+    const ph = breathScaledPhases(breathSession.basePhases, d.tempo);
+    els.breathPausePhases.textContent = PHASE_ORDER.filter((k) => ph[k] > 0).map((k) => `${PHASE_LABELS[k]} ${String(ph[k]).replace(".", ",")} s`).join(" · ");
+    els.breathPauseRestSlider.value = d.restMin;
+    els.breathPauseRestValue.textContent = `${d.restMin} Min`;
+    document.querySelectorAll("[data-breath-pause-sound]").forEach((el) => setActive(el, (el.dataset.breathPauseSound === "on") === d.sound));
+  }
+  els.breathPauseTempoSlider.addEventListener("input", () => { if (breathPauseDraft) { breathPauseDraft.tempo = Number(els.breathPauseTempoSlider.value); syncBreathPauseUI(); } });
+  els.breathPauseRestSlider.addEventListener("input", () => { if (breathPauseDraft) { breathPauseDraft.restMin = Number(els.breathPauseRestSlider.value); syncBreathPauseUI(); } });
+  document.querySelectorAll("[data-breath-pause-sound]").forEach((el) => el.addEventListener("click", () => {
+    if (breathPauseDraft) { breathPauseDraft.sound = el.dataset.breathPauseSound === "on"; syncBreathPauseUI(); }
+  }));
+  function pauseBreath() {
+    if (!breathSession || breathPaused) return;
+    breathPaused = true;
+    breathPauseTime = performance.now();
+    if (breathRaf) cancelAnimationFrame(breathRaf);
+    breathRaf = null;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    els.breathPhaseLabel.textContent = "Pausiert";
+    const elapsed = Math.min((breathPauseTime - breathSession.startTime) / 1000, breathSession.plannedTotal);
+    const restMin = Math.min(30, Math.max(1, Math.round((breathSession.plannedTotal - elapsed) / 60)));
+    breathPauseDraft = { tempo: breathSession.tempo, restMin, restMinAtStart: restMin, sound: breathSession.sound };
+    syncBreathPauseUI();
+    els.breathPauseBtn.hidden = true;
+    els.breathPauseOverlay.hidden = false;
+  }
+  function resumeBreath() {
+    if (!breathSession || !breathPaused) return;
+    const d = breathPauseDraft;
+    const elapsed = Math.min((breathPauseTime - breathSession.startTime) / 1000, breathSession.plannedTotal);
+    if (d) {
+      breathSession.sound = d.sound;
+      if (d.tempo !== breathSession.tempo || d.restMin !== d.restMinAtStart) {
+        const built = buildBreathCycle(breathScaledPhases(breathSession.basePhases, d.tempo));
+        if (built.cycleLen > 0) {
+          breathSession.tempo = d.tempo;
+          breathSession.schedule = built.schedule;
+          breathSession.cycleLen = built.cycleLen;
+          breathSession.cycleBase = elapsed;
+          const restS = d.restMin !== d.restMinAtStart ? d.restMin * 60 : breathSession.plannedTotal - elapsed;
+          breathSession.plannedTotal = elapsed + Math.max(1, Math.round(restS / built.cycleLen)) * built.cycleLen;
+          breathSession.lastKey = null;
+        }
+      }
+    }
+    breathPauseDraft = null;
+    breathPaused = false;
+    breathSession.startTime += performance.now() - breathPauseTime;
+    els.breathPauseOverlay.hidden = true;
+    els.breathPauseBtn.hidden = false;
+    breathRaf = requestAnimationFrame(breathTick);
+  }
+  els.breathPauseBtn.addEventListener("click", pauseBreath);
+  els.breathResumeBtn.addEventListener("click", resumeBreath);
 
   function breathLeavePlayer() {
     if (breathRaf) cancelAnimationFrame(breathRaf);
     breathRaf = null;
     breathSession = null;
     breathPaused = false;
+    breathPauseDraft = null;
+    els.breathPauseOverlay.hidden = true;
     releaseWakeLock();
     if (document.fullscreenElement === els.breathPlayer) document.exitFullscreen().catch(() => {});
     els.breathFsHint.hidden = true;
@@ -6761,7 +6901,9 @@
     els.movementDonePanel.hidden = true;
     els.movementFinishBadge.hidden = true;
     els.movementProgressTrack.innerHTML = `<span class="seg"><span class="fill"></span></span>`;
-    movementSession = { sequence, beatLenS, totalBeats, gridMode, startTime: performance.now(), lastBeatIdx: 0, finishTimer: null };
+    movementSession = { sequence, beatLenS, totalBeats, gridMode, preview: movementPrefs.preview, pool, startTime: performance.now(), lastBeatIdx: 0, finishTimer: null, pausedAt: null };
+    els.movementPauseOverlay.hidden = true;
+    els.movementPauseBtn.hidden = false;
     if (gridMode) {
       buildMovementLaneGrid(sequence, movementPrefs.mirror, movementPrefs.showLabel);
       updateMovementLaneGrid(0);
@@ -6840,13 +6982,70 @@
     if (beatIdx !== movementSession.lastBeatIdx) {
       movementSession.lastBeatIdx = beatIdx;
       if (movementSession.gridMode) updateMovementLaneGrid(beatIdx);
-      else renderMovementLaneWindow(movementSession.sequence, beatIdx, movementPrefs.preview, movementPrefs.mirror, movementPrefs.showLabel);
+      else renderMovementLaneWindow(movementSession.sequence, beatIdx, movementSession.preview, movementPrefs.mirror, movementPrefs.showLabel);
     }
     els.movementTimeEl.textContent = fmtClock(totalS - elapsed);
     const fill = els.movementProgressTrack.querySelector(".fill");
     if (fill) fill.style.width = Math.min(100, (elapsed / totalS) * 100) + "%";
     movementRaf = requestAnimationFrame(movementTick);
   }
+
+  // Pause with live tempo/preview (Fabian, 2026-10-02, audit point 20). Only
+  // this run changes; the client's own Movement settings stay as saved.
+  let movementPauseDraft = null; // { bpm, preview } while the sheet is open
+  function syncMovementPauseUI() {
+    const d = movementPauseDraft;
+    els.movementPauseBpmSlider.value = d.bpm;
+    els.movementPauseBpmValue.textContent = `${d.bpm} BPM`;
+    document.querySelectorAll("[data-mv-pause-preview]").forEach((el) => setActive(el, parsePreview(el.dataset.mvPausePreview) === d.preview));
+  }
+  els.movementPauseBpmSlider.addEventListener("input", () => { if (movementPauseDraft) { movementPauseDraft.bpm = Number(els.movementPauseBpmSlider.value); syncMovementPauseUI(); } });
+  document.querySelectorAll("[data-mv-pause-preview]").forEach((el) => el.addEventListener("click", () => {
+    if (movementPauseDraft) { movementPauseDraft.preview = parsePreview(el.dataset.mvPausePreview); syncMovementPauseUI(); }
+  }));
+  function pauseMovement() {
+    const ms = movementSession;
+    if (!ms || ms.pausedAt || ms.finishTimer) return;
+    if (movementRaf) cancelAnimationFrame(movementRaf);
+    movementRaf = null;
+    ms.pausedAt = performance.now();
+    movementPauseDraft = { bpm: Math.round(60 / ms.beatLenS), preview: ms.preview };
+    syncMovementPauseUI();
+    els.movementPauseBtn.hidden = true;
+    els.movementPauseOverlay.hidden = false;
+  }
+  function resumeMovement() {
+    const ms = movementSession;
+    if (!ms || !ms.pausedAt) return;
+    const d = movementPauseDraft;
+    const beatIdx = ms.lastBeatIdx;
+    ms.beatLenS = 60 / d.bpm;
+    if (d.preview !== ms.preview) {
+      ms.preview = d.preview;
+      const nowGrid = d.preview === "all";
+      const need = nowGrid ? ms.totalBeats : ms.totalBeats + d.preview - 1;
+      if (ms.sequence.length < need) {
+        const last = ms.sequence[ms.sequence.length - 1];
+        let prev = last ? last.id : null;
+        for (let i = ms.sequence.length; i < need; i++) {
+          const m = pickRandomMovement(ms.pool, prev);
+          ms.sequence.push(m); prev = m.id;
+        }
+      }
+      ms.gridMode = nowGrid;
+      if (nowGrid) { buildMovementLaneGrid(ms.sequence.slice(0, ms.totalBeats), movementPrefs.mirror, movementPrefs.showLabel); updateMovementLaneGrid(beatIdx); }
+      else renderMovementLaneWindow(ms.sequence, beatIdx, ms.preview, movementPrefs.mirror, movementPrefs.showLabel);
+    }
+    // Restart the current beat on the new tempo.
+    ms.startTime = performance.now() - beatIdx * ms.beatLenS * 1000;
+    ms.pausedAt = null;
+    movementPauseDraft = null;
+    els.movementPauseOverlay.hidden = true;
+    els.movementPauseBtn.hidden = false;
+    movementRaf = requestAnimationFrame(movementTick);
+  }
+  els.movementPauseBtn.addEventListener("click", pauseMovement);
+  els.movementResumeBtn.addEventListener("click", resumeMovement);
 
   function movementFinishSession() {
     const played = movementSession ? movementSession.totalBeats * movementSession.beatLenS : 0;
@@ -6872,6 +7071,8 @@
     if (document.fullscreenElement === els.movementPlayer) document.exitFullscreen().catch(() => {});
     els.movementFsHint.hidden = true;
     els.movementFinishBadge.hidden = true;
+    els.movementPauseOverlay.hidden = true;
+    movementPauseDraft = null;
     els.movementPlayer.hidden = true;
     els.movementDonePanel.hidden = true;
   }
@@ -7097,9 +7298,63 @@
   // numbers exactly where they were, not just "whatever last round had".
   // Without "keep" (shuffle), the cache is ignored and every number gets a
   // fresh spot on every call.
+  // Random one-by-one placement can paint itself into a corner at high
+  // density (24 markers on a phone left ~2 of 3 layouts with an overlap).
+  // So a whole layout is placed, then any pair still too close is pushed
+  // apart (clamped to the stage) until none is - the same idea as MOT's
+  // motSeparateObjects(). The result still looks scattered, not gridded.
+  function relaxedRememberLayout(count, bounds) {
+    const pts = [];
+    for (let i = 0; i < count; i++) pts.push(randomRememberPixelPosition(pts, bounds));
+    const clamp = (p) => {
+      p.x = Math.min(bounds.maxX, Math.max(bounds.minX, p.x));
+      p.y = Math.min(bounds.maxY, Math.max(bounds.minY, p.y));
+    };
+    for (let iter = 0; iter < 400; iter++) {
+      let moved = false;
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          let dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y;
+          let d = Math.hypot(dx, dy);
+          if (d >= REMEMBER_MIN_CENTER_PX) continue;
+          if (d < 0.01) { const a = Math.random() * Math.PI * 2; dx = Math.cos(a); dy = Math.sin(a); d = 1; }
+          const push = (REMEMBER_MIN_CENTER_PX - d) / 2 + 0.5;
+          pts[i].x -= (dx / d) * push; pts[i].y -= (dy / d) * push;
+          pts[j].x += (dx / d) * push; pts[j].y += (dy / d) * push;
+          clamp(pts[i]); clamp(pts[j]);
+          moved = true;
+        }
+      }
+      if (!moved) break;
+    }
+    const tooClose = pts.some((a, i) => pts.some((c, j) => j > i && Math.hypot(a.x - c.x, a.y - c.y) < REMEMBER_MIN_CENTER_PX - 0.5));
+    if (!tooClose) return pts;
+    // Still crowded (a small phone at 24 markers): fall back to a staggered
+    // (hexagonal) set of slots, which packs the most markers at the minimum
+    // distance, and pick `count` of them at random, slightly jittered.
+    const D = REMEMBER_MIN_CENTER_PX, rowH = D * Math.sqrt(3) / 2;
+    const slots = [];
+    for (let r = 0, y = bounds.minY; y <= bounds.maxY + 0.01; r++, y += rowH) {
+      for (let x = bounds.minX + (r % 2 ? D / 2 : 0); x <= bounds.maxX + 0.01; x += D) slots.push({ x, y });
+    }
+    if (slots.length < count) return pts;
+    for (let i = slots.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [slots[i], slots[j]] = [slots[j], slots[i]]; }
+    return slots.slice(0, count);
+  }
   function buildRememberPositions(count, keep) {
     const bounds = rememberStageBounds();
     const cache = keep && rememberState ? rememberState.positionCache : null;
+    // Fixed positions: lay out every number up to the maximum level once,
+    // as one relaxed layout, so a later (denser) level never has to squeeze
+    // a new marker into whatever space the earlier ones happened to leave.
+    if (cache && !Object.keys(cache).length) {
+      relaxedRememberLayout(Math.max(count, REMEMBER_MAX_LEVEL), bounds).forEach((px, i) => {
+        cache[i + 1] = { x: (px.x / bounds.w) * 100, y: (px.y / bounds.h) * 100 };
+      });
+    }
+    if (!cache) {
+      return relaxedRememberLayout(count, bounds).map((px, i) => ({ num: i + 1, x: (px.x / bounds.w) * 100, y: (px.y / bounds.h) * 100 }));
+    }
     const positions = [];
     const existingPx = [];
     for (let num = 1; num <= count; num++) {
