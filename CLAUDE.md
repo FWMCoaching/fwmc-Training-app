@@ -574,6 +574,18 @@ unrelated to the feature being changed.
   ~375-430px AND ~768px+, not just one or the other) rather than assuming
   the existing headroom still holds. Test: `tests/nav_overflow_test.py`.
 
+
+- **No overlaps in settings UI either (client, 2026-10-02, after "Intensität"
+  was covered by its slider in Master-Einstellungen)**: the no-overlap rule
+  for stages applies to every settings screen too. `.slider-label` had a
+  fixed `width:30px`, so any label longer than "Min"/"Max" ran under the
+  range input; it is now `min-width:30px;white-space:nowrap`. Never give a
+  text label a fixed width. `tests/no_overlap_settings_test.py` clones every
+  `.slider-row` into a 280px box and checks the Master sheet and several
+  ready screens live (all `<details>` open), measuring the TEXT extent
+  (a Range rect), not just the element box - overflowing text doesn't grow
+  the box, which is why a plain rect check missed this bug.
+
 ## Known open items
 
 - **Remember overlap edge case**: at the maximum density (24 markers,

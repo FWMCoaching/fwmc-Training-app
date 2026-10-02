@@ -1155,7 +1155,7 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .slider-row input[type="range"]{flex:1;min-width:0;accent-color:var(--brand);height:28px}
 .slider-row.two-line{flex-direction:column;align-items:stretch;gap:4px}
 .slider-line{display:flex;align-items:center;gap:10px;min-width:0}
-.slider-label{font-size:12.5px;color:var(--ink-soft);flex:none;width:30px}
+.slider-label{font-size:12.5px;color:var(--ink-soft);flex:none;min-width:30px;white-space:nowrap}
 .slider-value{
   font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;
   color:var(--brand-deep);text-align:right;align-self:flex-end;min-width:56px;
