@@ -3938,6 +3938,34 @@ none - cheap here and useful for strength order).
 Tests: `tests/workout_reps_builder_test.py`, `tests/workout_reps_combo_test.py`
 (both rewritten for the plan builder).
 
+### Kraftplan v3: Art, Pause danach, Supersatz (2026-10-02)
+
+Fabian: a base pause for the whole plan, but every exercise may deviate
+("ohne dass es unübersichtlich wird"), plus Supersätze, Pyramide and
+isometric holds inside the reps plan. Tabata stays Tabata; mixing timed
+circuits with reps goes through Kombi.
+- **Art** per item (`mode`): `"range"` (as before, the only one with
+  double progression), `"pyramid"` (`pyrFrom` -> `pyrTo` over `sets`
+  steps, `pyrBack` adds the way back: 10-8-6-8-10), `"time"` (`holdS`,
+  5-300 s; player shows "Halten starten", counts down with 3-2-1 beeps and
+  completes the set itself, "Fertig" ends early). Plank/Wandsitz
+  (`STRENGTH_HOLD_EXERCISES`) start as `"time"`.
+- **Pause danach** (`restAfterS`, null = plan's `exerciseRestS`, 0-180 s)
+  and **Supersatz** (`supersetNext` + `supersetGapS` 0-60 s) live in a
+  folded "Pause danach / Supersatz" `<details>` per item (none on the last
+  item); open state survives re-renders (`strengthOpenOptions`).
+- **Engine**: `buildStrengthSteps(plan)` flattens the plan into sets, each
+  with the pause that follows it. Linked items form a group played round
+  by round (A1 B1 A2 B2; 3+ linked items = Zirkelsatz); the round pause is
+  the group's FIRST item's `restS` (partners show a hint instead of their
+  own stepper), after the last round comes the last member's pause-after.
+  `strengthItemBlock()` precomputes `repsList` because its `sets` is the
+  already-expanded pyramid count - recomputing from it doubled the pyramid
+  (real bug, caught by the test).
+- Open idea list given to Fabian (AMRAP, Dropsatz, Seitenwechsel; Tempo,
+  EMOM, Aufwärmsatz as later) - not built until he picks.
+Test: `tests/strength_modes_test.py`.
+
 ### Interval phase wording corrected (2026-09-30)
 
 "Belastung"/"Erholung" (both the setup-screen phase labels and the live

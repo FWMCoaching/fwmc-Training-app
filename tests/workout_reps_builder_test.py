@@ -61,7 +61,9 @@ async def main():
         await rows.nth(1).locator(".strength-range-select").select_option("kraft"); await pg.wait_for_timeout(80)
         await rows.nth(1).locator('[data-sfield="sets"][data-dir="1"]').click(); await pg.wait_for_timeout(80)
         print("item 2 now 3×1–6 independently:", "3×1–6" in await rows.nth(1).inner_text() and "2×6–12" in await rows.nth(0).inner_text())
-        # custom range on item 3
+        # Plank starts as a timed hold; switch it to reps, then a custom range
+        print("Plank starts as 'Halten auf Zeit':", "halten" in await rows.nth(2).inner_text())
+        await rows.nth(2).locator(".strength-mode-select").select_option("range"); await pg.wait_for_timeout(80)
         await rows.nth(2).locator(".strength-range-select").select_option("custom"); await pg.wait_for_timeout(80)
         print("custom range steppers appear for item 3:", await rows.nth(2).locator('[data-sfield="customMin"]').count() == 2)
         await rows.nth(2).locator('[data-sfield="customMax"][data-dir="-1"]').click(); await pg.wait_for_timeout(80)
@@ -108,7 +110,7 @@ async def main():
         print("set 2 of 2:", "SATZ 2 VON 2" in (await pg.inner_text("#workoutSetInfo")).upper())
         await pg.click("#workoutSetDoneBtn"); await pg.wait_for_timeout(200)
         print("exercise-change rest shown:", "ÜBUNGSWECHSEL" in (await pg.inner_text("#workoutRestLabel")).upper())
-        print("change rest previews next exercise:", "Liegestütze" in await pg.inner_text("#workoutRestNext") and "3×1–6" in await pg.inner_text("#workoutRestNext"))
+        print("change rest previews next exercise:", "Liegestütze" in await pg.inner_text("#workoutRestNext") and "1–6" in await pg.inner_text("#workoutRestNext"))
         print("change rest counts 30 s:", (await pg.inner_text("#workoutRestCountdown")).strip() in ("30", "29"))
         await pg.click("#workoutRestSkipBtn"); await pg.wait_for_timeout(200)
         print("now Liegestütze, Übung 2 von 2, Satz 1 von 3:", await pg.inner_text("#workoutExerciseName") == "Liegestütze" and "ÜBUNG 2 VON 2 · SATZ 1 VON 3" in (await pg.inner_text("#workoutSetInfo")).upper())

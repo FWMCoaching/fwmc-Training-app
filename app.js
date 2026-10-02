@@ -1008,7 +1008,7 @@
   function workoutBlockMeta(block) {
     if (block.kind === "tabata") return `${block.rounds} Runden à ${block.workS}s/${block.restS}s`;
     if (block.kind === "circuit") return `${block.items.length} Übungen × ${block.sets} Sätze`;
-    if (block.kind === "strength") return block.items.map((it) => `${findWorkoutExercise(it.exercise).name} ${it.sets}×${it.rangeMin}–${it.rangeMax}`).join(" · ");
+    if (block.kind === "strength") return block.items.map((it) => `${findWorkoutExercise(it.exercise).name} ${strengthItemTargetText(it)}${it.supersetNext ? " (Supersatz mit nächster)" : ""}`).join(" · ");
     if (block.rangeMin != null) return `${block.sets}×${block.rangeMin}–${block.rangeMax}`;
     return `${block.sets}×${block.reps}`;
   }
@@ -1016,11 +1016,13 @@
     if (block.kind === "tabata") return block.rounds * (block.workS + block.restS);
     if (block.kind === "circuit") return buildCircuitSchedule(block).total;
     if (block.kind === "strength") {
-      // Same rough 30s/set estimate as a single reps block, plus every set
-      // rest, every exercise-change rest and the start countdown.
+      // Rough 30s per reps set (a hold counts its own time), plus every
+      // pause that follows a set and the start countdown.
       const items = block.items || [];
-      return (block.prepS || 0) + items.reduce((t, it) => t + it.sets * 30 + (it.sets - 1) * (it.restS ?? 60), 0)
-        + Math.max(0, items.length - 1) * (block.exerciseRestS ?? 0);
+      return (block.prepS || 0) + buildStrengthSteps(block).reduce((t, step) => {
+        const it = items[step.itemIndex];
+        return t + (strengthItemMode(it) === "time" ? it.holdS : 30) + (step.rest ? step.rest.s : 0);
+      }, 0);
     }
     return block.sets * 30 + (block.sets - 1) * (block.restS ?? 30); // 30s/set is a rough estimate for the "ca." total
   }
@@ -9544,42 +9546,104 @@
   // (shaped like a range-mode reps block), workoutState.strength the whole
   // plan - so renderRepsView()/the set-done button/the rest countdown need
   // only small, item-aware additions rather than a second engine.
+  // Item shapes (block items, explicit numbers, no preset keys):
+  //   mode "range"   - rangeMin/rangeMax per set (double progression)
+  //   mode "pyramid" - pyrFrom -> pyrTo over `sets` steps, optional pyrBack
+  //                    (back up again: 12-10-8-10-12)
+  //   mode "time"    - holdS per set (isometric hold, counted down)
+  // plus restS (between sets), restAfterS (pause after this exercise,
+  // null = the plan's exerciseRestS), supersetNext/supersetGapS (alternate
+  // set by set with the next exercise, gap between the two). Items from
+  // before modes existed have no `mode` and are plain range items.
+  function strengthItemMode(it) { return it.mode === "pyramid" || it.mode === "time" ? it.mode : "range"; }
+  function strengthPyramidReps(it) {
+    const n = Math.max(1, it.sets || 1);
+    const a = it.pyrFrom ?? 12, b = it.pyrTo ?? 6;
+    const down = Array.from({ length: n }, (_, k) => (n === 1 ? a : Math.round(a + (b - a) * k / (n - 1))));
+    return it.pyrBack && n > 1 ? down.concat(down.slice(0, -1).reverse()) : down;
+  }
+  // Effective number of sets (a "back up again" pyramid adds sets).
+  function strengthItemSets(it) {
+    return strengthItemMode(it) === "pyramid" ? strengthPyramidReps(it).length : it.sets;
+  }
+  function strengthSetTargetText(it, set) {
+    const mode = strengthItemMode(it);
+    if (mode === "time") return `${it.holdS} s halten`;
+    if (mode === "pyramid") return `${(it.repsList || strengthPyramidReps(it))[set - 1]} Wiederholungen`;
+    return `${it.rangeMin}–${it.rangeMax} Wiederholungen`;
+  }
+  function strengthItemTargetText(it) {
+    const mode = strengthItemMode(it);
+    if (mode === "time") return `${it.sets}× ${it.holdS} s halten`;
+    if (mode === "pyramid") return `Pyramide ${strengthPyramidReps(it).join("–")}`;
+    return `${it.sets}×${it.rangeMin}–${it.rangeMax}`;
+  }
+  // The whole plan as a flat list of sets, each knowing the pause that
+  // follows it. A run of items linked by supersetNext forms one group that
+  // is played round by round (A1 B1, A2 B2, ...): the gap between members
+  // is the member's own supersetGapS, the pause after a round is the
+  // group's first item's set rest, and after the last round comes the
+  // last member's pause-after (or the plan default).
+  function buildStrengthSteps(plan) {
+    const items = plan.items || [];
+    const steps = [];
+    let i = 0;
+    while (i < items.length) {
+      let j = i;
+      while (j < items.length - 1 && items[j].supersetNext) j += 1;
+      const isGroup = j > i;
+      const rounds = Math.max(...items.slice(i, j + 1).map(strengthItemSets));
+      for (let r = 1; r <= rounds; r++) {
+        const members = [];
+        for (let k = i; k <= j; k++) if (strengthItemSets(items[k]) >= r) members.push(k);
+        members.forEach((k, mi) => {
+          let rest;
+          if (mi < members.length - 1) rest = { s: items[k].supersetGapS ?? 0, mode: "superset" };
+          else if (r < rounds) rest = { s: items[isGroup ? i : k].restS ?? 60, mode: "set" };
+          else rest = { s: items[j].restAfterS ?? plan.exerciseRestS ?? 0, mode: "item" };
+          steps.push({ itemIndex: k, set: r, sets: strengthItemSets(items[k]), superset: isGroup, rest });
+        });
+      }
+      i = j + 1;
+    }
+    if (steps.length) steps[steps.length - 1].rest = null;
+    return steps;
+  }
   function strengthItemBlock(item) {
-    return { kind: "reps", exercise: item.exercise, sets: item.sets, reps: item.rangeMax, rangeMin: item.rangeMin, rangeMax: item.rangeMax, restS: item.restS, note: item.note || "" };
+    return {
+      kind: "reps", mode: strengthItemMode(item), exercise: item.exercise, sets: strengthItemSets(item),
+      reps: item.rangeMax, rangeMin: item.rangeMin, rangeMax: item.rangeMax,
+      pyrFrom: item.pyrFrom, pyrTo: item.pyrTo, pyrBack: item.pyrBack, holdS: item.holdS,
+      // Precomputed: `sets` above is already the expanded count of a
+      // there-and-back pyramid, so it must not be expanded a second time.
+      repsList: strengthItemMode(item) === "pyramid" ? strengthPyramidReps(item) : null,
+      restS: item.restS, note: item.note || "",
+    };
+  }
+  function strengthApplyStep(idx) {
+    const st = workoutState;
+    st.stepIndex = idx;
+    const step = st.steps[idx];
+    st.itemIndex = step.itemIndex;
+    st.block = strengthItemBlock(st.strength.items[step.itemIndex]);
+    st.ex = findWorkoutExercise(st.block.exercise);
+    st.setIndex = step.set;
   }
   function startStrengthBlock(plan) {
-    const first = strengthItemBlock(plan.items[0]);
     const now = performance.now();
     workoutState = {
-      kind: "reps", strength: plan, itemIndex: 0, block: first, ex: findWorkoutExercise(first.exercise),
-      setIndex: 1, startTime: now, sessionStart: now, achieved: [], results: [],
+      kind: "reps", strength: plan, steps: buildStrengthSteps(plan), stepIndex: 0,
+      startTime: now, sessionStart: now, achievedByItem: {},
     };
+    strengthApplyStep(0);
     requestWakeLock();
-    if ((plan.prepS || 0) > 0) {
-      renderRepsView();
-      startRepsRest(plan.prepS, "start");
-    } else {
-      renderRepsView();
-    }
-  }
-  function strengthNextItemIndex() {
-    const st = workoutState;
-    return st && st.strength && st.itemIndex + 1 < st.strength.items.length ? st.itemIndex + 1 : -1;
-  }
-  function advanceStrengthItem() {
-    const st = workoutState;
-    st.results.push({ exercise: st.block.exercise, rangeMin: st.block.rangeMin, rangeMax: st.block.rangeMax, achieved: st.achieved.slice() });
-    st.itemIndex += 1;
-    st.block = strengthItemBlock(st.strength.items[st.itemIndex]);
-    st.ex = findWorkoutExercise(st.block.exercise);
-    st.setIndex = 1;
-    st.achieved = [];
     renderRepsView();
+    if ((plan.prepS || 0) > 0) startRepsRest(plan.prepS, "start");
   }
   // Live per-set stopwatch - informational only (see CLAUDE.md's "Kraft-/
   // Wiederholungstraining" note on why time-under-tension isn't used to
   // gate anything: the research shows it tracks reps×tempo rather than
-  // being an independent lever). Only shown for range-mode blocks; a
+  // being an independent lever). Only shown for range/pyramid sets; a
   // classic fixed coach-plan "reps" block never touches this.
   function startWorkoutSetTimer() {
     stopWorkoutSetTimer();
@@ -9593,27 +9657,53 @@
     if (workoutSetTimerInterval) clearInterval(workoutSetTimerInterval);
     workoutSetTimerInterval = null;
   }
+  // Isometric hold: "Halten starten" counts holdS down (3-2-1 beeps at the
+  // end), then completes the set by itself; "Fertig" ends it early.
+  function startWorkoutHold() {
+    const st = workoutState;
+    if (!st) return;
+    stopWorkoutSetTimer();
+    const total = st.block.holdS || 30;
+    const t0 = performance.now();
+    st.holding = { t0, total };
+    els.workoutSetTimer.hidden = false;
+    els.workoutSetDoneBtn.textContent = "Fertig";
+    let beeped = {};
+    const update = () => {
+      const left = Math.max(0, total - (performance.now() - t0) / 1000);
+      els.workoutSetTimer.textContent = `${Math.ceil(left)} s`;
+      const whole = Math.ceil(left);
+      if (whole <= 3 && whole >= 1 && !beeped[whole]) { beeped[whole] = true; playWorkoutBeep(false); }
+      if (left <= 0) { playWorkoutBeep(true); completeWorkoutSet(); }
+    };
+    update();
+    workoutSetTimerInterval = setInterval(update, 200);
+  }
   function renderRepsView() {
     const { block, ex, setIndex } = workoutState;
-    const isRange = block.rangeMin != null;
+    const mode = block.mode || (block.rangeMin != null ? "range" : "fixed");
     els.workoutExerciseName.textContent = ex.name;
     const plan = workoutState.strength;
-    els.workoutSetInfo.textContent = (plan && plan.items.length > 1 ? `Übung ${workoutState.itemIndex + 1} von ${plan.items.length} · ` : "") + `Satz ${setIndex} von ${block.sets}`;
-    els.workoutRepsBig.textContent = isRange ? `${block.rangeMin}–${block.rangeMax} Wiederholungen` : `${block.reps} Wiederholungen`;
+    const step = plan ? workoutState.steps[workoutState.stepIndex] : null;
+    els.workoutSetInfo.textContent = (plan && plan.items.length > 1 ? `Übung ${workoutState.itemIndex + 1} von ${plan.items.length} · ` : "") +
+      `Satz ${setIndex} von ${block.sets}` + (step && step.superset ? " · Supersatz" : "");
+    els.workoutRepsBig.textContent = mode === "fixed" ? `${block.reps} Wiederholungen` : strengthSetTargetText(block, setIndex);
     els.workoutNote.textContent = block.note || ex.note || "";
     els.workoutSetDoneBtn.hidden = false;
+    els.workoutSetDoneBtn.textContent = mode === "time" ? "Halten starten" : "Satz erledigt";
     els.workoutRestBox.hidden = true;
-    els.workoutRepsInputRow.hidden = !isRange;
-    if (isRange) {
-      // Defaults to the top of the range - "aim for the last one to be
-      // genuinely hard" (the client's own words on progressive overload) -
-      // the client dials it down with -/+ only if they fell short.
-      workoutState.currentInput = block.rangeMax;
+    workoutState.holding = null;
+    els.workoutRepsInputRow.hidden = !(mode === "range" || mode === "pyramid");
+    if (mode === "range" || mode === "pyramid") {
+      // Defaults to the target (top of the range - "aim for the last one
+      // to be genuinely hard"); dialled down with -/+ only if they fell short.
+      workoutState.currentInput = mode === "pyramid" ? block.repsList[setIndex - 1] : block.rangeMax;
       els.workoutRepsInputValue.textContent = workoutState.currentInput;
       startWorkoutSetTimer();
     } else {
       stopWorkoutSetTimer();
-      els.workoutSetTimer.hidden = true;
+      els.workoutSetTimer.hidden = mode !== "time";
+      if (mode === "time") els.workoutSetTimer.textContent = `${block.holdS} s`;
     }
   }
   els.workoutRepsInputMinus.addEventListener("click", () => {
@@ -9626,24 +9716,35 @@
     workoutState.currentInput = Math.min(99, workoutState.currentInput + 1);
     els.workoutRepsInputValue.textContent = workoutState.currentInput;
   });
-  els.workoutSetDoneBtn.addEventListener("click", () => {
-    if (!workoutState || workoutState.kind !== "reps") return;
-    if (workoutState.block.rangeMin != null) {
-      workoutState.achieved.push(workoutState.currentInput);
-      stopWorkoutSetTimer();
-    }
-    if (workoutState.setIndex >= workoutState.block.sets) {
-      if (strengthNextItemIndex() < 0) { finishWorkoutBlock(); return; }
-      const changeS = workoutState.strength.exerciseRestS ?? 0;
-      if (changeS > 0) startRepsRest(changeS, "item");
-      else advanceStrengthItem();
+  function completeWorkoutSet() {
+    const st = workoutState;
+    if (!st || st.kind !== "reps") return;
+    const mode = st.block.mode || (st.block.rangeMin != null ? "range" : "fixed");
+    let value = null;
+    if (mode === "range" || mode === "pyramid") value = st.currentInput;
+    else if (mode === "time" && st.holding) value = Math.round(Math.min(st.holding.total, (performance.now() - st.holding.t0) / 1000));
+    stopWorkoutSetTimer();
+    st.holding = null;
+    if (st.strength) {
+      if (value != null) (st.achievedByItem[st.itemIndex] = st.achievedByItem[st.itemIndex] || []).push(value);
+      const rest = st.steps[st.stepIndex].rest;
+      if (!rest) { finishWorkoutBlock(); return; }
+      if (rest.s > 0) startRepsRest(rest.s, rest.mode);
+      else advanceRepsSet(rest.mode);
       return;
     }
-    startRepsRest(workoutState.block.restS ?? 30, "set");
+    if (value != null) (st.achieved = st.achieved || []).push(value);
+    if (st.setIndex >= st.block.sets) { finishWorkoutBlock(); return; }
+    startRepsRest(st.block.restS ?? 30, "set");
+  }
+  els.workoutSetDoneBtn.addEventListener("click", () => {
+    if (!workoutState || workoutState.kind !== "reps") return;
+    if (workoutState.block.mode === "time" && !workoutState.holding) { startWorkoutHold(); return; }
+    completeWorkoutSet();
   });
-  // `mode` says what the countdown leads into: "set" (next set of the same
-  // exercise), "item" (next exercise of a Kraftplan) or "start" (the
-  // Kraftplan's own start countdown, before its very first set).
+  // `mode` says what the countdown leads into: "set" (next set), "superset"
+  // (the partner exercise of a Supersatz), "item" (next exercise of a
+  // Kraftplan) or "start" (the Kraftplan's own start countdown).
   function startRepsRest(restS, mode = "set") {
     workoutState.restMode = mode;
     els.workoutSetDoneBtn.hidden = true;
@@ -9651,13 +9752,17 @@
     stopWorkoutSetTimer();
     els.workoutSetTimer.hidden = true;
     els.workoutRestBox.hidden = false;
-    els.workoutRestLabel.textContent = mode === "start" ? "Bereit machen" : mode === "item" ? "Pause – Übungswechsel" : "Pause";
+    els.workoutRestLabel.textContent = mode === "start" ? "Bereit machen" : mode === "item" ? "Pause – Übungswechsel" : mode === "superset" ? "Supersatz – Wechsel" : "Pause";
     let nextText = "";
-    if (mode === "item") {
-      const next = workoutState.strength.items[strengthNextItemIndex()];
-      nextText = `Als Nächstes: ${findWorkoutExercise(next.exercise).name} · ${next.sets}×${next.rangeMin}–${next.rangeMax}`;
+    const st = workoutState;
+    if (st.strength && mode !== "start") {
+      const next = st.steps[st.stepIndex + 1];
+      if (next && next.itemIndex !== st.itemIndex) {
+        const it = st.strength.items[next.itemIndex];
+        nextText = `Als Nächstes: ${findWorkoutExercise(it.exercise).name} · ${strengthSetTargetText(strengthItemBlock(it), next.set)}`;
+      }
     } else if (mode === "start") {
-      nextText = `Los geht's mit: ${workoutState.ex.name}`;
+      nextText = `Los geht's mit: ${st.ex.name}`;
     }
     els.workoutRestNext.hidden = !nextText;
     els.workoutRestNext.textContent = nextText;
@@ -9670,14 +9775,17 @@
     };
     tick();
   }
-  function advanceRepsSet() {
+  function advanceRepsSet(modeOverride) {
     if (workoutRestTimer) clearTimeout(workoutRestTimer);
     workoutRestTimer = null;
     if (!workoutState) return;
-    const mode = workoutState.restMode || "set";
+    const mode = modeOverride || workoutState.restMode || "set";
     workoutState.restMode = null;
-    if (mode === "item") { advanceStrengthItem(); return; }
-    if (mode === "set") workoutState.setIndex += 1;
+    if (workoutState.strength) {
+      if (mode !== "start") strengthApplyStep(workoutState.stepIndex + 1);
+    } else if (mode === "set") {
+      workoutState.setIndex += 1;
+    }
     renderRepsView();
   }
   els.workoutRestSkipBtn.addEventListener("click", () => advanceRepsSet());
@@ -9931,12 +10039,15 @@
     let suggestion = null;
     let doneEx = st ? st.ex : null;
     if (st && st.strength) {
-      if (st.achieved.length) st.results.push({ exercise: st.block.exercise, rangeMin: st.block.rangeMin, rangeMax: st.block.rangeMax, achieved: st.achieved.slice() });
       if (st.strength.items.length > 1) doneEx = { name: workoutBlockLabel(st.strength) };
       if (!workoutPlan && !comboProgram) {
-        const topNames = st.results
-          .filter((r) => r.achieved.length && recordWorkoutRepsProgress(r.exercise, r.rangeMin, r.rangeMax, r.achieved))
-          .map((r) => findWorkoutExercise(r.exercise).name);
+        // Double progression only makes sense for range items (a pyramid
+        // or a hold has its own fixed target per set).
+        const topNames = st.strength.items
+          .map((it, idx) => ({ it, achieved: st.achievedByItem[idx] || [] }))
+          .filter(({ it, achieved }) => strengthItemMode(it) === "range" && achieved.length
+            && recordWorkoutRepsProgress(it.exercise, it.rangeMin, it.rangeMax, achieved))
+          .map(({ it }) => findWorkoutExercise(it.exercise).name);
         if (topNames.length) suggestion = `Stark – bei ${topNames.join(", ")} hast du in jedem Satz das obere Ende deines Bereichs geschafft. Nächstes Mal schwerer machen (mehr Gewicht, schwerere Variante, oder die Übung tauschen)?`;
       }
     } else if (st && st.kind === "reps" && st.block.rangeMin != null && st.achieved.length && !workoutPlan && !comboProgram) {
@@ -10376,6 +10487,15 @@
       sets: clampInt(it.sets, 1, 10, 3),
       restS: clampInt(it.restS, 15, 300, 60),
       note: typeof it.note === "string" ? it.note : "",
+      // Added 2026-10-02: Art der Übung, Pause danach, Supersatz.
+      mode: it.mode === "pyramid" || it.mode === "time" ? it.mode : "range",
+      pyrFrom: clampInt(it.pyrFrom, 1, 30, 12),
+      pyrTo: clampInt(it.pyrTo, 1, 30, 6),
+      pyrBack: !!it.pyrBack,
+      holdS: clampInt(it.holdS, 5, 300, 30),
+      restAfterS: it.restAfterS == null ? null : clampInt(it.restAfterS, 0, 180, null),
+      supersetNext: !!it.supersetNext,
+      supersetGapS: clampInt(it.supersetGapS, 0, 60, 0),
     };
     if (out.customMax < out.customMin) out.customMax = out.customMin;
     return out;
@@ -10420,19 +10540,27 @@
     return hitTopEverySet;
   }
 
+  const STRENGTH_HOLD_EXERCISES = ["plank", "wandsitz"];
   function newStrengthItem(exerciseId) {
     return normalizeStrengthItem({
       exercise: exerciseId, rangeKey: workoutRepsPrefs.rangeKey, customMin: workoutRepsPrefs.customMin,
       customMax: workoutRepsPrefs.customMax, sets: workoutRepsPrefs.sets, restS: workoutRepsPrefs.restS, note: "",
+      // Static holds start as "Halten auf Zeit"; changeable via "Art".
+      mode: STRENGTH_HOLD_EXERCISES.includes(exerciseId) ? "time" : "range",
     });
   }
   // Plain block shape the engine plays (explicit min/max, no preset keys).
   function buildStrengthPlanBlock() {
     return {
       kind: "strength",
-      items: workoutRepsPrefs.items.map((it) => {
+      items: workoutRepsPrefs.items.map((it, i, all) => {
         const { min, max } = repRangeFor(it);
-        return { exercise: it.exercise, rangeMin: min, rangeMax: max, sets: it.sets, restS: it.restS, note: it.note || "" };
+        return {
+          exercise: it.exercise, mode: it.mode, rangeMin: min, rangeMax: max, sets: it.sets, restS: it.restS,
+          pyrFrom: it.pyrFrom, pyrTo: it.pyrTo, pyrBack: it.pyrBack, holdS: it.holdS,
+          restAfterS: it.restAfterS, supersetNext: it.supersetNext && i < all.length - 1, supersetGapS: it.supersetGapS,
+          note: it.note || "",
+        };
       }),
       exerciseRestS: workoutRepsPrefs.exerciseRestS,
       prepS: workoutRepsPrefs.prepS,
@@ -10445,6 +10573,8 @@
     return normalizeStrengthItem({
       exercise: it.exercise, rangeKey: preset ? preset.key : "custom",
       customMin: it.rangeMin, customMax: it.rangeMax, sets: it.sets, restS: it.restS, note: it.note || "",
+      mode: it.mode, pyrFrom: it.pyrFrom, pyrTo: it.pyrTo, pyrBack: it.pyrBack, holdS: it.holdS,
+      restAfterS: it.restAfterS, supersetNext: it.supersetNext, supersetGapS: it.supersetGapS,
     });
   }
   function refreshWorkoutRepsBuilder() {
@@ -10507,7 +10637,23 @@
     restS: { lo: 15, hi: 300, step: 15 },
     customMin: { lo: 1, hi: 30, step: 1 },
     customMax: { lo: 1, hi: 30, step: 1 },
+    pyrFrom: { lo: 1, hi: 30, step: 1 },
+    pyrTo: { lo: 1, hi: 30, step: 1 },
+    holdS: { lo: 5, hi: 300, step: 5 },
+    restAfterS: { lo: 0, hi: 180, step: 5 },
+    supersetGapS: { lo: 0, hi: 60, step: 5 },
   };
+  const STRENGTH_MODE_LABELS = { range: "Wiederholungen (Bereich)", pyramid: "Pyramide", time: "Halten auf Zeit" };
+  // Which items have their "Pause & Supersatz" options unfolded - UI state
+  // only, kept across re-renders so a tap on a stepper doesn't fold it shut.
+  const strengthOpenOptions = new Set();
+  function strengthPauseSummary(item, i, items) {
+    if (i >= items.length - 1) return "Letzte Übung";
+    if (item.supersetNext) return `Supersatz mit Übung ${i + 2}` + (item.supersetGapS > 0 ? ` · ${item.supersetGapS} s Wechsel` : "");
+    return item.restAfterS == null
+      ? `Pause danach: ${workoutRepsPrefs.exerciseRestS > 0 ? fmtSeconds(workoutRepsPrefs.exerciseRestS) : "keine"} (Standard)`
+      : `Pause danach: ${item.restAfterS > 0 ? fmtSeconds(item.restAfterS) : "keine"} (eigene)`;
+  }
   function renderWorkoutRepsList() {
     const items = workoutRepsPrefs.items;
     els.workoutRepsCount.textContent = items.length ? `${items.length} Übung${items.length === 1 ? "" : "en"}` : "";
@@ -10517,50 +10663,102 @@
     items.forEach((item, i) => {
       const ex = findWorkoutExercise(item.exercise);
       const { min, max } = repRangeFor(item);
+      const target = strengthItemTargetText({ ...item, rangeMin: min, rangeMax: max });
+      const inSuperset = item.supersetNext || (i > 0 && items[i - 1].supersetNext);
       const row = document.createElement("div");
-      row.className = "circuit-item-row strength-item-row";
+      row.className = "circuit-item-row strength-item-row" + (inSuperset ? " in-superset" : "");
+      const modeOptions = Object.entries(STRENGTH_MODE_LABELS).map(([k, l]) => `<option value="${k}" ${item.mode === k ? "selected" : ""}>${l}</option>`).join("");
       const rangeOptions = REP_RANGE_PRESETS.map((p) => `<option value="${p.key}" ${item.rangeKey === p.key ? "selected" : ""}>${p.label} (${p.min}–${p.max})</option>`).join("") +
         `<option value="custom" ${item.rangeKey === "custom" ? "selected" : ""}>Eigener Bereich</option>`;
+      let modeFields = "";
+      if (item.mode === "range") {
+        modeFields = `<div class="cardio-interval-phase-row strength-field-row"><span>Bereich</span><select class="strength-range-select" data-si="${i}" aria-label="Wiederholungsbereich">${rangeOptions}</select></div>` +
+          (item.rangeKey === "custom" ? strengthStepper(i, "customMin", "Min. Wdh.", item.customMin) + strengthStepper(i, "customMax", "Max. Wdh.", item.customMax) : "") +
+          strengthStepper(i, "sets", "Sätze", item.sets);
+      } else if (item.mode === "pyramid") {
+        modeFields = strengthStepper(i, "pyrFrom", "Von Wdh.", item.pyrFrom) + strengthStepper(i, "pyrTo", "Bis Wdh.", item.pyrTo) +
+          strengthStepper(i, "sets", "Stufen", item.sets) +
+          `<label class="checkbox-row strength-check"><input type="checkbox" class="strength-pyrback" data-si="${i}" ${item.pyrBack ? "checked" : ""}> und wieder zurück (z. B. 12–10–8–10–12)</label>`;
+      } else {
+        modeFields = strengthStepper(i, "holdS", "Haltezeit", `${item.holdS}s`) + strengthStepper(i, "sets", "Sätze", item.sets);
+      }
+      const isLast = i === items.length - 1;
+      const open = strengthOpenOptions.has(i);
+      let options = "";
+      if (!isLast) {
+        options = `<details class="strength-options" data-oi="${i}" ${open ? "open" : ""}><summary>${esc(strengthPauseSummary(item, i, items))}</summary><div class="strength-options-body">` +
+          `<label class="checkbox-row strength-check"><input type="checkbox" class="strength-superset" data-si="${i}" ${item.supersetNext ? "checked" : ""}> Supersatz mit der nächsten Übung (Sätze abwechselnd)</label>` +
+          (item.supersetNext
+            ? strengthStepper(i, "supersetGapS", "Wechselpause", `${item.supersetGapS}s`)
+            : (item.restAfterS == null
+              ? `<button type="button" class="link-btn strength-rest-custom" data-si="${i}">Eigene Pause nach dieser Übung einstellen</button>`
+              : strengthStepper(i, "restAfterS", "Pause danach", `${item.restAfterS}s`) +
+                `<button type="button" class="link-btn strength-rest-default" data-si="${i}">Wieder Standard verwenden (${fmtSeconds(workoutRepsPrefs.exerciseRestS)})</button>`)) +
+          `</div></details>`;
+      }
       row.innerHTML =
         `<div class="circuit-item-main">` +
-        `<span class="chapter-main" style="cursor:default"><span class="num">${i + 1}</span><span class="ca-icon">${workoutIconSVG(ex.icon)}</span><span class="info"><strong>${esc(ex.name)}</strong><span>${item.sets}×${min}–${max} · ${fmtSeconds(item.restS)} Satzpause</span></span></span>` +
+        `<span class="chapter-main" style="cursor:default"><span class="num">${i + 1}</span><span class="ca-icon">${workoutIconSVG(ex.icon)}</span><span class="info"><strong>${esc(ex.name)}</strong><span>${esc(target)}${i > 0 && items[i - 1].supersetNext ? "" : ` · ${fmtSeconds(item.restS)} ${item.supersetNext ? "Rundenpause" : "Satzpause"}`}${inSuperset ? " · Supersatz" : ""}</span></span></span>` +
         (i > 0 ? `<button class="circuit-step strength-move" data-move="${i}" title="Nach oben" aria-label="Nach oben">&uarr;</button>` : "") +
         `<button class="combo-block-remove" data-i="${i}" title="Entfernen">&#10005;</button>` +
         `</div>` +
         `<div class="cardio-interval-fields">` +
-        `<div class="cardio-interval-phase-row strength-field-row"><span>Bereich</span><select class="strength-range-select" data-si="${i}" aria-label="Wiederholungsbereich">${rangeOptions}</select></div>` +
-        (item.rangeKey === "custom" ? strengthStepper(i, "customMin", "Min. Wdh.", item.customMin) + strengthStepper(i, "customMax", "Max. Wdh.", item.customMax) : "") +
-        strengthStepper(i, "sets", "Sätze", item.sets) +
-        strengthStepper(i, "restS", "Satzpause", `${item.restS}s`) +
+        `<div class="cardio-interval-phase-row strength-field-row"><span>Art</span><select class="strength-mode-select" data-si="${i}" aria-label="Art der Übung">${modeOptions}</select></div>` +
+        modeFields +
+        // In a Supersatz the pause after each round belongs to the group's
+        // first exercise; the partners only show where it is set.
+        (i > 0 && items[i - 1].supersetNext
+          ? `<div class="group-help strength-round-hint">Rundenpause wie bei der ersten Übung des Supersatzes</div>`
+          : strengthStepper(i, "restS", item.supersetNext ? "Rundenpause" : "Satzpause", `${item.restS}s`)) +
         `</div>` +
+        options +
         `<input type="text" class="circuit-item-note" data-i="${i}" placeholder="Eigene Notiz (optional, z. B. Gewicht)" maxlength="80" value="${esc(item.note || "")}">`;
       els.workoutRepsList.appendChild(row);
     });
+    const rerender = () => { saveWorkoutRepsPrefs(); renderWorkoutRepsList(); syncWorkoutRepsUI(); };
+    const itemOf = (el) => workoutRepsPrefs.items[Number(el.dataset.si)];
     els.workoutRepsList.querySelectorAll("[data-sfield]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const item = workoutRepsPrefs.items[Number(btn.dataset.si)];
+        const item = itemOf(btn);
         const f = btn.dataset.sfield;
         const lim = STRENGTH_FIELD_LIMITS[f];
-        item[f] = Math.max(lim.lo, Math.min(lim.hi, item[f] + Number(btn.dataset.dir) * lim.step));
+        item[f] = Math.max(lim.lo, Math.min(lim.hi, (item[f] ?? 0) + Number(btn.dataset.dir) * lim.step));
         if (f === "customMin" && item.customMax < item.customMin) item.customMax = item.customMin;
         if (f === "customMax" && item.customMin > item.customMax) item.customMin = item.customMax;
-        saveWorkoutRepsPrefs();
-        renderWorkoutRepsList();
-        syncWorkoutRepsUI();
+        rerender();
       });
     });
     els.workoutRepsList.querySelectorAll(".strength-range-select").forEach((sel) => {
       sel.addEventListener("change", () => {
-        const item = workoutRepsPrefs.items[Number(sel.dataset.si)];
+        const item = itemOf(sel);
         if (sel.value === "custom" && item.rangeKey !== "custom") {
           // Start "Eigener Bereich" from whatever range was showing.
           const { min, max } = repRangeFor(item);
           item.customMin = min; item.customMax = max;
         }
         item.rangeKey = sel.value;
-        saveWorkoutRepsPrefs();
-        renderWorkoutRepsList();
-        syncWorkoutRepsUI();
+        rerender();
+      });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-mode-select").forEach((sel) => {
+      sel.addEventListener("change", () => { itemOf(sel).mode = sel.value; rerender(); });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-pyrback").forEach((cb) => {
+      cb.addEventListener("change", () => { itemOf(cb).pyrBack = cb.checked; rerender(); });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-superset").forEach((cb) => {
+      cb.addEventListener("change", () => { itemOf(cb).supersetNext = cb.checked; rerender(); });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-rest-custom").forEach((btn) => {
+      btn.addEventListener("click", () => { itemOf(btn).restAfterS = workoutRepsPrefs.exerciseRestS; rerender(); });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-rest-default").forEach((btn) => {
+      btn.addEventListener("click", () => { itemOf(btn).restAfterS = null; rerender(); });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-options").forEach((d) => {
+      d.addEventListener("toggle", () => {
+        if (d.open) strengthOpenOptions.add(Number(d.dataset.oi));
+        else strengthOpenOptions.delete(Number(d.dataset.oi));
       });
     });
     els.workoutRepsList.querySelectorAll(".strength-move").forEach((btn) => {
@@ -10568,6 +10766,7 @@
         const i = Number(btn.dataset.move);
         const list = workoutRepsPrefs.items;
         [list[i - 1], list[i]] = [list[i], list[i - 1]];
+        strengthOpenOptions.clear();
         saveWorkoutRepsPrefs();
         renderWorkoutRepsList();
       });
@@ -10575,6 +10774,7 @@
     els.workoutRepsList.querySelectorAll(".combo-block-remove").forEach((btn) => {
       btn.addEventListener("click", () => {
         workoutRepsPrefs.items.splice(Number(btn.dataset.i), 1);
+        strengthOpenOptions.clear();
         saveWorkoutRepsPrefs();
         refreshWorkoutRepsBuilder();
       });
@@ -10646,6 +10846,7 @@
   els.workoutRepsExerciseRestSlider.addEventListener("input", () => {
     workoutRepsPrefs.exerciseRestS = Number(els.workoutRepsExerciseRestSlider.value);
     saveWorkoutRepsPrefs();
+    renderWorkoutRepsList();
     syncWorkoutRepsUI();
   });
   els.workoutRepsPrepSlider.addEventListener("input", () => {
