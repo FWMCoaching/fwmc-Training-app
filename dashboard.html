@@ -83,6 +83,12 @@
     border-radius: 8px 8px 0 0; padding: 8px 14px; font-size: 0.85rem; cursor: pointer; margin: 0;
   }
   .tab-btn.active { background: var(--panel); color: var(--text); border-bottom-color: var(--panel); }
+  .kind-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+  .kind-btn { padding: 8px 4px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel2); color: var(--text); cursor: pointer; font-size: 0.85rem; margin-top: 0; }
+  .kind-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .mv-check { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; margin-top: 8px; }
+  .mv-check label, .inline-check { display: flex; align-items: center; gap: 6px; margin: 0; font-weight: 400; }
+  .mv-check input, .inline-check input { width: auto; }
   .ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 10px; }
   .ex-btn {
     background: var(--panel2); border: 1px solid var(--border); color: var(--text); border-radius: 8px;
@@ -165,7 +171,7 @@
 
     <details class="panel" id="overviewDetails" style="padding:16px">
       <summary style="cursor:pointer;list-style:none"><h2 style="display:inline">Alle Übungen im Überblick</h2></summary>
-      <p class="hint">Stand: 28.09.2026 · von Hand gepflegt, kein Live-Abgleich mit der App - bei Fragen zu neuen Übungen einfach fragen. <span class="ov-pill full"><span class="dot"></span>im Baukasten nutzbar</span> <span class="ov-pill json"><span class="dot"></span>nur über den JSON-Tab</span> <span class="ov-pill none"><span class="dot"></span>noch nicht im Dashboard, nur in der App</span></p>
+      <p class="hint">Stand: 02.10.2026 · von Hand gepflegt, kein Live-Abgleich mit der App - bei Fragen zu neuen Übungen einfach fragen. <span class="ov-pill full"><span class="dot"></span>im Baukasten nutzbar</span> <span class="ov-pill json"><span class="dot"></span>nur über den JSON-Tab</span> <span class="ov-pill none"><span class="dot"></span>noch nicht im Dashboard, nur in der App</span></p>
       <div id="overviewBody"></div>
     </details>
 
@@ -215,13 +221,51 @@
         <button class="tab-btn active" id="tabBuilderBtn" type="button">Baukasten</button>
         <button class="tab-btn" id="tabJsonBtn" type="button">JSON</button>
       </div>
-      <p class="hint" id="builderFallbackHint" hidden>Dieser Code nutzt eine Programmübersicht (mehrere Programme) oder ein Format, das der Baukasten noch nicht abbildet - bitte über den JSON-Tab bearbeiten.</p>
+      <p class="hint" id="builderFallbackHint" hidden>Dieser Code nutzt eine Programmübersicht (mehrere Programme) oder ein Format, das der Baukasten noch nicht abbildet (z.B. Zirkel, Kraftplan oder Kombi) - bitte über den JSON-Tab bearbeiten.</p>
 
       <div id="builderView">
         <label for="pName" style="margin-top:14px">Name des Programms</label>
         <input id="pName" placeholder="z.B. Dig03 · Fokus-Training" />
         <label for="pDesc">Beschreibung (optional)</label>
         <input id="pDesc" placeholder="z.B. Kurzes Aufmerksamkeitstraining, 3 Übungen" />
+        <label style="margin-top:14px">Bereich</label>
+        <div class="kind-row" id="kindRow">
+          <button class="kind-btn active" type="button" data-kind="visual">Visual Training</button>
+          <button class="kind-btn" type="button" data-kind="movement">Movement</button>
+          <button class="kind-btn" type="button" data-kind="cardio">Cardio</button>
+          <button class="kind-btn" type="button" data-kind="workout">Workout</button>
+        </div>
+        <p class="hint" id="kindHint">Der Code landet in der App automatisch im passenden Bereich.</p>
+
+        <div id="movementBuilder" hidden>
+          <label style="margin-top:14px">Bewegungen (mindestens 2)</label>
+          <div class="mv-check" id="mvMovements"></div>
+          <div class="block-fields">
+            <div><label>Tempo (BPM)</label><input type="number" id="mvBpm" min="20" max="160" step="5" value="60" /></div>
+            <div><label>Dauer (Min.)</label><input type="number" id="mvDuration" min="1" max="60" step="1" value="5" /></div>
+            <div><label>Vorschau</label><select id="mvPreview"><option value="1">Keine (1 Feld)</option><option value="2">Kurz (2 Felder)</option><option value="3" selected>Mittel (3 Felder)</option><option value="4">Weit (4 Felder)</option></select></div>
+          </div>
+          <label class="inline-check" style="margin-top:10px"><input type="checkbox" id="mvMirror" checked /> Gespiegelt (wie ein Spiegelbild)</label>
+          <label class="inline-check" style="margin-top:6px"><input type="checkbox" id="mvShowLabel" checked /> Beschriftung unter der Figur zeigen</label>
+        </div>
+
+        <div id="cardioBuilder" hidden>
+          <label style="margin-top:14px">Aktivität hinzufügen - antippen fügt sie ans Ende an</label>
+          <div class="ex-grid" id="cardioGrid"></div>
+          <label style="margin-top:16px">Deine Einheit <span id="cardioCount" class="hint"></span></label>
+          <div id="cardioList"></div>
+          <p class="empty-hint" id="cardioEmptyHint">Noch keine Aktivität hinzugefügt.</p>
+        </div>
+
+        <div id="workoutBuilder" hidden>
+          <label style="margin-top:14px">Übung hinzufügen - antippen fügt sie ans Ende an</label>
+          <div class="ex-grid" id="workoutGrid"></div>
+          <label style="margin-top:16px">Dein Plan <span id="workoutCount" class="hint"></span></label>
+          <div id="workoutList"></div>
+          <p class="empty-hint" id="workoutEmptyHint">Noch keine Übung hinzugefügt.</p>
+        </div>
+
+        <div id="visualBuilder">
         <label for="pPauseS">Pause zwischen den Übungen (Sekunden)</label>
         <input id="pPauseS" type="number" min="0" step="5" value="15" style="max-width:140px" />
         <label for="pIntroVideo">Intro-Video (URL, optional - läuft bevor das Programm startet)</label>
@@ -245,6 +289,7 @@
 
         <label for="pEndVideo" style="margin-top:16px">Abschluss-Video (URL, optional - läuft nach der letzten Übung)</label>
         <input id="pEndVideo" type="url" placeholder="https://…" />
+        </div>
       </div>
 
       <div id="jsonView" hidden>
@@ -410,13 +455,14 @@
       ["Box-Atmung", "none"], ["Ruhige Atmung (Kohärenz)", "none"],
       ["4-7-8 / Relax", "none"], ["Wim Hof", "none"], ["Eigenes Muster", "none"],
     ]},
-    { domain: "Movement", items: [["Ganzkörper-Reaktion (Limb-Cueing)", "none"]] },
+    { domain: "Movement", items: [["Ganzkörper-Reaktion (Limb-Cueing)", "full"]] },
+    { domain: "Cardio", items: [["Joggen, Rad, Crosstrainer, Rudern, Walking, Treppe, Schwimmen (auch als Intervall)", "full"]] },
     { domain: "Workout", items: [
-      ["Kniebeugen", "none"], ["Liegestütze", "none"], ["Ausfallschritte", "none"],
-      ["Unterarmstütz (Plank)", "none"], ["Hampelmann", "none"], ["Bergsteiger", "none"],
-      ["Burpees", "none"], ["Sit-ups", "none"], ["Superman", "none"], ["Hüftheben (Brücke)", "none"],
-      ["Kniehebelauf", "none"], ["Wandsitz", "none"], ["Trizeps-Dips", "none"], ["Sprungkniebeugen", "none"],
-      ["Tabata/Zirkel-Intervall-Timer (Mechanik, keine einzelne Übung)", "none"],
+      ["Kniebeugen", "full"], ["Liegestütze", "full"], ["Ausfallschritte", "full"],
+      ["Unterarmstütz (Plank)", "full"], ["Hampelmann", "full"], ["Bergsteiger", "full"],
+      ["Burpees", "full"], ["Sit-ups", "full"], ["Superman", "full"], ["Hüftheben (Brücke)", "full"],
+      ["Kniehebelauf", "full"], ["Wandsitz", "full"], ["Trizeps-Dips", "full"], ["Sprungkniebeugen", "full"],
+      ["Sätze × Wiederholungen oder Intervall pro Übung", "full"], ["Zirkel und Kraftplan mit mehreren Übungen", "json"],
     ]},
     { domain: "Test-Bereich (wächst laufend)", items: [
       ["Go/No-Go Reaktionstest", "none"], ["Positions-Gedächtnis (N-Back)", "none"],
@@ -538,6 +584,156 @@
   const MIN_COLORS = 2;
   const DEFAULT_BLOCK_COLORS = ["orange", "rot", "lila"];
 
+  // Other areas (Fabian, 2026-10-02 "E. Ja"): Movement, Cardio and Workout
+  // codes are click-together too. Shapes match what the app's own
+  // renderMovementProgramIntro / cardio-plan / workout-plan code reads.
+  const MOVEMENTS = [
+    { id: "armL-heben", label: "Linker Arm heben" }, { id: "armL-strecken", label: "Linker Arm strecken" },
+    { id: "armR-heben", label: "Rechter Arm heben" }, { id: "armR-strecken", label: "Rechter Arm strecken" },
+    { id: "legL-heben", label: "Linkes Bein heben" }, { id: "legL-strecken", label: "Linkes Bein strecken" },
+    { id: "legR-heben", label: "Rechtes Bein heben" }, { id: "legR-strecken", label: "Rechtes Bein strecken" },
+  ];
+  const CARDIO_ACTIVITIES = [
+    { id: "joggen", name: "Joggen" }, { id: "rad", name: "Rad fahren" }, { id: "cross", name: "Crosstrainer" },
+    { id: "rudern", name: "Rudergerät" }, { id: "walking", name: "Walking" }, { id: "treppe", name: "Treppensteigen" },
+    { id: "schwimmen", name: "Schwimmen" },
+  ];
+  const CARDIO_BY_ID = Object.fromEntries(CARDIO_ACTIVITIES.map((a) => [a.id, a]));
+  const WORKOUT_EXERCISES = [
+    { id: "kniebeuge", name: "Kniebeugen" }, { id: "liegestuetz", name: "Liegestütze" },
+    { id: "ausfallschritt", name: "Ausfallschritte" }, { id: "plank", name: "Unterarmstütz (Plank)" },
+    { id: "hampelmann", name: "Hampelmann" }, { id: "bergsteiger", name: "Bergsteiger" },
+    { id: "burpee", name: "Burpees" }, { id: "situp", name: "Sit-ups" }, { id: "superman", name: "Superman" },
+    { id: "huefthebe", name: "Hüftheben (Brücke)" }, { id: "kniehebelauf", name: "Kniehebelauf" },
+    { id: "wandsitz", name: "Wandsitz" }, { id: "trizepsdip", name: "Trizeps-Dips" },
+    { id: "sprungkniebeuge", name: "Sprungkniebeugen" },
+  ];
+  const WORKOUT_BY_ID = Object.fromEntries(WORKOUT_EXERCISES.map((e) => [e.id, e]));
+  let builderKind = "visual";
+  let cardioItems = [];
+  let workoutBlocks = [];
+
+  function setBuilderKind(kind) {
+    builderKind = kind;
+    document.querySelectorAll("#kindRow [data-kind]").forEach((b) => b.classList.toggle("active", b.dataset.kind === kind));
+    document.getElementById("visualBuilder").hidden = kind !== "visual";
+    document.getElementById("movementBuilder").hidden = kind !== "movement";
+    document.getElementById("cardioBuilder").hidden = kind !== "cardio";
+    document.getElementById("workoutBuilder").hidden = kind !== "workout";
+  }
+  document.querySelectorAll("#kindRow [data-kind]").forEach((b) => b.addEventListener("click", () => setBuilderKind(b.dataset.kind)));
+
+  function renderMovementChecks(selected) {
+    const box = document.getElementById("mvMovements");
+    box.innerHTML = "";
+    MOVEMENTS.forEach((m) => {
+      const lbl = document.createElement("label");
+      lbl.innerHTML = `<input type="checkbox" data-mv="${m.id}" ${selected.includes(m.id) ? "checked" : ""} />${escapeHtml(m.label)}`;
+      box.appendChild(lbl);
+    });
+    box.querySelectorAll("[data-mv]").forEach((input) => input.addEventListener("change", () => {
+      const checked = box.querySelectorAll("[data-mv]:checked").length;
+      if (!input.checked && checked < 2) input.checked = true; // keep at least 2
+    }));
+  }
+  function movementSelection() { return [...document.querySelectorAll("#mvMovements [data-mv]:checked")].map((i) => i.dataset.mv); }
+
+  function moveButtons(i, len) {
+    return `<div class="block-actions">
+          <button class="icon-btn" data-act="up" title="Nach oben" ${i === 0 ? "disabled" : ""}>&uarr;</button>
+          <button class="icon-btn" data-act="down" title="Nach unten" ${i === len - 1 ? "disabled" : ""}>&darr;</button>
+          <button class="icon-btn" data-act="remove" title="Entfernen">&times;</button>
+        </div>`;
+  }
+  function wireMoveButtons(card, arr, i, rerender) {
+    card.querySelector('[data-act="up"]').addEventListener("click", () => { if (i > 0) { [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]]; rerender(); } });
+    card.querySelector('[data-act="down"]').addEventListener("click", () => { if (i < arr.length - 1) { [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]]; rerender(); } });
+    card.querySelector('[data-act="remove"]').addEventListener("click", () => { arr.splice(i, 1); rerender(); });
+  }
+
+  function renderCardioGrid() {
+    const grid = document.getElementById("cardioGrid");
+    grid.innerHTML = "";
+    CARDIO_ACTIVITIES.forEach((a) => {
+      const btn = document.createElement("button");
+      btn.className = "ex-btn"; btn.type = "button"; btn.textContent = a.name;
+      btn.addEventListener("click", () => { cardioItems.push({ activity: a.id, durationS: 600, label: "", interval: null }); renderCardioList(); });
+      grid.appendChild(btn);
+    });
+  }
+  function renderCardioList() {
+    const list = document.getElementById("cardioList");
+    list.innerHTML = "";
+    document.getElementById("cardioCount").textContent = cardioItems.length ? `(${cardioItems.length})` : "";
+    document.getElementById("cardioEmptyHint").hidden = cardioItems.length > 0;
+    cardioItems.forEach((item, i) => {
+      const card = document.createElement("div");
+      card.className = "block-card";
+      const on = !!item.interval;
+      card.innerHTML = `<div class="block-head"><strong>${i + 1}. ${escapeHtml((CARDIO_BY_ID[item.activity] || { name: item.activity }).name)}</strong>${moveButtons(i, cardioItems.length)}</div>
+        <div class="block-fields">
+          <div><label>Dauer (Min.)</label><input type="number" min="1" max="60" step="1" data-c="min" value="${Math.round(item.durationS / 60)}" /></div>
+          <div><label>Bezeichnung (optional)</label><input type="text" data-c="label" maxlength="40" value="${escapeHtml(item.label || "")}" placeholder="z.B. Warm-up" /></div>
+        </div>
+        <label class="inline-check" style="margin-top:8px"><input type="checkbox" data-c="interval" ${on ? "checked" : ""} /> Als Intervall (intensiv/leichter im Wechsel)</label>
+        <div class="block-fields" data-c="intervalFields" ${on ? "" : "hidden"}>
+          <div><label>Intensiv (Sek.)</label><input type="number" min="5" max="300" step="5" data-c="onS" value="${on ? item.interval.onS : 30}" /></div>
+          <div><label>Leichter (Sek.)</label><input type="number" min="5" max="300" step="5" data-c="offS" value="${on ? item.interval.offS : 30}" /></div>
+        </div>`;
+      list.appendChild(card);
+      card.querySelector('[data-c="min"]').addEventListener("input", (e) => { item.durationS = Math.max(1, Math.min(60, Number(e.target.value) || 1)) * 60; });
+      card.querySelector('[data-c="label"]').addEventListener("input", (e) => { item.label = e.target.value.trim(); });
+      card.querySelector('input[data-c="interval"]').addEventListener("change", (e) => {
+        item.interval = e.target.checked ? { onS: Number(card.querySelector('[data-c="onS"]').value) || 30, offS: Number(card.querySelector('[data-c="offS"]').value) || 30 } : null;
+        card.querySelector('[data-c="intervalFields"]').hidden = !e.target.checked;
+      });
+      ["onS", "offS"].forEach((f) => card.querySelector(`[data-c="${f}"]`).addEventListener("input", (e) => { if (item.interval) item.interval[f] = Math.max(5, Number(e.target.value) || 5); }));
+      wireMoveButtons(card, cardioItems, i, renderCardioList);
+    });
+  }
+
+  function renderWorkoutGrid() {
+    const grid = document.getElementById("workoutGrid");
+    grid.innerHTML = "";
+    WORKOUT_EXERCISES.forEach((ex) => {
+      const btn = document.createElement("button");
+      btn.className = "ex-btn"; btn.type = "button"; btn.textContent = ex.name;
+      btn.addEventListener("click", () => { workoutBlocks.push({ kind: "reps", exercise: ex.id, sets: 3, reps: 12, restS: 30, workS: 20, rounds: 8 }); renderWorkoutList(); });
+      grid.appendChild(btn);
+    });
+  }
+  function renderWorkoutList() {
+    const list = document.getElementById("workoutList");
+    list.innerHTML = "";
+    document.getElementById("workoutCount").textContent = workoutBlocks.length ? `(${workoutBlocks.length})` : "";
+    document.getElementById("workoutEmptyHint").hidden = workoutBlocks.length > 0;
+    workoutBlocks.forEach((b, i) => {
+      const card = document.createElement("div");
+      card.className = "block-card";
+      const reps = b.kind === "reps";
+      card.innerHTML = `<div class="block-head"><strong>${i + 1}. ${escapeHtml((WORKOUT_BY_ID[b.exercise] || { name: b.exercise }).name)}</strong>${moveButtons(i, workoutBlocks.length)}</div>
+        <div class="kind-row" style="grid-template-columns:1fr 1fr">
+          <button class="kind-btn ${reps ? "active" : ""}" type="button" data-w-kind="reps">Sätze × Wiederholungen</button>
+          <button class="kind-btn ${reps ? "" : "active"}" type="button" data-w-kind="tabata">Intervall (Zeit)</button>
+        </div>
+        <div class="block-fields">${reps
+          ? `<div><label>Sätze</label><input type="number" min="1" max="10" data-w="sets" value="${b.sets}" /></div>
+             <div><label>Wiederholungen</label><input type="number" min="1" max="100" data-w="reps" value="${b.reps}" /></div>
+             <div><label>Satzpause (Sek.)</label><input type="number" min="0" max="300" step="5" data-w="restS" value="${b.restS}" /></div>`
+          : `<div><label>Runden</label><input type="number" min="1" max="30" data-w="rounds" value="${b.rounds}" /></div>
+             <div><label>Belastung (Sek.)</label><input type="number" min="5" max="300" step="5" data-w="workS" value="${b.workS}" /></div>
+             <div><label>Pause (Sek.)</label><input type="number" min="0" max="300" step="5" data-w="restS" value="${b.restS}" /></div>`}</div>`;
+      list.appendChild(card);
+      card.querySelectorAll("[data-w-kind]").forEach((btn) => btn.addEventListener("click", () => {
+        b.kind = btn.dataset.wKind;
+        if (b.kind === "tabata" && (b.restS > 60 || b.restS === 30)) b.restS = 10;
+        renderWorkoutList();
+      }));
+      card.querySelectorAll("[data-w]").forEach((input) => input.addEventListener("input", () => { b[input.dataset.w] = Math.max(Number(input.min) || 0, Number(input.value) || 0); }));
+      wireMoveButtons(card, workoutBlocks, i, renderWorkoutList);
+    });
+  }
+
   let builderBlocks = [];
   let builderUsable = true; // false when an edited code's config doesn't fit this builder's shape
 
@@ -633,6 +829,26 @@
   }
 
   function builderToConfig() {
+    const name = document.getElementById("pName").value.trim();
+    const description = document.getElementById("pDesc").value.trim() || undefined;
+    if (builderKind === "movement") {
+      return {
+        type: "movement-plan", name, description, movements: movementSelection(),
+        bpm: Number(document.getElementById("mvBpm").value) || 60,
+        durationMin: Number(document.getElementById("mvDuration").value) || 5,
+        preview: Number(document.getElementById("mvPreview").value) || 3,
+        mirror: document.getElementById("mvMirror").checked,
+        showLabel: document.getElementById("mvShowLabel").checked,
+      };
+    }
+    if (builderKind === "cardio") {
+      return { type: "cardio-plan", name, description, items: cardioItems.map((it) => ({ activity: it.activity, durationS: it.durationS, label: it.label || "", interval: it.interval ? { ...it.interval } : null })) };
+    }
+    if (builderKind === "workout") {
+      return { type: "workout-plan", name, description, blocks: workoutBlocks.map((b) => b.kind === "reps"
+        ? { kind: "reps", exercise: b.exercise, sets: b.sets, reps: b.reps, restS: b.restS }
+        : { kind: "tabata", exercise: b.exercise, workS: b.workS, restS: b.restS, rounds: b.rounds }) };
+    }
     return {
       name: document.getElementById("pName").value.trim(),
       description: document.getElementById("pDesc").value.trim() || undefined,
@@ -652,14 +868,40 @@
   // JSON tab and disables the builder tab for this edit, rather than
   // silently dropping fields the builder doesn't understand.
   function configToBuilder(config) {
-    const fits = config && typeof config === "object" && !config.type
-      && Array.isArray(config.blocks) && config.blocks.every((b) => EXERCISE_BY_ID[b.exercise]);
+    const isObj = config && typeof config === "object";
+    const t = isObj ? config.type : null;
+    let kind = null;
+    if (isObj && !t && Array.isArray(config.blocks) && config.blocks.every((b) => EXERCISE_BY_ID[b.exercise])) kind = "visual";
+    else if (t === "movement-plan" && Array.isArray(config.movements) && config.movements.every((id) => MOVEMENTS.some((m) => m.id === id))) kind = "movement";
+    else if (t === "cardio-plan" && Array.isArray(config.items) && config.items.every((it) => it && CARDIO_BY_ID[it.activity])) kind = "cardio";
+    else if (t === "workout-plan" && Array.isArray(config.blocks) && config.blocks.every((b) => b && (b.kind === "reps" || b.kind === "tabata") && b.rangeMin == null && WORKOUT_BY_ID[b.exercise])) kind = "workout";
+    const fits = !!kind;
     document.getElementById("builderFallbackHint").hidden = !!fits;
     document.getElementById("tabBuilderBtn").disabled = !fits;
     builderUsable = !!fits;
     if (!fits) { builderBlocks = []; switchTab("json"); return; }
     document.getElementById("pName").value = config.name || "";
     document.getElementById("pDesc").value = config.description || "";
+    setBuilderKind(kind);
+    if (kind === "movement") {
+      renderMovementChecks(config.movements);
+      document.getElementById("mvBpm").value = config.bpm ?? 60;
+      document.getElementById("mvDuration").value = config.durationMin ?? 5;
+      document.getElementById("mvPreview").value = String([1, 2, 3, 4].includes(config.preview) ? config.preview : 3);
+      document.getElementById("mvMirror").checked = config.mirror !== false;
+      document.getElementById("mvShowLabel").checked = config.showLabel !== false;
+      return;
+    }
+    if (kind === "cardio") {
+      cardioItems = config.items.map((it) => ({ activity: it.activity, durationS: it.durationS || 600, label: it.label || "", interval: it.interval && it.interval.onS ? { onS: it.interval.onS, offS: it.interval.offS || 30 } : null }));
+      renderCardioList();
+      return;
+    }
+    if (kind === "workout") {
+      workoutBlocks = config.blocks.map((b) => ({ kind: b.kind, exercise: b.exercise, sets: b.sets ?? 3, reps: b.reps ?? 12, restS: b.restS ?? 30, workS: b.workS ?? 20, rounds: b.rounds ?? 8 }));
+      renderWorkoutList();
+      return;
+    }
     document.getElementById("pPauseS").value = config.pauseS ?? 15;
     document.getElementById("pIntroVideo").value = config.introVideo || "";
     document.getElementById("pEndVideo").value = config.endVideo || "";
@@ -679,6 +921,12 @@
     document.getElementById("pIntroVideo").value = "";
     document.getElementById("pEndVideo").value = "";
     builderBlocks = [];
+    cardioItems = []; workoutBlocks = [];
+    renderMovementChecks([]); renderCardioList(); renderWorkoutList();
+    document.getElementById("mvBpm").value = 60; document.getElementById("mvDuration").value = 5;
+    document.getElementById("mvPreview").value = "3";
+    document.getElementById("mvMirror").checked = true; document.getElementById("mvShowLabel").checked = true;
+    setBuilderKind("visual");
     builderUsable = true;
     document.getElementById("builderFallbackHint").hidden = true;
     document.getElementById("tabBuilderBtn").disabled = false;
@@ -707,6 +955,9 @@
   document.getElementById("tabJsonBtn").addEventListener("click", () => switchTab("json"));
   renderExGrid();
   renderBlockList();
+  renderMovementChecks([]);
+  renderCardioGrid(); renderCardioList();
+  renderWorkoutGrid(); renderWorkoutList();
 
   function editProgram(code) {
     const full = programsCache.find((p) => p.code === code);
@@ -735,7 +986,8 @@
     let config;
     if (currentTabIsBuilder() && builderUsable) {
       config = builderToConfig();
-      if (!config.blocks.length) { msg.textContent = "Mindestens eine Übung hinzufügen."; msg.className = "msg err"; return; }
+      const empty = builderKind === "movement" ? config.movements.length < 2 : builderKind === "cardio" ? !config.items.length : !config.blocks.length;
+      if (empty) { msg.textContent = builderKind === "movement" ? "Mindestens zwei Bewegungen auswählen." : builderKind === "cardio" ? "Mindestens eine Aktivität hinzufügen." : "Mindestens eine Übung hinzufügen."; msg.className = "msg err"; return; }
       document.getElementById("pConfig").value = JSON.stringify(config, null, 2); // keep JSON tab in sync
     } else {
       try { config = JSON.parse(document.getElementById("pConfig").value); }

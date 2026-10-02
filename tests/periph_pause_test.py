@@ -92,12 +92,13 @@ async def main():
         print("pause button visible again on the fresh run:", await pg.is_visible("#periphPauseBtn"))
         await pg.click("#backBtn"); await pg.wait_for_timeout(150)
 
-        # --- a non-Periph exercise never shows the pause button ---
+        # --- since audit point 20 every VT canvas exercise has the pause;
+        # only Hütchen sortieren (no Reiz/Pause schedule) never shows it ---
         await pg.click("#backToHome"); await pg.wait_for_timeout(150)
         await pg.click('#natHome .section-tab[data-section="visual"]'); await pg.wait_for_timeout(150)
-        await pg.click('[data-exercise="vt-color"]'); await pg.wait_for_timeout(150)
+        await pg.click('[data-exercise="cone-tap"]'); await pg.wait_for_timeout(150)
         await pg.click("#startBtn"); await pg.wait_for_timeout(500)
-        print("pause button stays hidden for a non-Periph exercise:", await pg.is_hidden("#periphPauseBtn"))
+        print("pause button stays hidden for Hütchen sortieren:", await pg.is_hidden("#periphPauseBtn"))
         await pg.click("#backBtn"); await pg.wait_for_timeout(150)
 
         await b.close()

@@ -1227,6 +1227,10 @@
     periphPauseFixSizeSlider: $("periphPauseFixSizeSlider"), periphPauseFixSizeValue: $("periphPauseFixSizeValue"),
     periphPauseColorPicker: $("periphPauseColorPicker"), periphPauseColorHint: $("periphPauseColorHint"),
     periphResumeBtn: $("periphResumeBtn"),
+    vtPauseTempoGroup: $("vtPauseTempoGroup"), vtPauseStimulusSlider: $("vtPauseStimulusSlider"), vtPauseStimulusValue: $("vtPauseStimulusValue"),
+    vtPauseIntervalMinSlider: $("vtPauseIntervalMinSlider"), vtPauseIntervalMaxSlider: $("vtPauseIntervalMaxSlider"), vtPauseIntervalValue: $("vtPauseIntervalValue"),
+    vtPauseBgIntensityGroup: $("vtPauseBgIntensityGroup"), vtPauseBgColorGroup: $("vtPauseBgColorGroup"),
+    vtPauseFixColorGroup: $("vtPauseFixColorGroup"), vtPauseFixSizeGroup: $("vtPauseFixSizeGroup"), vtPauseStimColorGroup: $("vtPauseStimColorGroup"),
     durationGroup: $("durationGroup"), tempoGroup: $("tempoGroup"), advanced: $("advanced"),
     vtSavedGroup: $("vtSavedGroup"), vtSavedList: $("vtSavedList"), vtSaveBtn: $("vtSaveBtn"),
     vtSaveForm: $("vtSaveForm"), vtSaveNameInput: $("vtSaveNameInput"),
@@ -1285,6 +1289,9 @@
     breathPhaseCount: $("breathPhaseCount"), breathPhaseLabel: $("breathPhaseLabel"), breathTimeEl: $("breathTimeEl"),
     breathBackBtn: $("breathBackBtn"), breathFsBtn: $("breathFsBtn"), breathFsHint: $("breathFsHint"),
     breathPauseBtn: $("breathPauseBtn"),
+    breathPauseOverlay: $("breathPauseOverlay"), breathPauseTempoSlider: $("breathPauseTempoSlider"), breathPauseTempoValue: $("breathPauseTempoValue"),
+    breathPausePhases: $("breathPausePhases"), breathPauseRestSlider: $("breathPauseRestSlider"), breathPauseRestValue: $("breathPauseRestValue"),
+    breathResumeBtn: $("breathResumeBtn"),
     breathFsHintOpenBtn: $("breathFsHintOpenBtn"), breathFsHintClose: $("breathFsHintClose"),
     breathDonePanel: $("breathDonePanel"), breathDoneSummary: $("breathDoneSummary"), breathRating: $("breathRating"),
     breathAgainBtn: $("breathAgainBtn"), breathDoneBackBtn: $("breathDoneBackBtn"),
@@ -1323,7 +1330,8 @@
     movementSaveCancelBtn: $("movementSaveCancelBtn"), movementSaveConfirmBtn: $("movementSaveConfirmBtn"),
     movementPlayer: $("movementPlayer"), movementLane: $("movementLane"), movementProgressTrack: $("movementProgressTrack"),
     movementFinishBadge: $("movementFinishBadge"), movementBpmSlider: $("movementBpmSlider"), movementBpmValue: $("movementBpmValue"),
-    movementPlayerBar: $("movementPlayerBar"), movementBackBtn: $("movementBackBtn"), movementTimeEl: $("movementTimeEl"),
+    movementPlayerBar: $("movementPlayerBar"), movementPauseBtn: $("movementPauseBtn"), movementPauseOverlay: $("movementPauseOverlay"), movementPauseBpmSlider: $("movementPauseBpmSlider"), movementPauseBpmValue: $("movementPauseBpmValue"), movementResumeBtn: $("movementResumeBtn"),
+    movementBackBtn: $("movementBackBtn"), movementTimeEl: $("movementTimeEl"),
     movementFsBtn: $("movementFsBtn"), movementFsHint: $("movementFsHint"),
     movementFsHintOpenBtn: $("movementFsHintOpenBtn"), movementFsHintClose: $("movementFsHintClose"),
     movementDonePanel: $("movementDonePanel"), movementDoneSummary: $("movementDoneSummary"), movementRating: $("movementRating"),
@@ -2396,6 +2404,9 @@
     colors: ["orange", "rot", "lila"],
     arrowColors: ["blau"],
     stroopColors: ["rot", "gruen", "blau", "gelb", "lila"],
+    // "Farb-Häufigkeit" (Fabian, 2026-10-02 "B. Ja"): relative pick-weight
+    // per Stroop ink colour, 1-3x; a missing key means 1x.
+    stroopWeights: {},
     periphKind: "gemischt",
     periphFixEnabled: true,
     periphFixChar: "",
@@ -2422,6 +2433,8 @@
     if (!Array.isArray(state.colors) || keysToColors(state.colors).length < MIN_COLORS) state.colors = ["orange", "rot", "lila"];
     if (!Array.isArray(state.arrowColors) || keysToColors(state.arrowColors).length < ARROW_MIN_COLORS) state.arrowColors = ["blau"];
     if (!Array.isArray(state.stroopColors) || keysToColors(state.stroopColors, STROOP_COLOR_LIB).length < STROOP_MIN_COLORS) state.stroopColors = DEFAULTS.stroopColors.slice();
+    if (!state.stroopWeights || typeof state.stroopWeights !== "object" || Array.isArray(state.stroopWeights)) state.stroopWeights = {};
+    state.stroopWeights = Object.fromEntries(Object.entries(state.stroopWeights).filter(([k, v]) => STROOP_COLOR_BY_KEY[k] && [1, 2, 3].includes(v)));
     if (!["buchstaben", "zahlen", "gemischt"].includes(state.periphKind)) state.periphKind = "gemischt";
     if (typeof state.periphFixEnabled !== "boolean") state.periphFixEnabled = true;
     if (typeof state.periphFixChar !== "string") state.periphFixChar = "";
@@ -2619,7 +2632,36 @@
     colorAllBtn = buildColorAllBtn(lib);
     els.colorPicker.appendChild(colorAllBtn);
   }
+  function stroopWeightOf(key) {
+    const w = state.stroopWeights && state.stroopWeights[key];
+    return [1, 2, 3].includes(w) ? w : 1;
+  }
+  function renderStroopWeights() {
+    const box = document.getElementById("stroopWeights");
+    const show = colorMode === "stroop" && state.stroopColors.length >= STROOP_MIN_COLORS;
+    box.hidden = !show;
+    if (!show) return;
+    const rows = document.getElementById("stroopWeightRows");
+    rows.innerHTML = "";
+    state.stroopColors.forEach((key) => {
+      const c = STROOP_COLOR_BY_KEY[key];
+      if (!c) return;
+      const row = document.createElement("div");
+      row.className = "slider-row";
+      row.innerHTML = `<span class="slider-label"><span class="stroop-weight-dot" style="background:${c.hex}"></span>${c.name}</span><input type="range" data-stroop-weight="${key}" min="1" max="3" step="1" aria-label="Häufigkeit ${c.name}"><span class="slider-value">${stroopWeightOf(key)}×</span>`;
+      const input = row.querySelector("input");
+      input.value = stroopWeightOf(key);
+      input.addEventListener("input", () => {
+        const v = Number(input.value);
+        if (v === 1) delete state.stroopWeights[key]; else state.stroopWeights[key] = v;
+        savePrefs();
+        row.querySelector(".slider-value").textContent = v + "×";
+      });
+      rows.appendChild(row);
+    });
+  }
   function syncColorUI() {
+    renderStroopWeights();
     const keys = colorModeArray();
     const { min, max } = colorModeLimits();
     const lib = colorModePalette();
@@ -3516,7 +3558,7 @@
       if (existingBlock.colors) {
         if (ex.usesColors) state.colors = existingBlock.colors.slice();
         else if (ex.usesArrowColors) state.arrowColors = existingBlock.colors.slice();
-        else if (ex.usesStroopColors) state.stroopColors = existingBlock.colors.slice();
+        else if (ex.usesStroopColors) { state.stroopColors = existingBlock.colors.slice(); state.stroopWeights = { ...(existingBlock.stroopWeights || {}) }; }
       }
       state.duration = existingBlock.duration ?? state.duration;
       state.stimulusS = existingBlock.stimulusS ?? state.stimulusS;
@@ -3552,7 +3594,7 @@
     };
     if (ex.usesColors) block.colors = state.colors.slice();
     else if (ex.usesArrowColors) block.colors = state.arrowColors.slice();
-    else if (ex.usesStroopColors) block.colors = state.stroopColors.slice();
+    else if (ex.usesStroopColors) { block.colors = state.stroopColors.slice(); if (Object.keys(state.stroopWeights).length) block.stroopWeights = { ...state.stroopWeights }; }
     if (ex.type === "periph") block.periph = periphStateSnapshot();
     if (comboVisualEditIndex != null) comboDraftBlocks[comboVisualEditIndex] = block;
     else comboDraftBlocks.push(block);
@@ -4170,9 +4212,12 @@
     const instruction = "Sag laut die SCHRIFTFARBE (nicht das Wort)";
     const show = state.stimulusS;
     const colors = active.stroopColors;
+    // Ink colour (the answer) follows the client's Farb-Häufigkeit weights;
+    // the word is then any other colour, so every stimulus stays incongruent.
+    const weightOf = (c) => stroopWeightOf(c.key);
     while (t < state.duration) {
-      const wIdx = Math.floor(rng() * colors.length);
-      const inkIdx = pick(colors, [wIdx], rng);
+      const inkIdx = colors.indexOf(weightedPick(colors, weightOf, rng));
+      const wIdx = pick(colors, [inkIdx], rng);
       let bg = currentBgFill("#ffffff");
       // With only 2 colours picked there's no third one left for the
       // background to stay distinct from both word and ink - fall back to
@@ -4656,7 +4701,10 @@
     els.progressTrack.hidden = false;
     els.coneOrderStage.hidden = true;
     els.stageWrap.hidden = false;
-    els.periphPauseBtn.hidden = EXERCISES[state.exercise].type !== "periph";
+    // Pause with live adjustment for every exercise on this canvas engine
+    // (Fabian, 2026-10-02, audit point 20) - not just Periphere Wahrnehmung.
+    // Hütchen sortieren never comes through here (startConeTap()).
+    els.periphPauseBtn.hidden = false;
     fitCanvas();
     ensureAudioCtx();
     const built = buildScheduleFor(EXERCISES[state.exercise], Math.random);
@@ -5027,11 +5075,76 @@
   // gap: elapsed time is always (now - session.startTime), so shifting
   // startTime forward by exactly the paused duration on resume makes the
   // pause invisible to the stimulus timing.
+  // The overlay shows only what applies to the running exercise: tempo for
+  // every schedule-driven one, background unless the background IS the
+  // stimulus, the fixation point while it is switched on, stimulus colours
+  // only for Periphere Wahrnehmung's own characters.
+  let vtPauseTempoAtStart = null;
+  function syncVtPauseTempoUI() {
+    els.vtPauseStimulusSlider.value = state.stimulusS;
+    els.vtPauseStimulusValue.textContent = fmtSeconds(state.stimulusS);
+    els.vtPauseIntervalMinSlider.value = state.intervalMin;
+    els.vtPauseIntervalMaxSlider.value = state.intervalMax;
+    els.vtPauseIntervalValue.textContent = `${Math.round(state.intervalMin)}–${Math.round(state.intervalMax)} s`;
+  }
+  // A tempo change inside a coach programme, Kombi or Cardio guest only
+  // applies to that run - the client's own saved VT settings stay as they are.
+  function vtPauseTempoPersist() {
+    if (!program && !comboProgram && !cardioGuestActive) { savePrefs(); syncTempoUI(); }
+  }
+  els.vtPauseStimulusSlider.addEventListener("input", () => {
+    state.stimulusS = Number(els.vtPauseStimulusSlider.value); syncVtPauseTempoUI(); vtPauseTempoPersist();
+  });
+  els.vtPauseIntervalMinSlider.addEventListener("input", () => {
+    state.intervalMin = Math.min(Number(els.vtPauseIntervalMinSlider.value), state.intervalMax); syncVtPauseTempoUI(); vtPauseTempoPersist();
+  });
+  els.vtPauseIntervalMaxSlider.addEventListener("input", () => {
+    state.intervalMax = Math.max(Number(els.vtPauseIntervalMaxSlider.value), state.intervalMin); syncVtPauseTempoUI(); vtPauseTempoPersist();
+  });
+
+  // Rebuilds everything after the paused moment with the new tempo: past
+  // frames stay, the frame on screen ends now, and a fresh schedule (built by
+  // the exercise's own builder, minus its 3-2-1 lead-in) fills the remaining
+  // time up to the same end as before.
+  function rebuildVtScheduleFrom(elapsed) {
+    const ex = EXERCISES[state.exercise];
+    if (elapsed < 3) {
+      const built = buildScheduleFor(ex, Math.random);
+      session.schedule = built.schedule; session.total = built.total;
+    } else {
+      const remaining = state.duration - elapsed;
+      const kept = session.schedule.filter((f) => f.t0 < elapsed).map((f) => (f.t1 > elapsed ? { ...f, t1: elapsed } : f));
+      let fresh = [], freshEnd = elapsed;
+      if (remaining > 0) {
+        const savedDuration = state.duration;
+        state.duration = 3 + remaining;
+        try {
+          const built = buildScheduleFor(ex, Math.random);
+          const shift = elapsed - 3;
+          fresh = built.schedule.filter((f) => f.kind !== "count").map((f) => ({ ...f, t0: f.t0 + shift, t1: f.t1 + shift }));
+          freshEnd = built.total + shift;
+        } finally { state.duration = savedDuration; }
+      }
+      session.schedule = kept.concat(fresh);
+      session.total = Math.max(freshEnd, elapsed);
+      session.lastIndex = Math.min(session.lastIndex, kept.length - 1);
+    }
+    const addon = buildAddonSchedule(ex, state.exercise, session.schedule, Math.random);
+    session.addonSchedule = addon.schedule; session.addonSizeMode = addon.sizeMode;
+  }
+
   els.periphPauseBtn.addEventListener("click", () => {
     if (!session || periphPausedAt) return;
     if (raf) cancelAnimationFrame(raf);
     raf = null;
     periphPausedAt = performance.now();
+    const ex = EXERCISES[state.exercise] || {};
+    els.vtPauseTempoGroup.hidden = ex.type === "flash-host";
+    els.vtPauseBgIntensityGroup.hidden = els.vtPauseBgColorGroup.hidden = !!ex.bgIsStimulus;
+    els.vtPauseFixColorGroup.hidden = els.vtPauseFixSizeGroup.hidden = !state.periphFixEnabled;
+    els.vtPauseStimColorGroup.hidden = ex.type !== "periph";
+    vtPauseTempoAtStart = { stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax };
+    syncVtPauseTempoUI();
     syncBgUI();
     syncPeriphFixUI();
     syncPeriphColorUI();
@@ -5040,6 +5153,12 @@
   });
   els.periphResumeBtn.addEventListener("click", () => {
     if (!session || !periphPausedAt) return;
+    const t0 = vtPauseTempoAtStart;
+    const elapsed = (periphPausedAt - session.startTime) / 1000;
+    if (t0 && (t0.stimulusS !== state.stimulusS || t0.intervalMin !== state.intervalMin || t0.intervalMax !== state.intervalMax)) {
+      rebuildVtScheduleFrom(elapsed);
+    }
+    vtPauseTempoAtStart = null;
     session.startTime += performance.now() - periphPausedAt;
     periphPausedAt = null;
     els.periphPauseOverlay.hidden = true;
@@ -5603,6 +5722,7 @@
     });
     const resetBtn = document.getElementById("masterCvdResetBtn");
     if (resetBtn) resetBtn.hidden = !Object.keys(cvdOverrides).length;
+    try { applySignalColors(); } catch (e) { /* signal block not initialised yet at first load */ }
   }
   // Colour-dependent helpers the exercises read at render time.
   function cvdStroopColor(key) {
@@ -5626,6 +5746,189 @@
     });
   }
   function applyColorVisionMode() { applyCvdState(); }
+
+  // ---- Ziel-/Signalfarbe pro Übung (Fabian, 2026-10-02: "A. Ja") ----
+  // Every Test exercise whose signal is a fixed colour gets a picker for it
+  // in its own Feineinstellungen. Effective colour: the client's own pick
+  // wins, else the colour-safe palette (cvdPalOn), else the default. Kept
+  // in one store so a new exercise is one SIGNAL_DEFS entry plus a CSS rule
+  // builder - texts naming the colour follow via data-sig spans.
+  const SIGNAL_KEY = "fwmc-signal-colors-v1";
+  const SIGNAL_LIB = FIX_COLOR_LIB.filter((c) => c.key !== "weiss");
+  const SIGNAL_BY_KEY = Object.fromEntries(SIGNAL_LIB.map((c) => [c.key, c]));
+  const SIGNAL_DEFS = {
+    gng: { screen: "gngReady", slots: {
+      go: { label: "Farbe für „Tippen“", def: { hex: "#2e7d32", name: "Grün" }, cvd: { hex: "#0b3d91", name: "Blau" } },
+      nogo: { label: "Farbe für „Nicht tippen“", def: { hex: "#d32f2f", name: "Rot" }, cvd: { hex: "#f5a300", name: "Orange" } } } },
+    simon: { screen: "simonReady", slots: {
+      a: { label: "Farbe linke Taste", def: { hex: "#1565c0", name: "Blau" }, cvd: { hex: "#0b3d91", name: "Blau" } },
+      b: { label: "Farbe rechte Taste", def: { hex: "#e65100", name: "Orange" }, cvd: { hex: "#f5a300", name: "Orange" } } } },
+    search: { screen: "searchReady", slots: {
+      target: { label: "Farbe des Ziels", def: { hex: "#d64545", name: "Rot" }, cvd: { hex: "#0b3d91", name: "Blau" } },
+      distractor: { label: "Farbe der Ablenker", def: { hex: "#8a97a3", name: "Grau" }, cvd: { hex: "#c3ccd4", name: "Grau" } } } },
+    ab: { screen: "abReady", slots: {
+      t1: { label: "Farbe des ersten Ziels", def: { hex: "#007094", name: "Blau" }, cvd: { hex: "#f5a300", name: "Orange" } } } },
+    stop: { screen: "stopReady", slots: {
+      signal: { label: "Farbe des Stopp-Signals", def: { hex: "#d32f2f", name: "Rot" }, cvd: { hex: "#f5a300", name: "Orange" } } } },
+    reakt: { screen: "reaktReady", slots: {
+      light: { label: "Farbe des Lichts", def: { hex: "#f2a900", name: "Gelb" } } } },
+    antizip: { screen: "antizipReady", slots: {
+      ball: { label: "Farbe des Balls", def: { hex: "#007094", name: "Blau" } } } },
+    corsi: { screen: "corsiReady", slots: {
+      lit: { label: "Farbe der leuchtenden Blöcke", def: { hex: "#007094", name: "Blau" } } } },
+  };
+  const signalPrefs = (() => {
+    const raw = readJSON(SIGNAL_KEY, {});
+    const out = {};
+    Object.entries(raw && typeof raw === "object" ? raw : {}).forEach(([ex, slots]) => {
+      if (!SIGNAL_DEFS[ex] || !slots || typeof slots !== "object") return;
+      Object.entries(slots).forEach(([slot, key]) => {
+        if (SIGNAL_DEFS[ex].slots[slot] && SIGNAL_BY_KEY[key]) (out[ex] = out[ex] || {})[slot] = key;
+      });
+    });
+    return out;
+  })();
+  function saveSignalPrefs() { writeJSON(SIGNAL_KEY, signalPrefs); }
+  function sigCustomKey(ex, slot) { return (signalPrefs[ex] && signalPrefs[ex][slot]) || null; }
+  function sigEffective(ex, slot) {
+    const def = SIGNAL_DEFS[ex].slots[slot];
+    const key = sigCustomKey(ex, slot);
+    if (key) return { hex: SIGNAL_BY_KEY[key].hex, name: SIGNAL_BY_KEY[key].name, custom: true };
+    if (def.cvd && cvdPalOn(ex)) return { hex: def.cvd.hex, name: def.cvd.name, custom: false };
+    return { hex: def.def.hex, name: def.def.name, custom: false };
+  }
+  function sigColor(ex, slot) { return sigEffective(ex, slot).hex; }
+  // German adjective forms for "Roter Kreis"/"Rotes Quadrat"; Lila/Pink/
+  // Orange-style loan words stay as they are where an ending reads oddly.
+  function sigAdj(name, ending) {
+    if (name === "Lila") return "Lila";
+    return name + ending;
+  }
+  function sigText(ex, slot, form) {
+    const n = sigEffective(ex, slot).name;
+    if (form === "upper") return n.toUpperCase();
+    if (form === "lower") return n.toLowerCase();
+    if (form === "er") return sigAdj(n, "er");
+    if (form === "es") return sigAdj(n, "es");
+    if (form === "er-lower") return sigAdj(n, "er").toLowerCase();
+    return n;
+  }
+  function sigInk(hex) { return relLuma(hex) > 0.55 ? "#16232a" : "#ffffff"; }
+  function sigDarker(hex) { return mixHex(hex, "#000000", 0.3); }
+  function sigStroke(hex) { return relLuma(hex) > 0.55 ? "-webkit-text-stroke:2px #16232a" : "-webkit-text-stroke:0"; }
+  // CSS for the custom picks only - `html body.sigc` outranks both the base
+  // rules and the body.cvdp-<ex> palette rules.
+  const SIGNAL_CSS = {
+    "gng.go": (c) => `.gng-stimulus.go{background:${c};border-color:${sigDarker(c)}}`,
+    "gng.nogo": (c) => `.gng-stimulus.nogo{background:${c};border-color:${sigDarker(c)}}`,
+    "simon.a": (c) => `.simon-dot.simon-dot-blue{background:${c}} .simon-response-btn.simon-blue{background-color:${c};color:${sigInk(c)}}`,
+    "simon.b": (c) => `.simon-dot.simon-dot-orange{background:${c}} .simon-response-btn.simon-orange{background-color:${c};color:${sigInk(c)}}`,
+    "ab.t1": (c) => `.ab-stream-char.is-t1{color:${c};${sigStroke(c)}}`,
+    "stop.signal": (c) => `.stop-arrow.stop-signal{color:${c};${sigStroke(c)}}`,
+    "reakt.light": (c) => `.reakt-light{background:radial-gradient(circle at 35% 30%,${mixHex("#ffffff", c, 0.55)},${c} 70%);border-color:${sigDarker(c)}}`,
+    "antizip.ball": (c) => `.antizip-ball{background:${c}}`,
+    "corsi.lit": (c) => `.corsi-block.lit{background:${mixHex("#ffffff", c, 0.3)};border-color:${c}}`,
+  };
+  const signalStyleEl = document.createElement("style");
+  signalStyleEl.id = "signalColorStyles";
+  document.head.appendChild(signalStyleEl);
+  document.body.classList.add("sigc");
+  function applySignalColors() {
+    let css = "";
+    Object.entries(signalPrefs).forEach(([ex, slots]) => Object.keys(slots).forEach((slot) => {
+      const build = SIGNAL_CSS[`${ex}.${slot}`];
+      if (!build) return;
+      build(sigColor(ex, slot)).split(/\s(?=\.)/).forEach((rule) => { css += `html body.sigc ${rule}\n`; });
+    }));
+    signalStyleEl.textContent = css;
+    document.querySelectorAll("[data-sig]").forEach((el) => {
+      const [ex, slot] = el.dataset.sig.split(".");
+      el.textContent = sigText(ex, slot, el.dataset.sigForm || "");
+    });
+    const sl = document.getElementById("simonLeftBtn");
+    const sr = document.getElementById("simonRightBtn");
+    if (sl) sl.setAttribute("aria-label", sigText("simon", "a"));
+    if (sr) sr.setAttribute("aria-label", sigText("simon", "b"));
+    syncSignalPickers();
+  }
+  // Two signal colours are "too close" when they are equally bright AND
+  // near in hue - lila vs. rot share a brightness but read clearly apart.
+  function sigTooClose(a, b) {
+    if (a.toLowerCase() === b.toLowerCase()) return true;
+    const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const [x, y] = [rgb(a), rgb(b)];
+    const dist = Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]);
+    return Math.abs(relLuma(a) - relLuma(b)) < 0.12 && dist < 110;
+  }
+  function signalClashText(ex) {
+    const def = SIGNAL_DEFS[ex];
+    const slots = Object.keys(def.slots);
+    const msgs = [];
+    if (slots.length === 2 && sigTooClose(sigColor(ex, slots[0]), sigColor(ex, slots[1]))) {
+      msgs.push("Die beiden Farben sind sich sehr ähnlich - sie sind dann schwer zu unterscheiden.");
+    }
+    if (slots.some((s) => colorsClash(sigColor(ex, s), "#ffffff"))) {
+      msgs.push("Diese Farbe ist auf hellem Hintergrund kaum zu sehen.");
+    }
+    return msgs.join(" ");
+  }
+  function syncSignalPickers() {
+    document.querySelectorAll("[data-sig-picker]").forEach((picker) => {
+      const [ex, slot] = picker.dataset.sigPicker.split(".");
+      syncSingleSelectPicker(picker, sigCustomKey(ex, slot));
+      const status = picker.parentElement.querySelector("[data-sig-status]");
+      if (status) {
+        status.textContent = "";
+        const eff = sigEffective(ex, slot);
+        if (eff.custom) {
+          status.append(`Eigene Farbe: ${eff.name}. `);
+          const reset = document.createElement("button");
+          reset.type = "button"; reset.className = "text-link";
+          reset.dataset.sigReset = `${ex}.${slot}`;
+          reset.textContent = "Standard";
+          status.appendChild(reset);
+        } else {
+          status.textContent = `Standard: ${eff.name}.`;
+        }
+      }
+    });
+    document.querySelectorAll("[data-sig-clash]").forEach((el) => {
+      const txt = signalClashText(el.dataset.sigClash);
+      el.textContent = txt; el.hidden = !txt;
+    });
+  }
+  Object.entries(SIGNAL_DEFS).forEach(([ex, def]) => {
+    const host = cvdControlsHost(def.screen);
+    if (!host) return;
+    const group = document.createElement("div");
+    group.className = "group sig-group";
+    group.dataset.sigGroup = ex;
+    group.innerHTML = '<div class="group-label">Signalfarbe</div><div class="group-help">Zum Beispiel bei einer Farbschwäche oder einfach nach Geschmack.</div>';
+    Object.entries(def.slots).forEach(([slot, s]) => {
+      const row = document.createElement("div");
+      row.className = "sig-row";
+      row.innerHTML = `<div class="cvd-row-label">${s.label}</div><div class="color-picker" data-sig-picker="${ex}.${slot}"></div><div class="group-help" data-sig-status></div>`;
+      buildSingleSelectPicker(row.querySelector("[data-sig-picker]"), SIGNAL_LIB, (key) => {
+        (signalPrefs[ex] = signalPrefs[ex] || {})[slot] = key;
+        saveSignalPrefs(); applySignalColors();
+      });
+      group.appendChild(row);
+    });
+    const clash = document.createElement("div");
+    clash.className = "group-help sig-clash";
+    clash.dataset.sigClash = ex;
+    clash.hidden = true;
+    group.appendChild(clash);
+    host.appendChild(group);
+  });
+  document.addEventListener("click", (e) => {
+    const r = e.target.closest("[data-sig-reset]");
+    if (!r) return;
+    const [ex, slot] = r.dataset.sigReset.split(".");
+    if (signalPrefs[ex]) { delete signalPrefs[ex][slot]; if (!Object.keys(signalPrefs[ex]).length) delete signalPrefs[ex]; }
+    saveSignalPrefs(); applySignalColors();
+  });
+  applySignalColors();
   document.querySelectorAll("[data-master-cvd]").forEach((el) => el.addEventListener("click", () => {
     const key = el.dataset.masterCvd;
     if (masterPrefs.colorVision.includes(key)) masterPrefs.colorVision = masterPrefs.colorVision.filter((k) => k !== key);
@@ -5997,10 +6300,13 @@
   function breathTick(now) {
     if (!breathSession) return;
     const elapsed = Math.min((now - breathSession.startTime) / 1000, breathSession.plannedTotal);
-    const inCycle = elapsed % breathSession.cycleLen;
-    const cycleNum = Math.floor(elapsed / breathSession.cycleLen);
+    // cycleBase: where the current run of cycles started (moves when the
+    // tempo/duration was changed in the pause sheet, so a fresh cycle begins).
+    const sinceBase = Math.max(0, elapsed - (breathSession.cycleBase || 0));
+    const inCycle = sinceBase % breathSession.cycleLen;
+    const cycleNum = Math.floor(sinceBase / breathSession.cycleLen);
     const frame = breathSession.schedule.find((f) => inCycle >= f.t0 && inCycle < f.t1) || breathSession.schedule[breathSession.schedule.length - 1];
-    const frameKey = cycleNum + ":" + frame.key;
+    const frameKey = (breathSession.cycleBase || 0) + ":" + cycleNum + ":" + frame.key;
     if (frameKey !== breathSession.lastKey) {
       breathSession.lastKey = frameKey;
       if (breathSession.sound) speakWord(frame.label);
@@ -6029,9 +6335,12 @@
     els.breathPlayer.hidden = false;
     els.breathPlayerBar.hidden = false;
     els.breathDonePanel.hidden = true;
-    breathSession = { schedule: built.schedule, cycleLen: built.cycleLen, plannedTotal: cycles * built.cycleLen, startTime: performance.now(), lastKey: null, sound: breathPrefs.sound };
+    breathSession = { schedule: built.schedule, cycleLen: built.cycleLen, plannedTotal: cycles * built.cycleLen, startTime: performance.now(), lastKey: null, sound: breathPrefs.sound,
+      basePhases: { ...breathWorking }, tempo: 1, cycleBase: 0 };
     breathPaused = false;
-    els.breathPauseBtn.textContent = "Pause";
+    breathPauseDraft = null;
+    els.breathPauseBtn.hidden = false;
+    els.breathPauseOverlay.hidden = true;
     requestWakeLock();
     breathRaf = requestAnimationFrame(breathTick);
   }
@@ -6040,33 +6349,85 @@
     startBreathSession();
   });
 
-  // Pause/Fortsetzen: the tips sheet tells clients to pause if they feel
-  // unwell, so the breath player needs an actual pause, not just "Beenden".
+  // Pause: the tips sheet tells clients to pause if they feel unwell, so the
+  // breath player needs an actual pause, not just "Beenden". The pause sheet
+  // also adjusts tempo, remaining duration and the spoken cues for the rest
+  // of this run (Fabian, 2026-10-02, audit point 20). Nothing is saved to the
+  // client's own settings.
   let breathPaused = false;
   let breathPauseTime = 0;
-  function toggleBreathPause() {
-    if (!breathSession) return;
-    if (breathPaused) {
-      breathPaused = false;
-      breathSession.startTime += performance.now() - breathPauseTime;
-      els.breathPauseBtn.textContent = "Pause";
-      breathRaf = requestAnimationFrame(breathTick);
-    } else {
-      breathPaused = true;
-      breathPauseTime = performance.now();
-      if (breathRaf) cancelAnimationFrame(breathRaf);
-      breathRaf = null;
-      els.breathPauseBtn.textContent = "Fortsetzen";
-      els.breathPhaseLabel.textContent = "Pausiert";
-    }
+  let breathPauseDraft = null; // { tempo, restMin, sound } while the sheet is open
+  function breathScaledPhases(base, tempo) {
+    const out = {};
+    Object.keys(base).forEach((k) => { out[k] = base[k] > 0 ? Math.max(1, Math.round(base[k] * tempo * 10) / 10) : 0; });
+    return out;
   }
-  els.breathPauseBtn.addEventListener("click", toggleBreathPause);
+  function syncBreathPauseUI() {
+    const d = breathPauseDraft;
+    els.breathPauseTempoSlider.value = d.tempo;
+    els.breathPauseTempoValue.textContent = d.tempo === 1 ? "wie eingestellt" : d.tempo > 1 ? `${d.tempo.toFixed(1).replace(".", ",")}× langsamer` : `${(1 / d.tempo).toFixed(1).replace(".", ",")}× schneller`;
+    const ph = breathScaledPhases(breathSession.basePhases, d.tempo);
+    els.breathPausePhases.textContent = PHASE_ORDER.filter((k) => ph[k] > 0).map((k) => `${PHASE_LABELS[k]} ${String(ph[k]).replace(".", ",")} s`).join(" · ");
+    els.breathPauseRestSlider.value = d.restMin;
+    els.breathPauseRestValue.textContent = `${d.restMin} Min`;
+    document.querySelectorAll("[data-breath-pause-sound]").forEach((el) => setActive(el, (el.dataset.breathPauseSound === "on") === d.sound));
+  }
+  els.breathPauseTempoSlider.addEventListener("input", () => { if (breathPauseDraft) { breathPauseDraft.tempo = Number(els.breathPauseTempoSlider.value); syncBreathPauseUI(); } });
+  els.breathPauseRestSlider.addEventListener("input", () => { if (breathPauseDraft) { breathPauseDraft.restMin = Number(els.breathPauseRestSlider.value); syncBreathPauseUI(); } });
+  document.querySelectorAll("[data-breath-pause-sound]").forEach((el) => el.addEventListener("click", () => {
+    if (breathPauseDraft) { breathPauseDraft.sound = el.dataset.breathPauseSound === "on"; syncBreathPauseUI(); }
+  }));
+  function pauseBreath() {
+    if (!breathSession || breathPaused) return;
+    breathPaused = true;
+    breathPauseTime = performance.now();
+    if (breathRaf) cancelAnimationFrame(breathRaf);
+    breathRaf = null;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    els.breathPhaseLabel.textContent = "Pausiert";
+    const elapsed = Math.min((breathPauseTime - breathSession.startTime) / 1000, breathSession.plannedTotal);
+    const restMin = Math.min(30, Math.max(1, Math.round((breathSession.plannedTotal - elapsed) / 60)));
+    breathPauseDraft = { tempo: breathSession.tempo, restMin, restMinAtStart: restMin, sound: breathSession.sound };
+    syncBreathPauseUI();
+    els.breathPauseBtn.hidden = true;
+    els.breathPauseOverlay.hidden = false;
+  }
+  function resumeBreath() {
+    if (!breathSession || !breathPaused) return;
+    const d = breathPauseDraft;
+    const elapsed = Math.min((breathPauseTime - breathSession.startTime) / 1000, breathSession.plannedTotal);
+    if (d) {
+      breathSession.sound = d.sound;
+      if (d.tempo !== breathSession.tempo || d.restMin !== d.restMinAtStart) {
+        const built = buildBreathCycle(breathScaledPhases(breathSession.basePhases, d.tempo));
+        if (built.cycleLen > 0) {
+          breathSession.tempo = d.tempo;
+          breathSession.schedule = built.schedule;
+          breathSession.cycleLen = built.cycleLen;
+          breathSession.cycleBase = elapsed;
+          const restS = d.restMin !== d.restMinAtStart ? d.restMin * 60 : breathSession.plannedTotal - elapsed;
+          breathSession.plannedTotal = elapsed + Math.max(1, Math.round(restS / built.cycleLen)) * built.cycleLen;
+          breathSession.lastKey = null;
+        }
+      }
+    }
+    breathPauseDraft = null;
+    breathPaused = false;
+    breathSession.startTime += performance.now() - breathPauseTime;
+    els.breathPauseOverlay.hidden = true;
+    els.breathPauseBtn.hidden = false;
+    breathRaf = requestAnimationFrame(breathTick);
+  }
+  els.breathPauseBtn.addEventListener("click", pauseBreath);
+  els.breathResumeBtn.addEventListener("click", resumeBreath);
 
   function breathLeavePlayer() {
     if (breathRaf) cancelAnimationFrame(breathRaf);
     breathRaf = null;
     breathSession = null;
     breathPaused = false;
+    breathPauseDraft = null;
+    els.breathPauseOverlay.hidden = true;
     releaseWakeLock();
     if (document.fullscreenElement === els.breathPlayer) document.exitFullscreen().catch(() => {});
     els.breathFsHint.hidden = true;
@@ -6761,7 +7122,9 @@
     els.movementDonePanel.hidden = true;
     els.movementFinishBadge.hidden = true;
     els.movementProgressTrack.innerHTML = `<span class="seg"><span class="fill"></span></span>`;
-    movementSession = { sequence, beatLenS, totalBeats, gridMode, startTime: performance.now(), lastBeatIdx: 0, finishTimer: null };
+    movementSession = { sequence, beatLenS, totalBeats, gridMode, preview: movementPrefs.preview, pool, startTime: performance.now(), lastBeatIdx: 0, finishTimer: null, pausedAt: null };
+    els.movementPauseOverlay.hidden = true;
+    els.movementPauseBtn.hidden = false;
     if (gridMode) {
       buildMovementLaneGrid(sequence, movementPrefs.mirror, movementPrefs.showLabel);
       updateMovementLaneGrid(0);
@@ -6840,13 +7203,70 @@
     if (beatIdx !== movementSession.lastBeatIdx) {
       movementSession.lastBeatIdx = beatIdx;
       if (movementSession.gridMode) updateMovementLaneGrid(beatIdx);
-      else renderMovementLaneWindow(movementSession.sequence, beatIdx, movementPrefs.preview, movementPrefs.mirror, movementPrefs.showLabel);
+      else renderMovementLaneWindow(movementSession.sequence, beatIdx, movementSession.preview, movementPrefs.mirror, movementPrefs.showLabel);
     }
     els.movementTimeEl.textContent = fmtClock(totalS - elapsed);
     const fill = els.movementProgressTrack.querySelector(".fill");
     if (fill) fill.style.width = Math.min(100, (elapsed / totalS) * 100) + "%";
     movementRaf = requestAnimationFrame(movementTick);
   }
+
+  // Pause with live tempo/preview (Fabian, 2026-10-02, audit point 20). Only
+  // this run changes; the client's own Movement settings stay as saved.
+  let movementPauseDraft = null; // { bpm, preview } while the sheet is open
+  function syncMovementPauseUI() {
+    const d = movementPauseDraft;
+    els.movementPauseBpmSlider.value = d.bpm;
+    els.movementPauseBpmValue.textContent = `${d.bpm} BPM`;
+    document.querySelectorAll("[data-mv-pause-preview]").forEach((el) => setActive(el, parsePreview(el.dataset.mvPausePreview) === d.preview));
+  }
+  els.movementPauseBpmSlider.addEventListener("input", () => { if (movementPauseDraft) { movementPauseDraft.bpm = Number(els.movementPauseBpmSlider.value); syncMovementPauseUI(); } });
+  document.querySelectorAll("[data-mv-pause-preview]").forEach((el) => el.addEventListener("click", () => {
+    if (movementPauseDraft) { movementPauseDraft.preview = parsePreview(el.dataset.mvPausePreview); syncMovementPauseUI(); }
+  }));
+  function pauseMovement() {
+    const ms = movementSession;
+    if (!ms || ms.pausedAt || ms.finishTimer) return;
+    if (movementRaf) cancelAnimationFrame(movementRaf);
+    movementRaf = null;
+    ms.pausedAt = performance.now();
+    movementPauseDraft = { bpm: Math.round(60 / ms.beatLenS), preview: ms.preview };
+    syncMovementPauseUI();
+    els.movementPauseBtn.hidden = true;
+    els.movementPauseOverlay.hidden = false;
+  }
+  function resumeMovement() {
+    const ms = movementSession;
+    if (!ms || !ms.pausedAt) return;
+    const d = movementPauseDraft;
+    const beatIdx = ms.lastBeatIdx;
+    ms.beatLenS = 60 / d.bpm;
+    if (d.preview !== ms.preview) {
+      ms.preview = d.preview;
+      const nowGrid = d.preview === "all";
+      const need = nowGrid ? ms.totalBeats : ms.totalBeats + d.preview - 1;
+      if (ms.sequence.length < need) {
+        const last = ms.sequence[ms.sequence.length - 1];
+        let prev = last ? last.id : null;
+        for (let i = ms.sequence.length; i < need; i++) {
+          const m = pickRandomMovement(ms.pool, prev);
+          ms.sequence.push(m); prev = m.id;
+        }
+      }
+      ms.gridMode = nowGrid;
+      if (nowGrid) { buildMovementLaneGrid(ms.sequence.slice(0, ms.totalBeats), movementPrefs.mirror, movementPrefs.showLabel); updateMovementLaneGrid(beatIdx); }
+      else renderMovementLaneWindow(ms.sequence, beatIdx, ms.preview, movementPrefs.mirror, movementPrefs.showLabel);
+    }
+    // Restart the current beat on the new tempo.
+    ms.startTime = performance.now() - beatIdx * ms.beatLenS * 1000;
+    ms.pausedAt = null;
+    movementPauseDraft = null;
+    els.movementPauseOverlay.hidden = true;
+    els.movementPauseBtn.hidden = false;
+    movementRaf = requestAnimationFrame(movementTick);
+  }
+  els.movementPauseBtn.addEventListener("click", pauseMovement);
+  els.movementResumeBtn.addEventListener("click", resumeMovement);
 
   function movementFinishSession() {
     const played = movementSession ? movementSession.totalBeats * movementSession.beatLenS : 0;
@@ -6872,6 +7292,8 @@
     if (document.fullscreenElement === els.movementPlayer) document.exitFullscreen().catch(() => {});
     els.movementFsHint.hidden = true;
     els.movementFinishBadge.hidden = true;
+    els.movementPauseOverlay.hidden = true;
+    movementPauseDraft = null;
     els.movementPlayer.hidden = true;
     els.movementDonePanel.hidden = true;
   }
@@ -7097,9 +7519,63 @@
   // numbers exactly where they were, not just "whatever last round had".
   // Without "keep" (shuffle), the cache is ignored and every number gets a
   // fresh spot on every call.
+  // Random one-by-one placement can paint itself into a corner at high
+  // density (24 markers on a phone left ~2 of 3 layouts with an overlap).
+  // So a whole layout is placed, then any pair still too close is pushed
+  // apart (clamped to the stage) until none is - the same idea as MOT's
+  // motSeparateObjects(). The result still looks scattered, not gridded.
+  function relaxedRememberLayout(count, bounds) {
+    const pts = [];
+    for (let i = 0; i < count; i++) pts.push(randomRememberPixelPosition(pts, bounds));
+    const clamp = (p) => {
+      p.x = Math.min(bounds.maxX, Math.max(bounds.minX, p.x));
+      p.y = Math.min(bounds.maxY, Math.max(bounds.minY, p.y));
+    };
+    for (let iter = 0; iter < 400; iter++) {
+      let moved = false;
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          let dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y;
+          let d = Math.hypot(dx, dy);
+          if (d >= REMEMBER_MIN_CENTER_PX) continue;
+          if (d < 0.01) { const a = Math.random() * Math.PI * 2; dx = Math.cos(a); dy = Math.sin(a); d = 1; }
+          const push = (REMEMBER_MIN_CENTER_PX - d) / 2 + 0.5;
+          pts[i].x -= (dx / d) * push; pts[i].y -= (dy / d) * push;
+          pts[j].x += (dx / d) * push; pts[j].y += (dy / d) * push;
+          clamp(pts[i]); clamp(pts[j]);
+          moved = true;
+        }
+      }
+      if (!moved) break;
+    }
+    const tooClose = pts.some((a, i) => pts.some((c, j) => j > i && Math.hypot(a.x - c.x, a.y - c.y) < REMEMBER_MIN_CENTER_PX - 0.5));
+    if (!tooClose) return pts;
+    // Still crowded (a small phone at 24 markers): fall back to a staggered
+    // (hexagonal) set of slots, which packs the most markers at the minimum
+    // distance, and pick `count` of them at random, slightly jittered.
+    const D = REMEMBER_MIN_CENTER_PX, rowH = D * Math.sqrt(3) / 2;
+    const slots = [];
+    for (let r = 0, y = bounds.minY; y <= bounds.maxY + 0.01; r++, y += rowH) {
+      for (let x = bounds.minX + (r % 2 ? D / 2 : 0); x <= bounds.maxX + 0.01; x += D) slots.push({ x, y });
+    }
+    if (slots.length < count) return pts;
+    for (let i = slots.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [slots[i], slots[j]] = [slots[j], slots[i]]; }
+    return slots.slice(0, count);
+  }
   function buildRememberPositions(count, keep) {
     const bounds = rememberStageBounds();
     const cache = keep && rememberState ? rememberState.positionCache : null;
+    // Fixed positions: lay out every number up to the maximum level once,
+    // as one relaxed layout, so a later (denser) level never has to squeeze
+    // a new marker into whatever space the earlier ones happened to leave.
+    if (cache && !Object.keys(cache).length) {
+      relaxedRememberLayout(Math.max(count, REMEMBER_MAX_LEVEL), bounds).forEach((px, i) => {
+        cache[i + 1] = { x: (px.x / bounds.w) * 100, y: (px.y / bounds.h) * 100 };
+      });
+    }
+    if (!cache) {
+      return relaxedRememberLayout(count, bounds).map((px, i) => ({ num: i + 1, x: (px.x / bounds.w) * 100, y: (px.y / bounds.h) * 100 }));
+    }
     const positions = [];
     const existingPx = [];
     for (let num = 1; num <= count; num++) {
@@ -13827,7 +14303,7 @@
       if (block.colors) {
         if (visEx.usesColors) state.colors = block.colors;
         else if (visEx.usesArrowColors) state.arrowColors = block.colors;
-        else if (visEx.usesStroopColors) state.stroopColors = block.colors;
+        else if (visEx.usesStroopColors) { state.stroopColors = block.colors; state.stroopWeights = { ...(block.stroopWeights || {}) }; }
       }
       state.duration = block.duration ?? 60;
       state.stimulusS = block.stimulusS ?? 1.5;
@@ -20848,8 +21324,6 @@
   const SEARCH_MIN_RESOLVED = 4;
   const SEARCH_ITEM_PX = 34;
   const SEARCH_MIN_CENTER_PX = SEARCH_ITEM_PX + 12;
-  const SEARCH_COLOR_TARGET_NORMAL = "#d64545";
-  const SEARCH_COLOR_DISTRACTOR_NORMAL = "#8a97a3";
   const searchPrefs = { length: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadSearchPrefs() {
     const saved = readJSON(SEARCH_PREFS_KEY, null);
@@ -20960,8 +21434,8 @@
     const items = [];
     // Farbschwäche-Unterstützung: dark blue target colour vs. light grey
     // distractors - apart by brightness, not just hue.
-    const SEARCH_COLOR_TARGET = cvdPalOn("search") ? CVD_DARK : SEARCH_COLOR_TARGET_NORMAL;
-    const SEARCH_COLOR_DISTRACTOR = cvdPalOn("search") ? "#c3ccd4" : SEARCH_COLOR_DISTRACTOR_NORMAL;
+    const SEARCH_COLOR_TARGET = sigColor("search", "target");
+    const SEARCH_COLOR_DISTRACTOR = sigColor("search", "distractor");
     if (mode === "feature") {
       for (let i = 0; i < setSize - 1; i++) items.push({ shape: "circle", color: SEARCH_COLOR_DISTRACTOR, isTarget: false });
       items.push({ shape: "circle", color: SEARCH_COLOR_TARGET, isTarget: true });
@@ -20980,8 +21454,7 @@
     return items;
   }
   function searchTargetLabel(mode) {
-    if (cvdPalOn("search")) return mode === "feature" ? "Blauer Kreis" : "Blaues Quadrat";
-    return mode === "feature" ? "Roter Kreis" : "Rotes Quadrat";
+    return mode === "feature" ? `${sigText("search", "target", "er")} Kreis` : `${sigText("search", "target", "es")} Quadrat`;
   }
 
   // Anti-overlap scatter placement across the whole stage - copy-adapted

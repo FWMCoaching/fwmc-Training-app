@@ -69,9 +69,9 @@ async def main():
         await open_test("gng")
         await pg.click("#gngAdvanced summary"); await pg.wait_for_timeout(80)
         await pg.click("#gngReady .cvd-group [data-cvd-kind='pal'][data-cvd-val='0']"); await pg.wait_for_timeout(60)
-        print("GNG safe colours off, text back to grün:", not await body_has("cvdp-gng") and await pg.is_visible('#gngReady [data-cvdp-ex="gng"][data-cvdp-show="off"]'))
+        print("GNG safe colours off, text back to grün:", not await body_has("cvdp-gng") and (await pg.inner_text('#gngReady .page-sub [data-sig="gng.go"]')) == "grün")
         await pg.click("#gngReady .cvd-group [data-cvd-kind='pal'][data-cvd-val='1']"); await pg.wait_for_timeout(60)
-        print("GNG instruction text says blau when safe colours are on:", await pg.is_visible('#gngReady [data-cvdp-ex="gng"][data-cvdp-show="on"]'))
+        print("GNG instruction text says blau when safe colours are on:", (await pg.inner_text('#gngReady .page-sub [data-sig="gng.go"]')) == "blau")
         await pg.click("#gngReadyStartBtn"); await pg.wait_for_timeout(150)
         colour = ""
         for _ in range(200):
