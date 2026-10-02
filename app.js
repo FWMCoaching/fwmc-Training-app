@@ -6506,7 +6506,7 @@
     }
     comboMovementEditIndex = editIndex ?? null;
     els.movementReadyTitle.textContent = "Baustein: Movement";
-    els.movementReadyHint.textContent = "Stelle die Bewegungen für diesen Kombi-Baustein ein.";
+    els.movementReadyHint.textContent = "Stelle die Bewegungen für diesen Baustein ein.";
     els.movementStartBtn.textContent = "Baustein übernehmen";
     openMovementReady();
   }
@@ -7370,7 +7370,7 @@
     } else {
       openRememberReady(mode);
       els.rememberReadyTitle.textContent = `Baustein: Remember · ${REMEMBER_MODES[mode].title}`;
-      els.rememberReadyDesc.textContent = "Stelle Schwierigkeit und Dauer für diesen Kombi-Baustein ein.";
+      els.rememberReadyDesc.textContent = "Stelle Schwierigkeit und Dauer für diesen Baustein ein.";
       els.rememberComboDurationGroup.hidden = false;
       els.rememberComboDurationSlider.value = comboRememberDurationS;
       els.rememberComboDurationValue.textContent = fmtSeconds(comboRememberDurationS);
@@ -7726,7 +7726,7 @@
     }
     openBlitzReady();
     els.blitzReadyTitle.textContent = "Baustein: Blitz-Raster";
-    els.blitzReadyDesc.textContent = "Stelle Raster, Bereiche und Dauer für diesen Kombi-Baustein ein.";
+    els.blitzReadyDesc.textContent = "Stelle Raster, Bereiche und Dauer für diesen Baustein ein.";
     els.blitzComboDurationGroup.hidden = false;
     els.blitzComboDurationSlider.value = comboBlitzDurationS;
     els.blitzComboDurationValue.textContent = fmtSeconds(comboBlitzDurationS);
@@ -8432,7 +8432,7 @@
     } else {
       openFlashReady(mode);
       els.flashReadyTitle.textContent = `Baustein: Flash · ${flashModeTitle(mode)}`;
-      els.flashReadyDesc.textContent = "Stelle Schwierigkeit und Dauer für diesen Kombi-Baustein ein.";
+      els.flashReadyDesc.textContent = "Stelle Schwierigkeit und Dauer für diesen Baustein ein.";
       els.flashComboDurationGroup.hidden = false;
       els.flashComboDurationSlider.value = comboFlashDurationS;
       els.flashComboDurationValue.textContent = fmtSeconds(comboFlashDurationS);
@@ -9219,7 +9219,7 @@
     } else {
       openMotReady(mode);
       els.motReadyTitle.textContent = `Baustein: MOT · ${motModeTitle(mode)}`;
-      els.motReadyDesc.textContent = "Stelle Schwierigkeit und Dauer für diesen Kombi-Baustein ein.";
+      els.motReadyDesc.textContent = "Stelle Schwierigkeit und Dauer für diesen Baustein ein.";
       els.motComboDurationGroup.hidden = false;
       els.motComboDurationSlider.value = comboMotDurationS;
       els.motComboDurationValue.textContent = fmtSeconds(comboMotDurationS);
@@ -10293,7 +10293,7 @@
     if (!el) return;
     el.innerHTML =
       `<div class="group-label">Töne &amp; Ansagen</div>` +
-      `<div class="group-help">Gilt für Tabata-Zirkel, Kraftplan, Cardio und die Pausen im Kombi-Baukasten. In den Feineinstellungen jedes Bereichs kannst du davon abweichen.</div>` +
+      `<div class="group-help">Gilt für Tabata-Zirkel, Kraftplan, Cardio und die Pausen im Kombi-Programm. In den Feineinstellungen jedes Bereichs kannst du davon abweichen.</div>` +
       cueControlsHtml(masterPrefs.cues, CUE_FIELD_LABELS.master) +
       `<div class="cue-sub-label">iPhone/iPad</div>` +
       `<label class="checkbox-row"><input type="checkbox" data-cue-silent${masterPrefs.cuesIgnoreSilent ? " checked" : ""}> Töne auch bei eingeschaltetem Stummschalter</label>` +
@@ -10862,7 +10862,7 @@
     }
     comboWorkoutEditIndex = editIndex ?? null;
     els.workoutTabataReadyTitle.textContent = "Baustein: Zirkel";
-    els.workoutTabataReadyHint.textContent = "Stelle die Übungen für diesen Kombi-Baustein zusammen.";
+    els.workoutTabataReadyHint.textContent = "Stelle die Übungen für diesen Baustein zusammen.";
     openWorkoutTabataReady();
   }
   function exitWorkoutComboCapture() {
@@ -11484,7 +11484,7 @@
     }
     comboWorkoutRepsEditIndex = editIndex ?? null;
     els.workoutRepsReadyTitle.textContent = "Baustein: Kraft-/Wiederholungstraining";
-    els.workoutRepsReadyHint.textContent = "Stell den Kraftplan für diesen Kombi-Baustein zusammen – mehrere Übungen, jede mit eigenem Bereich, Sätzen und Pausen.";
+    els.workoutRepsReadyHint.textContent = "Stell den Kraftplan für diesen Baustein zusammen – mehrere Übungen, jede mit eigenem Bereich, Sätzen und Pausen.";
     openWorkoutRepsReady();
   }
   function exitWorkoutRepsComboCapture() {
@@ -12001,7 +12001,7 @@
     cardioPrefs.items = existingBlock ? existingBlock.items.map(copyCardioItem) : [];
     comboCardioEditIndex = editIndex ?? null;
     els.cardioReadyTitle.textContent = "Baustein: Cardio";
-    els.cardioReadyHint.textContent = "Stelle die Aktivitäten für diesen Kombi-Baustein zusammen.";
+    els.cardioReadyHint.textContent = "Stelle die Aktivitäten für diesen Baustein zusammen.";
     openCardioReady();
   }
   function exitCardioComboCapture() {

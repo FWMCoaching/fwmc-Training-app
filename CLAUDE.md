@@ -1178,6 +1178,12 @@ Rules that came out of it, for every future change:
   `page.route(...)` (404 or a fake def).
 Test: `tests/audit_fixes_test.py`.
 
+**Naming decisions (Fabian, 2026-10-02)**: the cross-section combo is called
+**Kombi-Programm** in every client-facing text (never "Komplett-Programm" or
+"Kombi-Baukasten"); its parts are **Bausteine**. NAT's home heading reads
+"NAT – Neuroathletik", the nav tab stays "NAT". The "Name noch offen" tags
+stay until Fabian decides (he wants to settle it soon).
+
 ## Hard rule: every exercise works everywhere (client, 2026-10-02)
 
 Client, after Kraftübungen turned out not to be stackable: "Solche Fehler
