@@ -159,6 +159,13 @@ body.nav-test-unlocked .section-switch{max-width:680px}
   .section-switch, .sub-switch{display:grid;grid-template-columns:repeat(3,1fr);max-width:none;border-radius:18px}
   .section-tab, .sub-tab{border-radius:14px}
 }
+/* Between phone portrait and a wide tablet (phone landscape, iPad split
+   view, 481-760px) 7 tabs in one row still broke "Atemtraining" mid-word -
+   use a 4-per-row grid there. */
+@media (min-width:481px) and (max-width:760px){
+  .section-switch{display:grid;grid-template-columns:repeat(4,1fr);max-width:none;border-radius:18px}
+  .section-tab{border-radius:14px}
+}
 .nat-panel-card{
   border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);
   padding:18px;box-shadow:var(--shadow);border-left:4px solid var(--brand);
@@ -1602,7 +1609,10 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .workout-reps-view,.workout-tabata-view{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:420px}
 .workout-exercise-name{font-family:"Magra",sans-serif;font-weight:700;font-size:26px;color:#16232a;text-align:center}
 .workout-set-info{font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#007094}
-.workout-reps-big{font-family:"Magra",sans-serif;font-weight:700;font-size:52px;color:#16232a}
+.workout-reps-big{font-family:"Magra",sans-serif;font-weight:700;font-size:clamp(30px,10vw,52px);line-height:1.1;color:#16232a;text-align:center;max-width:100%;overflow-wrap:break-word}
+/* An empty status pill (e.g. Kraftplan, which shows no running time) stays
+   in the layout so the bar keeps its spacing, but is not drawn. */
+.player-status:empty{visibility:hidden}
 .workout-set-timer{font-variant-numeric:tabular-nums;font-size:15px;color:#4f6168}
 .workout-note{font-size:14px;color:#4f6168;text-align:center;max-width:36ch}
 .workout-reps-input{display:flex;align-items:center;gap:10px}
@@ -1701,3 +1711,20 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .train-pause .text-link{align-self:center;margin:0 0 12px}
 .train-pause-list{max-height:none}
 #comboTransitionPauseBtn{margin-top:10px}
+
+/* Full-storage warning (writeJSON quota error) */
+.storage-warning{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:9999;max-width:560px;margin:0 auto;background:#7a2e0e;color:#ffffff;border-radius:14px;padding:14px 16px;box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:10px}
+.storage-warning p{margin:0;font-size:15px;line-height:1.4}
+.storage-warning button{align-self:flex-end;min-height:44px;padding:0 18px;border:0;border-radius:10px;background:#ffffff;color:#7a2e0e;font-weight:700;font-size:15px}
+
+/* iPhone Safari zooms into any text field below 16px when it's tapped and
+   doesn't zoom back. Touch devices get 16px in every typing field. */
+@media (pointer:coarse){
+  input[type="text"],input[type="search"],input[type="number"],input[type="email"],input[type="url"],input:not([type]),textarea,select{font-size:16px !important}
+}
+
+/* Dark mode: white on the lighter dark-mode brand (#39a7cc) was only
+   2.8:1 - dark text gives 6.4:1 (WCAG AA). */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .start-btn:not(.secondary){color:#0f1a1e}
+}

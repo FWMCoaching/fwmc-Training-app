@@ -22,7 +22,7 @@ async def main():
         ctx = await b.new_context(viewport={"width": 390, "height": 844}, service_workers="block")
         pg = await ctx.new_page()
         pg.on("pageerror", lambda e: errors.append("pageerror: " + str(e)))
-        pg.on("console", lambda m: errors.append("console: " + m.text) if m.type == "error" else None)
+        pg.on("console", lambda m: errors.append("console: " + m.text) if m.type == "error" and "Failed to load resource" not in m.text else None)
 
         # ---- fresh browser: Test tab hidden everywhere, nothing unlocked ----
         await pg.goto(URL); await pg.wait_for_timeout(400)
@@ -43,8 +43,12 @@ async def main():
         await pg.click("#faqCloseBtn"); await pg.wait_for_timeout(150)
 
         # ---- a WRONG code behaves like any other unknown code, tab stays hidden ----
+        # The sandbox has no route to the Worker; answer like the real one does
+        # for an unknown code, so the check doesn't depend on network timing.
+        await pg.route("**/online-training.fwmc.workers.dev/**", lambda r: r.fulfill(status=404, body="{}"))
         await pg.fill("#programCodeInput", "definitely-not-a-real-code")
-        await pg.click("#programGoBtn"); await pg.wait_for_timeout(400)
+        await pg.click("#programGoBtn")
+        await pg.wait_for_selector("#programError", state="visible", timeout=5000)
         print("wrong code shows the normal not-found error:", await pg.is_visible("#programError"))
         print("Test tab still hidden after a wrong code:", await pg.is_hidden('#home .section-tab[data-section="test"]'))
 

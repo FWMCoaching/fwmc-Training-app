@@ -78,7 +78,8 @@ async def main():
 
         # ---- global reset in Master-Einstellungen ----
         await pg.click("#testHome .master-settings-btn"); await pg.wait_for_timeout(200)
-        await pg.click("#masterBgResetAllBtn"); await pg.wait_for_timeout(200)
+        await pg.click("#masterBgResetAllBtn"); await pg.wait_for_timeout(150)
+        await pg.click("#confirmYesBtn"); await pg.wait_for_timeout(200)
         await pg.click("#masterSettingsCloseBtn"); await pg.wait_for_timeout(150)
         raw_simon_after = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-simon-prefs-v1') || '{}')")
         print("Simon-Test reset by the global button (now rot, following master):", raw_simon_after.get("bgColorKey") == "rot")

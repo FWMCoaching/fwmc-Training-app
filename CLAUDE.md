@@ -1141,6 +1141,43 @@ unrelated to the feature being changed.
   rather than assuming a green light and building/changing it. This
   applies to every session going forward, not just the one it was said in.
 
+## Audit-Fixes (2026-10-02)
+
+Fabian asked for a full audit of the app (design, naming, flow, bugs,
+gaps, the way to a "real" app). The report is a Claude Doc
+(https://claude.ai/artifact/UaiRhm8pPY7BB2mPKW2L3H). Clear bugs were fixed
+in the same pass; everything else (naming of the tabs, auto-pause in the
+background, Beenden confirmation, Cardio fullscreen, Worker CORS/rate
+limit, version display, a11y, cloud sync) is a proposal waiting on him.
+Rules that came out of it, for every future change:
+- **Stage hints** that must sit below a wrapping player-bar use
+  `placeHintBelowBar(hintEl, barEl)` (ResizeObserver keeps it right), never
+  a fixed `top`. Because the hint now follows the bar, any text that can
+  wrap the bar (the status pill) must be set BEFORE `stageTopClearanceY()`
+  measures - Verbindungstest broke exactly this way and was fixed by
+  writing its "0/25 · 0,0 s" status before the layout.
+- **Kombi blocks carry their own settings**: NAT blocks store a `prefs`
+  snapshot played via `prefsOverride`; Movement blocks keep direction/
+  figureStyle. `startComboBlock()` saves the client's own breath/movement/
+  Wim-Hof prefs once per run (`comboPrefsBackup`), `restoreComboPrefs()` puts
+  them back in `finishComboProgram`/`abortComboProgram`. A Kombi run must
+  never change the client's standalone settings.
+- **Training codes**: `lookupProgram()` times out after 12 s and returns
+  `{__lookupError:"network"}`; `codeDefProblem(def)` checks a def before it
+  is opened, `showCodeError()` shows one message for all failures. A broken
+  def must never throw out of `openProgramIntro()`.
+- **Backup** excludes `fwmc-admin-token` (`BACKUP_EXCLUDE`).
+- **Destructive actions** only through `confirmDialog()`, never `confirm()`.
+- **Inputs** are 16 px on touch devices (iOS zooms otherwise); the
+  section nav switches to a grid between 481 and 760 px.
+- `.player-status:empty` is hidden (no empty pill in the bar).
+- **Audio**: `unlockCueAudio()` creates the AudioContext on the first
+  pointerdown. A test that fakes AudioContext must install the fake with
+  `add_init_script` before the page loads.
+- **Tests never depend on the live Worker**: route `CODE_API` with
+  `page.route(...)` (404 or a fake def).
+Test: `tests/audit_fixes_test.py`.
+
 ## Hard rule: every exercise works everywhere (client, 2026-10-02)
 
 Client, after Kraftübungen turned out not to be stackable: "Solche Fehler
@@ -5131,11 +5168,8 @@ padding, short enough to never wrap) at 768px with Test unlocked.
 
 **Everything else the review raised, not acted on this round (carried
 forward, client's own words: "musst du mir danach nochmal vorlegen")**:
-- Silent data loss: `writeJSON()`'s `localStorage.setItem` call swallows
-  every error (`catch (e) {}`) - a full/blocked/private-mode storage fails
-  with zero user-facing warning. An export/import backup now exists
-  (Datensicherung, 2026-10-02); the silent write failure itself is not
-  addressed.
+- Silent data loss: fixed 2026-10-02 (see "Audit-Fixes" below) -
+  `writeJSON()` now shows `#storageWarning` once when a write fails.
 - The whole Playwright suite only ever runs against Chromium, while the
   app is clearly built for iPhone PWA use (apple-touch-icon, standalone
   display, `apple-mobile-web-app-capable`) - iOS Safari's own service-
