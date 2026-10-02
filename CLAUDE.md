@@ -1197,6 +1197,13 @@ code. A run = any such button or a between-blocks transition visible
 In fullscreen the sheet is moved into the fullscreen element and back to
 `body` on close. A new player needs nothing extra as long as its exit
 button follows that id/text convention. Test: `tests/end_confirm_test.py`.
+**Start buttons** (same day): every button that starts a training, a coach
+programme, a plan or a Kombi-Programm reads **"Training starten"** (no more
+"Programm/Plan/Cardio/Atemtraining/Jetzt starten"); only Kombi capture mode
+shows "Baustein übernehmen". The Cardio extra exercise is called
+**Zusatzaufgabe** in every client-facing text (button "+ Zusatzaufgabe",
+timer "Zusatzaufgabe · 0:20"; never "Zusatzimpuls"/"Zusatzübung").
+Test: `tests/start_labels_test.py`.
 
 ## Hard rule: every exercise works everywhere (client, 2026-10-02)
 
