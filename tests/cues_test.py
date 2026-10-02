@@ -116,9 +116,9 @@ async def main():
             await pg.click('#comboAddGrid >> text="Cardio-Einheit"'); await pg.wait_for_timeout(200)
             await pg.click(f'#cardioAddGrid >> text="{act}"'); await pg.wait_for_timeout(60)
             await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(200)
-        print("two Kombi blocks:", await pg.locator("#comboBlockList .combo-block-remove").count() == 2)
+        print("two Kombi blocks:", await pg.locator("#comboBlockList .combo-block-remove:not(.combo-block-move)").count() == 2)
         await pg.click("#comboClearBtn"); await pg.click("#confirmYesBtn"); await pg.wait_for_timeout(80)
-        print("Ja clears Kombi:", await pg.locator("#comboBlockList .combo-block-remove").count() == 0 and await pg.is_visible("#comboEmptyHint"))
+        print("Ja clears Kombi:", await pg.locator("#comboBlockList .combo-block-remove:not(.combo-block-move)").count() == 0 and await pg.is_visible("#comboEmptyHint"))
         await pg.context.close()
 
         # ---------- Tabata runtime (time x6) ----------

@@ -593,16 +593,13 @@ unrelated to the feature being changed.
   produces occasional overlaps (~77-80px apart vs. the ~82px guarantee)
   in roughly 2 of 3 runs. Pre-existing, not yet fixed.
 - **Deferred/parked, not yet actioned**: a lock-code gate for the NAT
-  section; a "Kids-Training" mode concept; extending Stroop's colour
-  palette further (Grau was suggested as a possible addition); a redesign
+  section and a "Kids-Training" mode concept (both re-confirmed "weiter
+  parken" by Fabian 2026-10-02); Stroop's colour palette gets NO grey
+  (decided 2026-10-02); a redesign
   of Movement's "Ganzes Programm" preview grid for long programmes (up to
-  480 tiles today); Kombi block reordering after adding; whether "skip to
-  end" should still count a programme as fully completed; a defensive
+  480 tiles today); a defensive
   DOM-hide for Workout's finish state (currently relies only on the
-  done-panel's opaque overlay); which exercises the Zusatzaufgabe add-on
-  (below) should be EXCLUDED from, not yet decided ("die müssen wir aber
-  später dann mal noch mal besprechen") - ask before touching its current
-  scope; combining an exercise's peripheral add-on with **acoustic
+  done-panel's opaque overlay); combining an exercise's peripheral add-on with **acoustic
   signals** that get "perceived and processed with some rules or other" -
   explicitly a later idea, not to build until asked ("das merkst du dir
   mal bitte").
@@ -788,10 +785,13 @@ unrelated to the feature being changed.
   or duration stop condition today - once `speedStep` plateaus at the cap
   it just keeps flashing rounds at max speed until the user taps
   "Beenden"; every other mode (climb/climbRepeat/training) has the same
-  Beenden-only ending. Whether to add a natural stopping point (fixed rep
-  count with a right/wrong tally, or a fixed duration) is still an open
-  product decision, not implemented (client hasn't weighed in on this part
-  yet - see Offene Fragen).
+  Beenden-only ending. **Decided and built 2026-10-02**: "Konstant" now
+  runs a fixed number of rounds (`flashPrefs.constantRounds`, slider 5-50,
+  default 20, `#flashRoundsSlider` in `#flashConstantGroup`), the level
+  pill reads "Runde n/N · Tempo-Stufe x", the run ends by itself and the
+  done panel shows "x von N Runden richtig" (early Beenden adds
+  "vorzeitig beendet"). Only standalone: a Kombi block or Cardio guest
+  keeps its own duration as the end (`flashState.roundLimit` = 0 there).
 - **Dark-mode contrast bug (fixed) - a pattern to watch for**: `.flash-
   digit`/`.flash-input-label`/`.flash-typed-input` (the last since replaced
   by `.flash-answer-box`/`.flash-key`, built fixed-hex from the start) were
@@ -1215,6 +1215,27 @@ shift. Every footer shows "Stand: TT.MM.JJJJ, HH:MM" - `build.sh` replaces
 hand-edit the date. Cardio has `#cardioFsBtn` (`wireFullscreen`);
 `hideAllPlayers()` leaves fullscreen when the fullscreen element got hidden
 (guest takeover, finish, abort). Test: `tests/autopause_version_fs_test.py`.
+**Round 3 (same day)**: the "Beta" tag is gone from every footer. Kombi
+Bausteine have ↑/↓ buttons (`.combo-block-move`, swap with the neighbour,
+the block's own "Pause danach" moves with it). **Skipping past the end
+counts as aborted**: "»" on the last step of a coach programme
+(`playChapter` past the end), the Tabata Zirkel or a Cardio unit, or the
+last block of a Workout plan, shows "… beendet" without the check mark,
+"Abgebrochen · …" and a history entry with `aborted: true`,
+`note: "abgebrochen"` (`setDonePanelAborted(panel, aborted, title)`;
+Cardio then counts the real elapsed time, not the plan). A natural end or
+"Übung beenden" still counts as completed. Flash "Konstant" rounds and
+Corsi's two attempts per length: see their own entries. Decided, no
+build: keep both Stroop versions; no grey in Stroop; Movement diagonal/
+alternating direction later; keep the old codes dig01/dig02/xppbsp-1;
+NAT lock code and Kids mode stay parked. **Zusatzaufgabe scope settled**
+(Fabian: "sollte alles überall gehen, außer es widerspricht sich in der
+Darstellung"): every exercise on the shared VT canvas engine has it;
+excluded only where it clashes visually or has no Reiz/Pause phases -
+Hütchen sortieren and NAT's own engines (Positionen merken, Blitz-Raster,
+Flash-Speicher-Test, MOT), which already fill the stage with their own
+stimuli. A new VT canvas exercise gets it automatically. Test:
+`tests/audit_round3_test.py`.
 
 ## Hard rule: every exercise works everywhere (client, 2026-10-02)
 
@@ -5105,8 +5126,19 @@ is a plain `!==` (not constant-time; low real-world risk over HTTPS/
 Cloudflare's own network jitter), and there is still no server-side rate-
 limiting on `/program` at all (now a much smaller risk with a ~10-character
 random tail - 32^10 combinations - but not zero, e.g. against a very high
-request-volume scripted attempt). None of these three were touched this
-round.
+request-volume scripted attempt). **All three done 2026-10-02 (Fabian:
+"ja")** in `worker/src/index.js`: admin routes answer CORS only for
+`ADMIN_ORIGINS` (GitHub Pages origin + localhost:8845) and refuse a
+foreign browser origin with 403 (curl/scripts without an Origin header
+still work with the token); constant-time token compare
+(`timingSafeEqual`); `/program` rate limited per IP via the
+`LOOKUP_LIMITER` `[[ratelimits]]` binding in `wrangler.toml` (30/min,
+wrangler 4.36+, the code skips the check if the binding is missing).
+**Needs a `wrangler deploy` from the session that holds
+CLOUDFLARE_API_TOKEN to go live.** If the dashboard ever moves to a
+custom domain, add that origin to `ADMIN_ORIGINS`. Test:
+`tests/worker_hardening_test.py` (runs `worker/test/hardening.mjs` in
+plain node against a mocked D1).
 
 **Test-Bereich visibility**: implemented as described in "Test-Bereich
 (autonomous, ongoing)" below - hidden-by-default nav tab, revealed
@@ -5906,7 +5938,10 @@ doesn't:
   judgment over a whole array shown at once - this is the only exercise
   where the client must reproduce an ORDERED SEQUENCE OF SPATIAL LOCATIONS,
   the Corsi task's defining feature (holding both "where" and "in what
-  order" at once). Simplified to a single-trial-per-length adaptive climb
+  order" at once). **Since 2026-10-02 it follows Kessels' standard: two
+  sequences per length, advance while at least one is right, stop when
+  both fail (`corsiAfterAttempt()`, progress pill "Länge n · Versuch x/2").**
+  Originally simplified to a single-trial-per-length adaptive climb
   (sequence length +1 after every correct recall, ends on the first wrong
   tap) rather than Kessels' own 2-trials-per-length stop rule - the same
   simplification several digital adaptations use (e.g. PsyToolkit's own
@@ -6963,7 +6998,8 @@ doesn't:
   in two different places (Visual Training AND Test) read as redundant/
   confusing on the home screen? If the client would rather not keep both,
   this is the one entry in the whole Test-Bereich series to reconsider
-  removing rather than any of the others.
+  removing rather than any of the others. **Decided 2026-10-02: keep
+  both.**
 
 - **Regelwechsel-Test: congruency not separately analysed**: because the
   stimuli are deliberately bivalent (every digit is a valid input to both
@@ -6980,7 +7016,11 @@ doesn't:
   or whether the current single switch-cost number is good enough for a
   training tool (as opposed to a lab-grade measurement).
 
-- **Blockspanne-Test single-trial-per-length scoring**: this version ends a
+- **Blockspanne-Test single-trial-per-length scoring** (RESOLVED
+  2026-10-02, Fabian: "wie Standard" - every length now has two sequences,
+  the run goes on while at least one of them is correct and ends when both
+  fail; the done panel also counts correct sequences; the text below is
+  the original note): this version ends a
   run on the very first wrong tap at any given sequence length, so the
   reported "Blockspanne erreicht" is the longest sequence recalled in one
   unbroken climb - a simplification of Kessels et al. (2000)'s own

@@ -362,10 +362,6 @@ section{margin-bottom:26px}
   font-family:inherit;cursor:pointer;
 }
 .site-footer .faq-open-btn:hover{color:var(--brand);text-decoration:underline}
-.beta{
-  display:inline-block;margin-left:8px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-  border:1px solid var(--line);border-radius:999px;padding:1px 7px;vertical-align:1px;
-}
 
 /* ---- Sub-screens ---- */
 .readyhead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
@@ -1456,6 +1452,8 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
   margin-left:auto;flex:none;width:30px;height:30px;border-radius:50%;border:none;
   background:var(--surface-2);color:var(--ink-soft);font-size:16px;cursor:pointer;
 }
+.combo-block-move + .combo-block-move,.combo-block-move + .combo-block-remove{margin-left:4px}
+.combo-block-move{font-size:15px;font-weight:700}
 /* A slim, secondary strip between two block cards (not its own card) -
    the gap-to-next-exercise pause, editable inline, never shown after the
    last block. */
