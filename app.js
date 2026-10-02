@@ -4469,6 +4469,9 @@
   // each engine's own start function so a leftover overlay from switching
   // mid-programme between a cycle block and a Wim-Hof block never shows.
   function hideAllPlayers() {
+    // Leaving a player always drops an open "Pausiert" sheet (it lives
+    // inside that player); guarded since this runs during start-up too.
+    try { closeTrainPause(); } catch (e) {}
     els.player.hidden = true;
     els.breathPlayer.hidden = true;
     els.wimhofPlayer.hidden = true;
@@ -5022,7 +5025,7 @@
         if (breathSession && !breathPaused) breathSession.startTime += hiddenMs;
         if (wimhofState) { wimhofState.phaseStart += hiddenMs; wimhofState.sessionStart += hiddenMs; }
         if (movementSession) movementSession.startTime += hiddenMs;
-        if (workoutState) {
+        if (workoutState && !workoutState.pausedAt) {
           if (workoutState.startTime) workoutState.startTime += hiddenMs;
           if (workoutState.phaseStart) workoutState.phaseStart += hiddenMs;
           if (workoutState.sessionStart) workoutState.sessionStart += hiddenMs;
@@ -9730,10 +9733,11 @@
   // gate anything: the research shows it tracks reps×tempo rather than
   // being an independent lever). Only shown for range/pyramid sets; a
   // classic fixed coach-plan "reps" block never touches this.
-  function startWorkoutSetTimer() {
+  let workoutSetTimerT0 = null; // start of the running stopwatch, kept so a pause can resume it
+  function startWorkoutSetTimer(t0 = performance.now()) {
     stopWorkoutSetTimer();
     els.workoutSetTimer.hidden = false;
-    const t0 = performance.now();
+    workoutSetTimerT0 = t0;
     const update = () => { els.workoutSetTimer.textContent = fmtClock(Math.floor((performance.now() - t0) / 1000)); };
     update();
     workoutSetTimerInterval = setInterval(update, 500);
@@ -9741,6 +9745,7 @@
   function stopWorkoutSetTimer() {
     if (workoutSetTimerInterval) clearInterval(workoutSetTimerInterval);
     workoutSetTimerInterval = null;
+    workoutSetTimerT0 = null;
   }
   // Isometric hold: "Halten starten" counts holdS down (3-2-1 beeps at the
   // end), then completes the set by itself; "Fertig" ends it early.
@@ -9756,13 +9761,15 @@
     const beeped = new Set();
     const cfg = cueCfg("strength");
     const update = () => {
-      const inS = (performance.now() - t0) / 1000;
+      if (!st.holding) return;
+      const inS = (performance.now() - st.holding.t0) / 1000;
       const left = Math.max(0, total - inS);
       els.workoutSetTimer.textContent = `${Math.ceil(left)} s`;
       if (cfg.countEnd && cfg.countdownS > 0) cueCountdownBeep(beeped, left, cfg.countdownS);
       cueTickCheck(beeped, inS, left, cfg);
       if (left <= 0) { if (cfg.countEnd && cfg.countdownS > 0) playWorkoutBeep(true); completeWorkoutSet(); }
     };
+    st.holdUpdate = update;
     update();
     workoutSetTimerInterval = setInterval(update, 200);
   }
@@ -9877,13 +9884,18 @@
     const cfg = cueCfg("strength");
     cueStrengthRestStart(mode, restS, cfg);
     const countOn = cfg.countStart && cfg.countdownS > 0;
-    let remaining = restS;
+    // Remaining seconds live on workoutState so the pause editor can
+    // stop, change and restart this countdown.
+    st.restRemaining = restS;
     const tick = () => {
+      if (workoutState !== st) return;
+      const remaining = st.restRemaining;
       els.workoutRestCountdown.textContent = Math.max(0, Math.ceil(remaining));
       if (countOn && remaining >= 1 && remaining <= cfg.countdownS) playWorkoutBeep(false);
       if (remaining <= 0) { if (countOn) playWorkoutBeep(true); advanceRepsSet(); return; }
-      workoutRestTimer = setTimeout(() => { remaining -= 1; tick(); }, 1000);
+      workoutRestTimer = setTimeout(() => { st.restRemaining -= 1; tick(); }, 1000);
     };
+    st.restTick = tick;
     tick();
   }
   // Spoken cues at the start of a Kraftplan pause: "Halbzeit", "Letzter
@@ -9919,6 +9931,7 @@
     if (!workoutState) return;
     const mode = modeOverride || workoutState.restMode || "set";
     workoutState.restMode = null;
+    workoutState.restTick = null;
     if (workoutState.strength) {
       if (mode !== "start") strengthApplyStep(workoutState.stepIndex + 1);
     } else if (mode === "set") {
@@ -13192,6 +13205,7 @@
   // countdown) - a genuinely long rest needs a visible countdown so the
   // client can see how much is actually left, not just an unlabelled wait.
   let comboTransitionInterval = null;
+  let comboTransitionState = null; // { remaining, run, stop } while a Kombi pause counts down
   function showComboTransition(nextBlock, pauseS, onContinue) {
     hideAllPlayers();
     if (comboTransitionTimer) clearTimeout(comboTransitionTimer);
@@ -13207,22 +13221,349 @@
     if (cfg.announceNext) parts.push(`Als Nächstes: ${comboBlockLabel(nextBlock)}.`);
     if (parts.length) cueSay(parts.join(" "));
     const countOn = cfg.countStart && cfg.countdownS > 0;
-    let remaining = pauseS;
-    els.comboTransitionCountdown.textContent = fmtClock(remaining);
+    const ts = comboTransitionState = { remaining: pauseS };
+    els.comboTransitionCountdown.textContent = fmtClock(ts.remaining);
     const go = () => {
       clearTimeout(comboTransitionTimer);
       clearInterval(comboTransitionInterval);
+      comboTransitionState = null;
+      closeTrainPause();
       els.comboTransition.hidden = true;
       onContinue();
     };
     els.comboTransitionBtn.onclick = go;
-    comboTransitionInterval = setInterval(() => {
-      remaining -= 1;
-      els.comboTransitionCountdown.textContent = fmtClock(remaining);
-      if (countOn && remaining >= 1 && remaining <= cfg.countdownS) playWorkoutBeep(false);
-    }, 1000);
-    comboTransitionTimer = setTimeout(() => { if (countOn) playWorkoutBeep(true); go(); }, pauseS * 1000);
+    // (Re)starts the countdown from ts.remaining - also used after the
+    // pause editor changed it.
+    ts.run = () => {
+      clearTimeout(comboTransitionTimer);
+      clearInterval(comboTransitionInterval);
+      els.comboTransitionCountdown.textContent = fmtClock(Math.max(0, ts.remaining));
+      if (ts.remaining <= 0) { go(); return; }
+      comboTransitionInterval = setInterval(() => {
+        ts.remaining -= 1;
+        els.comboTransitionCountdown.textContent = fmtClock(Math.max(0, ts.remaining));
+        if (countOn && ts.remaining >= 1 && ts.remaining <= cfg.countdownS) playWorkoutBeep(false);
+        if (ts.remaining <= 0) { if (countOn) playWorkoutBeep(true); go(); }
+      }, 1000);
+    };
+    ts.stop = () => { clearTimeout(comboTransitionTimer); clearInterval(comboTransitionInterval); };
+    ts.run();
   }
+  // ---- Pause während des Trainings (Fabian, 2026-10-02) ----
+  // One shared "Pausiert" sheet for Tabata/Zirkel, Kraftplan, Cardio and
+  // the Kombi pauses between Bausteine. Pausing freezes the running timer;
+  // the sheet edits the pause that is running now (or the one right after
+  // the current exercise) and, via "Alle Pausen anzeigen", every pause
+  // still ahead - including the Kombi pauses when this runs inside a Kombi.
+  // "Weiter" carries on exactly where it stopped. Each domain supplies an
+  // adapter: { host, pause(), resume(), current(), list() }; a row is
+  // { label, sub, get(), set(v) }.
+  const TRAIN_PAUSE_STEP = 5;
+  const TRAIN_PAUSE_MAX = 600;
+  let trainPauseAdapter = null;
+  const trainPauseEl = document.getElementById("trainPauseOverlay");
+  const trainPauseCurrentEl = document.getElementById("trainPauseCurrent");
+  const trainPauseListEl = document.getElementById("trainPauseList");
+  const trainPauseOverviewBtn = document.getElementById("trainPauseOverviewBtn");
+  let trainPauseRows = [];
+  function fmtPauseS(v) { return v >= 60 ? `${Math.floor(v / 60)}:${String(v % 60).padStart(2, "0")} min` : `${v} s`; }
+  function trainPauseRowHtml(row, i, cls) {
+    return `<div class="train-pause-row ${cls || ""}"><div class="train-pause-text"><div class="train-pause-label">${esc(row.label)}</div>` +
+      (row.sub ? `<div class="train-pause-sub">${esc(row.sub)}</div>` : "") + `</div>` +
+      `<div class="circuit-duration"><button type="button" class="circuit-step" data-tp="${i}" data-dir="-1" aria-label="${esc(row.label)} kürzer">&minus;</button>` +
+      `<span class="circuit-duration-value" data-tpv="${i}">${fmtPauseS(row.get())}</span>` +
+      `<button type="button" class="circuit-step" data-tp="${i}" data-dir="1" aria-label="${esc(row.label)} länger">+</button></div></div>`;
+  }
+  function renderTrainPause() {
+    const a = trainPauseAdapter;
+    if (!a) return;
+    const cur = a.current();
+    const list = a.list().concat(comboPauseRows(a.inComboTransition));
+    trainPauseRows = [];
+    if (cur) {
+      trainPauseRows.push(cur);
+      trainPauseCurrentEl.innerHTML = `<div class="group-label">${esc(cur.title || "Diese Pause")}</div>` + trainPauseRowHtml(cur, 0, "current");
+    } else {
+      trainPauseCurrentEl.innerHTML = `<div class="group-help">Nach dieser Übung folgt keine Pause mehr.</div>`;
+    }
+    const start = trainPauseRows.length;
+    list.forEach((r) => trainPauseRows.push(r));
+    trainPauseListEl.innerHTML = list.length
+      ? `<div class="group-label">Weitere Pausen</div>` + list.map((r, k) => trainPauseRowHtml(r, start + k)).join("")
+      : `<div class="group-help">Keine weiteren Pausen.</div>`;
+  }
+  function trainPauseStep(i, dir) {
+    const row = trainPauseRows[i];
+    if (!row) return;
+    // Steps snap to the 5 s grid, so "noch 13 s" goes to 10 or 15.
+    const cur = row.get();
+    const v = dir > 0 ? Math.floor(cur / TRAIN_PAUSE_STEP) * TRAIN_PAUSE_STEP + TRAIN_PAUSE_STEP
+      : Math.ceil(cur / TRAIN_PAUSE_STEP) * TRAIN_PAUSE_STEP - TRAIN_PAUSE_STEP;
+    row.set(Math.max(0, Math.min(TRAIN_PAUSE_MAX, v)));
+    renderTrainPause();
+  }
+  trainPauseEl.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-tp]");
+    if (b) trainPauseStep(Number(b.dataset.tp), Number(b.dataset.dir));
+  });
+  trainPauseOverviewBtn.addEventListener("click", () => {
+    trainPauseListEl.hidden = !trainPauseListEl.hidden;
+    trainPauseOverviewBtn.textContent = trainPauseListEl.hidden ? "Alle Pausen anzeigen" : "Weitere Pausen ausblenden";
+  });
+  function openTrainPause(adapter) {
+    if (trainPauseAdapter) return;
+    trainPauseAdapter = adapter;
+    adapter.pause();
+    adapter.host.appendChild(trainPauseEl);
+    trainPauseListEl.hidden = true;
+    trainPauseOverviewBtn.textContent = "Alle Pausen anzeigen";
+    renderTrainPause();
+    trainPauseEl.hidden = false;
+  }
+  // Closing without resuming (the run ended or was aborted meanwhile).
+  function closeTrainPause() {
+    trainPauseAdapter = null;
+    trainPauseEl.hidden = true;
+  }
+  document.getElementById("trainPauseResumeBtn").addEventListener("click", () => {
+    const a = trainPauseAdapter;
+    closeTrainPause();
+    if (a) a.resume();
+  });
+  // Kombi pauses between Bausteine that are still ahead. Edits apply to
+  // this run only (the def is copied once, so a saved Kombi stays as is).
+  function comboPauseRows(inTransition) {
+    if (!comboProgram) return [];
+    if (!comboProgram.pausesCopied) {
+      comboProgram.def = { ...comboProgram.def, blocks: comboProgram.def.blocks.map((b) => ({ ...b })) };
+      comboProgram.pausesCopied = true;
+    }
+    const blocks = comboProgram.def.blocks;
+    const from = comboProgram.blockIndex + (inTransition ? 1 : 0);
+    const rows = [];
+    for (let i = from; i < blocks.length - 1; i++) {
+      const b = blocks[i];
+      rows.push({
+        label: `Kombi: nach ${comboBlockLabel(b)}`, sub: `vor ${comboBlockLabel(blocks[i + 1])}`,
+        get: () => b.pauseAfterS ?? masterPrefs.defaultPauseS,
+        set: (v) => { b.pauseAfterS = v; },
+      });
+    }
+    return rows;
+  }
+
+  // Tabata / Zirkel: frames of the flat schedule. Changing one pause
+  // shifts every later frame and the total.
+  const CIRCUIT_PAUSE_TYPES = ["prep", "rest", "setrest"];
+  function circuitSetFrameDur(idx, dur) {
+    const st = workoutState;
+    const f = st.schedule[idx];
+    const delta = dur - (f.t1 - f.t0);
+    f.t1 += delta;
+    for (let j = idx + 1; j < st.schedule.length; j++) { st.schedule[j].t0 += delta; st.schedule[j].t1 += delta; }
+    st.total += delta;
+  }
+  function circuitPauseLabel(f) {
+    const items = workoutState.block.items;
+    if (f.type === "prep") return { label: "Bereit machen", sub: `vor ${findWorkoutExercise(items[0].exercise).name}` };
+    if (f.type === "setrest") return { label: `Satzpause nach Satz ${f.set}`, sub: `vor ${findWorkoutExercise(items[0].exercise).name}` };
+    return { label: `Pause vor ${findWorkoutExercise(items[f.itemIdx + 1].exercise).name}`, sub: `Satz ${f.set}` };
+  }
+  function circuitPauseAdapter() {
+    const st = workoutState;
+    const E = () => (st.pausedAt - st.startTime) / 1000;
+    const frameIdxAt = (t) => st.schedule.findIndex((f) => t >= f.t0 && t < f.t1);
+    const frameRow = (idx) => {
+      const f = st.schedule[idx];
+      return { ...circuitPauseLabel(f), get: () => Math.round(f.t1 - f.t0), set: (v) => circuitSetFrameDur(idx, v) };
+    };
+    return {
+      host: els.workoutPlayer,
+      pause() {
+        st.pausedAt = performance.now();
+        if (workoutRaf) cancelAnimationFrame(workoutRaf);
+        workoutRaf = null;
+      },
+      resume() {
+        if (workoutState !== st) return;
+        st.startTime += performance.now() - st.pausedAt;
+        st.pausedAt = null;
+        workoutRaf = requestAnimationFrame(circuitTick);
+      },
+      current() {
+        const idx = frameIdxAt(E());
+        if (idx < 0) return null;
+        const f = st.schedule[idx];
+        if (CIRCUIT_PAUSE_TYPES.includes(f.type)) {
+          const inS = E() - f.t0;
+          return { title: "Diese Pause – noch", ...circuitPauseLabel(f),
+            get: () => Math.max(0, Math.ceil(f.t1 - E())), set: (v) => circuitSetFrameDur(idx, inS + v) };
+        }
+        const next = st.schedule[idx + 1];
+        if (next && CIRCUIT_PAUSE_TYPES.includes(next.type)) return { title: "Pause nach dieser Übung", ...frameRow(idx + 1) };
+        return null;
+      },
+      list() {
+        const idx = frameIdxAt(E());
+        const cur = st.schedule[idx];
+        const skip = cur && !CIRCUIT_PAUSE_TYPES.includes(cur.type) ? idx + 1 : idx;
+        const rows = [];
+        st.schedule.forEach((f, j) => { if (j > skip && CIRCUIT_PAUSE_TYPES.includes(f.type)) rows.push(frameRow(j)); });
+        return rows;
+      },
+    };
+  }
+
+  // Kraftplan (and a plain coach "reps" block): the running countdown
+  // lives in workoutState.restRemaining; later pauses are the rest of each
+  // step (drop sets follow straight on and aren't offered).
+  const STRENGTH_REST_TITLES = { set: "Satzpause", item: "Pause – Übungswechsel", superset: "Supersatz – Wechsel", side: "Seitenwechsel", warmup: "Pause nach Aufwärmsatz" };
+  function strengthRestRow(step) {
+    const it = workoutState.strength.items[step.itemIndex];
+    return {
+      label: `${STRENGTH_REST_TITLES[step.rest.mode] || "Pause"} nach ${findWorkoutExercise(it.exercise).name}`,
+      sub: strengthStepLabel(step),
+      get: () => step.rest.s, set: (v) => { step.rest.s = v; },
+    };
+  }
+  function repsPauseAdapter() {
+    const st = workoutState;
+    const inRest = () => !!st.restMode;
+    return {
+      host: els.workoutPlayer,
+      pause() {
+        st.pausedAt = performance.now();
+        if (workoutRestTimer) clearTimeout(workoutRestTimer);
+        workoutRestTimer = null;
+        st.pausedSetT0 = workoutSetTimerT0;
+        if (workoutSetTimerInterval) clearInterval(workoutSetTimerInterval);
+        workoutSetTimerInterval = null;
+      },
+      resume() {
+        if (workoutState !== st) return;
+        const d = performance.now() - st.pausedAt;
+        st.pausedAt = null;
+        if (inRest() && st.restTick) { st.restTick(); return; }
+        if (st.holding) {
+          st.holding.t0 += d;
+          workoutSetTimerInterval = setInterval(st.holdUpdate, 200);
+        } else if (st.pausedSetT0 != null) {
+          startWorkoutSetTimer(st.pausedSetT0 + d);
+        }
+      },
+      current() {
+        if (inRest()) {
+          return { title: "Diese Pause – noch", label: els.workoutRestLabel.textContent, sub: els.workoutRestNext.hidden ? "" : els.workoutRestNext.textContent,
+            get: () => Math.max(0, Math.ceil(st.restRemaining)),
+            set: (v) => { st.restRemaining = v; els.workoutRestCountdown.textContent = v; } };
+        }
+        if (st.strength) {
+          const step = st.steps[st.stepIndex];
+          if (!step.rest || step.rest.mode === "drop") return null;
+          return { title: "Pause nach diesem Satz", ...strengthRestRow(step) };
+        }
+        if (st.setIndex >= st.block.sets) return null;
+        return { title: "Pause nach diesem Satz", label: "Satzpause", sub: st.ex.name,
+          get: () => st.block.restS ?? 30, set: (v) => { st.block.restS = v; } };
+      },
+      list() {
+        if (!st.strength) return [];
+        // In a rest the current step's own rest is the running one; in a
+        // set it's shown above as "Pause nach diesem Satz".
+        return st.steps.slice(st.stepIndex + 1).filter((s) => s.rest && s.rest.mode !== "drop").map(strengthRestRow);
+      },
+    };
+  }
+  els.workoutPauseBtn = document.getElementById("workoutPauseBtn");
+  els.workoutPauseBtn.addEventListener("click", () => {
+    if (!workoutState || trainPauseAdapter) return;
+    openTrainPause(workoutState.kind === "circuit" ? circuitPauseAdapter() : repsPauseAdapter());
+  });
+
+  // Cardio: pause pseudo-items in cardioState.items. A missing pause after
+  // an activity (0 s) can be added here too.
+  function cardioPauseAfterRow(realIdx) {
+    const cs = cardioState;
+    const act = findCardioActivity(cs.items[realIdx].activity);
+    const nextReal = cs.items.slice(realIdx + 1).find((it) => !it.pause);
+    const pauseItem = () => (cs.items[realIdx + 1] && cs.items[realIdx + 1].pause ? cs.items[realIdx + 1] : null);
+    return {
+      label: `Pause nach ${act.name}`, sub: nextReal ? `vor ${findCardioActivity(nextReal.activity).name}` : "",
+      get: () => (pauseItem() ? pauseItem().durationS : 0),
+      set: (v) => {
+        const p = pauseItem();
+        if (p) p.durationS = v;
+        else if (v > 0) cs.items.splice(realIdx + 1, 0, { pause: true, durationS: v });
+      },
+    };
+  }
+  function cardioPauseAdapter() {
+    const cs = cardioState;
+    const lastReal = () => { let l = -1; cs.items.forEach((it, i) => { if (!it.pause) l = i; }); return l; };
+    const inS = () => (cs.pausedAt - cs.blockStartTime) / 1000;
+    return {
+      host: els.cardioPlayer,
+      pause() {
+        cs.pausedAt = performance.now();
+        if (cardioRaf) cancelAnimationFrame(cardioRaf);
+        cardioRaf = null;
+      },
+      resume() {
+        if (cardioState !== cs) return;
+        const d = performance.now() - cs.pausedAt;
+        cs.pausedAt = null;
+        cs.blockStartTime += d;
+        cs.sessionStartTime += d;
+        if (cs.nextGuestAt != null) cs.nextGuestAt += d;
+        cardioRaf = requestAnimationFrame(cardioTick);
+      },
+      current() {
+        const cur = cs.items[cs.index];
+        if (!cur) return null;
+        if (cur.pause) {
+          const prevReal = cs.index - 1;
+          const row = cardioPauseAfterRow(prevReal);
+          const done = inS();
+          return { ...row, title: "Diese Pause – noch",
+            get: () => Math.max(0, Math.ceil(cur.durationS - done)), set: (v) => { cur.durationS = done + v; } };
+        }
+        if (cs.index >= lastReal()) return null;
+        return { title: "Pause nach dieser Aktivität", ...cardioPauseAfterRow(cs.index) };
+      },
+      list() {
+        const rows = [];
+        const last = lastReal();
+        let start = cs.index + 1;
+        for (let i = start; i < last; i++) if (!cs.items[i].pause) rows.push(cardioPauseAfterRow(i));
+        return rows;
+      },
+    };
+  }
+  document.getElementById("cardioPauseBtn").addEventListener("click", () => {
+    if (!cardioState || trainPauseAdapter || cardioGuestActive) return;
+    openTrainPause(cardioPauseAdapter());
+  });
+
+  // Kombi: the pause screen between two Bausteine.
+  document.getElementById("comboTransitionPauseBtn").addEventListener("click", () => {
+    const ts = comboTransitionState;
+    if (!ts || trainPauseAdapter) return;
+    openTrainPause({
+      host: els.comboTransition,
+      inComboTransition: true,
+      pause() { ts.stop(); },
+      resume() { if (comboTransitionState === ts) ts.run(); },
+      current() {
+        const blocks = comboProgram ? comboProgram.def.blocks : [];
+        const next = blocks[comboProgram.blockIndex + 1];
+        return { title: "Diese Pause – noch", label: "Pause", sub: next ? `vor ${comboBlockLabel(next)}` : "",
+          get: () => Math.max(0, Math.ceil(ts.remaining)),
+          set: (v) => { ts.remaining = v; els.comboTransitionCountdown.textContent = fmtClock(v); } };
+      },
+      list() { return []; },
+    });
+  });
+
   function advanceComboProgram(playedS) {
     if (!comboProgram) return;
     comboProgram.totalPlayedS += playedS;

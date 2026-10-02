@@ -1670,3 +1670,15 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .cue-sub-label{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin:12px 0 6px}
 .checkbox-row.cue-indent{margin-left:26px}
 .cue-domain .choice-row,.cue-master .choice-row{flex-wrap:wrap}
+
+/* ---- Pause während des Trainings: shared "Pausiert" sheet ---- */
+.train-pause-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.train-pause-row:first-of-type{border-top:0}
+.train-pause-row.current{border-top:0;padding-top:2px}
+.train-pause-text{flex:1;min-width:0}
+.train-pause-label{font-size:14px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.train-pause-sub{font-size:12.5px;color:var(--ink-soft);overflow-wrap:anywhere}
+.train-pause-row .circuit-duration-value{min-width:52px}
+.train-pause .text-link{align-self:center;margin:0 0 12px}
+.train-pause-list{max-height:none}
+#comboTransitionPauseBtn{margin-top:10px}

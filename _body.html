@@ -640,6 +640,7 @@
   </div>
   <div class="player-bar" id="cardioPlayerBar">
     <button id="cardioBackBtn">&#10005; Beenden</button>
+    <button id="cardioPauseBtn">Pause</button>
     <button id="cardioAddonTriggerBtn" hidden>+ Zusatzimpuls</button>
   </div>
   <div class="pause-overlay" id="cardioAddonPicker" hidden>
@@ -5432,6 +5433,7 @@
   <div class="progress-track" id="workoutProgressTrack"></div>
   <div class="player-bar" id="workoutPlayerBar">
     <button id="workoutBackBtn">&#10005; Beenden</button>
+    <button id="workoutPauseBtn">Pause</button>
     <span class="player-status" id="workoutTimeEl"></span>
     <button id="workoutFsBtn">Vollbild</button>
   </div>
@@ -5540,6 +5542,20 @@
   <p class="done-summary" id="comboTransitionMeta"></p>
   <div class="pause-countdown" id="comboTransitionCountdown"></div>
   <button class="again" id="comboTransitionBtn">&Uuml;berspringen</button>
+  <button class="back" id="comboTransitionPauseBtn">Pause anhalten &amp; Pausen bearbeiten</button>
+</div>
+
+<!-- Shared "Pausiert" sheet for Tabata/Kraftplan, Cardio and the Kombi
+     pauses: JS moves it into whichever player is running (see
+     openTrainPause in app.js). -->
+<div class="pause-overlay train-pause" id="trainPauseOverlay" hidden>
+  <div class="pause-panel">
+    <h3>Pausiert</h3>
+    <div class="group" id="trainPauseCurrent"></div>
+    <button type="button" class="text-link" id="trainPauseOverviewBtn">Alle Pausen anzeigen</button>
+    <div class="group train-pause-list" id="trainPauseList" hidden></div>
+    <button class="start-btn" id="trainPauseResumeBtn">Weiter</button>
+  </div>
 </div>
 
 <div class="done-panel standalone" id="comboDonePanel" hidden>
