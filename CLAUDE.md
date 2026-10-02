@@ -1204,6 +1204,17 @@ shows "Baustein übernehmen". The Cardio extra exercise is called
 **Zusatzaufgabe** in every client-facing text (button "+ Zusatzaufgabe",
 timer "Zusatzaufgabe · 0:20"; never "Zusatzimpuls"/"Zusatzübung").
 Test: `tests/start_labels_test.py`.
+**Auto-Pause, Stand, Cardio-Vollbild** (same day): leaving the app mid-run
+(visibilitychange to hidden) calls `autoPauseOnLeave()`, which clicks the
+visible `button[id$="PauseBtn"]` whose text starts with "Pause" (skipped
+while any `.pause-overlay` is open, and for Cardio, which keeps running on
+purpose). A new player gets this for free as long as its pause button
+follows that id/text convention; players without one keep the timestamp
+shift. Every footer shows "Stand: TT.MM.JJJJ, HH:MM" - `build.sh` replaces
+`__APP_STAND__` in `_body.html` at build time (Berlin time), so never
+hand-edit the date. Cardio has `#cardioFsBtn` (`wireFullscreen`);
+`hideAllPlayers()` leaves fullscreen when the fullscreen element got hidden
+(guest takeover, finish, abort). Test: `tests/autopause_version_fs_test.py`.
 
 ## Hard rule: every exercise works everywhere (client, 2026-10-02)
 
