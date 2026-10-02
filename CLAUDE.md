@@ -242,6 +242,19 @@ unrelated to the feature being changed.
   `flashSafeFy()` (see its NAT entry below) - not worth merging, since it
   clamps a single already-computed `fy` fraction rather than being a whole
   bounds function.
+- **Hard rule: nothing on a stage may ever sit under the hint or a
+  player-bar button (client, 2026-10-01, after an iPad screenshot of
+  Linienhalbierungs-Test drawing its line right next to "Tippe auf die
+  Mitte der Linie")**: applies to every exercise, present and future, in
+  every section. Fixed then: `bisectRenderLine()` and `renderSubitizeDots()`
+  now clamp their top edge via `stageTopClearanceY()`, and `.ufov-stage`
+  got a top padding clearing hint + bar. `tests/hint_overlap_all_test.py`
+  starts every Test-Bereich and NAT exercise at 390px and 1000px width,
+  samples the stage repeatedly and fails on any visible element
+  overlapping the hint or a bar item (plus a `Math.random=()=>0`
+  worst-case run for Linienhalbierung). **Any new exercise must be added to
+  that test's `TEST`/`NAT` lists in the same commit**, and must place its
+  content below the measured hint/bar, never at a hardcoded y.
 - **`.player-bar` can also overflow off-screen on a narrow phone (fixed
   2026-09-27, found while investigating the above)**: the bar's 4 items
   (Beenden/Pause/status pill/Vollbild) are `display:flex;justify-content:
@@ -1116,6 +1129,53 @@ unrelated to the feature being changed.
   rather than assuming a green light and building/changing it. This
   applies to every session going forward, not just the one it was said in.
 
+## Hard rule: every exercise works everywhere (client, 2026-10-02)
+
+Client, after Kraftübungen turned out not to be stackable: "Solche Fehler
+dürfen nicht passieren. Wir müssen ja wohl einen Lerneffekt beim
+Erstellen neuer Sachen haben." So, for **every new exercise or exercise
+type** (and every change to an existing one) outside the Test-Bereich,
+the same piece of work must cover, without being asked:
+1. **Einzeln**: own ready screen, Feineinstellungen, saved presets.
+2. **Kombi-Baustein**: an entry in `COMBO_CAPTURE_ENTRIES`, a commit path
+   back to `comboScreen`, an edit opener in `COMBO_EDIT_OPENERS` (an added
+   Baustein must be re-editable), and playback in `startComboBlock()`.
+3. **Plan-Stapeln**: wherever the domain has a plan builder (Workout
+   Zirkel, Workout Kraftplan, Cardio-Einheit), the exercise must be
+   addable there, several times, each item with its own values.
+4. **Pausen**: rest between sets / between exercises / start countdown,
+   wherever the paradigm has those phases - check the Tabata Zirkel's
+   options (`workoutCircuitPrefs`) as the reference set. **"Pause zwischen
+   Übungen" is always a slider, 0-180 s in 5 s steps** (client, same day;
+   0 = straight on): Tabata Zirkel (`#workoutCircuitRestSlider`, default
+   10 s - replaced the old 5/10/15 s choice row), Kraftplan
+   (`#workoutRepsExerciseRestSlider`, default 60 s), Cardio and Kombi
+   (`.combo-pause-slider`, already 0-180). Rest between SETS in the
+   Kraftplan deliberately goes up to 300 s, since heavy strength sets
+   (1-6 reps) commonly need 3-5 min.
+5. **Master-Einstellungen**: `MASTER_BG_TARGETS` (if it has a background),
+   `CVD_EXERCISES`/`CVD_FB_SELECTORS` (if right/wrong feedback or fixed
+   colours), restriction filters.
+6. **Cardio-Zusatzaufgabe** parity for Visual Training/NAT (see the
+   Cardio section).
+**Test-Bereich exercises are exempt** (client, same day: "Außer die
+Übungen in Test. Da muss das erst gehen, wenn sie aus Test woanders hin
+gepackt werden") - the rule and the test apply the moment an exercise is
+promoted out of Test into a regular section, as part of that promotion.
+Before calling any such work done, compare it against an existing,
+complete sibling (e.g. a new Workout mode against Tabata) item by item,
+rather than only against the ask's literal wording.
+**`tests/exercise_coverage_test.py` enforces 1-3 generically**: every
+Visual Training home card and every NAT sub-tab must have a Kombi entry,
+every Kombi entry must commit as a Baustein and be editable, every
+Workout exercise must stack into both Zirkel and Kraftplan, and every
+"Pause zwischen Übungen/Bausteinen" control must be the 0-180 s slider. It walks the
+live DOM, so a new exercise is covered automatically - if it fails, fix
+the app, never loosen the test. It found a real gap on its first run:
+Periphere Wahrnehmung had no Kombi entry (fixed the same day: a NAT Kombi
+entry reusing `openVisualComboCapture("periph-flash", PERIPH_ICON_HTML)`,
+played back as a normal `visual` block).
+
 ## Master-Einstellungen (added 2026-09-27, client's own framing: "wie ein Profil, nur ohne Login")
 
 A gear button (`.master-settings-btn`, one per screen's `.brandbar`, seven
@@ -1262,12 +1322,43 @@ restriction, the hearing checkbox, code history, migration of all three
 old shapes - the last one via a separate inline script, not the main test
 file, since it needs to seed localStorage before the page's first load).
 
-**Not built, genuine open question**: whether the Blau-Gelb/vollständige
-Farbenblindheit categories (and the five-exercise + systemic-feedback
-backlog above) get wired up at all, and on what timeline - ask before
-starting that pass, since it's a real design effort (safe replacement
-palettes across three CVD axes), not a quick follow-on to tonight's
-settings-sheet redesign.
+**Built 2026-10-02 (client approved both parts): Farbschwäche-Unterstützung.**
+Any Farbsehen option ticked in Master now switches on, for every exercise
+that has it, two independent aids (one shared block in app.js,
+`CVD_EXERCISES`/`CVD_FB_SELECTORS`, next to `applyColorVisionMode()`):
+- **Haken & Kreuz** (`fb`): a tick/cross badge on every right/wrong
+  feedback state, so green/red no longer carries the meaning alone.
+  Implemented as a generated stylesheet (`#cvdFeedbackStyles`, built from
+  `CVD_FB_SELECTORS`) that adds an SVG `background-image` badge, centred at
+  the top, scoped per exercise via `body.fbs-<ex>` - no positioning or
+  layout change, so it's safe on absolutely-positioned markers and static
+  buttons alike (a corner badge got clipped away on round buttons, hence
+  centre-top). MOT's 3D look keeps its gradient under the badge (special
+  rule). 26 exercises: Remember/Blitz/MOT plus every Test-Bereich exercise
+  with right/wrong feedback.
+- **Farbsichere Farben** (`pal`): `body.cvdp-<ex>` plus render-time reads
+  (`cvdPalOn(ex)`) swap the fixed colours of Go/No-Go, Simon, Stopp-Signal,
+  Doppelziel (T1), Suchtest, Wortfarben-Test, Kartensortier-Test and
+  Merkspanne. Pairs are dark blue `#0b3d91` vs. amber `#f5a300` (apart by
+  brightness, ~4.9:1, so they survive every CVD type incl. full colour
+  blindness); 4-colour tasks use a brightness ladder Schwarz/Blau/Orange/
+  Gelb (words and button labels change with it); Merkspanne uses
+  Okabe-Ito + grey (9 colours, same count). Instruction texts that name a
+  colour swap via `<span data-cvdp-ex data-cvdp-show="on|off">` pairs.
+  Honest limit: for full colour blindness the 4-colour/9-colour tasks rest
+  on brightness steps alone - better, not perfect.
+Each exercise's Feineinstellungen gets a "Farbschwäche-Unterstützung" group
+(injected by JS into every ready screen; a new `details.advanced` is
+created where a screen had none) with An/Aus per aid. Pressing either
+stores an override (`fwmc-cvd-overrides-v1`, `{ex:{fb,pal}}`) that wins
+over Master in both directions; the status line offers "Wieder den
+Master-Einstellungen folgen", and Master-Einstellungen has a global reset
+(`#masterCvdResetBtn`, shown only while overrides exist). The old
+`body.cvd-rotgruen` GNG-only swap is gone (replaced by `cvdp-gng`). VT's
+Stroop exercises are untouched - they already have a free colour picker.
+**Any new exercise with right/wrong feedback or a fixed colour pair must
+be added to `CVD_EXERCISES`/`CVD_FB_SELECTORS` (and palette reads) in the
+same commit.** Test: `tests/cvd_support_test.py`.
 
 ## Movement
 
@@ -3808,6 +3899,44 @@ the next); editing an already-added reps block reopens it correctly
 prefilled and persists changes; a range-mode reps block plays back
 correctly (right range, live timer, reps-input default) when reached
 mid-combo-run, and aborting mid-block during a combo still works.
+
+### Kraftplan: several exercises stacked, like Tabata (2026-10-02)
+
+Client report: "Die Kraftübungen können nicht gestackt werden" - the
+reps builder above only ever held ONE exercise, standalone and as a
+Kombi-Baustein (several single-exercise Bausteine were possible, but not
+one plan). Rebuilt `workoutRepsReady` into a Kraftplan builder that
+mirrors the Tabata Zirkel builder: add-grid with info button + "+" and
+a "N× im Plan" badge, an ordered item list, saved plans
+(`fwmc-workout-reps-saved-v1`), and a "↑" button to reorder (Tabata has
+none - cheap here and useful for strength order).
+- **Per item** (`workoutRepsPrefs.items[]`: `{exercise, rangeKey,
+  customMin, customMax, sets 1-10, restS 15-300, note}`): own range
+  (select: the 3 presets or "Eigener Bereich" with min/max steppers),
+  own sets, own Satzpause, own note (e.g. the weight used).
+- **Plan-level pauses**: "Pause zwischen Übungen" (`exerciseRestS`,
+  0-180s in 5s steps, default 60, 0 = straight on) and, in Feineinstellungen, a
+  "Vorbereitungszeit" start countdown (`prepS`, 0-30s, default 10). The
+  old range/sets/set-rest controls moved into Feineinstellungen as the
+  **defaults for newly added exercises** (set-rest range widened to
+  15-300s). No cool-down: a reps plan has no timed phase to append one to.
+- **Block shape** played by the engine: `{kind:"strength", items:[{exercise,
+  rangeMin, rangeMax, sets, restS, note}], exerciseRestS, prepS}`, built by
+  `buildStrengthPlanBlock()`. `startStrengthBlock()` runs it on the same
+  reps view/state as a single "reps" block (`workoutState.block` = current
+  item, `workoutState.strength` = whole plan); `startRepsRest(s, mode)`
+  takes `"set"`/`"item"`/`"start"` and labels the countdown accordingly
+  ("Pause", "Pause – Übungswechsel" + "Als Nächstes: …", "Bereit machen").
+  Set info reads "Übung 2 von 3 · Satz 1 von 4". Double progression is
+  recorded per item at the end (standalone only, as before).
+- **Kombi**: the whole Kraftplan is ONE Baustein (`kind:"strength"`),
+  edit-in-place; re-editing maps an explicit min/max back to its preset
+  when it matches one. An older single-exercise range-mode `kind:"reps"`
+  combo block still plays and reopens as a 1-item plan (saved back as
+  `strength`). Plain fixed coach "reps" blocks are untouched.
+- **Migration**: an old saved single `exercise` becomes a 1-item plan.
+Tests: `tests/workout_reps_builder_test.py`, `tests/workout_reps_combo_test.py`
+(both rewritten for the plan builder).
 
 ### Interval phase wording corrected (2026-09-30)
 

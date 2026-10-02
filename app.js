@@ -1002,17 +1002,26 @@
   }
   function workoutBlockLabel(block) {
     if (block.kind === "circuit") return circuitSummaryLabel(block);
+    if (block.kind === "strength") return block.items.length === 1 ? findWorkoutExercise(block.items[0].exercise).name : `Kraftplan · ${block.items.length} Übungen`;
     return findWorkoutExercise(block.exercise).name;
   }
   function workoutBlockMeta(block) {
     if (block.kind === "tabata") return `${block.rounds} Runden à ${block.workS}s/${block.restS}s`;
     if (block.kind === "circuit") return `${block.items.length} Übungen × ${block.sets} Sätze`;
+    if (block.kind === "strength") return block.items.map((it) => `${findWorkoutExercise(it.exercise).name} ${it.sets}×${it.rangeMin}–${it.rangeMax}`).join(" · ");
     if (block.rangeMin != null) return `${block.sets}×${block.rangeMin}–${block.rangeMax}`;
     return `${block.sets}×${block.reps}`;
   }
   function workoutBlockSeconds(block) {
     if (block.kind === "tabata") return block.rounds * (block.workS + block.restS);
     if (block.kind === "circuit") return buildCircuitSchedule(block).total;
+    if (block.kind === "strength") {
+      // Same rough 30s/set estimate as a single reps block, plus every set
+      // rest, every exercise-change rest and the start countdown.
+      const items = block.items || [];
+      return (block.prepS || 0) + items.reduce((t, it) => t + it.sets * 30 + (it.sets - 1) * (it.restS ?? 60), 0)
+        + Math.max(0, items.length - 1) * (block.exerciseRestS ?? 0);
+    }
     return block.sets * 30 + (block.sets - 1) * (block.restS ?? 30); // 30s/set is a rough estimate for the "ca." total
   }
   // ---- Coach-authored / self-built workout plans (mirrors the breath and
@@ -1089,6 +1098,7 @@
   // ever wants a plain one-click preset again.
   const COMBO_PRESETS = {};
   const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Movement", visual: "Visual Training", workout: "Workout", cardio: "Cardio", nat: "NAT" };
+  const PERIPH_ICON_HTML = '<div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg></div>';
   const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat"];
   // Blitz-Raster/Flash Speicher Test/MOT-Fähigkeit render inside the same
   // "NAT" group as Remember (all 4 are NAT sub-exercises) but need their
@@ -1122,6 +1132,7 @@
       { label: "Remember · Feste Positionen", meta: "Schwierigkeit & Dauer einstellen", open: () => openRememberComboCapture("fixed", null, null) },
       { label: "Remember · Bewegte Positionen", meta: "Schwierigkeit & Dauer einstellen", open: () => openRememberComboCapture("shuffle", null, null) },
       { label: "Remember · Trainingsmodus", meta: "gezielt bei einer Zahlenanzahl üben", open: () => openRememberComboCapture("training", null, null) },
+      { label: "Periphere Wahrnehmung", meta: "Zeichen, Bereich, Tempo & Dauer einstellen", open: () => openVisualComboCapture("periph-flash", PERIPH_ICON_HTML, null, null) },
       { label: "Blitz-Raster", meta: "Raster, Bereiche & Dauer einstellen", open: () => openBlitzComboCapture(null, null) },
       { label: "Flash · Konstant", meta: "Schwierigkeit & Dauer einstellen", open: () => openFlashComboCapture("constant", null, null) },
       { label: "Flash · Steigend, direkt", meta: "Schwierigkeit & Dauer einstellen", open: () => openFlashComboCapture("climb", null, null) },
@@ -1142,7 +1153,7 @@
     // renderComboBlockList() below.
     workout: [
       { label: "Eigener Zirkel", meta: "mehrere Übungen mit Sätzen & Pausen zusammenstellen", open: () => openWorkoutComboCapture(null, null) },
-      { label: "Kraft-/Wiederholungstraining", meta: "Übung & Wiederholungsbereich einstellen", open: () => openWorkoutRepsComboCapture(null, null) },
+      { label: "Kraft-/Wiederholungstraining", meta: "Kraftplan aus mehreren Übungen mit Sätzen & Pausen", open: () => openWorkoutRepsComboCapture(null, null) },
     ],
     // Visual has too many exercises (and its own client-side "incompatible"
     // masking from Master-Einstellungen) for a static list - resolved fresh
@@ -1157,7 +1168,7 @@
     breath: (block, i) => openBreathComboCapture(block.pattern, block, i),
     wimhof: (block, i) => openWimhofComboCapture(block, i),
     visual: (block, i) => openVisualComboCapture(block.exercise, null, block, i),
-    workout: (block, i) => (block.kind === "reps" ? openWorkoutRepsComboCapture(block, i) : openWorkoutComboCapture(block, i)),
+    workout: (block, i) => (block.kind === "reps" || block.kind === "strength" ? openWorkoutRepsComboCapture(block, i) : openWorkoutComboCapture(block, i)),
     nat: (block, i) => openRememberComboCapture(block.mode, block, i),
     blitz: (block, i) => openBlitzComboCapture(block, i),
     flash: (block, i) => openFlashComboCapture(block.mode, block, i),
@@ -1334,6 +1345,12 @@
     workoutRepsCustomMaxSlider: $("workoutRepsCustomMaxSlider"), workoutRepsCustomRangeValue: $("workoutRepsCustomRangeValue"),
     workoutRepsSetsRow: $("workoutRepsSetsRow"), workoutRepsRestSlider: $("workoutRepsRestSlider"), workoutRepsRestValue: $("workoutRepsRestValue"),
     workoutRepsSuggestionHint: $("workoutRepsSuggestionHint"), workoutRepsStartBtn: $("workoutRepsStartBtn"),
+    workoutRepsSavedGroup: $("workoutRepsSavedGroup"), workoutRepsSavedList: $("workoutRepsSavedList"),
+    workoutRepsCount: $("workoutRepsCount"), workoutRepsEmptyHint: $("workoutRepsEmptyHint"), workoutRepsList: $("workoutRepsList"),
+    workoutRepsSaveBtn: $("workoutRepsSaveBtn"), workoutRepsSaveForm: $("workoutRepsSaveForm"), workoutRepsSaveNameInput: $("workoutRepsSaveNameInput"),
+    workoutRepsSaveCancelBtn: $("workoutRepsSaveCancelBtn"), workoutRepsSaveConfirmBtn: $("workoutRepsSaveConfirmBtn"),
+    workoutRepsExerciseRestSlider: $("workoutRepsExerciseRestSlider"), workoutRepsExerciseRestValue: $("workoutRepsExerciseRestValue"),
+    workoutRepsPrepSlider: $("workoutRepsPrepSlider"), workoutRepsPrepValue: $("workoutRepsPrepValue"),
     workoutSetTimer: $("workoutSetTimer"), workoutRepsInputRow: $("workoutRepsInputRow"), workoutRepsInputValue: $("workoutRepsInputValue"),
     workoutRepsInputMinus: $("workoutRepsInputMinus"), workoutRepsInputPlus: $("workoutRepsInputPlus"),
     natHome: $("natHome"), natPeripherPanel: $("natPeripherPanel"), natRememberPanel: $("natRememberPanel"), natBlitzPanel: $("natBlitzPanel"), natFlashPanel: $("natFlashPanel"), natMotPanel: $("natMotPanel"),
@@ -1884,7 +1901,7 @@
     workoutCircuitSaveBtn: $("workoutCircuitSaveBtn"), workoutCircuitSaveForm: $("workoutCircuitSaveForm"),
     workoutCircuitSaveNameInput: $("workoutCircuitSaveNameInput"),
     workoutCircuitSaveCancelBtn: $("workoutCircuitSaveCancelBtn"), workoutCircuitSaveConfirmBtn: $("workoutCircuitSaveConfirmBtn"),
-    workoutCircuitAddGrid: $("workoutCircuitAddGrid"), workoutCircuitCount: $("workoutCircuitCount"),
+    workoutCircuitAddGrid: $("workoutCircuitAddGrid"), workoutCircuitRestSlider: $("workoutCircuitRestSlider"), workoutCircuitRestValue: $("workoutCircuitRestValue"), workoutCircuitCount: $("workoutCircuitCount"),
     workoutCircuitEmptyHint: $("workoutCircuitEmptyHint"), workoutCircuitList: $("workoutCircuitList"),
     workoutCircuitSetRestGroup: $("workoutCircuitSetRestGroup"),
     workoutCircuitSetRestSlider: $("workoutCircuitSetRestSlider"), workoutCircuitSetRestValue: $("workoutCircuitSetRestValue"),
@@ -1929,6 +1946,7 @@
     workoutPlayer: $("workoutPlayer"), workoutRepsView: $("workoutRepsView"), workoutExerciseName: $("workoutExerciseName"),
     workoutSetInfo: $("workoutSetInfo"), workoutRepsBig: $("workoutRepsBig"), workoutNote: $("workoutNote"),
     workoutSetDoneBtn: $("workoutSetDoneBtn"), workoutRestBox: $("workoutRestBox"), workoutRestCountdown: $("workoutRestCountdown"),
+    workoutRestLabel: $("workoutRestLabel"), workoutRestNext: $("workoutRestNext"),
     workoutRestSkipBtn: $("workoutRestSkipBtn"), workoutTabataView: $("workoutTabataView"), tabataPhaseLabel: $("tabataPhaseLabel"),
     tabataCountdown: $("tabataCountdown"), tabataExerciseName: $("tabataExerciseName"), tabataRoundLabel: $("tabataRoundLabel"),
     tabataExerciseIcon: $("tabataExerciseIcon"), tabataExerciseNote: $("tabataExerciseNote"),
@@ -5173,9 +5191,252 @@
   // to tell them apart) but have no exercise wired to them yet - same
   // "collect it now, adapt exercises as their target colour becomes
   // configurable" pattern the client already approved for Rot-Grün.
-  function applyColorVisionMode() {
-    document.body.classList.toggle("cvd-rotgruen", masterPrefs.colorVision.includes("rotgruen"));
+  // ---- Farbschwäche-Unterstützung (client, 2026-10-02) ----
+  // Two independent aids per exercise:
+  //  - "fb": a tick/cross symbol on every right/wrong feedback state, so the
+  //    green/red feedback no longer relies on colour alone.
+  //  - "pal": a colour-safe replacement for an exercise's FIXED colour pair/
+  //    palette (Go/No-Go, Simon, Stopp-Signal, Doppelziel, Suchtest,
+  //    Wortfarben-Test, Kartensortier-Test, Merkspanne). The safe colours
+  //    differ in BRIGHTNESS as well as hue (dark blue vs. amber, a black/
+  //    blue/orange/yellow brightness ladder, Okabe-Ito for Merkspanne), so
+  //    they stay apart for Rot-Grün, Blau-Gelb and - as far as brightness
+  //    alone allows - full colour blindness too.
+  // Both follow Master-Einstellungen by default (any Farbsehen option ticked
+  // = on); each exercise's own Feineinstellungen can switch either one on or
+  // off independently, which is stored as an override until reset. One
+  // shared store, never part of the exercises' own prefs objects.
+  const CVD_OVERRIDE_KEY = "fwmc-cvd-overrides-v1";
+  const cvdOverrides = (() => {
+    const saved = readJSON(CVD_OVERRIDE_KEY, {});
+    return saved && typeof saved === "object" ? saved : {};
+  })();
+  function saveCvdOverrides() { writeJSON(CVD_OVERRIDE_KEY, cvdOverrides); }
+  // ex id -> ready screens that get the controls, whether it has right/
+  // wrong feedback (fb) and/or a fixed palette (pal).
+  const CVD_EXERCISES = {
+    remember: { screens: ["rememberReady", "rememberTrainingReady"], fb: true },
+    blitz: { screens: ["blitzReady"], fb: true },
+    mot: { screens: ["motReady", "motTrainingReady"], fb: true },
+    gng: { screens: ["gngReady"], fb: true, pal: true },
+    testNback: { screens: ["testNbackReady"], fb: true },
+    trail: { screens: ["trailReady"], fb: true },
+    flanker: { screens: ["flankerReady"], fb: true },
+    ufov: { screens: ["ufovReady"], fb: true },
+    posner: { screens: ["posnerReady"], fb: true },
+    simon: { screens: ["simonReady"], fb: true, pal: true },
+    rotation: { screens: ["rotationReady"], fb: true },
+    merk: { screens: ["merkReady"], fb: true, pal: true },
+    search: { screens: ["searchReady"], fb: true, pal: true },
+    ab: { screens: ["abReady"], fb: true, pal: true },
+    hick: { screens: ["hickReady"], fb: true },
+    corsi: { screens: ["corsiReady"], fb: true },
+    ts: { screens: ["tsReady"], fb: true },
+    anti: { screens: ["antiReady"], fb: true },
+    stroop: { screens: ["stroopReady"], fb: true, pal: true },
+    subitize: { screens: ["subitizeReady"], fb: true },
+    vorlauf: { screens: ["vorlaufReady"], fb: true },
+    stop: { screens: ["stopReady"], fb: true, pal: true },
+    dsst: { screens: ["dsstReady"], fb: true },
+    wcst: { screens: ["wcstReady"], fb: true, pal: true },
+    navon: { screens: ["navonReady"], fb: true },
+    iconic: { screens: ["iconicReady"], fb: true },
+  };
+  // Feedback selectors per exercise: [okSelectors, badSelectors].
+  const CVD_FB_SELECTORS = {
+    remember: [".remember-marker.correct", ".remember-marker.wrong"],
+    blitz: [".blitz-cell.correct", ".blitz-cell.wrong"],
+    mot: [".mot-object.correct", ".mot-object.wrong"],
+    gng: [".gng-stimulus.hit", ".gng-stimulus.wrong"],
+    testNback: [".nback-match-btn.correct", ".nback-match-btn.wrong"],
+    trail: [null, ".trail-marker.wrong"],
+    flanker: [".flanker-response-btn.correct", ".flanker-response-btn.wrong"],
+    ufov: [".ufov-shape-btn.correct, .ufov-ring-btn.correct", ".ufov-shape-btn.wrong, .ufov-ring-btn.wrong"],
+    posner: [".posner-box.correct", ".posner-box.wrong"],
+    simon: [".simon-response-btn.correct", ".simon-response-btn.wrong"],
+    rotation: [".rotation-response-btn.correct", ".rotation-response-btn.wrong"],
+    merk: [".merk-response-btn.correct", ".merk-response-btn.wrong"],
+    search: [".search-item.correct, .search-item.reveal", ".search-item.wrong"],
+    ab: [".ab-t1-btn.correct, .ab-t2-btn.correct", ".ab-t1-btn.wrong, .ab-t2-btn.wrong"],
+    hick: [".hick-box.correct", ".hick-box.wrong"],
+    corsi: [".corsi-block.correct", ".corsi-block.wrong"],
+    ts: [".ts-response-btn.correct", ".ts-response-btn.wrong"],
+    anti: [".anti-response-btn.correct", ".anti-response-btn.wrong"],
+    stroop: [".stroop-response-btn.correct", ".stroop-response-btn.wrong"],
+    subitize: [".subitize-key.correct", ".subitize-key.wrong"],
+    vorlauf: [null, ".vorlauf-dot.falsestart"],
+    stop: [".stop-response-btn.correct", ".stop-response-btn.wrong"],
+    dsst: [".dsst-key.correct", ".dsst-key.wrong"],
+    wcst: [".wcst-card.wcst-ref.correct", ".wcst-card.wcst-ref.wrong"],
+    navon: [".navon-response-btn.correct", ".navon-response-btn.wrong"],
+    iconic: [".iconic-answer-box.correct", ".iconic-answer-box.wrong"],
+  };
+  // Safe palettes. Two-colour pairs: dark blue vs. amber (brightness
+  // contrast ~4.9:1, so they stay apart even without any colour vision).
+  const CVD_DARK = "#0b3d91";
+  const CVD_LIGHT = "#f5a300";
+  // Four-colour ladder for Wortfarben-/Kartensortier-Test, same order as
+  // their own keys (rot, blau, gruen, gelb), brightness ~0.01/0.18/0.42/0.74.
+  const CVD_FOUR = [
+    { key: "rot", title: "Schwarz", word: "SCHWARZ", hex: "#16232a" },
+    { key: "blau", title: "Blau", word: "BLAU", hex: "#2f6fed" },
+    { key: "gruen", title: "Orange", word: "ORANGE", hex: "#e69f00" },
+    { key: "gelb", title: "Gelb", word: "GELB", hex: "#f0e442" },
+  ];
+  // Okabe-Ito (the standard colour-blind-safe qualitative palette) + grey.
+  const CVD_MERK_PALETTE = ["#000000", "#e69f00", "#56b4e9", "#009e73", "#f0e442", "#0072b2", "#d55e00", "#cc79a7", "#999999"];
+
+  function cvdMasterOn() { return masterPrefs.colorVision.length > 0; }
+  function cvdOverride(ex, kind) {
+    const o = cvdOverrides[ex];
+    return o && typeof o[kind] === "boolean" ? o[kind] : null;
   }
+  function cvdFbOn(ex) { const o = cvdOverride(ex, "fb"); return o == null ? cvdMasterOn() : o; }
+  function cvdPalOn(ex) { const o = cvdOverride(ex, "pal"); return o == null ? cvdMasterOn() : o; }
+  function cvdSetOverride(ex, kind, value) {
+    if (value == null) {
+      if (cvdOverrides[ex]) delete cvdOverrides[ex][kind];
+      if (cvdOverrides[ex] && !Object.keys(cvdOverrides[ex]).length) delete cvdOverrides[ex];
+    } else {
+      cvdOverrides[ex] = cvdOverrides[ex] || {};
+      cvdOverrides[ex][kind] = value;
+    }
+    saveCvdOverrides();
+    applyCvdState();
+  }
+  function resetAllCvdOverrides() {
+    Object.keys(cvdOverrides).forEach((k) => delete cvdOverrides[k]);
+    saveCvdOverrides();
+    applyCvdState();
+  }
+
+  // One generated stylesheet for every tick/cross rule, so the selector map
+  // above is the single source of truth. Each rule is scoped to its own
+  // body class (fbs-<ex>), so one exercise's setting never leaks into
+  // another. A background-image badge needs no positioning and changes no
+  // layout - safe on absolutely-positioned markers and static buttons alike.
+  const CVD_OK_IMG = `url("data:image/svg+xml,${encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='#ffffff' stroke='#16232a' stroke-width='1.5'/><path d='M6.5 12.5l3.6 3.6 7.4-8' fill='none' stroke='#16232a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>")}")`;
+  const CVD_BAD_IMG = `url("data:image/svg+xml,${encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='#ffffff' stroke='#16232a' stroke-width='1.5'/><path d='M7.5 7.5l9 9M16.5 7.5l-9 9' fill='none' stroke='#16232a' stroke-width='3' stroke-linecap='round'/></svg>")}")`;
+  (function buildCvdStyles() {
+    const badge = "background-repeat:no-repeat;background-position:center top 4px;background-size:20px 20px";
+    const scope = (ex, sel) => sel.split(",").map((s) => `body.fbs-${ex} ${s.trim()}`).join(",");
+    let css = "";
+    Object.entries(CVD_FB_SELECTORS).forEach(([ex, [ok, bad]]) => {
+      if (ok) css += `${scope(ex, ok)}{background-image:${CVD_OK_IMG};${badge}}\n`;
+      if (bad) css += `${scope(ex, bad)}{background-image:${CVD_BAD_IMG};${badge}}\n`;
+    });
+    // MOT's 3D look draws its sphere as a background-image gradient - keep
+    // it underneath the badge instead of replacing it.
+    css += `body.fbs-mot .mot-object.style-3d.correct{background-image:${CVD_OK_IMG},radial-gradient(circle at 34% 28%, #a8e0ac 0%, #2e7d32 55%, #1b5e20 100%);background-repeat:no-repeat,no-repeat;background-position:center top 4px,center;background-size:20px 20px,cover}\n`;
+    css += `body.fbs-mot .mot-object.style-3d.wrong{background-image:${CVD_BAD_IMG},radial-gradient(circle at 34% 28%, #f3a6a6 0%, #d32f2f 55%, #941f1f 100%);background-repeat:no-repeat,no-repeat;background-position:center top 4px,center;background-size:20px 20px,cover}\n`;
+    const style = document.createElement("style");
+    style.id = "cvdFeedbackStyles";
+    style.textContent = css;
+    document.head.appendChild(style);
+  })();
+
+  // Per-exercise controls, injected into each ready screen's own
+  // Feineinstellungen (a new one is added where a screen has none yet).
+  function cvdControlsHost(screenId) {
+    const screen = document.getElementById(screenId);
+    if (!screen) return null;
+    let body = screen.querySelector("details.advanced .advanced-body");
+    if (!body) {
+      const det = document.createElement("details");
+      det.className = "advanced";
+      det.innerHTML = '<summary>Feineinstellungen</summary><div class="advanced-body"></div>';
+      const anchor = screen.querySelector(".start-btn");
+      const best = anchor && anchor.previousElementSibling && anchor.previousElementSibling.classList.contains("group-help") ? anchor.previousElementSibling : anchor;
+      screen.insertBefore(det, best || null);
+      body = det.querySelector(".advanced-body");
+    }
+    return body;
+  }
+  function cvdToggleRow(ex, kind, label) {
+    const row = document.createElement("div");
+    row.className = "cvd-row";
+    row.innerHTML = `<div class="cvd-row-label">${label}</div><div class="choice-row"><button class="choice" data-cvd-ex="${ex}" data-cvd-kind="${kind}" data-cvd-val="1">An</button><button class="choice" data-cvd-ex="${ex}" data-cvd-kind="${kind}" data-cvd-val="0">Aus</button></div><div class="group-help cvd-status" data-cvd-status="${ex}:${kind}"></div>`;
+    return row;
+  }
+  Object.entries(CVD_EXERCISES).forEach(([ex, cfg]) => {
+    cfg.screens.forEach((screenId) => {
+      const host = cvdControlsHost(screenId);
+      if (!host) return;
+      const group = document.createElement("div");
+      group.className = "group cvd-group";
+      group.dataset.cvdGroup = ex;
+      group.innerHTML = '<div class="group-label">Farbschw&auml;che-Unterst&uuml;tzung</div>';
+      if (cfg.fb) group.appendChild(cvdToggleRow(ex, "fb", "Haken &amp; Kreuz bei richtig/falsch"));
+      if (cfg.pal) group.appendChild(cvdToggleRow(ex, "pal", "Farbsichere Farben"));
+      host.appendChild(group);
+    });
+  });
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-cvd-ex]");
+    if (btn) { cvdSetOverride(btn.dataset.cvdEx, btn.dataset.cvdKind, btn.dataset.cvdVal === "1"); return; }
+    const reset = e.target.closest("[data-cvd-reset]");
+    if (reset) { const [ex, kind] = reset.dataset.cvdReset.split(":"); cvdSetOverride(ex, kind, null); }
+  });
+
+  function applyCvdState() {
+    Object.entries(CVD_EXERCISES).forEach(([ex, cfg]) => {
+      if (cfg.fb) document.body.classList.toggle(`fbs-${ex}`, cvdFbOn(ex));
+      if (cfg.pal) document.body.classList.toggle(`cvdp-${ex}`, cvdPalOn(ex));
+    });
+    document.querySelectorAll("[data-cvd-ex]").forEach((b) => {
+      const on = b.dataset.cvdKind === "fb" ? cvdFbOn(b.dataset.cvdEx) : cvdPalOn(b.dataset.cvdEx);
+      setActive(b, (b.dataset.cvdVal === "1") === on);
+    });
+    document.querySelectorAll("[data-cvd-status]").forEach((el) => {
+      const [ex, kind] = el.dataset.cvdStatus.split(":");
+      el.textContent = "";
+      if (cvdOverride(ex, kind) == null) {
+        el.textContent = cvdMasterOn() ? "Folgt den Master-Einstellungen (Farbsehen ausgewählt)." : "Folgt den Master-Einstellungen.";
+      } else {
+        el.append("Eigene Einstellung für diese Übung. ");
+        const link = document.createElement("button");
+        link.className = "text-link";
+        link.type = "button";
+        link.dataset.cvdReset = `${ex}:${kind}`;
+        link.textContent = "Wieder den Master-Einstellungen folgen";
+        el.appendChild(link);
+      }
+    });
+    // Texts that name a colour (instructions, cues) swap with the palette.
+    document.querySelectorAll("[data-cvdp-ex]").forEach((el) => {
+      el.hidden = (el.dataset.cvdpShow === "on") !== cvdPalOn(el.dataset.cvdpEx);
+    });
+    syncWcstRefColors();
+    const stroopNames = { rot: "Rot", blau: "Blau", gruen: "Grün", gelb: "Gelb" };
+    document.querySelectorAll("[data-stroop-color]").forEach((b) => {
+      const safe = cvdStroopColor(b.dataset.stroopColor);
+      b.setAttribute("aria-label", safe ? safe.title : stroopNames[b.dataset.stroopColor]);
+    });
+    const resetBtn = document.getElementById("masterCvdResetBtn");
+    if (resetBtn) resetBtn.hidden = !Object.keys(cvdOverrides).length;
+  }
+  // Colour-dependent helpers the exercises read at render time.
+  function cvdStroopColor(key) {
+    return cvdPalOn("stroop") ? CVD_FOUR.find((c) => c.key === key) : null;
+  }
+  function cvdWcstHex(idx, normalHex) { return cvdPalOn("wcst") ? CVD_FOUR[idx].hex : normalHex; }
+  function syncWcstRefColors() {
+    const row = document.getElementById("wcstRefRow");
+    if (!row) return;
+    const normal = ["#d64545", "#2e7d32", "#f4c430", "#1565c0"];
+    const normalNames = ["rot", "grün", "gelb", "blau"];
+    const counts = ["ein", "zwei", "drei", "vier"];
+    const shapes = [["Dreieck", "Dreiecke"], ["Stern", "Sterne"], ["Quadrat", "Quadrate"], ["Kreis", "Kreise"]];
+    const safeNames = ["schwarz", "blau", "orange", "gelb"];
+    row.querySelectorAll(".wcst-ref").forEach((btn) => {
+      const i = Number(btn.dataset.refIdx);
+      btn.querySelectorAll(".wcst-shape").forEach((s) => { s.style.color = cvdWcstHex(i, normal[i]); });
+      const name = (cvdPalOn("wcst") ? safeNames : normalNames)[i];
+      const adj = i === 0 ? `${name}es` : `${name}e`;
+      btn.setAttribute("aria-label", `Referenzkarte ${i + 1}: ${counts[i]} ${adj} ${shapes[i][i === 0 ? 0 : 1]}`);
+    });
+  }
+  function applyColorVisionMode() { applyCvdState(); }
   document.querySelectorAll("[data-master-cvd]").forEach((el) => el.addEventListener("click", () => {
     const key = el.dataset.masterCvd;
     if (masterPrefs.colorVision.includes(key)) masterPrefs.colorVision = masterPrefs.colorVision.filter((k) => k !== key);
@@ -5183,6 +5444,9 @@
     saveMasterPrefs(); applyColorVisionMode(); syncMasterCvdUI();
   }));
   function syncMasterCvdUI() { document.querySelectorAll("[data-master-cvd]").forEach((el) => setActive(el, masterPrefs.colorVision.includes(el.dataset.masterCvd))); }
+  document.getElementById("masterCvdResetBtn").addEventListener("click", () => {
+    if (confirm("Eigene Farbschwäche-Einstellungen aller Übungen zurücksetzen? Danach folgen alle wieder den Master-Einstellungen.")) resetAllCvdOverrides();
+  });
   applyColorVisionMode();
 
   document.querySelectorAll("[data-master-limb]").forEach((el) => el.addEventListener("click", () => {
@@ -6986,7 +7250,7 @@
   // instead of a separate mini-screen set like Remember has. ----
   els.periphOpenBtn.addEventListener("click", () => {
     readyReturnScreen = "natHome";
-    openReady("periph-flash", '<div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg></div>');
+    openReady("periph-flash", PERIPH_ICON_HTML);
   });
   els.rememberReadyStartBtn.addEventListener("click", () => {
     if (comboRememberCaptureOriginal) { commitRememberComboCapture(); return; }
@@ -9253,6 +9517,7 @@
     renderWorkoutOverview();
     if (block.kind === "tabata") startTabataBlock(block);
     else if (block.kind === "circuit") startCircuitBlock(block);
+    else if (block.kind === "strength") startStrengthBlock(block);
     else startRepsBlock(block);
   }
   function renderWorkoutOverview() {
@@ -9270,6 +9535,46 @@
     workoutState = { kind: "reps", block, ex, setIndex: 1, startTime: performance.now(), achieved: [] };
     renderRepsView();
     requestWakeLock();
+  }
+  // ---- Kraftplan ("strength"): several reps exercises in a row, each
+  // with its own range/sets/set-rest (added 2026-10-02 - the client's ask:
+  // stack strength exercises into one plan like Tabata, standalone AND as a
+  // single Kombi-Baustein). Runs on the exact same reps view/state as a
+  // single "reps" block - workoutState.block is always the CURRENT item
+  // (shaped like a range-mode reps block), workoutState.strength the whole
+  // plan - so renderRepsView()/the set-done button/the rest countdown need
+  // only small, item-aware additions rather than a second engine.
+  function strengthItemBlock(item) {
+    return { kind: "reps", exercise: item.exercise, sets: item.sets, reps: item.rangeMax, rangeMin: item.rangeMin, rangeMax: item.rangeMax, restS: item.restS, note: item.note || "" };
+  }
+  function startStrengthBlock(plan) {
+    const first = strengthItemBlock(plan.items[0]);
+    const now = performance.now();
+    workoutState = {
+      kind: "reps", strength: plan, itemIndex: 0, block: first, ex: findWorkoutExercise(first.exercise),
+      setIndex: 1, startTime: now, sessionStart: now, achieved: [], results: [],
+    };
+    requestWakeLock();
+    if ((plan.prepS || 0) > 0) {
+      renderRepsView();
+      startRepsRest(plan.prepS, "start");
+    } else {
+      renderRepsView();
+    }
+  }
+  function strengthNextItemIndex() {
+    const st = workoutState;
+    return st && st.strength && st.itemIndex + 1 < st.strength.items.length ? st.itemIndex + 1 : -1;
+  }
+  function advanceStrengthItem() {
+    const st = workoutState;
+    st.results.push({ exercise: st.block.exercise, rangeMin: st.block.rangeMin, rangeMax: st.block.rangeMax, achieved: st.achieved.slice() });
+    st.itemIndex += 1;
+    st.block = strengthItemBlock(st.strength.items[st.itemIndex]);
+    st.ex = findWorkoutExercise(st.block.exercise);
+    st.setIndex = 1;
+    st.achieved = [];
+    renderRepsView();
   }
   // Live per-set stopwatch - informational only (see CLAUDE.md's "Kraft-/
   // Wiederholungstraining" note on why time-under-tension isn't used to
@@ -9292,7 +9597,8 @@
     const { block, ex, setIndex } = workoutState;
     const isRange = block.rangeMin != null;
     els.workoutExerciseName.textContent = ex.name;
-    els.workoutSetInfo.textContent = `Satz ${setIndex} von ${block.sets}`;
+    const plan = workoutState.strength;
+    els.workoutSetInfo.textContent = (plan && plan.items.length > 1 ? `Übung ${workoutState.itemIndex + 1} von ${plan.items.length} · ` : "") + `Satz ${setIndex} von ${block.sets}`;
     els.workoutRepsBig.textContent = isRange ? `${block.rangeMin}–${block.rangeMax} Wiederholungen` : `${block.reps} Wiederholungen`;
     els.workoutNote.textContent = block.note || ex.note || "";
     els.workoutSetDoneBtn.hidden = false;
@@ -9326,12 +9632,36 @@
       workoutState.achieved.push(workoutState.currentInput);
       stopWorkoutSetTimer();
     }
-    if (workoutState.setIndex >= workoutState.block.sets) { finishWorkoutBlock(); return; }
-    startRepsRest(workoutState.block.restS ?? 30);
+    if (workoutState.setIndex >= workoutState.block.sets) {
+      if (strengthNextItemIndex() < 0) { finishWorkoutBlock(); return; }
+      const changeS = workoutState.strength.exerciseRestS ?? 0;
+      if (changeS > 0) startRepsRest(changeS, "item");
+      else advanceStrengthItem();
+      return;
+    }
+    startRepsRest(workoutState.block.restS ?? 30, "set");
   });
-  function startRepsRest(restS) {
+  // `mode` says what the countdown leads into: "set" (next set of the same
+  // exercise), "item" (next exercise of a Kraftplan) or "start" (the
+  // Kraftplan's own start countdown, before its very first set).
+  function startRepsRest(restS, mode = "set") {
+    workoutState.restMode = mode;
     els.workoutSetDoneBtn.hidden = true;
+    els.workoutRepsInputRow.hidden = true;
+    stopWorkoutSetTimer();
+    els.workoutSetTimer.hidden = true;
     els.workoutRestBox.hidden = false;
+    els.workoutRestLabel.textContent = mode === "start" ? "Bereit machen" : mode === "item" ? "Pause – Übungswechsel" : "Pause";
+    let nextText = "";
+    if (mode === "item") {
+      const next = workoutState.strength.items[strengthNextItemIndex()];
+      nextText = `Als Nächstes: ${findWorkoutExercise(next.exercise).name} · ${next.sets}×${next.rangeMin}–${next.rangeMax}`;
+    } else if (mode === "start") {
+      nextText = `Los geht's mit: ${workoutState.ex.name}`;
+    }
+    els.workoutRestNext.hidden = !nextText;
+    els.workoutRestNext.textContent = nextText;
+    els.workoutRestSkipBtn.textContent = mode === "start" ? "Sofort starten" : "Jetzt weiter";
     let remaining = restS;
     const tick = () => {
       els.workoutRestCountdown.textContent = Math.max(0, Math.ceil(remaining));
@@ -9343,7 +9673,11 @@
   function advanceRepsSet() {
     if (workoutRestTimer) clearTimeout(workoutRestTimer);
     workoutRestTimer = null;
-    workoutState.setIndex += 1;
+    if (!workoutState) return;
+    const mode = workoutState.restMode || "set";
+    workoutState.restMode = null;
+    if (mode === "item") { advanceStrengthItem(); return; }
+    if (mode === "set") workoutState.setIndex += 1;
     renderRepsView();
   }
   els.workoutRestSkipBtn.addEventListener("click", () => advanceRepsSet());
@@ -9443,7 +9777,7 @@
       block.items.forEach((item, i) => {
         schedule.push({ t0: t, t1: t + item.workS, type: "work", set, itemIdx: i, exercise: item.exercise, note: item.note });
         t += item.workS;
-        if (i < block.items.length - 1) {
+        if (i < block.items.length - 1 && block.restS > 0) {
           schedule.push({ t0: t, t1: t + block.restS, type: "rest", set, itemIdx: i });
           t += block.restS;
         }
@@ -9595,12 +9929,22 @@
     // going straight to its own next block/summary, no natural place to
     // show it without interrupting that flow.
     let suggestion = null;
-    if (st && st.kind === "reps" && st.block.rangeMin != null && st.achieved.length && !workoutPlan && !comboProgram) {
+    let doneEx = st ? st.ex : null;
+    if (st && st.strength) {
+      if (st.achieved.length) st.results.push({ exercise: st.block.exercise, rangeMin: st.block.rangeMin, rangeMax: st.block.rangeMax, achieved: st.achieved.slice() });
+      if (st.strength.items.length > 1) doneEx = { name: workoutBlockLabel(st.strength) };
+      if (!workoutPlan && !comboProgram) {
+        const topNames = st.results
+          .filter((r) => r.achieved.length && recordWorkoutRepsProgress(r.exercise, r.rangeMin, r.rangeMax, r.achieved))
+          .map((r) => findWorkoutExercise(r.exercise).name);
+        if (topNames.length) suggestion = `Stark – bei ${topNames.join(", ")} hast du in jedem Satz das obere Ende deines Bereichs geschafft. Nächstes Mal schwerer machen (mehr Gewicht, schwerere Variante, oder die Übung tauschen)?`;
+      }
+    } else if (st && st.kind === "reps" && st.block.rangeMin != null && st.achieved.length && !workoutPlan && !comboProgram) {
       const hitTop = recordWorkoutRepsProgress(st.block.exercise, st.block.rangeMin, st.block.rangeMax, st.achieved);
       if (hitTop) suggestion = `Stark – du hast in jedem Satz ${st.block.rangeMax}+ Wiederholungen geschafft. Nächstes Mal schwerer machen (mehr Gewicht, schwerere Variante, oder die Übung tauschen)?`;
     }
     workoutState = null;
-    onWorkoutBlockDone(played, st ? st.ex : null, suggestion);
+    onWorkoutBlockDone(played, doneEx, suggestion);
   }
   function onWorkoutBlockDone(playedS, ex, suggestion) {
     releaseWakeLock();
@@ -9708,6 +10052,7 @@
     const saved = readJSON(WORKOUT_CIRCUIT_KEY, null);
     if (saved && typeof saved === "object") Object.assign(workoutCircuitPrefs, saved);
     if (!Array.isArray(workoutCircuitPrefs.items)) workoutCircuitPrefs.items = [];
+    if (!Number.isFinite(workoutCircuitPrefs.restS) || workoutCircuitPrefs.restS < 0 || workoutCircuitPrefs.restS > 180) workoutCircuitPrefs.restS = 10;
     if (!Number.isFinite(workoutCircuitPrefs.prepS) || workoutCircuitPrefs.prepS < 3 || workoutCircuitPrefs.prepS > 30) workoutCircuitPrefs.prepS = TABATA_PREP_S;
     if (!Number.isFinite(workoutCircuitPrefs.cooldownS) || workoutCircuitPrefs.cooldownS < 0 || workoutCircuitPrefs.cooldownS > 120) workoutCircuitPrefs.cooldownS = 0;
   }
@@ -9825,14 +10170,15 @@
     closeWorkoutCircuitCustomForm();
     renderWorkoutCircuitAddGrid();
   });
-  document.querySelectorAll("[data-wo-rest]").forEach((el) => el.addEventListener("click", () => {
-    workoutCircuitPrefs.restS = Number(el.dataset.woRest); saveWorkoutCircuitPrefs(); syncWorkoutCircuitUI();
-  }));
+  els.workoutCircuitRestSlider.addEventListener("input", () => {
+    workoutCircuitPrefs.restS = Number(els.workoutCircuitRestSlider.value); saveWorkoutCircuitPrefs(); syncWorkoutCircuitUI();
+  });
   document.querySelectorAll("[data-wo-sets]").forEach((el) => el.addEventListener("click", () => {
     workoutCircuitPrefs.sets = Number(el.dataset.woSets); saveWorkoutCircuitPrefs(); syncWorkoutCircuitUI();
   }));
   function syncWorkoutCircuitUI() {
-    document.querySelectorAll("[data-wo-rest]").forEach((el) => setActive(el, Number(el.dataset.woRest) === workoutCircuitPrefs.restS));
+    els.workoutCircuitRestSlider.value = workoutCircuitPrefs.restS;
+    els.workoutCircuitRestValue.textContent = workoutCircuitPrefs.restS > 0 ? `${workoutCircuitPrefs.restS} s` : "Keine";
     document.querySelectorAll("[data-wo-sets]").forEach((el) => setActive(el, Number(el.dataset.woSets) === workoutCircuitPrefs.sets));
     els.workoutCircuitSetRestGroup.hidden = workoutCircuitPrefs.sets <= 1;
     els.workoutCircuitSetRestSlider.value = workoutCircuitPrefs.setRestS;
@@ -10012,8 +10358,28 @@
     return { min: preset.min, max: preset.max };
   }
 
+  // v2 (2026-10-02): a whole Kraftplan - an ordered list of exercises, each
+  // with its own range/sets/set-rest, plus a rest between exercises and a
+  // start countdown - instead of the original single exercise. The old
+  // flat fields (rangeKey/customMin/customMax/sets/restS) now act as the
+  // defaults for newly added exercises; an old saved single `exercise` is
+  // migrated into a one-item plan on load.
   const WORKOUT_REPS_KEY = "fwmc-workout-reps-builder-v1";
-  const workoutRepsPrefs = { exercise: null, rangeKey: "muskelaufbau", customMin: 8, customMax: 12, sets: 3, restS: 60 };
+  const workoutRepsPrefs = { items: [], rangeKey: "muskelaufbau", customMin: 8, customMax: 12, sets: 3, restS: 60, exerciseRestS: 60, prepS: 10 };
+  function clampInt(v, lo, hi, dflt) { return Number.isFinite(v) && v >= lo && v <= hi ? Math.round(v) : dflt; }
+  function normalizeStrengthItem(it) {
+    const out = {
+      exercise: it.exercise,
+      rangeKey: it.rangeKey === "custom" || REP_RANGE_PRESETS.some((p) => p.key === it.rangeKey) ? it.rangeKey : "muskelaufbau",
+      customMin: clampInt(it.customMin, 1, 30, 8),
+      customMax: clampInt(it.customMax, 1, 30, 12),
+      sets: clampInt(it.sets, 1, 10, 3),
+      restS: clampInt(it.restS, 15, 300, 60),
+      note: typeof it.note === "string" ? it.note : "",
+    };
+    if (out.customMax < out.customMin) out.customMax = out.customMin;
+    return out;
+  }
   function loadWorkoutRepsPrefs() {
     const saved = readJSON(WORKOUT_REPS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(workoutRepsPrefs, saved);
@@ -10021,7 +10387,16 @@
     if (!Number.isFinite(workoutRepsPrefs.customMin) || workoutRepsPrefs.customMin < 1 || workoutRepsPrefs.customMin > 30) workoutRepsPrefs.customMin = 8;
     if (!Number.isFinite(workoutRepsPrefs.customMax) || workoutRepsPrefs.customMax < workoutRepsPrefs.customMin || workoutRepsPrefs.customMax > 30) workoutRepsPrefs.customMax = 12;
     if (![2, 3, 4, 5].includes(workoutRepsPrefs.sets)) workoutRepsPrefs.sets = 3;
-    if (!Number.isFinite(workoutRepsPrefs.restS) || workoutRepsPrefs.restS < 15 || workoutRepsPrefs.restS > 180) workoutRepsPrefs.restS = 60;
+    if (!Number.isFinite(workoutRepsPrefs.restS) || workoutRepsPrefs.restS < 15 || workoutRepsPrefs.restS > 300) workoutRepsPrefs.restS = 60;
+    workoutRepsPrefs.exerciseRestS = clampInt(workoutRepsPrefs.exerciseRestS, 0, 180, 60);
+    workoutRepsPrefs.prepS = clampInt(workoutRepsPrefs.prepS, 0, 30, 10);
+    if (!Array.isArray(workoutRepsPrefs.items)) workoutRepsPrefs.items = [];
+    // Migration from the single-exercise builder.
+    if (workoutRepsPrefs.exercise && !workoutRepsPrefs.items.length) {
+      workoutRepsPrefs.items.push({ exercise: workoutRepsPrefs.exercise, rangeKey: workoutRepsPrefs.rangeKey, customMin: workoutRepsPrefs.customMin, customMax: workoutRepsPrefs.customMax, sets: workoutRepsPrefs.sets, restS: workoutRepsPrefs.restS, note: "" });
+    }
+    delete workoutRepsPrefs.exercise;
+    workoutRepsPrefs.items = workoutRepsPrefs.items.filter((it) => it && it.exercise).map(normalizeStrengthItem);
   }
   function saveWorkoutRepsPrefs() { writeJSON(WORKOUT_REPS_KEY, workoutRepsPrefs); }
   loadWorkoutRepsPrefs();
@@ -10045,23 +10420,64 @@
     return hitTopEverySet;
   }
 
+  function newStrengthItem(exerciseId) {
+    return normalizeStrengthItem({
+      exercise: exerciseId, rangeKey: workoutRepsPrefs.rangeKey, customMin: workoutRepsPrefs.customMin,
+      customMax: workoutRepsPrefs.customMax, sets: workoutRepsPrefs.sets, restS: workoutRepsPrefs.restS, note: "",
+    });
+  }
+  // Plain block shape the engine plays (explicit min/max, no preset keys).
+  function buildStrengthPlanBlock() {
+    return {
+      kind: "strength",
+      items: workoutRepsPrefs.items.map((it) => {
+        const { min, max } = repRangeFor(it);
+        return { exercise: it.exercise, rangeMin: min, rangeMax: max, sets: it.sets, restS: it.restS, note: it.note || "" };
+      }),
+      exerciseRestS: workoutRepsPrefs.exerciseRestS,
+      prepS: workoutRepsPrefs.prepS,
+    };
+  }
+  // Reverse: a stored plan item (explicit min/max) back into an editable
+  // builder item, mapping to a named preset when the numbers match one.
+  function strengthItemFromBlockItem(it) {
+    const preset = REP_RANGE_PRESETS.find((p) => p.min === it.rangeMin && p.max === it.rangeMax);
+    return normalizeStrengthItem({
+      exercise: it.exercise, rangeKey: preset ? preset.key : "custom",
+      customMin: it.rangeMin, customMax: it.rangeMax, sets: it.sets, restS: it.restS, note: it.note || "",
+    });
+  }
+  function refreshWorkoutRepsBuilder() {
+    renderWorkoutRepsExerciseGrid();
+    renderWorkoutRepsList();
+    syncWorkoutRepsUI();
+  }
+
   function renderWorkoutRepsExerciseGrid() {
     els.workoutRepsExerciseGrid.innerHTML = "";
     allWorkoutExerciseEntries().forEach(([id, ex]) => {
       const isCustom = !WORKOUT_EXERCISES[id];
+      const count = workoutRepsPrefs.items.filter((it) => it.exercise === id).length;
       const wrap = document.createElement("div");
       wrap.className = "custom-exercise-add-row";
-      const btn = document.createElement("button");
-      btn.className = "combo-add-btn";
-      setActive(btn, workoutRepsPrefs.exercise === id);
-      btn.innerHTML = `<span class="ca-icon">${workoutIconSVG(ex.icon)}</span><span class="ca-text"><span class="ca-title">${esc(ex.name)}</span></span>`;
-      btn.addEventListener("click", () => {
-        workoutRepsPrefs.exercise = id;
+      const infoBtn = document.createElement("button");
+      infoBtn.className = "combo-add-btn";
+      infoBtn.setAttribute("aria-label", `Erklärung: ${ex.name}`);
+      infoBtn.innerHTML = `<span class="ca-icon">${workoutIconSVG(ex.icon)}</span>` +
+        `<span class="ca-text"><span class="ca-title">${esc(ex.name)}</span>` +
+        (count ? `<br><span class="ca-meta">${count}× im Plan</span>` : "") + `</span>`;
+      infoBtn.addEventListener("click", () => openWorkoutExerciseInfo(ex));
+      wrap.appendChild(infoBtn);
+      const addBtn = document.createElement("button");
+      addBtn.className = "ca-plus-btn";
+      addBtn.setAttribute("aria-label", `${ex.name} zum Kraftplan hinzufügen`);
+      addBtn.innerHTML = `<span class="ca-plus">+</span>`;
+      addBtn.addEventListener("click", () => {
+        workoutRepsPrefs.items.push(newStrengthItem(id));
         saveWorkoutRepsPrefs();
-        renderWorkoutRepsExerciseGrid();
-        syncWorkoutRepsUI();
+        refreshWorkoutRepsBuilder();
       });
-      wrap.appendChild(btn);
+      wrap.appendChild(addBtn);
       if (isCustom) {
         const rm = document.createElement("button");
         rm.className = "combo-block-remove";
@@ -10070,15 +10486,107 @@
         rm.addEventListener("click", () => {
           customWorkoutExercises = customWorkoutExercises.filter((c) => c.id !== id);
           saveCustomWorkoutExercises(customWorkoutExercises);
-          if (workoutRepsPrefs.exercise === id) { workoutRepsPrefs.exercise = null; saveWorkoutRepsPrefs(); }
-          renderWorkoutRepsExerciseGrid();
-          syncWorkoutRepsUI();
+          workoutRepsPrefs.items = workoutRepsPrefs.items.filter((it) => it.exercise !== id);
+          saveWorkoutRepsPrefs();
+          refreshWorkoutRepsBuilder();
         });
         wrap.appendChild(rm);
       }
       els.workoutRepsExerciseGrid.appendChild(wrap);
     });
   }
+
+  function strengthStepper(i, field, label, value) {
+    return `<div class="cardio-interval-phase-row strength-field-row"><span>${label}</span>` +
+      `<button class="circuit-step" data-si="${i}" data-sfield="${field}" data-dir="-1" aria-label="${label} weniger">&minus;</button>` +
+      `<span class="circuit-duration-value" data-svalue="${field}">${value}</span>` +
+      `<button class="circuit-step" data-si="${i}" data-sfield="${field}" data-dir="1" aria-label="${label} mehr">+</button></div>`;
+  }
+  const STRENGTH_FIELD_LIMITS = {
+    sets: { lo: 1, hi: 10, step: 1 },
+    restS: { lo: 15, hi: 300, step: 15 },
+    customMin: { lo: 1, hi: 30, step: 1 },
+    customMax: { lo: 1, hi: 30, step: 1 },
+  };
+  function renderWorkoutRepsList() {
+    const items = workoutRepsPrefs.items;
+    els.workoutRepsCount.textContent = items.length ? `${items.length} Übung${items.length === 1 ? "" : "en"}` : "";
+    els.workoutRepsEmptyHint.hidden = items.length > 0;
+    els.workoutRepsSaveBtn.hidden = items.length === 0 || !els.workoutRepsSaveForm.hidden;
+    els.workoutRepsList.innerHTML = "";
+    items.forEach((item, i) => {
+      const ex = findWorkoutExercise(item.exercise);
+      const { min, max } = repRangeFor(item);
+      const row = document.createElement("div");
+      row.className = "circuit-item-row strength-item-row";
+      const rangeOptions = REP_RANGE_PRESETS.map((p) => `<option value="${p.key}" ${item.rangeKey === p.key ? "selected" : ""}>${p.label} (${p.min}–${p.max})</option>`).join("") +
+        `<option value="custom" ${item.rangeKey === "custom" ? "selected" : ""}>Eigener Bereich</option>`;
+      row.innerHTML =
+        `<div class="circuit-item-main">` +
+        `<span class="chapter-main" style="cursor:default"><span class="num">${i + 1}</span><span class="ca-icon">${workoutIconSVG(ex.icon)}</span><span class="info"><strong>${esc(ex.name)}</strong><span>${item.sets}×${min}–${max} · ${fmtSeconds(item.restS)} Satzpause</span></span></span>` +
+        (i > 0 ? `<button class="circuit-step strength-move" data-move="${i}" title="Nach oben" aria-label="Nach oben">&uarr;</button>` : "") +
+        `<button class="combo-block-remove" data-i="${i}" title="Entfernen">&#10005;</button>` +
+        `</div>` +
+        `<div class="cardio-interval-fields">` +
+        `<div class="cardio-interval-phase-row strength-field-row"><span>Bereich</span><select class="strength-range-select" data-si="${i}" aria-label="Wiederholungsbereich">${rangeOptions}</select></div>` +
+        (item.rangeKey === "custom" ? strengthStepper(i, "customMin", "Min. Wdh.", item.customMin) + strengthStepper(i, "customMax", "Max. Wdh.", item.customMax) : "") +
+        strengthStepper(i, "sets", "Sätze", item.sets) +
+        strengthStepper(i, "restS", "Satzpause", `${item.restS}s`) +
+        `</div>` +
+        `<input type="text" class="circuit-item-note" data-i="${i}" placeholder="Eigene Notiz (optional, z. B. Gewicht)" maxlength="80" value="${esc(item.note || "")}">`;
+      els.workoutRepsList.appendChild(row);
+    });
+    els.workoutRepsList.querySelectorAll("[data-sfield]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const item = workoutRepsPrefs.items[Number(btn.dataset.si)];
+        const f = btn.dataset.sfield;
+        const lim = STRENGTH_FIELD_LIMITS[f];
+        item[f] = Math.max(lim.lo, Math.min(lim.hi, item[f] + Number(btn.dataset.dir) * lim.step));
+        if (f === "customMin" && item.customMax < item.customMin) item.customMax = item.customMin;
+        if (f === "customMax" && item.customMin > item.customMax) item.customMin = item.customMax;
+        saveWorkoutRepsPrefs();
+        renderWorkoutRepsList();
+        syncWorkoutRepsUI();
+      });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-range-select").forEach((sel) => {
+      sel.addEventListener("change", () => {
+        const item = workoutRepsPrefs.items[Number(sel.dataset.si)];
+        if (sel.value === "custom" && item.rangeKey !== "custom") {
+          // Start "Eigener Bereich" from whatever range was showing.
+          const { min, max } = repRangeFor(item);
+          item.customMin = min; item.customMax = max;
+        }
+        item.rangeKey = sel.value;
+        saveWorkoutRepsPrefs();
+        renderWorkoutRepsList();
+        syncWorkoutRepsUI();
+      });
+    });
+    els.workoutRepsList.querySelectorAll(".strength-move").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.dataset.move);
+        const list = workoutRepsPrefs.items;
+        [list[i - 1], list[i]] = [list[i], list[i - 1]];
+        saveWorkoutRepsPrefs();
+        renderWorkoutRepsList();
+      });
+    });
+    els.workoutRepsList.querySelectorAll(".combo-block-remove").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        workoutRepsPrefs.items.splice(Number(btn.dataset.i), 1);
+        saveWorkoutRepsPrefs();
+        refreshWorkoutRepsBuilder();
+      });
+    });
+    els.workoutRepsList.querySelectorAll(".circuit-item-note").forEach((input) => {
+      input.addEventListener("change", () => {
+        workoutRepsPrefs.items[Number(input.dataset.i)].note = input.value.trim();
+        saveWorkoutRepsPrefs();
+      });
+    });
+  }
+
   function openWorkoutRepsCustomForm() {
     els.workoutRepsCustomForm.hidden = false;
     els.workoutRepsCustomBtn.hidden = true;
@@ -10099,13 +10607,13 @@
     const id = `custom-${Date.now()}`;
     customWorkoutExercises.push({ id, name, note, icon: "custom" });
     saveCustomWorkoutExercises(customWorkoutExercises);
-    workoutRepsPrefs.exercise = id;
+    workoutRepsPrefs.items.push(newStrengthItem(id));
     saveWorkoutRepsPrefs();
     closeWorkoutRepsCustomForm();
-    renderWorkoutRepsExerciseGrid();
-    syncWorkoutRepsUI();
+    refreshWorkoutRepsBuilder();
   });
 
+  // Defaults for newly added exercises (Feineinstellungen).
   document.querySelectorAll("#workoutRepsRangeRow [data-reps-range]").forEach((el) => {
     el.addEventListener("click", () => {
       workoutRepsPrefs.rangeKey = el.dataset.repsRange;
@@ -10135,6 +10643,16 @@
     saveWorkoutRepsPrefs();
     syncWorkoutRepsUI();
   });
+  els.workoutRepsExerciseRestSlider.addEventListener("input", () => {
+    workoutRepsPrefs.exerciseRestS = Number(els.workoutRepsExerciseRestSlider.value);
+    saveWorkoutRepsPrefs();
+    syncWorkoutRepsUI();
+  });
+  els.workoutRepsPrepSlider.addEventListener("input", () => {
+    workoutRepsPrefs.prepS = Number(els.workoutRepsPrepSlider.value);
+    saveWorkoutRepsPrefs();
+    syncWorkoutRepsUI();
+  });
 
   function syncWorkoutRepsUI() {
     document.querySelectorAll("#workoutRepsRangeRow [data-reps-range]").forEach((el) => setActive(el, el.dataset.repsRange === workoutRepsPrefs.rangeKey));
@@ -10153,14 +10671,22 @@
     document.querySelectorAll("#workoutRepsSetsRow [data-reps-sets]").forEach((el) => setActive(el, Number(el.dataset.repsSets) === workoutRepsPrefs.sets));
     els.workoutRepsRestSlider.value = workoutRepsPrefs.restS;
     els.workoutRepsRestValue.textContent = fmtSeconds(workoutRepsPrefs.restS);
-    const hasExercise = !!workoutRepsPrefs.exercise;
-    els.workoutRepsStartBtn.disabled = !hasExercise;
-    els.workoutRepsStartBtn.textContent = hasExercise ? "Training starten" : "Bitte eine Übung wählen";
-    const progress = hasExercise ? loadWorkoutRepsProgress()[workoutRepsPrefs.exercise] : null;
-    if (progress && progress.suggestIncrease) {
-      const ex = findWorkoutExercise(workoutRepsPrefs.exercise);
+    els.workoutRepsExerciseRestSlider.value = workoutRepsPrefs.exerciseRestS;
+    els.workoutRepsExerciseRestValue.textContent = workoutRepsPrefs.exerciseRestS > 0 ? fmtSeconds(workoutRepsPrefs.exerciseRestS) : "Keine";
+    els.workoutRepsPrepSlider.value = workoutRepsPrefs.prepS;
+    els.workoutRepsPrepValue.textContent = workoutRepsPrefs.prepS > 0 ? `${workoutRepsPrefs.prepS} s` : "Aus";
+    const hasItems = workoutRepsPrefs.items.length > 0;
+    els.workoutRepsStartBtn.disabled = !hasItems;
+    els.workoutRepsStartBtn.textContent = hasItems
+      ? (comboWorkoutRepsCaptureOriginal ? "Baustein übernehmen" : "Training starten")
+      : "Mindestens eine Übung hinzufügen";
+    const progress = loadWorkoutRepsProgress();
+    const nudge = [...new Set(workoutRepsPrefs.items.map((it) => it.exercise))]
+      .filter((id) => progress[id] && progress[id].suggestIncrease)
+      .map((id) => findWorkoutExercise(id).name);
+    if (nudge.length) {
       els.workoutRepsSuggestionHint.hidden = false;
-      els.workoutRepsSuggestionHint.textContent = `Letztes Mal hast du bei ${ex.name} in jedem Satz ${progress.max}+ Wiederholungen geschafft – heute schwerer probieren (mehr Gewicht, schwerere Variante, oder die Übung tauschen)?`;
+      els.workoutRepsSuggestionHint.textContent = `Letztes Mal hast du bei ${nudge.join(", ")} in jedem Satz das obere Ende deines Bereichs geschafft – heute schwerer probieren (mehr Gewicht, schwerere Variante, oder die Übung tauschen)?`;
     } else {
       els.workoutRepsSuggestionHint.hidden = true;
     }
@@ -10168,57 +10694,55 @@
 
   function openWorkoutRepsReady() {
     closeWorkoutRepsCustomForm();
-    renderWorkoutRepsExerciseGrid();
-    syncWorkoutRepsUI();
+    renderWorkoutRepsSaved();
+    refreshWorkoutRepsBuilder();
     showScreen("workoutRepsReady");
   }
   els.workoutRepsStartCard.addEventListener("click", openWorkoutRepsReady);
 
   // ---- Kombi-Baukasten capture, same pattern as the circuit builder's own
   // (openWorkoutComboCapture) - reopen this exact ready screen instead of a
-  // second settings UI. A combo "workout" block with kind:"reps" already
-  // plays back with zero further engine changes (runWorkoutBlock()/
-  // workoutBlockLabel()/Meta()/Seconds() all dispatch on block.kind, and
-  // the range-mode reps view built above only checks block.rangeMin).
+  // second settings UI. The whole Kraftplan becomes ONE combo block
+  // (kind:"strength"), exactly like a whole Zirkel is one block; it plays
+  // back through runWorkoutBlock() like any other workout block. An older
+  // single-exercise range-mode "reps" combo block reopens as a one-item
+  // plan and is saved back as a "strength" block.
   let comboWorkoutRepsCaptureOriginal = null;
   let comboWorkoutRepsEditIndex = null;
   function openWorkoutRepsComboCapture(existingBlock, editIndex) {
-    comboWorkoutRepsCaptureOriginal = { ...workoutRepsPrefs };
-    if (existingBlock) {
-      workoutRepsPrefs.exercise = existingBlock.exercise;
-      // The combo block only ever stores an explicit min/max (see
-      // commitWorkoutRepsComboCapture below), never one of the named
-      // presets - re-editing always lands on "Eigener Bereich" with those
-      // exact numbers prefilled, rather than guessing which preset (if
-      // any) they happened to match.
-      workoutRepsPrefs.rangeKey = "custom";
-      workoutRepsPrefs.customMin = existingBlock.rangeMin;
-      workoutRepsPrefs.customMax = existingBlock.rangeMax;
-      workoutRepsPrefs.sets = existingBlock.sets;
-      workoutRepsPrefs.restS = existingBlock.restS;
+    comboWorkoutRepsCaptureOriginal = JSON.parse(JSON.stringify(workoutRepsPrefs));
+    if (existingBlock && existingBlock.kind === "strength") {
+      workoutRepsPrefs.items = existingBlock.items.map(strengthItemFromBlockItem);
+      workoutRepsPrefs.exerciseRestS = existingBlock.exerciseRestS ?? workoutRepsPrefs.exerciseRestS;
+      workoutRepsPrefs.prepS = existingBlock.prepS ?? workoutRepsPrefs.prepS;
+    } else if (existingBlock) {
+      workoutRepsPrefs.items = [strengthItemFromBlockItem({
+        exercise: existingBlock.exercise, rangeMin: existingBlock.rangeMin, rangeMax: existingBlock.rangeMax,
+        sets: existingBlock.sets, restS: existingBlock.restS, note: existingBlock.note,
+      })];
+      workoutRepsPrefs.prepS = 0;
+    } else {
+      workoutRepsPrefs.items = [];
     }
     comboWorkoutRepsEditIndex = editIndex ?? null;
     els.workoutRepsReadyTitle.textContent = "Baustein: Kraft-/Wiederholungstraining";
-    els.workoutRepsReadyHint.textContent = "Stelle Übung, Wiederholungsbereich, Sätze und Pause für diesen Kombi-Baustein ein.";
+    els.workoutRepsReadyHint.textContent = "Stell den Kraftplan für diesen Kombi-Baustein zusammen – mehrere Übungen, jede mit eigenem Bereich, Sätzen und Pausen.";
     openWorkoutRepsReady();
   }
   function exitWorkoutRepsComboCapture() {
     if (comboWorkoutRepsCaptureOriginal) {
+      Object.keys(workoutRepsPrefs).forEach((k) => delete workoutRepsPrefs[k]);
       Object.assign(workoutRepsPrefs, comboWorkoutRepsCaptureOriginal);
       saveWorkoutRepsPrefs();
       comboWorkoutRepsCaptureOriginal = null;
     }
     comboWorkoutRepsEditIndex = null;
     els.workoutRepsReadyTitle.textContent = "Kraft-/Wiederholungstraining";
-    els.workoutRepsReadyHint.textContent = "Wähle eine Übung und einen Wiederholungsbereich – die App merkt sich deine letzten Sätze und schlägt vor, wann du steigern kannst.";
+    els.workoutRepsReadyHint.textContent = "Stell dir deinen Kraftplan zusammen: tippe Übungen in der Reihenfolge an, in der du sie machen willst – jede mit eigenem Wiederholungsbereich, eigenen Sätzen und eigener Satzpause.";
   }
   function commitWorkoutRepsComboCapture() {
-    if (!workoutRepsPrefs.exercise) return;
-    const { min, max } = repRangeFor(workoutRepsPrefs);
-    const block = {
-      domain: "workout", kind: "reps", exercise: workoutRepsPrefs.exercise,
-      sets: workoutRepsPrefs.sets, reps: max, rangeMin: min, rangeMax: max, restS: workoutRepsPrefs.restS,
-    };
+    if (!workoutRepsPrefs.items.length) return;
+    const block = { domain: "workout", ...buildStrengthPlanBlock() };
     if (comboWorkoutRepsEditIndex != null) comboDraftBlocks[comboWorkoutRepsEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitWorkoutRepsComboCapture();
@@ -10231,22 +10755,47 @@
   });
 
   function startWorkoutRepsNow() {
-    if (!workoutRepsPrefs.exercise) return;
-    const { min, max } = repRangeFor(workoutRepsPrefs);
+    if (!workoutRepsPrefs.items.length) return;
     workoutStandaloneReturnScreen = "workoutRepsReady";
-    startStandaloneWorkoutBlock({
-      kind: "reps",
-      exercise: workoutRepsPrefs.exercise,
-      sets: workoutRepsPrefs.sets,
-      reps: max,
-      rangeMin: min,
-      rangeMax: max,
-      restS: workoutRepsPrefs.restS,
-    });
+    startStandaloneWorkoutBlock(buildStrengthPlanBlock());
   }
   els.workoutRepsStartBtn.addEventListener("click", () => {
     if (comboWorkoutRepsCaptureOriginal) { commitWorkoutRepsComboCapture(); return; }
     startWorkoutRepsNow();
+  });
+
+  // ---- Saved Kraftpläne: same "save under a name, tap to reuse" pattern
+  // as the saved Zirkel. ----
+  const WORKOUT_REPS_SAVED_KEY = "fwmc-workout-reps-saved-v1";
+  const workoutRepsSavedStore = makePresetStore(WORKOUT_REPS_SAVED_KEY);
+  function renderWorkoutRepsSaved() {
+    renderPresetList(workoutRepsSavedStore, els.workoutRepsSavedList, els.workoutRepsSavedGroup, null,
+      (e) => `${e.items.length} Übung${e.items.length === 1 ? "" : "en"} · ${e.items.reduce((t, it) => t + it.sets, 0)} Sätze`,
+      (entry) => {
+        workoutRepsPrefs.items = entry.items.map(normalizeStrengthItem);
+        workoutRepsPrefs.exerciseRestS = clampInt(entry.exerciseRestS, 0, 180, workoutRepsPrefs.exerciseRestS);
+        workoutRepsPrefs.prepS = clampInt(entry.prepS, 0, 30, workoutRepsPrefs.prepS);
+        saveWorkoutRepsPrefs();
+        // While capturing a Kombi-Baustein, loading a saved plan only fills
+        // the draft for review, never starts a session.
+        if (comboWorkoutRepsCaptureOriginal) { refreshWorkoutRepsBuilder(); return; }
+        startWorkoutRepsNow();
+      });
+  }
+  wirePresetSaveForm({
+    saveBtn: els.workoutRepsSaveBtn, form: els.workoutRepsSaveForm, nameInput: els.workoutRepsSaveNameInput,
+    cancelBtn: els.workoutRepsSaveCancelBtn, confirmBtn: els.workoutRepsSaveConfirmBtn,
+    defaultName: () => `Eigener Kraftplan ${new Date().toLocaleDateString("de-DE")}`,
+    onSave: (name) => {
+      const list = workoutRepsSavedStore.load();
+      list.push({
+        id: String(Date.now()), name,
+        items: workoutRepsPrefs.items.map((it) => ({ ...it })),
+        exerciseRestS: workoutRepsPrefs.exerciseRestS, prepS: workoutRepsPrefs.prepS,
+      });
+      workoutRepsSavedStore.save(list);
+      renderWorkoutRepsSaved();
+    },
   });
 
   // ==== Cardio: self-built sequence of physical activities (Joggen, Rad
@@ -12138,7 +12687,7 @@
       // rangeMin - no settings screen exists to reopen for those. Both
       // "circuit" and range-mode "reps" (rangeMin set - always true for
       // one built via openWorkoutRepsComboCapture) are edit-in-place.
-      const workoutNotEditable = block.domain === "workout" && block.kind !== "circuit" && block.rangeMin == null;
+      const workoutNotEditable = block.domain === "workout" && block.kind !== "circuit" && block.kind !== "strength" && block.rangeMin == null;
       const editOpener = workoutNotEditable ? null : COMBO_EDIT_OPENERS[block.domain];
       const row = document.createElement("div");
       row.className = "chapter-row";
@@ -15481,7 +16030,7 @@
   }
   function wcstRenderStimulus(card) {
     els.wcstStimulusCard.innerHTML = "";
-    const hex = WCST_COLOR_HEX[card.colorIdx];
+    const hex = cvdWcstHex(card.colorIdx, WCST_COLOR_HEX[card.colorIdx]);
     const shape = WCST_SHAPES[card.shapeIdx];
     for (let i = 0; i < card.countIdx + 1; i++) {
       const span = document.createElement("span");
@@ -16901,8 +17450,13 @@
     const maxStartX = Math.max(margin, rect.width - lengthPx - margin);
     const startX = margin + Math.random() * Math.max(0, maxStartX - margin);
     const lineH = 4;
-    const maxStartY = Math.max(0, rect.height - lineH);
-    const startY = Math.random() * maxStartY;
+    // Keep the line (and the 28px tap mark centred on it) clear of the
+    // floating hint and player-bar - .bisect-area starts at the top of the
+    // stage, underneath both (client report: line drawn right next to the
+    // "Tippe auf die Mitte der Linie" text on an iPad).
+    const minY = stageTopClearanceY(rect, els.bisectHint, els.bisectPlayerBar, 0, 14);
+    const maxStartY = Math.max(minY, rect.height - lineH - margin);
+    const startY = minY + Math.random() * (maxStartY - minY);
     els.bisectLine.style.left = startX + "px";
     els.bisectLine.style.top = startY + "px";
     els.bisectLine.style.width = lengthPx + "px";
@@ -17700,6 +18254,8 @@
   // always leaves at least one unused colour available to swap in as an
   // unambiguous "changed" colour.
   const MERK_PALETTE = ["#e53935", "#1e88e5", "#43a047", "#fdd835", "#8e24aa", "#fb8c00", "#00acc1", "#d81b60", "#6d4c41"];
+  // Farbschwäche-Unterstützung: Okabe-Ito + grey instead (same count of 9).
+  function merkPalette() { return cvdPalOn("merk") ? CVD_MERK_PALETTE : MERK_PALETTE; }
   const MERK_TRIAL_COUNT = 20; // balanced 10 changed / 10 unchanged, see buildMerkTrials
   const MERK_STUDY_MS = 500; // sample-array exposure
   const MERK_RETENTION_MS = 900; // blank retention interval - same order of magnitude as Luck & Vogel's own design
@@ -17841,7 +18397,7 @@
     return positions;
   }
   function shuffledPalette() {
-    const arr = MERK_PALETTE.slice();
+    const arr = merkPalette().slice();
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
@@ -17932,7 +18488,7 @@
     if (trial.changed) {
       const idx = Math.floor(Math.random() * testItems.length);
       const usedColors = merkState.items.map((it) => it.color);
-      const spare = MERK_PALETTE.filter((c) => !usedColors.includes(c));
+      const spare = merkPalette().filter((c) => !usedColors.includes(c));
       testItems[idx].color = spare[Math.floor(Math.random() * spare.length)];
     }
     merkState.phase = "responding";
@@ -18422,8 +18978,8 @@
   const SEARCH_MIN_RESOLVED = 4;
   const SEARCH_ITEM_PX = 34;
   const SEARCH_MIN_CENTER_PX = SEARCH_ITEM_PX + 12;
-  const SEARCH_COLOR_TARGET = "#d64545";
-  const SEARCH_COLOR_DISTRACTOR = "#8a97a3";
+  const SEARCH_COLOR_TARGET_NORMAL = "#d64545";
+  const SEARCH_COLOR_DISTRACTOR_NORMAL = "#8a97a3";
   const searchPrefs = { length: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadSearchPrefs() {
     const saved = readJSON(SEARCH_PREFS_KEY, null);
@@ -18532,6 +19088,10 @@
   // where no single feature is unique, forcing an item-by-item scan.
   function buildSearchItems(mode, setSize, rng) {
     const items = [];
+    // Farbschwäche-Unterstützung: dark blue target colour vs. light grey
+    // distractors - apart by brightness, not just hue.
+    const SEARCH_COLOR_TARGET = cvdPalOn("search") ? CVD_DARK : SEARCH_COLOR_TARGET_NORMAL;
+    const SEARCH_COLOR_DISTRACTOR = cvdPalOn("search") ? "#c3ccd4" : SEARCH_COLOR_DISTRACTOR_NORMAL;
     if (mode === "feature") {
       for (let i = 0; i < setSize - 1; i++) items.push({ shape: "circle", color: SEARCH_COLOR_DISTRACTOR, isTarget: false });
       items.push({ shape: "circle", color: SEARCH_COLOR_TARGET, isTarget: true });
@@ -18549,7 +19109,10 @@
     }
     return items;
   }
-  function searchTargetLabel(mode) { return mode === "feature" ? "Roter Kreis" : "Rotes Quadrat"; }
+  function searchTargetLabel(mode) {
+    if (cvdPalOn("search")) return mode === "feature" ? "Blauer Kreis" : "Blaues Quadrat";
+    return mode === "feature" ? "Roter Kreis" : "Rotes Quadrat";
+  }
 
   // Anti-overlap scatter placement across the whole stage - copy-adapted
   // from Trail Making's own trailRandomPixelPosition/trailStageBounds
@@ -21481,8 +22044,8 @@
     stroopState.stimAt = performance.now();
     els.stroopHint.textContent = "";
     stroopClearStage();
-    els.stroopWord.textContent = STROOP_COLORS[trial.word].word;
-    els.stroopWord.style.color = STROOP_COLORS[trial.ink].hex;
+    els.stroopWord.textContent = (cvdStroopColor(trial.word) || STROOP_COLORS[trial.word]).word;
+    els.stroopWord.style.color = (cvdStroopColor(trial.ink) || STROOP_COLORS[trial.ink]).hex;
     scheduleStroopTimer(stroopEndTrial, stroopState.diff.responseMs);
   }
   function stroopEndTrial() {
@@ -21743,11 +22306,13 @@
     els.subitizeDots.innerHTML = "";
     const rect = els.subitizeDots.getBoundingClientRect();
     const radius = 14;
-    subitizePlaceDots(count, rect.width, rect.height, radius).forEach((p) => {
+    // Dots must never land under the floating hint or player-bar.
+    const minY = Math.max(0, stageTopClearanceY(rect, els.subitizeHint, els.subitizePlayerBar, 0, 0, 8));
+    subitizePlaceDots(count, rect.width, Math.max(2 * radius, rect.height - minY), radius).forEach((p) => {
       const dot = document.createElement("div");
       dot.className = "subitize-dot";
       dot.style.left = p.x + "px";
-      dot.style.top = p.y + "px";
+      dot.style.top = (p.y + minY) + "px";
       els.subitizeDots.appendChild(dot);
     });
   }
