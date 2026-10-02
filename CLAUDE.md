@@ -4084,6 +4084,45 @@ snapped to the 5 s grid, 0-600 s.
 - `hideAllPlayers()` closes the sheet, so Beenden while paused is safe.
 Test: `tests/train_pause_edit_test.py`.
 
+### Cardio: Hintergrund, Motivation, Zusatzreize an freien Stellen (2026-10-02)
+
+Fabian: a background colour for Cardio, a big motivation field (image or
+quote) per activity, Zusatzreize only where the quote/image isn't
+("wirklich nur fein da, wo Buchstaben sind"), and a gallery that changes
+on its own. Cardio only - in other areas the field would be in the way.
+- **Hintergrund**: `cardioPrefs.bgColorKey/bgIntensity/bgCustom`, tints the
+  whole `#cardioPlayer` (`applyCardioBg`), wired through
+  `wireBgIntensityControl` on the ready screen ("Hintergrund & Motivation",
+  `#cardioLookAdvanced`) and in the shared pause sheet (`#cardioPauseBgGroup`,
+  shown only when the adapter carries `bgGroup`). In `MASTER_BG_TARGETS`.
+  Cardio stage text is now fixed hex (was `var(--ink)`, a dark-mode bug).
+- **Motivation per activity**: `item.motiv = {mode: keine|spruch|bild|galerie,
+  text, imageId}`, a select under each activity in the list. Shown in
+  `#cardioMotiv` while that activity runs (not in pauses).
+  `copyCardioItem()` deep-copies items incl. `motiv` everywhere items are
+  copied (saved units, Kombi capture, coach plans).
+- **Images** never leave the device: canvas-compressed JPEG (max 900 px)
+  in `fwmc-cardio-images-v1` (`{id: dataURL}`), items/gallery hold only
+  the id. A full storage shows a hint instead of failing silently.
+  `pruneCardioImage(id)` deletes an image only when no other localStorage
+  value (and no in-memory Kombi draft/capture) still mentions its id.
+- **Galerie**: `cardioPrefs.gallery` (quotes and images),
+  `galleryChangeS` 15-600 s, `galleryOrder` zufall (no immediate repeat
+  across reshuffles) or reihe; `cardioState.gallery` tracks position and
+  shifts with the pause like every other timestamp.
+- **Inline Zusatzreiz**: when the guest is `addon-flash`/`periph-flash` AND
+  the motivation box is visible, `triggerCardioGuest()` starts
+  `startCardioInlineFlash(cfg)` instead of a takeover: Cardio keeps running,
+  characters flash in `#cardioFlashLayer` using the guest cfg (kind,
+  colours vs. the Cardio background, Reiz-Dauer, Pause min/max, Größe,
+  Bereich via `randPosFromCfg`). Placement rejects any box touching a glyph
+  of the quote (each character measured by its own Range rect, so the gaps
+  between lines/words stay usable), the image, title/timer/labels, the
+  chapter nav and the player bar; no fit = that flash is skipped. Pause
+  freezes it; any other guest, abort or finish stops it. Every other guest
+  stays a full takeover.
+Test: `tests/cardio_motiv_test.py`.
+
 ### Interval phase wording corrected (2026-09-30)
 
 "Belastung"/"Erholung" (both the setup-screen phase labels and the live

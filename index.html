@@ -594,6 +594,50 @@
     </div>
   </details>
 
+  <details class="advanced" id="cardioLookAdvanced">
+    <summary>Hintergrund &amp; Motivation</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="cardioBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="cardioBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="cardioBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="cardioBgContrastHint" hidden></div>
+        <div class="bg-master-status" id="cardioBgMasterStatus"></div>
+      </div>
+      <div class="group">
+        <div class="group-label">Motivations-Galerie</div>
+        <div class="group-help">Spr&uuml;che und Bilder f&uuml;r alle Aktivit&auml;ten, bei denen du unter &bdquo;Motivation&ldquo; die Galerie w&auml;hlst. Bilder bleiben nur auf diesem Ger&auml;t.</div>
+        <div class="cardio-gallery-list" id="cardioGalleryList"></div>
+        <div class="cardio-gallery-empty group-help" id="cardioGalleryEmpty">Noch nichts in der Galerie.</div>
+        <div class="cardio-gallery-add">
+          <input type="text" id="cardioGalleryTextInput" maxlength="160" placeholder="Spruch eingeben">
+          <button type="button" class="text-link" id="cardioGalleryAddTextBtn">Spruch hinzuf&uuml;gen</button>
+        </div>
+        <label class="cardio-img-pick">
+          <input type="file" accept="image/*" id="cardioGalleryImgInput" hidden>
+          <span>+ Bild hinzuf&uuml;gen</span>
+        </label>
+        <div class="group-help" id="cardioImgError" hidden></div>
+      </div>
+      <div class="group">
+        <div class="group-label">Wechsel in der Galerie</div>
+        <div class="slider-row">
+          <span class="slider-label">Alle</span>
+          <input type="range" id="cardioGalleryChangeSlider" min="15" max="600" step="15" aria-label="Wechsel-Intervall der Galerie">
+          <span class="slider-value" id="cardioGalleryChangeValue"></span>
+        </div>
+        <div class="choice-row two" id="cardioGalleryOrderRow">
+          <button type="button" class="choice" data-order="zufall">Zuf&auml;llig</button>
+          <button type="button" class="choice" data-order="reihe">Der Reihe nach</button>
+        </div>
+      </div>
+    </div>
+  </details>
+
   <details class="advanced" id="cardioAddonAdvanced">
     <summary>Zusatzaufgabe w&auml;hrend Cardio</summary>
     <div class="advanced-body">
@@ -650,12 +694,17 @@
     <div class="cardio-activity-label" id="cardioActivityLabel" hidden></div>
     <div class="cardio-countdown" id="cardioCountdown">0:00</div>
     <div class="cardio-phase-label" id="cardioPhaseLabel" hidden></div>
+    <div class="cardio-motiv" id="cardioMotiv" hidden>
+      <img id="cardioMotivImg" alt="" hidden>
+      <p id="cardioMotivText" hidden></p>
+    </div>
     <div class="chapter-nav">
       <button id="cardioPrevBtn" title="Vorherige Aktivit&auml;t" aria-label="Vorherige Aktivit&auml;t">&laquo;</button>
       <button id="cardioRestartBtn" title="Aktivit&auml;t neu starten" aria-label="Aktivit&auml;t neu starten">&#8635;</button>
       <button id="cardioSkipBtn" title="Weiter zur n&auml;chsten Aktivit&auml;t" aria-label="Weiter zur n&auml;chsten Aktivit&auml;t">&raquo;</button>
     </div>
   </div>
+  <div class="cardio-flash-layer" id="cardioFlashLayer" aria-hidden="true"></div>
   <div class="player-bar" id="cardioPlayerBar">
     <button id="cardioBackBtn">&#10005; Beenden</button>
     <button id="cardioPauseBtn">Pause</button>
@@ -5572,6 +5621,13 @@
     <div class="group" id="trainPauseCurrent"></div>
     <button type="button" class="text-link" id="trainPauseOverviewBtn">Alle Pausen anzeigen</button>
     <div class="group train-pause-list" id="trainPauseList" hidden></div>
+    <div class="group" id="cardioPauseBgGroup" hidden>
+      <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="cardioPauseBgValue"></span></div>
+      <input type="range" id="cardioPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      <div class="group-label">Hintergrundfarbe</div>
+      <div class="color-picker" id="cardioPauseBgColorPicker"></div>
+      <div class="group-help" id="cardioPauseBgContrastHint" hidden></div>
+    </div>
     <button class="start-btn" id="trainPauseResumeBtn">Weiter</button>
   </div>
 </div>
