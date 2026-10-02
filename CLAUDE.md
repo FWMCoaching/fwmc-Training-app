@@ -1679,51 +1679,48 @@ AND coach-authored single-exercise blocks) share `circuitTick`:
   "last rep" vs. a normal one - not asked for, and the base cue already
   reuses the same short/long shape the client specifically requested.
 
-## Geplant: Ziel-/Signalfarbe pro Übung (noch nicht gebaut, 2026-09-27)
+## Ziel-/Signalfarbe pro Übung + Stroop-Farbhäufigkeit (gebaut 2026-10-02)
 
-Client request, queued to start once the background-colour Feineinstellungen
-work (see the batch tasks in flight the same day) is fully landed - don't
-start this while that's still touching the same ready-screens/prefs
-objects, to avoid two feature streams editing the same files at once.
+Fabian: "A. Ja", "B. Ja".
 
-**The ask**: beyond the *background* colour (already being added
-everywhere it makes sense), the *signal/target* colour itself (the colour
-of the "go" stimulus, the Simon dot, the search target, etc.) should also
-be configurable per exercise - reusing the app's existing "multi-select
-with a select-all shortcut" pattern (see Established patterns at the top
-of this file; already used for VT's arrow colours/Stroop's palette). The
-client's own stated reason: this isn't just a cosmetic option - letting
-someone reassign which colour means what is a genuine accessibility
-feature for red-green colour vision deficiency ("Rot-Grün-Schwäche") and
-any other reason someone might want to swap it ("mit welchen Gründen auch
-immer").
+**A - Signalfarbe** (`SIGNAL_DEFS` in app.js, next to the CVD block):
+every Test exercise whose signal is a fixed colour has a "Signalfarbe"
+group injected into its Feineinstellungen (same host helper as the CVD
+toggles, `cvdControlsHost`): Go/No-Go (go/nogo), Farbkonflikt-Test
+(left/right key), Suchtest (target/distractor), Doppelziel-Test (T1),
+Stopp-Signal-Test (signal), Reaktionsfeld-Test (light), Antizipationstest
+(ball), Blockspanne-Test (lit block). Palette = `FIX_COLOR_LIB` without
+Weiß; store `fwmc-signal-colors-v1` = `{ex:{slot:key}}`; a missing entry
+means "Standard" (each row has a "Standard" reset link).
+- Effective colour (`sigEffective`): own pick > colour-safe palette
+  (`cvdPalOn(ex)`, only where the slot has a `cvd` value) > default.
+- Applied as a generated stylesheet `#signalColorStyles`, every rule
+  prefixed `html body.sigc` so it outranks both base rules and
+  `body.cvdp-<ex>` rules (`SIGNAL_CSS` holds one builder per slot). Suchtest
+  reads `sigColor("search", ...)` at render time instead.
+- Texts naming a colour are `<span data-sig="ex.slot" data-sig-form=...>`
+  (forms: lower/upper/er/es/er-lower, e.g. "Roter Kreis", "blauer");
+  they replaced the old `data-cvdp-ex` span pairs for gng/stop/search/ab
+  (Wortfarben-Test keeps its pair). Simon's buttons are relabelled and
+  get a readable text colour (`sigInk`).
+- Never blocks: a warning under the group if the two colours are too close
+  (`sigTooClose`: same brightness AND near in RGB - lila vs. rot is fine)
+  or a colour barely shows on white.
+- **A new Test exercise with a fixed signal colour gets a `SIGNAL_DEFS`
+  entry, a `SIGNAL_CSS` builder and `data-sig` text spans in the same
+  commit.** Merkspanne/Kartensortier/Wortfarben are palettes, not single
+  signals - their colours stay with the CVD palette.
+Test: `tests/signal_color_test.py`.
 
-**Per-exercise shape** (from the orchestrating session's own audit, done
-when scoping the background-colour work - re-verify before building, this
-was reasoned from reading the code, not asked exercise-by-exercise):
-- **One signal colour**: Reaktionsfeld-Test's light, Antizipationstest's
-  moving object, Corsi's lit-block accent - a single colour picker each.
-- **Two contrasting signal colours**: Go/No-Go (Grün/Rot), Simon/
-  Farbkonflikt-Test (Blau/Orange), Suchtest (Ziel/Distraktor) - two
-  independent pickers, reusing `colorsClash()` (already used by MOT/
-  Periph to keep a stimulus colour distinct from the background) so the
-  two picks can't collapse into two shades of the same thing.
-- **Doppelziel-Test**: one picker for the T1 accent colour vs. the fixed
-  dark distractor colour.
-- **Wortfarben-Test/Stroop is its own, different case** - a single "target
-  colour" picker doesn't make sense here (the whole task IS naming
-  several ink colours). Client's own answer when asked what "Dominanz-
-  Verteilung" should mean: **Farb-Häufigkeit** (specific colours can be
-  made to appear more or less often), *not* a congruent/incongruent
-  ratio. Combine with the same accessibility angle as above: the colour
-  **pool** itself (which colours are in play at all) should be a
-  multi-select include/exclude list (mirroring VT's own Stroop colour-
-  palette picker, `buildStimColorPicker`/`colorModeArray()`-style), and
-  on top of that a per-colour frequency/weighting control (not just
-  uniform random choice among the included colours) - exact UI for the
-  weighting (a slider per colour? a simple "diese Farbe seltener" toggle?)
-  still needs designing, ask if unclear rather than guessing a full
-  weighting scheme unprompted.
+**B - Häufigkeit der Farben** (VT Stroop klassisch / mit Hintergrund):
+`state.stroopWeights` (`{key: 2|3}`, missing = 1×) in the VT prefs; a
+collapsible "Häufigkeit der Farben" under the colour picker
+(`#stroopWeights`, shown only in Stroop colour mode) with one 1×-3× slider
+per selected colour. `buildStroopSchedule` picks the INK colour (the
+answer) with `weightedPick`, then the word from the other colours, so every
+stimulus stays incongruent. Kombi Bausteine carry `stroopWeights` (capture,
+edit, playback). The Test-Bereich Wortfarben-Test is a fixed balanced
+design and was left alone. Test: `tests/stroop_weights_test.py`.
 
 ## Recherche: Konkurrenzanalyse & Kamera-basierte Bewegungserkennung (2026-09-27, unbaut)
 
@@ -2628,6 +2625,18 @@ UI. Added as a `dashboard.html`-only feature (no Worker/API changes needed
   simple existing code populates the builder, editing a bundle correctly
   falls back to JSON-only with the hint visible, "Neuer Code" resets
   everything.
+- **Other areas in the Baukasten (2026-10-02, Fabian "E. Ja")**: a
+  "Bereich" row (Visual Training / Movement / Cardio / Workout) switches
+  the builder. Movement writes a `movement-plan` (movements ≥2, bpm,
+  durationMin, preview 1-4, mirror, showLabel), Cardio a `cardio-plan`
+  (activities with minutes, label, optional interval), Workout a
+  `workout-plan` of `reps`/`tabata` blocks. `configToBuilder` opens those
+  types in the builder; circuit/strength/range blocks, bundles and Kombi
+  stay JSON-only (fallback hint). The dashboard keeps its own copies of
+  MOVEMENTS/CARDIO_ACTIVITIES/WORKOUT_EXERCISES - **add a new catalog entry
+  there too** (and in the "Alle Übungen im Überblick" list). Test:
+  `tests/dashboard_builder_test.py` (mocked Worker; the saved configs are
+  fed to the real app to prove they open).
 - **Not built**: multi-program bundles (`xppbsp-1`'s shape) in the
   builder - still JSON-only; the other 4 `EXERCISES` types (`cross-modal`,
   `cone-tap`, `cone-compass`, `periph-flash`) aren't offered in the picker,

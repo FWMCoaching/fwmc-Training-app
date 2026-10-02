@@ -1649,6 +1649,8 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
    hex throughout for anything player/stage-scoped. */
 .cvd-row{margin-top:10px}
 .cvd-row-label{font-size:14px;font-weight:600;margin-bottom:6px}
+.sig-row{margin-top:10px}
+.sig-clash{color:#a24b00;font-weight:600}
 .cvd-status{margin-top:6px}
 .cvd-status .text-link{font-size:13px;padding:0;margin-left:2px}
 body.cvdp-gng .gng-stimulus.go{background:#0b3d91;border-color:#062a66}
@@ -1729,3 +1731,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 
 /* "Stand: …" build stamp in every footer (Fabian, 2026-10-02). */
 .site-footer p.app-version{margin:-4px 0 8px;font-size:12px;color:var(--ink-soft)}
+/* Stroop "Häufigkeit der Farben" (per-colour weight sliders) */
+.stroop-weights{margin-top:10px}
+.stroop-weights summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--brand);padding:4px 0}
+.stroop-weight-dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.25)}

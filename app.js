@@ -2404,6 +2404,9 @@
     colors: ["orange", "rot", "lila"],
     arrowColors: ["blau"],
     stroopColors: ["rot", "gruen", "blau", "gelb", "lila"],
+    // "Farb-Häufigkeit" (Fabian, 2026-10-02 "B. Ja"): relative pick-weight
+    // per Stroop ink colour, 1-3x; a missing key means 1x.
+    stroopWeights: {},
     periphKind: "gemischt",
     periphFixEnabled: true,
     periphFixChar: "",
@@ -2430,6 +2433,8 @@
     if (!Array.isArray(state.colors) || keysToColors(state.colors).length < MIN_COLORS) state.colors = ["orange", "rot", "lila"];
     if (!Array.isArray(state.arrowColors) || keysToColors(state.arrowColors).length < ARROW_MIN_COLORS) state.arrowColors = ["blau"];
     if (!Array.isArray(state.stroopColors) || keysToColors(state.stroopColors, STROOP_COLOR_LIB).length < STROOP_MIN_COLORS) state.stroopColors = DEFAULTS.stroopColors.slice();
+    if (!state.stroopWeights || typeof state.stroopWeights !== "object" || Array.isArray(state.stroopWeights)) state.stroopWeights = {};
+    state.stroopWeights = Object.fromEntries(Object.entries(state.stroopWeights).filter(([k, v]) => STROOP_COLOR_BY_KEY[k] && [1, 2, 3].includes(v)));
     if (!["buchstaben", "zahlen", "gemischt"].includes(state.periphKind)) state.periphKind = "gemischt";
     if (typeof state.periphFixEnabled !== "boolean") state.periphFixEnabled = true;
     if (typeof state.periphFixChar !== "string") state.periphFixChar = "";
@@ -2627,7 +2632,36 @@
     colorAllBtn = buildColorAllBtn(lib);
     els.colorPicker.appendChild(colorAllBtn);
   }
+  function stroopWeightOf(key) {
+    const w = state.stroopWeights && state.stroopWeights[key];
+    return [1, 2, 3].includes(w) ? w : 1;
+  }
+  function renderStroopWeights() {
+    const box = document.getElementById("stroopWeights");
+    const show = colorMode === "stroop" && state.stroopColors.length >= STROOP_MIN_COLORS;
+    box.hidden = !show;
+    if (!show) return;
+    const rows = document.getElementById("stroopWeightRows");
+    rows.innerHTML = "";
+    state.stroopColors.forEach((key) => {
+      const c = STROOP_COLOR_BY_KEY[key];
+      if (!c) return;
+      const row = document.createElement("div");
+      row.className = "slider-row";
+      row.innerHTML = `<span class="slider-label"><span class="stroop-weight-dot" style="background:${c.hex}"></span>${c.name}</span><input type="range" data-stroop-weight="${key}" min="1" max="3" step="1" aria-label="Häufigkeit ${c.name}"><span class="slider-value">${stroopWeightOf(key)}×</span>`;
+      const input = row.querySelector("input");
+      input.value = stroopWeightOf(key);
+      input.addEventListener("input", () => {
+        const v = Number(input.value);
+        if (v === 1) delete state.stroopWeights[key]; else state.stroopWeights[key] = v;
+        savePrefs();
+        row.querySelector(".slider-value").textContent = v + "×";
+      });
+      rows.appendChild(row);
+    });
+  }
   function syncColorUI() {
+    renderStroopWeights();
     const keys = colorModeArray();
     const { min, max } = colorModeLimits();
     const lib = colorModePalette();
@@ -3524,7 +3558,7 @@
       if (existingBlock.colors) {
         if (ex.usesColors) state.colors = existingBlock.colors.slice();
         else if (ex.usesArrowColors) state.arrowColors = existingBlock.colors.slice();
-        else if (ex.usesStroopColors) state.stroopColors = existingBlock.colors.slice();
+        else if (ex.usesStroopColors) { state.stroopColors = existingBlock.colors.slice(); state.stroopWeights = { ...(existingBlock.stroopWeights || {}) }; }
       }
       state.duration = existingBlock.duration ?? state.duration;
       state.stimulusS = existingBlock.stimulusS ?? state.stimulusS;
@@ -3560,7 +3594,7 @@
     };
     if (ex.usesColors) block.colors = state.colors.slice();
     else if (ex.usesArrowColors) block.colors = state.arrowColors.slice();
-    else if (ex.usesStroopColors) block.colors = state.stroopColors.slice();
+    else if (ex.usesStroopColors) { block.colors = state.stroopColors.slice(); if (Object.keys(state.stroopWeights).length) block.stroopWeights = { ...state.stroopWeights }; }
     if (ex.type === "periph") block.periph = periphStateSnapshot();
     if (comboVisualEditIndex != null) comboDraftBlocks[comboVisualEditIndex] = block;
     else comboDraftBlocks.push(block);
@@ -4178,9 +4212,12 @@
     const instruction = "Sag laut die SCHRIFTFARBE (nicht das Wort)";
     const show = state.stimulusS;
     const colors = active.stroopColors;
+    // Ink colour (the answer) follows the client's Farb-Häufigkeit weights;
+    // the word is then any other colour, so every stimulus stays incongruent.
+    const weightOf = (c) => stroopWeightOf(c.key);
     while (t < state.duration) {
-      const wIdx = Math.floor(rng() * colors.length);
-      const inkIdx = pick(colors, [wIdx], rng);
+      const inkIdx = colors.indexOf(weightedPick(colors, weightOf, rng));
+      const wIdx = pick(colors, [inkIdx], rng);
       let bg = currentBgFill("#ffffff");
       // With only 2 colours picked there's no third one left for the
       // background to stay distinct from both word and ink - fall back to
@@ -5685,6 +5722,7 @@
     });
     const resetBtn = document.getElementById("masterCvdResetBtn");
     if (resetBtn) resetBtn.hidden = !Object.keys(cvdOverrides).length;
+    try { applySignalColors(); } catch (e) { /* signal block not initialised yet at first load */ }
   }
   // Colour-dependent helpers the exercises read at render time.
   function cvdStroopColor(key) {
@@ -5708,6 +5746,189 @@
     });
   }
   function applyColorVisionMode() { applyCvdState(); }
+
+  // ---- Ziel-/Signalfarbe pro Übung (Fabian, 2026-10-02: "A. Ja") ----
+  // Every Test exercise whose signal is a fixed colour gets a picker for it
+  // in its own Feineinstellungen. Effective colour: the client's own pick
+  // wins, else the colour-safe palette (cvdPalOn), else the default. Kept
+  // in one store so a new exercise is one SIGNAL_DEFS entry plus a CSS rule
+  // builder - texts naming the colour follow via data-sig spans.
+  const SIGNAL_KEY = "fwmc-signal-colors-v1";
+  const SIGNAL_LIB = FIX_COLOR_LIB.filter((c) => c.key !== "weiss");
+  const SIGNAL_BY_KEY = Object.fromEntries(SIGNAL_LIB.map((c) => [c.key, c]));
+  const SIGNAL_DEFS = {
+    gng: { screen: "gngReady", slots: {
+      go: { label: "Farbe für „Tippen“", def: { hex: "#2e7d32", name: "Grün" }, cvd: { hex: "#0b3d91", name: "Blau" } },
+      nogo: { label: "Farbe für „Nicht tippen“", def: { hex: "#d32f2f", name: "Rot" }, cvd: { hex: "#f5a300", name: "Orange" } } } },
+    simon: { screen: "simonReady", slots: {
+      a: { label: "Farbe linke Taste", def: { hex: "#1565c0", name: "Blau" }, cvd: { hex: "#0b3d91", name: "Blau" } },
+      b: { label: "Farbe rechte Taste", def: { hex: "#e65100", name: "Orange" }, cvd: { hex: "#f5a300", name: "Orange" } } } },
+    search: { screen: "searchReady", slots: {
+      target: { label: "Farbe des Ziels", def: { hex: "#d64545", name: "Rot" }, cvd: { hex: "#0b3d91", name: "Blau" } },
+      distractor: { label: "Farbe der Ablenker", def: { hex: "#8a97a3", name: "Grau" }, cvd: { hex: "#c3ccd4", name: "Grau" } } } },
+    ab: { screen: "abReady", slots: {
+      t1: { label: "Farbe des ersten Ziels", def: { hex: "#007094", name: "Blau" }, cvd: { hex: "#f5a300", name: "Orange" } } } },
+    stop: { screen: "stopReady", slots: {
+      signal: { label: "Farbe des Stopp-Signals", def: { hex: "#d32f2f", name: "Rot" }, cvd: { hex: "#f5a300", name: "Orange" } } } },
+    reakt: { screen: "reaktReady", slots: {
+      light: { label: "Farbe des Lichts", def: { hex: "#f2a900", name: "Gelb" } } } },
+    antizip: { screen: "antizipReady", slots: {
+      ball: { label: "Farbe des Balls", def: { hex: "#007094", name: "Blau" } } } },
+    corsi: { screen: "corsiReady", slots: {
+      lit: { label: "Farbe der leuchtenden Blöcke", def: { hex: "#007094", name: "Blau" } } } },
+  };
+  const signalPrefs = (() => {
+    const raw = readJSON(SIGNAL_KEY, {});
+    const out = {};
+    Object.entries(raw && typeof raw === "object" ? raw : {}).forEach(([ex, slots]) => {
+      if (!SIGNAL_DEFS[ex] || !slots || typeof slots !== "object") return;
+      Object.entries(slots).forEach(([slot, key]) => {
+        if (SIGNAL_DEFS[ex].slots[slot] && SIGNAL_BY_KEY[key]) (out[ex] = out[ex] || {})[slot] = key;
+      });
+    });
+    return out;
+  })();
+  function saveSignalPrefs() { writeJSON(SIGNAL_KEY, signalPrefs); }
+  function sigCustomKey(ex, slot) { return (signalPrefs[ex] && signalPrefs[ex][slot]) || null; }
+  function sigEffective(ex, slot) {
+    const def = SIGNAL_DEFS[ex].slots[slot];
+    const key = sigCustomKey(ex, slot);
+    if (key) return { hex: SIGNAL_BY_KEY[key].hex, name: SIGNAL_BY_KEY[key].name, custom: true };
+    if (def.cvd && cvdPalOn(ex)) return { hex: def.cvd.hex, name: def.cvd.name, custom: false };
+    return { hex: def.def.hex, name: def.def.name, custom: false };
+  }
+  function sigColor(ex, slot) { return sigEffective(ex, slot).hex; }
+  // German adjective forms for "Roter Kreis"/"Rotes Quadrat"; Lila/Pink/
+  // Orange-style loan words stay as they are where an ending reads oddly.
+  function sigAdj(name, ending) {
+    if (name === "Lila") return "Lila";
+    return name + ending;
+  }
+  function sigText(ex, slot, form) {
+    const n = sigEffective(ex, slot).name;
+    if (form === "upper") return n.toUpperCase();
+    if (form === "lower") return n.toLowerCase();
+    if (form === "er") return sigAdj(n, "er");
+    if (form === "es") return sigAdj(n, "es");
+    if (form === "er-lower") return sigAdj(n, "er").toLowerCase();
+    return n;
+  }
+  function sigInk(hex) { return relLuma(hex) > 0.55 ? "#16232a" : "#ffffff"; }
+  function sigDarker(hex) { return mixHex(hex, "#000000", 0.3); }
+  function sigStroke(hex) { return relLuma(hex) > 0.55 ? "-webkit-text-stroke:2px #16232a" : "-webkit-text-stroke:0"; }
+  // CSS for the custom picks only - `html body.sigc` outranks both the base
+  // rules and the body.cvdp-<ex> palette rules.
+  const SIGNAL_CSS = {
+    "gng.go": (c) => `.gng-stimulus.go{background:${c};border-color:${sigDarker(c)}}`,
+    "gng.nogo": (c) => `.gng-stimulus.nogo{background:${c};border-color:${sigDarker(c)}}`,
+    "simon.a": (c) => `.simon-dot.simon-dot-blue{background:${c}} .simon-response-btn.simon-blue{background-color:${c};color:${sigInk(c)}}`,
+    "simon.b": (c) => `.simon-dot.simon-dot-orange{background:${c}} .simon-response-btn.simon-orange{background-color:${c};color:${sigInk(c)}}`,
+    "ab.t1": (c) => `.ab-stream-char.is-t1{color:${c};${sigStroke(c)}}`,
+    "stop.signal": (c) => `.stop-arrow.stop-signal{color:${c};${sigStroke(c)}}`,
+    "reakt.light": (c) => `.reakt-light{background:radial-gradient(circle at 35% 30%,${mixHex("#ffffff", c, 0.55)},${c} 70%);border-color:${sigDarker(c)}}`,
+    "antizip.ball": (c) => `.antizip-ball{background:${c}}`,
+    "corsi.lit": (c) => `.corsi-block.lit{background:${mixHex("#ffffff", c, 0.3)};border-color:${c}}`,
+  };
+  const signalStyleEl = document.createElement("style");
+  signalStyleEl.id = "signalColorStyles";
+  document.head.appendChild(signalStyleEl);
+  document.body.classList.add("sigc");
+  function applySignalColors() {
+    let css = "";
+    Object.entries(signalPrefs).forEach(([ex, slots]) => Object.keys(slots).forEach((slot) => {
+      const build = SIGNAL_CSS[`${ex}.${slot}`];
+      if (!build) return;
+      build(sigColor(ex, slot)).split(/\s(?=\.)/).forEach((rule) => { css += `html body.sigc ${rule}\n`; });
+    }));
+    signalStyleEl.textContent = css;
+    document.querySelectorAll("[data-sig]").forEach((el) => {
+      const [ex, slot] = el.dataset.sig.split(".");
+      el.textContent = sigText(ex, slot, el.dataset.sigForm || "");
+    });
+    const sl = document.getElementById("simonLeftBtn");
+    const sr = document.getElementById("simonRightBtn");
+    if (sl) sl.setAttribute("aria-label", sigText("simon", "a"));
+    if (sr) sr.setAttribute("aria-label", sigText("simon", "b"));
+    syncSignalPickers();
+  }
+  // Two signal colours are "too close" when they are equally bright AND
+  // near in hue - lila vs. rot share a brightness but read clearly apart.
+  function sigTooClose(a, b) {
+    if (a.toLowerCase() === b.toLowerCase()) return true;
+    const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const [x, y] = [rgb(a), rgb(b)];
+    const dist = Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]);
+    return Math.abs(relLuma(a) - relLuma(b)) < 0.12 && dist < 110;
+  }
+  function signalClashText(ex) {
+    const def = SIGNAL_DEFS[ex];
+    const slots = Object.keys(def.slots);
+    const msgs = [];
+    if (slots.length === 2 && sigTooClose(sigColor(ex, slots[0]), sigColor(ex, slots[1]))) {
+      msgs.push("Die beiden Farben sind sich sehr ähnlich - sie sind dann schwer zu unterscheiden.");
+    }
+    if (slots.some((s) => colorsClash(sigColor(ex, s), "#ffffff"))) {
+      msgs.push("Diese Farbe ist auf hellem Hintergrund kaum zu sehen.");
+    }
+    return msgs.join(" ");
+  }
+  function syncSignalPickers() {
+    document.querySelectorAll("[data-sig-picker]").forEach((picker) => {
+      const [ex, slot] = picker.dataset.sigPicker.split(".");
+      syncSingleSelectPicker(picker, sigCustomKey(ex, slot));
+      const status = picker.parentElement.querySelector("[data-sig-status]");
+      if (status) {
+        status.textContent = "";
+        const eff = sigEffective(ex, slot);
+        if (eff.custom) {
+          status.append(`Eigene Farbe: ${eff.name}. `);
+          const reset = document.createElement("button");
+          reset.type = "button"; reset.className = "text-link";
+          reset.dataset.sigReset = `${ex}.${slot}`;
+          reset.textContent = "Standard";
+          status.appendChild(reset);
+        } else {
+          status.textContent = `Standard: ${eff.name}.`;
+        }
+      }
+    });
+    document.querySelectorAll("[data-sig-clash]").forEach((el) => {
+      const txt = signalClashText(el.dataset.sigClash);
+      el.textContent = txt; el.hidden = !txt;
+    });
+  }
+  Object.entries(SIGNAL_DEFS).forEach(([ex, def]) => {
+    const host = cvdControlsHost(def.screen);
+    if (!host) return;
+    const group = document.createElement("div");
+    group.className = "group sig-group";
+    group.dataset.sigGroup = ex;
+    group.innerHTML = '<div class="group-label">Signalfarbe</div><div class="group-help">Zum Beispiel bei einer Farbschwäche oder einfach nach Geschmack.</div>';
+    Object.entries(def.slots).forEach(([slot, s]) => {
+      const row = document.createElement("div");
+      row.className = "sig-row";
+      row.innerHTML = `<div class="cvd-row-label">${s.label}</div><div class="color-picker" data-sig-picker="${ex}.${slot}"></div><div class="group-help" data-sig-status></div>`;
+      buildSingleSelectPicker(row.querySelector("[data-sig-picker]"), SIGNAL_LIB, (key) => {
+        (signalPrefs[ex] = signalPrefs[ex] || {})[slot] = key;
+        saveSignalPrefs(); applySignalColors();
+      });
+      group.appendChild(row);
+    });
+    const clash = document.createElement("div");
+    clash.className = "group-help sig-clash";
+    clash.dataset.sigClash = ex;
+    clash.hidden = true;
+    group.appendChild(clash);
+    host.appendChild(group);
+  });
+  document.addEventListener("click", (e) => {
+    const r = e.target.closest("[data-sig-reset]");
+    if (!r) return;
+    const [ex, slot] = r.dataset.sigReset.split(".");
+    if (signalPrefs[ex]) { delete signalPrefs[ex][slot]; if (!Object.keys(signalPrefs[ex]).length) delete signalPrefs[ex]; }
+    saveSignalPrefs(); applySignalColors();
+  });
+  applySignalColors();
   document.querySelectorAll("[data-master-cvd]").forEach((el) => el.addEventListener("click", () => {
     const key = el.dataset.masterCvd;
     if (masterPrefs.colorVision.includes(key)) masterPrefs.colorVision = masterPrefs.colorVision.filter((k) => k !== key);
@@ -14082,7 +14303,7 @@
       if (block.colors) {
         if (visEx.usesColors) state.colors = block.colors;
         else if (visEx.usesArrowColors) state.arrowColors = block.colors;
-        else if (visEx.usesStroopColors) state.stroopColors = block.colors;
+        else if (visEx.usesStroopColors) { state.stroopColors = block.colors; state.stroopWeights = { ...(block.stroopWeights || {}) }; }
       }
       state.duration = block.duration ?? 60;
       state.stimulusS = block.stimulusS ?? 1.5;
@@ -21103,8 +21324,6 @@
   const SEARCH_MIN_RESOLVED = 4;
   const SEARCH_ITEM_PX = 34;
   const SEARCH_MIN_CENTER_PX = SEARCH_ITEM_PX + 12;
-  const SEARCH_COLOR_TARGET_NORMAL = "#d64545";
-  const SEARCH_COLOR_DISTRACTOR_NORMAL = "#8a97a3";
   const searchPrefs = { length: "mittel", bgColorKey: "gruen", bgIntensity: 0 };
   function loadSearchPrefs() {
     const saved = readJSON(SEARCH_PREFS_KEY, null);
@@ -21215,8 +21434,8 @@
     const items = [];
     // Farbschwäche-Unterstützung: dark blue target colour vs. light grey
     // distractors - apart by brightness, not just hue.
-    const SEARCH_COLOR_TARGET = cvdPalOn("search") ? CVD_DARK : SEARCH_COLOR_TARGET_NORMAL;
-    const SEARCH_COLOR_DISTRACTOR = cvdPalOn("search") ? "#c3ccd4" : SEARCH_COLOR_DISTRACTOR_NORMAL;
+    const SEARCH_COLOR_TARGET = sigColor("search", "target");
+    const SEARCH_COLOR_DISTRACTOR = sigColor("search", "distractor");
     if (mode === "feature") {
       for (let i = 0; i < setSize - 1; i++) items.push({ shape: "circle", color: SEARCH_COLOR_DISTRACTOR, isTarget: false });
       items.push({ shape: "circle", color: SEARCH_COLOR_TARGET, isTarget: true });
@@ -21235,8 +21454,7 @@
     return items;
   }
   function searchTargetLabel(mode) {
-    if (cvdPalOn("search")) return mode === "feature" ? "Blauer Kreis" : "Blaues Quadrat";
-    return mode === "feature" ? "Roter Kreis" : "Rotes Quadrat";
+    return mode === "feature" ? `${sigText("search", "target", "er")} Kreis` : `${sigText("search", "target", "es")} Quadrat`;
   }
 
   // Anti-overlap scatter placement across the whole stage - copy-adapted
