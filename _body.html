@@ -5792,6 +5792,17 @@
       <div class="bundle-list" id="masterCodeHistoryList"></div>
     </div>
 
+    <div class="group" id="masterBackupGroup">
+      <div class="group-label">Datensicherung</div>
+      <div class="group-help">Speichert deine Pl&auml;ne, Kombis, Feineinstellungen, Spr&uuml;che und Bilder in eine Datei. Mit &bdquo;Importieren&ldquo; holst du sie auf einem neuen Ger&auml;t oder nach dem L&ouml;schen der Browserdaten zur&uuml;ck. Es wird nur &uuml;bernommen, was in der Datei steht &ndash; alles andere bleibt, wie es ist.</div>
+      <div class="custom-exercise-form-actions">
+        <button class="start-btn secondary" type="button" id="masterBackupExportBtn">Sicherung exportieren</button>
+        <button class="start-btn secondary" type="button" id="masterBackupImportBtn">Sicherung importieren</button>
+      </div>
+      <input type="file" id="masterBackupFile" accept="application/json,.json" hidden>
+      <div class="group-help" id="masterBackupMsg" role="status" hidden></div>
+    </div>
+
     <button class="start-btn" id="masterSettingsCloseBtn">Schlie&szlig;en</button>
   </div>
 </div>
