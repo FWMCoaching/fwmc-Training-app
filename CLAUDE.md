@@ -1129,6 +1129,39 @@ unrelated to the feature being changed.
   rather than assuming a green light and building/changing it. This
   applies to every session going forward, not just the one it was said in.
 
+## Hard rule: every exercise works everywhere (client, 2026-10-02)
+
+Client, after Kraftübungen turned out not to be stackable: "Solche Fehler
+dürfen nicht passieren. Wir müssen ja wohl einen Lerneffekt beim
+Erstellen neuer Sachen haben." So, for **every new exercise or exercise
+type** (and every change to an existing one) outside the Test-Bereich,
+the same piece of work must cover, without being asked:
+1. **Einzeln**: own ready screen, Feineinstellungen, saved presets.
+2. **Kombi-Baustein**: an entry in `COMBO_CAPTURE_ENTRIES`, a commit path
+   back to `comboScreen`, an edit opener in `COMBO_EDIT_OPENERS` (an added
+   Baustein must be re-editable), and playback in `startComboBlock()`.
+3. **Plan-Stapeln**: wherever the domain has a plan builder (Workout
+   Zirkel, Workout Kraftplan, Cardio-Einheit), the exercise must be
+   addable there, several times, each item with its own values.
+4. **Pausen**: rest between sets / between exercises / start countdown,
+   wherever the paradigm has those phases - check the Tabata Zirkel's
+   options (`workoutCircuitPrefs`) as the reference set.
+5. **Master-Einstellungen**: `MASTER_BG_TARGETS` (if it has a background),
+   `CVD_EXERCISES`/`CVD_FB_SELECTORS` (if right/wrong feedback or fixed
+   colours), restriction filters.
+6. **Cardio-Zusatzaufgabe** parity for Visual Training/NAT (see the
+   Cardio section).
+Before calling any such work done, compare it against an existing,
+complete sibling (e.g. a new Workout mode against Tabata) item by item,
+rather than only against the ask's literal wording.
+**`tests/exercise_coverage_test.py` enforces 1-3 generically**: every
+Visual Training home card and every NAT sub-tab must have a Kombi entry,
+every Kombi entry must commit as a Baustein and be editable, and every
+Workout exercise must stack into both Zirkel and Kraftplan. It walks the
+live DOM, so a new exercise is covered automatically - if it fails, fix
+the app, never loosen the test. It found a real gap on its first run:
+Periphere Wahrnehmung had no Kombi entry (fixed the same day).
+
 ## Master-Einstellungen (added 2026-09-27, client's own framing: "wie ein Profil, nur ohne Login")
 
 A gear button (`.master-settings-btn`, one per screen's `.brandbar`, seven
