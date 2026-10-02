@@ -1145,7 +1145,14 @@ the same piece of work must cover, without being asked:
    addable there, several times, each item with its own values.
 4. **Pausen**: rest between sets / between exercises / start countdown,
    wherever the paradigm has those phases - check the Tabata Zirkel's
-   options (`workoutCircuitPrefs`) as the reference set.
+   options (`workoutCircuitPrefs`) as the reference set. **"Pause zwischen
+   Übungen" is always a slider, 0-180 s in 5 s steps** (client, same day;
+   0 = straight on): Tabata Zirkel (`#workoutCircuitRestSlider`, default
+   10 s - replaced the old 5/10/15 s choice row), Kraftplan
+   (`#workoutRepsExerciseRestSlider`, default 60 s), Cardio and Kombi
+   (`.combo-pause-slider`, already 0-180). Rest between SETS in the
+   Kraftplan deliberately goes up to 300 s, since heavy strength sets
+   (1-6 reps) commonly need 3-5 min.
 5. **Master-Einstellungen**: `MASTER_BG_TARGETS` (if it has a background),
    `CVD_EXERCISES`/`CVD_FB_SELECTORS` (if right/wrong feedback or fixed
    colours), restriction filters.
@@ -1160,11 +1167,14 @@ complete sibling (e.g. a new Workout mode against Tabata) item by item,
 rather than only against the ask's literal wording.
 **`tests/exercise_coverage_test.py` enforces 1-3 generically**: every
 Visual Training home card and every NAT sub-tab must have a Kombi entry,
-every Kombi entry must commit as a Baustein and be editable, and every
-Workout exercise must stack into both Zirkel and Kraftplan. It walks the
+every Kombi entry must commit as a Baustein and be editable, every
+Workout exercise must stack into both Zirkel and Kraftplan, and every
+"Pause zwischen Übungen/Bausteinen" control must be the 0-180 s slider. It walks the
 live DOM, so a new exercise is covered automatically - if it fails, fix
 the app, never loosen the test. It found a real gap on its first run:
-Periphere Wahrnehmung had no Kombi entry (fixed the same day).
+Periphere Wahrnehmung had no Kombi entry (fixed the same day: a NAT Kombi
+entry reusing `openVisualComboCapture("periph-flash", PERIPH_ICON_HTML)`,
+played back as a normal `visual` block).
 
 ## Master-Einstellungen (added 2026-09-27, client's own framing: "wie ein Profil, nur ohne Login")
 
@@ -3905,7 +3915,7 @@ none - cheap here and useful for strength order).
   (select: the 3 presets or "Eigener Bereich" with min/max steppers),
   own sets, own Satzpause, own note (e.g. the weight used).
 - **Plan-level pauses**: "Pause zwischen Übungen" (`exerciseRestS`,
-  0-300s, default 90, 0 = straight on) and, in Feineinstellungen, a
+  0-180s in 5s steps, default 60, 0 = straight on) and, in Feineinstellungen, a
   "Vorbereitungszeit" start countdown (`prepS`, 0-30s, default 10). The
   old range/sets/set-rest controls moved into Feineinstellungen as the
   **defaults for newly added exercises** (set-rest range widened to

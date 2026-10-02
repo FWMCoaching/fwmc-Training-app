@@ -6,7 +6,9 @@ URL = "http://localhost:8845/index.html"
 # could not be stacked): every exercise/exercise type outside the
 # Test-Bereich must work everywhere - single, as a Kombi-Baustein (added
 # AND editable afterwards), and, for Workout exercises, stackable in both
-# plan builders (Zirkel and Kraftplan). This test walks EVERY entry in
+# plan builders (Zirkel and Kraftplan); the pause between exercises/
+# Bausteine must be a 0-180 s slider everywhere (Zirkel, Kraftplan, Kombi,
+# Cardio). This test walks EVERY entry in
 # the Kombi add grid generically, so a new entry that can't be committed
 # fails here without anyone writing a new test - and it checks that the
 # number of Visual Training / NAT / Atemtraining exercises on their home
@@ -97,6 +99,12 @@ async def main():
             idx += 1
         print(f"every Kombi entry ({total_entries}) can be added as a Baustein:", committed == total_entries and len(fails) == fails_before)
 
+        # Kombi pause between Bausteine: a 0-180 s slider between every two blocks.
+        bad = await pg.evaluate("() => [...document.querySelectorAll('#comboBlockList .combo-pause-slider')].filter((r) => !(r.min === '0' && r.max === '180' && r.step === '5')).length")
+        n_pause = await pg.locator("#comboBlockList .combo-pause-slider").count()
+        print("Kombi: pause slider (0–180 s) between every two Bausteine:", bad == 0 and n_pause == total_entries - 1)
+        if bad or n_pause != total_entries - 1: fails.append(f"Kombi pause sliders: {n_pause}, wrong range: {bad}")
+
         not_editable = await pg.evaluate("() => [...document.querySelectorAll('#comboBlockList .chapter-row')].filter((r) => r.querySelector('.chapter-main').tagName !== 'BUTTON').map((r) => r.textContent.trim())")
         print("every added Baustein is editable afterwards:", len(not_editable) == 0)
         if not_editable: fails.append("not editable: " + "; ".join(not_editable))
@@ -114,9 +122,23 @@ async def main():
             for i in range(n_plus):
                 await pg.locator(f"{grid} .ca-plus-btn").nth(i).click(); await pg.wait_for_timeout(30)
             n_items = await pg.locator(lst).count()
+            rest_sel = "#workoutCircuitRestSlider" if "Circuit" in grid else "#workoutRepsExerciseRestSlider"
+            rng = await pg.evaluate("(sel) => { const r = document.querySelector(sel); return r ? [r.min, r.max, r.step] : null; }", rest_sel)
+            print(f"{grid}: 'Pause zwischen Übungen' is a 0–180 s slider:", rng == ["0", "180", "5"])
+            if rng != ["0", "180", "5"]: fails.append(f"{rest_sel}: {rng}")
             print(f"{grid}: all {n_ex} exercises stackable into one plan:", n_ex > 0 and n_plus == n_ex and n_items == n_ex)
             if not (n_ex > 0 and n_plus == n_ex and n_items == n_ex): fails.append(f"{grid}: {n_plus}/{n_ex} addable, {n_items} in plan")
             await pg.locator(".screen:not([hidden]) .back-link").first.click(); await pg.wait_for_timeout(150)
+
+        # Cardio: pause slider between activities, 0-180 s.
+        await pg.goto(URL); await pg.wait_for_timeout(300)
+        await pg.click('#home .section-tab[data-section="cardio"]'); await pg.wait_for_timeout(150)
+        await pg.click("#cardioStartCard"); await pg.wait_for_timeout(150)
+        await pg.locator("#cardioAddGrid .combo-add-btn").nth(0).click(); await pg.wait_for_timeout(60)
+        await pg.locator("#cardioAddGrid .combo-add-btn").nth(1).click(); await pg.wait_for_timeout(60)
+        rng = await pg.evaluate("() => { const r = document.querySelector('#cardioList .combo-pause-slider'); return r ? [r.min, r.max, r.step] : null; }")
+        print("Cardio: pause between activities is a 0–180 s slider:", rng == ["0", "180", "5"])
+        if rng != ["0", "180", "5"]: fails.append(f"cardio pause: {rng}")
 
         print("coverage failures:", fails)
         await b.close()

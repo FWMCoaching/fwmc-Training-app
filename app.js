@@ -1098,6 +1098,7 @@
   // ever wants a plain one-click preset again.
   const COMBO_PRESETS = {};
   const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Movement", visual: "Visual Training", workout: "Workout", cardio: "Cardio", nat: "NAT" };
+  const PERIPH_ICON_HTML = '<div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg></div>';
   const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat"];
   // Blitz-Raster/Flash Speicher Test/MOT-Fähigkeit render inside the same
   // "NAT" group as Remember (all 4 are NAT sub-exercises) but need their
@@ -1131,6 +1132,7 @@
       { label: "Remember · Feste Positionen", meta: "Schwierigkeit & Dauer einstellen", open: () => openRememberComboCapture("fixed", null, null) },
       { label: "Remember · Bewegte Positionen", meta: "Schwierigkeit & Dauer einstellen", open: () => openRememberComboCapture("shuffle", null, null) },
       { label: "Remember · Trainingsmodus", meta: "gezielt bei einer Zahlenanzahl üben", open: () => openRememberComboCapture("training", null, null) },
+      { label: "Periphere Wahrnehmung", meta: "Zeichen, Bereich, Tempo & Dauer einstellen", open: () => openVisualComboCapture("periph-flash", PERIPH_ICON_HTML, null, null) },
       { label: "Blitz-Raster", meta: "Raster, Bereiche & Dauer einstellen", open: () => openBlitzComboCapture(null, null) },
       { label: "Flash · Konstant", meta: "Schwierigkeit & Dauer einstellen", open: () => openFlashComboCapture("constant", null, null) },
       { label: "Flash · Steigend, direkt", meta: "Schwierigkeit & Dauer einstellen", open: () => openFlashComboCapture("climb", null, null) },
@@ -1899,7 +1901,7 @@
     workoutCircuitSaveBtn: $("workoutCircuitSaveBtn"), workoutCircuitSaveForm: $("workoutCircuitSaveForm"),
     workoutCircuitSaveNameInput: $("workoutCircuitSaveNameInput"),
     workoutCircuitSaveCancelBtn: $("workoutCircuitSaveCancelBtn"), workoutCircuitSaveConfirmBtn: $("workoutCircuitSaveConfirmBtn"),
-    workoutCircuitAddGrid: $("workoutCircuitAddGrid"), workoutCircuitCount: $("workoutCircuitCount"),
+    workoutCircuitAddGrid: $("workoutCircuitAddGrid"), workoutCircuitRestSlider: $("workoutCircuitRestSlider"), workoutCircuitRestValue: $("workoutCircuitRestValue"), workoutCircuitCount: $("workoutCircuitCount"),
     workoutCircuitEmptyHint: $("workoutCircuitEmptyHint"), workoutCircuitList: $("workoutCircuitList"),
     workoutCircuitSetRestGroup: $("workoutCircuitSetRestGroup"),
     workoutCircuitSetRestSlider: $("workoutCircuitSetRestSlider"), workoutCircuitSetRestValue: $("workoutCircuitSetRestValue"),
@@ -7248,7 +7250,7 @@
   // instead of a separate mini-screen set like Remember has. ----
   els.periphOpenBtn.addEventListener("click", () => {
     readyReturnScreen = "natHome";
-    openReady("periph-flash", '<div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg></div>');
+    openReady("periph-flash", PERIPH_ICON_HTML);
   });
   els.rememberReadyStartBtn.addEventListener("click", () => {
     if (comboRememberCaptureOriginal) { commitRememberComboCapture(); return; }
@@ -9775,7 +9777,7 @@
       block.items.forEach((item, i) => {
         schedule.push({ t0: t, t1: t + item.workS, type: "work", set, itemIdx: i, exercise: item.exercise, note: item.note });
         t += item.workS;
-        if (i < block.items.length - 1) {
+        if (i < block.items.length - 1 && block.restS > 0) {
           schedule.push({ t0: t, t1: t + block.restS, type: "rest", set, itemIdx: i });
           t += block.restS;
         }
@@ -10050,6 +10052,7 @@
     const saved = readJSON(WORKOUT_CIRCUIT_KEY, null);
     if (saved && typeof saved === "object") Object.assign(workoutCircuitPrefs, saved);
     if (!Array.isArray(workoutCircuitPrefs.items)) workoutCircuitPrefs.items = [];
+    if (!Number.isFinite(workoutCircuitPrefs.restS) || workoutCircuitPrefs.restS < 0 || workoutCircuitPrefs.restS > 180) workoutCircuitPrefs.restS = 10;
     if (!Number.isFinite(workoutCircuitPrefs.prepS) || workoutCircuitPrefs.prepS < 3 || workoutCircuitPrefs.prepS > 30) workoutCircuitPrefs.prepS = TABATA_PREP_S;
     if (!Number.isFinite(workoutCircuitPrefs.cooldownS) || workoutCircuitPrefs.cooldownS < 0 || workoutCircuitPrefs.cooldownS > 120) workoutCircuitPrefs.cooldownS = 0;
   }
@@ -10167,14 +10170,15 @@
     closeWorkoutCircuitCustomForm();
     renderWorkoutCircuitAddGrid();
   });
-  document.querySelectorAll("[data-wo-rest]").forEach((el) => el.addEventListener("click", () => {
-    workoutCircuitPrefs.restS = Number(el.dataset.woRest); saveWorkoutCircuitPrefs(); syncWorkoutCircuitUI();
-  }));
+  els.workoutCircuitRestSlider.addEventListener("input", () => {
+    workoutCircuitPrefs.restS = Number(els.workoutCircuitRestSlider.value); saveWorkoutCircuitPrefs(); syncWorkoutCircuitUI();
+  });
   document.querySelectorAll("[data-wo-sets]").forEach((el) => el.addEventListener("click", () => {
     workoutCircuitPrefs.sets = Number(el.dataset.woSets); saveWorkoutCircuitPrefs(); syncWorkoutCircuitUI();
   }));
   function syncWorkoutCircuitUI() {
-    document.querySelectorAll("[data-wo-rest]").forEach((el) => setActive(el, Number(el.dataset.woRest) === workoutCircuitPrefs.restS));
+    els.workoutCircuitRestSlider.value = workoutCircuitPrefs.restS;
+    els.workoutCircuitRestValue.textContent = workoutCircuitPrefs.restS > 0 ? `${workoutCircuitPrefs.restS} s` : "Keine";
     document.querySelectorAll("[data-wo-sets]").forEach((el) => setActive(el, Number(el.dataset.woSets) === workoutCircuitPrefs.sets));
     els.workoutCircuitSetRestGroup.hidden = workoutCircuitPrefs.sets <= 1;
     els.workoutCircuitSetRestSlider.value = workoutCircuitPrefs.setRestS;
@@ -10361,7 +10365,7 @@
   // defaults for newly added exercises; an old saved single `exercise` is
   // migrated into a one-item plan on load.
   const WORKOUT_REPS_KEY = "fwmc-workout-reps-builder-v1";
-  const workoutRepsPrefs = { items: [], rangeKey: "muskelaufbau", customMin: 8, customMax: 12, sets: 3, restS: 60, exerciseRestS: 90, prepS: 10 };
+  const workoutRepsPrefs = { items: [], rangeKey: "muskelaufbau", customMin: 8, customMax: 12, sets: 3, restS: 60, exerciseRestS: 60, prepS: 10 };
   function clampInt(v, lo, hi, dflt) { return Number.isFinite(v) && v >= lo && v <= hi ? Math.round(v) : dflt; }
   function normalizeStrengthItem(it) {
     const out = {
@@ -10384,7 +10388,7 @@
     if (!Number.isFinite(workoutRepsPrefs.customMax) || workoutRepsPrefs.customMax < workoutRepsPrefs.customMin || workoutRepsPrefs.customMax > 30) workoutRepsPrefs.customMax = 12;
     if (![2, 3, 4, 5].includes(workoutRepsPrefs.sets)) workoutRepsPrefs.sets = 3;
     if (!Number.isFinite(workoutRepsPrefs.restS) || workoutRepsPrefs.restS < 15 || workoutRepsPrefs.restS > 300) workoutRepsPrefs.restS = 60;
-    workoutRepsPrefs.exerciseRestS = clampInt(workoutRepsPrefs.exerciseRestS, 0, 300, 90);
+    workoutRepsPrefs.exerciseRestS = clampInt(workoutRepsPrefs.exerciseRestS, 0, 180, 60);
     workoutRepsPrefs.prepS = clampInt(workoutRepsPrefs.prepS, 0, 30, 10);
     if (!Array.isArray(workoutRepsPrefs.items)) workoutRepsPrefs.items = [];
     // Migration from the single-exercise builder.
@@ -10769,7 +10773,7 @@
       (e) => `${e.items.length} Übung${e.items.length === 1 ? "" : "en"} · ${e.items.reduce((t, it) => t + it.sets, 0)} Sätze`,
       (entry) => {
         workoutRepsPrefs.items = entry.items.map(normalizeStrengthItem);
-        workoutRepsPrefs.exerciseRestS = clampInt(entry.exerciseRestS, 0, 300, workoutRepsPrefs.exerciseRestS);
+        workoutRepsPrefs.exerciseRestS = clampInt(entry.exerciseRestS, 0, 180, workoutRepsPrefs.exerciseRestS);
         workoutRepsPrefs.prepS = clampInt(entry.prepS, 0, 30, workoutRepsPrefs.prepS);
         saveWorkoutRepsPrefs();
         // While capturing a Kombi-Baustein, loading a saved plan only fills
