@@ -26,7 +26,7 @@ async def main():
         print("welcome paragraph visible:", await pg.is_visible("#tipsWelcome"))
         welcome_text = await pg.inner_text("#tipsWelcome")
         print("welcome mentions starting without an account:", "Account" in welcome_text)
-        print("welcome mentions the gear/Einstellungen:", "Einstellungen" in welcome_text)
+        print("welcome mentions the gear/Einstellungen:", "Grundeinstellungen" in welcome_text)
         print("welcome mentions Kombi-Programm:", "Kombi-Programm" in welcome_text)
         print("coach hint visible:", await pg.is_visible("#tipsCoachHint"))
         coach_text = await pg.inner_text("#tipsCoachHint")

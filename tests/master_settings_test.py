@@ -166,7 +166,7 @@ async def main():
         print("hearing checkbox now ticked:", await pg.is_checked("#masterHearingCheck"))
         await pg.click("#masterSettingsCloseBtn"); await pg.wait_for_timeout(150)
         print("Sehen & Hören now greyed:", "incompatible" in (await cross_card.get_attribute("class") or ""))
-        print("blocked note references Einstellungen:", "Einstellungen" in await cross_card.locator(".excard-blocked-note").inner_text())
+        print("blocked note references Einstellungen:", "Grundeinstellungen" in await cross_card.locator(".excard-blocked-note").inner_text())
         other_card = pg.locator('.excard[data-exercise="vt-color"]')
         print("an unrelated card stays unaffected:", "incompatible" not in (await other_card.get_attribute("class") or ""))
         await cross_card.click(); await pg.wait_for_timeout(200)
