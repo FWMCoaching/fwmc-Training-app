@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Suchtest (Visuelle Suche): tenth exercise added under the autonomous "Test"
 # section. Classic visual-search paradigm / Treisman & Gelade's Feature

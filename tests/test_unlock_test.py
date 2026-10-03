@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Client request (2026-10-01): the "Test" section tab should not be visible
 # to anyone by default - only someone who's been given a specific word gets

@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Wortfarben-Test (Stroop-Aufgabe): eighteenth exercise added under the
 # autonomous "Test" section. Classic Stroop colour-word task (Stroop, 1935)

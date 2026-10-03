@@ -8,7 +8,7 @@ import json
 import sys
 from playwright.sync_api import sync_playwright
 
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
 results = []
 

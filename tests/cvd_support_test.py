@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Farbschwäche-Unterstützung (2026-10-02): ticking any Farbsehen option in
 # Master-Einstellungen turns on, for every exercise, (a) a tick/cross badge

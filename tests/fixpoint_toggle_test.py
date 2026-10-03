@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Two fixes: (1) the shared VT-canvas fixation point (Periphere Wahrnehmung
 # and every other VT exercise via drawFixationPoint()) could be recoloured/

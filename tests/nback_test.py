@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Positions-Gedächtnis (N-Back): the second exercise added under the
 # autonomous "Test" section (built the same firing that also fixed the

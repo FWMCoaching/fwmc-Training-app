@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Regression test for a real bug report (screenshot on an iPhone-width
 # viewport): Trail Making Test's instruction line ("Tippe abwechselnd Zahl

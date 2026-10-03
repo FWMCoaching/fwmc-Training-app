@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Cardio "+ Zusatzaufgabe" live picker (Tier 2) - supersedes the first
 # manual-trigger version (cardio_addon_manual_test.py, now removed), which

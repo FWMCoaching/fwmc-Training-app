@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Blockspanne-Test (Corsi Block-Tapping Task): fourteenth exercise added
 # under the autonomous "Test" section. Grounded in the Corsi block-tapping

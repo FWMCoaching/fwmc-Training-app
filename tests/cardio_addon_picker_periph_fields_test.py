@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Batch A of the "genau so als wenn man die Übung einzeln machen würde"
 # follow-up (cardio_addon_picker_full_settings_test.py covered the first,

@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # The top-level section-switch (6 tabs since "Test" was added) and NAT's own
 # sub-switch (5 tabs since Objektverfolgung (MOT) was added) are flex rows of

@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Three follow-up fixes to the Cardio "+ Zusatzimpuls" system, all
 # client-requested after trying the live picker (Tier 2, see

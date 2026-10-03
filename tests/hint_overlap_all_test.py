@@ -8,7 +8,7 @@
 # Linienhalbierung with Math.random forced to 0 (line at the very top).
 import asyncio, sys
 from playwright.async_api import async_playwright
-URL="http://localhost:8845/index.html"
+URL="http://localhost:8845/index.html?bereich=visual"
 TEST=["ab","alarm","anti","antizip","bisect","corsi","dsst","flanker","gng","hick","iconic","kippbild","merk","navon","posner","pvt","reakt","rotation","search","simon","stop","stroop","subitize","testNback","trail","ts","ufov","vorlauf","wcst"]
 NAT=[("remember","#rememberOpenFixed"),("blitz","#blitzOpenBtn"),("flash","#flashOpenConstant"),("mot","#motOpenSpeed")]
 JS="""(p)=>{const pl=document.getElementById(p+'Player'); if(!pl||pl.hidden) return null;

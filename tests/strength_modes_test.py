@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Kraftplan v3 (2026-10-02, Fabian): per exercise an "Art" (Wiederholungen /
 # Pyramide / Halten auf Zeit), an own "Pause danach" deviating from the

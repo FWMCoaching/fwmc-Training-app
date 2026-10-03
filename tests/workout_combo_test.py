@@ -1,7 +1,7 @@
 import asyncio, json
 from playwright.async_api import async_playwright
 OUT = "screenshots/wc_"
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 WORKOUT_BUNDLE = {"type": "workout-bundle", "name": "Test-Kundin · Pläne", "programs": [
     {"label": "Woche 1", "createdAt": "2026-09-10", "description": "Start", "blocks": [

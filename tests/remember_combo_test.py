@@ -1,7 +1,7 @@
 import asyncio
 from playwright.async_api import async_playwright
 
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Remember's Kombi-Baukasten capture mode - last item in the documented
 # backlog for the Kombi-Baukasten rebuild. Unlike every other domain

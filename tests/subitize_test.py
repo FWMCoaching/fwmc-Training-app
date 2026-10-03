@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Sofortmengen-Test (Subitizing-Aufgabe): a Test-Bereich entry picked from
 # the "Recherche-Backlog: 20 Kandidaten" list. Grounded in subitizing

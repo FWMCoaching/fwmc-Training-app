@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # "Test" is a 6th top-level section, alongside Visual Training/Atemtraining/
 # Movement/Workout/NAT - an explicit experimentation area the client asked

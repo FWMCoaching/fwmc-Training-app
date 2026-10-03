@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Ziel-/Signalfarbe pro Übung (Fabian, 2026-10-02 "A. Ja"): every Test
 # exercise with a fixed signal colour gets a picker in its Feineinstellungen;

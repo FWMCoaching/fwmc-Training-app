@@ -1,7 +1,7 @@
 import asyncio, json
 from playwright.async_api import async_playwright
 
-URL = "http://localhost:8845/index.html#videotest1"
+URL = "http://localhost:8845/index.html?bereich=visual#videotest1"
 VIDEO_URL = "http://localhost:8845/explainer-vrw-placeholder.mp4"
 
 DEF = {

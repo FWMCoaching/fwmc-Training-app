@@ -9,7 +9,7 @@ from playwright.async_api import async_playwright
 # 2) The Master sheet and several ready screens (all <details> opened) are
 #    checked live: no two visible siblings may overlap.
 
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 SIBLING_CHECK = """(rootSel) => {
   const root = document.querySelector(rootSel);

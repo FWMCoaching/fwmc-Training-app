@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # "Zusatzaufgabe": lets a VT-canvas exercise (e.g. "4 Pfeile gerade") run
 # Periphere Wahrnehmung's own peripheral-flash mechanic as an add-on during

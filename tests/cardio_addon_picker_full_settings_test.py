@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Client's follow-up ask (2026-09-30), using Periphere Wahrnehmung and
 # Blitz-Raster as the illustrating example: pre-start Feineinstellungen lets

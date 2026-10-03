@@ -1,6 +1,6 @@
 import asyncio, base64, os
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Cardio: background colour, per-activity motivation (quote/image/gallery),
 # and the inline Zusatzreiz that flashes letters/digits only where nothing

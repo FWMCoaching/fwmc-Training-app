@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Kombi-Baukasten integration for the new Kraft-/Wiederholungstraining
 # builder (workout_reps_builder_test.py covers the standalone screen

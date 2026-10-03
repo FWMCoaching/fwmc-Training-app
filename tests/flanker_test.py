@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Ablenkungstest (Flanker): fourth exercise added under the autonomous "Test"
 # section. Classic Eriksen flanker paradigm (Eriksen & Eriksen, 1974) - a

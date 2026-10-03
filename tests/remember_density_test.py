@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Positionen merken at the maximum of 24 markers: no two markers may ever be
 # closer than the 82 px minimum (was a known open item - ~2 of 3 layouts had

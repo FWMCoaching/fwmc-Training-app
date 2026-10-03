@@ -1,7 +1,7 @@
 import asyncio, json
 from playwright.async_api import async_playwright
 OUT = "screenshots/wc2_"
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 COMBO_PROGRAM = {"type": "combo-program", "name": "Gesamt-Session", "description": "Alle vier Bereiche.",
     "blocks": [
