@@ -107,12 +107,12 @@ button{font-family:inherit;color:inherit}
 :root{--appbar-h:calc(68px + env(safe-area-inset-top,0px))}
 .app-bar{position:fixed;top:0;left:0;right:0;z-index:35;background:var(--bg);display:none}
 .app-bar-inner{max-width:760px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top,0px)) 20px 12px;display:flex;align-items:center;flex-wrap:wrap;column-gap:14px;row-gap:6px}
-body:has(.player:not([hidden]) .pause-overlay:not([hidden]),.player:not([hidden]) .pause-screen:not([hidden]),.player:not([hidden]) .done-panel:not([hidden]),body>.done-panel:not([hidden])) .app-bar{display:block}
-body:has(.player:not([hidden]) .pause-overlay:not([hidden]),.player:not([hidden]) .pause-screen:not([hidden]),.player:not([hidden]) .done-panel:not([hidden]),body>.done-panel:not([hidden])) .player-bar{top:var(--appbar-h)}
-body:has(.player:not([hidden]) .pause-overlay:not([hidden]),.player:not([hidden]) .pause-screen:not([hidden]),.player:not([hidden]) .done-panel:not([hidden]),body>.done-panel:not([hidden])) .pause-overlay{padding-top:calc(90px + var(--appbar-h))}
-body:has(.player:not([hidden]) .pause-overlay:not([hidden]),.player:not([hidden]) .pause-screen:not([hidden]),.player:not([hidden]) .done-panel:not([hidden]),body>.done-panel:not([hidden])) .pause-screen{padding-top:calc(14px + var(--appbar-h))}
-body:has(.player:not([hidden]) .pause-overlay:not([hidden]),.player:not([hidden]) .pause-screen:not([hidden]),.player:not([hidden]) .done-panel:not([hidden]),body>.done-panel:not([hidden])) .done-panel{padding-top:calc(24px + var(--appbar-h))}
-body:has(.player:not([hidden]) .pause-overlay:not([hidden]),.player:not([hidden]) .pause-screen:not([hidden]),.player:not([hidden]) .done-panel:not([hidden]),body>.done-panel:not([hidden])) .remember-hint{visibility:hidden}
+body:has(.player:not([hidden]) .pause-overlay:not([hidden]),.player:not([hidden]) .pause-screen:not([hidden]),.player:not([hidden]) .done-panel:not([hidden]),>.done-panel:not([hidden])) .app-bar{display:block}
+body:has(.player:not([hidden]) .pause-overlay:not([hidden]),.player:not([hidden]) .pause-screen:not([hidden]),.player:not([hidden]) .done-panel:not([hidden]),>.done-panel:not([hidden])) .player-bar{top:var(--appbar-h)}
+body:has(.player:not([hidden]) .pause-overlay:not([hidden]),.player:not([hidden]) .pause-screen:not([hidden]),.player:not([hidden]) .done-panel:not([hidden]),>.done-panel:not([hidden])) .pause-overlay{padding-top:calc(90px + var(--appbar-h))}
+body:has(.player:not([hidden]) .pause-overlay:not([hidden]),.player:not([hidden]) .pause-screen:not([hidden]),.player:not([hidden]) .done-panel:not([hidden]),>.done-panel:not([hidden])) .pause-screen{padding-top:calc(14px + var(--appbar-h))}
+body:has(.player:not([hidden]) .pause-overlay:not([hidden]),.player:not([hidden]) .pause-screen:not([hidden]),.player:not([hidden]) .done-panel:not([hidden]),>.done-panel:not([hidden])) .done-panel{padding-top:calc(24px + var(--appbar-h))}
+body:has(.player:not([hidden]) .pause-overlay:not([hidden]),.player:not([hidden]) .pause-screen:not([hidden]),.player:not([hidden]) .done-panel:not([hidden]),>.done-panel:not([hidden])) .remember-hint{visibility:hidden}
 .brand-logo{height:40px;width:auto;display:block}
 .brand-sub{
   font-style:normal;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;

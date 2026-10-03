@@ -79,6 +79,14 @@ async def run(scheme, shot):
         if shot: await pg.screenshot(path=f"app_bar_done_{scheme}.png")
         await pg.click("#kippbildDoneBackBtn"); await pg.wait_for_timeout(300)
         check(f"[{scheme}] global bar gone after leaving", not await pg.evaluate(BAR_ON))
+        # Body-level panels (Kombi pause between Bausteine etc. - Fabian 03.10.)
+        for pid in ["comboTransition", "comboDonePanel", "workoutTransition", "breathTransition", "cardioDonePanel"]:
+            await pg.evaluate(f"document.getElementById('{pid}').hidden=false")
+            await pg.wait_for_timeout(100)
+            check(f"[{scheme}] bar shown on #{pid}", await pg.evaluate(BAR_ON))
+            bad = await pg.evaluate(COVER_JS, f"#{pid} button, #{pid} h2")
+            check(f"[{scheme}] nothing covered on #{pid} {bad}", bad == [])
+            await pg.evaluate(f"document.getElementById('{pid}').hidden=true")
         check(f"[{scheme}] no page errors {errs}", errs == [])
         await b.close()
 
