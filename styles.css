@@ -1735,3 +1735,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .stroop-weights{margin-top:10px}
 .stroop-weights summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--brand);padding:4px 0}
 .stroop-weight-dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.25)}
+
+/* Persönliche Nachricht vom Trainer (Code-Feld "message") */
+.coach-message-text{white-space:pre-wrap;font-size:16px;line-height:1.5;color:var(--ink);margin:6px 0 18px;padding:14px 16px;border-left:4px solid var(--brand);background:var(--brand-pale);border-radius:10px;overflow-wrap:anywhere}
+.code-history-message{white-space:pre-wrap;overflow-wrap:anywhere}

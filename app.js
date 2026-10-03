@@ -1270,6 +1270,7 @@
     masterBgContrastHint: $("masterBgContrastHint"), masterBgResetAllBtn: $("masterBgResetAllBtn"),
     masterPauseSlider: $("masterPauseSlider"), masterPauseValue: $("masterPauseValue"),
     masterCodeHistoryGroup: $("masterCodeHistoryGroup"), masterCodeHistoryList: $("masterCodeHistoryList"),
+    coachMessageSheet: $("coachMessageSheet"), coachMessageText: $("coachMessageText"), coachMessageOkBtn: $("coachMessageOkBtn"),
     workoutExerciseInfoSheet: $("workoutExerciseInfoSheet"), workoutExerciseInfoIcon: $("workoutExerciseInfoIcon"),
     workoutExerciseInfoTitle: $("workoutExerciseInfoTitle"), workoutExerciseInfoNote: $("workoutExerciseInfoNote"),
     workoutExerciseInfoCloseBtn: $("workoutExerciseInfoCloseBtn"),
@@ -3770,7 +3771,8 @@
       return;
     }
     if (ctx.errorEl) ctx.errorEl.hidden = true;
-    recordCodeUsage(code);
+    recordCodeUsage(code, def);
+    showCoachMessageIfNew(code, def);
     try {
       if (def.type === "bundle") { openBundleOverview(def, code, ctx); return; }
       if (def.type === "breath-bundle") { openBreathBundleOverview(def, code); return; }
@@ -6062,12 +6064,48 @@
     const list = readJSON(CODE_HISTORY_KEY, []);
     return Array.isArray(list) ? list : [];
   }
-  function recordCodeUsage(code) {
+  // ---- Persönliche Nachricht / Hausaufgabe im Code (2026-10-03, Fabian:
+  // "umsetzen"): a code's config may carry `message` (free text, set in the
+  // dashboard). It pops up once when the code is opened, and again only when
+  // the trainer changes the text; the latest text stays readable under
+  // Grundeinstellungen > Trainings-Code-Verlauf.
+  const COACH_MESSAGE_SEEN_KEY = "fwmc-coach-message-seen-v1"; // { [code]: text }
+  function coachMessageOf(def) {
+    const m = def && typeof def.message === "string" ? def.message.trim() : "";
+    return m.slice(0, 1000);
+  }
+  let coachMessageReturnFocus = null;
+  function openCoachMessage(text) {
+    els.coachMessageText.textContent = text;
+    coachMessageReturnFocus = document.activeElement;
+    els.coachMessageSheet.hidden = false;
+    els.coachMessageOkBtn.focus();
+  }
+  function closeCoachMessage() {
+    els.coachMessageSheet.hidden = true;
+    if (coachMessageReturnFocus && coachMessageReturnFocus.focus) { try { coachMessageReturnFocus.focus(); } catch (e) {} }
+  }
+  function showCoachMessageIfNew(code, def) {
+    const text = coachMessageOf(def);
+    if (!text) return;
+    const seen = readJSON(COACH_MESSAGE_SEEN_KEY, {});
+    if (seen[code] === text) return;
+    seen[code] = text;
+    writeJSON(COACH_MESSAGE_SEEN_KEY, seen);
+    openCoachMessage(text);
+  }
+  els.coachMessageOkBtn.addEventListener("click", closeCoachMessage);
+  els.coachMessageSheet.addEventListener("click", (e) => { if (e.target === els.coachMessageSheet) closeCoachMessage(); });
+  els.coachMessageSheet.addEventListener("keydown", (e) => { if (e.key === "Escape") closeCoachMessage(); });
+
+  function recordCodeUsage(code, def) {
     const list = loadCodeHistory();
     const today = new Date().toISOString().slice(0, 10);
-    const existing = list.find((h) => h.code === code);
+    const message = coachMessageOf(def);
+    let existing = list.find((h) => h.code === code);
     if (existing) existing.lastUsed = today;
-    else list.push({ code, firstUsed: today, lastUsed: today });
+    else { existing = { code, firstUsed: today, lastUsed: today }; list.push(existing); }
+    if (message) existing.message = message; else delete existing.message;
     list.sort((a, b) => b.lastUsed.localeCompare(a.lastUsed));
     writeJSON(CODE_HISTORY_KEY, list.slice(0, CODE_HISTORY_MAX));
   }
@@ -6081,7 +6119,8 @@
       const item = document.createElement("button");
       item.className = "bundle-item";
       item.innerHTML = `<div class="bundle-item-head"><strong>${esc(h.code)}</strong></div>` +
-        `<span class="bundle-meta">zuerst ${formatDateDE(h.firstUsed)} &middot; zuletzt ${formatDateDE(h.lastUsed)}</span>`;
+        `<span class="bundle-meta">zuerst ${formatDateDE(h.firstUsed)} &middot; zuletzt ${formatDateDE(h.lastUsed)}</span>` +
+        (h.message ? `<span class="bundle-desc code-history-message">Nachricht: ${esc(h.message)}</span>` : "");
       item.addEventListener("click", () => { closeMasterSettings(); openProgramIntro(h.code); });
       const copyBtn = document.createElement("button");
       copyBtn.type = "button";
