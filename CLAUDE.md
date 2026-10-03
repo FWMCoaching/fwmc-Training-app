@@ -4380,7 +4380,7 @@ them next to "Nachricht an den Kunden" (`loadCodeFields(config, code)` /
 codes table has a "Laufzeit / Plätze" column (`codeRunText`), and
 "Plätze freigeben" posts `/admin/code-seats-reset`.
 - **App**: every lookup sends `&device=` (`deviceId()`, 20 random chars in
-  `fwmc-device-id`, no personal data - mention it in the privacy text).
+  `fwmc-device-id`, no personal data - explained in the "Datenschutz in der App" sheet).
   `lookupProgram()` maps 410 `expired` / 403 `not_yet` / 403 `full` to
   `__lookupError`; `showCodeError()` says when the code was valid or from
   when it is, and to contact "deinen Trainer". `codeValidityProblem(def)`
@@ -4411,6 +4411,34 @@ JSON are skipped and counted, a full storage stops with a message, then the
 page reloads so every `load*Prefs()` migrates old shapes. A future change
 to the file format bumps `BACKUP_VERSION` and adds a step to
 `BACKUP_MIGRATIONS[oldVersion]`. Test: `tests/backup_test.py`.
+
+### Atemtraining: Hörmodus (2026-10-03)
+
+Fabian: "Hör-Modus ohne Bildschirm". The breathReady "Ansage" row has three
+choices: An / Hörmodus / Aus (`breathPrefs.sound` + `breathPrefs.listen`).
+Hörmodus speaks each phase, counts the seconds ("2", "3" ...), says the
+remaining minutes at a phase start ("Noch N Minuten"/"Noch eine Minute")
+and "Geschafft. Gut gemacht." at the end (standalone only). It covers the
+player with the dark `#breathListenLayer` (fixed `#05090b`, z-index above
+the player-bar, so a pocket tap can't hit Beenden); pausing needs a 900 ms
+hold on `#breathListenHoldBtn` (`BREATH_LISTEN_HOLD_MS`, keyboard click
+pauses directly). The layer hides while paused; voice "Aus" in the pause
+sheet returns to the normal view. Kombi blocks and saved presets carry
+`listen`; coach programmes keep the client's own setting.
+Test: `tests/breath_listen_test.py`.
+
+### Datenschutz in der App (2026-10-03)
+
+Every footer's "Datenschutz" is a `.privacy-open-btn` that opens
+`#privacySheet` (same `.sheet` pattern as the FAQ, placed after
+`#faqSheet` in `_body.html` so it stacks above it; Escape closes it first).
+Four plain-language items: what stays on the device, the code lookup
+(code + random device id, stored only for group codes with seats), the IP
+address (rate limiting only, not stored), videos/links. It ends with links
+to the website's Datenschutzerklärung and Impressum. The FAQ storage answer
+links to it with an inline `.privacy-open-btn.inline-link`. **Anything new
+that sends data off the device must be added to this sheet in the same
+commit.** Test: `tests/privacy_test.py`.
 
 ### Interval phase wording corrected (2026-09-30)
 
