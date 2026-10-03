@@ -6384,6 +6384,16 @@
     if (masterSettingsReturnFocus) masterSettingsReturnFocus.focus();
   }
   document.querySelectorAll(".master-settings-btn").forEach((btn) => btn.addEventListener("click", openMasterSettings));
+  // Logo-Leiste in pause/end phases: player controls move down by its real
+  // height (it wraps to two rows on a narrow phone, like every brandbar).
+  (() => {
+    const appBar = document.getElementById("appBar");
+    if (!appBar || typeof ResizeObserver === "undefined") return;
+    new ResizeObserver(() => {
+      const h = appBar.offsetHeight;
+      if (h) document.documentElement.style.setProperty("--appbar-h", h + "px");
+    }).observe(appBar);
+  })();
   els.masterSettingsCloseBtn.addEventListener("click", closeMasterSettings);
   els.masterSettingsSheet.addEventListener("click", (e) => { if (e.target === els.masterSettingsSheet) closeMasterSettings(); });
   els.masterSettingsSheet.addEventListener("keydown", (e) => trapTabKey(els.masterSettingsSheet, e));
