@@ -1828,10 +1828,6 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .hour-grid .day-item-actions{margin-top:4px}
 .hour-grid .day-act{padding:4px 9px;font-size:12px}
 .today-plan-btn{margin-top:12px;width:100%}
-.today-code{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-bottom:22px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
-.today-code-label{font-size:13px;font-weight:700;color:var(--ink);flex-basis:100%}
-.today-code .program-entry-row{flex:1;min-width:200px;margin:0}
-.today-code .program-error{flex-basis:100%}
 .area-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 @media (min-width:700px){ .area-grid{grid-template-columns:repeat(3,1fr)} }
 .area-tile{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:14px;cursor:pointer;box-shadow:var(--shadow);color:var(--ink);min-width:0}
