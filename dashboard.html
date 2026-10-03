@@ -49,6 +49,7 @@
     border-radius: 8px; padding: 9px 10px; font-size: 0.95rem; font-family: inherit;
   }
   textarea { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.82rem; min-height: 160px; resize: vertical; }
+  #pMessage { font-family: inherit; font-size: 0.95rem; min-height: 72px; }
   button {
     background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 9px 16px;
     font-size: 0.9rem; cursor: pointer; margin-top: 12px; transition: filter 0.1s, transform 0.1s;
@@ -216,6 +217,10 @@
         <button id="pCodeRandomBtn" class="secondary" type="button" style="margin-top:0;white-space:nowrap">Zufällig ergänzen</button>
       </div>
       <p class="hint" style="margin-top:4px">Für neue Codes an Kunden: ein eigenes Kürzel eintippen (optional) und dann auf "Zufällig ergänzen" tippen - hängt automatisch unerratbare Zeichen an, damit niemand fremde Trainings-Codes durchprobieren kann.</p>
+
+      <label for="pMessage" style="margin-top:14px">Nachricht an den Kunden (optional)</label>
+      <textarea id="pMessage" rows="3" maxlength="1000" placeholder="z.B. Diese Woche bitte 3x die Atemübung vor dem Schlafen. Bis Donnerstag!"></textarea>
+      <p class="hint" style="margin-top:4px">Erscheint einmal beim Öffnen des Codes, und wieder, sobald du den Text änderst. Gilt für jeden Code-Typ (auch Übersichten und JSON).</p>
 
       <div class="tabs">
         <button class="tab-btn active" id="tabBuilderBtn" type="button">Baukasten</button>
@@ -915,6 +920,7 @@
   }
 
   function resetBuilder() {
+    loadCodeFields({});
     document.getElementById("pName").value = "";
     document.getElementById("pDesc").value = "";
     document.getElementById("pPauseS").value = 15;
@@ -959,12 +965,25 @@
   renderCardioGrid(); renderCardioList();
   renderWorkoutGrid(); renderWorkoutList();
 
+  // Code-level fields (any code type): live outside the Baukasten/JSON tabs
+  // and are written into the config on save, so they work for every type.
+  function loadCodeFields(config) {
+    const c = config && typeof config === "object" ? config : {};
+    document.getElementById("pMessage").value = typeof c.message === "string" ? c.message : "";
+  }
+  function applyCodeFields(config) {
+    if (!config || typeof config !== "object") return;
+    const message = document.getElementById("pMessage").value.trim();
+    if (message) config.message = message; else delete config.message;
+  }
+
   function editProgram(code) {
     const full = programsCache.find((p) => p.code === code);
     if (!full) return;
     document.getElementById("pCode").value = code;
     document.getElementById("pActive").checked = full.active;
     document.getElementById("pConfig").value = JSON.stringify(full.config, null, 2);
+    loadCodeFields(full.config);
     configToBuilder(full.config);
     if (builderUsable) switchTab("builder");
     document.getElementById("pCode").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -993,6 +1012,8 @@
       try { config = JSON.parse(document.getElementById("pConfig").value); }
       catch (e) { msg.textContent = "Ungültiges JSON: " + e.message; msg.className = "msg err"; return; }
     }
+    applyCodeFields(config);
+    document.getElementById("pConfig").value = JSON.stringify(config, null, 2);
     if (!config.name) { msg.textContent = "Name fehlt."; msg.className = "msg err"; return; }
     if (!code) { msg.textContent = "Code fehlt."; msg.className = "msg err"; return; }
     try {

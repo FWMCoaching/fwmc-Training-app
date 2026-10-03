@@ -4313,6 +4313,21 @@ on its own. Cardio only - in other areas the field would be in the way.
   stays a full takeover.
 Test: `tests/cardio_motiv_test.py`.
 
+### Persönliche Nachricht im Code (2026-10-03)
+
+Fabian: "Persönliche Nachricht oder Hausaufgabe im Code" - umsetzen. Any
+code config (every type, bundles included) may carry `message` (free text,
+max 1000 chars). The dashboard has a "Nachricht an den Kunden" field above
+the Baukasten/JSON tabs (`#pMessage`, `loadCodeFields()`/`applyCodeFields()`
+write it into the config on save, an empty field removes it). In the app,
+`openProgramIntro()` calls `showCoachMessageIfNew(code, def)`: the sheet
+`#coachMessageSheet` ("Nachricht von deinem Trainer" - never Fabian's name,
+other trainers may use the app later) opens over the opened screen once per
+text version (`fwmc-coach-message-seen-v1`, `{code: text}`), and again when
+the trainer changes the text. `recordCodeUsage(code, def)` keeps the latest
+text in the code history, so it stays readable under Grundeinstellungen >
+Trainings-Code-Verlauf. Test: `tests/coach_message_test.py`.
+
 ### Datensicherung: Export/Import (2026-10-02)
 
 Master-Einstellungen, group `#masterBackupGroup`. "Sicherung exportieren"

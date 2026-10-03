@@ -1857,3 +1857,6 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .plan-clear-btn{display:block;margin:16px 0 30px}
 #planEntrySheet .group-label{display:block;margin:12px 0 4px}
 .plan-entry-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* Persönliche Nachricht vom Trainer (Code-Feld "message") */
+.coach-message-text{white-space:pre-wrap;font-size:16px;line-height:1.5;color:var(--ink);margin:6px 0 18px;padding:14px 16px;border-left:4px solid var(--brand);background:var(--brand-pale);border-radius:10px;overflow-wrap:anywhere}
+.code-history-message{white-space:pre-wrap;overflow-wrap:anywhere}
