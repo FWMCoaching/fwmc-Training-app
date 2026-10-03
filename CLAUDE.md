@@ -5162,8 +5162,12 @@ still work with the token); constant-time token compare
 (`timingSafeEqual`); `/program` rate limited per IP via the
 `LOOKUP_LIMITER` `[[ratelimits]]` binding in `wrangler.toml` (30/min,
 wrangler 4.36+, the code skips the check if the binding is missing).
-**Needs a `wrangler deploy` from the session that holds
-CLOUDFLARE_API_TOKEN to go live.** If the dashboard ever moves to a
+**Deployed 2026-10-03** (version 480d6c01, verified: /program 200,
+admin routes 401 without token, foreign origin 403). Deploys run in the
+Claude Code environment "FWMC-automation" (holds CLOUDFLARE_API_TOKEN as
+an environment variable, network access "Vollständig"; a network change
+only applies to NEW sessions) - this project's own environment cannot
+reach api.cloudflare.com. If the dashboard ever moves to a
 custom domain, add that origin to `ADMIN_ORIGINS`. Test:
 `tests/worker_hardening_test.py` (runs `worker/test/hardening.mjs` in
 plain node against a mocked D1).
