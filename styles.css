@@ -1860,3 +1860,37 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 /* Persönliche Nachricht vom Trainer (Code-Feld "message") */
 .coach-message-text{white-space:pre-wrap;font-size:16px;line-height:1.5;color:var(--ink);margin:6px 0 18px;padding:14px 16px;border-left:4px solid var(--brand);background:var(--brand-pale);border-radius:10px;overflow-wrap:anywhere}
 .code-history-message{white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* ==== Mein Fortschritt ==== */
+.today-progress{margin-bottom:22px}
+.progress-card{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;color:var(--ink);font:inherit;cursor:pointer}
+.progress-card-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.progress-card-row div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.progress-card-row strong{font-family:"Magra",sans-serif;font-size:19px;line-height:1.15;color:var(--brand-deep);overflow-wrap:break-word}
+.progress-card-row span{font-size:12px;color:var(--ink-soft);line-height:1.3}
+.progress-card-more{display:block;margin-top:10px;font-size:14px;font-weight:700;color:var(--brand)}
+.progress-bar{height:10px;border-radius:999px;background:var(--line);overflow:hidden}
+.progress-bar span{display:block;height:100%;background:var(--brand);border-radius:999px;transition:width .3s}
+.progress-goal-row{display:flex;align-items:center;gap:12px;margin:4px 0 12px}
+.progress-goal-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:22px;line-height:1;cursor:pointer;flex:none}
+.progress-goal-btn:disabled{opacity:.4;cursor:default}
+.progress-goal-value{flex:1;min-width:0;text-align:center;font-weight:700;font-size:16px}
+.progress-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:18px}
+.progress-weeks{position:relative;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;align-items:end;height:150px;padding-top:4px}
+.progress-week{display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;min-width:0}
+.progress-week-n{font-size:12px;font-weight:700;color:var(--ink-soft)}
+.progress-week-bar{position:relative;flex:1;width:100%;max-width:30px;display:flex;align-items:flex-end;background:var(--brand-pale);border-radius:6px;overflow:hidden}
+.progress-week-bar>span{display:block;width:100%;background:var(--brand);border-radius:6px 6px 0 0}
+.progress-week.reached .progress-week-bar>span{background:#2e7d32}
+.progress-week-bar::after{content:"";position:absolute;left:0;right:0;bottom:var(--goal-pos,0);border-top:2px dashed var(--ink-soft);opacity:.6}
+.progress-week-label{font-size:11px;color:var(--ink-soft);white-space:nowrap}
+.progress-area{display:grid;grid-template-columns:minmax(0,9em) minmax(0,1fr) auto;align-items:center;gap:10px;margin:8px 0}
+.progress-area-name{font-size:14px;min-width:0;overflow-wrap:break-word}
+.progress-area-bar{height:10px;border-radius:999px;background:var(--line);overflow:hidden}
+.progress-area-bar span{display:block;height:100%;border-radius:999px}
+.progress-area-n{font-weight:700;font-size:14px;min-width:2ch;text-align:right}
+.progress-milestones{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}
+.progress-milestone{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:12px;border:1px dashed var(--line);color:var(--ink-soft);min-width:0}
+.progress-milestone strong{font-family:"Magra",sans-serif;font-size:20px;line-height:1.1}
+.progress-milestone span{font-size:11px}
+.progress-milestone.reached{border-style:solid;border-color:var(--brand);background:var(--brand-pale);color:var(--brand-deep)}

@@ -223,7 +223,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 03.10.2026, 17:36</p>
+    <p class="app-version">Stand: 03.10.2026, 17:56</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -290,6 +290,14 @@
     <button class="start-btn secondary today-plan-btn" id="todayPlanBtn" type="button">Wochenplan bearbeiten</button>
   </section>
 
+  <section class="today-progress">
+    <div class="section-head"><h2>Mein Fortschritt</h2></div>
+    <button class="progress-card" id="todayProgressOpenBtn" type="button" aria-label="Mein Fortschritt ansehen">
+      <span id="todayProgressCard"></span>
+      <span class="progress-card-more">Alles ansehen &rarr;</span>
+    </button>
+  </section>
+
   <section class="today-code">
     <label class="today-code-label" for="todayCodeInput">Trainings-Code</label>
     <div class="program-entry-row">
@@ -306,7 +314,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 03.10.2026, 17:36</p>
+    <p class="app-version">Stand: 03.10.2026, 17:56</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -314,6 +322,40 @@
       <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutz</a>
     </nav>
   </footer>
+</div>
+
+<div class="screen" id="progressScreen" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="progressBackBtn">&larr; Zur&uuml;ck zu Heute</button>
+  </div>
+  <h1 class="page-title">Mein Fortschritt</h1>
+  <p class="page-sub">Dein Training im &Uuml;berblick: Wochenziel, Serie, Meilensteine und wie sich dein Training auf die Bereiche verteilt. Abgebrochene Trainings z&auml;hlen nicht mit.</p>
+  <div class="group">
+    <div class="group-label">Wochenziel</div>
+    <div class="progress-goal-row">
+      <button class="progress-goal-btn" id="progressGoalMinus" type="button" aria-label="Wochenziel verringern">&minus;</button>
+      <span class="progress-goal-value" id="progressGoalValue"></span>
+      <button class="progress-goal-btn" id="progressGoalPlus" type="button" aria-label="Wochenziel erh&ouml;hen">+</button>
+    </div>
+    <div class="progress-bar" id="progressWeekBar"></div>
+    <p class="group-help" id="progressWeekText"></p>
+  </div>
+  <div class="progress-stats" id="progressStats"></div>
+  <div class="group">
+    <div class="group-label">Die letzten 8 Wochen</div>
+    <div class="progress-weeks" id="progressWeeks"></div>
+    <p class="group-help">Gr&uuml;n: Wochenziel erreicht. Die Linie zeigt dein Ziel.</p>
+  </div>
+  <div class="group">
+    <div class="group-label">Bereiche in den letzten 4 Wochen</div>
+    <div id="progressAreas"></div>
+    <p class="group-help" id="progressAreasNote"></p>
+  </div>
+  <div class="group">
+    <div class="group-label">Meilensteine</div>
+    <div class="progress-milestones" id="progressMilestones"></div>
+    <p class="group-help" id="progressNextText"></p>
+  </div>
 </div>
 
 <div class="screen" id="planScreen" hidden>
@@ -427,7 +469,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 03.10.2026, 17:36</p>
+    <p class="app-version">Stand: 03.10.2026, 17:56</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -500,7 +542,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 03.10.2026, 17:36</p>
+    <p class="app-version">Stand: 03.10.2026, 17:56</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -610,7 +652,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 03.10.2026, 17:36</p>
+    <p class="app-version">Stand: 03.10.2026, 17:56</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -669,7 +711,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 03.10.2026, 17:36</p>
+    <p class="app-version">Stand: 03.10.2026, 17:56</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1029,7 +1071,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 03.10.2026, 17:36</p>
+    <p class="app-version">Stand: 03.10.2026, 17:56</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1219,7 +1261,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 03.10.2026, 17:36</p>
+    <p class="app-version">Stand: 03.10.2026, 17:56</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>

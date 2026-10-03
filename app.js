@@ -1181,7 +1181,11 @@
   // ---- Elements ----
   const $ = (id) => document.getElementById(id);
   const els = {
-    todayHome: $("todayHome"), planScreen: $("planScreen"),
+    todayHome: $("todayHome"), planScreen: $("planScreen"), progressScreen: $("progressScreen"),
+    todayProgressCard: $("todayProgressCard"), todayProgressOpenBtn: $("todayProgressOpenBtn"), progressBackBtn: $("progressBackBtn"),
+    progressGoalMinus: $("progressGoalMinus"), progressGoalPlus: $("progressGoalPlus"), progressGoalValue: $("progressGoalValue"),
+    progressWeekBar: $("progressWeekBar"), progressWeekText: $("progressWeekText"), progressStats: $("progressStats"), progressWeeks: $("progressWeeks"),
+    progressAreas: $("progressAreas"), progressAreasNote: $("progressAreasNote"), progressMilestones: $("progressMilestones"), progressNextText: $("progressNextText"),
     home: $("home"), ready: $("ready"), player: $("player"), playerBar: $("playerBar"),
     donePanel: $("donePanel"), doneSummary: $("doneSummary"), doneRating: $("doneRating"),
     readyTitle: $("readyTitle"), readyIcon: $("readyIcon"), readyTrains: $("readyTrains"), rulesBox: $("rulesBox"),
@@ -1998,11 +2002,12 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["todayHome", "planScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
+  const SCREENS = ["todayHome", "planScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
     if (name === "todayHome") renderToday();
+    if (name === "progressScreen") renderProgressScreen();
     if (name !== "todayHome" && els.todayCodeError) els.todayCodeError.hidden = true;
     if (name !== "home") els.programError.hidden = true;
     if (name !== "breathHome") els.breathProgramError.hidden = true;
@@ -2100,6 +2105,7 @@
     const item = { id: String(Date.now()), ts: new Date().toISOString(), rating: null, ...entry };
     list.unshift(item);
     writeJSON(HISTORY_KEY, list.slice(0, 200));
+    recordProgress(item);
     return item.id;
   }
   function rateHistory(id, rating) {
@@ -2107,6 +2113,167 @@
     const item = list.find((e) => e.id === id);
     if (item) { item.rating = rating; writeJSON(HISTORY_KEY, list); }
   }
+  // ==== Mein Fortschritt (Fabian, 2026-10-03: "umsetzen") ====
+  // Weekly goal, a week streak, milestones and an overview across all areas.
+  // The history keeps only the last 200 runs, so lifetime numbers live in
+  // their own store, filled by addHistory() (recordProgress) and seeded once
+  // from the existing history. Aborted runs never count.
+  const PROGRESS_KEY = "fwmc-progress-v1";
+  const PROGRESS_MILESTONES = [1, 5, 10, 25, 50, 100, 150, 200, 300, 500, 750, 1000];
+  function loadProgress() {
+    const raw = readJSON(PROGRESS_KEY, null);
+    const p = raw && typeof raw === "object" ? raw : {};
+    const goal = Math.round(Number(p.weekGoal));
+    const out = {
+      weekGoal: goal >= 1 && goal <= 14 ? goal : 3,
+      days: p.days && typeof p.days === "object" ? p.days : {},
+      seeded: !!p.seeded,
+    };
+    if (!out.seeded) {
+      loadHistory().forEach((e) => { if (!e.aborted) progressAdd(out, e); });
+      out.seeded = true;
+      writeJSON(PROGRESS_KEY, out);
+    }
+    return out;
+  }
+  function progressDay(ts) {
+    const d = new Date(ts);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+  function progressAdd(p, e) {
+    const key = progressDay(e.ts || Date.now());
+    const day = p.days[key] || (p.days[key] = { n: 0, s: 0, a: {} });
+    const area = historyAreaOf(e);
+    day.n += 1;
+    day.s += Math.max(0, Math.round(Number(e.seconds) || 0));
+    day.a[area] = (day.a[area] || 0) + 1;
+  }
+  function recordProgress(e) {
+    if (!e || e.aborted) return;
+    const p = loadProgress();
+    progressAdd(p, e);
+    writeJSON(PROGRESS_KEY, p);
+  }
+  function progressMonday(d) {
+    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+    return x;
+  }
+  function progressWeek(p, monday) {
+    let n = 0, s = 0;
+    const a = {};
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(d.getDate() + i);
+      const day = p.days[progressDay(d)];
+      if (!day) continue;
+      n += day.n; s += day.s;
+      Object.entries(day.a || {}).forEach(([k, v]) => { a[k] = (a[k] || 0) + v; });
+    }
+    return { n, s, a };
+  }
+  function progressSummary(p, now) {
+    const thisMon = progressMonday(now || new Date());
+    const weekAt = (back) => { const m = new Date(thisMon); m.setDate(m.getDate() - back * 7); return m; };
+    const cur = progressWeek(p, thisMon);
+    // Streak: weeks in a row with the goal reached. The running week only
+    // counts once it is reached, so an unfinished week never breaks it.
+    let streak = cur.n >= p.weekGoal ? 1 : 0;
+    for (let back = 1; back < 520; back++) { if (progressWeek(p, weekAt(back)).n >= p.weekGoal) streak++; else break; }
+    const days = Object.keys(p.days).sort();
+    let best = 0;
+    if (days.length) {
+      let run = 0;
+      const first = progressMonday(new Date(days[0] + "T12:00:00"));
+      for (let m = new Date(first); m <= thisMon; m.setDate(m.getDate() + 7)) {
+        if (progressWeek(p, m).n >= p.weekGoal) { run++; best = Math.max(best, run); } else run = 0;
+      }
+    }
+    let total = 0, totalS = 0;
+    Object.values(p.days).forEach((d) => { total += d.n; totalS += d.s; });
+    const weeks = [];
+    for (let back = 7; back >= 0; back--) { const m = weekAt(back); weeks.push({ monday: m, ...progressWeek(p, m) }); }
+    const areas = {};
+    let areaS = 0;
+    for (let back = 0; back < 4; back++) {
+      const w = progressWeek(p, weekAt(back));
+      Object.entries(w.a).forEach(([k, v]) => { areas[k] = (areas[k] || 0) + v; });
+      areaS += w.s;
+    }
+    const next = PROGRESS_MILESTONES.find((m) => m > total) || null;
+    return { cur, streak, best: Math.max(best, streak), total, totalS, weeks, areas, areaS, next };
+  }
+  const PROGRESS_AREA_LABEL = { combo: ["Kombi-Programm", "#007094"], test: ["Test-Bereich", "#b45309"] };
+  function progressAreaInfo(k) {
+    const a = AREA_BY_KEY[k];
+    return a ? [a.label, a.color] : (PROGRESS_AREA_LABEL[k] || [k, "#6b7c85"]);
+  }
+  function progressStreakText(n) { return n === 1 ? "1 Woche" : `${n} Wochen`; }
+  function renderTodayProgressCard() {
+    const p = loadProgress();
+    const s = progressSummary(p);
+    const pct = Math.min(100, Math.round((s.cur.n / p.weekGoal) * 100));
+    els.todayProgressCard.innerHTML = `
+      <div class="progress-card-row">
+        <div><strong>${s.cur.n} von ${p.weekGoal}</strong><span>Wochenziel</span></div>
+        <div><strong>${progressStreakText(s.streak)}</strong><span>Serie</span></div>
+        <div><strong>${s.total}</strong><span>Trainings gesamt</span></div>
+      </div>
+      <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${p.weekGoal}" aria-valuenow="${Math.min(s.cur.n, p.weekGoal)}"><span style="width:${pct}%"></span></div>`;
+  }
+  function renderProgressScreen() {
+    const p = loadProgress();
+    const s = progressSummary(p);
+    els.progressGoalValue.textContent = p.weekGoal === 1 ? "1 Training pro Woche" : `${p.weekGoal} Trainings pro Woche`;
+    els.progressGoalMinus.disabled = p.weekGoal <= 1;
+    els.progressGoalPlus.disabled = p.weekGoal >= 14;
+    const left = Math.max(0, p.weekGoal - s.cur.n);
+    const pct = Math.min(100, Math.round((s.cur.n / p.weekGoal) * 100));
+    els.progressWeekBar.innerHTML = `<span style="width:${pct}%"></span>`;
+    els.progressWeekText.textContent = left
+      ? `Diese Woche ${s.cur.n} von ${p.weekGoal}. Noch ${left} bis zum Ziel.`
+      : `Diese Woche ${s.cur.n} von ${p.weekGoal}. Ziel erreicht, stark!`;
+    els.progressStats.innerHTML =
+      `<div class="stat"><strong>${progressStreakText(s.streak)}</strong><span>Serie (Wochenziel in Folge erreicht)</span></div>` +
+      `<div class="stat"><strong>${progressStreakText(s.best)}</strong><span>Längste Serie</span></div>` +
+      `<div class="stat"><strong>${s.total}</strong><span>Trainings gesamt</span></div>` +
+      `<div class="stat"><strong>${s.totalS ? fmtMinutes(s.totalS) : "–"}</strong><span>Trainingszeit gesamt</span></div>`;
+    const maxN = Math.max(p.weekGoal * 1.25, ...s.weeks.map((w) => w.n), 1);
+    els.progressWeeks.innerHTML = s.weeks.map((w, i) => {
+      const h = Math.round((w.n / maxN) * 100);
+      const label = i === s.weeks.length - 1 ? "diese" : `${String(w.monday.getDate()).padStart(2, "0")}.${String(w.monday.getMonth() + 1).padStart(2, "0")}.`;
+      return `<div class="progress-week${w.n >= p.weekGoal ? " reached" : ""}" title="${w.n} Trainings">
+        <span class="progress-week-n">${w.n}</span>
+        <span class="progress-week-bar"><span style="height:${h}%"></span></span>
+        <span class="progress-week-label">${label}</span></div>`;
+    }).join("");
+    els.progressWeeks.style.setProperty("--goal-pos", `${Math.round((p.weekGoal / maxN) * 100)}%`);
+    const areaRows = Object.entries(s.areas).sort((a, b) => b[1] - a[1]);
+    const maxA = Math.max(1, ...areaRows.map((r) => r[1]));
+    els.progressAreas.innerHTML = areaRows.length
+      ? areaRows.map(([k, n]) => {
+          const [label, color] = progressAreaInfo(k);
+          return `<div class="progress-area"><span class="progress-area-name">${esc(label)}</span>
+            <span class="progress-area-bar"><span style="width:${Math.round((n / maxA) * 100)}%;background:${color}"></span></span>
+            <span class="progress-area-n">${n}</span></div>`;
+        }).join("")
+      : `<p class="group-help">In den letzten 4 Wochen noch kein Training. Leg einfach los, dann siehst du hier, wie sich dein Training auf die Bereiche verteilt.</p>`;
+    els.progressAreasNote.textContent = areaRows.length ? `Zusammen ${s.areaS ? fmtMinutes(s.areaS) : "unter einer Minute"} in den letzten 4 Wochen.` : "";
+    els.progressMilestones.innerHTML = PROGRESS_MILESTONES.map((m) =>
+      `<div class="progress-milestone${s.total >= m ? " reached" : ""}"><strong>${m}</strong><span>${m === 1 ? "Training" : "Trainings"}</span></div>`).join("");
+    els.progressNextText.textContent = s.next
+      ? `Noch ${s.next - s.total} ${s.next - s.total === 1 ? "Training" : "Trainings"} bis zum nächsten Meilenstein (${s.next}).`
+      : "Alle Meilensteine geschafft. Respekt!";
+  }
+  function setProgressGoal(delta) {
+    const p = loadProgress();
+    p.weekGoal = Math.max(1, Math.min(14, p.weekGoal + delta));
+    writeJSON(PROGRESS_KEY, p);
+    renderProgressScreen();
+  }
+  els.progressGoalMinus.addEventListener("click", () => setProgressGoal(-1));
+  els.progressGoalPlus.addEventListener("click", () => setProgressGoal(1));
+  els.todayProgressOpenBtn.addEventListener("click", () => showScreen("progressScreen"));
+  els.progressBackBtn.addEventListener("click", () => showScreen("todayHome"));
   const PROGRAM_HISTORY_KINDS = ["program", "breath-program", "workout-plan", "movement-plan", "cardio-plan", "combo"];
   function isCompleted(progKey) {
     return loadHistory().some((e) => PROGRAM_HISTORY_KINDS.includes(e.kind) && e.progKey === progKey);
@@ -25163,6 +25330,7 @@
     renderWeekStrip(hist);
     renderCalendar(hist);
     renderDayPanel(hist);
+    renderTodayProgressCard();
     els.todayPlanBtn.textContent = planHasEntries() ? "Wochenplan bearbeiten" : "Wochenplan anlegen";
     if (!els.todayAreaGrid.children.length) renderAreaGrid();
   }

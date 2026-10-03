@@ -4328,6 +4328,25 @@ the trainer changes the text. `recordCodeUsage(code, def)` keeps the latest
 text in the code history, so it stays readable under Grundeinstellungen >
 Trainings-Code-Verlauf. Test: `tests/coach_message_test.py`.
 
+### Mein Fortschritt (2026-10-03)
+
+Fabian: "umsetzen". Heute has a "Mein Fortschritt" card (`#todayProgressOpenBtn`:
+Wochenziel x von y, Serie, Trainings gesamt) that opens `#progressScreen`:
+- Wochenziel 1-14 per week (−/+), with a bar and text for this week.
+- Serie = weeks in a row with the goal reached. The running week counts
+  only once it is reached, so an unfinished week never breaks the streak.
+  Also shows the longest streak, total trainings and total time.
+- Chart of the last 8 weeks (green = goal reached, dashed line = goal).
+- Areas in the last 4 weeks (`historyAreaOf`, plus Kombi-Programm and Test).
+- Meilensteine 1/5/10/25/50/100/150/200/300/500/750/1000 trainings.
+Data lives in `fwmc-progress-v1` = `{weekGoal, days:{"YYYY-MM-DD":{n, s, a:{area:n}}}, seeded}`.
+It is seeded once from the history; after that `addHistory()` calls
+`recordProgress()`. Lifetime numbers therefore survive the history's
+200-entry cap. Aborted runs never count.
+A new area only needs its `historyAreaOf` mapping (and a `PLAN_AREAS`
+entry for its label/colour).
+Test: `tests/progress_test.py`.
+
 ### Codes mit Laufzeit: persönlich / Gruppe, Plätze, Ablauf (2026-10-03)
 
 Fabian: "Datum kann vergeben werden, muss aber nicht"; team codes later.
