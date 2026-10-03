@@ -3699,10 +3699,18 @@
     try {
       const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
       const timer = ctrl ? setTimeout(() => ctrl.abort(), 12000) : null;
-      const res = await fetch(`${CODE_API}?code=${encodeURIComponent(code)}`, ctrl ? { signal: ctrl.signal } : undefined);
+      const res = await fetch(`${CODE_API}?code=${encodeURIComponent(code)}&device=${encodeURIComponent(deviceId())}`, ctrl ? { signal: ctrl.signal } : undefined);
       if (timer) clearTimeout(timer);
       if (res.ok) return await res.json();
       if (res.status >= 500) return { __lookupError: "network" };
+      // Codes with a run time / seat limit (Worker answers 410/403 with a reason)
+      if (res.status === 410 || res.status === 403) {
+        let body = {};
+        try { body = await res.json(); } catch (e) {}
+        if (body.error === "expired") return { __lookupError: "expired", validUntil: body.validUntil };
+        if (body.error === "not_yet") return { __lookupError: "not_yet", validFrom: body.validFrom };
+        if (body.error === "full") return { __lookupError: "full" };
+      }
     } catch (e) {
       return { __lookupError: "network" };
     }
@@ -3722,16 +3730,50 @@
     if (t) return true;
     return !nonEmpty(def.blocks) || def.blocks.some((b) => !b || !EXERCISES[b.exercise]);
   }
-  function showCodeError(ctx, kind) {
+  function showCodeError(ctx, kind, info) {
     const el = ctx.errorEl;
     if (!el) return;
     if (!el.dataset.defaultText) el.dataset.defaultText = el.textContent;
-    el.textContent = kind === "network"
-      ? "Keine Verbindung zum Server. Bitte prüfe deine Internetverbindung und versuche es noch einmal."
-      : kind === "broken"
-        ? "Dieses Training konnte nicht geöffnet werden. Bitte gib deinem Coach kurz Bescheid."
-        : el.dataset.defaultText;
+    const texts = {
+      network: "Keine Verbindung zum Server. Bitte prüfe deine Internetverbindung und versuche es noch einmal.",
+      broken: "Dieses Training konnte nicht geöffnet werden. Bitte gib deinem Trainer kurz Bescheid.",
+      expired: `${info && info.validUntil ? "Dieser Code war bis " + codeDateText(info.validUntil) + " gültig." : "Dieser Code ist abgelaufen."} Wenn du weiter trainieren möchtest, wende dich an deinen Trainer.`,
+      not_yet: `Dieser Code gilt erst ab ${info && info.validFrom ? codeDateText(info.validFrom) : "einem späteren Tag"}.`,
+      full: "Alle Plätze dieses Gruppen-Codes sind schon vergeben. Frag deinen Trainer nach einem weiteren Platz.",
+    };
+    el.textContent = texts[kind] || el.dataset.defaultText;
     el.hidden = false;
+  }
+
+  // ---- Codes with a run time and seats (config.validFrom / validUntil as
+  // YYYY-MM-DD, config.codeKind "persoenlich"|"gruppe", config.seats). The
+  // Worker checks dates and seats; the app checks the dates again itself so
+  // an expiry also works against an older Worker. The device id is a random
+  // string (no personal data), only used to count the seats of a group code.
+  const DEVICE_ID_KEY = "fwmc-device-id";
+  function deviceId() {
+    let id = "";
+    try { id = localStorage.getItem(DEVICE_ID_KEY) || ""; } catch (e) {}
+    if (!/^[a-z0-9]{16,40}$/.test(id)) {
+      const abc = "abcdefghijkmnpqrstuvwxyz23456789";
+      const bytes = new Uint8Array(20);
+      try { crypto.getRandomValues(bytes); } catch (e) { for (let i = 0; i < 20; i++) bytes[i] = Math.floor(Math.random() * 256); }
+      id = Array.from(bytes, (b) => abc[b % abc.length]).join("");
+      try { localStorage.setItem(DEVICE_ID_KEY, id); } catch (e) {}
+    }
+    return id;
+  }
+  const isoDay = (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "";
+  function todayIsoBerlin() {
+    try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); }
+    catch (e) { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+  }
+  function codeDateText(iso) { const [y, m, d] = iso.split("-"); return `${d}.${m}.${y}`; }
+  function codeValidityProblem(def) {
+    const from = isoDay(def && def.validFrom), until = isoDay(def && def.validUntil), today = todayIsoBerlin();
+    if (until && today > until) return { __lookupError: "expired", validUntil: until };
+    if (from && today < from) return { __lookupError: "not_yet", validFrom: from };
+    return null;
   }
 
   let originBundle = null; // { def, code } - set when a programme was opened from a bundle overview
@@ -3766,10 +3808,11 @@
       return;
     }
     if (ctx.goBtn) { ctx.goBtn.disabled = true; ctx.goBtn.textContent = "Lädt …"; }
-    const def = await lookupProgram(code);
+    let def = await lookupProgram(code);
     if (ctx.goBtn) { ctx.goBtn.disabled = false; ctx.goBtn.textContent = "Öffnen"; }
+    if (def && !def.__lookupError) def = codeValidityProblem(def) || def;
     if (!def || def.__lookupError || codeDefProblem(def)) {
-      showCodeError(ctx, !def ? "notfound" : def.__lookupError ? "network" : "broken");
+      showCodeError(ctx, !def ? "notfound" : def.__lookupError || "broken", def);
       showScreen(ctx.homeScreen);
       return;
     }
@@ -6109,6 +6152,8 @@
     if (existing) existing.lastUsed = today;
     else { existing = { code, firstUsed: today, lastUsed: today }; list.push(existing); }
     if (message) existing.message = message; else delete existing.message;
+    const validUntil = isoDay(def && def.validUntil);
+    if (validUntil) existing.validUntil = validUntil; else delete existing.validUntil;
     list.sort((a, b) => b.lastUsed.localeCompare(a.lastUsed));
     writeJSON(CODE_HISTORY_KEY, list.slice(0, CODE_HISTORY_MAX));
   }
@@ -6122,7 +6167,7 @@
       const item = document.createElement("button");
       item.className = "bundle-item";
       item.innerHTML = `<div class="bundle-item-head"><strong>${esc(h.code)}</strong></div>` +
-        `<span class="bundle-meta">zuerst ${formatDateDE(h.firstUsed)} &middot; zuletzt ${formatDateDE(h.lastUsed)}</span>` +
+        `<span class="bundle-meta">zuerst ${formatDateDE(h.firstUsed)} &middot; zuletzt ${formatDateDE(h.lastUsed)}${isoDay(h.validUntil) ? ` &middot; ${todayIsoBerlin() > h.validUntil ? "abgelaufen, galt bis" : "gültig bis"} ${codeDateText(h.validUntil)}` : ""}</span>` +
         (h.message ? `<span class="bundle-desc code-history-message">Nachricht: ${esc(h.message)}</span>` : "");
       item.addEventListener("click", () => { closeMasterSettings(); openProgramIntro(h.code); });
       const copyBtn = document.createElement("button");
