@@ -2,7 +2,7 @@ import asyncio, json, urllib.parse
 from playwright.async_api import async_playwright
 
 DASH = "http://localhost:8845/dashboard.html"
-APP = "http://localhost:8845/index.html"
+APP = "http://localhost:8845/index.html?bereich=visual"
 CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
 
 # Persönliche Nachricht / Hausaufgabe im Code (Fabian, 2026-10-03):
