@@ -1,6 +1,6 @@
 {
-  "name": "FWMC Coach-Dashboard",
-  "short_name": "Coach-Dashboard",
+  "name": "FWMC Trainer-Dashboard",
+  "short_name": "Trainer-Dashboard",
   "description": "Trainings-Codes und Kunden-Verlauf verwalten - für Fabian Westermann Mentalcoaching.",
   "start_url": "./dashboard.html",
   "scope": "./dashboard.html",

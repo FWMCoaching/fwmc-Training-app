@@ -30,7 +30,7 @@ async def main():
         print("welcome mentions Kombi-Programm:", "Kombi-Programm" in welcome_text)
         print("coach hint visible:", await pg.is_visible("#tipsCoachHint"))
         coach_text = await pg.inner_text("#tipsCoachHint")
-        print("coach hint mentions Coach:", "Coach" in coach_text)
+        print("coach hint mentions Trainer:", "Trainer" in coach_text)
         print("coach hint has a contact link:", await pg.locator('#tipsCoachHint a[href="https://www.fabian-westermann.de/"]').count() == 1)
         # existing practical tips list still intact, plus the epilepsy/
         # photosensitivity flash-stimuli note added after the client's

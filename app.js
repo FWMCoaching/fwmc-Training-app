@@ -560,7 +560,7 @@
       usesColors: true, bgIsStimulus: true,
       task: "Erkenne Farbe und Pfeilrichtung und reagiere mit der passenden Seite.",
       trains: "Farbwahrnehmung und schnelle Seitenentscheidung",
-      rules: "Du siehst eine Farbfläche mit weißem Pfeil. Die Farbe sagt dir, was du tust – der Pfeil zeigt die Seite (links oder rechts). Welche Farbe wofür steht, legst du mit deinem Coach fest.",
+      rules: "Du siehst eine Farbfläche mit weißem Pfeil. Die Farbe sagt dir, was du tust – der Pfeil zeigt die Seite (links oder rechts). Welche Farbe wofür steht, legst du mit deinem Trainer fest.",
     },
     "vrw-original": {
       title: "VRW · Direkt & Umgekehrt",
@@ -666,7 +666,7 @@
     "dig01": {
       name: "Einstieg · Tempo-Steigerung",
       featured: true,
-      description: "Zweimal VT: erst ruhig mit viel Zeit, dann doppelt so schnell. Beispiel-Zuordnung für dieses Demo: Orange = mit der Hand antippen · Rot = mit dem Fuß antippen · Lila = kurz stehen bleiben. Bei deinem Coach kann das anders aussehen.",
+      description: "Zweimal VT: erst ruhig mit viel Zeit, dann doppelt so schnell. Beispiel-Zuordnung für dieses Demo: Orange = mit der Hand antippen · Rot = mit dem Fuß antippen · Lila = kurz stehen bleiben. Bei deinem Trainer kann das anders aussehen.",
       pauseS: 15,
       blocks: [
         { exercise: "vt-color", palette: "ORL", duration: 60, stimulusS: 2.5, intervalMin: 15, intervalMax: 25 },
@@ -676,7 +676,7 @@
     "dig02": {
       name: "Fortgeschritten · Gemischtes Training",
       featured: true,
-      description: "VT, VRW, Stroop und nochmal VRW – durchgehend zügiges Tempo. Beispiel-Zuordnung für dieses Demo: Orange = mit der Hand antippen · Rot = mit dem Fuß antippen · Lila = kurz stehen bleiben. Bei deinem Coach kann das anders aussehen.",
+      description: "VT, VRW, Stroop und nochmal VRW – durchgehend zügiges Tempo. Beispiel-Zuordnung für dieses Demo: Orange = mit der Hand antippen · Rot = mit dem Fuß antippen · Lila = kurz stehen bleiben. Bei deinem Trainer kann das anders aussehen.",
       pauseS: 15,
       blocks: [
         { exercise: "vt-color", palette: "ORL", duration: 60, stimulusS: 0.8, intervalMin: 3, intervalMax: 5 },

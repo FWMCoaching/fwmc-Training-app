@@ -1256,6 +1256,28 @@ Flash-Speicher-Test, MOT), which already fill the stage with their own
 stimuli. A new VT canvas exercise gets it automatically. Test:
 `tests/audit_round3_test.py`.
 
+## Hard rule: one design, "aus einer Feder" (client, 2026-10-03)
+
+Fabian had to notice himself that the Heute code card looked different from
+the code cards in every other area. His rule: everything comes from one hand.
+For every new window, card, button or text:
+- Reuse the existing pattern of the closest sibling (classes, colours,
+  layout, spacing, button labels, explanation texts) instead of inventing a
+  new one. Example: a code entry is always `.code-card` with
+  "Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein."
+- Client-facing text says "dein Trainer", never "Coach" or a name (other
+  trainers will use the app later). The dashboard is the "Trainer-Dashboard".
+- A deviation needs a real reason and goes to Fabian as a proposal first.
+- Before every go-live: screenshot the new element next to an existing
+  sibling (390px, light and dark) and compare. Do this yourself; Fabian must
+  never be the one to spot an inconsistency.
+- The dashboard is dark by Fabian's choice but uses the app fonts (Magra,
+  Public Sans) and must not scroll sideways at 390px (tables sit in
+  `.table-scroll`).
+`tests/consistency_test.py` checks the code cards, section headings, the
+"Coach" wording and the dashboard fonts/width. Extend it whenever a new
+shared pattern appears.
+
 ## Hard rule: every exercise works everywhere (client, 2026-10-02)
 
 Client, after Kraftübungen turned out not to be stackable: "Solche Fehler
@@ -2561,7 +2583,7 @@ the client).
     genuinely different "level of processing" question, not a rule or a
     search. *Zuhause*: Test.
 
-## Coach-Dashboard & Worker-Repo (2026-09-28)
+## Trainer-Dashboard (formerly Coach-Dashboard) & Worker-Repo (2026-09-28)
 
 Client's ask: a way to programme Trainings-Codes and see which client
 (Kürzel only) got which code and when, without needing me in the loop every
