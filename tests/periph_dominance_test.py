@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # "Dominanz": a 1x-3x weight slider per currently selected Bereich zone
 # (Periphere Wahrnehmung only, for now), skewing how often that zone gets

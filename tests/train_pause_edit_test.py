@@ -1,6 +1,6 @@
 import asyncio, json
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Pause während des Trainings (Fabian, 2026-10-02): "Pause" freezes Tabata,
 # Kraftplan, Cardio and the Kombi pause screen; the sheet edits the current

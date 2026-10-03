@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Go/No-Go Reaktionstest: the first exercise added under the autonomous
 # "Test" section. Classic inhibitory-control paradigm - a series of single

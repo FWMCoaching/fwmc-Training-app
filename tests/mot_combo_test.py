@@ -1,7 +1,7 @@
 import asyncio
 from playwright.async_api import async_playwright
 
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Objektverfolgung (MOT)'s Kombi-Baukasten capture mode - same shape as Remember/
 # Flash (3 modes share a ready screen, "training" has its own), plus the

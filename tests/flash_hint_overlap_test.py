@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Regression test for a real bug report: a flashed digit's random position
 # (fx,fy) is shared with Periph's radial layout, which has no fixed on-screen

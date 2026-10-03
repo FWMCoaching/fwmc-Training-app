@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Picking a colour while intensity is 0% jumps it to 50% (0% would
 # otherwise render plain white regardless of colour, looking "broken").

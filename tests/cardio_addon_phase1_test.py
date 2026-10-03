@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Phase 1: Cardio "+ Zusatzimpuls" extended from the original 4 guest types
 # to every remaining exercise in the shared EXERCISES catalog that already

@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # FAQ: one shared overlay (#faqSheet), opened from a "Häufige Fragen" link
 # in EVERY section's site-footer (".faq-open-btn", six instances - home,

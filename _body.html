@@ -1,4 +1,4 @@
-<div class="screen" id="home">
+<div class="screen" id="home" hidden>
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
     <em class="brand-sub">FWMC Online-Training</em>
@@ -6,7 +6,8 @@
   </header>
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
-    <button class="section-tab active" data-section="visual" role="tab" aria-selected="true">Visual Training</button>
+    <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
     <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
     <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
@@ -214,6 +215,132 @@
   </footer>
 </div>
 
+<div class="screen" id="todayHome">
+  <header class="brandbar">
+    <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC Online-Training</em>
+    <button class="master-settings-btn" type="button" aria-label="Grundeinstellungen">&#9881;&#xFE0F;</button>
+  </header>
+
+  <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab active" data-section="today" role="tab" aria-selected="true">Heute</button>
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Cardio</button>
+    <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
+    <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
+  </nav>
+
+  <section class="today-hello">
+    <h1 class="today-greeting" id="todayGreeting">Guten Tag</h1>
+    <p class="today-date" id="todayDate"></p>
+  </section>
+
+  <section class="today-main" id="todayMain" aria-live="polite"></section>
+
+  <section class="today-week">
+    <div class="section-head">
+      <h2>Diese Woche</h2>
+      <span class="section-note" id="todayProgress"></span>
+    </div>
+    <div class="week-nav">
+      <button class="week-nav-btn" id="todayWeekPrev" type="button" aria-label="Vorherige Woche">&lsaquo;</button>
+      <div class="week-strip" id="todayWeekStrip"></div>
+      <button class="week-nav-btn" id="todayWeekNext" type="button" aria-label="N&auml;chste Woche">&rsaquo;</button>
+    </div>
+    <div class="cal-switch" role="group" aria-label="Kalenderansicht">
+      <button class="cal-switch-btn" id="calMonthBtn" type="button" aria-expanded="false">Monat aufklappen</button>
+      <button class="cal-switch-btn" id="calNextMonthBtn" type="button" aria-expanded="false" hidden>N&auml;chsten Monat dazu</button>
+      <button class="cal-switch-btn" id="calQuarterBtn" type="button" aria-pressed="false">Quartal</button>
+      <button class="cal-switch-btn" id="calYearBtn" type="button" aria-pressed="false">Jahr</button>
+    </div>
+    <div class="cal-expand" id="calExpand" hidden></div>
+
+    <div class="day-panel" id="todayDayPanel">
+      <div class="day-panel-head">
+        <h3 id="dayPanelTitle"></h3>
+        <div class="day-view-switch" role="group" aria-label="Tagesansicht">
+          <button class="day-view-btn active" data-day-view="list" type="button">Liste</button>
+          <button class="day-view-btn" data-day-view="hours" type="button">Stunden</button>
+        </div>
+      </div>
+      <div id="dayPanelBody"></div>
+      <button class="text-link small" id="dayAddBtn" type="button">+ Nur an diesem Tag etwas eintragen</button>
+    </div>
+    <button class="start-btn secondary today-plan-btn" id="todayPlanBtn" type="button">Wochenplan bearbeiten</button>
+  </section>
+
+  <section class="today-code">
+    <label class="today-code-label" for="todayCodeInput">Trainings-Code</label>
+    <div class="program-entry-row">
+      <input type="text" id="todayCodeInput" placeholder="Code eingeben" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <button id="todayCodeGoBtn">&Ouml;ffnen</button>
+    </div>
+    <div class="program-error" id="todayCodeError" role="alert" hidden>Zu diesem Code wurde kein Training gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
+  </section>
+
+  <section class="today-areas">
+    <div class="section-head"><h2>Bereiche</h2></div>
+    <div class="area-grid" id="todayAreaGrid"></div>
+  </section>
+
+  <footer class="site-footer">
+    <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
+    <p class="app-version">Stand: __APP_STAND__</p>
+    <nav>
+      <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
+      <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
+      <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a>
+      <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutz</a>
+    </nav>
+  </footer>
+</div>
+
+<div class="screen" id="planScreen" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="planBackBtn">&larr; Zur&uuml;ck zu Heute</button>
+  </div>
+  <h1 class="page-title">Dein Wochenplan</h1>
+  <p class="page-sub">Lege fest, was du an welchem Wochentag trainierst. Der Plan wiederholt sich jede Woche. Mit Phasen planst du mehrere Abschnitte hintereinander, zum Beispiel 4 Wochen Grundlage und danach 8 Wochen Aufbau.</p>
+  <div class="group">
+    <label class="group-label" for="planStartInput">Plan beginnt in der Woche vom</label>
+    <input type="date" id="planStartInput" class="plan-date-input">
+    <p class="group-help" id="planStartHelp"></p>
+  </div>
+  <div id="planPhaseList"></div>
+  <button class="start-btn secondary" id="planAddPhaseBtn" type="button">+ Phase hinzuf&uuml;gen</button>
+  <button class="text-link small plan-clear-btn" id="planClearBtn" type="button">Ganzen Plan l&ouml;schen</button>
+</div>
+
+<div class="sheet" id="planEntrySheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="planEntryTitle">
+    <h2 id="planEntryTitle">Training eintragen</h2>
+    <p class="group-help" id="planEntryContext"></p>
+    <label class="group-label" for="planEntryArea">Bereich</label>
+    <select id="planEntryArea" class="plan-select"></select>
+    <label class="group-label" for="planEntryWhat">Training</label>
+    <select id="planEntryWhat" class="plan-select"></select>
+    <label class="group-label" for="planEntryCode">Trainings-Code (optional)</label>
+    <input type="text" id="planEntryCode" class="plan-input" placeholder="z. B. von deinem Trainer" autocapitalize="off" autocomplete="off" spellcheck="false">
+    <div class="plan-entry-row">
+      <div>
+        <label class="group-label" for="planEntryTime">Uhrzeit (optional)</label>
+        <input type="time" id="planEntryTime" class="plan-input">
+      </div>
+      <div>
+        <label class="group-label" for="planEntryMinutes">Dauer</label>
+        <select id="planEntryMinutes" class="plan-select"></select>
+      </div>
+    </div>
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="planEntryCancelBtn" type="button">Abbrechen</button>
+      <button class="start-btn" id="planEntrySaveBtn" type="button">Eintragen</button>
+    </div>
+  </div>
+</div>
+
 <div class="screen" id="breathHome" hidden>
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" alt="Fabian Westermann Mentalcoaching">
@@ -222,6 +349,7 @@
   </header>
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
     <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
     <button class="section-tab active" data-section="breath" role="tab" aria-selected="true">Atemtraining</button>
     <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
@@ -299,6 +427,7 @@
   </header>
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
     <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
     <button class="section-tab active" data-section="movement" role="tab" aria-selected="true">Movement</button>
@@ -390,6 +519,7 @@
   </header>
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
     <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
     <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
@@ -480,6 +610,7 @@
   </header>
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
     <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
     <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
@@ -743,6 +874,7 @@
   </header>
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
     <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
     <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
@@ -897,6 +1029,7 @@
   </header>
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
     <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
     <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
@@ -5895,6 +6028,14 @@
     </div>
 
     <button class="start-btn" id="masterSettingsCloseBtn">Schlie&szlig;en</button>
+  </div>
+</div>
+
+<div class="sheet" id="coachMessageSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="coachMessageTitle">
+    <h2 id="coachMessageTitle">Nachricht von deinem Trainer</h2>
+    <p class="coach-message-text" id="coachMessageText"></p>
+    <button class="start-btn" id="coachMessageOkBtn">Alles klar</button>
   </div>
 </div>
 

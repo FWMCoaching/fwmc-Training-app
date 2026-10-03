@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 async def swipe(pg, selector, dx, dy=0, start_x=300, start_y=400):
     await pg.eval_on_selector(selector, """(el, {dx, dy, startX, startY}) => {

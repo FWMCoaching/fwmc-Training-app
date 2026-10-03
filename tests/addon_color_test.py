@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # "Farbe der Reize": the peripheral characters (Periphere Wahrnehmung's own,
 # and the Zusatzaufgabe's "eigene Feineinstellung" bundle) now have their own

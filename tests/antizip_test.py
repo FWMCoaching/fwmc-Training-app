@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Antizipationstest (Coincidence-Anticipation Timing): twelfth exercise added
 # under the autonomous "Test" section. A ball moves at constant speed across

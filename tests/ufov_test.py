@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Blickfeld-Test (UFOV): fifth exercise added under the autonomous "Test"
 # section. Grounded in the Useful Field of View test (Ball & Owsley,

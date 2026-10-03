@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Broader audit triggered by a user report (screenshot of Trail Making's
 # instruction text running off both edges of an iPhone screen, with markers

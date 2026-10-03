@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Three client asks for Periphere Wahrnehmung's "Farbe der Reize" picker
 # that survived the "Transparenz" background-mode revert (that fourth ask

@@ -1,7 +1,7 @@
 import asyncio
 from playwright.async_api import async_playwright
 
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Pause markers between Kombi-Baukasten blocks - client's ask: a Master
 # default, adjustable per block (different exercises need different

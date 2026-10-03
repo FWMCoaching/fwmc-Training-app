@@ -1,7 +1,7 @@
 import asyncio
 from playwright.async_api import async_playwright
 
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Task #21: a welcome/onboarding text inside the existing "So trainierst
 # du richtig" sheet (tipsSheet) - dismissible but always recallable, per

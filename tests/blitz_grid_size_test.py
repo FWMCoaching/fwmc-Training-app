@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Blitz-Raster's Rastergröße was capped at 5x5 - the client asked for higher
 # options ("8x8 oder so", "mindestens auf iPad macht das Sinn"). Added

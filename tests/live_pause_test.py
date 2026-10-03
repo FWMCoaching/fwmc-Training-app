@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Audit point 20 (Fabian, 2026-10-02): pause with live adjustment for every
 # Visual-Training exercise (tempo, background, fixation point), Atemtraining

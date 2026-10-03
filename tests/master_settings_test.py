@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Master-Einstellungen: a no-login "profile" (client's own framing) reachable
 # via a gear button top-right of every section's brandbar - accessibility

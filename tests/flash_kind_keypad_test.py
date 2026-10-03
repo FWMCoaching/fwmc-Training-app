@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Two changes to Flash-Speicher-Test, from the client's own reference video
 # of a similar app: (1) a "Zeichentyp" setting (Buchstaben/Zahlen/Gemischt),

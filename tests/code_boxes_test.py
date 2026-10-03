@@ -3,7 +3,7 @@ import json
 import urllib.parse
 from playwright.async_api import async_playwright
 
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Fake remote defs, served in place of the real Cloudflare worker via
 # page.route() - lets this test exercise the movement-plan/cardio-plan/

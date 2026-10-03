@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Batch D of the "genau so als wenn man die Übung einzeln machen würde"
 # follow-up, closing it out: Remember/Flash/MOT's own mode-specific numeric

@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Reported bug: "Beenden" (#backBtn) inside a Cardio guest exercise
 # (Zusatzimpuls) ended the ENTIRE Cardio session instead of just the guest

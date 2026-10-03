@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 OUT = "screenshots/"
 
 # Blitz-Raster: N grid cells light up simultaneously and briefly, then go

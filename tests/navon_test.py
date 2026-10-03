@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Ganzheit-Detail-Test (Navon-Aufgabe): twenty-fifth exercise added under
 # the autonomous "Test" section, picked from the Recherche-Backlog

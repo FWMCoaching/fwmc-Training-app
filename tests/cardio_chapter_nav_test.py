@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Cardio's "Nächste Aktivität" button used to be one-directional (forward-
 # only, dynamic text label). The client asked for the same bidirectional

@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Cardio "+ Zusatzaufgabe" Zeitfenster-Slider (ab/bis) durften bisher bis zu
 # 60 Min. weit geschoben werden, unabhaengig davon, wie viel Zeit die vom

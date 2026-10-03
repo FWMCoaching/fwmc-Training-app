@@ -1181,6 +1181,7 @@
   // ---- Elements ----
   const $ = (id) => document.getElementById(id);
   const els = {
+    todayHome: $("todayHome"), planScreen: $("planScreen"),
     home: $("home"), ready: $("ready"), player: $("player"), playerBar: $("playerBar"),
     donePanel: $("donePanel"), doneSummary: $("doneSummary"), doneRating: $("doneRating"),
     readyTitle: $("readyTitle"), readyIcon: $("readyIcon"), readyTrains: $("readyTrains"), rulesBox: $("rulesBox"),
@@ -1270,6 +1271,7 @@
     masterBgContrastHint: $("masterBgContrastHint"), masterBgResetAllBtn: $("masterBgResetAllBtn"),
     masterPauseSlider: $("masterPauseSlider"), masterPauseValue: $("masterPauseValue"),
     masterCodeHistoryGroup: $("masterCodeHistoryGroup"), masterCodeHistoryList: $("masterCodeHistoryList"),
+    coachMessageSheet: $("coachMessageSheet"), coachMessageText: $("coachMessageText"), coachMessageOkBtn: $("coachMessageOkBtn"),
     workoutExerciseInfoSheet: $("workoutExerciseInfoSheet"), workoutExerciseInfoIcon: $("workoutExerciseInfoIcon"),
     workoutExerciseInfoTitle: $("workoutExerciseInfoTitle"), workoutExerciseInfoNote: $("workoutExerciseInfoNote"),
     workoutExerciseInfoCloseBtn: $("workoutExerciseInfoCloseBtn"),
@@ -1996,10 +1998,12 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
+  const SCREENS = ["todayHome", "planScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
+    if (name === "todayHome") renderToday();
+    if (name !== "todayHome" && els.todayCodeError) els.todayCodeError.hidden = true;
     if (name !== "home") els.programError.hidden = true;
     if (name !== "breathHome") els.breathProgramError.hidden = true;
     if (name !== "movementHome") els.movementProgramError.hidden = true;
@@ -2021,7 +2025,7 @@
     btn.addEventListener("click", () => {
       const sec = btn.dataset.section;
       activateSectionTab(sec);
-      showScreen(sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "cardio" ? "cardioHome" : sec === "nat" ? "natHome" : sec === "test" ? "testHome" : "home");
+      showScreen(sec === "today" ? "todayHome" : sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "cardio" ? "cardioHome" : sec === "nat" ? "natHome" : sec === "test" ? "testHome" : "home");
     });
   });
 
@@ -3756,7 +3760,7 @@
       try { localStorage.removeItem(TEST_UNLOCK_KEY); } catch (e) {}
       applyTestTabVisibility();
       if (ctx.errorEl) ctx.errorEl.hidden = true;
-      const homeToSec = { home: "visual", breathHome: "breath", movementHome: "movement", workoutHome: "workout", cardioHome: "cardio", natHome: "nat" };
+      const homeToSec = { todayHome: "today", home: "visual", breathHome: "breath", movementHome: "movement", workoutHome: "workout", cardioHome: "cardio", natHome: "nat" };
       activateSectionTab(homeToSec[ctx.homeScreen] || "visual");
       showScreen(ctx.homeScreen);
       return;
@@ -3770,7 +3774,8 @@
       return;
     }
     if (ctx.errorEl) ctx.errorEl.hidden = true;
-    recordCodeUsage(code);
+    recordCodeUsage(code, def);
+    showCoachMessageIfNew(code, def);
     try {
       if (def.type === "bundle") { openBundleOverview(def, code, ctx); return; }
       if (def.type === "breath-bundle") { openBreathBundleOverview(def, code); return; }
@@ -5014,7 +5019,7 @@
       summary = `${ex.title} · ${fmtMinutes(spent)}`;
     }
     els.doneSummary.textContent = summary;
-    const id = addHistory({ kind: "exercise", title: ex.title, seconds: Math.round(spent), note });
+    const id = addHistory({ kind: "exercise", exId: state.exercise, title: ex.title, seconds: Math.round(spent), note });
     renderRating(els.doneRating, id);
     els.donePanel.hidden = false;
     els.playerBar.hidden = true;
@@ -6062,12 +6067,48 @@
     const list = readJSON(CODE_HISTORY_KEY, []);
     return Array.isArray(list) ? list : [];
   }
-  function recordCodeUsage(code) {
+  // ---- Persönliche Nachricht / Hausaufgabe im Code (2026-10-03, Fabian:
+  // "umsetzen"): a code's config may carry `message` (free text, set in the
+  // dashboard). It pops up once when the code is opened, and again only when
+  // the trainer changes the text; the latest text stays readable under
+  // Grundeinstellungen > Trainings-Code-Verlauf.
+  const COACH_MESSAGE_SEEN_KEY = "fwmc-coach-message-seen-v1"; // { [code]: text }
+  function coachMessageOf(def) {
+    const m = def && typeof def.message === "string" ? def.message.trim() : "";
+    return m.slice(0, 1000);
+  }
+  let coachMessageReturnFocus = null;
+  function openCoachMessage(text) {
+    els.coachMessageText.textContent = text;
+    coachMessageReturnFocus = document.activeElement;
+    els.coachMessageSheet.hidden = false;
+    els.coachMessageOkBtn.focus();
+  }
+  function closeCoachMessage() {
+    els.coachMessageSheet.hidden = true;
+    if (coachMessageReturnFocus && coachMessageReturnFocus.focus) { try { coachMessageReturnFocus.focus(); } catch (e) {} }
+  }
+  function showCoachMessageIfNew(code, def) {
+    const text = coachMessageOf(def);
+    if (!text) return;
+    const seen = readJSON(COACH_MESSAGE_SEEN_KEY, {});
+    if (seen[code] === text) return;
+    seen[code] = text;
+    writeJSON(COACH_MESSAGE_SEEN_KEY, seen);
+    openCoachMessage(text);
+  }
+  els.coachMessageOkBtn.addEventListener("click", closeCoachMessage);
+  els.coachMessageSheet.addEventListener("click", (e) => { if (e.target === els.coachMessageSheet) closeCoachMessage(); });
+  els.coachMessageSheet.addEventListener("keydown", (e) => { if (e.key === "Escape") closeCoachMessage(); });
+
+  function recordCodeUsage(code, def) {
     const list = loadCodeHistory();
     const today = new Date().toISOString().slice(0, 10);
-    const existing = list.find((h) => h.code === code);
+    const message = coachMessageOf(def);
+    let existing = list.find((h) => h.code === code);
     if (existing) existing.lastUsed = today;
-    else list.push({ code, firstUsed: today, lastUsed: today });
+    else { existing = { code, firstUsed: today, lastUsed: today }; list.push(existing); }
+    if (message) existing.message = message; else delete existing.message;
     list.sort((a, b) => b.lastUsed.localeCompare(a.lastUsed));
     writeJSON(CODE_HISTORY_KEY, list.slice(0, CODE_HISTORY_MAX));
   }
@@ -6081,7 +6122,8 @@
       const item = document.createElement("button");
       item.className = "bundle-item";
       item.innerHTML = `<div class="bundle-item-head"><strong>${esc(h.code)}</strong></div>` +
-        `<span class="bundle-meta">zuerst ${formatDateDE(h.firstUsed)} &middot; zuletzt ${formatDateDE(h.lastUsed)}</span>`;
+        `<span class="bundle-meta">zuerst ${formatDateDE(h.firstUsed)} &middot; zuletzt ${formatDateDE(h.lastUsed)}</span>` +
+        (h.message ? `<span class="bundle-desc code-history-message">Nachricht: ${esc(h.message)}</span>` : "");
       item.addEventListener("click", () => { closeMasterSettings(); openProgramIntro(h.code); });
       const copyBtn = document.createElement("button");
       copyBtn.type = "button";
@@ -14256,7 +14298,7 @@
   function currentHomeScreen() {
     const active = document.querySelector(".section-tab.active");
     const sec = active ? active.dataset.section : "visual";
-    return sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "cardio" ? "cardioHome" : sec === "nat" ? "natHome" : sec === "test" ? "testHome" : "home";
+    return sec === "today" ? "todayHome" : sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "cardio" ? "cardioHome" : sec === "nat" ? "natHome" : sec === "test" ? "testHome" : "home";
   }
 
   function startComboProgram(def, code, key, fallbackReturnScreen) {
@@ -24859,8 +24901,585 @@
   els.subitizeDoneBackBtn.addEventListener("click", () => { els.subitizePlayer.hidden = true; els.subitizeDonePanel.hidden = true; showScreen("testHome"); });
   wireFullscreen({ player: els.subitizePlayer, btn: els.subitizeFsBtn, hint: els.subitizeFsHint, hintOpen: els.subitizeFsHintOpenBtn, hintClose: els.subitizeFsHintClose });
 
+  // ==== Startseite "Heute" + Wochenplan + Kalender (2026-10-03) ====
+  // The app opens on "Heute" (Fabian: "öffnet immer auf Heute"). A plan is
+  // local only (fwmc-plan-v1): phases run back to back from plan.startDate,
+  // each phase is one repeating week (entries per weekday, 0 = Mo .. 6 = So),
+  // weeks: 0 = unbegrenzt (only sensible as the last phase). Extras are
+  // one-off entries on a date, skips hide a plan entry on one date, done
+  // holds manual ticks. A planned entry also counts as done when the
+  // history has a training of the same area on that day (one history entry
+  // per planned entry).
+  Object.assign(els, {
+    todayGreeting: $("todayGreeting"), todayDate: $("todayDate"), todayMain: $("todayMain"),
+    todayProgress: $("todayProgress"), todayWeekStrip: $("todayWeekStrip"),
+    todayWeekPrev: $("todayWeekPrev"), todayWeekNext: $("todayWeekNext"),
+    calMonthBtn: $("calMonthBtn"), calNextMonthBtn: $("calNextMonthBtn"), calQuarterBtn: $("calQuarterBtn"),
+    calYearBtn: $("calYearBtn"), calExpand: $("calExpand"),
+    dayPanelTitle: $("dayPanelTitle"), dayPanelBody: $("dayPanelBody"), dayAddBtn: $("dayAddBtn"),
+    todayPlanBtn: $("todayPlanBtn"), todayCodeInput: $("todayCodeInput"), todayCodeGoBtn: $("todayCodeGoBtn"),
+    todayCodeError: $("todayCodeError"), todayAreaGrid: $("todayAreaGrid"),
+    planBackBtn: $("planBackBtn"), planStartInput: $("planStartInput"), planStartHelp: $("planStartHelp"),
+    planPhaseList: $("planPhaseList"), planAddPhaseBtn: $("planAddPhaseBtn"), planClearBtn: $("planClearBtn"),
+    planEntrySheet: $("planEntrySheet"), planEntryTitle: $("planEntryTitle"), planEntryContext: $("planEntryContext"),
+    planEntryArea: $("planEntryArea"), planEntryWhat: $("planEntryWhat"), planEntryCode: $("planEntryCode"),
+    planEntryTime: $("planEntryTime"), planEntryMinutes: $("planEntryMinutes"),
+    planEntryCancelBtn: $("planEntryCancelBtn"), planEntrySaveBtn: $("planEntrySaveBtn"),
+  });
+
+  const PLAN_KEY = "fwmc-plan-v1";
+  const DAY_VIEW_KEY = "fwmc-day-view-v1";
+  const PLAN_AREAS = [
+    { key: "visual", label: "Visual Training", short: "Visual", color: "#1f7ab8", screen: "home", text: "Wahrnehmen, entscheiden, reagieren.",
+      icon: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="#fff"/>' },
+    { key: "breath", label: "Atemtraining", short: "Atem", color: "#2a9d8f", screen: "breathHome", text: "Ruhig werden und Fokus finden.",
+      icon: '<path d="M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-3 3M3 12h8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
+    { key: "movement", label: "Movement", short: "Movement", color: "#c77d12", screen: "movementHome", text: "Bewegen, merken, reagieren im Takt.",
+      icon: '<circle cx="12" cy="4.5" r="2" fill="#fff"/><path d="M12 7v7M12 9l-5-3M12 9l5 3M12 14l-4 6M12 14l4 6" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
+    { key: "workout", label: "Workout", short: "Workout", color: "#c0392b", screen: "workoutHome", text: "Kraft, Intervalle und eigene Pläne.",
+      icon: '<path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
+    { key: "cardio", label: "Cardio", short: "Cardio", color: "#7b4fb8", screen: "cardioHome", text: "Ausdauer, auf Wunsch mit Zusatzaufgaben.",
+      icon: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' },
+    { key: "nat", label: "NAT – Neuroathletik", short: "NAT", color: "#3a7d2c", screen: "natHome", text: "Wahrnehmung, Gedächtnis und Reaktion.",
+      icon: '<circle cx="12" cy="12" r="8" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="2.5" fill="#fff"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
+  ];
+  const AREA_BY_KEY = Object.fromEntries(PLAN_AREAS.map((a) => [a.key, a]));
+  const AREA_TO_SECTION = { visual: "visual", breath: "breath", movement: "movement", workout: "workout", cardio: "cardio", nat: "nat", test: "test" };
+  const NAT_SUBS = [["peripher", "Periphere Wahrnehmung"], ["remember", "Positionen merken"], ["blitz", "Blitz-Raster"], ["flash", "Flash-Speicher-Test"], ["mot", "Objektverfolgung (MOT)"]];
+  const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+  const WD_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+  const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+  const PHASE_TINTS = ["#007094", "#c77d12", "#7b4fb8", "#3a7d2c", "#c0392b", "#2a9d8f"];
+
+  // ---- date helpers (local dates as "YYYY-MM-DD") ----
+  function dStr(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+  function dParse(s) { const [y, m, d] = String(s).split("-").map(Number); return new Date(y, (m || 1) - 1, d || 1); }
+  function dAdd(s, days) { const d = dParse(s); d.setDate(d.getDate() + days); return dStr(d); }
+  function wdIdx(s) { return (dParse(s).getDay() + 6) % 7; }
+  function mondayOf(s) { return dAdd(s, -wdIdx(s)); }
+  function dDiff(a, b) { return Math.round((dParse(b) - dParse(a)) / 86400000); }
+  function todayStr() { return dStr(new Date()); }
+  function longDate(s) { const d = dParse(s); return `${WD_LONG[wdIdx(s)]}, ${d.getDate()}. ${MONTHS[d.getMonth()]}`; }
+  function timeToMin(t) { if (!t) return null; const [h, m] = t.split(":").map(Number); return h * 60 + (m || 0); }
+  function minToTime(m) { return `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`; }
+  function fmtGap(min) { const h = Math.floor(min / 60), m = min % 60; return h ? (m ? `${h} Std. ${m} Min.` : `${h} Std.`) : `${m} Min.`; }
+  function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  // ---- plan storage ----
+  function emptyPlan() { return { startDate: mondayOf(todayStr()), phases: [], extras: {}, skips: {}, done: {} }; }
+  function cleanEntry(e) {
+    if (!e || !AREA_BY_KEY[e.area]) return null;
+    return { id: String(e.id || newId()), area: e.area, what: String(e.what || ""), code: String(e.code || "").slice(0, 60),
+      time: /^\d{2}:\d{2}$/.test(e.time || "") ? e.time : "", minutes: Math.max(5, Math.min(240, Number(e.minutes) || 15)) };
+  }
+  function loadPlan() {
+    const raw = readJSON(PLAN_KEY, null);
+    const p = emptyPlan();
+    if (!raw || typeof raw !== "object") return p;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw.startDate || "")) p.startDate = mondayOf(raw.startDate);
+    p.phases = (Array.isArray(raw.phases) ? raw.phases : []).map((ph) => ({
+      id: String(ph.id || newId()), name: String(ph.name || "Phase").slice(0, 40),
+      weeks: Math.max(0, Math.min(104, Number(ph.weeks) || 0)),
+      days: [0, 1, 2, 3, 4, 5, 6].map((i) => ((ph.days && ph.days[i]) || []).map(cleanEntry).filter(Boolean)),
+    }));
+    ["extras", "skips", "done"].forEach((k) => { if (raw[k] && typeof raw[k] === "object") p[k] = raw[k]; });
+    Object.keys(p.extras).forEach((d) => { p.extras[d] = (p.extras[d] || []).map(cleanEntry).filter(Boolean); });
+    return p;
+  }
+  let plan = loadPlan();
+  function savePlan() { writeJSON(PLAN_KEY, plan); }
+  function planHasEntries() { return plan.phases.some((ph) => ph.days.some((d) => d.length)) || Object.values(plan.extras).some((l) => l.length); }
+
+  // Which phase covers a date (null before the start / after a limited end).
+  function phaseFor(date) {
+    const w = Math.floor(dDiff(plan.startDate, date) / 7);
+    if (w < 0) return null;
+    let acc = 0;
+    for (let i = 0; i < plan.phases.length; i++) {
+      const ph = plan.phases[i];
+      if (ph.weeks === 0 || w < acc + ph.weeks) return { phase: ph, index: i, weekInPhase: w - acc + 1 };
+      acc += ph.weeks;
+    }
+    return null;
+  }
+  function phaseStartDate(index) {
+    let acc = 0;
+    for (let i = 0; i < index; i++) acc += plan.phases[i].weeks || 0;
+    return dAdd(plan.startDate, acc * 7);
+  }
+
+  function historyAreaOf(e) {
+    const k = e.kind || "";
+    if (k.startsWith("breath")) return "breath";
+    if (k.startsWith("movement")) return "movement";
+    if (k.startsWith("workout")) return "workout";
+    if (k.startsWith("cardio")) return "cardio";
+    if (["remember", "blitz", "flash", "mot"].includes(k)) return "nat";
+    if (k === "exercise") return e.exId === "periph-flash" ? "nat" : "visual";
+    if (k === "program") return "visual";
+    if (k === "combo") return "combo";
+    return "test";
+  }
+  // Planned + extra entries of a date, sorted, with done state.
+  function occurrencesOn(date, historyList) {
+    const out = [];
+    const ph = phaseFor(date);
+    const skips = plan.skips[date] || [];
+    if (ph) ph.phase.days[wdIdx(date)].forEach((e) => { if (!skips.includes(e.id)) out.push({ ...e, extra: false, phaseName: ph.phase.name }); });
+    (plan.extras[date] || []).forEach((e) => out.push({ ...e, extra: true }));
+    out.sort((a, b) => (timeToMin(a.time) ?? 9999) - (timeToMin(b.time) ?? 9999));
+    const manual = plan.done[date] || [];
+    const hist = (historyList || loadHistory()).filter((h) => !h.aborted && dStr(new Date(h.ts)) === date).map(historyAreaOf);
+    out.forEach((o) => { o.manual = manual.includes(o.id); o.done = o.manual; });
+    out.forEach((o) => {
+      if (o.done) return;
+      const i = hist.indexOf(o.area);
+      if (i >= 0) { hist.splice(i, 1); o.done = true; o.auto = true; }
+    });
+    return out;
+  }
+  function weekStats(monday, historyList) {
+    let planned = 0, done = 0;
+    for (let i = 0; i < 7; i++) {
+      const occ = occurrencesOn(dAdd(monday, i), historyList);
+      planned += occ.length; done += occ.filter((o) => o.done).length;
+    }
+    return { planned, done };
+  }
+
+  // ---- labels and launching ----
+  function visualExercises() {
+    return Array.from(document.querySelectorAll("#home .excard[data-exercise]")).map((c) => ({ id: c.dataset.exercise, title: (c.querySelector("h3") || c).textContent.trim() }));
+  }
+  function whatOptions(area) {
+    const opts = [{ v: "", t: area === "visual" ? "Freie Wahl im Bereich" : "Freie Wahl im Bereich" }];
+    if (area === "visual") visualExercises().forEach((x) => opts.push({ v: "ex:" + x.id, t: x.title }));
+    if (area === "nat") NAT_SUBS.forEach(([k, t]) => opts.push({ v: "nat:" + k, t }));
+    return opts;
+  }
+  function entryTitle(e) {
+    if (e.what && e.what.startsWith("ex:")) { const x = visualExercises().find((v) => v.id === e.what.slice(3)); if (x) return x.title; }
+    if (e.what && e.what.startsWith("nat:")) { const n = NAT_SUBS.find(([k]) => k === e.what.slice(4)); if (n) return n[1]; }
+    if (e.code) return `${AREA_BY_KEY[e.area].short} · Code ${e.code}`;
+    return AREA_BY_KEY[e.area].label;
+  }
+  function goArea(area) {
+    const sec = AREA_TO_SECTION[area] || "visual";
+    if (sec === "test" && !readJSON(TEST_UNLOCK_KEY, false)) { activateSectionTab("visual"); showScreen("home"); return; }
+    activateSectionTab(sec);
+    showScreen(AREA_BY_KEY[area] ? AREA_BY_KEY[area].screen : sec === "test" ? "testHome" : "home");
+  }
+  function startEntry(e) {
+    if (e.code) {
+      const ctx = { goBtn: null, errorEl: els.todayCodeError, homeScreen: "todayHome" };
+      activateSectionTab("today");
+      openProgramIntro(e.code, ctx);
+      return;
+    }
+    goArea(e.area);
+    if (e.what && e.what.startsWith("ex:")) {
+      const card = document.querySelector(`#home .excard[data-exercise="${CSS.escape(e.what.slice(3))}"]`);
+      if (card) card.click();
+    } else if (e.what && e.what.startsWith("nat:")) {
+      const tab = document.querySelector(`.sub-tab[data-nat-sub="${CSS.escape(e.what.slice(4))}"]`);
+      if (tab) tab.click();
+    }
+  }
+  function continueFromHistory(h) {
+    const area = historyAreaOf(h);
+    if (h.kind === "exercise" && h.exId) { startEntry({ area: area === "nat" ? "nat" : "visual", what: area === "nat" ? "nat:peripher" : "ex:" + h.exId }); return; }
+    const natSub = { remember: "remember", blitz: "blitz", flash: "flash", mot: "mot" }[h.kind];
+    if (natSub) { startEntry({ area: "nat", what: "nat:" + natSub }); return; }
+    if (area === "combo") { activateSectionTab("visual"); showScreen("home"); openComboScreen(); return; }
+    goArea(area);
+  }
+
+  // ---- "Heute" screen ----
+  let todaySel = todayStr();
+  let calMode = null; // null | "month" | "quarter" | "year"
+  let calShowNext = false;
+  let calYear = new Date().getFullYear();
+  let dayView = readJSON(DAY_VIEW_KEY, "list") === "hours" ? "hours" : "list";
+
+  function greetingFor(h) { return h < 5 ? "Guten Abend" : h < 11 ? "Guten Morgen" : h < 17 ? "Guten Tag" : "Guten Abend"; }
+  function areaDot(area, extraClass) {
+    const a = AREA_BY_KEY[area];
+    return `<span class="area-dot ${extraClass || ""}" style="background:${a ? a.color : "#888"}" aria-hidden="true"></span>`;
+  }
+  function renderToday() {
+    const now = new Date();
+    const today = todayStr();
+    els.todayGreeting.textContent = greetingFor(now.getHours());
+    els.todayDate.textContent = longDate(today);
+    const hist = loadHistory();
+    renderTodayMain(today, hist);
+    const st = weekStats(mondayOf(today), hist);
+    els.todayProgress.textContent = st.planned ? `${st.done} von ${st.planned} geplanten Einheiten` : "noch nichts geplant";
+    renderWeekStrip(hist);
+    renderCalendar(hist);
+    renderDayPanel(hist);
+    els.todayPlanBtn.textContent = planHasEntries() ? "Wochenplan bearbeiten" : "Wochenplan anlegen";
+    if (!els.todayAreaGrid.children.length) renderAreaGrid();
+  }
+  function renderTodayMain(today, hist) {
+    const occ = occurrencesOn(today, hist);
+    const open = occ.filter((o) => !o.done);
+    const last = hist.find((h) => !h.aborted) || hist[0];
+    const hint = "Nutze gerne die bereitstehenden Trainings oder gestalte dir eigene. Wenn du Hilfe brauchst, nimm gerne Kontakt zu deinem Trainer auf.";
+    let html;
+    if (open.length) {
+      const e = open[0];
+      const meta = [e.time ? `${e.time} Uhr` : "", `${e.minutes} Min.`, AREA_BY_KEY[e.area].label].filter(Boolean).join(" · ");
+      const more = open.length > 1 ? `<p class="today-main-more">Danach heute noch: ${open.slice(1).map((o) => esc(entryTitle(o))).join(", ")}</p>` : "";
+      html = `<div class="today-main-kicker">Heutiges Training</div>
+        <h2 class="today-main-title">${areaDot(e.area)}${esc(entryTitle(e))}</h2>
+        <p class="today-main-meta">${esc(meta)}</p>${more}
+        <button class="start-btn" type="button" data-today-start="${esc(e.id)}">Training starten</button>`;
+    } else {
+      const doneAll = occ.length > 0;
+      const lastRow = last ? `<p class="today-main-meta">Zuletzt: ${esc(last.title)} · ${esc(longDate(dStr(new Date(last.ts))))}</p>
+        <button class="start-btn" type="button" id="todayContinueBtn">Weitermachen</button>` : "";
+      html = `<div class="today-main-kicker">${doneAll ? "Heute alles geschafft" : "Weitermachen"}</div>
+        <h2 class="today-main-title">${doneAll ? "Stark, dein Training für heute ist erledigt." : last ? esc(last.title) : "Schön, dass du da bist."}</h2>
+        ${doneAll ? "" : lastRow}
+        <p class="today-main-hint">${doneAll ? "Wenn du magst, findest du unten in den Bereichen weitere Trainings." : (occ.length ? "" : "Für heute ist nichts geplant. ") + hint}</p>`;
+    }
+    els.todayMain.innerHTML = html;
+    const startBtn = els.todayMain.querySelector("[data-today-start]");
+    if (startBtn) startBtn.addEventListener("click", () => { const e = open.find((o) => o.id === startBtn.dataset.todayStart); if (e) startEntry(e); });
+    const cont = els.todayMain.querySelector("#todayContinueBtn");
+    if (cont && last) cont.addEventListener("click", () => continueFromHistory(last));
+  }
+  function dayStateClass(date, hist) {
+    const occ = occurrencesOn(date, hist);
+    if (!occ.length) return { cls: "rest", occ };
+    if (occ.every((o) => o.done)) return { cls: "done", occ };
+    if (occ.some((o) => o.done)) return { cls: "partial", occ };
+    return { cls: date < todayStr() ? "missed" : "planned", occ };
+  }
+  function renderWeekStrip(hist) {
+    const monday = mondayOf(todaySel);
+    const today = todayStr();
+    let html = "";
+    for (let i = 0; i < 7; i++) {
+      const date = dAdd(monday, i);
+      const { cls, occ } = dayStateClass(date, hist);
+      const mark = cls === "done" ? "✓" : cls === "rest" ? "" : `<span class="week-dots">${[...new Set(occ.map((o) => o.area))].slice(0, 3).map((a) => areaDot(a)).join("")}</span>`;
+      const label = `${WD_LONG[i]}, ${dParse(date).getDate()}. ${MONTHS[dParse(date).getMonth()]}: ${cls === "rest" ? "nichts geplant" : `${occ.filter((o) => o.done).length} von ${occ.length} erledigt`}`;
+      html += `<button type="button" class="week-day ${cls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}" data-date="${date}" aria-label="${esc(label)}">
+        <span class="week-day-name">${WD_SHORT[i]}</span><span class="week-day-num">${dParse(date).getDate()}</span><span class="week-day-mark">${mark}</span></button>`;
+    }
+    els.todayWeekStrip.innerHTML = html;
+  }
+  function monthGridHtml(year, month, hist, mini) {
+    const first = dStr(new Date(year, month, 1));
+    const daysIn = new Date(year, month + 1, 0).getDate();
+    const lead = wdIdx(first);
+    const today = todayStr();
+    const phases = new Map();
+    let cells = WD_SHORT.map((w) => `<span class="cal-wd">${mini ? w[0] : w}</span>`).join("");
+    for (let i = 0; i < lead; i++) cells += `<span class="cal-cell empty"></span>`;
+    for (let d = 1; d <= daysIn; d++) {
+      const date = dStr(new Date(year, month, d));
+      const { cls, occ } = dayStateClass(date, hist);
+      const ph = phaseFor(date);
+      if (ph) phases.set(ph.index, ph.phase.name);
+      const band = ph ? `<span class="cal-band" style="background:${PHASE_TINTS[ph.index % PHASE_TINTS.length]}"></span>` : "";
+      const dots = mini ? "" : `<span class="cal-dots">${[...new Set(occ.map((o) => o.area))].slice(0, 4).map((a) => areaDot(a)).join("")}</span>`;
+      const check = cls === "done" ? `<span class="cal-check">✓</span>` : "";
+      cells += `<button type="button" class="cal-cell ${cls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}" data-date="${date}" aria-label="${esc(longDate(date))}">${band}<span class="cal-num">${d}</span>${check}${dots}</button>`;
+    }
+    const legend = phases.size ? `<div class="cal-legend">${[...phases].map(([i, n]) => `<span><i style="background:${PHASE_TINTS[i % PHASE_TINTS.length]}"></i>${esc(n)}</span>`).join("")}</div>` : "";
+    return `<div class="cal-month${mini ? " mini" : ""}"><div class="cal-month-title">${MONTHS[month]} ${year}</div><div class="cal-grid">${cells}</div>${legend}</div>`;
+  }
+  function renderCalendar(hist) {
+    els.calMonthBtn.setAttribute("aria-expanded", calMode === "month" ? "true" : "false");
+    els.calMonthBtn.textContent = calMode === "month" ? "Monat zuklappen" : "Monat aufklappen";
+    els.calMonthBtn.classList.toggle("active", calMode === "month");
+    els.calNextMonthBtn.hidden = calMode !== "month";
+    els.calNextMonthBtn.setAttribute("aria-expanded", calShowNext ? "true" : "false");
+    els.calNextMonthBtn.textContent = calShowNext ? "Nächsten Monat ausblenden" : "Nächsten Monat dazu";
+    els.calQuarterBtn.setAttribute("aria-pressed", calMode === "quarter" ? "true" : "false");
+    els.calQuarterBtn.classList.toggle("active", calMode === "quarter");
+    els.calYearBtn.setAttribute("aria-pressed", calMode === "year" ? "true" : "false");
+    els.calYearBtn.classList.toggle("active", calMode === "year");
+    els.calExpand.hidden = !calMode;
+    if (!calMode) { els.calExpand.innerHTML = ""; return; }
+    const sel = dParse(todaySel);
+    if (calMode === "month") {
+      let html = `<div class="cal-head"><button type="button" class="week-nav-btn" data-cal-step="-1" aria-label="Vorheriger Monat">&lsaquo;</button><span></span><button type="button" class="week-nav-btn" data-cal-step="1" aria-label="Nächster Monat">&rsaquo;</button></div>`;
+      html += monthGridHtml(sel.getFullYear(), sel.getMonth(), hist, false);
+      if (calShowNext) { const n = new Date(sel.getFullYear(), sel.getMonth() + 1, 1); html += monthGridHtml(n.getFullYear(), n.getMonth(), hist, false); }
+      els.calExpand.innerHTML = html;
+    } else if (calMode === "quarter") {
+      let html = `<p class="cal-hint">Seitlich wischen für weitere Monate. Auf iPad oder Laptop am besten lesbar.</p><div class="cal-quarter" id="calQuarterScroller">`;
+      for (let i = -3; i <= 12; i++) { const m = new Date(sel.getFullYear(), sel.getMonth() + i, 1); html += monthGridHtml(m.getFullYear(), m.getMonth(), hist, true); }
+      els.calExpand.innerHTML = html + "</div>";
+      const sc = els.calExpand.querySelector(".cal-quarter");
+      const cur = sc.children[3];
+      if (cur) sc.scrollLeft = cur.offsetLeft - sc.offsetLeft;
+    } else {
+      let html = `<div class="cal-head"><button type="button" class="week-nav-btn" data-year-step="-1" aria-label="Vorheriges Jahr">&lsaquo;</button><span class="cal-year-title">${calYear}</span><button type="button" class="week-nav-btn" data-year-step="1" aria-label="Nächstes Jahr">&rsaquo;</button></div>
+        <p class="cal-hint">Die Jahresansicht ist klein. Auf iPad, MacBook oder Laptop siehst du sie am besten.</p><div class="cal-year">`;
+      for (let m = 0; m < 12; m++) html += monthGridHtml(calYear, m, hist, true);
+      els.calExpand.innerHTML = html + "</div>";
+    }
+  }
+  function renderDayPanel(hist) {
+    const date = todaySel;
+    els.dayPanelTitle.textContent = date === todayStr() ? `Heute, ${longDate(date)}` : longDate(date);
+    document.querySelectorAll(".day-view-btn").forEach((b) => b.classList.toggle("active", b.dataset.dayView === dayView));
+    const occ = occurrencesOn(date, hist);
+    if (!occ.length) {
+      const ph = phaseFor(date);
+      els.dayPanelBody.innerHTML = `<p class="day-empty">${ph || planHasEntries() ? "Ruhetag, an diesem Tag ist nichts geplant." : "Noch kein Plan. Lege unten deinen Wochenplan an oder trage nur für diesen Tag etwas ein."}</p>`;
+      return;
+    }
+    const item = (o, style, compact) => {
+      const meta = [o.time ? (o.time + "–" + minToTime(timeToMin(o.time) + o.minutes)) : "ohne Uhrzeit", `${o.minutes} Min.`, AREA_BY_KEY[o.area].short].join(" · ");
+      const status = o.done ? (o.auto && !o.manual ? "erledigt (aus deinem Verlauf)" : "erledigt") : "offen";
+      if (compact) return `<div class="day-item compact${o.done ? " done" : ""}" style="${style}" data-occ="${esc(o.id)}">
+        <div class="day-item-title">${areaDot(o.area)} ${esc(entryTitle(o))}</div>
+        <div class="day-item-meta">${esc(o.time)}–${esc(minToTime(timeToMin(o.time) + o.minutes))} · ${o.done ? "✓ erledigt" : "offen"}</div>
+        <div class="day-item-actions"><button type="button" class="day-act" data-act="start">Starten</button><button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}" aria-label="${o.manual ? "Erledigt, zurücknehmen" : "Abhaken"}">✓</button></div></div>`;
+      return `<div class="day-item${o.done ? " done" : ""}" ${style ? `style="${style}"` : ""} data-occ="${esc(o.id)}">
+        <div class="day-item-main">${areaDot(o.area)}<div><div class="day-item-title">${esc(entryTitle(o))}</div><div class="day-item-meta">${esc(meta)} · ${status}</div></div></div>
+        <div class="day-item-actions">
+          <button type="button" class="day-act" data-act="start">Starten</button>
+          <button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}">${o.manual ? "✓ Erledigt" : "Abhaken"}</button>
+          ${compact ? "" : `<button type="button" class="day-act subtle" data-act="${o.extra ? "remove" : "skip"}">${o.extra ? "Löschen" : "Heute auslassen"}</button>`}
+        </div></div>`;
+    };
+    const timed = occ.filter((o) => o.time), untimed = occ.filter((o) => !o.time);
+    let html = "";
+    if (dayView === "list") {
+      timed.forEach((o, i) => {
+        if (i > 0) {
+          const prev = timed[i - 1];
+          const gap = timeToMin(o.time) - (timeToMin(prev.time) + prev.minutes);
+          if (gap >= 15) html += `<div class="day-gap" aria-label="${esc(fmtGap(gap))} frei"><span>${esc(fmtGap(gap))} dazwischen</span></div>`;
+        }
+        html += item(o);
+      });
+      if (untimed.length) html += `<div class="day-subhead">Ohne Uhrzeit</div>` + untimed.map((o) => item(o)).join("");
+    } else {
+      if (untimed.length) html += `<div class="day-subhead">Ohne Uhrzeit</div>` + untimed.map((o) => item(o)).join("");
+      const starts = timed.map((o) => timeToMin(o.time)), ends = timed.map((o) => timeToMin(o.time) + o.minutes);
+      const from = Math.min(6, ...starts.map((m) => Math.floor(m / 60)));
+      const to = Math.min(24, Math.max(22, ...ends.map((m) => Math.ceil(m / 60))));
+      const H = 56, BLOCK_PX = 76;
+      // A block is never shorter than its content (BLOCK_PX), so columns
+      // are assigned on the drawn extent, not the training's own length -
+      // otherwise two trainings 30 min apart would be drawn on top of each
+      // other (no-overlap rule). Columns are counted per cluster of blocks
+      // that touch, so a lone block still gets the full width.
+      const tops = starts.map((m) => (m / 60 - from) * H);
+      const bottoms = timed.map((o, i) => tops[i] + Math.max(BLOCK_PX, (o.minutes / 60) * H));
+      const colOf = [], nColsOf = [];
+      let cluster = [], cols = [], clusterEnd = -1;
+      const closeCluster = () => { cluster.forEach((i) => { nColsOf[i] = Math.max(1, cols.length); }); cluster = []; cols = []; };
+      timed.forEach((o, i) => {
+        if (tops[i] >= clusterEnd) closeCluster();
+        let c = cols.findIndex((end) => end <= tops[i] + 0.5);
+        if (c < 0) { c = cols.length; cols.push(0); }
+        cols[c] = bottoms[i] + 4; colOf[i] = c; cluster.push(i);
+        clusterEnd = Math.max(clusterEnd, bottoms[i] + 4);
+      });
+      closeCluster();
+      let rows = "";
+      for (let h = from; h < to; h++) rows += `<div class="hour-row" style="top:${(h - from) * H}px"><span>${String(h).padStart(2, "0")}:00</span></div>`;
+      const blocks = timed.map((o, i) => item(o, `top:${tops[i]}px;height:${bottoms[i] - tops[i]}px;left:calc(48px + (100% - 48px) * ${colOf[i]} / ${nColsOf[i]});width:calc((100% - 48px) / ${nColsOf[i]} - 4px)`, true)).join("");
+      const lastBottom = Math.max(0, ...bottoms);
+      html += timed.length ? `<div class="hour-grid" style="height:${Math.max((to - from) * H, lastBottom + 8)}px">${rows}${blocks}</div>` : "";
+    }
+    els.dayPanelBody.innerHTML = html;
+    els.dayPanelBody.querySelectorAll(".day-item").forEach((el) => {
+      const o = occ.find((x) => x.id === el.dataset.occ);
+      el.querySelectorAll(".day-act").forEach((b) => b.addEventListener("click", () => dayAction(date, o, b.dataset.act)));
+    });
+  }
+  function dayAction(date, o, act) {
+    if (!o) return;
+    if (act === "start") { startEntry(o); return; }
+    if (act === "done") {
+      const l = plan.done[date] || [];
+      plan.done[date] = l.includes(o.id) ? l.filter((x) => x !== o.id) : [...l, o.id];
+      if (!plan.done[date].length) delete plan.done[date];
+    } else if (act === "skip") {
+      plan.skips[date] = [...(plan.skips[date] || []), o.id];
+    } else if (act === "remove") {
+      plan.extras[date] = (plan.extras[date] || []).filter((x) => x.id !== o.id);
+      if (!plan.extras[date].length) delete plan.extras[date];
+    }
+    savePlan();
+    renderToday();
+  }
+  function selectDay(date) {
+    todaySel = date;
+    if (calMode === "year") calYear = dParse(date).getFullYear();
+    renderToday();
+  }
+  function renderAreaGrid() {
+    els.todayAreaGrid.innerHTML = PLAN_AREAS.map((a) => `<button type="button" class="area-tile" data-area="${a.key}">
+      <span class="area-icon" style="background:${a.color}"><svg viewBox="0 0 24 24" aria-hidden="true">${a.icon}</svg></span>
+      <span class="area-name">${esc(a.label)}</span><span class="area-text">${esc(a.text)}</span></button>`).join("");
+    els.todayAreaGrid.querySelectorAll(".area-tile").forEach((b) => b.addEventListener("click", () => goArea(b.dataset.area)));
+  }
+
+  els.todayWeekStrip.addEventListener("click", (e) => { const b = e.target.closest("[data-date]"); if (b) selectDay(b.dataset.date); });
+  els.calExpand.addEventListener("click", (e) => {
+    const step = e.target.closest("[data-cal-step]");
+    if (step) { const d = dParse(todaySel); const n = new Date(d.getFullYear(), d.getMonth() + Number(step.dataset.calStep), 1); selectDay(dStr(n)); return; }
+    const ys = e.target.closest("[data-year-step]");
+    if (ys) { calYear += Number(ys.dataset.yearStep); renderCalendar(loadHistory()); return; }
+    const b = e.target.closest("[data-date]");
+    if (b) { selectDay(b.dataset.date); els.dayPanelTitle.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+  });
+  els.todayWeekPrev.addEventListener("click", () => selectDay(dAdd(todaySel, -7)));
+  els.todayWeekNext.addEventListener("click", () => selectDay(dAdd(todaySel, 7)));
+  els.calMonthBtn.addEventListener("click", () => { calMode = calMode === "month" ? null : "month"; if (!calMode) calShowNext = false; renderCalendar(loadHistory()); });
+  els.calNextMonthBtn.addEventListener("click", () => { calShowNext = !calShowNext; renderCalendar(loadHistory()); });
+  els.calQuarterBtn.addEventListener("click", () => { calMode = calMode === "quarter" ? null : "quarter"; calShowNext = false; renderCalendar(loadHistory()); });
+  els.calYearBtn.addEventListener("click", () => { calMode = calMode === "year" ? null : "year"; calShowNext = false; calYear = dParse(todaySel).getFullYear(); renderCalendar(loadHistory()); });
+  document.querySelectorAll(".day-view-btn").forEach((b) => b.addEventListener("click", () => { dayView = b.dataset.dayView; writeJSON(DAY_VIEW_KEY, dayView); renderDayPanel(loadHistory()); }));
+  els.dayAddBtn.addEventListener("click", () => openPlanEntry({ kind: "extra", date: todaySel }));
+  els.todayPlanBtn.addEventListener("click", () => openPlanScreen());
+
+  const TODAY_CODE_CTX = { goBtn: els.todayCodeGoBtn, errorEl: els.todayCodeError, homeScreen: "todayHome" };
+  function goTodayCode() { const code = els.todayCodeInput.value.trim(); if (code) openProgramIntro(code, TODAY_CODE_CTX); }
+  els.todayCodeGoBtn.addEventListener("click", goTodayCode);
+  els.todayCodeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") goTodayCode(); });
+
+  // ---- plan editor ----
+  function openPlanScreen() {
+    if (!plan.phases.length) plan.phases.push({ id: newId(), name: "Mein Wochenplan", weeks: 0, days: [[], [], [], [], [], [], []] });
+    renderPlanScreen();
+    showScreen("planScreen");
+  }
+  function renderPlanScreen() {
+    els.planStartInput.value = plan.startDate;
+    els.planStartHelp.textContent = `Startet am ${longDate(plan.startDate)}.`;
+    els.planPhaseList.innerHTML = plan.phases.map((ph, pi) => {
+      const isLast = pi === plan.phases.length - 1;
+      const weekOpts = [`<option value="0"${ph.weeks === 0 ? " selected" : ""}>unbegrenzt</option>`]
+        .concat(Array.from({ length: 52 }, (_, i) => i + 1).map((w) => `<option value="${w}"${ph.weeks === w ? " selected" : ""}>${w} ${w === 1 ? "Woche" : "Wochen"}</option>`)).join("");
+      const start = phaseStartDate(pi);
+      const range = ph.weeks ? `${longDate(start)} bis ${longDate(dAdd(start, ph.weeks * 7 - 1))}` : `ab ${longDate(start)}`;
+      const days = ph.days.map((list, di) => `<div class="plan-day">
+          <div class="plan-day-name">${WD_SHORT[di]}</div>
+          <div class="plan-day-items">${list.length ? list.map((e) => `<div class="plan-item">${areaDot(e.area)}<span class="plan-item-text">${esc(entryTitle(e))}<small>${esc([e.time ? e.time + " Uhr" : "", e.minutes + " Min."].filter(Boolean).join(" · "))}</small></span>
+              <button type="button" class="plan-item-btn" data-edit="${pi}:${di}:${esc(e.id)}" aria-label="Bearbeiten">✎</button>
+              <button type="button" class="plan-item-btn" data-del="${pi}:${di}:${esc(e.id)}" aria-label="Entfernen">✕</button></div>`).join("") : `<span class="plan-rest">Ruhetag</span>`}
+            <button type="button" class="text-link small" data-add="${pi}:${di}">+ Training</button></div></div>`).join("");
+      return `<section class="plan-phase" style="border-left-color:${PHASE_TINTS[pi % PHASE_TINTS.length]}">
+        <div class="plan-phase-head">
+          <input type="text" class="plan-input plan-phase-name" data-phase-name="${pi}" value="${esc(ph.name)}" maxlength="40" aria-label="Name der Phase">
+          <select class="plan-select" data-phase-weeks="${pi}" aria-label="Dauer der Phase">${weekOpts}</select>
+        </div>
+        <p class="group-help">${esc(range)}${!ph.weeks && !isLast ? " · Wähle eine Dauer, sonst starten die folgenden Phasen nie." : ""}</p>
+        ${days}
+        <div class="plan-phase-actions">
+          ${pi > 0 ? `<button type="button" class="text-link small" data-phase-up="${pi}">↑ nach vorne</button>` : ""}
+          <button type="button" class="text-link small" data-phase-copy="${pi}">Phase kopieren</button>
+          <button type="button" class="text-link small danger" data-phase-del="${pi}">Phase löschen</button>
+        </div></section>`;
+    }).join("");
+  }
+  els.planPhaseList.addEventListener("click", (e) => {
+    const t = e.target.closest("button");
+    if (!t) return;
+    const d = t.dataset;
+    if (d.add) { const [pi, di] = d.add.split(":").map(Number); openPlanEntry({ kind: "plan", pi, di }); return; }
+    if (d.edit) { const [pi, di, id] = d.edit.split(":"); openPlanEntry({ kind: "plan", pi: +pi, di: +di, id }); return; }
+    if (d.del) { const [pi, di, id] = d.del.split(":"); plan.phases[+pi].days[+di] = plan.phases[+pi].days[+di].filter((x) => x.id !== id); savePlan(); renderPlanScreen(); return; }
+    if (d.phaseUp) { const i = +d.phaseUp; [plan.phases[i - 1], plan.phases[i]] = [plan.phases[i], plan.phases[i - 1]]; savePlan(); renderPlanScreen(); return; }
+    if (d.phaseCopy) { const src = plan.phases[+d.phaseCopy]; const cp = JSON.parse(JSON.stringify(src)); cp.id = newId(); cp.name = (src.name + " (Kopie)").slice(0, 40); cp.days.forEach((l) => l.forEach((x) => { x.id = newId(); })); if (!src.weeks) src.weeks = 4; plan.phases.splice(+d.phaseCopy + 1, 0, cp); savePlan(); renderPlanScreen(); return; }
+    if (d.phaseDel) { const i = +d.phaseDel; confirmDialog(`Phase „${plan.phases[i].name}“ mit allen Trainings löschen?`, () => { plan.phases.splice(i, 1); savePlan(); renderPlanScreen(); }); }
+  });
+  els.planPhaseList.addEventListener("change", (e) => {
+    const t = e.target;
+    if (t.dataset.phaseWeeks != null) { plan.phases[+t.dataset.phaseWeeks].weeks = Number(t.value); savePlan(); renderPlanScreen(); }
+    if (t.dataset.phaseName != null) { plan.phases[+t.dataset.phaseName].name = t.value.trim().slice(0, 40) || "Phase"; savePlan(); }
+  });
+  els.planStartInput.addEventListener("change", () => { if (els.planStartInput.value) { plan.startDate = mondayOf(els.planStartInput.value); savePlan(); renderPlanScreen(); } });
+  els.planAddPhaseBtn.addEventListener("click", () => {
+    const last = plan.phases[plan.phases.length - 1];
+    if (last && !last.weeks) last.weeks = 4;
+    plan.phases.push({ id: newId(), name: `Phase ${plan.phases.length + 1}`, weeks: 0, days: [[], [], [], [], [], [], []] });
+    savePlan(); renderPlanScreen();
+  });
+  els.planClearBtn.addEventListener("click", () => confirmDialog("Den ganzen Wochenplan mit allen Phasen und Einträgen löschen?", () => {
+    plan = emptyPlan(); savePlan(); openPlanScreen();
+  }));
+  els.planBackBtn.addEventListener("click", () => { activateSectionTab("today"); showScreen("todayHome"); });
+
+  // ---- entry sheet (plan weekday or one-off date) ----
+  let planEntryTarget = null;
+  let planEntryReturnFocus = null;
+  els.planEntryArea.innerHTML = PLAN_AREAS.map((a) => `<option value="${a.key}">${esc(a.label)}</option>`).join("");
+  els.planEntryMinutes.innerHTML = [5, 10, 15, 20, 25, 30, 40, 45, 60, 75, 90, 120].map((m) => `<option value="${m}">${m} Min.</option>`).join("");
+  function fillWhat(area, value) {
+    els.planEntryWhat.innerHTML = whatOptions(area).map((o) => `<option value="${esc(o.v)}">${esc(o.t)}</option>`).join("");
+    els.planEntryWhat.value = whatOptions(area).some((o) => o.v === value) ? value : "";
+  }
+  els.planEntryArea.addEventListener("change", () => fillWhat(els.planEntryArea.value, ""));
+  function openPlanEntry(target) {
+    planEntryTarget = target;
+    let existing = null;
+    if (target.kind === "plan" && target.id) existing = plan.phases[target.pi].days[target.di].find((x) => x.id === target.id);
+    const e = existing || { area: "visual", what: "", code: "", time: "", minutes: 15 };
+    els.planEntryTitle.textContent = existing ? "Training ändern" : "Training eintragen";
+    els.planEntryContext.textContent = target.kind === "plan"
+      ? `${plan.phases[target.pi].name} · jeden ${WD_LONG[target.di]}`
+      : `Nur am ${longDate(target.date)}`;
+    els.planEntryArea.value = e.area;
+    fillWhat(e.area, e.what);
+    els.planEntryCode.value = e.code || "";
+    els.planEntryTime.value = e.time || "";
+    els.planEntryMinutes.value = String(e.minutes);
+    if (!els.planEntryMinutes.value) els.planEntryMinutes.value = "15";
+    planEntryReturnFocus = document.activeElement;
+    els.planEntrySheet.hidden = false;
+    focusFirstIn(els.planEntrySheet);
+  }
+  function closePlanEntry() { els.planEntrySheet.hidden = true; planEntryTarget = null; if (planEntryReturnFocus) planEntryReturnFocus.focus(); }
+  els.planEntryCancelBtn.addEventListener("click", closePlanEntry);
+  els.planEntrySheet.addEventListener("click", (e) => { if (e.target === els.planEntrySheet) closePlanEntry(); });
+  els.planEntrySheet.addEventListener("keydown", (e) => { if (e.key === "Escape") closePlanEntry(); else trapTabKey(els.planEntrySheet, e); });
+  els.planEntrySaveBtn.addEventListener("click", () => {
+    const t = planEntryTarget;
+    if (!t) return;
+    const entry = cleanEntry({ id: t.id || newId(), area: els.planEntryArea.value, what: els.planEntryWhat.value, code: els.planEntryCode.value.trim(),
+      time: els.planEntryTime.value, minutes: els.planEntryMinutes.value });
+    if (t.kind === "plan") {
+      const list = plan.phases[t.pi].days[t.di];
+      const i = list.findIndex((x) => x.id === entry.id);
+      if (i >= 0) list[i] = entry; else list.push(entry);
+    } else {
+      plan.extras[t.date] = [...(plan.extras[t.date] || []), entry];
+    }
+    savePlan();
+    closePlanEntry();
+    if (t.kind === "plan") renderPlanScreen(); else renderToday();
+  });
+
+  // Start screen: always "Heute", unless the URL names an area
+  // (?bereich=visual|breath|movement|workout|cardio|nat|test) - used for
+  // direct links and by the test suite.
+  function initStartScreen() {
+    let sec = "today";
+    try { sec = new URLSearchParams(location.search).get("bereich") || "today"; } catch (e) {}
+    if (sec === "test" && !readJSON(TEST_UNLOCK_KEY, false)) sec = "visual";
+    const screens = { today: "todayHome", heute: "todayHome", visual: "home", breath: "breathHome", movement: "movementHome", workout: "workoutHome", cardio: "cardioHome", nat: "natHome", test: "testHome" };
+    if (!screens[sec]) sec = "today";
+    if (sec === "heute") sec = "today";
+    activateSectionTab(sec);
+    showScreen(screens[sec]);
+  }
+
   // ---- Start-up ----
   renderHistory();
+  initStartScreen();
   openFromHash();
   if (!readJSON(TIPS_KEY, false)) openTips();
 

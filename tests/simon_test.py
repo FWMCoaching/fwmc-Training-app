@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Farbkonflikt-Test (Simon-Aufgabe): ninth exercise added under the autonomous
 # "Test" section. Classic Simon task (Simon & Rudell, 1967) - a coloured dot

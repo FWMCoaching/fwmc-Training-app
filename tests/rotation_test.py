@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Rotationstest (Mentale Rotation): seventh exercise added under the
 # autonomous "Test" section. Classic mental-rotation/character-rotation

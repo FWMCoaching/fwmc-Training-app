@@ -1,6 +1,6 @@
 import asyncio, json, os
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Datensicherung: export all fwmc- keys to a file, import writes only the
 # keys in the file, skips junk, rejects a newer version, keeps other keys.

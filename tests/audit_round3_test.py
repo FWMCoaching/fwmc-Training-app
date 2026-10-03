@@ -1,7 +1,7 @@
 import asyncio, json, urllib.parse
 from playwright.async_api import async_playwright
 
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Audit decisions round 3 (Fabian, 2026-10-02):
 # 16 no "Beta" tag in the footer; 17 Kombi-Bausteine can be moved up/down;

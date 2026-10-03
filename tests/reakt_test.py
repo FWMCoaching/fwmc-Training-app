@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Reaktionsfeld-Test: fifteenth autonomous entry under the Test section.
 # Grounded in reaction-light-board training devices such as the Dynavision

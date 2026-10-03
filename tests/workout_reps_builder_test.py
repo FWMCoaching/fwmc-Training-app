@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Client-facing "Kraft-/Wiederholungstraining" builder, v2 (2026-10-02):
 # a whole Kraftplan of several exercises (like the Tabata Zirkel), each

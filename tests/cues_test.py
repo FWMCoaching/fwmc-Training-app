@@ -1,6 +1,6 @@
 import asyncio, json
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Töne & Ansagen + "Alle entfernen" (2026-10-02, Fabian): one Master setting
 # for countdown beeps, Takt-Ton and spoken cues, each area (Tabata,

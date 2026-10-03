@@ -2,7 +2,7 @@ import asyncio, json, urllib.parse
 from playwright.async_api import async_playwright
 
 DASH = "http://localhost:8845/dashboard.html"
-APP = "http://localhost:8845/index.html"
+APP = "http://localhost:8845/index.html?bereich=visual"
 
 # Dashboard Baukasten for Movement, Cardio and Workout codes (Fabian,
 # 2026-10-02 "E. Ja"). Mocks the Worker API, builds one code per area,

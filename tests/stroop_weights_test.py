@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-URL = "http://localhost:8845/index.html"
+URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Stroop "Häufigkeit der Farben" (Fabian, 2026-10-02 "B. Ja"): per-colour
 # 1x-3x weight for the ink colour in VT Stroop klassisch / mit Hintergrund.
