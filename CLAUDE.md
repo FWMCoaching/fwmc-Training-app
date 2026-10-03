@@ -4450,7 +4450,7 @@ screen's top padding, so it looks unchanged at rest. `#appBar` (last
 element in `_body.html`, same logo/sub/gear) is fixed at the top and shown
 by a `body:has(...)` rule ONLY while a visible player shows a
 `.pause-overlay`, a `.pause-screen` or a `.done-panel`, or a body-level
-done/transition panel is open; while the exercise runs it stays hidden. In
+done/transition panel is open (`>.done-panel` inside `:has()` - a selector there is relative to `body`, so `body>.done-panel` never matched and the Kombi pause had no logo until fixed); while the exercise runs it stays hidden. In
 that state `.player-bar`, `.pause-overlay`, `.pause-screen` and
 `.done-panel` move down by `--appbar-h` (its real height, set by a
 ResizeObserver in app.js, since it wraps to two rows on a phone) and stage
