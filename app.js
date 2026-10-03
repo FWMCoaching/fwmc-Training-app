@@ -1329,7 +1329,7 @@
     movementSaveForm: $("movementSaveForm"), movementSaveNameInput: $("movementSaveNameInput"),
     movementSaveCancelBtn: $("movementSaveCancelBtn"), movementSaveConfirmBtn: $("movementSaveConfirmBtn"),
     movementPlayer: $("movementPlayer"), movementLane: $("movementLane"), movementProgressTrack: $("movementProgressTrack"),
-    movementFinishBadge: $("movementFinishBadge"), movementBpmSlider: $("movementBpmSlider"), movementBpmValue: $("movementBpmValue"),
+    movementFinishBadge: $("movementFinishBadge"), movementBpmSlider: $("movementBpmSlider"), movementDurSlider: $("movementDurSlider"), movementDurValue: $("movementDurValue"), movementBpmValue: $("movementBpmValue"),
     movementPlayerBar: $("movementPlayerBar"), movementPauseBtn: $("movementPauseBtn"), movementPauseOverlay: $("movementPauseOverlay"), movementPauseBpmSlider: $("movementPauseBpmSlider"), movementPauseBpmValue: $("movementPauseBpmValue"), movementResumeBtn: $("movementResumeBtn"),
     movementBackBtn: $("movementBackBtn"), movementTimeEl: $("movementTimeEl"),
     movementFsBtn: $("movementFsBtn"), movementFsHint: $("movementFsHint"),
@@ -6778,6 +6778,7 @@
     }
     if (movementPrefs.figureStyle !== "figur" && movementPrefs.figureStyle !== "abstrakt") movementPrefs.figureStyle = "figur";
     if (!MOVEMENT_DIRECTIONS.includes(movementPrefs.direction)) movementPrefs.direction = "rechts";
+    if (!Number.isFinite(movementPrefs.durationMin) || movementPrefs.durationMin <= 0) movementPrefs.durationMin = 1;
   }
   function saveMovementPrefs() { writeJSON(MOVEMENT_PREFS_KEY, movementPrefs); }
   loadMovementPrefs();
@@ -6858,7 +6859,18 @@
   });
 
   document.querySelectorAll("[data-mv-dur]").forEach((el) => el.addEventListener("click", () => { movementPrefs.durationMin = Number(el.dataset.mvDur); saveMovementPrefs(); syncMvDurationUI(); }));
-  function syncMvDurationUI() { document.querySelectorAll("[data-mv-dur]").forEach((el) => setActive(el, Number(el.dataset.mvDur) === movementPrefs.durationMin)); }
+  function syncMvDurationUI() {
+    document.querySelectorAll("[data-mv-dur]").forEach((el) => setActive(el, Number(el.dataset.mvDur) === movementPrefs.durationMin));
+    els.movementDurSlider.value = movementPrefs.durationMin;
+    els.movementDurValue.textContent = `${String(movementPrefs.durationMin).replace(".", ",")} Min`;
+  }
+  // Feineinstellungen slider: 1-5 min in half-minute steps (Fabian
+  // 2026-10-03: the 1/2/3 Min buttons were too short; longer than 5 min
+  // goes through stacking Movement twice in a Kombi). A coach code may
+  // still set a longer durationMin - the slider then just shows its max.
+  els.movementDurSlider.addEventListener("input", () => {
+    movementPrefs.durationMin = Number(els.movementDurSlider.value); saveMovementPrefs(); syncMvDurationUI();
+  });
 
   document.querySelectorAll("[data-mv-mirror]").forEach((el) => el.addEventListener("click", () => { movementPrefs.mirror = el.dataset.mvMirror === "1"; saveMovementPrefs(); syncMvMirrorUI(); }));
   function syncMvMirrorUI() { document.querySelectorAll("[data-mv-mirror]").forEach((el) => setActive(el, (el.dataset.mvMirror === "1") === movementPrefs.mirror)); }
@@ -7146,7 +7158,7 @@
   const movementSavedStore = makePresetStore(MOVEMENT_SAVED_KEY);
   function renderMovementSaved() {
     renderPresetList(movementSavedStore, els.movementSavedList, els.movementSavedGroup, null,
-      (e) => `${e.durationMin} Min · ${e.movements.length} Bewegungen · ${e.bpm} BPM`,
+      (e) => `${String(e.durationMin).replace(".", ",")} Min · ${e.movements.length} Bewegungen · ${e.bpm} BPM`,
       (entry) => {
         movementPrefs.movements = entry.movements.slice();
         movementPrefs.preview = entry.preview;
