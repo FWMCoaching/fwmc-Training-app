@@ -4328,6 +4328,33 @@ the trainer changes the text. `recordCodeUsage(code, def)` keeps the latest
 text in the code history, so it stays readable under Grundeinstellungen >
 Trainings-Code-Verlauf. Test: `tests/coach_message_test.py`.
 
+### Codes mit Laufzeit: persönlich / Gruppe, Plätze, Ablauf (2026-10-03)
+
+Fabian: "Datum kann vergeben werden, muss aber nicht"; team codes later.
+Optional config fields on any code: `validFrom`/`validUntil` (ISO dates,
+Berlin day, both inclusive), `codeKind: "gruppe"` + `seats` (1-1000).
+Without `codeKind` a code is personal (no seat limit). The dashboard edits
+them next to "Nachricht an den Kunden" (`loadCodeFields(config, code)` /
+`applyCodeFields()` returns an error text, e.g. from after until), the
+codes table has a "Laufzeit / Plätze" column (`codeRunText`), and
+"Plätze freigeben" posts `/admin/code-seats-reset`.
+- **App**: every lookup sends `&device=` (`deviceId()`, 20 random chars in
+  `fwmc-device-id`, no personal data - mention it in the privacy text).
+  `lookupProgram()` maps 410 `expired` / 403 `not_yet` / 403 `full` to
+  `__lookupError`; `showCodeError()` says when the code was valid or from
+  when it is, and to contact "deinen Trainer". `codeValidityProblem(def)`
+  checks the dates on the client too, so expiry works even with an older
+  Worker. The code history shows "gültig bis …".
+- **Worker**: checks the dates first, then seats in table `code_devices`
+  (`code, device, first_seen`, created lazily): a known device always gets
+  in, a new one only while seats are left. `/admin/programs` returns
+  `seatsUsed` per code. Test: `tests/worker_hardening_test.py` (mock D1
+  that dispatches on the SQL text).
+- **The Worker change needs a deploy** (FWMC-automation environment, only
+  with Fabian's yes). Until then seats are not enforced; dates already work
+  through the app.
+Test: `tests/code_validity_test.py`.
+
 ### Datensicherung: Export/Import (2026-10-02)
 
 Master-Einstellungen, group `#masterBackupGroup`. "Sicherung exportieren"

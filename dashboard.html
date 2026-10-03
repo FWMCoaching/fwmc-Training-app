@@ -207,7 +207,7 @@
     <div class="panel">
       <h2>Trainings-Codes</h2>
       <table id="progTable">
-        <thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Geändert</th><th></th></tr></thead>
+        <thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Laufzeit / Plätze</th><th>Geändert</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
 
@@ -221,6 +221,23 @@
       <label for="pMessage" style="margin-top:14px">Nachricht an den Kunden (optional)</label>
       <textarea id="pMessage" rows="3" maxlength="1000" placeholder="z.B. Diese Woche bitte 3x die Atemübung vor dem Schlafen. Bis Donnerstag!"></textarea>
       <p class="hint" style="margin-top:4px">Erscheint einmal beim Öffnen des Codes, und wieder, sobald du den Text änderst. Gilt für jeden Code-Typ (auch Übersichten und JSON).</p>
+
+      <label style="margin-top:14px">Art des Codes</label>
+      <div class="code-kind-row" style="display:flex;gap:8px;flex-wrap:wrap">
+        <label style="margin:0;display:flex;gap:6px;align-items:center"><input type="radio" name="pKind" value="person" id="pKindPerson" checked style="width:auto;margin:0" /> Persönlich (eine Person)</label>
+        <label style="margin:0;display:flex;gap:6px;align-items:center"><input type="radio" name="pKind" value="gruppe" id="pKindGruppe" style="width:auto;margin:0" /> Gruppe (mehrere Plätze)</label>
+      </div>
+      <div id="pSeatsRow" hidden>
+        <label for="pSeats" style="margin-top:10px">Plätze (Anzahl Geräte, die den Code nutzen dürfen)</label>
+        <input id="pSeats" type="number" min="1" max="1000" value="10" />
+        <p class="hint" id="pSeatsInfo" style="margin-top:4px"></p>
+        <button id="pSeatsResetBtn" class="secondary" type="button" hidden>Plätze freigeben</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="flex:1;min-width:140px"><label for="pValidFrom" style="margin-top:10px">Gültig ab (optional)</label><input id="pValidFrom" type="date" /></div>
+        <div style="flex:1;min-width:140px"><label for="pValidUntil" style="margin-top:10px">Gültig bis (optional)</label><input id="pValidUntil" type="date" /></div>
+      </div>
+      <p class="hint" style="margin-top:4px">Ohne Datum gilt der Code unbegrenzt. Nach dem Ablauf sieht der Kunde einen Hinweis, sich an dich zu wenden. Plätze zählen Geräte: jedes Gerät, das den Code zum ersten Mal öffnet, belegt einen Platz.</p>
 
       <div class="tabs">
         <button class="tab-btn active" id="tabBuilderBtn" type="button">Baukasten</button>
@@ -419,6 +436,7 @@
       tr.className = "clickable";
       tr.innerHTML = `<td>${escapeHtml(p.code)}</td><td>${escapeHtml(p.name)}</td>` +
         `<td><span class="pill ${p.active ? "on" : "off"}">${p.active ? "aktiv" : "inaktiv"}</span></td>` +
+        `<td>${escapeHtml(codeRunText(p))}</td>` +
         `<td>${fmtDate(p.updatedAt)}</td><td><a class="copy-link" data-toggle="${p.code}">${p.active ? "deaktivieren" : "aktivieren"}</a></td>`;
       tr.addEventListener("click", (ev) => {
         if (ev.target.dataset.toggle) return;
@@ -967,15 +985,62 @@
 
   // Code-level fields (any code type): live outside the Baukasten/JSON tabs
   // and are written into the config on save, so they work for every type.
-  function loadCodeFields(config) {
-    const c = config && typeof config === "object" ? config : {};
-    document.getElementById("pMessage").value = typeof c.message === "string" ? c.message : "";
+  const isoOk = (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  const deDate = (v) => isoOk(v) ? v.slice(8, 10) + "." + v.slice(5, 7) + "." + v.slice(0, 4) : "";
+  function codeRunText(p) {
+    const c = p.config || {};
+    const parts = [];
+    if (isoOk(c.validFrom) && isoOk(c.validUntil)) parts.push(deDate(c.validFrom) + "–" + deDate(c.validUntil));
+    else if (isoOk(c.validUntil)) parts.push("bis " + deDate(c.validUntil));
+    else if (isoOk(c.validFrom)) parts.push("ab " + deDate(c.validFrom));
+    if (c.codeKind === "gruppe" && c.seats) parts.push((p.seatsUsed || 0) + "/" + c.seats + " Plätze");
+    return parts.length ? parts.join(" · ") : "unbegrenzt";
   }
+  let editingCode = "";
+  function syncSeatsUI() {
+    const group = document.getElementById("pKindGruppe").checked;
+    document.getElementById("pSeatsRow").hidden = !group;
+    const p = programsCache.find((x) => x.code === editingCode);
+    const used = p && p.config && p.config.codeKind === "gruppe" ? (p.seatsUsed || 0) : 0;
+    document.getElementById("pSeatsInfo").textContent = p && group ? "Belegt: " + used + " von " + (p.config.seats || "?") : "";
+    document.getElementById("pSeatsResetBtn").hidden = !(group && used > 0);
+  }
+  function loadCodeFields(config, code) {
+    const c = config && typeof config === "object" ? config : {};
+    editingCode = code || "";
+    document.getElementById("pMessage").value = typeof c.message === "string" ? c.message : "";
+    const group = c.codeKind === "gruppe";
+    document.getElementById(group ? "pKindGruppe" : "pKindPerson").checked = true;
+    document.getElementById("pSeats").value = group && c.seats ? c.seats : 10;
+    document.getElementById("pValidFrom").value = isoOk(c.validFrom) ? c.validFrom : "";
+    document.getElementById("pValidUntil").value = isoOk(c.validUntil) ? c.validUntil : "";
+    syncSeatsUI();
+  }
+  // Returns an error text, or "" when the fields are fine.
   function applyCodeFields(config) {
-    if (!config || typeof config !== "object") return;
+    if (!config || typeof config !== "object") return "";
     const message = document.getElementById("pMessage").value.trim();
     if (message) config.message = message; else delete config.message;
+    const from = document.getElementById("pValidFrom").value, until = document.getElementById("pValidUntil").value;
+    if (isoOk(from) && isoOk(until) && from > until) return "\"Gültig ab\" liegt nach \"Gültig bis\".";
+    if (isoOk(from)) config.validFrom = from; else delete config.validFrom;
+    if (isoOk(until)) config.validUntil = until; else delete config.validUntil;
+    if (document.getElementById("pKindGruppe").checked) {
+      const n = Math.floor(Number(document.getElementById("pSeats").value));
+      if (!(n >= 1 && n <= 1000)) return "Plätze: bitte eine Zahl von 1 bis 1000.";
+      config.codeKind = "gruppe"; config.seats = n;
+    } else { delete config.codeKind; delete config.seats; }
+    return "";
   }
+  document.getElementById("pKindPerson").addEventListener("change", syncSeatsUI);
+  document.getElementById("pKindGruppe").addEventListener("change", syncSeatsUI);
+  document.getElementById("pSeatsResetBtn").addEventListener("click", async () => {
+    if (!editingCode) return;
+    if (!confirm("Alle belegten Plätze von \"" + editingCode + "\" freigeben? Bisherige Geräte müssen den Code dann neu öffnen und belegen wieder einen Platz.")) return;
+    await api("/admin/code-seats-reset", { method: "POST", body: { code: editingCode } });
+    await loadPrograms();
+    syncSeatsUI();
+  });
 
   function editProgram(code) {
     const full = programsCache.find((p) => p.code === code);
@@ -983,7 +1048,7 @@
     document.getElementById("pCode").value = code;
     document.getElementById("pActive").checked = full.active;
     document.getElementById("pConfig").value = JSON.stringify(full.config, null, 2);
-    loadCodeFields(full.config);
+    loadCodeFields(full.config, code);
     configToBuilder(full.config);
     if (builderUsable) switchTab("builder");
     document.getElementById("pCode").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1012,7 +1077,8 @@
       try { config = JSON.parse(document.getElementById("pConfig").value); }
       catch (e) { msg.textContent = "Ungültiges JSON: " + e.message; msg.className = "msg err"; return; }
     }
-    applyCodeFields(config);
+    const fieldErr = applyCodeFields(config);
+    if (fieldErr) { msg.textContent = fieldErr; msg.className = "msg err"; return; }
     document.getElementById("pConfig").value = JSON.stringify(config, null, 2);
     if (!config.name) { msg.textContent = "Name fehlt."; msg.className = "msg err"; return; }
     if (!code) { msg.textContent = "Code fehlt."; msg.className = "msg err"; return; }

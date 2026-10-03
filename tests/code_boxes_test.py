@@ -43,7 +43,7 @@ async def main():
 
         async def handle_route(route):
             url = route.request.url
-            code = url.split("code=")[-1] if "code=" in url else ""
+            code = url.split("code=")[-1].split("&")[0] if "code=" in url else ""
             code = urllib.parse.unquote(code.split("&")[0])
             def_ = FAKE_DEFS.get(code)
             if def_ is None:
