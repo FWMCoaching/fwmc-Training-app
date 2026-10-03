@@ -1068,7 +1068,7 @@
   }
   function comboBlockMeta(block) {
     if (block.domain === "wimhof") return `${block.rounds ?? WIMHOF_DEFAULTS.rounds} Runden`;
-    if (block.domain === "breath") return fmtMinutes((block.durationMin ?? 5) * 60);
+    if (block.domain === "breath") return fmtMinutes((block.durationMin ?? 5) * 60) + (block.listen ? " · Hörmodus" : "");
     if (block.domain === "movement") return fmtMinutes((block.durationMin ?? 2) * 60);
     if (block.domain === "workout") return workoutBlockMeta(block);
     if (block.domain === "visual") return fmtMinutes((block.duration ?? 60));
@@ -1268,6 +1268,7 @@
     tipsSheet: $("tipsSheet"), tipsBtn: $("tipsBtn"), tipsCloseBtn: $("tipsCloseBtn"),
     tipInstall: $("tipInstall"), tipInstallText: $("tipInstallText"),
     faqSheet: $("faqSheet"), faqCloseBtn: $("faqCloseBtn"),
+    privacySheet: $("privacySheet"), privacyCloseBtn: $("privacyCloseBtn"),
     masterSettingsSheet: $("masterSettingsSheet"), masterSettingsCloseBtn: $("masterSettingsCloseBtn"),
     masterHearingCheck: $("masterHearingCheck"),
     masterBgColorPicker: $("masterBgColorPicker"), masterBgNoneBtn: $("masterBgNoneBtn"),
@@ -1295,6 +1296,11 @@
     breathPhaseCount: $("breathPhaseCount"), breathPhaseLabel: $("breathPhaseLabel"), breathTimeEl: $("breathTimeEl"),
     breathBackBtn: $("breathBackBtn"), breathFsBtn: $("breathFsBtn"), breathFsHint: $("breathFsHint"),
     breathPauseBtn: $("breathPauseBtn"),
+    breathListenHelp: $("breathListenHelp"),
+    breathListenLayer: $("breathListenLayer"),
+    breathListenPhase: $("breathListenPhase"),
+    breathListenTime: $("breathListenTime"),
+    breathListenHoldBtn: $("breathListenHoldBtn"),
     breathPauseOverlay: $("breathPauseOverlay"), breathPauseTempoSlider: $("breathPauseTempoSlider"), breathPauseTempoValue: $("breathPauseTempoValue"),
     breathPausePhases: $("breathPausePhases"), breathPauseRestSlider: $("breathPauseRestSlider"), breathPauseRestValue: $("breathPauseRestValue"),
     breathResumeBtn: $("breathResumeBtn"),
@@ -5557,6 +5563,16 @@
   els.faqCloseBtn.addEventListener("click", closeFaq);
   els.faqSheet.addEventListener("click", (e) => { if (e.target === els.faqSheet) closeFaq(); });
   els.faqSheet.addEventListener("keydown", (e) => trapTabKey(els.faqSheet, e));
+  // "Datenschutz in der App" (every footer + the FAQ): what stays on the
+  // device and what a code lookup sends (code + random device id). Opened
+  // over the FAQ when tapped from there, so the FAQ stays open underneath.
+  let privacyReturnFocus = null;
+  function openPrivacy() { privacyReturnFocus = document.activeElement; els.privacySheet.hidden = false; focusFirstIn(els.privacySheet); }
+  function closePrivacy() { els.privacySheet.hidden = true; if (privacyReturnFocus) privacyReturnFocus.focus(); }
+  document.querySelectorAll(".privacy-open-btn").forEach((btn) => btn.addEventListener("click", openPrivacy));
+  els.privacyCloseBtn.addEventListener("click", closePrivacy);
+  els.privacySheet.addEventListener("click", (e) => { if (e.target === els.privacySheet) closePrivacy(); });
+  els.privacySheet.addEventListener("keydown", (e) => trapTabKey(els.privacySheet, e));
   // Workout-exercise info sheet: tapping an exercise's icon/name in the
   // Tabata/Workout picker (not the "+") opens this instead of adding it -
   // same technique-cue text (ex.note) already shown live during the workout,
@@ -6376,6 +6392,7 @@
     if (e.key !== "Escape") return;
     if (!els.tipsSheet.hidden) closeTips();
     if (!els.breathTipsSheet.hidden) closeBreathTips();
+    if (!els.privacySheet.hidden) { closePrivacy(); return; }
     if (!els.faqSheet.hidden) closeFaq();
     if (!els.masterSettingsSheet.hidden) closeMasterSettings();
     if (!els.videoModal.hidden) closeVideoModal();
@@ -6388,7 +6405,7 @@
   // rendered as a circle that grows on the in-breath and shrinks on the
   // out-breath, with an optional spoken phase cue.
   const BREATH_PREFS_KEY = "fwmc-breath-v1";
-  const breathPrefs = { durationMin: 5, sound: true, custom: { in: 4, hold1: 0, out: 6, hold2: 0 } };
+  const breathPrefs = { durationMin: 5, sound: true, listen: false, custom: { in: 4, hold1: 0, out: 6, hold2: 0 } };
   function loadBreathPrefs() {
     const saved = readJSON(BREATH_PREFS_KEY, null);
     if (saved && typeof saved === "object") {
@@ -6462,12 +6479,22 @@
   });
 
   document.querySelectorAll("[data-breath-sound]").forEach((el) => {
-    el.addEventListener("click", () => { breathPrefs.sound = el.dataset.breathSound === "on"; saveBreathPrefs(); syncBreathSoundUI(); });
-  });
-  function syncBreathSoundUI() {
-    document.querySelectorAll("[data-breath-sound]").forEach((el) => {
-      setActive(el, (el.dataset.breathSound === "on") === breathPrefs.sound);
+    el.addEventListener("click", () => {
+      const v = el.dataset.breathSound;
+      breathPrefs.sound = v !== "off";
+      breathPrefs.listen = v === "hoer";
+      saveBreathPrefs(); syncBreathSoundUI();
     });
+  });
+  // Ansage has three modes on two stored flags: "on" (sound), "hoer"
+  // (Hörmodus: sound + listen - counts the seconds, says the remaining
+  // minutes, dark screen with a hold-to-pause button so it can go in a
+  // pocket) and "off".
+  function breathSoundMode() { return breathPrefs.listen ? "hoer" : breathPrefs.sound ? "on" : "off"; }
+  function syncBreathSoundUI() {
+    const mode = breathSoundMode();
+    document.querySelectorAll("[data-breath-sound]").forEach((el) => setActive(el, el.dataset.breathSound === mode));
+    els.breathListenHelp.hidden = mode !== "hoer";
   }
 
   function openBreathReady(key) {
@@ -6494,13 +6521,14 @@
   let comboBreathCaptureOriginal = null;
   let comboBreathEditIndex = null;
   function openBreathComboCapture(patternKey, existingBlock, editIndex) {
-    comboBreathCaptureOriginal = { durationMin: breathPrefs.durationMin, sound: breathPrefs.sound, custom: { ...breathPrefs.custom } };
+    comboBreathCaptureOriginal = { durationMin: breathPrefs.durationMin, sound: breathPrefs.sound, listen: breathPrefs.listen, custom: { ...breathPrefs.custom } };
     const key = existingBlock ? existingBlock.pattern : patternKey;
     openBreathReady(key);
     if (existingBlock) {
       if (existingBlock.phases) breathWorking = { ...existingBlock.phases };
       breathPrefs.durationMin = existingBlock.durationMin ?? breathPrefs.durationMin;
       breathPrefs.sound = existingBlock.sound !== false;
+      breathPrefs.listen = !!existingBlock.listen;
       syncPhaseUI(); syncBreathDurationUI(); syncBreathSoundUI();
     }
     comboBreathEditIndex = editIndex ?? null;
@@ -6511,6 +6539,7 @@
     if (comboBreathCaptureOriginal) {
       breathPrefs.durationMin = comboBreathCaptureOriginal.durationMin;
       breathPrefs.sound = comboBreathCaptureOriginal.sound;
+      breathPrefs.listen = comboBreathCaptureOriginal.listen;
       breathPrefs.custom = comboBreathCaptureOriginal.custom;
       saveBreathPrefs();
       comboBreathCaptureOriginal = null;
@@ -6519,7 +6548,7 @@
     els.breathStartBtn.textContent = "Training starten";
   }
   function commitBreathComboCapture() {
-    const block = { domain: "breath", pattern: breathPatternKey, durationMin: breathPrefs.durationMin, phases: { ...breathWorking }, sound: breathPrefs.sound };
+    const block = { domain: "breath", pattern: breathPatternKey, durationMin: breathPrefs.durationMin, phases: { ...breathWorking }, sound: breathPrefs.sound, listen: breathPrefs.listen };
     if (comboBreathEditIndex != null) comboDraftBlocks[comboBreathEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitBreathComboCapture();
@@ -6563,7 +6592,23 @@
     const frameKey = (breathSession.cycleBase || 0) + ":" + cycleNum + ":" + frame.key;
     if (frameKey !== breathSession.lastKey) {
       breathSession.lastKey = frameKey;
-      if (breathSession.sound) speakWord(frame.label);
+      breathSession.lastSec = 0;
+      let say = frame.label;
+      if (breathSession.listen) {
+        const minLeft = Math.ceil((breathSession.plannedTotal - elapsed) / 60 - 0.01);
+        if (minLeft >= 1 && minLeft < breathSession.lastMinuteSaid) {
+          breathSession.lastMinuteSaid = minLeft;
+          say += minLeft === 1 ? ". Noch eine Minute" : `. Noch ${minLeft} Minuten`;
+        }
+      }
+      if (breathSession.sound) speakWord(say);
+    } else if (breathSession.listen && breathSession.sound) {
+      // Hörmodus counts along: "Einatmen ... 2 ... 3 ... 4".
+      const sec = Math.floor(inCycle - frame.t0 + 0.0001);
+      if (sec > breathSession.lastSec && sec < Math.floor(frame.t1 - frame.t0 + 0.0001)) {
+        breathSession.lastSec = sec;
+        speakWord(String(sec + 1));
+      }
     }
     const progress = easeInOut((inCycle - frame.t0) / (frame.t1 - frame.t0 || 1));
     let scale;
@@ -6575,6 +6620,10 @@
     els.breathPhaseLabel.textContent = frame.label;
     els.breathPhaseCount.textContent = Math.max(1, Math.ceil(frame.t1 - inCycle));
     els.breathTimeEl.textContent = fmtClock(breathSession.plannedTotal - elapsed);
+    if (breathSession.listen) {
+      els.breathListenPhase.textContent = frame.label;
+      els.breathListenTime.textContent = els.breathTimeEl.textContent;
+    }
     if (elapsed >= breathSession.plannedTotal) { breathFinishSession(); return; }
     breathRaf = requestAnimationFrame(breathTick);
   }
@@ -6589,12 +6638,16 @@
     els.breathPlayer.hidden = false;
     els.breathPlayerBar.hidden = false;
     els.breathDonePanel.hidden = true;
-    breathSession = { schedule: built.schedule, cycleLen: built.cycleLen, plannedTotal: cycles * built.cycleLen, startTime: performance.now(), lastKey: null, sound: breathPrefs.sound,
+    breathSession = { schedule: built.schedule, cycleLen: built.cycleLen, plannedTotal: cycles * built.cycleLen, startTime: performance.now(), lastKey: null,
+      sound: breathPrefs.sound || breathPrefs.listen, listen: !!breathPrefs.listen, lastSec: 0,
+      lastMinuteSaid: Math.ceil((cycles * built.cycleLen) / 60 - 0.01),
       basePhases: { ...breathWorking }, tempo: 1, cycleBase: 0 };
     breathPaused = false;
     breathPauseDraft = null;
     els.breathPauseBtn.hidden = false;
     els.breathPauseOverlay.hidden = true;
+    els.breathListenLayer.hidden = !breathSession.listen;
+    resetBreathListenHold();
     requestWakeLock();
     breathRaf = requestAnimationFrame(breathTick);
   }
@@ -6644,6 +6697,8 @@
     breathPauseDraft = { tempo: breathSession.tempo, restMin, restMinAtStart: restMin, sound: breathSession.sound };
     syncBreathPauseUI();
     els.breathPauseBtn.hidden = true;
+    els.breathListenLayer.hidden = true;
+    resetBreathListenHold();
     els.breathPauseOverlay.hidden = false;
   }
   function resumeBreath() {
@@ -6652,6 +6707,9 @@
     const elapsed = Math.min((breathPauseTime - breathSession.startTime) / 1000, breathSession.plannedTotal);
     if (d) {
       breathSession.sound = d.sound;
+      // Turning the voice off in Hörmodus leaves nothing to follow on a
+      // dark screen, so it switches back to the normal view.
+      if (!d.sound) breathSession.listen = false;
       if (d.tempo !== breathSession.tempo || d.restMin !== d.restMinAtStart) {
         const built = buildBreathCycle(breathScaledPhases(breathSession.basePhases, d.tempo));
         if (built.cycleLen > 0) {
@@ -6670,9 +6728,30 @@
     breathSession.startTime += performance.now() - breathPauseTime;
     els.breathPauseOverlay.hidden = true;
     els.breathPauseBtn.hidden = false;
+    els.breathListenLayer.hidden = !breathSession.listen;
     breathRaf = requestAnimationFrame(breathTick);
   }
   els.breathPauseBtn.addEventListener("click", pauseBreath);
+
+  // Hörmodus: one big hold-to-pause button instead of taps, so a phone in a
+  // pocket can't pause or end the training by accident.
+  const BREATH_LISTEN_HOLD_MS = 900;
+  let breathListenHoldTimer = null;
+  function resetBreathListenHold() {
+    if (breathListenHoldTimer) clearTimeout(breathListenHoldTimer);
+    breathListenHoldTimer = null;
+    els.breathListenHoldBtn.classList.remove("holding");
+  }
+  els.breathListenHoldBtn.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    resetBreathListenHold();
+    els.breathListenHoldBtn.classList.add("holding");
+    breathListenHoldTimer = setTimeout(() => { resetBreathListenHold(); pauseBreath(); }, BREATH_LISTEN_HOLD_MS);
+  });
+  ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => els.breathListenHoldBtn.addEventListener(ev, resetBreathListenHold));
+  els.breathListenHoldBtn.addEventListener("contextmenu", (e) => e.preventDefault());
+  // Keyboard (Enter/Space give a click with detail 0) pauses directly.
+  els.breathListenHoldBtn.addEventListener("click", (e) => { if (e.detail === 0) pauseBreath(); });
   els.breathResumeBtn.addEventListener("click", resumeBreath);
 
   function breathLeavePlayer() {
@@ -6682,6 +6761,8 @@
     breathPaused = false;
     breathPauseDraft = null;
     els.breathPauseOverlay.hidden = true;
+    els.breathListenLayer.hidden = true;
+    resetBreathListenHold();
     releaseWakeLock();
     if (document.fullscreenElement === els.breathPlayer) document.exitFullscreen().catch(() => {});
     els.breathFsHint.hidden = true;
@@ -6693,9 +6774,13 @@
     if (breathRaf) cancelAnimationFrame(breathRaf);
     breathRaf = null;
     const played = breathSession ? breathSession.plannedTotal : 0;
+    const wasListen = !!(breathSession && breathSession.listen && breathSession.sound);
     breathSession = null;
     releaseWakeLock();
     if (window.speechSynthesis) speechSynthesis.cancel();
+    els.breathListenLayer.hidden = true;
+    resetBreathListenHold();
+    if (wasListen && !breathProgram && !comboProgram) speakWord("Geschafft. Gut gemacht.");
     if (breathProgram) { advanceBreathProgram(played); return; }
     if (comboProgram) { advanceComboProgram(played); return; }
     els.breathPlayerBar.hidden = true;
@@ -6730,6 +6815,7 @@
         breathWorking = { ...entry.phases };
         breathPrefs.durationMin = entry.durationMin;
         breathPrefs.sound = entry.sound;
+        breathPrefs.listen = !!entry.listen;
         saveBreathPrefs();
         // While capturing a Kombi-Baustein, loading a saved setting should
         // just fill the draft for review, not immediately start a session.
@@ -6748,7 +6834,7 @@
       const list = breathSavedStore.load();
       list.push({
         id: String(Date.now()), name, patternKey: breathPatternKey,
-        phases: { ...breathWorking }, durationMin: breathPrefs.durationMin, sound: breathPrefs.sound,
+        phases: { ...breathWorking }, durationMin: breathPrefs.durationMin, sound: breathPrefs.sound, listen: breathPrefs.listen,
       });
       breathSavedStore.save(list);
       renderBreathSaved();
@@ -14546,6 +14632,7 @@
       breathWorking = block.phases ? { ...block.phases } : { ...(BREATH_PATTERNS[block.pattern].phases || breathPrefs.custom) };
       breathPrefs.durationMin = block.durationMin ?? 5;
       breathPrefs.sound = block.sound !== false;
+      breathPrefs.listen = !!block.listen;
       startBreathSession();
     } else if (block.domain === "movement") {
       if (block.movements) movementPrefs.movements = block.movements;

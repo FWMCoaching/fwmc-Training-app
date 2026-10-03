@@ -357,11 +357,11 @@ section{margin-bottom:26px}
 .site-footer nav{display:flex;flex-wrap:wrap;gap:6px 18px}
 .site-footer a{color:var(--ink-soft);font-weight:600;text-decoration:none}
 .site-footer a:hover{color:var(--brand);text-decoration:underline}
-.site-footer .faq-open-btn{
+.site-footer .faq-open-btn,.site-footer .privacy-open-btn{
   color:var(--ink-soft);font-weight:600;font-size:13px;background:none;border:none;padding:0;
   font-family:inherit;cursor:pointer;
 }
-.site-footer .faq-open-btn:hover{color:var(--brand);text-decoration:underline}
+.site-footer .faq-open-btn:hover,.site-footer .privacy-open-btn:hover{color:var(--brand);text-decoration:underline}
 
 /* ---- Sub-screens ---- */
 .readyhead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
@@ -1152,7 +1152,9 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .faq-item summary::after{content:"+";font-size:20px;line-height:1;color:var(--brand);flex:none}
 .faq-item[open] summary::after{content:"–"}
 .faq-body{padding:0 16px 16px;color:var(--ink-soft);font-size:14px;line-height:1.55}
-.faq-body a{color:var(--brand)}
+.faq-body a,#privacySheet .group-help a{color:var(--brand)}
+/* A link-styled button inside running text (opens another sheet). */
+.inline-link{border:none;background:none;padding:0;font:inherit;color:var(--brand);text-decoration:underline;cursor:pointer}
 
 .slider-row{display:flex;align-items:center;gap:10px;min-width:0}
 .slider-row input[type="range"]{flex:1;min-width:0;accent-color:var(--brand);height:28px}
@@ -1890,3 +1892,17 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .progress-milestone strong{font-family:"Magra",sans-serif;font-size:20px;line-height:1.1}
 .progress-milestone span{font-size:11px}
 .progress-milestone.reached{border-style:solid;border-color:var(--brand);background:var(--brand-pale);color:var(--brand-deep)}
+
+/* Hörmodus (Atemtraining): dark screen for a phone in a pocket - follows
+   the voice, not the picture. Fixed hex like every other player element;
+   covers the player-bar too (z 25 > 24) so pocket taps can't reach
+   "Beenden"; pausing only through the long-press button. */
+.breath-listen-layer{position:absolute;inset:0;z-index:25;background:#05090b;color:#7d939b;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:calc(24px + env(safe-area-inset-top,0px)) 24px calc(24px + env(safe-area-inset-bottom,0px));text-align:center;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.breath-listen-title{font-family:"Magra",sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:#4f6168}
+.breath-listen-phase{font-family:"Magra",sans-serif;font-weight:700;font-size:30px;color:#9fb3ba}
+.breath-listen-time{font-size:18px;font-variant-numeric:tabular-nums}
+.breath-listen-note{font-size:14px;color:#4f6168;max-width:28ch}
+.breath-listen-hold{position:relative;overflow:hidden;margin-top:28px;border:1px solid #2a3a40;background:#0c1418;color:#9fb3ba;border-radius:14px;font:inherit;font-weight:700;font-size:15px;padding:18px 26px;min-height:60px;cursor:pointer;touch-action:none}
+.breath-listen-fill{position:absolute;inset:0;background:#123a47;transform:scaleX(0);transform-origin:left;transition:transform .15s}
+.breath-listen-hold.holding .breath-listen-fill{transform:scaleX(1);transition:transform .9s linear}
+.breath-listen-hold-text{position:relative}
