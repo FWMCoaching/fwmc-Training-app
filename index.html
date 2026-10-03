@@ -45,7 +45,7 @@
 
   <section class="code-card">
     <h2>Dein pers&ouml;nliches Training</h2>
-    <p>Du hast einen Trainings-Code von deinem Coach? Gib ihn hier ein.</p>
+    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
     <div class="program-entry-row">
       <input type="text" id="programCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="programGoBtn">&Ouml;ffnen</button>
@@ -223,7 +223,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 03.10.2026, 17:36</p>
+    <p class="app-version">Stand: 03.10.2026, 18:34</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -290,10 +290,19 @@
     <button class="start-btn secondary today-plan-btn" id="todayPlanBtn" type="button">Wochenplan bearbeiten</button>
   </section>
 
-  <section class="today-code">
-    <label class="today-code-label" for="todayCodeInput">Trainings-Code</label>
+  <section class="today-progress">
+    <div class="section-head"><h2>Mein Fortschritt</h2></div>
+    <button class="progress-card" id="todayProgressOpenBtn" type="button" aria-label="Mein Fortschritt ansehen">
+      <span id="todayProgressCard"></span>
+      <span class="progress-card-more">Alles ansehen &rarr;</span>
+    </button>
+  </section>
+
+  <section class="code-card today-code">
+    <h2>Dein pers&ouml;nliches Training</h2>
+    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
     <div class="program-entry-row">
-      <input type="text" id="todayCodeInput" placeholder="Code eingeben" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <input type="text" id="todayCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="todayCodeGoBtn">&Ouml;ffnen</button>
     </div>
     <div class="program-error" id="todayCodeError" role="alert" hidden>Zu diesem Code wurde kein Training gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
@@ -306,7 +315,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 03.10.2026, 17:36</p>
+    <p class="app-version">Stand: 03.10.2026, 18:34</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -314,6 +323,40 @@
       <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutz</a>
     </nav>
   </footer>
+</div>
+
+<div class="screen" id="progressScreen" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="progressBackBtn">&larr; Zur&uuml;ck zu Heute</button>
+  </div>
+  <h1 class="page-title">Mein Fortschritt</h1>
+  <p class="page-sub">Dein Training im &Uuml;berblick: Wochenziel, Serie, Meilensteine und wie sich dein Training auf die Bereiche verteilt. Abgebrochene Trainings z&auml;hlen nicht mit.</p>
+  <div class="group">
+    <div class="group-label">Wochenziel</div>
+    <div class="progress-goal-row">
+      <button class="progress-goal-btn" id="progressGoalMinus" type="button" aria-label="Wochenziel verringern">&minus;</button>
+      <span class="progress-goal-value" id="progressGoalValue"></span>
+      <button class="progress-goal-btn" id="progressGoalPlus" type="button" aria-label="Wochenziel erh&ouml;hen">+</button>
+    </div>
+    <div class="progress-bar" id="progressWeekBar"></div>
+    <p class="group-help" id="progressWeekText"></p>
+  </div>
+  <div class="progress-stats" id="progressStats"></div>
+  <div class="group">
+    <div class="group-label">Die letzten 8 Wochen</div>
+    <div class="progress-weeks" id="progressWeeks"></div>
+    <p class="group-help">Gr&uuml;n: Wochenziel erreicht. Die Linie zeigt dein Ziel.</p>
+  </div>
+  <div class="group">
+    <div class="group-label">Bereiche in den letzten 4 Wochen</div>
+    <div id="progressAreas"></div>
+    <p class="group-help" id="progressAreasNote"></p>
+  </div>
+  <div class="group">
+    <div class="group-label">Meilensteine</div>
+    <div class="progress-milestones" id="progressMilestones"></div>
+    <p class="group-help" id="progressNextText"></p>
+  </div>
 </div>
 
 <div class="screen" id="planScreen" hidden>
@@ -388,7 +431,7 @@
 
   <section class="code-card">
     <h2>Dein pers&ouml;nliches Atemtraining</h2>
-    <p>Du hast einen Trainings-Code von deinem Coach? Gib ihn hier ein.</p>
+    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
     <div class="program-entry-row">
       <input type="text" id="breathProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="breathProgramGoBtn">&Ouml;ffnen</button>
@@ -427,7 +470,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 03.10.2026, 17:36</p>
+    <p class="app-version">Stand: 03.10.2026, 18:34</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -466,7 +509,7 @@
 
   <section class="code-card">
     <h2>Dein pers&ouml;nliches Bewegungsprogramm</h2>
-    <p>Du hast einen Trainings-Code von deinem Coach? Gib ihn hier ein.</p>
+    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
     <div class="program-entry-row">
       <input type="text" id="movementProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="movementProgramGoBtn">&Ouml;ffnen</button>
@@ -500,7 +543,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 03.10.2026, 17:36</p>
+    <p class="app-version">Stand: 03.10.2026, 18:34</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -557,7 +600,7 @@
 
   <section class="code-card">
     <h2>Dein pers&ouml;nlicher Trainingsplan</h2>
-    <p>Du hast einen Trainings-Code von deinem Coach? Gib ihn hier ein.</p>
+    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
     <div class="program-entry-row">
       <input type="text" id="workoutProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="workoutProgramGoBtn">&Ouml;ffnen</button>
@@ -610,7 +653,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 03.10.2026, 17:36</p>
+    <p class="app-version">Stand: 03.10.2026, 18:34</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -648,7 +691,7 @@
 
   <section class="code-card">
     <h2>Deine pers&ouml;nliche Cardio-Einheit</h2>
-    <p>Du hast einen Trainings-Code von deinem Coach? Gib ihn hier ein.</p>
+    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
     <div class="program-entry-row">
       <input type="text" id="cardioProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="cardioProgramGoBtn">&Ouml;ffnen</button>
@@ -669,7 +712,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 03.10.2026, 17:36</p>
+    <p class="app-version">Stand: 03.10.2026, 18:34</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -786,7 +829,7 @@
     <div class="advanced-body">
       <div class="group">
         <label class="checkbox-row"><input type="checkbox" id="cardioAddonEnableToggle"> Zusatzaufgaben w&auml;hrend Cardio aktivieren</label>
-        <div class="group-help">Ein Ein/Aus-Schalter wie bei der Zusatzaufgabe sonst auch &ndash; gilt f&uuml;r jede Cardio-Einheit, egal ob selbst gebaut oder von deinem Coach zugewiesen.</div>
+        <div class="group-help">Ein Ein/Aus-Schalter wie bei der Zusatzaufgabe sonst auch &ndash; gilt f&uuml;r jede Cardio-Einheit, egal ob selbst gebaut oder von deinem Trainer zugewiesen.</div>
       </div>
       <div id="cardioAddonBody" hidden>
         <div class="group">
@@ -920,7 +963,7 @@
 
   <section class="code-card">
     <h2>Dein pers&ouml;nliches NAT-Programm</h2>
-    <p>Du hast einen Trainings-Code von deinem Coach? Gib ihn hier ein.</p>
+    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
     <div class="program-entry-row">
       <input type="text" id="natProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="natProgramGoBtn">&Ouml;ffnen</button>
@@ -1029,7 +1072,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 03.10.2026, 17:36</p>
+    <p class="app-version">Stand: 03.10.2026, 18:34</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1219,7 +1262,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 03.10.2026, 17:36</p>
+    <p class="app-version">Stand: 03.10.2026, 18:34</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -5898,7 +5941,7 @@
       <li id="tipInstall"><strong>Wie eine App nutzen.</strong> <span id="tipInstallText">&Ouml;ffne im Browser-Men&uuml; &bdquo;Zum Startbildschirm hinzuf&uuml;gen&ldquo; &ndash; dann startest du dein Training mit einem Tipp.</span></li>
       <li><strong>Schnelle Lichtreize.</strong> Manche &Uuml;bungen arbeiten mit schnell blinkenden oder wechselnden visuellen Reizen. Das ist f&uuml;r die allermeisten Menschen unbedenklich &ndash; bei bekannter Epilepsie oder Lichtempfindlichkeit aber bitte vorher &auml;rztlich abkl&auml;ren und im Zweifel auf diese &Uuml;bungen verzichten.</li>
     </ol>
-    <p class="group-help" id="tipsCoachHint">Unsicher, was f&uuml;r dich das Richtige ist? Sprich mit deinem Coach, oder vereinbare &uuml;ber die <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a> einen Termin.</p>
+    <p class="group-help" id="tipsCoachHint">Unsicher, was f&uuml;r dich das Richtige ist? Sprich mit deinem Trainer, oder vereinbare &uuml;ber die <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a> einen Termin.</p>
     <button class="start-btn" id="tipsCloseBtn">Los geht&rsquo;s</button>
   </div>
 </div>
@@ -5919,12 +5962,12 @@
 
     <details class="faq-item">
       <summary>Wo werden meine Trainingsdaten gespeichert?</summary>
-      <div class="faq-body">Ausschlie&szlig;lich lokal in diesem Browser auf diesem Ger&auml;t &ndash; nicht in einer Cloud und nicht bei einem Server. Das gilt auch f&uuml;r einen Trainings-Code von deinem Coach: Der liefert dir nur ein fertiges Programm zum Abrufen, das funktioniert ausschlie&szlig;lich in diese eine Richtung &ndash; es flie&szlig;en dabei nie Daten zur&uuml;ck. Dein Coach sieht weder deine Ergebnisse noch deinen Trainingsverlauf noch sonst etwas von deinem Training. Wechselst du das Ger&auml;t oder l&ouml;schst du die Browserdaten, geht der Verlauf verloren. Details in der <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutzerkl&auml;rung</a>.</div>
+      <div class="faq-body">Ausschlie&szlig;lich lokal in diesem Browser auf diesem Ger&auml;t &ndash; nicht in einer Cloud und nicht bei einem Server. Das gilt auch f&uuml;r einen Trainings-Code von deinem Trainer: Der liefert dir nur ein fertiges Programm zum Abrufen, das funktioniert ausschlie&szlig;lich in diese eine Richtung &ndash; es flie&szlig;en dabei nie Daten zur&uuml;ck. Dein Trainer sieht weder deine Ergebnisse noch deinen Trainingsverlauf noch sonst etwas von deinem Training. Wechselst du das Ger&auml;t oder l&ouml;schst du die Browserdaten, geht der Verlauf verloren. Details in der <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutzerkl&auml;rung</a>.</div>
     </details>
 
     <details class="faq-item">
       <summary>Was ist ein Trainings-Code?</summary>
-      <div class="faq-body">Ein pers&ouml;nliches, von deinem Coach zusammengestelltes Programm aus mehreren &Uuml;bungen. Du gibst den Code auf der jeweiligen Startseite unter &bdquo;Dein pers&ouml;nliches Training&ldquo; ein &ndash; ohne Code kannst du trotzdem alle einzelnen &Uuml;bungen frei nutzen.</div>
+      <div class="faq-body">Ein pers&ouml;nliches, von deinem Trainer zusammengestelltes Programm aus mehreren &Uuml;bungen. Du gibst den Code auf der jeweiligen Startseite unter &bdquo;Dein pers&ouml;nliches Training&ldquo; ein &ndash; ohne Code kannst du trotzdem alle einzelnen &Uuml;bungen frei nutzen.</div>
     </details>
 
     <details class="faq-item">
@@ -5949,7 +5992,7 @@
 
     <details class="faq-item">
       <summary>Ich habe eine Frage oder ein Problem &ndash; an wen wende ich mich?</summary>
-      <div class="faq-body">Am einfachsten &uuml;ber die <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a> unten in der Fu&szlig;zeile, oder direkt bei deinem Coach.</div>
+      <div class="faq-body">Am einfachsten &uuml;ber die <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a> unten in der Fu&szlig;zeile, oder direkt bei deinem Trainer.</div>
     </details>
 
     <button class="start-btn" id="faqCloseBtn">Schlie&szlig;en</button>
@@ -5959,7 +6002,7 @@
 <div class="sheet" id="masterSettingsSheet" hidden>
   <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="masterSettingsTitle">
     <h2 id="masterSettingsTitle">Grundeinstellungen</h2>
-    <p class="group-help">Diese Einstellungen werden nur in diesem Browser auf diesem Ger&auml;t gespeichert &ndash; nicht in einer Cloud, nicht bei einem Server, und nicht automatisch mit deinem Coach geteilt.</p>
+    <p class="group-help">Diese Einstellungen werden nur in diesem Browser auf diesem Ger&auml;t gespeichert &ndash; nicht in einer Cloud, nicht bei einem Server, und nicht automatisch mit deinem Trainer geteilt.</p>
 
     <div class="group">
       <div class="group-label">Vorhandene Einschr&auml;nkungen</div>

@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>FWMC Coach-Dashboard</title>
+<title>FWMC Trainer-Dashboard</title>
 <meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#007094" />
 <link rel="manifest" href="./dashboard-manifest.json" />
 <link rel="icon" href="./dashboard-icon-192.png" />
 <link rel="apple-touch-icon" href="./dashboard-icon-512.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-title" content="Coach-Dashboard" />
+<meta name="apple-mobile-web-app-title" content="Trainer-Dashboard" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <style>
   :root {
@@ -18,16 +18,20 @@
     --text: #e8ebf2; --muted: #9099ab; --accent: #007094;
     --good: #3cc27a; --danger: #e5584f; --radius: 10px;
   }
+  /* Same fonts as the app (aus einer Feder): Magra for headings, Public Sans for text. */
+  @font-face{font-family:"Magra";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/magra-700.woff2) format("woff2")}
+  @font-face{font-family:"Public Sans";font-style:normal;font-weight:100 900;font-display:swap;src:url(fonts/public-sans.woff2) format("woff2")}
   * { box-sizing: border-box; }
   html { background: var(--bg); }
   body {
-    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0; font-family: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: var(--bg); color: var(--text); padding: 0 20px 20px;
   }
   .top-bar {
     height: 5px; margin: 0 -20px 20px;
     background: var(--accent);
   }
+  h1, h2 { font-family: "Magra", system-ui, sans-serif; font-weight: 700; }
   h1 { font-size: 1.3rem; margin: 0 0 4px; }
   h2 { font-size: 1.05rem; margin: 0 0 12px; }
   .sub { color: var(--muted); font-size: 0.85rem; margin: 0 0 20px; }
@@ -77,7 +81,13 @@
   #gate .panel { text-align: left; }
   #app { display: none; }
   a.copy-link { color: var(--accent); cursor: pointer; font-size: 0.8rem; }
-  .top-actions { display: flex; justify-content: space-between; align-items: baseline; }
+  .top-actions { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  @media (max-width: 560px) {
+    .top-actions { flex-direction: column; }
+    .top-actions .brand-row { flex-direction: column; align-items: flex-start; }
+    #logoutBtn { align-self: flex-end; margin-top: -8px; }
+  }
   .tabs { display: flex; gap: 6px; margin: 14px 0 4px; }
   .tab-btn {
     background: var(--panel2); border: 1px solid var(--border); color: var(--muted);
@@ -149,7 +159,7 @@
       <div class="brand-logo-box"><img src="logo-full.png" alt="Fabian Westermann Mentalcoaching" /></div>
     </div>
     <div class="panel">
-      <h2>Coach-Dashboard</h2>
+      <h2>Trainer-Dashboard</h2>
       <p class="sub">Willkommen zurück. Einmalig den Admin-Token deines Workers eintragen, danach merkt sich dieser Browser ihn (localStorage), nirgendwo sonst.</p>
       <label for="tokenInput">Admin-Token</label>
       <input id="tokenInput" type="password" autocomplete="off" placeholder="…" />
@@ -163,7 +173,7 @@
       <div class="brand-row">
         <div class="brand-logo-box"><img src="logo-full.png" alt="Fabian Westermann Mentalcoaching" /></div>
         <div>
-          <h1>Coach-Dashboard</h1>
+          <h1>Trainer-Dashboard</h1>
           <p class="sub">Trainings-Codes verwalten &amp; Kunden-Verlauf - alles liegt in der Cloudflare-Datenbank, geräteübergreifend abrufbar.</p>
         </div>
       </div>
@@ -198,18 +208,18 @@
 
       <label for="chFilter" style="margin-top:20px">Filtern nach Kürzel (leer = alle, letzte 500)</label>
       <input id="chFilter" placeholder="z.B. MK" />
-      <table id="chTable">
+      <div class="table-scroll"><table id="chTable">
         <thead><tr><th>Kürzel</th><th>Code</th><th>Notiz</th><th>Datum</th></tr></thead>
         <tbody></tbody>
-      </table>
+      </table></div>
     </div>
 
     <div class="panel">
       <h2>Trainings-Codes</h2>
-      <table id="progTable">
+      <div class="table-scroll"><table id="progTable">
         <thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Laufzeit / Plätze</th><th>Geändert</th><th></th></tr></thead>
         <tbody></tbody>
-      </table>
+      </table></div>
 
       <label for="pCode" style="margin-top:20px">Code (neu anlegen oder bestehenden Code eintippen bzw. anklicken zum Bearbeiten)</label>
       <div style="display:flex;gap:8px;align-items:center">
