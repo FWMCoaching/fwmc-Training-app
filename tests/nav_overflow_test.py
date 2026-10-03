@@ -85,7 +85,7 @@ async def main():
             await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)
         await pg.set_viewport_size({"width": 768, "height": 1024}); await pg.wait_for_timeout(150)
         tab_count = await pg.locator('#home .section-switch .section-tab:not([hidden])').count()
-        print("Test unlocked -> 7 tabs now shown:", tab_count == 7)
+        print("Test unlocked -> 8 tabs now shown (incl. Heute):", tab_count == 8)
         heights = await pg.evaluate("""() => ({
             atem: document.querySelector('#home .section-tab[data-section="breath"]').getBoundingClientRect().height,
             movement: document.querySelector('#home .section-tab[data-section="movement"]').getBoundingClientRect().height,
