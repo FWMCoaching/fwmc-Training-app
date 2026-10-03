@@ -23284,9 +23284,11 @@
     // still-empty pre-round height let a block land somewhere the hint's
     // real text then covered once set right after (the Corsi overlap flake
     // in stage_hint_overlap_audit_test.py).
+    // Same for the progress pill: it can wrap the player-bar onto a second
+    // row (which moves the hint down), so it is written before measuring too.
     els.corsiHint.textContent = "Gleich geht's los …";
-    renderCorsiBoard(buildCorsiBoard());
     els.corsiProgressEl.textContent = `Länge ${corsiState.span} · Versuch 1/2`;
+    renderCorsiBoard(buildCorsiBoard());
     requestWakeLock();
     scheduleCorsiTimer(corsiStartLevel, 1000);
   }
