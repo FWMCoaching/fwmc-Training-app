@@ -4391,9 +4391,9 @@ codes table has a "Laufzeit / Plätze" column (`codeRunText`), and
   in, a new one only while seats are left. `/admin/programs` returns
   `seatsUsed` per code. Test: `tests/worker_hardening_test.py` (mock D1
   that dispatches on the SQL text).
-- **The Worker change needs a deploy** (FWMC-automation environment, only
-  with Fabian's yes). Until then seats are not enforced; dates already work
-  through the app.
+- **Deployed 2026-10-03** with Fabian's yes (version 3a75e714, verified:
+  /program 200, admin without token 401, foreign origin 403). Seats are
+  enforced from now on.
 Test: `tests/code_validity_test.py`.
 
 ### Datensicherung: Export/Import (2026-10-02)
@@ -4439,6 +4439,23 @@ to the website's Datenschutzerklärung and Impressum. The FAQ storage answer
 links to it with an inline `.privacy-open-btn.inline-link`. **Anything new
 that sends data off the device must be added to this sheet in the same
 commit.** Test: `tests/privacy_test.py`.
+
+### Logo-Leiste (2026-10-03)
+
+Fabian: a fixed top bar with the logo, also at the same place in pause and
+end phases, with the pause controls moved so nothing is covered; branding
+inside a running exercise is decided later. Every `.screen>.brandbar` is
+`position:sticky;top:0` with a solid `var(--bg)` and sits flush in the
+screen's top padding, so it looks unchanged at rest. `#appBar` (last
+element in `_body.html`, same logo/sub/gear) is fixed at the top and shown
+by a `body:has(...)` rule ONLY while a visible player shows a
+`.pause-overlay`, a `.pause-screen` or a `.done-panel`, or a body-level
+done/transition panel is open; while the exercise runs it stays hidden. In
+that state `.player-bar`, `.pause-overlay`, `.pause-screen` and
+`.done-panel` move down by `--appbar-h` (its real height, set by a
+ResizeObserver in app.js, since it wraps to two rows on a phone) and stage
+hints are hidden. A new player gets this for free as long as it uses those
+classes. Test: `tests/app_bar_test.py`.
 
 ### Interval phase wording corrected (2026-09-30)
 
