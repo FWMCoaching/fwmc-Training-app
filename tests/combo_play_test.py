@@ -22,7 +22,7 @@ async def main():
         b = await p.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args=["--no-sandbox"])
         ctx = await b.new_context(viewport={"width": 390, "height": 844}, service_workers="block")
         async def api(route):
-            code = route.request.url.split("code=")[-1]
+            code = route.request.url.split("code=")[-1].split("&")[0]
             data = {"comboprog": COMBO_PROGRAM, "combobundle": COMBO_BUNDLE}.get(code)
             if data:
                 await route.fulfill(status=200, content_type="application/json", body=json.dumps(data))
