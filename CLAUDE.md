@@ -1518,6 +1518,15 @@ movement-picker chips AND the lane/grid tiles during play) - picking a style
 live-regenerates the already-built picker chips too (`syncMvPickerUI()`), not
 just future lane renders.
 
+**Dauer (2026-10-03)**: besides the 1/2/3 Min buttons, Feineinstellungen
+has "Exakte Dauer" (`#movementDurSlider`, 1-5 min in 0.5 steps, shown as
+"2,5 Min"). Fabian: longer than 5 min = stack Movement twice in a Kombi.
+A coach code can still set more (the slider then sits at its max). Test:
+`tests/movement_duration_test.py`. Open feedback from Fabian, same day, not
+yet decided: the lane "jumps" to the left/middle instead of letting you work
+forward to the right, and the whole Movement look doesn't grab him yet -
+he wants to think about it first (carry forward, don't build unasked).
+
 **Laufrichtung (window/"lane" mode only), added 2026-09-27**: the client
 described the lane as a flowing strip - new cues entering from one edge,
 whatever's centred "on the beat" is the one that counts, done ones fading
