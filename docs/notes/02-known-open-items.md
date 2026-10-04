@@ -1,0 +1,557 @@
+# Known open items
+
+- **Remember overlap edge case - fixed 2026-10-02**: `relaxedRememberLayout()`
+  places a whole layout, pushes too-close pairs apart, and on a small phone
+  falls back to random picks from a staggered (hex) slot set. Fixed
+  positions pre-lay out all 24 numbers once. Test:
+  `tests/remember_density_test.py` (390x844 and 375x667, both modes).
+- **Deferred/parked, not yet actioned**: a lock-code gate for the NAT
+  section and a "Kids-Training" mode concept (both re-confirmed "weiter
+  parken" by Fabian 2026-10-02); Stroop's colour palette gets NO grey
+  (decided 2026-10-02); a redesign
+  of Movement's "Ganzes Programm" preview grid for long programmes (up to
+  480 tiles today); a defensive
+  DOM-hide for Workout's finish state (currently relies only on the
+  done-panel's opaque overlay); combining an exercise's peripheral add-on with **acoustic
+  signals** that get "perceived and processed with some rules or other" -
+  explicitly a later idea, not to build until asked ("das merkst du dir
+  mal bitte").
+- **App icon redesign, shipped 2026-09-27** ("Wir nehmen erstmal E neu"):
+  `icon-192.png`/`icon-512.png` used to show the brand circle clipped by a
+  transparent-cornered circular crop marked `"purpose":"maskable"` in
+  `manifest.json`, which OS icon-masking then cropped further - likely why
+  it looked "off" on the home screen. Several directions were explored
+  (full-bleed square with the complete signet, the original clipped circle
+  at various paddings/proportions incl. a Spotify-ratio comparison) on an
+  icon-proposals artifact (https://claude.ai/artifact/8upP6M7NPpjuHzio82LG1t,
+  "Update 1-4") before the client picked **candidate E**: keep the exact
+  same circle/signature scale+position as the original (pixel-aligned via
+  86% line-pixel IoU match against the old icon-512.png, using a separately
+  supplied isolated signet), but fill the square canvas's corners with the
+  same brand teal (#007094) instead of leaving them transparent - same
+  visual footprint as before, no more transparent corners for the OS mask
+  to chew on. Shipped as the actual `icon-192.png`/`icon-512.png` in this
+  commit (built from the session's `E_same_position_v2.png`). Note traded
+  off deliberately: this keeps the original's edge-to-edge visual scale
+  rather than adding Android's recommended maskable safe-zone padding, so
+  an aggressive OS mask shape could still clip a sliver at the very edges
+  on some launchers - same residual risk the original always had, not a
+  regression, and explicitly the trade-off the client chose (brand-
+  recognition continuity over maximal mask-safety). Other explored
+  directions (full-bleed complete-signet variants B/F1/F2, Spotify-ratio
+  original-circle variants G at 80%/90%) remain on the artifact if this
+  needs revisiting.
+- **NAT status**: Remember is fully built (Feste/Bewegte Positionen +
+  Trainingsmodus), now including background colour/intensity (pre-settable
+  in each mode's Feineinstellungen) plus a mid-exercise Pause with live
+  adjustment of the same setting. Periphere Wahrnehmung is fully built
+  (Phase 1-4: fixation point, Zeichentyp, Bereich programmes incl. 3×3 zone
+  picker, radial size growth, background colour/intensity) plus a
+  mid-exercise Pause with live background/fixation-point adjustment (see
+  Established patterns). **Blitz-Raster** (4th NAT sub-tab) is fully built:
+  an NxN grid (3×3 up to 8×8 - raised from a 3-5 ceiling per the client's
+  own "8x8 oder so, mindestens auf iPad macht das Sinn"; `blitzEligibleCells
+  ()`/`blitzMaxLevelForCurrentSettings()` were already generic over
+  `gridSize`, so this was mostly a new `#blitzGridSizeRow` choice + widening
+  `loadBlitzPrefs()`'s validation array - `renderBlitzGrid()` now also
+  narrows `.blitz-grid`'s gap in steps as `gridSize` grows past 5, so the
+  extra cells stay a reasonable tap target on a phone-width screen too, not
+  just on the bigger screen - iPad - the client actually had in mind) where
+  several cells light up SIMULTANEOUSLY and briefly, then go dark; the
+  client taps back exactly those cells, order doesn't matter - the key
+  difference from Remember (which is an ordered, studied-layout recall). At
+  anything above 3×3 a "Bereich" restricts play to specific 3×3-band zones,
+  reusing `PERIPH_ZONES` band math (see `blitzEligibleCells()`) rather than
+  a second zone system; the centre band is always eligible (no fixation
+  point to protect here, but keeping the convention avoids a confusing 9th
+  toggle). Test: `tests/blitz_grid_size_test.py`. Same Bei-Fehler options as
+  Remember (reset2/backOne/stay), same background colour/intensity +
+  transfer + mid-game Pause pattern as Periph/Remember (`blitzPrefs`, a
+  `"blitz"` `BG_SOURCES` entry). Engine mirrors Remember's setTimeout/
+  `scheduleBlitzTimer` pause approach closely (own state, own functions,
+  copy-adapted rather than shared - the phase model and win/lose logic
+  differ enough - simultaneous flash + unordered tap-set vs. sequential
+  reveal + ordered click - that a shared engine would need a maze of
+  conditionals for little gain). No fixed/shuffle/training sub-modes like
+  Remember (grid cell positions never move, so there's nothing to persist)
+  - if a Trainingsmodus-style "start straight at level N" turns out to be
+  wanted later, add a second ready screen the same way Remember has one.
+  Not (yet) wired into the Kombi builder - wasn't asked for.
+  **Flash Speicher Test** (4th NAT sub-tab) is fully built and is a
+  **third, distinct** concept from both Remember and Blitz-Raster (the
+  user was explicit about this): characters appear ONE AT A TIME at
+  scattered positions - `randFlashPos()` mirrors Periph's own
+  `randPeriphPos()` axis/zone maths directly rather than a new positioning
+  system, own `flashPrefs.axes/useZones/zones` - each briefly, then an
+  answer panel opens to enter them back IN ORDER (unlike Blitz-Raster,
+  where order doesn't matter; see "Zeichentyp + on-screen keypad" below for
+  how entry itself works). Four modes share one `flashPrefs` object
+  (mirroring `rememberPrefs`): `"constant"` (fixed count, speeds up via a
+  `speedStep` that shortens `stimulusS`/`intervalS` by ~15% per step, capped
+  at `FLASH_SPEED_STEPS`), `"climb"` (count +1 every success),
+  `"climbRepeat"` (like climb, but repeats `repsPerLevel` times per count
+  before advancing), `"training"` (Remember-style direct start count/
+  speed). The first three share one ready screen (`#flashReady`, mode
+  picked via `flashReadyMode`, mirroring how Remember's fixed/shuffle share
+  `#rememberReady`); training gets its own (`#flashTrainingReady`). Same
+  Bei-Fehler semantics as Remember/Blitz but reinterpreted per mode
+  (resets `speedStep` for constant, `count` for the climb modes) - button
+  labels were reworded ("Ganz von vorne" not "Zurück auf 2") since there's
+  no universal "2" floor here. Same background colour/intensity + transfer
+  + mid-game Pause pattern as the others (`flashPrefs` is now a 4th
+  `BG_SOURCES` entry). Engine again mirrors Remember/Blitz's setTimeout/
+  `scheduleFlashTimer` pause approach as its own copy, not a shared
+  abstraction, for the same "phase models differ too much" reason as
+  Blitz-Raster. Not wired into Kombi - wasn't asked for. Also got a
+  togglable, customisable Fixpunkt (`flashPrefs.fixEnabled/fixChar/
+  fixColor/fixSize`, reusing `FIX_COLOR_LIB`) matching Periph's - the
+  client asked for it explicitly ("wie bei anderen bereits gestaltet")
+  since Flash's positioning already mirrors Periph's peripheral-focus
+  design. Unlike Periph's canvas dot (always drawn, no on/off), Flash's is
+  a DOM element (`#flashFixpointEl`, centred via CSS) with its own toggle,
+  and it stays visible for the entire run regardless of flash/gap/input
+  phase - `renderFlashFixpoint()` is the DOM equivalent of Periph's
+  `drawFixationPoint()`.
+  **Zeichentyp + on-screen keypad** (client's own reference: a screen
+  recording of a similar app): Flash now has the same three-way
+  Buchstaben/Zahlen/Gemischt choice as Periphere Wahrnehmung
+  (`flashPrefs.kind`, `#flashKindRow`/`#flashTrainingKindRow` mirroring
+  `#periphKindRow`'s markup/wiring exactly), and `flashStartRound()`
+  generates each sequence character via `randPeriphChar(flashState.kind,
+  Math.random)` - reused directly rather than duplicated, so "gemischt"
+  means the same thing here as it does for Periph (each character
+  independently rolls digit-or-letter). The old free-text `<input
+  inputmode="numeric">` is gone; the answer panel is now `N` individual
+  `.flash-answer-box` boxes (`renderFlashAnswerBoxes()`, one per
+  `flashState.sequence.length`, rebuilt every round since the count
+  changes) plus an on-screen `.flash-key` keypad (`renderFlashKeypad()`,
+  built once per game since the Zeichentyp can't change mid-run: digits
+  0-9, the 24-letter `PERIPH_LETTERS` pool, or both for Gemischt) and a
+  backspace button. `flashState.typed` (a plain string) replaces the
+  input's `.value`; `flashTypeChar()`/`flashBackspace()` are the tap
+  handlers, auto-checking once `typed.length` reaches the sequence length
+  - same "auto-check on full length" behaviour the text input had.
+  `flashUnitLabel(kind)` ("Zahlen"/"Buchstaben"/"Zeichen") replaces the
+  hardcoded "Zahlen" in the level indicator and the done-panel note; the
+  best-hint texts were generalised to "Zeichenfolge" instead of branching
+  per kind (a hint label, not worth the extra branching). Client was
+  explicit the overall layout/flow shouldn't change much otherwise - this
+  only touches the answer-entry mechanic and adds the one new setting.
+  Test: `tests/flash_kind_keypad_test.py`; `tests/flash_test.py` and
+  `tests/flash_fixpoint_test.py` were updated to tap the keypad instead of
+  typing into the now-removed input.
+- **Fixpunkt: on/off toggle, comprehensively, plus a Flash overlap bug**:
+  the shared VT-canvas fixation point (`drawFixationPoint()` - Periphere
+  Wahrnehmung and every other VT exercise, since it's one shared
+  `state.periphFix*` setting, not per-exercise) could be recoloured/resized
+  but never fully switched off; the client asked for it to be "einstellbar
+  und entfernbar" everywhere it exists. Added `state.periphFixEnabled`
+  (default `true`) with the exact same "Anzeigen"/"Ausblenden" two-button
+  toggle Flash Speicher Test's fixpoint already had (`#periphFixToggleRow`,
+  collapsing `#periphFixOptions` when off) - `drawFixationPoint()` now
+  returns immediately when it's off. Scoped to the Ready screen's
+  Feineinstellungen only (the client said "in den Voreinstellungen"), not
+  duplicated into Periph's mid-exercise Pause overlay - unlike colour/size,
+  which already are (see Established patterns) - since a live-toggle wasn't
+  asked for. Remember/Blitz-Raster have no fixpoint at all, so nothing to
+  do there. Separately, a real bug: Flash Speicher Test's own fixpoint
+  (`#flashFixpointEl`) is absolutely centred on the WHOLE stage - once the
+  answer panel (boxes + keypad, see above) fills that space, the centred
+  dot landed right on top of a keypad key and covered it. `flashOpenInput()`
+  now force-hides it (`els.flashFixpointEl.hidden = true`, regardless of
+  `flashPrefs.fixEnabled`) the moment the answer panel opens;
+  `flashShowDigit()` calls `renderFlashFixpoint()` to restore it (or keep it
+  off, if disabled) for the next flash/gap phase. Test:
+  `tests/fixpoint_toggle_test.py`.
+- **Flash Speicher Test: digit/hint overlap bug (fixed 2026-09-27)** - user
+  report: "hatte das Gefühl, dass da einmal eine Zahl eingeblendet wurde,
+  direkt oben unter dem Bereich, wo auch richtig ... steht". Confirmed and
+  reproduced: `randFlashPos()` (the radial fx/fy positioning mirrored from
+  Periph, see above) has no concept of `#flashHint` (the "Merken …"/
+  "Richtig! Weiter geht's …"/error-message pill fixed near the top of the
+  stage via `.remember-hint{top:68px+safe-area}`) - at max radius and a
+  near-vertical angle, a digit's fy can be as low as ~10% of stage height,
+  which visually collides with the hint pill. Fixed with `flashSafeFy()`:
+  measures `#flashHint`'s actual rendered `getBoundingClientRect().bottom`
+  against `#flashStage`'s rect at flash time (adapts to safe-area insets/
+  device size/hint text length rather than a hardcoded percentage) and
+  clamps the digit's fy so it can never render above the hint's bottom edge
+  + 20px margin. `randPeriphPos()` itself (Periph/Blitz-Reize, which has no
+  overlaid hint text) was deliberately left untouched. Test:
+  `tests/flash_hint_overlap_test.py` (forces `Math.random()` to the values
+  that previously produced the worst-case placement, asserts no overlap).
+  Same report also asked two design questions, both confirmed by reading
+  the code and answered for the client: (1) the displayed speed cap really
+  did stop at "Tempo-Stufe 9" (`FLASH_SPEED_STEPS = 8`, displayed as
+  `speedStep + 1`) - by design, not a bug, but the client then explicitly
+  asked for more headroom ("darf ruhig noch höher und schneller gehen als
+  Stufe 9"), so **raised 2026-09-27**: `FLASH_SPEED_STEPS` is now `20`
+  (displayed ceiling "Tempo-Stufe 21"), and the per-step floors in
+  `flashEffectiveStimulusS()`/`flashEffectiveIntervalS()` were lowered from
+  0.25s/0.15s to 0.12s/0.08s - raising the step ceiling alone would have
+  been cosmetic without this, since at the OLD floors "mittel"/"schwer"
+  difficulty already plateaus at or before step 8 (0.85^step decay simply
+  has nothing left to shrink); the new floors keep genuine speed increase
+  going noticeably further for every starting difficulty, not just
+  "leicht". Same 0.85 per-step decay rate kept - only the ceiling/floor
+  moved, not the ramp-up feel. (2) "Konstant" mode has no fixed rep-count
+  or duration stop condition today - once `speedStep` plateaus at the cap
+  it just keeps flashing rounds at max speed until the user taps
+  "Beenden"; every other mode (climb/climbRepeat/training) has the same
+  Beenden-only ending. **Decided and built 2026-10-02**: "Konstant" now
+  runs a fixed number of rounds (`flashPrefs.constantRounds`, slider 5-50,
+  default 20, `#flashRoundsSlider` in `#flashConstantGroup`), the level
+  pill reads "Runde n/N · Tempo-Stufe x", the run ends by itself and the
+  done panel shows "x von N Runden richtig" (early Beenden adds
+  "vorzeitig beendet"). Only standalone: a Kombi block or Cardio guest
+  keeps its own duration as the end (`flashState.roundLimit` = 0 there).
+- **Dark-mode contrast bug (fixed) - a pattern to watch for**: `.flash-
+  digit`/`.flash-input-label`/`.flash-typed-input` (the last since replaced
+  by `.flash-answer-box`/`.flash-key`, built fixed-hex from the start) were
+  styled with `var(--ink)`/`var(--surface)`/`var(--line)`, which switch with the OS
+  colour scheme - but `.player`'s own background is hardcoded
+  `#ffffff` regardless of theme (by design: every exercise's background is
+  controlled by its own bgColorKey/bgIntensity, never by OS dark mode).
+  Every OTHER player-scoped element already uses fixed hex values for
+  exactly this reason (`.remember-hint`'s `#4f6168`, `.remember-marker`'s
+  `#fff`, etc.) - these three broke that convention, so in OS dark mode the
+  digit rendered pale grey-on-white ("zu durchsichtig"). Fixed to fixed hex
+  values. Also caught and fixed the same class of bug in `.blitz-cell`'s
+  unlit background (was `var(--brand-pale)`, dark-teal in dark mode against
+  a white stage - now a fixed `#e5f1f4`) while auditing for it. When adding
+  any new player/stage-scoped visual, use fixed hex colours, never a
+  `var(--...)` custom property - those are for the surrounding app chrome
+  (cards, buttons, settings screens), which correctly does follow OS theme.
+- **Dominanz-Gewichtung**: built for Periphere Wahrnehmung only so far (the
+  user's own words: "Regler pro Zone, 1×–3×, erstmal nur bei Periphere
+  Wahrnehmung testen" - explicitly a test on one exercise before deciding
+  whether to extend it). `state.periphZoneWeights` (`{tl:1,...,br:1}`,
+  1-3 each, validated in `loadPrefs()`) holds a weight per zone regardless
+  of current selection, so toggling a zone off and back on doesn't lose a
+  custom weight. `renderPeriphZoneWeights()` (called from
+  `syncPeriphFieldUI()`) rebuilds one slider row per *currently selected*
+  zone into `#periphZoneWeights`, reading each zone's German label straight
+  off its `aria-label` rather than a second label map; hidden entirely
+  outside zone mode or with ≤1 zone selected (weighting one zone against
+  nothing is meaningless). The actual skew is one shared generic helper,
+  `weightedPick(items, weightFn, rng)` (plain proportional weighted-random
+  pick, weight 1 everywhere reduces to the old flat equal split) - wired
+  into `randPeriphPos()`'s zone branch only; axis mode is untouched, and
+  Blitz-Raster/Flash Speicher Test/Remember don't use it yet. If dominance
+  gets confirmed for those too, reuse `weightedPick()` rather than
+  reimplementing the ratio math - it's already generic over "the pool" and
+  "how weight for the pool" get read.
+- **Live-pause-adjust, extended 2026-10-02 (audit point 20, Fabian: "Das
+  passt so")**: every exercise on the VT canvas engine now has the Pause
+  button (`#periphPauseBtn`, shown in `runSession()`; Hütchen sortieren
+  never goes through it). The overlay shows only what applies: tempo
+  (`#vtPauseTempoGroup`: Einblenddauer + Pause min/max) always, background
+  unless `bgIsStimulus`, fixation point only while `periphFixEnabled`,
+  stimulus colours only for Periph. A tempo change is applied on "Weiter"
+  by `rebuildVtScheduleFrom(elapsed)`: past frames stay, the current frame
+  ends now, the exercise's own builder fills the rest (built with
+  `state.duration = 3 + remaining`, count frames dropped, shifted by
+  `elapsed - 3`), add-on schedule rebuilt; it is saved to the client's VT
+  settings only when standalone (not in a programme/Kombi/Cardio guest).
+  **Atemtraining**: "Pause" opens `#breathPauseOverlay` (Atemtempo 0.5-2×
+  scales every phase of `breathSession.basePhases`, Restdauer 1-30 min,
+  Sprachansage an/aus); a change starts a fresh cycle on resume
+  (`breathSession.cycleBase`); nothing is saved. **Movement**: new
+  `#movementPauseBtn` + `#movementPauseOverlay` (BPM 20-160, Vorschau incl.
+  "Ganz"); beat count stays, the current beat restarts on the new tempo,
+  `movementSession.preview` (not `movementPrefs`) drives the lane; nothing
+  is saved. Not given a live pause on purpose: Wim Hof (guided breathing
+  with safety holds), programme videos (native controls), Hütchen
+  sortieren. Domains that already had their own pause (NAT, Test,
+  Workout, Cardio, Kombi) are unchanged. Test: `tests/live_pause_test.py`.
+- **Zusatzaufgabe** (peripheral flashes as an add-on inside other
+  exercises): any exercise that goes through the shared VT canvas
+  engine - `buildScheduleFor`/`drawScene`, i.e. every `EXERCISES` entry
+  except `type:"periph"` (itself) and `type:"color-tap"` (Hütchen
+  sortieren, which has no Reiz/Pause schedule to hook into) - can now
+  optionally run Periphere Wahrnehmung's own peripheral character flash
+  on top of its own "Reiz" (any non-`"blank"` frame) and/or "Pause"
+  (`"blank"` frame) phases. This is the app's **first genuinely
+  per-exercise setting** - every earlier per-domain setting (background
+  colour, Bereich, ...) is one value shared by an entire domain (e.g. ALL
+  VT/NAT-canvas exercises share one `state.bgColorKey`), but "4 Pfeile
+  gerade" and "4 Pfeile diagonal" each need their own independent add-on
+  config - so it can't live in the flat `state` prefs blob like everything
+  else. It gets its own store instead: `ADDON_KEY = "fwmc-addon-v1"`,
+  `{ [exerciseId]: { phases, mode, own } }`, read/written via
+  `getAddonEntry(exId)` (always returns a normalized entry, creating an
+  "off" one on first ask) - never through `state`/`loadPrefs()`/
+  `savePrefs()`.
+  - `phases`: subset of `["reiz","pause"]`. The Phase-1/Phase-2/"Beide"
+    UI (`#addonPhaseRow`/`#addonPhaseAllBtn`) is the same multi-select +
+    "select all" shortcut pattern as every other one in the app (colours,
+    Periph's own Bereich axes, ...), **except** empty is this control's
+    valid "off" state rather than an error - so unlike every other use of
+    the pattern, empty gets no warning hint and doesn't disable Start.
+  - `mode`: `"uebernehmen"` (default) live-mirrors Periphere Wahrnehmung's
+    own current Zeichentyp/Bereich/Größe/Tempo (`addonConfigFromState()`
+    reads `state.periph*`/`state.stimulusS`/`intervalMin/Max` directly, so
+    it always tracks Periph's main settings, exactly like the background
+    colour "übernehmen" idea) or `"eigen"` - a per-exercise override
+    bundle (`entry.own`: kind/axes/useZones/zones/sizeMode/stimulusS/
+    intervalMin/intervalMax) edited independently via the same Kind/
+    Bereich/Größe controls as Periph's own ready screen, just writing to
+    `entry.own` instead of `state`. No Dominanz-Gewichtung in `own` -
+    consistent with Dominanz staying Periph-only until confirmed
+    elsewhere (see above).
+  - **Positioning math is shared, not duplicated**: `randPeriphPos(rng)`
+    is now a thin wrapper around `randPosFromCfg(cfg, rng)`, which takes
+    a plain `{useZones, zones, axes, zoneWeights?}` and does the zone/axis
+    math generically - Periph calls it with a `state`-derived cfg
+    (including `periphZoneWeights` for Dominanz), the add-on calls it with
+    either `addonConfigFromState()` or `entry.own` (no `zoneWeights`, so
+    `randPosFromCfg` falls back to a plain equal pick within
+    `weightedPick`'s call site). Likewise `drawPeriphChar(cw, ch, unit, fx,
+    fy, char, sizeMode)` was pulled out of `drawScene`'s `"periph"` case so
+    both Periph's own frames and the add-on overlay render pixel-identical
+    characters.
+  - **Runtime**: `buildAddonSchedule(ex, exId, hostSchedule, rng)` (called
+    once in `runSession()`, stored as `session.addonSchedule`/
+    `session.addonSizeMode`) walks the host exercise's *already-built*
+    schedule and, for every frame whose kind maps to an enabled phase
+    (`"blank"` → pause, anything else → reiz), subdivides that frame's
+    `[t0,t1)` window with the add-on's own show/gap timing - so an add-on
+    flash can never land outside the phase it was enabled for, whatever
+    the host's own timing looks like, without needing the two schedules to
+    share a merge step. `tick()` draws it via `drawAddonOverlay(elapsed)`
+    right after the host's own `drawScene()` call, as a plain overlay on
+    the same canvas frame - it's independent of `session.lastIndex`/
+    `onEnterFrame()`, which stay host-schedule-only.
+  - **Presets**: `entry.own` bundles can be saved by name
+    (`ADDON_PRESETS_KEY = "fwmc-addon-presets-v1"`, a plain
+    `makePresetStore()` like `bgPresetStore` - **not** exercise-scoped, so
+    a bundle saved from "4 Pfeile gerade" shows up and can be applied from
+    any other eligible exercise's ready screen too), satisfying the
+    client's "beide Möglichkeiten" ask (transfer-from-Periph AND a
+    separately-saveable local override).
+  - **Not built / explicitly out of scope for this first pass**: which
+    exercises to exclude (see Deferred/parked above); acoustic signals
+    (see Deferred/parked above); Remember/Blitz-Raster/Flash Speicher
+    Test don't go through `buildScheduleFor`/`drawScene` at all (separate
+    setTimeout/DOM engines with no equivalent Reiz/Pause schedule
+    concept), so they're **not** wired into this - would need its own
+    design if wanted later; no pause-and-live-adjust for the add-on itself
+    (the Pause button only ever shows for Periph, see `runSession()`'s
+    `els.periphPauseBtn.hidden` line) - not asked for.
+  - Test: `tests/addon_periph_test.py`.
+  - **Fixed bug**: the add-on fired during the 3-2-1 countdown, before the
+    host exercise itself had started. `buildAddonSchedule()` classified any
+    non-`"blank"` frame as "Reiz", which included the countdown's `"count"`
+    frames (always first, from `pushCountdown()`). Fixed by skipping
+    `"count"` frames outright, before the phase check.
+  - **"Farbe der Reize"**: the flashed characters' own colour is now
+    client-configurable too, under Feineinstellungen, for **both** Periph
+    itself (`state.periphColors`, `#periphColorGroup`) and the add-on's
+    "eigene Feineinstellung" bundle (`entry.own.colors`, `#addonColorPicker`
+    inside `#addonOwnBody`) - a deliberately **separate** multi-select
+    swatch picker from the `colorMode`/`colorModeArray()` system used for
+    arrow/Stroop/VT colours (`buildStimColorSwatch`/`buildStimColorPicker`/
+    `syncStimColorUI`), since an arrow exercise's own colour picker and its
+    add-on's stimulus-colour picker need to be open and edited independently
+    at the same time - reusing the shared system (which tracks one "current"
+    array) would conflict. Palette is `STROOP_COLOR_LIB` (includes Schwarz/
+    Weiß, relevant for contrast), default `["schwarz"]`, minimum one colour
+    (same "can't drop the last one" rule as every other colour picker).
+    Selecting more than one is "gemischt" - each individual flash rolls its
+    own colour independently (`pickPeriphColor()`), "in den Rhythmus mit
+    eingerechnet" per the client's own phrasing.
+    - **Contrast safety**: a flashed character must never end up the same
+      (or too close a) colour as whatever it's flashed on top of, or it's
+      "faktisch nicht wahrzunehmen" per the client. `colorsClash(hexA,hexB)`
+      (exact match, or a luma-distance check under 0.12 - reusing the exact
+      threshold idea already used for Stroop's word/background outline fix)
+      feeds `pickPeriphColor(colorKeys, avoidHex, rng)`, which filters the
+      client's selection down to non-clashing candidates before picking -
+      falling back to the full selection only if every one of them clashes
+      (in practice: only one colour was selected at all, so there's no
+      alternative to substitute - the UI hint calls this out explicitly).
+      The tricky part is that VT/VRW/Kompass-Aufbau/Stroop mit Hintergrund
+      carry a **new** background colour in their own frame payload every
+      single stimulus (the background IS the trained signal there), not the
+      one constant flat tint every other exercise uses - so `frameBgHex
+      (frame)` mirrors `drawScene()`'s own fill logic per `frame.kind`
+      exactly (`payload.bg`/`payload.color`/`"#ffffff"`/the flat tint, case
+      by case) to know what a given add-on flash would actually land on,
+      entirely at schedule-build time (no need to render a frame to find
+      out - each add-on flash is built by subdividing exactly one host
+      frame's own `[t0,t1)` window, so it's always contained within a frame
+      whose background is already known). Periph's own schedule only needs
+      this once per run (`buildPeriphSchedule` computes `bgHex` up front),
+      since its own background is always the flat, run-constant tint.
+    - **Arrow overlap avoidance**: "bei den Pfeilen sollte natürlich dann
+      auch nicht unbedingt der Zusatzreiz auf dem Pfeil liegen" - any host
+      frame that draws an arrow (`"cue"`/`"vt"`/`"vrw"`, and `"cross"`'s
+      visual/conflict/invert branch) gets its polygon recomputed at
+      schedule-build time (`frameArrowPolygon()`, the exact same
+      `arrowPoints()` call `drawScene()` itself uses) and a candidate
+      add-on position is re-rolled (`pointInPolygon()`, standard ray-casting,
+      up to 12 tries) until it lands outside it, rather than possibly
+      landing right on top of the arrow. Kompass-Aufbau ("color" kind, a
+      flat colour fill) draws no arrow, so nothing to avoid there beyond the
+      background-colour rule above; Sehen & Hören's audio-only frames
+      (speaker icon) are likewise left alone.
+    - Test: `tests/addon_color_test.py` (picker UI/persistence/independence,
+      plus runtime smoke tests running the new logic for real against VRW
+      and an arrow exercise - no internal hook exists to assert the exact
+      colour/position chosen for a given flash, so the maths itself was
+      verified by careful reading rather than a dedicated unit test).
+- **MOT-Fähigkeit** (5th NAT sub-tab, next to Flash Speicher Test): Multiple
+  Object Tracking - N identical-looking objects drift around the stage, K of
+  them are briefly highlighted as "targets", then everything looks the same
+  again and keeps moving for a while; the client tracks the target(s) with
+  their eyes the whole time, then taps them back once movement stops (same
+  unordered tap-set mechanic as Blitz-Raster's `blitzTapCell` - a wrong tap
+  immediately reveals the real target(s) and fails the round; enough correct
+  taps succeeds). Same Bei-Fehler/background-colour+transfer/mid-game-Pause/
+  Beenden-doubles-as-Finish conventions as Remember/Blitz/Flash (`motPrefs`,
+  a 5th `BG_SOURCES` entry).
+  - **Difficulty progression was researched, not guessed, before building
+    it** (the client explicitly expected this: "ich gehe davon aus, dass du
+    ... recherchierst, bevor du da richtig loslegst"): the classic MOT
+    paradigm and commercial tools (NeuroTracker's 3D-MOT) keep object/target
+    count FIXED per session (NeuroTracker: 8 objects, 4 targets) and instead
+    adapt SPEED via a staircase - correct round: speed up by a fixed ratio
+    (NeuroTracker: ±0.05 in log space, i.e. ×10^0.05 ≈ ×1.12 per step);
+    wrong: slow down by the same ratio. That became the "Tempo steigt" mode
+    below - but the client then explicitly asked for the Flash-Speicher-Test
+    treatment instead of settling for a single mode: separate modes for
+    speed rising, count rising, both rising, plus a Trainingsmodus, each
+    individually configurable, with a configurable object colour and the
+    usual background controls thrown in too.
+  - **Four modes, one shared level counter** (`motState.level`, starts at 1;
+    Bei-Fehler's reset2/backOne/stay always resets/steps this ONE counter,
+    mode-agnostically):
+    - **`"speed"`** ("Tempo steigt"): `motPrefs.objectCount`/`targetCount`
+      are plain, FIXED client-set sliders - "Anzahl Objekte" 4-12 **default
+      8**, "Anzahl Ziele" 1-4 **default 4** (matches the NeuroTracker
+      standard exactly - an earlier draft shipped 8/3 as a "gentler" default
+      and the client caught the inconsistency between what was researched
+      and what was built; fixed). Only `motState.speedStep` "levels up"
+      (`motEffectiveSpeed() = speed × MOT_SPEED_STEP_FACTOR^speedStep`,
+      `MOT_SPEED_STEP_FACTOR = 1.12`) - the exact same shape as Flash
+      Speicher Test's "Konstant" mode, shown as "Tempo-Stufe N".
+    - **`"count"`** ("Anzahl steigt"): speed fixed, object/target count
+      rises from a configurable start (`motPrefs.growStartObjects` 3-8
+      default 4, `growStartTargets` 1-3 default 1). No "Tempo-Stufe" shown
+      (speed never moves in this mode).
+    - **`"both"`** ("Beides steigt"): count and speed rise together from the
+      same starting point and the same level counter.
+    - **`"training"`**: direct start at chosen object/target/speed-step
+      values (`motPrefs.trainingObjects/trainingTargets/trainingSpeedStep`),
+      plus a "Weiter steigern" / "Bei dieser Einstellung bleiben" toggle
+      (`motPrefs.trainingProgress`) - progressing follows the same rule as
+      "both". Own dual-instance screen (`#motTrainingReady`), same pattern
+      as Flash's own Trainingsmodus screen (own Darstellung/Farbe/
+      Feineinstellungen/Hintergrund controls, all sharing the same
+      underlying `motPrefs` fields as the main Ready screen).
+    All four modes are derived from `motState.level` by ONE function,
+    `motCountsForRound()` - the single place the growth formulas live:
+    object count grows roughly every 2 levels, target count roughly every 4,
+    both capped (`MOT_OBJ_MAX`, `MOT_TARGET_MAX`, and target count is always
+    also clamped to `n - 2` so there are always ≥2 distractors). Best-score
+    tracking (`MOT_BEST_KEY`) is keyed by mode name, same shape as Flash's
+    own per-mode bests - four separate best-hints, one per featured card.
+  - **Farbe der Objekte / Farbe des Ziels**: two independent, both
+    configurable colours, each rolled once per ROUND (not per object -
+    every object must look identical to its neighbours within a round, or
+    the whole point of MOT is lost; only the round-to-round palette can
+    vary): `motState.baseColorHex` for normal objects
+    (`pickPeriphColor(motState.colors, bgHex, Math.random)`, avoiding the
+    background) and `motState.targetColorHex` for the highlighted target(s)
+    during the pre-tracking "highlight" phase (`pickMotColor(motState.
+    targetColors, [bgHex, motState.baseColorHex], Math.random)` - a small
+    MOT-local variant of `pickPeriphColor` that avoids TWO colours at once,
+    since target and normal objects are on screen together and must read as
+    clearly different at a glance; `motPrefs.targetColors` defaults to
+    `["gelb"]`, matching the `#f2a900` the CSS default used before this was
+    configurable). Both reuse the exact same swatch-picker
+    (`buildStimColorPicker`/`syncStimColorUI`) and contrast-avoidance
+    (`pickPeriphColor`/`colorsClash`) infrastructure originally built for
+    the Zusatzaufgabe/Periph "Farbe der Reize" feature, wired as a second,
+    independent picker pair (main + Training screen instances, same as
+    "Farbe der Objekte"). `motGradientCss(hex)` generalises the 3D-Optik
+    glossy-sphere gradient (see below) from a hardcoded colour to whichever
+    hex is passed in, reused for both the object and target renders. The
+    "correct"/"wrong" tap-feedback states are the only colours that stay
+    fixed CSS (green/red) regardless of any of the above - those are
+    pass/fail semantics, not a look the client picks.
+  - **Mark-before-tracking and confirm/deny-on-tap were already exactly
+    what the client asked for a message later** ("die Ziele müssen
+    natürlich vorher auch markiert sein... und am Ende dann bestätigt oder
+    verneint werden beim Anklicken") when they asked for the target colour
+    to be configurable too - `motStartRound()`'s "highlight" phase already
+    marks the target(s) before movement starts, and `motTapObject()`
+    already marks a correct tap green immediately and a wrong tap red
+    (revealing the true target(s) green) immediately - both existed since
+    the very first MOT draft, verified again via `tests/mot_target_color_test.py`
+    rather than being newly built.
+  - An earlier draft grew object AND target count with level instead of any
+    of the above (`motObjectCount(level)`/`motTargetCount(level)`), and a
+    second draft had only the single "speed" mode with an (inconsistent) 8/3
+    default - both built, tested, and superseded once the client asked for
+    the full 4-mode treatment; if an old commit still mentions level-scaled
+    counts or a single mode, that's one of the superseded drafts.
+  - **The first requestAnimationFrame-driven engine outside the VT canvas**:
+    every other exercise is either a precomputed schedule (`tick()`-driven)
+    or discrete setTimeout flash/gap/input phases - MOT additionally needs a
+    continuous physics simulation while "tracking". `motPhysicsTick(ts)`
+    advances position by `dt` (clamped to 50ms so a backgrounded/dropped
+    frame can't fling objects across the stage on return), bounces off the
+    stage edges, and stops itself once `trackElapsedMs` reaches `trackS`
+    (from the Schwierigkeit bucket, same custom-slider-degrades-bucket-to-
+    "custom" pattern as Blitz/Flash's `flashDifficultyBucket()`). Positions
+    /velocities live in **pixel space** relative to `#motObjectsLayer`'s own
+    `getBoundingClientRect()` (captured once per round, immediately after
+    unhiding the player - same "read the rect right after unhiding, no rAF
+    wait needed" trick `fitCanvas()` already relies on), not the app's usual
+    `{fx,fy}` fractional convention - device rotation mid-round isn't
+    handled (objects would just look off until the next round), an accepted
+    simplification since nothing else in the app has continuous
+    multi-second animation either. Pause cancels the `raf` outright (not a
+    "remaining delay" replay like the setTimeout-based phases; there's
+    nothing to resume BUT re-arm, since `trackElapsedMs` already reflects
+    exactly how much tracking time had elapsed) and restarts it fresh on
+    resume; the highlight/checking phases' delays use the same
+    `scheduleXTimer` remaining-delay trick as everywhere else
+    (`scheduleMotTimer`).
+  - **Objects don't collide, but do get separated**: `motMoveObjects()` only
+    bounces objects off the stage edges, not off each other (full elastic
+    collision wasn't worth the complexity for v1) - but a real bug surfaced
+    during testing: two objects drifting close enough overlap not just
+    visually but in their (square, `2×radius` a side) actual hit-areas, so a
+    tap meant for one can register on its neighbour instead - on a real
+    finger, not just in a Playwright click. Fixed with `motSeparateObjects()`,
+    a lightweight positional-only correction (no velocity change) run once
+    per tick that pushes any pair closer than `MOT_MIN_DIST_FACTOR × radius`
+    apart back out to exactly that distance. The factor is `2.9`, not the
+    more obvious `2` (circle-tangency) - two `2×radius` squares whose
+    centres are exactly `2×radius` apart can still overlap depending on the
+    angle between them (worst case, diagonal: needs up to `2×radius×√2 ≈
+    2.83×radius` to guarantee no overlap at any angle) - `motPlaceObjects()`'s
+    own initial rejection-sampling placement uses the same factor, so the
+    round never even starts with two objects too close together.
+  - **Darstellung** (client asked for this up front, alongside the base
+    version): `motPrefs.style`, `"flach"` (plain circle) or `"3d"` (a
+    radial-gradient glossy-sphere look via the `.mot-object.style-3d` CSS
+    class - highlight/correct/wrong states each get their own gradient
+    variant so the colour semantics still read clearly) - movement stays a
+    flat 2D plane in both cases. Genuine 3D movement is explicitly
+    "Zukunftsmusik" per the client's own framing - noted here so the
+    `motPrefs`/round-engine shape isn't assumed final, but nothing further
+    was attempted.
+  - **Not built / explicitly deferred**: which exercises/rules to add under
+    this tab next ("dann werden wir da wieder verschiedene Übungen drunter
+    setzen" - the client's own framing, same "start with one version" spirit
+    as Flash Speicher Test's four modes were added incrementally); actual
+    3D movement (see Darstellung above); a fixation point (doesn't fit this
+    exercise - there's no single point to hold focus on, the whole point is
+    tracking a moving target across the stage); Zusatzaufgabe/Dominanz
+    (neither asked for here).
+  - Test: `tests/mot_test.py` (4-mode structure), `tests/mot_target_color_test.py`
+    (Farbe des Ziels).
+

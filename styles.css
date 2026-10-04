@@ -155,7 +155,7 @@ body.nav-test-unlocked .section-switch{max-width:780px}
    580px alongside it so a 6th tab (added for the new "Test" section)
    still gets enough room for the longest label ("Atemtraining") to sit on
    one line at any width the flex row is actually used at. */
-.section-tab{flex:1;min-width:0;overflow-wrap:break-word;border:1.5px solid transparent;background:none;border-radius:999px;padding:13px 4px;font-size:12.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;text-align:center}
+.section-tab{flex:1;min-width:0;overflow-wrap:normal;hyphens:manual;border:1.5px solid transparent;background:none;border-radius:999px;padding:13px 4px;font-size:12.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;text-align:center}
 .section-tab.active{background:var(--brand-pale);color:var(--brand-deep);border-color:var(--brand);box-shadow:var(--shadow)}
 
 /* ---- Sub-navigation (second level, nested directly under a top-level
@@ -163,8 +163,8 @@ body.nav-test-unlocked .section-switch{max-width:780px}
    nav, since picking a sub-item here is the one thing you must do before
    anything else on the screen makes sense). ---- */
 .subnav-label{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:8px}
-.sub-switch{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:20px;max-width:560px}
-.sub-tab{flex:1;min-width:0;overflow-wrap:break-word;border:1.5px solid transparent;background:none;border-radius:10px;padding:13px 6px;font-size:12.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;text-align:center}
+.sub-switch{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:20px}
+.sub-tab{flex:1;min-width:0;overflow-wrap:normal;hyphens:manual;border:1.5px solid transparent;background:none;border-radius:10px;padding:13px 6px;font-size:12.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;text-align:center}
 .sub-tab.active{background:var(--brand-pale);color:var(--brand-deep);border-color:var(--brand);box-shadow:var(--shadow)}
 /* A single flex row of 5-6 tabs (now that MOT-Fähigkeit and Test exist)
    genuinely doesn't fit next to German-length labels on a phone in
@@ -182,7 +182,11 @@ body.nav-test-unlocked .section-switch{max-width:780px}
 /* Between phone portrait and a wide tablet (phone landscape, iPad split
    view, 481-760px) 7 tabs in one row still broke "Atemtraining" mid-word -
    use a 4-per-row grid there. */
-@media (min-width:481px) and (max-width:760px){
+/* Above 480px the section bar is a 4-per-row grid at every width
+   (2026-10-04): with "Heute" as 8th tab one row never has room for
+   "Atemtraining" inside the 760px screen, and tabs must never break a
+   word (tests/text_wrap_audit_test.py checks every width). */
+@media (min-width:481px){
   .section-switch{display:grid;grid-template-columns:repeat(4,1fr);max-width:none;border-radius:18px}
   .section-tab{border-radius:14px}
 }

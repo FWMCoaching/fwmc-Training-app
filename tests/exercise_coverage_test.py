@@ -59,7 +59,7 @@ async def main():
             title = await pg.evaluate("(id) => document.querySelector(`.excard[data-exercise='${id}']`).querySelector('h3, .ex-title, strong, .title')?.textContent.trim() || id", ex_id)
             if not any(l.startswith(title[:12]) for l in kombi_labels): missing.append(title)
         # NAT: every sub-tab by the first word of its name.
-        nat_tabs = await pg.evaluate("() => [...new Set([...document.querySelectorAll('#natHome [data-nat-sub]')].map((e) => e.textContent.trim()))]")
+        nat_tabs = await pg.evaluate("() => [...new Set([...document.querySelectorAll('#natHome [data-nat-sub]')].map((e) => e.textContent.replace(/\u00ad/g, '').trim()))]")
         for t in nat_tabs:
             word = t.split(" ")[0].split("-")[0]
             if not any(l.startswith(word) for l in kombi_labels): missing.append(t)

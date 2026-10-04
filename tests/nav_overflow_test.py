@@ -44,11 +44,12 @@ async def main():
             r = await no_overflow(w, h)
             print(f"{w}px portrait - no overflow (section={r['sec']}, sub={r['sub']}, body={r['body']}):", all(r.values()))
 
-        # a comfortably wide viewport should use the original single-row
-        # pill (not the narrow-phone grid), with no overlapping labels
+        # since 2026-10-04 the section bar is a 4-column grid above 480px
+        # too (a single row broke "Atemtraining" mid-word on iPad, see
+        # text_wrap_audit_test.py), with no overlapping labels
         await pg.set_viewport_size({"width": 768, "height": 1024}); await pg.wait_for_timeout(150)
         display = await pg.evaluate("() => getComputedStyle(document.querySelector('#natHome .section-switch')).display")
-        print("wide viewport keeps the single-row pill (flex, not grid):", display == "flex")
+        print("wide viewport uses the 4-column grid:", display == "grid")
         r = await no_overflow(768, 1024)
         print("768px - no overflow:", all(r.values()))
         # :not([hidden]) - the "Test" tab is hidden-by-default (client
@@ -57,7 +58,7 @@ async def main():
         # (0,0,0,0), which would otherwise read as a false "overlap"
         # against the real last tab's right edge.
         rects = await pg.evaluate("""() => [...document.querySelectorAll('#natHome .section-switch .section-tab:not([hidden])')].map(el => el.getBoundingClientRect())""")
-        overlaps = any(rects[i]["right"] > rects[i + 1]["left"] for i in range(len(rects) - 1))
+        overlaps = any(abs(rects[i]["top"] - rects[i + 1]["top"]) < 2 and rects[i]["right"] > rects[i + 1]["left"] for i in range(len(rects) - 1))
         print("no tab overlaps its neighbour at 768px:", not overlaps)
 
         # a narrow phone should have switched to the 3-per-row grid

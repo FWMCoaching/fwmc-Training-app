@@ -1,0 +1,86 @@
+import asyncio, json
+from playwright.async_api import async_playwright
+
+# Layout audit (Fabian, 2026-10-04: "Sowas muss geprüft werden und darf
+# nicht vorkommen"): every area's home screen, plus each NAT sub-tab, at
+# phone, tablet and laptop widths. Fails on
+#  - a word broken in the middle across two lines (e.g. "Atemtrainin|g"),
+#  - text sticking out of its own button/tab,
+#  - the page scrolling sideways.
+# A break right after a hyphen ("Flash-|Speicher") is allowed.
+# New screens get covered by adding them to AREAS / the NAT loop.
+
+BASE = "http://localhost:8845/index.html?bereich="
+AREAS = ["heute", "visual", "breath", "movement", "workout", "cardio", "nat", "test"]
+WIDTHS = [375, 390, 430, 600, 768, 820, 1024, 1180, 1366]
+
+AUDIT_JS = r"""
+() => {
+  const scr = [...document.querySelectorAll('.screen')].find(s => !s.hidden && s.offsetParent !== null);
+  const root = scr || document.body;
+  const out = [];
+  const visible = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let n;
+  while ((n = walker.nextNode())) {
+    const el = n.parentElement;
+    if (!el || !n.textContent.trim() || !visible(el)) continue;
+    if (el.closest('[hidden], details:not([open]) > :not(summary), input, textarea, select, svg')) continue;
+    const re = /[^\s\-–­/]+[\-–­/]?/g;
+    let m;
+    while ((m = re.exec(n.textContent))) {
+      const tok = m[0].replace(/[\-–­/]$/, '');
+      if (tok.length < 2) continue;
+      // Compare the line of the word's first and last letter (per-letter
+      // ranges: a range spanning a soft hyphen also reports the hyphen glyph
+      // on the previous line, which is a legal break, not a split word).
+      const lineOf = i => {
+        const rg = document.createRange();
+        rg.setStart(n, i); rg.setEnd(n, i + 1);
+        const rs = [...rg.getClientRects()];
+        return rs.length ? Math.round(rs[rs.length - 1].top) : null;
+      };
+      const a = lineOf(m.index), z = lineOf(m.index + tok.length - 1);
+      if (a !== null && z !== null && Math.abs(z - a) > 4)
+        out.push('Wort getrennt: "' + tok + '" in <' + el.tagName.toLowerCase() + '.' + el.className + '>');
+    }
+  }
+  root.querySelectorAll('button, .section-tab, .sub-tab, .choice').forEach(b => {
+    if (!visible(b) || b.closest('[hidden]')) return;
+    if (b.scrollWidth > b.clientWidth + 2) out.push('Text ragt aus Knopf: "' + b.textContent.trim().slice(0, 30) + '"');
+  });
+  if (document.documentElement.scrollWidth > window.innerWidth + 1)
+    out.push('Seite scrollt seitlich (' + document.documentElement.scrollWidth + ' > ' + window.innerWidth + ')');
+  return [...new Set(out)];
+}
+"""
+
+async def audit(pg, label, problems):
+    found = await pg.evaluate(AUDIT_JS)
+    for f in found:
+        problems.append(label + ": " + f)
+
+async def main():
+    problems, errors = [], []
+    async with async_playwright() as p:
+        b = await p.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args=["--no-sandbox"])
+        for w in WIDTHS:
+            ctx = await b.new_context(viewport={"width": w, "height": 900}, service_workers="block")
+            await ctx.add_init_script("localStorage.setItem('fwmc-test-unlocked','true');localStorage.setItem('fwmc-tips-seen','true')")
+            pg = await ctx.new_page()
+            pg.on("pageerror", lambda e: errors.append("pageerror: " + str(e)))
+            for area in AREAS:
+                await pg.goto(BASE + area); await pg.wait_for_timeout(250)
+                await audit(pg, f"{w}px {area}", problems)
+                if area == "nat":
+                    subs = await pg.eval_on_selector_all("#natHome .sub-tab", "els => els.map(e => e.dataset.natSub)")
+                    for s in subs[1:]:
+                        await pg.click(f'#natHome .sub-tab[data-nat-sub="{s}"]'); await pg.wait_for_timeout(150)
+                        await audit(pg, f"{w}px nat/{s}", problems)
+            await ctx.close()
+        await b.close()
+    for x in problems: print("  " + x)
+    print("Layout-Audit ohne Befund:", not problems, f"({len(problems)} Befunde)")
+    print("No page errors:", not errors, errors[:3])
+
+asyncio.run(main())
