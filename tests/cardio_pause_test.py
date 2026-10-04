@@ -75,7 +75,7 @@ async def main():
         await pg.fill("#cardioList .combo-pause-slider >> nth=1", "0")
         await pg.dispatch_event("#cardioList .combo-pause-slider >> nth=1", "input")
         await pg.wait_for_timeout(100)
-        print("second pause value label updates to 0s:", "0" in await pause_rows.nth(1).inner_text())
+        print("second pause value label updates to Keine (0s):", "Keine" in await pause_rows.nth(1).inner_text())
 
         # ---- run: activity 1 (60s virtual / 15x = 4s real) -> pause
         # (visible, skippable) -> activity 2 -> NO pause screen at all

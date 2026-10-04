@@ -179,12 +179,17 @@
   function fmtSeconds(sec) {
     return `${String(Math.round(sec * 10) / 10).replace(".", ",")} s`;
   }
+  // A pause of 0 reads "Keine" everywhere (Tabata/Kraftplan already did).
+  function fmtPauseAfter(sec) { return sec > 0 ? fmtSeconds(sec) : "Keine"; }
   function programSeconds(def) {
     const pause = def.pauseS ?? 15;
     return def.blocks.reduce((sum, b, i) => sum + b.duration + (i > 0 ? (b.pauseS ?? pause) : 0), 0);
   }
   function exerciseCountLabel(n) {
     return n === 1 ? "1 Übung" : `${n} Übungen`;
+  }
+  function countLabel(n, one, many) {
+    return n === 1 ? `1 ${one}` : `${n} ${many}`;
   }
   function colorDots(colors) {
     return `<span class="dots">${colors.map((c) => `<span class="dot" style="background:${c.hex}"></span>`).join("")}</span>`;
@@ -1063,7 +1068,7 @@
     if (block.domain === "blitz") return "Blitz-Raster";
     if (block.domain === "flash") return `Flash-Speicher-Test · ${flashModeTitle(block.mode)}`;
     if (block.domain === "mot") return `Objektverfolgung (MOT) · ${motModeTitle(block.mode)}`;
-    if (block.domain === "cardio") return `Cardio · ${exerciseCountLabel(block.items.length)}`;
+    if (block.domain === "cardio") return `Cardio · ${countLabel(block.items.length, "Aktivität", "Aktivitäten")}`;
     return block.domain;
   }
   function comboBlockMeta(block) {
@@ -2106,7 +2111,11 @@
     if (check) check.hidden = !!aborted;
     if (h) h.textContent = aborted ? abortedTitle : h.dataset.doneTitle;
   }
+  // True while the « ↻ » bar silently stops a run to restart or jump - that
+  // stop must not leave a history entry (see updateStepNav).
+  let stepNavSilent = false;
   function addHistory(entry) {
+    if (stepNavSilent) return null;
     const list = loadHistory();
     const item = { id: String(Date.now()), ts: new Date().toISOString(), rating: null, ...entry };
     list.unshift(item);
@@ -7642,7 +7651,7 @@
       ? addHistory({ kind: "movement-plan", title: movementProgram.title, progKey: movementProgram.key, seconds: Math.round(played) })
       : addHistory({ kind: "movement", title: "Ganzkörper-Reaktion", seconds: Math.round(played) });
     renderRating(els.movementRating, id, "Wie gut hast du mitgehalten?");
-    els.movementDoneBackBtn.textContent = movementProgram && movementOriginBundle ? "Zurück zu meinen Programmen" : "Zur Startseite";
+    els.movementDoneBackBtn.textContent = movementProgram && movementOriginBundle ? "Zurück zu meinen Programmen" : "Zur Übersicht";
     els.movementDonePanel.hidden = false;
   }
   function movementLeavePlayer() {
@@ -7843,15 +7852,40 @@
   // and y axes are very different absolute distances. MIN_CENTER_PX is
   // the marker's own diameter plus a visible gap, i.e. the true minimum
   // centre-to-centre distance for two markers to never touch.
-  const REMEMBER_MARKER_PX = 72;
-  const REMEMBER_MIN_CENTER_PX = REMEMBER_MARKER_PX + 10;
+  // Marker size shrinks on a small screen (min 52 px) so the maximum of 24
+  // numbers always fits without overlap above the bottom control bar.
+  const REMEMBER_MARKER_MAX_PX = 72, REMEMBER_MARKER_MIN_PX = 52, REMEMBER_MAX_MARKERS = 24;
+  let REMEMBER_MARKER_PX = REMEMBER_MARKER_MAX_PX;
+  let REMEMBER_MIN_CENTER_PX = REMEMBER_MARKER_PX + 10;
+  function rememberHexSlots(w, h, minY, px) {
+    const half = px / 2, D = px + 10, rowH = D * Math.sqrt(3) / 2;
+    const minX = half + 8, maxX = Math.max(minX, w - half - 8), maxY = Math.max(minY, h - half - 8);
+    let n = 0;
+    for (let r = 0, y = minY; y <= maxY + 0.01; r++, y += rowH) {
+      for (let x = minX + (r % 2 ? D / 2 : 0); x <= maxX + 0.01; x += D) n++;
+    }
+    return n;
+  }
   function rememberStageBounds() {
     const rect = els.rememberStage.getBoundingClientRect();
     const w = rect.width || 390;
     const h = rect.height || 600;
-    const half = REMEMBER_MARKER_PX / 2;
-    const minY = stageTopClearanceY(rect, els.rememberHint, els.rememberPlayerBar, 112, half);
-    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY, maxY: Math.max(minY, h - 16) };
+    let px = REMEMBER_MARKER_MAX_PX;
+    const minYFor = (q) => stageTopClearanceY(rect, els.rememberHint, els.rememberPlayerBar, 112, q / 2);
+    while (px > REMEMBER_MARKER_MIN_PX && rememberHexSlots(w, h, minYFor(px), px) < REMEMBER_MAX_MARKERS) px -= 4;
+    // Within one run the size only ever shrinks (the hint text and with it
+    // the free height change between levels), so fixed positions laid out
+    // once stay far enough apart.
+    if (rememberState) {
+      if (rememberState.markerPx) px = Math.min(px, rememberState.markerPx);
+      rememberState.markerPx = px;
+    }
+    REMEMBER_MARKER_PX = px;
+    REMEMBER_MIN_CENTER_PX = px + 10;
+    els.rememberStage.style.setProperty("--remember-marker-px", px + "px");
+    const half = px / 2;
+    const minY = minYFor(px);
+    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY, maxY: Math.max(minY, h - half - 8) };
   }
   function randomRememberPixelPosition(existingPx, bounds) {
     for (let attempt = 0; attempt < 300; attempt++) {
@@ -11505,7 +11539,7 @@
     hideAllPlayers();
     const played = workoutPlan.totalPlayedS;
     const title = workoutPlan.title;
-    setDonePanelAborted(els.workoutProgramDonePanel, aborted, "Plan beendet");
+    setDonePanelAborted(els.workoutProgramDonePanel, aborted, "Programm beendet");
     els.workoutProgramDoneSummary.textContent = aborted
       ? `Abgebrochen · ${fmtMinutes(played)} Training`
       : `${exerciseCountLabel(workoutPlan.def.blocks.length)} · ${fmtMinutes(played)} Training`;
@@ -12718,12 +12752,12 @@
         pauseRow.innerHTML =
           `<span class="slider-label">Pause danach</span>` +
           `<input type="range" class="combo-pause-slider" min="0" max="180" step="5" value="${pauseS}" aria-label="Pause nach Aktivität ${i + 1}">` +
-          `<span class="slider-value">${esc(fmtSeconds(pauseS))}</span>`;
+          `<span class="slider-value">${esc(fmtPauseAfter(pauseS))}</span>`;
         const slider = pauseRow.querySelector(".combo-pause-slider");
         const valueEl = pauseRow.querySelector(".slider-value");
         slider.addEventListener("input", () => {
           item.pauseAfterS = Number(slider.value);
-          valueEl.textContent = fmtSeconds(item.pauseAfterS);
+          valueEl.textContent = fmtPauseAfter(item.pauseAfterS);
         });
         slider.addEventListener("change", () => { saveCardioPrefs(); syncCardioAddonWindowBounds(); });
         els.cardioList.appendChild(pauseRow);
@@ -12975,7 +13009,7 @@
       item.innerHTML =
         `<div class="bundle-item-head"><strong>${esc(p.label || ("Einheit " + (i + 1)))}</strong>${dateLabel ? `<span class="bundle-date">${dateLabel}</span>` : ""}</div>` +
         (badges ? `<div class="badges">${badges}</div>` : "") +
-        `<span class="bundle-meta">${exerciseCountLabel(p.items.length)} · ca. ${fmtMinutes(cardioItemsSeconds(p.items))}</span>` +
+        `<span class="bundle-meta">${countLabel(p.items.length, "Aktivität", "Aktivitäten")} · ca. ${fmtMinutes(cardioItemsSeconds(p.items))}</span>` +
         (p.description ? `<span class="bundle-desc">${esc(p.description)}</span>` : "");
       item.addEventListener("click", () => {
         cardioOriginBundle = { def: bundleDef, code };
@@ -12989,7 +13023,7 @@
   function renderCardioProgramIntro(def, code, key) {
     const title = def.name || def.label || "Deine Cardio-Einheit";
     els.cardioProgramTitle.textContent = title;
-    els.cardioProgramMeta.textContent = `${exerciseCountLabel(def.items.length)} · ca. ${fmtMinutes(cardioItemsSeconds(def.items))}`;
+    els.cardioProgramMeta.textContent = `${countLabel(def.items.length, "Aktivität", "Aktivitäten")} · ca. ${fmtMinutes(cardioItemsSeconds(def.items))}`;
     els.cardioProgramDesc.textContent = def.description || "";
     els.cardioProgramDesc.hidden = !def.description;
     els.cardioProgramChapterList.innerHTML = "";
@@ -14570,12 +14604,12 @@
     const id = cardioProgram
       ? addHistory({ kind: "cardio-plan", title: cardioProgram.title, progKey: cardioProgram.key, seconds: Math.round(totalS), note: aborted ? `abgebrochen · ${names}` : names, aborted: !!aborted })
       : addHistory({ kind: "cardio", title: "Cardio", seconds: Math.round(totalS), note: aborted ? `abgebrochen · ${names}` : names, aborted: !!aborted });
-    renderRating(els.cardioRating, id);
+    renderRating(els.cardioRating, id, "Wie gut hast du durchgehalten?");
     setDonePanelAborted(els.cardioDonePanel, aborted, "Training beendet");
     els.cardioDoneSummary.textContent = aborted
       ? `Abgebrochen · ${fmtMinutes(totalS)} Training`
-      : `${exerciseCountLabel(realCount)} · ${fmtMinutes(totalS)} Training`;
-    els.cardioDoneBackBtn.textContent = cardioProgram && cardioOriginBundle ? "Zurück zu meinen Einheiten" : "Zur Übersicht";
+      : `${countLabel(realCount, "Aktivität", "Aktivitäten")} · ${fmtMinutes(totalS)} Training`;
+    els.cardioDoneBackBtn.textContent = cardioProgram ? (cardioOriginBundle ? "Zurück zu meinen Programmen" : "Zur Startseite") : "Zur Übersicht";
     els.cardioDonePanel.hidden = false;
   }
   els.cardioAgainBtn.addEventListener("click", () => {
@@ -15099,10 +15133,10 @@
     const played = comboProgram.totalPlayedS;
     const title = comboProgram.title;
     const key = comboProgram.key;
-    els.comboDoneSummary.textContent = `${exerciseCountLabel(comboProgram.def.blocks.length)} · ${fmtMinutes(played)} Training`;
+    els.comboDoneSummary.textContent = `${countLabel(comboProgram.def.blocks.length, "Baustein", "Bausteine")} · ${fmtMinutes(played)} Training`;
     const id = addHistory({ kind: "combo", title, progKey: key, seconds: Math.round(played) });
     renderRating(els.comboRating, id, "Wie fühlst du dich nach dem Programm?");
-    els.comboDoneBackBtn.textContent = comboOriginBundle ? "Zurück zu meinen Programmen" : "Zurück";
+    els.comboDoneBackBtn.textContent = comboOriginBundle ? "Zurück zu meinen Programmen" : "Zur Startseite";
     els.comboDonePanel.hidden = false;
     lastComboProgram = comboProgram;
     comboProgram = null;
@@ -15216,6 +15250,192 @@
       try { btn.click(); } finally { endConfirmBypass = false; }
     });
   }, true);
+  // ---- Einheitliche Steuerleiste « ↻ » (Fabian, 2026-10-04: "sollte
+  // nachher überall identisch sein") ----
+  // One bar (#stepNav) at the bottom of every running exercise and every
+  // pause between exercises: « back, ↻ start again, » forward. It is moved
+  // into whichever player is visible and its slots are filled per context:
+  // - areas that already had their own buttons (Visual-Training programmes
+  //   and their pause screen, Tabata, Cardio, Positionen-merken training)
+  //   lend those buttons to the bar, so their behaviour stays exactly as is;
+  // - the Kraftplan steps set by set;
+  // - inside a Kombi-Programm (or a trainer's breathing plan) « » jump to the
+  //   previous/next Baustein and ↻ starts the current one again;
+  // - a single exercise gets ↻ (start again with the same settings), « »
+  //   are shown but disabled, so the bar looks the same everywhere.
+  // A jump or restart stops the run silently (no history entry, no "Wirklich
+  // beenden?") through the player's own "✕ Beenden" button - a new player
+  // needs nothing extra as long as it follows that id/text convention.
+  const stepNavEl = document.getElementById("stepNav");
+  const stepParking = document.getElementById("stepNavParking");
+  const STEP_SLOTS = ["prev", "restart", "extra", "next"];
+  const stepGeneric = { prev: $("stepPrevBtn"), restart: $("stepRestartBtn"), next: $("stepNextBtn") };
+  const stepFns = {};
+  const stepHome = new Map(); // a lent button -> { parent, index } to put it back
+  const startBtnByPlayer = {};
+  let pendingStartBtn = null;
+  const stepVis = (el) => !!el && !el.hidden && el.getClientRects().length > 0;
+  ["prev", "restart", "next"].forEach((k) => stepGeneric[k].addEventListener("click", () => {
+    const fn = stepFns[k];
+    if (typeof fn === "function") fn();
+    queueStepNav();
+  }));
+  // Remember which "Training starten" button opened which player, so ↻ can
+  // start the same exercise again with the same settings.
+  document.addEventListener("click", (e) => {
+    const b = e.target && e.target.closest ? e.target.closest("button") : null;
+    if (b && b.textContent.trim() === "Training starten" && b.closest(".screen")) pendingStartBtn = b;
+  }, true);
+  function stepSilentStop(back) {
+    stepNavSilent = true;
+    endConfirmBypass = true;
+    try { back.click(); } finally { endConfirmBypass = false; }
+    try {
+      if (comboTransitionState && comboTransitionState.stop) comboTransitionState.stop();
+      comboTransitionState = null;
+      clearTimeout(comboTransitionTimer); clearInterval(comboTransitionInterval);
+      clearTimeout(breathTransitionTimer); clearTimeout(workoutTransitionTimer);
+      document.querySelectorAll(".done-panel").forEach((d) => { d.hidden = true; });
+      hideAllPlayers();
+    } finally { stepNavSilent = false; }
+  }
+  function stepComboJump(j, back) {
+    const saved = comboProgram;
+    stepSilentStop(back);
+    comboProgram = saved;
+    startComboBlock(j);
+  }
+  function stepBreathJump(j, back) {
+    const saved = breathProgram;
+    stepSilentStop(back);
+    breathProgram = saved;
+    startBreathProgramBlock(j);
+  }
+  function stepRestartSingle(back, start) {
+    stepSilentStop(back);
+    start.click();
+  }
+  // Kraftplan: jump to set `j` of the flattened plan (warm-ups, sides and
+  // drop sets included). Past the last set counts as aborted, like "»" at
+  // the end of every other sequence.
+  function stepStrengthJump(j) {
+    const st = workoutState;
+    if (!st) return;
+    if (workoutRestTimer) clearTimeout(workoutRestTimer);
+    workoutRestTimer = null;
+    stopWorkoutSetTimer();
+    st.holding = null; st.restMode = null; st.restTick = null;
+    const n = st.strength ? st.steps.length : st.block.sets;
+    if (j >= n) { st.aborted = true; finishWorkoutBlock(); return; }
+    if (st.strength) strengthApplyStep(Math.max(0, j));
+    else st.setIndex = Math.max(1, j + 1);
+    renderRepsView();
+  }
+  function stepRepsCtx() {
+    const st = workoutState;
+    if (st.restMode === "start") {
+      return { prev: null, restart: () => { if (workoutRestTimer) clearTimeout(workoutRestTimer); startRepsRest(st.strength.prepS || 10, "start"); }, next: () => stepStrengthJump(0) };
+    }
+    const i = st.strength ? st.stepIndex : st.setIndex - 1;
+    return { prev: i > 0 ? () => stepStrengthJump(i - 1) : null, restart: () => stepStrengthJump(i), next: () => stepStrengthJump(i + 1) };
+  }
+  function stepTransitionCtx(id) {
+    const panel = $(id);
+    const hide = () => { closeTrainPause(); panel.hidden = true; };
+    if (id === "comboTransition" && comboProgram) {
+      const i = comboProgram.blockIndex;
+      const stop = () => { if (comboTransitionState && comboTransitionState.stop) comboTransitionState.stop(); comboTransitionState = null; hide(); };
+      return { prev: i > 0 ? () => { stop(); startComboBlock(i - 1); } : null, restart: () => { stop(); startComboBlock(i); }, next: () => $("comboTransitionBtn").click() };
+    }
+    if (id === "breathTransition" && breathProgram) {
+      const i = breathProgram.blockIndex;
+      const stop = () => { clearTimeout(breathTransitionTimer); hide(); };
+      return { prev: i > 0 ? () => { stop(); startBreathProgramBlock(i - 1); } : null, restart: () => { stop(); startBreathProgramBlock(i); }, next: () => $("breathTransitionBtn").click() };
+    }
+    if (id === "workoutTransition" && workoutPlan) {
+      const i = workoutPlan.blockIndex;
+      const stop = () => { clearTimeout(workoutTransitionTimer); hide(); };
+      return { prev: i > 0 ? () => { stop(); startWorkoutPlanBlock(i - 1); } : null, restart: () => { stop(); startWorkoutPlanBlock(i); }, next: () => $("workoutTransitionBtn").click() };
+    }
+    return { prev: null, restart: null, next: () => panel.querySelector("button.again").click() };
+  }
+  function stepCtx() {
+    const tr = ["comboTransition", "breathTransition", "workoutTransition"].find((id) => stepVis($(id)));
+    if (tr) return { host: $(tr), ...stepTransitionCtx(tr) };
+    const player = [...document.querySelectorAll(".player")].find(stepVis);
+    if (!player) return null;
+    if ([...player.querySelectorAll(".pause-overlay, .done-panel, .breath-listen-layer, .program-video-player")].some(stepVis)) return null;
+    if (cardioGuestActive) return { host: player, prev: null, restart: null, next: null };
+    const id = (x) => $(x);
+    if (player.id === "player") {
+      if (stepVis(id("pauseScreen"))) return { host: player, prev: id("prevChapterBtn"), restart: id("restartChapterBtn"), next: id("nextChapterBtn") };
+      if (program && !id("liveNav").hidden) return { host: player, prev: id("livePrevBtn"), restart: id("liveRestartBtn"), extra: id("liveEndBtn"), next: id("liveNextBtn") };
+    }
+    if (player.id === "cardioPlayer") return { host: player, prev: id("cardioPrevBtn"), restart: id("cardioRestartBtn"), next: id("cardioSkipBtn") };
+    if (player.id === "workoutPlayer") {
+      if (stepVis(id("workoutTabataView"))) return { host: player, prev: id("tabataPrevBtn"), restart: id("tabataRestartBtn"), next: id("tabataSkipBtn") };
+      if (stepVis(id("workoutRepsView")) && workoutState && workoutState.kind === "reps") return { host: player, ...stepRepsCtx() };
+    }
+    if (player.id === "rememberPlayer" && !id("rememberNav").hidden) return { host: player, prev: id("rememberNavPrevBtn"), restart: id("rememberNavRestartBtn"), next: id("rememberNavNextBtn") };
+    const back = [...player.querySelectorAll("button[id$='ackBtn']")].find((b) => isEndTrainingBtn(b) && stepVis(b));
+    if (!back) return { host: player, prev: null, restart: null, next: null };
+    if (comboProgram) {
+      const i = comboProgram.blockIndex, n = comboProgram.def.blocks.length;
+      return { host: player, prev: i > 0 ? () => stepComboJump(i - 1, back) : null, restart: () => stepComboJump(i, back), next: i + 1 < n ? () => stepComboJump(i + 1, back) : null };
+    }
+    if (breathProgram && (player.id === "breathPlayer" || player.id === "wimhofPlayer")) {
+      const i = breathProgram.blockIndex, n = breathProgram.def.blocks.length;
+      return { host: player, prev: i > 0 ? () => stepBreathJump(i - 1, back) : null, restart: () => stepBreathJump(i, back), next: i + 1 < n ? () => stepBreathJump(i + 1, back) : null };
+    }
+    const start = startBtnByPlayer[player.id];
+    return { host: player, prev: null, restart: start ? () => stepRestartSingle(back, start) : null, next: null };
+  }
+  function stepReturn(btn) {
+    if (Object.values(stepGeneric).includes(btn)) { stepParking.appendChild(btn); return; }
+    const h = stepHome.get(btn);
+    if (!h) { stepParking.appendChild(btn); return; }
+    h.parent.insertBefore(btn, h.parent.children[h.index] || null);
+  }
+  function updateStepNav() {
+    const visPlayer = [...document.querySelectorAll(".player")].find(stepVis);
+    if (visPlayer && pendingStartBtn) { startBtnByPlayer[visPlayer.id] = pendingStartBtn; pendingStartBtn = null; }
+    const ctx = stepCtx();
+    STEP_SLOTS.forEach((slot) => {
+      const slotEl = stepNavEl.querySelector(`[data-slot="${slot}"]`);
+      const want = ctx ? ctx[slot] : null;
+      const wantEl = want instanceof HTMLElement ? want : (slot === "extra" ? null : stepGeneric[slot]);
+      [...slotEl.children].forEach((c) => { if (c !== wantEl) stepReturn(c); });
+      if (wantEl && wantEl.parentNode !== slotEl) {
+        if (!Object.values(stepGeneric).includes(wantEl) && !stepHome.has(wantEl)) {
+          stepHome.set(wantEl, { parent: wantEl.parentNode, index: [...wantEl.parentNode.children].indexOf(wantEl) });
+        }
+        slotEl.appendChild(wantEl);
+      }
+      if (slot !== "extra") {
+        stepFns[slot] = typeof want === "function" ? want : null;
+        if (wantEl === stepGeneric[slot]) {
+          const dis = typeof want !== "function";
+          if (wantEl.disabled !== dis) wantEl.disabled = dis;
+        }
+      }
+    });
+    if (ctx) {
+      const host = ctx.host || document.body;
+      if (stepNavEl.parentNode !== host) host.appendChild(stepNavEl);
+      if (stepNavEl.hidden) stepNavEl.hidden = false;
+    } else if (!stepNavEl.hidden) {
+      stepNavEl.hidden = true;
+    }
+  }
+  let stepQueued = false;
+  function queueStepNav() {
+    if (stepQueued) return;
+    stepQueued = true;
+    Promise.resolve().then(() => { stepQueued = false; updateStepNav(); });
+  }
+  new MutationObserver(queueStepNav).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["hidden"] });
+  document.addEventListener("fullscreenchange", queueStepNav);
+  setInterval(updateStepNav, 400);
   // ---- Datensicherung (2026-10-02, Fabian): export every "fwmc-" key into
   // one JSON file and import it again. Import only writes the keys that are
   // in the file (anything newer keeps its default), skips unknown/invalid
@@ -15369,6 +15589,7 @@
     els.comboBlockCount.textContent = comboDraftBlocks.length ? `${comboDraftBlocks.length} Baustein${comboDraftBlocks.length === 1 ? "" : "e"}` : "";
     document.getElementById("comboClearBtn").hidden = comboDraftBlocks.length === 0;
     els.comboEmptyHint.hidden = comboDraftBlocks.length > 0;
+    els.comboStartBtn.disabled = comboDraftBlocks.length === 0;
     els.comboBlockList.innerHTML = "";
     comboDraftBlocks.forEach((block, i) => {
       // A workout block predating this rebuild (or coach-authored) can
@@ -15424,12 +15645,12 @@
         pauseRow.innerHTML =
           `<span class="slider-label">Pause danach</span>` +
           `<input type="range" class="combo-pause-slider" min="0" max="180" step="5" value="${pauseS}" aria-label="Pause nach Baustein ${i + 1}">` +
-          `<span class="slider-value">${esc(fmtSeconds(pauseS))}</span>`;
+          `<span class="slider-value">${esc(fmtPauseAfter(pauseS))}</span>`;
         const slider = pauseRow.querySelector(".combo-pause-slider");
         const valueEl = pauseRow.querySelector(".slider-value");
         slider.addEventListener("input", () => {
           block.pauseAfterS = Number(slider.value);
-          valueEl.textContent = fmtSeconds(block.pauseAfterS);
+          valueEl.textContent = fmtPauseAfter(block.pauseAfterS);
         });
         els.comboBlockList.appendChild(pauseRow);
       }
@@ -15437,7 +15658,7 @@
   }
   function renderComboSaved() {
     renderPresetList(comboSavedStore, els.comboSavedList, els.comboSavedGroup, null,
-      (e) => `${exerciseCountLabel(e.blocks.length)} · ca. ${fmtMinutes(e.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0))}`,
+      (e) => `${countLabel(e.blocks.length, "Baustein", "Bausteine")} · ca. ${fmtMinutes(e.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0))}`,
       (entry) => {
         comboOriginBundle = null;
         startComboProgram({ name: entry.name, blocks: entry.blocks }, "local", "local:" + entry.id, currentHomeScreen());
@@ -23383,7 +23604,7 @@
     // in stage_hint_overlap_audit_test.py).
     // Same for the progress pill: it can wrap the player-bar onto a second
     // row (which moves the hint down), so it is written before measuring too.
-    els.corsiHint.textContent = "Gleich geht's los …";
+    els.corsiHint.textContent = "Bereit? Gleich geht's los …";
     els.corsiProgressEl.textContent = `Länge ${corsiState.span} · Versuch 1/2`;
     renderCorsiBoard(buildCorsiBoard());
     requestWakeLock();
@@ -23738,7 +23959,7 @@
     };
     applyReaktBg();
     els.reaktField.innerHTML = "";
-    els.reaktHint.textContent = "Gleich geht's los …";
+    els.reaktHint.textContent = "Bereit? Gleich geht's los …";
     els.reaktProgressEl.textContent = `Treffer: 0 · ${reaktState.length.title}`;
     requestWakeLock();
     scheduleReaktTimer(reaktSpawnLight, REAKT_LEAD_IN_MS);

@@ -4457,6 +4457,42 @@ ResizeObserver in app.js, since it wraps to two rows on a phone) and stage
 hints are hidden. A new player gets this for free as long as it uses those
 classes. Test: `tests/app_bar_test.py`.
 
+### Steuerleiste « ↻ » überall (2026-10-04)
+
+Fabian: "sollte nachher überall identisch sein". One bar, `#stepNav`
+(end of `_body.html`), fixed at the bottom of every running player and of
+the pauses between Bausteine/blocks (`#comboTransition`,
+`#breathTransition`, workout transition): « zurück, ↻ neu starten,
+optional an extra button, » weiter. `updateStepNav()` (MutationObserver on
+`hidden` + 400 ms interval) picks the context in `stepCtx()`:
+- areas with their own nav LEND their buttons (moved into the slots,
+  put back afterwards, ids/handlers unchanged): VT pause screen and
+  programme `liveNav`, Cardio, Tabata, Remember Trainingsmodus;
+  Kraftplan uses `stepRepsCtx()` (step by step, also in rests and the
+  start countdown);
+- Kombi/breath plan: « » jump Bausteine, ↻ restarts the current one
+  (`stepComboJump`/`stepBreathJump`); in a pause ↻ repeats the one just
+  done, » continues;
+- every other player: ↻ restarts via the "Training starten" button that
+  opened it (recorded in `startBtnByPlayer`), « » shown disabled.
+- hidden while a pause overlay, done panel, Hörmodus layer or programme
+  video is open; Cardio guests show it disabled.
+Restart/jump stop the run through the player's own Beenden with
+`stepNavSilent` (no history entry, `addHistory` returns early) and
+`endConfirmBypass`. **A new player needs nothing extra** as long as its
+exit button follows the `…BackBtn`/"Beenden" convention and it is a
+`.player`; every `.player` keeps `--stepnav-h` free at the bottom (no
+stage content under the bar). Test: `tests/step_nav_test.py`.
+
+Same pass, consistency fixes from an audit: "Programm geschafft!"/
+"Programm beendet" everywhere (no "Plan …"), sheet buttons "Los geht's",
+done-back labels "Zur Übersicht" (own builder) / "Zur Startseite" /
+"Zurück zu meinen Programmen", singular/plural via `countLabel()`
+("1 Baustein", "1 Aktivität"), "Pause danach" shows "Keine" at 0
+(`fmtPauseAfter`), Kombi "Training starten" disabled while empty. Open
+proposals from that audit (transition designs, start countdowns, sound
+toggle, presets, unit formats ...) went to Fabian as a decision list.
+
 ### Interval phase wording corrected (2026-09-30)
 
 "Belastung"/"Erholung" (both the setup-screen phase labels and the live

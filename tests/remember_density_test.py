@@ -3,11 +3,13 @@ from playwright.async_api import async_playwright
 URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Positionen merken at the maximum of 24 markers: no two markers may ever be
-# closer than the 82 px minimum (was a known open item - ~2 of 3 layouts had
+# closer than the minimum (marker size + 10 px; markers shrink to 52 px on a
+# small screen so 24 still fit above the control bar) (was a known open item - ~2 of 3 layouts had
 # an overlap). Repeated runs, both position modes, two phone sizes.
 
 
-async def violations(pg, min_dist=82):
+async def violations(pg):
+    min_dist = await pg.eval_on_selector(".remember-marker", "e => e.getBoundingClientRect().width + 10")
     pts = await pg.eval_on_selector_all(".remember-marker", "els => els.map(e => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })")
     bad = 0
     for i in range(len(pts)):

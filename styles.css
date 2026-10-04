@@ -565,9 +565,9 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 }
 .remember-marker{
   position:absolute;transform:translate(-50%,-50%);
-  width:72px;height:72px;border-radius:50%;border:none;padding:0;
+  width:var(--remember-marker-px,72px);height:var(--remember-marker-px,72px);border-radius:50%;border:none;padding:0;
   display:flex;align-items:center;justify-content:center;
-  font-family:"Magra",sans-serif;font-weight:700;font-size:28px;color:#fff;
+  font-family:"Magra",sans-serif;font-weight:700;font-size:calc(var(--remember-marker-px,72px) * .39);color:#fff;
   background:#007094;box-shadow:0 2px 10px rgba(0,0,0,.18);
   cursor:default;transition:background .15s ease,transform .1s ease;
 }
@@ -1038,7 +1038,7 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .navon-response-btn.correct{background:#2e7d32;color:#fff}
 .navon-response-btn.wrong{background:#d32f2f;color:#fff}
 
-.iconic-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:16px;background:#ffffff}
+.iconic-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:calc(124px + env(safe-area-inset-top,0px)) 16px 16px;overflow-y:auto;background:#ffffff}
 .iconic-grid{display:flex;flex-direction:column;gap:8px}
 .iconic-row{display:flex;gap:8px;border:3px solid transparent;border-radius:8px;padding:4px}
 .iconic-row.cued{border-color:#007094}
@@ -1926,3 +1926,28 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .breath-listen-fill{position:absolute;inset:0;background:#123a47;transform:scaleX(0);transform-origin:left;transition:transform .15s}
 .breath-listen-hold.holding .breath-listen-fill{transform:scaleX(1);transition:transform .9s linear}
 .breath-listen-hold-text{position:relative}
+
+/* ---- Einheitliche Steuerleiste « ↻ » (Fabian, 2026-10-04) ----
+   One toolbar at the bottom of every running exercise and every pause
+   between exercises (#stepNav, filled by updateStepNav in app.js). Every
+   player keeps its bottom free for it, so nothing on a stage ever sits
+   under the controls. Fixed hex colours: player-scoped, never dark-mode. */
+:root{--stepnav-h:calc(66px + env(safe-area-inset-bottom,0px))}
+.player{padding-bottom:var(--stepnav-h)}
+.pause-screen{padding-bottom:calc(16px + var(--stepnav-h))}
+.done-panel.standalone:has(> .step-nav:not([hidden])){padding-bottom:calc(24px + var(--stepnav-h))}
+.step-nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:31;height:var(--stepnav-h);
+  padding:0 12px env(safe-area-inset-bottom,0px);box-sizing:border-box;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  background:#ffffff;border-top:1px solid #e3eaec;
+}
+.step-slot{display:contents}
+.step-nav button{
+  border:none;background:rgba(22,35,42,.07);color:#16232a;cursor:pointer;font-weight:700;
+  width:46px;height:46px;border-radius:50%;font-size:18px;padding:0;
+}
+.step-nav button:disabled{opacity:.3;cursor:default}
+.step-nav [data-slot="extra"] button{width:auto;padding:0 16px;border-radius:999px;font-size:14px;white-space:nowrap}
+.live-nav:not(:has(button)),.chapter-nav:not(:has(button)){display:none}
+#stepNavParking{display:none}
