@@ -254,7 +254,7 @@ Rules that came out of it, for every future change:
 - **Backup** excludes `fwmc-admin-token` (`BACKUP_EXCLUDE`).
 - **Destructive actions** only through `confirmDialog()`, never `confirm()`.
 - **Inputs** are 16 px on touch devices (iOS zooms otherwise); the
-  section nav switches to a grid between 481 and 760 px.
+  section nav is a 4-column grid above 480 px (no single row: it broke words on iPad).
 - `.player-status:empty` is hidden (no empty pill in the bar).
 - **Audio**: `unlockCueAudio()` creates the AudioContext on the first
   pointerdown. A test that fakes AudioContext must install the fake with
@@ -337,7 +337,7 @@ For every new window, card, button or text:
 - Before every go-live: screenshot the new element next to an existing
   sibling (390px, light and dark) and compare. Do this yourself; Fabian must
   never be the one to spot an inconsistency.
-- The dashboard is dark by Fabian's choice but uses the app fonts (Magra,
+- The dashboard follows the device's light/dark setting (Fabian, 2026-10-04; tokens in its :root + a prefers-color-scheme block) and uses the app fonts (Magra,
   Public Sans) and must not scroll sideways at 390px (tables sit in
   `.table-scroll`).
 `tests/consistency_test.py` checks the code cards, section headings, the

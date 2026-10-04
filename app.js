@@ -2097,9 +2097,14 @@
 
   // ---- Training history ----
   const HISTORY_KEY = "fwmc-history-v1";
+  // Entries saved before the renaming of 2026-10-02 still carry the old
+  // exercise names; show the current ones everywhere (history, "Weitermachen").
+  const HISTORY_RENAMES = [[/^Remember\b/, "Positionen merken"], [/MOT-Fähigkeit/g, "Objektverfolgung (MOT)"], [/Flash Speicher Test/g, "Flash-Speicher-Test"]];
   function loadHistory() {
     const h = readJSON(HISTORY_KEY, []);
-    return Array.isArray(h) ? h : [];
+    if (!Array.isArray(h)) return [];
+    h.forEach((e) => { if (e && typeof e.title === "string") HISTORY_RENAMES.forEach(([re, to]) => { e.title = e.title.replace(re, to); }); });
+    return h;
   }
   // A done panel shows either "geschafft" (check mark + its own heading) or
   // "beendet" when the client skipped past the end (Fabian, 2026-10-02:
@@ -2229,7 +2234,7 @@
     const pct = Math.min(100, Math.round((s.cur.n / p.weekGoal) * 100));
     els.todayProgressCard.innerHTML = `
       <div class="progress-card-row">
-        <div><strong>${s.cur.n} von ${p.weekGoal}</strong><span>Wochenziel</span></div>
+        <div><strong>${s.cur.n} von ${p.weekGoal}${s.cur.n >= p.weekGoal ? " ✓" : ""}</strong><span>${s.cur.n >= p.weekGoal ? "Wochenziel erreicht" : "Wochenziel"}</span></div>
         <div><strong>${progressStreakText(s.streak)}</strong><span>Serie</span></div>
         <div><strong>${s.total}</strong><span>Trainings gesamt</span></div>
       </div>
@@ -2325,12 +2330,17 @@
     moreBtn.hidden = list.length <= HISTORY_VISIBLE_SHORT;
     moreBtn.textContent = expanded ? "Weniger anzeigen" : "Alle anzeigen";
   }
+  // One "Gesamter Trainingsverlauf" section per area home (Fabian, 2026-10-04:
+  // it was missing in Cardio, NAT and Test). A new area adds its prefix here
+  // and the same markup block (ids <prefix>HistorySection/Stats/List/MoreBtn/ClearBtn).
+  const HISTORY_PREFIXES = ["", "breath", "movement", "workout", "cardio", "nat", "test"];
+  const historyEl = (prefix, part) => document.getElementById(prefix ? prefix + "History" + part : "history" + part);
   function renderHistory() {
     const list = loadHistory();
-    renderHistoryInto(els.historySection, els.historyStats, els.historyList, els.historyMoreBtn, list);
-    renderHistoryInto(els.breathHistorySection, els.breathHistoryStats, els.breathHistoryList, els.breathHistoryMoreBtn, list);
-    renderHistoryInto(els.movementHistorySection, els.movementHistoryStats, els.movementHistoryList, els.movementHistoryMoreBtn, list);
-    renderHistoryInto(els.workoutHistorySection, els.workoutHistoryStats, els.workoutHistoryList, els.workoutHistoryMoreBtn, list);
+    HISTORY_PREFIXES.forEach((pre) => {
+      const sec = historyEl(pre, "Section");
+      if (sec) renderHistoryInto(sec, historyEl(pre, "Stats"), historyEl(pre, "List"), historyEl(pre, "MoreBtn"), list);
+    });
   }
   function clearHistory() {
     confirmDialog("Deinen Trainingsverlauf auf diesem Gerät löschen?", () => {
@@ -2338,13 +2348,11 @@
       renderHistory();
     });
   }
-  els.historyClearBtn.addEventListener("click", clearHistory);
-  els.breathHistoryClearBtn.addEventListener("click", clearHistory);
-  els.movementHistoryClearBtn.addEventListener("click", clearHistory);
-  els.workoutHistoryClearBtn.addEventListener("click", clearHistory);
-  [els.historyList, els.breathHistoryList, els.movementHistoryList, els.workoutHistoryList].forEach((listEl, i) => {
-    const btn = [els.historyMoreBtn, els.breathHistoryMoreBtn, els.movementHistoryMoreBtn, els.workoutHistoryMoreBtn][i];
-    btn.addEventListener("click", () => { listEl.dataset.expanded = listEl.dataset.expanded === "1" ? "0" : "1"; renderHistory(); });
+  HISTORY_PREFIXES.forEach((pre) => {
+    const listEl = historyEl(pre, "List");
+    if (!listEl) return;
+    historyEl(pre, "ClearBtn").addEventListener("click", clearHistory);
+    historyEl(pre, "MoreBtn").addEventListener("click", () => { listEl.dataset.expanded = listEl.dataset.expanded === "1" ? "0" : "1"; renderHistory(); });
   });
 
   // Rating widget shown on the finish screens.
@@ -15248,6 +15256,9 @@
     confirmDialog("Möchtest du das Training wirklich beenden?", () => {
       endConfirmBypass = true;
       try { btn.click(); } finally { endConfirmBypass = false; }
+      // The run just ended: the next run starts its own clock even if the
+      // 1 s sampler has not ticked in between.
+      trainingRunStartedAt = null;
     });
   }, true);
   // ---- Einheitliche Steuerleiste « ↻ » (Fabian, 2026-10-04: "sollte
@@ -26019,6 +26030,18 @@
   // PWA: only meaningful on real hosting - service workers do not run
   // inside the Artifacts preview sandbox, so registration there is a
   // silent, expected no-op.
+  // The logo sometimes stayed an empty white box on iPad (Fabian, 2026-10-04):
+  // retry a failed or empty logo load a few times instead of giving up.
+  document.querySelectorAll("img.brand-logo").forEach((img) => {
+    let tries = 0;
+    const retry = () => {
+      if (tries >= 3) return;
+      tries++;
+      setTimeout(() => { img.src = "logo-full.png?r=" + tries; }, 600 * tries);
+    };
+    img.addEventListener("error", retry);
+    if (img.complete && !img.naturalWidth) retry();
+  });
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
   }

@@ -6,6 +6,7 @@
 <title>FWMC Trainer-Dashboard</title>
 <meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#007094" />
+<meta name="color-scheme" content="dark light" />
 <link rel="manifest" href="./dashboard-manifest.json" />
 <link rel="icon" href="./dashboard-icon-192.png" />
 <link rel="apple-touch-icon" href="./dashboard-icon-512.png" />
@@ -17,6 +18,17 @@
     --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --border: #2a2f3a;
     --text: #e8ebf2; --muted: #9099ab; --accent: #007094;
     --good: #3cc27a; --danger: #e5584f; --radius: 10px;
+  }
+  /* Follows the device's light/dark setting (Fabian, 2026-10-04: "Gerät
+     folgen"); dark stays the default for devices that report nothing. */
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6f8f9; --panel: #ffffff; --panel2: #eef3f5; --border: #d3dde2;
+      --text: #16232a; --muted: #5b6b73; --good: #1f8a52; --danger: #c62828;
+      --panel-hover: #b9c7ce;
+    }
+    .brand-logo-box { box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+    .pill.on { background: rgba(31,138,82,0.12); }
   }
   /* Same fonts as the app (aus einer Feder): Magra for headings, Public Sans for text. */
   @font-face{font-family:"Magra";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/magra-700.woff2) format("woff2")}
@@ -40,7 +52,7 @@
     background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
     padding: 16px; margin-bottom: 20px; transition: border-color 0.15s;
   }
-  .panel:hover { border-color: #343b4a; }
+  .panel:hover { border-color: var(--panel-hover, #343b4a); }
   .brand-row { display: flex; align-items: center; gap: 14px; }
   .brand-logo-box {
     background: #fff; border-radius: 10px; padding: 6px 10px; flex: none;
