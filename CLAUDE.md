@@ -191,6 +191,14 @@ Never skip step 3 for "small" changes — several regressions in this
 project's history came from shared rendering/state code that looked
 unrelated to the feature being changed.
 
+**Bundle releases to save usage (Fabian, 2026-10-04)**: the full test suite
+on every release was the biggest usage cost. Bundle 3-4 changes into one
+release and run the complete suite only once, at the end, before that one
+release. While building, run just the test files of the changes at hand.
+A pure documentation change (this file only) needs no suite run. Urgent
+bug fixes Fabian is waiting on may still go out alone. Ideas go to Fabian
+first as a short list with a recommendation; only what he approves gets built.
+
 ## Established patterns worth reusing
 
 - **`stageTopClearanceY()` - shared top-clearance for full-stage exercises
