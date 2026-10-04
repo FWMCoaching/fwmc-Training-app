@@ -94,7 +94,7 @@ async def main():
         await pg.click('#rememberTrainingDifficultyRow [data-remember-diff="schwer"]'); await pg.wait_for_timeout(100)
         await pg.click("#rememberTrainingStartBtn"); await pg.wait_for_timeout(150)
         print("player visible (training):", await pg.is_visible("#rememberPlayer"))
-        print("nav visible for training mode:", await pg.is_visible("#rememberNav"))
+        print("nav visible for training mode (in the shared bar):", await pg.is_visible("#stepNav #rememberNavNextBtn"))
         print("level label shows 6 Zahlen:", await pg.inner_text("#rememberLevelEl"))
 
         await pg.wait_for_timeout(900)  # schwer level-6 reveal: 0.7+4*0.15=1.3s -> not fully done yet, still covering soon

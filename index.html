@@ -223,7 +223,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 04.10.2026, 00:52</p>
+    <p class="app-version">Stand: 04.10.2026, 08:01</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -315,7 +315,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 04.10.2026, 00:52</p>
+    <p class="app-version">Stand: 04.10.2026, 08:01</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -470,7 +470,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 04.10.2026, 00:52</p>
+    <p class="app-version">Stand: 04.10.2026, 08:01</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -543,7 +543,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 04.10.2026, 00:52</p>
+    <p class="app-version">Stand: 04.10.2026, 08:01</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -653,7 +653,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 04.10.2026, 00:52</p>
+    <p class="app-version">Stand: 04.10.2026, 08:01</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -712,7 +712,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 04.10.2026, 00:52</p>
+    <p class="app-version">Stand: 04.10.2026, 08:01</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1072,7 +1072,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 04.10.2026, 00:52</p>
+    <p class="app-version">Stand: 04.10.2026, 08:01</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1262,7 +1262,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 04.10.2026, 00:52</p>
+    <p class="app-version">Stand: 04.10.2026, 08:01</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -5806,7 +5806,7 @@
 
 <div class="done-panel standalone" id="workoutProgramDonePanel" hidden>
   <div class="done-check">&#10003;</div>
-  <h2>Plan geschafft!</h2>
+  <h2>Programm geschafft!</h2>
   <p class="done-summary" id="workoutProgramDoneSummary"></p>
   <div class="rating" id="workoutProgramRating"></div>
   <button class="again" id="workoutProgramAgainBtn">Nochmal von vorne</button>
@@ -6168,7 +6168,7 @@
       <li><strong>Ton optional.</strong> Bei &bdquo;Mit Ansage&ldquo; sagt eine Stimme die Phase an &ndash; praktisch mit geschlossenen Augen.</li>
       <li><strong>Bei Unwohlsein pausieren.</strong> Brich sofort ab, wenn dir schwindelig wird. Kein Ersatz f&uuml;r medizinische Behandlung.</li>
     </ol>
-    <button class="start-btn" id="breathTipsCloseBtn">Verstanden</button>
+    <button class="start-btn" id="breathTipsCloseBtn">Los geht&rsquo;s</button>
   </div>
 </div>
 <header class="app-bar" id="appBar">
@@ -6178,6 +6178,18 @@
     <button class="master-settings-btn" type="button" aria-label="Grundeinstellungen">&#9881;&#xFE0F;</button>
   </div>
 </header>
+
+<!-- Einheitliche Steuerleiste « ↻ » (Fabian, 2026-10-04): one bar at the
+     bottom of every running exercise and every pause between exercises.
+     JS (updateStepNav in app.js) moves it into the visible player and
+     fills its slots, either with the area's own buttons or with these. -->
+<nav class="step-nav" id="stepNav" aria-label="Steuerung" hidden>
+  <span class="step-slot" data-slot="prev"><button type="button" id="stepPrevBtn" title="Zur&uuml;ck" aria-label="Zur&uuml;ck">&laquo;</button></span>
+  <span class="step-slot" data-slot="restart"><button type="button" id="stepRestartBtn" title="Neu starten" aria-label="Neu starten">&#8635;</button></span>
+  <span class="step-slot" data-slot="extra"></span>
+  <span class="step-slot" data-slot="next"><button type="button" id="stepNextBtn" title="Weiter" aria-label="Weiter">&raquo;</button></span>
+</nav>
+<div id="stepNavParking" hidden></div>
 
 <script src="./app.js" defer></script>
 </body>
