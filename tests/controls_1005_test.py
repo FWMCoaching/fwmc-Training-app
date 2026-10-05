@@ -7,10 +7,10 @@ from playwright.async_api import async_playwright
 # top left in the logo bar (pages) and in the bar over pauses/results.
 URL = "http://localhost:8845/index.html?bereich=movement"
 ok_all = True
-def check(label, ok):
+def check(label, ok, info=""):
     global ok_all
     ok_all = ok_all and bool(ok)
-    print(label + ":", bool(ok))
+    print(label + ":", bool(ok), info)
 
 async def main():
     errors = []
@@ -24,7 +24,11 @@ async def main():
         await pg.goto(URL); await pg.wait_for_timeout(300)
 
         check("no back button on an area home", not await pg.is_visible("#movementHome .bar-back-btn"))
+        LOGO = "() => { const e = [...document.querySelectorAll('.screen:not([hidden]) > .brandbar .brand-logo')][0]; const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; }"
+        logo_home = await pg.evaluate(LOGO)
         await pg.click("#movementStartCard"); await pg.wait_for_timeout(200)
+        # Logo mittig (2026-10-05): same place on the area home and a sub page
+        check("logo at the same place on home and sub page", await pg.evaluate(LOGO) == logo_home, logo_home)
         check("back button in the logo bar of a sub page", await pg.is_visible("#movementReady .bar-back-btn"))
         box = await pg.locator("#movementReady .bar-back-btn").bounding_box()
         check("back button is 44 px and top left", box and box["width"] >= 44 and box["height"] >= 44 and box["x"] < 40)

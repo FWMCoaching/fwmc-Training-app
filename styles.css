@@ -1960,10 +1960,10 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
    (Fabian, 2026-10-05: Steuerung überall gleich) */
 .bar-back-btn,.brandbar .back-link.bar-back-btn{
   width:44px;height:44px;flex:0 0 44px;margin:-2px 0 -2px -6px;border-radius:50%;border:none;
-  background:var(--surface-2);color:var(--ink-soft);font-size:0;padding:0;cursor:pointer;
+  background:var(--surface-2);color:var(--ink);font-size:0;padding:0;cursor:pointer;
   display:inline-flex;align-items:center;justify-content:center;
 }
-.bar-back-btn::before{content:"\2039";font-size:32px;line-height:1;margin-top:-4px}
+.bar-back-btn::before{content:"\2039";font-size:38px;font-weight:700;line-height:1;margin-top:-5px}
 .bar-back-btn[hidden]{display:none}
 .bar-back-btn:hover{color:var(--brand)}
 .step-nav #stepSoundBtn{margin-left:0;display:inline-flex;align-items:center;justify-content:center;background:rgba(22,35,42,.07);color:#16232a}
@@ -2018,3 +2018,21 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 /* The stage hint already says "Jetzt in der richtigen Reihenfolge eintippen": no second copy above the boxes (review 2026-10-05). */
 #flashInputLabel{display:none}
 .flash-stage:has(> #flashInputPanel:not([hidden])){padding-top:var(--flash-input-top,0px);box-sizing:border-box}
+
+/* Logo mittig (Fabian, 2026-10-05): every top bar (area homes, sub pages,
+   the bar over pauses/results) is the same three-slot grid - left the ‹
+   back button (empty on the area homes), centre the logo with
+   "FWMC Online-Training" below, right the gear (room for menu/sound later).
+   The logo therefore sits at exactly the same place on every page. */
+.brandbar,.app-bar-inner{
+  display:grid;grid-template-columns:44px 1fr 44px;grid-template-areas:"back logo gear" "back sub gear";
+  align-items:center;justify-items:center;column-gap:10px;row-gap:4px;flex-wrap:nowrap;
+}
+.brandbar .brand-logo,.app-bar-inner .brand-logo{grid-area:logo}
+.brandbar .brand-sub,.app-bar-inner .brand-sub{grid-area:sub;text-align:center}
+.brandbar .master-settings-btn,.app-bar-inner .master-settings-btn{grid-area:gear;margin:0;width:44px;height:44px}
+.brandbar .bar-back-btn,.app-bar-inner .bar-back-btn,.brandbar .back-link.bar-back-btn{grid-area:back;margin:0}
+:root{--appbar-h:calc(94px + env(safe-area-inset-top,0px))}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--appbar-h:calc(106px + env(safe-area-inset-top,0px))}
+}
