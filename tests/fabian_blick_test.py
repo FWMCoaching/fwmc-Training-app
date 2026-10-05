@@ -139,7 +139,8 @@ async def new_page(b, w, h, scheme):
 
 
 async def replay(pg, entry, clicks):
-    """Open the entry point and replay a click path. Returns False if a click fails."""
+    """Open the entry point and replay a click path. Returns False (and
+    remembers the failing selector in pg.last_fail) if a click fails."""
     if entry.startswith("nav:"):
         await pg.goto(BASE + "?bereich=heute"); await pg.wait_for_timeout(250)
         if entry == "nav:gear":
@@ -153,6 +154,7 @@ async def replay(pg, entry, clicks):
         try:
             await pg.click(sel, timeout=2500)
         except Exception:
+            pg.last_fail = sel
             return False
         await pg.wait_for_timeout(180)
     return True
@@ -211,8 +213,8 @@ async def discover(b):
               while (el && el !== document.body) { if (el.id) { parts.unshift('#' + CSS.escape(el.id)); break; }
                 const p = el.parentElement; parts.unshift(el.tagName.toLowerCase() + ':nth-child(' + ([...p.children].indexOf(el) + 1) + ')'); el = p; }
               return parts.join(' > '); }""")
-            if sb and base_state["screen"] not in starts:
-                starts[base_state["screen"]] = (entry, clicks + [sb])
+            if sb and key_of(base_state) not in starts:
+                starts[key_of(base_state)] = (entry, clicks + [sb])
     await ctx.close()
     return states, starts
 
@@ -241,7 +243,8 @@ async () => {
   for (const c of ctrls.slice(0, 12)) {
     const r = c.getBoundingClientRect();
     const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-    if (hit && !c.contains(hit) && !hit.contains(c) && !hit.closest('.bottom-nav, .brandbar') ) {
+    // a visible control on top (sticky start bar) is layout, not a frozen page
+    if (hit && !c.contains(hit) && !hit.contains(c) && !hit.closest('.bottom-nav, .brandbar, button, a, input, label, select')) {
       const d = hit.tagName.toLowerCase() + (hit.id ? '#' + hit.id : '') + (typeof hit.className === 'string' && hit.className ? '.' + hit.className.split(' ')[0] : '');
       out.push({cat: 'eingefroren', msg: 'Knopf nach Scrollen nicht antippbar, verdeckt von ' + d,
                 el: c.tagName.toLowerCase() + (c.id ? '#' + c.id : '') + ' "' + (c.textContent || '').trim().slice(0, 24) + '"'});
@@ -271,7 +274,7 @@ async def audit_config(b, cfg, states, starts):
             [(f"start:{scr}", v[0], v[1], True) for scr, v in starts.items()]
     for k, entry, clicks, is_start in items:
         if not await replay(pg, entry, clicks):
-            findings.append({"cat": "rundgang", "state": k, "msg": "Weg nicht nachspielbar", "el": ""})
+            findings.append({"cat": "rundgang", "state": k, "msg": "Weg nicht nachspielbar", "el": getattr(pg, "last_fail", "")})
             continue
         if is_start:
             await pg.wait_for_timeout(1800)
@@ -319,9 +322,13 @@ def cross_screen(infos_by_cfg):
     return out
 
 
+NUM = re.compile(r"\d+(\.\d+)?")
+
+
 def fkey(f):
     # Stable key without the config so a finding in all 4 configs counts once.
-    return f"{f['cat']}|{f['state']}|{f.get('el','')}|{re.sub(r'\d+(\.\d+)?', '#', f['msg'])[:120]}"
+    msg = NUM.sub("#", f["msg"])[:120]
+    return f"{f['cat']}|{f['state']}|{f.get('el','')}|{msg}"
 
 
 def write_report(findings, states, starts, new_keys, secs):
@@ -352,6 +359,8 @@ def write_report(findings, states, starts, new_keys, secs):
 
 async def main():
     t0 = time.time()
+    import shutil
+    shutil.rmtree(OUT, ignore_errors=True)
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"])
         states, starts = await discover(b)

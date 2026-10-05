@@ -6,6 +6,9 @@
   const cs = el => getComputedStyle(el);
   const vis = el => {
     if (!el || el.closest('[hidden]')) return false;
+    const det = el.closest('details:not([open])');
+    if (det && !el.closest('summary')) return false;
+    if (el.checkVisibility && !el.checkVisibility({checkOpacity: true, checkVisibilityCSS: true})) return false;
     const r = el.getBoundingClientRect(), s = cs(el);
     if (!(r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity > 0.05)) return false;
     // Clipped away by a collapsed ancestor (e.g. closed "Feineinstellungen" with max-height 0)?
@@ -93,6 +96,8 @@
       if (a.contains(b) || b.contains(a)) continue;
       // canvas/img under its own overlay label is the design (stage text) unless one is a control
       if ((a.tagName === 'CANVAS' || b.tagName === 'CANVAS') && !(isInteractive(a) || isInteractive(b) || /hint/.test(a.className + b.className))) continue;
+      // the player bar floats over the stage canvas by design (engines draw below it)
+      if ((a.tagName === 'CANVAS' && b.closest('.player-bar')) || (b.tagName === 'CANVAS' && a.closest('.player-bar'))) continue;
       if (a.tagName === 'IMG' && b.tagName === 'IMG') continue;
       if (inFixed(a) !== inFixed(b) && !fixedMode) continue;
       const r = a.getBoundingClientRect(), q = b.getBoundingClientRect();
@@ -123,9 +128,10 @@
   const nav = document.getElementById('bottomNav');
   if (!isPlayer && !isSheet && nav && vis(nav)) {
     const navTop = nav.getBoundingClientRect().top;
-    const maxBottom = Math.max(0, ...flowAtoms.filter(a => !nav.contains(a)).map(a => a.getBoundingClientRect().bottom + window.scrollY));
+    let low = null, maxBottom = 0;
+    flowAtoms.filter(a => !nav.contains(a)).forEach(a => { const b = a.getBoundingClientRect().bottom + window.scrollY; if (b > maxBottom) { maxBottom = b; low = a; } });
     const reach = document.documentElement.scrollHeight - (window.innerHeight - navTop);
-    if (maxBottom > reach + 2) add('ueberlappt', 'Unterster Inhalt bleibt unter der unteren Leiste (' + Math.round(maxBottom - reach) + ' px)');
+    if (maxBottom > reach + 2) add('ueberlappt', 'Unterster Inhalt bleibt unter der unteren Leiste (' + Math.round(maxBottom - reach) + ' px)', low);
   }
 
   // ---------- taste: tap targets >= 44 px ----------
@@ -136,8 +142,8 @@
     const r = t.getBoundingClientRect();
     // Links inside running text are measured by line height; skip them.
     if (t.tagName === 'A' && t.closest('p, li') && cs(t).display === 'inline') return;
-    const min = Math.min(r.width, r.height);
-    if (min < 43.5) add('taste', 'Tipp-Fläche nur ' + Math.round(r.width) + '×' + Math.round(r.height) + ' px', t);
+    if (r.height < 43.5) add('taste', 'nur ' + Math.round(r.height) + ' px hoch (mind. 44)', t);
+    else if (r.width < 43.5) add('taste', 'nur ' + Math.round(r.width) + ' px breit (mind. 44)', t);
   });
 
   // ---------- kopf: one common top bar, bottom bar on screens ----------
@@ -235,7 +241,7 @@
   // ---------- player conventions ----------
   if (isPlayer && opts.isStart) {
     const p = players[0];
-    const back = [...p.querySelectorAll('button[id$="BackBtn"]')].find(vis);
+    const back = [...p.querySelectorAll('button[id$="BackBtn"], button#backBtn')].find(vis);
     const pause = [...p.querySelectorAll('button[id$="PauseBtn"]')].find(vis);
     if (!back) add('player', 'Kein sichtbarer Beenden-Knopf (…BackBtn)');
     else if (!/Beenden/.test(back.textContent)) add('player', 'Beenden-Knopf heißt "' + back.textContent.trim() + '"', back);
