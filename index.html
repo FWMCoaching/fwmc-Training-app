@@ -13,9 +13,25 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="FWMC Online-Training">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./splash/apple-splash-1290-2796.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./splash/apple-splash-1179-2556.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./splash/apple-splash-1284-2778.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./splash/apple-splash-1170-2532.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./splash/apple-splash-1125-2436.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./splash/apple-splash-1242-2688.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./splash/apple-splash-828-1792.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./splash/apple-splash-750-1334.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./splash/apple-splash-1320-2868.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./splash/apple-splash-1206-2622.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./splash/apple-splash-2048-2732.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./splash/apple-splash-1668-2388.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./splash/apple-splash-1640-2360.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./splash/apple-splash-1620-2160.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./splash/apple-splash-1488-2266.png">
 <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+<div class="app-splash" id="appSplash" aria-hidden="true"><img src="logo-white.png" width="900" height="177" alt=""></div>
 <div class="screen" id="home" hidden>
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" width="900" height="177" alt="Fabian Westermann Mentalcoaching">
@@ -223,7 +239,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 05.10.2026, 13:52</p>
+    <p class="app-version">Stand: 05.10.2026, 14:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -259,6 +275,14 @@
   </section>
 
   <section class="today-main" id="todayMain" aria-live="polite"></section>
+
+  <section class="today-main install-hint" id="installHint" hidden>
+    <div class="today-main-kicker">Tipp</div>
+    <h2 class="today-main-title">Als App auf den Startbildschirm</h2>
+    <p class="today-main-hint" id="installHintText"></p>
+    <button class="start-btn" id="installHintAddBtn" type="button" hidden>Zum Startbildschirm hinzuf&uuml;gen</button>
+    <button class="text-link small" id="installHintCloseBtn" type="button">Nicht mehr anzeigen</button>
+  </section>
 
   <section class="today-week">
     <div class="section-head">
@@ -317,7 +341,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 05.10.2026, 13:52</p>
+    <p class="app-version">Stand: 05.10.2026, 14:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -472,7 +496,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 05.10.2026, 13:52</p>
+    <p class="app-version">Stand: 05.10.2026, 14:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -545,7 +569,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 05.10.2026, 13:52</p>
+    <p class="app-version">Stand: 05.10.2026, 14:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -655,7 +679,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 05.10.2026, 13:52</p>
+    <p class="app-version">Stand: 05.10.2026, 14:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -727,7 +751,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 05.10.2026, 13:52</p>
+    <p class="app-version">Stand: 05.10.2026, 14:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1100,7 +1124,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 05.10.2026, 13:52</p>
+    <p class="app-version">Stand: 05.10.2026, 14:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1303,7 +1327,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 05.10.2026, 13:52</p>
+    <p class="app-version">Stand: 05.10.2026, 14:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -2429,6 +2453,7 @@
           <span class="slider-value" id="rememberStepValue"></span>
         </div>
       </div>
+      <div class="look-host" data-look="remember"></div>
       <div class="group">
         <div class="group-label">Hintergrund</div>
         <div class="color-picker" id="rememberBgColorPicker"></div>
@@ -2526,6 +2551,7 @@
           <span class="slider-value" id="rememberTrainingStepValue"></span>
         </div>
       </div>
+      <div class="look-host" data-look="remember"></div>
       <div class="group">
         <div class="group-label">Hintergrund</div>
         <div class="color-picker" id="rememberTrainingBgColorPicker"></div>
@@ -2781,6 +2807,7 @@
           <span class="slider-value" id="flashIntervalValue"></span>
         </div>
       </div>
+      <div class="look-host" data-look="flash"></div>
       <div class="group">
         <div class="group-label">Hintergrund</div>
         <div class="color-picker" id="flashBgColorPicker"></div>
@@ -2910,6 +2937,7 @@
           <span class="slider-value" id="flashTrainingIntervalValue"></span>
         </div>
       </div>
+      <div class="look-host" data-look="flash"></div>
       <div class="group">
         <div class="group-label">Hintergrund</div>
         <div class="color-picker" id="flashTrainingBgColorPicker"></div>
@@ -3055,6 +3083,7 @@
           <input type="range" id="motHighlightSlider" min="1" max="4" step="0.1" aria-label="Markierdauer">
         </div>
       </div>
+      <div class="look-host" data-look="mot"></div>
       <div class="group">
         <div class="group-label">Hintergrund</div>
         <div class="color-picker" id="motBgColorPicker"></div>
@@ -3166,6 +3195,7 @@
           <input type="range" id="motTrainingHighlightSlider" min="1" max="4" step="0.1" aria-label="Markierdauer">
         </div>
       </div>
+      <div class="look-host" data-look="mot"></div>
       <div class="group">
         <div class="group-label">Hintergrund</div>
         <div class="color-picker" id="motTrainingBgColorPicker"></div>

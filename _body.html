@@ -1,3 +1,4 @@
+<div class="app-splash" id="appSplash" aria-hidden="true"><img src="logo-white.png" width="900" height="177" alt=""></div>
 <div class="screen" id="home" hidden>
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" width="900" height="177" alt="Fabian Westermann Mentalcoaching">
@@ -241,6 +242,14 @@
   </section>
 
   <section class="today-main" id="todayMain" aria-live="polite"></section>
+
+  <section class="today-main install-hint" id="installHint" hidden>
+    <div class="today-main-kicker">Tipp</div>
+    <h2 class="today-main-title">Als App auf den Startbildschirm</h2>
+    <p class="today-main-hint" id="installHintText"></p>
+    <button class="start-btn" id="installHintAddBtn" type="button" hidden>Zum Startbildschirm hinzuf&uuml;gen</button>
+    <button class="text-link small" id="installHintCloseBtn" type="button">Nicht mehr anzeigen</button>
+  </section>
 
   <section class="today-week">
     <div class="section-head">
@@ -2411,6 +2420,7 @@
           <span class="slider-value" id="rememberStepValue"></span>
         </div>
       </div>
+      <div class="look-host" data-look="remember"></div>
       <div class="group">
         <div class="group-label">Hintergrund</div>
         <div class="color-picker" id="rememberBgColorPicker"></div>
@@ -2508,6 +2518,7 @@
           <span class="slider-value" id="rememberTrainingStepValue"></span>
         </div>
       </div>
+      <div class="look-host" data-look="remember"></div>
       <div class="group">
         <div class="group-label">Hintergrund</div>
         <div class="color-picker" id="rememberTrainingBgColorPicker"></div>
@@ -2763,6 +2774,7 @@
           <span class="slider-value" id="flashIntervalValue"></span>
         </div>
       </div>
+      <div class="look-host" data-look="flash"></div>
       <div class="group">
         <div class="group-label">Hintergrund</div>
         <div class="color-picker" id="flashBgColorPicker"></div>
@@ -2892,6 +2904,7 @@
           <span class="slider-value" id="flashTrainingIntervalValue"></span>
         </div>
       </div>
+      <div class="look-host" data-look="flash"></div>
       <div class="group">
         <div class="group-label">Hintergrund</div>
         <div class="color-picker" id="flashTrainingBgColorPicker"></div>
@@ -3037,6 +3050,7 @@
           <input type="range" id="motHighlightSlider" min="1" max="4" step="0.1" aria-label="Markierdauer">
         </div>
       </div>
+      <div class="look-host" data-look="mot"></div>
       <div class="group">
         <div class="group-label">Hintergrund</div>
         <div class="color-picker" id="motBgColorPicker"></div>
@@ -3148,6 +3162,7 @@
           <input type="range" id="motTrainingHighlightSlider" min="1" max="4" step="0.1" aria-label="Markierdauer">
         </div>
       </div>
+      <div class="look-host" data-look="mot"></div>
       <div class="group">
         <div class="group-label">Hintergrund</div>
         <div class="color-picker" id="motTrainingBgColorPicker"></div>

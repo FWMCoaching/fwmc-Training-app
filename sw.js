@@ -2,7 +2,7 @@
 // the cache is only a fallback for offline use. Requests to other origins
 // (e.g. the programme-code API) are never cached, so a revoked code stops
 // working immediately.
-const CACHE = "fwmc-visual-training-v5";
+const CACHE = "fwmc-visual-training-v6";
 const ASSETS = [
   "./",
   "./index.html",
@@ -10,6 +10,7 @@ const ASSETS = [
   "./app.js",
   "./manifest.json",
   "./logo-full.png",
+  "./logo-white.png",
   "./icon-192.png",
   "./icon-512.png",
   "./fonts/magra-400.woff2",

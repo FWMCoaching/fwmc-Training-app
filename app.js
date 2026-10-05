@@ -58,6 +58,98 @@
   const FIX_COLOR_LIB = [{ key: "grau", name: "Grau", hex: DOT }, ...STROOP_COLOR_LIB];
   const FIX_COLOR_BY_KEY = Object.fromEntries(FIX_COLOR_LIB.map((c) => [c.key, c]));
 
+  // ---- Größe + Farbe der Zahlen/Zeichen (Fabian, 2026-10-05) ----
+  // Positionen merken (Kreise + Zahl), Flash-Speicher-Test (Zeichen) and MOT
+  // (Objekte, no text, so size only) get the same two Feineinstellungen on
+  // both of their ready screens. One spec per exercise, one builder
+  // (initLookControls) that fills every ".look-host[data-look]" in
+  // _body.html. The values live in the exercise's own prefs, so Kombi
+  // snapshots and saved settings carry them; the Cardio guest panel has the
+  // same fields (buildCardioGuestFieldsHtml). Each engine caps the size so
+  // nothing overlaps or leaves the stage. MOT starts at 1.0 because its
+  // objects are tap targets (44 px).
+  const FLASH_CHAR_COLOR_LIB = [{ key: "standard", name: "Standard", hex: "#16232a" }, ...STROOP_COLOR_LIB];
+  const REMEMBER_NUM_COLOR_LIB = [{ key: "weiss", name: "Standard", hex: "#ffffff" }, ...STROOP_COLOR_LIB.filter((c) => c.key !== "weiss")];
+  const LOOK_SPECS = {
+    remember: {
+      size: { field: "markerScale", min: 0.8, max: 1.6, step: 0.1, label: "Größe der Kreise", help: "Die Zahl wächst mit. Wird es zu eng, werden die Kreise automatisch etwas kleiner." },
+      color: { field: "numColor", lib: REMEMBER_NUM_COLOR_LIB, def: "weiss", label: "Farbe der Zahlen", against: () => "#007094", tip: "Tipp: Diese Farbe hebt sich kaum vom Kreis ab." },
+    },
+    flash: {
+      size: { field: "charScale", min: 0.6, max: 2, step: 0.1, label: "Größe der Zeichen", help: "Auf kleinen Bildschirmen wird die Größe automatisch begrenzt." },
+      color: { field: "charColor", lib: FLASH_CHAR_COLOR_LIB, def: "standard", label: "Farbe der Zeichen", against: (p) => (p.bgIntensity > 0 && STROOP_COLOR_BY_KEY[p.bgColorKey] ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "#ffffff"), tip: "Tipp: Diese Farbe hebt sich kaum vom Hintergrund ab." },
+    },
+    mot: {
+      size: { field: "objScale", min: 1, max: 1.6, step: 0.1, inlineValue: true, label: "Größe der Objekte", help: "Bei vielen Objekten auf kleinem Bildschirm wird die Größe automatisch begrenzt, damit sie sich nicht überlappen." },
+    },
+  };
+  function normalizeLookPrefs(kind, p) {
+    const { size, color } = LOOK_SPECS[kind];
+    if (typeof p[size.field] !== "number" || !(p[size.field] >= size.min) || !(p[size.field] <= size.max)) p[size.field] = Math.min(size.max, Math.max(size.min, 1));
+    if (color && !color.lib.some((c) => c.key === p[color.field])) p[color.field] = color.def;
+  }
+  function lookColorHex(kind, key) {
+    const { color } = LOOK_SPECS[kind];
+    return (color.lib.find((c) => c.key === key) || color.lib.find((c) => c.key === color.def)).hex;
+  }
+  // WCAG contrast ratio of two "#rrggbb" colours (1 .. 21).
+  function contrastRatio(hexA, hexB) {
+    const lum = (hex) => {
+      const h = hex.replace("#", "");
+      const ch = [0, 2, 4].map((i) => parseInt(h.substr(i, 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+      return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+    };
+    const a = lum(hexA), b = lum(hexB);
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  }
+  const LOOK_SYNCS = { remember: [], flash: [], mot: [] };
+  function syncLook(kind) { LOOK_SYNCS[kind].forEach((fn) => fn()); }
+  function initLookControls(sources) {
+    document.querySelectorAll(".look-host[data-look]").forEach((host) => {
+      const kind = host.dataset.look;
+      const { size, color } = LOOK_SPECS[kind];
+      const { prefs, save } = sources[kind];
+      const nodes = [];
+      const sizeGroup = document.createElement("div");
+      sizeGroup.className = "group";
+      sizeGroup.dataset.lookSize = kind;
+      // MOT's sibling sliders carry the value inside the label - match that.
+      sizeGroup.innerHTML = size.inlineValue
+        ? `<div class="group-label">${esc(size.label)} <span class="slider-value"></span></div>` +
+          `<div class="slider-row"><input type="range" min="${size.min}" max="${size.max}" step="${size.step}" aria-label="${esc(size.label)}"></div>` +
+          `<div class="group-help">${esc(size.help)}</div>`
+        : `<div class="group-label">${esc(size.label)}</div>` +
+        `<div class="slider-row"><input type="range" min="${size.min}" max="${size.max}" step="${size.step}" aria-label="${esc(size.label)}"><span class="slider-value"></span></div>` +
+        `<div class="group-help">${esc(size.help)}</div>`;
+      const slider = sizeGroup.querySelector("input");
+      const sizeValue = sizeGroup.querySelector(".slider-value");
+      slider.addEventListener("input", () => { prefs[size.field] = Number(slider.value); save(); syncLook(kind); });
+      nodes.push(sizeGroup);
+      let picker = null, hint = null;
+      if (color) {
+        const colorGroup = document.createElement("div");
+        colorGroup.className = "group";
+        colorGroup.dataset.lookColor = kind;
+        colorGroup.innerHTML = `<div class="group-label">${esc(color.label)}</div><div class="color-picker"></div><div class="group-help look-contrast-hint" hidden></div>`;
+        picker = colorGroup.querySelector(".color-picker");
+        hint = colorGroup.querySelector(".look-contrast-hint");
+        buildSingleSelectPicker(picker, color.lib, (key) => { prefs[color.field] = key; save(); syncLook(kind); });
+        nodes.push(colorGroup);
+      }
+      LOOK_SYNCS[kind].push(() => {
+        slider.value = prefs[size.field];
+        sizeValue.textContent = prefs[size.field].toFixed(1).replace(".", ",") + "×";
+        if (!color) return;
+        syncSingleSelectPicker(picker, prefs[color.field]);
+        const low = contrastRatio(lookColorHex(kind, prefs[color.field]), color.against(prefs)) < 3;
+        hint.hidden = !low;
+        hint.textContent = low ? color.tip : "";
+      });
+      host.replaceWith(...nodes);
+    });
+    Object.keys(LOOK_SYNCS).forEach(syncLook);
+  }
+
   // 3x3 field split for Periphere Wahrnehmung's "Eigene Auswahl" mode - the
   // centre cell is where the fixation point already sits, so it's not a
   // selectable zone.
@@ -1272,6 +1364,7 @@
     historyMoreBtn: $("historyMoreBtn"),
     tipsSheet: $("tipsSheet"), tipsBtn: $("tipsBtn"), tipsCloseBtn: $("tipsCloseBtn"),
     tipInstall: $("tipInstall"), tipInstallText: $("tipInstallText"),
+    installHint: $("installHint"), installHintText: $("installHintText"), installHintAddBtn: $("installHintAddBtn"), installHintCloseBtn: $("installHintCloseBtn"),
     faqSheet: $("faqSheet"), faqCloseBtn: $("faqCloseBtn"),
     privacySheet: $("privacySheet"), privacyCloseBtn: $("privacyCloseBtn"),
     masterSettingsSheet: $("masterSettingsSheet"), masterSettingsCloseBtn: $("masterSettingsCloseBtn"),
@@ -3316,9 +3409,9 @@
     syncSingleSelectPicker(els.periphPauseFixColorPicker, state.periphFixColor);
     els.periphFixCharInput.value = state.periphFixChar;
     els.periphFixSizeSlider.value = state.periphFixSize;
-    els.periphFixSizeValue.textContent = state.periphFixSize.toFixed(1) + "×";
+    els.periphFixSizeValue.textContent = state.periphFixSize.toFixed(1).replace(".", ",") + "×";
     els.periphPauseFixSizeSlider.value = state.periphFixSize;
-    els.periphPauseFixSizeValue.textContent = state.periphFixSize.toFixed(1) + "×";
+    els.periphPauseFixSizeValue.textContent = state.periphFixSize.toFixed(1).replace(".", ",") + "×";
   }
   // Horizontal/Vertikal/Diagonal are a multi-select set, same pattern as
   // the arrow-colour picker: "Überall" is the "alle Farben" shortcut for
@@ -7743,12 +7836,15 @@
     trainingPositionMode: "shuffle",
     bgColorKey: "gruen",
     bgIntensity: 0,
+    markerScale: 1,
+    numColor: "weiss",
   };
   function loadRememberPrefs() {
     const saved = readJSON(REMEMBER_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(rememberPrefs, saved);
     if (!STROOP_COLOR_BY_KEY[rememberPrefs.bgColorKey]) rememberPrefs.bgColorKey = "gruen";
     if (typeof rememberPrefs.bgIntensity !== "number" || rememberPrefs.bgIntensity < 0 || rememberPrefs.bgIntensity > 1) rememberPrefs.bgIntensity = 0;
+    normalizeLookPrefs("remember", rememberPrefs);
   }
   function saveRememberPrefsToStorage() { writeJSON(REMEMBER_PREFS_KEY, rememberPrefs); }
   loadRememberPrefs();
@@ -7883,9 +7979,16 @@
     const rect = els.rememberStage.getBoundingClientRect();
     const w = rect.width || 390;
     const h = rect.height || 600;
-    let px = REMEMBER_MARKER_MAX_PX;
+    // "Größe der Kreise" scales the starting size; the shrink loop below
+    // still caps it so all REMEMBER_MAX_MARKERS fit without overlapping.
+    const scale = (rememberState ? rememberState.markerScale : rememberPrefs.markerScale) || 1;
+    const maxPx = Math.round(REMEMBER_MARKER_MAX_PX * scale), minPx = Math.min(REMEMBER_MARKER_MIN_PX, maxPx);
+    let px = maxPx;
     const minYFor = (q) => stageTopClearanceY(rect, els.rememberHint, els.rememberPlayerBar, 112, q / 2);
-    while (px > REMEMBER_MARKER_MIN_PX && rememberHexSlots(w, h, minYFor(px), px) < REMEMBER_MAX_MARKERS) px -= 4;
+    // Bigger than standard only needs room for the markers this level
+    // actually shows (with headroom); later levels shrink it again.
+    const need = scale > 1 && rememberState ? Math.min(REMEMBER_MAX_MARKERS, Math.max(8, rememberState.level * 2)) : REMEMBER_MAX_MARKERS;
+    while (px > minPx && rememberHexSlots(w, h, minYFor(px), px) < need) px -= 4;
     // Within one run the size only ever shrinks (the hint text and with it
     // the free height change between levels), so fixed positions laid out
     // once stay far enough apart.
@@ -8132,8 +8235,10 @@
       revealBaseS: p.revealBaseS, revealStepS: p.revealStepS,
       errorMode: p.errorMode,
       trainingStart: p.trainingStart, trainingProgress: p.trainingProgress,
+      markerScale: p.markerScale || 1,
       paused: false,
     };
+    els.rememberStage.style.setProperty("--remember-num-color", lookColorHex("remember", p.numColor));
     els.rememberStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
     requestWakeLock();
     startRememberLevel();
@@ -8223,6 +8328,7 @@
     });
   }
   function openRememberReady(mode) {
+    syncLook("remember");
     rememberReadyMode = mode;
     const m = REMEMBER_MODES[mode];
     els.rememberReadyTitle.textContent = m.title;
@@ -8343,6 +8449,7 @@
   });
 
   function syncRememberTrainingUI() {
+    syncLook("remember");
     els.rememberStartSlider.value = rememberPrefs.trainingStart;
     els.rememberStartValue.textContent = String(rememberPrefs.trainingStart);
     document.querySelectorAll("[data-remember-position]").forEach((el) => {
@@ -8944,6 +9051,8 @@
     fixChar: "",
     fixColor: "grau",
     fixSize: 1,
+    charScale: 1,
+    charColor: "standard",
   };
   function loadFlashPrefs() {
     const saved = readJSON(FLASH_PREFS_KEY, null);
@@ -8966,6 +9075,7 @@
     if (typeof flashPrefs.fixChar !== "string") flashPrefs.fixChar = "";
     if (!FIX_COLOR_BY_KEY[flashPrefs.fixColor]) flashPrefs.fixColor = "grau";
     if (typeof flashPrefs.fixSize !== "number" || flashPrefs.fixSize < 0.6 || flashPrefs.fixSize > 2) flashPrefs.fixSize = 1;
+    normalizeLookPrefs("flash", flashPrefs);
   }
   function saveFlashPrefsToStorage() { writeJSON(FLASH_PREFS_KEY, flashPrefs); }
   loadFlashPrefs();
@@ -9011,7 +9121,7 @@
         cancelBtn: els.flashTrainingBgSaveCancelBtn, confirmBtn: els.flashTrainingBgSaveConfirmBtn,
       },
     ],
-  }, () => { saveFlashPrefsToStorage(); applyFlashBg(); }, "flash");
+  }, () => { saveFlashPrefsToStorage(); applyFlashBg(); syncLook("flash"); }, "flash");
 
   // ---- Fixpunkt in der Mitte - same customisation (Zeichen/Farbe/Größe)
   // as Periphere Wahrnehmung's, reusing FIX_COLOR_LIB, but with its own
@@ -9062,7 +9172,7 @@
       syncSingleSelectPicker(picker, flashPrefs.fixColor);
       charInput.value = flashPrefs.fixChar;
       sizeSlider.value = flashPrefs.fixSize;
-      sizeValue.textContent = flashPrefs.fixSize.toFixed(1) + "×";
+      sizeValue.textContent = flashPrefs.fixSize.toFixed(1).replace(".", ",") + "×";
     });
     if (flashState) renderFlashFixpoint();
   }
@@ -9295,6 +9405,7 @@
       : "Noch keine Bestleistung bei diesem Modus – leg los!";
   }
   function openFlashReady(mode) {
+    syncLook("flash");
     flashReadyMode = mode;
     els.flashReadyTitle.textContent = mode === "constant" ? "Konstant" : mode === "climb" ? "Steigend, direkt" : "Steigend, mit Wiederholung";
     els.flashReadyDesc.textContent = mode === "constant"
@@ -9325,6 +9436,7 @@
     showScreen("natHome");
   });
   function openFlashTrainingReady() {
+    syncLook("flash");
     syncFlashKindUI();
     syncFlashFieldUI();
     syncFlashTrainingUI();
@@ -9455,8 +9567,14 @@
     flashState.phase = "flash";
     renderFlashFixpoint(); // restores it (if enabled) after flashOpenInput() forced it off
     els.flashDigitEl.textContent = digit;
-    els.flashDigitEl.style.left = pos.fx * 100 + "%";
+    // "Größe/Farbe der Zeichen": 64 px × scale, capped at 30 % of the
+    // shorter stage side so a big character still fits on a phone.
+    const stageRect = els.flashStage.getBoundingClientRect();
+    const capPx = stageRect.width && stageRect.height ? Math.min(stageRect.width, stageRect.height) * 0.3 : 64;
+    els.flashDigitEl.style.fontSize = Math.round(Math.max(24, Math.min(64 * flashState.charScale, Math.max(64, capPx)))) + "px";
+    els.flashDigitEl.style.color = lookColorHex("flash", flashState.charColor);
     els.flashDigitEl.hidden = false;
+    els.flashDigitEl.style.left = flashSafeFx(pos.fx) * 100 + "%";
     els.flashDigitEl.style.top = flashSafeFy(pos.fy) * 100 + "%";
     scheduleFlashTimer(flashAfterDigit, flashEffectiveStimulusS() * 1000);
   }
@@ -9477,6 +9595,15 @@
     const minY = stageTopClearanceY(stageRect, els.flashHint, els.flashPlayerBar, 0, half, 16);
     const maxFy = Math.max(0, (stageRect.height - half) / stageRect.height);
     return Math.min(maxFy, Math.max(fy, minY / stageRect.height));
+  }
+  // Same idea sideways: a large character centred near the edge must not be
+  // cut off by the stage border.
+  function flashSafeFx(fx) {
+    const stageRect = els.flashStage.getBoundingClientRect();
+    if (!stageRect.width) return fx;
+    const half = (els.flashDigitEl.getBoundingClientRect().width || 40) / 2 + 6;
+    const min = half / stageRect.width, max = 1 - min;
+    return min >= max ? 0.5 : Math.min(max, Math.max(min, fx));
   }
   function flashAfterDigit() {
     if (!flashState) return;
@@ -9662,6 +9789,7 @@
       stimulusS: p.stimulusS, intervalS: p.intervalS, errorMode: p.errorMode,
       axes: p.axes.slice(), zones: p.zones.slice(), useZones: p.useZones,
       fixEnabled: p.fixEnabled, fixChar: p.fixChar, fixColor: p.fixColor, fixSize: p.fixSize,
+      charScale: p.charScale || 1, charColor: p.charColor,
       trainingProgress: p.trainingProgress, startLevel: p.startCount, trainingStartLevel: p.trainingStart,
       startTime: performance.now(), paused: false,
     };
@@ -9864,6 +9992,7 @@
     objectCount: 8, targetCount: 4,           // "speed" mode's fixed counts (matches NeuroTracker's own 8/4)
     growStartObjects: 4, growStartTargets: 1, // "count"/"both" modes' starting counts
     trainingObjects: 6, trainingTargets: 2, trainingSpeedStep: 0, trainingProgress: true,
+    objScale: 1,
   };
   function loadMotPrefs() {
     const saved = readJSON(MOT_PREFS_KEY, null);
@@ -9888,9 +10017,15 @@
     motPrefs.trainingTargets = Math.min(motPrefs.trainingTargets, Math.max(1, motPrefs.trainingObjects - 2), MOT_TARGET_MAX);
     if (typeof motPrefs.trainingSpeedStep !== "number" || motPrefs.trainingSpeedStep < 0) motPrefs.trainingSpeedStep = 0;
     if (typeof motPrefs.trainingProgress !== "boolean") motPrefs.trainingProgress = true;
+    normalizeLookPrefs("mot", motPrefs);
   }
   function saveMotPrefsToStorage() { writeJSON(MOT_PREFS_KEY, motPrefs); }
   loadMotPrefs();
+  initLookControls({
+    remember: { prefs: rememberPrefs, save: saveRememberPrefsToStorage },
+    flash: { prefs: flashPrefs, save: saveFlashPrefsToStorage },
+    mot: { prefs: motPrefs, save: saveMotPrefsToStorage },
+  });
 
   const MOT_BEST_KEY = "fwmc-mot-best-v1"; // { speed: bestLevel, count: N, both: N, training: N }
   function motDifficultyBucket() {
@@ -10121,6 +10256,7 @@
       : "Noch keine Bestleistung bei diesem Modus – leg los!";
   }
   function openMotReady(mode) {
+    syncLook("mot");
     motReadyMode = mode;
     els.motReadyTitle.textContent = mode === "speed" ? "Tempo steigt" : mode === "count" ? "Anzahl steigt" : "Beides steigt";
     els.motReadyDesc.textContent = mode === "speed"
@@ -10148,6 +10284,7 @@
     showScreen("natHome");
   });
   function openMotTrainingReady() {
+    syncLook("mot");
     syncMotStyleUI();
     syncMotColorUI();
     syncMotTrainingUI();
@@ -10239,6 +10376,15 @@
   // retry a candidate spot a handful of times if it lands too close to an
   // already-placed object, else just accept it - a rare, brief overlap at
   // high object counts is a much smaller problem than an infinite loop.
+  // "Größe der Objekte" (objScale, 1.0-1.6) scales MOT_RADIUS, capped so n
+  // objects at their minimum spacing cover at most ~28 % of the stage -
+  // never below the plain MOT_RADIUS (44 px tap target).
+  function motRadiusFor(n, stageW, stageH) {
+    const want = MOT_RADIUS * ((motState && motState.objScale) || 1);
+    const area = Math.max(1, stageW * stageH * 0.75);
+    const cap = Math.sqrt((0.28 * area * 4) / (Math.PI * Math.max(1, n))) / MOT_MIN_DIST_FACTOR;
+    return Math.round(Math.max(MOT_RADIUS, Math.min(want, cap)));
+  }
   function motPlaceObjects(n, stageW, stageH, radius, topMinY) {
     const objs = [];
     const minDist = radius * MOT_MIN_DIST_FACTOR;
@@ -10248,7 +10394,7 @@
         x = radius + Math.random() * Math.max(1, stageW - 2 * radius);
         y = topMinY + Math.random() * Math.max(1, stageH - radius - topMinY);
         tries++;
-      } while (tries < 30 && objs.some((o) => Math.hypot(o.x - x, o.y - y) < minDist));
+      } while (tries < 300 && objs.some((o) => Math.hypot(o.x - x, o.y - y) < minDist));
       const angle = Math.random() * Math.PI * 2;
       objs.push({ id: i, x, y, vx: Math.cos(angle), vy: Math.sin(angle) });
     }
@@ -10400,7 +10546,7 @@
     const rect = els.motObjectsLayer.getBoundingClientRect();
     motState.stageW = rect.width;
     motState.stageH = rect.height;
-    motState.radius = MOT_RADIUS;
+    motState.radius = motRadiusFor(n, motState.stageW, motState.stageH);
     motState.topMinY = Math.max(motState.radius, stageTopClearanceY(rect, els.motHint, els.motPlayerBar, motState.radius, motState.radius));
     motState.objects = motPlaceObjects(n, motState.stageW, motState.stageH, motState.radius, motState.topMinY);
     motState.targetIds = pickRandomSubset(motState.objects.map((o) => o.id), k);
@@ -10504,6 +10650,7 @@
       trainingProgress: p.trainingProgress,
       speed: p.speed, trackS: p.trackS, highlightS: p.highlightS,
       errorMode: p.errorMode, style: p.style, colors: p.colors.slice(), targetColors: p.targetColors.slice(),
+      objScale: p.objScale || 1,
       startTime: performance.now(), timer: null, comboDurationTimer: null, raf: null, paused: false,
     };
     els.motStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
@@ -13252,9 +13399,9 @@
     // the OTHER modes' own numeric fields (Flash's constantCount/startCount/
     // repsPerLevel, MOT's fixed-count/grow-start objects+targets) still
     // deliberately stay at each domain's own built-in default for now.
-    if (guestId === "remember") return { duration: 20, mode: "fixed", revealBaseS: REMEMBER_DIFFICULTIES.mittel.revealBaseS, revealStepS: REMEMBER_DIFFICULTIES.mittel.revealStepS, errorMode: "reset2", trainingStart: 8, trainingProgress: true, trainingPositionMode: "shuffle", ...bg };
-    if (guestId === "flash") return { duration: 20, mode: "constant", kind: "zahlen", stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS, intervalS: FLASH_DIFFICULTIES.mittel.intervalS, errorMode: "reset2", axes: PERIPH_AXIS_KEYS.slice(), useZones: false, zones: PERIPH_ZONE_KEYS.slice(), fixEnabled: true, fixChar: "", fixColor: "grau", fixSize: 1, constantCount: 3, startCount: 3, repsPerLevel: 2, trainingStart: 5, trainingProgress: true, ...bg };
-    if (guestId === "mot") return { duration: 20, mode: "speed", style: "flach", speed: MOT_DIFFICULTIES.mittel.speed, trackS: MOT_DIFFICULTIES.mittel.trackS, highlightS: MOT_DIFFICULTIES.mittel.highlightS, errorMode: "reset2", colors: ["schwarz"], targetColors: ["gelb"], objectCount: 8, targetCount: 4, growStartObjects: 4, growStartTargets: 1, trainingObjects: 6, trainingTargets: 2, trainingSpeedStep: 0, trainingProgress: true, ...bg };
+    if (guestId === "remember") return { duration: 20, mode: "fixed", revealBaseS: REMEMBER_DIFFICULTIES.mittel.revealBaseS, revealStepS: REMEMBER_DIFFICULTIES.mittel.revealStepS, errorMode: "reset2", trainingStart: 8, trainingProgress: true, trainingPositionMode: "shuffle", markerScale: 1, numColor: "weiss", ...bg };
+    if (guestId === "flash") return { duration: 20, mode: "constant", kind: "zahlen", stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS, intervalS: FLASH_DIFFICULTIES.mittel.intervalS, errorMode: "reset2", axes: PERIPH_AXIS_KEYS.slice(), useZones: false, zones: PERIPH_ZONE_KEYS.slice(), fixEnabled: true, fixChar: "", fixColor: "grau", fixSize: 1, constantCount: 3, startCount: 3, repsPerLevel: 2, trainingStart: 5, trainingProgress: true, charScale: 1, charColor: "standard", ...bg };
+    if (guestId === "mot") return { duration: 20, mode: "speed", style: "flach", speed: MOT_DIFFICULTIES.mittel.speed, trackS: MOT_DIFFICULTIES.mittel.trackS, highlightS: MOT_DIFFICULTIES.mittel.highlightS, errorMode: "reset2", colors: ["schwarz"], targetColors: ["gelb"], objectCount: 8, targetCount: 4, growStartObjects: 4, growStartTargets: 1, trainingObjects: 6, trainingTargets: 2, trainingSpeedStep: 0, trainingProgress: true, objScale: 1, ...bg };
     if (guestId === "vt-color" || guestId === "vrw-original") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg };
     if (guestId === "stroop-classic" || guestId === "stroop-bg") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "blau", "gruen"], ...bg };
     if (guestId === "8-vrw" || guestId === "cross-modal") return { duration: 20, stimulusS: 1, intervalMin: 2, intervalMax: 4, ...bg };
@@ -13315,6 +13462,9 @@
         if (!Number.isFinite(p.startCount) || p.startCount < 1) p.startCount = d.startCount;
         if (!Array.isArray(p.zones) || !p.zones.length || !p.zones.every((z) => PERIPH_ZONE_KEYS.includes(z))) p.zones = d.zones.slice();
       }
+      if (cardioGuestIsRemember(t.id)) normalizeLookPrefs("remember", p);
+      if (cardioGuestIsFlash(t.id)) normalizeLookPrefs("flash", p);
+      if (cardioGuestIsMot(t.id)) normalizeLookPrefs("mot", p);
       if (cardioGuestIsRemember(t.id)) {
         if (!Number.isFinite(p.revealBaseS) || p.revealBaseS < 0.5 || p.revealBaseS > 3) p.revealBaseS = d.revealBaseS;
         if (!Number.isFinite(p.revealStepS) || p.revealStepS < 0.1 || p.revealStepS > 1) p.revealStepS = d.revealStepS;
@@ -13482,6 +13632,19 @@
   // "vorher einstellen" vs. "während des laufenden Trainings live wählen"
   // too). Returns markup only - wireCardioGuestFields() below does the
   // corresponding event wiring, kept as its own function for the same reason.
+  // Größe + Farbe der Zahlen/Zeichen (LOOK_SPECS), same fields as the
+  // exercise's own ready screen.
+  function cardioLookFieldsHtml(kind, typeId, cfg) {
+    const { size, color } = LOOK_SPECS[kind];
+    let html = `<div class="group-label">${esc(size.label)}</div>` +
+      `<div class="slider-row"><input type="range" min="${size.min}" max="${size.max}" step="${size.step}" data-type="${typeId}" data-f="${size.field}" value="${cfg[size.field]}" aria-label="${esc(size.label)}"><span class="slider-value" data-fvalue="${typeId}-${size.field}">${cfg[size.field]}</span></div>`;
+    if (color) {
+      html += `<div class="group-label">${esc(color.label)}</div><div class="cardio-guest-colors">` +
+        color.lib.map((c) => `<label><input type="radio" name="cardioGuestLook-${typeId}" data-looktype="${typeId}" data-lookfield="${color.field}" data-lookcolor="${c.key}" ${cfg[color.field] === c.key ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
+        `</div>`;
+    }
+    return html;
+  }
   function buildCardioGuestFieldsHtml(t, cfg) {
     const lib = cardioGuestColorLib(t.id);
     let html = "";
@@ -13548,7 +13711,7 @@
           // (#rememberAdvanced) - the difficulty presets above are just
           // three fixed points on the same two fields these sliders cover
           // continuously.
-          html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` +
+          html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` + cardioLookFieldsHtml("remember", t.id, cfg) +
             `<div class="group-label">Einblenddauer bei 2 Zahlen</div>` +
             `<div class="slider-row"><input type="range" min="0.4" max="3" step="0.1" data-type="${t.id}" data-f="revealBaseS" value="${cfg.revealBaseS}"><span class="slider-value" data-fvalue="${t.id}-revealBaseS">${cfg.revealBaseS}</span></div>` +
             `<div class="group-label">Zusätzliche Zeit je weiterer Zahl</div>` +
@@ -13577,7 +13740,7 @@
           // Raw stimulusS/intervalS sliders + the fixation-point controls,
           // same as Flash's own Ready screen nests both under its own
           // Feineinstellungen (#flashAdvanced).
-          html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` +
+          html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` + cardioLookFieldsHtml("flash", t.id, cfg) +
             `<div class="group-label">Einblenddauer je Zahl</div>` +
             `<div class="slider-row"><input type="range" min="0.3" max="2" step="0.1" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"><span class="slider-value" data-fvalue="${t.id}-stimulusS">${cfg.stimulusS}</span></div>` +
             `<div class="group-label">Pause zwischen den Zahlen</div>` +
@@ -13626,7 +13789,7 @@
             `</div>`;
           // Raw speed/trackS/highlightS sliders, same as MOT's own Ready
           // screen nests them under its own Feineinstellungen (#motAdvanced).
-          html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` +
+          html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` + cardioLookFieldsHtml("mot", t.id, cfg) +
             `<div class="group-label">Geschwindigkeit</div>` +
             `<div class="slider-row"><input type="range" min="0.05" max="0.4" step="0.01" data-type="${t.id}" data-f="speed" value="${cfg.speed}"><span class="slider-value" data-fvalue="${t.id}-speed">${cfg.speed}</span></div>` +
             `<div class="group-label">Verfolgungsdauer</div>` +
@@ -13937,6 +14100,13 @@
     });
     container.querySelectorAll("input[data-fixchar]").forEach((input) => {
       input.addEventListener("input", () => { getCfg(input.dataset.type).fixChar = input.value.slice(0, 3); persist(); });
+    });
+    container.querySelectorAll("input[data-lookcolor]").forEach((radio) => {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        getCfg(radio.dataset.looktype)[radio.dataset.lookfield] = radio.dataset.lookcolor;
+        persist();
+      });
     });
     container.querySelectorAll("input[data-fixcolor]").forEach((radio) => {
       radio.addEventListener("change", () => {
@@ -26157,6 +26327,56 @@
   initStartScreen();
   openFromHash();
   if (!readJSON(TIPS_KEY, false)) openTips();
+
+  // ---- Startbild ausblenden (2026-10-05) ----
+  // #appSplash covers the first paint; once the app is set up it fades out,
+  // but not before ~0.7 s after navigation start so it never just flickers.
+  // Automated browsers drop it at once (tests of it set fwmc-test-splash).
+  (function hideAppSplash() {
+    const el = $("appSplash");
+    if (!el) return;
+    const gone = () => { el.classList.add("is-gone"); setTimeout(() => el.remove(), 400); };
+    if (navigator.webdriver && !readJSON("fwmc-test-splash", false)) { el.remove(); return; }
+    setTimeout(gone, Math.max(0, 700 - performance.now()));
+  })();
+
+  // ---- Hinweis "Zum Startbildschirm hinzufügen" (2026-10-05) ----
+  // One card on Heute, only on a phone/tablet in the browser (not when
+  // already installed, not inside the preview frame), until the client
+  // taps "Nicht mehr anzeigen" or installs. Android/Chrome gets a real
+  // install button when the browser offers one (beforeinstallprompt), iOS
+  // the Safari steps. Tests force a platform with fwmc-test-install.
+  (function installHint() {
+    const KEY = "fwmc-install-hint-dismissed";
+    const forced = readJSON("fwmc-test-install", null);
+    let inFrame = false;
+    try { inFrame = window.self !== window.top; } catch (e) { inFrame = true; }
+    const platform = forced || (standalone || inFrame || navigator.webdriver ? null : isIOS ? "ios" : /Android/i.test(navigator.userAgent) ? "android" : null);
+    let deferredPrompt = null;
+    const hide = () => { els.installHint.hidden = true; };
+    const dismiss = () => { writeJSON(KEY, true); hide(); };
+    els.installHintCloseBtn.addEventListener("click", dismiss);
+    els.installHintAddBtn.addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      try { const choice = await deferredPrompt.userChoice; if (choice && choice.outcome === "accepted") dismiss(); } catch (e) {}
+      deferredPrompt = null;
+      els.installHintAddBtn.hidden = true;
+    });
+    window.addEventListener("appinstalled", dismiss);
+    if (!platform || readJSON(KEY, false)) return;
+    // Static text only; the button names stay on one line (nowrap).
+    els.installHintText.innerHTML = platform === "ios"
+      ? "Tippe in Safari auf <span class=\"nowrap\">„Teilen“</span> (das Quadrat mit dem Pfeil) und dann auf <span class=\"nowrap\">„Zum Home-Bildschirm“</span>. Dann liegt dein Training mit Logo auf dem Startbildschirm und öffnet ohne Browserleiste."
+      : "Öffne das Browser-Menü (⋮) und tippe auf <span class=\"nowrap\">„Zum Startbildschirm</span> <span class=\"nowrap\">hinzufügen“</span>. Dann liegt dein Training mit Logo auf dem Startbildschirm und öffnet ohne Browserleiste.";
+    els.installHint.hidden = false;
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      els.installHintText.textContent = "Dann liegt dein Training mit Logo auf dem Startbildschirm und öffnet ohne Browserleiste.";
+      els.installHintAddBtn.hidden = false;
+    });
+  })();
 
   // PWA: only meaningful on real hosting - service workers do not run
   // inside the Artifacts preview sandbox, so registration there is a
