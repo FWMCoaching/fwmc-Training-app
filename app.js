@@ -15867,6 +15867,40 @@
     document.addEventListener("touchend", end, { passive: true });
     document.addEventListener("touchcancel", () => reset(true), { passive: true });
   })();
+  // ---- Seite hinter offenen Fenstern festhalten (2026-10-05) ----
+  // While any .sheet is open the page is pinned (body position:fixed at
+  // -scrollY) instead of overflow:hidden, which dropped the scroll position
+  // to the top. On close the old position comes back - unless a sheet action
+  // opened another screen meanwhile, then that screen starts at the top.
+  (function sheetScrollLock() {
+    let lockedY = null, lockedScreen = null;
+    const visibleScreen = () => [...document.querySelectorAll(".screen")].find((el) => !el.hidden && el.offsetParent !== null) || null;
+    function sync() {
+      const open = !!document.querySelector(".sheet:not([hidden])");
+      const html = document.documentElement, body = document.body;
+      if (open && lockedY === null) {
+        lockedY = window.scrollY;
+        lockedScreen = visibleScreen();
+        body.style.top = -lockedY + "px";
+        html.classList.add("sheet-lock");
+        body.classList.add("sheet-lock");
+      } else if (!open && lockedY !== null) {
+        const y = lockedY;
+        const same = visibleScreen() === lockedScreen;
+        lockedY = null; lockedScreen = null;
+        html.classList.remove("sheet-lock");
+        body.classList.remove("sheet-lock");
+        body.style.top = "";
+        const prev = html.style.scrollBehavior;
+        html.style.scrollBehavior = "auto";
+        window.scrollTo(0, same ? y : 0);
+        html.style.scrollBehavior = prev;
+      }
+    }
+    new MutationObserver(sync).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden"] });
+    sync();
+  })();
+
   // ---- Fenster nach unten wegziehen (Fabian, 2026-10-05: "bei zügigem
   // Ziehen solche Fenster schließen"): every bottom sheet gets a small grab
   // bar; when its content is scrolled to the top, dragging it down moves the
@@ -27584,13 +27618,8 @@
       kombi: fb ? () => startKombiWith("free", () => openFreeComboCapture(freeFind(fid), null)) : null,
     };
   }
-  // Every open sheet locks the page scroll (html/body overflow hidden), which
-  // drops the scroll position - "Abbrechen" must leave the page where it was.
-  let tileSheetScrollY = 0;
   function closeTileSheet() {
     tileSheet.hidden = true;
-    if (tileSheetScrollY) window.scrollTo(0, tileSheetScrollY);
-    tileSheetScrollY = 0;
     if (tileSheetReturnFocus && document.body.contains(tileSheetReturnFocus)) tileSheetReturnFocus.focus({ preventScroll: true });
     tileSheetReturnFocus = null;
   }
@@ -27609,7 +27638,6 @@
       b.addEventListener("click", () => {
         tileSheetReturnFocus = fn ? null : tileSheetReturnFocus;
         lpSuppressUntil = 0;
-        if (fn) tileSheetScrollY = 0;
         closeTileSheet();
         if (fn) fn();
       });
@@ -27625,7 +27653,6 @@
     if (a.kombi) add("Zum Kombi-Programm", "start-btn secondary", "kombi", a.kombi);
     add("Abbrechen", "text-link", "cancel", null);
     tileSheetReturnFocus = tile;
-    tileSheetScrollY = window.scrollY;
     tileSheet.hidden = false;
     focusFirstIn(tileSheet);
   }
