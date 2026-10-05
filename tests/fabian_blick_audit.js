@@ -7,7 +7,19 @@
   const vis = el => {
     if (!el || el.closest('[hidden]')) return false;
     const r = el.getBoundingClientRect(), s = cs(el);
-    return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity > 0.05;
+    if (!(r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity > 0.05)) return false;
+    // Clipped away by a collapsed ancestor (e.g. closed "Feineinstellungen" with max-height 0)?
+    for (let e = el.parentElement; e && e !== document.body; e = e.parentElement) {
+      const es = cs(e);
+      if (+es.opacity <= 0.05) return false;
+      if (es.overflowX !== 'visible' || es.overflowY !== 'visible') {
+        const q = e.getBoundingClientRect();
+        if (q.height < 1 || q.width < 1) return false;
+        if (es.overflowY !== 'visible' && es.overflowY !== 'auto' && es.overflowY !== 'scroll' && (r.top >= q.bottom - 1 || r.bottom <= q.top + 1)) return false;
+        if (es.overflowX === 'hidden' || es.overflowX === 'clip') { if (r.left >= q.right - 1 || r.right <= q.left + 1) return false; }
+      }
+    }
+    return true;
   };
   function desc(el) {
     const id = el.id ? '#' + el.id : '';

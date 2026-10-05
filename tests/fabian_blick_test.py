@@ -76,7 +76,9 @@ STATE_JS = r"""
   const sheet = [...document.querySelectorAll('.sheet')].filter(vis).map(e => e.id);
   const player = [...document.querySelectorAll('.player')].filter(vis).map(e => e.id);
   const done = [...document.querySelectorAll('.done-panel')].filter(vis).map(e => e.id || e.className);
-  return {screen: scr.join('+'), sheet: sheet.join('+'), player: player.join('+'), done: done.join('+')};
+  const sc = document.getElementById(scr[0] || '');
+  const h = sc && [...sc.querySelectorAll('h1, h2')].find(vis);
+  return {screen: scr.join('+'), title: h ? h.textContent.trim().replace(/\s+/g, ' ').slice(0, 40) : '', sheet: sheet.join('+'), player: player.join('+'), done: done.join('+')};
 }
 """
 
@@ -102,7 +104,10 @@ CANDIDATES_JS = r"""
   const els = [...root.querySelectorAll('button, a[href], [role=button], [data-open-combo], summary')]
     .filter(el => vis(el) && !el.disabled && !el.closest('.bottom-nav, .brandbar .bar-back-btn, .bar-back-btn'))
     .filter(el => !(el.tagName === 'A' && /^https?:|^mailto:|^tel:/.test(el.getAttribute('href') || '')))
-    .filter(el => !skip.test((el.textContent || '') + ' ' + (el.getAttribute('aria-label') || '')));
+    .filter(el => !skip.test((el.textContent || '') + ' ' + (el.getAttribute('aria-label') || '')))
+    // Settings toggles (choices, chips, steppers, tabs) never open a new screen: skip for speed.
+    .filter(el => !el.matches('[aria-pressed], [aria-checked], [role=tab], [role=radio], [role=switch], .choice, .chip, [class*=stepper], [class*=-opt], [class*=seg]'))
+    .filter(el => (el.textContent || '').trim().length > 2 || el.matches('.master-settings-btn, [aria-label]'));
   return els.map(el => ({sel: path(el), text: (el.textContent || el.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 40)}));
 }
 """
@@ -111,9 +116,12 @@ AUDIT_JS = open(os.path.join(HERE, "fabian_blick_audit.js"), encoding="utf-8").r
 
 
 def key_of(state):
-    parts = [state["screen"]]
     if state["sheet"]:
-        parts.append("sheet:" + state["sheet"])
+        return "sheet:" + state["sheet"]  # the same sheet over any screen is one state
+    parts = [state["screen"]]
+    # Screens shared by several exercises/programmes are told apart by their title.
+    if re.fullmatch(r"ready|programIntro|\w*ProgramIntro|\w*BundleOverview|bundleOverview", state["screen"] or ""):
+        parts = [f'{state["screen"]}[{state["title"]}]']
     if state["player"]:
         parts.append("player:" + state["player"])
     return " / ".join(p for p in parts if p)
@@ -190,6 +198,7 @@ async def discover(b):
             if not k or k in states:
                 continue
             states[k] = (entry, clicks + [c["sel"]], c["text"])
+            print(f"  + {k}  ({entry} › {c['text']})", flush=True)
             if not st["player"]:
                 queue.append((entry, clicks + [c["sel"]], depth + 1))
         # Remember how to start the exercise from this screen (player audit).
@@ -206,6 +215,51 @@ async def discover(b):
                 starts[base_state["screen"]] = (entry, clicks + [sb])
     await ctx.close()
     return states, starts
+
+
+SCROLL_JS = r"""
+async () => {
+  const out = [];
+  const vis = el => el && !el.closest('[hidden]') && el.getBoundingClientRect().width > 0;
+  const sheets = [...document.querySelectorAll('.sheet')].filter(vis);
+  const layer = sheets[sheets.length - 1] || [...document.querySelectorAll('.screen')].find(vis);
+  if (!layer) return out;
+  const scrollers = [document.scrollingElement, ...layer.querySelectorAll('*')].filter(e => {
+    if (e === document.scrollingElement) return !sheets.length;
+    const s = getComputedStyle(e); return /(auto|scroll)/.test(s.overflowY) && e.scrollHeight > e.clientHeight + 4; });
+  const frame = () => new Promise(r => requestAnimationFrame(() => r(true)));
+  for (const sc of scrollers.slice(0, 3)) {
+    sc.scrollTop = sc.scrollHeight; await frame(); await new Promise(r => setTimeout(r, 120));
+    sc.scrollTop = 0; sc.scrollTop = -50; await frame(); await new Promise(r => setTimeout(r, 120));
+  }
+  // Still alive? A frame must come within a second, and the first visible
+  // control must be the element hit at its centre (no invisible layer on top).
+  const alive = await Promise.race([frame(), new Promise(r => setTimeout(() => r(false), 1000))]);
+  if (!alive) out.push({cat: 'eingefroren', msg: 'Seite reagiert nach Scrollen an Anfang/Ende nicht mehr', el: ''});
+  const ctrls = [...layer.querySelectorAll('button, a[href], input, select')].filter(e => {
+    const r = e.getBoundingClientRect(); return vis(e) && r.top >= 0 && r.bottom <= innerHeight && getComputedStyle(e).visibility !== 'hidden'; });
+  for (const c of ctrls.slice(0, 12)) {
+    const r = c.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    if (hit && !c.contains(hit) && !hit.contains(c) && !hit.closest('.bottom-nav, .brandbar') ) {
+      const d = hit.tagName.toLowerCase() + (hit.id ? '#' + hit.id : '') + (typeof hit.className === 'string' && hit.className ? '.' + hit.className.split(' ')[0] : '');
+      out.push({cat: 'eingefroren', msg: 'Knopf nach Scrollen nicht antippbar, verdeckt von ' + d,
+                el: c.tagName.toLowerCase() + (c.id ? '#' + c.id : '') + ' "' + (c.textContent || '').trim().slice(0, 24) + '"'});
+    }
+  }
+  return out;
+}
+"""
+
+
+async def scroll_check(pg):
+    """Scroll every scroll area to its end and back to the top (also past it),
+    then check the page still reacts (Fabian 2026-10-05: Grundeinstellungen
+    froze after scrolling to the top)."""
+    try:
+        return await asyncio.wait_for(pg.evaluate(SCROLL_JS), timeout=8)
+    except Exception as e:
+        return [{"cat": "eingefroren", "msg": "Seite hängt nach Scrollen (" + type(e).__name__ + ")", "el": ""}]
 
 
 async def audit_config(b, cfg, states, starts):
@@ -225,6 +279,8 @@ async def audit_config(b, cfg, states, starts):
         if is_start and not st["player"]:
             continue  # starts a sheet/confirm instead; covered elsewhere
         res = await pg.evaluate(AUDIT_JS, {"isStart": is_start})
+        if not is_start:
+            res["findings"] += await scroll_check(pg)
         infos[k] = res["info"]
         for f in res["findings"]:
             f["state"] = k if not is_start else f"player:{st['player']}"
@@ -265,7 +321,7 @@ def cross_screen(infos_by_cfg):
 
 def fkey(f):
     # Stable key without the config so a finding in all 4 configs counts once.
-    return f"{f['cat']}|{f['state']}|{f.get('el','')}|{re.sub(r'[0-9.]+', '#', f['msg'])[:120]}"
+    return f"{f['cat']}|{f['state']}|{f.get('el','')}|{re.sub(r'\d+(\.\d+)?', '#', f['msg'])[:120]}"
 
 
 def write_report(findings, states, starts, new_keys, secs):
