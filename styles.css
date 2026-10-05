@@ -2103,14 +2103,15 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 /* Seitenübergänge (2026-10-05, enablePageTransitions in app.js) */
 /* On a page only the content moves; the logo bar stays put (same place
    on every page). Players and result panels animate as a whole. */
-.screen.tr-push > :not(.brandbar){animation:trPush .26s cubic-bezier(.2,.8,.2,1)}
-.screen.tr-pop > :not(.brandbar){animation:trPop .26s cubic-bezier(.2,.8,.2,1)}
-.screen.tr-fade > :not(.brandbar),.tr-fade:not(.screen){animation:trFade .2s ease}
-.tr-rise{animation:trRise .26s cubic-bezier(.2,.8,.2,1)}
-@keyframes trPush{from{transform:translateX(28%);opacity:0}to{transform:none;opacity:1}}
-@keyframes trPop{from{transform:translateX(-22%);opacity:0}to{transform:none;opacity:1}}
+.screen.tr-push > :not(.brandbar){animation:trPush .36s cubic-bezier(.32,.72,0,1)}
+.screen.tr-pop > :not(.brandbar){animation:trPop .36s cubic-bezier(.32,.72,0,1)}
+.screen.tr-fade > :not(.brandbar),.tr-fade:not(.screen){animation:trFade .24s ease}
+.tr-rise{animation:trRise .34s cubic-bezier(.32,.72,0,1)}
+/* Slower and a real slide (Fabian 2026-10-05: "wirkt fast wie ein Einblenden"): longer travel, opacity only at the very start, iOS-like curve. */
+@keyframes trPush{from{transform:translateX(70%);opacity:.2}35%{opacity:1}to{transform:none;opacity:1}}
+@keyframes trPop{from{transform:translateX(-40%);opacity:.2}35%{opacity:1}to{transform:none;opacity:1}}
 @keyframes trFade{from{opacity:0}to{opacity:1}}
-@keyframes trRise{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes trRise{from{transform:translateY(48px);opacity:0}40%{opacity:1}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.screen.tr-push > :not(.brandbar),.screen.tr-pop > :not(.brandbar),.tr-rise{animation:trFade .2s ease}}
 body{overflow-x:clip}
 
