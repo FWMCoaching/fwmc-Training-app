@@ -2174,19 +2174,19 @@
   // fwmc-test-natmodes is set (many tests click the NAT sub-tabs).
   const NAT_MODES = {
     remember: { title: "Positionen merken", modes: [
-      { key: "fixed", label: "Feste Positionen", card: "rememberOpenFixed", screen: "rememberReady" },
-      { key: "shuffle", label: "Bewegte Positionen", card: "rememberOpenShuffle", screen: "rememberReady" },
-      { key: "training", label: "Trainingsmodus", card: "rememberOpenTraining", screen: "rememberTrainingReady" }] },
+      { key: "fixed", label: "Feste Positionen", sub: "Plätze bleiben", card: "rememberOpenFixed", screen: "rememberReady" },
+      { key: "shuffle", label: "Bewegte Positionen", sub: "neu gemischt", card: "rememberOpenShuffle", screen: "rememberReady" },
+      { key: "training", label: "Trainingsmodus", sub: "gezielt üben", card: "rememberOpenTraining", screen: "rememberTrainingReady" }] },
     flash: { title: "Flash-Speicher-Test", modes: [
-      { key: "constant", label: "Konstant", card: "flashOpenConstant", screen: "flashReady" },
-      { key: "climb", label: "Steigend", card: "flashOpenClimb", screen: "flashReady" },
-      { key: "climbRepeat", label: "Steigend mit Wiederholung", card: "flashOpenClimbRepeat", screen: "flashReady" },
-      { key: "training", label: "Trainingsmodus", card: "flashOpenTraining", screen: "flashTrainingReady" }] },
+      { key: "constant", label: "Konstant", sub: "gleich viele, schneller", card: "flashOpenConstant", screen: "flashReady" },
+      { key: "climb", label: "Steigend", sub: "+1 nach Erfolg", card: "flashOpenClimb", screen: "flashReady" },
+      { key: "climbRepeat", label: "Mit Wiederholung", sub: "+1 nach 2–3 Runden", card: "flashOpenClimbRepeat", screen: "flashReady" },
+      { key: "training", label: "Trainingsmodus", sub: "gezielt üben", card: "flashOpenTraining", screen: "flashTrainingReady" }] },
     mot: { title: "Objektverfolgung (MOT)", modes: [
-      { key: "speed", label: "Tempo steigt", card: "motOpenSpeed", screen: "motReady" },
-      { key: "count", label: "Anzahl steigt", card: "motOpenCount", screen: "motReady" },
-      { key: "both", label: "Beides steigt", card: "motOpenBoth", screen: "motReady" },
-      { key: "training", label: "Trainingsmodus", card: "motOpenTraining", screen: "motTrainingReady" }] },
+      { key: "speed", label: "Tempo steigt", sub: "immer schneller", card: "motOpenSpeed", screen: "motReady" },
+      { key: "count", label: "Anzahl steigt", sub: "immer mehr Objekte", card: "motOpenCount", screen: "motReady" },
+      { key: "both", label: "Beides steigt", sub: "Tempo und Anzahl", card: "motOpenBoth", screen: "motReady" },
+      { key: "training", label: "Trainingsmodus", sub: "gezielt üben", card: "motOpenTraining", screen: "motTrainingReady" }] },
   };
   const NAT_MODE_KEY = "fwmc-nat-mode-v1";
   const natModesOn = !(navigator.webdriver && !readJSON("fwmc-test-natmodes", false));
@@ -2203,7 +2203,7 @@
     box.className = "group nat-mode-group";
     box.hidden = true;
     box.dataset.natEx = ex;
-    box.innerHTML = `<div class="group-label">Modus</div><div class="choice-row two" role="group" aria-label="Modus">${NAT_MODES[ex].modes.map((m) => `<button type="button" class="choice" data-nat-mode="${m.key}">${esc(m.label)}</button>`).join("")}</div>`;
+    box.innerHTML = `<div class="group-label">Modus</div><div class="choice-row${NAT_MODES[ex].modes.length === 3 ? "" : " two"}" role="group" aria-label="Modus">${NAT_MODES[ex].modes.map((m) => `<button type="button" class="choice" data-nat-mode="${m.key}">${esc(m.label)}<small>${esc(m.sub)}</small></button>`).join("")}</div>`;
     sub.after(box);
     const h1 = scr.querySelector(":scope > h1.page-title");
     if (h1) h1.dataset.natOrigTitle = h1.textContent;

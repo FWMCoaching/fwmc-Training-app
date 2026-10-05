@@ -311,5 +311,12 @@ For every new or changed exercise/screen, in the same commit:
   Fabian says "zurück"**: set `bottomNavOn = false` in app.js (old layout comes
   back unchanged), or revert to merge 482c1f7 (state before the bar). Test:
   `tests/bottom_nav_1005_test.py`.
+- NAT wie Visual Training (2026-10-05): no sub-tab row; the 5 exercises are
+  `.nat-tile` cards (VT tile look) under "Einzelne Übungen", variants are a
+  "Modus" row on the ready screen (`NAT_MODES` in app.js; the mode buttons
+  click the old hidden variant cards, so openers/Kombi/Heute stay as they
+  are; last mode in `fwmc-nat-mode-v1`). A new NAT exercise needs a tile
+  and, if it has variants, a `NAT_MODES` entry. Off in automated browsers
+  unless `fwmc-test-natmodes`. Test: `tests/nat_modes_1005_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.
