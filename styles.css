@@ -1442,6 +1442,16 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
   max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;
 }
 @media (min-width:600px){.sheet-inner{border-radius:22px}}
+/* iPhone (Fabian 2026-10-05: Grundeinstellungen "frieren ein", wenn man
+   ganz nach oben scrollt): at the top of the sheet iOS handed the drag on
+   to the page behind it, which can't move, so the sheet seemed stuck until
+   the finger was lifted. The sheet now keeps its own scroll (contain), the
+   page behind is locked while a sheet is open, and the height follows the
+   visible viewport (dvh) so the top never hides under Safari's bars. */
+.sheet{overscroll-behavior:contain}
+.sheet-inner{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;max-height:90dvh}
+@supports not (height:1dvh){.sheet-inner{max-height:90vh}}
+html:has(.sheet:not([hidden])),body:has(.sheet:not([hidden])){overflow:hidden}
 .sheet-inner h2{margin:0 0 12px;font-size:23px}
 .tips{margin:0 0 20px;padding:0;list-style:none;counter-reset:tip;display:flex;flex-direction:column;gap:12px}
 .tips li{counter-increment:tip;position:relative;padding-left:40px;font-size:14.5px;color:var(--ink-soft)}

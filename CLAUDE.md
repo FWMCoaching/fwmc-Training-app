@@ -331,7 +331,7 @@ For every new or changed exercise/screen, in the same commit:
   switch `masterPrefs.levelSuggest` in Grundeinstellungen. Details and the
   assumed thresholds: docs/notes/02. A new NAT exercise with difficulty
   levels gets a `LEVEL_SUGGEST_EX` entry. Test: `tests/level_suggest_1005_test.py`.
-- Freie Bausteine (2026-10-05): 7th area `free` (`#freeHome`, Training hub
+- Eigenes Training (2026-10-05, first built as "Freie Bausteine", renamed by Fabian the same day; client-facing name everywhere is "Eigenes Training", one item is "ein Training"): 7th area `free` (`#freeHome`, Training hub
   tile, `?bereich=free`), the client's own activities as Abhaken / Mit Zeit /
   Checkliste in `fwmc-free-blocks-v1` + read-only templates (`FREE_TEMPLATES`,
   "Dehnen"). Kombi blocks keep their own copy (`{domain:"free", free}`),

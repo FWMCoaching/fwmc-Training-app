@@ -1200,7 +1200,7 @@
   // place (rather than removing the mechanism) in case a future domain
   // ever wants a plain one-click preset again.
   const COMBO_PRESETS = {};
-  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Movement", visual: "Visual Training", workout: "Workout", cardio: "Cardio", nat: "NAT", free: "Freier Baustein" };
+  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Movement", visual: "Visual Training", workout: "Workout", cardio: "Cardio", nat: "NAT", free: "Eigenes Training" };
   const PERIPH_ICON_HTML = '<div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg></div>';
   const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat", "free"];
   // Blitz-Raster/Flash-Speicher-Test/Objektverfolgung (MOT) render inside the same
@@ -26115,7 +26115,7 @@
       icon: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' },
     { key: "nat", label: "NAT – Neuroathletik", short: "NAT", color: "#3a7d2c", screen: "natHome", text: "Wahrnehmung, Gedächtnis und Reaktion.",
       icon: '<circle cx="12" cy="12" r="8" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="2.5" fill="#fff"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
-    { key: "free", label: "Freie Bausteine", short: "Freie Bausteine", color: "#a0527a", screen: "freeHome", text: "Eigenes wie Dehnen, Eisbad oder Journal.",
+    { key: "free", label: "Eigenes Training", short: "Eigenes Training", color: "#a0527a", screen: "freeHome", text: "Eigenes wie Dehnen, Eisbad oder Journal.",
       icon: '<rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M8 12.5l2.8 2.8L16.5 9" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
   ];
   const AREA_BY_KEY = Object.fromEntries(PLAN_AREAS.map((a) => [a.key, a]));
@@ -26739,7 +26739,7 @@
     }));
     return {
       id: String(b.id || newId()), kind,
-      title: String(b.title || "").trim().slice(0, 40) || "Eigener Baustein",
+      title: String(b.title || "").trim().slice(0, 40) || "Eigenes Training",
       note: String(b.note || "").trim().slice(0, 160),
       minutes: Math.max(1, Math.min(60, Math.round(Number(b.minutes) || 5))),
       items,
@@ -26847,7 +26847,7 @@
     freeDraft = src ? freeCopy(freeClean(src)) : { kind: "check", title: "", note: "", minutes: 5, items: [] };
     if (!src) freeDraft.title = "";
     if (mode === "copy") freeDraft.title = freeDraft.title.slice(0, 40);
-    els.freeEditTitle.textContent = mode === "capture" ? "Baustein: Freier Baustein" : mode === "edit" ? "Baustein bearbeiten" : "Neuer Baustein";
+    els.freeEditTitle.textContent = mode === "capture" ? "Baustein: Eigenes Training" : mode === "edit" ? "Training bearbeiten" : "Neues Training";
     els.freeEditHint.textContent = mode === "capture"
       ? "Änderungen gelten nur für diesen Baustein im Kombi-Programm."
       : mode === "copy" ? "Deine Kopie der Vorlage – passe sie an und speichere sie." : "Lege fest, was du machst und wie es in der App ablaufen soll.";
@@ -26971,7 +26971,7 @@
     const id = freeEditId;
     const b = freeFind(id);
     if (!b) return;
-    confirmDialog(`Den Baustein „${b.title}“ löschen?`, () => {
+    confirmDialog(`Das Training „${b.title}“ löschen?`, () => {
       saveFreeBlocks(loadFreeBlocks().filter((x) => x.id !== id));
       renderFreeHome();
       showScreen("freeHome");
@@ -26986,7 +26986,7 @@
   function openFreeComboCapture(src, editIndex) { openFreeEditor(src, "capture", editIndex); }
   function comboFreeCaptureEntries() {
     return freeAllBlocks().map((b) => ({ label: b.title, meta: freeBlockMeta(b), open: () => openFreeComboCapture(b, null) }))
-      .concat([{ label: "Neuer freier Baustein", meta: "abhaken, mit Zeit oder als Checkliste", open: () => openFreeComboCapture(null, null) }]);
+      .concat([{ label: "Neues eigenes Training", meta: "abhaken, mit Zeit oder als Checkliste", open: () => openFreeComboCapture(null, null) }]);
   }
 
   // ---- the run ----
