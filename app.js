@@ -15562,6 +15562,122 @@
     const hide = !appBarBackTarget();
     if (appBarBack.hidden !== hide) appBarBack.hidden = hide;
   }, 300);
+
+  // ---- Seitenübergänge + Zurück per Wischen (Fabian, 2026-10-05) ----
+  // Like an iPhone app: going deeper (area home -> sub page, sub -> sub)
+  // slides the new page in from the right, going back slides it in from the
+  // left, switching between area homes only fades, a result panel rises in
+  // from below and a starting exercise only fades in (opacity only, so the
+  // exercise's own layout measurements are never off). "Bewegung
+  // reduzieren" gets the fade only. One MutationObserver on the "hidden"
+  // attribute covers every way a page is shown, so a new screen needs
+  // nothing extra. Off in automated browsers (tests measure positions right
+  // after a click) unless fwmc-test-transitions is set.
+  // Swipe from the left edge (first 28 px) to the right = the visible
+  // ‹ button: the page follows the finger and slides out.
+  const HOME_SCREENS = new Set(["todayHome", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "progressScreen"]);
+  const reduceMotion = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
+  let transitionsOn = false; // switched on after start-up (enablePageTransitions)
+  let navBackPending = 0;    // timestamp of the last back tap / swipe
+  let lastShown = null;      // id of the last visible screen, or "player"
+  function playTransition(el, kind) {
+    if (!transitionsOn) return;
+    if (reduceMotion.matches && kind !== "fade") kind = "fade";
+    el.classList.remove("tr-push", "tr-pop", "tr-fade", "tr-rise");
+    void el.offsetWidth; // restart the animation
+    el.classList.add("tr-" + kind);
+    const done = () => { el.classList.remove("tr-" + kind); el.removeEventListener("animationend", done); };
+    el.addEventListener("animationend", done);
+    setTimeout(done, 600);
+  }
+  document.addEventListener("click", (e) => {
+    if (e.target.closest && e.target.closest(".bar-back-btn, .back-link, .done-panel button")) navBackPending = Date.now();
+  }, true);
+  const screenObserver = new MutationObserver((records) => {
+    records.forEach((r) => {
+      const el = r.target;
+      if (el.hidden) return;
+      if (el.classList.contains("screen")) {
+        const id = el.id;
+        if (id === lastShown) return;
+        const back = Date.now() - navBackPending < 700;
+        let kind;
+        if (lastShown === "player" || lastShown === null) kind = "fade";
+        else if (HOME_SCREENS.has(id) && HOME_SCREENS.has(lastShown)) kind = "fade";
+        else if (back || HOME_SCREENS.has(id)) kind = "pop";
+        else kind = "push";
+        lastShown = id;
+        playTransition(el, kind);
+      } else if (el.classList.contains("player")) {
+        lastShown = "player";
+        playTransition(el, "fade");
+      } else if (el.classList.contains("done-panel")) {
+        playTransition(el, "rise");
+      }
+    });
+  });
+  document.querySelectorAll(".screen, .player, .done-panel").forEach((el) => screenObserver.observe(el, { attributes: true, attributeFilter: ["hidden"] }));
+  function enablePageTransitions() {
+    const vis = document.querySelector(".screen:not([hidden])");
+    lastShown = vis ? vis.id : null;
+    transitionsOn = !(navigator.webdriver && !readJSON("fwmc-test-transitions", false));
+  }
+  // Swipe back from the left edge
+  (function wireEdgeSwipeBack() {
+    let start = null, page = null, target = null, moved = false;
+    const backTarget = () => {
+      const scr = document.querySelector(".screen:not([hidden])");
+      const own = scr && [...scr.querySelectorAll(":scope > .brandbar .bar-back-btn")].find(barVis);
+      if (own) return { btn: own, page: scr };
+      if (barVis(appBarBack) && appBarBackTarget()) return { btn: appBarBack, page: [...document.querySelectorAll(".done-panel")].find(barVis) || null };
+      return null;
+    };
+    const reset = (animate) => {
+      if (page) {
+        page.style.transition = animate ? "transform .2s ease" : "";
+        page.style.transform = "";
+        const pg = page;
+        setTimeout(() => { pg.style.transition = ""; }, 220);
+      }
+      start = page = target = null; moved = false;
+    };
+    document.addEventListener("touchstart", (e) => {
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      if (t.clientX > 28) return;
+      if (e.target.closest && e.target.closest("input, textarea, select, .sheet:not([hidden])")) return;
+      const bt = backTarget();
+      if (!bt) return;
+      start = { x: t.clientX, y: t.clientY, time: Date.now() };
+      target = bt.btn; page = bt.page;
+    }, { passive: true });
+    document.addEventListener("touchmove", (e) => {
+      if (!start) return;
+      const t = e.touches[0];
+      const dx = t.clientX - start.x, dy = t.clientY - start.y;
+      if (!moved && Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { reset(false); return; }
+      if (dx > 8) moved = true;
+      if (moved && page && !reduceMotion.matches) page.style.transform = `translateX(${Math.max(0, dx)}px)`;
+    }, { passive: true });
+    const end = (e) => {
+      if (!start) return;
+      const t = e.changedTouches && e.changedTouches[0];
+      const dx = t ? t.clientX - start.x : 0;
+      const fast = dx > 40 && Date.now() - start.time < 250;
+      if (moved && (dx > Math.min(110, window.innerWidth * 0.3) || fast)) {
+        const btn = target, pg = page;
+        start = null; moved = false; target = null; page = null;
+        const go = () => { if (pg) { pg.style.transition = ""; pg.style.transform = ""; } navBackPending = Date.now(); btn.click(); };
+        if (pg && !reduceMotion.matches) {
+          pg.style.transition = "transform .18s ease-out";
+          pg.style.transform = "translateX(100%)";
+          setTimeout(go, 170);
+        } else go();
+      } else reset(true);
+    };
+    document.addEventListener("touchend", end, { passive: true });
+    document.addEventListener("touchcancel", () => reset(true), { passive: true });
+  })();
   // ---- Einheitliche Steuerleiste « ↻ » (Fabian, 2026-10-04: "sollte
   // nachher überall identisch sein") ----
   // One bar (#stepNav) at the bottom of every running exercise and every
@@ -26339,6 +26455,7 @@
     if (navigator.webdriver && !readJSON("fwmc-test-splash", false)) { el.remove(); return; }
     setTimeout(gone, Math.max(0, 700 - performance.now()));
   })();
+  enablePageTransitions();
 
   // ---- Hinweis "Zum Startbildschirm hinzufügen" (2026-10-05) ----
   // One card on Heute, only on a phone/tablet in the browser (not when
