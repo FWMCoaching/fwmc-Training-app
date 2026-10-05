@@ -2106,7 +2106,8 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  const SCREENS = ["todayHome", "planScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
+  els.trainingHub = $("trainingHub"); els.moreScreen = $("moreScreen");
+  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -2119,6 +2120,7 @@
     if (name !== "workoutHome") els.workoutProgramError.hidden = true;
     if (name !== "cardioHome") els.cardioProgramError.hidden = true;
     if (name !== "natHome") els.natProgramError.hidden = true;
+    if (name !== "moreScreen") $("moreCodeError").hidden = true;
     window.scrollTo(0, 0);
   }
 
@@ -15576,6 +15578,10 @@
   // Swipe from the left edge (first 28 px) to the right = the visible
   // ‹ button: the page follows the finger and slides out.
   const HOME_SCREENS = new Set(["todayHome", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "progressScreen"]);
+  // With the bottom bar the four tabs are the top level; the area homes sit
+  // one level deeper, under "Training".
+  const NAV_TOP_SCREENS = new Set(["todayHome", "trainingHub", "progressScreen", "moreScreen"]);
+  let bottomNavOn = false; // set by the bottom bar block at the end of start-up
   const reduceMotion = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
   let transitionsOn = false; // switched on after start-up (enablePageTransitions)
   let navBackPending = 0;    // timestamp of the last back tap / swipe
@@ -15601,10 +15607,11 @@
         const id = el.id;
         if (id === lastShown) return;
         const back = Date.now() - navBackPending < 700;
+        const tops = bottomNavOn ? NAV_TOP_SCREENS : HOME_SCREENS;
         let kind;
         if (lastShown === "player" || lastShown === null) kind = "fade";
-        else if (HOME_SCREENS.has(id) && HOME_SCREENS.has(lastShown)) kind = "fade";
-        else if (back || HOME_SCREENS.has(id)) kind = "pop";
+        else if (tops.has(id) && tops.has(lastShown)) kind = "fade";
+        else if (back || tops.has(id)) kind = "pop";
         else kind = "push";
         lastShown = id;
         playTransition(el, kind);
@@ -26283,7 +26290,7 @@
   function renderAreaGrid() {
     els.todayAreaGrid.innerHTML = PLAN_AREAS.map((a) => `<button type="button" class="area-tile" data-area="${a.key}">
       <span class="area-icon" style="background:${a.color}"><svg viewBox="0 0 24 24" aria-hidden="true">${a.icon}</svg></span>
-      <span class="area-name">${esc(a.label)}</span><span class="area-text">${esc(a.text)}</span></button>`).join("");
+      <span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(a.key === "nat" ? "Neuroathletik: " + a.text : a.text)}</span></button>`).join("");
     els.todayAreaGrid.querySelectorAll(".area-tile").forEach((b) => b.addEventListener("click", () => goArea(b.dataset.area)));
   }
 
@@ -26310,6 +26317,80 @@
   function goTodayCode() { const code = els.todayCodeInput.value.trim(); if (code) openProgramIntro(code, TODAY_CODE_CTX); }
   els.todayCodeGoBtn.addEventListener("click", goTodayCode);
   els.todayCodeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") goTodayCode(); });
+
+  // ---- Untere Navigationsleiste (Fabian, 2026-10-05: "Probieren wir den
+  // Schritt aus") ----
+  // Four fixed tabs like a real iPhone app: Heute, Training (all areas as
+  // tiles, replacing the 8-tab grid), Fortschritt, Mehr (code, settings,
+  // help, privacy, contact). Hidden as soon as no page is visible (a running
+  // exercise, a pause, a result). The area homes move one level down under
+  // Training and get the round ‹ button back to it (swipe works too). The
+  // old layout is the state before this block (git: merge 482c1f7); turning
+  // bottomNavOn off brings it back. Automated browsers keep the old layout
+  // (115 tests click the 8 tabs) unless fwmc-test-bottomnav is set.
+  const MORE_CODE_CTX = { goBtn: $("moreCodeGoBtn"), errorEl: $("moreCodeError"), homeScreen: "moreScreen" };
+  function goMoreCode() { const code = $("moreCodeInput").value.trim(); if (code) openProgramIntro(code, MORE_CODE_CTX); }
+  $("moreCodeGoBtn").addEventListener("click", goMoreCode);
+  $("moreCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") goMoreCode(); });
+  $("moreSettingsBtn").addEventListener("click", openMasterSettings);
+  $("moreTipsBtn").addEventListener("click", () => els.tipsBtn.click());
+  const NAV_TAB_OF = { todayHome: "today", planScreen: "today", trainingHub: "training", progressScreen: "progress", moreScreen: "more" };
+  const AREA_HOME_IDS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome"];
+  const TEST_TILE = { color: "#5c6b73", label: "Test", text: "Neue Übungen zum Ausprobieren.",
+    icon: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' };
+  function renderHubAreaGrid() {
+    const grid = $("hubAreaGrid");
+    const tiles = PLAN_AREAS.map((a) => ({ key: a.key, ...a }));
+    if (readJSON(TEST_UNLOCK_KEY, false)) tiles.push({ key: "test", ...TEST_TILE });
+    grid.innerHTML = tiles.map((a) => `<button type="button" class="area-tile" data-area="${a.key}">
+      <span class="area-icon" style="background:${a.color}"><svg viewBox="0 0 24 24" aria-hidden="true">${a.icon}</svg></span>
+      <span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(a.key === "nat" ? "Neuroathletik: " + a.text : a.text)}</span></button>`).join("");
+    grid.querySelectorAll(".area-tile").forEach((b) => b.addEventListener("click", () => {
+      if (b.dataset.area === "test") { activateSectionTab("test"); showScreen("testHome"); } else goArea(b.dataset.area);
+    }));
+  }
+  bottomNavOn = !(navigator.webdriver && !readJSON("fwmc-test-bottomnav", false));
+  if (bottomNavOn) {
+    document.body.classList.add("has-bottom-nav");
+    const nav = $("bottomNav");
+    AREA_HOME_IDS.forEach((id) => {
+      const bar = els[id] && els[id].querySelector(":scope > .brandbar");
+      if (!bar || bar.querySelector(".bar-back-btn")) return;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "bar-back-btn";
+      btn.setAttribute("aria-label", "Zurück zu Training");
+      btn.title = "Zurück";
+      btn.addEventListener("click", () => showScreen("trainingHub"));
+      bar.insertBefore(btn, bar.firstChild);
+    });
+    nav.querySelectorAll("[data-nav]").forEach((btn) => btn.addEventListener("click", () => {
+      const t = btn.dataset.nav;
+      if (t === "today") { activateSectionTab("today"); showScreen("todayHome"); }
+      else if (t === "training") showScreen("trainingHub");
+      else if (t === "progress") showScreen("progressScreen");
+      else showScreen("moreScreen");
+    }));
+    const syncBottomNav = () => {
+      const scr = document.querySelector(".screen:not([hidden])");
+      nav.hidden = !scr;
+      document.body.classList.toggle("bottom-nav-on", !!scr);
+      if (!scr) return;
+      if (scr.id === "trainingHub" && !scr.dataset.rendered) { renderHubAreaGrid(); scr.dataset.rendered = "1"; }
+      const tab = NAV_TAB_OF[scr.id] || "training";
+      nav.querySelectorAll("[data-nav]").forEach((b) => {
+        const on = b.dataset.nav === tab;
+        b.classList.toggle("active", on);
+        if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+      });
+    };
+    const navObserver = new MutationObserver((recs) => {
+      if (recs.some((r) => r.target.id === "trainingHub" && r.target.hidden === false)) delete els.trainingHub.dataset.rendered;
+      syncBottomNav();
+    });
+    document.querySelectorAll(".screen").forEach((el) => navObserver.observe(el, { attributes: true, attributeFilter: ["hidden"] }));
+    syncBottomNav();
+  }
 
   // ---- plan editor ----
   function openPlanScreen() {

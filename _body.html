@@ -318,6 +318,98 @@
   </footer>
 </div>
 
+<div class="screen" id="trainingHub" hidden>
+  <header class="brandbar">
+    <img class="brand-logo" src="logo-full.png" width="900" height="177" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC Online-Training</em>
+    <button class="master-settings-btn" type="button" aria-label="Grundeinstellungen">&#9881;&#xFE0F;</button>
+  </header>
+
+  <button class="combo-entry-link" data-open-combo="1">Kombi-Programm aus mehreren Bereichen &rarr;</button>
+
+  <h1 class="page-title">Training</h1>
+  <p class="page-sub">W&auml;hle einen Bereich oder stell dir ein Kombi-Programm zusammen.</p>
+
+  <div class="area-grid" id="hubAreaGrid"></div>
+
+  <footer class="site-footer">
+    <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
+    <p class="app-version">Stand: __APP_STAND__</p>
+    <nav>
+      <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
+      <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
+      <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a>
+      <button class="privacy-open-btn" type="button">Datenschutz</button>
+    </nav>
+  </footer>
+</div>
+
+<div class="screen" id="moreScreen" hidden>
+  <header class="brandbar">
+    <img class="brand-logo" src="logo-full.png" width="900" height="177" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC Online-Training</em>
+    <button class="master-settings-btn" type="button" aria-label="Grundeinstellungen">&#9881;&#xFE0F;</button>
+  </header>
+
+  <h1 class="page-title">Mehr</h1>
+  <p class="page-sub">Trainings-Code, Einstellungen, Hilfe und Kontakt zu deinem Trainer.</p>
+
+  <section class="code-card">
+    <h2>Dein pers&ouml;nliches Training</h2>
+    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
+    <div class="program-entry-row">
+      <input type="text" id="moreCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <button id="moreCodeGoBtn">&Ouml;ffnen</button>
+    </div>
+    <div class="program-error" id="moreCodeError" role="alert" hidden>Zu diesem Code wurde kein Training gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
+  </section>
+
+  <div class="more-list">
+    <button class="featured-card" id="moreSettingsBtn" type="button">
+      <span class="fc-title">Grundeinstellungen</span>
+      <span class="fc-desc">T&ouml;ne, Countdown, Hintergrundfarbe, Farbsehen und Sicherung deiner Daten.</span>
+    </button>
+    <button class="featured-card" id="moreTipsBtn" type="button">
+      <span class="fc-title">So trainierst du richtig</span>
+      <span class="fc-desc">Kurze Tipps f&uuml;r dein Training und wie du die App nutzt.</span>
+    </button>
+    <button class="featured-card faq-open-btn" type="button">
+      <span class="fc-title">H&auml;ufige Fragen</span>
+      <span class="fc-desc">Antworten rund um Training, Codes, Daten und Offline-Nutzung.</span>
+    </button>
+    <button class="featured-card privacy-open-btn" type="button">
+      <span class="fc-title">Datenschutz in der App</span>
+      <span class="fc-desc">Was auf deinem Ger&auml;t bleibt und was die App verschickt.</span>
+    </button>
+    <a class="featured-card" href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">
+      <span class="fc-title">Website &amp; Kontakt</span>
+      <span class="fc-desc">Termin vereinbaren oder Kontakt zu deinem Trainer aufnehmen.</span>
+    </a>
+    <a class="featured-card" href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">
+      <span class="fc-title">Impressum</span>
+      <span class="fc-desc">Anbieter und rechtliche Angaben.</span>
+    </a>
+  </div>
+
+  <footer class="site-footer">
+    <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
+    <p class="app-version">Stand: __APP_STAND__</p>
+    <nav>
+      <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
+      <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
+      <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a>
+      <button class="privacy-open-btn" type="button">Datenschutz</button>
+    </nav>
+  </footer>
+</div>
+
+<nav class="bottom-nav" id="bottomNav" aria-label="Hauptnavigation" hidden>
+  <button class="bottom-nav-btn" data-nav="today" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="15" r="1.8" fill="currentColor"/></svg><span>Heute</span></button>
+  <button class="bottom-nav-btn" data-nav="training" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>Training</span></button>
+  <button class="bottom-nav-btn" data-nav="progress" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V13M12 20V5M19 20v-9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span>Fortschritt</span></button>
+  <button class="bottom-nav-btn" data-nav="more" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.9" fill="currentColor"/><circle cx="12" cy="12" r="1.9" fill="currentColor"/><circle cx="18.5" cy="12" r="1.9" fill="currentColor"/></svg><span>Mehr</span></button>
+</nav>
+
 <div class="screen" id="progressScreen" hidden>
   <div class="readyhead">
     <button class="back-link" id="progressBackBtn">&larr; Zur&uuml;ck zu Heute</button>
