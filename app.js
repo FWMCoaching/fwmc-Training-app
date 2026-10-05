@@ -16281,6 +16281,7 @@
       if (!editOpener) main.style.cursor = "default";
       main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(comboBlockLabel(block))}</strong><span>${esc(comboBlockMeta(block))}</span></span>`;
       if (editOpener) main.addEventListener("click", () => editOpener(block, i));
+      if (comboDraftBlocks.length > 1) row.appendChild(dragHandleEl());
       row.appendChild(main);
       // Reorder: swap with the neighbour (its own "Pause danach" travels
       // with the block). Only shown where a move is possible.
@@ -16293,10 +16294,7 @@
         mv.textContent = sym;
         mv.title = label;
         mv.setAttribute("aria-label", label);
-        mv.addEventListener("click", () => {
-          [comboDraftBlocks[i], comboDraftBlocks[j]] = [comboDraftBlocks[j], comboDraftBlocks[i]];
-          renderComboBlockList();
-        });
+        mv.addEventListener("click", () => moveComboBlock(i, j));
         row.appendChild(mv);
       });
       const rm = document.createElement("button");
@@ -16331,6 +16329,14 @@
       }
     });
   }
+  // One reorder path for ↑/↓ and drag (Gesten, 2026-10-05): the block
+  // moves with everything it carries, incl. its own "Pause danach".
+  function moveComboBlock(from, to) {
+    if (from === to || from < 0 || to < 0 || from >= comboDraftBlocks.length || to >= comboDraftBlocks.length) return;
+    comboDraftBlocks.splice(to, 0, comboDraftBlocks.splice(from, 1)[0]);
+    renderComboBlockList();
+  }
+  wireDragReorder(els.comboBlockList, { row: ".chapter-row", hide: ".combo-pause-row", onMove: moveComboBlock });
   function renderComboSaved() {
     renderPresetList(comboSavedStore, els.comboSavedList, els.comboSavedGroup, null,
       (e) => `${countLabel(e.blocks.length, "Baustein", "Bausteine")} · ca. ${fmtMinutes(e.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0))}`,
@@ -26752,11 +26758,26 @@
     });
     nav.querySelectorAll("[data-nav]").forEach((btn) => btn.addEventListener("click", () => {
       const t = btn.dataset.nav;
+      if (btn.classList.contains("active") && navTabRetap(t)) return;
       if (t === "today") { activateSectionTab("today"); showScreen("todayHome"); }
       else if (t === "training") showScreen("trainingHub");
       else if (t === "progress") showScreen("progressScreen");
       else showScreen("moreScreen");
     }));
+    // Tap the active tab again (Gesten, 2026-10-05) like an iPhone app:
+    // scrolled -> smooth back to the top; already at the top on a page
+    // below the tab -> back to the tab's own page (the normal tab click
+    // does that); at the top of the tab's own page -> nothing.
+    const NAV_ROOT = { today: "todayHome", training: "trainingHub", progress: "progressScreen", more: "moreScreen" };
+    function navTabRetap(t) {
+      const scr = document.querySelector(".screen:not([hidden])");
+      if (!scr) return true;
+      if (window.scrollY > 4) {
+        window.scrollTo({ top: 0, behavior: reduceMotion.matches ? "auto" : "smooth" });
+        return true;
+      }
+      return scr.id === NAV_ROOT[t];
+    }
     const syncBottomNav = () => {
       const scr = document.querySelector(".screen:not([hidden])");
       nav.hidden = !scr;
@@ -26960,7 +26981,7 @@
     const items = freeDraft.items;
     els.freeItemCount.textContent = items.length ? countLabel(items.length, "Punkt", "Punkte") : "";
     els.freeItemList.innerHTML = items.map((it, i) => `<div class="circuit-item-row free-item-row">
-      <div class="circuit-item-main"><span class="free-item-num">${i + 1}</span>
+      <div class="circuit-item-main">${items.length > 1 ? `<span class="drag-handle" data-drag-handle aria-hidden="true" title="Ziehen zum Verschieben">&equiv;</span>` : ""}<span class="free-item-num">${i + 1}</span>
         <input type="text" class="free-input free-item-text" data-i="${i}" maxlength="60" value="${esc(it.text)}" placeholder="z.&nbsp;B. Waden" aria-label="Punkt ${i + 1}"></div>
       <div class="free-item-tools">
         <div class="circuit-duration"><button type="button" class="free-item-btn" data-step="-1" data-i="${i}" aria-label="Punkt ${i + 1} kürzer">&minus;</button>
@@ -26988,14 +27009,23 @@
       let v = up ? (cur === 0 ? 10 : cur + step) : (cur <= 10 ? 0 : cur - step);
       items[i].s = Math.max(0, Math.min(FREE_ITEM_MAX_S, v));
     } else if (b.dataset.move) {
-      const j = i + Number(b.dataset.move);
-      if (j >= 0 && j < items.length) [items[i], items[j]] = [items[j], items[i]];
+      freeMoveItem(i, i + Number(b.dataset.move));
+      return;
     } else if (b.dataset.remove != null) {
       items.splice(Number(b.dataset.remove), 1);
     }
     renderFreeItemList();
     syncFreeSaveBtn();
   });
+  // One reorder path for ↑/↓ and drag (Gesten, 2026-10-05).
+  function freeMoveItem(from, to) {
+    const items = freeDraft.items;
+    if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return;
+    items.splice(to, 0, items.splice(from, 1)[0]);
+    renderFreeItemList();
+    syncFreeSaveBtn();
+  }
+  wireDragReorder(els.freeItemList, { row: ".free-item-row", onMove: freeMoveItem });
   els.freeItemAddBtn.addEventListener("click", () => {
     const last = freeDraft.items[freeDraft.items.length - 1];
     freeDraft.items.push({ text: "", s: last ? last.s : 30 });
@@ -27274,9 +27304,18 @@
     planEntryTarget = target;
     let existing = null;
     if (target.kind === "plan" && target.id) existing = plan.phases[target.pi].days[target.di].find((x) => x.id === target.id);
-    const e = existing || { area: "visual", what: "", code: "", time: "", minutes: 15 };
+    const e = existing || { area: "visual", what: "", code: "", time: "", minutes: 15, ...(target.preset || {}) };
     els.planEntryTitle.textContent = existing ? "Training ändern" : "Training eintragen";
-    els.planEntryContext.textContent = target.kind === "plan"
+    // pickDay (long-press "In den Wochenplan"): the weekday is chosen in
+    // the sheet; pi -1 = no phase yet, one is created on save.
+    $("planEntryDayWrap").hidden = !target.pickDay;
+    if (target.pickDay) {
+      $("planEntryDay").innerHTML = WD_LONG.map((d, i) => `<option value="${i}">jeden ${d}</option>`).join("");
+      $("planEntryDay").value = String(target.di);
+    }
+    els.planEntryContext.textContent = target.pickDay
+      ? (target.pi >= 0 ? `Wochenplan · ${plan.phases[target.pi].name}` : "Wochenplan")
+      : target.kind === "plan"
       ? `${plan.phases[target.pi].name} · jeden ${WD_LONG[target.di]}`
       : `Nur am ${longDate(target.date)}`;
     els.planEntryArea.value = e.area;
@@ -27298,6 +27337,13 @@
     if (!t) return;
     const entry = cleanEntry({ id: t.id || newId(), area: els.planEntryArea.value, what: els.planEntryWhat.value, code: els.planEntryCode.value.trim(),
       time: els.planEntryTime.value, minutes: els.planEntryMinutes.value });
+    if (t.pickDay) {
+      t.di = Number($("planEntryDay").value) || 0;
+      if (t.pi < 0 || !plan.phases[t.pi]) {
+        plan.phases.push({ id: newId(), name: `Phase ${plan.phases.length + 1}`, weeks: 0, days: [[], [], [], [], [], [], []] });
+        t.pi = plan.phases.length - 1;
+      }
+    }
     if (t.kind === "plan") {
       const list = plan.phases[t.pi].days[t.di];
       const i = list.findIndex((x) => x.id === entry.id);
@@ -27307,7 +27353,8 @@
     }
     savePlan();
     closePlanEntry();
-    if (t.kind === "plan") renderPlanScreen(); else renderToday();
+    if (t.pickDay) { if (!els.todayHome.hidden) renderToday(); }
+    else if (t.kind === "plan") renderPlanScreen(); else renderToday();
   });
 
   // Start screen: always "Heute", unless the URL names an area
@@ -27324,6 +27371,317 @@
     activateSectionTab(sec);
     showScreen(screens[sec]);
   }
+
+  // ==== Gesten (Fabian, 2026-10-05: four approved gestures) ====
+  // Same style as "Zurück per Wischen" and "Fenster nach unten wegziehen":
+  // plain touch/pointer listeners, passive where possible, "Bewegung
+  // reduzieren" respected, harmless on desktop. Tab re-tap lives in the
+  // bottom bar block (navTabRetap). Docs: docs/notes/01 (Gesten).
+  // Test: tests/gestures_1005_test.py.
+
+  // -- Ziehen zum Sortieren: a ≡ handle (44 px) on each row; the row lifts
+  // and follows the finger/mouse, a dashed placeholder shows where it lands,
+  // and the drop calls the list's own reorder function (the same one ↑/↓
+  // use). Rows to hide while dragging (Kombi "Pause danach" strips) travel
+  // with their block anyway, so they are simply hidden during the drag.
+  function dragHandleEl() {
+    const h = document.createElement("span");
+    h.className = "drag-handle";
+    h.dataset.dragHandle = "";
+    h.setAttribute("aria-hidden", "true");
+    h.title = "Ziehen zum Verschieben";
+    h.textContent = "≡";
+    return h;
+  }
+  function wireDragReorder(list, opts) {
+    let drag = null;
+    const rowsOf = () => [...list.querySelectorAll(opts.row)];
+    const place = () => {
+      const d = drag;
+      d.el.style.top = (d.y - d.offY) + "px";
+      const others = rowsOf().filter((r) => r !== d.el);
+      const before = others.find((r) => { const b = r.getBoundingClientRect(); return d.y < b.top + b.height / 2; });
+      if (before) { if (before.previousElementSibling !== d.ph) list.insertBefore(d.ph, before); }
+      else if (others.length) { const last = others[others.length - 1]; if (last.nextElementSibling !== d.ph) last.after(d.ph); }
+    };
+    const tick = () => {
+      if (!drag) return;
+      const edge = 80, bottomEdge = window.innerHeight - 110;
+      const v = drag.y < edge ? -Math.ceil((edge - drag.y) / 8) : drag.y > bottomEdge ? Math.ceil((drag.y - bottomEdge) / 8) : 0;
+      if (v) { window.scrollBy(0, v); place(); }
+      drag.raf = requestAnimationFrame(tick);
+    };
+    const finish = (commit) => {
+      const d = drag;
+      if (!d) return;
+      drag = null;
+      cancelAnimationFrame(d.raf);
+      const seq = [...list.querySelectorAll(opts.row + ", .drag-placeholder")].filter((x) => x !== d.el);
+      const to = seq.indexOf(d.ph);
+      d.el.classList.remove("drag-lifted");
+      ["width", "left", "top"].forEach((k) => { d.el.style[k] = ""; });
+      d.ph.remove();
+      list.classList.remove("drag-active");
+      document.body.classList.remove("drag-busy");
+      if (commit && to >= 0 && to !== d.from) opts.onMove(d.from, to);
+    };
+    list.addEventListener("pointerdown", (e) => {
+      const h = e.target.closest && e.target.closest("[data-drag-handle]");
+      if (!h || drag || (e.pointerType === "mouse" && e.button !== 0)) return;
+      const el = h.closest(opts.row);
+      const rows = rowsOf();
+      const from = rows.indexOf(el);
+      if (from < 0 || rows.length < 2) return;
+      e.preventDefault();
+      if (document.activeElement && list.contains(document.activeElement)) document.activeElement.blur();
+      const r0 = el.getBoundingClientRect();
+      if (opts.hide) list.classList.add("drag-active");
+      const r = el.getBoundingClientRect();
+      const ph = document.createElement("div");
+      ph.className = "drag-placeholder";
+      ph.style.height = r0.height + "px";
+      list.insertBefore(ph, el);
+      el.style.width = r.width + "px";
+      el.style.left = r.left + "px";
+      el.classList.add("drag-lifted");
+      document.body.classList.add("drag-busy");
+      drag = { el, ph, from, offY: e.clientY - r.top, y: e.clientY, id: e.pointerId, raf: 0 };
+      try { h.setPointerCapture(e.pointerId); } catch (err) {}
+      place();
+      drag.raf = requestAnimationFrame(tick);
+    });
+    list.addEventListener("pointermove", (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      drag.y = e.clientY;
+      place();
+    });
+    list.addEventListener("pointerup", (e) => { if (drag && e.pointerId === drag.id) finish(true); });
+    list.addEventListener("pointercancel", (e) => { if (drag && e.pointerId === drag.id) finish(false); });
+    // A touch on the handle must never scroll the page instead.
+    list.addEventListener("touchmove", (e) => { if (drag && e.cancelable) e.preventDefault(); }, { passive: false });
+  }
+
+  // -- Kalender wischen: on Heute a horizontal swipe (> 50 px, clearly more
+  // sideways than up/down) over the week strip or the month/year calendar
+  // does what ‹ / › do, with a short slide. Vertical scrolling stays
+  // native (touch-action: pan-y), touches from the left edge (≤ 28 px)
+  // belong to "Zurück per Wischen", the quarter view scrolls by itself.
+  (function wireCalendarSwipe() {
+    const slide = (el, dir) => {
+      if (!el || reduceMotion.matches) return;
+      const cls = dir > 0 ? "cal-slide-next" : "cal-slide-prev";
+      el.classList.remove("cal-slide-next", "cal-slide-prev");
+      void el.offsetWidth;
+      el.classList.add(cls);
+      setTimeout(() => el.classList.remove(cls), 450);
+    };
+    let swallowClickUntil = 0;
+    const wire = (area, step) => {
+      let s = null;
+      area.addEventListener("touchstart", (e) => {
+        s = null;
+        if (e.touches.length !== 1) return;
+        const t = e.touches[0];
+        if (t.clientX <= 28) return;
+        s = { x: t.clientX, y: t.clientY };
+      }, { passive: true });
+      area.addEventListener("touchend", (e) => {
+        if (!s) return;
+        const t = e.changedTouches && e.changedTouches[0];
+        const st = s;
+        s = null;
+        if (!t) return;
+        const dx = t.clientX - st.x, dy = t.clientY - st.y;
+        if (Math.abs(dx) <= 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+        if (step(dx < 0 ? 1 : -1)) swallowClickUntil = Date.now() + 500;
+      }, { passive: true });
+      area.addEventListener("touchcancel", () => { s = null; }, { passive: true });
+      area.addEventListener("click", (e) => {
+        if (Date.now() < swallowClickUntil) { e.preventDefault(); e.stopPropagation(); }
+      }, true);
+    };
+    wire(els.todayWeekStrip, (dir) => {
+      (dir > 0 ? els.todayWeekNext : els.todayWeekPrev).click();
+      slide(els.todayWeekStrip, dir);
+      return true;
+    });
+    wire(els.calExpand, (dir) => {
+      const btn = els.calExpand.querySelector(`[data-cal-step="${dir}"], [data-year-step="${dir}"]`);
+      if (!btn) return false;
+      btn.click();
+      els.calExpand.querySelectorAll(".cal-month:not(.mini), .cal-year").forEach((el) => slide(el, dir));
+      return true;
+    });
+  })();
+
+  // -- Lange drücken: about 500 ms on an area tile or an exercise card
+  // (Training hub, Heute tiles, Visual Training cards, NAT tiles, Eigenes
+  // Training cards) opens a small action sheet. A finger that moves more
+  // than 10 px is scrolling and cancels it; a short tap still clicks.
+  // Only actions that really work for that item are offered.
+  const LP_SEL = "#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #freeOwnGrid [data-free-id], #freeTplGrid [data-free-id]";
+  const tileSheet = $("tileActionSheet");
+  let tileSheetReturnFocus = null;
+  let lpSuppressUntil = 0; // swallow the click that may follow a long press
+  function clickVisibleStart() {
+    const scr = document.querySelector(".screen:not([hidden])");
+    const b = scr && [...scr.querySelectorAll("button")].find((x) => x.textContent.trim() === "Training starten" && !x.disabled && x.getClientRects().length);
+    if (b) b.click();
+  }
+  function startKombiWith(area, open) { goArea(area); openComboScreen(); open(); }
+  function lpActions(tile) {
+    const name = (sel) => ((tile.querySelector(sel) || tile).textContent || "").trim();
+    if (tile.classList.contains("area-tile")) {
+      const area = tile.dataset.area;
+      const src = COMBO_CAPTURE_ENTRIES[area];
+      const entries = typeof src === "function" ? src() : (src || []);
+      const usable = entries.filter((x) => !x.disabled);
+      return {
+        title: name(".area-name"), open: () => tile.click(),
+        plan: AREA_BY_KEY[area] ? { area, what: "" } : null,
+        kombi: !usable.length ? null : usable.length === 1 ? () => startKombiWith(area, usable[0].open) : () => {
+          goArea(area);
+          openComboScreen();
+          const g = [...els.comboAddGrid.querySelectorAll(".combo-domain-group")].find((x) => x.firstElementChild && x.firstElementChild.textContent === COMBO_DOMAIN_TITLE[area]);
+          if (g) setTimeout(() => g.scrollIntoView({ block: "start", behavior: reduceMotion.matches ? "auto" : "smooth" }), 60);
+        },
+      };
+    }
+    if (tile.classList.contains("excard")) {
+      const id = tile.dataset.exercise;
+      const ok = !exerciseBlockedReason(tile) && !!EXERCISES[id];
+      const icon = tile.querySelector(".icon-badge, .icon-tile");
+      return {
+        title: name("h3"), open: () => tile.click(),
+        start: ok ? () => { tile.click(); clickVisibleStart(); } : null,
+        plan: { area: "visual", what: "ex:" + id },
+        kombi: ok ? () => startKombiWith("visual", () => openVisualComboCapture(id, icon ? icon.outerHTML : "", null, null)) : null,
+      };
+    }
+    if (tile.classList.contains("nat-tile")) {
+      const sub = tile.dataset.natEx;
+      const mode = NAT_MODES[sub] ? (readJSON(NAT_MODE_KEY, {})[sub] || NAT_MODES[sub].modes[0].key) : null;
+      const cap = {
+        peripher: () => openVisualComboCapture("periph-flash", PERIPH_ICON_HTML, null, null),
+        remember: () => openRememberComboCapture(mode, null, null),
+        blitz: () => openBlitzComboCapture(null, null),
+        flash: () => openFlashComboCapture(mode, null, null),
+        mot: () => openMotComboCapture(mode, null, null),
+      }[sub];
+      return {
+        title: name("h3"), open: () => tile.click(),
+        start: () => { openNatExercise(sub); clickVisibleStart(); },
+        plan: NAT_SUBS.some(([k]) => k === sub) ? { area: "nat", what: "nat:" + sub } : null,
+        kombi: cap ? () => startKombiWith("nat", cap) : null,
+      };
+    }
+    const fid = tile.dataset.freeId;
+    const fb = freeFind(fid);
+    return {
+      title: name(".fc-title"), open: () => tile.click(),
+      start: fb ? () => { openFreeReady(fid); clickVisibleStart(); } : null,
+      plan: fb ? { area: "free", what: "free:" + fid } : null,
+      kombi: fb ? () => startKombiWith("free", () => openFreeComboCapture(freeFind(fid), null)) : null,
+    };
+  }
+  // Every open sheet locks the page scroll (html/body overflow hidden), which
+  // drops the scroll position - "Abbrechen" must leave the page where it was.
+  let tileSheetScrollY = 0;
+  function closeTileSheet() {
+    tileSheet.hidden = true;
+    if (tileSheetScrollY) window.scrollTo(0, tileSheetScrollY);
+    tileSheetScrollY = 0;
+    if (tileSheetReturnFocus && document.body.contains(tileSheetReturnFocus)) tileSheetReturnFocus.focus({ preventScroll: true });
+    tileSheetReturnFocus = null;
+  }
+  function openTileSheet(tile) {
+    if (!tileSheet.hidden) return;
+    const a = lpActions(tile);
+    $("tileActionTitle").textContent = a.title;
+    const list = $("tileActionList");
+    list.innerHTML = "";
+    const add = (label, cls, act, fn) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = cls;
+      b.dataset.tileAct = act;
+      b.textContent = label;
+      b.addEventListener("click", () => {
+        tileSheetReturnFocus = fn ? null : tileSheetReturnFocus;
+        lpSuppressUntil = 0;
+        if (fn) tileSheetScrollY = 0;
+        closeTileSheet();
+        if (fn) fn();
+      });
+      list.appendChild(b);
+    };
+    if (a.start) add("Direkt starten", "start-btn", "start", a.start);
+    else add("Öffnen", "start-btn", "open", a.open);
+    if (a.plan) add("In den Wochenplan", "start-btn secondary", "plan", () => {
+      const ph = phaseFor(todayStr());
+      const pi = ph ? ph.index : plan.phases.length - 1;
+      openPlanEntry({ kind: "plan", pi, di: wdIdx(todayStr()), pickDay: true, preset: a.plan });
+    });
+    if (a.kombi) add("Zum Kombi-Programm", "start-btn secondary", "kombi", a.kombi);
+    add("Abbrechen", "text-link", "cancel", null);
+    tileSheetReturnFocus = tile;
+    tileSheetScrollY = window.scrollY;
+    tileSheet.hidden = false;
+    focusFirstIn(tileSheet);
+  }
+  tileSheet.addEventListener("click", (e) => { if (e.target === tileSheet) closeTileSheet(); });
+  tileSheet.addEventListener("keydown", (e) => { if (e.key === "Escape") closeTileSheet(); else trapTabKey(tileSheet, e); });
+  (function wireLongPress() {
+    let timer = 0, start = null, fired = false;
+    const cancel = () => {
+      clearTimeout(timer);
+      timer = 0;
+      if (start) start.tile.classList.remove("lp-pressing");
+      start = null;
+    };
+    document.addEventListener("touchstart", (e) => {
+      cancel();
+      fired = false;
+      if (e.touches.length !== 1) return;
+      const tile = e.target.closest && e.target.closest(LP_SEL);
+      if (!tile || !tile.getClientRects().length) return;
+      const t = e.touches[0];
+      start = { x: t.clientX, y: t.clientY, tile };
+      timer = setTimeout(() => {
+        timer = 0;
+        if (!start) return;
+        fired = true;
+        start.tile.classList.remove("lp-pressing");
+        openTileSheet(start.tile);
+      }, 500);
+      setTimeout(() => { if (start && start.tile === tile && timer && !reduceMotion.matches) tile.classList.add("lp-pressing"); }, 150);
+    }, { passive: true });
+    document.addEventListener("touchmove", (e) => {
+      if (!start) return;
+      const t = e.touches[0];
+      if (Math.abs(t.clientX - start.x) > 10 || Math.abs(t.clientY - start.y) > 10) cancel();
+    }, { passive: true });
+    document.addEventListener("touchend", (e) => {
+      cancel();
+      if (fired) {
+        fired = false;
+        lpSuppressUntil = Date.now() + 700;
+        if (e.cancelable) e.preventDefault();
+      }
+    }, { passive: false });
+    document.addEventListener("touchcancel", cancel, { passive: true });
+    // The click that may still follow a long press must not open the tile.
+    document.addEventListener("click", (e) => {
+      if (Date.now() < lpSuppressUntil && e.target.closest && e.target.closest(LP_SEL)) { e.preventDefault(); e.stopPropagation(); lpSuppressUntil = 0; }
+    }, true);
+    // Android long press / right click on desktop = the same sheet.
+    document.addEventListener("contextmenu", (e) => {
+      const tile = e.target.closest && e.target.closest(LP_SEL);
+      if (!tile) return;
+      e.preventDefault();
+      if (!fired) { cancel(); openTileSheet(tile); }
+    });
+  })();
 
   // ---- Start-up ----
   renderHistory();

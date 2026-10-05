@@ -354,5 +354,12 @@ For every new or changed exercise/screen, in the same commit:
   labels only, never free text or names. `REMINDER_VAPID_PUBLIC_KEY` in app.js
   stays "" until deployed (worker/README.md). Details: docs/notes/26. Test:
   `tests/reminders_1005_test.py`, Worker: `cd worker && npm test`.
+- Gesten (2026-10-05): tap the active bottom tab again = to the top /
+  back to the tab's page; swipe the Heute calendar = ‹ / ›; ≡ drag handle
+  reorders Kombi-Bausteine and checklist points (`wireDragReorder`, drop
+  calls the same function as ↑/↓, which stay); long press on area tiles /
+  exercise cards = `#tileActionSheet` (`LP_SEL`, `lpActions`). A new
+  sortable list or tile kind hooks into these, details in docs/notes/01.
+  Test: `tests/gestures_1005_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.
