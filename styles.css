@@ -82,6 +82,7 @@ body{
   font-size:15px;
   line-height:1.45;
   overscroll-behavior:none;
+  word-spacing:.06em; /* Public Sans has a very narrow space: "Zeichen – wird" read as "Zeichen –wird" (review 2026-10-05) */
   -webkit-font-smoothing:antialiased;
 }
 h1,h2,h3{font-family:"Magra",system-ui,sans-serif;font-weight:700}
@@ -2207,3 +2208,13 @@ a.featured-card{text-decoration:none;color:inherit}
 }
 .free-tick-btn:active{background:#00536e}
 #freeNoteInput{resize:vertical;line-height:1.4}
+.history-list .history-empty{display:block;padding:12px 0;color:var(--ink-soft);font-size:14px;border:none;background:none}
+.done-summary{text-wrap:balance}
+.free-run-icon{width:84px;height:84px;margin:4px auto 0}
+.free-run-icon svg{width:52px;height:52px}
+.free-run-icon[hidden]{display:none}
+.chapter-row .free-ready-icon{width:30px;height:30px;border-radius:50%;background:#007094;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.chapter-row .free-ready-icon svg{width:20px;height:20px}
+/* Griff-Strich: shows a bottom sheet can be pulled down to close (phones only) */
+.sheet-grab{flex:none;width:40px;height:5px;border-radius:3px;background:var(--line);margin:-12px auto 12px}
+@media (min-width:600px){.sheet-grab{display:none}}

@@ -307,8 +307,9 @@ For every new or changed exercise/screen, in the same commit:
   first with a 3 s fallback to the cache (works offline); bump `CACHE` when
   the precache list changes. Test: `tests/swipe_offline_transitions_1005_test.py`.
 - Untere Leiste (2026-10-05, Fabian "probieren wir aus"): fixed `#bottomNav`
-  with Heute / Training (`#trainingHub`, tiles from `PLAN_AREAS` + Test when
-  unlocked) / Fortschritt / Mehr (`#moreScreen`: code card, Grundeinstellungen,
+  with Heute / Training (`#trainingHub`: code card - moved here from Mehr,
+  Fabian 2026-10-05, ids still `moreCode*` - and tiles from `PLAN_AREAS` + Test
+  when unlocked) / Fortschritt / Mehr (`#moreScreen`: Grundeinstellungen,
   Tipps, FAQ, Datenschutz, Website, Impressum). The old 8-tab grid and the
   Heute "Bereiche" tiles are hidden via `body.has-bottom-nav`; area homes get
   a ‹ back to Training. Shown only while a `.screen` is visible (never in a

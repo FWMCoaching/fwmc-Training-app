@@ -2130,7 +2130,7 @@
     if (name !== "workoutHome") els.workoutProgramError.hidden = true;
     if (name !== "cardioHome") els.cardioProgramError.hidden = true;
     if (name !== "natHome") els.natProgramError.hidden = true;
-    if (name !== "moreScreen") $("moreCodeError").hidden = true;
+    if (name !== "trainingHub") $("moreCodeError").hidden = true;
     syncNatModeRows(name);
     window.scrollTo(0, 0);
   }
@@ -2499,8 +2499,17 @@
   const HISTORY_VISIBLE_SHORT = 3;
   const HISTORY_VISIBLE_EXPANDED = 200; // effectively "all" - addHistory() itself caps storage at 200
   function renderHistoryInto(sectionEl, statsEl, listEl, moreBtn, list) {
-    sectionEl.hidden = list.length === 0;
-    if (!list.length) return;
+    // Always shown, also before the first training, so every area home has
+    // the same frame (Fabian's rule; review 2026-10-05 thought it missing).
+    sectionEl.hidden = false;
+    const clearBtn = sectionEl.querySelector('[id$="istoryClearBtn"]');
+    if (clearBtn) clearBtn.hidden = !list.length;
+    if (!list.length) {
+      statsEl.innerHTML = "";
+      listEl.innerHTML = '<li class="history-empty">Noch kein Training gespeichert. Nach deinem ersten Training siehst du es hier.</li>';
+      if (moreBtn) moreBtn.hidden = true;
+      return;
+    }
     const weekStart = startOfWeek();
     const week = list.filter((e) => new Date(e.ts) >= weekStart);
     const weekSec = week.reduce((s, e) => s + (e.seconds || 0), 0);
@@ -13881,7 +13890,7 @@
               `<div class="group-label">Nach Erfolg</div>` +
               `<div class="choice-row two">` +
               `<button class="choice${cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="1">Weiter steigern<small>wie gewohnt +1</small></button>` +
-              `<button class="choice${!cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="0">Bei dieser Anzahl bleiben<small>zum gezielten Üben</small></button>` +
+              `<button class="choice${!cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="0">Anzahl halten<small>zum gezielten Üben</small></button>` +
               `</div>`
             ) : "") +
             `</div></details>`;
@@ -15856,6 +15865,63 @@
     };
     document.addEventListener("touchend", end, { passive: true });
     document.addEventListener("touchcancel", () => reset(true), { passive: true });
+  })();
+  // ---- Fenster nach unten wegziehen (Fabian, 2026-10-05: "bei zügigem
+  // Ziehen solche Fenster schließen"): every bottom sheet gets a small grab
+  // bar; when its content is scrolled to the top, dragging it down moves the
+  // sheet with the finger and a long or fast pull closes it - through the
+  // sheet's own close path (Escape handler, backdrop click or its close
+  // button), so nothing sheet-specific is skipped. Phones only (sheets sit
+  // at the bottom below 600 px). ----
+  (function () {
+    const closeSheet = (sheet) => {
+      sheet.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      if (sheet.hidden) return;
+      sheet.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      if (sheet.hidden) return;
+      const btn = [...sheet.querySelectorAll("button")].find((b) => /^(Schließen|Fertig|Abbrechen|Nein|Zurück)\b/.test(b.textContent.trim()) || b.classList.contains("sheet-close"));
+      if (btn) btn.click();
+    };
+    document.querySelectorAll(".sheet > .sheet-inner").forEach((inner) => {
+      const grab = document.createElement("div");
+      grab.className = "sheet-grab";
+      grab.setAttribute("aria-hidden", "true");
+      inner.insertBefore(grab, inner.firstChild);
+      let y0 = null, t0 = 0, dy = 0, dragging = false;
+      inner.addEventListener("touchstart", (e) => {
+        if (e.touches.length !== 1 || window.innerWidth >= 600 || inner.scrollTop > 0) { y0 = null; return; }
+        if (e.target.closest("input[type=range], textarea")) { y0 = null; return; }
+        y0 = e.touches[0].clientY; t0 = Date.now(); dy = 0; dragging = false;
+      }, { passive: true });
+      inner.addEventListener("touchmove", (e) => {
+        if (y0 === null) return;
+        dy = e.touches[0].clientY - y0;
+        if (!dragging && (dy < 6 || inner.scrollTop > 0)) { if (dy < 0) y0 = null; return; }
+        dragging = true;
+        if (e.cancelable) e.preventDefault();
+        inner.style.transition = "none";
+        inner.style.transform = `translateY(${Math.max(0, dy)}px)`;
+      }, { passive: false });
+      const end = () => {
+        if (y0 === null) return;
+        const fast = dy > 50 && Date.now() - t0 < 260;
+        const sheet = inner.parentElement;
+        y0 = null;
+        if (!dragging) return;
+        dragging = false;
+        if (dy > Math.min(140, inner.offsetHeight * 0.3) || fast) {
+          inner.style.transition = "transform .18s ease-out";
+          inner.style.transform = "translateY(100%)";
+          setTimeout(() => { closeSheet(sheet); inner.style.transition = ""; inner.style.transform = ""; }, 170);
+        } else {
+          inner.style.transition = "transform .2s ease";
+          inner.style.transform = "";
+          setTimeout(() => { inner.style.transition = ""; }, 220);
+        }
+      };
+      inner.addEventListener("touchend", end, { passive: true });
+      inner.addEventListener("touchcancel", end, { passive: true });
+    });
   })();
   // ---- Einheitliche Steuerleiste « ↻ » (Fabian, 2026-10-04: "sollte
   // nachher überall identisch sein") ----
@@ -26646,7 +26712,8 @@
   // old layout is the state before this block (git: merge 482c1f7); turning
   // bottomNavOn off brings it back. Automated browsers keep the old layout
   // (115 tests click the 8 tabs) unless fwmc-test-bottomnav is set.
-  const MORE_CODE_CTX = { goBtn: $("moreCodeGoBtn"), errorEl: $("moreCodeError"), homeScreen: "moreScreen" };
+  // Code entry sits on Training (Fabian 2026-10-05: "eher oben bei Training"; ids kept from its time on Mehr)
+  const MORE_CODE_CTX = { goBtn: $("moreCodeGoBtn"), errorEl: $("moreCodeError"), homeScreen: "trainingHub" };
   function goMoreCode() { const code = $("moreCodeInput").value.trim(); if (code) openProgramIntro(code, MORE_CODE_CTX); }
   $("moreCodeGoBtn").addEventListener("click", goMoreCode);
   $("moreCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") goMoreCode(); });
@@ -26724,11 +26791,23 @@
   const FREE_KEY = "fwmc-free-blocks-v1";
   const FREE_KINDS = { check: "Abhaken", timer: "Mit Zeit", list: "Checkliste" };
   const FREE_ITEM_MAX_S = 600;
+  // Strichfiguren für die Vorlage Dehnen (Fabian 2026-10-05: "die Figuren gibt's
+  // bei den Kraftübungen ja auch"), same 24x24 white-stroke style as WORKOUT_ICONS.
+  const STRETCH_ICONS = {
+    waden: `<circle cx="15" cy="4" r="2" fill="#fff"/><path d="M15 6 L12 12" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 7.5 L19.5 8.5" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12 L14 16 L14 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12 L6 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 3 L21 21" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    quad: `<circle cx="12" cy="3" r="2" fill="#fff"/><path d="M12 5 L12 12" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12 L12 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12 L13 16.5 L9 14" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7.5 L9 13" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7.5 L15.5 10" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    hamstring: `<circle cx="14" cy="8" r="2" fill="#fff"/><path d="M5 18 L20 18" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 18 L12.5 10" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 11.5 L19 16.5" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    hipflexor: `<circle cx="11" cy="3" r="2" fill="#fff"/><path d="M11 5 L11 12" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 12 L16 13 L16 19" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 12 L8 18 L3 19" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 7.5 L14 10" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    glute: `<circle cx="4" cy="16" r="2" fill="#fff"/><path d="M6 16 L13 16" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 16 L11 10 L16 9" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 15.5 L11 11" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 16 L19 17" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    chest: `<circle cx="12" cy="3" r="2" fill="#fff"/><path d="M12 5 L12 13" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 13 L9 20 M12 13 L15 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7.5 L5 10 M12 7.5 L19 10" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    shoulder: `<circle cx="12" cy="3" r="2" fill="#fff"/><path d="M12 5 L12 13" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 13 L9 20 M12 13 L15 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M17.5 8 L7 8.5" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5 L9.5 8.5" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    neck: `<circle cx="14" cy="4" r="2" fill="#fff"/><path d="M12.5 6 L12 7.5 L12 14" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 14 L9 20 M12 14 L15 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8.5 L9 4 L13 2.2" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8.5 L15 12" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  };
   const FREE_TEMPLATES = [{
     id: "tpl-dehnen", template: true, kind: "list", title: "Dehnen",
     note: "Nur bis zu einem angenehmen Ziehen und ruhig weiteratmen. Bei Dehnungen für eine Seite nach der Hälfte die Seite wechseln.",
     minutes: 5,
-    items: ["Waden", "Oberschenkel vorne", "Oberschenkel hinten", "Hüftbeuger", "Gesäß", "Brust", "Schultern", "Nacken"].map((text) => ({ text, s: 30 })),
+    items: [["Waden", "waden"], ["Oberschenkel vorne", "quad"], ["Oberschenkel hinten", "hamstring"], ["Hüftbeuger", "hipflexor"], ["Gesäß", "glute"], ["Brust", "chest"], ["Schultern", "shoulder"], ["Nacken", "neck"]].map(([text, icon]) => ({ text, s: 30, icon })),
   }];
   function freeClean(b) {
     if (!b || typeof b !== "object") return null;
@@ -26736,6 +26815,7 @@
     const items = (Array.isArray(b.items) ? b.items : []).map((it) => ({
       text: String((it && it.text) || "").slice(0, 60),
       s: Math.max(0, Math.min(FREE_ITEM_MAX_S, Math.round(Number(it && it.s) || 0))),
+      icon: it && STRETCH_ICONS[it.icon] ? it.icon : undefined,
     }));
     return {
       id: String(b.id || newId()), kind,
@@ -26758,7 +26838,7 @@
     if (b.kind === "timer") return [{ text: b.title, s: b.minutes * 60 }];
     if (b.kind === "list") {
       const it = b.items.filter((x) => x.text.trim());
-      return it.length ? it.map((x) => ({ text: x.text.trim(), s: x.s })) : [{ text: b.title, s: 0 }];
+      return it.length ? it.map((x) => ({ text: x.text.trim(), s: x.s, icon: x.icon })) : [{ text: b.title, s: 0 }];
     }
     return [{ text: b.title, s: 0 }];
   }
@@ -26824,6 +26904,7 @@
     els.freeReadyNote.hidden = !b.note;
     const steps = b.kind === "list" ? freeSteps(b) : [];
     els.freeReadyItems.innerHTML = steps.map((x, i) => `<div class="chapter-row"><span class="chapter-main" style="cursor:default"><span class="num">${i + 1}</span>` +
+      (x.icon ? `<span class="free-ready-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${STRETCH_ICONS[x.icon]}</svg></span>` : "") +
       `<span class="info"><strong>${esc(x.text)}</strong><span>${esc(freeItemTimeLabel(x.s))}</span></span></span></div>`).join("");
     els.freeEditBtn.hidden = !!b.template;
     els.freeCopyBtn.hidden = !b.template;
@@ -27017,6 +27098,9 @@
     els.freeRunProgress.textContent = r.block.kind === "list" ? `Punkt ${r.index + 1} von ${n}` : FREE_KINDS[r.block.kind];
     els.freeRunItem.hidden = r.block.kind !== "list";
     els.freeRunItem.textContent = st.text;
+    const ic = $("freeRunIcon");
+    ic.hidden = !st.icon;
+    ic.innerHTML = st.icon ? `<svg viewBox="0 0 24 24" aria-hidden="true">${STRETCH_ICONS[st.icon]}</svg>` : "";
     els.freeRunCountdown.hidden = !(st.s > 0);
     els.freeTickBtn.hidden = st.s > 0;
     const next = r.steps[r.index + 1];
