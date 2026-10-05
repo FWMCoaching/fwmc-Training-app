@@ -2315,3 +2315,5 @@ button:not(:disabled):active,[role="button"]:active,a:active{opacity:.6;transiti
 /* Kleine Textknöpfe: 44 px Tippfläche bei gleicher Optik (Fabian-Blick
    2026-10-05) - taller padding, the negative margin keeps the layout. */
 .text-link{padding-top:12px;padding-bottom:12px;margin-top:-6px;margin-bottom:-6px}
+/* Glocke: Training mit Erinnerung (2026-10-05) */
+.rem-bell{display:inline-flex;vertical-align:-2px;margin-left:6px;color:var(--brand)}

@@ -57,3 +57,6 @@ a browser; cross-checked once against the reference `http_ece` library).
   after that (the help text says "Öffne die App ab und zu").
 
 Test: `tests/reminders_1005_test.py`.
+
+## Glocke auf Heute (2026-10-05)
+Fabian: "Kann ja irgendwie nen kleines Symbol drauf hinweisen an den Trainings Terminen für die App?" While reminders are on, every open training in the Heute day panel whose reminder still lies ahead (within the 14 days sent) shows a small brand-coloured bell after its title (`reminderBellHtml`, `.rem-bell`). Own appointments never get a reminder or a bell (Fabian 2026-10-05: they have their own calendars). Test: `tests/reminder_bell_1005_test.py`.

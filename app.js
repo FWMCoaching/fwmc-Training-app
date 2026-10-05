@@ -26582,6 +26582,22 @@
       els.calExpand.innerHTML = html + "</div>";
     }
   }
+  // Glocke an Trainings mit Erinnerung (Fabian 2026-10-05: "nen kleines
+  // Symbol ... an den Trainings Terminen"): shown while reminders are on, on
+  // open trainings whose reminder still lies ahead within the 14 days the
+  // app sends (own appointments never get one).
+  const BELL_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>';
+  function reminderBellHtml(date, o) {
+    if (typeof remState === "undefined" || !remState || !remState.prefs.on || o.done) return "";
+    const today = todayStr();
+    if (date < today || date >= dAdd(today, 14)) return "";
+    if (date === today) {
+      const now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+      const at = o.time ? timeToMin(o.time) - remState.prefs.lead : timeToMin(remState.prefs.morning || "08:00");
+      if (at <= nowMin) return "";
+    }
+    return `<span class="rem-bell" title="Mit Erinnerung" aria-label="mit Erinnerung">${BELL_SVG}</span>`;
+  }
   function renderDayPanel(hist) {
     const date = todaySel;
     els.dayPanelTitle.textContent = date === todayStr() ? `Heute, ${longDate(date)}` : longDate(date);
@@ -26597,11 +26613,11 @@
       const meta = [o.time ? (o.time + "–" + minToTime(timeToMin(o.time) + o.minutes)) : "ohne Uhrzeit", `${o.minutes} Min.`, AREA_BY_KEY[o.area].short].join(" · ");
       const status = o.done ? (o.auto && !o.manual ? "erledigt (aus deinem Verlauf)" : "erledigt") : "offen";
       if (compact) return `<div class="day-item compact${o.done ? " done" : ""}" style="${style}" data-occ="${esc(o.id)}">
-        <div class="day-item-title">${areaDot(o.area)} ${esc(entryTitle(o))}</div>
+        <div class="day-item-title">${areaDot(o.area)} ${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div>
         <div class="day-item-meta">${esc(o.time)}–${esc(minToTime(timeToMin(o.time) + o.minutes))} · ${o.done ? "✓ erledigt" : "offen"}</div>
         <div class="day-item-actions"><button type="button" class="day-act" data-act="start">Starten</button><button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}" aria-label="${o.manual ? "Erledigt, zurücknehmen" : "Abhaken"}">✓</button></div></div>`;
       return `<div class="day-item${o.done ? " done" : ""}" ${style ? `style="${style}"` : ""} data-occ="${esc(o.id)}">
-        <div class="day-item-main">${areaDot(o.area)}<div><div class="day-item-title">${esc(entryTitle(o))}</div><div class="day-item-meta">${esc(meta)} · ${status}</div></div></div>
+        <div class="day-item-main">${areaDot(o.area)}<div><div class="day-item-title">${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div><div class="day-item-meta">${esc(meta)} · ${status}</div></div></div>
         <div class="day-item-actions">
           <button type="button" class="day-act" data-act="start">Starten</button>
           <button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}">${o.manual ? "✓ Erledigt" : "Abhaken"}</button>
@@ -27817,7 +27833,8 @@
     if (!/^\d{2}:\d{2}$/.test(prefs.morning || "")) prefs.morning = "08:00";
     prefs.on = prefs.on === true;
     remState = { prefs, timer: null, lastSync: 0, lastResult: null, busy: false, again: false };
-    const savePrefs = () => writeJSON(REMINDER_KEY, prefs);
+    // The bell on Heute's trainings follows the switch at once.
+    const savePrefs = () => { writeJSON(REMINDER_KEY, prefs); try { renderToday(); } catch (e) {} };
     const vapidKey = () => { const ov = readJSON("fwmc-test-reminder-key", ""); return ov === "off" ? "" : (ov || REMINDER_VAPID_PUBLIC_KEY || ""); };
     const groupEl = $("reminderGroup"), onCheck = $("reminderOnCheck"), statusEl = $("reminderStatus");
     const morningInput = $("reminderMorningInput");
@@ -27853,6 +27870,7 @@
       else setStatus("Aus. Beim Einschalten fragt dein Gerät, ob die App Mitteilungen schicken darf.", false);
     }
     remState.syncUI = syncUI;
+    if (prefs.on) { try { renderToday(); } catch (e) {} }
 
     // Local date + "HH:MM" -> Date in the device's time zone (DST-safe).
     function localAt(date, time) { const d = dParse(date); const [h, m] = time.split(":").map(Number); d.setHours(h, m, 0, 0); return d; }
