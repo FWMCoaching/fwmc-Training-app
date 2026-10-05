@@ -2068,3 +2068,24 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 @keyframes trRise{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.screen.tr-push > :not(.brandbar),.screen.tr-pop > :not(.brandbar),.tr-rise{animation:trFade .2s ease}}
 body{overflow-x:clip}
+
+/* Untere Navigationsleiste (2026-10-05, bottomNavOn in app.js). Below the
+   sheets (z-index 60), hidden while an exercise runs. */
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(4,minmax(0,150px));justify-content:center;background:var(--surface);border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));box-shadow:0 -2px 12px rgba(0,0,0,.06)}
+.bottom-nav[hidden]{display:none}
+.bottom-nav-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;border:none;background:none;color:var(--ink-soft);font-family:"Public Sans",sans-serif;font-weight:600;font-size:11.5px;line-height:1.1;cursor:pointer;border-radius:12px;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.bottom-nav-btn svg{width:26px;height:26px}
+.bottom-nav-btn.active{color:var(--brand)}
+.bottom-nav-btn.active span{font-weight:700}
+body.bottom-nav-on .screen:not([hidden]){padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+.has-bottom-nav .screen > .section-switch{display:none}
+.has-bottom-nav #todayHome .today-areas{display:none}
+.has-bottom-nav #progressScreen > .brandbar .bar-back-btn{display:none}
+.more-list{display:flex;flex-direction:column;gap:10px;margin:0 0 22px}
+.more-list .featured-card{line-height:1.3}
+#moreScreen .page-sub{margin-bottom:14px}
+/* Mehr carries these links as cards now; the small footer row would repeat them with tiny tap targets. */
+.has-bottom-nav .site-footer nav{display:none}
+a.featured-card{text-decoration:none;color:inherit}
+#trainingHub .combo-entry-link{margin-bottom:16px}
+.bottom-nav-on .storage-warning{bottom:calc(82px + env(safe-area-inset-bottom))}
