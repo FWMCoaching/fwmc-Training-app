@@ -454,6 +454,9 @@ For every new or changed exercise/screen, in the same commit:
   `{"startCountdown":false}`. Every sub page gets the logo bar with its
   `.back-link` moved in as the round ‹ button (JS, from `.readyhead`); a new
   sub page only needs the usual `.readyhead > .back-link`.
+  Logo mittig (2026-10-05): every top bar (`.brandbar`, `.app-bar-inner`)
+  is one grid "back | logo + sub | gear", so the logo sits at the same
+  place on every page; `--appbar-h` follows its height (light/dark).
 - Tabs never wrap (2026-10-05): `.section-tab`/`.sub-tab` are nowrap, NAT
   sub-tabs a 2-/3-per-row grid; `tests/text_wrap_audit_test.py` flags a
   two-line tab. Answer keys grow with the screen (Flash keypad width capped
