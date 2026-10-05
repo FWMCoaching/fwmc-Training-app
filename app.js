@@ -9507,6 +9507,14 @@
       btn.addEventListener("click", () => flashTypeChar(k));
       els.flashKeypad.appendChild(btn);
     });
+    // Gemischt leaves two free cells in the last row: the ⌫ key goes there
+    // (one row less, so the keypad fits a small phone; Fabian review
+    // 2026-10-05), otherwise it keeps its own row below.
+    const cols = flashState.kind === "zahlen" ? 5 : 6;
+    const back = els.flashBackspaceBtn || $("flashBackspaceBtn");
+    if (!back.__home) back.__home = { parent: back.parentNode, next: back.nextSibling };
+    if (cols - (keys.length % cols) === 2) { back.classList.add("in-keypad"); els.flashKeypad.appendChild(back); }
+    else { back.classList.remove("in-keypad"); back.__home.parent.insertBefore(back, back.__home.next); }
   }
   function renderFlashAnswerBoxes() {
     els.flashAnswerBoxes.innerHTML = "";
@@ -9544,6 +9552,11 @@
     els.flashHint.textContent = "Jetzt in der richtigen Reihenfolge eintippen";
     renderFlashAnswerBoxes();
     els.flashInputPanel.hidden = false;
+    // The answer panel starts below the hint and the player bar (it is
+    // centred in the space left; the bigger keypad of 2026-10-05 otherwise
+    // reached under the bar on a small phone).
+    const flashTop = stageTopClearanceY(els.flashStage.getBoundingClientRect(), els.flashHint, els.flashPlayerBar, 0, 0, 4);
+    els.flashStage.style.setProperty("--flash-input-top", flashTop + "px");
     // The fixpoint is absolutely centred on the whole stage, which - once
     // the answer panel (boxes + keypad) fills that space - lands it right
     // on top of the keypad and covers a key. Always hide it here regardless
@@ -11063,10 +11076,20 @@
   }
   function saveWorkoutSoundPrefs() { writeJSON(WORKOUT_SOUND_KEY, workoutSoundPrefs); }
   loadWorkoutSoundPrefs();
+  const SPEAKER_SVG = (on) => '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" stroke-width="1.6"/>' +
+    (on ? '<path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.3 6.3a8 8 0 0 1 0 11.4"/>' : '<path d="M16 9.5l5 5"/><path d="M21 9.5l-5 5"/>') + '</svg>';
   function syncWorkoutSoundUI() {
     const chk = $("masterSoundCheck");
     if (chk) chk.checked = workoutSoundPrefs.enabled;
-    [els.workoutTabataSoundToggleBtn, els.tabataSoundToggleBtn, $("stepSoundBtn")].forEach((btn) => {
+    // The step bar uses a single-colour speaker (like « ↻ »), not the emoji.
+    const stepBtn = $("stepSoundBtn");
+    if (stepBtn) {
+      stepBtn.innerHTML = SPEAKER_SVG(workoutSoundPrefs.enabled);
+      stepBtn.classList.toggle("is-off", !workoutSoundPrefs.enabled);
+      stepBtn.setAttribute("aria-pressed", workoutSoundPrefs.enabled ? "true" : "false");
+    }
+    [els.workoutTabataSoundToggleBtn, els.tabataSoundToggleBtn].forEach((btn) => {
       if (!btn) return;
       btn.textContent = workoutSoundPrefs.enabled ? "\u{1F50A}" : "\u{1F507}";
       btn.classList.toggle("is-off", !workoutSoundPrefs.enabled);
