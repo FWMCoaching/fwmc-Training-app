@@ -1191,7 +1191,7 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .faq-body{padding:0 16px 16px;color:var(--ink-soft);font-size:14px;line-height:1.55}
 .faq-body a,#privacySheet .group-help a{color:var(--brand)}
 /* A link-styled button inside running text (opens another sheet). */
-.inline-link{border:none;background:none;padding:0;font:inherit;color:var(--brand);text-decoration:underline;cursor:pointer}
+.inline-link{border:none;background:none;padding:13px 0;margin:-13px 0;font:inherit;color:var(--brand);text-decoration:underline;cursor:pointer}
 
 .slider-row{display:flex;align-items:center;gap:10px;min-width:0}
 .slider-row input[type="range"]{flex:1;min-width:0;accent-color:var(--brand);height:28px}
