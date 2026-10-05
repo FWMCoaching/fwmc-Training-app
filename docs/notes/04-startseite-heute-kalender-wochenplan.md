@@ -53,3 +53,19 @@ Training) is no longer the default.
   from the trainer, calendar export (.ics), trainer dashboard view.
 Test: `tests/today_test.py`.
 
+## Eigene Termine + Countdown (2026-10-05)
+Fabian: Wettkampf, Spiel, Vereinstraining, Massage, Ruhetag sollen in den
+Kalender, ein großes Ziel als Motivations-Countdown auf Heute.
+- Storage `fwmc-events-v1`: `[{id, date, time, title, kind, goal}]`, kind
+  one of `EVENT_KINDS` (wettkampf/training/erholung/sonstiges, fixed colours).
+- Day panel: `#dayEvents` above the trainings (cards with "Bearbeiten"),
+  `#dayEventAddBtn` opens `#eventSheet` (title, kind, date, time, goal
+  toggle; delete via `confirmDialog`). Week strip and month cells get a
+  diamond `.event-mark` (bigger for a goal) and "1 Termin" in the label.
+- `#todayCountdown` (a `.today-main` card) shows the nearest goal from today
+  on: "Noch n Tage" / "Morgen…" / "Heute ist es so weit"; past goals vanish.
+- Events do NOT steer training yet (open question to Fabian, see
+  /mnt/project-files/app/ideen-liste.md: .ics export/import, which events
+  should affect Trainingssteuerung).
+Test: `tests/events_countdown_1005_test.py`.
+

@@ -25896,6 +25896,39 @@
 
   const PLAN_KEY = "fwmc-plan-v1";
   const DAY_VIEW_KEY = "fwmc-day-view-v1";
+  // ---- Eigene Termine + Countdown (Fabian, 2026-10-05) ----
+  // Things that belong to the client's training week but don't happen in
+  // the app (a race, a match, club training, a massage, a rest day). Local
+  // only: [{id, date, time, title, kind, goal}]. An event marked as goal
+  // drives the countdown card on Heute (the nearest one from today on).
+  const EVENT_KEY = "fwmc-events-v1";
+  const EVENT_KINDS = [
+    { key: "wettkampf", label: "Wettkampf / Spiel", color: "#e67e22" },
+    { key: "training", label: "Training", color: "#8395a7" },
+    { key: "erholung", label: "Erholung", color: "#16a085" },
+    { key: "sonstiges", label: "Sonstiges", color: "#8e7cc3" },
+  ];
+  const EVENT_KIND_BY_KEY = Object.fromEntries(EVENT_KINDS.map((k) => [k.key, k]));
+  function loadEvents() {
+    const l = readJSON(EVENT_KEY, []);
+    return Array.isArray(l) ? l.filter((e) => e && typeof e.date === "string" && e.title) : [];
+  }
+  function saveEvents(list) { writeJSON(EVENT_KEY, list); }
+  function eventsOn(date, list) {
+    return (list || loadEvents()).filter((e) => e.date === date)
+      .sort((x, y) => (x.time || "99:99").localeCompare(y.time || "99:99"));
+  }
+  function nextGoalEvent(list) {
+    const today = todayStr();
+    return (list || loadEvents()).filter((e) => e.goal && e.date >= today)
+      .sort((x, y) => x.date.localeCompare(y.date) || (x.time || "").localeCompare(y.time || ""))[0] || null;
+  }
+  function eventMarkHtml(date, list) {
+    const ev = eventsOn(date, list);
+    if (!ev.length) return "";
+    const k = EVENT_KIND_BY_KEY[ev[0].kind] || EVENT_KINDS[3];
+    return `<span class="event-mark${ev.some((e) => e.goal) ? " goal" : ""}" style="background:${k.color}" aria-hidden="true"></span>`;
+  }
   const PLAN_AREAS = [
     { key: "visual", label: "Visual Training", short: "Visual", color: "#1f7ab8", screen: "home", text: "Wahrnehmen, entscheiden, reagieren.",
       icon: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="#fff"/>' },
@@ -26080,8 +26113,9 @@
     els.todayDate.textContent = longDate(today);
     const hist = loadHistory();
     renderTodayMain(today, hist);
+    renderCountdown();
     const st = weekStats(mondayOf(today), hist);
-    els.todayProgress.textContent = st.planned ? `${st.done} von ${st.planned} geplanten Einheiten` : "noch nichts geplant";
+    els.todayProgress.textContent = st.planned ? `${st.done} von ${st.planned} geplanten Einheiten` : "noch kein App-Training geplant";
     renderWeekStrip(hist);
     renderCalendar(hist);
     renderDayPanel(hist);
@@ -26128,14 +26162,17 @@
   function renderWeekStrip(hist) {
     const monday = mondayOf(todaySel);
     const today = todayStr();
+    const evList = loadEvents();
     let html = "";
     for (let i = 0; i < 7; i++) {
       const date = dAdd(monday, i);
       const { cls, occ } = dayStateClass(date, hist);
       const mark = cls === "done" ? "✓" : cls === "rest" ? "" : `<span class="week-dots">${[...new Set(occ.map((o) => o.area))].slice(0, 3).map((a) => areaDot(a)).join("")}</span>`;
       const label = `${WD_LONG[i]}, ${dParse(date).getDate()}. ${MONTHS[dParse(date).getMonth()]}: ${cls === "rest" ? "nichts geplant" : `${occ.filter((o) => o.done).length} von ${occ.length} erledigt`}`;
-      html += `<button type="button" class="week-day ${cls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}" data-date="${date}" aria-label="${esc(label)}">
-        <span class="week-day-name">${WD_SHORT[i]}</span><span class="week-day-num">${dParse(date).getDate()}</span><span class="week-day-mark">${mark}</span></button>`;
+      const evCount = eventsOn(date, evList).length;
+      const fullLabel = evCount ? `${label}, ${evCount === 1 ? "1 Termin" : evCount + " Termine"}` : label;
+      html += `<button type="button" class="week-day ${cls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}" data-date="${date}" aria-label="${esc(fullLabel)}">
+        ${eventMarkHtml(date, evList)}<span class="week-day-name">${WD_SHORT[i]}</span><span class="week-day-num">${dParse(date).getDate()}</span><span class="week-day-mark">${mark}</span></button>`;
     }
     els.todayWeekStrip.innerHTML = html;
   }
@@ -26144,6 +26181,7 @@
     const daysIn = new Date(year, month + 1, 0).getDate();
     const lead = wdIdx(first);
     const today = todayStr();
+    const evList = loadEvents();
     const phases = new Map();
     let cells = WD_SHORT.map((w) => `<span class="cal-wd">${mini ? w[0] : w}</span>`).join("");
     for (let i = 0; i < lead; i++) cells += `<span class="cal-cell empty"></span>`;
@@ -26155,7 +26193,9 @@
       const band = ph ? `<span class="cal-band" style="background:${PHASE_TINTS[ph.index % PHASE_TINTS.length]}"></span>` : "";
       const dots = mini ? "" : `<span class="cal-dots">${[...new Set(occ.map((o) => o.area))].slice(0, 4).map((a) => areaDot(a)).join("")}</span>`;
       const check = cls === "done" ? `<span class="cal-check">✓</span>` : "";
-      cells += `<button type="button" class="cal-cell ${cls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}" data-date="${date}" aria-label="${esc(longDate(date))}">${band}<span class="cal-num">${d}</span>${check}${dots}</button>`;
+      const evN = eventsOn(date, evList).length;
+      const calLabel = longDate(date) + (evN ? `, ${evN === 1 ? "1 Termin" : evN + " Termine"}` : "");
+      cells += `<button type="button" class="cal-cell ${cls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}" data-date="${date}" aria-label="${esc(calLabel)}">${band}${eventMarkHtml(date, evList)}<span class="cal-num">${d}</span>${check}${dots}</button>`;
     }
     const legend = phases.size ? `<div class="cal-legend">${[...phases].map(([i, n]) => `<span><i style="background:${PHASE_TINTS[i % PHASE_TINTS.length]}"></i>${esc(n)}</span>`).join("")}</div>` : "";
     return `<div class="cal-month${mini ? " mini" : ""}"><div class="cal-month-title">${MONTHS[month]} ${year}</div><div class="cal-grid">${cells}</div>${legend}</div>`;
@@ -26197,10 +26237,11 @@
     const date = todaySel;
     els.dayPanelTitle.textContent = date === todayStr() ? `Heute, ${longDate(date)}` : longDate(date);
     document.querySelectorAll(".day-view-btn").forEach((b) => b.classList.toggle("active", b.dataset.dayView === dayView));
+    const hasEvents = renderDayEvents(date);
     const occ = occurrencesOn(date, hist);
     if (!occ.length) {
       const ph = phaseFor(date);
-      els.dayPanelBody.innerHTML = `<p class="day-empty">${ph || planHasEntries() ? "Ruhetag, an diesem Tag ist nichts geplant." : "Noch kein Plan. Lege unten deinen Wochenplan an oder trage nur für diesen Tag etwas ein."}</p>`;
+      els.dayPanelBody.innerHTML = hasEvents ? `<p class="day-empty">Kein Training aus der App geplant.</p>` : `<p class="day-empty">${ph || planHasEntries() ? "Ruhetag, an diesem Tag ist nichts geplant." : "Noch kein Plan. Lege unten deinen Wochenplan an oder trage ein App-Training nur für diesen Tag ein."}</p>`;
       return;
     }
     const item = (o, style, compact) => {
@@ -26317,6 +26358,100 @@
   function goTodayCode() { const code = els.todayCodeInput.value.trim(); if (code) openProgramIntro(code, TODAY_CODE_CTX); }
   els.todayCodeGoBtn.addEventListener("click", goTodayCode);
   els.todayCodeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") goTodayCode(); });
+
+  // ---- Termine: Tagesliste, Countdown, Eintragen/Bearbeiten ----
+  function daysUntil(date) { return Math.round((dParse(date) - dParse(todayStr())) / 86400000); }
+  function renderCountdown() {
+    const card = $("todayCountdown");
+    const g = nextGoalEvent();
+    if (!g) { card.hidden = true; card.innerHTML = ""; return; }
+    const n = daysUntil(g.date);
+    const big = n === 0 ? "Heute ist es so weit" : n === 1 ? "Morgen ist es so weit" : `Noch ${n} Tage`;
+    const sub = n === 0 ? "Viel Erfolg! Du hast dich gut vorbereitet." : n <= 7 ? "Die letzten Tage: eher locker trainieren und gut erholen." : "Jedes Training bringt dich deinem Ziel näher.";
+    const when = longDate(g.date) + (g.time ? `, ${g.time} Uhr` : "");
+    card.innerHTML = `<div class="today-main-kicker">Dein Ziel</div>
+      <h2 class="today-main-title">${esc(g.title)}</h2>
+      <p class="countdown-big">${esc(big)}</p>
+      <p class="today-main-meta">${esc(when)}</p>
+      <p class="today-main-hint">${esc(sub)}</p>
+      <button class="text-link small" type="button" id="countdownShowBtn">Im Kalender zeigen</button>`;
+    card.hidden = false;
+    card.querySelector("#countdownShowBtn").addEventListener("click", () => {
+      selectDay(g.date);
+      $("dayPanelTitle").scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+  }
+  function renderDayEvents(date) {
+    const box = $("dayEvents");
+    const ev = eventsOn(date);
+    box.innerHTML = ev.map((e) => {
+      const k = EVENT_KIND_BY_KEY[e.kind] || EVENT_KINDS[3];
+      const meta = [e.time ? `${e.time} Uhr` : "ohne Uhrzeit", k.label, e.goal ? "Ziel mit Countdown" : ""].filter(Boolean).join(" · ");
+      return `<div class="day-item event-item" style="border-left-color:${k.color}" data-event="${esc(e.id)}">
+        <div class="day-item-main"><span class="area-dot event-dot" style="background:${k.color}" aria-hidden="true"></span><div><div class="day-item-title">${esc(e.title)}</div><div class="day-item-meta">${esc(meta)}</div></div></div>
+        <div class="day-item-actions"><button type="button" class="day-act" data-event-edit="${esc(e.id)}">Bearbeiten</button></div></div>`;
+    }).join("");
+    box.querySelectorAll("[data-event-edit]").forEach((b) => b.addEventListener("click", () => openEventSheet(b.dataset.eventEdit)));
+    return ev.length > 0;
+  }
+  let eventEditId = null, eventKind = "wettkampf", eventReturnFocus = null;
+  function renderEventKinds() {
+    $("eventKindRow").innerHTML = EVENT_KINDS.map((k) => `<button type="button" class="choice${k.key === eventKind ? " active" : ""}" data-kind="${k.key}" aria-pressed="${k.key === eventKind}"><span class="event-kind-dot" style="background:${k.color}" aria-hidden="true"></span>${esc(k.label)}</button>`).join("");
+  }
+  function openEventSheet(id) {
+    const e = id ? loadEvents().find((x) => x.id === id) : null;
+    eventEditId = e ? e.id : null;
+    eventKind = e ? (EVENT_KIND_BY_KEY[e.kind] ? e.kind : "sonstiges") : "wettkampf";
+    $("eventSheetTitle").textContent = e ? "Termin bearbeiten" : "Termin eintragen";
+    $("eventSaveBtn").textContent = e ? "Speichern" : "Eintragen";
+    $("eventTitleInput").value = e ? e.title : "";
+    $("eventDateInput").value = e ? e.date : todaySel;
+    $("eventTimeInput").value = e ? (e.time || "") : "";
+    $("eventGoalToggle").checked = !!(e && e.goal);
+    $("eventDeleteBtn").hidden = !e;
+    $("eventError").hidden = true;
+    renderEventKinds();
+    eventReturnFocus = document.activeElement;
+    $("eventSheet").hidden = false;
+    // Editing: no keyboard popping up over the sheet on a phone.
+    (e ? $("eventCancelBtn") : $("eventTitleInput")).focus();
+  }
+  function closeEventSheet() {
+    $("eventSheet").hidden = true; eventEditId = null;
+    if (eventReturnFocus && document.contains(eventReturnFocus)) eventReturnFocus.focus();
+  }
+  function saveEventFromSheet() {
+    const title = $("eventTitleInput").value.trim();
+    const date = $("eventDateInput").value;
+    const err = $("eventError");
+    if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      err.textContent = !title ? "Bitte gib ein, was ansteht." : "Bitte wähle ein Datum.";
+      err.hidden = false; return;
+    }
+    const item = { id: eventEditId || newId(), date, time: $("eventTimeInput").value || "", title, kind: eventKind, goal: $("eventGoalToggle").checked };
+    const list = loadEvents().filter((x) => x.id !== item.id);
+    list.push(item);
+    saveEvents(list);
+    closeEventSheet();
+    selectDay(date);
+  }
+  $("eventKindRow").addEventListener("click", (e) => { const b = e.target.closest("[data-kind]"); if (b) { eventKind = b.dataset.kind; renderEventKinds(); } });
+  $("dayEventAddBtn").addEventListener("click", () => openEventSheet(null));
+  $("eventCancelBtn").addEventListener("click", closeEventSheet);
+  $("eventSaveBtn").addEventListener("click", saveEventFromSheet);
+  $("eventTitleInput").addEventListener("keydown", (e) => { if (e.key === "Enter") saveEventFromSheet(); });
+  $("eventDeleteBtn").addEventListener("click", () => {
+    const id = eventEditId;
+    const e = loadEvents().find((x) => x.id === id);
+    if (!e) return;
+    confirmDialog(`„${e.title}“ wirklich löschen?`, () => {
+      saveEvents(loadEvents().filter((x) => x.id !== id));
+      closeEventSheet();
+      renderToday();
+    });
+  });
+  $("eventSheet").addEventListener("click", (e) => { if (e.target === $("eventSheet")) closeEventSheet(); });
+  $("eventSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closeEventSheet(); else trapTabKey($("eventSheet"), e); });
 
   // ---- Untere Navigationsleiste (Fabian, 2026-10-05: "Probieren wir den
   // Schritt aus") ----
