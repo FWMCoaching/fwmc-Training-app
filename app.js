@@ -4413,9 +4413,13 @@
   let periphPausedAt = null; // performance.now() timestamp while the Periph pause overlay is open, else null
 
   // 3-2-1 lead-in with the exercise's one-line task; returns its length.
+  // Grundeinstellungen "Countdown 3-2-1 vor dem Start" (Fabian, 2026-10-05)
+  // switches it off; the exercise then fills those 3 s instead.
+  function vtLeadS() { return masterPrefs.startCountdown === false ? 0 : 3; }
   function pushCountdown(schedule, cfg) {
-    for (let n = 3; n >= 1; n--) schedule.push({ t0: 3 - n, t1: 4 - n, kind: "count", payload: { n, task: cfg.task } });
-    return 3;
+    const lead = vtLeadS();
+    for (let n = lead; n >= 1; n--) schedule.push({ t0: lead - n, t1: lead + 1 - n, kind: "count", payload: { n, task: cfg.task } });
+    return lead;
   }
 
   function buildArrowSchedule(cfg, rng) {
@@ -5346,7 +5350,8 @@
   // time up to the same end as before.
   function rebuildVtScheduleFrom(elapsed) {
     const ex = EXERCISES[state.exercise];
-    if (elapsed < 3) {
+    const lead = vtLeadS();
+    if (elapsed < lead) {
       const built = buildScheduleFor(ex, Math.random);
       session.schedule = built.schedule; session.total = built.total;
     } else {
@@ -5355,10 +5360,10 @@
       let fresh = [], freshEnd = elapsed;
       if (remaining > 0) {
         const savedDuration = state.duration;
-        state.duration = 3 + remaining;
+        state.duration = lead + remaining;
         try {
           const built = buildScheduleFor(ex, Math.random);
-          const shift = elapsed - 3;
+          const shift = elapsed - lead;
           fresh = built.schedule.filter((f) => f.kind !== "count").map((f) => ({ ...f, t0: f.t0 + shift, t1: f.t1 + shift }));
           freshEnd = built.total + shift;
         } finally { state.duration = savedDuration; }
@@ -5669,7 +5674,7 @@
   })();
   function saveCueOverrides() { writeJSON(CUE_OVERRIDES_KEY, cueOverrides); }
 
-  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20 };
+  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true };
   function loadMasterPrefs() {
     const saved = readJSON(MASTER_PREFS_KEY, null);
     if (saved && typeof saved === "object") {
@@ -6392,7 +6397,7 @@
   let masterSettingsReturnFocus = null;
   function openMasterSettings() {
     masterSettingsReturnFocus = document.activeElement;
-    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); syncMasterBgUI(); syncMasterPauseUI(); renderMasterCues(); renderMasterCodeHistory();
+    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; syncMasterBgUI(); syncMasterPauseUI(); renderMasterCues(); renderMasterCodeHistory();
     els.masterSettingsSheet.hidden = false;
     focusFirstIn(els.masterSettingsSheet);
   }
@@ -11059,7 +11064,9 @@
   function saveWorkoutSoundPrefs() { writeJSON(WORKOUT_SOUND_KEY, workoutSoundPrefs); }
   loadWorkoutSoundPrefs();
   function syncWorkoutSoundUI() {
-    [els.workoutTabataSoundToggleBtn, els.tabataSoundToggleBtn].forEach((btn) => {
+    const chk = $("masterSoundCheck");
+    if (chk) chk.checked = workoutSoundPrefs.enabled;
+    [els.workoutTabataSoundToggleBtn, els.tabataSoundToggleBtn, $("stepSoundBtn")].forEach((btn) => {
       if (!btn) return;
       btn.textContent = workoutSoundPrefs.enabled ? "\u{1F50A}" : "\u{1F507}";
       btn.classList.toggle("is-off", !workoutSoundPrefs.enabled);
@@ -11072,6 +11079,15 @@
   }
   els.workoutTabataSoundToggleBtn.addEventListener("click", toggleWorkoutSound);
   els.tabataSoundToggleBtn.addEventListener("click", toggleWorkoutSound);
+  // Einheitliche Steuerung (Fabian, 2026-10-05): one sound switch in the
+  // step bar of every exercise and one in the Grundeinstellungen, both the
+  // same flag as the Workout toggles (cue tones, countdown beeps, spoken cues).
+  $("stepSoundBtn").addEventListener("click", toggleWorkoutSound);
+  $("masterSoundCheck").addEventListener("change", (e) => {
+    workoutSoundPrefs.enabled = e.target.checked;
+    saveWorkoutSoundPrefs();
+    syncWorkoutSoundUI();
+  });
   syncWorkoutSoundUI();
 
   let workoutAudioCtx = null;
@@ -15261,6 +15277,98 @@
       trainingRunStartedAt = null;
     });
   }, true);
+  // ---- Start-Countdown 3-2-1 (Fabian, 2026-10-05: Steuerung überall
+  // gleich) ----
+  // Visual Training draws its own "Gleich geht's los 3-2-1" on the stage,
+  // Tabata and Kraftplan have their own "Bereit machen" time. Every other
+  // regular exercise gets the same lead-in here, in one place: the start tap
+  // is held back, a 3-2-1 overlay (with the countdown beeps) runs, then the
+  // tap goes through. Kombi capture ("Baustein übernehmen") is never held.
+  // Grundeinstellungen "Countdown 3-2-1 vor dem Start" switches it off.
+  const LEADIN_START_IDS = ["movementStartBtn", "movementProgramStartBtn", "breathStartBtn", "breathProgramStartBtn",
+    "rememberReadyStartBtn", "rememberTrainingStartBtn", "blitzReadyStartBtn", "flashReadyStartBtn", "flashTrainingStartBtn",
+    "motReadyStartBtn", "motTrainingStartBtn", "cardioStartBtn", "cardioProgramStartBtn"];
+  let leadInBypass = false, leadInTimer = null;
+  function stopLeadIn() { clearTimeout(leadInTimer); leadInTimer = null; $("leadIn").hidden = true; }
+  document.addEventListener("click", (e) => {
+    if (leadInBypass || masterPrefs.startCountdown === false) return;
+    // Automated test browsers start instantly (the suite's timings predate
+    // the lead-in); tests of the lead-in itself set fwmc-test-leadin.
+    if (navigator.webdriver && !readJSON("fwmc-test-leadin", false)) return;
+    const b = e.target && e.target.closest ? e.target.closest("button") : null;
+    if (!b || !LEADIN_START_IDS.includes(b.id) || b.disabled) return;
+    if (b.textContent.replace(/­/g, "").trim() !== "Training starten") return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const ov = $("leadIn"), num = $("leadInNum");
+    let n = 3;
+    const tick = () => {
+      if (n === 0) {
+        stopLeadIn();
+        leadInBypass = true;
+        try { b.click(); } finally { leadInBypass = false; }
+        return;
+      }
+      num.textContent = String(n);
+      playWorkoutBeep(false);
+      n -= 1;
+      leadInTimer = setTimeout(tick, 1000);
+    };
+    ov.hidden = false;
+    tick();
+  }, true);
+  $("leadInCancelBtn").addEventListener("click", stopLeadIn);
+  els.masterStartCountdownCheck = $("masterStartCountdownCheck");
+  els.masterStartCountdownCheck.addEventListener("change", () => {
+    masterPrefs.startCountdown = els.masterStartCountdownCheck.checked;
+    saveMasterPrefs();
+  });
+  // ---- Zurück-Knopf oben links (Fabian, 2026-10-05) ----
+  // Every sub page gets the same logo bar as the area homes, with its own
+  // "← Zurück" link moved in as a round ‹ button top left (same element, so
+  // its behaviour and every test that clicks it stay as they were). The bar
+  // over pauses and results gets the same button: it does what "Zur
+  // Übersicht" does; in a pause it stays hidden, since the player's own
+  // "✕ Beenden" is right there (a reviewer found two exits confusing).
+  // Inside a running exercise the step bar stays the only control.
+  const barVis = (el) => !!el && !el.hidden && el.getClientRects().length > 0;
+  const barTpl = document.querySelector(".screen > .brandbar");
+  document.querySelectorAll(".screen").forEach((scr) => {
+    if (!barTpl || scr.querySelector(":scope > .brandbar")) return;
+    const head = scr.querySelector(":scope > .readyhead");
+    const link = head && head.querySelector(".back-link");
+    if (!link) return;
+    const bar = barTpl.cloneNode(true);
+    bar.querySelectorAll(".master-settings-btn").forEach((g) => g.addEventListener("click", openMasterSettings));
+    link.classList.add("bar-back-btn");
+    link.setAttribute("aria-label", "Zurück");
+    link.title = "Zurück";
+    bar.insertBefore(link, bar.firstChild);
+    scr.insertBefore(bar, scr.firstChild);
+    if (!head.children.length) head.remove();
+  });
+  function appBarBackTarget() {
+    const done = [...document.querySelectorAll(".done-panel")].find(barVis);
+    if (done) {
+      const b = [...done.querySelectorAll("button")].find((x) => barVis(x) && (x.classList.contains("back") || x.textContent.includes("Übersicht")));
+      if (b) return b;
+    }
+    // In a pause the player's own "✕ Beenden" sits right below: no second exit.
+    return null;
+  }
+  const appBarBack = document.createElement("button");
+  appBarBack.type = "button";
+  appBarBack.className = "bar-back-btn";
+  appBarBack.setAttribute("aria-label", "Zurück");
+  appBarBack.title = "Zurück";
+  appBarBack.addEventListener("click", () => { const t = appBarBackTarget(); if (t) t.click(); });
+  const appBarInner = $("appBar").querySelector(".app-bar-inner");
+  appBarInner.insertBefore(appBarBack, appBarInner.firstChild);
+  setInterval(() => {
+    if (getComputedStyle($("appBar")).display === "none") return;
+    const hide = !appBarBackTarget();
+    if (appBarBack.hidden !== hide) appBarBack.hidden = hide;
+  }, 300);
   // ---- Einheitliche Steuerleiste « ↻ » (Fabian, 2026-10-04: "sollte
   // nachher überall identisch sein") ----
   // One bar (#stepNav) at the bottom of every running exercise and every

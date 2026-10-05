@@ -79,7 +79,7 @@ async def main():
         print("sound icon still speaker (enabled) before start:", "\U0001F50A" in await pg.inner_text("#workoutTabataSoundToggleBtn"))
         await pg.click("#workoutTabataStartBtn"); await pg.wait_for_timeout(200)
         print("tabata player visible:", await pg.is_visible("#workoutTabataView"))
-        print("sound toggle visible during live play:", await pg.is_visible("#tabataSoundToggleBtn"))
+        print("sound toggle visible during live play:", await pg.is_visible("#stepSoundBtn"))
 
         # wait through: prep(3s) -> long beep(work start) -> work(4s) with short beeps at 3,2,1 -> long beep(work end, no more items/sets/cooldown) -> done
         await pg.wait_for_function("() => !document.getElementById('workoutDonePanel').hidden", timeout=10000)

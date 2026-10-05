@@ -444,6 +444,16 @@ For every new or changed exercise/screen, in the same commit:
 - Player conventions: exit button id `…BackBtn` + "Beenden", pause button
   id `…PauseBtn` + "Pause", class `.player` (gives step-nav, auto-pause,
   end-confirm for free).
+- Einheitliche Steuerung (2026-10-05): a regular exercise without its own
+  lead-in gets the shared 3-2-1 overlay (`LEADIN_START_IDS` in app.js, its
+  start button must read "Training starten"); VT draws its own, Tabata/
+  Kraftplan use "Bereit machen". Grundeinstellungen "Countdown 3-2-1 vor dem
+  Start" (`masterPrefs.startCountdown`) and "Töne und Ansagen"
+  (`workoutSoundPrefs.enabled`, also 🔊 `#stepSoundBtn` in the step bar).
+  Tests that need an instant start seed `fwmc-master-v1` with
+  `{"startCountdown":false}`. Every sub page gets the logo bar with its
+  `.back-link` moved in as the round ‹ button (JS, from `.readyhead`); a new
+  sub page only needs the usual `.readyhead > .back-link`.
 - New dashboard catalog entries: add them to dashboard.html's own copies too.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

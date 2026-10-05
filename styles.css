@@ -104,7 +104,7 @@ button{font-family:inherit;color:inherit}
    (pause sheet, pause between exercises, done panel, transition screen).
    While the exercise itself runs, it stays hidden. Player controls move
    down by its height, so nothing is covered. */
-:root{--appbar-h:calc(68px + env(safe-area-inset-top,0px))}
+:root{--appbar-h:calc(72px + env(safe-area-inset-top,0px))}
 .app-bar{position:fixed;top:0;left:0;right:0;z-index:35;background:var(--bg);display:none}
 .app-bar-inner{max-width:760px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top,0px)) 20px 12px;display:flex;align-items:center;flex-wrap:wrap;column-gap:14px;row-gap:6px}
 body:has(.player:not([hidden]) .pause-overlay:not([hidden]),.player:not([hidden]) .pause-screen:not([hidden]),.player:not([hidden]) .done-panel:not([hidden]),>.done-panel:not([hidden])) .app-bar{display:block}
@@ -1955,3 +1955,22 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .step-nav [data-slot="extra"] button{width:auto;padding:0 16px;border-radius:999px;font-size:14px;white-space:nowrap}
 .live-nav:not(:has(button)),.chapter-nav:not(:has(button)){display:none}
 #stepNavParking{display:none}
+
+/* Zurück-Knopf oben links + Start-Countdown + Ton in der Steuerleiste
+   (Fabian, 2026-10-05: Steuerung überall gleich) */
+.bar-back-btn,.brandbar .back-link.bar-back-btn{
+  width:44px;height:44px;flex:0 0 44px;margin:-2px 0 -2px -6px;border-radius:50%;border:none;
+  background:var(--surface-2);color:var(--ink-soft);font-size:0;padding:0;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.bar-back-btn::before{content:"\2039";font-size:32px;line-height:1;margin-top:-4px}
+.bar-back-btn[hidden]{display:none}
+.bar-back-btn:hover{color:var(--brand)}
+.step-nav #stepSoundBtn{margin-left:0;font-size:17px}
+.step-nav #stepSoundBtn.is-off{opacity:.5}
+.tabata-sound-toggle{display:none}
+.lead-in{position:fixed;inset:0;z-index:40;background:#ffffff;color:#16232a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px}
+.lead-in[hidden]{display:none}
+.lead-in-label{color:#007094;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:15px}
+.lead-in-num{font-family:Magra,sans-serif;font-weight:700;font-size:min(42vw,220px);line-height:1}
+.lead-in-cancel{margin-top:18px;min-height:48px;padding:0 26px;border-radius:999px;border:1px solid #9fb0b8;background:#ffffff;color:#16232a;font-size:16px;font-weight:600;cursor:pointer}
