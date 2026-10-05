@@ -205,8 +205,8 @@ async def main():
           const cs = path ? getComputedStyle(path) : null;
           return { svg: !!path, drawing: c.classList.contains('is-drawing'), anim: cs && cs.animationName, dur: cs && cs.animationDuration,
                    bg: getComputedStyle(c).backgroundColor, text: c.textContent.trim() }; }""")
-        check("completed run: SVG check mark draws itself (~0.5 s, brand colour)",
-              st["svg"] and st["drawing"] and st["anim"] == "doneCheckDraw" and st["dur"] == "0.5s" and st["bg"] == "rgb(0, 112, 148)", st)
+        check("completed run: SVG check mark draws itself (~0.5 s, green as before)",
+              st["svg"] and st["drawing"] and st["anim"] == "doneCheckDraw" and st["dur"] == "0.5s" and st["bg"] == "rgb(46, 125, 50)", st)
         await pg.screenshot(path=f"{SHOTS}/done_drawing_390_light.png")
         await pg.wait_for_timeout(800)
         await pg.screenshot(path=f"{SHOTS}/done_390_light.png")

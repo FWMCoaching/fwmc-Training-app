@@ -2322,17 +2322,17 @@ button:not(:disabled):active,[role="button"]:active,a:active{opacity:.6;transiti
    Konfetti nein. Hochzählen und pulsieren bei neuer Bestleistung ja") ====
    initDoneEffects in app.js: the check mark of every done panel draws
    itself; a new personal best counts up and pulses 3 times (~2 s). */
-.done-check{background:#007094;animation:none}
+.done-check{animation:none}
 .done-check svg{width:44px;height:44px;display:block}
 .done-check path{stroke-dasharray:36;stroke-dashoffset:0}
 .done-check.is-drawing{animation:pop .4s ease-out}
 .done-check.is-drawing path{animation:doneCheckDraw .5s cubic-bezier(.65,0,.35,1) .15s both}
 @keyframes doneCheckDraw{from{stroke-dashoffset:36}to{stroke-dashoffset:0}}
-.best-num{display:inline-block;position:relative;font-size:1.3em;font-weight:800;color:#007094;font-variant-numeric:tabular-nums;line-height:1;vertical-align:-.04em}
+.best-num{display:inline-block;position:relative;font-size:1.3em;font-weight:800;color:var(--brand);font-variant-numeric:tabular-nums;line-height:1;vertical-align:-.04em}
 .best-num.counting{color:transparent}
-.best-num.counting::after{content:attr(data-count);position:absolute;inset:0;text-align:center;color:#007094}
+.best-num.counting::after{content:attr(data-count);position:absolute;inset:0;text-align:center;color:var(--brand)}
 .best-num.best-pulse{animation:bestPulse .42s ease-in-out 3}
-.best-tag{display:block;width:max-content;margin:6px auto 0;color:#007094;font-weight:800;white-space:nowrap}
+.best-tag{display:block;width:max-content;margin:6px auto 0;color:var(--brand);font-weight:800;white-space:nowrap}
 .best-sep{display:none}
 .best-tag.best-pulse{animation:bestPulse .42s ease-in-out 3}
 .best-tag.best-tag-in{animation:bestTagIn .3s ease-out both}

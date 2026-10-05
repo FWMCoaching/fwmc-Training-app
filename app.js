@@ -26273,19 +26273,20 @@
     const k = EVENT_KIND_BY_KEY[ev[0].kind] || EVENT_KINDS[3];
     return `<span class="event-mark${ev.some((e) => e.goal) ? " goal" : ""}" style="background:${k.color}" aria-hidden="true"></span>`;
   }
+  // Order = Training overview (Fabian 2026-10-05).
   const PLAN_AREAS = [
     { key: "visual", label: "Visual Training", short: "Visual", color: "#1f7ab8", screen: "home", text: "Wahrnehmen, entscheiden, reagieren.",
       icon: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="#fff"/>' },
     { key: "breath", label: "Atemtraining", short: "Atem", color: "#2a9d8f", screen: "breathHome", text: "Ruhig werden und Fokus finden.",
       icon: '<path d="M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-3 3M3 12h8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
+    { key: "nat", label: "NAT – Neuroathletik", short: "NAT", color: "#3a7d2c", screen: "natHome", text: "Wahrnehmung, Gedächtnis und Reaktion.",
+      icon: '<circle cx="12" cy="12" r="8" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="2.5" fill="#fff"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
     { key: "movement", label: "Movement", short: "Movement", color: "#c77d12", screen: "movementHome", text: "Bewegen, merken, reagieren im Takt.",
       icon: '<circle cx="12" cy="4.5" r="2" fill="#fff"/><path d="M12 7v7M12 9l-5-3M12 9l5 3M12 14l-4 6M12 14l4 6" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
     { key: "workout", label: "Workout", short: "Workout", color: "#c0392b", screen: "workoutHome", text: "Kraft, Intervalle und eigene Pläne.",
       icon: '<path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
     { key: "cardio", label: "Cardio", short: "Cardio", color: "#7b4fb8", screen: "cardioHome", text: "Ausdauer, auf Wunsch mit Zusatzaufgaben.",
       icon: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' },
-    { key: "nat", label: "NAT – Neuroathletik", short: "NAT", color: "#3a7d2c", screen: "natHome", text: "Wahrnehmung, Gedächtnis und Reaktion.",
-      icon: '<circle cx="12" cy="12" r="8" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="2.5" fill="#fff"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
     { key: "free", label: "Eigenes Training", short: "Eigenes Training", color: "#a0527a", screen: "freeHome", text: "Eigenes wie Dehnen, Eisbad oder Journal.",
       icon: '<rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M8 12.5l2.8 2.8L16.5 9" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
   ];
@@ -27898,6 +27899,9 @@
   const ONB_KEY = "fwmc-onboarding-v1";
   function onboardingWanted() {
     if (navigator.webdriver && !readJSON("fwmc-test-onboarding", false)) return false;
+    // A trainer's code link (#code) goes straight to the programme; the
+    // slides come on the next normal start instead.
+    if (location.hash && location.hash.length > 1) return false;
     return !readJSON(ONB_KEY, false) && !readJSON(TIPS_KEY, false) && loadHistory().length === 0;
   }
   // Returns true when the slides are shown (the tips follow when they close).
