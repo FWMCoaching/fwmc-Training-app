@@ -31,7 +31,7 @@ the app on the home screen (iOS 16.4+), explained in plain German.
   lead/morning change, and when the app becomes visible after >= 6 h.
   Eigene Termine (`fwmc-events-v1`) are NOT reminded (free-text titles; ask
   Fabian before adding).
-- `REMINDER_VAPID_PUBLIC_KEY = ""` until the Worker is deployed with keys;
+- `REMINDER_VAPID_PUBLIC_KEY` holds the deployed key (Worker deployed 2026-10-05 19:10 UTC, version 6c507a9d; previous version 3a75e714 for rollback). Without a key the switch is disabled;
   tests set a key via `fwmc-test-reminder-key`.
 
 ## sw.js

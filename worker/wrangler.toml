@@ -35,7 +35,7 @@ crons = ["*/5 * * * *"]
 # value goes into app.js as REMINDER_VAPID_PUBLIC_KEY. The private key is a
 # secret: `npx wrangler secret put VAPID_PRIVATE_KEY` - never commit it.
 [vars]
-VAPID_PUBLIC_KEY = ""
+VAPID_PUBLIC_KEY = "BCes2a8Y5x41WmaHmfOzmzxoUXIbEr06-LoBNnz98w8tMw_OAWN8Ses5tYGZXDwD0UrzaYBzot7mGVGjXVX7C7k"
 VAPID_SUBJECT = "https://fwmcoaching.github.io/fwmc-Training-app/"
 
 # The admin token is set once via:

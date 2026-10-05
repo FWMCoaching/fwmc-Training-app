@@ -27737,10 +27737,11 @@
   // plus the device's push subscription to the Worker (POST /reminders);
   // the Worker's cron sends them via Web Push and deletes each one after
   // sending. Switching off sends DELETE /reminders and unsubscribes.
-  // REMINDER_VAPID_PUBLIC_KEY stays "" until the Worker is deployed with its
-  // VAPID keys (worker/README.md) - meanwhile the switch is disabled and the
-  // sheet says "werden gerade eingerichtet". Details: docs/notes/26.
-  const REMINDER_VAPID_PUBLIC_KEY = "";
+  // REMINDER_VAPID_PUBLIC_KEY is the Worker's VAPID public key (deployed
+  // 2026-10-05, worker/README.md). Without a key the switch is disabled and
+  // the sheet says "werden gerade eingerichtet" (tests: fwmc-test-reminder-key
+  // "off"). Details: docs/notes/26.
+  const REMINDER_VAPID_PUBLIC_KEY = "BCes2a8Y5x41WmaHmfOzmzxoUXIbEr06-LoBNnz98w8tMw_OAWN8Ses5tYGZXDwD0UrzaYBzot7mGVGjXVX7C7k";
   const REMINDER_API = "https://online-training.fwmc.workers.dev/reminders";
   const REMINDER_KEY = "fwmc-reminders-v1";
   const REMINDER_LEADS = [0, 5, 10, 15, 30];
@@ -27755,7 +27756,7 @@
     prefs.on = prefs.on === true;
     remState = { prefs, timer: null, lastSync: 0, lastResult: null, busy: false, again: false };
     const savePrefs = () => writeJSON(REMINDER_KEY, prefs);
-    const vapidKey = () => REMINDER_VAPID_PUBLIC_KEY || readJSON("fwmc-test-reminder-key", "") || "";
+    const vapidKey = () => { const ov = readJSON("fwmc-test-reminder-key", ""); return ov === "off" ? "" : (ov || REMINDER_VAPID_PUBLIC_KEY || ""); };
     const groupEl = $("reminderGroup"), onCheck = $("reminderOnCheck"), statusEl = $("reminderStatus");
     const morningInput = $("reminderMorningInput");
 

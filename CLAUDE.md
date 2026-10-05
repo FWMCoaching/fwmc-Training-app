@@ -352,7 +352,8 @@ For every new or changed exercise/screen, in the same commit:
   /reminders`, cron every 5 min, Web Push with VAPID); every `savePlan()`/
   `addHistory()` resyncs via `reminderPlanChanged()`. Reminder texts use area
   labels only, never free text or names. `REMINDER_VAPID_PUBLIC_KEY` in app.js
-  stays "" until deployed (worker/README.md). Details: docs/notes/26. Test:
+  is the deployed Worker's key (live since 2026-10-05; tests force the
+  "not set up" state with `fwmc-test-reminder-key` = "off"). Details: docs/notes/26. Test:
   `tests/reminders_1005_test.py`, Worker: `cd worker && npm test`.
 - Gesten (2026-10-05): tap the active bottom tab again = to the top /
   back to the tab's page; swipe the Heute calendar = ‹ / ›; ≡ drag handle

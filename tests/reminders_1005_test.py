@@ -112,7 +112,7 @@ async def main():
 
         # ---- 1. Not set up yet (no VAPID key): switch disabled, clear text ----
         posts = []
-        st = dict(base_storage); del st["fwmc-test-reminder-key"]
+        st = dict(base_storage); st["fwmc-test-reminder-key"] = json.dumps("off")
         ctx, pg, errors = await new_page(b, st, posts)
         await pg.goto(BASE); await pg.wait_for_timeout(500)
         await open_master(pg)
