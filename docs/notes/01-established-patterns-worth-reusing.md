@@ -133,6 +133,45 @@
   Add it wherever a screen already has prev/next buttons for browsing a
   fixed sequence; don't add it to a screen with scattered tap-targets a
   swipe could conflict with (e.g. Remember's training-mode markers).
+- **Gesten (Fabian, 2026-10-05, block "Gesten" in app.js, test
+  `tests/gestures_1005_test.py`)** - same style as "Zurück per Wischen"
+  and "Fenster nach unten wegziehen" (touch/pointer listeners, passive
+  where possible, reduced motion = no slide, harmless on desktop):
+  - *Aktiven Tab erneut tippen* (`navTabRetap` in the bottom bar block):
+    scrolled -> smooth to the top; at the top on a page below the tab ->
+    the tab's own page (`NAV_ROOT`); at the top of that page -> nothing.
+  - *Kalender wischen*: horizontal swipe > 50 px (|dx| >= 1.5 |dy|) on
+    `#todayWeekStrip` clicks `#todayWeekPrev/Next`, on `#calExpand` the
+    `[data-cal-step]` / `[data-year-step]` button (quarter view scrolls
+    natively), then a 0.32 s slide (`cal-slide-next/prev`). Touches from
+    x <= 28 px are left to the edge back swipe; the click that may follow
+    a swipe is swallowed. `touch-action: pan-y` keeps vertical scrolling
+    native. (Own variant of `wireSwipeNav` because of those two extras.)
+  - *Ziehen zum Sortieren*: `wireDragReorder(list, {row, hide, onMove})` +
+    `dragHandleEl()` (≡, 44 px, `touch-action:none`). Pointer events
+    (touch + mouse), the row lifts (`.drag-lifted`, fixed), a dashed
+    `.drag-placeholder` shows the drop slot, auto-scroll near the edges;
+    the drop calls `onMove(from, to)`, which must be the SAME function the
+    ↑/↓ buttons call (`moveComboBlock`, `freeMoveItem`). `hide` rows (Kombi
+    "Pause danach") are hidden while dragging; they live on the block, so
+    they travel along. Keep ↑/↓ for accessibility (the handle is
+    `aria-hidden`). A new sortable list = one `wireDragReorder` call.
+  - *Lange drücken* (500 ms, > 10 px movement cancels): `LP_SEL` (area
+    tiles in `#hubAreaGrid`/`#todayAreaGrid`, `#home .excard`, NAT
+    `.nat-tile`, Eigenes-Training cards) opens `#tileActionSheet` with only
+    the actions that work for the item (`lpActions`): "Direkt starten"
+    (opens the ready screen and clicks its visible "Training starten") or
+    "Öffnen", "In den Wochenplan" (`openPlanEntry` with `pickDay` +
+    `preset`: weekday select in the sheet, current phase or a new one),
+    "Zum Kombi-Programm" (fresh Kombi + that item's capture; an area with
+    several capture entries opens the Kombi screen at its group),
+    "Abbrechen" (page scroll position restored). The click after a long
+    press is swallowed, tiles have `user-select:none` and
+    `-webkit-touch-callout:none`; right click / Android context menu opens
+    the same sheet. A new kind of tile: add it to `LP_SEL` and `lpActions`.
+  - Known, not changed: every open sheet resets the page scroll to the top
+    (the `html:has(.sheet:not([hidden]))` overflow lock); the long-press
+    sheet restores it itself.
 - **Single-select swatch picker**: `buildSingleSelectPicker(container, lib,
   onPick)` / `syncSingleSelectPicker(container, currentKey)` build and sync
   a "pick exactly one colour" swatch grid (as opposed to the multi-select

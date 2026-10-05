@@ -469,6 +469,10 @@
   <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="planEntryTitle">
     <h2 id="planEntryTitle">Training eintragen</h2>
     <p class="group-help" id="planEntryContext"></p>
+    <div id="planEntryDayWrap" hidden>
+      <label class="group-label" for="planEntryDay">Wochentag</label>
+      <select id="planEntryDay" class="plan-select"></select>
+    </div>
     <label class="group-label" for="planEntryArea">Bereich</label>
     <select id="planEntryArea" class="plan-select"></select>
     <label class="group-label" for="planEntryWhat">Training</label>
@@ -6526,6 +6530,13 @@
     <h2 id="coachMessageTitle">Nachricht von deinem Trainer</h2>
     <p class="coach-message-text" id="coachMessageText"></p>
     <button class="start-btn" id="coachMessageOkBtn">Alles klar</button>
+  </div>
+</div>
+
+<div class="sheet" id="tileActionSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="tileActionTitle">
+    <h2 id="tileActionTitle"></h2>
+    <div class="tile-action-list" id="tileActionList"></div>
   </div>
 </div>
 

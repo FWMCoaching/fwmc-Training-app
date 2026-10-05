@@ -339,5 +339,12 @@ For every new or changed exercise/screen, in the same commit:
   plan entries can name one (`what: "free:<id>"`), history kind `free`.
   A new template is one `FREE_TEMPLATES` entry. Details: docs/notes/25.
   Test: `tests/free_block_1005_test.py`.
+- Gesten (2026-10-05): tap the active bottom tab again = to the top /
+  back to the tab's page; swipe the Heute calendar = ‹ / ›; ≡ drag handle
+  reorders Kombi-Bausteine and checklist points (`wireDragReorder`, drop
+  calls the same function as ↑/↓, which stay); long press on area tiles /
+  exercise cards = `#tileActionSheet` (`LP_SEL`, `lpActions`). A new
+  sortable list or tile kind hooks into these, details in docs/notes/01.
+  Test: `tests/gestures_1005_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.
