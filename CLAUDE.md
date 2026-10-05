@@ -464,5 +464,20 @@ For every new or changed exercise/screen, in the same commit:
   on a 375 px phone: `tests/tap_size_1005_test.py`. A new answer button
   named `…-response-btn` gets the scaling for free.
 - New dashboard catalog entries: add them to dashboard.html's own copies too.
+- Größe + Farbe (2026-10-05): an exercise that shows circles/characters/
+  objects gets "Größe der …" (+ "Farbe der …" if it has text) via
+  `LOOK_SPECS` in app.js: add a spec, put `<div class="look-host"
+  data-look="…">` before the "Hintergrund" group of each ready screen, call
+  `syncLook()` in its openers, copy the value into its state in start…Game
+  and cap the size in the engine (no overlap, stays on the stage, tap targets
+  ≥ 44 px). Cardio guest panel: `cardioLookFieldsHtml`. Test:
+  `tests/start_install_look_1005_test.py`.
+- Startbild + Startbildschirm-Hinweis (2026-10-05): `#appSplash` (teal +
+  logo-white.png) fades out at the end of init (automated browsers drop it
+  unless `fwmc-test-splash`); iOS startup images in `splash/` (made from the
+  same picture, linked in build.sh), manifest background #007094. The Heute
+  card `#installHint` shows once on phones/tablets in the browser
+  (`fwmc-install-hint-dismissed`; tests force it with `fwmc-test-install`).
+  A new logo means regenerating logo-white.png and splash/.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

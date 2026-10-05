@@ -571,7 +571,7 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
   position:absolute;transform:translate(-50%,-50%);
   width:var(--remember-marker-px,72px);height:var(--remember-marker-px,72px);border-radius:50%;border:none;padding:0;
   display:flex;align-items:center;justify-content:center;
-  font-family:"Magra",sans-serif;font-weight:700;font-size:calc(var(--remember-marker-px,72px) * .39);color:#fff;
+  font-family:"Magra",sans-serif;font-weight:700;font-size:calc(var(--remember-marker-px,72px) * .39);color:var(--remember-num-color,#fff);
   background:#007094;box-shadow:0 2px 10px rgba(0,0,0,.18);
   cursor:default;transition:background .15s ease,transform .1s ease;
 }
@@ -2036,3 +2036,21 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){--appbar-h:calc(106px + env(safe-area-inset-top,0px))}
 }
+
+/* Startbild (2026-10-05): covers the first paint until app.js is ready,
+   then fades out (hideAppSplash). The 4 s animation is only a safety net
+   in case the script never gets there. Same picture as the iOS startup
+   images in splash/ and the Android manifest background_color. */
+.app-splash{position:fixed;inset:0;z-index:10000;background:#007094;display:flex;align-items:center;justify-content:center;transition:opacity .35s ease;animation:appSplashOut .35s ease 4s forwards}
+.app-splash img{width:min(78vw,420px);height:auto}
+.app-splash.is-gone{opacity:0;pointer-events:none}
+@keyframes appSplashOut{to{opacity:0;visibility:hidden}}
+@media (prefers-reduced-motion:reduce){.app-splash{transition:none}}
+.install-hint .today-main-hint{margin-bottom:12px}
+.install-hint .start-btn{margin-bottom:4px}
+.install-hint .text-link{display:block;margin:0 auto -10px;min-height:44px}
+.nowrap{white-space:nowrap}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .color-swatch:not(.active) .swatch{box-shadow:0 0 0 1px rgba(255,255,255,.22)}
+}
+:root[data-theme="dark"] .color-swatch:not(.active) .swatch{box-shadow:0 0 0 1px rgba(255,255,255,.22)}
