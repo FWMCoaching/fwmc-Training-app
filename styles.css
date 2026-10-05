@@ -2219,3 +2219,11 @@ a.featured-card{text-decoration:none;color:inherit}
 /* Griff-Strich: shows a bottom sheet can be pulled down to close (phones only) */
 .sheet-grab{flex:none;width:40px;height:5px;border-radius:3px;background:var(--line);margin:-12px auto 12px}
 @media (min-width:600px){.sheet-grab{display:none}}
+
+/* Erinnerungen (2026-10-05): the privacy sheet can be opened from inside
+   Grundeinstellungen, so it stacks above every other sheet. */
+#privacySheet{z-index:61}
+.reminder-status{font-weight:600}
+.reminder-status.ok{color:var(--brand-deep)}
+.reminder-time{max-width:160px}
+#reminderGroup.unavailable .choice-row,#reminderGroup.unavailable .reminder-time{opacity:.55}

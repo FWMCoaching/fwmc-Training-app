@@ -240,6 +240,7 @@ everywhere goes here, short.
 | 23-test-bereich | **Instructions for the "Test-Bereich" Routine** (read fully if woken by it), roster, open questions |
 | 24-claude-md-langfassung-2026-10-05 | verbatim CLAUDE.md before the 2026-10-05 slimming (reasons, history) |
 | 25-freier-baustein | Freie Bausteine area: model, kinds, Dehnen template, editor, player, Kombi/plan/history wiring |
+| 26-erinnerungen | Push reminders before planned trainings: Grundeinstellungen section, payload, sw.js push, Worker /reminders + cron, deploy |
 
 ## Must-do rules collected from the detail notes
 
@@ -345,5 +346,13 @@ For every new or changed exercise/screen, in the same commit:
   plan entries can name one (`what: "free:<id>"`), history kind `free`.
   A new template is one `FREE_TEMPLATES` entry. Details: docs/notes/25.
   Test: `tests/free_block_1005_test.py`.
+- Erinnerungen (2026-10-05): Grundeinstellungen `#reminderGroup` (prefs
+  `fwmc-reminders-v1`, not in backups). The app sends only the next 14 days
+  as `{at, title, body}` + push subscription to the Worker (`POST/DELETE
+  /reminders`, cron every 5 min, Web Push with VAPID); every `savePlan()`/
+  `addHistory()` resyncs via `reminderPlanChanged()`. Reminder texts use area
+  labels only, never free text or names. `REMINDER_VAPID_PUBLIC_KEY` in app.js
+  stays "" until deployed (worker/README.md). Details: docs/notes/26. Test:
+  `tests/reminders_1005_test.py`, Worker: `cd worker && npm test`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

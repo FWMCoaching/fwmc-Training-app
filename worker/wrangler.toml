@@ -17,6 +17,27 @@ namespace_id = "1001"
   limit = 30
   period = 60
 
+# Erinnerungen (2026-10-05): rate limit for POST/DELETE /reminders
+# (20 per minute per IP - the app syncs a few times a day at most).
+[[ratelimits]]
+name = "REMINDER_LIMITER"
+namespace_id = "1002"
+
+  [ratelimits.simple]
+  limit = 20
+  period = 60
+
+# Cron: send due reminders every 5 minutes.
+[triggers]
+crons = ["*/5 * * * *"]
+
+# VAPID public key for Web Push (from `node scripts/gen-vapid.mjs`). The same
+# value goes into app.js as REMINDER_VAPID_PUBLIC_KEY. The private key is a
+# secret: `npx wrangler secret put VAPID_PRIVATE_KEY` - never commit it.
+[vars]
+VAPID_PUBLIC_KEY = ""
+VAPID_SUBJECT = "https://fwmcoaching.github.io/fwmc-Training-app/"
+
 # The admin token is set once via:
 #   npx wrangler secret put ADMIN_TOKEN
 # Never commit its value - only the binding name is declared here.

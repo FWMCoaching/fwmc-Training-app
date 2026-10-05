@@ -27,6 +27,12 @@
 //   (wrangler.toml, [[ratelimits]]): 30 lookups per minute is far above what
 //   a client typing a code ever needs, but makes guessing codes impractical.
 //   If the binding is missing (old wrangler, local dev) the lookup still works.
+//
+// Erinnerungen (2026-10-05): POST/DELETE /reminders (public, rate limited
+// through REMINDER_LIMITER) and a cron trigger every 5 minutes that sends
+// due reminders via Web Push - see reminders.js and README.md.
+
+import { handleReminders, sendDueReminders } from "./reminders.js";
 
 const ADMIN_ORIGINS = [
   "https://fwmcoaching.github.io",
@@ -51,6 +57,8 @@ export default {
     let res;
     if (url.pathname === "/program") {
       res = await handleProgramLookup(request, env);
+    } else if (url.pathname === "/reminders") {
+      res = await handleReminders(request, env, (data, status, extra) => json(data, status, { ...corsHeaders(), ...(extra || {}) }));
     } else if (url.pathname === "/admin/programs") {
       res = await withAuth(request, env, () => handleAdminPrograms(request, env));
     } else if (url.pathname === "/admin/program") {
@@ -72,6 +80,11 @@ export default {
       res = new Response(res.body, { status: res.status, headers });
     }
     return res;
+  },
+
+  // Cron trigger (wrangler.toml [triggers]): send due reminders.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(sendDueReminders(env).catch((e) => console.error("reminders", e && e.message)));
   },
 };
 
@@ -234,7 +247,7 @@ async function handleClientHistoryCreate(request, env) {
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
   };
 }
