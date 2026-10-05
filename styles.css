@@ -2235,7 +2235,7 @@ a.featured-card{text-decoration:none;color:inherit}
 .free-run-icon{width:84px;height:84px;margin:4px auto 0}
 .free-run-icon svg{width:52px;height:52px}
 .free-run-icon[hidden]{display:none}
-.chapter-row .free-ready-icon{width:30px;height:30px;border-radius:50%;background:#007094;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.chapter-row .free-ready-icon{width:30px;height:30px;border-radius:50%;background:var(--brand);display:inline-flex;align-items:center;justify-content:center;flex:none}
 .chapter-row .free-ready-icon svg{width:20px;height:20px}
 /* Griff-Strich: shows a bottom sheet can be pulled down to close (phones only) */
 .sheet-grab{flex:none;width:40px;height:5px;border-radius:3px;background:var(--line);margin:-12px auto 12px}
@@ -2307,14 +2307,14 @@ button:not(:disabled):active,[role="button"]:active,a:active{opacity:.6;transiti
 }
 /* Code-Feld im Dunkelmodus nicht grell weiß (Fabian-Blick 2026-10-05) */
 @media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]) .program-entry-row input{background:#0d2730;color:#f2f7f8;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+  :root:not([data-theme="light"]) .program-entry-row input{background:var(--bg);color:var(--ink);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
   :root:not([data-theme="light"]) .program-entry-row input::placeholder{color:rgba(242,247,248,.6)}
 }
-:root[data-theme="dark"] .program-entry-row input{background:#0d2730;color:#f2f7f8;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+:root[data-theme="dark"] .program-entry-row input{background:var(--bg);color:var(--ink);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
 :root[data-theme="dark"] .program-entry-row input::placeholder{color:rgba(242,247,248,.6)}
 /* Kleine Textknöpfe: 44 px Tippfläche bei gleicher Optik (Fabian-Blick
    2026-10-05) - taller padding, the negative margin keeps the layout. */
-.text-link{padding-top:12px;padding-bottom:12px;margin-top:-6px;margin-bottom:-6px}
+.text-link{min-height:44px;padding-top:10px;padding-bottom:10px}
 /* Glocke: Training mit Erinnerung (2026-10-05) */
 .rem-bell{display:inline-flex;vertical-align:-2px;margin-left:6px;color:var(--brand)}
 
@@ -2440,7 +2440,7 @@ html.onb-open,html.onb-open body{overflow:hidden}
 
 /* Regler in Markenfarbe statt Browser-Blau (Prüfer 05.10.) */
 input[type=range]{accent-color:#007094}
-.tips-link{color:var(--brand);font-weight:700;display:inline-block;padding:12px 0;margin:-12px 0;text-decoration:underline;text-underline-offset:2px}
+.tips-link{color:var(--brand);font-weight:700;display:inline-block;padding:13px 0;margin:-13px 0;text-decoration:underline;text-underline-offset:2px}
 /* ‹ als feiner Linien-Pfeil wie in iOS (Prüfer 05.10.) */
 .bar-back-btn::before{content:"";font-size:0;width:11px;height:11px;margin:0 0 0 4px;border-left:2.5px solid currentColor;border-bottom:2.5px solid currentColor;border-radius:1px;transform:rotate(45deg)}
 /* Training-Übersicht (Fabian 05.10., Entwurf E2): Kernbereiche getönt 2x2,

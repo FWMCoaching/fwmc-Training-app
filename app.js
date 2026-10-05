@@ -19776,6 +19776,10 @@
     els.wcstStimulusCard.innerHTML = "";
     els.wcstHint.textContent = "Ordne die Karte unten einer der vier oben zu. Du bekommst nur eine Rückmeldung, ob es richtig oder falsch war – die Regel musst du selbst herausfinden.";
     els.wcstProgressEl.textContent = `0/${wcstState.maxTrials} · 0 Kategorien`;
+    // Cards start below the hint (it wraps to 3 lines on small phones and
+    // used to cover the reference cards).
+    els.wcstStage.style.paddingTop = "";
+    els.wcstStage.style.paddingTop = Math.round(stageTopClearanceY(els.wcstStage.getBoundingClientRect(), els.wcstHint, els.wcstPlayerBar, 16)) + "px";
     requestWakeLock();
     scheduleWcstTimer(wcstNextTrial, 900);
   }
