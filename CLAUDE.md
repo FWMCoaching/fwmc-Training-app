@@ -91,7 +91,17 @@ reviewer (separate Agent, fresh context) gets screenshots of every changed
 screen and its siblings (390px and 1024px, light and dark), task "find
 everything that would bother Fabian", calibrated with the "Nachgetragene
 Punkte" table in /mnt/project-files/firma/abgabe-check.md. Fix its finds
-before pushing. Anything Fabian still finds becomes a general automatic
+before pushing. Automatic part of it: `tests/fabian_blick_test.py` walks every
+screen/sheet/exercise start it can reach (375 and 430 px, light/dark) and
+checks error kinds (Umbruch, Überlappung, Tasten < 44 px, Kopfleiste,
+Farben, Kontrast, Stil, alte Namen, Einfrieren nach Scrollen); known finds
+sit in `tests/fabian_blick_baseline.json`, only new ones fail. Report and
+screenshots: `tests/screenshots/fabian_blick/`. `tests/ios_gefuehl_test.py`
+compares transitions/gestures with iOS plus the automatable points of
+/mnt/project-files/app/benchmark-gute-app.md (KNOWN = open finds); the walk
+also checks pressed states, light patches in dark mode, one primary button,
+tabular timer digits. A new kind of
+error Fabian finds becomes a check there. Anything Fabian still finds becomes a general automatic
 check (the kind of error, not the single case).
 **App-Gefühl is Claude's job (Fabian 2026-10-05: "Das musst du selbst
 bemerken. Du bist der Experte")**: every release that touches navigation,
