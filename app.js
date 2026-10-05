@@ -5457,6 +5457,7 @@
       summary = `${ex.title} · ${fmtMinutes(spent)}`;
     }
     els.doneSummary.textContent = summary;
+    if (coneTap) markBest(els.doneSummary, "", coneTap.count);
     const id = addHistory({ kind: "exercise", exId: state.exercise, title: ex.title, seconds: Math.round(spent), note });
     renderRating(els.doneRating, id);
     els.donePanel.hidden = false;
@@ -5763,7 +5764,7 @@
   else if (isIOS) els.tipInstallText.textContent = "Tippe in Safari auf „Teilen“ und dann auf „Zum Home-Bildschirm“ – dann startest du dein Training mit einem Tipp.";
   let tipsReturnFocus = null;
   function openTips() { tipsReturnFocus = document.activeElement; els.tipsSheet.hidden = false; focusFirstIn(els.tipsSheet); }
-  function closeTips() { els.tipsSheet.hidden = true; writeJSON(TIPS_KEY, true); if (tipsReturnFocus) tipsReturnFocus.focus(); }
+  function closeTips() { const first = !readJSON(TIPS_KEY, false); els.tipsSheet.hidden = true; writeJSON(TIPS_KEY, true); if (tipsReturnFocus) tipsReturnFocus.focus(); if (first) showTipsWhereHint(); }
   els.tipsBtn.addEventListener("click", openTips);
   els.tipsCloseBtn.addEventListener("click", closeTips);
   els.tipsSheet.addEventListener("click", (e) => { if (e.target === els.tipsSheet) closeTips(); });
@@ -8635,6 +8636,7 @@
       const modeTitle = REMEMBER_MODES[state.mode].title;
       els.rememberPlayerBar.hidden = true;
       els.rememberDoneSummary.textContent = `${modeTitle} · Zahl ${state.cleared} erreicht` + (isRecord ? " · Neue Bestleistung!" : "");
+      markBest(els.rememberDoneSummary, "Zahl ", state.cleared);
       const id = addHistory({ kind: "remember", title: `Positionen merken · ${modeTitle}`, seconds: Math.round(played), note: `Zahl ${state.cleared} erreicht` });
       renderRating(els.rememberRating, id, "Wie war deine Konzentration?");
       levelSuggestAfter("remember", state.mode, state, els.rememberDonePanel, els.rememberRating);
@@ -9124,6 +9126,7 @@
       const played = (performance.now() - state.startTime) / 1000;
       els.blitzPlayerBar.hidden = true;
       els.blitzDoneSummary.textContent = `Blitz-Raster · Stufe ${state.cleared} erreicht` + (isRecord ? " · Neue Bestleistung!" : "");
+      markBest(els.blitzDoneSummary, "Stufe ", state.cleared);
       const id = addHistory({ kind: "blitz", title: "Blitz-Raster", seconds: Math.round(played), note: `Stufe ${state.cleared} erreicht` });
       renderRating(els.blitzRating, id, "Wie war deine Konzentration?");
       levelSuggestAfter("blitz", "standard", state, els.blitzDonePanel, els.blitzRating);
@@ -10027,6 +10030,7 @@
         : `${state.cleared} ${flashUnitLabel(state.kind)} erreicht`;
       els.flashPlayerBar.hidden = true;
       els.flashDoneSummary.textContent = `${modeTitle} · ${note}` + (isRecord ? " · Neue Bestleistung!" : "");
+      if (state.mode === "constant") markBest(els.flashDoneSummary, "Tempo-Stufe ", state.cleared + 1); else markBest(els.flashDoneSummary, "· ", state.cleared);
       const id = addHistory({ kind: "flash", title: `Flash-Speicher-Test · ${modeTitle}`, seconds: Math.round(played), note });
       renderRating(els.flashRating, id, "Wie war deine Konzentration?");
       levelSuggestAfter("flash", state.mode, state, els.flashDonePanel, els.flashRating);
@@ -10882,6 +10886,7 @@
       const note = state.mode === "speed" ? `Tempo-Stufe ${state.cleared + 1} erreicht` : `Stufe ${state.cleared} erreicht`;
       els.motPlayerBar.hidden = true;
       els.motDoneSummary.textContent = `Objektverfolgung (MOT) · ${modeTitle} · ${note}` + (isRecord ? " · Neue Bestleistung!" : "");
+      markBest(els.motDoneSummary, "Stufe ", state.mode === "speed" ? state.cleared + 1 : state.cleared);
       const id = addHistory({ kind: "mot", title: `Objektverfolgung (MOT) · ${modeTitle}`, seconds: Math.round(played), note });
       renderRating(els.motRating, id, "Wie war deine Konzentration?");
       levelSuggestAfter("mot", state.mode, state, els.motDonePanel, els.motRating);
@@ -27788,11 +27793,233 @@
     });
   })();
 
+  // ==== Erfolge spürbar machen (Fabian, 2026-10-05: "Haken ja, kein Ton.
+  // Konfetti nein. Hochzählen und pulsieren bei neuer Bestleistung ja, lange
+  // genug um zu merken, dass es kein Darstellungsfehler ist.") ====
+  // One mechanism for every .done-panel: when it becomes visible with its
+  // check mark shown (a completed run - setDonePanelAborted hides the mark
+  // for aborted ones), the mark draws itself (SVG stroke, ~0.6 s). A new
+  // personal best: markBest() wraps the record number in the summary; on
+  // show it counts up from 0 and then pulses 3 times (~2 s together). The
+  // summary's textContent always holds the final value (the counting digits
+  // are drawn via ::after), so nothing reads a half-counted number. Panels
+  // that only say "Neue Bestleistung!" without markBest (Test-Bereich) get
+  // the pulse on that phrase. Reduced motion: final state at once.
+  const DONE_CHECK_SVG = '<svg viewBox="0 0 52 52" aria-hidden="true" focusable="false"><path d="M15 27l8 8 15-17" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const BEST_PHRASE = /Neue Best(?:leistung|zeit)!/;
+  function wrapBestTag(el) {
+    if (el.querySelector(".best-tag")) return el.querySelector(".best-tag");
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const m = BEST_PHRASE.exec(n.nodeValue);
+      if (!m) continue;
+      // The phrase gets its own line; its " · " stays in the text (hidden).
+      const sep = / · $/.test(n.nodeValue.slice(0, m.index)) ? 3 : 0;
+      const rest = n.splitText(m.index - sep);
+      rest.splitText(m[0].length + sep);
+      const tag = document.createElement("span");
+      tag.className = "best-tag";
+      tag.textContent = m[0];
+      if (sep) { const s = document.createElement("span"); s.className = "best-sep"; s.textContent = " · "; rest.replaceWith(s, tag); }
+      else rest.replaceWith(tag);
+      return tag;
+    }
+    return null;
+  }
+  // Call right after setting a summary's text: anchor + value is the record
+  // as it reads in the summary (e.g. "Zahl " + 7).
+  function markBest(el, anchor, value) {
+    if (!el) return;
+    const text = el.textContent, num = String(value), i = text.indexOf(anchor + num);
+    if (i < 0 || !BEST_PHRASE.test(text)) return;
+    const at = i + anchor.length;
+    const span = document.createElement("span");
+    span.className = "best-num";
+    span.dataset.best = num;
+    span.textContent = num;
+    el.textContent = "";
+    el.append(text.slice(0, at), span, text.slice(at + num.length));
+    wrapBestTag(el);
+  }
+  const BEST_COUNT_MS = 750;
+  function celebrateBest(summary) {
+    const tag = wrapBestTag(summary);
+    if (!tag) return;
+    const num = summary.querySelector(".best-num");
+    if (summary._bestRaf) cancelAnimationFrame(summary._bestRaf);
+    [num, tag].forEach((el) => el && el.classList.remove("counting", "best-pulse", "best-tag-in"));
+    if (reduceMotion.matches) return;
+    const pulse = (el) => { void el.offsetWidth; el.classList.add("best-pulse"); };
+    const target = num ? parseInt(num.dataset.best, 10) : NaN;
+    if (!num || !(target > 0)) { pulse(num || tag); return; }
+    tag.style.visibility = "hidden";
+    num.classList.add("counting");
+    num.dataset.count = "0";
+    const t0 = performance.now();
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / BEST_COUNT_MS);
+      num.dataset.count = String(Math.round(target * (1 - Math.pow(1 - k, 2))));
+      if (k < 1) { summary._bestRaf = requestAnimationFrame(step); return; }
+      summary._bestRaf = 0;
+      num.classList.remove("counting");
+      tag.style.visibility = "";
+      tag.classList.add("best-tag-in");
+      pulse(num);
+    };
+    summary._bestRaf = requestAnimationFrame(step);
+  }
+  function celebrateDone(panel) {
+    if (panel.hidden || !panel.getClientRects().length) return;
+    const check = panel.querySelector(".done-check");
+    if (check) {
+      check.classList.remove("is-drawing");
+      if (!check.hidden && !reduceMotion.matches) { void check.offsetWidth; check.classList.add("is-drawing"); }
+    }
+    const summary = panel.querySelector(".done-summary");
+    if (summary && BEST_PHRASE.test(summary.textContent)) celebrateBest(summary);
+  }
+  (function initDoneEffects() {
+    document.querySelectorAll(".done-check").forEach((c) => { c.innerHTML = DONE_CHECK_SVG; c.setAttribute("aria-hidden", "true"); });
+    const obs = new MutationObserver((recs) => recs.forEach((r) => {
+      if (!r.target.hidden) requestAnimationFrame(() => celebrateDone(r.target));
+    }));
+    document.querySelectorAll(".done-panel").forEach((p) => obs.observe(p, { attributes: true, attributeFilter: ["hidden"] }));
+  })();
+
+  // ==== Erster Start (Fabian, 2026-10-05: "ja, dahinter ist dann direkt das
+  // was sonst auch immer kommt mit dem 'So trainierst du richtig'") ====
+  // Three slides (#onboarding) on the very first start only: not for anyone
+  // who already saw the tips (fwmc-tips-seen) or has a history. Order:
+  // Startbild (#appSplash, above it) -> slides -> tips sheet. Done or
+  // skipped = fwmc-onboarding-v1. Automated browsers never see it unless
+  // fwmc-test-onboarding is set. Closing the tips sheet the first time
+  // points at where they live now (showTipsWhereHint; tests:
+  // fwmc-test-tipshint).
+  const ONB_KEY = "fwmc-onboarding-v1";
+  function onboardingWanted() {
+    if (navigator.webdriver && !readJSON("fwmc-test-onboarding", false)) return false;
+    return !readJSON(ONB_KEY, false) && !readJSON(TIPS_KEY, false) && loadHistory().length === 0;
+  }
+  // Returns true when the slides are shown (the tips follow when they close).
+  function startOnboarding() {
+    if (!onboardingWanted()) return false;
+    const box = $("onboarding"), track = $("onbTrack"), next = $("onbNextBtn");
+    const dots = [...box.querySelectorAll(".onb-dot")], slides = [...box.querySelectorAll(".onb-slide")];
+    const last = slides.length - 1;
+    let idx = 0;
+    // Slide 3 reuses the wording of the "Zum Startbildschirm" card on Heute.
+    const tail = "Dann liegt dein Training mit Logo auf dem Startbildschirm und öffnet ohne Browserleiste.";
+    if (standalone) {
+      $("onbInstallTitle").textContent = "Deine App auf dem Startbildschirm";
+      $("onbInstallText").textContent = "Schon erledigt: Dein Training liegt auf dem Startbildschirm, öffnet mit einem Tipp ohne Browserleiste und läuft auch ohne Internet.";
+    } else if (isIOS) {
+      $("onbInstallText").innerHTML = "Tippe in Safari auf <span class=\"nowrap\">„Teilen“</span> (das Quadrat mit dem Pfeil) und dann auf <span class=\"nowrap\">„Zum Home-Bildschirm“</span>. " + tail;
+    } else {
+      $("onbInstallText").innerHTML = "Öffne das Browser-Menü (⋮) und tippe auf <span class=\"nowrap\">„Zum Startbildschirm</span> <span class=\"nowrap\">hinzufügen“</span>. " + tail;
+    }
+    function go(i) {
+      idx = Math.max(0, Math.min(last, i));
+      track.style.transform = `translateX(${-idx * 100}%)`;
+      dots.forEach((d, k) => d.setAttribute("aria-current", k === idx ? "true" : "false"));
+      slides.forEach((s, k) => { s.inert = k !== idx; s.setAttribute("aria-hidden", k === idx ? "false" : "true"); });
+      next.textContent = idx === last ? "Los geht’s" : "Weiter";
+      box.setAttribute("aria-labelledby", slides[idx].querySelector("h2").id || "onbTitle1");
+    }
+    slides.forEach((s, k) => { const h = s.querySelector("h2"); if (h && !h.id) h.id = "onbTitle" + (k + 1); });
+    function finish() {
+      writeJSON(ONB_KEY, true);
+      const done = () => {
+        box.hidden = true;
+        box.classList.remove("is-leaving");
+        document.documentElement.classList.remove("onb-open");
+        if (!readJSON(TIPS_KEY, false)) openTips();
+      };
+      if (reduceMotion.matches) { done(); return; }
+      box.classList.add("is-leaving");
+      setTimeout(done, 300);
+    }
+    next.addEventListener("click", () => { if (idx === last) finish(); else go(idx + 1); });
+    $("onbSkipBtn").addEventListener("click", finish);
+    dots.forEach((d, k) => d.addEventListener("click", () => go(k)));
+    box.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") go(idx + 1);
+      else if (e.key === "ArrowLeft") go(idx - 1);
+      else if (e.key === "Escape") finish();
+      else trapTabKey(box, e);
+    });
+    // Swipe: the track follows the finger, a long or fast drag turns the page.
+    const vp = $("onbViewport");
+    let x0 = null, y0 = 0, t0 = 0, dx = 0, horiz = null;
+    vp.addEventListener("touchstart", (e) => {
+      e.stopPropagation(); // not the app-wide edge swipe "back"
+      if (e.touches.length !== 1) { x0 = null; return; }
+      x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now(); dx = 0; horiz = null;
+    }, { passive: true });
+    vp.addEventListener("touchmove", (e) => {
+      if (x0 === null) return;
+      dx = e.touches[0].clientX - x0;
+      const dy = e.touches[0].clientY - y0;
+      if (horiz === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) horiz = Math.abs(dx) > Math.abs(dy);
+      if (!horiz) return;
+      if (e.cancelable) e.preventDefault();
+      const edge = (idx === 0 && dx > 0) || (idx === last && dx < 0);
+      track.style.transition = "none";
+      track.style.transform = `translateX(calc(${-idx * 100}% + ${edge ? dx / 3 : dx}px))`;
+    }, { passive: false });
+    const end = (e) => {
+      if (e) e.stopPropagation();
+      if (x0 === null) return;
+      x0 = null;
+      track.style.transition = "";
+      if (!horiz) return;
+      const fast = Math.abs(dx) > 40 && Date.now() - t0 < 260;
+      if (dx < -Math.min(80, vp.clientWidth * 0.2) || (fast && dx < 0)) go(idx + 1);
+      else if (dx > Math.min(80, vp.clientWidth * 0.2) || (fast && dx > 0)) go(idx - 1);
+      else go(idx);
+    };
+    vp.addEventListener("touchend", end, { passive: true });
+    vp.addEventListener("touchcancel", end, { passive: true });
+    go(0);
+    document.documentElement.classList.add("onb-open");
+    box.hidden = false;
+    box.focus({ preventScroll: true });
+    return true;
+  }
+  function showTipsWhereHint() {
+    if (navigator.webdriver && !readJSON("fwmc-test-tipshint", false)) return;
+    const nav = $("bottomNav");
+    const moreBtn = nav && !nav.hidden ? nav.querySelector('[data-nav="more"]') : null;
+    const target = moreBtn || (barVis(els.tipsBtn) ? els.tipsBtn : null);
+    if (!target) return;
+    document.querySelectorAll(".where-toast").forEach((t) => t.remove());
+    const toast = document.createElement("div");
+    toast.className = "where-toast";
+    toast.setAttribute("role", "status");
+    toast.textContent = moreBtn ? "Tipps findest du jederzeit unter „Mehr“." : "Tipps findest du jederzeit hier.";
+    document.body.appendChild(toast);
+    const r = target.getBoundingClientRect(), tw = toast.offsetWidth;
+    const cx = r.left + r.width / 2;
+    const left = Math.max(16, Math.min(window.innerWidth - 16 - tw, cx - tw / 2));
+    toast.style.left = left + "px";
+    toast.style.setProperty("--caret-x", Math.max(18, Math.min(tw - 18, cx - left)) + "px");
+    if (moreBtn) toast.style.bottom = (window.innerHeight - r.top + 12) + "px";
+    else { toast.style.top = (r.bottom + 12) + "px"; toast.style.bottom = "auto"; toast.classList.add("no-caret"); }
+    target.classList.remove("nav-hint");
+    void target.offsetWidth;
+    target.classList.add("nav-hint");
+    setTimeout(() => target.classList.remove("nav-hint"), 2100);
+    setTimeout(() => {
+      if (reduceMotion.matches) { toast.remove(); return; }
+      toast.classList.add("is-leaving");
+      setTimeout(() => toast.remove(), 300);
+    }, reduceMotion.matches ? 3000 : 2400);
+  }
+
   // ---- Start-up ----
   renderHistory();
   initStartScreen();
   openFromHash();
-  if (!readJSON(TIPS_KEY, false)) openTips();
+  if (!startOnboarding() && !readJSON(TIPS_KEY, false)) openTips();
 
   // ---- Startbild ausblenden (2026-10-05) ----
   // #appSplash covers the first paint; once the app is set up it fades out,
