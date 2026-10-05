@@ -14856,6 +14856,10 @@
   function showCardioGuestBadge() {
     updateCardioGuestBadge();
     els.cardioGuestBadge.hidden = false;
+    // The guest player's bar is laid out a frame later - re-measure then,
+    // not only on the next 1 s tick (the badge sat over "Vollbild" meanwhile).
+    requestAnimationFrame(() => requestAnimationFrame(updateCardioGuestBadge));
+    setTimeout(updateCardioGuestBadge, 120);
     if (cardioGuestBadgeInterval) clearInterval(cardioGuestBadgeInterval);
     cardioGuestBadgeInterval = setInterval(updateCardioGuestBadge, 1000);
   }
@@ -26498,7 +26502,7 @@
       const doneAll = occ.length > 0;
       const lastRow = last ? `<p class="today-main-meta">Zuletzt: ${esc(last.title)} · ${esc(longDate(dStr(new Date(last.ts))))}</p>
         <button class="start-btn" type="button" id="todayContinueBtn">Weitermachen</button>` : "";
-      html = `<div class="today-main-kicker">${doneAll ? "Heute alles geschafft" : "Weitermachen"}</div>
+      html = `<div class="today-main-kicker">${doneAll ? "Heute alles geschafft" : last ? "Weitermachen" : "Los geht's"}</div>
         <h2 class="today-main-title">${doneAll ? "Stark, dein Training für heute ist erledigt." : last ? esc(last.title) : "Schön, dass du da bist."}</h2>
         ${doneAll ? "" : lastRow}
         <p class="today-main-hint">${doneAll ? "Wenn du magst, findest du unter „Training“ weitere Übungen." : (occ.length ? "" : "Für heute ist nichts geplant. ") + hint}</p>`;
@@ -26848,13 +26852,22 @@
   const AREA_HOME_IDS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome"];
   const TEST_TILE = { color: "#5c6b73", label: "Test", text: "Neue Übungen zum Ausprobieren.",
     icon: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' };
+  const HUB_CORE = ["visual", "breath", "nat", "movement"];
+  const HUB_TEXT = { free: "z. B. Dehnen, Eisbad oder Journal." };
   function renderHubAreaGrid() {
     const grid = $("hubAreaGrid");
     const tiles = PLAN_AREAS.map((a) => ({ key: a.key, ...a }));
     if (readJSON(TEST_UNLOCK_KEY, false)) tiles.push({ key: "test", ...TEST_TILE });
-    grid.innerHTML = tiles.map((a) => `<button type="button" class="area-tile" data-area="${a.key}">
+    // Fabian 2026-10-05 (Entwurf E2): the four core areas as tinted 2x2
+    // tiles, below them "Dazu: dein klassisches Training" with smaller
+    // tiles (Workout, Cardio, Eigenes Training, Test when unlocked).
+    const tile = (a, core) => `<button type="button" class="area-tile${core ? " hub-core-tile" : ""}" data-area="${a.key}"${core ? ` style="--tile-c:${a.color}"` : ""}>
       <span class="area-icon" style="background:${a.color}"><svg viewBox="0 0 24 24" aria-hidden="true">${a.icon}</svg></span>
-      <span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(a.key === "nat" ? "Neuroathletik: " + a.text : a.text)}</span>${a.key === "test" ? '<span class="test-unlock-badge">Mit Code freigeschaltet</span>' : ""}</button>`).join("");
+      ${core ? "" : '<span class="t-wrap">'}<span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(HUB_TEXT[a.key] || (a.key === "nat" ? "Neuroathletik: " + a.text : a.text))}</span>${a.key === "test" ? '<span class="test-unlock-badge">Mit Code freigeschaltet</span>' : ""}${core ? "" : "</span>"}</button>`;
+    const core = tiles.filter((a) => HUB_CORE.includes(a.key)), extra = tiles.filter((a) => !HUB_CORE.includes(a.key));
+    grid.innerHTML = `<div class="area-grid hub-core">${core.map((a) => tile(a, true)).join("")}</div>
+      <div class="hub-group-title">Dazu: dein klassisches Training</div><p class="hub-sub">Kombinierbar mit allen Bereichen oben.</p>
+      <div class="area-grid hub-extra">${extra.map((a) => tile(a, false)).join("")}</div>`;
     grid.querySelectorAll(".area-tile").forEach((b) => b.addEventListener("click", () => {
       if (b.dataset.area === "test") { activateSectionTab("test"); showScreen("testHome"); } else goArea(b.dataset.area);
     }));
