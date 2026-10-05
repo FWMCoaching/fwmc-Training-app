@@ -277,7 +277,7 @@ For every new or changed exercise/screen, in the same commit:
   sub page only needs the usual `.readyhead > .back-link`.
   Kopfleiste eine Zeile (2026-10-05, Fabian chose draft A, replaced "Logo
   mittig"): every top bar (`.brandbar`, `.app-bar-inner`) is one flex row
-  "‹ back (sub pages) | logo | FWMC Online-Training | gear", 65 px
+  "‹ back (sub pages) | logo | FWMC Online-Training | gear", 53 px
   (`--appbar-h`), thin bottom line; dark mode swaps in logo-white.png via
   CSS `content:url()` (no white plate). The title is always two lines
   "FWMC / Online-Training" (`.nowrap` span is a block) so it looks the same
