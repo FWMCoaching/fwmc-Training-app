@@ -251,6 +251,40 @@
     if (pause && !/Pause|Weiter/.test(pause.textContent)) add('player', 'Pause-Knopf heißt "' + pause.textContent.trim() + '"', pause);
   }
 
+  // ---------- Benchmark (app/benchmark-gute-app.md) ----------
+  // 11 druck: every control shows a pressed state on touch (a CSS :active rule matches it)
+  if (!window.__fbActiveSel) {
+    const sels = [];
+    for (const sh of document.styleSheets) { try { const walk = rules => { for (const r of rules) {
+      if (r.selectorText && r.selectorText.includes(':active')) r.selectorText.split(',').forEach(x => { if (x.includes(':active')) sels.push(x.replace(/:active/g, '').trim() || '*'); });
+      if (r.cssRules) walk(r.cssRules); } }; walk(sh.cssRules); } catch (e) {} }
+    window.__fbActiveSel = sels;
+  }
+  const pressed = el => window.__fbActiveSel.some(x => { try { return el.matches(x) || !!el.closest(x); } catch (e) { return false; } });
+  root.querySelectorAll('button, a[href], [role=button], summary').forEach(el => {
+    if (!vis(el) || el.disabled) return;
+    if (!pressed(el)) add('druck', 'Kein Druckzustand beim Antippen (keine :active-Regel)', el);
+  });
+  // 24 dunkel: no light patches in dark mode (also fixed bars outside the layer)
+  if (matchMedia('(prefers-color-scheme: dark)').matches) {
+    const pool = new Set([...root.querySelectorAll('*'), ...[...document.body.querySelectorAll('*')].filter(e => cs(e).position === 'fixed' && !e.closest('.sheet, .screen[hidden], .player[hidden]'))]);
+    pool.forEach(el => {
+      if (!vis(el) || el.matches('img, canvas, svg, input[type=range]') || el.closest('canvas, svg, [data-sig], .look-host, [class*=swatch], .app-splash') || el.getAttribute('style')?.includes('background')) return;
+      const c = parse(cs(el).backgroundColor); if (!c || c.a < 0.9) return;
+      const r = el.getBoundingClientRect(); if (r.width * r.height < 2500) return;
+      if (lum(c) > 0.6) add('dunkel', 'Heller Fleck im Dunkelmodus (' + hex(c) + ', ' + Math.round(r.width) + '×' + Math.round(r.height) + ' px)', el);
+    });
+  }
+  // 17 hauptaktion: at most one primary button per screen
+  if (!isPlayer && !isSheet) {
+    const prim = [...root.querySelectorAll('.start-btn')].filter(vis);
+    if (prim.length > 1) add('hauptaktion', prim.length + ' Hauptknöpfe gleichzeitig sichtbar: ' + prim.map(b => b.textContent.trim().slice(0, 20)).join(' / '));
+  }
+  // 23 ziffern: running times keep their width (tabular digits)
+  if (isPlayer) textEls.forEach(el => {
+    if (/^\s*\d{1,2}:\d{2}\s*$/.test(el.textContent) && !/tabular-nums/.test(cs(el).fontVariantNumeric)) add('ziffern', 'Zeit springt in der Breite (keine gleich breiten Ziffern)', el);
+  });
+
   // ---------- stil: signatures of shared kinds (compared across screens in Python) ----------
   const kinds = [['Seitentitel', 'h1.page-title'], ['Unterzeile', '.page-sub'], ['Gruppen-Überschrift', '.group-label'],
     ['Abschnitt-Überschrift', '.section-head h2'], ['Code-Karte', '.code-card'], ['Kombi-Eintrag', '.combo-entry-link'],

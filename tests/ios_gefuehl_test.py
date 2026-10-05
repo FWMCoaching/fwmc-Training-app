@@ -1,4 +1,7 @@
-"""App-Gefühl wie iOS (Fabian, 2026-10-05: Seitenübergänge "viel zu schnell",
+"""App-Gefühl wie iOS + automatisch prüfbare Punkte aus
+/mnt/project-files/app/benchmark-gute-app.md (Nummern in Klammern).
+
+App-Gefühl wie iOS (Fabian, 2026-10-05: Seitenübergänge "viel zu schnell",
 wirkten wie Einblenden statt Hereinschieben; "Das musst du selbst
 bemerken"). Part of the Fabian-Blick: measures the real animations and
 gestures in Chromium against the iOS reference values and lists every
@@ -36,6 +39,8 @@ KNOWN = {  # Fundliste 2026-10-05, App-Thread behebt sie; nach dem Beheben hier 
     "Fenster (Sheet): Dauer wie iOS (0,30-0,50 s)",
     "Fenster (Sheet): Griff-Strich oben wie iOS",
     "Fenster (Sheet): schließt durch Herunterziehen",
+    "Wochenleiste per Wischen blättern (Benchmark 8)",
+    "Startseite springt beim Laden nicht (Layout-Verschiebung < 0,1, Benchmark 3)",
 }
 results = []
 CUR = "(() => { const s = [...document.querySelectorAll('.screen')].find(s => !s.hidden); return s ? s.id : ''; })()"
@@ -106,6 +111,8 @@ async def main():
         anims = await pg.evaluate(ANIMS_JS, "#" + sid2)
         dur = max([a["duration"] for a in anims] or [0])
         check("Zurück: Dauer wie iOS (0,30-0,50 s)", 300 <= dur <= 500, f"{dur:.0f} ms")
+        check("Zurück: kommt von links (Benchmark 2)", any("translateX(-" in a["fromTransform"] for a in anims),
+              sorted({a["fromTransform"] for a in anims})[:2])
         await pg.wait_for_timeout(700)
 
         # ---- swipe from the left edge goes back ----
@@ -148,10 +155,68 @@ async def main():
         if not closed:
             await pg.keyboard.press("Escape"); await pg.wait_for_timeout(300)
 
+        # ---- Benchmark 7: tapping the active tab scrolls back to the top ----
+        await pg.click('#bottomNav [data-nav="training"]'); await pg.wait_for_timeout(500)
+        await pg.evaluate("window.scrollTo(0, 400)"); await pg.wait_for_timeout(200)
+        y0 = await pg.evaluate("scrollY")
+        await pg.click('#bottomNav [data-nav="training"]'); await pg.wait_for_timeout(900)
+        y1 = await pg.evaluate("scrollY")
+        check("Aktiven Reiter unten antippen = nach oben (Benchmark 7)", y0 > 0 and y1 < 5, f"{y0} -> {y1}")
+
+        # ---- Benchmark 8: swipe the week strip on Heute ----
+        await pg.click('#bottomNav [data-nav="today"]'); await pg.wait_for_timeout(600)
+        strip = await pg.evaluate("""(() => { const d = document.querySelector('#todayHome .week-day'); if (!d) return null;
+          const r = d.parentElement.getBoundingClientRect(); return [r.left + r.width * 0.75, r.top + r.height / 2,
+          d.parentElement.textContent.replace(/\\s+/g, ' ').trim()]; })()""")
+        if strip:
+            await touch_swipe(pg, strip[0], strip[1], strip[0] - 220, strip[1] + 4)
+            await pg.wait_for_timeout(700)
+            after_txt = await pg.evaluate("document.querySelector('#todayHome .week-day').parentElement.textContent.replace(/\\s+/g, ' ').trim()")
+            check("Wochenleiste per Wischen blättern (Benchmark 8)", after_txt != strip[2])
+
         # ---- bottom bar ----
         sizes = await pg.evaluate("[...document.querySelectorAll('#bottomNav .bottom-nav-btn')].map(b => { const r = b.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; })")
         check("Untere Leiste: jede Taste mind. 44 px", sizes and all(min(s) >= 44 for s in sizes), sizes)
+        await ctx.close()
+
+        # ---- Benchmark 3: nothing jumps while the start page loads ----
+        ctx = await b.new_context(viewport={"width": 390, "height": 844}, service_workers="block")
+        await ctx.add_init_script(INIT + """
+          window.__cls = 0; new PerformanceObserver(l => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; })
+            .observe({type: 'layout-shift', buffered: true});""")
+        pg = await ctx.new_page()
+        await pg.goto(BASE + "?bereich=heute"); await pg.wait_for_timeout(2500)
+        cls = await pg.evaluate("window.__cls")
+        check("Startseite springt beim Laden nicht (Layout-Verschiebung < 0,1, Benchmark 3)", cls < 0.1, f"{cls:.3f}")
+        await ctx.close()
+
+        # ---- Benchmark 4: "Bewegung reduzieren" ----
+        ctx = await b.new_context(viewport={"width": 390, "height": 844}, reduced_motion="reduce", service_workers="block")
+        await ctx.add_init_script(INIT)
+        pg = await ctx.new_page()
+        await pg.goto(BASE + "?bereich=nat"); await pg.wait_for_timeout(600)
+        await pg.click(".nat-tile >> nth=0"); await pg.wait_for_timeout(30)
+        sid = await pg.evaluate(CUR)
+        anims = await pg.evaluate(ANIMS_JS, "#" + sid)
+        check("Bewegung reduzieren: kein Schieben, nur Blenden (Benchmark 4)",
+              not any("translate" in a["fromTransform"] for a in anims), sorted({a["fromTransform"] for a in anims}))
+        await ctx.close()
         await b.close()
+
+    # ---- static checks against the source ----
+    import os, re as _re
+    root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+    js = open(os.path.join(root, "app.js"), encoding="utf-8").read()
+    css = open(os.path.join(root, "styles.css"), encoding="utf-8").read()
+    html = open(os.path.join(root, "index.html"), encoding="utf-8").read()
+    check("Nie Browser-Dialoge confirm()/alert() (Benchmark 14)",
+          not _re.search(r"(?<![.\w])(window\.)?(confirm|alert)\(", _re.sub(r"//.*", "", js)))
+    check("Bildschirm bleibt während Übungen an (Wake Lock, Benchmark 28)", "wakeLock.request" in js)
+    check("Notch/Home-Leiste berücksichtigt (viewport-fit=cover + safe-area, Benchmark 20)",
+          "viewport-fit=cover" in html and "safe-area-inset-bottom" in css)
+    check("Als App installierbar: Manifest, Icon, Theme-Farbe (Benchmark 27)",
+          all(x in html for x in ('rel="manifest"', 'apple-touch-icon', 'theme-color')))
+    check("Offline: Service Worker vorhanden (Benchmark 27)", os.path.exists(os.path.join(root, "sw.js")))
     check("keine Seitenfehler", not errors, errors[:2])
     bad = [n for n, ok in results if not ok and n not in KNOWN]
     print("NEUE ABWEICHUNGEN:", bad if bad else "keine")
