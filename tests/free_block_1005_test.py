@@ -55,7 +55,7 @@ async def main():
         await pg.goto(BASE); await pg.wait_for_timeout(400)
         await pg.click('#bottomNav [data-nav="training"]'); await pg.wait_for_timeout(200)
         tile = pg.locator('#hubAreaGrid .area-tile[data-area="free"]')
-        check("Training hub has a 'Freie Bausteine' tile", await tile.count() == 1 and "Freie Bausteine" in await tile.inner_text())
+        check("Training hub has a 'Eigenes Training' tile", await tile.count() == 1 and "Eigenes Training" in await tile.inner_text())
         await tile.click(); await pg.wait_for_timeout(200)
         check("tile opens the area home", await visible_screen(pg) == "freeHome")
         frame = await pg.evaluate("""() => { const h = document.getElementById('freeHome');
@@ -118,7 +118,7 @@ async def main():
         # ---- plan entry pointing at one Baustein, auto-tick ----
         opts = await pg.evaluate("""() => { const a = document.getElementById('planEntryArea'); a.value = 'free';
           a.dispatchEvent(new Event('change')); return [...document.getElementById('planEntryWhat').options].map(o => o.textContent); }""")
-        check("Wochenplan: 'Freie Bausteine' area offers each Baustein", "Eisbad" in opts and "Dehnen" in opts, opts)
+        check("Wochenplan: 'Eigenes Training' area offers each Baustein", "Eisbad" in opts and "Dehnen" in opts, opts)
         await pg.evaluate("""(id) => { const d = new Date(); const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
           localStorage.setItem('fwmc-plan-v1', JSON.stringify({startDate: ds, phases: [], extras: {[ds]: [{id: 'pe1', area: 'free', what: 'free:' + id, code: '', time: '', minutes: 10}]}, skips: {}, done: {}})); }""", ids["Eisbad"])
         await pg.goto(BASE + "?bereich=heute"); await pg.wait_for_timeout(400)
@@ -214,15 +214,15 @@ async def main():
         # ---- Kombi: capture (own copy), edit, playback ----
         await pg.click('#freeHome [data-open-combo="1"]'); await pg.wait_for_timeout(200)
         grp = await pg.evaluate("""() => { const g = [...document.querySelectorAll('#comboAddGrid .combo-domain-group')]
-          .find(x => x.querySelector('.combo-domain-title').textContent === 'Freier Baustein');
+          .find(x => x.querySelector('.combo-domain-title').textContent === 'Eigenes Training');
           return g ? [...g.querySelectorAll('.ca-title')].map(e => e.textContent) : null; }""")
-        check("Kombi offers a 'Freier Baustein' group with own + template + new", grp and "Eisbad" in grp and "Dehnen" in grp and "Neuer freier Baustein" in grp, grp)
+        check("Kombi offers a 'Eigenes Training' group with own + template + new", grp and "Eisbad" in grp and "Dehnen" in grp and "Neues eigenes Training" in grp, grp)
         await pg.click('#comboAddGrid .combo-add-btn:has(.ca-title:text-is("Eisbad"))'); await pg.wait_for_timeout(150)
         check("capture opens the editor with 'Baustein übernehmen'", await visible_screen(pg) == "freeEdit"
               and await pg.inner_text("#freeSaveBtn") == "Baustein übernehmen" and not await pg.is_visible("#freeDeleteBtn"))
         await pg.click("#freeSaveBtn"); await pg.wait_for_timeout(150)
         check("committed back to the Kombi", await visible_screen(pg) == "comboScreen" and await pg.locator("#comboBlockList .chapter-row").count() == 1)
-        await pg.click('#comboAddGrid .combo-add-btn:has(.ca-title:text-is("Neuer freier Baustein"))'); await pg.wait_for_timeout(150)
+        await pg.click('#comboAddGrid .combo-add-btn:has(.ca-title:text-is("Neues eigenes Training"))'); await pg.wait_for_timeout(150)
         await pg.fill("#freeTitleInput", "Ruhig atmen")
         await pg.click("#freeSaveBtn"); await pg.wait_for_timeout(150)
         await pg.click("#comboBlockList .chapter-row >> nth=0 >> .chapter-main"); await pg.wait_for_timeout(150)

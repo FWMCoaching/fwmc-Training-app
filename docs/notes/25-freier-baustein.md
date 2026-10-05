@@ -1,5 +1,7 @@
 # Freie Bausteine (2026-10-05)
 
+**Renamed (Fabian, 2026-10-05 evening): client-facing name is "Eigenes Training"** (area, Kombi group, plan area; one item = "Training", e.g. "+ Neues Training"; inside a Kombi it is still a Baustein). Code names (`free`, `fwmc-free-blocks-v1`) and the history below keep the old wording.
+
 Client's ask: own activities outside the app (Dehnen, Eisbad,
 Mobilisation, Journal ...) that can be planned, combined and logged.
 Built as a 7th area "Freie Bausteine" (`PLAN_AREAS` key `free`, colour
