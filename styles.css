@@ -2197,3 +2197,11 @@ a.featured-card{text-decoration:none;color:inherit}
 }
 .free-tick-btn:active{background:#00536e}
 #freeNoteInput{resize:vertical;line-height:1.4}
+
+/* Erinnerungen (2026-10-05): the privacy sheet can be opened from inside
+   Grundeinstellungen, so it stacks above every other sheet. */
+#privacySheet{z-index:61}
+.reminder-status{font-weight:600}
+.reminder-status.ok{color:var(--brand-deep)}
+.reminder-time{max-width:160px}
+#reminderGroup.unavailable .choice-row,#reminderGroup.unavailable .reminder-time{opacity:.55}

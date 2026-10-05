@@ -82,3 +82,32 @@ self.addEventListener("fetch", (event) => {
   );
   event.waitUntil(net.catch(() => {}));
 });
+
+// Erinnerungen (2026-10-05): the Worker's cron sends a Web Push with
+// {title, body} shortly before a planned training. Tapping it focuses an
+// open app window, or opens the app on "Heute".
+self.addEventListener("push", (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) { data = { body: event.data ? event.data.text() : "" }; }
+  const title = data.title || "FWMC Online-Training";
+  event.waitUntil(self.registration.showNotification(title, {
+    body: data.body || "",
+    icon: "./icon-192.png",
+    badge: "./icon-192.png",
+    tag: data.tag || undefined,
+    data: { url: "./index.html?bereich=heute" },
+  }));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL((event.notification.data && event.notification.data.url) || "./index.html?bereich=heute", self.registration.scope).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if (c.url.startsWith(self.registration.scope) && "focus" in c) return c.focus();
+      }
+      return self.clients.openWindow ? self.clients.openWindow(target) : undefined;
+    })
+  );
+});

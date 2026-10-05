@@ -2316,6 +2316,7 @@
     list.unshift(item);
     writeJSON(HISTORY_KEY, list.slice(0, 200));
     recordProgress(item);
+    reminderPlanChanged(); // a finished training ticks its plan entry: drop its reminder
     return item.id;
   }
   function rateHistory(id, rating) {
@@ -6588,7 +6589,7 @@
   let masterSettingsReturnFocus = null;
   function openMasterSettings() {
     masterSettingsReturnFocus = document.activeElement;
-    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; syncMasterBgUI(); syncMasterPauseUI(); renderMasterCues(); renderMasterCodeHistory();
+    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; syncMasterBgUI(); syncMasterPauseUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
     els.masterSettingsSheet.hidden = false;
     focusFirstIn(els.masterSettingsSheet);
   }
@@ -16055,7 +16056,7 @@
   // Keys that must never travel in a client backup file: the coach
   // dashboard (dashboard.html, same origin) keeps its admin token under an
   // fwmc- key in this same localStorage.
-  const BACKUP_EXCLUDE = ["fwmc-admin-token"];
+  const BACKUP_EXCLUDE = ["fwmc-admin-token", "fwmc-reminders-v1"]; // reminders belong to this device's push subscription
   function buildBackup() {
     const data = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -26162,7 +26163,7 @@
     return p;
   }
   let plan = loadPlan();
-  function savePlan() { writeJSON(PLAN_KEY, plan); }
+  function savePlan() { writeJSON(PLAN_KEY, plan); reminderPlanChanged(); }
   function planHasEntries() { return plan.phases.some((ph) => ph.days.some((d) => d.length)) || Object.values(plan.extras).some((l) => l.length); }
 
   // Which phase covers a date (null before the start / after a limited end).
@@ -27258,6 +27259,186 @@
     setTimeout(gone, Math.max(0, 700 - performance.now()));
   })();
   enablePageTransitions();
+
+  // ---- Erinnerungen (Push vor geplanten Trainings, 2026-10-05) ----
+  // Fabian approved: a reminder on the phone before every planned training
+  // of the Wochenplan (lead time "Zur Zeit"/5/10/15/30 min, default 10;
+  // entries without a time get one morning reminder, default 08:00). The
+  // app computes the next 14 days itself and sends only {at, title, body}
+  // plus the device's push subscription to the Worker (POST /reminders);
+  // the Worker's cron sends them via Web Push and deletes each one after
+  // sending. Switching off sends DELETE /reminders and unsubscribes.
+  // REMINDER_VAPID_PUBLIC_KEY stays "" until the Worker is deployed with its
+  // VAPID keys (worker/README.md) - meanwhile the switch is disabled and the
+  // sheet says "werden gerade eingerichtet". Details: docs/notes/26.
+  const REMINDER_VAPID_PUBLIC_KEY = "";
+  const REMINDER_API = "https://online-training.fwmc.workers.dev/reminders";
+  const REMINDER_KEY = "fwmc-reminders-v1";
+  const REMINDER_LEADS = [0, 5, 10, 15, 30];
+  const REMINDER_DAYS = 14;
+  const REMINDER_MAX = 60;
+  var remState = null; // var: savePlan()/addHistory() may run before this block
+  function reminderPlanChanged() { if (remState && remState.prefs.on) remState.schedule(1500); }
+  (function initReminders() {
+    const prefs = Object.assign({ on: false, lead: 10, morning: "08:00" }, readJSON(REMINDER_KEY, {}) || {});
+    if (!REMINDER_LEADS.includes(prefs.lead)) prefs.lead = 10;
+    if (!/^\d{2}:\d{2}$/.test(prefs.morning || "")) prefs.morning = "08:00";
+    prefs.on = prefs.on === true;
+    remState = { prefs, timer: null, lastSync: 0, lastResult: null, busy: false, again: false };
+    const savePrefs = () => writeJSON(REMINDER_KEY, prefs);
+    const vapidKey = () => REMINDER_VAPID_PUBLIC_KEY || readJSON("fwmc-test-reminder-key", "") || "";
+    const groupEl = $("reminderGroup"), onCheck = $("reminderOnCheck"), statusEl = $("reminderStatus");
+    const morningInput = $("reminderMorningInput");
+
+    function support() {
+      if (!vapidKey()) return "setup";
+      const hasApis = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+      if (isIOS && !standalone) return "ios-install";
+      if (!hasApis) return "unsupported";
+      if (Notification.permission === "denied") return "denied";
+      return "ok";
+    }
+    const TEXTS = {
+      setup: "Erinnerungen werden gerade eingerichtet und sind bald verfügbar.",
+      "ios-install": "Am iPhone und iPad gehen Erinnerungen nur, wenn die App auf dem Startbildschirm liegt (ab iOS 16.4): In Safari auf „Teilen“ und dann auf „Zum Home-Bildschirm“ tippen, die App von dort öffnen und die Erinnerungen hier einschalten.",
+      unsupported: "Dieser Browser kann leider keine Erinnerungen anzeigen. Am Handy klappt es mit der App auf dem Startbildschirm, am Computer z. B. mit Chrome, Edge oder Firefox.",
+      denied: "Mitteilungen sind für diese App ausgeschaltet. Erlaube sie in den Einstellungen deines Geräts (bzw. des Browsers) und schalte die Erinnerungen dann hier wieder ein.",
+    };
+    function setStatus(text, ok) { statusEl.textContent = text; statusEl.classList.toggle("ok", !!ok); }
+    function syncUI() {
+      const s = support();
+      onCheck.checked = prefs.on;
+      onCheck.disabled = (s === "setup" || s === "ios-install" || s === "unsupported") && !prefs.on;
+      groupEl.classList.toggle("unavailable", s !== "ok" && !prefs.on);
+      document.querySelectorAll("[data-reminder-lead]").forEach((b) => setActive(b, Number(b.dataset.reminderLead) === prefs.lead));
+      morningInput.value = prefs.morning;
+      if (prefs.on) {
+        const r = remState.lastResult;
+        if (r && r.error) setStatus("Aktiv – die Erinnerungen konnten gerade nicht übertragen werden. Die App versucht es beim nächsten Öffnen noch einmal.", false);
+        else if (r) setStatus(r.count ? `Aktiv – ${r.count === 1 ? "1 Erinnerung" : r.count + " Erinnerungen"} in den nächsten 14 Tagen.` : "Aktiv – in den nächsten 14 Tagen ist noch kein Training geplant.", true);
+        else setStatus("Aktiv.", true);
+      } else if (s !== "ok") setStatus(TEXTS[s], false);
+      else setStatus("Aus. Beim Einschalten fragt dein Gerät, ob die App Mitteilungen schicken darf.", false);
+    }
+    remState.syncUI = syncUI;
+
+    // Local date + "HH:MM" -> Date in the device's time zone (DST-safe).
+    function localAt(date, time) { const d = dParse(date); const [h, m] = time.split(":").map(Number); d.setHours(h, m, 0, 0); return d; }
+    function remLabel(e) { const a = AREA_BY_KEY[e.area]; return `${a ? a.label : "Training"} · ${e.minutes} Min.`; }
+    // The payload: only times and short texts, no names, no history.
+    function computeReminders(now) {
+      now = now || new Date();
+      const hist = loadHistory();
+      const out = [];
+      const today = dStr(now);
+      for (let i = 0; i < REMINDER_DAYS; i++) {
+        const date = dAdd(today, i);
+        const occ = occurrencesOn(date, hist).filter((o) => !o.done);
+        occ.filter((o) => o.time).forEach((o) => {
+          const at = new Date(localAt(date, o.time).getTime() - prefs.lead * 60000);
+          if (at <= now) return;
+          out.push({ at: at.toISOString(), title: `Training um ${o.time} Uhr`,
+            body: prefs.lead ? `In ${prefs.lead} Minuten: ${remLabel(o)}` : `Jetzt: ${remLabel(o)}` });
+        });
+        const untimed = occ.filter((o) => !o.time);
+        if (untimed.length) {
+          const at = localAt(date, prefs.morning);
+          if (at > now) {
+            out.push({ at: at.toISOString(), title: "Heute steht Training an",
+              body: untimed.length === 1 ? `Heute geplant: ${remLabel(untimed[0])}` : `Heute geplant: ${untimed.length} Trainings – ${untimed.map((o) => (AREA_BY_KEY[o.area] || {}).short || "Training").join(", ")}` });
+          }
+        }
+      }
+      out.sort((a, b) => a.at.localeCompare(b.at));
+      return out.slice(0, REMINDER_MAX);
+    }
+    window.__fwmcComputeReminders = computeReminders; // used by the test
+
+    function b64urlToBytes(s) {
+      const pad = "=".repeat((4 - (s.length % 4)) % 4);
+      const bin = atob((s + pad).replace(/-/g, "+").replace(/_/g, "/"));
+      return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    }
+    function withTimeout(p, ms) { return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]); }
+    async function getSubscription(create) {
+      const reg = await withTimeout(navigator.serviceWorker.ready, 8000);
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub && create) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64urlToBytes(vapidKey()) });
+      return sub;
+    }
+    async function sendJSON(method, body) {
+      const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+      const t = ctrl ? setTimeout(() => ctrl.abort(), 12000) : null;
+      try {
+        const res = await fetch(REMINDER_API, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: ctrl ? ctrl.signal : undefined });
+        return res.ok;
+      } catch (e) { return false; } finally { if (t) clearTimeout(t); }
+    }
+    async function syncNow() {
+      if (!prefs.on || support() !== "ok") return;
+      if (remState.busy) { remState.again = true; return; }
+      remState.busy = true;
+      try {
+        let sub = null;
+        try { sub = await getSubscription(Notification.permission === "granted"); } catch (e) { sub = null; }
+        if (!sub) { remState.lastResult = { error: true }; return; }
+        const reminders = computeReminders();
+        const ok = await sendJSON("POST", { subscription: sub.toJSON ? sub.toJSON() : sub, reminders });
+        if (!prefs.on) return; // switched off meanwhile
+        remState.lastResult = ok ? { count: reminders.length } : { error: true };
+        remState.lastSync = Date.now();
+      } finally {
+        remState.busy = false; syncUI();
+        if (remState.again) { remState.again = false; schedule(0); }
+      }
+    }
+    function schedule(ms) {
+      clearTimeout(remState.timer);
+      remState.timer = setTimeout(syncNow, ms || 0);
+    }
+    remState.schedule = schedule;
+
+    async function enable() {
+      const s = support();
+      if (s !== "ok") { prefs.on = false; syncUI(); return; }
+      setStatus("Einen Moment …", false);
+      let perm = Notification.permission;
+      if (perm !== "granted") { try { perm = await Notification.requestPermission(); } catch (e) { perm = "denied"; } }
+      if (perm !== "granted") {
+        prefs.on = false; savePrefs(); syncUI();
+        if (perm !== "denied") setStatus("Ohne deine Erlaubnis für Mitteilungen kann die App nicht erinnern. Schalte die Erinnerungen ein und tippe dann auf „Erlauben“.", false);
+        return;
+      }
+      let sub = null;
+      try { sub = await getSubscription(true); } catch (e) { sub = null; }
+      if (!sub) { prefs.on = false; savePrefs(); syncUI(); setStatus("Das Einschalten hat gerade nicht geklappt. Bitte versuche es später noch einmal.", false); return; }
+      prefs.on = true; savePrefs(); remState.lastResult = null;
+      await syncNow();
+    }
+    async function disable() {
+      prefs.on = false; savePrefs(); remState.lastResult = null; clearTimeout(remState.timer);
+      syncUI();
+      try {
+        const sub = "serviceWorker" in navigator && "PushManager" in window ? await getSubscription(false) : null;
+        if (sub) { await sendJSON("DELETE", { endpoint: sub.endpoint }); try { await sub.unsubscribe(); } catch (e) {} }
+      } catch (e) {}
+    }
+    onCheck.addEventListener("change", () => { if (onCheck.checked) enable(); else disable(); });
+    document.querySelectorAll("[data-reminder-lead]").forEach((b) => b.addEventListener("click", () => {
+      prefs.lead = Number(b.dataset.reminderLead); savePrefs(); syncUI(); reminderPlanChanged();
+    }));
+    morningInput.addEventListener("change", () => {
+      if (!/^\d{2}:\d{2}$/.test(morningInput.value)) { morningInput.value = prefs.morning; return; }
+      prefs.morning = morningInput.value; savePrefs(); reminderPlanChanged();
+    });
+    // Keep the 14-day window rolling: on start, and when the app comes back
+    // after six hours or more.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && prefs.on && Date.now() - remState.lastSync > 6 * 3600000) schedule(1000);
+    });
+    syncUI();
+    if (prefs.on) schedule(2000);
+  })();
 
   // ---- Hinweis "Zum Startbildschirm hinzufügen" (2026-10-05) ----
   // One card on Heute, only on a phone/tablet in the browser (not when

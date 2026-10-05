@@ -6403,6 +6403,11 @@
       <div class="faq-body">Die App fragt den Code bei unserem Server ab (betrieben bei Cloudflare) und l&auml;dt das Programm deines Trainers. Mitgeschickt werden nur der Code und eine zuf&auml;llige Ger&auml;te-Kennung: 20 zuf&auml;llige Zeichen, die die App beim ersten Mal erzeugt, ohne Bezug zu deinem Namen, deinem Ger&auml;t oder deiner Telefonnummer. Gespeichert wird die Kennung nur bei einem Gruppen-Code mit begrenzten Pl&auml;tzen, damit dein Ger&auml;t seinen Platz beh&auml;lt. Deine Ergebnisse, dein Verlauf und deine Einstellungen werden nie &uuml;bertragen &ndash; dein Trainer sieht davon nichts.</div>
     </details>
 
+    <details class="faq-item" id="privacyReminders">
+      <summary>Was passiert bei Erinnerungen?</summary>
+      <div class="faq-body">Nur wenn du in den Grundeinstellungen die Erinnerungen einschaltest: Dann speichert der Server deines Trainers (betrieben bei Cloudflare) die Push-Adresse dieses Ger&auml;ts &ndash; eine zuf&auml;llige Adresse, die dein Browser bzw. Handy-Hersteller f&uuml;r Mitteilungen vergibt &ndash; und die geplanten Zeiten der n&auml;chsten 14 Tage mit einem kurzen Text wie &bdquo;In 10 Minuten: Cardio &middot; 20 Min.&ldquo;. Beides dient nur dazu, dir die Erinnerung zu schicken. Kein Name, kein Verlauf, keine Ergebnisse. Jede Erinnerung wird nach dem Versenden gel&ouml;scht; schaltest du die Erinnerungen aus, wird alles sofort gel&ouml;scht. Die Mitteilung selbst wird &uuml;ber den Push-Dienst deines Ger&auml;ts zugestellt (z.&nbsp;B. Apple oder Google).</div>
+    </details>
+
     <details class="faq-item">
       <summary>Sieht der Server deine IP-Adresse?</summary>
       <div class="faq-body">Wie bei jedem Aufruf im Internet technisch ja. Wir speichern sie nicht. Sie dient nur dazu, zu viele Abrufe in kurzer Zeit zu bremsen, damit niemand Codes durchprobieren kann.</div>
@@ -6498,6 +6503,23 @@
     </div>
 
     <div class="group cue-master" id="masterCuesGroup"></div>
+
+    <div class="group" id="reminderGroup">
+      <div class="group-label">Erinnerungen</div>
+      <label class="checkbox-row"><input type="checkbox" id="reminderOnCheck"> Vor geplanten Trainings erinnern</label>
+      <div class="group-help reminder-status" id="reminderStatus" role="status"></div>
+      <div class="group-label">Wann erinnern?</div>
+      <div class="choice-row" id="reminderLeadRow">
+        <button class="choice" type="button" data-reminder-lead="0">Zur Zeit</button>
+        <button class="choice" type="button" data-reminder-lead="5">5 Min. vorher</button>
+        <button class="choice" type="button" data-reminder-lead="10">10 Min. vorher</button>
+        <button class="choice" type="button" data-reminder-lead="15">15 Min. vorher</button>
+        <button class="choice" type="button" data-reminder-lead="30">30 Min. vorher</button>
+      </div>
+      <label class="group-label" for="reminderMorningInput">Trainings ohne Uhrzeit: morgens erinnern um</label>
+      <input type="time" id="reminderMorningInput" class="plan-input reminder-time" lang="de">
+      <div class="group-help">Die App erinnert dich an die Trainings aus deinem Wochenplan auf &bdquo;Heute&ldquo;. Dazu schickt sie die Uhrzeiten der n&auml;chsten 14 Tage mit einem kurzen Text (z.&nbsp;B. &bdquo;In 10 Minuten: Cardio &middot; 20 Min.&ldquo;) an den Server deines Trainers, der die Mitteilung p&uuml;nktlich verschickt. &Ouml;ffne die App ab und zu, damit die Erinnerungen weiterlaufen. Mehr dazu unter <button class="privacy-open-btn inline-link" type="button">Datenschutz in der App</button>.</div>
+    </div>
 
     <div class="group" id="masterCodeHistoryGroup" hidden>
       <div class="group-label">Zuletzt genutzte Trainings-Codes</div>
