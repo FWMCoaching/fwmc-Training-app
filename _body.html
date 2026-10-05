@@ -6619,3 +6619,41 @@
   <button type="button" class="lead-in-cancel" id="leadInCancelBtn">Abbrechen</button>
 </div>
 <div id="stepNavParking" hidden></div>
+<!-- Erster Start (2026-10-05, Fabian: "ja, dahinter ist dann direkt das was
+     sonst auch immer kommt"): three slides before the tips sheet, only for
+     new clients (initOnboarding in app.js, key fwmc-onboarding-v1). -->
+<div class="onb" id="onboarding" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="onbTitle1" hidden>
+  <div class="onb-top"><button type="button" class="onb-skip" id="onbSkipBtn">&Uuml;berspringen</button></div>
+  <div class="onb-viewport" id="onbViewport">
+    <div class="onb-track" id="onbTrack">
+      <section class="onb-slide" aria-roledescription="Folie" aria-label="1 von 3">
+        <div class="onb-art onb-art-logo"><img src="logo-white.png" width="900" height="177" alt="Fabian Westermann Mentalcoaching"></div>
+        <h2 id="onbTitle1">Willkommen bei deinem FWMC <span class="nowrap">Online-Training</span></h2>
+        <p>Kurze Trainingseinheiten f&uuml;r Wahrnehmung, Atmung, Bewegung und Kraft &ndash; direkt auf Handy, Tablet oder Laptop. Ohne Account: Dein Training bleibt auf deinem Ger&auml;t.</p>
+      </section>
+      <section class="onb-slide" aria-roledescription="Folie" aria-label="2 von 3">
+        <div class="onb-art onb-art-bar" aria-hidden="true">
+          <span class="onb-tab on"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="15" r="1.8" fill="currentColor"/></svg>Heute</span>
+          <span class="onb-tab on"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>Training</span>
+          <span class="onb-tab"><svg viewBox="0 0 24 24"><path d="M5 20V13M12 20V5M19 20v-9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Fortschritt</span>
+          <span class="onb-tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.9" fill="currentColor"/><circle cx="12" cy="12" r="1.9" fill="currentColor"/><circle cx="18.5" cy="12" r="1.9" fill="currentColor"/></svg>Mehr</span>
+        </div>
+        <h2>W&auml;hle &Uuml;bungen oder plane deine Woche</h2>
+        <p>Unten in der Leiste: Unter <strong>Heute</strong> siehst du, was diese Woche ansteht, und planst deine Trainings. Unter <strong>Training</strong> findest du alle Bereiche und &Uuml;bungen &ndash; und gibst einen Trainings-Code von deinem Trainer ein.</p>
+      </section>
+      <section class="onb-slide" aria-roledescription="Folie" aria-label="3 von 3">
+        <div class="onb-art onb-art-phone" aria-hidden="true"><span class="onb-phone"><i></i><i></i><i></i><img src="icon-192.png" width="192" height="192" alt=""><i></i><i></i><i></i><i></i><i></i></span></div>
+        <h2 id="onbInstallTitle">Leg die App auf deinen Startbildschirm</h2>
+        <p id="onbInstallText"></p>
+      </section>
+    </div>
+  </div>
+  <div class="onb-foot">
+    <div class="onb-dots" id="onbDots">
+      <button type="button" class="onb-dot" aria-label="Folie 1"></button>
+      <button type="button" class="onb-dot" aria-label="Folie 2"></button>
+      <button type="button" class="onb-dot" aria-label="Folie 3"></button>
+    </div>
+    <button type="button" class="start-btn onb-next" id="onbNextBtn">Weiter</button>
+  </div>
+</div>

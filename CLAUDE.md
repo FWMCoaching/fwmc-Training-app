@@ -362,5 +362,23 @@ For every new or changed exercise/screen, in the same commit:
   exercise cards = `#tileActionSheet` (`LP_SEL`, `lpActions`). A new
   sortable list or tile kind hooks into these, details in docs/notes/01.
   Test: `tests/gestures_1005_test.py`.
+- Erfolge spürbar (2026-10-05, Fabian: "Haken ja, kein Ton. Konfetti
+  nein."): one observer on every `.done-panel` (`initDoneEffects` in app.js)
+  draws the SVG check mark (brand #007094, ~0.6 s) when the panel opens with
+  `.done-check` visible - aborted runs (`setDonePanelAborted`) get none. A
+  new best: call `markBest(summaryEl, anchor, value)` right after setting the
+  summary text ("Zahl ", 7); the number counts up, then pulses 3x (~2 s),
+  "Neue Bestleistung!" gets its own line. textContent always holds the final
+  value (counting digits are drawn via `::after`). Without `markBest` the
+  phrase alone pulses. No sound, no confetti; reduced motion = final state.
+  A new done panel only needs `.done-check` + `.done-summary`. Test:
+  `tests/erfolge_onboarding_1005_test.py`.
+- Erster Start (2026-10-05): 3 slides `#onboarding` (Willkommen / Heute +
+  Training / Startbildschirm, swipe + dots + "Überspringen") only when
+  `fwmc-onboarding-v1`, `fwmc-tips-seen` and the history are all empty;
+  order Startbild → slides → tips sheet (`startOnboarding()` at start-up).
+  The first close of the tips sheet rings the "Mehr" tab + toast
+  (`showTipsWhereHint`). Off in automated browsers unless
+  `fwmc-test-onboarding` / `fwmc-test-tipshint`. Same test as above.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.
