@@ -479,5 +479,14 @@ For every new or changed exercise/screen, in the same commit:
   card `#installHint` shows once on phones/tablets in the browser
   (`fwmc-install-hint-dismissed`; tests force it with `fwmc-test-install`).
   A new logo means regenerating logo-white.png and splash/.
+- Seitenübergänge + Wischen + Offline (2026-10-05): one MutationObserver on
+  `hidden` animates every `.screen` (deeper = `tr-push` from the right, back
+  = `tr-pop`, between area homes = `tr-fade`), `.player` (fade only, never a
+  transform: engines measure rects at start) and `.done-panel` (`tr-rise`);
+  reduced motion = fade. Off in automated browsers unless
+  `fwmc-test-transitions`. Swipe from the left edge (≤ 28 px) clicks the
+  visible `.bar-back-btn`. A new screen needs nothing extra. sw.js: network-
+  first with a 3 s fallback to the cache (works offline); bump `CACHE` when
+  the precache list changes. Test: `tests/swipe_offline_transitions_1005_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

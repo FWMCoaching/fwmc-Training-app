@@ -2,7 +2,7 @@
 // the cache is only a fallback for offline use. Requests to other origins
 // (e.g. the programme-code API) are never cached, so a revoked code stops
 // working immediately.
-const CACHE = "fwmc-visual-training-v6";
+const CACHE = "fwmc-visual-training-v7";
 const ASSETS = [
   "./",
   "./index.html",
@@ -50,20 +50,35 @@ self.addEventListener("fetch", (event) => {
     );
     return;
   }
+  // Network-first, but offline (Fabian, 2026-10-05: "läuft auch im Studio
+  // ohne Netz"): with no or a very slow connection the cached copy answers
+  // after at most 3 s, and the network answer still refreshes the cache in
+  // the background for the next start. "no-store" so a browser HTTP cache
+  // never quietly answers this fetch with a stale response right after a
+  // deploy - it must be an actual round trip.
+  const net = fetch(req, { cache: "no-store" }).then((res) => {
+    if (res.ok) {
+      const copy = res.clone();
+      caches.open(CACHE).then((c) => c.put(req, copy));
+    }
+    return res;
+  });
   event.respondWith(
-    // "no-store" so a browser HTTP cache never quietly answers this network-
-    // first fetch with a stale response right after a deploy - it must be an
-    // actual round trip, or the whole point of "network-first" is defeated.
-    fetch(req, { cache: "no-store" })
-      .then((res) => {
-        if (res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
-          return res;
-        }
+    new Promise((resolve) => {
+      let settled = false;
+      const fromCache = () => caches.match(req, { ignoreSearch: true });
+      const timer = setTimeout(() => {
+        fromCache().then((hit) => { if (hit && !settled) { settled = true; resolve(hit); } });
+      }, 3000);
+      net.then((res) => {
+        if (settled) return;
+        if (res.ok) { settled = true; clearTimeout(timer); resolve(res); return; }
         // A server error: the cached copy is better than a broken page.
-        return caches.match(req, { ignoreSearch: true }).then((hit) => hit || res);
-      })
-      .catch(() => caches.match(req, { ignoreSearch: true }))
+        fromCache().then((hit) => { if (!settled) { settled = true; clearTimeout(timer); resolve(hit || res); } });
+      }).catch(() => {
+        fromCache().then((hit) => { if (!settled) { settled = true; clearTimeout(timer); resolve(hit || Response.error()); } });
+      });
+    })
   );
+  event.waitUntil(net.catch(() => {}));
 });
