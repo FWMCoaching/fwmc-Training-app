@@ -2448,11 +2448,11 @@ input[type=range]{accent-color:#007094}
 .hub-areas .hub-core-tile{background:color-mix(in srgb,var(--tile-c) 12%,var(--surface));border-color:color-mix(in srgb,var(--tile-c) 45%,transparent)}
 .hub-group-title{font-family:Magra,sans-serif;font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--brand);margin:20px 0 6px}
 .hub-sub{font-size:13px;color:var(--ink-soft);margin:0 0 10px}
-.hub-extra .area-tile{flex-direction:row;align-items:center;gap:10px;padding:12px;box-shadow:none;flex-wrap:wrap}
+.hub-extra .area-tile{flex-direction:row;align-items:flex-start;gap:10px;padding:12px;box-shadow:none;flex-wrap:wrap}
 .hub-extra .area-icon{width:34px;height:34px;border-radius:10px;flex:none}
 .hub-extra .area-icon svg{width:20px;height:20px}
 .hub-extra .area-name{font-size:14px}
 .hub-extra .area-text{font-size:12px}
 .hub-extra .t-wrap{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
-.hub-extra .test-unlock-badge{align-self:flex-start;margin-top:4px}
+.hub-extra .test-unlock-badge{align-self:flex-start;margin-top:4px;font-size:11px;padding:2px 8px}
 @media (min-width:700px){ .hub-core{grid-template-columns:repeat(4,1fr)} .hub-extra{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))} }
