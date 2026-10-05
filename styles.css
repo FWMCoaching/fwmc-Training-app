@@ -328,15 +328,15 @@ section{margin-bottom:26px}
 /* ---- Exercise tiles ---- */
 .card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 @media (min-width:600px){.card-grid{grid-template-columns:repeat(3,1fr);gap:12px}}
-.excard{
+.excard,.nat-tile{
   border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);
   padding:14px;text-align:left;cursor:pointer;
   display:flex;flex-direction:column;gap:8px;
   box-shadow:var(--shadow);
   transition:transform .12s ease, border-color .12s ease;
 }
-.excard:hover{border-color:var(--brand-light);transform:translateY(-1px)}
-.excard:active{transform:translateY(0)}
+.excard:hover,.nat-tile:hover{border-color:var(--brand-light);transform:translateY(-1px)}
+.excard:active,.nat-tile:active{transform:translateY(0)}
 /* Master-Einstellungen ("Gehörlos" etc.) can make an exercise unusable
    rather than merely adjustable (unlike Farbsehen/Go-No-Go, which adapts
    its own colours instead) - greyed out + a small note back to Settings,
@@ -364,8 +364,8 @@ section{margin-bottom:26px}
   display:flex;align-items:center;justify-content:center;
   font-family:"Magra",sans-serif;font-weight:700;font-size:11.5px;
 }
-.excard h3{margin:0;font-size:15px;line-height:1.2;color:var(--ink)}
-.excard p{margin:0;font-size:12.5px;color:var(--ink-soft);line-height:1.35;flex:1}
+.excard h3,.nat-tile h3{margin:0;font-size:15px;line-height:1.2;color:var(--ink)}
+.excard p,.nat-tile p{margin:0;font-size:12.5px;color:var(--ink-soft);line-height:1.35;flex:1}
 .tag{
   align-self:flex-start;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
   color:var(--brand-deep);background:var(--brand-pale);padding:3px 8px;border-radius:999px;
@@ -2114,3 +2114,7 @@ a.featured-card{text-decoration:none;color:inherit}
 #eventSheet .group-label{display:block;margin-top:14px;margin-bottom:6px}
 #eventSheet .plan-entry-row .group-label{margin-top:14px}
 .event-countdown .text-link{margin:4px 0 -12px}
+
+/* NAT wie Visual Training (2026-10-05): tiles + Modus on the ready screen */
+.nat-modes #natHome .sub-switch,.nat-modes #natHome .subnav-label,.nat-modes #natHome .nat-panel{display:none}
+.nat-mode-group .choice{min-height:44px;font-size:14px}

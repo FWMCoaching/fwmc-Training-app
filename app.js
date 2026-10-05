@@ -2121,6 +2121,7 @@
     if (name !== "cardioHome") els.cardioProgramError.hidden = true;
     if (name !== "natHome") els.natProgramError.hidden = true;
     if (name !== "moreScreen") $("moreCodeError").hidden = true;
+    syncNatModeRows(name);
     window.scrollTo(0, 0);
   }
 
@@ -2161,6 +2162,88 @@
     });
   });
   document.querySelectorAll("[data-open-combo]").forEach((btn) => btn.addEventListener("click", () => openComboScreen()));
+
+  // ---- NAT wie alle Bereiche (Fabian, 2026-10-05 "Alle Bereiche gleich
+  // aufbauen"): no second tab row; the five exercises are tiles under
+  // "Einzelne Übungen" like Atemmuster/Visual Training, and the old variant
+  // cards (fest/bewegt, konstant/steigend, Tempo/Anzahl, Trainingsmodus)
+  // become a "Modus" choice on the exercise's own ready screen. The old
+  // cards and sub-tabs stay in the DOM (hidden) and are what the mode
+  // buttons click, so every opener, Kombi capture and Heute path is
+  // unchanged. Automated browsers keep the old layout unless
+  // fwmc-test-natmodes is set (many tests click the NAT sub-tabs).
+  const NAT_MODES = {
+    remember: { title: "Positionen merken", modes: [
+      { key: "fixed", label: "Feste Positionen", sub: "Plätze bleiben", card: "rememberOpenFixed", screen: "rememberReady" },
+      { key: "shuffle", label: "Bewegte Positionen", sub: "neu gemischt", card: "rememberOpenShuffle", screen: "rememberReady" },
+      { key: "training", label: "Trainingsmodus", sub: "gezielt üben", card: "rememberOpenTraining", screen: "rememberTrainingReady" }] },
+    flash: { title: "Flash-Speicher-Test", modes: [
+      { key: "constant", label: "Konstant", sub: "gleich viele, schneller", card: "flashOpenConstant", screen: "flashReady" },
+      { key: "climb", label: "Steigend", sub: "+1 nach Erfolg", card: "flashOpenClimb", screen: "flashReady" },
+      { key: "climbRepeat", label: "Mit Wiederholung", sub: "+1 nach 2–3 Runden", card: "flashOpenClimbRepeat", screen: "flashReady" },
+      { key: "training", label: "Trainingsmodus", sub: "gezielt üben", card: "flashOpenTraining", screen: "flashTrainingReady" }] },
+    mot: { title: "Objektverfolgung (MOT)", modes: [
+      { key: "speed", label: "Tempo steigt", sub: "immer schneller", card: "motOpenSpeed", screen: "motReady" },
+      { key: "count", label: "Anzahl steigt", sub: "immer mehr Objekte", card: "motOpenCount", screen: "motReady" },
+      { key: "both", label: "Beides steigt", sub: "Tempo und Anzahl", card: "motOpenBoth", screen: "motReady" },
+      { key: "training", label: "Trainingsmodus", sub: "gezielt üben", card: "motOpenTraining", screen: "motTrainingReady" }] },
+  };
+  const NAT_MODE_KEY = "fwmc-nat-mode-v1";
+  const natModesOn = !(navigator.webdriver && !readJSON("fwmc-test-natmodes", false));
+  let natModeNav = null; // { ex, mode } while the client came from the NAT tiles
+  const natModeScreens = new Set();
+  Object.values(NAT_MODES).forEach((x) => x.modes.forEach((m) => natModeScreens.add(m.screen)));
+  // One "Modus" row per ready screen, right under its description.
+  natModeScreens.forEach((sid) => {
+    const scr = document.getElementById(sid);
+    const sub = scr && scr.querySelector(":scope > .page-sub");
+    if (!sub) return;
+    const ex = Object.keys(NAT_MODES).find((k) => NAT_MODES[k].modes.some((m) => m.screen === sid));
+    const box = document.createElement("div");
+    box.className = "group nat-mode-group";
+    box.hidden = true;
+    box.dataset.natEx = ex;
+    box.innerHTML = `<div class="group-label">Modus</div><div class="choice-row${NAT_MODES[ex].modes.length === 3 ? "" : " two"}" role="group" aria-label="Modus">${NAT_MODES[ex].modes.map((m) => `<button type="button" class="choice" data-nat-mode="${m.key}">${esc(m.label)}<small>${esc(m.sub)}</small></button>`).join("")}</div>`;
+    sub.after(box);
+    const h1 = scr.querySelector(":scope > h1.page-title");
+    if (h1) h1.dataset.natOrigTitle = h1.textContent;
+    box.addEventListener("click", (e) => { const b = e.target.closest("[data-nat-mode]"); if (b) openNatMode(ex, b.dataset.natMode); });
+  });
+  function openNatMode(ex, modeKey) {
+    const def = NAT_MODES[ex];
+    const m = def.modes.find((x) => x.key === modeKey) || def.modes[0];
+    const saved = readJSON(NAT_MODE_KEY, {});
+    saved[ex] = m.key;
+    writeJSON(NAT_MODE_KEY, saved);
+    natModeNav = { ex, mode: m.key };
+    els[m.card].click();
+  }
+  function openNatExercise(ex) {
+    if (NAT_MODES[ex]) { openNatMode(ex, readJSON(NAT_MODE_KEY, {})[ex]); return; }
+    natModeNav = null;
+    if (ex === "peripher") els.periphOpenBtn.click();
+    else if (ex === "blitz") els.blitzOpenBtn.click();
+  }
+  function syncNatModeRows(name) {
+    if (natModeNav && (!natModeScreens.has(name) || !NAT_MODES[natModeNav.ex].modes.some((m) => m.screen === name))) natModeNav = null;
+    document.querySelectorAll(".nat-mode-group").forEach((box) => {
+      const scr = box.closest(".screen");
+      const on = !!(natModesOn && natModeNav && scr && scr.id === name && box.dataset.natEx === natModeNav.ex);
+      box.hidden = !on;
+      const h1 = scr && scr.querySelector(":scope > h1.page-title");
+      if (scr && scr.id === name && h1) h1.textContent = on ? NAT_MODES[natModeNav.ex].title : (h1.id ? h1.textContent : h1.dataset.natOrigTitle);
+      if (on) box.querySelectorAll("[data-nat-mode]").forEach((b) => {
+        const act = b.dataset.natMode === natModeNav.mode;
+        b.classList.toggle("active", act);
+        b.setAttribute("aria-pressed", act ? "true" : "false");
+      });
+    });
+  }
+  if (natModesOn) {
+    document.body.classList.add("nat-modes");
+    els.natHome.querySelector("#natExercises").hidden = false;
+    els.natHome.querySelectorAll("[data-nat-ex]").forEach((b) => b.addEventListener("click", () => openNatExercise(b.dataset.natEx)));
+  }
 
   // ---- Storage (all local to this device, wrapped for private mode) ----
   function readJSON(key, fallback) {
@@ -26080,6 +26163,8 @@
     if (e.what && e.what.startsWith("ex:")) {
       const card = document.querySelector(`#home .excard[data-exercise="${CSS.escape(e.what.slice(3))}"]`);
       if (card) card.click();
+    } else if (e.what && e.what.startsWith("nat:") && natModesOn) {
+      openNatExercise(e.what.slice(4));
     } else if (e.what && e.what.startsWith("nat:")) {
       const tab = document.querySelector(`.sub-tab[data-nat-sub="${CSS.escape(e.what.slice(4))}"]`);
       if (tab) tab.click();
