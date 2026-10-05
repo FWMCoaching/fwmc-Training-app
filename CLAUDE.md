@@ -267,9 +267,13 @@ For every new or changed exercise/screen, in the same commit:
   `{"startCountdown":false}`. Every sub page gets the logo bar with its
   `.back-link` moved in as the round ‹ button (JS, from `.readyhead`); a new
   sub page only needs the usual `.readyhead > .back-link`.
-  Logo mittig (2026-10-05): every top bar (`.brandbar`, `.app-bar-inner`)
-  is one grid "back | logo + sub | gear", so the logo sits at the same
-  place on every page; `--appbar-h` follows its height (light/dark).
+  Kopfleiste eine Zeile (2026-10-05, Fabian chose draft A, replaced "Logo
+  mittig"): every top bar (`.brandbar`, `.app-bar-inner`) is one flex row
+  "‹ back (sub pages) | logo | FWMC Online-Training | gear", 65 px
+  (`--appbar-h`), thin bottom line; dark mode swaps in logo-white.png via
+  CSS `content:url()` (no white plate). The title is always two lines
+  "FWMC / Online-Training" (`.nowrap` span is a block) so it looks the same
+  with and without ‹; under 380 px logo/text shrink, from 700 px they grow.
 - Tabs never wrap (2026-10-05): `.section-tab`/`.sub-tab` are nowrap, NAT
   sub-tabs a 2-/3-per-row grid; `tests/text_wrap_audit_test.py` flags a
   two-line tab. Answer keys grow with the screen (Flash keypad width capped
@@ -318,5 +322,13 @@ For every new or changed exercise/screen, in the same commit:
   are; last mode in `fwmc-nat-mode-v1`). A new NAT exercise needs a tile
   and, if it has variants, a `NAT_MODES` entry. Off in automated browsers
   unless `fwmc-test-natmodes`. Test: `tests/nat_modes_1005_test.py`.
+- Stufen-Vorschlag (2026-10-05, Fabian's favourite idea): after 3 very good
+  runs in a row on Leicht/Mittel, the result panel of Positionen merken,
+  Blitz-Raster, Flash and MOT suggests the next difficulty
+  (`levelSuggestAfter`, `LEVEL_SUGGEST_EX` in app.js, state in
+  `fwmc-level-suggest-v1`); per exercise "nicht mehr vorschlagen", master
+  switch `masterPrefs.levelSuggest` in Grundeinstellungen. Details and the
+  assumed thresholds: docs/notes/02. A new NAT exercise with difficulty
+  levels gets a `LEVEL_SUGGEST_EX` entry. Test: `tests/level_suggest_1005_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

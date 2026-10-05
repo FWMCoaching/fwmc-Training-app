@@ -9474,7 +9474,7 @@
   });
   function syncFlashTrainingUI() {
     els.flashTrainingStartSlider.value = flashPrefs.trainingStart;
-    els.flashTrainingStartValue.textContent = String(flashPrefs.trainingStart);
+    els.flashTrainingStartValue.textContent = flashPrefs.trainingStart + " Zeichen";
     document.querySelectorAll("#flashTrainingProgressRow [data-flash-progress]").forEach((el) => setActive(el, (el.dataset.flashProgress === "1") === flashPrefs.trainingProgress));
     syncFlashSpeedUI();
     const best = flashBestFor("training");
@@ -9496,10 +9496,10 @@
     flashReadyMode = mode;
     els.flashReadyTitle.textContent = mode === "constant" ? "Konstant" : mode === "climb" ? "Steigend, direkt" : "Steigend, mit Wiederholung";
     els.flashReadyDesc.textContent = mode === "constant"
-      ? "Immer gleich viele Zahlen – wird dafür immer schneller eingeblendet."
+      ? "Immer gleich viele Zeichen – wird dafür immer schneller eingeblendet."
       : mode === "climb"
-      ? "Nach jeder richtigen Runde kommt eine Zahl mehr dazu."
-      : "Jede Stufe wird erst mehrmals wiederholt, bevor eine Zahl dazukommt.";
+      ? "Nach jeder richtigen Runde kommt ein Zeichen mehr dazu."
+      : "Jede Stufe wird erst mehrmals wiederholt, bevor ein Zeichen dazukommt.";
     els.flashConstantGroup.hidden = mode !== "constant";
     els.flashStartGroup.hidden = mode === "constant";
     els.flashRepsGroup.hidden = mode !== "climbRepeat";
@@ -9833,7 +9833,7 @@
     } else {
       flashState.repsDone = 0;
       if (flashState.errorMode === "stay") hint = "Leider falsch – nochmal versuchen";
-      else if (flashState.errorMode === "backOne") { flashState.count = Math.max(2, flashState.count - 1); hint = "Leider falsch – eine Zahl weniger"; }
+      else if (flashState.errorMode === "backOne") { flashState.count = Math.max(2, flashState.count - 1); hint = "Leider falsch – ein Zeichen weniger"; }
       else { flashState.count = flashState.startLevel; hint = "Leider falsch – nochmal von vorne"; }
     }
     els.flashHint.textContent = hint;
@@ -13851,7 +13851,7 @@
             // eigenen Ready-Seiten (flashConstantGroup/flashStartGroup/
             // flashRepsGroup/flashTrainingReady).
             (cfg.mode === "constant" ? (
-              `<div class="group-label">Anzahl der Zahlen <span class="group-count">${cfg.constantCount}</span></div>` +
+              `<div class="group-label">Anzahl der Zeichen <span class="group-count">${cfg.constantCount}</span></div>` +
               `<div class="slider-row"><input type="range" min="2" max="6" step="1" data-type="${t.id}" data-f="constantCount" value="${cfg.constantCount}"><span class="slider-value" data-fvalue="${t.id}-constantCount">${cfg.constantCount}</span></div>`
             ) : cfg.mode === "climb" || cfg.mode === "climbRepeat" ? (
               `<div class="group-label">Startanzahl <span class="group-count">${cfg.startCount}</span></div>` +
@@ -13863,12 +13863,12 @@
                 `</div>`
               ) : "")
             ) : cfg.mode === "training" ? (
-              `<div class="group-label">Startzahl <span class="group-count">${cfg.trainingStart}</span></div>` +
+              `<div class="group-label">Start mit <span class="group-count">${cfg.trainingStart} Zeichen</span></div>` +
               `<div class="slider-row"><input type="range" min="2" max="9" step="1" data-type="${t.id}" data-f="trainingStart" value="${cfg.trainingStart}"><span class="slider-value" data-fvalue="${t.id}-trainingStart">${cfg.trainingStart}</span></div>` +
               `<div class="group-label">Nach Erfolg</div>` +
               `<div class="choice-row two">` +
               `<button class="choice${cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="1">Weiter steigern<small>wie gewohnt +1</small></button>` +
-              `<button class="choice${!cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="0">Bei dieser Zahl bleiben<small>zum gezielten Üben</small></button>` +
+              `<button class="choice${!cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="0">Bei dieser Anzahl bleiben<small>zum gezielten Üben</small></button>` +
               `</div>`
             ) : "") +
             `</div></details>`;
@@ -26302,7 +26302,7 @@
       html = `<div class="today-main-kicker">${doneAll ? "Heute alles geschafft" : "Weitermachen"}</div>
         <h2 class="today-main-title">${doneAll ? "Stark, dein Training für heute ist erledigt." : last ? esc(last.title) : "Schön, dass du da bist."}</h2>
         ${doneAll ? "" : lastRow}
-        <p class="today-main-hint">${doneAll ? "Wenn du magst, findest du unten in den Bereichen weitere Trainings." : (occ.length ? "" : "Für heute ist nichts geplant. ") + hint}</p>`;
+        <p class="today-main-hint">${doneAll ? "Wenn du magst, findest du unter „Training“ weitere Übungen." : (occ.length ? "" : "Für heute ist nichts geplant. ") + hint}</p>`;
     }
     els.todayMain.innerHTML = html;
     const startBtn = els.todayMain.querySelector("[data-today-start]");

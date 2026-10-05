@@ -40,7 +40,7 @@ async def main():
             check(t + "Konstant active by default", await pg.get_attribute('#flashReady [data-nat-mode="constant"]', "aria-pressed") == "true")
             await pg.click('#flashReady [data-nat-mode="climb"]'); await pg.wait_for_timeout(150)
             check(t + "Steigend active", await pg.get_attribute('#flashReady [data-nat-mode="climb"]', "aria-pressed") == "true")
-            check(t + "desc follows mode", "eine Zahl mehr" in await pg.inner_text("#flashReadyDesc"))
+            check(t + "desc follows mode", "ein Zeichen mehr" in await pg.inner_text("#flashReadyDesc"))
             await pg.click('#flashReady [data-nat-mode="training"]'); await pg.wait_for_timeout(150)
             sid, title = await visible_title(pg)
             check(t + "Trainingsmodus = training screen with same row", sid == "flashTrainingReady" and title == "Flash-Speicher-Test" and await pg.is_visible("#flashTrainingReady .nat-mode-group"), (sid, title))

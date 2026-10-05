@@ -555,3 +555,18 @@
   - Test: `tests/mot_test.py` (4-mode structure), `tests/mot_target_color_test.py`
     (Farbe des Ziels).
 
+
+## Stufen-Vorschlag (2026-10-05)
+
+Fabian's favourite from the idea list (#19). After `LEVEL_SUGGEST_RUNS` (3)
+very good runs in a row on the same exercise, mode and difficulty, the
+result panel shows a box "Stark, 3 sehr gute Runden auf Mittel!" with
+"Auf Schwer stellen", "Für diese Übung nicht mehr vorschlagen" and "Alle
+Vorschläge ausschalten" (opens Grundeinstellungen, switch "Stufen-Vorschläge").
+Switching it back on clears the per-exercise mutes. Only Leicht/Mittel get a
+suggestion, never the Trainingsmodus; showing the box resets the streak, a
+weak run resets it too. Covered: Positionen merken, Blitz-Raster (standard),
+Flash, MOT. "Very good" thresholds are ASSUMPTIONS, not from Fabian or a
+study - adjust if he finds them too easy/hard: Positionen merken ≥ 7 reached
+(≥ 6 with shuffled positions), Blitz ≥ 6, Flash climbing ≥ 7, Flash constant
+≥ 8 rounds with ≥ 90 % correct, MOT ≥ 8.
