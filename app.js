@@ -5852,7 +5852,7 @@
   })();
   function saveCueOverrides() { writeJSON(CUE_OVERRIDES_KEY, cueOverrides); }
 
-  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true };
+  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true };
   function loadMasterPrefs() {
     const saved = readJSON(MASTER_PREFS_KEY, null);
     if (saved && typeof saved === "object") {
@@ -6575,7 +6575,7 @@
   let masterSettingsReturnFocus = null;
   function openMasterSettings() {
     masterSettingsReturnFocus = document.activeElement;
-    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; syncMasterBgUI(); syncMasterPauseUI(); renderMasterCues(); renderMasterCodeHistory();
+    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; syncMasterBgUI(); syncMasterPauseUI(); renderMasterCues(); renderMasterCodeHistory();
     els.masterSettingsSheet.hidden = false;
     focusFirstIn(els.masterSettingsSheet);
   }
@@ -8614,6 +8614,7 @@
       els.rememberDoneSummary.textContent = `${modeTitle} · Zahl ${state.cleared} erreicht` + (isRecord ? " · Neue Bestleistung!" : "");
       const id = addHistory({ kind: "remember", title: `Positionen merken · ${modeTitle}`, seconds: Math.round(played), note: `Zahl ${state.cleared} erreicht` });
       renderRating(els.rememberRating, id, "Wie war deine Konzentration?");
+      levelSuggestAfter("remember", state.mode, state, els.rememberDonePanel, els.rememberRating);
       els.rememberDonePanel.hidden = false;
     } else {
       els.rememberPlayer.hidden = true;
@@ -9085,6 +9086,7 @@
       els.blitzDoneSummary.textContent = `Blitz-Raster · Stufe ${state.cleared} erreicht` + (isRecord ? " · Neue Bestleistung!" : "");
       const id = addHistory({ kind: "blitz", title: "Blitz-Raster", seconds: Math.round(played), note: `Stufe ${state.cleared} erreicht` });
       renderRating(els.blitzRating, id, "Wie war deine Konzentration?");
+      levelSuggestAfter("blitz", "standard", state, els.blitzDonePanel, els.blitzRating);
       els.blitzDonePanel.hidden = false;
     } else {
       els.blitzPlayer.hidden = true;
@@ -9987,6 +9989,7 @@
       els.flashDoneSummary.textContent = `${modeTitle} · ${note}` + (isRecord ? " · Neue Bestleistung!" : "");
       const id = addHistory({ kind: "flash", title: `Flash-Speicher-Test · ${modeTitle}`, seconds: Math.round(played), note });
       renderRating(els.flashRating, id, "Wie war deine Konzentration?");
+      levelSuggestAfter("flash", state.mode, state, els.flashDonePanel, els.flashRating);
       els.flashDonePanel.hidden = false;
     } else {
       els.flashPlayer.hidden = true;
@@ -10841,6 +10844,7 @@
       els.motDoneSummary.textContent = `Objektverfolgung (MOT) · ${modeTitle} · ${note}` + (isRecord ? " · Neue Bestleistung!" : "");
       const id = addHistory({ kind: "mot", title: `Objektverfolgung (MOT) · ${modeTitle}`, seconds: Math.round(played), note });
       renderRating(els.motRating, id, "Wie war deine Konzentration?");
+      levelSuggestAfter("mot", state.mode, state, els.motDonePanel, els.motRating);
       els.motDonePanel.hidden = false;
     } else {
       els.motPlayer.hidden = true;
@@ -15601,6 +15605,75 @@
     masterPrefs.startCountdown = els.masterStartCountdownCheck.checked;
     saveMasterPrefs();
   });
+  $("masterLevelSuggestCheck").addEventListener("change", () => {
+    masterPrefs.levelSuggest = $("masterLevelSuggestCheck").checked;
+    if (masterPrefs.levelSuggest) { const s = readJSON(LEVEL_SUGGEST_KEY, {}); s.muted = {}; writeJSON(LEVEL_SUGGEST_KEY, s); }
+    saveMasterPrefs();
+  });
+
+  // ---- Stufen-Vorschlag (Fabian, 2026-10-05, Favorit): after three very
+  // good runs in a row on Leicht or Mittel, the result panel suggests the
+  // next difficulty. "Für diese Übung nicht mehr vorschlagen" mutes one
+  // exercise, "Alle Vorschläge ausschalten" opens the Grundeinstellungen
+  // (masterPrefs.levelSuggest; switching it back on clears the mutes).
+  // A run counts as very good when it reaches LEVEL_SUGGEST_GOOD (an
+  // assumption, see docs/notes/02); Trainingsmodus and Kombi/Cardio runs
+  // never count. State: fwmc-level-suggest-v1 {streaks:{key:n}, muted:{ex:true}}.
+  const LEVEL_SUGGEST_KEY = "fwmc-level-suggest-v1";
+  const LEVEL_SUGGEST_RUNS = 3;
+  const LEVEL_SUGGEST_EX = {
+    remember: { title: "Positionen merken", diffs: REMEMBER_DIFFICULTIES, bucket: () => rememberDifficultyBucket(),
+      apply: (d) => { rememberPrefs.revealBaseS = d.revealBaseS; rememberPrefs.revealStepS = d.revealStepS; saveRememberPrefsToStorage(); } },
+    blitz: { title: "Blitz-Raster", diffs: BLITZ_DIFFICULTIES, bucket: () => blitzDifficultyBucket(),
+      apply: (d) => { blitzPrefs.flashS = d.flashS; saveBlitzPrefsToStorage(); } },
+    flash: { title: "Flash-Speicher-Test", diffs: FLASH_DIFFICULTIES, bucket: () => flashDifficultyBucket(),
+      apply: (d) => { flashPrefs.stimulusS = d.stimulusS; flashPrefs.intervalS = d.intervalS; saveFlashPrefsToStorage(); } },
+    mot: { title: "Objektverfolgung (MOT)", diffs: MOT_DIFFICULTIES, bucket: () => motDifficultyBucket(),
+      apply: (d) => { motPrefs.speed = d.speed; motPrefs.trackS = d.trackS; motPrefs.highlightS = d.highlightS; saveMotPrefsToStorage(); } },
+  };
+  // What counts as a very good run, per exercise and mode.
+  function levelRunIsGood(ex, mode, st) {
+    if (ex === "remember") return st.cleared >= (mode === "shuffle" ? 6 : 7);
+    if (ex === "blitz") return st.cleared >= 6;
+    if (ex === "flash") return mode === "constant" ? (st.roundsPlayed >= 8 && st.hits / st.roundsPlayed >= 0.9) : st.cleared >= 7;
+    if (ex === "mot") return st.cleared >= 8;
+    return false;
+  }
+  function levelSuggestAfter(ex, mode, st, panel, beforeEl) {
+    panel.querySelectorAll(".level-suggest").forEach((n) => n.remove());
+    const def = LEVEL_SUGGEST_EX[ex];
+    if (!def || mode === "training") return;
+    const diff = def.bucket();
+    const order = ["leicht", "mittel", "schwer"];
+    if (!order.includes(diff)) return;
+    const s = readJSON(LEVEL_SUGGEST_KEY, {});
+    s.streaks = s.streaks || {}; s.muted = s.muted || {};
+    const key = `${ex}:${mode}:${diff}`;
+    s.streaks[key] = levelRunIsGood(ex, mode, st) ? (s.streaks[key] || 0) + 1 : 0;
+    const next = order[order.indexOf(diff) + 1];
+    const show = next && s.streaks[key] >= LEVEL_SUGGEST_RUNS && masterPrefs.levelSuggest !== false && !s.muted[ex];
+    if (show) s.streaks[key] = 0;
+    writeJSON(LEVEL_SUGGEST_KEY, s);
+    if (!show) return;
+    const box = document.createElement("div");
+    box.className = "level-suggest";
+    box.setAttribute("role", "status");
+    box.innerHTML = `<div class="level-suggest-title">Stark, ${LEVEL_SUGGEST_RUNS} sehr gute Runden auf ${esc(def.diffs[diff].title)}!</div>
+      <p>Bereit für die nächste Stufe? Beim nächsten Start läuft es dann auf <strong>${esc(def.diffs[next].title)}</strong>.</p>
+      <button type="button" class="start-btn level-suggest-yes">Auf ${esc(def.diffs[next].title)} stellen</button>
+      <button type="button" class="text-link small level-suggest-mute">Für diese Übung nicht mehr vorschlagen</button>
+      <button type="button" class="text-link small level-suggest-off">Alle Vorschläge ausschalten</button>`;
+    box.querySelector(".level-suggest-yes").addEventListener("click", () => {
+      def.apply(def.diffs[next]);
+      box.innerHTML = `<div class="level-suggest-title">Eingestellt: ${esc(def.diffs[next].title)}</div><p>Viel Erfolg beim nächsten Training. Zurückstellen kannst du jederzeit bei „Schwierigkeit“.</p>`;
+    });
+    box.querySelector(".level-suggest-mute").addEventListener("click", () => {
+      const t = readJSON(LEVEL_SUGGEST_KEY, {}); t.muted = t.muted || {}; t.muted[ex] = true; writeJSON(LEVEL_SUGGEST_KEY, t);
+      box.remove();
+    });
+    box.querySelector(".level-suggest-off").addEventListener("click", () => openMasterSettings());
+    if (beforeEl && beforeEl.parentNode === panel) panel.insertBefore(box, beforeEl); else panel.appendChild(box);
+  }
   // ---- Zurück-Knopf oben links (Fabian, 2026-10-05) ----
   // Every sub page gets the same logo bar as the area homes, with its own
   // "← Zurück" link moved in as a round ‹ button top left (same element, so

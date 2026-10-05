@@ -2118,3 +2118,11 @@ a.featured-card{text-decoration:none;color:inherit}
 /* NAT wie Visual Training (2026-10-05): tiles + Modus on the ready screen */
 .nat-modes #natHome .sub-switch,.nat-modes #natHome .subnav-label,.nat-modes #natHome .nat-panel{display:none}
 .nat-mode-group .choice{min-height:44px;font-size:14px}
+
+/* Stufen-Vorschlag auf dem Ergebnis (2026-10-05). The done panel uses
+   fixed player colours (never var(--...)), so this does too. */
+.level-suggest{background:#e6f3f7;border:1.5px solid #007094;border-radius:16px;padding:14px 16px;width:100%;max-width:340px;text-align:left;box-sizing:border-box}
+.level-suggest-title{font-family:"Magra",sans-serif;font-weight:700;font-size:17px;color:#00546f}
+.level-suggest p{margin:4px 0 10px;font-size:14px;color:#16232a}
+.level-suggest .start-btn{width:100%;min-height:44px;padding:12px;font-size:17px;background:#007094;color:#fff;box-shadow:none}
+.level-suggest .text-link{display:block;min-height:44px;width:100%;text-align:center;color:#00546f}
