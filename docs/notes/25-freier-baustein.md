@@ -24,6 +24,37 @@ Built as a 7th area "Freie Bausteine" (`PLAN_AREAS` key `free`, colour
   hinten, Hüftbeuger, Gesäß, Brust, Schultern, Nacken). "Kopieren und
   anpassen" opens the editor with a copy; saving creates an own Baustein.
 
+## Trainer-Vorlagen per Code (2026-10-05)
+Fabian: "also so wie die eigenen Übungen die sie gestalten können? Dann ja".
+- Code type `free-template`: `{type:"free-template", name, trainings:[{kind,
+  title, note, minutes, items:[{text, s}]}, …]}` (1-30 trainings, the shape
+  `freeClean` accepts; optional `id` per training for stable ids). Built in
+  the Trainer-Dashboard (Bereich "Eigenes Training", see notes/10) or JSON.
+- `codeDefProblem` → `freeTemplateDefProblem`: trainings must be a non-empty
+  array of objects, `items` an array if present, a Checkliste needs at least
+  one point with text; otherwise `showCodeError(…, "broken")`.
+- `openProgramIntro` → `importTrainerTemplates(def, code)`: stores the
+  cleaned trainings in `fwmc-free-trainer-v1` (`[{…training, id:
+  "tr-<code>-<n|own id>", code}]`, code normalised), replacing all earlier
+  templates of that code (= update, no duplicates; other codes stay), opens
+  `#freeHome` and shows "Neu von deinem Trainer: …" / "Aktualisiert: …"
+  (`#freeTrainerNotice`, gone on the next visit). Works from every code box
+  (Training hub, area code cards, Heute), all funnel through openProgramIntro.
+- `loadTrainerTemplates()` adds `template:true, trainer:true`;
+  `freeAllBlocks()` = own + trainer + `FREE_TEMPLATES`, so ready screen,
+  run, Kombi capture, Wochenplan select, history "Weitermachen" and long
+  press all work unchanged. `#freeHome` section "Von deinem Trainer" (per
+  Trainings-Code, hidden when empty) between own trainings and Vorlagen.
+  Ready screen meta "… · von deinem Trainer", "Kopieren und anpassen" (copy
+  becomes an own training) and "Vorlage entfernen" (confirmDialog; the code
+  brings it back). Swipe on a trainer card offers only "Löschen".
+- Ids are by position (`tr-<code>-1`, …) unless the training carries an
+  `id`: if the trainer reorders trainings, a plan entry pointing at
+  `free:tr-…` follows the position. Removed trainings leave stale plan
+  entries that simply open the area.
+- Test: `tests/trainer_template_1005_test.py` (CODE_API routed, incl. the
+  dashboard builder writing a code the app opens).
+
 ## Screens
 - `#freeHome`: same frame as Cardio (logo bar, tab row, Kombi link, hero,
   code card using the generic `openProgramIntro` like Mehr, "Deine
@@ -65,8 +96,7 @@ Built as a 7th area "Freie Bausteine" (`PLAN_AREAS` key `free`, colour
   (`freeAreaActive`), so a Kombi started here returns here.
 - Not applicable (no stage objects/colours): Größe/Farbe, CVD,
   background colour (`MASTER_BG_TARGETS`), Cardio-Zusatzaufgabe.
-- Not built / open for Fabian: own icons per Baustein, sharing a Baustein
-  via trainer code, more templates (e.g. Mobilisation, Atemübung vor dem
+- Not built / open for Fabian: own icons per Baustein, more templates (e.g. Mobilisation, Atemübung vor dem
   Schlafen), whether "Abhaken" should log a chosen duration instead of the
   (near zero) real time.
 
