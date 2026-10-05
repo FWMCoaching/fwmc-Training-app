@@ -84,6 +84,10 @@ origin, history entries tagged `movement-plan`/`cardio-plan` with a
 - Both got `-bundle` counterparts (`openMovementBundleOverview`/
   `openCardioBundleOverview`) identical in shape to
   `openWorkoutBundleOverview`.
+- `free-template` (2026-10-05, no bundle form): `{name, trainings:[…]}` -
+  not a programme to run but read-only "Eigenes Training" templates that
+  `importTrainerTemplates` stores and shows in `#freeHome` under "Von
+  deinem Trainer"; same code again = update. Details: notes/25.
 
 `dashboard.html`'s JSON-tab hint text was updated to document all of this
 (the new types' exact shapes, valid `movements`/`activity` values, and

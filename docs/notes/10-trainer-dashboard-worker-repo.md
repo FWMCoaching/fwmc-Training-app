@@ -140,6 +140,19 @@ UI. Added as a `dashboard.html`-only feature (no Worker/API changes needed
   there too** (and in the "Alle Übungen im Überblick" list). Test:
   `tests/dashboard_builder_test.py` (mocked Worker; the saved configs are
   fed to the real app to prove they open).
+- **Eigenes Training (2026-10-05, Trainer-Vorlagen per Code)**: 5th
+  "Bereich" button "Eigenes Training" (`#freeBuilder`): "+ Training
+  hinzufügen", per training Art (Abhaken / Mit Zeit / Checkliste), Titel,
+  Notiz, Dauer 1-60 Min. (Mit Zeit) or points with text + seconds 0-600
+  (Checkliste, "+ Punkt", ✕), ↑/↓/✕ per training. Writes `{type:
+  "free-template", name, description, trainings:[…]}` (save checks: at
+  least one training, every training a title, a checklist at least one
+  point). `configToBuilder` opens such codes in the builder. The kind row is
+  now `auto-fit` (2-3 per row on a phone). The Worker stores configs
+  generically (only code/active/config, dates and seats are read), so this
+  type needed **no Worker change and no deploy**. App side: notes/25.
+  Test: `tests/trainer_template_1005_test.py` (+ the kind count in
+  `tests/dashboard_builder_test.py`).
 - **Not built**: multi-program bundles (`xppbsp-1`'s shape) in the
   builder - still JSON-only; the other 4 `EXERCISES` types (`cross-modal`,
   `cone-tap`, `cone-compass`, `periph-flash`) aren't offered in the picker,

@@ -4117,6 +4117,7 @@
     if (t === "movement-plan") return !nonEmpty(def.movements);
     if (t === "cardio-plan") return !nonEmpty(def.items);
     if (t === "breath-program" || t === "workout-plan" || t === "combo-program") return !nonEmpty(def.blocks);
+    if (t === "free-template") return freeTemplateDefProblem(def);
     if (t) return true;
     return !nonEmpty(def.blocks) || def.blocks.some((b) => !b || !EXERCISES[b.exercise]);
   }
@@ -4221,6 +4222,7 @@
       if (def.type === "cardio-plan") { cardioOriginBundle = null; renderCardioProgramIntro(def, code, code); return; }
       if (def.type === "combo-bundle") { openComboBundleOverview(def, code); return; }
       if (def.type === "combo-program") { comboOriginBundle = null; startComboProgram(def, code, code, ctx.homeScreen); return; }
+      if (def.type === "free-template") { importTrainerTemplates(def, code); return; }
       originBundle = null;
       renderProgramIntro(def, code, code, ctx);
     } catch (e) {
@@ -15834,7 +15836,7 @@
       if (e.touches.length !== 1) return;
       const t = e.touches[0];
       if (t.clientX > 28) return;
-      if (e.target.closest && e.target.closest("input, textarea, select, .sheet:not([hidden])")) return;
+      if (e.target.closest && e.target.closest("input, textarea, select, .sheet:not([hidden]), .swipe-open")) return; // .swipe-open: closing a swiped list row
       const bt = backTarget();
       if (!bt) return;
       start = { x: t.clientX, y: t.clientY, time: Date.now() };
@@ -26730,16 +26732,17 @@
   $("eventCancelBtn").addEventListener("click", closeEventSheet);
   $("eventSaveBtn").addEventListener("click", saveEventFromSheet);
   $("eventTitleInput").addEventListener("keydown", (e) => { if (e.key === "Enter") saveEventFromSheet(); });
-  $("eventDeleteBtn").addEventListener("click", () => {
-    const id = eventEditId;
+  // One delete path for "Termin löschen" in the sheet and the list swipe.
+  function askDeleteEvent(id) {
     const e = loadEvents().find((x) => x.id === id);
     if (!e) return;
     confirmDialog(`„${e.title}“ wirklich löschen?`, () => {
       saveEvents(loadEvents().filter((x) => x.id !== id));
-      closeEventSheet();
+      if (!$("eventSheet").hidden) closeEventSheet();
       renderToday();
     });
-  });
+  }
+  $("eventDeleteBtn").addEventListener("click", () => askDeleteEvent(eventEditId));
   $("eventSheet").addEventListener("click", (e) => { if (e.target === $("eventSheet")) closeEventSheet(); });
   $("eventSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closeEventSheet(); else trapTabKey($("eventSheet"), e); });
 
@@ -26887,7 +26890,22 @@
     return (Array.isArray(raw) ? raw : []).map(freeClean).filter(Boolean);
   }
   function saveFreeBlocks(list) { writeJSON(FREE_KEY, list); }
-  function freeAllBlocks() { return loadFreeBlocks().concat(FREE_TEMPLATES); }
+  // Trainer-Vorlagen per Code (Fabian, 2026-10-05): a code of type
+  // "free-template" carries one or more trainings ({trainings:[...]}, the
+  // shape freeClean accepts). They are kept per code in FREE_TRAINER_KEY as
+  // read-only templates (template + trainer flag, id "tr-<code>-<n>" or the
+  // item's own id), shown under "Von deinem Trainer" in #freeHome; entering
+  // the same code again replaces that code's templates (no duplicates).
+  // Docs: docs/notes/25-freier-baustein.md, test: tests/trainer_template_1005_test.py.
+  const FREE_TRAINER_KEY = "fwmc-free-trainer-v1";
+  function loadTrainerTemplates() {
+    const raw = readJSON(FREE_TRAINER_KEY, []);
+    return (Array.isArray(raw) ? raw : []).map((b) => {
+      const c = freeClean(b);
+      return c ? { ...c, template: true, trainer: true, code: String(b.code || "") } : null;
+    }).filter(Boolean);
+  }
+  function freeAllBlocks() { return loadFreeBlocks().concat(loadTrainerTemplates(), FREE_TEMPLATES); }
   function freeFind(id) { return freeAllBlocks().find((b) => b.id === id) || null; }
   // Points that actually run (a checklist point without text is skipped).
   function freeSteps(b) {
@@ -26936,6 +26954,7 @@
     els.freeOwnGrid.innerHTML = own.map(freeCardHtml).join("");
     els.freeOwnEmpty.hidden = own.length > 0;
     els.freeTplGrid.innerHTML = FREE_TEMPLATES.map(freeCardHtml).join("");
+    renderFreeTrainer();
     renderHistory();
   }
   [els.freeOwnGrid, els.freeTplGrid].forEach((g) => g.addEventListener("click", (e) => {
@@ -26955,7 +26974,8 @@
     if (!b) { showScreen("freeHome"); return; }
     freeReadyId = b.id;
     els.freeReadyTitle.textContent = b.title;
-    els.freeReadyMeta.textContent = freeBlockMeta(b) + (b.template ? " · Vorlage" : "");
+    els.freeReadyMeta.textContent = freeBlockMeta(b) + (b.trainer ? " · von deinem Trainer" : b.template ? " · Vorlage" : "");
+    $("freeTrainerRemoveBtn").hidden = !b.trainer;
     els.freeReadyNote.textContent = b.note;
     els.freeReadyNote.hidden = !b.note;
     const steps = b.kind === "list" ? freeSteps(b) : [];
@@ -27113,22 +27133,72 @@
     renderFreeHome();
     openFreeReady(b.id);
   });
-  els.freeDeleteBtn.addEventListener("click", () => {
-    const id = freeEditId;
+  // One delete path for "Training löschen" in the editor and the list swipe.
+  function askDeleteFree(id) {
     const b = freeFind(id);
-    if (!b) return;
+    if (!b || b.template) return;
     confirmDialog(`Das Training „${b.title}“ löschen?`, () => {
       saveFreeBlocks(loadFreeBlocks().filter((x) => x.id !== id));
       renderFreeHome();
       showScreen("freeHome");
     });
-  });
+  }
+  els.freeDeleteBtn.addEventListener("click", () => askDeleteFree(freeEditId));
   $("freeEditBack").addEventListener("click", () => {
     if (freeEditMode === "capture") { freeEditMode = "new"; showScreen("comboScreen"); return; }
     if (freeEditMode === "edit" && freeFind(freeEditId)) { openFreeReady(freeEditId); return; }
     if (freeEditMode === "copy" && freeReadyId) { openFreeReady(freeReadyId); return; }
     showScreen("freeHome");
   });
+  // ---- Trainer-Vorlagen per Code (see FREE_TRAINER_KEY above) ----
+  els.freeTrainerGrid = $("freeTrainerGrid");
+  function renderFreeTrainer() {
+    const list = loadTrainerTemplates();
+    els.freeTrainerGrid.innerHTML = list.map(freeCardHtml).join("");
+    $("freeTrainerSection").hidden = list.length === 0;
+    $("freeTrainerNotice").hidden = true;
+  }
+  els.freeTrainerGrid.addEventListener("click", (e) => {
+    const c = e.target.closest("[data-free-id]");
+    if (c) openFreeReady(c.dataset.freeId);
+  });
+  function freeTemplateDefProblem(def) {
+    const list = def.trainings;
+    if (!Array.isArray(list) || !list.length || list.length > 30) return true;
+    return list.some((t) => !t || typeof t !== "object" || Array.isArray(t)
+      || (t.items != null && !Array.isArray(t.items))
+      || (t.kind === "list" && !(t.items || []).some((it) => it && String(it.text || "").trim())));
+  }
+  function importTrainerTemplates(def, code) {
+    const key = normCode(code);
+    const fresh = def.trainings.map((t, i) => {
+      const c = freeClean({ ...t, id: undefined });
+      if (c.kind === "list") c.items = c.items.filter((x) => x.text.trim());
+      const ownId = typeof t.id === "string" && /^[a-z0-9-]{1,40}$/i.test(t.id) ? t.id : String(i + 1);
+      return { ...c, id: `tr-${key}-${ownId}`, code: key };
+    });
+    const before = readJSON(FREE_TRAINER_KEY, []);
+    const others = (Array.isArray(before) ? before : []).filter((b) => b && b.code !== key);
+    const updated = others.length !== (Array.isArray(before) ? before.length : 0);
+    writeJSON(FREE_TRAINER_KEY, others.concat(fresh));
+    goArea("free");
+    if (!els.freeHome.hidden) {
+      const n = $("freeTrainerNotice");
+      n.textContent = (updated ? "Aktualisiert: " : "Neu von deinem Trainer: ") + fresh.map((b) => b.title).join(", ");
+      n.hidden = false;
+      const sec = $("freeTrainerSection");
+      setTimeout(() => sec.scrollIntoView({ block: "start", behavior: reduceMotion.matches ? "auto" : "smooth" }), 60);
+    }
+  }
+  function askRemoveTrainerTemplate(id) {
+    const b = loadTrainerTemplates().find((x) => x.id === id);
+    if (!b) return;
+    confirmDialog(`Die Vorlage „${b.title}“ von deinem Trainer entfernen? Mit dem Trainings-Code kannst du sie jederzeit wieder holen.`, () => {
+      writeJSON(FREE_TRAINER_KEY, (readJSON(FREE_TRAINER_KEY, []) || []).filter((x) => x && `${x.id}` !== id));
+      showScreen("freeHome");
+    });
+  }
+  $("freeTrainerRemoveBtn").addEventListener("click", () => askRemoveTrainerTemplate(freeReadyId));
   function openFreeComboCapture(src, editIndex) { openFreeEditor(src, "capture", editIndex); }
   function comboFreeCaptureEntries() {
     return freeAllBlocks().map((b) => ({ label: b.title, meta: freeBlockMeta(b), open: () => openFreeComboCapture(b, null) }))
@@ -27267,6 +27337,11 @@
     renderPlanScreen();
     showScreen("planScreen");
   }
+  function removePlanEntry(pi, di, id) {
+    if (!plan.phases[pi]) return;
+    plan.phases[pi].days[di] = plan.phases[pi].days[di].filter((x) => x.id !== id);
+    savePlan();
+  }
   function renderPlanScreen() {
     els.planStartInput.value = plan.startDate;
     els.planStartHelp.textContent = `Startet am ${longDate(plan.startDate)}.`;
@@ -27302,7 +27377,7 @@
     const d = t.dataset;
     if (d.add) { const [pi, di] = d.add.split(":").map(Number); openPlanEntry({ kind: "plan", pi, di }); return; }
     if (d.edit) { const [pi, di, id] = d.edit.split(":"); openPlanEntry({ kind: "plan", pi: +pi, di: +di, id }); return; }
-    if (d.del) { const [pi, di, id] = d.del.split(":"); plan.phases[+pi].days[+di] = plan.phases[+pi].days[+di].filter((x) => x.id !== id); savePlan(); renderPlanScreen(); return; }
+    if (d.del) { const [pi, di, id] = d.del.split(":"); removePlanEntry(+pi, +di, id); renderPlanScreen(); return; }
     if (d.phaseUp) { const i = +d.phaseUp; [plan.phases[i - 1], plan.phases[i]] = [plan.phases[i], plan.phases[i - 1]]; savePlan(); renderPlanScreen(); return; }
     if (d.phaseCopy) { const src = plan.phases[+d.phaseCopy]; const cp = JSON.parse(JSON.stringify(src)); cp.id = newId(); cp.name = (src.name + " (Kopie)").slice(0, 40); cp.days.forEach((l) => l.forEach((x) => { x.id = newId(); })); if (!src.weeks) src.weeks = 4; plan.phases.splice(+d.phaseCopy + 1, 0, cp); savePlan(); renderPlanScreen(); return; }
     if (d.phaseDel) { const i = +d.phaseDel; confirmDialog(`Phase „${plan.phases[i].name}“ mit allen Trainings löschen?`, () => { plan.phases.splice(i, 1); savePlan(); renderPlanScreen(); }); }
@@ -27338,6 +27413,7 @@
     planEntryTarget = target;
     let existing = null;
     if (target.kind === "plan" && target.id) existing = plan.phases[target.pi].days[target.di].find((x) => x.id === target.id);
+    if (target.kind === "extra" && target.id) existing = (plan.extras[target.date] || []).find((x) => x.id === target.id) || null;
     const e = existing || { area: "visual", what: "", code: "", time: "", minutes: 15, ...(target.preset || {}) };
     els.planEntryTitle.textContent = existing ? "Training ändern" : "Training eintragen";
     // pickDay (long-press "In den Wochenplan"): the weekday is chosen in
@@ -27383,11 +27459,14 @@
       const i = list.findIndex((x) => x.id === entry.id);
       if (i >= 0) list[i] = entry; else list.push(entry);
     } else {
-      plan.extras[t.date] = [...(plan.extras[t.date] || []), entry];
+      const list = [...(plan.extras[t.date] || [])];
+      const i = list.findIndex((x) => x.id === entry.id);
+      if (i >= 0) list[i] = entry; else list.push(entry);
+      plan.extras[t.date] = list;
     }
     savePlan();
     closePlanEntry();
-    if (t.pickDay) { if (!els.todayHome.hidden) renderToday(); }
+    if (t.pickDay || t.fromToday) { if (!els.todayHome.hidden) renderToday(); }
     else if (t.kind === "plan") renderPlanScreen(); else renderToday();
   });
 
@@ -27553,7 +27632,7 @@
   // Training cards) opens a small action sheet. A finger that moves more
   // than 10 px is scrolling and cancels it; a short tap still clicks.
   // Only actions that really work for that item are offered.
-  const LP_SEL = "#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #freeOwnGrid [data-free-id], #freeTplGrid [data-free-id]";
+  const LP_SEL = "#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #freeOwnGrid [data-free-id], #freeTrainerGrid [data-free-id], #freeTplGrid [data-free-id]";
   const tileSheet = $("tileActionSheet");
   let tileSheetReturnFocus = null;
   let lpSuppressUntil = 0; // swallow the click that may follow a long press
@@ -27708,6 +27787,200 @@
       e.preventDefault();
       if (!fired) { cancel(); openTileSheet(tile); }
     });
+  })();
+
+  // ==== Wischen in Listen (Fabian, 2026-10-05: "Einen Termin oder ein
+  // eigenes Training nach links wischen, dann erscheinen 'Bearbeiten' und
+  // 'Löschen', so wie beim Löschen einer Mail am iPhone.") ====
+  // Touch only. A row from SWIPE_ROWS follows the finger to the left and
+  // reveals its action buttons behind it (a panel laid under the row, so the
+  // row itself is never moved in the DOM); swipe right, a tap on the row or
+  // anywhere else closes it; one row open at a time. The direction is decided
+  // after ~10 px like the edge swipe, so vertical scrolling stays native
+  // (rows have touch-action: pan-y); touches from x <= 28 px belong to the
+  // edge back swipe. Every action calls the list's existing function, and
+  // "Löschen" always asks via confirmDialog(). The visible buttons stay.
+  // Docs: docs/notes/01 (Gesten), test: tests/list_swipe_1005_test.py.
+  const SWIPE_BTN_W = 84, SWIPE_GAP = 8;
+  const SWIPE_ROWS = [
+    { sel: "#dayEvents .event-item", acts: (row) => {
+      const id = row.dataset.event;
+      return [{ label: "Bearbeiten", run: () => openEventSheet(id) }, { label: "Löschen", del: true, run: () => askDeleteEvent(id) }];
+    } },
+    { sel: "#dayPanelBody .day-item:not(.compact)", acts: (row) => {
+      const date = todaySel;
+      const o = occurrencesOn(date).find((x) => x.id === row.dataset.occ);
+      if (!o) return null;
+      if (o.extra) return [
+        { label: "Bearbeiten", run: () => openPlanEntry({ kind: "extra", date, id: o.id }) },
+        { label: "Löschen", del: true, run: () => confirmDialog(`„${entryTitle(o)}“ am ${longDate(date)} löschen?`, () => dayAction(date, o, "remove")) },
+      ];
+      const ph = phaseFor(date);
+      if (!ph) return null;
+      const di = wdIdx(date);
+      return [
+        { label: "Bearbeiten", run: () => openPlanEntry({ kind: "plan", pi: ph.index, di, id: o.id, fromToday: true }) },
+        { label: "Löschen", del: true, run: () => confirmDialog(`„${entryTitle(o)}“ aus dem Wochenplan löschen? Es fällt dann jeden ${WD_LONG[di]} weg. Nur für heute: „Heute auslassen“.`, () => { removePlanEntry(ph.index, di, o.id); renderToday(); }) },
+      ];
+    } },
+    { sel: "#planPhaseList .plan-item", acts: (row) => {
+      const ed = row.querySelector("[data-edit]"), del = row.querySelector("[data-del]");
+      if (!ed || !del) return null;
+      const title = ((row.querySelector(".plan-item-text") || row).firstChild || {}).textContent || "Training";
+      return [{ label: "Bearbeiten", run: () => ed.click() },
+        { label: "Löschen", del: true, run: () => confirmDialog(`„${title.trim()}“ aus dem Wochenplan löschen?`, () => del.click()) }];
+    } },
+    { sel: "#freeOwnGrid [data-free-id]", acts: (row) => {
+      const id = row.dataset.freeId;
+      return [{ label: "Bearbeiten", run: () => { const b = freeFind(id); if (b) openFreeEditor(b, "edit"); } },
+        { label: "Löschen", del: true, run: () => askDeleteFree(id) }];
+    } },
+    { sel: "#freeTrainerGrid [data-free-id]", acts: (row) => [{ label: "Löschen", del: true, run: () => askRemoveTrainerTemplate(row.dataset.freeId) }] },
+    // Saved settings / saved Kombi-Programme (renderPresetList): only delete exists there.
+    { sel: ".bundle-item-wrap", acts: (row) => {
+      const rm = row.querySelector(':scope > .combo-block-remove[title="Löschen"]');
+      if (!rm) return null;
+      const name = ((row.querySelector(".bundle-item strong") || {}).textContent || "").trim();
+      return [{ label: "Löschen", del: true, run: () => confirmDialog(`„${name}“ löschen?`, () => rm.click()) }];
+    } },
+  ];
+  const SWIPE_SEL = SWIPE_ROWS.map((r) => r.sel).join(", ");
+  (function wireListSwipe() {
+    let st = null;        // the touch being tracked
+    let open = null;      // { row, panel, w }
+    let suppressUntil = 0;
+    const findRow = (el) => {
+      if (!el || !el.closest) return null;
+      for (const r of SWIPE_ROWS) { const row = el.closest(r.sel); if (row) return { row, cfg: r }; }
+      return null;
+    };
+    function setX(row, x, animate) {
+      row.style.transition = animate && !reduceMotion.matches ? "transform .3s cubic-bezier(.2,.8,.2,1)" : "none";
+      row.style.transform = x ? `translateX(${x}px)` : "";
+    }
+    function buildPanel(row, acts) {
+      const parent = row.parentElement;
+      if (getComputedStyle(parent).position === "static") parent.style.position = "relative";
+      if (getComputedStyle(row).position === "static") row.style.position = "relative";
+      row.style.zIndex = "1";
+      // keep the sliding row inside its list (no overlap with the card or panel border around it)
+      parent.style.clipPath = "inset(-40px 0 -40px 0)";
+      const panel = document.createElement("div");
+      panel.className = "swipe-actions";
+      const w = acts.length * SWIPE_BTN_W + (acts.length - 1) * 6;
+      const radius = getComputedStyle(row).borderTopRightRadius;
+      Object.assign(panel.style, { top: row.offsetTop + "px", left: (row.offsetLeft + row.offsetWidth - w) + "px", width: w + "px", height: row.offsetHeight + "px" });
+      acts.forEach((a) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "swipe-act" + (a.del ? " swipe-del" : "");
+        b.dataset.swipeAct = a.del ? "delete" : "edit";
+        b.textContent = a.label;
+        b.style.borderRadius = radius && radius !== "0px" ? radius : "12px";
+        b.addEventListener("click", (e) => {
+          e.stopPropagation();
+          suppressUntil = 0; // the action may click the row's own button
+          closeOpen(false);
+          a.run();
+        });
+        panel.appendChild(b);
+      });
+      parent.appendChild(panel);
+      return { panel, w: w + SWIPE_GAP };
+    }
+    function closeOpen(animate = true) {
+      if (!open) return;
+      const { row, panel } = open;
+      open = null;
+      row.classList.remove("swipe-open");
+      setX(row, 0, animate && row.isConnected);
+      const done = () => {
+        const parent = panel.parentElement;
+        panel.remove(); row.style.zIndex = ""; row.style.transition = "";
+        if (parent && !(open && open.panel.parentElement === parent)) parent.style.clipPath = "";
+      };
+      if (animate && row.isConnected && !reduceMotion.matches) setTimeout(() => { if (!open || open.panel !== panel) done(); }, 320); else done();
+    }
+    document.addEventListener("touchstart", (e) => {
+      st = null;
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const target = e.target;
+      if (open) {
+        if (open.panel.contains(target)) return; // a tap on an action button
+        if (!open.row.contains(target) || !open.row.isConnected) {
+          closeOpen(); suppressUntil = Date.now() + 450; return;
+        }
+        st = { row: open.row, x: t.clientX, y: t.clientY, time: Date.now(), base: -open.w, dir: null, cur: -open.w, existing: true };
+        return;
+      }
+      if (t.clientX <= 28) return;
+      if (target.closest && target.closest("input, textarea, select, [data-drag-handle]")) return;
+      const hit = findRow(target);
+      if (!hit || !hit.row.getClientRects().length) return;
+      const sheet = hit.row.closest(".sheet");
+      if (document.querySelector(".sheet:not([hidden])") && !sheet) return;
+      st = { row: hit.row, cfg: hit.cfg, x: t.clientX, y: t.clientY, time: Date.now(), base: 0, dir: null, cur: 0 };
+    }, { passive: true });
+    document.addEventListener("touchmove", (e) => {
+      if (!st) return;
+      const t = e.touches[0];
+      const dx = t.clientX - st.x, dy = t.clientY - st.y;
+      if (!st.dir) {
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+        if (Math.abs(dy) >= Math.abs(dx)) {
+          if (st.existing) closeOpen();
+          st = null; return;
+        }
+        if (!st.existing) {
+          if (dx > 0) { st = null; return; } // a swipe to the right on a closed row does nothing
+          if (!tileSheet.hidden) { st = null; return; }
+          const acts = st.cfg.acts(st.row);
+          if (!acts || !acts.length) { st = null; return; }
+          const built = buildPanel(st.row, acts);
+          open = { row: st.row, panel: built.panel, w: built.w };
+          st.row.classList.add("swipe-open");
+        }
+        st.dir = "h";
+        st.x = t.clientX; // start following from here, no jump
+      }
+      const w = open ? open.w : 0;
+      let x = st.base + (t.clientX - st.x);
+      if (x < -w) x = -w - (-w - x) * 0.3; // rubber band past the buttons
+      x = Math.min(0, x);
+      st.cur = x;
+      setX(st.row, x, false);
+    }, { passive: true }); // rows have touch-action: pan-y, so the page never scrolls sideways
+    document.addEventListener("touchend", () => {
+      if (!st) return;
+      const s = st; st = null;
+      if (!s.dir) {
+        // a plain tap on the open row closes it (and does not open the item)
+        if (s.existing) { closeOpen(); suppressUntil = Date.now() + 450; }
+        return;
+      }
+      suppressUntil = Date.now() + 450;
+      if (!open || open.row !== s.row) return;
+      const fast = Date.now() - s.time < 250;
+      const moved = s.cur - s.base;
+      const shouldOpen = s.existing ? !(moved > open.w / 3 || (fast && moved > 25)) : (-s.cur > open.w / 2 || (fast && moved < -25));
+      if (shouldOpen) setX(s.row, -open.w, true); else closeOpen();
+    }, { passive: true });
+    document.addEventListener("touchcancel", () => {
+      if (!st) return;
+      const s = st; st = null;
+      if (open && open.row === s.row) { if (s.base) setX(s.row, s.base, true); else closeOpen(); }
+    }, { passive: true });
+    // Swallow the click that may follow a swipe or the tap that closed a row.
+    document.addEventListener("click", (e) => {
+      if (Date.now() >= suppressUntil) return;
+      if (e.target.closest && e.target.closest(".swipe-actions")) return;
+      e.preventDefault(); e.stopPropagation(); suppressUntil = 0;
+    }, true);
+    // Scrolling the page or changing the screen closes an open row.
+    window.addEventListener("scroll", () => { if (open && !st) closeOpen(); }, { passive: true });
+    new MutationObserver(() => { if (open && (!open.row.isConnected || !open.row.getClientRects().length)) closeOpen(false); })
+      .observe(document.body, { subtree: true, attributes: true, attributeFilter: ["hidden"], childList: true });
   })();
 
   // ---- Start-up ----

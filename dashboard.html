@@ -108,7 +108,9 @@
     border-radius: 8px 8px 0 0; padding: 8px 14px; font-size: 0.85rem; cursor: pointer; margin: 0;
   }
   .tab-btn.active { background: var(--panel); color: var(--text); border-bottom-color: var(--panel); }
-  .kind-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+  .kind-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 6px; margin-top: 8px; }
+  .free-point { display: grid; grid-template-columns: 1fr 96px 34px; gap: 6px; align-items: center; margin-top: 6px; }
+  .free-point input { margin: 0; }
   .kind-btn { padding: 8px 4px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel2); color: var(--text); cursor: pointer; font-size: 0.85rem; margin-top: 0; }
   .kind-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
   .mv-check { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; margin-top: 8px; }
@@ -196,7 +198,7 @@
 
     <details class="panel" id="overviewDetails" style="padding:16px">
       <summary style="cursor:pointer;list-style:none"><h2 style="display:inline">Alle Übungen im Überblick</h2></summary>
-      <p class="hint">Stand: 02.10.2026 · von Hand gepflegt, kein Live-Abgleich mit der App - bei Fragen zu neuen Übungen einfach fragen. <span class="ov-pill full"><span class="dot"></span>im Baukasten nutzbar</span> <span class="ov-pill json"><span class="dot"></span>nur über den JSON-Tab</span> <span class="ov-pill none"><span class="dot"></span>noch nicht im Dashboard, nur in der App</span></p>
+      <p class="hint">Stand: 05.10.2026 · von Hand gepflegt, kein Live-Abgleich mit der App - bei Fragen zu neuen Übungen einfach fragen. <span class="ov-pill full"><span class="dot"></span>im Baukasten nutzbar</span> <span class="ov-pill json"><span class="dot"></span>nur über den JSON-Tab</span> <span class="ov-pill none"><span class="dot"></span>noch nicht im Dashboard, nur in der App</span></p>
       <div id="overviewBody"></div>
     </details>
 
@@ -280,6 +282,7 @@
           <button class="kind-btn" type="button" data-kind="movement">Movement</button>
           <button class="kind-btn" type="button" data-kind="cardio">Cardio</button>
           <button class="kind-btn" type="button" data-kind="workout">Workout</button>
+          <button class="kind-btn" type="button" data-kind="free">Eigenes Training</button>
         </div>
         <p class="hint" id="kindHint">Der Code landet in der App automatisch im passenden Bereich.</p>
 
@@ -309,6 +312,14 @@
           <label style="margin-top:16px">Dein Plan <span id="workoutCount" class="hint"></span></label>
           <div id="workoutList"></div>
           <p class="empty-hint" id="workoutEmptyHint">Noch keine Übung hinzugefügt.</p>
+        </div>
+
+        <div id="freeBuilder" hidden>
+          <p class="hint" style="margin-top:14px">Vorlagen für den Bereich „Eigenes Training“ in der App: Der Kunde gibt den Code ein, die Trainings erscheinen bei ihm unter „Von deinem Trainer“ (nicht veränderbar, aber startbar, planbar, im Kombi-Programm nutzbar und als Kopie anpassbar). Gibt er den Code nach einer Änderung erneut ein, wird die Vorlage aktualisiert.</p>
+          <button class="secondary" type="button" id="freeAddBtn">+ Training hinzufügen</button>
+          <label style="margin-top:16px">Deine Trainings <span id="freeCount" class="hint"></span></label>
+          <div id="freeList"></div>
+          <p class="empty-hint" id="freeEmptyHint">Noch kein Training hinzugefügt.</p>
         </div>
 
         <div id="visualBuilder">
@@ -342,7 +353,7 @@
         <label for="pConfig" style="margin-top:14px">Konfiguration (JSON - gleiche Struktur wie dig01/dig02/xppbsp-1)</label>
         <textarea id="pConfig" placeholder='{"name":"Dig03 · …","pauseS":15,"blocks":[{"exercise":"vt-color","colors":["orange","rot","lila"],"duration":60,"stimulusS":1,"intervalMin":3,"intervalMax":5}]}'></textarea>
         <p class="hint">Gültige <code>exercise</code>-Werte im Baukasten: vt-color, vrw-original, 4-straight, 4-diag, 8-solo, 8-vrw, stroop-classic, stroop-bg. Weitere Einzelübungen (cross-modal, cone-tap, …) sowie <code>periph-flash</code> (Periphere Wahrnehmung, NAT) funktionieren im selben <code>blocks</code>-Format, aber nur hier im JSON-Tab - der Code landet dann automatisch auf der Startseite des jeweiligen Bereichs (NAT bei <code>periph-flash</code>, sonst Visual Training). Programmübersichten mit mehreren Programmen: <code>{"type":"bundle","name":"…","programs":[{"label":"…","blocks":[…]}, …]}</code>.</p>
-        <p class="hint">Andere Bereiche brauchen einen eigenen <code>type</code>: Workout-Plan <code>{"type":"workout-plan","name":"…","blocks":[…]}</code> (Blockformat wie im Workout-Baukasten, gleiche Feldnamen) bzw. <code>{"type":"workout-bundle","programs":[…]}</code>. Bewegungsprogramm (Movement) <code>{"type":"movement-plan","name":"…","movements":["armL-heben","armR-heben","legL-strecken",…],"bpm":90,"durationMin":8,"preview":3,"mirror":true,"showLabel":true}</code> (mind. 2 Bewegungen aus den 8 Grund-IDs: armL/armR/legL/legR jeweils -heben/-strecken) bzw. <code>{"type":"movement-bundle","programs":[…]}</code>. Cardio-Einheit <code>{"type":"cardio-plan","name":"…","items":[{"activity":"joggen","durationS":600,"label":"","interval":null}, …]}</code> (<code>activity</code> aus joggen/rad/cross/rudern/walking/treppe/schwimmen, <code>interval</code> optional <code>{"onS":30,"offS":30}</code> - die Zusatzaufgabe während Cardio bleibt eine reine Klienten-Einstellung, kein Coach-Feld) bzw. <code>{"type":"cardio-bundle","programs":[…]}</code>. Positionen merken/Blitz-Raster/Flash-Speicher-Test/MOT (NAT) sowie der Test-Bereich haben noch keinen Code-Typ.</p>
+        <p class="hint">Andere Bereiche brauchen einen eigenen <code>type</code>: Workout-Plan <code>{"type":"workout-plan","name":"…","blocks":[…]}</code> (Blockformat wie im Workout-Baukasten, gleiche Feldnamen) bzw. <code>{"type":"workout-bundle","programs":[…]}</code>. Bewegungsprogramm (Movement) <code>{"type":"movement-plan","name":"…","movements":["armL-heben","armR-heben","legL-strecken",…],"bpm":90,"durationMin":8,"preview":3,"mirror":true,"showLabel":true}</code> (mind. 2 Bewegungen aus den 8 Grund-IDs: armL/armR/legL/legR jeweils -heben/-strecken) bzw. <code>{"type":"movement-bundle","programs":[…]}</code>. Cardio-Einheit <code>{"type":"cardio-plan","name":"…","items":[{"activity":"joggen","durationS":600,"label":"","interval":null}, …]}</code> (<code>activity</code> aus joggen/rad/cross/rudern/walking/treppe/schwimmen, <code>interval</code> optional <code>{"onS":30,"offS":30}</code> - die Zusatzaufgabe während Cardio bleibt eine reine Klienten-Einstellung, kein Coach-Feld) bzw. <code>{"type":"cardio-bundle","programs":[…]}</code>. Vorlagen für „Eigenes Training“ <code>{"type":"free-template","name":"…","trainings":[{"kind":"list","title":"Mobilisation","note":"…","items":[{"text":"Schultern kreisen","s":30}]},{"kind":"timer","title":"Eisbad","minutes":3},{"kind":"check","title":"Journal"}]}</code> (<code>kind</code> check = Abhaken, timer = Mit Zeit mit <code>minutes</code> 1-60, list = Checkliste mit Punkten, <code>s</code> 0-600 Sekunden, 0 = selbst abhaken). Positionen merken/Blitz-Raster/Flash-Speicher-Test/MOT (NAT) sowie der Test-Bereich haben noch keinen Code-Typ.</p>
         <p class="hint">Optionale Video-Links (nur beim Standard-/Bundle-Typ): <code>introVideo</code> (Programmebene, vor Start), <code>endVideo</code> (Programmebene, nach der letzten Übung), <code>videoAfter</code> (pro Block, läuft nach dieser Übung) - reine URL-Strings, Abspielung in der App folgt noch.</p>
       </div>
 
@@ -511,6 +522,7 @@
       ["Kniehebelauf", "full"], ["Wandsitz", "full"], ["Trizeps-Dips", "full"], ["Sprungkniebeugen", "full"],
       ["Sätze × Wiederholungen oder Intervall pro Übung", "full"], ["Zirkel und Kraftplan mit mehreren Übungen", "json"],
     ]},
+    { domain: "Eigenes Training", items: [["Vorlagen: Abhaken, Mit Zeit, Checkliste (mehrere pro Code)", "full"]] },
     { domain: "Test-Bereich (wächst laufend)", items: [
       ["Go/No-Go Reaktionstest", "none"], ["Positions-Gedächtnis (N-Back)", "none"],
       ["Verbindungstest (Trail Making)", "none"], ["Ablenkungstest (Flanker)", "none"],
@@ -667,6 +679,7 @@
     document.getElementById("movementBuilder").hidden = kind !== "movement";
     document.getElementById("cardioBuilder").hidden = kind !== "cardio";
     document.getElementById("workoutBuilder").hidden = kind !== "workout";
+    document.getElementById("freeBuilder").hidden = kind !== "free";
   }
   document.querySelectorAll("#kindRow [data-kind]").forEach((b) => b.addEventListener("click", () => setBuilderKind(b.dataset.kind)));
 
@@ -781,6 +794,68 @@
     });
   }
 
+  // Eigenes Training (2026-10-05, Fabian: Trainer-Vorlagen per Code): a
+  // "free-template" code carries trainings in the app's own shape
+  // ({kind: check|timer|list, title, note, minutes, items:[{text, s}]}),
+  // read by app.js importTrainerTemplates()/freeClean().
+  const FREE_KINDS = [["check", "Abhaken"], ["timer", "Mit Zeit"], ["list", "Checkliste"]];
+  let freeTrainings = [];
+  function newFreeTraining() { return { kind: "list", title: "", note: "", minutes: 5, items: [{ text: "", s: 30 }] }; }
+  document.getElementById("freeAddBtn").addEventListener("click", () => { freeTrainings.push(newFreeTraining()); renderFreeList(); });
+  function renderFreeList() {
+    const list = document.getElementById("freeList");
+    list.innerHTML = "";
+    document.getElementById("freeCount").textContent = freeTrainings.length ? `(${freeTrainings.length})` : "";
+    document.getElementById("freeEmptyHint").hidden = freeTrainings.length > 0;
+    freeTrainings.forEach((t, i) => {
+      const card = document.createElement("div");
+      card.className = "block-card free-card";
+      card.innerHTML = `<div class="block-head"><strong>${i + 1}. ${escapeHtml(t.title || "Training")}</strong>${moveButtons(i, freeTrainings.length)}</div>
+        <div class="kind-row" style="grid-template-columns:repeat(3,1fr)">${FREE_KINDS.map(([k, l]) => `<button class="kind-btn ${t.kind === k ? "active" : ""}" type="button" data-f-kind="${k}">${l}</button>`).join("")}</div>
+        <label>Titel</label><input type="text" data-f="title" maxlength="40" value="${escapeHtml(t.title)}" placeholder="z.B. Mobilisation am Morgen" />
+        <label>Notiz (optional, wird beim Training angezeigt)</label><input type="text" data-f="note" maxlength="160" value="${escapeHtml(t.note)}" placeholder="z.B. Ruhig atmen" />
+        ${t.kind === "timer" ? `<div class="block-fields"><div><label>Dauer (Min.)</label><input type="number" min="1" max="60" step="1" data-f="minutes" value="${t.minutes}" /></div></div>` : ""}
+        ${t.kind === "list" ? `<label>Punkte (Sekunden 0 = der Kunde hakt selbst ab)</label>
+          <div data-f="points">${t.items.map((it, j) => `<div class="free-point"><input type="text" maxlength="60" data-p="text" data-j="${j}" value="${escapeHtml(it.text)}" placeholder="z.B. Waden" aria-label="Punkt ${j + 1}" /><input type="number" min="0" max="600" step="5" data-p="s" data-j="${j}" value="${it.s}" aria-label="Sekunden für Punkt ${j + 1}" /><button class="icon-btn" type="button" data-p="remove" data-j="${j}" title="Punkt entfernen" ${t.items.length < 2 ? "disabled" : ""}>&times;</button></div>`).join("")}</div>
+          <button class="secondary" type="button" data-f="addPoint" style="margin-top:8px">+ Punkt</button>` : ""}`;
+      list.appendChild(card);
+      card.querySelectorAll("[data-f-kind]").forEach((b) => b.addEventListener("click", () => {
+        t.kind = b.dataset.fKind;
+        if (t.kind === "list" && !t.items.length) t.items.push({ text: "", s: 30 });
+        renderFreeList();
+      }));
+      card.querySelector('[data-f="title"]').addEventListener("input", (e) => { t.title = e.target.value; card.querySelector(".block-head strong").textContent = `${i + 1}. ${t.title.trim() || "Training"}`; });
+      card.querySelector('[data-f="note"]').addEventListener("input", (e) => { t.note = e.target.value; });
+      const mins = card.querySelector('[data-f="minutes"]');
+      if (mins) mins.addEventListener("input", () => { t.minutes = Math.max(1, Math.min(60, Math.round(Number(mins.value) || 1))); });
+      card.querySelectorAll("[data-p]").forEach((el) => {
+        const j = Number(el.dataset.j);
+        if (el.dataset.p === "text") el.addEventListener("input", () => { t.items[j].text = el.value; });
+        if (el.dataset.p === "s") el.addEventListener("input", () => { t.items[j].s = Math.max(0, Math.min(600, Math.round(Number(el.value) || 0))); });
+        if (el.dataset.p === "remove") el.addEventListener("click", () => { if (t.items.length > 1) { t.items.splice(j, 1); renderFreeList(); } });
+      });
+      const addP = card.querySelector('[data-f="addPoint"]');
+      if (addP) addP.addEventListener("click", () => { const last = t.items[t.items.length - 1]; t.items.push({ text: "", s: last ? last.s : 30 }); renderFreeList(); });
+      wireMoveButtons(card, freeTrainings, i, renderFreeList);
+    });
+  }
+  function freeTrainingsConfig() {
+    return freeTrainings.map((t) => {
+      const out = { kind: t.kind, title: t.title.trim() };
+      if (t.note.trim()) out.note = t.note.trim();
+      if (t.kind === "timer") out.minutes = t.minutes;
+      if (t.kind === "list") out.items = t.items.filter((it) => it.text.trim()).map((it) => ({ text: it.text.trim(), s: it.s }));
+      return out;
+    });
+  }
+  // "" when fine, else the message for #pMsg.
+  function freeTrainingsProblem(cfg) {
+    if (!cfg.trainings.length) return "Mindestens ein Training hinzufügen.";
+    if (cfg.trainings.some((t) => !t.title)) return "Jedes Training braucht einen Titel.";
+    if (cfg.trainings.some((t) => t.kind === "list" && !t.items.length)) return "Eine Checkliste braucht mindestens einen Punkt mit Text.";
+    return "";
+  }
+
   let builderBlocks = [];
   let builderUsable = true; // false when an edited code's config doesn't fit this builder's shape
 
@@ -891,6 +966,9 @@
     if (builderKind === "cardio") {
       return { type: "cardio-plan", name, description, items: cardioItems.map((it) => ({ activity: it.activity, durationS: it.durationS, label: it.label || "", interval: it.interval ? { ...it.interval } : null })) };
     }
+    if (builderKind === "free") {
+      return { type: "free-template", name, description, trainings: freeTrainingsConfig() };
+    }
     if (builderKind === "workout") {
       return { type: "workout-plan", name, description, blocks: workoutBlocks.map((b) => b.kind === "reps"
         ? { kind: "reps", exercise: b.exercise, sets: b.sets, reps: b.reps, restS: b.restS }
@@ -921,6 +999,7 @@
     if (isObj && !t && Array.isArray(config.blocks) && config.blocks.every((b) => EXERCISE_BY_ID[b.exercise])) kind = "visual";
     else if (t === "movement-plan" && Array.isArray(config.movements) && config.movements.every((id) => MOVEMENTS.some((m) => m.id === id))) kind = "movement";
     else if (t === "cardio-plan" && Array.isArray(config.items) && config.items.every((it) => it && CARDIO_BY_ID[it.activity])) kind = "cardio";
+    else if (t === "free-template" && Array.isArray(config.trainings) && config.trainings.every((x) => x && typeof x === "object" && (!x.items || Array.isArray(x.items)))) kind = "free";
     else if (t === "workout-plan" && Array.isArray(config.blocks) && config.blocks.every((b) => b && (b.kind === "reps" || b.kind === "tabata") && b.rangeMin == null && WORKOUT_BY_ID[b.exercise])) kind = "workout";
     const fits = !!kind;
     document.getElementById("builderFallbackHint").hidden = !!fits;
@@ -942,6 +1021,16 @@
     if (kind === "cardio") {
       cardioItems = config.items.map((it) => ({ activity: it.activity, durationS: it.durationS || 600, label: it.label || "", interval: it.interval && it.interval.onS ? { onS: it.interval.onS, offS: it.interval.offS || 30 } : null }));
       renderCardioList();
+      return;
+    }
+    if (kind === "free") {
+      freeTrainings = config.trainings.map((x) => ({
+        kind: FREE_KINDS.some(([k]) => k === x.kind) ? x.kind : "check", title: String(x.title || ""), note: String(x.note || ""),
+        minutes: Math.max(1, Math.min(60, Math.round(Number(x.minutes) || 5))),
+        items: (x.items || []).map((it) => ({ text: String((it && it.text) || ""), s: Math.max(0, Math.min(600, Math.round(Number(it && it.s) || 0))) })),
+      }));
+      freeTrainings.forEach((x) => { if (x.kind === "list" && !x.items.length) x.items.push({ text: "", s: 30 }); });
+      renderFreeList();
       return;
     }
     if (kind === "workout") {
@@ -969,8 +1058,8 @@
     document.getElementById("pIntroVideo").value = "";
     document.getElementById("pEndVideo").value = "";
     builderBlocks = [];
-    cardioItems = []; workoutBlocks = [];
-    renderMovementChecks([]); renderCardioList(); renderWorkoutList();
+    cardioItems = []; workoutBlocks = []; freeTrainings = [];
+    renderMovementChecks([]); renderCardioList(); renderWorkoutList(); renderFreeList();
     document.getElementById("mvBpm").value = 60; document.getElementById("mvDuration").value = 5;
     document.getElementById("mvPreview").value = "3";
     document.getElementById("mvMirror").checked = true; document.getElementById("mvShowLabel").checked = true;
@@ -1006,6 +1095,7 @@
   renderMovementChecks([]);
   renderCardioGrid(); renderCardioList();
   renderWorkoutGrid(); renderWorkoutList();
+  renderFreeList();
 
   // Code-level fields (any code type): live outside the Baukasten/JSON tabs
   // and are written into the config on save, so they work for every type.
@@ -1094,7 +1184,11 @@
     let config;
     if (currentTabIsBuilder() && builderUsable) {
       config = builderToConfig();
-      const empty = builderKind === "movement" ? config.movements.length < 2 : builderKind === "cardio" ? !config.items.length : !config.blocks.length;
+      if (builderKind === "free") {
+        const problem = freeTrainingsProblem(config);
+        if (problem) { msg.textContent = problem; msg.className = "msg err"; return; }
+      }
+      const empty = builderKind === "free" ? false : builderKind === "movement" ? config.movements.length < 2 : builderKind === "cardio" ? !config.items.length : !config.blocks.length;
       if (empty) { msg.textContent = builderKind === "movement" ? "Mindestens zwei Bewegungen auswählen." : builderKind === "cardio" ? "Mindestens eine Aktivität hinzufügen." : "Mindestens eine Übung hinzufügen."; msg.className = "msg err"; return; }
       document.getElementById("pConfig").value = JSON.stringify(config, null, 2); // keep JSON tab in sync
     } else {

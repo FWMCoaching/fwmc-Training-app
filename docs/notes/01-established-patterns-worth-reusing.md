@@ -169,6 +169,43 @@
     press is swallowed, tiles have `user-select:none` and
     `-webkit-touch-callout:none`; right click / Android context menu opens
     the same sheet. A new kind of tile: add it to `LP_SEL` and `lpActions`.
+  - *Wischen in Listen* (Fabian 2026-10-05: "nach links wischen, dann
+    erscheinen 'Bearbeiten' und 'Löschen', so wie beim Löschen einer Mail am
+    iPhone"; block "Wischen in Listen" after the long press, test
+    `tests/list_swipe_1005_test.py`): one document-level touch listener and
+    a table `SWIPE_ROWS = [{sel, acts(row) -> [{label, del?, run}]}]`. Rows:
+    Heute `#dayEvents .event-item` (Termin: `openEventSheet` /
+    `askDeleteEvent`), `#dayPanelBody .day-item:not(.compact)` (one-off
+    training: `openPlanEntry({kind:"extra", date, id})` now edits in place /
+    `dayAction(..., "remove")`; weekly training: `openPlanEntry({kind:"plan",
+    pi, di, id, fromToday:true})` / `removePlanEntry` after a confirm that
+    says it leaves the Wochenplan for that weekday, "Heute auslassen" stays
+    for one day), `#planPhaseList .plan-item` (clicks the row's own ✎ / ✕
+    after a confirm), `#freeOwnGrid` cards (`openFreeEditor(b,"edit")` /
+    `askDeleteFree`), `#freeTrainerGrid` cards (only Löschen =
+    `askRemoveTrainerTemplate`), every `renderPresetList` row
+    (`.bundle-item-wrap` with a `.combo-block-remove[title=Löschen]`: saved
+    settings and saved Kombi-Programme; only Löschen, since no edit exists;
+    the ✕ itself still deletes at once as before). The Stunden view's
+    compact blocks are left out (too narrow). Mechanics: direction decided
+    after 10 px (vertical = native scroll, rows have `touch-action:pan-y`;
+    the listeners are passive), the row follows the finger with a rubber band
+    past the buttons, snaps open past half the width or on a fast flick
+    (0.3 s ease, reduced motion = no slide). The buttons are a
+    `.swipe-actions` panel laid absolutely under the row in its parent (the
+    row is never moved in the DOM; parent gets `position:relative` and,
+    while open, a horizontal `clip-path` so the row slides out of its list,
+    not over the panel border). 84 px wide buttons, full row height (≥ 44),
+    radius of the row; Bearbeiten `var(--brand)`, Löschen `var(--warn)`,
+    text `var(--bg)` (white in light, dark in dark mode like `.start-btn`).
+    One row open; a tap on the open row or anywhere else closes it and that
+    tap is swallowed (iOS behaviour); scrolling or a screen change closes it
+    too. Touches from x ≤ 28 px stay with the edge back swipe, except on an
+    open row (`.swipe-open` is excluded in `wireEdgeSwipeBack`). Long press
+    (cancels at > 10 px) and drag handles (`[data-drag-handle]` ignored)
+    keep working. A new list with edit/delete: one `SWIPE_ROWS` entry with
+    the list's existing functions + its selector in the `touch-action:pan-y`
+    rule in styles.css.
   - Known, not changed: every open sheet resets the page scroll to the top
     (the `html:has(.sheet:not([hidden]))` overflow lock); the long-press
     sheet restores it itself.

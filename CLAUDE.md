@@ -362,5 +362,19 @@ For every new or changed exercise/screen, in the same commit:
   exercise cards = `#tileActionSheet` (`LP_SEL`, `lpActions`). A new
   sortable list or tile kind hooks into these, details in docs/notes/01.
   Test: `tests/gestures_1005_test.py`.
+- Wischen in Listen (2026-10-05, Fabian approved): swipe a list row left =
+  "Bearbeiten" / "Löschen" behind it (iOS Mail style; touch only, one row
+  open, swipe right / tap closes, direction after 10 px, not from x ≤ 28).
+  Rows + actions in `SWIPE_ROWS` (app.js); actions call the list's existing
+  functions (`askDeleteEvent`, `askDeleteFree`, `removePlanEntry`, the row's
+  own ✎/✕), "Löschen" always via `confirmDialog()`. A new list with
+  edit/delete = one `SWIPE_ROWS` entry + `touch-action:pan-y` in styles.css.
+  Details docs/notes/01, test `tests/list_swipe_1005_test.py`.
+- Trainer-Vorlagen per Code (2026-10-05): code type `free-template`
+  (`{trainings:[…]}` in the Eigenes-Training shape) adds read-only templates
+  "Von deinem Trainer" to `#freeHome` (`fwmc-free-trainer-v1`, ids
+  `tr-<code>-<n>`, same code again = update); built in the dashboard
+  (Bereich "Eigenes Training"). Worker stores configs generically, no deploy
+  needed. Details docs/notes/25 + 10, test `tests/trainer_template_1005_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.
