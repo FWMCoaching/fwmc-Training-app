@@ -92,7 +92,13 @@ screen and its siblings (390px and 1024px, light and dark), task "find
 everything that would bother Fabian", calibrated with the "Nachgetragene
 Punkte" table in /mnt/project-files/firma/abgabe-check.md. Fix its finds
 before pushing. Anything Fabian still finds becomes a general automatic
-check (the kind of error, not the single case). Once a quarter: the home
+check (the kind of error, not the single case).
+**App-Gefühl is Claude's job (Fabian 2026-10-05: "Das musst du selbst
+bemerken. Du bist der Experte")**: every release that touches navigation,
+sheets, transitions or touch also gets checked against native iOS app
+conventions, unasked - motion 0.3-0.4 s with a real slide (not a fade),
+swipe back / pull down to close / tap active tab to top, grab bars, safe
+areas, 44 px targets, no sticky hover. The reviewer prompt includes this. Once a quarter: the home
 screen of every area (about 12 screenshots).
 
 **Bundle releases (Fabian, 2026-10-04)**: bundle 3-4 changes per release,

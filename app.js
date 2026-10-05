@@ -27339,7 +27339,7 @@
     if (!el) return;
     const gone = () => { el.classList.add("is-gone"); setTimeout(() => el.remove(), 400); };
     if (navigator.webdriver && !readJSON("fwmc-test-splash", false)) { el.remove(); return; }
-    setTimeout(gone, Math.max(0, 700 - performance.now()));
+    setTimeout(gone, Math.max(0, 1200 - performance.now())); // shown at least 1.2 s (Fabian 2026-10-05: "minimal länger")
   })();
   enablePageTransitions();
 
