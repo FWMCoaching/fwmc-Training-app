@@ -513,7 +513,10 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .tempo-custom{font-size:12.5px;color:var(--ink-soft)}
 
 /* ---- Breathing phase sliders + preview chips ---- */
-.phase-sliders{display:flex;flex-direction:column;gap:10px}
+.phase-sliders{display:grid;grid-template-columns:auto minmax(0,1fr) auto;column-gap:10px;row-gap:10px;align-items:center}
+.phase-sliders .slider-line{display:contents}
+.phase-sliders input[type="range"]{width:100%;min-width:0;accent-color:var(--brand);height:28px}
+.phase-sliders .slider-value{align-self:center}
 .pattern-breakdown{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 4px}
 .phase-chip{
   display:inline-block;background:var(--brand-pale);color:var(--brand-deep);
@@ -2107,16 +2110,30 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 /* Seitenübergänge (2026-10-05, enablePageTransitions in app.js) */
 /* On a page only the content moves; the logo bar stays put (same place
    on every page). Players and result panels animate as a whole. */
-.screen.tr-push > :not(.brandbar){animation:trPush .36s cubic-bezier(.32,.72,0,1)}
-.screen.tr-pop > :not(.brandbar){animation:trPop .36s cubic-bezier(.32,.72,0,1)}
+/* iOS push (Fabian-Blick 2026-10-05: "iOS: 0,35 s, ganz von rechts, ohne
+   Einblenden"): the new page slides in fully from the right on an opaque
+   layer (::before) over a snapshot of the old page (.tr-ghost, built in
+   app.js), which drifts 30 % to the left. Back = the mirror image: the old
+   page slides out to the right over the new one. The logo bar stays put. */
+.screen.tr-push,.screen.tr-pop{position:relative}
+.screen.tr-push{z-index:1}
+.screen.tr-push::before{content:"";position:fixed;inset:0;background:var(--bg);box-shadow:-8px 0 24px rgba(0,0,0,.12);animation:trPush .35s cubic-bezier(.32,.72,0,1) both;pointer-events:none}
+.screen.tr-push > :not(.brandbar){animation:trPush .35s cubic-bezier(.32,.72,0,1)}
+.screen.tr-pop > :not(.brandbar){animation:trPop .35s cubic-bezier(.32,.72,0,1)}
 .screen.tr-fade > :not(.brandbar),.tr-fade:not(.screen){animation:trFade .24s ease}
 .tr-rise{animation:trRise .34s cubic-bezier(.32,.72,0,1)}
-/* Slower and a real slide (Fabian 2026-10-05: "wirkt fast wie ein Einblenden"): longer travel, opacity only at the very start, iOS-like curve. */
-@keyframes trPush{from{transform:translateX(70%);opacity:.2}35%{opacity:1}to{transform:none;opacity:1}}
-@keyframes trPop{from{transform:translateX(-40%);opacity:.2}35%{opacity:1}to{transform:none;opacity:1}}
+.tr-ghost{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:var(--bg)}
+.tr-ghost.pop{z-index:2;box-shadow:-8px 0 24px rgba(0,0,0,.12);animation:trGhostOut .35s cubic-bezier(.32,.72,0,1) both}
+.tr-ghost.push{animation:trGhostBack .35s cubic-bezier(.32,.72,0,1) both}
+.tr-ghost > .ghost-bar{position:absolute;top:0;left:0;right:0;z-index:3}
+.tr-ghost > .ghost-bar > .brandbar{margin:0 auto!important;max-width:760px;position:relative!important}
+@keyframes trPush{from{transform:translateX(100%)}to{transform:none}}
+@keyframes trPop{from{transform:translateX(-30%)}to{transform:none}}
+@keyframes trGhostBack{from{transform:none}to{transform:translateX(-30%)}}
+@keyframes trGhostOut{from{transform:none}to{transform:translateX(100%)}}
 @keyframes trFade{from{opacity:0}to{opacity:1}}
 @keyframes trRise{from{transform:translateY(48px);opacity:0}40%{opacity:1}to{transform:none;opacity:1}}
-@media (prefers-reduced-motion:reduce){.screen.tr-push > :not(.brandbar),.screen.tr-pop > :not(.brandbar),.tr-rise{animation:trFade .2s ease}}
+@media (prefers-reduced-motion:reduce){.screen.tr-push > :not(.brandbar),.screen.tr-pop > :not(.brandbar),.tr-rise{animation:trFade .2s ease}.screen.tr-push::before{display:none}}
 body{overflow-x:clip}
 
 /* Untere Navigationsleiste (2026-10-05, bottomNavOn in app.js). Below the
@@ -2223,6 +2240,19 @@ a.featured-card{text-decoration:none;color:inherit}
 /* Griff-Strich: shows a bottom sheet can be pulled down to close (phones only) */
 .sheet-grab{flex:none;width:40px;height:5px;border-radius:3px;background:var(--line);margin:-12px auto 12px}
 @media (min-width:600px){.sheet-grab{display:none}}
+/* Fenster fahren von unten herein (Fabian-Blick 2026-10-05, iOS sheet):
+   backdrop fades, the panel slides up; centred dialogs on wide screens
+   rise a little and fade. Only with page transitions on (html.tr-on). */
+html.tr-on .sheet:not([hidden]){animation:sheetFade .28s ease}
+html.tr-on .sheet:not([hidden]) > .sheet-inner{animation:sheetUp .38s cubic-bezier(.32,.72,0,1)}
+@media (min-width:600px){html.tr-on .sheet:not([hidden]) > .sheet-inner{animation:sheetPop .26s cubic-bezier(.32,.72,0,1)}}
+@keyframes sheetFade{from{background-color:rgba(10,16,19,0)}}
+@keyframes sheetUp{from{transform:translateY(100%)}}
+@keyframes sheetPop{from{transform:translateY(24px) scale(.97);opacity:0}}
+@media (prefers-reduced-motion:reduce){html.tr-on .sheet:not([hidden]) > .sheet-inner{animation:trFade .2s ease}}
+/* Steuerknöpfe in Übungen 44 px hoch (Fabian-Blick 2026-10-05) */
+.player-bar button,.player-status{min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding-top:0;padding-bottom:0;box-sizing:border-box}
+.choice{min-height:44px;box-sizing:border-box}
 
 /* Erinnerungen (2026-10-05): the privacy sheet can be opened from inside
    Grundeinstellungen, so it stacks above every other sheet. */
@@ -2249,3 +2279,39 @@ body.drag-busy{user-select:none;-webkit-user-select:none}
 .lp-pressing{transform:scale(.97)!important;transition:transform .35s ease!important}
 .tile-action-list{display:flex;flex-direction:column;gap:8px}
 .tile-action-list .text-link{min-height:44px;align-self:center;padding:6px 18px}
+/* Schritt-Nummern im Dunkelmodus lesbar (Fabian-Blick 2026-10-05: weiß auf
+   hellem Petrol nur 2,8 : 1) - dark digits on the dark-mode brand colour. */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .chapter-row .num,:root:not([data-theme="light"]) .free-item-num{color:#0f1a1e}
+}
+:root[data-theme="dark"] .chapter-row .num,:root[data-theme="dark"] .free-item-num{color:#0f1a1e}
+
+/* Zahnrad (Fabian 2026-10-05, Entwurf C): line icon in a light circle like
+   the ‹ button. --round-btn sets the VISIBLE circle of both round bar
+   buttons; the tap area always stays 44 px. */
+:root{--round-btn:38px}
+.brandbar .master-settings-btn,.app-bar-inner .master-settings-btn{display:inline-flex;align-items:center;justify-content:center;color:var(--ink);box-shadow:none;background:radial-gradient(circle closest-side,var(--surface-2) calc(var(--round-btn) / 2 - .5px),transparent calc(var(--round-btn) / 2))}
+.bar-back-btn,.brandbar .back-link.bar-back-btn{background:radial-gradient(circle closest-side,var(--surface-2) calc(var(--round-btn) / 2 - .5px),transparent calc(var(--round-btn) / 2))}
+.master-settings-btn .gear-icon{display:block;pointer-events:none}
+.master-settings-btn:hover{color:var(--brand)}
+/* Sichtbare Rückmeldung beim Antippen (Fabian-Blick 2026-10-05): like iOS,
+   a pressed control dims for the moment the finger is on it; hover effects
+   don't stick after a tap on touch screens. */
+button,[role="button"],a{-webkit-tap-highlight-color:transparent}
+button:not(:disabled),[role="button"]{transition:opacity .12s ease,transform .12s ease}
+button:not(:disabled):active,[role="button"]:active,a:active{opacity:.6;transition:none}
+.featured-card:active,.tile:active,.nat-tile:active,.hub-tile:active,.choice:active{transform:scale(.98)}
+@media (hover:none){
+  .text-link:hover{text-decoration:none}
+  .bar-back-btn:hover,.master-settings-btn:hover,.back-link:hover{color:var(--ink)}
+}
+/* Code-Feld im Dunkelmodus nicht grell weiß (Fabian-Blick 2026-10-05) */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .program-entry-row input{background:#0d2730;color:#f2f7f8;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+  :root:not([data-theme="light"]) .program-entry-row input::placeholder{color:rgba(242,247,248,.6)}
+}
+:root[data-theme="dark"] .program-entry-row input{background:#0d2730;color:#f2f7f8;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+:root[data-theme="dark"] .program-entry-row input::placeholder{color:rgba(242,247,248,.6)}
+/* Kleine Textknöpfe: 44 px Tippfläche bei gleicher Optik (Fabian-Blick
+   2026-10-05) - taller padding, the negative margin keeps the layout. */
+.text-link{padding-top:12px;padding-bottom:12px;margin-top:-6px;margin-bottom:-6px}

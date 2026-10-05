@@ -41,9 +41,12 @@ cat <<'EOF'
 <link rel="apple-touch-startup-image" media="screen and (device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./splash/apple-splash-1640-2360.png">
 <link rel="apple-touch-startup-image" media="screen and (device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./splash/apple-splash-1620-2160.png">
 <link rel="apple-touch-startup-image" media="screen and (device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./splash/apple-splash-1488-2266.png">
+<link rel="preload" href="./fonts/public-sans.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./fonts/magra-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+<script>try{var f=localStorage.getItem("fwmc-test-bottomnav");if(!navigator.webdriver||(f&&f!=="false"))document.body.classList.add("has-bottom-nav")}catch(e){}</script>
 EOF
 body
 cat <<'EOF'

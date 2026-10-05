@@ -8952,6 +8952,7 @@
     blitzState.phase = "flash";
     els.blitzHint.textContent = "Merken …";
     els.blitzLevelEl.textContent = `${blitzState.level} Felder`;
+    fitBlitzGrid();
     renderBlitzGrid();
     scheduleBlitzTimer(blitzCoverRound, blitzState.flashS * 1000);
   }
@@ -8959,7 +8960,23 @@
     if (!blitzState) return;
     blitzState.phase = "input";
     els.blitzHint.textContent = "Jetzt genau diese Felder antippen";
+    fitBlitzGrid();
     renderBlitzGrid();
+  }
+  // Keep the grid below the hint (Fabian-Blick 2026-10-05: on a small iPhone
+  // the hint sat on the top row): the stage reserves the hint's height at the
+  // top and the square grid shrinks to the height that is left.
+  function fitBlitzGrid() {
+    const stage = els.blitzStage, hint = els.blitzHint, grid = els.blitzGrid;
+    if (!stage || !hint || !grid || !stage.offsetParent) return;
+    placeHintBelowBar(hint, els.blitzPlayer.querySelector(".player-bar"));
+    stage.style.paddingTop = "";
+    grid.style.maxWidth = "";
+    const sr = stage.getBoundingClientRect(), hr = hint.getBoundingClientRect();
+    const top = Math.max(24, Math.ceil(hr.bottom - sr.top + 10));
+    stage.style.paddingTop = top + "px";
+    const room = Math.floor(sr.height - top - 24);
+    if (room > 0) grid.style.maxWidth = Math.min(460, room) + "px";
   }
   function blitzTapCell(key, el) {
     if (!blitzState || blitzState.phase !== "input" || blitzState.paused || blitzState.tapped.has(key)) return;
@@ -15768,6 +15785,42 @@
   let transitionsOn = false; // switched on after start-up (enablePageTransitions)
   let navBackPending = 0;    // timestamp of the last back tap / swipe
   let lastShown = null;      // id of the last visible screen, or "player"
+  // Snapshot of the page that was just left, for the iOS push/pop (styles:
+  // .tr-ghost). Visual only: no ids' behaviour matters for 0.35 s, it sits
+  // last in <body> (getElementById still finds the real elements first),
+  // radios lose their name (a cloned checked radio would uncheck the real
+  // group), media are dropped and the root loses .screen so no selector
+  // like ".screen:not([hidden])" ever finds it.
+  let lastShownEl = null, lastScrollY = 0, ghostSkipUntil = 0;
+  window.addEventListener("scroll", () => { lastScrollY = window.scrollY; }, { passive: true });
+  function makeGhost(old, kind) {
+    if (!old || Date.now() < ghostSkipUntil) return;
+    document.querySelectorAll(".tr-ghost").forEach((g) => g.remove());
+    const g = document.createElement("div");
+    g.className = "tr-ghost " + kind;
+    g.setAttribute("aria-hidden", "true");
+    const c = old.cloneNode(true);
+    const cs = getComputedStyle(old);
+    c.hidden = false;
+    c.removeAttribute("id");
+    c.classList.remove("screen", "tr-push", "tr-pop", "tr-fade");
+    c.style.cssText += `;display:flex;flex-direction:column;max-width:760px;margin:0 auto;padding:${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft};transform:translateY(${-lastScrollY}px)`;
+    c.querySelectorAll("video,audio,iframe,canvas").forEach((m) => m.remove());
+    c.querySelectorAll("input[name]").forEach((i) => i.removeAttribute("name"));
+    const bar = c.querySelector(":scope > .brandbar");
+    if (bar) {
+      const wrap = document.createElement("div");
+      wrap.className = "ghost-bar";
+      wrap.style.background = cs.backgroundColor === "rgba(0, 0, 0, 0)" ? "" : cs.backgroundColor;
+      wrap.appendChild(bar);
+      g.appendChild(wrap);
+    }
+    g.appendChild(c);
+    document.body.appendChild(g);
+    const rm = () => g.remove();
+    g.addEventListener("animationend", rm);
+    setTimeout(rm, 600);
+  }
   function playTransition(el, kind) {
     if (!transitionsOn) return;
     if (reduceMotion.matches && kind !== "fade") kind = "fade";
@@ -15795,10 +15848,14 @@
         else if (tops.has(id) && tops.has(lastShown)) kind = "fade";
         else if (back || tops.has(id)) kind = "pop";
         else kind = "push";
+        const prevEl = lastShownEl;
         lastShown = id;
+        lastShownEl = el;
+        if (transitionsOn && !reduceMotion.matches && (kind === "push" || kind === "pop") && prevEl && prevEl !== el && prevEl.hidden) makeGhost(prevEl, kind);
         playTransition(el, kind);
       } else if (el.classList.contains("player")) {
         lastShown = "player";
+        lastShownEl = null;
         playTransition(el, "fade");
       } else if (el.classList.contains("done-panel")) {
         playTransition(el, "rise");
@@ -15809,7 +15866,9 @@
   function enablePageTransitions() {
     const vis = document.querySelector(".screen:not([hidden])");
     lastShown = vis ? vis.id : null;
+    lastShownEl = vis || null;
     transitionsOn = !(navigator.webdriver && !readJSON("fwmc-test-transitions", false));
+    document.documentElement.classList.toggle("tr-on", transitionsOn);
   }
   // Swipe back from the left edge
   (function wireEdgeSwipeBack() {
@@ -15856,7 +15915,7 @@
       if (moved && (dx > Math.min(110, window.innerWidth * 0.3) || fast)) {
         const btn = target, pg = page;
         start = null; moved = false; target = null; page = null;
-        const go = () => { if (pg) { pg.style.transition = ""; pg.style.transform = ""; } navBackPending = Date.now(); btn.click(); };
+        const go = () => { if (pg) { pg.style.transition = ""; pg.style.transform = ""; } navBackPending = Date.now(); ghostSkipUntil = Date.now() + 400; btn.click(); };
         if (pg && !reduceMotion.matches) {
           pg.style.transition = "transform .18s ease-out";
           pg.style.transform = "translateX(100%)";
@@ -26776,6 +26835,9 @@
     }));
   }
   bottomNavOn = !(navigator.webdriver && !readJSON("fwmc-test-bottomnav", false));
+  // index.html already sets has-bottom-nav before the first paint (no jump
+  // of the Heute page when the old tab grid disappears); undo it if off.
+  if (!bottomNavOn) document.body.classList.remove("has-bottom-nav");
   if (bottomNavOn) {
     document.body.classList.add("has-bottom-nav");
     const nav = $("bottomNav");
