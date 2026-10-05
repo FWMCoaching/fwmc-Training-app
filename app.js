@@ -26854,7 +26854,7 @@
     if (readJSON(TEST_UNLOCK_KEY, false)) tiles.push({ key: "test", ...TEST_TILE });
     grid.innerHTML = tiles.map((a) => `<button type="button" class="area-tile" data-area="${a.key}">
       <span class="area-icon" style="background:${a.color}"><svg viewBox="0 0 24 24" aria-hidden="true">${a.icon}</svg></span>
-      <span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(a.key === "nat" ? "Neuroathletik: " + a.text : a.text)}</span></button>`).join("");
+      <span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(a.key === "nat" ? "Neuroathletik: " + a.text : a.text)}</span>${a.key === "test" ? '<span class="test-unlock-badge">Mit Code freigeschaltet</span>' : ""}</button>`).join("");
     grid.querySelectorAll(".area-tile").forEach((b) => b.addEventListener("click", () => {
       if (b.dataset.area === "test") { activateSectionTab("test"); showScreen("testHome"); } else goArea(b.dataset.area);
     }));
