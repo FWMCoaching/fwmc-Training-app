@@ -1161,6 +1161,7 @@
     if (block.domain === "flash") return `Flash-Speicher-Test · ${flashModeTitle(block.mode)}`;
     if (block.domain === "mot") return `Objektverfolgung (MOT) · ${motModeTitle(block.mode)}`;
     if (block.domain === "cardio") return `Cardio · ${countLabel(block.items.length, "Aktivität", "Aktivitäten")}`;
+    if (block.domain === "free") return block.free.title;
     return block.domain;
   }
   function comboBlockMeta(block) {
@@ -1174,6 +1175,7 @@
     if (block.domain === "flash") return fmtMinutes((block.duration ?? 60));
     if (block.domain === "mot") return fmtMinutes((block.duration ?? 60));
     if (block.domain === "cardio") return fmtMinutes(cardioItemsSeconds(block.items));
+    if (block.domain === "free") return freeBlockMeta(block.free);
     return "";
   }
   function comboBlockSeconds(block) {
@@ -1187,6 +1189,7 @@
     if (block.domain === "flash") return block.duration ?? 60;
     if (block.domain === "mot") return block.duration ?? 60;
     if (block.domain === "cardio") return cardioItemsSeconds(block.items);
+    if (block.domain === "free") return freeBlockSeconds(block.free);
     return 0;
   }
   // Curated quick-add presets the combo builder offers per section - not the
@@ -1197,9 +1200,9 @@
   // place (rather than removing the mechanism) in case a future domain
   // ever wants a plain one-click preset again.
   const COMBO_PRESETS = {};
-  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Movement", visual: "Visual Training", workout: "Workout", cardio: "Cardio", nat: "NAT" };
+  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Movement", visual: "Visual Training", workout: "Workout", cardio: "Cardio", nat: "NAT", free: "Freier Baustein" };
   const PERIPH_ICON_HTML = '<div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg></div>';
-  const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat"];
+  const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat", "free"];
   // Blitz-Raster/Flash-Speicher-Test/Objektverfolgung (MOT) render inside the same
   // "NAT" group as Remember (all 4 are NAT sub-exercises) but need their
   // own domain KEY for the block dispatch, since "nat" is Remember's alone
@@ -1261,6 +1264,9 @@
     // this map may be a function like this one; renderComboAddGrid() calls
     // it to get the current list.
     visual: () => comboVisualCaptureEntries(),
+    // Freie Bausteine: the client's own saved ones + the templates, each
+    // opening the editor in capture mode (the block keeps its own copy).
+    free: () => comboFreeCaptureEntries(),
   };
   const COMBO_EDIT_OPENERS = {
     cardio: (block, i) => openCardioComboCapture(block, i),
@@ -1273,6 +1279,7 @@
     blitz: (block, i) => openBlitzComboCapture(block, i),
     flash: (block, i) => openFlashComboCapture(block.mode, block, i),
     mot: (block, i) => openMotComboCapture(block.mode, block, i),
+    free: (block, i) => openFreeComboCapture(block.free, i),
   };
 
   // ---- Elements ----
@@ -2107,12 +2114,15 @@
   };
 
   els.trainingHub = $("trainingHub"); els.moreScreen = $("moreScreen");
-  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
+  els.freeHome = $("freeHome"); els.freeReady = $("freeReady"); els.freeEdit = $("freeEdit"); els.freePlayer = $("freePlayer");
+  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
     if (name === "todayHome") renderToday();
     if (name === "progressScreen") renderProgressScreen();
+    if (name === "freeHome") renderFreeHome();
+    if (name !== "freeHome") $("freeProgramError").hidden = true;
     if (name !== "todayHome" && els.todayCodeError) els.todayCodeError.hidden = true;
     if (name !== "home") els.programError.hidden = true;
     if (name !== "breathHome") els.breathProgramError.hidden = true;
@@ -2126,7 +2136,9 @@
   }
 
   // ---- Section switcher (Visual Training / Atemtraining) ----
+  let freeAreaActive = false; // "Freie Bausteine" has no tab of its own (reached via Training / Heute)
   function activateSectionTab(sec) {
+    freeAreaActive = sec === "free";
     document.querySelectorAll(".section-tab").forEach((b) => {
       const on = b.dataset.section === sec;
       b.classList.toggle("active", on);
@@ -2511,7 +2523,7 @@
   // One "Gesamter Trainingsverlauf" section per area home (Fabian, 2026-10-04:
   // it was missing in Cardio, NAT and Test). A new area adds its prefix here
   // and the same markup block (ids <prefix>HistorySection/Stats/List/MoreBtn/ClearBtn).
-  const HISTORY_PREFIXES = ["", "breath", "movement", "workout", "cardio", "nat", "test"];
+  const HISTORY_PREFIXES = ["", "breath", "movement", "workout", "cardio", "nat", "test", "free"];
   const historyEl = (prefix, part) => document.getElementById(prefix ? prefix + "History" + part : "history" + part);
   function renderHistory() {
     const list = loadHistory();
@@ -5100,6 +5112,7 @@
     els.kippbildPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.cardioPlayer.hidden = true;
+    els.freePlayer.hidden = true;
     els.programVideoPlayer.hidden = true;
     els.programVideoEl.pause();
     els.breathTransition.hidden = true;
@@ -14944,6 +14957,7 @@
   let lastComboProgram = null;
 
   function currentHomeScreen() {
+    if (freeAreaActive) return "freeHome";
     const active = document.querySelector(".section-tab.active");
     const sec = active ? active.dataset.section : "visual";
     return sec === "today" ? "todayHome" : sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "cardio" ? "cardioHome" : sec === "nat" ? "natHome" : sec === "test" ? "testHome" : "home";
@@ -15037,6 +15051,8 @@
     } else if (block.domain === "cardio") {
       cardioProgram = null;
       startStandaloneCardio(block.items.map(copyCardioItem));
+    } else if (block.domain === "free" && block.free) {
+      startFreeRun(block.free);
     } else {
       startComboBlock(idx + 1); // unknown domain - skip rather than get stuck
     }
@@ -15569,7 +15585,7 @@
   // Grundeinstellungen "Countdown 3-2-1 vor dem Start" switches it off.
   const LEADIN_START_IDS = ["movementStartBtn", "movementProgramStartBtn", "breathStartBtn", "breathProgramStartBtn",
     "rememberReadyStartBtn", "rememberTrainingStartBtn", "blitzReadyStartBtn", "flashReadyStartBtn", "flashTrainingStartBtn",
-    "motReadyStartBtn", "motTrainingStartBtn", "cardioStartBtn", "cardioProgramStartBtn"];
+    "motReadyStartBtn", "motTrainingStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn"];
   let leadInBypass = false, leadInTimer = null;
   function stopLeadIn() { clearTimeout(leadInTimer); leadInTimer = null; $("leadIn").hidden = true; }
   document.addEventListener("click", (e) => {
@@ -15733,7 +15749,7 @@
   // after a click) unless fwmc-test-transitions is set.
   // Swipe from the left edge (first 28 px) to the right = the visible
   // ‹ button: the page follows the finger and slides out.
-  const HOME_SCREENS = new Set(["todayHome", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "progressScreen"]);
+  const HOME_SCREENS = new Set(["todayHome", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "progressScreen"]);
   // With the bottom bar the four tabs are the top level; the area homes sit
   // one level deeper, under "Training".
   const NAV_TOP_SCREENS = new Set(["todayHome", "trainingHub", "progressScreen", "moreScreen"]);
@@ -15963,6 +15979,7 @@
       if (program && !id("liveNav").hidden) return { host: player, prev: id("livePrevBtn"), restart: id("liveRestartBtn"), extra: id("liveEndBtn"), next: id("liveNextBtn") };
     }
     if (player.id === "cardioPlayer") return { host: player, prev: id("cardioPrevBtn"), restart: id("cardioRestartBtn"), next: id("cardioSkipBtn") };
+    if (player.id === "freePlayer") return { host: player, prev: id("freePrevBtn"), restart: id("freeRestartBtn"), next: id("freeSkipBtn") };
     if (player.id === "workoutPlayer") {
       if (stepVis(id("workoutTabataView"))) return { host: player, prev: id("tabataPrevBtn"), restart: id("tabataRestartBtn"), next: id("tabataSkipBtn") };
       if (stepVis(id("workoutRepsView")) && workoutState && workoutState.kind === "reps") return { host: player, ...stepRepsCtx() };
@@ -26098,9 +26115,11 @@
       icon: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' },
     { key: "nat", label: "NAT – Neuroathletik", short: "NAT", color: "#3a7d2c", screen: "natHome", text: "Wahrnehmung, Gedächtnis und Reaktion.",
       icon: '<circle cx="12" cy="12" r="8" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="2.5" fill="#fff"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
+    { key: "free", label: "Freie Bausteine", short: "Freie Bausteine", color: "#a0527a", screen: "freeHome", text: "Eigenes wie Dehnen, Eisbad oder Journal.",
+      icon: '<rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M8 12.5l2.8 2.8L16.5 9" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
   ];
   const AREA_BY_KEY = Object.fromEntries(PLAN_AREAS.map((a) => [a.key, a]));
-  const AREA_TO_SECTION = { visual: "visual", breath: "breath", movement: "movement", workout: "workout", cardio: "cardio", nat: "nat", test: "test" };
+  const AREA_TO_SECTION = { visual: "visual", breath: "breath", movement: "movement", workout: "workout", cardio: "cardio", nat: "nat", test: "test", free: "free" };
   const NAT_SUBS = [["peripher", "Periphere Wahrnehmung"], ["remember", "Positionen merken"], ["blitz", "Blitz-Raster"], ["flash", "Flash-Speicher-Test"], ["mot", "Objektverfolgung (MOT)"]];
   const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
   const WD_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
@@ -26174,6 +26193,7 @@
     if (k === "exercise") return e.exId === "periph-flash" ? "nat" : "visual";
     if (k === "program") return "visual";
     if (k === "combo") return "combo";
+    if (k === "free") return "free";
     return "test";
   }
   // Planned + extra entries of a date, sorted, with done state.
@@ -26211,11 +26231,13 @@
     const opts = [{ v: "", t: area === "visual" ? "Freie Wahl im Bereich" : "Freie Wahl im Bereich" }];
     if (area === "visual") visualExercises().forEach((x) => opts.push({ v: "ex:" + x.id, t: x.title }));
     if (area === "nat") NAT_SUBS.forEach(([k, t]) => opts.push({ v: "nat:" + k, t }));
+    if (area === "free") freeAllBlocks().forEach((b) => opts.push({ v: "free:" + b.id, t: b.title }));
     return opts;
   }
   function entryTitle(e) {
     if (e.what && e.what.startsWith("ex:")) { const x = visualExercises().find((v) => v.id === e.what.slice(3)); if (x) return x.title; }
     if (e.what && e.what.startsWith("nat:")) { const n = NAT_SUBS.find(([k]) => k === e.what.slice(4)); if (n) return n[1]; }
+    if (e.what && e.what.startsWith("free:")) { const b = freeFind(e.what.slice(5)); if (b) return b.title; }
     if (e.code) return `${AREA_BY_KEY[e.area].short} · Code ${e.code}`;
     return AREA_BY_KEY[e.area].label;
   }
@@ -26233,7 +26255,9 @@
       return;
     }
     goArea(e.area);
-    if (e.what && e.what.startsWith("ex:")) {
+    if (e.what && e.what.startsWith("free:")) {
+      if (freeFind(e.what.slice(5))) openFreeReady(e.what.slice(5));
+    } else if (e.what && e.what.startsWith("ex:")) {
       const card = document.querySelector(`#home .excard[data-exercise="${CSS.escape(e.what.slice(3))}"]`);
       if (card) card.click();
     } else if (e.what && e.what.startsWith("nat:") && natModesOn) {
@@ -26248,6 +26272,7 @@
     if (h.kind === "exercise" && h.exId) { startEntry({ area: area === "nat" ? "nat" : "visual", what: area === "nat" ? "nat:peripher" : "ex:" + h.exId }); return; }
     const natSub = { remember: "remember", blitz: "blitz", flash: "flash", mot: "mot" }[h.kind];
     if (natSub) { startEntry({ area: "nat", what: "nat:" + natSub }); return; }
+    if (h.kind === "free" && h.freeId && freeFind(h.freeId)) { startEntry({ area: "free", what: "free:" + h.freeId }); return; }
     if (area === "combo") { activateSectionTab("visual"); showScreen("home"); openComboScreen(); return; }
     goArea(area);
   }
@@ -26628,7 +26653,7 @@
   $("moreSettingsBtn").addEventListener("click", openMasterSettings);
   $("moreTipsBtn").addEventListener("click", () => els.tipsBtn.click());
   const NAV_TAB_OF = { todayHome: "today", planScreen: "today", trainingHub: "training", progressScreen: "progress", moreScreen: "more" };
-  const AREA_HOME_IDS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome"];
+  const AREA_HOME_IDS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome"];
   const TEST_TILE = { color: "#5c6b73", label: "Test", text: "Neue Übungen zum Ausprobieren.",
     icon: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' };
   function renderHubAreaGrid() {
@@ -26684,6 +26709,408 @@
     document.querySelectorAll(".screen").forEach((el) => navObserver.observe(el, { attributes: true, attributeFilter: ["hidden"] }));
     syncBottomNav();
   }
+
+  // ==== Freie Bausteine (2026-10-05) ====
+  // The client's own activities outside the app (Dehnen, Eisbad,
+  // Mobilisation, Journal ...): three kinds - "check" (just tick it off),
+  // "timer" (a countdown of 1-60 min) and "list" (a checklist, each point
+  // with optional seconds; 0 = tick it yourself). Saved in FREE_KEY, plus
+  // ready-made templates (FREE_TEMPLATES, read-only: "Kopieren und
+  // anpassen"). A Kombi block stores its own copy ({domain:"free", free}),
+  // so editing the saved Baustein later never changes a captured Kombi.
+  // Plan entries can name one Baustein ("free:<id>"); auto-tick works per
+  // area like every other area (historyAreaOf: kind "free").
+  // Docs: docs/notes/25-freier-baustein.md, test: tests/free_block_1005_test.py.
+  const FREE_KEY = "fwmc-free-blocks-v1";
+  const FREE_KINDS = { check: "Abhaken", timer: "Mit Zeit", list: "Checkliste" };
+  const FREE_ITEM_MAX_S = 600;
+  const FREE_TEMPLATES = [{
+    id: "tpl-dehnen", template: true, kind: "list", title: "Dehnen",
+    note: "Nur bis zu einem angenehmen Ziehen und ruhig weiteratmen. Bei Dehnungen für eine Seite nach der Hälfte die Seite wechseln.",
+    minutes: 5,
+    items: ["Waden", "Oberschenkel vorne", "Oberschenkel hinten", "Hüftbeuger", "Gesäß", "Brust", "Schultern", "Nacken"].map((text) => ({ text, s: 30 })),
+  }];
+  function freeClean(b) {
+    if (!b || typeof b !== "object") return null;
+    const kind = FREE_KINDS[b.kind] ? b.kind : "check";
+    const items = (Array.isArray(b.items) ? b.items : []).map((it) => ({
+      text: String((it && it.text) || "").slice(0, 60),
+      s: Math.max(0, Math.min(FREE_ITEM_MAX_S, Math.round(Number(it && it.s) || 0))),
+    }));
+    return {
+      id: String(b.id || newId()), kind,
+      title: String(b.title || "").trim().slice(0, 40) || "Eigener Baustein",
+      note: String(b.note || "").trim().slice(0, 160),
+      minutes: Math.max(1, Math.min(60, Math.round(Number(b.minutes) || 5))),
+      items,
+    };
+  }
+  function freeCopy(b) { return JSON.parse(JSON.stringify(b)); }
+  function loadFreeBlocks() {
+    const raw = readJSON(FREE_KEY, []);
+    return (Array.isArray(raw) ? raw : []).map(freeClean).filter(Boolean);
+  }
+  function saveFreeBlocks(list) { writeJSON(FREE_KEY, list); }
+  function freeAllBlocks() { return loadFreeBlocks().concat(FREE_TEMPLATES); }
+  function freeFind(id) { return freeAllBlocks().find((b) => b.id === id) || null; }
+  // Points that actually run (a checklist point without text is skipped).
+  function freeSteps(b) {
+    if (b.kind === "timer") return [{ text: b.title, s: b.minutes * 60 }];
+    if (b.kind === "list") {
+      const it = b.items.filter((x) => x.text.trim());
+      return it.length ? it.map((x) => ({ text: x.text.trim(), s: x.s })) : [{ text: b.title, s: 0 }];
+    }
+    return [{ text: b.title, s: 0 }];
+  }
+  function freeBlockSeconds(b) {
+    if (b.kind === "timer") return b.minutes * 60;
+    if (b.kind === "list") return freeSteps(b).reduce((s, x) => s + (x.s || 20), 0);
+    return 60;
+  }
+  function freeBlockMeta(b) {
+    if (b.kind === "timer") return `${FREE_KINDS.timer} · ${fmtMinutes(b.minutes * 60)}`;
+    if (b.kind === "list") {
+      const n = freeSteps(b).length;
+      const timed = freeSteps(b).some((x) => x.s > 0);
+      return `${FREE_KINDS.list} · ${countLabel(n, "Punkt", "Punkte")}${timed ? ` · ca. ${fmtMinutes(freeBlockSeconds(b))}` : ""}`;
+    }
+    return FREE_KINDS.check;
+  }
+  function freeItemTimeLabel(s) { return s > 0 ? (s >= 60 ? fmtClock(s) + " Min." : `${s} s`) : "ohne Zeit"; }
+
+  els.freeOwnGrid = $("freeOwnGrid"); els.freeTplGrid = $("freeTplGrid"); els.freeOwnEmpty = $("freeOwnEmpty");
+  els.freeReadyTitle = $("freeReadyTitle"); els.freeReadyMeta = $("freeReadyMeta"); els.freeReadyNote = $("freeReadyNote");
+  els.freeReadyItems = $("freeReadyItems"); els.freeStartBtn = $("freeStartBtn"); els.freeEditBtn = $("freeEditBtn"); els.freeCopyBtn = $("freeCopyBtn");
+  els.freeEditTitle = $("freeEditTitle"); els.freeEditHint = $("freeEditHint"); els.freeKindRow = $("freeKindRow");
+  els.freeTitleInput = $("freeTitleInput"); els.freeNoteInput = $("freeNoteInput");
+  els.freeMinutesGroup = $("freeMinutesGroup"); els.freeMinutesSlider = $("freeMinutesSlider"); els.freeMinutesValue = $("freeMinutesValue");
+  els.freeItemsGroup = $("freeItemsGroup"); els.freeItemList = $("freeItemList"); els.freeItemCount = $("freeItemCount"); els.freeItemAddBtn = $("freeItemAddBtn");
+  els.freeSaveBtn = $("freeSaveBtn"); els.freeDeleteBtn = $("freeDeleteBtn");
+  els.freeRunProgress = $("freeRunProgress"); els.freeRunTitle = $("freeRunTitle"); els.freeRunItem = $("freeRunItem");
+  els.freeRunCountdown = $("freeRunCountdown"); els.freeRunNote = $("freeRunNote"); els.freeTickBtn = $("freeTickBtn"); els.freeRunNext = $("freeRunNext");
+  els.freeDoneSummary = $("freeDoneSummary"); els.freeRating = $("freeRating");
+
+  // ---- area home ----
+  function freeCardHtml(b) {
+    return `<button type="button" class="featured-card" data-free-id="${esc(b.id)}"><span class="fc-title">${esc(b.title)}</span>` +
+      (b.note ? `<span class="fc-desc">${esc(b.note)}</span>` : "") + `<span class="fc-meta">${esc(freeBlockMeta(b))}</span></button>`;
+  }
+  function renderFreeHome() {
+    const own = loadFreeBlocks();
+    els.freeOwnGrid.innerHTML = own.map(freeCardHtml).join("");
+    els.freeOwnEmpty.hidden = own.length > 0;
+    els.freeTplGrid.innerHTML = FREE_TEMPLATES.map(freeCardHtml).join("");
+    renderHistory();
+  }
+  [els.freeOwnGrid, els.freeTplGrid].forEach((g) => g.addEventListener("click", (e) => {
+    const c = e.target.closest("[data-free-id]");
+    if (c) openFreeReady(c.dataset.freeId);
+  }));
+  $("freeNewBtn").addEventListener("click", () => openFreeEditor(null, "new"));
+  const FREE_CODE_CTX = { goBtn: $("freeProgramGoBtn"), errorEl: $("freeProgramError"), homeScreen: "freeHome" };
+  function goFreeCode() { const code = $("freeProgramCodeInput").value.trim(); if (code) openProgramIntro(code, FREE_CODE_CTX); }
+  $("freeProgramGoBtn").addEventListener("click", goFreeCode);
+  $("freeProgramCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") goFreeCode(); });
+
+  // ---- ready screen (Einzeln) ----
+  let freeReadyId = null;
+  function openFreeReady(id) {
+    const b = freeFind(id);
+    if (!b) { showScreen("freeHome"); return; }
+    freeReadyId = b.id;
+    els.freeReadyTitle.textContent = b.title;
+    els.freeReadyMeta.textContent = freeBlockMeta(b) + (b.template ? " · Vorlage" : "");
+    els.freeReadyNote.textContent = b.note;
+    els.freeReadyNote.hidden = !b.note;
+    const steps = b.kind === "list" ? freeSteps(b) : [];
+    els.freeReadyItems.innerHTML = steps.map((x, i) => `<div class="chapter-row"><span class="chapter-main" style="cursor:default"><span class="num">${i + 1}</span>` +
+      `<span class="info"><strong>${esc(x.text)}</strong><span>${esc(freeItemTimeLabel(x.s))}</span></span></span></div>`).join("");
+    els.freeEditBtn.hidden = !!b.template;
+    els.freeCopyBtn.hidden = !b.template;
+    showScreen("freeReady");
+  }
+  $("freeBackToHome").addEventListener("click", () => showScreen("freeHome"));
+  els.freeStartBtn.addEventListener("click", () => {
+    const b = freeFind(freeReadyId);
+    if (b) startFreeRun(b);
+  });
+  els.freeEditBtn.addEventListener("click", () => { const b = freeFind(freeReadyId); if (b) openFreeEditor(b, "edit"); });
+  els.freeCopyBtn.addEventListener("click", () => { const b = freeFind(freeReadyId); if (b) openFreeEditor(b, "copy"); });
+
+  // ---- editor (also the Kombi capture screen) ----
+  // freeEditMode: "new" | "edit" | "copy" | "capture"
+  let freeDraft = null, freeEditMode = "new", freeEditId = null, freeCaptureIndex = null;
+  function openFreeEditor(src, mode, captureIndex) {
+    freeEditMode = mode;
+    freeEditId = mode === "edit" && src ? src.id : null;
+    freeCaptureIndex = mode === "capture" ? (captureIndex ?? null) : null;
+    freeDraft = src ? freeCopy(freeClean(src)) : { kind: "check", title: "", note: "", minutes: 5, items: [] };
+    if (!src) freeDraft.title = "";
+    if (mode === "copy") freeDraft.title = freeDraft.title.slice(0, 40);
+    els.freeEditTitle.textContent = mode === "capture" ? "Baustein: Freier Baustein" : mode === "edit" ? "Baustein bearbeiten" : "Neuer Baustein";
+    els.freeEditHint.textContent = mode === "capture"
+      ? "Änderungen gelten nur für diesen Baustein im Kombi-Programm."
+      : mode === "copy" ? "Deine Kopie der Vorlage – passe sie an und speichere sie." : "Lege fest, was du machst und wie es in der App ablaufen soll.";
+    els.freeTitleInput.value = freeDraft.title;
+    els.freeNoteInput.value = freeDraft.note;
+    els.freeDeleteBtn.hidden = mode !== "edit";
+    syncFreeEditor();
+    showScreen("freeEdit");
+  }
+  function syncFreeEditor() {
+    const d = freeDraft;
+    els.freeKindRow.querySelectorAll("[data-free-kind]").forEach((b) => setActive(b, b.dataset.freeKind === d.kind));
+    els.freeMinutesGroup.hidden = d.kind !== "timer";
+    els.freeItemsGroup.hidden = d.kind !== "list";
+    els.freeMinutesSlider.value = String(d.minutes);
+    els.freeMinutesValue.textContent = `${d.minutes} Min.`;
+    renderFreeItemList();
+    syncFreeSaveBtn();
+  }
+  function syncFreeSaveBtn() {
+    const needItems = freeDraft.kind === "list" && !freeDraft.items.some((x) => x.text.trim());
+    els.freeSaveBtn.disabled = needItems;
+    els.freeSaveBtn.textContent = freeEditMode === "capture" ? "Baustein übernehmen" : "Speichern";
+    const hint = $("freeSaveHint");
+    if (hint) hint.hidden = !needItems;
+  }
+  function renderFreeItemList() {
+    const items = freeDraft.items;
+    els.freeItemCount.textContent = items.length ? countLabel(items.length, "Punkt", "Punkte") : "";
+    els.freeItemList.innerHTML = items.map((it, i) => `<div class="circuit-item-row free-item-row">
+      <div class="circuit-item-main"><span class="free-item-num">${i + 1}</span>
+        <input type="text" class="free-input free-item-text" data-i="${i}" maxlength="60" value="${esc(it.text)}" placeholder="z.&nbsp;B. Waden" aria-label="Punkt ${i + 1}"></div>
+      <div class="free-item-tools">
+        <div class="circuit-duration"><button type="button" class="free-item-btn" data-step="-1" data-i="${i}" aria-label="Punkt ${i + 1} kürzer">&minus;</button>
+          <span class="circuit-duration-value free-item-time">${esc(freeItemTimeLabel(it.s))}</span>
+          <button type="button" class="free-item-btn" data-step="1" data-i="${i}" aria-label="Punkt ${i + 1} länger">+</button></div>
+        <span class="free-item-moves">${i > 0 ? `<button type="button" class="free-item-btn" data-move="-1" data-i="${i}" aria-label="Nach oben" title="Nach oben">&uarr;</button>` : ""}` +
+        `${i < items.length - 1 ? `<button type="button" class="free-item-btn" data-move="1" data-i="${i}" aria-label="Nach unten" title="Nach unten">&darr;</button>` : ""}` +
+        `${items.length > 1 ? `<button type="button" class="free-item-btn" data-remove="${i}" aria-label="Punkt ${i + 1} entfernen" title="Entfernen">&#10005;</button>` : ""}</span>
+      </div></div>`).join("");
+  }
+  els.freeItemList.addEventListener("input", (e) => {
+    const inp = e.target.closest(".free-item-text");
+    if (!inp) return;
+    freeDraft.items[Number(inp.dataset.i)].text = inp.value;
+    syncFreeSaveBtn();
+  });
+  els.freeItemList.addEventListener("click", (e) => {
+    const b = e.target.closest(".free-item-btn");
+    if (!b) return;
+    const i = Number(b.dataset.i), items = freeDraft.items;
+    if (b.dataset.step) {
+      // 0 -> 10 s, then 5 s steps up to 1 min, then 15 s steps
+      const cur = items[i].s, up = Number(b.dataset.step) > 0;
+      const step = (up ? cur >= 60 : cur > 60) ? 15 : 5;
+      let v = up ? (cur === 0 ? 10 : cur + step) : (cur <= 10 ? 0 : cur - step);
+      items[i].s = Math.max(0, Math.min(FREE_ITEM_MAX_S, v));
+    } else if (b.dataset.move) {
+      const j = i + Number(b.dataset.move);
+      if (j >= 0 && j < items.length) [items[i], items[j]] = [items[j], items[i]];
+    } else if (b.dataset.remove != null) {
+      items.splice(Number(b.dataset.remove), 1);
+    }
+    renderFreeItemList();
+    syncFreeSaveBtn();
+  });
+  els.freeItemAddBtn.addEventListener("click", () => {
+    const last = freeDraft.items[freeDraft.items.length - 1];
+    freeDraft.items.push({ text: "", s: last ? last.s : 30 });
+    renderFreeItemList();
+    syncFreeSaveBtn();
+    const inputs = els.freeItemList.querySelectorAll(".free-item-text");
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  });
+  els.freeKindRow.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-free-kind]");
+    if (!b) return;
+    freeDraft.kind = b.dataset.freeKind;
+    if (freeDraft.kind === "list" && !freeDraft.items.length) freeDraft.items.push({ text: "", s: 30 });
+    syncFreeEditor();
+  });
+  els.freeMinutesSlider.addEventListener("input", () => {
+    freeDraft.minutes = Number(els.freeMinutesSlider.value);
+    els.freeMinutesValue.textContent = `${freeDraft.minutes} Min.`;
+  });
+  els.freeTitleInput.addEventListener("input", () => { freeDraft.title = els.freeTitleInput.value; });
+  els.freeNoteInput.addEventListener("input", () => { freeDraft.note = els.freeNoteInput.value; });
+  function freeDraftClean() {
+    const d = { ...freeDraft, items: freeDraft.items.filter((x) => x.text.trim()) };
+    return freeClean(d);
+  }
+  els.freeSaveBtn.addEventListener("click", () => {
+    if (els.freeSaveBtn.disabled) return;
+    const b = freeDraftClean();
+    if (freeEditMode === "capture") {
+      delete b.id;
+      const block = { domain: "free", free: b };
+      if (freeCaptureIndex != null && comboDraftBlocks[freeCaptureIndex]) {
+        block.pauseAfterS = comboDraftBlocks[freeCaptureIndex].pauseAfterS;
+        comboDraftBlocks[freeCaptureIndex] = block;
+      } else comboDraftBlocks.push(block);
+      freeEditMode = "new";
+      renderComboBlockList();
+      showScreen("comboScreen");
+      return;
+    }
+    const list = loadFreeBlocks();
+    if (freeEditMode === "edit" && freeEditId) {
+      b.id = freeEditId;
+      const i = list.findIndex((x) => x.id === freeEditId);
+      if (i >= 0) list[i] = b; else list.push(b);
+    } else {
+      b.id = "fb-" + newId();
+      list.push(b);
+    }
+    saveFreeBlocks(list);
+    renderFreeHome();
+    openFreeReady(b.id);
+  });
+  els.freeDeleteBtn.addEventListener("click", () => {
+    const id = freeEditId;
+    const b = freeFind(id);
+    if (!b) return;
+    confirmDialog(`Den Baustein „${b.title}“ löschen?`, () => {
+      saveFreeBlocks(loadFreeBlocks().filter((x) => x.id !== id));
+      renderFreeHome();
+      showScreen("freeHome");
+    });
+  });
+  $("freeEditBack").addEventListener("click", () => {
+    if (freeEditMode === "capture") { freeEditMode = "new"; showScreen("comboScreen"); return; }
+    if (freeEditMode === "edit" && freeFind(freeEditId)) { openFreeReady(freeEditId); return; }
+    if (freeEditMode === "copy" && freeReadyId) { openFreeReady(freeReadyId); return; }
+    showScreen("freeHome");
+  });
+  function openFreeComboCapture(src, editIndex) { openFreeEditor(src, "capture", editIndex); }
+  function comboFreeCaptureEntries() {
+    return freeAllBlocks().map((b) => ({ label: b.title, meta: freeBlockMeta(b), open: () => openFreeComboCapture(b, null) }))
+      .concat([{ label: "Neuer freier Baustein", meta: "abhaken, mit Zeit oder als Checkliste", open: () => openFreeComboCapture(null, null) }]);
+  }
+
+  // ---- the run ----
+  let freeRun = null; // { block, steps, index, startT, stepT, pausedAt, timer, beeped, skippedEnd }
+  let lastFreeBlock = null;
+  function startFreeRun(block) {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    $("freeDonePanel").hidden = true;
+    const b = freeCopy(block);
+    lastFreeBlock = b;
+    const now = performance.now();
+    freeRun = { block: b, steps: freeSteps(b), index: 0, startT: now, stepT: now, pausedAt: null, pausedMs: 0, timer: null, beeped: new Set() };
+    els.freeRunTitle.textContent = b.title;
+    els.freeRunNote.textContent = b.note;
+    els.freeRunNote.hidden = !b.note;
+    $("freePlayer").hidden = false;
+    requestWakeLock();
+    freeShowStep();
+    freeRun.timer = setInterval(freeTick, 200);
+  }
+  function freeShowStep() {
+    const r = freeRun;
+    if (!r) return;
+    const st = r.steps[r.index];
+    const n = r.steps.length;
+    r.beeped = new Set();
+    els.freeRunProgress.textContent = r.block.kind === "list" ? `Punkt ${r.index + 1} von ${n}` : FREE_KINDS[r.block.kind];
+    els.freeRunItem.hidden = r.block.kind !== "list";
+    els.freeRunItem.textContent = st.text;
+    els.freeRunCountdown.hidden = !(st.s > 0);
+    els.freeTickBtn.hidden = st.s > 0;
+    const next = r.steps[r.index + 1];
+    els.freeRunNext.textContent = next ? `Als Nächstes: ${next.text}` : "";
+    els.freeRunNext.hidden = !next;
+    $("freeSkipBtn").setAttribute("aria-label", r.index < n - 1 ? "Weiter zum nächsten Punkt" : "Beenden");
+    freeTick();
+  }
+  function freeTick() {
+    const r = freeRun;
+    if (!r || r.pausedAt != null) return;
+    const st = r.steps[r.index];
+    if (!(st.s > 0)) return;
+    const left = st.s - (performance.now() - r.stepT) / 1000;
+    els.freeRunCountdown.textContent = fmtClock(left);
+    const sec = Math.ceil(left);
+    if (sec >= 1 && sec <= 3 && !r.beeped.has(sec)) { r.beeped.add(sec); playWorkoutBeep(false); }
+    if (left <= 0) { playWorkoutBeep(true); freeAdvance(false); }
+  }
+  function freeAdvance(skipped) {
+    const r = freeRun;
+    if (!r) return;
+    if (r.index >= r.steps.length - 1) { finishFreeRun(skipped); return; }
+    r.index++;
+    r.stepT = performance.now();
+    freeShowStep();
+  }
+  els.freeTickBtn.addEventListener("click", () => freeAdvance(false));
+  $("freePrevBtn").addEventListener("click", () => {
+    const r = freeRun;
+    if (!r) return;
+    r.index = Math.max(0, r.index - 1);
+    r.stepT = performance.now();
+    freeShowStep();
+  });
+  $("freeRestartBtn").addEventListener("click", () => { if (freeRun) { freeRun.stepT = performance.now(); freeShowStep(); } });
+  $("freeSkipBtn").addEventListener("click", () => freeAdvance(true));
+  wireSwipeNav($("freePlayer"), { onLeft: () => $("freeSkipBtn").click(), onRight: () => $("freePrevBtn").click() });
+  function freeStopRun() {
+    const r = freeRun;
+    if (r && r.timer) clearInterval(r.timer);
+    freeRun = null;
+    releaseWakeLock();
+    return r;
+  }
+  function freeElapsedS(r) {
+    const end = r.pausedAt != null ? r.pausedAt : performance.now();
+    return Math.max(0, (end - r.startT - r.pausedMs) / 1000);
+  }
+  function finishFreeRun(aborted) {
+    const r = freeStopRun();
+    if (!r) return;
+    const secs = Math.round(freeElapsedS(r));
+    if (comboProgram) { advanceComboProgram(secs); return; }
+    $("freePlayer").hidden = true;
+    const b = r.block;
+    const id = addHistory({ kind: "free", title: b.title, freeId: b.id, seconds: secs,
+      note: aborted ? "abgebrochen" : FREE_KINDS[b.kind], aborted: !!aborted });
+    renderRating(els.freeRating, id, "Wie fühlst du dich jetzt?");
+    setDonePanelAborted($("freeDonePanel"), aborted, "Training beendet");
+    els.freeDoneSummary.textContent = aborted
+      ? `Abgebrochen · ${fmtMinutes(secs)} Training`
+      : b.kind === "list" ? `${countLabel(r.steps.length, "Punkt", "Punkte")} erledigt · ${fmtMinutes(secs)} Training`
+      : b.kind === "timer" ? `${b.title} · ${fmtMinutes(secs)} Training` : `${b.title} erledigt`;
+    $("freeDonePanel").hidden = false;
+  }
+  function abortFreeRun() {
+    freeStopRun();
+    hideAllPlayers();
+    if (comboProgram) { abortComboProgram(); return; }
+    if (freeFind(freeReadyId)) openFreeReady(freeReadyId); else showScreen("freeHome");
+  }
+  $("freeBackBtn").addEventListener("click", abortFreeRun);
+  $("freePauseBtn").addEventListener("click", () => {
+    const r = freeRun;
+    if (!r || trainPauseAdapter) return;
+    openTrainPause({
+      host: $("freePlayer"),
+      pause() { if (r.pausedAt == null) r.pausedAt = performance.now(); },
+      resume() {
+        if (freeRun !== r || r.pausedAt == null) return;
+        const d = performance.now() - r.pausedAt;
+        r.stepT += d; r.pausedMs += d; r.pausedAt = null;
+        freeTick();
+      },
+      current() { return null; },
+      list() { return []; },
+    });
+  });
+  $("freeAgainBtn").addEventListener("click", () => { if (lastFreeBlock) startFreeRun(lastFreeBlock); });
+  $("freeDoneBackBtn").addEventListener("click", () => {
+    $("freeDonePanel").hidden = true;
+    if (freeFind(freeReadyId)) openFreeReady(freeReadyId); else showScreen("freeHome");
+  });
 
   // ---- plan editor ----
   function openPlanScreen() {
@@ -26805,7 +27232,8 @@
     let sec = "today";
     try { sec = new URLSearchParams(location.search).get("bereich") || "today"; } catch (e) {}
     if (sec === "test" && !readJSON(TEST_UNLOCK_KEY, false)) sec = "visual";
-    const screens = { today: "todayHome", heute: "todayHome", visual: "home", breath: "breathHome", movement: "movementHome", workout: "workoutHome", cardio: "cardioHome", nat: "natHome", test: "testHome" };
+    const screens = { today: "todayHome", heute: "todayHome", visual: "home", breath: "breathHome", movement: "movementHome", workout: "workoutHome", cardio: "cardioHome", nat: "natHome", test: "testHome", free: "freeHome", frei: "freeHome" };
+    if (sec === "frei") sec = "free";
     if (!screens[sec]) sec = "today";
     if (sec === "heute") sec = "today";
     activateSectionTab(sec);

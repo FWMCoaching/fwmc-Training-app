@@ -44,7 +44,7 @@ async def main():
         check("date shown", len((await pg.locator("#todayDate").inner_text()).strip()) > 5)
         main_txt = await pg.locator("#todayMain").inner_text()
         check("Weitermachen card with hint", "Trainer" in main_txt)
-        check("6 area tiles", await pg.locator("#todayAreaGrid .area-tile").count() == 6)
+        check("7 area tiles (incl. Freie Bausteine)", await pg.locator("#todayAreaGrid .area-tile").count() == 7)
         check("7 days in strip", await pg.locator("#todayWeekStrip .week-day").count() == 7)
         check("no plan yet: empty day text", "Noch kein Plan" in await pg.locator("#dayPanelBody").inner_text())
 
