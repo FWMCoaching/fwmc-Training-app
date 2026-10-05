@@ -30,3 +30,12 @@ change's description suggests. When adding a feature, add a script here
 covering: the happy path, zero/boundary-selection states, persistence
 across `page.reload()`, and any interaction with other exercises' state
 (e.g. a setting that must NOT leak into an unrelated exercise).
+
+## Fabian-Blick (whole-app walk)
+
+`python3 fabian_blick_test.py` (about 10 min; `--quick` = one view) clicks
+through every reachable screen, sheet and exercise start and checks the
+error kinds Fabian kept finding by eye. Output: `screenshots/fabian_blick/report.md`.
+Known finds are in `fabian_blick_baseline.json`; after fixing some, run
+`--update-baseline` so the list shrinks (never to hide a new find).
+`python3 ios_gefuehl_test.py` measures transitions/gestures against iOS.
