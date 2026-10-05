@@ -82,6 +82,7 @@ body{
   font-size:15px;
   line-height:1.45;
   overscroll-behavior:none;
+  word-spacing:.06em; /* Public Sans has a very narrow space: "Zeichen – wird" read as "Zeichen –wird" (review 2026-10-05) */
   -webkit-font-smoothing:antialiased;
 }
 h1,h2,h3{font-family:"Magra",system-ui,sans-serif;font-weight:700}
@@ -129,12 +130,12 @@ body:has(.player:not([hidden]) .pause-overlay:not([hidden]),.player:not([hidden]
   margin-left:auto;width:38px;height:38px;border-radius:50%;border:none;
   background:var(--surface-2);color:var(--ink-soft);font-size:17px;cursor:pointer;line-height:1;
 }
-.master-settings-btn:hover{color:var(--brand)}
+@media (hover:hover){.master-settings-btn:hover{color:var(--brand)}}
 .sound-toggle-btn{
   margin-left:auto;width:38px;height:38px;border-radius:50%;border:none;
   background:var(--surface-2);color:var(--ink-soft);font-size:17px;cursor:pointer;line-height:1;
 }
-.sound-toggle-btn:hover{color:var(--brand)}
+@media (hover:hover){.sound-toggle-btn:hover{color:var(--brand)}}
 .sound-toggle-btn.is-off{opacity:.5}
 .tabata-sound-toggle{margin:10px auto 0;display:block}
 @media (prefers-color-scheme:dark){
@@ -238,10 +239,10 @@ body.nav-test-unlocked .section-switch{max-width:780px}
   border:none;background:none;padding:6px 0;cursor:pointer;
   color:var(--brand);font-weight:700;font-size:14.5px;
 }
-.text-link:hover{text-decoration:underline}
+@media (hover:hover){.text-link:hover{text-decoration:underline}}
 .text-link.small{font-size:13px;font-weight:600}
 .text-link:disabled{opacity:.45;cursor:not-allowed}
-.text-link:disabled:hover{text-decoration:none}
+@media (hover:hover){.text-link:disabled:hover{text-decoration:none}}
 
 /* ---- Section headings ---- */
 section{margin-bottom:26px}
@@ -306,7 +307,7 @@ section{margin-bottom:26px}
   border-left:4px solid var(--brand);
   transition:transform .12s ease, border-color .12s ease;
 }
-.featured-card:hover{transform:translateY(-1px)}
+@media (hover:hover){.featured-card:hover{transform:translateY(-1px)}}
 .featured-card.hidden-extra{display:none}
 .fc-title{font-family:"Magra",sans-serif;font-weight:700;font-size:16.5px;color:var(--ink)}
 .fc-desc{font-size:13.5px;color:var(--ink-soft)}
@@ -342,7 +343,7 @@ section{margin-bottom:26px}
   box-shadow:var(--shadow);
   transition:transform .12s ease, border-color .12s ease;
 }
-.excard:hover,.nat-tile:hover{border-color:var(--brand-light);transform:translateY(-1px)}
+@media (hover:hover){.excard:hover,.nat-tile:hover{border-color:var(--brand-light);transform:translateY(-1px)}}
 .excard:active,.nat-tile:active{transform:translateY(0)}
 /* Master-Einstellungen ("Gehörlos" etc.) can make an exercise unusable
    rather than merely adjustable (unlike Farbsehen/Go-No-Go, which adapts
@@ -350,7 +351,7 @@ section{margin-bottom:26px}
    not just filtered away, so the exercise still visibly exists and the
    client understands why it's blocked. */
 .excard.incompatible{opacity:.5;cursor:pointer}
-.excard.incompatible:hover{transform:none}
+@media (hover:hover){.excard.incompatible:hover{transform:none}}
 /* Same treatment for the Kombi-Baukasten's own Visual add-grid, which
    mirrors this exercise-level check rather than filtering blocked
    exercises away silently. */
@@ -387,12 +388,12 @@ section{margin-bottom:26px}
 .site-footer p{margin:0 0 8px}
 .site-footer nav{display:flex;flex-wrap:wrap;gap:6px 18px}
 .site-footer a{color:var(--ink-soft);font-weight:600;text-decoration:none}
-.site-footer a:hover{color:var(--brand);text-decoration:underline}
+@media (hover:hover){.site-footer a:hover{color:var(--brand);text-decoration:underline}}
 .site-footer .faq-open-btn,.site-footer .privacy-open-btn{
   color:var(--ink-soft);font-weight:600;font-size:13px;background:none;border:none;padding:0;
   font-family:inherit;cursor:pointer;
 }
-.site-footer .faq-open-btn:hover,.site-footer .privacy-open-btn:hover{color:var(--brand);text-decoration:underline}
+@media (hover:hover){.site-footer .faq-open-btn:hover,.site-footer .privacy-open-btn:hover{color:var(--brand);text-decoration:underline}}
 
 /* ---- Sub-screens ---- */
 .readyhead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
@@ -400,7 +401,7 @@ section{margin-bottom:26px}
   border:none;background:none;color:var(--ink-soft);font-size:14px;font-weight:600;
   cursor:pointer;padding:6px 0;display:flex;align-items:center;gap:5px;
 }
-.back-link:hover{color:var(--brand)}
+@media (hover:hover){.back-link:hover{color:var(--brand)}}
 h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;text-wrap:balance}
 .page-sub{color:var(--ink-soft);font-size:15px;margin:0 0 18px;max-width:56ch}
 
@@ -414,7 +415,7 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
   padding:14px 16px;box-shadow:var(--shadow);
   transition:transform .12s ease, border-color .12s ease;
 }
-.bundle-item:hover{border-color:var(--brand-light);transform:translateY(-1px)}
+@media (hover:hover){.bundle-item:hover{border-color:var(--brand-light);transform:translateY(-1px)}}
 .bundle-item-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .bundle-item strong{font-family:"Magra",sans-serif;font-size:17px;color:var(--ink)}
 .bundle-date{flex:none;font-size:12.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
@@ -512,7 +513,10 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .tempo-custom{font-size:12.5px;color:var(--ink-soft)}
 
 /* ---- Breathing phase sliders + preview chips ---- */
-.phase-sliders{display:flex;flex-direction:column;gap:10px}
+.phase-sliders{display:grid;grid-template-columns:auto minmax(0,1fr) auto;column-gap:10px;row-gap:10px;align-items:center}
+.phase-sliders .slider-line{display:contents}
+.phase-sliders input[type="range"]{width:100%;min-width:0;accent-color:var(--brand);height:28px}
+.phase-sliders .slider-value{align-self:center}
 .pattern-breakdown{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 4px}
 .phase-chip{
   display:inline-block;background:var(--brand-pale);color:var(--brand-deep);
@@ -1187,7 +1191,7 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .faq-body{padding:0 16px 16px;color:var(--ink-soft);font-size:14px;line-height:1.55}
 .faq-body a,#privacySheet .group-help a{color:var(--brand)}
 /* A link-styled button inside running text (opens another sheet). */
-.inline-link{border:none;background:none;padding:0;font:inherit;color:var(--brand);text-decoration:underline;cursor:pointer}
+.inline-link{border:none;background:none;padding:13px 0;margin:-13px 0;font:inherit;color:var(--brand);text-decoration:underline;cursor:pointer}
 
 .slider-row{display:flex;align-items:center;gap:10px;min-width:0}
 .slider-row input[type="range"]{flex:1;min-width:0;accent-color:var(--brand);height:28px}
@@ -1204,12 +1208,12 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
   font-family:"Magra",sans-serif;font-weight:700;font-size:19px;letter-spacing:.02em;
   padding:18px;cursor:pointer;box-shadow:var(--shadow);
 }
-.start-btn:hover{background:var(--brand-deep)}
+@media (hover:hover){.start-btn:hover{background:var(--brand-deep)}}
 .start-btn:active{opacity:.9}
 
 /* ---- Player (always light: stimuli are designed on white) ---- */
 .player{position:fixed;inset:0;background:#ffffff;display:flex;flex-direction:column;z-index:20;color:#16232a}
-.player.calm{background:var(--brand-pale)}
+.player.calm{background:#e5f1f4}
 .stage-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
 #stage{width:100%;height:100%;display:block}
 
@@ -1413,7 +1417,7 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
    still visibly smaller than the "Jetzt starten" .start-btn above it. */
 #cardioAddonPickerCancelBtn{margin-top:4px;border-radius:14px;font-family:"Magra",sans-serif;font-weight:700;font-size:16px;padding:13px}
 .pause-toggle{border:1.5px solid #dde6e8;background:#fff;color:#16232a}
-.breath-pause-btn{border-radius:14px;font-weight:700;font-size:14px;padding:11px 26px;cursor:pointer}
+.breath-pause-btn{border-radius:14px;font-weight:700;font-size:14px;padding:11px 26px;cursor:pointer;min-height:44px}
 .chapter-nav{display:flex;align-items:center;justify-content:center;gap:8px}
 .chapter-nav button{
   border:none;background:rgba(22,35,42,.07);color:#16232a;width:42px;height:42px;
@@ -1451,7 +1455,11 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .sheet{overscroll-behavior:contain}
 .sheet-inner{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;max-height:90dvh}
 @supports not (height:1dvh){.sheet-inner{max-height:90vh}}
-html:has(.sheet:not([hidden])),body:has(.sheet:not([hidden])){overflow:hidden}
+/* Scroll lock while a sheet is open (JS adds .sheet-lock): body is pinned at
+   its scroll offset so the page neither scrolls behind the sheet nor jumps
+   to the top (overflow:hidden alone dropped the position, html/body are 100%). */
+html.sheet-lock{overflow:hidden}
+body.sheet-lock{position:fixed;left:0;right:0;width:100%;height:auto;overflow:visible}
 .sheet-inner h2{margin:0 0 12px;font-size:23px}
 .tips{margin:0 0 20px;padding:0;list-style:none;counter-reset:tip;display:flex;flex-direction:column;gap:12px}
 .tips li{counter-increment:tip;position:relative;padding-left:40px;font-size:14.5px;color:var(--ink-soft)}
@@ -1468,7 +1476,7 @@ html:has(.sheet:not([hidden])),body:has(.sheet:not([hidden])){overflow:hidden}
   color:var(--brand-deep);font-size:13.5px;font-weight:700;border-radius:12px;padding:11px 14px;
   cursor:pointer;margin-bottom:18px;
 }
-.combo-entry-link:hover{border-color:var(--brand-light)}
+@media (hover:hover){.combo-entry-link:hover{border-color:var(--brand-light)}}
 
 .start-btn.secondary{
   background:var(--surface);color:var(--brand-deep);border:1.5px solid var(--brand);box-shadow:none;
@@ -1484,7 +1492,7 @@ html:has(.sheet:not([hidden])),body:has(.sheet:not([hidden])){overflow:hidden}
   border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 14px;
   cursor:pointer;box-shadow:var(--shadow);
 }
-.combo-add-btn:hover{border-color:var(--brand-light)}
+@media (hover:hover){.combo-add-btn:hover{border-color:var(--brand-light)}}
 /* Single-select use (Kraft-/Wiederholungstraining's exercise picker) -
    every other use of this class is an "add to list" trigger with no
    selected state of its own, so this only ever applies where a picker
@@ -1532,7 +1540,7 @@ html:has(.sheet:not([hidden])),body:has(.sheet:not([hidden])){overflow:hidden}
   background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;
   box-shadow:var(--shadow);
 }
-.ca-plus-btn:hover{border-color:var(--brand-light)}
+@media (hover:hover){.ca-plus-btn:hover{border-color:var(--brand-light)}}
 .ca-plus-btn .ca-plus{font-size:20px;font-weight:700;color:var(--brand);line-height:1}
 .workout-info-icon{
   width:56px;height:56px;border-radius:50%;background:var(--brand);
@@ -1738,7 +1746,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 
 /* "Alle entfernen" next to a built list's title (2026-10-02) */
 .list-clear-btn{float:right;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);font:inherit;font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;border-radius:999px;padding:3px 10px;cursor:pointer}
-.list-clear-btn:hover{color:#c62828;border-color:#c62828}
+@media (hover:hover){.list-clear-btn:hover{color:#c62828;border-color:#c62828}}
 /* Töne & Ansagen controls (Master + each area's Feineinstellungen) */
 .cue-domain .checkbox-row,.cue-master .checkbox-row{margin-top:8px;font-weight:500}
 .cue-sub-label{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin:12px 0 6px}
@@ -1991,7 +1999,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 }
 .bar-back-btn::before{content:"\2039";font-size:38px;font-weight:700;line-height:1;margin-top:-5px}
 .bar-back-btn[hidden]{display:none}
-.bar-back-btn:hover{color:var(--brand)}
+@media (hover:hover){.bar-back-btn:hover{color:var(--brand)}}
 .step-nav #stepSoundBtn{margin-left:0;display:inline-flex;align-items:center;justify-content:center;background:rgba(22,35,42,.07);color:#16232a}
 .step-nav #stepSoundBtn.is-off{opacity:1;color:#4f6168}
 .tabata-sound-toggle{display:none}
@@ -2053,8 +2061,8 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .brandbar,.app-bar-inner{
   display:flex;align-items:center;column-gap:8px;flex-wrap:nowrap;min-height:44px;
 }
-.screen>.brandbar{padding:calc(10px + env(safe-area-inset-top,0px)) 20px 10px;border-bottom:1px solid var(--line);margin-bottom:18px}
-.app-bar-inner{padding:calc(10px + env(safe-area-inset-top,0px)) 20px 10px}
+.screen>.brandbar{padding:calc(4px + env(safe-area-inset-top,0px)) 20px 4px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.app-bar-inner{padding:calc(4px + env(safe-area-inset-top,0px)) 20px 4px}
 .app-bar{border-bottom:1px solid var(--line)}
 .brandbar .brand-logo,.app-bar-inner .brand-logo{height:25px;flex:0 0 auto}
 .brandbar .brand-sub .nowrap,.app-bar-inner .brand-sub .nowrap{display:block}
@@ -2064,7 +2072,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .brandbar .master-settings-btn,.app-bar-inner .master-settings-btn{flex:0 0 44px;margin:0;width:44px;height:44px;font-size:20px;background:var(--surface-2);box-shadow:inset 0 0 0 1.5px var(--line)}
 .brandbar .bar-back-btn,.app-bar-inner .bar-back-btn,.brandbar .back-link.bar-back-btn{margin:0}
 .brandbar .bar-back-btn[hidden],.app-bar-inner .bar-back-btn[hidden]{display:none}
-:root{--appbar-h:calc(65px + env(safe-area-inset-top,0px))}
+:root{--appbar-h:calc(53px + env(safe-area-inset-top,0px))}
 /* Small phones (up to 379 px, iPhone mini/SE): a little smaller so "Online-Training" still
    fits between logo and gear on sub pages (‹ takes room there). */
 @media (max-width:379px){
@@ -2102,20 +2110,35 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 /* Seitenübergänge (2026-10-05, enablePageTransitions in app.js) */
 /* On a page only the content moves; the logo bar stays put (same place
    on every page). Players and result panels animate as a whole. */
-.screen.tr-push > :not(.brandbar){animation:trPush .26s cubic-bezier(.2,.8,.2,1)}
-.screen.tr-pop > :not(.brandbar){animation:trPop .26s cubic-bezier(.2,.8,.2,1)}
-.screen.tr-fade > :not(.brandbar),.tr-fade:not(.screen){animation:trFade .2s ease}
-.tr-rise{animation:trRise .26s cubic-bezier(.2,.8,.2,1)}
-@keyframes trPush{from{transform:translateX(28%);opacity:0}to{transform:none;opacity:1}}
-@keyframes trPop{from{transform:translateX(-22%);opacity:0}to{transform:none;opacity:1}}
+/* iOS push (Fabian-Blick 2026-10-05: "iOS: 0,35 s, ganz von rechts, ohne
+   Einblenden"): the new page slides in fully from the right on an opaque
+   layer (::before) over a snapshot of the old page (.tr-ghost, built in
+   app.js), which drifts 30 % to the left. Back = the mirror image: the old
+   page slides out to the right over the new one. The logo bar stays put. */
+.screen.tr-push,.screen.tr-pop{position:relative}
+.screen.tr-push{z-index:1}
+.screen.tr-push::before{content:"";position:fixed;inset:0;background:var(--bg);box-shadow:-8px 0 24px rgba(0,0,0,.12);animation:trPush .35s cubic-bezier(.32,.72,0,1) both;pointer-events:none}
+.screen.tr-push > :not(.brandbar){animation:trPush .35s cubic-bezier(.32,.72,0,1)}
+.screen.tr-pop > :not(.brandbar){animation:trPop .35s cubic-bezier(.32,.72,0,1)}
+.screen.tr-fade > :not(.brandbar),.tr-fade:not(.screen){animation:trFade .24s ease}
+.tr-rise{animation:trRise .34s cubic-bezier(.32,.72,0,1)}
+.tr-ghost{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:var(--bg)}
+.tr-ghost.pop{z-index:2;box-shadow:-8px 0 24px rgba(0,0,0,.12);animation:trGhostOut .35s cubic-bezier(.32,.72,0,1) both}
+.tr-ghost.push{animation:trGhostBack .35s cubic-bezier(.32,.72,0,1) both}
+.tr-ghost > .ghost-bar{position:absolute;top:0;left:0;right:0;z-index:3}
+.tr-ghost > .ghost-bar > .brandbar{margin:0 auto!important;max-width:760px;position:relative!important}
+@keyframes trPush{from{transform:translateX(100%)}to{transform:none}}
+@keyframes trPop{from{transform:translateX(-30%)}to{transform:none}}
+@keyframes trGhostBack{from{transform:none}to{transform:translateX(-30%)}}
+@keyframes trGhostOut{from{transform:none}to{transform:translateX(100%)}}
 @keyframes trFade{from{opacity:0}to{opacity:1}}
-@keyframes trRise{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
-@media (prefers-reduced-motion:reduce){.screen.tr-push > :not(.brandbar),.screen.tr-pop > :not(.brandbar),.tr-rise{animation:trFade .2s ease}}
+@keyframes trRise{from{transform:translateY(48px);opacity:0}40%{opacity:1}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.screen.tr-push > :not(.brandbar),.screen.tr-pop > :not(.brandbar),.tr-rise{animation:trFade .2s ease}.screen.tr-push::before{display:none}}
 body{overflow-x:clip}
 
 /* Untere Navigationsleiste (2026-10-05, bottomNavOn in app.js). Below the
    sheets (z-index 60), hidden while an exercise runs. */
-.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(4,minmax(0,150px));justify-content:center;background:var(--surface);border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));box-shadow:0 -2px 12px rgba(0,0,0,.06)}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(4,minmax(0,150px));justify-content:center;background:var(--surface);border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-right)) max(6px,calc(env(safe-area-inset-bottom) - 3px)) max(8px,env(safe-area-inset-left));box-shadow:0 -2px 12px rgba(0,0,0,.06)}
 .bottom-nav[hidden]{display:none}
 .bottom-nav-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;border:none;background:none;color:var(--ink-soft);font-family:"Public Sans",sans-serif;font-weight:600;font-size:11.5px;line-height:1.1;cursor:pointer;border-radius:12px;white-space:nowrap;-webkit-tap-highlight-color:transparent}
 .bottom-nav-btn svg{width:26px;height:26px}
@@ -2207,3 +2230,229 @@ a.featured-card{text-decoration:none;color:inherit}
 }
 .free-tick-btn:active{background:#00536e}
 #freeNoteInput{resize:vertical;line-height:1.4}
+.history-list .history-empty{display:block;padding:12px 14px;color:var(--ink-soft);font-size:14px;border:none;background:none}
+.done-summary{text-wrap:balance}
+.free-run-icon{width:84px;height:84px;margin:4px auto 0}
+.free-run-icon svg{width:52px;height:52px}
+.free-run-icon[hidden]{display:none}
+.chapter-row .free-ready-icon{width:30px;height:30px;border-radius:50%;background:var(--brand);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.chapter-row .free-ready-icon svg{width:20px;height:20px}
+/* Griff-Strich: shows a bottom sheet can be pulled down to close (phones only) */
+.sheet-grab{flex:none;width:40px;height:5px;border-radius:3px;background:var(--line);margin:-12px auto 12px}
+@media (min-width:600px){.sheet-grab{display:none}}
+/* Fenster fahren von unten herein (Fabian-Blick 2026-10-05, iOS sheet):
+   backdrop fades, the panel slides up; centred dialogs on wide screens
+   rise a little and fade. Only with page transitions on (html.tr-on). */
+html.tr-on .sheet:not([hidden]){animation:sheetFade .28s ease}
+html.tr-on .sheet:not([hidden]) > .sheet-inner{animation:sheetUp .38s cubic-bezier(.32,.72,0,1)}
+@media (min-width:600px){html.tr-on .sheet:not([hidden]) > .sheet-inner{animation:sheetPop .26s cubic-bezier(.32,.72,0,1)}}
+@keyframes sheetFade{from{background-color:rgba(10,16,19,0)}}
+@keyframes sheetUp{from{transform:translateY(100%)}}
+@keyframes sheetPop{from{transform:translateY(24px) scale(.97);opacity:0}}
+@media (prefers-reduced-motion:reduce){html.tr-on .sheet:not([hidden]) > .sheet-inner{animation:trFade .2s ease}}
+/* Steuerknöpfe in Übungen 44 px hoch (Fabian-Blick 2026-10-05) */
+.player-bar button,.player-status{min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding-top:0;padding-bottom:0;box-sizing:border-box}
+.choice{min-height:44px;box-sizing:border-box}
+
+/* Erinnerungen (2026-10-05): the privacy sheet can be opened from inside
+   Grundeinstellungen, so it stacks above every other sheet. */
+#privacySheet{z-index:61}
+.reminder-status{font-weight:600}
+.reminder-status.ok{color:var(--brand-deep)}
+.reminder-time{max-width:160px}
+#reminderGroup.unavailable .choice-row,#reminderGroup.unavailable .reminder-time{opacity:.55}
+/* ---- Gesten (2026-10-05): drag handle, lifted row, calendar slide, long-press sheet ---- */
+.drag-handle{flex:none;width:44px;height:44px;margin:-7px -6px -7px -10px;display:flex;align-items:center;justify-content:center;font-size:24px;line-height:1;color:var(--ink-soft);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.free-item-row .drag-handle{margin:0 -4px 0 -10px}
+.drag-placeholder{border:2px dashed var(--brand-light);border-radius:var(--radius);background:var(--brand-pale);box-sizing:border-box}
+.drag-lifted{position:fixed;z-index:70;margin:0;box-shadow:0 12px 30px rgba(0,0,0,.25);transform:scale(1.02);cursor:grabbing}
+.drag-lifted .drag-handle{cursor:grabbing}
+.drag-active .combo-pause-row{display:none}
+body.drag-busy{user-select:none;-webkit-user-select:none}
+.week-strip,.cal-expand>.cal-month,.cal-expand>.cal-year{touch-action:pan-y}
+@keyframes calSlideNext{from{transform:translateX(42%);opacity:0}to{transform:none;opacity:1}}
+@keyframes calSlidePrev{from{transform:translateX(-42%);opacity:0}to{transform:none;opacity:1}}
+.cal-slide-next{animation:calSlideNext .32s cubic-bezier(.2,.8,.2,1)}
+.cal-slide-prev{animation:calSlidePrev .32s cubic-bezier(.2,.8,.2,1)}
+.today-week .week-nav{overflow:hidden;padding:3px;margin:-3px}
+#hubAreaGrid .area-tile,#todayAreaGrid .area-tile,#home .excard,#natExercises .nat-tile,#freeOwnGrid .featured-card,#freeTplGrid .featured-card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.lp-pressing{transform:scale(.97)!important;transition:transform .35s ease!important}
+.tile-action-list{display:flex;flex-direction:column;gap:8px}
+.tile-action-list .text-link{min-height:44px;align-self:center;padding:6px 18px}
+/* Schritt-Nummern im Dunkelmodus lesbar (Fabian-Blick 2026-10-05: weiß auf
+   hellem Petrol nur 2,8 : 1) - dark digits on the dark-mode brand colour. */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .chapter-row .num,:root:not([data-theme="light"]) .free-item-num{color:#0f1a1e}
+}
+:root[data-theme="dark"] .chapter-row .num,:root[data-theme="dark"] .free-item-num{color:#0f1a1e}
+
+/* Zahnrad (Fabian 2026-10-05, Entwurf C): line icon in a light circle like
+   the ‹ button. --round-btn sets the VISIBLE circle of both round bar
+   buttons; the tap area always stays 44 px. */
+:root{--round-btn:38px}
+.brandbar .master-settings-btn,.app-bar-inner .master-settings-btn{display:inline-flex;align-items:center;justify-content:center;color:var(--ink);box-shadow:none;background:radial-gradient(circle closest-side,var(--surface-2) calc(var(--round-btn) / 2 - .5px),transparent calc(var(--round-btn) / 2))}
+.bar-back-btn,.brandbar .back-link.bar-back-btn{background:radial-gradient(circle closest-side,var(--surface-2) calc(var(--round-btn) / 2 - .5px),transparent calc(var(--round-btn) / 2))}
+.master-settings-btn .gear-icon{display:block;pointer-events:none}
+@media (hover:hover){.master-settings-btn:hover{color:var(--brand)}}
+/* Sichtbare Rückmeldung beim Antippen (Fabian-Blick 2026-10-05): like iOS,
+   a pressed control dims for the moment the finger is on it; hover effects
+   don't stick after a tap on touch screens. */
+button,[role="button"],a{-webkit-tap-highlight-color:transparent}
+button:not(:disabled),[role="button"]{transition:opacity .12s ease,transform .12s ease}
+button:not(:disabled):active,[role="button"]:active,a:active{opacity:.6;transition:none}
+.featured-card:active,.tile:active,.nat-tile:active,.hub-tile:active,.choice:active{transform:scale(.98)}
+@media (hover:none){
+  .text-link:hover{text-decoration:none}
+  .bar-back-btn:hover,.master-settings-btn:hover,.back-link:hover{color:var(--ink)}
+}
+/* Code-Feld im Dunkelmodus nicht grell weiß (Fabian-Blick 2026-10-05) */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .program-entry-row input{background:var(--bg);color:var(--ink);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+  :root:not([data-theme="light"]) .program-entry-row input::placeholder{color:rgba(242,247,248,.6)}
+}
+:root[data-theme="dark"] .program-entry-row input{background:var(--bg);color:var(--ink);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+:root[data-theme="dark"] .program-entry-row input::placeholder{color:rgba(242,247,248,.6)}
+/* Kleine Textknöpfe: 44 px Tippfläche bei gleicher Optik (Fabian-Blick
+   2026-10-05) - taller padding, the negative margin keeps the layout. */
+.text-link{min-height:44px;padding-top:10px;padding-bottom:10px}
+/* Glocke: Training mit Erinnerung (2026-10-05) */
+.rem-bell{display:inline-flex;vertical-align:-2px;margin-left:6px;color:var(--brand)}
+
+/* ==== Erfolge spürbar machen (2026-10-05, Fabian: "Haken ja, kein Ton.
+   Konfetti nein. Hochzählen und pulsieren bei neuer Bestleistung ja") ====
+   initDoneEffects in app.js: the check mark of every done panel draws
+   itself; a new personal best counts up and pulses 3 times (~2 s). */
+.done-check{animation:none}
+.done-check svg{width:44px;height:44px;display:block}
+.done-check path{stroke-dasharray:36;stroke-dashoffset:0}
+.done-check.is-drawing{animation:pop .4s ease-out}
+.done-check.is-drawing path{animation:doneCheckDraw .5s cubic-bezier(.65,0,.35,1) .15s both}
+@keyframes doneCheckDraw{from{stroke-dashoffset:36}to{stroke-dashoffset:0}}
+.best-num{display:inline-block;position:relative;font-size:1.3em;font-weight:800;color:var(--brand);font-variant-numeric:tabular-nums;line-height:1;vertical-align:-.04em}
+.best-num.counting{color:transparent}
+.best-num.counting::after{content:attr(data-count);position:absolute;inset:0;text-align:center;color:var(--brand)}
+.best-num.best-pulse{animation:bestPulse .42s ease-in-out 3}
+.best-tag{display:block;width:max-content;margin:6px auto 0;color:var(--brand);font-weight:800;white-space:nowrap}
+.best-sep{display:none}
+.best-tag.best-pulse{animation:bestPulse .42s ease-in-out 3}
+.best-tag.best-tag-in{animation:bestTagIn .3s ease-out both}
+@keyframes bestPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+@keyframes bestTagIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.done-panel.standalone .best-num,.done-panel.standalone .best-num.counting::after,.done-panel.standalone .best-tag{color:var(--brand)}
+.done-panel.standalone .best-num.counting{color:transparent}
+@media (prefers-reduced-motion:reduce){
+  .done-check,.done-check.is-drawing,.done-check.is-drawing path,.best-num.best-pulse,.best-tag.best-pulse,.best-tag.best-tag-in{animation:none}
+}
+
+/* ==== Erster Start (2026-10-05): three slides above everything but the
+   Startbild (#appSplash z 10000), below nothing else (sheets are 60). ==== */
+html.onb-open,html.onb-open body{overflow:hidden}
+.onb{position:fixed;inset:0;z-index:70;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+  transition:opacity .3s ease}
+.onb[hidden]{display:none}
+.onb:focus{outline:none}
+.onb.is-leaving{opacity:0;pointer-events:none}
+.onb-top{display:flex;justify-content:flex-end;padding:8px 12px 0;flex:none}
+.onb-skip{min-height:44px;min-width:44px;padding:0 12px;border:none;background:none;color:var(--brand);font:600 15px/1 "Public Sans",sans-serif;cursor:pointer;border-radius:12px;-webkit-tap-highlight-color:transparent}
+.onb-viewport{flex:1;min-height:0;overflow:hidden;touch-action:pan-y}
+.onb-track{display:flex;height:100%;transition:transform .36s cubic-bezier(.32,.72,0,1);will-change:transform}
+.onb-slide{flex:0 0 100%;min-width:0;height:100%;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12px 24px 8px}
+.onb-slide > *{max-width:460px;width:100%}
+.onb-slide h2{font-size:27px;line-height:1.2;margin:28px 0 12px;color:var(--ink);text-wrap:balance}
+.onb-slide p{font-size:16px;line-height:1.55;margin:0;color:var(--ink-soft);text-wrap:pretty}
+.onb-slide p strong{color:var(--ink)}
+.onb-art{display:flex;align-items:center;justify-content:center}
+.onb-art-logo{background:#007094;border-radius:24px;padding:30px 28px;max-width:320px;box-shadow:var(--shadow)}
+.onb-art-logo img{width:100%;height:auto;display:block}
+.onb-art-bar{gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:8px;max-width:340px;box-shadow:var(--shadow)}
+.onb-tab{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px;border-radius:14px;color:var(--ink-soft);opacity:.55;font:600 11.5px/1.1 "Public Sans",sans-serif;white-space:nowrap}
+.onb-tab svg{width:26px;height:26px}
+.onb-tab.on{opacity:1;color:var(--brand);background:var(--brand-pale);font-weight:700}
+.onb-art-phone{max-width:none}
+.onb-phone{width:124px;height:200px;border:3px solid var(--ink-soft);border-radius:24px;padding:26px 14px;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:min-content;gap:10px;justify-items:center;background:var(--surface)}
+.onb-phone i{width:26px;height:26px;border-radius:7px;background:var(--surface-2);border:1px solid var(--line)}
+.onb-phone img{width:30px;height:30px;border-radius:8px;box-shadow:0 0 0 3px var(--brand-pale),0 0 0 5px var(--brand)}
+.onb-foot{flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;padding:4px 24px 20px}
+.onb-dots{display:flex;gap:2px}
+.onb-dot{width:44px;height:44px;border:none;background:none;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+.onb-dot::before{content:"";width:8px;height:8px;border-radius:4px;background:var(--ink-soft);opacity:.4;transition:width .25s ease,background .25s ease}
+.onb-dot[aria-current="true"]::before{width:22px;background:var(--brand);opacity:1}
+.onb-next{margin-top:0;width:100%;max-width:400px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .onb-next{color:#0f1a1e}}
+:root[data-theme="dark"] .onb-next{color:#0f1a1e}
+@media (max-height:640px){.onb-slide h2{font-size:23px;margin-top:18px}.onb-art-logo{padding:22px}.onb-phone{transform:scale(.8)}}
+@media (min-width:700px){.onb-slide h2{font-size:32px}.onb-slide p{font-size:17.5px}.onb-slide > *{max-width:520px}.onb-art-logo{max-width:380px}.onb-foot{padding-bottom:36px}}
+@media (prefers-reduced-motion:reduce){.onb-track,.onb,.onb-dot::before{transition:none}}
+
+/* Hinweis nach dem ersten Schließen der Tipps: ring on the "Mehr" tab and a
+   short toast pointing at it (showTipsWhereHint). */
+.bottom-nav-btn.nav-hint,.text-link.nav-hint{color:var(--brand);animation:navHintRing 1s ease-out 2}
+@keyframes navHintRing{0%{box-shadow:0 0 0 0 rgba(0,112,148,.45)}70%{box-shadow:0 0 0 12px rgba(0,112,148,0)}100%{box-shadow:0 0 0 0 rgba(0,112,148,0)}}
+.where-toast{position:fixed;z-index:45;left:16px;bottom:calc(24px + env(safe-area-inset-bottom,0px));max-width:min(320px,calc(100vw - 32px));background:var(--ink);color:var(--bg);font:600 14.5px/1.35 "Public Sans",sans-serif;padding:11px 16px;border-radius:14px;box-shadow:var(--shadow);pointer-events:none;animation:whereToastIn .3s ease-out both}
+.where-toast::after{content:"";position:absolute;bottom:-6px;left:var(--caret-x,50%);width:12px;height:12px;margin-left:-6px;background:inherit;transform:rotate(45deg);border-radius:2px}
+.where-toast.no-caret::after{display:none}
+.where-toast.is-leaving{animation:whereToastOut .3s ease-in both}
+@keyframes whereToastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes whereToastOut{to{opacity:0;transform:translateY(8px)}}
+@media (prefers-reduced-motion:reduce){.bottom-nav-btn.nav-hint,.text-link.nav-hint,.where-toast,.where-toast.is-leaving{animation:none}}
+/* Wischen in Listen (2026-10-05): row slides left, actions lie behind it */
+#dayEvents .event-item,#dayPanelBody .day-item:not(.compact),#planPhaseList .plan-item,#freeOwnGrid .featured-card,#freeTrainerGrid .featured-card,.bundle-item-wrap{touch-action:pan-y}
+.swipe-actions{position:absolute;z-index:0;display:flex;gap:6px}
+.swipe-act{flex:1;min-width:0;min-height:44px;border:0;padding:0 6px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;background:var(--brand);color:var(--bg);-webkit-tap-highlight-color:transparent}
+.swipe-act.swipe-del{background:var(--warn)}
+.swipe-open{background-color:var(--surface)}
+.bundle-item-wrap.swipe-open{background-color:var(--bg)}
+#freeTrainerGrid .featured-card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.free-trainer-notice{background:var(--brand-pale);color:var(--ink);border-radius:12px;padding:10px 12px;font-size:13.5px;font-weight:600;margin:0 0 10px}
+.area-tile .test-unlock-badge{margin-left:0;margin-top:2px;border-radius:10px;line-height:1.35;padding:3px 9px}
+
+/* Ergebnis-Seiten im Dunkelmodus dunkel (Prüfer 2026-10-05: weißer Blitz,
+   unlesbare Texte). The stage stays light, the result panel follows the theme. */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .done-panel{background:var(--bg);color:var(--ink)}
+  :root:not([data-theme="light"]) .done-panel h2{color:var(--ink)}
+  :root:not([data-theme="light"]) .done-summary,:root:not([data-theme="light"]) .rating-scale{color:var(--ink-soft)}
+  :root:not([data-theme="light"]) .rating{background:var(--surface);border-color:var(--line)}
+  :root:not([data-theme="light"]) .rating-row button:not(.active){background:var(--surface-2);border-color:var(--line);color:var(--ink)}
+  :root:not([data-theme="light"]) .rating-thanks{color:#6cc070}
+  :root:not([data-theme="light"]) .done-panel .back{color:var(--brand)}
+  :root:not([data-theme="light"]) .level-suggest{background:var(--surface);border-color:var(--brand)}
+  :root:not([data-theme="light"]) .level-suggest-title,:root:not([data-theme="light"]) .level-suggest .text-link{color:var(--brand-deep)}
+  :root:not([data-theme="light"]) .level-suggest p{color:var(--ink)}
+  :root:not([data-theme="light"]) .level-suggest .start-btn{background:var(--surface-2);color:var(--brand-deep)}
+  :root:not([data-theme="light"]) body:has(.done-panel:not([hidden])) .step-nav{background:var(--surface);border-top-color:var(--line)}
+  :root:not([data-theme="light"]) body:has(.done-panel:not([hidden])) .step-nav button,:root:not([data-theme="light"]) body:has(.done-panel:not([hidden])) .step-nav #stepSoundBtn{background:rgba(255,255,255,.08);color:var(--ink)}
+}
+  :root[data-theme="dark"] .done-panel{background:var(--bg);color:var(--ink)}
+  :root[data-theme="dark"] .done-panel h2{color:var(--ink)}
+  :root[data-theme="dark"] .done-summary,:root[data-theme="dark"] .rating-scale{color:var(--ink-soft)}
+  :root[data-theme="dark"] .rating{background:var(--surface);border-color:var(--line)}
+  :root[data-theme="dark"] .rating-row button:not(.active){background:var(--surface-2);border-color:var(--line);color:var(--ink)}
+  :root[data-theme="dark"] .rating-thanks{color:#6cc070}
+  :root[data-theme="dark"] .done-panel .back{color:var(--brand)}
+  :root[data-theme="dark"] .level-suggest{background:var(--surface);border-color:var(--brand)}
+  :root[data-theme="dark"] .level-suggest-title,:root[data-theme="dark"] .level-suggest .text-link{color:var(--brand-deep)}
+  :root[data-theme="dark"] .level-suggest p{color:var(--ink)}
+  :root[data-theme="dark"] .level-suggest .start-btn{background:var(--surface-2);color:var(--brand-deep)}
+  :root[data-theme="dark"] body:has(.done-panel:not([hidden])) .step-nav{background:var(--surface);border-top-color:var(--line)}
+  :root[data-theme="dark"] body:has(.done-panel:not([hidden])) .step-nav button,:root[data-theme="dark"] body:has(.done-panel:not([hidden])) .step-nav #stepSoundBtn{background:rgba(255,255,255,.08);color:var(--ink)}
+
+/* Regler in Markenfarbe statt Browser-Blau (Prüfer 05.10.) */
+input[type=range]{accent-color:#007094}
+.tips-link{color:var(--brand);font-weight:700;display:inline-block;padding:13px 0;margin:-13px 0;text-decoration:underline;text-underline-offset:2px}
+/* ‹ als feiner Linien-Pfeil wie in iOS (Prüfer 05.10.) */
+.bar-back-btn::before{content:"";font-size:0;width:11px;height:11px;margin:0 0 0 4px;border-left:2.5px solid currentColor;border-bottom:2.5px solid currentColor;border-radius:1px;transform:rotate(45deg)}
+/* Training-Übersicht (Fabian 05.10., Entwurf E2): Kernbereiche getönt 2x2,
+   darunter "Dazu: dein klassisches Training" mit kleineren Kacheln */
+.hub-areas .hub-core-tile{background:color-mix(in srgb,var(--tile-c) 12%,var(--surface));border-color:color-mix(in srgb,var(--tile-c) 45%,transparent)}
+.hub-group-title{font-family:Magra,sans-serif;font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--brand);margin:20px 0 6px}
+.hub-sub{font-size:13px;color:var(--ink-soft);margin:0 0 10px}
+.hub-extra .area-tile{flex-direction:row;align-items:flex-start;gap:10px;padding:12px;box-shadow:none;flex-wrap:wrap}
+.hub-extra .area-icon{width:34px;height:34px;border-radius:10px;flex:none}
+.hub-extra .area-icon svg{width:20px;height:20px}
+.hub-extra .area-name{font-size:14px}
+.hub-extra .area-text{font-size:12px}
+.hub-extra .t-wrap{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.hub-extra .test-unlock-badge{align-self:flex-start;margin-top:4px;font-size:11px;padding:2px 8px}
+@media (min-width:700px){ .hub-core{grid-template-columns:repeat(4,1fr)} .hub-extra{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))} }

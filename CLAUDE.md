@@ -102,7 +102,13 @@ compares transitions/gestures with iOS plus the automatable points of
 also checks pressed states, light patches in dark mode, one primary button,
 tabular timer digits. A new kind of
 error Fabian finds becomes a check there. Anything Fabian still finds becomes a general automatic
-check (the kind of error, not the single case). Once a quarter: the home
+check (the kind of error, not the single case).
+**App-Gefühl is Claude's job (Fabian 2026-10-05: "Das musst du selbst
+bemerken. Du bist der Experte")**: every release that touches navigation,
+sheets, transitions or touch also gets checked against native iOS app
+conventions, unasked - motion 0.3-0.4 s with a real slide (not a fade),
+swipe back / pull down to close / tap active tab to top, grab bars, safe
+areas, 44 px targets, no sticky hover. The reviewer prompt includes this. Once a quarter: the home
 screen of every area (about 12 screenshots).
 
 **Bundle releases (Fabian, 2026-10-04)**: bundle 3-4 changes per release,
@@ -244,6 +250,7 @@ everywhere goes here, short.
 | 23-test-bereich | **Instructions for the "Test-Bereich" Routine** (read fully if woken by it), roster, open questions |
 | 24-claude-md-langfassung-2026-10-05 | verbatim CLAUDE.md before the 2026-10-05 slimming (reasons, history) |
 | 25-freier-baustein | Freie Bausteine area: model, kinds, Dehnen template, editor, player, Kombi/plan/history wiring |
+| 26-erinnerungen | Push reminders before planned trainings: Grundeinstellungen section, payload, sw.js push, Worker /reminders + cron, deploy |
 
 ## Must-do rules collected from the detail notes
 
@@ -280,7 +287,7 @@ For every new or changed exercise/screen, in the same commit:
   sub page only needs the usual `.readyhead > .back-link`.
   Kopfleiste eine Zeile (2026-10-05, Fabian chose draft A, replaced "Logo
   mittig"): every top bar (`.brandbar`, `.app-bar-inner`) is one flex row
-  "‹ back (sub pages) | logo | FWMC Online-Training | gear", 65 px
+  "‹ back (sub pages) | logo | FWMC Online-Training | gear", 53 px
   (`--appbar-h`), thin bottom line; dark mode swaps in logo-white.png via
   CSS `content:url()` (no white plate). The title is always two lines
   "FWMC / Online-Training" (`.nowrap` span is a block) so it looks the same
@@ -317,8 +324,9 @@ For every new or changed exercise/screen, in the same commit:
   first with a 3 s fallback to the cache (works offline); bump `CACHE` when
   the precache list changes. Test: `tests/swipe_offline_transitions_1005_test.py`.
 - Untere Leiste (2026-10-05, Fabian "probieren wir aus"): fixed `#bottomNav`
-  with Heute / Training (`#trainingHub`, tiles from `PLAN_AREAS` + Test when
-  unlocked) / Fortschritt / Mehr (`#moreScreen`: code card, Grundeinstellungen,
+  with Heute / Training (`#trainingHub`: code card - moved here from Mehr,
+  Fabian 2026-10-05, ids still `moreCode*` - and tiles from `PLAN_AREAS` + Test
+  when unlocked) / Fortschritt / Mehr (`#moreScreen`: Grundeinstellungen,
   Tipps, FAQ, Datenschutz, Website, Impressum). The old 8-tab grid and the
   Heute "Bereiche" tiles are hidden via `body.has-bottom-nav`; area homes get
   a ‹ back to Training. Shown only while a `.screen` is visible (never in a
@@ -348,5 +356,53 @@ For every new or changed exercise/screen, in the same commit:
   plan entries can name one (`what: "free:<id>"`), history kind `free`.
   A new template is one `FREE_TEMPLATES` entry. Details: docs/notes/25.
   Test: `tests/free_block_1005_test.py`.
+- Erinnerungen (2026-10-05): Grundeinstellungen `#reminderGroup` (prefs
+  `fwmc-reminders-v1`, not in backups). The app sends only the next 14 days
+  as `{at, title, body}` + push subscription to the Worker (`POST/DELETE
+  /reminders`, cron every 5 min, Web Push with VAPID); every `savePlan()`/
+  `addHistory()` resyncs via `reminderPlanChanged()`. Reminder texts use area
+  labels only, never free text or names. `REMINDER_VAPID_PUBLIC_KEY` in app.js
+  is the deployed Worker's key (live since 2026-10-05; tests force the
+  "not set up" state with `fwmc-test-reminder-key` = "off"). Details: docs/notes/26. Test:
+  `tests/reminders_1005_test.py`, Worker: `cd worker && npm test`.
+- Gesten (2026-10-05): tap the active bottom tab again = to the top /
+  back to the tab's page; swipe the Heute calendar = ‹ / ›; ≡ drag handle
+  reorders Kombi-Bausteine and checklist points (`wireDragReorder`, drop
+  calls the same function as ↑/↓, which stay); long press on area tiles /
+  exercise cards = `#tileActionSheet` (`LP_SEL`, `lpActions`). A new
+  sortable list or tile kind hooks into these, details in docs/notes/01.
+  Test: `tests/gestures_1005_test.py`.
+- Erfolge spürbar (2026-10-05, Fabian: "Haken ja, kein Ton. Konfetti
+  nein."): one observer on every `.done-panel` (`initDoneEffects` in app.js)
+  draws the SVG check mark (brand #007094, ~0.6 s) when the panel opens with
+  `.done-check` visible - aborted runs (`setDonePanelAborted`) get none. A
+  new best: call `markBest(summaryEl, anchor, value)` right after setting the
+  summary text ("Zahl ", 7); the number counts up, then pulses 3x (~2 s),
+  "Neue Bestleistung!" gets its own line. textContent always holds the final
+  value (counting digits are drawn via `::after`). Without `markBest` the
+  phrase alone pulses. No sound, no confetti; reduced motion = final state.
+  A new done panel only needs `.done-check` + `.done-summary`. Test:
+  `tests/erfolge_onboarding_1005_test.py`.
+- Erster Start (2026-10-05): 3 slides `#onboarding` (Willkommen / Heute +
+  Training / Startbildschirm, swipe + dots + "Überspringen") only when
+  `fwmc-onboarding-v1`, `fwmc-tips-seen` and the history are all empty;
+  order Startbild → slides → tips sheet (`startOnboarding()` at start-up).
+  The first close of the tips sheet rings the "Mehr" tab + toast
+  (`showTipsWhereHint`). Off in automated browsers unless
+  `fwmc-test-onboarding` / `fwmc-test-tipshint`. Same test as above.
+- Wischen in Listen (2026-10-05, Fabian approved): swipe a list row left =
+  "Bearbeiten" / "Löschen" behind it (iOS Mail style; touch only, one row
+  open, swipe right / tap closes, direction after 10 px, not from x ≤ 28).
+  Rows + actions in `SWIPE_ROWS` (app.js); actions call the list's existing
+  functions (`askDeleteEvent`, `askDeleteFree`, `removePlanEntry`, the row's
+  own ✎/✕), "Löschen" always via `confirmDialog()`. A new list with
+  edit/delete = one `SWIPE_ROWS` entry + `touch-action:pan-y` in styles.css.
+  Details docs/notes/01, test `tests/list_swipe_1005_test.py`.
+- Trainer-Vorlagen per Code (2026-10-05): code type `free-template`
+  (`{trainings:[…]}` in the Eigenes-Training shape) adds read-only templates
+  "Von deinem Trainer" to `#freeHome` (`fwmc-free-trainer-v1`, ids
+  `tr-<code>-<n>`, same code again = update); built in the dashboard
+  (Bereich "Eigenes Training"). Worker stores configs generically, no deploy
+  needed. Details docs/notes/25 + 10, test `tests/trainer_template_1005_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

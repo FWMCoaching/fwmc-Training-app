@@ -59,9 +59,11 @@ async def main():
 
             await pg.click('[data-nav="more"]'); await pg.wait_for_timeout(200)
             check(t + "Mehr opens", await pg.is_visible("#moreScreen") and await pg.evaluate(ACTIVE) == "more")
-            check(t + "Mehr has the code card", await pg.is_visible("#moreScreen .code-card"))
+            check(t + "code card moved from Mehr to Training", not await pg.is_visible("#moreScreen .code-card") and await pg.locator("#trainingHub .code-card #moreCodeInput").count() == 1)
+            await pg.click('[data-nav="training"]'); await pg.wait_for_timeout(200)
             await pg.fill("#moreCodeInput", "gibtsnicht123"); await pg.click("#moreCodeGoBtn"); await pg.wait_for_timeout(500)
-            check(t + "wrong code shows the error on Mehr", await pg.is_visible("#moreCodeError") and await pg.is_visible("#moreScreen"))
+            check(t + "wrong code shows the error on Training", await pg.is_visible("#moreCodeError") and await pg.is_visible("#trainingHub"))
+            await pg.click('[data-nav="more"]'); await pg.wait_for_timeout(200)
             await pg.click("#moreSettingsBtn"); await pg.wait_for_timeout(200)
             check(t + "Grundeinstellungen open from Mehr", await pg.is_visible("#masterSettingsSheet") if await pg.locator("#masterSettingsSheet").count() else await pg.evaluate("!![...document.querySelectorAll('.sheet')].find(s => !s.hidden)"))
             await pg.keyboard.press("Escape"); await pg.wait_for_timeout(150)

@@ -33,5 +33,43 @@ npx wrangler deploy
 ```
 
 After that, `npx wrangler deploy` from this folder ships any further changes
-to this file. The dashboard's own admin-token field (entered once, stored
+to this file.
+
+## Erinnerungen (Web Push, 2026-10-05)
+
+- `POST /reminders` `{subscription, reminders:[{at, title, body}]}` - public,
+  rate limited (`REMINDER_LIMITER`, 20/min/IP). Upserts the push
+  subscription and **replaces** all its pending reminders. Limits: 60
+  reminders, `at` from now to 15 days ahead, title 80 / body 160 chars,
+  endpoint only on real push services (Google, Mozilla, Apple, Microsoft).
+- `DELETE /reminders` `{endpoint}` - removes the subscription and its reminders.
+- Cron every 5 minutes (`scheduled`): sends due reminders (RFC 8291
+  aes128gcm + VAPID ES256, WebCrypto only), deletes each after sending,
+  drops unsent ones older than 2 h, removes subscriptions that answer
+  404/410. Code: `src/reminders.js`. Tables: `push_subs`, `push_reminders`.
+- Tests (plain node, no wrangler): `npm test`.
+
+### Deploy steps (once)
+
+```sh
+cd worker
+npm install
+# 1. Tables in D1 (the Worker would also create them on first use)
+npx wrangler d1 execute fwmc-training-codes --remote --file=migrations/0001_reminders.sql
+# 2. VAPID key pair - generate ONCE (a new pair breaks all subscriptions)
+node scripts/gen-vapid.mjs
+# 3. Private key as a secret (paste the VAPID_PRIVATE_KEY line)
+npx wrangler secret put VAPID_PRIVATE_KEY
+# 4. Public key: put the VAPID_PUBLIC_KEY line into wrangler.toml [vars]
+# 5. Deploy (also registers the 5-minute cron)
+npx wrangler deploy
+```
+
+6. Paste the same public key into `app.js`:
+   `const REMINDER_VAPID_PUBLIC_KEY = "<public key>";`, run `sh build.sh`,
+   commit, push. Until then the app shows "Erinnerungen werden gerade
+   eingerichtet" and the switch stays off.
+7. Check: `curl -i -X OPTIONS https://online-training.fwmc.workers.dev/reminders`
+   answers 204 with `DELETE` in `Access-Control-Allow-Methods`; in the
+   Cloudflare dashboard the Worker shows the cron trigger. The dashboard's own admin-token field (entered once, stored
 only in the coach's browser) must match whatever value you set here.

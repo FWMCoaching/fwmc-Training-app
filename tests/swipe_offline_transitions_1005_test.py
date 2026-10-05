@@ -43,6 +43,8 @@ async def main():
         check("animation class removed afterwards", await pg.evaluate(TR, "movementHome") == "")
         await pg.click("#movementStartCard")
         check("going deeper slides in from the right", await pg.evaluate(TR, "movementReady") == "tr-push")
+        check("old page stays visible underneath (iOS push)", await pg.evaluate("document.querySelectorAll('.tr-ghost.push').length") == 1)
+        check("snapshot is never found as a screen", await pg.evaluate("document.querySelectorAll('.screen:not([hidden])').length") == 1)
         await pg.wait_for_timeout(400)
         await pg.click("#movementReady .bar-back-btn")
         check("going back slides in from the left", await pg.evaluate(TR, "movementHome") == "tr-pop")

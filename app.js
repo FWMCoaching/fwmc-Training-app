@@ -2130,7 +2130,7 @@
     if (name !== "workoutHome") els.workoutProgramError.hidden = true;
     if (name !== "cardioHome") els.cardioProgramError.hidden = true;
     if (name !== "natHome") els.natProgramError.hidden = true;
-    if (name !== "moreScreen") $("moreCodeError").hidden = true;
+    if (name !== "trainingHub") $("moreCodeError").hidden = true;
     syncNatModeRows(name);
     window.scrollTo(0, 0);
   }
@@ -2316,6 +2316,7 @@
     list.unshift(item);
     writeJSON(HISTORY_KEY, list.slice(0, 200));
     recordProgress(item);
+    reminderPlanChanged(); // a finished training ticks its plan entry: drop its reminder
     return item.id;
   }
   function rateHistory(id, rating) {
@@ -2499,8 +2500,17 @@
   const HISTORY_VISIBLE_SHORT = 3;
   const HISTORY_VISIBLE_EXPANDED = 200; // effectively "all" - addHistory() itself caps storage at 200
   function renderHistoryInto(sectionEl, statsEl, listEl, moreBtn, list) {
-    sectionEl.hidden = list.length === 0;
-    if (!list.length) return;
+    // Always shown, also before the first training, so every area home has
+    // the same frame (Fabian's rule; review 2026-10-05 thought it missing).
+    sectionEl.hidden = false;
+    const clearBtn = sectionEl.querySelector('[id$="istoryClearBtn"]');
+    if (clearBtn) clearBtn.hidden = !list.length;
+    if (!list.length) {
+      statsEl.innerHTML = "";
+      listEl.innerHTML = '<li class="history-empty">Noch kein Training gespeichert. Nach deinem ersten Training siehst du es hier.</li>';
+      if (moreBtn) moreBtn.hidden = true;
+      return;
+    }
     const weekStart = startOfWeek();
     const week = list.filter((e) => new Date(e.ts) >= weekStart);
     const weekSec = week.reduce((s, e) => s + (e.seconds || 0), 0);
@@ -4107,6 +4117,7 @@
     if (t === "movement-plan") return !nonEmpty(def.movements);
     if (t === "cardio-plan") return !nonEmpty(def.items);
     if (t === "breath-program" || t === "workout-plan" || t === "combo-program") return !nonEmpty(def.blocks);
+    if (t === "free-template") return freeTemplateDefProblem(def);
     if (t) return true;
     return !nonEmpty(def.blocks) || def.blocks.some((b) => !b || !EXERCISES[b.exercise]);
   }
@@ -4211,6 +4222,7 @@
       if (def.type === "cardio-plan") { cardioOriginBundle = null; renderCardioProgramIntro(def, code, code); return; }
       if (def.type === "combo-bundle") { openComboBundleOverview(def, code); return; }
       if (def.type === "combo-program") { comboOriginBundle = null; startComboProgram(def, code, code, ctx.homeScreen); return; }
+      if (def.type === "free-template") { importTrainerTemplates(def, code); return; }
       originBundle = null;
       renderProgramIntro(def, code, code, ctx);
     } catch (e) {
@@ -5447,6 +5459,7 @@
       summary = `${ex.title} · ${fmtMinutes(spent)}`;
     }
     els.doneSummary.textContent = summary;
+    if (coneTap) markBest(els.doneSummary, "", coneTap.count);
     const id = addHistory({ kind: "exercise", exId: state.exercise, title: ex.title, seconds: Math.round(spent), note });
     renderRating(els.doneRating, id);
     els.donePanel.hidden = false;
@@ -5753,7 +5766,7 @@
   else if (isIOS) els.tipInstallText.textContent = "Tippe in Safari auf „Teilen“ und dann auf „Zum Home-Bildschirm“ – dann startest du dein Training mit einem Tipp.";
   let tipsReturnFocus = null;
   function openTips() { tipsReturnFocus = document.activeElement; els.tipsSheet.hidden = false; focusFirstIn(els.tipsSheet); }
-  function closeTips() { els.tipsSheet.hidden = true; writeJSON(TIPS_KEY, true); if (tipsReturnFocus) tipsReturnFocus.focus(); }
+  function closeTips() { const first = !readJSON(TIPS_KEY, false); els.tipsSheet.hidden = true; writeJSON(TIPS_KEY, true); if (tipsReturnFocus) tipsReturnFocus.focus(); if (first) showTipsWhereHint(); }
   els.tipsBtn.addEventListener("click", openTips);
   els.tipsCloseBtn.addEventListener("click", closeTips);
   els.tipsSheet.addEventListener("click", (e) => { if (e.target === els.tipsSheet) closeTips(); });
@@ -6588,7 +6601,7 @@
   let masterSettingsReturnFocus = null;
   function openMasterSettings() {
     masterSettingsReturnFocus = document.activeElement;
-    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; syncMasterBgUI(); syncMasterPauseUI(); renderMasterCues(); renderMasterCodeHistory();
+    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; syncMasterBgUI(); syncMasterPauseUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
     els.masterSettingsSheet.hidden = false;
     focusFirstIn(els.masterSettingsSheet);
   }
@@ -8625,6 +8638,7 @@
       const modeTitle = REMEMBER_MODES[state.mode].title;
       els.rememberPlayerBar.hidden = true;
       els.rememberDoneSummary.textContent = `${modeTitle} · Zahl ${state.cleared} erreicht` + (isRecord ? " · Neue Bestleistung!" : "");
+      markBest(els.rememberDoneSummary, "Zahl ", state.cleared);
       const id = addHistory({ kind: "remember", title: `Positionen merken · ${modeTitle}`, seconds: Math.round(played), note: `Zahl ${state.cleared} erreicht` });
       renderRating(els.rememberRating, id, "Wie war deine Konzentration?");
       levelSuggestAfter("remember", state.mode, state, els.rememberDonePanel, els.rememberRating);
@@ -8942,6 +8956,7 @@
     blitzState.phase = "flash";
     els.blitzHint.textContent = "Merken …";
     els.blitzLevelEl.textContent = `${blitzState.level} Felder`;
+    fitBlitzGrid();
     renderBlitzGrid();
     scheduleBlitzTimer(blitzCoverRound, blitzState.flashS * 1000);
   }
@@ -8949,7 +8964,23 @@
     if (!blitzState) return;
     blitzState.phase = "input";
     els.blitzHint.textContent = "Jetzt genau diese Felder antippen";
+    fitBlitzGrid();
     renderBlitzGrid();
+  }
+  // Keep the grid below the hint (Fabian-Blick 2026-10-05: on a small iPhone
+  // the hint sat on the top row): the stage reserves the hint's height at the
+  // top and the square grid shrinks to the height that is left.
+  function fitBlitzGrid() {
+    const stage = els.blitzStage, hint = els.blitzHint, grid = els.blitzGrid;
+    if (!stage || !hint || !grid || !stage.offsetParent) return;
+    placeHintBelowBar(hint, els.blitzPlayer.querySelector(".player-bar"));
+    stage.style.paddingTop = "";
+    grid.style.maxWidth = "";
+    const sr = stage.getBoundingClientRect(), hr = hint.getBoundingClientRect();
+    const top = Math.max(24, Math.ceil(hr.bottom - sr.top + 10));
+    stage.style.paddingTop = top + "px";
+    const room = Math.floor(sr.height - top - 24);
+    if (room > 0) grid.style.maxWidth = Math.min(460, room) + "px";
   }
   function blitzTapCell(key, el) {
     if (!blitzState || blitzState.phase !== "input" || blitzState.paused || blitzState.tapped.has(key)) return;
@@ -9097,6 +9128,7 @@
       const played = (performance.now() - state.startTime) / 1000;
       els.blitzPlayerBar.hidden = true;
       els.blitzDoneSummary.textContent = `Blitz-Raster · Stufe ${state.cleared} erreicht` + (isRecord ? " · Neue Bestleistung!" : "");
+      markBest(els.blitzDoneSummary, "Stufe ", state.cleared);
       const id = addHistory({ kind: "blitz", title: "Blitz-Raster", seconds: Math.round(played), note: `Stufe ${state.cleared} erreicht` });
       renderRating(els.blitzRating, id, "Wie war deine Konzentration?");
       levelSuggestAfter("blitz", "standard", state, els.blitzDonePanel, els.blitzRating);
@@ -10000,6 +10032,7 @@
         : `${state.cleared} ${flashUnitLabel(state.kind)} erreicht`;
       els.flashPlayerBar.hidden = true;
       els.flashDoneSummary.textContent = `${modeTitle} · ${note}` + (isRecord ? " · Neue Bestleistung!" : "");
+      if (state.mode === "constant") markBest(els.flashDoneSummary, "Tempo-Stufe ", state.cleared + 1); else markBest(els.flashDoneSummary, "· ", state.cleared);
       const id = addHistory({ kind: "flash", title: `Flash-Speicher-Test · ${modeTitle}`, seconds: Math.round(played), note });
       renderRating(els.flashRating, id, "Wie war deine Konzentration?");
       levelSuggestAfter("flash", state.mode, state, els.flashDonePanel, els.flashRating);
@@ -10855,6 +10888,7 @@
       const note = state.mode === "speed" ? `Tempo-Stufe ${state.cleared + 1} erreicht` : `Stufe ${state.cleared} erreicht`;
       els.motPlayerBar.hidden = true;
       els.motDoneSummary.textContent = `Objektverfolgung (MOT) · ${modeTitle} · ${note}` + (isRecord ? " · Neue Bestleistung!" : "");
+      markBest(els.motDoneSummary, "Stufe ", state.mode === "speed" ? state.cleared + 1 : state.cleared);
       const id = addHistory({ kind: "mot", title: `Objektverfolgung (MOT) · ${modeTitle}`, seconds: Math.round(played), note });
       renderRating(els.motRating, id, "Wie war deine Konzentration?");
       levelSuggestAfter("mot", state.mode, state, els.motDonePanel, els.motRating);
@@ -13881,7 +13915,7 @@
               `<div class="group-label">Nach Erfolg</div>` +
               `<div class="choice-row two">` +
               `<button class="choice${cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="1">Weiter steigern<small>wie gewohnt +1</small></button>` +
-              `<button class="choice${!cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="0">Bei dieser Anzahl bleiben<small>zum gezielten Üben</small></button>` +
+              `<button class="choice${!cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="0">Anzahl halten<small>zum gezielten Üben</small></button>` +
               `</div>`
             ) : "") +
             `</div></details>`;
@@ -14822,6 +14856,10 @@
   function showCardioGuestBadge() {
     updateCardioGuestBadge();
     els.cardioGuestBadge.hidden = false;
+    // The guest player's bar is laid out a frame later - re-measure then,
+    // not only on the next 1 s tick (the badge sat over "Vollbild" meanwhile).
+    requestAnimationFrame(() => requestAnimationFrame(updateCardioGuestBadge));
+    setTimeout(updateCardioGuestBadge, 120);
     if (cardioGuestBadgeInterval) clearInterval(cardioGuestBadgeInterval);
     cardioGuestBadgeInterval = setInterval(updateCardioGuestBadge, 1000);
   }
@@ -15758,6 +15796,42 @@
   let transitionsOn = false; // switched on after start-up (enablePageTransitions)
   let navBackPending = 0;    // timestamp of the last back tap / swipe
   let lastShown = null;      // id of the last visible screen, or "player"
+  // Snapshot of the page that was just left, for the iOS push/pop (styles:
+  // .tr-ghost). Visual only: no ids' behaviour matters for 0.35 s, it sits
+  // last in <body> (getElementById still finds the real elements first),
+  // radios lose their name (a cloned checked radio would uncheck the real
+  // group), media are dropped and the root loses .screen so no selector
+  // like ".screen:not([hidden])" ever finds it.
+  let lastShownEl = null, lastScrollY = 0, ghostSkipUntil = 0;
+  window.addEventListener("scroll", () => { lastScrollY = window.scrollY; }, { passive: true });
+  function makeGhost(old, kind) {
+    if (!old || Date.now() < ghostSkipUntil) return;
+    document.querySelectorAll(".tr-ghost").forEach((g) => g.remove());
+    const g = document.createElement("div");
+    g.className = "tr-ghost " + kind;
+    g.setAttribute("aria-hidden", "true");
+    const c = old.cloneNode(true);
+    const cs = getComputedStyle(old);
+    c.hidden = false;
+    c.removeAttribute("id");
+    c.classList.remove("screen", "tr-push", "tr-pop", "tr-fade");
+    c.style.cssText += `;display:flex;flex-direction:column;max-width:760px;margin:0 auto;padding:${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft};transform:translateY(${-lastScrollY}px)`;
+    c.querySelectorAll("video,audio,iframe,canvas").forEach((m) => m.remove());
+    c.querySelectorAll("input[name]").forEach((i) => i.removeAttribute("name"));
+    const bar = c.querySelector(":scope > .brandbar");
+    if (bar) {
+      const wrap = document.createElement("div");
+      wrap.className = "ghost-bar";
+      wrap.style.background = cs.backgroundColor === "rgba(0, 0, 0, 0)" ? "" : cs.backgroundColor;
+      wrap.appendChild(bar);
+      g.appendChild(wrap);
+    }
+    g.appendChild(c);
+    document.body.appendChild(g);
+    const rm = () => g.remove();
+    g.addEventListener("animationend", rm);
+    setTimeout(rm, 600);
+  }
   function playTransition(el, kind) {
     if (!transitionsOn) return;
     if (reduceMotion.matches && kind !== "fade") kind = "fade";
@@ -15785,10 +15859,14 @@
         else if (tops.has(id) && tops.has(lastShown)) kind = "fade";
         else if (back || tops.has(id)) kind = "pop";
         else kind = "push";
+        const prevEl = lastShownEl;
         lastShown = id;
+        lastShownEl = el;
+        if (transitionsOn && !reduceMotion.matches && (kind === "push" || kind === "pop") && prevEl && prevEl !== el && prevEl.hidden) makeGhost(prevEl, kind);
         playTransition(el, kind);
       } else if (el.classList.contains("player")) {
         lastShown = "player";
+        lastShownEl = null;
         playTransition(el, "fade");
       } else if (el.classList.contains("done-panel")) {
         playTransition(el, "rise");
@@ -15799,7 +15877,9 @@
   function enablePageTransitions() {
     const vis = document.querySelector(".screen:not([hidden])");
     lastShown = vis ? vis.id : null;
+    lastShownEl = vis || null;
     transitionsOn = !(navigator.webdriver && !readJSON("fwmc-test-transitions", false));
+    document.documentElement.classList.toggle("tr-on", transitionsOn);
   }
   // Swipe back from the left edge
   (function wireEdgeSwipeBack() {
@@ -15824,7 +15904,7 @@
       if (e.touches.length !== 1) return;
       const t = e.touches[0];
       if (t.clientX > 28) return;
-      if (e.target.closest && e.target.closest("input, textarea, select, .sheet:not([hidden])")) return;
+      if (e.target.closest && e.target.closest("input, textarea, select, .sheet:not([hidden]), .swipe-open")) return; // .swipe-open: closing a swiped list row
       const bt = backTarget();
       if (!bt) return;
       start = { x: t.clientX, y: t.clientY, time: Date.now() };
@@ -15846,7 +15926,7 @@
       if (moved && (dx > Math.min(110, window.innerWidth * 0.3) || fast)) {
         const btn = target, pg = page;
         start = null; moved = false; target = null; page = null;
-        const go = () => { if (pg) { pg.style.transition = ""; pg.style.transform = ""; } navBackPending = Date.now(); btn.click(); };
+        const go = () => { if (pg) { pg.style.transition = ""; pg.style.transform = ""; } navBackPending = Date.now(); ghostSkipUntil = Date.now() + 400; btn.click(); };
         if (pg && !reduceMotion.matches) {
           pg.style.transition = "transform .18s ease-out";
           pg.style.transform = "translateX(100%)";
@@ -15856,6 +15936,97 @@
     };
     document.addEventListener("touchend", end, { passive: true });
     document.addEventListener("touchcancel", () => reset(true), { passive: true });
+  })();
+  // ---- Seite hinter offenen Fenstern festhalten (2026-10-05) ----
+  // While any .sheet is open the page is pinned (body position:fixed at
+  // -scrollY) instead of overflow:hidden, which dropped the scroll position
+  // to the top. On close the old position comes back - unless a sheet action
+  // opened another screen meanwhile, then that screen starts at the top.
+  (function sheetScrollLock() {
+    let lockedY = null, lockedScreen = null;
+    const visibleScreen = () => [...document.querySelectorAll(".screen")].find((el) => !el.hidden && el.offsetParent !== null) || null;
+    function sync() {
+      const open = !!document.querySelector(".sheet:not([hidden])");
+      const html = document.documentElement, body = document.body;
+      if (open && lockedY === null) {
+        lockedY = window.scrollY;
+        lockedScreen = visibleScreen();
+        body.style.top = -lockedY + "px";
+        html.classList.add("sheet-lock");
+        body.classList.add("sheet-lock");
+      } else if (!open && lockedY !== null) {
+        const y = lockedY;
+        const same = visibleScreen() === lockedScreen;
+        lockedY = null; lockedScreen = null;
+        html.classList.remove("sheet-lock");
+        body.classList.remove("sheet-lock");
+        body.style.top = "";
+        const prev = html.style.scrollBehavior;
+        html.style.scrollBehavior = "auto";
+        window.scrollTo(0, same ? y : 0);
+        html.style.scrollBehavior = prev;
+      }
+    }
+    new MutationObserver(sync).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden"] });
+    sync();
+  })();
+
+  // ---- Fenster nach unten wegziehen (Fabian, 2026-10-05: "bei zügigem
+  // Ziehen solche Fenster schließen"): every bottom sheet gets a small grab
+  // bar; when its content is scrolled to the top, dragging it down moves the
+  // sheet with the finger and a long or fast pull closes it - through the
+  // sheet's own close path (Escape handler, backdrop click or its close
+  // button), so nothing sheet-specific is skipped. Phones only (sheets sit
+  // at the bottom below 600 px). ----
+  (function () {
+    const closeSheet = (sheet) => {
+      sheet.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      if (sheet.hidden) return;
+      sheet.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      if (sheet.hidden) return;
+      const btn = [...sheet.querySelectorAll("button")].find((b) => /^(Schließen|Fertig|Abbrechen|Nein|Zurück)\b/.test(b.textContent.trim()) || b.classList.contains("sheet-close"));
+      if (btn) btn.click();
+    };
+    document.querySelectorAll(".sheet > .sheet-inner").forEach((inner) => {
+      const grab = document.createElement("div");
+      grab.className = "sheet-grab";
+      grab.setAttribute("aria-hidden", "true");
+      inner.insertBefore(grab, inner.firstChild);
+      let y0 = null, t0 = 0, dy = 0, dragging = false;
+      inner.addEventListener("touchstart", (e) => {
+        if (e.touches.length !== 1 || window.innerWidth >= 600 || inner.scrollTop > 0) { y0 = null; return; }
+        if (e.target.closest("input[type=range], textarea")) { y0 = null; return; }
+        y0 = e.touches[0].clientY; t0 = Date.now(); dy = 0; dragging = false;
+      }, { passive: true });
+      inner.addEventListener("touchmove", (e) => {
+        if (y0 === null) return;
+        dy = e.touches[0].clientY - y0;
+        if (!dragging && (dy < 6 || inner.scrollTop > 0)) { if (dy < 0) y0 = null; return; }
+        dragging = true;
+        if (e.cancelable) e.preventDefault();
+        inner.style.transition = "none";
+        inner.style.transform = `translateY(${Math.max(0, dy)}px)`;
+      }, { passive: false });
+      const end = () => {
+        if (y0 === null) return;
+        const fast = dy > 50 && Date.now() - t0 < 260;
+        const sheet = inner.parentElement;
+        y0 = null;
+        if (!dragging) return;
+        dragging = false;
+        if (dy > Math.min(140, inner.offsetHeight * 0.3) || fast) {
+          inner.style.transition = "transform .18s ease-out";
+          inner.style.transform = "translateY(100%)";
+          setTimeout(() => { closeSheet(sheet); inner.style.transition = ""; inner.style.transform = ""; }, 170);
+        } else {
+          inner.style.transition = "transform .2s ease";
+          inner.style.transform = "";
+          setTimeout(() => { inner.style.transition = ""; }, 220);
+        }
+      };
+      inner.addEventListener("touchend", end, { passive: true });
+      inner.addEventListener("touchcancel", end, { passive: true });
+    });
   })();
   // ---- Einheitliche Steuerleiste « ↻ » (Fabian, 2026-10-04: "sollte
   // nachher überall identisch sein") ----
@@ -16055,7 +16226,7 @@
   // Keys that must never travel in a client backup file: the coach
   // dashboard (dashboard.html, same origin) keeps its admin token under an
   // fwmc- key in this same localStorage.
-  const BACKUP_EXCLUDE = ["fwmc-admin-token"];
+  const BACKUP_EXCLUDE = ["fwmc-admin-token", "fwmc-reminders-v1"]; // reminders belong to this device's push subscription
   function buildBackup() {
     const data = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -16214,6 +16385,7 @@
       if (!editOpener) main.style.cursor = "default";
       main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(comboBlockLabel(block))}</strong><span>${esc(comboBlockMeta(block))}</span></span>`;
       if (editOpener) main.addEventListener("click", () => editOpener(block, i));
+      if (comboDraftBlocks.length > 1) row.appendChild(dragHandleEl());
       row.appendChild(main);
       // Reorder: swap with the neighbour (its own "Pause danach" travels
       // with the block). Only shown where a move is possible.
@@ -16226,10 +16398,7 @@
         mv.textContent = sym;
         mv.title = label;
         mv.setAttribute("aria-label", label);
-        mv.addEventListener("click", () => {
-          [comboDraftBlocks[i], comboDraftBlocks[j]] = [comboDraftBlocks[j], comboDraftBlocks[i]];
-          renderComboBlockList();
-        });
+        mv.addEventListener("click", () => moveComboBlock(i, j));
         row.appendChild(mv);
       });
       const rm = document.createElement("button");
@@ -16264,6 +16433,14 @@
       }
     });
   }
+  // One reorder path for ↑/↓ and drag (Gesten, 2026-10-05): the block
+  // moves with everything it carries, incl. its own "Pause danach".
+  function moveComboBlock(from, to) {
+    if (from === to || from < 0 || to < 0 || from >= comboDraftBlocks.length || to >= comboDraftBlocks.length) return;
+    comboDraftBlocks.splice(to, 0, comboDraftBlocks.splice(from, 1)[0]);
+    renderComboBlockList();
+  }
+  wireDragReorder(els.comboBlockList, { row: ".chapter-row", hide: ".combo-pause-row", onMove: moveComboBlock });
   function renderComboSaved() {
     renderPresetList(comboSavedStore, els.comboSavedList, els.comboSavedGroup, null,
       (e) => `${countLabel(e.blocks.length, "Baustein", "Bausteine")} · ca. ${fmtMinutes(e.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0))}`,
@@ -19599,6 +19776,10 @@
     els.wcstStimulusCard.innerHTML = "";
     els.wcstHint.textContent = "Ordne die Karte unten einer der vier oben zu. Du bekommst nur eine Rückmeldung, ob es richtig oder falsch war – die Regel musst du selbst herausfinden.";
     els.wcstProgressEl.textContent = `0/${wcstState.maxTrials} · 0 Kategorien`;
+    // Cards start below the hint (it wraps to 3 lines on small phones and
+    // used to cover the reference cards).
+    els.wcstStage.style.paddingTop = "";
+    els.wcstStage.style.paddingTop = Math.round(stageTopClearanceY(els.wcstStage.getBoundingClientRect(), els.wcstHint, els.wcstPlayerBar, 16)) + "px";
     requestWakeLock();
     scheduleWcstTimer(wcstNextTrial, 900);
   }
@@ -26102,19 +26283,20 @@
     const k = EVENT_KIND_BY_KEY[ev[0].kind] || EVENT_KINDS[3];
     return `<span class="event-mark${ev.some((e) => e.goal) ? " goal" : ""}" style="background:${k.color}" aria-hidden="true"></span>`;
   }
+  // Order = Training overview (Fabian 2026-10-05).
   const PLAN_AREAS = [
     { key: "visual", label: "Visual Training", short: "Visual", color: "#1f7ab8", screen: "home", text: "Wahrnehmen, entscheiden, reagieren.",
       icon: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="#fff"/>' },
     { key: "breath", label: "Atemtraining", short: "Atem", color: "#2a9d8f", screen: "breathHome", text: "Ruhig werden und Fokus finden.",
       icon: '<path d="M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-3 3M3 12h8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
+    { key: "nat", label: "NAT – Neuroathletik", short: "NAT", color: "#3a7d2c", screen: "natHome", text: "Wahrnehmung, Gedächtnis und Reaktion.",
+      icon: '<circle cx="12" cy="12" r="8" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="2.5" fill="#fff"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
     { key: "movement", label: "Movement", short: "Movement", color: "#c77d12", screen: "movementHome", text: "Bewegen, merken, reagieren im Takt.",
       icon: '<circle cx="12" cy="4.5" r="2" fill="#fff"/><path d="M12 7v7M12 9l-5-3M12 9l5 3M12 14l-4 6M12 14l4 6" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
     { key: "workout", label: "Workout", short: "Workout", color: "#c0392b", screen: "workoutHome", text: "Kraft, Intervalle und eigene Pläne.",
       icon: '<path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
     { key: "cardio", label: "Cardio", short: "Cardio", color: "#7b4fb8", screen: "cardioHome", text: "Ausdauer, auf Wunsch mit Zusatzaufgaben.",
       icon: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' },
-    { key: "nat", label: "NAT – Neuroathletik", short: "NAT", color: "#3a7d2c", screen: "natHome", text: "Wahrnehmung, Gedächtnis und Reaktion.",
-      icon: '<circle cx="12" cy="12" r="8" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="2.5" fill="#fff"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
     { key: "free", label: "Eigenes Training", short: "Eigenes Training", color: "#a0527a", screen: "freeHome", text: "Eigenes wie Dehnen, Eisbad oder Journal.",
       icon: '<rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M8 12.5l2.8 2.8L16.5 9" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
   ];
@@ -26162,7 +26344,7 @@
     return p;
   }
   let plan = loadPlan();
-  function savePlan() { writeJSON(PLAN_KEY, plan); }
+  function savePlan() { writeJSON(PLAN_KEY, plan); reminderPlanChanged(); }
   function planHasEntries() { return plan.phases.some((ph) => ph.days.some((d) => d.length)) || Object.values(plan.extras).some((l) => l.length); }
 
   // Which phase covers a date (null before the start / after a limited end).
@@ -26324,7 +26506,7 @@
       const doneAll = occ.length > 0;
       const lastRow = last ? `<p class="today-main-meta">Zuletzt: ${esc(last.title)} · ${esc(longDate(dStr(new Date(last.ts))))}</p>
         <button class="start-btn" type="button" id="todayContinueBtn">Weitermachen</button>` : "";
-      html = `<div class="today-main-kicker">${doneAll ? "Heute alles geschafft" : "Weitermachen"}</div>
+      html = `<div class="today-main-kicker">${doneAll ? "Heute alles geschafft" : last ? "Weitermachen" : "Los geht's"}</div>
         <h2 class="today-main-title">${doneAll ? "Stark, dein Training für heute ist erledigt." : last ? esc(last.title) : "Schön, dass du da bist."}</h2>
         ${doneAll ? "" : lastRow}
         <p class="today-main-hint">${doneAll ? "Wenn du magst, findest du unter „Training“ weitere Übungen." : (occ.length ? "" : "Für heute ist nichts geplant. ") + hint}</p>`;
@@ -26416,6 +26598,22 @@
       els.calExpand.innerHTML = html + "</div>";
     }
   }
+  // Glocke an Trainings mit Erinnerung (Fabian 2026-10-05: "nen kleines
+  // Symbol ... an den Trainings Terminen"): shown while reminders are on, on
+  // open trainings whose reminder still lies ahead within the 14 days the
+  // app sends (own appointments never get one).
+  const BELL_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>';
+  function reminderBellHtml(date, o) {
+    if (typeof remState === "undefined" || !remState || !remState.prefs.on || o.done) return "";
+    const today = todayStr();
+    if (date < today || date >= dAdd(today, 14)) return "";
+    if (date === today) {
+      const now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+      const at = o.time ? timeToMin(o.time) - remState.prefs.lead : timeToMin(remState.prefs.morning || "08:00");
+      if (at <= nowMin) return "";
+    }
+    return `<span class="rem-bell" title="Mit Erinnerung" aria-label="mit Erinnerung">${BELL_SVG}</span>`;
+  }
   function renderDayPanel(hist) {
     const date = todaySel;
     els.dayPanelTitle.textContent = date === todayStr() ? `Heute, ${longDate(date)}` : longDate(date);
@@ -26431,11 +26629,11 @@
       const meta = [o.time ? (o.time + "–" + minToTime(timeToMin(o.time) + o.minutes)) : "ohne Uhrzeit", `${o.minutes} Min.`, AREA_BY_KEY[o.area].short].join(" · ");
       const status = o.done ? (o.auto && !o.manual ? "erledigt (aus deinem Verlauf)" : "erledigt") : "offen";
       if (compact) return `<div class="day-item compact${o.done ? " done" : ""}" style="${style}" data-occ="${esc(o.id)}">
-        <div class="day-item-title">${areaDot(o.area)} ${esc(entryTitle(o))}</div>
+        <div class="day-item-title">${areaDot(o.area)} ${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div>
         <div class="day-item-meta">${esc(o.time)}–${esc(minToTime(timeToMin(o.time) + o.minutes))} · ${o.done ? "✓ erledigt" : "offen"}</div>
         <div class="day-item-actions"><button type="button" class="day-act" data-act="start">Starten</button><button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}" aria-label="${o.manual ? "Erledigt, zurücknehmen" : "Abhaken"}">✓</button></div></div>`;
       return `<div class="day-item${o.done ? " done" : ""}" ${style ? `style="${style}"` : ""} data-occ="${esc(o.id)}">
-        <div class="day-item-main">${areaDot(o.area)}<div><div class="day-item-title">${esc(entryTitle(o))}</div><div class="day-item-meta">${esc(meta)} · ${status}</div></div></div>
+        <div class="day-item-main">${areaDot(o.area)}<div><div class="day-item-title">${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div><div class="day-item-meta">${esc(meta)} · ${status}</div></div></div>
         <div class="day-item-actions">
           <button type="button" class="day-act" data-act="start">Starten</button>
           <button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}">${o.manual ? "✓ Erledigt" : "Abhaken"}</button>
@@ -26623,16 +26821,17 @@
   $("eventCancelBtn").addEventListener("click", closeEventSheet);
   $("eventSaveBtn").addEventListener("click", saveEventFromSheet);
   $("eventTitleInput").addEventListener("keydown", (e) => { if (e.key === "Enter") saveEventFromSheet(); });
-  $("eventDeleteBtn").addEventListener("click", () => {
-    const id = eventEditId;
+  // One delete path for "Termin löschen" in the sheet and the list swipe.
+  function askDeleteEvent(id) {
     const e = loadEvents().find((x) => x.id === id);
     if (!e) return;
     confirmDialog(`„${e.title}“ wirklich löschen?`, () => {
       saveEvents(loadEvents().filter((x) => x.id !== id));
-      closeEventSheet();
+      if (!$("eventSheet").hidden) closeEventSheet();
       renderToday();
     });
-  });
+  }
+  $("eventDeleteBtn").addEventListener("click", () => askDeleteEvent(eventEditId));
   $("eventSheet").addEventListener("click", (e) => { if (e.target === $("eventSheet")) closeEventSheet(); });
   $("eventSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closeEventSheet(); else trapTabKey($("eventSheet"), e); });
 
@@ -26646,7 +26845,8 @@
   // old layout is the state before this block (git: merge 482c1f7); turning
   // bottomNavOn off brings it back. Automated browsers keep the old layout
   // (115 tests click the 8 tabs) unless fwmc-test-bottomnav is set.
-  const MORE_CODE_CTX = { goBtn: $("moreCodeGoBtn"), errorEl: $("moreCodeError"), homeScreen: "moreScreen" };
+  // Code entry sits on Training (Fabian 2026-10-05: "eher oben bei Training"; ids kept from its time on Mehr)
+  const MORE_CODE_CTX = { goBtn: $("moreCodeGoBtn"), errorEl: $("moreCodeError"), homeScreen: "trainingHub" };
   function goMoreCode() { const code = $("moreCodeInput").value.trim(); if (code) openProgramIntro(code, MORE_CODE_CTX); }
   $("moreCodeGoBtn").addEventListener("click", goMoreCode);
   $("moreCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") goMoreCode(); });
@@ -26656,18 +26856,30 @@
   const AREA_HOME_IDS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome"];
   const TEST_TILE = { color: "#5c6b73", label: "Test", text: "Neue Übungen zum Ausprobieren.",
     icon: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' };
+  const HUB_CORE = ["visual", "breath", "nat", "movement"];
+  const HUB_TEXT = { free: "z. B. Dehnen, Eisbad oder Journal." };
   function renderHubAreaGrid() {
     const grid = $("hubAreaGrid");
     const tiles = PLAN_AREAS.map((a) => ({ key: a.key, ...a }));
     if (readJSON(TEST_UNLOCK_KEY, false)) tiles.push({ key: "test", ...TEST_TILE });
-    grid.innerHTML = tiles.map((a) => `<button type="button" class="area-tile" data-area="${a.key}">
+    // Fabian 2026-10-05 (Entwurf E2): the four core areas as tinted 2x2
+    // tiles, below them "Dazu: dein klassisches Training" with smaller
+    // tiles (Workout, Cardio, Eigenes Training, Test when unlocked).
+    const tile = (a, core) => `<button type="button" class="area-tile${core ? " hub-core-tile" : ""}" data-area="${a.key}"${core ? ` style="--tile-c:${a.color}"` : ""}>
       <span class="area-icon" style="background:${a.color}"><svg viewBox="0 0 24 24" aria-hidden="true">${a.icon}</svg></span>
-      <span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(a.key === "nat" ? "Neuroathletik: " + a.text : a.text)}</span></button>`).join("");
+      ${core ? "" : '<span class="t-wrap">'}<span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(HUB_TEXT[a.key] || (a.key === "nat" ? "Neuroathletik: " + a.text : a.text))}</span>${a.key === "test" ? '<span class="test-unlock-badge">Mit Code freigeschaltet</span>' : ""}${core ? "" : "</span>"}</button>`;
+    const core = tiles.filter((a) => HUB_CORE.includes(a.key)), extra = tiles.filter((a) => !HUB_CORE.includes(a.key));
+    grid.innerHTML = `<div class="area-grid hub-core">${core.map((a) => tile(a, true)).join("")}</div>
+      <div class="hub-group-title">Dazu: dein klassisches Training</div><p class="hub-sub">Kombinierbar mit allen Bereichen oben.</p>
+      <div class="area-grid hub-extra">${extra.map((a) => tile(a, false)).join("")}</div>`;
     grid.querySelectorAll(".area-tile").forEach((b) => b.addEventListener("click", () => {
       if (b.dataset.area === "test") { activateSectionTab("test"); showScreen("testHome"); } else goArea(b.dataset.area);
     }));
   }
   bottomNavOn = !(navigator.webdriver && !readJSON("fwmc-test-bottomnav", false));
+  // index.html already sets has-bottom-nav before the first paint (no jump
+  // of the Heute page when the old tab grid disappears); undo it if off.
+  if (!bottomNavOn) document.body.classList.remove("has-bottom-nav");
   if (bottomNavOn) {
     document.body.classList.add("has-bottom-nav");
     const nav = $("bottomNav");
@@ -26684,11 +26896,26 @@
     });
     nav.querySelectorAll("[data-nav]").forEach((btn) => btn.addEventListener("click", () => {
       const t = btn.dataset.nav;
+      if (btn.classList.contains("active") && navTabRetap(t)) return;
       if (t === "today") { activateSectionTab("today"); showScreen("todayHome"); }
       else if (t === "training") showScreen("trainingHub");
       else if (t === "progress") showScreen("progressScreen");
       else showScreen("moreScreen");
     }));
+    // Tap the active tab again (Gesten, 2026-10-05) like an iPhone app:
+    // scrolled -> smooth back to the top; already at the top on a page
+    // below the tab -> back to the tab's own page (the normal tab click
+    // does that); at the top of the tab's own page -> nothing.
+    const NAV_ROOT = { today: "todayHome", training: "trainingHub", progress: "progressScreen", more: "moreScreen" };
+    function navTabRetap(t) {
+      const scr = document.querySelector(".screen:not([hidden])");
+      if (!scr) return true;
+      if (window.scrollY > 4) {
+        window.scrollTo({ top: 0, behavior: reduceMotion.matches ? "auto" : "smooth" });
+        return true;
+      }
+      return scr.id === NAV_ROOT[t];
+    }
     const syncBottomNav = () => {
       const scr = document.querySelector(".screen:not([hidden])");
       nav.hidden = !scr;
@@ -26724,11 +26951,23 @@
   const FREE_KEY = "fwmc-free-blocks-v1";
   const FREE_KINDS = { check: "Abhaken", timer: "Mit Zeit", list: "Checkliste" };
   const FREE_ITEM_MAX_S = 600;
+  // Strichfiguren für die Vorlage Dehnen (Fabian 2026-10-05: "die Figuren gibt's
+  // bei den Kraftübungen ja auch"), same 24x24 white-stroke style as WORKOUT_ICONS.
+  const STRETCH_ICONS = {
+    waden: `<circle cx="15" cy="4" r="2" fill="#fff"/><path d="M15 6 L12 12" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 7.5 L19.5 8.5" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12 L14 16 L14 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12 L6 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 3 L21 21" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    quad: `<circle cx="12" cy="3" r="2" fill="#fff"/><path d="M12 5 L12 12" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12 L12 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12 L13 16.5 L9 14" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7.5 L9 13" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7.5 L15.5 10" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    hamstring: `<circle cx="14" cy="8" r="2" fill="#fff"/><path d="M5 18 L20 18" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 18 L12.5 10" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 11.5 L19 16.5" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    hipflexor: `<circle cx="11" cy="3" r="2" fill="#fff"/><path d="M11 5 L11 12" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 12 L16 13 L16 19" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 12 L8 18 L3 19" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 7.5 L14 10" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    glute: `<circle cx="4" cy="16" r="2" fill="#fff"/><path d="M6 16 L13 16" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 16 L11 10 L16 9" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 15.5 L11 11" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 16 L19 17" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    chest: `<circle cx="12" cy="3" r="2" fill="#fff"/><path d="M12 5 L12 13" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 13 L9 20 M12 13 L15 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7.5 L5 10 M12 7.5 L19 10" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    shoulder: `<circle cx="12" cy="3" r="2" fill="#fff"/><path d="M12 5 L12 13" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 13 L9 20 M12 13 L15 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M17.5 8 L7 8.5" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5 L9.5 8.5" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    neck: `<circle cx="14" cy="4" r="2" fill="#fff"/><path d="M12.5 6 L12 7.5 L12 14" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 14 L9 20 M12 14 L15 20" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8.5 L9 4 L13 2.2" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8.5 L15 12" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  };
   const FREE_TEMPLATES = [{
     id: "tpl-dehnen", template: true, kind: "list", title: "Dehnen",
     note: "Nur bis zu einem angenehmen Ziehen und ruhig weiteratmen. Bei Dehnungen für eine Seite nach der Hälfte die Seite wechseln.",
     minutes: 5,
-    items: ["Waden", "Oberschenkel vorne", "Oberschenkel hinten", "Hüftbeuger", "Gesäß", "Brust", "Schultern", "Nacken"].map((text) => ({ text, s: 30 })),
+    items: [["Waden", "waden"], ["Oberschenkel vorne", "quad"], ["Oberschenkel hinten", "hamstring"], ["Hüftbeuger", "hipflexor"], ["Gesäß", "glute"], ["Brust", "chest"], ["Schultern", "shoulder"], ["Nacken", "neck"]].map(([text, icon]) => ({ text, s: 30, icon })),
   }];
   function freeClean(b) {
     if (!b || typeof b !== "object") return null;
@@ -26736,6 +26975,7 @@
     const items = (Array.isArray(b.items) ? b.items : []).map((it) => ({
       text: String((it && it.text) || "").slice(0, 60),
       s: Math.max(0, Math.min(FREE_ITEM_MAX_S, Math.round(Number(it && it.s) || 0))),
+      icon: it && STRETCH_ICONS[it.icon] ? it.icon : undefined,
     }));
     return {
       id: String(b.id || newId()), kind,
@@ -26751,14 +26991,29 @@
     return (Array.isArray(raw) ? raw : []).map(freeClean).filter(Boolean);
   }
   function saveFreeBlocks(list) { writeJSON(FREE_KEY, list); }
-  function freeAllBlocks() { return loadFreeBlocks().concat(FREE_TEMPLATES); }
+  // Trainer-Vorlagen per Code (Fabian, 2026-10-05): a code of type
+  // "free-template" carries one or more trainings ({trainings:[...]}, the
+  // shape freeClean accepts). They are kept per code in FREE_TRAINER_KEY as
+  // read-only templates (template + trainer flag, id "tr-<code>-<n>" or the
+  // item's own id), shown under "Von deinem Trainer" in #freeHome; entering
+  // the same code again replaces that code's templates (no duplicates).
+  // Docs: docs/notes/25-freier-baustein.md, test: tests/trainer_template_1005_test.py.
+  const FREE_TRAINER_KEY = "fwmc-free-trainer-v1";
+  function loadTrainerTemplates() {
+    const raw = readJSON(FREE_TRAINER_KEY, []);
+    return (Array.isArray(raw) ? raw : []).map((b) => {
+      const c = freeClean(b);
+      return c ? { ...c, template: true, trainer: true, code: String(b.code || "") } : null;
+    }).filter(Boolean);
+  }
+  function freeAllBlocks() { return loadFreeBlocks().concat(loadTrainerTemplates(), FREE_TEMPLATES); }
   function freeFind(id) { return freeAllBlocks().find((b) => b.id === id) || null; }
   // Points that actually run (a checklist point without text is skipped).
   function freeSteps(b) {
     if (b.kind === "timer") return [{ text: b.title, s: b.minutes * 60 }];
     if (b.kind === "list") {
       const it = b.items.filter((x) => x.text.trim());
-      return it.length ? it.map((x) => ({ text: x.text.trim(), s: x.s })) : [{ text: b.title, s: 0 }];
+      return it.length ? it.map((x) => ({ text: x.text.trim(), s: x.s, icon: x.icon })) : [{ text: b.title, s: 0 }];
     }
     return [{ text: b.title, s: 0 }];
   }
@@ -26800,6 +27055,7 @@
     els.freeOwnGrid.innerHTML = own.map(freeCardHtml).join("");
     els.freeOwnEmpty.hidden = own.length > 0;
     els.freeTplGrid.innerHTML = FREE_TEMPLATES.map(freeCardHtml).join("");
+    renderFreeTrainer();
     renderHistory();
   }
   [els.freeOwnGrid, els.freeTplGrid].forEach((g) => g.addEventListener("click", (e) => {
@@ -26819,11 +27075,13 @@
     if (!b) { showScreen("freeHome"); return; }
     freeReadyId = b.id;
     els.freeReadyTitle.textContent = b.title;
-    els.freeReadyMeta.textContent = freeBlockMeta(b) + (b.template ? " · Vorlage" : "");
+    els.freeReadyMeta.textContent = freeBlockMeta(b) + (b.trainer ? " · von deinem Trainer" : b.template ? " · Vorlage" : "");
+    $("freeTrainerRemoveBtn").hidden = !b.trainer;
     els.freeReadyNote.textContent = b.note;
     els.freeReadyNote.hidden = !b.note;
     const steps = b.kind === "list" ? freeSteps(b) : [];
     els.freeReadyItems.innerHTML = steps.map((x, i) => `<div class="chapter-row"><span class="chapter-main" style="cursor:default"><span class="num">${i + 1}</span>` +
+      (x.icon ? `<span class="free-ready-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${STRETCH_ICONS[x.icon]}</svg></span>` : "") +
       `<span class="info"><strong>${esc(x.text)}</strong><span>${esc(freeItemTimeLabel(x.s))}</span></span></span></div>`).join("");
     els.freeEditBtn.hidden = !!b.template;
     els.freeCopyBtn.hidden = !b.template;
@@ -26878,7 +27136,7 @@
     const items = freeDraft.items;
     els.freeItemCount.textContent = items.length ? countLabel(items.length, "Punkt", "Punkte") : "";
     els.freeItemList.innerHTML = items.map((it, i) => `<div class="circuit-item-row free-item-row">
-      <div class="circuit-item-main"><span class="free-item-num">${i + 1}</span>
+      <div class="circuit-item-main">${items.length > 1 ? `<span class="drag-handle" data-drag-handle aria-hidden="true" title="Ziehen zum Verschieben">&equiv;</span>` : ""}<span class="free-item-num">${i + 1}</span>
         <input type="text" class="free-input free-item-text" data-i="${i}" maxlength="60" value="${esc(it.text)}" placeholder="z.&nbsp;B. Waden" aria-label="Punkt ${i + 1}"></div>
       <div class="free-item-tools">
         <div class="circuit-duration"><button type="button" class="free-item-btn" data-step="-1" data-i="${i}" aria-label="Punkt ${i + 1} kürzer">&minus;</button>
@@ -26906,14 +27164,23 @@
       let v = up ? (cur === 0 ? 10 : cur + step) : (cur <= 10 ? 0 : cur - step);
       items[i].s = Math.max(0, Math.min(FREE_ITEM_MAX_S, v));
     } else if (b.dataset.move) {
-      const j = i + Number(b.dataset.move);
-      if (j >= 0 && j < items.length) [items[i], items[j]] = [items[j], items[i]];
+      freeMoveItem(i, i + Number(b.dataset.move));
+      return;
     } else if (b.dataset.remove != null) {
       items.splice(Number(b.dataset.remove), 1);
     }
     renderFreeItemList();
     syncFreeSaveBtn();
   });
+  // One reorder path for ↑/↓ and drag (Gesten, 2026-10-05).
+  function freeMoveItem(from, to) {
+    const items = freeDraft.items;
+    if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return;
+    items.splice(to, 0, items.splice(from, 1)[0]);
+    renderFreeItemList();
+    syncFreeSaveBtn();
+  }
+  wireDragReorder(els.freeItemList, { row: ".free-item-row", onMove: freeMoveItem });
   els.freeItemAddBtn.addEventListener("click", () => {
     const last = freeDraft.items[freeDraft.items.length - 1];
     freeDraft.items.push({ text: "", s: last ? last.s : 30 });
@@ -26967,22 +27234,72 @@
     renderFreeHome();
     openFreeReady(b.id);
   });
-  els.freeDeleteBtn.addEventListener("click", () => {
-    const id = freeEditId;
+  // One delete path for "Training löschen" in the editor and the list swipe.
+  function askDeleteFree(id) {
     const b = freeFind(id);
-    if (!b) return;
+    if (!b || b.template) return;
     confirmDialog(`Das Training „${b.title}“ löschen?`, () => {
       saveFreeBlocks(loadFreeBlocks().filter((x) => x.id !== id));
       renderFreeHome();
       showScreen("freeHome");
     });
-  });
+  }
+  els.freeDeleteBtn.addEventListener("click", () => askDeleteFree(freeEditId));
   $("freeEditBack").addEventListener("click", () => {
     if (freeEditMode === "capture") { freeEditMode = "new"; showScreen("comboScreen"); return; }
     if (freeEditMode === "edit" && freeFind(freeEditId)) { openFreeReady(freeEditId); return; }
     if (freeEditMode === "copy" && freeReadyId) { openFreeReady(freeReadyId); return; }
     showScreen("freeHome");
   });
+  // ---- Trainer-Vorlagen per Code (see FREE_TRAINER_KEY above) ----
+  els.freeTrainerGrid = $("freeTrainerGrid");
+  function renderFreeTrainer() {
+    const list = loadTrainerTemplates();
+    els.freeTrainerGrid.innerHTML = list.map(freeCardHtml).join("");
+    $("freeTrainerSection").hidden = list.length === 0;
+    $("freeTrainerNotice").hidden = true;
+  }
+  els.freeTrainerGrid.addEventListener("click", (e) => {
+    const c = e.target.closest("[data-free-id]");
+    if (c) openFreeReady(c.dataset.freeId);
+  });
+  function freeTemplateDefProblem(def) {
+    const list = def.trainings;
+    if (!Array.isArray(list) || !list.length || list.length > 30) return true;
+    return list.some((t) => !t || typeof t !== "object" || Array.isArray(t)
+      || (t.items != null && !Array.isArray(t.items))
+      || (t.kind === "list" && !(t.items || []).some((it) => it && String(it.text || "").trim())));
+  }
+  function importTrainerTemplates(def, code) {
+    const key = normCode(code);
+    const fresh = def.trainings.map((t, i) => {
+      const c = freeClean({ ...t, id: undefined });
+      if (c.kind === "list") c.items = c.items.filter((x) => x.text.trim());
+      const ownId = typeof t.id === "string" && /^[a-z0-9-]{1,40}$/i.test(t.id) ? t.id : String(i + 1);
+      return { ...c, id: `tr-${key}-${ownId}`, code: key };
+    });
+    const before = readJSON(FREE_TRAINER_KEY, []);
+    const others = (Array.isArray(before) ? before : []).filter((b) => b && b.code !== key);
+    const updated = others.length !== (Array.isArray(before) ? before.length : 0);
+    writeJSON(FREE_TRAINER_KEY, others.concat(fresh));
+    goArea("free");
+    if (!els.freeHome.hidden) {
+      const n = $("freeTrainerNotice");
+      n.textContent = (updated ? "Aktualisiert: " : "Neu von deinem Trainer: ") + fresh.map((b) => b.title).join(", ");
+      n.hidden = false;
+      const sec = $("freeTrainerSection");
+      setTimeout(() => sec.scrollIntoView({ block: "start", behavior: reduceMotion.matches ? "auto" : "smooth" }), 60);
+    }
+  }
+  function askRemoveTrainerTemplate(id) {
+    const b = loadTrainerTemplates().find((x) => x.id === id);
+    if (!b) return;
+    confirmDialog(`Die Vorlage „${b.title}“ von deinem Trainer entfernen? Mit dem Trainings-Code kannst du sie jederzeit wieder holen.`, () => {
+      writeJSON(FREE_TRAINER_KEY, (readJSON(FREE_TRAINER_KEY, []) || []).filter((x) => x && `${x.id}` !== id));
+      showScreen("freeHome");
+    });
+  }
+  $("freeTrainerRemoveBtn").addEventListener("click", () => askRemoveTrainerTemplate(freeReadyId));
   function openFreeComboCapture(src, editIndex) { openFreeEditor(src, "capture", editIndex); }
   function comboFreeCaptureEntries() {
     return freeAllBlocks().map((b) => ({ label: b.title, meta: freeBlockMeta(b), open: () => openFreeComboCapture(b, null) }))
@@ -27017,6 +27334,9 @@
     els.freeRunProgress.textContent = r.block.kind === "list" ? `Punkt ${r.index + 1} von ${n}` : FREE_KINDS[r.block.kind];
     els.freeRunItem.hidden = r.block.kind !== "list";
     els.freeRunItem.textContent = st.text;
+    const ic = $("freeRunIcon");
+    ic.hidden = !st.icon;
+    ic.innerHTML = st.icon ? `<svg viewBox="0 0 24 24" aria-hidden="true">${STRETCH_ICONS[st.icon]}</svg>` : "";
     els.freeRunCountdown.hidden = !(st.s > 0);
     els.freeTickBtn.hidden = st.s > 0;
     const next = r.steps[r.index + 1];
@@ -27118,6 +27438,11 @@
     renderPlanScreen();
     showScreen("planScreen");
   }
+  function removePlanEntry(pi, di, id) {
+    if (!plan.phases[pi]) return;
+    plan.phases[pi].days[di] = plan.phases[pi].days[di].filter((x) => x.id !== id);
+    savePlan();
+  }
   function renderPlanScreen() {
     els.planStartInput.value = plan.startDate;
     els.planStartHelp.textContent = `Startet am ${longDate(plan.startDate)}.`;
@@ -27153,7 +27478,7 @@
     const d = t.dataset;
     if (d.add) { const [pi, di] = d.add.split(":").map(Number); openPlanEntry({ kind: "plan", pi, di }); return; }
     if (d.edit) { const [pi, di, id] = d.edit.split(":"); openPlanEntry({ kind: "plan", pi: +pi, di: +di, id }); return; }
-    if (d.del) { const [pi, di, id] = d.del.split(":"); plan.phases[+pi].days[+di] = plan.phases[+pi].days[+di].filter((x) => x.id !== id); savePlan(); renderPlanScreen(); return; }
+    if (d.del) { const [pi, di, id] = d.del.split(":"); removePlanEntry(+pi, +di, id); renderPlanScreen(); return; }
     if (d.phaseUp) { const i = +d.phaseUp; [plan.phases[i - 1], plan.phases[i]] = [plan.phases[i], plan.phases[i - 1]]; savePlan(); renderPlanScreen(); return; }
     if (d.phaseCopy) { const src = plan.phases[+d.phaseCopy]; const cp = JSON.parse(JSON.stringify(src)); cp.id = newId(); cp.name = (src.name + " (Kopie)").slice(0, 40); cp.days.forEach((l) => l.forEach((x) => { x.id = newId(); })); if (!src.weeks) src.weeks = 4; plan.phases.splice(+d.phaseCopy + 1, 0, cp); savePlan(); renderPlanScreen(); return; }
     if (d.phaseDel) { const i = +d.phaseDel; confirmDialog(`Phase „${plan.phases[i].name}“ mit allen Trainings löschen?`, () => { plan.phases.splice(i, 1); savePlan(); renderPlanScreen(); }); }
@@ -27189,9 +27514,19 @@
     planEntryTarget = target;
     let existing = null;
     if (target.kind === "plan" && target.id) existing = plan.phases[target.pi].days[target.di].find((x) => x.id === target.id);
-    const e = existing || { area: "visual", what: "", code: "", time: "", minutes: 15 };
+    if (target.kind === "extra" && target.id) existing = (plan.extras[target.date] || []).find((x) => x.id === target.id) || null;
+    const e = existing || { area: "visual", what: "", code: "", time: "", minutes: 15, ...(target.preset || {}) };
     els.planEntryTitle.textContent = existing ? "Training ändern" : "Training eintragen";
-    els.planEntryContext.textContent = target.kind === "plan"
+    // pickDay (long-press "In den Wochenplan"): the weekday is chosen in
+    // the sheet; pi -1 = no phase yet, one is created on save.
+    $("planEntryDayWrap").hidden = !target.pickDay;
+    if (target.pickDay) {
+      $("planEntryDay").innerHTML = WD_LONG.map((d, i) => `<option value="${i}">jeden ${d}</option>`).join("");
+      $("planEntryDay").value = String(target.di);
+    }
+    els.planEntryContext.textContent = target.pickDay
+      ? (target.pi >= 0 ? `Wochenplan · ${plan.phases[target.pi].name}` : "Wochenplan")
+      : target.kind === "plan"
       ? `${plan.phases[target.pi].name} · jeden ${WD_LONG[target.di]}`
       : `Nur am ${longDate(target.date)}`;
     els.planEntryArea.value = e.area;
@@ -27213,16 +27548,27 @@
     if (!t) return;
     const entry = cleanEntry({ id: t.id || newId(), area: els.planEntryArea.value, what: els.planEntryWhat.value, code: els.planEntryCode.value.trim(),
       time: els.planEntryTime.value, minutes: els.planEntryMinutes.value });
+    if (t.pickDay) {
+      t.di = Number($("planEntryDay").value) || 0;
+      if (t.pi < 0 || !plan.phases[t.pi]) {
+        plan.phases.push({ id: newId(), name: `Phase ${plan.phases.length + 1}`, weeks: 0, days: [[], [], [], [], [], [], []] });
+        t.pi = plan.phases.length - 1;
+      }
+    }
     if (t.kind === "plan") {
       const list = plan.phases[t.pi].days[t.di];
       const i = list.findIndex((x) => x.id === entry.id);
       if (i >= 0) list[i] = entry; else list.push(entry);
     } else {
-      plan.extras[t.date] = [...(plan.extras[t.date] || []), entry];
+      const list = [...(plan.extras[t.date] || [])];
+      const i = list.findIndex((x) => x.id === entry.id);
+      if (i >= 0) list[i] = entry; else list.push(entry);
+      plan.extras[t.date] = list;
     }
     savePlan();
     closePlanEntry();
-    if (t.kind === "plan") renderPlanScreen(); else renderToday();
+    if (t.pickDay || t.fromToday) { if (!els.todayHome.hidden) renderToday(); }
+    else if (t.kind === "plan") renderPlanScreen(); else renderToday();
   });
 
   // Start screen: always "Heute", unless the URL names an area
@@ -27240,11 +27586,734 @@
     showScreen(screens[sec]);
   }
 
+  // ==== Gesten (Fabian, 2026-10-05: four approved gestures) ====
+  // Same style as "Zurück per Wischen" and "Fenster nach unten wegziehen":
+  // plain touch/pointer listeners, passive where possible, "Bewegung
+  // reduzieren" respected, harmless on desktop. Tab re-tap lives in the
+  // bottom bar block (navTabRetap). Docs: docs/notes/01 (Gesten).
+  // Test: tests/gestures_1005_test.py.
+
+  // -- Ziehen zum Sortieren: a ≡ handle (44 px) on each row; the row lifts
+  // and follows the finger/mouse, a dashed placeholder shows where it lands,
+  // and the drop calls the list's own reorder function (the same one ↑/↓
+  // use). Rows to hide while dragging (Kombi "Pause danach" strips) travel
+  // with their block anyway, so they are simply hidden during the drag.
+  function dragHandleEl() {
+    const h = document.createElement("span");
+    h.className = "drag-handle";
+    h.dataset.dragHandle = "";
+    h.setAttribute("aria-hidden", "true");
+    h.title = "Ziehen zum Verschieben";
+    h.textContent = "≡";
+    return h;
+  }
+  function wireDragReorder(list, opts) {
+    let drag = null;
+    const rowsOf = () => [...list.querySelectorAll(opts.row)];
+    const place = () => {
+      const d = drag;
+      d.el.style.top = (d.y - d.offY) + "px";
+      const others = rowsOf().filter((r) => r !== d.el);
+      const before = others.find((r) => { const b = r.getBoundingClientRect(); return d.y < b.top + b.height / 2; });
+      if (before) { if (before.previousElementSibling !== d.ph) list.insertBefore(d.ph, before); }
+      else if (others.length) { const last = others[others.length - 1]; if (last.nextElementSibling !== d.ph) last.after(d.ph); }
+    };
+    const tick = () => {
+      if (!drag) return;
+      const edge = 80, bottomEdge = window.innerHeight - 110;
+      const v = drag.y < edge ? -Math.ceil((edge - drag.y) / 8) : drag.y > bottomEdge ? Math.ceil((drag.y - bottomEdge) / 8) : 0;
+      if (v) { window.scrollBy(0, v); place(); }
+      drag.raf = requestAnimationFrame(tick);
+    };
+    const finish = (commit) => {
+      const d = drag;
+      if (!d) return;
+      drag = null;
+      cancelAnimationFrame(d.raf);
+      const seq = [...list.querySelectorAll(opts.row + ", .drag-placeholder")].filter((x) => x !== d.el);
+      const to = seq.indexOf(d.ph);
+      d.el.classList.remove("drag-lifted");
+      ["width", "left", "top"].forEach((k) => { d.el.style[k] = ""; });
+      d.ph.remove();
+      list.classList.remove("drag-active");
+      document.body.classList.remove("drag-busy");
+      if (commit && to >= 0 && to !== d.from) opts.onMove(d.from, to);
+    };
+    list.addEventListener("pointerdown", (e) => {
+      const h = e.target.closest && e.target.closest("[data-drag-handle]");
+      if (!h || drag || (e.pointerType === "mouse" && e.button !== 0)) return;
+      const el = h.closest(opts.row);
+      const rows = rowsOf();
+      const from = rows.indexOf(el);
+      if (from < 0 || rows.length < 2) return;
+      e.preventDefault();
+      if (document.activeElement && list.contains(document.activeElement)) document.activeElement.blur();
+      const r0 = el.getBoundingClientRect();
+      if (opts.hide) list.classList.add("drag-active");
+      const r = el.getBoundingClientRect();
+      const ph = document.createElement("div");
+      ph.className = "drag-placeholder";
+      ph.style.height = r0.height + "px";
+      list.insertBefore(ph, el);
+      el.style.width = r.width + "px";
+      el.style.left = r.left + "px";
+      el.classList.add("drag-lifted");
+      document.body.classList.add("drag-busy");
+      drag = { el, ph, from, offY: e.clientY - r.top, y: e.clientY, id: e.pointerId, raf: 0 };
+      try { h.setPointerCapture(e.pointerId); } catch (err) {}
+      place();
+      drag.raf = requestAnimationFrame(tick);
+    });
+    list.addEventListener("pointermove", (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      drag.y = e.clientY;
+      place();
+    });
+    list.addEventListener("pointerup", (e) => { if (drag && e.pointerId === drag.id) finish(true); });
+    list.addEventListener("pointercancel", (e) => { if (drag && e.pointerId === drag.id) finish(false); });
+    // A touch on the handle must never scroll the page instead.
+    list.addEventListener("touchmove", (e) => { if (drag && e.cancelable) e.preventDefault(); }, { passive: false });
+  }
+
+  // -- Kalender wischen: on Heute a horizontal swipe (> 50 px, clearly more
+  // sideways than up/down) over the week strip or the month/year calendar
+  // does what ‹ / › do, with a short slide. Vertical scrolling stays
+  // native (touch-action: pan-y), touches from the left edge (≤ 28 px)
+  // belong to "Zurück per Wischen", the quarter view scrolls by itself.
+  (function wireCalendarSwipe() {
+    const slide = (el, dir) => {
+      if (!el || reduceMotion.matches) return;
+      const cls = dir > 0 ? "cal-slide-next" : "cal-slide-prev";
+      el.classList.remove("cal-slide-next", "cal-slide-prev");
+      void el.offsetWidth;
+      el.classList.add(cls);
+      setTimeout(() => el.classList.remove(cls), 450);
+    };
+    let swallowClickUntil = 0;
+    const wire = (area, step) => {
+      let s = null;
+      area.addEventListener("touchstart", (e) => {
+        s = null;
+        if (e.touches.length !== 1) return;
+        const t = e.touches[0];
+        if (t.clientX <= 28) return;
+        s = { x: t.clientX, y: t.clientY };
+      }, { passive: true });
+      area.addEventListener("touchend", (e) => {
+        if (!s) return;
+        const t = e.changedTouches && e.changedTouches[0];
+        const st = s;
+        s = null;
+        if (!t) return;
+        const dx = t.clientX - st.x, dy = t.clientY - st.y;
+        if (Math.abs(dx) <= 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+        if (step(dx < 0 ? 1 : -1)) swallowClickUntil = Date.now() + 500;
+      }, { passive: true });
+      area.addEventListener("touchcancel", () => { s = null; }, { passive: true });
+      area.addEventListener("click", (e) => {
+        if (Date.now() < swallowClickUntil) { e.preventDefault(); e.stopPropagation(); }
+      }, true);
+    };
+    wire(els.todayWeekStrip, (dir) => {
+      (dir > 0 ? els.todayWeekNext : els.todayWeekPrev).click();
+      slide(els.todayWeekStrip, dir);
+      return true;
+    });
+    wire(els.calExpand, (dir) => {
+      const btn = els.calExpand.querySelector(`[data-cal-step="${dir}"], [data-year-step="${dir}"]`);
+      if (!btn) return false;
+      btn.click();
+      els.calExpand.querySelectorAll(".cal-month:not(.mini), .cal-year").forEach((el) => slide(el, dir));
+      return true;
+    });
+  })();
+
+  // -- Lange drücken: about 500 ms on an area tile or an exercise card
+  // (Training hub, Heute tiles, Visual Training cards, NAT tiles, Eigenes
+  // Training cards) opens a small action sheet. A finger that moves more
+  // than 10 px is scrolling and cancels it; a short tap still clicks.
+  // Only actions that really work for that item are offered.
+  const LP_SEL = "#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #freeOwnGrid [data-free-id], #freeTrainerGrid [data-free-id], #freeTplGrid [data-free-id]";
+  const tileSheet = $("tileActionSheet");
+  let tileSheetReturnFocus = null;
+  let lpSuppressUntil = 0; // swallow the click that may follow a long press
+  function clickVisibleStart() {
+    const scr = document.querySelector(".screen:not([hidden])");
+    const b = scr && [...scr.querySelectorAll("button")].find((x) => x.textContent.trim() === "Training starten" && !x.disabled && x.getClientRects().length);
+    if (b) b.click();
+  }
+  function startKombiWith(area, open) { goArea(area); openComboScreen(); open(); }
+  function lpActions(tile) {
+    const name = (sel) => ((tile.querySelector(sel) || tile).textContent || "").trim();
+    if (tile.classList.contains("area-tile")) {
+      const area = tile.dataset.area;
+      const src = COMBO_CAPTURE_ENTRIES[area];
+      const entries = typeof src === "function" ? src() : (src || []);
+      const usable = entries.filter((x) => !x.disabled);
+      return {
+        title: name(".area-name"), open: () => tile.click(),
+        plan: AREA_BY_KEY[area] ? { area, what: "" } : null,
+        kombi: !usable.length ? null : usable.length === 1 ? () => startKombiWith(area, usable[0].open) : () => {
+          goArea(area);
+          openComboScreen();
+          const g = [...els.comboAddGrid.querySelectorAll(".combo-domain-group")].find((x) => x.firstElementChild && x.firstElementChild.textContent === COMBO_DOMAIN_TITLE[area]);
+          if (g) setTimeout(() => g.scrollIntoView({ block: "start", behavior: reduceMotion.matches ? "auto" : "smooth" }), 60);
+        },
+      };
+    }
+    if (tile.classList.contains("excard")) {
+      const id = tile.dataset.exercise;
+      const ok = !exerciseBlockedReason(tile) && !!EXERCISES[id];
+      const icon = tile.querySelector(".icon-badge, .icon-tile");
+      return {
+        title: name("h3"), open: () => tile.click(),
+        start: ok ? () => { tile.click(); clickVisibleStart(); } : null,
+        plan: { area: "visual", what: "ex:" + id },
+        kombi: ok ? () => startKombiWith("visual", () => openVisualComboCapture(id, icon ? icon.outerHTML : "", null, null)) : null,
+      };
+    }
+    if (tile.classList.contains("nat-tile")) {
+      const sub = tile.dataset.natEx;
+      const mode = NAT_MODES[sub] ? (readJSON(NAT_MODE_KEY, {})[sub] || NAT_MODES[sub].modes[0].key) : null;
+      const cap = {
+        peripher: () => openVisualComboCapture("periph-flash", PERIPH_ICON_HTML, null, null),
+        remember: () => openRememberComboCapture(mode, null, null),
+        blitz: () => openBlitzComboCapture(null, null),
+        flash: () => openFlashComboCapture(mode, null, null),
+        mot: () => openMotComboCapture(mode, null, null),
+      }[sub];
+      return {
+        title: name("h3"), open: () => tile.click(),
+        start: () => { openNatExercise(sub); clickVisibleStart(); },
+        plan: NAT_SUBS.some(([k]) => k === sub) ? { area: "nat", what: "nat:" + sub } : null,
+        kombi: cap ? () => startKombiWith("nat", cap) : null,
+      };
+    }
+    const fid = tile.dataset.freeId;
+    const fb = freeFind(fid);
+    return {
+      title: name(".fc-title"), open: () => tile.click(),
+      start: fb ? () => { openFreeReady(fid); clickVisibleStart(); } : null,
+      plan: fb ? { area: "free", what: "free:" + fid } : null,
+      kombi: fb ? () => startKombiWith("free", () => openFreeComboCapture(freeFind(fid), null)) : null,
+    };
+  }
+  function closeTileSheet() {
+    tileSheet.hidden = true;
+    if (tileSheetReturnFocus && document.body.contains(tileSheetReturnFocus)) tileSheetReturnFocus.focus({ preventScroll: true });
+    tileSheetReturnFocus = null;
+  }
+  function openTileSheet(tile) {
+    if (!tileSheet.hidden) return;
+    const a = lpActions(tile);
+    $("tileActionTitle").textContent = a.title;
+    const list = $("tileActionList");
+    list.innerHTML = "";
+    const add = (label, cls, act, fn) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = cls;
+      b.dataset.tileAct = act;
+      b.textContent = label;
+      b.addEventListener("click", () => {
+        tileSheetReturnFocus = fn ? null : tileSheetReturnFocus;
+        lpSuppressUntil = 0;
+        closeTileSheet();
+        if (fn) fn();
+      });
+      list.appendChild(b);
+    };
+    if (a.start) add("Direkt starten", "start-btn", "start", a.start);
+    else add("Öffnen", "start-btn", "open", a.open);
+    if (a.plan) add("In den Wochenplan", "start-btn secondary", "plan", () => {
+      const ph = phaseFor(todayStr());
+      const pi = ph ? ph.index : plan.phases.length - 1;
+      openPlanEntry({ kind: "plan", pi, di: wdIdx(todayStr()), pickDay: true, preset: a.plan });
+    });
+    if (a.kombi) add("Zum Kombi-Programm", "start-btn secondary", "kombi", a.kombi);
+    add("Abbrechen", "text-link", "cancel", null);
+    tileSheetReturnFocus = tile;
+    tileSheet.hidden = false;
+    focusFirstIn(tileSheet);
+  }
+  tileSheet.addEventListener("click", (e) => { if (e.target === tileSheet) closeTileSheet(); });
+  tileSheet.addEventListener("keydown", (e) => { if (e.key === "Escape") closeTileSheet(); else trapTabKey(tileSheet, e); });
+  (function wireLongPress() {
+    let timer = 0, start = null, fired = false;
+    const cancel = () => {
+      clearTimeout(timer);
+      timer = 0;
+      if (start) start.tile.classList.remove("lp-pressing");
+      start = null;
+    };
+    document.addEventListener("touchstart", (e) => {
+      cancel();
+      fired = false;
+      if (e.touches.length !== 1) return;
+      const tile = e.target.closest && e.target.closest(LP_SEL);
+      if (!tile || !tile.getClientRects().length) return;
+      const t = e.touches[0];
+      start = { x: t.clientX, y: t.clientY, tile };
+      timer = setTimeout(() => {
+        timer = 0;
+        if (!start) return;
+        fired = true;
+        start.tile.classList.remove("lp-pressing");
+        openTileSheet(start.tile);
+      }, 500);
+      setTimeout(() => { if (start && start.tile === tile && timer && !reduceMotion.matches) tile.classList.add("lp-pressing"); }, 150);
+    }, { passive: true });
+    document.addEventListener("touchmove", (e) => {
+      if (!start) return;
+      const t = e.touches[0];
+      if (Math.abs(t.clientX - start.x) > 10 || Math.abs(t.clientY - start.y) > 10) cancel();
+    }, { passive: true });
+    document.addEventListener("touchend", (e) => {
+      cancel();
+      if (fired) {
+        fired = false;
+        lpSuppressUntil = Date.now() + 700;
+        if (e.cancelable) e.preventDefault();
+      }
+    }, { passive: false });
+    document.addEventListener("touchcancel", cancel, { passive: true });
+    // The click that may still follow a long press must not open the tile.
+    document.addEventListener("click", (e) => {
+      if (Date.now() < lpSuppressUntil && e.target.closest && e.target.closest(LP_SEL)) { e.preventDefault(); e.stopPropagation(); lpSuppressUntil = 0; }
+    }, true);
+    // Android long press / right click on desktop = the same sheet.
+    document.addEventListener("contextmenu", (e) => {
+      const tile = e.target.closest && e.target.closest(LP_SEL);
+      if (!tile) return;
+      e.preventDefault();
+      if (!fired) { cancel(); openTileSheet(tile); }
+    });
+  })();
+
+  // ==== Erfolge spürbar machen (Fabian, 2026-10-05: "Haken ja, kein Ton.
+  // Konfetti nein. Hochzählen und pulsieren bei neuer Bestleistung ja, lange
+  // genug um zu merken, dass es kein Darstellungsfehler ist.") ====
+  // One mechanism for every .done-panel: when it becomes visible with its
+  // check mark shown (a completed run - setDonePanelAborted hides the mark
+  // for aborted ones), the mark draws itself (SVG stroke, ~0.6 s). A new
+  // personal best: markBest() wraps the record number in the summary; on
+  // show it counts up from 0 and then pulses 3 times (~2 s together). The
+  // summary's textContent always holds the final value (the counting digits
+  // are drawn via ::after), so nothing reads a half-counted number. Panels
+  // that only say "Neue Bestleistung!" without markBest (Test-Bereich) get
+  // the pulse on that phrase. Reduced motion: final state at once.
+  const DONE_CHECK_SVG = '<svg viewBox="0 0 52 52" aria-hidden="true" focusable="false"><path d="M15 27l8 8 15-17" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const BEST_PHRASE = /Neue Best(?:leistung|zeit)!/;
+  function wrapBestTag(el) {
+    if (el.querySelector(".best-tag")) return el.querySelector(".best-tag");
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const m = BEST_PHRASE.exec(n.nodeValue);
+      if (!m) continue;
+      // The phrase gets its own line; its " · " stays in the text (hidden).
+      const sep = / · $/.test(n.nodeValue.slice(0, m.index)) ? 3 : 0;
+      const rest = n.splitText(m.index - sep);
+      rest.splitText(m[0].length + sep);
+      const tag = document.createElement("span");
+      tag.className = "best-tag";
+      tag.textContent = m[0];
+      if (sep) { const s = document.createElement("span"); s.className = "best-sep"; s.textContent = " · "; rest.replaceWith(s, tag); }
+      else rest.replaceWith(tag);
+      return tag;
+    }
+    return null;
+  }
+  // Call right after setting a summary's text: anchor + value is the record
+  // as it reads in the summary (e.g. "Zahl " + 7).
+  function markBest(el, anchor, value) {
+    if (!el) return;
+    const text = el.textContent, num = String(value), i = text.indexOf(anchor + num);
+    if (i < 0 || !BEST_PHRASE.test(text)) return;
+    const at = i + anchor.length;
+    const span = document.createElement("span");
+    span.className = "best-num";
+    span.dataset.best = num;
+    span.textContent = num;
+    el.textContent = "";
+    el.append(text.slice(0, at), span, text.slice(at + num.length));
+    wrapBestTag(el);
+  }
+  const BEST_COUNT_MS = 750;
+  function celebrateBest(summary) {
+    const tag = wrapBestTag(summary);
+    if (!tag) return;
+    const num = summary.querySelector(".best-num");
+    if (summary._bestRaf) cancelAnimationFrame(summary._bestRaf);
+    [num, tag].forEach((el) => el && el.classList.remove("counting", "best-pulse", "best-tag-in"));
+    if (reduceMotion.matches) return;
+    const pulse = (el) => { void el.offsetWidth; el.classList.add("best-pulse"); };
+    const target = num ? parseInt(num.dataset.best, 10) : NaN;
+    if (!num || !(target > 0)) { pulse(num || tag); return; }
+    tag.style.visibility = "hidden";
+    num.classList.add("counting");
+    num.dataset.count = "0";
+    const t0 = performance.now();
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / BEST_COUNT_MS);
+      num.dataset.count = String(Math.round(target * (1 - Math.pow(1 - k, 2))));
+      if (k < 1) { summary._bestRaf = requestAnimationFrame(step); return; }
+      summary._bestRaf = 0;
+      num.classList.remove("counting");
+      tag.style.visibility = "";
+      tag.classList.add("best-tag-in");
+      pulse(num);
+    };
+    summary._bestRaf = requestAnimationFrame(step);
+  }
+  function celebrateDone(panel) {
+    if (panel.hidden || !panel.getClientRects().length) return;
+    const check = panel.querySelector(".done-check");
+    if (check) {
+      check.classList.remove("is-drawing");
+      if (!check.hidden && !reduceMotion.matches) { void check.offsetWidth; check.classList.add("is-drawing"); }
+    }
+    const summary = panel.querySelector(".done-summary");
+    if (summary && BEST_PHRASE.test(summary.textContent)) celebrateBest(summary);
+  }
+  (function initDoneEffects() {
+    document.querySelectorAll(".done-check").forEach((c) => { c.innerHTML = DONE_CHECK_SVG; c.setAttribute("aria-hidden", "true"); });
+    const obs = new MutationObserver((recs) => recs.forEach((r) => {
+      if (!r.target.hidden) requestAnimationFrame(() => celebrateDone(r.target));
+    }));
+    document.querySelectorAll(".done-panel").forEach((p) => obs.observe(p, { attributes: true, attributeFilter: ["hidden"] }));
+  })();
+
+  // ==== Erster Start (Fabian, 2026-10-05: "ja, dahinter ist dann direkt das
+  // was sonst auch immer kommt mit dem 'So trainierst du richtig'") ====
+  // Three slides (#onboarding) on the very first start only: not for anyone
+  // who already saw the tips (fwmc-tips-seen) or has a history. Order:
+  // Startbild (#appSplash, above it) -> slides -> tips sheet. Done or
+  // skipped = fwmc-onboarding-v1. Automated browsers never see it unless
+  // fwmc-test-onboarding is set. Closing the tips sheet the first time
+  // points at where they live now (showTipsWhereHint; tests:
+  // fwmc-test-tipshint).
+  const ONB_KEY = "fwmc-onboarding-v1";
+  function onboardingWanted() {
+    if (navigator.webdriver && !readJSON("fwmc-test-onboarding", false)) return false;
+    // A trainer's code link (#code) goes straight to the programme; the
+    // slides come on the next normal start instead.
+    if (location.hash && location.hash.length > 1) return false;
+    return !readJSON(ONB_KEY, false) && !readJSON(TIPS_KEY, false) && loadHistory().length === 0;
+  }
+  // Returns true when the slides are shown (the tips follow when they close).
+  function startOnboarding() {
+    if (!onboardingWanted()) return false;
+    const box = $("onboarding"), track = $("onbTrack"), next = $("onbNextBtn");
+    const dots = [...box.querySelectorAll(".onb-dot")], slides = [...box.querySelectorAll(".onb-slide")];
+    const last = slides.length - 1;
+    let idx = 0;
+    // Slide 3 reuses the wording of the "Zum Startbildschirm" card on Heute.
+    const tail = "Dann liegt dein Training mit Logo auf dem Startbildschirm und öffnet ohne Browserleiste.";
+    if (standalone) {
+      $("onbInstallTitle").textContent = "Deine App auf dem Startbildschirm";
+      $("onbInstallText").textContent = "Schon erledigt: Dein Training liegt auf dem Startbildschirm, öffnet mit einem Tipp ohne Browserleiste und läuft auch ohne Internet.";
+    } else if (isIOS) {
+      $("onbInstallText").innerHTML = "Tippe in Safari auf <span class=\"nowrap\">„Teilen“</span> (das Quadrat mit dem Pfeil) und dann auf <span class=\"nowrap\">„Zum Home-Bildschirm“</span>. " + tail;
+    } else {
+      $("onbInstallText").innerHTML = "Öffne das Browser-Menü (⋮) und tippe auf <span class=\"nowrap\">„Zum Startbildschirm</span> <span class=\"nowrap\">hinzufügen“</span>. " + tail;
+    }
+    function go(i) {
+      idx = Math.max(0, Math.min(last, i));
+      track.style.transform = `translateX(${-idx * 100}%)`;
+      dots.forEach((d, k) => d.setAttribute("aria-current", k === idx ? "true" : "false"));
+      slides.forEach((s, k) => { s.inert = k !== idx; s.setAttribute("aria-hidden", k === idx ? "false" : "true"); });
+      next.textContent = idx === last ? "Los geht’s" : "Weiter";
+      box.setAttribute("aria-labelledby", slides[idx].querySelector("h2").id || "onbTitle1");
+    }
+    slides.forEach((s, k) => { const h = s.querySelector("h2"); if (h && !h.id) h.id = "onbTitle" + (k + 1); });
+    function finish() {
+      writeJSON(ONB_KEY, true);
+      const done = () => {
+        box.hidden = true;
+        box.classList.remove("is-leaving");
+        document.documentElement.classList.remove("onb-open");
+        if (!readJSON(TIPS_KEY, false)) openTips();
+      };
+      if (reduceMotion.matches) { done(); return; }
+      box.classList.add("is-leaving");
+      setTimeout(done, 300);
+    }
+    next.addEventListener("click", () => { if (idx === last) finish(); else go(idx + 1); });
+    $("onbSkipBtn").addEventListener("click", finish);
+    dots.forEach((d, k) => d.addEventListener("click", () => go(k)));
+    box.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") go(idx + 1);
+      else if (e.key === "ArrowLeft") go(idx - 1);
+      else if (e.key === "Escape") finish();
+      else trapTabKey(box, e);
+    });
+    // Swipe: the track follows the finger, a long or fast drag turns the page.
+    const vp = $("onbViewport");
+    let x0 = null, y0 = 0, t0 = 0, dx = 0, horiz = null;
+    vp.addEventListener("touchstart", (e) => {
+      e.stopPropagation(); // not the app-wide edge swipe "back"
+      if (e.touches.length !== 1) { x0 = null; return; }
+      x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now(); dx = 0; horiz = null;
+    }, { passive: true });
+    vp.addEventListener("touchmove", (e) => {
+      if (x0 === null) return;
+      dx = e.touches[0].clientX - x0;
+      const dy = e.touches[0].clientY - y0;
+      if (horiz === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) horiz = Math.abs(dx) > Math.abs(dy);
+      if (!horiz) return;
+      if (e.cancelable) e.preventDefault();
+      const edge = (idx === 0 && dx > 0) || (idx === last && dx < 0);
+      track.style.transition = "none";
+      track.style.transform = `translateX(calc(${-idx * 100}% + ${edge ? dx / 3 : dx}px))`;
+    }, { passive: false });
+    const end = (e) => {
+      if (e) e.stopPropagation();
+      if (x0 === null) return;
+      x0 = null;
+      track.style.transition = "";
+      if (!horiz) return;
+      const fast = Math.abs(dx) > 40 && Date.now() - t0 < 260;
+      if (dx < -Math.min(80, vp.clientWidth * 0.2) || (fast && dx < 0)) go(idx + 1);
+      else if (dx > Math.min(80, vp.clientWidth * 0.2) || (fast && dx > 0)) go(idx - 1);
+      else go(idx);
+    };
+    vp.addEventListener("touchend", end, { passive: true });
+    vp.addEventListener("touchcancel", end, { passive: true });
+    go(0);
+    document.documentElement.classList.add("onb-open");
+    box.hidden = false;
+    box.focus({ preventScroll: true });
+    return true;
+  }
+  function showTipsWhereHint() {
+    if (navigator.webdriver && !readJSON("fwmc-test-tipshint", false)) return;
+    const nav = $("bottomNav");
+    const moreBtn = nav && !nav.hidden ? nav.querySelector('[data-nav="more"]') : null;
+    const target = moreBtn || (barVis(els.tipsBtn) ? els.tipsBtn : null);
+    if (!target) return;
+    document.querySelectorAll(".where-toast").forEach((t) => t.remove());
+    const toast = document.createElement("div");
+    toast.className = "where-toast";
+    toast.setAttribute("role", "status");
+    toast.textContent = moreBtn ? "Tipps findest du jederzeit unter „Mehr“." : "Tipps findest du jederzeit hier.";
+    document.body.appendChild(toast);
+    const r = target.getBoundingClientRect(), tw = toast.offsetWidth;
+    const cx = r.left + r.width / 2;
+    const left = Math.max(16, Math.min(window.innerWidth - 16 - tw, cx - tw / 2));
+    toast.style.left = left + "px";
+    toast.style.setProperty("--caret-x", Math.max(18, Math.min(tw - 18, cx - left)) + "px");
+    if (moreBtn) toast.style.bottom = (window.innerHeight - r.top + 12) + "px";
+    else { toast.style.top = (r.bottom + 12) + "px"; toast.style.bottom = "auto"; toast.classList.add("no-caret"); }
+    target.classList.remove("nav-hint");
+    void target.offsetWidth;
+    target.classList.add("nav-hint");
+    setTimeout(() => target.classList.remove("nav-hint"), 2100);
+    setTimeout(() => {
+      if (reduceMotion.matches) { toast.remove(); return; }
+      toast.classList.add("is-leaving");
+      setTimeout(() => toast.remove(), 300);
+    }, reduceMotion.matches ? 3000 : 2400);
+  }
+
+  // ==== Wischen in Listen (Fabian, 2026-10-05: "Einen Termin oder ein
+  // eigenes Training nach links wischen, dann erscheinen 'Bearbeiten' und
+  // 'Löschen', so wie beim Löschen einer Mail am iPhone.") ====
+  // Touch only. A row from SWIPE_ROWS follows the finger to the left and
+  // reveals its action buttons behind it (a panel laid under the row, so the
+  // row itself is never moved in the DOM); swipe right, a tap on the row or
+  // anywhere else closes it; one row open at a time. The direction is decided
+  // after ~10 px like the edge swipe, so vertical scrolling stays native
+  // (rows have touch-action: pan-y); touches from x <= 28 px belong to the
+  // edge back swipe. Every action calls the list's existing function, and
+  // "Löschen" always asks via confirmDialog(). The visible buttons stay.
+  // Docs: docs/notes/01 (Gesten), test: tests/list_swipe_1005_test.py.
+  const SWIPE_BTN_W = 84, SWIPE_GAP = 8;
+  const SWIPE_ROWS = [
+    { sel: "#dayEvents .event-item", acts: (row) => {
+      const id = row.dataset.event;
+      return [{ label: "Bearbeiten", run: () => openEventSheet(id) }, { label: "Löschen", del: true, run: () => askDeleteEvent(id) }];
+    } },
+    { sel: "#dayPanelBody .day-item:not(.compact)", acts: (row) => {
+      const date = todaySel;
+      const o = occurrencesOn(date).find((x) => x.id === row.dataset.occ);
+      if (!o) return null;
+      if (o.extra) return [
+        { label: "Bearbeiten", run: () => openPlanEntry({ kind: "extra", date, id: o.id }) },
+        { label: "Löschen", del: true, run: () => confirmDialog(`„${entryTitle(o)}“ am ${longDate(date)} löschen?`, () => dayAction(date, o, "remove")) },
+      ];
+      const ph = phaseFor(date);
+      if (!ph) return null;
+      const di = wdIdx(date);
+      return [
+        { label: "Bearbeiten", run: () => openPlanEntry({ kind: "plan", pi: ph.index, di, id: o.id, fromToday: true }) },
+        { label: "Löschen", del: true, run: () => confirmDialog(`„${entryTitle(o)}“ aus dem Wochenplan löschen? Es fällt dann jeden ${WD_LONG[di]} weg. Nur für heute: „Heute auslassen“.`, () => { removePlanEntry(ph.index, di, o.id); renderToday(); }) },
+      ];
+    } },
+    { sel: "#planPhaseList .plan-item", acts: (row) => {
+      const ed = row.querySelector("[data-edit]"), del = row.querySelector("[data-del]");
+      if (!ed || !del) return null;
+      const title = ((row.querySelector(".plan-item-text") || row).firstChild || {}).textContent || "Training";
+      return [{ label: "Bearbeiten", run: () => ed.click() },
+        { label: "Löschen", del: true, run: () => confirmDialog(`„${title.trim()}“ aus dem Wochenplan löschen?`, () => del.click()) }];
+    } },
+    { sel: "#freeOwnGrid [data-free-id]", acts: (row) => {
+      const id = row.dataset.freeId;
+      return [{ label: "Bearbeiten", run: () => { const b = freeFind(id); if (b) openFreeEditor(b, "edit"); } },
+        { label: "Löschen", del: true, run: () => askDeleteFree(id) }];
+    } },
+    { sel: "#freeTrainerGrid [data-free-id]", acts: (row) => [{ label: "Löschen", del: true, run: () => askRemoveTrainerTemplate(row.dataset.freeId) }] },
+    // Saved settings / saved Kombi-Programme (renderPresetList): only delete exists there.
+    { sel: ".bundle-item-wrap", acts: (row) => {
+      const rm = row.querySelector(':scope > .combo-block-remove[title="Löschen"]');
+      if (!rm) return null;
+      const name = ((row.querySelector(".bundle-item strong") || {}).textContent || "").trim();
+      return [{ label: "Löschen", del: true, run: () => confirmDialog(`„${name}“ löschen?`, () => rm.click()) }];
+    } },
+  ];
+  const SWIPE_SEL = SWIPE_ROWS.map((r) => r.sel).join(", ");
+  (function wireListSwipe() {
+    let st = null;        // the touch being tracked
+    let open = null;      // { row, panel, w }
+    let suppressUntil = 0;
+    const findRow = (el) => {
+      if (!el || !el.closest) return null;
+      for (const r of SWIPE_ROWS) { const row = el.closest(r.sel); if (row) return { row, cfg: r }; }
+      return null;
+    };
+    function setX(row, x, animate) {
+      row.style.transition = animate && !reduceMotion.matches ? "transform .3s cubic-bezier(.2,.8,.2,1)" : "none";
+      row.style.transform = x ? `translateX(${x}px)` : "";
+    }
+    function buildPanel(row, acts) {
+      const parent = row.parentElement;
+      if (getComputedStyle(parent).position === "static") parent.style.position = "relative";
+      if (getComputedStyle(row).position === "static") row.style.position = "relative";
+      row.style.zIndex = "1";
+      // keep the sliding row inside its list (no overlap with the card or panel border around it)
+      parent.style.clipPath = "inset(-40px 0 -40px 0)";
+      const panel = document.createElement("div");
+      panel.className = "swipe-actions";
+      const w = acts.length * SWIPE_BTN_W + (acts.length - 1) * 6;
+      const radius = getComputedStyle(row).borderTopRightRadius;
+      Object.assign(panel.style, { top: row.offsetTop + "px", left: (row.offsetLeft + row.offsetWidth - w) + "px", width: w + "px", height: row.offsetHeight + "px" });
+      acts.forEach((a) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "swipe-act" + (a.del ? " swipe-del" : "");
+        b.dataset.swipeAct = a.del ? "delete" : "edit";
+        b.textContent = a.label;
+        b.style.borderRadius = radius && radius !== "0px" ? radius : "12px";
+        b.addEventListener("click", (e) => {
+          e.stopPropagation();
+          suppressUntil = 0; // the action may click the row's own button
+          closeOpen(false);
+          a.run();
+        });
+        panel.appendChild(b);
+      });
+      parent.appendChild(panel);
+      return { panel, w: w + SWIPE_GAP };
+    }
+    function closeOpen(animate = true) {
+      if (!open) return;
+      const { row, panel } = open;
+      open = null;
+      row.classList.remove("swipe-open");
+      setX(row, 0, animate && row.isConnected);
+      const done = () => {
+        const parent = panel.parentElement;
+        panel.remove(); row.style.zIndex = ""; row.style.transition = "";
+        if (parent && !(open && open.panel.parentElement === parent)) parent.style.clipPath = "";
+      };
+      if (animate && row.isConnected && !reduceMotion.matches) setTimeout(() => { if (!open || open.panel !== panel) done(); }, 320); else done();
+    }
+    document.addEventListener("touchstart", (e) => {
+      st = null;
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const target = e.target;
+      if (open) {
+        if (open.panel.contains(target)) return; // a tap on an action button
+        if (!open.row.contains(target) || !open.row.isConnected) {
+          closeOpen(); suppressUntil = Date.now() + 450; return;
+        }
+        st = { row: open.row, x: t.clientX, y: t.clientY, time: Date.now(), base: -open.w, dir: null, cur: -open.w, existing: true };
+        return;
+      }
+      if (t.clientX <= 28) return;
+      if (target.closest && target.closest("input, textarea, select, [data-drag-handle]")) return;
+      const hit = findRow(target);
+      if (!hit || !hit.row.getClientRects().length) return;
+      const sheet = hit.row.closest(".sheet");
+      if (document.querySelector(".sheet:not([hidden])") && !sheet) return;
+      st = { row: hit.row, cfg: hit.cfg, x: t.clientX, y: t.clientY, time: Date.now(), base: 0, dir: null, cur: 0 };
+    }, { passive: true });
+    document.addEventListener("touchmove", (e) => {
+      if (!st) return;
+      const t = e.touches[0];
+      const dx = t.clientX - st.x, dy = t.clientY - st.y;
+      if (!st.dir) {
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+        if (Math.abs(dy) >= Math.abs(dx)) {
+          if (st.existing) closeOpen();
+          st = null; return;
+        }
+        if (!st.existing) {
+          if (dx > 0) { st = null; return; } // a swipe to the right on a closed row does nothing
+          if (!tileSheet.hidden) { st = null; return; }
+          const acts = st.cfg.acts(st.row);
+          if (!acts || !acts.length) { st = null; return; }
+          const built = buildPanel(st.row, acts);
+          open = { row: st.row, panel: built.panel, w: built.w };
+          st.row.classList.add("swipe-open");
+        }
+        st.dir = "h";
+        st.x = t.clientX; // start following from here, no jump
+      }
+      const w = open ? open.w : 0;
+      let x = st.base + (t.clientX - st.x);
+      if (x < -w) x = -w - (-w - x) * 0.3; // rubber band past the buttons
+      x = Math.min(0, x);
+      st.cur = x;
+      setX(st.row, x, false);
+    }, { passive: true }); // rows have touch-action: pan-y, so the page never scrolls sideways
+    document.addEventListener("touchend", () => {
+      if (!st) return;
+      const s = st; st = null;
+      if (!s.dir) {
+        // a plain tap on the open row closes it (and does not open the item)
+        if (s.existing) { closeOpen(); suppressUntil = Date.now() + 450; }
+        return;
+      }
+      suppressUntil = Date.now() + 450;
+      if (!open || open.row !== s.row) return;
+      const fast = Date.now() - s.time < 250;
+      const moved = s.cur - s.base;
+      const shouldOpen = s.existing ? !(moved > open.w / 3 || (fast && moved > 25)) : (-s.cur > open.w / 2 || (fast && moved < -25));
+      if (shouldOpen) setX(s.row, -open.w, true); else closeOpen();
+    }, { passive: true });
+    document.addEventListener("touchcancel", () => {
+      if (!st) return;
+      const s = st; st = null;
+      if (open && open.row === s.row) { if (s.base) setX(s.row, s.base, true); else closeOpen(); }
+    }, { passive: true });
+    // Swallow the click that may follow a swipe or the tap that closed a row.
+    document.addEventListener("click", (e) => {
+      if (Date.now() >= suppressUntil) return;
+      if (e.target.closest && e.target.closest(".swipe-actions")) return;
+      e.preventDefault(); e.stopPropagation(); suppressUntil = 0;
+    }, true);
+    // Scrolling the page or changing the screen closes an open row.
+    window.addEventListener("scroll", () => { if (open && !st) closeOpen(); }, { passive: true });
+    new MutationObserver(() => { if (open && (!open.row.isConnected || !open.row.getClientRects().length)) closeOpen(false); })
+      .observe(document.body, { subtree: true, attributes: true, attributeFilter: ["hidden"], childList: true });
+  })();
+
   // ---- Start-up ----
   renderHistory();
   initStartScreen();
   openFromHash();
-  if (!readJSON(TIPS_KEY, false)) openTips();
+  if (!startOnboarding() && !readJSON(TIPS_KEY, false)) openTips();
 
   // ---- Startbild ausblenden (2026-10-05) ----
   // #appSplash covers the first paint; once the app is set up it fades out,
@@ -27255,9 +28324,192 @@
     if (!el) return;
     const gone = () => { el.classList.add("is-gone"); setTimeout(() => el.remove(), 400); };
     if (navigator.webdriver && !readJSON("fwmc-test-splash", false)) { el.remove(); return; }
-    setTimeout(gone, Math.max(0, 700 - performance.now()));
+    setTimeout(gone, Math.max(0, 1200 - performance.now())); // shown at least 1.2 s (Fabian 2026-10-05: "minimal länger")
   })();
   enablePageTransitions();
+
+  // ---- Erinnerungen (Push vor geplanten Trainings, 2026-10-05) ----
+  // Fabian approved: a reminder on the phone before every planned training
+  // of the Wochenplan (lead time "Zur Zeit"/5/10/15/30 min, default 10;
+  // entries without a time get one morning reminder, default 08:00). The
+  // app computes the next 14 days itself and sends only {at, title, body}
+  // plus the device's push subscription to the Worker (POST /reminders);
+  // the Worker's cron sends them via Web Push and deletes each one after
+  // sending. Switching off sends DELETE /reminders and unsubscribes.
+  // REMINDER_VAPID_PUBLIC_KEY is the Worker's VAPID public key (deployed
+  // 2026-10-05, worker/README.md). Without a key the switch is disabled and
+  // the sheet says "werden gerade eingerichtet" (tests: fwmc-test-reminder-key
+  // "off"). Details: docs/notes/26.
+  const REMINDER_VAPID_PUBLIC_KEY = "BCes2a8Y5x41WmaHmfOzmzxoUXIbEr06-LoBNnz98w8tMw_OAWN8Ses5tYGZXDwD0UrzaYBzot7mGVGjXVX7C7k";
+  const REMINDER_API = "https://online-training.fwmc.workers.dev/reminders";
+  const REMINDER_KEY = "fwmc-reminders-v1";
+  const REMINDER_LEADS = [0, 5, 10, 15, 30];
+  const REMINDER_DAYS = 14;
+  const REMINDER_MAX = 60;
+  var remState = null; // var: savePlan()/addHistory() may run before this block
+  function reminderPlanChanged() { if (remState && remState.prefs.on) remState.schedule(1500); }
+  (function initReminders() {
+    const prefs = Object.assign({ on: false, lead: 10, morning: "08:00" }, readJSON(REMINDER_KEY, {}) || {});
+    if (!REMINDER_LEADS.includes(prefs.lead)) prefs.lead = 10;
+    if (!/^\d{2}:\d{2}$/.test(prefs.morning || "")) prefs.morning = "08:00";
+    prefs.on = prefs.on === true;
+    remState = { prefs, timer: null, lastSync: 0, lastResult: null, busy: false, again: false };
+    // The bell on Heute's trainings follows the switch at once.
+    const savePrefs = () => { writeJSON(REMINDER_KEY, prefs); try { renderToday(); } catch (e) {} };
+    const vapidKey = () => { const ov = readJSON("fwmc-test-reminder-key", ""); return ov === "off" ? "" : (ov || REMINDER_VAPID_PUBLIC_KEY || ""); };
+    const groupEl = $("reminderGroup"), onCheck = $("reminderOnCheck"), statusEl = $("reminderStatus");
+    const morningInput = $("reminderMorningInput");
+
+    function support() {
+      if (!vapidKey()) return "setup";
+      const hasApis = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+      if (isIOS && !standalone) return "ios-install";
+      if (!hasApis) return "unsupported";
+      if (Notification.permission === "denied") return "denied";
+      return "ok";
+    }
+    const TEXTS = {
+      setup: "Erinnerungen werden gerade eingerichtet und sind bald verfügbar.",
+      "ios-install": "Am iPhone und iPad gehen Erinnerungen nur, wenn die App auf dem Startbildschirm liegt (ab iOS 16.4): In Safari auf „Teilen“ und dann auf „Zum Home-Bildschirm“ tippen, die App von dort öffnen und die Erinnerungen hier einschalten.",
+      unsupported: "Dieser Browser kann leider keine Erinnerungen anzeigen. Am Handy klappt es mit der App auf dem Startbildschirm, am Computer z. B. mit Chrome, Edge oder Firefox.",
+      denied: "Mitteilungen sind für diese App ausgeschaltet. Erlaube sie in den Einstellungen deines Geräts (bzw. des Browsers) und schalte die Erinnerungen dann hier wieder ein.",
+    };
+    function setStatus(text, ok) { statusEl.textContent = text; statusEl.classList.toggle("ok", !!ok); }
+    function syncUI() {
+      const s = support();
+      onCheck.checked = prefs.on;
+      onCheck.disabled = (s === "setup" || s === "ios-install" || s === "unsupported") && !prefs.on;
+      groupEl.classList.toggle("unavailable", s !== "ok" && !prefs.on);
+      document.querySelectorAll("[data-reminder-lead]").forEach((b) => setActive(b, Number(b.dataset.reminderLead) === prefs.lead));
+      morningInput.value = prefs.morning;
+      if (prefs.on) {
+        const r = remState.lastResult;
+        if (r && r.error) setStatus("Aktiv – die Erinnerungen konnten gerade nicht übertragen werden. Die App versucht es beim nächsten Öffnen noch einmal.", false);
+        else if (r) setStatus(r.count ? `Aktiv – ${r.count === 1 ? "1 Erinnerung" : r.count + " Erinnerungen"} in den nächsten 14 Tagen.` : "Aktiv – in den nächsten 14 Tagen ist noch kein Training geplant.", true);
+        else setStatus("Aktiv.", true);
+      } else if (s !== "ok") setStatus(TEXTS[s], false);
+      else setStatus("Aus. Beim Einschalten fragt dein Gerät, ob die App Mitteilungen schicken darf.", false);
+    }
+    remState.syncUI = syncUI;
+    if (prefs.on) { try { renderToday(); } catch (e) {} }
+
+    // Local date + "HH:MM" -> Date in the device's time zone (DST-safe).
+    function localAt(date, time) { const d = dParse(date); const [h, m] = time.split(":").map(Number); d.setHours(h, m, 0, 0); return d; }
+    function remLabel(e) { const a = AREA_BY_KEY[e.area]; return `${a ? a.label : "Training"} · ${e.minutes} Min.`; }
+    // The payload: only times and short texts, no names, no history.
+    function computeReminders(now) {
+      now = now || new Date();
+      const hist = loadHistory();
+      const out = [];
+      const today = dStr(now);
+      for (let i = 0; i < REMINDER_DAYS; i++) {
+        const date = dAdd(today, i);
+        const occ = occurrencesOn(date, hist).filter((o) => !o.done);
+        occ.filter((o) => o.time).forEach((o) => {
+          const at = new Date(localAt(date, o.time).getTime() - prefs.lead * 60000);
+          if (at <= now) return;
+          out.push({ at: at.toISOString(), title: `Training um ${o.time} Uhr`,
+            body: prefs.lead ? `In ${prefs.lead} Minuten: ${remLabel(o)}` : `Jetzt: ${remLabel(o)}` });
+        });
+        const untimed = occ.filter((o) => !o.time);
+        if (untimed.length) {
+          const at = localAt(date, prefs.morning);
+          if (at > now) {
+            out.push({ at: at.toISOString(), title: "Heute steht Training an",
+              body: untimed.length === 1 ? `Heute geplant: ${remLabel(untimed[0])}` : `Heute geplant: ${untimed.length} Trainings – ${untimed.map((o) => (AREA_BY_KEY[o.area] || {}).short || "Training").join(", ")}` });
+          }
+        }
+      }
+      out.sort((a, b) => a.at.localeCompare(b.at));
+      return out.slice(0, REMINDER_MAX);
+    }
+    window.__fwmcComputeReminders = computeReminders; // used by the test
+
+    function b64urlToBytes(s) {
+      const pad = "=".repeat((4 - (s.length % 4)) % 4);
+      const bin = atob((s + pad).replace(/-/g, "+").replace(/_/g, "/"));
+      return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    }
+    function withTimeout(p, ms) { return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]); }
+    async function getSubscription(create) {
+      const reg = await withTimeout(navigator.serviceWorker.ready, 8000);
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub && create) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64urlToBytes(vapidKey()) });
+      return sub;
+    }
+    async function sendJSON(method, body) {
+      const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+      const t = ctrl ? setTimeout(() => ctrl.abort(), 12000) : null;
+      try {
+        const res = await fetch(REMINDER_API, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: ctrl ? ctrl.signal : undefined });
+        return res.ok;
+      } catch (e) { return false; } finally { if (t) clearTimeout(t); }
+    }
+    async function syncNow() {
+      if (!prefs.on || support() !== "ok") return;
+      if (remState.busy) { remState.again = true; return; }
+      remState.busy = true;
+      try {
+        let sub = null;
+        try { sub = await getSubscription(Notification.permission === "granted"); } catch (e) { sub = null; }
+        if (!sub) { remState.lastResult = { error: true }; return; }
+        const reminders = computeReminders();
+        const ok = await sendJSON("POST", { subscription: sub.toJSON ? sub.toJSON() : sub, reminders });
+        if (!prefs.on) return; // switched off meanwhile
+        remState.lastResult = ok ? { count: reminders.length } : { error: true };
+        remState.lastSync = Date.now();
+      } finally {
+        remState.busy = false; syncUI();
+        if (remState.again) { remState.again = false; schedule(0); }
+      }
+    }
+    function schedule(ms) {
+      clearTimeout(remState.timer);
+      remState.timer = setTimeout(syncNow, ms || 0);
+    }
+    remState.schedule = schedule;
+
+    async function enable() {
+      const s = support();
+      if (s !== "ok") { prefs.on = false; syncUI(); return; }
+      setStatus("Einen Moment …", false);
+      let perm = Notification.permission;
+      if (perm !== "granted") { try { perm = await Notification.requestPermission(); } catch (e) { perm = "denied"; } }
+      if (perm !== "granted") {
+        prefs.on = false; savePrefs(); syncUI();
+        if (perm !== "denied") setStatus("Ohne deine Erlaubnis für Mitteilungen kann die App nicht erinnern. Schalte die Erinnerungen ein und tippe dann auf „Erlauben“.", false);
+        return;
+      }
+      let sub = null;
+      try { sub = await getSubscription(true); } catch (e) { sub = null; }
+      if (!sub) { prefs.on = false; savePrefs(); syncUI(); setStatus("Das Einschalten hat gerade nicht geklappt. Bitte versuche es später noch einmal.", false); return; }
+      prefs.on = true; savePrefs(); remState.lastResult = null;
+      await syncNow();
+    }
+    async function disable() {
+      prefs.on = false; savePrefs(); remState.lastResult = null; clearTimeout(remState.timer);
+      syncUI();
+      try {
+        const sub = "serviceWorker" in navigator && "PushManager" in window ? await getSubscription(false) : null;
+        if (sub) { await sendJSON("DELETE", { endpoint: sub.endpoint }); try { await sub.unsubscribe(); } catch (e) {} }
+      } catch (e) {}
+    }
+    onCheck.addEventListener("change", () => { if (onCheck.checked) enable(); else disable(); });
+    document.querySelectorAll("[data-reminder-lead]").forEach((b) => b.addEventListener("click", () => {
+      prefs.lead = Number(b.dataset.reminderLead); savePrefs(); syncUI(); reminderPlanChanged();
+    }));
+    morningInput.addEventListener("change", () => {
+      if (!/^\d{2}:\d{2}$/.test(morningInput.value)) { morningInput.value = prefs.morning; return; }
+      prefs.morning = morningInput.value; savePrefs(); reminderPlanChanged();
+    });
+    // Keep the 14-day window rolling: on start, and when the app comes back
+    // after six hours or more.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && prefs.on && Date.now() - remState.lastSync > 6 * 3600000) schedule(1000);
+    });
+    syncUI();
+    if (prefs.on) schedule(2000);
+  })();
 
   // ---- Hinweis "Zum Startbildschirm hinzufügen" (2026-10-05) ----
   // One card on Heute, only on a phone/tablet in the browser (not when

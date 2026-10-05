@@ -41,7 +41,7 @@ async def main():
         await pg.add_init_script("localStorage.setItem('fwmc-admin-token','test')")
         await pg.goto(DASH); await pg.wait_for_timeout(500)
 
-        print("kind row with 4 areas:", await pg.locator("#kindRow [data-kind]").count() == 4)
+        print("kind row with 5 areas:", await pg.locator("#kindRow [data-kind]").count() == 5)
         print("visual builder shown by default:", await pg.is_visible("#visualBuilder") and await pg.is_hidden("#movementBuilder"))
 
         # ---- Movement ----
