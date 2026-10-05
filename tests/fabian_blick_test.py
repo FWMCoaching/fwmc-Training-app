@@ -329,7 +329,12 @@ NUM = re.compile(r"\d+(\.\d+)?")
 def fkey(f):
     # Stable key without the config so a finding in all 4 configs counts once.
     msg = NUM.sub("#", f["msg"])[:120]
-    return f"{f['cat']}|{f['state']}|{f.get('el','')}|{msg}"
+    el = f.get("el", "")
+    if f["cat"] in ("taste", "druck", "dunkel"):
+        el = re.sub(r' ".*', "", el)  # same kind of control = one finding, whatever its label
+        if f["cat"] == "dunkel":
+            msg = re.sub(r"\(#.*", "", msg)
+    return f"{f['cat']}|{f['state']}|{el}|{msg}"
 
 
 def write_report(findings, states, starts, new_keys, secs):
