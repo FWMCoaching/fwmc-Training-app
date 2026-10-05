@@ -59,6 +59,11 @@ async def main():
         loose = await pg.evaluate("""() => [...document.querySelectorAll('.screen .back-link')]
           .filter(b => !b.matches('.screen > .brandbar > .back-link.bar-back-btn:first-child')).map(b => b.id)""")
         check("every back link is the round button in the logo bar", not loose, loose[:5])
+        # Same frame everywhere (2026-10-05): every area home, Heute included,
+        # offers the Kombi-Programm entry.
+        no_combo = await pg.evaluate("""() => ['todayHome','home','breathHome','movementHome','workoutHome','cardioHome','natHome']
+          .filter(id => !document.querySelector('#' + id + ' .combo-entry-link'))""")
+        check("every area home has the Kombi-Programm entry", not no_combo, no_combo)
         await b.close()
 
         b = await p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"])
