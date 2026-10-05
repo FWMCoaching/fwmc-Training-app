@@ -223,7 +223,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 04.10.2026, 21:38</p>
+    <p class="app-version">Stand: 05.10.2026, 07:59</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -315,7 +315,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 04.10.2026, 21:38</p>
+    <p class="app-version">Stand: 05.10.2026, 07:59</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -470,7 +470,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 04.10.2026, 21:38</p>
+    <p class="app-version">Stand: 05.10.2026, 07:59</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -543,7 +543,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 04.10.2026, 21:38</p>
+    <p class="app-version">Stand: 05.10.2026, 07:59</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -653,7 +653,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 04.10.2026, 21:38</p>
+    <p class="app-version">Stand: 05.10.2026, 07:59</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -725,7 +725,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 04.10.2026, 21:38</p>
+    <p class="app-version">Stand: 05.10.2026, 07:59</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1098,7 +1098,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 04.10.2026, 21:38</p>
+    <p class="app-version">Stand: 05.10.2026, 07:59</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1301,7 +1301,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 04.10.2026, 21:38</p>
+    <p class="app-version">Stand: 05.10.2026, 07:59</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -6148,6 +6148,13 @@
       </div>
     </div>
 
+    <div class="group">
+      <div class="group-label">In allen &Uuml;bungen</div>
+      <label class="checkbox-row"><input type="checkbox" id="masterSoundCheck"> T&ouml;ne und Ansagen</label>
+      <label class="checkbox-row"><input type="checkbox" id="masterStartCountdownCheck"> Countdown 3-2-1 vor dem Start</label>
+      <div class="group-help">Den Ton kannst du auch w&auml;hrend jeder &Uuml;bung unten in der Steuerleiste mit &#128266; an- und ausschalten. Im Workout gilt vor dem Start die eigene Vorbereitungszeit aus den Feineinstellungen.</div>
+    </div>
+
     <div class="group cue-master" id="masterCuesGroup"></div>
 
     <div class="group" id="masterCodeHistoryGroup" hidden>
@@ -6227,7 +6234,13 @@
   <span class="step-slot" data-slot="restart"><button type="button" id="stepRestartBtn" title="Neu starten" aria-label="Neu starten">&#8635;</button></span>
   <span class="step-slot" data-slot="extra"></span>
   <span class="step-slot" data-slot="next"><button type="button" id="stepNextBtn" title="Weiter" aria-label="Weiter">&raquo;</button></span>
+  <span class="step-slot step-sound"><button type="button" id="stepSoundBtn" class="sound-toggle-btn" title="Ton an/aus" aria-label="Ton an/aus">&#128266;</button></span>
 </nav>
+<div class="lead-in" id="leadIn" hidden>
+  <div class="lead-in-label">Gleich geht&rsquo;s los</div>
+  <div class="lead-in-num" id="leadInNum">3</div>
+  <button type="button" class="lead-in-cancel" id="leadInCancelBtn">Abbrechen</button>
+</div>
 <div id="stepNavParking" hidden></div>
 
 <script src="./app.js" defer></script>

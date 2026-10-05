@@ -53,8 +53,12 @@ async def main():
         check("no 'dein Coach' in app texts", not coach_js, coach_js[:2])
 
         backs = await pg.evaluate("""() => ['progressScreen','planScreen'].map(id =>
-          !!document.querySelector('#' + id + ' .readyhead .back-link'))""")
-        check("Heute sub screens use the shared back link", all(backs), backs)
+          !!document.querySelector('#' + id + ' > .brandbar > .back-link.bar-back-btn'))""")
+        check("Heute sub screens use the shared back button in the logo bar", all(backs), backs)
+        # Every sub page: its back link sits top left in the logo bar (2026-10-05)
+        loose = await pg.evaluate("""() => [...document.querySelectorAll('.screen .back-link')]
+          .filter(b => !b.matches('.screen > .brandbar > .back-link.bar-back-btn:first-child')).map(b => b.id)""")
+        check("every back link is the round button in the logo bar", not loose, loose[:5])
         await b.close()
 
         b = await p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"])
