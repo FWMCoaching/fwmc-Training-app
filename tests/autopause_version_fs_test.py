@@ -36,7 +36,7 @@ with sync_playwright() as p:
 
     # 14: version stamp
     stamps = pg.evaluate("[...document.querySelectorAll('.site-footer .app-version')].map(e=>e.textContent.trim())")
-    check("every footer has a Stand line", len(stamps) == 10)
+    check("every footer has a Stand line", len(stamps) == 11)
     check("Stand looks like a date and time", all(re.fullmatch(r"Stand: \d\d\.\d\d\.\d{4}, \d\d:\d\d", s) for s in stamps))
     check("version visible on home", pg.locator("#home .app-version").is_visible())
 

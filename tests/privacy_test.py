@@ -24,7 +24,7 @@ async def main():
             pg.on("console", lambda m: errors.append("console: " + m.text) if m.type == "error" else None)
             await pg.goto(URL); await pg.wait_for_timeout(400)
             if scheme == "light":
-                check("10 footer buttons", await pg.locator(".site-footer .privacy-open-btn").count() == 10)
+                check("11 footer buttons", await pg.locator(".site-footer .privacy-open-btn").count() == 11)
                 check("no footer link to an external Datenschutz page", await pg.locator('.site-footer a', has_text="Datenschutz").count() == 0)
             check("sheet hidden at start", await pg.is_hidden("#privacySheet"))
             await pg.locator("#home .site-footer .privacy-open-btn").click(); await pg.wait_for_timeout(200)

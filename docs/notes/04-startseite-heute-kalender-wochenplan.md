@@ -29,7 +29,8 @@ Training) is no longer the default.
 - **Plan model** (`fwmc-plan-v1`): `{startDate (a Monday), phases:[{id,
   name, weeks (0 = unbegrenzt), days[7][entries]}], extras:{date:[entries]},
   skips:{date:[ids]}, done:{date:[ids]}}`. An entry is `{id, area, what
-  ("ex:<exerciseId>" | "nat:<sub>" | ""), code, time, minutes}`. Phases
+  ("ex:<exerciseId>" | "nat:<sub>" | "free:<freeBlockId>" | ""), code, time, minutes}`
+  (`free:` = one Freier Baustein, see docs/notes/25-freier-baustein.md). Phases
   follow each other. An unlimited phase that is not the last one gets a
   warning, because the phases after it would never start.
   `occurrencesOn(date)` computes a day: phase entries + extras − skips. An

@@ -1057,6 +1057,180 @@
   <button class="back" id="cardioDoneBackBtn">Zur &Uuml;bersicht</button>
 </div>
 
+<div class="screen" id="freeHome" hidden>
+  <header class="brandbar">
+    <img class="brand-logo" src="logo-full.png" width="900" height="177" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC <span class="nowrap">Online-Training</span></em>
+    <button class="master-settings-btn" type="button" aria-label="Grundeinstellungen">&#9881;&#xFE0F;</button>
+  </header>
+
+  <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Cardio</button>
+    <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
+    <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
+  </nav>
+
+  <button class="combo-entry-link" data-open-combo="1">Kombi-Programm aus mehreren Bereichen &rarr;</button>
+
+  <section class="hero">
+    <div class="hero-kicker">Freie Bausteine</div>
+    <h1 class="hero-title">Dein Training au&szlig;erhalb der App.</h1>
+    <p class="hero-text">Dehnen, Eisbad, Mobilisation oder Journal: Lege eigene Bausteine an&nbsp;&ndash; zum Abhaken, mit Zeit oder als Checkliste.</p>
+  </section>
+
+  <section class="code-card">
+    <h2>Dein pers&ouml;nliches Training</h2>
+    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
+    <div class="program-entry-row">
+      <input type="text" id="freeProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <button id="freeProgramGoBtn">&Ouml;ffnen</button>
+    </div>
+    <div class="program-error" id="freeProgramError" role="alert" hidden>Zu diesem Code wurde kein Training gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
+  </section>
+
+  <section class="patterns">
+    <div class="section-head">
+      <h2>Deine Bausteine</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t</span>
+    </div>
+    <p class="group-help" id="freeOwnEmpty">Noch kein eigener Baustein &ndash; leg einen an oder kopiere die Vorlage unten.</p>
+    <div class="featured-grid" id="freeOwnGrid"></div>
+    <button class="featured-card free-new-card" id="freeNewBtn">
+      <span class="fc-title">+ Neuer Baustein</span>
+      <span class="fc-desc">Titel, Art und Inhalt selbst festlegen.</span>
+    </button>
+  </section>
+
+  <section class="patterns">
+    <div class="section-head">
+      <h2>Vorlagen</h2>
+      <span class="section-note">direkt starten oder kopieren</span>
+    </div>
+    <div class="featured-grid" id="freeTplGrid"></div>
+  </section>
+
+  <section class="history" id="freeHistorySection" hidden>
+    <div class="section-head">
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
+    </div>
+    <div class="history-stats" id="freeHistoryStats"></div>
+    <ul class="history-list" id="freeHistoryList"></ul>
+    <div class="history-actions">
+      <button class="text-link small" id="freeHistoryMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="freeHistoryClearBtn">Verlauf l&ouml;schen</button>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
+    <p class="app-version">Stand: __APP_STAND__</p>
+    <nav>
+      <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
+      <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
+      <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a>
+      <button class="privacy-open-btn" type="button">Datenschutz</button>
+    </nav>
+  </footer>
+</div>
+
+<div class="screen" id="freeReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="freeBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="freeReadyTitle">&nbsp;</h1>
+  <div class="program-meta" id="freeReadyMeta"></div>
+  <p class="page-sub" id="freeReadyNote" hidden></p>
+  <div class="chapter-list" id="freeReadyItems"></div>
+  <button class="start-btn" id="freeStartBtn">Training starten</button>
+  <div class="free-ready-actions">
+    <button class="text-link" id="freeEditBtn">Bearbeiten</button>
+    <button class="text-link" id="freeCopyBtn">Kopieren und anpassen</button>
+  </div>
+</div>
+
+<div class="screen" id="freeEdit" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="freeEditBack">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="freeEditTitle">Neuer Baustein</h1>
+  <p class="page-sub" id="freeEditHint">Lege fest, was du machst und wie es in der App ablaufen soll.</p>
+
+  <div class="group">
+    <div class="group-label">Art</div>
+    <div class="choice-row" id="freeKindRow">
+      <button type="button" class="choice" data-free-kind="check">Abhaken<small>nur erledigen</small></button>
+      <button type="button" class="choice" data-free-kind="timer">Mit Zeit<small>Timer l&auml;uft</small></button>
+      <button type="button" class="choice" data-free-kind="list">Checkliste<small>Punkt f&uuml;r Punkt</small></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <label class="group-label" for="freeTitleInput">Titel</label>
+    <input type="text" class="free-input" id="freeTitleInput" maxlength="40" placeholder="z.&nbsp;B. Eisbad, Mobilisation, Journal">
+  </div>
+
+  <div class="group">
+    <label class="group-label" for="freeNoteInput">Notiz <span class="group-count">optional</span></label>
+    <textarea class="free-input" id="freeNoteInput" rows="2" maxlength="160" placeholder="Wird w&auml;hrend des Trainings angezeigt"></textarea>
+  </div>
+
+  <div class="group" id="freeMinutesGroup" hidden>
+    <div class="group-label">Dauer</div>
+    <div class="slider-row">
+      <span class="slider-label">Zeit</span>
+      <input type="range" id="freeMinutesSlider" min="1" max="60" step="1" aria-label="Dauer in Minuten">
+      <span class="slider-value" id="freeMinutesValue"></span>
+    </div>
+  </div>
+
+  <div class="group" id="freeItemsGroup" hidden>
+    <div class="group-label">Punkte der Checkliste <span class="group-count" id="freeItemCount"></span></div>
+    <p class="group-help">Mit Sekunden l&auml;uft ein Countdown und es geht von allein weiter. Tippst du &minus; bis &bdquo;ohne Zeit&ldquo;, hakst du den Punkt selbst ab.</p>
+    <div class="chapter-list" id="freeItemList"></div>
+    <button type="button" class="text-link" id="freeItemAddBtn">+ Punkt hinzuf&uuml;gen</button>
+  </div>
+
+  <p class="group-help" id="freeSaveHint" hidden>Trag mindestens einen Punkt ein, dann kannst du speichern.</p>
+  <button class="start-btn" id="freeSaveBtn">Speichern</button>
+  <button class="text-link free-delete-btn" id="freeDeleteBtn" hidden>Baustein l&ouml;schen</button>
+</div>
+
+<div class="player" id="freePlayer" hidden>
+  <div class="cardio-stage free-stage">
+    <div class="cardio-block-progress" id="freeRunProgress"></div>
+    <h2 class="cardio-activity-title" id="freeRunTitle"></h2>
+    <div class="free-run-item" id="freeRunItem" hidden></div>
+    <div class="cardio-countdown" id="freeRunCountdown" hidden>0:00</div>
+    <div class="cardio-activity-label" id="freeRunNote" hidden></div>
+    <button type="button" class="free-tick-btn" id="freeTickBtn">&#10003; Erledigt</button>
+    <div class="cardio-activity-label" id="freeRunNext" hidden></div>
+    <div class="chapter-nav">
+      <button id="freePrevBtn" title="Vorheriger Punkt" aria-label="Vorheriger Punkt">&laquo;</button>
+      <button id="freeRestartBtn" title="Punkt neu starten" aria-label="Punkt neu starten">&#8635;</button>
+      <button id="freeSkipBtn" title="Weiter zum n&auml;chsten Punkt" aria-label="Weiter zum n&auml;chsten Punkt">&raquo;</button>
+    </div>
+  </div>
+  <div class="player-bar" id="freePlayerBar">
+    <button id="freeBackBtn">&#10005; Beenden</button>
+    <button id="freePauseBtn">Pause</button>
+  </div>
+</div>
+
+<div class="done-panel" id="freeDonePanel" hidden>
+  <div class="done-check">&#10003;</div>
+  <h2>Geschafft!</h2>
+  <p class="done-summary" id="freeDoneSummary"></p>
+  <div class="rating" id="freeRating"></div>
+  <button class="again" id="freeAgainBtn">Nochmal</button>
+  <button class="back" id="freeDoneBackBtn">Zur &Uuml;bersicht</button>
+</div>
+
 <div class="screen" id="natHome" hidden>
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" width="900" height="177" alt="Fabian Westermann Mentalcoaching">

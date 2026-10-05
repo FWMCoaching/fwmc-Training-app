@@ -233,6 +233,7 @@ everywhere goes here, short.
 | 22-client-security... | Worker hardening, Test unlock word, epilepsy note, open review items |
 | 23-test-bereich | **Instructions for the "Test-Bereich" Routine** (read fully if woken by it), roster, open questions |
 | 24-claude-md-langfassung-2026-10-05 | verbatim CLAUDE.md before the 2026-10-05 slimming (reasons, history) |
+| 25-freier-baustein | Freie Bausteine area: model, kinds, Dehnen template, editor, player, Kombi/plan/history wiring |
 
 ## Must-do rules collected from the detail notes
 
@@ -330,5 +331,12 @@ For every new or changed exercise/screen, in the same commit:
   switch `masterPrefs.levelSuggest` in Grundeinstellungen. Details and the
   assumed thresholds: docs/notes/02. A new NAT exercise with difficulty
   levels gets a `LEVEL_SUGGEST_EX` entry. Test: `tests/level_suggest_1005_test.py`.
+- Freie Bausteine (2026-10-05): 7th area `free` (`#freeHome`, Training hub
+  tile, `?bereich=free`), the client's own activities as Abhaken / Mit Zeit /
+  Checkliste in `fwmc-free-blocks-v1` + read-only templates (`FREE_TEMPLATES`,
+  "Dehnen"). Kombi blocks keep their own copy (`{domain:"free", free}`),
+  plan entries can name one (`what: "free:<id>"`), history kind `free`.
+  A new template is one `FREE_TEMPLATES` entry. Details: docs/notes/25.
+  Test: `tests/free_block_1005_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

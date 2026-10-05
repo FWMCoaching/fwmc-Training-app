@@ -3,6 +3,13 @@
 @font-face{font-family:"Magra";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/magra-400.woff2) format("woff2")}
 @font-face{font-family:"Magra";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/magra-700.woff2) format("woff2")}
 @font-face{font-family:"Public Sans";font-style:normal;font-weight:100 900;font-display:swap;src:url(fonts/public-sans.woff2) format("woff2")}
+/* Magra only has old-style digits (3, 4, 5, 7, 9 hang below the line, 6 and
+   8 stand taller), so numbers in headings, timers and results jumped in
+   height. Digits inside any Magra text come from Public Sans instead
+   (same family name + unicode-range: the browser uses this face just for
+   0-9). Reviewer note, fixed 2026-10-05. */
+@font-face{font-family:"Magra";font-style:normal;font-weight:400;font-display:swap;unicode-range:U+0030-0039;src:url(fonts/public-sans.woff2) format("woff2")}
+@font-face{font-family:"Magra";font-style:normal;font-weight:700;font-display:swap;unicode-range:U+0030-0039;src:url(fonts/public-sans.woff2) format("woff2")}
 
 :root{
   --brand:#007094;
@@ -2153,3 +2160,40 @@ a.featured-card{text-decoration:none;color:inherit}
 .level-suggest p{margin:4px 0 10px;font-size:14px;color:#16232a}
 .level-suggest .start-btn{width:100%;min-height:44px;padding:12px;font-size:16px;background:#fff;color:#007094;border:1.5px solid #007094;box-shadow:none}
 .level-suggest .text-link{display:block;min-height:44px;width:100%;text-align:center;color:#00546f}
+
+/* ==== Freie Bausteine (2026-10-05) ==== */
+.free-new-card{width:100%;margin-top:10px}
+@media (min-width:600px){.free-new-card{width:calc(50% - 5px)}}
+#freeOwnEmpty{margin:0 0 10px}
+.free-input{
+  width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px;
+  font-family:inherit;color:var(--ink);background:var(--surface);min-height:44px;
+}
+#freeKindRow .choice{min-height:44px}
+.free-item-row{gap:6px}
+.free-item-num{
+  width:30px;height:30px;border-radius:50%;background:var(--brand);color:#fff;flex:none;
+  display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;
+}
+.free-item-tools{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.free-item-moves{display:flex;gap:4px;margin-left:auto}
+.free-item-btn{
+  width:44px;height:44px;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--surface-2);
+  color:var(--ink);font-size:17px;font-weight:700;cursor:pointer;line-height:1;
+}
+.free-item-time{min-width:64px;white-space:nowrap}
+.free-ready-actions{display:flex;justify-content:center;gap:18px;margin-top:12px}
+.free-ready-actions .text-link{min-height:44px}
+#freeReadyItems{margin-bottom:18px}
+.free-delete-btn{display:block;margin:14px auto 0;min-height:44px;color:var(--warn)}
+#freeItemAddBtn{align-self:flex-start;min-height:44px}
+/* Stage: fixed hex like every player (it stays white in dark mode). */
+.free-run-item{font-family:"Magra",sans-serif;font-weight:700;font-size:32px;line-height:1.2;color:#00536e;max-width:30ch;overflow-wrap:break-word}
+.free-stage .cardio-activity-title{max-width:22ch;overflow-wrap:break-word}
+.free-stage .cardio-activity-label{max-width:40ch}
+.free-tick-btn{
+  min-width:200px;min-height:56px;padding:12px 28px;border:none;border-radius:16px;cursor:pointer;
+  background:#007094;color:#ffffff;font-family:"Magra",sans-serif;font-weight:700;font-size:20px;
+}
+.free-tick-btn:active{background:#00536e}
+#freeNoteInput{resize:vertical;line-height:1.4}

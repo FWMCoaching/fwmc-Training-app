@@ -1,0 +1,72 @@
+# Freie Bausteine (2026-10-05)
+
+Client's ask: own activities outside the app (Dehnen, Eisbad,
+Mobilisation, Journal ...) that can be planned, combined and logged.
+Built as a 7th area "Freie Bausteine" (`PLAN_AREAS` key `free`, colour
+#a0527a), reached via the Training hub tile and the Heute area tiles
+(no tab in the old 8-tab grid on purpose: a 9th tab would break the
+4-column grid; with the bottom bar the tab row is hidden anyway).
+`?bereich=free` (or `frei`) opens it directly.
+
+## Model
+- Storage `fwmc-free-blocks-v1`: `[{id, kind, title, note, minutes, items:[{text, s}]}]`,
+  normalised by `freeClean()` (title max 40, falls back to "Eigener
+  Baustein"; note max 160; minutes 1-60; item seconds 0-600, 0 = tick yourself).
+- Kinds (`FREE_KINDS`): `check` "Abhaken" (title + "✓ Erledigt"),
+  `timer` "Mit Zeit" (slider 1-60 min in 1-min steps, countdown),
+  `list` "Checkliste" (points one after another; a point with seconds
+  shows a countdown and moves on by itself, a point without shows
+  "✓ Erledigt"; "Als Nächstes: …" below).
+- Templates `FREE_TEMPLATES` (read-only, id `tpl-…`): "Dehnen" =
+  Checkliste with 8 generic stretches of 30 s (Waden, Oberschenkel vorne/
+  hinten, Hüftbeuger, Gesäß, Brust, Schultern, Nacken). "Kopieren und
+  anpassen" opens the editor with a copy; saving creates an own Baustein.
+
+## Screens
+- `#freeHome`: same frame as Cardio (logo bar, tab row, Kombi link, hero,
+  code card using the generic `openProgramIntro` like Mehr, "Deine
+  Bausteine" `.featured-card`s + "+ Neuer Baustein", "Vorlagen", history
+  prefix `free`, footer).
+- `#freeReady`: title, meta, note, the checklist points, "Training starten"
+  (`freeStartBtn`, in `LEADIN_START_IDS` = 3-2-1), "Bearbeiten" (own) or
+  "Kopieren und anpassen" (template).
+- `#freeEdit`: kind row, title, note (textarea), duration slider or the
+  point editor (text, −/+ seconds: 0 → 10 s, 5-s steps to 1 min, then
+  15 s; ↑ ↓ ✕, all 44 px), "Speichern"; "Baustein löschen" via
+  `confirmDialog()` only when editing an own one.
+- `#freePlayer` (`.player`, reuses the `.cardio-stage` classes, fixed hex):
+  `freeBackBtn` "✕ Beenden", `freePauseBtn` "Pause" (shared "Pausiert"
+  sheet via `openTrainPause`), « ↻ » via `stepCtx` (`freePrevBtn`/
+  `freeRestartBtn`/`freeSkipBtn`), swipe nav, beeps in the last 3 s of a
+  timed point (`playWorkoutBeep`, follows "Töne und Ansagen").
+- `#freeDonePanel`: "Geschafft!", rating, Nochmal, Zur Übersicht.
+
+## Everywhere
+- Verlauf: `addHistory({kind:"free", title, freeId, seconds, note})`,
+  seconds = real elapsed time minus pauses. "»" on the last point =
+  aborted (`note:"abgebrochen"`, `setDonePanelAborted`); "✕ Beenden"
+  leaves no entry (like Cardio). "Weitermachen" on Heute reopens the same
+  Baustein via `freeId`.
+- Wochenplan: area `free`, the "Training" select lists every Baustein
+  (`what: "free:<id>"`, templates included); `startEntry` opens that
+  Baustein's ready screen. Auto-tick is per area (`historyAreaOf` →
+  `free`), like every other area: any finished free run that day ticks
+  one planned free entry.
+- Kombi: group "Freier Baustein" in `COMBO_CAPTURE_ENTRIES.free` (own +
+  templates + "Neuer freier Baustein"); each opens `#freeEdit` in capture
+  mode ("Baustein übernehmen", edits apply to the block only). Block shape
+  `{domain:"free", free:{kind,title,note,minutes,items}}` - its own copy,
+  so later edits of the saved Baustein never change a captured Kombi.
+  `COMBO_EDIT_OPENERS.free`, label/meta/seconds, `startComboBlock()` →
+  `startFreeRun()`; finish → `advanceComboProgram()`, Beenden →
+  `abortComboProgram()`. `currentHomeScreen()` knows the area
+  (`freeAreaActive`), so a Kombi started here returns here.
+- Not applicable (no stage objects/colours): Größe/Farbe, CVD,
+  background colour (`MASTER_BG_TARGETS`), Cardio-Zusatzaufgabe.
+- Not built / open for Fabian: own icons per Baustein, sharing a Baustein
+  via trainer code, more templates (e.g. Mobilisation, Atemübung vor dem
+  Schlafen), whether "Abhaken" should log a chosen duration instead of the
+  (near zero) real time.
+
+Test: `tests/free_block_1005_test.py`; also in `tests/text_wrap_audit_test.py`
+(area + ready + editor) and `tests/bottom_nav_1005_test.py` (7 hub tiles).

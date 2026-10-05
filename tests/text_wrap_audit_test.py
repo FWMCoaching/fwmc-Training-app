@@ -11,7 +11,7 @@ from playwright.async_api import async_playwright
 # New screens get covered by adding them to AREAS / the NAT loop.
 
 BASE = "http://localhost:8845/index.html?bereich="
-AREAS = ["heute", "visual", "breath", "movement", "workout", "cardio", "nat", "test"]
+AREAS = ["heute", "visual", "breath", "movement", "workout", "cardio", "nat", "test", "free"]
 WIDTHS = [375, 390, 430, 600, 768, 820, 1024, 1180, 1366]
 
 AUDIT_JS = r"""
@@ -84,6 +84,12 @@ async def main():
                     for s in subs[1:]:
                         await pg.click(f'#natHome .sub-tab[data-nat-sub="{s}"]'); await pg.wait_for_timeout(150)
                         await audit(pg, f"{w}px nat/{s}", problems)
+                if area == "free":
+                    # Freie Bausteine: ready screen and editor (checklist) of the template
+                    await pg.click('#freeTplGrid [data-free-id="tpl-dehnen"]'); await pg.wait_for_timeout(150)
+                    await audit(pg, f"{w}px free/ready", problems)
+                    await pg.click("#freeCopyBtn"); await pg.wait_for_timeout(150)
+                    await audit(pg, f"{w}px free/edit", problems)
             await ctx.close()
         await b.close()
     for x in problems: print("  " + x)
