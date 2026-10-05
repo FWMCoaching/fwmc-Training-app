@@ -243,6 +243,8 @@
 
   <section class="today-main" id="todayMain" aria-live="polite"></section>
 
+  <section class="today-main event-countdown" id="todayCountdown" hidden></section>
+
   <section class="today-main install-hint" id="installHint" hidden>
     <div class="today-main-kicker">Tipp</div>
     <h2 class="today-main-title">Als App auf den Startbildschirm</h2>
@@ -277,8 +279,10 @@
           <button class="day-view-btn" data-day-view="hours" type="button">Stunden</button>
         </div>
       </div>
+      <div id="dayEvents"></div>
       <div id="dayPanelBody"></div>
-      <button class="text-link small" id="dayAddBtn" type="button">+ Nur an diesem Tag etwas eintragen</button>
+      <button class="text-link small" id="dayAddBtn" type="button">+ App-Training nur f&uuml;r diesen Tag eintragen</button>
+      <button class="text-link small" id="dayEventAddBtn" type="button">+ Eigenen Termin eintragen (z. B. Wettkampf)</button>
     </div>
     <button class="start-btn secondary today-plan-btn" id="todayPlanBtn" type="button">Wochenplan bearbeiten</button>
   </section>
@@ -484,6 +488,34 @@
       <button class="start-btn secondary" id="planEntryCancelBtn" type="button">Abbrechen</button>
       <button class="start-btn" id="planEntrySaveBtn" type="button">Eintragen</button>
     </div>
+  </div>
+</div>
+
+<div class="sheet" id="eventSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="eventSheetTitle">
+    <h2 id="eventSheetTitle">Termin eintragen</h2>
+    <p class="group-help">F&uuml;r alles, was zu deinem Training geh&ouml;rt, aber nicht in der App stattfindet: Wettkampf, Spiel, Vereinstraining, Massage, Ruhetag.</p>
+    <label class="group-label" for="eventTitleInput">Was steht an?</label>
+    <input type="text" id="eventTitleInput" class="plan-input" placeholder="z. B. Halbmarathon, Massage" maxlength="60" autocomplete="off">
+    <div class="group-label" id="eventKindLabel">Art</div>
+    <div class="choice-row two" id="eventKindRow" role="group" aria-labelledby="eventKindLabel"></div>
+    <div class="plan-entry-row">
+      <div>
+        <label class="group-label" for="eventDateInput">Datum</label>
+        <input type="date" id="eventDateInput" class="plan-input" lang="de">
+      </div>
+      <div>
+        <label class="group-label" for="eventTimeInput">Uhrzeit (optional)</label>
+        <input type="time" id="eventTimeInput" class="plan-input" lang="de">
+      </div>
+    </div>
+    <label class="checkbox-row event-goal-row"><input type="checkbox" id="eventGoalToggle"> Gro&szlig;es Ziel: Countdown auf Heute zeigen</label>
+    <div class="program-error" id="eventError" role="alert" hidden></div>
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="eventCancelBtn" type="button">Abbrechen</button>
+      <button class="start-btn" id="eventSaveBtn" type="button">Eintragen</button>
+    </div>
+    <button class="text-link small event-delete-btn" id="eventDeleteBtn" type="button" hidden>Termin l&ouml;schen</button>
   </div>
 </div>
 
@@ -6150,7 +6182,7 @@
 
     <details class="faq-item">
       <summary>Was wird auf deinem Ger&auml;t gespeichert?</summary>
-      <div class="faq-body">Dein Trainingsverlauf, dein Fortschritt, dein Wochenplan, deine Einstellungen, gespeicherte Programme und Bilder, die du f&uuml;r Cardio ausw&auml;hlst. Alles liegt nur im Speicher dieses Browsers auf diesem Ger&auml;t, nicht in einer Cloud. L&ouml;schst du die Browserdaten, ist es weg. In den Grundeinstellungen kannst du eine Sicherung als Datei speichern und wieder einlesen &ndash; die Datei liegt dann nur bei dir.</div>
+      <div class="faq-body">Dein Trainingsverlauf, dein Fortschritt, dein Wochenplan, deine Termine, deine Einstellungen, gespeicherte Programme und Bilder, die du f&uuml;r Cardio ausw&auml;hlst. Alles liegt nur im Speicher dieses Browsers auf diesem Ger&auml;t, nicht in einer Cloud. L&ouml;schst du die Browserdaten, ist es weg. In den Grundeinstellungen kannst du eine Sicherung als Datei speichern und wieder einlesen &ndash; die Datei liegt dann nur bei dir.</div>
     </details>
 
     <details class="faq-item">

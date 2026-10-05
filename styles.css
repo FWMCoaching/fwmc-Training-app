@@ -1862,7 +1862,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .area-name{font-weight:800;font-size:15px;overflow-wrap:anywhere}
 .area-text{font-size:13px;line-height:1.4;color:var(--ink-soft)}
 .plan-date-input,.plan-input,.plan-select{font:inherit;font-size:15px;padding:9px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);box-sizing:border-box;max-width:100%}
-.plan-select,.plan-input{width:100%}
+.plan-select,.plan-input{width:100%;min-height:44px}
 .plan-phase{border:1px solid var(--line);border-left:5px solid var(--brand);border-radius:var(--radius);background:var(--surface);padding:14px;margin-bottom:14px}
 .plan-phase-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,140px);gap:8px}
 .plan-phase-head .plan-select{width:100%}
@@ -2089,3 +2089,28 @@ body.bottom-nav-on .screen:not([hidden]){padding-bottom:calc(84px + env(safe-are
 a.featured-card{text-decoration:none;color:inherit}
 #trainingHub .combo-entry-link{margin-bottom:16px}
 .bottom-nav-on .storage-warning{bottom:calc(82px + env(safe-area-inset-bottom))}
+
+/* Eigene Termine + Countdown (2026-10-05) */
+.week-day{position:relative}
+.event-mark{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:2px;transform:rotate(45deg)}
+.event-mark.goal{width:10px;height:10px;top:3px;right:3px;box-shadow:0 0 0 1.5px var(--surface)}
+.countdown-big{font-family:"Magra",sans-serif;font-weight:700;font-size:30px;line-height:1.1;margin:2px 0 6px;color:var(--brand-deep)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .countdown-big{color:var(--brand-light)}}
+:root[data-theme="dark"] .countdown-big{color:var(--brand-light)}
+.event-countdown .text-link{min-height:44px}
+.event-item .day-item-main .area-dot{border-radius:2px;transform:rotate(45deg)}
+.event-kind-dot{display:inline-block;width:10px;height:10px;border-radius:2px;transform:rotate(45deg);margin-bottom:4px}
+#eventKindRow{margin-bottom:4px}
+#eventKindRow .choice{font-size:14px;min-height:44px}
+.event-goal-row{margin:14px 0 4px;min-height:44px}
+.event-goal-row input{width:20px;height:20px}
+.event-delete-btn{display:block;margin:12px auto 0;min-height:44px;color:var(--warn)}
+#dayEventAddBtn{display:block;min-height:44px;text-align:left}
+.day-item:not(.compact) .day-act{min-height:44px}
+.cal-cell .event-mark{top:3px;right:3px;width:6px;height:6px}
+.cal-cell .event-mark.goal{width:8px;height:8px;top:2px;right:2px}
+#dayAddBtn{display:block;min-height:44px;text-align:left}
+#dayEvents:not(:empty){margin-bottom:12px}
+#eventSheet .group-label{display:block;margin-top:14px;margin-bottom:6px}
+#eventSheet .plan-entry-row .group-label{margin-top:14px}
+.event-countdown .text-link{margin:4px 0 -12px}
