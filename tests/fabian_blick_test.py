@@ -180,6 +180,18 @@ async def discover(b):
         if not await replay(pg, entry, clicks):
             continue
         base_state = await pg.evaluate(STATE_JS)
+        # Remember how to start the exercise from this screen (player audit).
+        if not base_state["player"] and not base_state["sheet"]:
+            sb = await pg.evaluate("""() => { const vis = el => el.getBoundingClientRect().width > 0 && !el.closest('[hidden]');
+              const s = [...document.querySelectorAll('.screen')].find(e => !e.hidden && vis(e));
+              let b = s && [...s.querySelectorAll('button')].find(x => vis(x) && !x.disabled && x.textContent.trim() === 'Training starten');
+              if (!b) return null; if (b.id) return '#' + CSS.escape(b.id);
+              const parts = []; let el = b;
+              while (el && el !== document.body) { if (el.id) { parts.unshift('#' + CSS.escape(el.id)); break; }
+                const p = el.parentElement; parts.unshift(el.tagName.toLowerCase() + ':nth-child(' + ([...p.children].indexOf(el) + 1) + ')'); el = p; }
+              return parts.join(' > '); }""")
+            if sb and key_of(base_state) not in starts:
+                starts[key_of(base_state)] = (entry, clicks + [sb])
         cands = await pg.evaluate(CANDIDATES_JS, SKIP_TEXT.pattern)
         dirty = False
         for c in cands:
@@ -203,18 +215,6 @@ async def discover(b):
             print(f"  + {k}  ({entry} › {c['text']})", flush=True)
             if not st["player"]:
                 queue.append((entry, clicks + [c["sel"]], depth + 1))
-        # Remember how to start the exercise from this screen (player audit).
-        if not base_state["player"] and not base_state["sheet"]:
-            sb = await pg.evaluate("""() => { const vis = el => el.getBoundingClientRect().width > 0 && !el.closest('[hidden]');
-              const s = [...document.querySelectorAll('.screen')].find(e => !e.hidden && vis(e));
-              let b = s && [...s.querySelectorAll('button')].find(x => vis(x) && !x.disabled && x.textContent.trim() === 'Training starten');
-              if (!b) return null; if (b.id) return '#' + CSS.escape(b.id);
-              const parts = []; let el = b;
-              while (el && el !== document.body) { if (el.id) { parts.unshift('#' + CSS.escape(el.id)); break; }
-                const p = el.parentElement; parts.unshift(el.tagName.toLowerCase() + ':nth-child(' + ([...p.children].indexOf(el) + 1) + ')'); el = p; }
-              return parts.join(' > '); }""")
-            if sb and key_of(base_state) not in starts:
-                starts[key_of(base_state)] = (entry, clicks + [sb])
     await ctx.close()
     return states, starts
 
@@ -278,6 +278,7 @@ async def audit_config(b, cfg, states, starts):
             continue
         if is_start:
             await pg.wait_for_timeout(1800)
+        await pg.mouse.move(0, 0)  # no :hover left on the last clicked button
         st = await pg.evaluate(STATE_JS)
         if is_start and not st["player"]:
             continue  # starts a sheet/confirm instead; covered elsewhere

@@ -100,6 +100,9 @@
       if ((a.tagName === 'CANVAS' && b.closest('.player-bar')) || (b.tagName === 'CANVAS' && a.closest('.player-bar'))) continue;
       if (a.tagName === 'IMG' && b.tagName === 'IMG') continue;
       if (inFixed(a) !== inFixed(b) && !fixedMode) continue;
+      // inline pieces of one wrapped paragraph share line boxes: not an overlap
+      const inl = e => cs(e).display.startsWith('inline') && !isInteractive(e);
+      if (inl(a) && inl(b) && a.closest('p, li, div, label') === b.closest('p, li, div, label')) continue;
       const r = a.getBoundingClientRect(), q = b.getBoundingClientRect();
       const w = Math.min(r.right, q.right) - Math.max(r.left, q.left), h = Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top);
       if (w <= 3 || h <= 3) continue;
@@ -206,7 +209,7 @@
   const offPalette = {};
   if (!isPlayer) {
     root.querySelectorAll('*').forEach(el => {
-      if (!vis(el) || skipColour(el)) return;
+      if (!vis(el) || skipColour(el) || el.matches('input[type=range]')) return;
       const s = cs(el);
       const check = (prop, val) => { const c = parse(val); if (!c || c.a < 0.05) return; const h = hex(c); if (!near(h)) (offPalette[h + ' (' + prop + ')'] = offPalette[h + ' (' + prop + ')'] || el); };
       check('Hintergrund', s.backgroundColor);
