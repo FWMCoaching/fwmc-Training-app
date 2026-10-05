@@ -454,6 +454,12 @@ For every new or changed exercise/screen, in the same commit:
   `{"startCountdown":false}`. Every sub page gets the logo bar with its
   `.back-link` moved in as the round ‹ button (JS, from `.readyhead`); a new
   sub page only needs the usual `.readyhead > .back-link`.
+- Tabs never wrap (2026-10-05): `.section-tab`/`.sub-tab` are nowrap, NAT
+  sub-tabs a 2-/3-per-row grid; `tests/text_wrap_audit_test.py` flags a
+  two-line tab. Answer keys grow with the screen (Flash keypad width capped
+  by 66vh, `*-response-btn` zoom steps at 430/700/1000 px) and stay ≥ 44 px
+  on a 375 px phone: `tests/tap_size_1005_test.py`. A new answer button
+  named `…-response-btn` gets the scaling for free.
 - New dashboard catalog entries: add them to dashboard.html's own copies too.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

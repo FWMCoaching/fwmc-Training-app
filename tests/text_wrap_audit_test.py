@@ -49,6 +49,13 @@ AUDIT_JS = r"""
     if (!visible(b) || b.closest('[hidden]')) return;
     if (b.scrollWidth > b.clientWidth + 2) out.push('Text ragt aus Knopf: "' + b.textContent.trim().slice(0, 30) + '"');
   });
+  // Tabs keep their label on one line (Fabian, 2026-10-05: "keine Umbrüche in den Reitern").
+  root.querySelectorAll('.section-tab, .sub-tab').forEach(t => {
+    if (!visible(t)) return;
+    const rg = document.createRange(); rg.selectNodeContents(t);
+    const lines = new Set([...rg.getClientRects()].filter(r => r.width > 1).map(r => Math.round(r.top))).size;
+    if (lines > 1) out.push('Reiter zweizeilig: "' + t.textContent.trim().slice(0, 30) + '"');
+  });
   if (document.documentElement.scrollWidth > window.innerWidth + 1)
     out.push('Seite scrollt seitlich (' + document.documentElement.scrollWidth + ' > ' + window.innerWidth + ')');
   return [...new Set(out)];
