@@ -1453,6 +1453,7 @@
     wimhofPlayer: $("wimhofPlayer"), wimhofPlayerBar: $("wimhofPlayerBar"), wimhofBig: $("wimhofBig"),
     wimhofPhaseCount: $("wimhofPhaseCount"), wimhofPhaseLabel: $("wimhofPhaseLabel"), wimhofSub: $("wimhofSub"),
     wimhofHoldDoneBtn: $("wimhofHoldDoneBtn"), wimhofStatusEl: $("wimhofStatusEl"),
+    wimhofPauseBtn: $("wimhofPauseBtn"), wimhofPauseOverlay: $("wimhofPauseOverlay"), wimhofResumeBtn: $("wimhofResumeBtn"),
     wimhofBackBtn: $("wimhofBackBtn"), wimhofFsBtn: $("wimhofFsBtn"), wimhofFsHint: $("wimhofFsHint"),
     wimhofFsHintOpenBtn: $("wimhofFsHintOpenBtn"), wimhofFsHintClose: $("wimhofFsHintClose"),
     wimhofDonePanel: $("wimhofDonePanel"), wimhofDoneSummary: $("wimhofDoneSummary"), wimhofRating: $("wimhofRating"),
@@ -5775,7 +5776,7 @@
       if (hiddenMs > 500) {
         if (session && !periphPausedAt) session.startTime += hiddenMs;
         if (breathSession && !breathPaused) breathSession.startTime += hiddenMs;
-        if (wimhofState) { wimhofState.phaseStart += hiddenMs; wimhofState.sessionStart += hiddenMs; }
+        if (wimhofState && wimhofState.pausedAt == null) { wimhofState.phaseStart += hiddenMs; wimhofState.sessionStart += hiddenMs; }
         if (movementSession) movementSession.startTime += hiddenMs;
         if (workoutState && !workoutState.pausedAt) {
           if (workoutState.startTime) workoutState.startTime += hiddenMs;
@@ -7316,7 +7317,10 @@
     els.wimhofPlayerBar.hidden = false;
     els.wimhofDonePanel.hidden = true;
     els.wimhofHoldDoneBtn.hidden = true;
-    wimhofState = { round: 1, phase: "power", phaseStart: performance.now(), sessionStart: performance.now(), retentions: [] };
+    els.wimhofPauseOverlay.hidden = true;
+    els.wimhofPauseBtn.hidden = false;
+    wimhofState = { round: 1, phase: "power", phaseStart: performance.now(), sessionStart: performance.now(), retentions: [], pausedAt: null, beeped: null };
+    wimhofCue("start");
     requestWakeLock();
     wimhofRaf = requestAnimationFrame(wimhofTick);
   }
@@ -7336,6 +7340,7 @@
         wimhofState.phaseStart = now;
         wimhofCircle.style.transform = "scale(0.55)";
         els.wimhofHoldDoneBtn.hidden = false;
+        wimhofCue("retention");
       } else {
         const within = (elapsedInPhase % s.breathPaceS) / s.breathPaceS;
         const half = within < 0.5;
@@ -7359,24 +7364,80 @@
       els.wimhofPhaseLabel.textContent = "Halten – voll eingeatmet";
       els.wimhofPhaseCount.textContent = Math.ceil(remain);
       els.wimhofSub.textContent = `Runde ${wimhofState.round} von ${s.rounds}`;
+      // 3-2-1 before the hold ends, like the countdown beeps elsewhere
+      const sec = Math.ceil(remain);
+      if (sec >= 1 && sec <= 3 && wimhofState.beeped !== sec) { wimhofState.beeped = sec; playWorkoutBeep(false); }
       if (elapsed >= s.recoveryHoldS) {
-        if (wimhofState.round >= s.rounds) { wimhofFinish(); return; }
+        if (wimhofState.round >= s.rounds) { wimhofCue("end"); wimhofFinish(); return; }
         wimhofState.round += 1;
         wimhofState.phase = "power";
         wimhofState.phaseStart = now;
+        wimhofCue("round");
       }
     }
     els.wimhofStatusEl.textContent = `Runde ${wimhofState.round}/${s.rounds}`;
     wimhofRaf = requestAnimationFrame(wimhofTick);
   }
   els.wimhofHoldDoneBtn.addEventListener("click", () => {
-    if (!wimhofState || wimhofState.phase !== "retention") return;
+    if (!wimhofState || wimhofState.phase !== "retention" || wimhofState.pausedAt != null) return;
     const held = (performance.now() - wimhofState.phaseStart) / 1000;
     wimhofState.retentions.push(held);
     wimhofState.phase = "recovery";
     wimhofState.phaseStart = performance.now();
+    wimhofState.beeped = null;
     els.wimhofHoldDoneBtn.hidden = true;
+    wimhofCue("recovery");
   });
+  // Töne bei jedem Phasenwechsel (Fabian, 2026-10-06, Feinheit 43): a tone
+  // plus a short spoken cue, both through cueVolume(), so 🔊 in the step
+  // bar and the pause sheet switch them off mid-exercise.
+  const WIMHOF_CUES = {
+    start: [false, "Kräftig ein- und ausatmen"],
+    retention: [true, "Ausatmen und anhalten"],
+    recovery: [true, "Einatmen und halten"],
+    round: [true, "Ausatmen. Neue Runde"],
+    end: [true, "Ausatmen. Geschafft"],
+  };
+  function wimhofCue(kind) {
+    const c = WIMHOF_CUES[kind];
+    if (!c) return;
+    playWorkoutBeep(c[0]);
+    cueSay(c[1]);
+  }
+  // Pause (Fabian, 2026-10-06, Feinheit 44): freezes the current phase,
+  // including a running breath hold, and continues at the same point.
+  function syncWimhofPauseSound() {
+    document.querySelectorAll("[data-wh-pause-sound]").forEach((el) => setActive(el, (el.dataset.whPauseSound === "on") === workoutSoundPrefs.enabled));
+  }
+  function pauseWimhof() {
+    if (!wimhofState || wimhofState.pausedAt != null) return;
+    wimhofState.pausedAt = performance.now();
+    if (wimhofRaf) cancelAnimationFrame(wimhofRaf);
+    wimhofRaf = null;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    els.wimhofPhaseLabel.textContent = "Pausiert";
+    els.wimhofPauseBtn.hidden = true;
+    syncWimhofPauseSound();
+    els.wimhofPauseOverlay.hidden = false;
+  }
+  function resumeWimhof() {
+    if (!wimhofState || wimhofState.pausedAt == null) return;
+    const d = performance.now() - wimhofState.pausedAt;
+    wimhofState.phaseStart += d;
+    wimhofState.sessionStart += d;
+    wimhofState.pausedAt = null;
+    els.wimhofPauseOverlay.hidden = true;
+    els.wimhofPauseBtn.hidden = false;
+    wimhofRaf = requestAnimationFrame(wimhofTick);
+  }
+  els.wimhofPauseBtn.addEventListener("click", pauseWimhof);
+  els.wimhofResumeBtn.addEventListener("click", resumeWimhof);
+  document.querySelectorAll("[data-wh-pause-sound]").forEach((el) => el.addEventListener("click", () => {
+    workoutSoundPrefs.enabled = el.dataset.whPauseSound === "on";
+    saveWorkoutSoundPrefs();
+    syncWorkoutSoundUI();
+    syncWimhofPauseSound();
+  }));
 
   function wimhofFinish() {
     if (wimhofRaf) cancelAnimationFrame(wimhofRaf);
@@ -7389,6 +7450,7 @@
     if (breathProgram) { advanceBreathProgram(played); return; }
     if (comboProgram) { advanceComboProgram(played); return; }
     els.wimhofPlayerBar.hidden = true;
+    els.wimhofPauseBtn.hidden = true;
     const avgHold = retentions.length ? retentions.reduce((a, b) => a + b, 0) / retentions.length : 0;
     els.wimhofDoneSummary.textContent = `${wimhofSettings.rounds} Runden${avgHold ? " · komfortable Anhaltezeit " + fmtClock(avgHold) : ""}`;
     const id = addHistory({ kind: "breath", title: WIMHOF_INFO.name, seconds: Math.round(played) });
@@ -7403,6 +7465,7 @@
     if (document.fullscreenElement === els.wimhofPlayer) document.exitFullscreen().catch(() => {});
     els.wimhofFsHint.hidden = true;
     els.wimhofHoldDoneBtn.hidden = true;
+    els.wimhofPauseOverlay.hidden = true;
     els.wimhofPlayer.hidden = true;
     els.wimhofDonePanel.hidden = true;
   }
@@ -7423,6 +7486,7 @@
   const movementPrefs = {
     movements: MOVEMENTS.map((m) => m.id),
     preview: 3, bpm: 60, durationMin: 1, mirror: true, showLabel: true, figureStyle: "figur", direction: "rechts",
+    tick: true, tickVolume: 0.7,
   };
   function loadMovementPrefs() {
     const saved = readJSON(MOVEMENT_PREFS_KEY, null);
@@ -7433,6 +7497,20 @@
     if (movementPrefs.figureStyle !== "figur" && movementPrefs.figureStyle !== "abstrakt") movementPrefs.figureStyle = "figur";
     if (!MOVEMENT_DIRECTIONS.includes(movementPrefs.direction)) movementPrefs.direction = "rechts";
     if (!Number.isFinite(movementPrefs.durationMin) || movementPrefs.durationMin <= 0) movementPrefs.durationMin = 1;
+    Object.assign(movementPrefs, mvTickOf(movementPrefs));
+  }
+  // Takt-Ton (Fabian, 2026-10-06, Feinheit 41): one soft tone per movement,
+  // own on/off + Lautstärke like Gleichgewicht, times the overall volume.
+  // No spoken movement names. Kombi blocks, presets and Weitermachen carry
+  // the two values along (mvTickOf reads them from any of those shapes).
+  function mvTickOf(src) {
+    const v = Number(src && src.tickVolume);
+    return { tick: !(src && src.tick === false), tickVolume: Number.isFinite(v) ? Math.max(0.1, Math.min(1, v)) : 0.7 };
+  }
+  function movementTickSound(vol) {
+    if (!(vol > 0)) return;
+    window.__mvTicks = (window.__mvTicks || 0) + 1;
+    playCueTone(820, 0.06, 0.45 * vol);
   }
   function saveMovementPrefs() { writeJSON(MOVEMENT_PREFS_KEY, movementPrefs); }
   loadMovementPrefs();
@@ -7538,8 +7616,18 @@
   document.querySelectorAll("[data-mv-direction]").forEach((el) => el.addEventListener("click", () => { movementPrefs.direction = el.dataset.mvDirection; saveMovementPrefs(); syncMvDirectionUI(); }));
   function syncMvDirectionUI() { document.querySelectorAll("[data-mv-direction]").forEach((el) => setActive(el, el.dataset.mvDirection === movementPrefs.direction)); }
 
+  function syncMvTickUI() {
+    document.querySelectorAll("[data-mv-tick]").forEach((el) => setActive(el, (el.dataset.mvTick === "1") === movementPrefs.tick));
+    $("movementTickVolumeRow").hidden = !movementPrefs.tick;
+    $("movementTickVolumeSlider").value = movementPrefs.tickVolume;
+    $("movementTickVolumeValue").textContent = fmtPct(movementPrefs.tickVolume);
+  }
+  document.querySelectorAll("[data-mv-tick]").forEach((el) => el.addEventListener("click", () => { movementPrefs.tick = el.dataset.mvTick === "1"; saveMovementPrefs(); syncMvTickUI(); }));
+  $("movementTickVolumeSlider").addEventListener("input", (e) => { movementPrefs.tickVolume = Number(e.target.value); syncMvTickUI(); });
+  $("movementTickVolumeSlider").addEventListener("change", () => { saveMovementPrefs(); movementTickSound(movementPrefs.tickVolume); });
+
   function openMovementReady() {
-    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI(); syncMvFigureUI(); syncMvDirectionUI();
+    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI(); syncMvFigureUI(); syncMvDirectionUI(); syncMvTickUI();
     els.movementSaveForm.hidden = true;
     els.movementSaveBtn.hidden = false;
     renderMovementSaved();
@@ -7568,6 +7656,7 @@
       movementPrefs.showLabel = existingBlock.showLabel ?? movementPrefs.showLabel;
       if (MOVEMENT_DIRECTIONS.includes(existingBlock.direction)) movementPrefs.direction = existingBlock.direction;
       if (existingBlock.figureStyle === "figur" || existingBlock.figureStyle === "abstrakt") movementPrefs.figureStyle = existingBlock.figureStyle;
+      Object.assign(movementPrefs, mvTickOf(existingBlock));
     }
     comboMovementEditIndex = editIndex ?? null;
     els.movementReadyTitle.textContent = "Baustein: Reaktionstraining";
@@ -7591,6 +7680,7 @@
       domain: "movement", movements: movementPrefs.movements.slice(), preview: movementPrefs.preview,
       bpm: movementPrefs.bpm, durationMin: movementPrefs.durationMin, mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel,
       direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle,
+      tick: movementPrefs.tick, tickVolume: movementPrefs.tickVolume,
     };
     if (comboMovementEditIndex != null) comboDraftBlocks[comboMovementEditIndex] = block;
     else comboDraftBlocks.push(block);
@@ -7789,7 +7879,7 @@
     els.movementDonePanel.hidden = true;
     els.movementFinishBadge.hidden = true;
     els.movementProgressTrack.innerHTML = `<span class="seg"><span class="fill"></span></span>`;
-    movementSession = { sequence, beatLenS, totalBeats, gridMode, preview: movementPrefs.preview, pool, startTime: performance.now(), lastBeatIdx: 0, finishTimer: null, pausedAt: null };
+    movementSession = { sequence, beatLenS, totalBeats, gridMode, preview: movementPrefs.preview, pool, startTime: performance.now(), lastBeatIdx: 0, finishTimer: null, pausedAt: null, ...mvTickOf(movementPrefs) };
     els.movementPauseOverlay.hidden = true;
     els.movementPauseBtn.hidden = false;
     if (gridMode) {
@@ -7799,6 +7889,7 @@
       renderMovementLaneWindow(sequence, 0, movementPrefs.preview, movementPrefs.mirror, movementPrefs.showLabel);
     }
     requestWakeLock();
+    if (movementSession.tick) movementTickSound(movementSession.tickVolume);
     movementRaf = requestAnimationFrame(movementTick);
   }
   els.movementStartBtn.addEventListener("click", () => {
@@ -7823,8 +7914,9 @@
         movementPrefs.showLabel = entry.showLabel;
         if (MOVEMENT_DIRECTIONS.includes(entry.direction)) movementPrefs.direction = entry.direction;
         if (entry.figureStyle === "figur" || entry.figureStyle === "abstrakt") movementPrefs.figureStyle = entry.figureStyle;
+        if ("tick" in entry) Object.assign(movementPrefs, mvTickOf(entry));
         saveMovementPrefs();
-        syncMvDirectionUI(); syncMvFigureUI();
+        syncMvDirectionUI(); syncMvFigureUI(); syncMvTickUI();
         // While capturing a Kombi-Baustein, loading a saved setting should
         // just fill the draft for review/adjustment, not immediately start
         // a live session.
@@ -7846,6 +7938,7 @@
         movements: movementPrefs.movements.slice(), preview: movementPrefs.preview, bpm: movementPrefs.bpm,
         durationMin: movementPrefs.durationMin, mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel,
         direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle,
+        tick: movementPrefs.tick, tickVolume: movementPrefs.tickVolume,
       });
       movementSavedStore.save(list);
       renderMovementSaved();
@@ -7869,6 +7962,7 @@
     const beatIdx = Math.min(Math.floor(elapsed / movementSession.beatLenS), movementSession.totalBeats - 1);
     if (beatIdx !== movementSession.lastBeatIdx) {
       movementSession.lastBeatIdx = beatIdx;
+      if (movementSession.tick) movementTickSound(movementSession.tickVolume);
       if (movementSession.gridMode) updateMovementLaneGrid(beatIdx);
       else renderMovementLaneWindow(movementSession.sequence, beatIdx, movementSession.preview, movementPrefs.mirror, movementPrefs.showLabel);
     }
@@ -7886,7 +7980,16 @@
     els.movementPauseBpmSlider.value = d.bpm;
     els.movementPauseBpmValue.textContent = `${d.bpm} BPM`;
     document.querySelectorAll("[data-mv-pause-preview]").forEach((el) => setActive(el, parsePreview(el.dataset.mvPausePreview) === d.preview));
+    document.querySelectorAll("[data-mv-pause-tick]").forEach((el) => setActive(el, (el.dataset.mvPauseTick === "1") === d.tick));
+    $("movementPauseTickVolumeRow").hidden = !d.tick;
+    $("movementPauseTickVolumeSlider").value = d.tickVolume;
+    $("movementPauseTickVolumeValue").textContent = fmtPct(d.tickVolume);
   }
+  document.querySelectorAll("[data-mv-pause-tick]").forEach((el) => el.addEventListener("click", () => {
+    if (movementPauseDraft) { movementPauseDraft.tick = el.dataset.mvPauseTick === "1"; syncMovementPauseUI(); }
+  }));
+  $("movementPauseTickVolumeSlider").addEventListener("input", (e) => { if (movementPauseDraft) { movementPauseDraft.tickVolume = Number(e.target.value); syncMovementPauseUI(); } });
+  $("movementPauseTickVolumeSlider").addEventListener("change", () => { if (movementPauseDraft) movementTickSound(movementPauseDraft.tickVolume); });
   els.movementPauseBpmSlider.addEventListener("input", () => { if (movementPauseDraft) { movementPauseDraft.bpm = Number(els.movementPauseBpmSlider.value); syncMovementPauseUI(); } });
   document.querySelectorAll("[data-mv-pause-preview]").forEach((el) => el.addEventListener("click", () => {
     if (movementPauseDraft) { movementPauseDraft.preview = parsePreview(el.dataset.mvPausePreview); syncMovementPauseUI(); }
@@ -7897,7 +8000,7 @@
     if (movementRaf) cancelAnimationFrame(movementRaf);
     movementRaf = null;
     ms.pausedAt = performance.now();
-    movementPauseDraft = { bpm: Math.round(60 / ms.beatLenS), preview: ms.preview };
+    movementPauseDraft = { bpm: Math.round(60 / ms.beatLenS), preview: ms.preview, tick: ms.tick, tickVolume: ms.tickVolume };
     resumeSingleNote("movement");
     syncMovementPauseUI();
     els.movementPauseBtn.hidden = true;
@@ -7909,6 +8012,7 @@
     const d = movementPauseDraft;
     const beatIdx = ms.lastBeatIdx;
     ms.beatLenS = 60 / d.bpm;
+    ms.tick = d.tick; ms.tickVolume = d.tickVolume;
     if (d.preview !== ms.preview) {
       ms.preview = d.preview;
       const nowGrid = d.preview === "all";
@@ -7928,6 +8032,7 @@
     // Restart the current beat on the new tempo.
     ms.startTime = performance.now() - beatIdx * ms.beatLenS * 1000;
     ms.pausedAt = null;
+    if (ms.tick) movementTickSound(ms.tickVolume);
     movementPauseDraft = null;
     els.movementPauseOverlay.hidden = true;
     els.movementPauseBtn.hidden = false;
@@ -10064,9 +10169,22 @@
       flashState.comboRemainingMs = Math.max(0, flashState.comboDurationFiresAt - flashState.pausedAt);
     }
     syncFlashBgUI();
+    syncFlashPauseTempo();
     els.flashPauseBtn.hidden = true;
     els.flashPauseOverlay.hidden = false;
   }
+  // Tempo live (Fabian, 2026-10-06, Feinheit 42): Einblenddauer and Pause
+  // zwischen den Zeichen for the rest of this run only (like VT's pause
+  // sheet); the client's saved Flash settings stay as they are. With rising
+  // tempo the steps keep scaling from the new base.
+  function syncFlashPauseTempo() {
+    $("flashPauseStimulusSlider").value = flashState.stimulusS;
+    $("flashPauseStimulusValue").textContent = fmtSeconds(flashState.stimulusS);
+    $("flashPauseIntervalSlider").value = flashState.intervalS;
+    $("flashPauseIntervalValue").textContent = fmtSeconds(flashState.intervalS);
+  }
+  $("flashPauseStimulusSlider").addEventListener("input", (e) => { if (flashState) { flashState.stimulusS = Number(e.target.value); syncFlashPauseTempo(); } });
+  $("flashPauseIntervalSlider").addEventListener("input", (e) => { if (flashState) { flashState.intervalS = Number(e.target.value); syncFlashPauseTempo(); } });
   function resumeFlash() {
     if (!flashState || !flashState.paused) return;
     flashState.startTime += performance.now() - flashState.pausedAt;
@@ -11795,9 +11913,18 @@
       motState.comboRemainingMs = Math.max(0, motState.comboDurationFiresAt - motState.pausedAt);
     }
     syncMotBgUI();
+    syncMotPauseSpeed();
     els.motPauseBtn.hidden = true;
     els.motPauseOverlay.hidden = false;
   }
+  // Tempo live (Fabian, 2026-10-06, Feinheit 42): the base speed for the
+  // rest of this run (read every frame by motMoveObjects); saved MOT
+  // settings stay as they are.
+  function syncMotPauseSpeed() {
+    $("motPauseSpeedSlider").value = motState.speed;
+    $("motPauseSpeedValue").textContent = Math.round(motState.speed * 100) + "%";
+  }
+  $("motPauseSpeedSlider").addEventListener("input", (e) => { if (motState) { motState.speed = Number(e.target.value); syncMotPauseSpeed(); } });
   function resumeMot() {
     if (!motState || !motState.paused) return;
     motState.startTime += performance.now() - motState.pausedAt;
@@ -15984,7 +16111,8 @@
     // 3-2-1 before the first Baustein like every single start (Feinheit 10,
     // 2026-10-06) - unless that block brings its own: Visual Training draws
     // it on the stage, Krafttraining has "Bereit machen", Wim-Hof stops on
-    // its safety screen first. Later blocks start after the Kombi pause.
+    // its safety screen first (its start button runs the 3-2-1). Later blocks
+    // start after the Kombi pause.
     const first = def.blocks && def.blocks[0];
     const own = !first || first.domain === "wimhof" || first.domain === "workout" ||
       (first.domain === "visual" && !(EXERCISES[first.exercise] && EXERCISES[first.exercise].type === "color-tap"));
@@ -16031,6 +16159,7 @@
       movementPrefs.showLabel = block.showLabel ?? movementPrefs.showLabel;
       if (MOVEMENT_DIRECTIONS.includes(block.direction)) movementPrefs.direction = block.direction;
       if (block.figureStyle === "figur" || block.figureStyle === "abstrakt") movementPrefs.figureStyle = block.figureStyle;
+      if ("tick" in block) Object.assign(movementPrefs, mvTickOf(block));
       startMovementSession();
     } else if (block.domain === "visual") {
       program = null;
@@ -16612,7 +16741,8 @@
   // Grundeinstellungen "Countdown 3-2-1 vor dem Start" switches it off.
   const LEADIN_START_IDS = ["movementStartBtn", "movementProgramStartBtn", "breathStartBtn", "breathProgramStartBtn",
     "rememberReadyStartBtn", "rememberTrainingStartBtn", "blitzReadyStartBtn", "flashReadyStartBtn", "flashTrainingStartBtn",
-    "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn"];
+    "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn",
+    "wimhofStartBtn"];
   let leadInBypass = false, leadInTimer = null;
   function stopLeadIn() { clearTimeout(leadInTimer); leadInTimer = null; $("leadIn").hidden = true; }
   document.addEventListener("click", (e) => {
@@ -16633,7 +16763,7 @@
     runLeadIn(() => {
       leadInBypass = true;
       try { b.click(); } finally { leadInBypass = false; }
-    }, /^(breath|cardio|free)/.test(b.id));
+    }, /^(breath|wimhof|cardio|free)/.test(b.id));
   }, true);
   // The 3-2-1 overlay itself, shared by the start buttons above and the
   // first Kombi-Baustein (startComboProgram).
@@ -27538,7 +27668,8 @@
       const total = ms.totalBeats * ms.beatLenS, played = ms.lastBeatIdx * ms.beatLenS;
       rec = { kind, title: "Ganzkörper-Reaktion", total, played, rest: total - played,
         movement: { movements: movementPrefs.movements.slice(), bpm: Math.round(60 / ms.beatLenS), preview: ms.preview,
-          mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel, direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle } };
+          mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel, direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle,
+          tick: ms.tick, tickVolume: ms.tickVolume } };
     }
     if (rec && resumeSingleBase && resumeSingleBase.kind === kind) { rec.played += resumeSingleBase.offset; rec.total = resumeSingleBase.total; }
     if (!rec || rec.total < 180 || rec.played < 30 || rec.rest < 60) return;

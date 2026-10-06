@@ -302,7 +302,11 @@ For every new or changed exercise/screen, in the same commit:
   (🔊 off = 0, else `masterPrefs.volume`, the one "Lautstärke" in the
   Grundeinstellungen); a new sound multiplies its gain/`u.volume` by it and
   returns at 0. Gleichgewicht's own Lautstärke multiplies on top.
-  Test: `tests/ton_lautstaerke_1006_test.py`. Every sub page gets the logo bar with its
+  Test: `tests/ton_lautstaerke_1006_test.py`. Takt-Ton (Reaktionstraining:
+  `movementPrefs.tick/tickVolume` via `mvTickOf`, carried by Kombi/presets/
+  Weitermachen; Gleichgewicht), Wim-Hof cues at every phase (`wimhofCue`)
+  and Wim-Hof pause/3-2-1; MOT/Flash pause sheets change tempo for the run
+  only. Test: `tests/takt_tempo_wimhof_1006_test.py`. Every sub page gets the logo bar with its
   `.back-link` moved in as the round ‹ button (JS, from `.readyhead`); a new
   sub page only needs the usual `.readyhead > .back-link`.
   Kopfleiste eine Zeile (2026-10-05, Fabian chose draft A, replaced "Logo
