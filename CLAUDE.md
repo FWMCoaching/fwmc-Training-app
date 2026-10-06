@@ -295,7 +295,14 @@ For every new or changed exercise/screen, in the same commit:
   Start" (`masterPrefs.startCountdown`) and "Töne und Ansagen"
   (`workoutSoundPrefs.enabled`, also 🔊 `#stepSoundBtn` in the step bar).
   Tests that need an instant start seed `fwmc-master-v1` with
-  `{"startCountdown":false}`. Every sub page gets the logo bar with its
+  `{"startCountdown":false}`. Hütchen sortieren (VT start button, no
+  canvas) and the first Kombi-Baustein (`startComboProgram`, unless VT/
+  Kraft/Wim-Hof bring their own) also get it via `runLeadIn()` (2026-10-06).
+  Ton (2026-10-06): every tone and spoken word goes through `cueVolume()`
+  (🔊 off = 0, else `masterPrefs.volume`, the one "Lautstärke" in the
+  Grundeinstellungen); a new sound multiplies its gain/`u.volume` by it and
+  returns at 0. Gleichgewicht's own Lautstärke multiplies on top.
+  Test: `tests/ton_lautstaerke_1006_test.py`. Every sub page gets the logo bar with its
   `.back-link` moved in as the round ‹ button (JS, from `.readyhead`); a new
   sub page only needs the usual `.readyhead > .back-link`.
   Kopfleiste eine Zeile (2026-10-05, Fabian chose draft A, replaced "Logo
@@ -479,7 +486,12 @@ For every new or changed exercise/screen, in the same commit:
   light. Test: `tests/design_1006_test.py`.
 - Trainings-Übersicht (2026-10-06): the lower "Dazu" tiles are 2 per row
   like the core tiles (4 from 700 px), icon on top, names nowrap with a
-  capped font (`.hub-extra`); never back to full-width rows.
+  capped font (`.hub-extra`); never back to full-width rows. Headings
+  (Fabian 06.10. abends): "Unser Schwerpunkttraining" / "Neurozentrierte
+  Grundlagen gezielt trainieren." above the core tiles ("Unser" is the one
+  deliberate "we" in the app), "Frei kombinierbar, auch mit den Bereichen
+  oben." under "Dazu", Kombi button below the lower tiles (Heute keeps it
+  at the top); tile texts start equally far left in both groups.
 - Gleichgewicht + Größe live (2026-10-06): 6th NAT exercise (letter sticks,
   Nein-Nein/Ja-Ja/Ohr-Schulter/Diagonal/Sakkaden, metronome, sets or open-ended,
   stance shown/spoken, drag + pinch, live tempo/Takt/Zeit anhalten/Lautstärke);
