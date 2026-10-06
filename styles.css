@@ -1802,6 +1802,18 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .today-main-hint{margin:12px 0 0;font-size:calc(14.5px * var(--ts,1));line-height:1.5;color:var(--ink)}
 .today-resume-line{margin:10px 0 0;font-size:calc(14px * var(--ts,1));color:var(--ink-soft);display:flex;flex-wrap:wrap;align-items:center;gap:0 8px}
 .today-resume-go{margin-top:0}
+.today-resume-until{margin:8px 0 0;text-align:center;font-size:calc(13px * var(--ts,1));color:var(--ink-soft)}
+.week-review-list{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.week-review-row{display:flex;align-items:center;gap:10px;font-size:calc(14.5px * var(--ts,1));color:var(--ink);min-width:0}
+.week-review-mark{flex:0 0 26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--ink-soft)}
+.week-review-row.is-done .week-review-mark{background:var(--brand);color:#ffffff}
+.week-review-day{flex:0 0 auto;font-weight:700;color:var(--ink-soft);min-width:2ch}
+.week-review-title{flex:1 1 auto;min-width:0;overflow-wrap:break-word}
+.week-review-label{display:block;margin:16px 0 6px;font-weight:700;font-size:calc(14px * var(--ts,1));color:var(--ink)}
+.week-review-optional{font-weight:400;color:var(--ink-soft)}
+.week-review-saved{margin:8px 0 0;font-size:calc(13px * var(--ts,1));color:var(--ink-soft)}
+.week-review-intent{margin:6px 0 2px;font-size:calc(17px * var(--ts,1));line-height:1.4;font-weight:600;color:var(--ink)}
+#todayWeekReview .plan-input{width:100%;box-sizing:border-box}
 .today-resume-line .text-link{min-height:44px;padding:0 4px;margin-left:-4px}
 .today-resume-actions{display:flex;justify-content:center;gap:16px;margin-top:2px}
 .today-resume-actions .text-link{min-height:44px}

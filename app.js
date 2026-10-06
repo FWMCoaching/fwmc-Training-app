@@ -6892,6 +6892,7 @@
   function startBreathSession() {
     const built = buildBreathCycle(breathWorking);
     if (built.cycleLen <= 0) return;
+    resumeSingleBase = null;
     breathPatternName = BREATH_PATTERNS[breathPatternKey].name;
     const cycles = Math.max(1, Math.round((breathPrefs.durationMin * 60) / built.cycleLen));
     hideAllPlayers();
@@ -6956,6 +6957,7 @@
     const elapsed = Math.min((breathPauseTime - breathSession.startTime) / 1000, breathSession.plannedTotal);
     const restMin = Math.min(30, Math.max(1, Math.round((breathSession.plannedTotal - elapsed) / 60)));
     breathPauseDraft = { tempo: breathSession.tempo, restMin, restMinAtStart: restMin, sound: breathSession.sound };
+    resumeSingleNote("breath");
     syncBreathPauseUI();
     els.breathPauseBtn.hidden = true;
     els.breathListenLayer.hidden = true;
@@ -7042,6 +7044,7 @@
     els.breathListenLayer.hidden = true;
     resetBreathListenHold();
     if (wasListen && !breathProgram && !comboProgram) speakWord("Geschafft. Gut gemacht.");
+    if (!breathProgram && !comboProgram) resumeSingleClear("breath");
     if (breathProgram) { advanceBreathProgram(played); return; }
     if (comboProgram) { advanceComboProgram(played); return; }
     els.breathPlayerBar.hidden = true;
@@ -7055,6 +7058,7 @@
   function breathAbort() {
     if (comboProgram) { breathLeavePlayer(); abortComboProgram(); return; }
     const wasProgram = !!breathProgram;
+    resumeSingleNote("breath");
     breathProgram = null;
     breathLeavePlayer();
     showScreen(wasProgram ? "breathProgramIntro" : "breathReady");
@@ -7725,6 +7729,7 @@
   function startMovementSession() {
     const pool = MOVEMENTS.filter((m) => movementPrefs.movements.includes(m.id));
     if (pool.length < MIN_MOVEMENTS) return;
+    resumeSingleBase = null;
     const beatLenS = 60 / movementPrefs.bpm;
     const totalBeats = Math.max(4, Math.round((movementPrefs.durationMin * 60) / beatLenS));
     const gridMode = movementPrefs.preview === "all";
@@ -7846,6 +7851,7 @@
     movementRaf = null;
     ms.pausedAt = performance.now();
     movementPauseDraft = { bpm: Math.round(60 / ms.beatLenS), preview: ms.preview };
+    resumeSingleNote("movement");
     syncMovementPauseUI();
     els.movementPauseBtn.hidden = true;
     els.movementPauseOverlay.hidden = false;
@@ -7889,6 +7895,7 @@
     releaseWakeLock();
     els.movementFinishBadge.hidden = true;
     if (comboProgram) { advanceComboProgram(played); return; }
+    if (!movementProgram) resumeSingleClear("movement");
     els.movementPlayerBar.hidden = true;
     els.movementDoneSummary.textContent = `Ganzkörper-Reaktion · ${fmtMinutes(played)}`;
     const id = movementProgram
@@ -7915,6 +7922,7 @@
   function movementAbort() {
     if (comboProgram) { movementLeavePlayer(); abortComboProgram(); return; }
     const wasProgram = !!movementProgram;
+    resumeSingleNote("movement");
     movementProgram = null;
     movementLeavePlayer();
     showScreen(wasProgram ? "movementProgramIntro" : "movementReady");
@@ -26312,7 +26320,7 @@
   // history has a training of the same area on that day (one history entry
   // per planned entry).
   Object.assign(els, {
-    todayGreeting: $("todayGreeting"), todayDate: $("todayDate"), todayMain: $("todayMain"),
+    todayGreeting: $("todayGreeting"), todayDate: $("todayDate"), todayMain: $("todayMain"), todayWeekReview: $("todayWeekReview"),
     todayProgress: $("todayProgress"), todayWeekStrip: $("todayWeekStrip"),
     todayWeekPrev: $("todayWeekPrev"), todayWeekNext: $("todayWeekNext"),
     calMonthBtn: $("calMonthBtn"), calNextMonthBtn: $("calNextMonthBtn"), calQuarterBtn: $("calQuarterBtn"),
@@ -26546,10 +26554,57 @@
     } catch (e) {}
   }
   function resumeClear() { try { localStorage.removeItem(RESUME_KEY); } catch (e) {} }
+  // Single longer exercises (Fabian, 2026-10-06: "atmen nach einem Anruf"):
+  // Atem-Muster and Movement remember the rest of the run when they are
+  // paused (also the automatic pause on leaving the app), left in the
+  // background or ended with "Beenden"; only runs of 3+ min with at least
+  // 30 s done and 1 min left. Own key, so a programme stays resumable too;
+  // Heute offers the more recent one.
+  const RESUME_SINGLE_KEY = "fwmc-resume-single-v1";
+  let resumeSingleBase = null; // { total, offset } while a continued run plays, so a second break keeps the original length
+  function resumeSingleNote(kind) {
+    let rec = null;
+    if (kind === "breath" && breathSession && !breathProgram && !comboProgram) {
+      const bs = breathSession;
+      const ref = breathPaused ? breathPauseTime : performance.now();
+      const played = Math.min(Math.max(0, (ref - bs.startTime) / 1000), bs.plannedTotal);
+      rec = { kind, title: breathPatternName, total: bs.plannedTotal, played, rest: bs.plannedTotal - played,
+        breath: { key: breathPatternKey, phases: breathScaledPhases(bs.basePhases, bs.tempo), sound: !!bs.sound, listen: !!bs.listen } };
+    } else if (kind === "movement" && movementSession && !movementProgram && !comboProgram) {
+      const ms = movementSession;
+      const total = ms.totalBeats * ms.beatLenS, played = ms.lastBeatIdx * ms.beatLenS;
+      rec = { kind, title: "Ganzkörper-Reaktion", total, played, rest: total - played,
+        movement: { movements: movementPrefs.movements.slice(), bpm: Math.round(60 / ms.beatLenS), preview: ms.preview,
+          mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel, direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle } };
+    }
+    if (rec && resumeSingleBase && resumeSingleBase.kind === kind) { rec.played += resumeSingleBase.offset; rec.total = resumeSingleBase.total; }
+    if (!rec || rec.total < 180 || rec.played < 30 || rec.rest < 60) return;
+    rec.total = Math.round(rec.total); rec.rest = Math.round(rec.rest); rec.played = Math.round(rec.played);
+    writeJSON(RESUME_SINGLE_KEY, { ...rec, type: "single", ts: Date.now() });
+  }
+  function resumeSingleClear(kind) {
+    const r = readJSON(RESUME_SINGLE_KEY, null);
+    if (!kind || (r && r.kind === kind)) { try { localStorage.removeItem(RESUME_SINGLE_KEY); } catch (e) {} }
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) return;
+    if (breathSession) resumeSingleNote("breath");
+    if (movementSession && !movementSession.finishTimer) resumeSingleNote("movement");
+  });
   function resumeGet() {
-    const r = readJSON(RESUME_KEY, null);
-    if (!r || !RESUME_UNIT[r.type] || !r.def || !Array.isArray(r.def.blocks) || !(r.pos > 0) || r.pos >= r.total || !(Date.now() - r.ts < RESUME_MAX_AGE_MS)) return null;
-    return r;
+    let r = readJSON(RESUME_KEY, null);
+    if (!r || !RESUME_UNIT[r.type] || !r.def || !Array.isArray(r.def.blocks) || !(r.pos > 0) || r.pos >= r.total || !(Date.now() - r.ts < RESUME_MAX_AGE_MS)) r = null;
+    let s1 = readJSON(RESUME_SINGLE_KEY, null);
+    if (!s1 || !(s1.kind === "breath" ? s1.breath && s1.breath.phases : s1.kind === "movement" ? s1.movement && Array.isArray(s1.movement.movements) : false)
+      || !(s1.rest >= 60) || !(s1.total >= s1.rest) || !(Date.now() - s1.ts < RESUME_MAX_AGE_MS)) s1 = null;
+    if (r && s1) return s1.ts > r.ts ? s1 : r;
+    return r || s1;
+  }
+  function resumeDrop(r) {
+    if (r && r.type === "single") resumeSingleClear(); else resumeClear();
+  }
+  function resumeCount(r) {
+    return r.type === "single" ? `noch ${Math.ceil(r.rest / 60)}\u00a0Min.` : `${RESUME_UNIT[r.type][0]} ${r.pos + 1}\u00a0von\u00a0${r.total}`;
   }
   function resumeAgo(ts) {
     const min = Math.round((Date.now() - ts) / 60000);
@@ -26559,14 +26614,42 @@
     if (h < 24) return h === 1 ? "vor 1\u00a0Std." : `vor ${h}\u00a0Std.`;
     return dStr(new Date(ts)) === dAdd(todayStr(), -1) ? "gestern" : `am ${longDate(dStr(new Date(ts)))}`;
   }
+  // Fabian 2026-10-06: the 3-day limit must be visible ("noch bis … möglich").
+  function resumeUntil(r) {
+    const end = new Date(r.ts + RESUME_MAX_AGE_MS);
+    const hm = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`;
+    const day = dStr(end), today = todayStr();
+    const name = day === today ? "heute" : day === dAdd(today, 1) ? "morgen" : ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"][end.getDay()];
+    return `Fortsetzen ist noch bis ${name}, ${hm}\u00a0Uhr möglich.`;
+  }
   function resumeMeta(r) {
-    const u = RESUME_UNIT[r.type];
-    return `${u[0]} ${r.pos + 1}\u00a0von\u00a0${r.total} · unterbrochen ${resumeAgo(r.ts)}`;
+    return `${resumeCount(r)} · unterbrochen ${resumeAgo(r.ts)}`;
   }
   function resumeRun(r, fromStart) {
     const idx = fromStart ? 0 : r.idx;
     const played = fromStart ? 0 : (r.played || 0);
     hideAllPlayers();
+    if (r.type === "single") {
+      const runS = fromStart ? r.total : r.rest;
+      if (r.kind === "breath") {
+        const b = r.breath, keep = { durationMin: breathPrefs.durationMin, sound: breathPrefs.sound, listen: breathPrefs.listen };
+        activateSectionTab("breath");
+        breathPatternKey = BREATH_PATTERNS[b.key] ? b.key : "box";
+        breathWorking = { ...b.phases };
+        Object.assign(breathPrefs, { durationMin: runS / 60, sound: b.sound, listen: b.listen });
+        startBreathSession();
+        Object.assign(breathPrefs, keep);
+        resumeSingleBase = { kind: "breath", total: r.total, offset: r.total - runS };
+      } else {
+        const keep = { ...movementPrefs, movements: movementPrefs.movements.slice() };
+        activateSectionTab("movement");
+        Object.assign(movementPrefs, r.movement, { durationMin: runS / 60 });
+        startMovementSession();
+        Object.assign(movementPrefs, keep);
+        resumeSingleBase = { kind: "movement", total: r.total, offset: r.total - runS };
+      }
+      return;
+    }
     if (r.type === "combo") {
       comboReturnScreen = "todayHome"; comboOriginBundle = null;
       comboProgram = { def: r.def, blockIndex: idx, code: r.code, key: r.key, title: r.title, totalPlayedS: played };
@@ -26617,6 +26700,7 @@
     els.todayDate.textContent = longDate(today);
     const hist = loadHistory();
     renderTodayMain(today, hist);
+    renderWeekReview(today, hist);
     renderCountdown();
     const st = weekStats(mondayOf(today), hist);
     els.todayProgress.textContent = st.planned ? `${st.done} von ${st.planned} geplanten Einheiten` : "noch kein App-Training geplant";
@@ -26642,12 +26726,13 @@
         <h2 class="today-main-title">${areaDot(e.area)}${esc(entryTitle(e))}</h2>
         <p class="today-main-meta">${esc(meta)}</p>${more}
         <button class="start-btn" type="button" data-today-start="${esc(e.id)}">Training starten</button>${resume ? `
-        <p class="today-resume-line">Unterbrochen: ${esc(resume.title)} · <span class="nowrap">${esc(RESUME_UNIT[resume.type][0])} ${resume.pos + 1}&nbsp;von&nbsp;${resume.total}</span></p><p class="today-resume-line today-resume-go"><button class="text-link small" type="button" id="todayResumeBtn">Fortsetzen</button></p>` : ""}`;
+        <p class="today-resume-line">Unterbrochen: ${esc(resume.title)} · <span class="nowrap">${esc(resumeCount(resume))}</span></p><p class="today-resume-line today-resume-go"><button class="text-link small" type="button" id="todayResumeBtn">Fortsetzen</button></p>` : ""}`;
     } else if (resume) {
       html = `<div class="today-main-kicker">Weitermachen</div>
         <h2 class="today-main-title">${esc(resume.title)}</h2>
         <p class="today-main-meta">${esc(resumeMeta(resume))}</p>
         <button class="start-btn" type="button" id="todayResumeBtn">Fortsetzen</button>
+        <p class="today-resume-until">${esc(resumeUntil(resume))}</p>
         <div class="today-resume-actions"><button class="text-link small" type="button" id="todayResumeRestartBtn">Von vorne</button><button class="text-link small danger" type="button" id="todayResumeDropBtn">Verwerfen</button></div>`;
     } else {
       const doneAll = occ.length > 0;
@@ -26667,8 +26752,78 @@
     if (resume && q("todayResumeBtn")) q("todayResumeBtn").addEventListener("click", () => resumeRun(resume));
     if (resume && q("todayResumeRestartBtn")) q("todayResumeRestartBtn").addEventListener("click", () => resumeRun(resume, true));
     if (resume && q("todayResumeDropBtn")) q("todayResumeDropBtn").addEventListener("click", () => {
-      confirmDialog("Unterbrochenes Training verwerfen? Du kannst es danach nicht mehr an dieser Stelle fortsetzen.", () => { resumeClear(); renderToday(); });
+      confirmDialog("Unterbrochenes Training verwerfen? Du kannst es danach nicht mehr an dieser Stelle fortsetzen.", () => { resumeDrop(resume); renderToday(); });
     });
+  }
+  // ---- Wochenabschluss (Fabian, 2026-10-06: "mit Haken ... und nem Satz") ----
+  // Sundays: one check per planned unit of the week, one sentence on how it
+  // went and an optional "Vorsatz" for next week (fwmc-week-intent-v1, keyed by
+  // that week's Monday). Monday to Saturday the Vorsatz sits on Heute until
+  // the client hides it. Nothing leaves the device.
+  const WEEK_INTENT_KEY = "fwmc-week-intent-v1";
+  function weekReviewSentence(planned, done, trained) {
+    if (planned) {
+      if (done >= planned) return planned === 1 ? "Deine geplante Einheit ist geschafft. Stark!" : `Alle ${planned} geplanten Einheiten geschafft. Stark!`;
+      if (done * 2 >= planned) return `${done} von ${planned} geplanten Einheiten geschafft. Gut drangeblieben.`;
+      return `${done} von ${planned} geplanten Einheiten geschafft. Plane nächste Woche lieber etwas weniger, dafür sicher.`;
+    }
+    if (trained) return `Diese Woche ${trained === 1 ? "ein Training" : trained + " Trainings"} ohne festen Plan. Mit einem Wochenplan siehst du hier deine Haken.`;
+    return "Diese Woche war ruhig. Wie wäre es mit einem kleinen Plan für nächste Woche?";
+  }
+  function renderWeekReview(today, hist) {
+    const box = els.todayWeekReview;
+    const intents = readJSON(WEEK_INTENT_KEY, {}) || {};
+    const monday = mondayOf(today);
+    if (wdIdx(today) === 6) {
+      const rows = [];
+      let planned = 0, done = 0;
+      for (let i = 0; i < 7; i++) {
+        occurrencesOn(dAdd(monday, i), hist).forEach((o) => {
+          planned++; if (o.done) done++;
+          rows.push(`<li class="week-review-row${o.done ? " is-done" : ""}"><span class="week-review-mark" aria-label="${o.done ? "geschafft" : "offen"}">${o.done
+            ? '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+            : '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>'}</span><span class="week-review-day">${WD_SHORT[i]}</span><span class="week-review-title">${esc(entryTitle(o))}</span></li>`);
+        });
+      }
+      const trained = hist.filter((h) => !h.aborted && dStr(new Date(h.ts)) >= monday && dStr(new Date(h.ts)) <= today).length;
+      const next = dAdd(monday, 7);
+      const cur = intents[next] && intents[next].text ? intents[next].text : "";
+      box.innerHTML = `<div class="today-main-kicker">Wochenabschluss</div>
+        <h2 class="today-main-title">Deine Woche</h2>
+        ${rows.length ? `<ul class="week-review-list">${rows.join("")}</ul>` : ""}
+        <p class="today-main-hint week-review-sentence">${esc(weekReviewSentence(planned, done, trained))}</p>
+        <label class="week-review-label" for="weekIntentInput">Mein Vorsatz für nächste Woche <span class="week-review-optional">(freiwillig)</span></label>
+        <input type="text" id="weekIntentInput" class="plan-input" maxlength="120" placeholder="z. B. Zweimal Atemtraining am Abend" autocomplete="off" value="${esc(cur)}">
+        <p class="week-review-saved" id="weekIntentSaved" hidden>Gespeichert. Ab Montag steht dein Vorsatz hier auf Heute.</p>`;
+      const inp = box.querySelector("#weekIntentInput");
+      const save = () => {
+        const all = readJSON(WEEK_INTENT_KEY, {}) || {};
+        const text = inp.value.trim().slice(0, 120);
+        Object.keys(all).forEach((k) => { if (k < dAdd(monday, -21)) delete all[k]; });
+        if (text) all[next] = { text, hidden: false }; else delete all[next];
+        writeJSON(WEEK_INTENT_KEY, all);
+        box.querySelector("#weekIntentSaved").hidden = !text;
+      };
+      inp.addEventListener("change", save);
+      inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); inp.blur(); } });
+      box.hidden = false;
+      return;
+    }
+    const it = intents[monday];
+    if (it && it.text && !it.hidden) {
+      box.innerHTML = `<div class="today-main-kicker">Dein Vorsatz für diese Woche</div>
+        <p class="week-review-intent">${esc(it.text)}</p>
+        <button class="text-link small" type="button" id="weekIntentHideBtn">Ausblenden</button>`;
+      box.querySelector("#weekIntentHideBtn").addEventListener("click", () => {
+        const all = readJSON(WEEK_INTENT_KEY, {}) || {};
+        if (all[monday]) { all[monday].hidden = true; writeJSON(WEEK_INTENT_KEY, all); }
+        box.hidden = true;
+      });
+      box.hidden = false;
+      return;
+    }
+    box.hidden = true;
+    box.innerHTML = "";
   }
   function dayStateClass(date, hist) {
     const occ = occurrencesOn(date, hist);
