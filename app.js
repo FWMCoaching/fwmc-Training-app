@@ -349,7 +349,19 @@
     if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
     return audioCtx;
   }
+  // Every tone and spoken word in the app goes through cueVolume(): the 🔊
+  // switch (workoutSoundPrefs.enabled) mutes all of it, the one Lautstärke
+  // in the Grundeinstellungen (masterPrefs.volume, 0-1) scales all of it
+  // (Feinheiten 1+2, 2026-10-06). Gleichgewicht's own Lautstärke multiplies
+  // on top of it.
+  function cueVolume() {
+    if (!workoutSoundPrefs.enabled) return 0;
+    const v = Number(masterPrefs.volume);
+    return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 1;
+  }
   function playBeep() {
+    const vol = cueVolume();
+    if (vol <= 0) return;
     const ac = ensureAudioCtx();
     if (!ac) return;
     const osc = ac.createOscillator();
@@ -357,7 +369,7 @@
     osc.type = "sine";
     osc.frequency.value = 880;
     gain.gain.setValueAtTime(0.0001, ac.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.35, ac.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, 0.35 * vol), ac.currentTime + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.2);
     osc.connect(gain).connect(ac.destination);
     osc.start();
@@ -374,10 +386,12 @@
     speechSynthesis.onvoiceschanged = pickVoice;
   }
   function speakWord(word) {
-    if (!window.speechSynthesis) return;
+    const vol = cueVolume();
+    if (!window.speechSynthesis || vol <= 0) return;
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(word);
     u.lang = "de-DE";
+    u.volume = vol;
     if (deVoice) u.voice = deVoice;
     u.rate = 1.0;
     speechSynthesis.speak(u);
@@ -5922,7 +5936,7 @@
   })();
   function saveCueOverrides() { writeJSON(CUE_OVERRIDES_KEY, cueOverrides); }
 
-  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true };
+  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true, volume: 1 };
   function loadMasterPrefs() {
     const saved = readJSON(MASTER_PREFS_KEY, null);
     if (saved && typeof saved === "object") {
@@ -6521,6 +6535,20 @@
     saveMasterPrefs();
     syncMasterPauseUI();
   });
+  // Eine Lautstärke für alle Töne und Ansagen (Feinheit 2, 2026-10-06).
+  // A short tone on release lets the client hear the new level.
+  $("masterVolumeSlider").addEventListener("input", () => {
+    masterPrefs.volume = Number($("masterVolumeSlider").value) / 100;
+    saveMasterPrefs();
+    syncMasterVolumeUI();
+  });
+  $("masterVolumeSlider").addEventListener("change", () => playWorkoutBeep(false));
+  function syncMasterVolumeUI() {
+    const raw = Number(masterPrefs.volume);
+    const v = Math.round((Number.isFinite(raw) ? Math.max(0, Math.min(1, raw)) : 1) * 100);
+    $("masterVolumeSlider").value = v;
+    $("masterVolumeValue").textContent = v + " %";
+  }
   function syncMasterPauseUI() {
     els.masterPauseSlider.value = masterPrefs.defaultPauseS;
     els.masterPauseValue.textContent = fmtSeconds(masterPrefs.defaultPauseS);
@@ -6645,7 +6673,7 @@
   let masterSettingsReturnFocus = null;
   function openMasterSettings() {
     masterSettingsReturnFocus = document.activeElement;
-    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; syncMasterBgUI(); syncMasterPauseUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
+    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; syncMasterBgUI(); syncMasterPauseUI(); syncMasterVolumeUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
     els.masterSettingsSheet.hidden = false;
     focusFirstIn(els.masterSettingsSheet);
   }
@@ -10513,7 +10541,8 @@
   // other cue in the app.
   function balanceClick(high) {
     const st = balanceState;
-    if (!st || !workoutSoundPrefs.enabled || st.volume <= 0) return;
+    const vol = st ? st.volume * cueVolume() : 0;
+    if (vol <= 0) return;
     window.__balanceClicks = (window.__balanceClicks || 0) + 1;
     try {
       applyCueAudioSession();
@@ -10525,7 +10554,7 @@
       osc.frequency.value = high ? 1050 : 820;
       osc.connect(gain);
       gain.connect(ctx.destination);
-      const now = ctx.currentTime, peak = Math.max(0.0002, 0.45 * st.volume);
+      const now = ctx.currentTime, peak = Math.max(0.0002, 0.45 * vol);
       gain.gain.setValueAtTime(0.0001, now);
       gain.gain.exponentialRampToValueAtTime(peak, now + 0.005);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
@@ -10545,7 +10574,7 @@
       u.lang = "de-DE";
       if (deVoice) u.voice = deVoice;
       u.rate = 1.05;
-      u.volume = Math.max(0, Math.min(1, st.volume));
+      u.volume = Math.max(0, Math.min(1, st.volume * cueVolume()));
       speechSynthesis.speak(u);
     } catch (e) {}
   }
@@ -12335,7 +12364,8 @@
     try { if (navigator.audioSession) navigator.audioSession.type = masterPrefs.cuesIgnoreSilent ? "playback" : "auto"; } catch (e) {}
   }
   function playCueTone(freq, durationS, peak) {
-    if (!workoutSoundPrefs.enabled) return;
+    const vol = cueVolume();
+    if (vol <= 0) return;
     try {
       applyCueAudioSession();
       if (!workoutAudioCtx) workoutAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -12348,7 +12378,7 @@
       gain.connect(ctx.destination);
       const now = ctx.currentTime;
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(peak, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak * vol), now + 0.01);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + durationS);
       osc.start(now);
       osc.stop(now + durationS + 0.02);
@@ -12403,7 +12433,7 @@
   // Spoken announcement via the device's own speech output (no audio files).
   // Muted together with the beeps by the speaker toggle.
   function cueSay(text) {
-    if (!text || !workoutSoundPrefs.enabled) return;
+    if (!text || cueVolume() <= 0) return;
     window.__cueLog = window.__cueLog || [];
     window.__cueLog.push(text);
     if (!window.speechSynthesis) return;
@@ -12412,6 +12442,7 @@
       // queued, not cancelled: "Halbzeit" must not cut off a running note
       const u = new SpeechSynthesisUtterance(text);
       u.lang = "de-DE";
+      u.volume = cueVolume();
       if (deVoice) u.voice = deVoice;
       u.rate = 1.05;
       speechSynthesis.speak(u);
@@ -12489,7 +12520,7 @@
     const el = document.getElementById("masterCuesGroup");
     if (!el) return;
     el.innerHTML =
-      `<div class="group-label">Töne &amp; Ansagen</div>` +
+      `<div class="group-label">Countdown und Ansagen</div>` +
       `<div class="group-help">Gilt für Tabata-Zirkel, Kraftplan, Ausdauertraining und die Pausen im Kombi-Programm. In den Feineinstellungen jedes Bereichs kannst du davon abweichen.</div>` +
       cueControlsHtml(masterPrefs.cues, CUE_FIELD_LABELS.master) +
       `<div class="cue-sub-label">iPhone/iPad</div>` +
@@ -12512,7 +12543,7 @@
     if (!el) return;
     const own = !!cueOverrides[domain];
     el.innerHTML =
-      `<div class="group-label">Töne &amp; Ansagen</div>` +
+      `<div class="group-label">Countdown und Ansagen</div>` +
       `<div class="choice-row two">` +
       `<button type="button" class="choice${own ? "" : " active"}" data-cue-mode="master">Wie Grundeinstellungen</button>` +
       `<button type="button" class="choice${own ? " active" : ""}" data-cue-mode="own">Eigene Einstellung</button></div>` +
@@ -15945,9 +15976,20 @@
   }
 
   function startComboProgram(def, code, key, fallbackReturnScreen) {
-    comboReturnScreen = fallbackReturnScreen || "home";
-    comboProgram = { def, blockIndex: 0, code, key, title: def.name || "Dein Programm", totalPlayedS: 0 };
-    startComboBlock(0);
+    const go = () => {
+      comboReturnScreen = fallbackReturnScreen || "home";
+      comboProgram = { def, blockIndex: 0, code, key, title: def.name || "Dein Programm", totalPlayedS: 0 };
+      startComboBlock(0);
+    };
+    // 3-2-1 before the first Baustein like every single start (Feinheit 10,
+    // 2026-10-06) - unless that block brings its own: Visual Training draws
+    // it on the stage, Krafttraining has "Bereit machen", Wim-Hof stops on
+    // its safety screen first. Later blocks start after the Kombi pause.
+    const first = def.blocks && def.blocks[0];
+    const own = !first || first.domain === "wimhof" || first.domain === "workout" ||
+      (first.domain === "visual" && !(EXERCISES[first.exercise] && EXERCISES[first.exercise].type === "color-tap"));
+    if (own || !leadInWanted()) { go(); return; }
+    runLeadIn(go, /^(breath|cardio|free)$/.test(first.domain));
   }
   function startComboBlock(idx) {
     if (!comboProgram) return;
@@ -16579,29 +16621,40 @@
     // the lead-in); tests of the lead-in itself set fwmc-test-leadin.
     if (navigator.webdriver && !readJSON("fwmc-test-leadin", false)) return;
     const b = e.target && e.target.closest ? e.target.closest("button") : null;
-    if (!b || !LEADIN_START_IDS.includes(b.id) || b.disabled) return;
+    if (!b || b.disabled) return;
+    // Hütchen sortieren shares Visual Training's start button but has no
+    // canvas, so it never got VT's own countdown (Feinheit 10, 2026-10-06).
+    const coneStart = b.id === "startBtn" && EXERCISES[state.exercise] && EXERCISES[state.exercise].type === "color-tap";
+    if (!LEADIN_START_IDS.includes(b.id) && !coneStart) return;
     if (b.textContent.replace(/­/g, "").trim() !== "Training starten") return;
     e.preventDefault();
     e.stopImmediatePropagation();
+    // Atem/Wim-Hof: the lead-in matches the calm player (dark in dark mode, 2026-10-06).
+    runLeadIn(() => {
+      leadInBypass = true;
+      try { b.click(); } finally { leadInBypass = false; }
+    }, /^(breath|cardio|free)/.test(b.id));
+  }, true);
+  // The 3-2-1 overlay itself, shared by the start buttons above and the
+  // first Kombi-Baustein (startComboProgram).
+  function runLeadIn(onDone, calm) {
     const ov = $("leadIn"), num = $("leadInNum");
     let n = 3;
     const tick = () => {
-      if (n === 0) {
-        stopLeadIn();
-        leadInBypass = true;
-        try { b.click(); } finally { leadInBypass = false; }
-        return;
-      }
+      if (n === 0) { stopLeadIn(); onDone(); return; }
       num.textContent = String(n);
       playWorkoutBeep(false);
       n -= 1;
       leadInTimer = setTimeout(tick, 1000);
     };
-    // Atem/Wim-Hof: the lead-in matches the calm player (dark in dark mode, 2026-10-06).
-    ov.classList.toggle("calm", /^(breath|cardio|free)/.test(b.id));
+    ov.classList.toggle("calm", !!calm);
     ov.hidden = false;
     tick();
-  }, true);
+  }
+  function leadInWanted() {
+    if (masterPrefs.startCountdown === false) return false;
+    return !(navigator.webdriver && !readJSON("fwmc-test-leadin", false));
+  }
   $("leadInCancelBtn").addEventListener("click", stopLeadIn);
   els.masterStartCountdownCheck = $("masterStartCountdownCheck");
   els.masterStartCountdownCheck.addEventListener("change", () => {
@@ -28108,8 +28161,9 @@
       <span class="area-icon" style="background:${a.color}"><svg viewBox="0 0 24 24" aria-hidden="true">${a.icon}</svg></span>
       ${core ? "" : '<span class="t-wrap">'}<span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(HUB_TEXT[a.key] || (a.key === "nat" ? "Neuroathletik: " + a.text : a.text))}</span>${a.key === "test" ? '<span class="test-unlock-badge">Mit Code freigeschaltet</span>' : ""}${core ? "" : "</span>"}</button>`;
     const core = tiles.filter((a) => HUB_CORE.includes(a.key)), extra = tiles.filter((a) => !HUB_CORE.includes(a.key));
-    grid.innerHTML = `<div class="area-grid hub-core">${core.map((a) => tile(a, true)).join("")}</div>
-      <div class="hub-group-title">Dazu: dein klassisches Training</div><p class="hub-sub">Kombinierbar mit allen Bereichen oben.</p>
+    grid.innerHTML = `<div class="hub-group-title hub-first">Unser Schwerpunkttraining</div><p class="hub-sub">Neurozentrierte Grundlagen gezielt trainieren.</p>
+      <div class="area-grid hub-core">${core.map((a) => tile(a, true)).join("")}</div>
+      <div class="hub-group-title">Dazu: dein klassisches Training</div><p class="hub-sub">Frei kombinierbar, auch mit den Bereichen oben.</p>
       <div class="area-grid hub-extra">${extra.map((a) => tile(a, false)).join("")}</div>`;
     grid.querySelectorAll(".area-tile").forEach((b) => b.addEventListener("click", () => {
       if (b.dataset.area === "test") { activateSectionTab("test"); showScreen("testHome"); } else goArea(b.dataset.area);

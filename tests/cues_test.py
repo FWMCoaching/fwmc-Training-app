@@ -55,7 +55,7 @@ async def main():
         pg = await new_page(b, errors)
         await pg.click("#home .master-settings-btn"); await pg.wait_for_timeout(150)
         m = pg.locator("#masterCuesGroup")
-        print("master has Töne & Ansagen:", "Töne & Ansagen" in await m.inner_text())
+        print("master has Countdown und Ansagen:", "Countdown und Ansagen" in await m.inner_text())
         print("note option hidden until 'ansagen' ticked:", await m.locator('[data-cue-key="announceNote"]').count() == 0)
         await m.locator('[data-cue-count="5"]').click(); await pg.wait_for_timeout(60)
         await m.locator('[data-cue-key="announceNext"]').check(); await pg.wait_for_timeout(60)
