@@ -1371,7 +1371,7 @@
     historyMoreBtn: $("historyMoreBtn"),
     tipsSheet: $("tipsSheet"), tipsBtn: $("tipsBtn"), tipsCloseBtn: $("tipsCloseBtn"),
     tipInstall: $("tipInstall"), tipInstallText: $("tipInstallText"),
-    installHint: $("installHint"), installHintText: $("installHintText"), installHintAddBtn: $("installHintAddBtn"), installHintCloseBtn: $("installHintCloseBtn"),
+    installHint: $("installHint"), installHintText: $("installHintText"), installHintAddBtn: $("installHintAddBtn"), installHintCloseBtn: $("installHintCloseBtn"), installHintSteps: $("installHintSteps"), installHintWhere: $("installHintWhere"), installPointer: $("installPointer"),
     faqSheet: $("faqSheet"), faqCloseBtn: $("faqCloseBtn"),
     privacySheet: $("privacySheet"), privacyCloseBtn: $("privacyCloseBtn"),
     masterSettingsSheet: $("masterSettingsSheet"), masterSettingsCloseBtn: $("masterSettingsCloseBtn"),
@@ -5247,6 +5247,7 @@
     if (idx >= program.steps.length) { finishProgram(true); return; }
     program.chapterIndex = idx;
     const step = program.steps[idx];
+    resumeNote("program", program, idx, program.steps.slice(0, idx).filter((st) => st.type === "exercise").length);
     if (step.type === "video") { playProgramVideo(step); return; }
     applyBlockToState(step.block);
     buildProgressTrack(program.def.blocks.length);
@@ -5395,6 +5396,7 @@
   }
 
   function finishProgram(aborted) {
+    resumeClear();
     if (raf) cancelAnimationFrame(raf);
     accountSession();
     releaseWakeLock();
@@ -5762,6 +5764,29 @@
   const TIPS_KEY = "fwmc-tips-seen";
   const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  // ---- Text size follows the iPhone setting (Fabian, 2026-10-06) ----
+  // Safari gives -apple-system-body the Dynamic Type size (17 px = standard).
+  // styles.css multiplies every text size of 10.5-22 px by --ts; big numbers
+  // and stage visuals stay fixed. Capped so layouts and tabs keep fitting.
+  // Tests force a factor with fwmc-test-textscale.
+  function applyTextScale() {
+    let ts = 1;
+    const forced = readJSON("fwmc-test-textscale", null);
+    if (typeof forced === "number") ts = forced;
+    else if (isIOS && window.CSS && CSS.supports("font", "-apple-system-body")) {
+      const probe = document.createElement("span");
+      probe.style.cssText = "font:-apple-system-body;position:absolute;visibility:hidden";
+      probe.textContent = "x";
+      document.body.appendChild(probe);
+      const px = parseFloat(getComputedStyle(probe).fontSize);
+      probe.remove();
+      if (px > 0) ts = px / 17;
+    }
+    ts = Math.max(0.95, Math.min(1.25, ts));
+    document.documentElement.style.setProperty("--ts", String(Math.round(ts * 100) / 100));
+  }
+  applyTextScale();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) applyTextScale(); });
   if (standalone) els.tipInstall.hidden = true;
   else if (isIOS) els.tipInstallText.textContent = "Tippe in Safari auf „Teilen“ und dann auf „Zum Home-Bildschirm“ – dann startest du dein Training mit einem Tipp.";
   let tipsReturnFocus = null;
@@ -7082,6 +7107,7 @@
     if (!breathProgram) return;
     if (idx >= breathProgram.def.blocks.length) { finishBreathProgram(); return; }
     breathProgram.blockIndex = idx;
+    resumeNote("breath", breathProgram, idx);
     const block = breathProgram.def.blocks[idx];
     if (block.pattern === "wimhof") {
       wimhofSettings.breaths = block.breaths ?? WIMHOF_DEFAULTS.breaths;
@@ -7121,6 +7147,7 @@
   }
   let lastBreathProgram = null; // kept after finishBreathProgram so "Nochmal von vorne" can restart it
   function finishBreathProgram() {
+    resumeClear();
     hideAllPlayers();
     const played = breathProgram.totalPlayedS;
     const title = breathProgram.title;
@@ -11853,6 +11880,7 @@
     if (!workoutPlan) return;
     if (idx >= workoutPlan.def.blocks.length) { finishWorkoutPlan(); return; }
     workoutPlan.blockIndex = idx;
+    resumeNote("workout", workoutPlan, idx);
     runWorkoutBlock(workoutPlan.def.blocks[idx]);
   }
   function showWorkoutTransition(nextBlock, onContinue) {
@@ -11866,6 +11894,7 @@
     workoutTransitionTimer = setTimeout(go, 4000);
   }
   function finishWorkoutPlan(aborted) {
+    resumeClear();
     hideAllPlayers();
     const played = workoutPlan.totalPlayedS;
     const title = workoutPlan.title;
@@ -15010,6 +15039,7 @@
     if (!comboProgram) return;
     if (idx >= comboProgram.def.blocks.length) { finishComboProgram(); return; }
     comboProgram.blockIndex = idx;
+    resumeNote("combo", comboProgram, idx);
     const block = comboProgram.def.blocks[idx];
     // Blocks write their settings into the shared Breath/Movement/Wim-Hof
     // objects. Keep the client's own values and put them back when the
@@ -15488,6 +15518,7 @@
     comboPrefsBackup = null;
   }
   function finishComboProgram() {
+    resumeClear();
     hideAllPlayers();
     restoreComboPrefs();
     const played = comboProgram.totalPlayedS;
@@ -26498,6 +26529,65 @@
       if (tab) tab.click();
     }
   }
+  // ==== Weitermachen nach Unterbrechung (Fabian 2026-10-06: "mit rein") ====
+  // Every multi-part run (Kombi-Programm, Workout-Plan, Atem-Programm,
+  // Trainings-Code-Programm) notes where it is at each block start; a run
+  // that ends without reaching its end (Beenden, app closed, phone locked)
+  // leaves that note, and "Heute" offers to continue with the block that was
+  // interrupted. The natural end (and skipping past it) clears it.
+  const RESUME_KEY = "fwmc-resume-v1";
+  const RESUME_MAX_AGE_MS = 3 * 864e5;
+  const RESUME_UNIT = { combo: ["Baustein", "Bausteine"], workout: ["Übung", "Übungen"], breath: ["Übung", "Übungen"], program: ["Übung", "Übungen"] };
+  function resumeNote(type, run, idx, pos) {
+    if (!run || !run.def || !Array.isArray(run.def.blocks)) return;
+    try {
+      localStorage.setItem(RESUME_KEY, JSON.stringify({ type, def: run.def, code: run.code || null, key: run.key || null, title: run.title || "",
+        idx, pos: pos == null ? idx : pos, total: run.def.blocks.length, played: Math.round(run.totalPlayedS || run.playedS || 0), ts: Date.now() }));
+    } catch (e) {}
+  }
+  function resumeClear() { try { localStorage.removeItem(RESUME_KEY); } catch (e) {} }
+  function resumeGet() {
+    const r = readJSON(RESUME_KEY, null);
+    if (!r || !RESUME_UNIT[r.type] || !r.def || !Array.isArray(r.def.blocks) || !(r.pos > 0) || r.pos >= r.total || !(Date.now() - r.ts < RESUME_MAX_AGE_MS)) return null;
+    return r;
+  }
+  function resumeAgo(ts) {
+    const min = Math.round((Date.now() - ts) / 60000);
+    if (min < 2) return "gerade eben";
+    if (min < 60) return `vor ${min}\u00a0Min.`;
+    const h = Math.round(min / 60);
+    if (h < 24) return h === 1 ? "vor 1\u00a0Std." : `vor ${h}\u00a0Std.`;
+    return dStr(new Date(ts)) === dAdd(todayStr(), -1) ? "gestern" : `am ${longDate(dStr(new Date(ts)))}`;
+  }
+  function resumeMeta(r) {
+    const u = RESUME_UNIT[r.type];
+    return `${u[0]} ${r.pos + 1}\u00a0von\u00a0${r.total} · unterbrochen ${resumeAgo(r.ts)}`;
+  }
+  function resumeRun(r, fromStart) {
+    const idx = fromStart ? 0 : r.idx;
+    const played = fromStart ? 0 : (r.played || 0);
+    hideAllPlayers();
+    if (r.type === "combo") {
+      comboReturnScreen = "todayHome"; comboOriginBundle = null;
+      comboProgram = { def: r.def, blockIndex: idx, code: r.code, key: r.key, title: r.title, totalPlayedS: played };
+      startComboBlock(idx);
+    } else if (r.type === "workout") {
+      workoutOriginBundle = null;
+      workoutPlan = { def: r.def, blockIndex: idx, code: r.code, key: r.key, title: r.title, totalPlayedS: played };
+      startWorkoutPlanBlock(idx);
+    } else if (r.type === "breath") {
+      breathOriginBundle = null;
+      breathProgram = { def: r.def, blockIndex: idx, code: r.code, key: r.key, title: r.title, totalPlayedS: played };
+      startBreathProgramBlock(idx);
+    } else if (r.type === "program") {
+      originBundle = null; programIntroHomeScreen = "todayHome";
+      activateSectionTab("visual");
+      const steps = buildProgramSteps(r.def);
+      program = { def: r.def, steps, chapterIndex: idx, code: r.code, key: r.key, title: r.title, playedS: played };
+      playChapter(Math.min(idx, steps.length - 1));
+    }
+  }
+
   function continueFromHistory(h) {
     const area = historyAreaOf(h);
     if (h.kind === "exercise" && h.exId) { startEntry({ area: area === "nat" ? "nat" : "visual", what: area === "nat" ? "nat:peripher" : "ex:" + h.exId }); return; }
@@ -26543,6 +26633,7 @@
     const last = hist.find((h) => !h.aborted) || hist[0];
     const hint = "Nutze gerne die bereitstehenden Trainings oder gestalte dir eigene. Wenn du Hilfe brauchst, nimm gerne Kontakt zu deinem Trainer auf.";
     let html;
+    const resume = resumeGet();
     if (open.length) {
       const e = open[0];
       const meta = [e.time ? `${e.time} Uhr` : "", `${e.minutes} Min.`, AREA_BY_KEY[e.area].label].filter(Boolean).join(" · ");
@@ -26550,7 +26641,14 @@
       html = `<div class="today-main-kicker">Heutiges Training</div>
         <h2 class="today-main-title">${areaDot(e.area)}${esc(entryTitle(e))}</h2>
         <p class="today-main-meta">${esc(meta)}</p>${more}
-        <button class="start-btn" type="button" data-today-start="${esc(e.id)}">Training starten</button>`;
+        <button class="start-btn" type="button" data-today-start="${esc(e.id)}">Training starten</button>${resume ? `
+        <p class="today-resume-line">Unterbrochen: ${esc(resume.title)} · <span class="nowrap">${esc(RESUME_UNIT[resume.type][0])} ${resume.pos + 1}&nbsp;von&nbsp;${resume.total}</span></p><p class="today-resume-line today-resume-go"><button class="text-link small" type="button" id="todayResumeBtn">Fortsetzen</button></p>` : ""}`;
+    } else if (resume) {
+      html = `<div class="today-main-kicker">Weitermachen</div>
+        <h2 class="today-main-title">${esc(resume.title)}</h2>
+        <p class="today-main-meta">${esc(resumeMeta(resume))}</p>
+        <button class="start-btn" type="button" id="todayResumeBtn">Fortsetzen</button>
+        <div class="today-resume-actions"><button class="text-link small" type="button" id="todayResumeRestartBtn">Von vorne</button><button class="text-link small danger" type="button" id="todayResumeDropBtn">Verwerfen</button></div>`;
     } else {
       const doneAll = occ.length > 0;
       const lastRow = last ? `<p class="today-main-meta">Zuletzt: ${esc(last.title)} · ${esc(longDate(dStr(new Date(last.ts))))}</p>
@@ -26565,6 +26663,12 @@
     if (startBtn) startBtn.addEventListener("click", () => { const e = open.find((o) => o.id === startBtn.dataset.todayStart); if (e) startEntry(e); });
     const cont = els.todayMain.querySelector("#todayContinueBtn");
     if (cont && last) cont.addEventListener("click", () => continueFromHistory(last));
+    const q = (id) => els.todayMain.querySelector("#" + id);
+    if (resume && q("todayResumeBtn")) q("todayResumeBtn").addEventListener("click", () => resumeRun(resume));
+    if (resume && q("todayResumeRestartBtn")) q("todayResumeRestartBtn").addEventListener("click", () => resumeRun(resume, true));
+    if (resume && q("todayResumeDropBtn")) q("todayResumeDropBtn").addEventListener("click", () => {
+      confirmDialog("Unterbrochenes Training verwerfen? Du kannst es danach nicht mehr an dieser Stelle fortsetzen.", () => { resumeClear(); renderToday(); });
+    });
   }
   function dayStateClass(date, hist) {
     const occ = occurrencesOn(date, hist);
@@ -27648,6 +27752,13 @@
     let sec = "today";
     try { sec = new URLSearchParams(location.search).get("bereich") || "today"; } catch (e) {}
     if (sec === "test" && !readJSON(TEST_UNLOCK_KEY, false)) sec = "visual";
+    // App-icon shortcuts (manifest.json "shortcuts", Android/Chrome): the
+    // bottom bar's own pages.
+    if (sec === "training" || sec === "fortschritt") {
+      activateSectionTab("today");
+      showScreen(sec === "fortschritt" ? "progressScreen" : bottomNavOn ? "trainingHub" : "todayHome");
+      return;
+    }
     const screens = { today: "todayHome", heute: "todayHome", visual: "home", breath: "breathHome", movement: "movementHome", workout: "workoutHome", cardio: "cardioHome", nat: "natHome", test: "testHome", free: "freeHome", frei: "freeHome" };
     if (sec === "frei") sec = "free";
     if (!screens[sec]) sec = "today";
@@ -28618,7 +28729,18 @@
     const hide = () => { els.installHint.hidden = true; };
     const dismiss = () => { writeJSON(KEY, true); hide(); };
     els.installHintCloseBtn.addEventListener("click", dismiss);
+    // iPhone/iPad: Apple offers no "add" API to web pages, so the button
+    // points at Safari's own share button (arrow overlay) instead.
+    const isPad = /iPad/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) || (forced === "ios" && readJSON("fwmc-test-install-pad", false));
+    document.body.appendChild(els.installPointer); // fixed, outside animated screens
+    const hidePointer = () => { els.installPointer.hidden = true; };
+    els.installPointer.addEventListener("click", hidePointer);
     els.installHintAddBtn.addEventListener("click", async () => {
+      if (platform === "ios") {
+        els.installPointer.classList.toggle("is-pad", isPad);
+        els.installPointer.hidden = false;
+        return;
+      }
       if (!deferredPrompt) return;
       deferredPrompt.prompt();
       try { const choice = await deferredPrompt.userChoice; if (choice && choice.outcome === "accepted") dismiss(); } catch (e) {}
@@ -28628,9 +28750,14 @@
     window.addEventListener("appinstalled", dismiss);
     if (!platform || readJSON(KEY, false)) return;
     // Static text only; the button names stay on one line (nowrap).
-    els.installHintText.innerHTML = platform === "ios"
-      ? "Tippe in Safari auf <span class=\"nowrap\">„Teilen“</span> (das Quadrat mit dem Pfeil) und dann auf <span class=\"nowrap\">„Zum Home-Bildschirm“</span>. Dann liegt dein Training mit Logo auf dem Startbildschirm und öffnet ohne Browserleiste."
-      : "Öffne das Browser-Menü (⋮) und tippe auf <span class=\"nowrap\">„Zum Startbildschirm</span> <span class=\"nowrap\">hinzufügen“</span>. Dann liegt dein Training mit Logo auf dem Startbildschirm und öffnet ohne Browserleiste.";
+    if (platform === "ios") {
+      els.installHintText.textContent = "Dann liegt dein Training mit Logo auf dem Startbildschirm und öffnet ohne Browserleiste. So geht es:";
+      els.installHintWhere.textContent = isPad ? "(oben rechts)" : "(unten in der Mitte; bei neuem iOS zuerst auf\u00a0⋯ tippen)";
+      els.installHintSteps.hidden = false;
+      els.installHintAddBtn.hidden = false;
+    } else {
+      els.installHintText.innerHTML = "Öffne das Browser-Menü (⋮) und tippe auf <span class=\"nowrap\">„Zum Startbildschirm</span> <span class=\"nowrap\">hinzufügen“</span>. Dann liegt dein Training mit Logo auf dem Startbildschirm und öffnet ohne Browserleiste.";
+    }
     els.installHint.hidden = false;
     window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();

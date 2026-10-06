@@ -70,3 +70,19 @@ Kalender, ein großes Ziel als Motivations-Countdown auf Heute.
   should affect Trainingssteuerung).
 Test: `tests/events_countdown_1005_test.py`.
 
+
+## Weitermachen nach Unterbrechung (2026-10-06)
+
+Fabian: "Weitermachen nach Unterbrechung mit rein." Multi-block runs write
+`fwmc-resume-v1` = `{type, def, code, key, title, idx, pos, total, played, ts}`
+whenever a block starts (`resumeNote`), types `combo` / `workout` / `breath` /
+`program` (Trainer-Programm: `pos` counts exercises, `idx` is the chapter
+step). Every finish… (natural end, skip past the end) calls `resumeClear()`;
+"Beenden" mid-run leaves it. `resumeGet()` offers it only from block 2 on
+(pos > 0, pos < total) and for 3 days. Heute: without an open planned
+training the main card becomes "Weitermachen" (title, "Übung 2 von 3 ·
+unterbrochen vor 10 Min.", Fortsetzen / Von vorne / Verwerfen with
+confirmDialog); with one, a single "Unterbrochen: … Fortsetzen" line under
+it. `resumeRun()` rebuilds the runner (origin bundles reset, return screen
+Heute). Not covered: Cardio-Einheit (one timeline, no blocks) and single
+exercises. Test: `tests/resume_install_1006_test.py`.

@@ -53,9 +53,11 @@ async def main():
         ctx, pg = await new_page(b, "if (!localStorage.getItem('fwmc-install-hint-dismissed')) localStorage.setItem('fwmc-test-install', JSON.stringify('ios'))", errors)
         await pg.goto(BASE); await pg.wait_for_timeout(300)
         check("install hint visible on Heute (iOS)", await pg.is_visible("#todayHome #installHint"))
-        txt = await pg.inner_text("#installHintText")
+        # 2026-10-06: the steps moved into #installHintSteps (share icon + arrow
+        # overlay via "+ Zum Startbildschirm"), see resume_install_1006_test.py
+        txt = await pg.inner_text("#installHint")
         check("iOS text names Teilen and Home-Bildschirm", "Teilen" in txt and "Home-Bildschirm" in txt, txt)
-        check("no install button on iOS", not await pg.is_visible("#installHintAddBtn"))
+        check("iOS button points at the share button", await pg.is_visible("#installHintAddBtn") and "Zum Startbildschirm" in await pg.inner_text("#installHintAddBtn"))
         box = await pg.locator("#installHintCloseBtn").bounding_box()
         check("close link is a 44 px tap target", box and box["height"] >= 44, box)
         await pg.click("#installHintCloseBtn"); await pg.wait_for_timeout(100)
