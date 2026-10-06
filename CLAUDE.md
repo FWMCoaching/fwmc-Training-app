@@ -302,7 +302,11 @@ For every new or changed exercise/screen, in the same commit:
   (🔊 off = 0, else `masterPrefs.volume`, the one "Lautstärke" in the
   Grundeinstellungen); a new sound multiplies its gain/`u.volume` by it and
   returns at 0. Gleichgewicht's own Lautstärke multiplies on top.
-  Test: `tests/ton_lautstaerke_1006_test.py`. Every sub page gets the logo bar with its
+  Test: `tests/ton_lautstaerke_1006_test.py`. Takt-Ton (Reaktionstraining:
+  `movementPrefs.tick/tickVolume` via `mvTickOf`, carried by Kombi/presets/
+  Weitermachen; Gleichgewicht), Wim-Hof cues at every phase (`wimhofCue`)
+  and Wim-Hof pause/3-2-1; MOT/Flash pause sheets change tempo for the run
+  only. Test: `tests/takt_tempo_wimhof_1006_test.py`. Every sub page gets the logo bar with its
   `.back-link` moved in as the round ‹ button (JS, from `.readyhead`); a new
   sub page only needs the usual `.readyhead > .back-link`.
   Kopfleiste eine Zeile (2026-10-05, Fabian chose draft A, replaced "Logo
@@ -468,7 +472,7 @@ For every new or changed exercise/screen, in the same commit:
   collapsed behind `.code-toggle` (test flag `fwmc-test-codequiet`);
   `.player.calm` (Atem, Wim-Hof) is dark petrol in dark mode; Fortschritt
   without history shows `#progressEmpty`; with the bottom bar the Kombi link
-  shows only on Heute and Training. Weitermachen also for single Atem/
+  shows only on Training (Heute dropped it, Fabian 06.10. abends). Weitermachen also for single Atem/
   Reaktionstraining runs (`fwmc-resume-single-v1`, ≥ 3 min, ≥ 30 s played),
   the card names the 3-day deadline. Sunday on Heute: Wochenabschluss
   (`#todayWeekReview`, check marks + one sentence + optional Vorsatz in
@@ -490,12 +494,13 @@ For every new or changed exercise/screen, in the same commit:
   (Fabian 06.10. abends): "Unser Schwerpunkttraining" / "Neurozentrierte
   Grundlagen gezielt trainieren." above the core tiles ("Unser" is the one
   deliberate "we" in the app), "Frei kombinierbar, auch mit den Bereichen
-  oben." under "Dazu", Kombi button below the lower tiles (Heute keeps it
-  at the top); tile texts start equally far left in both groups.
+  oben." under "Dazu", Kombi button below the lower tiles (Heute has none
+  since 06.10. evening); tile texts start equally far left in both groups.
 - Gleichgewicht + Größe live (2026-10-06): 6th NAT exercise (letter sticks,
   Nein-Nein/Ja-Ja/Ohr-Schulter/Diagonal/Sakkaden, metronome, sets or open-ended,
   stance shown/spoken, drag + pinch, live tempo/Takt/Zeit anhalten/Lautstärke);
-  details docs/notes/02. Every LOOK_SPECS exercise also gets its size live in the
+  details docs/notes/02 (letter colour per stick, colours/length/width/font
+  live in the pause sheet, one-time silent-switch hint; music like Spotify keeps playing). Every LOOK_SPECS exercise also gets its size live in the
   pause sheet and by pinch (`LIVE_LOOK`); a new one needs one entry there.
   Tests: `tests/gleichgewicht_1006_test.py`, `tests/live_size_1006_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests

@@ -79,11 +79,11 @@ async def main():
             check(f"[{tag}] unlock badge on one line", info["badgeOneLine"])
             check(f"[{tag}] no sideways scroll", info["noSideScroll"])
             await ctx.close()
-        # Heute keeps its Kombi link at the top
+        # Heute shows no Kombi link any more (Fabian 06.10. abends: "Wer trainieren will, geht unten auf Training")
         ctx, pg = await new_page(b, "localStorage.setItem('fwmc-test-bottomnav','true');")
         watch(pg)
         await pg.goto(BASE + "?bereich=heute"); await pg.wait_for_timeout(500)
-        check("Heute: Kombi link still near the top", await pg.evaluate("(() => { const l = document.querySelector('#todayHome > .combo-entry-link'); return !!l && l.getBoundingClientRect().height > 0 && l.getBoundingClientRect().top < 300; })()"))
+        check("Heute: no Kombi link", await pg.evaluate("(() => { const l = document.querySelector('#todayHome > .combo-entry-link'); return !l || l.getBoundingClientRect().height === 0; })()"))
         await ctx.close()
 
         # ---- 2 + 3. Ton aus = alles stumm, eine Lautstärke ----

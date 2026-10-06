@@ -1453,6 +1453,7 @@
     wimhofPlayer: $("wimhofPlayer"), wimhofPlayerBar: $("wimhofPlayerBar"), wimhofBig: $("wimhofBig"),
     wimhofPhaseCount: $("wimhofPhaseCount"), wimhofPhaseLabel: $("wimhofPhaseLabel"), wimhofSub: $("wimhofSub"),
     wimhofHoldDoneBtn: $("wimhofHoldDoneBtn"), wimhofStatusEl: $("wimhofStatusEl"),
+    wimhofPauseBtn: $("wimhofPauseBtn"), wimhofPauseOverlay: $("wimhofPauseOverlay"), wimhofResumeBtn: $("wimhofResumeBtn"),
     wimhofBackBtn: $("wimhofBackBtn"), wimhofFsBtn: $("wimhofFsBtn"), wimhofFsHint: $("wimhofFsHint"),
     wimhofFsHintOpenBtn: $("wimhofFsHintOpenBtn"), wimhofFsHintClose: $("wimhofFsHintClose"),
     wimhofDonePanel: $("wimhofDonePanel"), wimhofDoneSummary: $("wimhofDoneSummary"), wimhofRating: $("wimhofRating"),
@@ -5747,6 +5748,25 @@
   // if no time passed while away, instead of building a separate pause/
   // resume UI for each engine.
   let hiddenAt = null;
+  // Pause sheets start below the player bar's real bottom edge (2026-10-06,
+  // review of ideas 41-44): with a long status ("8 Objekte · 4 Ziele ·
+  // Tempo-Stufe 1") the bar wraps to 2-3 rows at 390 px, and the fixed CSS
+  // padding let a tall panel (Flash/MOT with tempo sliders) slide under it.
+  // Starting the overlay itself below the bar also keeps scrolled content
+  // from passing under the bar's pills.
+  function placePauseOverlay(ov) {
+    ov.style.top = ""; ov.style.paddingTop = "";
+    if (ov.hidden) return;
+    const bar = ov.closest(".player") && ov.closest(".player").querySelector(".player-bar");
+    if (!bar || !bar.getClientRects().length) return;
+    const off = Math.round(bar.getBoundingClientRect().bottom - ov.getBoundingClientRect().top + 8);
+    if (off > 0) { ov.style.top = off + "px"; ov.style.paddingTop = "12px"; }
+  }
+  const placeOpenPauseOverlays = () => document.querySelectorAll(".player .pause-overlay").forEach((ov) => { if (!ov.hidden) placePauseOverlay(ov); });
+  new MutationObserver((muts) => muts.forEach((m) => {
+    if (m.target.classList && m.target.classList.contains("pause-overlay")) requestAnimationFrame(() => placePauseOverlay(m.target));
+  })).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["hidden"] });
+  window.addEventListener("resize", placeOpenPauseOverlays);
   // Auto-Pause (Fabian, 2026-10-02): leaving the app mid-training (a call,
   // switching apps) presses that player's own visible "Pause" button, so
   // the client comes back to its pause screen instead of a run that kept
@@ -5775,7 +5795,7 @@
       if (hiddenMs > 500) {
         if (session && !periphPausedAt) session.startTime += hiddenMs;
         if (breathSession && !breathPaused) breathSession.startTime += hiddenMs;
-        if (wimhofState) { wimhofState.phaseStart += hiddenMs; wimhofState.sessionStart += hiddenMs; }
+        if (wimhofState && wimhofState.pausedAt == null) { wimhofState.phaseStart += hiddenMs; wimhofState.sessionStart += hiddenMs; }
         if (movementSession) movementSession.startTime += hiddenMs;
         if (workoutState && !workoutState.pausedAt) {
           if (workoutState.startTime) workoutState.startTime += hiddenMs;
@@ -7316,7 +7336,10 @@
     els.wimhofPlayerBar.hidden = false;
     els.wimhofDonePanel.hidden = true;
     els.wimhofHoldDoneBtn.hidden = true;
-    wimhofState = { round: 1, phase: "power", phaseStart: performance.now(), sessionStart: performance.now(), retentions: [] };
+    els.wimhofPauseOverlay.hidden = true;
+    els.wimhofPauseBtn.hidden = false;
+    wimhofState = { round: 1, phase: "power", phaseStart: performance.now(), sessionStart: performance.now(), retentions: [], pausedAt: null, beeped: null };
+    wimhofCue("start");
     requestWakeLock();
     wimhofRaf = requestAnimationFrame(wimhofTick);
   }
@@ -7336,6 +7359,7 @@
         wimhofState.phaseStart = now;
         wimhofCircle.style.transform = "scale(0.55)";
         els.wimhofHoldDoneBtn.hidden = false;
+        wimhofCue("retention");
       } else {
         const within = (elapsedInPhase % s.breathPaceS) / s.breathPaceS;
         const half = within < 0.5;
@@ -7359,24 +7383,80 @@
       els.wimhofPhaseLabel.textContent = "Halten – voll eingeatmet";
       els.wimhofPhaseCount.textContent = Math.ceil(remain);
       els.wimhofSub.textContent = `Runde ${wimhofState.round} von ${s.rounds}`;
+      // 3-2-1 before the hold ends, like the countdown beeps elsewhere
+      const sec = Math.ceil(remain);
+      if (sec >= 1 && sec <= 3 && wimhofState.beeped !== sec) { wimhofState.beeped = sec; playWorkoutBeep(false); }
       if (elapsed >= s.recoveryHoldS) {
-        if (wimhofState.round >= s.rounds) { wimhofFinish(); return; }
+        if (wimhofState.round >= s.rounds) { wimhofCue("end"); wimhofFinish(); return; }
         wimhofState.round += 1;
         wimhofState.phase = "power";
         wimhofState.phaseStart = now;
+        wimhofCue("round");
       }
     }
     els.wimhofStatusEl.textContent = `Runde ${wimhofState.round}/${s.rounds}`;
     wimhofRaf = requestAnimationFrame(wimhofTick);
   }
   els.wimhofHoldDoneBtn.addEventListener("click", () => {
-    if (!wimhofState || wimhofState.phase !== "retention") return;
+    if (!wimhofState || wimhofState.phase !== "retention" || wimhofState.pausedAt != null) return;
     const held = (performance.now() - wimhofState.phaseStart) / 1000;
     wimhofState.retentions.push(held);
     wimhofState.phase = "recovery";
     wimhofState.phaseStart = performance.now();
+    wimhofState.beeped = null;
     els.wimhofHoldDoneBtn.hidden = true;
+    wimhofCue("recovery");
   });
+  // Töne bei jedem Phasenwechsel (Fabian, 2026-10-06, Feinheit 43): a tone
+  // plus a short spoken cue, both through cueVolume(), so 🔊 in the step
+  // bar and the pause sheet switch them off mid-exercise.
+  const WIMHOF_CUES = {
+    start: [false, "Kräftig ein- und ausatmen"],
+    retention: [true, "Ausatmen und anhalten"],
+    recovery: [true, "Einatmen und halten"],
+    round: [true, "Ausatmen. Neue Runde"],
+    end: [true, "Ausatmen. Geschafft"],
+  };
+  function wimhofCue(kind) {
+    const c = WIMHOF_CUES[kind];
+    if (!c) return;
+    playWorkoutBeep(c[0]);
+    cueSay(c[1]);
+  }
+  // Pause (Fabian, 2026-10-06, Feinheit 44): freezes the current phase,
+  // including a running breath hold, and continues at the same point.
+  function syncWimhofPauseSound() {
+    document.querySelectorAll("[data-wh-pause-sound]").forEach((el) => setActive(el, (el.dataset.whPauseSound === "on") === workoutSoundPrefs.enabled));
+  }
+  function pauseWimhof() {
+    if (!wimhofState || wimhofState.pausedAt != null) return;
+    wimhofState.pausedAt = performance.now();
+    if (wimhofRaf) cancelAnimationFrame(wimhofRaf);
+    wimhofRaf = null;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    els.wimhofPhaseLabel.textContent = "Pausiert";
+    els.wimhofPauseBtn.hidden = true;
+    syncWimhofPauseSound();
+    els.wimhofPauseOverlay.hidden = false;
+  }
+  function resumeWimhof() {
+    if (!wimhofState || wimhofState.pausedAt == null) return;
+    const d = performance.now() - wimhofState.pausedAt;
+    wimhofState.phaseStart += d;
+    wimhofState.sessionStart += d;
+    wimhofState.pausedAt = null;
+    els.wimhofPauseOverlay.hidden = true;
+    els.wimhofPauseBtn.hidden = false;
+    wimhofRaf = requestAnimationFrame(wimhofTick);
+  }
+  els.wimhofPauseBtn.addEventListener("click", pauseWimhof);
+  els.wimhofResumeBtn.addEventListener("click", resumeWimhof);
+  document.querySelectorAll("[data-wh-pause-sound]").forEach((el) => el.addEventListener("click", () => {
+    workoutSoundPrefs.enabled = el.dataset.whPauseSound === "on";
+    saveWorkoutSoundPrefs();
+    syncWorkoutSoundUI();
+    syncWimhofPauseSound();
+  }));
 
   function wimhofFinish() {
     if (wimhofRaf) cancelAnimationFrame(wimhofRaf);
@@ -7389,6 +7469,7 @@
     if (breathProgram) { advanceBreathProgram(played); return; }
     if (comboProgram) { advanceComboProgram(played); return; }
     els.wimhofPlayerBar.hidden = true;
+    els.wimhofPauseBtn.hidden = true;
     const avgHold = retentions.length ? retentions.reduce((a, b) => a + b, 0) / retentions.length : 0;
     els.wimhofDoneSummary.textContent = `${wimhofSettings.rounds} Runden${avgHold ? " · komfortable Anhaltezeit " + fmtClock(avgHold) : ""}`;
     const id = addHistory({ kind: "breath", title: WIMHOF_INFO.name, seconds: Math.round(played) });
@@ -7403,6 +7484,7 @@
     if (document.fullscreenElement === els.wimhofPlayer) document.exitFullscreen().catch(() => {});
     els.wimhofFsHint.hidden = true;
     els.wimhofHoldDoneBtn.hidden = true;
+    els.wimhofPauseOverlay.hidden = true;
     els.wimhofPlayer.hidden = true;
     els.wimhofDonePanel.hidden = true;
   }
@@ -7423,6 +7505,7 @@
   const movementPrefs = {
     movements: MOVEMENTS.map((m) => m.id),
     preview: 3, bpm: 60, durationMin: 1, mirror: true, showLabel: true, figureStyle: "figur", direction: "rechts",
+    tick: true, tickVolume: 0.7,
   };
   function loadMovementPrefs() {
     const saved = readJSON(MOVEMENT_PREFS_KEY, null);
@@ -7433,6 +7516,20 @@
     if (movementPrefs.figureStyle !== "figur" && movementPrefs.figureStyle !== "abstrakt") movementPrefs.figureStyle = "figur";
     if (!MOVEMENT_DIRECTIONS.includes(movementPrefs.direction)) movementPrefs.direction = "rechts";
     if (!Number.isFinite(movementPrefs.durationMin) || movementPrefs.durationMin <= 0) movementPrefs.durationMin = 1;
+    Object.assign(movementPrefs, mvTickOf(movementPrefs));
+  }
+  // Takt-Ton (Fabian, 2026-10-06, Feinheit 41): one soft tone per movement,
+  // own on/off + Lautstärke like Gleichgewicht, times the overall volume.
+  // No spoken movement names. Kombi blocks, presets and Weitermachen carry
+  // the two values along (mvTickOf reads them from any of those shapes).
+  function mvTickOf(src) {
+    const v = Number(src && src.tickVolume);
+    return { tick: !(src && src.tick === false), tickVolume: Number.isFinite(v) ? Math.max(0.1, Math.min(1, v)) : 0.7 };
+  }
+  function movementTickSound(vol) {
+    if (!(vol > 0)) return;
+    window.__mvTicks = (window.__mvTicks || 0) + 1;
+    playCueTone(820, 0.06, 0.45 * vol);
   }
   function saveMovementPrefs() { writeJSON(MOVEMENT_PREFS_KEY, movementPrefs); }
   loadMovementPrefs();
@@ -7538,8 +7635,18 @@
   document.querySelectorAll("[data-mv-direction]").forEach((el) => el.addEventListener("click", () => { movementPrefs.direction = el.dataset.mvDirection; saveMovementPrefs(); syncMvDirectionUI(); }));
   function syncMvDirectionUI() { document.querySelectorAll("[data-mv-direction]").forEach((el) => setActive(el, el.dataset.mvDirection === movementPrefs.direction)); }
 
+  function syncMvTickUI() {
+    document.querySelectorAll("[data-mv-tick]").forEach((el) => setActive(el, (el.dataset.mvTick === "1") === movementPrefs.tick));
+    $("movementTickVolumeRow").hidden = !movementPrefs.tick;
+    $("movementTickVolumeSlider").value = movementPrefs.tickVolume;
+    $("movementTickVolumeValue").textContent = fmtPct(movementPrefs.tickVolume);
+  }
+  document.querySelectorAll("[data-mv-tick]").forEach((el) => el.addEventListener("click", () => { movementPrefs.tick = el.dataset.mvTick === "1"; saveMovementPrefs(); syncMvTickUI(); }));
+  $("movementTickVolumeSlider").addEventListener("input", (e) => { movementPrefs.tickVolume = Number(e.target.value); syncMvTickUI(); });
+  $("movementTickVolumeSlider").addEventListener("change", () => { saveMovementPrefs(); movementTickSound(movementPrefs.tickVolume); });
+
   function openMovementReady() {
-    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI(); syncMvFigureUI(); syncMvDirectionUI();
+    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI(); syncMvFigureUI(); syncMvDirectionUI(); syncMvTickUI();
     els.movementSaveForm.hidden = true;
     els.movementSaveBtn.hidden = false;
     renderMovementSaved();
@@ -7568,6 +7675,7 @@
       movementPrefs.showLabel = existingBlock.showLabel ?? movementPrefs.showLabel;
       if (MOVEMENT_DIRECTIONS.includes(existingBlock.direction)) movementPrefs.direction = existingBlock.direction;
       if (existingBlock.figureStyle === "figur" || existingBlock.figureStyle === "abstrakt") movementPrefs.figureStyle = existingBlock.figureStyle;
+      Object.assign(movementPrefs, mvTickOf(existingBlock));
     }
     comboMovementEditIndex = editIndex ?? null;
     els.movementReadyTitle.textContent = "Baustein: Reaktionstraining";
@@ -7591,6 +7699,7 @@
       domain: "movement", movements: movementPrefs.movements.slice(), preview: movementPrefs.preview,
       bpm: movementPrefs.bpm, durationMin: movementPrefs.durationMin, mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel,
       direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle,
+      tick: movementPrefs.tick, tickVolume: movementPrefs.tickVolume,
     };
     if (comboMovementEditIndex != null) comboDraftBlocks[comboMovementEditIndex] = block;
     else comboDraftBlocks.push(block);
@@ -7789,7 +7898,8 @@
     els.movementDonePanel.hidden = true;
     els.movementFinishBadge.hidden = true;
     els.movementProgressTrack.innerHTML = `<span class="seg"><span class="fill"></span></span>`;
-    movementSession = { sequence, beatLenS, totalBeats, gridMode, preview: movementPrefs.preview, pool, startTime: performance.now(), lastBeatIdx: 0, finishTimer: null, pausedAt: null };
+    movementSession = { sequence, beatLenS, totalBeats, gridMode, preview: movementPrefs.preview, pool, startTime: performance.now(), lastBeatIdx: 0, finishTimer: null, pausedAt: null, ...mvTickOf(movementPrefs) };
+    if (movementSession.tick) silentSwitchHint();
     els.movementPauseOverlay.hidden = true;
     els.movementPauseBtn.hidden = false;
     if (gridMode) {
@@ -7799,6 +7909,7 @@
       renderMovementLaneWindow(sequence, 0, movementPrefs.preview, movementPrefs.mirror, movementPrefs.showLabel);
     }
     requestWakeLock();
+    if (movementSession.tick) movementTickSound(movementSession.tickVolume);
     movementRaf = requestAnimationFrame(movementTick);
   }
   els.movementStartBtn.addEventListener("click", () => {
@@ -7823,8 +7934,9 @@
         movementPrefs.showLabel = entry.showLabel;
         if (MOVEMENT_DIRECTIONS.includes(entry.direction)) movementPrefs.direction = entry.direction;
         if (entry.figureStyle === "figur" || entry.figureStyle === "abstrakt") movementPrefs.figureStyle = entry.figureStyle;
+        if ("tick" in entry) Object.assign(movementPrefs, mvTickOf(entry));
         saveMovementPrefs();
-        syncMvDirectionUI(); syncMvFigureUI();
+        syncMvDirectionUI(); syncMvFigureUI(); syncMvTickUI();
         // While capturing a Kombi-Baustein, loading a saved setting should
         // just fill the draft for review/adjustment, not immediately start
         // a live session.
@@ -7846,6 +7958,7 @@
         movements: movementPrefs.movements.slice(), preview: movementPrefs.preview, bpm: movementPrefs.bpm,
         durationMin: movementPrefs.durationMin, mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel,
         direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle,
+        tick: movementPrefs.tick, tickVolume: movementPrefs.tickVolume,
       });
       movementSavedStore.save(list);
       renderMovementSaved();
@@ -7869,6 +7982,7 @@
     const beatIdx = Math.min(Math.floor(elapsed / movementSession.beatLenS), movementSession.totalBeats - 1);
     if (beatIdx !== movementSession.lastBeatIdx) {
       movementSession.lastBeatIdx = beatIdx;
+      if (movementSession.tick) movementTickSound(movementSession.tickVolume);
       if (movementSession.gridMode) updateMovementLaneGrid(beatIdx);
       else renderMovementLaneWindow(movementSession.sequence, beatIdx, movementSession.preview, movementPrefs.mirror, movementPrefs.showLabel);
     }
@@ -7886,7 +8000,16 @@
     els.movementPauseBpmSlider.value = d.bpm;
     els.movementPauseBpmValue.textContent = `${d.bpm} BPM`;
     document.querySelectorAll("[data-mv-pause-preview]").forEach((el) => setActive(el, parsePreview(el.dataset.mvPausePreview) === d.preview));
+    document.querySelectorAll("[data-mv-pause-tick]").forEach((el) => setActive(el, (el.dataset.mvPauseTick === "1") === d.tick));
+    $("movementPauseTickVolumeRow").hidden = !d.tick;
+    $("movementPauseTickVolumeSlider").value = d.tickVolume;
+    $("movementPauseTickVolumeValue").textContent = fmtPct(d.tickVolume);
   }
+  document.querySelectorAll("[data-mv-pause-tick]").forEach((el) => el.addEventListener("click", () => {
+    if (movementPauseDraft) { movementPauseDraft.tick = el.dataset.mvPauseTick === "1"; syncMovementPauseUI(); }
+  }));
+  $("movementPauseTickVolumeSlider").addEventListener("input", (e) => { if (movementPauseDraft) { movementPauseDraft.tickVolume = Number(e.target.value); syncMovementPauseUI(); } });
+  $("movementPauseTickVolumeSlider").addEventListener("change", () => { if (movementPauseDraft) movementTickSound(movementPauseDraft.tickVolume); });
   els.movementPauseBpmSlider.addEventListener("input", () => { if (movementPauseDraft) { movementPauseDraft.bpm = Number(els.movementPauseBpmSlider.value); syncMovementPauseUI(); } });
   document.querySelectorAll("[data-mv-pause-preview]").forEach((el) => el.addEventListener("click", () => {
     if (movementPauseDraft) { movementPauseDraft.preview = parsePreview(el.dataset.mvPausePreview); syncMovementPauseUI(); }
@@ -7897,7 +8020,7 @@
     if (movementRaf) cancelAnimationFrame(movementRaf);
     movementRaf = null;
     ms.pausedAt = performance.now();
-    movementPauseDraft = { bpm: Math.round(60 / ms.beatLenS), preview: ms.preview };
+    movementPauseDraft = { bpm: Math.round(60 / ms.beatLenS), preview: ms.preview, tick: ms.tick, tickVolume: ms.tickVolume };
     resumeSingleNote("movement");
     syncMovementPauseUI();
     els.movementPauseBtn.hidden = true;
@@ -7909,6 +8032,7 @@
     const d = movementPauseDraft;
     const beatIdx = ms.lastBeatIdx;
     ms.beatLenS = 60 / d.bpm;
+    ms.tick = d.tick; ms.tickVolume = d.tickVolume;
     if (d.preview !== ms.preview) {
       ms.preview = d.preview;
       const nowGrid = d.preview === "all";
@@ -7928,6 +8052,7 @@
     // Restart the current beat on the new tempo.
     ms.startTime = performance.now() - beatIdx * ms.beatLenS * 1000;
     ms.pausedAt = null;
+    if (ms.tick) movementTickSound(ms.tickVolume);
     movementPauseDraft = null;
     els.movementPauseOverlay.hidden = true;
     els.movementPauseBtn.hidden = false;
@@ -10064,9 +10189,22 @@
       flashState.comboRemainingMs = Math.max(0, flashState.comboDurationFiresAt - flashState.pausedAt);
     }
     syncFlashBgUI();
+    syncFlashPauseTempo();
     els.flashPauseBtn.hidden = true;
     els.flashPauseOverlay.hidden = false;
   }
+  // Tempo live (Fabian, 2026-10-06, Feinheit 42): Einblenddauer and Pause
+  // zwischen den Zeichen for the rest of this run only (like VT's pause
+  // sheet); the client's saved Flash settings stay as they are. With rising
+  // tempo the steps keep scaling from the new base.
+  function syncFlashPauseTempo() {
+    $("flashPauseStimulusSlider").value = flashState.stimulusS;
+    $("flashPauseStimulusValue").textContent = fmtSeconds(flashState.stimulusS);
+    $("flashPauseIntervalSlider").value = flashState.intervalS;
+    $("flashPauseIntervalValue").textContent = fmtSeconds(flashState.intervalS);
+  }
+  $("flashPauseStimulusSlider").addEventListener("input", (e) => { if (flashState) { flashState.stimulusS = Number(e.target.value); syncFlashPauseTempo(); } });
+  $("flashPauseIntervalSlider").addEventListener("input", (e) => { if (flashState) { flashState.intervalS = Number(e.target.value); syncFlashPauseTempo(); } });
   function resumeFlash() {
     if (!flashState || !flashState.paused) return;
     flashState.startTime += performance.now() - flashState.pausedAt;
@@ -10274,7 +10412,7 @@
   const BALANCE_DEFAULTS = {
     mode: "nein", sticks: 1, letters: "zufall", custom: "", custom2: "", singleS: 5, letterCount: 7,
     metro: true, bpm: 60, timing: "timed", setS: 30, sets: 3, restS: 30, stance: "normal", stanceSpeak: false,
-    size: 1, lengthPct: 70, widthF: 1, fontF: 1, color1: "blau", color2: "gelb", letterColor: "auto", volume: 0.8,
+    size: 1, lengthPct: 70, widthF: 1, fontF: 1, color1: "blau", color2: "gelb", letterColor: "auto", letterColor2: "auto", volume: 0.8,
     pos: null, bgColorKey: "gruen", bgIntensity: 0,
   };
   const balancePrefs = JSON.parse(JSON.stringify(BALANCE_DEFAULTS));
@@ -10303,6 +10441,8 @@
     if (!BALANCE_STICK_COLORS.some((c) => c.key === p.color1)) p.color1 = d.color1;
     if (!BALANCE_STICK_COLORS.some((c) => c.key === p.color2)) p.color2 = d.color2;
     if (!BALANCE_LETTER_COLORS.some((c) => c.key === p.letterColor)) p.letterColor = d.letterColor;
+    // Per-stick letter colour (Fabian 2026-10-06); older settings: same as stick 1.
+    if (!BALANCE_LETTER_COLORS.some((c) => c.key === p.letterColor2)) p.letterColor2 = p.letterColor;
     p.volume = balClamp(p.volume, 0, 1, d.volume);
     if (!Array.isArray(p.pos) || !p.pos.every((q) => q && Number.isFinite(q.x) && Number.isFinite(q.y))) p.pos = null;
     if (!STROOP_COLOR_BY_KEY[p.bgColorKey]) p.bgColorKey = d.bgColorKey;
@@ -10361,6 +10501,7 @@
     sets: balEl("balanceSetsSlider"), setsValue: balEl("balanceSetsValue"), rest: balEl("balanceRestSlider"), restValue: balEl("balanceRestValue"),
     stanceSpeak: balEl("balanceStanceSpeak"), color1Label: balEl("balanceColor1Label"), color1: balEl("balanceColor1Picker"), color2Group: balEl("balanceColor2Group"), color2: balEl("balanceColor2Picker"),
     letterColor: balEl("balanceLetterColorPicker"), letterHint: balEl("balanceLetterContrastHint"),
+    letterColorLabel: balEl("balanceLetterColorLabel"), letterColor2Group: balEl("balanceLetterColor2Group"), letterColor2: balEl("balanceLetterColor2Picker"),
     length: balEl("balanceLengthSlider"), lengthValue: balEl("balanceLengthValue"), width: balEl("balanceWidthSlider"), widthValue: balEl("balanceWidthValue"),
     font: balEl("balanceFontSlider"), fontValue: balEl("balanceFontValue"), countGroup: balEl("balanceCountGroup"), count: balEl("balanceCountSlider"), countValue: balEl("balanceCountValue"),
     volume: balEl("balanceVolumeSlider"), volumeValue: balEl("balanceVolumeValue"), posHelp: balEl("balancePosHelp"), start: balEl("balanceReadyStartBtn"),
@@ -10397,6 +10538,7 @@
   buildSingleSelectPicker(balanceUi.color1, BALANCE_STICK_COLORS, (k) => balanceSet("color1", k));
   buildSingleSelectPicker(balanceUi.color2, BALANCE_STICK_COLORS, (k) => balanceSet("color2", k));
   buildSingleSelectPicker(balanceUi.letterColor, BALANCE_LETTER_COLORS, (k) => balanceSet("letterColor", k));
+  buildSingleSelectPicker(balanceUi.letterColor2, BALANCE_LETTER_COLORS, (k) => balanceSet("letterColor2", k));
   function balanceResetPos() {
     balancePrefs.pos = null;
     saveBalancePrefsToStorage();
@@ -10438,7 +10580,11 @@
     syncSingleSelectPicker(balanceUi.color1, p.color1);
     syncSingleSelectPicker(balanceUi.color2, p.color2);
     syncSingleSelectPicker(balanceUi.letterColor, p.letterColor);
-    const low = [p.color1, ...(p.sticks === 2 ? [p.color2] : [])].some((k) => contrastRatio(balanceLetterHex(p.letterColor, k), balanceStickHex(k)) < 3);
+    syncSingleSelectPicker(balanceUi.letterColor2, p.letterColor2);
+    balanceUi.letterColorLabel.textContent = p.sticks === 2 ? "Farbe der Buchstaben · Stift 1" : "Farbe der Buchstaben";
+    balanceUi.letterColor2Group.hidden = p.sticks !== 2;
+    const low = contrastRatio(balanceLetterHex(p.letterColor, p.color1), balanceStickHex(p.color1)) < 3
+      || (p.sticks === 2 && contrastRatio(balanceLetterHex(p.letterColor2, p.color2), balanceStickHex(p.color2)) < 3);
     balanceUi.letterHint.hidden = !low;
     balanceUi.length.value = p.lengthPct; balanceUi.lengthValue.textContent = Math.round(p.lengthPct) + " %";
     balanceUi.width.value = p.widthF; balanceUi.widthValue.textContent = fmtFactor(p.widthF);
@@ -10586,7 +10732,7 @@
       const letters = st.letterSets[i];
       el.innerHTML = letters.map((ch, j) => `<span class="balance-letter" data-j="${j}">${esc(ch)}</span>`).join("");
       el.style.background = balanceStickHex(i === 1 ? st.color2 : st.color1);
-      el.style.color = balanceLetterHex(st.letterColor, i === 1 ? st.color2 : st.color1);
+      el.style.color = balanceLetterHex(i === 1 ? (st.letterColor2 || st.letterColor) : st.letterColor, i === 1 ? st.color2 : st.color1);
     });
     balanceApplySingle();
   }
@@ -10603,7 +10749,7 @@
     if (st.letters !== "einzeln") { st.single = null; return; }
     const prev = st.single;
     const stick = st.mode === "sakk" && st.sticks === 2 ? (prev ? 1 - prev.stick : 0) : 0;
-    const n = st.letterSets[stick].length;
+    const n = Math.min(st.letterSets[stick].length, st.visN || Infinity);
     let slot = Math.floor(Math.random() * n);
     if (prev && n > 1) {
       // A real jump: a different height (Sakkaden on one stick: the other half).
@@ -10632,9 +10778,18 @@
     const aw = a.x1 - a.x0, ah = a.y1 - a.y0;
     const z = st.size;
     const w = Math.round(Math.max(22, Math.min(52 * z * st.widthF, aw * (st.sticks === 2 ? 0.4 : 0.8))));
-    const len = Math.round(Math.max(w * 2, Math.min(ah, ah * (st.lengthPct / 100) * z)));
+    // Bigger sticks get bigger letters (Fabian 2026-10-06: "nicht nur der
+    // Rand breiter"). When the wanted letters no longer fit the free height,
+    // the stick shows fewer letters instead of shrinking them; the stick
+    // gets shorter with them.
+    const lenWanted = Math.round(Math.max(w * 2, Math.min(ah, ah * (st.lengthPct / 100) * z)));
     const n = Math.max(...st.letterSets.slice(0, st.sticks).map((l) => l.length), 1);
-    const fs = Math.round(Math.max(10, Math.min(30 * z * st.fontF, (len / n) * 0.82, w * 1.25)));
+    const fsWanted = Math.max(10, Math.min(30 * z * st.fontF, w * 1.25));
+    const fit = Math.max(1, Math.floor((lenWanted * 0.82) / fsWanted));
+    const k = Math.min(n, Math.max(Math.min(n, 2), fit));
+    const len = k < n ? Math.max(w * 2, Math.min(lenWanted, Math.round((k * fsWanted) / 0.82))) : lenWanted;
+    const fs = Math.round(Math.max(10, Math.min(fsWanted, (len / k) * 0.82)));
+    st.visN = k;
     st.geom = { a, w, len };
     balP.sticks.forEach((el, i) => {
       if (i >= st.sticks) return;
@@ -10646,6 +10801,7 @@
       el.style.left = Math.round(cx - w / 2) + "px";
       el.style.top = Math.round(cy - len / 2) + "px";
       el.style.fontSize = fs + "px";
+      el.querySelectorAll(".balance-letter").forEach((sp, j) => sp.classList.toggle("off", j >= k));
       el.style.borderRadius = Math.round(Math.min(14, w / 3)) + "px";
     });
   }
@@ -10663,9 +10819,9 @@
     balP.bpmLive.textContent = `${st.bpm}/min`;
     balP.bpmMinus.disabled = st.bpm <= 30;
     balP.bpmPlus.disabled = st.bpm >= 200;
-    balP.metroBtn.textContent = st.metro ? "Takt stoppen" : "Takt starten";
+    balP.metroBtn.textContent = st.metro ? "Takt aus" : "Takt an";
     setActive(balP.metroBtn, st.metro);
-    balP.clockBtn.textContent = st.clockHeld ? "Zeit weiter" : "Zeit anhalten";
+    balP.clockBtn.textContent = st.clockHeld ? "Zeit weiter" : "Zeit halten";
     setActive(balP.clockBtn, st.clockHeld);
     balP.finishBtn.hidden = !(st.timing === "open" && !st.guest);
     balP.liveVolume.value = st.volume;
@@ -10688,6 +10844,42 @@
     if (field === "size") { balanceLayout(); syncLook("balance"); }
     balanceSyncLive();
   }
+  // Stick look live from the pause sheet (Fabian 2026-10-06: colours per
+  // stick and the other sensible settings also during the exercise). Like
+  // the live tempo, a standalone run saves it; Kombi/Cardio only this run.
+  const balPauseLook = {
+    color1: balEl("balancePauseColor1Picker"), color2: balEl("balancePauseColor2Picker"),
+    letterColor: balEl("balancePauseLetterColorPicker"), letterColor2: balEl("balancePauseLetterColor2Picker"),
+    color1Label: balEl("balancePauseColor1Label"), letter1Label: balEl("balancePauseLetter1Label"), stick2: balEl("balancePauseStick2Group"),
+    lengthPct: [balEl("balancePauseLengthSlider"), balEl("balancePauseLengthValue"), (v) => Math.round(v) + " %"],
+    widthF: [balEl("balancePauseWidthSlider"), balEl("balancePauseWidthValue"), (v) => fmtFactor(v)],
+    fontF: [balEl("balancePauseFontSlider"), balEl("balancePauseFontValue"), (v) => fmtFactor(v)],
+  };
+  function balanceLiveLook(field, value) {
+    const st = balanceState;
+    if (!st) return;
+    st[field] = value;
+    if (st.own) { balancePrefs[field] = value; saveBalancePrefsToStorage(); syncBalanceReadyUI(); }
+    balanceRenderSticks();
+    balanceLayout();
+    syncBalancePauseLook();
+  }
+  function syncBalancePauseLook() {
+    const st = balanceState;
+    if (!st) return;
+    const two = st.sticks === 2;
+    balPauseLook.color1Label.textContent = two ? "Farbe Stift 1" : "Farbe des Stifts";
+    balPauseLook.letter1Label.textContent = two ? "Farbe der Buchstaben · Stift 1" : "Farbe der Buchstaben";
+    balPauseLook.stick2.hidden = !two;
+    ["color1", "color2", "letterColor"].forEach((f) => syncSingleSelectPicker(balPauseLook[f], st[f]));
+    syncSingleSelectPicker(balPauseLook.letterColor2, st.letterColor2 || st.letterColor);
+    ["lengthPct", "widthF", "fontF"].forEach((f) => { const [inp, val, fmt] = balPauseLook[f]; inp.value = st[f]; val.textContent = fmt(st[f]); });
+  }
+  buildSingleSelectPicker(balPauseLook.color1, BALANCE_STICK_COLORS, (k) => balanceLiveLook("color1", k));
+  buildSingleSelectPicker(balPauseLook.color2, BALANCE_STICK_COLORS, (k) => balanceLiveLook("color2", k));
+  buildSingleSelectPicker(balPauseLook.letterColor, BALANCE_LETTER_COLORS, (k) => balanceLiveLook("letterColor", k));
+  buildSingleSelectPicker(balPauseLook.letterColor2, BALANCE_LETTER_COLORS, (k) => balanceLiveLook("letterColor2", k));
+  ["lengthPct", "widthF", "fontF"].forEach((f) => balPauseLook[f][0].addEventListener("input", () => balanceLiveLook(f, Number(balPauseLook[f][0].value))));
   function balanceToast(text) {
     balP.toast.textContent = text;
     balP.toast.hidden = false;
@@ -10762,7 +10954,10 @@
     if (st.phase === "rest") t = `Pause · ${fmtClock(st.restS - st.phaseElapsed)}`;
     else if (st.timing === "open") t = fmtClock(st.phaseElapsed);
     else t = fmtClock(st.setS - st.phaseElapsed);
-    if (st.clockHeld) t += " angehalten";
+    // Held clock: a pause sign in front instead of the word "angehalten",
+    // so the status stays short and the player bar keeps one row (Fabian
+    // 2026-10-06: "Vollbild wandert runter").
+    if (st.clockHeld) t = "⏸ " + t;
     if (balP.status.textContent !== t) balP.status.textContent = t;
   }
   function balanceBeginSet() {
@@ -10874,6 +11069,7 @@
     balanceBeginSet();
     st.lastNow = performance.now();
     st.raf = requestAnimationFrame(balanceTick);
+    if (st.metro) silentSwitchHint();
   }
   function balanceCleanup() {
     const st = balanceState;
@@ -10928,6 +11124,7 @@
     syncBalanceBgUI();
     balanceSyncLive();
     balP.pauseBtn.hidden = true;
+    syncBalancePauseLook();
     balP.pauseOverlay.hidden = false;
   }
   function resumeBalance() {
@@ -11795,9 +11992,18 @@
       motState.comboRemainingMs = Math.max(0, motState.comboDurationFiresAt - motState.pausedAt);
     }
     syncMotBgUI();
+    syncMotPauseSpeed();
     els.motPauseBtn.hidden = true;
     els.motPauseOverlay.hidden = false;
   }
+  // Tempo live (Fabian, 2026-10-06, Feinheit 42): the base speed for the
+  // rest of this run (read every frame by motMoveObjects); saved MOT
+  // settings stay as they are.
+  function syncMotPauseSpeed() {
+    $("motPauseSpeedSlider").value = motState.speed;
+    $("motPauseSpeedValue").textContent = Math.round(motState.speed * 100) + "%";
+  }
+  $("motPauseSpeedSlider").addEventListener("input", (e) => { if (motState) { motState.speed = Number(e.target.value); syncMotPauseSpeed(); } });
   function resumeMot() {
     if (!motState || !motState.paused) return;
     motState.startTime += performance.now() - motState.pausedAt;
@@ -12360,8 +12566,32 @@
   // switch mutes on the speaker (not on headphones). "playback" plays
   // through the switch but pauses other music, so it's an explicit opt-in
   // in Master-Einstellungen (masterPrefs.cuesIgnoreSilent).
+  // Beat exercises do NOT switch to "playback" on their own: that would stop
+  // the client's music (Spotify). Instead the first beat run on an iPhone/iPad
+  // shows a one-time hint about the silent switch (silentSwitchHint, Fabian
+  // 2026-10-06: he heard no Takt with the switch on).
+  function silentSwitchHint() {
+    try {
+      const forced = localStorage.getItem("fwmc-test-silenthint") === "true";
+      const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      if (!forced && (!ios || navigator.webdriver)) return;
+      if (masterPrefs.cuesIgnoreSilent || localStorage.getItem("fwmc-silent-hint-v1")) return;
+      localStorage.setItem("fwmc-silent-hint-v1", "1");
+    } catch (e) { return; }
+    const el = document.createElement("div");
+    el.className = "silent-hint"; el.id = "silentHint"; el.setAttribute("role", "status");
+    el.textContent = "Kein Takt zu hören? Stummschalter am iPhone ausschalten. Oder in den Grundeinstellungen „Töne auch bei eingeschaltetem Stummschalter“ wählen (pausiert dann Musik).";
+    const close = () => { el.remove(); };
+    el.addEventListener("click", close);
+    document.body.appendChild(el);
+    setTimeout(close, 7000);
+  }
   function applyCueAudioSession() {
-    try { if (navigator.audioSession) navigator.audioSession.type = masterPrefs.cuesIgnoreSilent ? "playback" : "auto"; } catch (e) {}
+    try {
+      if (!navigator.audioSession) return;
+      const want = masterPrefs.cuesIgnoreSilent ? "playback" : "auto";
+      if (navigator.audioSession.type !== want) navigator.audioSession.type = want;
+    } catch (e) {}
   }
   function playCueTone(freq, durationS, peak) {
     const vol = cueVolume();
@@ -12397,7 +12627,10 @@
       applyCueAudioSession();
       if (!workoutAudioCtx) workoutAudioCtx = new AC();
       const ctx = workoutAudioCtx;
-      if (ctx.state !== "running") ctx.resume().catch(() => {});
+      // Any tap revives a stalled context (iOS "interrupted" after the
+      // silent switch or a call); one that refuses gets replaced, so the
+      // beat comes back without restarting the exercise.
+      if (ctx.state !== "running") ctx.resume().catch(() => { try { ctx.close(); } catch (e) {} if (workoutAudioCtx === ctx) { workoutAudioCtx = new AC(); cueAudioPrimed = false; } });
       if (!cueAudioPrimed) {
         const src = ctx.createBufferSource();
         src.buffer = ctx.createBuffer(1, 1, 22050);
@@ -12524,7 +12757,7 @@
       `<div class="group-help">Gilt für Tabata-Zirkel, Kraftplan, Ausdauertraining und die Pausen im Kombi-Programm. In den Feineinstellungen jedes Bereichs kannst du davon abweichen.</div>` +
       cueControlsHtml(masterPrefs.cues, CUE_FIELD_LABELS.master) +
       `<div class="cue-sub-label">iPhone/iPad</div>` +
-      `<label class="checkbox-row"><input type="checkbox" data-cue-silent${masterPrefs.cuesIgnoreSilent ? " checked" : ""}> Töne auch bei eingeschaltetem Stummschalter</label>` +
+      `<label class="checkbox-row"><input type="checkbox" data-cue-silent${masterPrefs.cuesIgnoreSilent ? " checked" : ""}> Töne auch bei eingeschaltetem Stummschalter (pausiert Musik, z. B. Spotify)</label>` +
       `<div class="group-help">Ohne Haken spielt das iPhone Töne über den Lautsprecher nur, wenn der Stummschalter aus ist (mit Kopfhörern immer). Mit Haken klingen sie trotzdem, dafür pausiert iOS dann meist deine Musik.</div>`;
   }
   (() => {
@@ -15984,7 +16217,8 @@
     // 3-2-1 before the first Baustein like every single start (Feinheit 10,
     // 2026-10-06) - unless that block brings its own: Visual Training draws
     // it on the stage, Krafttraining has "Bereit machen", Wim-Hof stops on
-    // its safety screen first. Later blocks start after the Kombi pause.
+    // its safety screen first (its start button runs the 3-2-1). Later blocks
+    // start after the Kombi pause.
     const first = def.blocks && def.blocks[0];
     const own = !first || first.domain === "wimhof" || first.domain === "workout" ||
       (first.domain === "visual" && !(EXERCISES[first.exercise] && EXERCISES[first.exercise].type === "color-tap"));
@@ -16031,6 +16265,7 @@
       movementPrefs.showLabel = block.showLabel ?? movementPrefs.showLabel;
       if (MOVEMENT_DIRECTIONS.includes(block.direction)) movementPrefs.direction = block.direction;
       if (block.figureStyle === "figur" || block.figureStyle === "abstrakt") movementPrefs.figureStyle = block.figureStyle;
+      if ("tick" in block) Object.assign(movementPrefs, mvTickOf(block));
       startMovementSession();
     } else if (block.domain === "visual") {
       program = null;
@@ -16612,7 +16847,8 @@
   // Grundeinstellungen "Countdown 3-2-1 vor dem Start" switches it off.
   const LEADIN_START_IDS = ["movementStartBtn", "movementProgramStartBtn", "breathStartBtn", "breathProgramStartBtn",
     "rememberReadyStartBtn", "rememberTrainingStartBtn", "blitzReadyStartBtn", "flashReadyStartBtn", "flashTrainingStartBtn",
-    "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn"];
+    "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn",
+    "wimhofStartBtn"];
   let leadInBypass = false, leadInTimer = null;
   function stopLeadIn() { clearTimeout(leadInTimer); leadInTimer = null; $("leadIn").hidden = true; }
   document.addEventListener("click", (e) => {
@@ -16633,7 +16869,7 @@
     runLeadIn(() => {
       leadInBypass = true;
       try { b.click(); } finally { leadInBypass = false; }
-    }, /^(breath|cardio|free)/.test(b.id));
+    }, /^(breath|wimhof|cardio|free)/.test(b.id));
   }, true);
   // The 3-2-1 overlay itself, shared by the start buttons above and the
   // first Kombi-Baustein (startComboProgram).
@@ -27538,7 +27774,8 @@
       const total = ms.totalBeats * ms.beatLenS, played = ms.lastBeatIdx * ms.beatLenS;
       rec = { kind, title: "Ganzkörper-Reaktion", total, played, rest: total - played,
         movement: { movements: movementPrefs.movements.slice(), bpm: Math.round(60 / ms.beatLenS), preview: ms.preview,
-          mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel, direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle } };
+          mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel, direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle,
+          tick: ms.tick, tickVolume: ms.tickVolume } };
     }
     if (rec && resumeSingleBase && resumeSingleBase.kind === kind) { rec.played += resumeSingleBase.offset; rec.total = resumeSingleBase.total; }
     if (!rec || rec.total < 180 || rec.played < 30 || rec.rest < 60) return;

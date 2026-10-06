@@ -604,6 +604,8 @@ study - adjust if he finds them too easy/hard: Positionen merken ≥ 7 reached
   overview. No CVD entry (no right/wrong feedback), no Stufen-Vorschlag (no levels).
 - Test: tests/gleichgewicht_1006_test.py.
 
+- 2026-10-06 evening (Fabian): status shows "⏸ m:ss" while the clock is held (no word, the bar stays one line); `balanceLayout` sizes letters with the stick and shows only `st.visN` letters (`.balance-letter.off`) when they would not fit; the "Regler" chip is hidden, size/colours/length/width/font are live in the pause sheet (`balPauseLook`, `balanceLiveLook`, `syncBalancePauseLook`, saved for own runs); `letterColor2` = letter colour of stick 2 (falls back to `letterColor`); beat runs keep the "auto" audio session so the client's music (Spotify) keeps playing; the first beat run on an iPhone/iPad shows a one-time silent-switch hint (`silentSwitchHint`, `fwmc-silent-hint-v1`, test flag `fwmc-test-silenthint`); "playback" only via the Grundeinstellungen opt-in, labelled "pausiert Musik" and `unlockCueAudio` resumes/recreates a dead AudioContext on every tap.
+
 ## Größe während der Übung (all LOOK_SPECS exercises, 2026-10-06)
 
 `LIVE_LOOK` in app.js: Positionen merken, Flash, MOT and Gleichgewicht get the
