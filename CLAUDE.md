@@ -404,5 +404,18 @@ For every new or changed exercise/screen, in the same commit:
   `tr-<code>-<n>`, same code again = update); built in the dashboard
   (Bereich "Eigenes Training"). Worker stores configs generically, no deploy
   needed. Details docs/notes/25 + 10, test `tests/trainer_template_1005_test.py`.
+- Zurück + langes Drücken + App-Gefühl A/B/C (2026-10-06): every deeper
+  screen gets a browser-history entry (`histSync` in app.js, from the screen
+  observer); popstate taps the visible ‹ (`edgeBackTarget`), so Safari's own
+  edge swipe (Safari owns the left edge, our touch handler only works in the
+  home-screen app), Android back and the browser back button all go back.
+  In-app ‹ drops the entry silently. A new screen needs nothing extra.
+  Long press: the sheet ignores clicks while the opening finger is down and
+  250 ms after (`lpSheetBlockUntil`), contextmenu from a touch is ignored,
+  tiles have no iOS callout/selection. Fabian-Blick checks both on every
+  state ("zurueck", "lange"). `.screen > .start-btn[id$=StartBtn]` gets
+  `.start-sticky` (stays above the bottom bar, A); Mehr list shows › / ↗ (B);
+  Heute calendar buttons ≥ 44 px, ‹ › in a row with the week range (C).
+  Tests: `tests/history_back_1006_test.py`, `tests/app_feel_1006_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

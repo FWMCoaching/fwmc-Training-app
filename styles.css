@@ -1825,6 +1825,18 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .cal-switch{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0}
 .cal-switch-btn{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:9px 14px;font-size:13.5px;font-weight:700;cursor:pointer}
 .cal-switch-btn.active{background:var(--brand-pale);border-color:var(--brand);color:var(--brand-deep)}
+/* Heute-Kalender: alle Tasten mind. 44 px (Fabian 2026-10-06, Punkt C).
+   ‹ › stehen wie im iOS-Kalender in einer eigenen Zeile mit dem Wochen-
+   Zeitraum, damit die 7 Tage die volle Breite bekommen. */
+.week-nav{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;grid-template-areas:"prev range next" "strip strip strip";gap:6px 4px;align-items:center}
+#todayWeekPrev{grid-area:prev}
+#todayWeekNext{grid-area:next}
+.week-range{grid-area:range;text-align:center;font-weight:700;font-size:15px;color:var(--ink)}
+.week-nav .week-strip{grid-area:strip}
+.week-nav-btn{width:44px;height:44px;min-height:44px;flex:none;border-radius:12px}
+.week-day{min-height:58px}
+.cal-switch-btn{min-height:44px}
+.day-view-btn{min-height:44px;padding:6px 14px}
 .cal-expand{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px}
 .cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .cal-year-title{font-weight:800;font-size:17px}
@@ -2277,6 +2289,8 @@ body.drag-busy{user-select:none;-webkit-user-select:none}
 .today-week .week-nav{overflow:hidden;padding:3px;margin:-3px}
 #hubAreaGrid .area-tile,#todayAreaGrid .area-tile,#home .excard,#natExercises .nat-tile,#freeOwnGrid .featured-card,#freeTplGrid .featured-card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .lp-pressing{transform:scale(.97)!important;transition:transform .35s ease!important}
+/* Long press: no iOS text selection, loupe or link preview on the tiles (2026-10-06) */
+#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, [data-free-id]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .tile-action-list{display:flex;flex-direction:column;gap:8px}
 .tile-action-list .text-link{min-height:44px;align-self:center;padding:6px 18px}
 /* Schritt-Nummern im Dunkelmodus lesbar (Fabian-Blick 2026-10-05: weiß auf
@@ -2456,3 +2470,14 @@ input[type=range]{accent-color:#007094}
 .hub-extra .t-wrap{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
 .hub-extra .test-unlock-badge{align-self:flex-start;margin-top:4px;font-size:11px;padding:2px 8px}
 @media (min-width:700px){ .hub-core{grid-template-columns:repeat(4,1fr)} .hub-extra{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))} }
+
+/* Mehr-Liste wie iOS-Einstellungen: › für Seiten in der App, ↗ für Links
+   nach draußen (Fabian 2026-10-06, Punkt B) */
+.more-list .featured-card{position:relative;padding-right:44px}
+.more-list .featured-card::after{content:"\203A";position:absolute;right:16px;top:50%;transform:translateY(-52%);font-size:26px;line-height:1;font-weight:400;color:var(--ink-soft)}
+.more-list a.featured-card[target="_blank"]::after{content:"\2197";font-size:17px}
+
+/* "Training starten" bleibt auf Übungsseiten unten sichtbar (Fabian
+   2026-10-06, Punkt A). Nur vor dem Start, nie im Spieler. */
+.start-btn.start-sticky{position:sticky;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:5;box-shadow:0 0 0 10px var(--bg),0 18px 0 10px var(--bg),0 -12px 18px 8px var(--bg)}
+body.bottom-nav-on .start-btn.start-sticky{bottom:calc(74px + env(safe-area-inset-bottom,0px))}
