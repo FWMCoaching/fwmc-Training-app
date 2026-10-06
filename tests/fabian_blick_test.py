@@ -447,6 +447,8 @@ def fkey(f):
     el = f.get("el", "")
     if f["cat"] in ("taste", "druck", "dunkel"):
         el = re.sub(r' ".*', "", el)  # same kind of control = one finding, whatever its label
+        # randomised shape classes (Test-Bereich "Suchen" draws circles or squares at random)
+        el = re.sub(r"\.shape-[\w-]+", ".shape-*", el)
         if f["cat"] == "dunkel":
             msg = re.sub(r"\(#.*", "", msg)
             # an element with an id is the same element whatever transient state

@@ -201,6 +201,17 @@ Test: `tests/audit_fixes_test.py`.
   uses Magra/Public Sans, never scrolls sideways at 390px (`.table-scroll`).
 `tests/consistency_test.py` checks this; extend it for every new shared pattern.
 
+## Hard rule: Feinheiten quer prüfen (Fabian, 2026-10-06)
+
+"Wenn wir irgendwo an Feinheiten schrauben, immer prüfen, wo sie uns sonst
+fehlen, damit es uns nicht in kleinen Schritten auffällt." Every new or
+changed fine-tuning (live sound/volume/tempo, pause handling, size/colour,
+dark player, lead-in, resume, fullscreen, presets ...) is checked, unasked,
+against every sibling exercise in the same piece of work: build it where it
+plainly fits, and list the rest for Fabian with a recommendation. The matrix
+lives in /mnt/project-files/app/feinheiten-matrix.md - update it with every
+such change.
+
 ## Hard rule: every exercise works everywhere (client, 2026-10-02)
 
 "Solche Fehler dürfen nicht passieren." Every new or changed exercise
@@ -454,5 +465,15 @@ For every new or changed exercise/screen, in the same commit:
   (`#todayWeekReview`, check marks + one sentence + optional Vorsatz in
   `fwmc-week-intent-v1`, shown Mon-Sat). Tests: `tests/design_1006_test.py`,
   `tests/resume_week_1006_test.py`.
+- Ruhige Kopfleiste, warmer Ton, dunkle Übungen (2026-10-06): main pages keep
+  an empty 44 px ‹ slot (`.brandbar::before` when no visible back button), so
+  logo/title never jump; the title's two lines sit on the logo's text lines
+  (`--lg` = logo height drives size/offset; a hidden back button uses
+  `visibility:hidden`, never `display:none`, and `barVis` ignores it). Tokens
+  are warm (light bg #f7f4ef, dark bg #0c1b20). Heute greeting is a soft
+  `.today-hello` card. In dark mode the lead-in and the players of Atem
+  (`.player.calm`), Ausdauer, Eigenes Training and Krafttraining
+  (`.player.calm-dk`) are dark; exercises whose background colour matters stay
+  light. Test: `tests/design_1006_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

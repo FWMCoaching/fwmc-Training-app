@@ -396,7 +396,7 @@
 "taste|player:player|button#livePrevBtn|nur # px breit (mind. #)",
 "taste|player:player|button#liveRestartBtn|nur # px breit (mind. #)",
 "taste|player:player|button#stepSoundBtn.sound-toggle-btn|nur # px breit (mind. #)",
-"taste|player:searchPlayer|button.search-item.shape-circle|nur # px hoch (mind. #)",
+"taste|player:searchPlayer|button.search-item.shape-*|nur # px hoch (mind. #)",
 "taste|programIntro[Einstieg · Tempo-Steigerung]|button.chapter-main|nur # px hoch (mind. #)",
 "taste|programIntro[Fortgeschritten · Gemischtes Training]|button.chapter-main|nur # px hoch (mind. #)",
 "taste|programIntro[Fortgeschritten · Gemischtes Training]|button.play-explainer|nur # px hoch (mind. #)",

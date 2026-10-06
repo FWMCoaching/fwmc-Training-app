@@ -27,10 +27,10 @@ async def main():
         LOGO = "() => { const e = [...document.querySelectorAll('.screen:not([hidden]) > .brandbar .brand-logo')][0]; const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; }"
         logo_home = await pg.evaluate(LOGO)
         await pg.click("#movementStartCard"); await pg.wait_for_timeout(200)
-        # Kopfleiste eine Zeile (2026-10-05, Entwurf A): the logo moves right
-        # by the ‹ button on a sub page but stays in the same row/height.
+        # Kopfleiste ruhig (2026-10-06, Fabian "2A"): the ‹ slot is reserved on
+        # main pages too, so the logo keeps its exact place on a sub page.
         logo_sub = await pg.evaluate(LOGO)
-        check("logo in the same row on home and sub page", logo_sub[1] == logo_home[1] and logo_sub[0] > logo_home[0], (logo_home, logo_sub))
+        check("logo keeps its place on home and sub page", logo_sub == logo_home, (logo_home, logo_sub))
         check("back button in the logo bar of a sub page", await pg.is_visible("#movementReady .bar-back-btn"))
         box = await pg.locator("#movementReady .bar-back-btn").bounding_box()
         check("back button is 44 px and top left", box and box["width"] >= 44 and box["height"] >= 44 and box["x"] < 40)

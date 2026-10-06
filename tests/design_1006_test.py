@@ -82,6 +82,42 @@ async def main():
                 check(t + "breath player stays light", lum(pbg) > 180, pbg)
             await pg.click("#breathBackBtn"); await pg.wait_for_timeout(300)
             await ctx.close()
+
+            # 3-2-1 before Atem follows the mode (Fabian 06.10.: white in dark mode)
+            ctx = await b.new_context(viewport={"width": 390, "height": 844}, color_scheme=scheme, service_workers="block")
+            await ctx.add_init_script("localStorage.setItem('fwmc-tips-seen','true');localStorage.setItem('fwmc-test-bottomnav','true');localStorage.setItem('fwmc-test-leadin','true')")
+            pg = await ctx.new_page()
+            await pg.goto(BASE + "?bereich=breath"); await pg.wait_for_timeout(300)
+            await pg.click("#patternGrid .featured-card >> nth=1"); await pg.wait_for_timeout(200)
+            await pg.click("#breathStartBtn"); await pg.wait_for_timeout(300)
+            vis = await pg.is_visible("#leadIn")
+            lbg = await pg.evaluate("getComputedStyle(document.getElementById('leadIn')).backgroundColor")
+            check(t + "breath countdown shows and matches the mode", vis and ((lum(lbg) < 40) if scheme == "dark" else (lum(lbg) > 200)), lbg)
+            await ctx.close()
+            # Kopfleiste 2A: logo and title stay in place on main and sub pages
+            ctx = await b.new_context(viewport={"width": 390, "height": 844}, color_scheme=scheme, service_workers="block")
+            await ctx.add_init_script(INIT)
+            pg = await ctx.new_page(); xs = []
+            for q in ("", "?bereich=training", "?bereich=breath", "?bereich=fortschritt", "?bereich=cardio"):
+                await pg.goto(BASE + q); await pg.wait_for_timeout(250)
+                xs.append(await pg.evaluate("(()=>{const s=[...document.querySelectorAll('.screen')].find(x=>!x.hidden); const bar=s.querySelector(':scope > .brandbar'); const l=bar.querySelector('.brand-logo').getBoundingClientRect(); const t=bar.querySelector('.brand-sub').getBoundingClientRect(); return [Math.round(l.left), Math.round(t.left)]})()"))
+            check(t + "logo and title never jump", len(set(map(tuple, xs))) == 1, xs)
+            await ctx.close()
+
+            # Ausdauer + Eigenes Training player dark in dark mode, light otherwise
+            ctx = await b.new_context(viewport={"width": 390, "height": 844}, color_scheme=scheme, service_workers="block")
+            await ctx.add_init_script(INIT)
+            pg = await ctx.new_page()
+            await pg.goto(BASE + "?bereich=cardio"); await pg.wait_for_timeout(300)
+            await pg.click("#cardioStartCard"); await pg.wait_for_timeout(200)
+            await pg.click('#cardioAddGrid >> text="Joggen"'); await pg.wait_for_timeout(100)
+            await pg.evaluate("document.getElementById('cardioStartBtn').click()"); await pg.wait_for_timeout(1200)
+            cbg, ctx_col = await pg.evaluate("[getComputedStyle(document.getElementById('cardioPlayer')).backgroundColor, getComputedStyle(document.getElementById('cardioCountdown')).color]")
+            if scheme == "dark":
+                check(t + "Ausdauer player dark with light digits", lum(cbg) < 40 and lum(ctx_col) > 180, (cbg, ctx_col))
+            else:
+                check(t + "Ausdauer player stays white", lum(cbg) > 240, cbg)
+            await ctx.close()
         await b.close()
     check("No page errors", not errors, errors[:5])
     print("ALL OK" if ok_all else "SOME CHECKS FAILED")
