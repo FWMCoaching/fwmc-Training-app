@@ -15864,6 +15864,7 @@
         lastShownEl = el;
         if (transitionsOn && !reduceMotion.matches && (kind === "push" || kind === "pop") && prevEl && prevEl !== el && prevEl.hidden) makeGhost(prevEl, kind);
         playTransition(el, kind);
+        histSync(kind, tops.has(id));
       } else if (el.classList.contains("player")) {
         lastShown = "player";
         lastShownEl = null;
@@ -15875,22 +15876,70 @@
   });
   document.querySelectorAll(".screen, .player, .done-panel").forEach((el) => screenObserver.observe(el, { attributes: true, attributeFilter: ["hidden"] }));
   function enablePageTransitions() {
+    // Opened straight on a sub page (?bereich=…): one entry so that the
+    // first swipe back stays in the app and lands on the page above.
+    try {
+      if (!histCur() && edgeBackTarget()) { history.replaceState({ fwmc: 0 }, ""); history.pushState({ fwmc: 1 }, ""); histDepth = 1; }
+    } catch (e) {}
     const vis = document.querySelector(".screen:not([hidden])");
     lastShown = vis ? vis.id : null;
     lastShownEl = vis || null;
     transitionsOn = !(navigator.webdriver && !readJSON("fwmc-test-transitions", false));
     document.documentElement.classList.toggle("tr-on", transitionsOn);
   }
+  // ---- Browser-Verlauf = Unterseiten (2026-10-06) ----
+  // In Safari (not the home-screen app) iOS owns the left-edge swipe: it
+  // cancels our own touch handler and goes back in the browser history.
+  // So every deeper page gets a history entry; Safari's swipe, Android's
+  // back gesture/button and the browser back button then fire popstate,
+  // which taps the visible ‹ like the edge swipe does. Back taps inside the
+  // app drop the extra entries silently, so the history never runs ahead.
+  let histDepth = 0, histSilent = false, histFromPop = false;
+  const histCur = () => { try { return (history.state && history.state.fwmc) || 0; } catch (e) { return 0; } };
+  function histSync(kind, toTop) {
+    try {
+      if (histFromPop) { histFromPop = false; histDepth = histCur(); }
+      else if (kind === "push") { histDepth = histCur() + 1; history.pushState({ fwmc: histDepth }, ""); return; }
+      else if (kind === "pop") histDepth = Math.max(0, histCur() - 1);
+      if (toTop) histDepth = 0;
+      const cur = histCur();
+      if (cur > histDepth) { histSilent = true; history.go(histDepth - cur); }
+    } catch (e) {}
+  }
+  window.addEventListener("popstate", () => {
+    if (histSilent) { histSilent = false; return; }
+    const bt = edgeBackTarget();
+    if (!bt || document.querySelector(".sheet:not([hidden])")) { // nothing to go back to here (e.g. inside a player): keep the entry
+      try { history.pushState({ fwmc: histCur() + 1 }, ""); } catch (e) {}
+      return;
+    }
+    histFromPop = true;
+    navBackPending = Date.now(); ghostSkipUntil = Date.now() + 400;
+    bt.btn.click();
+    setTimeout(() => { histFromPop = false; }, 0);
+  });
+  function edgeBackTarget() {
+    const scr = document.querySelector(".screen:not([hidden])");
+    const own = scr && [...scr.querySelectorAll(":scope > .brandbar .bar-back-btn")].find(barVis);
+    if (own) return { btn: own, page: scr };
+    if (barVis(appBarBack) && appBarBackTarget()) return { btn: appBarBack, page: [...document.querySelectorAll(".done-panel")].find(barVis) || null };
+    return null;
+  }
+  // "Training starten" stays in reach on long exercise pages (Punkt A,
+  // 2026-10-06): every screen's own start button sticks to the bottom.
+  // The button sits in its own bar with a solid background, so a greyed-out
+  // or pressed (semi-transparent) button never lets the page show through.
+  document.querySelectorAll('.screen > button.start-btn[id$="StartBtn"], .screen > #startBtn').forEach((b) => {
+    const bar = document.createElement("div");
+    bar.className = "start-sticky-bar";
+    b.before(bar);
+    bar.appendChild(b);
+    b.classList.add("start-sticky");
+  });
   // Swipe back from the left edge
   (function wireEdgeSwipeBack() {
     let start = null, page = null, target = null, moved = false;
-    const backTarget = () => {
-      const scr = document.querySelector(".screen:not([hidden])");
-      const own = scr && [...scr.querySelectorAll(":scope > .brandbar .bar-back-btn")].find(barVis);
-      if (own) return { btn: own, page: scr };
-      if (barVis(appBarBack) && appBarBackTarget()) return { btn: appBarBack, page: [...document.querySelectorAll(".done-panel")].find(barVis) || null };
-      return null;
-    };
+    const backTarget = edgeBackTarget;
     const reset = (animate) => {
       if (page) {
         page.style.transition = animate ? "transform .2s ease" : "";
@@ -26524,6 +26573,12 @@
     if (occ.some((o) => o.done)) return { cls: "partial", occ };
     return { cls: date < todayStr() ? "missed" : "planned", occ };
   }
+  function isoWeek(d) {
+    const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const day = t.getUTCDay() || 7;
+    t.setUTCDate(t.getUTCDate() + 4 - day);
+    return Math.ceil(((t - Date.UTC(t.getUTCFullYear(), 0, 1)) / 864e5 + 1) / 7);
+  }
   function renderWeekStrip(hist) {
     const monday = mondayOf(todaySel);
     const today = todayStr();
@@ -26540,6 +26595,20 @@
         ${eventMarkHtml(date, evList)}<span class="week-day-name">${WD_SHORT[i]}</span><span class="week-day-num">${dParse(date).getDate()}</span><span class="week-day-mark">${mark}</span></button>`;
     }
     els.todayWeekStrip.innerHTML = html;
+    // Week range above the strip, iOS calendar style: "5.–11. Oktober"
+    const sun = dParse(dAdd(monday, 6)), mon = dParse(monday);
+    const range = mon.getMonth() === sun.getMonth()
+      ? `${mon.getDate()}.–${sun.getDate()}. ${MONTHS[sun.getMonth()]}`
+      : `${mon.getDate()}. ${MONTHS[mon.getMonth()]} – ${sun.getDate()}. ${MONTHS[sun.getMonth()]}`;
+    const rangeEl = document.getElementById("todayWeekRange");
+    if (rangeEl) rangeEl.textContent = range;
+    // The heading names the week shown; "Heute" brings the current one back.
+    const off = Math.round((dParse(monday) - dParse(mondayOf(today))) / (7 * 864e5));
+    const titleEl = document.getElementById("todayWeekTitle");
+    if (titleEl) titleEl.textContent = off === 0 ? "Diese Woche" : off === -1 ? "Letzte Woche" : off === 1 ? "Nächste Woche" : `KW ${isoWeek(dParse(monday))}`;
+    els.todayProgress.hidden = off !== 0;
+    const todayBtn = document.getElementById("todayWeekTodayBtn");
+    if (todayBtn) todayBtn.hidden = off === 0;
   }
   function monthGridHtml(year, month, hist, mini) {
     const first = dStr(new Date(year, month, 1));
@@ -26725,6 +26794,7 @@
     const b = e.target.closest("[data-date]");
     if (b) { selectDay(b.dataset.date); els.dayPanelTitle.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
   });
+  document.getElementById("todayWeekTodayBtn").addEventListener("click", () => selectDay(todayStr()));
   els.todayWeekPrev.addEventListener("click", () => selectDay(dAdd(todaySel, -7)));
   els.todayWeekNext.addEventListener("click", () => selectDay(dAdd(todaySel, 7)));
   els.calMonthBtn.addEventListener("click", () => { calMode = calMode === "month" ? null : "month"; if (!calMode) calShowNext = false; renderCalendar(loadHistory()); });
@@ -27737,6 +27807,7 @@
   const tileSheet = $("tileActionSheet");
   let tileSheetReturnFocus = null;
   let lpSuppressUntil = 0; // swallow the click that may follow a long press
+  let lpSheetBlockUntil = 0, lpLastTouch = 0, lpTouchDown = false;
   function clickVisibleStart() {
     const scr = document.querySelector(".screen:not([hidden])");
     const b = scr && [...scr.querySelectorAll("button")].find((x) => x.textContent.trim() === "Training starten" && !x.disabled && x.getClientRects().length);
@@ -27816,6 +27887,9 @@
       b.dataset.tileAct = act;
       b.textContent = label;
       b.addEventListener("click", () => {
+        // Fabian 2026-10-06: the finger that opened the sheet must never
+        // also press one of its buttons (it opened right under the finger).
+        if (Date.now() < lpSheetBlockUntil) return;
         tileSheetReturnFocus = fn ? null : tileSheetReturnFocus;
         lpSuppressUntil = 0;
         closeTileSheet();
@@ -27833,10 +27907,12 @@
     if (a.kombi) add("Zum Kombi-Programm", "start-btn secondary", "kombi", a.kombi);
     add("Abbrechen", "text-link", "cancel", null);
     tileSheetReturnFocus = tile;
+    // Blocked while the finger that opened it is still down, and briefly after.
+    lpSheetBlockUntil = lpTouchDown ? Infinity : Date.now() + 250;
     tileSheet.hidden = false;
     focusFirstIn(tileSheet);
   }
-  tileSheet.addEventListener("click", (e) => { if (e.target === tileSheet) closeTileSheet(); });
+  tileSheet.addEventListener("click", (e) => { if (e.target === tileSheet && Date.now() >= lpSheetBlockUntil) closeTileSheet(); });
   tileSheet.addEventListener("keydown", (e) => { if (e.key === "Escape") closeTileSheet(); else trapTabKey(tileSheet, e); });
   (function wireLongPress() {
     let timer = 0, start = null, fired = false;
@@ -27849,6 +27925,9 @@
     document.addEventListener("touchstart", (e) => {
       cancel();
       fired = false;
+      lpLastTouch = Date.now();
+      lpTouchDown = true;
+      lpSuppressUntil = 0; // a new touch is a new gesture, its click is real
       if (e.touches.length !== 1) return;
       const tile = e.target.closest && e.target.closest(LP_SEL);
       if (!tile || !tile.getClientRects().length) return;
@@ -27870,22 +27949,34 @@
     }, { passive: true });
     document.addEventListener("touchend", (e) => {
       cancel();
+      lpLastTouch = Date.now();
+      lpTouchDown = false;
+      if (lpSheetBlockUntil === Infinity) lpSheetBlockUntil = Date.now() + 250;
       if (fired) {
         fired = false;
         lpSuppressUntil = Date.now() + 700;
         if (e.cancelable) e.preventDefault();
       }
     }, { passive: false });
-    document.addEventListener("touchcancel", cancel, { passive: true });
+    document.addEventListener("touchcancel", () => {
+      cancel();
+      lpTouchDown = false;
+      if (lpSheetBlockUntil === Infinity) lpSheetBlockUntil = Date.now() + 250;
+    }, { passive: true });
     // The click that may still follow a long press must not open the tile.
     document.addEventListener("click", (e) => {
-      if (Date.now() < lpSuppressUntil && e.target.closest && e.target.closest(LP_SEL)) { e.preventDefault(); e.stopPropagation(); lpSuppressUntil = 0; }
+      // Every one of them (iOS may send more than one); a click that lands on
+      // the sheet that opened under the finger is held off by lpSheetBlockUntil.
+      if (Date.now() < lpSuppressUntil && e.target.closest && e.target.closest(LP_SEL)) { e.preventDefault(); e.stopPropagation(); }
     }, true);
     // Android long press / right click on desktop = the same sheet.
     document.addEventListener("contextmenu", (e) => {
       const tile = e.target.closest && e.target.closest(LP_SEL);
       if (!tile) return;
       e.preventDefault();
+      // On touch screens the timer above owns the long press; a contextmenu
+      // from the same touch would cancel it and let the click through.
+      if (start || lpTouchDown || Date.now() - lpLastTouch < 400) return;
       if (!fired) { cancel(); openTileSheet(tile); }
     });
   })();

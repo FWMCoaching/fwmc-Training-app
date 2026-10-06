@@ -23,6 +23,10 @@ spotting by eye, instead of one test per single case.
      name        old/forbidden names (Remember, Coach, Komplett-Programm ...)
      player      exercise player: buttons, naming (…BackBtn "Beenden",
                  …PauseBtn "Pause"), hint/bar overlap
+     lange       long press on a tile three times: sheet opens every time,
+                 the page never changes (first config only)
+     zurueck     a ‹ is visible but swiping back / the back button does not
+                 go back (first config only)
 3. Report: tests/screenshots/fabian_blick/report.md (+ report.json and the
    screenshots). Findings already known are listed in
    tests/fabian_blick_baseline.json; the test fails only on NEW findings,
@@ -109,6 +113,42 @@ CANDIDATES_JS = r"""
     .filter(el => !el.matches('[aria-pressed], [aria-checked], [role=tab], [role=radio], [role=switch], .choice, .chip, [class*=stepper], [class*=-opt], [class*=seg]'))
     .filter(el => (el.textContent || '').trim().length > 2 || el.matches('.master-settings-btn, [aria-label]'));
   return els.map(el => ({sel: path(el), text: (el.textContent || el.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 40)}));
+}
+"""
+
+BACK_VISIBLE_JS = """() => [...document.querySelectorAll('.bar-back-btn')].some(b => !b.hidden && !b.closest('[hidden]') && b.getClientRects().length > 0)"""
+
+# lange (Fabian 2026-10-06): long press a tile three times in a row, the
+# way iOS does it (touch held 600 ms, then the late click on the tile and a
+# tap that lands on the sheet that opened under the finger). Every time the
+# action sheet must open and the page must stay where it was.
+LONGPRESS_JS = r"""
+async () => {
+  const SEL = '#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #freeOwnGrid [data-free-id], #freeTrainerGrid [data-free-id], #freeTplGrid [data-free-id]';
+  const vis = el => el && !el.closest('[hidden]') && el.getClientRects().length > 0;
+  const tile = [...document.querySelectorAll(SEL)].find(vis);
+  if (!tile) return null;
+  const scr = () => [...document.querySelectorAll('.screen')].filter(vis).map(e => e.id).join('+');
+  const before = scr(), sheet = document.getElementById('tileActionSheet'), out = [];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  for (let i = 1; i <= 3; i++) {
+    const r = tile.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+    const mk = () => new Touch({identifier: i, target: tile, clientX: x, clientY: y});
+    tile.dispatchEvent(new TouchEvent('touchstart', {touches: [mk()], changedTouches: [mk()], bubbles: true, cancelable: true}));
+    await wait(650);
+    tile.dispatchEvent(new TouchEvent('touchend', {touches: [], changedTouches: [mk()], bubbles: true, cancelable: true}));
+    tile.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, clientX: x, clientY: y}));
+    const under = document.elementFromPoint(x, y);
+    if (under) under.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, clientX: x, clientY: y}));
+    await wait(150);
+    if (sheet.hidden) out.push('Menü beim ' + i + '. langen Drücken nicht offen');
+    if (scr() !== before) { out.push('Seite gewechselt beim ' + i + '. langen Drücken (' + scr() + ')'); break; }
+    await wait(400);
+    const cancel = sheet.querySelector('[data-tile-act=cancel]');
+    if (cancel && !sheet.hidden) cancel.click();
+    await wait(150);
+  }
+  return out;
 }
 """
 
@@ -244,7 +284,7 @@ async () => {
     const r = c.getBoundingClientRect();
     const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
     // a visible control on top (sticky start bar) is layout, not a frozen page
-    if (hit && !c.contains(hit) && !hit.contains(c) && !hit.closest('.bottom-nav, .brandbar, button, a, input, label, select')) {
+    if (hit && !c.contains(hit) && !hit.contains(c) && !hit.closest('.bottom-nav, .brandbar, .start-sticky-bar, button, a, input, label, select')) {
       const d = hit.tagName.toLowerCase() + (hit.id ? '#' + hit.id : '') + (typeof hit.className === 'string' && hit.className ? '.' + hit.className.split(' ')[0] : '');
       out.push({cat: 'eingefroren', msg: 'Knopf nach Scrollen nicht antippbar, verdeckt von ' + d,
                 el: c.tagName.toLowerCase() + (c.id ? '#' + c.id : '') + ' "' + (c.textContent || '').trim().slice(0, 24) + '"'});
@@ -294,6 +334,20 @@ async def audit_config(b, cfg, states, starts):
             await pg.screenshot(path=os.path.join(OUT, name, fn), full_page=not is_start)
         except Exception:
             pass
+        if cfg == CONFIGS[0] and not is_start and not st["sheet"] and not st["player"]:
+            lp = await pg.evaluate(LONGPRESS_JS)
+            for m in lp or []:
+                findings.append({"cat": "lange", "state": k, "el": "", "msg": m})
+            if lp is not None and not await replay(pg, entry, clicks):
+                continue
+        # zurueck (Fabian 2026-10-06): wherever a ‹ is visible, swiping back
+        # (Safari edge swipe = browser back, Android back) must go back too.
+        if cfg == CONFIGS[0] and not is_start and not st["sheet"] and not st["player"] and await pg.evaluate(BACK_VISIBLE_JS):
+            await pg.evaluate("history.back()"); await pg.wait_for_timeout(350)
+            after = await pg.evaluate(STATE_JS)
+            if "localhost" not in pg.url or after["screen"] == st["screen"] or not after["screen"]:
+                findings.append({"cat": "zurueck", "state": k, "el": "",
+                                 "msg": "‹ sichtbar, aber Zurückwischen/Zurück-Taste bleibt auf der Seite oder verlässt die App"})
     await ctx.close()
     for e in errs:
         findings.append({"cat": "fehler", "state": "-", "msg": e[:160], "el": ""})

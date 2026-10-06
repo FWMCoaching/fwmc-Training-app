@@ -255,11 +255,12 @@
 
   <section class="today-week">
     <div class="section-head">
-      <h2>Diese Woche</h2>
+      <h2 id="todayWeekTitle">Diese Woche</h2>
       <span class="section-note" id="todayProgress"></span>
     </div>
     <div class="week-nav">
       <button class="week-nav-btn" id="todayWeekPrev" type="button" aria-label="Vorherige Woche">&lsaquo;</button>
+      <div class="week-range"><span id="todayWeekRange" aria-live="polite"></span><button class="week-today-btn" id="todayWeekTodayBtn" type="button" hidden>Heute</button></div>
       <div class="week-strip" id="todayWeekStrip"></div>
       <button class="week-nav-btn" id="todayWeekNext" type="button" aria-label="N&auml;chste Woche">&rsaquo;</button>
     </div>
