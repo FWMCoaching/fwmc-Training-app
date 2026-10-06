@@ -22,10 +22,10 @@
   --test-accent-pale:#fef3c7;
   --ink:#16232a;
   --ink-soft:#4f6168;
-  --bg:#f6f8f9;
-  --surface:#ffffff;
-  --surface-2:#eef3f4;
-  --line:#dde6e8;
+  --bg:#f7f4ef;
+  --surface:#fffdf9;
+  --surface-2:#f1ece4;
+  --line:#e8e0d4;
   --ok:#2e7d32;
   --warn:#b3261e;
   --shadow:0 1px 2px rgba(16,40,48,.04), 0 8px 24px -12px rgba(16,40,48,.18);
@@ -43,10 +43,10 @@
     --test-accent-pale:#453211;
     --ink:#e9f0f2;
     --ink-soft:#a9bbc0;
-    --bg:#0f1a1e;
-    --surface:#16262b;
-    --surface-2:#1c2f35;
-    --line:#283d43;
+    --bg:#0c1b20;
+    --surface:#132a30;
+    --surface-2:#19343b;
+    --line:#244249;
     --ok:#66bb6a;
     --warn:#ef9a9a;
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
@@ -63,10 +63,10 @@
   --test-accent-pale:#453211;
   --ink:#e9f0f2;
   --ink-soft:#a9bbc0;
-  --bg:#0f1a1e;
-  --surface:#16262b;
-  --surface-2:#1c2f35;
-  --line:#283d43;
+  --bg:#0c1b20;
+  --surface:#132a30;
+  --surface-2:#19343b;
+  --line:#244249;
   --ok:#66bb6a;
   --warn:#ef9a9a;
   --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
@@ -270,6 +270,8 @@ section{margin-bottom:26px}
   padding:0 20px;font-weight:700;font-size:calc(15px * var(--ts,1));cursor:pointer;flex:none;
 }
 .program-entry-row button:disabled{opacity:.7}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .program-entry-row button{background:var(--bg)}}
+:root[data-theme="dark"] .program-entry-row button{background:var(--bg)}
 .program-error{
   margin-top:10px;font-size:calc(13.5px * var(--ts,1));background:rgba(255,255,255,.95);color:#b3261e;
   border-radius:10px;padding:8px 12px;font-weight:600;
@@ -1791,7 +1793,14 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .stroop-weight-dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.25)}
 
 /* ==== Startseite "Heute", Kalender, Wochenplan (2026-10-03) ==== */
-.today-hello{margin:4px 0 16px}
+/* Begrüßung als sanfte Fläche (Fabian 2026-10-06, Variante 1): petrol-pale with a warm evening light top right */
+.today-hello{position:relative;overflow:hidden;margin:4px 0 14px;padding:16px 18px 18px;border-radius:20px;background:radial-gradient(110% 120% at 100% 0%,rgba(242,184,128,.28) 0%,rgba(242,184,128,0) 60%),linear-gradient(160deg,#e3f0f3 0%,#eef5f6 100%)}
+.today-hello > *{position:relative;z-index:1}
+.today-hello::after{content:"";position:absolute;right:-26px;top:-26px;width:110px;height:110px;border-radius:50%;border:14px solid rgba(0,112,148,.07)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .today-hello{background:radial-gradient(110% 120% at 100% 0%,rgba(214,140,110,.14) 0%,rgba(214,140,110,0) 60%),linear-gradient(160deg,#12313a 0%,#132a30 100%)}
+  :root:not([data-theme="light"]) .today-hello::after{border-color:rgba(105,194,224,.07)}}
+:root[data-theme="dark"] .today-hello{background:radial-gradient(110% 120% at 100% 0%,rgba(214,140,110,.14) 0%,rgba(214,140,110,0) 60%),linear-gradient(160deg,#12313a 0%,#132a30 100%)}
+:root[data-theme="dark"] .today-hello::after{border-color:rgba(105,194,224,.07)}
 .today-greeting{font-size:28px;line-height:1.15;margin:0;color:var(--ink)}
 .today-date{margin:4px 0 0;color:var(--ink-soft);font-size:calc(15px * var(--ts,1))}
 .today-main{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:22px}
@@ -1831,6 +1840,25 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
    Wim-Hof) go dark with a soft petrol circle. Fixed hex colours (stage rule). */
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]) .player.calm{background:#0b1619;color:#e9f0f2}
+  /* Ausdauer, Eigenes Training, Krafttraining: background has no meaning there, so dark mode stays dark (Fabian 2026-10-06) */
+  :root:not([data-theme="light"]) .player.calm-dk{background:#0b1619;color:#e9f0f2}
+  :root:not([data-theme="light"]) .player.calm-dk .workout-exercise-name,:root:not([data-theme="light"]) .player.calm-dk .workout-reps-big,:root:not([data-theme="light"]) .player.calm-dk .tabata-phase-label,:root:not([data-theme="light"]) .player.calm-dk .tabata-countdown,:root:not([data-theme="light"]) .player.calm-dk .tabata-exercise,:root:not([data-theme="light"]) .player.calm-dk .pause-countdown{color:#e9f0f2}
+  :root:not([data-theme="light"]) .player.calm-dk .workout-set-info{color:#69c2e0}
+  :root:not([data-theme="light"]) .player.calm-dk .workout-note,:root:not([data-theme="light"]) .player.calm-dk .workout-set-timer,:root:not([data-theme="light"]) .player.calm-dk .workout-rest-next,:root:not([data-theme="light"]) .player.calm-dk .tabata-round,:root:not([data-theme="light"]) .player.calm-dk .tabata-note,:root:not([data-theme="light"]) .player.calm-dk .pause-label{color:#a9bbc0}
+  :root:not([data-theme="light"]) .player.calm-dk .workout-overview-row{background:#16262b;border-color:#283d43;color:#a9bbc0}
+  :root:not([data-theme="light"]) .player.calm-dk .workout-overview-row.current{color:#e9f0f2;border-color:#ff9110}
+  :root:not([data-theme="light"]) .player.calm-dk .workout-overview-row .wo-num{background:#1c2f35;color:#a9bbc0}
+  :root:not([data-theme="light"]) .player.calm-dk .tabata-note-custom{background:#122b32;border-color:#2f95b8;color:#69c2e0}
+  :root:not([data-theme="light"]) .player.calm-dk .workout-tabata-view.phase-work{background:#12301d}
+  :root:not([data-theme="light"]) .player.calm-dk .workout-tabata-view.phase-rest{background:#3a2516}
+  :root:not([data-theme="light"]) .player.calm-dk .chapter-nav button{background:#16262b;border-color:#283d43;color:#e9f0f2}
+  :root:not([data-theme="light"]) .player.calm-dk .cardio-activity-title,:root:not([data-theme="light"]) .player.calm-dk .cardio-countdown{color:#e9f0f2}
+  :root:not([data-theme="light"]) .player.calm-dk .cardio-block-progress,:root:not([data-theme="light"]) .player.calm-dk .free-run-item{color:#69c2e0}
+  :root:not([data-theme="light"]) .player.calm-dk .cardio-activity-label{color:#a9bbc0}
+  :root:not([data-theme="light"]) .player.calm-dk .player-bar button,:root:not([data-theme="light"]) .player.calm-dk .player-status{background:rgba(22,38,43,.92);color:#e9f0f2;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  :root:not([data-theme="light"]) body:has(.player.calm-dk:not([hidden])) .step-nav{background:#0b1619;border-top-color:#1c2f35}
+  :root:not([data-theme="light"]) body:has(.player.calm-dk:not([hidden])) .step-nav button,:root:not([data-theme="light"]) body:has(.player.calm-dk:not([hidden])) .step-nav #stepSoundBtn,:root:not([data-theme="light"]) body:has(.player.calm-dk:not([hidden])) .step-nav #stepSoundBtn.is-off{background:rgba(233,240,242,.12);color:#e9f0f2}
+  :root:not([data-theme="light"]) .lead-in.calm{background:#0b1619;color:#e9f0f2} :root:not([data-theme="light"]) .lead-in.calm .lead-in-label{color:#69c2e0} :root:not([data-theme="light"]) .lead-in.calm .lead-in-cancel{background:#16262b;border-color:#283d43;color:#e9f0f2}
   :root:not([data-theme="light"]) .player.calm .breath-circle{background:radial-gradient(circle,rgba(57,167,204,.30) 0%,rgba(57,167,204,.08) 70%);border-color:rgba(105,194,224,.40)}
   :root:not([data-theme="light"]) .player.calm .breath-phase-count,:root:not([data-theme="light"]) .player.calm .breath-phase-label{color:#e9f0f2}
   :root:not([data-theme="light"]) .player.calm .wimhof-sub,:root:not([data-theme="light"]) .player.calm .pause-label{color:#a9bbc0}
@@ -1840,6 +1868,25 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
   :root:not([data-theme="light"]) body:has(.player.calm:not([hidden])) .step-nav button,:root:not([data-theme="light"]) body:has(.player.calm:not([hidden])) .step-nav #stepSoundBtn,:root:not([data-theme="light"]) body:has(.player.calm:not([hidden])) .step-nav #stepSoundBtn.is-off{background:rgba(233,240,242,.12);color:#e9f0f2}
 }
 :root[data-theme="dark"] .player.calm{background:#0b1619;color:#e9f0f2}
+/* Ausdauer, Eigenes Training, Krafttraining: background has no meaning there, so dark mode stays dark (Fabian 2026-10-06) */
+:root[data-theme="dark"] .player.calm-dk{background:#0b1619;color:#e9f0f2}
+:root[data-theme="dark"] .player.calm-dk .workout-exercise-name,:root[data-theme="dark"] .player.calm-dk .workout-reps-big,:root[data-theme="dark"] .player.calm-dk .tabata-phase-label,:root[data-theme="dark"] .player.calm-dk .tabata-countdown,:root[data-theme="dark"] .player.calm-dk .tabata-exercise,:root[data-theme="dark"] .player.calm-dk .pause-countdown{color:#e9f0f2}
+:root[data-theme="dark"] .player.calm-dk .workout-set-info{color:#69c2e0}
+:root[data-theme="dark"] .player.calm-dk .workout-note,:root[data-theme="dark"] .player.calm-dk .workout-set-timer,:root[data-theme="dark"] .player.calm-dk .workout-rest-next,:root[data-theme="dark"] .player.calm-dk .tabata-round,:root[data-theme="dark"] .player.calm-dk .tabata-note,:root[data-theme="dark"] .player.calm-dk .pause-label{color:#a9bbc0}
+:root[data-theme="dark"] .player.calm-dk .workout-overview-row{background:#16262b;border-color:#283d43;color:#a9bbc0}
+:root[data-theme="dark"] .player.calm-dk .workout-overview-row.current{color:#e9f0f2;border-color:#ff9110}
+:root[data-theme="dark"] .player.calm-dk .workout-overview-row .wo-num{background:#1c2f35;color:#a9bbc0}
+:root[data-theme="dark"] .player.calm-dk .tabata-note-custom{background:#122b32;border-color:#2f95b8;color:#69c2e0}
+:root[data-theme="dark"] .player.calm-dk .workout-tabata-view.phase-work{background:#12301d}
+:root[data-theme="dark"] .player.calm-dk .workout-tabata-view.phase-rest{background:#3a2516}
+:root[data-theme="dark"] .player.calm-dk .chapter-nav button{background:#16262b;border-color:#283d43;color:#e9f0f2}
+:root[data-theme="dark"] .player.calm-dk .cardio-activity-title,:root[data-theme="dark"] .player.calm-dk .cardio-countdown{color:#e9f0f2}
+:root[data-theme="dark"] .player.calm-dk .cardio-block-progress,:root[data-theme="dark"] .player.calm-dk .free-run-item{color:#69c2e0}
+:root[data-theme="dark"] .player.calm-dk .cardio-activity-label{color:#a9bbc0}
+:root[data-theme="dark"] .player.calm-dk .player-bar button,:root[data-theme="dark"] .player.calm-dk .player-status{background:rgba(22,38,43,.92);color:#e9f0f2;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+:root[data-theme="dark"] body:has(.player.calm-dk:not([hidden])) .step-nav{background:#0b1619;border-top-color:#1c2f35}
+:root[data-theme="dark"] body:has(.player.calm-dk:not([hidden])) .step-nav button,:root[data-theme="dark"] body:has(.player.calm-dk:not([hidden])) .step-nav #stepSoundBtn,:root[data-theme="dark"] body:has(.player.calm-dk:not([hidden])) .step-nav #stepSoundBtn.is-off{background:rgba(233,240,242,.12);color:#e9f0f2}
+:root[data-theme="dark"] .lead-in.calm{background:#0b1619;color:#e9f0f2} :root[data-theme="dark"] .lead-in.calm .lead-in-label{color:#69c2e0} :root[data-theme="dark"] .lead-in.calm .lead-in-cancel{background:#16262b;border-color:#283d43;color:#e9f0f2}
 :root[data-theme="dark"] .player.calm .breath-circle{background:radial-gradient(circle,rgba(57,167,204,.30) 0%,rgba(57,167,204,.08) 70%);border-color:rgba(105,194,224,.40)}
 :root[data-theme="dark"] .player.calm .breath-phase-count,:root[data-theme="dark"] .player.calm .breath-phase-label{color:#e9f0f2}
 :root[data-theme="dark"] .player.calm .wimhof-sub,:root[data-theme="dark"] .player.calm .pause-label{color:#a9bbc0}
@@ -2157,6 +2204,16 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
   .brandbar .brand-sub,.app-bar-inner .brand-sub{font-size:10px;letter-spacing:.02em}
 }
 @media (max-width:339px){.brand-sub .nowrap{white-space:normal}}
+/* Kopfleiste ruhig (Fabian 2026-10-06, "2A"): the ‹ slot stays reserved on main
+   pages so logo and title never jump, and the two title lines sit exactly on
+   the two text lines of the logo ("Fabian Westermann" / "Mentalcoaching").
+   --lg is the logo height; size and offset of the title follow it. */
+.brandbar,.app-bar-inner{--lg:25px}
+@media (max-width:379px){.brandbar,.app-bar-inner{--lg:21px}}
+@media (min-width:700px){.brandbar,.app-bar-inner{--lg:30px}}
+.brandbar:not(:has(.bar-back-btn:not([hidden])))::before,.app-bar-inner:not(:has(.bar-back-btn:not([hidden])))::before{content:"";flex:0 0 44px}
+.brandbar .brand-sub,.app-bar-inner .brand-sub{font-size:calc(var(--lg) * .384);line-height:calc(var(--lg) * .448);letter-spacing:.04em;align-self:flex-end;margin-bottom:calc((44px - var(--lg)) / 2 - var(--lg) * .12)}
+
 /* Tablets/desktop: logo and title a bit larger so they don't look lost. */
 @media (min-width:700px){
   .brandbar .brand-logo,.app-bar-inner .brand-logo,:root:not([data-theme="light"]) .brandbar .brand-logo,:root:not([data-theme="light"]) .app-bar-inner .brand-logo{height:30px}
@@ -2240,7 +2297,7 @@ html,body{overflow-x:clip}
 body.bottom-nav-on .screen:not([hidden]){padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .has-bottom-nav .screen > .section-switch{display:none}
 .has-bottom-nav #todayHome .today-areas{display:none}
-.has-bottom-nav #progressScreen > .brandbar .bar-back-btn{display:none}
+.has-bottom-nav #progressScreen > .brandbar .bar-back-btn{visibility:hidden;pointer-events:none}
 .more-list{display:flex;flex-direction:column;gap:10px;margin:0 0 22px}
 .more-list .featured-card{line-height:1.3}
 #moreScreen .page-sub{margin-bottom:14px}

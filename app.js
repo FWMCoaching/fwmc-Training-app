@@ -15694,6 +15694,8 @@
       n -= 1;
       leadInTimer = setTimeout(tick, 1000);
     };
+    // Atem/Wim-Hof: the lead-in matches the calm player (dark in dark mode, 2026-10-06).
+    ov.classList.toggle("calm", /^(breath|cardio|free)/.test(b.id));
     ov.hidden = false;
     tick();
   }, true);
@@ -15780,7 +15782,7 @@
   // Übersicht" does; in a pause it stays hidden, since the player's own
   // "✕ Beenden" is right there (a reviewer found two exits confusing).
   // Inside a running exercise the step bar stays the only control.
-  const barVis = (el) => !!el && !el.hidden && el.getClientRects().length > 0;
+  const barVis = (el) => !!el && !el.hidden && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden";
   const barTpl = document.querySelector(".screen > .brandbar");
   document.querySelectorAll(".screen").forEach((scr) => {
     if (!barTpl || scr.querySelector(":scope > .brandbar")) return;
