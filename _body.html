@@ -3695,9 +3695,13 @@
         <div class="color-picker" id="balanceColor2Picker"></div>
       </div>
       <div class="group">
-        <div class="group-label">Farbe der Buchstaben</div>
+        <div class="group-label" id="balanceLetterColorLabel">Farbe der Buchstaben</div>
         <div class="color-picker" id="balanceLetterColorPicker"></div>
         <div class="group-help look-contrast-hint" id="balanceLetterContrastHint" hidden>Tipp: Diese Farbe hebt sich kaum vom Stift ab.</div>
+      </div>
+      <div class="group" id="balanceLetterColor2Group">
+        <div class="group-label">Farbe der Buchstaben &middot; Stift 2</div>
+        <div class="color-picker" id="balanceLetterColor2Picker"></div>
       </div>
       <div class="group">
         <div class="group-label">L&auml;nge der Stifte</div>
@@ -4185,7 +4189,7 @@
   </div>
 
   <div class="group">
-    <div class="group-label">Takt</div>
+    <div class="group-label">Takt-Ton</div>
     <div class="choice-row two" id="movementTickRow">
       <button class="choice" data-mv-tick="1">Mit Takt-Ton<small>leiser Ton bei jeder Bewegung</small></button>
       <button class="choice" data-mv-tick="0">Ohne Takt-Ton<small>nur sehen</small></button>
@@ -4764,7 +4768,7 @@
       <h3>Pausiert</h3>
       <div class="group">
         <div class="group-label">T&ouml;ne und Ansagen</div>
-        <div class="choice-row two" id="wimhofPauseSoundRow">
+        <div class="choice-row" id="wimhofPauseSoundRow">
           <button class="choice" data-wh-pause-sound="on">An</button>
           <button class="choice" data-wh-pause-sound="off">Aus</button>
         </div>
@@ -4820,7 +4824,7 @@
       </div>
       <div class="group">
         <div class="group-label">Takt-Ton</div>
-        <div class="choice-row two" id="movementPauseTickRow">
+        <div class="choice-row" id="movementPauseTickRow">
           <button class="choice" data-mv-pause-tick="1">An</button>
           <button class="choice" data-mv-pause-tick="0">Aus</button>
         </div>
@@ -4828,6 +4832,7 @@
           <div class="group-label">Lautst&auml;rke <span class="slider-value" id="movementPauseTickVolumeValue"></span></div>
           <input type="range" id="movementPauseTickVolumeSlider" min="0.1" max="1" step="0.05" aria-label="Lautst&auml;rke des Takt-Tons">
         </div>
+        <div class="group-help">Gilt f&uuml;r dieses Training.</div>
       </div>
       <button class="start-btn" id="movementResumeBtn">Weiter</button>
     </div>
@@ -5066,8 +5071,8 @@
           <button type="button" id="balanceBpmPlus" aria-label="Schneller">+</button>
         </span>
         <button type="button" class="balance-chip" id="balanceMetroBtn">Takt aus</button>
-        <button type="button" class="balance-chip" id="balanceClockBtn">Zeit anhalten</button>
-        <button type="button" class="balance-chip" id="balanceKnobBtn" aria-expanded="false">Regler</button>
+        <button type="button" class="balance-chip" id="balanceClockBtn">Zeit halten</button>
+        <button type="button" class="balance-chip" id="balanceKnobBtn" aria-expanded="false" hidden>Regler</button>
         <button type="button" class="balance-chip balance-finish" id="balanceFinishBtn" hidden>Fertig</button>
       </div>
       <div class="balance-knobs" id="balanceKnobs" hidden>
@@ -5086,6 +5091,27 @@
       <div class="group">
         <div class="group-label">Lautst&auml;rke <span class="slider-value" id="balancePauseVolumeValue"></span></div>
         <input type="range" id="balancePauseVolumeSlider" min="0" max="1" step="0.05" aria-label="Lautst&auml;rke">
+      </div>
+      <div class="group">
+        <div class="group-label" id="balancePauseColor1Label">Farbe des Stifts</div>
+        <div class="color-picker" id="balancePauseColor1Picker"></div>
+        <div class="group-label" id="balancePauseLetter1Label">Farbe der Buchstaben</div>
+        <div class="color-picker" id="balancePauseLetterColorPicker"></div>
+      </div>
+      <div class="group" id="balancePauseStick2Group">
+        <div class="group-label">Farbe Stift 2</div>
+        <div class="color-picker" id="balancePauseColor2Picker"></div>
+        <div class="group-label">Farbe der Buchstaben &middot; Stift 2</div>
+        <div class="color-picker" id="balancePauseLetterColor2Picker"></div>
+      </div>
+      <div class="group">
+        <div class="group-label">L&auml;nge der Stifte <span class="slider-value" id="balancePauseLengthValue"></span></div>
+        <input type="range" id="balancePauseLengthSlider" min="30" max="100" step="5" aria-label="L&auml;nge der Stifte">
+        <div class="group-label">Breite der Stifte <span class="slider-value" id="balancePauseWidthValue"></span></div>
+        <input type="range" id="balancePauseWidthSlider" min="0.6" max="1.8" step="0.1" aria-label="Breite der Stifte">
+        <div class="group-label">Schriftgr&ouml;&szlig;e <span class="slider-value" id="balancePauseFontValue"></span></div>
+        <input type="range" id="balancePauseFontSlider" min="0.6" max="1.8" step="0.1" aria-label="Schriftgr&ouml;&szlig;e">
+        <div class="group-help">Gilt sofort und bleibt gespeichert, wie auf der &Uuml;bungsseite.</div>
       </div>
       <div class="group" data-look-anchor>
         <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="balancePauseBgValue"></span></div>

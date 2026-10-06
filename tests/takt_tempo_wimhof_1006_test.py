@@ -45,6 +45,11 @@ async def open_wimhof(pg):
     await pg.click("#breathHome .featured-card:has-text('Kraftvolle Atmung')"); await pg.wait_for_timeout(200)
     await pg.click("#wimhofAckCheck"); await pg.wait_for_timeout(100)
 
+BAR_CLEAR_JS = """(id) => { const ov = document.getElementById(id); const bar = ov.closest('.player').querySelector('.player-bar');
+  const panel = ov.querySelector('.pause-panel'); ov.scrollTop = 0;
+  // the overlay itself clips scrolled content, so its top must be below the bar
+  return [Math.round(bar.getBoundingClientRect().bottom), Math.round(ov.getBoundingClientRect().top), Math.round(panel.getBoundingClientRect().top)]; }"""
+
 async def main():
     errors = []
     def watch(pg):
@@ -118,6 +123,9 @@ async def main():
         check("41 no spoken movement names", await pg.evaluate("window.__spoken.length") == 0, await pg.evaluate("window.__spoken"))
         await pg.click("#movementPauseBtn"); await pg.wait_for_timeout(200)
         check("41 pause sheet has Takt-Ton on/off", await pg.is_visible("[data-mv-pause-tick='0']"))
+        widths = await pg.evaluate("[document.getElementById('movementPauseTickVolumeSlider').offsetWidth, document.getElementById('movementPauseBpmSlider').offsetWidth]")
+        check("41 Takt-Ton volume slider as wide as the Tempo slider", abs(widths[0] - widths[1]) <= 2, widths)
+        check("41 same name on ready screen and pause sheet", await pg.evaluate("[...document.querySelectorAll('#movementReady .group-label')].some(e => e.textContent.trim() === 'Takt-Ton')"))
         await pg.click("[data-mv-pause-tick='0']"); await pg.wait_for_timeout(100)
         check("41 pause volume hidden when off", not await pg.is_visible("#movementPauseTickVolumeSlider"))
         await pg.click("#movementResumeBtn"); await pg.wait_for_timeout(100)
@@ -167,6 +175,8 @@ async def main():
         await pg.click("#motReadyStartBtn"); await pg.wait_for_timeout(900)
         await pg.click("#motPauseBtn"); await pg.wait_for_timeout(200)
         check("42 MOT pause sheet has Geschwindigkeit", await pg.is_visible("#motPauseSpeedSlider"))
+        r = await pg.evaluate(BAR_CLEAR_JS, "motPauseOverlay")
+        check("42 MOT pause sheet starts below the (wrapping) player bar, also scrolled", r[1] >= r[0] and r[2] >= r[0], r)
         await pg.fill("#motPauseSpeedSlider", "0.33"); await pg.wait_for_timeout(100)
         check("42 MOT value label follows", (await pg.inner_text("#motPauseSpeedValue")).strip() == "33%")
         await pg.click("#motResumeBtn"); await pg.wait_for_timeout(500)
@@ -195,6 +205,8 @@ async def main():
         await pg.set_viewport_size({"width": 375, "height": 667}); await pg.wait_for_timeout(200)
         box = await pg.evaluate("(() => { const r = document.getElementById('flashResumeBtn').getBoundingClientRect(); return [r.top, r.bottom, innerHeight]; })()")
         check("42 Weiter visible on a 375x667 phone", box[1] <= box[2] + 1 and box[0] >= 0, box)
+        r = await pg.evaluate(BAR_CLEAR_JS, "flashPauseOverlay")
+        check("42 Flash pause sheet below the player bar at 375 px, also scrolled", r[1] >= r[0] and r[2] >= r[0], r)
         await ctx.close()
 
         await b.close()

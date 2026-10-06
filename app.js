@@ -5748,6 +5748,25 @@
   // if no time passed while away, instead of building a separate pause/
   // resume UI for each engine.
   let hiddenAt = null;
+  // Pause sheets start below the player bar's real bottom edge (2026-10-06,
+  // review of ideas 41-44): with a long status ("8 Objekte · 4 Ziele ·
+  // Tempo-Stufe 1") the bar wraps to 2-3 rows at 390 px, and the fixed CSS
+  // padding let a tall panel (Flash/MOT with tempo sliders) slide under it.
+  // Starting the overlay itself below the bar also keeps scrolled content
+  // from passing under the bar's pills.
+  function placePauseOverlay(ov) {
+    ov.style.top = ""; ov.style.paddingTop = "";
+    if (ov.hidden) return;
+    const bar = ov.closest(".player") && ov.closest(".player").querySelector(".player-bar");
+    if (!bar || !bar.getClientRects().length) return;
+    const off = Math.round(bar.getBoundingClientRect().bottom - ov.getBoundingClientRect().top + 8);
+    if (off > 0) { ov.style.top = off + "px"; ov.style.paddingTop = "12px"; }
+  }
+  const placeOpenPauseOverlays = () => document.querySelectorAll(".player .pause-overlay").forEach((ov) => { if (!ov.hidden) placePauseOverlay(ov); });
+  new MutationObserver((muts) => muts.forEach((m) => {
+    if (m.target.classList && m.target.classList.contains("pause-overlay")) requestAnimationFrame(() => placePauseOverlay(m.target));
+  })).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["hidden"] });
+  window.addEventListener("resize", placeOpenPauseOverlays);
   // Auto-Pause (Fabian, 2026-10-02): leaving the app mid-training (a call,
   // switching apps) presses that player's own visible "Pause" button, so
   // the client comes back to its pause screen instead of a run that kept
@@ -10392,7 +10411,7 @@
   const BALANCE_DEFAULTS = {
     mode: "nein", sticks: 1, letters: "zufall", custom: "", custom2: "", singleS: 5, letterCount: 7,
     metro: true, bpm: 60, timing: "timed", setS: 30, sets: 3, restS: 30, stance: "normal", stanceSpeak: false,
-    size: 1, lengthPct: 70, widthF: 1, fontF: 1, color1: "blau", color2: "gelb", letterColor: "auto", volume: 0.8,
+    size: 1, lengthPct: 70, widthF: 1, fontF: 1, color1: "blau", color2: "gelb", letterColor: "auto", letterColor2: "auto", volume: 0.8,
     pos: null, bgColorKey: "gruen", bgIntensity: 0,
   };
   const balancePrefs = JSON.parse(JSON.stringify(BALANCE_DEFAULTS));
@@ -10421,6 +10440,8 @@
     if (!BALANCE_STICK_COLORS.some((c) => c.key === p.color1)) p.color1 = d.color1;
     if (!BALANCE_STICK_COLORS.some((c) => c.key === p.color2)) p.color2 = d.color2;
     if (!BALANCE_LETTER_COLORS.some((c) => c.key === p.letterColor)) p.letterColor = d.letterColor;
+    // Per-stick letter colour (Fabian 2026-10-06); older settings: same as stick 1.
+    if (!BALANCE_LETTER_COLORS.some((c) => c.key === p.letterColor2)) p.letterColor2 = p.letterColor;
     p.volume = balClamp(p.volume, 0, 1, d.volume);
     if (!Array.isArray(p.pos) || !p.pos.every((q) => q && Number.isFinite(q.x) && Number.isFinite(q.y))) p.pos = null;
     if (!STROOP_COLOR_BY_KEY[p.bgColorKey]) p.bgColorKey = d.bgColorKey;
@@ -10479,6 +10500,7 @@
     sets: balEl("balanceSetsSlider"), setsValue: balEl("balanceSetsValue"), rest: balEl("balanceRestSlider"), restValue: balEl("balanceRestValue"),
     stanceSpeak: balEl("balanceStanceSpeak"), color1Label: balEl("balanceColor1Label"), color1: balEl("balanceColor1Picker"), color2Group: balEl("balanceColor2Group"), color2: balEl("balanceColor2Picker"),
     letterColor: balEl("balanceLetterColorPicker"), letterHint: balEl("balanceLetterContrastHint"),
+    letterColorLabel: balEl("balanceLetterColorLabel"), letterColor2Group: balEl("balanceLetterColor2Group"), letterColor2: balEl("balanceLetterColor2Picker"),
     length: balEl("balanceLengthSlider"), lengthValue: balEl("balanceLengthValue"), width: balEl("balanceWidthSlider"), widthValue: balEl("balanceWidthValue"),
     font: balEl("balanceFontSlider"), fontValue: balEl("balanceFontValue"), countGroup: balEl("balanceCountGroup"), count: balEl("balanceCountSlider"), countValue: balEl("balanceCountValue"),
     volume: balEl("balanceVolumeSlider"), volumeValue: balEl("balanceVolumeValue"), posHelp: balEl("balancePosHelp"), start: balEl("balanceReadyStartBtn"),
@@ -10515,6 +10537,7 @@
   buildSingleSelectPicker(balanceUi.color1, BALANCE_STICK_COLORS, (k) => balanceSet("color1", k));
   buildSingleSelectPicker(balanceUi.color2, BALANCE_STICK_COLORS, (k) => balanceSet("color2", k));
   buildSingleSelectPicker(balanceUi.letterColor, BALANCE_LETTER_COLORS, (k) => balanceSet("letterColor", k));
+  buildSingleSelectPicker(balanceUi.letterColor2, BALANCE_LETTER_COLORS, (k) => balanceSet("letterColor2", k));
   function balanceResetPos() {
     balancePrefs.pos = null;
     saveBalancePrefsToStorage();
@@ -10556,7 +10579,11 @@
     syncSingleSelectPicker(balanceUi.color1, p.color1);
     syncSingleSelectPicker(balanceUi.color2, p.color2);
     syncSingleSelectPicker(balanceUi.letterColor, p.letterColor);
-    const low = [p.color1, ...(p.sticks === 2 ? [p.color2] : [])].some((k) => contrastRatio(balanceLetterHex(p.letterColor, k), balanceStickHex(k)) < 3);
+    syncSingleSelectPicker(balanceUi.letterColor2, p.letterColor2);
+    balanceUi.letterColorLabel.textContent = p.sticks === 2 ? "Farbe der Buchstaben · Stift 1" : "Farbe der Buchstaben";
+    balanceUi.letterColor2Group.hidden = p.sticks !== 2;
+    const low = contrastRatio(balanceLetterHex(p.letterColor, p.color1), balanceStickHex(p.color1)) < 3
+      || (p.sticks === 2 && contrastRatio(balanceLetterHex(p.letterColor2, p.color2), balanceStickHex(p.color2)) < 3);
     balanceUi.letterHint.hidden = !low;
     balanceUi.length.value = p.lengthPct; balanceUi.lengthValue.textContent = Math.round(p.lengthPct) + " %";
     balanceUi.width.value = p.widthF; balanceUi.widthValue.textContent = fmtFactor(p.widthF);
@@ -10704,7 +10731,7 @@
       const letters = st.letterSets[i];
       el.innerHTML = letters.map((ch, j) => `<span class="balance-letter" data-j="${j}">${esc(ch)}</span>`).join("");
       el.style.background = balanceStickHex(i === 1 ? st.color2 : st.color1);
-      el.style.color = balanceLetterHex(st.letterColor, i === 1 ? st.color2 : st.color1);
+      el.style.color = balanceLetterHex(i === 1 ? (st.letterColor2 || st.letterColor) : st.letterColor, i === 1 ? st.color2 : st.color1);
     });
     balanceApplySingle();
   }
@@ -10721,7 +10748,7 @@
     if (st.letters !== "einzeln") { st.single = null; return; }
     const prev = st.single;
     const stick = st.mode === "sakk" && st.sticks === 2 ? (prev ? 1 - prev.stick : 0) : 0;
-    const n = st.letterSets[stick].length;
+    const n = Math.min(st.letterSets[stick].length, st.visN || Infinity);
     let slot = Math.floor(Math.random() * n);
     if (prev && n > 1) {
       // A real jump: a different height (Sakkaden on one stick: the other half).
@@ -10750,9 +10777,18 @@
     const aw = a.x1 - a.x0, ah = a.y1 - a.y0;
     const z = st.size;
     const w = Math.round(Math.max(22, Math.min(52 * z * st.widthF, aw * (st.sticks === 2 ? 0.4 : 0.8))));
-    const len = Math.round(Math.max(w * 2, Math.min(ah, ah * (st.lengthPct / 100) * z)));
+    // Bigger sticks get bigger letters (Fabian 2026-10-06: "nicht nur der
+    // Rand breiter"). When the wanted letters no longer fit the free height,
+    // the stick shows fewer letters instead of shrinking them; the stick
+    // gets shorter with them.
+    const lenWanted = Math.round(Math.max(w * 2, Math.min(ah, ah * (st.lengthPct / 100) * z)));
     const n = Math.max(...st.letterSets.slice(0, st.sticks).map((l) => l.length), 1);
-    const fs = Math.round(Math.max(10, Math.min(30 * z * st.fontF, (len / n) * 0.82, w * 1.25)));
+    const fsWanted = Math.max(10, Math.min(30 * z * st.fontF, w * 1.25));
+    const fit = Math.max(1, Math.floor((lenWanted * 0.82) / fsWanted));
+    const k = Math.min(n, Math.max(Math.min(n, 2), fit));
+    const len = k < n ? Math.max(w * 2, Math.min(lenWanted, Math.round((k * fsWanted) / 0.82))) : lenWanted;
+    const fs = Math.round(Math.max(10, Math.min(fsWanted, (len / k) * 0.82)));
+    st.visN = k;
     st.geom = { a, w, len };
     balP.sticks.forEach((el, i) => {
       if (i >= st.sticks) return;
@@ -10764,6 +10800,7 @@
       el.style.left = Math.round(cx - w / 2) + "px";
       el.style.top = Math.round(cy - len / 2) + "px";
       el.style.fontSize = fs + "px";
+      el.querySelectorAll(".balance-letter").forEach((sp, j) => sp.classList.toggle("off", j >= k));
       el.style.borderRadius = Math.round(Math.min(14, w / 3)) + "px";
     });
   }
@@ -10781,9 +10818,9 @@
     balP.bpmLive.textContent = `${st.bpm}/min`;
     balP.bpmMinus.disabled = st.bpm <= 30;
     balP.bpmPlus.disabled = st.bpm >= 200;
-    balP.metroBtn.textContent = st.metro ? "Takt stoppen" : "Takt starten";
+    balP.metroBtn.textContent = st.metro ? "Takt aus" : "Takt an";
     setActive(balP.metroBtn, st.metro);
-    balP.clockBtn.textContent = st.clockHeld ? "Zeit weiter" : "Zeit anhalten";
+    balP.clockBtn.textContent = st.clockHeld ? "Zeit weiter" : "Zeit halten";
     setActive(balP.clockBtn, st.clockHeld);
     balP.finishBtn.hidden = !(st.timing === "open" && !st.guest);
     balP.liveVolume.value = st.volume;
@@ -10806,6 +10843,42 @@
     if (field === "size") { balanceLayout(); syncLook("balance"); }
     balanceSyncLive();
   }
+  // Stick look live from the pause sheet (Fabian 2026-10-06: colours per
+  // stick and the other sensible settings also during the exercise). Like
+  // the live tempo, a standalone run saves it; Kombi/Cardio only this run.
+  const balPauseLook = {
+    color1: balEl("balancePauseColor1Picker"), color2: balEl("balancePauseColor2Picker"),
+    letterColor: balEl("balancePauseLetterColorPicker"), letterColor2: balEl("balancePauseLetterColor2Picker"),
+    color1Label: balEl("balancePauseColor1Label"), letter1Label: balEl("balancePauseLetter1Label"), stick2: balEl("balancePauseStick2Group"),
+    lengthPct: [balEl("balancePauseLengthSlider"), balEl("balancePauseLengthValue"), (v) => Math.round(v) + " %"],
+    widthF: [balEl("balancePauseWidthSlider"), balEl("balancePauseWidthValue"), (v) => fmtFactor(v)],
+    fontF: [balEl("balancePauseFontSlider"), balEl("balancePauseFontValue"), (v) => fmtFactor(v)],
+  };
+  function balanceLiveLook(field, value) {
+    const st = balanceState;
+    if (!st) return;
+    st[field] = value;
+    if (st.own) { balancePrefs[field] = value; saveBalancePrefsToStorage(); syncBalanceReadyUI(); }
+    balanceRenderSticks();
+    balanceLayout();
+    syncBalancePauseLook();
+  }
+  function syncBalancePauseLook() {
+    const st = balanceState;
+    if (!st) return;
+    const two = st.sticks === 2;
+    balPauseLook.color1Label.textContent = two ? "Farbe Stift 1" : "Farbe des Stifts";
+    balPauseLook.letter1Label.textContent = two ? "Farbe der Buchstaben · Stift 1" : "Farbe der Buchstaben";
+    balPauseLook.stick2.hidden = !two;
+    ["color1", "color2", "letterColor"].forEach((f) => syncSingleSelectPicker(balPauseLook[f], st[f]));
+    syncSingleSelectPicker(balPauseLook.letterColor2, st.letterColor2 || st.letterColor);
+    ["lengthPct", "widthF", "fontF"].forEach((f) => { const [inp, val, fmt] = balPauseLook[f]; inp.value = st[f]; val.textContent = fmt(st[f]); });
+  }
+  buildSingleSelectPicker(balPauseLook.color1, BALANCE_STICK_COLORS, (k) => balanceLiveLook("color1", k));
+  buildSingleSelectPicker(balPauseLook.color2, BALANCE_STICK_COLORS, (k) => balanceLiveLook("color2", k));
+  buildSingleSelectPicker(balPauseLook.letterColor, BALANCE_LETTER_COLORS, (k) => balanceLiveLook("letterColor", k));
+  buildSingleSelectPicker(balPauseLook.letterColor2, BALANCE_LETTER_COLORS, (k) => balanceLiveLook("letterColor2", k));
+  ["lengthPct", "widthF", "fontF"].forEach((f) => balPauseLook[f][0].addEventListener("input", () => balanceLiveLook(f, Number(balPauseLook[f][0].value))));
   function balanceToast(text) {
     balP.toast.textContent = text;
     balP.toast.hidden = false;
@@ -10880,7 +10953,10 @@
     if (st.phase === "rest") t = `Pause · ${fmtClock(st.restS - st.phaseElapsed)}`;
     else if (st.timing === "open") t = fmtClock(st.phaseElapsed);
     else t = fmtClock(st.setS - st.phaseElapsed);
-    if (st.clockHeld) t += " angehalten";
+    // Held clock: a pause sign in front instead of the word "angehalten",
+    // so the status stays short and the player bar keeps one row (Fabian
+    // 2026-10-06: "Vollbild wandert runter").
+    if (st.clockHeld) t = "⏸ " + t;
     if (balP.status.textContent !== t) balP.status.textContent = t;
   }
   function balanceBeginSet() {
@@ -11046,6 +11122,7 @@
     syncBalanceBgUI();
     balanceSyncLive();
     balP.pauseBtn.hidden = true;
+    syncBalancePauseLook();
     balP.pauseOverlay.hidden = false;
   }
   function resumeBalance() {
@@ -12487,8 +12564,18 @@
   // switch mutes on the speaker (not on headphones). "playback" plays
   // through the switch but pauses other music, so it's an explicit opt-in
   // in Master-Einstellungen (masterPrefs.cuesIgnoreSilent).
+  // A running beat exercise (Gleichgewicht with Takt, Reaktionstraining with
+  // Takt-Ton) plays through the silent switch on its own (Fabian 2026-10-06:
+  // the beat is part of the exercise, he heard nothing with the switch on).
+  function cueBeatRunning() {
+    return !!((balanceState && balanceState.metro) || (typeof movementSession !== "undefined" && movementSession && movementSession.tick));
+  }
   function applyCueAudioSession() {
-    try { if (navigator.audioSession) navigator.audioSession.type = masterPrefs.cuesIgnoreSilent ? "playback" : "auto"; } catch (e) {}
+    try {
+      if (!navigator.audioSession) return;
+      const want = masterPrefs.cuesIgnoreSilent || cueBeatRunning() ? "playback" : "auto";
+      if (navigator.audioSession.type !== want) navigator.audioSession.type = want;
+    } catch (e) {}
   }
   function playCueTone(freq, durationS, peak) {
     const vol = cueVolume();
@@ -12524,7 +12611,10 @@
       applyCueAudioSession();
       if (!workoutAudioCtx) workoutAudioCtx = new AC();
       const ctx = workoutAudioCtx;
-      if (ctx.state !== "running") ctx.resume().catch(() => {});
+      // Any tap revives a stalled context (iOS "interrupted" after the
+      // silent switch or a call); one that refuses gets replaced, so the
+      // beat comes back without restarting the exercise.
+      if (ctx.state !== "running") ctx.resume().catch(() => { try { ctx.close(); } catch (e) {} if (workoutAudioCtx === ctx) { workoutAudioCtx = new AC(); cueAudioPrimed = false; } });
       if (!cueAudioPrimed) {
         const src = ctx.createBufferSource();
         src.buffer = ctx.createBuffer(1, 1, 22050);

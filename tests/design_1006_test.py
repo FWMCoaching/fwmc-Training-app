@@ -69,7 +69,7 @@ async def main():
                 vis = await pg.evaluate("(() => { const s = [...document.querySelectorAll('.screen')].find(x => !x.hidden); const l = s && s.querySelector(':scope > .combo-entry-link'); return !!(l && l.offsetParent); })()")
                 check(t + f"{area} home has no Kombi link", not vis)
             await pg.goto(BASE); await pg.wait_for_timeout(250)
-            check(t + "Kombi link stays on Heute", await pg.is_visible("#todayHome .combo-entry-link") or await pg.locator("#todayHome .combo-entry-link").count() == 0)
+            check(t + "no Kombi link on Heute (only Training)", not await pg.is_visible("#todayHome .combo-entry-link"))
 
             # Atem-Player
             await pg.goto(BASE + "?bereich=breath"); await pg.wait_for_timeout(300)
