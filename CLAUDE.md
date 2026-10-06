@@ -500,7 +500,7 @@ For every new or changed exercise/screen, in the same commit:
   Nein-Nein/Ja-Ja/Ohr-Schulter/Diagonal/Sakkaden, metronome, sets or open-ended,
   stance shown/spoken, drag + pinch, live tempo/Takt/Zeit anhalten/Lautstärke);
   details docs/notes/02 (letter colour per stick, colours/length/width/font
-  live in the pause sheet, beat plays through the iPhone silent switch). Every LOOK_SPECS exercise also gets its size live in the
+  live in the pause sheet, one-time silent-switch hint; music like Spotify keeps playing). Every LOOK_SPECS exercise also gets its size live in the
   pause sheet and by pinch (`LIVE_LOOK`); a new one needs one entry there.
   Tests: `tests/gleichgewicht_1006_test.py`, `tests/live_size_1006_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests

@@ -7899,6 +7899,7 @@
     els.movementFinishBadge.hidden = true;
     els.movementProgressTrack.innerHTML = `<span class="seg"><span class="fill"></span></span>`;
     movementSession = { sequence, beatLenS, totalBeats, gridMode, preview: movementPrefs.preview, pool, startTime: performance.now(), lastBeatIdx: 0, finishTimer: null, pausedAt: null, ...mvTickOf(movementPrefs) };
+    if (movementSession.tick) silentSwitchHint();
     els.movementPauseOverlay.hidden = true;
     els.movementPauseBtn.hidden = false;
     if (gridMode) {
@@ -11068,6 +11069,7 @@
     balanceBeginSet();
     st.lastNow = performance.now();
     st.raf = requestAnimationFrame(balanceTick);
+    if (st.metro) silentSwitchHint();
   }
   function balanceCleanup() {
     const st = balanceState;
@@ -12564,16 +12566,30 @@
   // switch mutes on the speaker (not on headphones). "playback" plays
   // through the switch but pauses other music, so it's an explicit opt-in
   // in Master-Einstellungen (masterPrefs.cuesIgnoreSilent).
-  // A running beat exercise (Gleichgewicht with Takt, Reaktionstraining with
-  // Takt-Ton) plays through the silent switch on its own (Fabian 2026-10-06:
-  // the beat is part of the exercise, he heard nothing with the switch on).
-  function cueBeatRunning() {
-    return !!((balanceState && balanceState.metro) || (typeof movementSession !== "undefined" && movementSession && movementSession.tick));
+  // Beat exercises do NOT switch to "playback" on their own: that would stop
+  // the client's music (Spotify). Instead the first beat run on an iPhone/iPad
+  // shows a one-time hint about the silent switch (silentSwitchHint, Fabian
+  // 2026-10-06: he heard no Takt with the switch on).
+  function silentSwitchHint() {
+    try {
+      const forced = localStorage.getItem("fwmc-test-silenthint") === "true";
+      const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      if (!forced && (!ios || navigator.webdriver)) return;
+      if (masterPrefs.cuesIgnoreSilent || localStorage.getItem("fwmc-silent-hint-v1")) return;
+      localStorage.setItem("fwmc-silent-hint-v1", "1");
+    } catch (e) { return; }
+    const el = document.createElement("div");
+    el.className = "silent-hint"; el.id = "silentHint"; el.setAttribute("role", "status");
+    el.textContent = "Kein Takt zu hören? Stummschalter am iPhone ausschalten. Oder in den Grundeinstellungen „Töne auch bei eingeschaltetem Stummschalter“ wählen (pausiert dann Musik).";
+    const close = () => { el.remove(); };
+    el.addEventListener("click", close);
+    document.body.appendChild(el);
+    setTimeout(close, 7000);
   }
   function applyCueAudioSession() {
     try {
       if (!navigator.audioSession) return;
-      const want = masterPrefs.cuesIgnoreSilent || cueBeatRunning() ? "playback" : "auto";
+      const want = masterPrefs.cuesIgnoreSilent ? "playback" : "auto";
       if (navigator.audioSession.type !== want) navigator.audioSession.type = want;
     } catch (e) {}
   }
@@ -12741,7 +12757,7 @@
       `<div class="group-help">Gilt für Tabata-Zirkel, Kraftplan, Ausdauertraining und die Pausen im Kombi-Programm. In den Feineinstellungen jedes Bereichs kannst du davon abweichen.</div>` +
       cueControlsHtml(masterPrefs.cues, CUE_FIELD_LABELS.master) +
       `<div class="cue-sub-label">iPhone/iPad</div>` +
-      `<label class="checkbox-row"><input type="checkbox" data-cue-silent${masterPrefs.cuesIgnoreSilent ? " checked" : ""}> Töne auch bei eingeschaltetem Stummschalter</label>` +
+      `<label class="checkbox-row"><input type="checkbox" data-cue-silent${masterPrefs.cuesIgnoreSilent ? " checked" : ""}> Töne auch bei eingeschaltetem Stummschalter (pausiert Musik, z. B. Spotify)</label>` +
       `<div class="group-help">Ohne Haken spielt das iPhone Töne über den Lautsprecher nur, wenn der Stummschalter aus ist (mit Kopfhörern immer). Mit Haken klingen sie trotzdem, dafür pausiert iOS dann meist deine Musik.</div>`;
   }
   (() => {
