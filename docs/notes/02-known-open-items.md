@@ -570,3 +570,46 @@ Flash, MOT. "Very good" thresholds are ASSUMPTIONS, not from Fabian or a
 study - adjust if he finds them too easy/hard: Positionen merken ≥ 7 reached
 (≥ 6 with shuffled positions), Blitz ≥ 6, Flash climbing ≥ 7, Flash constant
 ≥ 8 rounds with ≥ 90 % correct, MOT ≥ 8.
+
+## Gleichgewicht (6th NAT exercise, built 2026-10-06, Fabian's build order 12:31/12:33)
+
+- Research + Fabian's decisions: /mnt/project-files/app/recherche/gleichgewicht-vestibulaer.md.
+- Code: "==== Gleichgewicht" section in app.js (`balancePrefs`, `fwmc-balance-prefs-v1`,
+  `startBalanceGame(opts, prefsOverride)`, `balanceLayout`, `balanceTick`), markup
+  `#balanceReady`/`#balancePlayer`, CSS `.balance-*`.
+- Modes v1: Nein-Nein, Ja-Ja, Ohr-Schulter, Diagonal (side alternates per set), Sakkaden
+  (switching to it sets 2 sticks once). Later (not built): VOR x2, sequences/Folgen,
+  unruhiger Hintergrund, Buchstaben-Wechsel mit Ansage.
+- Sticks: 1 or 2, vertical, one colour each, letters in "Automatisch" contrast colour by
+  default; nothing is ever marked. Letters: Zufällig (alphabet without I/J/O/Q/W/Y),
+  Eigene (up to 12, stick 2 optional), Nur einer (one letter, new height every 3/5/10 s;
+  Sakkaden: jumps on every beat, to the other stick with 2 sticks; the cue names where).
+- Size: LOOK_SPECS `balance.size` (0.6-2.0) scales length, width and font together;
+  Feineinstellungen Länge (% of free height), Breite, Schriftgröße, Buchstaben pro Stift.
+  Sticks are dragged with one finger (pos saved as fractions of the free area),
+  pinch = size. "Stifte zurück in die Mitte" in Feineinstellungen and the pause sheet.
+- Ablauf: Mit Zeit (Dauer pro Satz 10-180 s, Sätze 1-10, Pause 0-180 s) or Ohne
+  Zeitvorgabe (until "Fertig"; Beenden also counts as completed standalone).
+  Timed + Beenden before the end = aborted (< 10 s: no entry, back to ready).
+  In a Kombi Beenden quits the programme, "Fertig" goes on.
+- Live strip (bottom of the stage): − tempo +, "Takt stoppen/starten", "Zeit anhalten"
+  (clock + rest countdown stop, beat keeps going), "Regler" (Lautstärke, Größe),
+  "Fertig" (open mode). Sound on/off = the 🔊 in the step bar (workoutSoundPrefs).
+  Live changes are saved in standalone runs only (`st.own`).
+- Stand: shown in the hint every set; spoken ("Satz 2. Tandem") when "Stand ansagen"
+  is on (own volume via `balanceSay`). Einbein alternates links/rechts per set.
+- Wired: NAT tile + sub-tab, Kombi (`domain:"balance"`, full prefs snapshot), Cardio
+  guest (`balance`, mode list from BALANCE_MODES, `[data-balf]` fields), NAT_SUBS,
+  history kind `balance`, BG_SOURCES/MASTER_BG_TARGETS, LEADIN_START_IDS, dashboard
+  overview. No CVD entry (no right/wrong feedback), no Stufen-Vorschlag (no levels).
+- Test: tests/gleichgewicht_1006_test.py.
+
+## Größe während der Übung (all LOOK_SPECS exercises, 2026-10-06)
+
+`LIVE_LOOK` in app.js: Positionen merken, Flash, MOT and Gleichgewicht get the
+"Größe der …" slider in their pause sheet and two-finger pinch on the stage
+(`wirePinchSize`, ctrl+wheel = trackpad). Applies at once: Flash = shown/next
+character, MOT = moving objects (radius re-capped by `motRadiusFor`), Positionen
+merken = markers capped by the closest pair/edges/hint so nothing overlaps.
+Standalone runs save the value; Kombi/Cardio runs only change the run. A new
+LOOK exercise needs one `LIVE_LOOK` entry. Test: tests/live_size_1006_test.py.

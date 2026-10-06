@@ -82,6 +82,9 @@
     mot: {
       size: { field: "objScale", min: 1, max: 1.6, step: 0.1, inlineValue: true, label: "Größe der Objekte", help: "Bei vielen Objekten auf kleinem Bildschirm wird die Größe automatisch begrenzt, damit sie sich nicht überlappen." },
     },
+    balance: {
+      size: { field: "size", min: 0.6, max: 2, step: 0.1, label: "Größe der Stifte", help: "Länge, Breite und Schrift wachsen mit. Während der Übung: mit zwei Fingern ziehen oder unter „Regler“." },
+    },
   };
   function normalizeLookPrefs(kind, p) {
     const { size, color } = LOOK_SPECS[kind];
@@ -102,7 +105,7 @@
     const a = lum(hexA), b = lum(hexB);
     return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
   }
-  const LOOK_SYNCS = { remember: [], flash: [], mot: [] };
+  const LOOK_SYNCS = { remember: [], flash: [], mot: [], balance: [] };
   function syncLook(kind) { LOOK_SYNCS[kind].forEach((fn) => fn()); }
   function initLookControls(sources) {
     document.querySelectorAll(".look-host[data-look]").forEach((host) => {
@@ -753,6 +756,7 @@
     "remember": { title: "Positionen merken", type: "remember" },
     "flash": { title: "Flash-Speicher-Test", type: "flash" },
     "mot": { title: "Objektverfolgung (MOT)", type: "mot" },
+    "balance": { title: "Gleichgewicht", type: "balance" },
   };
 
   // ---- Programmes: coach-authored multi-block sessions. Real client
@@ -1160,6 +1164,7 @@
     if (block.domain === "blitz") return "Blitz-Raster";
     if (block.domain === "flash") return `Flash-Speicher-Test · ${flashModeTitle(block.mode)}`;
     if (block.domain === "mot") return `Objektverfolgung (MOT) · ${motModeTitle(block.mode)}`;
+    if (block.domain === "balance") return `Gleichgewicht · ${BALANCE_MODES[balanceBlockPrefs(block).mode].name}`;
     if (block.domain === "cardio") return `Ausdauertraining · ${countLabel(block.items.length, "Aktivität", "Aktivitäten")}`;
     if (block.domain === "free") return block.free.title;
     return block.domain;
@@ -1174,6 +1179,7 @@
     if (block.domain === "blitz") return fmtMinutes((block.duration ?? 60));
     if (block.domain === "flash") return fmtMinutes((block.duration ?? 60));
     if (block.domain === "mot") return fmtMinutes((block.duration ?? 60));
+    if (block.domain === "balance") return balanceMeta(balanceBlockPrefs(block));
     if (block.domain === "cardio") return fmtMinutes(cardioItemsSeconds(block.items));
     if (block.domain === "free") return freeBlockMeta(block.free);
     return "";
@@ -1188,6 +1194,7 @@
     if (block.domain === "blitz") return block.duration ?? 60;
     if (block.domain === "flash") return block.duration ?? 60;
     if (block.domain === "mot") return block.duration ?? 60;
+    if (block.domain === "balance") return balanceTotalSeconds(balanceBlockPrefs(block));
     if (block.domain === "cardio") return cardioItemsSeconds(block.items);
     if (block.domain === "free") return freeBlockSeconds(block.free);
     return 0;
@@ -1245,6 +1252,7 @@
       { label: "Objektverfolgung (MOT) · Anzahl steigt", meta: "Schwierigkeit & Dauer einstellen", open: () => openMotComboCapture("count", null, null) },
       { label: "Objektverfolgung (MOT) · Beides steigt", meta: "Schwierigkeit & Dauer einstellen", open: () => openMotComboCapture("both", null, null) },
       { label: "Objektverfolgung (MOT) · Trainingsmodus", meta: "gezielt bei einer Stufe üben", open: () => openMotComboCapture("training", null, null) },
+      { label: "Gleichgewicht", meta: "Modus, Takt, Stand & Ablauf einstellen", open: () => openBalanceComboCapture(null, null) },
     ],
     // "Zirkel" (circuit/Tabata) and "Kraft-/Wiederholungstraining" (reps,
     // with a real rep-range picker - see the CLAUDE.md note) both have a
@@ -1279,6 +1287,7 @@
     blitz: (block, i) => openBlitzComboCapture(block, i),
     flash: (block, i) => openFlashComboCapture(block.mode, block, i),
     mot: (block, i) => openMotComboCapture(block.mode, block, i),
+    balance: (block, i) => openBalanceComboCapture(block, i),
     free: (block, i) => openFreeComboCapture(block.free, i),
   };
 
@@ -2115,7 +2124,7 @@
 
   els.trainingHub = $("trainingHub"); els.moreScreen = $("moreScreen");
   els.freeHome = $("freeHome"); els.freeReady = $("freeReady"); els.freeEdit = $("freeEdit"); els.freePlayer = $("freePlayer");
-  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
+  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -2167,6 +2176,7 @@
       els.natBlitzPanel.hidden = sub !== "blitz";
       els.natFlashPanel.hidden = sub !== "flash";
       els.natMotPanel.hidden = sub !== "mot";
+      els.natBalancePanel.hidden = sub !== "balance";
       if (sub === "remember") renderRememberBests();
       if (sub === "blitz") renderBlitzBest();
       if (sub === "flash") renderFlashBests();
@@ -2235,6 +2245,7 @@
     natModeNav = null;
     if (ex === "peripher") els.periphOpenBtn.click();
     else if (ex === "blitz") els.blitzOpenBtn.click();
+    else if (ex === "balance") els.balanceOpenBtn.click();
   }
   function syncNatModeRows(name) {
     if (natModeNav && (!natModeScreens.has(name) || !NAT_MODES[natModeNav.ex].modes.some((m) => m.screen === name))) natModeNav = null;
@@ -3217,6 +3228,7 @@
     { id: "blitz", label: "Blitz-Raster", get: () => ({ colorKey: blitzPrefs.bgColorKey, intensity: blitzPrefs.bgIntensity }) },
     { id: "flash", label: "Flash-Speicher-Test", get: () => ({ colorKey: flashPrefs.bgColorKey, intensity: flashPrefs.bgIntensity }) },
     { id: "mot", label: "Objektverfolgung (MOT)", get: () => ({ colorKey: motPrefs.bgColorKey, intensity: motPrefs.bgIntensity }) },
+    { id: "balance", label: "Gleichgewicht", get: () => ({ colorKey: balancePrefs.bgColorKey, intensity: balancePrefs.bgIntensity }) },
   ];
   const BG_PRESETS_KEY = "fwmc-bg-presets-v1"; // [{ id, name, colorKey, intensity }] - not scoped to a domain, any saved combo applies anywhere
   const bgPresetStore = makePresetStore(BG_PRESETS_KEY);
@@ -3238,6 +3250,7 @@
     () => ({ prefs: blitzPrefs, key: BLITZ_PREFS_KEY, save: saveBlitzPrefsToStorage }),
     () => ({ prefs: flashPrefs, key: FLASH_PREFS_KEY, save: saveFlashPrefsToStorage }),
     () => ({ prefs: motPrefs, key: MOT_PREFS_KEY, save: saveMotPrefsToStorage }),
+    () => ({ prefs: balancePrefs, key: BALANCE_PREFS_KEY, save: saveBalancePrefsToStorage }),
     () => ({ prefs: gngPrefs, key: GNG_PREFS_KEY, save: saveGngPrefsToStorage }),
     () => ({ prefs: testNbackPrefs, key: TEST_NBACK_PREFS_KEY, save: saveTestNbackPrefsToStorage }),
     () => ({ prefs: trailPrefs, key: TRAIL_PREFS_KEY, save: saveTrailPrefsToStorage }),
@@ -5099,6 +5112,7 @@
     els.blitzPlayer.hidden = true;
     els.flashPlayer.hidden = true;
     els.motPlayer.hidden = true;
+    els.balancePlayer.hidden = true;
     els.gngPlayer.hidden = true;
     els.testNbackPlayer.hidden = true;
     els.trailPlayer.hidden = true;
@@ -9733,6 +9747,11 @@
       : `${flashState.count} ${flashUnitLabel(flashState.kind)}`;
     flashShowDigit();
   }
+  function flashDigitFontPx() {
+    const stageRect = els.flashStage.getBoundingClientRect();
+    const capPx = stageRect.width && stageRect.height ? Math.min(stageRect.width, stageRect.height) * 0.3 : 64;
+    return Math.round(Math.max(24, Math.min(64 * flashState.charScale, Math.max(64, capPx))));
+  }
   function flashShowDigit() {
     const digit = flashState.sequence[flashState.shownIndex];
     const pos = randFlashPos();
@@ -9741,9 +9760,7 @@
     els.flashDigitEl.textContent = digit;
     // "Größe/Farbe der Zeichen": 64 px × scale, capped at 30 % of the
     // shorter stage side so a big character still fits on a phone.
-    const stageRect = els.flashStage.getBoundingClientRect();
-    const capPx = stageRect.width && stageRect.height ? Math.min(stageRect.width, stageRect.height) * 0.3 : 64;
-    els.flashDigitEl.style.fontSize = Math.round(Math.max(24, Math.min(64 * flashState.charScale, Math.max(64, capPx)))) + "px";
+    els.flashDigitEl.style.fontSize = flashDigitFontPx() + "px";
     els.flashDigitEl.style.color = lookColorHex("flash", flashState.charColor);
     els.flashDigitEl.hidden = false;
     els.flashDigitEl.style.left = flashSafeFx(pos.fx) * 100 + "%";
@@ -10195,7 +10212,876 @@
   }
   function saveMotPrefsToStorage() { writeJSON(MOT_PREFS_KEY, motPrefs); }
   loadMotPrefs();
+
+  // ==== Gleichgewicht (NAT, Fabian 2026-10-06, Bauauftrag 12:31/12:33) ====
+  // One or two vertical letter sticks ("Augen-Stifte") on the stage, the
+  // client moves the head in time (Nein-Nein, Ja-Ja, Ohr-Schulter,
+  // Diagonal) or only the eyes (Sakkaden). Nothing is marked on a full
+  // stick; "Nur einer" shows one letter at changing heights. Metronome,
+  // tempo, volume, "Zeit anhalten" (the clock stops, the beat keeps going)
+  // and the stick size are all live controls; the sticks can be dragged
+  // and pinched. Runs with sets/pauses or open-ended ("Ohne Zeitvorgabe",
+  // ends on "Fertig"). Details: docs/notes/02 (NAT status).
+  const BALANCE_PREFS_KEY = "fwmc-balance-prefs-v1";
+  const BALANCE_MODES = {
+    nein: { name: "Nein-Nein", hint: "Kopf im Takt links-rechts drehen", help: "Kopf im Takt nach links und rechts drehen, der Blick bleibt auf einem Buchstaben. Spricht vor allem die waagerechten Bogengänge an.", cue: ["◀ links", "rechts ▶"] },
+    ja: { name: "Ja-Ja", hint: "Kopf im Takt nicken", help: "Kopf im Takt nicken, der Blick bleibt auf einem Buchstaben.", cue: ["▲ hoch", "▼ runter"] },
+    ohr: { name: "Ohr-Schulter", hint: "Ohr im Takt zur Schulter neigen", help: "Kopf im Takt seitlich neigen, Ohr Richtung Schulter, der Blick bleibt auf einem Buchstaben.", cue: ["◀ Ohr links", "Ohr rechts ▶"] },
+    diag: { name: "Diagonal", hint: "Kopf etwa 45° gedreht, so im Takt nicken", help: "Kopf etwa 45° zur Seite drehen und in dieser Stellung im Takt nicken. Die Seite wechselt mit jedem Satz.", cue: ["▲ hoch", "▼ runter"] },
+    sakk: { name: "Sakkaden", hint: "Kopf ruhig, nur die Augen springen im Takt", help: "Kopf bleibt ruhig, nur die Augen springen im Takt von Stift zu Stift. Am besten mit 2 Stiften weit auseinander.", cue: ["◀ links", "rechts ▶"] },
+  };
+  const BALANCE_STANCES = { sitzen: "Sitzen", normal: "Normaler Stand", eng: "Enger Stand", halbtandem: "Halbtandem", tandem: "Tandem", einbein: "Einbeinstand" };
+  const BALANCE_STICK_COLORS = [
+    { key: "blau", name: "Blau", hex: "#1f5fbf" }, { key: "gelb", name: "Gelb", hex: "#f2c200" },
+    { key: "rot", name: "Rot", hex: "#d32f2f" }, { key: "gruen", name: "Grün", hex: "#2e7d32" },
+    { key: "schwarz", name: "Schwarz", hex: "#16232a" }, { key: "weiss", name: "Weiß", hex: "#ffffff" },
+    { key: "orange", name: "Orange", hex: "#ff9110" }, { key: "lila", name: "Lila", hex: "#7b3fa0" },
+  ];
+  const BALANCE_LETTER_COLORS = [
+    { key: "auto", name: "Automatisch", hex: "linear-gradient(135deg,#ffffff 50%,#16232a 50%)" },
+    { key: "weiss", name: "Weiß", hex: "#ffffff" }, { key: "schwarz", name: "Schwarz", hex: "#16232a" },
+    { key: "gelb", name: "Gelb", hex: "#ffd400" }, { key: "rot", name: "Rot", hex: "#d32f2f" }, { key: "blau", name: "Blau", hex: "#1f5fbf" },
+  ];
+  const BALANCE_ALPHABET = "ABCDEFGHKLMNPRSTUVXZ"; // no I/J/O/Q/W/Y: easy to mix up at a glance
+  const BALANCE_DEFAULTS = {
+    mode: "nein", sticks: 1, letters: "zufall", custom: "", custom2: "", singleS: 5, letterCount: 7,
+    metro: true, bpm: 60, timing: "timed", setS: 30, sets: 3, restS: 30, stance: "normal", stanceSpeak: false,
+    size: 1, lengthPct: 70, widthF: 1, fontF: 1, color1: "blau", color2: "gelb", letterColor: "auto", volume: 0.8,
+    pos: null, bgColorKey: "gruen", bgIntensity: 0,
+  };
+  const balancePrefs = JSON.parse(JSON.stringify(BALANCE_DEFAULTS));
+  const balClamp = (v, lo, hi, d) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
+  function normalizeBalancePrefs(p) {
+    const d = BALANCE_DEFAULTS;
+    if (!BALANCE_MODES[p.mode]) p.mode = d.mode;
+    if (p.sticks !== 1 && p.sticks !== 2) p.sticks = d.sticks;
+    if (!["zufall", "eigen", "einzeln"].includes(p.letters)) p.letters = d.letters;
+    p.custom = typeof p.custom === "string" ? p.custom.slice(0, 12) : "";
+    p.custom2 = typeof p.custom2 === "string" ? p.custom2.slice(0, 12) : "";
+    if (![3, 5, 10].includes(p.singleS)) p.singleS = d.singleS;
+    p.letterCount = Math.round(balClamp(p.letterCount, 3, 12, d.letterCount));
+    if (typeof p.metro !== "boolean") p.metro = d.metro;
+    p.bpm = Math.round(balClamp(p.bpm, 30, 200, d.bpm) / 5) * 5;
+    if (p.timing !== "timed" && p.timing !== "open") p.timing = d.timing;
+    p.setS = balClamp(p.setS, 10, 180, d.setS);
+    p.sets = Math.round(balClamp(p.sets, 1, 10, d.sets));
+    p.restS = balClamp(p.restS, 0, 180, d.restS);
+    if (!BALANCE_STANCES[p.stance]) p.stance = d.stance;
+    if (typeof p.stanceSpeak !== "boolean") p.stanceSpeak = d.stanceSpeak;
+    p.size = Math.round(balClamp(p.size, 0.6, 2, 1) * 10) / 10;
+    p.lengthPct = balClamp(p.lengthPct, 30, 100, d.lengthPct);
+    p.widthF = balClamp(p.widthF, 0.6, 1.8, 1);
+    p.fontF = balClamp(p.fontF, 0.6, 1.8, 1);
+    if (!BALANCE_STICK_COLORS.some((c) => c.key === p.color1)) p.color1 = d.color1;
+    if (!BALANCE_STICK_COLORS.some((c) => c.key === p.color2)) p.color2 = d.color2;
+    if (!BALANCE_LETTER_COLORS.some((c) => c.key === p.letterColor)) p.letterColor = d.letterColor;
+    p.volume = balClamp(p.volume, 0, 1, d.volume);
+    if (!Array.isArray(p.pos) || !p.pos.every((q) => q && Number.isFinite(q.x) && Number.isFinite(q.y))) p.pos = null;
+    if (!STROOP_COLOR_BY_KEY[p.bgColorKey]) p.bgColorKey = d.bgColorKey;
+    if (!Number.isFinite(p.bgIntensity) || p.bgIntensity < 0 || p.bgIntensity > 1) p.bgIntensity = 0;
+    return p;
+  }
+  (function loadBalancePrefs() {
+    const saved = readJSON(BALANCE_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(balancePrefs, saved);
+    normalizeBalancePrefs(balancePrefs);
+  })();
+  function saveBalancePrefsToStorage() { writeJSON(BALANCE_PREFS_KEY, balancePrefs); }
+  const balanceStickHex = (key) => (BALANCE_STICK_COLORS.find((c) => c.key === key) || BALANCE_STICK_COLORS[0]).hex;
+  function balanceLetterHex(letterKey, stickKey) {
+    const stick = balanceStickHex(stickKey);
+    if (letterKey !== "auto") return BALANCE_LETTER_COLORS.find((c) => c.key === letterKey).hex;
+    return contrastRatio("#ffffff", stick) >= contrastRatio("#16232a", stick) ? "#ffffff" : "#16232a";
+  }
+  function balanceDefaultPos(n) { return n === 2 ? [{ x: 0.2, y: 0.5 }, { x: 0.8, y: 0.5 }] : [{ x: 0.5, y: 0.5 }]; }
+  function balanceCleanLetters(raw) {
+    return [...String(raw || "").toUpperCase()].filter((ch) => /[A-Z0-9ÄÖÜ]/.test(ch)).slice(0, 12);
+  }
+  function balanceRandomLetters(n) {
+    const out = [];
+    while (out.length < n) {
+      const ch = BALANCE_ALPHABET[Math.floor(Math.random() * BALANCE_ALPHABET.length)];
+      if (!out.includes(ch) || out.length >= BALANCE_ALPHABET.length) out.push(ch);
+    }
+    return out;
+  }
+  function balanceLettersFor(p, i) {
+    if (p.letters === "eigen") {
+      const own = balanceCleanLetters(i === 1 && balanceCleanLetters(p.custom2).length ? p.custom2 : p.custom);
+      if (own.length) return own;
+    }
+    return balanceRandomLetters(p.letterCount);
+  }
+  function balanceStanceLabel(p, setIdx) {
+    if (p.stance !== "einbein") return BALANCE_STANCES[p.stance];
+    if (p.timing === "open") return "Einbeinstand, Seite nach Gefühl wechseln";
+    return setIdx % 2 === 0 ? "Einbein links" : "Einbein rechts";
+  }
+  function balanceTotalSeconds(p) { return p.timing === "open" ? 0 : p.sets * p.setS + Math.max(0, p.sets - 1) * p.restS; }
+  function balanceMeta(p) {
+    const beat = p.metro ? `${p.bpm}/min` : "ohne Takt";
+    return p.timing === "open" ? `ohne Zeitvorgabe · ${beat}` : `${countLabel(p.sets, "Satz", "Sätze")} à ${fmtClock(p.setS)} · ${beat}`;
+  }
+
+  // ---- Ready screen ----
+  const balEl = (id) => document.getElementById(id);
+  const balanceUi = {
+    ready: balEl("balanceReady"), title: balEl("balanceReadyTitle"), desc: balEl("balanceReadyDesc"),
+    modeHelp: balEl("balanceModeHelp"), customBox: balEl("balanceCustomBox"), custom: balEl("balanceCustomInput"), custom2: balEl("balanceCustomInput2"),
+    singleBox: balEl("balanceSingleBox"), singleHelp: balEl("balanceSingleHelp"), bpmRow: balEl("balanceBpmRow"), bpm: balEl("balanceBpmSlider"), bpmValue: balEl("balanceBpmValue"),
+    timedBox: balEl("balanceTimedBox"), openHelp: balEl("balanceOpenHelp"), setS: balEl("balanceSetSlider"), setValue: balEl("balanceSetValue"),
+    sets: balEl("balanceSetsSlider"), setsValue: balEl("balanceSetsValue"), rest: balEl("balanceRestSlider"), restValue: balEl("balanceRestValue"),
+    stanceSpeak: balEl("balanceStanceSpeak"), color1Label: balEl("balanceColor1Label"), color1: balEl("balanceColor1Picker"), color2Group: balEl("balanceColor2Group"), color2: balEl("balanceColor2Picker"),
+    letterColor: balEl("balanceLetterColorPicker"), letterHint: balEl("balanceLetterContrastHint"),
+    length: balEl("balanceLengthSlider"), lengthValue: balEl("balanceLengthValue"), width: balEl("balanceWidthSlider"), widthValue: balEl("balanceWidthValue"),
+    font: balEl("balanceFontSlider"), fontValue: balEl("balanceFontValue"), countGroup: balEl("balanceCountGroup"), count: balEl("balanceCountSlider"), countValue: balEl("balanceCountValue"),
+    volume: balEl("balanceVolumeSlider"), volumeValue: balEl("balanceVolumeValue"), posHelp: balEl("balancePosHelp"), start: balEl("balanceReadyStartBtn"),
+  };
+  els.balanceReady = balanceUi.ready;
+  els.balancePlayer = balEl("balancePlayer");
+  els.natBalancePanel = balEl("natBalancePanel");
+  els.balanceOpenBtn = balEl("balanceOpenBtn");
+  const fmtFactor = (v) => v.toFixed(1).replace(".", ",") + "×";
+  const fmtPct = (v) => Math.round(v * 100) + " %";
+  function balanceSet(field, value) {
+    balancePrefs[field] = value;
+    saveBalancePrefsToStorage();
+    syncBalanceReadyUI();
+  }
+  document.querySelectorAll("#balanceModeRow [data-bal-mode]").forEach((b) => b.addEventListener("click", () => {
+    const m = b.dataset.balMode;
+    // Sakkaden lives on two sticks; switching to it once offers that.
+    if (m === "sakk" && balancePrefs.mode !== "sakk") balancePrefs.sticks = 2;
+    balanceSet("mode", m);
+  }));
+  document.querySelectorAll("#balanceSticksRow [data-bal-sticks]").forEach((b) => b.addEventListener("click", () => balanceSet("sticks", Number(b.dataset.balSticks))));
+  document.querySelectorAll("#balanceLettersRow [data-bal-letters]").forEach((b) => b.addEventListener("click", () => balanceSet("letters", b.dataset.balLetters)));
+  document.querySelectorAll("#balanceSingleRow [data-bal-single]").forEach((b) => b.addEventListener("click", () => balanceSet("singleS", Number(b.dataset.balSingle))));
+  document.querySelectorAll("#balanceMetroRow [data-bal-metro]").forEach((b) => b.addEventListener("click", () => balanceSet("metro", b.dataset.balMetro === "1")));
+  document.querySelectorAll("#balanceTimingRow [data-bal-timing]").forEach((b) => b.addEventListener("click", () => balanceSet("timing", b.dataset.balTiming)));
+  document.querySelectorAll("#balanceStanceRow [data-bal-stance]").forEach((b) => b.addEventListener("click", () => balanceSet("stance", b.dataset.balStance)));
+  balanceUi.stanceSpeak.addEventListener("change", () => balanceSet("stanceSpeak", balanceUi.stanceSpeak.checked));
+  balanceUi.custom.addEventListener("input", () => { balancePrefs.custom = balanceUi.custom.value.slice(0, 12); saveBalancePrefsToStorage(); });
+  balanceUi.custom2.addEventListener("input", () => { balancePrefs.custom2 = balanceUi.custom2.value.slice(0, 12); saveBalancePrefsToStorage(); });
+  [["bpm", "bpm"], ["setS", "setS"], ["sets", "sets"], ["rest", "restS"], ["length", "lengthPct"], ["width", "widthF"], ["font", "fontF"], ["count", "letterCount"], ["volume", "volume"]].forEach(([el, field]) => {
+    balanceUi[el].addEventListener("input", () => balanceSet(field, Number(balanceUi[el].value)));
+  });
+  buildSingleSelectPicker(balanceUi.color1, BALANCE_STICK_COLORS, (k) => balanceSet("color1", k));
+  buildSingleSelectPicker(balanceUi.color2, BALANCE_STICK_COLORS, (k) => balanceSet("color2", k));
+  buildSingleSelectPicker(balanceUi.letterColor, BALANCE_LETTER_COLORS, (k) => balanceSet("letterColor", k));
+  function balanceResetPos() {
+    balancePrefs.pos = null;
+    saveBalancePrefsToStorage();
+    if (balanceState) { balanceState.pos = balanceDefaultPos(balanceState.sticks); balanceLayout(); }
+    syncBalanceReadyUI();
+  }
+  balEl("balanceResetPosBtn").addEventListener("click", balanceResetPos);
+  function syncBalanceReadyUI() {
+    const p = balancePrefs;
+    const act = (sel, attr, val) => document.querySelectorAll(sel).forEach((b) => setActive(b, b.dataset[attr] === String(val)));
+    act("#balanceModeRow [data-bal-mode]", "balMode", p.mode);
+    act("#balanceSticksRow [data-bal-sticks]", "balSticks", p.sticks);
+    act("#balanceLettersRow [data-bal-letters]", "balLetters", p.letters);
+    act("#balanceSingleRow [data-bal-single]", "balSingle", p.singleS);
+    act("#balanceMetroRow [data-bal-metro]", "balMetro", p.metro ? 1 : 0);
+    act("#balanceTimingRow [data-bal-timing]", "balTiming", p.timing);
+    act("#balanceStanceRow [data-bal-stance]", "balStance", p.stance);
+    balanceUi.modeHelp.textContent = BALANCE_MODES[p.mode].help;
+    balanceUi.customBox.hidden = p.letters !== "eigen";
+    balanceUi.custom.value = p.custom;
+    balanceUi.custom2.value = p.custom2;
+    balanceUi.custom2.hidden = p.sticks !== 2;
+    balanceUi.singleBox.hidden = p.letters !== "einzeln";
+    balEl("balanceSingleRow").hidden = p.mode === "sakk";
+    balanceUi.singleHelp.textContent = p.mode === "sakk"
+      ? (p.sticks === 2 ? "Nur ein Buchstabe ist zu sehen. Er springt mit jedem Schlag zum anderen Stift, jedes Mal an eine andere Höhe." : "Nur ein Buchstabe ist zu sehen. Er springt mit jedem Schlag an eine andere Höhe.")
+      : "Nur ein Buchstabe ist zu sehen, jedes Mal an einer anderen Höhe.";
+    balanceUi.bpmRow.hidden = !p.metro;
+    balanceUi.bpm.value = p.bpm;
+    balanceUi.bpmValue.textContent = `${p.bpm}/min`;
+    balanceUi.timedBox.hidden = p.timing !== "timed";
+    balanceUi.openHelp.hidden = p.timing !== "open";
+    balanceUi.setS.value = p.setS; balanceUi.setValue.textContent = fmtClock(p.setS);
+    balanceUi.sets.value = p.sets; balanceUi.setsValue.textContent = String(p.sets);
+    balanceUi.rest.value = p.restS; balanceUi.restValue.textContent = fmtPauseAfter(p.restS);
+    balanceUi.stanceSpeak.checked = p.stanceSpeak;
+    balanceUi.color1Label.textContent = p.sticks === 2 ? "Farbe Stift 1" : "Farbe des Stifts";
+    balanceUi.color2Group.hidden = p.sticks !== 2;
+    syncSingleSelectPicker(balanceUi.color1, p.color1);
+    syncSingleSelectPicker(balanceUi.color2, p.color2);
+    syncSingleSelectPicker(balanceUi.letterColor, p.letterColor);
+    const low = [p.color1, ...(p.sticks === 2 ? [p.color2] : [])].some((k) => contrastRatio(balanceLetterHex(p.letterColor, k), balanceStickHex(k)) < 3);
+    balanceUi.letterHint.hidden = !low;
+    balanceUi.length.value = p.lengthPct; balanceUi.lengthValue.textContent = Math.round(p.lengthPct) + " %";
+    balanceUi.width.value = p.widthF; balanceUi.widthValue.textContent = fmtFactor(p.widthF);
+    balanceUi.font.value = p.fontF; balanceUi.fontValue.textContent = fmtFactor(p.fontF);
+    balanceUi.countGroup.hidden = p.letters === "eigen";
+    balanceUi.count.value = p.letterCount; balanceUi.countValue.textContent = String(p.letterCount);
+    balanceUi.volume.value = p.volume; balanceUi.volumeValue.textContent = fmtPct(p.volume);
+    balanceUi.posHelp.textContent = p.pos ? "Du hast die Stifte verschoben. Die Position bleibt gespeichert." : "Die Stifte stehen in der Mitte. Verschieben geht während der Übung mit dem Finger.";
+    syncLook("balance");
+  }
+  const applyBalanceBg = makeBgApplier(balEl("balanceStage"), balancePrefs);
+  const syncBalanceBgUI = wireBgIntensityControl(balancePrefs, {
+    pickers: [balEl("balanceBgColorPicker"), balEl("balancePauseBgColorPicker")],
+    sliders: [balEl("balanceBgIntensitySlider"), balEl("balancePauseBgSlider")],
+    valueEls: [balEl("balanceBgIntensityValue"), balEl("balancePauseBgValue")],
+    hintEls: [balEl("balanceBgContrastHint"), balEl("balancePauseBgContrastHint")],
+    masterStatusEls: [balEl("balanceBgMasterStatus")],
+    transfer: [{
+      sourceRow: balEl("balanceBgSourceRow"), presetGroup: balEl("balanceBgPresetGroup"), presetList: balEl("balanceBgPresetList"),
+      saveBtn: balEl("balanceBgSaveBtn"), form: balEl("balanceBgSaveForm"), nameInput: balEl("balanceBgSaveNameInput"),
+      cancelBtn: balEl("balanceBgSaveCancelBtn"), confirmBtn: balEl("balanceBgSaveConfirmBtn"),
+    }],
+  }, () => { saveBalancePrefsToStorage(); if (balanceState) { balanceState.bgColorKey = balancePrefs.bgColorKey; balanceState.bgIntensity = balancePrefs.bgIntensity; } applyBalanceStageBg(); }, "balance");
+  function applyBalanceStageBg() {
+    const p = balanceState || balancePrefs;
+    balEl("balanceStage").style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
+  }
+  function renderBalanceLast() {
+    const last = loadHistory().find((h) => h.kind === "balance" && !h.aborted);
+    balEl("balanceLastHint").textContent = last ? `Zuletzt: ${last.title.replace("Gleichgewicht · ", "")}` : "";
+  }
+  renderBalanceLast();
+  function openBalanceReady() {
+    normalizeBalancePrefs(balancePrefs);
+    syncBalanceReadyUI();
+    syncBalanceBgUI();
+    showScreen("balanceReady");
+  }
+  els.balanceOpenBtn.addEventListener("click", openBalanceReady);
+  balEl("balanceReadyBackToHome").addEventListener("click", () => {
+    if (comboBalanceCaptureOriginal) { exitBalanceComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("natHome");
+  });
+
+  // ---- Kombi-Baustein capture (same pattern as Blitz-Raster) ----
+  let comboBalanceCaptureOriginal = null;
+  let comboBalanceEditIndex = null;
+  const BALANCE_READY_DESC = balanceUi.desc.textContent;
+  function openBalanceComboCapture(existingBlock, editIndex) {
+    comboBalanceCaptureOriginal = JSON.parse(JSON.stringify(balancePrefs));
+    comboBalanceEditIndex = editIndex ?? null;
+    if (existingBlock && existingBlock.prefs) Object.assign(balancePrefs, JSON.parse(JSON.stringify(existingBlock.prefs)));
+    openBalanceReady();
+    balanceUi.title.textContent = "Baustein: Gleichgewicht";
+    balanceUi.desc.textContent = "Stelle Modus, Takt und Ablauf für diesen Baustein ein. Mit „Ohne Zeitvorgabe“ geht es weiter, sobald du „Fertig“ tippst.";
+    balanceUi.start.textContent = "Baustein übernehmen";
+  }
+  function exitBalanceComboCapture() {
+    if (comboBalanceCaptureOriginal) {
+      Object.keys(balancePrefs).forEach((k) => { delete balancePrefs[k]; });
+      Object.assign(balancePrefs, comboBalanceCaptureOriginal);
+      saveBalancePrefsToStorage();
+      comboBalanceCaptureOriginal = null;
+    }
+    comboBalanceEditIndex = null;
+    balanceUi.title.textContent = "Gleichgewicht";
+    balanceUi.desc.textContent = BALANCE_READY_DESC;
+    balanceUi.start.textContent = "Training starten";
+  }
+  function commitBalanceComboCapture() {
+    const block = { domain: "balance", prefs: JSON.parse(JSON.stringify(balancePrefs)) };
+    if (comboBalanceEditIndex != null) comboDraftBlocks[comboBalanceEditIndex] = block;
+    else comboDraftBlocks.push(block);
+    exitBalanceComboCapture();
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+  function balanceBlockPrefs(block) {
+    return normalizeBalancePrefs({ ...JSON.parse(JSON.stringify(balancePrefs)), ...JSON.parse(JSON.stringify((block && block.prefs) || {})) });
+  }
+
+  // ---- Player ----
+  const balP = {
+    player: els.balancePlayer, stage: balEl("balanceStage"), hint: balEl("balanceHint"), sticks: [balEl("balanceStick0"), balEl("balanceStick1")],
+    rest: balEl("balanceRest"), restCount: balEl("balanceRestCount"), restNext: balEl("balanceRestNext"), toast: balEl("balanceToast"),
+    live: balEl("balanceLive"), cue: balEl("balanceCue"), bpmMinus: balEl("balanceBpmMinus"), bpmPlus: balEl("balanceBpmPlus"), bpmLive: balEl("balanceBpmLive"),
+    metroBtn: balEl("balanceMetroBtn"), clockBtn: balEl("balanceClockBtn"), knobBtn: balEl("balanceKnobBtn"), finishBtn: balEl("balanceFinishBtn"),
+    knobs: balEl("balanceKnobs"), liveVolume: balEl("balanceLiveVolume"), liveSize: balEl("balanceLiveSize"), liveVolumeValue: balEl("balanceLiveVolumeValue"), liveSizeValue: balEl("balanceLiveSizeValue"),
+    pauseOverlay: balEl("balancePauseOverlay"), pauseBpm: balEl("balancePauseBpmSlider"), pauseBpmValue: balEl("balancePauseBpmValue"),
+    pauseVolume: balEl("balancePauseVolumeSlider"), pauseVolumeValue: balEl("balancePauseVolumeValue"), resumeBtn: balEl("balanceResumeBtn"),
+    bar: balEl("balancePlayerBar"), backBtn: balEl("balanceBackBtn"), pauseBtn: balEl("balancePauseBtn"), status: balEl("balanceStatusEl"),
+    fsBtn: balEl("balanceFsBtn"), fsHint: balEl("balanceFsHint"), done: balEl("balanceDonePanel"), doneSummary: balEl("balanceDoneSummary"),
+    rating: balEl("balanceRating"), againBtn: balEl("balanceAgainBtn"), doneBackBtn: balEl("balanceDoneBackBtn"),
+  };
+  wireFullscreen({ player: balP.player, btn: balP.fsBtn, hint: balP.fsHint, hintOpen: balEl("balanceFsHintOpenBtn"), hintClose: balEl("balanceFsHintClose") });
+  let balanceState = null;
+  let balanceReturnScreen = "natHome";
+  // Own click sound with its own volume (the Lautstärke control); the 🔊
+  // switch in the step bar (workoutSoundPrefs.enabled) mutes it like every
+  // other cue in the app.
+  function balanceClick(high) {
+    const st = balanceState;
+    if (!st || !workoutSoundPrefs.enabled || st.volume <= 0) return;
+    window.__balanceClicks = (window.__balanceClicks || 0) + 1;
+    try {
+      applyCueAudioSession();
+      if (!workoutAudioCtx) workoutAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = workoutAudioCtx;
+      if (ctx.state !== "running") ctx.resume().catch(() => {});
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = high ? 1050 : 820;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime, peak = Math.max(0.0002, 0.45 * st.volume);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(peak, now + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+      osc.start(now);
+      osc.stop(now + 0.08);
+    } catch (e) {}
+  }
+  function balanceSay(text) {
+    const st = balanceState;
+    if (!text || !st || !workoutSoundPrefs.enabled) return;
+    window.__cueLog = window.__cueLog || [];
+    window.__cueLog.push(text);
+    if (!window.speechSynthesis) return;
+    try {
+      applyCueAudioSession();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "de-DE";
+      if (deVoice) u.voice = deVoice;
+      u.rate = 1.05;
+      u.volume = Math.max(0, Math.min(1, st.volume));
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  function balanceRenderSticks() {
+    const st = balanceState;
+    balP.sticks.forEach((el, i) => {
+      el.hidden = i >= st.sticks;
+      if (el.hidden) return;
+      const letters = st.letterSets[i];
+      el.innerHTML = letters.map((ch, j) => `<span class="balance-letter" data-j="${j}">${esc(ch)}</span>`).join("");
+      el.style.background = balanceStickHex(i === 1 ? st.color2 : st.color1);
+      el.style.color = balanceLetterHex(st.letterColor, i === 1 ? st.color2 : st.color1);
+    });
+    balanceApplySingle();
+  }
+  // "Nur einer": every letter hidden but one (visibility, so the stick
+  // keeps its layout and the visible letter sits at its real height).
+  function balanceApplySingle() {
+    const st = balanceState;
+    balP.sticks.forEach((el, i) => el.querySelectorAll(".balance-letter").forEach((sp, j) => {
+      sp.style.visibility = !st.single || (st.single.stick === i && st.single.slot === j) ? "" : "hidden";
+    }));
+  }
+  function balanceNextSingle() {
+    const st = balanceState;
+    if (st.letters !== "einzeln") { st.single = null; return; }
+    const prev = st.single;
+    const stick = st.mode === "sakk" && st.sticks === 2 ? (prev ? 1 - prev.stick : 0) : 0;
+    const n = st.letterSets[stick].length;
+    let slot = Math.floor(Math.random() * n);
+    if (prev && n > 1) {
+      // A real jump: a different height (Sakkaden on one stick: the other half).
+      const half = n / 2;
+      for (let k = 0; k < 20 && (slot === prev.slot || (st.mode === "sakk" && st.sticks === 1 && (slot < half) === (prev.slot < half))); k++) slot = Math.floor(Math.random() * n);
+    }
+    st.letterSets[stick][slot] = BALANCE_ALPHABET[Math.floor(Math.random() * BALANCE_ALPHABET.length)];
+    const sp = balP.sticks[stick].querySelector(`.balance-letter[data-j="${slot}"]`);
+    if (sp) sp.textContent = st.letterSets[stick][slot];
+    st.single = { stick, slot };
+    balanceApplySingle();
+  }
+  // Free area between the hint and the live controls; sticks are placed by
+  // their saved centre (fractions of that area) and clamped inside it.
+  function balanceArea() {
+    const rect = balP.stage.getBoundingClientRect();
+    const top = stageTopClearanceY(rect, balP.hint, balP.bar, 100, 0, 14);
+    const liveTop = balP.live.getBoundingClientRect().top - rect.top;
+    const bottom = Math.max(top + 80, (liveTop > 0 ? liveTop : rect.height) - 12);
+    return { rect, x0: 12, x1: Math.max(60, rect.width - 12), y0: top, y1: bottom };
+  }
+  function balanceLayout() {
+    const st = balanceState;
+    if (!st) return;
+    const a = balanceArea();
+    const aw = a.x1 - a.x0, ah = a.y1 - a.y0;
+    const z = st.size;
+    const w = Math.round(Math.max(22, Math.min(52 * z * st.widthF, aw * (st.sticks === 2 ? 0.4 : 0.8))));
+    const len = Math.round(Math.max(w * 2, Math.min(ah, ah * (st.lengthPct / 100) * z)));
+    const n = Math.max(...st.letterSets.slice(0, st.sticks).map((l) => l.length), 1);
+    const fs = Math.round(Math.max(10, Math.min(30 * z * st.fontF, (len / n) * 0.82, w * 1.25)));
+    st.geom = { a, w, len };
+    balP.sticks.forEach((el, i) => {
+      if (i >= st.sticks) return;
+      const q = st.pos[i] || balanceDefaultPos(st.sticks)[i];
+      const cx = Math.min(a.x1 - w / 2, Math.max(a.x0 + w / 2, a.x0 + q.x * aw));
+      const cy = len >= ah ? a.y0 + ah / 2 : Math.min(a.y1 - len / 2, Math.max(a.y0 + len / 2, a.y0 + q.y * ah));
+      el.style.width = w + "px";
+      el.style.height = len + "px";
+      el.style.left = Math.round(cx - w / 2) + "px";
+      el.style.top = Math.round(cy - len / 2) + "px";
+      el.style.fontSize = fs + "px";
+      el.style.borderRadius = Math.round(Math.min(14, w / 3)) + "px";
+    });
+  }
+  function balanceSetHint() {
+    const st = balanceState;
+    const m = BALANCE_MODES[st.mode];
+    let side = "";
+    if (st.mode === "diag") side = st.timing === "open" || st.guest ? " (Seite nach Gefühl wechseln)" : (st.setIdx % 2 === 0 ? " · nach rechts gedreht" : " · nach links gedreht");
+    const setInfo = st.timing === "timed" && st.sets > 1 && !st.guest ? `Satz ${st.setIdx + 1} von ${st.sets} · ` : "";
+    balP.hint.innerHTML = `${esc(m.name)}: ${esc(m.hint)}${esc(side)}<br><span class="balance-stance">${setInfo}Stand: ${esc(balanceStanceLabel(st, st.setIdx))}</span>`;
+  }
+  function balanceSyncLive() {
+    const st = balanceState;
+    if (!st) return;
+    balP.bpmLive.textContent = `${st.bpm}/min`;
+    balP.bpmMinus.disabled = st.bpm <= 30;
+    balP.bpmPlus.disabled = st.bpm >= 200;
+    balP.metroBtn.textContent = st.metro ? "Takt stoppen" : "Takt starten";
+    setActive(balP.metroBtn, st.metro);
+    balP.clockBtn.textContent = st.clockHeld ? "Zeit weiter" : "Zeit anhalten";
+    setActive(balP.clockBtn, st.clockHeld);
+    balP.finishBtn.hidden = !(st.timing === "open" && !st.guest);
+    balP.liveVolume.value = st.volume;
+    balP.liveSize.value = st.size;
+    balP.liveVolumeValue.textContent = fmtPct(st.volume);
+    balP.liveSizeValue.textContent = st.size.toFixed(1).replace(".", ",") + "×";
+    balP.pauseBpm.value = st.bpm; balP.pauseBpmValue.textContent = `${st.bpm}/min`;
+    balP.pauseVolume.value = st.volume; balP.pauseVolumeValue.textContent = fmtPct(st.volume);
+    balP.live.querySelector(".balance-tempo").classList.toggle("is-off", !st.metro);
+    if (!st.metro) { balP.cue.textContent = ""; }
+  }
+  // Live changes during a standalone run are saved to the client's own
+  // settings (Fabian: "und das dann auch gespeichert wird"); inside a Kombi
+  // or as a Cardio-Zusatzaufgabe they only change this run.
+  function balanceLive(field, value) {
+    const st = balanceState;
+    if (!st) return;
+    st[field] = value;
+    if (st.own) { balancePrefs[field] = value; saveBalancePrefsToStorage(); }
+    if (field === "size") { balanceLayout(); syncLook("balance"); }
+    balanceSyncLive();
+  }
+  function balanceToast(text) {
+    balP.toast.textContent = text;
+    balP.toast.hidden = false;
+    clearTimeout(balanceToast.t);
+    balanceToast.t = setTimeout(() => { balP.toast.hidden = true; }, 1200);
+  }
+  balP.bpmMinus.addEventListener("click", () => { if (balanceState) balanceLive("bpm", Math.max(30, balanceState.bpm - 5)); });
+  balP.bpmPlus.addEventListener("click", () => { if (balanceState) balanceLive("bpm", Math.min(200, balanceState.bpm + 5)); });
+  balP.metroBtn.addEventListener("click", () => {
+    const st = balanceState;
+    if (!st) return;
+    balanceLive("metro", !st.metro);
+    st.nextBeatAt = performance.now() + 60000 / st.bpm;
+  });
+  balP.clockBtn.addEventListener("click", () => { if (balanceState) { balanceState.clockHeld = !balanceState.clockHeld; balanceSyncLive(); balanceStatus(); } });
+  balP.knobBtn.addEventListener("click", () => {
+    balP.knobs.hidden = !balP.knobs.hidden;
+    balP.knobBtn.setAttribute("aria-expanded", balP.knobs.hidden ? "false" : "true");
+    setActive(balP.knobBtn, !balP.knobs.hidden);
+    balanceLayout();
+  });
+  balP.liveVolume.addEventListener("input", () => balanceLive("volume", Number(balP.liveVolume.value)));
+  balP.liveSize.addEventListener("input", () => balanceLive("size", Number(balP.liveSize.value)));
+  balP.pauseBpm.addEventListener("input", () => balanceLive("bpm", Number(balP.pauseBpm.value)));
+  balP.pauseVolume.addEventListener("input", () => balanceLive("volume", Number(balP.pauseVolume.value)));
+  balEl("balancePauseResetPosBtn").addEventListener("click", () => {
+    if (!balanceState) return;
+    balanceState.pos = balanceDefaultPos(balanceState.sticks);
+    if (balanceState.own) { balancePrefs.pos = null; saveBalancePrefsToStorage(); }
+    balanceLayout();
+  });
+  balP.finishBtn.addEventListener("click", () => balanceFinish(false));
+
+  // Drag a stick with one finger; two fingers anywhere on the stage =
+  // pinch to resize (wirePinchSize, shared with the other "Größe" exercises).
+  balP.sticks.forEach((el, i) => {
+    let drag = null;
+    el.addEventListener("pointerdown", (e) => {
+      const st = balanceState;
+      if (!st || st.paused || balP.stage.dataset.pinching === "1") return;
+      e.preventDefault();
+      const r = el.getBoundingClientRect();
+      drag = { id: e.pointerId, dx: e.clientX - (r.left + r.width / 2), dy: e.clientY - (r.top + r.height / 2) };
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
+      el.classList.add("dragging");
+    });
+    el.addEventListener("pointermove", (e) => {
+      const st = balanceState;
+      if (!drag || drag.id !== e.pointerId || !st || !st.geom) return;
+      if (balP.stage.dataset.pinching === "1") { drag = null; el.classList.remove("dragging"); return; }
+      const { a } = st.geom;
+      const sr = a.rect;
+      const cx = e.clientX - drag.dx - sr.left, cy = e.clientY - drag.dy - sr.top;
+      st.pos[i] = { x: Math.min(1, Math.max(0, (cx - a.x0) / (a.x1 - a.x0))), y: Math.min(1, Math.max(0, (cy - a.y0) / (a.y1 - a.y0))) };
+      balanceLayout();
+    });
+    const end = (e) => {
+      if (!drag || drag.id !== e.pointerId) return;
+      drag = null;
+      el.classList.remove("dragging");
+      const st = balanceState;
+      if (st && st.own) { balancePrefs.pos = st.pos.map((q) => ({ x: q.x, y: q.y })); balancePrefs.sticksForPos = st.sticks; saveBalancePrefsToStorage(); }
+    };
+    el.addEventListener("pointerup", end);
+    el.addEventListener("pointercancel", end);
+  });
+
+  function balanceStatus() {
+    const st = balanceState;
+    if (!st) return;
+    let t;
+    if (st.phase === "rest") t = `Pause · ${fmtClock(st.restS - st.phaseElapsed)}`;
+    else if (st.timing === "open") t = fmtClock(st.phaseElapsed);
+    else t = fmtClock(st.setS - st.phaseElapsed);
+    if (st.clockHeld) t += " angehalten";
+    if (balP.status.textContent !== t) balP.status.textContent = t;
+  }
+  function balanceBeginSet() {
+    const st = balanceState;
+    st.phase = "set";
+    st.phaseElapsed = 0;
+    st.beatCount = 0;
+    balP.rest.hidden = true;
+    balP.sticks.forEach((el, i) => { el.hidden = i >= st.sticks; });
+    balanceSetHint();
+    balanceLayout();
+    if (st.letters === "einzeln") balanceNextSingle();
+    st.nextSingleAt = performance.now() + st.singleS * 1000;
+    st.nextBeatAt = performance.now() + 250;
+    if (st.stanceSpeak && !st.guest) balanceSay((st.timing === "timed" && st.sets > 1 ? `Satz ${st.setIdx + 1}. ` : "") + balanceStanceLabel(st, st.setIdx));
+    balanceStatus();
+  }
+  function balanceBeginRest() {
+    const st = balanceState;
+    st.phase = "rest";
+    st.phaseElapsed = 0;
+    st.restBeeped = new Set();
+    balP.cue.textContent = "";
+    balP.sticks.forEach((el) => { el.hidden = true; });
+    balP.rest.hidden = false;
+    balP.restNext.textContent = `Als Nächstes: Satz ${st.setIdx + 2} · ${balanceStanceLabel(st, st.setIdx + 1)}`;
+    balanceStatus();
+  }
+  function balanceBeat() {
+    const st = balanceState;
+    const even = st.beatCount % 2 === 0;
+    st.beatCount++;
+    balanceClick(even);
+    let cue = BALANCE_MODES[st.mode].cue[even ? 0 : 1];
+    if (st.mode === "sakk" && st.sticks === 1) cue = even ? "▲ oben" : "▼ unten";
+    // Sakkaden with one visible letter: the letter jumps on the beat and
+    // the cue names where it went.
+    if (st.mode === "sakk" && st.letters === "einzeln") {
+      balanceNextSingle();
+      const sg = st.single;
+      cue = st.sticks === 2 ? BALANCE_MODES.sakk.cue[sg.stick] : (sg.slot < st.letterSets[0].length / 2 ? "▲ oben" : "▼ unten");
+    }
+    balP.cue.textContent = cue;
+    balP.cue.classList.remove("beat");
+    void balP.cue.offsetWidth;
+    balP.cue.classList.add("beat");
+  }
+  function balanceTick(now) {
+    const st = balanceState;
+    if (!st) return;
+    if (balP.player.hidden) { balanceCleanup(); return; }
+    st.raf = requestAnimationFrame(balanceTick);
+    if (st.paused) { st.lastNow = now; return; }
+    const dt = Math.min(0.25, Math.max(0, (now - (st.lastNow || now)) / 1000));
+    st.lastNow = now;
+    if (!st.clockHeld) { st.phaseElapsed += dt; st.playedS += dt; }
+    if (st.phase === "set") {
+      if (st.metro && now >= st.nextBeatAt) {
+        balanceBeat();
+        const step = 60000 / st.bpm;
+        st.nextBeatAt = Math.max(st.nextBeatAt + step, now + step * 0.5);
+      }
+      if (st.letters === "einzeln" && !(st.mode === "sakk" && st.metro) && now >= st.nextSingleAt) {
+        balanceNextSingle();
+        st.nextSingleAt = now + (st.mode === "sakk" ? 1500 : st.singleS * 1000);
+      }
+      if (st.timing === "timed" && st.phaseElapsed >= st.setS) {
+        if (st.setIdx + 1 >= st.sets) { balanceFinish(false); return; }
+        if (st.restS > 0) balanceBeginRest();
+        else { st.setIdx++; balanceBeginSet(); }
+      }
+    } else if (st.phase === "rest") {
+      const remain = st.restS - st.phaseElapsed;
+      cueCountdownBeep(st.restBeeped, remain, 3);
+      balP.restCount.textContent = fmtClock(remain);
+      if (remain <= 0) { st.setIdx++; balanceBeginSet(); }
+    }
+    balanceStatus();
+  }
+  // opts.comboDurationS: one continuous run of that length (Cardio-
+  // Zusatzaufgabe). prefsOverride: Kombi block / Cardio cfg - never touches
+  // the client's own saved settings (st.own = false).
+  function startBalanceGame(opts, prefsOverride) {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    const p = normalizeBalancePrefs(JSON.parse(JSON.stringify(prefsOverride || balancePrefs)));
+    const guest = !!(opts && opts.comboDurationS);
+    const st = balanceState = {
+      ...p, own: !prefsOverride, guest, setIdx: 0, phase: "set", phaseElapsed: 0, playedS: 0, paused: false, clockHeld: false,
+      beatCount: 0, single: null, raf: null, lastNow: 0,
+    };
+    if (guest) { st.timing = "timed"; st.sets = 1; st.setS = opts.comboDurationS; st.restS = 0; }
+    const posOk = Array.isArray(p.pos) && p.pos.length >= st.sticks;
+    st.pos = posOk ? p.pos.slice(0, st.sticks).map((q) => ({ ...q })) : balanceDefaultPos(st.sticks);
+    st.letterSets = [0, 1].map((i) => balanceLettersFor(p, i));
+    if (st.letters === "einzeln") st.letterSets = st.letterSets.map(() => balanceRandomLetters(p.letterCount));
+    balP.player.hidden = false;
+    balP.bar.hidden = false;
+    balP.done.hidden = true;
+    balP.pauseOverlay.hidden = true;
+    balP.pauseBtn.hidden = false;
+    balP.knobs.hidden = true;
+    setActive(balP.knobBtn, false);
+    balP.cue.textContent = "";
+    applyBalanceStageBg();
+    requestWakeLock();
+    balanceRenderSticks();
+    balanceSyncLive();
+    balanceBeginSet();
+    st.lastNow = performance.now();
+    st.raf = requestAnimationFrame(balanceTick);
+  }
+  function balanceCleanup() {
+    const st = balanceState;
+    if (!st) return null;
+    if (st.raf) cancelAnimationFrame(st.raf);
+    balanceState = null;
+    balP.pauseOverlay.hidden = true;
+    balP.rest.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === balP.player) document.exitFullscreen().catch(() => {});
+    balP.fsHint.hidden = true;
+    return st;
+  }
+  // aborted: "Beenden" before the last set ended. Open-ended runs and
+  // "Fertig" always count as completed.
+  function balanceFinish(aborted) {
+    const st = balanceCleanup();
+    if (!st) return;
+    const played = st.playedS;
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
+    if (comboProgram) {
+      if (aborted) { abortComboProgram(); return; }
+      advanceComboProgram(played);
+      return;
+    }
+    if (aborted && played < 10) { balP.player.hidden = true; showScreen("balanceReady"); return; }
+    const title = `Gleichgewicht · ${BALANCE_MODES[st.mode].name}`;
+    const beat = st.metro ? ` · ${st.bpm}/min` : "";
+    let note;
+    if (aborted) note = "abgebrochen";
+    else if (st.timing === "open") note = `${fmtClock(played)}${beat}`;
+    else note = `${countLabel(st.sets, "Satz", "Sätze")} à ${fmtClock(st.setS)}${beat}`;
+    balP.bar.hidden = true;
+    setDonePanelAborted(balP.done, aborted, "Gleichgewicht beendet");
+    balP.doneSummary.textContent = aborted ? `Abgebrochen · ${fmtClock(played)}` : `${title} · ${note}`;
+    const id = addHistory({ kind: "balance", title, seconds: Math.round(played), note, ...(aborted ? { aborted: true } : {}) });
+    renderRating(balP.rating, id, "Wie sicher hast du dich gefühlt?");
+    renderBalanceLast();
+    balP.done.hidden = false;
+  }
+  balP.backBtn.addEventListener("click", () => {
+    const st = balanceState;
+    if (!st) return;
+    // Inside a Kombi "Beenden" quits the whole programme (like every other
+    // block); "Fertig" is the way on to the next Baustein.
+    balanceFinish(!!comboProgram || (st.timing === "timed" && !st.guest));
+  });
+  function pauseBalance() {
+    const st = balanceState;
+    if (!st || st.paused) return;
+    st.paused = true;
+    syncBalanceBgUI();
+    balanceSyncLive();
+    balP.pauseBtn.hidden = true;
+    balP.pauseOverlay.hidden = false;
+  }
+  function resumeBalance() {
+    const st = balanceState;
+    if (!st || !st.paused) return;
+    st.paused = false;
+    st.lastNow = performance.now();
+    st.nextBeatAt = performance.now() + 400;
+    st.nextSingleAt = performance.now() + st.singleS * 1000;
+    balP.pauseOverlay.hidden = true;
+    balP.pauseBtn.hidden = false;
+    balanceLayout();
+  }
+  balP.pauseBtn.addEventListener("click", pauseBalance);
+  balP.resumeBtn.addEventListener("click", resumeBalance);
+  balanceUi.start.addEventListener("click", () => {
+    if (comboBalanceCaptureOriginal) { commitBalanceComboCapture(); return; }
+    balanceReturnScreen = "natHome";
+    startBalanceGame();
+  });
+  balP.againBtn.addEventListener("click", () => { balP.done.hidden = true; startBalanceGame(); });
+  balP.doneBackBtn.addEventListener("click", () => { balP.player.hidden = true; balP.done.hidden = true; showScreen(balanceReturnScreen); });
+  if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => { if (balanceState) balanceLayout(); }).observe(balP.stage);
+
+  // Cardio-Zusatzaufgabe fields (same choices as the ready screen, compact).
+  function balanceCardioFieldsHtml(typeId, cfg) {
+    const row = (field, opts, cls) => `<div class="choice-row${cls ? " " + cls : ""}">` +
+      opts.map(([v, label]) => `<button class="choice${String(cfg[field]) === String(v) ? " active" : ""}" data-type="${typeId}" data-balf="${field}" data-balv="${v}">${label}</button>`).join("") + `</div>`;
+    return `<div class="choice-row" data-mode-row="${typeId}">` +
+      CARDIO_GUEST_MODE_LISTS.balance.map((m) => `<button class="choice${cfg.mode === m.id ? " active" : ""}" data-type="${typeId}" data-mode="${m.id}">${esc(m.title)}</button>`).join("") + `</div>` +
+      `<div class="cardio-guest-field-row"><div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${typeId}" data-f="duration" value="${cfg.duration}"></div></div>` +
+      `<div class="group-label">Stifte</div>` + row("sticks", [[1, "1 Stift"], [2, "2 Stifte"]], "two") +
+      `<div class="group-label">Buchstaben</div>` + row("letters", [["zufall", "Zufällig"], ["einzeln", "Nur einer"]], "two") +
+      `<div class="group-label">Takt</div>` + row("metro", [[true, "Mit Takt"], [false, "Ohne Takt"]], "two") +
+      (cfg.metro ? `<div class="slider-row"><span class="slider-label">Tempo</span><input type="range" min="30" max="200" step="5" data-type="${typeId}" data-f="bpm" value="${cfg.bpm}"><span class="slider-value" data-fvalue="${typeId}-bpm">${cfg.bpm}</span></div>` : "") +
+      `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` +
+      `<div class="group-label">${esc(LOOK_SPECS.balance.size.label)}</div>` +
+      `<div class="slider-row"><input type="range" min="0.6" max="2" step="0.1" data-type="${typeId}" data-f="size" value="${cfg.size}"><span class="slider-value" data-fvalue="${typeId}-size">${cfg.size}</span></div>` +
+      `<div class="group-label">Farbe des Stifts</div><div class="cardio-guest-colors">` +
+      BALANCE_STICK_COLORS.map((c) => `<label><input type="radio" name="cardioBalColor-${typeId}" data-looktype="${typeId}" data-lookfield="color1" data-lookcolor="${c.key}" ${cfg.color1 === c.key ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") + `</div>` +
+      `<div class="group-label">Lautstärke</div>` +
+      `<div class="slider-row"><input type="range" min="0" max="1" step="0.05" data-type="${typeId}" data-f="volume" value="${cfg.volume}"><span class="slider-value" data-fvalue="${typeId}-volume">${cfg.volume}</span></div>` +
+      `</div></details>`;
+  }
+
+  // ---- Größe während der Übung (Fabian 2026-10-06: "schadet doch nicht") ----
+  // Every exercise with "Größe der …" (LOOK_SPECS) gets the same size
+  // slider in its "Pausiert" sheet plus two-finger pinch on its stage
+  // (ctrl+wheel = trackpad pinch). A standalone run saves the new value;
+  // inside a Kombi or as a Cardio-Zusatzaufgabe it only changes this run.
+  function wirePinchSize(stage, { get, set, min, max, label }) {
+    const pts = new Map();
+    let start = null;
+    let toast = stage.querySelector(".look-toast");
+    if (!toast) { toast = document.createElement("div"); toast.className = "look-toast"; toast.hidden = true; stage.appendChild(toast); }
+    const show = (v) => {
+      toast.textContent = `${label} ${fmtFactor(v)}`;
+      toast.hidden = false;
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => { toast.hidden = true; }, 1200);
+    };
+    const dist = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+    const clampV = (v) => Math.round(Math.min(max, Math.max(min, v)) * 10) / 10;
+    stage.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "touch") return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size === 2) {
+        const v = get();
+        start = v == null ? null : { d: Math.max(20, dist()), v };
+        if (start) stage.dataset.pinching = "1";
+      }
+    }, true);
+    stage.addEventListener("pointermove", (e) => {
+      if (!pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (!start || pts.size < 2) return;
+      const v = clampV(start.v * dist() / start.d);
+      if (v !== get()) { set(v, false); show(v); }
+    }, true);
+    const up = (e) => {
+      if (!pts.delete(e.pointerId)) return;
+      if (start && pts.size < 2) {
+        const v = get();
+        if (v != null) set(v, true);
+        start = null;
+        setTimeout(() => { delete stage.dataset.pinching; }, 60);
+      }
+    };
+    stage.addEventListener("pointerup", up, true);
+    stage.addEventListener("pointercancel", up, true);
+    stage.addEventListener("wheel", (e) => {
+      if (!e.ctrlKey) return;
+      const cur = get();
+      if (cur == null) return;
+      e.preventDefault();
+      const v = clampV(cur * (e.deltaY < 0 ? 1.1 : 1 / 1.1));
+      if (v !== cur) { set(v, true); show(v); }
+    }, { passive: false });
+  }
+  // Remember: grow/shrink the markers now, but never past what keeps the
+  // current layout overlap-free (closest pair, stage edges, hint).
+  function rememberLiveSize(v) {
+    const st = rememberState;
+    if (!st) return;
+    st.markerScale = v;
+    st.markerPx = 0;
+    rememberStageBounds();
+    const rect = els.rememberStage.getBoundingClientRect();
+    const src = st.positionCache && Object.keys(st.positionCache).length ? Object.values(st.positionCache) : (st.positions || []);
+    const pts = src.map((p) => ({ x: (p.x / 100) * rect.width, y: (p.y / 100) * rect.height }));
+    const top = stageTopClearanceY(rect, els.rememberHint, els.rememberPlayerBar, 0, 0, 4);
+    let cap = Infinity;
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) cap = Math.min(cap, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y) - 10);
+      const p = pts[i];
+      cap = Math.min(cap, 2 * (p.x - 8), 2 * (rect.width - p.x - 8), 2 * (rect.height - p.y - 8), 2 * (p.y - top));
+    }
+    const px = Math.max(24, Math.min(REMEMBER_MARKER_PX, Math.floor(cap)));
+    st.markerPx = px;
+    REMEMBER_MARKER_PX = px;
+    REMEMBER_MIN_CENTER_PX = px + 10;
+    els.rememberStage.style.setProperty("--remember-marker-px", px + "px");
+  }
+  function motLiveSize(v) {
+    const st = motState;
+    if (!st) return;
+    st.objScale = v;
+    if (!st.objects || !st.stageW) return;
+    st.radius = motRadiusFor(st.objects.length, st.stageW, st.stageH);
+    st.objects.forEach((o) => {
+      if (!o.el) return;
+      o.x = Math.min(st.stageW - st.radius, Math.max(st.radius, o.x));
+      o.el.style.width = o.el.style.height = st.radius * 2 + "px";
+      o.el.style.left = o.x - st.radius + "px";
+      o.el.style.top = o.y - st.radius + "px";
+    });
+  }
+  function flashLiveSize(v) {
+    const st = flashState;
+    if (!st) return;
+    st.charScale = v;
+    if (!els.flashDigitEl.hidden) els.flashDigitEl.style.fontSize = flashDigitFontPx() + "px";
+  }
+  const LIVE_LOOK = {
+    remember: { stage: () => els.rememberStage, overlay: () => document.getElementById("rememberPauseOverlay"), state: () => rememberState, prefs: () => rememberPrefs, save: () => saveRememberPrefsToStorage(), apply: rememberLiveSize },
+    flash: { stage: () => els.flashStage, overlay: () => document.getElementById("flashPauseOverlay"), state: () => flashState, prefs: () => flashPrefs, save: () => saveFlashPrefsToStorage(), apply: flashLiveSize },
+    mot: { stage: () => els.motStage, overlay: () => document.getElementById("motPauseOverlay"), state: () => motState, prefs: () => motPrefs, save: () => saveMotPrefsToStorage(), apply: motLiveSize },
+    balance: { stage: () => balP.stage, overlay: () => balP.pauseOverlay, state: () => balanceState, prefs: () => balancePrefs, save: () => saveBalancePrefsToStorage(), apply: (v) => balanceLive("size", v), ownState: true },
+  };
+  Object.entries(LIVE_LOOK).forEach(([kind, L]) => {
+    const { size } = LOOK_SPECS[kind];
+    const get = () => { const st = L.state(); return st ? (st[size.field] || 1) : null; };
+    const set = (v, persist) => {
+      if (!L.state()) return;
+      L.apply(v);
+      if (persist && !L.ownState && !comboProgram && !cardioGuestActive) { L.prefs()[size.field] = v; L.save(); syncLook(kind); }
+      sync();
+    };
+    const overlay = L.overlay();
+    const panel = overlay && overlay.querySelector(".pause-panel");
+    let input = null, val = null;
+    if (panel) {
+      const g = document.createElement("div");
+      g.className = "group";
+      g.dataset.liveLook = kind;
+      g.innerHTML = `<div class="group-label">${esc(size.label)} <span class="slider-value"></span></div><input type="range" min="${size.min}" max="${size.max}" step="${size.step}" aria-label="${esc(size.label)}">`;
+      panel.insertBefore(g, panel.querySelector("[data-look-anchor]") || panel.querySelector(".start-btn"));
+      input = g.querySelector("input");
+      val = g.querySelector(".slider-value");
+      input.addEventListener("input", () => set(Number(input.value), true));
+      new MutationObserver(() => { if (!overlay.hidden) sync(); }).observe(overlay, { attributes: true, attributeFilter: ["hidden"] });
+    }
+    function sync() {
+      const v = get();
+      if (v == null || !input) return;
+      input.value = v;
+      val.textContent = fmtFactor(v);
+    }
+    wirePinchSize(L.stage(), { get, set, min: size.min, max: size.max, label: size.label.replace(/^Größe der /, "") });
+  });
+
   initLookControls({
+    balance: { prefs: balancePrefs, save: saveBalancePrefsToStorage },
     remember: { prefs: rememberPrefs, save: saveRememberPrefsToStorage },
     flash: { prefs: flashPrefs, save: saveFlashPrefsToStorage },
     mot: { prefs: motPrefs, save: saveMotPrefsToStorage },
@@ -13506,6 +14392,7 @@
     { id: "remember", title: "Positionen merken", group: "nat" },
     { id: "flash", title: "Flash-Speicher-Test", group: "nat" },
     { id: "mot", title: "Objektverfolgung (MOT)", group: "nat" },
+    { id: "balance", title: "Gleichgewicht", group: "nat" },
   ];
   // "addon-flash" and "periph-flash" both flash a coloured digit/letter at
   // a random peripheral position (the former as a Zusatzaufgabe overlay on
@@ -13551,6 +14438,7 @@
   function cardioGuestIsRemember(guestId) { return guestId === "remember"; }
   function cardioGuestIsFlash(guestId) { return guestId === "flash"; }
   function cardioGuestIsMot(guestId) { return guestId === "mot"; }
+  function cardioGuestIsBalance(guestId) { return guestId === "balance"; }
   // Any type with more than one starting mode (Remember/Flash/MOT each
   // have several - training vs. fixed vs. shuffle vs. ...) needs an extra
   // mode-choice step, both in the live picker (renderCardioAddonPicker())
@@ -13562,6 +14450,7 @@
     remember: [{ id: "fixed", title: "Feste Positionen" }, { id: "shuffle", title: "Bewegte Positionen" }, { id: "training", title: "Trainingsmodus" }],
     flash: [{ id: "constant", title: "Konstant" }, { id: "climb", title: "Steigend, direkt" }, { id: "climbRepeat", title: "Steigend, mit Wiederholung" }, { id: "training", title: "Trainingsmodus" }],
     mot: [{ id: "speed", title: "Tempo steigt" }, { id: "count", title: "Anzahl steigt" }, { id: "both", title: "Beides steigt" }, { id: "training", title: "Trainingsmodus" }],
+    balance: Object.entries(BALANCE_MODES).map(([id, m]) => ({ id, title: m.name })),
   };
   function cardioGuestModeList(guestId) { return CARDIO_GUEST_MODE_LISTS[guestId] || null; }
   function cardioGuestDefaultCfg(guestId) {
@@ -13579,6 +14468,7 @@
     // deliberately stay at each domain's own built-in default for now.
     if (guestId === "remember") return { duration: 20, mode: "fixed", revealBaseS: REMEMBER_DIFFICULTIES.mittel.revealBaseS, revealStepS: REMEMBER_DIFFICULTIES.mittel.revealStepS, errorMode: "reset2", trainingStart: 8, trainingProgress: true, trainingPositionMode: "shuffle", markerScale: 1, numColor: "weiss", ...bg };
     if (guestId === "flash") return { duration: 20, mode: "constant", kind: "zahlen", stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS, intervalS: FLASH_DIFFICULTIES.mittel.intervalS, errorMode: "reset2", axes: PERIPH_AXIS_KEYS.slice(), useZones: false, zones: PERIPH_ZONE_KEYS.slice(), fixEnabled: true, fixChar: "", fixColor: "grau", fixSize: 1, constantCount: 3, startCount: 3, repsPerLevel: 2, trainingStart: 5, trainingProgress: true, charScale: 1, charColor: "standard", ...bg };
+    if (guestId === "balance") return { ...JSON.parse(JSON.stringify(BALANCE_DEFAULTS)), duration: 20, ...bg };
     if (guestId === "mot") return { duration: 20, mode: "speed", style: "flach", speed: MOT_DIFFICULTIES.mittel.speed, trackS: MOT_DIFFICULTIES.mittel.trackS, highlightS: MOT_DIFFICULTIES.mittel.highlightS, errorMode: "reset2", colors: ["schwarz"], targetColors: ["gelb"], objectCount: 8, targetCount: 4, growStartObjects: 4, growStartTargets: 1, trainingObjects: 6, trainingTargets: 2, trainingSpeedStep: 0, trainingProgress: true, objScale: 1, ...bg };
     if (guestId === "vt-color" || guestId === "vrw-original") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg };
     if (guestId === "stroop-classic" || guestId === "stroop-bg") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "blau", "gruen"], ...bg };
@@ -13643,6 +14533,7 @@
       if (cardioGuestIsRemember(t.id)) normalizeLookPrefs("remember", p);
       if (cardioGuestIsFlash(t.id)) normalizeLookPrefs("flash", p);
       if (cardioGuestIsMot(t.id)) normalizeLookPrefs("mot", p);
+      if (cardioGuestIsBalance(t.id)) { const dur = p.duration; normalizeBalancePrefs(p); p.duration = dur; }
       if (cardioGuestIsRemember(t.id)) {
         if (!Number.isFinite(p.revealBaseS) || p.revealBaseS < 0.5 || p.revealBaseS > 3) p.revealBaseS = d.revealBaseS;
         if (!Number.isFinite(p.revealStepS) || p.revealStepS < 0.1 || p.revealStepS > 1) p.revealStepS = d.revealStepS;
@@ -13864,6 +14755,8 @@
           `<button class="choice${cfg.errorMode === "backOne" ? " active" : ""}" data-type="${t.id}" data-blitzerror="backOne">Ein Feld weniger<small>eine Stufe runter</small></button>` +
           `<button class="choice${cfg.errorMode === "stay" ? " active" : ""}" data-type="${t.id}" data-blitzerror="stay">Gleiche Anzahl<small>so lange, bis es klappt</small></button>` +
           `</div>`;
+      } else if (cardioGuestIsBalance(t.id)) {
+        html += balanceCardioFieldsHtml(t.id, cfg);
       } else if (cardioGuestIsConeTap(t.id)) {
         html += `<div class="cardio-guest-field-row">
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
@@ -14177,6 +15070,13 @@
       btn.addEventListener("click", () => {
         const cfg = getCfg(btn.dataset.type);
         cfg.zones = cfg.zones.length === PERIPH_ZONE_KEYS.length ? [] : PERIPH_ZONE_KEYS.slice();
+        select();
+      });
+    });
+    container.querySelectorAll("[data-balf]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const v = btn.dataset.balv;
+        getCfg(btn.dataset.type)[btn.dataset.balf] = v === "true" ? true : v === "false" ? false : /^\d+$/.test(v) ? Number(v) : v;
         select();
       });
     });
@@ -14769,6 +15669,7 @@
     else if (cardioGuestIsRemember(guestId)) startRememberGame(cfg.mode, comboOpts, cfg);
     else if (cardioGuestIsFlash(guestId)) startFlashGame(cfg.mode, comboOpts, cfg);
     else if (cardioGuestIsMot(guestId)) startMotGame(cfg.mode, comboOpts, cfg);
+    else if (cardioGuestIsBalance(guestId)) startBalanceGame(comboOpts, cfg);
     else {
       applyCardioGuestToState(realId, cfg);
       // "Hütchen sortieren" (cone-tap) is the one type here with its own
@@ -15129,6 +16030,8 @@
       startFlashGame(block.mode || "constant", { comboDurationS: block.duration ?? 60 }, block.prefs ? { ...JSON.parse(JSON.stringify(flashPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : undefined);
     } else if (block.domain === "mot") {
       startMotGame(block.mode || "speed", { comboDurationS: block.duration ?? 60 }, block.prefs ? { ...JSON.parse(JSON.stringify(motPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : undefined);
+    } else if (block.domain === "balance") {
+      startBalanceGame(null, balanceBlockPrefs(block));
     } else if (block.domain === "cardio") {
       cardioProgram = null;
       startStandaloneCardio(block.items.map(copyCardioItem));
@@ -15667,7 +16570,7 @@
   // Grundeinstellungen "Countdown 3-2-1 vor dem Start" switches it off.
   const LEADIN_START_IDS = ["movementStartBtn", "movementProgramStartBtn", "breathStartBtn", "breathProgramStartBtn",
     "rememberReadyStartBtn", "rememberTrainingStartBtn", "blitzReadyStartBtn", "flashReadyStartBtn", "flashTrainingStartBtn",
-    "motReadyStartBtn", "motTrainingStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn"];
+    "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn"];
   let leadInBypass = false, leadInTimer = null;
   function stopLeadIn() { clearTimeout(leadInTimer); leadInTimer = null; $("leadIn").hidden = true; }
   document.addEventListener("click", (e) => {
@@ -26397,7 +27300,7 @@
   ];
   const AREA_BY_KEY = Object.fromEntries(PLAN_AREAS.map((a) => [a.key, a]));
   const AREA_TO_SECTION = { visual: "visual", breath: "breath", movement: "movement", workout: "workout", cardio: "cardio", nat: "nat", test: "test", free: "free" };
-  const NAT_SUBS = [["peripher", "Periphere Wahrnehmung"], ["remember", "Positionen merken"], ["blitz", "Blitz-Raster"], ["flash", "Flash-Speicher-Test"], ["mot", "Objektverfolgung (MOT)"]];
+  const NAT_SUBS = [["peripher", "Periphere Wahrnehmung"], ["remember", "Positionen merken"], ["blitz", "Blitz-Raster"], ["flash", "Flash-Speicher-Test"], ["mot", "Objektverfolgung (MOT)"], ["balance", "Gleichgewicht"]];
   const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
   const WD_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
   const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -26466,7 +27369,7 @@
     if (k.startsWith("movement")) return "movement";
     if (k.startsWith("workout")) return "workout";
     if (k.startsWith("cardio")) return "cardio";
-    if (["remember", "blitz", "flash", "mot"].includes(k)) return "nat";
+    if (["remember", "blitz", "flash", "mot", "balance"].includes(k)) return "nat";
     if (k === "exercise") return e.exId === "periph-flash" ? "nat" : "visual";
     if (k === "program") return "visual";
     if (k === "combo") return "combo";
@@ -26681,7 +27584,7 @@
   function continueFromHistory(h) {
     const area = historyAreaOf(h);
     if (h.kind === "exercise" && h.exId) { startEntry({ area: area === "nat" ? "nat" : "visual", what: area === "nat" ? "nat:peripher" : "ex:" + h.exId }); return; }
-    const natSub = { remember: "remember", blitz: "blitz", flash: "flash", mot: "mot" }[h.kind];
+    const natSub = { remember: "remember", blitz: "blitz", flash: "flash", mot: "mot", balance: "balance" }[h.kind];
     if (natSub) { startEntry({ area: "nat", what: "nat:" + natSub }); return; }
     if (h.kind === "free" && h.freeId && freeFind(h.freeId)) { startEntry({ area: "free", what: "free:" + h.freeId }); return; }
     if (area === "combo") { activateSectionTab("visual"); showScreen("home"); openComboScreen(); return; }
@@ -28125,6 +29028,7 @@
         blitz: () => openBlitzComboCapture(null, null),
         flash: () => openFlashComboCapture(mode, null, null),
         mot: () => openMotComboCapture(mode, null, null),
+        balance: () => openBalanceComboCapture(null, null),
       }[sub];
       return {
         title: name("h3"), open: () => tile.click(),

@@ -7,7 +7,7 @@ URL = "http://localhost:8845/index.html?bereich=visual"
 # starting modes (training vs. fixed vs. shuffle vs. ...), so this batch adds
 # the new sub-mode-picker step to the live picker (cardioGuestModeList()) on
 # top of the prefsOverride/cardioGuestActive pattern proven in batch 1
-# (Blitz-Raster). CARDIO_GUEST_TYPES is now 17 entries.
+# (Blitz-Raster). CARDIO_GUEST_TYPES is now 18 entries (Gleichgewicht added 2026-10-06).
 
 async def main():
     errors = []
@@ -32,7 +32,7 @@ async def main():
         # ---- pool grid + fine-tune panels ----
         await pg.click("#cardioAddonAdvanced summary"); await pg.wait_for_timeout(150)
         await pg.check("#cardioAddonEnableToggle"); await pg.wait_for_timeout(150)
-        print("pool grid now offers 17 types:", await pg.locator("#cardioAddonPoolGrid [data-pool]").count() == 17)
+        print("pool grid now offers 18 types:", await pg.locator("#cardioAddonPoolGrid [data-pool]").count() == 18)
         for t in ("remember", "flash", "mot"):
             await pg.check(f'#cardioAddonPoolGrid input[data-pool="{t}"]')
         await pg.wait_for_timeout(200)
@@ -61,7 +61,7 @@ async def main():
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(400)
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
         print("no mode-row for the first (VT) type by default:", await pg.locator("#cardioAddonPickerDetail [data-mode-row]").count() == 0)
-        print("picker offers 17 choices total:", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 17)
+        print("picker offers 18 choices total:", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 18)
 
         # index 14 = remember (12 VT + periph-flash + blitz-raster + remember)
         await pg.locator("#cardioAddonPickerTypeRow .choice").nth(14).click(); await pg.wait_for_timeout(80)

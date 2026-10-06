@@ -30,7 +30,7 @@ async def main():
             check(t + "no second tab row", not await pg.is_visible("#natHome .sub-switch"))
             check(t + "no old variant panels", await pg.locator("#natHome .nat-panel:visible").count() == 0)
             names = await pg.eval_on_selector_all("#natExercises [data-nat-ex] h3", "els => els.map(e => e.textContent)")
-            check(t + "five exercise tiles", names == ["Periphere Wahrnehmung", "Positionen merken", "Blitz-Raster", "Flash-Speicher-Test", "Objektverfolgung (MOT)"], names)
+            check(t + "six exercise tiles", names == ["Periphere Wahrnehmung", "Positionen merken", "Blitz-Raster", "Flash-Speicher-Test", "Objektverfolgung (MOT)", "Gleichgewicht"], names)
             check(t + "heading like Visual Training", (await pg.inner_text("#natExercises h2")) == (await pg.inner_text("#home .exercises h2")))
             # Flash: default mode, switch modes, training screen, back
             await pg.click('[data-nat-ex="flash"]'); await pg.wait_for_timeout(200)
