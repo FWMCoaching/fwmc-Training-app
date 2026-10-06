@@ -418,5 +418,12 @@ For every new or changed exercise/screen, in the same commit:
   Heute calendar buttons ≥ 44 px, borderless SVG ‹ › in a row with the week
   range, heading names the week shown + "Heute" pill (C).
   Tests: `tests/history_back_1006_test.py`, `tests/app_feel_1006_test.py`.
+- Kein Sprung nach Übergängen (2026-10-06, Fabian: Box-Atmung "wird auf einmal
+  größer"): anything that slides sideways (screens in `tr-push`/`tr-pop`, the
+  edge-swipe drag) must never make the document wider than the phone, or the
+  phone zooms out and snaps back afterwards. `html,body{overflow-x:clip}` and
+  `.screen.tr-push/.tr-pop{overflow-x:clip}` guard it; a new sideways animation
+  stays inside a clipping box. Fabian-Blick "sprung" (mobile viewport,
+  transitions on) checks every page on slide-in and edge swipe.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

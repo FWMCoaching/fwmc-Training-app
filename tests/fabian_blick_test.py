@@ -27,6 +27,10 @@ spotting by eye, instead of one test per single case.
                  the page never changes (first config only)
      zurueck     a ‹ is visible but swiping back / the back button does not
                  go back (first config only)
+     sprung      page jumps after a slide-in (Fabian 2026-10-06, Box-Atmung):
+                 on a phone (mobile viewport, transitions on) the page must
+                 keep the device width during every slide in, ‹ back and
+                 edge swipe, and must not move/resize once it has arrived
 3. Report: tests/screenshots/fabian_blick/report.md (+ report.json and the
    screenshots). Findings already known are listed in
    tests/fabian_blick_baseline.json; the test fails only on NEW findings,
@@ -305,6 +309,63 @@ async def scroll_check(pg):
         return [{"cat": "eingefroren", "msg": "Seite hängt nach Scrollen (" + type(e).__name__ + ")", "el": ""}]
 
 
+JUMP_INIT = """
+(() => { window.__fbW = innerWidth; const w0 = () => window.__fbW0 || innerWidth;
+  const f = () => { const w = Math.max(innerWidth, document.documentElement.scrollWidth);
+    if (window.__fbW0 && w > window.__fbW0 + 1) window.__fbBad = Math.max(window.__fbBad || 0, w);
+    requestAnimationFrame(f); };
+  addEventListener('DOMContentLoaded', () => { window.__fbW0 = innerWidth; requestAnimationFrame(f); });
+  localStorage.setItem('fwmc-test-transitions', 'true'); })();
+"""
+JUMP_RECT_JS = """() => { const s = [...document.querySelectorAll('.screen')].find(e => !e.hidden && e.getClientRects().length);
+  const h = s && (s.querySelector('h1, .page-title, h2') || s); if (!h) return null;
+  const r = h.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.width), innerWidth]; }"""
+SWIPE_JS = """async () => { const el = document.elementFromPoint(8, innerHeight / 2) || document.body;
+  const mk = x => new Touch({identifier: 1, target: el, clientX: x, clientY: innerHeight / 2});
+  el.dispatchEvent(new TouchEvent('touchstart', {touches: [mk(8)], changedTouches: [mk(8)], bubbles: true}));
+  for (let i = 1; i <= 8; i++) { el.dispatchEvent(new TouchEvent('touchmove', {touches: [mk(8 + i * 30)], changedTouches: [mk(8 + i * 30)], bubbles: true}));
+    await new Promise(r => requestAnimationFrame(r)); }
+  el.dispatchEvent(new TouchEvent('touchend', {touches: [], changedTouches: [mk(248)], bubbles: true})); }"""
+
+
+async def jump_pass(b, states):
+    """sprung: replay every page on a phone with the iOS transitions on and
+    watch the layout width (a wider page = the phone zooms out, then snaps
+    back) and the title position after the page has arrived."""
+    ctx = await b.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True,
+                              service_workers="block")
+    await ctx.add_init_script(INIT); await ctx.add_init_script(JUMP_INIT)
+    pg = await ctx.new_page()
+    out = []
+    async def bad():
+        return await pg.evaluate("window.__fbBad || 0")
+    for k, (entry, clicks, _) in states.items():
+        if k.startswith("sheet:") or "player:" in k:
+            continue
+        if not await replay(pg, entry, clicks):
+            continue
+        await pg.wait_for_timeout(450)
+        r1 = await pg.evaluate(JUMP_RECT_JS)
+        await pg.wait_for_timeout(400)
+        r2 = await pg.evaluate(JUMP_RECT_JS)
+        w = await bad()
+        if w:
+            out.append({"cat": "sprung", "state": k, "el": "", "msg": f"Seite beim Hereinschieben breiter als das Handy ({w} px), springt danach zurück"})
+        elif r1 and r2 and (abs(r1[0] - r2[0]) > 3 or abs(r1[1] - r2[1]) > 3):
+            out.append({"cat": "sprung", "state": k, "el": "", "msg": "Seite verschiebt/vergrößert sich nach dem Hereinschieben"})
+        if not await pg.evaluate(BACK_VISIBLE_JS):
+            continue
+        await pg.evaluate("window.__fbBad = 0")
+        await pg.evaluate(SWIPE_JS); await pg.wait_for_timeout(600)
+        w = await bad()
+        if w:
+            out.append({"cat": "sprung", "state": k, "el": "", "msg": f"Zurückwischen macht die Seite breiter als das Handy ({w} px)"})
+    await ctx.close()
+    for f in out:
+        f["cfg"] = "handy-uebergang"
+    return out
+
+
 async def audit_config(b, cfg, states, starts):
     name, w, h, scheme = cfg
     ctx, pg, errs = await new_page(b, w, h, scheme)
@@ -425,9 +486,10 @@ async def main():
         b = await p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"])
         states, starts = await discover(b)
         print(f"Gefunden: {len(states)} Zustände, {len(starts)} Übungsstarts ({int(time.time() - t0)} s)")
-        results = await asyncio.gather(*[audit_config(b, c, states, starts) for c in CONFIGS])
+        results, jumps = await asyncio.gather(asyncio.gather(*[audit_config(b, c, states, starts) for c in CONFIGS]),
+                                              jump_pass(b, states))
         await b.close()
-    findings = [f for r in results for f in r[0]]
+    findings = [f for r in results for f in r[0]] + jumps
     findings += cross_screen({c[0]: r[1] for c, r in zip(CONFIGS, results)})
     keys = sorted({fkey(f) for f in findings})
     base = []

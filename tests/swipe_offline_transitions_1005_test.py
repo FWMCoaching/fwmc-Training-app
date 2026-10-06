@@ -63,6 +63,27 @@ async def main():
         check("swipe on an area home does nothing", await pg.is_visible("#movementHome"))
         await ctx.close()
 
+        # Sprung (Fabian 2026-10-06, Box-Atmung): on a phone the page must keep
+        # its width while it slides in or is swiped back - a wider page makes
+        # the phone zoom out and snap back after the animation.
+        ctx = await b.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True, service_workers="block")
+        await ctx.add_init_script(INIT + "localStorage.setItem('fwmc-test-transitions','true')")
+        pg = await ctx.new_page(); watch(pg)
+        await pg.goto(BASE + "index.html?bereich=breath"); await pg.wait_for_timeout(400)
+        WMON = "() => { window.__maxW = 0; const f = () => { window.__maxW = Math.max(window.__maxW, innerWidth, document.documentElement.scrollWidth); if (!window.__stopW) requestAnimationFrame(f); }; f(); }"
+        await pg.evaluate(WMON)
+        await pg.locator("#patternGrid > :nth-child(2)").tap(); await pg.wait_for_timeout(700)
+        check("phone: page keeps its width while sliding in", await pg.evaluate("window.__maxW") == 390, await pg.evaluate("window.__maxW"))
+        await pg.evaluate("window.__maxW = 0")
+        await pg.evaluate(SWIPE, [8, 120]); await pg.wait_for_timeout(500)
+        check("phone: page keeps its width during an edge swipe", await pg.evaluate("window.__maxW") == 390, await pg.evaluate("window.__maxW"))
+        if not await pg.is_visible("#breathReady"):
+            await pg.locator("#patternGrid > :nth-child(2)").tap(); await pg.wait_for_timeout(700)
+        await pg.evaluate("window.__maxW = 0")
+        await pg.click("#breathReady .bar-back-btn"); await pg.wait_for_timeout(600)
+        check("phone: page keeps its width when going back", await pg.evaluate("window.__maxW") == 390, await pg.evaluate("window.__maxW"))
+        await ctx.close()
+
         # reduced motion: only fade
         ctx = await b.new_context(viewport={"width": 390, "height": 844}, service_workers="block", reduced_motion="reduce")
         await ctx.add_init_script(INIT + "localStorage.setItem('fwmc-test-transitions','true')")
