@@ -2474,10 +2474,23 @@ input[type=range]{accent-color:#007094}
 /* Mehr-Liste wie iOS-Einstellungen: › für Seiten in der App, ↗ für Links
    nach draußen (Fabian 2026-10-06, Punkt B) */
 .more-list .featured-card{position:relative;padding-right:44px}
-.more-list .featured-card::after{content:"\203A";position:absolute;right:16px;top:50%;transform:translateY(-52%);font-size:26px;line-height:1;font-weight:400;color:var(--ink-soft)}
-.more-list a.featured-card[target="_blank"]::after{content:"\2197";font-size:17px}
+.more-list .featured-card::after{content:"";position:absolute;right:18px;top:50%;width:9px;height:16px;margin-top:-8px;background:var(--ink-soft);opacity:.75;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 18'%3E%3Cpath d='M1.5 1.5 8.5 9l-7 7.5' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 18'%3E%3Cpath d='M1.5 1.5 8.5 9l-7 7.5' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
+.more-list a.featured-card[target="_blank"]::after{width:14px;height:14px;margin-top:-7px;right:16px;-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M5 13 13 5M6.5 5H13v6.5' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M5 13 13 5M6.5 5H13v6.5' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+
+/* Kalender-Pfeile als randlose Chevrons in Markenfarbe (iOS-Kalender) */
+.week-nav-btn{border:none;background:none;font-size:0;color:var(--brand);display:flex;align-items:center;justify-content:center}
+.week-nav-btn::before{content:"";width:11px;height:20px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 18'%3E%3Cpath d='M1.5 1.5 8.5 9l-7 7.5' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 18'%3E%3Cpath d='M1.5 1.5 8.5 9l-7 7.5' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
+.week-nav-btn[aria-label^="Vorherig"]::before{transform:scaleX(-1)}
+@media (hover:hover){.week-nav-btn:hover{background:var(--brand-pale)}}
+.week-nav-btn:active{background:var(--brand-pale)}
+.week-range{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.week-today-btn{min-height:44px;padding:0 14px;border:1.5px solid var(--brand);background:none;color:var(--brand);border-radius:999px;font-weight:700;font-size:13.5px;cursor:pointer}
+.week-today-btn[hidden]{display:none}
 
 /* "Training starten" bleibt auf Übungsseiten unten sichtbar (Fabian
-   2026-10-06, Punkt A). Nur vor dem Start, nie im Spieler. */
-.start-btn.start-sticky{position:sticky;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:5;box-shadow:0 0 0 10px var(--bg),0 18px 0 10px var(--bg),0 -12px 18px 8px var(--bg)}
-body.bottom-nav-on .start-btn.start-sticky{bottom:calc(74px + env(safe-area-inset-bottom,0px))}
+   2026-10-06, Punkt A). Eigene Leiste mit festem Hintergrund (iOS-Stil),
+   nur vor dem Start, nie im Spieler. */
+.start-sticky-bar{position:sticky;bottom:0;z-index:5;background:var(--bg);margin:0 -16px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+body.bottom-nav-on .start-sticky-bar{bottom:calc(64px + max(0px, env(safe-area-inset-bottom,0px) - 3px));padding-bottom:10px}
+.start-sticky-bar[hidden], .start-sticky-bar:has(> .start-btn[hidden]){display:none}
+.start-sticky-bar > .start-btn{margin:0;width:100%}

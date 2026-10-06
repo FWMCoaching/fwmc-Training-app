@@ -15927,7 +15927,15 @@
   }
   // "Training starten" stays in reach on long exercise pages (Punkt A,
   // 2026-10-06): every screen's own start button sticks to the bottom.
-  document.querySelectorAll('.screen > button.start-btn[id$="StartBtn"]').forEach((b) => b.classList.add("start-sticky"));
+  // The button sits in its own bar with a solid background, so a greyed-out
+  // or pressed (semi-transparent) button never lets the page show through.
+  document.querySelectorAll('.screen > button.start-btn[id$="StartBtn"], .screen > #startBtn').forEach((b) => {
+    const bar = document.createElement("div");
+    bar.className = "start-sticky-bar";
+    b.before(bar);
+    bar.appendChild(b);
+    b.classList.add("start-sticky");
+  });
   // Swipe back from the left edge
   (function wireEdgeSwipeBack() {
     let start = null, page = null, target = null, moved = false;
@@ -26565,6 +26573,12 @@
     if (occ.some((o) => o.done)) return { cls: "partial", occ };
     return { cls: date < todayStr() ? "missed" : "planned", occ };
   }
+  function isoWeek(d) {
+    const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const day = t.getUTCDay() || 7;
+    t.setUTCDate(t.getUTCDate() + 4 - day);
+    return Math.ceil(((t - Date.UTC(t.getUTCFullYear(), 0, 1)) / 864e5 + 1) / 7);
+  }
   function renderWeekStrip(hist) {
     const monday = mondayOf(todaySel);
     const today = todayStr();
@@ -26588,6 +26602,13 @@
       : `${mon.getDate()}. ${MONTHS[mon.getMonth()]} – ${sun.getDate()}. ${MONTHS[sun.getMonth()]}`;
     const rangeEl = document.getElementById("todayWeekRange");
     if (rangeEl) rangeEl.textContent = range;
+    // The heading names the week shown; "Heute" brings the current one back.
+    const off = Math.round((dParse(monday) - dParse(mondayOf(today))) / (7 * 864e5));
+    const titleEl = document.getElementById("todayWeekTitle");
+    if (titleEl) titleEl.textContent = off === 0 ? "Diese Woche" : off === -1 ? "Letzte Woche" : off === 1 ? "Nächste Woche" : `KW ${isoWeek(dParse(monday))}`;
+    els.todayProgress.hidden = off !== 0;
+    const todayBtn = document.getElementById("todayWeekTodayBtn");
+    if (todayBtn) todayBtn.hidden = off === 0;
   }
   function monthGridHtml(year, month, hist, mini) {
     const first = dStr(new Date(year, month, 1));
@@ -26773,6 +26794,7 @@
     const b = e.target.closest("[data-date]");
     if (b) { selectDay(b.dataset.date); els.dayPanelTitle.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
   });
+  document.getElementById("todayWeekTodayBtn").addEventListener("click", () => selectDay(todayStr()));
   els.todayWeekPrev.addEventListener("click", () => selectDay(dAdd(todaySel, -7)));
   els.todayWeekNext.addEventListener("click", () => selectDay(dAdd(todaySel, 7)));
   els.calMonthBtn.addEventListener("click", () => { calMode = calMode === "month" ? null : "month"; if (!calMode) calShowNext = false; renderCalendar(loadHistory()); });

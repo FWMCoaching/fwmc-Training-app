@@ -414,8 +414,9 @@ For every new or changed exercise/screen, in the same commit:
   250 ms after (`lpSheetBlockUntil`), contextmenu from a touch is ignored,
   tiles have no iOS callout/selection. Fabian-Blick checks both on every
   state ("zurueck", "lange"). `.screen > .start-btn[id$=StartBtn]` gets
-  `.start-sticky` (stays above the bottom bar, A); Mehr list shows › / ↗ (B);
-  Heute calendar buttons ≥ 44 px, ‹ › in a row with the week range (C).
+  `.start-sticky`, wrapped in an opaque `.start-sticky-bar` (stays above the bottom bar, A; never use a transparent cover); Mehr list shows SVG › / ↗ (B);
+  Heute calendar buttons ≥ 44 px, borderless SVG ‹ › in a row with the week
+  range, heading names the week shown + "Heute" pill (C).
   Tests: `tests/history_back_1006_test.py`, `tests/app_feel_1006_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.
