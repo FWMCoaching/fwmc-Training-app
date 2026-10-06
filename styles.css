@@ -2127,7 +2127,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
    layer (::before) over a snapshot of the old page (.tr-ghost, built in
    app.js), which drifts 30 % to the left. Back = the mirror image: the old
    page slides out to the right over the new one. The logo bar stays put. */
-.screen.tr-push,.screen.tr-pop{position:relative}
+.screen.tr-push,.screen.tr-pop{position:relative;overflow-x:clip}
 .screen.tr-push{z-index:1}
 .screen.tr-push::before{content:"";position:fixed;inset:0;background:var(--bg);box-shadow:-8px 0 24px rgba(0,0,0,.12);animation:trPush .35s cubic-bezier(.32,.72,0,1) both;pointer-events:none}
 .screen.tr-push > :not(.brandbar){animation:trPush .35s cubic-bezier(.32,.72,0,1)}
@@ -2146,7 +2146,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 @keyframes trFade{from{opacity:0}to{opacity:1}}
 @keyframes trRise{from{transform:translateY(48px);opacity:0}40%{opacity:1}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.screen.tr-push > :not(.brandbar),.screen.tr-pop > :not(.brandbar),.tr-rise{animation:trFade .2s ease}.screen.tr-push::before{display:none}}
-body{overflow-x:clip}
+html,body{overflow-x:clip}
 
 /* Untere Navigationsleiste (2026-10-05, bottomNavOn in app.js). Below the
    sheets (z-index 60), hidden while an exercise runs. */
