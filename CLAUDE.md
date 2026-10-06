@@ -425,5 +425,19 @@ For every new or changed exercise/screen, in the same commit:
   `.screen.tr-push/.tr-pop{overflow-x:clip}` guard it; a new sideways animation
   stays inside a clipping box. Fabian-Blick "sprung" (mobile viewport,
   transitions on) checks every page on slide-in and edge swipe.
+- Weitermachen, Schriftgröße, Kurzbefehle (2026-10-06): multi-block runs
+  (Kombi, Workout-Plan, Atem-Programm, Trainer-Programm) store their block in
+  `fwmc-resume-v1` (`resumeNote` in each start…Block, `resumeClear` in each
+  finish…); Heute shows "Weitermachen" (Fortsetzen / Von vorne / Verwerfen)
+  from block 2 on, max 3 days, below a planned training as one line. A new
+  multi-block runner gets the same two calls + a `resumeRun` branch. Text
+  sizes 10.5-22 px in styles.css are `calc(Npx * var(--ts,1))`; `--ts`
+  follows the iPhone text size (`applyTextScale`, 0.95-1.25; tests:
+  `fwmc-test-textscale`) - write new text sizes the same way, keep tabs
+  capped (`min(var(--ts,1),1.05)`). The wrap audit also runs at x1.25/x0.9.
+  manifest.json `shortcuts` (Android only) use `?bereich=heute|training|
+  breath|fortschritt`. Install hint on iOS: "+ Zum Startbildschirm" shows
+  `#installPointer` (arrow to Safari's share button, iPad: top).
+  Test: `tests/resume_install_1006_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

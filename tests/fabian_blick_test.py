@@ -449,6 +449,9 @@ def fkey(f):
         el = re.sub(r' ".*', "", el)  # same kind of control = one finding, whatever its label
         if f["cat"] == "dunkel":
             msg = re.sub(r"\(#.*", "", msg)
+            # an element with an id is the same element whatever transient state
+            # class it has at that moment (e.g. #vorlaufDot .armed while waiting)
+            el = re.sub(r"^([\w-]+#[\w-]+\.[\w-]+)(\.[\w-]+)+", r"\1", el)
     return f"{f['cat']}|{f['state']}|{el}|{msg}"
 
 
