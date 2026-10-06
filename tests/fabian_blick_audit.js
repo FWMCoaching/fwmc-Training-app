@@ -142,7 +142,10 @@
     if (!vis(el)) return;
     let t = el;
     if (el.matches('input[type=checkbox], input[type=radio]')) t = el.closest('label') || el;
-    const r = t.getBoundingClientRect();
+    let r = t.getBoundingClientRect();
+    // mid pop-in animation (scale .5 -> 1, e.g. Reaktionsfeld-Licht): measure the real size
+    if (t.getAnimations && t.getAnimations().some(a => a.playState === 'running') && t.offsetHeight)
+      r = {width: t.offsetWidth, height: t.offsetHeight};
     // Links inside running text are measured by line height; skip them.
     if (t.tagName === 'A' && t.closest('p, li') && cs(t).display === 'inline') return;
     if (r.height < 43.5) add('taste', 'nur ' + Math.round(r.height) + ' px hoch (mind. 44)', t);

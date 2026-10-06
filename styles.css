@@ -2451,7 +2451,8 @@ body.drag-busy{user-select:none;-webkit-user-select:none}
    don't stick after a tap on touch screens. */
 button,[role="button"],a{-webkit-tap-highlight-color:transparent}
 button:not(:disabled),[role="button"]{transition:opacity .12s ease,transform .12s ease}
-button:not(:disabled):active,[role="button"]:active,a:active{opacity:.6;transition:none}
+button:not(:disabled):active,[role="button"]:active,a:active,summary:active{opacity:.6;transition:none}
+summary{-webkit-tap-highlight-color:transparent}
 .featured-card:active,.tile:active,.nat-tile:active,.hub-tile:active,.choice:active{transform:scale(.98)}
 @media (hover:none){
   .text-link:hover{text-decoration:none}
@@ -2600,17 +2601,18 @@ input[type=range]{accent-color:#007094}
 .hub-areas .hub-core-tile{background:color-mix(in srgb,var(--tile-c) 12%,var(--surface));border-color:color-mix(in srgb,var(--tile-c) 45%,transparent)}
 .hub-group-title{font-family:Magra,sans-serif;font-weight:700;font-size:calc(13px * var(--ts,1));letter-spacing:.08em;text-transform:uppercase;color:var(--brand);margin:20px 0 6px}
 .hub-sub{font-size:calc(13px * var(--ts,1));color:var(--ink-soft);margin:0 0 10px}
-.hub-extra .area-tile{flex-direction:row;align-items:flex-start;gap:10px;padding:12px;box-shadow:none;flex-wrap:wrap}
+/* Untere Kacheln wie oben 2 pro Reihe (ab 700 px 4), Symbol oben, Name in
+   einer Zeile wie bei den Kernbereichen (Fabian 06.10.: "unten so breit") */
+.hub-extra{grid-template-columns:repeat(2,1fr)}
+.hub-extra .area-tile{flex-direction:column;align-items:flex-start;gap:8px;padding:12px;box-shadow:none}
 .hub-extra .area-icon{width:34px;height:34px;border-radius:10px;flex:none}
 .hub-extra .area-icon svg{width:20px;height:20px}
-.hub-extra .area-name{font-size:calc(14px * var(--ts,1))}
-@media (max-width:699px){ .hub-extra{grid-template-columns:1fr} .hub-extra .area-tile{align-items:center} }
 .hub-extra .area-text{font-size:calc(12px * var(--ts,1))}
-.hub-extra .t-wrap{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.hub-extra .t-wrap{display:flex;flex-direction:column;gap:2px;min-width:0;max-width:100%}
 .hub-extra .test-unlock-badge{align-self:flex-start;margin-top:4px;font-size:calc(11px * var(--ts,1));padding:2px 8px}
-.hub-core .area-name{font-size:min(calc(15px * var(--ts,1)), 4vw)}
-@media (min-width:700px){ .hub-core .area-name{font-size:min(calc(15px * var(--ts,1)), 2.15vw)} }
-@media (min-width:700px){ .hub-core{grid-template-columns:repeat(4,1fr)} .hub-extra{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))} }
+.hub-core .area-name,.hub-extra .area-name{font-size:min(calc(15px * var(--ts,1)), 4vw);white-space:nowrap}
+@media (min-width:700px){ .hub-core .area-name,.hub-extra .area-name{font-size:min(calc(15px * var(--ts,1)), 16px)} }
+@media (min-width:700px){ .hub-core,.hub-extra{grid-template-columns:repeat(4,1fr)} }
 
 /* Mehr-Liste wie iOS-Einstellungen: › für Seiten in der App, ↗ für Links
    nach draußen (Fabian 2026-10-06, Punkt B) */
@@ -2639,3 +2641,79 @@ body.bottom-nav-on .start-sticky-bar{bottom:calc(64px + max(0px, env(safe-area-i
 /* Kombi-Link nur auf Heute und Training (Fabian 2026-10-06); with the bottom
    bar the area homes reach Kombi through the Training page. */
 body.has-bottom-nav .screen:not(#todayHome):not(#trainingHub) > .combo-entry-link{display:none}
+
+/* ---- Gleichgewicht (NAT, 2026-10-06): Buchstaben-Stifte, Live-Leiste.
+   Player/stage visuals use fixed hex colours (stays light, the background
+   colour is part of the exercise). ---- */
+.balance-stage{flex:1;position:relative;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+#rememberStage,#flashStage,#motStage{touch-action:none}
+.balance-stage .remember-hint{line-height:1.35}
+.balance-stance{font-weight:600;color:#4f6168}
+.balance-stick{
+  position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;
+  font-family:"Magra",sans-serif;font-weight:700;line-height:1;box-shadow:0 2px 10px rgba(0,0,0,.18);
+  cursor:grab;touch-action:none;-webkit-touch-callout:none;
+}
+.balance-stick.dragging{cursor:grabbing;box-shadow:0 6px 22px rgba(0,0,0,.28)}
+.balance-stick[hidden]{display:none}
+.balance-letter{display:block}
+.balance-rest{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#16232a;pointer-events:none}
+.balance-rest[hidden]{display:none}
+.balance-rest-label{font-size:calc(15px * var(--ts,1));font-weight:700;color:#4f6168;letter-spacing:.04em;text-transform:uppercase}
+.balance-rest-count{font-family:"Magra",sans-serif;font-weight:700;font-size:64px;font-variant-numeric:tabular-nums;line-height:1}
+.balance-rest-next{font-size:calc(14px * var(--ts,1));color:#4f6168;text-align:center;padding:0 24px}
+.balance-live{position:absolute;left:0;right:0;bottom:8px;display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 10px;z-index:3}
+.balance-cue{min-height:24px;font-size:calc(16px * var(--ts,1));font-weight:700;color:#16232a;background:rgba(255,255,255,.9);border-radius:999px;padding:3px 14px;box-shadow:0 1px 3px rgba(16,40,48,.16)}
+.balance-cue:empty{visibility:hidden}
+.balance-cue.beat{animation:balBeat .18s ease-out}
+@keyframes balBeat{from{transform:scale(1.12)}to{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.balance-cue.beat{animation:none}}
+.balance-live-row{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.balance-tempo{display:inline-flex;align-items:center;gap:2px;background:rgba(255,255,255,.92);border-radius:999px;box-shadow:0 1px 3px rgba(16,40,48,.16);padding:0 2px}
+.balance-tempo button{width:44px;height:44px;border:none;background:transparent;color:#16232a;font-size:22px;font-weight:700;border-radius:50%;cursor:pointer}
+.balance-tempo button:disabled{opacity:.3}
+.balance-tempo.is-off .balance-bpm{color:#7a8a90}
+.balance-bpm{min-width:62px;text-align:center;font-weight:700;font-size:calc(14px * var(--ts,1));color:#16232a;font-variant-numeric:tabular-nums;white-space:nowrap}
+.balance-chip{min-height:44px;border:none;border-radius:999px;padding:0 15px;background:rgba(255,255,255,.92);color:#16232a;font-weight:600;font-size:calc(14px * var(--ts,1));white-space:nowrap;cursor:pointer;box-shadow:0 1px 3px rgba(16,40,48,.16)}
+.balance-chip.active{background:#007094;color:#ffffff}
+#balanceMetroBtn.active{background:rgba(255,255,255,.92);color:#16232a}
+.balance-chip.balance-finish{background:#007094;color:#ffffff}
+.balance-chip[hidden]{display:none}
+.balance-knobs{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px;background:rgba(255,255,255,.95);border-radius:16px;padding:8px 14px;box-shadow:0 1px 3px rgba(16,40,48,.16)}
+.balance-knobs[hidden]{display:none}
+.balance-knob{display:flex;align-items:center;gap:8px;font-size:calc(13px * var(--ts,1));font-weight:600;color:#16232a;min-height:44px}
+.balance-knob input{width:120px}
+.balance-toast,.look-toast{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;background:rgba(22,35,42,.86);color:#ffffff;font-weight:700;font-size:calc(15px * var(--ts,1));padding:8px 16px;border-radius:999px;pointer-events:none;white-space:nowrap}
+.balance-toast[hidden],.look-toast[hidden]{display:none}
+.balance-custom{display:flex;flex-direction:column;gap:8px}
+.balance-custom input[hidden]{display:none}
+.balance-safety p{margin:0 0 10px;font-size:calc(13px * var(--ts,1));color:var(--ink-soft);line-height:1.45}
+.balance-timed,#balanceBpmRow{display:flex;flex-direction:column;gap:6px}
+.balance-timed .group-label{margin-top:6px}
+.balance-timed[hidden],#balanceBpmRow[hidden]{display:none}
+.balance-knobs{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:0 14px;width:min(340px,100%);box-sizing:border-box}
+.balance-knob{display:contents}
+.balance-knob span{min-height:44px;display:flex;align-items:center}
+.balance-knob input{width:100%}
+.balance-knob-val{font-variant-numeric:tabular-nums;min-width:40px;text-align:right;font-size:calc(13px * var(--ts,1))}
+
+/* Gleichgewicht: "Stand ansagen" is a full 44 px tap row */
+.checkbox-row.tap-row{min-height:44px}
+/* Farbsehen auf kleinen Android-Handys (360 px): "Vollständige
+   Farbenblindheit" bekommt die ganze Zeile statt aus der Karte zu ragen */
+
+
+/* "Wie bei …"-Knöpfe passen sich der Textlänge an statt in ein 3er-Raster
+   gezwängt zu werden (Prüfer 06.10.: "Wie bei Flash-Speicher-Test" ragte
+   aus der Karte, sobald Gleichgewicht als 5. Quelle dazukam) */
+.choice-row[id$="BgSourceRow"]{display:flex;flex-wrap:wrap}
+.choice-row[id$="BgSourceRow"] .choice{flex:1 1 auto;display:block}
+/* Pausenfenster höher als der Bildschirm: "Weiter" bleibt unten sichtbar
+   (Prüfer 06.10., Gleichgewicht; gilt für jedes Pausenfenster) */
+.pause-panel > .start-btn:last-child{position:sticky;bottom:0;box-shadow:0 0 0 12px var(--surface)}
+/* Farbsehen und Kacheln auf kleinen Android-Handys (360 px) */
+@media (max-width:380px){
+  #masterColorVisionRow{grid-template-columns:1fr}
+  .hub-extra .area-tile{padding:12px 10px}
+  .hub-extra .test-unlock-badge{white-space:nowrap;padding:2px 6px;font-size:min(calc(11px * var(--ts,1)), 2.9vw)}
+}

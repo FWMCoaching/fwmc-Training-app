@@ -6,8 +6,9 @@ spotting by eye, instead of one test per single case.
    gear sheet, it clicks every visible button/tile and remembers every new
    screen, sheet and player it reaches (depth 2). New screens are covered
    automatically - nothing to register.
-2. Audit: every state is replayed on a small iPhone (375x667) and a large
-   one (430x932), light and dark, with a full-page screenshot, and checked
+2. Audit: every state is replayed on a small iPhone (375x667), a large
+   one (430x932), a small Android phone (360x780), an iPad portrait
+   (768x1024) and landscape (1024x768) and a laptop (1440x900), light and dark, with a full-page screenshot, and checked
    for these error kinds:
      umbruch     word split mid-word, text sticking out of its box,
                  page scrolling sideways, clipped text
@@ -40,7 +41,7 @@ spotting by eye, instead of one test per single case.
    Fabian's ok (CLAUDE.md: fix the app, never loosen the test).
 
 Usage (from tests/, dev server on :8845):
-  python3 fabian_blick_test.py                 # full walk, 4 configs
+  python3 fabian_blick_test.py                 # full walk, 12 configs
   python3 fabian_blick_test.py --quick         # 1 config (375 light)
   python3 fabian_blick_test.py --update-baseline
 """
@@ -54,8 +55,14 @@ OUT = os.path.join(HERE, "screenshots", "fabian_blick")
 BASELINE = os.path.join(HERE, "fabian_blick_baseline.json")
 QUICK = "--quick" in sys.argv
 UPDATE = "--update-baseline" in sys.argv
+# Every device class Fabian's clients use (Fabian 2026-10-06: "iPad, Laptop,
+# aber auch Android und Co"), each light and dark.
 CONFIGS = [("se-hell", 375, 667, "light"), ("se-dunkel", 375, 667, "dark"),
-           ("max-hell", 430, 932, "light"), ("max-dunkel", 430, 932, "dark")]
+           ("max-hell", 430, 932, "light"), ("max-dunkel", 430, 932, "dark"),
+           ("android-hell", 360, 780, "light"), ("android-dunkel", 360, 780, "dark"),
+           ("ipad-hell", 768, 1024, "light"), ("ipad-dunkel", 768, 1024, "dark"),
+           ("ipad-quer-hell", 1024, 768, "light"), ("ipad-quer-dunkel", 1024, 768, "dark"),
+           ("laptop-hell", 1440, 900, "light"), ("laptop-dunkel", 1440, 900, "dark")]
 if QUICK:
     CONFIGS = CONFIGS[:1]
 ENTRIES = ["heute", "visual", "breath", "movement", "workout", "cardio", "nat", "test", "free"]
@@ -187,10 +194,20 @@ async def replay(pg, entry, clicks):
     remembers the failing selector in pg.last_fail) if a click fails."""
     if entry.startswith("nav:"):
         await pg.goto(BASE + "?bereich=heute"); await pg.wait_for_timeout(250)
-        if entry == "nav:gear":
-            await pg.click("#todayHome .master-settings-btn", timeout=3000)
-        else:
-            await pg.click(f'#bottomNav [data-nav="{entry[4:]}"]', timeout=3000)
+        try:  # under suite load a click can miss its window: retry once, then skip
+            for attempt in (0, 1):
+                try:
+                    if entry == "nav:gear":
+                        await pg.click("#todayHome .master-settings-btn", timeout=3000 + attempt * 5000)
+                    else:
+                        await pg.click(f'#bottomNav [data-nav="{entry[4:]}"]', timeout=3000 + attempt * 5000)
+                    break
+                except Exception:
+                    if attempt:
+                        raise
+        except Exception:
+            pg.last_fail = entry
+            return False
     else:
         await pg.goto(BASE + "?bereich=" + entry)
     await pg.wait_for_timeout(250)
@@ -268,6 +285,10 @@ async () => {
   const out = [];
   const vis = el => el && !el.closest('[hidden]') && el.getBoundingClientRect().width > 0;
   const sheets = [...document.querySelectorAll('.sheet')].filter(vis);
+  // the sheet on top: highest z-index, then the later one in the page
+  // (Datenschutz opens over Grundeinstellungen with z-index 61)
+  const z = el => parseInt(getComputedStyle(el).zIndex, 10) || 0;
+  sheets.sort((a, b2) => z(a) - z(b2));
   const layer = sheets[sheets.length - 1] || [...document.querySelectorAll('.screen')].find(vis);
   if (!layer) return out;
   const scrollers = [document.scrollingElement, ...layer.querySelectorAll('*')].filter(e => {
@@ -442,7 +463,7 @@ NUM = re.compile(r"\d+(\.\d+)?")
 
 
 def fkey(f):
-    # Stable key without the config so a finding in all 4 configs counts once.
+    # Stable key without the config so a finding in all configs counts once.
     msg = NUM.sub("#", f["msg"])[:120]
     el = f.get("el", "")
     if f["cat"] in ("taste", "druck", "dunkel"):

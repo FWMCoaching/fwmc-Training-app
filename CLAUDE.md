@@ -92,7 +92,9 @@ screen and its siblings (390px and 1024px, light and dark), task "find
 everything that would bother Fabian", calibrated with the "Nachgetragene
 Punkte" table in /mnt/project-files/firma/abgabe-check.md. Fix its finds
 before pushing. Automatic part of it: `tests/fabian_blick_test.py` walks every
-screen/sheet/exercise start it can reach (375 and 430 px, light/dark) and
+screen/sheet/exercise start it can reach (iPhone 375/430, Android 360,
+iPad 768/1024, laptop 1440 px; light/dark - Fabian 2026-10-06: every
+device keeps the one design) and
 checks error kinds (Umbruch, Überlappung, Tasten < 44 px, Kopfleiste,
 Farben, Kontrast, Stil, alte Namen, Einfrieren nach Scrollen); known finds
 sit in `tests/fabian_blick_baseline.json`, only new ones fail. Report and
@@ -475,5 +477,14 @@ For every new or changed exercise/screen, in the same commit:
   (`.player.calm`), Ausdauer, Eigenes Training and Krafttraining
   (`.player.calm-dk`) are dark; exercises whose background colour matters stay
   light. Test: `tests/design_1006_test.py`.
+- Trainings-Übersicht (2026-10-06): the lower "Dazu" tiles are 2 per row
+  like the core tiles (4 from 700 px), icon on top, names nowrap with a
+  capped font (`.hub-extra`); never back to full-width rows.
+- Gleichgewicht + Größe live (2026-10-06): 6th NAT exercise (letter sticks,
+  Nein-Nein/Ja-Ja/Ohr-Schulter/Diagonal/Sakkaden, metronome, sets or open-ended,
+  stance shown/spoken, drag + pinch, live tempo/Takt/Zeit anhalten/Lautstärke);
+  details docs/notes/02. Every LOOK_SPECS exercise also gets its size live in the
+  pause sheet and by pinch (`LIVE_LOOK`); a new one needs one entry there.
+  Tests: `tests/gleichgewicht_1006_test.py`, `tests/live_size_1006_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.
