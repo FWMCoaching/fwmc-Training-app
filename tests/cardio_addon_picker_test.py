@@ -156,7 +156,7 @@ async def main():
         # ---- floating Cardio-status badge, not yet in warn range ----
         print("badge visible during the guest exercise:", await pg.is_visible("#cardioGuestBadge"))
         badge_a = await pg.inner_text("#cardioGuestBadge")
-        print("badge reads remaining Cardio time:", badge_a.startswith("Cardio: noch"))
+        print("badge reads remaining Cardio time:", badge_a.startswith("Ausdauer: noch"))
         print("not warning yet (block just started, ~1 Min. left):", "warn" not in (await pg.get_attribute("#cardioGuestBadge", "class")))
         await pg.wait_for_timeout(1300)
         badge_b = await pg.inner_text("#cardioGuestBadge")

@@ -1,3 +1,4 @@
 artifact-body.html
 tests/screenshots/
 screenshots/
+tests/*.png

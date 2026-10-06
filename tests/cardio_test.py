@@ -116,7 +116,7 @@ async def main():
         await pg.click("#cardioBackToHome"); await pg.wait_for_timeout(200)
         await pg.click('#cardioHome .section-tab[data-section="visual"]'); await pg.wait_for_timeout(200)
         history_text = await pg.inner_text("#historyList") if await pg.is_visible("#historySection") else ""
-        print("cardio history entry recorded on home:", "Cardio" in history_text)
+        print("cardio history entry recorded on home:", "Ausdauer" in history_text)
 
         # ==== Abort paths: cardioPlayer is a "player" overlay (like
         # workoutPlayer/els.player), not a SCREENS member - showScreen()

@@ -62,7 +62,7 @@ async def main():
         check("8 week bars", await pg.locator("#progressWeeks .progress-week").count() == 8)
         check("3 weeks marked reached", await pg.locator("#progressWeeks .progress-week.reached").count() == 3)
         areas = await pg.inner_text("#progressAreas")
-        check("areas list all trained areas", all(a in areas for a in ["Visual Training", "Atemtraining", "Workout", "Cardio", "Movement"]), areas)
+        check("areas list all trained areas", all(a in areas for a in ["Visuelles Training", "Atemtraining", "Krafttraining", "Ausdauertraining", "Reaktionstraining"]), areas)
         check("milestones 1/5/10 reached", await pg.locator(".progress-milestone.reached").count() == 3)
         check("next milestone text", "15 Trainings bis zum nächsten Meilenstein (25)" in await pg.inner_text("#progressNextText"))
 

@@ -212,7 +212,7 @@ async def main():
         check("deleted, back on the area home", len(await own_blocks(pg)) == 3 and await visible_screen(pg) == "freeHome")
 
         # ---- Kombi: capture (own copy), edit, playback ----
-        await pg.click('#freeHome [data-open-combo="1"]'); await pg.wait_for_timeout(200)
+        await pg.click('[data-nav="training"]'); await pg.wait_for_timeout(250); await pg.click('#trainingHub .combo-entry-link'); await pg.wait_for_timeout(200)
         grp = await pg.evaluate("""() => { const g = [...document.querySelectorAll('#comboAddGrid .combo-domain-group')]
           .find(x => x.querySelector('.combo-domain-title').textContent === 'Eigenes Training');
           return g ? [...g.querySelectorAll('.ca-title')].map(e => e.textContent) : null; }""")

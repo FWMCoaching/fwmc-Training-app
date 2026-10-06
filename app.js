@@ -1153,14 +1153,14 @@
   function comboBlockLabel(block) {
     if (block.domain === "wimhof") return WIMHOF_INFO.name;
     if (block.domain === "breath") return BREATH_PATTERNS[block.pattern].name;
-    if (block.domain === "movement") return "Movement · Ganzkörper-Reaktion";
+    if (block.domain === "movement") return "Reaktionstraining · Ganzkörper-Reaktion";
     if (block.domain === "workout") return workoutBlockLabel(block);
     if (block.domain === "visual") return EXERCISES[block.exercise] ? EXERCISES[block.exercise].title : block.exercise;
     if (block.domain === "nat") return `Positionen merken · ${REMEMBER_MODES[block.mode] ? REMEMBER_MODES[block.mode].title : block.mode}`;
     if (block.domain === "blitz") return "Blitz-Raster";
     if (block.domain === "flash") return `Flash-Speicher-Test · ${flashModeTitle(block.mode)}`;
     if (block.domain === "mot") return `Objektverfolgung (MOT) · ${motModeTitle(block.mode)}`;
-    if (block.domain === "cardio") return `Cardio · ${countLabel(block.items.length, "Aktivität", "Aktivitäten")}`;
+    if (block.domain === "cardio") return `Ausdauertraining · ${countLabel(block.items.length, "Aktivität", "Aktivitäten")}`;
     if (block.domain === "free") return block.free.title;
     return block.domain;
   }
@@ -1200,7 +1200,7 @@
   // place (rather than removing the mechanism) in case a future domain
   // ever wants a plain one-click preset again.
   const COMBO_PRESETS = {};
-  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Movement", visual: "Visual Training", workout: "Workout", cardio: "Cardio", nat: "NAT", free: "Eigenes Training" };
+  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Reaktionstraining", visual: "Visuelles Training", workout: "Krafttraining", cardio: "Ausdauertraining", nat: "NAT", free: "Eigenes Training" };
   const PERIPH_ICON_HTML = '<div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg></div>';
   const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat", "free"];
   // Blitz-Raster/Flash-Speicher-Test/Objektverfolgung (MOT) render inside the same
@@ -1225,7 +1225,7 @@
       { label: "Ganzkörper-Reaktion", meta: "Bewegungen, Tempo & Dauer einstellen", open: () => openMovementComboCapture(null, null) },
     ],
     cardio: [
-      { label: "Cardio-Einheit", meta: "eigene Aktivitäten zusammenstellen", open: () => openCardioComboCapture(null, null) },
+      { label: "Ausdauer-Einheit", meta: "eigene Aktivitäten zusammenstellen", open: () => openCardioComboCapture(null, null) },
     ],
     // Remember has no natural end (all 3 modes run until "Beenden") - the
     // capture UI adds a duration slider that only exists in combo mode
@@ -1288,7 +1288,7 @@
     todayHome: $("todayHome"), planScreen: $("planScreen"), progressScreen: $("progressScreen"),
     todayProgressCard: $("todayProgressCard"), todayProgressOpenBtn: $("todayProgressOpenBtn"), progressBackBtn: $("progressBackBtn"),
     progressGoalMinus: $("progressGoalMinus"), progressGoalPlus: $("progressGoalPlus"), progressGoalValue: $("progressGoalValue"),
-    progressWeekBar: $("progressWeekBar"), progressWeekText: $("progressWeekText"), progressStats: $("progressStats"), progressWeeks: $("progressWeeks"),
+    progressWeekBar: $("progressWeekBar"), progressWeekText: $("progressWeekText"), progressStats: $("progressStats"), progressEmpty: $("progressEmpty"), progressWeeks: $("progressWeeks"),
     progressAreas: $("progressAreas"), progressAreasNote: $("progressAreasNote"), progressMilestones: $("progressMilestones"), progressNextText: $("progressNextText"),
     home: $("home"), ready: $("ready"), player: $("player"), playerBar: $("playerBar"),
     donePanel: $("donePanel"), doneSummary: $("doneSummary"), doneRating: $("doneRating"),
@@ -2276,7 +2276,7 @@
     box.id = "storageWarning";
     box.setAttribute("role", "alert");
     const text = document.createElement("p");
-    text.textContent = "Der Speicher dieses Browsers ist voll. Neue Einstellungen und Verlaufseinträge werden gerade nicht gespeichert. Tipp: Motivationsbilder im Cardio-Bereich entfernen und unter Grundeinstellungen eine Datensicherung exportieren.";
+    text.textContent = "Der Speicher dieses Browsers ist voll. Neue Einstellungen und Verlaufseinträge werden gerade nicht gespeichert. Tipp: Motivationsbilder im Bereich Ausdauertraining entfernen und unter Grundeinstellungen eine Datensicherung exportieren.";
     const btn = document.createElement("button");
     btn.type = "button";
     btn.textContent = "Verstanden";
@@ -2443,6 +2443,11 @@
     els.progressWeekText.textContent = left
       ? `Diese Woche ${s.cur.n} von ${p.weekGoal}. Noch ${left} bis zum Ziel.`
       : `Diese Woche ${s.cur.n} von ${p.weekGoal}. Ziel erreicht, stark!`;
+    // No training yet (Fabian 2026-10-06): one friendly start card instead of
+    // zeros and empty bars; the week goal stays adjustable above it.
+    const empty = !s.total;
+    els.progressEmpty.hidden = !empty;
+    [els.progressStats, els.progressWeeks.closest(".group"), els.progressAreas.closest(".group"), els.progressMilestones.closest(".group")].forEach((el) => { if (el) el.hidden = empty; });
     els.progressStats.innerHTML =
       `<div class="stat"><strong>${progressStreakText(s.streak)}</strong><span>Serie (Wochenziel in Folge erreicht)</span></div>` +
       `<div class="stat"><strong>${progressStreakText(s.best)}</strong><span>Längste Serie</span></div>` +
@@ -3207,7 +3212,7 @@
   // (rememberPrefs.bgColorKey/bgIntensity). Flash-Speicher-Test will be a
   // third once it exists and gets its own background setting.
   const BG_SOURCES = [
-    { id: "vt", label: "Visual Training / NAT", get: () => ({ colorKey: state.bgColorKey, intensity: state.bgIntensity }) },
+    { id: "vt", label: "Visuelles Training / NAT", get: () => ({ colorKey: state.bgColorKey, intensity: state.bgIntensity }) },
     { id: "remember", label: "Positionen merken", get: () => ({ colorKey: rememberPrefs.bgColorKey, intensity: rememberPrefs.bgIntensity }) },
     { id: "blitz", label: "Blitz-Raster", get: () => ({ colorKey: blitzPrefs.bgColorKey, intensity: blitzPrefs.bgIntensity }) },
     { id: "flash", label: "Flash-Speicher-Test", get: () => ({ colorKey: flashPrefs.bgColorKey, intensity: flashPrefs.bgIntensity }) },
@@ -6892,6 +6897,7 @@
   function startBreathSession() {
     const built = buildBreathCycle(breathWorking);
     if (built.cycleLen <= 0) return;
+    resumeSingleBase = null;
     breathPatternName = BREATH_PATTERNS[breathPatternKey].name;
     const cycles = Math.max(1, Math.round((breathPrefs.durationMin * 60) / built.cycleLen));
     hideAllPlayers();
@@ -6956,6 +6962,7 @@
     const elapsed = Math.min((breathPauseTime - breathSession.startTime) / 1000, breathSession.plannedTotal);
     const restMin = Math.min(30, Math.max(1, Math.round((breathSession.plannedTotal - elapsed) / 60)));
     breathPauseDraft = { tempo: breathSession.tempo, restMin, restMinAtStart: restMin, sound: breathSession.sound };
+    resumeSingleNote("breath");
     syncBreathPauseUI();
     els.breathPauseBtn.hidden = true;
     els.breathListenLayer.hidden = true;
@@ -7042,6 +7049,7 @@
     els.breathListenLayer.hidden = true;
     resetBreathListenHold();
     if (wasListen && !breathProgram && !comboProgram) speakWord("Geschafft. Gut gemacht.");
+    if (!breathProgram && !comboProgram) resumeSingleClear("breath");
     if (breathProgram) { advanceBreathProgram(played); return; }
     if (comboProgram) { advanceComboProgram(played); return; }
     els.breathPlayerBar.hidden = true;
@@ -7055,6 +7063,7 @@
   function breathAbort() {
     if (comboProgram) { breathLeavePlayer(); abortComboProgram(); return; }
     const wasProgram = !!breathProgram;
+    resumeSingleNote("breath");
     breathProgram = null;
     breathLeavePlayer();
     showScreen(wasProgram ? "breathProgramIntro" : "breathReady");
@@ -7519,7 +7528,7 @@
       if (existingBlock.figureStyle === "figur" || existingBlock.figureStyle === "abstrakt") movementPrefs.figureStyle = existingBlock.figureStyle;
     }
     comboMovementEditIndex = editIndex ?? null;
-    els.movementReadyTitle.textContent = "Baustein: Movement";
+    els.movementReadyTitle.textContent = "Baustein: Reaktionstraining";
     els.movementReadyHint.textContent = "Stelle die Bewegungen für diesen Baustein ein.";
     els.movementStartBtn.textContent = "Baustein übernehmen";
     openMovementReady();
@@ -7725,6 +7734,7 @@
   function startMovementSession() {
     const pool = MOVEMENTS.filter((m) => movementPrefs.movements.includes(m.id));
     if (pool.length < MIN_MOVEMENTS) return;
+    resumeSingleBase = null;
     const beatLenS = 60 / movementPrefs.bpm;
     const totalBeats = Math.max(4, Math.round((movementPrefs.durationMin * 60) / beatLenS));
     const gridMode = movementPrefs.preview === "all";
@@ -7846,6 +7856,7 @@
     movementRaf = null;
     ms.pausedAt = performance.now();
     movementPauseDraft = { bpm: Math.round(60 / ms.beatLenS), preview: ms.preview };
+    resumeSingleNote("movement");
     syncMovementPauseUI();
     els.movementPauseBtn.hidden = true;
     els.movementPauseOverlay.hidden = false;
@@ -7889,6 +7900,7 @@
     releaseWakeLock();
     els.movementFinishBadge.hidden = true;
     if (comboProgram) { advanceComboProgram(played); return; }
+    if (!movementProgram) resumeSingleClear("movement");
     els.movementPlayerBar.hidden = true;
     els.movementDoneSummary.textContent = `Ganzkörper-Reaktion · ${fmtMinutes(played)}`;
     const id = movementProgram
@@ -7915,6 +7927,7 @@
   function movementAbort() {
     if (comboProgram) { movementLeavePlayer(); abortComboProgram(); return; }
     const wasProgram = !!movementProgram;
+    resumeSingleNote("movement");
     movementProgram = null;
     movementLeavePlayer();
     showScreen(wasProgram ? "movementProgramIntro" : "movementReady");
@@ -11591,7 +11604,7 @@
     if (!el) return;
     el.innerHTML =
       `<div class="group-label">Töne &amp; Ansagen</div>` +
-      `<div class="group-help">Gilt für Tabata-Zirkel, Kraftplan, Cardio und die Pausen im Kombi-Programm. In den Feineinstellungen jedes Bereichs kannst du davon abweichen.</div>` +
+      `<div class="group-help">Gilt für Tabata-Zirkel, Kraftplan, Ausdauertraining und die Pausen im Kombi-Programm. In den Feineinstellungen jedes Bereichs kannst du davon abweichen.</div>` +
       cueControlsHtml(masterPrefs.cues, CUE_FIELD_LABELS.master) +
       `<div class="cue-sub-label">iPhone/iPad</div>` +
       `<label class="checkbox-row"><input type="checkbox" data-cue-silent${masterPrefs.cuesIgnoreSilent ? " checked" : ""}> Töne auch bei eingeschaltetem Stummschalter</label>` +
@@ -11871,7 +11884,7 @@
     els.workoutDoneSummary.textContent = `${aborted ? "Abgebrochen · " : ""}${ex ? ex.name : "Training"} · ${fmtMinutes(playedS)}`;
     els.workoutDoneSuggestion.hidden = !suggestion;
     els.workoutDoneSuggestion.textContent = suggestion || "";
-    const id = addHistory({ kind: "workout", title: ex ? ex.name : "Workout", seconds: Math.round(playedS), note: aborted ? "abgebrochen" : undefined, aborted: !!aborted });
+    const id = addHistory({ kind: "workout", title: ex ? ex.name : "Krafttraining", seconds: Math.round(playedS), note: aborted ? "abgebrochen" : undefined, aborted: !!aborted });
     renderRating(els.workoutRating, id, "Wie gut hast du durchgehalten?");
     els.workoutDonePanel.hidden = false;
   }
@@ -13267,7 +13280,7 @@
   wirePresetSaveForm({
     saveBtn: els.cardioSaveBtn, form: els.cardioSaveForm, nameInput: els.cardioSaveNameInput,
     cancelBtn: els.cardioSaveCancelBtn, confirmBtn: els.cardioSaveConfirmBtn,
-    defaultName: () => `Eigenes Cardio ${new Date().toLocaleDateString("de-DE")}`,
+    defaultName: () => `Eigene Ausdauer-Einheit ${new Date().toLocaleDateString("de-DE")}`,
     onSave: (name) => {
       const list = cardioSavedStore.load();
       list.push({ id: String(Date.now()), name, items: cardioPrefs.items.map(copyCardioItem) });
@@ -13305,7 +13318,7 @@
     comboCardioCaptureOriginal = cardioPrefs.items.map(copyCardioItem);
     cardioPrefs.items = existingBlock ? existingBlock.items.map(copyCardioItem) : [];
     comboCardioEditIndex = editIndex ?? null;
-    els.cardioReadyTitle.textContent = "Baustein: Cardio";
+    els.cardioReadyTitle.textContent = "Baustein: Ausdauertraining";
     els.cardioReadyHint.textContent = "Stelle die Aktivitäten für diesen Baustein zusammen.";
     openCardioReady();
   }
@@ -13316,7 +13329,7 @@
       comboCardioCaptureOriginal = null;
     }
     comboCardioEditIndex = null;
-    els.cardioReadyTitle.textContent = "Cardio";
+    els.cardioReadyTitle.textContent = "Ausdauertraining";
     els.cardioReadyHint.textContent = "Stelle deine Aktivitäten in der Reihenfolge zusammen, in der du sie machen willst.";
   }
   function commitCardioComboCapture() {
@@ -13352,7 +13365,7 @@
   }
 
   function openCardioBundleOverview(bundleDef, code) {
-    els.cardioBundleTitle.textContent = bundleDef.name || "Deine Cardio-Einheiten";
+    els.cardioBundleTitle.textContent = bundleDef.name || "Deine Ausdauer-Einheiten";
     els.cardioBundleList.innerHTML = "";
     const sorted = bundleDef.programs
       .map((p, i) => ({ p, i }))
@@ -13380,7 +13393,7 @@
   }
 
   function renderCardioProgramIntro(def, code, key) {
-    const title = def.name || def.label || "Deine Cardio-Einheit";
+    const title = def.name || def.label || "Deine Ausdauer-Einheit";
     els.cardioProgramTitle.textContent = title;
     els.cardioProgramMeta.textContent = `${countLabel(def.items.length, "Aktivität", "Aktivitäten")} · ca. ${fmtMinutes(cardioItemsSeconds(def.items))}`;
     els.cardioProgramDesc.textContent = def.description || "";
@@ -13474,7 +13487,7 @@
   // `group` sorts both the Feineinstellungen pool grid and the live
   // picker into their parent domain, so the list stays legible as it
   // grows instead of one long flat run of choices.
-  const CARDIO_GUEST_GROUPS = { vt: "Visual Training", nat: "Neuroathletik (NAT)" };
+  const CARDIO_GUEST_GROUPS = { vt: "Visuelles Training", nat: "Neuroathletik (NAT)" };
   const CARDIO_GUEST_TYPES = [
     { id: "addon-flash", title: "Zusatzaufgabe · Ziffer/Buchstabe", group: "vt" },
     { id: "vt-color", title: "VT · Farbe & Seite", group: "vt" },
@@ -14877,7 +14890,7 @@
     const block = cardioState.items[cardioState.index];
     if (!block) { hideCardioGuestBadge(); return; }
     const remaining = Math.max(0, block.durationS - (performance.now() - cardioState.blockStartTime) / 1000);
-    els.cardioGuestBadge.textContent = `Cardio: noch ${fmtClock(remaining)}`;
+    els.cardioGuestBadge.textContent = `Ausdauer: noch ${fmtClock(remaining)}`;
     els.cardioGuestBadge.classList.toggle("warn", remaining <= CARDIO_GUEST_BADGE_WARN_S);
     const top = cardioGuestBadgeTop();
     els.cardioGuestBadge.style.top = top == null ? "" : top + "px";
@@ -14989,7 +15002,7 @@
     const names = [...new Set(realItems.map((b) => findCardioActivity(b.activity).name))].join(", ");
     const id = cardioProgram
       ? addHistory({ kind: "cardio-plan", title: cardioProgram.title, progKey: cardioProgram.key, seconds: Math.round(totalS), note: aborted ? `abgebrochen · ${names}` : names, aborted: !!aborted })
-      : addHistory({ kind: "cardio", title: "Cardio", seconds: Math.round(totalS), note: aborted ? `abgebrochen · ${names}` : names, aborted: !!aborted });
+      : addHistory({ kind: "cardio", title: "Ausdauertraining", seconds: Math.round(totalS), note: aborted ? `abgebrochen · ${names}` : names, aborted: !!aborted });
     renderRating(els.cardioRating, id, "Wie gut hast du durchgehalten?");
     setDonePanelAborted(els.cardioDonePanel, aborted, "Training beendet");
     els.cardioDoneSummary.textContent = aborted
@@ -16396,7 +16409,7 @@
     saveWorkoutRepsPrefs();
     refreshWorkoutRepsBuilder();
   }));
-  document.getElementById("cardioClearBtn").addEventListener("click", () => confirmDialog("Willst du alle Aktivitäten aus deiner Cardio-Einheit entfernen?", () => {
+  document.getElementById("cardioClearBtn").addEventListener("click", () => confirmDialog("Willst du alle Aktivitäten aus deiner Ausdauer-Einheit entfernen?", () => {
     cardioPrefs.items = [];
     saveCardioPrefs();
     renderCardioAddGrid();
@@ -26312,7 +26325,7 @@
   // history has a training of the same area on that day (one history entry
   // per planned entry).
   Object.assign(els, {
-    todayGreeting: $("todayGreeting"), todayDate: $("todayDate"), todayMain: $("todayMain"),
+    todayGreeting: $("todayGreeting"), todayDate: $("todayDate"), todayMain: $("todayMain"), todayWeekReview: $("todayWeekReview"),
     todayProgress: $("todayProgress"), todayWeekStrip: $("todayWeekStrip"),
     todayWeekPrev: $("todayWeekPrev"), todayWeekNext: $("todayWeekNext"),
     calMonthBtn: $("calMonthBtn"), calNextMonthBtn: $("calNextMonthBtn"), calQuarterBtn: $("calQuarterBtn"),
@@ -26365,17 +26378,17 @@
   }
   // Order = Training overview (Fabian 2026-10-05).
   const PLAN_AREAS = [
-    { key: "visual", label: "Visual Training", short: "Visual", color: "#1f7ab8", screen: "home", text: "Wahrnehmen, entscheiden, reagieren.",
+    { key: "visual", label: "Visuelles Training", short: "Visuell", color: "#1f7ab8", screen: "home", text: "Wahrnehmen, entscheiden, reagieren.",
       icon: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="#fff"/>' },
     { key: "breath", label: "Atemtraining", short: "Atem", color: "#2a9d8f", screen: "breathHome", text: "Ruhig werden und Fokus finden.",
       icon: '<path d="M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-3 3M3 12h8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
     { key: "nat", label: "NAT – Neuroathletik", short: "NAT", color: "#3a7d2c", screen: "natHome", text: "Wahrnehmung, Gedächtnis und Reaktion.",
       icon: '<circle cx="12" cy="12" r="8" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="2.5" fill="#fff"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
-    { key: "movement", label: "Movement", short: "Movement", color: "#c77d12", screen: "movementHome", text: "Bewegen, merken, reagieren im Takt.",
+    { key: "movement", label: "Reaktionstraining", short: "Reaktion", color: "#c77d12", screen: "movementHome", text: "Bewegen, merken, reagieren im Takt.",
       icon: '<circle cx="12" cy="4.5" r="2" fill="#fff"/><path d="M12 7v7M12 9l-5-3M12 9l5 3M12 14l-4 6M12 14l4 6" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
-    { key: "workout", label: "Workout", short: "Workout", color: "#c0392b", screen: "workoutHome", text: "Kraft, Intervalle und eigene Pläne.",
+    { key: "workout", label: "Krafttraining", short: "Kraft", color: "#c0392b", screen: "workoutHome", text: "Kraft, Intervalle und eigene Pläne.",
       icon: '<path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
-    { key: "cardio", label: "Cardio", short: "Cardio", color: "#7b4fb8", screen: "cardioHome", text: "Ausdauer, auf Wunsch mit Zusatzaufgaben.",
+    { key: "cardio", label: "Ausdauertraining", short: "Ausdauer", color: "#7b4fb8", screen: "cardioHome", text: "Ausdauer, auf Wunsch mit Zusatzaufgaben.",
       icon: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' },
     { key: "free", label: "Eigenes Training", short: "Eigenes Training", color: "#a0527a", screen: "freeHome", text: "Eigenes wie Dehnen, Eisbad oder Journal.",
       icon: '<rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M8 12.5l2.8 2.8L16.5 9" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
@@ -26546,10 +26559,57 @@
     } catch (e) {}
   }
   function resumeClear() { try { localStorage.removeItem(RESUME_KEY); } catch (e) {} }
+  // Single longer exercises (Fabian, 2026-10-06: "atmen nach einem Anruf"):
+  // Atem-Muster and Movement remember the rest of the run when they are
+  // paused (also the automatic pause on leaving the app), left in the
+  // background or ended with "Beenden"; only runs of 3+ min with at least
+  // 30 s done and 1 min left. Own key, so a programme stays resumable too;
+  // Heute offers the more recent one.
+  const RESUME_SINGLE_KEY = "fwmc-resume-single-v1";
+  let resumeSingleBase = null; // { total, offset } while a continued run plays, so a second break keeps the original length
+  function resumeSingleNote(kind) {
+    let rec = null;
+    if (kind === "breath" && breathSession && !breathProgram && !comboProgram) {
+      const bs = breathSession;
+      const ref = breathPaused ? breathPauseTime : performance.now();
+      const played = Math.min(Math.max(0, (ref - bs.startTime) / 1000), bs.plannedTotal);
+      rec = { kind, title: breathPatternName, total: bs.plannedTotal, played, rest: bs.plannedTotal - played,
+        breath: { key: breathPatternKey, phases: breathScaledPhases(bs.basePhases, bs.tempo), sound: !!bs.sound, listen: !!bs.listen } };
+    } else if (kind === "movement" && movementSession && !movementProgram && !comboProgram) {
+      const ms = movementSession;
+      const total = ms.totalBeats * ms.beatLenS, played = ms.lastBeatIdx * ms.beatLenS;
+      rec = { kind, title: "Ganzkörper-Reaktion", total, played, rest: total - played,
+        movement: { movements: movementPrefs.movements.slice(), bpm: Math.round(60 / ms.beatLenS), preview: ms.preview,
+          mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel, direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle } };
+    }
+    if (rec && resumeSingleBase && resumeSingleBase.kind === kind) { rec.played += resumeSingleBase.offset; rec.total = resumeSingleBase.total; }
+    if (!rec || rec.total < 180 || rec.played < 30 || rec.rest < 60) return;
+    rec.total = Math.round(rec.total); rec.rest = Math.round(rec.rest); rec.played = Math.round(rec.played);
+    writeJSON(RESUME_SINGLE_KEY, { ...rec, type: "single", ts: Date.now() });
+  }
+  function resumeSingleClear(kind) {
+    const r = readJSON(RESUME_SINGLE_KEY, null);
+    if (!kind || (r && r.kind === kind)) { try { localStorage.removeItem(RESUME_SINGLE_KEY); } catch (e) {} }
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) return;
+    if (breathSession) resumeSingleNote("breath");
+    if (movementSession && !movementSession.finishTimer) resumeSingleNote("movement");
+  });
   function resumeGet() {
-    const r = readJSON(RESUME_KEY, null);
-    if (!r || !RESUME_UNIT[r.type] || !r.def || !Array.isArray(r.def.blocks) || !(r.pos > 0) || r.pos >= r.total || !(Date.now() - r.ts < RESUME_MAX_AGE_MS)) return null;
-    return r;
+    let r = readJSON(RESUME_KEY, null);
+    if (!r || !RESUME_UNIT[r.type] || !r.def || !Array.isArray(r.def.blocks) || !(r.pos > 0) || r.pos >= r.total || !(Date.now() - r.ts < RESUME_MAX_AGE_MS)) r = null;
+    let s1 = readJSON(RESUME_SINGLE_KEY, null);
+    if (!s1 || !(s1.kind === "breath" ? s1.breath && s1.breath.phases : s1.kind === "movement" ? s1.movement && Array.isArray(s1.movement.movements) : false)
+      || !(s1.rest >= 60) || !(s1.total >= s1.rest) || !(Date.now() - s1.ts < RESUME_MAX_AGE_MS)) s1 = null;
+    if (r && s1) return s1.ts > r.ts ? s1 : r;
+    return r || s1;
+  }
+  function resumeDrop(r) {
+    if (r && r.type === "single") resumeSingleClear(); else resumeClear();
+  }
+  function resumeCount(r) {
+    return r.type === "single" ? `noch ${Math.ceil(r.rest / 60)}\u00a0Min.` : `${RESUME_UNIT[r.type][0]} ${r.pos + 1}\u00a0von\u00a0${r.total}`;
   }
   function resumeAgo(ts) {
     const min = Math.round((Date.now() - ts) / 60000);
@@ -26559,14 +26619,42 @@
     if (h < 24) return h === 1 ? "vor 1\u00a0Std." : `vor ${h}\u00a0Std.`;
     return dStr(new Date(ts)) === dAdd(todayStr(), -1) ? "gestern" : `am ${longDate(dStr(new Date(ts)))}`;
   }
+  // Fabian 2026-10-06: the 3-day limit must be visible ("noch bis … möglich").
+  function resumeUntil(r) {
+    const end = new Date(r.ts + RESUME_MAX_AGE_MS);
+    const hm = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`;
+    const day = dStr(end), today = todayStr();
+    const name = day === today ? "heute" : day === dAdd(today, 1) ? "morgen" : ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"][end.getDay()];
+    return `Fortsetzen ist noch bis ${name}, ${hm}\u00a0Uhr möglich.`;
+  }
   function resumeMeta(r) {
-    const u = RESUME_UNIT[r.type];
-    return `${u[0]} ${r.pos + 1}\u00a0von\u00a0${r.total} · unterbrochen ${resumeAgo(r.ts)}`;
+    return `${resumeCount(r)} · unterbrochen ${resumeAgo(r.ts)}`;
   }
   function resumeRun(r, fromStart) {
     const idx = fromStart ? 0 : r.idx;
     const played = fromStart ? 0 : (r.played || 0);
     hideAllPlayers();
+    if (r.type === "single") {
+      const runS = fromStart ? r.total : r.rest;
+      if (r.kind === "breath") {
+        const b = r.breath, keep = { durationMin: breathPrefs.durationMin, sound: breathPrefs.sound, listen: breathPrefs.listen };
+        activateSectionTab("breath");
+        breathPatternKey = BREATH_PATTERNS[b.key] ? b.key : "box";
+        breathWorking = { ...b.phases };
+        Object.assign(breathPrefs, { durationMin: runS / 60, sound: b.sound, listen: b.listen });
+        startBreathSession();
+        Object.assign(breathPrefs, keep);
+        resumeSingleBase = { kind: "breath", total: r.total, offset: r.total - runS };
+      } else {
+        const keep = { ...movementPrefs, movements: movementPrefs.movements.slice() };
+        activateSectionTab("movement");
+        Object.assign(movementPrefs, r.movement, { durationMin: runS / 60 });
+        startMovementSession();
+        Object.assign(movementPrefs, keep);
+        resumeSingleBase = { kind: "movement", total: r.total, offset: r.total - runS };
+      }
+      return;
+    }
     if (r.type === "combo") {
       comboReturnScreen = "todayHome"; comboOriginBundle = null;
       comboProgram = { def: r.def, blockIndex: idx, code: r.code, key: r.key, title: r.title, totalPlayedS: played };
@@ -26617,6 +26705,7 @@
     els.todayDate.textContent = longDate(today);
     const hist = loadHistory();
     renderTodayMain(today, hist);
+    renderWeekReview(today, hist);
     renderCountdown();
     const st = weekStats(mondayOf(today), hist);
     els.todayProgress.textContent = st.planned ? `${st.done} von ${st.planned} geplanten Einheiten` : "noch kein App-Training geplant";
@@ -26642,18 +26731,19 @@
         <h2 class="today-main-title">${areaDot(e.area)}${esc(entryTitle(e))}</h2>
         <p class="today-main-meta">${esc(meta)}</p>${more}
         <button class="start-btn" type="button" data-today-start="${esc(e.id)}">Training starten</button>${resume ? `
-        <p class="today-resume-line">Unterbrochen: ${esc(resume.title)} · <span class="nowrap">${esc(RESUME_UNIT[resume.type][0])} ${resume.pos + 1}&nbsp;von&nbsp;${resume.total}</span></p><p class="today-resume-line today-resume-go"><button class="text-link small" type="button" id="todayResumeBtn">Fortsetzen</button></p>` : ""}`;
+        <p class="today-resume-line">Unterbrochen: ${esc(resume.title)} · <span class="nowrap">${esc(resumeCount(resume))}</span></p><p class="today-resume-line today-resume-go"><button class="text-link small" type="button" id="todayResumeBtn">Fortsetzen</button></p>` : ""}`;
     } else if (resume) {
       html = `<div class="today-main-kicker">Weitermachen</div>
         <h2 class="today-main-title">${esc(resume.title)}</h2>
         <p class="today-main-meta">${esc(resumeMeta(resume))}</p>
         <button class="start-btn" type="button" id="todayResumeBtn">Fortsetzen</button>
+        <p class="today-resume-until">${esc(resumeUntil(resume))}</p>
         <div class="today-resume-actions"><button class="text-link small" type="button" id="todayResumeRestartBtn">Von vorne</button><button class="text-link small danger" type="button" id="todayResumeDropBtn">Verwerfen</button></div>`;
     } else {
       const doneAll = occ.length > 0;
       const lastRow = last ? `<p class="today-main-meta">Zuletzt: ${esc(last.title)} · ${esc(longDate(dStr(new Date(last.ts))))}</p>
-        <button class="start-btn" type="button" id="todayContinueBtn">Weitermachen</button>` : "";
-      html = `<div class="today-main-kicker">${doneAll ? "Heute alles geschafft" : last ? "Weitermachen" : "Los geht's"}</div>
+        <button class="start-btn" type="button" id="todayContinueBtn">Nochmal trainieren</button>` : "";
+      html = `<div class="today-main-kicker">${doneAll ? "Heute alles geschafft" : last ? "Zuletzt trainiert" : "Los geht’s"}</div>
         <h2 class="today-main-title">${doneAll ? "Stark, dein Training für heute ist erledigt." : last ? esc(last.title) : "Schön, dass du da bist."}</h2>
         ${doneAll ? "" : lastRow}
         <p class="today-main-hint">${doneAll ? "Wenn du magst, findest du unter „Training“ weitere Übungen." : (occ.length ? "" : "Für heute ist nichts geplant. ") + hint}</p>`;
@@ -26667,8 +26757,78 @@
     if (resume && q("todayResumeBtn")) q("todayResumeBtn").addEventListener("click", () => resumeRun(resume));
     if (resume && q("todayResumeRestartBtn")) q("todayResumeRestartBtn").addEventListener("click", () => resumeRun(resume, true));
     if (resume && q("todayResumeDropBtn")) q("todayResumeDropBtn").addEventListener("click", () => {
-      confirmDialog("Unterbrochenes Training verwerfen? Du kannst es danach nicht mehr an dieser Stelle fortsetzen.", () => { resumeClear(); renderToday(); });
+      confirmDialog("Unterbrochenes Training verwerfen? Du kannst es danach nicht mehr an dieser Stelle fortsetzen.", () => { resumeDrop(resume); renderToday(); });
     });
+  }
+  // ---- Wochenabschluss (Fabian, 2026-10-06: "mit Haken ... und nem Satz") ----
+  // Sundays: one check per planned unit of the week, one sentence on how it
+  // went and an optional "Vorsatz" for next week (fwmc-week-intent-v1, keyed by
+  // that week's Monday). Monday to Saturday the Vorsatz sits on Heute until
+  // the client hides it. Nothing leaves the device.
+  const WEEK_INTENT_KEY = "fwmc-week-intent-v1";
+  function weekReviewSentence(planned, done, trained) {
+    if (planned) {
+      if (done >= planned) return planned === 1 ? "Deine geplante Einheit ist geschafft. Stark!" : `Alle ${planned} geplanten Einheiten geschafft. Stark!`;
+      if (done * 2 >= planned) return `${done} von ${planned} geplanten Einheiten geschafft. Gut drangeblieben.`;
+      return `${done} von ${planned} geplanten Einheiten geschafft. Plane nächste Woche lieber etwas weniger, dafür sicher.`;
+    }
+    if (trained) return `Diese Woche ${trained === 1 ? "ein Training" : trained + " Trainings"} ohne festen Plan. Mit einem Wochenplan siehst du hier deine Haken.`;
+    return "Diese Woche war ruhig. Wie wäre es mit einem kleinen Plan für nächste Woche?";
+  }
+  function renderWeekReview(today, hist) {
+    const box = els.todayWeekReview;
+    const intents = readJSON(WEEK_INTENT_KEY, {}) || {};
+    const monday = mondayOf(today);
+    if (wdIdx(today) === 6) {
+      const rows = [];
+      let planned = 0, done = 0;
+      for (let i = 0; i < 7; i++) {
+        occurrencesOn(dAdd(monday, i), hist).forEach((o) => {
+          planned++; if (o.done) done++;
+          rows.push(`<li class="week-review-row${o.done ? " is-done" : ""}"><span class="week-review-mark" aria-label="${o.done ? "geschafft" : "offen"}">${o.done
+            ? '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+            : '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>'}</span><span class="week-review-day">${WD_SHORT[i]}</span><span class="week-review-title">${esc(entryTitle(o))}</span></li>`);
+        });
+      }
+      const trained = hist.filter((h) => !h.aborted && dStr(new Date(h.ts)) >= monday && dStr(new Date(h.ts)) <= today).length;
+      const next = dAdd(monday, 7);
+      const cur = intents[next] && intents[next].text ? intents[next].text : "";
+      box.innerHTML = `<div class="today-main-kicker">Wochenabschluss</div>
+        <h2 class="today-main-title">Deine Woche</h2>
+        ${rows.length ? `<ul class="week-review-list">${rows.join("")}</ul>` : ""}
+        <p class="today-main-hint week-review-sentence">${esc(weekReviewSentence(planned, done, trained))}</p>
+        <label class="week-review-label" for="weekIntentInput">Mein Vorsatz für nächste Woche <span class="week-review-optional">(freiwillig)</span></label>
+        <input type="text" id="weekIntentInput" class="plan-input" maxlength="120" placeholder="z. B. Zweimal Atemtraining am Abend" autocomplete="off" value="${esc(cur)}">
+        <p class="week-review-saved" id="weekIntentSaved" hidden>Gespeichert. Ab Montag steht dein Vorsatz hier auf Heute.</p>`;
+      const inp = box.querySelector("#weekIntentInput");
+      const save = () => {
+        const all = readJSON(WEEK_INTENT_KEY, {}) || {};
+        const text = inp.value.trim().slice(0, 120);
+        Object.keys(all).forEach((k) => { if (k < dAdd(monday, -21)) delete all[k]; });
+        if (text) all[next] = { text, hidden: false }; else delete all[next];
+        writeJSON(WEEK_INTENT_KEY, all);
+        box.querySelector("#weekIntentSaved").hidden = !text;
+      };
+      inp.addEventListener("change", save);
+      inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); inp.blur(); } });
+      box.hidden = false;
+      return;
+    }
+    const it = intents[monday];
+    if (it && it.text && !it.hidden) {
+      box.innerHTML = `<div class="today-main-kicker">Dein Vorsatz für diese Woche</div>
+        <p class="week-review-intent">${esc(it.text)}</p>
+        <button class="text-link small" type="button" id="weekIntentHideBtn">Ausblenden</button>`;
+      box.querySelector("#weekIntentHideBtn").addEventListener("click", () => {
+        const all = readJSON(WEEK_INTENT_KEY, {}) || {};
+        if (all[monday]) { all[monday].hidden = true; writeJSON(WEEK_INTENT_KEY, all); }
+        box.hidden = true;
+      });
+      box.hidden = false;
+      return;
+    }
+    box.hidden = true;
+    box.innerHTML = "";
   }
   function dayStateClass(date, hist) {
     const occ = occurrencesOn(date, hist);
@@ -26885,7 +27045,7 @@
   function renderAreaGrid() {
     els.todayAreaGrid.innerHTML = PLAN_AREAS.map((a) => `<button type="button" class="area-tile" data-area="${a.key}">
       <span class="area-icon" style="background:${a.color}"><svg viewBox="0 0 24 24" aria-hidden="true">${a.icon}</svg></span>
-      <span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(a.key === "nat" ? "Neuroathletik: " + a.text : a.text)}</span></button>`).join("");
+      <span class="area-name">${esc(a.key === "nat" ? a.short : a.label).replace(/(\S)training\b/, "$1\u00adtraining")}</span><span class="area-text">${esc(a.key === "nat" ? "Neuroathletik: " + a.text : a.text)}</span></button>`).join("");
     els.todayAreaGrid.querySelectorAll(".area-tile").forEach((b) => b.addEventListener("click", () => goArea(b.dataset.area)));
   }
 
@@ -28711,6 +28871,37 @@
     });
     syncUI();
     if (prefs.on) schedule(2000);
+  })();
+
+  $("progressEmptyBtn").addEventListener("click", () => {
+    if (bottomNavOn) showScreen("trainingHub"); else { activateSectionTab("today"); showScreen("todayHome"); }
+  });
+
+  // ---- Code-Kasten dezent (Fabian, 2026-10-06: "Code Kasten dezenter, ja") ----
+  // Every .code-card starts as one quiet row "Trainings-Code eingeben ›" and
+  // opens on tap (the input gets the focus); the big petrol block was the
+  // loudest thing on every area page although most clients rarely need it.
+  // Off in automated browsers unless fwmc-test-codequiet, so the many code
+  // tests keep typing straight into the open card.
+  (function quietCodeCards() {
+    if (navigator.webdriver && !readJSON("fwmc-test-codequiet", false)) return;
+    const KEY = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="8" cy="15" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 12l8-8M16 7l2.5 2.5M14 9l2 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    document.querySelectorAll(".code-card").forEach((card) => {
+      card.classList.add("code-quiet", "is-collapsed");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "code-toggle";
+      btn.setAttribute("aria-expanded", "false");
+      btn.innerHTML = `<span class="code-toggle-icon">${KEY}</span><span class="code-toggle-text"><span class="code-toggle-title">Trainings-Code eingeben</span><span class="code-toggle-sub">von deinem Trainer</span></span><span class="code-toggle-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+      card.insertBefore(btn, card.firstChild);
+      btn.addEventListener("click", () => {
+        const open = card.classList.contains("is-collapsed");
+        card.classList.toggle("is-collapsed", !open);
+        btn.setAttribute("aria-expanded", String(open));
+        const inp = card.querySelector("input");
+        if (open && inp) inp.focus();
+      });
+    });
   })();
 
   // ---- Hinweis "Zum Startbildschirm hinzufügen" (2026-10-05) ----

@@ -44,11 +44,11 @@
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
     <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
-    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visuell</button>
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
-    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
-    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
-    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Cardio</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Reaktion</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Kraft</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Ausdauer</button>
     <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
     <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
   </nav>
@@ -56,7 +56,7 @@
   <button class="combo-entry-link" data-open-combo="1">Kombi-Programm aus mehreren Bereichen &rarr;</button>
 
   <section class="hero">
-    <div class="hero-kicker">Visual Training</div>
+    <div class="hero-kicker">Visuelles Training</div>
     <h1 class="hero-title">Wahrnehmen. Entscheiden. Reagieren.</h1>
     <p class="hero-text">Kurze visuelle Trainingseinheiten f&uuml;r schnelle, klare Entscheidungen &ndash; direkt im Browser auf Handy, Tablet oder Laptop.</p>
     <button class="text-link" id="tipsBtn">So trainierst du richtig &rarr;</button>
@@ -72,18 +72,6 @@
     <div class="program-error" id="programError" role="alert" hidden>Zu diesem Code wurde kein Training gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
   </section>
 
-  <section class="history" id="historySection" hidden>
-    <div class="section-head">
-      <h2>Gesamter Trainingsverlauf</h2>
-      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
-    </div>
-    <div class="history-stats" id="historyStats"></div>
-    <ul class="history-list" id="historyList"></ul>
-    <div class="history-actions">
-      <button class="text-link small" id="historyMoreBtn" hidden>Alle anzeigen</button>
-      <button class="text-link small" id="historyClearBtn">Verlauf l&ouml;schen</button>
-    </div>
-  </section>
 
   <section class="featured-programs" id="featuredPrograms" hidden>
     <div class="section-head">
@@ -240,9 +228,22 @@
     </div>
   </section>
 
+  <section class="history" id="historySection" hidden>
+    <div class="section-head">
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
+    </div>
+    <div class="history-stats" id="historyStats"></div>
+    <ul class="history-list" id="historyList"></ul>
+    <div class="history-actions">
+      <button class="text-link small" id="historyMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="historyClearBtn">Verlauf l&ouml;schen</button>
+    </div>
+  </section>
+
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 10:43</p>
+    <p class="app-version">Stand: 06.10.2026, 13:06</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -261,11 +262,11 @@
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
     <button class="section-tab active" data-section="today" role="tab" aria-selected="true">Heute</button>
-    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visuell</button>
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
-    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
-    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
-    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Cardio</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Reaktion</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Kraft</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Ausdauer</button>
     <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
     <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
   </nav>
@@ -278,6 +279,8 @@
   </section>
 
   <section class="today-main" id="todayMain" aria-live="polite"></section>
+
+  <section class="today-main week-review" id="todayWeekReview" hidden></section>
 
   <section class="today-main event-countdown" id="todayCountdown" hidden></section>
 
@@ -358,7 +361,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 10:43</p>
+    <p class="app-version">Stand: 06.10.2026, 13:06</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -394,7 +397,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 10:43</p>
+    <p class="app-version">Stand: 06.10.2026, 13:06</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -444,7 +447,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 10:43</p>
+    <p class="app-version">Stand: 06.10.2026, 13:06</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -477,6 +480,12 @@
     <div class="progress-bar" id="progressWeekBar"></div>
     <p class="group-help" id="progressWeekText"></p>
   </div>
+  <section class="today-main progress-empty" id="progressEmpty" hidden>
+    <div class="today-main-kicker">Los geht&rsquo;s</div>
+    <h2 class="today-main-title">Hier w&auml;chst dein Fortschritt.</h2>
+    <p class="today-main-hint">Nach deinem ersten Training siehst du hier deine Serie, deine Wochen und welche Bereiche du trainierst. Ein paar Minuten reichen f&uuml;r den Anfang.</p>
+    <button class="start-btn" type="button" id="progressEmptyBtn">Erstes Training aussuchen</button>
+  </section>
   <div class="progress-stats" id="progressStats"></div>
   <div class="group">
     <div class="group-label">Die letzten 8 Wochen</div>
@@ -579,11 +588,11 @@
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
     <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
-    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visuell</button>
     <button class="section-tab active" data-section="breath" role="tab" aria-selected="true">Atemtraining</button>
-    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
-    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
-    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Cardio</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Reaktion</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Kraft</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Ausdauer</button>
     <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
     <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
   </nav>
@@ -607,18 +616,6 @@
     <div class="program-error" id="breathProgramError" role="alert" hidden>Zu diesem Code wurde kein Training gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
   </section>
 
-  <section class="history" id="breathHistorySection" hidden>
-    <div class="section-head">
-      <h2>Gesamter Trainingsverlauf</h2>
-      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
-    </div>
-    <div class="history-stats" id="breathHistoryStats"></div>
-    <ul class="history-list" id="breathHistoryList"></ul>
-    <div class="history-actions">
-      <button class="text-link small" id="breathHistoryMoreBtn" hidden>Alle anzeigen</button>
-      <button class="text-link small" id="breathHistoryClearBtn">Verlauf l&ouml;schen</button>
-    </div>
-  </section>
 
   <section class="featured-programs" id="breathFeaturedPrograms" hidden>
     <div class="section-head">
@@ -636,9 +633,22 @@
     <div class="featured-grid" id="patternGrid"></div>
   </section>
 
+  <section class="history" id="breathHistorySection" hidden>
+    <div class="section-head">
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
+    </div>
+    <div class="history-stats" id="breathHistoryStats"></div>
+    <ul class="history-list" id="breathHistoryList"></ul>
+    <div class="history-actions">
+      <button class="text-link small" id="breathHistoryMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="breathHistoryClearBtn">Verlauf l&ouml;schen</button>
+    </div>
+  </section>
+
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 10:43</p>
+    <p class="app-version">Stand: 06.10.2026, 13:06</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -657,11 +667,11 @@
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
     <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
-    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visuell</button>
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
-    <button class="section-tab active" data-section="movement" role="tab" aria-selected="true">Movement</button>
-    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
-    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Cardio</button>
+    <button class="section-tab active" data-section="movement" role="tab" aria-selected="true">Reaktion</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Kraft</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Ausdauer</button>
     <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
     <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
   </nav>
@@ -669,7 +679,7 @@
   <button class="combo-entry-link" data-open-combo="1">Kombi-Programm aus mehreren Bereichen &rarr;</button>
 
   <section class="hero">
-    <div class="hero-kicker">Movement <span class="placeholder-tag">Name noch offen</span></div>
+    <div class="hero-kicker">Reaktionstraining</div>
     <h1 class="hero-title">Bewegen. Merken. Reagieren.</h1>
     <p class="hero-text">Ganzk&ouml;rper-Reaktionstraining im Takt &ndash; ein Symbol zeigt dir, was als N&auml;chstes zu tun ist, bevor du dran bist.</p>
     <button class="text-link" id="movementTipsBtn">Wie funktioniert das? &rarr;</button>
@@ -685,6 +695,18 @@
     <div class="program-error" id="movementProgramError" role="alert" hidden>Zu diesem Code wurde kein Bewegungsprogramm gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
   </section>
 
+
+  <section class="patterns">
+    <div class="section-head">
+      <h2>Einzelne Übungen</h2>
+      <span class="section-note">8 Grundbewegungen, frei kombinierbar</span>
+    </div>
+    <button class="featured-card" id="movementStartCard">
+      <span class="fc-title">Ganzk&ouml;rper-Reaktion</span>
+      <span class="fc-desc">Arme und Beine heben oder strecken, im Takt &ndash; mit Vorschau auf das, was als N&auml;chstes kommt.</span>
+    </button>
+  </section>
+
   <section class="history" id="movementHistorySection" hidden>
     <div class="section-head">
       <h2>Gesamter Trainingsverlauf</h2>
@@ -698,20 +720,9 @@
     </div>
   </section>
 
-  <section class="patterns">
-    <div class="section-head">
-      <h2>Training starten</h2>
-      <span class="section-note">8 Grundbewegungen, frei kombinierbar</span>
-    </div>
-    <button class="featured-card" id="movementStartCard">
-      <span class="fc-title">Ganzk&ouml;rper-Reaktion</span>
-      <span class="fc-desc">Arme und Beine heben oder strecken, im Takt &ndash; mit Vorschau auf das, was als N&auml;chstes kommt.</span>
-    </button>
-  </section>
-
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 10:43</p>
+    <p class="app-version">Stand: 06.10.2026, 13:06</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -749,11 +760,11 @@
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
     <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
-    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visuell</button>
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
-    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
-    <button class="section-tab active" data-section="workout" role="tab" aria-selected="true">Workout</button>
-    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Cardio</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Reaktion</button>
+    <button class="section-tab active" data-section="workout" role="tab" aria-selected="true">Kraft</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Ausdauer</button>
     <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
     <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
   </nav>
@@ -761,7 +772,7 @@
   <button class="combo-entry-link" data-open-combo="1">Kombi-Programm aus mehreren Bereichen &rarr;</button>
 
   <section class="hero">
-    <div class="hero-kicker">Workout <span class="placeholder-tag">Name noch offen</span></div>
+    <div class="hero-kicker">Krafttraining</div>
     <h1 class="hero-title">K&ouml;rperliches Training.</h1>
     <p class="hero-text">Trainingspl&auml;ne mit festen S&auml;tzen und Wiederholungen, oder ein Tabata-/Intervall-Timer &ndash; direkt im Browser.</p>
   </section>
@@ -776,18 +787,6 @@
     <div class="program-error" id="workoutProgramError" role="alert" hidden>Zu diesem Code wurde kein Trainingsplan gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
   </section>
 
-  <section class="history" id="workoutHistorySection" hidden>
-    <div class="section-head">
-      <h2>Gesamter Trainingsverlauf</h2>
-      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
-    </div>
-    <div class="history-stats" id="workoutHistoryStats"></div>
-    <ul class="history-list" id="workoutHistoryList"></ul>
-    <div class="history-actions">
-      <button class="text-link small" id="workoutHistoryMoreBtn" hidden>Alle anzeigen</button>
-      <button class="text-link small" id="workoutHistoryClearBtn">Verlauf l&ouml;schen</button>
-    </div>
-  </section>
 
   <section class="featured-programs" id="workoutFeaturedPrograms" hidden>
     <div class="section-head">
@@ -819,9 +818,22 @@
     </button>
   </section>
 
+  <section class="history" id="workoutHistorySection" hidden>
+    <div class="section-head">
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
+    </div>
+    <div class="history-stats" id="workoutHistoryStats"></div>
+    <ul class="history-list" id="workoutHistoryList"></ul>
+    <div class="history-actions">
+      <button class="text-link small" id="workoutHistoryMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="workoutHistoryClearBtn">Verlauf l&ouml;schen</button>
+    </div>
+  </section>
+
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 10:43</p>
+    <p class="app-version">Stand: 06.10.2026, 13:06</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -840,11 +852,11 @@
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
     <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
-    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visuell</button>
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
-    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
-    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
-    <button class="section-tab active" data-section="cardio" role="tab" aria-selected="true">Cardio</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Reaktion</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Kraft</button>
+    <button class="section-tab active" data-section="cardio" role="tab" aria-selected="true">Ausdauer</button>
     <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
     <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
   </nav>
@@ -852,28 +864,28 @@
   <button class="combo-entry-link" data-open-combo="1">Kombi-Programm aus mehreren Bereichen &rarr;</button>
 
   <section class="hero">
-    <div class="hero-kicker">Cardio <span class="placeholder-tag">Name noch offen</span></div>
-    <h1 class="hero-title">Ausdauer. In Bewegung bleiben.</h1>
-    <p class="hero-text">Stell dir deine eigene Cardio-Einheit zusammen &ndash; mehrere Aktivit&auml;ten hintereinander, mit eigener Dauer und optionalem Intervall.</p>
+    <div class="hero-kicker">Ausdauertraining</div>
+    <h1 class="hero-title">Ausdauer. In&nbsp;Bewegung bleiben.</h1>
+    <p class="hero-text">Stell dir deine eigene Ausdauer-Einheit zusammen &ndash; mehrere Aktivit&auml;ten hintereinander, mit eigener Dauer und optionalem Intervall.</p>
   </section>
 
   <section class="code-card">
-    <h2>Deine pers&ouml;nliche Cardio-Einheit</h2>
+    <h2>Deine pers&ouml;nliche Ausdauer-Einheit</h2>
     <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
     <div class="program-entry-row">
       <input type="text" id="cardioProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="cardioProgramGoBtn">&Ouml;ffnen</button>
     </div>
-    <div class="program-error" id="cardioProgramError" role="alert" hidden>Zu diesem Code wurde keine Cardio-Einheit gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
+    <div class="program-error" id="cardioProgramError" role="alert" hidden>Zu diesem Code wurde keine Ausdauer-Einheit gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
   </section>
 
   <section class="patterns">
     <div class="section-head">
-      <h2>Eigene Cardio-Einheit</h2>
+      <h2>Eigene Ausdauer-Einheit</h2>
       <span class="section-note">frei einstellbar, ohne Plan</span>
     </div>
     <button class="featured-card" id="cardioStartCard">
-      <span class="fc-title">Cardio zusammenstellen</span>
+      <span class="fc-title">Ausdauer-Einheit zusammenstellen</span>
       <span class="fc-desc">W&auml;hle deine Aktivit&auml;ten, Dauer und optional Intervalle &ndash; l&auml;uft dann automatisch durch.</span>
     </button>
   </section>
@@ -893,7 +905,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 10:43</p>
+    <p class="app-version">Stand: 06.10.2026, 13:06</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -908,7 +920,7 @@
     <button class="back-link" id="cardioBundleBackToHome">&larr; Zur&uuml;ck</button>
   </div>
   <h1 class="page-title" id="cardioBundleTitle">&nbsp;</h1>
-  <p class="page-sub">W&auml;hle eine deiner Cardio-Einheiten aus. Die neueste steht oben.</p>
+  <p class="page-sub">W&auml;hle eine deiner Ausdauer-Einheiten aus. Die neueste steht oben.</p>
   <div class="bundle-list" id="cardioBundleList"></div>
 </div>
 
@@ -927,11 +939,11 @@
   <div class="readyhead">
     <button class="back-link" id="cardioBackToHome">&larr; Zur&uuml;ck</button>
   </div>
-  <h1 class="page-title" id="cardioReadyTitle">Cardio</h1>
+  <h1 class="page-title" id="cardioReadyTitle">Ausdauertraining</h1>
   <p class="page-sub" id="cardioReadyHint">Stelle deine Aktivit&auml;ten in der Reihenfolge zusammen, in der du sie machen willst.</p>
 
   <div class="group" id="cardioSavedGroup" hidden>
-    <div class="group-label">Deine gespeicherten Cardio-Einheiten</div>
+    <div class="group-label">Deine gespeicherten Ausdauer-Einheiten</div>
     <div class="bundle-list" id="cardioSavedList"></div>
   </div>
 
@@ -941,7 +953,7 @@
   </div>
 
   <div class="group">
-    <div class="group-label">Deine Cardio-Einheit <span class="group-count" id="cardioCount"></span><button class="list-clear-btn" type="button" id="cardioClearBtn" hidden aria-label="Ganze Liste leeren">&#10005; Alle entfernen</button></div>
+    <div class="group-label">Deine Ausdauer-Einheit <span class="group-count" id="cardioCount"></span><button class="list-clear-btn" type="button" id="cardioClearBtn" hidden aria-label="Ganze Liste leeren">&#10005; Alle entfernen</button></div>
     <p class="group-help" id="cardioEmptyHint">Noch keine Aktivit&auml;t hinzugef&uuml;gt &ndash; tippe oben eine an.</p>
     <div class="chapter-list" id="cardioList"></div>
     <button class="text-link small" id="cardioSaveBtn">Aktuelle Einheit speichern</button>
@@ -1006,11 +1018,11 @@
   </details>
 
   <details class="advanced" id="cardioAddonAdvanced">
-    <summary>Zusatzaufgabe w&auml;hrend Cardio</summary>
+    <summary>Zusatzaufgabe w&auml;hrend des Ausdauertrainings</summary>
     <div class="advanced-body">
       <div class="group">
-        <label class="checkbox-row"><input type="checkbox" id="cardioAddonEnableToggle"> Zusatzaufgaben w&auml;hrend Cardio aktivieren</label>
-        <div class="group-help">Ein Ein/Aus-Schalter wie bei der Zusatzaufgabe sonst auch &ndash; gilt f&uuml;r jede Cardio-Einheit, egal ob selbst gebaut oder von deinem Trainer zugewiesen.</div>
+        <label class="checkbox-row"><input type="checkbox" id="cardioAddonEnableToggle"> Zusatzaufgaben w&auml;hrend des Ausdauertrainings aktivieren</label>
+        <div class="group-help">Ein Ein/Aus-Schalter wie bei der Zusatzaufgabe sonst auch &ndash; gilt f&uuml;r jede Ausdauer-Einheit, egal ob selbst gebaut oder von deinem Trainer zugewiesen.</div>
       </div>
       <div id="cardioAddonBody" hidden>
         <div class="group">
@@ -1032,7 +1044,7 @@
         </div>
         <div class="group">
           <label class="checkbox-row"><input type="checkbox" id="cardioAddonWindowToggle"> Nur in einem bestimmten Zeitfenster</label>
-          <div class="group-help">Ohne Zeitfenster kann eine Zusatzaufgabe jederzeit w&auml;hrend der ganzen Cardio-Einheit aufblitzen.</div>
+          <div class="group-help">Ohne Zeitfenster kann eine Zusatzaufgabe jederzeit w&auml;hrend der ganzen Ausdauer-Einheit aufblitzen.</div>
           <div id="cardioAddonWindowBody" hidden>
             <div class="slider-row">
               <span>ab</span>
@@ -1117,11 +1129,11 @@
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
     <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
-    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visuell</button>
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
-    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
-    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
-    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Cardio</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Reaktion</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Kraft</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Ausdauer</button>
     <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
     <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
   </nav>
@@ -1189,7 +1201,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 10:43</p>
+    <p class="app-version">Stand: 06.10.2026, 13:06</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1302,11 +1314,11 @@
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
     <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
-    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visuell</button>
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
-    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
-    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
-    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Cardio</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Reaktion</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Kraft</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Ausdauer</button>
     <button class="section-tab active" data-section="nat" role="tab" aria-selected="true">NAT</button>
     <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
   </nav>
@@ -1323,7 +1335,7 @@
   <button class="combo-entry-link" data-open-combo="1">Kombi-Programm aus mehreren Bereichen &rarr;</button>
 
   <section class="hero">
-    <div class="hero-kicker">NAT &ndash; Neuroathletik <span class="placeholder-tag">Name noch offen</span></div>
+    <div class="hero-kicker">NAT &ndash; Neuroathletik</div>
     <h1 class="hero-title">Wahrnehmung. Ged&auml;chtnis. Reaktion.</h1>
   </section>
 
@@ -1490,7 +1502,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 10:43</p>
+    <p class="app-version">Stand: 06.10.2026, 13:06</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1509,11 +1521,11 @@
 
   <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
     <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
-    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visual Training</button>
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visuell</button>
     <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
-    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Movement</button>
-    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Workout</button>
-    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Cardio</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Reaktion</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Kraft</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Ausdauer</button>
     <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
     <button class="section-tab active" data-section="test" role="tab" aria-selected="true">Test</button>
   </nav>
@@ -1693,7 +1705,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 10:43</p>
+    <p class="app-version">Stand: 06.10.2026, 13:06</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -6160,7 +6172,7 @@
 
 <div class="sheet" id="movementTipsSheet" hidden>
   <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="movementTipsTitle">
-    <h2 id="movementTipsTitle">So funktioniert Movement</h2>
+    <h2 id="movementTipsTitle">So funktioniert das Reaktionstraining</h2>
     <ol class="tips">
       <li><strong>Symbol beobachten.</strong> Vier Balken zeigen Arme und Beine. Der hervorgehobene Balken zeigt, welcher sich bewegt &ndash; kurz und steil f&uuml;r heben, lang und flach f&uuml;r strecken.</li>
       <li><strong>Vorschau nutzen.</strong> Du siehst schon, was als N&auml;chstes kommt &ndash; so kannst du dich vorbereiten, statt nur zu reagieren.</li>
@@ -6379,7 +6391,7 @@
 <div class="sheet" id="tipsSheet" hidden>
   <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="tipsTitle">
     <h2 id="tipsTitle">So trainierst du richtig</h2>
-    <p class="group-help" id="tipsWelcome">Willkommen! Du brauchst keinen Account &ndash; unten unter &bdquo;Training&ldquo; w&auml;hlst du einen Bereich (Visual Training, Atemtraining, NAT, Movement, Workout, Cardio, Eigenes Training<span class="test-teaser" hidden>, Test</span>), tippst eine &Uuml;bung an und startest direkt. &Uuml;ber das Zahnrad oben rechts findest du die Grundeinstellungen, die f&uuml;r alle &Uuml;bungen gelten &ndash; z.&nbsp;B. Einschr&auml;nkungen oder eine Standard-Hintergrundfarbe, einmal gesetzt, &uuml;berall wirksam. Im Kombi-Programm stellst du dir mehrere &Uuml;bungen, auch aus verschiedenen Bereichen, zu einer eigenen Einheit zusammen.</p>
+    <p class="group-help" id="tipsWelcome">Willkommen! Du brauchst keinen Account &ndash; unten unter &bdquo;Training&ldquo; w&auml;hlst du einen Bereich (Visuelles Training, Atemtraining, NAT, Reaktionstraining, Krafttraining, Ausdauertraining, Eigenes Training<span class="test-teaser" hidden>, Test</span>), tippst eine &Uuml;bung an und startest direkt. &Uuml;ber das Zahnrad oben rechts findest du die Grundeinstellungen, die f&uuml;r alle &Uuml;bungen gelten &ndash; z.&nbsp;B. Einschr&auml;nkungen oder eine Standard-Hintergrundfarbe, einmal gesetzt, &uuml;berall wirksam. Im Kombi-Programm stellst du dir mehrere &Uuml;bungen, auch aus verschiedenen Bereichen, zu einer eigenen Einheit zusammen.</p>
     <ol class="tips">
       <li><strong>Platz &amp; Ruhe.</strong> Such dir eine ruhige Umgebung mit genug Platz, um dich zu bewegen.</li>
       <li><strong>Ger&auml;t stabil aufstellen.</strong> Stell Handy, Tablet oder Laptop so hin, dass du den Bildschirm gut siehst &ndash; am besten im Vollbild.</li>
@@ -6398,7 +6410,7 @@
 
     <details class="faq-item">
       <summary>Was ist FWMC Online-Training?</summary>
-      <div class="faq-body">Eine Sammlung kurzer Trainingseinheiten von Fabian Westermann Mentalcoaching &ndash; Visual Training, Atemtraining, NAT (neuroathletische &Uuml;bungen), Movement, Workout und Cardio, dazu dein eigenes Training<span class="test-teaser" hidden> und ein experimenteller Test-Bereich</span>. Alles l&auml;uft direkt im Browser, ohne Installation aus einem App Store.</div>
+      <div class="faq-body">Eine Sammlung kurzer Trainingseinheiten von Fabian Westermann Mentalcoaching &ndash; Visuelles Training, Atemtraining, NAT (neuroathletische &Uuml;bungen), Reaktionstraining, Krafttraining und Ausdauertraining, dazu dein eigenes Training<span class="test-teaser" hidden> und ein experimenteller Test-Bereich</span>. Alles l&auml;uft direkt im Browser, ohne Installation aus einem App Store.</div>
     </details>
 
     <details class="faq-item">
@@ -6428,7 +6440,7 @@
 
     <details class="faq-item">
       <summary>Was ist der Unterschied zwischen den Bereichen?</summary>
-      <div class="faq-body"><strong>Visual Training</strong> trainiert schnelle visuelle Entscheidungen. <strong>Atemtraining</strong> f&uuml;hrt durch Atemmuster. <strong>NAT</strong> sind neuroathletische &Uuml;bungen wie Ged&auml;chtnis- und Wahrnehmungstraining. <strong>Movement</strong> verbindet Bewegung mit visuellen Reizen. <strong>Workout</strong> ist reines Zeit-/Wiederholungstraining. <strong>Cardio</strong> stellt Ausdauer-Einheiten zusammen, auf Wunsch mit kleinen Zusatzaufgaben f&uuml;r den Kopf. Unter <strong>Eigenes Training</strong> legst du dir eigene Punkte an, zum Beispiel Dehnen, Eisbad oder Journal. <span class="test-teaser" hidden><strong>Test</strong> ist ein laufend wachsender Experimentierbereich mit neuen &Uuml;bungen.</span></div>
+      <div class="faq-body"><strong>Visuelles Training</strong> trainiert schnelle visuelle Entscheidungen. <strong>Atemtraining</strong> f&uuml;hrt durch Atemmuster. <strong>NAT</strong> sind neuroathletische &Uuml;bungen wie Ged&auml;chtnis- und Wahrnehmungstraining. <strong>Reaktionstraining</strong> verbindet Bewegung mit visuellen Reizen. <strong>Krafttraining</strong> ist reines Zeit-/Wiederholungstraining. <strong>Ausdauertraining</strong> stellt Ausdauer-Einheiten zusammen, auf Wunsch mit kleinen Zusatzaufgaben f&uuml;r den Kopf. Unter <strong>Eigenes Training</strong> legst du dir eigene Punkte an, zum Beispiel Dehnen, Eisbad oder Journal. <span class="test-teaser" hidden><strong>Test</strong> ist ein laufend wachsender Experimentierbereich mit neuen &Uuml;bungen.</span></div>
     </details>
 
     <details class="faq-item test-teaser" hidden>
@@ -6457,7 +6469,7 @@
 
     <details class="faq-item">
       <summary>Was wird auf deinem Ger&auml;t gespeichert?</summary>
-      <div class="faq-body">Dein Trainingsverlauf, dein Fortschritt, dein Wochenplan, deine Termine, deine Einstellungen, gespeicherte Programme und Bilder, die du f&uuml;r Cardio ausw&auml;hlst. Alles liegt nur im Speicher dieses Browsers auf diesem Ger&auml;t, nicht in einer Cloud. L&ouml;schst du die Browserdaten, ist es weg. In den Grundeinstellungen kannst du eine Sicherung als Datei speichern und wieder einlesen &ndash; die Datei liegt dann nur bei dir.</div>
+      <div class="faq-body">Dein Trainingsverlauf, dein Fortschritt, dein Wochenplan, deine Termine, deine Einstellungen, gespeicherte Programme und Bilder, die du f&uuml;r Ausdauertraining ausw&auml;hlst. Alles liegt nur im Speicher dieses Browsers auf diesem Ger&auml;t, nicht in einer Cloud. L&ouml;schst du die Browserdaten, ist es weg. In den Grundeinstellungen kannst du eine Sicherung als Datei speichern und wieder einlesen &ndash; die Datei liegt dann nur bei dir.</div>
     </details>
 
     <details class="faq-item">
@@ -6467,7 +6479,7 @@
 
     <details class="faq-item" id="privacyReminders">
       <summary>Was passiert bei Erinnerungen?</summary>
-      <div class="faq-body">Nur wenn du in den Grundeinstellungen die Erinnerungen einschaltest: Dann speichert der Server deines Trainers (betrieben bei Cloudflare) die Push-Adresse dieses Ger&auml;ts &ndash; eine zuf&auml;llige Adresse, die dein Browser bzw. Handy-Hersteller f&uuml;r Mitteilungen vergibt &ndash; und die geplanten Zeiten der n&auml;chsten 14 Tage mit einem kurzen Text wie &bdquo;In 10 Minuten: Cardio &middot; 20 Min.&ldquo;. Beides dient nur dazu, dir die Erinnerung zu schicken. Kein Name, kein Verlauf, keine Ergebnisse. Jede Erinnerung wird nach dem Versenden gel&ouml;scht; schaltest du die Erinnerungen aus, wird alles sofort gel&ouml;scht. Die Mitteilung selbst wird &uuml;ber den Push-Dienst deines Ger&auml;ts zugestellt (z.&nbsp;B. Apple oder Google).</div>
+      <div class="faq-body">Nur wenn du in den Grundeinstellungen die Erinnerungen einschaltest: Dann speichert der Server deines Trainers (betrieben bei Cloudflare) die Push-Adresse dieses Ger&auml;ts &ndash; eine zuf&auml;llige Adresse, die dein Browser bzw. Handy-Hersteller f&uuml;r Mitteilungen vergibt &ndash; und die geplanten Zeiten der n&auml;chsten 14 Tage mit einem kurzen Text wie &bdquo;In 10 Minuten: Ausdauertraining &middot; 20 Min.&ldquo;. Beides dient nur dazu, dir die Erinnerung zu schicken. Kein Name, kein Verlauf, keine Ergebnisse. Jede Erinnerung wird nach dem Versenden gel&ouml;scht; schaltest du die Erinnerungen aus, wird alles sofort gel&ouml;scht. Die Mitteilung selbst wird &uuml;ber den Push-Dienst deines Ger&auml;ts zugestellt (z.&nbsp;B. Apple oder Google).</div>
     </details>
 
     <details class="faq-item">
@@ -6520,7 +6532,7 @@
         <button class="choice" data-master-limb="legL">Linkes Bein</button>
         <button class="choice" data-master-limb="legR">Rechtes Bein</button>
       </div>
-      <div class="group-help">Blendet bei Movement die &Uuml;bungen f&uuml;r die jeweils betroffene Seite aus &ndash; muss dann nicht mehr pro Training neu eingestellt werden. Arme und Beine lassen sich unabh&auml;ngig voneinander einschr&auml;nken, auch beide Seiten gleichzeitig.</div>
+      <div class="group-help">Blendet beim Reaktionstraining die &Uuml;bungen f&uuml;r die jeweils betroffene Seite aus &ndash; muss dann nicht mehr pro Training neu eingestellt werden. Arme und Beine lassen sich unabh&auml;ngig voneinander einschr&auml;nken, auch beide Seiten gleichzeitig.</div>
     </div>
 
     <div class="group">
@@ -6549,7 +6561,7 @@
 
     <div class="group">
       <div class="group-label">Standard-Pause zwischen &Uuml;bungen</div>
-      <div class="group-help">Startwert f&uuml;r neue Pausen im Kombi-Programm und zwischen Cardio-Aktivit&auml;ten &ndash; z.&nbsp;B. um Material zu wechseln oder eine neue Position einzunehmen. Jede Pause bleibt einzeln anpassbar und l&auml;sst sich w&auml;hrend des Trainings jederzeit &uuml;berspringen.</div>
+      <div class="group-help">Startwert f&uuml;r neue Pausen im Kombi-Programm und zwischen Ausdauer-Aktivit&auml;ten &ndash; z.&nbsp;B. um Material zu wechseln oder eine neue Position einzunehmen. Jede Pause bleibt einzeln anpassbar und l&auml;sst sich w&auml;hrend des Trainings jederzeit &uuml;berspringen.</div>
       <div class="slider-row">
         <input type="range" id="masterPauseSlider" min="0" max="180" step="5" aria-label="Standard-Pause zwischen &Uuml;bungen">
         <span class="slider-value" id="masterPauseValue"></span>
@@ -6561,7 +6573,7 @@
       <label class="checkbox-row"><input type="checkbox" id="masterSoundCheck"> T&ouml;ne und Ansagen</label>
       <label class="checkbox-row"><input type="checkbox" id="masterStartCountdownCheck"> Countdown 3-2-1 vor dem Start</label>
       <label class="checkbox-row"><input type="checkbox" id="masterLevelSuggestCheck"> Stufen-Vorschl&auml;ge (n&auml;chste Schwierigkeit vorschlagen)</label>
-      <div class="group-help">Den Ton kannst du auch w&auml;hrend jeder &Uuml;bung unten in der Steuerleiste mit &#128266; an- und ausschalten. Im Workout gilt vor dem Start die eigene Vorbereitungszeit aus den Feineinstellungen.</div>
+      <div class="group-help">Den Ton kannst du auch w&auml;hrend jeder &Uuml;bung unten in der Steuerleiste mit &#128266; an- und ausschalten. Im Krafttraining gilt vor dem Start die eigene Vorbereitungszeit aus den Feineinstellungen.</div>
     </div>
 
     <div class="group cue-master" id="masterCuesGroup"></div>
@@ -6580,7 +6592,7 @@
       </div>
       <label class="group-label" for="reminderMorningInput">Trainings ohne Uhrzeit: morgens erinnern um</label>
       <input type="time" id="reminderMorningInput" class="plan-input reminder-time" lang="de">
-      <div class="group-help">Die App erinnert dich an die Trainings aus deinem Wochenplan auf &bdquo;Heute&ldquo;. Dazu schickt sie die Uhrzeiten der n&auml;chsten 14 Tage mit einem kurzen Text (z.&nbsp;B. &bdquo;In 10 Minuten: Cardio &middot; 20 Min.&ldquo;) an den Server deines Trainers, der die Mitteilung p&uuml;nktlich verschickt. &Ouml;ffne die App ab und zu, damit die Erinnerungen weiterlaufen. Mehr dazu unter <button class="privacy-open-btn inline-link" type="button">Datenschutz in der App</button>.</div>
+      <div class="group-help">Die App erinnert dich an die Trainings aus deinem Wochenplan auf &bdquo;Heute&ldquo;. Dazu schickt sie die Uhrzeiten der n&auml;chsten 14 Tage mit einem kurzen Text (z.&nbsp;B. &bdquo;In 10 Minuten: Ausdauertraining &middot; 20 Min.&ldquo;) an den Server deines Trainers, der die Mitteilung p&uuml;nktlich verschickt. &Ouml;ffne die App ab und zu, damit die Erinnerungen weiterlaufen. Mehr dazu unter <button class="privacy-open-btn inline-link" type="button">Datenschutz in der App</button>.</div>
     </div>
 
     <div class="group" id="masterCodeHistoryGroup" hidden>

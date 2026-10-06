@@ -86,3 +86,21 @@ confirmDialog); with one, a single "Unterbrochen: … Fortsetzen" line under
 it. `resumeRun()` rebuilds the runner (origin bundles reset, return screen
 Heute). Not covered: Cardio-Einheit (one timeline, no blocks) and single
 exercises. Test: `tests/resume_install_1006_test.py`.
+
+
+## Weitermachen für einzelne Übungen + Wochenabschluss (2026-10-06)
+
+- Single runs (Atem, Reaktionstraining) write `fwmc-resume-single-v1`
+  (`resumeSingleNote(kind)`) on pause, abort and when the app goes to the
+  background; only runs of ≥ 180 s with ≥ 30 s played and ≥ 60 s left.
+  Finishing clears it (`resumeSingleClear`). Continuing starts a run of the
+  remaining time with the stored settings (client prefs restored right
+  after start); `resumeSingleBase` keeps the original total so a second
+  break records the right rest. `resumeGet()` returns the more recent of the
+  program and single records; "Verwerfen" (`resumeDrop`) removes only that one.
+- The resume card shows "Fortsetzen ist noch bis … möglich." (`resumeUntil`).
+- Wochenabschluss: on Sundays `renderWeekReview()` lists the week's planned
+  entries with check/circle, one sentence (`weekReviewSentence`) and an
+  optional "Mein Vorsatz für nächste Woche" (120 chars) saved under next
+  Monday's date in `fwmc-week-intent-v1` (entries older than 21 days are
+  pruned). Mon-Sat the Vorsatz shows with "Ausblenden".

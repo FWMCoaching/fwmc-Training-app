@@ -22,7 +22,7 @@ async def main():
         print("Movement group present in add grid:", "Ganzkörper-Reaktion" in await pg.inner_text("#comboAddGrid"))
         await pg.click('#comboAddGrid >> text="Ganzkörper-Reaktion"'); await pg.wait_for_timeout(300)
         print("capture mode opens movementReady:", await pg.is_visible("#movementReady"))
-        print("title swapped to Baustein: Movement:", "Baustein: Movement" in await pg.inner_text("#movementReadyTitle"))
+        print("title swapped to Baustein: Reaktionstraining:", "Baustein: Reaktionstraining" in await pg.inner_text("#movementReadyTitle"))
         print("start button reads 'Baustein übernehmen':", "Baustein übernehmen" in await pg.inner_text("#movementStartBtn"))
 
         await pg.click("#movementStartBtn"); await pg.wait_for_timeout(300)
@@ -32,7 +32,7 @@ async def main():
         # ---- editing: tap the Movement block again ----
         await pg.click("#comboBlockList .chapter-main"); await pg.wait_for_timeout(300)
         print("edit reopens movement capture:", await pg.is_visible("#movementReady"))
-        print("title still shows capture mode on re-edit:", "Baustein: Movement" in await pg.inner_text("#movementReadyTitle"))
+        print("title still shows capture mode on re-edit:", "Baustein: Reaktionstraining" in await pg.inner_text("#movementReadyTitle"))
         await pg.click("#movementStartBtn"); await pg.wait_for_timeout(300)
         print("still exactly 1 block after re-edit+commit:", await pg.locator("#comboBlockList .chapter-row").count() == 1)
 

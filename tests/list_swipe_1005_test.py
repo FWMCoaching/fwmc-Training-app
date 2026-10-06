@@ -264,7 +264,7 @@ async def main():
 
         # ---------- saved Kombi-Programme ----------
         await pg.goto(BASE + "?bereich=free"); await pg.wait_for_timeout(400)
-        await pg.click("#freeHome .combo-entry-link"); await pg.wait_for_timeout(250)
+        await pg.click('[data-nav="training"]'); await pg.wait_for_timeout(250); await pg.click('#trainingHub .combo-entry-link'); await pg.wait_for_timeout(250)
         KS = "#comboSavedList .bundle-item-wrap"
         check("saved Kombi listed, ✕ still there", await pg.locator(KS).count() == 1 and await pg.locator(KS + " .combo-block-remove").count() == 1)
         await swipe_left(pg, cdp, KS, 0)
