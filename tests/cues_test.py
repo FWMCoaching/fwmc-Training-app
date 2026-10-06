@@ -113,7 +113,7 @@ async def main():
         await pg.click("#cardioBackToHome"); await pg.wait_for_timeout(100)
         await pg.click("#cardioHome .combo-entry-link"); await pg.wait_for_timeout(200)
         for act in ["Joggen", "Walking"]:
-            await pg.click('#comboAddGrid >> text="Cardio-Einheit"'); await pg.wait_for_timeout(200)
+            await pg.click('#comboAddGrid >> text="Ausdauer-Einheit"'); await pg.wait_for_timeout(200)
             await pg.click(f'#cardioAddGrid >> text="{act}"'); await pg.wait_for_timeout(60)
             await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(200)
         print("two Kombi blocks:", await pg.locator("#comboBlockList .combo-block-remove:not(.combo-block-move)").count() == 2)

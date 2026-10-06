@@ -439,5 +439,20 @@ For every new or changed exercise/screen, in the same commit:
   breath|fortschritt`. Install hint on iOS: "+ Zum Startbildschirm" shows
   `#installPointer` (arrow to Safari's share button, iPad: top).
   Test: `tests/resume_install_1006_test.py`.
+- Design-Runde + Namen (2026-10-06, Fabian "Alles deutsch"): client-facing
+  area names are Visuelles Training, Atemtraining, NAT ("NAT – Neuroathletik"
+  as heading), Reaktionstraining (code: movement), Krafttraining (workout),
+  Ausdauertraining (cardio), Eigenes Training; section tabs use the short
+  forms Visuell/Reaktion/Kraft/Ausdauer; no "Name noch offen" tags. Old
+  history entries keep their stored titles. `.code-card` is quiet and
+  collapsed behind `.code-toggle` (test flag `fwmc-test-codequiet`);
+  `.player.calm` (Atem, Wim-Hof) is dark petrol in dark mode; Fortschritt
+  without history shows `#progressEmpty`; with the bottom bar the Kombi link
+  shows only on Heute and Training. Weitermachen also for single Atem/
+  Reaktionstraining runs (`fwmc-resume-single-v1`, ≥ 3 min, ≥ 30 s played),
+  the card names the 3-day deadline. Sunday on Heute: Wochenabschluss
+  (`#todayWeekReview`, check marks + one sentence + optional Vorsatz in
+  `fwmc-week-intent-v1`, shown Mon-Sat). Tests: `tests/design_1006_test.py`,
+  `tests/resume_week_1006_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

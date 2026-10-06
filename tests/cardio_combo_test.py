@@ -25,10 +25,10 @@ async def main():
         # ==== Build a combo with a Cardio block ====
         await pg.click('#cardioHome .combo-entry-link'); await pg.wait_for_timeout(300)
         print("comboScreen open:", await pg.is_visible("#comboScreen"))
-        print("Cardio group present in add grid:", "Cardio-Einheit" in await pg.inner_text("#comboAddGrid"))
-        await pg.click('#comboAddGrid >> text="Cardio-Einheit"'); await pg.wait_for_timeout(300)
+        print("Cardio group present in add grid:", "Ausdauer-Einheit" in await pg.inner_text("#comboAddGrid"))
+        await pg.click('#comboAddGrid >> text="Ausdauer-Einheit"'); await pg.wait_for_timeout(300)
         print("capture mode opens cardioReady:", await pg.is_visible("#cardioReady"))
-        print("title swapped to Baustein: Cardio:", "Baustein: Cardio" in await pg.inner_text("#cardioReadyTitle"))
+        print("title swapped to Baustein: Cardio:", "Baustein: Ausdauertraining" in await pg.inner_text("#cardioReadyTitle"))
         print("capture starts blank (0 rows), not the standalone Schwimmen item:", await pg.locator("#cardioList .circuit-item-row").count() == 0)
 
         await pg.click('#cardioAddGrid >> text="Joggen"'); await pg.wait_for_timeout(150)
@@ -36,7 +36,7 @@ async def main():
         print("start button reads 'Baustein übernehmen':", "Baustein übernehmen" in await pg.inner_text("#cardioStartBtn"))
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(300)
         print("commit returns to comboScreen:", await pg.is_visible("#comboScreen"))
-        print("block list shows the Cardio block:", "Cardio · 2" in await pg.inner_text("#comboBlockList"))
+        print("block list shows the Cardio block:", "Ausdauertraining · 2" in await pg.inner_text("#comboBlockList"))
 
         # ---- editing: tap the Cardio block again, should reopen with its
         # 2 items, not blank ----
@@ -44,14 +44,14 @@ async def main():
         print("edit reopens capture with its 2 items:", await pg.locator("#cardioList .circuit-item-row").count() == 2)
         await pg.click('#cardioAddGrid >> text="Walking"'); await pg.wait_for_timeout(150)
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(300)
-        print("edited block now shows 3 activities:", "Cardio · 3" in await pg.inner_text("#comboBlockList"))
+        print("edited block now shows 3 activities:", "Ausdauertraining · 3" in await pg.inner_text("#comboBlockList"))
 
         # ---- cancel path (back-link) must also restore standalone state ----
-        await pg.click('#comboAddGrid >> text="Cardio-Einheit"'); await pg.wait_for_timeout(300)
+        await pg.click('#comboAddGrid >> text="Ausdauer-Einheit"'); await pg.wait_for_timeout(300)
         await pg.click('#cardioAddGrid >> text="Treppensteigen"'); await pg.wait_for_timeout(150)
         await pg.click("#cardioBackToHome"); await pg.wait_for_timeout(300)
         print("cancel (back) returns to comboScreen:", await pg.is_visible("#comboScreen"))
-        print("block list still shows only the earlier 3-activity block (cancelled add discarded):", "Cardio · 3" in await pg.inner_text("#comboBlockList") and "Cardio · 1" not in await pg.inner_text("#comboBlockList"))
+        print("block list still shows only the earlier 3-activity block (cancelled add discarded):", "Ausdauertraining · 3" in await pg.inner_text("#comboBlockList") and "Ausdauertraining · 1" not in await pg.inner_text("#comboBlockList"))
 
         # ---- standalone Cardio-Einheit (Schwimmen) must be untouched ----
         await pg.click("#comboBackToHome"); await pg.wait_for_timeout(200)
@@ -67,10 +67,10 @@ async def main():
         # unsaved builder in the app), so build a fresh one-block combo
         # here rather than relying on the earlier (already-verified) draft. ====
         await pg.click('#cardioHome .combo-entry-link'); await pg.wait_for_timeout(200)
-        await pg.click('#comboAddGrid >> text="Cardio-Einheit"'); await pg.wait_for_timeout(300)
+        await pg.click('#comboAddGrid >> text="Ausdauer-Einheit"'); await pg.wait_for_timeout(300)
         await pg.click('#cardioAddGrid >> text="Joggen"'); await pg.wait_for_timeout(150)
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(300)
-        print("fresh combo draft has 1 Cardio block:", "Cardio · 1" in await pg.inner_text("#comboBlockList"))
+        print("fresh combo draft has 1 Cardio block:", "Ausdauertraining · 1" in await pg.inner_text("#comboBlockList"))
         await pg.click("#comboStartBtn"); await pg.wait_for_timeout(500)
         print("combo run: cardioPlayer shows the block:", await pg.is_visible("#cardioPlayer"))
         print("combo run: no cardio done panel mid-combo:", not await pg.is_visible("#cardioDonePanel"))

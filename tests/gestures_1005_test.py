@@ -125,7 +125,7 @@ async def main():
         check("the tile's click was suppressed", await visible_screen(pg) == "trainingHub")
         acts = await pg.evaluate("[...document.querySelectorAll('#tileActionList button')].map(b => b.textContent)")
         check("area tile actions", acts == ["Öffnen", "In den Wochenplan", "Zum Kombi-Programm", "Abbrechen"], acts)
-        check("sheet title is the area", (await pg.inner_text("#tileActionTitle")).strip() == "Visual Training")
+        check("sheet title is the area", (await pg.inner_text("#tileActionTitle")).strip() == "Visuelles Training")
         check("action buttons >= 44 px", await pg.evaluate("[...document.querySelectorAll('#tileActionList button')].every(b => b.getBoundingClientRect().height >= 44)"))
         await pg.screenshot(path="gestures_sheet.png")
         await pg.click('#tileActionList [data-tile-act="cancel"]'); await pg.wait_for_timeout(200)
@@ -197,7 +197,7 @@ async def main():
 
         # ---------- 3a) drag reorder: Kombi-Bausteine ----------
         await pg.goto(HOST + "/index.html?bereich=visual"); await pg.wait_for_timeout(500)
-        await pg.click('#home [data-open-combo="1"]'); await pg.wait_for_timeout(200)
+        await pg.click('[data-nav="training"]'); await pg.wait_for_timeout(250); await pg.click('#trainingHub .combo-entry-link'); await pg.wait_for_timeout(200)
         for dur in ("15", "30", "45"):
             await pg.click('#comboAddGrid >> text="Positionen merken · Feste Positionen"'); await pg.wait_for_timeout(300)
             await pg.fill("#rememberComboDurationSlider", dur)

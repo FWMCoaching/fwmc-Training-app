@@ -22,7 +22,7 @@ async def main():
         for vw, vh in [(390, 844), (1024, 768)]:
             ctx = await b.new_context(viewport={"width": vw, "height": vh}, service_workers="block")
             await ctx.add_init_script(INIT + "localStorage.setItem('fwmc-test-bottomnav','true')")
-            await ctx.route("**/workers.dev/**", lambda r: r.fulfill(status=404, body="{}"))
+            await ctx.route("**/*.workers.dev/**", lambda r: r.fulfill(status=404, body="{}"))
             pg = await ctx.new_page()
             pg.on("pageerror", lambda e: errors.append("pageerror: " + str(e)))
             pg.on("console", lambda m: errors.append("console: " + m.text) if m.type == "error" and "Failed to load resource" not in m.text else None)

@@ -1153,14 +1153,14 @@
   function comboBlockLabel(block) {
     if (block.domain === "wimhof") return WIMHOF_INFO.name;
     if (block.domain === "breath") return BREATH_PATTERNS[block.pattern].name;
-    if (block.domain === "movement") return "Movement · Ganzkörper-Reaktion";
+    if (block.domain === "movement") return "Reaktionstraining · Ganzkörper-Reaktion";
     if (block.domain === "workout") return workoutBlockLabel(block);
     if (block.domain === "visual") return EXERCISES[block.exercise] ? EXERCISES[block.exercise].title : block.exercise;
     if (block.domain === "nat") return `Positionen merken · ${REMEMBER_MODES[block.mode] ? REMEMBER_MODES[block.mode].title : block.mode}`;
     if (block.domain === "blitz") return "Blitz-Raster";
     if (block.domain === "flash") return `Flash-Speicher-Test · ${flashModeTitle(block.mode)}`;
     if (block.domain === "mot") return `Objektverfolgung (MOT) · ${motModeTitle(block.mode)}`;
-    if (block.domain === "cardio") return `Cardio · ${countLabel(block.items.length, "Aktivität", "Aktivitäten")}`;
+    if (block.domain === "cardio") return `Ausdauertraining · ${countLabel(block.items.length, "Aktivität", "Aktivitäten")}`;
     if (block.domain === "free") return block.free.title;
     return block.domain;
   }
@@ -1200,7 +1200,7 @@
   // place (rather than removing the mechanism) in case a future domain
   // ever wants a plain one-click preset again.
   const COMBO_PRESETS = {};
-  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Movement", visual: "Visual Training", workout: "Workout", cardio: "Cardio", nat: "NAT", free: "Eigenes Training" };
+  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Reaktionstraining", visual: "Visuelles Training", workout: "Krafttraining", cardio: "Ausdauertraining", nat: "NAT", free: "Eigenes Training" };
   const PERIPH_ICON_HTML = '<div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg></div>';
   const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat", "free"];
   // Blitz-Raster/Flash-Speicher-Test/Objektverfolgung (MOT) render inside the same
@@ -1225,7 +1225,7 @@
       { label: "Ganzkörper-Reaktion", meta: "Bewegungen, Tempo & Dauer einstellen", open: () => openMovementComboCapture(null, null) },
     ],
     cardio: [
-      { label: "Cardio-Einheit", meta: "eigene Aktivitäten zusammenstellen", open: () => openCardioComboCapture(null, null) },
+      { label: "Ausdauer-Einheit", meta: "eigene Aktivitäten zusammenstellen", open: () => openCardioComboCapture(null, null) },
     ],
     // Remember has no natural end (all 3 modes run until "Beenden") - the
     // capture UI adds a duration slider that only exists in combo mode
@@ -1288,7 +1288,7 @@
     todayHome: $("todayHome"), planScreen: $("planScreen"), progressScreen: $("progressScreen"),
     todayProgressCard: $("todayProgressCard"), todayProgressOpenBtn: $("todayProgressOpenBtn"), progressBackBtn: $("progressBackBtn"),
     progressGoalMinus: $("progressGoalMinus"), progressGoalPlus: $("progressGoalPlus"), progressGoalValue: $("progressGoalValue"),
-    progressWeekBar: $("progressWeekBar"), progressWeekText: $("progressWeekText"), progressStats: $("progressStats"), progressWeeks: $("progressWeeks"),
+    progressWeekBar: $("progressWeekBar"), progressWeekText: $("progressWeekText"), progressStats: $("progressStats"), progressEmpty: $("progressEmpty"), progressWeeks: $("progressWeeks"),
     progressAreas: $("progressAreas"), progressAreasNote: $("progressAreasNote"), progressMilestones: $("progressMilestones"), progressNextText: $("progressNextText"),
     home: $("home"), ready: $("ready"), player: $("player"), playerBar: $("playerBar"),
     donePanel: $("donePanel"), doneSummary: $("doneSummary"), doneRating: $("doneRating"),
@@ -2276,7 +2276,7 @@
     box.id = "storageWarning";
     box.setAttribute("role", "alert");
     const text = document.createElement("p");
-    text.textContent = "Der Speicher dieses Browsers ist voll. Neue Einstellungen und Verlaufseinträge werden gerade nicht gespeichert. Tipp: Motivationsbilder im Cardio-Bereich entfernen und unter Grundeinstellungen eine Datensicherung exportieren.";
+    text.textContent = "Der Speicher dieses Browsers ist voll. Neue Einstellungen und Verlaufseinträge werden gerade nicht gespeichert. Tipp: Motivationsbilder im Bereich Ausdauertraining entfernen und unter Grundeinstellungen eine Datensicherung exportieren.";
     const btn = document.createElement("button");
     btn.type = "button";
     btn.textContent = "Verstanden";
@@ -2443,6 +2443,11 @@
     els.progressWeekText.textContent = left
       ? `Diese Woche ${s.cur.n} von ${p.weekGoal}. Noch ${left} bis zum Ziel.`
       : `Diese Woche ${s.cur.n} von ${p.weekGoal}. Ziel erreicht, stark!`;
+    // No training yet (Fabian 2026-10-06): one friendly start card instead of
+    // zeros and empty bars; the week goal stays adjustable above it.
+    const empty = !s.total;
+    els.progressEmpty.hidden = !empty;
+    [els.progressStats, els.progressWeeks.closest(".group"), els.progressAreas.closest(".group"), els.progressMilestones.closest(".group")].forEach((el) => { if (el) el.hidden = empty; });
     els.progressStats.innerHTML =
       `<div class="stat"><strong>${progressStreakText(s.streak)}</strong><span>Serie (Wochenziel in Folge erreicht)</span></div>` +
       `<div class="stat"><strong>${progressStreakText(s.best)}</strong><span>Längste Serie</span></div>` +
@@ -3207,7 +3212,7 @@
   // (rememberPrefs.bgColorKey/bgIntensity). Flash-Speicher-Test will be a
   // third once it exists and gets its own background setting.
   const BG_SOURCES = [
-    { id: "vt", label: "Visual Training / NAT", get: () => ({ colorKey: state.bgColorKey, intensity: state.bgIntensity }) },
+    { id: "vt", label: "Visuelles Training / NAT", get: () => ({ colorKey: state.bgColorKey, intensity: state.bgIntensity }) },
     { id: "remember", label: "Positionen merken", get: () => ({ colorKey: rememberPrefs.bgColorKey, intensity: rememberPrefs.bgIntensity }) },
     { id: "blitz", label: "Blitz-Raster", get: () => ({ colorKey: blitzPrefs.bgColorKey, intensity: blitzPrefs.bgIntensity }) },
     { id: "flash", label: "Flash-Speicher-Test", get: () => ({ colorKey: flashPrefs.bgColorKey, intensity: flashPrefs.bgIntensity }) },
@@ -7523,7 +7528,7 @@
       if (existingBlock.figureStyle === "figur" || existingBlock.figureStyle === "abstrakt") movementPrefs.figureStyle = existingBlock.figureStyle;
     }
     comboMovementEditIndex = editIndex ?? null;
-    els.movementReadyTitle.textContent = "Baustein: Movement";
+    els.movementReadyTitle.textContent = "Baustein: Reaktionstraining";
     els.movementReadyHint.textContent = "Stelle die Bewegungen für diesen Baustein ein.";
     els.movementStartBtn.textContent = "Baustein übernehmen";
     openMovementReady();
@@ -11599,7 +11604,7 @@
     if (!el) return;
     el.innerHTML =
       `<div class="group-label">Töne &amp; Ansagen</div>` +
-      `<div class="group-help">Gilt für Tabata-Zirkel, Kraftplan, Cardio und die Pausen im Kombi-Programm. In den Feineinstellungen jedes Bereichs kannst du davon abweichen.</div>` +
+      `<div class="group-help">Gilt für Tabata-Zirkel, Kraftplan, Ausdauertraining und die Pausen im Kombi-Programm. In den Feineinstellungen jedes Bereichs kannst du davon abweichen.</div>` +
       cueControlsHtml(masterPrefs.cues, CUE_FIELD_LABELS.master) +
       `<div class="cue-sub-label">iPhone/iPad</div>` +
       `<label class="checkbox-row"><input type="checkbox" data-cue-silent${masterPrefs.cuesIgnoreSilent ? " checked" : ""}> Töne auch bei eingeschaltetem Stummschalter</label>` +
@@ -11879,7 +11884,7 @@
     els.workoutDoneSummary.textContent = `${aborted ? "Abgebrochen · " : ""}${ex ? ex.name : "Training"} · ${fmtMinutes(playedS)}`;
     els.workoutDoneSuggestion.hidden = !suggestion;
     els.workoutDoneSuggestion.textContent = suggestion || "";
-    const id = addHistory({ kind: "workout", title: ex ? ex.name : "Workout", seconds: Math.round(playedS), note: aborted ? "abgebrochen" : undefined, aborted: !!aborted });
+    const id = addHistory({ kind: "workout", title: ex ? ex.name : "Krafttraining", seconds: Math.round(playedS), note: aborted ? "abgebrochen" : undefined, aborted: !!aborted });
     renderRating(els.workoutRating, id, "Wie gut hast du durchgehalten?");
     els.workoutDonePanel.hidden = false;
   }
@@ -13275,7 +13280,7 @@
   wirePresetSaveForm({
     saveBtn: els.cardioSaveBtn, form: els.cardioSaveForm, nameInput: els.cardioSaveNameInput,
     cancelBtn: els.cardioSaveCancelBtn, confirmBtn: els.cardioSaveConfirmBtn,
-    defaultName: () => `Eigenes Cardio ${new Date().toLocaleDateString("de-DE")}`,
+    defaultName: () => `Eigene Ausdauer-Einheit ${new Date().toLocaleDateString("de-DE")}`,
     onSave: (name) => {
       const list = cardioSavedStore.load();
       list.push({ id: String(Date.now()), name, items: cardioPrefs.items.map(copyCardioItem) });
@@ -13313,7 +13318,7 @@
     comboCardioCaptureOriginal = cardioPrefs.items.map(copyCardioItem);
     cardioPrefs.items = existingBlock ? existingBlock.items.map(copyCardioItem) : [];
     comboCardioEditIndex = editIndex ?? null;
-    els.cardioReadyTitle.textContent = "Baustein: Cardio";
+    els.cardioReadyTitle.textContent = "Baustein: Ausdauertraining";
     els.cardioReadyHint.textContent = "Stelle die Aktivitäten für diesen Baustein zusammen.";
     openCardioReady();
   }
@@ -13324,7 +13329,7 @@
       comboCardioCaptureOriginal = null;
     }
     comboCardioEditIndex = null;
-    els.cardioReadyTitle.textContent = "Cardio";
+    els.cardioReadyTitle.textContent = "Ausdauertraining";
     els.cardioReadyHint.textContent = "Stelle deine Aktivitäten in der Reihenfolge zusammen, in der du sie machen willst.";
   }
   function commitCardioComboCapture() {
@@ -13360,7 +13365,7 @@
   }
 
   function openCardioBundleOverview(bundleDef, code) {
-    els.cardioBundleTitle.textContent = bundleDef.name || "Deine Cardio-Einheiten";
+    els.cardioBundleTitle.textContent = bundleDef.name || "Deine Ausdauer-Einheiten";
     els.cardioBundleList.innerHTML = "";
     const sorted = bundleDef.programs
       .map((p, i) => ({ p, i }))
@@ -13388,7 +13393,7 @@
   }
 
   function renderCardioProgramIntro(def, code, key) {
-    const title = def.name || def.label || "Deine Cardio-Einheit";
+    const title = def.name || def.label || "Deine Ausdauer-Einheit";
     els.cardioProgramTitle.textContent = title;
     els.cardioProgramMeta.textContent = `${countLabel(def.items.length, "Aktivität", "Aktivitäten")} · ca. ${fmtMinutes(cardioItemsSeconds(def.items))}`;
     els.cardioProgramDesc.textContent = def.description || "";
@@ -13482,7 +13487,7 @@
   // `group` sorts both the Feineinstellungen pool grid and the live
   // picker into their parent domain, so the list stays legible as it
   // grows instead of one long flat run of choices.
-  const CARDIO_GUEST_GROUPS = { vt: "Visual Training", nat: "Neuroathletik (NAT)" };
+  const CARDIO_GUEST_GROUPS = { vt: "Visuelles Training", nat: "Neuroathletik (NAT)" };
   const CARDIO_GUEST_TYPES = [
     { id: "addon-flash", title: "Zusatzaufgabe · Ziffer/Buchstabe", group: "vt" },
     { id: "vt-color", title: "VT · Farbe & Seite", group: "vt" },
@@ -14885,7 +14890,7 @@
     const block = cardioState.items[cardioState.index];
     if (!block) { hideCardioGuestBadge(); return; }
     const remaining = Math.max(0, block.durationS - (performance.now() - cardioState.blockStartTime) / 1000);
-    els.cardioGuestBadge.textContent = `Cardio: noch ${fmtClock(remaining)}`;
+    els.cardioGuestBadge.textContent = `Ausdauer: noch ${fmtClock(remaining)}`;
     els.cardioGuestBadge.classList.toggle("warn", remaining <= CARDIO_GUEST_BADGE_WARN_S);
     const top = cardioGuestBadgeTop();
     els.cardioGuestBadge.style.top = top == null ? "" : top + "px";
@@ -14997,7 +15002,7 @@
     const names = [...new Set(realItems.map((b) => findCardioActivity(b.activity).name))].join(", ");
     const id = cardioProgram
       ? addHistory({ kind: "cardio-plan", title: cardioProgram.title, progKey: cardioProgram.key, seconds: Math.round(totalS), note: aborted ? `abgebrochen · ${names}` : names, aborted: !!aborted })
-      : addHistory({ kind: "cardio", title: "Cardio", seconds: Math.round(totalS), note: aborted ? `abgebrochen · ${names}` : names, aborted: !!aborted });
+      : addHistory({ kind: "cardio", title: "Ausdauertraining", seconds: Math.round(totalS), note: aborted ? `abgebrochen · ${names}` : names, aborted: !!aborted });
     renderRating(els.cardioRating, id, "Wie gut hast du durchgehalten?");
     setDonePanelAborted(els.cardioDonePanel, aborted, "Training beendet");
     els.cardioDoneSummary.textContent = aborted
@@ -16404,7 +16409,7 @@
     saveWorkoutRepsPrefs();
     refreshWorkoutRepsBuilder();
   }));
-  document.getElementById("cardioClearBtn").addEventListener("click", () => confirmDialog("Willst du alle Aktivitäten aus deiner Cardio-Einheit entfernen?", () => {
+  document.getElementById("cardioClearBtn").addEventListener("click", () => confirmDialog("Willst du alle Aktivitäten aus deiner Ausdauer-Einheit entfernen?", () => {
     cardioPrefs.items = [];
     saveCardioPrefs();
     renderCardioAddGrid();
@@ -26373,17 +26378,17 @@
   }
   // Order = Training overview (Fabian 2026-10-05).
   const PLAN_AREAS = [
-    { key: "visual", label: "Visual Training", short: "Visual", color: "#1f7ab8", screen: "home", text: "Wahrnehmen, entscheiden, reagieren.",
+    { key: "visual", label: "Visuelles Training", short: "Visuell", color: "#1f7ab8", screen: "home", text: "Wahrnehmen, entscheiden, reagieren.",
       icon: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="#fff"/>' },
     { key: "breath", label: "Atemtraining", short: "Atem", color: "#2a9d8f", screen: "breathHome", text: "Ruhig werden und Fokus finden.",
       icon: '<path d="M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-3 3M3 12h8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
     { key: "nat", label: "NAT – Neuroathletik", short: "NAT", color: "#3a7d2c", screen: "natHome", text: "Wahrnehmung, Gedächtnis und Reaktion.",
       icon: '<circle cx="12" cy="12" r="8" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="2.5" fill="#fff"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
-    { key: "movement", label: "Movement", short: "Movement", color: "#c77d12", screen: "movementHome", text: "Bewegen, merken, reagieren im Takt.",
+    { key: "movement", label: "Reaktionstraining", short: "Reaktion", color: "#c77d12", screen: "movementHome", text: "Bewegen, merken, reagieren im Takt.",
       icon: '<circle cx="12" cy="4.5" r="2" fill="#fff"/><path d="M12 7v7M12 9l-5-3M12 9l5 3M12 14l-4 6M12 14l4 6" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
-    { key: "workout", label: "Workout", short: "Workout", color: "#c0392b", screen: "workoutHome", text: "Kraft, Intervalle und eigene Pläne.",
+    { key: "workout", label: "Krafttraining", short: "Kraft", color: "#c0392b", screen: "workoutHome", text: "Kraft, Intervalle und eigene Pläne.",
       icon: '<path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
-    { key: "cardio", label: "Cardio", short: "Cardio", color: "#7b4fb8", screen: "cardioHome", text: "Ausdauer, auf Wunsch mit Zusatzaufgaben.",
+    { key: "cardio", label: "Ausdauertraining", short: "Ausdauer", color: "#7b4fb8", screen: "cardioHome", text: "Ausdauer, auf Wunsch mit Zusatzaufgaben.",
       icon: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' },
     { key: "free", label: "Eigenes Training", short: "Eigenes Training", color: "#a0527a", screen: "freeHome", text: "Eigenes wie Dehnen, Eisbad oder Journal.",
       icon: '<rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M8 12.5l2.8 2.8L16.5 9" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
@@ -26737,8 +26742,8 @@
     } else {
       const doneAll = occ.length > 0;
       const lastRow = last ? `<p class="today-main-meta">Zuletzt: ${esc(last.title)} · ${esc(longDate(dStr(new Date(last.ts))))}</p>
-        <button class="start-btn" type="button" id="todayContinueBtn">Weitermachen</button>` : "";
-      html = `<div class="today-main-kicker">${doneAll ? "Heute alles geschafft" : last ? "Weitermachen" : "Los geht's"}</div>
+        <button class="start-btn" type="button" id="todayContinueBtn">Nochmal trainieren</button>` : "";
+      html = `<div class="today-main-kicker">${doneAll ? "Heute alles geschafft" : last ? "Zuletzt trainiert" : "Los geht’s"}</div>
         <h2 class="today-main-title">${doneAll ? "Stark, dein Training für heute ist erledigt." : last ? esc(last.title) : "Schön, dass du da bist."}</h2>
         ${doneAll ? "" : lastRow}
         <p class="today-main-hint">${doneAll ? "Wenn du magst, findest du unter „Training“ weitere Übungen." : (occ.length ? "" : "Für heute ist nichts geplant. ") + hint}</p>`;
@@ -27040,7 +27045,7 @@
   function renderAreaGrid() {
     els.todayAreaGrid.innerHTML = PLAN_AREAS.map((a) => `<button type="button" class="area-tile" data-area="${a.key}">
       <span class="area-icon" style="background:${a.color}"><svg viewBox="0 0 24 24" aria-hidden="true">${a.icon}</svg></span>
-      <span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(a.key === "nat" ? "Neuroathletik: " + a.text : a.text)}</span></button>`).join("");
+      <span class="area-name">${esc(a.key === "nat" ? a.short : a.label).replace(/(\S)training\b/, "$1\u00adtraining")}</span><span class="area-text">${esc(a.key === "nat" ? "Neuroathletik: " + a.text : a.text)}</span></button>`).join("");
     els.todayAreaGrid.querySelectorAll(".area-tile").forEach((b) => b.addEventListener("click", () => goArea(b.dataset.area)));
   }
 
@@ -28866,6 +28871,37 @@
     });
     syncUI();
     if (prefs.on) schedule(2000);
+  })();
+
+  $("progressEmptyBtn").addEventListener("click", () => {
+    if (bottomNavOn) showScreen("trainingHub"); else { activateSectionTab("today"); showScreen("todayHome"); }
+  });
+
+  // ---- Code-Kasten dezent (Fabian, 2026-10-06: "Code Kasten dezenter, ja") ----
+  // Every .code-card starts as one quiet row "Trainings-Code eingeben ›" and
+  // opens on tap (the input gets the focus); the big petrol block was the
+  // loudest thing on every area page although most clients rarely need it.
+  // Off in automated browsers unless fwmc-test-codequiet, so the many code
+  // tests keep typing straight into the open card.
+  (function quietCodeCards() {
+    if (navigator.webdriver && !readJSON("fwmc-test-codequiet", false)) return;
+    const KEY = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="8" cy="15" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 12l8-8M16 7l2.5 2.5M14 9l2 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    document.querySelectorAll(".code-card").forEach((card) => {
+      card.classList.add("code-quiet", "is-collapsed");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "code-toggle";
+      btn.setAttribute("aria-expanded", "false");
+      btn.innerHTML = `<span class="code-toggle-icon">${KEY}</span><span class="code-toggle-text"><span class="code-toggle-title">Trainings-Code eingeben</span><span class="code-toggle-sub">von deinem Trainer</span></span><span class="code-toggle-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+      card.insertBefore(btn, card.firstChild);
+      btn.addEventListener("click", () => {
+        const open = card.classList.contains("is-collapsed");
+        card.classList.toggle("is-collapsed", !open);
+        btn.setAttribute("aria-expanded", String(open));
+        const inp = card.querySelector("input");
+        if (open && inp) inp.focus();
+      });
+    });
   })();
 
   // ---- Hinweis "Zum Startbildschirm hinzufügen" (2026-10-05) ----

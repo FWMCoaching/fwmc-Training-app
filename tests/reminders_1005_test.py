@@ -195,10 +195,10 @@ async def main():
         got = await pg.evaluate("window.__fwmcComputeReminders(new Date('2026-10-23T10:00:00Z'))")
         exp = [
             {"at": utc_iso("2026-10-24 09:20"), "title": "Training um 09:30 Uhr", "body": "In 10 Minuten: Atemtraining · 10 Min."},
-            {"at": utc_iso("2026-10-26 17:50"), "title": "Training um 18:00 Uhr", "body": "In 10 Minuten: Cardio · 20 Min."},
-            {"at": utc_iso("2026-10-28 08:00"), "title": "Heute steht Training an", "body": "Heute geplant: Visual Training · 15 Min."},
-            {"at": utc_iso("2026-11-02 17:50"), "title": "Training um 18:00 Uhr", "body": "In 10 Minuten: Cardio · 20 Min."},
-            {"at": utc_iso("2026-11-04 08:00"), "title": "Heute steht Training an", "body": "Heute geplant: Visual Training · 15 Min."},
+            {"at": utc_iso("2026-10-26 17:50"), "title": "Training um 18:00 Uhr", "body": "In 10 Minuten: Ausdauertraining · 20 Min."},
+            {"at": utc_iso("2026-10-28 08:00"), "title": "Heute steht Training an", "body": "Heute geplant: Visuelles Training · 15 Min."},
+            {"at": utc_iso("2026-11-02 17:50"), "title": "Training um 18:00 Uhr", "body": "In 10 Minuten: Ausdauertraining · 20 Min."},
+            {"at": utc_iso("2026-11-04 08:00"), "title": "Heute steht Training an", "body": "Heute geplant: Visuelles Training · 15 Min."},
         ]
         check("payload: 14 days, past entry of today skipped, sorted", got == exp)
         if got != exp: print(json.dumps(got, indent=1, ensure_ascii=False))

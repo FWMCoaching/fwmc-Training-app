@@ -53,7 +53,7 @@ async def main():
         print("Remember source row lists only VT/NAT:", await pg.locator("#rememberBgSourceRow button").all_inner_texts())
         print("Remember lists the VT-saved preset too (not domain-scoped):", await pg.locator("#rememberBgPresetList .bundle-item").all_inner_texts())
 
-        await pg.click('#rememberBgSourceRow button:has-text("Visual Training")'); await pg.wait_for_timeout(100)
+        await pg.click('#rememberBgSourceRow button:has-text("Visuelles Training")'); await pg.wait_for_timeout(100)
         prefs = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-remember-prefs-v1')||'{}')")
         print("quick-copy picked up VT's CURRENT colour (rot, not the saved preset):", prefs.get("bgColorKey") == "rot")
 

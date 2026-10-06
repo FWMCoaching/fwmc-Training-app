@@ -1802,11 +1802,58 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .today-main-hint{margin:12px 0 0;font-size:calc(14.5px * var(--ts,1));line-height:1.5;color:var(--ink)}
 .today-resume-line{margin:10px 0 0;font-size:calc(14px * var(--ts,1));color:var(--ink-soft);display:flex;flex-wrap:wrap;align-items:center;gap:0 8px}
 .today-resume-go{margin-top:0}
+/* Code-Kasten dezent (2026-10-06): one quiet row, opens on tap. */
+.code-card.code-quiet,:root:not([data-theme="light"]) .code-card.code-quiet,:root[data-theme="dark"] .code-card.code-quiet{background:var(--surface);color:var(--ink);border:1px solid var(--line);box-shadow:none;padding:0;border-radius:var(--radius)}
+.code-quiet .code-toggle{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:10px 14px 10px 12px;background:none;border:none;border-radius:var(--radius);color:var(--ink);text-align:left;cursor:pointer;font:inherit;-webkit-tap-highlight-color:transparent}
+.code-toggle-icon{flex:0 0 38px;height:38px;border-radius:11px;background:var(--brand-pale);color:var(--brand);display:inline-flex;align-items:center;justify-content:center}
+.code-toggle-text{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
+.code-toggle-title{font-weight:700;font-size:calc(15.5px * var(--ts,1));color:var(--ink)}
+.code-toggle-sub{font-size:calc(13px * var(--ts,1));color:var(--ink-soft)}
+.code-toggle-chev{flex:0 0 auto;color:var(--ink-soft);display:inline-flex;transition:transform .25s ease}
+.code-quiet:not(.is-collapsed) .code-toggle-chev{transform:rotate(90deg)}
+.code-quiet.is-collapsed > :not(.code-toggle){display:none}
+.code-quiet > h2{display:none}
+.code-card.code-quiet > p{margin:0;padding:0 16px 10px;color:var(--ink-soft);font-size:calc(14px * var(--ts,1))}
+.code-quiet .program-entry-row{padding:0 14px 14px}
+.code-quiet .program-entry-row input{background:var(--surface-2);color:var(--ink);border:1.5px solid var(--line)}
+.code-quiet .program-entry-row input::placeholder{color:var(--ink-soft)}
+.code-quiet .program-entry-row button{background:var(--brand);color:#ffffff;min-height:48px}
+.code-quiet .program-error{margin:0 14px 14px;background:var(--surface-2);color:var(--warn)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .code-quiet .program-entry-row button{color:#0f1a1e}}
+:root[data-theme="dark"] .code-quiet .program-entry-row button{color:#0f1a1e}
+@media (hover:hover){.code-quiet .code-toggle:hover{background:var(--surface-2)}}
+.code-quiet .code-toggle:active{background:var(--surface-2)}
+/* Fortschritt ohne Training (2026-10-06) */
+.progress-empty{margin:4px 0 22px}
+.progress-empty .start-btn{width:100%;margin-top:16px}
+/* Atemübung im Dunkelmodus (Fabian 2026-10-06): breathing needs no colour
+   perception and is often done in the evening, so the calm players (Atem,
+   Wim-Hof) go dark with a soft petrol circle. Fixed hex colours (stage rule). */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .player.calm{background:#0b1619;color:#e9f0f2}
+  :root:not([data-theme="light"]) .player.calm .breath-circle{background:radial-gradient(circle,rgba(57,167,204,.30) 0%,rgba(57,167,204,.08) 70%);border-color:rgba(105,194,224,.40)}
+  :root:not([data-theme="light"]) .player.calm .breath-phase-count,:root:not([data-theme="light"]) .player.calm .breath-phase-label{color:#e9f0f2}
+  :root:not([data-theme="light"]) .player.calm .wimhof-sub,:root:not([data-theme="light"]) .player.calm .pause-label{color:#a9bbc0}
+  :root:not([data-theme="light"]) .player.calm .pause-toggle{background:#16262b;border-color:#283d43;color:#e9f0f2}
+  :root:not([data-theme="light"]) .player.calm .player-bar button,:root:not([data-theme="light"]) .player.calm .player-status{background:rgba(22,38,43,.92);color:#e9f0f2;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  :root:not([data-theme="light"]) body:has(.player.calm:not([hidden])) .step-nav{background:#0b1619;border-top-color:#1c2f35}
+  :root:not([data-theme="light"]) body:has(.player.calm:not([hidden])) .step-nav button,:root:not([data-theme="light"]) body:has(.player.calm:not([hidden])) .step-nav #stepSoundBtn,:root:not([data-theme="light"]) body:has(.player.calm:not([hidden])) .step-nav #stepSoundBtn.is-off{background:rgba(233,240,242,.12);color:#e9f0f2}
+}
+:root[data-theme="dark"] .player.calm{background:#0b1619;color:#e9f0f2}
+:root[data-theme="dark"] .player.calm .breath-circle{background:radial-gradient(circle,rgba(57,167,204,.30) 0%,rgba(57,167,204,.08) 70%);border-color:rgba(105,194,224,.40)}
+:root[data-theme="dark"] .player.calm .breath-phase-count,:root[data-theme="dark"] .player.calm .breath-phase-label{color:#e9f0f2}
+:root[data-theme="dark"] .player.calm .wimhof-sub,:root[data-theme="dark"] .player.calm .pause-label{color:#a9bbc0}
+:root[data-theme="dark"] .player.calm .pause-toggle{background:#16262b;border-color:#283d43;color:#e9f0f2}
+:root[data-theme="dark"] .player.calm .player-bar button,:root[data-theme="dark"] .player.calm .player-status{background:rgba(22,38,43,.92);color:#e9f0f2;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+:root[data-theme="dark"] body:has(.player.calm:not([hidden])) .step-nav{background:#0b1619;border-top-color:#1c2f35}
+:root[data-theme="dark"] body:has(.player.calm:not([hidden])) .step-nav button,:root[data-theme="dark"] body:has(.player.calm:not([hidden])) .step-nav #stepSoundBtn,:root[data-theme="dark"] body:has(.player.calm:not([hidden])) .step-nav #stepSoundBtn.is-off{background:rgba(233,240,242,.12);color:#e9f0f2}
 .today-resume-until{margin:8px 0 0;text-align:center;font-size:calc(13px * var(--ts,1));color:var(--ink-soft)}
 .week-review-list{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
 .week-review-row{display:flex;align-items:center;gap:10px;font-size:calc(14.5px * var(--ts,1));color:var(--ink);min-width:0}
 .week-review-mark{flex:0 0 26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--ink-soft)}
 .week-review-row.is-done .week-review-mark{background:var(--brand);color:#ffffff}
+.week-review-row:not(.is-done) .week-review-mark{box-sizing:border-box;border:2px solid var(--line-strong,#b9c6cb)}
+.week-review-row:not(.is-done) .week-review-mark svg{display:none}
 .week-review-day{flex:0 0 auto;font-weight:700;color:var(--ink-soft);min-width:2ch}
 .week-review-title{flex:1 1 auto;min-width:0;overflow-wrap:break-word}
 .week-review-label{display:block;margin:16px 0 6px;font-weight:700;font-size:calc(14px * var(--ts,1));color:var(--ink)}
@@ -2500,9 +2547,12 @@ input[type=range]{accent-color:#007094}
 .hub-extra .area-icon{width:34px;height:34px;border-radius:10px;flex:none}
 .hub-extra .area-icon svg{width:20px;height:20px}
 .hub-extra .area-name{font-size:calc(14px * var(--ts,1))}
+@media (max-width:699px){ .hub-extra{grid-template-columns:1fr} .hub-extra .area-tile{align-items:center} }
 .hub-extra .area-text{font-size:calc(12px * var(--ts,1))}
 .hub-extra .t-wrap{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
 .hub-extra .test-unlock-badge{align-self:flex-start;margin-top:4px;font-size:calc(11px * var(--ts,1));padding:2px 8px}
+.hub-core .area-name{font-size:min(calc(15px * var(--ts,1)), 4vw)}
+@media (min-width:700px){ .hub-core .area-name{font-size:min(calc(15px * var(--ts,1)), 2.15vw)} }
 @media (min-width:700px){ .hub-core{grid-template-columns:repeat(4,1fr)} .hub-extra{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))} }
 
 /* Mehr-Liste wie iOS-Einstellungen: › für Seiten in der App, ↗ für Links
@@ -2528,3 +2578,7 @@ input[type=range]{accent-color:#007094}
 body.bottom-nav-on .start-sticky-bar{bottom:calc(64px + max(0px, env(safe-area-inset-bottom,0px) - 3px));padding-bottom:10px}
 .start-sticky-bar[hidden], .start-sticky-bar:has(> .start-btn[hidden]){display:none}
 .start-sticky-bar > .start-btn{margin:0;width:100%}
+
+/* Kombi-Link nur auf Heute und Training (Fabian 2026-10-06); with the bottom
+   bar the area homes reach Kombi through the Training page. */
+body.has-bottom-nav .screen:not(#todayHome):not(#trainingHub) > .combo-entry-link{display:none}

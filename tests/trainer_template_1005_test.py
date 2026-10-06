@@ -130,7 +130,7 @@ async def main():
 
         # ---- Kombi + Wochenplan see the templates ----
         await pg.goto(BASE + "?bereich=free"); await pg.wait_for_timeout(400)
-        await pg.click("#freeHome .combo-entry-link"); await pg.wait_for_timeout(200)
+        await pg.click('[data-nav="training"]'); await pg.wait_for_timeout(250); await pg.click('#trainingHub .combo-entry-link'); await pg.wait_for_timeout(200)
         labels = await pg.evaluate("[...document.querySelectorAll('#comboAddGrid button')].map((b) => b.textContent)")
         check("Kombi offers the trainer templates", any("Mobilisation" in l for l in labels) and any("Eisbad" in l and "lang" not in l for l in labels), labels)
         opts = await pg.evaluate("""(() => { const s = document.getElementById('planEntryArea'); s.value = 'free'; s.dispatchEvent(new Event('change'));

@@ -66,7 +66,7 @@ async def main():
         await pg.click("#workoutTabataStartBtn"); await pg.wait_for_timeout(200)
 
         # ---- block 4: Cardio ----
-        await pg.click('#comboAddGrid >> text="Cardio-Einheit"'); await pg.wait_for_timeout(200)
+        await pg.click('#comboAddGrid >> text="Ausdauer-Einheit"'); await pg.wait_for_timeout(200)
         await pg.click('#cardioAddGrid .combo-add-btn >> text="Joggen"'); await pg.wait_for_timeout(80)
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(200)
         print("block 4 (Cardio) committed, back at comboScreen:", await pg.is_visible("#comboScreen"))
@@ -79,7 +79,7 @@ async def main():
         await pg.click("#workoutRepsStartBtn"); await pg.wait_for_timeout(200)
 
         # ---- block 6: a second Cardio ----
-        await pg.click('#comboAddGrid >> text="Cardio-Einheit"'); await pg.wait_for_timeout(200)
+        await pg.click('#comboAddGrid >> text="Ausdauer-Einheit"'); await pg.wait_for_timeout(200)
         await pg.click('#cardioAddGrid .combo-add-btn >> text="Rad fahren"'); await pg.wait_for_timeout(80)
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(200)
 

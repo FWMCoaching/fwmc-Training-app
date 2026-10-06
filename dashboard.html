@@ -278,10 +278,10 @@
         <input id="pDesc" placeholder="z.B. Kurzes Aufmerksamkeitstraining, 3 Übungen" />
         <label style="margin-top:14px">Bereich</label>
         <div class="kind-row" id="kindRow">
-          <button class="kind-btn active" type="button" data-kind="visual">Visual Training</button>
-          <button class="kind-btn" type="button" data-kind="movement">Movement</button>
-          <button class="kind-btn" type="button" data-kind="cardio">Cardio</button>
-          <button class="kind-btn" type="button" data-kind="workout">Workout</button>
+          <button class="kind-btn active" type="button" data-kind="visual">Visuelles Training</button>
+          <button class="kind-btn" type="button" data-kind="movement">Reaktionstraining</button>
+          <button class="kind-btn" type="button" data-kind="cardio">Ausdauertraining</button>
+          <button class="kind-btn" type="button" data-kind="workout">Krafttraining</button>
           <button class="kind-btn" type="button" data-kind="free">Eigenes Training</button>
         </div>
         <p class="hint" id="kindHint">Der Code landet in der App automatisch im passenden Bereich.</p>
@@ -352,8 +352,8 @@
       <div id="jsonView" hidden>
         <label for="pConfig" style="margin-top:14px">Konfiguration (JSON - gleiche Struktur wie dig01/dig02/xppbsp-1)</label>
         <textarea id="pConfig" placeholder='{"name":"Dig03 · …","pauseS":15,"blocks":[{"exercise":"vt-color","colors":["orange","rot","lila"],"duration":60,"stimulusS":1,"intervalMin":3,"intervalMax":5}]}'></textarea>
-        <p class="hint">Gültige <code>exercise</code>-Werte im Baukasten: vt-color, vrw-original, 4-straight, 4-diag, 8-solo, 8-vrw, stroop-classic, stroop-bg. Weitere Einzelübungen (cross-modal, cone-tap, …) sowie <code>periph-flash</code> (Periphere Wahrnehmung, NAT) funktionieren im selben <code>blocks</code>-Format, aber nur hier im JSON-Tab - der Code landet dann automatisch auf der Startseite des jeweiligen Bereichs (NAT bei <code>periph-flash</code>, sonst Visual Training). Programmübersichten mit mehreren Programmen: <code>{"type":"bundle","name":"…","programs":[{"label":"…","blocks":[…]}, …]}</code>.</p>
-        <p class="hint">Andere Bereiche brauchen einen eigenen <code>type</code>: Workout-Plan <code>{"type":"workout-plan","name":"…","blocks":[…]}</code> (Blockformat wie im Workout-Baukasten, gleiche Feldnamen) bzw. <code>{"type":"workout-bundle","programs":[…]}</code>. Bewegungsprogramm (Movement) <code>{"type":"movement-plan","name":"…","movements":["armL-heben","armR-heben","legL-strecken",…],"bpm":90,"durationMin":8,"preview":3,"mirror":true,"showLabel":true}</code> (mind. 2 Bewegungen aus den 8 Grund-IDs: armL/armR/legL/legR jeweils -heben/-strecken) bzw. <code>{"type":"movement-bundle","programs":[…]}</code>. Cardio-Einheit <code>{"type":"cardio-plan","name":"…","items":[{"activity":"joggen","durationS":600,"label":"","interval":null}, …]}</code> (<code>activity</code> aus joggen/rad/cross/rudern/walking/treppe/schwimmen, <code>interval</code> optional <code>{"onS":30,"offS":30}</code> - die Zusatzaufgabe während Cardio bleibt eine reine Klienten-Einstellung, kein Coach-Feld) bzw. <code>{"type":"cardio-bundle","programs":[…]}</code>. Vorlagen für „Eigenes Training“ <code>{"type":"free-template","name":"…","trainings":[{"kind":"list","title":"Mobilisation","note":"…","items":[{"text":"Schultern kreisen","s":30}]},{"kind":"timer","title":"Eisbad","minutes":3},{"kind":"check","title":"Journal"}]}</code> (<code>kind</code> check = Abhaken, timer = Mit Zeit mit <code>minutes</code> 1-60, list = Checkliste mit Punkten, <code>s</code> 0-600 Sekunden, 0 = selbst abhaken). Positionen merken/Blitz-Raster/Flash-Speicher-Test/MOT (NAT) sowie der Test-Bereich haben noch keinen Code-Typ.</p>
+        <p class="hint">Gültige <code>exercise</code>-Werte im Baukasten: vt-color, vrw-original, 4-straight, 4-diag, 8-solo, 8-vrw, stroop-classic, stroop-bg. Weitere Einzelübungen (cross-modal, cone-tap, …) sowie <code>periph-flash</code> (Periphere Wahrnehmung, NAT) funktionieren im selben <code>blocks</code>-Format, aber nur hier im JSON-Tab - der Code landet dann automatisch auf der Startseite des jeweiligen Bereichs (NAT bei <code>periph-flash</code>, sonst Visuelles Training). Programmübersichten mit mehreren Programmen: <code>{"type":"bundle","name":"…","programs":[{"label":"…","blocks":[…]}, …]}</code>.</p>
+        <p class="hint">Andere Bereiche brauchen einen eigenen <code>type</code>: Krafttraining-Plan <code>{"type":"workout-plan","name":"…","blocks":[…]}</code> (Blockformat wie im Krafttraining-Baukasten, gleiche Feldnamen) bzw. <code>{"type":"workout-bundle","programs":[…]}</code>. Bewegungsprogramm (Reaktionstraining) <code>{"type":"movement-plan","name":"…","movements":["armL-heben","armR-heben","legL-strecken",…],"bpm":90,"durationMin":8,"preview":3,"mirror":true,"showLabel":true}</code> (mind. 2 Bewegungen aus den 8 Grund-IDs: armL/armR/legL/legR jeweils -heben/-strecken) bzw. <code>{"type":"movement-bundle","programs":[…]}</code>. Ausdauer-Einheit <code>{"type":"cardio-plan","name":"…","items":[{"activity":"joggen","durationS":600,"label":"","interval":null}, …]}</code> (<code>activity</code> aus joggen/rad/cross/rudern/walking/treppe/schwimmen, <code>interval</code> optional <code>{"onS":30,"offS":30}</code> - die Zusatzaufgabe während des Ausdauertrainings bleibt eine reine Klienten-Einstellung, kein Coach-Feld) bzw. <code>{"type":"cardio-bundle","programs":[…]}</code>. Vorlagen für „Eigenes Training“ <code>{"type":"free-template","name":"…","trainings":[{"kind":"list","title":"Mobilisation","note":"…","items":[{"text":"Schultern kreisen","s":30}]},{"kind":"timer","title":"Eisbad","minutes":3},{"kind":"check","title":"Journal"}]}</code> (<code>kind</code> check = Abhaken, timer = Mit Zeit mit <code>minutes</code> 1-60, list = Checkliste mit Punkten, <code>s</code> 0-600 Sekunden, 0 = selbst abhaken). Positionen merken/Blitz-Raster/Flash-Speicher-Test/MOT (NAT) sowie der Test-Bereich haben noch keinen Code-Typ.</p>
         <p class="hint">Optionale Video-Links (nur beim Standard-/Bundle-Typ): <code>introVideo</code> (Programmebene, vor Start), <code>endVideo</code> (Programmebene, nach der letzten Übung), <code>videoAfter</code> (pro Block, läuft nach dieser Übung) - reine URL-Strings, Abspielung in der App folgt noch.</p>
       </div>
 
@@ -497,7 +497,7 @@
   // "Stand: <date>" note above is load-bearing, not decorative. Update it
   // whenever this list is refreshed.
   const OVERVIEW = [
-    { domain: "Visual Training", items: [
+    { domain: "Visuelles Training", items: [
       ["VT · Farbe & Seite", "full"], ["VRW · Direkt & Umgekehrt", "full"],
       ["4 Pfeile · gerade", "full"], ["4 Pfeile · diagonal", "full"],
       ["8 Pfeile", "full"], ["8 Pfeile · Rot/Grün", "full"],
@@ -513,9 +513,9 @@
       ["Box-Atmung", "none"], ["Ruhige Atmung (Kohärenz)", "none"],
       ["4-7-8 / Relax", "none"], ["Wim Hof", "none"], ["Eigenes Muster", "none"],
     ]},
-    { domain: "Movement", items: [["Ganzkörper-Reaktion (Limb-Cueing)", "full"]] },
-    { domain: "Cardio", items: [["Joggen, Rad, Crosstrainer, Rudern, Walking, Treppe, Schwimmen (auch als Intervall)", "full"]] },
-    { domain: "Workout", items: [
+    { domain: "Reaktionstraining", items: [["Ganzkörper-Reaktion (Limb-Cueing)", "full"]] },
+    { domain: "Ausdauertraining", items: [["Joggen, Rad, Crosstrainer, Rudern, Walking, Treppe, Schwimmen (auch als Intervall)", "full"]] },
+    { domain: "Krafttraining", items: [
       ["Kniebeugen", "full"], ["Liegestütze", "full"], ["Ausfallschritte", "full"],
       ["Unterarmstütz (Plank)", "full"], ["Hampelmann", "full"], ["Bergsteiger", "full"],
       ["Burpees", "full"], ["Sit-ups", "full"], ["Superman", "full"], ["Hüftheben (Brücke)", "full"],
