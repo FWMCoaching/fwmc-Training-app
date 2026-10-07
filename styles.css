@@ -426,7 +426,7 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .bundle-desc{font-size:calc(13.5px * var(--ts,1));color:var(--ink-soft)}
 .bundle-item-wrap{display:flex;align-items:stretch;gap:8px}
 .bundle-item-wrap .bundle-item{flex:1;min-width:0}
-.bundle-item-wrap .combo-block-remove{align-self:center}
+.bundle-item-wrap .combo-block-remove,.bundle-item-wrap .combo-saved-edit{align-self:center;width:44px;height:44px;padding:7px;background-clip:content-box;margin:0 -7px;display:flex;align-items:center;justify-content:center}
 .badges{display:flex;gap:6px}
 .badge{font-size:calc(11px * var(--ts,1));font-weight:700;border-radius:999px;padding:2px 9px}
 .badge-new{background:var(--brand);color:#fff}
@@ -1505,7 +1505,7 @@ body.sheet-lock{position:fixed;left:0;right:0;width:100%;height:auto;overflow:vi
 .combo-add-btn .ca-title{font-size:calc(13.5px * var(--ts,1));font-weight:700;color:var(--ink)}
 .combo-add-btn .ca-meta{font-size:calc(12px * var(--ts,1));color:var(--ink-soft)}
 .combo-add-btn .ca-plus{flex:none;font-size:calc(20px * var(--ts,1));font-weight:700;color:var(--brand);line-height:1}
-.combo-block-remove{
+.combo-block-remove,.combo-saved-edit{
   margin-left:auto;flex:none;width:30px;height:30px;border-radius:50%;border:none;
   background:var(--surface-2);color:var(--ink-soft);font-size:calc(16px * var(--ts,1));cursor:pointer;
 }
@@ -2791,3 +2791,7 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 /* Game answer buttons count on touch-down (onGameTap in app.js): no
    callout, selection or grey tap flash, no double-tap zoom between taps. */
 .remember-marker,.blitz-cell,.mot-object,.flash-key{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+
+/* Kombi: Hinweis "Kopie von …" / "Du bearbeitest …" (07.10.) */
+.combo-edit-note{margin:0 0 16px;padding:10px 12px;border-radius:12px;background:var(--surface-2);color:var(--ink)}
+#comboInsertList .group-label{margin-top:10px}

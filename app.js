@@ -4298,6 +4298,7 @@
     }
     if (ctx.errorEl) ctx.errorEl.hidden = true;
     recordCodeUsage(code, def);
+    rememberTrainerProgram(code, def);
     showCoachMessageIfNew(code, def);
     try {
       if (def.type === "bundle") { openBundleOverview(def, code, ctx); return; }
@@ -4404,6 +4405,7 @@
     const homeScreen = (ctx || VISUAL_CODE_CTX).homeScreen;
     programIntroHomeScreen = homeScreen;
     const title = def.name || def.label || "Dein Programm";
+    introAdaptDef = { def, name: title };
     els.programTitle.textContent = title;
     els.programMeta.textContent = `${exerciseCountLabel(def.blocks.length)} · ca. ${fmtMinutes(programSeconds(def))}`;
     els.programDesc.textContent = def.description || "";
@@ -4579,6 +4581,7 @@
 
   function renderBreathProgramIntro(def, code, key) {
     const title = def.name || def.label || "Dein Atemtraining";
+    introAdaptDef = { def, name: title };
     els.breathProgramTitle.textContent = title;
     els.breathProgramMeta.textContent = `${exerciseCountLabel(def.blocks.length)} · ca. ${fmtMinutes(breathProgramSeconds(def))}`;
     els.breathProgramDesc.textContent = def.description || "";
@@ -4667,6 +4670,7 @@
 
   function renderWorkoutProgramIntro(def, code, key) {
     const title = def.name || def.label || "Dein Trainingsplan";
+    introAdaptDef = { def, name: title };
     els.workoutProgramTitle.textContent = title;
     els.workoutProgramMeta.textContent = `${exerciseCountLabel(def.blocks.length)} · ca. ${fmtMinutes(workoutPlanSeconds(def))}`;
     els.workoutProgramDesc.textContent = def.description || "";
@@ -7858,6 +7862,7 @@
 
   function renderMovementProgramIntro(def, code, key) {
     const title = def.name || def.label || "Dein Bewegungsprogramm";
+    introAdaptDef = { def, name: title };
     els.movementProgramTitle.textContent = title;
     els.movementProgramMeta.textContent = `${def.movements.length} Bewegungen · ${def.durationMin} Min · ${def.bpm} BPM`;
     els.movementProgramDesc.textContent = def.description || "";
@@ -14820,6 +14825,7 @@
 
   function renderCardioProgramIntro(def, code, key) {
     const title = def.name || def.label || "Deine Ausdauer-Einheit";
+    introAdaptDef = { def, name: title };
     els.cardioProgramTitle.textContent = title;
     els.cardioProgramMeta.textContent = `${countLabel(def.items.length, "Aktivität", "Aktivitäten")} · ca. ${fmtMinutes(cardioItemsSeconds(def.items))}`;
     els.cardioProgramDesc.textContent = def.description || "";
@@ -18004,23 +18010,192 @@
     renderComboBlockList();
   }
   wireDragReorder(els.comboBlockList, { row: ".chapter-row", hide: ".combo-pause-row", onMove: moveComboBlock });
+  // ---- Gespeicherte Programme (Fabian 07.10., "Erst Vorschau"): open one
+  // again to change it ("Speichern" replaces it, "Als neues Programm
+  // speichern" keeps the original), newest use first with 5 shown, and any
+  // ready-made or trainer programme can be copied in ("Fertiges Programm
+  // einfügen") or adapted as an own copy - an original is never changed. ----
+  const COMBO_SAVED_SHOW = 5;
+  let comboEditing = null; // { id, name } while a saved programme is open for changes
+  let comboSavedAll = false;
+  const deepCopy = (o) => JSON.parse(JSON.stringify(o));
+  function comboSavedSorted() {
+    return comboSavedStore.load().slice().sort((a, b) => (b.lastUsed || b.createdAt || "").localeCompare(a.lastUsed || a.createdAt || ""));
+  }
+  function comboEntryMeta(e) {
+    return `${countLabel(e.blocks.length, "Baustein", "Bausteine")} · ca. ${fmtMinutes(e.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0))}`;
+  }
   function renderComboSaved() {
-    renderPresetList(comboSavedStore, els.comboSavedList, els.comboSavedGroup, null,
-      (e) => `${countLabel(e.blocks.length, "Baustein", "Bausteine")} · ca. ${fmtMinutes(e.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0))}`,
-      (entry) => {
+    const list = comboSavedSorted();
+    els.comboSavedGroup.hidden = list.length === 0;
+    els.comboSavedList.innerHTML = "";
+    const shown = comboSavedAll ? list : list.slice(0, COMBO_SAVED_SHOW);
+    shown.forEach((entry) => {
+      const wrap = document.createElement("div");
+      wrap.className = "bundle-item-wrap";
+      const btn = document.createElement("button");
+      btn.className = "bundle-item";
+      btn.innerHTML = `<div class="bundle-item-head"><strong>${esc(entry.name)}</strong></div><span class="bundle-meta">${esc(comboEntryMeta(entry))}</span>`;
+      btn.addEventListener("click", () => {
+        const all = comboSavedStore.load();
+        const e = all.find((x) => x.id === entry.id);
+        if (e) { e.lastUsed = new Date().toISOString(); comboSavedStore.save(all); }
         comboOriginBundle = null;
         startComboProgram({ name: entry.name, blocks: entry.blocks }, "local", "local:" + entry.id, currentHomeScreen());
       });
+      const ed = document.createElement("button");
+      ed.className = "combo-saved-edit";
+      ed.title = "Bearbeiten";
+      ed.setAttribute("aria-label", "Bearbeiten");
+      ed.textContent = "✎";
+      ed.addEventListener("click", () => editComboSaved(entry));
+      const rm = document.createElement("button");
+      rm.className = "combo-block-remove";
+      rm.title = "Löschen";
+      rm.setAttribute("aria-label", "Löschen");
+      rm.textContent = "✕";
+      // ✕ deletes at once like every saved-settings list; swiping asks first.
+      rm.addEventListener("click", () => {
+        comboSavedStore.save(comboSavedStore.load().filter((e) => e.id !== entry.id));
+        if (comboEditing && comboEditing.id === entry.id) setComboEditing(null);
+        renderComboSaved();
+      });
+      wrap.appendChild(btn);
+      wrap.appendChild(ed);
+      wrap.appendChild(rm);
+      els.comboSavedList.appendChild(wrap);
+    });
+    const more = $("comboSavedMoreBtn");
+    more.hidden = list.length <= COMBO_SAVED_SHOW;
+    more.textContent = comboSavedAll ? "Weniger anzeigen" : `Alle anzeigen (${list.length})`;
   }
-  function openComboScreen() {
-    comboDraftBlocks = [];
-    els.comboSaveForm.hidden = true;
-    els.comboSaveBtn.hidden = false;
+  $("comboSavedMoreBtn").addEventListener("click", () => { comboSavedAll = !comboSavedAll; renderComboSaved(); });
+  function setComboEditing(ed, note) {
+    comboEditing = ed;
+    const n = $("comboEditNote");
+    const text = ed ? `Du bearbeitest „${ed.name}“. Speichern ersetzt es, oder du speicherst es als neues Programm.` : (note || "");
+    n.textContent = text;
+    n.hidden = !text;
+    els.comboSaveBtn.textContent = ed ? "Änderungen speichern" : "Aktuelles Programm speichern";
+  }
+  function editComboSaved(entry) {
+    comboDraftBlocks = deepCopy(entry.blocks);
+    setComboEditing({ id: entry.id, name: entry.name });
+    closeComboSaveForm();
+    renderComboBlockList();
+    els.comboBlockList.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+  // Ready-made / trainer programmes of every domain as Kombi-Bausteine.
+  function comboBlocksFromDef(def) {
+    if (!def || typeof def !== "object") return [];
+    const t = def.type;
+    if (t === "combo-program") return deepCopy(def.blocks || []);
+    if (t === "breath-program") return def.blocks.map((b) => (b.pattern === "wimhof" ? { ...deepCopy(b), domain: "wimhof" } : { ...deepCopy(b), domain: "breath" }));
+    if (t === "workout-plan") return def.blocks.map((b) => ({ ...deepCopy(b), domain: "workout" }));
+    if (t === "movement-plan") return [{ domain: "movement", movements: def.movements.slice(), preview: def.preview, bpm: def.bpm, durationMin: def.durationMin, mirror: def.mirror, showLabel: def.showLabel }];
+    if (t === "cardio-plan") return [{ domain: "cardio", items: def.items.map(copyCardioItem) }];
+    if (!t && Array.isArray(def.blocks)) {
+      return def.blocks.filter((b) => b && EXERCISES[b.exercise]).map((b, i, arr) => {
+        const o = { ...deepCopy(b), domain: "visual" };
+        if (!Array.isArray(b.colors) && EXERCISES[b.exercise].usesColors) o.colors = blockColors(b).colors.map((c) => c.key || (COLOR_LIB.find((l) => l.name === c.name) || {}).key).filter(Boolean);
+        delete o.palette;
+        delete o.pauseS;
+        if (i < arr.length - 1) o.pauseAfterS = arr[i + 1].pauseS ?? def.pauseS ?? 15;
+        return o;
+      });
+    }
+    return [];
+  }
+  // Trainer programmes stay readable for "einfügen" after the code was
+  // opened once (on this device only, never sent anywhere).
+  const TRAINER_PROGRAMS_KEY = "fwmc-trainer-programs-v1";
+  const BUNDLE_ITEM_TYPE = { "bundle": undefined, "breath-bundle": "breath-program", "workout-bundle": "workout-plan", "movement-bundle": "movement-plan", "cardio-bundle": "cardio-plan", "combo-bundle": "combo-program" };
+  function rememberTrainerProgram(code, def) {
+    if (!def || def.type === "free-template" || PROGRAMS[code] || BREATH_PROGRAMS[code] || WORKOUT_PLANS[code]) return;
+    const all = readJSON(TRAINER_PROGRAMS_KEY, {});
+    all[code] = { def, at: new Date().toISOString() };
+    const keep = Object.entries(all).sort((a, b) => b[1].at.localeCompare(a[1].at)).slice(0, CODE_HISTORY_MAX);
+    writeJSON(TRAINER_PROGRAMS_KEY, Object.fromEntries(keep));
+  }
+  function trainerProgramList() {
+    const out = [];
+    Object.values(readJSON(TRAINER_PROGRAMS_KEY, {})).sort((a, b) => b.at.localeCompare(a.at)).forEach(({ def }) => {
+      if (def.type in BUNDLE_ITEM_TYPE) (def.programs || []).forEach((p, i) => out.push({ name: p.label || p.name || `${def.name || "Programm"} ${i + 1}`, def: { ...p, type: BUNDLE_ITEM_TYPE[def.type] } }));
+      else out.push({ name: def.name || def.label || "Programm", def });
+    });
+    return out.filter((x) => comboBlocksFromDef(x.def).length);
+  }
+  function appProgramList() {
+    const out = [];
+    Object.values(PROGRAMS).filter((d) => d.featured).forEach((d) => out.push({ name: d.name, def: d }));
+    Object.values(BREATH_PROGRAMS).forEach((d) => out.push({ name: d.name, def: d }));
+    Object.values(WORKOUT_PLANS).forEach((d) => out.push({ name: d.name, def: d }));
+    return out;
+  }
+  function renderComboInsertList() {
+    const host = $("comboInsertList");
+    host.innerHTML = "";
+    const groups = [
+      ["Deine Programme", comboSavedSorted().filter((e) => !comboEditing || e.id !== comboEditing.id).map((e) => ({ name: e.name, blocks: e.blocks }))],
+      ["Von deinem Trainer", trainerProgramList().map((x) => ({ name: x.name, blocks: comboBlocksFromDef(x.def) }))],
+      ["In der App", appProgramList().map((x) => ({ name: x.name, blocks: comboBlocksFromDef(x.def) }))],
+    ];
+    groups.forEach(([label, items]) => {
+      if (!items.length) return;
+      const h = document.createElement("div");
+      h.className = "group-label";
+      h.textContent = label;
+      host.appendChild(h);
+      const list = document.createElement("div");
+      list.className = "bundle-list";
+      items.forEach((it) => {
+        const b = document.createElement("button");
+        b.className = "bundle-item";
+        b.innerHTML = `<div class="bundle-item-head"><strong>${esc(it.name)}</strong></div><span class="bundle-meta">${esc(comboEntryMeta(it))}</span>`;
+        b.addEventListener("click", () => {
+          comboDraftBlocks.push(...deepCopy(it.blocks));
+          renderComboBlockList();
+          $("comboInsertGroup").open = false;
+          els.comboBlockList.scrollIntoView({ block: "center", behavior: "smooth" });
+        });
+        list.appendChild(b);
+      });
+      host.appendChild(list);
+    });
+  }
+  $("comboInsertGroup").addEventListener("toggle", () => { if ($("comboInsertGroup").open) renderComboInsertList(); });
+  function openComboScreen(seed) {
+    comboDraftBlocks = seed ? deepCopy(seed.blocks) : [];
+    comboSavedAll = false;
+    setComboEditing(null, seed ? `Kopie von „${seed.name}“. Das Original bleibt, wie es ist. Speichere deine Version unter eigenem Namen.` : "");
+    comboAdaptName = seed ? `${seed.name} (eigene)`.slice(0, 40) : "";
+    closeComboSaveForm();
+    $("comboInsertGroup").open = false;
     renderComboAddGrid();
     renderComboBlockList();
     renderComboSaved();
     showScreen("comboScreen");
   }
+  var comboAdaptName = "";
+  // "Als Kombi-Programm anpassen" under every programme intro (built-in and
+  // trainer programmes): an own, editable copy in the Kombi builder.
+  var introAdaptDef; // var: a programme intro may open during start-up (code link)
+  [["programIntro", "programStartBtn"], ["breathProgramIntro", "breathProgramStartBtn"], ["workoutProgramIntro", "workoutProgramStartBtn"],
+   ["movementProgramIntro", "movementProgramStartBtn"], ["cardioProgramIntro", "cardioProgramStartBtn"]].forEach(([screenId, startId]) => {
+    const screen = $(screenId), startBtn = $(startId);
+    if (!screen || !startBtn) return;
+    const b = document.createElement("button");
+    b.className = "text-link small combo-adapt-link";
+    b.type = "button";
+    b.textContent = "Als Kombi-Programm anpassen";
+    b.addEventListener("click", () => {
+      if (!introAdaptDef) return;
+      const blocks = comboBlocksFromDef(introAdaptDef.def);
+      if (blocks.length) openComboScreen({ name: introAdaptDef.name, blocks });
+    });
+    const anchor = startBtn.closest(".start-sticky-bar") || startBtn;
+    anchor.parentNode.insertBefore(b, anchor);
+  });
   els.comboBackToHome.addEventListener("click", () => showScreen(currentHomeScreen()));
   function comboDraftName() {
     return (els.comboNameInput.value || "").trim() || `Programm ${new Date().toLocaleDateString("de-DE")}`;
@@ -18030,19 +18205,44 @@
     comboOriginBundle = null;
     startComboProgram({ name: comboDraftName(), blocks: comboDraftBlocks.slice() }, "local", "local:draft", currentHomeScreen());
   });
-  wirePresetSaveForm({
-    saveBtn: els.comboSaveBtn, form: els.comboSaveForm, nameInput: els.comboNameInput,
-    cancelBtn: els.comboSaveCancelBtn, confirmBtn: els.comboSaveConfirmBtn,
-    defaultName: () => `Programm ${new Date().toLocaleDateString("de-DE")}`,
-    onSave: (name) => {
-      const list = comboSavedStore.load();
-      list.push({ id: String(Date.now()), name, blocks: comboDraftBlocks.slice(), createdAt: new Date().toISOString() });
-      comboSavedStore.save(list);
-      renderComboSaved();
-      comboDraftBlocks = [];
-      renderComboBlockList();
-    },
+  function closeComboSaveForm() { els.comboSaveForm.hidden = true; els.comboSaveBtn.hidden = false; }
+  els.comboSaveBtn.addEventListener("click", () => {
+    els.comboSaveForm.hidden = false;
+    els.comboSaveBtn.hidden = true;
+    els.comboNameInput.value = comboEditing ? comboEditing.name : comboAdaptName;
+    $("comboSaveAsNewBtn").hidden = !comboEditing;
+    els.comboNameInput.focus();
   });
+  els.comboSaveCancelBtn.addEventListener("click", closeComboSaveForm);
+  function comboSaveDone() {
+    closeComboSaveForm();
+    setComboEditing(null);
+    comboAdaptName = "";
+    comboSavedAll = false;
+    renderComboSaved();
+    comboDraftBlocks = [];
+    renderComboBlockList();
+  }
+  function comboSaveNew() {
+    const name = comboDraftName();
+    const list = comboSavedStore.load();
+    const now = new Date().toISOString();
+    list.push({ id: String(Date.now()), name, blocks: deepCopy(comboDraftBlocks), createdAt: now, lastUsed: now });
+    comboSavedStore.save(list);
+    comboSaveDone();
+  }
+  els.comboSaveConfirmBtn.addEventListener("click", () => {
+    if (!comboEditing) { comboSaveNew(); return; }
+    const list = comboSavedStore.load();
+    const e = list.find((x) => x.id === comboEditing.id);
+    if (!e) { comboSaveNew(); return; }
+    e.name = comboDraftName();
+    e.blocks = deepCopy(comboDraftBlocks);
+    e.lastUsed = new Date().toISOString();
+    comboSavedStore.save(list);
+    comboSaveDone();
+  });
+  $("comboSaveAsNewBtn").addEventListener("click", comboSaveNew);
 
   // ==== Go/No-Go Reaktionstest (Test-Bereich, first autonomous entry) ====
   // Classic Go/No-Go inhibitory-control paradigm: a series of single
@@ -30019,12 +30219,14 @@
         { label: "Löschen", del: true, run: () => askDeleteFree(id) }];
     } },
     { sel: "#freeTrainerGrid [data-free-id]", acts: (row) => [{ label: "Löschen", del: true, run: () => askRemoveTrainerTemplate(row.dataset.freeId) }] },
-    // Saved settings / saved Kombi-Programme (renderPresetList): only delete exists there.
+    // Saved settings (renderPresetList): only delete; saved Kombi-Programme also Bearbeiten (07.10.).
     { sel: ".bundle-item-wrap", acts: (row) => {
       const rm = row.querySelector(':scope > .combo-block-remove[title="Löschen"]');
       if (!rm) return null;
       const name = ((row.querySelector(".bundle-item strong") || {}).textContent || "").trim();
-      return [{ label: "Löschen", del: true, run: () => confirmDialog(`„${name}“ löschen?`, () => rm.click()) }];
+      const ed = row.querySelector(":scope > .combo-saved-edit");
+      return [...(ed ? [{ label: "Bearbeiten", run: () => ed.click() }] : []),
+        { label: "Löschen", del: true, run: () => confirmDialog(`„${name}“ löschen?`, () => rm.click()) }];
     } },
   ];
   const SWIPE_SEL = SWIPE_ROWS.map((r) => r.sel).join(", ");
