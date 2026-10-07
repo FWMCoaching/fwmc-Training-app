@@ -725,7 +725,7 @@
     const mode = FF_MODES[state.ffMode] ? state.ffMode : "leuchten";
     const schedule = [];
     let t = pushCountdown(schedule, { task: FF_MODES[mode].task });
-    const show = state.stimulusS;
+    const show = vtShowS();
     let step = 0;
     const foot = () => (state.ffFoot === "wechsel" ? (step++ % 2 === 0 ? "L" : "R") : state.ffFoot === "zufall" ? (rng() < 0.5 ? "L" : "R") : null);
     const rand4 = () => Math.floor(rng() * 4);
@@ -1123,7 +1123,10 @@
     name: "Kraftvolle Atmung (Wim-Hof-Stil)*",
     short: "Schnelle Atemzüge, dann die Luft anhalten.",
   };
-  const WIMHOF_DEFAULTS = { breaths: 30, rounds: 3, breathPaceS: 1.7, recoveryHoldS: 15 };
+  const WIMHOF_DEFAULTS = { breaths: 30, rounds: 3, breathPaceS: 1.7, recoveryHoldS: 15, roundRestS: 0 };
+  // "Pause zwischen den Runden" (Fabian 07.10., Atempausen B): 0-180 s of
+  // normal breathing after the recovery hold, before the next round.
+  function whRoundRestOf(b) { const v = Number(b && b.roundRestS); return Number.isFinite(v) && v > 0 ? Math.min(180, Math.round(v / 5) * 5) : 0; }
 
   // ---- Coach-authored breathing programmes (mirrors PROGRAMS below): a
   // sequence of breathing blocks delivered by code, or shown here for free
@@ -1162,7 +1165,7 @@
       if (b.pattern === "wimhof") {
         const r = b.rounds ?? WIMHOF_DEFAULTS.rounds, n = b.breaths ?? WIMHOF_DEFAULTS.breaths;
         const pace = b.breathPaceS ?? WIMHOF_DEFAULTS.breathPaceS, rec = b.recoveryHoldS ?? WIMHOF_DEFAULTS.recoveryHoldS;
-        return sum + r * (n * pace + 30 + rec); // 30s = rough average retention, for the "ca." estimate only
+        return sum + r * (n * pace + 30 + rec) + Math.max(0, r - 1) * whRoundRestOf(b); // 30s = rough average retention, for the "ca." estimate only
       }
       return sum + (b.durationMin ?? 5) * 60;
     }, 0);
@@ -1519,7 +1522,7 @@
     return block.domain;
   }
   function comboBlockMeta(block) {
-    if (block.domain === "wimhof") return `${block.rounds ?? WIMHOF_DEFAULTS.rounds} Runden`;
+    if (block.domain === "wimhof") return `${block.rounds ?? WIMHOF_DEFAULTS.rounds} Runden` + (whRoundRestOf(block) ? ` · ${whRoundRestOf(block)} s Pause` : "");
     if (block.domain === "breath") return (block.noLimit ? "ohne Zeitlimit" : fmtMinutes((block.durationMin ?? 5) * 60)) + (block.listen ? " · Hörmodus" : "");
     if (block.domain === "movement") return fmtMinutes((block.durationMin ?? 2) * 60);
     if (block.domain === "workout") return workoutBlockMeta(block);
@@ -1534,7 +1537,7 @@
     return "";
   }
   function comboBlockSeconds(block) {
-    if (block.domain === "wimhof") { const r = block.rounds ?? WIMHOF_DEFAULTS.rounds, n = block.breaths ?? WIMHOF_DEFAULTS.breaths; return r * (n * (block.breathPaceS ?? WIMHOF_DEFAULTS.breathPaceS) + 30 + (block.recoveryHoldS ?? WIMHOF_DEFAULTS.recoveryHoldS)); }
+    if (block.domain === "wimhof") { const r = block.rounds ?? WIMHOF_DEFAULTS.rounds, n = block.breaths ?? WIMHOF_DEFAULTS.breaths; return r * (n * (block.breathPaceS ?? WIMHOF_DEFAULTS.breathPaceS) + 30 + (block.recoveryHoldS ?? WIMHOF_DEFAULTS.recoveryHoldS)) + Math.max(0, r - 1) * whRoundRestOf(block); }
     if (block.domain === "breath") return block.noLimit ? 0 : (block.durationMin ?? 5) * 60;
     if (block.domain === "movement") return (block.durationMin ?? 2) * 60;
     if (block.domain === "workout") return workoutBlockSeconds(block);
@@ -3341,8 +3344,7 @@
   };
 
   function randInterval(rng) {
-    const lo = Math.min(state.intervalMin, state.intervalMax);
-    const hi = Math.max(state.intervalMin, state.intervalMax);
+    const [lo, hi] = softGap(Math.min(state.intervalMin, state.intervalMax), Math.max(state.intervalMin, state.intervalMax), state.exercise);
     return lo + rng() * (hi - lo);
   }
   // ---- Colour picker. Shared by three independent selections: the
@@ -4330,6 +4332,7 @@
     els.vtSaveForm.hidden = true;
     els.vtSaveBtn.hidden = false;
     renderVTSaved();
+    applySoftState();
     showScreen("ready");
   }
 
@@ -5181,7 +5184,7 @@
     const schedule = [];
     let t = pushCountdown(schedule, cfg);
     let last = null;
-    const show = state.stimulusS;
+    const show = vtShowS();
     while (t < state.duration) {
       const choices = directions.filter((d) => d[0] !== last);
       const [name, angle] = choices[Math.floor(rng() * choices.length)];
@@ -5206,7 +5209,7 @@
     const schedule = [];
     let t = pushCountdown(schedule, cfg);
     const instruction = "Sag laut die SCHRIFTFARBE (nicht das Wort)";
-    const show = state.stimulusS;
+    const show = vtShowS();
     const colors = active.stroopColors;
     // Ink colour (the answer) follows the client's Farb-Häufigkeit weights;
     // the word is then any other colour, so every stimulus stays incongruent.
@@ -5233,7 +5236,7 @@
   function buildCrossModalSchedule(cfg, rng) {
     const schedule = [];
     let t = pushCountdown(schedule, cfg);
-    const show = state.stimulusS;
+    const show = vtShowS();
     let last = null;
     while (t < state.duration) {
       const roll = rng();
@@ -5270,7 +5273,7 @@
     const colors = active.colors;
     const schedule = [];
     let t = pushCountdown(schedule, cfg);
-    const show = state.stimulusS;
+    const show = vtShowS();
     while (t < state.duration) {
       const color = colors[Math.floor(rng() * colors.length)];
       const angle = rng() < 0.5 ? 90 : 270;
@@ -5286,7 +5289,7 @@
     const colors = active.colors;
     const schedule = [];
     let t = pushCountdown(schedule, cfg);
-    const show = state.stimulusS;
+    const show = vtShowS();
     while (t < state.duration) {
       const color = colors[Math.floor(rng() * colors.length)];
       const pause = randInterval(rng);
@@ -5301,7 +5304,7 @@
     const colors = active.colors;
     const schedule = [];
     let t = pushCountdown(schedule, cfg);
-    const show = state.stimulusS;
+    const show = vtShowS();
     while (t < state.duration) {
       const color = colors[Math.floor(rng() * colors.length)];
       const angle = rng() < 0.5 ? 90 : 270;
@@ -5419,7 +5422,7 @@
   function buildPeriphSchedule(cfg, rng) {
     const schedule = [];
     let t = pushCountdown(schedule, cfg);
-    const show = state.stimulusS;
+    const show = vtShowS();
     // Periph's own background is a flat tint, constant for the whole run
     // (it's never bgIsStimulus), so this only needs computing once.
     const bgHex = currentBgFill(NEUTRAL);
@@ -5511,8 +5514,10 @@
       const avoidHex = frameBgHex(frame);
       const polygon = frameArrowPolygon(cw, ch, frame);
       let t = frame.t0;
-      const show = cfg.stimulusS;
-      const gapMin = Math.min(cfg.intervalMin, cfg.intervalMax), gapMax = Math.max(cfg.intervalMin, cfg.intervalMax);
+      // Sanfte Reize: the Zusatzaufgabe follows its host exercise.
+      const soft = softOn(exId);
+      const show = soft ? Math.max(cfg.stimulusS, SOFT_MIN_SHOW_S) : cfg.stimulusS;
+      const [gapMin, gapMax] = softGap(Math.min(cfg.intervalMin, cfg.intervalMax), Math.max(cfg.intervalMin, cfg.intervalMax), exId);
       while (t + show <= frame.t1) {
         const char = randPeriphChar(cfg.kind, rng);
         let pos = randPosFromCfg(cfg, rng);
@@ -5550,10 +5555,22 @@
     if (idx !== -1) {
       const frame = session.schedule[idx];
       if (idx !== session.lastIndex) {
+        // Sanfte Reize: remember the frame we come from for a cross-fade.
+        session.fadeFrom = session.soft && session.lastIndex >= 0 ? session.schedule[session.lastIndex] : null;
+        session.fadeAt = elapsed;
         session.lastIndex = idx;
         onEnterFrame(frame);
       }
-      drawScene(frame.kind, frame.payload);
+      const fadeP = session.fadeFrom ? (elapsed - session.fadeAt) / Math.min(SOFT_FADE_S, Math.max(0.05, (frame.t1 - frame.t0) * 0.4)) : 1;
+      if (fadeP < 1) {
+        drawScene(session.fadeFrom.kind, session.fadeFrom.payload);
+        ctx.globalAlpha = Math.max(0, fadeP);
+        drawScene(frame.kind, frame.payload);
+        ctx.globalAlpha = 1;
+      } else {
+        session.fadeFrom = null;
+        drawScene(frame.kind, frame.payload);
+      }
       drawAddonOverlay(elapsed);
     } else if (elapsed >= session.total) {
       finishSession();
@@ -5580,7 +5597,11 @@
     if (idx === -1) return;
     const f = session.addonSchedule[idx];
     const cw = canvas.width, ch = canvas.height, unit = Math.min(cw, ch) / 2;
+    // Sanfte Reize: fade in and out instead of popping up.
+    const a = session.soft ? Math.max(0, Math.min(1, (elapsed - f.t0) / SOFT_FADE_S, (f.t1 - elapsed) / SOFT_FADE_S)) : 1;
+    ctx.globalAlpha = a;
     drawPeriphChar(cw, ch, unit, f.fx, f.fy, f.char, session.addonSizeMode, f.color);
+    ctx.globalAlpha = 1;
   }
 
   // Redraws whatever frame is currently frozen on screen (used while the
@@ -5710,9 +5731,10 @@
     els.periphPauseBtn.hidden = false;
     fitCanvas();
     ensureAudioCtx();
+    softStartRun();
     const built = buildScheduleFor(EXERCISES[state.exercise], Math.random);
     const addon = buildAddonSchedule(EXERCISES[state.exercise], state.exercise, built.schedule, Math.random);
-    session = { ...built, startTime: performance.now(), lastIndex: -1, addonSchedule: addon.schedule, addonSizeMode: addon.sizeMode };
+    session = { ...built, startTime: performance.now(), lastIndex: -1, addonSchedule: addon.schedule, addonSizeMode: addon.sizeMode, soft: softOn(state.exercise) };
     requestWakeLock();
     raf = requestAnimationFrame(tick);
   }
@@ -6153,6 +6175,7 @@
     els.vtPauseFixColorGroup.hidden = els.vtPauseFixSizeGroup.hidden = !state.periphFixEnabled || ex.type === "farbfelder";
     els.vtPauseStimColorGroup.hidden = ex.type !== "periph";
     vtPauseTempoAtStart = { stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax };
+    applySoftState();
     syncVtPauseTempoUI();
     syncBgUI();
     syncPeriphFixUI();
@@ -6164,9 +6187,11 @@
     if (!session || !periphPausedAt) return;
     const t0 = vtPauseTempoAtStart;
     const elapsed = (periphPausedAt - session.startTime) / 1000;
-    if (t0 && (t0.stimulusS !== state.stimulusS || t0.intervalMin !== state.intervalMin || t0.intervalMax !== state.intervalMax)) {
+    const softNow = softOn(state.exercise);
+    if ((t0 && (t0.stimulusS !== state.stimulusS || t0.intervalMin !== state.intervalMin || t0.intervalMax !== state.intervalMax)) || softNow !== !!session.soft) {
       rebuildVtScheduleFrom(elapsed);
     }
+    session.soft = softNow;
     vtPauseTempoAtStart = null;
     session.startTime += performance.now() - periphPausedAt;
     periphPausedAt = null;
@@ -6376,6 +6401,8 @@
   // styles.css multiplies every text size of 10.5-22 px by --ts; big numbers
   // and stage visuals stay fixed. Capped so layouts and tabs keep fitting.
   // Tests force a factor with fwmc-test-textscale.
+  var TEXT_SIZE_FACTORS = { normal: 1, gross: 1.12, sehrgross: 1.25 };
+  var TEXT_SCALE_MAX = 1.3;
   function applyTextScale() {
     let ts = 1;
     const forced = readJSON("fwmc-test-textscale", null);
@@ -6390,6 +6417,10 @@
       if (px > 0) ts = px / 17;
     }
     ts = Math.max(0.95, Math.min(1.25, ts));
+    // Grundeinstellungen "Schriftgröße" (Normal/Groß/Sehr groß) multiplies
+    // on top, capped at TEXT_SCALE_MAX so the layouts still fit.
+    const m = readJSON("fwmc-master-v1", null);
+    ts = Math.min(TEXT_SCALE_MAX, ts * (TEXT_SIZE_FACTORS[m && m.textSize] || 1));
     document.documentElement.style.setProperty("--ts", String(Math.round(ts * 100) / 100));
   }
   applyTextScale();
@@ -6510,7 +6541,7 @@
   })();
   function saveCueOverrides() { writeJSON(CUE_OVERRIDES_KEY, cueOverrides); }
 
-  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true, volume: 1 };
+  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true, volume: 1, textSize: "normal", softStimuli: false };
   function loadMasterPrefs() {
     const saved = readJSON(MASTER_PREFS_KEY, null);
     if (saved && typeof saved === "object") {
@@ -6546,6 +6577,8 @@
     if (!Number.isFinite(masterPrefs.defaultPauseS) || masterPrefs.defaultPauseS < 0 || masterPrefs.defaultPauseS > 180) masterPrefs.defaultPauseS = 20;
     masterPrefs.cues = normalizeCueCfg(masterPrefs.cues);
     if (typeof masterPrefs.cuesIgnoreSilent !== "boolean") masterPrefs.cuesIgnoreSilent = false;
+    if (!TEXT_SIZE_FACTORS[masterPrefs.textSize]) masterPrefs.textSize = "normal";
+    masterPrefs.softStimuli = masterPrefs.softStimuli === true;
     // Persist immediately so a migrated (or just-cleaned-up) shape actually
     // lands on disk right away, rather than silently staying in the old
     // shape in storage until the client happens to touch some toggle -
@@ -6854,6 +6887,176 @@
     });
   }
   function applyColorVisionMode() { applyCvdState(); }
+
+  // ---- Sehen und Reize: Sanfte Reize (Fabian 07.10., Atempausen-Nacht N) ----
+  // Grundeinstellungen switch masterPrefs.softStimuli makes every fast light
+  // change calmer at once: stimuli stay at least SOFT_MIN_SHOW_S, the gap
+  // between them is at least SOFT_MIN_GAP_S, screen-filling colour changes
+  // cross-fade over SOFT_FADE_S instead of flashing, Zusatzaufgabe signs fade
+  // in and out, Blitz-Raster cells and Flash characters fade in.
+  // Affected: every exercise on the VT canvas engine except Hütchen
+  // sortieren (keyed by its own EXERCISES id), Blitz-Raster ("blitz"),
+  // Flash-Speicher-Test ("flash"); Kombi, Cardio guests and the Cardio
+  // Zusatzaufgabe run the same engines, so they follow along.
+  // Per exercise: an override in its Feineinstellungen (fwmc-soft-overrides-v1,
+  // {ex: true|false}, wins over the Grundeinstellungen), and An/Aus in its
+  // pause sheet for the running exercise only (softLive). Ready screens show
+  // "Sanfte Reize sind an · Grundeinstellungen" while it is on.
+  // A new fast-stimulus exercise: one SOFT_EXERCISES entry + read softOn(ex)
+  // in its timing (CLAUDE.md). Test: tests/atempause_sanft_1007_test.py.
+  const SOFT_MIN_SHOW_S = 0.8;
+  const SOFT_MIN_GAP_S = 1.2;
+  const SOFT_FADE_S = 0.3;
+  const SOFT_BLITZ_MIN_S = 1.2;
+  const SOFT_FLASH_MIN_SHOW_S = 0.8;
+  const SOFT_FLASH_MIN_GAP_S = 0.6;
+  const SOFT_OVERRIDE_KEY = "fwmc-soft-overrides-v1";
+  const softOverrides = (() => {
+    const saved = readJSON(SOFT_OVERRIDE_KEY, {});
+    const out = {};
+    if (saved && typeof saved === "object") Object.entries(saved).forEach(([k, v]) => { if (typeof v === "boolean") out[k] = v; });
+    return out;
+  })();
+  // "@vt" = the VT exercise the shared ready screen / player shows right now.
+  const SOFT_EXERCISES = {
+    "@vt": { screens: ["ready"], pause: "periphPauseOverlay", noteAfter: "#hilfsmittelNote" },
+    blitz: { screens: ["blitzReady"], pause: "blitzPauseOverlay", noteAfter: ".page-sub" },
+    flash: { screens: ["flashReady", "flashTrainingReady"], pause: "flashPauseOverlay", noteAfter: ".page-sub" },
+  };
+  let softLive = null; // { ex, on } - pause-sheet choice for the running exercise only
+  function softResolve(ex) { return ex === "@vt" ? state.exercise : ex; }
+  function softApplies(ex) {
+    if (ex === "blitz" || ex === "flash") return true;
+    const e = EXERCISES[ex];
+    return !!e && e.type !== "color-tap";
+  }
+  function softMasterOn() { return masterPrefs.softStimuli === true; }
+  function softOverride(ex) { return typeof softOverrides[ex] === "boolean" ? softOverrides[ex] : null; }
+  function softStored(ex) { const o = softOverride(ex); return o == null ? softMasterOn() : o; }
+  function softOn(ex) { return softLive && softLive.ex === ex ? softLive.on : softStored(ex); }
+  function softSetOverride(ex, value) {
+    if (value == null) delete softOverrides[ex]; else softOverrides[ex] = value;
+    writeJSON(SOFT_OVERRIDE_KEY, softOverrides);
+    applySoftState();
+  }
+  function softStartRun() { softLive = null; applySoftState(); }
+  window.__fwmcSoft = { on: (ex) => softOn(ex), show: () => vtShowS(), gap: (lo, hi, ex) => softGap(lo, hi, ex) }; // used by the test
+  // VT engine timing (every schedule builder reads these two).
+  function vtShowS() { return softOn(state.exercise) ? Math.max(state.stimulusS, SOFT_MIN_SHOW_S) : state.stimulusS; }
+  function softGap(lo, hi, ex) {
+    if (!softOn(ex)) return [lo, hi];
+    const l = Math.max(lo, SOFT_MIN_GAP_S);
+    return [l, Math.max(hi, l)];
+  }
+  function softControlsRow(ex, live) {
+    const row = document.createElement("div");
+    row.className = "choice-row two soft-row";
+    const attr = live ? `data-soft-live="${ex}"` : `data-soft-ex="${ex}"`;
+    row.innerHTML = `<button class="choice" type="button" ${attr} data-soft-val="1">An</button><button class="choice" type="button" ${attr} data-soft-val="0">Aus</button>`;
+    return row;
+  }
+  Object.entries(SOFT_EXERCISES).forEach(([ex, cfg]) => {
+    cfg.screens.forEach((screenId) => {
+      const screen = document.getElementById(screenId);
+      if (!screen) return;
+      // the note under the description
+      const note = document.createElement("div");
+      note.className = "soft-note";
+      note.dataset.softNote = ex;
+      note.hidden = true;
+      note.innerHTML = '<span class="soft-note-text">Sanfte Reize sind an</span> &middot; <button class="inline-link" type="button" data-open-master="masterSoftGroup">Grundeinstellungen</button>';
+      const anchor = screen.querySelector(cfg.noteAfter) || screen.querySelector(".page-title");
+      if (anchor) anchor.after(note);
+      // the per-exercise switch in its Feineinstellungen
+      const host = cvdControlsHost(screenId);
+      if (!host) return;
+      const g = document.createElement("div");
+      g.className = "group soft-group";
+      g.dataset.softGroup = ex;
+      g.innerHTML = '<div class="group-label">Sanfte Reize f&uuml;r diese &Uuml;bung</div>';
+      g.appendChild(softControlsRow(ex, false));
+      const st = document.createElement("div");
+      st.className = "group-help soft-status";
+      st.dataset.softStatus = ex;
+      g.appendChild(st);
+      host.appendChild(g);
+    });
+    // the pause sheet: this run only
+    const panel = document.querySelector(`#${cfg.pause} .pause-panel`);
+    if (!panel) return;
+    const g = document.createElement("div");
+    g.className = "group soft-group";
+    g.innerHTML = '<div class="group-label">Sanfte Reize</div>';
+    g.appendChild(softControlsRow(ex, true));
+    const help = document.createElement("div");
+    help.className = "group-help";
+    help.textContent = "Ruhigere Lichtwechsel, gilt nur für diesen Durchgang.";
+    g.appendChild(help);
+    const groups = panel.querySelectorAll(":scope > .group");
+    const last = groups[groups.length - 1];
+    panel.insertBefore(g, last ? last.nextSibling : panel.firstChild);
+  });
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-soft-ex], [data-soft-live], [data-soft-reset], [data-open-master]");
+    if (!b) return;
+    if (b.dataset.openMaster) { openMasterSettings(b.dataset.openMaster); return; }
+    if (b.dataset.softReset) { softSetOverride(softResolve(b.dataset.softReset), null); return; }
+    const on = b.dataset.softVal === "1";
+    if (b.dataset.softEx) { softSetOverride(softResolve(b.dataset.softEx), on); return; }
+    softLive = { ex: softResolve(b.dataset.softLive), on };
+    applySoftState();
+  });
+  function applySoftState() {
+    ["blitz", "flash"].forEach((ex) => document.body.classList.toggle(`soft-${ex}`, softOn(ex)));
+    document.querySelectorAll("[data-soft-ex]").forEach((b) => setActive(b, (b.dataset.softVal === "1") === softStored(softResolve(b.dataset.softEx))));
+    document.querySelectorAll("[data-soft-live]").forEach((b) => setActive(b, (b.dataset.softVal === "1") === softOn(softResolve(b.dataset.softLive))));
+    document.querySelectorAll("[data-soft-note]").forEach((n) => {
+      const ex = softResolve(n.dataset.softNote);
+      const on = softApplies(ex) && softStored(ex);
+      n.hidden = !on;
+      if (on) n.querySelector(".soft-note-text").textContent = softOverride(ex) != null && !softMasterOn() ? "Sanfte Reize sind für diese Übung an" : "Sanfte Reize sind an";
+    });
+    document.querySelectorAll("[data-soft-group]").forEach((g) => { g.hidden = !softApplies(softResolve(g.dataset.softGroup)); });
+    document.querySelectorAll("[data-soft-status]").forEach((el) => {
+      const key = el.dataset.softStatus, ex = softResolve(key);
+      el.textContent = "";
+      if (softOverride(ex) == null) el.textContent = softMasterOn() ? "Folgt den Grundeinstellungen (Sanfte Reize an)." : "Folgt den Grundeinstellungen.";
+      else {
+        el.append("Eigene Einstellung für diese Übung. ");
+        const link = document.createElement("button");
+        link.className = "text-link";
+        link.type = "button";
+        link.dataset.softReset = key;
+        link.textContent = "Wieder den Grundeinstellungen folgen";
+        el.appendChild(link);
+      }
+    });
+    const reset = document.getElementById("masterSoftResetBtn");
+    if (reset) reset.hidden = !Object.keys(softOverrides).length;
+  }
+  // Grundeinstellungen "Sehen und Reize": Schriftgröße + Sanfte Reize.
+  function syncMasterSeeUI() {
+    document.querySelectorAll("[data-master-textsize]").forEach((b) => setActive(b, b.dataset.masterTextsize === masterPrefs.textSize));
+    $("masterSoftCheck").checked = masterPrefs.softStimuli === true;
+    applySoftState();
+  }
+  document.querySelectorAll("[data-master-textsize]").forEach((b) => b.addEventListener("click", () => {
+    masterPrefs.textSize = b.dataset.masterTextsize;
+    saveMasterPrefs();
+    applyTextScale();
+    syncMasterSeeUI();
+  }));
+  $("masterSoftCheck").addEventListener("change", (e) => {
+    masterPrefs.softStimuli = e.target.checked;
+    saveMasterPrefs();
+    syncMasterSeeUI();
+  });
+  $("masterSoftResetBtn").addEventListener("click", () => {
+    Object.keys(softOverrides).forEach((k) => delete softOverrides[k]);
+    writeJSON(SOFT_OVERRIDE_KEY, softOverrides);
+    applySoftState();
+  });
+  syncMasterSeeUI();
 
   // ---- Ziel-/Signalfarbe pro Übung (Fabian, 2026-10-02: "A. Ja") ----
   // Every Test exercise whose signal is a fixed colour gets a picker for it
@@ -7264,11 +7467,23 @@
   }
 
   let masterSettingsReturnFocus = null;
-  function openMasterSettings() {
+  function openMasterSettings(section) {
     masterSettingsReturnFocus = document.activeElement;
     syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; syncMasterBgUI(); syncMasterPauseUI(); syncMasterVolumeUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
+    syncMasterSeeUI();
     els.masterSettingsSheet.hidden = false;
-    focusFirstIn(els.masterSettingsSheet);
+    // openMasterSettings("someGroupId") opens the sheet at that section
+    // (the "Sanfte Reize sind an" notes, the Nichtraucher-Pause info).
+    const target = typeof section === "string" ? document.getElementById(section) : null;
+    if (target) {
+      const inner = els.masterSettingsSheet.querySelector(".sheet-inner");
+      requestAnimationFrame(() => {
+        if (inner) inner.scrollTop += target.getBoundingClientRect().top - inner.getBoundingClientRect().top - 12;
+        target.classList.remove("is-called"); void target.offsetWidth; target.classList.add("is-called");
+        const f = target.querySelector("input, button");
+        if (f) f.focus({ preventScroll: true });
+      });
+    } else focusFirstIn(els.masterSettingsSheet);
   }
   function closeMasterSettings() {
     els.masterSettingsSheet.hidden = true;
@@ -7477,6 +7692,8 @@
   let breathRaf = null;
   let breathSession = null; // { schedule, cycleLen, plannedTotal, startTime, lastKey, sound }
   let breathPatternName = "";
+  let breakRun = null; // { min } while a Nichtraucher-Pause from Heute runs
+  const BREAK_TITLE = "Nichtraucher-Pause";
   // Set while a coach-authored breathing programme is chaining blocks
   // through this engine and/or the Wim-Hof one below; null for a single
   // freely-chosen pattern. { def, blockIndex, code, key, title, totalPlayedS }
@@ -7550,8 +7767,11 @@
     resumeSingleBase = null;
     clearBreathEndHold();
     breathPatternName = BREATH_PATTERNS[breathPatternKey].name;
-    const open = opts && "open" in opts ? !!opts.open : !!breathPrefs.noLimit;
-    const cycles = Math.max(1, Math.round((breathPrefs.durationMin * 60) / built.cycleLen));
+    // Nichtraucher-Pause (Heute): its own short duration, own title.
+    breakRun = opts && opts.breakMin ? { min: opts.breakMin } : null;
+    if (breakRun) breathPatternName = BREAK_TITLE;
+    const open = breakRun ? false : opts && "open" in opts ? !!opts.open : !!breathPrefs.noLimit;
+    const cycles = Math.max(1, Math.round(((breakRun ? breakRun.min : breathPrefs.durationMin) * 60) / built.cycleLen));
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.breathPlayer.hidden = false;
@@ -7822,14 +8042,86 @@
     // (Not for « ↻ », which stops silently and starts again.)
     if (breathSession && breathSession.open && !breathProgram && !stepNavSilent) { breathFinishOpen(); return; }
     const wasProgram = !!breathProgram;
+    if (breakRun && !wasProgram) { breakRun = null; breathLeavePlayer(); goToHeute(); return; }
     resumeSingleNote("breath");
     breathProgram = null;
     breathLeavePlayer();
     showScreen(wasProgram ? "breathProgramIntro" : "breathReady");
   }
   els.breathBackBtn.addEventListener("click", breathAbort);
-  els.breathAgainBtn.addEventListener("click", () => { breathLeavePlayer(); startBreathSession(); });
-  els.breathDoneBackBtn.addEventListener("click", () => { breathLeavePlayer(); showScreen("breathHome"); });
+  els.breathAgainBtn.addEventListener("click", () => {
+    const br = breakRun;
+    breathLeavePlayer();
+    if (br) startBreakPause(br.min); else startBreathSession();
+  });
+  els.breathDoneBackBtn.addEventListener("click", () => {
+    const br = breakRun;
+    breakRun = null;
+    breathLeavePlayer();
+    if (br) goToHeute(); else showScreen("breathHome");
+  });
+
+  // ---- Nichtraucher-Pause (Fabian 07.10., Atempausen A) ----
+  // A short calm breathing pause from Heute: Ruhige Atmung (Kohärenz) for
+  // 1/2/3 min (fwmc-atempause-v1), the client's own voice setting, history
+  // kind "breath" with the title "Nichtraucher-Pause". No Weitermachen
+  // record (too short), "Beenden"/"Fertig" lead back to Heute.
+  // ?bereich=atempause (push "Zeit für eine Atempause") opens Heute at
+  // this card. Details: docs/notes/20 (Atemtraining) + 26.
+  const BREAK_KEY = "fwmc-atempause-v1";
+  const breakPrefs = Object.assign({ min: 2 }, readJSON(BREAK_KEY, {}) || {});
+  if (![1, 2, 3].includes(breakPrefs.min)) breakPrefs.min = 2;
+  function syncBreakCard() {
+    document.querySelectorAll("[data-break-min]").forEach((b) => setActive(b, Number(b.dataset.breakMin) === breakPrefs.min));
+    $("todayBreakMinText").textContent = `${breakPrefs.min} Min.`;
+  }
+  document.querySelectorAll("[data-break-min]").forEach((b) => b.addEventListener("click", () => {
+    breakPrefs.min = Number(b.dataset.breakMin);
+    writeJSON(BREAK_KEY, breakPrefs);
+    syncBreakCard();
+    reminderPlanChanged(); // the reminder text names the minutes
+  }));
+  syncBreakCard();
+  function startBreakPause(min) {
+    breathProgram = null;
+    breathPatternKey = "coherent";
+    breathWorking = { ...BREATH_PATTERNS.coherent.phases };
+    const go = () => startBreathSession({ breakMin: min || breakPrefs.min });
+    if (leadInWanted()) runLeadIn(go, true); else go();
+  }
+  $("todayBreakStartBtn").addEventListener("click", () => startBreakPause(breakPrefs.min));
+  function goToHeute() { activateSectionTab("today"); showScreen("todayHome"); try { renderToday(); } catch (e) {} }
+  let breakInfoReturnFocus = null;
+  function openBreakInfo() {
+    breakInfoReturnFocus = document.activeElement;
+    $("breakInfoSheet").hidden = false;
+    $("breakInfoCloseBtn").focus();
+  }
+  function closeBreakInfo() {
+    $("breakInfoSheet").hidden = true;
+    if (breakInfoReturnFocus) breakInfoReturnFocus.focus();
+  }
+  $("todayBreakInfoBtn").addEventListener("click", openBreakInfo);
+  $("breakInfoCloseBtn").addEventListener("click", closeBreakInfo);
+  $("breakInfoSheet").addEventListener("click", (e) => { if (e.target.id === "breakInfoSheet") closeBreakInfo(); });
+  $("breakInfoSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closeBreakInfo(); else trapTabKey($("breakInfoSheet"), e); });
+  $("breakInfoReminderLink").addEventListener("click", () => { closeBreakInfo(); openMasterSettings("reminderBreakGroup"); });
+  // A push tap while the app is already open: sw.js posts a message instead
+  // of loading the URL (never interrupts a running exercise).
+  if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", (e) => {
+    if (e.data && e.data.fwmcOpen === "atempause" && !document.querySelector(".player:not([hidden])")) showBreakCard();
+  });
+  // Deep link / push tap: Heute, scrolled to the card, which glows briefly.
+  function showBreakCard() {
+    goToHeute();
+    const card = $("todayBreak");
+    setTimeout(() => {
+      try { card.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) {}
+      card.classList.remove("is-called");
+      void card.offsetWidth;
+      card.classList.add("is-called");
+    }, 120);
+  }
 
   // ---- Saved breathing settings: same "save under a name, tap to reuse"
   // pattern as Kombi/Visual Training, scoped per pattern (a saved 4-7-8
@@ -7884,6 +8176,7 @@
       wimhofSettings.rounds = block.rounds ?? WIMHOF_DEFAULTS.rounds;
       wimhofSettings.breathPaceS = block.breathPaceS ?? WIMHOF_DEFAULTS.breathPaceS;
       wimhofSettings.recoveryHoldS = block.recoveryHoldS ?? WIMHOF_DEFAULTS.recoveryHoldS;
+      wimhofSettings.roundRestS = whRoundRestOf(block);
       startWimhofSession();
     } else {
       breathPatternKey = block.pattern;
@@ -7968,6 +8261,7 @@
   function loadWimhofSettings() {
     const saved = readJSON(WIMHOF_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(wimhofSettings, saved);
+    wimhofSettings.roundRestS = whRoundRestOf(wimhofSettings);
   }
   function saveWimhofSettings() { writeJSON(WIMHOF_PREFS_KEY, wimhofSettings); }
   loadWimhofSettings();
@@ -7977,7 +8271,10 @@
     document.querySelectorAll("[data-wh-rounds]").forEach((el) => setActive(el, Number(el.dataset.whRounds) === wimhofSettings.rounds));
     document.querySelectorAll("[data-wh-pace]").forEach((el) => setActive(el, Number(el.dataset.whPace) === wimhofSettings.breathPaceS));
     document.querySelectorAll("[data-wh-recovery]").forEach((el) => setActive(el, Number(el.dataset.whRecovery) === wimhofSettings.recoveryHoldS));
+    $("wimhofRoundRestSlider").value = wimhofSettings.roundRestS;
+    $("wimhofRoundRestValue").textContent = wimhofSettings.roundRestS > 0 ? `${wimhofSettings.roundRestS} s` : "Keine";
   }
+  $("wimhofRoundRestSlider").addEventListener("input", (e) => { wimhofSettings.roundRestS = whRoundRestOf({ roundRestS: e.target.value }); saveWimhofSettings(); syncWimhofUI(); });
   document.querySelectorAll("[data-wh-breaths]").forEach((el) => el.addEventListener("click", () => { wimhofSettings.breaths = Number(el.dataset.whBreaths); saveWimhofSettings(); syncWimhofUI(); }));
   document.querySelectorAll("[data-wh-rounds]").forEach((el) => el.addEventListener("click", () => { wimhofSettings.rounds = Number(el.dataset.whRounds); saveWimhofSettings(); syncWimhofUI(); }));
   document.querySelectorAll("[data-wh-pace]").forEach((el) => el.addEventListener("click", () => { wimhofSettings.breathPaceS = Number(el.dataset.whPace); saveWimhofSettings(); syncWimhofUI(); }));
@@ -7994,8 +8291,41 @@
     els.wimhofAckCheck.checked = false; // the safety notes are re-confirmed every visit, not just once - capture/edit included
     syncWimhofStartBtn();
     syncWimhofUI();
+    $("wimhofSaveForm").hidden = true;
+    $("wimhofSaveBtn").hidden = false;
+    renderWimhofSaved();
     showScreen("wimhofReady");
   }
+  // ---- Saved Wim-Hof settings (2026-10-07, same pattern as the cycle
+  // patterns' presets). Loading one only fills the settings: the safety
+  // notes still have to be confirmed before the start.
+  const WIMHOF_SAVED_KEY = "fwmc-wimhof-saved-v1";
+  const wimhofSavedStore = makePresetStore(WIMHOF_SAVED_KEY);
+  function wimhofPresetMeta(e) {
+    const r = e.rounds ?? WIMHOF_DEFAULTS.rounds;
+    return `${r} ${r === 1 ? "Runde" : "Runden"} à ${e.breaths ?? WIMHOF_DEFAULTS.breaths} Atemzüge` + (whRoundRestOf(e) ? ` · ${whRoundRestOf(e)} s Pause` : "");
+  }
+  function renderWimhofSaved() {
+    renderPresetList(wimhofSavedStore, $("wimhofSavedList"), $("wimhofSavedGroup"), null, wimhofPresetMeta, (entry) => {
+      ["breaths", "rounds", "breathPaceS", "recoveryHoldS"].forEach((k) => { if (typeof entry[k] === "number") wimhofSettings[k] = entry[k]; });
+      wimhofSettings.roundRestS = whRoundRestOf(entry);
+      if (!comboWimhofCaptureOriginal) saveWimhofSettings();
+      syncWimhofUI();
+      showToast("Einstellung geladen. Bitte oben bestätigen und starten.");
+    });
+  }
+  wirePresetSaveForm({
+    saveBtn: $("wimhofSaveBtn"), form: $("wimhofSaveForm"), nameInput: $("wimhofSaveNameInput"),
+    cancelBtn: $("wimhofSaveCancelBtn"), confirmBtn: $("wimhofSaveConfirmBtn"),
+    defaultName: () => `Eigene Einstellung ${new Date().toLocaleDateString("de-DE")}`,
+    onSave: (name) => {
+      const list = wimhofSavedStore.load();
+      list.push({ id: String(Date.now()), name, breaths: wimhofSettings.breaths, rounds: wimhofSettings.rounds,
+        breathPaceS: wimhofSettings.breathPaceS, recoveryHoldS: wimhofSettings.recoveryHoldS, roundRestS: wimhofSettings.roundRestS });
+      wimhofSavedStore.save(list);
+      renderWimhofSaved();
+    },
+  });
 
   // ---- Kombi-Baukasten capture for Wim-Hof-style breathing: same pattern
   // as the cycle patterns above, reopening wimhofReady. The safety
@@ -8012,6 +8342,7 @@
       wimhofSettings.rounds = existingBlock.rounds ?? wimhofSettings.rounds;
       wimhofSettings.breathPaceS = existingBlock.breathPaceS ?? wimhofSettings.breathPaceS;
       wimhofSettings.recoveryHoldS = existingBlock.recoveryHoldS ?? wimhofSettings.recoveryHoldS;
+      wimhofSettings.roundRestS = whRoundRestOf(existingBlock);
     }
     comboWimhofEditIndex = editIndex ?? null;
     openWimhofReady();
@@ -8028,6 +8359,7 @@
     const block = {
       domain: "wimhof", breaths: wimhofSettings.breaths, rounds: wimhofSettings.rounds,
       breathPaceS: wimhofSettings.breathPaceS, recoveryHoldS: wimhofSettings.recoveryHoldS,
+      ...(wimhofSettings.roundRestS > 0 ? { roundRestS: wimhofSettings.roundRestS } : {}),
     };
     if (comboWimhofEditIndex != null) comboDraftBlocks[comboWimhofEditIndex] = block;
     else comboDraftBlocks.push(block);
@@ -8091,7 +8423,7 @@
       els.wimhofPhaseLabel.textContent = "Anhalten – ausgeatmet";
       els.wimhofPhaseCount.textContent = fmtClock(held);
       els.wimhofSub.textContent = "Drücke unten, sobald du wieder einatmen musst.";
-    } else {
+    } else if (wimhofState.phase === "recovery") {
       const elapsed = (now - wimhofState.phaseStart) / 1000;
       const remain = Math.max(0, s.recoveryHoldS - elapsed);
       wimhofCircle.style.transform = "scale(1)";
@@ -8103,10 +8435,35 @@
       if (sec >= 1 && sec <= 3 && wimhofState.beeped !== sec) { wimhofState.beeped = sec; playWorkoutBeep(false); }
       if (elapsed >= s.recoveryHoldS) {
         if (wimhofState.round >= s.rounds) { wimhofCue("end"); wimhofFinish(); return; }
+        if (s.roundRestS > 0) {
+          // "Pause zwischen den Runden": breathe normally, calm display.
+          wimhofState.phase = "rest";
+          wimhofState.phaseStart = now;
+          wimhofState.beeped = null;
+          wimhofCue("rest");
+        } else {
+          wimhofState.round += 1;
+          wimhofState.phase = "power";
+          wimhofState.phaseStart = now;
+          wimhofCue("round");
+        }
+      }
+    } else if (wimhofState.phase === "rest") {
+      const elapsed = (now - wimhofState.phaseStart) / 1000;
+      const remain = Math.max(0, s.roundRestS - elapsed);
+      // a slow, quiet swell (about 10 s per breath) - no counting along
+      const swell = 0.5 - 0.5 * Math.cos((elapsed / 10) * 2 * Math.PI);
+      wimhofCircle.style.transform = `scale(${(0.7 + 0.12 * swell).toFixed(3)})`;
+      els.wimhofPhaseLabel.textContent = "Normal atmen";
+      els.wimhofPhaseCount.textContent = fmtClock(remain);
+      els.wimhofSub.textContent = `Gleich Runde ${wimhofState.round + 1} von ${s.rounds}`;
+      const sec = Math.ceil(remain);
+      if (sec >= 1 && sec <= 3 && wimhofState.beeped !== sec) { wimhofState.beeped = sec; playWorkoutBeep(false); }
+      if (elapsed >= s.roundRestS) {
         wimhofState.round += 1;
         wimhofState.phase = "power";
         wimhofState.phaseStart = now;
-        wimhofCue("round");
+        wimhofCue("restEnd");
       }
     }
     els.wimhofStatusEl.textContent = `Runde ${wimhofState.round}/${s.rounds}`;
@@ -8130,6 +8487,8 @@
     retention: [true, "Ausatmen und anhalten"],
     recovery: [true, "Einatmen und halten"],
     round: [true, "Ausatmen. Neue Runde"],
+    rest: [true, "Ausatmen. Jetzt ganz normal atmen"],
+    restEnd: [true, "Neue Runde"],
     end: [true, "Ausatmen. Geschafft"],
   };
   function wimhofCue(kind) {
@@ -10148,7 +10507,7 @@
     els.blitzLevelEl.textContent = `${blitzState.level} Felder`;
     fitBlitzGrid();
     renderBlitzGrid();
-    scheduleBlitzTimer(blitzCoverRound, blitzState.flashS * 1000);
+    scheduleBlitzTimer(blitzCoverRound, (softOn("blitz") ? Math.max(blitzState.flashS, SOFT_BLITZ_MIN_S) : blitzState.flashS) * 1000);
   }
   function blitzCoverRound() {
     if (!blitzState) return;
@@ -10214,6 +10573,7 @@
     els.blitzDonePanel.hidden = true;
     els.blitzPauseOverlay.hidden = true;
     els.blitzPauseBtn.hidden = false;
+    softStartRun();
     const p = prefsOverride || blitzPrefs;
     blitzState = {
       level: p.startCount, cleared: 0, phase: "reveal", lit: new Set(), tapped: new Set(), eligible: new Set(),
@@ -10874,12 +11234,12 @@
     flashState.timer = setTimeout(fn, delayMs);
   }
   function flashEffectiveStimulusS() {
-    if (flashState.mode !== "constant") return flashState.stimulusS;
-    return Math.max(0.12, flashState.stimulusS * Math.pow(0.85, flashState.speedStep));
+    const v = flashState.mode !== "constant" ? flashState.stimulusS : Math.max(0.12, flashState.stimulusS * Math.pow(0.85, flashState.speedStep));
+    return softOn("flash") ? Math.max(v, SOFT_FLASH_MIN_SHOW_S) : v;
   }
   function flashEffectiveIntervalS() {
-    if (flashState.mode !== "constant") return flashState.intervalS;
-    return Math.max(0.08, flashState.intervalS * Math.pow(0.85, flashState.speedStep));
+    const v = flashState.mode !== "constant" ? flashState.intervalS : Math.max(0.08, flashState.intervalS * Math.pow(0.85, flashState.speedStep));
+    return softOn("flash") ? Math.max(v, SOFT_FLASH_MIN_GAP_S) : v;
   }
   function flashStartRound() {
     const count = flashState.mode === "constant" ? flashState.constantCount : flashState.count;
@@ -11111,6 +11471,7 @@
     els.flashPauseBtn.hidden = false;
     els.flashInputPanel.hidden = true;
     els.flashDigitEl.hidden = true;
+    softStartRun();
     const p = prefsOverride || flashPrefs;
     lastFlashMode = mode;
     flashReturnScreen = mode === "training" ? "flashTrainingReady" : "flashReady";
@@ -17375,6 +17736,7 @@
       wimhofSettings.rounds = block.rounds ?? WIMHOF_DEFAULTS.rounds;
       wimhofSettings.breathPaceS = block.breathPaceS ?? WIMHOF_DEFAULTS.breathPaceS;
       wimhofSettings.recoveryHoldS = block.recoveryHoldS ?? WIMHOF_DEFAULTS.recoveryHoldS;
+      wimhofSettings.roundRestS = whRoundRestOf(block);
       hideAllPlayers();
       openWimhofReady();
     } else if (block.domain === "breath") {
@@ -29286,7 +29648,7 @@
   let resumeSingleBase = null; // { total, offset } while a continued run plays, so a second break keeps the original length
   function resumeSingleNote(kind) {
     let rec = null;
-    if (kind === "breath" && breathSession && !breathProgram && !comboProgram) {
+    if (kind === "breath" && breathSession && !breathProgram && !comboProgram && !breakRun) {
       const bs = breathSession;
       const ref = breathPaused ? breathPauseTime : performance.now();
       const played = Math.min(Math.max(0, (ref - bs.startTime) / 1000), bs.plannedTotal);
@@ -31372,6 +31734,8 @@
     let sec = "today";
     try { sec = new URLSearchParams(location.search).get("bereich") || "today"; } catch (e) {}
     if (sec === "test" && !readJSON(TEST_UNLOCK_KEY, false)) sec = "visual";
+    // Push "Zeit für eine Atempause" (sw.js): Heute at the Nichtraucher-Pause.
+    if (sec === "atempause") { showBreakCard(); return; }
     // App-icon shortcuts (manifest.json "shortcuts", Android/Chrome): the
     // bottom bar's own pages.
     if (sec === "training" || sec === "fortschritt") {
@@ -32184,18 +32548,34 @@
   const REMINDER_DAYS = 14;
   const REMINDER_MAX = 60;
   var remState = null; // var: savePlan()/addHistory() may run before this block
-  function reminderPlanChanged() { if (remState && remState.prefs.on) remState.schedule(1500); }
+  function reminderPlanChanged() { if (remState && remState.active()) remState.schedule(1500); }
+  // Atempausen-Erinnerung (Fabian 07.10., Atempausen C): 1-3 fixed times a
+  // day, title "Zeit für eine Atempause" (sw.js opens the Nichtraucher-Pause
+  // for exactly this title), body names only the minutes. Skipped on plan
+  // pause days. Same 14-day window and the same POST as the trainings.
+  const BREAK_REMINDER_TITLE = "Zeit für eine Atempause";
+  const BREAK_TIME_DEFAULTS = ["10:30", "15:00", "18:30"];
   (function initReminders() {
     const prefs = Object.assign({ on: false, lead: 10, morning: "08:00" }, readJSON(REMINDER_KEY, {}) || {});
     if (!REMINDER_LEADS.includes(prefs.lead)) prefs.lead = 10;
     if (!/^\d{2}:\d{2}$/.test(prefs.morning || "")) prefs.morning = "08:00";
     prefs.on = prefs.on === true;
-    remState = { prefs, timer: null, lastSync: 0, lastResult: null, busy: false, again: false };
+    // prefs.breaks: the Atempausen reminders, independent of the trainings.
+    const br = prefs.breaks && typeof prefs.breaks === "object" ? prefs.breaks : {};
+    prefs.breaks = {
+      on: br.on === true,
+      count: [1, 2, 3].includes(br.count) ? br.count : 2,
+      times: BREAK_TIME_DEFAULTS.map((d, i) => (Array.isArray(br.times) && /^\d{2}:\d{2}$/.test(br.times[i] || "") ? br.times[i] : d)),
+    };
+    // One push subscription serves both kinds of reminders.
+    const active = () => prefs.on || prefs.breaks.on;
+    remState = { prefs, active, timer: null, lastSync: 0, lastResult: null, busy: false, again: false };
     // The bell on Heute's trainings follows the switch at once.
     const savePrefs = () => { writeJSON(REMINDER_KEY, prefs); try { renderToday(); } catch (e) {} };
     const vapidKey = () => { const ov = readJSON("fwmc-test-reminder-key", ""); return ov === "off" ? "" : (ov || REMINDER_VAPID_PUBLIC_KEY || ""); };
     const groupEl = $("reminderGroup"), onCheck = $("reminderOnCheck"), statusEl = $("reminderStatus");
     const morningInput = $("reminderMorningInput");
+    const breakCheck = $("reminderBreakCheck"), breakBody = $("reminderBreakBody");
 
     function support() {
       if (!vapidKey()) return "setup";
@@ -32214,12 +32594,22 @@
     function setStatus(text, ok) { statusEl.textContent = text; statusEl.classList.toggle("ok", !!ok); }
     function syncUI() {
       const s = support();
+      const blocked = s === "setup" || s === "ios-install" || s === "unsupported";
       onCheck.checked = prefs.on;
-      onCheck.disabled = (s === "setup" || s === "ios-install" || s === "unsupported") && !prefs.on;
-      groupEl.classList.toggle("unavailable", s !== "ok" && !prefs.on);
+      onCheck.disabled = blocked && !prefs.on;
+      breakCheck.checked = prefs.breaks.on;
+      breakCheck.disabled = blocked && !prefs.breaks.on;
+      breakBody.hidden = !prefs.breaks.on;
+      document.querySelectorAll("[data-break-count]").forEach((b) => setActive(b, Number(b.dataset.breakCount) === prefs.breaks.count));
+      document.querySelectorAll("[data-break-time]").forEach((inp) => {
+        const i = Number(inp.dataset.breakTime);
+        inp.value = prefs.breaks.times[i];
+        inp.closest(".reminder-break-time").hidden = i >= prefs.breaks.count;
+      });
+      groupEl.classList.toggle("unavailable", s !== "ok" && !active());
       document.querySelectorAll("[data-reminder-lead]").forEach((b) => setActive(b, Number(b.dataset.reminderLead) === prefs.lead));
       morningInput.value = prefs.morning;
-      if (prefs.on) {
+      if (active()) {
         const r = remState.lastResult;
         if (r && r.error) setStatus("Aktiv – die Erinnerungen konnten gerade nicht übertragen werden. Die App versucht es beim nächsten Öffnen noch einmal.", false);
         else if (r) setStatus(r.count ? `Aktiv – ${r.count === 1 ? "1 Erinnerung" : r.count + " Erinnerungen"} in den nächsten 14 Tagen.` : "Aktiv – in den nächsten 14 Tagen ist noch kein Training geplant.", true);
@@ -32239,8 +32629,17 @@
       const hist = loadHistory();
       const out = [];
       const today = dStr(now);
+      const breakMin = (readJSON("fwmc-atempause-v1", {}) || {}).min;
+      const breakBody = `${[1, 2, 3].includes(breakMin) ? breakMin : 2} Min. ruhig atmen: deine Nichtraucher-Pause`;
       for (let i = 0; i < REMINDER_DAYS; i++) {
         const date = dAdd(today, i);
+        if (prefs.breaks.on && !pauseOn(date)) {
+          [...new Set(prefs.breaks.times.slice(0, prefs.breaks.count))].forEach((t) => {
+            const at = localAt(date, t);
+            if (at > now) out.push({ at: at.toISOString(), title: BREAK_REMINDER_TITLE, body: breakBody });
+          });
+        }
+        if (!prefs.on) continue;
         const occ = occurrencesOn(date, hist).filter((o) => !o.done);
         occ.filter((o) => o.time).forEach((o) => {
           const at = new Date(localAt(date, o.time).getTime() - prefs.lead * 60000);
@@ -32283,7 +32682,7 @@
       } catch (e) { return false; } finally { if (t) clearTimeout(t); }
     }
     async function syncNow() {
-      if (!prefs.on || support() !== "ok") return;
+      if (!active() || support() !== "ok") return;
       if (remState.busy) { remState.again = true; return; }
       remState.busy = true;
       try {
@@ -32292,7 +32691,7 @@
         if (!sub) { remState.lastResult = { error: true }; return; }
         const reminders = computeReminders();
         const ok = await sendJSON("POST", { subscription: sub.toJSON ? sub.toJSON() : sub, reminders });
-        if (!prefs.on) return; // switched off meanwhile
+        if (!active()) return; // switched off meanwhile
         remState.lastResult = ok ? { count: reminders.length } : { error: true };
         remState.lastSync = Date.now();
       } finally {
@@ -32306,32 +32705,48 @@
     }
     remState.schedule = schedule;
 
-    async function enable() {
+    // kind: "on" (trainings) or "breaks" (Atempausen); both share one
+    // push subscription, so the second switch only resyncs.
+    const setFlag = (kind, v) => { if (kind === "breaks") prefs.breaks.on = v; else prefs.on = v; };
+    async function enable(kind) {
+      kind = kind || "on";
       const s = support();
-      if (s !== "ok") { prefs.on = false; syncUI(); return; }
+      if (s !== "ok") { setFlag(kind, false); syncUI(); return; }
+      if (active()) { setFlag(kind, true); savePrefs(); remState.lastResult = null; syncUI(); await syncNow(); return; }
       setStatus("Einen Moment …", false);
       let perm = Notification.permission;
       if (perm !== "granted") { try { perm = await Notification.requestPermission(); } catch (e) { perm = "denied"; } }
       if (perm !== "granted") {
-        prefs.on = false; savePrefs(); syncUI();
+        setFlag(kind, false); savePrefs(); syncUI();
         if (perm !== "denied") setStatus("Ohne deine Erlaubnis für Mitteilungen kann die App nicht erinnern. Schalte die Erinnerungen ein und tippe dann auf „Erlauben“.", false);
         return;
       }
       let sub = null;
       try { sub = await getSubscription(true); } catch (e) { sub = null; }
-      if (!sub) { prefs.on = false; savePrefs(); syncUI(); setStatus("Das Einschalten hat gerade nicht geklappt. Bitte versuche es später noch einmal.", false); return; }
-      prefs.on = true; savePrefs(); remState.lastResult = null;
+      if (!sub) { setFlag(kind, false); savePrefs(); syncUI(); setStatus("Das Einschalten hat gerade nicht geklappt. Bitte versuche es später noch einmal.", false); return; }
+      setFlag(kind, true); savePrefs(); remState.lastResult = null;
       await syncNow();
     }
-    async function disable() {
-      prefs.on = false; savePrefs(); remState.lastResult = null; clearTimeout(remState.timer);
+    async function disable(kind) {
+      setFlag(kind || "on", false); savePrefs(); remState.lastResult = null;
+      if (active()) { syncUI(); await syncNow(); return; }
+      clearTimeout(remState.timer);
       syncUI();
       try {
         const sub = "serviceWorker" in navigator && "PushManager" in window ? await getSubscription(false) : null;
         if (sub) { await sendJSON("DELETE", { endpoint: sub.endpoint }); try { await sub.unsubscribe(); } catch (e) {} }
       } catch (e) {}
     }
-    onCheck.addEventListener("change", () => { if (onCheck.checked) enable(); else disable(); });
+    onCheck.addEventListener("change", () => { if (onCheck.checked) enable("on"); else disable("on"); });
+    breakCheck.addEventListener("change", () => { if (breakCheck.checked) enable("breaks"); else disable("breaks"); });
+    document.querySelectorAll("[data-break-count]").forEach((b) => b.addEventListener("click", () => {
+      prefs.breaks.count = Number(b.dataset.breakCount); savePrefs(); syncUI(); reminderPlanChanged();
+    }));
+    document.querySelectorAll("[data-break-time]").forEach((inp) => inp.addEventListener("change", () => {
+      const i = Number(inp.dataset.breakTime);
+      if (!/^\d{2}:\d{2}$/.test(inp.value)) { inp.value = prefs.breaks.times[i]; return; }
+      prefs.breaks.times[i] = inp.value; savePrefs(); reminderPlanChanged();
+    }));
     document.querySelectorAll("[data-reminder-lead]").forEach((b) => b.addEventListener("click", () => {
       prefs.lead = Number(b.dataset.reminderLead); savePrefs(); syncUI(); reminderPlanChanged();
     }));
@@ -32342,10 +32757,10 @@
     // Keep the 14-day window rolling: on start, and when the app comes back
     // after six hours or more.
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible" && prefs.on && Date.now() - remState.lastSync > 6 * 3600000) schedule(1000);
+      if (document.visibilityState === "visible" && active() && Date.now() - remState.lastSync > 6 * 3600000) schedule(1000);
     });
     syncUI();
-    if (prefs.on) schedule(2000);
+    if (active()) schedule(2000);
   })();
 
   $("progressEmptyBtn").addEventListener("click", () => {
