@@ -989,8 +989,64 @@
     }).join("");
     return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">${cells}</svg>`;
   }
+  // Reaktionstraining neu (Fabian 07.10., from the preview page): three more
+  // symbol styles, each without a body silhouette and without the original
+  // product's triangle/square shapes. "felder" = 2x2 rounded squares (arms
+  // top, legs bottom), the active one filled with a white arrow; "punkte" =
+  // four joint dots on a thin frame, the active one grows a stroke in its
+  // direction; "pfeil" = only one arrow in the matching quarter of a faint
+  // cross. Arrow up = heben, arrow outward = strecken.
+  const MV_QUAD = { armLeft: [0, 0], armRight: [1, 0], legLeft: [0, 1], legRight: [1, 1] };
+  function mvActiveSlot(slots) {
+    const key = Object.keys(MV_QUAD).find((k) => slots[k]);
+    return key ? { key, dir: slots[key] === "heben" ? "up" : (key.endsWith("Left") ? "left" : "right") } : null;
+  }
+  function mvArrow(cx, cy, dir, sz, col) {
+    const a = { up: [0, -1], left: [-1, 0], right: [1, 0] }[dir];
+    const x2 = cx + a[0] * sz, y2 = cy + a[1] * sz, x1 = cx - a[0] * sz * 0.7, y1 = cy - a[1] * sz * 0.7;
+    const px = -a[1], py = a[0], h = sz * 0.55;
+    const f = (n) => n.toFixed(1);
+    return `<path d="M${f(x1)} ${f(y1)}L${f(x2)} ${f(y2)}M${f(x2 - a[0] * h + px * h)} ${f(y2 - a[1] * h + py * h)}L${f(x2)} ${f(y2)}L${f(x2 - a[0] * h - px * h)} ${f(y2 - a[1] * h - py * h)}" fill="none" stroke="${col}" stroke-width="${f(sz * 0.32)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  function figureSVGFelder(slots, baseColor) {
+    baseColor = baseColor || "#16232a";
+    const act = mvActiveSlot(slots);
+    let out = "";
+    for (const k in MV_QUAD) {
+      const [x, y] = MV_QUAD[k], on = act && act.key === k;
+      out += on
+        ? `<rect x="${6 + x * 46}" y="${6 + y * 46}" width="42" height="42" rx="9" fill="${FIG_HIGHLIGHT}" stroke="${FIG_HIGHLIGHT}" stroke-width="3"/>` + mvArrow(27 + x * 46, 27 + y * 46, act.dir, 12, "#fff")
+        : `<rect x="${6 + x * 46}" y="${6 + y * 46}" width="42" height="42" rx="9" fill="none" stroke="${baseColor}" stroke-opacity=".3" stroke-width="3"/>`;
+    }
+    return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">${out}</svg>`;
+  }
+  function figureSVGPunkte(slots, baseColor) {
+    baseColor = baseColor || "#16232a";
+    const act = mvActiveSlot(slots);
+    const P = { armLeft: [30, 30], armRight: [70, 30], legLeft: [34, 72], legRight: [66, 72] };
+    const ln = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${baseColor}" stroke-opacity=".3" stroke-width="3"/>`;
+    let out = ln(30, 30, 70, 30) + ln(34, 72, 66, 72) + ln(50, 30, 50, 72);
+    for (const k in P) {
+      const [x, y] = P[k], on = act && act.key === k;
+      if (on) {
+        const v = { up: [0, -1], left: [-1, 0], right: [1, 0] }[act.dir];
+        out += `<line x1="${x}" y1="${y}" x2="${x + v[0] * 24}" y2="${y + v[1] * 24}" stroke="${FIG_HIGHLIGHT}" stroke-width="9" stroke-linecap="round"/>`;
+      }
+      out += on ? `<circle cx="${x}" cy="${y}" r="10" fill="${FIG_HIGHLIGHT}"/>`
+        : `<circle cx="${x}" cy="${y}" r="7" fill="none" stroke="${baseColor}" stroke-opacity=".45" stroke-width="3"/>`;
+    }
+    return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">${out}</svg>`;
+  }
+  function figureSVGPfeil(slots, baseColor) {
+    baseColor = baseColor || "#16232a";
+    const act = mvActiveSlot(slots);
+    const Q = { armLeft: [29, 29], armRight: [71, 29], legLeft: [29, 71], legRight: [71, 71] };
+    const cross = `<line x1="50" y1="10" x2="50" y2="90" stroke="${baseColor}" stroke-opacity=".3" stroke-width="2.5"/><line x1="10" y1="50" x2="90" y2="50" stroke="${baseColor}" stroke-opacity=".3" stroke-width="2.5"/>`;
+    return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">${cross}${act ? mvArrow(Q[act.key][0], Q[act.key][1], act.dir, 15, FIG_HIGHLIGHT) : ""}</svg>`;
+  }
+  const MV_STYLE_SVG = { felder: figureSVGFelder, punkte: figureSVGPunkte, pfeil: figureSVGPfeil, figur: figureSVGFigur, abstrakt: figureSVGAbstrakt };
   function figureSVG(slots, baseColor) {
-    return movementPrefs.figureStyle === "abstrakt" ? figureSVGAbstrakt(slots, baseColor) : figureSVGFigur(slots, baseColor);
+    return (MV_STYLE_SVG[movementPrefs.figureStyle] || figureSVGFigur)(slots, baseColor);
   }
   // Resolves which SCREEN side each anatomical limb is drawn on. Mirrored
   // (default): the client's left appears on-screen left, like copying a
@@ -7504,16 +7560,40 @@
   const MOVEMENT_DIRECTIONS = ["rechts", "links", "oben", "unten"];
   const movementPrefs = {
     movements: MOVEMENTS.map((m) => m.id),
-    preview: 3, bpm: 60, durationMin: 1, mirror: true, showLabel: true, figureStyle: "figur", direction: "rechts",
-    tick: true, tickVolume: 0.7,
+    preview: 3, bpm: 60, durationMin: 1, mirror: true, showLabel: true, figureStyle: "felder", direction: "rechts",
+    tick: true, tickVolume: 0.7, layout: "zeilen", rowLen: 4,
   };
+  // Anzeige (Fabian 07.10.): "zeilen" = rows of 3-5 fields that wander up
+  // while you work through them (the next row is always visible, the picture
+  // never jumps), "feld" = a still field of N x N, page by page, "band" =
+  // the older strip of single fields (Vorschau/Laufrichtung apply only there).
+  const MV_STYLES = ["felder", "punkte", "pfeil", "figur", "abstrakt"];
+  const MV_LAYOUTS = ["zeilen", "feld", "band"];
+  // Look fields of a Kombi block / preset / Weitermachen record. Older ones
+  // have no layout: they were made with the strip, so they keep it.
+  function mvLookOf(src) {
+    const o = {};
+    if (!src) return o;
+    if (MV_STYLES.includes(src.figureStyle)) o.figureStyle = src.figureStyle;
+    if (MOVEMENT_DIRECTIONS.includes(src.direction)) o.direction = src.direction;
+    o.layout = MV_LAYOUTS.includes(src.layout) ? src.layout : "band";
+    if ([3, 4, 5].includes(Number(src.rowLen))) o.rowLen = Number(src.rowLen);
+    return o;
+  }
   function loadMovementPrefs() {
     const saved = readJSON(MOVEMENT_PREFS_KEY, null);
-    if (saved && typeof saved === "object") Object.assign(movementPrefs, saved);
+    if (saved && typeof saved === "object") {
+      Object.assign(movementPrefs, saved);
+      // Fabian 07.10. "erstmal so reinnehmen": everyone gets the new rows +
+      // "Vier Felder" once; afterwards their own choice sticks.
+      if (!("layout" in saved)) { movementPrefs.layout = "zeilen"; movementPrefs.rowLen = 4; movementPrefs.figureStyle = "felder"; }
+    }
     if (!Array.isArray(movementPrefs.movements) || movementPrefs.movements.length < MIN_MOVEMENTS) {
       movementPrefs.movements = MOVEMENTS.map((m) => m.id);
     }
-    if (movementPrefs.figureStyle !== "figur" && movementPrefs.figureStyle !== "abstrakt") movementPrefs.figureStyle = "figur";
+    if (!MV_STYLES.includes(movementPrefs.figureStyle)) movementPrefs.figureStyle = "felder";
+    if (!MV_LAYOUTS.includes(movementPrefs.layout)) movementPrefs.layout = "zeilen";
+    if (![3, 4, 5].includes(Number(movementPrefs.rowLen))) movementPrefs.rowLen = 4;
     if (!MOVEMENT_DIRECTIONS.includes(movementPrefs.direction)) movementPrefs.direction = "rechts";
     if (!Number.isFinite(movementPrefs.durationMin) || movementPrefs.durationMin <= 0) movementPrefs.durationMin = 1;
     Object.assign(movementPrefs, mvTickOf(movementPrefs));
@@ -7634,6 +7714,22 @@
 
   document.querySelectorAll("[data-mv-direction]").forEach((el) => el.addEventListener("click", () => { movementPrefs.direction = el.dataset.mvDirection; saveMovementPrefs(); syncMvDirectionUI(); }));
   function syncMvDirectionUI() { document.querySelectorAll("[data-mv-direction]").forEach((el) => setActive(el, el.dataset.mvDirection === movementPrefs.direction)); }
+  document.querySelectorAll("[data-mv-layout]").forEach((el) => el.addEventListener("click", () => { movementPrefs.layout = el.dataset.mvLayout; saveMovementPrefs(); syncMvLayoutUI(); }));
+  document.querySelectorAll("[data-mv-rowlen]").forEach((el) => el.addEventListener("click", () => { movementPrefs.rowLen = Number(el.dataset.mvRowlen); saveMovementPrefs(); syncMvLayoutUI(); }));
+  function syncMvLayoutUI() {
+    document.querySelectorAll("[data-mv-layout]").forEach((el) => setActive(el, el.dataset.mvLayout === movementPrefs.layout));
+    document.querySelectorAll("[data-mv-rowlen]").forEach((el) => setActive(el, Number(el.dataset.mvRowlen) === movementPrefs.rowLen));
+    const band = movementPrefs.layout === "band";
+    $("movementRowLenGroup").hidden = band;
+    $("movementPreviewGroup").hidden = !band;
+    $("movementDirectionGroup").hidden = !band;
+    $("movementLayoutHelp").textContent = MV_LAYOUT_HELP[movementPrefs.layout];
+  }
+  const MV_LAYOUT_HELP = {
+    zeilen: "Die nächste Zeile ist immer schon zu sehen. Während du sie abarbeitest, rückt sie nach oben, das Bild springt nicht.",
+    feld: "Ein ganzes Feld steht still, du arbeitest es Zeile für Zeile durch. Danach kommt ein neues Feld.",
+    band: "Einzelne Felder ziehen nacheinander durch. Unter Vorschau stellst du ein, wie weit du vorausschaust.",
+  };
 
   function syncMvTickUI() {
     document.querySelectorAll("[data-mv-tick]").forEach((el) => setActive(el, (el.dataset.mvTick === "1") === movementPrefs.tick));
@@ -7646,7 +7742,7 @@
   $("movementTickVolumeSlider").addEventListener("change", () => { saveMovementPrefs(); movementTickSound(movementPrefs.tickVolume); });
 
   function openMovementReady() {
-    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI(); syncMvFigureUI(); syncMvDirectionUI(); syncMvTickUI();
+    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI(); syncMvFigureUI(); syncMvDirectionUI(); syncMvTickUI(); syncMvLayoutUI();
     els.movementSaveForm.hidden = true;
     els.movementSaveBtn.hidden = false;
     renderMovementSaved();
@@ -7673,8 +7769,7 @@
       movementPrefs.durationMin = existingBlock.durationMin ?? movementPrefs.durationMin;
       movementPrefs.mirror = existingBlock.mirror ?? movementPrefs.mirror;
       movementPrefs.showLabel = existingBlock.showLabel ?? movementPrefs.showLabel;
-      if (MOVEMENT_DIRECTIONS.includes(existingBlock.direction)) movementPrefs.direction = existingBlock.direction;
-      if (existingBlock.figureStyle === "figur" || existingBlock.figureStyle === "abstrakt") movementPrefs.figureStyle = existingBlock.figureStyle;
+      Object.assign(movementPrefs, mvLookOf(existingBlock));
       Object.assign(movementPrefs, mvTickOf(existingBlock));
     }
     comboMovementEditIndex = editIndex ?? null;
@@ -7698,7 +7793,7 @@
     const block = {
       domain: "movement", movements: movementPrefs.movements.slice(), preview: movementPrefs.preview,
       bpm: movementPrefs.bpm, durationMin: movementPrefs.durationMin, mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel,
-      direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle,
+      direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle, layout: movementPrefs.layout, rowLen: movementPrefs.rowLen,
       tick: movementPrefs.tick, tickVolume: movementPrefs.tickVolume,
     };
     if (comboMovementEditIndex != null) comboDraftBlocks[comboMovementEditIndex] = block;
@@ -7882,14 +7977,101 @@
     if (tiles[beatIdx]) tiles[beatIdx].scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
   }
 
+  // ---- Zeilen / Feld (Fabian 07.10.): rows of rowLen fields, positioned
+  // per frame. "zeilen": scroll = max(0, t/N - 1) rows, so the row you work
+  // on starts as the 2nd visible row and glides to the top while you work
+  // through it; rows above fade out, ~2.5 rows are visible. "feld": N rows
+  // stand still; after the last one a new field replaces the page. ----
+  function mvRowsSetup(ms) {
+    els.movementLane.className = "movement-lane rows";
+    els.movementLane.innerHTML = '<div class="mv-rows-view"></div>';
+    ms.rowEls = new Map();
+    mvRowsLayout(ms);
+  }
+  function mvRowsLayout(ms) {
+    const view = els.movementLane.firstElementChild;
+    if (!view) return;
+    ms.rowEls.forEach((e) => e.remove()); ms.rowEls.clear();
+    const stage = els.movementLane.parentElement;
+    const N = ms.rowLen, gap = N >= 5 ? 8 : 10;
+    const visRows = ms.layout === "zeilen" ? 2.55 : N;
+    // keep clear of the player bar on top (hint/bar rule): pad the lane by
+    // the bar's reach, the stage centres the rest in what is left below it
+    const sr = stage.getBoundingClientRect(), br = els.movementPlayerBar.getBoundingClientRect();
+    const topClear = br.height ? Math.max(0, br.bottom - sr.top + 12) : 0;
+    els.movementLane.style.paddingTop = topClear + "px";
+    const availW = Math.min(stage.clientWidth - 28, 720);
+    const availH = Math.max(160, stage.clientHeight - topClear - 40);
+    const cell = Math.floor(Math.max(44, Math.min((availW - gap * (N - 1)) / N, (availH + gap) / visRows - gap, 170)));
+    ms.rowH = cell + gap; ms.cell = cell; ms.gap = gap;
+    view.style.width = (cell * N + gap * (N - 1)) + "px";
+    view.style.height = Math.round(ms.rowH * visRows - gap) + "px";
+    ms.rowsBeat = -1;
+  }
+  function mvRowEl(ms, k) {
+    let e = ms.rowEls.get(k);
+    if (e) return e;
+    e = document.createElement("div");
+    e.className = "mv-row";
+    e.style.gridTemplateColumns = `repeat(${ms.rowLen}, ${ms.cell}px)`;
+    e.style.gap = ms.gap + "px";
+    const label = movementPrefs.showLabel && ms.cell >= 96;
+    for (let c = 0; c < ms.rowLen; c++) {
+      const idx = k * ms.rowLen + c, m = ms.sequence[idx];
+      const d = document.createElement("div");
+      d.className = "movement-tile mv-cell";
+      d.style.height = ms.cell + "px";
+      if (m && idx < ms.totalBeats) d.innerHTML = movementTileHTML(m, movementPrefs.mirror, label);
+      else d.classList.add("empty");
+      d.dataset.idx = idx;
+      e.appendChild(d);
+    }
+    els.movementLane.firstElementChild.appendChild(e);
+    ms.rowEls.set(k, e);
+    return e;
+  }
+  function mvRowsDraw(ms, t) {
+    const N = ms.rowLen, i = Math.max(0, Math.min(Math.floor(t), ms.totalBeats - 1)), r = Math.floor(i / N);
+    let sc, first, last;
+    if (ms.layout === "zeilen") { sc = Math.max(0, t / N - 1); first = Math.floor(sc); last = first + 3; }
+    else { const page = Math.floor(r / N); sc = page * N; first = sc; last = sc + N - 1; }
+    ms.rowEls.forEach((e, k) => { if (k < first || k > last) { e.remove(); ms.rowEls.delete(k); } });
+    const beatChanged = ms.rowsBeat !== i;
+    for (let k = first; k <= last; k++) {
+      if (k * N >= ms.totalBeats) continue;
+      const e = mvRowEl(ms, k);
+      e.style.transform = `translateY(${((k - sc) * ms.rowH).toFixed(1)}px)`;
+      let op = 1;
+      if (ms.layout === "zeilen") { if (k < sc) op = Math.max(0, 1 - (sc - k) * 1.6); if (k - sc > 1.6) op = 0.45; }
+      e.style.opacity = op;
+      if (beatChanged || e.dataset.drawn !== "1") {
+        e.dataset.drawn = "1";
+        for (const d of e.children) {
+          const idx = Number(d.dataset.idx);
+          d.classList.toggle("active", idx === i);
+          d.classList.toggle("done", idx < i);
+        }
+      }
+    }
+    ms.rowsBeat = i;
+  }
+  window.addEventListener("resize", () => {
+    const ms = movementSession;
+    if (!ms || !ms.rows) return;
+    mvRowsLayout(ms);
+    const t = ms.pausedAt ? ms.lastBeatIdx : (performance.now() - ms.startTime) / 1000 / ms.beatLenS;
+    mvRowsDraw(ms, t);
+  });
+
   function startMovementSession() {
     const pool = MOVEMENTS.filter((m) => movementPrefs.movements.includes(m.id));
     if (pool.length < MIN_MOVEMENTS) return;
     resumeSingleBase = null;
     const beatLenS = 60 / movementPrefs.bpm;
     const totalBeats = Math.max(4, Math.round((movementPrefs.durationMin * 60) / beatLenS));
-    const gridMode = movementPrefs.preview === "all";
-    const seqCount = gridMode ? totalBeats : totalBeats + movementPrefs.preview - 1;
+    const rows = movementPrefs.layout !== "band";
+    const gridMode = !rows && movementPrefs.preview === "all";
+    const seqCount = gridMode || rows ? totalBeats : totalBeats + movementPrefs.preview - 1;
     const sequence = buildMovementSequence(pool, seqCount);
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
@@ -7898,11 +8080,15 @@
     els.movementDonePanel.hidden = true;
     els.movementFinishBadge.hidden = true;
     els.movementProgressTrack.innerHTML = `<span class="seg"><span class="fill"></span></span>`;
-    movementSession = { sequence, beatLenS, totalBeats, gridMode, preview: movementPrefs.preview, pool, startTime: performance.now(), lastBeatIdx: 0, finishTimer: null, pausedAt: null, ...mvTickOf(movementPrefs) };
+    els.movementLane.style.paddingTop = "";
+    movementSession = { sequence, beatLenS, totalBeats, gridMode, rows, layout: movementPrefs.layout, rowLen: movementPrefs.rowLen, preview: movementPrefs.preview, pool, startTime: performance.now(), lastBeatIdx: 0, finishTimer: null, pausedAt: null, ...mvTickOf(movementPrefs) };
     if (movementSession.tick) silentSwitchHint();
     els.movementPauseOverlay.hidden = true;
     els.movementPauseBtn.hidden = false;
-    if (gridMode) {
+    if (rows) {
+      mvRowsSetup(movementSession);
+      mvRowsDraw(movementSession, 0);
+    } else if (gridMode) {
       buildMovementLaneGrid(sequence, movementPrefs.mirror, movementPrefs.showLabel);
       updateMovementLaneGrid(0);
     } else {
@@ -7932,11 +8118,10 @@
         movementPrefs.durationMin = entry.durationMin;
         movementPrefs.mirror = entry.mirror;
         movementPrefs.showLabel = entry.showLabel;
-        if (MOVEMENT_DIRECTIONS.includes(entry.direction)) movementPrefs.direction = entry.direction;
-        if (entry.figureStyle === "figur" || entry.figureStyle === "abstrakt") movementPrefs.figureStyle = entry.figureStyle;
+        Object.assign(movementPrefs, mvLookOf(entry));
         if ("tick" in entry) Object.assign(movementPrefs, mvTickOf(entry));
         saveMovementPrefs();
-        syncMvDirectionUI(); syncMvFigureUI(); syncMvTickUI();
+        syncMvDirectionUI(); syncMvFigureUI(); syncMvTickUI(); syncMvLayoutUI();
         // While capturing a Kombi-Baustein, loading a saved setting should
         // just fill the draft for review/adjustment, not immediately start
         // a live session.
@@ -7957,7 +8142,7 @@
         id: String(Date.now()), name,
         movements: movementPrefs.movements.slice(), preview: movementPrefs.preview, bpm: movementPrefs.bpm,
         durationMin: movementPrefs.durationMin, mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel,
-        direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle,
+        direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle, layout: movementPrefs.layout, rowLen: movementPrefs.rowLen,
         tick: movementPrefs.tick, tickVolume: movementPrefs.tickVolume,
       });
       movementSavedStore.save(list);
@@ -7983,9 +8168,11 @@
     if (beatIdx !== movementSession.lastBeatIdx) {
       movementSession.lastBeatIdx = beatIdx;
       if (movementSession.tick) movementTickSound(movementSession.tickVolume);
-      if (movementSession.gridMode) updateMovementLaneGrid(beatIdx);
+      if (movementSession.rows) { /* drawn below, every frame */ }
+      else if (movementSession.gridMode) updateMovementLaneGrid(beatIdx);
       else renderMovementLaneWindow(movementSession.sequence, beatIdx, movementSession.preview, movementPrefs.mirror, movementPrefs.showLabel);
     }
+    if (movementSession.rows) mvRowsDraw(movementSession, elapsed / movementSession.beatLenS);
     els.movementTimeEl.textContent = fmtClock(totalS - elapsed);
     const fill = els.movementProgressTrack.querySelector(".fill");
     if (fill) fill.style.width = Math.min(100, (elapsed / totalS) * 100) + "%";
@@ -8023,6 +8210,7 @@
     movementPauseDraft = { bpm: Math.round(60 / ms.beatLenS), preview: ms.preview, tick: ms.tick, tickVolume: ms.tickVolume };
     resumeSingleNote("movement");
     syncMovementPauseUI();
+    $("movementPausePreviewRow").closest(".group").hidden = !!ms.rows;
     els.movementPauseBtn.hidden = true;
     els.movementPauseOverlay.hidden = false;
   }
@@ -8033,7 +8221,8 @@
     const beatIdx = ms.lastBeatIdx;
     ms.beatLenS = 60 / d.bpm;
     ms.tick = d.tick; ms.tickVolume = d.tickVolume;
-    if (d.preview !== ms.preview) {
+    if (ms.rows) { /* Zeilen/Feld: no Vorschau, nothing to rebuild */ }
+    else if (d.preview !== ms.preview) {
       ms.preview = d.preview;
       const nowGrid = d.preview === "all";
       const need = nowGrid ? ms.totalBeats : ms.totalBeats + d.preview - 1;
@@ -8052,6 +8241,7 @@
     // Restart the current beat on the new tempo.
     ms.startTime = performance.now() - beatIdx * ms.beatLenS * 1000;
     ms.pausedAt = null;
+    if (ms.rows) mvRowsDraw(ms, beatIdx);
     if (ms.tick) movementTickSound(ms.tickVolume);
     movementPauseDraft = null;
     els.movementPauseOverlay.hidden = true;
@@ -16263,8 +16453,7 @@
       movementPrefs.durationMin = block.durationMin ?? 2;
       movementPrefs.mirror = block.mirror ?? movementPrefs.mirror;
       movementPrefs.showLabel = block.showLabel ?? movementPrefs.showLabel;
-      if (MOVEMENT_DIRECTIONS.includes(block.direction)) movementPrefs.direction = block.direction;
-      if (block.figureStyle === "figur" || block.figureStyle === "abstrakt") movementPrefs.figureStyle = block.figureStyle;
+      Object.assign(movementPrefs, mvLookOf(block));
       if ("tick" in block) Object.assign(movementPrefs, mvTickOf(block));
       startMovementSession();
     } else if (block.domain === "visual") {
@@ -27774,7 +27963,7 @@
       const total = ms.totalBeats * ms.beatLenS, played = ms.lastBeatIdx * ms.beatLenS;
       rec = { kind, title: "Ganzkörper-Reaktion", total, played, rest: total - played,
         movement: { movements: movementPrefs.movements.slice(), bpm: Math.round(60 / ms.beatLenS), preview: ms.preview,
-          mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel, direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle,
+          mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel, direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle, layout: movementPrefs.layout, rowLen: movementPrefs.rowLen,
           tick: ms.tick, tickVolume: ms.tickVolume } };
     }
     if (rec && resumeSingleBase && resumeSingleBase.kind === kind) { rec.played += resumeSingleBase.offset; rec.total = resumeSingleBase.total; }
@@ -29654,6 +29843,18 @@
     box.focus({ preventScroll: true });
     return true;
   }
+  // Tipps-Karte auf Heute (Fabian 07.10.: many click the tips sheet away on
+  // the first start; a card in the middle of Heute, between week and
+  // progress, until the client hides it - it stays under "Mehr").
+  const TIPS_CARD_KEY = "fwmc-tips-card-hidden";
+  function syncTipsCard() { $("todayTipsCard").hidden = !!readJSON(TIPS_CARD_KEY, false); }
+  $("todayTipsOpenBtn").addEventListener("click", () => openTips());
+  $("todayTipsHideBtn").addEventListener("click", () => {
+    writeJSON(TIPS_CARD_KEY, true);
+    syncTipsCard();
+    showTipsWhereHint();
+  });
+  syncTipsCard();
   function showTipsWhereHint() {
     if (navigator.webdriver && !readJSON("fwmc-test-tipshint", false)) return;
     const nav = $("bottomNav");

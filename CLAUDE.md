@@ -501,6 +501,16 @@ For every new or changed exercise/screen, in the same commit:
   start equally far left in both groups. Reaktionstraining keeps its core place with a
   `.hub-test-mark` "Test" pill (Test-Bereich colours, `HUB_TEST_MARK` in app.js,
   Fabian 07.10. while it is reworked; remove the key to drop it).
+- Reaktionstraining neu + Test-Look + Tipps-Karte (2026-10-07): Anzeige
+  `movementPrefs.layout` "zeilen" (rows of `rowLen` 3-5 glide up per frame,
+  `mvRowsDraw`) / "feld" (still N x N page) / "band" (old strip; Vorschau +
+  Laufrichtung only there); Symbole `figureStyle` felder/punkte/pfeil/figur/
+  abstrakt ("Kreise"). Presets/Kombi/Weitermachen carry both via `mvLookOf`
+  (no layout = band). An area that is open but unfinished gets `.test-look`
+  on its screens (Test yellow kicker/bars/tab) + `.test-note` "Noch im Test"
+  + `HUB_TEST_MARK`. Heute `#todayTipsCard` (between week and progress)
+  until "Ausblenden" (`fwmc-tips-card-hidden`, toast "unter Mehr").
+  Test: `tests/reaktion_anzeige_1007_test.py`.
 - Gleichgewicht + Größe live (2026-10-06): 6th NAT exercise (letter sticks,
   Nein-Nein/Ja-Ja/Ohr-Schulter/Diagonal/Sakkaden, metronome, sets or open-ended,
   stance shown/spoken, drag + pinch, live tempo/Takt/Zeit anhalten/Lautstärke);

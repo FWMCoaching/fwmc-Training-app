@@ -300,6 +300,14 @@
     <button class="start-btn secondary today-plan-btn" id="todayPlanBtn" type="button">Wochenplan bearbeiten</button>
   </section>
 
+  <section class="today-main tips-card" id="todayTipsCard" hidden>
+    <div class="today-main-kicker">Tipp</div>
+    <h2 class="today-main-title">So trainierst du richtig</h2>
+    <p class="today-main-hint">Kurze Tipps f&uuml;r dein Training und wie du die App nutzt. Lohnt sich vor dem ersten Training.</p>
+    <button class="start-btn secondary" id="todayTipsOpenBtn" type="button">Tipps ansehen</button>
+    <button class="text-link small" id="todayTipsHideBtn" type="button">Ausblenden <span class="tips-card-where">(bleibt unter &bdquo;Mehr&ldquo;)</span></button>
+  </section>
+
   <section class="today-progress">
     <div class="section-head"><h2>Mein Fortschritt</h2></div>
     <button class="progress-card" id="todayProgressOpenBtn" type="button" aria-label="Mein Fortschritt ansehen">
@@ -622,7 +630,7 @@
   </footer>
 </div>
 
-<div class="screen" id="movementHome" hidden>
+<div class="screen test-look" id="movementHome" hidden>
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" width="900" height="177" alt="Fabian Westermann Mentalcoaching">
     <em class="brand-sub">FWMC <span class="nowrap">Online-Training</span></em>
@@ -643,8 +651,9 @@
   <button class="combo-entry-link" data-open-combo="1">Kombi-Programm aus mehreren Bereichen &rarr;</button>
 
   <section class="hero">
-    <div class="hero-kicker">Reaktionstraining</div>
+    <div class="hero-kicker">Reaktionstraining <span class="test-unlock-badge">Test</span></div>
     <h1 class="hero-title">Bewegen. Merken. Reagieren.</h1>
+    <p class="test-note"><strong>Noch im Test.</strong> Du kannst hier schon trainieren, &Uuml;bungen und Aussehen &auml;ndern sich aber noch.</p>
     <p class="hero-text">Ganzk&ouml;rper-Reaktionstraining im Takt &ndash; ein Symbol zeigt dir, was als N&auml;chstes zu tun ist, bevor du dran bist.</p>
     <button class="text-link" id="movementTipsBtn">Wie funktioniert das? &rarr;</button>
   </section>
@@ -696,7 +705,7 @@
   </footer>
 </div>
 
-<div class="screen" id="movementBundleOverview" hidden>
+<div class="screen test-look" id="movementBundleOverview" hidden>
   <div class="readyhead">
     <button class="back-link" id="movementBundleBackToHome">&larr; Zur&uuml;ck</button>
   </div>
@@ -705,7 +714,7 @@
   <div class="bundle-list" id="movementBundleList"></div>
 </div>
 
-<div class="screen" id="movementProgramIntro" hidden>
+<div class="screen test-look" id="movementProgramIntro" hidden>
   <div class="readyhead">
     <button class="back-link" id="movementProgramBackToHome">&larr; Zur&uuml;ck</button>
   </div>
@@ -4155,11 +4164,12 @@
   <button class="start-btn" id="breathProgramStartBtn">Training starten</button>
 </div>
 
-<div class="screen" id="movementReady" hidden>
+<div class="screen test-look" id="movementReady" hidden>
   <div class="readyhead">
     <button class="back-link" id="movementBackToHome">&larr; Zur&uuml;ck</button>
   </div>
   <h1 class="page-title" id="movementReadyTitle">Ganzk&ouml;rper-Reaktion</h1>
+  <p class="test-note"><strong>Noch im Test.</strong> Du kannst hier schon trainieren, &Uuml;bungen und Aussehen &auml;ndern sich aber noch.</p>
   <p class="page-sub" id="movementReadyHint">Ein Symbol zeigt die n&auml;chste Bewegung. Stell ein, wie viele Bewegungen du im Voraus sehen willst.</p>
 
   <div class="group">
@@ -4169,6 +4179,37 @@
   </div>
 
   <div class="group">
+    <div class="group-label">Anzeige</div>
+    <div class="choice-row" id="movementLayoutRow">
+      <button class="choice" data-mv-layout="zeilen">Wandernde Zeilen<small>n&auml;chste Zeile r&uuml;ckt nach</small></button>
+      <button class="choice" data-mv-layout="feld">Ganzes Feld<small>steht still</small></button>
+      <button class="choice" data-mv-layout="band">Band<small>einzelne Felder</small></button>
+    </div>
+    <div class="group-help" id="movementLayoutHelp"></div>
+  </div>
+
+  <div class="group" id="movementRowLenGroup">
+    <div class="group-label">Felder pro Zeile</div>
+    <div class="choice-row" id="movementRowLenRow">
+      <button class="choice" data-mv-rowlen="3">3<small>3 &times; 3</small></button>
+      <button class="choice" data-mv-rowlen="4">4<small>4 &times; 4</small></button>
+      <button class="choice" data-mv-rowlen="5">5<small>5 &times; 5</small></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Symbole</div>
+    <div class="choice-row" id="movementFigureStyleRow">
+      <button class="choice" data-mv-figure="felder">Vier Felder<small>oben Arme, unten Beine</small></button>
+      <button class="choice" data-mv-figure="punkte">Vier Punkte<small>ein Strich zeigt die Richtung</small></button>
+      <button class="choice" data-mv-figure="pfeil">Nur Pfeil<small>im passenden Viertel</small></button>
+      <button class="choice" data-mv-figure="figur">Figur<small>Strichm&auml;nnchen</small></button>
+      <button class="choice" data-mv-figure="abstrakt">Kreise<small>vier Kreise</small></button>
+    </div>
+    <div class="group-help">Pfeil nach oben hei&szlig;t heben, Pfeil nach au&szlig;en hei&szlig;t strecken.</div>
+  </div>
+
+  <div class="group" id="movementPreviewGroup">
     <div class="group-label">Vorschau</div>
     <div class="choice-row" id="previewRow">
       <button class="choice" data-mv-preview="1">Keine<small>1 Feld</small></button>
@@ -4241,20 +4282,13 @@
           <button class="choice" data-mv-label="0">Nur Symbol</button>
         </div>
       </div>
-      <div class="group">
+      <div class="group" id="movementDirectionGroup">
         <div class="group-label">Laufrichtung<span class="group-count">nur bei &bdquo;Vorschau&ldquo; ungleich &bdquo;Ganz&ldquo;</span></div>
         <div class="choice-row" id="movementDirectionRow">
           <button class="choice" data-mv-direction="rechts">Von rechts<small>wie lesen: links fertig, rechts neu</small></button>
           <button class="choice" data-mv-direction="links">Von links<small>gespiegelt</small></button>
           <button class="choice" data-mv-direction="oben">Von oben<small>senkrecht</small></button>
           <button class="choice" data-mv-direction="unten">Von unten<small>senkrecht, gespiegelt</small></button>
-        </div>
-      </div>
-      <div class="group">
-        <div class="group-label">Darstellung</div>
-        <div class="choice-row two" id="movementFigureStyleRow">
-          <button class="choice" data-mv-figure="figur">Figur<small>Strichmännchen</small></button>
-          <button class="choice" data-mv-figure="abstrakt">Abstrakt<small>Symbol-Raster</small></button>
         </div>
       </div>
     </div>
