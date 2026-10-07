@@ -548,5 +548,12 @@ For every new or changed exercise/screen, in the same commit:
 - Hilfsmittel (2026-10-07): an exercise that needs equipment gets one
   `HILFSMITTEL` entry in app.js (text + optional `link`, shown only when set);
   the VT ready screen renders it as `.hilfsmittel-note`. Details docs/notes/28.
+- Sanfte Reize (2026-10-07): Grundeinstellungen "Sehen und Reize"
+  (`masterPrefs.softStimuli`, + Schriftgröße `textSize` on top of `--ts`).
+  Every exercise with fast light changes honours it: VT canvas exercises get
+  it for free (`vtShowS`/`softGap`/cross-fade); any other engine adds one
+  `SOFT_EXERCISES` entry (ready screens get the "Sanfte Reize sind an" note +
+  override, the pause sheet the live switch) and reads `softOn(ex)` for
+  longer minimum times / softer fades. Details docs/notes/03.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

@@ -194,3 +194,52 @@ exercise/colour/intensity (`fwmc-fb-hint-v1`) whether to show the tick
 (`confirmDialog` with `{title, yes, no, onNo}` options). Off in automated
 browsers unless `fwmc-test-fbhint`. Test: `tests/fb_haken_1007_test.py`.
 Test-Bereich exercises have the pause row, not the start question (open).
+
+## Sehen und Reize (2026-10-07, Fabian approved on the decision page)
+Header group `#masterSeeGroup` after "Hören", then two groups:
+- **Schriftgröße** `#masterTextSizeRow` (`[data-master-textsize]`
+  normal/gross/sehrgross, labels Standard/Groß/Sehr groß - "Normal" is not used
+  in this sheet on purpose, see the Einschränkungen redesign above and
+  `master_settings_test.py`). `masterPrefs.textSize`; `applyTextScale()` reads
+  it straight from `fwmc-master-v1` (it runs before masterPrefs exists) and
+  multiplies the device factor by `TEXT_SIZE_FACTORS` (1 / 1.12 / 1.25), capped
+  at `TEXT_SCALE_MAX` 1.3. Tabs stay capped by their own `min(var(--ts),1.05)`.
+- **Sanfte Reize** `#masterSoftGroup` (`#masterSoftCheck`,
+  `masterPrefs.softStimuli`). Block "Sehen und Reize: Sanfte Reize" in app.js
+  after the CVD block. What changes while on:
+  - VT canvas engine (every exercise except Hütchen sortieren, incl. Periphere
+    Wahrnehmung and Farbfelder; Kombi, programmes, Cardio guests): display time
+    at least `SOFT_MIN_SHOW_S` 0.8 s (`vtShowS()` in every schedule builder),
+    gap at least `SOFT_MIN_GAP_S` 1.2 s (`randInterval` via `softGap`), every
+    frame change cross-fades over `SOFT_FADE_S` 0.3 s (max 40 % of the frame) in
+    `tick()` - so no full-screen colour pops up hard.
+  - Zusatzaufgabe (also the Cardio one, `cardio-flash-host`): same minimums,
+    signs fade in and out (`drawAddonOverlay`). It follows its host exercise.
+  - Blitz-Raster: lit time at least 1.2 s, lit cells fade in (`body.soft-blitz`).
+  - Flash-Speicher-Test: character at least 0.8 s, gap at least 0.6 s (also the
+    speeding-up "Konstant" mode), characters fade in (`body.soft-flash`).
+  The exercises get easier; that is intended and they are marked.
+- Marking: every affected ready screen (`#ready` for VT, `#blitzReady`,
+  `#flashReady`, `#flashTrainingReady`) shows `.soft-note` "Sanfte Reize sind an
+  · Grundeinstellungen" while it applies; the link (`[data-open-master]`) calls
+  `openMasterSettings("masterSoftGroup")`, which scrolls the sheet to that
+  group (any group id works, e.g. `reminderBreakGroup`).
+- Override per exercise: "Sanfte Reize für diese Übung" An/Aus in the
+  Feineinstellungen (`[data-soft-ex]`, `fwmc-soft-overrides-v1` `{exId: bool}`,
+  VT keyed by its EXERCISES id; status line + "Wieder den Grundeinstellungen
+  folgen"; global reset `#masterSoftResetBtn`). Live: the pause sheets
+  (`periphPauseOverlay`, `blitzPauseOverlay`, `flashPauseOverlay`) have
+  "Sanfte Reize" An/Aus for the running exercise only (`softLive`, cleared by
+  `softStartRun()` at every start; VT rebuilds the rest of the schedule on
+  "Weiter").
+- Both settings live in `fwmc-` keys, so the backup includes them. Nothing
+  leaves the device (no privacy text needed).
+- Not covered (proposals for Fabian): Test-Bereich exercises with short
+  flashes (Iconic 120 ms, UFOV, Subitizing, Go/No-Go, Reaktionslicht ...),
+  Positionen merken / MOT (no flashing, longer displays), Reaktionstraining
+  (figure changes on the beat). Recommendation: add Test exercises when they
+  are promoted; Reaktionstraining only if Fabian finds it too hectic.
+- **A new fast-stimulus exercise** gets one `SOFT_EXERCISES` entry (ready
+  screens, pause overlay, where the note goes) and reads `softOn(ex)` in its
+  timing (VT canvas exercises get it for free).
+Test: `tests/atempause_sanft_1007_test.py` (section N).

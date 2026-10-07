@@ -2934,3 +2934,36 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 .ff-hand-row .ff-dot{width:22px;height:22px;border-radius:50%;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
 .ff-hand-row .ff-hand-name{flex:1 1 auto;min-width:0;font-weight:600;font-size:calc(14px * var(--ts,1));color:var(--ink)}
 .ff-hand-row .plan-select{flex:0 1 auto;width:auto;min-width:0}
+/* ---- Nichtraucher-Pause auf Heute (2026-10-07): ruhige, kompakte Karte ---- */
+.today-break-head{display:flex;align-items:center;gap:12px}
+.today-break-icon{flex:none;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--brand-pale);color:var(--brand-deep)}
+.today-break-text{flex:1 1 auto;min-width:0}
+.today-break-title{margin:0;font-size:calc(17px * var(--ts,1));line-height:1.25;color:var(--ink)}
+.today-break-sub{margin:2px 0 0;font-size:calc(13.5px * var(--ts,1));line-height:1.4;color:var(--ink-soft)}
+.today-break-info{flex:none;width:44px;height:44px;margin:-4px -8px -4px 0;border:none;background:none;border-radius:50%;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.today-break-info:active{background:var(--brand-pale)}
+.today-break-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;align-items:stretch}
+.today-break-mins{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:1 1 180px}
+.today-break-mins .choice{padding:8px 4px;font-size:calc(14px * min(var(--ts,1), 1.1));white-space:nowrap}
+.today-main .start-btn.today-break-start{flex:1 1 160px;width:auto;margin:0}
+.today-break.is-called,#masterSettingsSheet .group.is-called{animation:fwmcCalled 1.6s ease-out 1}
+@keyframes fwmcCalled{0%,40%{box-shadow:0 0 0 3px var(--brand)}100%{box-shadow:0 0 0 0 transparent}}
+.break-info-text{font-size:calc(15px * var(--ts,1));line-height:1.55;color:var(--ink)}
+/* Atempausen-Erinnerung in den Grundeinstellungen */
+.reminder-break{margin-top:14px}
+.reminder-break-body{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+.reminder-break-times{display:flex;flex-direction:column;gap:8px}
+.reminder-break-time{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:calc(14px * var(--ts,1));color:var(--ink)}
+.reminder-break-time[hidden]{display:none}
+.reminder-break-time .plan-input{width:auto;flex:0 0 auto}
+/* Sanfte Reize (2026-10-07): Hinweis auf betroffenen Übungen + weiche Lichtwechsel */
+.soft-note{font-size:calc(13.5px * var(--ts,1));line-height:1.5;color:var(--ink);background:var(--brand-pale);border-radius:12px;padding:10px 14px;margin:0 0 14px}
+.soft-note .inline-link{font-weight:600}
+.soft-group .soft-row{margin-top:6px}
+.soft-status{margin-top:6px}
+.soft-status .text-link{font-size:calc(13px * var(--ts,1));padding:0;margin-left:2px}
+body.soft-blitz .blitz-cell.lit{animation:fwmcSoftLit .4s ease-out 1}
+@keyframes fwmcSoftLit{from{background:#e5f1f4}to{background:#f2a900}}
+body.soft-flash .flash-digit:not([hidden]){animation:fwmcSoftIn .3s ease-out 1}
+@keyframes fwmcSoftIn{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion: reduce){.today-break.is-called,#masterSettingsSheet .group.is-called{animation:none}}

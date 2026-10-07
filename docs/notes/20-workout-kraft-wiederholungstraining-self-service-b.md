@@ -462,6 +462,39 @@ rounds, not a duration).
 - Heute plan entries open the ready screen, so the checkbox applies there.
 Test: `tests/nacht_vollbild_atem_reaktion_1007_test.py`.
 
+### Atempausen: Nichtraucher-Pause + Pause zwischen den Runden (2026-10-07)
+
+Fabian approved on the decision page (07.10. 21:53).
+- **Nichtraucher-Pause** (Heute card `#todayBreak`, `.today-main.today-break`,
+  below the main card stack, above the week): "Nichtraucher-Pause / 2 Min.
+  Atempause · ruhig atmen, kurz abschalten", 1/2/3 Min. (`[data-break-min]`,
+  `fwmc-atempause-v1` `{min}`), secondary button "Atempause starten" (the main
+  card keeps the one primary button), ⓘ opens `#breakInfoSheet` (warm text,
+  no judging; link "Erinnerungen einstellen" opens the Grundeinstellungen at
+  `#reminderBreakGroup`). `startBreakPause(min)`: Ruhige Atmung (Kohärenz
+  5,5/5,5), the client's own Ansage/Hörmodus, calm 3-2-1 if switched on,
+  `startBreathSession({breakMin})` -> `breakRun`; runs `min` minutes (whole
+  cycles: 55 s / 121 s / 176 s), never "ohne Zeitlimit", no Weitermachen record.
+  End hold "Weiter atmen" works as usual. History `kind:"breath"`, title
+  "Nichtraucher-Pause" (so a planned Atemtraining counts as done). "Beenden",
+  "Zur Übersicht" go back to Heute, "Nochmal" restarts the pause.
+  `?bereich=atempause` (push tap) = Heute scrolled to the card (`showBreakCard`).
+- **Wim-Hof "Pause zwischen den Runden"** (`#wimhofRoundRestSlider`, 0-180 s in
+  5 s, default 0 = straight on, `wimhofSettings.roundRestS`, `whRoundRestOf()`):
+  after the recovery hold of every round but the last, phase `"rest"`: circle
+  swells slowly, "Normal atmen" + "0:20" countdown, "Gleich Runde 2 von 3", cue
+  "Ausatmen. Jetzt ganz normal atmen", 3-2-1 beeps, then "Neue Runde". Pause
+  freezes it like every phase. Carried by Kombi blocks (`roundRestS`, meta
+  "3 Runden · 20 s Pause", seconds estimate), trainer Atem-Programm blocks
+  (`roundRestS` optional; dashboard builder does not offer it yet) and the new
+  **Wim-Hof presets** (`fwmc-wimhof-saved-v1`, "Aktuelle Einstellung
+  speichern"; loading fills the settings only - the safety notes still have
+  to be confirmed).
+- The cycle patterns (Ruhige Atmung, Box, 4-7-8, Eigenes Muster) have no rounds
+  (one continuous rhythm over a duration), so no round pause there; Kombi and
+  Atem-Programm already have pauses between blocks.
+Test: `tests/atempause_sanft_1007_test.py` (sections A, B).
+
 ### Datenschutz in der App (2026-10-03)
 
 Every footer's "Datenschutz" is a `.privacy-open-btn` that opens
