@@ -273,6 +273,7 @@ everywhere goes here, short.
 | 24-claude-md-langfassung-2026-10-05 | verbatim CLAUDE.md before the 2026-10-05 slimming (reasons, history) |
 | 25-freier-baustein | Freie Bausteine area: model, kinds, Dehnen template, editor, player, Kombi/plan/history wiring |
 | 26-erinnerungen | Push reminders before planned trainings: Grundeinstellungen section, payload, sw.js push, Worker /reminders + cron, deploy |
+| 28-farbfelder | Farbfelder (VT, 2x2 mat grid): modes, rule function, Abfolge timing, Kombi/Cardio wiring, generic Hilfsmittel note |
 
 ## Must-do rules collected from the detail notes
 
@@ -540,5 +541,8 @@ For every new or changed exercise/screen, in the same commit:
 - Tippen beim Aufsetzen everywhere (2026-10-07): every game tap target is in
   `FAST_TAP_SEL` (one delegated pointerdown listener); a new answer button or
   tap area joins it unless its handler needs the tap coordinates.
+- Hilfsmittel (2026-10-07): an exercise that needs equipment gets one
+  `HILFSMITTEL` entry in app.js (text + optional `link`, shown only when set);
+  the VT ready screen renders it as `.hilfsmittel-note`. Details docs/notes/28.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

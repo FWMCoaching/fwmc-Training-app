@@ -95,11 +95,11 @@ async def main():
 
         await pg.click("#cardioAddonPickerCancelBtn"); await pg.wait_for_timeout(150)
 
-        # ==== periph-flash (index 12): same controls, PLUS zone-dominance
+        # ==== periph-flash (index 13): same controls, PLUS zone-dominance
         # weighting collapsed under "Feineinstellungen" ====
         saved_before = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-cardio-addon-v1')).perType['periph-flash']")
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(12).click(); await pg.wait_for_timeout(80)
+        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(13).click(); await pg.wait_for_timeout(80)
         await detail.locator('[data-zones-toggle]').click(); await pg.wait_for_timeout(80)
         print("periph-flash: zone grid shown with all 8 active by default:", await detail.locator(".periph-zone[data-zone].active").count() == 8)
         print("periph-flash: 'Feineinstellungen' collapsible present (8 zones selected):", await detail.locator("details.advanced").count() == 1)
@@ -130,7 +130,7 @@ async def main():
         # ==== for real: live-edit axes/zones/size/weights, start, confirm
         # isolation even after actually running the burst ====
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(12).click(); await pg.wait_for_timeout(80)
+        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(13).click(); await pg.wait_for_timeout(80)
         await detail.locator('[data-sizemode="wachsend"]').click(); await pg.wait_for_timeout(80)
         await detail.locator('[data-axis="horizontal"]').click(); await pg.wait_for_timeout(80)
         await pg.click("#cardioAddonPickerStartBtn"); await pg.wait_for_timeout(400)

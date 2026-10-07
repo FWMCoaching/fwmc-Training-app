@@ -49,6 +49,29 @@ async def run(b,vp,p,opener=None,worst=False):
     print(vp['width'],p,"worst" if worst else "","OK" if not found else sorted(found)[:6])
     if found: BAD.append((vp['width'],p))
     await ctx.close()
+# Farbfelder (2026-10-07) draws its grid on the shared VT canvas, under the
+# floating player bar: every mode must keep the grid below the bar and above
+# its caption band (window.__ffLastGeom, CSS px).
+async def run_ff(b,vp):
+    ctx=await b.new_context(viewport=vp,service_workers="block"); pg=await ctx.new_page()
+    await pg.add_init_script("localStorage.setItem('fwmc-tips-seen','true');localStorage.setItem('fwmc-master-v1',JSON.stringify({startCountdown:false}))")
+    errs=[]; pg.on("pageerror", lambda e: errs.append(str(e)))
+    await pg.goto(URL); await pg.wait_for_timeout(250)
+    for mode in ["leuchten","regeln","leer","abfolge"]:
+        await pg.click('.excard[data-exercise="farbfelder"]'); await pg.wait_for_timeout(150)
+        await pg.evaluate("(m)=>{document.querySelector(`[data-ff-mode=${m}]`).click();document.querySelector('[data-ff-foot=wechsel]').click()}",mode)
+        await pg.evaluate("()=>document.getElementById('startBtn').click()")
+        bad=set()
+        for i in range(10):
+            await pg.wait_for_timeout(200)
+            g=await pg.evaluate("()=>window.__ffLastGeom")
+            if g and not (g['top']>=g['barBottom'] and g['bottom']<=g['capTop']+0.5): bad.add("grid <> bar/caption")
+        if errs: bad.add("pageerror: "+errs[0][:80])
+        print(vp['width'],"farbfelder",mode,"OK" if not bad else sorted(bad))
+        if bad: BAD.append((vp['width'],"farbfelder "+mode))
+        await pg.click("#backBtn"); await pg.wait_for_timeout(250)
+        await pg.click("#backToHome"); await pg.wait_for_timeout(150)
+    await ctx.close()
 async def main():
     async with async_playwright() as pw:
         b=await pw.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome",args=["--no-sandbox"])
@@ -56,6 +79,7 @@ async def main():
             for p in TEST: await run(b,vp,p)
             for p,o in NAT: await run(b,vp,p,o)
             await run(b,vp,"bisect",worst=True)
+            await run_ff(b,vp)
         await b.close()
     print("all exercises clear of hint/bar:", not BAD)
 asyncio.run(main())

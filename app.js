@@ -583,7 +583,9 @@
     ctx.fillStyle = currentBgFill("#ffffff");
     ctx.fillRect(0, 0, cw, ch);
 
-    if (kind === "blank") {
+    if (kind === "farbfelder" || (kind === "blank" && EXERCISES[state.exercise] && EXERCISES[state.exercise].type === "farbfelder")) {
+      drawFarbfelder(kind === "farbfelder" ? payload : null);
+    } else if (kind === "blank") {
       ctx.fillStyle = currentBgFill(NEUTRAL);
       ctx.fillRect(0, 0, cw, ch);
       drawFixationPoint(cx, cy, unit);
@@ -663,6 +665,268 @@
     }
   }
 
+  // ---- Farbfelder (Fabian, 2026-10-07): a 2x2 colour grid that mirrors the
+  // client's 4-colour floor mat. Four modes, all on the shared VT canvas
+  // engine (so Zusatzaufgabe, Kombi, Cardio, presets and history come along).
+  // Fields are indexed 0 = oben links, 1 = oben rechts, 2 = unten links,
+  // 3 = unten rechts; state.ffLayout holds one COLOR_LIB key per field.
+  // Details: docs/notes/28-farbfelder.md.
+  const FF_FIELD_NAMES = ["Oben links", "Oben rechts", "Unten links", "Unten rechts"];
+  const FF_DEFAULT_LAYOUT = ["rot", "blau", "gelb", "gruen"];
+  const FF_MODES = {
+    leuchten: { help: "Ein Feld leuchtet auf. Tritt so schnell wie möglich darauf.", task: "Ein Feld leuchtet auf – tritt darauf." },
+    regeln: { help: "Auf einem Feld erscheint ein Symbol. Das Symbol sagt dir, auf welches Feld du trittst.", task: "Das Symbol sagt dir, auf welches Feld du trittst." },
+    leer: { help: "Auf drei Feldern erscheint dasselbe Symbol. Tritt auf das vierte, leere Feld – gegen den ersten Impuls.", task: "Tritt auf das Feld ohne Symbol." },
+    abfolge: { help: "Die Felder leuchten nacheinander auf. Bei „Jetzt du“ trittst du die Folge nach. Jede Runde wird sie ein Feld länger.", task: "Merk dir die Folge und tritt sie bei „Jetzt du“ nach." },
+  };
+  // Each Stufe adds one symbol (rule) to the ones before.
+  const FF_SYMBOLS = {
+    viereck: { name: "Viereck", rule: "auf dasselbe Feld", short: "gleich" },
+    dreieck: { name: "Dreieck", rule: "auf das Feld schräg gegenüber", short: "schräg" },
+    strich: { name: "Strich", rule: "auf das Nachbarfeld in derselben Reihe", short: "daneben" },
+    herz: { name: "Herz", rule: "auf das Feld in derselben Spalte (oben ↔ unten)", short: "drüber/drunter" },
+  };
+  const FF_LEVEL_SYMBOLS = ["viereck", "dreieck", "strich", "herz"];
+  const FF_EMPTY_SYMBOLS = ["kreis", "viereck", "dreieck", "herz"];
+  const FF_MODE_LABELS = { leuchten: "Leuchten", regeln: "Regeln", leer: "Das leere Feld", abfolge: "Abfolge merken" };
+  const FF_HAND_ACTIONS = { keine: "Keine", hoch: "Hände hoch", seitlich: "Hände seitlich", klatschen: "Klatschen" };
+  const FF_SEQ_MAX = 12;
+  // Pure rule: which field (0-3) a symbol shown on `field` points to.
+  function ffTarget(symbol, field) {
+    if (symbol === "dreieck") return 3 - field; // diagonal
+    if (symbol === "strich") return field ^ 1; // same row
+    if (symbol === "herz") return field ^ 2; // same column
+    return field; // viereck: same field
+  }
+  function ffStateSnapshot(src = state) {
+    return {
+      ffLayout: src.ffLayout.slice(), ffMode: src.ffMode, ffLevel: src.ffLevel, ffSeqStart: src.ffSeqStart,
+      ffFoot: src.ffFoot, ffHands: src.ffHands, ffHandRules: { ...src.ffHandRules },
+    };
+  }
+  function ffNormalize(p) {
+    const lay = Array.isArray(p.ffLayout) ? p.ffLayout : null;
+    p.ffLayout = lay && lay.length === 4 && lay.every((k) => COLOR_BY_KEY[k]) && new Set(lay).size === 4 ? lay.slice() : FF_DEFAULT_LAYOUT.slice();
+    if (!FF_MODES[p.ffMode]) p.ffMode = "leuchten";
+    if (![1, 2, 3, 4].includes(p.ffLevel)) p.ffLevel = 1;
+    if (![2, 3].includes(p.ffSeqStart)) p.ffSeqStart = 2;
+    if (!["aus", "wechsel", "zufall"].includes(p.ffFoot)) p.ffFoot = "aus";
+    if (typeof p.ffHands !== "boolean") p.ffHands = false;
+    const rules = p.ffHandRules && typeof p.ffHandRules === "object" && !Array.isArray(p.ffHandRules) ? p.ffHandRules : { rot: "hoch" };
+    p.ffHandRules = Object.fromEntries(Object.entries(rules).filter(([k, v]) => COLOR_BY_KEY[k] && FF_HAND_ACTIONS[v]));
+  }
+  function ffHandFor(field) {
+    if (!state.ffHands) return null;
+    const a = state.ffHandRules[state.ffLayout[field]];
+    return a && a !== "keine" ? FF_HAND_ACTIONS[a] : null;
+  }
+  let ffSeqResume = null; // sequence length to continue with after a live tempo change
+  function buildFarbfelderSchedule(cfg, rng) {
+    const mode = FF_MODES[state.ffMode] ? state.ffMode : "leuchten";
+    const schedule = [];
+    let t = pushCountdown(schedule, { task: FF_MODES[mode].task });
+    const show = state.stimulusS;
+    let step = 0;
+    const foot = () => (state.ffFoot === "wechsel" ? (step++ % 2 === 0 ? "L" : "R") : state.ffFoot === "zufall" ? (rng() < 0.5 ? "L" : "R") : null);
+    const rand4 = () => Math.floor(rng() * 4);
+    if (mode === "abfolge") {
+      let len = ffSeqResume || state.ffSeqStart;
+      ffSeqResume = null;
+      const seq = [], feet = [];
+      const stepOn = Math.max(0.5, Math.min(1.5, show * 0.7)), stepGap = 0.3, recallPer = Math.max(1.2, show);
+      while (t < state.duration) {
+        while (seq.length < len) {
+          let f;
+          do { f = rand4(); } while (seq.length && f === seq[seq.length - 1]);
+          seq.push(f);
+          feet.push(state.ffFoot === "wechsel" ? (feet.length % 2 === 0 ? "L" : "R") : state.ffFoot === "zufall" ? (rng() < 0.5 ? "L" : "R") : null);
+        }
+        schedule.push({ t0: t, t1: t + 0.8, kind: "farbfelder", payload: { mode, phase: "intro", caption: `Schau zu · ${len} Felder`, seqLen: len } });
+        t += 0.8;
+        for (let i = 0; i < len; i++) {
+          const f = seq[i], hand = ffHandFor(f);
+          schedule.push({ t0: t, t1: t + stepOn, kind: "farbfelder", payload: { mode, phase: "show", lit: f, target: f, foot: feet[i], hand, say: hand, caption: `Schau zu · ${i + 1}/${len}`, seqLen: len } });
+          t += stepOn;
+          schedule.push({ t0: t, t1: t + stepGap, kind: "farbfelder", payload: { mode, phase: "gap", caption: `Schau zu · ${i + 1}/${len}`, seqLen: len } });
+          t += stepGap;
+        }
+        const recall = len * recallPer;
+        schedule.push({ t0: t, t1: t + recall, kind: "farbfelder", payload: { mode, phase: "recall", caption: `Jetzt du · ${len} Felder`, say: "Jetzt du", seqLen: len } });
+        t += recall;
+        const pause = randInterval(rng);
+        schedule.push({ t0: t, t1: t + pause, kind: "blank", payload: {} });
+        t += pause;
+        if (len < FF_SEQ_MAX) len++;
+      }
+      return { schedule, total: t };
+    }
+    let last = -1;
+    while (t < state.duration) {
+      let payload;
+      if (mode === "regeln") {
+        const syms = FF_LEVEL_SYMBOLS.slice(0, state.ffLevel);
+        let symbol, at, target, tries = 0;
+        do {
+          symbol = syms[Math.floor(rng() * syms.length)];
+          at = rand4();
+          target = ffTarget(symbol, at);
+        } while (target === last && ++tries < 12);
+        payload = { mode, symbol, at, target, foot: foot() };
+      } else if (mode === "leer") {
+        let empty;
+        do { empty = rand4(); } while (empty === last);
+        const symbol = FF_EMPTY_SYMBOLS[Math.floor(rng() * FF_EMPTY_SYMBOLS.length)];
+        payload = { mode, symbol, marks: [0, 1, 2, 3].filter((i) => i !== empty), target: empty, foot: foot() };
+      } else {
+        let f;
+        do { f = rand4(); } while (f === last);
+        const hand = ffHandFor(f);
+        payload = { mode, lit: f, target: f, foot: foot(), hand, say: hand };
+      }
+      last = payload.target;
+      const pause = randInterval(rng);
+      schedule.push({ t0: t, t1: t + show, kind: "farbfelder", payload });
+      schedule.push({ t0: t + show, t1: t + show + pause, kind: "blank", payload: {} });
+      t += show + pause;
+    }
+    return { schedule, total: t };
+  }
+
+  // Grid geometry in canvas pixels: always below the player bar (it floats
+  // over the stage) and above a reserved caption band at the bottom, so a
+  // caption or the rule legend never touches a field.
+  function ffGeometry(cw, ch) {
+    const cRect = canvas.getBoundingClientRect();
+    const dpr = cRect.width ? cw / cRect.width : 1;
+    const bar = document.getElementById("playerBar");
+    const barRect = bar && !bar.hidden ? bar.getBoundingClientRect() : null;
+    const m = 14 * dpr;
+    const top = barRect && barRect.height ? Math.max(m, (barRect.bottom - cRect.top) * dpr + 10 * dpr) : m;
+    const capH = Math.max(46, ch * 0.065);
+    const bottom = ch - capH - m;
+    const availW = cw - 2 * m, availH = Math.max(40 * dpr, bottom - top);
+    const side = Math.max(20, Math.min(availW, availH));
+    const x0 = (cw - side) / 2, y0 = top + (availH - side) / 2;
+    const gap = Math.max(4 * dpr, side * 0.025);
+    const cell = (side - gap) / 2;
+    if (navigator.webdriver) window.__ffLastGeom = { top: cRect.top + y0 / dpr, bottom: cRect.top + (y0 + side) / dpr, left: cRect.left + x0 / dpr, right: cRect.left + (x0 + side) / dpr, barBottom: barRect ? barRect.bottom : 0, capTop: cRect.top + (ch - capH) / dpr };
+    return { x0, y0, side, gap, cell, capH };
+  }
+  function ffRoundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  // One symbol, white with a dark outline so it reads on every field colour.
+  function ffDrawSymbol(kind, cx, cy, r, fill = "#ffffff", stroke = INK) {
+    ctx.save();
+    ctx.lineJoin = "round";
+    ctx.lineWidth = Math.max(2, r * 0.13);
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = stroke;
+    ctx.beginPath();
+    if (kind === "viereck") {
+      const s = r * 1.5;
+      ctx.rect(cx - s / 2, cy - s / 2, s, s);
+    } else if (kind === "dreieck") {
+      ctx.moveTo(cx, cy - r * 0.95);
+      ctx.lineTo(cx + r * 0.98, cy + r * 0.75);
+      ctx.lineTo(cx - r * 0.98, cy + r * 0.75);
+      ctx.closePath();
+    } else if (kind === "strich") {
+      const w = r * 0.42, h = r * 1.9;
+      ctx.rect(cx - w / 2, cy - h / 2, w, h);
+    } else if (kind === "herz") {
+      const s = r * 1.05;
+      ctx.moveTo(cx, cy + s * 0.85);
+      ctx.bezierCurveTo(cx - s * 1.25, cy + s * 0.05, cx - s * 0.95, cy - s * 0.95, cx, cy - s * 0.38);
+      ctx.bezierCurveTo(cx + s * 0.95, cy - s * 0.95, cx + s * 1.25, cy + s * 0.05, cx, cy + s * 0.85);
+      ctx.closePath();
+    } else {
+      ctx.arc(cx, cy, r * 0.85, 0, Math.PI * 2);
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+  function ffDrawBadge(cx, cy, r, letter) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.lineWidth = Math.max(2, r * 0.1);
+    ctx.strokeStyle = INK;
+    ctx.stroke();
+    if (letter) {
+      ctx.fillStyle = INK;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `700 ${Math.round(r * 1.25)}px Magra, sans-serif`;
+      ctx.fillText(letter, cx, cy + r * 0.05);
+    }
+  }
+  // The rule legend of "Regeln" in the caption band: mini symbol + word.
+  function ffDrawLegend(cw, ch, capH) {
+    const syms = FF_LEVEL_SYMBOLS.slice(0, state.ffLevel);
+    const y0 = ch - capH;
+    ctx.fillStyle = "#f5f5f5";
+    ctx.fillRect(0, y0, cw, capH);
+    let size = Math.round(capH * 0.34);
+    const measure = () => {
+      ctx.font = `700 ${size}px 'Public Sans', sans-serif`;
+      return syms.reduce((w, s) => w + size * 1.2 + size * 0.35 + ctx.measureText(FF_SYMBOLS[s].short).width, 0) + (syms.length - 1) * size * 1.1;
+    };
+    let total = measure();
+    while (total > cw * 0.94 && size > 9) { size -= 1; total = measure(); }
+    let x = (cw - total) / 2;
+    const cy = y0 + capH / 2;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    syms.forEach((s) => {
+      ffDrawSymbol(s, x + size * 0.6, cy, size * 0.5, "#ffffff", INK);
+      x += size * 1.2 + size * 0.35;
+      ctx.font = `700 ${size}px 'Public Sans', sans-serif`;
+      ctx.fillStyle = INK;
+      ctx.fillText(FF_SYMBOLS[s].short, x, cy);
+      x += ctx.measureText(FF_SYMBOLS[s].short).width + size * 1.1;
+    });
+  }
+  // p = null draws the resting grid (pause between stimuli).
+  function drawFarbfelder(p) {
+    const cw = canvas.width, ch = canvas.height;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, cw, ch);
+    const g = ffGeometry(cw, ch);
+    const full = !!(p && (p.mode === "regeln" || p.mode === "leer"));
+    for (let i = 0; i < 4; i++) {
+      const hex = (COLOR_BY_KEY[state.ffLayout[i]] || COLOR_BY_KEY[FF_DEFAULT_LAYOUT[i]]).hex;
+      const x = g.x0 + (i % 2) * (g.cell + g.gap), y = g.y0 + (i >> 1) * (g.cell + g.gap);
+      const lit = !!(p && p.lit === i);
+      ffRoundRect(x, y, g.cell, g.cell, g.cell * 0.06);
+      ctx.fillStyle = full || lit ? hex : mixHex("#ffffff", hex, 0.42);
+      ctx.fill();
+      const cx = x + g.cell / 2, cy = y + g.cell / 2;
+      if (lit) {
+        const lw = g.cell * 0.06;
+        ffRoundRect(x + lw * 1.2, y + lw * 1.2, g.cell - lw * 2.4, g.cell - lw * 2.4, g.cell * 0.04);
+        ctx.lineWidth = lw;
+        ctx.strokeStyle = "#ffffff";
+        ctx.stroke();
+        ffDrawBadge(cx, cy, g.cell * 0.17, p.foot || "");
+      }
+      if (p && p.mode === "regeln" && p.at === i) ffDrawSymbol(p.symbol, cx, cy, g.cell * 0.24);
+      if (p && p.mode === "leer" && p.marks && p.marks.includes(i)) ffDrawSymbol(p.symbol, cx, cy, g.cell * 0.22);
+    }
+    if (p && p.foot && (p.mode === "regeln" || p.mode === "leer")) ffDrawBadge(g.x0 + g.side / 2, g.y0 + g.side / 2, g.cell * 0.13, p.foot);
+    const caption = p && p.caption ? (p.hand ? `${p.caption} · ${p.hand}` : p.caption) : p && p.hand ? p.hand : "";
+    if (caption) barCaption(cw, ch, caption, false);
+    else if (state.ffMode === "regeln") ffDrawLegend(cw, ch, g.capH);
+  }
+
   // ---- Exercise catalogue ----
   // title: full name · task: one sentence shown in the countdown and pause
   // preview · trains: what the exercise is good for · rules: explanation on
@@ -738,6 +1002,12 @@
       task: "Reagiere auf die Farbe – passend zu deinem eigenen Richtungs-Aufbau am Boden.",
       trains: "Reaktionsschnelligkeit gezielt in frei gewählte Richtungen",
       rules: "Klebe ein Kreuz oder einen Stern mit vier oder acht Richtungen auf den Boden und stelle deine Farbhütchen in die Richtungen, die du trainieren willst. Mehrere Farben auf derselben Richtung lassen diese Richtung häufiger drankommen. Welche Farbe wohin gehört, legst du komplett selbst fest – die App zeigt immer nur die Farbe.",
+    },
+    "farbfelder": {
+      title: "Farbfelder", type: "farbfelder", bgIsStimulus: true,
+      task: "Tritt auf das richtige Farbfeld deiner Matte.",
+      trains: "Farbwahrnehmung, Fußarbeit und schnelles Umsetzen von Regeln",
+      rules: "Leg deine vier Farbfelder so auf den Boden, wie sie unten unter „Anordnung“ eingestellt sind, und stell dich davor. Der Bildschirm zeigt dieselben vier Felder: Oben ist die Reihe, die näher am Bildschirm liegt. Je nach Modus trittst du auf das Feld, das aufleuchtet, auf das Feld, das ein Symbol dir sagt, auf das leere Feld oder eine ganze Abfolge nach.",
     },
     "periph-flash": {
       title: "Periphere Wahrnehmung", type: "periph",
@@ -2946,6 +3216,14 @@
     periphColors: ["schwarz"],
     bgColorKey: "gruen",
     bgIntensity: 0,
+    // Farbfelder (see FF_* above): mat layout, mode and options.
+    ffLayout: FF_DEFAULT_LAYOUT.slice(),
+    ffMode: "leuchten",
+    ffLevel: 1,
+    ffSeqStart: 2,
+    ffFoot: "aus",
+    ffHands: false,
+    ffHandRules: { rot: "hoch" },
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -2973,6 +3251,7 @@
     if (!Array.isArray(state.periphColors) || !state.periphColors.length || !state.periphColors.every((k) => STROOP_COLOR_BY_KEY[k])) state.periphColors = DEFAULTS.periphColors.slice();
     if (!STROOP_COLOR_BY_KEY[state.bgColorKey]) state.bgColorKey = "gruen";
     if (typeof state.bgIntensity !== "number" || state.bgIntensity < 0 || state.bgIntensity > 1) state.bgIntensity = 0;
+    ffNormalize(state); // also copies ffLayout/ffHandRules, so DEFAULTS is never mutated
   }
   function savePrefs() { writeJSON(PREFS_KEY, state); }
   loadPrefs();
@@ -4006,6 +4285,7 @@
     els.colorGroup.hidden = !ex.usesColors && !ex.usesArrowColors && !ex.usesStroopColors;
     const isConeTap = ex.type === "color-tap";
     const isPeriph = ex.type === "periph";
+    const isFf = ex.type === "farbfelder";
     const bgAllowed = !isConeTap && !ex.bgIsStimulus;
     els.tempoGroup.hidden = isConeTap;
     els.advanced.hidden = isConeTap;
@@ -4013,7 +4293,10 @@
     // The fixation-point Feineinstellung applies to every exercise with
     // this dot (i.e. everything except Hütchen sortieren), not just
     // Periphere Wahrnehmung - it was just built there first.
-    els.periphFixGroup.hidden = isConeTap;
+    els.periphFixGroup.hidden = isConeTap || isFf; // Farbfelder: the grid has no centre dot
+    ffEls.settings.hidden = !isFf;
+    if (isFf) { ffActiveCell = 0; syncFfUI(); }
+    renderHilfsmittel(id);
     els.periphFieldGroup.hidden = !isPeriph;
     els.periphSizeGroup.hidden = !isPeriph;
     els.periphColorGroup.hidden = !isPeriph;
@@ -4037,6 +4320,125 @@
     renderVTSaved();
     showScreen("ready");
   }
+
+  // ---- Hilfsmittel note (2026-10-07, first used by Farbfelder): one entry
+  // per exercise that needs equipment; `link` (a product page) is shown only
+  // once Fabian sets a URL. A new exercise that needs something = one entry.
+  const HILFSMITTEL = {
+    farbfelder: {
+      text: "Du brauchst: eine Farbmatte mit 4 Feldern oder 4 farbige Hütchen, Bälle oder Zettel auf dem Boden, angeordnet wie hier eingestellt.",
+      link: "",
+    },
+  };
+  function renderHilfsmittel(exId) {
+    const box = document.getElementById("hilfsmittelNote");
+    const h = HILFSMITTEL[exId];
+    box.hidden = !h;
+    if (!h) return;
+    document.getElementById("hilfsmittelText").textContent = h.text;
+    const a = document.getElementById("hilfsmittelLink");
+    a.hidden = !h.link;
+    if (h.link) a.href = h.link; else a.removeAttribute("href");
+  }
+
+  // ---- Farbfelder ready-screen settings (stored in `state`, PREFS_KEY) ----
+  const ffEls = {
+    settings: $("ffSettings"), modeRow: $("ffModeRow"), modeHelp: $("ffModeHelp"),
+    levelGroup: $("ffLevelGroup"), levelRow: $("ffLevelRow"), ruleList: $("ffRuleList"),
+    seqGroup: $("ffSeqGroup"), seqRow: $("ffSeqRow"),
+    layoutGrid: $("ffLayoutGrid"), layoutHelp: $("ffLayoutHelp"), colorPicker: $("ffColorPicker"),
+    footRow: $("ffFootRow"), handsRow: $("ffHandsRow"), handBody: $("ffHandBody"), handRows: $("ffHandRows"),
+  };
+  let ffActiveCell = 0;
+  // Small SVG of a rule symbol for the ready screen (same shapes as the stage).
+  function ffSymbolSvg(kind) {
+    const shape = kind === "viereck" ? '<rect x="5" y="5" width="14" height="14"/>'
+      : kind === "dreieck" ? '<polygon points="12,3.5 21,19.5 3,19.5"/>'
+      : kind === "strich" ? '<rect x="10" y="3" width="4" height="18"/>'
+      : '<path d="M12 20.5C5 15.5 2.5 12 4 8.3 5.4 5 9.6 4.6 12 8c2.4-3.4 6.6-3 8 .3 1.5 3.7-1 7.2-8 12.2z"/>';
+    return `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">${shape}</svg>`;
+  }
+  function ffSave() { savePrefs(); }
+  function syncFfUI() {
+    ffEls.modeRow.querySelectorAll("[data-ff-mode]").forEach((b) => setActive(b, b.dataset.ffMode === state.ffMode));
+    ffEls.modeHelp.textContent = FF_MODES[state.ffMode].help;
+    ffEls.levelGroup.hidden = state.ffMode !== "regeln";
+    ffEls.levelRow.querySelectorAll("[data-ff-level]").forEach((b) => setActive(b, Number(b.dataset.ffLevel) === state.ffLevel));
+    ffEls.ruleList.innerHTML = FF_LEVEL_SYMBOLS.slice(0, state.ffLevel).map((k) =>
+      `<li>${ffSymbolSvg(k)}<span><strong>${esc(FF_SYMBOLS[k].name)}:</strong> ${esc(FF_SYMBOLS[k].rule)}</span></li>`).join("");
+    ffEls.seqGroup.hidden = state.ffMode !== "abfolge";
+    ffEls.seqRow.querySelectorAll("[data-ff-seq]").forEach((b) => setActive(b, Number(b.dataset.ffSeq) === state.ffSeqStart));
+    ffEls.layoutGrid.querySelectorAll("[data-ff-cell]").forEach((b) => {
+      const i = Number(b.dataset.ffCell);
+      const c = COLOR_BY_KEY[state.ffLayout[i]];
+      b.style.background = c.hex;
+      b.style.color = relLuma(c.hex) > 0.6 ? "#16232a" : "#ffffff";
+      b.textContent = c.name;
+      b.setAttribute("aria-label", `${FF_FIELD_NAMES[i]}: ${c.name}`);
+      setActive(b, i === ffActiveCell);
+    });
+    ffEls.layoutHelp.textContent = `Tippe ein Feld an und wähle seine Farbe. Oben ist die Reihe näher am Bildschirm. Gewählt: ${FF_FIELD_NAMES[ffActiveCell]}.`;
+    ffEls.colorPicker.querySelectorAll(".color-swatch[data-color]").forEach((b) => setActive(b, b.dataset.color === state.ffLayout[ffActiveCell]));
+    ffEls.footRow.querySelectorAll("[data-ff-foot]").forEach((b) => setActive(b, b.dataset.ffFoot === state.ffFoot));
+    ffEls.handsRow.querySelectorAll("[data-ff-hands]").forEach((b) => setActive(b, (b.dataset.ffHands === "1") === state.ffHands));
+    ffEls.handBody.hidden = !state.ffHands;
+    ffEls.handRows.innerHTML = state.ffLayout.map((k) => {
+      const c = COLOR_BY_KEY[k];
+      const cur = state.ffHandRules[k] || "keine";
+      return `<label class="ff-hand-row"><span class="ff-dot" style="background:${c.hex}"></span><span class="ff-hand-name">${esc(c.name)}</span>` +
+        `<select class="plan-select" data-ff-hand="${k}" aria-label="Hände bei ${esc(c.name)}">` +
+        Object.entries(FF_HAND_ACTIONS).map(([v, label]) => `<option value="${v}"${v === cur ? " selected" : ""}>${esc(label)}</option>`).join("") +
+        `</select></label>`;
+    }).join("");
+  }
+  // Single-select swatches for the chosen field; a colour that already sits
+  // on another field swaps places, so all four always stay different.
+  COLOR_LIB.forEach((c) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "color-swatch";
+    btn.dataset.color = c.key;
+    btn.setAttribute("aria-pressed", "false");
+    const stroke = relLuma(c.hex) > 0.75 ? "#16232a" : "#fff";
+    btn.innerHTML = `<span class="swatch" style="background:${c.hex}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="${stroke}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">${c.name}</span>`;
+    btn.addEventListener("click", () => {
+      const lay = state.ffLayout.slice();
+      const other = lay.indexOf(c.key);
+      if (other !== -1 && other !== ffActiveCell) lay[other] = lay[ffActiveCell];
+      lay[ffActiveCell] = c.key;
+      state.ffLayout = lay;
+      ffSave(); syncFfUI();
+    });
+    ffEls.colorPicker.appendChild(btn);
+  });
+  ffEls.layoutGrid.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-ff-cell]");
+    if (!b) return;
+    ffActiveCell = Number(b.dataset.ffCell);
+    syncFfUI();
+  });
+  ffEls.modeRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-mode]"); if (b) { state.ffMode = b.dataset.ffMode; ffSave(); syncFfUI(); } });
+  ffEls.levelRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-level]"); if (b) { state.ffLevel = Number(b.dataset.ffLevel); ffSave(); syncFfUI(); } });
+  ffEls.seqRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-seq]"); if (b) { state.ffSeqStart = Number(b.dataset.ffSeq); ffSave(); syncFfUI(); } });
+  ffEls.footRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-foot]"); if (b) { state.ffFoot = b.dataset.ffFoot; ffSave(); syncFfUI(); } });
+  ffEls.handsRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-hands]"); if (b) { state.ffHands = b.dataset.ffHands === "1"; ffSave(); syncFfUI(); } });
+  // Test hooks (automated browsers only): the pure rule and a schedule
+  // built with some settings swapped in for the call.
+  if (navigator.webdriver) window.__ff = {
+    target: ffTarget,
+    build: (over) => {
+      const keep = JSON.parse(JSON.stringify(state));
+      Object.assign(state, over || {});
+      try { return buildFarbfelderSchedule({}, Math.random).schedule; } finally { Object.assign(state, keep); }
+    },
+  };
+  ffEls.handRows.addEventListener("change", (e) => {
+    const sel = e.target.closest("[data-ff-hand]");
+    if (!sel) return;
+    state.ffHandRules = { ...state.ffHandRules, [sel.dataset.ffHand]: sel.value };
+    ffSave();
+  });
+
 
   // ---- Kombi-Baukasten capture, same pattern as Cardio/Movement/Breath
   // above: reopen this exact "ready" screen (already reused across every
@@ -4088,7 +4490,9 @@
       state.intervalMin = existingBlock.intervalMin ?? state.intervalMin;
       state.intervalMax = existingBlock.intervalMax ?? state.intervalMax;
       if (existingBlock.periph) Object.assign(state, JSON.parse(JSON.stringify(existingBlock.periph)));
+      if (existingBlock.ff) { Object.assign(state, JSON.parse(JSON.stringify(existingBlock.ff))); ffNormalize(state); }
       renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
+      if (ex.type === "farbfelder") syncFfUI();
       if (ex.type === "periph") { syncPeriphFixUI(); syncPeriphKindUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); syncPeriphColorUI(); }
     }
     comboVisualEditIndex = editIndex ?? null;
@@ -4119,6 +4523,7 @@
     else if (ex.usesArrowColors) block.colors = state.arrowColors.slice();
     else if (ex.usesStroopColors) { block.colors = state.stroopColors.slice(); if (Object.keys(state.stroopWeights).length) block.stroopWeights = { ...state.stroopWeights }; }
     if (ex.type === "periph") block.periph = periphStateSnapshot();
+    if (ex.type === "farbfelder") block.ff = ffStateSnapshot();
     if (comboVisualEditIndex != null) comboDraftBlocks[comboVisualEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitVisualComboCapture();
@@ -4904,6 +5309,7 @@
       cfg.type === "color" ? buildColorSchedule(cfg, rng) :
       cfg.type === "vrw-real" ? buildVRWRealSchedule(cfg, rng) :
       cfg.type === "periph" ? buildPeriphSchedule(cfg, rng) :
+      cfg.type === "farbfelder" ? buildFarbfelderSchedule(cfg, rng) :
       cfg.type === "flash-host" ? buildFlashHostSchedule(cfg, rng) :
       buildArrowSchedule(cfg, rng);
   }
@@ -5108,6 +5514,7 @@
   }
 
   function onEnterFrame(frame) {
+    if (frame.kind === "farbfelder") { if (frame.payload.say) speakWord(frame.payload.say); return; }
     if (frame.kind !== "cross") return;
     const p = frame.payload;
     if (p.mode === "audio" || p.mode === "conflict") speakWord(p.word);
@@ -5188,6 +5595,7 @@
     state.stimulusS = block.stimulusS ?? 1.5;
     state.intervalMin = block.intervalMin ?? 2;
     state.intervalMax = block.intervalMax ?? 4;
+    if (block.ff) { Object.assign(state, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
     active = blockColors(block);
   }
 
@@ -5699,6 +6107,8 @@
     } else {
       const remaining = state.duration - elapsed;
       const kept = session.schedule.filter((f) => f.t0 < elapsed).map((f) => (f.t1 > elapsed ? { ...f, t1: elapsed } : f));
+      // Abfolge merken goes on with the sequence length it had reached.
+      if (ex.type === "farbfelder") ffSeqResume = kept.reduce((m, f) => Math.max(m, (f.payload && f.payload.seqLen) || 0), 0) || null;
       let fresh = [], freshEnd = elapsed;
       if (remaining > 0) {
         const savedDuration = state.duration;
@@ -5726,7 +6136,7 @@
     const ex = EXERCISES[state.exercise] || {};
     els.vtPauseTempoGroup.hidden = ex.type === "flash-host";
     els.vtPauseBgIntensityGroup.hidden = els.vtPauseBgColorGroup.hidden = !!ex.bgIsStimulus;
-    els.vtPauseFixColorGroup.hidden = els.vtPauseFixSizeGroup.hidden = !state.periphFixEnabled;
+    els.vtPauseFixColorGroup.hidden = els.vtPauseFixSizeGroup.hidden = !state.periphFixEnabled || ex.type === "farbfelder";
     els.vtPauseStimColorGroup.hidden = ex.type !== "periph";
     vtPauseTempoAtStart = { stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax };
     syncVtPauseTempoUI();
@@ -5759,6 +6169,7 @@
       (e) => {
         const ex = EXERCISES[e.exercise];
         const usedColors = ex && ex.usesArrowColors ? e.arrowColors : ex && ex.usesStroopColors ? e.stroopColors : e.colors;
+        if (e.ff) return `${fmtMinutes(e.duration)} · ${FF_MODE_LABELS[e.ff.ffMode] || ""}`;
         return `${fmtMinutes(e.duration)}${usedColors && usedColors.length ? ` · ${usedColors.length} Farben` : ""}`;
       },
       (entry) => {
@@ -5769,11 +6180,13 @@
         state.stimulusS = entry.stimulusS;
         state.intervalMin = entry.intervalMin;
         state.intervalMax = entry.intervalMax;
+        if (entry.ff) { Object.assign(state, JSON.parse(JSON.stringify(entry.ff))); ffNormalize(state); }
         savePrefs();
         // While capturing a Kombi-Baustein, loading a saved setting should
         // just fill the draft for review, not immediately start a session.
         if (comboVisualCaptureOriginal) {
           renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
+          if (EXERCISES[state.exercise].type === "farbfelder") syncFfUI();
           return;
         }
         active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors), stroopColors: keysToColors(state.stroopColors, STROOP_COLOR_LIB) };
@@ -5790,6 +6203,7 @@
         id: String(Date.now()), name, exercise: state.exercise,
         colors: state.colors.slice(), arrowColors: state.arrowColors.slice(), stroopColors: state.stroopColors.slice(), duration: state.duration,
         stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax,
+        ...(EXERCISES[state.exercise].type === "farbfelder" ? { ff: ffStateSnapshot() } : {}),
       });
       vtSavedStore.save(list);
       renderVTSaved();
@@ -11458,6 +11872,26 @@
   if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => { if (balanceState) balanceLayout(); }).observe(balP.stage);
 
   // Cardio-Zusatzaufgabe fields (same choices as the ready screen, compact).
+  // Farbfelder as Cardio-Zusatzaufgabe: the same choices as its ready
+  // screen (Modus, Stufe, Startlänge, Fuß, Hände, Tempo); layout and hand
+  // rules are the client's own (the mat on the floor does not change).
+  function farbfelderCardioFieldsHtml(typeId, cfg) {
+    const row = (field, opts, cls) => `<div class="choice-row${cls ? " " + cls : ""}">` +
+      opts.map(([v, label]) => `<button class="choice${String(cfg[field]) === String(v) ? " active" : ""}" data-type="${typeId}" data-balf="${field}" data-balv="${v}">${label}</button>`).join("") + `</div>`;
+    return `<div class="choice-row two" data-mode-row="${typeId}">` +
+      CARDIO_GUEST_MODE_LISTS.farbfelder.map((m) => `<button class="choice${cfg.mode === m.id ? " active" : ""}" data-type="${typeId}" data-mode="${m.id}">${esc(m.title)}</button>`).join("") + `</div>` +
+      `<div class="cardio-guest-field-row">
+        <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${typeId}" data-f="duration" value="${cfg.duration}"></div>
+        <div><label>Reiz-Dauer (Sek.)</label><input type="number" min="0.3" max="3" step="0.1" data-type="${typeId}" data-f="stimulusS" value="${cfg.stimulusS}"></div>
+        <div><label>Pause min (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${typeId}" data-f="intervalMin" value="${cfg.intervalMin}"></div>
+        <div><label>Pause max (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${typeId}" data-f="intervalMax" value="${cfg.intervalMax}"></div>
+      </div>` +
+      (cfg.mode === "regeln" ? `<div class="group-label">Stufe</div>` + row("level", [[1, "Stufe 1"], [2, "Stufe 2"], [3, "Stufe 3"], [4, "Stufe 4"]], "two") : "") +
+      (cfg.mode === "abfolge" ? `<div class="group-label">Länge der ersten Folge</div>` + row("seqStart", [[2, "2 Felder"], [3, "3 Felder"]], "two") : "") +
+      `<div class="group-label">Fuß-Vorgabe</div>` + row("foot", [["aus", "Aus"], ["wechsel", "Im Wechsel"], ["zufall", "Zufällig"]]) +
+      `<div class="group-label">Hände</div>` + row("hands", [[false, "Aus"], [true, "An"]], "two") +
+      `<div class="group-help">Anordnung und Hand-Aufgaben wie unter Visuelles Training › Farbfelder eingestellt.</div>`;
+  }
   function balanceCardioFieldsHtml(typeId, cfg) {
     const row = (field, opts, cls) => `<div class="choice-row${cls ? " " + cls : ""}">` +
       opts.map(([v, label]) => `<button class="choice${String(cfg[field]) === String(v) ? " active" : ""}" data-type="${typeId}" data-balf="${field}" data-balv="${v}">${label}</button>`).join("") + `</div>`;
@@ -15047,6 +15481,7 @@
     { id: "cross-modal", title: "Sehen & Hören", group: "vt" },
     { id: "cone-compass", title: "Hütchen · Kompass-Aufbau", group: "vt" },
     { id: "cone-tap", title: "Hütchen sortieren", group: "vt" },
+    { id: "farbfelder", title: "Farbfelder", group: "vt" },
     { id: "periph-flash", title: "Periphere Wahrnehmung", group: "nat" },
     { id: "blitz-raster", title: "Blitz-Raster", group: "nat" },
     { id: "remember", title: "Positionen merken", group: "nat" },
@@ -15099,6 +15534,7 @@
   function cardioGuestIsFlash(guestId) { return guestId === "flash"; }
   function cardioGuestIsMot(guestId) { return guestId === "mot"; }
   function cardioGuestIsBalance(guestId) { return guestId === "balance"; }
+  function cardioGuestIsFarbfelder(guestId) { return guestId === "farbfelder"; }
   // Any type with more than one starting mode (Remember/Flash/MOT each
   // have several - training vs. fixed vs. shuffle vs. ...) needs an extra
   // mode-choice step, both in the live picker (renderCardioAddonPicker())
@@ -15111,6 +15547,7 @@
     flash: [{ id: "constant", title: "Konstant" }, { id: "climb", title: "Steigend, direkt" }, { id: "climbRepeat", title: "Steigend, mit Wiederholung" }, { id: "training", title: "Trainingsmodus" }],
     mot: [{ id: "speed", title: "Tempo steigt" }, { id: "count", title: "Anzahl steigt" }, { id: "both", title: "Beides steigt" }, { id: "training", title: "Trainingsmodus" }],
     balance: Object.entries(BALANCE_MODES).map(([id, m]) => ({ id, title: m.name })),
+    farbfelder: Object.entries(FF_MODE_LABELS).map(([id, title]) => ({ id, title })),
   };
   function cardioGuestModeList(guestId) { return CARDIO_GUEST_MODE_LISTS[guestId] || null; }
   function cardioGuestDefaultCfg(guestId) {
@@ -15129,6 +15566,9 @@
     if (guestId === "remember") return { duration: 20, mode: "fixed", revealBaseS: REMEMBER_DIFFICULTIES.mittel.revealBaseS, revealStepS: REMEMBER_DIFFICULTIES.mittel.revealStepS, errorMode: "reset2", trainingStart: 8, trainingProgress: true, trainingPositionMode: "shuffle", markerScale: 1, numColor: "weiss", ...bg };
     if (guestId === "flash") return { duration: 20, mode: "constant", kind: "zahlen", stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS, intervalS: FLASH_DIFFICULTIES.mittel.intervalS, errorMode: "reset2", axes: PERIPH_AXIS_KEYS.slice(), useZones: false, zones: PERIPH_ZONE_KEYS.slice(), fixEnabled: true, fixChar: "", fixColor: "grau", fixSize: 1, constantCount: 3, startCount: 3, repsPerLevel: 2, trainingStart: 5, trainingProgress: true, charScale: 1, charColor: "standard", ...bg };
     if (guestId === "balance") return { ...JSON.parse(JSON.stringify(BALANCE_DEFAULTS)), duration: 20, ...bg };
+    // Farbfelder: the mat layout and the hand rules always come from the
+    // client's own Farbfelder settings (it is the same mat on the floor).
+    if (guestId === "farbfelder") return { duration: 20, mode: "leuchten", stimulusS: 1.5, intervalMin: 2, intervalMax: 4, level: 1, seqStart: 2, foot: "aus", hands: false };
     if (guestId === "mot") return { duration: 20, mode: "speed", style: "flach", speed: MOT_DIFFICULTIES.mittel.speed, trackS: MOT_DIFFICULTIES.mittel.trackS, highlightS: MOT_DIFFICULTIES.mittel.highlightS, errorMode: "reset2", colors: ["schwarz"], targetColors: ["gelb"], objectCount: 8, targetCount: 4, growStartObjects: 4, growStartTargets: 1, trainingObjects: 6, trainingTargets: 2, trainingSpeedStep: 0, trainingProgress: true, objScale: 1, ...bg };
     if (guestId === "vt-color" || guestId === "vrw-original") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg };
     if (guestId === "stroop-classic" || guestId === "stroop-bg") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "blau", "gruen"], ...bg };
@@ -15194,6 +15634,15 @@
       if (cardioGuestIsFlash(t.id)) normalizeLookPrefs("flash", p);
       if (cardioGuestIsMot(t.id)) normalizeLookPrefs("mot", p);
       if (cardioGuestIsBalance(t.id)) { const dur = p.duration; normalizeBalancePrefs(p); p.duration = dur; }
+      if (cardioGuestIsFarbfelder(t.id)) {
+        if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
+        if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
+        if (!Number.isFinite(p.intervalMax) || p.intervalMax < 0.5 || p.intervalMax > 15) p.intervalMax = d.intervalMax;
+        if (![1, 2, 3, 4].includes(p.level)) p.level = d.level;
+        if (![2, 3].includes(p.seqStart)) p.seqStart = d.seqStart;
+        if (!["aus", "wechsel", "zufall"].includes(p.foot)) p.foot = d.foot;
+        if (typeof p.hands !== "boolean") p.hands = d.hands;
+      }
       if (cardioGuestIsRemember(t.id)) {
         if (!Number.isFinite(p.revealBaseS) || p.revealBaseS < 0.5 || p.revealBaseS > 3) p.revealBaseS = d.revealBaseS;
         if (!Number.isFinite(p.revealStepS) || p.revealStepS < 0.1 || p.revealStepS > 1) p.revealStepS = d.revealStepS;
@@ -15417,6 +15866,8 @@
           `</div>`;
       } else if (cardioGuestIsBalance(t.id)) {
         html += balanceCardioFieldsHtml(t.id, cfg);
+      } else if (cardioGuestIsFarbfelder(t.id)) {
+        html += farbfelderCardioFieldsHtml(t.id, cfg);
       } else if (cardioGuestIsConeTap(t.id)) {
         html += `<div class="cardio-guest-field-row">
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
@@ -16167,6 +16618,11 @@
     // usesStroopColors one below - same addonDefaultOwn()-shaped cfg as
     // addon-flash (cardioGuestIsPeriphLike()), just written into these
     // fields instead of active.*.
+    if (guestId === "farbfelder") {
+      state.ffMode = cfg.mode; state.ffLevel = cfg.level; state.ffSeqStart = cfg.seqStart;
+      state.ffFoot = cfg.foot; state.ffHands = cfg.hands;
+      ffNormalize(state);
+    }
     if (guestId === "periph-flash") {
       state.periphKind = cfg.kind;
       state.periphAxes = cfg.axes;
@@ -16673,6 +17129,7 @@
       state.exercise = block.exercise;
       const visEx = EXERCISES[block.exercise];
       if (block.periph) Object.assign(state, JSON.parse(JSON.stringify(block.periph)));
+      if (block.ff) { Object.assign(state, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
       // Generalized from a visual-only "usesColors" check (the sole shape
       // the original 3 curated presets ever needed) to all 3 colour kinds,
       // now that capture mode lets any exercise's block carry its own

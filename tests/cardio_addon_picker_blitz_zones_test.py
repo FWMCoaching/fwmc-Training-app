@@ -40,7 +40,7 @@ async def main():
 
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(400)
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(13).click(); await pg.wait_for_timeout(80)
+        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(14).click(); await pg.wait_for_timeout(80)
 
         print("all 8 zones active by default:", await detail.locator(".periph-zone[data-blitzzone].active").count() == 8)
         print("'Überall' active with all 8 selected:", await detail.locator("[data-blitzzone-all].active").count() == 1)

@@ -60,11 +60,11 @@ async def main():
         print("generic type: colour row present live:", await detail.locator("[data-colors]").count() == 1)
         await pg.click("#cardioAddonPickerCancelBtn"); await pg.wait_for_timeout(150)
 
-        # ==== Periphere Wahrnehmung (periph-flash, index 12): kind/colour/
+        # ==== Periphere Wahrnehmung (periph-flash, index 13): kind/colour/
         # background rows, same depth as its own Feineinstellungen panel ====
         saved_periph_before = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-cardio-addon-v1')).perType['periph-flash']")
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(12).click(); await pg.wait_for_timeout(80)
+        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(13).click(); await pg.wait_for_timeout(80)
         print("periph-flash: kind-row present live:", await detail.locator("[data-kind-row]").count() == 1)
         print("periph-flash: colour row present live:", await detail.locator("[data-colors]").count() == 1)
         print("periph-flash: background row present live:", await detail.locator("[data-bgcolors]").count() == 1)
@@ -91,12 +91,12 @@ async def main():
         print("periph-flash: saved kind untouched by the live edit:", saved_periph_after["kind"] == saved_periph_before["kind"])
         print("periph-flash: saved background intensity untouched by the live edit:", saved_periph_after["bgIntensity"] == saved_periph_before["bgIntensity"])
 
-        # ==== Blitz-Raster (index 13): difficulty/grid/error rows, same
+        # ==== Blitz-Raster (index 14): difficulty/grid/error rows, same
         # depth as its own Feineinstellungen panel; grid size change is
         # checkable directly via the rendered cell count ====
         saved_blitz_before = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-cardio-addon-v1')).perType['blitz-raster']")
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(13).click(); await pg.wait_for_timeout(80)
+        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(14).click(); await pg.wait_for_timeout(80)
         print("blitz-raster: difficulty row present live:", await detail.locator("[data-blitzdiff-row]").count() == 1)
         print("blitz-raster: grid-size row present live:", await detail.locator("[data-blitzgrid-row]").count() == 1)
         print("blitz-raster: 'Bei Fehler' row present live:", await detail.locator("[data-blitzerror-row]").count() == 1)
