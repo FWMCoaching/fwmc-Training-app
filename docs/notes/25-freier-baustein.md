@@ -72,6 +72,8 @@ Fabian: "also so wie die eigenen Übungen die sie gestalten können? Dann ja".
   sheet via `openTrainPause`), « ↻ » via `stepCtx` (`freePrevBtn`/
   `freeRestartBtn`/`freeSkipBtn`), swipe nav, beeps in the last 3 s of a
   timed point (`playWorkoutBeep`, follows "Töne und Ansagen").
+- Vollbild (Idee 52, 2026-10-07): `#freeFsBtn` + `#freeFsHint` via
+  `wireFullscreen` like every player; a finished run leaves fullscreen.
 - `#freeDonePanel`: "Geschafft!", rating, Nochmal, Zur Übersicht.
 
 ## Everywhere

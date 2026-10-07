@@ -1209,6 +1209,15 @@
   // screen, follows dark mode) or the always-light player stage (fixed
   // dark ink, matching the visual-training canvas).
   const FIG_HIGHLIGHT = "#ff9110";
+  // Signalfarbe (Idee 55, Fabian 06.10.): the highlight colour of the
+  // movement that is due now - movementPrefs.sigColor (a SIGNAL_LIB key,
+  // null = Standard Orange). Kombi blocks/presets/Weitermachen carry it via
+  // mvLookOf, so a block plays in its own colour.
+  function mvSigHex(p) {
+    p = p || movementPrefs;
+    const c = p && p.sigColor ? SIGNAL_BY_KEY[p.sigColor] : null;
+    return c ? c.hex : FIG_HIGHLIGHT;
+  }
   // slots: { armLeft, armRight, legLeft, legRight } - each holds a pose
   // name ("heben"/"strecken") when that screen-side limb is the active one.
   const FIGURE_LIMB = {
@@ -1223,7 +1232,7 @@
       const type = slots[key];
       const def = FIGURE_LIMB[key];
       const [x2, y2] = def[type || "neutral"];
-      const color = type ? FIG_HIGHLIGHT : baseColor;
+      const color = type ? mvSigHex() : baseColor;
       const width = type ? 10 : 8;
       return `<line x1="${def.x0}" y1="${def.y0}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${width}" stroke-linecap="round"/>`;
     }).join("");
@@ -1249,11 +1258,11 @@
       const type = slots[key];
       const def = ABSTRACT_CELL[key];
       const active = !!type;
-      const ring = active ? FIG_HIGHLIGHT : baseColor;
-      const fill = active ? FIG_HIGHLIGHT : "none";
+      const ring = active ? mvSigHex() : baseColor;
+      const fill = active ? mvSigHex() : "none";
       let mark;
-      if (type === "heben") mark = `<polygon points="${arrowPolygon(def.cx, def.cy, -90, 13)}" fill="#fff"/>`;
-      else if (type === "strecken") mark = `<polygon points="${arrowPolygon(def.cx, def.cy, def.out, 13)}" fill="#fff"/>`;
+      if (type === "heben") mark = `<polygon points="${arrowPolygon(def.cx, def.cy, -90, 13)}" fill="${sigInk(ring)}"/>`;
+      else if (type === "strecken") mark = `<polygon points="${arrowPolygon(def.cx, def.cy, def.out, 13)}" fill="${sigInk(ring)}"/>`;
       else mark = `<circle cx="${def.cx}" cy="${def.cy}" r="3" fill="${baseColor}"/>`;
       return `<circle cx="${def.cx}" cy="${def.cy}" r="19" fill="${fill}" stroke="${ring}" stroke-width="3"/>${mark}`;
     }).join("");
@@ -1285,7 +1294,7 @@
     for (const k in MV_QUAD) {
       const [x, y] = MV_QUAD[k], on = act && act.key === k;
       out += on
-        ? `<rect x="${6 + x * 46}" y="${6 + y * 46}" width="42" height="42" rx="9" fill="${FIG_HIGHLIGHT}" stroke="${FIG_HIGHLIGHT}" stroke-width="3"/>` + mvArrow(27 + x * 46, 27 + y * 46, act.dir, 12, "#fff")
+        ? `<rect x="${6 + x * 46}" y="${6 + y * 46}" width="42" height="42" rx="9" fill="${mvSigHex()}" stroke="${mvSigHex()}" stroke-width="3"/>` + mvArrow(27 + x * 46, 27 + y * 46, act.dir, 12, sigInk(mvSigHex()))
         : `<rect x="${6 + x * 46}" y="${6 + y * 46}" width="42" height="42" rx="9" fill="none" stroke="${baseColor}" stroke-opacity=".3" stroke-width="3"/>`;
     }
     return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">${out}</svg>`;
@@ -1300,9 +1309,9 @@
       const [x, y] = P[k], on = act && act.key === k;
       if (on) {
         const v = { up: [0, -1], left: [-1, 0], right: [1, 0] }[act.dir];
-        out += `<line x1="${x}" y1="${y}" x2="${x + v[0] * 24}" y2="${y + v[1] * 24}" stroke="${FIG_HIGHLIGHT}" stroke-width="9" stroke-linecap="round"/>`;
+        out += `<line x1="${x}" y1="${y}" x2="${x + v[0] * 24}" y2="${y + v[1] * 24}" stroke="${mvSigHex()}" stroke-width="9" stroke-linecap="round"/>`;
       }
-      out += on ? `<circle cx="${x}" cy="${y}" r="10" fill="${FIG_HIGHLIGHT}"/>`
+      out += on ? `<circle cx="${x}" cy="${y}" r="10" fill="${mvSigHex()}"/>`
         : `<circle cx="${x}" cy="${y}" r="9" fill="none" stroke="${baseColor}" stroke-opacity=".5" stroke-width="4"/>`;
     }
     return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">${out}</svg>`;
@@ -1312,7 +1321,7 @@
     const act = mvActiveSlot(slots);
     const Q = { armLeft: [29, 29], armRight: [71, 29], legLeft: [29, 71], legRight: [71, 71] };
     const cross = `<line x1="50" y1="10" x2="50" y2="90" stroke="${baseColor}" stroke-opacity=".3" stroke-width="2.5"/><line x1="10" y1="50" x2="90" y2="50" stroke="${baseColor}" stroke-opacity=".3" stroke-width="2.5"/>`;
-    return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">${cross}${act ? mvArrow(Q[act.key][0], Q[act.key][1], act.dir, 15, FIG_HIGHLIGHT) : ""}</svg>`;
+    return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">${cross}${act ? mvArrow(Q[act.key][0], Q[act.key][1], act.dir, 15, mvSigHex()) : ""}</svg>`;
   }
   const MV_STYLE_SVG = { felder: figureSVGFelder, punkte: figureSVGPunkte, pfeil: figureSVGPfeil, figur: figureSVGFigur, abstrakt: figureSVGAbstrakt };
   function figureSVG(slots, baseColor) {
@@ -1511,7 +1520,7 @@
   }
   function comboBlockMeta(block) {
     if (block.domain === "wimhof") return `${block.rounds ?? WIMHOF_DEFAULTS.rounds} Runden`;
-    if (block.domain === "breath") return fmtMinutes((block.durationMin ?? 5) * 60) + (block.listen ? " · Hörmodus" : "");
+    if (block.domain === "breath") return (block.noLimit ? "ohne Zeitlimit" : fmtMinutes((block.durationMin ?? 5) * 60)) + (block.listen ? " · Hörmodus" : "");
     if (block.domain === "movement") return fmtMinutes((block.durationMin ?? 2) * 60);
     if (block.domain === "workout") return workoutBlockMeta(block);
     if (block.domain === "visual") return fmtMinutes((block.duration ?? 60));
@@ -1526,7 +1535,7 @@
   }
   function comboBlockSeconds(block) {
     if (block.domain === "wimhof") { const r = block.rounds ?? WIMHOF_DEFAULTS.rounds, n = block.breaths ?? WIMHOF_DEFAULTS.breaths; return r * (n * (block.breathPaceS ?? WIMHOF_DEFAULTS.breathPaceS) + 30 + (block.recoveryHoldS ?? WIMHOF_DEFAULTS.recoveryHoldS)); }
-    if (block.domain === "breath") return (block.durationMin ?? 5) * 60;
+    if (block.domain === "breath") return block.noLimit ? 0 : (block.durationMin ?? 5) * 60;
     if (block.domain === "movement") return (block.durationMin ?? 2) * 60;
     if (block.domain === "workout") return workoutBlockSeconds(block);
     if (block.domain === "visual") return block.duration ?? 60;
@@ -1749,6 +1758,7 @@
     breathPlayer: $("breathPlayer"), breathPlayerBar: $("breathPlayerBar"), breathBig: $("breathBig"),
     breathPhaseCount: $("breathPhaseCount"), breathPhaseLabel: $("breathPhaseLabel"), breathTimeEl: $("breathTimeEl"),
     breathBackBtn: $("breathBackBtn"), breathFsBtn: $("breathFsBtn"), breathFsHint: $("breathFsHint"),
+    breathFinishBtn: $("breathFinishBtn"), breathEndNowBtn: $("breathEndNowBtn"), breathMoreBtn: $("breathMoreBtn"), breathEndNote: $("breathEndNote"), breathPauseFinishBtn: $("breathPauseFinishBtn"),
     breathPauseBtn: $("breathPauseBtn"),
     breathListenHelp: $("breathListenHelp"),
     breathListenLayer: $("breathListenLayer"),
@@ -3619,6 +3629,7 @@
     { id: "flash", label: "Flash-Speicher-Test", get: () => ({ colorKey: flashPrefs.bgColorKey, intensity: flashPrefs.bgIntensity }) },
     { id: "mot", label: "Objektverfolgung (MOT)", get: () => ({ colorKey: motPrefs.bgColorKey, intensity: motPrefs.bgIntensity }) },
     { id: "balance", label: "Gleichgewicht", get: () => ({ colorKey: balancePrefs.bgColorKey, intensity: balancePrefs.bgIntensity }) },
+    { id: "movement", label: "Reaktionstraining", get: () => ({ colorKey: movementPrefs.bgColorKey, intensity: movementPrefs.bgIntensity }) },
   ];
   const BG_PRESETS_KEY = "fwmc-bg-presets-v1"; // [{ id, name, colorKey, intensity }] - not scoped to a domain, any saved combo applies anywhere
   const bgPresetStore = makePresetStore(BG_PRESETS_KEY);
@@ -3641,6 +3652,7 @@
     () => ({ prefs: flashPrefs, key: FLASH_PREFS_KEY, save: saveFlashPrefsToStorage }),
     () => ({ prefs: motPrefs, key: MOT_PREFS_KEY, save: saveMotPrefsToStorage }),
     () => ({ prefs: balancePrefs, key: BALANCE_PREFS_KEY, save: saveBalancePrefsToStorage }),
+    () => ({ prefs: movementPrefs, key: MOVEMENT_PREFS_KEY, save: saveMovementPrefs }),
     () => ({ prefs: gngPrefs, key: GNG_PREFS_KEY, save: saveGngPrefsToStorage }),
     () => ({ prefs: testNbackPrefs, key: TEST_NBACK_PREFS_KEY, save: saveTestNbackPrefsToStorage }),
     () => ({ prefs: trailPrefs, key: TRAIL_PREFS_KEY, save: saveTrailPrefsToStorage }),
@@ -5679,7 +5691,9 @@
     els.breathProgramDonePanel.hidden = true;
     // A player that was just hidden can't stay the fullscreen element
     // (Cardio's guest takeover, its finish/abort, any other exit).
+    // (The whole page is fullscreen only while a Kombi runs - never hidden.)
     if (document.fullscreenElement && document.fullscreenElement.hidden) document.exitFullscreen().catch(() => {});
+    refreshFsLabels();
   }
 
   function runSession() {
@@ -6021,7 +6035,7 @@
     cardioGuestActive = false;
     stopPauseTimers();
     releaseWakeLock();
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    if (document.fullscreenElement && !(comboProgram && document.fullscreenElement === document.documentElement)) document.exitFullscreen().catch(() => {});
     els.fsHint.hidden = true;
     els.liveNav.hidden = true;
     if (window.speechSynthesis) speechSynthesis.cancel();
@@ -6211,16 +6225,40 @@
   });
   els.again.addEventListener("click", startSession);
 
-  // ---- Fullscreen (shared by the visual player and the breath player) ----
+  // ---- Fullscreen (shared by every player) ----
+  // Kombi durchgehend im Vollbild (Idee 52, Fabian 06.10.): each area's
+  // player is its own element, so fullscreen on a player ended at every
+  // Baustein change (hideAllPlayers hides it). While a Kombi runs, the
+  // button asks for fullscreen on the whole page instead; hideAllPlayers
+  // never sees that element hidden, and finish/abort of the Kombi leave it.
+  // The end-confirm sheet lives in the page, so it shows there as well.
+  const fsWired = [];
+  function fsIsOn(player) {
+    const fe = document.fullscreenElement;
+    return !!fe && (fe === player || fe === document.documentElement);
+  }
+  function refreshFsLabels() {
+    fsWired.forEach((c) => { c.btn.textContent = fsIsOn(c.player) ? "Vollbild aus" : "Vollbild"; });
+  }
+  function exitComboFullscreen() {
+    if (document.fullscreenElement === document.documentElement) document.exitFullscreen().catch(() => {});
+  }
+  // iPhone Safari has no Fullscreen API at all (only for videos): the
+  // buttons would only ever show the "eingebettete Ansicht" hint there, so
+  // they are hidden. Embedded views (API present, but not allowed) keep
+  // the button and its hint.
+  if (typeof Element.prototype.requestFullscreen !== "function") document.documentElement.classList.add("no-fs-api");
   function wireFullscreen(cfg) {
+    fsWired.push(cfg);
     function updateLabel() {
-      cfg.btn.textContent = document.fullscreenElement === cfg.player ? "Vollbild aus" : "Vollbild";
+      cfg.btn.textContent = fsIsOn(cfg.player) ? "Vollbild aus" : "Vollbild";
     }
     document.addEventListener("fullscreenchange", updateLabel);
     cfg.btn.addEventListener("click", () => {
-      if (document.fullscreenElement === cfg.player) { document.exitFullscreen().catch(() => {}); return; }
-      if (document.fullscreenEnabled && cfg.player.requestFullscreen) {
-        cfg.player.requestFullscreen().catch(() => { cfg.hint.hidden = false; });
+      if (fsIsOn(cfg.player)) { document.exitFullscreen().catch(() => {}); return; }
+      const target = comboProgram ? document.documentElement : cfg.player;
+      if (document.fullscreenEnabled && target.requestFullscreen) {
+        target.requestFullscreen().catch(() => { cfg.hint.hidden = false; });
       } else {
         cfg.hint.hidden = false;
       }
@@ -7268,12 +7306,13 @@
   // rendered as a circle that grows on the in-breath and shrinks on the
   // out-breath, with an optional spoken phase cue.
   const BREATH_PREFS_KEY = "fwmc-breath-v1";
-  const breathPrefs = { durationMin: 5, sound: true, listen: false, custom: { in: 4, hold1: 0, out: 6, hold2: 0 } };
+  const breathPrefs = { durationMin: 5, sound: true, listen: false, noLimit: false, custom: { in: 4, hold1: 0, out: 6, hold2: 0 } };
   function loadBreathPrefs() {
     const saved = readJSON(BREATH_PREFS_KEY, null);
     if (saved && typeof saved === "object") {
       Object.assign(breathPrefs, saved);
       breathPrefs.custom = Object.assign({ in: 4, hold1: 0, out: 6, hold2: 0 }, saved.custom || {});
+      breathPrefs.noLimit = saved.noLimit === true;
     }
   }
   function saveBreathPrefs() { writeJSON(BREATH_PREFS_KEY, breathPrefs); }
@@ -7329,16 +7368,25 @@
   els.phaseOutSlider.addEventListener("input", () => onPhaseSliderInput("out", els.phaseOutSlider));
   els.phaseHold2Slider.addEventListener("input", () => onPhaseSliderInput("hold2", els.phaseHold2Slider));
 
+  // Picking a duration means "with a time limit" again (Idee 53).
   document.querySelectorAll("[data-breath-dur]").forEach((el) => {
-    el.addEventListener("click", () => { breathPrefs.durationMin = Number(el.dataset.breathDur); saveBreathPrefs(); syncBreathDurationUI(); });
+    el.addEventListener("click", () => { breathPrefs.durationMin = Number(el.dataset.breathDur); breathPrefs.noLimit = false; saveBreathPrefs(); syncBreathDurationUI(); });
   });
   function syncBreathDurationUI() {
-    document.querySelectorAll("[data-breath-dur]").forEach((el) => setActive(el, Number(el.dataset.breathDur) === breathPrefs.durationMin));
+    document.querySelectorAll("[data-breath-dur]").forEach((el) => setActive(el, !breathPrefs.noLimit && Number(el.dataset.breathDur) === breathPrefs.durationMin));
     els.breathDurationSlider.value = breathPrefs.durationMin;
     els.breathDurationValue.textContent = `${breathPrefs.durationMin} Min`;
+    // "Ohne Zeitlimit" (Idee 53, Fabian 06.10.): the pattern runs until
+    // "Fertig"; the duration stays visible (dimmed) for the next timed run.
+    $("breathNoLimitCheck").checked = !!breathPrefs.noLimit;
+    $("breathNoLimitHelp").hidden = !breathPrefs.noLimit;
+    els.breathDurationSlider.closest(".group").classList.toggle("breath-dur-off", !!breathPrefs.noLimit);
   }
   els.breathDurationSlider.addEventListener("input", () => {
-    breathPrefs.durationMin = Number(els.breathDurationSlider.value); saveBreathPrefs(); syncBreathDurationUI();
+    breathPrefs.durationMin = Number(els.breathDurationSlider.value); breathPrefs.noLimit = false; saveBreathPrefs(); syncBreathDurationUI();
+  });
+  $("breathNoLimitCheck").addEventListener("change", (e) => {
+    breathPrefs.noLimit = e.target.checked; saveBreathPrefs(); syncBreathDurationUI();
   });
 
   document.querySelectorAll("[data-breath-sound]").forEach((el) => {
@@ -7384,7 +7432,7 @@
   let comboBreathCaptureOriginal = null;
   let comboBreathEditIndex = null;
   function openBreathComboCapture(patternKey, existingBlock, editIndex) {
-    comboBreathCaptureOriginal = { durationMin: breathPrefs.durationMin, sound: breathPrefs.sound, listen: breathPrefs.listen, custom: { ...breathPrefs.custom } };
+    comboBreathCaptureOriginal = { durationMin: breathPrefs.durationMin, sound: breathPrefs.sound, listen: breathPrefs.listen, noLimit: !!breathPrefs.noLimit, custom: { ...breathPrefs.custom } };
     const key = existingBlock ? existingBlock.pattern : patternKey;
     openBreathReady(key);
     if (existingBlock) {
@@ -7392,6 +7440,7 @@
       breathPrefs.durationMin = existingBlock.durationMin ?? breathPrefs.durationMin;
       breathPrefs.sound = existingBlock.sound !== false;
       breathPrefs.listen = !!existingBlock.listen;
+      breathPrefs.noLimit = !!existingBlock.noLimit;
       syncPhaseUI(); syncBreathDurationUI(); syncBreathSoundUI();
     }
     comboBreathEditIndex = editIndex ?? null;
@@ -7403,6 +7452,7 @@
       breathPrefs.durationMin = comboBreathCaptureOriginal.durationMin;
       breathPrefs.sound = comboBreathCaptureOriginal.sound;
       breathPrefs.listen = comboBreathCaptureOriginal.listen;
+      breathPrefs.noLimit = comboBreathCaptureOriginal.noLimit;
       breathPrefs.custom = comboBreathCaptureOriginal.custom;
       saveBreathPrefs();
       comboBreathCaptureOriginal = null;
@@ -7411,7 +7461,7 @@
     els.breathStartBtn.textContent = "Training starten";
   }
   function commitBreathComboCapture() {
-    const block = { domain: "breath", pattern: breathPatternKey, durationMin: breathPrefs.durationMin, phases: { ...breathWorking }, sound: breathPrefs.sound, listen: breathPrefs.listen };
+    const block = { domain: "breath", pattern: breathPatternKey, durationMin: breathPrefs.durationMin, phases: { ...breathWorking }, sound: breathPrefs.sound, listen: breathPrefs.listen, ...(breathPrefs.noLimit ? { noLimit: true } : {}) };
     if (comboBreathEditIndex != null) comboDraftBlocks[comboBreathEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitBreathComboCapture();
@@ -7482,20 +7532,25 @@
     breathCircle.style.transform = `scale(${scale.toFixed(3)})`;
     els.breathPhaseLabel.textContent = frame.label;
     els.breathPhaseCount.textContent = Math.max(1, Math.ceil(frame.t1 - inCycle));
-    els.breathTimeEl.textContent = fmtClock(breathSession.plannedTotal - elapsed);
+    // Ohne Zeitlimit: the clock counts up (there is no rest to show).
+    els.breathTimeEl.textContent = fmtClock(breathSession.open ? elapsed : breathSession.plannedTotal - elapsed);
     if (breathSession.listen) {
       els.breathListenPhase.textContent = frame.label;
       els.breathListenTime.textContent = els.breathTimeEl.textContent;
     }
-    if (elapsed >= breathSession.plannedTotal) { breathFinishSession(); return; }
+    if (elapsed >= breathSession.plannedTotal) { breathEnterEndHold(); return; }
     breathRaf = requestAnimationFrame(breathTick);
   }
 
-  function startBreathSession() {
+  // opts.open: run without a time limit (default: breathPrefs.noLimit for a
+  // single run; Kombi blocks pass their own value, Atem-Programme false).
+  function startBreathSession(opts) {
     const built = buildBreathCycle(breathWorking);
     if (built.cycleLen <= 0) return;
     resumeSingleBase = null;
+    clearBreathEndHold();
     breathPatternName = BREATH_PATTERNS[breathPatternKey].name;
+    const open = opts && "open" in opts ? !!opts.open : !!breathPrefs.noLimit;
     const cycles = Math.max(1, Math.round((breathPrefs.durationMin * 60) / built.cycleLen));
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
@@ -7505,7 +7560,8 @@
     breathSession = { schedule: built.schedule, cycleLen: built.cycleLen, plannedTotal: cycles * built.cycleLen, startTime: performance.now(), lastKey: null,
       sound: breathPrefs.sound || breathPrefs.listen, listen: !!breathPrefs.listen, lastSec: 0,
       lastMinuteSaid: Math.ceil((cycles * built.cycleLen) / 60 - 0.01),
-      basePhases: { ...breathWorking }, tempo: 1, cycleBase: 0 };
+      basePhases: { ...breathWorking }, tempo: 1, cycleBase: 0, open: false };
+    if (open) breathSetOpen(breathSession, 0);
     breathPaused = false;
     breathPauseDraft = null;
     els.breathPauseBtn.hidden = false;
@@ -7515,6 +7571,102 @@
     requestWakeLock();
     breathRaf = requestAnimationFrame(breathTick);
   }
+  // ---- Ohne Zeitlimit + "Weiter atmen" (Idee 53, Fabian 06.10.: Haken
+  // unter Dauer, nach Ablauf "Weiter atmen" neben Beenden, im Kombi danach
+  // normal weiter; nur Atmung) ----
+  // An open run has no planned end: the clock counts up, "Fertig" (stage
+  // and pause sheet) ends it as completed with the real time. A timed run
+  // holds at its end for BREATH_MORE_HOLD_S with "Beenden" / "Weiter
+  // atmen"; without a tap it ends as before (done panel, next Baustein,
+  // next programme block). "Weiter atmen" goes on open-ended with the same
+  // pattern, tempo and voice - the seconds already done stay counted.
+  const BREATH_MORE_HOLD_S = 10;
+  let breathEndHold = null; // { left, timer } while the end hold waits
+  function breathSetOpen(bs, fromS) {
+    bs.open = true;
+    bs.plannedTotal = Infinity;
+    bs.lastMinuteSaid = Infinity;
+    if (fromS > 0) { bs.cycleBase = fromS; bs.lastKey = null; }
+    els.breathFinishBtn.hidden = false;
+  }
+  function clearBreathEndHold() {
+    if (breathEndHold) clearInterval(breathEndHold.timer);
+    breathEndHold = null;
+    els.breathEndNowBtn.hidden = true;
+    els.breathMoreBtn.hidden = true;
+    els.breathFinishBtn.hidden = true;
+    els.breathEndNote.hidden = true;
+    els.breathBackBtn.style.visibility = "";
+  }
+  function breathEndNoteText(left) {
+    const s = `${left}\u00a0s`;
+    if (comboProgram || breathProgram) return `Ohne Tippen geht es in ${s} weiter.`;
+    return `Ohne Tippen endet die Übung in ${s}.`;
+  }
+  function breathEnterEndHold() {
+    const bs = breathSession;
+    if (!bs) return;
+    if (breathRaf) cancelAnimationFrame(breathRaf);
+    breathRaf = null;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    clearBreathEndHold();
+    breathEndHold = { left: BREATH_MORE_HOLD_S, timer: null };
+    breathCircle.style.transform = "scale(0.55)";
+    els.breathPhaseLabel.textContent = "Geschafft";
+    els.breathPhaseCount.textContent = String(BREATH_MORE_HOLD_S);
+    els.breathTimeEl.textContent = fmtClock(0);
+    els.breathPauseBtn.hidden = true;
+    els.breathListenLayer.hidden = true;
+    resetBreathListenHold();
+    els.breathEndNowBtn.hidden = false;
+    els.breathMoreBtn.hidden = false;
+    els.breathEndNote.textContent = breathEndNoteText(BREATH_MORE_HOLD_S);
+    els.breathEndNote.hidden = false;
+    // One "Beenden" on screen: the bar's ✕ waits until the hold is over.
+    els.breathBackBtn.style.visibility = "hidden";
+    // Measured on performance.now() like the run itself, so a phone that
+    // slept or a throttled background tab never stretches the hold.
+    const t0 = performance.now();
+    breathEndHold.timer = setInterval(() => {
+      if (!breathEndHold || !breathSession || els.breathPlayer.hidden) { clearBreathEndHold(); return; }
+      const left = Math.max(0, Math.ceil(BREATH_MORE_HOLD_S - (performance.now() - t0) / 1000));
+      if (left !== breathEndHold.left) {
+        breathEndHold.left = left;
+        els.breathPhaseCount.textContent = String(left);
+        els.breathEndNote.textContent = breathEndNoteText(left);
+      }
+      if (left <= 0) { clearBreathEndHold(); breathFinishSession(); }
+    }, 200);
+  }
+  els.breathEndNowBtn.addEventListener("click", () => { if (breathEndHold) { clearBreathEndHold(); breathFinishSession(); } });
+  els.breathMoreBtn.addEventListener("click", () => {
+    const bs = breathSession;
+    if (!bs || !breathEndHold) return;
+    const done = bs.plannedTotal;
+    clearBreathEndHold();
+    breathSetOpen(bs, done);
+    bs.startTime = performance.now() - done * 1000;
+    els.breathPauseBtn.hidden = false;
+    els.breathListenLayer.hidden = !bs.listen;
+    breathRaf = requestAnimationFrame(breathTick);
+  });
+  function breathOpenElapsed() {
+    const bs = breathSession;
+    if (!bs) return 0;
+    const ref = breathPaused ? breathPauseTime : performance.now();
+    return Math.max(0, (ref - bs.startTime) / 1000);
+  }
+  function breathFinishOpen() {
+    const bs = breathSession;
+    if (!bs || !bs.open) return;
+    bs.playedOpen = breathOpenElapsed();
+    breathPaused = false;
+    breathPauseDraft = null;
+    els.breathPauseOverlay.hidden = true;
+    breathFinishSession();
+  }
+  els.breathFinishBtn.addEventListener("click", breathFinishOpen);
+  els.breathPauseFinishBtn.addEventListener("click", breathFinishOpen);
   els.breathStartBtn.addEventListener("click", () => {
     if (comboBreathCaptureOriginal) { commitBreathComboCapture(); return; }
     startBreathSession();
@@ -7549,7 +7701,7 @@
     if (breathPauseDraft) { breathPauseDraft.sound = el.dataset.breathPauseSound === "on"; syncBreathPauseUI(); }
   }));
   function pauseBreath() {
-    if (!breathSession || breathPaused) return;
+    if (!breathSession || breathPaused || breathEndHold) return;
     breathPaused = true;
     breathPauseTime = performance.now();
     if (breathRaf) cancelAnimationFrame(breathRaf);
@@ -7561,6 +7713,8 @@
     breathPauseDraft = { tempo: breathSession.tempo, restMin, restMinAtStart: restMin, sound: breathSession.sound };
     resumeSingleNote("breath");
     syncBreathPauseUI();
+    $("breathPauseRestGroup").hidden = !!breathSession.open;
+    els.breathPauseFinishBtn.hidden = !breathSession.open;
     els.breathPauseBtn.hidden = true;
     els.breathListenLayer.hidden = true;
     resetBreathListenHold();
@@ -7583,7 +7737,7 @@
           breathSession.cycleLen = built.cycleLen;
           breathSession.cycleBase = elapsed;
           const restS = d.restMin !== d.restMinAtStart ? d.restMin * 60 : breathSession.plannedTotal - elapsed;
-          breathSession.plannedTotal = elapsed + Math.max(1, Math.round(restS / built.cycleLen)) * built.cycleLen;
+          if (!breathSession.open) breathSession.plannedTotal = elapsed + Math.max(1, Math.round(restS / built.cycleLen)) * built.cycleLen;
           breathSession.lastKey = null;
         }
       }
@@ -7622,6 +7776,7 @@
   function breathLeavePlayer() {
     if (breathRaf) cancelAnimationFrame(breathRaf);
     breathRaf = null;
+    clearBreathEndHold();
     breathSession = null;
     breathPaused = false;
     breathPauseDraft = null;
@@ -7638,7 +7793,10 @@
   function breathFinishSession() {
     if (breathRaf) cancelAnimationFrame(breathRaf);
     breathRaf = null;
-    const played = breathSession ? breathSession.plannedTotal : 0;
+    clearBreathEndHold();
+    const wasOpen = !!(breathSession && breathSession.open);
+    // Ohne Zeitlimit / after "Weiter atmen": the real time (pauses excluded).
+    const played = breathSession ? (wasOpen ? (breathSession.playedOpen ?? breathOpenElapsed()) : breathSession.plannedTotal) : 0;
     const wasListen = !!(breathSession && breathSession.listen && breathSession.sound);
     breathSession = null;
     releaseWakeLock();
@@ -7651,7 +7809,7 @@
     if (comboProgram) { advanceComboProgram(played); return; }
     els.breathPlayerBar.hidden = true;
     els.breathDoneSummary.textContent = `${breathPatternName} · ${fmtMinutes(played)}`;
-    const id = addHistory({ kind: "breath", title: breathPatternName, seconds: Math.round(played) });
+    const id = addHistory({ kind: "breath", title: breathPatternName, seconds: Math.round(played), ...(wasOpen ? { note: "ohne Zeitlimit" } : {}) });
     renderRating(els.breathRating, id, "Wie ruhig fühlst du dich gerade?");
     els.breathDonePanel.hidden = false;
   }
@@ -7659,6 +7817,10 @@
   // programme intro if a coach-authored programme was chaining blocks.
   function breathAbort() {
     if (comboProgram) { breathLeavePlayer(); abortComboProgram(); return; }
+    // Ohne Zeitlimit there is nothing to abort: "Beenden" ends it with the
+    // real time, like Gleichgewicht "Ohne Zeitvorgabe".
+    // (Not for « ↻ », which stops silently and starts again.)
+    if (breathSession && breathSession.open && !breathProgram && !stepNavSilent) { breathFinishOpen(); return; }
     const wasProgram = !!breathProgram;
     resumeSingleNote("breath");
     breathProgram = null;
@@ -7676,13 +7838,14 @@
   const breathSavedStore = makePresetStore(BREATH_SAVED_KEY);
   function renderBreathSaved() {
     renderPresetList(breathSavedStore, els.breathSavedList, els.breathSavedGroup, (e) => e.patternKey === breathPatternKey,
-      (e) => `${fmtMinutes(e.durationMin * 60)} · ${e.phases.in}-${e.phases.hold1}-${e.phases.out}-${e.phases.hold2}s`,
+      (e) => `${e.noLimit ? "ohne Zeitlimit" : fmtMinutes(e.durationMin * 60)} · ${e.phases.in}-${e.phases.hold1}-${e.phases.out}-${e.phases.hold2}s`,
       (entry) => {
         breathPatternKey = entry.patternKey;
         breathWorking = { ...entry.phases };
         breathPrefs.durationMin = entry.durationMin;
         breathPrefs.sound = entry.sound;
         breathPrefs.listen = !!entry.listen;
+        breathPrefs.noLimit = !!entry.noLimit;
         saveBreathPrefs();
         // While capturing a Kombi-Baustein, loading a saved setting should
         // just fill the draft for review, not immediately start a session.
@@ -7702,6 +7865,7 @@
       list.push({
         id: String(Date.now()), name, patternKey: breathPatternKey,
         phases: { ...breathWorking }, durationMin: breathPrefs.durationMin, sound: breathPrefs.sound, listen: breathPrefs.listen,
+        ...(breathPrefs.noLimit ? { noLimit: true } : {}),
       });
       breathSavedStore.save(list);
       renderBreathSaved();
@@ -7726,7 +7890,7 @@
       breathWorking = block.phases ? { ...block.phases } : { ...(BREATH_PATTERNS[block.pattern].phases || breathPrefs.custom) };
       breathPrefs.durationMin = block.durationMin ?? 5;
       breathPrefs.sound = block.sound !== false;
-      startBreathSession();
+      startBreathSession({ open: false });
     }
   }
   let breathTransitionTimer = null;
@@ -8057,6 +8221,7 @@
     movements: MOVEMENTS.map((m) => m.id),
     preview: 3, bpm: 60, durationMin: 1, mirror: true, showLabel: true, figureStyle: "felder", direction: "rechts",
     tick: true, tickVolume: 0.7, layout: "zeilen", rowLen: 4,
+    bgColorKey: "gruen", bgIntensity: 0, sigColor: null,
   };
   // Anzeige (Fabian 07.10.): "zeilen" = rows of 3-5 fields that wander up
   // while you work through them (the next row is always visible, the picture
@@ -8073,7 +8238,17 @@
     if (MOVEMENT_DIRECTIONS.includes(src.direction)) o.direction = src.direction;
     o.layout = MV_LAYOUTS.includes(src.layout) ? src.layout : "band";
     if ([3, 4, 5].includes(Number(src.rowLen))) o.rowLen = Number(src.rowLen);
+    // Hintergrund + Signalfarbe (Idee 55): only when the source has them -
+    // older blocks/presets keep the client's current colours.
+    if (STROOP_COLOR_BY_KEY[src.bgColorKey]) o.bgColorKey = src.bgColorKey;
+    if (typeof src.bgIntensity === "number" && src.bgIntensity >= 0 && src.bgIntensity <= 1) o.bgIntensity = src.bgIntensity;
+    if (typeof src.bgCustom === "boolean") o.bgCustom = src.bgCustom;
+    if ("sigColor" in src) o.sigColor = SIGNAL_BY_KEY[src.sigColor] ? src.sigColor : null;
     return o;
+  }
+  // The colour fields a Kombi block / preset / Weitermachen record stores.
+  function mvColorsOf(p) {
+    return { bgColorKey: p.bgColorKey, bgIntensity: p.bgIntensity, bgCustom: !!p.bgCustom, sigColor: p.sigColor || null };
   }
   function loadMovementPrefs() {
     const saved = readJSON(MOVEMENT_PREFS_KEY, null);
@@ -8091,6 +8266,9 @@
     if (![3, 4, 5].includes(Number(movementPrefs.rowLen))) movementPrefs.rowLen = 4;
     if (!MOVEMENT_DIRECTIONS.includes(movementPrefs.direction)) movementPrefs.direction = "rechts";
     if (!Number.isFinite(movementPrefs.durationMin) || movementPrefs.durationMin <= 0) movementPrefs.durationMin = 1;
+    if (!STROOP_COLOR_BY_KEY[movementPrefs.bgColorKey]) movementPrefs.bgColorKey = "gruen";
+    if (!(movementPrefs.bgIntensity >= 0 && movementPrefs.bgIntensity <= 1)) movementPrefs.bgIntensity = 0;
+    if (movementPrefs.sigColor && !SIGNAL_BY_KEY[movementPrefs.sigColor]) movementPrefs.sigColor = null;
     Object.assign(movementPrefs, mvTickOf(movementPrefs));
   }
   // Takt-Ton (Fabian, 2026-10-06, Feinheit 41): one soft tone per movement,
@@ -8237,7 +8415,7 @@
   $("movementTickVolumeSlider").addEventListener("change", () => { saveMovementPrefs(); movementTickSound(movementPrefs.tickVolume); });
 
   function openMovementReady() {
-    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI(); syncMvFigureUI(); syncMvDirectionUI(); syncMvTickUI(); syncMvLayoutUI();
+    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI(); syncMvFigureUI(); syncMvDirectionUI(); syncMvTickUI(); syncMvLayoutUI(); syncMvColorsUI();
     els.movementSaveForm.hidden = true;
     els.movementSaveBtn.hidden = false;
     renderMovementSaved();
@@ -8289,7 +8467,7 @@
       domain: "movement", movements: movementPrefs.movements.slice(), preview: movementPrefs.preview,
       bpm: movementPrefs.bpm, durationMin: movementPrefs.durationMin, mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel,
       direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle, layout: movementPrefs.layout, rowLen: movementPrefs.rowLen,
-      tick: movementPrefs.tick, tickVolume: movementPrefs.tickVolume,
+      tick: movementPrefs.tick, tickVolume: movementPrefs.tickVolume, ...mvColorsOf(movementPrefs),
     };
     if (comboMovementEditIndex != null) comboDraftBlocks[comboMovementEditIndex] = block;
     else comboDraftBlocks.push(block);
@@ -8559,6 +8737,96 @@
     mvRowsDraw(ms, t);
   });
 
+  // ---- Hintergrund + Signalfarbe (Idee 55, Fabian 06.10.: "auch
+  // Hintergrund- und Signalfarbe einstellbar") ----
+  // Background: the shared bg control (makeBgApplier pattern, Master
+  // default cascade via MASTER_BG_TARGETS). The player is dark in dark mode,
+  // so there the colour is mixed into the dark player tone instead of white
+  // - a tint, never a bright flash. Pause-sheet changes inside a Kombi stay
+  // with the block (restoreComboPrefs puts the client's own values back).
+  function mvDarkTheme() {
+    const t = document.documentElement.dataset.theme;
+    return t === "dark" || (t !== "light" && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+  function movementBgHex(p) {
+    p = p || movementPrefs;
+    const c = STROOP_COLOR_BY_KEY[p.bgColorKey];
+    return p.bgIntensity > 0 && c ? mixHex(mvDarkTheme() ? "#0b1619" : "#ffffff", c.hex, p.bgIntensity) : null;
+  }
+  function applyMovementBg() { els.movementPlayer.style.background = movementBgHex() || ""; }
+  if (window.matchMedia) {
+    const mq = matchMedia("(prefers-color-scheme: dark)");
+    const onScheme = () => { if (!els.movementPlayer.hidden) applyMovementBg(); };
+    if (mq.addEventListener) mq.addEventListener("change", onScheme);
+  }
+  const syncMovementBgUI = wireBgIntensityControl(movementPrefs, {
+    pickers: [$("movementBgColorPicker"), $("movementPauseBgColorPicker")],
+    sliders: [$("movementBgIntensitySlider"), $("movementPauseBgSlider")],
+    valueEls: [$("movementBgIntensityValue"), $("movementPauseBgValue")],
+    hintEls: [$("movementBgContrastHint"), $("movementPauseBgContrastHint")],
+    masterStatusEls: [$("movementBgMasterStatus")],
+    transfer: [{
+      sourceRow: $("movementBgSourceRow"), presetGroup: $("movementBgPresetGroup"), presetList: $("movementBgPresetList"),
+      saveBtn: $("movementBgSaveBtn"), form: $("movementBgSaveForm"), nameInput: $("movementBgSaveNameInput"),
+      cancelBtn: $("movementBgSaveCancelBtn"), confirmBtn: $("movementBgSaveConfirmBtn"),
+    }],
+  }, () => { if (!comboProgram) saveMovementPrefs(); applyMovementBg(); syncMvSigUI(); }, "movement");
+  // Signal colour: same swatches, "Standard"-link and clash hint as the
+  // Signalfarbe of the Test exercises (SIGNAL_LIB), but stored in
+  // movementPrefs so presets, Kombi blocks and Weitermachen carry it.
+  const mvSigStyleEl = document.createElement("style");
+  mvSigStyleEl.id = "movementSigStyles";
+  document.head.appendChild(mvSigStyleEl);
+  function hexRgba(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+  }
+  function applyMvSignalCss() {
+    const c = mvSigHex();
+    if (c === FIG_HIGHLIGHT) { mvSigStyleEl.textContent = ""; return; }
+    const dk = mixHex("#0b1619", c, 0.2);
+    mvSigStyleEl.textContent =
+      `#movementPlayer .movement-tile.active{border-color:${c} !important;box-shadow:0 6px 20px -8px ${hexRgba(c, 0.5)} !important}\n` +
+      `#movementPlayer .movement-lane.rows .mv-cell.active{border-color:${c} !important;background:${mixHex("#ffffff", c, 0.1)} !important;box-shadow:0 0 0 3px ${hexRgba(c, 0.35)} !important}\n` +
+      `@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #movementPlayer .movement-lane.rows .mv-cell.active{background:${dk} !important}}\n` +
+      `:root[data-theme="dark"] #movementPlayer .movement-lane.rows .mv-cell.active{background:${dk} !important}`;
+  }
+  buildSingleSelectPicker($("movementSigPicker"), SIGNAL_LIB, (key) => {
+    movementPrefs.sigColor = key;
+    saveMovementPrefs();
+    syncMvSigUI();
+  });
+  document.getElementById("movementSigGroup").addEventListener("click", (e) => {
+    if (!e.target.closest("[data-mv-sig-reset]")) return;
+    movementPrefs.sigColor = null;
+    saveMovementPrefs();
+    syncMvSigUI();
+  });
+  function syncMvSigUI() {
+    syncSingleSelectPicker($("movementSigPicker"), movementPrefs.sigColor);
+    const status = $("movementSigStatus");
+    status.textContent = "";
+    const c = movementPrefs.sigColor ? SIGNAL_BY_KEY[movementPrefs.sigColor] : null;
+    if (c) {
+      status.append(`Eigene Farbe: ${c.name}. `);
+      const reset = document.createElement("button");
+      reset.type = "button"; reset.className = "text-link";
+      reset.dataset.mvSigReset = "1";
+      reset.textContent = "Standard";
+      status.appendChild(reset);
+    } else {
+      status.textContent = "Standard: Orange.";
+    }
+    // Light mode: on the (tinted) light stage; dark mode: on the dark tiles.
+    const lightBg = mvDarkTheme() ? null : (movementBgHex() || "#ffffff");
+    const clash = $("movementSigClash");
+    const txt = lightBg && colorsClash(mvSigHex(), lightBg) ? "Diese Farbe ist auf diesem Hintergrund kaum zu sehen." : "";
+    clash.textContent = txt; clash.hidden = !txt;
+    // The movement chips on this screen draw the signal colour too.
+    if (typeof syncMvPickerUI === "function" && !els.movementReady.hidden) syncMvPickerUI();
+  }
+  function syncMvColorsUI() { syncMovementBgUI(); syncMvSigUI(); }
+
   function startMovementSession() {
     const pool = MOVEMENTS.filter((m) => movementPrefs.movements.includes(m.id));
     if (pool.length < MIN_MOVEMENTS) return;
@@ -8577,6 +8845,8 @@
     els.movementFinishBadge.hidden = true;
     els.movementProgressTrack.innerHTML = `<span class="seg"><span class="fill"></span></span>`;
     els.movementLane.style.paddingTop = "";
+    applyMovementBg();
+    applyMvSignalCss();
     movementSession = { sequence, beatLenS, totalBeats, gridMode, rows, layout: movementPrefs.layout, rowLen: movementPrefs.rowLen, preview: movementPrefs.preview, pool, startTime: performance.now(), lastBeatIdx: 0, finishTimer: null, pausedAt: null, ...mvTickOf(movementPrefs) };
     if (movementSession.tick) silentSwitchHint();
     els.movementPauseOverlay.hidden = true;
@@ -8617,7 +8887,7 @@
         Object.assign(movementPrefs, mvLookOf(entry));
         if ("tick" in entry) Object.assign(movementPrefs, mvTickOf(entry));
         saveMovementPrefs();
-        syncMvDirectionUI(); syncMvFigureUI(); syncMvTickUI(); syncMvLayoutUI();
+        syncMvDirectionUI(); syncMvFigureUI(); syncMvTickUI(); syncMvLayoutUI(); syncMvColorsUI();
         // While capturing a Kombi-Baustein, loading a saved setting should
         // just fill the draft for review/adjustment, not immediately start
         // a live session.
@@ -8639,7 +8909,7 @@
         movements: movementPrefs.movements.slice(), preview: movementPrefs.preview, bpm: movementPrefs.bpm,
         durationMin: movementPrefs.durationMin, mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel,
         direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle, layout: movementPrefs.layout, rowLen: movementPrefs.rowLen,
-        tick: movementPrefs.tick, tickVolume: movementPrefs.tickVolume,
+        tick: movementPrefs.tick, tickVolume: movementPrefs.tickVolume, ...mvColorsOf(movementPrefs),
       });
       movementSavedStore.save(list);
       renderMovementSaved();
@@ -17113,7 +17383,7 @@
       breathPrefs.durationMin = block.durationMin ?? 5;
       breathPrefs.sound = block.sound !== false;
       breathPrefs.listen = !!block.listen;
-      startBreathSession();
+      startBreathSession({ open: !!block.noLimit });
     } else if (block.domain === "movement") {
       if (block.movements) movementPrefs.movements = block.movements;
       movementPrefs.preview = block.preview ?? movementPrefs.preview;
@@ -17571,6 +17841,7 @@
   function finishComboProgram() {
     resumeClear();
     hideAllPlayers();
+    exitComboFullscreen();
     restoreComboPrefs();
     const played = comboProgram.totalPlayedS;
     const title = comboProgram.title;
@@ -17585,6 +17856,7 @@
   }
   function abortComboProgram() {
     hideAllPlayers();
+    exitComboFullscreen();
     restoreComboPrefs();
     comboProgram = null;
     showScreen(comboReturnScreen);
@@ -29020,16 +29292,18 @@
       const played = Math.min(Math.max(0, (ref - bs.startTime) / 1000), bs.plannedTotal);
       rec = { kind, title: breathPatternName, total: bs.plannedTotal, played, rest: bs.plannedTotal - played,
         breath: { key: breathPatternKey, phases: breathScaledPhases(bs.basePhases, bs.tempo), sound: !!bs.sound, listen: !!bs.listen } };
+      // Ohne Zeitlimit: no rest to keep - Weitermachen goes on open-ended.
+      if (bs.open) { rec.open = true; rec.breath.open = true; rec.total = played; rec.rest = 0; }
     } else if (kind === "movement" && movementSession && !movementProgram && !comboProgram) {
       const ms = movementSession;
       const total = ms.totalBeats * ms.beatLenS, played = ms.lastBeatIdx * ms.beatLenS;
       rec = { kind, title: "Ganzkörper-Reaktion", total, played, rest: total - played,
         movement: { movements: movementPrefs.movements.slice(), bpm: Math.round(60 / ms.beatLenS), preview: ms.preview,
           mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel, direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle, layout: movementPrefs.layout, rowLen: movementPrefs.rowLen,
-          tick: ms.tick, tickVolume: ms.tickVolume } };
+          tick: ms.tick, tickVolume: ms.tickVolume, ...mvColorsOf(movementPrefs) } };
     }
-    if (rec && resumeSingleBase && resumeSingleBase.kind === kind) { rec.played += resumeSingleBase.offset; rec.total = resumeSingleBase.total; }
-    if (!rec || rec.total < 180 || rec.played < 30 || rec.rest < 60) return;
+    if (rec && resumeSingleBase && resumeSingleBase.kind === kind) { rec.played += resumeSingleBase.offset; rec.total = rec.open ? rec.played : resumeSingleBase.total; }
+    if (!rec || (rec.open ? rec.played < 30 : (rec.total < 180 || rec.played < 30 || rec.rest < 60))) return;
     rec.total = Math.round(rec.total); rec.rest = Math.round(rec.rest); rec.played = Math.round(rec.played);
     writeJSON(RESUME_SINGLE_KEY, { ...rec, type: "single", ts: Date.now() });
   }
@@ -29074,7 +29348,7 @@
     let s1 = readJSON(RESUME_SINGLE_KEY, null);
     const s1ok = (x) => x.kind === "strength" ? x.plan && Array.isArray(x.plan.items) && x.plan.items.length && x.pos > 0 && x.pos < x.total
       : (x.kind === "breath" ? x.breath && x.breath.phases : x.kind === "movement" ? x.movement && Array.isArray(x.movement.movements) : x.kind === "cardio" ? Array.isArray(x.items) && x.items.length && x.index < x.items.length : false)
-        && x.rest >= 60 && x.total >= x.rest;
+        && (x.open ? x.played >= 30 : x.rest >= 60 && x.total >= x.rest);
     if (!s1 || !s1ok(s1) || !(Date.now() - s1.ts < RESUME_MAX_AGE_MS)) s1 = null;
     if (r && s1) return s1.ts > r.ts ? s1 : r;
     return r || s1;
@@ -29084,6 +29358,7 @@
   }
   function resumeCount(r) {
     if (r.type === "single" && r.kind === "strength") return `Satz ${r.pos + 1}\u00a0von\u00a0${r.total}`;
+    if (r.type === "single" && r.open) return "ohne Zeitlimit";
     return r.type === "single" ? `noch ${Math.ceil(r.rest / 60)}\u00a0Min.` : `${RESUME_UNIT[r.type][0]} ${r.pos + 1}\u00a0von\u00a0${r.total}`;
   }
   function resumeAgo(ts) {
@@ -29132,8 +29407,15 @@
         activateSectionTab("breath");
         breathPatternKey = BREATH_PATTERNS[b.key] ? b.key : "box";
         breathWorking = { ...b.phases };
+        if (r.open) {
+          Object.assign(breathPrefs, { sound: b.sound, listen: b.listen });
+          startBreathSession({ open: true });
+          Object.assign(breathPrefs, keep);
+          resumeSingleBase = { kind: "breath", total: 0, offset: fromStart ? 0 : (r.played || 0) };
+          return;
+        }
         Object.assign(breathPrefs, { durationMin: runS / 60, sound: b.sound, listen: b.listen });
-        startBreathSession();
+        startBreathSession({ open: false });
         Object.assign(breathPrefs, keep);
         resumeSingleBase = { kind: "breath", total: r.total, offset: r.total - runS };
       } else {
@@ -30368,8 +30650,11 @@
     if (r && r.timer) clearInterval(r.timer);
     freeRun = null;
     releaseWakeLock();
+    $("freeFsHint").hidden = true;
     return r;
   }
+  // Vollbild (Idee 52, Fabian 06.10.): same button as every other player.
+  wireFullscreen({ player: $("freePlayer"), btn: $("freeFsBtn"), hint: $("freeFsHint"), hintOpen: $("freeFsHintOpenBtn"), hintClose: $("freeFsHintClose") });
   function freeElapsedS(r) {
     const end = r.pausedAt != null ? r.pausedAt : performance.now();
     return Math.max(0, (end - r.startT - r.pausedMs) / 1000);
@@ -30379,6 +30664,7 @@
     if (!r) return;
     const secs = Math.round(freeElapsedS(r));
     if (comboProgram) { advanceComboProgram(secs); return; }
+    if (document.fullscreenElement === $("freePlayer")) document.exitFullscreen().catch(() => {});
     $("freePlayer").hidden = true;
     const b = r.block;
     const id = addHistory({ kind: "free", title: b.title, freeId: b.id, seconds: secs,

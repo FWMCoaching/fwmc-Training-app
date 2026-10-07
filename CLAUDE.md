@@ -177,7 +177,10 @@ Test: `tests/audit_fixes_test.py`.
 - Footer "Stand: TT.MM.JJJJ, HH:MM" comes from `__APP_STAND__`, replaced by
   `build.sh` (Berlin time) - never hand-edit. No "Beta" tag.
 - Cardio fullscreen `#cardioFsBtn` (`wireFullscreen`); `hideAllPlayers()`
-  leaves fullscreen when its element got hidden.
+  leaves fullscreen when its element got hidden. In a Kombi the button makes
+  the whole page fullscreen (stays across Bausteine, Kombi end/abort leaves
+  it); no Fullscreen API (iPhone) = `html.no-fs-api` hides every `…FsBtn`.
+  A new player only needs `wireFullscreen` (docs/notes/13).
   Test: `tests/autopause_version_fs_test.py`.
 - Kombi Bausteine have ↑/↓ (`.combo-block-move`, its "Pause danach" moves along).
 - Skipping past the end counts as aborted (coach programme, Tabata Zirkel,

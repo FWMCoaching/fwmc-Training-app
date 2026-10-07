@@ -1305,6 +1305,8 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .pause-panel .start-btn{margin-top:4px}
 #movementPauseTickVolumeRow{display:flex;flex-direction:column;gap:10px;margin-top:4px}
 .fs-hint span{flex:1}
+/* iPhone Safari: no Fullscreen API at all - no Vollbild button (Idee 52) */
+.no-fs-api [id$="FsBtn"]{display:none !important}
 .fs-hint button{border:none;border-radius:999px;cursor:pointer}
 .fs-hint button[id$="FsHintOpenBtn"],.fs-hint #fsHintOpenBtn{background:#007094;color:#fff;font-size:calc(12.5px * var(--ts,1));font-weight:700;padding:8px 12px;white-space:nowrap;min-height:36px}
 .fs-hint-close{background:transparent;color:#fff;font-size:calc(20px * var(--ts,1));line-height:1;padding:4px 6px;opacity:.75}
@@ -1421,6 +1423,12 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 #cardioAddonPickerCancelBtn{margin-top:4px;border-radius:14px;font-family:"Magra",sans-serif;font-weight:700;font-size:calc(16px * var(--ts,1));padding:13px}
 .pause-toggle{border:1.5px solid #dde6e8;background:#fff;color:#16232a}
 .breath-pause-btn{border-radius:14px;font-weight:700;font-size:calc(14px * var(--ts,1));padding:11px 26px;cursor:pointer;min-height:44px}
+/* Atem ohne Zeitlimit / "Weiter atmen" (Idee 53): Pause + Fertig, or at the
+   end Beenden + Weiter atmen, side by side under the phase label */
+.breath-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.breath-pause-btn.breath-primary{border:1.5px solid #007094;background:#007094;color:#ffffff}
+.breath-end-note{font-size:calc(13.5px * var(--ts,1));color:#4f6168;text-align:center;margin-top:-8px}
+.breath-dur-off .choice-row,.breath-dur-off .slider-row{opacity:.45}
 .chapter-nav{display:flex;align-items:center;justify-content:center;gap:8px}
 .chapter-nav button{
   border:none;background:rgba(22,35,42,.07);color:#16232a;width:42px;height:42px;
@@ -1879,6 +1887,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
   :root:not([data-theme="light"]) .player.calm .breath-phase-count,:root:not([data-theme="light"]) .player.calm .breath-phase-label{color:#e9f0f2}
   :root:not([data-theme="light"]) .player.calm .wimhof-sub,:root:not([data-theme="light"]) .player.calm .pause-label{color:#a9bbc0}
   :root:not([data-theme="light"]) .player.calm .pause-toggle{background:#16262b;border-color:#283d43;color:#e9f0f2}
+  :root:not([data-theme="light"]) .player.calm .breath-end-note{color:#a9bbc0}
   :root:not([data-theme="light"]) .player.calm .player-bar button,:root:not([data-theme="light"]) .player.calm .player-status{background:rgba(22,38,43,.92);color:#e9f0f2;box-shadow:0 1px 3px rgba(0,0,0,.4)}
   :root:not([data-theme="light"]) body:has(.player.calm:not([hidden])) .step-nav{background:#0b1619;border-top-color:#1c2f35}
   :root:not([data-theme="light"]) body:has(.player.calm:not([hidden])) .step-nav button,:root:not([data-theme="light"]) body:has(.player.calm:not([hidden])) .step-nav #stepSoundBtn,:root:not([data-theme="light"]) body:has(.player.calm:not([hidden])) .step-nav #stepSoundBtn.is-off{background:rgba(233,240,242,.12);color:#e9f0f2}
@@ -1907,6 +1916,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 :root[data-theme="dark"] .player.calm .breath-phase-count,:root[data-theme="dark"] .player.calm .breath-phase-label{color:#e9f0f2}
 :root[data-theme="dark"] .player.calm .wimhof-sub,:root[data-theme="dark"] .player.calm .pause-label{color:#a9bbc0}
 :root[data-theme="dark"] .player.calm .pause-toggle{background:#16262b;border-color:#283d43;color:#e9f0f2}
+:root[data-theme="dark"] .player.calm .breath-end-note{color:#a9bbc0}
 :root[data-theme="dark"] .player.calm .player-bar button,:root[data-theme="dark"] .player.calm .player-status{background:rgba(22,38,43,.92);color:#e9f0f2;box-shadow:0 1px 3px rgba(0,0,0,.4)}
 :root[data-theme="dark"] body:has(.player.calm:not([hidden])) .step-nav{background:#0b1619;border-top-color:#1c2f35}
 :root[data-theme="dark"] body:has(.player.calm:not([hidden])) .step-nav button,:root[data-theme="dark"] body:has(.player.calm:not([hidden])) .step-nav #stepSoundBtn,:root[data-theme="dark"] body:has(.player.calm:not([hidden])) .step-nav #stepSoundBtn.is-off{background:rgba(233,240,242,.12);color:#e9f0f2}

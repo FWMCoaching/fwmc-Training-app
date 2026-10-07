@@ -1366,6 +1366,12 @@
   <div class="player-bar" id="freePlayerBar">
     <button id="freeBackBtn">&#10005; Beenden</button>
     <button id="freePauseBtn">Pause</button>
+    <button id="freeFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="freeFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="freeFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="freeFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
   </div>
 </div>
 
@@ -4287,6 +4293,8 @@
       <input type="range" id="breathDurationSlider" min="1" max="20" step="1" aria-label="Dauer in Minuten">
       <span class="slider-value" id="breathDurationValue">5 Min</span>
     </div>
+    <label class="checkbox-row tap-row"><input type="checkbox" id="breathNoLimitCheck"> Ohne Zeitlimit</label>
+    <div class="group-help" id="breathNoLimitHelp" hidden>L&auml;uft, bis du &bdquo;Fertig&ldquo; tippst &ndash; im Kombi-Programm geht es dann zum n&auml;chsten Baustein.</div>
   </div>
 
   <div class="group">
@@ -4461,6 +4469,39 @@
           <button class="choice" data-mv-direction="links">Von links<small>gespiegelt</small></button>
           <button class="choice" data-mv-direction="oben">Von oben<small>senkrecht</small></button>
           <button class="choice" data-mv-direction="unten">Von unten<small>senkrecht, gespiegelt</small></button>
+        </div>
+      </div>
+      <div class="group" id="movementSigGroup">
+        <div class="group-label">Signalfarbe</div>
+        <div class="group-help">Farbe der Bewegung, die gerade dran ist. Zum Beispiel bei einer Farbschw&auml;che oder einfach nach Geschmack.</div>
+        <div class="sig-row">
+          <div class="color-picker" id="movementSigPicker"></div>
+          <div class="group-help" id="movementSigStatus"></div>
+        </div>
+        <div class="group-help sig-clash" id="movementSigClash" hidden></div>
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="movementBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="movementBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="movementBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="movementBgContrastHint" hidden></div>
+        <div class="bg-master-status" id="movementBgMasterStatus"></div>
+        <div class="choice-row" id="movementBgSourceRow"></div>
+        <div class="group" id="movementBgPresetGroup" hidden>
+          <div class="group-label">Gespeicherte Farbgestaltungen</div>
+          <div class="bundle-list" id="movementBgPresetList"></div>
+        </div>
+        <button class="text-link small" id="movementBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
+        <div class="custom-exercise-form" id="movementBgSaveForm" hidden>
+          <input type="text" id="movementBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <div class="custom-exercise-form-actions">
+            <button class="start-btn secondary" id="movementBgSaveCancelBtn">Abbrechen</button>
+            <button class="start-btn" id="movementBgSaveConfirmBtn">Speichern</button>
+          </div>
         </div>
       </div>
     </div>
@@ -4906,7 +4947,13 @@
       <div class="breath-phase-count" id="breathPhaseCount">4</div>
     </div>
     <div class="breath-phase-label" id="breathPhaseLabel">Einatmen</div>
-    <button class="breath-pause-btn pause-toggle" id="breathPauseBtn">Pause</button>
+    <div class="breath-actions">
+      <button class="breath-pause-btn pause-toggle" id="breathPauseBtn">Pause</button>
+      <button class="breath-pause-btn breath-primary" id="breathFinishBtn" hidden>Fertig</button>
+      <button class="breath-pause-btn pause-toggle" id="breathEndNowBtn" hidden>Beenden</button>
+      <button class="breath-pause-btn breath-primary" id="breathMoreBtn" hidden>Weiter atmen</button>
+    </div>
+    <div class="breath-end-note" id="breathEndNote" hidden></div>
   </div>
   <div class="breath-listen-layer" id="breathListenLayer" hidden>
     <div class="breath-listen-title">H&ouml;rmodus</div>
@@ -4923,7 +4970,7 @@
         <input type="range" id="breathPauseTempoSlider" min="0.5" max="2" step="0.1" aria-label="Atemtempo">
         <div class="group-help" id="breathPausePhases"></div>
       </div>
-      <div class="group">
+      <div class="group" id="breathPauseRestGroup">
         <div class="group-label">Restdauer <span class="slider-value" id="breathPauseRestValue"></span></div>
         <input type="range" id="breathPauseRestSlider" min="1" max="30" step="1" aria-label="Restdauer">
       </div>
@@ -4936,6 +4983,7 @@
         <div class="group-help">Gilt f&uuml;r dieses Training. Nach &bdquo;Weiter&ldquo; beginnt ein neuer Atemzyklus.</div>
       </div>
       <button class="start-btn" id="breathResumeBtn">Weiter</button>
+      <button class="start-btn secondary" id="breathPauseFinishBtn" hidden>Fertig</button>
     </div>
   </div>
   <div class="player-bar" id="breathPlayerBar">
@@ -5040,6 +5088,15 @@
           <input type="range" id="movementPauseTickVolumeSlider" min="0.1" max="1" step="0.05" aria-label="Lautst&auml;rke des Takt-Tons">
         </div>
         <div class="group-help">Gilt f&uuml;r dieses Training.</div>
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="movementPauseBgValue"></span></div>
+        <input type="range" id="movementPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="movementPauseBgColorPicker"></div>
+        <div class="group-help" id="movementPauseBgContrastHint" hidden></div>
       </div>
       <button class="start-btn" id="movementResumeBtn">Weiter</button>
     </div>

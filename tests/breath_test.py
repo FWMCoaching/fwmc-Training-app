@@ -79,8 +79,10 @@ async def main():
         print("phase label changed:", label1, "->", label2)
         await pg.screenshot(path=OUT + "06_player_phase2.png")
 
-        # wait for auto-finish (plannedTotal = round(3/2)*2 = 2s already elapsed ~1.8s, should finish soon)
-        await pg.wait_for_function("() => !document.getElementById('breathDonePanel').hidden", timeout=8000)
+        # wait for auto-finish (plannedTotal = round(3/2)*2 = 2s already elapsed ~1.8s, should finish soon).
+        # Since 07.10. (Idee 53) a timed run holds 10 s at its end with "Weiter atmen" /
+        # "Beenden" before it finishes by itself, hence the longer timeout.
+        await pg.wait_for_function("() => !document.getElementById('breathDonePanel').hidden", timeout=20000)
         print("done panel summary:", await pg.inner_text("#breathDoneSummary"))
         await pg.screenshot(path=OUT + "07_done.png")
         await pg.click('#breathRating [data-rate="5"]'); await pg.wait_for_timeout(100)

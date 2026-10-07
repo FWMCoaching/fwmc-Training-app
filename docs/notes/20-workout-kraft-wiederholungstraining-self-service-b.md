@@ -428,6 +428,40 @@ sheet returns to the normal view. Kombi blocks and saved presets carry
 `listen`; coach programmes keep the client's own setting.
 Test: `tests/breath_listen_test.py`.
 
+### Atemtraining: Ohne Zeitlimit + "Weiter atmen" (Idee 53, gebaut 2026-10-07)
+
+Fabian 06.10.: "Haken 'Ohne Zeitlimit' unter Dauer + nach Ablauf 'Weiter
+atmen'-Knopf, Kombi geht danach weiter; nur Atmung" (Wim-Hof not: it has
+rounds, not a duration).
+- Ready: `#breathNoLimitCheck` (`.checkbox-row.tap-row`) inside the Dauer
+  group, `breathPrefs.noLimit` (saved in `fwmc-breath-v1`). On = help text
+  `#breathNoLimitHelp`, the duration rows dimmed (`.breath-dur-off`); tapping a
+  duration or the slider switches the limit back on.
+- `startBreathSession(opts)`: `opts.open` wins (Kombi block `noLimit`,
+  Atem-Programm always `false`, Weitermachen), else `breathPrefs.noLimit`.
+  An open session has `open:true, plannedTotal:Infinity`; the bar clock counts
+  up; stage shows Pause + `#breathFinishBtn` "Fertig" (primary), the pause
+  sheet hides Restdauer and shows `#breathPauseFinishBtn` "Fertig" (the way
+  out of Hörmodus). Fertig = completed with the real time (pauses excluded),
+  history `note:"ohne Zeitlimit"`. "✕ Beenden" of a single open run also
+  completes (like Gleichgewicht "Ohne Zeitvorgabe"); in a Kombi it aborts the
+  Kombi as always, Fertig goes to the next Baustein.
+- End of a timed run: `breathEnterEndHold()` holds `BREATH_MORE_HOLD_S` (10 s):
+  "Geschafft", countdown in the circle, `#breathEndNowBtn` "Beenden" +
+  `#breathMoreBtn` "Weiter atmen" in one row, `#breathEndNote` ("Ohne Tippen
+  endet die Übung in N s." / "... geht es in N s weiter."), the bar's ✕ waits
+  (`visibility:hidden`). No tap = ends as before (done panel / next Baustein /
+  next programme block). "Weiter atmen" = same session goes on open-ended
+  (`breathSetOpen`, new cycle, clock continues from the planned time).
+  Neither button id ends in `BackBtn`, so no "Wirklich beenden?".
+- Kombi: block `noLimit:true` (capture/edit via the same checkbox,
+  `comboBlockMeta` "ohne Zeitlimit", `comboBlockSeconds` 0 like Gleichgewicht
+  open). Presets store `noLimit` (label "ohne Zeitlimit · …").
+- Weitermachen: an open run notes `{open:true, played, total:played, rest:0}`
+  (≥ 30 s played); Heute shows "ohne Zeitlimit"; Fortsetzen runs open again.
+- Heute plan entries open the ready screen, so the checkbox applies there.
+Test: `tests/nacht_vollbild_atem_reaktion_1007_test.py`.
+
 ### Datenschutz in der App (2026-10-03)
 
 Every footer's "Datenschutz" is a `.privacy-open-btn` that opens
