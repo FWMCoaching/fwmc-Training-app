@@ -678,6 +678,11 @@
     regeln: { help: "Auf einem Feld erscheint ein Symbol. Das Symbol sagt dir, auf welches Feld du trittst.", task: "Das Symbol sagt dir, auf welches Feld du trittst." },
     leer: { help: "Auf drei Feldern erscheint dasselbe Symbol. Tritt auf das vierte, leere Feld – gegen den ersten Impuls.", task: "Tritt auf das Feld ohne Symbol." },
     abfolge: { help: "Die Felder leuchten nacheinander auf. Bei „Jetzt du“ trittst du die Folge nach. Jede Runde wird sie ein Feld länger.", task: "Merk dir die Folge und tritt sie bei „Jetzt du“ nach." },
+    // Reize (Fabian 07.10. 21:53, Varianten A-D): docs/notes/28.
+    ansage: { help: "Die Stimme sagt eine Farbe, der Bildschirm zeigt nur die vier Felder. Tritt auf die gesagte Farbe. Dafür muss der Ton an sein.", task: "Hör zu und tritt auf die gesagte Farbe." },
+    farbwort: { help: "Auf einem Feld steht ein Farbwort in einer anderen Schriftfarbe. Tritt auf das Feld in der Schriftfarbe, nicht auf das, was da steht.", task: "Die Schriftfarbe zählt – tritt auf dieses Feld." },
+    fusshand: { help: "Zwei Felder zeigen ein Zeichen: Auf das Feld mit dem Fuß trittst du, auf das Feld mit der Hand zeigst du mit der Hand.", task: "Fuß: drauftreten. Hand: hinzeigen." },
+    sehenhoeren: { help: "Ein Feld leuchtet auf, eine Farbe wird gesagt oder beides zugleich. Passen Bild und Ansage nicht zusammen, gilt, was du unter „Bei beidem gilt“ eingestellt hast. Dafür muss der Ton an sein.", task: "Bild oder Ansage – bei beidem gilt deine Regel." },
   };
   // Each Stufe adds one symbol (rule) to the ones before.
   const FF_SYMBOLS = {
@@ -688,7 +693,15 @@
   };
   const FF_LEVEL_SYMBOLS = ["viereck", "dreieck", "strich", "herz"];
   const FF_EMPTY_SYMBOLS = ["kreis", "viereck", "dreieck", "herz"];
-  const FF_MODE_LABELS = { leuchten: "Leuchten", regeln: "Regeln", leer: "Das leere Feld", abfolge: "Abfolge merken" };
+  const FF_MODE_LABELS = { leuchten: "Leuchten", regeln: "Regeln", leer: "Das leere Feld", abfolge: "Abfolge merken", ansage: "Ansage", farbwort: "Farbwort", fusshand: "Fuß und Hand", sehenhoeren: "Sehen und Hören" };
+  // Sehen und Hören: share of only shown / only said / both, in percent.
+  const FF_MIXES = {
+    ausgewogen: { label: "Ausgewogen", weights: [35, 35, 30] },
+    mehrbeides: { label: "Mehr beides", weights: [20, 20, 60] },
+    nurbeides: { label: "Nur beides", weights: [0, 0, 100] },
+  };
+  // Rhythmus-Umkehr (E): only these modes have a rule that can flip.
+  const FF_FLIP_MODES = ["leuchten", "regeln", "sehenhoeren"];
   const FF_HAND_ACTIONS = { keine: "Keine", hoch: "Hände hoch", seitlich: "Hände seitlich", klatschen: "Klatschen" };
   const FF_SEQ_MAX = 12;
   // Pure rule: which field (0-3) a symbol shown on `field` points to.
@@ -698,10 +711,43 @@
     if (symbol === "herz") return field ^ 2; // same column
     return field; // viereck: same field
   }
+  // Rhythmus-Umkehr: is the n-th stimulus (1-based) a flipped one?
+  function ffIsFlipped(n, every) { return every === 2 || every === 3 ? n > 0 && n % every === 0 : false; }
+  // Leuchten / Regeln: "andersherum" = the field diagonally opposite the
+  // normal target.
+  function ffLeuchtenTarget(lit, flipped) { return flipped ? 3 - lit : lit; }
+  function ffRegelnTarget(symbol, at, flipped) { const t = ffTarget(symbol, at); return flipped ? 3 - t : t; }
+  // Ansage: the said colour's field.
+  function ffAnsageTarget(colorKey, layout) { return layout.indexOf(colorKey); }
+  // Farbwort: the INK colour counts, never the word.
+  function ffFarbwortTarget(inkKey, layout) { return layout.indexOf(inkKey); }
+  // Sehen und Hören: kind bild / ton / beides; with both, `gilt` (gesagt |
+  // gezeigt) decides, a flipped stimulus takes the other source.
+  function ffSehenHoerenTarget(kind, shown, said, gilt, flipped) {
+    if (kind === "bild") return shown;
+    if (kind === "ton") return said;
+    const useSaid = (gilt === "gezeigt") === !!flipped;
+    return useSaid ? said : shown;
+  }
+  // Farbwort pick: ink field + a word colour from the mat that is never the ink.
+  function ffPickFarbwort(layout, rng, avoidField = -1) {
+    let ink;
+    do { ink = Math.floor(rng() * 4); } while (ink === avoidField);
+    const others = layout.filter((k, i) => i !== ink);
+    const wordKey = others[Math.floor(rng() * others.length)];
+    return { inkKey: layout[ink], wordKey, at: Math.floor(rng() * 4), target: ffFarbwortTarget(layout[ink], layout) };
+  }
+  function ffPickWeighted(weights, rng) {
+    const sum = weights.reduce((a, b) => a + b, 0);
+    let r = rng() * sum;
+    for (let i = 0; i < weights.length; i++) { if (weights[i] > 0 && (r -= weights[i]) < 0) return i; }
+    return weights.findIndex((w) => w > 0);
+  }
   function ffStateSnapshot(src = state) {
     return {
       ffLayout: src.ffLayout.slice(), ffMode: src.ffMode, ffLevel: src.ffLevel, ffSeqStart: src.ffSeqStart,
       ffFoot: src.ffFoot, ffHands: src.ffHands, ffHandRules: { ...src.ffHandRules },
+      ffGilt: src.ffGilt, ffMix: src.ffMix, ffFlip: src.ffFlip,
     };
   }
   function ffNormalize(p) {
@@ -712,6 +758,9 @@
     if (![2, 3].includes(p.ffSeqStart)) p.ffSeqStart = 2;
     if (!["aus", "wechsel", "zufall"].includes(p.ffFoot)) p.ffFoot = "aus";
     if (typeof p.ffHands !== "boolean") p.ffHands = false;
+    if (!["gesagt", "gezeigt"].includes(p.ffGilt)) p.ffGilt = "gesagt";
+    if (!FF_MIXES[p.ffMix]) p.ffMix = "ausgewogen";
+    if (![0, 2, 3].includes(p.ffFlip)) p.ffFlip = 0;
     const rules = p.ffHandRules && typeof p.ffHandRules === "object" && !Array.isArray(p.ffHandRules) ? p.ffHandRules : { rot: "hoch" };
     p.ffHandRules = Object.fromEntries(Object.entries(rules).filter(([k, v]) => COLOR_BY_KEY[k] && FF_HAND_ACTIONS[v]));
   }
@@ -761,17 +810,47 @@
       return { schedule, total: t };
     }
     let last = -1;
+    let n = 0; // stimuli counted for the Rhythmus-Umkehr
+    const flipEvery = FF_FLIP_MODES.includes(mode) ? state.ffFlip : 0;
+    const lay = state.ffLayout;
+    const colorName = (f) => (COLOR_BY_KEY[lay[f]] || COLOR_BY_KEY[FF_DEFAULT_LAYOUT[f]]).name;
     while (t < state.duration) {
       let payload;
       if (mode === "regeln") {
         const syms = FF_LEVEL_SYMBOLS.slice(0, state.ffLevel);
+        const flipped = ffIsFlipped(n + 1, flipEvery);
         let symbol, at, target, tries = 0;
         do {
           symbol = syms[Math.floor(rng() * syms.length)];
           at = rand4();
-          target = ffTarget(symbol, at);
+          target = ffRegelnTarget(symbol, at, flipped);
         } while (target === last && ++tries < 12);
-        payload = { mode, symbol, at, target, foot: foot() };
+        n++;
+        payload = { mode, symbol, at, target, flipped, n, foot: foot() };
+      } else if (mode === "ansage") {
+        let f;
+        do { f = rand4(); } while (f === last);
+        payload = { mode, said: lay[f], say: colorName(f), target: ffAnsageTarget(lay[f], lay), foot: foot() };
+      } else if (mode === "farbwort") {
+        payload = { mode, ...ffPickFarbwort(lay, rng, last), foot: foot() };
+      } else if (mode === "fusshand") {
+        let f, h;
+        do { f = rand4(); } while (f === last);
+        do { h = rand4(); } while (h === f);
+        payload = { mode, footAt: f, handAt: h, target: f, handTarget: h, foot: foot() };
+      } else if (mode === "sehenhoeren") {
+        const kind = ["bild", "ton", "beides"][ffPickWeighted((FF_MIXES[state.ffMix] || FF_MIXES.ausgewogen).weights, rng)];
+        const flipped = kind === "beides" ? ffIsFlipped(n + 1, flipEvery) : false;
+        let shown, said, target, tries = 0;
+        do {
+          shown = kind === "ton" ? null : rand4();
+          said = null;
+          if (kind !== "bild") { do { said = rand4(); } while (kind === "beides" && said === shown); }
+          target = ffSehenHoerenTarget(kind, shown, said, state.ffGilt, flipped);
+        } while (target === last && ++tries < 12);
+        if (kind === "beides") n++;
+        payload = { mode, kind, shown, saidField: said, said: said === null ? null : lay[said], say: said === null ? null : colorName(said), target, flipped, n: kind === "beides" ? n : null, foot: foot() };
+        if (shown !== null) payload.lit = shown;
       } else if (mode === "leer") {
         let empty;
         do { empty = rand4(); } while (empty === last);
@@ -781,7 +860,8 @@
         let f;
         do { f = rand4(); } while (f === last);
         const hand = ffHandFor(f);
-        payload = { mode, lit: f, target: f, foot: foot(), hand, say: hand };
+        const flipped = ffIsFlipped(++n, flipEvery);
+        payload = { mode, lit: f, target: ffLeuchtenTarget(f, flipped), flipped, n, foot: foot(), hand, say: hand };
       }
       last = payload.target;
       const pause = randInterval(rng);
@@ -895,13 +975,91 @@
       x += ctx.measureText(FF_SYMBOLS[s].short).width + size * 1.1;
     });
   }
+  // Foot and hand marks of "Fuß und Hand": white with a dark outline like
+  // the rule symbols; the outline is stroked first and the fill drawn over
+  // it, so toes/fingers merge into one clean silhouette.
+  function ffDrawFootHand(kind, cx, cy, r) {
+    const parts = [];
+    if (kind === "fuss") {
+      // sole (slightly tilted egg) + five toes, big toe on the left
+      // ball + heel merge into one footprint (outline first, fill over it)
+      parts.push(() => { ctx.moveTo(cx + r * 0.47, cy - r * 0.02); ctx.ellipse(cx + r * 0.07, cy - r * 0.02, r * 0.4, r * 0.4, -0.15, 0, Math.PI * 2); });
+      parts.push(() => { ctx.moveTo(cx + r * 0.27, cy + r * 0.6); ctx.ellipse(cx - r * 0.02, cy + r * 0.6, r * 0.29, r * 0.36, -0.1, 0, Math.PI * 2); });
+      parts.push(() => { ffRoundRectPath(cx - r * 0.25, cy, r * 0.5, r * 0.6, r * 0.1); });
+      [[-0.27, -0.6, 0.15], [0.0, -0.7, 0.11], [0.21, -0.65, 0.095], [0.38, -0.54, 0.083], [0.51, -0.38, 0.07]].forEach(([dx, dy, rr]) =>
+        parts.push(() => { ctx.moveTo(cx + dx * r + rr * r, cy + dy * r); ctx.arc(cx + dx * r, cy + dy * r, rr * r, 0, Math.PI * 2); }));
+    } else {
+      // palm + four fingers + thumb
+      parts.push(() => { ffRoundRectPath(cx - r * 0.46, cy - r * 0.12, r * 0.92, r * 0.86, r * 0.26); });
+      [[-0.36, 0.17, 0.62], [-0.12, 0.18, 0.78], [0.12, 0.18, 0.74], [0.35, 0.16, 0.58]].forEach(([dx, w, h]) =>
+        parts.push(() => { ffRoundRectPath(cx + dx * r - w * r / 2, cy - r * 0.08 - h * r, w * r, h * r + r * 0.2, w * r / 2); }));
+      parts.push(() => {
+        ctx.save(); ctx.translate(cx - r * 0.5, cy + r * 0.22); ctx.rotate(-0.75);
+        ffRoundRectPath(-r * 0.09, -r * 0.5, r * 0.19, r * 0.6, r * 0.09);
+        ctx.restore();
+      });
+    }
+    ctx.save();
+    ctx.lineJoin = "round";
+    ctx.beginPath(); parts.forEach((f) => f());
+    ctx.lineWidth = Math.max(4, r * 0.2);
+    ctx.strokeStyle = INK; ctx.stroke();
+    ctx.beginPath(); parts.forEach((f) => f());
+    ctx.fillStyle = "#ffffff"; ctx.fill();
+    ctx.restore();
+  }
+  function ffRoundRectPath(x, y, w, h, r) {
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  // Farbwort: the colour word on a white plate (so every ink reads on every
+  // field), in the ink colour; light inks get a thin dark edge.
+  function ffDrawWord(x, y, cell, wordKey, inkKey) {
+    const ink = (COLOR_BY_KEY[inkKey] || COLOR_BY_KEY.rot).hex;
+    const word = (COLOR_BY_KEY[wordKey] || COLOR_BY_KEY.blau).name.toUpperCase();
+    const pw = cell * 0.88, ph = cell * 0.4;
+    const px = x + (cell - pw) / 2, py = y + (cell - ph) / 2;
+    ffRoundRect(px, py, pw, ph, ph * 0.18);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.lineWidth = Math.max(1.5, cell * 0.008);
+    ctx.strokeStyle = "rgba(22,35,42,0.25)";
+    ctx.stroke();
+    const size = fitText(ctx, word, pw * 0.86, Math.round(ph * 0.66), "Magra, sans-serif", 700);
+    ctx.font = `700 ${size}px Magra, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    if (relLuma(ink) > 0.45) {
+      ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(1.5, size * 0.06);
+      ctx.strokeStyle = INK;
+      ctx.strokeText(word, x + cell / 2, y + cell / 2 + size * 0.04);
+    }
+    ctx.fillStyle = ink;
+    ctx.fillText(word, x + cell / 2, y + cell / 2 + size * 0.04);
+  }
+  // The caption that stays on for a whole run (rule reminder), if any.
+  function ffRuleCaption() {
+    const m = state.ffMode;
+    const every = FF_FLIP_MODES.includes(m) ? state.ffFlip : 0;
+    if ((m === "ansage" || m === "sehenhoeren") && cueVolume() <= 0) return "Ton ist aus – bitte einschalten";
+    if (m === "sehenhoeren") return `Bei beidem gilt: ${state.ffGilt === "gezeigt" ? "das Gezeigte" : "das Gesagte"}` + (every ? ` · jedes ${every}. Mal andersherum` : "");
+    if (m === "leuchten" && every) return `Jedes ${every}. Mal schräg gegenüber`;
+    if (m === "farbwort") return "Die Schriftfarbe zählt";
+    if (m === "fusshand") return "Fuß: drauftreten · Hand: hinzeigen";
+    return "";
+  }
   // p = null draws the resting grid (pause between stimuli).
   function drawFarbfelder(p) {
     const cw = canvas.width, ch = canvas.height;
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, cw, ch);
     const g = ffGeometry(cw, ch);
-    const full = !!(p && (p.mode === "regeln" || p.mode === "leer"));
+    const full = !!(p && ["regeln", "leer", "ansage", "farbwort", "fusshand"].includes(p.mode));
     for (let i = 0; i < 4; i++) {
       const hex = (COLOR_BY_KEY[state.ffLayout[i]] || COLOR_BY_KEY[FF_DEFAULT_LAYOUT[i]]).hex;
       const x = g.x0 + (i % 2) * (g.cell + g.gap), y = g.y0 + (i >> 1) * (g.cell + g.gap);
@@ -920,9 +1078,13 @@
       }
       if (p && p.mode === "regeln" && p.at === i) ffDrawSymbol(p.symbol, cx, cy, g.cell * 0.24);
       if (p && p.mode === "leer" && p.marks && p.marks.includes(i)) ffDrawSymbol(p.symbol, cx, cy, g.cell * 0.22);
+      if (p && p.mode === "farbwort" && p.at === i) ffDrawWord(x, y, g.cell, p.wordKey, p.inkKey);
+      if (p && p.mode === "fusshand" && p.footAt === i) ffDrawFootHand("fuss", cx, cy, g.cell * 0.3);
+      if (p && p.mode === "fusshand" && p.handAt === i) ffDrawFootHand("hand", cx, cy, g.cell * 0.3);
     }
-    if (p && p.foot && (p.mode === "regeln" || p.mode === "leer")) ffDrawBadge(g.x0 + g.side / 2, g.y0 + g.side / 2, g.cell * 0.13, p.foot);
-    const caption = p && p.caption ? (p.hand ? `${p.caption} · ${p.hand}` : p.caption) : p && p.hand ? p.hand : "";
+    if (p && p.foot && !p.lit && p.lit !== 0 && p.mode !== "abfolge") ffDrawBadge(g.x0 + g.side / 2, g.y0 + g.side / 2, g.cell * 0.13, p.foot);
+    const hand = p && p.hand ? p.hand : "";
+    const caption = p && p.caption ? [p.caption, hand].filter(Boolean).join(" · ") : [ffRuleCaption(), hand].filter(Boolean).join(" · ");
     if (caption) barCaption(cw, ch, caption, false);
     else if (state.ffMode === "regeln") ffDrawLegend(cw, ch, g.capH);
   }
@@ -1007,7 +1169,7 @@
       title: "Farbfelder", type: "farbfelder", bgIsStimulus: true,
       task: "Tritt auf das richtige Farbfeld deiner Matte.",
       trains: "Farbwahrnehmung, Fußarbeit und schnelles Umsetzen von Regeln",
-      rules: "Leg deine vier Farbfelder so auf den Boden, wie sie unten unter „Anordnung“ eingestellt sind, und stell dich davor. Der Bildschirm zeigt dieselben vier Felder: Oben ist die Reihe, die näher am Bildschirm liegt. Je nach Modus trittst du auf das Feld, das aufleuchtet, auf das Feld, das ein Symbol dir sagt, auf das leere Feld oder eine ganze Abfolge nach.",
+      rules: "Leg deine vier Farbfelder so auf den Boden, wie sie unten unter „Anordnung“ eingestellt sind, und stell dich davor. Der Bildschirm zeigt dieselben vier Felder: Oben ist die Reihe, die näher am Bildschirm liegt. Je nach Modus trittst du auf das Feld, das aufleuchtet, auf das Feld, das ein Symbol dir sagt, auf das leere Feld, eine ganze Abfolge nach, auf die gesagte Farbe, auf die Schriftfarbe eines Farbworts, mit Fuß und Hand zugleich oder nach Bild und Ansage.",
     },
     "periph-flash": {
       title: "Periphere Wahrnehmung", type: "periph",
@@ -3234,6 +3396,9 @@
     ffFoot: "aus",
     ffHands: false,
     ffHandRules: { rot: "hoch" },
+    ffGilt: "gesagt", // Sehen und Hören: what counts when both come
+    ffMix: "ausgewogen", // Sehen und Hören: FF_MIXES key
+    ffFlip: 0, // Rhythmus-Umkehr: 0 = aus, 2 / 3 = every 2nd / 3rd stimulus
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -4360,6 +4525,8 @@
     seqGroup: $("ffSeqGroup"), seqRow: $("ffSeqRow"),
     layoutGrid: $("ffLayoutGrid"), layoutHelp: $("ffLayoutHelp"), colorPicker: $("ffColorPicker"),
     footRow: $("ffFootRow"), handsRow: $("ffHandsRow"), handBody: $("ffHandBody"), handRows: $("ffHandRows"),
+    handsGroup: $("ffHandsGroup"), giltGroup: $("ffGiltGroup"), giltRow: $("ffGiltRow"), mixRow: $("ffMixRow"),
+    flipGroup: $("ffFlipGroup"), flipRow: $("ffFlipRow"), flipHelp: $("ffFlipHelp"),
   };
   let ffActiveCell = 0;
   // Small SVG of a rule symbol for the ready screen (same shapes as the stage).
@@ -4380,6 +4547,17 @@
       `<li>${ffSymbolSvg(k)}<span><strong>${esc(FF_SYMBOLS[k].name)}:</strong> ${esc(FF_SYMBOLS[k].rule)}</span></li>`).join("");
     ffEls.seqGroup.hidden = state.ffMode !== "abfolge";
     ffEls.seqRow.querySelectorAll("[data-ff-seq]").forEach((b) => setActive(b, Number(b.dataset.ffSeq) === state.ffSeqStart));
+    ffEls.giltGroup.hidden = state.ffMode !== "sehenhoeren";
+    ffEls.giltRow.querySelectorAll("[data-ff-gilt]").forEach((b) => setActive(b, b.dataset.ffGilt === state.ffGilt));
+    ffEls.mixRow.querySelectorAll("[data-ff-mix]").forEach((b) => setActive(b, b.dataset.ffMix === state.ffMix));
+    ffEls.flipGroup.hidden = !FF_FLIP_MODES.includes(state.ffMode);
+    ffEls.flipRow.querySelectorAll("[data-ff-flip]").forEach((b) => setActive(b, Number(b.dataset.ffFlip) === state.ffFlip));
+    ffEls.flipHelp.textContent = state.ffMode === "sehenhoeren"
+      ? "Zähl die Reize mit Bild und Ansage mit: Bei jedem 2. oder 3. davon gilt die andere Quelle. Die App zeigt es nicht an."
+      : state.ffMode === "regeln"
+        ? "Zähl mit: Beim 2. oder 3. Symbol trittst du auf das Feld schräg gegenüber vom eigentlichen Ziel. Die App zeigt es nicht an."
+        : "Zähl mit: Beim 2. oder 3. Mal trittst du auf das Feld schräg gegenüber. Die App zeigt es nicht an.";
+    ffEls.handsGroup.hidden = state.ffMode === "fusshand";
     ffEls.layoutGrid.querySelectorAll("[data-ff-cell]").forEach((b) => {
       const i = Number(b.dataset.ffCell);
       const c = COLOR_BY_KEY[state.ffLayout[i]];
@@ -4434,10 +4612,16 @@
   ffEls.seqRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-seq]"); if (b) { state.ffSeqStart = Number(b.dataset.ffSeq); ffSave(); syncFfUI(); } });
   ffEls.footRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-foot]"); if (b) { state.ffFoot = b.dataset.ffFoot; ffSave(); syncFfUI(); } });
   ffEls.handsRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-hands]"); if (b) { state.ffHands = b.dataset.ffHands === "1"; ffSave(); syncFfUI(); } });
+  ffEls.giltRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-gilt]"); if (b) { state.ffGilt = b.dataset.ffGilt; ffSave(); syncFfUI(); } });
+  ffEls.mixRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-mix]"); if (b) { state.ffMix = b.dataset.ffMix; ffSave(); syncFfUI(); } });
+  ffEls.flipRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-flip]"); if (b) { state.ffFlip = Number(b.dataset.ffFlip); ffSave(); syncFfUI(); } });
   // Test hooks (automated browsers only): the pure rule and a schedule
   // built with some settings swapped in for the call.
   if (navigator.webdriver) window.__ff = {
     target: ffTarget,
+    isFlipped: ffIsFlipped, leuchtenTarget: ffLeuchtenTarget, regelnTarget: ffRegelnTarget,
+    ansageTarget: ffAnsageTarget, farbwortTarget: ffFarbwortTarget, sehenHoerenTarget: ffSehenHoerenTarget,
+    pickFarbwort: (layout) => ffPickFarbwort(layout, Math.random),
     build: (over) => {
       const keep = JSON.parse(JSON.stringify(state));
       Object.assign(state, over || {});
@@ -6017,6 +6201,8 @@
       summary = `${coneTap.count} Durchgänge · ${fmtMinutes(spent)}` + (isRecord && coneTap.count > 0 ? " · Neue Bestleistung!" : "");
     } else {
       summary = `${ex.title} · ${fmtMinutes(spent)}`;
+      // Farbfelder: the history row names the mode (8 very different variants).
+      if (ex.type === "farbfelder") note = FF_MODE_LABELS[state.ffMode] + (FF_FLIP_MODES.includes(state.ffMode) && state.ffFlip ? ` · jedes ${state.ffFlip}. Mal andersherum` : "");
     }
     els.doneSummary.textContent = summary;
     if (coneTap) markBest(els.doneSummary, "", coneTap.count);
@@ -12158,6 +12344,9 @@
       </div>` +
       (cfg.mode === "regeln" ? `<div class="group-label">Stufe</div>` + row("level", [[1, "Stufe 1"], [2, "Stufe 2"], [3, "Stufe 3"], [4, "Stufe 4"]], "two") : "") +
       (cfg.mode === "abfolge" ? `<div class="group-label">Länge der ersten Folge</div>` + row("seqStart", [[2, "2 Felder"], [3, "3 Felder"]], "two") : "") +
+      (cfg.mode === "sehenhoeren" ? `<div class="group-label">Bei beidem gilt</div>` + row("gilt", [["gesagt", "das Gesagte"], ["gezeigt", "das Gezeigte"]], "two") +
+        `<div class="group-label">Mischung</div>` + row("mix", Object.entries(FF_MIXES).map(([k, m]) => [k, m.label])) : "") +
+      (FF_FLIP_MODES.includes(cfg.mode) ? `<div class="group-label">Rhythmus-Umkehr</div>` + row("flip", [[0, "Aus"], [2, "Jedes 2. Mal"], [3, "Jedes 3. Mal"]]) : "") +
       `<div class="group-label">Fuß-Vorgabe</div>` + row("foot", [["aus", "Aus"], ["wechsel", "Im Wechsel"], ["zufall", "Zufällig"]]) +
       `<div class="group-label">Hände</div>` + row("hands", [[false, "Aus"], [true, "An"]], "two") +
       `<div class="group-help">Anordnung und Hand-Aufgaben wie unter Visuelles Training › Farbfelder eingestellt.</div>`;
@@ -15838,7 +16027,7 @@
     if (guestId === "balance") return { ...JSON.parse(JSON.stringify(BALANCE_DEFAULTS)), duration: 20, ...bg };
     // Farbfelder: the mat layout and the hand rules always come from the
     // client's own Farbfelder settings (it is the same mat on the floor).
-    if (guestId === "farbfelder") return { duration: 20, mode: "leuchten", stimulusS: 1.5, intervalMin: 2, intervalMax: 4, level: 1, seqStart: 2, foot: "aus", hands: false };
+    if (guestId === "farbfelder") return { duration: 20, mode: "leuchten", stimulusS: 1.5, intervalMin: 2, intervalMax: 4, level: 1, seqStart: 2, foot: "aus", hands: false, gilt: "gesagt", mix: "ausgewogen", flip: 0 };
     if (guestId === "mot") return { duration: 20, mode: "speed", style: "flach", speed: MOT_DIFFICULTIES.mittel.speed, trackS: MOT_DIFFICULTIES.mittel.trackS, highlightS: MOT_DIFFICULTIES.mittel.highlightS, errorMode: "reset2", colors: ["schwarz"], targetColors: ["gelb"], objectCount: 8, targetCount: 4, growStartObjects: 4, growStartTargets: 1, trainingObjects: 6, trainingTargets: 2, trainingSpeedStep: 0, trainingProgress: true, objScale: 1, ...bg };
     if (guestId === "vt-color" || guestId === "vrw-original") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg };
     if (guestId === "stroop-classic" || guestId === "stroop-bg") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "blau", "gruen"], ...bg };
@@ -15912,6 +16101,9 @@
         if (![2, 3].includes(p.seqStart)) p.seqStart = d.seqStart;
         if (!["aus", "wechsel", "zufall"].includes(p.foot)) p.foot = d.foot;
         if (typeof p.hands !== "boolean") p.hands = d.hands;
+        if (!["gesagt", "gezeigt"].includes(p.gilt)) p.gilt = d.gilt;
+        if (!FF_MIXES[p.mix]) p.mix = d.mix;
+        if (![0, 2, 3].includes(p.flip)) p.flip = d.flip;
       }
       if (cardioGuestIsRemember(t.id)) {
         if (!Number.isFinite(p.revealBaseS) || p.revealBaseS < 0.5 || p.revealBaseS > 3) p.revealBaseS = d.revealBaseS;
@@ -16891,6 +17083,7 @@
     if (guestId === "farbfelder") {
       state.ffMode = cfg.mode; state.ffLevel = cfg.level; state.ffSeqStart = cfg.seqStart;
       state.ffFoot = cfg.foot; state.ffHands = cfg.hands;
+      state.ffGilt = cfg.gilt; state.ffMix = cfg.mix; state.ffFlip = cfg.flip;
       ffNormalize(state);
     }
     if (guestId === "periph-flash") {

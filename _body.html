@@ -3937,6 +3937,10 @@
         <button type="button" class="choice" data-ff-mode="regeln">Regeln<small>das Symbol sagt, wohin</small></button>
         <button type="button" class="choice" data-ff-mode="leer">Das leere Feld<small>tritt aufs freie Feld</small></button>
         <button type="button" class="choice" data-ff-mode="abfolge">Abfolge merken<small>Folge nachtreten</small></button>
+        <button type="button" class="choice" data-ff-mode="ansage">Ansage<small>die Farbe wird gesagt</small></button>
+        <button type="button" class="choice" data-ff-mode="farbwort">Farbwort<small>die Schriftfarbe z&auml;hlt</small></button>
+        <button type="button" class="choice" data-ff-mode="fusshand">Fu&szlig; und Hand<small>treten und zeigen</small></button>
+        <button type="button" class="choice" data-ff-mode="sehenhoeren">Sehen und H&ouml;ren<small>Bild, Ansage oder beides</small></button>
       </div>
       <div class="group-help" id="ffModeHelp"></div>
     </div>
@@ -3961,6 +3965,32 @@
       <div class="group-help">Jede Runde kommt ein Feld dazu.</div>
     </div>
 
+    <div class="group" id="ffGiltGroup" hidden>
+      <div class="group-label">Bei beidem gilt</div>
+      <div class="choice-row two" id="ffGiltRow" role="group" aria-label="Bei beidem gilt">
+        <button type="button" class="choice" data-ff-gilt="gesagt">das Gesagte</button>
+        <button type="button" class="choice" data-ff-gilt="gezeigt">das Gezeigte</button>
+      </div>
+      <div class="group-help">Kommen Bild und Ansage zugleich und passen nicht zusammen, z&auml;hlt diese Quelle.</div>
+      <div class="group-label">Mischung</div>
+      <div class="choice-row" id="ffMixRow" role="group" aria-label="Mischung">
+        <button type="button" class="choice" data-ff-mix="ausgewogen">Ausgewogen<small>35 / 35 / 30 %</small></button>
+        <button type="button" class="choice" data-ff-mix="mehrbeides">Mehr beides<small>20 / 20 / 60 %</small></button>
+        <button type="button" class="choice" data-ff-mix="nurbeides">Nur beides<small>0 / 0 / 100 %</small></button>
+      </div>
+      <div class="group-help">Anteile: nur gezeigt / nur gesagt / beides zugleich.</div>
+    </div>
+
+    <div class="group" id="ffFlipGroup" hidden>
+      <div class="group-label">Rhythmus-Umkehr</div>
+      <div class="choice-row" id="ffFlipRow" role="group" aria-label="Rhythmus-Umkehr">
+        <button type="button" class="choice" data-ff-flip="0">Aus</button>
+        <button type="button" class="choice" data-ff-flip="2">Jedes 2. Mal<small>andersherum</small></button>
+        <button type="button" class="choice" data-ff-flip="3">Jedes 3. Mal<small>andersherum</small></button>
+      </div>
+      <div class="group-help" id="ffFlipHelp"></div>
+    </div>
+
     <div class="group">
       <div class="group-label">Anordnung wie deine Matte</div>
       <div class="ff-layout-grid" id="ffLayoutGrid">
@@ -3983,7 +4013,7 @@
       <div class="group-help">Die App zeigt L oder R: Mit diesem Fu&szlig; trittst du.</div>
     </div>
 
-    <div class="group">
+    <div class="group" id="ffHandsGroup">
       <div class="group-label">H&auml;nde</div>
       <div class="choice-row two" id="ffHandsRow" role="group" aria-label="H&auml;nde">
         <button type="button" class="choice" data-ff-hands="0">Aus</button>
@@ -3991,7 +4021,7 @@
       </div>
       <div id="ffHandBody" hidden>
         <div class="ff-hand-rows" id="ffHandRows"></div>
-        <div class="group-help">Bei &bdquo;Leuchten&ldquo; und &bdquo;Abfolge merken&ldquo; zeigt und sagt die App die Aufgabe an. Bei &bdquo;Regeln&ldquo; und &bdquo;Das leere Feld&ldquo; merkst du sie dir selbst, sonst w&uuml;rde die Anzeige die L&ouml;sung verraten.</div>
+        <div class="group-help">Bei &bdquo;Leuchten&ldquo; und &bdquo;Abfolge merken&ldquo; zeigt und sagt die App die Aufgabe an. Bei den anderen Modi merkst du sie dir selbst, sonst w&uuml;rde die Anzeige die L&ouml;sung verraten.</div>
       </div>
     </div>
   </div>

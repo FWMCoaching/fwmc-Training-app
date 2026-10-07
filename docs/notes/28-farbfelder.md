@@ -55,3 +55,43 @@ MASTER_BG_TARGETS beyond the shared VT state (bg is the stimulus).
 shows only when `link` is set (empty for now - Fabian names a product later).
 
 Test: `tests/farbfelder_1007_test.py`; screenshots `tests/screenshots/farbfelder/`.
+
+## Reize A-E (Fabian 07.10. 21:53, built the same night)
+Four more entries in the same "Modus" row (8 modes, 2 per row) plus one option.
+State: `ffGilt` (gesagt|gezeigt, default gesagt), `ffMix` (`FF_MIXES` key,
+default ausgewogen), `ffFlip` (0|2|3, default 0) - in snapshot/normalize, so
+presets, Kombi blocks and Cardio guests carry them. Pure rules (exposed on
+`window.__ff`): `ffIsFlipped(n, every)`, `ffLeuchtenTarget`, `ffRegelnTarget`,
+`ffAnsageTarget`, `ffFarbwortTarget`, `ffSehenHoerenTarget`, `ffPickFarbwort`.
+- A **Ansage**: `speakWord(colour name)` (same helper as Sehen & Hören, so
+  `cueVolume()`/🔊 apply); the stimulus frame shows all 4 fields at full colour,
+  nothing marked (resting frames are faded as everywhere). Speaks the colour,
+  not the field name (shorter, faster) - field names are a possible later option.
+- B **Farbwort**: word (mat colour, upper case) in a different ink colour (also
+  a mat colour) on a white plate on a random field; target = field of the INK.
+  Word never equals ink (`ffPickFarbwort`). Light inks get a thin dark edge.
+- C **Fuß und Hand**: footprint and hand silhouettes (white, dark outline, drawn
+  as one merged shape) on two different fields; target = foot field,
+  `handTarget` = hand field. The Hände group is hidden for this mode.
+- D **Sehen und Hören**: per stimulus kind bild / ton / beides, weights from
+  `FF_MIXES` (Ausgewogen 35/35/30, Mehr beides 20/20/60, Nur beides 0/0/100).
+  With beides the said field always differs from the lit one; "Bei beidem gilt"
+  decides. Caption band: "Bei beidem gilt: das Gesagte" (+ Umkehr).
+- E **Rhythmus-Umkehr** (Leuchten, Regeln, Sehen und Hören): every 2nd/3rd
+  stimulus flips. Leuchten: diagonal of the lit field; Regeln: diagonal of the
+  normal target; Sehen und Hören: the other source - and here only "beides"
+  stimuli are counted (single-source stimuli have no other source).
+  **Not marked on screen** (decision: counting is the training); the static
+  caption names the rule (Leuchten "Jedes 2. Mal schräg gegenüber"; Regeln keeps
+  its symbol legend, the rule is on the ready screen). A live tempo change in
+  the pause sheet restarts the count.
+- Captions use the existing bottom caption band of `ffGeometry()` (reserved, so
+  never on a field or under the bar); Farbwort "Die Schriftfarbe zählt", Fuß
+  und Hand "Fuß: drauftreten · Hand: hinzeigen". With 🔊 off, Ansage and
+  Sehen und Hören show "Ton ist aus – bitte einschalten" there.
+- Foot badge (L/R): on the lit field when there is one, else at grid centre.
+- History: Farbfelder runs store the mode (+ Umkehr) as `note`.
+- Cardio guest: 8 modes; gilt/Mischung for Sehen und Hören, Umkehr row for the
+  three flip modes (`data-balf` gilt/mix/flip).
+Test: `tests/farbfelder_reize_1007_test.py`, screenshots `tests/screenshots/farbfelder_reize/`.
+Not built (to be asked): "Die Übung kann man auch noch woanders einbringen, dann sieht man was angetippt wird".
