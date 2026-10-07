@@ -2797,3 +2797,23 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 #comboInsertList .group-label{margin-top:10px}
 .combo-from{display:block;margin-top:3px;font-size:calc(12px * var(--ts,1));font-weight:700;color:var(--brand)}
 .combo-from::before{content:"↳ "}
+
+/* Code-Karte: "Noch keinen Trainer?" (Fabian 07.10.) */
+.code-card .code-ask-link{display:block;margin-top:12px;color:inherit;text-decoration:underline;text-underline-offset:3px;min-height:44px;line-height:44px}
+.code-card.code-quiet .code-ask-link{margin:0;padding:0 16px 8px;color:var(--brand);text-decoration:none;font-weight:700}
+
+/* Heute für Neue (07.10.): Frage + Wischreihe "Zum Ausprobieren" */
+.starter-ask,.starter-goals{margin:4px 0 6px}
+.starter-goals{grid-template-columns:repeat(2,1fr)}
+.starter-goals .choice{min-height:48px}
+.starter-change{margin:-4px 0 4px;display:flex;gap:16px;flex-wrap:wrap}
+.starter-head{margin:16px 0 8px;font-size:calc(12px * var(--ts,1));font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+.starter-row{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px;padding:2px 16px 8px;scroll-padding:0 16px;-webkit-overflow-scrolling:touch;scrollbar-width:none;touch-action:pan-x pan-y}
+.starter-row::-webkit-scrollbar{display:none}
+.starter-card{flex:0 0 min(62%,220px);scroll-snap-align:start;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:118px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);border-top:4px solid var(--area);background:var(--surface-2);color:var(--ink);text-align:left;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.starter-card:active{transform:scale(.97);transition:transform .1s ease}
+.starter-area{font-size:calc(11.5px * var(--ts,1));font-weight:700;color:var(--area)}
+.starter-card strong{font-size:calc(15px * var(--ts,1));line-height:1.25}
+.starter-desc{font-size:calc(13px * var(--ts,1));color:var(--ink-soft);line-height:1.35}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .starter-area{filter:brightness(1.5)}}
+:root[data-theme="dark"] .starter-area{filter:brightness(1.5)}

@@ -28416,12 +28416,16 @@
       const doneAll = occ.length > 0;
       const lastRow = last ? `<p class="today-main-meta">Zuletzt: ${esc(last.title)} · ${esc(longDate(dStr(new Date(last.ts))))}</p>
         <button class="start-btn" type="button" id="todayContinueBtn">Nochmal trainieren</button>` : "";
+      const starter = starterStage(hist);
       html = `<div class="today-main-kicker">${doneAll ? "Heute alles geschafft" : last ? "Zuletzt trainiert" : "Los geht’s"}</div>
         <h2 class="today-main-title">${doneAll ? "Stark, dein Training für heute ist erledigt." : last ? esc(last.title) : "Schön, dass du da bist."}</h2>
         ${doneAll ? "" : lastRow}
-        <p class="today-main-hint">${doneAll ? "Wenn du magst, findest du unter „Training“ weitere Übungen." : (occ.length ? "" : "Für heute ist nichts geplant. ") + hint}</p>`;
+        ${starter === "new" ? starterAskHtml() : `<p class="today-main-hint">${doneAll ? "Wenn du magst, findest du unter „Training“ weitere Übungen." : (occ.length ? "" : "Für heute ist nichts geplant. ") + hint}</p>`}
+        ${starter && !doneAll ? starterRowHtml() : ""}`;
     }
     els.todayMain.innerHTML = html;
+    wireStarter();
+    applyNewcomerLayout(hist);
     const startBtn = els.todayMain.querySelector("[data-today-start]");
     if (startBtn) startBtn.addEventListener("click", () => { const e = open.find((o) => o.id === startBtn.dataset.todayStart); if (e) startEntry(e); });
     const cont = els.todayMain.querySelector("#todayContinueBtn");
@@ -28433,6 +28437,102 @@
       confirmDialog("Unterbrochenes Training verwerfen? Du kannst es danach nicht mehr an dieser Stelle fortsetzen.", () => { resumeDrop(resume); renderToday(); });
     });
   }
+  // ---- Heute für Neue (Fabian 06.10. "1 bis 3 bauen", 07.10. vorgezogen):
+  // someone who has nothing in the app yet gets "Mit Trainer oder allein?",
+  // alone also "Wofür trainierst du?" (Idee 38), and a swipe row "Zum
+  // Ausprobieren" of exercises to tap straight away, ordered by that goal.
+  // The row stays until about 3 trainings or a plan/code (soft change);
+  // Fortschritt shows only after the first training, the week moves below
+  // the code card while nothing is there yet. Nothing leaves the device. ----
+  const STARTER_KEY = "fwmc-start-v1"; // { who: "trainer"|"allein", goal }
+  const openNatStarter = (ex) => () => {
+    goArea("nat");
+    if (natModesOn) openNatExercise(ex);
+    else { const tab = document.querySelector(`.sub-tab[data-nat-sub="${ex}"]`); if (tab) tab.click(); }
+  };
+  const STARTERS = {
+    box: { area: "breath", title: "Box-Atmung", desc: "Ein, halten, aus, halten. Bringt dich zur Ruhe.", open: () => { goArea("breath"); openBreathReady("box"); } },
+    coherent: { area: "breath", title: "Ruhige Atmung", desc: "Gleichmäßig und langsam atmen.", open: () => { goArea("breath"); openBreathReady("coherent"); } },
+    reset: { area: "breath", title: "Feierabend-Reset", desc: "Zwei Atemübungen zum Runterkommen.", open: () => { goArea("breath"); openProgramIntro("atem-reset", BREATH_CODE_CTX); } },
+    vt: { area: "visual", title: "Farbe & Seite", desc: "Schnell auf Farben reagieren.", open: () => { goArea("visual"); const c = document.querySelector('#home .excard[data-exercise="vt-color"]'); if (c) c.click(); } },
+    remember: { area: "nat", title: "Positionen merken", desc: "Zahlen merken und der Reihe nach antippen.", open: openNatStarter("remember") },
+    blitz: { area: "nat", title: "Blitz-Raster", desc: "Aufleuchtende Felder merken.", open: openNatStarter("blitz") },
+    peripher: { area: "nat", title: "Periphere Wahrnehmung", desc: "Den Blick weiten.", open: openNatStarter("peripher") },
+    balance: { area: "nat", title: "Gleichgewicht", desc: "Stand und Blick im Takt.", open: openNatStarter("balance") },
+    kraft: { area: "workout", title: "Ganzkörper-Einstieg", desc: "Drei Kraftübungen und ein kurzes Intervall.", open: () => { goArea("workout"); openProgramIntro("workout-start", WORKOUT_CODE_CTX); } },
+  };
+  const STARTER_GOALS = [
+    { key: "ruhe", label: "Ruhe", order: ["box", "coherent", "reset", "balance", "peripher", "vt"] },
+    { key: "fokus", label: "Fokus", order: ["remember", "vt", "blitz", "peripher", "box", "balance"] },
+    { key: "sport", label: "Sport", order: ["vt", "peripher", "kraft", "balance", "remember", "blitz"] },
+    { key: "gleichgewicht", label: "Gleichgewicht", order: ["balance", "peripher", "box", "vt", "kraft", "remember"] },
+  ];
+  const STARTER_DEFAULT = ["box", "vt", "remember", "balance", "reset", "kraft"];
+  function starterPrefs() { const p = readJSON(STARTER_KEY, {}); return p && typeof p === "object" ? p : {}; }
+  function starterDone(hist) { return hist.filter((h) => !h.aborted).length; }
+  // "new" = nothing in the app yet, "soft" = first trainings, null = regular Heute.
+  function starterStage(hist) {
+    if (planHasEntries() || loadCodeHistory().length) return null;
+    const n = starterDone(hist);
+    return n === 0 ? "new" : n < 3 ? "soft" : null;
+  }
+  function starterAskHtml() {
+    const p = starterPrefs();
+    if (!p.who) return `<p class="today-main-hint">Trainierst du mit einem Trainer?</p>
+      <div class="choice-row two starter-ask"><button class="choice" type="button" data-starter-who="trainer">Mit Trainer<small>ich habe einen Code</small></button><button class="choice" type="button" data-starter-who="allein">Allein<small>ich schaue mich um</small></button></div>`;
+    if (p.who === "trainer") return `<p class="today-main-hint">Gib unten den Trainings-Code von deinem Trainer ein. Bis dahin kannst du hier schon reinschnuppern.</p>
+      <p class="starter-change"><button class="text-link small" type="button" data-starter-code>Zum Code-Feld</button> <button class="text-link small" type="button" data-starter-reset>Doch allein</button></p>`;
+    if (!p.goal) return `<p class="today-main-hint">Wofür trainierst du?</p>
+      <div class="choice-row starter-goals">${STARTER_GOALS.map((g) => `<button class="choice" type="button" data-starter-goal="${g.key}">${esc(g.label)}</button>`).join("")}</div>`;
+    const g = STARTER_GOALS.find((x) => x.key === p.goal);
+    return `<p class="today-main-hint">Hier sind Übungen für ${esc(g ? g.label : "dich")} zum Ausprobieren. Einfach antippen.</p>
+      <p class="starter-change"><button class="text-link small" type="button" data-starter-reset>Ziel ändern</button></p>`;
+  }
+  function starterRowHtml() {
+    const p = starterPrefs();
+    const g = STARTER_GOALS.find((x) => x.key === p.goal);
+    const order = g ? g.order : STARTER_DEFAULT;
+    return `<div class="starter-head">Zum Ausprobieren</div>
+      <div class="starter-row" role="list">${order.map((k) => {
+        const it = STARTERS[k], a = AREA_BY_KEY[it.area];
+        return `<button class="starter-card" type="button" role="listitem" data-starter="${k}" style="--area:${a.color}"><span class="starter-area">${esc(a.short)}</span><strong>${esc(it.title)}</strong><span class="starter-desc">${esc(it.desc)}</span></button>`;
+      }).join("")}</div>`;
+  }
+  function wireStarter() {
+    const m = els.todayMain;
+    const save = (patch) => { writeJSON(STARTER_KEY, { ...starterPrefs(), ...patch }); renderToday(); };
+    m.querySelectorAll("[data-starter-who]").forEach((b) => b.addEventListener("click", () => {
+      save({ who: b.dataset.starterWho });
+      if (b.dataset.starterWho === "trainer") openTodayCodeCard();
+    }));
+    m.querySelectorAll("[data-starter-goal]").forEach((b) => b.addEventListener("click", () => save({ goal: b.dataset.starterGoal })));
+    m.querySelectorAll("[data-starter-reset]").forEach((b) => b.addEventListener("click", () => { writeJSON(STARTER_KEY, { who: "allein" }); renderToday(); }));
+    m.querySelectorAll("[data-starter-code]").forEach((b) => b.addEventListener("click", openTodayCodeCard));
+    m.querySelectorAll("[data-starter]").forEach((b) => b.addEventListener("click", () => { const it = STARTERS[b.dataset.starter]; if (it) it.open(); }));
+  }
+  function openTodayCodeCard() {
+    const card = document.querySelector("#todayHome .today-code");
+    if (!card) return;
+    const t = card.querySelector(".code-toggle");
+    if (t && card.classList.contains("is-collapsed")) t.click();
+    card.scrollIntoView({ block: "center", behavior: "smooth" });
+    const inp = card.querySelector("input");
+    if (inp) setTimeout(() => { try { inp.focus({ preventScroll: true }); } catch (e) {} }, 350);
+  }
+  let todayWeekHome = null;
+  function applyNewcomerLayout(hist) {
+    const isNew = starterStage(hist) === "new";
+    const home = els.todayHome || $("todayHome");
+    home.classList.toggle("newcomer", isNew);
+    const prog = home.querySelector(".today-progress");
+    if (prog) prog.hidden = starterDone(hist) === 0;
+    const week = home.querySelector(".today-week"), code = home.querySelector(".today-code");
+    if (!week || !code) return;
+    if (!todayWeekHome) todayWeekHome = { parent: week.parentNode, next: week.nextSibling };
+    if (isNew && week.previousElementSibling !== code) code.after(week);
+    else if (!isNew && week.parentNode === todayWeekHome.parent && code.nextElementSibling === week) todayWeekHome.parent.insertBefore(week, todayWeekHome.next);
+  }
+
   // ---- Wochenabschluss (Fabian, 2026-10-06: "mit Haken ... und nem Satz") ----
   // Sundays: one check per planned unit of the week, one sentence on how it
   // went and an optional "Vorsatz" for next week (fwmc-week-intent-v1, keyed by
@@ -30582,6 +30682,18 @@
   // loudest thing on every area page although most clients rarely need it.
   // Off in automated browsers unless fwmc-test-codequiet, so the many code
   // tests keep typing straight into the open card.
+  // "Noch keinen Trainer?" under every code card (Fabian 07.10.: the card
+  // should make people without a code curious about a personal plan).
+  const PLAN_REQUEST_URL = "https://www.fabian-westermann.de/#Kontakt";
+  document.querySelectorAll(".code-card").forEach((card) => {
+    const a = document.createElement("a");
+    a.className = "text-link small code-ask-link";
+    a.href = PLAN_REQUEST_URL;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = "Noch keinen Trainer? So bekommst du deinen Plan →";
+    card.appendChild(a);
+  });
   (function quietCodeCards() {
     if (navigator.webdriver && !readJSON("fwmc-test-codequiet", false)) return;
     const KEY = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="8" cy="15" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 12l8-8M16 7l2.5 2.5M14 9l2 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
@@ -30591,7 +30703,7 @@
       btn.type = "button";
       btn.className = "code-toggle";
       btn.setAttribute("aria-expanded", "false");
-      btn.innerHTML = `<span class="code-toggle-icon">${KEY}</span><span class="code-toggle-text"><span class="code-toggle-title">Trainings-Code eingeben</span><span class="code-toggle-sub">von deinem Trainer</span></span><span class="code-toggle-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+      btn.innerHTML = `<span class="code-toggle-icon">${KEY}</span><span class="code-toggle-text"><span class="code-toggle-title">Dein persönlicher Trainingsplan</span><span class="code-toggle-sub">Code eingeben oder individuell angepassten Plan anfragen</span></span><span class="code-toggle-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
       card.insertBefore(btn, card.firstChild);
       btn.addEventListener("click", () => {
         const open = card.classList.contains("is-collapsed");

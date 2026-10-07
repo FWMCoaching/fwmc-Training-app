@@ -116,7 +116,10 @@ screen of every area (about 12 screenshots).
 **Bundle releases (Fabian, 2026-10-04)**: bundle 3-4 changes per release,
 full suite once at the end; while building run only the tests at hand. A
 pure documentation change needs no suite run. Urgent fixes Fabian waits
-on may go out alone. Ideas go to Fabian first as a short list with a
+on may go out alone. **Tests at night (Fabian 2026-10-07)**: during the
+day only build (node --check, build.sh, preview), even 10-15 changes; the
+full suite, reviewer and Fabian-Blick run as one batch at night, repairs
+after it, then go live. Ideas go to Fabian first as a short list with a
 recommendation; only what he approves gets built.
 
 ## Working conventions
@@ -193,7 +196,11 @@ Test: `tests/audit_fixes_test.py`.
 
 - Reuse the closest sibling's pattern (classes, colours, layout, spacing,
   labels, explanation texts). A code entry is always `.code-card` with
-  "Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein."
+  "Dein Trainer stellt dir einen Plan zusammen, der genau zu dir passt: deine
+  Übungen, dein Tempo, dein Ziel. Du bekommst dafür einen Code. Gib ihn hier
+  ein." + the "Noch keinen Trainer?" link (JS, `PLAN_REQUEST_URL`); collapsed
+  it reads "Dein persönlicher Trainingsplan / Code eingeben oder individuell
+  angepassten Plan anfragen" (Fabian 07.10.).
 - Client-facing text says "dein Trainer", never "Coach" or a name. The
   dashboard is the "Trainer-Dashboard".
 - A deviation needs a real reason and goes to Fabian as a proposal first.
