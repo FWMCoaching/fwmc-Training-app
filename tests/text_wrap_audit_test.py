@@ -97,7 +97,11 @@ async def main():
                     await pg.evaluate("() => ['[data-ff-mode=regeln]','[data-ff-level=\"4\"]','[data-ff-hands=\"1\"]'].forEach(s => document.querySelector(s).click())")
                     await pg.wait_for_timeout(100)
                     await audit(pg, f"{w}px{ts_tag(ts)} visual/farbfelder", problems)
-                    await pg.evaluate("() => ['[data-ff-hands=\"0\"]','[data-ff-mode=leuchten]'].forEach(s => document.querySelector(s).click())")
+                    # Reize (2026-10-07 night): Sehen und Hören shows gilt, Mischung, Rhythmus-Umkehr
+                    await pg.evaluate("() => ['[data-ff-mode=sehenhoeren]','[data-ff-flip=\"2\"]'].forEach(s => document.querySelector(s).click())")
+                    await pg.wait_for_timeout(100)
+                    await audit(pg, f"{w}px{ts_tag(ts)} visual/farbfelder-sehenhoeren", problems)
+                    await pg.evaluate("() => ['[data-ff-hands=\"0\"]','[data-ff-flip=\"0\"]','[data-ff-mode=leuchten]'].forEach(s => document.querySelector(s).click())")
                     # Hütchen · Farbe + Zahl ready screen (2026-10-07): Anzahl Felder, Hilfsmittel
                     await pg.click("#backToHome"); await pg.wait_for_timeout(150)
                     await pg.click('.excard[data-exercise="cone-number"]'); await pg.wait_for_timeout(150)

@@ -57,9 +57,10 @@ async def run_ff(b,vp):
     await pg.add_init_script("localStorage.setItem('fwmc-tips-seen','true');localStorage.setItem('fwmc-master-v1',JSON.stringify({startCountdown:false}))")
     errs=[]; pg.on("pageerror", lambda e: errs.append(str(e)))
     await pg.goto(URL); await pg.wait_for_timeout(250)
-    for mode in ["leuchten","regeln","leer","abfolge"]:
+    # + the Reize (2026-10-07 night): Ansage, Farbwort, Fuß und Hand, Sehen und Hören
+    for mode in ["leuchten","regeln","leer","abfolge","ansage","farbwort","fusshand","sehenhoeren"]:
         await pg.click('.excard[data-exercise="farbfelder"]'); await pg.wait_for_timeout(150)
-        await pg.evaluate("(m)=>{document.querySelector(`[data-ff-mode=${m}]`).click();document.querySelector('[data-ff-foot=wechsel]').click()}",mode)
+        await pg.evaluate("(m)=>{document.querySelector(`[data-ff-mode=${m}]`).click();document.querySelector('[data-ff-foot=wechsel]').click();document.querySelector('[data-ff-flip=\"2\"]').click()}",mode)
         await pg.evaluate("()=>document.getElementById('startBtn').click()")
         bad=set()
         for i in range(10):
