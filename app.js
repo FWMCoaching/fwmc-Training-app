@@ -8613,6 +8613,19 @@
     }
     return positions;
   }
+  // Game answer buttons (Positionen merken, Blitz-Raster, MOT, Flash keypad)
+  // count on the finger going DOWN, not on "click": iOS drops the click when
+  // the finger slides a little, when the button shrinks under it (:active
+  // scale) or when a second finger is already on the glass - fast taps then
+  // "react" visibly but never count (Fabian 2026-10-07). Keyboard activation
+  // (click with detail 0) still works; a pointer's own follow-up click is ignored.
+  function onGameTap(el, fn) {
+    el.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      fn();
+    });
+    el.addEventListener("click", (e) => { if (e.detail === 0) fn(); });
+  }
   function renderRememberMarkers() {
     els.rememberStage.querySelectorAll(".remember-marker").forEach((el) => el.remove());
     rememberState.positions.forEach((p) => {
@@ -8628,7 +8641,7 @@
       if (covered) el.setAttribute("aria-label", "Verdecktes Zahlenfeld");
       else el.removeAttribute("aria-label");
       el.dataset.num = p.num;
-      if (covered) el.addEventListener("click", () => rememberClick(p.num, el));
+      if (covered) onGameTap(el, () => rememberClick(p.num, el));
       els.rememberStage.appendChild(el);
     });
   }
@@ -8815,6 +8828,20 @@
     els.rememberPauseOverlay.hidden = true;
     els.rememberPauseBtn.hidden = false;
   }
+  // Reizdauer live (Fabian 2026-10-07: "Bei Remember muss man in der Pause
+  // die Reizdauer usw. auch bearbeiten können"): Einblenddauer, Zeit je
+  // Zahl and Bei Fehler / Nach Erfolg for the rest of this run only, like
+  // Flash's tempo sheet; the saved settings stay as they are.
+  function syncRememberPauseTempo() {
+    if (!rememberState) return;
+    $("rememberPauseRevealSlider").value = rememberState.revealBaseS;
+    $("rememberPauseRevealValue").textContent = fmtSeconds(rememberState.revealBaseS);
+    $("rememberPauseStepSlider").value = rememberState.revealStepS;
+    $("rememberPauseStepValue").textContent = fmtSeconds(rememberState.revealStepS);
+  }
+  $("rememberPauseRevealSlider").addEventListener("input", (e) => { if (rememberState) { rememberState.revealBaseS = Number(e.target.value); syncRememberPauseTempo(); } });
+  $("rememberPauseStepSlider").addEventListener("input", (e) => { if (rememberState) { rememberState.revealStepS = Number(e.target.value); syncRememberPauseTempo(); } });
+  new MutationObserver(() => { if (!els.rememberPauseOverlay.hidden) syncRememberPauseTempo(); }).observe(els.rememberPauseOverlay, { attributes: true, attributeFilter: ["hidden"] });
   els.rememberPauseBtn.addEventListener("click", pauseRemember);
   els.rememberResumeBtn.addEventListener("click", resumeRemember);
   els.rememberNavPrevBtn.addEventListener("click", () => rememberState && rememberGoToLevel(rememberState.level - 1));
@@ -9336,7 +9363,7 @@
         const tappable = eligible && blitzState.phase === "input" && !blitzState.tapped.has(key);
         if (tappable) {
           el.classList.add("tappable");
-          el.addEventListener("click", () => blitzTapCell(key, el));
+          onGameTap(el, () => blitzTapCell(key, el));
         }
         els.blitzGrid.appendChild(el);
       }
@@ -9480,6 +9507,15 @@
     els.blitzPauseBtn.hidden = true;
     els.blitzPauseOverlay.hidden = false;
   }
+  // Blitzdauer live (Feinheiten quer, 2026-10-07, sibling of Remember's
+  // Reizdauer): rest of this run only, from the next round.
+  function syncBlitzPauseTempo() {
+    if (!blitzState) return;
+    $("blitzPauseFlashSlider").value = blitzState.flashS;
+    $("blitzPauseFlashValue").textContent = fmtSeconds(blitzState.flashS);
+  }
+  $("blitzPauseFlashSlider").addEventListener("input", (e) => { if (blitzState) { blitzState.flashS = Number(e.target.value); syncBlitzPauseTempo(); } });
+  new MutationObserver(() => { if (!els.blitzPauseOverlay.hidden) syncBlitzPauseTempo(); }).observe(els.blitzPauseOverlay, { attributes: true, attributeFilter: ["hidden"] });
   function resumeBlitz() {
     if (!blitzState || !blitzState.paused) return;
     blitzState.startTime += performance.now() - blitzState.pausedAt;
@@ -10163,7 +10199,7 @@
       btn.className = "flash-key";
       btn.type = "button";
       btn.textContent = k;
-      btn.addEventListener("click", () => flashTypeChar(k));
+      onGameTap(btn, () => flashTypeChar(k));
       els.flashKeypad.appendChild(btn);
     });
     // Gemischt leaves two free cells in the last row: the ⌫ key goes there
@@ -11365,6 +11401,7 @@
   // slider in its "Pausiert" sheet plus two-finger pinch on its stage
   // (ctrl+wheel = trackpad pinch). A standalone run saves the new value;
   // inside a Kombi or as a Cardio-Zusatzaufgabe it only changes this run.
+  const GAME_TAP_SEL = ".remember-marker.covered, .blitz-cell.tappable, .mot-object.tappable, .flash-key";
   function wirePinchSize(stage, { get, set, min, max, label }) {
     const pts = new Map();
     let start = null;
@@ -11380,6 +11417,11 @@
     const clampV = (v) => Math.round(Math.min(max, Math.max(min, v)) * 10) / 10;
     stage.addEventListener("pointerdown", (e) => {
       if (e.pointerType !== "touch") return;
+      // A fresh touch sequence drops pointers whose "up" got lost, and a
+      // finger on an answer button is a tap, never half of a pinch (fast
+      // two-thumb tapping must not resize or swallow taps).
+      if (e.isPrimary) { pts.clear(); start = null; delete stage.dataset.pinching; }
+      if (e.target.closest && e.target.closest(GAME_TAP_SEL)) return;
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pts.size === 2) {
         const v = get();
@@ -11495,6 +11537,50 @@
     }
     wirePinchSize(L.stage(), { get, set, min: size.min, max: size.max, label: size.label.replace(/^Größe der /, "") });
   });
+
+  // "Bei Fehler" / "Nach Erfolg" live in the pause sheet (2026-10-07, with
+  // Remember's Reizdauer): the ready screen's own choice buttons are cloned,
+  // so labels stay identical; the pick changes this run's state only.
+  function addPauseChoiceRow(overlay, { label, sourceRow, attr, get, set, visible }) {
+    const panel = overlay && overlay.querySelector(".pause-panel");
+    const src = document.getElementById(sourceRow);
+    if (!panel || !src) return;
+    const g = document.createElement("div");
+    g.className = "group";
+    g.dataset.pauseChoice = attr;
+    g.innerHTML = `<div class="group-label">${esc(label)}</div>`;
+    const row = document.createElement("div");
+    row.className = src.className;
+    src.querySelectorAll("[data-" + attr + "]").forEach((b) => {
+      const c = b.cloneNode(true);
+      c.removeAttribute("data-" + attr);
+      c.removeAttribute("id");
+      c.dataset.pauseVal = b.getAttribute("data-" + attr);
+      c.addEventListener("click", () => { set(c.dataset.pauseVal); sync(); });
+      row.appendChild(c);
+    });
+    g.appendChild(row);
+    const tempo = panel.querySelector("[id$=PauseTempoGroup]");
+    panel.insertBefore(g, tempo ? tempo.nextSibling : panel.querySelector(".group"));
+    function sync() {
+      const show = visible();
+      g.hidden = !show;
+      if (!show) return;
+      const v = get();
+      row.querySelectorAll("[data-pause-val]").forEach((c) => setActive(c, c.dataset.pauseVal === v));
+    }
+    new MutationObserver(() => { if (!overlay.hidden) sync(); }).observe(overlay, { attributes: true, attributeFilter: ["hidden"] });
+  }
+  addPauseChoiceRow(els.rememberPauseOverlay, { label: "Bei Fehler", sourceRow: "rememberErrorRow", attr: "remember-error",
+    visible: () => !!rememberState && rememberState.mode !== "training", get: () => rememberState.errorMode, set: (v) => { if (rememberState) rememberState.errorMode = v; } });
+  addPauseChoiceRow(els.rememberPauseOverlay, { label: "Nach Erfolg", sourceRow: "rememberProgressRow", attr: "remember-progress",
+    visible: () => !!rememberState && rememberState.mode === "training", get: () => (rememberState.trainingProgress ? "1" : "0"), set: (v) => { if (rememberState) rememberState.trainingProgress = v === "1"; } });
+  addPauseChoiceRow(els.blitzPauseOverlay, { label: "Bei Fehler", sourceRow: "blitzErrorRow", attr: "blitz-error",
+    visible: () => !!blitzState, get: () => blitzState.errorMode, set: (v) => { if (blitzState) blitzState.errorMode = v; } });
+  addPauseChoiceRow(els.flashPauseOverlay, { label: "Bei Fehler", sourceRow: "flashErrorRow", attr: "flash-error",
+    visible: () => !!flashState && flashState.mode !== "training", get: () => flashState.errorMode, set: (v) => { if (flashState) flashState.errorMode = v; } });
+  addPauseChoiceRow(els.motPauseOverlay, { label: "Bei Fehler", sourceRow: "motErrorRow", attr: "mot-error",
+    visible: () => !!motState, get: () => motState.errorMode, set: (v) => { if (motState) motState.errorMode = v; } });
 
   initLookControls({
     balance: { prefs: balancePrefs, save: saveBalancePrefsToStorage },
@@ -11974,7 +12060,7 @@
       const tappable = motState.phase === "identify" && !motState.tapped.has(o.id);
       if (tappable) {
         el.classList.add("tappable");
-        el.addEventListener("click", () => motTapObject(o.id));
+        onGameTap(el, () => motTapObject(o.id));
       }
       el.setAttribute("aria-label", `Objekt ${o.id + 1}`);
       o.el = el;

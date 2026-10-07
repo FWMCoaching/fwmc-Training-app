@@ -520,5 +520,11 @@ For every new or changed exercise/screen, in the same commit:
   live in the pause sheet, one-time silent-switch hint; music like Spotify keeps playing). Every LOOK_SPECS exercise also gets its size live in the
   pause sheet and by pinch (`LIVE_LOOK`); a new one needs one entry there.
   Tests: `tests/gleichgewicht_1006_test.py`, `tests/live_size_1006_test.py`.
+- Antwort-Tippen + Pause-Tempo (2026-10-07): game answer buttons (Positionen
+  merken, Blitz-Raster, MOT, Flash keys) count on pointerdown via
+  `onGameTap(el, fn)` (iOS drops clicks on a slide or second finger); a new
+  answer button uses it and joins `GAME_TAP_SEL` (never half of a pinch).
+  Pause sheets of all four edit timing and "Bei Fehler" for this run only
+  (`addPauseChoiceRow` clones the ready row). Test: `tests/nat_pause_tempo_1007_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

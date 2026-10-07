@@ -2785,3 +2785,7 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 :root[data-theme="dark"] .player.calm-dk#movementPlayer .movement-lane.rows .mv-cell.active{background:#2e2414}
 /* Wandernde Zeilen: the row coming up fades out at the bottom instead of a hard cut */
 .mv-rows-view.wander{-webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent);mask-image:linear-gradient(to bottom,#000 72%,transparent)}
+
+/* Game answer buttons count on touch-down (onGameTap in app.js): no
+   callout, selection or grey tap flash, no double-tap zoom between taps. */
+.remember-marker,.blitz-cell,.mot-object,.flash-key{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
