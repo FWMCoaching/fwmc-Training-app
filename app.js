@@ -6274,6 +6274,25 @@
       host.appendChild(group);
     });
   });
+  // Fabian 07.10.: the tick can distract - switch it in the pause too
+  // (same An/Aus buttons, so applyCvdState() marks them and the choice is
+  // the exercise's own setting, exactly like in its Feineinstellungen).
+  Object.entries(CVD_EXERCISES).forEach(([ex, cfg]) => {
+    if (!cfg.fb) return;
+    const panel = document.querySelector(`#${ex}PauseOverlay .pause-panel`);
+    if (!panel) return;
+    const g = document.createElement("div");
+    g.className = "group cvd-group";
+    g.innerHTML = '<div class="group-label">Haken &amp; Kreuz bei richtig/falsch</div>';
+    const row = cvdToggleRow(ex, "fb", "");
+    row.querySelector(".cvd-row-label").remove();
+    row.querySelector(".cvd-status").remove();
+    row.classList.remove("cvd-row");
+    g.appendChild(row);
+    const groups = panel.querySelectorAll(":scope > .group");
+    const last = groups[groups.length - 1];
+    panel.insertBefore(g, last ? last.nextSibling : panel.firstChild);
+  });
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-cvd-ex]");
     if (btn) { cvdSetOverride(btn.dataset.cvdEx, btn.dataset.cvdKind, btn.dataset.cvdVal === "1"); return; }
@@ -17123,9 +17142,15 @@
   // one go, after an in-app "Bist du sicher?" Ja/Nein - never the browser's
   // own confirm(), which looks foreign in the installed app.
   let confirmYesFn = null, confirmReturnFocus = null;
-  function confirmDialog(text, onYes) {
+  let confirmNoFn = null;
+  function confirmDialog(text, onYes, opts) {
     const sheet = document.getElementById("confirmSheet");
+    const o = opts || {};
     document.getElementById("confirmText").textContent = text;
+    document.getElementById("confirmTitle").textContent = o.title || "Bist du sicher?";
+    document.getElementById("confirmYesBtn").textContent = o.yes || "Ja";
+    document.getElementById("confirmNoBtn").textContent = o.no || "Nein";
+    confirmNoFn = o.onNo || null;
     confirmYesFn = onYes;
     confirmReturnFocus = document.activeElement;
     sheet.hidden = false;
@@ -17185,6 +17210,42 @@
   // is held back, a 3-2-1 overlay (with the countdown beeps) runs, then the
   // tap goes through. Kombi capture ("Baustein übernehmen") is never held.
   // Grundeinstellungen "Countdown 3-2-1 vor dem Start" switches it off.
+  // ---- Hinweis bei schwachem Kontrast (Fabian 07.10.): Haken & Kreuz is
+  // off unless chosen. When a run starts on a background where the green
+  // (richtig) or red (falsch) feedback stands out poorly (< 3:1), the
+  // first start with that colour/intensity asks once whether to add them.
+  // Registered before the lead-in listener, so it asks before the 3-2-1.
+  const FB_HINT_KEY = "fwmc-fb-hint-v1";
+  const FB_HINT_STARTS = {
+    rememberReadyStartBtn: ["remember", () => rememberPrefs], rememberTrainingStartBtn: ["remember", () => rememberPrefs],
+    blitzReadyStartBtn: ["blitz", () => blitzPrefs], motReadyStartBtn: ["mot", () => motPrefs], motTrainingStartBtn: ["mot", () => motPrefs],
+  };
+  const FB_OK_HEX = "#2e7d32", FB_BAD_HEX = "#d32f2f";
+  let fbHintBypass = false;
+  function fbHintWeak(prefs) {
+    if (!(prefs.bgIntensity > 0) || !STROOP_COLOR_BY_KEY[prefs.bgColorKey]) return false;
+    const bg = mixHex("#ffffff", STROOP_COLOR_BY_KEY[prefs.bgColorKey].hex, prefs.bgIntensity);
+    return Math.min(contrastRatio(FB_OK_HEX, bg), contrastRatio(FB_BAD_HEX, bg)) < 3;
+  }
+  document.addEventListener("click", (e) => {
+    if (fbHintBypass) return;
+    if (navigator.webdriver && !readJSON("fwmc-test-fbhint", false)) return;
+    const b = e.target && e.target.closest ? e.target.closest("button") : null;
+    const hit = b && !b.disabled && FB_HINT_STARTS[b.id];
+    if (!hit || b.textContent.trim() !== "Training starten") return;
+    const [ex, prefsOf] = hit, prefs = prefsOf();
+    if (cvdFbOn(ex) || !fbHintWeak(prefs)) return;
+    const seen = readJSON(FB_HINT_KEY, []);
+    const combo = `${ex}:${prefs.bgColorKey}:${Math.round(prefs.bgIntensity * 20)}`;
+    if (Array.isArray(seen) && seen.includes(combo)) return;
+    writeJSON(FB_HINT_KEY, (Array.isArray(seen) ? seen : []).concat(combo).slice(-60));
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const go = () => { fbHintBypass = true; try { b.click(); } finally { fbHintBypass = false; } };
+    confirmDialog("Auf dieser Hintergrundfarbe sind Grün (richtig) und Rot (falsch) schwer zu erkennen. Möchtest du zusätzlich ein Häkchen bzw. Kreuz als Bestätigung? Du kannst es jederzeit in den Feineinstellungen oder in der Pause ändern.",
+      () => { cvdSetOverride(ex, "fb", true); go(); },
+      { title: "Kontrast könnte schwach sein", yes: "Häkchen einblenden", no: "Ohne starten", onNo: go });
+  }, true);
   const LEADIN_START_IDS = ["movementStartBtn", "movementProgramStartBtn", "breathStartBtn", "breathProgramStartBtn",
     "rememberReadyStartBtn", "rememberTrainingStartBtn", "blitzReadyStartBtn", "flashReadyStartBtn", "flashTrainingStartBtn",
     "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn",
@@ -17917,10 +17978,11 @@
     // The end-of-training question may have moved the sheet into a
     // fullscreen player; put it back so later questions stay visible.
     if (confirmSheetEl.parentNode !== document.body) document.body.appendChild(confirmSheetEl);
-    const fn = confirmYesFn;
-    confirmYesFn = null;
+    const fn = confirmYesFn, noFn = confirmNoFn;
+    confirmYesFn = null; confirmNoFn = null;
     if (confirmReturnFocus && document.body.contains(confirmReturnFocus) && !confirmReturnFocus.hidden) confirmReturnFocus.focus();
     if (yes && fn) fn();
+    else if (!yes && noFn) noFn();
   }
   (() => {
     const sheet = document.getElementById("confirmSheet");

@@ -533,5 +533,12 @@ For every new or changed exercise/screen, in the same commit:
   answer button uses it and joins `GAME_TAP_SEL` (never half of a pinch).
   Pause sheets of all four edit timing and "Bei Fehler" for this run only
   (`addPauseChoiceRow` clones the ready row). Test: `tests/nat_pause_tempo_1007_test.py`.
+- Haken & Kreuz (2026-10-07): off by default; An/Aus in every fb exercise's
+  pause sheet; weak green/red contrast on the chosen background asks once at
+  the start (`FB_HINT_STARTS`, NAT). `confirmDialog(text, onYes, {title, yes,
+  no, onNo})`. Details docs/notes/03, test `tests/fb_haken_1007_test.py`.
+- Tippen beim Aufsetzen everywhere (2026-10-07): every game tap target is in
+  `FAST_TAP_SEL` (one delegated pointerdown listener); a new answer button or
+  tap area joins it unless its handler needs the tap coordinates.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

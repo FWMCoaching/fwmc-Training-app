@@ -182,3 +182,15 @@ Stroop exercises are untouched - they already have a free colour picker.
 be added to `CVD_EXERCISES`/`CVD_FB_SELECTORS` (and palette reads) in the
 same commit.** Test: `tests/cvd_support_test.py`.
 
+
+**2026-10-07 (Fabian: the tick "lenkt ab", should be off unless wanted):**
+Haken & Kreuz stays off by default (only Farbsehen in Grundeinstellungen or an
+override turns it on). Every fb exercise with a `#<ex>PauseOverlay` now has
+an "Haken & Kreuz bei richtig/falsch" An/Aus row in its pause sheet (same
+`data-cvd-ex` buttons, so it sets the exercise's own override). At the start
+of Positionen merken, Blitz-Raster and MOT (`FB_HINT_STARTS`), a background
+where green #2e7d32 or red #d32f2f falls below 3:1 asks once per
+exercise/colour/intensity (`fwmc-fb-hint-v1`) whether to show the tick
+(`confirmDialog` with `{title, yes, no, onNo}` options). Off in automated
+browsers unless `fwmc-test-fbhint`. Test: `tests/fb_haken_1007_test.py`.
+Test-Bereich exercises have the pause row, not the start question (open).
