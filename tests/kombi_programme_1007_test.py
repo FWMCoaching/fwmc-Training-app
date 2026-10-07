@@ -75,6 +75,7 @@ async def main():
         await pg.click("#comboInsertGroup summary"); await pg.wait_for_timeout(200)
         await pg.click('#comboInsertList .bundle-item >> text="Ganzkörper-Einstieg"'); await pg.wait_for_timeout(200)
         check("insert adds the 4 workout blocks", await pg.locator("#comboBlockList .chapter-row").count() == 5)
+        check("inserted blocks show their origin", await pg.locator('#comboBlockList .combo-from >> text="aus Ganzkörper-Einstieg"').count() == 4)
         await pg.click("#comboSaveBtn"); await pg.wait_for_timeout(100)
         await pg.fill("#comboNameInput", "Abend lang")
         await pg.click("#comboSaveAsNewBtn"); await pg.wait_for_timeout(200)

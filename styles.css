@@ -2795,3 +2795,5 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 /* Kombi: Hinweis "Kopie von …" / "Du bearbeitest …" (07.10.) */
 .combo-edit-note{margin:0 0 16px;padding:10px 12px;border-radius:12px;background:var(--surface-2);color:var(--ink)}
 #comboInsertList .group-label{margin-top:10px}
+.combo-from{display:block;margin-top:3px;font-size:calc(12px * var(--ts,1));font-weight:700;color:var(--brand)}
+.combo-from::before{content:"↳ "}

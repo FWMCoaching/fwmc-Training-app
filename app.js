@@ -17952,7 +17952,7 @@
       const main = document.createElement(editOpener ? "button" : "span");
       main.className = "chapter-main";
       if (!editOpener) main.style.cursor = "default";
-      main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(comboBlockLabel(block))}</strong><span>${esc(comboBlockMeta(block))}</span></span>`;
+      main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(comboBlockLabel(block))}</strong><span>${esc(comboBlockMeta(block))}</span>${block.fromProgram ? `<span class="combo-from">aus ${esc(block.fromProgram)}</span>` : ""}</span>`;
       if (editOpener) main.addEventListener("click", () => editOpener(block, i));
       if (comboDraftBlocks.length > 1) row.appendChild(dragHandleEl());
       row.appendChild(main);
@@ -18153,7 +18153,9 @@
         b.className = "bundle-item";
         b.innerHTML = `<div class="bundle-item-head"><strong>${esc(it.name)}</strong></div><span class="bundle-meta">${esc(comboEntryMeta(it))}</span>`;
         b.addEventListener("click", () => {
-          comboDraftBlocks.push(...deepCopy(it.blocks));
+          // Inserted blocks remember where they came from (Fabian 07.10.:
+          // "nicht mit der Markierung des Ursprungs ... unübersichtlich").
+          comboDraftBlocks.push(...deepCopy(it.blocks).map((bl) => ({ ...bl, fromProgram: bl.fromProgram || it.name })));
           renderComboBlockList();
           $("comboInsertGroup").open = false;
           els.comboBlockList.scrollIntoView({ block: "center", behavior: "smooth" });
