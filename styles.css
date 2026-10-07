@@ -1244,7 +1244,6 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .breath-phase-count{font-family:"Magra",sans-serif;font-weight:700;font-size:46px;color:#16232a;font-variant-numeric:tabular-nums}
 .breath-phase-label{font-size:calc(21px * var(--ts,1));font-weight:700;color:#16232a;text-align:center}
 .wimhof-sub{font-size:calc(14px * var(--ts,1));color:#4f6168;font-weight:600;text-align:center;min-height:1.4em}
-#wimhofHoldDoneBtn{border-radius:14px;padding:16px 26px;font-size:calc(16px * var(--ts,1));margin-top:4px}
 
 /* Standalone finish/transition overlays that must show regardless of which
    player engine (visual, breath-cycle or Wim Hof) was running underneath. */
@@ -1307,7 +1306,7 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 #movementPauseTickVolumeRow{display:flex;flex-direction:column;gap:10px;margin-top:4px}
 .fs-hint span{flex:1}
 .fs-hint button{border:none;border-radius:999px;cursor:pointer}
-.fs-hint #fsHintOpenBtn{background:#007094;color:#fff;font-size:calc(12.5px * var(--ts,1));font-weight:700;padding:8px 12px;white-space:nowrap}
+.fs-hint button[id$="FsHintOpenBtn"],.fs-hint #fsHintOpenBtn{background:#007094;color:#fff;font-size:calc(12.5px * var(--ts,1));font-weight:700;padding:8px 12px;white-space:nowrap;min-height:36px}
 .fs-hint-close{background:transparent;color:#fff;font-size:calc(20px * var(--ts,1));line-height:1;padding:4px 6px;opacity:.75}
 
 .live-nav{
@@ -1672,6 +1671,22 @@ body.sheet-lock{position:fixed;left:0;right:0;width:100%;height:auto;overflow:vi
 .workout-note{font-size:calc(14px * var(--ts,1));color:#4f6168;text-align:center;max-width:36ch}
 .workout-reps-input{display:flex;align-items:center;gap:10px}
 .workout-rest{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:6px}
+/* Kraftplan actions (Fabian 07.10.: "Jetzt weiter"/"Sofort starten" looked
+   tiny and foreign). One shape for every action in the reps view and the
+   Wim-Hof hold: full-width up to 360 px, Magra, fixed brand hex (player
+   visuals never use var(--brand), which turns light blue in dark mode). */
+.workout-rest{width:100%}
+#workoutSetDoneBtn,#workoutRestSkipBtn,#wimhofHoldDoneBtn{
+  width:min(360px,100%);min-height:56px;margin-top:8px;border:none;border-radius:16px;
+  background:#007094;color:#fff;box-shadow:0 6px 18px rgba(0,112,148,.22);
+  font-family:"Magra",sans-serif;font-weight:700;font-size:calc(18px * var(--ts,1));letter-spacing:.02em;
+  padding:15px 20px;cursor:pointer
+}
+#workoutSetDoneBtn:active,#workoutRestSkipBtn:active,#wimhofHoldDoneBtn:active{background:#005a78}
+.workout-reps-input{gap:14px;margin-top:4px}
+.workout-reps-input .slider-label{font-size:calc(15px * var(--ts,1));font-weight:700}
+.workout-reps-input .circuit-step{width:44px;height:44px;font-size:calc(20px * var(--ts,1))}
+.workout-reps-input .circuit-duration-value{font-family:"Magra",sans-serif;font-size:calc(24px * var(--ts,1));min-width:44px}
 .workout-overview{width:100%;max-width:420px;display:flex;flex-direction:column;gap:6px;margin-top:4px}
 .workout-overview-row{
   display:flex;align-items:center;gap:8px;font-size:calc(13px * var(--ts,1));color:#4f6168;
