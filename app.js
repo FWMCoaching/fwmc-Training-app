@@ -28387,6 +28387,9 @@
     icon: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' };
   const HUB_CORE = ["visual", "breath", "nat", "movement"];
   const HUB_TEXT = { free: "z. B. Dehnen, Eisbad oder Journal." };
+  // Fabian 07.10.: Reaktionstraining is being reworked, its tile keeps its
+  // place but carries a "Test" mark (Test-Bereich colours) until then.
+  const HUB_TEST_MARK = ["movement"];
   function renderHubAreaGrid() {
     const grid = $("hubAreaGrid");
     const tiles = PLAN_AREAS.map((a) => ({ key: a.key, ...a }));
@@ -28396,7 +28399,7 @@
     // tiles (Workout, Cardio, Eigenes Training, Test when unlocked).
     const tile = (a, core) => `<button type="button" class="area-tile${core ? " hub-core-tile" : ""}" data-area="${a.key}"${core ? ` style="--tile-c:${a.color}"` : ""}>
       <span class="area-icon" style="background:${a.color}"><svg viewBox="0 0 24 24" aria-hidden="true">${a.icon}</svg></span>
-      ${core ? "" : '<span class="t-wrap">'}<span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(HUB_TEXT[a.key] || (a.key === "nat" ? "Neuroathletik: " + a.text : a.text))}</span>${a.key === "test" ? '<span class="test-unlock-badge">Mit Code freigeschaltet</span>' : ""}${core ? "" : "</span>"}</button>`;
+      ${core ? "" : '<span class="t-wrap">'}<span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(HUB_TEXT[a.key] || (a.key === "nat" ? "Neuroathletik: " + a.text : a.text))}</span>${a.key === "test" ? '<span class="test-unlock-badge">Mit Code freigeschaltet</span>' : ""}${core ? "" : "</span>"}${HUB_TEST_MARK.includes(a.key) ? '<span class="hub-test-mark">Test</span>' : ""}</button>`;
     const core = tiles.filter((a) => HUB_CORE.includes(a.key)), extra = tiles.filter((a) => !HUB_CORE.includes(a.key));
     grid.innerHTML = `<div class="hub-group-title hub-first">Unser Schwerpunkttraining</div><p class="hub-sub">Neurozentrierte Grundlagen gezielt trainieren.</p>
       <div class="area-grid hub-core">${core.map((a) => tile(a, true)).join("")}</div>

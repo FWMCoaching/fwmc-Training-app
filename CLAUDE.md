@@ -498,7 +498,9 @@ For every new or changed exercise/screen, in the same commit:
   (`.combo-entry-card`, Fabian 07.10. Variante H: calm tile, icon = four squares in the
   core area colours, filled from `HUB_CORE` in `renderHubAreaGrid`, so a dropped core
   area is replaced by a "Dazu" colour; Heute has none since 06.10. evening); tile texts
-  start equally far left in both groups.
+  start equally far left in both groups. Reaktionstraining keeps its core place with a
+  `.hub-test-mark` "Test" pill (Test-Bereich colours, `HUB_TEST_MARK` in app.js,
+  Fabian 07.10. while it is reworked; remove the key to drop it).
 - Gleichgewicht + Größe live (2026-10-06): 6th NAT exercise (letter sticks,
   Nein-Nein/Ja-Ja/Ohr-Schulter/Diagonal/Sakkaden, metronome, sets or open-ended,
   stance shown/spoken, drag + pinch, live tempo/Takt/Zeit anhalten/Lautstärke);
