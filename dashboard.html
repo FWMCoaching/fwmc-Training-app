@@ -1639,7 +1639,7 @@
   // what values the app understands for a plan entry (whatOptions in app.js)
   const VISUAL_EX = [["vt-color", "VT · Farbe & Seite"], ["vrw-original", "VRW · Direkt & Umgekehrt"], ["4-straight", "4 Pfeile · gerade"],
     ["4-diag", "4 Pfeile · diagonal"], ["8-solo", "8 Pfeile"], ["8-vrw", "8 Pfeile · Rot/Grün"], ["stroop-classic", "Stroop · klassisch"],
-    ["stroop-bg", "Stroop · mit Hintergrund"], ["cross-modal", "Sehen & Hören"], ["cone-tap", "Hütchen sortieren"], ["cone-compass", "Hütchen · Kompass-Aufbau"], ["farbfelder", "Farbfelder"]];
+    ["stroop-bg", "Stroop · mit Hintergrund"], ["cross-modal", "Sehen & Hören"], ["cone-tap", "Hütchen sortieren"], ["cone-compass", "Hütchen · Kompass-Aufbau"], ["cone-number", "Hütchen · Farbe + Zahl"], ["farbfelder", "Farbfelder"]];
   const NAT_SUBS = [["peripher", "Periphere Wahrnehmung"], ["remember", "Positionen merken"], ["blitz", "Blitz-Raster"], ["flash", "Flash-Speicher-Test"], ["mot", "Objektverfolgung (MOT)"], ["balance", "Gleichgewicht"]];
   const TAGS = ["Einsteiger", "Fortgeschritten", "Sportler", "Führungskraft", "Regeneration", "Wettkampf"];
   const BS_KINDS = { kombi: "Kombi-Paket", week: "Wochen-Vorlage", phase: "Phasen-Vorlage" };
@@ -1677,6 +1677,8 @@
     const o = { id: String(e.id || uid()), area: e.area, what: String(e.what || ""), code: String(e.code || "").slice(0, 60),
       time: /^\d{2}:\d{2}$/.test(e.time || "") ? e.time : "", minutes: Math.max(5, Math.min(240, Math.round(Number(e.minutes) || 15))) };
     if (e.special) o.special = "Sondertraining";
+    // Optional name shown in the client's plan (e.g. a Kombi-Paket's name).
+    if (typeof e.title === "string" && e.title.trim()) o.title = e.title.trim().slice(0, 60);
     return o;
   }
   const cleanDays = (days) => [0, 1, 2, 3, 4, 5, 6].map((i) => ((days && days[i]) || []).map(cleanEntry).filter(Boolean));
@@ -1691,6 +1693,7 @@
   }
   function entryTitle(e) {
     const a = AREA[e.area] || AREAS[0];
+    if (e.title) return `${a.short} · ${e.title}`;
     const w = whatOptions(e.area).find(([v]) => v && v === e.what);
     if (w) return `${a.short} · ${w[1]}`;
     if (e.code) return `${a.short} · Code ${e.code}`;
@@ -2100,7 +2103,7 @@
       const ref = target.dataset.ref, di = +target.dataset.di;
       const items = bs.data.items || [];
       editDays(ref, (days) => {
-        if (bs.data.asOne) days[di].push(cleanEntry({ id: uid(), area: "combo", what: "", code: bs.data.code || "", minutes: items.reduce((s, x) => s + (Number(x.minutes) || 0), 0) }));
+        if (bs.data.asOne) days[di].push(cleanEntry({ id: uid(), area: "combo", what: "", title: bs.name || "", code: bs.data.code || "", minutes: items.reduce((s, x) => s + (Number(x.minutes) || 0), 0) }));
         else items.forEach((it) => days[di].push(cleanEntry({ id: uid(), area: it.area, what: it.what, minutes: it.minutes })));
       });
       toast(`„${bs.name}“ am ${WDL[di]} eingesetzt.`);
@@ -2262,7 +2265,9 @@
   function buildDef(p, version) {
     return { type: "training-plan", name: p.name || `Trainingsplan ${p.kuerzel}`, version,
       plan: { startDate: p.startDate, phases: p.phases.map((ph) => Object.assign({ id: ph.id, name: ph.name, weeks: ph.weeks, days: cleanDays(ph.days) },
-        ph.alt && ph.alt.length ? { alt: ph.alt.map(cleanDays) } : {}, ph.noScore ? { noScore: true } : {})) } };
+        ph.alt && ph.alt.length ? { alt: ph.alt.map(cleanDays) } : {}, ph.noScore ? { noScore: true } : {})),
+        // the client's Wettkampf dates land in their own calendar (app: applyTrainerPlan)
+        ...(p.comps && p.comps.length ? { events: p.comps.map((c) => ({ date: c.date, title: c.title, kind: "wettkampf" })) } : {}) } };
   }
   function issueProblem(p) {
     if (!p.phases.length) return "Der Plan hat noch keine Phase.";

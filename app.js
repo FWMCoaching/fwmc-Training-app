@@ -302,7 +302,8 @@
     function save(list) { writeJSON(key, list); }
     return { load, save };
   }
-  function renderPresetList(store, listEl, groupEl, filterFn, metaFn, onStart) {
+  // opts.confirmDelete (NAT presets, 2026-10-07): "✕" asks via confirmDialog().
+  function renderPresetList(store, listEl, groupEl, filterFn, metaFn, onStart, opts) {
     const all = store.load();
     const entries = filterFn ? all.filter(filterFn) : all;
     groupEl.hidden = entries.length === 0;
@@ -319,8 +320,12 @@
       rm.title = "Löschen";
       rm.textContent = "✕";
       rm.addEventListener("click", () => {
-        store.save(store.load().filter((e) => e.id !== entry.id));
-        renderPresetList(store, listEl, groupEl, filterFn, metaFn, onStart);
+        const del = () => {
+          store.save(store.load().filter((e) => e.id !== entry.id));
+          renderPresetList(store, listEl, groupEl, filterFn, metaFn, onStart, opts);
+        };
+        if (opts && opts.confirmDelete) confirmDialog(`Die Einstellung „${entry.name}“ löschen?`, del, { yes: "Löschen", no: "Abbrechen" });
+        else del();
       });
       wrap.appendChild(btn);
       wrap.appendChild(rm);
@@ -651,6 +656,10 @@
     } else if (kind === "color") {
       ctx.fillStyle = payload.color;
       ctx.fillRect(0, 0, cw, ch);
+    } else if (kind === "colornum") {
+      ctx.fillStyle = currentBgFill(NEUTRAL);
+      ctx.fillRect(0, 0, cw, ch);
+      drawColorNum(cw, ch, payload);
     } else if (kind === "vrw") {
       const bg = payload.direct ? payload.color : "#ffffff";
       const arrowFill = payload.direct ? "#ffffff" : payload.color;
@@ -811,6 +820,43 @@
     const cell = (side - gap) / 2;
     if (navigator.webdriver) window.__ffLastGeom = { top: cRect.top + y0 / dpr, bottom: cRect.top + (y0 + side) / dpr, left: cRect.left + x0 / dpr, right: cRect.left + (x0 + side) / dpr, barBottom: barRect ? barRect.bottom : 0, capTop: cRect.top + (ch - capH) / dpr };
     return { x0, y0, side, gap, cell, capH };
+  }
+  // Hütchen · Farbe + Zahl: one big colour disc below the floating player
+  // bar with the field number on it. Ink is white or dark, whichever has
+  // more contrast on that colour, with a fixed-hex outline of the other.
+  function cnGeometry(cw, ch) {
+    const cRect = canvas.getBoundingClientRect();
+    const dpr = cRect.width ? cw / cRect.width : 1;
+    const bar = document.getElementById("playerBar");
+    const barRect = bar && !bar.hidden ? bar.getBoundingClientRect() : null;
+    const m = 16 * dpr;
+    const top = barRect && barRect.height ? Math.max(m, (barRect.bottom - cRect.top) * dpr + 12 * dpr) : m;
+    const bottom = ch - m;
+    const r = Math.max(20, Math.min((cw - 2 * m) / 2, (bottom - top) / 2));
+    const cx = cw / 2, cy = top + (bottom - top) / 2;
+    if (navigator.webdriver) window.__cnLastGeom = { top: cRect.top + (cy - r) / dpr, bottom: cRect.top + (cy + r) / dpr, left: cRect.left + (cx - r) / dpr, right: cRect.left + (cx + r) / dpr, barBottom: barRect ? barRect.bottom : 0, stageBottom: cRect.bottom };
+    return { cx, cy, r };
+  }
+  function drawColorNum(cw, ch, payload) {
+    const { cx, cy, r } = cnGeometry(cw, ch);
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = payload.color;
+    ctx.fill();
+    const light = "#ffffff", dark = "#16232a";
+    const ink = contrastRatio(light, payload.color) >= contrastRatio(dark, payload.color) ? light : dark;
+    const text = String(payload.num);
+    const size = Math.round(r * 1.25);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `700 ${size}px Magra, sans-serif`;
+    ctx.lineJoin = "round";
+    ctx.lineWidth = Math.max(3, size * 0.07);
+    ctx.strokeStyle = ink === light ? dark : light;
+    ctx.strokeText(text, cx, cy + size * 0.04);
+    ctx.fillStyle = ink;
+    ctx.fillText(text, cx, cy + size * 0.04);
+    if (navigator.webdriver) window.__cnLast = { color: payload.color, num: payload.num, ink };
   }
   function ffRoundRect(x, y, w, h, r) {
     ctx.beginPath();
@@ -1002,6 +1048,17 @@
       task: "Reagiere auf die Farbe – passend zu deinem eigenen Richtungs-Aufbau am Boden.",
       trains: "Reaktionsschnelligkeit gezielt in frei gewählte Richtungen",
       rules: "Klebe ein Kreuz oder einen Stern mit vier oder acht Richtungen auf den Boden und stelle deine Farbhütchen in die Richtungen, die du trainieren willst. Mehrere Farben auf derselben Richtung lassen diese Richtung häufiger drankommen. Welche Farbe wohin gehört, legst du komplett selbst fest – die App zeigt immer nur die Farbe.",
+    },
+    // Hütchen · Farbe + Zahl (Fabian 2026-10-07, Idee H): 3-6 numbered
+    // fields on the floor, a coloured cup on each; the screen shows a colour
+    // with a big number and the client puts that cup on that field.
+    // state.cnFields = number of fields (3-6); colours = state.colors
+    // (usesColors), at most one per field. Details: docs/notes/29.
+    "cone-number": {
+      title: "Hütchen · Farbe + Zahl", type: "colornum", usesColors: true,
+      task: "Stelle den Becher in dieser Farbe auf das Feld mit dieser Zahl.",
+      trains: "Farbe und Zahl gleichzeitig erfassen und schnell umsetzen",
+      rules: "Lege nummerierte Felder (1 bis zur eingestellten Anzahl) auf den Boden und stelle auf jedes einen farbigen Becher oder ein Hütchen. Die App zeigt eine Farbe mit einer großen Zahl – zum Beispiel Gelb mit der 2: Stelle den gelben Becher so schnell wie möglich auf Feld 2. Steht dort schon ein Becher, tausche die beiden.",
     },
     "farbfelder": {
       title: "Farbfelder", type: "farbfelder", bgIsStimulus: true,
@@ -2492,6 +2549,7 @@
     if (name !== "natHome") els.natProgramError.hidden = true;
     if (name !== "trainingHub") $("moreCodeError").hidden = true;
     syncNatModeRows(name);
+    if (NAT_SAVED) NAT_SAVED(name);
     window.scrollTo(0, 0);
   }
 
@@ -2562,6 +2620,8 @@
       { key: "training", label: "Trainingsmodus", sub: "gezielt üben", card: "motOpenTraining", screen: "motTrainingReady" }] },
   };
   const NAT_MODE_KEY = "fwmc-nat-mode-v1";
+  // Set further down (NAT presets); `var` so showScreen() can test it before.
+  var NAT_SAVED = null;
   const natModesOn = !(navigator.webdriver && !readJSON("fwmc-test-natmodes", false));
   let natModeNav = null; // { ex, mode } while the client came from the NAT tiles
   const natModeScreens = new Set();
@@ -3196,6 +3256,7 @@
     schwer: { stimulusS: 0.8, intervalMin: 2, intervalMax: 4 },
   };
   const PREFS_KEY = "fwmc-webapp-v3";
+  const CN_MIN_FIELDS = 3, CN_MAX_FIELDS = 6; // Hütchen · Farbe + Zahl
   const DEFAULTS = {
     exercise: null,
     duration: 60,
@@ -3234,6 +3295,8 @@
     ffFoot: "aus",
     ffHands: false,
     ffHandRules: { rot: "hoch" },
+    // Hütchen · Farbe + Zahl: number of numbered fields on the floor.
+    cnFields: 4,
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -3262,6 +3325,12 @@
     if (!STROOP_COLOR_BY_KEY[state.bgColorKey]) state.bgColorKey = "gruen";
     if (typeof state.bgIntensity !== "number" || state.bgIntensity < 0 || state.bgIntensity > 1) state.bgIntensity = 0;
     ffNormalize(state); // also copies ffLayout/ffHandRules, so DEFAULTS is never mutated
+    cnNormalize(state);
+  }
+  function cnNormalize(p) {
+    const n = Math.round(Number(p.cnFields));
+    p.cnFields = n >= CN_MIN_FIELDS && n <= CN_MAX_FIELDS ? n : 4;
+    return p;
   }
   function savePrefs() { writeJSON(PREFS_KEY, state); }
   loadPrefs();
@@ -3366,6 +3435,8 @@
     else state.colors = keys;
   }
   function colorModeLimits() {
+    // Hütchen · Farbe + Zahl: one cup per field at most (3-6).
+    if (colorMode === "standard" && EXERCISES[state.exercise] && EXERCISES[state.exercise].type === "colornum") return { min: MIN_COLORS, max: state.cnFields };
     if (colorMode === "arrows") return { min: ARROW_MIN_COLORS, max: ARROW_MAX_COLORS };
     if (colorMode === "stroop") return { min: STROOP_MIN_COLORS, max: STROOP_MAX_COLORS };
     return { min: MIN_COLORS, max: MAX_COLORS };
@@ -4307,6 +4378,8 @@
     // Periphere Wahrnehmung - it was just built there first.
     els.periphFixGroup.hidden = isConeTap || isFf; // Farbfelder: the grid has no centre dot
     ffEls.settings.hidden = !isFf;
+    $("cnFieldsGroup").hidden = ex.type !== "colornum";
+    if (ex.type === "colornum") syncCnUI();
     if (isFf) { ffActiveCell = 0; syncFfUI(); }
     renderHilfsmittel(id);
     els.periphFieldGroup.hidden = !isPeriph;
@@ -4337,6 +4410,10 @@
   // per exercise that needs equipment; `link` (a product page) is shown only
   // once Fabian sets a URL. A new exercise that needs something = one entry.
   const HILFSMITTEL = {
+    "cone-number": {
+      text: "Du brauchst: 3-6 farbige Becher oder Hütchen und nummerierte Felder (z. B. Zettel mit 1-6).",
+      link: "",
+    },
     farbfelder: {
       text: "Du brauchst: eine Farbmatte mit 4 Feldern oder 4 farbige Hütchen, Bälle oder Zettel auf dem Boden, angeordnet wie hier eingestellt.",
       link: "",
@@ -4352,6 +4429,20 @@
     a.hidden = !h.link;
     if (h.link) a.href = h.link; else a.removeAttribute("href");
   }
+
+  // ---- Hütchen · Farbe + Zahl: "Anzahl Felder" (stored in `state`) ----
+  function syncCnUI() {
+    document.querySelectorAll("#cnFieldsRow [data-cn-fields]").forEach((b) => setActive(b, Number(b.dataset.cnFields) === state.cnFields));
+  }
+  document.querySelectorAll("#cnFieldsRow [data-cn-fields]").forEach((b) => b.addEventListener("click", () => {
+    state.cnFields = Number(b.dataset.cnFields);
+    cnNormalize(state);
+    // Fewer fields than chosen colours: keep the first ones (one cup per field).
+    if (state.colors.length > state.cnFields) state.colors = state.colors.slice(0, state.cnFields);
+    savePrefs();
+    syncCnUI();
+    syncColorUI();
+  }));
 
   // ---- Farbfelder ready-screen settings (stored in `state`, PREFS_KEY) ----
   const ffEls = {
@@ -4436,6 +4527,15 @@
   ffEls.handsRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-hands]"); if (b) { state.ffHands = b.dataset.ffHands === "1"; ffSave(); syncFfUI(); } });
   // Test hooks (automated browsers only): the pure rule and a schedule
   // built with some settings swapped in for the call.
+  // Test hook (automated browsers only): Farbe + Zahl schedule for given state/colours.
+  if (navigator.webdriver) window.__cn = {
+    build: (over, colorKeys) => {
+      const keep = JSON.parse(JSON.stringify(state)), keepActive = active;
+      Object.assign(state, over || {});
+      active = { ...active, colors: keysToColors(colorKeys || state.colors) };
+      try { return buildColorNumSchedule({}, Math.random).schedule; } finally { Object.assign(state, keep); active = keepActive; }
+    },
+  };
   if (navigator.webdriver) window.__ff = {
     target: ffTarget,
     build: (over) => {
@@ -4503,8 +4603,10 @@
       state.intervalMax = existingBlock.intervalMax ?? state.intervalMax;
       if (existingBlock.periph) Object.assign(state, JSON.parse(JSON.stringify(existingBlock.periph)));
       if (existingBlock.ff) { Object.assign(state, JSON.parse(JSON.stringify(existingBlock.ff))); ffNormalize(state); }
+      if (existingBlock.cn) { Object.assign(state, existingBlock.cn); cnNormalize(state); }
       renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
       if (ex.type === "farbfelder") syncFfUI();
+      if (ex.type === "colornum") syncCnUI();
       if (ex.type === "periph") { syncPeriphFixUI(); syncPeriphKindUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); syncPeriphColorUI(); }
     }
     comboVisualEditIndex = editIndex ?? null;
@@ -4536,6 +4638,7 @@
     else if (ex.usesStroopColors) { block.colors = state.stroopColors.slice(); if (Object.keys(state.stroopWeights).length) block.stroopWeights = { ...state.stroopWeights }; }
     if (ex.type === "periph") block.periph = periphStateSnapshot();
     if (ex.type === "farbfelder") block.ff = ffStateSnapshot();
+    if (ex.type === "colornum") block.cn = { cnFields: state.cnFields };
     if (comboVisualEditIndex != null) comboDraftBlocks[comboVisualEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitVisualComboCapture();
@@ -5297,6 +5400,31 @@
     return { schedule, total: t };
   }
 
+  // Hütchen · Farbe + Zahl: a random colour of the chosen ones + a random
+  // field number 1..cnFields, never the same pair twice in a row.
+  function buildColorNumSchedule(cfg, rng) {
+    const colors = active.colors;
+    const n = cnNormalize({ cnFields: state.cnFields }).cnFields;
+    const schedule = [];
+    let t = pushCountdown(schedule, cfg);
+    const show = state.stimulusS;
+    let last = "";
+    while (t < state.duration) {
+      let color, num, key, tries = 0;
+      do {
+        color = colors[Math.floor(rng() * colors.length)];
+        num = 1 + Math.floor(rng() * n);
+        key = color.key + num;
+      } while (key === last && tries++ < 8);
+      last = key;
+      const pause = randInterval(rng);
+      schedule.push({ t0: t, t1: t + show, kind: "colornum", payload: { color: color.hex, num } });
+      schedule.push({ t0: t + show, t1: t + show + pause, kind: "blank", payload: {} });
+      t += show + pause;
+    }
+    return { schedule, total: t };
+  }
+
   function buildVRWRealSchedule(cfg, rng) {
     const colors = active.colors;
     const schedule = [];
@@ -5322,6 +5450,7 @@
       cfg.type === "vrw-real" ? buildVRWRealSchedule(cfg, rng) :
       cfg.type === "periph" ? buildPeriphSchedule(cfg, rng) :
       cfg.type === "farbfelder" ? buildFarbfelderSchedule(cfg, rng) :
+      cfg.type === "colornum" ? buildColorNumSchedule(cfg, rng) :
       cfg.type === "flash-host" ? buildFlashHostSchedule(cfg, rng) :
       buildArrowSchedule(cfg, rng);
   }
@@ -5608,6 +5737,7 @@
     state.intervalMin = block.intervalMin ?? 2;
     state.intervalMax = block.intervalMax ?? 4;
     if (block.ff) { Object.assign(state, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
+    if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
     active = blockColors(block);
   }
 
@@ -6184,6 +6314,7 @@
         const ex = EXERCISES[e.exercise];
         const usedColors = ex && ex.usesArrowColors ? e.arrowColors : ex && ex.usesStroopColors ? e.stroopColors : e.colors;
         if (e.ff) return `${fmtMinutes(e.duration)} · ${FF_MODE_LABELS[e.ff.ffMode] || ""}`;
+        if (e.cn) return `${fmtMinutes(e.duration)} · ${e.cn.cnFields} Felder · ${(e.colors || []).length} Farben`;
         return `${fmtMinutes(e.duration)}${usedColors && usedColors.length ? ` · ${usedColors.length} Farben` : ""}`;
       },
       (entry) => {
@@ -6195,12 +6326,18 @@
         state.intervalMin = entry.intervalMin;
         state.intervalMax = entry.intervalMax;
         if (entry.ff) { Object.assign(state, JSON.parse(JSON.stringify(entry.ff))); ffNormalize(state); }
+        if (entry.cn) { Object.assign(state, entry.cn); cnNormalize(state); }
+        // Periphere Wahrnehmung (NAT presets, 2026-10-07): Zeichen, Bereich,
+        // Fixpunkt, Farben and background travel with the preset too.
+        if (entry.periph) { Object.assign(state, JSON.parse(JSON.stringify(entry.periph))); savePrefs(); loadPrefs(); }
         savePrefs();
         // While capturing a Kombi-Baustein, loading a saved setting should
         // just fill the draft for review, not immediately start a session.
         if (comboVisualCaptureOriginal) {
           renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
           if (EXERCISES[state.exercise].type === "farbfelder") syncFfUI();
+          if (entry.cn) syncCnUI();
+          if (entry.periph) { syncPeriphKindUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); syncPeriphColorUI(); syncPeriphFixUI(); syncBgUI(); }
           return;
         }
         active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors), stroopColors: keysToColors(state.stroopColors, STROOP_COLOR_LIB) };
@@ -6218,6 +6355,8 @@
         colors: state.colors.slice(), arrowColors: state.arrowColors.slice(), stroopColors: state.stroopColors.slice(), duration: state.duration,
         stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax,
         ...(EXERCISES[state.exercise].type === "farbfelder" ? { ff: ffStateSnapshot() } : {}),
+        ...(EXERCISES[state.exercise].type === "periph" ? { periph: { ...periphStateSnapshot(), bgColorKey: state.bgColorKey, bgIntensity: state.bgIntensity } } : {}),
+        ...(EXERCISES[state.exercise].type === "colornum" ? { cn: { cnFields: state.cnFields } } : {}),
       });
       vtSavedStore.save(list);
       renderVTSaved();
@@ -12736,6 +12875,116 @@
     els.motTrainingComboDurationValue.textContent = fmtSeconds(comboMotDurationS);
   });
 
+  // ---- NAT: "Aktuelle Einstellung speichern" (Idee 54, Fabian 2026-10-07).
+  // Same list + inline name form as VT/Atem/Reaktion (makePresetStore,
+  // renderPresetList, wirePresetSaveForm) on all eight NAT ready screens
+  // (Periphere Wahrnehmung uses the VT ready screen and its VT presets). A
+  // preset is the exercise's whole prefs object (mode, difficulty, timing,
+  // look, background) + the mode it was saved in. Tap = apply + start, like
+  // the siblings; in Kombi capture it only fills the draft (the capture
+  // restores the client's own prefs on exit, so nothing leaks). Kombi
+  // blocks and Cardio guests keep their own `prefs` snapshot
+  // (prefsOverride) and never read this store. "✕" asks first.
+  NAT_SAVED = (() => {
+    const natStore = makePresetStore("fwmc-nat-saved-v1"); // [{ id, name, ex, mode, prefs }]
+    const deep = (o) => JSON.parse(JSON.stringify(o));
+    const diffName = (table, p, fields) => {
+      const k = Object.keys(table).find((key) => fields.every((f) => Math.abs(table[key][f] - p[f]) < 0.001));
+      return k ? table[k].title : "Eigene Werte";
+    };
+    const modeLabel = (ex, mode) => { const m = NAT_MODES[ex] && NAT_MODES[ex].modes.find((x) => x.key === mode); return m ? m.label : ""; };
+    const EX = {
+      remember: {
+        prefs: rememberPrefs, put: (p) => { Object.assign(rememberPrefs, p); saveRememberPrefsToStorage(); loadRememberPrefs(); },
+        open: (mode) => { if (mode === "training") { syncRememberTrainingUI(); showScreen("rememberTrainingReady"); } else openRememberReady(mode); },
+        capturing: () => (comboRememberCaptureOriginal ? comboRememberCaptureMode : null),
+        meta: (e) => [modeLabel("remember", e.mode), e.mode === "training" ? `ab Zahl ${e.prefs.trainingStart}` : diffName(REMEMBER_DIFFICULTIES, e.prefs, ["revealBaseS", "revealStepS"])],
+      },
+      blitz: {
+        prefs: blitzPrefs, put: (p) => { Object.assign(blitzPrefs, p); saveBlitzPrefsToStorage(); loadBlitzPrefs(); },
+        open: () => openBlitzReady(),
+        capturing: () => (comboBlitzCaptureOriginal ? "-" : null),
+        meta: (e) => [`Raster ${e.prefs.gridSize}×${e.prefs.gridSize}`, diffName(BLITZ_DIFFICULTIES, e.prefs, ["flashS"])],
+      },
+      flash: {
+        prefs: flashPrefs, put: (p) => { Object.assign(flashPrefs, p); saveFlashPrefsToStorage(); loadFlashPrefs(); },
+        open: (mode) => { if (mode === "training") openFlashTrainingReady(); else openFlashReady(mode); },
+        capturing: () => (comboFlashCaptureOriginal ? comboFlashCaptureMode : null),
+        meta: (e) => [modeLabel("flash", e.mode), e.mode === "training" ? `ab ${e.prefs.trainingStart} Zeichen` : diffName(FLASH_DIFFICULTIES, e.prefs, ["stimulusS", "intervalS"])],
+      },
+      mot: {
+        prefs: motPrefs, put: (p) => { Object.assign(motPrefs, p); saveMotPrefsToStorage(); loadMotPrefs(); },
+        open: (mode) => { if (mode === "training") openMotTrainingReady(); else openMotReady(mode); },
+        capturing: () => (comboMotCaptureOriginal ? comboMotCaptureMode : null),
+        meta: (e) => [modeLabel("mot", e.mode), e.mode === "training" ? `${e.prefs.trainingObjects} Objekte` : diffName(MOT_DIFFICULTIES, e.prefs, ["speed", "trackS", "highlightS"])],
+      },
+      balance: {
+        prefs: balancePrefs, put: (p) => { Object.assign(balancePrefs, p); normalizeBalancePrefs(balancePrefs); saveBalancePrefsToStorage(); },
+        open: () => openBalanceReady(),
+        capturing: () => (comboBalanceCaptureOriginal ? "-" : null),
+        meta: (e) => [(BALANCE_MODES[e.prefs.mode] || {}).name || "", `${e.prefs.sticks === 2 ? "2 Stifte" : "1 Stift"}`, `${e.prefs.bpm}/min`],
+      },
+    };
+    // screen id -> exercise, its start button and the mode it currently shows
+    const SCREENS_NAT = {
+      rememberReady: { ex: "remember", start: "rememberReadyStartBtn", mode: () => rememberReadyMode },
+      rememberTrainingReady: { ex: "remember", start: "rememberTrainingStartBtn", mode: () => "training" },
+      blitzReady: { ex: "blitz", start: "blitzReadyStartBtn", mode: () => null },
+      flashReady: { ex: "flash", start: "flashReadyStartBtn", mode: () => flashReadyMode },
+      flashTrainingReady: { ex: "flash", start: "flashTrainingStartBtn", mode: () => "training" },
+      motReady: { ex: "mot", start: "motReadyStartBtn", mode: () => motReadyMode },
+      motTrainingReady: { ex: "mot", start: "motTrainingStartBtn", mode: () => "training" },
+      balanceReady: { ex: "balance", start: "balanceReadyStartBtn", mode: () => null },
+    };
+    const startOf = (ex, mode) => SCREENS_NAT[Object.keys(SCREENS_NAT).find((k) => SCREENS_NAT[k].ex === ex && (mode === "training") === k.includes("Training"))].start;
+    function render(sid) {
+      const c = SCREENS_NAT[sid];
+      const x = EX[c.ex];
+      const cap = x.capturing();
+      renderPresetList(natStore, $(sid + "SavedList"), $(sid + "SavedGroup"),
+        // In Kombi capture only presets of the captured mode fit; otherwise
+        // every preset of this exercise (its mode switches along).
+        (e) => e.ex === c.ex && (!cap || cap === "-" || e.mode === cap),
+        (e) => x.meta(e).filter(Boolean).join(" · "),
+        (entry) => apply(sid, entry), { confirmDelete: true });
+    }
+    function apply(sid, entry) {
+      const c = SCREENS_NAT[sid];
+      const x = EX[c.ex];
+      x.put(deep(entry.prefs));
+      if (x.capturing()) {
+        // Keep the capture's own title/description, only refresh the values.
+        const scr = $(sid);
+        const keep = [scr.querySelector(":scope > h1.page-title"), scr.querySelector(":scope > .page-sub")].filter(Boolean).map((el) => [el, el.textContent]);
+        x.open(entry.mode);
+        keep.forEach(([el, t]) => { el.textContent = t; });
+        return;
+      }
+      if (NAT_MODES[c.ex] && entry.mode) openNatMode(c.ex, entry.mode); else x.open(entry.mode);
+      $(startOf(c.ex, entry.mode)).click();
+    }
+    Object.keys(SCREENS_NAT).forEach((sid) => {
+      const c = SCREENS_NAT[sid];
+      wirePresetSaveForm({
+        saveBtn: $(sid + "SaveBtn"), form: $(sid + "SaveForm"), nameInput: $(sid + "SaveNameInput"),
+        cancelBtn: $(sid + "SaveCancelBtn"), confirmBtn: $(sid + "SaveConfirmBtn"),
+        defaultName: () => `Eigene Einstellung ${new Date().toLocaleDateString("de-DE")}`,
+        onSave: (name) => {
+          const list = natStore.load();
+          list.push({ id: String(Date.now()), name, ex: c.ex, mode: c.mode(), prefs: deep(EX[c.ex].prefs) });
+          natStore.save(list);
+          render(sid);
+        },
+      });
+    });
+    return function syncNatSaved(name) {
+      if (!SCREENS_NAT[name]) return;
+      $(name + "SaveForm").hidden = true;
+      $(name + "SaveBtn").hidden = false;
+      render(name);
+    };
+  })();
+
   // ---- Round engine ----
   function motEffectiveSpeed() { return motState.speed * Math.pow(MOT_SPEED_STEP_FACTOR, motState.speedStep); }
   // Same timer-wrapping trick as Remember/Blitz/Flash's: records what's
@@ -15752,6 +16001,7 @@
     { id: "cone-compass", title: "Hütchen · Kompass-Aufbau", group: "vt" },
     { id: "cone-tap", title: "Hütchen sortieren", group: "vt" },
     { id: "farbfelder", title: "Farbfelder", group: "vt" },
+    { id: "cone-number", title: "Hütchen · Farbe + Zahl", group: "vt" },
     { id: "periph-flash", title: "Periphere Wahrnehmung", group: "nat" },
     { id: "blitz-raster", title: "Blitz-Raster", group: "nat" },
     { id: "remember", title: "Positionen merken", group: "nat" },
@@ -15840,6 +16090,7 @@
     // client's own Farbfelder settings (it is the same mat on the floor).
     if (guestId === "farbfelder") return { duration: 20, mode: "leuchten", stimulusS: 1.5, intervalMin: 2, intervalMax: 4, level: 1, seqStart: 2, foot: "aus", hands: false };
     if (guestId === "mot") return { duration: 20, mode: "speed", style: "flach", speed: MOT_DIFFICULTIES.mittel.speed, trackS: MOT_DIFFICULTIES.mittel.trackS, highlightS: MOT_DIFFICULTIES.mittel.highlightS, errorMode: "reset2", colors: ["schwarz"], targetColors: ["gelb"], objectCount: 8, targetCount: 4, growStartObjects: 4, growStartTargets: 1, trainingObjects: 6, trainingTargets: 2, trainingSpeedStep: 0, trainingProgress: true, objScale: 1, ...bg };
+    if (guestId === "cone-number") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "gelb", "gruen", "blau"], fields: 4, ...bg };
     if (guestId === "vt-color" || guestId === "vrw-original") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg };
     if (guestId === "stroop-classic" || guestId === "stroop-bg") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "blau", "gruen"], ...bg };
     if (guestId === "8-vrw" || guestId === "cross-modal") return { duration: 20, stimulusS: 1, intervalMin: 2, intervalMax: 4, ...bg };
@@ -15904,6 +16155,10 @@
       if (cardioGuestIsFlash(t.id)) normalizeLookPrefs("flash", p);
       if (cardioGuestIsMot(t.id)) normalizeLookPrefs("mot", p);
       if (cardioGuestIsBalance(t.id)) { const dur = p.duration; normalizeBalancePrefs(p); p.duration = dur; }
+      if (t.id === "cone-number") {
+        if (!Number.isFinite(p.fields) || p.fields < CN_MIN_FIELDS || p.fields > CN_MAX_FIELDS) p.fields = d.fields;
+        p.fields = Math.round(p.fields);
+      }
       if (cardioGuestIsFarbfelder(t.id)) {
         if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
         if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
@@ -16296,7 +16551,8 @@
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
         <div><label>Reiz-Dauer (Sek.)</label><input type="number" min="0.3" max="3" step="0.1" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"></div>
         <div><label>Pause min (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${t.id}" data-f="intervalMin" value="${cfg.intervalMin}"></div>
-        <div><label>Pause max (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${t.id}" data-f="intervalMax" value="${cfg.intervalMax}"></div>
+        <div><label>Pause max (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${t.id}" data-f="intervalMax" value="${cfg.intervalMax}"></div>${t.id === "cone-number" ? `
+        <div><label>Anzahl Felder</label><input type="number" min="${CN_MIN_FIELDS}" max="${CN_MAX_FIELDS}" step="1" data-type="${t.id}" data-f="fields" value="${cfg.fields}"></div>` : ""}
       </div>`;
       }
       if (cardioGuestIsPeriphLike(t.id) || cardioGuestIsFlash(t.id)) {
@@ -16888,6 +17144,7 @@
     // usesStroopColors one below - same addonDefaultOwn()-shaped cfg as
     // addon-flash (cardioGuestIsPeriphLike()), just written into these
     // fields instead of active.*.
+    if (guestId === "cone-number") { state.cnFields = cfg.fields; cnNormalize(state); }
     if (guestId === "farbfelder") {
       state.ffMode = cfg.mode; state.ffLevel = cfg.level; state.ffSeqStart = cfg.seqStart;
       state.ffFoot = cfg.foot; state.ffHands = cfg.hands;
@@ -17400,6 +17657,7 @@
       const visEx = EXERCISES[block.exercise];
       if (block.periph) Object.assign(state, JSON.parse(JSON.stringify(block.periph)));
       if (block.ff) { Object.assign(state, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
+      if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
       // Generalized from a visual-only "usesColors" check (the sole shape
       // the original 3 curated presets ever needed) to all 3 colour kinds,
       // now that capture mode lets any exercise's block carry its own
@@ -28998,6 +29256,8 @@
       time: /^\d{2}:\d{2}$/.test(e.time || "") ? e.time : "", minutes: Math.max(5, Math.min(240, Number(e.minutes) || 15)) };
     if (e.special) o.special = String(e.special).slice(0, 40) || "Sondertraining";
     if (e.locked) o.locked = true;
+    // Optional name from the trainer (e.g. a Kombi-Paket from the dashboard).
+    if (typeof e.title === "string" && e.title.trim()) o.title = e.title.trim().slice(0, 60);
     return o;
   }
   const cleanDays = (days) => [0, 1, 2, 3, 4, 5, 6].map((i) => ((days && days[i]) || []).map(cleanEntry).filter(Boolean));
@@ -29219,6 +29479,7 @@
     return opts;
   }
   function entryTitle(e) {
+    if (e.title) return e.title;
     if (e.what && e.what.startsWith("ex:")) { const x = visualExercises().find((v) => v.id === e.what.slice(3)); if (x) return x.title; }
     if (e.what && e.what.startsWith("nat:")) { const n = NAT_SUBS.find(([k]) => k === e.what.slice(4)); if (n) return n[1]; }
     if (e.what && e.what.startsWith("free:")) { const b = freeFind(e.what.slice(5)); if (b) return b.title; }
@@ -30991,6 +31252,7 @@
     if (target.kind === "extra" && target.id) existing = (plan.extras[target.date] || []).find((x) => x.id === target.id) || null;
     if (target.kind === "dayov" && target.id) existing = (plan.dayOv[target.date] || []).find((x) => x.id === target.id) || null;
     const e = existing || { area: "visual", what: "", code: "", time: "", minutes: 15, ...(target.preset || {}) };
+    target.origTitle = e.title ? { title: e.title, area: e.area, what: e.what, code: e.code } : null;
     els.planEntryTitle.textContent = existing ? "Training ändern" : "Training eintragen";
     // pickDay (long-press "In den Wochenplan") and every new weekly entry:
     // several weekdays at once (kp1), "Jeden Tag" in one tap.
@@ -31026,6 +31288,9 @@
     const entry = cleanEntry({ id: t.id || newId(), area: els.planEntryArea.value, what: els.planEntryWhat.value, code: els.planEntryCode.value.trim(),
       time: els.planEntryTime.value, minutes: els.planEntryMinutes.value, special: t.kind === "extra" && $("planEntrySpecial").checked ? "Sondertraining" : "" });
     if (!entry) return;
+    // The trainer's name for it stays while the training itself is unchanged.
+    const ot = t.origTitle;
+    if (ot && ot.area === entry.area && (ot.what || "") === entry.what && (ot.code || "") === entry.code) entry.title = ot.title;
     if (t.onSave) { closePlanEntry(); t.onSave(entry); return; }
     if (t.pickDay) {
       if (t.pi < 0 || !plan.phases[t.pi]) {
@@ -31091,7 +31356,27 @@
     if (!sameSource) plan.startDate = incoming.startDate;
     plan.source = { code, version: Number(def.version) || 1, at: new Date().toISOString(), baseTimes };
     savePlan();
+    addTrainerEvents(def.plan.events, code);
     writeJSON(PLAN_CHECK_KEY, { day: todayStr(), offer: null });
+  }
+  // Wettkampf dates from the trainer (def.plan.events) go into the client's
+  // own calendar (fwmc-events-v1, the Heute calendar's store), marked
+  // `fromTrainer`; same date + title already there = skipped, so a new plan
+  // version never doubles them. focusWeekOf() then picks them up.
+  function addTrainerEvents(list, code) {
+    if (!Array.isArray(list) || !list.length) return 0;
+    const evs = loadEvents();
+    let added = 0;
+    list.slice(0, 50).forEach((x) => {
+      if (!x || !/^\d{4}-\d{2}-\d{2}$/.test(x.date || "")) return;
+      const title = String(x.title || "Wettkampf").trim().slice(0, 60) || "Wettkampf";
+      if (evs.some((e) => e.date === x.date && e.title === title)) return;
+      const kind = EVENT_KIND_BY_KEY[x.kind] ? x.kind : "wettkampf";
+      evs.push({ id: newId(), date: x.date, time: /^\d{2}:\d{2}$/.test(x.time || "") ? x.time : "", title, kind, goal: false, fromTrainer: String(code || "") });
+      added++;
+    });
+    if (added) saveEvents(evs);
+    return added;
   }
   function offerTrainerPlan(def, code, ctx) {
     activateSectionTab("today");

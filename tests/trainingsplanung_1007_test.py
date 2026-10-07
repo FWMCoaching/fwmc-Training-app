@@ -170,6 +170,11 @@ async def main():
 
         # ---- kp13: plan per code ----
         served["plan-tina"] = {"type": "training-plan", "version": 1, "plan": {"phases": [{"id": "t1", "name": "Grundlage vom Trainer", "weeks": 4, "days": [[{"id": "e1", "area": "nat", "what": "nat:remember", "minutes": 10, "time": "07:00"}]] + [[]] * 6}]}}
+        # Nacht 2 (L): a Kombi-Paket entry carries its name, Wettkampf dates come along
+        import datetime as _dt
+        comp_date = (_dt.date.today() + _dt.timedelta(days=14)).isoformat()
+        served["plan-tina"]["plan"]["phases"][0]["days"][2] = [{"id": "e3", "area": "combo", "what": "", "code": "", "title": "Kopf wach vor dem Spiel", "minutes": 20}]
+        served["plan-tina"]["plan"]["events"] = [{"date": comp_date, "title": "Turnier", "kind": "wettkampf"}, {"date": "kaputt", "title": "x"}]
         await seed(pg, None, {"fwmc-progress-v1": {"weekGoal": 3, "days": {}}})
         await pg.click(".today-code .code-toggle") if await pg.locator(".today-code .code-toggle").count() else None
         await pg.fill("#todayCodeInput", "plan-tina"); await pg.click("#todayCodeGoBtn"); await pg.wait_for_timeout(600)
@@ -177,6 +182,18 @@ async def main():
         await pg.click("#confirmYesBtn"); await pg.wait_for_timeout(400)
         pl = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-plan-v1'))")
         check("kp13: plan taken over with source", pl and pl["phases"][0]["name"] == "Grundlage vom Trainer" and pl["source"]["code"] == "plan-tina")
+        e3 = pl["phases"][0]["days"][2][0] if pl and pl["phases"][0]["days"][2] else {}
+        check("L1: entry.title kept (Kombi-Paket name)", e3.get("title") == "Kopf wach vor dem Spiel", e3)
+        evs = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-events-v1') || '[]')")
+        check("L2: trainer's Wettkampf in the own calendar, marked, broken date skipped", len(evs) == 1 and evs[0]["date"] == comp_date and evs[0]["kind"] == "wettkampf" and evs[0].get("fromTrainer") == "plan-tina", evs)
+        await pg.goto(BASE + "?bereich=heute"); await pg.wait_for_timeout(400)
+        await pg.click("#todayMyPlanBtn"); await pg.wait_for_timeout(400)
+        mp = await pg.inner_text("#myPlanScreen")
+        check("L2: recommendation text picks the Wettkampf up", "Turnier" in mp and "Empfehlung" in mp, mp[:300])
+        await pg.goto(BASE + "?bereich=heute"); await pg.wait_for_timeout(400)
+        await pg.click("#todayPlanBtn"); await pg.wait_for_timeout(400)
+        ed = await pg.inner_text("#planScreen")
+        check("L1: plan shows the Kombi-Paket name instead of 'Kombi-Programm'", "Kopf wach vor dem Spiel" in ed, ed[:300])
         # client changes the time, trainer publishes v2: own time survives
         pl["phases"][0]["days"][0][0]["time"] = "18:30"
         await pg.evaluate("(p) => localStorage.setItem('fwmc-plan-v1', JSON.stringify(p))", pl)
@@ -188,6 +205,8 @@ async def main():
         await pg.click("#planUpdateTakeBtn"); await pg.wait_for_timeout(600)
         await pg.click("#confirmYesBtn"); await pg.wait_for_timeout(400)
         pl = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-plan-v1'))")
+        evs = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-events-v1') || '[]')")
+        check("L2: new plan version does not double the Wettkampf", len(evs) == 1, len(evs))
         check("kp21: version 2 taken, own time kept", pl["source"]["version"] == 2 and pl["phases"][0]["days"][0][0]["time"] == "18:30" and len(pl["phases"][0]["days"][1]) == 1, json.dumps(pl["phases"][0]["days"][:2]))
 
         # layout: no sideways scroll, buttons >= 44 px on the new screens

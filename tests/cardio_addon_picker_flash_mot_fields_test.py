@@ -61,9 +61,9 @@ async def main():
 
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(400)
 
-        # ==== Flash (index 16): axes/zones + fixation live ====
+        # ==== Flash (index 17): axes/zones + fixation live ====
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(16).click(); await pg.wait_for_timeout(80)
+        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(17).click(); await pg.wait_for_timeout(80)
         print("flash: all 3 axes active by default live:",
               await detail.locator('[data-axis].active').count() == 3)
         print("flash: fixation shown as enabled by default, text input + colours + size visible:",
@@ -92,9 +92,9 @@ async def main():
         print("flash: saved fixEnabled/zones untouched by the live edit, even after running it:",
               saved_flash_after["fixEnabled"] == saved_flash_before["fixEnabled"] and saved_flash_after["zones"] == saved_flash_before["zones"])
 
-        # ==== MOT (index 17): Darstellung + Farbe des Ziels live ====
+        # ==== MOT (index 18): Darstellung + Farbe des Ziels live ====
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(17).click(); await pg.wait_for_timeout(80)
+        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(18).click(); await pg.wait_for_timeout(80)
         print("mot: 'Flach' active by default live:", await detail.locator('[data-motstyle="flach"].active').count() == 1)
         await detail.locator('[data-motstyle="3d"]').click(); await pg.wait_for_timeout(80)
         print("mot: style switches to 3D-Optik live:", await detail.locator('[data-motstyle="3d"].active').count() == 1)

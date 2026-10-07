@@ -266,7 +266,10 @@ async def main():
               and len(d1["plan"]["phases"]) == 2 and len(d1["plan"]["phases"][0]["alt"]) == 1 and d1["plan"]["phases"][1]["noScore"] is True
               and all(len(ph2["days"]) == 7 for ph2 in d1["plan"]["phases"]), json.dumps(d1)[:300])
         e0 = d1["plan"]["phases"][0]["days"][2][0]
-        check("def entry shape", set(e0.keys()) <= {"id", "area", "what", "code", "time", "minutes", "special"} and e0["time"] == "07:30", e0)
+        check("def entry shape", set(e0.keys()) <= {"id", "area", "what", "code", "time", "minutes", "special", "title"} and e0["time"] == "07:30", e0)
+        k0 = d1["plan"]["phases"][0]["days"][1][0]
+        check("L1: Kombi-Paket entry carries its name as title", k0["area"] == "combo" and k0.get("title") == "Kopf wach vor dem Spiel", k0)
+        check("L2: the client's Wettkampf dates go out as plan.events", d1["plan"].get("events") == [{"date": comp.isoformat(), "title": "Turnier", "kind": "wettkampf"}], d1["plan"].get("events"))
         check("kp21: client history logged with Kürzel", hist and hist[-1]["clientCode"] == "TS-07" and hist[-1]["programCode"] == "ts07-plan")
         st = await pg.inner_text("#plIssueState")
         check("kp21: 'Version 1, ausgegeben am …'", "Version 1, ausgegeben am" in st, st)
@@ -358,6 +361,9 @@ async def main():
             check("app: plan taken over as version 2 with A/B + noScore", ap["source"]["code"] == "ts07-plan" and ap["source"]["version"] == 2
                   and len(ap["phases"]) == 2 and len(ap["phases"][0].get("alt", [])) == 1 and ap["phases"][1].get("noScore") is True
                   and ap["phases"][0]["days"][1][0]["area"] == "combo", json.dumps(ap)[:300])
+            check("app L1: Kombi-Paket name kept", ap["phases"][0]["days"][1][0].get("title") == "Kopf wach vor dem Spiel", ap["phases"][0]["days"][1][0])
+            aev = await app.evaluate("() => JSON.parse(localStorage.getItem('fwmc-events-v1') || '[]')")
+            check("app L2: Wettkampf in the own calendar", len(aev) == 1 and aev[0]["title"] == "Turnier" and aev[0]["date"] == comp.isoformat() and aev[0]["fromTrainer"] == "ts07-plan", aev)
         await app.close()
 
         # ---- local-only mode, no token ----

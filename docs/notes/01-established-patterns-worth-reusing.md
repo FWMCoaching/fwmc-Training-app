@@ -91,7 +91,18 @@
   match any preset within a small floating-point tolerance.
 - **Named local presets**: `makePresetStore` / `renderPresetList` /
   `wirePresetSaveForm` — reusable save-under-a-name / tap-to-reuse pattern
-  used across VT, Breath, Movement, Workout, Kombi.
+  used across VT, Breath, Movement, Workout, Kombi and (2026-10-07, Idee 54)
+  all NAT ready screens: one store `fwmc-nat-saved-v1` `[{id, name, ex,
+  mode, prefs}]` (whole prefs object of the exercise), list/save form per
+  screen `<screenId>SavedGroup/SavedList/SaveBtn/SaveForm` in _body.html,
+  wired in the `NAT_SAVED` block after the MOT capture code (re-rendered from
+  `showScreen`). Tap = apply + start (mode switches along via
+  `openNatMode`); in Kombi capture only the captured mode's presets show and
+  a tap only fills the draft. `renderPresetList(..., {confirmDelete:true})`
+  asks via `confirmDialog()` before "✕" (NAT only so far; VT/Atem/Reaktion/
+  Kraft still delete at once - proposal to Fabian to switch them too).
+  Periphere Wahrnehmung (VT ready screen) carries `periph` (all periph* +
+  background) in its VT preset; Hütchen · Farbe + Zahl carries `cn`.
 - **Kombi (cross-section combo) blocks**: adding a new domain to the
   Kombi builder means adding branches to `comboBlockLabel`,
   `comboBlockMeta`, `comboBlockSeconds`, a `COMBO_PRESETS.<domain>` array,

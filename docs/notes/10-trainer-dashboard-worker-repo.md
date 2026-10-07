@@ -187,9 +187,13 @@ phases can be "aus der Wertung" (`noScore`).
   The dashboard keeps its own copy of `PLAN_AREAS`, the visual exercise ids
   and `NAT_SUBS` (`AREAS`, `VISUAL_EX`, `NAT_SUBS` in the planning script):
   **add a new area/exercise there too**.
+- **Nacht 2 (2026-10-07)**: a Kombi-Paket placed "als ein Eintrag" gets
+  `entry.title` = the Bausatz name (dashboard `cleanEntry` keeps `title`,
+  max 60); the client's Wettkämpfe (`p.comps`) go out as
+  `plan.events: [{date, title, kind:"wettkampf"}]` (app side: notes/27).
 - **Ausgabe (kp13/kp21)**: "Als Plan-Code ausgeben" builds
   `{type:"training-plan", name, version, plan:{startDate, phases:[{id, name,
-  weeks, days, alt?, noScore?}]}}` and saves it with the existing
+  weeks, days, alt?, noScore?}], events?}}` and saves it with the existing
   `POST /admin/program` (active) plus a `client-history` line (Kürzel,
   "Trainingsplan Version n"). Same code again = `version` = max(local
   issued, server config.version) + 1; entry ids stay stable so the client's

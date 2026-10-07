@@ -73,19 +73,19 @@ async def main():
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
         picker_groups = await pg.locator("#cardioAddonPickerTypeRow .cardio-addon-picker-group-label").all_inner_texts()
         print("picker grouped Visual Training then Neuroathletik:", picker_groups == ["Visuelles Training", "Neuroathletik (NAT)"])
-        print("picker offers 19 choices total:", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 19)
+        print("picker offers 20 choices total:", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 20)
 
-        # index 13 = periph-flash (first NAT entry, right after the 13 VT ones)
-        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(13).click(); await pg.wait_for_timeout(80)
+        # index 14 = periph-flash (first NAT entry, right after the 14 VT ones)
+        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(14).click(); await pg.wait_for_timeout(80)
         await pg.click("#cardioAddonPickerStartBtn"); await pg.wait_for_timeout(400)
         print("periph-flash takes over full-screen:", await pg.is_visible("#player") and await pg.is_hidden("#cardioPlayer"))
         await pg.click("#backBtn"); await pg.wait_for_timeout(300)
         print("periph-flash: Beenden returns to still-running cardioPlayer:",
               await pg.is_visible("#cardioPlayer") and not await pg.is_visible("#player"))
 
-        # index 14 = blitz-raster
+        # index 15 = blitz-raster
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(14).click(); await pg.wait_for_timeout(80)
+        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(15).click(); await pg.wait_for_timeout(80)
         await pg.click("#cardioAddonPickerStartBtn"); await pg.wait_for_timeout(400)
         print("blitz-raster takes over full-screen (own #blitzPlayer):",
               await pg.is_visible("#blitzPlayer") and await pg.is_hidden("#cardioPlayer"))
@@ -101,7 +101,7 @@ async def main():
 
         # ---- early-abort path too: trigger again, tap Beenden mid-round ----
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(14).click(); await pg.wait_for_timeout(80)
+        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(15).click(); await pg.wait_for_timeout(80)
         await pg.click("#cardioAddonPickerStartBtn"); await pg.wait_for_timeout(400)
         await pg.click("#blitzBackBtn"); await pg.wait_for_timeout(300)
         print("blitz-raster early Beenden also returns to cardioPlayer (not blitzDonePanel):",

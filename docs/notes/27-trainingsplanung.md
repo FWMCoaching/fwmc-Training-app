@@ -67,6 +67,15 @@ Ziel-Termine (`goal || kind==="wettkampf"`) erzeugen nur einen Empfehlungstext
 - Codetyp `training-plan`: `{plan:{phases, inserts?, startDate?}, version}`.
 - `codeDefProblem` prüft ihn. `openProgramIntro` → `offerTrainerPlan` fragt „Plan von deinem Trainer übernehmen?“.
 - `applyTrainerPlan` sperrt die Phasen (`locked`) und behält die eigenen Uhrzeiten des Kunden.
+- Optional `entry.title` (Nacht 2, 07.10.): `cleanEntry` behält ihn (String, max. 60),
+  `entryTitle` zeigt ihn vor allem anderen (Kombi-Paket aus dem Dashboard heißt dann
+  wie im Dashboard statt „Kombi-Programm“). Ändert der Kunde im Eintragsfenster
+  Bereich/Übung/Code, fällt der Titel weg; nur Uhrzeit/Dauer ändern behält ihn.
+- Optional `def.plan.events` (Nacht 2): `[{date, title, kind:"wettkampf"}]`.
+  `addTrainerEvents` trägt sie beim Übernehmen in die eigenen Termine
+  (`fwmc-events-v1`, gleicher Speicher wie der Heute-Kalender) ein, mit
+  `fromTrainer: <code>`; gleiches Datum + Titel schon da = übersprungen (neue
+  Version doppelt nichts). `focusWeekOf` nimmt sie dann für die Empfehlungen mit.
 - `checkTrainerPlanUpdate`:
   - Läuft einmal am Tag (`fwmc-plan-check-v1`), 2,5 s nach dem Start.
   - Bei höherer Version erscheint die Karte auf Heute.

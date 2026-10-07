@@ -98,6 +98,10 @@ async def main():
                     await pg.wait_for_timeout(100)
                     await audit(pg, f"{w}px{ts_tag(ts)} visual/farbfelder", problems)
                     await pg.evaluate("() => ['[data-ff-hands=\"0\"]','[data-ff-mode=leuchten]'].forEach(s => document.querySelector(s).click())")
+                    # Hütchen · Farbe + Zahl ready screen (2026-10-07): Anzahl Felder, Hilfsmittel
+                    await pg.click("#backToHome"); await pg.wait_for_timeout(150)
+                    await pg.click('.excard[data-exercise="cone-number"]'); await pg.wait_for_timeout(150)
+                    await audit(pg, f"{w}px{ts_tag(ts)} visual/cone-number", problems)
                 if area == "free":
                     # Freie Bausteine: ready screen and editor (checklist) of the template
                     await pg.click('#freeTplGrid [data-free-id="tpl-dehnen"]'); await pg.wait_for_timeout(150)

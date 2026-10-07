@@ -47,10 +47,10 @@ async def main():
         async def expand_finetune():
             await detail.locator("details.advanced summary").click(); await pg.wait_for_timeout(100)
 
-        # ==== Remember (index 15): training-only fields ====
+        # ==== Remember (index 16): training-only fields ====
         saved_remember_before = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-cardio-addon-v1')).perType['remember']")
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(15).click(); await pg.wait_for_timeout(80)
+        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(16).click(); await pg.wait_for_timeout(80)
         await expand_finetune()
         print("remember (fixed mode): no training-only fields shown:", await detail.locator('input[data-f="trainingStart"]').count() == 0)
         await detail.locator('[data-mode="training"]').click(); await pg.wait_for_timeout(80)
@@ -71,9 +71,9 @@ async def main():
               saved_remember_after["trainingPositionMode"] == saved_remember_before["trainingPositionMode"] and
               saved_remember_after["trainingProgress"] == saved_remember_before["trainingProgress"])
 
-        # ==== Flash (index 16): one of three field sets depending on mode ====
+        # ==== Flash (index 17): one of three field sets depending on mode ====
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(16).click(); await pg.wait_for_timeout(80)
+        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(17).click(); await pg.wait_for_timeout(80)
         await expand_finetune()
         print("flash (constant mode, default): shows 'Anzahl der Zahlen' only:",
               await detail.locator('input[data-f="constantCount"]').count() == 1 and
@@ -110,9 +110,9 @@ async def main():
               saved_flash_after["repsPerLevel"] == saved_flash_before["repsPerLevel"] and
               saved_flash_after["trainingStart"] == saved_flash_before["trainingStart"])
 
-        # ==== MOT (index 17): one of three field-pairs depending on mode ====
+        # ==== MOT (index 18): one of three field-pairs depending on mode ====
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(17).click(); await pg.wait_for_timeout(80)
+        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(18).click(); await pg.wait_for_timeout(80)
         await expand_finetune()
         print("mot (speed mode, default): shows fixed Objekte/Ziele, no grow/training fields:",
               await detail.locator('input[data-f="objectCount"]').count() == 1 and
