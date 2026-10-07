@@ -28402,6 +28402,13 @@
       <div class="area-grid hub-core">${core.map((a) => tile(a, true)).join("")}</div>
       <div class="hub-group-title">Dazu: dein klassisches Training</div><p class="hub-sub">Frei kombinierbar, auch mit den Bereichen oben.</p>
       <div class="area-grid hub-extra">${extra.map((a) => tile(a, false)).join("")}</div>`;
+    // Kombi tile icon (Fabian 07.10., Variante H): one square per core area in
+    // its real colour; if a core area goes away (e.g. Reaktion), the free
+    // square stands for the classic training below (first "Dazu" area).
+    const sq = core.slice(0, 4).map((a) => a.color);
+    while (sq.length < 4) sq.push((extra[sq.length - core.length] || extra[0] || { color: "#5c6b73" }).color);
+    const comboIcon = document.querySelector("#trainingHub .combo-card-icon");
+    if (comboIcon) comboIcon.innerHTML = sq.map((c) => `<i style="background:${c}"></i>`).join("");
     grid.querySelectorAll(".area-tile").forEach((b) => b.addEventListener("click", () => {
       if (b.dataset.area === "test") { activateSectionTab("test"); showScreen("testHome"); } else goArea(b.dataset.area);
     }));

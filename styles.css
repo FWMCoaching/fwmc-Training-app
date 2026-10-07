@@ -2305,7 +2305,17 @@ body.bottom-nav-on .screen:not([hidden]){padding-bottom:calc(84px + env(safe-are
 /* Mehr carries these links as cards now; the small footer row would repeat them with tiny tap targets. */
 .has-bottom-nav .site-footer nav{display:none}
 a.featured-card{text-decoration:none;color:inherit}
-#trainingHub .combo-entry-link{margin:16px 0 8px}
+#trainingHub .combo-entry-link{margin:0 0 8px}
+/* Kombi-Programm on Training (Fabian 07.10., Variante H): heading "Alles verbinden" + calm tile like the
+   "Dazu" tiles; the icon is four squares in the real colours of the four core areas (no petrol block) */
+.combo-entry-card{display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:14px;color:var(--ink)}
+@media (hover:hover){.combo-entry-card:hover{border-color:var(--brand-light)}}
+.combo-card-icon{width:40px;height:40px;display:grid;grid-template-columns:1fr 1fr;gap:3px;flex:none}
+.combo-card-icon i{border-radius:5px}
+.combo-card-text{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.combo-card-title{font-weight:800;font-size:calc(15px * var(--ts,1))}
+.combo-card-sub{font-weight:400;font-size:calc(13px * var(--ts,1));color:var(--ink-soft)}
+.combo-card-chev{width:20px;height:20px;color:var(--ink-soft);flex:none}
 .bottom-nav-on .storage-warning{bottom:calc(82px + env(safe-area-inset-bottom))}
 
 /* Eigene Termine + Countdown (2026-10-05) */

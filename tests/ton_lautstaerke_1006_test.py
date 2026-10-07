@@ -64,7 +64,11 @@ async def main():
               const lr = link.getBoundingClientRect();
               const badge = g.querySelector('.test-unlock-badge');
               return { titles, subs, firstIsTitle: first.classList.contains('hub-group-title'), pads,
-                       linkVisible: lr.height > 0, linkBelow: lr.top >= extra.bottom - 1 && lr.top - extra.bottom < 40,
+                       linkVisible: lr.height > 0, linkBelow: lr.top >= extra.bottom - 1 && lr.top - extra.bottom < 110,
+                       verbHead: (() => { const h = link.previousElementSibling && link.previousElementSibling.previousElementSibling; return !!h && h.classList.contains('hub-group-title') && h.textContent.trim() === 'Alles verbinden' && h.getBoundingClientRect().top >= extra.bottom; })(),
+                       squares: [...link.querySelectorAll('.combo-card-icon i')].map(i => getComputedStyle(i).backgroundColor),
+                       coreCols: [...g.querySelectorAll('.hub-core .area-icon')].map(i => getComputedStyle(i).backgroundColor),
+                       noDash: getComputedStyle(link).borderTopStyle === 'solid',
                        titleAbove: g.querySelector('.hub-group-title').getBoundingClientRect().bottom <= g.querySelector('.hub-core').getBoundingClientRect().top,
                        badgeOneLine: badge ? badge.getBoundingClientRect().height < 26 : true,
                        noSideScroll: document.documentElement.scrollWidth <= innerWidth };
@@ -75,7 +79,8 @@ async def main():
             check(f"[{tag}] sub lines", info["subs"] == ["Neurozentrierte Grundlagen gezielt trainieren.", "Frei kombinierbar, auch mit den Bereichen oben."], info["subs"])
             check(f"[{tag}] lower group title stays", info["titles"][1] == "Dazu: dein klassisches Training")
             check(f"[{tag}] tile texts start equally far left", len(set(info["pads"])) == 1, info["pads"])
-            check(f"[{tag}] Kombi button right below the lower tiles", info["linkVisible"] and info["linkBelow"])
+            check(f"[{tag}] Kombi tile below the lower tiles under the heading 'Alles verbinden'", info["linkVisible"] and info["linkBelow"] and info["verbHead"])
+            check(f"[{tag}] Kombi icon = four squares in the core area colours, solid frame (Variante H, 07.10.)", info["squares"] == info["coreCols"][:4] and len(info["squares"]) == 4 and info["noDash"], info["squares"])
             check(f"[{tag}] unlock badge on one line", info["badgeOneLine"])
             check(f"[{tag}] no sideways scroll", info["noSideScroll"])
             await ctx.close()
