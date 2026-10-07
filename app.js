@@ -7255,6 +7255,21 @@
     }
   }
   let breathTransitionTimer = null;
+  // "Kurz anhalten" on the 4-s "Weiter geht's" panel between the blocks of
+  // an Atem-Programm and a Workout-Plan (Idee 50, Fabian 06.10.): stops the
+  // auto-advance, the panel waits for "Weiter" (the Kombi panel already has
+  // its own "Pause anhalten").
+  function wireTransitionHold(panel, stopTimer) {
+    const btn = panel.querySelector(".transition-hold"), label = panel.querySelector(".next-label");
+    if (!btn) return;
+    btn.hidden = false;
+    if (label) label.textContent = "Weiter geht’s";
+    btn.onclick = () => {
+      stopTimer();
+      btn.hidden = true;
+      if (label) label.textContent = "Angehalten";
+    };
+  }
   function showBreathTransition(nextBlock, onContinue) {
     hideAllPlayers();
     els.breathTransitionTitle.textContent = blockPatternName(nextBlock);
@@ -7268,6 +7283,7 @@
     };
     els.breathTransitionBtn.onclick = go;
     breathTransitionTimer = setTimeout(go, 4000);
+    wireTransitionHold(els.breathTransition, () => { clearTimeout(breathTransitionTimer); breathTransitionTimer = null; });
   }
   function advanceBreathProgram(playedS) {
     if (!breathProgram) return;
@@ -11407,6 +11423,34 @@
   // (ctrl+wheel = trackpad pinch). A standalone run saves the new value;
   // inside a Kombi or as a Cardio-Zusatzaufgabe it only changes this run.
   const GAME_TAP_SEL = ".remember-marker.covered, .blitz-cell.tappable, .mot-object.tappable, .flash-key";
+  // Every other answer tap counts on touch-down too (Fabian 07.10.: "überall,
+  // wo du eine Berührung brauchst" - Hütchen sortieren and the Test-Bereich
+  // reacted only sometimes). One delegated listener: a touch/pen pointerdown
+  // on such an element clicks it at once, the real click that may follow is
+  // swallowed. Only for handlers that ignore the event's coordinates
+  // (Halbierung keeps its click, it measures where the finger was).
+  const FAST_TAP_SEL = [
+    "#coneOrderStage", "#gngStage", "#vorlaufTapzone", "#kippbildArea", "#antizipTapBtn",
+    "[class*='-response-btn']", ".reakt-light", ".hick-box", ".corsi-block", ".subitize-key", ".wcst-ref", "#dsstKeypad > button",
+    "#flankerLeftBtn", "#flankerRightBtn", "#posnerLeftBtn", "#posnerRightBtn", "#alarmLeftBtn", "#alarmRightBtn",
+    "#stopLeftBtn", "#stopRightBtn", "#navonHBtn", "#navonSBtn", "#rotationNormalBtn", "#rotationMirroredBtn",
+    "#merkSameBtn", "#merkChangedBtn", "#simonLeftBtn", "#simonRightBtn", "#tsLeftBtn", "#tsRightBtn", "#antiLeftBtn", "#antiRightBtn",
+  ].join(",");
+  let fastTapEl = null, fastTapAt = 0;
+  document.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse") return;
+    const el = e.target.closest && e.target.closest(FAST_TAP_SEL);
+    if (!el || el.disabled || el.closest("[hidden]") || el.matches(GAME_TAP_SEL)) return;
+    // a button inside a tap area (Beenden, Pause, step bar) keeps its own click
+    const inner = e.target.closest("button, a, input, select, textarea, label, [role=button]");
+    if (inner && inner !== el && el.contains(inner)) return;
+    fastTapEl = el; fastTapAt = performance.now();
+    el.click();
+  }, { capture: true });
+  document.addEventListener("click", (e) => {
+    if (!e.isTrusted || !fastTapEl || performance.now() - fastTapAt > 1000) return;
+    if (fastTapEl.contains(e.target)) { e.stopImmediatePropagation(); e.preventDefault(); fastTapEl = null; }
+  }, { capture: true });
   function wirePinchSize(stage, { get, set, min, max, label }) {
     const pts = new Map();
     let start = null;
@@ -12542,14 +12586,21 @@
     st.block = strengthItemBlock(st.strength.items[step.itemIndex]);
     st.ex = findWorkoutExercise(st.block.exercise);
     st.setIndex = step.set;
+    if (idx > 0) resumeStrengthNote();
   }
+  // Weitermachen beim Kraftplan (Idee 47, Fabian 06.10.): a standalone
+  // Kraftplan notes its set at every step; resumeRun() starts it again at
+  // that set (strengthResumeAt), with the plan's own "Bereit machen".
+  let strengthResumeAt = null; // { idx, played } while a continued Kraftplan starts
   function startStrengthBlock(plan) {
     const now = performance.now();
+    const at = strengthResumeAt; strengthResumeAt = null;
     workoutState = {
       kind: "reps", strength: plan, steps: buildStrengthSteps(plan), stepIndex: 0,
-      startTime: now, sessionStart: now, achievedByItem: {},
+      startTime: now, sessionStart: now - (at ? at.played * 1000 : 0), achievedByItem: {},
     };
-    strengthApplyStep(0);
+    if (!at && !workoutPlan && !comboProgram) resumeSingleClear("strength");
+    strengthApplyStep(at ? Math.min(at.idx, workoutState.steps.length - 1) : 0);
     requestWakeLock();
     renderRepsView();
     if ((plan.prepS || 0) > 0) startRepsRest(plan.prepS, "start");
@@ -13297,6 +13348,7 @@
       if (hitTop) suggestion = `Stark – du hast in jedem Satz ${st.block.rangeMax}+ Wiederholungen geschafft. Nächstes Mal schwerer machen (mehr Gewicht, schwerere Variante, oder die Übung tauschen)?`;
     }
     const aborted = !!(st && st.aborted);
+    if (st && st.strength && !workoutPlan && !comboProgram) resumeSingleClear("strength");
     workoutState = null;
     onWorkoutBlockDone(played, doneEx, aborted ? null : suggestion, aborted);
   }
@@ -13336,6 +13388,7 @@
     const go = () => { if (workoutTransitionTimer) clearTimeout(workoutTransitionTimer); els.workoutTransition.hidden = true; onContinue(); };
     els.workoutTransitionBtn.onclick = go;
     workoutTransitionTimer = setTimeout(go, 4000);
+    wireTransitionHold(els.workoutTransition, () => { clearTimeout(workoutTransitionTimer); workoutTransitionTimer = null; });
   }
   function finishWorkoutPlan(aborted) {
     resumeClear();
@@ -15835,13 +15888,17 @@
   function syncCardioAddonTriggerBtn() {
     els.cardioAddonTriggerBtn.hidden = false;
   }
-  function startStandaloneCardio(items) {
+  function startStandaloneCardio(items, at) {
+    if (!at && !comboProgram) resumeSingleClear("cardio");
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.cardioPlayer.hidden = false;
     els.cardioAddonPicker.hidden = true;
     lastCardioItems = items;
-    cardioState = { items: withCardioPauses(items), realCount: items.length, index: 0, blockStartTime: performance.now(), sessionStartTime: performance.now(), nextGuestAt: null, gallery: null, motivKey: null };
+    const t0 = performance.now();
+    cardioState = at
+      ? { items: at.items, realCount: at.items.filter((b) => !b.pause).length, index: at.index, blockStartTime: t0 - at.blockS * 1000, sessionStartTime: t0 - at.played * 1000, nextGuestAt: null, gallery: null, motivKey: null }
+      : { items: withCardioPauses(items), realCount: items.length, index: 0, blockStartTime: t0, sessionStartTime: t0, nextGuestAt: null, gallery: null, motivKey: null };
     stopCardioInlineFlash();
     els.cardioMotiv.hidden = true;
     applyCardioBg();
@@ -16409,6 +16466,7 @@
     onRight: () => els.cardioPrevBtn.click(),
   });
   function abortCardio() {
+    resumeCardioNote();
     stopCardioInlineFlash();
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
     cardioRaf = null;
@@ -16442,6 +16500,7 @@
     const totalS = aborted ? Math.min(plannedS, (performance.now() - cardioState.sessionStartTime) / 1000) : plannedS;
     const realItems = items.filter((b) => !b.pause);
     releaseWakeLock();
+    if (!comboProgram) resumeSingleClear("cardio");
     cardioState = null;
     if (comboProgram) { advanceComboProgram(totalS); return; }
     els.cardioPlayer.hidden = true;
@@ -28264,8 +28323,34 @@
     const r = readJSON(RESUME_SINGLE_KEY, null);
     if (!kind || (r && r.kind === kind)) { try { localStorage.removeItem(RESUME_SINGLE_KEY); } catch (e) {} }
   }
+  // Kraftplan (Idee 47): at every set, so a page iOS throws away in the
+  // background still knows where it was. pos/total count sets.
+  function resumeStrengthNote() {
+    const st = workoutState;
+    if (!st || !st.strength || workoutPlan || comboProgram) return;
+    const played = Math.round((performance.now() - st.sessionStart) / 1000);
+    writeJSON(RESUME_SINGLE_KEY, { type: "single", kind: "strength", title: workoutBlockLabel(st.strength), plan: st.strength,
+      idx: st.stepIndex, pos: st.stepIndex, total: st.steps.length, played, ts: Date.now() });
+  }
+  // Ausdauer-Einheit (Idee 48): on leaving the app and on "Beenden"; the
+  // rest of the current activity is kept (to the second), pauses included.
+  function resumeCardioNote() {
+    const cs = cardioState;
+    if (!cs || comboProgram) return;
+    const now = performance.now();
+    const total = cs.items.reduce((t, b) => t + b.durationS, 0);
+    const blockS = Math.max(0, (now - cs.blockStartTime) / 1000);
+    const done = cs.items.slice(0, cs.index).reduce((t, b) => t + b.durationS, 0) + blockS;
+    const rec = { type: "single", kind: "cardio", title: cardioProgram ? cardioProgram.title : "Ausdauertraining",
+      program: cardioProgram ? { code: cardioProgram.code, key: cardioProgram.key, title: cardioProgram.title } : null,
+      items: cs.items, index: cs.index, blockS: Math.round(blockS), total: Math.round(total), rest: Math.round(total - done),
+      played: Math.round((now - cs.sessionStartTime) / 1000), ts: Date.now() };
+    if (rec.total < 180 || done < 30 || rec.rest < 60) return;
+    writeJSON(RESUME_SINGLE_KEY, rec);
+  }
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) return;
+    if (cardioState) resumeCardioNote();
     if (breathSession) resumeSingleNote("breath");
     if (movementSession && !movementSession.finishTimer) resumeSingleNote("movement");
   });
@@ -28273,8 +28358,10 @@
     let r = readJSON(RESUME_KEY, null);
     if (!r || !RESUME_UNIT[r.type] || !r.def || !Array.isArray(r.def.blocks) || !(r.pos > 0) || r.pos >= r.total || !(Date.now() - r.ts < RESUME_MAX_AGE_MS)) r = null;
     let s1 = readJSON(RESUME_SINGLE_KEY, null);
-    if (!s1 || !(s1.kind === "breath" ? s1.breath && s1.breath.phases : s1.kind === "movement" ? s1.movement && Array.isArray(s1.movement.movements) : false)
-      || !(s1.rest >= 60) || !(s1.total >= s1.rest) || !(Date.now() - s1.ts < RESUME_MAX_AGE_MS)) s1 = null;
+    const s1ok = (x) => x.kind === "strength" ? x.plan && Array.isArray(x.plan.items) && x.plan.items.length && x.pos > 0 && x.pos < x.total
+      : (x.kind === "breath" ? x.breath && x.breath.phases : x.kind === "movement" ? x.movement && Array.isArray(x.movement.movements) : x.kind === "cardio" ? Array.isArray(x.items) && x.items.length && x.index < x.items.length : false)
+        && x.rest >= 60 && x.total >= x.rest;
+    if (!s1 || !s1ok(s1) || !(Date.now() - s1.ts < RESUME_MAX_AGE_MS)) s1 = null;
     if (r && s1) return s1.ts > r.ts ? s1 : r;
     return r || s1;
   }
@@ -28282,6 +28369,7 @@
     if (r && r.type === "single") resumeSingleClear(); else resumeClear();
   }
   function resumeCount(r) {
+    if (r.type === "single" && r.kind === "strength") return `Satz ${r.pos + 1}\u00a0von\u00a0${r.total}`;
     return r.type === "single" ? `noch ${Math.ceil(r.rest / 60)}\u00a0Min.` : `${RESUME_UNIT[r.type][0]} ${r.pos + 1}\u00a0von\u00a0${r.total}`;
   }
   function resumeAgo(ts) {
@@ -28307,6 +28395,22 @@
     const idx = fromStart ? 0 : r.idx;
     const played = fromStart ? 0 : (r.played || 0);
     hideAllPlayers();
+    if (r.type === "single" && r.kind === "strength") {
+      activateSectionTab("workout");
+      workoutPlan = null; workoutStandaloneReturnScreen = "workoutRepsReady";
+      if (!fromStart) strengthResumeAt = { idx: r.idx, played: r.played || 0 };
+      lastStandaloneWorkoutBlock = r.plan;
+      runWorkoutBlock(r.plan);
+      return;
+    }
+    if (r.type === "single" && r.kind === "cardio") {
+      activateSectionTab("cardio");
+      cardioProgram = r.program ? { ...r.program, def: { items: r.items.filter((b) => !b.pause) } } : null;
+      const real = r.items.filter((b) => !b.pause).map(copyCardioItem);
+      if (fromStart) startStandaloneCardio(real);
+      else { startStandaloneCardio(real, { items: r.items, index: r.index, blockS: r.blockS || 0, played: r.played || 0 }); lastCardioItems = real; }
+      return;
+    }
     if (r.type === "single") {
       const runS = fromStart ? r.total : r.rest;
       if (r.kind === "breath") {
@@ -29461,6 +29565,11 @@
     els.freeRunNext.textContent = next ? `Als Nächstes: ${next.text}` : "";
     els.freeRunNext.hidden = !next;
     $("freeSkipBtn").setAttribute("aria-label", r.index < n - 1 ? "Weiter zum nächsten Punkt" : "Beenden");
+    // Idee 51 (Fabian 06.10.): the phone lies on the floor while stretching,
+    // so a checklist with times says each timed point at its start and the
+    // next one 5 s before the end (🔊 / Lautstärke via cueSay).
+    r.saidNext = false;
+    if (r.block.kind === "list" && st.s > 0 && n > 1) cueSay(st.text);
     freeTick();
   }
   function freeTick() {
@@ -29471,6 +29580,8 @@
     const left = st.s - (performance.now() - r.stepT) / 1000;
     els.freeRunCountdown.textContent = fmtClock(left);
     const sec = Math.ceil(left);
+    const nx = r.steps[r.index + 1];
+    if (r.block.kind === "list" && nx && !r.saidNext && st.s >= 15 && left <= 6) { r.saidNext = true; cueSay(`Als Nächstes: ${nx.text}`); }
     if (sec >= 1 && sec <= 3 && !r.beeped.has(sec)) { r.beeped.add(sec); playWorkoutBeep(false); }
     if (left <= 0) { playWorkoutBeep(true); freeAdvance(false); }
   }
