@@ -2726,7 +2726,9 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 .choice-row[id$="BgSourceRow"] .choice{flex:1 1 auto;display:block}
 /* Pausenfenster höher als der Bildschirm: "Weiter" bleibt unten sichtbar
    (Prüfer 06.10., Gleichgewicht; gilt für jedes Pausenfenster) */
-.pause-panel > .start-btn:last-child{position:sticky;bottom:0;box-shadow:0 0 0 12px var(--surface)}
+.pause-panel > .start-btn:last-child{position:sticky;bottom:0;box-shadow:0 0 0 12px var(--surface),0 22px 0 12px var(--surface),0 -16px 14px 2px var(--surface)}
+/* iPad/Laptop: Pausenfenster breiter, Auswahlknöpfe einzeilig wie auf der Übungsseite (Prüfer 07.10.) */
+@media (min-width:700px){.pause-panel{max-width:440px}}
 /* Farbsehen und Kacheln auf kleinen Android-Handys (360 px) */
 @media (max-width:380px){
   #masterColorVisionRow{grid-template-columns:1fr}
