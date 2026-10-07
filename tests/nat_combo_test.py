@@ -42,8 +42,14 @@ async def main():
         block_row_text = await pg.inner_text("#comboBlockList")
         print("block list mentions Remember:", "Positionen merken" in block_row_text)
 
-        await pg.click("#comboStartBtn"); await pg.wait_for_timeout(300)
-        print("remember player visible:", await pg.is_visible("#rememberPlayer"))
+        # SPEEDUP caps the block's 60 s timer at 250 ms, so a fixed 300 ms
+        # sleep raced the block's end - wait for the player instead.
+        await pg.click("#comboStartBtn")
+        try:
+            await pg.wait_for_selector("#rememberPlayer", state="visible", timeout=1500); rp_vis = True
+        except Exception:
+            rp_vis = False
+        print("remember player visible:", rp_vis)
         print("remember nav hidden (fixed mode, not training):", await pg.is_hidden("#rememberNav"))
 
         # sped-up combo-duration timer should fire soon and, since this is the

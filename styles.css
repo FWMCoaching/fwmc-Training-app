@@ -30,6 +30,12 @@
   --warn:#b3261e;
   --shadow:0 1px 2px rgba(16,40,48,.04), 0 8px 24px -12px rgba(16,40,48,.18);
   --radius:16px;
+  /* Area colours (AREA_BY_KEY in app.js) as tokens, + a text variant with
+     >= 4.5:1 on the cards (darker in light mode, lighter in dark mode). */
+  --area-visual:#1f7ab8;--area-breath:#2a9d8f;--area-nat:#3a7d2c;--area-movement:#c77d12;
+  --area-workout:#c0392b;--area-cardio:#7b4fb8;--area-free:#a0527a;
+  --area-visual-ink:#1c6ea6;--area-breath-ink:#20766b;--area-nat-ink:#37772a;--area-movement-ink:#955e0e;
+  --area-workout-ink:#c0392b;--area-cardio-ink:#7b4fb8;--area-free-ink:#9d5078;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
@@ -50,6 +56,8 @@
     --ok:#66bb6a;
     --warn:#ef9a9a;
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    --area-visual-ink:#60a1cd;--area-breath-ink:#44a99c;--area-nat-ink:#77a56d;--area-movement-ink:#cd8b2c;
+    --area-workout-ink:#d78279;--area-cardio-ink:#a98dd1;--area-free-ink:#bf8ba6;
     color-scheme:dark;
   }
 }
@@ -70,6 +78,8 @@
   --ok:#66bb6a;
   --warn:#ef9a9a;
   --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+  --area-visual-ink:#60a1cd;--area-breath-ink:#44a99c;--area-nat-ink:#77a56d;--area-movement-ink:#cd8b2c;
+  --area-workout-ink:#d78279;--area-cardio-ink:#a98dd1;--area-free-ink:#bf8ba6;
   color-scheme:dark;
 }
 
@@ -427,6 +437,8 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .bundle-item-wrap{display:flex;align-items:stretch;gap:8px}
 .bundle-item-wrap .bundle-item{flex:1;min-width:0}
 .bundle-item-wrap .combo-block-remove,.bundle-item-wrap .combo-saved-edit{align-self:center;width:44px;height:44px;padding:7px;background-clip:content-box;margin:0 -7px;display:flex;align-items:center;justify-content:center}
+/* Code history in the Grundeinstellungen: the 44 px hit area stays inside its group (Fabian-Blick) */
+#masterCodeHistoryList .bundle-item-wrap .combo-block-remove{margin-right:0}
 .badges{display:flex;gap:6px}
 .badge{font-size:calc(11px * var(--ts,1));font-weight:700;border-radius:999px;padding:2px 9px}
 .badge-new{background:var(--brand);color:#fff}
@@ -2062,6 +2074,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .plan-phase-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
 .text-link.danger{color:var(--warn)}
 .plan-clear-btn{display:block;margin:16px 0 30px}
+.plan-insert-btn{display:block;margin:4px auto 0}
 #planEntrySheet .group-label{display:block;margin:12px 0 4px}
 .plan-entry-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 /* Persönliche Nachricht vom Trainer (Code-Feld "message") */
@@ -2844,11 +2857,9 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 .starter-row::-webkit-scrollbar{display:none}
 .starter-card{flex:0 0 min(62%,220px);scroll-snap-align:start;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:118px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);border-top:4px solid var(--area);background:var(--surface-2);color:var(--ink);text-align:left;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .starter-card:active{transform:scale(.97);transition:transform .1s ease}
-.starter-area{font-size:calc(11.5px * var(--ts,1));font-weight:700;color:var(--area)}
+.starter-area{font-size:calc(11.5px * var(--ts,1));font-weight:700;color:var(--area-ink,var(--area))}
 .starter-card strong{font-size:calc(15px * var(--ts,1));line-height:1.25}
 .starter-desc{font-size:calc(13px * var(--ts,1));color:var(--ink-soft);line-height:1.35}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .starter-area{filter:brightness(1.5)}}
-:root[data-theme="dark"] .starter-area{filter:brightness(1.5)}
 
 /* ==== Trainingsplanung (2026-10-07, docs/notes/27) ==== */
 .plan-tools{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}
@@ -2862,7 +2873,7 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 .plan-tray-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:8px}
 .plan-tray-tabs::-webkit-scrollbar{display:none}
 .plan-tray-tab{flex:0 0 auto;min-height:44px;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink-soft);font-weight:700;font-size:calc(13.5px * var(--ts,1));white-space:nowrap;cursor:pointer}
-.plan-tray-tab.active{background:var(--brand);border-color:var(--brand);color:#fff}
+.plan-tray-tab.active{background:var(--brand-pale);border-color:var(--brand);color:var(--brand-deep)}
 .plan-tray-items{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
 .plan-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;min-height:44px;max-width:240px;padding:8px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font-size:calc(14px * var(--ts,1));font-weight:600;cursor:pointer;touch-action:pan-x}
 .plan-chip span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2945,7 +2956,9 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 .today-break-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;align-items:stretch}
 .today-break-mins{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:1 1 180px}
 .today-break-mins .choice{padding:8px 4px;font-size:calc(14px * min(var(--ts,1), 1.1));white-space:nowrap}
-.today-main .start-btn.today-break-start{flex:1 1 160px;width:auto;margin:0}
+/* One main button per screen (Fabian-Blick 17): the break card starts via a
+   text link like the Tipp card's "Tipps ansehen ->". */
+.today-break-start{flex:1 1 160px;text-align:left;margin:0}
 .today-break.is-called,#masterSettingsSheet .group.is-called{animation:fwmcCalled 1.6s ease-out 1}
 @keyframes fwmcCalled{0%,40%{box-shadow:0 0 0 3px var(--brand)}100%{box-shadow:0 0 0 0 transparent}}
 .break-info-text{font-size:calc(15px * var(--ts,1));line-height:1.55;color:var(--ink)}

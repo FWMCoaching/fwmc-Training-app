@@ -78,9 +78,11 @@ async def main():
         await pg2.goto(BASE + "?bereich=breath"); await pg2.wait_for_timeout(300)
         await pg2.click('#breathFeaturedGrid .featured-card'); await pg2.wait_for_timeout(300)
         await pg2.click("#breathProgramStartBtn"); await pg2.wait_for_timeout(300)
-        for _ in range(40):
+        # The panel stays 4 s (after the 10 s "Weiter atmen" end hold):
+        # 15 s clock jumps skipped right over it, so step in 2 s.
+        for _ in range(300):
             if await pg2.is_visible("#breathTransition"): break
-            await pg2.clock.run_for(15000)
+            await pg2.clock.run_for(2000)
         vis = await pg2.is_visible("#breathTransition")
         check("transition panel shows 'Kurz anhalten'", vis and await pg2.is_visible("#breathTransitionHoldBtn"))
         if vis:

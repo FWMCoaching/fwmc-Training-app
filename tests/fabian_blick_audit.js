@@ -38,6 +38,34 @@
   const root = sheets[sheets.length - 1] || players[0] || screen || document.body;
   const isPlayer = !sheets.length && !!players.length;
   const isSheet = !!sheets.length;
+  // Nested scroll boxes inside the layer (e.g. "Mein Plan" week list with
+  // max-height + overflow-y:auto, the Heute "Zum Ausprobieren" row with
+  // overflow-x:auto): what is scrolled out of such a box is not on screen.
+  // The layer itself and .sheet-inner are not counted - the walk audits their
+  // whole content on purpose.
+  const nestedScrollers = el => {
+    const out = [];
+    for (let e = el.parentElement; e && e !== root && root.contains(e); e = e.parentElement) {
+      if (e.matches('.sheet-inner, .screen')) continue;
+      const es = cs(e);
+      const sx = /auto|scroll/.test(es.overflowX) && e.scrollWidth > e.clientWidth + 1;
+      const sy = /auto|scroll/.test(es.overflowY) && e.scrollHeight > e.clientHeight + 1;
+      if (sx || sy) out.push(e);
+    }
+    return out;
+  };
+  // The on-screen part of el: its rect cut to every nested scroll box.
+  const clipRect = el => {
+    const r = el.getBoundingClientRect(); let L = r.left, T = r.top, R = r.right, B = r.bottom;
+    nestedScrollers(el).forEach(e => { const q = e.getBoundingClientRect();
+      L = Math.max(L, q.left); T = Math.max(T, q.top); R = Math.min(R, q.right); B = Math.min(B, q.bottom); });
+    return {left: L, top: T, right: R, bottom: B, width: Math.max(0, R - L), height: Math.max(0, B - T)};
+  };
+  const inScrollView = el => {
+    const r = el.getBoundingClientRect();
+    return nestedScrollers(el).every(e => { const q = e.getBoundingClientRect();
+      return r.right > q.left + 1 && r.left < q.right - 1 && r.bottom > q.top + 1 && r.top < q.bottom - 1; });
+  };
 
   // ---------- umbruch: split words, text out of its box, sideways scroll ----------
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -73,6 +101,8 @@
   textEls.forEach(el => {
     const box = el.closest('.card, .group, .code-card, .tile, .sheet-inner, .hero, section');
     if (!box || box === el) return;
+    // clipped by a horizontal scroll box inside the card: does not stick out
+    if (nestedScrollers(el).some(e => box.contains(e) && /auto|scroll/.test(cs(e).overflowX))) return;
     const r = el.getBoundingClientRect(), b = box.getBoundingClientRect();
     if (r.right > b.right + 2 || r.left < b.left - 2) add('umbruch', 'Text ragt aus seinem Kasten', el);
   });
@@ -82,7 +112,7 @@
   const atoms = [];
   const seen = new Set();
   const consider = el => {
-    if (!vis(el)) return;
+    if (!vis(el) || !inScrollView(el)) return;
     const owner = el.closest('button, a[href], [role=button], label, summary') || el;
     if (seen.has(owner) || !root.contains(owner)) return;
     seen.add(owner); atoms.push(owner);
@@ -103,7 +133,7 @@
       // inline pieces of one wrapped paragraph share line boxes: not an overlap
       const inl = e => cs(e).display.startsWith('inline') && !isInteractive(e);
       if (inl(a) && inl(b) && a.closest('p, li, div, label') === b.closest('p, li, div, label')) continue;
-      const r = a.getBoundingClientRect(), q = b.getBoundingClientRect();
+      const r = clipRect(a), q = clipRect(b);
       const w = Math.min(r.right, q.right) - Math.max(r.left, q.left), h = Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top);
       if (w <= 3 || h <= 3) continue;
       const small = Math.min(r.width * r.height, q.width * q.height);

@@ -81,7 +81,10 @@ async def main():
         await pg.click("#kippbildPauseBtn"); await pg.wait_for_timeout(150)
         print("pause overlay visible:", await pg.is_visible("#kippbildPauseOverlay"))
         print("pause button hidden while paused:", await pg.is_hidden("#kippbildPauseBtn"))
-        await pg.wait_for_timeout(600)
+        # read after pausing: a 1 s tick between the read and the Pause click
+        # made this flaky under load
+        status_before_pause = await pg.inner_text("#kippbildProgressEl")
+        await pg.wait_for_timeout(1300)
         print("status genuinely frozen while paused:",
               (await pg.inner_text("#kippbildProgressEl")) == status_before_pause)
         await pg.click('#kippbildPauseBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)

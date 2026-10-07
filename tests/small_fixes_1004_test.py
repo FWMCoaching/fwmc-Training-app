@@ -28,7 +28,8 @@ with sync_playwright() as p:
     check("old name shown as Positionen merken", "Positionen merken · Feste Positionen" in pg.inner_text("#workoutHistoryList") and "Remember" not in pg.inner_text("#workoutHistoryList"))
     pg.goto(BASE + "index.html?bereich=heute"); pg.wait_for_timeout(400)
     card = pg.inner_text("#todayProgressCard")
-    check("week goal reached is marked", "Wochenziel erreicht" in card and "5 von 3 ✓" in card, card.replace("\n", " | ")[:80])
+    # kp2 (Trainingsplanung 07.10.): the goal counts up to the goal, more is "zusätzlich"
+    check("week goal reached is marked", "Wochenziel erreicht" in card and "3 von 3 ✓" in card and "2 zusätzlich" in card, card.replace("\n", " | ")[:80])
     check("Weitermachen shows the new name", "Remember" not in pg.inner_text("#todayMain"))
     w = pg.evaluate("document.querySelector('#todayHome .brand-logo').getAttribute('width')")
     check("logo carries its size before loading", w == "900")

@@ -30427,7 +30427,7 @@
     return `<div class="starter-head">Zum Ausprobieren</div>
       <div class="starter-row" role="list">${order.map((k) => {
         const it = STARTERS[k], a = AREA_BY_KEY[it.area];
-        return `<button class="starter-card" type="button" role="listitem" data-starter="${k}" style="--area:${a.color}"><span class="starter-area">${esc(a.short)}</span><strong>${esc(it.title)}</strong><span class="starter-desc">${esc(it.desc)}</span></button>`;
+        return `<button class="starter-card" type="button" role="listitem" data-starter="${k}" style="--area:var(--area-${a.key});--area-ink:var(--area-${a.key}-ink)"><span class="starter-area">${esc(a.short)}</span><strong>${esc(it.title)}</strong><span class="starter-desc">${esc(it.desc)}</span></button>`;
       }).join("")}</div>`;
   }
   function wireStarter() {
@@ -31589,7 +31589,7 @@
         ${varRow}
         ${days}
         <div class="plan-phase-opts">
-          <label class="checkbox-row"><input type="checkbox" data-phase-noscore="${pi}"${ph.noScore ? " checked" : ""}> Aus der Wertung nehmen</label>
+          <label class="checkbox-row tap-row"><input type="checkbox" data-phase-noscore="${pi}"${ph.noScore ? " checked" : ""}> Aus der Wertung nehmen</label>
           <p class="group-help">${ph.noScore ? "Diese Phase zählt nicht für Wochenziel und Serie. " : ""}${!ph.weeks || ph.weeks >= 4 ? "Empfehlung: etwa jede 4. Woche etwas leichter trainieren, damit die Erholung nicht zu kurz kommt. Sprich das am besten mit deinem Trainer ab." : ""}</p>
         </div>
         <div class="plan-phase-actions">
@@ -31601,7 +31601,7 @@
         <div class="plan-phase-head"><input type="text" class="plan-input plan-phase-name" data-ins-name="${esc(ins.id)}" value="${esc(ins.name)}" maxlength="40" aria-label="Name der Sonderwoche"></div>
         <p class="group-help">★ Sonderwoche in der Woche vom ${esc(longDate(ins.at))}. Dein Plan rückt danach eine Woche nach hinten.</p>
         ${ins.days.map((list, di) => planDayHtml(list, di, "i" + ins.id)).join("")}
-        <label class="checkbox-row"><input type="checkbox" data-ins-noscore="${esc(ins.id)}"${ins.noScore ? " checked" : ""}> Aus der Wertung nehmen</label>
+        <label class="checkbox-row tap-row"><input type="checkbox" data-ins-noscore="${esc(ins.id)}"${ins.noScore ? " checked" : ""}> Aus der Wertung nehmen</label>
         <div class="plan-phase-actions"><button type="button" class="text-link small danger" data-ins-del="${esc(ins.id)}">Sonderwoche löschen</button></div>
       </section>`).join("");
     planUndoChanged();
@@ -32021,7 +32021,7 @@
       const goal = loadEvents().find((f) => (f.goal || f.kind === "wettkampf") && mondayOf(f.date) === wk.monday);
       const sun = dAdd(wk.monday, 6);
       rows.push(`<button type="button" class="${cls}" data-week="${wk.monday}" style="--wk:${color}">
-        <span class="myplan-bar" aria-hidden="true"></span>
+        <span class="myplan-bar" aria-hidden="true"${wk.type === "pause" ? "" : ` style="background:${color}"`}></span>
         <span class="myplan-date">${dParse(wk.monday).getDate()}.${dParse(wk.monday).getMonth() + 1}.–${dParse(sun).getDate()}.${dParse(sun).getMonth() + 1}.</span>
         <span class="myplan-text">${esc(weekRowLabel(wk, ph))}${goal ? ` <span class="myplan-goal">◆ ${esc(goal.title)}</span>` : ""}</span>
         <span class="myplan-n">${wk.monday === thisMon ? "Du bist hier" : st.planned ? `${st.done}/${st.planned}` : ""}</span></button>`);
