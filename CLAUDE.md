@@ -236,7 +236,9 @@ Test-Bereich exercises are exempt until promoted out of Test (then this
 applies as part of the promotion). Before calling it done, compare item
 by item with a complete sibling (e.g. a new Workout mode vs. Tabata).
 `tests/exercise_coverage_test.py` enforces 1-3 and the pause slider on
-the live DOM; if it fails, fix the app, never loosen the test.
+the live DOM (since 2026-10-07 for every area on the Training page, read
+from the hub, and every card of every area home; ready-made programmes are
+not Bausteine); if it fails, fix the app, never loosen the test.
 
 ## Detail notes (docs/notes/) - read only what your task touches
 
@@ -518,5 +520,11 @@ For every new or changed exercise/screen, in the same commit:
   live in the pause sheet, one-time silent-switch hint; music like Spotify keeps playing). Every LOOK_SPECS exercise also gets its size live in the
   pause sheet and by pinch (`LIVE_LOOK`); a new one needs one entry there.
   Tests: `tests/gleichgewicht_1006_test.py`, `tests/live_size_1006_test.py`.
+- Antwort-Tippen + Pause-Tempo (2026-10-07): game answer buttons (Positionen
+  merken, Blitz-Raster, MOT, Flash keys) count on pointerdown via
+  `onGameTap(el, fn)` (iOS drops clicks on a slide or second finger); a new
+  answer button uses it and joins `GAME_TAP_SEL` (never half of a pinch).
+  Pause sheets of all four edit timing and "Bei Fehler" for this run only
+  (`addPauseChoiceRow` clones the ready row). Test: `tests/nat_pause_tempo_1007_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

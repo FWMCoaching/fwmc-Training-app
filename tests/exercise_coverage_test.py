@@ -66,6 +66,47 @@ async def main():
         print("every Visual Training and NAT exercise is offered in the Kombi:", not missing)
         if missing: fails.append("missing in Kombi: " + ", ".join(missing))
 
+        # ---- 1b. Every area and every exercise of every area (Fabian 07.10.:
+        # "haben wir dafür einen Automatismus?"). Generic, so a new area or a
+        # new exercise anywhere fails here until it is in the Kombi:
+        # - every Training-hub area (except Test) has its own Kombi group;
+        # - Atemtraining: every pattern card (incl. Wim-Hof) is offered;
+        # - Krafttraining: every exercise type card (Intervall/Zirkel, Kraft) has an entry;
+        # - Reaktion/Ausdauer: every start card has an entry.
+        # Ready-made programmes (featured grids, trainer codes) are whole runs
+        # of several steps, not single Bausteine - listed, not required.
+        domains = await pg.evaluate("() => [...document.querySelectorAll('#comboAddGrid .combo-domain-group')].map((g) => g.dataset.domain)")
+        # the area list comes from the Training hub itself (built from PLAN_AREAS),
+        # so a new area shows up here without touching this test
+        await pg.evaluate("() => localStorage.setItem('fwmc-test-bottomnav', 'true')")
+        await pg.goto(URL.replace("bereich=visual", "bereich=training")); await pg.wait_for_timeout(400)
+        hub_areas = await pg.evaluate("() => [...document.querySelectorAll('#hubAreaGrid .area-tile')].map((t) => t.dataset.area)")
+        await pg.evaluate("() => localStorage.removeItem('fwmc-test-bottomnav')")
+        print("areas on the Training page:", hub_areas)
+        if len(hub_areas) < 7: fails.append(f"Training hub lists only {hub_areas}")
+        no_group = [a for a in hub_areas if a != "test" and a not in domains]
+        print("every area has its own group in the Kombi:", not no_group, domains)
+        if no_group: fails.append("area without Kombi group: " + ", ".join(no_group))
+        def group_labels(dom):
+            return pg.evaluate("(d) => [...document.querySelectorAll(`#comboAddGrid .combo-domain-group[data-domain='${d}'] .ca-title`)].map((e) => e.textContent.trim())", dom)
+        await pg.goto(URL.replace("bereich=visual", "bereich=breath")); await pg.wait_for_timeout(400)
+        breath_cards = await pg.evaluate("() => [...document.querySelectorAll('#patternGrid > button')].map((b) => (b.querySelector('.fc-title, h3, strong') || b).textContent.trim())")
+        await pg.click('#breathHome [data-open-combo="1"]') if await pg.locator('#breathHome [data-open-combo="1"]').count() else await pg.evaluate("() => document.querySelector('[data-open-combo]').click()")
+        await pg.wait_for_timeout(200)
+        bl = await group_labels("breath")
+        miss_b = [c for c in breath_cards if not any(l.startswith(c[:14]) for l in bl)]
+        print(f"every Atemtraining exercise ({len(breath_cards)}) is offered in the Kombi:", bool(breath_cards) and not miss_b, miss_b)
+        if not breath_cards or miss_b: fails.append("Atem missing in Kombi: " + ", ".join(miss_b or ["no cards found"]))
+        for dom, sel in [("workout", "#workoutHome > section:not(.featured-programs) .featured-card[id$='StartCard']"),
+                         ("movement", "#movementHome .featured-card[id$='StartCard']"),
+                         ("cardio", "#cardioHome .featured-card[id$='StartCard']")]:
+            n_cards = await pg.evaluate("(s) => document.querySelectorAll(s).length", sel)
+            n_kombi = len(await group_labels(dom))
+            print(f"{dom}: every exercise type ({n_cards}) has a Kombi entry ({n_kombi}):", n_cards > 0 and n_kombi >= n_cards)
+            if not (n_cards > 0 and n_kombi >= n_cards): fails.append(f"{dom}: {n_cards} exercise types, {n_kombi} Kombi entries")
+        await pg.goto(URL); await pg.wait_for_timeout(300)
+        await pg.click('#home [data-open-combo="1"]'); await pg.wait_for_timeout(200)
+
         # ---- 2. Every Kombi entry: open, commit, editable ----
         idx = 0
         committed = 0
