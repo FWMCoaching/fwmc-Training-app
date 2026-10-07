@@ -1560,7 +1560,7 @@ body.sheet-lock{position:fixed;left:0;right:0;width:100%;height:auto;overflow:vi
 .custom-exercise-add-row{display:flex;align-items:center;gap:8px}
 .custom-exercise-add-row .combo-add-btn{flex:1}
 .ca-plus-btn{
-  flex:none;width:38px;height:38px;border-radius:12px;border:1px solid var(--line);
+  flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);
   background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;
   box-shadow:var(--shadow);
 }
@@ -1902,6 +1902,11 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
   :root:not([data-theme="light"]) .player.calm .pause-toggle{background:#16262b;border-color:#283d43;color:#e9f0f2}
   :root:not([data-theme="light"]) .player.calm .breath-end-note{color:#a9bbc0}
   :root:not([data-theme="light"]) .player.calm .player-bar button,:root:not([data-theme="light"]) .player.calm .player-status{background:rgba(22,38,43,.92);color:#e9f0f2;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  /* Prüfer 07.10. Nr. 8: a paused light player (VT, Farbfelder, NAT ...) goes dark around its pause sheet - no white bar above and no white strip below it. */
+  :root:not([data-theme="light"]) .player:has(.pause-overlay:not([hidden])){background:#0b1619}
+  :root:not([data-theme="light"]) .player:has(.pause-overlay:not([hidden])) .player-bar button,:root:not([data-theme="light"]) .player:has(.pause-overlay:not([hidden])) .player-status{background:rgba(22,38,43,.92);color:#e9f0f2;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  :root:not([data-theme="light"]) body:has(.player:not([hidden]) .pause-overlay:not([hidden])) .step-nav{background:#0b1619;border-top-color:#1c2f35}
+  :root:not([data-theme="light"]) #player:has(#periphPauseOverlay:not([hidden])) #stage{visibility:hidden}
   :root:not([data-theme="light"]) body:has(.player.calm:not([hidden])) .step-nav{background:#0b1619;border-top-color:#1c2f35}
   :root:not([data-theme="light"]) body:has(.player.calm:not([hidden])) .step-nav button,:root:not([data-theme="light"]) body:has(.player.calm:not([hidden])) .step-nav #stepSoundBtn,:root:not([data-theme="light"]) body:has(.player.calm:not([hidden])) .step-nav #stepSoundBtn.is-off{background:rgba(233,240,242,.12);color:#e9f0f2}
 }
@@ -1931,6 +1936,11 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 :root[data-theme="dark"] .player.calm .pause-toggle{background:#16262b;border-color:#283d43;color:#e9f0f2}
 :root[data-theme="dark"] .player.calm .breath-end-note{color:#a9bbc0}
 :root[data-theme="dark"] .player.calm .player-bar button,:root[data-theme="dark"] .player.calm .player-status{background:rgba(22,38,43,.92);color:#e9f0f2;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  /* Prüfer 07.10. Nr. 8: a paused light player (VT, Farbfelder, NAT ...) goes dark around its pause sheet - no white bar above and no white strip below it. */
+  :root[data-theme="dark"] .player:has(.pause-overlay:not([hidden])){background:#0b1619}
+  :root[data-theme="dark"] .player:has(.pause-overlay:not([hidden])) .player-bar button,:root[data-theme="dark"] .player:has(.pause-overlay:not([hidden])) .player-status{background:rgba(22,38,43,.92);color:#e9f0f2;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  :root[data-theme="dark"] body:has(.player:not([hidden]) .pause-overlay:not([hidden])) .step-nav{background:#0b1619;border-top-color:#1c2f35}
+  :root[data-theme="dark"] #player:has(#periphPauseOverlay:not([hidden])) #stage{visibility:hidden}
 :root[data-theme="dark"] body:has(.player.calm:not([hidden])) .step-nav{background:#0b1619;border-top-color:#1c2f35}
 :root[data-theme="dark"] body:has(.player.calm:not([hidden])) .step-nav button,:root[data-theme="dark"] body:has(.player.calm:not([hidden])) .step-nav #stepSoundBtn,:root[data-theme="dark"] body:has(.player.calm:not([hidden])) .step-nav #stepSoundBtn.is-off{background:rgba(233,240,242,.12);color:#e9f0f2}
 .today-resume-until{margin:8px 0 0;text-align:center;font-size:calc(13px * var(--ts,1));color:var(--ink-soft)}
@@ -2074,7 +2084,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .plan-phase-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
 .text-link.danger{color:var(--warn)}
 .plan-clear-btn{display:block;margin:16px 0 30px}
-.plan-insert-btn{display:block;margin:4px auto 0}
+.plan-insert-btn{display:block;margin:10px auto 0}
 #planEntrySheet .group-label{display:block;margin:12px 0 4px}
 .plan-entry-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 /* Persönliche Nachricht vom Trainer (Code-Feld "message") */
@@ -2696,6 +2706,10 @@ input[type=range]{accent-color:#007094}
 body.bottom-nav-on .start-sticky-bar{bottom:calc(64px + max(0px, env(safe-area-inset-bottom,0px) - 3px));padding-bottom:10px}
 .start-sticky-bar[hidden], .start-sticky-bar:has(> .start-btn[hidden]){display:none}
 .start-sticky-bar > .start-btn{margin:0;width:100%}
+/* Prüfer 07.10. Nr. 1: an open "Speichern" name form owns the screen - the
+   sticky start bar steps aside so it never covers the form and Speichern is
+   the one filled button. */
+.screen:has(.preset-save-form:not([hidden])) .start-sticky-bar{display:none}
 
 /* Kombi-Link nur auf Heute und Training (Fabian 2026-10-06); with the bottom
    bar the area homes reach Kombi through the Training page. */
@@ -2771,7 +2785,9 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 .choice-row[id$="BgSourceRow"] .choice{flex:1 1 auto;display:block}
 /* Pausenfenster höher als der Bildschirm: "Weiter" bleibt unten sichtbar
    (Prüfer 06.10., Gleichgewicht; gilt für jedes Pausenfenster) */
-.pause-panel > .start-btn:last-child{position:sticky;bottom:0;box-shadow:0 0 0 12px var(--surface),0 22px 0 12px var(--surface),0 -16px 14px 2px var(--surface)}
+.pause-panel > .start-btn:last-child{position:sticky;bottom:0;box-shadow:0 0 0 12px var(--surface),0 8px 0 12px var(--surface),0 -16px 14px 2px var(--surface)}
+/* (Prüfer 07.10. Nr. 8: the cover below "Weiter" ends with the panel's own
+   padding, so no second card edge shows under the panel.) */
 /* iPad/Laptop: Pausenfenster breiter, Auswahlknöpfe einzeilig wie auf der Übungsseite (Prüfer 07.10.) */
 @media (min-width:700px){.pause-panel{max-width:440px}}
 /* Farbsehen und Kacheln auf kleinen Android-Handys (360 px) */
@@ -2878,15 +2894,29 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 .plan-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;min-height:44px;max-width:240px;padding:8px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font-size:calc(14px * var(--ts,1));font-weight:600;cursor:pointer;touch-action:pan-x}
 .plan-chip span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .plan-chip.selected{border-color:var(--brand);background:var(--brand-pale);box-shadow:0 0 0 2px var(--brand) inset}
-.plan-day.drop-ready{outline:2px dashed var(--brand);outline-offset:-2px;border-radius:10px;cursor:copy}
+/* Prüfer 07.10. Nr. 2: the armed day frame gets its own room - it grows
+   8 px into the gutter (negative margin, so nothing inside moves) and pads
+   its content, so neither the day name nor the entry card touches the line. */
+.plan-day.drop-ready{outline:2px dashed var(--brand);outline-offset:-3px;border-radius:14px;cursor:copy;margin:0 -12px;padding:12px;border-top-color:transparent}
 .plan-day.drop-over{background:var(--brand-pale)}
 .plan-day-acts{display:flex;flex-wrap:wrap;gap:4px 14px}
 .plan-variant-row{display:flex;gap:8px;margin:6px 0}
-.plan-variant-row .choice{flex:1;min-height:44px}
-.plan-variant-tabs{display:flex;gap:6px;margin:6px 0 2px}
-.plan-vtab{min-width:44px;min-height:44px;padding:8px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-weight:700;cursor:pointer}
+.plan-variant-row .choice{flex:1;min-height:44px;white-space:nowrap;padding-left:8px;padding-right:8px}
+@media (max-width:399px){.plan-variant-row .choice{padding-left:4px;padding-right:4px;font-size:min(calc(14px * var(--ts,1)), 3.5vw)}}
+.plan-variant-tabs{display:flex;align-items:center;gap:6px;margin:6px 0 2px;flex-wrap:nowrap}
+/* Prüfer 07.10. Nr. 3: tabs never wrap - on phones the tab is just the
+   letter, "Woche" stands once in front of the row. "+" is dashed (an action,
+   not a tab); removing a week is a text link below the row. */
+.plan-vtabs-label{display:none;font-weight:700;font-size:calc(14px * var(--ts,1));color:var(--ink-soft);margin-right:4px;white-space:nowrap}
+.plan-vtab{min-width:44px;min-height:44px;padding:8px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-weight:700;cursor:pointer;white-space:nowrap;flex:none}
 .plan-vtab.active{background:var(--brand);border-color:var(--brand);color:#fff}
-.plan-vtab.add{color:var(--brand);font-size:calc(18px * var(--ts,1))}
+.plan-vtab.add{color:var(--brand);font-size:calc(18px * var(--ts,1));border-style:dashed;background:transparent}
+.plan-vtab-remove{display:block;margin:2px 0 0}
+@media (max-width:479px){
+  .plan-vtabs-label{display:inline}
+  .plan-vtab-word{display:none}
+  .plan-vtab{padding:8px 0;flex:1 1 0;max-width:64px}
+}
 .plan-phase-opts{display:flex;flex-direction:column;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
 .plan-opt{display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:600;font-size:calc(14.5px * var(--ts,1))}
 .plan-opt .plan-select,.plan-opt .plan-input{max-width:60%}
@@ -2906,7 +2936,10 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 .myplan-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:calc(13px * var(--ts,1));color:var(--ink-soft);margin-bottom:10px}
 .myplan-legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .myplan-legend i.pause{background:repeating-linear-gradient(135deg,#9aa7ad 0 3px,transparent 3px 6px);border:1px solid #9aa7ad}
-.myplan-list{display:flex;flex-direction:column;gap:4px;max-height:60vh;overflow-y:auto;margin-bottom:16px;padding-right:2px}
+.myplan-list{display:flex;flex-direction:column;gap:4px;margin-bottom:16px}
+.myplan-list .nobr{white-space:nowrap}
+.myplan-week[hidden]{display:none}
+.myplan-more{align-self:flex-start;min-height:44px}
 .myplan-week{display:grid;grid-template-columns:8px 92px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:44px;padding:8px 12px 8px 8px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-align:left;font-size:calc(13.5px * var(--ts,1));cursor:pointer}
 .myplan-bar{align-self:stretch;border-radius:4px;background:var(--wk)}
 .myplan-week.light .myplan-bar{opacity:.45}
@@ -2917,7 +2950,11 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 .myplan-text{min-width:0;overflow-wrap:anywhere}
 .myplan-n{font-weight:700;color:var(--brand);white-space:nowrap;font-size:calc(12.5px * var(--ts,1))}
 .myplan-goal{color:#e67e22;font-weight:700}
-.pause-ico{font-size:22px;width:28px;text-align:center}
+.pause-ico{flex:none;width:28px;display:inline-flex;align-items:center;justify-content:center;color:var(--brand-deep)}
+.pause-ico.inline{width:auto;vertical-align:-4px}
+.pause-ico .pause-svg{display:block}
+#pauseReasonRow .choice{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px}
+#pauseReasonRow .choice .pause-ico{width:auto;color:inherit}
 .choice-sheet-list{display:flex;flex-direction:column;gap:8px;margin:6px 0 12px}
 .choice-sheet-btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;min-height:52px;padding:12px 16px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);text-align:left;cursor:pointer;font-size:calc(15.5px * var(--ts,1))}
 .choice-sheet-btn small{color:var(--ink-soft);font-size:calc(13px * var(--ts,1));font-weight:400}
@@ -2980,3 +3017,7 @@ body.soft-blitz .blitz-cell.lit{animation:fwmcSoftLit .4s ease-out 1}
 body.soft-flash .flash-digit:not([hidden]){animation:fwmcSoftIn .3s ease-out 1}
 @keyframes fwmcSoftIn{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion: reduce){.today-break.is-called,#masterSettingsSheet .group.is-called{animation:none}}
+/* Prüfer 07.10. Nr. 10: an open Atem run ("Ohne Zeitlimit") has one way to
+   end while it runs - "Fertig" (counts as done). The bar's "✕ Beenden"
+   (counts as aborted) comes back in the pause sheet. */
+#breathPlayer:has(#breathFinishBtn:not([hidden])):not(:has(#breathPauseOverlay:not([hidden]))) #breathBackBtn{visibility:hidden}

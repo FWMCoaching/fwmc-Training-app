@@ -334,7 +334,17 @@
   }
   function wirePresetSaveForm(cfg) {
     // cfg: { saveBtn, form, nameInput, cancelBtn, confirmBtn, defaultName, onSave }
-    function open() { cfg.form.hidden = false; cfg.saveBtn.hidden = true; cfg.nameInput.value = ""; cfg.nameInput.focus(); }
+    // Prüfer 07.10. Nr. 1: while the form is open the screen's sticky
+    // "Training starten" bar steps aside (CSS: .screen:has(.preset-save-form
+    // :not([hidden])) .start-sticky-bar), so Speichern is the one filled
+    // button and nothing covers it; the form scrolls into view and Enter
+    // saves.
+    cfg.form.classList.add("preset-save-form");
+    function open() {
+      cfg.form.hidden = false; cfg.saveBtn.hidden = true; cfg.nameInput.value = "";
+      try { cfg.nameInput.focus({ preventScroll: true }); } catch (e) { cfg.nameInput.focus(); }
+      revealPresetForm(cfg.form);
+    }
     function close() { cfg.form.hidden = true; cfg.saveBtn.hidden = false; }
     cfg.saveBtn.addEventListener("click", open);
     cfg.cancelBtn.addEventListener("click", close);
@@ -342,6 +352,20 @@
       const name = (cfg.nameInput.value || "").trim() || cfg.defaultName();
       cfg.onSave(name);
       close();
+    });
+    wireEnterToSave(cfg.nameInput, cfg.confirmBtn);
+  }
+  function revealPresetForm(form) {
+    const go = () => { try { form.scrollIntoView({ block: "center" }); } catch (e) { /* old browsers */ } };
+    go();
+    // The on-screen keyboard (iOS) shrinks the viewport a moment later.
+    setTimeout(go, 350);
+  }
+  function wireEnterToSave(input, btn) {
+    input.addEventListener("keydown", (ev) => {
+      if (ev.key !== "Enter" || ev.isComposing) return;
+      ev.preventDefault();
+      btn.click();
     });
   }
 
@@ -695,7 +719,7 @@
   };
   // Each Stufe adds one symbol (rule) to the ones before.
   const FF_SYMBOLS = {
-    viereck: { name: "Viereck", rule: "auf dasselbe Feld", short: "gleich" },
+    viereck: { name: "Viereck", rule: "auf dasselbe Feld", short: "selbes Feld" },
     dreieck: { name: "Dreieck", rule: "auf das Feld schräg gegenüber", short: "schräg" },
     strich: { name: "Strich", rule: "auf das Nachbarfeld in derselben Reihe", short: "daneben" },
     herz: { name: "Herz", rule: "auf das Feld in derselben Spalte (oben ↔ unten)", short: "drüber/drunter" },
@@ -792,7 +816,12 @@
       ffSeqResume = null;
       const seq = [], feet = [];
       const stepOn = Math.max(0.5, Math.min(1.5, show * 0.7)), stepGap = 0.3, recallPer = Math.max(1.2, show);
+      let rounds = 0;
       while (t < state.duration) {
+        // A round that would not finish before the end is not started
+        // (Prüfer 07.10. Nr. 4) - capVtSchedule fills the rest with a blank.
+        if (rounds > 0 && t + 0.8 + len * (stepOn + stepGap + recallPer) > state.duration) break;
+        rounds++;
         while (seq.length < len) {
           let f;
           do { f = rand4(); } while (seq.length && f === seq[seq.length - 1]);
@@ -1218,9 +1247,9 @@
     // (usesColors), at most one per field. Details: docs/notes/29.
     "cone-number": {
       title: "Hütchen · Farbe + Zahl", type: "colornum", usesColors: true,
-      task: "Stelle den Becher in dieser Farbe auf das Feld mit dieser Zahl.",
+      task: "Stelle das Hütchen in dieser Farbe auf das Feld mit dieser Zahl.",
       trains: "Farbe und Zahl gleichzeitig erfassen und schnell umsetzen",
-      rules: "Lege nummerierte Felder (1 bis zur eingestellten Anzahl) auf den Boden und stelle auf jedes einen farbigen Becher oder ein Hütchen. Die App zeigt eine Farbe mit einer großen Zahl – zum Beispiel Gelb mit der 2: Stelle den gelben Becher so schnell wie möglich auf Feld 2. Steht dort schon ein Becher, tausche die beiden.",
+      rules: "Lege nummerierte Felder (1 bis zur eingestellten Anzahl) auf den Boden und stelle auf jedes ein farbiges Hütchen oder einen Becher. Die App zeigt eine Farbe mit einer großen Zahl – zum Beispiel Gelb mit der 2: Stelle das gelbe Hütchen so schnell wie möglich auf Feld 2. Steht dort schon eins, tausche die beiden.",
     },
     "farbfelder": {
       title: "Farbfelder", type: "farbfelder", bgIsStimulus: true,
@@ -4579,7 +4608,7 @@
   // once Fabian sets a URL. A new exercise that needs something = one entry.
   const HILFSMITTEL = {
     "cone-number": {
-      text: "Du brauchst: 3-6 farbige Becher oder Hütchen und nummerierte Felder (z. B. Zettel mit 1-6).",
+      text: "Du brauchst: 3-6 farbige Hütchen oder Becher und nummerierte Felder (z. B. Zettel mit 1-6).",
       link: "",
     },
     farbfelder: {
@@ -5629,7 +5658,29 @@
     return { schedule, total: t };
   }
 
+  // Prüfer 07.10. Nr. 4: every builder loops "while (t < duration)" and so
+  // ran up to one stimulus + pause (Abfolge merken: a whole round) past the
+  // chosen time - the clock started at 1:05-1:17 for "1 Min". The run now
+  // ends exactly at the chosen duration: nothing starts after the end, a
+  // stimulus that would be cut off becomes the closing blank, and a short
+  // schedule is padded with a blank (the clock always starts at the choice).
+  function capVtSchedule(built) {
+    const end = Number(state.duration);
+    if (!(end > 0) || !built || !Array.isArray(built.schedule)) return built;
+    const out = [];
+    for (const f of built.schedule) {
+      if (f.t0 >= end - 0.001) continue;
+      if (f.t1 <= end + 0.001) { out.push(f); continue; }
+      out.push(f.kind === "blank" ? { ...f, t1: end } : { t0: f.t0, t1: end, kind: "blank", payload: {} });
+    }
+    const last = out.length ? out[out.length - 1].t1 : 0;
+    if (last < end - 0.001) out.push({ t0: last, t1: end, kind: "blank", payload: {} });
+    return { ...built, schedule: out, total: end };
+  }
   function buildScheduleFor(cfg, rng) {
+    return capVtSchedule(buildScheduleForRaw(cfg, rng));
+  }
+  function buildScheduleForRaw(cfg, rng) {
     return cfg.type === "stroop" ? buildStroopSchedule(cfg, rng) :
       cfg.type === "cross" ? buildCrossModalSchedule(cfg, rng) :
       cfg.type === "vt" ? buildVTSchedule(cfg, rng) :
@@ -7885,7 +7936,7 @@
 
   function phaseChipsHtml(phases) {
     return PHASE_ORDER.filter((k) => phases[k] > 0)
-      .map((k) => `<span class="phase-chip">${fmtSeconds(phases[k]).replace(" ", "")} ${PHASE_LABELS[k]}</span>`)
+      .map((k) => `<span class="phase-chip">${fmtSeconds(phases[k]).replace(" ", "\u00a0")} ${PHASE_LABELS[k]}</span>`)
       .join("");
   }
   function syncPhaseUI() {
@@ -8142,6 +8193,7 @@
     els.breathFinishBtn.hidden = true;
     els.breathEndNote.hidden = true;
     els.breathBackBtn.style.visibility = "";
+    els.breathTimeEl.style.visibility = "";
   }
   function breathEndNoteText(left) {
     const s = `${left}\u00a0s`;
@@ -8158,8 +8210,11 @@
     breathEndHold = { left: BREATH_MORE_HOLD_S, timer: null };
     breathCircle.style.transform = "scale(0.55)";
     els.breathPhaseLabel.textContent = "Geschafft";
-    els.breathPhaseCount.textContent = String(BREATH_MORE_HOLD_S);
+    // Prüfer 07.10. Nr. 9: one counter only - the note counts down, the
+    // circle shows a check mark and the time pill steps aside.
+    els.breathPhaseCount.textContent = "✓";
     els.breathTimeEl.textContent = fmtClock(0);
+    els.breathTimeEl.style.visibility = "hidden";
     els.breathPauseBtn.hidden = true;
     els.breathListenLayer.hidden = true;
     resetBreathListenHold();
@@ -8177,7 +8232,6 @@
       const left = Math.max(0, Math.ceil(BREATH_MORE_HOLD_S - (performance.now() - t0) / 1000));
       if (left !== breathEndHold.left) {
         breathEndHold.left = left;
-        els.breathPhaseCount.textContent = String(left);
         els.breathEndNote.textContent = breathEndNoteText(left);
       }
       if (left <= 0) { clearBreathEndHold(); breathFinishSession(); }
@@ -14610,7 +14664,7 @@
   function cueControlsHtml(cfg, labels) {
     const has = (k) => k in labels;
     const choice = (attr, v, cur, text) => `<button type="button" class="choice${v === cur ? " active" : ""}" ${attr}="${v}">${text}</button>`;
-    const check = (k, extraClass = "") => has(k) ? `<label class="checkbox-row${extraClass}"><input type="checkbox" data-cue-key="${k}"${cfg[k] ? " checked" : ""}> ${labels[k]}</label>` : "";
+    const check = (k, extraClass = "") => has(k) ? `<label class="checkbox-row tap-row${extraClass}"><input type="checkbox" data-cue-key="${k}"${cfg[k] ? " checked" : ""}> ${labels[k]}</label>` : "";
     let h = `<div class="cue-sub-label">Countdown-Töne</div><div class="choice-row">` +
       CUE_COUNT_CHOICES.map((v) => choice("data-cue-count", v, cfg.countdownS, v ? `${v} Sek.` : "Aus")).join("") + `</div>`;
     if (cfg.countdownS > 0) h += check("countStart") + check("countEnd");
@@ -14653,7 +14707,7 @@
       `<div class="group-help">Gilt für Tabata-Zirkel, Kraftplan, Ausdauertraining und die Pausen im Kombi-Programm. In den Feineinstellungen jedes Bereichs kannst du davon abweichen.</div>` +
       cueControlsHtml(masterPrefs.cues, CUE_FIELD_LABELS.master) +
       `<div class="cue-sub-label">iPhone/iPad</div>` +
-      `<label class="checkbox-row"><input type="checkbox" data-cue-silent${masterPrefs.cuesIgnoreSilent ? " checked" : ""}> Töne auch bei eingeschaltetem Stummschalter (pausiert Musik, z. B. Spotify)</label>` +
+      `<label class="checkbox-row tap-row"><input type="checkbox" data-cue-silent${masterPrefs.cuesIgnoreSilent ? " checked" : ""}> Töne auch bei eingeschaltetem Stummschalter (pausiert Musik, z. B. Spotify)</label>` +
       `<div class="group-help">Ohne Haken spielt das iPhone Töne über den Lautsprecher nur, wenn der Stummschalter aus ist (mit Kopfhörern immer). Mit Haken klingen sie trotzdem, dafür pausiert iOS dann meist deine Musik.</div>`;
   }
   (() => {
@@ -19918,8 +19972,11 @@
     els.comboSaveBtn.hidden = true;
     els.comboNameInput.value = comboEditing ? comboEditing.name : comboAdaptName;
     $("comboSaveAsNewBtn").hidden = !comboEditing;
-    els.comboNameInput.focus();
+    try { els.comboNameInput.focus({ preventScroll: true }); } catch (e) { els.comboNameInput.focus(); }
+    revealPresetForm(els.comboSaveForm);
   });
+  els.comboSaveForm.classList.add("preset-save-form");
+  wireEnterToSave(els.comboNameInput, els.comboSaveConfirmBtn);
   els.comboSaveCancelBtn.addEventListener("click", closeComboSaveForm);
   function comboSaveDone() {
     closeComboSaveForm();
@@ -30314,7 +30371,7 @@
     const pz = pauseOn(date);
     const wk = planWeekMap(Math.floor(dDiff(plan.startDate, date) / 7));
     let text = "";
-    if (pz) { const r = PAUSE_BY_KEY[pz.reason] || PAUSE_BY_KEY.sonstiges; text = `${r[2]} Pause bis ${shortDate(pz.to)}`; }
+    if (pz) { const r = PAUSE_BY_KEY[pz.reason] || PAUSE_BY_KEY.sonstiges; text = `Pause (${r[1]}) bis ${shortDate(pz.to)}`; }
     else if (wk && wk.type === "insert") text = `★ ${wk.ins.name}`;
     else if (wk && wk.type === "blank") text = "Plan pausiert eine Woche";
     else if (planHasEntries() && plan.phases.length) { const ph = phaseFor(date); if (ph) text = weekRowLabel(wk, ph); }
@@ -30330,7 +30387,8 @@
     const resume = resumeGet();
     if (open.length) {
       const e = open[0];
-      const meta = [e.time ? `${e.time} Uhr` : "", `${e.minutes} Min.`, AREA_BY_KEY[e.area].label].filter(Boolean).join(" · ");
+      // Prüfer 07.10. Nr. 11: the area name only once (not when it is already the title)
+      const meta = [e.time ? `${e.time} Uhr` : "", `${e.minutes} Min.`, entryTitle(e) === AREA_BY_KEY[e.area].label ? "" : AREA_BY_KEY[e.area].label].filter(Boolean).join(" · ");
       const more = open.length > 1 ? `<p class="today-main-more">Danach heute noch: ${open.slice(1).map((o) => esc(entryTitle(o))).join(", ")}</p>` : "";
       html = `<div class="today-main-kicker">Heutiges Training</div>
         <h2 class="today-main-title">${areaDot(e.area)}${esc(entryTitle(e))}</h2>
@@ -30674,7 +30732,7 @@
     const pzDay = pauseOn(date);
     if (!occ.length && pzDay) {
       const r = PAUSE_BY_KEY[pzDay.reason] || PAUSE_BY_KEY.sonstiges;
-      els.dayPanelBody.innerHTML = `<p class="day-empty">${r[2]} Pause (${esc(r[1])}) bis ${esc(shortDate(pzDay.to))}. Keine Erinnerungen, deine Serie reißt nicht ab. <button type="button" class="text-link small" id="dayPauseEditBtn">Pause bearbeiten</button></p>`;
+      els.dayPanelBody.innerHTML = `<p class="day-empty"><span class="pause-ico inline" aria-hidden="true">${r[2]}</span> Pause (${esc(r[1])}) bis ${esc(shortDate(pzDay.to))}. Keine Erinnerungen, deine Serie reißt nicht ab. <button type="button" class="text-link small" id="dayPauseEditBtn">Pause bearbeiten</button></p>`;
       $("dayPauseEditBtn").addEventListener("click", () => openPauseSheet(pzDay.id));
       return;
     }
@@ -31577,7 +31635,8 @@
           <button type="button" class="choice small${nVar === 1 ? " active" : ""}" data-rot="${pi}:1" aria-pressed="${nVar === 1}">Jede Woche gleich</button>
           <button type="button" class="choice small${nVar > 1 ? " active" : ""}" data-rot="${pi}:2" aria-pressed="${nVar > 1}">Wochen im Wechsel</button>
         </div>
-        ${nVar > 1 ? `<div class="plan-variant-tabs">${VARIANT_NAMES.slice(0, nVar).map((n, i) => `<button type="button" class="plan-vtab${i === v ? " active" : ""}" data-vsel="${pi}:${i}" aria-pressed="${i === v}">Woche ${n}</button>`).join("")}${nVar < 4 ? `<button type="button" class="plan-vtab add" data-rot="${pi}:${nVar + 1}" aria-label="Woche ${VARIANT_NAMES[nVar]} dazu">+</button>` : ""}${nVar > 2 ? `<button type="button" class="plan-vtab add" data-rot="${pi}:${nVar - 1}" aria-label="Letzte Woche entfernen">−</button>` : ""}</div>
+        ${nVar > 1 ? `<div class="plan-variant-tabs" role="group" aria-label="Woche wählen"><span class="plan-vtabs-label" aria-hidden="true">Woche</span>${VARIANT_NAMES.slice(0, nVar).map((n, i) => `<button type="button" class="plan-vtab${i === v ? " active" : ""}" data-vsel="${pi}:${i}" aria-pressed="${i === v}" aria-label="Woche ${n}"><span class="plan-vtab-word">Woche </span>${n}</button>`).join("")}${nVar < 4 ? `<button type="button" class="plan-vtab add" data-rot="${pi}:${nVar + 1}" aria-label="Woche ${VARIANT_NAMES[nVar]} dazu">+</button>` : ""}</div>
+          ${nVar > 2 ? `<button type="button" class="text-link small danger plan-vtab-remove" data-rot="${pi}:${nVar - 1}">Woche ${VARIANT_NAMES[nVar - 1]} entfernen</button>` : ""}
           <p class="group-help">Woche A, B${nVar > 2 ? ", C" : ""}${nVar > 3 ? ", D" : ""} wechseln sich ab: In Woche 1 gilt A, in Woche 2 B und so weiter.</p>` : ""}`;
       const days = planDaysRef(pi, v).map((list, di) => planDayHtml(list, di, `${pi}/${v}`)).join("");
       return `<section class="plan-phase" style="border-left-color:${PHASE_TINTS[pi % PHASE_TINTS.length]}">
@@ -31972,7 +32031,17 @@
   // ==== Mein Plan (kp15), Woche verschieben (kp8), Pause (kp7),
   // Wettkampf (kp11) ====
   let myPlanBack = "todayHome";
-  const PAUSE_REASONS = [["urlaub", "Urlaub", "🧳"], ["krank", "Krank", "🌡"], ["verletzt", "Verletzt", "🩹"], ["sonstiges", "Sonstiges", "⏸"]];
+  // Prüfer 07.10. Nr. 5: line icons in the app's style (stroke = currentColor,
+  // like .today-break-icon / the bottom bar) instead of emoji, which render
+  // differently per system and vanish in dark mode. r[2] is HTML, only for
+  // innerHTML spots; plain-text labels name the reason without an icon.
+  const pauseSvg = (d) => `<svg class="pause-svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${d}</svg>`;
+  const PAUSE_REASONS = [
+    ["urlaub", "Urlaub", pauseSvg('<rect x="3" y="7.5" width="18" height="12.5" rx="2"/><path d="M9 7.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5v2"/><path d="M8 7.5v12.5M16 7.5v12.5"/>')],
+    ["krank", "Krank", pauseSvg('<path d="M14 14.5V5a2 2 0 1 0-4 0v9.5a4 4 0 1 0 4 0z"/><path d="M12 11v6"/>')],
+    ["verletzt", "Verletzt", pauseSvg('<rect x="2" y="8.5" width="20" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="M10.6 10.6h.01M13.4 13.4h.01M13.4 10.6h.01M10.6 13.4h.01"/>')],
+    ["sonstiges", "Sonstiges", pauseSvg('<rect x="6.5" y="5" width="3.5" height="14" rx="1"/><rect x="14" y="5" width="3.5" height="14" rx="1"/>')],
+  ];
   const PAUSE_BY_KEY = Object.fromEntries(PAUSE_REASONS.map((r) => [r[0], r]));
   function openMyPlan(back) {
     myPlanBack = back || "todayHome";
@@ -31993,7 +32062,7 @@
     return Math.min(last, 104);
   }
   function weekRowLabel(wk, ph) {
-    if (wk.type === "pause") { const r = PAUSE_BY_KEY[wk.pause.reason] || PAUSE_BY_KEY.sonstiges; return `${r[2]} Pause (${r[1]})`; }
+    if (wk.type === "pause") { const r = PAUSE_BY_KEY[wk.pause.reason] || PAUSE_BY_KEY.sonstiges; return `Pause (${r[1]})`; }
     if (wk.type === "insert") return `★ ${wk.ins.name}`;
     if (wk.type === "blank") return "Eine Woche später (verschoben)";
     if (!ph) return "Plan beendet";
@@ -32023,16 +32092,22 @@
       rows.push(`<button type="button" class="${cls}" data-week="${wk.monday}" style="--wk:${color}">
         <span class="myplan-bar" aria-hidden="true"${wk.type === "pause" ? "" : ` style="background:${color}"`}></span>
         <span class="myplan-date">${dParse(wk.monday).getDate()}.${dParse(wk.monday).getMonth() + 1}.–${dParse(sun).getDate()}.${dParse(sun).getMonth() + 1}.</span>
-        <span class="myplan-text">${esc(weekRowLabel(wk, ph))}${goal ? ` <span class="myplan-goal">◆ ${esc(goal.title)}</span>` : ""}</span>
+        <span class="myplan-text">${esc(weekRowLabel(wk, ph)).replace(/Woche \d+( von \d+)?( \([A-D]\))?/, (m) => `<span class="nobr">${m}</span>`)}${goal ? ` <span class="myplan-goal">◆ ${esc(goal.title)}</span>` : ""}</span>
         <span class="myplan-n">${wk.monday === thisMon ? "Du bist hier" : st.planned ? `${st.done}/${st.planned}` : ""}</span></button>`);
     }
-    $("myPlanList").innerHTML = rows.join("") || `<p class="group-help">Noch kein Plan. Lege ihn unter „Wochenplan“ an.</p>`;
+    // Prüfer 07.10. Nr. 7: no scroll box inside the page - the page scrolls,
+    // long plans show 12 weeks from now on and the rest behind one link.
+    const nowIdx = Math.max(0, rows.findIndex((r) => r.includes(" is-now")));
+    const cut = Math.max(12, nowIdx + 12);
+    const more = rows.length - cut;
+    $("myPlanList").innerHTML = rows.map((r, i) => (i >= cut ? r.replace("<button ", "<button hidden ") : r)).join("")
+      + (more > 0 ? `<button type="button" class="text-link small myplan-more" id="myPlanMoreBtn">Weitere ${more} ${more === 1 ? "Woche" : "Wochen"} anzeigen</button>` : "")
+      || `<p class="group-help">Noch kein Plan. Lege ihn unter „Wochenplan“ an.</p>`;
+    if (more > 0) $("myPlanMoreBtn").addEventListener("click", (ev) => { $("myPlanList").querySelectorAll(".myplan-week[hidden]").forEach((b) => { b.hidden = false; }); ev.currentTarget.remove(); });
     const kinds = [...new Set(plan.phases.map((p, i) => i))].map((i) => `<span><i style="background:${PHASE_TINTS[i % PHASE_TINTS.length]}"></i>${esc(plan.phases[i].name)}</span>`);
     if (plan.pauses.length) kinds.push(`<span><i class="pause"></i>Pause</span>`);
     if (plan.inserts.length) kinds.push(`<span><i style="background:#d4a017"></i>Sonderwoche</span>`);
     $("myPlanLegend").innerHTML = kinds.join("");
-    const nowRow = $("myPlanList").querySelector(".is-now");
-    if (nowRow) setTimeout(() => { const box = $("myPlanList"); if (box.scrollHeight > box.clientHeight) box.scrollTop = nowRow.offsetTop - box.offsetTop - 60; }, 0);
     $("myPlanPauses").innerHTML = plan.pauses.length ? plan.pauses.slice().sort((a, b) => a.from.localeCompare(b.from)).map((pz) => {
       const r = PAUSE_BY_KEY[pz.reason] || PAUSE_BY_KEY.sonstiges;
       return `<div class="day-item"><div class="day-item-main"><span class="pause-ico" aria-hidden="true">${r[2]}</span><div><div class="day-item-title">${esc(r[1])}: ${esc(shortDate(pz.from))} bis ${esc(shortDate(pz.to))}</div><div class="day-item-meta">${pz.shift ? "Plan rückt nach hinten" : "Plan läuft weiter, Tage bleiben leer"}</div></div></div>
@@ -32084,7 +32159,7 @@
   // ---- Pause eintragen ----
   let pauseEditId = null, pauseReason = "urlaub", pauseReturnFocus = null;
   function renderPauseReasons() {
-    $("pauseReasonRow").innerHTML = PAUSE_REASONS.map(([k, t, ic]) => `<button type="button" class="choice${k === pauseReason ? " active" : ""}" data-reason="${k}" aria-pressed="${k === pauseReason}"><span aria-hidden="true">${ic}</span> ${esc(t)}</button>`).join("");
+    $("pauseReasonRow").innerHTML = PAUSE_REASONS.map(([k, t, ic]) => `<button type="button" class="choice${k === pauseReason ? " active" : ""}" data-reason="${k}" aria-pressed="${k === pauseReason}"><span class="pause-ico" aria-hidden="true">${ic}</span><span>${esc(t)}</span></button>`).join("");
   }
   function pauseShiftDefault() {
     const f = $("pauseFromInput").value, t = $("pauseToInput").value;
@@ -33165,7 +33240,7 @@
       remState.busy = true;
       try {
         let sub = null;
-        try { sub = await getSubscription(Notification.permission === "granted"); } catch (e) { sub = null; }
+        try { sub = await withTimeout(getSubscription(Notification.permission === "granted"), 12000); } catch (e) { sub = null; }
         if (!sub) { remState.lastResult = { error: true }; return; }
         const reminders = computeReminders();
         const ok = await sendJSON("POST", { subscription: sub.toJSON ? sub.toJSON() : sub, reminders });
@@ -33200,8 +33275,11 @@
         return;
       }
       let sub = null;
-      try { sub = await getSubscription(true); } catch (e) { sub = null; }
-      if (!sub) { setFlag(kind, false); savePrefs(); syncUI(); setStatus("Das Einschalten hat gerade nicht geklappt. Bitte versuche es später noch einmal.", false); return; }
+      // Prüfer 07.10. Nr. 12: the push subscription can hang without a
+      // network - after 12 s (like lookupProgram) a friendly message instead
+      // of "Einen Moment …" for ever.
+      try { sub = await withTimeout(getSubscription(true), 12000); } catch (e) { sub = null; }
+      if (!sub) { setFlag(kind, false); savePrefs(); syncUI(); setStatus("Das Einschalten hat gerade nicht geklappt. Prüfe bitte deine Internetverbindung und versuche es dann noch einmal.", false); return; }
       setFlag(kind, true); savePrefs(); remState.lastResult = null;
       await syncNow();
     }
@@ -33260,7 +33338,7 @@
     a.href = PLAN_REQUEST_URL;
     a.target = "_blank";
     a.rel = "noopener";
-    a.textContent = "Noch keinen Trainer? So bekommst du deinen Plan →";
+    a.textContent = "Noch keinen Trainer? So bekommst du deinen\u00a0Plan\u00a0→";
     card.appendChild(a);
   });
   (function quietCodeCards() {

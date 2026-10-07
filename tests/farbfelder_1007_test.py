@@ -167,6 +167,17 @@ async def main():
         await pg.click("#periphResumeBtn"); await pg.wait_for_timeout(100)
         await pg.click("#backBtn"); await pg.wait_for_timeout(300)
 
+        # ---- Prüfer 07.10. Nr. 4: "1 Min" starts at 1:00 like Kompass-Aufbau
+        # (the schedule ends at the chosen time, Abfolge merken included) ----
+        for mode in ["abfolge", "regeln", "sehenhoeren", "leuchten"]:
+            await pg.goto(URL); await pg.wait_for_timeout(400)
+            await open_ff(pg)
+            await pg.click(f'[data-ff-mode="{mode}"]'); await pg.click('[data-dur="60"]'); await pg.wait_for_timeout(80)
+            await pg.click("#startBtn"); await pg.wait_for_timeout(150)
+            t = await pg.inner_text("#timeEl")
+            check(f"timer starts at the chosen 1:00 ({mode})", t.strip() == "1:00", t)
+            await pg.click("#backBtn"); await pg.wait_for_timeout(300)
+
         # ---- Kombi capture: own settings, standalone untouched ----
         before = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-webapp-v3')).ffMode")
         await pg.click("#backToHome"); await pg.wait_for_timeout(200)

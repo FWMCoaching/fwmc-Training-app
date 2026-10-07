@@ -92,6 +92,17 @@ async def main():
         await pg.click('[data-add="0/0:3"]'); await pg.wait_for_timeout(200)
         pl = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-plan-v1'))")
         check("kp3: tray item lands on Thursday", any(e["area"] == "visual" for e in pl["phases"][0]["days"][3]))
+        # Prüfer 07.10. Nr. 2: the armed day frame keeps its content off the dashed line
+        for vw in (390, 1024):
+            await pg.set_viewport_size({"width": vw, "height": 844 if vw == 390 else 1366}); await pg.wait_for_timeout(150)
+            gap = await pg.evaluate("""() => { const out = [];
+              document.querySelectorAll('.plan-day.drop-ready').forEach(d => { const r = d.getBoundingClientRect(), o = parseFloat(getComputedStyle(d).outlineOffset) || 0, w = parseFloat(getComputedStyle(d).outlineWidth) || 0;
+                const inner = { l: r.left - o + w, r: r.right + o - w, t: r.top - o + w, b: r.bottom + o - w };
+                d.querySelectorAll('.plan-day-name, .plan-item').forEach(c => { const q = c.getBoundingClientRect();
+                  out.push(Math.min(q.left - inner.l, inner.r - q.right, q.top - inner.t, inner.b - q.bottom)); }); });
+              return out.length ? Math.min(...out) : -99; }""")
+            check(f"Prüfer 2: armed day frame clear of day name and entry ({vw} px)", gap >= 4, gap)
+        await pg.set_viewport_size({"width": 390, "height": 844}); await pg.wait_for_timeout(150)
         # copy day
         await pg.click('#planTrayItems [data-tray="0"]')  # disarm
         await pg.click('[data-copyday="0/0:0"]'); await pg.click('[data-add="0/0:5"]'); await pg.wait_for_timeout(200)
@@ -217,6 +228,38 @@ async def main():
             small = await pg.evaluate("() => [...document.querySelectorAll('.screen:not([hidden]) button')].filter(b => b.offsetParent && b.getBoundingClientRect().height < 44 && !b.classList.contains('text-link') && !b.classList.contains('plan-item-btn')).map(b => b.textContent.trim()).slice(0, 5)")
             check(f"{scr}: no sideways scroll", not over)
             check(f"{scr}: buttons >= 44 px", not small, str(small))
+        # ---- Prüfer 07.10. Nr. 3: week tabs A-D stay one line, "−" is no tab ----
+        plan = {"startDate": D(monday), "phases": [{"id": "p1", "name": "Grundlage", "weeks": 0, "days": [[E("v1")]] + [[]] * 6,
+                 "alt": [[[E("v2", "workout")]] + [[]] * 6, [[]] * 7, [[]] * 7]}]}
+        await seed(pg, plan)
+        await pg.click("#todayPlanBtn"); await pg.wait_for_timeout(300)
+        for vw in (360, 390, 1024):
+            await pg.set_viewport_size({"width": vw, "height": 844}); await pg.wait_for_timeout(150)
+            lines = await pg.evaluate("""() => [...document.querySelectorAll('.plan-vtab, .plan-variant-row .choice')].filter(b => b.getClientRects().length).map(b => {
+              const rg = document.createRange(); rg.selectNodeContents(b); return new Set([...rg.getClientRects()].filter(r => r.width > 1).map(r => Math.round(r.top / 4))).size; })""")
+            check(f"Prüfer 3: week tabs + Wechsel row one line each ({vw} px)", lines and max(lines) == 1, lines)
+            over = await pg.evaluate("() => [...document.querySelectorAll('.plan-vtab, .plan-variant-row .choice')].filter(b => b.getClientRects().length && b.scrollWidth > b.clientWidth + 1).map(b => b.textContent.trim())")
+            check(f"Prüfer 3: no label sticks out of its button ({vw} px)", not over, over)
+        await pg.set_viewport_size({"width": 390, "height": 844}); await pg.wait_for_timeout(150)
+        check("Prüfer 3: 4 week tabs with their names for screen readers", await pg.evaluate("() => [...document.querySelectorAll('.plan-vtab[data-vsel]')].map(b => b.getAttribute('aria-label')).join()") == "Woche A,Woche B,Woche C,Woche D")
+        check("Prüfer 3: removing a week is a text link, not a tab", await pg.locator(".plan-vtab", has_text="−").count() == 0 and await pg.is_visible(".plan-vtab-remove"))
+        await pg.click(".plan-vtab-remove"); await pg.wait_for_timeout(200)
+        pl = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-plan-v1'))")
+        check("Prüfer 3: 'Woche D entfernen' removes week D", len(pl["phases"][0]["alt"]) == 2, len(pl["phases"][0]["alt"]))
+        # ---- Prüfer 07.10. Nr. 5: pause reasons with line icons, no emoji ----
+        await pg.click("#planPauseBtn"); await pg.wait_for_timeout(300)
+        rs = await pg.evaluate(r"""() => [...document.querySelectorAll('#pauseReasonRow .choice')].map(b => ({ svg: !!b.querySelector('svg'), h: b.getBoundingClientRect().height,
+            emoji: /[\u{1F300}-\u{1FAFF}\u2600-\u27BF\u23F8]/u.test(b.textContent), stroke: b.querySelector('svg') && b.querySelector('svg').getAttribute('stroke') }))""")
+        check("Prüfer 5: 4 reasons, each an SVG line icon (currentColor), no emoji, >= 44 px", len(rs) == 4 and all(r["svg"] and not r["emoji"] and r["h"] >= 44 and r["stroke"] == "currentColor" for r in rs), rs)
+        await pg.keyboard.press("Escape"); await pg.wait_for_timeout(200)
+        # ---- Prüfer 07.10. Nr. 7: Mein Plan scrolls with the page, "Woche 2 (B)" stays together ----
+        plan["startDate"] = D(monday - datetime.timedelta(days=7)); plan["phases"][0]["alt"] = [[[E("v2", "workout")]] + [[]] * 6]
+        await seed(pg, plan)
+        await pg.click("#todayMyPlanBtn"); await pg.wait_for_timeout(300)
+        box = await pg.evaluate("() => { const l = document.getElementById('myPlanList'); const s = getComputedStyle(l); return [s.overflowY, s.maxHeight]; }")
+        check("Prüfer 7: Mein Plan list has no own scroll box", box[0] == "visible" and box[1] == "none", box)
+        nobr = await pg.evaluate("() => [...document.querySelectorAll('#myPlanList .myplan-text .nobr')].map(e => e.textContent).slice(0, 2)")
+        check("Prüfer 7: 'Woche N (X)' kept on one line", nobr and all("(" in t for t in nobr), nobr)
         await pg.emulate_media(color_scheme="dark")
         await pg.screenshot(path="screenshots/planung_meinplan_dark.png", full_page=True)
         await b.close()

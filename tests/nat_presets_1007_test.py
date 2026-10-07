@@ -168,6 +168,40 @@ async def main():
                 await p2.wait_for_timeout(150)
                 await p2.screenshot(path=f"screenshots/nacht2_1007/nat_presets_{sid}_{scheme}.png")
             await c2.close()
+
+        # ---- Prüfer 07.10. Nr. 1: the name form lands in view, above the
+        # sticky start bar (which steps aside), Speichern is the one filled
+        # button, Enter saves - shared code, so VT/Atem/Reaktion too ----
+        c3 = await b.new_context(viewport={"width": 390, "height": 844}, service_workers="block")
+        await c3.add_init_script(INIT + "localStorage.setItem('fwmc-test-bottomnav','1');")
+        p3 = await c3.new_page()
+        p3.on("pageerror", lambda e: errors.append("pageerror: " + str(e)))
+        FORM_OK = """(sid) => { const f = document.getElementById(sid + 'SaveForm'), vh = innerHeight;
+          const bar = [...document.querySelectorAll('.screen:not([hidden]) .start-sticky-bar')].find(x => x.getClientRects().length);
+          const nav = document.getElementById('bottomNav');
+          const navTop = nav && nav.getClientRects().length ? nav.getBoundingClientRect().top : vh;
+          const parts = [...f.querySelectorAll('input, button')].filter(e => e.getClientRects().length).map(e => e.getBoundingClientRect());
+          const prim = [...document.querySelectorAll('.screen:not([hidden]) .start-btn:not(.secondary)')].filter(b => b.getClientRects().length && getComputedStyle(b).visibility !== 'hidden' && b.getBoundingClientRect().bottom > 0 && b.getBoundingClientRect().top < vh);
+          return { inView: parts.every(r => r.top >= 0 && r.bottom <= navTop + 1), barHidden: !bar, prim: prim.map(b => b.textContent.trim()) }; }"""
+        for url, card, sid in [("?bereich=nat", "#rememberOpenFixed", "rememberReady"), ("?bereich=nat", "#balanceOpenBtn", "balanceReady"),
+                               ("?bereich=visual", '.excard[data-exercise="cone-number"]', "vt"), ("?bereich=breath", None, "breath")]:
+            await p3.goto("http://localhost:8845/index.html" + url); await p3.wait_for_timeout(400)
+            if card: await js_click(p3, card)
+            else:
+                await p3.locator("#patternGrid .fc-title", has_text="Box-Atmung").click(); await p3.wait_for_timeout(300)
+            await p3.evaluate("(s) => document.getElementById(s + 'SaveBtn').scrollIntoView({block:'end'})", sid)
+            await p3.wait_for_timeout(100)
+            await p3.click(f"#{sid}SaveBtn"); await p3.wait_for_timeout(500)
+            r = await p3.evaluate(FORM_OK, sid)
+            check(f"{sid}: save form fully in view above the bars", r["inView"], r)
+            check(f"{sid}: sticky start bar steps aside while the form is open", r["barHidden"], r)
+            check(f"{sid}: Speichern is the one filled button", r["prim"] == ["Speichern"], r)
+            await p3.fill(f"#{sid}SaveNameInput", "Enter-Test " + sid)
+            await p3.press(f"#{sid}SaveNameInput", "Enter"); await p3.wait_for_timeout(250)
+            saved = await p3.evaluate("(s) => !!document.getElementById(s + 'SavedList') && document.getElementById(s + 'SavedList').textContent.includes('Enter-Test ' + s)", sid)
+            check(f"{sid}: Enter saves and closes the form", saved and not await p3.is_visible(f"#{sid}SaveForm"), saved)
+            check(f"{sid}: start bar back after saving", await p3.evaluate("() => !![...document.querySelectorAll('.screen:not([hidden]) .start-sticky-bar')].find(x => x.getClientRects().length)"))
+        await c3.close()
         await b.close()
     check("no pageerror/console error", not errors, "; ".join(errors[:3]))
     print("ALL PASS" if all(results) else "SOME FAILED")

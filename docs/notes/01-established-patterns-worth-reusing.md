@@ -89,6 +89,12 @@
   "Feineinstellungen" `<details>` exposes the same fields as raw sliders;
   a preset row shows "individuell eingestellt" when the live values don't
   match any preset within a small floating-point tolerance.
+- **Save-name form (Prüfer 07.10. Nr. 1)**: `wirePresetSaveForm` marks the
+  form `.preset-save-form`; while it is open the screen's sticky start bar is
+  hidden (CSS `:has`), the form scrolls into view (`revealPresetForm`, again
+  after 350 ms for the iOS keyboard) and Enter saves (`wireEnterToSave`).
+  Kombi's own save form uses the same two helpers. Fabian-Blick "verdeckt"
+  opens every such form on the first config and checks it.
 - **Named local presets**: `makePresetStore` / `renderPresetList` /
   `wirePresetSaveForm` — reusable save-under-a-name / tap-to-reuse pattern
   used across VT, Breath, Movement, Workout, Kombi and (2026-10-07, Idee 54)

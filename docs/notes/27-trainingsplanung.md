@@ -81,3 +81,16 @@ Ziel-Termine (`goal || kind==="wettkampf"`) erzeugen nur einen Empfehlungstext
   - Bei höherer Version erscheint die Karte auf Heute.
   - Tests löschen den Schlüssel.
 - Dashboard: siehe Notiz 10.
+
+## Prüfer 07.10. (Nacht) - Feinschliff
+
+- Ablage aktiv: `.plan-day.drop-ready` wächst 12 px in den Rand (negative
+  margin + padding), Tagname und Eintrag halten Abstand zur Strichellinie.
+- Woche A-D: unter 480 px nur der Buchstabe als Reiter (`aria-label`
+  "Woche X"), davor einmal "Woche"; "+" gestrichelt, Entfernen ist der
+  Textlink "Woche D entfernen" (`.plan-vtab-remove`). Reiter brechen nie um.
+- Pausengründe: SVG-Linien-Icons (`pauseSvg`, currentColor) statt Emoji;
+  reine Textstellen (Heute-Zeile, Mein Plan) nennen nur "Pause (Grund)".
+- Mein Plan: keine eigene Scrollbox mehr, 12 Wochen ab heute, Rest hinter
+  "Weitere N Wochen anzeigen"; "Woche N (X)" bleibt zusammen (`.nobr`).
+- Heute-Karte nennt den Bereich nicht doppelt, wenn er schon der Titel ist.

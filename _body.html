@@ -191,12 +191,12 @@
       </button>
 
       <button class="excard" data-exercise="cone-number" data-tags="huetchen">
-        <div class="icon-badge pale"><svg viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="9.5" fill="#f2a900"/>
-          <text x="12" y="16.6" text-anchor="middle" font-family="Magra, sans-serif" font-weight="700" font-size="13" fill="#ffffff" stroke="#16232a" stroke-width="0.9" paint-order="stroke">2</text>
+        <div class="icon-badge"><svg viewBox="0 0 24 24">
+          <rect x="4.5" y="4.5" width="15" height="15" rx="3.5" fill="none" stroke="#fff" stroke-width="2.2"/>
+          <text x="12" y="16.4" text-anchor="middle" font-family="Magra, sans-serif" font-weight="700" font-size="11.5" fill="#fff">2</text>
         </svg></div>
         <h3>H&uuml;tchen &middot; Farbe + Zahl</h3>
-        <p>Farbe und Zahl erscheinen &ndash; stelle den Becher auf das richtige Feld.</p>
+        <p>Farbe und Zahl erscheinen &ndash; stelle das H&uuml;tchen auf das richtige Feld.</p>
         <span class="tag">H&uuml;tchen</span>
       </button>
 
@@ -553,7 +553,7 @@
   <div id="planPhaseList"></div>
   <button class="start-btn secondary" id="planAddPhaseBtn" type="button">+ Phase hinzuf&uuml;gen</button>
   <button class="text-link plan-insert-btn" id="planAddInsertBtn" type="button">+ Sonderwoche einf&uuml;gen</button>
-  <button class="text-link small plan-clear-btn" id="planClearBtn" type="button">Ganzen Plan l&ouml;schen</button>
+  <button class="text-link small danger plan-clear-btn" id="planClearBtn" type="button">Ganzen Plan l&ouml;schen</button>
 </div>
 
 <div class="screen" id="myPlanScreen" hidden>
@@ -670,7 +670,7 @@
         <input type="time" id="eventTimeInput" class="plan-input" lang="de">
       </div>
     </div>
-    <label class="checkbox-row event-goal-row"><input type="checkbox" id="eventGoalToggle"> Gro&szlig;es Ziel: Countdown auf Heute zeigen</label>
+    <label class="checkbox-row tap-row event-goal-row"><input type="checkbox" id="eventGoalToggle"> Gro&szlig;es Ziel: Countdown auf Heute zeigen</label>
     <div class="program-error" id="eventError" role="alert" hidden></div>
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="eventCancelBtn" type="button">Abbrechen</button>
@@ -1060,7 +1060,7 @@
     <div class="chapter-list" id="cardioList"></div>
     <button class="text-link small" id="cardioSaveBtn">Aktuelle Einheit speichern</button>
     <div class="custom-exercise-form" id="cardioSaveForm" hidden>
-      <input type="text" id="cardioSaveNameInput" placeholder="Name (z.B. &bdquo;Montag Ausdauer&ldquo;)" maxlength="40">
+      <input type="text" id="cardioSaveNameInput" placeholder="Name (z.&#8239;B. Montag Ausdauer)" maxlength="40">
       <div class="custom-exercise-form-actions">
         <button class="start-btn secondary" id="cardioSaveCancelBtn">Abbrechen</button>
         <button class="start-btn" id="cardioSaveConfirmBtn">Speichern</button>
@@ -1123,7 +1123,7 @@
     <summary>Zusatzaufgabe w&auml;hrend des Ausdauertrainings</summary>
     <div class="advanced-body">
       <div class="group">
-        <label class="checkbox-row"><input type="checkbox" id="cardioAddonEnableToggle"> Zusatzaufgaben w&auml;hrend des Ausdauertrainings aktivieren</label>
+        <label class="checkbox-row tap-row"><input type="checkbox" id="cardioAddonEnableToggle"> Zusatzaufgaben w&auml;hrend des Ausdauertrainings aktivieren</label>
         <div class="group-help">Ein Ein/Aus-Schalter wie bei der Zusatzaufgabe sonst auch &ndash; gilt f&uuml;r jede Ausdauer-Einheit, egal ob selbst gebaut oder von deinem Trainer zugewiesen.</div>
       </div>
       <div id="cardioAddonBody" hidden>
@@ -1145,7 +1145,7 @@
           </div>
         </div>
         <div class="group">
-          <label class="checkbox-row"><input type="checkbox" id="cardioAddonWindowToggle"> Nur in einem bestimmten Zeitfenster</label>
+          <label class="checkbox-row tap-row"><input type="checkbox" id="cardioAddonWindowToggle"> Nur in einem bestimmten Zeitfenster</label>
           <div class="group-help">Ohne Zeitfenster kann eine Zusatzaufgabe jederzeit w&auml;hrend der ganzen Ausdauer-Einheit aufblitzen.</div>
           <div id="cardioAddonWindowBody" hidden>
             <div class="slider-row">
@@ -2976,7 +2976,7 @@
         </div>
         <button class="text-link small" id="rememberBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="rememberBgSaveForm" hidden>
-          <input type="text" id="rememberBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="rememberBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="rememberBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="rememberBgSaveConfirmBtn">Speichern</button>
@@ -2994,7 +2994,7 @@
   </div>
   <button class="text-link small" id="rememberReadySaveBtn">Aktuelle Einstellung speichern</button>
   <div class="custom-exercise-form" id="rememberReadySaveForm" hidden>
-    <input type="text" id="rememberReadySaveNameInput" placeholder="Name (z.B. &bdquo;Schnell, Schwer&ldquo;)" maxlength="40">
+    <input type="text" id="rememberReadySaveNameInput" placeholder="Name (z.&#8239;B. Schnell, schwer)" maxlength="40">
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="rememberReadySaveCancelBtn">Abbrechen</button>
       <button class="start-btn" id="rememberReadySaveConfirmBtn">Speichern</button>
@@ -3087,7 +3087,7 @@
         </div>
         <button class="text-link small" id="rememberTrainingBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="rememberTrainingBgSaveForm" hidden>
-          <input type="text" id="rememberTrainingBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="rememberTrainingBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="rememberTrainingBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="rememberTrainingBgSaveConfirmBtn">Speichern</button>
@@ -3105,7 +3105,7 @@
   </div>
   <button class="text-link small" id="rememberTrainingReadySaveBtn">Aktuelle Einstellung speichern</button>
   <div class="custom-exercise-form" id="rememberTrainingReadySaveForm" hidden>
-    <input type="text" id="rememberTrainingReadySaveNameInput" placeholder="Name (z.B. &bdquo;Schnell, Schwer&ldquo;)" maxlength="40">
+    <input type="text" id="rememberTrainingReadySaveNameInput" placeholder="Name (z.&#8239;B. Schnell, schwer)" maxlength="40">
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="rememberTrainingReadySaveCancelBtn">Abbrechen</button>
       <button class="start-btn" id="rememberTrainingReadySaveConfirmBtn">Speichern</button>
@@ -3212,7 +3212,7 @@
         </div>
         <button class="text-link small" id="blitzBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="blitzBgSaveForm" hidden>
-          <input type="text" id="blitzBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="blitzBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="blitzBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="blitzBgSaveConfirmBtn">Speichern</button>
@@ -3230,7 +3230,7 @@
   </div>
   <button class="text-link small" id="blitzReadySaveBtn">Aktuelle Einstellung speichern</button>
   <div class="custom-exercise-form" id="blitzReadySaveForm" hidden>
-    <input type="text" id="blitzReadySaveNameInput" placeholder="Name (z.B. &bdquo;Schnell, Schwer&ldquo;)" maxlength="40">
+    <input type="text" id="blitzReadySaveNameInput" placeholder="Name (z.&#8239;B. Schnell, schwer)" maxlength="40">
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="blitzReadySaveCancelBtn">Abbrechen</button>
       <button class="start-btn" id="blitzReadySaveConfirmBtn">Speichern</button>
@@ -3369,7 +3369,7 @@
         </div>
         <button class="text-link small" id="flashBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="flashBgSaveForm" hidden>
-          <input type="text" id="flashBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="flashBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="flashBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="flashBgSaveConfirmBtn">Speichern</button>
@@ -3403,7 +3403,7 @@
   </div>
   <button class="text-link small" id="flashReadySaveBtn">Aktuelle Einstellung speichern</button>
   <div class="custom-exercise-form" id="flashReadySaveForm" hidden>
-    <input type="text" id="flashReadySaveNameInput" placeholder="Name (z.B. &bdquo;Schnell, Schwer&ldquo;)" maxlength="40">
+    <input type="text" id="flashReadySaveNameInput" placeholder="Name (z.&#8239;B. Schnell, schwer)" maxlength="40">
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="flashReadySaveCancelBtn">Abbrechen</button>
       <button class="start-btn" id="flashReadySaveConfirmBtn">Speichern</button>
@@ -3512,7 +3512,7 @@
         </div>
         <button class="text-link small" id="flashTrainingBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="flashTrainingBgSaveForm" hidden>
-          <input type="text" id="flashTrainingBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="flashTrainingBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="flashTrainingBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="flashTrainingBgSaveConfirmBtn">Speichern</button>
@@ -3546,7 +3546,7 @@
   </div>
   <button class="text-link small" id="flashTrainingReadySaveBtn">Aktuelle Einstellung speichern</button>
   <div class="custom-exercise-form" id="flashTrainingReadySaveForm" hidden>
-    <input type="text" id="flashTrainingReadySaveNameInput" placeholder="Name (z.B. &bdquo;Schnell, Schwer&ldquo;)" maxlength="40">
+    <input type="text" id="flashTrainingReadySaveNameInput" placeholder="Name (z.&#8239;B. Schnell, schwer)" maxlength="40">
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="flashTrainingReadySaveCancelBtn">Abbrechen</button>
       <button class="start-btn" id="flashTrainingReadySaveConfirmBtn">Speichern</button>
@@ -3671,7 +3671,7 @@
         </div>
         <button class="text-link small" id="motBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="motBgSaveForm" hidden>
-          <input type="text" id="motBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="motBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="motBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="motBgSaveConfirmBtn">Speichern</button>
@@ -3689,7 +3689,7 @@
   </div>
   <button class="text-link small" id="motReadySaveBtn">Aktuelle Einstellung speichern</button>
   <div class="custom-exercise-form" id="motReadySaveForm" hidden>
-    <input type="text" id="motReadySaveNameInput" placeholder="Name (z.B. &bdquo;Schnell, Schwer&ldquo;)" maxlength="40">
+    <input type="text" id="motReadySaveNameInput" placeholder="Name (z.&#8239;B. Schnell, schwer)" maxlength="40">
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="motReadySaveCancelBtn">Abbrechen</button>
       <button class="start-btn" id="motReadySaveConfirmBtn">Speichern</button>
@@ -3796,7 +3796,7 @@
         </div>
         <button class="text-link small" id="motTrainingBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="motTrainingBgSaveForm" hidden>
-          <input type="text" id="motTrainingBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="motTrainingBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="motTrainingBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="motTrainingBgSaveConfirmBtn">Speichern</button>
@@ -3814,7 +3814,7 @@
   </div>
   <button class="text-link small" id="motTrainingReadySaveBtn">Aktuelle Einstellung speichern</button>
   <div class="custom-exercise-form" id="motTrainingReadySaveForm" hidden>
-    <input type="text" id="motTrainingReadySaveNameInput" placeholder="Name (z.B. &bdquo;Schnell, Schwer&ldquo;)" maxlength="40">
+    <input type="text" id="motTrainingReadySaveNameInput" placeholder="Name (z.&#8239;B. Schnell, schwer)" maxlength="40">
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="motTrainingReadySaveCancelBtn">Abbrechen</button>
       <button class="start-btn" id="motTrainingReadySaveConfirmBtn">Speichern</button>
@@ -3982,7 +3982,7 @@
         </div>
         <button class="text-link small" id="balanceBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="balanceBgSaveForm" hidden>
-          <input type="text" id="balanceBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="balanceBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="balanceBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="balanceBgSaveConfirmBtn">Speichern</button>
@@ -4007,7 +4007,7 @@
   </div>
   <button class="text-link small" id="balanceReadySaveBtn">Aktuelle Einstellung speichern</button>
   <div class="custom-exercise-form" id="balanceReadySaveForm" hidden>
-    <input type="text" id="balanceReadySaveNameInput" placeholder="Name (z.B. &bdquo;Schnell, Schwer&ldquo;)" maxlength="40">
+    <input type="text" id="balanceReadySaveNameInput" placeholder="Name (z.&#8239;B. Schnell, schwer)" maxlength="40">
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="balanceReadySaveCancelBtn">Abbrechen</button>
       <button class="start-btn" id="balanceReadySaveConfirmBtn">Speichern</button>
@@ -4312,7 +4312,7 @@
         </div>
         <button class="text-link small" id="addonSaveBtn">Diese Feineinstellung speichern</button>
         <div class="custom-exercise-form" id="addonSaveForm" hidden>
-          <input type="text" id="addonSaveNameInput" placeholder="Name (z.B. &bdquo;Nur unten, schnell&ldquo;)" maxlength="40">
+          <input type="text" id="addonSaveNameInput" placeholder="Name (z.&#8239;B. Nur unten, schnell)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="addonSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="addonSaveConfirmBtn">Speichern</button>
@@ -4384,7 +4384,7 @@
         </div>
         <button class="text-link small" id="bgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="bgSaveForm" hidden>
-          <input type="text" id="bgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="bgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="bgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="bgSaveConfirmBtn">Speichern</button>
@@ -4421,7 +4421,7 @@
   </div>
   <button class="text-link small" id="vtSaveBtn">Aktuelle Einstellung speichern</button>
   <div class="custom-exercise-form" id="vtSaveForm" hidden>
-    <input type="text" id="vtSaveNameInput" placeholder="Name (z.B. &bdquo;Schnell, 4 Farben&ldquo;)" maxlength="40">
+    <input type="text" id="vtSaveNameInput" placeholder="Name (z.&#8239;B. Schnell, 4 Farben)" maxlength="40">
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="vtSaveCancelBtn">Abbrechen</button>
       <button class="start-btn" id="vtSaveConfirmBtn">Speichern</button>
@@ -4487,7 +4487,7 @@
   </div>
   <button class="text-link small" id="breathSaveBtn">Aktuelle Einstellung speichern</button>
   <div class="custom-exercise-form" id="breathSaveForm" hidden>
-    <input type="text" id="breathSaveNameInput" placeholder="Name (z.B. &bdquo;Vor dem Schlafen&ldquo;)" maxlength="40">
+    <input type="text" id="breathSaveNameInput" placeholder="Name (z.&#8239;B. Vor dem Schlafen)" maxlength="40">
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="breathSaveCancelBtn">Abbrechen</button>
       <button class="start-btn" id="breathSaveConfirmBtn">Speichern</button>
@@ -4671,7 +4671,7 @@
         </div>
         <button class="text-link small" id="movementBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="movementBgSaveForm" hidden>
-          <input type="text" id="movementBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="movementBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="movementBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="movementBgSaveConfirmBtn">Speichern</button>
@@ -4687,7 +4687,7 @@
   </div>
   <button class="text-link small" id="movementSaveBtn">Aktuelle Einstellung speichern</button>
   <div class="custom-exercise-form" id="movementSaveForm" hidden>
-    <input type="text" id="movementSaveNameInput" placeholder="Name (z.B. &bdquo;Schnell, 4 Bewegungen&ldquo;)" maxlength="40">
+    <input type="text" id="movementSaveNameInput" placeholder="Name (z.&#8239;B. Schnell, 4 Bewegungen)" maxlength="40">
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="movementSaveCancelBtn">Abbrechen</button>
       <button class="start-btn" id="movementSaveConfirmBtn">Speichern</button>
@@ -4751,7 +4751,7 @@
     <div class="chapter-list" id="workoutCircuitList"></div>
     <button class="text-link small" id="workoutCircuitSaveBtn">Aktuellen Zirkel speichern</button>
     <div class="custom-exercise-form" id="workoutCircuitSaveForm" hidden>
-      <input type="text" id="workoutCircuitSaveNameInput" placeholder="Name (z.B. &bdquo;Oberkörper kurz&ldquo;)" maxlength="40">
+      <input type="text" id="workoutCircuitSaveNameInput" placeholder="Name (z.&#8239;B. Oberkörper kurz)" maxlength="40">
       <div class="custom-exercise-form-actions">
         <button class="start-btn secondary" id="workoutCircuitSaveCancelBtn">Abbrechen</button>
         <button class="start-btn" id="workoutCircuitSaveConfirmBtn">Speichern</button>
@@ -4854,7 +4854,7 @@
     <div class="chapter-list" id="workoutRepsList"></div>
     <button class="text-link small" id="workoutRepsSaveBtn">Aktuellen Kraftplan speichern</button>
     <div class="custom-exercise-form" id="workoutRepsSaveForm" hidden>
-      <input type="text" id="workoutRepsSaveNameInput" placeholder="Name (z.B. &bdquo;Beine &amp; Rumpf&ldquo;)" maxlength="40">
+      <input type="text" id="workoutRepsSaveNameInput" placeholder="Name (z.&#8239;B. Beine &amp; Rumpf)" maxlength="40">
       <div class="custom-exercise-form-actions">
         <button class="start-btn secondary" id="workoutRepsSaveCancelBtn">Abbrechen</button>
         <button class="start-btn" id="workoutRepsSaveConfirmBtn">Speichern</button>
@@ -4998,7 +4998,7 @@
   </div>
   <button class="text-link small" id="wimhofSaveBtn">Aktuelle Einstellung speichern</button>
   <div class="custom-exercise-form" id="wimhofSaveForm" hidden>
-    <input type="text" id="wimhofSaveNameInput" placeholder="Name (z.B. &bdquo;Morgens&ldquo;)" maxlength="40">
+    <input type="text" id="wimhofSaveNameInput" placeholder="Name (z.&#8239;B. Morgens)" maxlength="40">
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="wimhofSaveCancelBtn">Abbrechen</button>
       <button class="start-btn" id="wimhofSaveConfirmBtn">Speichern</button>
@@ -7332,7 +7332,7 @@
 
     <div class="group">
       <div class="group-label">H&ouml;ren</div>
-      <label class="checkbox-row"><input type="checkbox" id="masterHearingCheck"> Geh&ouml;rlosigkeit oder eingeschr&auml;nktes H&ouml;ren</label>
+      <label class="checkbox-row tap-row"><input type="checkbox" id="masterHearingCheck"> Geh&ouml;rlosigkeit oder eingeschr&auml;nktes H&ouml;ren</label>
       <div class="group-help">&Uuml;bungen, die zwingend Ton ben&ouml;tigen (aktuell nur &bdquo;Sehen &amp; H&ouml;ren&ldquo;), werden dann in der &Uuml;bersicht ausgegraut und markiert, statt versteckt.</div>
     </div>
 
@@ -7387,9 +7387,9 @@
 
     <div class="group">
       <div class="group-label">In allen &Uuml;bungen</div>
-      <label class="checkbox-row"><input type="checkbox" id="masterSoundCheck"> T&ouml;ne und Ansagen</label>
-      <label class="checkbox-row"><input type="checkbox" id="masterStartCountdownCheck"> Countdown 3-2-1 vor dem Start</label>
-      <label class="checkbox-row"><input type="checkbox" id="masterLevelSuggestCheck"> Stufen-Vorschl&auml;ge (n&auml;chste Schwierigkeit vorschlagen)</label>
+      <label class="checkbox-row tap-row"><input type="checkbox" id="masterSoundCheck"> T&ouml;ne und Ansagen</label>
+      <label class="checkbox-row tap-row"><input type="checkbox" id="masterStartCountdownCheck"> Countdown 3-2-1 vor dem Start</label>
+      <label class="checkbox-row tap-row"><input type="checkbox" id="masterLevelSuggestCheck"> Stufen-Vorschl&auml;ge (n&auml;chste Schwierigkeit vorschlagen)</label>
       <div class="group-help">Mit &#128266; in der Steuerleiste schaltest du w&auml;hrend jeder &Uuml;bung alle T&ouml;ne und Ansagen stumm oder wieder an. Im Krafttraining gilt vor dem Start die eigene Vorbereitungszeit aus den Feineinstellungen.</div>
     </div>
 
@@ -7406,7 +7406,7 @@
 
     <div class="group" id="reminderGroup">
       <div class="group-label">Erinnerungen</div>
-      <label class="checkbox-row"><input type="checkbox" id="reminderOnCheck"> Vor geplanten Trainings erinnern</label>
+      <label class="checkbox-row tap-row"><input type="checkbox" id="reminderOnCheck"> Vor geplanten Trainings erinnern</label>
       <div class="group-help reminder-status" id="reminderStatus" role="status"></div>
       <div class="group-label">Wann erinnern?</div>
       <div class="choice-row" id="reminderLeadRow">
@@ -7419,7 +7419,7 @@
       <label class="group-label" for="reminderMorningInput">Trainings ohne Uhrzeit: morgens erinnern um</label>
       <input type="time" id="reminderMorningInput" class="plan-input reminder-time" lang="de">
       <div class="reminder-break" id="reminderBreakGroup">
-        <label class="checkbox-row"><input type="checkbox" id="reminderBreakCheck"> Tags&uuml;ber an eine Atempause erinnern</label>
+        <label class="checkbox-row tap-row"><input type="checkbox" id="reminderBreakCheck"> Tags&uuml;ber an eine Atempause erinnern</label>
         <div class="reminder-break-body" id="reminderBreakBody" hidden>
           <div class="group-label">Wie oft am Tag?</div>
           <div class="choice-row" id="reminderBreakCountRow">

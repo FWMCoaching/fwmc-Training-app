@@ -2502,7 +2502,7 @@
         ${days.map((l, i) => `<div class="pv-day"><strong>${WD[i]}</strong><div>${l.length ? l.map((e) => esc(`${entryTitle(e)} · ${e.minutes} Min.`)).join("<br />") : `<span class="pv-src">frei</span>`}</div></div>`).join("")}`
         : `<div class="pv-src">${dDiff(p.startDate, date) < 0 ? "Der Plan beginnt später." : p.phases.length ? "Der Plan ist in dieser Woche schon zu Ende." : "Noch keine Phase im Plan."}</div>`}
       </div>
-      <p class="pv-src">Plan von deinem Trainer (Code ${esc(p.code || "…")}, Fassung ${last ? last.version : 1}). Uhrzeiten, Tage und Pausen kannst du selbst anpassen.</p>
+      <p class="pv-src">${p.code ? `Plan von deinem Trainer (Code ${esc(p.code)}, Fassung ${last ? last.version : 1}).` : "Plan von deinem Trainer."} Uhrzeiten, Tage und Pausen kannst du selbst anpassen.</p>
     </div>${tabs}`;
   }
   $("pvWhenRow").addEventListener("click", (ev) => { const b = ev.target.closest("[data-when]"); if (!b || b.disabled) return; pvWhen = b.dataset.when; renderPreview(); });

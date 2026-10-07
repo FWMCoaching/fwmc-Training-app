@@ -95,6 +95,20 @@
   root.querySelectorAll('button, .section-tab, .sub-tab, .choice, .chip').forEach(b => {
     if (vis(b) && b.scrollWidth > b.clientWidth + 2) add('umbruch', 'Text ragt aus Knopf', b);
   });
+  // Tabs never wrap (CLAUDE.md 2026-10-05; Prüfer 07.10. Nr. 3: "Woche / A"
+  // in the plan's week tabs): any tab-like button whose label runs onto a
+  // second line, in every tab row the app has or gets.
+  root.querySelectorAll('[role=tab], button[class*="tab"]').forEach(b => {
+    if (!vis(b) || b.closest('#bottomNav')) return;
+    const tops = new Set();
+    const walker = document.createTreeWalker(b, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (!n.textContent.trim() || !vis(n.parentElement)) continue;
+      const rg = document.createRange(); rg.selectNodeContents(n);
+      [...rg.getClientRects()].forEach(r => { if (r.width > 1) tops.add(Math.round(r.top / 4)); });
+    }
+    if (tops.size > 1) add('umbruch', 'Reiter bricht in zwei Zeilen um', b);
+  });
   if (document.documentElement.scrollWidth > window.innerWidth + 1)
     add('umbruch', 'Seite scrollt seitlich (' + document.documentElement.scrollWidth + ' > ' + window.innerWidth + ' px)');
   // Text wider than its card/group (visually sticks out, even without scroll).

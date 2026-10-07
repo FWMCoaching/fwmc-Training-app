@@ -95,3 +95,13 @@ presets, Kombi blocks and Cardio guests carry them. Pure rules (exposed on
   three flip modes (`data-balf` gilt/mix/flip).
 Test: `tests/farbfelder_reize_1007_test.py`, screenshots `tests/screenshots/farbfelder_reize/`.
 Not built (to be asked): "Die Übung kann man auch noch woanders einbringen, dann sieht man was angetippt wird".
+
+## Laufzeit = gewählte Dauer (Prüfer 07.10. Nr. 4)
+
+`buildScheduleFor` wraps every VT builder in `capVtSchedule`: nothing starts
+after `state.duration`, a stimulus that would be cut becomes the closing
+blank, a short schedule is padded with a blank; `total` is exactly the
+chosen duration, so the clock starts at 1:00 for "1 Min". Abfolge merken
+starts no round that would not finish. The raw builders (`__ff.build`,
+`__cn.build`) are unchanged. Tests: farbfelder_1007 / huetchen_farbe_zahl_1007
+("timer starts at the chosen 1:00").

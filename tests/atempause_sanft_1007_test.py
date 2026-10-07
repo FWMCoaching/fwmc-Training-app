@@ -192,6 +192,11 @@ async def main():
         await pg.route("https://online-training.fwmc.workers.dev/**", handle)
         await pg.goto(BASE + "?bereich=heute"); await pg.wait_for_timeout(500)
         await open_master(pg)
+        # Prüfer 07.10. Nr. 6: every tick row of the Grundeinstellungen is a 44 px tap row
+        small = await pg.evaluate("""() => [...document.querySelectorAll('#masterSettingsSheet label.checkbox-row')].filter(l => l.getClientRects().length && !l.closest('[hidden]'))
+            .map(l => [l.textContent.trim().slice(0, 30), Math.round(l.getBoundingClientRect().height)]).filter(([t, h]) => h < 44)""")
+        n_rows = await pg.evaluate("() => [...document.querySelectorAll('#masterSettingsSheet label.checkbox-row')].filter(l => l.getClientRects().length && !l.closest('[hidden]')).length")
+        check("Prüfer 6: every Grundeinstellungen tick row >= 44 px high", n_rows >= 5 and not small, (n_rows, small))
         await pg.locator("#reminderBreakGroup").scroll_into_view_if_needed()
         check("C: Atempausen switch in Erinnerungen", await pg.is_visible("#reminderGroup #reminderBreakCheck"))
         check("C: times hidden while off", not await pg.is_visible("#reminderBreakBody"))

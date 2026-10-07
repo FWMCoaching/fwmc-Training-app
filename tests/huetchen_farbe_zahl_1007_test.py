@@ -107,6 +107,16 @@ async def main():
         await pg.screenshot(path=f"{SHOTS}/cn_player_light.png")
         await pg.click("#backBtn"); await pg.wait_for_timeout(300)
 
+        # Prüfer 07.10. Nr. 4: "1 Min" starts at 1:00, same as the Kompass sibling
+        for card in ['.excard[data-exercise="cone-compass"]', CARD]:
+            await pg.goto(URL); await pg.wait_for_timeout(400)
+            await pg.click(card); await pg.wait_for_timeout(200)
+            await pg.click('[data-dur="60"]'); await pg.wait_for_timeout(80)
+            await pg.click("#startBtn"); await pg.wait_for_timeout(150)
+            t = await pg.inner_text("#timeEl")
+            check(f"timer starts at the chosen 1:00 ({card})", t.strip() == "1:00", t)
+            await pg.click("#backBtn"); await pg.wait_for_timeout(300)
+
         check("number ink is white or dark (fixed hex)", all(x["ink"] in ("#ffffff", "#16232a") for x in seen))
 
         # ---- preset carries Felder ----
