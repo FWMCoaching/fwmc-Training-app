@@ -16,6 +16,7 @@ async def main():
         await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)
         await pg.click('.section-tab[data-section="movement"]'); await pg.wait_for_timeout(150)
         await pg.click("#movementStartCard"); await pg.wait_for_timeout(150)
+        await pg.click("[data-mv-layout=band]")  # these checks cover the strip (Band); Zeilen/Feld: reaktion_anzeige_1007_test.py
         print("no sound row present:", await pg.locator("#movementSoundRow").count() == 0)
         await pg.click('#movementReady .advanced summary'); await pg.wait_for_timeout(150)
         await pg.screenshot(path=OUT + "01_ready_full.png", full_page=True)
@@ -50,6 +51,7 @@ async def main():
             await pg.click("#tipsCloseBtn")
         await pg.click('.section-tab[data-section="movement"]'); await pg.wait_for_timeout(150)
         await pg.click("#movementStartCard"); await pg.wait_for_timeout(150)
+        await pg.click("[data-mv-layout=band]")  # these checks cover the strip (Band); Zeilen/Feld: reaktion_anzeige_1007_test.py
         await pg.click('[data-mv-bpm="80"]')
         await pg.click('#movementReady .advanced summary'); await pg.wait_for_timeout(100)
         await pg.evaluate("() => { document.querySelector('[data-mv-dur=\"1\"]').dataset.mvDur = '0.08'; }")
@@ -66,6 +68,7 @@ async def main():
 
         # ---- Grid ("ganzes Programm") mode ----
         await pg.click("#movementStartCard"); await pg.wait_for_timeout(150)
+        await pg.click("[data-mv-layout=band]")  # these checks cover the strip (Band); Zeilen/Feld: reaktion_anzeige_1007_test.py
         await pg.click('[data-mv-preview="all"]')
         await pg.click('#movementReady .advanced summary'); await pg.wait_for_timeout(100)
         await pg.evaluate("() => { document.querySelector('[data-mv-dur=\"2\"]').dataset.mvDur = '0.1'; }")
@@ -89,6 +92,7 @@ async def main():
 
         # abort during finishing grace period should not crash
         await pg.click("#movementStartCard"); await pg.wait_for_timeout(150)
+        await pg.click("[data-mv-layout=band]")  # these checks cover the strip (Band); Zeilen/Feld: reaktion_anzeige_1007_test.py
         await pg.click("#movementStartBtn"); await pg.wait_for_timeout(300)
         await pg.click("#movementBackBtn"); await pg.wait_for_timeout(150)
         print("abort ok, back at ready:", await pg.is_visible("#movementReady"))
@@ -101,17 +105,19 @@ async def main():
         # play, and the choice must persist.
         print("still at movementReady after abort:", await pg.is_visible("#movementReady"))
         await pg.click('#movementReady .advanced summary'); await pg.wait_for_timeout(100)
-        print("default style is Figur:", await pg.get_attribute('[data-mv-figure="figur"]', "class") and "active" in await pg.get_attribute('[data-mv-figure="figur"]', "class"))
+        # default is "Vier Felder" since 07.10. (Fabian took over the preview page); Figur stays selectable
+        print("default style is Vier Felder:", "active" in (await pg.get_attribute('[data-mv-figure="felder"]', "class") or ""))
+        await pg.click('[data-mv-figure="figur"]'); await pg.wait_for_timeout(100)
         figur_svg = await pg.eval_on_selector(".movement-chip svg", "el => el.outerHTML")
         print("Figur style has a head circle:", "circle" in figur_svg and 'r="10"' in figur_svg)
 
-        await pg.click('[data-mv-figure="abstrakt"]'); await pg.wait_for_timeout(100)
+        await pg.click('[data-mv-figure="punkte"]'); await pg.wait_for_timeout(100)
         abstrakt_svg = await pg.eval_on_selector(".movement-chip svg", "el => el.outerHTML")
-        print("Abstrakt style is a different shape (grid of circles):", abstrakt_svg != figur_svg and abstrakt_svg.count("<circle") >= 4)
+        print("Punkte style is a different shape (four dots):", abstrakt_svg != figur_svg and abstrakt_svg.count("<circle") >= 4)
 
         await pg.click("#movementStartBtn"); await pg.wait_for_timeout(300)
         lane_svg = await pg.eval_on_selector(".movement-tile svg", "el => el.outerHTML")
-        print("lane reflects Abstrakt style too:", lane_svg.count("<circle") >= 4 and "polygon" in lane_svg)
+        print("lane reflects Punkte style too:", lane_svg.count("<circle") >= 4 and "#ff9110" in lane_svg.lower())
         await pg.click("#movementBackBtn"); await pg.wait_for_timeout(150)
 
         await pg.reload(); await pg.wait_for_timeout(400)
@@ -119,8 +125,9 @@ async def main():
             await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)
         await pg.click('.section-tab[data-section="movement"]'); await pg.wait_for_timeout(150)
         await pg.click("#movementStartCard"); await pg.wait_for_timeout(150)
+        await pg.click("[data-mv-layout=band]")  # these checks cover the strip (Band); Zeilen/Feld: reaktion_anzeige_1007_test.py
         await pg.click('#movementReady .advanced summary'); await pg.wait_for_timeout(100)
-        print("Abstrakt choice persisted after reload:", "active" in (await pg.get_attribute('[data-mv-figure="abstrakt"]', "class") or ""))
+        print("Punkte choice persisted after reload:", "active" in (await pg.get_attribute('[data-mv-figure="punkte"]', "class") or ""))
 
         # ---- Laufrichtung: window mode now shows a couple of faded "done"
         # tiles behind the active one too (not just upcoming), and the whole

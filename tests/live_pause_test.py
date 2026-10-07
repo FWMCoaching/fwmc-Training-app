@@ -126,6 +126,7 @@ async def main():
             await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)
         await pg.click('.section-tab[data-section="movement"]'); await pg.wait_for_timeout(150)
         await pg.click("#movementStartCard"); await pg.wait_for_timeout(150)
+        await pg.click("[data-mv-layout=band]")  # these checks cover the strip (Band); Zeilen/Feld: reaktion_anzeige_1007_test.py
         saved_bpm = await pg.evaluate("JSON.parse(localStorage.getItem('fwmc-movement-v1') || '{}').bpm")
         await pg.click("#movementStartBtn"); await pg.wait_for_timeout(800)
         print("Movement: pause button visible:", await pg.is_visible("#movementPauseBtn"))

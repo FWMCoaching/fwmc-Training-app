@@ -2305,7 +2305,17 @@ body.bottom-nav-on .screen:not([hidden]){padding-bottom:calc(84px + env(safe-are
 /* Mehr carries these links as cards now; the small footer row would repeat them with tiny tap targets. */
 .has-bottom-nav .site-footer nav{display:none}
 a.featured-card{text-decoration:none;color:inherit}
-#trainingHub .combo-entry-link{margin:16px 0 8px}
+#trainingHub .combo-entry-link{margin:0 0 8px}
+/* Kombi-Programm on Training (Fabian 07.10., Variante H): heading "Alles verbinden" + calm tile like the
+   "Dazu" tiles; the icon is four squares in the real colours of the four core areas (no petrol block) */
+.combo-entry-card{display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:14px;color:var(--ink)}
+@media (hover:hover){.combo-entry-card:hover{border-color:var(--brand-light)}}
+.combo-card-icon{width:40px;height:40px;display:grid;grid-template-columns:1fr 1fr;gap:3px;flex:none}
+.combo-card-icon i{border-radius:5px}
+.combo-card-text{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.combo-card-title{font-weight:800;font-size:calc(15px * var(--ts,1))}
+.combo-card-sub{font-weight:400;font-size:calc(13px * var(--ts,1));color:var(--ink-soft)}
+.combo-card-chev{width:20px;height:20px;color:var(--ink-soft);flex:none}
 .bottom-nav-on .storage-warning{bottom:calc(82px + env(safe-area-inset-bottom))}
 
 /* Eigene Termine + Countdown (2026-10-05) */
@@ -2725,3 +2735,53 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 }
 /* One-time iPhone hint in beat exercises: silent switch mutes the Takt (2026-10-06) */
 .silent-hint{position:fixed;left:16px;right:16px;bottom:calc(120px + env(safe-area-inset-bottom,0px));z-index:60;max-width:440px;margin:0 auto;padding:12px 16px;border-radius:14px;background:#16232a;color:#fff;font-size:calc(14px * var(--ts,1));line-height:1.4;box-shadow:0 6px 20px rgba(0,0,0,.3);cursor:pointer}
+/* "Test"-Kennzeichen auf einer Bereichskachel (Fabian 07.10.: Reaktionstraining
+   bleibt an seinem Platz, wird aber als Test markiert), Farben wie Test-Bereich */
+.area-tile:has(.hub-test-mark){position:relative}
+.hub-test-mark{position:absolute;top:10px;right:10px;font-size:calc(11px * var(--ts,1));font-weight:700;line-height:1.3;color:var(--test-accent-deep);background:var(--surface);border:1px solid var(--test-accent);border-radius:999px;padding:1px 8px;pointer-events:none}
+
+/* Reaktionstraining Zeilen/Feld (Fabian 07.10.): rows positioned by JS
+   (translateY per frame), fixed hex colours like every stage */
+.movement-lane.rows{display:block;max-width:none;width:auto}
+.mv-rows-view{position:relative;overflow:hidden;margin:0 auto}
+.mv-row{position:absolute;left:0;top:0;display:grid;will-change:transform}
+.movement-lane.rows .mv-cell{flex:none;max-width:none;width:auto;padding:6%;gap:4px;justify-content:center;border-radius:14px;opacity:1;transform:none;transition:border-color .12s ease,background-color .12s ease,opacity .12s ease;box-sizing:border-box}
+.movement-lane.rows .mv-cell .figure-svg{width:100%;height:auto;max-height:100%;flex:1 1 auto;min-height:0}
+.movement-lane.rows .mv-cell .mv-label{font-size:calc(11px * var(--ts,1));min-height:0}
+.movement-lane.rows .mv-cell.active{transform:none;border-color:#ff9110;background:#fff4e6;box-shadow:0 0 0 3px rgba(255,145,16,.35)}
+.movement-lane.rows .mv-cell.done{opacity:.35}
+.movement-lane.rows .mv-cell.empty{visibility:hidden}
+
+/* Bereich im Test, aber offen (Fabian 07.10.: Reaktionstraining): gleicher
+   gelber Look wie der Test-Bereich - "Test" oben links, gelbe Balken an den
+   Übungen, aktiver Reiter gelb - plus ein Hinweis "Noch im Test". */
+.screen.test-look .hero-kicker{color:var(--test-accent)}
+.screen.test-look .featured-card{border-left-color:var(--test-accent)}
+.screen.test-look .section-tab.active{background:var(--test-accent-pale);color:var(--test-accent-deep);border-color:var(--test-accent)}
+.test-note{margin:0 0 12px;padding:10px 12px;border-radius:12px;border-left:4px solid var(--test-accent);background:var(--test-accent-pale);color:var(--ink);font-size:calc(14px * var(--ts,1));line-height:1.4}
+.test-note strong{color:var(--test-accent-deep)}
+
+/* Tipps-Karte auf Heute (Fabian 07.10.) */
+.tips-card #todayTipsOpenBtn{margin-top:2px}
+.tips-card #todayTipsHideBtn{display:block;margin:2px 0 0}
+.tips-card-where{color:var(--ink-soft);font-weight:400}
+
+/* Reaktionstraining im Dunkelmodus (07.10., Prüfer + Fabian-Blick): the
+   background has no meaning here, so the player goes dark like Kraft/Ausdauer
+   (calm-dk); tiles dark, the symbols' dark ink turns light. Fixed hex. */
+@media (prefers-color-scheme:dark){
+:root:not([data-theme="light"]) .player.calm-dk#movementPlayer .movement-tile{background:#16262b;border-color:#283d43}
+:root:not([data-theme="light"]) .player.calm-dk#movementPlayer .movement-tile .mv-label{color:#e9f0f2}
+:root:not([data-theme="light"]) .player.calm-dk#movementPlayer .figure-svg [stroke="#16232a"]{stroke:#cfe0e4}
+:root:not([data-theme="light"]) .player.calm-dk#movementPlayer .figure-svg [fill="#16232a"]{fill:#cfe0e4}
+:root:not([data-theme="light"]) .player.calm-dk#movementPlayer .movement-tile.active{border-color:#ff9110}
+:root:not([data-theme="light"]) .player.calm-dk#movementPlayer .movement-lane.rows .mv-cell.active{background:#2e2414}
+}
+:root[data-theme="dark"] .player.calm-dk#movementPlayer .movement-tile{background:#16262b;border-color:#283d43}
+:root[data-theme="dark"] .player.calm-dk#movementPlayer .movement-tile .mv-label{color:#e9f0f2}
+:root[data-theme="dark"] .player.calm-dk#movementPlayer .figure-svg [stroke="#16232a"]{stroke:#cfe0e4}
+:root[data-theme="dark"] .player.calm-dk#movementPlayer .figure-svg [fill="#16232a"]{fill:#cfe0e4}
+:root[data-theme="dark"] .player.calm-dk#movementPlayer .movement-tile.active{border-color:#ff9110}
+:root[data-theme="dark"] .player.calm-dk#movementPlayer .movement-lane.rows .mv-cell.active{background:#2e2414}
+/* Wandernde Zeilen: the row coming up fades out at the bottom instead of a hard cut */
+.mv-rows-view.wander{-webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent);mask-image:linear-gradient(to bottom,#000 72%,transparent)}

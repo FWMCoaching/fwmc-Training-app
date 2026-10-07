@@ -70,3 +70,25 @@ genuine open questions on exact behaviour (switch how often? random or
 fixed rotation?), ask before building rather than guessing. Test:
 `tests/movement_test2.py`.
 
+
+**Reaktionstraining neu (2026-10-07)**: Fabian took over the preview page
+(https://claude.ai/artifact/LrJwu5HzGoWCAFZDxzDyUi) "erstmal so". Ready
+screen: "Anzeige" (Wandernde Zeilen = default / Ganzes Feld / Band),
+"Felder pro Zeile" 3-5 (not for Band), "Symbole" moved out of
+Feineinstellungen (Vier Felder = default, Vier Punkte, Nur Pfeil, Figur,
+Kreise = the old "abstrakt"). Old saved prefs without `layout` are moved once
+to zeilen/4/felder; old presets/Kombi blocks keep the strip. Rows engine:
+`mvRowsSetup/mvRowsLayout/mvRowsDraw` (cells sized to fit the stage below the
+player bar, max 170 px; zeilen shows 2.55 rows, scroll = max(0, t/N - 1);
+labels only if a cell is >= 96 px). The pause sheet hides Vorschau for rows.
+Symbols deliberately avoid a body silhouette and the original product's
+triangle/square; the new display stays marked as Test (`.test-look`) until
+Fabian has checked his Life-Kinetik licence (docs in STAND.md 07.10.).
+Open for Fabian: Trainer-Dashboard movement-plan codes cannot set
+layout/symbol yet (they play Band); live switch of Anzeige in the pause sheet.
+Same day, after the independent review: the player is `.player.calm-dk`
+(dark in dark mode; tiles #16262b, the symbols' #16232a ink is swapped to
+#cfe0e4 via CSS attribute selectors), rows never show text labels (same look
+on every size), "Wandernde Zeilen" fades the row coming up at the bottom
+(mask), short option labels, "Kreise" (abstrakt) hidden but still played for
+old presets/blocks.

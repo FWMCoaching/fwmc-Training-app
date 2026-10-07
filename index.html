@@ -243,7 +243,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 22:45</p>
+    <p class="app-version">Stand: 07.10.2026, 09:49</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -336,6 +336,14 @@
     <button class="start-btn secondary today-plan-btn" id="todayPlanBtn" type="button">Wochenplan bearbeiten</button>
   </section>
 
+  <section class="today-main tips-card" id="todayTipsCard" hidden>
+    <div class="today-main-kicker">Tipp</div>
+    <h2 class="today-main-title">So trainierst du richtig</h2>
+    <p class="today-main-hint">Kurze Tipps f&uuml;r dein Training und wie du die App nutzt. Lohnt sich vor dem ersten Training.</p>
+    <button class="text-link" id="todayTipsOpenBtn" type="button">Tipps ansehen &rarr;</button>
+    <button class="text-link small" id="todayTipsHideBtn" type="button">Ausblenden <span class="tips-card-where">(bleibt unter &bdquo;Mehr&ldquo;)</span></button>
+  </section>
+
   <section class="today-progress">
     <div class="section-head"><h2>Mein Fortschritt</h2></div>
     <button class="progress-card" id="todayProgressOpenBtn" type="button" aria-label="Mein Fortschritt ansehen">
@@ -361,7 +369,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 22:45</p>
+    <p class="app-version">Stand: 07.10.2026, 09:49</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -392,11 +400,12 @@
   </section>
 
   <div class="hub-areas" id="hubAreaGrid"></div>
-  <button class="combo-entry-link" data-open-combo="1">Kombi-Programm aus mehreren Bereichen &rarr;</button>
+  <div class="hub-group-title">Alles verbinden</div><p class="hub-sub">Dein Training aus mehreren Bereichen in einem Durchgang.</p>
+  <button class="combo-entry-link combo-entry-card" data-open-combo="1" type="button"><span class="combo-card-icon" aria-hidden="true"><i style="background:#1f7ab8"></i><i style="background:#2a9d8f"></i><i style="background:#3a7d2c"></i><i style="background:#c77d12"></i></span><span class="combo-card-text"><span class="combo-card-title">Kombi-Programm</span><span class="combo-card-sub">Bausteine aus allen Bereichen zu einem Training verbinden</span></span><svg class="combo-card-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 22:45</p>
+    <p class="app-version">Stand: 07.10.2026, 09:49</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -446,7 +455,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 22:45</p>
+    <p class="app-version">Stand: 07.10.2026, 09:49</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -647,7 +656,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 22:45</p>
+    <p class="app-version">Stand: 07.10.2026, 09:49</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -657,7 +666,7 @@
   </footer>
 </div>
 
-<div class="screen" id="movementHome" hidden>
+<div class="screen test-look" id="movementHome" hidden>
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" width="900" height="177" alt="Fabian Westermann Mentalcoaching">
     <em class="brand-sub">FWMC <span class="nowrap">Online-Training</span></em>
@@ -678,8 +687,9 @@
   <button class="combo-entry-link" data-open-combo="1">Kombi-Programm aus mehreren Bereichen &rarr;</button>
 
   <section class="hero">
-    <div class="hero-kicker">Reaktionstraining</div>
+    <div class="hero-kicker">Reaktionstraining <span class="test-unlock-badge">Test</span></div>
     <h1 class="hero-title">Bewegen. Merken. Reagieren.</h1>
+    <p class="test-note"><strong>Noch im Test.</strong> Du kannst hier schon trainieren, &Uuml;bungen und Aussehen &auml;ndern sich aber noch.</p>
     <p class="hero-text">Ganzk&ouml;rper-Reaktionstraining im Takt &ndash; ein Symbol zeigt dir, was als N&auml;chstes zu tun ist, bevor du dran bist.</p>
     <button class="text-link" id="movementTipsBtn">Wie funktioniert das? &rarr;</button>
   </section>
@@ -721,7 +731,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 22:45</p>
+    <p class="app-version">Stand: 07.10.2026, 09:49</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -731,7 +741,7 @@
   </footer>
 </div>
 
-<div class="screen" id="movementBundleOverview" hidden>
+<div class="screen test-look" id="movementBundleOverview" hidden>
   <div class="readyhead">
     <button class="back-link" id="movementBundleBackToHome">&larr; Zur&uuml;ck</button>
   </div>
@@ -740,7 +750,7 @@
   <div class="bundle-list" id="movementBundleList"></div>
 </div>
 
-<div class="screen" id="movementProgramIntro" hidden>
+<div class="screen test-look" id="movementProgramIntro" hidden>
   <div class="readyhead">
     <button class="back-link" id="movementProgramBackToHome">&larr; Zur&uuml;ck</button>
   </div>
@@ -832,7 +842,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 22:45</p>
+    <p class="app-version">Stand: 07.10.2026, 09:49</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -904,7 +914,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 22:45</p>
+    <p class="app-version">Stand: 07.10.2026, 09:49</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1200,7 +1210,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 22:45</p>
+    <p class="app-version">Stand: 07.10.2026, 09:49</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1520,7 +1530,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 22:45</p>
+    <p class="app-version">Stand: 07.10.2026, 09:49</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1723,7 +1733,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 06.10.2026, 22:45</p>
+    <p class="app-version">Stand: 07.10.2026, 09:49</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -4190,11 +4200,12 @@
   <button class="start-btn" id="breathProgramStartBtn">Training starten</button>
 </div>
 
-<div class="screen" id="movementReady" hidden>
+<div class="screen test-look" id="movementReady" hidden>
   <div class="readyhead">
     <button class="back-link" id="movementBackToHome">&larr; Zur&uuml;ck</button>
   </div>
   <h1 class="page-title" id="movementReadyTitle">Ganzk&ouml;rper-Reaktion</h1>
+  <p class="test-note"><strong>Noch im Test.</strong> Du kannst hier schon trainieren, &Uuml;bungen und Aussehen &auml;ndern sich aber noch.</p>
   <p class="page-sub" id="movementReadyHint">Ein Symbol zeigt die n&auml;chste Bewegung. Stell ein, wie viele Bewegungen du im Voraus sehen willst.</p>
 
   <div class="group">
@@ -4204,6 +4215,37 @@
   </div>
 
   <div class="group">
+    <div class="group-label">Anzeige</div>
+    <div class="choice-row" id="movementLayoutRow">
+      <button class="choice" data-mv-layout="zeilen">Zeilen<small>r&uuml;cken nach</small></button>
+      <button class="choice" data-mv-layout="feld">Feld<small>steht still</small></button>
+      <button class="choice" data-mv-layout="band">Band<small>einzeln</small></button>
+    </div>
+    <div class="group-help" id="movementLayoutHelp"></div>
+  </div>
+
+  <div class="group" id="movementRowLenGroup">
+    <div class="group-label">Felder pro Zeile</div>
+    <div class="choice-row" id="movementRowLenRow">
+      <button class="choice" data-mv-rowlen="3">3 Felder</button>
+      <button class="choice" data-mv-rowlen="4">4 Felder</button>
+      <button class="choice" data-mv-rowlen="5">5 Felder</button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Symbole</div>
+    <div class="choice-row" id="movementFigureStyleRow">
+      <button class="choice" data-mv-figure="felder">Felder<small>oben Arme</small></button>
+      <button class="choice" data-mv-figure="punkte">Punkte<small>Strich zeigt</small></button>
+      <button class="choice" data-mv-figure="pfeil">Pfeil<small>im Viertel</small></button>
+      <button class="choice" data-mv-figure="figur">Figur<small>Strichm&auml;nnchen</small></button>
+      <button class="choice" data-mv-figure="abstrakt" hidden>Kreise<small>vier Kreise</small></button>
+    </div>
+    <div class="group-help">Pfeil nach oben hei&szlig;t heben, Pfeil nach au&szlig;en hei&szlig;t strecken.</div>
+  </div>
+
+  <div class="group" id="movementPreviewGroup">
     <div class="group-label">Vorschau</div>
     <div class="choice-row" id="previewRow">
       <button class="choice" data-mv-preview="1">Keine<small>1 Feld</small></button>
@@ -4276,20 +4318,13 @@
           <button class="choice" data-mv-label="0">Nur Symbol</button>
         </div>
       </div>
-      <div class="group">
+      <div class="group" id="movementDirectionGroup">
         <div class="group-label">Laufrichtung<span class="group-count">nur bei &bdquo;Vorschau&ldquo; ungleich &bdquo;Ganz&ldquo;</span></div>
         <div class="choice-row" id="movementDirectionRow">
           <button class="choice" data-mv-direction="rechts">Von rechts<small>wie lesen: links fertig, rechts neu</small></button>
           <button class="choice" data-mv-direction="links">Von links<small>gespiegelt</small></button>
           <button class="choice" data-mv-direction="oben">Von oben<small>senkrecht</small></button>
           <button class="choice" data-mv-direction="unten">Von unten<small>senkrecht, gespiegelt</small></button>
-        </div>
-      </div>
-      <div class="group">
-        <div class="group-label">Darstellung</div>
-        <div class="choice-row two" id="movementFigureStyleRow">
-          <button class="choice" data-mv-figure="figur">Figur<small>Strichmännchen</small></button>
-          <button class="choice" data-mv-figure="abstrakt">Abstrakt<small>Symbol-Raster</small></button>
         </div>
       </div>
     </div>
@@ -4834,7 +4869,7 @@
   </div>
 </div>
 
-<div class="player" id="movementPlayer" hidden>
+<div class="player calm-dk" id="movementPlayer" hidden>
   <div class="movement-stage">
     <div class="movement-lane" id="movementLane"></div>
     <div class="movement-finish-badge" id="movementFinishBadge" hidden>Fertig!</div>
