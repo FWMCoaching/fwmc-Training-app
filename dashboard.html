@@ -164,6 +164,158 @@
   .ov-pill.full .dot { background: var(--good); }
   .ov-pill.json .dot { background: #d9a441; }
   .ov-pill.none .dot { background: #556; }
+  /* ---- Trainingsplanung (kp17-kp22, 2026-10-07): Bausätze, Plan-Baukasten,
+     Jahresübersicht, Kunden-Vorschau. Everything here is 44 px to tap and
+     never wider than the phone (wide parts sit in .table-scroll). ---- */
+  .local-only .server-only { display: none !important; }
+  .dash-nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 16px; }
+  .dash-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--border); color: var(--text); text-decoration: none; font-size: 0.85rem; }
+  .dash-nav a:hover { border-color: var(--accent); }
+  .gate-local { background: none; border: none; color: var(--accent); text-decoration: underline; padding: 0 4px; min-height: 44px; font-size: 0.85rem; margin-top: 8px; }
+  .pl-area button, .dsheet button { min-height: 44px; }
+  .pl-area input, .pl-area select, .dsheet input, .dsheet select { min-height: 44px; }
+  @media (pointer: coarse) { .pl-area input, .pl-area select, .pl-area textarea, .dsheet input, .dsheet select { font-size: 16px; } }
+  .pl-area h3, .dsheet h3 { font-family: "Magra", system-ui, sans-serif; font-size: 0.98rem; margin: 18px 0 6px; }
+  .pl-headrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .pl-headrow h2, .pl-headrow h3 { margin: 0; }
+  .pl-headrow button { margin-top: 0; }
+  .pl-btnrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .pl-btnrow button { margin-top: 0; }
+  .pl-inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .pl-inline > input, .pl-inline > select { flex: 1 1 140px; min-width: 0; width: auto; }
+  .pl-inline > button { margin-top: 0; }
+  .pl-inline .inline-check { flex: none; min-height: 44px; color: var(--text); font-size: 0.85rem; }
+  .pl-client { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 4px 14px; }
+  .pl-privacy { border-left: 3px solid var(--accent); padding-left: 8px; }
+  @media (min-width: 1000px) {
+    .pl-wide { width: min(1400px, calc(100vw - 60px)); margin-left: calc(50% - min(700px, 50vw - 30px)); }
+  }
+  .pl-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; margin-top: 10px; }
+  .pl-col { min-width: 0; }
+  @media (max-width: 1199px) { .pl-side { display: contents; } #bsSection { order: 1; } #plPlan { order: 2; } #pvSection { order: 3; } }
+  @media (min-width: 1200px) {
+    .pl-layout { grid-template-columns: 400px minmax(0, 1fr); align-items: start; }
+  }
+  .pl-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .pl-tag { min-height: 44px; margin: 0; padding: 0 12px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--border); color: var(--text); font-size: 0.8rem; }
+  .pl-tag.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pl-tag-static { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; background: var(--panel); border: 1px solid var(--border); color: var(--muted); }
+  .bs-card { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 8px; cursor: grab; }
+  .bs-card .pl-btnrow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .bs-card .pl-btnrow button { padding: 6px 4px; }
+  .bs-card.armed { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+  .bs-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .bs-name { display: block; margin-top: 6px; font-size: 0.95rem; overflow-wrap: anywhere; }
+  .bs-kind { background: rgba(0,112,148,0.16); color: var(--text); border: 1px solid var(--accent); }
+  .bs-note { font-size: 0.82rem; margin: 6px 0 0; color: var(--text); overflow-wrap: anywhere; }
+  .bs-item { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 76px 44px; gap: 6px; margin-top: 6px; align-items: center; }
+  .bs-item input, .bs-item select { margin: 0; padding: 6px 8px; }
+  @media (max-width: 520px) { .bs-item { grid-template-columns: minmax(0, 1fr) 76px 44px; } .bs-item .bs-what { grid-column: 1 / -1; grid-row: 2; } }
+  .pl-x { width: 44px; height: 44px; padding: 0; margin: 0; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; font-size: 1.1rem; }
+  .pl-placing { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: var(--accent); color: #fff; border-radius: 8px; padding: 6px 6px 6px 12px; margin-bottom: 10px; font-size: 0.88rem; }
+  .pl-placing[hidden] { display: none; }
+  #bsKindFilter, #pvWhenRow { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #pvWhenRow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pl-placing button { margin: 0; background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.6); color: #fff; }
+  .pl-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+  .pl-toolbar > div { flex: 1 1 180px; min-width: 0; }
+  .pl-toolbar button { margin-top: 0; }
+  .pl-phase { border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-top: 12px; background: var(--panel); border-left: 4px solid var(--accent); }
+  .pl-phase.tone1 { border-left-color: #4d9cb5; }
+  .pl-phase.no-score { border-left-style: dashed; }
+  .pl-phase-fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.2fr); gap: 8px; }
+  .pl-phase-fields label { margin: 0 0 3px; }
+  @media (max-width: 520px) { .pl-phase-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .pl-phase-fields > :first-child { grid-column: 1 / -1; } }
+  .pl-phase-meta { margin-top: 8px; }
+  .pl-rec { margin-top: 6px; font-size: 0.82rem; color: var(--text); background: var(--panel2); border-radius: 8px; padding: 6px 10px; border: 1px solid var(--border); }
+  .pl-week { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
+  .pl-week-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .pl-week-head strong { font-size: 0.88rem; }
+  .pl-week-head button { margin: 0; }
+  .pl-days-wrap { container-type: inline-size; }
+  .pl-days { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; margin-top: 6px; }
+  .pl-day { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 6px; align-items: start; background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 6px; min-height: 56px; }
+  .pl-day-name { font-weight: 600; font-size: 0.85rem; padding-top: 12px; text-align: center; }
+  .pl-chips { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .pl-day-free { color: var(--muted); font-size: 0.8rem; padding-top: 12px; }
+  .pl-chip { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 100%; margin: 0; padding: 5px 8px; text-align: left; background: var(--panel); color: var(--text); border: 1px solid var(--border); border-left: 4px solid var(--ac, var(--accent)); border-radius: 6px; font-size: 0.8rem; line-height: 1.25; }
+  .pl-chip-t { overflow-wrap: break-word; }
+  .pl-chip-m { color: var(--muted); font-size: 0.72rem; }
+  .pl-day-acts { display: flex; gap: 4px; }
+  .pl-ibtn { width: 44px; height: 44px; padding: 0; margin: 0; font-size: 1.15rem; line-height: 1; }
+  @container (min-width: 820px) {
+    .pl-days { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+    .pl-day { grid-template-columns: minmax(0, 1fr); min-height: 150px; align-content: start; }
+    .pl-day-name { padding-top: 2px; text-align: left; }
+    .pl-day-free { padding-top: 0; }
+    .pl-day-acts { justify-content: flex-start; }
+  }
+  .placing-day .pl-day, .placing-week .pl-week, .placing-phase .pl-dropzone { outline: 2px dashed var(--accent); outline-offset: 2px; cursor: copy; }
+  .drop-over { background: rgba(0,112,148,0.18) !important; }
+  .pl-dropzone { margin-top: 12px; border: 2px dashed var(--border); border-radius: 10px; padding: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .pl-dropzone button { margin: 0; }
+  .pl-comp { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 6px 6px 10px; margin-top: 6px; font-size: 0.85rem; }
+  .pl-comp > div { min-width: 0; flex: 1 1 200px; }
+  .pl-comp button { margin: 0; }
+  .pl-diamond { color: #c77d12; }
+  .pl-file { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; border-top: 1px solid var(--border); padding-top: 12px; align-items: center; }
+  .pl-file button { margin: 0; }
+  #plJson { min-height: 140px; }
+  /* sheets (dialogs) */
+  .dsheet { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,0.45); display: flex; align-items: flex-end; justify-content: center; padding: 10px; }
+  .dsheet[hidden] { display: none; }
+  .dsheet.top { z-index: 70; }
+  .dsheet-card { background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 14px; width: min(640px, 100%); max-height: calc(100vh - 20px); overflow-y: auto; padding: 16px; }
+  @media (min-width: 700px) { .dsheet { align-items: center; } }
+  .pl-menu button { display: block; width: 100%; text-align: left; margin-top: 6px; }
+  .pl-toast { pointer-events: none; position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 80; background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 0.88rem; max-width: calc(100vw - 32px); box-shadow: 0 4px 18px rgba(0,0,0,0.3); }
+  .pl-toast[hidden] { display: none; }
+  /* Jahresübersicht */
+  .tl-grid { min-width: 760px; position: relative; font-size: 0.8rem; }
+  .tl-row { display: grid; grid-template-columns: 130px minmax(0, 1fr); align-items: stretch; border-bottom: 1px solid var(--border); min-height: 58px; }
+  .tl-label { position: sticky; left: 0; z-index: 2; background: var(--panel); padding: 6px 8px 6px 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+  .tl-label strong { font-size: 0.9rem; }
+  .tl-label .hint { margin: 0; }
+  .tl-ends { color: #c77d12; font-size: 0.74rem; }
+  .tl-track { position: relative; min-height: 58px; }
+  .tl-months { display: flex; height: 100%; }
+  .tl-month { border-left: 1px solid var(--border); padding: 8px 4px; color: var(--muted); font-size: 0.74rem; white-space: nowrap; overflow: hidden; }
+  .tl-bar { position: absolute; top: 7px; height: 44px; margin: 0; padding: 0 6px; border-radius: 6px; color: #fff; font-size: 0.74rem; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; background: #007094; border: 1px solid rgba(255,255,255,0.35); min-height: 44px; }
+  .tl-bar.tone1 { background: #4d9cb5; }
+  .tl-bar.open { -webkit-mask-image: linear-gradient(90deg, #000 70%, transparent); mask-image: linear-gradient(90deg, #000 70%, transparent); }
+  .tl-bar.no-score { background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.22) 0 6px, transparent 6px 12px); }
+  .tl-diamond { pointer-events: none; position: absolute; top: 20px; width: 18px; height: 18px; margin-left: -9px; background: #c77d12; transform: rotate(45deg); border: 2px solid var(--panel); z-index: 1; }
+  .tl-today { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--danger); z-index: 1; pointer-events: none; }
+  /* So sieht es dein Kunde (kp22): the app's own tokens, simplified */
+  .pv-phone { --pv-bg: #0c1b20; --pv-surface: #132a30; --pv-line: #244249; --pv-ink: #e9f0f2; --pv-soft: #a9bbc0; --pv-brand: #39a7cc;
+    width: min(390px, 100%); height: 700px; margin: 10px auto 0; border-radius: 34px; border: 10px solid #1b1f24; background: var(--pv-bg); color: var(--pv-ink); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.3); font-family: "Public Sans", system-ui, sans-serif; }
+  @media (prefers-color-scheme: light) {
+    .pv-phone { --pv-bg: #f7f4ef; --pv-surface: #fffdf9; --pv-line: #e8e0d4; --pv-ink: #16232a; --pv-soft: #4f6168; --pv-brand: #007094; }
+  }
+  .pv-bar { display: flex; align-items: center; gap: 10px; padding: 12px 14px 8px; border-bottom: 1px solid var(--pv-line); }
+  .pv-bar img { height: 26px; width: auto; background: #fff; border-radius: 6px; padding: 3px 5px; }
+  .pv-bar span { font-family: "Magra", system-ui, sans-serif; font-weight: 700; font-size: 0.8rem; line-height: 1.1; }
+  .pv-scroll { flex: 1; overflow-y: auto; padding: 12px 14px 16px; }
+  .pv-kicker { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--pv-brand); font-weight: 700; }
+  .pv-title { font-family: "Magra", system-ui, sans-serif; font-size: 1.15rem; margin: 2px 0 10px; }
+  .pv-note { background: var(--pv-surface); border: 1px solid var(--pv-line); border-left: 4px solid #c77d12; border-radius: 12px; padding: 8px 10px; font-size: 0.78rem; margin-bottom: 10px; }
+  .pv-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 10px; }
+  .pv-wd { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.68rem; color: var(--pv-soft); padding: 4px 0; border-radius: 10px; }
+  .pv-wd.on { background: var(--pv-surface); color: var(--pv-ink); font-weight: 700; }
+  .pv-ring { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--pv-line); display: flex; align-items: center; justify-content: center; font-size: 0.66rem; color: var(--pv-ink); }
+  .pv-ring.has { border-color: var(--pv-brand); }
+  .pv-card { background: var(--pv-surface); border: 1px solid var(--pv-line); border-radius: 16px; padding: 10px 12px; margin-bottom: 10px; }
+  .pv-card-k { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--pv-soft); font-weight: 700; margin-bottom: 6px; }
+  .pv-item { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--pv-line); font-size: 0.82rem; }
+  .pv-item:first-of-type { border-top: none; }
+  .pv-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .pv-item small { display: block; color: var(--pv-soft); font-size: 0.7rem; }
+  .pv-day { display: grid; grid-template-columns: 26px 1fr; gap: 6px; padding: 4px 0; border-top: 1px solid var(--pv-line); font-size: 0.76rem; }
+  .pv-day:first-of-type { border-top: none; }
+  .pv-src { font-size: 0.7rem; color: var(--pv-soft); }
+  .pv-tabbar { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--pv-line); background: var(--pv-surface); font-size: 0.66rem; text-align: center; color: var(--pv-soft); }
+  .pv-tabbar span { padding: 10px 0 12px; }
+  .pv-tabbar .on { color: var(--pv-brand); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -181,6 +333,7 @@
       <input id="tokenInput" type="password" autocomplete="off" placeholder="…" />
       <button id="connectBtn">Verbinden</button>
       <div id="gateMsg" class="msg"></div>
+      <button type="button" class="gate-local" id="gateLocalBtn">Ohne Token: nur Trainingsplanung (lokal)</button>
     </div>
   </div>
 
@@ -190,11 +343,20 @@
         <div class="brand-logo-box"><img src="logo-full.png" alt="Fabian Westermann Mentalcoaching" /></div>
         <div>
           <h1>Trainer-Dashboard</h1>
-          <p class="sub">Trainings-Codes verwalten &amp; Kunden-Verlauf - alles liegt in der Cloudflare-Datenbank, geräteübergreifend abrufbar.</p>
+          <p class="sub">Trainingspläne bauen, Trainings-Codes verwalten &amp; Kunden-Verlauf. Codes und Verlauf liegen in der Cloudflare-Datenbank, die Trainingsplanung vorerst nur in diesem Browser.</p>
         </div>
       </div>
       <button class="secondary" id="logoutBtn">Abmelden</button>
     </div>
+
+    <nav class="dash-nav" aria-label="Bereiche des Dashboards">
+      <a href="#planPanel">Trainingsplanung</a>
+      <a href="#yearPanel">Jahresübersicht</a>
+      <a href="#historyPanel" class="server-only">Kunden-Verlauf</a>
+      <a href="#codesPanel" class="server-only">Trainings-Codes</a>
+    </nav>
+    <p class="hint local-note" id="localNote" hidden>Ohne Admin-Token: nur die Trainingsplanung, alles bleibt in diesem Browser. Plan-Codes kannst du als JSON kopieren.</p>
+
 
     <details class="panel" id="overviewDetails" style="padding:16px">
       <summary style="cursor:pointer;list-style:none"><h2 style="display:inline">Alle Übungen im Überblick</h2></summary>
@@ -202,7 +364,134 @@
       <div id="overviewBody"></div>
     </details>
 
-    <div class="panel">
+    <!-- ==== Trainingsplanung (kp17, kp18, kp20, kp21, kp22) ==== -->
+    <div class="panel pl-area pl-wide" id="planPanel">
+      <h2>Trainingsplanung</h2>
+      <p class="sub" style="margin-bottom:8px">Sammle Bausätze, die sich bei echten Kunden bewährt haben, bau daraus den Plan für deinen Kunden und gib ihn als Plan-Code aus.</p>
+      <div class="pl-client">
+        <div>
+          <label for="plClientSelect">Kunde</label>
+          <select id="plClientSelect"></select>
+        </div>
+        <div>
+          <label for="plNewKuerzel">Neuer Kunde oder neue Gruppe (nur Kürzel)</label>
+          <div class="pl-inline">
+            <input id="plNewKuerzel" maxlength="40" placeholder="z. B. TS-07" autocomplete="off" />
+            <label class="inline-check"><input type="checkbox" id="plNewGroup" /> Gruppe</label>
+            <button type="button" id="plNewClientBtn">Anlegen</button>
+          </div>
+        </div>
+      </div>
+      <p class="hint pl-privacy">Nur ein Kürzel wie „TS-07“, nie Namen oder Gesundheitsangaben. Wer dahinter steckt, weißt nur du. Alles liegt vorerst nur in diesem Browser; sichere es mit „Alles als Datei sichern“ (unten).</p>
+      <div class="msg" id="plClientMsg"></div>
+
+      <div class="pl-layout">
+        <div class="pl-col pl-side">
+          <section id="bsSection" aria-labelledby="bsHeading">
+            <div class="pl-headrow"><h3 id="bsHeading">Bausätze</h3><button type="button" id="bsNewBtn">+ Neuer Bausatz</button></div>
+            <div class="kind-row" id="bsKindFilter" role="group" aria-label="Art filtern">
+              <button class="kind-btn active" type="button" data-bk="all">Alle</button>
+              <button class="kind-btn" type="button" data-bk="kombi">Kombi</button>
+              <button class="kind-btn" type="button" data-bk="week">Wochen</button>
+              <button class="kind-btn" type="button" data-bk="phase">Phasen</button>
+            </div>
+            <div class="pl-tags" id="bsTagFilter" role="group" aria-label="Schlagworte filtern"></div>
+            <p class="hint">Ziehen auf den Plan oder „Einsetzen“ und dann auf die Stelle tippen. Ein Bausatz ist eine Kopiervorlage: ändern ändert keine ausgegebenen Pläne.</p>
+            <div id="bsList"></div>
+            <p class="empty-hint" id="bsEmpty"></p>
+          </section>
+          <section id="pvSection" aria-labelledby="pvHeading">
+            <h3 id="pvHeading">So sieht es dein Kunde</h3>
+            <div class="kind-row" id="pvWhenRow" role="group" aria-label="Woche der Vorschau">
+              <button class="kind-btn active" type="button" data-when="now">Diese Woche</button>
+              <button class="kind-btn" type="button" data-when="plus3">In 3 Wochen</button>
+              <button class="kind-btn" type="button" data-when="comp">Wettkampf</button>
+            </div>
+            <div class="pv-phone" id="pvPhone" aria-label="Vorschau der App"></div>
+            <p class="hint">Vereinfachte Vorschau wie „Heute“ und „Mein Plan“ in der App, ohne Verlauf: die echten Haken deines Kunden siehst du hier nicht.</p>
+          </section>
+        </div>
+
+        <div class="pl-col" id="plPlan">
+          <p class="empty-hint" id="plNoClient">Lege zuerst oben einen Kunden mit Kürzel an. Dann ziehst du Bausätze hierher oder baust Phasen von Hand.</p>
+          <div id="plEditor" hidden>
+            <div class="pl-placing" id="plPlacing" hidden><span id="plPlacingText"></span><button type="button" class="secondary" id="plPlacingCancel">Abbrechen</button></div>
+            <div class="pl-toolbar">
+              <div><label for="plStart">Plan beginnt in der Woche vom</label><input type="date" id="plStart" /></div>
+              <button type="button" class="secondary" id="plUndoBtn" disabled>Rückgängig</button>
+              <button type="button" class="secondary" id="plSaveVersionBtn">Stand speichern</button>
+            </div>
+            <p class="hint" id="plStartHint"></p>
+            <div id="plPhases"></div>
+            <div class="pl-dropzone" data-drop="phase-end" id="plPhaseEnd">
+              <button type="button" class="secondary" id="plAddPhaseBtn">+ Leere Phase</button>
+              <span class="hint" style="margin:0">oder eine Phasen-Vorlage hierher ziehen</span>
+            </div>
+
+            <h3>Wettkämpfe</h3>
+            <p class="hint" style="margin-top:0">Nur ein Hinweis für dich und in der Vorschau. Nichts am Training ändert sich von selbst.</p>
+            <div id="plComps"></div>
+            <div class="pl-inline" style="margin-top:8px">
+              <input type="date" id="plCompDate" aria-label="Datum des Wettkampfs" />
+              <input id="plCompTitle" maxlength="40" placeholder="z. B. Turnier" aria-label="Bezeichnung des Wettkampfs" />
+              <button type="button" class="secondary" id="plCompAddBtn">Wettkampf eintragen</button>
+            </div>
+
+            <h3>Als Plan-Code ausgeben</h3>
+            <div class="row">
+              <div><label for="plName">Name des Plans</label><input id="plName" maxlength="60" placeholder="z. B. Grundlage Herbst" /></div>
+              <div><label for="plCode">Plan-Code</label>
+                <div class="pl-inline"><input id="plCode" maxlength="60" placeholder="z. B. ts07" autocomplete="off" /><button type="button" class="secondary" id="plCodeRandomBtn">Zufällig ergänzen</button></div>
+              </div>
+            </div>
+            <p class="hint" id="plIssueState">Noch nicht ausgegeben.</p>
+            <button type="button" id="plIssueBtn">Als Plan-Code ausgeben</button>
+            <div class="msg" id="plIssueMsg"></div>
+            <details class="lib" id="plJsonDetails">
+              <summary>Plan-Code als JSON (Notausgang)</summary>
+              <textarea id="plJson" readonly aria-label="Plan-Code als JSON"></textarea>
+              <div class="pl-btnrow">
+                <button type="button" class="secondary" id="plJsonCopyBtn">JSON kopieren</button>
+                <button type="button" class="secondary server-only" id="plJsonToCodesBtn">Im JSON-Feld der Trainings-Codes öffnen</button>
+              </div>
+            </details>
+
+            <h3>Gespeicherte Stände</h3>
+            <div class="pl-inline">
+              <select id="plVersionSelect" aria-label="Gespeicherter Stand"></select>
+              <button type="button" class="secondary" id="plRestoreBtn">Zurückholen</button>
+            </div>
+            <p class="hint">„Stand speichern“ und jede Ausgabe legen einen Stand an (die letzten 30 je Kunde).</p>
+            <button type="button" class="danger" id="plDeleteClientBtn">Kunden-Plan löschen</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pl-file">
+        <button type="button" class="secondary" id="plExportBtn">Alles als Datei sichern</button>
+        <button type="button" class="secondary" id="plImportBtn">Aus Datei laden</button>
+        <input type="file" id="plImportFile" accept="application/json,.json" hidden />
+        <span class="hint" style="margin:0">Bausätze und Kunden-Pläne als eine JSON-Datei für deinen Rechner.</span>
+      </div>
+    </div>
+
+    <!-- ==== Jahresübersicht (kp19) ==== -->
+    <div class="panel pl-area pl-wide" id="yearPanel">
+      <div class="pl-headrow">
+        <h2>Jahresübersicht</h2>
+        <div class="pl-btnrow" style="margin-top:0">
+          <button type="button" class="secondary" id="tlPrevBtn" aria-label="Drei Monate früher">‹</button>
+          <button type="button" class="secondary" id="tlTodayBtn">Heute</button>
+          <button type="button" class="secondary" id="tlNextBtn" aria-label="Drei Monate später">›</button>
+        </div>
+      </div>
+      <p class="hint">Phasen aller Kunden-Pläne, ◆ = Wettkampf, roter Strich = heute. Tippen auf einen Balken öffnet den Plan.</p>
+      <div class="table-scroll"><div class="tl-grid" id="tlGrid"></div></div>
+      <p class="empty-hint" id="tlEmpty">Noch keine Kunden-Pläne. Leg oben in der Trainingsplanung einen an.</p>
+    </div>
+
+
+    <div class="panel server-only" id="historyPanel">
       <h2>Kunden-Verlauf</h2>
       <div class="row">
         <div>
@@ -230,7 +519,7 @@
       </table></div>
     </div>
 
-    <div class="panel">
+    <div class="panel server-only" id="codesPanel">
       <h2>Trainings-Codes</h2>
       <div class="table-scroll"><table id="progTable">
         <thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Laufzeit / Plätze</th><th>Geändert</th><th></th></tr></thead>
@@ -367,6 +656,78 @@
       <div id="pMsg" class="msg"></div>
     </div>
   </div>
+
+  <!-- Trainingsplanung: sheets (Bausatz, Eintrag, Tag, Rückfrage) + toast -->
+  <div class="dsheet" id="bsSheet" hidden>
+    <div class="dsheet-card pl-area" role="dialog" aria-modal="true" aria-labelledby="bsSheetTitle">
+      <div class="pl-headrow"><h2 id="bsSheetTitle">Neuer Bausatz</h2><button type="button" class="secondary" data-close="bsSheet">Schließen</button></div>
+      <div class="kind-row" id="bsKindRow" role="group" aria-label="Art des Bausatzes">
+        <button class="kind-btn" type="button" data-bskind="kombi">Kombi-Paket</button>
+        <button class="kind-btn" type="button" data-bskind="week">Woche</button>
+        <button class="kind-btn" type="button" data-bskind="phase">Phase</button>
+      </div>
+      <p class="hint" id="bsKindHint"></p>
+      <label for="bsName">Name</label>
+      <input id="bsName" maxlength="50" placeholder="z. B. Kopf wach vor dem Spiel" />
+      <label for="bsNote">Wofür, für wen</label>
+      <input id="bsNote" maxlength="160" placeholder="z. B. Vor dem Spiel, Sportler mit wenig Zeit" />
+      <label>Schlagworte</label>
+      <div class="pl-tags" id="bsTags"></div>
+      <div id="bsBody"></div>
+      <div class="msg" id="bsMsg"></div>
+      <div class="pl-btnrow">
+        <button type="button" id="bsSaveBtn">Bausatz speichern</button>
+        <button type="button" class="secondary" data-close="bsSheet">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dsheet top" id="entrySheet" hidden>
+    <div class="dsheet-card pl-area" role="dialog" aria-modal="true" aria-labelledby="entrySheetTitle">
+      <h2 id="entrySheetTitle">Training</h2>
+      <div class="row">
+        <div><label for="enArea">Bereich</label><select id="enArea"></select></div>
+        <div><label for="enWhat">Übung</label><select id="enWhat"></select></div>
+      </div>
+      <div class="row">
+        <div><label for="enMinutes">Minuten</label><input type="number" id="enMinutes" min="5" max="240" step="5" value="15" /></div>
+        <div><label for="enTime">Uhrzeit (optional)</label><input type="time" id="enTime" /></div>
+      </div>
+      <label for="enCode">Trainings-Code (optional, statt freier Wahl)</label>
+      <input id="enCode" maxlength="60" autocomplete="off" placeholder="z. B. dig01" />
+      <label class="inline-check" style="margin-top:10px;min-height:44px"><input type="checkbox" id="enSpecial" /> Sondertraining (bekommt einen Stern)</label>
+      <div class="msg" id="enMsg"></div>
+      <div class="pl-btnrow">
+        <button type="button" id="enSaveBtn">Übernehmen</button>
+        <button type="button" class="danger" id="enDeleteBtn">Entfernen</button>
+        <button type="button" class="secondary" data-close="entrySheet">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dsheet top" id="dayMenuSheet" hidden>
+    <div class="dsheet-card pl-area pl-menu" role="dialog" aria-modal="true" aria-labelledby="dayMenuTitle" style="width:min(420px,100%)">
+      <h2 id="dayMenuTitle">Tag</h2>
+      <button type="button" data-dm="add">Training hinzufügen</button>
+      <button type="button" class="secondary" data-dm="copy">Tag kopieren</button>
+      <button type="button" class="secondary" data-dm="paste">Kopierten Tag einfügen</button>
+      <button type="button" class="secondary" data-dm="kombi">Als Kombi-Paket speichern</button>
+      <button type="button" class="secondary" data-dm="clear">Tag leeren</button>
+      <button type="button" class="secondary" data-close="dayMenuSheet">Abbrechen</button>
+    </div>
+  </div>
+
+  <div class="dsheet top" id="plConfirmSheet" hidden>
+    <div class="dsheet-card pl-area" role="alertdialog" aria-modal="true" aria-labelledby="plConfirmTitle" style="width:min(440px,100%)">
+      <h2 id="plConfirmTitle">Wirklich?</h2>
+      <p class="sub" id="plConfirmText" style="margin-bottom:6px"></p>
+      <div class="pl-btnrow">
+        <button type="button" class="danger" id="plConfirmYes">Ja</button>
+        <button type="button" class="secondary" id="plConfirmNo">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+  <div class="pl-toast" id="plToast" role="status" aria-live="polite" hidden></div>
 
 <script>
   const TOKEN_KEY = "fwmc-admin-token";
@@ -1249,6 +1610,913 @@
   } else {
     showGate("");
   }
+</script>
+<script>
+// ==== Trainingsplanung im Trainer-Dashboard (2026-10-07, konzept-trainingsplanung kp17-kp22) ====
+// Bausätze (kp17), Plan-Baukasten (kp18), Jahresübersicht (kp19), lokale
+// Speicherung mit Ständen (kp20, vorerst nur dieser Browser), neue Fassung
+// eines Plan-Codes (kp21) und die Handy-Vorschau (kp22). The plan-code def
+// is exactly what app.js reads (codeDefProblem / applyTrainerPlan / loadPlan):
+// {type:"training-plan", name, version, plan:{startDate, phases:[{id, name,
+// weeks, days[7][entry], alt?, noScore?}]}}, entry {id, area, what, code,
+// time, minutes, special?}. No phase types, no automatic changes: a
+// Wettkampf only shows a recommendation. Docs: docs/notes/10.
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => escapeHtml(s == null ? "" : s);
+  // Copy of the app's PLAN_AREAS (+ combo) - keep in step with app.js.
+  const AREAS = [
+    { key: "visual", label: "Visuelles Training", short: "Visuell", color: "#1f7ab8" },
+    { key: "breath", label: "Atemtraining", short: "Atem", color: "#2a9d8f" },
+    { key: "nat", label: "NAT – Neuroathletik", short: "NAT", color: "#3a7d2c" },
+    { key: "movement", label: "Reaktionstraining", short: "Reaktion", color: "#c77d12" },
+    { key: "workout", label: "Krafttraining", short: "Kraft", color: "#c0392b" },
+    { key: "cardio", label: "Ausdauertraining", short: "Ausdauer", color: "#7b4fb8" },
+    { key: "free", label: "Eigenes Training", short: "Eigenes Training", color: "#a0527a" },
+    { key: "combo", label: "Kombi-Programm", short: "Kombi", color: "#007094" },
+  ];
+  const AREA = Object.fromEntries(AREAS.map((a) => [a.key, a]));
+  // what values the app understands for a plan entry (whatOptions in app.js)
+  const VISUAL_EX = [["vt-color", "VT · Farbe & Seite"], ["vrw-original", "VRW · Direkt & Umgekehrt"], ["4-straight", "4 Pfeile · gerade"],
+    ["4-diag", "4 Pfeile · diagonal"], ["8-solo", "8 Pfeile"], ["8-vrw", "8 Pfeile · Rot/Grün"], ["stroop-classic", "Stroop · klassisch"],
+    ["stroop-bg", "Stroop · mit Hintergrund"], ["cross-modal", "Sehen & Hören"], ["cone-tap", "Hütchen sortieren"], ["cone-compass", "Hütchen · Kompass-Aufbau"], ["farbfelder", "Farbfelder"]];
+  const NAT_SUBS = [["peripher", "Periphere Wahrnehmung"], ["remember", "Positionen merken"], ["blitz", "Blitz-Raster"], ["flash", "Flash-Speicher-Test"], ["mot", "Objektverfolgung (MOT)"], ["balance", "Gleichgewicht"]];
+  const TAGS = ["Einsteiger", "Fortgeschritten", "Sportler", "Führungskraft", "Regeneration", "Wettkampf"];
+  const BS_KINDS = { kombi: "Kombi-Paket", week: "Wochen-Vorlage", phase: "Phasen-Vorlage" };
+  const BS_KIND_HINT = {
+    kombi: "Ein Training aus mehreren Übungen, z. B. „Kopf wach vor dem Spiel“. Kommt auf einen Tag.",
+    week: "Eine Woche mit Tagen und Trainings. Ersetzt eine Woche in einer Phase.",
+    phase: "Mehrere gleiche Wochen, auf Wunsch im Wechsel (A/B/C/D). Kommt als neue Phase in den Plan.",
+  };
+  const WD = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+  const WDL = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+  const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+  const VAR = ["A", "B", "C", "D"];
+  const K_BS = "fwmc-dash-bausaetze-v1", K_PLANS = "fwmc-dash-plans-v1", K_VERS = "fwmc-dash-plan-versions-v1", K_CUR = "fwmc-dash-current-v1";
+  const REC_TEXT = "Empfehlung: in der Woche davor etwas leichter, mit dem Kunden abstimmen.";
+
+  // ---- helpers ----
+  function rj(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
+  function wj(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { toast("Speichern in diesem Browser ist fehlgeschlagen. Bitte „Alles als Datei sichern“."); return false; } }
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const pad = (n) => String(n).padStart(2, "0");
+  function dStr(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+  function dParse(s) { const [y, m, d] = String(s).split("-").map(Number); return new Date(y, (m || 1) - 1, d || 1); }
+  function dAdd(s, n) { const d = dParse(s); d.setDate(d.getDate() + n); return dStr(d); }
+  const isD = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || "");
+  function mondayOf(s) { return dAdd(s, -((dParse(s).getDay() + 6) % 7)); }
+  function dDiff(a, b) { return Math.round((dParse(b) - dParse(a)) / 864e5); }
+  const todayStr = () => dStr(new Date());
+  const deShort = (s) => `${s.slice(8, 10)}.${s.slice(5, 7)}.`;
+  const deLong = (s) => `${s.slice(8, 10)}.${s.slice(5, 7)}.${s.slice(0, 4)}`;
+  function stamp(iso) { const d = new Date(iso); return isNaN(d) ? "" : `${pad(d.getDate())}.${pad(d.getMonth() + 1)}., ${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+  function stampLong(iso) { const d = new Date(iso); return isNaN(d) ? "" : `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+  const emptyDays = () => [[], [], [], [], [], [], []];
+  function cleanEntry(e) {
+    if (!e || !AREA[e.area]) return null;
+    const o = { id: String(e.id || uid()), area: e.area, what: String(e.what || ""), code: String(e.code || "").slice(0, 60),
+      time: /^\d{2}:\d{2}$/.test(e.time || "") ? e.time : "", minutes: Math.max(5, Math.min(240, Math.round(Number(e.minutes) || 15))) };
+    if (e.special) o.special = "Sondertraining";
+    return o;
+  }
+  const cleanDays = (days) => [0, 1, 2, 3, 4, 5, 6].map((i) => ((days && days[i]) || []).map(cleanEntry).filter(Boolean));
+  const copyDays = (days) => cleanDays(days).map((l) => l.map((e) => Object.assign({}, e, { id: uid() })));
+  const nVariants = (ph) => 1 + ((ph.alt && ph.alt.length) || 0);
+  function whatOptions(area) {
+    if (area === "combo") return [["", "Kombi-Programm (per Code)"]];
+    const o = [["", "Freie Wahl im Bereich"]];
+    if (area === "visual") VISUAL_EX.forEach(([k, t]) => o.push(["ex:" + k, t]));
+    if (area === "nat") NAT_SUBS.forEach(([k, t]) => o.push(["nat:" + k, t]));
+    return o;
+  }
+  function entryTitle(e) {
+    const a = AREA[e.area] || AREAS[0];
+    const w = whatOptions(e.area).find(([v]) => v && v === e.what);
+    if (w) return `${a.short} · ${w[1]}`;
+    if (e.code) return `${a.short} · Code ${e.code}`;
+    return a.label;
+  }
+  // shorter for the narrow day cells (no word broken mid-word)
+  function chipTitle(e) { const t = entryTitle(e); return t === (AREA[e.area] || {}).label ? AREA[e.area].short : t; }
+  const dayMinutes = (l) => l.reduce((s, e) => s + e.minutes, 0);
+  const weekCount = (days) => days.reduce((s, l) => s + l.length, 0);
+  function countLabel(n, one, many) { return `${n} ${n === 1 ? one : many}`; }
+  function toast(text) {
+    const t = $("plToast"); t.textContent = text; t.hidden = false;
+    clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, 2600);
+  }
+  function setMsg(el, text, ok) { el.textContent = text || ""; el.className = "msg" + (text ? (ok ? " ok" : " err") : ""); }
+
+  // ---- sheets ----
+  let sheetStack = [];
+  function openSheet(id) { $(id).hidden = false; sheetStack.push(id); const f = $(id).querySelector("input:not([type=checkbox]), select, button"); if (f && id !== "dayMenuSheet") setTimeout(() => { try { f.focus({ preventScroll: true }); } catch (e) {} }, 30); }
+  function closeSheet(id) { $(id).hidden = true; sheetStack = sheetStack.filter((x) => x !== id); }
+  document.addEventListener("click", (ev) => {
+    const c = ev.target.closest("[data-close]"); if (c) { closeSheet(c.dataset.close); return; }
+    const sh = ev.target.classList && ev.target.classList.contains("dsheet") ? ev.target : null;
+    if (sh) closeSheet(sh.id); // tap on the dimmed background
+  });
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && sheetStack.length) { closeSheet(sheetStack[sheetStack.length - 1]); return; }
+    const inField = /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || "");
+    if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && (ev.key || "").toLowerCase() === "z" && !inField && !sheetStack.length && P()) { ev.preventDefault(); undo(); }
+  });
+  let confirmYes = null;
+  function confirmSheet(title, text, yesLabel, onYes) {
+    $("plConfirmTitle").textContent = title; $("plConfirmText").textContent = text; $("plConfirmYes").textContent = yesLabel || "Ja";
+    confirmYes = onYes; openSheet("plConfirmSheet");
+  }
+  $("plConfirmYes").addEventListener("click", () => { const f = confirmYes; confirmYes = null; closeSheet("plConfirmSheet"); if (f) f(); });
+  $("plConfirmNo").addEventListener("click", () => { confirmYes = null; closeSheet("plConfirmSheet"); });
+
+  // ---- state (kp20: localStorage, keys fwmc-dash-*) ----
+  let lib = rj(K_BS, []); if (!Array.isArray(lib)) lib = [];
+  let plans = rj(K_PLANS, {}); if (!plans || typeof plans !== "object" || Array.isArray(plans)) plans = {};
+  let versions = rj(K_VERS, {}); if (!versions || typeof versions !== "object") versions = {};
+  let cur = rj(K_CUR, ""); if (!plans[cur]) cur = Object.keys(plans).sort()[0] || "";
+  let undoStack = [];
+  let dayClip = null;
+  let placing = null; // {id} of a Bausatz waiting for a tap on the plan
+  let libKind = "all", libTags = [];
+  let pvWhen = "now";
+  let draft = null; // Bausatz being edited in #bsSheet
+  const P = () => plans[cur] || null;
+  function saveLib() { wj(K_BS, lib); }
+  function savePlans() { wj(K_PLANS, plans); wj(K_CUR, cur); }
+  function mutate(fn, opts) {
+    const p = P(); if (!p) return;
+    undoStack.push(JSON.stringify(p)); if (undoStack.length > 50) undoStack.shift();
+    fn(p); p.updatedAt = new Date().toISOString();
+    savePlans();
+    if (!(opts && opts.quiet)) renderPlanSide();
+  }
+  function undo() {
+    if (!undoStack.length) return;
+    plans[cur] = JSON.parse(undoStack.pop());
+    savePlans(); renderPlanSide(); toast("Rückgängig gemacht.");
+  }
+  function newPlan(kuerzel, group) {
+    return { kuerzel, group: !!group, name: "", code: "", startDate: mondayOf(todayStr()), phases: [], comps: [], issued: [], updatedAt: new Date().toISOString() };
+  }
+  function normPlan(p, k) {
+    const o = Object.assign(newPlan(k, p && p.group), p || {});
+    o.kuerzel = k;
+    o.startDate = isD(o.startDate) ? mondayOf(o.startDate) : mondayOf(todayStr());
+    o.phases = (Array.isArray(o.phases) ? o.phases : []).map((ph) => {
+      const x = { id: String(ph.id || uid()), name: String(ph.name || "Phase").slice(0, 40), weeks: Math.max(0, Math.min(104, Math.round(Number(ph.weeks) || 0))), days: cleanDays(ph.days) };
+      if (Array.isArray(ph.alt) && ph.alt.length) x.alt = ph.alt.slice(0, 3).map(cleanDays);
+      if (ph.noScore) x.noScore = true;
+      return x;
+    });
+    o.comps = (Array.isArray(o.comps) ? o.comps : []).filter((c) => c && isD(c.date)).map((c) => ({ id: String(c.id || uid()), date: c.date, title: String(c.title || "Wettkampf").slice(0, 40) }));
+    o.issued = Array.isArray(o.issued) ? o.issued : [];
+    return o;
+  }
+  Object.keys(plans).forEach((k) => { plans[k] = normPlan(plans[k], k); });
+
+  // ---- plan geometry: where each phase sits in the calendar ----
+  function phaseRanges(p) {
+    let wk = 0;
+    return p.phases.map((ph, i) => {
+      const from = dAdd(p.startDate, wk * 7);
+      const open = !ph.weeks;
+      const to = open ? null : dAdd(from, ph.weeks * 7 - 1);
+      const r = { i, ph, from, to, open, startWeek: wk };
+      wk += ph.weeks || 0;
+      return r;
+    });
+  }
+  function planEnd(p) { const r = phaseRanges(p); if (!r.length || r.some((x) => x.open)) return null; return r[r.length - 1].to; }
+  // phase + variant for a date (as the app's phaseFor, without client pauses)
+  function phaseAt(p, date) {
+    const w = Math.floor(dDiff(p.startDate, date) / 7);
+    if (w < 0) return null;
+    for (const r of phaseRanges(p)) {
+      if (r.open || w < r.startWeek + r.ph.weeks) {
+        if (r.open && r.i < p.phases.length - 1) continue; // only the last phase may run without end
+        const inPh = w - r.startWeek;
+        return { r, weekInPhase: inPh + 1, variant: inPh % nVariants(r.ph) };
+      }
+    }
+    return null;
+  }
+  const daysOfVariant = (ph, v) => (v > 0 && ph.alt && ph.alt[v - 1]) ? ph.alt[v - 1] : ph.days;
+  function compRec(p, monday) {
+    for (const c of p.comps) {
+      const cm = mondayOf(c.date);
+      if (monday === dAdd(cm, -7)) return `Woche vor „${c.title}“ (${deShort(c.date)}): ${REC_TEXT}`;
+      if (monday === cm) return `Woche von „${c.title}“ (${deShort(c.date)}): ${REC_TEXT}`;
+    }
+    return "";
+  }
+
+  // ---- day lists: "p:<phase>:<variant>" (plan) or "d:<variant>" (Bausatz draft) ----
+  function daysOf(ref) {
+    const [t, a, b] = ref.split(":");
+    if (t === "p") { const p = P(); const ph = p && p.phases[+a]; return ph ? daysOfVariant(ph, +b) : null; }
+    if (t === "d") { const d = draft && draft.data; return d && d.days ? daysOfVariant(d, +a) : null; }
+    return null;
+  }
+  function editDays(ref, fn) {
+    if (ref[0] === "p") mutate(() => { const days = daysOf(ref); if (days) fn(days); });
+    else { const days = daysOf(ref); if (days) { fn(days); renderDraftBody(); } }
+  }
+  function refName(ref) {
+    const [t, a, b] = ref.split(":");
+    if (t === "p") { const ph = P().phases[+a]; return ph ? ph.name + (nVariants(ph) > 1 ? ` · Woche ${VAR[+b]}` : "") : ""; }
+    return draft && draft.kind === "phase" && nVariants(draft.data) > 1 ? `Woche ${VAR[+a]}` : "Woche";
+  }
+  function dayHtml(ref, days, di) {
+    const list = days[di] || [];
+    return `<div class="pl-day" data-drop="day" data-ref="${ref}" data-di="${di}">
+      <div class="pl-day-name" title="${WDL[di]}">${WD[di]}</div>
+      <div class="pl-chips">${list.length ? list.map((e) => `<button type="button" class="pl-chip" data-act="entry" data-ref="${ref}" data-di="${di}" data-id="${esc(e.id)}" style="--ac:${AREA[e.area].color}"><span class="pl-chip-t">${e.special ? "★ " : ""}${esc(chipTitle(e))}</span><span class="pl-chip-m">${e.minutes} Min.${e.time ? " · " + e.time + " Uhr" : ""}</span></button>`).join("") : `<span class="pl-day-free">frei</span>`}</div>
+      <div class="pl-day-acts">
+        <button type="button" class="secondary pl-ibtn" data-act="add" data-ref="${ref}" data-di="${di}" aria-label="Training am ${WDL[di]} hinzufügen" title="Training hinzufügen">+</button>
+        <button type="button" class="secondary pl-ibtn" data-act="daymenu" data-ref="${ref}" data-di="${di}" aria-label="Mehr zum ${WDL[di]}: kopieren, einfügen, leeren" title="Kopieren, einfügen, leeren">⋯</button>
+      </div></div>`;
+  }
+  function weekHtml(ref, days, title, withSave) {
+    const n = weekCount(days), min = days.reduce((s, l) => s + dayMinutes(l), 0);
+    return `<div class="pl-week" data-drop="week" data-ref="${ref}">
+      <div class="pl-week-head"><div><strong>${esc(title)}</strong> <span class="hint">${countLabel(n, "Training", "Trainings")}${n ? ` · ${min} Min.` : ""}</span></div>
+      ${withSave ? `<button type="button" class="secondary" data-act="wk-save" data-ref="${ref}">Als Bausatz speichern</button>` : ""}</div>
+      <div class="pl-days-wrap"><div class="pl-days">${[0, 1, 2, 3, 4, 5, 6].map((di) => dayHtml(ref, days, di)).join("")}</div></div></div>`;
+  }
+
+  // ---- entry sheet ----
+  let enTarget = null; // {ref, di, id|null}
+  $("enArea").innerHTML = AREAS.map((a) => `<option value="${a.key}">${esc(a.label)}</option>`).join("");
+  function fillWhat(area, value) {
+    const o = whatOptions(area);
+    $("enWhat").innerHTML = o.map(([v, t]) => `<option value="${esc(v)}">${esc(t)}</option>`).join("");
+    $("enWhat").value = o.some(([v]) => v === value) ? value : "";
+  }
+  $("enArea").addEventListener("change", () => fillWhat($("enArea").value, ""));
+  function openEntry(ref, di, id) {
+    const days = daysOf(ref); if (!days) return;
+    const e = id ? days[di].find((x) => x.id === id) : null;
+    enTarget = { ref, di, id: e ? e.id : null };
+    $("entrySheetTitle").textContent = `${e ? "Training ändern" : "Training hinzufügen"} · ${WDL[di]}`;
+    const area = e ? e.area : "nat";
+    $("enArea").value = area; fillWhat(area, e ? e.what : "");
+    $("enMinutes").value = e ? e.minutes : 15; $("enTime").value = e ? e.time : "";
+    $("enCode").value = e ? e.code : ""; $("enSpecial").checked = !!(e && e.special);
+    $("enDeleteBtn").hidden = !e; setMsg($("enMsg"), "");
+    openSheet("entrySheet");
+  }
+  $("enSaveBtn").addEventListener("click", () => {
+    if (!enTarget) return;
+    const m = Math.round(Number($("enMinutes").value));
+    if (!(m >= 5 && m <= 240)) { setMsg($("enMsg"), "Minuten: bitte 5 bis 240."); return; }
+    const t = enTarget;
+    const e = cleanEntry({ id: t.id || uid(), area: $("enArea").value, what: $("enWhat").value, code: $("enCode").value.trim(), time: $("enTime").value, minutes: m, special: $("enSpecial").checked });
+    closeSheet("entrySheet");
+    editDays(t.ref, (days) => {
+      const i = t.id ? days[t.di].findIndex((x) => x.id === t.id) : -1;
+      if (i >= 0) days[t.di][i] = e; else days[t.di].push(e);
+    });
+  });
+  $("enDeleteBtn").addEventListener("click", () => {
+    const t = enTarget; if (!t || !t.id) return;
+    closeSheet("entrySheet");
+    editDays(t.ref, (days) => { days[t.di] = days[t.di].filter((x) => x.id !== t.id); });
+    if (t.ref[0] === "p") toast("Training entfernt. Rückgängig ist möglich.");
+  });
+
+  // ---- day menu: copy / paste / clear / save as Kombi-Paket ----
+  let dmTarget = null;
+  function openDayMenu(ref, di) {
+    dmTarget = { ref, di };
+    $("dayMenuTitle").textContent = `${WDL[di]} · ${refName(ref)}`;
+    $("dayMenuSheet").querySelector('[data-dm="paste"]').disabled = !dayClip;
+    const has = (daysOf(ref) || [])[di] && daysOf(ref)[di].length > 0;
+    $("dayMenuSheet").querySelector('[data-dm="clear"]').disabled = !has;
+    $("dayMenuSheet").querySelector('[data-dm="copy"]').disabled = !has;
+    $("dayMenuSheet").querySelector('[data-dm="kombi"]').hidden = ref[0] !== "p";
+    $("dayMenuSheet").querySelector('[data-dm="kombi"]').disabled = !has;
+    openSheet("dayMenuSheet");
+  }
+  $("dayMenuSheet").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-dm]"); if (!b || !dmTarget) return;
+    const { ref, di } = dmTarget; closeSheet("dayMenuSheet");
+    const act = b.dataset.dm;
+    if (act === "add") openEntry(ref, di, null);
+    else if (act === "copy") { dayClip = JSON.parse(JSON.stringify(daysOf(ref)[di])); toast(`${WDL[di]} kopiert. Über ⋯ an einem anderen Tag einfügen.`); }
+    else if (act === "paste" && dayClip) { editDays(ref, (days) => { days[di] = dayClip.map((e) => Object.assign({}, e, { id: uid() })); }); toast(`Auf ${WDL[di]} eingefügt.`); }
+    else if (act === "clear") editDays(ref, (days) => { days[di] = []; });
+    else if (act === "kombi") {
+      const list = daysOf(ref)[di];
+      openBsEditor({ kind: "kombi", name: "", note: "", tags: [], data: { items: list.map((e) => ({ area: e.area, what: e.what, minutes: e.minutes })), asOne: false, code: "" } });
+    }
+  });
+
+  // ---- Bausätze library (kp17) ----
+  function bsSummary(b) {
+    if (b.kind === "kombi") { const it = b.data.items || []; return `${countLabel(it.length, "Übung", "Übungen")} · ${it.reduce((s, x) => s + (Number(x.minutes) || 0), 0)} Min.${b.data.asOne ? " · als ein Kombi-Eintrag" : ""}`; }
+    if (b.kind === "week") return `${countLabel(weekCount(b.data.days), "Training", "Trainings")} pro Woche`;
+    const n = nVariants(b.data);
+    return `${b.data.weeks ? countLabel(b.data.weeks, "Woche", "Wochen") : "ohne festes Ende"}${n > 1 ? ` · Wochen im Wechsel ${VAR.slice(0, n).join("/")}` : ""} · ${countLabel(weekCount(b.data.days), "Training", "Trainings")} pro Woche`;
+  }
+  function renderTagFilter() {
+    $("bsTagFilter").innerHTML = TAGS.map((t) => `<button type="button" class="pl-tag${libTags.includes(t) ? " active" : ""}" data-tagf="${esc(t)}" aria-pressed="${libTags.includes(t)}">${esc(t)}</button>`).join("");
+  }
+  function renderLib() {
+    document.querySelectorAll("#bsKindFilter [data-bk]").forEach((b) => { b.classList.toggle("active", b.dataset.bk === libKind); b.setAttribute("aria-pressed", String(b.dataset.bk === libKind)); });
+    renderTagFilter();
+    const shown = lib.filter((b) => (libKind === "all" || b.kind === libKind) && libTags.every((t) => (b.tags || []).includes(t)))
+      .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+    $("bsList").innerHTML = shown.map((b) => `<div class="bs-card${placing && placing.id === b.id ? " armed" : ""}" draggable="true" data-bs="${esc(b.id)}">
+      <div class="bs-top"><span class="pill bs-kind">${BS_KINDS[b.kind]}</span><span class="hint" style="margin:0">Version ${b.version || 1} · ${b.used ? `${b.used}× eingesetzt` : "noch nicht eingesetzt"}</span></div>
+      <strong class="bs-name">${esc(b.name)}</strong>
+      <div class="hint" style="margin-top:2px">${esc(bsSummary(b))}</div>
+      ${(b.tags || []).length ? `<div class="pl-tags" style="margin-top:6px">${b.tags.map((t) => `<span class="pl-tag-static">${esc(t)}</span>`).join("")}</div>` : ""}
+      ${b.note ? `<p class="bs-note">${esc(b.note)}</p>` : ""}
+      <div class="pl-btnrow">
+        <button type="button" data-act="bs-place" data-bs="${esc(b.id)}"${P() ? "" : " disabled"}>${placing && placing.id === b.id ? "Wird eingesetzt …" : "Einsetzen"}</button>
+        <button type="button" class="secondary" data-act="bs-edit" data-bs="${esc(b.id)}">Bearbeiten</button>
+        <button type="button" class="secondary" data-act="bs-del" data-bs="${esc(b.id)}">Löschen</button>
+      </div></div>`).join("");
+    const empty = $("bsEmpty");
+    empty.hidden = shown.length > 0;
+    empty.textContent = lib.length ? "Kein Bausatz passt zu diesem Filter." :
+      "Noch keine Bausätze. Hier sammelst du, was sich bei echten Kunden bewährt hat: speichere eine Phase, eine Woche oder einen Tag aus einem Plan mit „Als Bausatz speichern“, oder leg mit „+ Neuer Bausatz“ einen an.";
+  }
+  $("bsKindFilter").addEventListener("click", (ev) => { const b = ev.target.closest("[data-bk]"); if (!b) return; libKind = b.dataset.bk; renderLib(); });
+  $("bsTagFilter").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-tagf]"); if (!b) return;
+    const t = b.dataset.tagf; libTags = libTags.includes(t) ? libTags.filter((x) => x !== t) : libTags.concat(t); renderLib();
+  });
+  $("bsList").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-act]"); if (!b) return;
+    const bs = lib.find((x) => x.id === b.dataset.bs); if (!bs) return;
+    if (b.dataset.act === "bs-place") { if (placing && placing.id === bs.id) setPlacing(null); else setPlacing(bs); }
+    else if (b.dataset.act === "bs-edit") openBsEditor(JSON.parse(JSON.stringify(bs)));
+    else if (b.dataset.act === "bs-del") confirmSheet("Bausatz löschen?", `„${bs.name}“ wird aus deiner Bibliothek entfernt. Pläne, in denen er schon steckt, bleiben, wie sie sind.`, "Löschen", () => {
+      lib = lib.filter((x) => x.id !== bs.id); saveLib(); if (placing && placing.id === bs.id) setPlacing(null); renderLib(); toast("Bausatz gelöscht.");
+    });
+  });
+
+  // ---- Bausatz editor sheet ----
+  function newDraft(kind) {
+    const data = kind === "kombi" ? { items: [{ area: "nat", what: "", minutes: 10 }], asOne: false, code: "" }
+      : kind === "week" ? { days: emptyDays() } : { name: "", weeks: 4, days: emptyDays() };
+    return { kind, name: "", note: "", tags: [], data };
+  }
+  function openBsEditor(d) {
+    draft = d;
+    $("bsSheetTitle").textContent = d.id ? "Bausatz bearbeiten" : "Neuer Bausatz";
+    $("bsName").value = d.name || ""; $("bsNote").value = d.note || "";
+    setMsg($("bsMsg"), "");
+    renderDraftHead(); renderDraftBody();
+    openSheet("bsSheet");
+  }
+  function renderDraftHead() {
+    document.querySelectorAll("#bsKindRow [data-bskind]").forEach((b) => {
+      b.classList.toggle("active", b.dataset.bskind === draft.kind); b.setAttribute("aria-pressed", String(b.dataset.bskind === draft.kind));
+      b.disabled = !!draft.id && b.dataset.bskind !== draft.kind; // an existing Bausatz keeps its kind
+    });
+    $("bsKindHint").textContent = BS_KIND_HINT[draft.kind];
+    $("bsTags").innerHTML = TAGS.map((t) => `<button type="button" class="pl-tag${draft.tags.includes(t) ? " active" : ""}" data-tag="${esc(t)}" aria-pressed="${draft.tags.includes(t)}">${esc(t)}</button>`).join("");
+  }
+  function renderDraftBody() {
+    if (!draft) return;
+    const d = draft.data, box = $("bsBody");
+    if (draft.kind === "kombi") {
+      box.innerHTML = `<h3>Übungen</h3>${d.items.map((it, i) => `<div class="bs-item" data-i="${i}">
+          <select data-k="area" aria-label="Bereich ${i + 1}">${AREAS.filter((a) => a.key !== "combo").map((a) => `<option value="${a.key}"${a.key === it.area ? " selected" : ""}>${esc(a.label)}</option>`).join("")}</select>
+          <select class="bs-what" data-k="what" aria-label="Übung ${i + 1}">${whatOptions(it.area).map(([v, t]) => `<option value="${esc(v)}"${v === it.what ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>
+          <input type="number" min="5" max="240" step="5" data-k="minutes" value="${it.minutes}" aria-label="Minuten ${i + 1}" />
+          <button type="button" class="pl-x" data-k="remove" aria-label="Übung ${i + 1} entfernen"${d.items.length < 2 ? " disabled" : ""}>×</button>
+        </div>`).join("")}
+        <button type="button" class="secondary" id="bsAddItemBtn">+ Übung</button>
+        <label class="inline-check" style="margin-top:12px;min-height:44px"><input type="checkbox" id="bsAsOne"${d.asOne ? " checked" : ""} /> Als ein Eintrag einsetzen (Kombi-Programm)</label>
+        <div id="bsCodeRow"${d.asOne ? "" : " hidden"}><label for="bsCode">Code des Kombi-Programms (optional)</label><input id="bsCode" maxlength="60" value="${esc(d.code || "")}" autocomplete="off" placeholder="z. B. kopfwach-…" /></div>
+        <p class="hint">Ohne Häkchen wird jede Übung ein eigener Eintrag am Tag. Mit Häkchen ein Kombi-Eintrag mit der Gesamtzeit; mit Code startet beim Kunden genau dieses Kombi-Programm.</p>`;
+    } else if (draft.kind === "week") {
+      box.innerHTML = `<h3>Woche</h3>${weekHtml("d:0", d.days, "Woche", false)}`;
+    } else {
+      const n = nVariants(d);
+      box.innerHTML = `<h3>Phase</h3><div class="pl-phase-fields">
+          <div><label for="bsPhName">Name der Phase</label><input id="bsPhName" maxlength="40" value="${esc(d.name || "")}" placeholder="z. B. Grundlage" /></div>
+          <div><label for="bsPhWeeks">Wochen (0 = ohne Ende)</label><input type="number" id="bsPhWeeks" min="0" max="104" value="${d.weeks}" /></div>
+          <div><label for="bsPhRot">Wochen im Wechsel</label><select id="bsPhRot">${[1, 2, 3, 4].map((k) => `<option value="${k}"${k === n ? " selected" : ""}>${k === 1 ? "keine" : VAR.slice(0, k).join("/")}</option>`).join("")}</select></div>
+        </div>
+        ${[...Array(n).keys()].map((v) => weekHtml(`d:${v}`, daysOfVariant(d, v), n > 1 ? `Woche ${VAR[v]}` : "Woche", false)).join("")}`;
+    }
+  }
+  $("bsKindRow").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-bskind]"); if (!b || !draft || draft.id || b.dataset.bskind === draft.kind) return;
+    const keep = { name: $("bsName").value, note: $("bsNote").value, tags: draft.tags };
+    draft = Object.assign(newDraft(b.dataset.bskind), keep);
+    renderDraftHead(); renderDraftBody();
+  });
+  $("bsTags").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-tag]"); if (!b || !draft) return;
+    const t = b.dataset.tag; draft.tags = draft.tags.includes(t) ? draft.tags.filter((x) => x !== t) : draft.tags.concat(t); renderDraftHead();
+  });
+  $("bsBody").addEventListener("change", (ev) => {
+    if (!draft) return;
+    const d = draft.data, el = ev.target;
+    const row = el.closest(".bs-item");
+    if (row) {
+      const it = d.items[+row.dataset.i];
+      if (el.dataset.k === "area") { it.area = el.value; it.what = ""; renderDraftBody(); }
+      else if (el.dataset.k === "what") it.what = el.value;
+      else if (el.dataset.k === "minutes") it.minutes = Math.max(5, Math.min(240, Math.round(Number(el.value) || 5)));
+      return;
+    }
+    if (el.id === "bsAsOne") { d.asOne = el.checked; $("bsCodeRow").hidden = !el.checked; }
+    else if (el.id === "bsCode") d.code = el.value.trim();
+    else if (el.id === "bsPhName") d.name = el.value.trim();
+    else if (el.id === "bsPhWeeks") d.weeks = Math.max(0, Math.min(104, Math.round(Number(el.value) || 0)));
+    else if (el.id === "bsPhRot") { setVariants(d, +el.value); renderDraftBody(); }
+  });
+  $("bsBody").addEventListener("input", (ev) => { if (draft && ev.target.id === "bsCode") draft.data.code = ev.target.value.trim(); if (draft && ev.target.id === "bsPhName") draft.data.name = ev.target.value.trim(); });
+  $("bsBody").addEventListener("click", (ev) => {
+    if (!draft) return;
+    if (ev.target.id === "bsAddItemBtn") { const last = draft.data.items[draft.data.items.length - 1]; draft.data.items.push({ area: last ? last.area : "nat", what: "", minutes: 10 }); renderDraftBody(); return; }
+    const rm = ev.target.closest('[data-k="remove"]');
+    if (rm) { const i = +rm.closest(".bs-item").dataset.i; if (draft.data.items.length > 1) { draft.data.items.splice(i, 1); renderDraftBody(); } return; }
+    dayActions(ev);
+  });
+  function setVariants(ph, n) {
+    const cur = nVariants(ph);
+    if (n === cur) return;
+    if (n === 1) { delete ph.alt; return; }
+    const alt = (ph.alt || []).slice(0, n - 1);
+    while (alt.length < n - 1) alt.push(copyDays(ph.days)); // a new week B starts as a copy of A
+    ph.alt = alt;
+  }
+  $("bsSaveBtn").addEventListener("click", () => {
+    if (!draft) return;
+    const name = $("bsName").value.trim();
+    if (!name) { setMsg($("bsMsg"), "Bitte einen Namen eingeben."); $("bsName").focus(); return; }
+    const d = draft.data;
+    if (draft.kind === "kombi" && !d.items.length) { setMsg($("bsMsg"), "Mindestens eine Übung."); return; }
+    if (draft.kind !== "kombi" && weekCount(d.days) + (d.alt || []).reduce((s, a) => s + weekCount(a), 0) === 0) { setMsg($("bsMsg"), "Mindestens ein Training in der Woche eintragen (+ an einem Tag)."); return; }
+    const now = new Date().toISOString();
+    const data = draft.kind === "kombi" ? { items: d.items.map((it) => ({ area: it.area, what: it.what || "", minutes: it.minutes })), asOne: !!d.asOne, code: d.asOne ? (d.code || "") : "" }
+      : draft.kind === "week" ? { days: cleanDays(d.days) }
+      : Object.assign({ name: d.name || name, weeks: d.weeks, days: cleanDays(d.days) }, d.alt && d.alt.length ? { alt: d.alt.map(cleanDays) } : {});
+    const old = draft.id ? lib.find((x) => x.id === draft.id) : null;
+    const rec = { id: old ? old.id : uid(), kind: draft.kind, name, note: $("bsNote").value.trim(), tags: draft.tags.slice(),
+      version: old ? (old.version || 1) + 1 : 1, used: old ? old.used || 0 : 0, createdAt: old ? old.createdAt : now, updatedAt: now, data };
+    if (old) lib[lib.indexOf(old)] = rec; else lib.push(rec);
+    saveLib(); closeSheet("bsSheet"); draft = null; renderLib();
+    toast(old ? `„${name}“ gespeichert (Version ${rec.version}).` : `Bausatz „${name}“ angelegt.`);
+  });
+  $("bsNewBtn").addEventListener("click", () => openBsEditor(newDraft(libKind === "all" ? "kombi" : libKind)));
+
+  // ---- placing a Bausatz: drag & drop (mouse) or "Einsetzen" + tap (touch) ----
+  function setPlacing(bs) {
+    placing = bs ? { id: bs.id } : null;
+    document.body.classList.remove("placing-day", "placing-week", "placing-phase");
+    if (bs) document.body.classList.add(bs.kind === "kombi" ? "placing-day" : bs.kind === "week" ? "placing-week" : "placing-phase");
+    $("plPlacing").hidden = !bs;
+    if (bs) $("plPlacingText").textContent = `„${bs.name}“ einsetzen: ${bs.kind === "kombi" ? "tippe auf einen Tag." : bs.kind === "week" ? "tippe auf eine Woche, sie wird ersetzt." : "tippe auf „Phase hier anfügen“."}`;
+    $("plAddPhaseBtn").textContent = bs && bs.kind === "phase" ? `Phase hier anfügen: ${bs.name}` : "+ Leere Phase";
+    renderLib();
+    if (bs && window.matchMedia("(max-width: 1199px)").matches) { const t = bs.kind === "phase" ? $("plPhaseEnd") : $("plPhases"); try { t.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) {} }
+  }
+  $("plPlacingCancel").addEventListener("click", () => setPlacing(null));
+  const DROP_FOR = { kombi: "day", week: "week", phase: "phase-end" };
+  function placeBs(bs, target) {
+    const p = P(); if (!p || !bs) return false;
+    const kind = target.dataset.drop;
+    if (kind !== DROP_FOR[bs.kind]) return false;
+    if (bs.kind === "phase") {
+      mutate((pl) => {
+        const ph = { id: uid(), name: (bs.data.name || bs.name).slice(0, 40), weeks: bs.data.weeks || 0, days: copyDays(bs.data.days) };
+        if (bs.data.alt && bs.data.alt.length) ph.alt = bs.data.alt.map(copyDays);
+        pl.phases.push(ph);
+      });
+      toast(`Phase „${bs.name}“ angefügt.`);
+    } else if (bs.kind === "week") {
+      const ref = target.dataset.ref;
+      editDays(ref, (days) => { const nd = copyDays(bs.data.days); for (let i = 0; i < 7; i++) days[i] = nd[i]; });
+      toast(`Woche durch „${bs.name}“ ersetzt. Rückgängig ist möglich.`);
+    } else {
+      const ref = target.dataset.ref, di = +target.dataset.di;
+      const items = bs.data.items || [];
+      editDays(ref, (days) => {
+        if (bs.data.asOne) days[di].push(cleanEntry({ id: uid(), area: "combo", what: "", code: bs.data.code || "", minutes: items.reduce((s, x) => s + (Number(x.minutes) || 0), 0) }));
+        else items.forEach((it) => days[di].push(cleanEntry({ id: uid(), area: it.area, what: it.what, minutes: it.minutes })));
+      });
+      toast(`„${bs.name}“ am ${WDL[di]} eingesetzt.`);
+    }
+    bs.used = (bs.used || 0) + 1; saveLib();
+    setPlacing(null);
+    return true;
+  }
+  // tap-to-place: a capture listener so the tap doesn't also open an entry
+  $("plPlan").addEventListener("click", (ev) => {
+    if (!placing) return;
+    const bs = lib.find((x) => x.id === placing.id); if (!bs) { setPlacing(null); return; }
+    const t = ev.target.closest(`[data-drop="${DROP_FOR[bs.kind]}"]`);
+    if (!t || ev.target.closest("#plPlacing")) return;
+    ev.preventDefault(); ev.stopPropagation();
+    placeBs(bs, t);
+  }, true);
+  // drag & drop
+  let dragId = null;
+  $("bsList").addEventListener("dragstart", (ev) => {
+    const c = ev.target.closest && ev.target.closest(".bs-card"); if (!c) return;
+    dragId = c.dataset.bs;
+    try { ev.dataTransfer.setData("text/plain", "fwmc-bs:" + dragId); ev.dataTransfer.effectAllowed = "copy"; } catch (e) {}
+    const bs = lib.find((x) => x.id === dragId);
+    if (bs) document.body.classList.add(bs.kind === "kombi" ? "placing-day" : bs.kind === "week" ? "placing-week" : "placing-phase");
+  });
+  $("bsList").addEventListener("dragend", () => { dragId = null; if (!placing) document.body.classList.remove("placing-day", "placing-week", "placing-phase"); clearDropOver(); });
+  function clearDropOver() { document.querySelectorAll(".drop-over").forEach((x) => x.classList.remove("drop-over")); }
+  function dragTarget(ev) {
+    const bs = dragId && lib.find((x) => x.id === dragId); if (!bs) return null;
+    if (bs.kind === "phase") return ev.target.closest("#plPlan") ? $("plPhaseEnd") : null; // a phase drops anywhere on the plan
+    return ev.target.closest(`[data-drop="${DROP_FOR[bs.kind]}"]`);
+  }
+  $("plPlan").addEventListener("dragover", (ev) => {
+    const t = dragTarget(ev); if (!t || !P()) return;
+    ev.preventDefault(); try { ev.dataTransfer.dropEffect = "copy"; } catch (e) {}
+    if (!t.classList.contains("drop-over")) { clearDropOver(); t.classList.add("drop-over"); }
+  });
+  $("plPlan").addEventListener("dragleave", (ev) => { if (!ev.relatedTarget || !$("plPlan").contains(ev.relatedTarget)) clearDropOver(); });
+  $("plPlan").addEventListener("drop", (ev) => {
+    const t = dragTarget(ev); clearDropOver(); if (!t) return;
+    ev.preventDefault();
+    const bs = lib.find((x) => x.id === dragId); dragId = null;
+    document.body.classList.remove("placing-day", "placing-week", "placing-phase");
+    placeBs(bs, t);
+  });
+
+  // ---- plan editor (kp18) ----
+  function dayActions(ev) {
+    const b = ev.target.closest("[data-act]"); if (!b) return false;
+    const act = b.dataset.act, ref = b.dataset.ref, di = +b.dataset.di;
+    if (act === "entry") openEntry(ref, di, b.dataset.id);
+    else if (act === "add") openEntry(ref, di, null);
+    else if (act === "daymenu") openDayMenu(ref, di);
+    else return false;
+    return true;
+  }
+  function phaseHtml(p, r) {
+    const ph = r.ph, pi = r.i, n = nVariants(ph);
+    const last = pi === p.phases.length - 1;
+    const range = r.open ? (last ? `ab ${deLong(r.from)}, ohne festes Ende` : `ab ${deLong(r.from)}: bitte Wochen eintragen (nur die letzte Phase darf ohne Ende laufen)`) : `${deLong(r.from)} bis ${deLong(r.to)}`;
+    const comps = p.comps.filter((c) => c.date >= r.from && (r.open || c.date <= r.to));
+    return `<div class="pl-phase${pi % 2 ? " tone1" : ""}${ph.noScore ? " no-score" : ""}" id="plPhase${pi}" data-pi="${pi}">
+      <div class="pl-phase-fields">
+        <div><label for="phName${pi}">Phase ${pi + 1}</label><input id="phName${pi}" data-pf="name" data-pi="${pi}" maxlength="40" value="${esc(ph.name)}" /></div>
+        <div><label for="phWeeks${pi}">Wochen</label><input type="number" id="phWeeks${pi}" data-pf="weeks" data-pi="${pi}" min="0" max="104" value="${ph.weeks}" /></div>
+        <div><label for="phRot${pi}">Wochen im Wechsel</label><select id="phRot${pi}" data-pf="rot" data-pi="${pi}">${[1, 2, 3, 4].map((k) => `<option value="${k}"${k === n ? " selected" : ""}>${k === 1 ? "keine" : VAR.slice(0, k).join("/")}</option>`).join("")}</select></div>
+      </div>
+      <label class="inline-check" style="min-height:44px;margin-top:4px"><input type="checkbox" data-pf="noScore" data-pi="${pi}"${ph.noScore ? " checked" : ""} /> Aus der Wertung nehmen (zählt beim Kunden nicht fürs Wochenziel)</label>
+      <div class="hint pl-phase-meta">${esc(range)}</div>
+      ${comps.map((c) => `<div class="pl-rec"><span class="pl-diamond">◆</span> ${esc(c.title)} am ${deLong(c.date)} in dieser Phase. ${REC_TEXT}</div>`).join("")}
+      <div class="pl-btnrow">
+        <button type="button" class="secondary" data-act="ph-up" data-pi="${pi}"${pi === 0 ? " disabled" : ""} aria-label="Phase ${pi + 1} nach oben">↑</button>
+        <button type="button" class="secondary" data-act="ph-down" data-pi="${pi}"${last ? " disabled" : ""} aria-label="Phase ${pi + 1} nach unten">↓</button>
+        <button type="button" class="secondary" data-act="ph-save" data-pi="${pi}">Phase als Bausatz speichern</button>
+        <button type="button" class="secondary" data-act="ph-del" data-pi="${pi}">Phase entfernen</button>
+      </div>
+      ${[...Array(n).keys()].map((v) => weekHtml(`p:${pi}:${v}`, daysOfVariant(ph, v), n > 1 ? `Woche ${VAR[v]}` : "Jede Woche", true)).join("")}
+    </div>`;
+  }
+  function renderPlan() {
+    const p = P();
+    $("plNoClient").hidden = !!p; $("plEditor").hidden = !p;
+    if (!p) return;
+    $("plStart").value = p.startDate;
+    const end = planEnd(p);
+    $("plStartHint").textContent = p.phases.length ? `Beginnt am Montag, ${deLong(p.startDate)}${end ? `, endet am ${deLong(end)}` : ", die letzte Phase läuft ohne Ende"}.` : `Beginnt am Montag, ${deLong(p.startDate)}. Noch keine Phase: zieh eine Phasen-Vorlage hierher oder leg eine leere an.`;
+    $("plUndoBtn").disabled = !undoStack.length;
+    $("plPhases").innerHTML = phaseRanges(p).map((r) => phaseHtml(p, r)).join("");
+    $("plComps").innerHTML = p.comps.length ? p.comps.slice().sort((a, b) => a.date.localeCompare(b.date)).map((c) => {
+      const at = phaseAt(p, c.date);
+      return `<div class="pl-comp"><div><span class="pl-diamond">◆</span> <strong>${deLong(c.date)}</strong> · ${esc(c.title)}${at ? ` <span class="hint">(${esc(at.r.ph.name)}, Woche ${at.weekInPhase})</span>` : ""}<div class="hint" style="margin-top:2px">${REC_TEXT}</div></div>
+        <button type="button" class="secondary" data-act="comp-del" data-id="${esc(c.id)}">Entfernen</button></div>`;
+    }).join("") : `<p class="empty-hint" style="margin-top:0">Noch kein Wettkampf eingetragen.</p>`;
+    if (document.activeElement !== $("plName")) $("plName").value = p.name || "";
+    if (document.activeElement !== $("plCode")) $("plCode").value = p.code || "";
+    renderIssueState(); renderJson(); renderVersions();
+  }
+  $("plPlan").addEventListener("click", (ev) => {
+    if (dayActions(ev)) return;
+    const b = ev.target.closest("[data-act]"); if (!b || !P()) return;
+    const act = b.dataset.act, pi = +b.dataset.pi;
+    if (act === "ph-up" && pi > 0) mutate((p) => { [p.phases[pi - 1], p.phases[pi]] = [p.phases[pi], p.phases[pi - 1]]; });
+    else if (act === "ph-down") mutate((p) => { if (pi < p.phases.length - 1) [p.phases[pi + 1], p.phases[pi]] = [p.phases[pi], p.phases[pi + 1]]; });
+    else if (act === "ph-del") { const name = P().phases[pi].name; mutate((p) => { p.phases.splice(pi, 1); }); toast(`Phase „${name}“ entfernt. Rückgängig ist möglich.`); }
+    else if (act === "ph-save") {
+      const ph = P().phases[pi];
+      openBsEditor({ kind: "phase", name: ph.name, note: "", tags: [], data: Object.assign({ name: ph.name, weeks: ph.weeks, days: copyDays(ph.days) }, ph.alt ? { alt: ph.alt.map(copyDays) } : {}) });
+    } else if (act === "wk-save") {
+      openBsEditor({ kind: "week", name: "", note: "", tags: [], data: { days: copyDays(daysOf(b.dataset.ref)) } });
+    } else if (act === "comp-del") mutate((p) => { p.comps = p.comps.filter((c) => c.id !== b.dataset.id); });
+  });
+  $("plPhases").addEventListener("change", (ev) => {
+    const el = ev.target; if (!el.dataset.pf) return;
+    const pi = +el.dataset.pi;
+    mutate((p) => {
+      const ph = p.phases[pi]; if (!ph) return;
+      if (el.dataset.pf === "name") ph.name = el.value.trim().slice(0, 40) || "Phase";
+      else if (el.dataset.pf === "weeks") ph.weeks = Math.max(0, Math.min(104, Math.round(Number(el.value) || 0)));
+      else if (el.dataset.pf === "rot") setVariants(ph, +el.value);
+      else if (el.dataset.pf === "noScore") { if (el.checked) ph.noScore = true; else delete ph.noScore; }
+    });
+  });
+  $("plAddPhaseBtn").addEventListener("click", () => {
+    if (placing) return; // handled by the tap-to-place listener
+    mutate((p) => { p.phases.push({ id: uid(), name: p.phases.length ? `Phase ${p.phases.length + 1}` : "Grundlage", weeks: 4, days: emptyDays() }); });
+  });
+  $("plStart").addEventListener("change", () => { const v = $("plStart").value; if (isD(v)) mutate((p) => { p.startDate = mondayOf(v); }); else renderPlan(); });
+  $("plUndoBtn").addEventListener("click", undo);
+  $("plCompAddBtn").addEventListener("click", () => {
+    const date = $("plCompDate").value; if (!isD(date)) { toast("Bitte ein Datum für den Wettkampf wählen."); return; }
+    const title = $("plCompTitle").value.trim() || "Wettkampf";
+    mutate((p) => { p.comps.push({ id: uid(), date, title: title.slice(0, 40) }); });
+    $("plCompDate").value = ""; $("plCompTitle").value = "";
+    toast(`Wettkampf am ${deLong(date)} eingetragen. ${REC_TEXT}`);
+  });
+  $("plName").addEventListener("change", () => mutate((p) => { p.name = $("plName").value.trim().slice(0, 60); }, { quiet: true }));
+  $("plCode").addEventListener("change", () => mutate((p) => { p.code = normCode($("plCode").value); $("plCode").value = p.code; renderIssueState(); renderJson(); }, { quiet: true }));
+  const normCode = (v) => String(v || "").trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9._-]/g, "").slice(0, 60);
+  $("plCodeRandomBtn").addEventListener("click", () => {
+    const p = P(); if (!p) return;
+    const prefix = normCode($("plCode").value) || normCode(p.kuerzel).replace(/[._]/g, "-");
+    const code = (prefix ? prefix + "-" : "") + randomCodeSuffix(8);
+    mutate((pl) => { pl.code = code; }, { quiet: true });
+    $("plCode").value = code; renderIssueState(); renderJson();
+  });
+
+  // ---- issue as plan code (kp21: same code again = version + 1) ----
+  function serverVersion(code) {
+    const s = (typeof programsCache !== "undefined" ? programsCache : []).find((x) => x.code === code);
+    if (!s) return { exists: false, v: 0 };
+    const c = s.config || {};
+    return { exists: true, other: c.type !== "training-plan", v: c.type === "training-plan" ? Number(c.version) || 1 : 0 };
+  }
+  function nextVersion(p, code) {
+    const local = p.issued.filter((x) => x.code === code).reduce((m, x) => Math.max(m, x.version || 0), 0);
+    return Math.max(local, serverVersion(code).v) + 1;
+  }
+  function buildDef(p, version) {
+    return { type: "training-plan", name: p.name || `Trainingsplan ${p.kuerzel}`, version,
+      plan: { startDate: p.startDate, phases: p.phases.map((ph) => Object.assign({ id: ph.id, name: ph.name, weeks: ph.weeks, days: cleanDays(ph.days) },
+        ph.alt && ph.alt.length ? { alt: ph.alt.map(cleanDays) } : {}, ph.noScore ? { noScore: true } : {})) } };
+  }
+  function issueProblem(p) {
+    if (!p.phases.length) return "Der Plan hat noch keine Phase.";
+    if (!p.phases.some((ph) => [ph.days].concat(ph.alt || []).some((d) => weekCount(d) > 0))) return "Der Plan hat noch kein Training.";
+    const openIdx = p.phases.findIndex((ph) => !ph.weeks);
+    if (openIdx >= 0 && openIdx < p.phases.length - 1) return `Phase ${openIdx + 1} („${p.phases[openIdx].name}“) braucht eine Wochenzahl; nur die letzte Phase darf ohne Ende laufen.`;
+    return "";
+  }
+  function renderIssueState() {
+    const p = P(); if (!p) return;
+    const mine = p.issued.filter((x) => x.code === p.code);
+    const last = mine[mine.length - 1];
+    $("plIssueState").textContent = !p.code ? "Noch kein Plan-Code. Tipp auf „Zufällig ergänzen“ oder gib einen ein."
+      : last ? `Version ${last.version}, ${last.copied ? "als JSON kopiert" : "ausgegeben"} am ${stampLong(last.at)}. Nochmal ausgeben = Version ${nextVersion(p, p.code)}; dein Kunde bekommt sie beim nächsten Öffnen der App angeboten.`
+      : `Code „${p.code}“ noch nicht ausgegeben. Erste Ausgabe = Version ${nextVersion(p, p.code)}.`;
+  }
+  function renderJson() {
+    const p = P(); if (!p) return;
+    $("plJson").value = JSON.stringify(buildDef(p, p.code ? nextVersion(p, p.code) : 1), null, 2);
+  }
+  $("plIssueBtn").addEventListener("click", async () => {
+    const p = P(); const msg = $("plIssueMsg"); if (!p) return;
+    p.name = $("plName").value.trim().slice(0, 60);
+    const code = normCode($("plCode").value);
+    $("plCode").value = code;
+    const prob = issueProblem(p);
+    if (prob) { setMsg(msg, prob); return; }
+    if (!code) { setMsg(msg, "Bitte einen Plan-Code eingeben oder „Zufällig ergänzen“ tippen."); $("plCode").focus(); return; }
+    const sv = serverVersion(code);
+    if (sv.other) { setMsg(msg, `Der Code „${code}“ ist schon für ein anderes Training vergeben. Bitte einen anderen wählen.`); return; }
+    const version = nextVersion(p, code);
+    const def = buildDef(p, version);
+    $("plJson").value = JSON.stringify(def, null, 2);
+    const at = new Date().toISOString();
+    const btn = $("plIssueBtn");
+    if (!token) {
+      mutate((pl) => { pl.code = code; pl.issued.push({ code, version, at, copied: true }); }, { quiet: true });
+      addVersion(`Version ${version} als JSON`);
+      $("plJsonDetails").open = true;
+      setMsg(msg, `Ohne Admin-Token nicht auf dem Server gespeichert. Das JSON (Version ${version}) steht unten zum Kopieren bereit.`, true);
+      renderPlan(); return;
+    }
+    btn.disabled = true; btn.textContent = "Wird ausgegeben …";
+    try {
+      await api("/admin/program", { method: "POST", body: { code, config: def, active: true } });
+      mutate((pl) => { pl.code = code; pl.issued.push({ code, version, at }); }, { quiet: true });
+      addVersion(`Ausgegeben, Version ${version}`);
+      api("/admin/client-history", { method: "POST", body: { clientCode: p.kuerzel, programCode: code, note: `Trainingsplan Version ${version}` } }).catch(() => {});
+      if (typeof loadPrograms === "function") loadPrograms().catch(() => {});
+      setMsg(msg, version === 1 ? `Ausgegeben: Version 1. Dein Kunde gibt den Code „${code}“ in der App ein und sieht „Plan von deinem Trainer übernehmen?“.` : `Version ${version} ausgegeben. Die App deines Kunden bietet die neue Fassung beim nächsten Öffnen an.`, true);
+    } catch (e) {
+      $("plJsonDetails").open = true;
+      setMsg(msg, "Nicht gespeichert (" + e.message + "). Das JSON steht unten zum Kopieren bereit.");
+    } finally { btn.disabled = false; btn.textContent = "Als Plan-Code ausgeben"; renderPlan(); }
+  });
+  $("plJsonCopyBtn").addEventListener("click", async () => {
+    const ta = $("plJson");
+    try { await navigator.clipboard.writeText(ta.value); toast("JSON kopiert."); }
+    catch (e) { ta.removeAttribute("readonly"); ta.select(); try { document.execCommand("copy"); toast("JSON kopiert."); } catch (e2) { toast("Bitte das markierte JSON selbst kopieren."); } ta.setAttribute("readonly", ""); }
+  });
+  $("plJsonToCodesBtn").addEventListener("click", () => {
+    const p = P(); if (!p) return;
+    $("pCode").value = normCode($("plCode").value);
+    $("pConfig").value = $("plJson").value;
+    builderUsable = false; document.getElementById("builderFallbackHint").hidden = false; document.getElementById("tabBuilderBtn").disabled = true;
+    switchTab("json");
+    $("pConfig").scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
+  // ---- Stände (kp20: versions per save) ----
+  function addVersion(label) {
+    const p = P(); if (!p) return;
+    const list = versions[cur] || (versions[cur] = []);
+    const snap = JSON.parse(JSON.stringify(p)); delete snap.issued;
+    list.push({ at: new Date().toISOString(), label: label || "", data: snap });
+    while (list.length > 30) list.shift();
+    wj(K_VERS, versions); renderVersions();
+  }
+  function renderVersions() {
+    const list = (versions[cur] || []).slice().reverse();
+    $("plVersionSelect").innerHTML = list.length ? list.map((v, i) => `<option value="${list.length - 1 - i}">Stand ${stamp(v.at)}${v.label ? " · " + esc(v.label) : ""}</option>`).join("") : `<option value="">Noch kein gespeicherter Stand</option>`;
+    $("plRestoreBtn").disabled = !list.length;
+  }
+  $("plSaveVersionBtn").addEventListener("click", () => { addVersion(""); toast("Stand gespeichert."); });
+  $("plRestoreBtn").addEventListener("click", () => {
+    const i = $("plVersionSelect").value; const v = (versions[cur] || [])[+i]; if (i === "" || !v) return;
+    mutate((p) => { const keep = p.issued; Object.keys(p).forEach((k) => delete p[k]); Object.assign(p, normPlan(JSON.parse(JSON.stringify(v.data)), cur)); p.issued = keep; });
+    toast(`Stand ${stamp(v.at)} zurückgeholt. Rückgängig ist möglich.`);
+  });
+
+  // ---- clients ----
+  function renderClients() {
+    const keys = Object.keys(plans).sort((a, b) => a.localeCompare(b, "de"));
+    $("plClientSelect").innerHTML = keys.length ? keys.map((k) => `<option value="${esc(k)}"${k === cur ? " selected" : ""}>${esc(k)}${plans[k].group ? " (Gruppe)" : ""}</option>`).join("") : `<option value="">Noch kein Kunde</option>`;
+    $("plClientSelect").disabled = !keys.length;
+  }
+  function selectClient(k) {
+    if (!plans[k]) return;
+    cur = k; undoStack = []; wj(K_CUR, cur);
+    if (placing) setPlacing(null);
+    setMsg($("plIssueMsg"), "");
+    renderAll();
+  }
+  $("plClientSelect").addEventListener("change", () => selectClient($("plClientSelect").value));
+  $("plNewClientBtn").addEventListener("click", () => {
+    const raw = $("plNewKuerzel").value.trim().toUpperCase().replace(/\s+/g, "-");
+    const msg = $("plClientMsg");
+    if (!raw) { setMsg(msg, "Bitte ein Kürzel eingeben, z. B. TS-07."); return; }
+    if (!/^[A-Z0-9ÄÖÜ][A-Z0-9ÄÖÜ._-]{0,11}$/.test(raw)) { setMsg(msg, "Kürzel: bis 12 Zeichen, nur Buchstaben, Ziffern, Punkt oder Bindestrich."); return; }
+    if (plans[raw]) { setMsg(msg, `„${raw}“ gibt es schon, es ist jetzt ausgewählt.`); selectClient(raw); return; }
+    plans[raw] = newPlan(raw, $("plNewGroup").checked); cur = raw; savePlans();
+    $("plNewKuerzel").value = ""; $("plNewGroup").checked = false;
+    setMsg(msg, `${plans[raw].group ? "Gruppe" : "Kunde"} „${raw}“ angelegt.`, true);
+    selectClient(raw);
+  });
+  $("plDeleteClientBtn").addEventListener("click", () => {
+    const p = P(); if (!p) return;
+    confirmSheet("Kunden-Plan löschen?", `Der Plan von „${p.kuerzel}“ und seine gespeicherten Stände werden aus diesem Browser gelöscht. Ein schon ausgegebener Plan-Code bleibt beim Kunden.`, "Löschen", () => {
+      delete plans[cur]; delete versions[cur]; wj(K_VERS, versions);
+      cur = Object.keys(plans).sort()[0] || ""; undoStack = []; savePlans(); renderAll(); toast("Kunden-Plan gelöscht.");
+    });
+  });
+
+  // ---- file backup (kp20) ----
+  $("plExportBtn").addEventListener("click", () => {
+    const data = { app: "fwmc-trainer-dashboard", format: 1, exportedAt: new Date().toISOString(), bausaetze: lib, plans, versions };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = `fwmc-trainer-dashboard-${todayStr()}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    toast("Datei gespeichert.");
+  });
+  $("plImportBtn").addEventListener("click", () => $("plImportFile").click());
+  $("plImportFile").addEventListener("change", async () => {
+    const f = $("plImportFile").files[0]; $("plImportFile").value = "";
+    if (!f) return;
+    let data;
+    try { data = JSON.parse(await f.text()); } catch (e) { toast("Diese Datei lässt sich nicht lesen."); return; }
+    if (!data || data.app !== "fwmc-trainer-dashboard") { toast("Das ist keine Sicherung des Trainer-Dashboards."); return; }
+    const inLib = Array.isArray(data.bausaetze) ? data.bausaetze.filter((b) => b && b.id && BS_KINDS[b.kind] && b.data) : [];
+    const inPlans = data.plans && typeof data.plans === "object" ? data.plans : {};
+    const overlap = inLib.filter((b) => lib.some((x) => x.id === b.id)).length + Object.keys(inPlans).filter((k) => plans[k]).length;
+    const go = () => {
+      inLib.forEach((b) => { const i = lib.findIndex((x) => x.id === b.id); if (i >= 0) lib[i] = b; else lib.push(b); });
+      Object.keys(inPlans).forEach((k) => { plans[k] = normPlan(inPlans[k], k); });
+      if (data.versions && typeof data.versions === "object") Object.keys(data.versions).forEach((k) => {
+        const have = versions[k] || [], seen = new Set(have.map((v) => v.at));
+        versions[k] = have.concat((data.versions[k] || []).filter((v) => v && v.at && !seen.has(v.at))).sort((a, b) => a.at.localeCompare(b.at)).slice(-30);
+      });
+      saveLib(); wj(K_VERS, versions);
+      if (!plans[cur]) cur = Object.keys(plans).sort()[0] || "";
+      undoStack = []; savePlans(); renderAll();
+      toast(`Geladen: ${countLabel(inLib.length, "Bausatz", "Bausätze")}, ${countLabel(Object.keys(inPlans).length, "Kunden-Plan", "Kunden-Pläne")}.`);
+    };
+    if (overlap) confirmSheet("Aus Datei laden?", `${countLabel(overlap, "Eintrag gibt", "Einträge gibt")} es hier schon; sie werden durch die Fassung aus der Datei ersetzt. Alles andere bleibt.`, "Laden", go);
+    else go();
+  });
+
+  // ---- Jahresübersicht (kp19) ----
+  let tlShift = 0; // in months
+  function tlWindow() {
+    const t = new Date(); const s = new Date(t.getFullYear(), t.getMonth() - 1 + tlShift, 1);
+    const e = new Date(s.getFullYear(), s.getMonth() + 12, 1);
+    return { from: dStr(s), to: dStr(e), days: dDiff(dStr(s), dStr(e)), start: s };
+  }
+  function renderTimeline() {
+    const keys = Object.keys(plans).sort((a, b) => a.localeCompare(b, "de"));
+    $("tlEmpty").hidden = keys.length > 0;
+    const grid = $("tlGrid");
+    if (!keys.length) { grid.innerHTML = ""; return; }
+    const w = tlWindow(), pct = (d) => (dDiff(w.from, d) / w.days) * 100;
+    const months = [...Array(12).keys()].map((i) => { const d = new Date(w.start.getFullYear(), w.start.getMonth() + i, 1); const n = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); return { label: MONTHS[d.getMonth()].slice(0, 3) + (d.getMonth() === 0 ? " " + String(d.getFullYear()).slice(2) : ""), n }; });
+    const today = todayStr();
+    const todayLine = today >= w.from && today < w.to ? `<div class="tl-today" style="left:${pct(today)}%"></div>` : "";
+    let html = `<div class="tl-row tl-head"><div class="tl-label"><span class="hint" style="margin:0">Kunde · ab ${MONTHS[w.start.getMonth()].slice(0, 3)} ${w.start.getFullYear()}</span></div><div class="tl-track"><div class="tl-months">${months.map((m) => `<div class="tl-month" style="flex:${m.n}">${m.label}</div>`).join("")}</div>${todayLine}</div></div>`;
+    keys.forEach((k) => {
+      const p = plans[k];
+      const end = planEnd(p);
+      const weeksLeft = end && end >= today ? Math.ceil((dDiff(today, end) + 1) / 7) : null;
+      const ends = end && end < today ? "Plan ist beendet" : weeksLeft != null && weeksLeft <= 3 ? `Plan endet in ${countLabel(weeksLeft, "Woche", "Wochen")}` : "";
+      const bars = phaseRanges(p).map((r) => {
+        const to = r.open ? w.to : dAdd(r.to, 1);
+        if (to <= w.from || r.from >= w.to) return "";
+        const a = Math.max(0, pct(r.from)), b = Math.min(100, pct(to));
+        return `<button type="button" class="tl-bar${r.i % 2 ? " tone1" : ""}${r.open ? " open" : ""}${r.ph.noScore ? " no-score" : ""}" style="left:${a}%;width:${Math.max(0.8, b - a)}%" data-tl="${esc(k)}" data-pi="${r.i}" title="${esc(`${r.ph.name}: ${deLong(r.from)}${r.open ? ", ohne Ende" : " bis " + deLong(r.to)}${r.ph.noScore ? " (aus der Wertung)" : ""}`)}" aria-label="${esc(`${k}, ${r.ph.name} ab ${deLong(r.from)} öffnen`)}">${esc(r.ph.name)}</button>`;
+      }).join("");
+      const dia = p.comps.filter((c) => c.date >= w.from && c.date < w.to).map((c) => `<span class="tl-diamond" style="left:${pct(c.date)}%" title="${esc(`${c.title}, ${deLong(c.date)}`)}" role="img" aria-label="${esc(`Wettkampf ${c.title} am ${deLong(c.date)}`)}"></span>`).join("");
+      html += `<div class="tl-row"><div class="tl-label"><strong>${esc(k)}</strong>${p.group ? `<span class="hint">Gruppe</span>` : ""}${ends ? `<span class="tl-ends">${ends}</span>` : !p.phases.length ? `<span class="hint">noch leer</span>` : ""}</div><div class="tl-track">${bars}${dia}${todayLine}</div></div>`;
+    });
+    grid.innerHTML = html;
+  }
+  $("tlGrid").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-tl]"); if (!b) return;
+    selectClient(b.dataset.tl);
+    const el = $("plPhase" + b.dataset.pi);
+    (el || $("planPanel")).scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  $("tlPrevBtn").addEventListener("click", () => { tlShift -= 3; renderTimeline(); });
+  $("tlNextBtn").addEventListener("click", () => { tlShift += 3; renderTimeline(); });
+  $("tlTodayBtn").addEventListener("click", () => { tlShift = 0; renderTimeline(); });
+
+  // ---- So sieht es dein Kunde (kp22): a simplified Heute / Mein Plan ----
+  function renderPreview() {
+    const p = P(), box = $("pvPhone");
+    const compNext = p ? p.comps.slice().sort((a, b) => a.date.localeCompare(b.date)).find((c) => c.date >= todayStr()) || p.comps[0] : null;
+    const compBtn = document.querySelector('#pvWhenRow [data-when="comp"]');
+    compBtn.disabled = !compNext;
+    if (pvWhen === "comp" && !compNext) pvWhen = "now";
+    document.querySelectorAll("#pvWhenRow [data-when]").forEach((b) => { b.classList.toggle("active", b.dataset.when === pvWhen); b.setAttribute("aria-pressed", String(b.dataset.when === pvWhen)); });
+    const bar = `<div class="pv-bar"><img src="logo-full.png" alt="" /><span>FWMC<br />Online-Training</span></div>`;
+    const tabs = `<div class="pv-tabbar"><span class="on">Heute</span><span>Training</span><span>Fortschritt</span><span>Mehr</span></div>`;
+    if (!p) { box.innerHTML = `${bar}<div class="pv-scroll"><div class="pv-kicker">Heute</div><p class="pv-src">Noch kein Kunde ausgewählt.</p></div>${tabs}`; return; }
+    let date = todayStr() < p.startDate ? p.startDate : todayStr();
+    if (pvWhen === "plus3") date = dAdd(date, 21);
+    if (pvWhen === "comp" && compNext) date = compNext.date;
+    const monday = mondayOf(date), wd = (dParse(date).getDay() + 6) % 7;
+    const at = phaseAt(p, date);
+    const days = at ? daysOfVariant(at.r.ph, at.variant) : emptyDays();
+    const d = dParse(date);
+    const rec = compRec(p, monday) || (pvWhen === "comp" && compNext ? `Woche von „${compNext.title}“: ${REC_TEXT}` : "");
+    const item = (e) => `<div class="pv-item"><span class="pv-dot" style="background:${AREA[e.area].color}"></span><div>${e.special ? "★ " : ""}${esc(entryTitle(e))}<small>${esc([e.time ? e.time + " Uhr" : "", e.minutes + " Min."].filter(Boolean).join(" · "))}</small></div></div>`;
+    const last = p.issued.filter((x) => x.code === p.code).slice(-1)[0];
+    box.innerHTML = `${bar}<div class="pv-scroll">
+      <div class="pv-kicker">Heute</div>
+      <div class="pv-title">${WDL[wd]}, ${d.getDate()}. ${MONTHS[d.getMonth()]}</div>
+      ${rec ? `<div class="pv-note">${esc(rec)}</div>` : ""}
+      <div class="pv-week">${days.map((l, i) => `<div class="pv-wd${i === wd ? " on" : ""}"><span>${WD[i]}</span><span class="pv-ring${l.length ? " has" : ""}">${l.length || ""}</span><span>${dParse(dAdd(monday, i)).getDate()}.</span></div>`).join("")}</div>
+      <div class="pv-card"><div class="pv-card-k">Geplant für heute</div>${days[wd].length ? days[wd].map(item).join("") : `<div class="pv-src">Heute ist nichts geplant. Erholung gehört dazu.</div>`}</div>
+      <div class="pv-card"><div class="pv-card-k">Mein Plan</div>
+        ${at ? `<div style="font-weight:700;font-size:0.85rem">${esc(at.r.ph.name)}</div><div class="pv-src" style="margin-bottom:6px">Woche ${at.weekInPhase}${at.r.ph.weeks ? " von " + at.r.ph.weeks : ""}${nVariants(at.r.ph) > 1 ? ` · Woche ${VAR[at.variant]}` : ""}${at.r.ph.noScore ? " · zählt nicht fürs Wochenziel" : ""}</div>
+        ${days.map((l, i) => `<div class="pv-day"><strong>${WD[i]}</strong><div>${l.length ? l.map((e) => esc(`${entryTitle(e)} · ${e.minutes} Min.`)).join("<br />") : `<span class="pv-src">frei</span>`}</div></div>`).join("")}`
+        : `<div class="pv-src">${dDiff(p.startDate, date) < 0 ? "Der Plan beginnt später." : p.phases.length ? "Der Plan ist in dieser Woche schon zu Ende." : "Noch keine Phase im Plan."}</div>`}
+      </div>
+      <p class="pv-src">Plan von deinem Trainer (Code ${esc(p.code || "…")}, Fassung ${last ? last.version : 1}). Uhrzeiten, Tage und Pausen kannst du selbst anpassen.</p>
+    </div>${tabs}`;
+  }
+  $("pvWhenRow").addEventListener("click", (ev) => { const b = ev.target.closest("[data-when]"); if (!b || b.disabled) return; pvWhen = b.dataset.when; renderPreview(); });
+
+  function renderPlanSide() { renderPlan(); renderPreview(); renderTimeline(); renderLib(); }
+  function renderAll() { renderClients(); renderPlanSide(); }
+
+  // ---- local-only mode (no admin token): only the planning, JSON to copy ----
+  const gl = document.getElementById("gateLocalBtn");
+  if (gl) gl.addEventListener("click", () => {
+    document.body.classList.add("local-only");
+    $("localNote").hidden = false;
+    showApp();
+    renderAll();
+  });
+  document.getElementById("connectBtn").addEventListener("click", () => { document.body.classList.remove("local-only"); $("localNote").hidden = true; });
+  window.fwmcPlanRender = renderAll; // for tests / after a login
+  renderAll();
+})();
 </script>
 </body>
 </html>
