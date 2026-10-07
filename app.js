@@ -1024,7 +1024,7 @@
     baseColor = baseColor || "#16232a";
     const act = mvActiveSlot(slots);
     const P = { armLeft: [30, 30], armRight: [70, 30], legLeft: [34, 72], legRight: [66, 72] };
-    const ln = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${baseColor}" stroke-opacity=".3" stroke-width="3"/>`;
+    const ln = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${baseColor}" stroke-opacity=".35" stroke-width="4.5" stroke-linecap="round"/>`;
     let out = ln(30, 30, 70, 30) + ln(34, 72, 66, 72) + ln(50, 30, 50, 72);
     for (const k in P) {
       const [x, y] = P[k], on = act && act.key === k;
@@ -1033,7 +1033,7 @@
         out += `<line x1="${x}" y1="${y}" x2="${x + v[0] * 24}" y2="${y + v[1] * 24}" stroke="${FIG_HIGHLIGHT}" stroke-width="9" stroke-linecap="round"/>`;
       }
       out += on ? `<circle cx="${x}" cy="${y}" r="10" fill="${FIG_HIGHLIGHT}"/>`
-        : `<circle cx="${x}" cy="${y}" r="7" fill="none" stroke="${baseColor}" stroke-opacity=".45" stroke-width="3"/>`;
+        : `<circle cx="${x}" cy="${y}" r="9" fill="none" stroke="${baseColor}" stroke-opacity=".5" stroke-width="4"/>`;
     }
     return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">${out}</svg>`;
   }
@@ -7984,7 +7984,7 @@
   // stand still; after the last one a new field replaces the page. ----
   function mvRowsSetup(ms) {
     els.movementLane.className = "movement-lane rows";
-    els.movementLane.innerHTML = '<div class="mv-rows-view"></div>';
+    els.movementLane.innerHTML = `<div class="mv-rows-view${ms.layout === "zeilen" ? " wander" : ""}"></div>`;
     ms.rowEls = new Map();
     mvRowsLayout(ms);
   }
@@ -8015,7 +8015,7 @@
     e.className = "mv-row";
     e.style.gridTemplateColumns = `repeat(${ms.rowLen}, ${ms.cell}px)`;
     e.style.gap = ms.gap + "px";
-    const label = movementPrefs.showLabel && ms.cell >= 96;
+    const label = false; // rows: symbols only, the same on every screen size (legend on the ready screen)
     for (let c = 0; c < ms.rowLen; c++) {
       const idx = k * ms.rowLen + c, m = ms.sequence[idx];
       const d = document.createElement("div");

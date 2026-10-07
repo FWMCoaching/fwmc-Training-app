@@ -111,13 +111,13 @@ async def main():
         figur_svg = await pg.eval_on_selector(".movement-chip svg", "el => el.outerHTML")
         print("Figur style has a head circle:", "circle" in figur_svg and 'r="10"' in figur_svg)
 
-        await pg.click('[data-mv-figure="abstrakt"]'); await pg.wait_for_timeout(100)
+        await pg.click('[data-mv-figure="punkte"]'); await pg.wait_for_timeout(100)
         abstrakt_svg = await pg.eval_on_selector(".movement-chip svg", "el => el.outerHTML")
-        print("Abstrakt style is a different shape (grid of circles):", abstrakt_svg != figur_svg and abstrakt_svg.count("<circle") >= 4)
+        print("Punkte style is a different shape (four dots):", abstrakt_svg != figur_svg and abstrakt_svg.count("<circle") >= 4)
 
         await pg.click("#movementStartBtn"); await pg.wait_for_timeout(300)
         lane_svg = await pg.eval_on_selector(".movement-tile svg", "el => el.outerHTML")
-        print("lane reflects Abstrakt style too:", lane_svg.count("<circle") >= 4 and "polygon" in lane_svg)
+        print("lane reflects Punkte style too:", lane_svg.count("<circle") >= 4 and "#ff9110" in lane_svg.lower())
         await pg.click("#movementBackBtn"); await pg.wait_for_timeout(150)
 
         await pg.reload(); await pg.wait_for_timeout(400)
@@ -127,7 +127,7 @@ async def main():
         await pg.click("#movementStartCard"); await pg.wait_for_timeout(150)
         await pg.click("[data-mv-layout=band]")  # these checks cover the strip (Band); Zeilen/Feld: reaktion_anzeige_1007_test.py
         await pg.click('#movementReady .advanced summary'); await pg.wait_for_timeout(100)
-        print("Abstrakt choice persisted after reload:", "active" in (await pg.get_attribute('[data-mv-figure="abstrakt"]', "class") or ""))
+        print("Punkte choice persisted after reload:", "active" in (await pg.get_attribute('[data-mv-figure="punkte"]', "class") or ""))
 
         # ---- Laufrichtung: window mode now shows a couple of faded "done"
         # tiles behind the active one too (not just upcoming), and the whole

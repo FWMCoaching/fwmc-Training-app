@@ -21,7 +21,7 @@ ROWS_INFO = """() => {
   if (!v) return null;
   const st = document.querySelector('.movement-stage').getBoundingClientRect();
   const r = v.getBoundingClientRect(), bar = document.getElementById('movementPlayerBar').getBoundingClientRect();
-  const rows = [...v.querySelectorAll('.mv-row')].map(e => ({ y: e.getBoundingClientRect().top, op: +getComputedStyle(e).opacity, n: e.children.length }));
+  const rows = [...v.querySelectorAll('.mv-row')].map(e => ({ k: Math.floor(+e.firstElementChild.dataset.idx / e.children.length), y: e.getBoundingClientRect().top, op: +getComputedStyle(e).opacity, n: e.children.length }));
   const cell = v.querySelector('.mv-cell').getBoundingClientRect();
   return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, stageBottom: st.bottom, barBottom: bar.bottom,
            active: v.querySelectorAll('.mv-cell.active').length, activeIdx: +(v.querySelector('.mv-cell.active') || {dataset:{idx:-1}}).dataset.idx,
@@ -90,10 +90,11 @@ async def main():
         ctx, pg = await page()
         await pg.goto(BASE + "?bereich=movement"); await pg.wait_for_timeout(400)
         await pg.click("#movementStartCard"); await pg.wait_for_timeout(300)
-        for sym in ["felder", "punkte", "pfeil", "figur", "abstrakt"]:
+        for sym in ["felder", "punkte", "pfeil", "figur"]:
             await pg.click(f"[data-mv-figure={sym}]")
             n = await pg.evaluate("""() => [...document.querySelectorAll('#movementPicker .movement-chip')].map(c => c.querySelector('svg').innerHTML.toLowerCase().split('#ff9110').length - 1)""")
             check(f"symbol '{sym}': every picker chip shows exactly one highlighted part", len(n) == 8 and all(x >= 1 for x in n), n)
+        check("four symbol choices visible (Kreise only kept for old settings)", await pg.evaluate("[...document.querySelectorAll('[data-mv-figure]')].filter(e => e.offsetParent).length === 4"))
         await ctx.close()
 
         # ---- 4. players: Zeilen wander, Feld stands still, both stay clear of the bar ----
@@ -117,8 +118,11 @@ async def main():
                     # after row 1 (2nd row) started, the rows glide up continuously
                     await pg.wait_for_timeout(120)
                     c = await pg.evaluate(ROWS_INFO)
-                    ys_b = {round(r["y"]) for r in b2["rows"]}; ys_c = {round(r["y"]) for r in c["rows"]}
-                    check(f"[{tag}] rows glide up while you work (no jump)", min(r["y"] for r in c["rows"]) < min(r["y"] for r in b2["rows"]) and ys_b != ys_c, (sorted(ys_b), sorted(ys_c)))
+                    # follow one row (by its first cell index) between two frames
+                    def row_y(info, k): return next((r["y"] for r in info["rows"] if r.get("k") == k), None)
+                    k = (c["activeIdx"]) // rl
+                    y1 = row_y(b2, k); y2 = row_y(c, k)
+                    check(f"[{tag}] rows glide up while you work (no jump)", y1 is not None and y2 is not None and 0 < y1 - y2 < 60, (k, y1, y2))
                     check(f"[{tag}] next row visible (2+ rows shown, faded ahead)", sum(1 for r in c["rows"] if r["op"] > 0.3) >= 2)
                 else:
                     check(f"[{tag}] field stands still ({rl} rows)", sorted(round(r["y"]) for r in a["rows"]) == sorted(round(r["y"]) for r in b2["rows"]) and len(a["rows"]) == rl)

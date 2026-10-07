@@ -86,3 +86,9 @@ triangle/square; the new display stays marked as Test (`.test-look`) until
 Fabian has checked his Life-Kinetik licence (docs in STAND.md 07.10.).
 Open for Fabian: Trainer-Dashboard movement-plan codes cannot set
 layout/symbol yet (they play Band); live switch of Anzeige in the pause sheet.
+Same day, after the independent review: the player is `.player.calm-dk`
+(dark in dark mode; tiles #16262b, the symbols' #16232a ink is swapped to
+#cfe0e4 via CSS attribute selectors), rows never show text labels (same look
+on every size), "Wandernde Zeilen" fades the row coming up at the bottom
+(mask), short option labels, "Kreise" (abstrakt) hidden but still played for
+old presets/blocks.

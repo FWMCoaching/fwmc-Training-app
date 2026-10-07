@@ -72,7 +72,7 @@ async def main():
         # permanent part of the app ----
         print("welcome-text Test mention now shown:", await pg.get_attribute("#tipsWelcome .test-teaser", "hidden") is None)
         await pg.click('#natHome .section-tab[data-section="test"]'); await pg.wait_for_timeout(150)
-        print("'Mit Code freigeschaltet' badge visible on testHome:", await pg.is_visible(".test-unlock-badge"))
+        print("'Mit Code freigeschaltet' badge visible on testHome:", await pg.is_visible("#testHome .test-unlock-badge"))
         kicker_color = await pg.evaluate("() => getComputedStyle(document.querySelector('#testHome .hero-kicker')).color")
         print("testHome's accent colour is amber (#b45309), not the teal brand colour:", kicker_color == "rgb(180, 83, 9)")
 

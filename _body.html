@@ -304,7 +304,7 @@
     <div class="today-main-kicker">Tipp</div>
     <h2 class="today-main-title">So trainierst du richtig</h2>
     <p class="today-main-hint">Kurze Tipps f&uuml;r dein Training und wie du die App nutzt. Lohnt sich vor dem ersten Training.</p>
-    <button class="start-btn secondary" id="todayTipsOpenBtn" type="button">Tipps ansehen</button>
+    <button class="text-link" id="todayTipsOpenBtn" type="button">Tipps ansehen &rarr;</button>
     <button class="text-link small" id="todayTipsHideBtn" type="button">Ausblenden <span class="tips-card-where">(bleibt unter &bdquo;Mehr&ldquo;)</span></button>
   </section>
 
@@ -4181,9 +4181,9 @@
   <div class="group">
     <div class="group-label">Anzeige</div>
     <div class="choice-row" id="movementLayoutRow">
-      <button class="choice" data-mv-layout="zeilen">Wandernde Zeilen<small>n&auml;chste Zeile r&uuml;ckt nach</small></button>
-      <button class="choice" data-mv-layout="feld">Ganzes Feld<small>steht still</small></button>
-      <button class="choice" data-mv-layout="band">Band<small>einzelne Felder</small></button>
+      <button class="choice" data-mv-layout="zeilen">Zeilen<small>r&uuml;cken nach</small></button>
+      <button class="choice" data-mv-layout="feld">Feld<small>steht still</small></button>
+      <button class="choice" data-mv-layout="band">Band<small>einzeln</small></button>
     </div>
     <div class="group-help" id="movementLayoutHelp"></div>
   </div>
@@ -4191,20 +4191,20 @@
   <div class="group" id="movementRowLenGroup">
     <div class="group-label">Felder pro Zeile</div>
     <div class="choice-row" id="movementRowLenRow">
-      <button class="choice" data-mv-rowlen="3">3<small>3 &times; 3</small></button>
-      <button class="choice" data-mv-rowlen="4">4<small>4 &times; 4</small></button>
-      <button class="choice" data-mv-rowlen="5">5<small>5 &times; 5</small></button>
+      <button class="choice" data-mv-rowlen="3">3 Felder</button>
+      <button class="choice" data-mv-rowlen="4">4 Felder</button>
+      <button class="choice" data-mv-rowlen="5">5 Felder</button>
     </div>
   </div>
 
   <div class="group">
     <div class="group-label">Symbole</div>
     <div class="choice-row" id="movementFigureStyleRow">
-      <button class="choice" data-mv-figure="felder">Vier Felder<small>oben Arme, unten Beine</small></button>
-      <button class="choice" data-mv-figure="punkte">Vier Punkte<small>ein Strich zeigt die Richtung</small></button>
-      <button class="choice" data-mv-figure="pfeil">Nur Pfeil<small>im passenden Viertel</small></button>
+      <button class="choice" data-mv-figure="felder">Felder<small>oben Arme</small></button>
+      <button class="choice" data-mv-figure="punkte">Punkte<small>Strich zeigt</small></button>
+      <button class="choice" data-mv-figure="pfeil">Pfeil<small>im Viertel</small></button>
       <button class="choice" data-mv-figure="figur">Figur<small>Strichm&auml;nnchen</small></button>
-      <button class="choice" data-mv-figure="abstrakt">Kreise<small>vier Kreise</small></button>
+      <button class="choice" data-mv-figure="abstrakt" hidden>Kreise<small>vier Kreise</small></button>
     </div>
     <div class="group-help">Pfeil nach oben hei&szlig;t heben, Pfeil nach au&szlig;en hei&szlig;t strecken.</div>
   </div>
@@ -4833,7 +4833,7 @@
   </div>
 </div>
 
-<div class="player" id="movementPlayer" hidden>
+<div class="player calm-dk" id="movementPlayer" hidden>
   <div class="movement-stage">
     <div class="movement-lane" id="movementLane"></div>
     <div class="movement-finish-badge" id="movementFinishBadge" hidden>Fertig!</div>
