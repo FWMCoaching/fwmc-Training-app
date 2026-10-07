@@ -236,7 +236,9 @@ Test-Bereich exercises are exempt until promoted out of Test (then this
 applies as part of the promotion). Before calling it done, compare item
 by item with a complete sibling (e.g. a new Workout mode vs. Tabata).
 `tests/exercise_coverage_test.py` enforces 1-3 and the pause slider on
-the live DOM; if it fails, fix the app, never loosen the test.
+the live DOM (since 2026-10-07 for every area on the Training page, read
+from the hub, and every card of every area home; ready-made programmes are
+not Bausteine); if it fails, fix the app, never loosen the test.
 
 ## Detail notes (docs/notes/) - read only what your task touches
 

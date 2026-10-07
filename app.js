@@ -17812,6 +17812,7 @@
       if (!presets.length && !captures.length) return;
       const group = document.createElement("div");
       group.className = "combo-domain-group";
+      group.dataset.domain = domain; // tests/exercise_coverage_test.py: every area needs a Kombi group
       group.innerHTML = `<div class="combo-domain-title">${esc(COMBO_DOMAIN_TITLE[domain])}</div>`;
       const opts = document.createElement("div");
       opts.className = "combo-domain-options";
