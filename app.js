@@ -1364,7 +1364,7 @@
   // ---- Elements ----
   const $ = (id) => document.getElementById(id);
   const els = {
-    todayHome: $("todayHome"), planScreen: $("planScreen"), progressScreen: $("progressScreen"),
+    todayHome: $("todayHome"), planScreen: $("planScreen"), myPlanScreen: $("myPlanScreen"), progressScreen: $("progressScreen"),
     todayProgressCard: $("todayProgressCard"), todayProgressOpenBtn: $("todayProgressOpenBtn"), progressBackBtn: $("progressBackBtn"),
     progressGoalMinus: $("progressGoalMinus"), progressGoalPlus: $("progressGoalPlus"), progressGoalValue: $("progressGoalValue"),
     progressWeekBar: $("progressWeekBar"), progressWeekText: $("progressWeekText"), progressStats: $("progressStats"), progressEmpty: $("progressEmpty"), progressWeeks: $("progressWeeks"),
@@ -2195,7 +2195,7 @@
 
   els.trainingHub = $("trainingHub"); els.moreScreen = $("moreScreen");
   els.freeHome = $("freeHome"); els.freeReady = $("freeReady"); els.freeEdit = $("freeEdit"); els.freePlayer = $("freePlayer");
-  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
+  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -2464,27 +2464,51 @@
     }
     return { n, s, a };
   }
+  // Wochenziel folgt dem Plan (kp2, Fabian 06.10.): with a plan for that
+  // week the goal is what was planned (phases taken out of the rating and
+  // pause days don't count), reached = the planned trainings were done;
+  // more is shown as "zusätzlich" but never rewarded. Without a plan the
+  // client's own number counts as before. A pause week neither reaches nor
+  // breaks the streak.
+  function weekGoalInfo(p, monday, hist) {
+    const w = progressWeek(p, monday);
+    const mon = dStr(monday);
+    let st = null;
+    try { if (planHasEntries() && dAdd(mon, 6) >= plan.startDate) st = weekStats(mon, hist); } catch (e) { st = null; }
+    if (st && st.pauseWeek) return { ...w, goal: 0, planDone: 0, extra: w.n, fromPlan: true, pause: true, reached: false };
+    if (st && st.scored > 0) {
+      const planDone = Math.min(st.scoredDone, st.scored);
+      return { ...w, goal: st.scored, planDone, extra: Math.max(0, w.n - planDone), fromPlan: true, reached: planDone >= st.scored };
+    }
+    if (st && st.planned > 0 && st.scored === 0) return { ...w, goal: 0, planDone: 0, extra: w.n, fromPlan: true, noScore: true, reached: false };
+    return { ...w, goal: p.weekGoal, planDone: Math.min(w.n, p.weekGoal), extra: Math.max(0, w.n - p.weekGoal), fromPlan: false, reached: w.n >= p.weekGoal };
+  }
   function progressSummary(p, now) {
     const thisMon = progressMonday(now || new Date());
     const weekAt = (back) => { const m = new Date(thisMon); m.setDate(m.getDate() - back * 7); return m; };
-    const cur = progressWeek(p, thisMon);
+    const hist = loadHistory();
+    const cur = weekGoalInfo(p, thisMon, hist);
     // Streak: weeks in a row with the goal reached. The running week only
-    // counts once it is reached, so an unfinished week never breaks it.
-    let streak = cur.n >= p.weekGoal ? 1 : 0;
-    for (let back = 1; back < 520; back++) { if (progressWeek(p, weekAt(back)).n >= p.weekGoal) streak++; else break; }
+    // counts once it is reached, so an unfinished week never breaks it;
+    // pause weeks and weeks out of the rating are skipped.
+    const neutral = (g) => g.pause || g.noScore;
+    let streak = cur.reached ? 1 : 0;
+    for (let back = 1; back < 520; back++) { const g = weekGoalInfo(p, weekAt(back), hist); if (neutral(g)) continue; if (g.reached) streak++; else break; }
     const days = Object.keys(p.days).sort();
     let best = 0;
     if (days.length) {
       let run = 0;
       const first = progressMonday(new Date(days[0] + "T12:00:00"));
       for (let m = new Date(first); m <= thisMon; m.setDate(m.getDate() + 7)) {
-        if (progressWeek(p, m).n >= p.weekGoal) { run++; best = Math.max(best, run); } else run = 0;
+        const g = weekGoalInfo(p, m, hist);
+        if (neutral(g)) continue;
+        if (g.reached) { run++; best = Math.max(best, run); } else run = 0;
       }
     }
     let total = 0, totalS = 0;
     Object.values(p.days).forEach((d) => { total += d.n; totalS += d.s; });
     const weeks = [];
-    for (let back = 7; back >= 0; back--) { const m = weekAt(back); weeks.push({ monday: m, ...progressWeek(p, m) }); }
+    for (let back = 7; back >= 0; back--) { const m = weekAt(back); weeks.push({ monday: m, ...weekGoalInfo(p, m, hist) }); }
     const areas = {};
     let areaS = 0;
     for (let back = 0; back < 4; back++) {
@@ -2501,17 +2525,24 @@
     return a ? [a.label, a.color] : (PROGRESS_AREA_LABEL[k] || [k, "#6b7c85"]);
   }
   function progressStreakText(n) { return n === 1 ? "1 Woche" : `${n} Wochen`; }
+  function curGoalText(c) {
+    if (c.pause) return ["Pause", "Diese Woche zählt nicht"];
+    if (c.noScore) return [`${c.n}`, "Diese Woche ohne Wertung"];
+    return [`${c.planDone} von ${c.goal}${c.reached ? " ✓" : ""}`, c.reached ? "Wochenziel erreicht" : c.fromPlan ? "Wochenziel laut Plan" : "Wochenziel"];
+  }
   function renderTodayProgressCard() {
     const p = loadProgress();
     const s = progressSummary(p);
-    const pct = Math.min(100, Math.round((s.cur.n / p.weekGoal) * 100));
+    const c = s.cur;
+    const [big, small] = curGoalText(c);
+    const pct = c.goal ? Math.min(100, Math.round((c.planDone / c.goal) * 100)) : 0;
     els.todayProgressCard.innerHTML = `
       <div class="progress-card-row">
-        <div><strong>${s.cur.n} von ${p.weekGoal}${s.cur.n >= p.weekGoal ? " ✓" : ""}</strong><span>${s.cur.n >= p.weekGoal ? "Wochenziel erreicht" : "Wochenziel"}</span></div>
+        <div><strong>${big}</strong><span>${small}${c.extra && c.goal ? ` · ${c.extra} zusätzlich` : ""}</span></div>
         <div><strong>${progressStreakText(s.streak)}</strong><span>Serie</span></div>
         <div><strong>${s.total}</strong><span>Trainings gesamt</span></div>
       </div>
-      <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${p.weekGoal}" aria-valuenow="${Math.min(s.cur.n, p.weekGoal)}"><span style="width:${pct}%"></span></div>`;
+      <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${c.goal}" aria-valuenow="${Math.min(c.planDone, c.goal)}"><span style="width:${pct}%"></span></div>`;
   }
   function renderProgressScreen() {
     const p = loadProgress();
@@ -2519,12 +2550,18 @@
     els.progressGoalValue.textContent = p.weekGoal === 1 ? "1 Training pro Woche" : `${p.weekGoal} Trainings pro Woche`;
     els.progressGoalMinus.disabled = p.weekGoal <= 1;
     els.progressGoalPlus.disabled = p.weekGoal >= 14;
-    const left = Math.max(0, p.weekGoal - s.cur.n);
-    const pct = Math.min(100, Math.round((s.cur.n / p.weekGoal) * 100));
+    const c = s.cur;
+    const goalNote = $("progressGoalPlanNote");
+    if (goalNote) { goalNote.hidden = !c.fromPlan; goalNote.textContent = c.fromPlan ? "Solange ein Wochenplan läuft, richtet sich dein Wochenziel nach dem Plan. Diese Zahl gilt für Wochen ohne Plan." : ""; }
+    const left = Math.max(0, c.goal - c.planDone);
+    const pct = c.goal ? Math.min(100, Math.round((c.planDone / c.goal) * 100)) : 0;
     els.progressWeekBar.innerHTML = `<span style="width:${pct}%"></span>`;
-    els.progressWeekText.textContent = left
-      ? `Diese Woche ${s.cur.n} von ${p.weekGoal}. Noch ${left} bis zum Ziel.`
-      : `Diese Woche ${s.cur.n} von ${p.weekGoal}. Ziel erreicht, stark!`;
+    const extraTxt = c.extra && c.goal ? ` Dazu ${c.extra} zusätzlich.` : "";
+    els.progressWeekText.textContent = c.pause ? "Diese Woche ist Pause. Deine Serie bleibt erhalten."
+      : c.noScore ? `Diese Woche ist ohne Wertung. ${c.n} ${c.n === 1 ? "Training" : "Trainings"} bisher.`
+      : left
+      ? `Diese Woche ${c.planDone} von ${c.goal}${c.fromPlan ? " geplanten" : ""}. Noch ${left} bis zum Ziel.${extraTxt}`
+      : `Diese Woche ${c.planDone} von ${c.goal}${c.fromPlan ? " geplanten" : ""}. Ziel erreicht, stark!${extraTxt}`;
     // No training yet (Fabian 2026-10-06): one friendly start card instead of
     // zeros and empty bars; the week goal stays adjustable above it.
     const empty = !s.total;
@@ -2535,16 +2572,19 @@
       `<div class="stat"><strong>${progressStreakText(s.best)}</strong><span>Längste Serie</span></div>` +
       `<div class="stat"><strong>${s.total}</strong><span>Trainings gesamt</span></div>` +
       `<div class="stat"><strong>${s.totalS ? fmtMinutes(s.totalS) : "–"}</strong><span>Trainingszeit gesamt</span></div>`;
-    const maxN = Math.max(p.weekGoal * 1.25, ...s.weeks.map((w) => w.n), 1);
+    // Split bars (kp2, Fabian 06.10.): below strong = planned and done,
+    // above lighter and narrower = extra; each week its own goal tick.
+    const maxN = Math.max(...s.weeks.map((w) => Math.max(w.goal * 1.25, w.planDone + w.extra)), 1);
     els.progressWeeks.innerHTML = s.weeks.map((w, i) => {
-      const h = Math.round((w.n / maxN) * 100);
+      const hp = Math.round((w.planDone / maxN) * 100), he = Math.round((w.extra / maxN) * 100);
       const label = i === s.weeks.length - 1 ? "diese" : `${String(w.monday.getDate()).padStart(2, "0")}.${String(w.monday.getMonth() + 1).padStart(2, "0")}.`;
-      return `<div class="progress-week${w.n >= p.weekGoal ? " reached" : ""}" title="${w.n} Trainings">
-        <span class="progress-week-n">${w.n}</span>
-        <span class="progress-week-bar"><span style="height:${h}%"></span></span>
+      const title = w.pause ? "Pause" : `${w.planDone} von ${w.goal}${w.extra ? `, ${w.extra} zusätzlich` : ""}`;
+      return `<div class="progress-week${w.reached ? " reached" : ""}${w.pause ? " pause" : ""}" title="${title}">
+        <span class="progress-week-n">${w.pause ? "–" : w.planDone + w.extra}</span>
+        <span class="progress-week-bar">${w.goal ? `<i class="progress-week-goal" style="bottom:${Math.round((w.goal / maxN) * 100)}%"></i>` : ""}<span class="pw-extra" style="height:${he}%;bottom:${hp}%"></span><span style="height:${hp}%"></span></span>
         <span class="progress-week-label">${label}</span></div>`;
     }).join("");
-    els.progressWeeks.style.setProperty("--goal-pos", `${Math.round((p.weekGoal / maxN) * 100)}%`);
+    els.progressWeeks.style.setProperty("--goal-pos", "-10%");
     const areaRows = Object.entries(s.areas).sort((a, b) => b[1] - a[1]);
     const maxA = Math.max(1, ...areaRows.map((r) => r[1]));
     els.progressAreas.innerHTML = areaRows.length
@@ -4207,6 +4247,7 @@
     if (t === "cardio-plan") return !nonEmpty(def.items);
     if (t === "breath-program" || t === "workout-plan" || t === "combo-program") return !nonEmpty(def.blocks);
     if (t === "free-template") return freeTemplateDefProblem(def);
+    if (t === "training-plan") return !def.plan || !nonEmpty(def.plan.phases);
     if (t) return true;
     return !nonEmpty(def.blocks) || def.blocks.some((b) => !b || !EXERCISES[b.exercise]);
   }
@@ -4313,6 +4354,7 @@
       if (def.type === "combo-bundle") { openComboBundleOverview(def, code); return; }
       if (def.type === "combo-program") { comboOriginBundle = null; startComboProgram(def, code, code, ctx.homeScreen); return; }
       if (def.type === "free-template") { importTrainerTemplates(def, code); return; }
+      if (def.type === "training-plan") { offerTrainerPlan(def, code, ctx); return; }
       originBundle = null;
       renderProgramIntro(def, code, code, ctx);
     } catch (e) {
@@ -18232,7 +18274,7 @@
   const TRAINER_PROGRAMS_KEY = "fwmc-trainer-programs-v1";
   const BUNDLE_ITEM_TYPE = { "bundle": undefined, "breath-bundle": "breath-program", "workout-bundle": "workout-plan", "movement-bundle": "movement-plan", "cardio-bundle": "cardio-plan", "combo-bundle": "combo-program" };
   function rememberTrainerProgram(code, def) {
-    if (!def || def.type === "free-template" || PROGRAMS[code] || BREATH_PROGRAMS[code] || WORKOUT_PLANS[code]) return;
+    if (!def || def.type === "free-template" || def.type === "training-plan" || PROGRAMS[code] || BREATH_PROGRAMS[code] || WORKOUT_PLANS[code]) return;
     const all = readJSON(TRAINER_PROGRAMS_KEY, {});
     all[code] = { def, at: new Date().toISOString() };
     const keep = Object.entries(all).sort((a, b) => b[1].at.localeCompare(a[1].at)).slice(0, CODE_HISTORY_MAX);
@@ -28187,6 +28229,9 @@
       icon: '<rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M8 12.5l2.8 2.8L16.5 9" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
   ];
   const AREA_BY_KEY = Object.fromEntries(PLAN_AREAS.map((a) => [a.key, a]));
+  // Kombi-Programme are plannable too (kp3 "Planen wie Basteln"): not an
+  // area tile, but a plan entry kind (what "combo:<savedId>").
+  AREA_BY_KEY.combo = { key: "combo", label: "Kombi-Programm", short: "Kombi", color: "#007094", screen: "comboScreen" };
   const AREA_TO_SECTION = { visual: "visual", breath: "breath", movement: "movement", workout: "workout", cardio: "cardio", nat: "nat", test: "test", free: "free" };
   const NAT_SUBS = [["peripher", "Periphere Wahrnehmung"], ["remember", "Positionen merken"], ["blitz", "Blitz-Raster"], ["flash", "Flash-Speicher-Test"], ["mot", "Objektverfolgung (MOT)"], ["balance", "Gleichgewicht"]];
   const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
@@ -28209,47 +28254,164 @@
   function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
   // ---- plan storage ----
-  function emptyPlan() { return { startDate: mondayOf(todayStr()), phases: [], extras: {}, skips: {}, done: {} }; }
+  // Trainingsplanung (Fabian 06./07.10.2026, konzept-trainingsplanung.md,
+  // kp1-kp15): the old model stays and loads unchanged; new fields are
+  // optional. phase.alt = weeks B-D of "Wochen im Wechsel" (ph.days = A),
+  // phase.noScore (aus der Wertung); plan.pauses, plan.weekOps
+  // (repeat/skip/shift), plan.inserts (Sonderwochen), plan.dayOv (nur an
+  // diesem Tag), plan.source (Plan per Code). Nothing ever shortens a
+  // training by itself (Fabian 07.10.): Entlastung/Wettkampf are hints. Details:
+  // docs/notes/27-trainingsplanung.md.
+  function emptyPlan() { return { startDate: mondayOf(todayStr()), phases: [], extras: {}, skips: {}, done: {}, pauses: [], weekOps: [], inserts: [], dayOv: {} }; }
   function cleanEntry(e) {
     if (!e || !AREA_BY_KEY[e.area]) return null;
-    return { id: String(e.id || newId()), area: e.area, what: String(e.what || ""), code: String(e.code || "").slice(0, 60),
+    const o = { id: String(e.id || newId()), area: e.area, what: String(e.what || ""), code: String(e.code || "").slice(0, 60),
       time: /^\d{2}:\d{2}$/.test(e.time || "") ? e.time : "", minutes: Math.max(5, Math.min(240, Number(e.minutes) || 15)) };
+    if (e.special) o.special = String(e.special).slice(0, 40) || "Sondertraining";
+    if (e.locked) o.locked = true;
+    return o;
   }
-  function loadPlan() {
-    const raw = readJSON(PLAN_KEY, null);
+  const cleanDays = (days) => [0, 1, 2, 3, 4, 5, 6].map((i) => ((days && days[i]) || []).map(cleanEntry).filter(Boolean));
+  function loadPlan(given) {
+    const raw = given !== undefined ? given : readJSON(PLAN_KEY, null);
     const p = emptyPlan();
     if (!raw || typeof raw !== "object") return p;
     if (/^\d{4}-\d{2}-\d{2}$/.test(raw.startDate || "")) p.startDate = mondayOf(raw.startDate);
-    p.phases = (Array.isArray(raw.phases) ? raw.phases : []).map((ph) => ({
-      id: String(ph.id || newId()), name: String(ph.name || "Phase").slice(0, 40),
-      weeks: Math.max(0, Math.min(104, Number(ph.weeks) || 0)),
-      days: [0, 1, 2, 3, 4, 5, 6].map((i) => ((ph.days && ph.days[i]) || []).map(cleanEntry).filter(Boolean)),
-    }));
-    ["extras", "skips", "done"].forEach((k) => { if (raw[k] && typeof raw[k] === "object") p[k] = raw[k]; });
+    p.phases = (Array.isArray(raw.phases) ? raw.phases : []).map((ph) => {
+      const o = { id: String(ph.id || newId()), name: String(ph.name || "Phase").slice(0, 40),
+        weeks: Math.max(0, Math.min(104, Number(ph.weeks) || 0)), days: cleanDays(ph.days) };
+      if (Array.isArray(ph.alt) && ph.alt.length) o.alt = ph.alt.slice(0, 3).map(cleanDays);
+      if (ph.noScore) o.noScore = true;
+      if (ph.locked) o.locked = true;
+      return o;
+    });
+    ["extras", "skips", "done", "dayOv"].forEach((k) => { if (raw[k] && typeof raw[k] === "object" && !Array.isArray(raw[k])) p[k] = raw[k]; });
     Object.keys(p.extras).forEach((d) => { p.extras[d] = (p.extras[d] || []).map(cleanEntry).filter(Boolean); });
+    Object.keys(p.dayOv).forEach((d) => { p.dayOv[d] = (p.dayOv[d] || []).map(cleanEntry).filter(Boolean); });
+    const isD = (x) => /^\d{4}-\d{2}-\d{2}$/.test(x || "");
+    p.pauses = (Array.isArray(raw.pauses) ? raw.pauses : []).filter((x) => x && isD(x.from) && isD(x.to) && x.to >= x.from)
+      .map((x) => ({ id: String(x.id || newId()), from: x.from, to: x.to, reason: String(x.reason || "sonstiges"), shift: !!x.shift }));
+    p.weekOps = (Array.isArray(raw.weekOps) ? raw.weekOps : []).filter((x) => x && isD(x.at) && ["repeat", "skip", "shift"].includes(x.op))
+      .map((x) => ({ id: String(x.id || newId()), at: mondayOf(x.at), op: x.op }));
+    p.inserts = (Array.isArray(raw.inserts) ? raw.inserts : []).filter((x) => x && isD(x.at))
+      .map((x) => ({ id: String(x.id || newId()), at: mondayOf(x.at), name: String(x.name || "Sonderwoche").slice(0, 40), days: cleanDays(x.days), noScore: !!x.noScore }));
+    if (raw.source && typeof raw.source === "object") p.source = { code: String(raw.source.code || "").slice(0, 60), version: Number(raw.source.version) || 1, at: String(raw.source.at || ""), baseTimes: raw.source.baseTimes && typeof raw.source.baseTimes === "object" ? raw.source.baseTimes : {} };
     return p;
   }
   let plan = loadPlan();
-  function savePlan() { writeJSON(PLAN_KEY, plan); reminderPlanChanged(); }
-  function planHasEntries() { return plan.phases.some((ph) => ph.days.some((d) => d.length)) || Object.values(plan.extras).some((l) => l.length); }
+  // Rückgängig (kp3): snapshots of the saved plan, in memory only (max 20).
+  let planUndo = [];
+  let planSaved = JSON.stringify(plan);
+  function savePlan(opts) {
+    const now = JSON.stringify(plan);
+    if (now !== planSaved && !(opts && opts.noUndo)) { planUndo.push(planSaved); if (planUndo.length > 20) planUndo.shift(); }
+    planSaved = now;
+    planMapCache = null;
+    writeJSON(PLAN_KEY, plan); reminderPlanChanged();
+    if (typeof planUndoChanged === "function") planUndoChanged();
+  }
+  function planUndoLast() {
+    if (!planUndo.length) return false;
+    planSaved = planUndo.pop();
+    plan = loadPlan(JSON.parse(planSaved));
+    planMapCache = null;
+    writeJSON(PLAN_KEY, plan); reminderPlanChanged();
+    planUndoChanged();
+    return true;
+  }
+  function planHasEntries() { return plan.phases.some((ph) => ph.days.some((d) => d.length) || (ph.alt || []).some((a) => a.some((d) => d.length))) || Object.values(plan.extras).some((l) => l.length) || plan.inserts.length > 0; }
 
-  // Which phase covers a date (null before the start / after a limited end).
-  function phaseFor(date) {
-    const w = Math.floor(dDiff(plan.startDate, date) / 7);
-    if (w < 0) return null;
+  // ---- timeline: which plan week runs in which calendar week ----
+  // Calendar week cw (from startDate) maps to a plan week pw. Shifting
+  // pauses, "eine Woche später" and Sonderwochen take a calendar week
+  // without using up a plan week; "wiederholen" shows the previous plan
+  // week again, "überspringen" jumps one ahead. A shifting pause takes a
+  // week when it covers 4 or more of its days (Montag bleibt Montag).
+  let planMapCache = null;
+  function pauseDaysIn(monday, pz) {
+    const a = monday > pz.from ? monday : pz.from, sun = dAdd(monday, 6), b = sun < pz.to ? sun : pz.to;
+    return a > b ? 0 : dDiff(a, b) + 1;
+  }
+  function planWeekMap(cw) {
+    if (cw < 0) return null;
+    if (!planMapCache || planMapCache.start !== plan.startDate) planMapCache = { start: plan.startDate, list: [], pw: 0, pending: null };
+    const c = planMapCache;
+    while (c.list.length <= cw && c.list.length < 1200) {
+      const monday = dAdd(plan.startDate, c.list.length * 7);
+      const ins = plan.inserts.find((x) => x.at === monday);
+      const pz = plan.pauses.find((x) => x.shift && pauseDaysIn(monday, x) >= 4);
+      const op = plan.weekOps.find((x) => x.at === monday);
+      // A repeat/skip that falls on a pause or Sonderwoche waits for the
+      // next plan week.
+      if (op && (op.op === "repeat" || op.op === "skip") && (ins || pz)) c.pending = op;
+      const eff = op && op.op !== "shift" && !ins && !pz ? op : (!ins && !pz && !(op && op.op === "shift") ? c.pending : null);
+      if (ins) c.list.push({ type: "insert", ins, monday });
+      else if (pz) c.list.push({ type: "pause", pause: pz, monday });
+      else if (op && op.op === "shift") c.list.push({ type: "blank", op, monday });
+      else if (eff && eff.op === "repeat" && c.pw > 0) { c.pending = null; c.list.push({ type: "plan", pw: c.pw - 1, repeated: true, op: eff, monday }); }
+      else {
+        if (eff && eff.op === "skip") c.pw += 1;
+        c.pending = null;
+        c.list.push({ type: "plan", pw: c.pw, skipped: !!(eff && eff.op === "skip"), op: eff, monday });
+        c.pw += 1;
+      }
+    }
+    return c.list[cw] || null;
+  }
+  function phaseOfPlanWeek(pw) {
     let acc = 0;
     for (let i = 0; i < plan.phases.length; i++) {
       const ph = plan.phases[i];
-      if (ph.weeks === 0 || w < acc + ph.weeks) return { phase: ph, index: i, weekInPhase: w - acc + 1 };
+      if (ph.weeks === 0 || pw < acc + ph.weeks) return { phase: ph, index: i, weekInPhase: pw - acc + 1 };
       acc += ph.weeks;
     }
     return null;
   }
+  // Wettkampf (kp11): the week before a focus date is "Tapering" (lighter),
+  // the week after "Erholung" (lighter still), as accepted suggestions.
+  // Wettkampf (kp11, Fabian 07.10.: only recommend, never change): weeks
+  // around a goal / Wettkampf appointment get a recommendation label.
+  function focusWeekOf(monday) {
+    let list = [];
+    try { list = loadEvents().filter((e) => e.goal || e.kind === "wettkampf"); } catch (e) { list = []; }
+    for (const f of list) {
+      const fm = mondayOf(f.date);
+      if (monday === dAdd(fm, -7)) return { kind: "taper", f, label: `Woche vor „${f.title}“: Empfehlung eher locker trainieren` };
+      if (monday === fm) return { kind: "race", f, label: `Woche von „${f.title}“: Empfehlung nur kurz und locker` };
+      if (monday === dAdd(fm, 7)) return { kind: "recover", f, label: `Nach „${f.title}“: Empfehlung Erholung einplanen` };
+    }
+    return null;
+  }
+  // Which phase covers a date (null before the start / after a limited end).
+  // Extra fields: week (calendar map entry), deload, focus, variant.
+  function phaseFor(date) {
+    const cw = Math.floor(dDiff(plan.startDate, date) / 7);
+    const wk = planWeekMap(cw);
+    if (!wk || wk.type !== "plan") return null;
+    const r = phaseOfPlanWeek(wk.pw);
+    if (!r) return null;
+    const ph = r.phase;
+    const nVar = 1 + (ph.alt ? ph.alt.length : 0);
+    r.variant = (r.weekInPhase - 1) % nVar;
+    r.focus = focusWeekOf(wk.monday);
+    r.week = wk;
+    r.pw = wk.pw;
+    return r;
+  }
+  function weekInfo(date) {
+    const cw = Math.floor(dDiff(plan.startDate, date) / 7);
+    const wk = planWeekMap(cw);
+    return { cw, wk, ph: phaseFor(date) };
+  }
   function phaseStartDate(index) {
+    // First calendar week whose plan week belongs to this phase.
     let acc = 0;
     for (let i = 0; i < index; i++) acc += plan.phases[i].weeks || 0;
+    for (let cw = 0; cw < 1200; cw++) { const wk = planWeekMap(cw); if (!wk) break; if (wk.type === "plan" && wk.pw >= acc) return wk.monday; }
     return dAdd(plan.startDate, acc * 7);
   }
+  function pauseOn(date) { return plan.pauses.find((x) => date >= x.from && date <= x.to) || null; }
+  function phaseDaysOf(ph, variant) { return variant > 0 && ph.alt && ph.alt[variant - 1] ? ph.alt[variant - 1] : ph.days; }
 
   function historyAreaOf(e) {
     const k = e.kind || "";
@@ -28265,12 +28427,29 @@
     return "test";
   }
   // Planned + extra entries of a date, sorted, with done state.
+  // Order of rules: pause (nothing) > Sonderwoche > "nur an diesem Tag"
+  // (dayOv) > phase week (A/B/C/D) - skips; extras are added as they are.
   function occurrencesOn(date, historyList) {
     const out = [];
+    const pz = pauseOn(date);
+    const cw = Math.floor(dDiff(plan.startDate, date) / 7);
+    const wk = planWeekMap(cw);
     const ph = phaseFor(date);
     const skips = plan.skips[date] || [];
-    if (ph) ph.phase.days[wdIdx(date)].forEach((e) => { if (!skips.includes(e.id)) out.push({ ...e, extra: false, phaseName: ph.phase.name }); });
-    (plan.extras[date] || []).forEach((e) => out.push({ ...e, extra: true }));
+    let base = null, src = null;
+    if (pz) base = [];
+    else if (wk && wk.type === "insert") { base = wk.ins.days[wdIdx(date)]; src = { phaseName: wk.ins.name, insert: true, noScore: wk.ins.noScore }; }
+    else if (plan.dayOv[date]) { base = plan.dayOv[date]; src = { phaseName: ph ? ph.phase.name : "", override: true, noScore: ph && ph.phase.noScore }; }
+    else if (ph) { base = phaseDaysOf(ph.phase, ph.variant)[wdIdx(date)]; src = { phaseName: ph.phase.name, noScore: ph.phase.noScore }; }
+    // Fabian 07.10. 21:17: the app never changes a training by itself
+    // ("Das sollte ein Trainer abstimmen") - Entlastung and Wettkampf are
+    // recommendations only (labels), the minutes stay as planned.
+    (base || []).forEach((e) => {
+      if (skips.includes(e.id)) return;
+      const o = { ...e, extra: false, ...(src || {}) };
+      out.push(o);
+    });
+    (plan.extras[date] || []).forEach((e) => out.push({ ...e, extra: true, noScore: false }));
     out.sort((a, b) => (timeToMin(a.time) ?? 9999) - (timeToMin(b.time) ?? 9999));
     const manual = plan.done[date] || [];
     const hist = (historyList || loadHistory()).filter((h) => !h.aborted && dStr(new Date(h.ts)) === date).map(historyAreaOf);
@@ -28282,13 +28461,20 @@
     });
     return out;
   }
+  // Week numbers for Heute/Fortschritt. "Gewertet" leaves out phases taken
+  // out of the rating (Fabian 06.10.: "keinen falschen Ehrgeiz") and pause
+  // days; extra = trainings beyond the plan (shown, never rewarded).
   function weekStats(monday, historyList) {
-    let planned = 0, done = 0;
+    let planned = 0, done = 0, scored = 0, scoredDone = 0, pauseDays = 0;
     for (let i = 0; i < 7; i++) {
-      const occ = occurrencesOn(dAdd(monday, i), historyList);
+      const date = dAdd(monday, i);
+      if (pauseOn(date)) pauseDays++;
+      const occ = occurrencesOn(date, historyList);
       planned += occ.length; done += occ.filter((o) => o.done).length;
+      occ.forEach((o) => { if (!o.noScore) { scored++; if (o.done) scoredDone++; } });
     }
-    return { planned, done };
+    const wk = planWeekMap(Math.floor(dDiff(plan.startDate, monday) / 7));
+    return { planned, done, scored, scoredDone, pauseDays, pauseWeek: pauseDays >= 4 || !!(wk && wk.type === "pause") };
   }
 
   // ---- labels and launching ----
@@ -28300,12 +28486,14 @@
     if (area === "visual") visualExercises().forEach((x) => opts.push({ v: "ex:" + x.id, t: x.title }));
     if (area === "nat") NAT_SUBS.forEach(([k, t]) => opts.push({ v: "nat:" + k, t }));
     if (area === "free") freeAllBlocks().forEach((b) => opts.push({ v: "free:" + b.id, t: b.title }));
+    if (area === "combo") { opts.length = 0; comboSavedStore.load().forEach((c) => opts.push({ v: "combo:" + c.id, t: c.name })); if (!opts.length) opts.push({ v: "", t: "Noch kein Kombi-Programm gespeichert" }); }
     return opts;
   }
   function entryTitle(e) {
     if (e.what && e.what.startsWith("ex:")) { const x = visualExercises().find((v) => v.id === e.what.slice(3)); if (x) return x.title; }
     if (e.what && e.what.startsWith("nat:")) { const n = NAT_SUBS.find(([k]) => k === e.what.slice(4)); if (n) return n[1]; }
     if (e.what && e.what.startsWith("free:")) { const b = freeFind(e.what.slice(5)); if (b) return b.title; }
+    if (e.what && e.what.startsWith("combo:")) { const c = comboSavedStore.load().find((x) => x.id === e.what.slice(6)); return c ? c.name : "Kombi-Programm"; }
     if (e.code) return `${AREA_BY_KEY[e.area].short} · Code ${e.code}`;
     return AREA_BY_KEY[e.area].label;
   }
@@ -28320,6 +28508,13 @@
       const ctx = { goBtn: null, errorEl: els.todayCodeError, homeScreen: "todayHome" };
       activateSectionTab("today");
       openProgramIntro(e.code, ctx);
+      return;
+    }
+    if (e.area === "combo") {
+      const c = comboSavedStore.load().find((x) => x.id === (e.what || "").slice(6));
+      activateSectionTab("today");
+      if (c) { comboOriginBundle = null; startComboProgram({ name: c.name, blocks: c.blocks }, "local", "local:" + c.id, "todayHome"); }
+      else openComboScreen();
       return;
     }
     goArea(e.area);
@@ -28546,14 +28741,30 @@
     renderTodayMain(today, hist);
     renderWeekReview(today, hist);
     renderCountdown();
-    const st = weekStats(mondayOf(today), hist);
-    els.todayProgress.textContent = st.planned ? `${st.done} von ${st.planned} geplanten Einheiten` : "noch kein App-Training geplant";
+    const st = weekStats(mondayOf(todaySel || today), hist);
+    els.todayProgress.textContent = st.pauseWeek ? "Pause" : st.planned ? `${st.done} von ${st.planned} geplanten Einheiten` : "noch kein App-Training geplant";
+    renderPlanLine(todaySel || today);
+    renderPlanUpdateCard();
+    $("todayPlanLinks").hidden = !planHasEntries();
     renderWeekStrip(hist);
     renderCalendar(hist);
     renderDayPanel(hist);
     renderTodayProgressCard();
     els.todayPlanBtn.textContent = planHasEntries() ? "Wochenplan bearbeiten" : "Wochenplan anlegen";
     if (!els.todayAreaGrid.children.length) renderAreaGrid();
+  }
+  // "Woche 3 von 6 · Grundlage" under the week heading (kp15), tap = Mein Plan.
+  function renderPlanLine(date) {
+    const el = $("todayPlanLine");
+    const pz = pauseOn(date);
+    const wk = planWeekMap(Math.floor(dDiff(plan.startDate, date) / 7));
+    let text = "";
+    if (pz) { const r = PAUSE_BY_KEY[pz.reason] || PAUSE_BY_KEY.sonstiges; text = `${r[2]} Pause bis ${shortDate(pz.to)}`; }
+    else if (wk && wk.type === "insert") text = `★ ${wk.ins.name}`;
+    else if (wk && wk.type === "blank") text = "Plan pausiert eine Woche";
+    else if (planHasEntries() && plan.phases.length) { const ph = phaseFor(date); if (ph) text = weekRowLabel(wk, ph); }
+    el.hidden = !text;
+    el.textContent = text ? text + " ›" : "";
   }
   function renderTodayMain(today, hist) {
     const occ = occurrencesOn(today, hist);
@@ -28769,9 +28980,20 @@
     box.hidden = true;
     box.innerHTML = "";
   }
+  // Trainings in the history beyond the plan of that day (kp2: shown as
+  // small light dots, never rewarded).
+  function extraAreasOn(date, hist, occ) {
+    const done = occ.filter((o) => o.auto).map((o) => o.area);
+    const out = [];
+    (hist || loadHistory()).filter((h) => !h.aborted && dStr(new Date(h.ts)) === date).map(historyAreaOf).forEach((a) => {
+      const i = done.indexOf(a);
+      if (i >= 0) done.splice(i, 1); else out.push(a);
+    });
+    return out;
+  }
   function dayStateClass(date, hist) {
     const occ = occurrencesOn(date, hist);
-    if (!occ.length) return { cls: "rest", occ };
+    if (!occ.length) return { cls: pauseOn(date) ? "rest pause" : "rest", occ };
     if (occ.every((o) => o.done)) return { cls: "done", occ };
     if (occ.some((o) => o.done)) return { cls: "partial", occ };
     return { cls: date < todayStr() ? "missed" : "planned", occ };
@@ -28790,8 +29012,10 @@
     for (let i = 0; i < 7; i++) {
       const date = dAdd(monday, i);
       const { cls, occ } = dayStateClass(date, hist);
-      const mark = cls === "done" ? "✓" : cls === "rest" ? "" : `<span class="week-dots">${[...new Set(occ.map((o) => o.area))].slice(0, 3).map((a) => areaDot(a)).join("")}</span>`;
-      const label = `${WD_LONG[i]}, ${dParse(date).getDate()}. ${MONTHS[dParse(date).getMonth()]}: ${cls === "rest" ? "nichts geplant" : `${occ.filter((o) => o.done).length} von ${occ.length} erledigt`}`;
+      const extra = date <= today ? extraAreasOn(date, hist, occ) : [];
+      const dots = occ.filter((o) => o.done).map((o) => areaDot(o.area)).slice(0, 3).join("") + occ.filter((o) => !o.done).map((o) => areaDot(o.area, "ring")).slice(0, Math.max(0, 3 - occ.filter((o) => o.done).length)).join("") + extra.slice(0, 2).map((a) => areaDot(a, "extra")).join("");
+      const mark = cls === "done" && !extra.length ? "✓" : (cls.startsWith("rest") && !extra.length) ? (cls.includes("pause") ? "<span class=\"week-pause\" aria-hidden=\"true\">–</span>" : "") : `<span class="week-dots">${dots}</span>`;
+      const label = `${WD_LONG[i]}, ${dParse(date).getDate()}. ${MONTHS[dParse(date).getMonth()]}: ${cls.includes("pause") ? "Pause" : cls === "rest" ? "nichts geplant" : `${occ.filter((o) => o.done).length} von ${occ.length} erledigt`}${extra.length ? `, ${extra.length} zusätzlich` : ""}`;
       const evCount = eventsOn(date, evList).length;
       const fullLabel = evCount ? `${label}, ${evCount === 1 ? "1 Termin" : evCount + " Termine"}` : label;
       html += `<button type="button" class="week-day ${cls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}" data-date="${date}" aria-label="${esc(fullLabel)}">
@@ -28829,7 +29053,7 @@
       if (ph) phases.set(ph.index, ph.phase.name);
       const band = ph ? `<span class="cal-band" style="background:${PHASE_TINTS[ph.index % PHASE_TINTS.length]}"></span>` : "";
       const dots = mini ? "" : `<span class="cal-dots">${[...new Set(occ.map((o) => o.area))].slice(0, 4).map((a) => areaDot(a)).join("")}</span>`;
-      const check = cls === "done" ? `<span class="cal-check">✓</span>` : "";
+      const check = (cls === "done" ? `<span class="cal-check">✓</span>` : "") + (occ.some((o) => o.special || o.insert) ? `<span class="cal-star" aria-hidden="true">★</span>` : "");
       const evN = eventsOn(date, evList).length;
       const calLabel = longDate(date) + (evN ? `, ${evN === 1 ? "1 Termin" : evN + " Termine"}` : "");
       cells += `<button type="button" class="cal-cell ${cls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}" data-date="${date}" aria-label="${esc(calLabel)}">${band}${eventMarkHtml(date, evList)}<span class="cal-num">${d}</span>${check}${dots}</button>`;
@@ -28892,24 +29116,31 @@
     document.querySelectorAll(".day-view-btn").forEach((b) => b.classList.toggle("active", b.dataset.dayView === dayView));
     const hasEvents = renderDayEvents(date);
     const occ = occurrencesOn(date, hist);
+    const pzDay = pauseOn(date);
+    if (!occ.length && pzDay) {
+      const r = PAUSE_BY_KEY[pzDay.reason] || PAUSE_BY_KEY.sonstiges;
+      els.dayPanelBody.innerHTML = `<p class="day-empty">${r[2]} Pause (${esc(r[1])}) bis ${esc(shortDate(pzDay.to))}. Keine Erinnerungen, deine Serie reißt nicht ab. <button type="button" class="text-link small" id="dayPauseEditBtn">Pause bearbeiten</button></p>`;
+      $("dayPauseEditBtn").addEventListener("click", () => openPauseSheet(pzDay.id));
+      return;
+    }
     if (!occ.length) {
       const ph = phaseFor(date);
       els.dayPanelBody.innerHTML = hasEvents ? `<p class="day-empty">Kein Training aus der App geplant.</p>` : `<p class="day-empty">${ph || planHasEntries() ? "Ruhetag, an diesem Tag ist nichts geplant." : "Noch kein Plan. Lege unten deinen Wochenplan an oder trage ein App-Training nur für diesen Tag ein."}</p>`;
       return;
     }
     const item = (o, style, compact) => {
-      const meta = [o.time ? (o.time + "–" + minToTime(timeToMin(o.time) + o.minutes)) : "ohne Uhrzeit", `${o.minutes} Min.`, AREA_BY_KEY[o.area].short].join(" · ");
+      const meta = [o.time ? (o.time + "–" + minToTime(timeToMin(o.time) + o.minutes)) : "ohne Uhrzeit", `${o.minutes} Min.`, AREA_BY_KEY[o.area].short].concat(o.special ? ["Sondertraining"] : []).join(" · ");
       const status = o.done ? (o.auto && !o.manual ? "erledigt (aus deinem Verlauf)" : "erledigt") : "offen";
       if (compact) return `<div class="day-item compact${o.done ? " done" : ""}" style="${style}" data-occ="${esc(o.id)}">
         <div class="day-item-title">${areaDot(o.area)} ${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div>
         <div class="day-item-meta">${esc(o.time)}–${esc(minToTime(timeToMin(o.time) + o.minutes))} · ${o.done ? "✓ erledigt" : "offen"}</div>
         <div class="day-item-actions"><button type="button" class="day-act" data-act="start">Starten</button><button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}" aria-label="${o.manual ? "Erledigt, zurücknehmen" : "Abhaken"}">✓</button></div></div>`;
       return `<div class="day-item${o.done ? " done" : ""}" ${style ? `style="${style}"` : ""} data-occ="${esc(o.id)}">
-        <div class="day-item-main">${areaDot(o.area)}<div><div class="day-item-title">${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div><div class="day-item-meta">${esc(meta)} · ${status}</div></div></div>
+        <div class="day-item-main">${areaDot(o.area)}<div><div class="day-item-title">${o.special ? "★ " : ""}${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div><div class="day-item-meta">${esc(meta)} · ${status}</div></div></div>
         <div class="day-item-actions">
           <button type="button" class="day-act" data-act="start">Starten</button>
           <button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}">${o.manual ? "✓ Erledigt" : "Abhaken"}</button>
-          ${compact ? "" : `<button type="button" class="day-act subtle" data-act="${o.extra ? "remove" : "skip"}">${o.extra ? "Löschen" : "Heute auslassen"}</button>`}
+          ${compact ? "" : `<button type="button" class="day-act subtle" data-act="change">Ändern</button><button type="button" class="day-act subtle" data-act="${o.extra ? "remove" : "skip"}">${o.extra ? "Löschen" : "Heute auslassen"}</button>`}
         </div></div>`;
     };
     const timed = occ.filter((o) => o.time), untimed = occ.filter((o) => !o.time);
@@ -28963,6 +29194,12 @@
   function dayAction(date, o, act) {
     if (!o) return;
     if (act === "start") { startEntry(o); return; }
+    if (act === "change") {
+      if (o.extra) openPlanEntry({ kind: "extra", date, id: o.id, fromToday: true });
+      else if (o.override) openPlanEntry({ kind: "dayov", date, id: o.id, fromToday: true });
+      else askScope(date, o, "edit");
+      return;
+    }
     if (act === "done") {
       const l = plan.done[date] || [];
       plan.done[date] = l.includes(o.id) ? l.filter((x) => x !== o.id) : [...l, o.id];
@@ -29007,6 +29244,9 @@
   document.querySelectorAll(".day-view-btn").forEach((b) => b.addEventListener("click", () => { dayView = b.dataset.dayView; writeJSON(DAY_VIEW_KEY, dayView); renderDayPanel(loadHistory()); }));
   els.dayAddBtn.addEventListener("click", () => openPlanEntry({ kind: "extra", date: todaySel }));
   els.todayPlanBtn.addEventListener("click", () => openPlanScreen());
+  $("todayPlanLine").addEventListener("click", () => openMyPlan("todayHome"));
+  $("todayMyPlanBtn").addEventListener("click", () => openMyPlan("todayHome"));
+  $("todayPauseBtn").addEventListener("click", () => openPauseSheet());
 
   const TODAY_CODE_CTX = { goBtn: els.todayCodeGoBtn, errorEl: els.todayCodeError, homeScreen: "todayHome" };
   function goTodayCode() { const code = els.todayCodeInput.value.trim(); if (code) openProgramIntro(code, TODAY_CODE_CTX); }
@@ -29125,7 +29365,7 @@
   $("moreCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") goMoreCode(); });
   $("moreSettingsBtn").addEventListener("click", openMasterSettings);
   $("moreTipsBtn").addEventListener("click", () => els.tipsBtn.click());
-  const NAV_TAB_OF = { todayHome: "today", planScreen: "today", trainingHub: "training", progressScreen: "progress", moreScreen: "more" };
+  const NAV_TAB_OF = { todayHome: "today", planScreen: "today", myPlanScreen: "today", trainingHub: "training", progressScreen: "progress", moreScreen: "more" };
   const AREA_HOME_IDS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome"];
   const TEST_TILE = { color: "#5c6b73", label: "Test", text: "Neue Übungen zum Ausprobieren.",
     icon: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' };
@@ -29724,60 +29964,193 @@
   });
 
   // ---- plan editor ----
+  // ==== Plan-Editor (Trainingsplanung kp1/kp3/kp4/kp6/kp10/kp11) ====
+  // Per phase: Woche A-D ("Wochen im Wechsel"), Entlastungswoche, "aus der
+  // Wertung nehmen"; an Ablage (tray) with Kombi-Programme, areas,
+  // exercises and Eigenes Training to tap onto a day (or drag with a
+  // mouse); copy a day; Rückgängig. Details docs/notes/27.
+  const planVariantSel = {};
+  let trayTab = "combo", traySel = null;
   function openPlanScreen() {
     if (!plan.phases.length) plan.phases.push({ id: newId(), name: "Mein Wochenplan", weeks: 0, days: [[], [], [], [], [], [], []] });
     renderPlanScreen();
     showScreen("planScreen");
   }
-  function removePlanEntry(pi, di, id) {
-    if (!plan.phases[pi]) return;
-    plan.phases[pi].days[di] = plan.phases[pi].days[di].filter((x) => x.id !== id);
+  function planDaysRef(pi, v) {
+    const ph = plan.phases[pi];
+    if (!ph) return null;
+    return v > 0 && ph.alt && ph.alt[v - 1] ? ph.alt[v - 1] : ph.days;
+  }
+  function insertDaysRef(id) { const ins = plan.inserts.find((x) => x.id === id); return ins ? ins.days : null; }
+  function daysRefOf(key) { return key.startsWith("i") ? insertDaysRef(key.slice(1)) : planDaysRef(+key.split("/")[0], +(key.split("/")[1] || 0)); }
+  function removePlanEntry(pi, di, id, v) {
+    const days = planDaysRef(pi, v || 0);
+    if (!days) return;
+    days[di] = days[di].filter((x) => x.id !== id);
     savePlan();
   }
+  const VARIANT_NAMES = ["A", "B", "C", "D"];
+  function planDayHtml(list, di, key) {
+    return `<div class="plan-day${traySel ? " drop-ready" : ""}" data-drop="${key}:${di}">
+      <div class="plan-day-name">${WD_SHORT[di]}</div>
+      <div class="plan-day-items">${list.length ? list.map((e) => `<div class="plan-item">${areaDot(e.area)}<span class="plan-item-text">${e.special ? "★ " : ""}${esc(entryTitle(e))}<small>${esc([e.time ? e.time + " Uhr" : "", e.minutes + " Min."].filter(Boolean).join(" · "))}</small></span>
+          <button type="button" class="plan-item-btn" data-edit="${key}:${di}:${esc(e.id)}" aria-label="Bearbeiten">✎</button>
+          <button type="button" class="plan-item-btn" data-del="${key}:${di}:${esc(e.id)}" aria-label="Entfernen">✕</button></div>`).join("") : `<span class="plan-rest">Ruhetag</span>`}
+        <div class="plan-day-acts"><button type="button" class="text-link small" data-add="${key}:${di}">+ Training</button>${list.length ? `<button type="button" class="text-link small" data-copyday="${key}:${di}">Tag kopieren</button>` : ""}</div></div></div>`;
+  }
   function renderPlanScreen() {
+    planMapCache = null;
     els.planStartInput.value = plan.startDate;
     els.planStartHelp.textContent = `Startet am ${longDate(plan.startDate)}.`;
+    const src = $("planSourceNote");
+    src.hidden = !plan.source;
+    if (plan.source) src.textContent = `Plan von deinem Trainer (Code ${plan.source.code}, Fassung ${plan.source.version}). Uhrzeiten, Tage und Pausen kannst du selbst anpassen.`;
+    renderPlanTray();
     els.planPhaseList.innerHTML = plan.phases.map((ph, pi) => {
       const isLast = pi === plan.phases.length - 1;
       const weekOpts = [`<option value="0"${ph.weeks === 0 ? " selected" : ""}>unbegrenzt</option>`]
         .concat(Array.from({ length: 52 }, (_, i) => i + 1).map((w) => `<option value="${w}"${ph.weeks === w ? " selected" : ""}>${w} ${w === 1 ? "Woche" : "Wochen"}</option>`)).join("");
       const start = phaseStartDate(pi);
       const range = ph.weeks ? `${longDate(start)} bis ${longDate(dAdd(start, ph.weeks * 7 - 1))}` : `ab ${longDate(start)}`;
-      const days = ph.days.map((list, di) => `<div class="plan-day">
-          <div class="plan-day-name">${WD_SHORT[di]}</div>
-          <div class="plan-day-items">${list.length ? list.map((e) => `<div class="plan-item">${areaDot(e.area)}<span class="plan-item-text">${esc(entryTitle(e))}<small>${esc([e.time ? e.time + " Uhr" : "", e.minutes + " Min."].filter(Boolean).join(" · "))}</small></span>
-              <button type="button" class="plan-item-btn" data-edit="${pi}:${di}:${esc(e.id)}" aria-label="Bearbeiten">✎</button>
-              <button type="button" class="plan-item-btn" data-del="${pi}:${di}:${esc(e.id)}" aria-label="Entfernen">✕</button></div>`).join("") : `<span class="plan-rest">Ruhetag</span>`}
-            <button type="button" class="text-link small" data-add="${pi}:${di}">+ Training</button></div></div>`).join("");
+      const nVar = 1 + (ph.alt ? ph.alt.length : 0);
+      const v = Math.min(planVariantSel[ph.id] || 0, nVar - 1);
+      const varRow = `<div class="plan-variant-row" role="group" aria-label="Wochen im Wechsel">
+          <button type="button" class="choice small${nVar === 1 ? " active" : ""}" data-rot="${pi}:1" aria-pressed="${nVar === 1}">Jede Woche gleich</button>
+          <button type="button" class="choice small${nVar > 1 ? " active" : ""}" data-rot="${pi}:2" aria-pressed="${nVar > 1}">Wochen im Wechsel</button>
+        </div>
+        ${nVar > 1 ? `<div class="plan-variant-tabs">${VARIANT_NAMES.slice(0, nVar).map((n, i) => `<button type="button" class="plan-vtab${i === v ? " active" : ""}" data-vsel="${pi}:${i}" aria-pressed="${i === v}">Woche ${n}</button>`).join("")}${nVar < 4 ? `<button type="button" class="plan-vtab add" data-rot="${pi}:${nVar + 1}" aria-label="Woche ${VARIANT_NAMES[nVar]} dazu">+</button>` : ""}${nVar > 2 ? `<button type="button" class="plan-vtab add" data-rot="${pi}:${nVar - 1}" aria-label="Letzte Woche entfernen">−</button>` : ""}</div>
+          <p class="group-help">Woche A, B${nVar > 2 ? ", C" : ""}${nVar > 3 ? ", D" : ""} wechseln sich ab: In Woche 1 gilt A, in Woche 2 B und so weiter.</p>` : ""}`;
+      const days = planDaysRef(pi, v).map((list, di) => planDayHtml(list, di, `${pi}/${v}`)).join("");
       return `<section class="plan-phase" style="border-left-color:${PHASE_TINTS[pi % PHASE_TINTS.length]}">
         <div class="plan-phase-head">
           <input type="text" class="plan-input plan-phase-name" data-phase-name="${pi}" value="${esc(ph.name)}" maxlength="40" aria-label="Name der Phase">
           <select class="plan-select" data-phase-weeks="${pi}" aria-label="Dauer der Phase">${weekOpts}</select>
         </div>
         <p class="group-help">${esc(range)}${!ph.weeks && !isLast ? " · Wähle eine Dauer, sonst starten die folgenden Phasen nie." : ""}</p>
+        ${varRow}
         ${days}
+        <div class="plan-phase-opts">
+          <label class="checkbox-row"><input type="checkbox" data-phase-noscore="${pi}"${ph.noScore ? " checked" : ""}> Aus der Wertung nehmen</label>
+          <p class="group-help">${ph.noScore ? "Diese Phase zählt nicht für Wochenziel und Serie. " : ""}${!ph.weeks || ph.weeks >= 4 ? "Empfehlung: etwa jede 4. Woche etwas leichter trainieren, damit die Erholung nicht zu kurz kommt. Sprich das am besten mit deinem Trainer ab." : ""}</p>
+        </div>
         <div class="plan-phase-actions">
           ${pi > 0 ? `<button type="button" class="text-link small" data-phase-up="${pi}">↑ nach vorne</button>` : ""}
           <button type="button" class="text-link small" data-phase-copy="${pi}">Phase kopieren</button>
           <button type="button" class="text-link small danger" data-phase-del="${pi}">Phase löschen</button>
         </div></section>`;
-    }).join("");
+    }).join("") + plan.inserts.map((ins) => `<section class="plan-phase plan-insert" style="border-left-color:#d4a017">
+        <div class="plan-phase-head"><input type="text" class="plan-input plan-phase-name" data-ins-name="${esc(ins.id)}" value="${esc(ins.name)}" maxlength="40" aria-label="Name der Sonderwoche"></div>
+        <p class="group-help">★ Sonderwoche in der Woche vom ${esc(longDate(ins.at))}. Dein Plan rückt danach eine Woche nach hinten.</p>
+        ${ins.days.map((list, di) => planDayHtml(list, di, "i" + ins.id)).join("")}
+        <label class="checkbox-row"><input type="checkbox" data-ins-noscore="${esc(ins.id)}"${ins.noScore ? " checked" : ""}> Aus der Wertung nehmen</label>
+        <div class="plan-phase-actions"><button type="button" class="text-link small danger" data-ins-del="${esc(ins.id)}">Sonderwoche löschen</button></div>
+      </section>`).join("");
+    planUndoChanged();
   }
+  function planUndoChanged() {
+    const b = $("planUndoBtn");
+    if (b) b.hidden = !planUndo.length;
+  }
+  $("planUndoBtn").addEventListener("click", () => {
+    if (planUndoLast()) { if (!$("planScreen").hidden) renderPlanScreen(); if (!$("myPlanScreen").hidden) renderMyPlan(); showToast("Rückgängig gemacht"); }
+  });
+  function setRotation(pi, n) {
+    const ph = plan.phases[pi];
+    const cur = 1 + (ph.alt ? ph.alt.length : 0);
+    if (n === cur) return;
+    if (n < cur && ph.alt) {
+      const gone = n === 1 ? ph.alt : ph.alt.slice(n - 1);
+      const doIt = () => { if (n === 1) delete ph.alt; else ph.alt = ph.alt.slice(0, n - 1); planVariantSel[ph.id] = 0; savePlan(); renderPlanScreen(); };
+      if (gone.some((d) => d.some((l) => l.length))) confirmDialog(n === 1 ? "Zurück zu „Jede Woche gleich“? Die Einträge der Wochen B bis D werden gelöscht, Woche A bleibt." : `Woche ${VARIANT_NAMES[n]} mit ihren Einträgen entfernen?`, doIt);
+      else doIt();
+      return;
+    }
+    ph.alt = ph.alt || [];
+    while (1 + ph.alt.length < n) ph.alt.push(ph.days.map((l) => l.map((x) => ({ ...x, id: newId() }))));
+    planVariantSel[ph.id] = n - 1;
+    savePlan(); renderPlanScreen();
+  }
+  // ---- Ablage (tray) ----
+  const TRAY_TABS = [["combo", "Kombi-Programme"], ["area", "Bereiche"], ["ex", "Übungen"], ["free", "Eigenes Training"]];
+  function trayItems(tab) {
+    if (tab === "combo") return comboSavedStore.load().map((c) => ({ area: "combo", what: "combo:" + c.id, t: c.name, minutes: Math.max(5, Math.round(c.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0) / 300) * 5 || 15) }));
+    if (tab === "area") return PLAN_AREAS.map((a) => ({ area: a.key, what: "", t: a.label, minutes: 15 }));
+    if (tab === "ex") return visualExercises().map((x) => ({ area: "visual", what: "ex:" + x.id, t: x.title, minutes: 10 }))
+      .concat(NAT_SUBS.map(([k, t]) => ({ area: "nat", what: "nat:" + k, t, minutes: 10 })));
+    return freeAllBlocks().map((b) => ({ area: "free", what: "free:" + b.id, t: b.title, minutes: 10 }));
+  }
+  function renderPlanTray() {
+    $("planTrayTabs").innerHTML = TRAY_TABS.map(([k, t]) => `<button type="button" class="plan-tray-tab${k === trayTab ? " active" : ""}" role="tab" aria-selected="${k === trayTab}" data-tray-tab="${k}">${esc(t)}</button>`).join("");
+    const items = trayItems(trayTab);
+    $("planTrayItems").innerHTML = items.length ? items.map((it, i) => `<button type="button" class="plan-chip${traySel && traySel.what === it.what && traySel.area === it.area ? " selected" : ""}" data-tray="${i}" draggable="true" aria-pressed="${!!(traySel && traySel.what === it.what && traySel.area === it.area)}">${areaDot(it.area)}<span>${esc(it.t)}</span></button>`).join("")
+      : `<p class="group-help">${trayTab === "combo" ? "Noch kein Kombi-Programm gespeichert. Stell eins unter Training › Alles verbinden zusammen und speichere es, dann liegt es hier." : "Hier ist noch nichts."}</p>`;
+    $("planTray").classList.toggle("armed", !!traySel);
+    $("planTrayHint").textContent = traySel ? `„${traySel.t}“ ausgewählt: Tippe auf einen Tag, um es dort einzutragen.` : "Tippe ein Training an und dann auf einen Tag. Am Laptop kannst du es auch ziehen.";
+  }
+  $("planTrayTabs").addEventListener("click", (e) => { const b = e.target.closest("[data-tray-tab]"); if (!b) return; trayTab = b.dataset.trayTab; renderPlanTray(); });
+  $("planTrayItems").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-tray]"); if (!b) return;
+    const it = trayItems(trayTab)[+b.dataset.tray];
+    traySel = traySel && traySel.what === it.what && traySel.area === it.area ? null : it;
+    renderPlanScreen();
+  });
+  $("planTrayItems").addEventListener("dragstart", (e) => {
+    const b = e.target.closest("[data-tray]"); if (!b) return;
+    traySel = trayItems(trayTab)[+b.dataset.tray];
+    try { e.dataTransfer.setData("text/plain", traySel.t); e.dataTransfer.effectAllowed = "copy"; } catch (err) {}
+  });
+  els.planPhaseList.addEventListener("dragover", (e) => { if (traySel && e.target.closest("[data-drop]")) { e.preventDefault(); e.target.closest("[data-drop]").classList.add("drop-over"); } });
+  els.planPhaseList.addEventListener("dragleave", (e) => { const d = e.target.closest("[data-drop]"); if (d) d.classList.remove("drop-over"); });
+  els.planPhaseList.addEventListener("drop", (e) => { const d = e.target.closest("[data-drop]"); if (!d || !traySel) return; e.preventDefault(); dropTray(d.dataset.drop); });
+  function dropTray(target) {
+    const [key, di] = [target.slice(0, target.lastIndexOf(":")), +target.slice(target.lastIndexOf(":") + 1)];
+    const days = daysRefOf(key);
+    if (!days || !traySel) return;
+    days[di].push(cleanEntry({ id: newId(), area: traySel.area, what: traySel.what, minutes: traySel.minutes }));
+    const t = traySel.t;
+    savePlan(); renderPlanScreen();
+    showToast(`„${t}“ am ${WD_LONG[di]} eingetragen`);
+  }
+  let copyDaySrc = null;
   els.planPhaseList.addEventListener("click", (e) => {
     const t = e.target.closest("button");
-    if (!t) return;
+    const dropZone = e.target.closest("[data-drop]");
+    if (!t && dropZone && traySel) { dropTray(dropZone.dataset.drop); return; }
+    if (!t) { if (dropZone && copyDaySrc) pasteDay(dropZone.dataset.drop); return; }
     const d = t.dataset;
-    if (d.add) { const [pi, di] = d.add.split(":").map(Number); openPlanEntry({ kind: "plan", pi, di }); return; }
-    if (d.edit) { const [pi, di, id] = d.edit.split(":"); openPlanEntry({ kind: "plan", pi: +pi, di: +di, id }); return; }
-    if (d.del) { const [pi, di, id] = d.del.split(":"); removePlanEntry(+pi, +di, id); renderPlanScreen(); return; }
+    const split3 = (v) => { const p = v.split(":"); return [p[0], +p[1], p.slice(2).join(":")]; };
+    if (d.add) {
+      if (traySel) { dropTray(d.add); return; }
+      if (copyDaySrc) { pasteDay(d.add); return; }
+      const [key, di] = split3(d.add); openPlanEntry({ kind: "plan", key, di }); return;
+    }
+    if (d.edit) { const [key, di, id] = split3(d.edit); openPlanEntry({ kind: "plan", key, di, id }); return; }
+    if (d.del) { const [key, di, id] = split3(d.del); const days = daysRefOf(key); if (days) { days[di] = days[di].filter((x) => x.id !== id); savePlan(); } renderPlanScreen(); return; }
+    if (d.copyday) { copyDaySrc = d.copyday; showToast("Tag kopiert: Tippe auf „+ Training“ bei einem anderen Tag, um ihn dort einzufügen."); return; }
+    if (d.rot) { const [pi, n] = d.rot.split(":").map(Number); setRotation(pi, n); return; }
+    if (d.vsel) { const [pi, v] = d.vsel.split(":").map(Number); planVariantSel[plan.phases[pi].id] = v; renderPlanScreen(); return; }
     if (d.phaseUp) { const i = +d.phaseUp; [plan.phases[i - 1], plan.phases[i]] = [plan.phases[i], plan.phases[i - 1]]; savePlan(); renderPlanScreen(); return; }
-    if (d.phaseCopy) { const src = plan.phases[+d.phaseCopy]; const cp = JSON.parse(JSON.stringify(src)); cp.id = newId(); cp.name = (src.name + " (Kopie)").slice(0, 40); cp.days.forEach((l) => l.forEach((x) => { x.id = newId(); })); if (!src.weeks) src.weeks = 4; plan.phases.splice(+d.phaseCopy + 1, 0, cp); savePlan(); renderPlanScreen(); return; }
-    if (d.phaseDel) { const i = +d.phaseDel; confirmDialog(`Phase „${plan.phases[i].name}“ mit allen Trainings löschen?`, () => { plan.phases.splice(i, 1); savePlan(); renderPlanScreen(); }); }
+    if (d.phaseCopy) { const src = plan.phases[+d.phaseCopy]; const cp = JSON.parse(JSON.stringify(src)); cp.id = newId(); cp.name = (src.name + " (Kopie)").slice(0, 40); [cp.days].concat(cp.alt || []).forEach((dd) => dd.forEach((l) => l.forEach((x) => { x.id = newId(); }))); if (!src.weeks) src.weeks = 4; plan.phases.splice(+d.phaseCopy + 1, 0, cp); savePlan(); renderPlanScreen(); return; }
+    if (d.phaseDel) { const i = +d.phaseDel; confirmDialog(`Phase „${plan.phases[i].name}“ mit allen Trainings löschen?`, () => { plan.phases.splice(i, 1); savePlan(); renderPlanScreen(); }); return; }
+    if (d.insDel) { const ins = plan.inserts.find((x) => x.id === d.insDel); if (ins) confirmDialog(`Sonderwoche „${ins.name}“ löschen? Dein Plan rückt dann wieder eine Woche nach vorne.`, () => { plan.inserts = plan.inserts.filter((x) => x !== ins); savePlan(); renderPlanScreen(); }); }
   });
+  function pasteDay(target) {
+    const [sk, sdi] = [copyDaySrc.slice(0, copyDaySrc.lastIndexOf(":")), +copyDaySrc.slice(copyDaySrc.lastIndexOf(":") + 1)];
+    const [tk, tdi] = [target.slice(0, target.lastIndexOf(":")), +target.slice(target.lastIndexOf(":") + 1)];
+    const from = daysRefOf(sk), to = daysRefOf(tk);
+    copyDaySrc = null;
+    if (!from || !to || (sk === tk && sdi === tdi)) return;
+    from[sdi].forEach((x) => to[tdi].push({ ...x, id: newId() }));
+    savePlan(); renderPlanScreen();
+    showToast(`Eingefügt am ${WD_LONG[tdi]}`);
+  }
   els.planPhaseList.addEventListener("change", (e) => {
     const t = e.target;
     if (t.dataset.phaseWeeks != null) { plan.phases[+t.dataset.phaseWeeks].weeks = Number(t.value); savePlan(); renderPlanScreen(); }
     if (t.dataset.phaseName != null) { plan.phases[+t.dataset.phaseName].name = t.value.trim().slice(0, 40) || "Phase"; savePlan(); }
+    if (t.dataset.phaseNoscore != null) { const ph = plan.phases[+t.dataset.phaseNoscore]; if (t.checked) ph.noScore = true; else delete ph.noScore; savePlan(); renderPlanScreen(); }
+    if (t.dataset.insName != null) { const ins = plan.inserts.find((x) => x.id === t.dataset.insName); if (ins) { ins.name = t.value.trim().slice(0, 40) || "Sonderwoche"; savePlan(); } }
+    if (t.dataset.insNoscore != null) { const ins = plan.inserts.find((x) => x.id === t.dataset.insNoscore); if (ins) { ins.noScore = t.checked; savePlan(); renderPlanScreen(); } }
   });
   els.planStartInput.addEventListener("change", () => { if (els.planStartInput.value) { plan.startDate = mondayOf(els.planStartInput.value); savePlan(); renderPlanScreen(); } });
   els.planAddPhaseBtn.addEventListener("click", () => {
@@ -29786,46 +30159,116 @@
     plan.phases.push({ id: newId(), name: `Phase ${plan.phases.length + 1}`, weeks: 0, days: [[], [], [], [], [], [], []] });
     savePlan(); renderPlanScreen();
   });
+  $("planAddInsertBtn").addEventListener("click", () => {
+    // Next free week from today on (or from the plan start).
+    let at = mondayOf(todayStr() > plan.startDate ? todayStr() : plan.startDate);
+    at = dAdd(at, 7);
+    while (plan.inserts.some((x) => x.at === at)) at = dAdd(at, 7);
+    choiceSheet("Sonderwoche einfügen", "Zum Beispiel Trainingslager oder Camp. Die Woche hat ihre eigenen Trainings, dein Plan rückt danach eine Woche nach hinten.",
+      [0, 1, 2, 3, 4].map((k) => { const m = dAdd(at, k * 7); return { label: `Woche vom ${longDate(m)}`, fn: () => {
+        plan.inserts.push({ id: newId(), at: m, name: "Sonderwoche", days: [[], [], [], [], [], [], []], noScore: false });
+        savePlan(); renderPlanScreen();
+        setTimeout(() => { const el = els.planPhaseList.querySelector(".plan-insert:last-of-type"); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); }, 50);
+      } }; }));
+  });
   els.planClearBtn.addEventListener("click", () => confirmDialog("Den ganzen Wochenplan mit allen Phasen und Einträgen löschen?", () => {
     plan = emptyPlan(); savePlan(); openPlanScreen();
   }));
-  els.planBackBtn.addEventListener("click", () => { activateSectionTab("today"); showScreen("todayHome"); });
+  els.planBackBtn.addEventListener("click", () => { traySel = null; copyDaySrc = null; activateSectionTab("today"); showScreen("todayHome"); });
+  $("planOverviewBtn").addEventListener("click", () => openMyPlan("planScreen"));
+  $("planPauseBtn").addEventListener("click", () => openPauseSheet());
+
+  function showToast(text) {
+    document.querySelectorAll(".app-toast").forEach((t) => t.remove());
+    const t = document.createElement("div");
+    t.className = "app-toast";
+    t.setAttribute("role", "status");
+    t.textContent = text;
+    document.body.appendChild(t);
+    setTimeout(() => t.classList.add("out"), 2600);
+    setTimeout(() => t.remove(), 3000);
+  }
+  // ---- choice sheet (kp4 "Wofür gilt das?", Sonderwoche, Wochen-Menü) ----
+  let choiceReturnFocus = null;
+  function choiceSheet(title, text, options) {
+    $("choiceTitle").textContent = title;
+    $("choiceText").textContent = text || "";
+    $("choiceText").hidden = !text;
+    const list = $("choiceList");
+    list.innerHTML = "";
+    options.forEach((o, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "choice-sheet-btn" + (o.danger ? " danger" : "") + (i === 0 && o.primary ? " primary" : "");
+      b.innerHTML = `<strong>${esc(o.label)}</strong>${o.sub ? `<small>${esc(o.sub)}</small>` : ""}`;
+      b.addEventListener("click", () => { closeChoiceSheet(); o.fn(); });
+      list.appendChild(b);
+    });
+    choiceReturnFocus = document.activeElement;
+    $("choiceSheet").hidden = false;
+    $("choiceCancelBtn").focus();
+  }
+  function closeChoiceSheet() { $("choiceSheet").hidden = true; if (choiceReturnFocus && document.contains(choiceReturnFocus)) choiceReturnFocus.focus(); }
+  $("choiceCancelBtn").addEventListener("click", closeChoiceSheet);
+  $("choiceSheet").addEventListener("click", (e) => { if (e.target === $("choiceSheet")) closeChoiceSheet(); });
+  $("choiceSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closeChoiceSheet(); else trapTabKey($("choiceSheet"), e); });
 
   // ---- entry sheet (plan weekday or one-off date) ----
   let planEntryTarget = null;
   let planEntryReturnFocus = null;
-  els.planEntryArea.innerHTML = PLAN_AREAS.map((a) => `<option value="${a.key}">${esc(a.label)}</option>`).join("");
+  let planEntryDaySel = [];
+  els.planEntryArea.innerHTML = PLAN_AREAS.map((a) => `<option value="${a.key}">${esc(a.label)}</option>`).join("") + `<option value="combo">Kombi-Programm</option>`;
   els.planEntryMinutes.innerHTML = [5, 10, 15, 20, 25, 30, 40, 45, 60, 75, 90, 120].map((m) => `<option value="${m}">${m} Min.</option>`).join("");
   function fillWhat(area, value) {
     els.planEntryWhat.innerHTML = whatOptions(area).map((o) => `<option value="${esc(o.v)}">${esc(o.t)}</option>`).join("");
-    els.planEntryWhat.value = whatOptions(area).some((o) => o.v === value) ? value : "";
+    els.planEntryWhat.value = whatOptions(area).some((o) => o.v === value) ? value : (whatOptions(area)[0] || { v: "" }).v;
   }
   els.planEntryArea.addEventListener("change", () => fillWhat(els.planEntryArea.value, ""));
+  function renderEntryDays() {
+    $("planEntryDays").innerHTML = WD_SHORT.map((d, i) => `<button type="button" class="plan-daypick${planEntryDaySel.includes(i) ? " active" : ""}" data-pick="${i}" aria-pressed="${planEntryDaySel.includes(i)}" aria-label="${WD_LONG[i]}">${d}</button>`).join("")
+      + `<button type="button" class="plan-daypick all${planEntryDaySel.length === 7 ? " active" : ""}" data-pick="all" aria-pressed="${planEntryDaySel.length === 7}">Jeden Tag</button>`;
+  }
+  $("planEntryDays").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-pick]"); if (!b) return;
+    if (b.dataset.pick === "all") planEntryDaySel = planEntryDaySel.length === 7 ? [] : [0, 1, 2, 3, 4, 5, 6];
+    else { const i = +b.dataset.pick; planEntryDaySel = planEntryDaySel.includes(i) ? planEntryDaySel.filter((x) => x !== i) : [...planEntryDaySel, i].sort(); }
+    renderEntryDays();
+  });
+  function entryContextName(key) {
+    if (key.startsWith("i")) { const ins = plan.inserts.find((x) => x.id === key.slice(1)); return ins ? ins.name : "Sonderwoche"; }
+    const [pi, v] = key.split("/").map(Number);
+    const ph = plan.phases[pi];
+    return ph ? ph.name + (ph.alt && ph.alt.length ? ` · Woche ${VARIANT_NAMES[v || 0]}` : "") : "Wochenplan";
+  }
   function openPlanEntry(target) {
     planEntryTarget = target;
+    if (target.kind === "plan" && target.key == null && target.pi != null) target.key = `${target.pi}/0`;
     let existing = null;
-    if (target.kind === "plan" && target.id) existing = plan.phases[target.pi].days[target.di].find((x) => x.id === target.id);
+    if (target.kind === "plan" && target.id) { const days = daysRefOf(target.key); existing = days ? days[target.di].find((x) => x.id === target.id) : null; }
     if (target.kind === "extra" && target.id) existing = (plan.extras[target.date] || []).find((x) => x.id === target.id) || null;
+    if (target.kind === "dayov" && target.id) existing = (plan.dayOv[target.date] || []).find((x) => x.id === target.id) || null;
     const e = existing || { area: "visual", what: "", code: "", time: "", minutes: 15, ...(target.preset || {}) };
     els.planEntryTitle.textContent = existing ? "Training ändern" : "Training eintragen";
-    // pickDay (long-press "In den Wochenplan"): the weekday is chosen in
-    // the sheet; pi -1 = no phase yet, one is created on save.
-    $("planEntryDayWrap").hidden = !target.pickDay;
-    if (target.pickDay) {
-      $("planEntryDay").innerHTML = WD_LONG.map((d, i) => `<option value="${i}">jeden ${d}</option>`).join("");
-      $("planEntryDay").value = String(target.di);
-    }
+    // pickDay (long-press "In den Wochenplan") and every new weekly entry:
+    // several weekdays at once (kp1), "Jeden Tag" in one tap.
+    const multi = (target.kind === "plan" && !existing) || target.pickDay;
+    $("planEntryDayWrap").hidden = true;
+    $("planEntryDaysWrap").hidden = !multi;
+    planEntryDaySel = multi ? [target.di != null ? target.di : 0] : [];
+    if (multi) renderEntryDays();
     els.planEntryContext.textContent = target.pickDay
-      ? (target.pi >= 0 ? `Wochenplan · ${plan.phases[target.pi].name}` : "Wochenplan")
+      ? (target.pi >= 0 && plan.phases[target.pi] ? `Wochenplan · ${plan.phases[target.pi].name}` : "Wochenplan")
       : target.kind === "plan"
-      ? `${plan.phases[target.pi].name} · jeden ${WD_LONG[target.di]}`
+      ? `${entryContextName(target.key)}${multi ? " · jede Woche" : ` · jeden ${WD_LONG[target.di]}`}`
       : `Nur am ${longDate(target.date)}`;
     els.planEntryArea.value = e.area;
     fillWhat(e.area, e.what);
     els.planEntryCode.value = e.code || "";
     els.planEntryTime.value = e.time || "";
-    els.planEntryMinutes.value = String(e.minutes);
+    els.planEntryMinutes.value = String(e.fullMinutes || e.minutes);
     if (!els.planEntryMinutes.value) els.planEntryMinutes.value = "15";
+    $("planEntrySpecialRow").hidden = target.kind !== "extra";
+    $("planEntrySpecial").checked = !!e.special;
     planEntryReturnFocus = document.activeElement;
     els.planEntrySheet.hidden = false;
     focusFirstIn(els.planEntrySheet);
@@ -29838,18 +30281,30 @@
     const t = planEntryTarget;
     if (!t) return;
     const entry = cleanEntry({ id: t.id || newId(), area: els.planEntryArea.value, what: els.planEntryWhat.value, code: els.planEntryCode.value.trim(),
-      time: els.planEntryTime.value, minutes: els.planEntryMinutes.value });
+      time: els.planEntryTime.value, minutes: els.planEntryMinutes.value, special: t.kind === "extra" && $("planEntrySpecial").checked ? "Sondertraining" : "" });
+    if (!entry) return;
+    if (t.onSave) { closePlanEntry(); t.onSave(entry); return; }
     if (t.pickDay) {
-      t.di = Number($("planEntryDay").value) || 0;
       if (t.pi < 0 || !plan.phases[t.pi]) {
         plan.phases.push({ id: newId(), name: `Phase ${plan.phases.length + 1}`, weeks: 0, days: [[], [], [], [], [], [], []] });
         t.pi = plan.phases.length - 1;
       }
+      t.key = `${t.pi}/0`;
     }
-    if (t.kind === "plan") {
-      const list = plan.phases[t.pi].days[t.di];
+    if (t.kind === "plan" || t.pickDay) {
+      const days = daysRefOf(t.key);
+      if (t.id) {
+        const i = days[t.di].findIndex((x) => x.id === entry.id);
+        if (i >= 0) days[t.di][i] = entry; else days[t.di].push(entry);
+      } else {
+        const sel = planEntryDaySel.length ? planEntryDaySel : [t.di || 0];
+        sel.forEach((di, k) => days[di].push({ ...entry, id: k ? newId() : entry.id }));
+      }
+    } else if (t.kind === "dayov") {
+      const list = [...(plan.dayOv[t.date] || [])];
       const i = list.findIndex((x) => x.id === entry.id);
       if (i >= 0) list[i] = entry; else list.push(entry);
+      plan.dayOv[t.date] = list;
     } else {
       const list = [...(plan.extras[t.date] || [])];
       const i = list.findIndex((x) => x.id === entry.id);
@@ -29861,6 +30316,311 @@
     if (t.pickDay || t.fromToday) { if (!els.todayHome.hidden) renderToday(); }
     else if (t.kind === "plan") renderPlanScreen(); else renderToday();
   });
+
+  // ==== Plan per Code von deinem Trainer (kp13) + neue Fassung (kp21) ====
+  // Code type "training-plan": {plan:{phases, inserts?, startDate?}, version}.
+  // Taking it over replaces the phases (and Sonderwochen); the client's own
+  // things stay: pauses, extras, ticks, "nur an diesem Tag", week moves,
+  // Wettkampf focus, and times he changed himself (kept per entry id).
+  // On start the app quietly asks once a day whether the trainer published
+  // a newer version and offers it on Heute. Docs: docs/notes/27.
+  const PLAN_CHECK_KEY = "fwmc-plan-check-v1";
+  function trainerPlanSummary(def) {
+    const ph = def.plan.phases || [];
+    const weeks = ph.reduce((s, p) => s + (Number(p.weeks) || 0), 0);
+    const n = ((ph[0] && ph[0].days) || []).reduce((a, d) => a + (d || []).length, 0);
+    return `${countLabel(ph.length, "Phase", "Phasen")}${weeks && ph.every((p) => Number(p.weeks)) ? ` über ${countLabel(weeks, "Woche", "Wochen")}` : ""}, zu Beginn ${countLabel(n, "Training", "Trainings")} pro Woche`;
+  }
+  function applyTrainerPlan(def, code) {
+    const incoming = loadPlan({ startDate: def.plan.startDate || mondayOf(todayStr()), phases: def.plan.phases, inserts: def.plan.inserts || [] });
+    const sameSource = plan.source && plan.source.code === code;
+    // client's own time changes survive a new version
+    const ownTimes = {};
+    if (sameSource && plan.source.baseTimes) {
+      plan.phases.forEach((ph) => [ph.days].concat(ph.alt || []).forEach((dd) => dd.forEach((l) => l.forEach((e) => {
+        if (e.id in plan.source.baseTimes && plan.source.baseTimes[e.id] !== e.time) ownTimes[e.id] = e.time;
+      }))));
+    }
+    const baseTimes = {};
+    incoming.phases.forEach((ph) => { ph.locked = true; [ph.days].concat(ph.alt || []).forEach((dd) => dd.forEach((l) => l.forEach((e) => { baseTimes[e.id] = e.time; if (e.id in ownTimes) e.time = ownTimes[e.id]; }))); });
+    plan.phases = incoming.phases;
+    plan.inserts = incoming.inserts;
+    if (!sameSource) plan.startDate = incoming.startDate;
+    plan.source = { code, version: Number(def.version) || 1, at: new Date().toISOString(), baseTimes };
+    savePlan();
+    writeJSON(PLAN_CHECK_KEY, { day: todayStr(), offer: null });
+  }
+  function offerTrainerPlan(def, code, ctx) {
+    activateSectionTab("today");
+    showScreen("todayHome");
+    const same = plan.source && plan.source.code === code;
+    const text = `${trainerPlanSummary(def)}. ${same ? "Deine eigenen Uhrzeiten, Pausen und Einträge bleiben erhalten." : planHasEntries() ? "Dein bisheriger Wochenplan wird dabei ersetzt. Deine Pausen, Termine und einzelnen Einträge bleiben." : "Du kannst danach Uhrzeiten, Tage und Pausen selbst anpassen."}`;
+    confirmDialog(text, () => { applyTrainerPlan(def, code); renderToday(); openMyPlan("todayHome"); showToast("Plan von deinem Trainer übernommen."); },
+      { title: same ? "Neue Fassung deines Plans übernehmen?" : "Plan von deinem Trainer übernehmen?", yes: "Übernehmen", no: "Nicht jetzt" });
+  }
+  async function checkTrainerPlanUpdate() {
+    if (!plan.source || !plan.source.code) return;
+    const st = readJSON(PLAN_CHECK_KEY, {}) || {};
+    if (st.day === todayStr()) return;
+    let def = null;
+    try { def = await lookupProgram(plan.source.code); } catch (e) { return; }
+    if (!def || def.__lookupError) return; // offline: try again next start
+    const offer = def.type === "training-plan" && !codeDefProblem(def) && (Number(def.version) || 1) > plan.source.version ? Number(def.version) || 1 : null;
+    writeJSON(PLAN_CHECK_KEY, { day: todayStr(), offer });
+    if (offer && !els.todayHome.hidden) renderToday();
+  }
+  function renderPlanUpdateCard() {
+    const st = readJSON(PLAN_CHECK_KEY, {}) || {};
+    const card = $("todayPlanUpdate");
+    if (!card) return;
+    const show = !!(plan.source && st.offer && st.offer > plan.source.version);
+    card.hidden = !show;
+    if (!show) return;
+    card.innerHTML = `<div class="today-main-kicker">Dein Plan</div>
+      <h2 class="today-main-title">Dein Trainer hat deinen Plan angepasst.</h2>
+      <p class="today-main-hint">Deine eigenen Uhrzeiten, Pausen und Einträge bleiben erhalten.</p>
+      <button class="start-btn" type="button" id="planUpdateTakeBtn">Ansehen und übernehmen</button>
+      <button class="text-link small" type="button" id="planUpdateLaterBtn">Später</button>`;
+    card.querySelector("#planUpdateTakeBtn").addEventListener("click", () => openProgramIntro(plan.source.code, { goBtn: null, errorEl: els.todayCodeError, homeScreen: "todayHome" }));
+    card.querySelector("#planUpdateLaterBtn").addEventListener("click", () => { card.hidden = true; });
+  }
+  setTimeout(() => { checkTrainerPlanUpdate(); }, 2500);
+
+  // ==== Mein Plan (kp15), Woche verschieben (kp8), Pause (kp7),
+  // Wettkampf (kp11) ====
+  let myPlanBack = "todayHome";
+  const PAUSE_REASONS = [["urlaub", "Urlaub", "🧳"], ["krank", "Krank", "🌡"], ["verletzt", "Verletzt", "🩹"], ["sonstiges", "Sonstiges", "⏸"]];
+  const PAUSE_BY_KEY = Object.fromEntries(PAUSE_REASONS.map((r) => [r[0], r]));
+  function openMyPlan(back) {
+    myPlanBack = back || "todayHome";
+    renderMyPlan();
+    showScreen("myPlanScreen");
+  }
+  $("myPlanBackBtn").addEventListener("click", () => { if (myPlanBack === "planScreen") { renderPlanScreen(); showScreen("planScreen"); } else { activateSectionTab("today"); showScreen("todayHome"); renderToday(); } });
+  function planLastWeek() {
+    // Show the plan up to its end, at most a year; an open-ended plan: 16
+    // weeks from today on.
+    const limited = plan.phases.length && plan.phases.every((p) => p.weeks);
+    const total = plan.phases.reduce((s, p) => s + (p.weeks || 0), 0);
+    let cw = 0, last = 0;
+    if (limited) {
+      for (; cw < 1200; cw++) { const wk = planWeekMap(cw); if (!wk) break; if (wk.type === "plan" && wk.pw >= total) break; last = cw; }
+    } else last = Math.max(0, Math.floor(dDiff(plan.startDate, todayStr()) / 7)) + 16;
+    loadEvents().filter((f) => (f.goal || f.kind === "wettkampf") && f.date >= todayStr()).forEach((f) => { last = Math.max(last, Math.floor(dDiff(plan.startDate, f.date) / 7) + 1); });
+    return Math.min(last, 104);
+  }
+  function weekRowLabel(wk, ph) {
+    if (wk.type === "pause") { const r = PAUSE_BY_KEY[wk.pause.reason] || PAUSE_BY_KEY.sonstiges; return `${r[2]} Pause (${r[1]})`; }
+    if (wk.type === "insert") return `★ ${wk.ins.name}`;
+    if (wk.type === "blank") return "Eine Woche später (verschoben)";
+    if (!ph) return "Plan beendet";
+    const n = ph.phase.weeks ? `Woche ${ph.weekInPhase} von ${ph.phase.weeks}` : `Woche ${ph.weekInPhase}`;
+    const bits = [ph.phase.name, n];
+    if (ph.phase.alt && ph.phase.alt.length) bits[1] += ` (${VARIANT_NAMES[ph.variant]})`;
+    if (ph.focus) bits.push(ph.focus.label);
+    if (wk.repeated) bits.push("wiederholt");
+    if (wk.skipped) bits.push("eine Woche übersprungen");
+    return bits.join(" · ");
+  }
+  function renderMyPlan() {
+    planMapCache = null;
+    const today = todayStr(), thisMon = mondayOf(today);
+    const hist = loadHistory();
+    const last = planLastWeek();
+    const rows = [];
+    for (let cw = 0; cw <= last; cw++) {
+      const wk = planWeekMap(cw);
+      if (!wk) break;
+      const ph = wk.type === "plan" ? phaseFor(wk.monday) : null;
+      const st = weekStats(wk.monday, hist);
+      const color = wk.type === "pause" ? "#9aa7ad" : wk.type === "insert" ? "#d4a017" : wk.type === "blank" ? "#c9d3d6" : ph ? PHASE_TINTS[ph.index % PHASE_TINTS.length] : "#c9d3d6";
+      const cls = ["myplan-week", wk.type, wk.monday === thisMon ? "is-now" : "", wk.monday < thisMon ? "past" : "", ph && ph.focus ? "hint" : ""].filter(Boolean).join(" ");
+      const goal = loadEvents().find((f) => (f.goal || f.kind === "wettkampf") && mondayOf(f.date) === wk.monday);
+      const sun = dAdd(wk.monday, 6);
+      rows.push(`<button type="button" class="${cls}" data-week="${wk.monday}" style="--wk:${color}">
+        <span class="myplan-bar" aria-hidden="true"></span>
+        <span class="myplan-date">${dParse(wk.monday).getDate()}.${dParse(wk.monday).getMonth() + 1}.–${dParse(sun).getDate()}.${dParse(sun).getMonth() + 1}.</span>
+        <span class="myplan-text">${esc(weekRowLabel(wk, ph))}${goal ? ` <span class="myplan-goal">◆ ${esc(goal.title)}</span>` : ""}</span>
+        <span class="myplan-n">${wk.monday === thisMon ? "Du bist hier" : st.planned ? `${st.done}/${st.planned}` : ""}</span></button>`);
+    }
+    $("myPlanList").innerHTML = rows.join("") || `<p class="group-help">Noch kein Plan. Lege ihn unter „Wochenplan“ an.</p>`;
+    const kinds = [...new Set(plan.phases.map((p, i) => i))].map((i) => `<span><i style="background:${PHASE_TINTS[i % PHASE_TINTS.length]}"></i>${esc(plan.phases[i].name)}</span>`);
+    if (plan.pauses.length) kinds.push(`<span><i class="pause"></i>Pause</span>`);
+    if (plan.inserts.length) kinds.push(`<span><i style="background:#d4a017"></i>Sonderwoche</span>`);
+    $("myPlanLegend").innerHTML = kinds.join("");
+    const nowRow = $("myPlanList").querySelector(".is-now");
+    if (nowRow) setTimeout(() => { const box = $("myPlanList"); if (box.scrollHeight > box.clientHeight) box.scrollTop = nowRow.offsetTop - box.offsetTop - 60; }, 0);
+    $("myPlanPauses").innerHTML = plan.pauses.length ? plan.pauses.slice().sort((a, b) => a.from.localeCompare(b.from)).map((pz) => {
+      const r = PAUSE_BY_KEY[pz.reason] || PAUSE_BY_KEY.sonstiges;
+      return `<div class="day-item"><div class="day-item-main"><span class="pause-ico" aria-hidden="true">${r[2]}</span><div><div class="day-item-title">${esc(r[1])}: ${esc(shortDate(pz.from))} bis ${esc(shortDate(pz.to))}</div><div class="day-item-meta">${pz.shift ? "Plan rückt nach hinten" : "Plan läuft weiter, Tage bleiben leer"}</div></div></div>
+        <div class="day-item-actions"><button type="button" class="day-act" data-pause-edit="${esc(pz.id)}">Bearbeiten</button>${pz.from <= today && pz.to >= today ? `<button type="button" class="day-act" data-pause-end="${esc(pz.id)}">Ich bin wieder fit</button>` : ""}</div></div>`;
+    }).join("") : `<p class="group-help">Keine Pause eingetragen.</p>`;
+    // Wettkampf: goal events from Termine
+    const goals = loadEvents().filter((e) => e.date >= today && (e.goal || e.kind === "wettkampf")).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
+    $("myPlanFocusHelp").textContent = goals.length
+      ? "Unsere Empfehlung: in der Woche davor eher locker trainieren, in der Wettkampfwoche nur kurz, danach Erholung einplanen. Dein Plan ändert sich dadurch nicht von selbst. Passe ihn an, wie du es mit deinem Trainer abgesprochen hast."
+      : "Trage einen Wettkampf, ein Spiel oder eine Prüfung als Termin auf Heute ein. Dann steht hier und in deinem Plan, wie du die Wochen davor und danach am besten angehst.";
+    $("myPlanFocus").innerHTML = goals.map((g) => `<div class="day-item"><div class="day-item-main"><span class="myplan-goal">◆</span><div><div class="day-item-title">${esc(g.title)}</div><div class="day-item-meta">${esc(longDate(g.date))}${daysUntil(g.date) > 0 ? ` · noch ${daysUntil(g.date)} Tage` : ""}</div></div></div></div>`).join("");
+  }
+  function shortDate(d) { const x = dParse(d); return `${x.getDate()}.${x.getMonth() + 1}.${x.getFullYear()}`; }
+  function goalOverrun(note) {
+    // Plan end after a focus date?
+    const f = loadEvents().filter((x) => x.goal && x.date >= todayStr()).sort((a, b) => a.date.localeCompare(b.date))[0];
+    if (!f || !plan.phases.length || !plan.phases.every((p) => p.weeks)) return "";
+    const total = plan.phases.reduce((s, p) => s + p.weeks, 0);
+    let endMon = null;
+    for (let cw = 0; cw < 1200; cw++) { const wk = planWeekMap(cw); if (!wk) break; if (wk.type === "plan" && wk.pw === total - 1) { endMon = wk.monday; break; } }
+    return endMon && dAdd(endMon, 6) > f.date ? `${note || ""}Dein Plan endet jetzt erst nach „${f.title}“ am ${shortDate(f.date)}. Wenn du magst, verkürze eine Phase um eine Woche.` : "";
+  }
+  $("myPlanList").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-week]"); if (!b) return;
+    const mon = b.dataset.week;
+    const next = dAdd(mon, 7);
+    const ops = plan.weekOps.filter((x) => x.at === mon || x.at === next);
+    const opts = [];
+    if (ops.length) opts.push({ label: "Änderung dieser Woche zurücknehmen", fn: () => { plan.weekOps = plan.weekOps.filter((x) => !ops.includes(x)); afterWeekOp(); } });
+    opts.push(
+      { label: "Diese Woche wiederholen", sub: "War zu schwer oder ist ausgefallen. Die Woche kommt noch einmal, der Plan rückt eine Woche nach hinten.", fn: () => { plan.weekOps = plan.weekOps.filter((x) => x.at !== next); plan.weekOps.push({ id: newId(), at: next, op: "repeat" }); afterWeekOp(); } },
+      { label: "Diese Woche überspringen", sub: "Läuft gut: Diese Woche gilt schon die nächste Planwoche.", fn: () => { plan.weekOps = plan.weekOps.filter((x) => x.at !== mon); plan.weekOps.push({ id: newId(), at: mon, op: "skip" }); afterWeekOp(); } },
+      { label: "Plan ab hier eine Woche später", sub: "Diese Woche bleibt frei, alles Weitere rückt eine Woche nach hinten.", fn: () => { plan.weekOps = plan.weekOps.filter((x) => x.at !== mon); plan.weekOps.push({ id: newId(), at: mon, op: "shift" }); afterWeekOp(); } },
+      { label: "Diese Woche ansehen", fn: () => { todaySel = mon < todayStr() && dAdd(mon, 6) >= todayStr() ? todayStr() : mon; activateSectionTab("today"); showScreen("todayHome"); renderToday(); } },
+    );
+    choiceSheet(`Woche vom ${longDate(mon)}`, "", opts);
+  });
+  function afterWeekOp() {
+    savePlan(); renderMyPlan();
+    const w = goalOverrun();
+    showToast(w || "Plan angepasst. Rückgängig geht oben im Wochenplan.");
+  }
+  $("myPlanPauses").addEventListener("click", (e) => {
+    const ed = e.target.closest("[data-pause-edit]"); if (ed) { openPauseSheet(ed.dataset.pauseEdit); return; }
+    const end = e.target.closest("[data-pause-end]");
+    if (end) { const pz = plan.pauses.find((x) => x.id === end.dataset.pauseEnd); if (pz) { pz.to = dAdd(todayStr(), -1); if (pz.to < pz.from) plan.pauses = plan.pauses.filter((x) => x !== pz); savePlan(); renderMyPlan(); showToast("Willkommen zurück! Ab heute läuft dein Plan wieder."); } }
+  });
+  $("myPlanPauseAddBtn").addEventListener("click", () => openPauseSheet());
+  // ---- Pause eintragen ----
+  let pauseEditId = null, pauseReason = "urlaub", pauseReturnFocus = null;
+  function renderPauseReasons() {
+    $("pauseReasonRow").innerHTML = PAUSE_REASONS.map(([k, t, ic]) => `<button type="button" class="choice${k === pauseReason ? " active" : ""}" data-reason="${k}" aria-pressed="${k === pauseReason}"><span aria-hidden="true">${ic}</span> ${esc(t)}</button>`).join("");
+  }
+  function pauseShiftDefault() {
+    const f = $("pauseFromInput").value, t = $("pauseToInput").value;
+    return f && t ? dDiff(f, t) + 1 > 3 : true;
+  }
+  function updatePauseHelp() {
+    const f = $("pauseFromInput").value, t = $("pauseToInput").value;
+    const days = f && t && t >= f ? dDiff(f, t) + 1 : 0;
+    $("pauseShiftHelp").textContent = $("pauseShiftToggle").checked
+      ? "Nach der Pause geht es dort weiter, wo du aufgehört hast. Alles Spätere rückt nach hinten (ab 4 Pausentagen um eine ganze Woche)."
+      : "Der Plan läuft im Hintergrund weiter, die Tage in der Pause bleiben nur leer. Passt für kurze Pausen.";
+    const warn = $("pauseWarn");
+    warn.hidden = !(days > 7);
+    warn.textContent = days > 7 ? "Nach mehr als einer Woche Pause empfehle ich, es danach ruhig angehen zu lassen. In „Mein Plan“ kannst du die erste Woche danach auch wiederholen." : "";
+  }
+  function openPauseSheet(id) {
+    const pz = id ? plan.pauses.find((x) => x.id === id) : null;
+    pauseEditId = pz ? pz.id : null;
+    pauseReason = pz ? pz.reason : "urlaub";
+    $("pauseSheetTitle").textContent = pz ? "Pause bearbeiten" : "Pause eintragen";
+    $("pauseSaveBtn").textContent = pz ? "Speichern" : "Eintragen";
+    $("pauseFromInput").value = pz ? pz.from : todayStr();
+    $("pauseToInput").value = pz ? pz.to : dAdd(todayStr(), 6);
+    $("pauseShiftToggle").checked = pz ? pz.shift : true;
+    $("pauseDeleteBtn").hidden = !pz;
+    $("pauseError").hidden = true;
+    renderPauseReasons();
+    updatePauseHelp();
+    pauseReturnFocus = document.activeElement;
+    $("pauseSheet").hidden = false;
+    $("pauseCancelBtn").focus();
+  }
+  function closePauseSheet() { $("pauseSheet").hidden = true; if (pauseReturnFocus && document.contains(pauseReturnFocus)) pauseReturnFocus.focus(); }
+  $("pauseReasonRow").addEventListener("click", (e) => { const b = e.target.closest("[data-reason]"); if (b) { pauseReason = b.dataset.reason; renderPauseReasons(); } });
+  ["pauseFromInput", "pauseToInput"].forEach((id) => $(id).addEventListener("change", () => { if (!pauseEditId) $("pauseShiftToggle").checked = pauseShiftDefault(); updatePauseHelp(); }));
+  $("pauseShiftToggle").addEventListener("change", updatePauseHelp);
+  $("pauseCancelBtn").addEventListener("click", closePauseSheet);
+  $("pauseSheet").addEventListener("click", (e) => { if (e.target === $("pauseSheet")) closePauseSheet(); });
+  $("pauseSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closePauseSheet(); else trapTabKey($("pauseSheet"), e); });
+  $("pauseSaveBtn").addEventListener("click", () => {
+    const from = $("pauseFromInput").value, to = $("pauseToInput").value;
+    const err = $("pauseError");
+    if (!from || !to || to < from) { err.textContent = "Bitte ein gültiges Von- und Bis-Datum wählen (Bis nicht vor Von)."; err.hidden = false; return; }
+    if (dDiff(from, to) > 365) { err.textContent = "Eine Pause kann höchstens ein Jahr lang sein."; err.hidden = false; return; }
+    const rec = { id: pauseEditId || newId(), from, to, reason: pauseReason, shift: $("pauseShiftToggle").checked };
+    plan.pauses = plan.pauses.filter((x) => x.id !== rec.id).concat(rec);
+    savePlan();
+    closePauseSheet();
+    if (!$("myPlanScreen").hidden) renderMyPlan();
+    if (!els.todayHome.hidden) renderToday();
+    const w = goalOverrun();
+    showToast(w || (rec.shift ? "Pause eingetragen, dein Plan rückt nach hinten." : "Pause eingetragen."));
+  });
+  $("pauseDeleteBtn").addEventListener("click", () => {
+    const id = pauseEditId;
+    confirmDialog("Diese Pause löschen? Dein Plan läuft dann wieder wie vorher.", () => {
+      plan.pauses = plan.pauses.filter((x) => x.id !== id); savePlan(); closePauseSheet();
+      if (!$("myPlanScreen").hidden) renderMyPlan();
+      if (!els.todayHome.hidden) renderToday();
+    });
+  });
+
+  // ---- kp4: "Wofür gilt das?" when a planned training is changed on Heute ----
+  function askScope(date, o, action) {
+    // action: "edit" | "remove"
+    const ph = phaseFor(date);
+    const label = action === "edit" ? "ändern" : "entfernen";
+    const opts = [
+      { label: "Nur an diesem Tag", sub: longDate(date), primary: true, fn: () => scopeDay(date, o, action) },
+    ];
+    if (ph && !o.override && !o.insert) {
+      opts.push({ label: "Ab jetzt immer", sub: `Ab dieser Woche jeden ${WD_LONG[wdIdx(date)]}`, fn: () => scopeFromNow(date, o, action, ph) });
+      opts.push({ label: `In der ganzen Phase „${ph.phase.name}“`, sub: "Auch in den Wochen davor", fn: () => scopePhase(date, o, action, ph) });
+    }
+    choiceSheet(`Training ${label}: Wofür gilt das?`, "", opts);
+  }
+  function dayListForOverride(date) {
+    if (plan.dayOv[date]) return plan.dayOv[date];
+    const ph = phaseFor(date);
+    const base = ph ? phaseDaysOf(ph.phase, ph.variant)[wdIdx(date)] : [];
+    const skips = plan.skips[date] || [];
+    plan.dayOv[date] = base.filter((e) => !skips.includes(e.id)).map((e) => ({ ...e }));
+    delete plan.skips[date];
+    return plan.dayOv[date];
+  }
+  function scopeDay(date, o, action) {
+    const list = dayListForOverride(date);
+    if (action === "remove") { plan.dayOv[date] = list.filter((x) => x.id !== o.id); savePlan(); renderToday(); return; }
+    const cur = list.find((x) => x.id === o.id) || o;
+    openPlanEntry({ kind: "dayov", date, id: o.id, preset: cur, fromToday: true });
+  }
+  function splitPhaseAt(date, ph) {
+    // "Ab jetzt immer": the phase ends before this week, a copy starts here.
+    const i = ph.index, p = ph.phase;
+    const doneWeeks = ph.weekInPhase - 1;
+    if (doneWeeks <= 0) return i;
+    const cp = JSON.parse(JSON.stringify(p));
+    cp.id = newId();
+    cp.weeks = p.weeks ? p.weeks - doneWeeks : 0;
+    p.weeks = doneWeeks;
+    // keep the A/B rhythm in step
+    if (cp.alt && cp.alt.length) { const all = [cp.days].concat(cp.alt); const sh = doneWeeks % all.length; const rot = all.slice(sh).concat(all.slice(0, sh)); cp.days = rot[0]; cp.alt = rot.slice(1); }
+    plan.phases.splice(i + 1, 0, cp);
+    return i + 1;
+  }
+  function scopeFromNow(date, o, action, ph) {
+    const ni = splitPhaseAt(date, ph);
+    const np = plan.phases[ni];
+    const v = ni === ph.index ? ph.variant : 0;
+    const days = phaseDaysOf(np, v);
+    const di = wdIdx(date);
+    if (action === "remove") { days[di] = days[di].filter((x) => x.id !== o.id); savePlan(); renderToday(); showToast("Ab dieser Woche entfernt."); return; }
+    openPlanEntry({ kind: "plan", key: `${ni}/${v}`, di, id: o.id, fromToday: true });
+  }
+  function scopePhase(date, o, action, ph) {
+    const days = phaseDaysOf(ph.phase, ph.variant), di = wdIdx(date);
+    if (action === "remove") { days[di] = days[di].filter((x) => x.id !== o.id); savePlan(); renderToday(); return; }
+    openPlanEntry({ kind: "plan", key: `${ph.index}/${ph.variant}`, di, id: o.id, fromToday: true });
+  }
 
   // Start screen: always "Heute", unless the URL names an area
   // (?bereich=visual|breath|movement|workout|cardio|nat|test) - used for

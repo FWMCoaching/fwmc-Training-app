@@ -243,7 +243,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 21:01</p>
+    <p class="app-version">Stand: 07.10.2026, 21:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -280,6 +280,8 @@
 
   <section class="today-main" id="todayMain" aria-live="polite"></section>
 
+  <section class="today-main plan-update" id="todayPlanUpdate" hidden></section>
+
   <section class="today-main week-review" id="todayWeekReview" hidden></section>
 
   <section class="today-main event-countdown" id="todayCountdown" hidden></section>
@@ -306,6 +308,7 @@
       <h2 id="todayWeekTitle">Diese Woche</h2>
       <span class="section-note" id="todayProgress"></span>
     </div>
+    <button type="button" class="today-plan-line" id="todayPlanLine" hidden></button>
     <div class="week-nav">
       <button class="week-nav-btn" id="todayWeekPrev" type="button" aria-label="Vorherige Woche">&lsaquo;</button>
       <div class="week-range"><span id="todayWeekRange" aria-live="polite"></span><button class="week-today-btn" id="todayWeekTodayBtn" type="button" hidden>Heute</button></div>
@@ -334,6 +337,10 @@
       <button class="text-link small" id="dayEventAddBtn" type="button">+ Eigenen Termin eintragen (z. B. Wettkampf)</button>
     </div>
     <button class="start-btn secondary today-plan-btn" id="todayPlanBtn" type="button">Wochenplan bearbeiten</button>
+    <div class="today-plan-links" id="todayPlanLinks" hidden>
+      <button class="text-link small" id="todayMyPlanBtn" type="button">Mein Plan ansehen</button>
+      <button class="text-link small" id="todayPauseBtn" type="button">Pause eintragen</button>
+    </div>
   </section>
 
   <section class="today-main tips-card" id="todayTipsCard" hidden>
@@ -369,7 +376,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 21:01</p>
+    <p class="app-version">Stand: 07.10.2026, 21:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -405,7 +412,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 21:01</p>
+    <p class="app-version">Stand: 07.10.2026, 21:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -455,7 +462,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 21:01</p>
+    <p class="app-version">Stand: 07.10.2026, 21:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -485,6 +492,7 @@
       <span class="progress-goal-value" id="progressGoalValue"></span>
       <button class="progress-goal-btn" id="progressGoalPlus" type="button" aria-label="Wochenziel erh&ouml;hen">+</button>
     </div>
+    <p class="group-help" id="progressGoalPlanNote" hidden></p>
     <div class="progress-bar" id="progressWeekBar"></div>
     <p class="group-help" id="progressWeekText"></p>
   </div>
@@ -523,9 +531,81 @@
     <input type="date" id="planStartInput" class="plan-date-input">
     <p class="group-help" id="planStartHelp"></p>
   </div>
+  <div class="plan-source-note" id="planSourceNote" hidden></div>
+  <div class="plan-tools">
+    <button class="plan-tool-btn" id="planOverviewBtn" type="button">Mein Plan</button>
+    <button class="plan-tool-btn" id="planPauseBtn" type="button">Pause eintragen</button>
+    <button class="plan-tool-btn" id="planUndoBtn" type="button" hidden>&#8630; R&uuml;ckg&auml;ngig</button>
+  </div>
+  <div class="plan-tray" id="planTray">
+    <div class="plan-tray-head">
+      <span class="group-label">Ablage</span>
+      <span class="plan-tray-hint" id="planTrayHint">Tippe ein Training an und dann auf einen Tag. Am Laptop kannst du es auch ziehen.</span>
+    </div>
+    <div class="plan-tray-tabs" role="tablist" id="planTrayTabs"></div>
+    <div class="plan-tray-items" id="planTrayItems"></div>
+  </div>
   <div id="planPhaseList"></div>
   <button class="start-btn secondary" id="planAddPhaseBtn" type="button">+ Phase hinzuf&uuml;gen</button>
+  <button class="start-btn secondary" id="planAddInsertBtn" type="button">+ Sonderwoche einf&uuml;gen</button>
   <button class="text-link small plan-clear-btn" id="planClearBtn" type="button">Ganzen Plan l&ouml;schen</button>
+</div>
+
+<div class="screen" id="myPlanScreen" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="myPlanBackBtn">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Mein Plan</h1>
+  <p class="page-sub">Dein ganzer Weg auf einen Blick: jede Zeile ist eine Woche. Tippe auf eine Woche, um sie zu wiederholen, zu &uuml;berspringen oder zu verschieben.</p>
+  <div class="myplan-legend" id="myPlanLegend"></div>
+  <div class="myplan-list" id="myPlanList"></div>
+  <div class="group" id="myPlanPausesGroup">
+    <div class="group-label">Pausen</div>
+    <div id="myPlanPauses"></div>
+    <button class="start-btn secondary" id="myPlanPauseAddBtn" type="button">Pause eintragen</button>
+  </div>
+  <div class="group" id="myPlanFocusGroup">
+    <div class="group-label">Auf einen Wettkampf hin</div>
+    <p class="group-help" id="myPlanFocusHelp"></p>
+    <div id="myPlanFocus"></div>
+  </div>
+</div>
+
+<div class="sheet" id="pauseSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="pauseSheetTitle">
+    <h2 id="pauseSheetTitle">Pause eintragen</h2>
+    <p class="group-help">Urlaub, krank oder verletzt: In der Pause gibt es keine Erinnerungen, und deine Serie rei&szlig;t nicht ab.</p>
+    <div class="group-label" id="pauseReasonLabel">Grund</div>
+    <div class="choice-row two" id="pauseReasonRow" role="group" aria-labelledby="pauseReasonLabel"></div>
+    <div class="plan-entry-row">
+      <div>
+        <label class="group-label" for="pauseFromInput">Von</label>
+        <input type="date" id="pauseFromInput" class="plan-input">
+      </div>
+      <div>
+        <label class="group-label" for="pauseToInput">Bis</label>
+        <input type="date" id="pauseToInput" class="plan-input">
+      </div>
+    </div>
+    <label class="checkbox-row"><input type="checkbox" id="pauseShiftToggle"> Plan nach hinten verschieben</label>
+    <p class="group-help" id="pauseShiftHelp">Nach der Pause geht es dort weiter, wo du aufgeh&ouml;rt hast. Alles Sp&auml;tere r&uuml;ckt nach hinten.</p>
+    <p class="group-help plan-warn" id="pauseWarn" hidden></p>
+    <div class="program-error" id="pauseError" role="alert" hidden></div>
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="pauseCancelBtn" type="button">Abbrechen</button>
+      <button class="start-btn" id="pauseSaveBtn" type="button">Eintragen</button>
+    </div>
+    <button class="text-link small danger" id="pauseDeleteBtn" type="button" hidden>Pause beenden und l&ouml;schen</button>
+  </div>
+</div>
+
+<div class="sheet" id="choiceSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="choiceTitle">
+    <h2 id="choiceTitle"></h2>
+    <p class="group-help" id="choiceText"></p>
+    <div class="choice-sheet-list" id="choiceList"></div>
+    <button class="start-btn secondary" id="choiceCancelBtn" type="button">Abbrechen</button>
+  </div>
 </div>
 
 <div class="sheet" id="planEntrySheet" hidden>
@@ -535,6 +615,10 @@
     <div id="planEntryDayWrap" hidden>
       <label class="group-label" for="planEntryDay">Wochentag</label>
       <select id="planEntryDay" class="plan-select"></select>
+    </div>
+    <div id="planEntryDaysWrap" hidden>
+      <div class="group-label" id="planEntryDaysLabel">An welchen Tagen?</div>
+      <div class="plan-days-pick" id="planEntryDays" role="group" aria-labelledby="planEntryDaysLabel"></div>
     </div>
     <label class="group-label" for="planEntryArea">Bereich</label>
     <select id="planEntryArea" class="plan-select"></select>
@@ -551,6 +635,10 @@
         <label class="group-label" for="planEntryMinutes">Dauer</label>
         <select id="planEntryMinutes" class="plan-select"></select>
       </div>
+    </div>
+    <div id="planEntrySpecialRow" hidden>
+      <label class="checkbox-row"><input type="checkbox" id="planEntrySpecial"> Sondertraining (mit Stern im Kalender)</label>
+      <p class="group-help">Zum Beispiel Testtag oder Training mit deinem Trainer. Z&auml;hlt als geplant.</p>
     </div>
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="planEntryCancelBtn" type="button">Abbrechen</button>
@@ -656,7 +744,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 21:01</p>
+    <p class="app-version">Stand: 07.10.2026, 21:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -731,7 +819,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 21:01</p>
+    <p class="app-version">Stand: 07.10.2026, 21:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -842,7 +930,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 21:01</p>
+    <p class="app-version">Stand: 07.10.2026, 21:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -914,7 +1002,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 21:01</p>
+    <p class="app-version">Stand: 07.10.2026, 21:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1210,7 +1298,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 21:01</p>
+    <p class="app-version">Stand: 07.10.2026, 21:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1530,7 +1618,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 21:01</p>
+    <p class="app-version">Stand: 07.10.2026, 21:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1733,7 +1821,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 21:01</p>
+    <p class="app-version">Stand: 07.10.2026, 21:23</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
