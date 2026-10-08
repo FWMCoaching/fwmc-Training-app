@@ -33,9 +33,9 @@
   /* Area colours (AREA_BY_KEY in app.js) as tokens, + a text variant with
      >= 4.5:1 on the cards (darker in light mode, lighter in dark mode). */
   --area-visual:#1f7ab8;--area-breath:#2a9d8f;--area-nat:#3a7d2c;--area-movement:#c77d12;
-  --area-workout:#c0392b;--area-cardio:#7b4fb8;--area-free:#a0527a;
+  --area-workout:#c0392b;--area-cardio:#7b4fb8;--area-free:#a0527a;--area-activation:#3b4fa8;
   --area-visual-ink:#1c6ea6;--area-breath-ink:#20766b;--area-nat-ink:#37772a;--area-movement-ink:#955e0e;
-  --area-workout-ink:#c0392b;--area-cardio-ink:#7b4fb8;--area-free-ink:#9d5078;
+  --area-workout-ink:#c0392b;--area-cardio-ink:#7b4fb8;--area-free-ink:#9d5078;--area-activation-ink:#3b4fa8;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
@@ -57,7 +57,7 @@
     --warn:#ef9a9a;
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
     --area-visual-ink:#60a1cd;--area-breath-ink:#44a99c;--area-nat-ink:#77a56d;--area-movement-ink:#cd8b2c;
-    --area-workout-ink:#d78279;--area-cardio-ink:#a98dd1;--area-free-ink:#bf8ba6;
+    --area-workout-ink:#d78279;--area-cardio-ink:#a98dd1;--area-free-ink:#bf8ba6;--area-activation-ink:#9aa7e0;
     color-scheme:dark;
   }
 }
@@ -79,7 +79,7 @@
   --warn:#ef9a9a;
   --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
   --area-visual-ink:#60a1cd;--area-breath-ink:#44a99c;--area-nat-ink:#77a56d;--area-movement-ink:#cd8b2c;
-  --area-workout-ink:#d78279;--area-cardio-ink:#a98dd1;--area-free-ink:#bf8ba6;
+  --area-workout-ink:#d78279;--area-cardio-ink:#a98dd1;--area-free-ink:#bf8ba6;--area-activation-ink:#9aa7e0;
   color-scheme:dark;
 }
 
@@ -2493,10 +2493,10 @@ body.drag-busy{user-select:none;-webkit-user-select:none}
 .cal-slide-next{animation:calSlideNext .32s cubic-bezier(.2,.8,.2,1)}
 .cal-slide-prev{animation:calSlidePrev .32s cubic-bezier(.2,.8,.2,1)}
 .today-week .week-nav{overflow:hidden;padding:3px;margin:-3px}
-#hubAreaGrid .area-tile,#todayAreaGrid .area-tile,#home .excard,#natExercises .nat-tile,#freeOwnGrid .featured-card,#freeTplGrid .featured-card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#hubAreaGrid .area-tile,#todayAreaGrid .area-tile,#home .excard,#natExercises .nat-tile,#activationGrid .nat-tile,#freeOwnGrid .featured-card,#freeTplGrid .featured-card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .lp-pressing{transform:scale(.97)!important;transition:transform .35s ease!important}
 /* Long press: no iOS text selection, loupe or link preview on the tiles (2026-10-06) */
-#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, [data-free-id]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #activationGrid [data-act-ex], [data-free-id]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .tile-action-list{display:flex;flex-direction:column;gap:8px}
 .tile-action-list .text-link{min-height:44px;align-self:center;padding:6px 18px}
 /* Schritt-Nummern im Dunkelmodus lesbar (Fabian-Blick 2026-10-05: weiß auf
@@ -3093,3 +3093,16 @@ body.soft-flash .flash-digit:not([hidden]){animation:fwmcSoftIn .3s ease-out 1}
 .anaglyph-hint-off{align-self:center;min-height:44px;margin-top:6px}
 #eyecountPlayer .step-nav{background:#000000;border-top-color:#1d2427}
 #eyecountPlayer .step-nav button{background:#1d2427;color:#e3e9eb}
+
+/* ---- Aktivierung + Optodrum (2026-10-08) ----
+   Area colour --area-activation; the exercise tiles reuse the NAT/VT tile
+   look with the area colour on the badge. The Optodrum stage is one canvas
+   filling the whole stage (behind the floating player bar, like the VT
+   canvas); fixed hex colours only (player is never themed). */
+#activationGrid .act-badge{background:var(--area-activation)}
+.opto-stage{flex:1;position:relative;overflow:hidden;min-height:0;background:#ffffff;touch-action:none;user-select:none;-webkit-user-select:none}
+.opto-stage canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+.opto-finish{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:3}
+.opto-dir-row{grid-template-columns:repeat(3,1fr)}
+.opto-sub{margin-top:12px}
+.opto-sub .choice-row + .group-label{margin-top:12px}

@@ -43,7 +43,7 @@ async def main():
             check(t + "footer not hidden under the bar", fb <= nt + 1, (fb, nt))
 
             await pg.click('[data-nav="training"]'); await pg.wait_for_timeout(200)
-            check(t + "Training shows all areas", await pg.is_visible("#trainingHub") and await pg.locator("#hubAreaGrid .area-tile").count() == 7)  # 6 areas + Freie Bausteine (2026-10-05)
+            check(t + "Training shows all areas", await pg.is_visible("#trainingHub") and await pg.locator("#hubAreaGrid .area-tile").count() == 8)  # 6 areas + Eigenes Training (2026-10-05) + Aktivierung (2026-10-08)
             check(t + "Training active", await pg.evaluate(ACTIVE) == "training")
             check(t + "Kombi-Programm entry on Training", await pg.is_visible("#trainingHub .combo-entry-link"))
             await pg.click('#hubAreaGrid [data-area="nat"]'); await pg.wait_for_timeout(200)

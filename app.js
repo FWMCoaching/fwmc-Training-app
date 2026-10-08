@@ -1994,6 +1994,7 @@
     if (block.domain === "balance") return `Gleichgewicht · ${BALANCE_MODES[balanceBlockPrefs(block).mode].name}`;
     if (block.domain === "cardio") return `Ausdauertraining · ${countLabel(block.items.length, "Aktivität", "Aktivitäten")}`;
     if (block.domain === "free") return block.free.title;
+    if (block.domain === "optodrum") return `Optodrum · ${OPTO_PATTERNS[optoBlockPrefs(block).pattern].name}`;
     return block.domain;
   }
   function comboBlockMeta(block) {
@@ -2009,6 +2010,7 @@
     if (block.domain === "balance") return balanceMeta(balanceBlockPrefs(block));
     if (block.domain === "cardio") return fmtMinutes(cardioItemsSeconds(block.items));
     if (block.domain === "free") return freeBlockMeta(block.free);
+    if (block.domain === "optodrum") { const p = optoBlockPrefs(block); return `${optoTimeLabel(p)} · ${optoDirName(p)} · Stufe ${p.speed}`; }
     return "";
   }
   function comboBlockSeconds(block) {
@@ -2024,6 +2026,7 @@
     if (block.domain === "balance") return balanceTotalSeconds(balanceBlockPrefs(block));
     if (block.domain === "cardio") return cardioItemsSeconds(block.items);
     if (block.domain === "free") return freeBlockSeconds(block.free);
+    if (block.domain === "optodrum") { const p = optoBlockPrefs(block); return p.noLimit ? 0 : p.durationS; }
     return 0;
   }
   // Curated quick-add presets the combo builder offers per section - not the
@@ -2034,9 +2037,9 @@
   // place (rather than removing the mechanism) in case a future domain
   // ever wants a plain one-click preset again.
   const COMBO_PRESETS = {};
-  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Reaktionstraining", visual: "Visuelles Training", workout: "Krafttraining", cardio: "Ausdauertraining", nat: "NAT", free: "Eigenes Training" };
+  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Reaktionstraining", visual: "Visuelles Training", workout: "Krafttraining", cardio: "Ausdauertraining", nat: "NAT", free: "Eigenes Training", activation: "Aktivierung" };
   const PERIPH_ICON_HTML = '<div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg></div>';
-  const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat", "free"];
+  const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat", "free", "activation"];
   // Blitz-Raster/Flash-Speicher-Test/Objektverfolgung (MOT) render inside the same
   // "NAT" group as Remember (all 4 are NAT sub-exercises) but need their
   // own domain KEY for the block dispatch, since "nat" is Remember's alone
@@ -2102,6 +2105,8 @@
     // Freie Bausteine: the client's own saved ones + the templates, each
     // opening the editor in capture mode (the block keeps its own copy).
     free: () => comboFreeCaptureEntries(),
+    // Aktivierung (2026-10-08): its own exercises (Optodrum); block domain per exercise.
+    activation: () => comboActivationCaptureEntries(),
   };
   const COMBO_EDIT_OPENERS = {
     cardio: (block, i) => openCardioComboCapture(block, i),
@@ -2116,6 +2121,7 @@
     mot: (block, i) => openMotComboCapture(block.mode, block, i),
     balance: (block, i) => openBalanceComboCapture(block, i),
     free: (block, i) => openFreeComboCapture(block.free, i),
+    optodrum: (block, i) => openOptoComboCapture(block, i),
   };
 
   // ---- Elements ----
@@ -2954,13 +2960,16 @@
 
   els.trainingHub = $("trainingHub"); els.moreScreen = $("moreScreen");
   els.freeHome = $("freeHome"); els.freeReady = $("freeReady"); els.freeEdit = $("freeEdit"); els.freePlayer = $("freePlayer");
-  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady", "eyecountReady"];
+  els.activationHome = $("activationHome"); els.optoReady = $("optoReady"); els.optoPlayer = $("optoPlayer");
+  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "activationHome", "optoReady", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady", "eyecountReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
     if (name === "todayHome") renderToday();
     if (name === "progressScreen") renderProgressScreen();
     if (name === "freeHome") renderFreeHome();
+    if (name === "activationHome") renderActivationHome();
+    if (name !== "activationHome") $("activationProgramError").hidden = true;
     if (name !== "freeHome") $("freeProgramError").hidden = true;
     if (name !== "todayHome" && els.todayCodeError) els.todayCodeError.hidden = true;
     if (name !== "home") els.programError.hidden = true;
@@ -2977,8 +2986,10 @@
 
   // ---- Section switcher (Visual Training / Atemtraining) ----
   let freeAreaActive = false; // "Freie Bausteine" has no tab of its own (reached via Training / Heute)
+  let activationAreaActive = false; // Aktivierung: no tab either (2026-10-08)
   function activateSectionTab(sec) {
     freeAreaActive = sec === "free";
+    activationAreaActive = sec === "activation";
     document.querySelectorAll(".section-tab").forEach((b) => {
       const on = b.dataset.section === sec;
       b.classList.toggle("active", on);
@@ -3422,7 +3433,7 @@
   // One "Gesamter Trainingsverlauf" section per area home (Fabian, 2026-10-04:
   // it was missing in Cardio, NAT and Test). A new area adds its prefix here
   // and the same markup block (ids <prefix>HistorySection/Stats/List/MoreBtn/ClearBtn).
-  const HISTORY_PREFIXES = ["", "breath", "movement", "workout", "cardio", "nat", "test", "free"];
+  const HISTORY_PREFIXES = ["", "breath", "movement", "workout", "cardio", "nat", "test", "free", "activation"];
   const historyEl = (prefix, part) => document.getElementById(prefix ? prefix + "History" + part : "history" + part);
   function renderHistory() {
     const list = loadHistory();
@@ -6438,6 +6449,7 @@
     els.workoutPlayer.hidden = true;
     els.cardioPlayer.hidden = true;
     els.freePlayer.hidden = true;
+    els.optoPlayer.hidden = true;
     els.programVideoPlayer.hidden = true;
     els.programVideoEl.pause();
     els.breathTransition.hidden = true;
@@ -7718,11 +7730,13 @@
     "@vt": { screens: ["ready"], pause: "periphPauseOverlay", noteAfter: "#hilfsmittelNote" },
     blitz: { screens: ["blitzReady"], pause: "blitzPauseOverlay", noteAfter: ".page-sub" },
     flash: { screens: ["flashReady", "flashTrainingReady"], pause: "flashPauseOverlay", noteAfter: ".page-sub" },
+    // Optodrum (Aktivierung, 2026-10-08): tempo capped, softer contrast.
+    optodrum: { screens: ["optoReady"], pause: "optoPauseOverlay", noteAfter: ".page-sub" },
   };
   let softLive = null; // { ex, on } - pause-sheet choice for the running exercise only
   function softResolve(ex) { return ex === "@vt" ? state.exercise : ex; }
   function softApplies(ex) {
-    if (ex === "blitz" || ex === "flash") return true;
+    if (ex === "blitz" || ex === "flash" || ex === "optodrum") return true;
     const e = EXERCISES[ex];
     return !!e && e.type !== "color-tap";
   }
@@ -18620,6 +18634,7 @@
 
   function currentHomeScreen() {
     if (freeAreaActive) return "freeHome";
+    if (activationAreaActive) return "activationHome";
     const active = document.querySelector(".section-tab.active");
     const sec = active ? active.dataset.section : "visual";
     return sec === "today" ? "todayHome" : sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "cardio" ? "cardioHome" : sec === "nat" ? "natHome" : sec === "test" ? "testHome" : "home";
@@ -18733,6 +18748,8 @@
       startStandaloneCardio(block.items.map(copyCardioItem));
     } else if (block.domain === "free" && block.free) {
       startFreeRun(block.free);
+    } else if (block.domain === "optodrum") {
+      startOptoRun(optoBlockPrefs(block));
     } else {
       startComboBlock(idx + 1); // unknown domain - skip rather than get stuck
     }
@@ -19310,7 +19327,7 @@
   }, true);
   const LEADIN_START_IDS = ["movementStartBtn", "movementProgramStartBtn", "breathStartBtn", "breathProgramStartBtn",
     "rememberReadyStartBtn", "rememberTrainingStartBtn", "blitzReadyStartBtn", "flashReadyStartBtn", "flashTrainingStartBtn",
-    "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn",
+    "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn", "optoStartBtn",
     "wimhofStartBtn"];
   let leadInBypass = false, leadInTimer = null;
   function stopLeadIn() { clearTimeout(leadInTimer); leadInTimer = null; $("leadIn").hidden = true; }
@@ -19488,7 +19505,7 @@
   // after a click) unless fwmc-test-transitions is set.
   // Swipe from the left edge (first 28 px) to the right = the visible
   // ‹ button: the page follows the finger and slides out.
-  const HOME_SCREENS = new Set(["todayHome", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "progressScreen"]);
+  const HOME_SCREENS = new Set(["todayHome", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "activationHome", "progressScreen"]);
   // With the bottom bar the four tabs are the top level; the area homes sit
   // one level deeper, under "Training".
   const NAV_TOP_SCREENS = new Set(["todayHome", "trainingHub", "progressScreen", "moreScreen"]);
@@ -30780,12 +30797,15 @@
       icon: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' },
     { key: "free", label: "Eigenes Training", short: "Eigenes Training", color: "#a0527a", screen: "freeHome", text: "Eigenes wie Dehnen, Eisbad oder Journal.",
       icon: '<rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M8 12.5l2.8 2.8L16.5 9" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
+    // Aktivierung (Fabian 2026-10-08): short activations, 8th area.
+    { key: "activation", label: "Aktivierung", short: "Aktivierung", color: "#3b4fa8", screen: "activationHome", text: "Kurze Aktivierungen für zwischendurch.",
+      icon: '<path d="M13 3L5 13.5h6L10 21l8-10.5h-6L13 3z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' },
   ];
   const AREA_BY_KEY = Object.fromEntries(PLAN_AREAS.map((a) => [a.key, a]));
   // Kombi-Programme are plannable too (kp3 "Planen wie Basteln"): not an
   // area tile, but a plan entry kind (what "combo:<savedId>").
   AREA_BY_KEY.combo = { key: "combo", label: "Kombi-Programm", short: "Kombi", color: "#007094", screen: "comboScreen" };
-  const AREA_TO_SECTION = { visual: "visual", breath: "breath", movement: "movement", workout: "workout", cardio: "cardio", nat: "nat", test: "test", free: "free" };
+  const AREA_TO_SECTION = { visual: "visual", breath: "breath", movement: "movement", workout: "workout", cardio: "cardio", nat: "nat", test: "test", free: "free", activation: "activation" };
   const NAT_SUBS = [["peripher", "Periphere Wahrnehmung"], ["remember", "Positionen merken"], ["blitz", "Blitz-Raster"], ["flash", "Flash-Speicher-Test"], ["mot", "Objektverfolgung (MOT)"], ["balance", "Gleichgewicht"]];
   const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
   const WD_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
@@ -30979,6 +30999,7 @@
     if (k === "program") return "visual";
     if (k === "combo") return "combo";
     if (k === "free") return "free";
+    if (k === "optodrum") return "activation";
     return "test";
   }
   // Planned + extra entries of a date, sorted, with done state.
@@ -31041,6 +31062,7 @@
     if (area === "visual") visualExercises().forEach((x) => opts.push({ v: "ex:" + x.id, t: x.title }));
     if (area === "nat") NAT_SUBS.forEach(([k, t]) => opts.push({ v: "nat:" + k, t }));
     if (area === "free") freeAllBlocks().forEach((b) => opts.push({ v: "free:" + b.id, t: b.title }));
+    if (area === "activation") Object.entries(ACTIVATION_EXERCISES).forEach(([k, x]) => opts.push({ v: "act:" + k, t: x.title }));
     if (area === "combo") { opts.length = 0; comboSavedStore.load().forEach((c) => opts.push({ v: "combo:" + c.id, t: c.name })); if (!opts.length) opts.push({ v: "", t: "Noch kein Kombi-Programm gespeichert" }); }
     return opts;
   }
@@ -31049,6 +31071,7 @@
     if (e.what && e.what.startsWith("ex:")) { const x = visualExercises().find((v) => v.id === e.what.slice(3)); if (x) return x.title; }
     if (e.what && e.what.startsWith("nat:")) { const n = NAT_SUBS.find(([k]) => k === e.what.slice(4)); if (n) return n[1]; }
     if (e.what && e.what.startsWith("free:")) { const b = freeFind(e.what.slice(5)); if (b) return b.title; }
+    if (e.what && e.what.startsWith("act:") && ACTIVATION_EXERCISES[e.what.slice(4)]) return ACTIVATION_EXERCISES[e.what.slice(4)].title;
     if (e.what && e.what.startsWith("combo:")) { const c = comboSavedStore.load().find((x) => x.id === e.what.slice(6)); return c ? c.name : "Kombi-Programm"; }
     if (e.code) return `${AREA_BY_KEY[e.area].short} · Code ${e.code}`;
     return AREA_BY_KEY[e.area].label;
@@ -31076,6 +31099,8 @@
     goArea(e.area);
     if (e.what && e.what.startsWith("free:")) {
       if (freeFind(e.what.slice(5))) openFreeReady(e.what.slice(5));
+    } else if (e.what && e.what.startsWith("act:")) {
+      openActivationExercise(e.what.slice(4));
     } else if (e.what && e.what.startsWith("ex:")) {
       const card = document.querySelector(`#home .excard[data-exercise="${CSS.escape(e.what.slice(3))}"]`);
       if (card) card.click();
@@ -31282,6 +31307,7 @@
     const natSub = { remember: "remember", blitz: "blitz", flash: "flash", mot: "mot", balance: "balance" }[h.kind];
     if (natSub) { startEntry({ area: "nat", what: "nat:" + natSub }); return; }
     if (h.kind === "free" && h.freeId && freeFind(h.freeId)) { startEntry({ area: "free", what: "free:" + h.freeId }); return; }
+    if (h.kind === "optodrum") { startEntry({ area: "activation", what: "act:optodrum" }); return; }
     if (area === "combo") { activateSectionTab("visual"); showScreen("home"); openComboScreen(); return; }
     goArea(area);
   }
@@ -31933,11 +31959,11 @@
   $("moreSettingsBtn").addEventListener("click", openMasterSettings);
   $("moreTipsBtn").addEventListener("click", () => els.tipsBtn.click());
   const NAV_TAB_OF = { todayHome: "today", planScreen: "today", myPlanScreen: "today", trainingHub: "training", progressScreen: "progress", moreScreen: "more" };
-  const AREA_HOME_IDS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome"];
+  const AREA_HOME_IDS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "activationHome"];
   const TEST_TILE = { color: "#5c6b73", label: "Test", text: "Neue Übungen zum Ausprobieren.",
     icon: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' };
   const HUB_CORE = ["visual", "breath", "nat", "movement"];
-  const HUB_TEXT = { free: "z. B. Dehnen, Eisbad oder Journal." };
+  const HUB_TEXT = { free: "z. B. Dehnen, Eisbad oder Journal.", activation: "Kurz und knackig, z. B. vor dem Training." };
   // Fabian 07.10.: Reaktionstraining is being reworked, its tile keeps its
   // place but carries a "Test" mark (Test-Bereich colours) until then.
   const HUB_TEST_MARK = ["movement"];
@@ -32648,7 +32674,8 @@
     if (tab === "combo") return comboSavedStore.load().map((c) => ({ area: "combo", what: "combo:" + c.id, t: c.name, minutes: Math.max(5, Math.round(c.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0) / 300) * 5 || 15) }));
     if (tab === "area") return PLAN_AREAS.map((a) => ({ area: a.key, what: "", t: a.label, minutes: 15 }));
     if (tab === "ex") return visualExercises().map((x) => ({ area: "visual", what: "ex:" + x.id, t: x.title, minutes: 10 }))
-      .concat(NAT_SUBS.map(([k, t]) => ({ area: "nat", what: "nat:" + k, t, minutes: 10 })));
+      .concat(NAT_SUBS.map(([k, t]) => ({ area: "nat", what: "nat:" + k, t, minutes: 10 })))
+      .concat(Object.entries(ACTIVATION_EXERCISES).map(([k, x]) => ({ area: "activation", what: "act:" + k, t: x.title, minutes: 5 })));
     return freeAllBlocks().map((b) => ({ area: "free", what: "free:" + b.id, t: b.title, minutes: 10 }));
   }
   function renderPlanTray() {
@@ -33237,6 +33264,495 @@
   // Start screen: always "Heute", unless the URL names an area
   // (?bereich=visual|breath|movement|workout|cardio|nat|test) - used for
   // direct links and by the test suite.
+  // ==== Aktivierung (8th area, Fabian 2026-10-08: "Ja so") ====
+  // Short activations (30 s - 2 min) on their own, as a Kombi-Baustein or
+  // planned on Heute. Area key "activation" (PLAN_AREAS, #activationHome,
+  // ?bereich=aktivierung). Own exercises are tiles in #activationGrid
+  // (ACTIVATION_EXERCISES); ACTIVATION_LINKS will later list existing
+  // exercises of other areas with a short preset ("Gleichgewicht kurz"),
+  // one entry each, rendered as the same tile with a small "aus NAT" tag:
+  //   { id, title, desc, tag, area, open: () => …, plan: { area, what } }
+  // Empty on purpose for now (Fabian: build the area + Optodrum first).
+  // Details: docs/notes/31-aktivierung-optodrum.md.
+  const ACTIVATION_EXERCISES = { optodrum: { title: "Optodrum", open: () => openOptoReady() } };
+  const ACTIVATION_LINKS = [];
+  function renderActivationHome() {
+    const grid = $("activationGrid");
+    grid.querySelectorAll(".act-link").forEach((el) => el.remove());
+    ACTIVATION_LINKS.forEach((l, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "nat-tile act-tile act-link";
+      b.dataset.actLink = String(i);
+      const a = AREA_BY_KEY[l.area];
+      b.innerHTML = `<div class="icon-badge act-badge"${a ? ` style="background:${a.color}"` : ""}>${l.icon || ""}</div><h3>${esc(l.title)}</h3><p>${esc(l.desc || "")}</p><span class="tag">${esc(a ? "aus " + a.short : l.tag || "")}</span>`;
+      b.addEventListener("click", () => l.open());
+      grid.appendChild(b);
+    });
+    renderHistory();
+  }
+  function openActivationExercise(id) {
+    const x = ACTIVATION_EXERCISES[id];
+    if (x) x.open(); else showScreen("activationHome");
+  }
+  const ACTIVATION_CODE_CTX = { goBtn: $("activationProgramGoBtn"), errorEl: $("activationProgramError"), homeScreen: "activationHome" };
+  function goActivationCode() { const code = $("activationProgramCodeInput").value.trim(); if (code) openProgramIntro(code, ACTIVATION_CODE_CTX); }
+  $("activationProgramGoBtn").addEventListener("click", goActivationCode);
+  $("activationProgramCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") goActivationCode(); });
+
+  // ==== Optodrum (Aktivierung, Fabian 2026-10-08) ====
+  // An optokinetic drum on the phone: stripes (default), a dot raster or a
+  // checkerboard drift across the whole stage. Everything is adjustable on
+  // the ready screen and live in the pause sheet (pattern, direction incl.
+  // "schräg" and "Wechsel" every N s, tempo 1-10, size, gap, two colours,
+  // fixation point). Canvas + requestAnimationFrame, DPR-aware; the motion
+  // state is kept in CSS px, so a resize never makes the pattern jump.
+  // Sanfte Reize: tempo capped at OPTO_SOFT_MAX, pattern colour 45 % toward
+  // the background (less contrast). Kombi blocks / presets carry the whole
+  // prefs object; a Kombi run only changes its own copy (st.own = false).
+  const OPTO_PREFS_KEY = "fwmc-optodrum-prefs-v1";
+  const OPTO_COLORS = [
+    { key: "schwarz", name: "Schwarz", hex: "#000000" }, { key: "weiss", name: "Weiß", hex: "#ffffff" },
+    { key: "grau", name: "Grau", hex: "#7a7a7a" }, { key: "rot", name: "Rot", hex: "#d32f2f" },
+    { key: "gruen", name: "Grün", hex: "#2e7d32" }, { key: "blau", name: "Blau", hex: "#1f5fbf" },
+    { key: "gelb", name: "Gelb", hex: "#f2c200" }, { key: "orange", name: "Orange", hex: "#ff9110" },
+  ];
+  // Tempo-Stufe 1-10 in CSS px per second (Leicht 3, Mittel 5, Schwer 8).
+  const OPTO_SPEEDS = [30, 45, 65, 90, 120, 160, 210, 270, 350, 450];
+  const OPTO_SOFT_MAX = 4;
+  const OPTO_FLIP_RAMP_S = 0.35; // "Wechsel": slow down and turn round instead of a hard jump
+  const OPTO_PATTERNS = {
+    streifen: { name: "Streifen", unit: "Streifen", size: "Streifenbreite", gap: "Abstand zwischen den Streifen", fg: "Farbe der Streifen" },
+    punkte: { name: "Punkte", unit: "Punkte", size: "Punktgröße", gap: "Abstand zwischen den Punkten", fg: "Farbe der Punkte" },
+    schach: { name: "Schachbrett", unit: "Felder", size: "Feldgröße", gap: "", fg: "Farbe der Felder" },
+  };
+  const OPTO_DIRS = {
+    links: { a: Math.PI, arrow: "←", name: "nach links" }, rechts: { a: 0, arrow: "→", name: "nach rechts" },
+    hoch: { a: -Math.PI / 2, arrow: "↑", name: "nach oben" }, runter: { a: Math.PI / 2, arrow: "↓", name: "nach unten" },
+  };
+  const OPTO_DIAGS = {
+    ro: { a: -Math.PI / 4, arrow: "↗", name: "nach rechts oben" }, ru: { a: Math.PI / 4, arrow: "↘", name: "nach rechts unten" },
+    lu: { a: (3 * Math.PI) / 4, arrow: "↙", name: "nach links unten" }, lo: { a: (-3 * Math.PI) / 4, arrow: "↖", name: "nach links oben" },
+  };
+  const OPTO_DEFAULTS = { pattern: "streifen", dir: "links", diag: "ro", axis: "h", swapS: 10, speed: 5, size: 40, gap: 40, fg: "schwarz", bg: "weiss", fix: false, durationS: 60, noLimit: false };
+  const optoClamp = (v, lo, hi, d) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
+  function normalizeOptoPrefs(p) {
+    const d = OPTO_DEFAULTS;
+    if (!OPTO_PATTERNS[p.pattern]) p.pattern = d.pattern;
+    if (!OPTO_DIRS[p.dir] && p.dir !== "schraeg" && p.dir !== "wechsel") p.dir = d.dir;
+    if (!OPTO_DIAGS[p.diag]) p.diag = d.diag;
+    if (p.axis !== "h" && p.axis !== "v") p.axis = d.axis;
+    p.swapS = Math.round(optoClamp(p.swapS, 5, 30, d.swapS));
+    p.speed = Math.round(optoClamp(p.speed, 1, 10, d.speed));
+    p.size = Math.round(optoClamp(p.size, 10, 160, d.size));
+    p.gap = Math.round(optoClamp(p.gap, 10, 200, d.gap));
+    if (!OPTO_COLORS.some((c) => c.key === p.fg)) p.fg = d.fg;
+    if (!OPTO_COLORS.some((c) => c.key === p.bg)) p.bg = d.bg;
+    if (typeof p.fix !== "boolean") p.fix = d.fix;
+    p.durationS = Math.round(optoClamp(p.durationS, 10, 300, d.durationS) / 10) * 10;
+    if (typeof p.noLimit !== "boolean") p.noLimit = d.noLimit;
+    return p;
+  }
+  const optoPrefs = normalizeOptoPrefs({ ...OPTO_DEFAULTS, ...(readJSON(OPTO_PREFS_KEY, null) || {}) });
+  function saveOptoPrefs() { writeJSON(OPTO_PREFS_KEY, optoPrefs); }
+  const optoHex = (key) => (OPTO_COLORS.find((c) => c.key === key) || OPTO_COLORS[0]).hex;
+  const optoDeep = (o) => JSON.parse(JSON.stringify(o));
+  function optoEffSpeed(p) { return softOn("optodrum") ? Math.min(p.speed, OPTO_SOFT_MAX) : p.speed; }
+  // Base direction (the one "Wechsel" starts with); the sign flips it.
+  function optoBase(p) {
+    if (p.dir === "schraeg") return OPTO_DIAGS[p.diag];
+    if (p.dir === "wechsel") return p.axis === "v" ? OPTO_DIRS.hoch : OPTO_DIRS.links;
+    return OPTO_DIRS[p.dir];
+  }
+  function optoDirName(p) {
+    if (p.dir === "wechsel") return p.axis === "v" ? `hoch und runter im Wechsel (${p.swapS} s)` : `links und rechts im Wechsel (${p.swapS} s)`;
+    return optoBase(p).name;
+  }
+  function optoPeriod(p) { return p.pattern === "schach" ? 2 * p.size : p.size + p.gap; }
+  function optoSpeedHelp(p) {
+    const eff = optoEffSpeed(p);
+    const per = OPTO_SPEEDS[eff - 1] / optoPeriod(p);
+    const n = per >= 10 ? Math.round(per) : Math.round(per * 10) / 10;
+    let t = `Stufe ${p.speed} von 10 · etwa ${String(n).replace(".", ",")} ${OPTO_PATTERNS[p.pattern].unit} pro Sekunde`;
+    if (eff < p.speed) t = `Sanfte Reize: höchstens Stufe ${OPTO_SOFT_MAX} · etwa ${String(n).replace(".", ",")} ${OPTO_PATTERNS[p.pattern].unit} pro Sekunde`;
+    return t;
+  }
+  function optoTimeLabel(p) { return p.noLimit ? "ohne Zeitlimit" : fmtMinutes(p.durationS); }
+  function optoMeta(p) { return `${optoTimeLabel(p)} · ${OPTO_PATTERNS[p.pattern].name} · Stufe ${p.speed}`; }
+  function optoBlockPrefs(block) { return normalizeOptoPrefs({ ...optoDeep(OPTO_DEFAULTS), ...optoDeep((block && block.prefs) || {}) }); }
+
+  // ---- shared controls (ready screen + pause sheet use the same markup) ----
+  function optoParse(f, raw) {
+    if (f === "fix") return raw === "1";
+    if (["speed", "durationS", "swapS"].includes(f)) return Number(raw);
+    return raw;
+  }
+  function optoBind(root, set) {
+    root.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-opto-f]");
+      if (b && root.contains(b)) set(b.dataset.optoF, optoParse(b.dataset.optoF, b.dataset.optoV));
+    });
+    root.querySelectorAll("input[data-opto-r]").forEach((inp) => inp.addEventListener("input", () => set(inp.dataset.optoR, Number(inp.value))));
+    root.querySelectorAll("input[data-opto-chk]").forEach((inp) => inp.addEventListener("change", () => set(inp.dataset.optoChk, inp.checked)));
+    root.querySelectorAll("[data-opto-c]").forEach((el) => buildSingleSelectPicker(el, OPTO_COLORS, (k) => set(el.dataset.optoC, k)));
+  }
+  function optoSyncControls(root, p) {
+    root.querySelectorAll("[data-opto-f]").forEach((b) => {
+      const f = b.dataset.optoF;
+      const cur = f === "fix" ? (p.fix ? "1" : "0") : String(p[f]);
+      setActive(b, cur === b.dataset.optoV && !(f === "durationS" && p.noLimit));
+    });
+    root.querySelectorAll("input[data-opto-r]").forEach((inp) => { inp.value = p[inp.dataset.optoR]; });
+    root.querySelectorAll("input[data-opto-chk]").forEach((inp) => { inp.checked = !!p[inp.dataset.optoChk]; });
+    root.querySelectorAll("[data-opto-c]").forEach((el) => syncSingleSelectPicker(el, p[el.dataset.optoC]));
+    const out = {
+      swapS: `${p.swapS} s`, speed: `Stufe ${p.speed}`, size: `${p.size} px`, gap: `${p.gap} px`,
+      durationS: fmtMinutes(p.durationS), speedHelp: optoSpeedHelp(p),
+    };
+    root.querySelectorAll("[data-opto-out]").forEach((el) => {
+      const k = el.dataset.optoOut;
+      if (k === "contrast") { el.hidden = contrastRatio(optoHex(p.fg), optoHex(p.bg)) >= 1.6; return; }
+      if (el.textContent !== out[k]) el.textContent = out[k];
+    });
+    const pat = OPTO_PATTERNS[p.pattern];
+    root.querySelectorAll("[data-opto-lbl]").forEach((el) => { el.textContent = pat[el.dataset.optoLbl]; });
+    root.querySelectorAll("[data-opto-show]").forEach((el) => {
+      const [k, v] = el.dataset.optoShow.split(":");
+      el.hidden = k === "noLimit" ? !p.noLimit : k === "notpattern" ? p.pattern === v : p[k] !== v;
+    });
+    const dur = root.querySelector('[data-opto-r="durationS"]');
+    if (dur) dur.closest(".group").classList.toggle("breath-dur-off", !!p.noLimit);
+  }
+
+  // ---- ready screen ----
+  const optoUi = {
+    ready: $("optoReady"), controls: $("optoReadyControls"), title: $("optoReadyTitle"), desc: $("optoReadyDesc"),
+    start: $("optoStartBtn"), back: $("optoBackToHome"),
+  };
+  const OPTO_READY_DESC = optoUi.desc.textContent;
+  function syncOptoReadyUI() { optoSyncControls(optoUi.controls, optoPrefs); }
+  optoBind(optoUi.controls, (f, v) => {
+    optoPrefs[f] = v;
+    if (f === "durationS") optoPrefs.noLimit = false;
+    normalizeOptoPrefs(optoPrefs);
+    saveOptoPrefs();
+    syncOptoReadyUI();
+  });
+  let optoReturnScreen = "activationHome";
+  function openOptoReady() {
+    normalizeOptoPrefs(optoPrefs);
+    syncOptoReadyUI();
+    renderOptoSaved();
+    $("optoSaveForm").hidden = true;
+    $("optoSaveBtn").hidden = false;
+    showScreen("optoReady");
+    try { applySoftState(); } catch (e) {}
+  }
+  $("optoOpenBtn").addEventListener("click", openOptoReady);
+  optoUi.back.addEventListener("click", () => {
+    if (comboOptoCaptureOriginal) { exitOptoComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("activationHome");
+  });
+
+  // ---- saved presets ("Aktuelle Einstellung speichern", like NAT/Atem) ----
+  const optoStore = makePresetStore("fwmc-optodrum-saved-v1"); // [{ id, name, prefs }]
+  function renderOptoSaved() {
+    renderPresetList(optoStore, $("optoSavedList"), $("optoSavedGroup"), null,
+      (e) => optoMeta(normalizeOptoPrefs({ ...OPTO_DEFAULTS, ...e.prefs })),
+      (entry) => {
+        Object.assign(optoPrefs, normalizeOptoPrefs({ ...OPTO_DEFAULTS, ...optoDeep(entry.prefs) }));
+        saveOptoPrefs();
+        syncOptoReadyUI();
+        // In Kombi capture a preset only fills the draft; otherwise it starts, like the siblings.
+        if (!comboOptoCaptureOriginal) optoUi.start.click();
+      }, { confirmDelete: true });
+  }
+  wirePresetSaveForm({
+    saveBtn: $("optoSaveBtn"), form: $("optoSaveForm"), nameInput: $("optoSaveNameInput"),
+    cancelBtn: $("optoSaveCancelBtn"), confirmBtn: $("optoSaveConfirmBtn"),
+    defaultName: () => `Eigene Einstellung ${new Date().toLocaleDateString("de-DE")}`,
+    onSave: (name) => {
+      const list = optoStore.load();
+      list.push({ id: String(Date.now()), name, prefs: optoDeep(optoPrefs) });
+      optoStore.save(list);
+      renderOptoSaved();
+    },
+  });
+
+  // ---- Kombi-Baustein capture (same pattern as Gleichgewicht) ----
+  let comboOptoCaptureOriginal = null;
+  let comboOptoEditIndex = null;
+  function openOptoComboCapture(existingBlock, editIndex) {
+    comboOptoCaptureOriginal = optoDeep(optoPrefs);
+    comboOptoEditIndex = editIndex ?? null;
+    if (existingBlock && existingBlock.prefs) Object.assign(optoPrefs, optoBlockPrefs(existingBlock));
+    openOptoReady();
+    optoUi.title.textContent = "Baustein: Optodrum";
+    optoUi.desc.textContent = "Stelle Muster, Richtung, Tempo und Dauer für diesen Baustein ein. Deine eigenen Einstellungen bleiben, wie sie sind.";
+    optoUi.start.textContent = "Baustein übernehmen";
+  }
+  function exitOptoComboCapture() {
+    if (comboOptoCaptureOriginal) {
+      Object.keys(optoPrefs).forEach((k) => { delete optoPrefs[k]; });
+      Object.assign(optoPrefs, comboOptoCaptureOriginal);
+      saveOptoPrefs();
+      comboOptoCaptureOriginal = null;
+    }
+    comboOptoEditIndex = null;
+    optoUi.title.textContent = "Optodrum";
+    optoUi.desc.textContent = OPTO_READY_DESC;
+    optoUi.start.textContent = "Training starten";
+  }
+  function commitOptoComboCapture() {
+    const block = { domain: "optodrum", prefs: optoDeep(optoPrefs) };
+    if (comboOptoEditIndex != null && comboDraftBlocks[comboOptoEditIndex]) {
+      block.pauseAfterS = comboDraftBlocks[comboOptoEditIndex].pauseAfterS;
+      comboDraftBlocks[comboOptoEditIndex] = block;
+    } else comboDraftBlocks.push(block);
+    exitOptoComboCapture();
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+
+  // ---- player ----
+  const optoP = {
+    player: els.optoPlayer, stage: $("optoStage"), canvas: $("optoCanvas"), bar: $("optoPlayerBar"), status: $("optoStatusEl"),
+    backBtn: $("optoBackBtn"), pauseBtn: $("optoPauseBtn"), finishBtn: $("optoFinishBtn"),
+    pauseOverlay: $("optoPauseOverlay"), pauseControls: $("optoPauseControls"), pauseHelp: $("optoPauseHelp"), resumeBtn: $("optoResumeBtn"),
+    fsBtn: $("optoFsBtn"), fsHint: $("optoFsHint"), done: $("optoDonePanel"), doneSummary: $("optoDoneSummary"),
+    rating: $("optoRating"), againBtn: $("optoAgainBtn"), doneBackBtn: $("optoDoneBackBtn"),
+  };
+  wireFullscreen({ player: optoP.player, btn: optoP.fsBtn, hint: optoP.fsHint, hintOpen: $("optoFsHintOpenBtn"), hintClose: $("optoFsHintClose") });
+  let optoState = null;
+  let optoLastRunPrefs = null;
+  function optoSize() {
+    const st = optoState;
+    if (!st) return;
+    const r = optoP.stage.getBoundingClientRect();
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+    if (st.w === w && st.h === h && st.dpr === dpr) return;
+    st.w = w; st.h = h; st.dpr = dpr;
+    optoP.canvas.width = Math.round(w * dpr);
+    optoP.canvas.height = Math.round(h * dpr);
+    optoP.canvas.style.width = w + "px";
+    optoP.canvas.style.height = h + "px";
+    optoDraw();
+  }
+  const optoMod = (a, m) => ((a % m) + m) % m;
+  function optoDraw() {
+    const st = optoState;
+    if (!st || !st.w) return;
+    const ctx = optoP.canvas.getContext("2d");
+    const W = st.w, H = st.h;
+    ctx.setTransform(st.dpr, 0, 0, st.dpr, 0, 0);
+    const bg = optoHex(st.bg);
+    const fg = softOn("optodrum") ? mixHex(optoHex(st.fg), bg, 0.45) : optoHex(st.fg);
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = fg;
+    if (st.pattern === "streifen") {
+      // Rotate so the stripes stand across the direction of travel; st.s is
+      // the travelled distance along it.
+      const P = st.size + st.gap;
+      const D = Math.hypot(W, H) / 2 + P;
+      ctx.save();
+      ctx.translate(W / 2, H / 2);
+      ctx.rotate(optoBase(st).a);
+      const s = optoMod(st.s, P);
+      for (let x = s - Math.ceil((D + s) / P) * P; x < D; x += P) ctx.fillRect(x, -D, st.size, 2 * D);
+      ctx.restore();
+    } else if (st.pattern === "punkte") {
+      const P = st.size + st.gap;
+      const ox = optoMod(st.dx, P) - P, oy = optoMod(st.dy, P) - P;
+      for (let y = oy; y < H; y += P) for (let x = ox; x < W; x += P) ctx.fillRect(x, y, st.size, st.size);
+    } else {
+      const L = st.size;
+      const ox = optoMod(st.dx, 2 * L) - 2 * L, oy = optoMod(st.dy, 2 * L) - 2 * L;
+      for (let r = 0, y = oy; y < H; r++, y += L) for (let q = 0, x = ox; x < W; q++, x += L) if (((r + q) & 1) === 0) ctx.fillRect(x, y, L, L);
+    }
+    if (st.fix) {
+      // Fixation point: red dot with a white and a thin dark ring, visible on any colour.
+      ctx.beginPath();
+      ctx.arc(W / 2, H / 2, 8, 0, Math.PI * 2);
+      ctx.fillStyle = "#d32f2f";
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "#ffffff";
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(W / 2, H / 2, 10.5, 0, Math.PI * 2);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "#16232a";
+      ctx.stroke();
+    }
+  }
+  function optoSign(st) {
+    if (st.dir !== "wechsel") return 1;
+    const since = st.t - st.flipAt;
+    if (st.flips > 0 && since < OPTO_FLIP_RAMP_S) return -st.sign + (2 * st.sign) * (since / OPTO_FLIP_RAMP_S);
+    return st.sign;
+  }
+  function optoArrow(st) {
+    const sg = optoSign(st);
+    if (st.dir !== "wechsel") return optoBase(st).arrow;
+    if (st.axis === "v") return sg >= 0 ? "↑" : "↓";
+    return sg >= 0 ? "←" : "→";
+  }
+  function optoStatus() {
+    const st = optoState;
+    if (!st) return;
+    const t = `${optoArrow(st)} ${fmtClock(st.noLimit ? st.t : st.durationS - st.t)}`;
+    if (optoP.status.textContent !== t) optoP.status.textContent = t;
+  }
+  function optoTick(now) {
+    const st = optoState;
+    if (!st) return;
+    if (optoP.player.hidden) { optoCleanup(); return; }
+    st.raf = requestAnimationFrame(optoTick);
+    const dt = Math.min(0.1, Math.max(0, (now - (st.lastNow || now)) / 1000));
+    st.lastNow = now;
+    if (st.paused) return;
+    st.t += dt;
+    if (st.dir === "wechsel" && st.t >= st.nextFlip) {
+      st.sign = -st.sign;
+      st.flipAt = st.t;
+      st.flips++;
+      st.nextFlip = st.t + st.swapS;
+    }
+    const v = OPTO_SPEEDS[optoEffSpeed(st) - 1] * optoSign(st);
+    const a = optoBase(st).a;
+    st.s += v * dt;
+    st.dx += v * dt * Math.cos(a);
+    st.dy += v * dt * Math.sin(a);
+    // keep the numbers small: the drawing only uses them modulo the period
+    const M = (st.size + st.gap) * 2 * st.size;
+    if (Math.abs(st.dx) > M * 50) st.dx = optoMod(st.dx, M);
+    if (Math.abs(st.dy) > M * 50) st.dy = optoMod(st.dy, M);
+    if (Math.abs(st.s) > M * 50) st.s = optoMod(st.s, st.size + st.gap);
+    optoDraw();
+    optoStatus();
+    if (!st.noLimit && st.t >= st.durationS) optoFinish(false);
+  }
+  // prefsOverride: Kombi block - never touches the client's own settings.
+  function startOptoRun(prefsOverride) {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    softStartRun();
+    const p = normalizeOptoPrefs({ ...OPTO_DEFAULTS, ...optoDeep(prefsOverride || optoPrefs) });
+    optoLastRunPrefs = prefsOverride ? optoDeep(p) : null;
+    const st = optoState = { ...p, own: !prefsOverride, t: 0, s: 0, dx: 0, dy: 0, sign: 1, flips: 0, flipAt: 0, nextFlip: p.swapS, paused: false, raf: null, lastNow: 0, w: 0, h: 0, dpr: 1 };
+    optoP.player.hidden = false;
+    optoP.bar.hidden = false;
+    optoP.done.hidden = true;
+    optoP.pauseOverlay.hidden = true;
+    optoP.pauseBtn.hidden = false;
+    optoP.finishBtn.hidden = !st.noLimit;
+    requestWakeLock();
+    optoSize();
+    optoStatus();
+    st.lastNow = performance.now();
+    st.raf = requestAnimationFrame(optoTick);
+  }
+  function optoCleanup() {
+    const st = optoState;
+    if (!st) return null;
+    if (st.raf) cancelAnimationFrame(st.raf);
+    optoState = null;
+    optoP.pauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === optoP.player) document.exitFullscreen().catch(() => {});
+    optoP.fsHint.hidden = true;
+    return st;
+  }
+  // aborted: "Beenden" before the time ran out. "Ohne Zeitlimit" and
+  // "Fertig" always count as done.
+  function optoFinish(aborted) {
+    const st = optoCleanup();
+    if (!st) return;
+    const played = st.t;
+    if (comboProgram) {
+      if (aborted) { abortComboProgram(); return; }
+      advanceComboProgram(played);
+      return;
+    }
+    if (aborted && played < 5) { optoP.player.hidden = true; showScreen("optoReady"); return; }
+    const title = `Optodrum · ${OPTO_PATTERNS[st.pattern].name}`;
+    const note = aborted ? "abgebrochen" : `${optoDirName(st)} · Stufe ${optoEffSpeed(st)}`;
+    optoP.bar.hidden = true;
+    setDonePanelAborted(optoP.done, aborted, "Optodrum beendet");
+    optoP.doneSummary.textContent = aborted ? `Abgebrochen · ${fmtClock(played)}` : `${title} · ${fmtClock(played)} · ${note}`;
+    const id = addHistory({ kind: "optodrum", title, seconds: Math.round(played), note, ...(aborted ? { aborted: true } : {}) });
+    renderRating(optoP.rating, id);
+    optoP.done.hidden = false;
+  }
+  optoP.backBtn.addEventListener("click", () => {
+    const st = optoState;
+    if (!st) return;
+    // Inside a Kombi "Beenden" quits the whole programme (like every other
+    // block); "Fertig" is the way on to the next Baustein.
+    optoFinish(!!comboProgram || !st.noLimit);
+  });
+  optoP.finishBtn.addEventListener("click", () => optoFinish(false));
+  function pauseOpto() {
+    const st = optoState;
+    if (!st || st.paused) return;
+    st.paused = true;
+    optoP.pauseBtn.hidden = true;
+    optoP.pauseHelp.textContent = st.own ? "Gilt sofort und bleibt gespeichert, wie auf der Übungsseite." : "Gilt sofort, nur für diesen Durchgang.";
+    optoSyncControls(optoP.pauseControls, st);
+    optoP.pauseOverlay.hidden = false;
+    try { applySoftState(); } catch (e) {}
+  }
+  function resumeOpto() {
+    const st = optoState;
+    if (!st || !st.paused) return;
+    st.paused = false;
+    st.lastNow = performance.now();
+    optoP.pauseOverlay.hidden = true;
+    optoP.pauseBtn.hidden = false;
+  }
+  optoP.pauseBtn.addEventListener("click", pauseOpto);
+  optoP.resumeBtn.addEventListener("click", resumeOpto);
+  // Live changes from the pause sheet: a standalone run saves them to the
+  // client's own settings (like Gleichgewicht), a Kombi run only this run.
+  optoBind(optoP.pauseControls, (f, v) => {
+    const st = optoState;
+    if (!st) return;
+    st[f] = v;
+    normalizeOptoPrefs(st);
+    if (f === "dir" || f === "axis") { st.sign = 1; st.flips = 0; st.flipAt = st.t; st.nextFlip = st.t + st.swapS; }
+    if (f === "swapS") st.nextFlip = st.t + st.swapS;
+    if (st.own) { optoPrefs[f] = st[f]; normalizeOptoPrefs(optoPrefs); saveOptoPrefs(); syncOptoReadyUI(); }
+    optoSyncControls(optoP.pauseControls, st);
+    optoDraw();
+    optoStatus();
+  });
+  // Sanfte Reize switched live in the pause sheet: redraw with the new contrast.
+  optoP.pauseOverlay.addEventListener("click", (e) => {
+    if (e.target.closest("[data-soft-live]")) setTimeout(() => { if (optoState) { optoSyncControls(optoP.pauseControls, optoState); optoDraw(); } }, 0);
+  });
+  optoUi.ready.addEventListener("click", (e) => {
+    if (e.target.closest("[data-soft-ex], [data-soft-reset]")) setTimeout(syncOptoReadyUI, 0);
+  });
+  optoUi.start.addEventListener("click", () => {
+    if (comboOptoCaptureOriginal) { commitOptoComboCapture(); return; }
+    optoReturnScreen = "activationHome";
+    startOptoRun();
+  });
+  optoP.againBtn.addEventListener("click", () => { optoP.done.hidden = true; startOptoRun(optoLastRunPrefs || undefined); });
+  optoP.doneBackBtn.addEventListener("click", () => { optoP.player.hidden = true; optoP.done.hidden = true; showScreen(optoReturnScreen); });
+  if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => { if (optoState) optoSize(); }).observe(optoP.stage);
+  window.addEventListener("resize", () => { if (optoState) optoSize(); });
+  if (navigator.webdriver) {
+    window.__opto = () => (optoState ? { t: optoState.t, s: optoState.s, dx: optoState.dx, dy: optoState.dy, sign: optoSign(optoState), flips: optoState.flips,
+      speed: optoState.speed, eff: optoEffSpeed(optoState), pxs: OPTO_SPEEDS[optoEffSpeed(optoState) - 1], dir: optoState.dir, pattern: optoState.pattern,
+      w: optoState.w, h: optoState.h, own: optoState.own, paused: optoState.paused } : null);
+  }
+  function comboActivationCaptureEntries() {
+    return [{ label: "Optodrum", meta: "Muster, Richtung, Tempo & Dauer einstellen", open: () => openOptoComboCapture(null, null) }];
+  }
+
   function initStartScreen() {
     let sec = "today";
     try { sec = new URLSearchParams(location.search).get("bereich") || "today"; } catch (e) {}
@@ -33250,8 +33766,9 @@
       showScreen(sec === "fortschritt" ? "progressScreen" : bottomNavOn ? "trainingHub" : "todayHome");
       return;
     }
-    const screens = { today: "todayHome", heute: "todayHome", visual: "home", breath: "breathHome", movement: "movementHome", workout: "workoutHome", cardio: "cardioHome", nat: "natHome", test: "testHome", free: "freeHome", frei: "freeHome" };
+    const screens = { today: "todayHome", heute: "todayHome", visual: "home", breath: "breathHome", movement: "movementHome", workout: "workoutHome", cardio: "cardioHome", nat: "natHome", test: "testHome", free: "freeHome", frei: "freeHome", activation: "activationHome", aktivierung: "activationHome" };
     if (sec === "frei") sec = "free";
+    if (sec === "aktivierung") sec = "activation";
     if (!screens[sec]) sec = "today";
     if (sec === "heute") sec = "today";
     activateSectionTab(sec);
@@ -33405,7 +33922,7 @@
   // Training cards) opens a small action sheet. A finger that moves more
   // than 10 px is scrolling and cancels it; a short tap still clicks.
   // Only actions that really work for that item are offered.
-  const LP_SEL = "#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #freeOwnGrid [data-free-id], #freeTrainerGrid [data-free-id], #freeTplGrid [data-free-id]";
+  const LP_SEL = "#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #freeOwnGrid [data-free-id], #freeTrainerGrid [data-free-id], #freeTplGrid [data-free-id], #activationGrid [data-act-ex]";
   const tileSheet = $("tileActionSheet");
   let tileSheetReturnFocus = null;
   let lpSuppressUntil = 0; // swallow the click that may follow a long press
@@ -33443,6 +33960,15 @@
         start: ok ? () => { tile.click(); clickVisibleStart(); } : null,
         plan: { area: "visual", what: "ex:" + id },
         kombi: ok ? () => startKombiWith("visual", () => openVisualComboCapture(id, icon ? icon.outerHTML : "", null, null)) : null,
+      };
+    }
+    if (tile.dataset.actEx) {
+      const ax = tile.dataset.actEx;
+      return {
+        title: name("h3"), open: () => tile.click(),
+        start: () => { openActivationExercise(ax); clickVisibleStart(); },
+        plan: { area: "activation", what: "act:" + ax },
+        kombi: ax === "optodrum" ? () => startKombiWith("activation", () => openOptoComboCapture(null, null)) : null,
       };
     }
     if (tile.classList.contains("nat-tile")) {

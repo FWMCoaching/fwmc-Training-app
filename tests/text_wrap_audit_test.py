@@ -11,7 +11,7 @@ from playwright.async_api import async_playwright
 # New screens get covered by adding them to AREAS / the NAT loop.
 
 BASE = "http://localhost:8845/index.html?bereich="
-AREAS = ["heute", "visual", "breath", "movement", "workout", "cardio", "nat", "test", "free"]
+AREAS = ["heute", "visual", "breath", "movement", "workout", "cardio", "nat", "test", "free", "aktivierung"]
 WIDTHS = [375, 390, 430, 600, 768, 820, 1024, 1180, 1366]
 # iPhone text size (2026-10-06): the app follows the iOS setting up to 1.25x
 # (--ts), so small phones are also checked with the biggest and smallest factor.
@@ -111,6 +111,16 @@ async def main():
                     await pg.click("#backToHome"); await pg.wait_for_timeout(150)
                     await pg.click('.excard[data-exercise="cone-number"]'); await pg.wait_for_timeout(150)
                     await audit(pg, f"{w}px{ts_tag(ts)} visual/cone-number", problems)
+                if area == "aktivierung":
+                    # Optodrum ready screen (2026-10-08) with every sub row open, then the pause sheet
+                    await pg.click("#optoOpenBtn"); await pg.wait_for_timeout(150)
+                    await pg.evaluate("() => { document.getElementById('optoAdvanced').open = true; document.querySelector('#optoReadyControls [data-opto-f=dir][data-opto-v=schraeg]').click(); }")
+                    await pg.wait_for_timeout(100)
+                    await audit(pg, f"{w}px{ts_tag(ts)} aktivierung/optodrum", problems)
+                    await pg.evaluate("() => document.querySelector('#optoReadyControls [data-opto-f=dir][data-opto-v=wechsel]').click()")
+                    await pg.wait_for_timeout(100)
+                    await audit(pg, f"{w}px{ts_tag(ts)} aktivierung/optodrum-wechsel", problems)
+                    await pg.evaluate("() => document.querySelector('#optoReadyControls [data-opto-f=dir][data-opto-v=links]').click()")
                 if area == "free":
                     # Freie Bausteine: ready screen and editor (checklist) of the template
                     await pg.click('#freeTplGrid [data-free-id="tpl-dehnen"]'); await pg.wait_for_timeout(150)

@@ -15,7 +15,7 @@ JS="""(p)=>{const pl=document.getElementById(p+'Player'); if(!pl||pl.hidden) ret
 const hint=document.getElementById(p+'Hint'); const bar=document.getElementById(p+'PlayerBar');
 const R=e=>e.getBoundingClientRect(); const out=[];
 const zones=[]; if(hint&&hint.textContent.trim()&&R(hint).height) zones.push(['hint',R(hint)]); if(bar&&R(bar).height){ for(const c of bar.children){const r=R(c); if(r.height) zones.push(['bar:'+(c.id||c.textContent.trim().slice(0,10)),r]);}}
-for(const e of pl.querySelectorAll('*')){ if(['bisectArea','subitizeDots','trailLinesSvg'].includes(e.id)||e===hint||(hint&&hint.contains(e))||(bar&&bar.contains(e))) continue;
+for(const e of pl.querySelectorAll('*')){ if(['bisectArea','subitizeDots','trailLinesSvg','optoCanvas'].includes(e.id)||e===hint||(hint&&hint.contains(e))||(bar&&bar.contains(e))) continue;
  if(e.closest('.pause-overlay,.done-panel,[id$=DonePanel],[id$=PauseOverlay]')) continue;
  const cs=getComputedStyle(e); if(cs.visibility==='hidden'||cs.display==='none'||+cs.opacity===0) continue;
  if([...e.children].some(c=>{const r=R(c);return r.width&&r.height;})) continue;
@@ -101,6 +101,23 @@ async def run_cn(b,vp):
         await pg.click("#backBtn"); await pg.wait_for_timeout(250)
         await pg.click("#backToHome"); await pg.wait_for_timeout(150)
     await ctx.close()
+# Optodrum (Aktivierung, 2026-10-08): the pattern canvas fills the stage
+# behind the floating bar on purpose (like the VT canvas, nothing to read
+# there); the "Fertig" chip (Ohne Zeitlimit) and the fixation point must be
+# clear of every bar item.
+async def run_opto(b,vp):
+    ctx=await b.new_context(viewport=vp,service_workers="block"); pg=await ctx.new_page()
+    await pg.add_init_script("localStorage.setItem('fwmc-tips-seen','true');localStorage.setItem('fwmc-master-v1',JSON.stringify({startCountdown:false}));localStorage.setItem('fwmc-optodrum-prefs-v1',JSON.stringify({noLimit:true,fix:true}))")
+    errs=[]; pg.on("pageerror", lambda e: errs.append(str(e)))
+    await pg.goto(URL.replace("bereich=visual","bereich=aktivierung")); await pg.wait_for_timeout(250)
+    await pg.click("#optoOpenBtn"); await pg.click("#optoStartBtn"); await pg.wait_for_timeout(400)
+    found=set(await pg.evaluate(JS,"opto") or [])
+    fix=await pg.evaluate("()=>{const s=document.getElementById('optoStage').getBoundingClientRect();const cy=s.top+s.height/2;return [...document.getElementById('optoPlayerBar').children].every(c=>{const r=c.getBoundingClientRect();return !r.height||r.bottom<cy-12;});}")
+    if not fix: found.add("fixation point <> bar")
+    if errs: found.add("pageerror: "+errs[0][:80])
+    print(vp['width'],"optodrum","OK" if not found else sorted(found))
+    if found: BAD.append((vp['width'],"optodrum"))
+    await ctx.close()
 async def main():
     async with async_playwright() as pw:
         b=await pw.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome",args=["--no-sandbox"])
@@ -110,6 +127,7 @@ async def main():
             await run(b,vp,"bisect",worst=True)
             await run_ff(b,vp)
             await run_cn(b,vp)
+            await run_opto(b,vp)
         await b.close()
     print("all exercises clear of hint/bar:", not BAD)
 asyncio.run(main())

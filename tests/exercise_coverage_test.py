@@ -99,7 +99,9 @@ async def main():
         if not breath_cards or miss_b: fails.append("Atem missing in Kombi: " + ", ".join(miss_b or ["no cards found"]))
         for dom, sel in [("workout", "#workoutHome > section:not(.featured-programs) .featured-card[id$='StartCard']"),
                          ("movement", "#movementHome .featured-card[id$='StartCard']"),
-                         ("cardio", "#cardioHome .featured-card[id$='StartCard']")]:
+                         ("cardio", "#cardioHome .featured-card[id$='StartCard']"),
+                         # Aktivierung (2026-10-08): every own exercise tile
+                         ("activation", "#activationHome [data-act-ex]")]:
             n_cards = await pg.evaluate("(s) => document.querySelectorAll(s).length", sel)
             n_kombi = len(await group_labels(dom))
             print(f"{dom}: every exercise type ({n_cards}) has a Kombi entry ({n_kombi}):", n_cards > 0 and n_kombi >= n_cards)
