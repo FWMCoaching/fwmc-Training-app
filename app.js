@@ -7080,6 +7080,7 @@
     try { closeTrainPause(); } catch (e) {}
     try { lwStop(); } catch (e) {} // Hütchen · Laufweg stage lives inside #player
     try { zusSignalStop(); } catch (e) {} // Zusatz für oben: signal timer
+    try { breathGuideRuns.forEach((r, h) => { if (r.guest) breathGuideStop(h); }); } catch (e) {} // Pausen mit Atemführung
     els.player.hidden = true;
     els.breathPlayer.hidden = true;
     els.wimhofPlayer.hidden = true;
@@ -7726,16 +7727,56 @@
 
   // ---- Pause between programme exercises ----
   let pauseTimer = null;
-  let breathTimer = null;
   let pauseRemaining = 0;
   let pausePaused = false;
   let pauseNextIdx = 0; // steps-index to advance to once the pause countdown ends
 
   function stopPauseTimers() {
     if (pauseTimer) clearTimeout(pauseTimer);
-    if (breathTimer) clearInterval(breathTimer);
-    pauseTimer = breathTimer = null;
-    els.breath.classList.remove("run");
+    pauseTimer = null;
+    breathGuideStop(els.breath);
+  }
+
+  // ---- Atemführung: one breathing guide (circle 4 s in / 4 s out, CSS
+  // animation .breath.run + the "Einatmen"/"Ausatmen" label) for the
+  // trainer-programme pause and - with "Pausen mit Atemführung" in the
+  // Grundeinstellungen (masterPrefs.pauseBreath, Fabian 08.10.) - the
+  // pauses of the Kombi-Programm, Krafttraining and Ausdauertraining.
+  // Those wrap their countdown in a .breath-host; it only becomes a
+  // .breath circle while the guide runs, the countdown stays inside at its
+  // full size. Pauses under PAUSE_BREATH_MIN_S keep the plain countdown.
+  // A new pause: wrap its countdown in .breath-host + a hidden .breath-label
+  // and call breathGuideFor(host, label, pauseSeconds) / breathGuideStop.
+  const PAUSE_BREATH_MIN_S = 10;
+  const breathGuideRuns = new Map(); // host -> { timer, label }
+  function breathGuideStart(host, label) {
+    if (!host || breathGuideRuns.has(host)) return;
+    const guest = host.classList.contains("breath-host");
+    if (guest) host.classList.add("breath");
+    host.classList.remove("run");
+    void host.offsetWidth;
+    host.classList.add("run");
+    let inhale = true;
+    label.textContent = "Einatmen";
+    label.hidden = false;
+    const timer = setInterval(() => {
+      inhale = !inhale;
+      label.textContent = inhale ? "Einatmen" : "Ausatmen";
+    }, 4000);
+    breathGuideRuns.set(host, { timer, label, guest });
+  }
+  function breathGuideStop(host) {
+    if (!host) return;
+    const r = breathGuideRuns.get(host);
+    host.classList.remove("run");
+    if (!r) return;
+    clearInterval(r.timer);
+    breathGuideRuns.delete(host);
+    if (r.guest) { host.classList.remove("breath"); r.label.hidden = true; }
+  }
+  function breathGuideFor(host, label, pauseS) {
+    if (masterPrefs.pauseBreath === true && pauseS >= PAUSE_BREATH_MIN_S) breathGuideStart(host, label);
+    else breathGuideStop(host);
   }
 
   function startPause(nextIdx) {
@@ -7761,15 +7802,8 @@
     els.liveNav.hidden = true;
     setProgress(doneCount, 0);
     // Breathing guide: 4 s in, 4 s out, synced with the CSS animation.
-    let inhale = true;
-    els.breathLabel.textContent = "Einatmen";
-    els.breath.classList.remove("run");
-    void els.breath.offsetWidth;
-    els.breath.classList.add("run");
-    breathTimer = setInterval(() => {
-      inhale = !inhale;
-      els.breathLabel.textContent = inhale ? "Einatmen" : "Ausatmen";
-    }, 4000);
+    breathGuideStop(els.breath);
+    breathGuideStart(els.breath, els.breathLabel);
     tickPause();
   }
   function tickPause() {
@@ -8424,7 +8458,7 @@
   })();
   function saveCueOverrides() { writeJSON(CUE_OVERRIDES_KEY, cueOverrides); }
 
-  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true, volume: 1, textSize: "normal", softStimuli: false };
+  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true, volume: 1, textSize: "normal", softStimuli: false, pauseBreath: false };
   function loadMasterPrefs() {
     const saved = readJSON(MASTER_PREFS_KEY, null);
     if (saved && typeof saved === "object") {
@@ -9923,7 +9957,7 @@
   let masterSettingsReturnFocus = null;
   function openMasterSettings(section) {
     masterSettingsReturnFocus = document.activeElement;
-    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; syncMasterBgUI(); syncMasterPauseUI(); syncMasterVolumeUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
+    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; $("masterPauseBreathCheck").checked = masterPrefs.pauseBreath === true; syncMasterBgUI(); syncMasterPauseUI(); syncMasterVolumeUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
     syncMasterSeeUI();
     syncAnaglyphMasterUI();
     gearRenderMaster();
@@ -16510,6 +16544,7 @@
     els.workoutSetDoneBtn.hidden = false;
     els.workoutSetDoneBtn.textContent = mode === "time" ? "Halten starten" : "Satz erledigt";
     els.workoutRestBox.hidden = true;
+    breathGuideStop($("workoutRestBreath"));
     workoutState.holding = null;
     const logs = mode === "range" || mode === "pyramid" || mode === "amrap";
     els.workoutRepsInputRow.hidden = !logs;
@@ -16598,6 +16633,10 @@
     els.workoutRestNext.hidden = !nextText;
     els.workoutRestNext.textContent = nextText;
     els.workoutRestSkipBtn.textContent = mode === "start" ? "Sofort starten" : "Jetzt weiter";
+    // Atemführung only in real rests (between sets / exercises), never in
+    // "Bereit machen", a Supersatz or side switch.
+    breathGuideStop($("workoutRestBreath"));
+    breathGuideFor($("workoutRestBreath"), $("workoutRestBreathLabel"), mode === "set" || mode === "item" ? restS : 0);
     const cfg = cueCfg("strength");
     cueStrengthRestStart(mode, restS, cfg);
     const countOn = cfg.countStart && cfg.countdownS > 0;
@@ -17047,6 +17086,10 @@
         // a long beep marks the instant of every work start AND end
         if (prevFrame && (frame.type === "work" || prevFrame.type === "work") && cueTransitionBeeps(cfg)) playWorkoutBeep(true);
         cueTabataFrameStart(frame, frameIdx, cfg);
+        // Atemführung in the real rests (between exercises / sets), not in
+        // "Bereit machen" or the cool-down.
+        breathGuideStop($("tabataBreath"));
+        breathGuideFor($("tabataBreath"), $("tabataBreathLabel"), frame.type === "rest" || frame.type === "setrest" ? frame.t1 - frame.t0 : 0);
       }
       // Countdown (Töne & Ansagen, default 3 s) to every work start and end.
       const countEnd = frame.type === "work" && cfg.countEnd;
@@ -17161,6 +17204,8 @@
     if (workoutRestTimer) clearTimeout(workoutRestTimer);
     workoutRestTimer = null;
     stopWorkoutSetTimer();
+    breathGuideStop($("workoutRestBreath"));
+    breathGuideStop($("tabataBreath"));
     const st = workoutState;
     const played = st ? (performance.now() - (st.sessionStart || st.startTime)) / 1000 : 0;
     // Double-progression check (see the Kraft-/Wiederholungstraining note
@@ -17266,6 +17311,8 @@
     if (workoutTransitionTimer) clearTimeout(workoutTransitionTimer);
     workoutTransitionTimer = null;
     workoutState = null;
+    breathGuideStop($("workoutRestBreath"));
+    breathGuideStop($("tabataBreath"));
     releaseWakeLock();
     if (document.fullscreenElement === els.workoutPlayer) document.exitFullscreen().catch(() => {});
     els.workoutFsHint.hidden = true;
@@ -19891,6 +19938,11 @@
       return;
     }
     cueCardioTick(block, blockElapsed);
+    if (cardioState.breathBlock !== cardioState.index) {
+      cardioState.breathBlock = cardioState.index;
+      breathGuideStop($("cardioBreath"));
+      breathGuideFor($("cardioBreath"), $("cardioBreathLabel"), block.pause ? block.durationS : 0);
+    }
     if (block.pause) {
       const nextBlock = cardioState.items[cardioState.index + 1];
       const nextAct = nextBlock ? findCardioActivity(nextBlock.activity) : null;
@@ -20085,7 +20137,7 @@
       const r = el.getBoundingClientRect();
       if (r.width > 0 && r.height > 0) rects.push(r);
     };
-    [els.cardioBlockProgress, els.cardioActivityTitle, els.cardioActivityLabel, els.cardioCountdown,
+    [els.cardioBlockProgress, els.cardioActivityTitle, els.cardioActivityLabel, els.cardioCountdown, $("cardioBreath"), $("cardioBreathLabel"),
       els.cardioPhaseLabel, els.cardioMotivImg, els.cardioPlayer.querySelector(".chapter-nav")].forEach(add);
     els.cardioPlayer.querySelectorAll("#cardioPlayerBar button").forEach(add);
     if (!els.cardioMotiv.hidden && !els.cardioMotivText.hidden) {
@@ -20420,6 +20472,7 @@
     releaseWakeLock();
     if (!comboProgram) resumeSingleClear("cardio");
     cardioState = null;
+    breathGuideStop($("cardioBreath"));
     if (comboProgram) { advanceComboProgram(totalS); return; }
     els.cardioPlayer.hidden = true;
     if (document.fullscreenElement === els.cardioPlayer) document.exitFullscreen().catch(() => {});
@@ -20618,10 +20671,13 @@
     const countOn = cfg.countStart && cfg.countdownS > 0;
     const ts = comboTransitionState = { remaining: pauseS };
     els.comboTransitionCountdown.textContent = fmtClock(ts.remaining);
+    breathGuideStop($("comboTransitionBreath"));
+    breathGuideFor($("comboTransitionBreath"), $("comboTransitionBreathLabel"), pauseS);
     const go = () => {
       clearTimeout(comboTransitionTimer);
       clearInterval(comboTransitionInterval);
       comboTransitionState = null;
+      breathGuideStop($("comboTransitionBreath"));
       closeTrainPause();
       els.comboTransition.hidden = true;
       onContinue();
@@ -21239,6 +21295,10 @@
   els.masterStartCountdownCheck = $("masterStartCountdownCheck");
   els.masterStartCountdownCheck.addEventListener("change", () => {
     masterPrefs.startCountdown = els.masterStartCountdownCheck.checked;
+    saveMasterPrefs();
+  });
+  $("masterPauseBreathCheck").addEventListener("change", () => {
+    masterPrefs.pauseBreath = $("masterPauseBreathCheck").checked;
     saveMasterPrefs();
   });
   $("masterLevelSuggestCheck").addEventListener("change", () => {

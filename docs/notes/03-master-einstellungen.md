@@ -258,3 +258,25 @@ empty field removes the key and the Heute button comes back. Help text "Nur
 für die Begrüßung. Bleibt auf diesem Gerät." The sheet never opens with focus
 in this field (iPhone keyboard): `openMasterSettings()` focuses the first
 other control. Details: docs/notes/04. Test: `tests/vorname_heute_1008_test.py`.
+
+## Pausen mit Atemführung (2026-10-08, Idee 16)
+Checkbox `#masterPauseBreathCheck` in the group "Standard-Pause zwischen
+Übungen" (`masterPrefs.pauseBreath`, default off). When on, pauses of at least
+`PAUSE_BREATH_MIN_S` (10 s) show the breathing circle of the trainer-programme
+pause: Kombi pause between Bausteine (`#comboTransitionBreath`), Tabata/Zirkel
+rest + Satzpause (`#tabataBreath`, not "Bereit machen"/cool-down), Kraftplan
+rest between sets/exercises (`#workoutRestBreath`, modes `set`/`item`, not the
+start, Supersatz or side switch) and Ausdauer pauses (`#cardioBreath`).
+One helper in app.js: `breathGuideStart/Stop/For` (the trainer pause `#breath`
+uses it too). Each pause wraps its countdown in `.breath-host` + a hidden
+`.breath-label`; the host only becomes `.breath.run` (190 px circle, 8 s CSS
+animation, reduced motion = still circle) while the guide runs, and the
+countdown stays inside at its own full size (Fabian 08.10.: remaining time
+always clearly readable). No tone. `hideAllPlayers()`/`workoutLeavePlayer()`/
+`finishCardio()` stop it. Dark mode: `.player.calm-dk` circle/label like
+`.player.calm`; the Kombi pause countdown follows `--ink`.
+Not built (proposals): Gleichgewicht set rest, Atem-Programm/Wim-Hof (already
+breathing), Krafttraining-Plan transition (4 s), Eigenes Training.
+A new pause: wrap its countdown in `.breath-host`, add a `.breath-label`, call
+`breathGuideFor(host, label, pauseS)` when it starts and `breathGuideStop` when
+it ends. Test: `tests/atemfuehrung_1008_test.py`.
