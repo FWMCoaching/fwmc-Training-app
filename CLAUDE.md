@@ -299,7 +299,9 @@ For every new or changed exercise/screen, in the same commit:
   new screens go into `tests/text_wrap_audit_test.py` (AREAS). Never give a
   text label a fixed width.
 - Every area has the same frame (code card, tiles, Kombi-Programm,
-  Gesamter Trainingsverlauf) - compare with a sibling before shipping.
+  Gesamter Trainingsverlauf) - compare with a sibling before shipping. Order
+  (hero, code card, Beispiel-Programme, exercises, Kombi, Verlauf; Kraft/
+  Ausdauer exempt) is enforced by `tests/bereiche_reihenfolge_1008_test.py`.
 - Right/wrong feedback or fixed colours: `CVD_EXERCISES`/`CVD_FB_SELECTORS`;
   fixed signal colour: `SIGNAL_DEFS` + `SIGNAL_CSS` + `data-sig` spans.
 - Background colour: `makeBgApplier` + `wireBgIntensityControl` + `MASTER_BG_TARGETS`.

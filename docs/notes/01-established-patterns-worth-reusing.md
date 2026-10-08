@@ -486,3 +486,17 @@
   (a Range rect), not just the element box - overflowing text doesn't grow
   the box, which is why a plain rect check missed this bug.
 
+
+## Gleiche Abschnitt-Reihenfolge in allen Bereichen (2026-10-08, Idee 20)
+Every area home from the Training hub (`#hubAreaGrid`, so a new area is in
+automatically) keeps: hero > `.code-card` > `.featured-programs` (Beispiel-
+Programme, where present) > exercises > Kombi link (where visible) >
+`.history` (always last). Krafttraining and Ausdauertraining are exempt
+(different on purpose); Test-Bereich has no code card on purpose. The order
+"Programme above exercises" is the existing one of Visuelles Training and
+Atemtraining (the brief listed exercises first; nothing was moved, Fabian
+decides if it should change). Checked at 390/1024 px in the real layout
+(bottom bar + NAT tiles: by DOM order and on-screen position) and in the
+automated fallback layout (old Kombi link at the top: same relative order in
+every area). Test: `tests/bereiche_reihenfolge_1008_test.py`; if it fails,
+move the section in the app, never loosen the test.
