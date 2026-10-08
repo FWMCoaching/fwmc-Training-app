@@ -4672,6 +4672,7 @@
   <p class="page-sub" id="programDesc"></p>
   <video class="intro-video" id="introVideo" hidden controls playsinline></video>
   <div class="chapter-list" id="chapterList"></div>
+  <p class="program-hint gear-program-note" id="programGearNote" hidden></p>
   <p class="program-hint">Das Programm l&auml;uft automatisch durch alle &Uuml;bungen, mit kurzer Pause dazwischen. Tippe auf eine &Uuml;bung, um direkt dort einzusteigen.</p>
   <button class="start-btn" id="programStartBtn">Training starten</button>
 </div>
@@ -8216,6 +8217,13 @@
       <div class="group-label">H&ouml;ren</div>
       <label class="checkbox-row tap-row"><input type="checkbox" id="masterHearingCheck"> Geh&ouml;rlosigkeit oder eingeschr&auml;nktes H&ouml;ren</label>
       <div class="group-help">&Uuml;bungen, die zwingend Ton ben&ouml;tigen (aktuell nur &bdquo;Sehen &amp; H&ouml;ren&ldquo;), werden dann in der &Uuml;bersicht ausgegraut und markiert, statt versteckt.</div>
+    </div>
+
+    <div class="group" id="masterGearGroup">
+      <div class="group-label">Meine Hilfsmittel</div>
+      <div class="group-help">Hak an, was du zum Training da hast. &Uuml;bungen, f&uuml;r die dir noch etwas fehlt, sind leicht ausgegraut &ndash; du kannst sie trotzdem &ouml;ffnen und starten.</div>
+      <div id="masterGearList"></div>
+      <button class="text-link small" type="button" id="masterGearOpenBtn">Alle Hilfsmittel ansehen</button>
     </div>
 
     <div class="group" id="masterSeeGroup">

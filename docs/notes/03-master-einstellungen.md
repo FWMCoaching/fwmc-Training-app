@@ -93,6 +93,11 @@ list, extremities needed the same treatment):
   yes/no is what actually does something. Checkbox label deliberately
   spans both ("Gehörlosigkeit oder eingeschränktes Hören") so a client
   doesn't have to self-diagnose which exact category before ticking it.
+- **Meine Hilfsmittel** (`#masterGearGroup`, after Hören, 2026-10-08): one
+  checkbox per GEAR_ITEMS entry (Rot-Grün-Brille only with the Test-Bereich
+  unlocked), rendered on every open (`gearRenderMaster`), stored in
+  `fwmc-gear-v1`, synced with the Hilfsmittel page. Unlike Hören this never
+  blocks: missing equipment only greys + labels. Details docs/notes/28.
 - **Trainings-Code-Verlauf**: every successful code lookup
   (`openProgramIntro()`, regardless of which of the four programme/bundle
   types it resolves to) calls `recordCodeUsage(code)`, which upserts
