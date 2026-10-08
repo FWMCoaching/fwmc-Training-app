@@ -111,3 +111,22 @@ Card `#todayBreak` between the main cards (install hint) and the week: a short
 calm breathing pause (1/2/3 Min.) with an ⓘ sheet. `?bereich=atempause` opens
 Heute scrolled to it (push "Zeit für eine Atempause"). Details: docs/notes/20
 (Atemtraining) and 26 (reminder).
+
+## Vorname in der Begrüßung (2026-10-08, Fabian approved)
+- `.today-hello`: `renderHello()` (called by `renderToday()`) writes
+  `greetingFor(hour)` and, with a name, ", " + `span.today-greeting-name`
+  (textContent only, never innerHTML). Names over 12 chars get
+  `.has-long-name` (24 px instead of 28 px).
+- Storage: `fwmc-name-v1`, plain string, `cleanName()` = whitespace
+  collapsed, trimmed, max 30 chars (`NAME_MAX`); empty = key removed. Only on
+  the device; in backups through the fwmc- prefix (not in `BACKUP_EXCLUDE`).
+  Never read by the reminder payload (`computeReminders`) or any Worker call.
+- Without a name: `#helloNameBtn` "+ Wie dürfen wir dich nennen?" (text-link
+  small, 44 px) opens `#helloNameForm` inline (`.plan-input`
+  autocomplete=given-name + `.start-btn.secondary` "Speichern", Enter saves,
+  "Abbrechen"/Escape closes). Empty/whitespace saves nothing. Once saved the
+  button is gone; clearing the name in Grundeinstellungen brings it back.
+- Grundeinstellungen "Dein Name": docs/notes/03. Privacy sheet: the first
+  name is listed under "Was wird auf deinem Gerät gespeichert?".
+Test: `tests/vorname_heute_1008_test.py`; the wrap audit covers the open form
+and a 30-char name on Heute.

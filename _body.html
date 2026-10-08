@@ -273,6 +273,14 @@
   <section class="today-hello">
     <h1 class="today-greeting" id="todayGreeting">Guten Tag</h1>
     <p class="today-date" id="todayDate"></p>
+    <button class="text-link small hello-name-btn" id="helloNameBtn" type="button" hidden>+ Wie d&uuml;rfen wir dich nennen?</button>
+    <form class="hello-name-form" id="helloNameForm" hidden>
+      <div class="hello-name-row">
+        <input type="text" id="helloNameInput" class="plan-input" maxlength="30" autocomplete="given-name" autocapitalize="words" spellcheck="false" placeholder="Dein Vorname" aria-label="Dein Vorname">
+        <button class="start-btn secondary hello-name-save" id="helloNameSaveBtn" type="submit">Speichern</button>
+      </div>
+      <button class="text-link small hello-name-cancel" id="helloNameCancelBtn" type="button">Abbrechen</button>
+    </form>
   </section>
 
   <section class="today-main" id="todayMain" aria-live="polite"></section>
@@ -8132,7 +8140,7 @@
 
     <details class="faq-item">
       <summary>Was wird auf deinem Ger&auml;t gespeichert?</summary>
-      <div class="faq-body">Dein Trainingsverlauf, dein Fortschritt, dein Wochenplan, deine Termine, deine Einstellungen, gespeicherte Programme und Bilder, die du f&uuml;r Ausdauertraining ausw&auml;hlst. Alles liegt nur im Speicher dieses Browsers auf diesem Ger&auml;t, nicht in einer Cloud. L&ouml;schst du die Browserdaten, ist es weg. In den Grundeinstellungen kannst du eine Sicherung als Datei speichern und wieder einlesen &ndash; die Datei liegt dann nur bei dir.</div>
+      <div class="faq-body">Dein Vorname (wenn du ihn f&uuml;r die Begr&uuml;&szlig;ung eingibst), dein Trainingsverlauf, dein Fortschritt, dein Wochenplan, deine Termine, deine Einstellungen, gespeicherte Programme und Bilder, die du f&uuml;r Ausdauertraining ausw&auml;hlst. Alles liegt nur im Speicher dieses Browsers auf diesem Ger&auml;t, nicht in einer Cloud. L&ouml;schst du die Browserdaten, ist es weg. In den Grundeinstellungen kannst du eine Sicherung als Datei speichern und wieder einlesen &ndash; die Datei liegt dann nur bei dir.</div>
     </details>
 
     <details class="faq-item">
@@ -8164,6 +8172,12 @@
   <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="masterSettingsTitle">
     <h2 id="masterSettingsTitle">Grundeinstellungen</h2>
     <p class="group-help">Diese Einstellungen werden nur in diesem Browser auf diesem Ger&auml;t gespeichert &ndash; nicht in einer Cloud, nicht bei einem Server, und nicht automatisch mit deinem Trainer geteilt.</p>
+
+    <div class="group" id="masterNameGroup">
+      <label class="group-label" for="masterNameInput">Dein Name</label>
+      <input type="text" id="masterNameInput" class="plan-input" maxlength="30" autocomplete="given-name" autocapitalize="words" spellcheck="false" placeholder="Dein Vorname">
+      <div class="group-help">Nur f&uuml;r die Begr&uuml;&szlig;ung. Bleibt auf diesem Ger&auml;t.</div>
+    </div>
 
     <div class="group">
       <div class="group-label">Vorhandene Einschr&auml;nkungen</div>

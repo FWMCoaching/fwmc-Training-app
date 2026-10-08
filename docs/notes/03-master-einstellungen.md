@@ -243,3 +243,13 @@ Header group `#masterSeeGroup` after "Hören", then two groups:
   screens, pause overlay, where the note goes) and reads `softOn(ex)` in its
   timing (VT canvas exercises get it for free).
 Test: `tests/atempause_sanft_1007_test.py` (section N).
+
+## Dein Name (2026-10-08)
+First group of the sheet `#masterNameGroup`: `#masterNameInput`
+(`.plan-input`, maxlength 30, autocomplete=given-name), filled from
+`getUserName()` in `openMasterSettings()`, saved on change/blur/Enter via
+`setUserName()` (`fwmc-name-v1`), then `renderHello()` updates Heute; an
+empty field removes the key and the Heute button comes back. Help text "Nur
+für die Begrüßung. Bleibt auf diesem Gerät." The sheet never opens with focus
+in this field (iPhone keyboard): `openMasterSettings()` focuses the first
+other control. Details: docs/notes/04. Test: `tests/vorname_heute_1008_test.py`.

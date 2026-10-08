@@ -89,6 +89,15 @@ async def main():
                     # Hilfsmittel und Starterpaket (Mehr, 2026-10-08): no page parameter, opened like the Mehr row
                     await pg.evaluate("() => document.getElementById('moreGearBtn').click()"); await pg.wait_for_timeout(150)
                 await audit(pg, f"{w}px{ts_tag(ts)} {area}", problems)
+                if area == "heute":
+                    # Vorname in der Begrüßung (2026-10-08): inline form open, then a long name
+                    await pg.evaluate("() => { const b = document.getElementById('helloNameBtn'); if (b && !b.hidden) b.click(); }")
+                    await pg.wait_for_timeout(100)
+                    await audit(pg, f"{w}px{ts_tag(ts)} heute/vorname-form", problems)
+                    await pg.evaluate("() => localStorage.setItem('fwmc-name-v1', 'Maximiliane-Charlotte-Josefine')")
+                    await pg.goto(BASE + "heute"); await pg.wait_for_timeout(250)
+                    await audit(pg, f"{w}px{ts_tag(ts)} heute/vorname-lang", problems)
+                    await pg.evaluate("() => localStorage.removeItem('fwmc-name-v1')")
                 if area == "hilfsmittel":
                     # with a shop link: "Ansehen" + "Werbung · Partner-Link" + partner sentence
                     await pg.evaluate("() => { window.__gear.items.forEach(g => { g.link = 'https://example.com/' + g.id; }); window.__gear.render(); }")

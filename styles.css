@@ -1902,6 +1902,16 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 :root[data-theme="dark"] .today-hello::after{border-color:rgba(105,194,224,.07)}
 .today-greeting{font-size:28px;line-height:1.15;margin:0;color:var(--ink)}
 .today-date{margin:4px 0 0;color:var(--ink-soft);font-size:calc(15px * var(--ts,1))}
+/* Vorname in der Begrüßung (Fabian 08.10.): "+ Wie dürfen wir dich nennen?" until a name is saved, then the inline form */
+.today-greeting{overflow-wrap:break-word}
+.today-greeting.has-long-name{font-size:24px}
+.today-greeting-name{white-space:normal}
+.hello-name-btn{display:block;min-height:44px;margin:4px 0 -10px -4px;padding:0 4px;text-align:left;max-width:100%;overflow-wrap:break-word}
+.hello-name-form{margin:10px 0 -6px}
+.hello-name-row{display:flex;gap:8px;align-items:stretch}
+.hello-name-row .plan-input{flex:1 1 auto;min-width:0;width:auto}
+.start-btn.hello-name-save{flex:0 0 auto;margin:0;min-height:44px;padding:0 16px;border-radius:10px;font-size:calc(15px * var(--ts,1))}
+.hello-name-cancel{min-height:44px;padding:0 4px;margin-left:-4px}
 .today-main{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:22px}
 .today-main-kicker{font-size:calc(12px * var(--ts,1));font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--brand)}
 .today-main-title{font-size:calc(21px * var(--ts,1));line-height:1.25;margin:6px 0 4px;display:flex;align-items:center;gap:8px;color:var(--ink)}

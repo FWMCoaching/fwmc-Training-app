@@ -9021,6 +9021,7 @@
     syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; syncMasterBgUI(); syncMasterPauseUI(); syncMasterVolumeUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
     syncMasterSeeUI();
     syncAnaglyphMasterUI();
+    { const mn = $("masterNameInput"); if (mn) mn.value = getUserName(); }
     els.masterSettingsSheet.hidden = false;
     // openMasterSettings("someGroupId") opens the sheet at that section
     // (the "Sanfte Reize sind an" notes, the Nichtraucher-Pause info).
@@ -9033,7 +9034,14 @@
         const f = target.querySelector("input, button");
         if (f) f.focus({ preventScroll: true });
       });
-    } else focusFirstIn(els.masterSettingsSheet);
+    } else {
+      // Never start in "Dein Name": a focused text field opens the iPhone keyboard.
+      const sh = els.masterSettingsSheet;
+      const f = [...sh.querySelectorAll(FOCUSABLE)].find((e) => e.id !== "masterNameInput");
+      if (f) f.focus({ preventScroll: true });
+      sh.scrollTop = 0;
+      sh.querySelectorAll(".sheet-inner").forEach((el) => { el.scrollTop = 0; });
+    }
   }
   function closeMasterSettings() {
     els.masterSettingsSheet.hidden = true;
@@ -32946,10 +32954,70 @@
     const a = AREA_BY_KEY[area];
     return `<span class="area-dot ${extraClass || ""}" style="background:${a ? a.color : "#888"}" aria-hidden="true"></span>`;
   }
+  // Vorname in der Begrüßung (Fabian 08.10.): stored only on this device
+  // (fwmc-name-v1, plain string, trimmed, max 30 chars; in backups via the
+  // fwmc- prefix). Never part of a reminder payload or any Worker call.
+  // Without a name the hello card offers "+ Wie dürfen wir dich nennen?",
+  // which opens an inline form; Grundeinstellungen "Dein Name" edits/clears it.
+  const NAME_KEY = "fwmc-name-v1";
+  const NAME_MAX = 30;
+  function cleanName(v) { return String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, NAME_MAX).trim(); }
+  function getUserName() { try { return cleanName(localStorage.getItem(NAME_KEY)); } catch (e) { return ""; } }
+  function setUserName(v) {
+    const n = cleanName(v);
+    try { if (n) localStorage.setItem(NAME_KEY, n); else localStorage.removeItem(NAME_KEY); } catch (e) {}
+    return n;
+  }
+  function renderHello(now) {
+    const g = els.todayGreeting;
+    const name = getUserName();
+    g.textContent = greetingFor((now || new Date()).getHours()) + (name ? "," : "");
+    if (name) {
+      g.appendChild(document.createTextNode(" "));
+      const sp = document.createElement("span");
+      sp.className = "today-greeting-name";
+      sp.textContent = name;
+      g.appendChild(sp);
+    }
+    g.classList.toggle("has-long-name", name.length > 12);
+    const btn = $("helloNameBtn"), form = $("helloNameForm");
+    if (!btn || !form) return;
+    if (name) { btn.hidden = true; form.hidden = true; }
+    else if (form.hidden) btn.hidden = false;
+  }
+  (function initHelloName() {
+    const btn = $("helloNameBtn"), form = $("helloNameForm"), inp = $("helloNameInput");
+    if (!btn || !form || !inp) return;
+    btn.addEventListener("click", () => {
+      btn.hidden = true; form.hidden = false; inp.value = "";
+      inp.focus();
+    });
+    const close = () => { form.hidden = true; inp.value = ""; renderHello(); };
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const n = cleanName(inp.value);
+      if (!n) { inp.value = ""; inp.focus(); return; }
+      setUserName(n);
+      close();
+    });
+    $("helloNameCancelBtn").addEventListener("click", close);
+    inp.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } });
+    const mInp = $("masterNameInput");
+    if (mInp) {
+      const save = () => {
+        const n = setUserName(mInp.value);
+        mInp.value = n;
+        renderHello();
+      };
+      mInp.addEventListener("change", save);
+      mInp.addEventListener("blur", save);
+      mInp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); save(); mInp.blur(); } });
+    }
+  })();
   function renderToday() {
     const now = new Date();
     const today = todayStr();
-    els.todayGreeting.textContent = greetingFor(now.getHours());
+    renderHello(now);
     els.todayDate.textContent = longDate(today);
     const hist = loadHistory();
     renderTodayMain(today, hist);
