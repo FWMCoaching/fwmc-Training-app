@@ -5,7 +5,8 @@ Fabian's request: a second kind of Zusatzaufgabe next to "Zeichen am Rand"
 up and the client decides whether it holds ("stimmt die Aufgabe?").
 
 ## Where it lives
-- Ready screen `#addonGroup` (label "Zusatzaufgabe"): `#addonTaskRow`
+- Ready screen `#addonGroup` (label "Zusatzaufgabe"): sub-label "Art der
+  Zusatzaufgabe" (`.addon-task-label`, Prüfer 08.10.), then `#addonTaskRow`
   (`data-addon-task` periph / rechnen). The old periph controls are wrapped
   in `#addonPeriphBody`, the new ones are in `#addonMathBody`: Rechenart
   (`data-addon-mathlevel` plus10 / plus20 / mal), "So antwortest du"

@@ -32,6 +32,13 @@ back to the middle.
   direction, gegen = opposite, stehen = no step, kreis = no step, change the
   ball's circling direction (meant for the Zusatz "Ball um den Körper
   kreisen"). Switching it on with nothing set gives Blau = Gegenrichtung.
+  UI (Prüfer 08.10.): one chip row per colour (`colorChoiceRowsHtml`,
+  `data-rk-rulecol` + `data-val`, chips `RK_MEANING_CHIPS` Normal /
+  Gegenrichtung / Stehen bleiben / Kreis wechseln), never a `<select>`.
+  The Regeln sheet lists only colours with a non-normal meaning plus "Alle
+  anderen Farben: Schritt in die gezeigte Richtung."; the note placeholder
+  mentions colours only for exercises with colours; pill, pause link and
+  sheet title all read "Regeln und Notiz".
   Decisions: only in "Zeichen zeigen" and not with "Zahlen" (no visible
   colour). With "Farbe + Zahl" the colour is drawn independently of the
   number: the number names the direction, the colour what to do (otherwise

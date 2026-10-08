@@ -473,3 +473,17 @@ Hütchen · Farbe + Zahl and Farbfelder (JSON), Aktivierung · Optodrum and
 Test-Bereich "Jedes Auge zählt (Farbbrille)" (not in the dashboard). The app's
 privacy sheet says the trainer may keep the plan under a Kürzel on the FWMC
 server (kp20). Test: `tests/hilfsmittel_texte_1008_test.py`.
+
+**Freischaltung + QR-Code zeigen (08.10.2026, details docs/notes/36)**:
+kind "Freischaltung" (`data-kind="unlock"`, `#unlockBuilder`) builds its
+checkboxes from dashboard.html's `FEATURE_UNLOCKS` copy (label + hint; a
+new feature = one entry there + one in app.js) plus "Sperr-Code" (`lock`);
+saves `{"type":"feature-unlock","features":[…]}`, `configToBuilder`
+recognises it, the codes table marks it "Freischaltung"/"Freischaltung
+sperren". Every row of the codes table has "QR-Code zeigen" (`data-qr`,
+does not open the editor), and after "Speichern" `#pQrBtn` appears:
+`#codeQrSheet` shows a big QR (`qrcode.js` from the app folder, loaded in
+`<head>`) for `<app url>#code=<CODE>`, the code as text and the hint for the
+client. App URL = the dashboard's own folder on github.io /
+fabian-westermann.de / localhost, else the Pages URL. Test:
+`tests/pruefer_fixes_1008_test.py` (decodes the canvas with jsQR).

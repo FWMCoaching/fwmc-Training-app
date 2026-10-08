@@ -285,7 +285,7 @@ everywhere goes here, short.
 | 33-huetchen-laufweg | Hütchen · Laufweg (VT, cone map with drawn path): why VT-catalog architecture, path maker, variants, what is not wired |
 | 34-ton-sequenz | Ton-Sequenz (Test-Bereich): step model, audio graph (merger, fades, cueVolume), Kanal-Test, Suchlauf, presets, safety, iPhone checks |
 | 35-richtungskreuz-zusaetze-regeln | Richtungskreuz (VT, 4 directions, Farbregel), Zusätze für oben (`ZUSAETZE`, signal), ⓘ Regeln + Meine Notiz (`REGELN_EXERCISES`, notes in presets/Kombi, trainer note) |
-| 36-qr-uebergabe | QR-Übergabe trainer → client: range screen, payload fields, split codes, import/dedupe, iPhone Safari copy + paste field, Kunden-Training (own store, snapshot of bests) |
+| 36-qr-uebergabe | QR-Übergabe trainer → client: range screen, payload fields, split codes, import/dedupe, iPhone Safari copy + paste field, Kunden-Training (own store, snapshot of bests), in-app scanner, trainer codes as QR (`#code=`), Freischaltungen (`FEATURE_UNLOCKS`) |
 | 37-neuro-aktivierung | Neuro-Aktivierung (hidden 9th area `neuro`, unlocked by code type `neuro-unlock`): step player, `NEURO_EXERCISES`, Kombi/plan only when unlocked, "Spezialübung von deinem Trainer" in trainer Kombi codes, dashboard builder, texts Fabian reviews |
 
 ## Must-do rules collected from the detail notes
@@ -608,8 +608,24 @@ For every new or changed exercise/screen, in the same commit:
   Fortschritt needs goes into `hoPack`/`hoUnpack`. Anything that records a
   run goes through `addHistory()` (Kunden-Training diverts it there), and a
   new per-exercise best/level store is named `fwmc-…-best-v1` or added to
-  `HO_SNAP_RE`. `qrcode.js` (vendored) belongs in every Artifact publish.
-  Details docs/notes/36, test `tests/qr_uebergabe_1008_test.py`.
+  `HO_SNAP_RE`. `qrcode.js` and `jsqr.js` (vendored) belong in every
+  Artifact publish. Trainer tools ("An Kunden übergeben", "Kunden-Training
+  starten") only after a `feature-unlock` code with `trainer-tools`
+  (`fwmc-features-v1`); "Trainer-QR-Code scannen" (in-app camera,
+  BarcodeDetector or lazy jsQR) is always there and reads handover codes
+  and trainer codes (`#code=<CODE>` or bare; same path as the code card,
+  `openCodeAsTyped`). Details docs/notes/36, tests
+  `tests/qr_uebergabe_1008_test.py`, `tests/pruefer_fixes_1008_test.py`.
+- Freischaltungen (2026-10-08): code type `feature-unlock` (several
+  features per code, `lock` hides again); a new unlockable feature = one
+  `FEATURE_UNLOCKS` entry in app.js (label, toast texts, screen, `apply`,
+  automatic `body.feat-<key>`) + one entry in dashboard.html's copy. Every
+  trainer code can be shown as QR in the dashboard ("QR-Code zeigen").
+- Prüfer-Runde (2026-10-08), everywhere: one checkbox style (brand accent,
+  22 px in rows); a player bar with ⓘ stays one row from 360 px (icon
+  buttons ≤ 480 px, short status via `barCompact()`); colour meanings are
+  chip rows (`colorChoiceRowsHtml`), never a `<select>`; German "1,5 s" and
+  "80 %". Details docs/notes/01.
 - Neuro-Aktivierung (2026-10-08): hidden area `neuro`, visible only after a
   `neuro-unlock` code (`fwmc-neuro-unlocked-v1`; tests seed `fwmc-test-neuro`).
   Anything that lists areas/exercises (hub, PLAN_AREAS, Kombi groups, tray,

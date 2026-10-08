@@ -486,3 +486,28 @@
   (a Range rect), not just the element box - overflowing text doesn't grow
   the box, which is why a plain rect check missed this bug.
 
+
+## Prüfer-Runde 08.10.2026: general rules
+- **One checkbox style**: every checkbox uses `accent-color: var(--brand)`;
+  in rows (`.checkbox-row`, `.inline-check`, `.warn-check`,
+  `.cardio-interval-toggle`, …) it is 22 px. Never a native grey box.
+- **Player bar with ⓘ stays one row from 360 px**: at ≤ 480 px a bar with
+  the ⓘ turns `…PauseBtn`/`…FsBtn`/`#fsBtn` into 44 px icon buttons (CSS
+  mask `--bar-icon`, the text stays for screen readers), the status pill is
+  13 px; ≤ 400 px tighter gaps. Status texts use the short form when
+  `barCompact()` (`innerWidth <= 480`): Flash "a/b · Stufe s", MOT "k aus
+  n". A new player status must fit the same way.
+- **Colour meanings are chip rows**, one per colour (`colorChoiceRowsHtml`
+  in app.js), never a `<select>`.
+- **Pause sheets**: a loose last item before "Weiter" (`.pause-panel >
+  :nth-last-child(2):not(.group)`) keeps 14 px, so nothing sits under the
+  button's fade. One help sentence per sheet, never two contradicting ones.
+- **Kombi pause countdown** (`.done-panel .pause-countdown`) uses
+  `var(--ink)` in dark mode (it stands on the screen background, not a
+  player).
+- `.chapter-nav` buttons (« ↻ ») are 46 px everywhere, also while a pause
+  sheet is open.
+- Sheets that open with a text focus target the `.sheet-inner` (tabIndex
+  -1, no outline) instead of the first button (no focus ring on open).
+- Numbers: German decimal comma ("1,5 s") and a space before % ("80 %") in
+  every value display, also Cardio guest sliders (`cgFmt`) and the dashboard.

@@ -28,9 +28,12 @@ Kombi code ("Spezialübung von deinem Trainer") without unlocking the area.
   (`--area-neuro`, ink light `#8a4b2a` / dark `#d39a78`), icon = vibration waves.
 - Training hub: own row "Für dich freigeschaltet" / "Von deinem Trainer, nur
   mit Code." directly under the four core tiles (never takes a core place,
-  `HUB_CORE` unchanged), tile in the `.hub-extra` look with the existing
-  "Mit Code freigeschaltet" badge (same as the Test tile). Heute area tiles
-  follow `PLAN_AREAS`.
+  `HUB_CORE` unchanged), tile in the `.hub-extra` look, no badge (Prüfer
+  08.10.: the unlock is said once, in the row heading; tile text "Geführt
+  mit Vibration oder Massageball."). Heute area tiles follow `PLAN_AREAS`.
+  `#neuroHome` hero: "Geführte Aktivierungen, meist mit Hilfsmitteln wie
+  Vibrationsgerät oder Massageball.", tiles under "Übungen" (Gelenke
+  kreisen needs nothing). "Z‑Vibe" uses U+2011 (no break at the hyphen).
 - `#neuroHome`: logo bar + ‹ (AREA_HOME_IDS), old tab row without an active
   tab (`neuroAreaActive`, like Eigenes Training/Aktivierung), Kombi link,
   hero, unlock notice, `.code-card` (`NEURO_CODE_CTX`), tiles `#neuroGrid`
@@ -121,6 +124,15 @@ pill flips every `altS` and the new side is spoken), `none`.
   (`blockResultPush` → "Eben: …" in the next pause, closing panel and the
   combo history note "Vibration links / rechts: Spezialübung von deinem
   Trainer · 2:30"). No own history entry (the Kombi is the entry).
+  Prüfer 08.10.: the "Eben: …" line reads only "erledigt · 2:30" (the tag
+  already stands above the pause title); the history note keeps the tag via
+  `blockResultPush(run, label, text, note)` (optional 4th arg). One tag
+  style everywhere: teal outline; in the player fixed hex (#007094 light,
+  #39a7cc on #16262b in the dark `.calm-dk` player). Durchgänge chips read
+  "1×/2×/3×"; Dauer pro Schritt is the slider only. The pause sheet says
+  one sentence: "Der Takt gilt sofort, die Dauer ab dem nächsten Schritt.
+  Beides bleibt gespeichert, wie auf der Übungsseite." (own run) or "Nur
+  für diesen Durchgang." (Kombi/code).
 - It can't leave the code: `neuroStripBlocks` removes neuro blocks when a
   locked client inserts a trainer programme ("einfügen") or adapts one into an
   own Kombi (`openComboScreen(seed)`); a trainer programme made only of neuro
