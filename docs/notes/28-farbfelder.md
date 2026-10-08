@@ -94,7 +94,6 @@ presets, Kombi blocks and Cardio guests carry them. Pure rules (exposed on
 - Cardio guest: 8 modes; gilt/Mischung for Sehen und Hören, Umkehr row for the
   three flip modes (`data-balf` gilt/mix/flip).
 Test: `tests/farbfelder_reize_1007_test.py`, screenshots `tests/screenshots/farbfelder_reize/`.
-Not built (to be asked): "Die Übung kann man auch noch woanders einbringen, dann sieht man was angetippt wird".
 
 ## Laufzeit = gewählte Dauer (Prüfer 07.10. Nr. 4)
 
@@ -105,3 +104,56 @@ chosen duration, so the clock starts at 1:00 for "1 Min". Abfolge merken
 starts no round that would not finish. The raw builders (`__ff.build`,
 `__cn.build`) are unchanged. Tests: farbfelder_1007 / huetchen_farbe_zahl_1007
 ("timer starts at the chosen 1:00").
+
+## Antippen (Fabian 08.10., "dann sieht man was angetippt wird")
+Ready screen group "So antwortest du" (`#ffAnswerRow`): Treten ("auf der Matte",
+default, unchanged behaviour) / Antippen ("auf dem Bildschirm, mit Wertung").
+State `ffAnswer` (treten|tippen) in DEFAULTS/snapshot/normalize, so presets and
+Kombi blocks carry it; blocks/presets saved before 08.10. load as treten
+(`Object.assign(state, { ffAnswer: "treten" }, ….ff)` at the 4 load sites).
+Cardio guest always treads (`state.ffAnswer = "treten"` in the guest setup,
+`ffTapMode()` is also false while `cardioGuestActive`); not offered there.
+- Tippen texts: `FF_MODES[m].tapHelp/tapTask` (countdown task, mode help),
+  `FF_MODE_SMALL` (mode buttons' small line), `FF_RULES_TAP` (rules box);
+  Fuß und Hand caption "Tippe das Feld mit dem Fuß an" (only the foot counts).
+  Hidden in tippen: Hilfsmittel note, Fuß-Vorgabe (`#ffFootGroup`, no L/R badge
+  in the schedule), Hände (`ffHandFor` returns null). Layout label becomes
+  "Anordnung der Felder", the mat sentence drops out of the help.
+- Engine (`session.ffTap`, set in `runSession` when `ffTapMode()`): own
+  pointerdown on `#stage` (needs coordinates, so not FAST_TAP_SEL; `#player.ff-tap
+  #stage{touch-action:none}`), `ffFieldAt` maps canvas px via `ffGeometry`
+  (gap → nearer field, outside the grid ignored). `ffTapEnter` on every frame
+  change: a stimulus opens an answer window that lasts until the next stimulus
+  (blank included); first tap counts, later ones ignored, none = missed.
+  Abfolge: intro opens a round, show frames collect the sequence, "Jetzt du"
+  opens input until the next intro; wrong tap ends the round's input.
+  A live tempo change (`rebuildVtScheduleFrom`) drops an open, unanswered
+  window/round (`ffTapAbandon`). Taps while paused or in the 3-2-1 are ignored.
+- Feedback: Haken & Kreuz (`CVD_EXERCISES.farbfelder`, `screens: []`, drawn on
+  the canvas by `ffDrawTapFlash`, fixed hex): off (default) = neutral white
+  ring/flash 0.42 s on the tapped field; on = green #2e7d32 / red #d32f2f ring +
+  white disc with dark tick/cross. An/Aus in `#ffFbRow` (ready, tippen only) and
+  `#vtPauseFfFbGroup` (pause sheet, tap runs only). No FB_HINT_STARTS question:
+  the badge is white/dark on every field, so contrast never depends on the colour.
+- Score (`ffTapScore`): "18 von 22 richtig · Ø 0,84 s" (Ø over correct taps,
+  stimulus start → tap) / Abfolge "5 von 7 Runden richtig · längste Folge 6".
+  Single runs: done summary + history note (`Leuchten · Antippen · …`). In a
+  Kombi or coach programme the taps get feedback but no score summary (open).
+  No markBest (no obvious per-mode best yet).
+- Test hooks (automated browsers): `window.__ffTap()` (current window/round/
+  items/score), `window.__ffTapFinish()`, `window.__ffTapLastScore`, `__ff.snapshot()`.
+
+## Matten-Anordnung: halten und ziehen (Fabian 08.10.)
+Label "Anordnung deiner Matte" + `.tag` "veränderbar"; each cell shows a move
+icon (`FF_GRIP_SVG`, cell ink colour). Help under the grid: "Halte ein Feld
+gedrückt und zieh es auf ein anderes: Die beiden Farben tauschen den Platz. Eine
+Farbe änderst du, indem du das Feld antippst und unten die Farbe wählst
+(gewählt: …). Leg deine Matte genauso hin: Oben ist die Reihe näher am Bildschirm."
+`wireFfLayoutDrag`: mouse drag after 6 px, touch/pen after a 250 ms long press
+(moving > 10 px before = scroll, no drag; cells stay `touch-action:pan-y`,
+touchmove is prevented only while dragging); a `.ff-ghost.drag-lifted` copy
+follows the pointer, source `.ff-drag-src`, target `.ff-drop-target`, drop swaps
+`state.ffLayout` (+ `.ff-swapped` pop), outside = cancel, a click right after a
+drag is swallowed. Hand rules are keyed by colour and move with it. The edge
+swipe back ignores touches that start on `.ff-layout-grid`.
+Test: `tests/farbfelder_tippen_1008_test.py`, screenshots `tests/screenshots/farbfelder_tippen/`.

@@ -4078,6 +4078,20 @@
       <div class="group-help" id="ffModeHelp"></div>
     </div>
 
+    <div class="group" id="ffAnswerGroup">
+      <div class="group-label">So antwortest du</div>
+      <div class="choice-row two" id="ffAnswerRow" role="group" aria-label="So antwortest du">
+        <button type="button" class="choice" data-ff-answer="treten">Treten<small>auf der Matte</small></button>
+        <button type="button" class="choice" data-ff-answer="tippen">Antippen<small>auf dem Bildschirm, mit Wertung</small></button>
+      </div>
+      <div class="group-help" id="ffAnswerHelp"></div>
+      <div class="cvd-row" id="ffFbRow" hidden>
+        <div class="cvd-row-label">Haken &amp; Kreuz bei richtig/falsch</div>
+        <div class="choice-row"><button type="button" class="choice" data-cvd-ex="farbfelder" data-cvd-kind="fb" data-cvd-val="1">An</button><button type="button" class="choice" data-cvd-ex="farbfelder" data-cvd-kind="fb" data-cvd-val="0">Aus</button></div>
+        <div class="group-help cvd-status" data-cvd-status="farbfelder:fb"></div>
+      </div>
+    </div>
+
     <div class="group" id="ffLevelGroup" hidden>
       <div class="group-label">Stufe</div>
       <div class="choice-row four" id="ffLevelRow" role="group" aria-label="Stufe">
@@ -4124,8 +4138,8 @@
       <div class="group-help" id="ffFlipHelp"></div>
     </div>
 
-    <div class="group">
-      <div class="group-label">Anordnung wie deine Matte</div>
+    <div class="group" id="ffLayoutGroup">
+      <div class="group-label"><span id="ffLayoutLabel">Anordnung deiner Matte</span> <span class="tag ff-tag">ver&auml;nderbar</span></div>
       <div class="ff-layout-grid" id="ffLayoutGrid">
         <button type="button" class="ff-cell" data-ff-cell="0" aria-label="Oben links"></button>
         <button type="button" class="ff-cell" data-ff-cell="1" aria-label="Oben rechts"></button>
@@ -4136,7 +4150,7 @@
       <div class="color-picker" id="ffColorPicker"></div>
     </div>
 
-    <div class="group">
+    <div class="group" id="ffFootGroup">
       <div class="group-label">Fu&szlig;-Vorgabe</div>
       <div class="choice-row" id="ffFootRow" role="group" aria-label="Fu&szlig;-Vorgabe">
         <button type="button" class="choice" data-ff-foot="aus">Aus</button>
@@ -5021,6 +5035,10 @@
           <div class="slider-line"><span class="slider-label">Min</span><input type="range" id="vtPauseIntervalMinSlider" min="1" max="30" step="1" aria-label="Pause minimal"></div>
           <div class="slider-line"><span class="slider-label">Max</span><input type="range" id="vtPauseIntervalMaxSlider" min="1" max="30" step="1" aria-label="Pause maximal"></div>
           <div class="group-help">Gilt ab &bdquo;Weiter&ldquo; f&uuml;r den Rest dieser &Uuml;bung.</div>
+        </div>
+        <div class="group" id="vtPauseFfFbGroup" hidden>
+          <div class="group-label">Haken &amp; Kreuz bei richtig/falsch</div>
+          <div class="choice-row"><button type="button" class="choice" data-cvd-ex="farbfelder" data-cvd-kind="fb" data-cvd-val="1">An</button><button type="button" class="choice" data-cvd-ex="farbfelder" data-cvd-kind="fb" data-cvd-val="0">Aus</button></div>
         </div>
         <div class="group" id="vtPauseBgIntensityGroup">
           <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="periphPauseBgValue"></span></div>

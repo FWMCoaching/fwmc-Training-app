@@ -707,15 +707,23 @@
   const FF_FIELD_NAMES = ["Oben links", "Oben rechts", "Unten links", "Unten rechts"];
   const FF_DEFAULT_LAYOUT = ["rot", "blau", "gelb", "gruen"];
   const FF_MODES = {
-    leuchten: { help: "Ein Feld leuchtet auf. Tritt so schnell wie möglich darauf.", task: "Ein Feld leuchtet auf – tritt darauf." },
-    regeln: { help: "Auf einem Feld erscheint ein Symbol. Das Symbol sagt dir, auf welches Feld du trittst.", task: "Das Symbol sagt dir, auf welches Feld du trittst." },
-    leer: { help: "Auf drei Feldern erscheint dasselbe Symbol. Tritt auf das vierte, leere Feld – gegen den ersten Impuls.", task: "Tritt auf das Feld ohne Symbol." },
-    abfolge: { help: "Die Felder leuchten nacheinander auf. Bei „Jetzt du“ trittst du die Folge nach. Jede Runde wird sie ein Feld länger.", task: "Merk dir die Folge und tritt sie bei „Jetzt du“ nach." },
+    leuchten: { help: "Ein Feld leuchtet auf. Tritt so schnell wie möglich darauf.", task: "Ein Feld leuchtet auf – tritt darauf.",
+      tapHelp: "Ein Feld leuchtet auf. Tippe es so schnell wie möglich an.", tapTask: "Ein Feld leuchtet auf: Tippe es an." },
+    regeln: { help: "Auf einem Feld erscheint ein Symbol. Das Symbol sagt dir, auf welches Feld du trittst.", task: "Das Symbol sagt dir, auf welches Feld du trittst.",
+      tapHelp: "Auf einem Feld erscheint ein Symbol. Das Symbol sagt dir, welches Feld du antippst.", tapTask: "Das Symbol sagt dir, welches Feld du antippst." },
+    leer: { help: "Auf drei Feldern erscheint dasselbe Symbol. Tritt auf das vierte, leere Feld – gegen den ersten Impuls.", task: "Tritt auf das Feld ohne Symbol.",
+      tapHelp: "Auf drei Feldern erscheint dasselbe Symbol. Tippe das vierte, leere Feld an, gegen den ersten Impuls.", tapTask: "Tippe das Feld ohne Symbol an." },
+    abfolge: { help: "Die Felder leuchten nacheinander auf. Bei „Jetzt du“ trittst du die Folge nach. Jede Runde wird sie ein Feld länger.", task: "Merk dir die Folge und tritt sie bei „Jetzt du“ nach.",
+      tapHelp: "Die Felder leuchten nacheinander auf. Bei „Jetzt du“ tippst du die Folge in derselben Reihenfolge nach. Jede Runde wird sie ein Feld länger.", tapTask: "Merk dir die Folge und tippe sie bei „Jetzt du“ nach." },
     // Reize (Fabian 07.10. 21:53, Varianten A-D): docs/notes/28.
-    ansage: { help: "Die Stimme sagt eine Farbe, der Bildschirm zeigt nur die vier Felder. Tritt auf die gesagte Farbe. Dafür muss der Ton an sein.", task: "Hör zu und tritt auf die gesagte Farbe." },
-    farbwort: { help: "Auf einem Feld steht ein Farbwort in einer anderen Schriftfarbe. Tritt auf das Feld in der Schriftfarbe, nicht auf das, was da steht.", task: "Die Schriftfarbe zählt – tritt auf dieses Feld." },
-    fusshand: { help: "Zwei Felder zeigen ein Zeichen: Auf das Feld mit dem Fuß trittst du, auf das Feld mit der Hand zeigst du mit der Hand.", task: "Fuß: drauftreten. Hand: hinzeigen." },
-    sehenhoeren: { help: "Ein Feld leuchtet auf, eine Farbe wird gesagt oder beides zugleich. Passen Bild und Ansage nicht zusammen, gilt, was du unter „Bei beidem gilt“ eingestellt hast. Dafür muss der Ton an sein.", task: "Bild oder Ansage – bei beidem gilt deine Regel." },
+    ansage: { help: "Die Stimme sagt eine Farbe, der Bildschirm zeigt nur die vier Felder. Tritt auf die gesagte Farbe. Dafür muss der Ton an sein.", task: "Hör zu und tritt auf die gesagte Farbe.",
+      tapHelp: "Die Stimme sagt eine Farbe, der Bildschirm zeigt nur die vier Felder. Tippe die gesagte Farbe an. Dafür muss der Ton an sein.", tapTask: "Hör zu und tippe die gesagte Farbe an." },
+    farbwort: { help: "Auf einem Feld steht ein Farbwort in einer anderen Schriftfarbe. Tritt auf das Feld in der Schriftfarbe, nicht auf das, was da steht.", task: "Die Schriftfarbe zählt – tritt auf dieses Feld.",
+      tapHelp: "Auf einem Feld steht ein Farbwort in einer anderen Schriftfarbe. Tippe das Feld in der Schriftfarbe an, nicht das, was da steht.", tapTask: "Die Schriftfarbe zählt: Tippe dieses Feld an." },
+    fusshand: { help: "Zwei Felder zeigen ein Zeichen: Auf das Feld mit dem Fuß trittst du, auf das Feld mit der Hand zeigst du mit der Hand.", task: "Fuß: drauftreten. Hand: hinzeigen.",
+      tapHelp: "Zwei Felder zeigen ein Zeichen, einen Fuß und eine Hand. Beim Antippen zählt nur der Fuß: Tippe sein Feld an, die Hand lenkt nur ab.", tapTask: "Tippe das Feld mit dem Fuß an." },
+    sehenhoeren: { help: "Ein Feld leuchtet auf, eine Farbe wird gesagt oder beides zugleich. Passen Bild und Ansage nicht zusammen, gilt, was du unter „Bei beidem gilt“ eingestellt hast. Dafür muss der Ton an sein.", task: "Bild oder Ansage – bei beidem gilt deine Regel.",
+      tapHelp: "Ein Feld leuchtet auf, eine Farbe wird gesagt oder beides zugleich. Tippe das passende Feld an. Passen Bild und Ansage nicht zusammen, gilt, was du unter „Bei beidem gilt“ eingestellt hast. Dafür muss der Ton an sein.", tapTask: "Bild oder Ansage: Bei beidem gilt deine Regel." },
   };
   // Each Stufe adds one symbol (rule) to the ones before.
   const FF_SYMBOLS = {
@@ -737,6 +745,7 @@
   const FF_FLIP_MODES = ["leuchten", "regeln", "sehenhoeren"];
   const FF_HAND_ACTIONS = { keine: "Keine", hoch: "Hände hoch", seitlich: "Hände seitlich", klatschen: "Klatschen" };
   const FF_SEQ_MAX = 12;
+  const FF_ANSWERS = ["treten", "tippen"];
   // Pure rule: which field (0-3) a symbol shown on `field` points to.
   function ffTarget(symbol, field) {
     if (symbol === "dreieck") return 3 - field; // diagonal
@@ -780,7 +789,7 @@
     return {
       ffLayout: src.ffLayout.slice(), ffMode: src.ffMode, ffLevel: src.ffLevel, ffSeqStart: src.ffSeqStart,
       ffFoot: src.ffFoot, ffHands: src.ffHands, ffHandRules: { ...src.ffHandRules },
-      ffGilt: src.ffGilt, ffMix: src.ffMix, ffFlip: src.ffFlip,
+      ffGilt: src.ffGilt, ffMix: src.ffMix, ffFlip: src.ffFlip, ffAnswer: src.ffAnswer,
     };
   }
   function ffNormalize(p) {
@@ -794,11 +803,15 @@
     if (!["gesagt", "gezeigt"].includes(p.ffGilt)) p.ffGilt = "gesagt";
     if (!FF_MIXES[p.ffMix]) p.ffMix = "ausgewogen";
     if (![0, 2, 3].includes(p.ffFlip)) p.ffFlip = 0;
+    if (!FF_ANSWERS.includes(p.ffAnswer)) p.ffAnswer = "treten";
     const rules = p.ffHandRules && typeof p.ffHandRules === "object" && !Array.isArray(p.ffHandRules) ? p.ffHandRules : { rot: "hoch" };
     p.ffHandRules = Object.fromEntries(Object.entries(rules).filter(([k, v]) => COLOR_BY_KEY[k] && FF_HAND_ACTIONS[v]));
   }
+  // Antippen (Fabian 08.10.): the client taps the field on the screen and the
+  // app checks it. Never as a Cardio-Zusatzaufgabe (the guest always treads).
+  function ffTapMode() { return state.ffAnswer === "tippen" && !cardioGuestActive; }
   function ffHandFor(field) {
-    if (!state.ffHands) return null;
+    if (!state.ffHands || ffTapMode()) return null;
     const a = state.ffHandRules[state.ffLayout[field]];
     return a && a !== "keine" ? FF_HAND_ACTIONS[a] : null;
   }
@@ -806,10 +819,13 @@
   function buildFarbfelderSchedule(cfg, rng) {
     const mode = FF_MODES[state.ffMode] ? state.ffMode : "leuchten";
     const schedule = [];
-    let t = pushCountdown(schedule, { task: FF_MODES[mode].task });
+    const tap = ffTapMode();
+    let t = pushCountdown(schedule, { task: tap ? FF_MODES[mode].tapTask : FF_MODES[mode].task });
     const show = vtShowS();
     let step = 0;
-    const foot = () => (state.ffFoot === "wechsel" ? (step++ % 2 === 0 ? "L" : "R") : state.ffFoot === "zufall" ? (rng() < 0.5 ? "L" : "R") : null);
+    // Antippen: no L/R foot badge (nothing to tread with).
+    const footMode = tap ? "aus" : state.ffFoot;
+    const foot = () => (footMode === "wechsel" ? (step++ % 2 === 0 ? "L" : "R") : footMode === "zufall" ? (rng() < 0.5 ? "L" : "R") : null);
     const rand4 = () => Math.floor(rng() * 4);
     if (mode === "abfolge") {
       let len = ffSeqResume || state.ffSeqStart;
@@ -826,7 +842,7 @@
           let f;
           do { f = rand4(); } while (seq.length && f === seq[seq.length - 1]);
           seq.push(f);
-          feet.push(state.ffFoot === "wechsel" ? (feet.length % 2 === 0 ? "L" : "R") : state.ffFoot === "zufall" ? (rng() < 0.5 ? "L" : "R") : null);
+          feet.push(footMode === "wechsel" ? (feet.length % 2 === 0 ? "L" : "R") : footMode === "zufall" ? (rng() < 0.5 ? "L" : "R") : null);
         }
         schedule.push({ t0: t, t1: t + 0.8, kind: "farbfelder", payload: { mode, phase: "intro", caption: `Schau zu · ${len} Felder`, seqLen: len } });
         t += 0.8;
@@ -1125,7 +1141,7 @@
     if (m === "sehenhoeren") return `Bei beidem gilt: ${state.ffGilt === "gezeigt" ? "das Gezeigte" : "das Gesagte"}` + (every ? ` · jedes ${every}. Mal andersherum` : "");
     if (m === "leuchten" && every) return `Jedes ${every}. Mal schräg gegenüber`;
     if (m === "farbwort") return "Die Schriftfarbe zählt";
-    if (m === "fusshand") return "Fuß: drauftreten · Hand: hinzeigen";
+    if (m === "fusshand") return ffTapMode() ? "Tippe das Feld mit dem Fuß an" : "Fuß: drauftreten · Hand: hinzeigen";
     return "";
   }
   // p = null draws the resting grid (pause between stimuli).
@@ -1162,6 +1178,128 @@
     const caption = p && p.caption ? [p.caption, hand].filter(Boolean).join(" · ") : [ffRuleCaption(), hand].filter(Boolean).join(" · ");
     if (caption) barCaption(cw, ch, caption, false);
     else if (state.ffMode === "regeln") ffDrawLegend(cw, ch, g.capH);
+    ffDrawTapFlash(g);
+  }
+
+  // ---- Farbfelder · Antippen (Fabian 08.10.): the client taps the field on
+  // the screen, the app checks it. Answer window of a stimulus = from its
+  // start until the next stimulus starts (the blank after it included); the
+  // first tap counts, later ones in that window are ignored, no tap = missed.
+  // Abfolge merken: during "Jetzt du" (until the next round) the taps must
+  // follow the shown sequence; a wrong tap ends that round's input.
+  // State lives in session.ffTap (only while a Farbfelder run answers by tap).
+  const FF_TAP_FLASH_MS = 420;
+  function ffTapNew() { return { items: [], cur: null, rounds: [], round: null, flash: null }; }
+  function ffTapCloseItem(tp) {
+    if (tp.cur) { tp.items.push(tp.cur); tp.cur = null; }
+  }
+  function ffTapCloseRound(tp) {
+    const r = tp.round;
+    tp.round = null;
+    if (!r || !r.input) return; // a round whose "Jetzt du" never came is not scored
+    r.ok = !r.failed && r.pos === r.seq.length;
+    tp.rounds.push(r);
+  }
+  // Called on every frame change of a tapping run.
+  function ffTapEnter(tp, frame) {
+    if (frame.kind !== "farbfelder") return;
+    const p = frame.payload || {};
+    if (p.mode === "abfolge") {
+      if (p.phase === "intro") { ffTapCloseRound(tp); tp.round = { seq: [], pos: 0, input: false, failed: false, len: p.seqLen }; }
+      else if (p.phase === "show" && tp.round) tp.round.seq.push(p.target);
+      else if (p.phase === "recall" && tp.round) { tp.round.input = true; tp.round.t0 = frame.t0; }
+      return;
+    }
+    ffTapCloseItem(tp);
+    tp.cur = { target: p.target, t0: frame.t0, done: false, ok: false, field: null, rt: null };
+  }
+  // A live tempo change rebuilds the schedule: an unanswered stimulus or an
+  // unfinished round at that moment is dropped instead of scored.
+  function ffTapAbandon(tp) {
+    if (tp.cur && !tp.cur.done) tp.cur = null;
+    if (tp.round && !(tp.round.input && (tp.round.failed || tp.round.pos === tp.round.seq.length))) tp.round = null;
+  }
+  // One tap on `field` (0-3) at run time `elapsed` (s). Returns true if it counted.
+  function ffTapAnswer(tp, field, elapsed) {
+    if (field == null) return false;
+    const r = tp.round;
+    if (r) {
+      if (!r.input || r.failed || r.pos >= r.seq.length) return false;
+      const ok = field === r.seq[r.pos];
+      if (ok) r.pos++; else r.failed = true;
+      tp.flash = { field, ok, at: performance.now() };
+      return true;
+    }
+    const it = tp.cur;
+    if (!it || it.done || elapsed < it.t0) return false;
+    it.done = true;
+    it.field = field;
+    it.ok = field === it.target;
+    it.rt = Math.max(0, elapsed - it.t0);
+    tp.flash = { field, ok: it.ok, at: performance.now() };
+    return true;
+  }
+  function ffTapFinish(tp) { ffTapCloseItem(tp); ffTapCloseRound(tp); }
+  function ffTapScore(tp, mode) {
+    if (mode === "abfolge") {
+      const ok = tp.rounds.filter((r) => r.ok);
+      const longest = ok.reduce((m, r) => Math.max(m, r.seq.length), 0);
+      return { rounds: tp.rounds.length, roundsOk: ok.length, longest,
+        text: `${ok.length} von ${tp.rounds.length} Runden richtig` + (longest ? ` · längste Folge ${longest}` : "") };
+    }
+    const hits = tp.items.filter((i) => i.ok);
+    const rts = hits.map((i) => i.rt).filter((v) => v != null);
+    const avg = rts.length ? rts.reduce((a, b) => a + b, 0) / rts.length : null;
+    return { total: tp.items.length, hits: hits.length, missed: tp.items.filter((i) => !i.done).length, avg,
+      text: `${hits.length} von ${tp.items.length} richtig` + (avg != null ? ` · Ø ${avg.toFixed(2).replace(".", ",")} s` : "") };
+  }
+  // Which field (0-3) a canvas point (canvas px) is on; the thin gap between
+  // fields goes to the nearer one, outside the grid = null.
+  function ffFieldAt(g, x, y) {
+    if (x < g.x0 || x > g.x0 + g.side || y < g.y0 || y > g.y0 + g.side) return null;
+    const col = x - g.x0 < g.side / 2 ? 0 : 1, row = y - g.y0 < g.side / 2 ? 0 : 1;
+    return row * 2 + col;
+  }
+  // Short mark on the tapped field. Haken & Kreuz off (default): a neutral
+  // white ring ("angenommen"); on: green/red ring plus a white disc with a
+  // dark tick/cross, so the meaning never rests on colour alone.
+  function ffDrawTapFlash(g) {
+    const tp = session && session.ffTap;
+    const f = tp && tp.flash;
+    if (!f) return;
+    const age = performance.now() - f.at;
+    if (age > FF_TAP_FLASH_MS) { tp.flash = null; return; }
+    const a = 1 - age / FF_TAP_FLASH_MS;
+    const x = g.x0 + (f.field % 2) * (g.cell + g.gap), y = g.y0 + (f.field >> 1) * (g.cell + g.gap);
+    const fb = cvdFbOn("farbfelder");
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, a * 1.6);
+    const lw = g.cell * 0.05;
+    ffRoundRect(x + lw / 2, y + lw / 2, g.cell - lw, g.cell - lw, g.cell * 0.06);
+    ctx.lineWidth = lw;
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke();
+    if (fb) {
+      ffRoundRect(x + lw * 1.5, y + lw * 1.5, g.cell - lw * 3, g.cell - lw * 3, g.cell * 0.05);
+      ctx.strokeStyle = f.ok ? "#2e7d32" : "#d32f2f";
+      ctx.stroke();
+      const cx = x + g.cell / 2, cy = y + g.cell / 2, r = g.cell * 0.16;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff"; ctx.fill();
+      ctx.lineWidth = Math.max(2, r * 0.12); ctx.strokeStyle = "#16232a"; ctx.stroke();
+      ctx.beginPath();
+      ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(3, r * 0.26);
+      if (f.ok) { ctx.moveTo(cx - r * 0.48, cy + r * 0.04); ctx.lineTo(cx - r * 0.12, cy + r * 0.38); ctx.lineTo(cx + r * 0.5, cy - r * 0.34); }
+      else { ctx.moveTo(cx - r * 0.38, cy - r * 0.38); ctx.lineTo(cx + r * 0.38, cy + r * 0.38); ctx.moveTo(cx + r * 0.38, cy - r * 0.38); ctx.lineTo(cx - r * 0.38, cy + r * 0.38); }
+      ctx.stroke();
+    } else {
+      ctx.globalAlpha = a * 0.35;
+      ffRoundRect(x, y, g.cell, g.cell, g.cell * 0.06);
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   // ---- Exercise catalogue ----
@@ -1255,7 +1393,7 @@
       title: "Farbfelder", type: "farbfelder", bgIsStimulus: true,
       task: "Tritt auf das richtige Farbfeld deiner Matte.",
       trains: "Farbwahrnehmung, Fußarbeit und schnelles Umsetzen von Regeln",
-      rules: "Leg deine vier Farbfelder so auf den Boden, wie sie unten unter „Anordnung“ eingestellt sind, und stell dich davor. Der Bildschirm zeigt dieselben vier Felder: Oben ist die Reihe, die näher am Bildschirm liegt. Je nach Modus trittst du auf das Feld, das aufleuchtet, auf das Feld, das ein Symbol dir sagt, auf das leere Feld, eine ganze Abfolge nach, auf die gesagte Farbe, auf die Schriftfarbe eines Farbworts, mit Fuß und Hand zugleich oder nach Bild und Ansage.",
+      rules: "Leg deine vier Farbfelder so auf den Boden, wie sie unten unter „Anordnung deiner Matte“ eingestellt sind, und stell dich davor. Der Bildschirm zeigt dieselben vier Felder: Oben ist die Reihe, die näher am Bildschirm liegt. Je nach Modus trittst du auf das Feld, das aufleuchtet, auf das Feld, das ein Symbol dir sagt, auf das leere Feld, eine ganze Abfolge nach, auf die gesagte Farbe, auf die Schriftfarbe eines Farbworts, mit Fuß und Hand zugleich oder nach Bild und Ansage.",
     },
     "periph-flash": {
       title: "Periphere Wahrnehmung", type: "periph",
@@ -3494,6 +3632,7 @@
     ffGilt: "gesagt", // Sehen und Hören: what counts when both come
     ffMix: "ausgewogen", // Sehen und Hören: FF_MIXES key
     ffFlip: 0, // Rhythmus-Umkehr: 0 = aus, 2 / 3 = every 2nd / 3rd stimulus
+    ffAnswer: "treten", // So antwortest du: treten (mat) | tippen (screen, scored)
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -4576,8 +4715,8 @@
     ffEls.settings.hidden = !isFf;
     $("cnFieldsGroup").hidden = ex.type !== "colornum";
     if (ex.type === "colornum") syncCnUI();
-    if (isFf) { ffActiveCell = 0; syncFfUI(); }
     renderHilfsmittel(id);
+    if (isFf) { ffActiveCell = 0; syncFfUI(); } // after the note: Antippen hides it
     els.periphFieldGroup.hidden = !isPeriph;
     els.periphSizeGroup.hidden = !isPeriph;
     els.periphColorGroup.hidden = !isPeriph;
@@ -4650,7 +4789,18 @@
     footRow: $("ffFootRow"), handsRow: $("ffHandsRow"), handBody: $("ffHandBody"), handRows: $("ffHandRows"),
     handsGroup: $("ffHandsGroup"), giltGroup: $("ffGiltGroup"), giltRow: $("ffGiltRow"), mixRow: $("ffMixRow"),
     flipGroup: $("ffFlipGroup"), flipRow: $("ffFlipRow"), flipHelp: $("ffFlipHelp"),
+    answerRow: $("ffAnswerRow"), answerHelp: $("ffAnswerHelp"), fbRow: $("ffFbRow"),
+    footGroup: $("ffFootGroup"), layoutLabel: $("ffLayoutLabel"),
   };
+  // Mode buttons' small line, treten / tippen wording.
+  const FF_MODE_SMALL = {
+    leer: ["tritt aufs freie Feld", "tippe aufs freie Feld"],
+    abfolge: ["Folge nachtreten", "Folge nachtippen"],
+    fusshand: ["treten und zeigen", "nur der Fuß zählt"],
+  };
+  const FF_RULES_TAP = "Der Bildschirm zeigt vier Farbfelder, angeordnet wie unten unter „Anordnung deiner Matte“. Je nach Modus tippst du das Feld an, das aufleuchtet, das ein Symbol dir sagt, das leere Feld, eine ganze Abfolge, die gesagte Farbe, die Schriftfarbe eines Farbworts, das Feld mit dem Fuß oder das nach Bild und Ansage. Die App prüft jede Antwort und zeigt dir am Ende, wie viele richtig waren.";
+  // Small move icon in each layout cell, drawn in the cell's ink colour.
+  const FF_GRIP_SVG = '<svg class="ff-grip" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg>';
   let ffActiveCell = 0;
   // Small SVG of a rule symbol for the ready screen (same shapes as the stage).
   function ffSymbolSvg(kind) {
@@ -4662,8 +4812,25 @@
   }
   function ffSave() { savePrefs(); }
   function syncFfUI() {
-    ffEls.modeRow.querySelectorAll("[data-ff-mode]").forEach((b) => setActive(b, b.dataset.ffMode === state.ffMode));
-    ffEls.modeHelp.textContent = FF_MODES[state.ffMode].help;
+    const tap = state.ffAnswer === "tippen";
+    ffEls.modeRow.querySelectorAll("[data-ff-mode]").forEach((b) => {
+      setActive(b, b.dataset.ffMode === state.ffMode);
+      const sm = FF_MODE_SMALL[b.dataset.ffMode], small = b.querySelector("small");
+      if (sm && small) small.textContent = sm[tap ? 1 : 0];
+    });
+    ffEls.modeHelp.textContent = tap ? FF_MODES[state.ffMode].tapHelp : FF_MODES[state.ffMode].help;
+    ffEls.answerRow.querySelectorAll("[data-ff-answer]").forEach((b) => setActive(b, b.dataset.ffAnswer === state.ffAnswer));
+    ffEls.answerHelp.textContent = tap
+      ? "Tippe das richtige Feld auf dem Bildschirm an. Es zählt die erste Berührung. Am Ende siehst du, wie viele richtig waren und wie schnell du warst."
+      : "Du trittst auf deiner Matte. Die App zeigt nur an und prüft nichts.";
+    ffEls.fbRow.hidden = !tap;
+    // Antippen needs no mat, no foot or hand rule.
+    ffEls.footGroup.hidden = tap;
+    if (EXERCISES[state.exercise] && EXERCISES[state.exercise].type === "farbfelder") {
+      renderHilfsmittel(tap ? null : state.exercise);
+      els.rulesBox.textContent = tap ? FF_RULES_TAP : EXERCISES[state.exercise].rules;
+    }
+    ffEls.layoutLabel.textContent = tap ? "Anordnung der Felder" : "Anordnung deiner Matte";
     ffEls.levelGroup.hidden = state.ffMode !== "regeln";
     ffEls.levelRow.querySelectorAll("[data-ff-level]").forEach((b) => setActive(b, Number(b.dataset.ffLevel) === state.ffLevel));
     ffEls.ruleList.innerHTML = FF_LEVEL_SYMBOLS.slice(0, state.ffLevel).map((k) =>
@@ -4680,17 +4847,18 @@
       : state.ffMode === "regeln"
         ? "Zähl mit: Beim 2. oder 3. Symbol trittst du auf das Feld schräg gegenüber vom eigentlichen Ziel. Die App zeigt es nicht an."
         : "Zähl mit: Beim 2. oder 3. Mal trittst du auf das Feld schräg gegenüber. Die App zeigt es nicht an.";
-    ffEls.handsGroup.hidden = state.ffMode === "fusshand";
+    ffEls.handsGroup.hidden = state.ffMode === "fusshand" || tap;
     ffEls.layoutGrid.querySelectorAll("[data-ff-cell]").forEach((b) => {
       const i = Number(b.dataset.ffCell);
       const c = COLOR_BY_KEY[state.ffLayout[i]];
       b.style.background = c.hex;
       b.style.color = relLuma(c.hex) > 0.6 ? "#16232a" : "#ffffff";
-      b.textContent = c.name;
-      b.setAttribute("aria-label", `${FF_FIELD_NAMES[i]}: ${c.name}`);
+      b.innerHTML = `<span class="ff-cell-name">${esc(c.name)}</span>${FF_GRIP_SVG}`;
+      b.setAttribute("aria-label", `${FF_FIELD_NAMES[i]}: ${c.name}. Gedrückt halten und ziehen zum Tauschen.`);
       setActive(b, i === ffActiveCell);
     });
-    ffEls.layoutHelp.textContent = `Tippe ein Feld an und wähle seine Farbe. Oben ist die Reihe näher am Bildschirm. Gewählt: ${FF_FIELD_NAMES[ffActiveCell]}.`;
+    ffEls.layoutHelp.textContent = "Halte ein Feld gedrückt und zieh es auf ein anderes: Die beiden Farben tauschen den Platz. Eine Farbe änderst du, indem du das Feld antippst und unten die Farbe wählst"
+      + ` (gewählt: ${FF_FIELD_NAMES[ffActiveCell]}).` + (tap ? "" : " Leg deine Matte genauso hin: Oben ist die Reihe näher am Bildschirm.");
     ffEls.colorPicker.querySelectorAll(".color-swatch[data-color]").forEach((b) => setActive(b, b.dataset.color === state.ffLayout[ffActiveCell]));
     ffEls.footRow.querySelectorAll("[data-ff-foot]").forEach((b) => setActive(b, b.dataset.ffFoot === state.ffFoot));
     ffEls.handsRow.querySelectorAll("[data-ff-hands]").forEach((b) => setActive(b, (b.dataset.ffHands === "1") === state.ffHands));
@@ -4724,12 +4892,108 @@
     });
     ffEls.colorPicker.appendChild(btn);
   });
+  let ffDragClickBlockUntil = 0;
   ffEls.layoutGrid.addEventListener("click", (e) => {
     const b = e.target.closest("[data-ff-cell]");
-    if (!b) return;
+    if (!b || performance.now() < ffDragClickBlockUntil) return;
     ffActiveCell = Number(b.dataset.ffCell);
     syncFfUI();
   });
+  // Matten-Anordnung: hold and drag a field onto another to swap the two
+  // colours (Fabian 08.10.). Mouse: the drag starts after 6 px; touch/pen:
+  // after a 250 ms long press (the cell lifts), so normal scrolling over the
+  // grid keeps working (cells are touch-action:pan-y; while dragging the
+  // page must not scroll). Drop outside the grid = cancel. A plain tap still
+  // selects the field for the colour picker. Hand rules are keyed by colour,
+  // so they move with it. Lift look follows wireDragReorder (.drag-lifted).
+  (function wireFfLayoutDrag() {
+    const grid = ffEls.layoutGrid;
+    let p = null;
+    const cellAt = (x, y) => {
+      const el = document.elementFromPoint(x, y);
+      const c = el && el.closest && el.closest("[data-ff-cell]");
+      return c && grid.contains(c) ? c : null;
+    };
+    const clearMarks = () => grid.querySelectorAll(".ff-drop-target, .ff-drag-src").forEach((c) => c.classList.remove("ff-drop-target", "ff-drag-src"));
+    const end = () => {
+      if (!p) return;
+      clearTimeout(p.timer);
+      if (p.ghost) p.ghost.remove();
+      if (p.dragging) { document.body.classList.remove("drag-busy"); grid.classList.remove("ff-dragging"); }
+      clearMarks();
+      p = null;
+    };
+    const startDrag = () => {
+      if (!p || p.dragging) return;
+      p.dragging = true;
+      const r = p.cell.getBoundingClientRect();
+      const ghost = p.cell.cloneNode(true);
+      ghost.removeAttribute("data-ff-cell");
+      ghost.removeAttribute("aria-label");
+      ghost.classList.remove("active");
+      ghost.classList.add("ff-ghost", "drag-lifted");
+      ghost.setAttribute("aria-hidden", "true");
+      ghost.style.width = r.width + "px";
+      ghost.style.height = r.height + "px";
+      p.offX = p.x - r.left; p.offY = p.y - r.top;
+      p.ghost = ghost;
+      document.body.appendChild(ghost);
+      place();
+      p.cell.classList.add("ff-drag-src");
+      grid.classList.add("ff-dragging");
+      document.body.classList.add("drag-busy");
+      if (p.type !== "mouse") { try { if (navigator.vibrate) navigator.vibrate(10); } catch (err) {} }
+    };
+    const place = () => {
+      p.ghost.style.left = (p.x - p.offX) + "px";
+      p.ghost.style.top = (p.y - p.offY) + "px";
+      const over = cellAt(p.x, p.y);
+      grid.querySelectorAll(".ff-drop-target").forEach((c) => { if (c !== over) c.classList.remove("ff-drop-target"); });
+      if (over && over !== p.cell) over.classList.add("ff-drop-target");
+    };
+    grid.addEventListener("pointerdown", (e) => {
+      const cell = e.target.closest("[data-ff-cell]");
+      if (!cell || p || (e.pointerType === "mouse" && e.button !== 0)) return;
+      p = { id: e.pointerId, type: e.pointerType, cell, from: Number(cell.dataset.ffCell), x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, dragging: false, timer: 0, ghost: null };
+      if (e.pointerType !== "mouse") p.timer = setTimeout(startDrag, 250);
+    });
+    document.addEventListener("pointermove", (e) => {
+      if (!p || e.pointerId !== p.id) return;
+      p.x = e.clientX; p.y = e.clientY;
+      if (!p.dragging) {
+        const d = Math.hypot(p.x - p.x0, p.y - p.y0);
+        if (p.type === "mouse") { if (d > 6) startDrag(); }
+        else if (d > 10) end(); // the finger moved before the long press: a scroll
+        return;
+      }
+      place();
+    });
+    document.addEventListener("pointerup", (e) => {
+      if (!p || e.pointerId !== p.id) return;
+      if (!p.dragging) { end(); return; }
+      const over = cellAt(e.clientX, e.clientY);
+      const from = p.from, to = over ? Number(over.dataset.ffCell) : -1;
+      ffDragClickBlockUntil = performance.now() + 400;
+      end();
+      if (to < 0 || to === from) return;
+      const lay = state.ffLayout.slice();
+      [lay[from], lay[to]] = [lay[to], lay[from]];
+      state.ffLayout = lay;
+      ffActiveCell = to;
+      ffSave();
+      syncFfUI();
+      [from, to].forEach((i) => {
+        const c = grid.querySelector(`[data-ff-cell="${i}"]`);
+        c.classList.remove("ff-swapped"); void c.offsetWidth; c.classList.add("ff-swapped");
+        setTimeout(() => c.classList.remove("ff-swapped"), 400);
+      });
+    });
+    document.addEventListener("pointercancel", (e) => { if (p && e.pointerId === p.id) end(); });
+    // While a field is lifted the page must not scroll under the finger.
+    grid.addEventListener("touchmove", (e) => { if (p && p.dragging && e.cancelable) e.preventDefault(); }, { passive: false });
+    // No context menu / callout from the long press.
+    grid.addEventListener("contextmenu", (e) => { if (e.target.closest("[data-ff-cell]")) e.preventDefault(); });
+  })();
   ffEls.modeRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-mode]"); if (b) { state.ffMode = b.dataset.ffMode; ffSave(); syncFfUI(); } });
   ffEls.levelRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-level]"); if (b) { state.ffLevel = Number(b.dataset.ffLevel); ffSave(); syncFfUI(); } });
   ffEls.seqRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-seq]"); if (b) { state.ffSeqStart = Number(b.dataset.ffSeq); ffSave(); syncFfUI(); } });
@@ -4738,6 +5002,7 @@
   ffEls.giltRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-gilt]"); if (b) { state.ffGilt = b.dataset.ffGilt; ffSave(); syncFfUI(); } });
   ffEls.mixRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-mix]"); if (b) { state.ffMix = b.dataset.ffMix; ffSave(); syncFfUI(); } });
   ffEls.flipRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-flip]"); if (b) { state.ffFlip = Number(b.dataset.ffFlip); ffSave(); syncFfUI(); } });
+  ffEls.answerRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-answer]"); if (b) { state.ffAnswer = b.dataset.ffAnswer; ffSave(); syncFfUI(); } });
   // Test hooks (automated browsers only): the pure rule and a schedule
   // built with some settings swapped in for the call.
   // Test hook (automated browsers only): Farbe + Zahl schedule for given state/colours.
@@ -4754,6 +5019,7 @@
     isFlipped: ffIsFlipped, leuchtenTarget: ffLeuchtenTarget, regelnTarget: ffRegelnTarget,
     ansageTarget: ffAnsageTarget, farbwortTarget: ffFarbwortTarget, sehenHoerenTarget: ffSehenHoerenTarget,
     pickFarbwort: (layout) => ffPickFarbwort(layout, Math.random),
+    snapshot: () => ffStateSnapshot(),
     build: (over) => {
       const keep = JSON.parse(JSON.stringify(state));
       Object.assign(state, over || {});
@@ -4818,7 +5084,7 @@
       state.intervalMin = existingBlock.intervalMin ?? state.intervalMin;
       state.intervalMax = existingBlock.intervalMax ?? state.intervalMax;
       if (existingBlock.periph) Object.assign(state, JSON.parse(JSON.stringify(existingBlock.periph)));
-      if (existingBlock.ff) { Object.assign(state, JSON.parse(JSON.stringify(existingBlock.ff))); ffNormalize(state); }
+      if (existingBlock.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(existingBlock.ff))); ffNormalize(state); }
       if (existingBlock.cn) { Object.assign(state, existingBlock.cn); cnNormalize(state); }
       renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
       if (ex.type === "farbfelder") syncFfUI();
@@ -5923,6 +6189,7 @@
         session.fadeFrom = session.soft && session.lastIndex >= 0 ? session.schedule[session.lastIndex] : null;
         session.fadeAt = elapsed;
         session.lastIndex = idx;
+        if (session.ffTap) ffTapEnter(session.ffTap, frame);
         onEnterFrame(frame);
       }
       const fadeP = session.fadeFrom ? (elapsed - session.fadeAt) / Math.min(SOFT_FADE_S, Math.max(0.05, (frame.t1 - frame.t0) * 0.4)) : 1;
@@ -5992,7 +6259,7 @@
     state.stimulusS = block.stimulusS ?? 1.5;
     state.intervalMin = block.intervalMin ?? 2;
     state.intervalMax = block.intervalMax ?? 4;
-    if (block.ff) { Object.assign(state, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
+    if (block.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
     if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
     active = blockColors(block);
   }
@@ -6100,9 +6367,45 @@
     const built = buildScheduleFor(EXERCISES[state.exercise], Math.random);
     const addon = buildAddonSchedule(EXERCISES[state.exercise], state.exercise, built.schedule, Math.random);
     session = { ...built, startTime: performance.now(), lastIndex: -1, addonSchedule: addon.schedule, addonSizeMode: addon.sizeMode, soft: softOn(state.exercise) };
+    // Farbfelder · Antippen: the canvas takes taps and scores them.
+    session.ffTap = EXERCISES[state.exercise].type === "farbfelder" && ffTapMode() ? ffTapNew() : null;
+    els.player.classList.toggle("ff-tap", !!session.ffTap);
     requestWakeLock();
     raf = requestAnimationFrame(tick);
   }
+
+  // Farbfelder · Antippen: the tap counts on touch-down (like every game
+  // answer, see onGameTap) and needs its coordinates, so it has its own
+  // listener instead of FAST_TAP_SEL. Only active while a tapping run is on
+  // screen; the paused sheet covers the canvas anyway.
+  canvas.addEventListener("pointerdown", (e) => {
+    const tp = session && session.ffTap;
+    if (!tp || periphPausedAt || els.player.hidden) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    e.preventDefault();
+    const r = canvas.getBoundingClientRect();
+    if (!r.width) return;
+    const k = canvas.width / r.width;
+    const g = ffGeometry(canvas.width, canvas.height);
+    const field = ffFieldAt(g, (e.clientX - r.left) * k, (e.clientY - r.top) * k);
+    ffTapAnswer(tp, field, (performance.now() - session.startTime) / 1000);
+  });
+  if (navigator.webdriver) window.__ffTap = () => {
+    const tp = session && session.ffTap;
+    if (!tp) return null;
+    const fr = session.lastIndex >= 0 ? session.schedule[session.lastIndex] : null;
+    return {
+      elapsed: (performance.now() - session.startTime) / 1000,
+      frame: fr ? { kind: fr.kind, t0: fr.t0, t1: fr.t1, phase: fr.payload && fr.payload.phase, target: fr.payload && fr.payload.target } : null,
+      cur: tp.cur ? { ...tp.cur } : null,
+      round: tp.round ? JSON.parse(JSON.stringify(tp.round)) : null,
+      items: tp.items.map((i) => ({ ...i })),
+      rounds: tp.rounds.map((r) => ({ len: r.seq.length, ok: r.ok })),
+      flash: tp.flash ? { field: tp.flash.field, ok: tp.flash.ok } : null,
+      score: ffTapScore(tp, state.ffMode),
+    };
+  };
+  if (navigator.webdriver) window.__ffTapFinish = () => { if (session && session.ffTap) finishSession(); };
 
   // Tap-paced cone-order exercise ("Hütchen sortieren"): four big colour
   // dots show the order the client's four cones should be sorted into. Runs
@@ -6388,6 +6691,11 @@
 
   function finishSession() {
     if (raf) cancelAnimationFrame(raf);
+    // Farbfelder · Antippen: close the last answer window before the session goes.
+    const ffTap = session && session.ffTap;
+    if (ffTap) ffTapFinish(ffTap);
+    const ffScore = ffTap ? ffTapScore(ffTap, state.ffMode) : null;
+    if (ffScore && navigator.webdriver) window.__ffTapLastScore = ffScore;
     const spent = accountSession();
     if (window.speechSynthesis) speechSynthesis.cancel();
     els.liveNav.hidden = true;
@@ -6406,6 +6714,7 @@
       summary = `${ex.title} · ${fmtMinutes(spent)}`;
       // Farbfelder: the history row names the mode (8 very different variants).
       if (ex.type === "farbfelder") note = FF_MODE_LABELS[state.ffMode] + (FF_FLIP_MODES.includes(state.ffMode) && state.ffFlip ? ` · jedes ${state.ffFlip}. Mal andersherum` : "");
+      if (ffScore) { summary = `${ffScore.text} · ${fmtMinutes(spent)}`; note = `${note} · Antippen · ${ffScore.text}`; }
     }
     els.doneSummary.textContent = summary;
     if (coneTap) markBest(els.doneSummary, "", coneTap.count);
@@ -6527,6 +6836,7 @@
       session.total = Math.max(freshEnd, elapsed);
       session.lastIndex = Math.min(session.lastIndex, kept.length - 1);
     }
+    if (session.ffTap) ffTapAbandon(session.ffTap);
     const addon = buildAddonSchedule(ex, state.exercise, session.schedule, Math.random);
     session.addonSchedule = addon.schedule; session.addonSizeMode = addon.sizeMode;
   }
@@ -6541,6 +6851,7 @@
     els.vtPauseBgIntensityGroup.hidden = els.vtPauseBgColorGroup.hidden = !!ex.bgIsStimulus;
     els.vtPauseFixColorGroup.hidden = els.vtPauseFixSizeGroup.hidden = !state.periphFixEnabled || ex.type === "farbfelder";
     els.vtPauseStimColorGroup.hidden = ex.type !== "periph";
+    document.getElementById("vtPauseFfFbGroup").hidden = !session.ffTap;
     vtPauseTempoAtStart = { stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax };
     applySoftState();
     syncVtPauseTempoUI();
@@ -6587,7 +6898,7 @@
         state.stimulusS = entry.stimulusS;
         state.intervalMin = entry.intervalMin;
         state.intervalMax = entry.intervalMax;
-        if (entry.ff) { Object.assign(state, JSON.parse(JSON.stringify(entry.ff))); ffNormalize(state); }
+        if (entry.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(entry.ff))); ffNormalize(state); }
         if (entry.cn) { Object.assign(state, entry.cn); cnNormalize(state); }
         // Periphere Wahrnehmung (NAT presets, 2026-10-07): Zeichen, Bereich,
         // Fixpunkt, Farben and background travel with the preset too.
@@ -7047,6 +7358,9 @@
     wcst: { screens: ["wcstReady"], fb: true, pal: true },
     navon: { screens: ["navonReady"], fb: true },
     iconic: { screens: ["iconicReady"], fb: true },
+    // Farbfelder · Antippen draws its tick/cross on the canvas (no selectors);
+    // its An/Aus rows sit in #ffFbRow (ready) and #vtPauseFfFbGroup (pause).
+    farbfelder: { screens: [], fb: true },
   };
   // Feedback selectors per exercise: [okSelectors, badSelectors].
   const CVD_FB_SELECTORS = {
@@ -17756,6 +18070,7 @@
       state.ffMode = cfg.mode; state.ffLevel = cfg.level; state.ffSeqStart = cfg.seqStart;
       state.ffFoot = cfg.foot; state.ffHands = cfg.hands;
       state.ffGilt = cfg.gilt; state.ffMix = cfg.mix; state.ffFlip = cfg.flip;
+      state.ffAnswer = "treten"; // tapping the screen while running makes no sense
       ffNormalize(state);
     }
     if (guestId === "periph-flash") {
@@ -18265,7 +18580,7 @@
       state.exercise = block.exercise;
       const visEx = EXERCISES[block.exercise];
       if (block.periph) Object.assign(state, JSON.parse(JSON.stringify(block.periph)));
-      if (block.ff) { Object.assign(state, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
+      if (block.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
       if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
       // Generalized from a visual-only "usesColors" check (the sole shape
       // the original 3 curated presets ever needed) to all 3 colour kinds,
@@ -19230,7 +19545,7 @@
       if (e.touches.length !== 1) return;
       const t = e.touches[0];
       if (t.clientX > 28) return;
-      if (e.target.closest && e.target.closest("input, textarea, select, .sheet:not([hidden]), .swipe-open")) return; // .swipe-open: closing a swiped list row
+      if (e.target.closest && e.target.closest("input, textarea, select, .sheet:not([hidden]), .swipe-open, .ff-layout-grid")) return; // .swipe-open: closing a swiped list row
       const bt = backTarget();
       if (!bt) return;
       start = { x: t.clientX, y: t.clientY, time: Date.now() };
