@@ -11,7 +11,7 @@ from playwright.async_api import async_playwright
 # New screens get covered by adding them to AREAS / the NAT loop.
 
 BASE = "http://localhost:8845/index.html?bereich="
-AREAS = ["heute", "visual", "breath", "movement", "workout", "cardio", "nat", "test", "free", "aktivierung", "hilfsmittel", "fortschritt"]
+AREAS = ["heute", "visual", "breath", "movement", "workout", "cardio", "nat", "test", "free", "aktivierung", "neuro", "hilfsmittel", "fortschritt"]
 WIDTHS = [375, 390, 430, 600, 768, 820, 1024, 1180, 1366]
 # iPhone text size (2026-10-06): the app follows the iOS setting up to 1.25x
 # (--ts), so small phones are also checked with the biggest and smallest factor.
@@ -79,7 +79,7 @@ async def main():
         b = await p.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args=["--no-sandbox"])
         for w, ts in [(w, 1) for w in WIDTHS] + SCALED:
             ctx = await b.new_context(viewport={"width": w, "height": 900}, service_workers="block")
-            await ctx.add_init_script("localStorage.setItem('fwmc-test-unlocked','true');localStorage.setItem('fwmc-tips-seen','true')"
+            await ctx.add_init_script("localStorage.setItem('fwmc-test-unlocked','true');localStorage.setItem('fwmc-tips-seen','true');localStorage.setItem('fwmc-test-neuro','true')"
                                       + (f";localStorage.setItem('fwmc-test-textscale','{ts}');localStorage.setItem('fwmc-test-bottomnav','true')" if ts != 1 else ""))
             pg = await ctx.new_page()
             pg.on("pageerror", lambda e: errors.append("pageerror: " + str(e)))
@@ -193,6 +193,16 @@ async def main():
                     await pg.wait_for_timeout(100)
                     await audit(pg, f"{w}px{ts_tag(ts)} aktivierung/optodrum-wechsel", problems)
                     await pg.evaluate("() => document.querySelector('#optoReadyControls [data-opto-f=dir][data-opto-v=links]').click()")
+                if area == "neuro":
+                    # Neuro-Aktivierung (2026-10-08, unlocked via fwmc-test-neuro): every
+                    # template's ready screen with Feineinstellungen + Sicherheitshinweis open
+                    for ex in ["vibration", "ball-fuss", "ball-hand", "gelenke"]:
+                        await pg.goto(BASE + "neuro"); await pg.wait_for_timeout(200)
+                        await pg.click(f'[data-neuro-ex="{ex}"]'); await pg.wait_for_timeout(150)
+                        await pg.evaluate("() => { document.getElementById('neuroAdvanced').open = true; document.getElementById('neuroSafety').open = true; document.querySelector('#neuroReadyControls [data-nr-f=takt][data-nr-v=\"1\"]').click(); }")
+                        await pg.wait_for_timeout(100)
+                        await audit(pg, f"{w}px{ts_tag(ts)} neuro/{ex}", problems)
+                        await pg.evaluate("() => document.querySelector('#neuroReadyControls [data-nr-f=takt][data-nr-v=\"0\"]').click()")
                 if area == "free":
                     # Freie Bausteine: ready screen and editor (checklist) of the template
                     await pg.click('#freeTplGrid [data-free-id="tpl-dehnen"]'); await pg.wait_for_timeout(150)

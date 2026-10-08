@@ -87,6 +87,8 @@
   .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; }
   .pill.on { background: rgba(60,194,122,0.18); color: var(--good); }
   .pill.off { background: rgba(229,88,79,0.18); color: var(--danger); }
+  /* Neuro-Aktivierung (2026-10-08): "Spezialübung" marker */
+  .pill.sp { background: rgba(138,75,42,0.16); color: var(--text); border: 1px solid rgba(138,75,42,0.55); margin-left: 6px; }
   .msg { font-size: 0.85rem; margin-top: 10px; }
   .msg.err { color: var(--danger); }
   .msg.ok { color: var(--good); }
@@ -582,6 +584,7 @@
           <button class="kind-btn" type="button" data-kind="cardio">Ausdauertraining</button>
           <button class="kind-btn" type="button" data-kind="workout">Krafttraining</button>
           <button class="kind-btn" type="button" data-kind="free">Eigenes Training</button>
+          <button class="kind-btn" type="button" data-kind="neuro">Neuro-Aktivierung</button>
         </div>
         <p class="hint" id="kindHint">Der Code landet in der App automatisch im passenden Bereich.</p>
 
@@ -621,6 +624,25 @@
           <p class="empty-hint" id="freeEmptyHint">Noch kein Training hinzugefügt.</p>
         </div>
 
+        <!-- Neuro-Aktivierung (2026-10-08, docs/notes/37): a hidden area in the app.
+             "Spezialübung" = combo-program with neuro blocks (plays for every client,
+             tagged "Spezialübung von deinem Trainer"); "Bereich freischalten" =
+             neuro-unlock code (shows the area on that device). -->
+        <div id="neuroBuilder" hidden>
+          <div class="kind-row" id="neuroModeRow" style="grid-template-columns:repeat(2,1fr)">
+            <button class="kind-btn active" type="button" data-neuro-mode="kombi">Spezialübung (Kombi-Code)</button>
+            <button class="kind-btn" type="button" data-neuro-mode="unlock">Bereich freischalten</button>
+          </div>
+          <p class="hint" id="neuroModeHint"></p>
+          <div id="neuroKombiPart">
+            <label style="margin-top:14px">Übung hinzufügen - antippen fügt sie ans Ende an <span class="pill sp">Spezialübung</span></label>
+            <div class="ex-grid" id="neuroGrid"></div>
+            <label style="margin-top:16px">Dein Kombi-Programm <span id="neuroCount" class="hint"></span></label>
+            <div id="neuroList"></div>
+            <p class="empty-hint" id="neuroEmptyHint">Noch keine Übung hinzugefügt.</p>
+          </div>
+        </div>
+
         <div id="visualBuilder">
         <label for="pPauseS">Pause zwischen den Übungen (Sekunden)</label>
         <input id="pPauseS" type="number" min="0" step="5" value="15" style="max-width:140px" />
@@ -652,7 +674,7 @@
         <label for="pConfig" style="margin-top:14px">Konfiguration (JSON - gleiche Struktur wie dig01/dig02/xppbsp-1)</label>
         <textarea id="pConfig" placeholder='{"name":"Dig03 · …","pauseS":15,"blocks":[{"exercise":"vt-color","colors":["orange","rot","lila"],"duration":60,"stimulusS":1,"intervalMin":3,"intervalMax":5}]}'></textarea>
         <p class="hint">Gültige <code>exercise</code>-Werte im Baukasten: vt-color, vrw-original, 4-straight, 4-diag, 8-solo, 8-vrw, stroop-classic, stroop-bg. Weitere Einzelübungen (cross-modal, cone-tap, …) sowie <code>periph-flash</code> (Periphere Wahrnehmung, NAT) funktionieren im selben <code>blocks</code>-Format, aber nur hier im JSON-Tab - der Code landet dann automatisch auf der Startseite des jeweiligen Bereichs (NAT bei <code>periph-flash</code>, sonst Visuelles Training). Programmübersichten mit mehreren Programmen: <code>{"type":"bundle","name":"…","programs":[{"label":"…","blocks":[…]}, …]}</code>.</p>
-        <p class="hint">Andere Bereiche brauchen einen eigenen <code>type</code>: Krafttraining-Plan <code>{"type":"workout-plan","name":"…","blocks":[…]}</code> (Blockformat wie im Krafttraining-Baukasten, gleiche Feldnamen) bzw. <code>{"type":"workout-bundle","programs":[…]}</code>. Bewegungsprogramm (Reaktionstraining) <code>{"type":"movement-plan","name":"…","movements":["armL-heben","armR-heben","legL-strecken",…],"bpm":90,"durationMin":8,"preview":3,"mirror":true,"showLabel":true}</code> (mind. 2 Bewegungen aus den 8 Grund-IDs: armL/armR/legL/legR jeweils -heben/-strecken) bzw. <code>{"type":"movement-bundle","programs":[…]}</code>. Ausdauer-Einheit <code>{"type":"cardio-plan","name":"…","items":[{"activity":"joggen","durationS":600,"label":"","interval":null}, …]}</code> (<code>activity</code> aus joggen/rad/cross/rudern/walking/treppe/schwimmen, <code>interval</code> optional <code>{"onS":30,"offS":30}</code> - die Zusatzaufgabe während des Ausdauertrainings bleibt eine reine Klienten-Einstellung, kein Coach-Feld) bzw. <code>{"type":"cardio-bundle","programs":[…]}</code>. Vorlagen für „Eigenes Training“ <code>{"type":"free-template","name":"…","trainings":[{"kind":"list","title":"Mobilisation","note":"…","items":[{"text":"Schultern kreisen","s":30}]},{"kind":"timer","title":"Eisbad","minutes":3},{"kind":"check","title":"Journal"}]}</code> (<code>kind</code> check = Abhaken, timer = Mit Zeit mit <code>minutes</code> 1-60, list = Checkliste mit Punkten, <code>s</code> 0-600 Sekunden, 0 = selbst abhaken). Positionen merken/Blitz-Raster/Flash-Speicher-Test/MOT (NAT) sowie der Test-Bereich haben noch keinen Code-Typ.</p>
+        <p class="hint">Andere Bereiche brauchen einen eigenen <code>type</code>: Krafttraining-Plan <code>{"type":"workout-plan","name":"…","blocks":[…]}</code> (Blockformat wie im Krafttraining-Baukasten, gleiche Feldnamen) bzw. <code>{"type":"workout-bundle","programs":[…]}</code>. Bewegungsprogramm (Reaktionstraining) <code>{"type":"movement-plan","name":"…","movements":["armL-heben","armR-heben","legL-strecken",…],"bpm":90,"durationMin":8,"preview":3,"mirror":true,"showLabel":true}</code> (mind. 2 Bewegungen aus den 8 Grund-IDs: armL/armR/legL/legR jeweils -heben/-strecken) bzw. <code>{"type":"movement-bundle","programs":[…]}</code>. Ausdauer-Einheit <code>{"type":"cardio-plan","name":"…","items":[{"activity":"joggen","durationS":600,"label":"","interval":null}, …]}</code> (<code>activity</code> aus joggen/rad/cross/rudern/walking/treppe/schwimmen, <code>interval</code> optional <code>{"onS":30,"offS":30}</code> - die Zusatzaufgabe während des Ausdauertrainings bleibt eine reine Klienten-Einstellung, kein Coach-Feld) bzw. <code>{"type":"cardio-bundle","programs":[…]}</code>. Vorlagen für „Eigenes Training“ <code>{"type":"free-template","name":"…","trainings":[{"kind":"list","title":"Mobilisation","note":"…","items":[{"text":"Schultern kreisen","s":30}]},{"kind":"timer","title":"Eisbad","minutes":3},{"kind":"check","title":"Journal"}]}</code> (<code>kind</code> check = Abhaken, timer = Mit Zeit mit <code>minutes</code> 1-60, list = Checkliste mit Punkten, <code>s</code> 0-600 Sekunden, 0 = selbst abhaken). Positionen merken/Blitz-Raster/Flash-Speicher-Test/MOT (NAT) sowie der Test-Bereich haben noch keinen Code-Typ. Neuro-Aktivierung: Freischalten <code>{"type":"neuro-unlock","name":"…"}</code> (mit <code>"lock":true</code> wieder verbergen), Spezialübung als Kombi-Code <code>{"type":"combo-program","name":"…","blocks":[{"domain":"neuro","ex":"vibration","prefs":{"stepS":20,"reps":1,"takt":false,"bpm":60}}]}</code> (<code>ex</code> aus vibration/ball-fuss/ball-hand/gelenke; Neuro-Bausteine dürfen auch zwischen anderen Kombi-Bausteinen stehen).</p>
         <p class="hint">Optionale Video-Links (nur beim Standard-/Bundle-Typ): <code>introVideo</code> (Programmebene, vor Start), <code>endVideo</code> (Programmebene, nach der letzten Übung), <code>videoAfter</code> (pro Block, läuft nach dieser Übung) - reine URL-Strings, Abspielung in der App folgt noch.</p>
       </div>
 
@@ -840,7 +862,8 @@
     programsCache.forEach((p) => {
       const tr = document.createElement("tr");
       tr.className = "clickable";
-      tr.innerHTML = `<td>${escapeHtml(p.code)}</td><td>${escapeHtml(p.name)}</td>` +
+      const mark = neuroCfgMark(p.config);
+      tr.innerHTML = `<td>${escapeHtml(p.code)}</td><td>${escapeHtml(p.name)}${mark ? `<span class="pill sp">${mark}</span>` : ""}</td>` +
         `<td><span class="pill ${p.active ? "on" : "off"}">${p.active ? "aktiv" : "inaktiv"}</span></td>` +
         `<td>${escapeHtml(codeRunText(p))}</td>` +
         `<td>${fmtDate(p.updatedAt)}</td><td><a class="copy-link" data-toggle="${p.code}">${p.active ? "deaktivieren" : "aktivieren"}</a></td>`;
@@ -1055,6 +1078,7 @@
     document.getElementById("cardioBuilder").hidden = kind !== "cardio";
     document.getElementById("workoutBuilder").hidden = kind !== "workout";
     document.getElementById("freeBuilder").hidden = kind !== "free";
+    document.getElementById("neuroBuilder").hidden = kind !== "neuro";
   }
   document.querySelectorAll("#kindRow [data-kind]").forEach((b) => b.addEventListener("click", () => setBuilderKind(b.dataset.kind)));
 
@@ -1231,6 +1255,78 @@
     return "";
   }
 
+  // Neuro-Aktivierung (2026-10-08): copy of NEURO_EXERCISES in app.js
+  // (id, title, default seconds per step). Keep both lists in sync.
+  const NEURO_EX = [
+    { id: "vibration", title: "Vibration links / rechts", stepS: 20 },
+    { id: "ball-fuss", title: "Massageball: Fußsohlen", stepS: 30 },
+    { id: "ball-hand", title: "Massageball: Hände", stepS: 30 },
+    { id: "gelenke", title: "Gelenke kreisen", stepS: 20 },
+  ];
+  const NEURO_BY_ID = Object.fromEntries(NEURO_EX.map((e) => [e.id, e]));
+  let neuroMode = "kombi";
+  let neuroBlocks = [];
+  const neuroNum = (v, lo, hi, d) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : d; };
+  function setNeuroMode(m) {
+    neuroMode = m === "unlock" ? "unlock" : "kombi";
+    document.querySelectorAll("#neuroModeRow [data-neuro-mode]").forEach((b) => b.classList.toggle("active", b.dataset.neuroMode === neuroMode));
+    document.getElementById("neuroKombiPart").hidden = neuroMode !== "kombi";
+    document.getElementById("neuroModeHint").textContent = neuroMode === "unlock"
+      ? "Freischalt-Code: Gibt dein Kunde ihn ein, erscheint auf seinem Gerät der Bereich „Neuro-Aktivierung“ (Training, Kombi, Wochenplan). Sonst bleibt der Bereich unsichtbar. Es wird nichts weiter gespeichert."
+      : "Spezialübung: ein Kombi-Code mit Neuro-Übungen. Er läuft bei jedem Kunden, auch ohne freigeschalteten Bereich, und ist dort als „Spezialübung von deinem Trainer“ markiert. Der Kunde kann sie nicht in eigene Kombis oder Pläne übernehmen.";
+  }
+  document.querySelectorAll("#neuroModeRow [data-neuro-mode]").forEach((b) => b.addEventListener("click", () => setNeuroMode(b.dataset.neuroMode)));
+  function renderNeuroGrid() {
+    const grid = document.getElementById("neuroGrid");
+    grid.innerHTML = "";
+    NEURO_EX.forEach((x) => {
+      const btn = document.createElement("button");
+      btn.className = "ex-btn"; btn.type = "button"; btn.textContent = x.title;
+      btn.addEventListener("click", () => { neuroBlocks.push({ ex: x.id, stepS: x.stepS, reps: 1, takt: false, bpm: 60, pauseAfterS: 15 }); renderNeuroList(); });
+      grid.appendChild(btn);
+    });
+  }
+  function renderNeuroList() {
+    const list = document.getElementById("neuroList");
+    list.innerHTML = "";
+    document.getElementById("neuroCount").textContent = neuroBlocks.length ? `(${neuroBlocks.length})` : "";
+    document.getElementById("neuroEmptyHint").hidden = neuroBlocks.length > 0;
+    neuroBlocks.forEach((b, i) => {
+      const card = document.createElement("div");
+      card.className = "block-card neuro-card";
+      card.innerHTML = `<div class="block-head"><strong>${i + 1}. ${escapeHtml((NEURO_BY_ID[b.ex] || { title: b.ex }).title)}<span class="pill sp">Spezialübung</span></strong>${moveButtons(i, neuroBlocks.length)}</div>
+        <div class="block-fields">
+          <div><label>Sek. pro Schritt</label><input type="number" min="10" max="120" step="5" data-n="stepS" value="${b.stepS}" /></div>
+          <div><label>Durchgänge</label><input type="number" min="1" max="3" step="1" data-n="reps" value="${b.reps}" /></div>
+          <div><label>Takt (pro Min.)</label><input type="number" min="30" max="120" step="5" data-n="bpm" value="${b.bpm}" /></div>
+          ${i < neuroBlocks.length - 1 ? `<div><label>Pause danach (Sek.)</label><input type="number" min="0" max="180" step="5" data-n="pauseAfterS" value="${b.pauseAfterS}" /></div>` : ""}
+        </div>
+        <label class="inline-check" style="margin-top:8px"><input type="checkbox" data-n="takt" ${b.takt ? "checked" : ""} /> Takt-Ton an</label>`;
+      list.appendChild(card);
+      card.querySelectorAll("input[data-n]").forEach((inp) => inp.addEventListener(inp.type === "checkbox" ? "change" : "input", () => {
+        const k = inp.dataset.n;
+        if (k === "takt") b.takt = inp.checked;
+        else b[k] = Number(inp.value);
+      }));
+      wireMoveButtons(card, neuroBlocks, i, renderNeuroList);
+    });
+  }
+  function neuroConfig(name, description) {
+    if (neuroMode === "unlock") return { type: "neuro-unlock", name: name || "Neuro-Aktivierung freischalten", description };
+    return { type: "combo-program", name, description, blocks: neuroBlocks.map((b, i, arr) => {
+      const o = { domain: "neuro", ex: b.ex, prefs: { stepS: neuroNum(b.stepS, 10, 120, 30), reps: neuroNum(b.reps, 1, 3, 1), takt: !!b.takt, bpm: neuroNum(b.bpm, 30, 120, 60) } };
+      if (i < arr.length - 1) o.pauseAfterS = neuroNum(b.pauseAfterS, 0, 180, 15);
+      return o;
+    }) };
+  }
+  // "Spezialübung" / "Freischaltung" marker for the codes table.
+  function neuroCfgMark(c) {
+    if (!c || typeof c !== "object") return "";
+    if (c.type === "neuro-unlock") return "Neuro freischalten";
+    const blocks = c.type === "combo-program" ? c.blocks : c.type === "combo-bundle" ? (c.programs || []).flatMap((p) => (p && p.blocks) || []) : [];
+    return Array.isArray(blocks) && blocks.some((b) => b && b.domain === "neuro") ? "Spezialübung" : "";
+  }
+
   let builderBlocks = [];
   let builderUsable = true; // false when an edited code's config doesn't fit this builder's shape
 
@@ -1344,6 +1440,7 @@
     if (builderKind === "free") {
       return { type: "free-template", name, description, trainings: freeTrainingsConfig() };
     }
+    if (builderKind === "neuro") return neuroConfig(name, description);
     if (builderKind === "workout") {
       return { type: "workout-plan", name, description, blocks: workoutBlocks.map((b) => b.kind === "reps"
         ? { kind: "reps", exercise: b.exercise, sets: b.sets, reps: b.reps, restS: b.restS }
@@ -1376,6 +1473,7 @@
     else if (t === "cardio-plan" && Array.isArray(config.items) && config.items.every((it) => it && CARDIO_BY_ID[it.activity])) kind = "cardio";
     else if (t === "free-template" && Array.isArray(config.trainings) && config.trainings.every((x) => x && typeof x === "object" && (!x.items || Array.isArray(x.items)))) kind = "free";
     else if (t === "workout-plan" && Array.isArray(config.blocks) && config.blocks.every((b) => b && (b.kind === "reps" || b.kind === "tabata") && b.rangeMin == null && WORKOUT_BY_ID[b.exercise])) kind = "workout";
+    else if (t === "neuro-unlock" || (t === "combo-program" && Array.isArray(config.blocks) && config.blocks.length && config.blocks.every((b) => b && b.domain === "neuro" && NEURO_BY_ID[b.ex]))) kind = "neuro";
     const fits = !!kind;
     document.getElementById("builderFallbackHint").hidden = !!fits;
     document.getElementById("tabBuilderBtn").disabled = !fits;
@@ -1408,6 +1506,15 @@
       renderFreeList();
       return;
     }
+    if (kind === "neuro") {
+      setNeuroMode(t === "neuro-unlock" ? "unlock" : "kombi");
+      neuroBlocks = t === "neuro-unlock" ? [] : config.blocks.map((b) => {
+        const p = b.prefs || {};
+        return { ex: b.ex, stepS: neuroNum(p.stepS, 10, 120, NEURO_BY_ID[b.ex].stepS), reps: neuroNum(p.reps, 1, 3, 1), takt: !!p.takt, bpm: neuroNum(p.bpm, 30, 120, 60), pauseAfterS: neuroNum(b.pauseAfterS, 0, 180, 15) };
+      });
+      renderNeuroList();
+      return;
+    }
     if (kind === "workout") {
       workoutBlocks = config.blocks.map((b) => ({ kind: b.kind, exercise: b.exercise, sets: b.sets ?? 3, reps: b.reps ?? 12, restS: b.restS ?? 30, workS: b.workS ?? 20, rounds: b.rounds ?? 8 }));
       renderWorkoutList();
@@ -1433,8 +1540,8 @@
     document.getElementById("pIntroVideo").value = "";
     document.getElementById("pEndVideo").value = "";
     builderBlocks = [];
-    cardioItems = []; workoutBlocks = []; freeTrainings = [];
-    renderMovementChecks([]); renderCardioList(); renderWorkoutList(); renderFreeList();
+    cardioItems = []; workoutBlocks = []; freeTrainings = []; neuroBlocks = []; setNeuroMode("kombi");
+    renderMovementChecks([]); renderCardioList(); renderWorkoutList(); renderFreeList(); renderNeuroList();
     document.getElementById("mvBpm").value = 60; document.getElementById("mvDuration").value = 5;
     document.getElementById("mvPreview").value = "3";
     document.getElementById("mvMirror").checked = true; document.getElementById("mvShowLabel").checked = true;
@@ -1471,6 +1578,7 @@
   renderCardioGrid(); renderCardioList();
   renderWorkoutGrid(); renderWorkoutList();
   renderFreeList();
+  renderNeuroGrid(); renderNeuroList(); setNeuroMode("kombi");
 
   // Code-level fields (any code type): live outside the Baukasten/JSON tabs
   // and are written into the config on save, so they work for every type.
@@ -1563,7 +1671,7 @@
         const problem = freeTrainingsProblem(config);
         if (problem) { msg.textContent = problem; msg.className = "msg err"; return; }
       }
-      const empty = builderKind === "free" ? false : builderKind === "movement" ? config.movements.length < 2 : builderKind === "cardio" ? !config.items.length : !config.blocks.length;
+      const empty = builderKind === "free" || (builderKind === "neuro" && config.type === "neuro-unlock") ? false : builderKind === "movement" ? config.movements.length < 2 : builderKind === "cardio" ? !config.items.length : !config.blocks.length;
       if (empty) { msg.textContent = builderKind === "movement" ? "Mindestens zwei Bewegungen auswählen." : builderKind === "cardio" ? "Mindestens eine Aktivität hinzufügen." : "Mindestens eine Übung hinzufügen."; msg.className = "msg err"; return; }
       document.getElementById("pConfig").value = JSON.stringify(config, null, 2); // keep JSON tab in sync
     } else {

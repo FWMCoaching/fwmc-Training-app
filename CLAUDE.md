@@ -285,6 +285,7 @@ everywhere goes here, short.
 | 33-huetchen-laufweg | Hütchen · Laufweg (VT, cone map with drawn path): why VT-catalog architecture, path maker, variants, what is not wired |
 | 34-ton-sequenz | Ton-Sequenz (Test-Bereich): step model, audio graph (merger, fades, cueVolume), Kanal-Test, Suchlauf, presets, safety, iPhone checks |
 | 36-qr-uebergabe | QR-Übergabe trainer → client: range screen, payload fields, split codes, import/dedupe, iPhone Safari copy + paste field, Kunden-Training (own store, snapshot of bests) |
+| 37-neuro-aktivierung | Neuro-Aktivierung (hidden 9th area `neuro`, unlocked by code type `neuro-unlock`): step player, `NEURO_EXERCISES`, Kombi/plan only when unlocked, "Spezialübung von deinem Trainer" in trainer Kombi codes, dashboard builder, texts Fabian reviews |
 
 ## Must-do rules collected from the detail notes
 
@@ -599,5 +600,13 @@ For every new or changed exercise/screen, in the same commit:
   new per-exercise best/level store is named `fwmc-…-best-v1` or added to
   `HO_SNAP_RE`. `qrcode.js` (vendored) belongs in every Artifact publish.
   Details docs/notes/36, test `tests/qr_uebergabe_1008_test.py`.
+- Neuro-Aktivierung (2026-10-08): hidden area `neuro`, visible only after a
+  `neuro-unlock` code (`fwmc-neuro-unlocked-v1`; tests seed `fwmc-test-neuro`).
+  Anything that lists areas/exercises (hub, PLAN_AREAS, Kombi groups, tray,
+  gear cards) must follow `neuroUnlocked()`; neuro blocks in a trainer Kombi
+  code always play, tagged "Spezialübung von deinem Trainer" when locked, and
+  never get copied into own Kombis (`neuroStripBlocks`). A new template = one
+  `NEURO_EXERCISES` entry + dashboard `NEURO_EX`. Details docs/notes/37, test
+  `tests/neuro_aktivierung_1008_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.
