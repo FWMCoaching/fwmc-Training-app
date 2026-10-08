@@ -1300,7 +1300,7 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .ton-sweep-line{display:flex;gap:8px;margin-top:10px}
 .ton-sweep-line .start-btn{flex:1;margin:0}
 .ton-sweep-hz{min-height:1.4em;margin-top:8px;font-size:calc(18px * var(--ts,1));font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
-.ton-text-input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:calc(14px * var(--ts,1));font-family:inherit;color:var(--ink);background:var(--surface)}
+.ton-text-input{width:100%;min-height:44px;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:calc(14px * var(--ts,1));font-family:inherit;color:var(--ink);background:var(--surface)}
 @media (pointer:coarse){.ton-text-input{font-size:16px}}
 .ton-stage{flex:1;position:relative;min-height:0;display:flex;align-items:center;justify-content:center;padding:96px 20px 24px;overflow:hidden}
 .ton-now{text-align:center;max-width:520px}
@@ -2265,7 +2265,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .bar-back-btn,.brandbar .back-link.bar-back-btn{
   width:44px;height:44px;flex:0 0 44px;margin:-2px 0 -2px -6px;border-radius:50%;border:none;
   background:var(--surface-2);color:var(--ink);font-size:0;padding:0;cursor:pointer;
-  display:inline-flex;align-items:center;justify-content:center;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:600;
 }
 .bar-back-btn::before{content:"\2039";font-size:38px;font-weight:700;line-height:1;margin-top:-5px}
 .bar-back-btn[hidden]{display:none}
@@ -3315,7 +3315,7 @@ body.soft-flash .flash-digit:not([hidden]){animation:fwmcSoftIn .3s ease-out 1}
 .rk-cell.active{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--brand)}
 .rk-dir-name{font-size:calc(12px * var(--ts,1));font-weight:600;opacity:.9}
 .rk-dir-sign{font-size:calc(15px * var(--ts,1));font-weight:700;white-space:nowrap}
-.rk-me{grid-area:m;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--ink);color:var(--surface);font-weight:700;font-size:calc(14px * var(--ts,1));aspect-ratio:1;max-width:56px;justify-self:center;align-self:center;width:100%}
+.rk-me{grid-area:m;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#007094;color:#ffffff;font-weight:700;font-size:calc(14px * var(--ts,1));aspect-ratio:1;max-width:56px;justify-self:center;align-self:center;width:100%}
 #rkColorPicker{margin-top:12px}
 .rk-num-line{display:flex;flex-direction:column;gap:6px;margin-top:12px}
 .rk-num-line[hidden]{display:none}
