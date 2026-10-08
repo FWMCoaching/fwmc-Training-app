@@ -9,7 +9,7 @@
 import asyncio, sys
 from playwright.async_api import async_playwright
 URL="http://localhost:8845/index.html?bereich=visual"
-TEST=["ab","alarm","anti","antizip","bisect","corsi","dsst","eyecount","flanker","gng","hick","iconic","kippbild","merk","navon","posner","pvt","reakt","rotation","search","simon","stop","stroop","subitize","testNback","trail","ts","ufov","vorlauf","wcst"]
+TEST=["ab","alarm","anti","antizip","bisect","corsi","dsst","eyecount","flanker","gng","hick","iconic","kippbild","merk","navon","posner","pvt","reakt","rotation","search","simon","stop","stroop","subitize","testNback","trail","ts","ufov","vorlauf","wcst","ton"]
 NAT=[("remember","#rememberOpenFixed"),("blitz","#blitzOpenBtn"),("flash","#flashOpenConstant"),("mot","#motOpenSpeed"),("balance","#balanceOpenBtn")]
 JS="""(p)=>{const pl=document.getElementById(p+'Player'); if(!pl||pl.hidden) return null;
 const hint=document.getElementById(p+'Hint'); const bar=document.getElementById(p+'PlayerBar');
@@ -119,6 +119,26 @@ async def run_opto(b,vp):
     print(vp['width'],"optodrum","OK" if not found else sorted(found))
     if found: BAD.append((vp['width'],"optodrum"))
     await ctx.close()
+# Hütchen · Laufweg (2026-10-08): caption, map and buttons sit below the
+# floating player bar, in both variants (Karte / Weg merken).
+async def run_lw(b,vp):
+    ctx=await b.new_context(viewport=vp,service_workers="block"); pg=await ctx.new_page()
+    await pg.add_init_script("localStorage.setItem('fwmc-tips-seen','true');localStorage.setItem('fwmc-master-v1',JSON.stringify({startCountdown:false}))")
+    errs=[]; pg.on("pageerror", lambda e: errs.append(str(e)))
+    await pg.goto(URL); await pg.wait_for_timeout(250)
+    for v in ["karte","merken"]:
+        await pg.click('.excard[data-exercise="cone-path"]'); await pg.wait_for_timeout(150)
+        await pg.evaluate("(v)=>{document.querySelector(`[data-lw-variant=${v}]`).click();document.getElementById('startBtn').click()}",v)
+        await pg.wait_for_timeout(300)
+        bad=await pg.evaluate("()=>{const bar=[...document.getElementById('playerBar').children].map(c=>c.getBoundingClientRect()).filter(r=>r.height);const bb=Math.max(...bar.map(r=>r.bottom));return ['lwCaption','lwMap','lwNextBtn'].filter(id=>{const e=document.getElementById(id);const r=e.getBoundingClientRect();return r.height&&r.top<bb-1;});}")
+        bad=set(bad)
+        if errs: bad.add("pageerror: "+errs[0][:80])
+        print(vp['width'],"cone-path",v,"OK" if not bad else sorted(bad))
+        if bad: BAD.append((vp['width'],"cone-path "+v))
+        await pg.click("#backBtn"); await pg.wait_for_timeout(250)
+        if await pg.is_visible("#doneBackBtn"): await pg.click("#doneBackBtn"); await pg.wait_for_timeout(150)
+        if await pg.is_visible("#backToHome"): await pg.click("#backToHome"); await pg.wait_for_timeout(150)
+    await ctx.close()
 async def main():
     async with async_playwright() as pw:
         b=await pw.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome",args=["--no-sandbox"])
@@ -132,6 +152,7 @@ async def main():
             await run_ff(b,vp)
             await run_cn(b,vp)
             await run_opto(b,vp)
+            await run_lw(b,vp)
         await b.close()
     print("all exercises clear of hint/bar:", not BAD)
 asyncio.run(main())

@@ -117,6 +117,30 @@ async def main():
                     await pg.click("#backToHome"); await pg.wait_for_timeout(150)
                     await pg.click('.excard[data-exercise="cone-number"]'); await pg.wait_for_timeout(150)
                     await audit(pg, f"{w}px{ts_tag(ts)} visual/cone-number", problems)
+                    # Hütchen · Laufweg ready screen (2026-10-08): Weg merken, Nach Zeit, Reihenfarben open
+                    await pg.click("#backToHome"); await pg.wait_for_timeout(150)
+                    await pg.click('.excard[data-exercise="cone-path"]'); await pg.wait_for_timeout(150)
+                    await pg.evaluate("() => { document.querySelector('[data-lw-variant=merken]').click(); document.querySelector('[data-lw-end=dauer]').click(); document.getElementById('lwAdvanced').open = true; }")
+                    await pg.wait_for_timeout(100)
+                    await audit(pg, f"{w}px{ts_tag(ts)} visual/cone-path", problems)
+                    await pg.evaluate("() => { document.querySelector('[data-lw-variant=karte]').click(); document.querySelector('[data-lw-end=runden]').click(); }")
+                    # Zusatzaufgabe Rechnen (2026-10-08) on an arrow exercise
+                    await pg.click("#backToHome"); await pg.wait_for_timeout(150)
+                    await pg.click('.excard[data-exercise="4-straight"]'); await pg.wait_for_timeout(150)
+                    await pg.evaluate("() => { const t = document.querySelector('[data-addon-task=rechnen]'); if (t) { const d = t.closest('details'); if (d) d.open = true; t.click(); } }")
+                    await pg.wait_for_timeout(100)
+                    await audit(pg, f"{w}px{ts_tag(ts)} visual/addon-rechnen", problems)
+                    await pg.evaluate("() => { const t = document.querySelector('[data-addon-task=periph]'); if (t) t.click(); }")
+                if area == "test":
+                    # Ton-Sequenz ready screen (2026-10-08): safety note open, Wechsel + Puls + Gleiten rows
+                    await pg.click("#tonOpenBtn"); await pg.wait_for_timeout(150)
+                    await pg.evaluate("() => { document.getElementById('tonSafety').open = true; document.querySelector('[data-ton-ear=alt]').click(); document.querySelector('[data-ton-pattern=pulse]').click(); }")
+                    await pg.wait_for_timeout(100)
+                    await audit(pg, f"{w}px{ts_tag(ts)} test/ton-sequenz", problems)
+                    await pg.evaluate("() => { document.querySelector('[data-ton-pattern=glide]').click(); }")
+                    await pg.wait_for_timeout(100)
+                    await audit(pg, f"{w}px{ts_tag(ts)} test/ton-sequenz-gleiten", problems)
+                    await pg.evaluate("() => { document.querySelector('[data-ton-pattern=steady]').click(); document.querySelector('[data-ton-ear=both]').click(); }")
                 if area == "aktivierung":
                     # Optodrum ready screen (2026-10-08) with every sub row open, then the pause sheet
                     await pg.click("#optoOpenBtn"); await pg.wait_for_timeout(150)

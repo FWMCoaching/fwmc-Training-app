@@ -1474,6 +1474,15 @@
       trains: "Farbe und Zahl gleichzeitig erfassen und schnell umsetzen",
       rules: "Lege nummerierte Felder (1 bis zur eingestellten Anzahl) auf den Boden und stelle auf jedes ein farbiges Hütchen oder einen Becher. Die App zeigt eine Farbe mit einer großen Zahl – zum Beispiel Gelb mit der 2: Stelle das gelbe Hütchen so schnell wie möglich auf Feld 2. Steht dort schon eins, tausche die beiden.",
     },
+    // Hütchen · Laufweg "Folge der Karte" (Fabian 2026-10-08): a cone grid
+    // and a drawn path to walk; own DOM stage like Hütchen sortieren, no
+    // scoring (the app can't see the walk). docs/notes/33.
+    "cone-path": {
+      title: "Hütchen · Laufweg", type: "laufweg",
+      task: "Lauf den Weg auf der Karte durch deine Hütchen.",
+      trains: "Orientierung im Raum, Wege lesen, merken und umsetzen",
+      rules: "Stell deine Hütchen in Reihen auf, wie unten eingestellt – oben auf der Karte ist die hintere Reihe, du startest unten am Startpunkt. Die App zeichnet einen Weg zwischen und um die Hütchen, mit Schleifen um einzelne Hütchen; der Pfeil zeigt das Ende. Lauf ihn genau so ab. Bei „Karte in der Hand“ nimmst du das Handy mit, bei „Weg merken“ prägst du dir den Weg ein und läufst ohne Karte. Mit „Nächster Weg“ kommt jedes Mal ein neuer Weg.",
+    },
     "farbfelder": {
       title: "Farbfelder", type: "farbfelder", bgIsStimulus: true,
       task: "Tritt auf das richtige Farbfeld deiner Matte.",
@@ -2677,6 +2686,7 @@
     kippbildDonePanel: $("kippbildDonePanel"), kippbildDoneSummary: $("kippbildDoneSummary"), kippbildRating: $("kippbildRating"),
     kippbildAgainBtn: $("kippbildAgainBtn"), kippbildDoneBackBtn: $("kippbildDoneBackBtn"),
     eyecountReady: $("eyecountReady"), eyecountPlayer: $("eyecountPlayer"),
+    tonReady: $("tonReady"), tonPlayer: $("tonPlayer"), // Ton-Sequenz
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
@@ -2961,7 +2971,7 @@
   els.trainingHub = $("trainingHub"); els.moreScreen = $("moreScreen");
   els.freeHome = $("freeHome"); els.freeReady = $("freeReady"); els.freeEdit = $("freeEdit"); els.freePlayer = $("freePlayer");
   els.activationHome = $("activationHome"); els.optoReady = $("optoReady"); els.optoPlayer = $("optoPlayer");
-  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "activationHome", "optoReady", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady", "eyecountReady"];
+  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "activationHome", "optoReady", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady", "eyecountReady", "tonReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -3741,6 +3751,9 @@
     ffFlip: 0, // Rhythmus-Umkehr: 0 = aus, 2 / 3 = every 2nd / 3rd stimulus
     ffAnswer: "treten", // So antwortest du: treten (mat) | tippen (screen, scored)
     ffCount: "wechsel", // Einblenden: eins | wechsel | phasen (FF_COUNTS)
+    // Hütchen · Laufweg (2026-10-08), see lwNormalize()
+    lwVariant: "karte", lwRows: 3, lwCols: 3, lwRowColors: ["gelb", "blau", "rot"], lwLength: "mittel",
+    lwShowS: 8, lwEnd: "runden", lwRounds: 5, lwDurS: 300,
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -3770,6 +3783,7 @@
     if (typeof state.bgIntensity !== "number" || state.bgIntensity < 0 || state.bgIntensity > 1) state.bgIntensity = 0;
     ffNormalize(state); // also copies ffLayout/ffHandRules, so DEFAULTS is never mutated
     cnNormalize(state);
+    lwNormalize(state); // Hütchen · Laufweg (copies lwRowColors too)
   }
   function cnNormalize(p) {
     const n = Math.round(Number(p.cnFields));
@@ -3822,6 +3836,7 @@
       if (typeof e.own.intervalMax !== "number" || e.own.intervalMax < 0.5 || e.own.intervalMax > 15) e.own.intervalMax = d.intervalMax;
       if (!Array.isArray(e.own.colors) || !e.own.colors.length || !e.own.colors.every((k) => STROOP_COLOR_BY_KEY[k])) e.own.colors = d.colors.slice();
     }
+    addonMathNormalizeEntry(e); // Zusatzaufgabe Rechnen (2026-10-08)
     return e;
   }
   function loadAddonStore() {
@@ -4683,6 +4698,11 @@
     els.addonPhaseHint.textContent = enabled ? "" : "Aus – wähle „Beim Reiz“, „In der Pause“ oder beides, um die Zusatzaufgabe zu aktivieren.";
     els.addonConfigBody.hidden = !enabled;
     if (!enabled) return;
+    // Zusatzaufgabe Rechnen (2026-10-08): which add-on, then its own body.
+    document.querySelectorAll("#addonTaskRow [data-addon-task]").forEach((el) => setActive(el, el.dataset.addonTask === entry.task));
+    $("addonMathBody").hidden = entry.task !== "rechnen";
+    $("addonPeriphBody").hidden = entry.task === "rechnen";
+    if (entry.task === "rechnen") { syncAddonMathUI(entry); return; }
     document.querySelectorAll("#addonModeRow [data-addon-mode]").forEach((el) => setActive(el, el.dataset.addonMode === entry.mode));
     els.addonOwnBody.hidden = entry.mode !== "eigen";
     if (entry.mode !== "eigen") return;
@@ -4816,12 +4836,16 @@
     els.setupBtn.onclick = ex.setupDiagram ? openSetupModal : null;
     colorMode = ex.usesArrowColors ? "arrows" : ex.usesStroopColors ? "stroop" : "standard";
     els.colorGroup.hidden = !ex.usesColors && !ex.usesArrowColors && !ex.usesStroopColors;
-    const isConeTap = ex.type === "color-tap";
+    const isLw = ex.type === "laufweg"; // Hütchen · Laufweg: own settings, no tempo/bg/add-on
+    const isConeTap = ex.type === "color-tap" || isLw;
     const isPeriph = ex.type === "periph";
     const isFf = ex.type === "farbfelder";
     const bgAllowed = !isConeTap && !ex.bgIsStimulus;
     els.tempoGroup.hidden = isConeTap;
     els.advanced.hidden = isConeTap;
+    $("lwSettings").hidden = !isLw;
+    $("durationGroup").hidden = isLw;
+    if (isLw) syncLwUI();
     els.periphKindGroup.hidden = !isPeriph;
     // The fixation-point Feineinstellung applies to every exercise with
     // this dot (i.e. everything except Hütchen sortieren), not just
@@ -4849,6 +4873,7 @@
     if (bgAllowed) syncBgUI();
     if (!isConeTap && !isPeriph) syncAddonUI();
     syncDurationUI();
+    if (isLw) els.coneBestHint.hidden = true;
     syncTempoUI();
     els.vtSaveForm.hidden = true;
     els.vtSaveBtn.hidden = false;
@@ -4870,6 +4895,7 @@
       text: "Du brauchst: vier Hütchen oder Becher in Rot, Gelb, Grün und Blau, nebeneinander vor dir.",
       link: "",
     },
+    "cone-path": { text: "Du brauchst: Hütchen oder Becher in den eingestellten Farben, ausgelegt wie auf der Karte.", link: "" },
     "cone-number": {
       text: "Du brauchst: 3-6 farbige Hütchen oder Becher und nummerierte Felder (z. B. Zettel mit 1-6).",
       link: "",
@@ -5222,6 +5248,7 @@
       if (existingBlock.periph) Object.assign(state, JSON.parse(JSON.stringify(existingBlock.periph)));
       if (existingBlock.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(existingBlock.ff))); ffNormalize(state); }
       if (existingBlock.cn) { Object.assign(state, existingBlock.cn); cnNormalize(state); }
+      if (existingBlock.lw) { lwApply(existingBlock.lw); syncLwUI(); }
       renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
       if (ex.type === "farbfelder") syncFfUI();
       if (ex.type === "colornum") syncCnUI();
@@ -5257,6 +5284,7 @@
     if (ex.type === "periph") block.periph = periphStateSnapshot();
     if (ex.type === "farbfelder") block.ff = ffStateSnapshot();
     if (ex.type === "colornum") block.cn = { cnFields: state.cnFields };
+    if (ex.type === "laufweg") { block.lw = lwSnapshot(); block.duration = lwEstimateS(); }
     if (comboVisualEditIndex != null) comboDraftBlocks[comboVisualEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitVisualComboCapture();
@@ -6262,12 +6290,16 @@
     // store, and its single synthetic "blank" frame is always active -
     // everything past this branch (the actual flash placement/timing) is
     // the exact same logic every other exercise's own add-on uses.
+    if (exId === "cardio-flash-host" && cardioHostAddonId === "addon-math") {
+      return buildMathAddonSchedule(exId, hostSchedule, cardioHostAddonCfg || cardioAddonPrefs.perType["addon-math"] || cardioGuestDefaultCfg("addon-math"), new Set(["pause"]), rng);
+    }
     if (exId === "cardio-flash-host") {
       cfg = cardioAddonPrefs.perType["addon-flash"] || cardioGuestDefaultCfg("addon-flash");
       phaseSet = new Set(["pause"]);
     } else {
       const entry = getAddonEntry(exId);
       if (!entry.phases.length) return { schedule: [], sizeMode: "gleich" };
+      if (entry.task === "rechnen") return buildMathAddonSchedule(exId, hostSchedule, entry.math, new Set(entry.phases), rng);
       cfg = entry.mode === "eigen" ? entry.own : addonConfigFromState();
       phaseSet = new Set(entry.phases);
     }
@@ -6359,6 +6391,7 @@
   // drew - an independent overlay schedule, gated to the phases the client
   // enabled it for, see buildAddonSchedule().
   function drawAddonOverlay(elapsed) {
+    if (session.addonMath) { mathDrawOverlay(elapsed); return; } // Zusatzaufgabe Rechnen
     if (!session.addonSchedule || !session.addonSchedule.length) return;
     const idx = session.addonSchedule.findIndex((f) => elapsed >= f.t0 && elapsed < f.t1);
     if (idx === -1) return;
@@ -6370,6 +6403,296 @@
     drawPeriphChar(cw, ch, unit, f.fx, f.fy, f.char, session.addonSizeMode, f.color);
     ctx.globalAlpha = 1;
   }
+
+  // ==== Zusatzaufgabe "Rechnen" (Fabian 2026-10-08) ====
+  // A second kind of Zusatzaufgabe next to the peripheral characters: a
+  // statement like "2 + 3 > 6" or "7 − 4 = 3" appears where the host shows
+  // nothing; about half are true. Answer modes: Doppelkreis (inner disc =
+  // stimmt, outer ring = stimmt nicht), Nur bei "stimmt" antippen (go/no-go)
+  // and Laut sagen (no tap). Per exercise in the add-on store
+  // (entry.task = "periph" | "rechnen", entry.math), Cardio guest
+  // "addon-math". Taps count on pointerdown and never reach the host
+  // (capture listener on #stageWrap). Details: docs/notes/32.
+  function addonMathDefault() { return { level: "plus10", answer: "doppelkreis", stimulusS: 3, intervalMin: 2, intervalMax: 4 }; }
+  function addonMathNormalize(m) {
+    const d = addonMathDefault();
+    const o = m && typeof m === "object" ? { ...m } : {};
+    if (!["plus10", "plus20", "mal"].includes(o.level)) o.level = d.level;
+    if (!["doppelkreis", "gonogo", "laut"].includes(o.answer)) o.answer = d.answer;
+    if (!Number.isFinite(o.stimulusS) || o.stimulusS < 1.5 || o.stimulusS > 6) o.stimulusS = d.stimulusS;
+    if (!Number.isFinite(o.intervalMin) || o.intervalMin < 1 || o.intervalMin > 15) o.intervalMin = d.intervalMin;
+    if (!Number.isFinite(o.intervalMax) || o.intervalMax < 1 || o.intervalMax > 15) o.intervalMax = d.intervalMax;
+    return o;
+  }
+  function addonMathNormalizeEntry(e) {
+    if (!["periph", "rechnen"].includes(e.task)) e.task = "periph";
+    const n = addonMathNormalize(e.math);
+    if (e.math && typeof e.math === "object") Object.assign(e.math, n); else e.math = n;
+  }
+  // One statement. Values stay small and never negative; the shown number of
+  // a false statement is 1-3 off (1-6 for Mal), so it is not obvious.
+  function mathMakeStatement(level, rng) {
+    const ri = (a, b) => a + Math.floor(rng() * (b - a + 1));
+    const max = level === "plus10" ? 10 : 20;
+    let a, b, op, res;
+    if (level === "mal" && rng() < 0.6) { a = ri(2, 10); b = ri(2, 10); op = "·"; res = a * b; }
+    else if (rng() < 0.5) { res = ri(2, max); a = ri(0, res); b = res - a; op = "+"; }
+    else { a = ri(2, max); b = ri(0, a); op = "−"; res = a - b; }
+    const wantTrue = rng() < 0.5;
+    let rel = rng() < 0.6 ? "=" : rng() < 0.5 ? ">" : "<";
+    const k = ri(1, op === "·" ? 6 : 3);
+    let c;
+    if (rel === ">" && wantTrue && res === 0) rel = "<";
+    if (rel === "=") c = wantTrue ? res : res - k >= 0 && rng() < 0.5 ? res - k : res + k;
+    else if (rel === ">") c = wantTrue ? Math.max(0, res - k) : res + ri(0, k);
+    else c = wantTrue ? res + k : Math.max(0, res - ri(0, k));
+    const truth = rel === "=" ? res === c : rel === ">" ? res > c : res < c;
+    return { text: `${a} ${op} ${b} ${rel} ${c}`, truth, a, b, op, rel, c, res };
+  }
+  // Sizes in canvas px. Doppelkreis: ring and inner disc both >= 44 css px.
+  function mathGeometry(cw, ch, answer) {
+    const r = canvas.getBoundingClientRect();
+    const k = r.width ? cw / r.width : 1;
+    const minCss = Math.min(r.width || cw / k, r.height || ch / k);
+    const bar = els.playerBar.getBoundingClientRect();
+    const top = Math.max(0, (bar.height ? bar.bottom - r.top : 60) + 10) * k;
+    if (answer === "doppelkreis") {
+      const R = Math.max(106, Math.min(150, minCss * 0.3));
+      const ring = Math.max(46, R * 0.4);
+      return { R: R * k, rIn: (R - ring) * k, k, top };
+    }
+    const R = Math.max(64, Math.min(104, minCss * 0.21));
+    return { R: R * k, rIn: R * k, k, top };
+  }
+  // What the host draws in these frames, as polygons / boxes to keep clear
+  // of: arrows exactly (frameArrowPolygon, as for the characters), centred
+  // words/discs/icons as a centre box, the fixation point on blank frames.
+  function mathObstacles(cw, ch, frames, k) {
+    const obs = [];
+    frames.forEach((f) => {
+      const poly = frameArrowPolygon(cw, ch, f);
+      if (poly) { obs.push({ poly }); return; }
+      if (f.kind === "blank" || f.kind === "color") obs.push({ box: [cw / 2 - 26 * k, ch / 2 - 26 * k, cw / 2 + 26 * k, ch / 2 + 26 * k] });
+      else if (f.kind !== "flash-host") obs.push({ box: [cw * 0.12, ch * 0.36, cw * 0.88, ch * 0.64] });
+    });
+    return obs;
+  }
+  function mathOverlap(x, y, R, obs) {
+    if (!obs.length) return 0;
+    const pts = [[x, y]];
+    for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2; pts.push([x + Math.cos(a) * R, y + Math.sin(a) * R]); if (i % 2 === 0) pts.push([x + Math.cos(a) * R * 0.55, y + Math.sin(a) * R * 0.55]); }
+    let n = 0;
+    obs.forEach((o) => {
+      if (o.poly) {
+        pts.forEach(([px, py]) => { if (pointInPolygon(px, py, o.poly)) n++; });
+        o.poly.forEach(([px, py]) => { if (Math.hypot(px - x, py - y) < R) n++; });
+      } else {
+        const [x0, y0, x1, y1] = o.box;
+        const nx = Math.max(x0, Math.min(x, x1)), ny = Math.max(y0, Math.min(y, y1));
+        const dd = Math.hypot(nx - x, ny - y);
+        if (dd < R) n += 1 + Math.round((R - dd) / (R / 4));
+      }
+    });
+    return n;
+  }
+  function mathPlace(cw, ch, g, frames, rng) {
+    const m = 8 * g.k;
+    const xMin = g.R + m, xMax = cw - g.R - m;
+    const yMin = Math.max(g.top + g.R, g.R + m), yMax = ch - g.R - m;
+    const obs = mathObstacles(cw, ch, frames, g.k);
+    let best = null;
+    for (let i = 0; i < 48; i++) {
+      const x = xMax > xMin ? xMin + rng() * (xMax - xMin) : cw / 2;
+      const y = yMax > yMin ? yMin + rng() * (yMax - yMin) : Math.min(ch - g.R, yMin);
+      const score = mathOverlap(x, y, g.R + 8 * g.k, obs); // a little air around the circle
+      if (!best || score < best.score) best = { x, y, score };
+      if (score === 0) break;
+    }
+    // Random tries missed: scan a grid (with, then without the extra air)
+    // before accepting an overlap - small stages leave few free spots.
+    for (const air of [8, 0]) {
+      if (best.score === 0) break;
+      for (let gy = 0; gy <= 14 && best.score > 0; gy++) for (let gx = 0; gx <= 10; gx++) {
+        const x = xMax > xMin ? xMin + (gx / 10) * (xMax - xMin) : cw / 2;
+        const y = yMax > yMin ? yMin + (gy / 14) * (yMax - yMin) : Math.min(ch - g.R, yMin);
+        const score = mathOverlap(x, y, g.R + air * g.k, obs);
+        if (score < best.score) best = { x, y, score };
+        if (score === 0) break;
+      }
+    }
+    return best;
+  }
+  // Statements are placed in runs of consecutive frames of the chosen
+  // phase(s); a run shorter than 1 s gets none, a statement never outlasts
+  // its run (so "In der Pause" keeps it out of the stimulus).
+  function buildMathAddonSchedule(exId, hostSchedule, cfg, phaseSet, rng) {
+    const m = addonMathNormalize(cfg);
+    const cw = canvas.width, ch = canvas.height;
+    const wins = [];
+    hostSchedule.forEach((f) => {
+      if (f.kind === "count") return;
+      if (!phaseSet.has(f.kind === "blank" ? "pause" : "reiz")) return;
+      const last = wins[wins.length - 1];
+      if (last && Math.abs(last.t1 - f.t0) < 1e-6) { last.t1 = f.t1; last.frames.push(f); } else wins.push({ t0: f.t0, t1: f.t1, frames: [f] });
+    });
+    const soft = softOn(exId);
+    const show = soft ? Math.max(m.stimulusS, SOFT_MIN_SHOW_S) : m.stimulusS;
+    const [gMin, gMax] = softGap(Math.min(m.intervalMin, m.intervalMax), Math.max(m.intervalMin, m.intervalMax), exId);
+    const geo = mathGeometry(cw, ch, m.answer);
+    const schedule = [];
+    let id = 0;
+    wins.forEach((w) => {
+      let t = w.t0 + Math.min(0.4, (w.t1 - w.t0) * 0.1);
+      while (t < w.t1 - 1) {
+        const t1 = Math.min(t + show, w.t1);
+        if (t1 - t < 1) break;
+        const st = mathMakeStatement(m.level, rng);
+        const frames = w.frames.filter((f) => f.t1 > t && f.t0 < t1);
+        const pos = mathPlace(cw, ch, geo, frames, rng);
+        schedule.push({ id: ++id, t0: t, t1, text: st.text, truth: st.truth, x: pos.x, y: pos.y, overlap: pos.score });
+        t = t1 + gMin + rng() * (gMax - gMin);
+      }
+    });
+    return { schedule, sizeMode: "gleich", math: { answer: m.answer, R: geo.R, rIn: geo.rIn, k: geo.k } };
+  }
+  function mathSessionNew(info) {
+    return { ...info, cur: null, answered: {}, ok: 0, bad: 0, miss: 0, minT0: 0, flash: null, log: [] };
+  }
+  function mathClose(m, it) {
+    if (!it || m.answered[it.id] || m.answer === "laut") return;
+    if (m.answer === "gonogo" && !it.truth) { m.ok++; m.log.push({ text: it.text, truth: it.truth, result: "richtig", tapped: false }); return; }
+    m.miss++;
+    m.log.push({ text: it.text, truth: it.truth, result: "verpasst", tapped: false });
+  }
+  function mathCurrent(m, elapsed) {
+    const sch = (session && session.addonSchedule) || [];
+    return sch.find((f) => f.t0 >= m.minT0 && elapsed >= f.t0 && elapsed < f.t1) || null;
+  }
+  function mathTrack(m, elapsed) {
+    const it = mathCurrent(m, elapsed);
+    if (it !== m.cur) { mathClose(m, m.cur); m.cur = it; }
+    return it;
+  }
+  function mathAbandon(m, elapsed) { m.cur = null; m.minT0 = elapsed; }
+  // said: true = "stimmt" (inner disc / the go tap), false = "stimmt nicht".
+  function mathAnswer(m, it, said, elapsed) {
+    if (!it || m.answered[it.id] || m.answer === "laut") return false;
+    m.answered[it.id] = true;
+    const right = said === it.truth;
+    if (right) m.ok++; else m.bad++;
+    m.log.push({ text: it.text, truth: it.truth, result: right ? "richtig" : "falsch", tapped: true, said });
+    m.flash = { x: it.x, y: it.y, r: said || m.answer !== "doppelkreis" ? m.rIn : m.R, until: elapsed + 0.3 };
+    return true;
+  }
+  function mathFinish(m) {
+    if (navigator.webdriver) window.__mathLastScore = { ok: m.ok, bad: m.bad, miss: m.miss, answer: m.answer, log: m.log.slice() };
+    if (m.answer === "laut") return null;
+    return { ok: m.ok, bad: m.bad, miss: m.miss, text: `Rechnen: ${m.ok} richtig, ${m.bad} falsch, ${m.miss} verpasst` };
+  }
+  function mathDrawOverlay(elapsed) {
+    const m = session.addonMath;
+    const it = mathTrack(m, elapsed);
+    const k = m.k || 1;
+    if (it && !m.answered[it.id]) {
+      const a = session.soft ? Math.max(0, Math.min(1, (elapsed - it.t0) / SOFT_FADE_S, (it.t1 - elapsed) / SOFT_FADE_S)) : 1;
+      ctx.save();
+      ctx.globalAlpha = a;
+      if (m.answer === "doppelkreis") {
+        ctx.beginPath(); ctx.arc(it.x, it.y, m.R, 0, Math.PI * 2);
+        ctx.fillStyle = "#37474f"; ctx.fill();
+        ctx.lineWidth = 2 * k; ctx.strokeStyle = "#ffffff"; ctx.stroke();
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        const ringMid = (m.R + m.rIn) / 2;
+        ctx.font = `700 ${Math.round(Math.max(12 * k, (m.R - m.rIn) * 0.27))}px 'Public Sans', sans-serif`;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText("stimmt nicht", it.x, it.y + ringMid);
+      }
+      ctx.beginPath(); ctx.arc(it.x, it.y, m.rIn, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff"; ctx.fill();
+      ctx.lineWidth = 3 * k; ctx.strokeStyle = "#16232a"; ctx.stroke();
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const size = fitText(ctx, it.text, m.rIn * 1.62, Math.round(m.rIn * 0.42), "Magra, sans-serif", 700);
+      ctx.font = `700 ${size}px Magra, sans-serif`;
+      ctx.fillStyle = "#16232a";
+      ctx.fillText(it.text, it.x, it.y - (m.answer === "doppelkreis" ? m.rIn * 0.08 : 0));
+      if (m.answer === "doppelkreis") {
+        ctx.font = `600 ${Math.round(Math.max(11 * k, m.rIn * 0.2))}px 'Public Sans', sans-serif`;
+        ctx.fillStyle = "#4a5a61";
+        ctx.fillText("stimmt", it.x, it.y + m.rIn * 0.5);
+      }
+      ctx.restore();
+    }
+    if (m.flash && elapsed < m.flash.until) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, (m.flash.until - elapsed) / 0.3);
+      ctx.beginPath(); ctx.arc(m.flash.x, m.flash.y, m.flash.r, 0, Math.PI * 2);
+      ctx.lineWidth = 6 * k; ctx.strokeStyle = "#ffffff"; ctx.stroke();
+      ctx.lineWidth = 2 * k; ctx.strokeStyle = "#16232a"; ctx.stroke();
+      ctx.restore();
+    }
+  }
+  // Taps: capture phase on the stage wrapper, so a tap on the statement is
+  // never also a tap for the host exercise (e.g. Farbfelder · Antippen); a
+  // tap outside the circle passes on untouched.
+  els.stageWrap.addEventListener("pointerdown", (e) => {
+    const m = session && session.addonMath;
+    if (!m || m.answer === "laut" || periphPausedAt || els.player.hidden) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (e.target !== canvas) return;
+    const elapsed = (performance.now() - session.startTime) / 1000;
+    const it = mathTrack(m, elapsed);
+    if (!it || m.answered[it.id]) return;
+    const r = canvas.getBoundingClientRect();
+    if (!r.width) return;
+    const kk = canvas.width / r.width;
+    const d = Math.hypot((e.clientX - r.left) * kk - it.x, (e.clientY - r.top) * kk - it.y);
+    if (d > m.R + 4 * kk) return;
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    mathAnswer(m, it, m.answer === "doppelkreis" ? d <= m.rIn : true, elapsed);
+  }, { capture: true });
+  // Ready-screen controls (#addonMathBody) - per exercise like the rest.
+  function syncAddonMathUI(entry) {
+    const mm = entry.math;
+    document.querySelectorAll("#addonMathLevelRow [data-addon-mathlevel]").forEach((el) => setActive(el, el.dataset.addonMathlevel === mm.level));
+    document.querySelectorAll("#addonMathAnswerRow [data-addon-mathanswer]").forEach((el) => setActive(el, el.dataset.addonMathanswer === mm.answer));
+    $("addonMathShowSlider").value = mm.stimulusS;
+    $("addonMathShowValue").textContent = fmtSeconds(mm.stimulusS);
+    $("addonMathGapMinSlider").value = mm.intervalMin;
+    $("addonMathGapMaxSlider").value = mm.intervalMax;
+    $("addonMathGapValue").textContent = `${fmtSeconds(Math.min(mm.intervalMin, mm.intervalMax))}–${fmtSeconds(Math.max(mm.intervalMin, mm.intervalMax))}`;
+  }
+  const addonMathEdit = (fn) => { const entry = getAddonEntry(state.exercise); fn(entry); saveAddonStore(); syncAddonUI(); };
+  document.querySelectorAll("#addonTaskRow [data-addon-task]").forEach((el) => el.addEventListener("click", () => addonMathEdit((e) => { e.task = el.dataset.addonTask; })));
+  document.querySelectorAll("#addonMathLevelRow [data-addon-mathlevel]").forEach((el) => el.addEventListener("click", () => addonMathEdit((e) => { e.math.level = el.dataset.addonMathlevel; })));
+  document.querySelectorAll("#addonMathAnswerRow [data-addon-mathanswer]").forEach((el) => el.addEventListener("click", () => addonMathEdit((e) => { e.math.answer = el.dataset.addonMathanswer; })));
+  [["addonMathShowSlider", "stimulusS"], ["addonMathGapMinSlider", "intervalMin"], ["addonMathGapMaxSlider", "intervalMax"]].forEach(([id, f]) => {
+    $(id).addEventListener("input", () => {
+      const entry = getAddonEntry(state.exercise);
+      entry.math[f] = Number($(id).value);
+      saveAddonStore();
+      syncAddonMathUI(entry);
+    });
+  });
+  // Cardio "+ Zusatzaufgabe" · Rechnen runs on the blank host
+  // (cardio-flash-host); triggerCardioGuest() names which add-on it carries.
+  let cardioHostAddonId = null, cardioHostAddonCfg = null;
+  if (navigator.webdriver) window.__mathFinishRun = () => { if (session && session.addonMath) finishSession(); };
+  if (navigator.webdriver) window.__math = {
+    make: (level, n, seed) => { let x = seed || 1; const rng = () => ((x = (x * 16807) % 2147483647) / 2147483647); return Array.from({ length: n }, () => mathMakeStatement(level, rng)); },
+    state: () => {
+      const m = session && session.addonMath;
+      if (!m) return null;
+      const r = canvas.getBoundingClientRect(), kk = canvas.width / (r.width || 1);
+      const elapsed = (performance.now() - session.startTime) / 1000;
+      const it = mathCurrent(m, elapsed);
+      const css = (v) => v / kk;
+      return {
+        answer: m.answer, ok: m.ok, bad: m.bad, miss: m.miss, R: css(m.R), rIn: css(m.rIn), count: session.addonSchedule.length,
+        cur: it ? { id: it.id, text: it.text, truth: it.truth, answered: !!m.answered[it.id], cx: r.left + css(it.x), cy: r.top + css(it.y), overlap: it.overlap } : null,
+        items: session.addonSchedule.map((f) => ({ t0: f.t0, t1: f.t1, text: f.text, truth: f.truth, overlap: f.overlap, cx: r.left + css(f.x), cy: r.top + css(f.y) })),
+      };
+    },
+  };
 
   // Redraws whatever frame is currently frozen on screen (used while the
   // Periph pause overlay is open) without touching the schedule/elapsed
@@ -6397,6 +6720,7 @@
     state.intervalMax = block.intervalMax ?? 4;
     if (block.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
     if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
+    if (block.lw) lwApply(block.lw);
     active = blockColors(block);
   }
 
@@ -6430,6 +6754,7 @@
     // Leaving a player always drops an open "Pausiert" sheet (it lives
     // inside that player); guarded since this runs during start-up too.
     try { closeTrainPause(); } catch (e) {}
+    try { lwStop(); } catch (e) {} // Hütchen · Laufweg stage lives inside #player
     els.player.hidden = true;
     els.breathPlayer.hidden = true;
     els.wimhofPlayer.hidden = true;
@@ -6468,6 +6793,7 @@
     els.bisectPlayer.hidden = true;
     els.kippbildPlayer.hidden = true;
     els.eyecountPlayer.hidden = true;
+    els.tonPlayer.hidden = true; tonHaltSilently(); // Ton-Sequenz
     els.workoutPlayer.hidden = true;
     els.cardioPlayer.hidden = true;
     els.freePlayer.hidden = true;
@@ -6505,6 +6831,7 @@
     const built = buildScheduleFor(EXERCISES[state.exercise], Math.random);
     const addon = buildAddonSchedule(EXERCISES[state.exercise], state.exercise, built.schedule, Math.random);
     session = { ...built, startTime: performance.now(), lastIndex: -1, addonSchedule: addon.schedule, addonSizeMode: addon.sizeMode, soft: softOn(state.exercise) };
+    session.addonMath = addon.math ? mathSessionNew(addon.math) : null; // Zusatzaufgabe Rechnen
     // Farbfelder · Antippen: the canvas takes taps and scores them.
     session.ffTap = EXERCISES[state.exercise].type === "farbfelder" && ffTapMode() ? ffTapNew() : null;
     els.player.classList.toggle("ff-tap", !!session.ffTap);
@@ -6613,6 +6940,368 @@
     renderConeOrderRound();
   }
   els.coneOrderStage.addEventListener("click", () => coneTapAdvance());
+
+  // ==== Hütchen · Laufweg "Folge der Karte" (Fabian 2026-10-08) ====
+  // A VT catalog exercise like Hütchen sortieren / Kompass-Aufbau (same ready
+  // screen, Kombi, presets, Wochenplan, history), but tap-paced with its own
+  // DOM/SVG stage instead of the canvas schedule: the app can't see the walk,
+  // so there is no stimulus timing and no scoring. Settings live in the VT
+  // state (lw*), snapshot `lw` in Kombi blocks and presets. docs/notes/33.
+  const LW_LENGTHS = { kurz: { n: 3, label: "Kurz" }, mittel: { n: 5, label: "Mittel" }, lang: { n: 7, label: "Lang" } };
+  const LW_ROW_DEFAULTS = ["gelb", "blau", "rot", "gruen"];
+  const LW_VARIANT_LABELS = { karte: "Karte in der Hand", merken: "Weg merken" };
+  // Hoisted, literal-only: loadPrefs() runs before this block is reached.
+  function lwNormalize(p) {
+    if (!["karte", "merken"].includes(p.lwVariant)) p.lwVariant = "karte";
+    const rr = Math.round(Number(p.lwRows)), cc = Math.round(Number(p.lwCols));
+    p.lwRows = rr >= 2 && rr <= 4 ? rr : 3;
+    p.lwCols = cc >= 2 && cc <= 4 ? cc : 3;
+    const lib = ["rot", "gelb", "gruen", "blau", "orange", "lila", "pink"];
+    const defs = p.lwRows === 2 ? ["gelb", "rot"] : p.lwRows === 4 ? ["gelb", "blau", "rot", "gruen"] : ["gelb", "blau", "rot"];
+    const cur = Array.isArray(p.lwRowColors) ? p.lwRowColors.slice() : [];
+    p.lwRowColors = Array.from({ length: p.lwRows }, (_, i) => (lib.includes(cur[i]) ? cur[i] : defs[i]));
+    if (!["kurz", "mittel", "lang"].includes(p.lwLength)) p.lwLength = "mittel";
+    const sh = Math.round(Number(p.lwShowS));
+    p.lwShowS = sh >= 3 && sh <= 20 ? sh : 8;
+    if (!["runden", "dauer"].includes(p.lwEnd)) p.lwEnd = "runden";
+    const ro = Math.round(Number(p.lwRounds));
+    p.lwRounds = ro >= 1 && ro <= 20 ? ro : 5;
+    p.lwDurS = [120, 180, 300, 600].includes(Number(p.lwDurS)) ? Number(p.lwDurS) : 300;
+    return p;
+  }
+  function lwSnapshot(p = state) {
+    return { lwVariant: p.lwVariant, lwRows: p.lwRows, lwCols: p.lwCols, lwRowColors: p.lwRowColors.slice(), lwLength: p.lwLength, lwShowS: p.lwShowS, lwEnd: p.lwEnd, lwRounds: p.lwRounds, lwDurS: p.lwDurS };
+  }
+  function lwApply(snap) { if (snap) { Object.assign(state, JSON.parse(JSON.stringify(snap))); lwNormalize(state); } }
+  // Rough run length for the Kombi list (Runden: ~40 s per path).
+  function lwEstimateS(p = state) { return p.lwEnd === "dauer" ? p.lwDurS : p.lwRounds * (p.lwVariant === "merken" ? p.lwShowS + 35 : 40); }
+
+  // ---- Path maker (pure; units: cone (col c, row r) sits at x = c, y = r,
+  // row 0 = back row = top of the map, the client starts below the front row).
+  // Targets are cones; around each the path makes a full loop or wraps round
+  // the far side; between cones it runs along the gaps (half-unit lattice
+  // lines), so it never crosses a cone; Catmull-Rom smoothing plus a little
+  // jitter gives the hand-drawn look.
+  const LW_RHO = 0.36;
+  function lwMakePath(rows, cols, length, rng) {
+    const ri = (a, b) => a + Math.floor(rng() * (b - a + 1));
+    const n = (LW_LENGTHS[length] || LW_LENGTHS.mittel).n;
+    const cones = [];
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) cones.push({ r, c });
+    const targets = [];
+    let prev = null, prev2 = null;
+    for (let i = 0; i < n; i++) {
+      let pool = cones.filter((k) => k !== prev && (cones.length <= 2 || k !== prev2));
+      if (i === 0) pool = pool.filter((k) => k.r >= rows - 2); // start near the front
+      const t = pool[Math.floor(rng() * pool.length)];
+      targets.push(t); prev2 = prev; prev = t;
+    }
+    const start = { x: ri(0, cols - 1) + (rng() < 0.5 ? 0 : 0.5) * (cols > 1 ? 1 : 0), y: rows - 1 + 0.95 };
+    if (start.x > cols - 1) start.x = cols - 1;
+    const sides = [{ x: -0.95, y: ri(0, rows - 1) }, { x: cols - 1 + 0.95, y: ri(0, rows - 1) }, { x: ri(0, cols - 1), y: -0.85 }];
+    const end = sides[Math.floor(rng() * sides.length)];
+    const clampG = (v, n2) => Math.max(-0.5, Math.min(n2 - 0.5, v));
+    const cornerOf = (cone, toward) => ({ x: cone.c + (toward.x >= cone.c ? 0.5 : -0.5), y: cone.r + (toward.y >= cone.r ? 0.5 : -0.5) });
+    const snap = (p) => ({ x: clampG(Math.round(p.x - 0.5) + 0.5, cols), y: clampG(Math.round(p.y - 0.5) + 0.5, rows) });
+    const clear = (a, b, skip) => {
+      for (let s = 0; s <= 20; s++) {
+        const x = a.x + (b.x - a.x) * (s / 20), y = a.y + (b.y - a.y) * (s / 20);
+        if (cones.some((k) => Math.hypot(k.c - x, k.r - y) < (k === skip ? 0.3 : 0.36))) return false;
+      }
+      return true;
+    };
+    // L-shaped run along gap lines from lattice point a to lattice point b.
+    const lattice = (a, b) => (Math.abs(a.x - b.x) < 1e-9 || Math.abs(a.y - b.y) < 1e-9 ? [a, b] : rng() < 0.5 ? [a, { x: b.x, y: a.y }, b] : [a, { x: a.x, y: b.y }, b]);
+    const pts = [{ x: start.x, y: start.y, kind: "start" }];
+    let cur = { x: start.x, y: start.y };
+    let curCone = null;
+    const push = (p, kind) => {
+      const last = pts[pts.length - 1];
+      if (Math.hypot(last.x - p.x, last.y - p.y) > 1e-6) pts.push({ x: p.x, y: p.y, kind });
+    };
+    let lane = 0;
+    const travel = (to, toCone) => {
+      // from cur (start or a loop point of curCone) to lattice corner `to`;
+      // each run gets its own small lane offset so two passes along the same
+      // gap stay apart on the map
+      lane = (lane + 1) % 3;
+      const off = (lane - 1) * 0.07;
+      const laneP = (p) => ({ x: p.x + off, y: p.y + off });
+      if (!clear(cur, to, curCone)) {
+        const from = curCone ? cornerOf(curCone, to) : snap(cur);
+        if (curCone) {
+          // stay on the loop circle until facing that corner, never across the cone
+          const th = Math.atan2(cur.y - curCone.r, cur.x - curCone.c), ph = Math.atan2(from.y - curCone.r, from.x - curCone.c);
+          let dd = ph - th; while (dd > Math.PI) dd -= 2 * Math.PI; while (dd < -Math.PI) dd += 2 * Math.PI;
+          const k = Math.floor(Math.abs(dd) / (Math.PI / 5));
+          for (let s2 = 1; s2 <= k; s2++) push({ x: curCone.c + Math.cos(th + dd * (s2 / (k + 1))) * LW_RHO, y: curCone.r + Math.sin(th + dd * (s2 / (k + 1))) * LW_RHO }, "loop");
+        }
+        if (Math.hypot(from.x - cur.x, from.y - cur.y) > 1e-6) push(from, "gap");
+        const run = lattice(from, to).slice(1);
+        run.forEach((p, i) => push(i < run.length - 1 ? laneP(p) : p, "gap"));
+      } else push(to, "gap");
+      cur = { x: to.x, y: to.y };
+    };
+    targets.forEach((t, i) => {
+      const next = targets[i + 1];
+      const entryCorner = cornerOf(t, cur);
+      travel(entryCorner, t);
+      const exitToward = next ? { x: next.c, y: next.r } : end;
+      const thIn = Math.atan2(entryCorner.y - t.r, entryCorner.x - t.c);
+      const exitCorner = cornerOf(t, exitToward);
+      const thOut = Math.atan2(exitCorner.y - t.r, exitCorner.x - t.c);
+      const full = rng() < 0.5;
+      let dir = rng() < 0.5 ? 1 : -1;
+      const sweep = (d) => { let v = (thOut - thIn) * d; v = ((v % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI); return v; };
+      let total;
+      if (full) total = 2 * Math.PI + sweep(dir);
+      else { if (sweep(dir) < Math.PI * 0.9) dir = -dir; total = Math.max(sweep(dir), Math.PI * 0.9); }
+      const steps = Math.max(3, Math.ceil(total / (Math.PI / 5)));
+      for (let s = 0; s <= steps; s++) {
+        const a = thIn + dir * total * (s / steps);
+        push({ x: t.c + Math.cos(a) * LW_RHO, y: t.r + Math.sin(a) * LW_RHO }, "loop");
+      }
+      t.loop = full ? "full" : "half"; t.dir = dir;
+      cur = { ...pts[pts.length - 1] };
+      curCone = t;
+    });
+    // to the end mark (outside the field)
+    const endLattice = snap({ x: Math.max(-0.5, Math.min(cols - 0.5, end.x)), y: Math.max(-0.5, Math.min(rows - 0.5, end.y)) });
+    travel(endLattice, null);
+    push(end, "end");
+    // Long straight runs get extra points, so the smoothing keeps the corners
+    // tight instead of bulging towards a cone; then a little jitter on the
+    // gap points only (loops stay round) for the hand-drawn look.
+    const dense = [pts[0]];
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i], L = Math.hypot(b.x - a.x, b.y - a.y);
+      if (a.kind !== "loop" && b.kind !== "loop" && L > 0.6) {
+        const k = Math.ceil(L / 0.45);
+        for (let j = 1; j < k; j++) dense.push({ x: a.x + (b.x - a.x) * (j / k), y: a.y + (b.y - a.y) * (j / k), kind: "gap" });
+      }
+      dense.push(b);
+    }
+    dense.forEach((p) => { if (p.kind === "gap") { p.x += (rng() - 0.5) * 0.05; p.y += (rng() - 0.5) * 0.05; } });
+    return { rows, cols, cones, targets: targets.map((t) => ({ r: t.r, c: t.c, loop: t.loop, dir: t.dir })), start, end, pts: dense, d: lwSmoothPath(dense) };
+  }
+  function lwSmoothPath(pts) {
+    const f = (v) => Math.round(v * 1000) / 1000;
+    let d = `M${f(pts[0].x)} ${f(pts[0].y)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+      const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 };
+      const c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 };
+      d += ` C${f(c1.x)} ${f(c1.y)} ${f(c2.x)} ${f(c2.y)} ${f(p2.x)} ${f(p2.y)}`;
+    }
+    return d;
+  }
+  // SVG map: cones in their row colours, start mark, path + arrow (or none).
+  function lwConeSvg(x, y, hex) {
+    return `<g class="lw-cone"><ellipse cx="${x}" cy="${y + 0.13}" rx="0.19" ry="0.055" fill="${hex}" stroke="#16232a" stroke-width="0.022"/>` +
+      `<path d="M${x} ${y - 0.2} L${x + 0.13} ${y + 0.12} L${x - 0.13} ${y + 0.12} Z" fill="${hex}" stroke="#16232a" stroke-width="0.022" stroke-linejoin="round"/>` +
+      `<path d="M${x - 0.075} ${y - 0.03} L${x + 0.075} ${y - 0.03}" stroke="#ffffff" stroke-width="0.035" stroke-linecap="round" opacity="0.85"/></g>`;
+  }
+  function lwMapSvg(path, rowColors, showPath, opts = {}) {
+    const { rows, cols } = path;
+    const x0 = -1.15, y0 = -1.0, w = cols - 1 + 2.3, h = rows - 1 + 2.25;
+    let svg = `<svg class="lw-svg" viewBox="${x0} ${y0} ${w} ${h}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(opts.label || "Karte mit Hütchen")}">`;
+    svg += `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="#ffffff"/>`;
+    svg += `<text x="${x0 + 0.12}" y="${y0 + 0.3}" font-size="0.2" font-family="'Public Sans',sans-serif" font-weight="600" fill="#5c6e75">hinten</text>`;
+    path.cones.forEach((k) => { svg += lwConeSvg(k.c, k.r, (COLOR_BY_KEY[rowColors[k.r]] || COLOR_BY_KEY.rot).hex); });
+    if (showPath && path.d) {
+      svg += `<path class="lw-path" d="${path.d}" fill="none" stroke="#ffffff" stroke-width="0.13" stroke-linecap="round" stroke-linejoin="round"/>`;
+      svg += `<path class="lw-path" data-lw-path="1" d="${path.d}" fill="none" stroke="#16232a" stroke-width="0.065" stroke-linecap="round" stroke-linejoin="round"/>`;
+      // small direction marks along the way (every ~1.1 units, not at the ends)
+      const P = path.pts;
+      let total = 0;
+      for (let i = 1; i < P.length; i++) total += Math.hypot(P[i].x - P[i - 1].x, P[i].y - P[i - 1].y);
+      let acc = 0, nextAt = 0.9;
+      for (let i = 1; i < P.length; i++) {
+        const seg = Math.hypot(P[i].x - P[i - 1].x, P[i].y - P[i - 1].y);
+        while (seg > 0 && acc + seg >= nextAt && nextAt < total - 0.6) {
+          const t = (nextAt - acc) / seg, x = P[i - 1].x + (P[i].x - P[i - 1].x) * t, y = P[i - 1].y + (P[i].y - P[i - 1].y) * t;
+          const an = Math.atan2(P[i].y - P[i - 1].y, P[i].x - P[i - 1].x), cs = Math.cos(an), sn = Math.sin(an);
+          const pt = (f, l) => `${(x + cs * f - sn * l).toFixed(3)} ${(y + sn * f + cs * l).toFixed(3)}`;
+          svg += `<path class="lw-chevron" d="M${pt(-0.08, -0.1)} L${pt(0.1, 0)} L${pt(-0.08, 0.1)} Z" fill="#16232a" stroke="#ffffff" stroke-width="0.02" stroke-linejoin="round"/>`;
+          nextAt += 1.1;
+        }
+        acc += seg;
+      }
+      const a = path.pts[path.pts.length - 2], b = path.pts[path.pts.length - 1];
+      const ang = Math.atan2(b.y - a.y, b.x - a.x), L = 0.26, W = 0.16;
+      const tip = { x: b.x + Math.cos(ang) * 0.08, y: b.y + Math.sin(ang) * 0.08 };
+      const bx = tip.x - Math.cos(ang) * L, by = tip.y - Math.sin(ang) * L;
+      svg += `<path class="lw-arrow" d="M${tip.x} ${tip.y} L${bx + Math.sin(ang) * W} ${by - Math.cos(ang) * W} L${bx - Math.sin(ang) * W} ${by + Math.cos(ang) * W} Z" fill="#16232a"/>`;
+    }
+    const s = path.start;
+    svg += `<circle class="lw-start" cx="${s.x}" cy="${s.y}" r="0.15" fill="#007094" stroke="#ffffff" stroke-width="0.04"/>`;
+    const lx = s.x + 0.24 + 0.62 > x0 + w ? s.x - 0.24 - 0.62 : s.x + 0.24;
+    svg += `<text x="${lx}" y="${s.y + 0.08}" font-size="0.22" font-family="'Public Sans',sans-serif" font-weight="700" fill="#007094">Start</text>`;
+    return svg + `</svg>`;
+  }
+
+  // ---- Ready screen (#lwSettings) ----
+  function syncLwUI() {
+    lwNormalize(state);
+    document.querySelectorAll("#lwVariantRow [data-lw-variant]").forEach((b) => setActive(b, b.dataset.lwVariant === state.lwVariant));
+    $("lwVariantHelp").textContent = state.lwVariant === "merken"
+      ? "Du siehst den Weg kurz, dann verschwindet er. Lauf ihn aus dem Kopf, mit „Weg zeigen“ prüfst du danach."
+      : "Nimm das Handy mit und lauf den Weg, den die Karte zeigt.";
+    $("lwShowGroup").hidden = state.lwVariant !== "merken";
+    $("lwShowSlider").value = state.lwShowS;
+    $("lwShowValue").textContent = `${state.lwShowS} s`;
+    document.querySelectorAll("#lwLengthRow [data-lw-length]").forEach((b) => setActive(b, b.dataset.lwLength === state.lwLength));
+    document.querySelectorAll("#lwRowsRow [data-lw-rows]").forEach((b) => setActive(b, Number(b.dataset.lwRows) === state.lwRows));
+    document.querySelectorAll("#lwColsRow [data-lw-cols]").forEach((b) => setActive(b, Number(b.dataset.lwCols) === state.lwCols));
+    document.querySelectorAll("#lwEndRow [data-lw-end]").forEach((b) => setActive(b, b.dataset.lwEnd === state.lwEnd));
+    $("lwRoundsLine").hidden = state.lwEnd !== "runden";
+    $("lwDurRow").hidden = state.lwEnd !== "dauer";
+    $("lwRoundsSlider").value = state.lwRounds;
+    $("lwRoundsValue").textContent = `${state.lwRounds} ${state.lwRounds === 1 ? "Weg" : "Wege"}`;
+    document.querySelectorAll("#lwDurRow [data-lw-dur]").forEach((b) => setActive(b, Number(b.dataset.lwDur) === state.lwDurS));
+    $("lwSizeHelp").textContent = `${state.lwRows * state.lwCols} Hütchen: ${state.lwRows} Reihen mit je ${state.lwCols}. Oben ist die hintere Reihe, unten die vordere – du startest unten.`;
+    const names = ["hinten", "Mitte", "vorne"];
+    const rowName = (i) => (state.lwRows === 2 ? ["hinten", "vorne"][i] : state.lwRows === 3 ? names[i] : ["hinten", "2. Reihe", "3. Reihe", "vorne"][i]);
+    $("lwRowColors").innerHTML = state.lwRowColors.map((key, i) =>
+      `<div class="lw-row-colors"><span class="lw-row-name">Reihe ${rowName(i)}</span><div class="lw-row-swatches" role="group" aria-label="Farbe Reihe ${rowName(i)}">` +
+      COLOR_LIB.map((c) => `<button type="button" class="lw-swatch${c.key === key ? " active" : ""}" data-lw-row="${i}" data-lw-color="${c.key}" style="background:${c.hex}" aria-label="${c.name}" aria-pressed="${c.key === key}"></button>`).join("") +
+      `</div></div>`).join("");
+    const demo = lwMakePath(state.lwRows, state.lwCols, "kurz", () => 0.5);
+    $("lwPreview").innerHTML = lwMapSvg({ ...demo, d: "" }, state.lwRowColors, false, { label: "So stellst du die Hütchen auf" });
+  }
+  const lwSet = (fn) => { fn(); lwNormalize(state); savePrefs(); syncLwUI(); };
+  document.querySelectorAll("#lwVariantRow [data-lw-variant]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwVariant = b.dataset.lwVariant; })));
+  document.querySelectorAll("#lwLengthRow [data-lw-length]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwLength = b.dataset.lwLength; })));
+  document.querySelectorAll("#lwRowsRow [data-lw-rows]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwRows = Number(b.dataset.lwRows); })));
+  document.querySelectorAll("#lwColsRow [data-lw-cols]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwCols = Number(b.dataset.lwCols); })));
+  document.querySelectorAll("#lwEndRow [data-lw-end]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwEnd = b.dataset.lwEnd; })));
+  document.querySelectorAll("#lwDurRow [data-lw-dur]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwDurS = Number(b.dataset.lwDur); })));
+  $("lwShowSlider").addEventListener("input", () => lwSet(() => { state.lwShowS = Number($("lwShowSlider").value); }));
+  $("lwRoundsSlider").addEventListener("input", () => lwSet(() => { state.lwRounds = Number($("lwRoundsSlider").value); }));
+  $("lwRowColors").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-lw-color]");
+    if (!b) return;
+    lwSet(() => { state.lwRowColors[Number(b.dataset.lwRow)] = b.dataset.lwColor; });
+  });
+
+  // ---- Run ----
+  let lwRun = null;  // { round, path, phase: show|walk|check|karte, showEnd, pausedAt }
+  let lwLast = null; // result handed to finishSession()
+  function lwStop() {
+    if (!lwRun && $("lwStage").hidden) return;
+    lwRun = null;
+    $("lwStage").hidden = true;
+    $("lwPauseOverlay").hidden = true;
+    $("lwPauseBtn").hidden = true;
+  }
+  function lwRender() {
+    const r = lwRun;
+    if (!r) return;
+    const show = r.phase !== "walk";
+    $("lwMap").innerHTML = lwMapSvg(r.path, r.cfg.lwRowColors, show, { label: show ? "Karte mit deinem Weg" : "Karte ohne Weg" });
+    const of = r.cfg.lwEnd === "runden" ? ` von ${r.cfg.lwRounds}` : "";
+    const left = Math.max(0, Math.ceil(r.showEnd - lwNow()));
+    $("lwCaption").textContent = r.phase === "show" ? `Weg ${r.round}${of} · merk dir den Weg · noch ${left} s`
+      : r.phase === "walk" ? `Weg ${r.round}${of} · lauf ihn aus dem Kopf`
+      : r.phase === "check" ? `Weg ${r.round}${of} · so war der Weg` : `Weg ${r.round}${of}`;
+    const reveal = $("lwRevealBtn");
+    reveal.hidden = !(r.phase === "walk" || r.phase === "check");
+    reveal.textContent = r.phase === "check" ? "Weg ausblenden" : "Weg zeigen";
+    const last = r.cfg.lwEnd === "runden" && r.round >= r.cfg.lwRounds;
+    $("lwNextBtn").textContent = last ? "Fertig" : "Nächster Weg";
+    $("lwNextBtn").hidden = r.phase === "show";
+  }
+  function lwNow() { return (performance.now() - session.startTime) / 1000; }
+  function lwNewPath() {
+    const r = lwRun;
+    let p, tries = 0;
+    do { p = lwMakePath(r.cfg.lwRows, r.cfg.lwCols, r.cfg.lwLength, Math.random); tries++; } while (r.path && p.d === r.path.d && tries < 5);
+    r.path = p;
+    if (navigator.webdriver) window.__lwLast = p;
+    if (r.cfg.lwVariant === "merken") { r.phase = "show"; r.showEnd = lwNow() + r.cfg.lwShowS; } else r.phase = "karte";
+    lwRender();
+  }
+  function lwTick() {
+    const r = lwRun;
+    if (!r || r.pausedAt) return;
+    const el = lwNow();
+    if (r.cfg.lwEnd === "dauer" && el >= session.total) { lwComplete(); return; }
+    if (r.phase === "show" && el >= r.showEnd) { r.phase = "walk"; lwRender(); }
+    else if (r.phase === "show") {
+      const txt = $("lwCaption").textContent, left = Math.max(0, Math.ceil(r.showEnd - el));
+      if (!txt.endsWith(`noch ${left} s`)) lwRender();
+    }
+    els.timeEl.textContent = r.cfg.lwEnd === "dauer" ? fmtClock(session.total - el) : fmtClock(el);
+    raf = requestAnimationFrame(lwTick);
+  }
+  function startLaufweg() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.player.hidden = false;
+    els.playerBar.hidden = false;
+    els.progressTrack.hidden = !comboProgram && !program;
+    els.stageWrap.hidden = true;
+    els.coneOrderStage.hidden = true;
+    els.periphPauseBtn.hidden = true;
+    $("lwStage").hidden = false;
+    $("lwPauseBtn").hidden = false;
+    $("lwPauseOverlay").hidden = true;
+    if (raf) cancelAnimationFrame(raf);
+    const cfg = lwNormalize(lwSnapshot());
+    session = { startTime: performance.now(), total: cfg.lwEnd === "dauer" ? cfg.lwDurS : 3600, schedule: [] };
+    lwRun = { cfg, round: 1, path: null, phase: "karte", showEnd: 0, pausedAt: null };
+    // keep the map below the floating player bar
+    const bar = els.playerBar.getBoundingClientRect();
+    $("lwStage").style.paddingTop = Math.round(Math.max(64, bar.bottom + 6)) + "px";
+    requestWakeLock();
+    lwNewPath();
+    raf = requestAnimationFrame(lwTick);
+  }
+  function lwComplete() {
+    const r = lwRun;
+    if (!r) return;
+    lwLast = { cfg: r.cfg, count: r.round };
+    lwStop();
+    finishSession();
+  }
+  $("lwNextBtn").addEventListener("click", () => {
+    const r = lwRun;
+    if (!r || r.pausedAt) return;
+    if (r.cfg.lwEnd === "runden" && r.round >= r.cfg.lwRounds) { lwComplete(); return; }
+    r.round++;
+    lwNewPath();
+  });
+  $("lwRevealBtn").addEventListener("click", () => {
+    const r = lwRun;
+    if (!r || r.pausedAt) return;
+    r.phase = r.phase === "check" ? "walk" : "check";
+    lwRender();
+  });
+  $("lwPauseBtn").addEventListener("click", () => {
+    const r = lwRun;
+    if (!r || r.pausedAt) return;
+    r.pausedAt = performance.now();
+    if (raf) cancelAnimationFrame(raf);
+    raf = null;
+    $("lwPauseOverlay").hidden = false;
+    $("lwPauseBtn").hidden = true;
+  });
+  $("lwResumeBtn").addEventListener("click", () => {
+    const r = lwRun;
+    if (!r || !r.pausedAt) return;
+    session.startTime += performance.now() - r.pausedAt;
+    r.pausedAt = null;
+    $("lwPauseOverlay").hidden = true;
+    $("lwPauseBtn").hidden = false;
+    raf = requestAnimationFrame(lwTick);
+  });
+  function lwResultText(d) { return `${d.count} ${d.count === 1 ? "Weg" : "Wege"}`; }
+  function lwNote(d) { return `${LW_VARIANT_LABELS[d.cfg.lwVariant]} · ${d.cfg.lwRows}×${d.cfg.lwCols} Hütchen · ${LW_LENGTHS[d.cfg.lwLength].label} · ${lwResultText(d)}`; }
+  if (navigator.webdriver) window.__lw = {
+    make: (rows, cols, length, seed) => { let x = seed || 1; const rng = () => ((x = (x * 16807) % 2147483647) / 2147483647); return lwMakePath(rows, cols, length, rng); },
+    run: () => (lwRun ? { round: lwRun.round, phase: lwRun.phase, cfg: lwRun.cfg, paused: !!lwRun.pausedAt, d: lwRun.path && lwRun.path.d } : null),
+    finish: () => { if (lwRun) lwComplete(); },
+  };
 
   // idx indexes program.steps (exercises and video steps interleaved).
   // Used for every direct/manual chapter jump (chapter list, prev/next,
@@ -6829,22 +7518,26 @@
     buildProgressTrack(1);
     els.liveNav.hidden = true;
     if (EXERCISES[state.exercise].type === "color-tap") startConeTap();
+    else if (EXERCISES[state.exercise].type === "laufweg") startLaufweg();
     else runSession();
   }
 
   function finishSession() {
     if (raf) cancelAnimationFrame(raf);
+    const lwDone = lwLast; lwLast = null; // Hütchen · Laufweg result (lwComplete)
     // Farbfelder · Antippen: close the last answer window before the session goes.
     const ffTap = session && session.ffTap;
     if (ffTap) ffTapFinish(ffTap);
     const ffScore = ffTap ? ffTapScore(ffTap, state.ffMode) : null;
     if (ffScore && navigator.webdriver) window.__ffTapLastScore = ffScore;
+    const mathScore = session && session.addonMath ? mathFinish(session.addonMath) : null; // Zusatzaufgabe Rechnen
     const spent = accountSession();
     if (window.speechSynthesis) speechSynthesis.cancel();
     els.liveNav.hidden = true;
     // Kombi / coach programme: the block's score goes into the run's results
     // (shown in the next pause and in the closing summary + history note).
     if (ffScore && (program || comboProgram)) blockResultPush(program || comboProgram, `${EXERCISES[state.exercise].title} · ${FF_MODE_LABELS[state.ffMode]}`, ffScore.text);
+    if (mathScore && (program || comboProgram)) blockResultPush(program || comboProgram, `${EXERCISES[state.exercise].title} · Zusatzaufgabe`, mathScore.text);
     if (program) { advanceProgramStep(); return; }
     if (comboProgram) { coneTap = null; advanceComboProgram(spent); return; }
     if (cardioGuestActive) { coneTap = null; returnFromCardioGuest(); return; }
@@ -6856,12 +7549,16 @@
       const isRecord = saveConeBest(coneTap.duration, coneTap.count);
       note = `${coneTap.count} Durchgänge`;
       summary = `${coneTap.count} Durchgänge · ${fmtMinutes(spent)}` + (isRecord && coneTap.count > 0 ? " · Neue Bestleistung!" : "");
+    } else if (lwDone) {
+      summary = `${lwResultText(lwDone)} · ${fmtMinutes(spent)}`;
+      note = lwNote(lwDone);
     } else {
       summary = `${ex.title} · ${fmtMinutes(spent)}`;
       // Farbfelder: the history row names the mode (8 very different variants).
       if (ex.type === "farbfelder") note = FF_MODE_LABELS[state.ffMode] + (FF_FLIP_MODES.includes(state.ffMode) && state.ffFlip ? ` · jedes ${state.ffFlip}. Mal andersherum` : "")
         + (state.ffMode === "einblenden" ? ` · ${FF_COUNT_NOTES[state.ffCount] || FF_COUNT_NOTES.wechsel}` : "");
       if (ffScore) { summary = `${ffScore.text} · ${fmtMinutes(spent)}`; note = `${note} · Antippen · ${ffScore.text}`; }
+      if (mathScore) { summary += ` · ${mathScore.text}`; note = note ? `${note} · ${mathScore.text}` : mathScore.text; }
     }
     els.doneSummary.textContent = summary;
     if (coneTap) markBest(els.doneSummary, "", coneTap.count);
@@ -6878,6 +7575,7 @@
 
   function leavePlayer() {
     if (raf) cancelAnimationFrame(raf);
+    lwStop(); // Hütchen · Laufweg
     session = null;
     coneTap = null;
     program = null;
@@ -6991,6 +7689,7 @@
     if (session.ffTap) ffTapAbandon(session.ffTap);
     const addon = buildAddonSchedule(ex, state.exercise, session.schedule, Math.random);
     session.addonSchedule = addon.schedule; session.addonSizeMode = addon.sizeMode;
+    if (session.addonMath) mathAbandon(session.addonMath, elapsed); // Zusatzaufgabe Rechnen: drop the open question
   }
 
   els.periphPauseBtn.addEventListener("click", () => {
@@ -7040,6 +7739,7 @@
         const usedColors = ex && ex.usesArrowColors ? e.arrowColors : ex && ex.usesStroopColors ? e.stroopColors : e.colors;
         if (e.ff) return `${fmtMinutes(e.duration)} · ${FF_MODE_LABELS[e.ff.ffMode] || ""}`;
         if (e.cn) return `${fmtMinutes(e.duration)} · ${e.cn.cnFields} Felder · ${(e.colors || []).length} Farben`;
+        if (e.lw) return `${LW_VARIANT_LABELS[e.lw.lwVariant] || ""} · ${e.lw.lwRows}×${e.lw.lwCols} · ${(LW_LENGTHS[e.lw.lwLength] || LW_LENGTHS.mittel).label}`;
         return `${fmtMinutes(e.duration)}${usedColors && usedColors.length ? ` · ${usedColors.length} Farben` : ""}`;
       },
       (entry) => {
@@ -7052,6 +7752,7 @@
         state.intervalMax = entry.intervalMax;
         if (entry.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(entry.ff))); ffNormalize(state); }
         if (entry.cn) { Object.assign(state, entry.cn); cnNormalize(state); }
+        if (entry.lw) lwApply(entry.lw);
         // Periphere Wahrnehmung (NAT presets, 2026-10-07): Zeichen, Bereich,
         // Fixpunkt, Farben and background travel with the preset too.
         if (entry.periph) { Object.assign(state, JSON.parse(JSON.stringify(entry.periph))); savePrefs(); loadPrefs(); }
@@ -7062,6 +7763,7 @@
           renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
           if (EXERCISES[state.exercise].type === "farbfelder") syncFfUI();
           if (entry.cn) syncCnUI();
+          if (entry.lw) syncLwUI();
           if (entry.periph) { syncPeriphKindUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); syncPeriphColorUI(); syncPeriphFixUI(); syncBgUI(); }
           return;
         }
@@ -7082,6 +7784,7 @@
         ...(EXERCISES[state.exercise].type === "farbfelder" ? { ff: ffStateSnapshot() } : {}),
         ...(EXERCISES[state.exercise].type === "periph" ? { periph: { ...periphStateSnapshot(), bgColorKey: state.bgColorKey, bgIntensity: state.bgIntensity } } : {}),
         ...(EXERCISES[state.exercise].type === "colornum" ? { cn: { cnFields: state.cnFields } } : {}),
+        ...(EXERCISES[state.exercise].type === "laufweg" ? { lw: lwSnapshot() } : {}),
       });
       vtSavedStore.save(list);
       renderVTSaved();
@@ -7772,7 +8475,7 @@
   function softApplies(ex) {
     if (ex === "blitz" || ex === "flash" || ex === "optodrum") return true;
     const e = EXERCISES[ex];
-    return !!e && e.type !== "color-tap";
+    return !!e && e.type !== "color-tap" && e.type !== "laufweg";
   }
   function softMasterOn() { return masterPrefs.softStimuli === true; }
   function softOverride(ex) { return typeof softOverrides[ex] === "boolean" ? softOverrides[ex] : null; }
@@ -17172,7 +17875,7 @@
   // `group` sorts both the Feineinstellungen pool grid and the live
   // picker into their parent domain, so the list stays legible as it
   // grows instead of one long flat run of choices.
-  const CARDIO_GUEST_GROUPS = { vt: "Visuelles Training", nat: "Neuroathletik (NAT)" };
+  const CARDIO_GUEST_GROUPS = { vt: "Visuelles Training", nat: "Neuroathletik (NAT)", extra: "Weitere Zusatzaufgaben" };
   const CARDIO_GUEST_TYPES = [
     { id: "addon-flash", title: "Zusatzaufgabe · Ziffer/Buchstabe", group: "vt" },
     { id: "vt-color", title: "VT · Farbe & Seite", group: "vt" },
@@ -17194,6 +17897,8 @@
     { id: "flash", title: "Flash-Speicher-Test", group: "nat" },
     { id: "mot", title: "Objektverfolgung (MOT)", group: "nat" },
     { id: "balance", title: "Gleichgewicht", group: "nat" },
+    // Zusatzaufgabe Rechnen (2026-10-08): last, so older picker positions stay.
+    { id: "addon-math", title: "Zusatzaufgabe · Rechnen", group: "extra" },
   ];
   // "addon-flash" and "periph-flash" both flash a coloured digit/letter at
   // a random peripheral position (the former as a Zusatzaufgabe overlay on
@@ -17210,7 +17915,7 @@
   function cardioGuestColorLib(guestId) {
     return cardioGuestIsPeriphLike(guestId) || guestId === "stroop-classic" || guestId === "stroop-bg" || guestId === "mot" ? STROOP_COLOR_LIB : COLOR_LIB;
   }
-  function cardioGuestRealId(guestId) { return guestId === "addon-flash" ? "cardio-flash-host" : guestId; }
+  function cardioGuestRealId(guestId) { return guestId === "addon-flash" || guestId === "addon-math" ? "cardio-flash-host" : guestId; }
   // Mirrors currentBgFill()'s own exclusion exactly (ex.type === "color-tap"
   // || ex.bgIsStimulus): cone-tap's stage is plain hard-coded white in CSS
   // (never reads state.bgColorKey/bgIntensity) and vt-color/vrw-original/
@@ -17264,6 +17969,7 @@
     // data for addon-flash, which never had this control standalone either.
     if (cardioGuestIsPeriphLike(guestId)) return { duration: 20, ...addonDefaultOwn(), zoneWeights: { tl: 1, tm: 1, tr: 1, ml: 1, mr: 1, bl: 1, bm: 1, br: 1 }, ...bg };
     if (guestId === "cone-tap") return { duration: 20 };
+    if (guestId === "addon-math") return { duration: 30, ...addonMathDefault(), ...bg };
     if (guestId === "blitz-raster") return { duration: 20, flashS: BLITZ_DIFFICULTIES.mittel.flashS, errorMode: "reset2", gridSize: 4, startCount: 3, zones: PERIPH_ZONE_KEYS.slice(), ...bg };
     // Remember/Flash/MOT: training-mode start values added here (Batch D) -
     // the OTHER modes' own numeric fields (Flash's constantCount/startCount/
@@ -17305,7 +18011,8 @@
       if (modeList) {
         if (!modeList.some((m) => m.id === p.mode)) p.mode = d.mode;
       }
-      if (!cardioGuestIsConeTap(t.id) && !cardioGuestIsBlitz(t.id) && !modeList) {
+      if (t.id === "addon-math") { const dur = p.duration; Object.assign(p, addonMathNormalize(p)); p.duration = dur; }
+      if (!cardioGuestIsConeTap(t.id) && !cardioGuestIsBlitz(t.id) && !modeList && t.id !== "addon-math") {
         if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
         if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
         if (!Number.isFinite(p.intervalMax) || p.intervalMax < 0.5 || p.intervalMax > 15) p.intervalMax = d.intervalMax;
@@ -17546,7 +18253,21 @@
       // for it would adjust something with zero visible effect, so they're
       // simply left out rather than shown-but-inert. Blitz-Raster has its
       // own entirely different field set (see below), not this one at all.
-      if (cardioGuestIsBlitz(t.id)) {
+      if (t.id === "addon-math") {
+        // Zusatzaufgabe Rechnen: the same choices as on the ready screens.
+        const row = (f, items) => `<div class="choice-row${items.length > 3 ? " two" : ""}">` + items.map(([v, title, small]) =>
+          `<button class="choice${cfg[f] === v ? " active" : ""}" data-type="${t.id}" data-balf="${f}" data-balv="${v}">${esc(title)}${small ? `<small>${esc(small)}</small>` : ""}</button>`).join("") + `</div>`;
+        html += `<div class="cardio-guest-field-row">
+        <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
+        <div><label>Anzeigedauer (Sek.)</label><input type="number" min="1.5" max="6" step="0.5" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"></div>
+        <div><label>Pause min (Sek.)</label><input type="number" min="1" max="15" step="0.5" data-type="${t.id}" data-f="intervalMin" value="${cfg.intervalMin}"></div>
+        <div><label>Pause max (Sek.)</label><input type="number" min="1" max="15" step="0.5" data-type="${t.id}" data-f="intervalMax" value="${cfg.intervalMax}"></div>
+      </div>` +
+          `<div class="group-label">Rechenart</div>` + row("level", [["plus10", "Plus/Minus", "bis 10"], ["plus20", "Plus/Minus", "bis 20"], ["mal", "Mit Mal", "bis 10 · 10"]]) +
+          `<div class="group-label">So antwortest du</div>` +
+          `<div class="choice-row" style="grid-template-columns:1fr">` + [["doppelkreis", "Doppelkreis", "innen tippen = stimmt, Ring tippen = stimmt nicht"], ["gonogo", "Nur bei „stimmt“ antippen", "stimmt es nicht, tippst du nichts"], ["laut", "Laut sagen", "ohne Tippen"]].map(([v, title, small]) =>
+            `<button class="choice${cfg.answer === v ? " active" : ""}" data-type="${t.id}" data-balf="answer" data-balv="${v}">${esc(title)}<small>${esc(small)}</small></button>`).join("") + `</div>`;
+      } else if (cardioGuestIsBlitz(t.id)) {
         html += `<div class="cardio-guest-field-row">
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
         <div><label>Startanzahl</label><input type="number" min="2" max="12" step="1" data-type="${t.id}" data-f="startCount" value="${cfg.startCount}"></div>
@@ -18497,6 +19218,7 @@
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
     cardioRaf = null;
     const realId = cardioGuestRealId(guestId);
+    cardioHostAddonId = guestId; cardioHostAddonCfg = cfg; // Zusatzaufgabe Rechnen rides on the blank host too
     cardioGuestActive = true;
     const comboOpts = { comboDurationS: cfg.duration };
     // Blitz-Raster/Remember/Flash/MOT don't touch state.exercise/
@@ -18799,7 +19521,7 @@
     // start after the Kombi pause.
     const first = def.blocks && def.blocks[0];
     const own = !first || first.domain === "wimhof" || first.domain === "workout" ||
-      (first.domain === "visual" && !(EXERCISES[first.exercise] && EXERCISES[first.exercise].type === "color-tap"));
+      (first.domain === "visual" && !(EXERCISES[first.exercise] && /^(color-tap|laufweg)$/.test(EXERCISES[first.exercise].type)));
     if (own || !leadInWanted()) { go(); return; }
     runLeadIn(go, /^(breath|cardio|free)$/.test(first.domain));
   }
@@ -18852,6 +19574,7 @@
       if (block.periph) Object.assign(state, JSON.parse(JSON.stringify(block.periph)));
       if (block.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
       if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
+      if (block.lw) lwApply(block.lw);
       // Generalized from a visual-only "usesColors" check (the sole shape
       // the original 3 curated presets ever needed) to all 3 colour kinds,
       // now that capture mode lets any exercise's block carry its own
@@ -19514,7 +20237,7 @@
     if (!b || b.disabled) return;
     // Hütchen sortieren shares Visual Training's start button but has no
     // canvas, so it never got VT's own countdown (Feinheit 10, 2026-10-06).
-    const coneStart = b.id === "startBtn" && EXERCISES[state.exercise] && EXERCISES[state.exercise].type === "color-tap";
+    const coneStart = b.id === "startBtn" && EXERCISES[state.exercise] && /^(color-tap|laufweg)$/.test(EXERCISES[state.exercise].type);
     if (!LEADIN_START_IDS.includes(b.id) && !coneStart) return;
     if (b.textContent.replace(/­/g, "").trim() !== "Training starten") return;
     e.preventDefault();
@@ -26259,6 +26982,646 @@
   ecEl("AgainBtn").addEventListener("click", () => anaglyphStart(startEyecountGame));
   ecEl("DoneBackBtn").addEventListener("click", () => { ecEl("Player").hidden = true; ecEl("DonePanel").hidden = true; showScreen("testHome"); });
   wireFullscreen({ player: ecEl("Player"), btn: ecEl("FsBtn"), hint: ecEl("FsHint"), hintOpen: ecEl("FsHintOpenBtn"), hintClose: ecEl("FsHintClose") });
+
+  // ==== Ton-Sequenz (Test-Bereich, Fabian 2026-10-08) ====
+  // A tool, not a scored test: plays tones on the left, right or both ears
+  // as a sequence of steps (Dauerton / Puls / Gleiten, pause after each
+  // step, whole sequence repeated). Spec: the "Empfehlung" section of
+  // /mnt/project-files/app/recherche/ton-sequenzen-2026-10-08.md; no effect
+  // claims, no dB, always starts quiet, max 10 min per run.
+  // Audio graph per tone (one "voice"):
+  //   Oscillator -> pulse gain -> fade gain -> L gain / R gain
+  //   -> ChannelMerger(2) (input 0 = left, 1 = right) -> master gain
+  //   (step volume x wave factor x cueVolume()) -> destination.
+  // The merger (not a StereoPanner) keeps "Links" strictly on channel 0.
+  // Details: docs/notes/34-ton-sequenz.md. Test: tests/ton_sequenz_1008_test.py.
+  const TON_SEQ_KEY = "fwmc-ton-seq-v1";        // saved sequences (presets list)
+  const TON_CUR_KEY = "fwmc-ton-current-v1";    // the sequence being edited
+  const TON_CHANTEST_KEY = "fwmc-ton-chantest-v1";
+  const TON_LAST_KEY = "fwmc-ton-last-v1";
+  const TON_MAX_S = 600;
+  const TON_MAX_STEPS = 12;
+  const TON_FADE_IN_S = 1.5;
+  const TON_MIN_PLAYED_S = 5;
+  const TON_WAVES = { sine: "Sinus", triangle: "Dreieck", square: "Rechteck" };
+  // Square/triangle sound much louder than a sine at the same gain.
+  const TON_WAVE_GAIN = { sine: 1, triangle: 0.85, square: 0.45 };
+  const TON_EARS = { left: "Links", right: "Rechts", both: "Beide Ohren", alt: "Wechsel" };
+  const TON_PATTERNS = { steady: "Dauerton", pulse: "Puls", glide: "Gleiten" };
+  const TON_SWEEP = { from: 100, to: 1000, s: 60 };
+  const tonEl = (id) => document.getElementById("ton" + id);
+  function tonClamp(v, lo, hi, d) { v = Number(v); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; }
+  function tonStepDefault() {
+    return { freq: 500, wave: "sine", ear: "both", altS: 2, pattern: "steady", pulseUnit: "ms", onMs: 500, offMs: 500, bpm: 60, glideTo: 1000, dur: 30, pause: 0, vol: 20 };
+  }
+  function tonNormStep(s) {
+    const d = tonStepDefault();
+    s = s && typeof s === "object" ? s : {};
+    const r5 = (v, lo, hi, def, step) => Math.round(tonClamp(v, lo, hi, def) / step) * step;
+    return {
+      freq: Math.round(tonClamp(s.freq, 20, 2000, d.freq)),
+      wave: TON_WAVES[s.wave] ? s.wave : d.wave,
+      ear: TON_EARS[s.ear] ? s.ear : d.ear,
+      altS: r5(s.altS, 0.5, 10, d.altS, 0.5),
+      pattern: TON_PATTERNS[s.pattern] ? s.pattern : d.pattern,
+      pulseUnit: s.pulseUnit === "bpm" ? "bpm" : "ms",
+      onMs: r5(s.onMs, 50, 2000, d.onMs, 50),
+      offMs: r5(s.offMs, 50, 2000, d.offMs, 50),
+      bpm: Math.round(tonClamp(s.bpm, 20, 240, d.bpm)),
+      glideTo: Math.round(tonClamp(s.glideTo, 20, 2000, d.glideTo)),
+      dur: r5(s.dur, 5, 300, d.dur, 5),
+      pause: r5(s.pause, 0, 180, d.pause, 5),
+      vol: r5(s.vol, 5, 100, d.vol, 5),
+    };
+  }
+  function tonNormSeq(q) {
+    q = q && typeof q === "object" ? q : {};
+    const steps = Array.isArray(q.steps) && q.steps.length ? q.steps.slice(0, TON_MAX_STEPS).map(tonNormStep) : [tonStepDefault()];
+    return { name: typeof q.name === "string" ? q.name.slice(0, 40) : "", repeat: Math.round(tonClamp(q.repeat, 1, 10, 1)), steps };
+  }
+  // Only what sources carry (research §5.3): two diagnostic reference
+  // frequencies and a pure procedure template. No "Sacculus/Utriculus".
+  const TON_PRESETS = {
+    ref500: { name: "Referenz 500 Hz", repeat: 1, steps: [{ freq: 500, dur: 30 }] },
+    ref100: { name: "Referenz 100 Hz", repeat: 1, steps: [{ freq: 100, dur: 30 }] },
+    lr: { name: "Seitenvergleich L/R", repeat: 1, steps: [{ freq: 500, ear: "left", dur: 20, pause: 10 }, { freq: 500, ear: "right", dur: 20 }] },
+  };
+  let tonSeq = tonNormSeq(readJSON(TON_CUR_KEY, null));
+  let tonSel = 0;
+  // var, not let: hideAllPlayers() may run before this block is reached.
+  var tonRun = null, tonTool = null, tonLastRun = null;
+  function tonSaveCur() { writeJSON(TON_CUR_KEY, tonSeq); }
+  // Log slider 0..1000 <-> 20..2000 Hz.
+  function tonPosToHz(p) { return Math.round(20 * Math.pow(100, tonClamp(p, 0, 1000, 500) / 1000)); }
+  function tonHzToPos(hz) { return Math.round((Math.log(tonClamp(hz, 20, 2000, 500) / 20) / Math.log(100)) * 1000); }
+  function tonFmtS(s) {
+    s = Math.max(0, Math.round(s));
+    return s < 60 ? `${s} s` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} Min`;
+  }
+  function tonDec(v) { return String(v).replace(".", ","); }
+  function tonPulseTimes(st) {
+    if (st.pulseUnit === "bpm") {
+      const per = 60 / st.bpm;
+      const on = Math.max(0.05, Math.min(0.5 * per, 0.6));
+      return { on, off: per - on };
+    }
+    return { on: st.onMs / 1000, off: st.offMs / 1000 };
+  }
+  function tonPatternText(st) {
+    if (st.pattern === "pulse") return st.pulseUnit === "bpm" ? `Puls ${st.bpm} pro Minute` : `Puls ${st.onMs} ms an, ${st.offMs} ms aus`;
+    if (st.pattern === "glide") return `Gleiten ${st.freq} → ${st.glideTo} Hz`;
+    return "Dauerton";
+  }
+  function tonEarText(st) { return st.ear === "alt" ? `Wechsel alle ${tonDec(st.altS)} s` : TON_EARS[st.ear]; }
+  function tonStepSummary(st) {
+    const hz = st.pattern === "glide" ? `${st.freq} → ${st.glideTo} Hz` : `${st.freq} Hz`;
+    const pat = st.pattern === "pulse" ? (st.pulseUnit === "bpm" ? `Puls ${st.bpm}/Min` : `Puls ${st.onMs}/${st.offMs} ms`) : st.pattern === "glide" ? "Gleiten" : "Dauerton";
+    return `${hz} · ${tonEarText(st)} · ${pat} · ${tonFmtS(st.dur)}${st.pause ? ` · Pause ${tonFmtS(st.pause)}` : ""}`;
+  }
+  function tonSeqSeconds(q) {
+    let t = 0;
+    for (let r = 0; r < q.repeat; r++) q.steps.forEach((s) => { t += s.dur + s.pause; });
+    const last = q.steps[q.steps.length - 1];
+    return t - (last ? last.pause : 0);
+  }
+
+  // ---- audio ----
+  function tonCtx() {
+    try {
+      applyCueAudioSession();
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!workoutAudioCtx) workoutAudioCtx = new AC();
+      if (workoutAudioCtx.state !== "running") workoutAudioCtx.resume().catch(() => {});
+      return workoutAudioCtx;
+    } catch (e) { return null; }
+  }
+  // Plays step `st` from `fromS` seconds into it for `lenS` seconds.
+  // opts: vol (overrides st.vol), fadeIn (s), total (glide/alt reference length).
+  function tonVoice(st, fromS, lenS, opts) {
+    opts = opts || {};
+    const ctx = tonCtx();
+    if (!ctx || lenS <= 0) return null;
+    try {
+      const t0 = ctx.currentTime + 0.02;
+      const end = t0 + lenS;
+      const total = opts.total || st.dur;
+      const osc = ctx.createOscillator();
+      osc.type = st.wave;
+      if (st.pattern === "glide") {
+        const f = (x) => st.freq * Math.pow(st.glideTo / st.freq, Math.min(1, Math.max(0, x / total)));
+        osc.frequency.setValueAtTime(f(fromS), t0);
+        osc.frequency.exponentialRampToValueAtTime(f(fromS + lenS), end);
+      } else {
+        osc.frequency.setValueAtTime(st.freq, t0);
+      }
+      const pulse = ctx.createGain(), fade = ctx.createGain(), gL = ctx.createGain(), gR = ctx.createGain();
+      const merger = ctx.createChannelMerger(2);
+      const master = ctx.createGain();
+      osc.connect(pulse); pulse.connect(fade); fade.connect(gL); fade.connect(gR);
+      gL.connect(merger, 0, 0); gR.connect(merger, 0, 1);
+      merger.connect(master); master.connect(ctx.destination);
+      const level = () => ((opts.vol != null ? opts.vol : st.vol) / 100) * 0.5 * (TON_WAVE_GAIN[st.wave] || 1) * cueVolume();
+      master.gain.setValueAtTime(level(), t0);
+      // Always starts quiet: a slow fade-in on a fresh start, a short one on resume.
+      const fin = Math.min(opts.fadeIn != null ? opts.fadeIn : (fromS < 0.01 ? TON_FADE_IN_S : 0.3), lenS / 2);
+      fade.gain.setValueAtTime(0.0001, t0);
+      fade.gain.exponentialRampToValueAtTime(1, t0 + Math.max(0.01, fin));
+      fade.gain.setValueAtTime(1, Math.max(t0 + Math.max(0.01, fin), end - 0.06));
+      fade.gain.linearRampToValueAtTime(0, end);
+      if (st.pattern === "pulse") {
+        // 8 ms ramps on every edge against clicks.
+        const { on, off } = tonPulseTimes(st);
+        const per = on + off;
+        pulse.gain.setValueAtTime(0, t0);
+        for (let ts = Math.floor(fromS / per) * per - fromS; ts < lenS; ts += per) {
+          const b = t0 + ts + on;
+          if (b <= t0 + 0.01) continue;
+          const a = t0 + Math.max(0, ts);
+          pulse.gain.setValueAtTime(0, a);
+          pulse.gain.linearRampToValueAtTime(1, a + 0.008);
+          pulse.gain.setValueAtTime(1, Math.max(a + 0.008, b - 0.008));
+          pulse.gain.linearRampToValueAtTime(0, b);
+        }
+      } else {
+        pulse.gain.setValueAtTime(1, t0);
+      }
+      if (st.ear === "alt") {
+        // Starts left; each switch glides over ~5 ms (setTargetAtTime).
+        let k = Math.floor(fromS / st.altS);
+        let first = true;
+        for (let ts = k * st.altS - fromS; ts < lenS; ts += st.altS, k++) {
+          const leftOn = k % 2 === 0 ? 1 : 0;
+          const a = t0 + Math.max(0, ts);
+          if (first) { gL.gain.setValueAtTime(leftOn, a); gR.gain.setValueAtTime(1 - leftOn, a); first = false; }
+          else { gL.gain.setTargetAtTime(leftOn, a, 0.005); gR.gain.setTargetAtTime(1 - leftOn, a, 0.005); }
+        }
+      } else {
+        gL.gain.setValueAtTime(st.ear === "right" ? 0 : 1, t0);
+        gR.gain.setValueAtTime(st.ear === "left" ? 0 : 1, t0);
+      }
+      osc.start(t0);
+      osc.stop(end + 0.05);
+      const voice = {
+        stopped: false, st, t0, end,
+        stop() {
+          if (voice.stopped) return;
+          voice.stopped = true;
+          try {
+            const n = ctx.currentTime;
+            fade.gain.cancelScheduledValues(n);
+            fade.gain.setValueAtTime(Math.max(0.0001, Number(fade.gain.value) || 0.0001), n);
+            fade.gain.linearRampToValueAtTime(0, n + 0.04);
+            osc.stop(n + 0.06);
+          } catch (e) {}
+          setTimeout(() => { try { master.disconnect(); } catch (e) {} }, 250);
+        },
+        setVol(v) {
+          opts.vol = v;
+          try { master.gain.setTargetAtTime(level(), ctx.currentTime, 0.05); } catch (e) {}
+        },
+      };
+      return voice;
+    } catch (e) { return null; }
+  }
+  function tonMuted() { return cueVolume() <= 0; }
+  const TON_MUTED_TEXT = "Töne sind ausgeschaltet. Schalte sie mit 🔊 oder in den Grundeinstellungen ein.";
+
+  // ---- ready-screen helpers (only one sound at a time) ----
+  function tonToolStop() {
+    const tool = tonTool;
+    tonTool = null;
+    if (tool) {
+      (tool.timers || []).forEach((t) => clearTimeout(t));
+      if (tool.iv) clearInterval(tool.iv);
+      if (tool.voice) tool.voice.stop();
+      if (tool.kind === "chan") { const s = tonEl("ChannelStatus"); if (s && s.dataset.ear) { s.textContent = ""; delete s.dataset.ear; } }
+    }
+    const set = (id, txt) => { const b = tonEl(id); if (b) b.textContent = txt; };
+    set("ChannelBtn", "Kanal-Test starten");
+    set("PreviewBtn", "Probehören");
+    set("SweepBtn", "Suchlauf starten");
+    const m = tonEl("SweepMarkBtn");
+    if (m) m.hidden = true;
+  }
+  function tonChannelTest() {
+    if (tonTool && tonTool.kind === "chan") { tonToolStop(); return; }
+    tonToolStop();
+    const status = tonEl("ChannelStatus");
+    if (tonMuted()) { status.textContent = TON_MUTED_TEXT; return; }
+    unlockCueAudio();
+    silentSwitchHint();
+    const tool = { kind: "chan", timers: [], voice: null };
+    tonTool = tool;
+    tonEl("ChannelBtn").textContent = "Kanal-Test stoppen";
+    const beep = (ear, label) => {
+      if (tool.voice) tool.voice.stop();
+      status.textContent = label;
+      status.dataset.ear = ear;
+      tool.voice = tonVoice({ ...tonStepDefault(), freq: 600, ear, pattern: "pulse", onMs: 250, offMs: 150, dur: 2 }, 0, 2, { fadeIn: 0.02, vol: 25 });
+    };
+    beep("left", "Jetzt links …");
+    tool.timers.push(setTimeout(() => beep("right", "Jetzt rechts …"), 2600));
+    tool.timers.push(setTimeout(() => {
+      if (tonTool !== tool) return;
+      tool.voice = null;
+      tonToolStop();
+      delete status.dataset.ear;
+      status.textContent = "Fertig. Kam „links“ nur links und „rechts“ nur rechts an? Wenn nicht: Kopfhörer richtig herum aufsetzen und am iPhone Mono-Audio ausschalten.";
+      try { localStorage.setItem(TON_CHANTEST_KEY, "1"); } catch (e) {}
+    }, 4800));
+  }
+  function tonPreview() {
+    if (tonTool && tonTool.kind === "preview") { tonToolStop(); return; }
+    tonToolStop();
+    if (tonMuted()) { showToast(TON_MUTED_TEXT); return; }
+    unlockCueAudio();
+    silentSwitchHint();
+    const st = tonSeq.steps[tonSel];
+    const len = Math.min(st.dur, 10);
+    const tool = { kind: "preview", timers: [], voice: tonVoice(st, 0, len, { fadeIn: 0.6, total: len }) };
+    tonTool = tool;
+    tonEl("PreviewBtn").textContent = "Probehören stoppen";
+    tool.timers.push(setTimeout(() => { if (tonTool === tool) tonToolStop(); }, len * 1000 + 100));
+  }
+  function tonSweepHzAt(t) { return TON_SWEEP.from * Math.pow(TON_SWEEP.to / TON_SWEEP.from, Math.min(1, Math.max(0, t / TON_SWEEP.s))); }
+  function tonSweep() {
+    if (tonTool && tonTool.kind === "sweep") { tonToolStop(); tonEl("SweepHz").textContent = ""; return; }
+    tonToolStop();
+    if (tonMuted()) { tonEl("SweepHz").textContent = TON_MUTED_TEXT; return; }
+    unlockCueAudio();
+    silentSwitchHint();
+    const base = tonSeq.steps[tonSel];
+    const st = { ...base, freq: TON_SWEEP.from, glideTo: TON_SWEEP.to, pattern: "glide", ear: base.ear === "alt" ? "both" : base.ear, dur: TON_SWEEP.s };
+    const tool = { kind: "sweep", timers: [], voice: tonVoice(st, 0, TON_SWEEP.s, { fadeIn: 0.8 }), t0: performance.now(), iv: null };
+    tonTool = tool;
+    tonEl("SweepBtn").textContent = "Suchlauf stoppen";
+    tonEl("SweepMarkBtn").hidden = false;
+    const show = () => { tonEl("SweepHz").textContent = `${Math.round(tonSweepHzAt((performance.now() - tool.t0) / 1000))} Hz`; };
+    show();
+    tool.iv = setInterval(show, 100);
+    tool.timers.push(setTimeout(() => { if (tonTool !== tool) return; tonToolStop(); tonEl("SweepHz").textContent = "Suchlauf zu Ende."; }, TON_SWEEP.s * 1000 + 100));
+  }
+  function tonSweepMark() {
+    if (!tonTool || tonTool.kind !== "sweep") return;
+    const hz = Math.round(tonSweepHzAt((performance.now() - tonTool.t0) / 1000));
+    tonToolStop();
+    tonSeq.steps[tonSel].freq = hz;
+    tonSaveCur();
+    tonRender();
+    tonEl("SweepHz").textContent = `${hz} Hz gemerkt – steht jetzt in Schritt ${tonSel + 1}.`;
+  }
+
+  // ---- ready screen ----
+  function renderTonBest() {
+    const last = readJSON(TON_LAST_KEY, null);
+    const el = tonEl("BestHint");
+    if (el) el.textContent = last && last.name ? `Zuletzt: ${last.name}` : "";
+  }
+  renderTonBest();
+  function tonRenderList() {
+    const list = tonEl("StepList");
+    const n = tonSeq.steps.length;
+    list.innerHTML = tonSeq.steps.map((st, i) =>
+      `<div class="ton-step-row${i === tonSel ? " active" : ""}">` +
+      `<button type="button" class="ton-step-main" data-ton-sel="${i}" aria-pressed="${i === tonSel}"><strong>Schritt ${i + 1}</strong><span>${esc(tonStepSummary(st))}</span></button>` +
+      `<div class="ton-step-actions">` +
+      `<button type="button" class="combo-block-move" data-ton-up="${i}" aria-label="Schritt ${i + 1} nach oben"${i === 0 ? " disabled" : ""}>↑</button>` +
+      `<button type="button" class="combo-block-move" data-ton-down="${i}" aria-label="Schritt ${i + 1} nach unten"${i === n - 1 ? " disabled" : ""}>↓</button>` +
+      `<button type="button" class="combo-block-move" data-ton-dup="${i}" aria-label="Schritt ${i + 1} duplizieren"${n >= TON_MAX_STEPS ? " disabled" : ""}>⧉</button>` +
+      `<button type="button" class="combo-block-remove" data-ton-del="${i}" aria-label="Schritt ${i + 1} entfernen"${n <= 1 ? " disabled" : ""}>✕</button>` +
+      `</div></div>`).join("");
+    tonEl("AddStepBtn").hidden = n >= TON_MAX_STEPS;
+  }
+  function tonRenderEditor() {
+    const st = tonSeq.steps[tonSel];
+    tonEl("EditorTitle").textContent = `Schritt ${tonSel + 1} bearbeiten`;
+    tonEl("FreqSlider").value = tonHzToPos(st.freq);
+    tonEl("FreqValue").textContent = `${st.freq} Hz`;
+    if (document.activeElement !== tonEl("FreqInput")) tonEl("FreqInput").value = st.freq;
+    tonEl("LowHint").hidden = Math.min(st.freq, st.pattern === "glide" ? st.glideTo : st.freq) >= 150;
+    const act = (row, attr, val) => tonEl(row).querySelectorAll(`[${attr}]`).forEach((b) => setActive(b, b.getAttribute(attr) === val));
+    act("WaveRow", "data-ton-wave", st.wave);
+    act("EarRow", "data-ton-ear", st.ear);
+    act("PatternRow", "data-ton-pattern", st.pattern);
+    act("PulseUnitRow", "data-ton-pulseunit", st.pulseUnit);
+    tonEl("AltGroup").hidden = st.ear !== "alt";
+    tonEl("AltSlider").value = st.altS;
+    tonEl("AltValue").textContent = `${tonDec(st.altS)} s`;
+    tonEl("PulseGroup").hidden = st.pattern !== "pulse";
+    tonEl("PulseMsGroup").hidden = st.pulseUnit !== "ms";
+    tonEl("PulseBpmGroup").hidden = st.pulseUnit !== "bpm";
+    tonEl("OnSlider").value = st.onMs; tonEl("OnValue").textContent = `${st.onMs} ms`;
+    tonEl("OffSlider").value = st.offMs; tonEl("OffValue").textContent = `${st.offMs} ms`;
+    tonEl("BpmSlider").value = st.bpm; tonEl("BpmValue").textContent = `${st.bpm}/Min`;
+    tonEl("GlideGroup").hidden = st.pattern !== "glide";
+    tonEl("GlideSlider").value = tonHzToPos(st.glideTo); tonEl("GlideValue").textContent = `${st.glideTo} Hz`;
+    tonEl("DurSlider").value = st.dur; tonEl("DurValue").textContent = tonFmtS(st.dur);
+    tonEl("PauseSlider").value = st.pause; tonEl("PauseValue").textContent = st.pause ? tonFmtS(st.pause) : "direkt weiter";
+    tonEl("VolSlider").value = st.vol; tonEl("VolValue").textContent = `${st.vol} %`;
+  }
+  function tonRender() {
+    if (tonSel >= tonSeq.steps.length) tonSel = tonSeq.steps.length - 1;
+    tonRenderList();
+    tonRenderEditor();
+    tonEl("RepeatSlider").value = tonSeq.repeat;
+    tonEl("RepeatValue").textContent = `${tonSeq.repeat}×`;
+    const total = tonSeqSeconds(tonSeq);
+    tonEl("TotalHelp").textContent = `Wie oft die ganze Sequenz läuft. Gesamt: ${tonFmtS(Math.min(total, TON_MAX_S))}` +
+      (total > TON_MAX_S ? ` – die Sequenz endet nach 10 Minuten (Obergrenze, damit es keine Dauerbeschallung wird).` : ".");
+  }
+  function tonEdit(fn) { fn(tonSeq.steps[tonSel]); tonSeq.steps[tonSel] = tonNormStep(tonSeq.steps[tonSel]); tonSaveCur(); tonRender(); }
+  tonEl("StepList").addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b || b.disabled) return;
+    const d = b.dataset;
+    const steps = tonSeq.steps;
+    if (d.tonSel != null) tonSel = Number(d.tonSel);
+    else if (d.tonUp != null) { const i = Number(d.tonUp); if (i > 0) { [steps[i - 1], steps[i]] = [steps[i], steps[i - 1]]; tonSel = i - 1; } }
+    else if (d.tonDown != null) { const i = Number(d.tonDown); if (i < steps.length - 1) { [steps[i + 1], steps[i]] = [steps[i], steps[i + 1]]; tonSel = i + 1; } }
+    else if (d.tonDup != null) { const i = Number(d.tonDup); if (steps.length < TON_MAX_STEPS) { steps.splice(i + 1, 0, { ...steps[i] }); tonSel = i + 1; } }
+    else if (d.tonDel != null) { const i = Number(d.tonDel); if (steps.length > 1) { steps.splice(i, 1); if (tonSel >= i && tonSel > 0) tonSel -= 1; } }
+    else return;
+    tonToolStop();
+    tonSaveCur();
+    tonRender();
+  });
+  tonEl("AddStepBtn").addEventListener("click", () => {
+    if (tonSeq.steps.length >= TON_MAX_STEPS) return;
+    const last = tonSeq.steps[tonSeq.steps.length - 1];
+    tonSeq.steps.push(tonNormStep({ ...last }));
+    tonSel = tonSeq.steps.length - 1;
+    tonSaveCur();
+    tonRender();
+  });
+  tonEl("FreqSlider").addEventListener("input", (e) => tonEdit((st) => { st.freq = tonPosToHz(e.target.value); }));
+  tonEl("FreqInput").addEventListener("change", (e) => tonEdit((st) => { st.freq = Math.round(tonClamp(e.target.value, 20, 2000, st.freq)); e.target.value = Math.round(tonClamp(e.target.value, 20, 2000, st.freq)); }));
+  tonEl("FreqInput").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } });
+  document.querySelectorAll("[data-ton-fstep]").forEach((b) => b.addEventListener("click", () => tonEdit((st) => { st.freq = st.freq + Number(b.dataset.tonFstep); })));
+  const tonChoice = (row, attr, key) => tonEl(row).querySelectorAll(`[${attr}]`).forEach((b) => b.addEventListener("click", () => tonEdit((st) => { st[key] = b.getAttribute(attr); })));
+  tonChoice("WaveRow", "data-ton-wave", "wave");
+  tonChoice("EarRow", "data-ton-ear", "ear");
+  tonChoice("PatternRow", "data-ton-pattern", "pattern");
+  tonChoice("PulseUnitRow", "data-ton-pulseunit", "pulseUnit");
+  const tonSlider = (id, key, conv) => tonEl(id).addEventListener("input", (e) => tonEdit((st) => { st[key] = conv ? conv(e.target.value) : Number(e.target.value); }));
+  tonSlider("AltSlider", "altS");
+  tonSlider("OnSlider", "onMs");
+  tonSlider("OffSlider", "offMs");
+  tonSlider("BpmSlider", "bpm");
+  tonSlider("GlideSlider", "glideTo", tonPosToHz);
+  tonSlider("DurSlider", "dur");
+  tonSlider("PauseSlider", "pause");
+  tonSlider("VolSlider", "vol");
+  tonEl("RepeatSlider").addEventListener("input", (e) => { tonSeq.repeat = Math.round(tonClamp(e.target.value, 1, 10, 1)); tonSaveCur(); tonRender(); });
+  tonEl("PresetRow").querySelectorAll("[data-ton-preset]").forEach((b) => b.addEventListener("click", () => {
+    tonToolStop();
+    tonSeq = tonNormSeq(JSON.parse(JSON.stringify(TON_PRESETS[b.dataset.tonPreset])));
+    tonSel = 0;
+    tonSaveCur();
+    tonRender();
+    showToast(`Vorlage „${tonSeq.name}“ geladen.`);
+  }));
+  tonEl("ChannelBtn").addEventListener("click", tonChannelTest);
+  tonEl("PreviewBtn").addEventListener("click", tonPreview);
+  tonEl("SweepBtn").addEventListener("click", tonSweep);
+  tonEl("SweepMarkBtn").addEventListener("click", tonSweepMark);
+
+  const tonSavedStore = makePresetStore(TON_SEQ_KEY);
+  function renderTonSaved() {
+    renderPresetList(tonSavedStore, tonEl("SavedList"), tonEl("SavedGroup"), null,
+      (e) => { const q = tonNormSeq(e.seq); return `${q.steps.length} ${q.steps.length === 1 ? "Schritt" : "Schritte"} · ${tonFmtS(Math.min(tonSeqSeconds(q), TON_MAX_S))}`; },
+      (e) => { tonToolStop(); tonSeq = tonNormSeq(JSON.parse(JSON.stringify(e.seq))); tonSeq.name = e.name; tonSel = 0; tonSaveCur(); tonRender(); showToast(`„${e.name}“ geladen.`); },
+      { confirmDelete: true });
+  }
+  wirePresetSaveForm({
+    saveBtn: tonEl("SaveBtn"), form: tonEl("SaveForm"), nameInput: tonEl("SaveNameInput"),
+    cancelBtn: tonEl("SaveCancelBtn"), confirmBtn: tonEl("SaveConfirmBtn"),
+    defaultName: () => tonSeq.name || `Sequenz ${tonSavedStore.load().length + 1}`,
+    onSave: (name) => {
+      const list = tonSavedStore.load();
+      tonSeq.name = name;
+      tonSaveCur();
+      list.push({ id: String(Date.now()), name, seq: JSON.parse(JSON.stringify(tonSeq)) });
+      tonSavedStore.save(list.slice(-20));
+      renderTonSaved();
+      showToast(`„${name}“ gespeichert.`);
+    },
+  });
+
+  tonEl("OpenBtn").addEventListener("click", () => {
+    tonRender();
+    renderTonSaved();
+    tonEl("ChannelStatus").textContent = "";
+    tonEl("SweepHz").textContent = "";
+    showScreen("tonReady");
+  });
+  tonEl("ReadyBackToHome").addEventListener("click", () => { tonToolStop(); showScreen("testHome"); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") tonToolStop(); });
+
+  // ---- player ----
+  function tonBuildSegs(q) {
+    const segs = [];
+    for (let r = 0; r < q.repeat; r++) q.steps.forEach((st, i) => {
+      segs.push({ kind: "tone", st, i, r, dur: st.dur });
+      if (st.pause) segs.push({ kind: "pause", st, i, r, dur: st.pause });
+    });
+    if (segs.length && segs[segs.length - 1].kind === "pause") segs.pop();
+    const out = [];
+    let acc = 0;
+    for (const s of segs) {
+      if (acc >= TON_MAX_S) break;
+      const d = Math.min(s.dur, TON_MAX_S - acc);
+      out.push({ ...s, dur: d });
+      acc += d;
+    }
+    return out;
+  }
+  function tonSegElapsed(run) { return run.segOff + (run.paused ? 0 : (performance.now() - run.segStart) / 1000); }
+  function tonPlayedS(run) { return ((run.paused ? run.pausedAt : performance.now()) - run.startTime - run.pausedTotal) / 1000; }
+  function tonRenderNow() {
+    const run = tonRun;
+    if (!run) return;
+    const seg = run.segs[run.idx];
+    if (!seg) return;
+    const n = run.q.steps.length;
+    const el = tonSegElapsed(run);
+    const left = Math.max(0, Math.ceil(seg.dur - el - 0.001));
+    const rep = run.q.repeat > 1 ? ` · Durchgang ${seg.r + 1} von ${run.q.repeat}` : "";
+    const st = seg.st;
+    if (seg.kind === "pause") {
+      tonEl("NowStep").textContent = `Pause nach Schritt ${seg.i + 1}${rep}`;
+      tonEl("NowHz").textContent = "Pause";
+      const next = run.segs[run.idx + 1];
+      tonEl("NowEar").textContent = next ? `Danach: ${next.st.freq} Hz · ${tonEarText(next.st)}` : "";
+      tonEl("NowPattern").textContent = "";
+    } else {
+      tonEl("NowStep").textContent = `Schritt ${seg.i + 1} von ${n}${rep}`;
+      const hz = st.pattern === "glide" ? Math.round(st.freq * Math.pow(st.glideTo / st.freq, Math.min(1, el / st.dur))) : st.freq;
+      tonEl("NowHz").textContent = `${hz} Hz`;
+      tonEl("NowEar").textContent = st.ear === "alt" ? `Wechsel · jetzt ${Math.floor(el / st.altS) % 2 === 0 ? "links" : "rechts"}` : TON_EARS[st.ear];
+      tonEl("NowPattern").textContent = `${tonPatternText(st)} · ${TON_WAVES[st.wave]}`;
+    }
+    tonEl("NowTime").textContent = `noch ${tonFmtS(left)}`;
+    tonEl("NowMute").hidden = !tonMuted();
+    const totalLeft = run.segs.slice(run.idx).reduce((a, s) => a + s.dur, 0) - el;
+    tonEl("ProgressEl").textContent = `Gesamt noch ${tonFmtS(totalLeft)}`;
+  }
+  function tonPlaySeg() {
+    const run = tonRun;
+    const seg = run.segs[run.idx];
+    run.segStart = performance.now();
+    const left = seg.dur - run.segOff;
+    if (seg.kind === "tone") run.voice = tonVoice(seg.st, run.segOff, left, { vol: run.vols[seg.i] != null ? run.vols[seg.i] : seg.st.vol });
+    clearTimeout(run.timer);
+    run.timer = setTimeout(tonNextSeg, Math.max(0, left * 1000));
+    tonRenderNow();
+  }
+  function tonNextSeg() {
+    const run = tonRun;
+    if (!run) return;
+    if (run.voice) { run.voice.stop(); run.voice = null; }
+    run.idx += 1;
+    if (run.idx >= run.segs.length) { tonFinish(); return; }
+    run.segOff = 0;
+    tonPlaySeg();
+  }
+  function startTon() {
+    tonToolStop();
+    unlockCueAudio();
+    silentSwitchHint();
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    tonEl("Player").hidden = false;
+    tonEl("PlayerBar").hidden = false;
+    tonEl("DonePanel").hidden = true;
+    tonEl("PauseOverlay").hidden = true;
+    tonEl("PauseBtn").hidden = false;
+    const q = tonNormSeq(JSON.parse(JSON.stringify(tonSeq)));
+    tonRun = {
+      q, segs: tonBuildSegs(q), idx: -1, segStart: 0, segOff: 0, paused: false, pausedAt: 0, pausedTotal: 0,
+      startTime: performance.now(), voice: null, timer: null, iv: null, vols: {},
+      before: tonEl("BeforeInput").value.trim().slice(0, 80),
+    };
+    tonEl("Hint").textContent = "Bei Schwindel, Übelkeit, Druck oder Ohrgeräusch sofort stoppen.";
+    tonNextSeg();
+    placeHintBelowBar(tonEl("Hint"), tonEl("PlayerBar"));
+    requestWakeLock();
+    tonRun.iv = setInterval(tonRenderNow, 250);
+  }
+  // Before the first run with one-sided tones: offer the Kanal-Test once.
+  tonEl("ReadyStartBtn").addEventListener("click", () => {
+    let tested = false;
+    try { tested = !!localStorage.getItem(TON_CHANTEST_KEY); } catch (e) {}
+    if (tested || !tonSeq.steps.some((s) => s.ear !== "both")) { startTon(); return; }
+    confirmDialog("Deine Sequenz spielt Töne nur links oder rechts. Der Kanal-Test zeigt dir in 5 Sekunden, ob die Seiten richtig ankommen.",
+      () => { const g = tonEl("ChannelBtn"); try { g.scrollIntoView({ block: "center" }); } catch (e) {} tonChannelTest(); },
+      { title: "Erst den Kanal-Test?", yes: "Kanal-Test machen", no: "Ohne Test starten", onNo: () => { try { localStorage.setItem(TON_CHANTEST_KEY, "skip"); } catch (e) {} startTon(); } });
+  });
+  function tonPause() {
+    const run = tonRun;
+    if (!run || run.paused) return;
+    run.segOff = tonSegElapsed(run);
+    run.paused = true;
+    run.pausedAt = performance.now();
+    clearTimeout(run.timer);
+    if (run.voice) { run.voice.stop(); run.voice = null; }
+    const seg = run.segs[run.idx];
+    const v = run.vols[seg.i] != null ? run.vols[seg.i] : seg.st.vol;
+    tonEl("LiveVolSlider").value = v;
+    tonEl("LiveVolValue").textContent = `${v} %`;
+    tonEl("PauseBtn").hidden = true;
+    tonEl("PauseOverlay").hidden = false;
+    tonRenderNow();
+  }
+  function tonResume() {
+    const run = tonRun;
+    if (!run || !run.paused) return;
+    unlockCueAudio();
+    run.pausedTotal += performance.now() - run.pausedAt;
+    run.paused = false;
+    tonEl("PauseOverlay").hidden = true;
+    tonEl("PauseBtn").hidden = false;
+    tonPlaySeg();
+  }
+  tonEl("PauseBtn").addEventListener("click", tonPause);
+  tonEl("ResumeBtn").addEventListener("click", tonResume);
+  tonEl("LiveVolSlider").addEventListener("input", (e) => {
+    const run = tonRun;
+    if (!run) return;
+    const seg = run.segs[run.idx];
+    const v = Math.round(tonClamp(e.target.value, 5, 100, 20) / 5) * 5;
+    run.vols[seg.i] = v;
+    tonEl("LiveVolValue").textContent = `${v} %`;
+  });
+  function tonTeardown(run) {
+    clearTimeout(run.timer);
+    clearInterval(run.iv);
+    if (run.voice) { run.voice.stop(); run.voice = null; }
+    releaseWakeLock();
+  }
+  function tonNoteBase(run) {
+    const name = run.q.name || "Eigene Sequenz";
+    const freqs = [...new Set(run.q.steps.map((s) => s.freq))].slice(0, 4).join(" / ");
+    return `${name} · ${freqs} Hz${run.before ? ` · Vorher: ${run.before}` : ""}`;
+  }
+  function tonFinalize(run, playedS, aborted) {
+    tonEl("PauseOverlay").hidden = true;
+    tonEl("PlayerBar").hidden = true;
+    const panel = tonEl("DonePanel");
+    setDonePanelAborted(panel, aborted, "Ton-Sequenz beendet");
+    const name = run.q.name || "Eigene Sequenz";
+    const n = run.q.steps.length;
+    tonEl("DoneSummary").textContent = `${aborted ? "Abgebrochen · " : ""}Ton-Sequenz „${name}“ · ${n} ${n === 1 ? "Schritt" : "Schritte"} · ${tonFmtS(playedS)}`;
+    const base = tonNoteBase(run);
+    const entry = { kind: "tonseq", title: "Ton-Sequenz", seconds: Math.round(playedS), note: base };
+    if (run.before) entry.before = run.before;
+    if (aborted) { entry.aborted = true; entry.note = `abgebrochen · ${base}`; }
+    run.histId = addHistory(entry);
+    run.noteBase = entry.note;
+    tonLastRun = run;
+    tonEl("AfterInput").value = "";
+    tonEl("AfterSaved").hidden = true;
+    if (!aborted) { writeJSON(TON_LAST_KEY, { name, ts: Date.now() }); renderTonBest(); }
+    renderRating(tonEl("Rating"), run.histId, "Wie ging es dir mit den Tönen?");
+    panel.hidden = false;
+  }
+  tonEl("AfterSaveBtn").addEventListener("click", () => {
+    const v = tonEl("AfterInput").value.trim().slice(0, 80);
+    const run = tonLastRun;
+    if (!v || !run || !run.histId) return;
+    const list = loadHistory();
+    const item = list.find((e) => e.id === run.histId);
+    if (item) { item.after = v; item.note = `${run.noteBase} · Nachher: ${v}`; writeJSON(HISTORY_KEY, list); }
+    tonEl("AfterSaved").hidden = false;
+  });
+  wireEnterToSave(tonEl("AfterInput"), tonEl("AfterSaveBtn"));
+  function tonFinish() {
+    const run = tonRun;
+    if (!run) return;
+    tonRun = null;
+    tonTeardown(run);
+    tonFinalize(run, tonPlayedS(run), false);
+  }
+  function tonStop() {
+    const run = tonRun;
+    if (!run) return;
+    const played = tonPlayedS(run);
+    tonRun = null;
+    tonTeardown(run);
+    tonEl("PauseOverlay").hidden = true;
+    if (played >= TON_MIN_PLAYED_S) tonFinalize(run, played, true);
+    else { tonEl("Player").hidden = true; showScreen("testHome"); }
+  }
+  // hideAllPlayers() (another player starting, Cardio takeover ...) silences everything.
+  function tonHaltSilently() {
+    if (tonRun) { const r = tonRun; tonRun = null; tonTeardown(r); }
+    if (tonTool) tonToolStop();
+  }
+  tonEl("BackBtn").addEventListener("click", tonStop);
+  tonEl("AgainBtn").addEventListener("click", () => { tonEl("DonePanel").hidden = true; startTon(); });
+  tonEl("DoneBackBtn").addEventListener("click", () => { tonEl("Player").hidden = true; tonEl("DonePanel").hidden = true; showScreen("testHome"); });
+  if (navigator.webdriver) window.__ton = { seq: () => tonSeq, run: () => tonRun, tool: () => tonTool, sel: () => tonSel, finish: () => tonFinish() };
+  // ==== Ende Ton-Sequenz ====
 
   // Rotationstest (Mentale Rotation) - grounded in the classic mental-
   // rotation/character-rotation chronometric paradigm (Cooper & Shepard,

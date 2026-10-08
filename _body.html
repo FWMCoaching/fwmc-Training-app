@@ -200,6 +200,17 @@
         <span class="tag">H&uuml;tchen</span>
       </button>
 
+      <button class="excard" data-exercise="cone-path" data-tags="huetchen">
+        <div class="icon-badge"><svg viewBox="0 0 24 24">
+          <path d="M5 20 C5 14, 11 15, 11 11 S6 5, 12 4.5 S19 8, 18 12 S14 17, 19 19" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+          <polygon points="17,16.2 20.6,19.6 16.2,20.4" fill="#fff"/>
+          <circle cx="5" cy="20" r="1.8" fill="#fff"/>
+        </svg></div>
+        <h3>H&uuml;tchen &middot; Laufweg</h3>
+        <p>Folge der Karte: Lauf den gezeichneten Weg durch deine H&uuml;tchen &ndash; mit der Karte in der Hand oder aus dem Kopf.</p>
+        <span class="tag">H&uuml;tchen</span>
+      </button>
+
       <button class="excard" data-exercise="farbfelder" data-tags="huetchen">
         <div class="icon-badge pale"><svg viewBox="0 0 24 24">
           <rect x="3" y="3" width="8.4" height="8.4" rx="1.6" fill="#d32f2f"/>
@@ -2138,6 +2149,11 @@
       <span class="fc-desc">Mit Rot-Gr&uuml;n-Brille: Auf schwarzem Grund erscheinen nacheinander Punkte, jeder ist nur f&uuml;r ein Auge sichtbar. Tippe jeden Punkt an, sobald du ihn siehst &ndash; am Ende siehst du, wie viele Punkte jedes Auge erwischt hat und wie schnell.</span>
       <span class="fc-meta" id="eyecountBestHint"></span>
     </button>
+    <button class="featured-card" id="tonOpenBtn">
+      <span class="fc-title">Ton-Sequenz</span>
+      <span class="fc-desc">Werkzeug f&uuml;r dein Neuroathletik-Training mit deinem Trainer: T&ouml;ne mit einstellbarer Frequenz auf dem linken, rechten oder auf beiden Ohren &ndash; als Folge von Schritten mit Dauerton, Puls oder Gleiten und Pausen dazwischen. Mit Kopfh&ouml;rern. Training, keine Therapie.</span>
+      <span class="fc-meta" id="tonBestHint"></span>
+    </button>
   </section>
 
   <section class="history" id="testHistorySection" hidden>
@@ -2811,6 +2827,187 @@
   </div>
 
   <button class="start-btn" id="eyecountReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="tonReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="tonReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Ton-Sequenz</h1>
+  <p class="page-sub">Spiel T&ouml;ne gezielt auf dem linken, rechten oder auf beiden Ohren ab &ndash; als Folge von Schritten, f&uuml;r &Uuml;bungen mit deinem Trainer. Am besten mit Kopfh&ouml;rern.</p>
+
+  <details class="advanced balance-safety" id="tonSafety">
+    <summary>Sicherheitshinweis &middot; Training, keine Therapie</summary>
+    <div class="advanced-body">
+    <p>Die Ton-Sequenzen sind ein Trainingswerkzeug f&uuml;r dein Neuroathletik-Training mit deinem Trainer. Sie sind keine Therapie und keine Diagnose. Dass bestimmte T&ouml;ne &uuml;ber Kopfh&ouml;rer das Gleichgewichtsorgan trainieren, ist wissenschaftlich nicht belegt.</p>
+    <p>Stell die Lautst&auml;rke leise ein: so leise, dass du den Ton gerade deutlich h&ouml;rst. Nie unangenehm laut. Jeder Ton beginnt leise und wird langsam lauter.</p>
+    <p><strong>Sofort aufh&ouml;ren</strong>, wenn dir schwindlig oder &uuml;bel wird, du Druck auf dem Ohr sp&uuml;rst oder ein Ohrger&auml;usch auftritt.</p>
+    <p><strong>Erst &auml;rztlich abkl&auml;ren</strong>, wenn du Schwindel- oder Ohrerkrankungen, Tinnitus, eine H&ouml;rminderung oder Epilepsie hast. Nicht im Stra&szlig;enverkehr und nicht bei &Uuml;bungen mit Sturzgefahr ohne Halt in Reichweite.</p>
+    </div>
+  </details>
+
+  <div class="group">
+    <div class="group-label">Vorlagen</div>
+    <div class="choice-row" id="tonPresetRow">
+      <button type="button" class="choice" data-ton-preset="ref500">Referenz 500&nbsp;Hz<small>Diagnostik-Referenz</small></button>
+      <button type="button" class="choice" data-ton-preset="ref100">Referenz 100&nbsp;Hz<small>Diagnostik-Referenz</small></button>
+      <button type="button" class="choice" data-ton-preset="lr">Links / Rechts<small>Seitenvergleich</small></button>
+    </div>
+    <div class="group-help">500&nbsp;Hz und 100&nbsp;Hz sind Referenzfrequenzen aus der Diagnostik des Gleichgewichtsorgans. Eine Wirkung im Training ist damit nicht verbunden. Deine eigenen Abl&auml;ufe legst du unten als Schritte an.</div>
+  </div>
+
+  <div class="group" id="tonSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Sequenzen</div>
+    <div class="bundle-list" id="tonSavedList"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Kanal-Test</div>
+    <div class="group-help">Pr&uuml;f vor dem ersten Mal, ob links und rechts richtig ankommen. Ist am iPhone &bdquo;Mono-Audio&ldquo; an (Bedienungshilfen), h&ouml;rst du beides auf beiden Ohren.</div>
+    <button type="button" class="start-btn secondary" id="tonChannelBtn">Kanal-Test starten</button>
+    <div class="ton-channel-status" id="tonChannelStatus" role="status" aria-live="polite"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Schritte</div>
+    <div class="ton-step-list" id="tonStepList"></div>
+    <button type="button" class="text-link small" id="tonAddStepBtn">+ Schritt</button>
+  </div>
+
+  <div class="group ton-editor" id="tonEditor">
+    <div class="group-label" id="tonEditorTitle">Schritt 1 bearbeiten</div>
+
+    <div class="ton-field-label">Frequenz</div>
+    <div class="slider-row">
+      <input type="range" id="tonFreqSlider" min="0" max="1000" step="1" aria-label="Frequenz">
+      <span class="slider-value" id="tonFreqValue"></span>
+    </div>
+    <div class="ton-freq-line">
+      <button type="button" class="ton-step-btn" data-ton-fstep="-10">&minus;10</button>
+      <button type="button" class="ton-step-btn" data-ton-fstep="-1">&minus;1</button>
+      <input type="number" id="tonFreqInput" min="20" max="2000" step="1" inputmode="numeric" aria-label="Frequenz in Hertz">
+      <span class="ton-unit">Hz</span>
+      <button type="button" class="ton-step-btn" data-ton-fstep="1">+1</button>
+      <button type="button" class="ton-step-btn" data-ton-fstep="10">+10</button>
+    </div>
+    <div class="group-help ton-low-hint" id="tonLowHint" hidden>Tiefe T&ouml;ne sind &uuml;ber Handy und viele Kopfh&ouml;rer kaum h&ouml;rbar &ndash; nicht lauter drehen.</div>
+
+    <div class="ton-field-label">Klang</div>
+    <div class="choice-row" id="tonWaveRow">
+      <button type="button" class="choice" data-ton-wave="sine">Sinus<small>weich</small></button>
+      <button type="button" class="choice" data-ton-wave="triangle">Dreieck<small>etwas heller</small></button>
+      <button type="button" class="choice" data-ton-wave="square">Rechteck<small>hart</small></button>
+    </div>
+
+    <div class="ton-field-label">Ohr</div>
+    <div class="choice-row two" id="tonEarRow">
+      <button type="button" class="choice" data-ton-ear="left">Links</button>
+      <button type="button" class="choice" data-ton-ear="right">Rechts</button>
+      <button type="button" class="choice" data-ton-ear="both">Beide</button>
+      <button type="button" class="choice" data-ton-ear="alt">Wechsel<small>links, rechts, links &hellip;</small></button>
+    </div>
+    <div id="tonAltGroup" hidden>
+      <div class="ton-field-label">Wechsel alle</div>
+      <div class="slider-row">
+        <input type="range" id="tonAltSlider" min="0.5" max="10" step="0.5" aria-label="Wechsel alle">
+        <span class="slider-value" id="tonAltValue"></span>
+      </div>
+    </div>
+
+    <div class="ton-field-label">Muster</div>
+    <div class="choice-row" id="tonPatternRow">
+      <button type="button" class="choice" data-ton-pattern="steady">Dauerton</button>
+      <button type="button" class="choice" data-ton-pattern="pulse">Puls<small>an / aus</small></button>
+      <button type="button" class="choice" data-ton-pattern="glide">Gleiten<small>von &rarr; bis</small></button>
+    </div>
+    <div id="tonPulseGroup" hidden>
+      <div class="choice-row two" id="tonPulseUnitRow">
+        <button type="button" class="choice" data-ton-pulseunit="ms">An / Aus<small>in Millisekunden</small></button>
+        <button type="button" class="choice" data-ton-pulseunit="bpm">Takt<small>Schl&auml;ge pro Minute</small></button>
+      </div>
+      <div id="tonPulseMsGroup">
+        <div class="ton-field-label">An</div>
+        <div class="slider-row">
+          <input type="range" id="tonOnSlider" min="50" max="2000" step="50" aria-label="Ton an">
+          <span class="slider-value" id="tonOnValue"></span>
+        </div>
+        <div class="ton-field-label">Aus</div>
+        <div class="slider-row">
+          <input type="range" id="tonOffSlider" min="50" max="2000" step="50" aria-label="Ton aus">
+          <span class="slider-value" id="tonOffValue"></span>
+        </div>
+      </div>
+      <div id="tonPulseBpmGroup" hidden>
+        <div class="ton-field-label">Takt</div>
+        <div class="slider-row">
+          <input type="range" id="tonBpmSlider" min="20" max="240" step="1" aria-label="Takt in Schl&auml;gen pro Minute">
+          <span class="slider-value" id="tonBpmValue"></span>
+        </div>
+      </div>
+    </div>
+    <div id="tonGlideGroup" hidden>
+      <div class="ton-field-label">Gleiten bis</div>
+      <div class="slider-row">
+        <input type="range" id="tonGlideSlider" min="0" max="1000" step="1" aria-label="Gleiten bis">
+        <span class="slider-value" id="tonGlideValue"></span>
+      </div>
+      <div class="group-help">Der Ton gleitet w&auml;hrend der Dauer des Schritts von der Frequenz oben bis hierher.</div>
+    </div>
+
+    <div class="ton-field-label">Dauer</div>
+    <div class="slider-row">
+      <input type="range" id="tonDurSlider" min="5" max="300" step="5" aria-label="Dauer des Schritts">
+      <span class="slider-value" id="tonDurValue"></span>
+    </div>
+    <div class="ton-field-label">Pause danach</div>
+    <div class="slider-row">
+      <input type="range" id="tonPauseSlider" min="0" max="180" step="5" aria-label="Pause danach">
+      <span class="slider-value" id="tonPauseValue"></span>
+    </div>
+    <div class="ton-field-label">Lautst&auml;rke</div>
+    <div class="slider-row">
+      <input type="range" id="tonVolSlider" min="5" max="100" step="5" aria-label="Lautst&auml;rke des Schritts">
+      <span class="slider-value" id="tonVolValue"></span>
+    </div>
+    <div class="group-help">So leise, dass du den Ton gerade deutlich h&ouml;rst. Nie unangenehm laut. Die Lautst&auml;rke deines Ger&auml;ts und die in den Grundeinstellungen gelten zus&auml;tzlich.</div>
+    <button type="button" class="start-btn secondary" id="tonPreviewBtn">Probeh&ouml;ren</button>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Frequenz-Suchlauf</div>
+    <div class="group-help">Der Ton steigt langsam von 100 auf 1000&nbsp;Hz (1 Minute). Tipp auf &bdquo;Merken&ldquo;, wenn du eine Frequenz &uuml;bernehmen willst &ndash; sie kommt in den Schritt, den du gerade bearbeitest.</div>
+    <div class="ton-sweep-line">
+      <button type="button" class="start-btn secondary" id="tonSweepBtn">Suchlauf starten</button>
+      <button type="button" class="start-btn secondary" id="tonSweepMarkBtn" hidden>Merken</button>
+    </div>
+    <div class="ton-sweep-hz" id="tonSweepHz" aria-live="off"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Wiederholungen</div>
+    <div class="slider-row">
+      <input type="range" id="tonRepeatSlider" min="1" max="10" step="1" aria-label="Wiederholungen der ganzen Sequenz">
+      <span class="slider-value" id="tonRepeatValue"></span>
+    </div>
+    <div class="group-help" id="tonTotalHelp"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Vorher / Nachher</div>
+    <input type="text" id="tonBeforeInput" class="ton-text-input" maxlength="80" placeholder="Vorher (z.&#8239;B. Einbeinstand links 12 s)" aria-label="Vorher-Wert">
+    <div class="group-help">Freiwillig: Mach vor der Sequenz deinen Test und trag das Ergebnis ein. Den Nachher-Wert erg&auml;nzt du am Ende. Beides steht im Verlauf.</div>
+  </div>
+
+  <button class="text-link small" id="tonSaveBtn">Sequenz speichern</button>
+  <div class="custom-exercise-form" id="tonSaveForm" hidden>
+    <input type="text" id="tonSaveNameInput" placeholder="Name (z.&#8239;B. Seitenvergleich 300 Hz)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="tonSaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="tonSaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
+
+  <button class="start-btn" id="tonReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="simonReady" hidden>
@@ -4608,6 +4805,71 @@
     <div class="group-help">Nummeriere deine Felder von 1 bis zu dieser Zahl. Du kannst h&ouml;chstens so viele Farben w&auml;hlen, wie es Felder gibt.</div>
   </div>
 
+  <!-- Hütchen · Laufweg (2026-10-08), docs/notes/33 -->
+  <div id="lwSettings" hidden>
+    <div class="group">
+      <div class="group-label">So l&auml;ufst du</div>
+      <div class="choice-row two" id="lwVariantRow">
+        <button type="button" class="choice" data-lw-variant="karte">Karte in der Hand<small>der Weg bleibt sichtbar</small></button>
+        <button type="button" class="choice" data-lw-variant="merken">Weg merken<small>ansehen, dann ohne Karte</small></button>
+      </div>
+      <div class="group-help" id="lwVariantHelp"></div>
+    </div>
+    <div class="group" id="lwShowGroup" hidden>
+      <div class="group-label">Zeit zum Merken</div>
+      <div class="slider-row">
+        <input type="range" id="lwShowSlider" min="3" max="20" step="1" aria-label="Zeit zum Merken">
+        <span class="slider-value" id="lwShowValue"></span>
+      </div>
+    </div>
+    <div class="group">
+      <div class="group-label">Wegl&auml;nge</div>
+      <div class="choice-row" id="lwLengthRow">
+        <button type="button" class="choice" data-lw-length="kurz">Kurz<small>3 H&uuml;tchen</small></button>
+        <button type="button" class="choice" data-lw-length="mittel">Mittel<small>5 H&uuml;tchen</small></button>
+        <button type="button" class="choice" data-lw-length="lang">Lang<small>7 H&uuml;tchen</small></button>
+      </div>
+    </div>
+    <div class="group">
+      <div class="group-label">Aufbau</div>
+      <div class="lw-size-line"><span class="lw-size-label">Reihen</span>
+        <div class="choice-row" id="lwRowsRow"><button type="button" class="choice" data-lw-rows="2">2</button><button type="button" class="choice" data-lw-rows="3">3</button><button type="button" class="choice" data-lw-rows="4">4</button></div>
+      </div>
+      <div class="lw-size-line"><span class="lw-size-label">Spalten</span>
+        <div class="choice-row" id="lwColsRow"><button type="button" class="choice" data-lw-cols="2">2</button><button type="button" class="choice" data-lw-cols="3">3</button><button type="button" class="choice" data-lw-cols="4">4</button></div>
+      </div>
+      <div class="lw-preview" id="lwPreview"></div>
+      <div class="group-help" id="lwSizeHelp"></div>
+    </div>
+    <div class="group">
+      <div class="group-label">Ende</div>
+      <div class="choice-row two" id="lwEndRow">
+        <button type="button" class="choice" data-lw-end="runden">Nach Wegen<small>feste Anzahl</small></button>
+        <button type="button" class="choice" data-lw-end="dauer">Nach Zeit<small>so viele Wege wie m&ouml;glich</small></button>
+      </div>
+      <div class="slider-row" id="lwRoundsLine">
+        <input type="range" id="lwRoundsSlider" min="1" max="20" step="1" aria-label="Anzahl Wege">
+        <span class="slider-value" id="lwRoundsValue"></span>
+      </div>
+      <div class="choice-row four" id="lwDurRow" hidden>
+        <button type="button" class="choice" data-lw-dur="120">2 Min</button>
+        <button type="button" class="choice" data-lw-dur="180">3 Min</button>
+        <button type="button" class="choice" data-lw-dur="300">5 Min</button>
+        <button type="button" class="choice" data-lw-dur="600">10 Min</button>
+      </div>
+    </div>
+    <details class="advanced" id="lwAdvanced">
+      <summary>Feineinstellungen</summary>
+      <div class="advanced-body">
+        <div class="group">
+          <div class="group-label">Farbe der H&uuml;tchen je Reihe</div>
+          <div id="lwRowColors"></div>
+          <div class="group-help">Stell deine H&uuml;tchen in genau diesen Farben auf. Voreingestellt: hinten Gelb, Mitte Blau, vorne Rot.</div>
+        </div>
+      </div>
+    </details>
+  </div>
+
   <div class="group" id="colorGroup" hidden>
     <div class="group-label">Farben <span class="group-count" id="colorCount"></span></div>
     <div class="color-picker" id="colorPicker"></div>
@@ -4665,7 +4927,7 @@
   </div>
 
   <div class="group" id="addonGroup" hidden>
-    <div class="group-label">Zusatzaufgabe: Periphere Wahrnehmung</div>
+    <div class="group-label">Zusatzaufgabe</div>
     <div class="choice-row two" id="addonPhaseRow">
       <button class="choice" data-addon-phase="reiz">Beim Reiz</button>
       <button class="choice" data-addon-phase="pause">In der Pause</button>
@@ -4674,6 +4936,46 @@
     <div class="color-hint" id="addonPhaseHint"></div>
 
     <div id="addonConfigBody" hidden>
+      <!-- Zusatzaufgabe Rechnen (2026-10-08): which add-on runs -->
+      <div class="choice-row two" style="margin-top:10px" id="addonTaskRow">
+        <button class="choice" data-addon-task="periph">Zeichen am Rand<small>Periphere Wahrnehmung</small></button>
+        <button class="choice" data-addon-task="rechnen">Rechnen<small>stimmt die Aufgabe?</small></button>
+      </div>
+      <div id="addonMathBody" hidden>
+        <div class="group-help" style="margin-top:8px">Eine Rechnung mit Ergebnis oder Vergleich erscheint, z.&#8239;B. &bdquo;7 &minus; 4 = 3&ldquo; oder &bdquo;2 + 3 &gt; 6&ldquo;. Etwa die H&auml;lfte stimmt. Sie erscheint dort, wo gerade nichts von der &Uuml;bung zu sehen ist.</div>
+        <div class="group" style="margin-top:10px">
+          <div class="group-label">Rechenart</div>
+          <div class="choice-row" id="addonMathLevelRow">
+            <button class="choice" data-addon-mathlevel="plus10">Plus/Minus<small>bis 10</small></button>
+            <button class="choice" data-addon-mathlevel="plus20">Plus/Minus<small>bis 20</small></button>
+            <button class="choice" data-addon-mathlevel="mal">Mit Mal<small>bis 10 &middot; 10</small></button>
+          </div>
+        </div>
+        <div class="group">
+          <div class="group-label">So antwortest du</div>
+          <div class="choice-row" style="grid-template-columns:1fr" id="addonMathAnswerRow">
+            <button class="choice" data-addon-mathanswer="doppelkreis">Doppelkreis<small>innen tippen = stimmt, Ring tippen = stimmt nicht</small></button>
+            <button class="choice" data-addon-mathanswer="gonogo">Nur bei &bdquo;stimmt&ldquo; antippen<small>stimmt es nicht, tippst du nichts</small></button>
+            <button class="choice" data-addon-mathanswer="laut">Laut sagen<small>ohne Tippen, &bdquo;stimmt&ldquo; oder &bdquo;stimmt nicht&ldquo;</small></button>
+          </div>
+        </div>
+        <div class="group">
+          <div class="group-label">Anzeigedauer</div>
+          <div class="slider-row">
+            <input type="range" id="addonMathShowSlider" min="1.5" max="6" step="0.5" aria-label="Anzeigedauer der Rechnung">
+            <span class="slider-value" id="addonMathShowValue"></span>
+          </div>
+        </div>
+        <div class="group">
+          <div class="group-label">Pause zwischen den Rechnungen</div>
+          <div class="slider-row two-line">
+            <div class="slider-line"><span class="slider-label">Min</span><input type="range" id="addonMathGapMinSlider" min="1" max="15" step="0.5" aria-label="Pause minimal"></div>
+            <div class="slider-line"><span class="slider-label">Max</span><input type="range" id="addonMathGapMaxSlider" min="1" max="15" step="0.5" aria-label="Pause maximal"></div>
+            <span class="slider-value" id="addonMathGapValue"></span>
+          </div>
+        </div>
+      </div>
+      <div id="addonPeriphBody">
       <div class="choice-row two" style="margin-top:10px" id="addonModeRow">
         <button class="choice" data-addon-mode="uebernehmen">Wie Periphere Wahrnehmung<small>&uuml;bernimmt Bereich, Zeichentyp &amp; Tempo</small></button>
         <button class="choice" data-addon-mode="eigen">Eigene Feineinstellung<small>weicht f&uuml;r diese &Uuml;bung ab</small></button>
@@ -4756,6 +5058,7 @@
             <button class="start-btn" id="addonSaveConfirmBtn">Speichern</button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   </div>
@@ -5494,10 +5797,27 @@
     <div class="cone-order-count" id="coneOrderCount"></div>
     <div class="cone-order-row" id="coneOrderRow"></div>
   </div>
+  <!-- Hütchen · Laufweg (2026-10-08): map + buttons, no canvas -->
+  <div class="lw-stage" id="lwStage" hidden>
+    <div class="lw-caption" id="lwCaption"></div>
+    <div class="lw-map" id="lwMap"></div>
+    <div class="lw-actions">
+      <button type="button" class="lw-btn secondary" id="lwRevealBtn" hidden>Weg zeigen</button>
+      <button type="button" class="lw-btn" id="lwNextBtn">N&auml;chster Weg</button>
+    </div>
+    <div class="pause-overlay" id="lwPauseOverlay" hidden>
+      <div class="pause-panel">
+        <h3>Pausiert</h3>
+        <div class="group-help" style="text-align:center;margin-bottom:12px">Die Zeit steht, bis du weitermachst.</div>
+        <button class="start-btn" id="lwResumeBtn">Weiter</button>
+      </div>
+    </div>
+  </div>
   <div class="progress-track" id="progressTrack"></div>
   <div class="player-bar" id="playerBar">
     <button id="backBtn">&#10005; Beenden</button>
     <button id="periphPauseBtn" hidden>Pause</button>
+    <button id="lwPauseBtn" hidden>Pause</button>
     <span class="player-status" id="timeEl">0:00</span>
     <button id="fsBtn">Vollbild</button>
   </div>
@@ -6838,6 +7158,51 @@
     <div class="rating" id="eyecountRating"></div>
     <button class="again" id="eyecountAgainBtn">Nochmal</button>
     <button class="back" id="eyecountDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player calm" id="tonPlayer" hidden>
+  <div class="ton-stage" id="tonStage">
+    <div class="remember-hint" id="tonHint"></div>
+    <div class="ton-now" id="tonNow">
+      <div class="ton-now-step" id="tonNowStep"></div>
+      <div class="ton-now-hz" id="tonNowHz"></div>
+      <div class="ton-now-ear" id="tonNowEar"></div>
+      <div class="ton-now-pattern" id="tonNowPattern"></div>
+      <div class="ton-now-time" id="tonNowTime"></div>
+      <div class="ton-now-mute" id="tonNowMute" hidden>T&ouml;ne sind ausgeschaltet. Mit &#128264; unten oder in den Grundeinstellungen einschalten.</div>
+    </div>
+  </div>
+  <div class="pause-overlay" id="tonPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <div class="ton-field-label">Lautst&auml;rke dieses Schritts</div>
+      <div class="slider-row">
+        <input type="range" id="tonLiveVolSlider" min="5" max="100" step="5" aria-label="Lautst&auml;rke dieses Schritts">
+        <span class="slider-value" id="tonLiveVolValue"></span>
+      </div>
+      <p class="group-help">Gilt nur f&uuml;r diesen Durchgang. Bei Schwindel, &Uuml;belkeit, Druck oder Ohrger&auml;usch beende die Sequenz.</p>
+      <button class="start-btn" id="tonResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="tonPlayerBar">
+    <button id="tonBackBtn">&#10005; Beenden</button>
+    <button id="tonPauseBtn">Pause</button>
+    <span class="player-status" id="tonProgressEl"></span>
+  </div>
+
+  <div class="done-panel" id="tonDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="tonDoneSummary"></p>
+    <div class="ton-after" id="tonAfterGroup">
+      <input type="text" id="tonAfterInput" class="ton-text-input" maxlength="80" placeholder="Nachher (z.&#8239;B. Einbeinstand links 15 s)" aria-label="Nachher-Wert">
+      <button class="start-btn secondary" id="tonAfterSaveBtn">Nachher speichern</button>
+      <div class="ton-after-saved" id="tonAfterSaved" hidden>Gespeichert &ndash; steht im Verlauf.</div>
+    </div>
+    <div class="rating" id="tonRating"></div>
+    <button class="again" id="tonAgainBtn">Nochmal</button>
+    <button class="back" id="tonDoneBackBtn">Zur &Uuml;bersicht</button>
   </div>
 </div>
 
