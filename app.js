@@ -1474,6 +1474,15 @@
       trains: "Farbe und Zahl gleichzeitig erfassen und schnell umsetzen",
       rules: "Lege nummerierte Felder (1 bis zur eingestellten Anzahl) auf den Boden und stelle auf jedes ein farbiges Hütchen oder einen Becher. Die App zeigt eine Farbe mit einer großen Zahl – zum Beispiel Gelb mit der 2: Stelle das gelbe Hütchen so schnell wie möglich auf Feld 2. Steht dort schon eins, tausche die beiden.",
     },
+    // Hütchen · Laufweg "Folge der Karte" (Fabian 2026-10-08): a cone grid
+    // and a drawn path to walk; own DOM stage like Hütchen sortieren, no
+    // scoring (the app can't see the walk). docs/notes/33.
+    "cone-path": {
+      title: "Hütchen · Laufweg", type: "laufweg",
+      task: "Lauf den Weg auf der Karte durch deine Hütchen.",
+      trains: "Orientierung im Raum, Wege lesen, merken und umsetzen",
+      rules: "Stell deine Hütchen in Reihen auf, wie unten eingestellt – oben auf der Karte ist die hintere Reihe, du startest unten am Startpunkt. Die App zeichnet einen Weg zwischen und um die Hütchen, mit Schleifen um einzelne Hütchen; der Pfeil zeigt das Ende. Lauf ihn genau so ab. Bei „Karte in der Hand“ nimmst du das Handy mit, bei „Weg merken“ prägst du dir den Weg ein und läufst ohne Karte. Mit „Nächster Weg“ kommt jedes Mal ein neuer Weg.",
+    },
     "farbfelder": {
       title: "Farbfelder", type: "farbfelder", bgIsStimulus: true,
       task: "Tritt auf das richtige Farbfeld deiner Matte.",
@@ -3735,6 +3744,9 @@
     ffFlip: 0, // Rhythmus-Umkehr: 0 = aus, 2 / 3 = every 2nd / 3rd stimulus
     ffAnswer: "treten", // So antwortest du: treten (mat) | tippen (screen, scored)
     ffCount: "wechsel", // Einblenden: eins | wechsel | phasen (FF_COUNTS)
+    // Hütchen · Laufweg (2026-10-08), see lwNormalize()
+    lwVariant: "karte", lwRows: 3, lwCols: 3, lwRowColors: ["gelb", "blau", "rot"], lwLength: "mittel",
+    lwShowS: 8, lwEnd: "runden", lwRounds: 5, lwDurS: 300,
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -3764,6 +3776,7 @@
     if (typeof state.bgIntensity !== "number" || state.bgIntensity < 0 || state.bgIntensity > 1) state.bgIntensity = 0;
     ffNormalize(state); // also copies ffLayout/ffHandRules, so DEFAULTS is never mutated
     cnNormalize(state);
+    lwNormalize(state); // Hütchen · Laufweg (copies lwRowColors too)
   }
   function cnNormalize(p) {
     const n = Math.round(Number(p.cnFields));
@@ -4809,12 +4822,16 @@
     els.setupBtn.onclick = ex.setupDiagram ? openSetupModal : null;
     colorMode = ex.usesArrowColors ? "arrows" : ex.usesStroopColors ? "stroop" : "standard";
     els.colorGroup.hidden = !ex.usesColors && !ex.usesArrowColors && !ex.usesStroopColors;
-    const isConeTap = ex.type === "color-tap";
+    const isLw = ex.type === "laufweg"; // Hütchen · Laufweg: own settings, no tempo/bg/add-on
+    const isConeTap = ex.type === "color-tap" || isLw;
     const isPeriph = ex.type === "periph";
     const isFf = ex.type === "farbfelder";
     const bgAllowed = !isConeTap && !ex.bgIsStimulus;
     els.tempoGroup.hidden = isConeTap;
     els.advanced.hidden = isConeTap;
+    $("lwSettings").hidden = !isLw;
+    $("durationGroup").hidden = isLw;
+    if (isLw) syncLwUI();
     els.periphKindGroup.hidden = !isPeriph;
     // The fixation-point Feineinstellung applies to every exercise with
     // this dot (i.e. everything except Hütchen sortieren), not just
@@ -4842,6 +4859,7 @@
     if (bgAllowed) syncBgUI();
     if (!isConeTap && !isPeriph) syncAddonUI();
     syncDurationUI();
+    if (isLw) els.coneBestHint.hidden = true;
     syncTempoUI();
     els.vtSaveForm.hidden = true;
     els.vtSaveBtn.hidden = false;
@@ -4854,6 +4872,7 @@
   // per exercise that needs equipment; `link` (a product page) is shown only
   // once Fabian sets a URL. A new exercise that needs something = one entry.
   const HILFSMITTEL = {
+    "cone-path": { text: "Du brauchst Hütchen in den eingestellten Farben.", link: "" },
     "cone-number": {
       text: "Du brauchst: 3-6 farbige Hütchen oder Becher und nummerierte Felder (z. B. Zettel mit 1-6).",
       link: "",
@@ -5206,6 +5225,7 @@
       if (existingBlock.periph) Object.assign(state, JSON.parse(JSON.stringify(existingBlock.periph)));
       if (existingBlock.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(existingBlock.ff))); ffNormalize(state); }
       if (existingBlock.cn) { Object.assign(state, existingBlock.cn); cnNormalize(state); }
+      if (existingBlock.lw) { lwApply(existingBlock.lw); syncLwUI(); }
       renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
       if (ex.type === "farbfelder") syncFfUI();
       if (ex.type === "colornum") syncCnUI();
@@ -5241,6 +5261,7 @@
     if (ex.type === "periph") block.periph = periphStateSnapshot();
     if (ex.type === "farbfelder") block.ff = ffStateSnapshot();
     if (ex.type === "colornum") block.cn = { cnFields: state.cnFields };
+    if (ex.type === "laufweg") { block.lw = lwSnapshot(); block.duration = lwEstimateS(); }
     if (comboVisualEditIndex != null) comboDraftBlocks[comboVisualEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitVisualComboCapture();
@@ -6664,6 +6685,7 @@
     state.intervalMax = block.intervalMax ?? 4;
     if (block.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
     if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
+    if (block.lw) lwApply(block.lw);
     active = blockColors(block);
   }
 
@@ -6697,6 +6719,7 @@
     // Leaving a player always drops an open "Pausiert" sheet (it lives
     // inside that player); guarded since this runs during start-up too.
     try { closeTrainPause(); } catch (e) {}
+    try { lwStop(); } catch (e) {} // Hütchen · Laufweg stage lives inside #player
     els.player.hidden = true;
     els.breathPlayer.hidden = true;
     els.wimhofPlayer.hidden = true;
@@ -6881,6 +6904,368 @@
     renderConeOrderRound();
   }
   els.coneOrderStage.addEventListener("click", () => coneTapAdvance());
+
+  // ==== Hütchen · Laufweg "Folge der Karte" (Fabian 2026-10-08) ====
+  // A VT catalog exercise like Hütchen sortieren / Kompass-Aufbau (same ready
+  // screen, Kombi, presets, Wochenplan, history), but tap-paced with its own
+  // DOM/SVG stage instead of the canvas schedule: the app can't see the walk,
+  // so there is no stimulus timing and no scoring. Settings live in the VT
+  // state (lw*), snapshot `lw` in Kombi blocks and presets. docs/notes/33.
+  const LW_LENGTHS = { kurz: { n: 3, label: "Kurz" }, mittel: { n: 5, label: "Mittel" }, lang: { n: 7, label: "Lang" } };
+  const LW_ROW_DEFAULTS = ["gelb", "blau", "rot", "gruen"];
+  const LW_VARIANT_LABELS = { karte: "Karte in der Hand", merken: "Weg merken" };
+  // Hoisted, literal-only: loadPrefs() runs before this block is reached.
+  function lwNormalize(p) {
+    if (!["karte", "merken"].includes(p.lwVariant)) p.lwVariant = "karte";
+    const rr = Math.round(Number(p.lwRows)), cc = Math.round(Number(p.lwCols));
+    p.lwRows = rr >= 2 && rr <= 4 ? rr : 3;
+    p.lwCols = cc >= 2 && cc <= 4 ? cc : 3;
+    const lib = ["rot", "gelb", "gruen", "blau", "orange", "lila", "pink"];
+    const defs = p.lwRows === 2 ? ["gelb", "rot"] : p.lwRows === 4 ? ["gelb", "blau", "rot", "gruen"] : ["gelb", "blau", "rot"];
+    const cur = Array.isArray(p.lwRowColors) ? p.lwRowColors.slice() : [];
+    p.lwRowColors = Array.from({ length: p.lwRows }, (_, i) => (lib.includes(cur[i]) ? cur[i] : defs[i]));
+    if (!["kurz", "mittel", "lang"].includes(p.lwLength)) p.lwLength = "mittel";
+    const sh = Math.round(Number(p.lwShowS));
+    p.lwShowS = sh >= 3 && sh <= 20 ? sh : 8;
+    if (!["runden", "dauer"].includes(p.lwEnd)) p.lwEnd = "runden";
+    const ro = Math.round(Number(p.lwRounds));
+    p.lwRounds = ro >= 1 && ro <= 20 ? ro : 5;
+    p.lwDurS = [120, 180, 300, 600].includes(Number(p.lwDurS)) ? Number(p.lwDurS) : 300;
+    return p;
+  }
+  function lwSnapshot(p = state) {
+    return { lwVariant: p.lwVariant, lwRows: p.lwRows, lwCols: p.lwCols, lwRowColors: p.lwRowColors.slice(), lwLength: p.lwLength, lwShowS: p.lwShowS, lwEnd: p.lwEnd, lwRounds: p.lwRounds, lwDurS: p.lwDurS };
+  }
+  function lwApply(snap) { if (snap) { Object.assign(state, JSON.parse(JSON.stringify(snap))); lwNormalize(state); } }
+  // Rough run length for the Kombi list (Runden: ~40 s per path).
+  function lwEstimateS(p = state) { return p.lwEnd === "dauer" ? p.lwDurS : p.lwRounds * (p.lwVariant === "merken" ? p.lwShowS + 35 : 40); }
+
+  // ---- Path maker (pure; units: cone (col c, row r) sits at x = c, y = r,
+  // row 0 = back row = top of the map, the client starts below the front row).
+  // Targets are cones; around each the path makes a full loop or wraps round
+  // the far side; between cones it runs along the gaps (half-unit lattice
+  // lines), so it never crosses a cone; Catmull-Rom smoothing plus a little
+  // jitter gives the hand-drawn look.
+  const LW_RHO = 0.36;
+  function lwMakePath(rows, cols, length, rng) {
+    const ri = (a, b) => a + Math.floor(rng() * (b - a + 1));
+    const n = (LW_LENGTHS[length] || LW_LENGTHS.mittel).n;
+    const cones = [];
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) cones.push({ r, c });
+    const targets = [];
+    let prev = null, prev2 = null;
+    for (let i = 0; i < n; i++) {
+      let pool = cones.filter((k) => k !== prev && (cones.length <= 2 || k !== prev2));
+      if (i === 0) pool = pool.filter((k) => k.r >= rows - 2); // start near the front
+      const t = pool[Math.floor(rng() * pool.length)];
+      targets.push(t); prev2 = prev; prev = t;
+    }
+    const start = { x: ri(0, cols - 1) + (rng() < 0.5 ? 0 : 0.5) * (cols > 1 ? 1 : 0), y: rows - 1 + 0.95 };
+    if (start.x > cols - 1) start.x = cols - 1;
+    const sides = [{ x: -0.95, y: ri(0, rows - 1) }, { x: cols - 1 + 0.95, y: ri(0, rows - 1) }, { x: ri(0, cols - 1), y: -0.85 }];
+    const end = sides[Math.floor(rng() * sides.length)];
+    const clampG = (v, n2) => Math.max(-0.5, Math.min(n2 - 0.5, v));
+    const cornerOf = (cone, toward) => ({ x: cone.c + (toward.x >= cone.c ? 0.5 : -0.5), y: cone.r + (toward.y >= cone.r ? 0.5 : -0.5) });
+    const snap = (p) => ({ x: clampG(Math.round(p.x - 0.5) + 0.5, cols), y: clampG(Math.round(p.y - 0.5) + 0.5, rows) });
+    const clear = (a, b, skip) => {
+      for (let s = 0; s <= 20; s++) {
+        const x = a.x + (b.x - a.x) * (s / 20), y = a.y + (b.y - a.y) * (s / 20);
+        if (cones.some((k) => Math.hypot(k.c - x, k.r - y) < (k === skip ? 0.3 : 0.36))) return false;
+      }
+      return true;
+    };
+    // L-shaped run along gap lines from lattice point a to lattice point b.
+    const lattice = (a, b) => (Math.abs(a.x - b.x) < 1e-9 || Math.abs(a.y - b.y) < 1e-9 ? [a, b] : rng() < 0.5 ? [a, { x: b.x, y: a.y }, b] : [a, { x: a.x, y: b.y }, b]);
+    const pts = [{ x: start.x, y: start.y, kind: "start" }];
+    let cur = { x: start.x, y: start.y };
+    let curCone = null;
+    const push = (p, kind) => {
+      const last = pts[pts.length - 1];
+      if (Math.hypot(last.x - p.x, last.y - p.y) > 1e-6) pts.push({ x: p.x, y: p.y, kind });
+    };
+    let lane = 0;
+    const travel = (to, toCone) => {
+      // from cur (start or a loop point of curCone) to lattice corner `to`;
+      // each run gets its own small lane offset so two passes along the same
+      // gap stay apart on the map
+      lane = (lane + 1) % 3;
+      const off = (lane - 1) * 0.07;
+      const laneP = (p) => ({ x: p.x + off, y: p.y + off });
+      if (!clear(cur, to, curCone)) {
+        const from = curCone ? cornerOf(curCone, to) : snap(cur);
+        if (curCone) {
+          // stay on the loop circle until facing that corner, never across the cone
+          const th = Math.atan2(cur.y - curCone.r, cur.x - curCone.c), ph = Math.atan2(from.y - curCone.r, from.x - curCone.c);
+          let dd = ph - th; while (dd > Math.PI) dd -= 2 * Math.PI; while (dd < -Math.PI) dd += 2 * Math.PI;
+          const k = Math.floor(Math.abs(dd) / (Math.PI / 5));
+          for (let s2 = 1; s2 <= k; s2++) push({ x: curCone.c + Math.cos(th + dd * (s2 / (k + 1))) * LW_RHO, y: curCone.r + Math.sin(th + dd * (s2 / (k + 1))) * LW_RHO }, "loop");
+        }
+        if (Math.hypot(from.x - cur.x, from.y - cur.y) > 1e-6) push(from, "gap");
+        const run = lattice(from, to).slice(1);
+        run.forEach((p, i) => push(i < run.length - 1 ? laneP(p) : p, "gap"));
+      } else push(to, "gap");
+      cur = { x: to.x, y: to.y };
+    };
+    targets.forEach((t, i) => {
+      const next = targets[i + 1];
+      const entryCorner = cornerOf(t, cur);
+      travel(entryCorner, t);
+      const exitToward = next ? { x: next.c, y: next.r } : end;
+      const thIn = Math.atan2(entryCorner.y - t.r, entryCorner.x - t.c);
+      const exitCorner = cornerOf(t, exitToward);
+      const thOut = Math.atan2(exitCorner.y - t.r, exitCorner.x - t.c);
+      const full = rng() < 0.5;
+      let dir = rng() < 0.5 ? 1 : -1;
+      const sweep = (d) => { let v = (thOut - thIn) * d; v = ((v % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI); return v; };
+      let total;
+      if (full) total = 2 * Math.PI + sweep(dir);
+      else { if (sweep(dir) < Math.PI * 0.9) dir = -dir; total = Math.max(sweep(dir), Math.PI * 0.9); }
+      const steps = Math.max(3, Math.ceil(total / (Math.PI / 5)));
+      for (let s = 0; s <= steps; s++) {
+        const a = thIn + dir * total * (s / steps);
+        push({ x: t.c + Math.cos(a) * LW_RHO, y: t.r + Math.sin(a) * LW_RHO }, "loop");
+      }
+      t.loop = full ? "full" : "half"; t.dir = dir;
+      cur = { ...pts[pts.length - 1] };
+      curCone = t;
+    });
+    // to the end mark (outside the field)
+    const endLattice = snap({ x: Math.max(-0.5, Math.min(cols - 0.5, end.x)), y: Math.max(-0.5, Math.min(rows - 0.5, end.y)) });
+    travel(endLattice, null);
+    push(end, "end");
+    // Long straight runs get extra points, so the smoothing keeps the corners
+    // tight instead of bulging towards a cone; then a little jitter on the
+    // gap points only (loops stay round) for the hand-drawn look.
+    const dense = [pts[0]];
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i], L = Math.hypot(b.x - a.x, b.y - a.y);
+      if (a.kind !== "loop" && b.kind !== "loop" && L > 0.6) {
+        const k = Math.ceil(L / 0.45);
+        for (let j = 1; j < k; j++) dense.push({ x: a.x + (b.x - a.x) * (j / k), y: a.y + (b.y - a.y) * (j / k), kind: "gap" });
+      }
+      dense.push(b);
+    }
+    dense.forEach((p) => { if (p.kind === "gap") { p.x += (rng() - 0.5) * 0.05; p.y += (rng() - 0.5) * 0.05; } });
+    return { rows, cols, cones, targets: targets.map((t) => ({ r: t.r, c: t.c, loop: t.loop, dir: t.dir })), start, end, pts: dense, d: lwSmoothPath(dense) };
+  }
+  function lwSmoothPath(pts) {
+    const f = (v) => Math.round(v * 1000) / 1000;
+    let d = `M${f(pts[0].x)} ${f(pts[0].y)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+      const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 };
+      const c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 };
+      d += ` C${f(c1.x)} ${f(c1.y)} ${f(c2.x)} ${f(c2.y)} ${f(p2.x)} ${f(p2.y)}`;
+    }
+    return d;
+  }
+  // SVG map: cones in their row colours, start mark, path + arrow (or none).
+  function lwConeSvg(x, y, hex) {
+    return `<g class="lw-cone"><ellipse cx="${x}" cy="${y + 0.13}" rx="0.19" ry="0.055" fill="${hex}" stroke="#16232a" stroke-width="0.022"/>` +
+      `<path d="M${x} ${y - 0.2} L${x + 0.13} ${y + 0.12} L${x - 0.13} ${y + 0.12} Z" fill="${hex}" stroke="#16232a" stroke-width="0.022" stroke-linejoin="round"/>` +
+      `<path d="M${x - 0.075} ${y - 0.03} L${x + 0.075} ${y - 0.03}" stroke="#ffffff" stroke-width="0.035" stroke-linecap="round" opacity="0.85"/></g>`;
+  }
+  function lwMapSvg(path, rowColors, showPath, opts = {}) {
+    const { rows, cols } = path;
+    const x0 = -1.15, y0 = -1.0, w = cols - 1 + 2.3, h = rows - 1 + 2.25;
+    let svg = `<svg class="lw-svg" viewBox="${x0} ${y0} ${w} ${h}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(opts.label || "Karte mit Hütchen")}">`;
+    svg += `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="#ffffff"/>`;
+    svg += `<text x="${x0 + 0.12}" y="${y0 + 0.3}" font-size="0.2" font-family="'Public Sans',sans-serif" font-weight="600" fill="#5c6e75">hinten</text>`;
+    path.cones.forEach((k) => { svg += lwConeSvg(k.c, k.r, (COLOR_BY_KEY[rowColors[k.r]] || COLOR_BY_KEY.rot).hex); });
+    if (showPath && path.d) {
+      svg += `<path class="lw-path" d="${path.d}" fill="none" stroke="#ffffff" stroke-width="0.13" stroke-linecap="round" stroke-linejoin="round"/>`;
+      svg += `<path class="lw-path" data-lw-path="1" d="${path.d}" fill="none" stroke="#16232a" stroke-width="0.065" stroke-linecap="round" stroke-linejoin="round"/>`;
+      // small direction marks along the way (every ~1.1 units, not at the ends)
+      const P = path.pts;
+      let total = 0;
+      for (let i = 1; i < P.length; i++) total += Math.hypot(P[i].x - P[i - 1].x, P[i].y - P[i - 1].y);
+      let acc = 0, nextAt = 0.9;
+      for (let i = 1; i < P.length; i++) {
+        const seg = Math.hypot(P[i].x - P[i - 1].x, P[i].y - P[i - 1].y);
+        while (seg > 0 && acc + seg >= nextAt && nextAt < total - 0.6) {
+          const t = (nextAt - acc) / seg, x = P[i - 1].x + (P[i].x - P[i - 1].x) * t, y = P[i - 1].y + (P[i].y - P[i - 1].y) * t;
+          const an = Math.atan2(P[i].y - P[i - 1].y, P[i].x - P[i - 1].x), cs = Math.cos(an), sn = Math.sin(an);
+          const pt = (f, l) => `${(x + cs * f - sn * l).toFixed(3)} ${(y + sn * f + cs * l).toFixed(3)}`;
+          svg += `<path class="lw-chevron" d="M${pt(-0.08, -0.1)} L${pt(0.1, 0)} L${pt(-0.08, 0.1)} Z" fill="#16232a" stroke="#ffffff" stroke-width="0.02" stroke-linejoin="round"/>`;
+          nextAt += 1.1;
+        }
+        acc += seg;
+      }
+      const a = path.pts[path.pts.length - 2], b = path.pts[path.pts.length - 1];
+      const ang = Math.atan2(b.y - a.y, b.x - a.x), L = 0.26, W = 0.16;
+      const tip = { x: b.x + Math.cos(ang) * 0.08, y: b.y + Math.sin(ang) * 0.08 };
+      const bx = tip.x - Math.cos(ang) * L, by = tip.y - Math.sin(ang) * L;
+      svg += `<path class="lw-arrow" d="M${tip.x} ${tip.y} L${bx + Math.sin(ang) * W} ${by - Math.cos(ang) * W} L${bx - Math.sin(ang) * W} ${by + Math.cos(ang) * W} Z" fill="#16232a"/>`;
+    }
+    const s = path.start;
+    svg += `<circle class="lw-start" cx="${s.x}" cy="${s.y}" r="0.15" fill="#007094" stroke="#ffffff" stroke-width="0.04"/>`;
+    const lx = s.x + 0.24 + 0.62 > x0 + w ? s.x - 0.24 - 0.62 : s.x + 0.24;
+    svg += `<text x="${lx}" y="${s.y + 0.08}" font-size="0.22" font-family="'Public Sans',sans-serif" font-weight="700" fill="#007094">Start</text>`;
+    return svg + `</svg>`;
+  }
+
+  // ---- Ready screen (#lwSettings) ----
+  function syncLwUI() {
+    lwNormalize(state);
+    document.querySelectorAll("#lwVariantRow [data-lw-variant]").forEach((b) => setActive(b, b.dataset.lwVariant === state.lwVariant));
+    $("lwVariantHelp").textContent = state.lwVariant === "merken"
+      ? "Du siehst den Weg kurz, dann verschwindet er. Lauf ihn aus dem Kopf, mit „Weg zeigen“ prüfst du danach."
+      : "Nimm das Handy mit und lauf den Weg, den die Karte zeigt.";
+    $("lwShowGroup").hidden = state.lwVariant !== "merken";
+    $("lwShowSlider").value = state.lwShowS;
+    $("lwShowValue").textContent = `${state.lwShowS} s`;
+    document.querySelectorAll("#lwLengthRow [data-lw-length]").forEach((b) => setActive(b, b.dataset.lwLength === state.lwLength));
+    document.querySelectorAll("#lwRowsRow [data-lw-rows]").forEach((b) => setActive(b, Number(b.dataset.lwRows) === state.lwRows));
+    document.querySelectorAll("#lwColsRow [data-lw-cols]").forEach((b) => setActive(b, Number(b.dataset.lwCols) === state.lwCols));
+    document.querySelectorAll("#lwEndRow [data-lw-end]").forEach((b) => setActive(b, b.dataset.lwEnd === state.lwEnd));
+    $("lwRoundsLine").hidden = state.lwEnd !== "runden";
+    $("lwDurRow").hidden = state.lwEnd !== "dauer";
+    $("lwRoundsSlider").value = state.lwRounds;
+    $("lwRoundsValue").textContent = `${state.lwRounds} ${state.lwRounds === 1 ? "Weg" : "Wege"}`;
+    document.querySelectorAll("#lwDurRow [data-lw-dur]").forEach((b) => setActive(b, Number(b.dataset.lwDur) === state.lwDurS));
+    $("lwSizeHelp").textContent = `${state.lwRows * state.lwCols} Hütchen: ${state.lwRows} Reihen mit je ${state.lwCols}. Oben ist die hintere Reihe, unten die vordere – du startest unten.`;
+    const names = ["hinten", "Mitte", "vorne"];
+    const rowName = (i) => (state.lwRows === 2 ? ["hinten", "vorne"][i] : state.lwRows === 3 ? names[i] : ["hinten", "2. Reihe", "3. Reihe", "vorne"][i]);
+    $("lwRowColors").innerHTML = state.lwRowColors.map((key, i) =>
+      `<div class="lw-row-colors"><span class="lw-row-name">Reihe ${rowName(i)}</span><div class="lw-row-swatches" role="group" aria-label="Farbe Reihe ${rowName(i)}">` +
+      COLOR_LIB.map((c) => `<button type="button" class="lw-swatch${c.key === key ? " active" : ""}" data-lw-row="${i}" data-lw-color="${c.key}" style="background:${c.hex}" aria-label="${c.name}" aria-pressed="${c.key === key}"></button>`).join("") +
+      `</div></div>`).join("");
+    const demo = lwMakePath(state.lwRows, state.lwCols, "kurz", () => 0.5);
+    $("lwPreview").innerHTML = lwMapSvg({ ...demo, d: "" }, state.lwRowColors, false, { label: "So stellst du die Hütchen auf" });
+  }
+  const lwSet = (fn) => { fn(); lwNormalize(state); savePrefs(); syncLwUI(); };
+  document.querySelectorAll("#lwVariantRow [data-lw-variant]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwVariant = b.dataset.lwVariant; })));
+  document.querySelectorAll("#lwLengthRow [data-lw-length]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwLength = b.dataset.lwLength; })));
+  document.querySelectorAll("#lwRowsRow [data-lw-rows]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwRows = Number(b.dataset.lwRows); })));
+  document.querySelectorAll("#lwColsRow [data-lw-cols]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwCols = Number(b.dataset.lwCols); })));
+  document.querySelectorAll("#lwEndRow [data-lw-end]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwEnd = b.dataset.lwEnd; })));
+  document.querySelectorAll("#lwDurRow [data-lw-dur]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwDurS = Number(b.dataset.lwDur); })));
+  $("lwShowSlider").addEventListener("input", () => lwSet(() => { state.lwShowS = Number($("lwShowSlider").value); }));
+  $("lwRoundsSlider").addEventListener("input", () => lwSet(() => { state.lwRounds = Number($("lwRoundsSlider").value); }));
+  $("lwRowColors").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-lw-color]");
+    if (!b) return;
+    lwSet(() => { state.lwRowColors[Number(b.dataset.lwRow)] = b.dataset.lwColor; });
+  });
+
+  // ---- Run ----
+  let lwRun = null;  // { round, path, phase: show|walk|check|karte, showEnd, pausedAt }
+  let lwLast = null; // result handed to finishSession()
+  function lwStop() {
+    if (!lwRun && $("lwStage").hidden) return;
+    lwRun = null;
+    $("lwStage").hidden = true;
+    $("lwPauseOverlay").hidden = true;
+    $("lwPauseBtn").hidden = true;
+  }
+  function lwRender() {
+    const r = lwRun;
+    if (!r) return;
+    const show = r.phase !== "walk";
+    $("lwMap").innerHTML = lwMapSvg(r.path, r.cfg.lwRowColors, show, { label: show ? "Karte mit deinem Weg" : "Karte ohne Weg" });
+    const of = r.cfg.lwEnd === "runden" ? ` von ${r.cfg.lwRounds}` : "";
+    const left = Math.max(0, Math.ceil(r.showEnd - lwNow()));
+    $("lwCaption").textContent = r.phase === "show" ? `Weg ${r.round}${of} · merk dir den Weg · noch ${left} s`
+      : r.phase === "walk" ? `Weg ${r.round}${of} · lauf ihn aus dem Kopf`
+      : r.phase === "check" ? `Weg ${r.round}${of} · so war der Weg` : `Weg ${r.round}${of}`;
+    const reveal = $("lwRevealBtn");
+    reveal.hidden = !(r.phase === "walk" || r.phase === "check");
+    reveal.textContent = r.phase === "check" ? "Weg ausblenden" : "Weg zeigen";
+    const last = r.cfg.lwEnd === "runden" && r.round >= r.cfg.lwRounds;
+    $("lwNextBtn").textContent = last ? "Fertig" : "Nächster Weg";
+    $("lwNextBtn").hidden = r.phase === "show";
+  }
+  function lwNow() { return (performance.now() - session.startTime) / 1000; }
+  function lwNewPath() {
+    const r = lwRun;
+    let p, tries = 0;
+    do { p = lwMakePath(r.cfg.lwRows, r.cfg.lwCols, r.cfg.lwLength, Math.random); tries++; } while (r.path && p.d === r.path.d && tries < 5);
+    r.path = p;
+    if (navigator.webdriver) window.__lwLast = p;
+    if (r.cfg.lwVariant === "merken") { r.phase = "show"; r.showEnd = lwNow() + r.cfg.lwShowS; } else r.phase = "karte";
+    lwRender();
+  }
+  function lwTick() {
+    const r = lwRun;
+    if (!r || r.pausedAt) return;
+    const el = lwNow();
+    if (r.cfg.lwEnd === "dauer" && el >= session.total) { lwComplete(); return; }
+    if (r.phase === "show" && el >= r.showEnd) { r.phase = "walk"; lwRender(); }
+    else if (r.phase === "show") {
+      const txt = $("lwCaption").textContent, left = Math.max(0, Math.ceil(r.showEnd - el));
+      if (!txt.endsWith(`noch ${left} s`)) lwRender();
+    }
+    els.timeEl.textContent = r.cfg.lwEnd === "dauer" ? fmtClock(session.total - el) : fmtClock(el);
+    raf = requestAnimationFrame(lwTick);
+  }
+  function startLaufweg() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.player.hidden = false;
+    els.playerBar.hidden = false;
+    els.progressTrack.hidden = !comboProgram && !program;
+    els.stageWrap.hidden = true;
+    els.coneOrderStage.hidden = true;
+    els.periphPauseBtn.hidden = true;
+    $("lwStage").hidden = false;
+    $("lwPauseBtn").hidden = false;
+    $("lwPauseOverlay").hidden = true;
+    if (raf) cancelAnimationFrame(raf);
+    const cfg = lwNormalize(lwSnapshot());
+    session = { startTime: performance.now(), total: cfg.lwEnd === "dauer" ? cfg.lwDurS : 3600, schedule: [] };
+    lwRun = { cfg, round: 1, path: null, phase: "karte", showEnd: 0, pausedAt: null };
+    // keep the map below the floating player bar
+    const bar = els.playerBar.getBoundingClientRect();
+    $("lwStage").style.paddingTop = Math.round(Math.max(64, bar.bottom + 6)) + "px";
+    requestWakeLock();
+    lwNewPath();
+    raf = requestAnimationFrame(lwTick);
+  }
+  function lwComplete() {
+    const r = lwRun;
+    if (!r) return;
+    lwLast = { cfg: r.cfg, count: r.round };
+    lwStop();
+    finishSession();
+  }
+  $("lwNextBtn").addEventListener("click", () => {
+    const r = lwRun;
+    if (!r || r.pausedAt) return;
+    if (r.cfg.lwEnd === "runden" && r.round >= r.cfg.lwRounds) { lwComplete(); return; }
+    r.round++;
+    lwNewPath();
+  });
+  $("lwRevealBtn").addEventListener("click", () => {
+    const r = lwRun;
+    if (!r || r.pausedAt) return;
+    r.phase = r.phase === "check" ? "walk" : "check";
+    lwRender();
+  });
+  $("lwPauseBtn").addEventListener("click", () => {
+    const r = lwRun;
+    if (!r || r.pausedAt) return;
+    r.pausedAt = performance.now();
+    if (raf) cancelAnimationFrame(raf);
+    raf = null;
+    $("lwPauseOverlay").hidden = false;
+    $("lwPauseBtn").hidden = true;
+  });
+  $("lwResumeBtn").addEventListener("click", () => {
+    const r = lwRun;
+    if (!r || !r.pausedAt) return;
+    session.startTime += performance.now() - r.pausedAt;
+    r.pausedAt = null;
+    $("lwPauseOverlay").hidden = true;
+    $("lwPauseBtn").hidden = false;
+    raf = requestAnimationFrame(lwTick);
+  });
+  function lwResultText(d) { return `${d.count} ${d.count === 1 ? "Weg" : "Wege"}`; }
+  function lwNote(d) { return `${LW_VARIANT_LABELS[d.cfg.lwVariant]} · ${d.cfg.lwRows}×${d.cfg.lwCols} Hütchen · ${LW_LENGTHS[d.cfg.lwLength].label} · ${lwResultText(d)}`; }
+  if (navigator.webdriver) window.__lw = {
+    make: (rows, cols, length, seed) => { let x = seed || 1; const rng = () => ((x = (x * 16807) % 2147483647) / 2147483647); return lwMakePath(rows, cols, length, rng); },
+    run: () => (lwRun ? { round: lwRun.round, phase: lwRun.phase, cfg: lwRun.cfg, paused: !!lwRun.pausedAt, d: lwRun.path && lwRun.path.d } : null),
+    finish: () => { if (lwRun) lwComplete(); },
+  };
 
   // idx indexes program.steps (exercises and video steps interleaved).
   // Used for every direct/manual chapter jump (chapter list, prev/next,
@@ -7092,11 +7477,13 @@
     buildProgressTrack(1);
     els.liveNav.hidden = true;
     if (EXERCISES[state.exercise].type === "color-tap") startConeTap();
+    else if (EXERCISES[state.exercise].type === "laufweg") startLaufweg();
     else runSession();
   }
 
   function finishSession() {
     if (raf) cancelAnimationFrame(raf);
+    const lwDone = lwLast; lwLast = null; // Hütchen · Laufweg result (lwComplete)
     // Farbfelder · Antippen: close the last answer window before the session goes.
     const ffTap = session && session.ffTap;
     if (ffTap) ffTapFinish(ffTap);
@@ -7117,6 +7504,9 @@
       const isRecord = saveConeBest(coneTap.duration, coneTap.count);
       note = `${coneTap.count} Durchgänge`;
       summary = `${coneTap.count} Durchgänge · ${fmtMinutes(spent)}` + (isRecord && coneTap.count > 0 ? " · Neue Bestleistung!" : "");
+    } else if (lwDone) {
+      summary = `${lwResultText(lwDone)} · ${fmtMinutes(spent)}`;
+      note = lwNote(lwDone);
     } else {
       summary = `${ex.title} · ${fmtMinutes(spent)}`;
       // Farbfelder: the history row names the mode (8 very different variants).
@@ -7136,6 +7526,7 @@
 
   function leavePlayer() {
     if (raf) cancelAnimationFrame(raf);
+    lwStop(); // Hütchen · Laufweg
     session = null;
     coneTap = null;
     program = null;
@@ -7299,6 +7690,7 @@
         const usedColors = ex && ex.usesArrowColors ? e.arrowColors : ex && ex.usesStroopColors ? e.stroopColors : e.colors;
         if (e.ff) return `${fmtMinutes(e.duration)} · ${FF_MODE_LABELS[e.ff.ffMode] || ""}`;
         if (e.cn) return `${fmtMinutes(e.duration)} · ${e.cn.cnFields} Felder · ${(e.colors || []).length} Farben`;
+        if (e.lw) return `${LW_VARIANT_LABELS[e.lw.lwVariant] || ""} · ${e.lw.lwRows}×${e.lw.lwCols} · ${(LW_LENGTHS[e.lw.lwLength] || LW_LENGTHS.mittel).label}`;
         return `${fmtMinutes(e.duration)}${usedColors && usedColors.length ? ` · ${usedColors.length} Farben` : ""}`;
       },
       (entry) => {
@@ -7311,6 +7703,7 @@
         state.intervalMax = entry.intervalMax;
         if (entry.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(entry.ff))); ffNormalize(state); }
         if (entry.cn) { Object.assign(state, entry.cn); cnNormalize(state); }
+        if (entry.lw) lwApply(entry.lw);
         // Periphere Wahrnehmung (NAT presets, 2026-10-07): Zeichen, Bereich,
         // Fixpunkt, Farben and background travel with the preset too.
         if (entry.periph) { Object.assign(state, JSON.parse(JSON.stringify(entry.periph))); savePrefs(); loadPrefs(); }
@@ -7321,6 +7714,7 @@
           renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
           if (EXERCISES[state.exercise].type === "farbfelder") syncFfUI();
           if (entry.cn) syncCnUI();
+          if (entry.lw) syncLwUI();
           if (entry.periph) { syncPeriphKindUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); syncPeriphColorUI(); syncPeriphFixUI(); syncBgUI(); }
           return;
         }
@@ -7341,6 +7735,7 @@
         ...(EXERCISES[state.exercise].type === "farbfelder" ? { ff: ffStateSnapshot() } : {}),
         ...(EXERCISES[state.exercise].type === "periph" ? { periph: { ...periphStateSnapshot(), bgColorKey: state.bgColorKey, bgIntensity: state.bgIntensity } } : {}),
         ...(EXERCISES[state.exercise].type === "colornum" ? { cn: { cnFields: state.cnFields } } : {}),
+        ...(EXERCISES[state.exercise].type === "laufweg" ? { lw: lwSnapshot() } : {}),
       });
       vtSavedStore.save(list);
       renderVTSaved();
@@ -8031,7 +8426,7 @@
   function softApplies(ex) {
     if (ex === "blitz" || ex === "flash" || ex === "optodrum") return true;
     const e = EXERCISES[ex];
-    return !!e && e.type !== "color-tap";
+    return !!e && e.type !== "color-tap" && e.type !== "laufweg";
   }
   function softMasterOn() { return masterPrefs.softStimuli === true; }
   function softOverride(ex) { return typeof softOverrides[ex] === "boolean" ? softOverrides[ex] : null; }
@@ -18965,7 +19360,7 @@
     // start after the Kombi pause.
     const first = def.blocks && def.blocks[0];
     const own = !first || first.domain === "wimhof" || first.domain === "workout" ||
-      (first.domain === "visual" && !(EXERCISES[first.exercise] && EXERCISES[first.exercise].type === "color-tap"));
+      (first.domain === "visual" && !(EXERCISES[first.exercise] && /^(color-tap|laufweg)$/.test(EXERCISES[first.exercise].type)));
     if (own || !leadInWanted()) { go(); return; }
     runLeadIn(go, /^(breath|cardio|free)$/.test(first.domain));
   }
@@ -19018,6 +19413,7 @@
       if (block.periph) Object.assign(state, JSON.parse(JSON.stringify(block.periph)));
       if (block.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
       if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
+      if (block.lw) lwApply(block.lw);
       // Generalized from a visual-only "usesColors" check (the sole shape
       // the original 3 curated presets ever needed) to all 3 colour kinds,
       // now that capture mode lets any exercise's block carry its own
@@ -19652,7 +20048,7 @@
     if (!b || b.disabled) return;
     // Hütchen sortieren shares Visual Training's start button but has no
     // canvas, so it never got VT's own countdown (Feinheit 10, 2026-10-06).
-    const coneStart = b.id === "startBtn" && EXERCISES[state.exercise] && EXERCISES[state.exercise].type === "color-tap";
+    const coneStart = b.id === "startBtn" && EXERCISES[state.exercise] && /^(color-tap|laufweg)$/.test(EXERCISES[state.exercise].type);
     if (!LEADIN_START_IDS.includes(b.id) && !coneStart) return;
     if (b.textContent.replace(/­/g, "").trim() !== "Training starten") return;
     e.preventDefault();

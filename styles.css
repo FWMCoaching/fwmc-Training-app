@@ -1247,6 +1247,30 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .cone-order-row{display:flex;gap:4vmin;align-items:center;justify-content:center}
 .cone-order-dot{width:20vmin;height:20vmin;max-width:130px;max-height:130px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
 
+/* Hütchen · Laufweg (2026-10-08): map stage inside #player, fixed hex colours */
+.lw-stage{flex:1;display:flex;flex-direction:column;min-height:0;background:#ffffff;color:#16232a;
+  padding:72px 14px calc(14px + env(safe-area-inset-bottom,0px));gap:10px;position:relative;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.lw-caption{font-size:calc(16px * var(--ts,1));font-weight:700;text-align:center;color:#16232a;min-height:1.4em}
+.lw-map{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+.lw-map .lw-svg{width:100%;height:100%;max-width:720px}
+.lw-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.lw-btn{min-height:52px;padding:12px 22px;border-radius:14px;border:none;background:#007094;color:#ffffff;
+  font-size:calc(17px * var(--ts,1));font-weight:700;cursor:pointer;flex:1 1 0;max-width:340px;touch-action:manipulation}
+.lw-btn.secondary{background:#ffffff;color:#007094;box-shadow:inset 0 0 0 2px #007094}
+.lw-btn:active{filter:brightness(.92)}
+.lw-stage .pause-overlay{padding-top:calc(90px + env(safe-area-inset-top,0px))}
+.lw-size-line{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.lw-size-label{flex:none;min-width:4.2em;font-size:calc(14px * var(--ts,1));font-weight:600;color:var(--ink)}
+.lw-size-line .choice-row{flex:1;margin:0}
+.lw-preview{margin:6px auto 4px;max-width:260px;border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.lw-preview .lw-svg{display:block;width:100%;height:auto}
+.lw-row-colors{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.lw-row-name{font-size:calc(13.5px * var(--ts,1));font-weight:600;color:var(--ink)}
+.lw-row-swatches{display:flex;flex-wrap:wrap;gap:6px}
+.lw-swatch{width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;box-shadow:0 0 0 1px rgba(0,0,0,.1)}
+.lw-swatch.active{box-shadow:0 0 0 3px var(--bg),0 0 0 5.5px var(--ink)}
+
 /* ---- Breathing player ---- */
 .breath-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:0 20px}
 .breath.big{width:min(64vw,270px);height:min(64vw,270px)}
