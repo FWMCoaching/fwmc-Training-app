@@ -1,9 +1,9 @@
 """QR-Übergabe (Idee 69, Fabian 2026-10-08, Variante A + Kunden-Training).
 
-Trainer side: Fortschritt "An Kunden übergeben" -> range chips (seit <Zeit> /
-30 / 60 / 90 Min) + checkboxes -> one QR code (or several for a big payload)
--> "Fertig" asks "Diese N Trainings auf deinem Gerät löschen?" (Löschen /
-Behalten). Client side: the app opens with #import=…, asks once, imports with
+Trainer side: "An Kunden übergeben" (under the code card on Heute/Training
+since 08.10. abends) -> range chips (seit <Zeit> / 30 / 60 / 90 Min) +
+checkboxes -> one QR code (or several for a big payload) -> "Fertig" removes
+the handed-over runs from the trainer's history without asking. Client side: the app opens with #import=…, asks once, imports with
 the tag "bei deinem Trainer", dedupes, clears the fragment. iPhone Safari gets
 "Code kopieren" + the paste field in the home-screen app. Kunden-Training:
 runs go to their own store, never into the trainer's history/progress/bests,
@@ -112,8 +112,20 @@ async def decode_screenshot(pg):
 
 
 async def open_progress(pg):
-    await pg.goto(ROOT + "?bereich=fortschritt")
+    await pg.goto(ROOT + "?bereich=training")
     await pg.wait_for_timeout(400)
+
+
+async def tm_menu(pg):
+    """Trainer-Menü oben links (08.10. abends): trainer buttons live there."""
+    if not await pg.is_visible("#trainerMenuSheet"):
+        await pg.locator(".trainer-mode-btn:visible").first.click()
+        await pg.wait_for_timeout(150)
+
+
+async def tm_click(pg, sel):
+    await tm_menu(pg)
+    await pg.click(sel)
 
 
 async def main():
@@ -126,14 +138,18 @@ async def main():
                 entry(3, 80, "Gleichgewicht · Wörter"), entry(4, 180, "Optodrum (dein Aufwärmen)", kind="optodrum")]
         ctx, pg = await new_page(b, seed={"fwmc-history-v1": hist})
         await open_progress(pg)
-        check("Fortschritt shows the history section with the 4 entries",
-              await pg.is_visible("#progressHistorySection") and await pg.locator("#progressHistoryList li").count() == 3)
-        check("Fortschritt: 'An Kunden übergeben' (secondary) + one-line explanation",
+        await pg.goto(ROOT + "?bereich=fortschritt"); await pg.wait_for_timeout(400)
+        check("Fortschritt shows the history section with the 4 entries, no trainer block there (08.10. abends)",
+              await pg.is_visible("#progressHistorySection") and await pg.locator("#progressHistoryList li").count() == 3
+              and not await pg.is_visible("#handoverGroup"))
+        await open_progress(pg)
+        await tm_menu(pg)
+        check("Trainer-Menü: 'An Kunden übergeben' (secondary)",
               await pg.is_visible("#handoverOpenBtn") and "secondary" in (await pg.get_attribute("#handoverOpenBtn", "class"))
               and "QR-Code" in await pg.inner_text("#handoverGroup"))
         await pg.screenshot(path=os.path.join(SHOTS, "1_fortschritt_390_light.png"), full_page=True)
         prog_before = await ls(pg, "fwmc-progress-v1")
-        await pg.click("#handoverOpenBtn"); await pg.wait_for_timeout(250)
+        await tm_click(pg, "#handoverOpenBtn"); await pg.wait_for_timeout(250)
         check("opens the screen 'An Kunden übergeben'", await pg.is_visible("#handoverScreen"))
         since = (await pg.inner_text("#handoverSinceLabel")).strip()
         import calendar
@@ -234,13 +250,11 @@ async def main():
 
         # ================= trainer: Fertig -> delete =================
         await pg.click("#handoverDoneBtn"); await pg.wait_for_timeout(300)
-        check("Fertig asks 'Diese 3 Trainings auf deinem Gerät löschen?' (Löschen / Behalten)",
-              await pg.is_visible("#confirmSheet") and await pg.inner_text("#confirmTitle") == "Diese 3 Trainings auf deinem Gerät löschen?"
-              and await pg.inner_text("#confirmYesBtn") == "Löschen" and await pg.inner_text("#confirmNoBtn") == "Behalten")
+        check("Fertig asks nothing (Fabian 08.10. abends) and names the removal in a toast",
+              not await pg.is_visible("#confirmSheet") and "aus deinem Verlauf entfernt" in await pg.evaluate("(document.querySelector('.app-toast') || {}).textContent || ''"))
         await pg.screenshot(path=os.path.join(SHOTS, "5_aufraeumen_390_light.png"))
-        await pg.click("#confirmYesBtn"); await pg.wait_for_timeout(300)
         th = await ls(pg, "fwmc-history-v1", [])
-        check("Löschen removes exactly those 3 entries", [e["id"] for e in th] == [hist[3]["id"]], [e["id"] for e in th])
+        check("Fertig removes exactly those 3 entries", [e["id"] for e in th] == [hist[3]["id"]], [e["id"] for e in th])
         tprog = await ls(pg, "fwmc-progress-v1", {})
         check("trainer progress drops them too", sum(d["n"] for d in tprog["days"].values()) == 1
               and sum(d["n"] for d in prog_before["days"].values()) == 4, tprog)
@@ -253,7 +267,7 @@ async def main():
             e["note"] = f"Stufe {i % 9} · Treffer {i % 13}/12"
         ctx, pg = await new_page(b, seed={"fwmc-history-v1": big})
         await open_progress(pg)
-        await pg.click("#handoverOpenBtn"); await pg.wait_for_timeout(200)
+        await tm_click(pg, "#handoverOpenBtn"); await pg.wait_for_timeout(200)
         await pg.click('#handoverRangeRow [data-ho-range="90"]'); await pg.wait_for_timeout(200)
         check("150 entries selected", await pg.inner_text("#handoverGoBtn") == "150 Trainings übergeben")
         await pg.click("#handoverGoBtn"); await pg.wait_for_timeout(800)
@@ -294,12 +308,11 @@ async def main():
         hist2 = [entry(201, 5, "Flash-Speicher-Test"), entry(202, 15, "Blitz-Raster")]
         ctx, pg = await new_page(b, seed={"fwmc-history-v1": hist2})
         await open_progress(pg)
-        await pg.click("#handoverOpenBtn"); await pg.wait_for_timeout(200)
+        await tm_click(pg, "#handoverOpenBtn"); await pg.wait_for_timeout(200)
         await pg.click("#handoverGoBtn"); await pg.wait_for_timeout(600)
         url2 = await qr_url(pg)
         await pg.click("#handoverDoneBtn"); await pg.wait_for_timeout(200)
-        await pg.click("#confirmNoBtn"); await pg.wait_for_timeout(200)
-        check("Behalten keeps the entries", len(await ls(pg, "fwmc-history-v1", [])) == 2)
+        check("Fertig removes the handed-over entries", len(await ls(pg, "fwmc-history-v1", [])) == 0)
         sctx, sp = await new_page(b, extra_init="localStorage.setItem('fwmc-test-ios-browser','true');")
         await sctx.grant_permissions(["clipboard-read", "clipboard-write"], origin=f"http://localhost:{PORT}")
         await sp.goto(url2); await sp.wait_for_timeout(600)
@@ -338,7 +351,7 @@ async def main():
         ctx, pg = await new_page(b, seed=seed)
         await open_progress(pg)
         prog0 = await ls(pg, "fwmc-progress-v1")
-        await pg.click("#clientRunStartBtn"); await pg.wait_for_timeout(300)
+        await tm_click(pg, '#tmModes [data-tm="client"]'); await pg.wait_for_timeout(300)
         strip = await pg.inner_text("#clientRunStrip")
         check("strip 'Kunden-Training · seit HH:MM' + Beenden", await pg.is_visible("#clientRunStrip") and "Kunden-Training · seit " in strip
               and await pg.is_visible("#clientRunEndBtn"), strip)
@@ -348,7 +361,7 @@ async def main():
         check("strip stays on other pages", await pg.is_visible("#clientRunStrip"))
         await pg.click('#freeOwnGrid [data-free-id="f1"]'); await pg.wait_for_timeout(200)
         await pg.click("#freeStartBtn"); await pg.wait_for_timeout(300)
-        check("strip hidden inside the player", not await pg.is_visible("#clientRunStrip"))
+        check("inside the player the strip is a thin line in the mode colour", await pg.evaluate("(() => { const s = document.getElementById('clientRunStrip'); return !s.hidden && s.classList.contains('slim') && s.getBoundingClientRect().height <= 10; })()"))
         await pg.click("#freeTickBtn"); await pg.wait_for_timeout(300)
         await pg.evaluate("localStorage.setItem('fwmc-remember-best-v1', JSON.stringify({leicht: 9}))")  # a client's best
         await pg.click("#freeDoneBackBtn"); await pg.wait_for_timeout(200)
@@ -358,8 +371,12 @@ async def main():
         check("client run stored flagged in fwmc-client-runs-v1", len(runs) == 1 and runs[0]["title"] == "Eisbad" and runs[0].get("client"))
         check("trainer progress unchanged (stats, streak, Wochenabschluss read it)", await ls(pg, "fwmc-progress-v1") == prog0)
         check("strip counts '1 Training'", "1 Training" in await pg.inner_text("#clientRunStrip"))
-        await pg.click("#clientRunEndBtn"); await pg.wait_for_timeout(700)
-        check("Beenden goes straight to the QR code with that 1 run", await pg.is_visible("#handoverQrScreen")
+        await pg.click("#clientRunEndBtn"); await pg.wait_for_timeout(400)
+        ticked = await pg.evaluate("[...document.querySelectorAll('#handoverList input:checked')].length")
+        check("Beenden opens the selection (08.10. abends) with this client run ticked, no time window",
+              await pg.is_visible("#handoverScreen") and ticked == 1 and not await pg.is_visible("#handoverRangeGroup"), ticked)
+        await pg.click("#handoverGoBtn"); await pg.wait_for_timeout(700)
+        check("then the QR code with that 1 run", await pg.is_visible("#handoverQrScreen")
               and "1 Training" in await pg.inner_text("#handoverQrMeta"))
         check("strip gone, session cleared", not await pg.is_visible("#clientRunStrip") and await ls(pg, "fwmc-client-session-v1") is None)
         check("own best restored after the session", await ls(pg, "fwmc-remember-best-v1") == {"leicht": 4})
@@ -375,20 +392,22 @@ async def main():
         check("client receives the Kunden-Training run", len(ch) == 1 and ch[0]["title"] == "Eisbad" and ch[0].get("trainer") == 1)
         await cctx.close()
         # leftover runs (left the QR screen via ‹): shown on Fortschritt
-        await pg.click("#clientRunStartBtn"); await pg.wait_for_timeout(200)
+        await tm_click(pg, '#tmModes [data-tm="client"]'); await pg.wait_for_timeout(200)
         await pg.goto(ROOT + "?bereich=free"); await pg.wait_for_timeout(300)
         await pg.click('#freeOwnGrid [data-free-id="f1"]'); await pg.wait_for_timeout(150)
         await pg.click("#freeStartBtn"); await pg.wait_for_timeout(250)
         await pg.click("#freeTickBtn"); await pg.wait_for_timeout(250)
         await pg.click("#freeDoneBackBtn"); await pg.wait_for_timeout(150)
         await pg.click("#clientRunEndBtn"); await pg.wait_for_timeout(600)
-        await pg.click("#handoverQrBackBtn"); await pg.wait_for_timeout(300)
-        check("leftover runs: Fortschritt says '1 Training … noch nicht übergeben'",
+        await pg.click("#handoverBackBtn"); await pg.wait_for_timeout(300)
+        await tm_menu(pg)
+        check("leftover runs: Trainer-Menü says '1 Training … noch nicht übergeben'",
               await pg.is_visible("#clientRunPending") and "noch nicht übergeben" in await pg.inner_text("#clientRunPending"))
-        await pg.click("#clientRunPendingBtn"); await pg.wait_for_timeout(600)
-        check("'QR-Code zeigen' reopens the code", await pg.is_visible("#handoverQrScreen"))
-        await pg.click("#handoverQrBackBtn"); await pg.wait_for_timeout(200)
-        await pg.click("#clientRunDropBtn"); await pg.wait_for_timeout(200)
+        await tm_click(pg, "#clientRunPendingBtn"); await pg.wait_for_timeout(600)
+        check("'QR-Code zeigen' reopens the selection with the leftover ticked", await pg.is_visible("#handoverScreen")
+              and await pg.evaluate("[...document.querySelectorAll('#handoverList input:checked')].length") == 1)
+        await pg.click("#handoverBackBtn"); await pg.wait_for_timeout(200)
+        await tm_click(pg, "#clientRunDropBtn"); await pg.wait_for_timeout(200)
         await pg.click("#confirmYesBtn"); await pg.wait_for_timeout(200)
         check("'Löschen' drops the leftovers", (await ls(pg, "fwmc-client-runs-v1", [])) == [] and not await pg.is_visible("#clientRunPending"))
         await ctx.close()
@@ -410,7 +429,7 @@ async def main():
                 await open_progress(pg)
                 ok = [await no_sideways(pg)]
                 await pg.screenshot(path=os.path.join(SHOTS, f"L1_fortschritt_{tag}.png"), full_page=True)
-                await pg.click("#handoverOpenBtn"); await pg.wait_for_timeout(250)
+                await tm_click(pg, "#handoverOpenBtn"); await pg.wait_for_timeout(250)
                 ok.append(await no_sideways(pg))
                 await pg.screenshot(path=os.path.join(SHOTS, f"L2_zeitraum_{tag}.png"), full_page=True)
                 wrap = await pg.evaluate("""[...document.querySelectorAll('#handoverRangeRow .choice, #handoverGoBtn')].filter(e => e.getClientRects().length)
@@ -421,8 +440,7 @@ async def main():
                 await pg.screenshot(path=os.path.join(SHOTS, f"L3_qr_{tag}.png"), full_page=True)
                 await pg.click("#handoverDoneBtn"); await pg.wait_for_timeout(250)
                 await pg.screenshot(path=os.path.join(SHOTS, f"L5_aufraeumen_{tag}.png"))
-                await pg.click("#confirmNoBtn"); await pg.wait_for_timeout(200)
-                await pg.click("#clientRunStartBtn"); await pg.wait_for_timeout(250)
+                await tm_click(pg, '#tmModes [data-tm="client"]'); await pg.wait_for_timeout(250)
                 ok.append(await no_sideways(pg))
                 sh = await pg.evaluate("document.getElementById('clientRunStrip').getBoundingClientRect().height")
                 ok.append(44 <= sh <= 60)
@@ -433,7 +451,9 @@ async def main():
                 await pg.screenshot(path=os.path.join(SHOTS, f"L6_einfuegen_{tag}.png"))
                 await pg.click("#handoverPasteCancelBtn")
                 cctx, cp = await new_page(b, scheme, w, h, extra_init="localStorage.setItem('fwmc-test-ios-browser','true');")
-                await pg.click("#handoverOpenBtn"); await pg.wait_for_timeout(200)
+                # "Fertig" removed the runs (08.10. abends), seed them again for the client view
+                await pg.evaluate("h => localStorage.setItem('fwmc-history-v1', JSON.stringify(h))", lay_hist)
+                await tm_click(pg, "#handoverOpenBtn"); await pg.wait_for_timeout(200)
                 await pg.click("#handoverGoBtn"); await pg.wait_for_timeout(600)
                 await cp.goto(await qr_url(pg)); await cp.wait_for_timeout(600)
                 ok.append(await no_sideways(cp))

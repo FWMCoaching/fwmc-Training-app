@@ -628,6 +628,14 @@ For every new or changed exercise/screen, in the same commit:
   buttons ≤ 480 px, short status via `barCompact()`); colour meanings are
   chip rows (`colorChoiceRowsHtml`), never a `<select>`; German "1,5 s" and
   "80 %". Details docs/notes/01.
+- Trainer-Menü (2026-10-08 abends): the `trainer-tools` unlock shows a round
+  button in the ‹ slot of the main pages; modes Mein Training / Mit Kunde /
+  Ausprobieren ("Test"), all trainer stores 14 days, selection before every QR,
+  overview "Gespeicherte Trainings"; sent runs leave history + Fortschritt,
+  deleted own runs are only hidden. Anything that records a run still goes
+  through `addHistory()` (it diverts by mode). Details docs/notes/36. A button
+  must stay readable on its background in light and dark:
+  `tests/knopf_lesbar_1008_test.py` (contrast ≥ 3:1 everywhere).
 - Neuro-Aktivierung (2026-10-08): hidden area `neuro`, visible only after a
   `neuro-unlock` code (`fwmc-neuro-unlocked-v1`; tests seed `fwmc-test-neuro`).
   Anything that lists areas/exercises (hub, PLAN_AREAS, Kombi groups, tray,

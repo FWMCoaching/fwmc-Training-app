@@ -36,7 +36,7 @@
 <script>try{var f=localStorage.getItem("fwmc-test-bottomnav");if(!navigator.webdriver||(f&&f!=="false"))document.body.classList.add("has-bottom-nav")}catch(e){}</script>
 <div class="app-splash" id="appSplash" aria-hidden="true"><img src="logo-white.png" width="900" height="177" alt=""></div>
 <div class="client-run-strip" id="clientRunStrip" role="status" hidden>
-  <span class="client-run-text">Kunden-Training &middot; seit <span id="clientRunSince"></span><span id="clientRunCount"></span></span>
+  <span class="client-run-text"><span id="clientRunLabel">Kunden-Training</span><span id="clientRunSep"> &middot; seit </span><span id="clientRunSince"></span><span id="clientRunCount"></span></span>
   <button class="client-run-end" id="clientRunEndBtn" type="button">Beenden</button>
 </div>
 <div class="screen" id="home" hidden>
@@ -292,7 +292,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 21:06</p>
+    <p class="app-version">Stand: 08.10.2026, 23:13</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -452,7 +452,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 21:06</p>
+    <p class="app-version">Stand: 08.10.2026, 23:13</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -488,7 +488,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 21:06</p>
+    <p class="app-version">Stand: 08.10.2026, 23:13</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -542,7 +542,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 21:06</p>
+    <p class="app-version">Stand: 08.10.2026, 23:13</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -630,6 +630,10 @@
       <button class="start-btn secondary" id="handoverOpenBtn" type="button">An Kunden &uuml;bergeben</button>
       <p class="group-help">Schickt Trainings per QR-Code auf das Handy deines Kunden.</p>
     </div>
+    <div class="handover-item" id="tmStoreItem">
+      <button class="start-btn secondary" id="tmStoreBtn" type="button">Gespeicherte Trainings</button>
+      <p class="group-help">Alles der letzten 14 Tage: &uuml;bergeben oder aufr&auml;umen.</p>
+    </div>
     <div class="handover-item" id="clientRunItem">
       <button class="start-btn secondary" id="clientRunStartBtn" type="button">Kunden-Training starten</button>
       <p class="group-help" id="clientRunActiveNote" hidden>Ein Kunden-Training l&auml;uft. Beenden kannst du es oben im Streifen.</p>
@@ -643,7 +647,7 @@
       </div>
     </div>
     <div class="handover-item" id="handoverScanItem">
-      <button class="text-link small handover-paste-link" id="handoverScanOpenBtn" type="button">Trainer-QR-Code scannen</button>
+      <button class="text-link small handover-paste-link" id="handoverScanOpenBtn" type="button"><svg class="qr-mini" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M14 14h2.5v2.5H14zM17.5 17.5H20V20h-2.5zM14 18.5v1.5M18.5 14H20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Trainer-QR-Code scannen</button>
       <p class="group-help">Zeigt dir dein Trainer einen QR-Code mit deinen Trainings? Scanne ihn hier, dann landen sie in dieser App.</p>
     </div>
   </div>
@@ -653,9 +657,9 @@
   <div class="readyhead">
     <button class="back-link" id="handoverBackBtn">&larr; Zur&uuml;ck</button>
   </div>
-  <h1 class="page-title">An Kunden &uuml;bergeben</h1>
-  <p class="page-sub">Welche Trainings bekommt dein Kunde? W&auml;hle den Zeitraum und nimm einzelne Trainings heraus, die nicht zu ihm geh&ouml;ren.</p>
-  <div class="group">
+  <h1 class="page-title" id="handoverPickTitle">An Kunden &uuml;bergeben</h1>
+  <p class="page-sub" id="handoverPickSub">Welche Trainings bekommt dein Kunde? W&auml;hle den Zeitraum und nimm einzelne Trainings heraus, die nicht zu ihm geh&ouml;ren.</p>
+  <div class="group" id="handoverRangeGroup">
     <div class="group-label">Zeitraum</div>
     <div class="choice-row handover-range" id="handoverRangeRow">
       <button class="choice" type="button" data-ho-range="since"><span id="handoverSinceLabel">seit</span></button>
@@ -665,6 +669,15 @@
     </div>
     <label class="handover-since" id="handoverSinceRow"><span>Seit</span> <input type="time" id="handoverSinceInput" class="plan-date-input" step="300"> <span>Uhr</span></label>
   </div>
+  <div class="group" id="handoverKindGroup" hidden>
+    <div class="group-label">Zeigen</div>
+    <div class="choice-row handover-range" id="handoverKindRow">
+      <button class="choice" type="button" data-ho-kind="all">Alle</button>
+      <button class="choice" type="button" data-ho-kind="client">Kunde</button>
+      <button class="choice" type="button" data-ho-kind="try">Test</button>
+      <button class="choice" type="button" data-ho-kind="own">Eigene</button>
+    </div>
+  </div>
   <div class="group">
     <div class="group-label">Trainings</div>
     <ul class="history-list handover-list" id="handoverList"></ul>
@@ -673,11 +686,13 @@
     <div class="hilfsmittel-kicker">Bevor dein Kunde scannt:</div>
     <ul>
       <li>Hat er die App auf seinem Handy (am besten auf dem Startbildschirm)?</li>
-      <li>Er tippt in seiner App unter Fortschritt auf &bdquo;Trainer-QR-Code scannen&ldquo;.</li>
+      <li>Er tippt in seiner App auf Heute oder Training unter dem Code-Feld auf &bdquo;Trainer-QR-Code scannen&ldquo;.</li>
       <li>Nicht mit der normalen Kamera-App scannen: Auf dem iPhone landen die Trainings sonst im Browser statt in seiner App.</li>
     </ul>
   </div>
   <button class="start-btn" id="handoverGoBtn" type="button" disabled>0 Trainings &uuml;bergeben</button>
+  <button class="text-link small danger handover-del" id="handoverDeleteBtn" type="button" disabled>Angehakte l&ouml;schen</button>
+  <button class="text-link small danger handover-del" id="handoverClearBtn" type="button" hidden>Alles l&ouml;schen</button>
 </div>
 
 <div class="screen" id="handoverQrScreen" hidden>
@@ -685,7 +700,7 @@
     <button class="back-link" id="handoverQrBackBtn">&larr; Zur&uuml;ck</button>
   </div>
   <h1 class="page-title">Scannen lassen</h1>
-  <p class="page-sub">Dein Kunde tippt in seiner App unter Fortschritt auf &bdquo;Trainer-QR-Code scannen&ldquo;. Seine App fragt dann einmal, ob er die Trainings &uuml;bernehmen m&ouml;chte.</p>
+  <p class="page-sub">Dein Kunde tippt in seiner App auf Heute oder Training unter dem Code-Feld auf &bdquo;Trainer-QR-Code scannen&ldquo;. Seine App fragt dann einmal, ob er die Trainings &uuml;bernehmen m&ouml;chte.</p>
   <div class="handover-qr-card">
     <canvas class="handover-qr" id="handoverQrCanvas" role="img" aria-label="QR-Code f&uuml;r die &Uuml;bergabe" width="10" height="10"></canvas>
     <p class="handover-qr-error" id="handoverQrError" hidden>Der QR-Code konnte nicht erzeugt werden. Bitte lade die Seite neu und versuche es noch einmal.</p>
@@ -971,7 +986,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 21:06</p>
+    <p class="app-version">Stand: 08.10.2026, 23:13</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1046,7 +1061,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 21:06</p>
+    <p class="app-version">Stand: 08.10.2026, 23:13</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1157,7 +1172,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 21:06</p>
+    <p class="app-version">Stand: 08.10.2026, 23:13</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1229,7 +1244,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 21:06</p>
+    <p class="app-version">Stand: 08.10.2026, 23:13</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1526,7 +1541,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 21:06</p>
+    <p class="app-version">Stand: 08.10.2026, 23:13</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1702,7 +1717,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 21:06</p>
+    <p class="app-version">Stand: 08.10.2026, 23:13</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -2016,7 +2031,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 21:06</p>
+    <p class="app-version">Stand: 08.10.2026, 23:13</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -2393,7 +2408,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 21:06</p>
+    <p class="app-version">Stand: 08.10.2026, 23:13</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -2606,7 +2621,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 21:06</p>
+    <p class="app-version">Stand: 08.10.2026, 23:13</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -8947,7 +8962,7 @@
     <h2 id="handoverImportTitle"></h2>
     <p class="group-help" id="handoverImportText"></p>
     <ul class="history-list handover-import-list" id="handoverImportList"></ul>
-    <p class="group-help handover-ios-note" id="handoverImportIos" hidden>Nutzt du die App vom Startbildschirm? Safari und die App haben getrennte Speicher. Tippe dann auf &bdquo;Code kopieren&ldquo;, &ouml;ffne die App und f&uuml;ge ihn unter Fortschritt &rsaquo; &bdquo;Trainer-QR-Code scannen&ldquo; &rsaquo; &bdquo;Code von Hand einf&uuml;gen&ldquo; ein.</p>
+    <p class="group-help handover-ios-note" id="handoverImportIos" hidden>Nutzt du die App vom Startbildschirm? Safari und die App haben getrennte Speicher. Tippe dann auf &bdquo;Code kopieren&ldquo;, &ouml;ffne die App und f&uuml;ge ihn unter Training &rsaquo; &bdquo;Trainer-QR-Code scannen&ldquo; &rsaquo; &bdquo;Code von Hand einf&uuml;gen&ldquo; ein.</p>
     <div class="handover-sheet-actions">
       <button class="start-btn" id="handoverImportYesBtn" type="button">&Uuml;bernehmen</button>
       <button class="start-btn secondary" id="handoverImportCopyBtn" type="button" hidden>Code kopieren</button>
@@ -8984,6 +8999,24 @@
     <p class="scan-error" id="handoverScanError" role="alert" hidden></p>
     <button class="text-link small scan-paste-link" id="handoverScanPasteBtn" type="button">Code von Hand einf&uuml;gen</button>
     <button class="start-btn secondary" id="handoverScanCancelBtn" type="button">Abbrechen</button>
+  </div>
+</div>
+
+<!-- Trainer-Menü (Fabian 08.10. abends): oben links auf den Hauptseiten,
+     nur nach der Freischaltung "trainer-tools". Drei Modi; die Knöpfe
+     "An Kunden übergeben" und der Kunden-Training-Block ziehen per JS hierher. -->
+<div class="sheet" id="trainerMenuSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="trainerMenuTitle">
+    <h2 id="trainerMenuTitle">Trainer-Men&uuml;</h2>
+    <div class="group-label">Wof&uuml;r nutzt du die App gerade?</div>
+    <div class="tm-modes" id="tmModes">
+      <button class="tm-mode" data-tm="own" type="button"><span class="tm-mode-title">Mein Training</span><span class="tm-mode-sub">Alles z&auml;hlt f&uuml;r deinen Fortschritt.</span></button>
+      <button class="tm-mode" data-tm="client" type="button"><span class="tm-mode-title"><span class="tm-dot tm-dot-client" aria-hidden="true"></span>Mit Kunde</span><span class="tm-mode-sub">Nichts z&auml;hlt f&uuml;r dich. Am Ende kommt der QR-Code f&uuml;r deinen Kunden.</span></button>
+      <button class="tm-mode" data-tm="try" type="button"><span class="tm-mode-title"><span class="tm-dot tm-dot-try" aria-hidden="true"></span>Ausprobieren</span><span class="tm-mode-sub">Nichts z&auml;hlt. 14 Tage lang kannst du es trotzdem noch &uuml;bergeben.</span></button>
+    </div>
+    <p class="group-help" id="tmModeNote" hidden></p>
+    <div class="handover-group tm-tools" id="tmToolsHost"></div>
+    <button class="start-btn secondary" id="tmCloseBtn" type="button">Schlie&szlig;en</button>
   </div>
 </div>
 
