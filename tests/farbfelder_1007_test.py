@@ -60,7 +60,7 @@ async def main():
         check("Zusatzaufgabe offered", await pg.is_visible("#addonGroup"))
         # other exercises don't show the Farbfelder block or the note
         await pg.click("#backToHome"); await pg.wait_for_timeout(200)
-        await pg.click('.excard[data-exercise="cone-compass"]'); await pg.wait_for_timeout(200)
+        await pg.click('.excard[data-exercise="vt-color"]'); await pg.wait_for_timeout(200)
         check("sibling has no Farbfelder block/note", not await pg.is_visible("#ffSettings") and not await pg.is_visible("#hilfsmittelNote"))
         await pg.click("#backToHome"); await pg.wait_for_timeout(200)
 
