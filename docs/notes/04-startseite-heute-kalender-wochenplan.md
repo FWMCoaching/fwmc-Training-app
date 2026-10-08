@@ -70,6 +70,29 @@ Kalender, ein großes Ziel als Motivations-Countdown auf Heute.
   should affect Trainingssteuerung).
 Test: `tests/events_countdown_1005_test.py`.
 
+### Termine wiederholen (Serien, 2026-10-08)
+- Termin sheet: "Wiederholen" `#eventRepeatRow` Nie / Jede Woche / Alle 2
+  Wochen (default Nie); field `repeat: "weekly"|"biweekly"`, missing = once
+  (old events). No end date (Fabian: unlimited + deleting). With a series the
+  date label reads "Erster Termin" and `#eventRepeatHint` says it repeats
+  without end / that editing changes all dates of the series.
+- `eventOccursOn(e, date)`, `eventNextDate(e, from)`; `eventsOn()` returns one
+  copy per day with `date` = that day (`seriesDate` = first date), so week
+  strip, month/quarter/year cells and the day panel need nothing extra. Day
+  rows carry `data-event-date` for the swipe actions.
+- Delete (sheet "Termin löschen" or list swipe) of a series: `confirmDialog`
+  with "Nur diesen Termin" (date into `skip[]`) / "Alle Termine dieser Serie" /
+  "Abbrechen". New `confirmDialog` option `cancel`: shows `#confirmCancelBtn`
+  and makes tapping beside the sheet / Escape cancel instead of running onNo.
+- Trainer events (`fromTrainer`, def.plan.events) never repeat; their sheet
+  hides `#eventRepeatGroup`. Editing keeps unknown fields (e.g. fromTrainer).
+- `nextGoalEvent` counts a repeating goal down to its next date.
+  Trainingsplanung (`focusWeekOf`, Mein Plan goals/markers, plan length,
+  `goalOverrun`) uses `loadSingleEvents()` only, so a weekly game does not
+  mark every week as Wettkampfwoche. Reminders only cover plan entries, events
+  were never part of them.
+Test: `tests/termin_serien_1008_test.py`.
+
 
 ## Weitermachen nach Unterbrechung (2026-10-06)
 

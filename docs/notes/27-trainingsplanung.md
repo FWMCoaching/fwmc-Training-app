@@ -76,6 +76,8 @@ Ziel-Termine (`goal || kind==="wettkampf"`) erzeugen nur einen Empfehlungstext
   (`fwmc-events-v1`, gleicher Speicher wie der Heute-Kalender) ein, mit
   `fromTrainer: <code>`; gleiches Datum + Titel schon da = übersprungen (neue
   Version doppelt nichts). `focusWeekOf` nimmt sie dann für die Empfehlungen mit.
+  Trainer-Termine wiederholen sich nie. Eigene Serien (`repeat`, Notiz 04)
+  zählen für Empfehlungen, Planlänge und Mein Plan nicht mit (`loadSingleEvents`).
 - `checkTrainerPlanUpdate`:
   - Läuft einmal am Tag (`fwmc-plan-check-v1`), 2,5 s nach dem Start.
   - Bei höherer Version erscheint die Karte auf Heute.

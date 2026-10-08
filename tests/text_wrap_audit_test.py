@@ -18,9 +18,9 @@ WIDTHS = [375, 390, 430, 600, 768, 820, 1024, 1180, 1366]
 SCALED = [(375, 1.25), (390, 1.25), (430, 1.25), (390, 0.95)]
 
 AUDIT_JS = r"""
-() => {
+(sel) => {
   const scr = [...document.querySelectorAll('.screen')].find(s => !s.hidden && s.offsetParent !== null);
-  const root = scr || document.body;
+  const root = (sel && document.querySelector(sel)) || scr || document.body;
   const out = [];
   const visible = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -68,8 +68,8 @@ AUDIT_JS = r"""
 def ts_tag(ts):
     return "" if ts == 1 else f" Schrift x{ts}"
 
-async def audit(pg, label, problems):
-    found = await pg.evaluate(AUDIT_JS)
+async def audit(pg, label, problems, root=None):
+    found = await pg.evaluate(AUDIT_JS, root)
     for f in found:
         problems.append(label + ": " + f)
 
@@ -98,6 +98,14 @@ async def main():
                     await pg.goto(BASE + "heute"); await pg.wait_for_timeout(250)
                     await audit(pg, f"{w}px{ts_tag(ts)} heute/vorname-lang", problems)
                     await pg.evaluate("() => localStorage.removeItem('fwmc-name-v1')")
+                    # Termin-Serien (2026-10-08): Termin sheet of a weekly series (repeat row + hint), delete question with 3 buttons
+                    await pg.evaluate("() => { const d = new Date(), p = n => String(n).padStart(2, '0'); localStorage.setItem('fwmc-events-v1', JSON.stringify([{id: 'wa1', date: d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()), time: '18:00', title: 'Vereinstraining', kind: 'training', goal: false, repeat: 'biweekly'}])); }")
+                    await pg.goto(BASE + "heute"); await pg.wait_for_timeout(250)
+                    await pg.evaluate("() => document.querySelector('#dayEvents [data-event-edit]').click()"); await pg.wait_for_timeout(120)
+                    await audit(pg, f"{w}px{ts_tag(ts)} heute/termin-serie-sheet", problems, "#eventSheet .sheet-inner")
+                    await pg.evaluate("() => document.getElementById('eventDeleteBtn').click()"); await pg.wait_for_timeout(120)
+                    await audit(pg, f"{w}px{ts_tag(ts)} heute/termin-serie-loeschen", problems, "#confirmSheet .sheet-inner")
+                    await pg.evaluate("() => { document.getElementById('confirmCancelBtn').click(); document.getElementById('eventCancelBtn').click(); localStorage.removeItem('fwmc-events-v1'); }")
                 if area == "fortschritt":
                     # QR-Übergabe (2026-10-08): range screen, QR code, import sheet, paste sheet, Kunden-Training strip
                     await pg.evaluate("""() => { const t = Date.now(); localStorage.setItem('fwmc-history-v1', JSON.stringify([0, 1, 2].map(i => ({id: 'w' + i, ts: new Date(t - (5 + i * 20) * 60000).toISOString(), kind: 'exercise', title: ['Objektverfolgung (MOT) · Geschwindigkeit', 'Farbfelder · Antippen', 'Gleichgewicht · Wörter'][i], seconds: 300, rating: null})))); }""")

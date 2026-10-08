@@ -299,7 +299,9 @@ For every new or changed exercise/screen, in the same commit:
   new screens go into `tests/text_wrap_audit_test.py` (AREAS). Never give a
   text label a fixed width.
 - Every area has the same frame (code card, tiles, Kombi-Programm,
-  Gesamter Trainingsverlauf) - compare with a sibling before shipping.
+  Gesamter Trainingsverlauf) - compare with a sibling before shipping. Order
+  (hero, code card, Beispiel-Programme, exercises, Kombi, Verlauf; Kraft/
+  Ausdauer exempt) is enforced by `tests/bereiche_reihenfolge_1008_test.py`.
 - Right/wrong feedback or fixed colours: `CVD_EXERCISES`/`CVD_FB_SELECTORS`;
   fixed signal colour: `SIGNAL_DEFS` + `SIGNAL_CSS` + `data-sig` spans.
 - Background colour: `makeBgApplier` + `wireBgIntensityControl` + `MASTER_BG_TARGETS`.
@@ -618,5 +620,15 @@ For every new or changed exercise/screen, in the same commit:
   never get copied into own Kombis (`neuroStripBlocks`). A new template = one
   `NEURO_EXERCISES` entry + dashboard `NEURO_EX`. Details docs/notes/37, test
   `tests/neuro_aktivierung_1008_test.py`.
+- Pausen mit Atemführung (2026-10-08): `masterPrefs.pauseBreath` (Grundeinstellungen,
+  off). A new rest pause wraps its countdown in `.breath-host` + a hidden
+  `.breath-label` and calls `breathGuideFor(host, label, pauseS)` / `breathGuideStop`
+  (one helper, also the trainer pause; < 10 s = plain countdown; the countdown
+  stays full size inside the circle). Details docs/notes/03, test
+  `tests/atemfuehrung_1008_test.py`.
+- Termin-Serien (2026-10-08): own events `repeat` weekly/biweekly (no end, `skip[]`);
+  anything reading events by date uses `eventsOn`/`eventNextDate`, planning
+  recommendations `loadSingleEvents`. A choice "only this / all" uses
+  `confirmDialog(..., {cancel})` so tapping beside never deletes. docs/notes/04.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

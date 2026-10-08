@@ -7080,6 +7080,7 @@
     try { closeTrainPause(); } catch (e) {}
     try { lwStop(); } catch (e) {} // Hütchen · Laufweg stage lives inside #player
     try { zusSignalStop(); } catch (e) {} // Zusatz für oben: signal timer
+    try { breathGuideRuns.forEach((r, h) => { if (r.guest) breathGuideStop(h); }); } catch (e) {} // Pausen mit Atemführung
     els.player.hidden = true;
     els.breathPlayer.hidden = true;
     els.wimhofPlayer.hidden = true;
@@ -7726,16 +7727,56 @@
 
   // ---- Pause between programme exercises ----
   let pauseTimer = null;
-  let breathTimer = null;
   let pauseRemaining = 0;
   let pausePaused = false;
   let pauseNextIdx = 0; // steps-index to advance to once the pause countdown ends
 
   function stopPauseTimers() {
     if (pauseTimer) clearTimeout(pauseTimer);
-    if (breathTimer) clearInterval(breathTimer);
-    pauseTimer = breathTimer = null;
-    els.breath.classList.remove("run");
+    pauseTimer = null;
+    breathGuideStop(els.breath);
+  }
+
+  // ---- Atemführung: one breathing guide (circle 4 s in / 4 s out, CSS
+  // animation .breath.run + the "Einatmen"/"Ausatmen" label) for the
+  // trainer-programme pause and - with "Pausen mit Atemführung" in the
+  // Grundeinstellungen (masterPrefs.pauseBreath, Fabian 08.10.) - the
+  // pauses of the Kombi-Programm, Krafttraining and Ausdauertraining.
+  // Those wrap their countdown in a .breath-host; it only becomes a
+  // .breath circle while the guide runs, the countdown stays inside at its
+  // full size. Pauses under PAUSE_BREATH_MIN_S keep the plain countdown.
+  // A new pause: wrap its countdown in .breath-host + a hidden .breath-label
+  // and call breathGuideFor(host, label, pauseSeconds) / breathGuideStop.
+  const PAUSE_BREATH_MIN_S = 10;
+  const breathGuideRuns = new Map(); // host -> { timer, label }
+  function breathGuideStart(host, label) {
+    if (!host || breathGuideRuns.has(host)) return;
+    const guest = host.classList.contains("breath-host");
+    if (guest) host.classList.add("breath");
+    host.classList.remove("run");
+    void host.offsetWidth;
+    host.classList.add("run");
+    let inhale = true;
+    label.textContent = "Einatmen";
+    label.hidden = false;
+    const timer = setInterval(() => {
+      inhale = !inhale;
+      label.textContent = inhale ? "Einatmen" : "Ausatmen";
+    }, 4000);
+    breathGuideRuns.set(host, { timer, label, guest });
+  }
+  function breathGuideStop(host) {
+    if (!host) return;
+    const r = breathGuideRuns.get(host);
+    host.classList.remove("run");
+    if (!r) return;
+    clearInterval(r.timer);
+    breathGuideRuns.delete(host);
+    if (r.guest) { host.classList.remove("breath"); r.label.hidden = true; }
+  }
+  function breathGuideFor(host, label, pauseS) {
+    if (masterPrefs.pauseBreath === true && pauseS >= PAUSE_BREATH_MIN_S) breathGuideStart(host, label);
+    else breathGuideStop(host);
   }
 
   function startPause(nextIdx) {
@@ -7761,15 +7802,8 @@
     els.liveNav.hidden = true;
     setProgress(doneCount, 0);
     // Breathing guide: 4 s in, 4 s out, synced with the CSS animation.
-    let inhale = true;
-    els.breathLabel.textContent = "Einatmen";
-    els.breath.classList.remove("run");
-    void els.breath.offsetWidth;
-    els.breath.classList.add("run");
-    breathTimer = setInterval(() => {
-      inhale = !inhale;
-      els.breathLabel.textContent = inhale ? "Einatmen" : "Ausatmen";
-    }, 4000);
+    breathGuideStop(els.breath);
+    breathGuideStart(els.breath, els.breathLabel);
     tickPause();
   }
   function tickPause() {
@@ -8424,7 +8458,7 @@
   })();
   function saveCueOverrides() { writeJSON(CUE_OVERRIDES_KEY, cueOverrides); }
 
-  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true, volume: 1, textSize: "normal", softStimuli: false };
+  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true, volume: 1, textSize: "normal", softStimuli: false, pauseBreath: false };
   function loadMasterPrefs() {
     const saved = readJSON(MASTER_PREFS_KEY, null);
     if (saved && typeof saved === "object") {
@@ -9923,7 +9957,7 @@
   let masterSettingsReturnFocus = null;
   function openMasterSettings(section) {
     masterSettingsReturnFocus = document.activeElement;
-    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; syncMasterBgUI(); syncMasterPauseUI(); syncMasterVolumeUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
+    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; $("masterPauseBreathCheck").checked = masterPrefs.pauseBreath === true; syncMasterBgUI(); syncMasterPauseUI(); syncMasterVolumeUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
     syncMasterSeeUI();
     syncAnaglyphMasterUI();
     gearRenderMaster();
@@ -16510,6 +16544,7 @@
     els.workoutSetDoneBtn.hidden = false;
     els.workoutSetDoneBtn.textContent = mode === "time" ? "Halten starten" : "Satz erledigt";
     els.workoutRestBox.hidden = true;
+    breathGuideStop($("workoutRestBreath"));
     workoutState.holding = null;
     const logs = mode === "range" || mode === "pyramid" || mode === "amrap";
     els.workoutRepsInputRow.hidden = !logs;
@@ -16598,6 +16633,10 @@
     els.workoutRestNext.hidden = !nextText;
     els.workoutRestNext.textContent = nextText;
     els.workoutRestSkipBtn.textContent = mode === "start" ? "Sofort starten" : "Jetzt weiter";
+    // Atemführung only in real rests (between sets / exercises), never in
+    // "Bereit machen", a Supersatz or side switch.
+    breathGuideStop($("workoutRestBreath"));
+    breathGuideFor($("workoutRestBreath"), $("workoutRestBreathLabel"), mode === "set" || mode === "item" ? restS : 0);
     const cfg = cueCfg("strength");
     cueStrengthRestStart(mode, restS, cfg);
     const countOn = cfg.countStart && cfg.countdownS > 0;
@@ -17047,6 +17086,10 @@
         // a long beep marks the instant of every work start AND end
         if (prevFrame && (frame.type === "work" || prevFrame.type === "work") && cueTransitionBeeps(cfg)) playWorkoutBeep(true);
         cueTabataFrameStart(frame, frameIdx, cfg);
+        // Atemführung in the real rests (between exercises / sets), not in
+        // "Bereit machen" or the cool-down.
+        breathGuideStop($("tabataBreath"));
+        breathGuideFor($("tabataBreath"), $("tabataBreathLabel"), frame.type === "rest" || frame.type === "setrest" ? frame.t1 - frame.t0 : 0);
       }
       // Countdown (Töne & Ansagen, default 3 s) to every work start and end.
       const countEnd = frame.type === "work" && cfg.countEnd;
@@ -17161,6 +17204,8 @@
     if (workoutRestTimer) clearTimeout(workoutRestTimer);
     workoutRestTimer = null;
     stopWorkoutSetTimer();
+    breathGuideStop($("workoutRestBreath"));
+    breathGuideStop($("tabataBreath"));
     const st = workoutState;
     const played = st ? (performance.now() - (st.sessionStart || st.startTime)) / 1000 : 0;
     // Double-progression check (see the Kraft-/Wiederholungstraining note
@@ -17266,6 +17311,8 @@
     if (workoutTransitionTimer) clearTimeout(workoutTransitionTimer);
     workoutTransitionTimer = null;
     workoutState = null;
+    breathGuideStop($("workoutRestBreath"));
+    breathGuideStop($("tabataBreath"));
     releaseWakeLock();
     if (document.fullscreenElement === els.workoutPlayer) document.exitFullscreen().catch(() => {});
     els.workoutFsHint.hidden = true;
@@ -19891,6 +19938,11 @@
       return;
     }
     cueCardioTick(block, blockElapsed);
+    if (cardioState.breathBlock !== cardioState.index) {
+      cardioState.breathBlock = cardioState.index;
+      breathGuideStop($("cardioBreath"));
+      breathGuideFor($("cardioBreath"), $("cardioBreathLabel"), block.pause ? block.durationS : 0);
+    }
     if (block.pause) {
       const nextBlock = cardioState.items[cardioState.index + 1];
       const nextAct = nextBlock ? findCardioActivity(nextBlock.activity) : null;
@@ -20085,7 +20137,7 @@
       const r = el.getBoundingClientRect();
       if (r.width > 0 && r.height > 0) rects.push(r);
     };
-    [els.cardioBlockProgress, els.cardioActivityTitle, els.cardioActivityLabel, els.cardioCountdown,
+    [els.cardioBlockProgress, els.cardioActivityTitle, els.cardioActivityLabel, els.cardioCountdown, $("cardioBreath"), $("cardioBreathLabel"),
       els.cardioPhaseLabel, els.cardioMotivImg, els.cardioPlayer.querySelector(".chapter-nav")].forEach(add);
     els.cardioPlayer.querySelectorAll("#cardioPlayerBar button").forEach(add);
     if (!els.cardioMotiv.hidden && !els.cardioMotivText.hidden) {
@@ -20420,6 +20472,7 @@
     releaseWakeLock();
     if (!comboProgram) resumeSingleClear("cardio");
     cardioState = null;
+    breathGuideStop($("cardioBreath"));
     if (comboProgram) { advanceComboProgram(totalS); return; }
     els.cardioPlayer.hidden = true;
     if (document.fullscreenElement === els.cardioPlayer) document.exitFullscreen().catch(() => {});
@@ -20618,10 +20671,13 @@
     const countOn = cfg.countStart && cfg.countdownS > 0;
     const ts = comboTransitionState = { remaining: pauseS };
     els.comboTransitionCountdown.textContent = fmtClock(ts.remaining);
+    breathGuideStop($("comboTransitionBreath"));
+    breathGuideFor($("comboTransitionBreath"), $("comboTransitionBreathLabel"), pauseS);
     const go = () => {
       clearTimeout(comboTransitionTimer);
       clearInterval(comboTransitionInterval);
       comboTransitionState = null;
+      breathGuideStop($("comboTransitionBreath"));
       closeTrainPause();
       els.comboTransition.hidden = true;
       onContinue();
@@ -21086,6 +21142,7 @@
   // own confirm(), which looks foreign in the installed app.
   let confirmYesFn = null, confirmReturnFocus = null;
   let confirmNoFn = null;
+  let confirmHasCancel = false;
   function confirmDialog(text, onYes, opts) {
     const sheet = document.getElementById("confirmSheet");
     const o = opts || {};
@@ -21093,6 +21150,12 @@
     document.getElementById("confirmTitle").textContent = o.title || "Bist du sicher?";
     document.getElementById("confirmYesBtn").textContent = o.yes || "Ja";
     document.getElementById("confirmNoBtn").textContent = o.no || "Nein";
+    // opts.cancel (label): a third, neutral way out; then tapping beside the
+    // sheet or Escape cancels too instead of running onNo.
+    const cancelBtn = document.getElementById("confirmCancelBtn");
+    cancelBtn.hidden = !o.cancel;
+    cancelBtn.textContent = o.cancel || "Abbrechen";
+    confirmHasCancel = !!o.cancel;
     confirmNoFn = o.onNo || null;
     confirmYesFn = onYes;
     confirmReturnFocus = document.activeElement;
@@ -21239,6 +21302,10 @@
   els.masterStartCountdownCheck = $("masterStartCountdownCheck");
   els.masterStartCountdownCheck.addEventListener("change", () => {
     masterPrefs.startCountdown = els.masterStartCountdownCheck.checked;
+    saveMasterPrefs();
+  });
+  $("masterPauseBreathCheck").addEventListener("change", () => {
+    masterPrefs.pauseBreath = $("masterPauseBreathCheck").checked;
     saveMasterPrefs();
   });
   $("masterLevelSuggestCheck").addEventListener("change", () => {
@@ -21930,8 +21997,8 @@
     // The end-of-training question may have moved the sheet into a
     // fullscreen player; put it back so later questions stay visible.
     if (confirmSheetEl.parentNode !== document.body) document.body.appendChild(confirmSheetEl);
-    const fn = confirmYesFn, noFn = confirmNoFn;
-    confirmYesFn = null; confirmNoFn = null;
+    const fn = confirmYesFn, noFn = yes === null ? null : confirmNoFn;
+    confirmYesFn = null; confirmNoFn = null; confirmHasCancel = false;
     if (confirmReturnFocus && document.body.contains(confirmReturnFocus) && !confirmReturnFocus.hidden) confirmReturnFocus.focus();
     if (yes && fn) fn();
     else if (!yes && noFn) noFn();
@@ -21940,8 +22007,9 @@
     const sheet = document.getElementById("confirmSheet");
     document.getElementById("confirmYesBtn").addEventListener("click", () => closeConfirmDialog(true));
     document.getElementById("confirmNoBtn").addEventListener("click", () => closeConfirmDialog(false));
-    sheet.addEventListener("click", (e) => { if (e.target === sheet) closeConfirmDialog(false); });
-    sheet.addEventListener("keydown", (e) => { if (e.key === "Escape") closeConfirmDialog(false); else trapTabKey(sheet, e); });
+    document.getElementById("confirmCancelBtn").addEventListener("click", () => closeConfirmDialog(null));
+    sheet.addEventListener("click", (e) => { if (e.target === sheet) closeConfirmDialog(confirmHasCancel ? null : false); });
+    sheet.addEventListener("keydown", (e) => { if (e.key === "Escape") closeConfirmDialog(confirmHasCancel ? null : false); else trapTabKey(sheet, e); });
   })();
   document.getElementById("workoutCircuitClearBtn").addEventListener("click", () => confirmDialog("Willst du alle Übungen aus deinem Zirkel entfernen?", () => {
     workoutCircuitPrefs.items = [];
@@ -33599,13 +33667,44 @@
     return Array.isArray(l) ? l.filter((e) => e && typeof e.date === "string" && e.title) : [];
   }
   function saveEvents(list) { writeJSON(EVENT_KEY, list); }
+  // Serien (Fabian 08.10.): an own event may repeat every week or every
+  // second week from its date on, without an end (`repeat`: "weekly" /
+  // "biweekly"; missing = "none" = once). Deleting a single date of a series
+  // adds it to `skip`; editing always changes the whole series. Trainer
+  // events (fromTrainer) never repeat. Each occurrence is the stored event
+  // with `date` set to that day (`seriesDate` = the first date).
+  const EVENT_REPEATS = [["none", "Nie"], ["weekly", "Jede Woche"], ["biweekly", "Alle 2 Wochen"]];
+  const EVENT_REPEAT_META = { weekly: "jede Woche", biweekly: "alle 2 Wochen" };
+  function eventRepeatDays(e) {
+    if (!e || e.fromTrainer) return 0;
+    return e.repeat === "weekly" ? 7 : e.repeat === "biweekly" ? 14 : 0;
+  }
+  function eventSkipped(e, date) { return Array.isArray(e.skip) && e.skip.includes(date); }
+  function eventOccursOn(e, date) {
+    if (eventSkipped(e, date)) return false;
+    if (e.date === date) return true;
+    const n = eventRepeatDays(e);
+    return n > 0 && date > e.date && dDiff(e.date, date) % n === 0;
+  }
+  // First date on/after `from` the event takes place (null = none left).
+  function eventNextDate(e, from) {
+    const n = eventRepeatDays(e);
+    if (!n) return e.date >= from && !eventSkipped(e, e.date) ? e.date : null;
+    let d = e.date >= from ? e.date : dAdd(e.date, Math.ceil(dDiff(e.date, from) / n) * n);
+    for (let i = 0; i < 400; i++, d = dAdd(d, n)) if (!eventSkipped(e, d)) return d;
+    return null;
+  }
+  function eventAt(e, date) { return date === e.date ? e : { ...e, date, seriesDate: e.date }; }
+  // Wettkampf recommendations and Mein Plan only look at single dates: a
+  // weekly game would otherwise mark every week.
+  function loadSingleEvents() { return loadEvents().filter((e) => !eventRepeatDays(e)); }
   function eventsOn(date, list) {
-    return (list || loadEvents()).filter((e) => e.date === date)
+    return (list || loadEvents()).filter((e) => eventOccursOn(e, date)).map((e) => eventAt(e, date))
       .sort((x, y) => (x.time || "99:99").localeCompare(y.time || "99:99"));
   }
   function nextGoalEvent(list) {
     const today = todayStr();
-    return (list || loadEvents()).filter((e) => e.goal && e.date >= today)
+    return (list || loadEvents()).filter((e) => e.goal).map((e) => { const d = eventNextDate(e, today); return d ? eventAt(e, d) : null; }).filter(Boolean)
       .sort((x, y) => x.date.localeCompare(y.date) || (x.time || "").localeCompare(y.time || ""))[0] || null;
   }
   function eventMarkHtml(date, list) {
@@ -33781,7 +33880,7 @@
   // around a goal / Wettkampf appointment get a recommendation label.
   function focusWeekOf(monday) {
     let list = [];
-    try { list = loadEvents().filter((e) => e.goal || e.kind === "wettkampf"); } catch (e) { list = []; }
+    try { list = loadSingleEvents().filter((e) => e.goal || e.kind === "wettkampf"); } catch (e) { list = []; }
     for (const f of list) {
       const fm = mondayOf(f.date);
       if (monday === dAdd(fm, -7)) return { kind: "taper", f, label: `Woche vor „${f.title}“: Empfehlung eher locker trainieren` };
@@ -34773,21 +34872,35 @@
     const ev = eventsOn(date);
     box.innerHTML = ev.map((e) => {
       const k = EVENT_KIND_BY_KEY[e.kind] || EVENT_KINDS[3];
-      const meta = [e.time ? `${e.time} Uhr` : "ohne Uhrzeit", k.label, e.goal ? "Ziel mit Countdown" : ""].filter(Boolean).join(" · ");
-      return `<div class="day-item event-item" style="border-left-color:${k.color}" data-event="${esc(e.id)}">
+      const meta = [e.time ? `${e.time} Uhr` : "ohne Uhrzeit", k.label, EVENT_REPEAT_META[eventRepeatDays(e) ? e.repeat : ""] || "", e.goal ? "Ziel mit Countdown" : ""].filter(Boolean).join(" · ");
+      return `<div class="day-item event-item" style="border-left-color:${k.color}" data-event="${esc(e.id)}" data-event-date="${esc(date)}">
         <div class="day-item-main"><span class="area-dot event-dot" style="background:${k.color}" aria-hidden="true"></span><div><div class="day-item-title">${esc(e.title)}</div><div class="day-item-meta">${esc(meta)}</div></div></div>
         <div class="day-item-actions"><button type="button" class="day-act" data-event-edit="${esc(e.id)}">Bearbeiten</button></div></div>`;
     }).join("");
-    box.querySelectorAll("[data-event-edit]").forEach((b) => b.addEventListener("click", () => openEventSheet(b.dataset.eventEdit)));
+    box.querySelectorAll("[data-event-edit]").forEach((b) => b.addEventListener("click", () => openEventSheet(b.dataset.eventEdit, date)));
     return ev.length > 0;
   }
-  let eventEditId = null, eventKind = "wettkampf", eventReturnFocus = null;
+  let eventEditId = null, eventEditDate = null, eventKind = "wettkampf", eventRepeat = "none", eventEditTrainer = false, eventReturnFocus = null;
+  function renderEventRepeat() {
+    $("eventRepeatRow").innerHTML = EVENT_REPEATS.map(([k, label]) => `<button type="button" class="choice${k === eventRepeat ? " active" : ""}" data-repeat="${k}" aria-pressed="${k === eventRepeat}">${esc(label)}</button>`).join("");
+    const series = eventRepeat !== "none";
+    $("eventDateLabel").textContent = series ? "Erster Termin" : "Datum";
+    const hint = $("eventRepeatHint");
+    hint.hidden = !series;
+    hint.textContent = eventEditId
+      ? "Änderungen gelten für alle Termine dieser Serie. Einen einzelnen Termin löschst du über „Termin löschen“."
+      : "Wiederholt sich ab dem ersten Termin ohne Ende. Einzelne Termine oder die ganze Serie löschst du später über „Bearbeiten“.";
+  }
   function renderEventKinds() {
     $("eventKindRow").innerHTML = EVENT_KINDS.map((k) => `<button type="button" class="choice${k.key === eventKind ? " active" : ""}" data-kind="${k.key}" aria-pressed="${k.key === eventKind}"><span class="event-kind-dot" style="background:${k.color}" aria-hidden="true"></span>${esc(k.label)}</button>`).join("");
   }
-  function openEventSheet(id) {
+  function openEventSheet(id, date) {
     const e = id ? loadEvents().find((x) => x.id === id) : null;
     eventEditId = e ? e.id : null;
+    eventEditDate = e ? (date || e.date) : null;
+    eventEditTrainer = !!(e && e.fromTrainer);
+    eventRepeat = e && eventRepeatDays(e) ? e.repeat : "none";
+    $("eventRepeatGroup").hidden = eventEditTrainer;
     eventKind = e ? (EVENT_KIND_BY_KEY[e.kind] ? e.kind : "sonstiges") : "wettkampf";
     $("eventSheetTitle").textContent = e ? "Termin bearbeiten" : "Termin eintragen";
     $("eventSaveBtn").textContent = e ? "Speichern" : "Eintragen";
@@ -34798,13 +34911,14 @@
     $("eventDeleteBtn").hidden = !e;
     $("eventError").hidden = true;
     renderEventKinds();
+    renderEventRepeat();
     eventReturnFocus = document.activeElement;
     $("eventSheet").hidden = false;
     // Editing: no keyboard popping up over the sheet on a phone.
     (e ? $("eventCancelBtn") : $("eventTitleInput")).focus();
   }
   function closeEventSheet() {
-    $("eventSheet").hidden = true; eventEditId = null;
+    $("eventSheet").hidden = true; eventEditId = null; eventEditDate = null;
     if (eventReturnFocus && document.contains(eventReturnFocus)) eventReturnFocus.focus();
   }
   function saveEventFromSheet() {
@@ -34815,7 +34929,10 @@
       err.textContent = !title ? "Bitte gib ein, was ansteht." : "Bitte wähle ein Datum.";
       err.hidden = false; return;
     }
-    const item = { id: eventEditId || newId(), date, time: $("eventTimeInput").value || "", title, kind: eventKind, goal: $("eventGoalToggle").checked };
+    const old = eventEditId ? loadEvents().find((x) => x.id === eventEditId) : null;
+    const item = { ...(old || {}), id: eventEditId || newId(), date, time: $("eventTimeInput").value || "", title, kind: eventKind, goal: $("eventGoalToggle").checked };
+    if (!eventEditTrainer && eventRepeat !== "none") item.repeat = eventRepeat; else delete item.repeat;
+    if (!item.repeat) delete item.skip;
     const list = loadEvents().filter((x) => x.id !== item.id);
     list.push(item);
     saveEvents(list);
@@ -34823,21 +34940,34 @@
     selectDay(date);
   }
   $("eventKindRow").addEventListener("click", (e) => { const b = e.target.closest("[data-kind]"); if (b) { eventKind = b.dataset.kind; renderEventKinds(); } });
+  $("eventRepeatRow").addEventListener("click", (e) => { const b = e.target.closest("[data-repeat]"); if (b) { eventRepeat = b.dataset.repeat; renderEventRepeat(); } });
   $("dayEventAddBtn").addEventListener("click", () => openEventSheet(null));
   $("eventCancelBtn").addEventListener("click", closeEventSheet);
   $("eventSaveBtn").addEventListener("click", saveEventFromSheet);
   $("eventTitleInput").addEventListener("keydown", (e) => { if (e.key === "Enter") saveEventFromSheet(); });
   // One delete path for "Termin löschen" in the sheet and the list swipe.
-  function askDeleteEvent(id) {
+  // A series asks "Nur diesen Termin" (adds `date` to skip) or "Alle
+  // Termine dieser Serie"; tapping beside the sheet deletes nothing.
+  function askDeleteEvent(id, date) {
     const e = loadEvents().find((x) => x.id === id);
     if (!e) return;
-    confirmDialog(`„${e.title}“ wirklich löschen?`, () => {
-      saveEvents(loadEvents().filter((x) => x.id !== id));
-      if (!$("eventSheet").hidden) closeEventSheet();
-      renderToday();
+    const done = () => { if (!$("eventSheet").hidden) closeEventSheet(); renderToday(); };
+    const removeAll = () => { saveEvents(loadEvents().filter((x) => x.id !== id)); done(); };
+    if (!eventRepeatDays(e)) { confirmDialog(`„${e.title}“ wirklich löschen?`, removeAll); return; }
+    const day = date && eventOccursOn(e, date) ? date : eventNextDate(e, todayStr()) || e.date;
+    confirmDialog(`„${e.title}“ wiederholt sich ${EVENT_REPEAT_META[e.repeat]}. Möchtest du nur den Termin am ${longDate(day)} löschen oder alle Termine dieser Serie?`, removeAll, {
+      title: "Termin löschen", yes: "Alle Termine dieser Serie", no: "Nur diesen Termin", cancel: "Abbrechen",
+      onNo: () => {
+        const list = loadEvents();
+        const x = list.find((y) => y.id === id);
+        if (!x) return;
+        x.skip = [...new Set([...(Array.isArray(x.skip) ? x.skip : []), day])].sort();
+        saveEvents(list);
+        done();
+      },
     });
   }
-  $("eventDeleteBtn").addEventListener("click", () => askDeleteEvent(eventEditId));
+  $("eventDeleteBtn").addEventListener("click", () => askDeleteEvent(eventEditId, eventEditDate));
   $("eventSheet").addEventListener("click", (e) => { if (e.target === $("eventSheet")) closeEventSheet(); });
   $("eventSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closeEventSheet(); else trapTabKey($("eventSheet"), e); });
 
@@ -35945,7 +36075,7 @@
     if (limited) {
       for (; cw < 1200; cw++) { const wk = planWeekMap(cw); if (!wk) break; if (wk.type === "plan" && wk.pw >= total) break; last = cw; }
     } else last = Math.max(0, Math.floor(dDiff(plan.startDate, todayStr()) / 7)) + 16;
-    loadEvents().filter((f) => (f.goal || f.kind === "wettkampf") && f.date >= todayStr()).forEach((f) => { last = Math.max(last, Math.floor(dDiff(plan.startDate, f.date) / 7) + 1); });
+    loadSingleEvents().filter((f) => (f.goal || f.kind === "wettkampf") && f.date >= todayStr()).forEach((f) => { last = Math.max(last, Math.floor(dDiff(plan.startDate, f.date) / 7) + 1); });
     return Math.min(last, 104);
   }
   function weekRowLabel(wk, ph) {
@@ -35974,7 +36104,7 @@
       const st = weekStats(wk.monday, hist);
       const color = wk.type === "pause" ? "#9aa7ad" : wk.type === "insert" ? "#d4a017" : wk.type === "blank" ? "#c9d3d6" : ph ? PHASE_TINTS[ph.index % PHASE_TINTS.length] : "#c9d3d6";
       const cls = ["myplan-week", wk.type, wk.monday === thisMon ? "is-now" : "", wk.monday < thisMon ? "past" : "", ph && ph.focus ? "hint" : ""].filter(Boolean).join(" ");
-      const goal = loadEvents().find((f) => (f.goal || f.kind === "wettkampf") && mondayOf(f.date) === wk.monday);
+      const goal = loadSingleEvents().find((f) => (f.goal || f.kind === "wettkampf") && mondayOf(f.date) === wk.monday);
       const sun = dAdd(wk.monday, 6);
       rows.push(`<button type="button" class="${cls}" data-week="${wk.monday}" style="--wk:${color}">
         <span class="myplan-bar" aria-hidden="true"${wk.type === "pause" ? "" : ` style="background:${color}"`}></span>
@@ -36001,7 +36131,7 @@
         <div class="day-item-actions"><button type="button" class="day-act" data-pause-edit="${esc(pz.id)}">Bearbeiten</button>${pz.from <= today && pz.to >= today ? `<button type="button" class="day-act" data-pause-end="${esc(pz.id)}">Ich bin wieder fit</button>` : ""}</div></div>`;
     }).join("") : `<p class="group-help">Keine Pause eingetragen.</p>`;
     // Wettkampf: goal events from Termine
-    const goals = loadEvents().filter((e) => e.date >= today && (e.goal || e.kind === "wettkampf")).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
+    const goals = loadSingleEvents().filter((e) => e.date >= today && (e.goal || e.kind === "wettkampf")).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
     $("myPlanFocusHelp").textContent = goals.length
       ? "Unsere Empfehlung: in der Woche davor eher locker trainieren, in der Wettkampfwoche nur kurz, danach Erholung einplanen. Dein Plan ändert sich dadurch nicht von selbst. Passe ihn an, wie du es mit deinem Trainer abgesprochen hast."
       : "Trage einen Wettkampf, ein Spiel oder eine Prüfung als Termin auf Heute ein. Dann steht hier und in deinem Plan, wie du die Wochen davor und danach am besten angehst.";
@@ -36010,7 +36140,7 @@
   function shortDate(d) { const x = dParse(d); return `${x.getDate()}.${x.getMonth() + 1}.${x.getFullYear()}`; }
   function goalOverrun(note) {
     // Plan end after a focus date?
-    const f = loadEvents().filter((x) => x.goal && x.date >= todayStr()).sort((a, b) => a.date.localeCompare(b.date))[0];
+    const f = loadSingleEvents().filter((x) => x.goal && x.date >= todayStr()).sort((a, b) => a.date.localeCompare(b.date))[0];
     if (!f || !plan.phases.length || !plan.phases.every((p) => p.weeks)) return "";
     const total = plan.phases.reduce((s, p) => s + p.weeks, 0);
     let endMon = null;
@@ -38070,8 +38200,8 @@
   const SWIPE_BTN_W = 84, SWIPE_GAP = 8;
   const SWIPE_ROWS = [
     { sel: "#dayEvents .event-item", acts: (row) => {
-      const id = row.dataset.event;
-      return [{ label: "Bearbeiten", run: () => openEventSheet(id) }, { label: "Löschen", del: true, run: () => askDeleteEvent(id) }];
+      const id = row.dataset.event, date = row.dataset.eventDate;
+      return [{ label: "Bearbeiten", run: () => openEventSheet(id, date) }, { label: "Löschen", del: true, run: () => askDeleteEvent(id, date) }];
     } },
     { sel: "#dayPanelBody .day-item:not(.compact)", acts: (row) => {
       const date = todaySel;

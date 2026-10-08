@@ -1483,6 +1483,15 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 @media (prefers-reduced-motion:reduce){.breath.run .breath-circle{animation:none;transform:scale(.86)}}
 .pause-countdown{position:relative;font-family:"Magra",sans-serif;font-weight:700;font-size:58px;color:#16232a;font-variant-numeric:tabular-nums}
 .breath-label{font-size:calc(14px * var(--ts,1));color:#4f6168;font-weight:600;min-height:1.4em}
+/* Pausen mit Atemführung (2026-10-08): .breath-host wraps a pause countdown;
+   app.js adds .breath (+ .run) only while the guide runs. The countdown stays
+   inside at its own full size, never smaller. */
+.breath-host{position:relative;display:flex;align-items:center;justify-content:center}
+.breath-host:not(.breath) > .breath-circle{display:none}
+.breath-host.breath{width:190px;height:190px;margin:4px auto}
+.breath-host.breath > :not(.breath-circle){position:relative}
+.done-panel.standalone .pause-countdown{color:var(--ink)}
+.done-panel.standalone .breath-label{color:var(--ink-soft)}
 .next-card{
   width:100%;background:#fff;border:1px solid #dde6e8;border-left:4px solid #007094;border-radius:14px;
   padding:14px 16px;text-align:left;margin-top:6px;
@@ -1972,7 +1981,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
   :root:not([data-theme="light"]) body:has(.player.calm-dk:not([hidden])) .step-nav{background:#0b1619;border-top-color:#1c2f35}
   :root:not([data-theme="light"]) body:has(.player.calm-dk:not([hidden])) .step-nav button,:root:not([data-theme="light"]) body:has(.player.calm-dk:not([hidden])) .step-nav #stepSoundBtn,:root:not([data-theme="light"]) body:has(.player.calm-dk:not([hidden])) .step-nav #stepSoundBtn.is-off{background:rgba(233,240,242,.12);color:#e9f0f2}
   :root:not([data-theme="light"]) .lead-in.calm{background:#0b1619;color:#e9f0f2} :root:not([data-theme="light"]) .lead-in.calm .lead-in-label{color:#69c2e0} :root:not([data-theme="light"]) .lead-in.calm .lead-in-cancel{background:#16262b;border-color:#283d43;color:#e9f0f2}
-  :root:not([data-theme="light"]) .player.calm .breath-circle{background:radial-gradient(circle,rgba(57,167,204,.30) 0%,rgba(57,167,204,.08) 70%);border-color:rgba(105,194,224,.40)}
+  :root:not([data-theme="light"]) .player.calm .breath-circle{background:radial-gradient(circle,rgba(57,167,204,.30) 0%,rgba(57,167,204,.08) 70%);border-color:rgba(105,194,224,.40)}:root:not([data-theme="light"]) .player.calm-dk .breath-circle{background:radial-gradient(circle,rgba(57,167,204,.30) 0%,rgba(57,167,204,.08) 70%);border-color:rgba(105,194,224,.40)}:root:not([data-theme="light"]) .player.calm-dk .breath-label{color:#a9bbc0}
   :root:not([data-theme="light"]) .player.calm .breath-phase-count,:root:not([data-theme="light"]) .player.calm .breath-phase-label{color:#e9f0f2}
   :root:not([data-theme="light"]) .player.calm .wimhof-sub,:root:not([data-theme="light"]) .player.calm .pause-label{color:#a9bbc0}
   :root:not([data-theme="light"]) .player.calm .pause-toggle{background:#16262b;border-color:#283d43;color:#e9f0f2}
@@ -2006,7 +2015,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 :root[data-theme="dark"] body:has(.player.calm-dk:not([hidden])) .step-nav{background:#0b1619;border-top-color:#1c2f35}
 :root[data-theme="dark"] body:has(.player.calm-dk:not([hidden])) .step-nav button,:root[data-theme="dark"] body:has(.player.calm-dk:not([hidden])) .step-nav #stepSoundBtn,:root[data-theme="dark"] body:has(.player.calm-dk:not([hidden])) .step-nav #stepSoundBtn.is-off{background:rgba(233,240,242,.12);color:#e9f0f2}
 :root[data-theme="dark"] .lead-in.calm{background:#0b1619;color:#e9f0f2} :root[data-theme="dark"] .lead-in.calm .lead-in-label{color:#69c2e0} :root[data-theme="dark"] .lead-in.calm .lead-in-cancel{background:#16262b;border-color:#283d43;color:#e9f0f2}
-:root[data-theme="dark"] .player.calm .breath-circle{background:radial-gradient(circle,rgba(57,167,204,.30) 0%,rgba(57,167,204,.08) 70%);border-color:rgba(105,194,224,.40)}
+:root[data-theme="dark"] .player.calm .breath-circle{background:radial-gradient(circle,rgba(57,167,204,.30) 0%,rgba(57,167,204,.08) 70%);border-color:rgba(105,194,224,.40)}:root[data-theme="dark"] .player.calm-dk .breath-circle{background:radial-gradient(circle,rgba(57,167,204,.30) 0%,rgba(57,167,204,.08) 70%);border-color:rgba(105,194,224,.40)}:root[data-theme="dark"] .player.calm-dk .breath-label{color:#a9bbc0}
 :root[data-theme="dark"] .player.calm .breath-phase-count,:root[data-theme="dark"] .player.calm .breath-phase-label{color:#e9f0f2}
 :root[data-theme="dark"] .player.calm .wimhof-sub,:root[data-theme="dark"] .player.calm .pause-label{color:#a9bbc0}
 :root[data-theme="dark"] .player.calm .pause-toggle{background:#16262b;border-color:#283d43;color:#e9f0f2}
@@ -3371,3 +3380,7 @@ body.client-run-on .screen>.brandbar{top:calc(48px + env(safe-area-inset-top,0px
 .neuro-stage .free-run-item{font-size:calc(28px * var(--ts,1))}
 @media (max-width:380px){.neuro-stage .free-run-item{font-size:calc(24px * var(--ts,1))}.neuro-side{font-size:calc(22px * var(--ts,1))}}
 .neuro-controls .chapter-row .info span{white-space:normal}
+/* confirmDialog with opts.cancel (Termin-Serien 2026-10-08): neutral third way out */
+.confirm-cancel-btn{display:block;margin:12px auto 0;min-height:44px}
+/* Termin-Serien: "Alle 2 Wochen" stays on one line on a phone */
+#eventRepeatRow{grid-template-columns:.7fr 1fr 1.25fr}
