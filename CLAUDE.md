@@ -276,6 +276,7 @@ everywhere goes here, short.
 | 24-claude-md-langfassung-2026-10-05 | verbatim CLAUDE.md before the 2026-10-05 slimming (reasons, history) |
 | 25-freier-baustein | Freie Bausteine area: model, kinds, Dehnen template, editor, player, Kombi/plan/history wiring |
 | 26-erinnerungen | Push reminders before planned trainings: Grundeinstellungen section, payload, sw.js push, Worker /reminders + cron, deploy |
+| 27-trainingsplanung | Plan model (phases, weeks A-D, pauses, weekOps, Sonderwochen, dayOv), planWeekMap, Mein Plan, scope question, trainer plan code + versions; nothing changes training automatically |
 | 28-farbfelder | Farbfelder (VT, 2x2 mat grid): modes, rule function, Abfolge timing, Kombi/Cardio wiring, generic Hilfsmittel note |
 | 29-huetchen-farbe-zahl | Hütchen · Farbe + Zahl (VT, 3-6 numbered fields): cnFields, colour cap, drawing, Kombi/Cardio/preset wiring |
 
