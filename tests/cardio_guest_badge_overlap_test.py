@@ -44,10 +44,10 @@ async def main():
         # domains, each with their own .player-bar/Vollbild.
         await check(pg, 6, "#fsBtn", "#backBtn", "4-diag (generic player)")
         await check(pg, 11, "#fsBtn", "#backBtn", "cone-tap")
-        await check(pg, 13, "#blitzFsBtn", "#blitzBackBtn", "blitz-raster")
-        await check(pg, 14, "#rememberFsBtn", "#rememberBackBtn", "remember")
-        await check(pg, 15, "#flashFsBtn", "#flashBackBtn", "flash")
-        await check(pg, 16, "#motFsBtn", "#motBackBtn", "mot")
+        await check(pg, 15, "#blitzFsBtn", "#blitzBackBtn", "blitz-raster")
+        await check(pg, 16, "#rememberFsBtn", "#rememberBackBtn", "remember")
+        await check(pg, 17, "#flashFsBtn", "#flashBackBtn", "flash")
+        await check(pg, 18, "#motFsBtn", "#motBackBtn", "mot")
 
         await pg.click("#cardioBackBtn"); await pg.wait_for_timeout(200)
         print("back at cardioReady after all of it:", await pg.is_visible("#cardioReady"))

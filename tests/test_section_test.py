@@ -30,7 +30,9 @@ async def main():
         await pg.click('#home .section-tab[data-section="test"]'); await pg.wait_for_timeout(150)
         print("testHome visible:", await pg.is_visible("#testHome"))
         print("Test tab marked active:", "active" in (await pg.get_attribute('#testHome .section-tab[data-section="test"]', "class") or ""))
-        print("empty-state hint visible when no exercises added yet:", await pg.is_visible("#testEmptyHint"))
+        # The Test-Bereich has exercises by now: the empty hint shows only while it has none.
+        n_test_ex = await pg.evaluate("document.querySelectorAll('#testPanel [id$=OpenBtn]').length")
+        print("empty-state hint shown only when there are no exercises:", await pg.is_visible("#testEmptyHint") == (n_test_ex == 0), f"({n_test_ex} exercises)")
 
         # navigate to every other section from Test and back, to confirm the
         # tab bar + showScreen wiring didn't regress anything for the others

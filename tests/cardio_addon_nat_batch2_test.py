@@ -32,7 +32,7 @@ async def main():
         # ---- pool grid + fine-tune panels ----
         await pg.click("#cardioAddonAdvanced summary"); await pg.wait_for_timeout(150)
         await pg.check("#cardioAddonEnableToggle"); await pg.wait_for_timeout(150)
-        print("pool grid now offers 18 types:", await pg.locator("#cardioAddonPoolGrid [data-pool]").count() == 18)
+        print("pool grid now offers 20 types:", await pg.locator("#cardioAddonPoolGrid [data-pool]").count() == 20)
         for t in ("remember", "flash", "mot"):
             await pg.check(f'#cardioAddonPoolGrid input[data-pool="{t}"]')
         await pg.wait_for_timeout(200)
@@ -61,10 +61,10 @@ async def main():
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(400)
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
         print("no mode-row for the first (VT) type by default:", await pg.locator("#cardioAddonPickerDetail [data-mode-row]").count() == 0)
-        print("picker offers 18 choices total:", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 18)
+        print("picker offers 20 choices total:", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 20)
 
-        # index 14 = remember (12 VT + periph-flash + blitz-raster + remember)
-        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(14).click(); await pg.wait_for_timeout(80)
+        # index 16 = remember (13 VT + periph-flash + blitz-raster + remember)
+        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(16).click(); await pg.wait_for_timeout(80)
         print("mode-row appears once Remember is selected:", await pg.locator("#cardioAddonPickerDetail [data-mode-row]").count() == 1)
         print("3 mode choices shown for Remember:", await pg.locator("#cardioAddonPickerDetail [data-mode-row] .choice").count() == 3)
         print("Remember's difficulty/error rows also present live (same depth as pre-start):",
@@ -80,18 +80,18 @@ async def main():
         print("remember: early Beenden returns to still-running cardioPlayer:",
               await pg.is_visible("#cardioPlayer") and await pg.is_hidden("#rememberPlayer"))
 
-        # index 15 = flash
+        # index 17 = flash
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(15).click(); await pg.wait_for_timeout(80)
+        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(17).click(); await pg.wait_for_timeout(80)
         await pg.click("#cardioAddonPickerStartBtn"); await pg.wait_for_timeout(400)
         print("flash takes over full-screen:", await pg.is_visible("#flashPlayer") and await pg.is_hidden("#cardioPlayer"))
         await pg.click("#flashBackBtn"); await pg.wait_for_timeout(300)
         print("flash: Beenden returns to still-running cardioPlayer:",
               await pg.is_visible("#cardioPlayer") and await pg.is_hidden("#flashPlayer"))
 
-        # index 16 = mot
+        # index 18 = mot
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(16).click(); await pg.wait_for_timeout(80)
+        await pg.locator("#cardioAddonPickerTypeRow .choice").nth(18).click(); await pg.wait_for_timeout(80)
         await pg.click("#cardioAddonPickerStartBtn"); await pg.wait_for_timeout(400)
         print("mot takes over full-screen:", await pg.is_visible("#motPlayer") and await pg.is_hidden("#cardioPlayer"))
         await pg.click("#motBackBtn"); await pg.wait_for_timeout(300)

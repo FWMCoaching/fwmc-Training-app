@@ -266,9 +266,10 @@ async def main():
         await pg.goto(BASE + "?bereich=free"); await pg.wait_for_timeout(400)
         await pg.click('[data-nav="training"]'); await pg.wait_for_timeout(250); await pg.click('#trainingHub .combo-entry-link'); await pg.wait_for_timeout(250)
         KS = "#comboSavedList .bundle-item-wrap"
-        check("saved Kombi listed, ✕ still there", await pg.locator(KS).count() == 1 and await pg.locator(KS + " .combo-block-remove").count() == 1)
+        check("saved Kombi listed, ✎ and ✕ still there", await pg.locator(KS).count() == 1 and await pg.locator(KS + " .combo-block-remove").count() == 1 and await pg.locator(KS + " .combo-saved-edit").count() == 1)
         await swipe_left(pg, cdp, KS, 0)
-        check("saved Kombi: only Löschen", await panels(pg) == [["Löschen"]], await panels(pg))
+        # since 07.10. a saved Kombi can be edited (Fabian "Erst Vorschau")
+        check("saved Kombi: Bearbeiten + Löschen", await panels(pg) == [["Bearbeiten", "Löschen"]], await panels(pg))
         await pg.click(".swipe-actions [data-swipe-act='delete']"); await pg.wait_for_timeout(200)
         check("saved Kombi delete asks first", await pg.is_visible("#confirmSheet") and "Morgenkombi" in await pg.inner_text("#confirmText"))
         await pg.click("#confirmYesBtn"); await pg.wait_for_timeout(250)

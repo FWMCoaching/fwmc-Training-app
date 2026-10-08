@@ -116,7 +116,10 @@ screen of every area (about 12 screenshots).
 **Bundle releases (Fabian, 2026-10-04)**: bundle 3-4 changes per release,
 full suite once at the end; while building run only the tests at hand. A
 pure documentation change needs no suite run. Urgent fixes Fabian waits
-on may go out alone. Ideas go to Fabian first as a short list with a
+on may go out alone. **Tests at night (Fabian 2026-10-07)**: during the
+day only build (node --check, build.sh, preview), even 10-15 changes; the
+full suite, reviewer and Fabian-Blick run as one batch at night, repairs
+after it, then go live. Ideas go to Fabian first as a short list with a
 recommendation; only what he approves gets built.
 
 ## Working conventions
@@ -174,7 +177,10 @@ Test: `tests/audit_fixes_test.py`.
 - Footer "Stand: TT.MM.JJJJ, HH:MM" comes from `__APP_STAND__`, replaced by
   `build.sh` (Berlin time) - never hand-edit. No "Beta" tag.
 - Cardio fullscreen `#cardioFsBtn` (`wireFullscreen`); `hideAllPlayers()`
-  leaves fullscreen when its element got hidden.
+  leaves fullscreen when its element got hidden. In a Kombi the button makes
+  the whole page fullscreen (stays across Bausteine, Kombi end/abort leaves
+  it); no Fullscreen API (iPhone) = `html.no-fs-api` hides every `…FsBtn`.
+  A new player only needs `wireFullscreen` (docs/notes/13).
   Test: `tests/autopause_version_fs_test.py`.
 - Kombi Bausteine have ↑/↓ (`.combo-block-move`, its "Pause danach" moves along).
 - Skipping past the end counts as aborted (coach programme, Tabata Zirkel,
@@ -193,7 +199,11 @@ Test: `tests/audit_fixes_test.py`.
 
 - Reuse the closest sibling's pattern (classes, colours, layout, spacing,
   labels, explanation texts). A code entry is always `.code-card` with
-  "Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein."
+  "Dein Trainer stellt dir einen Plan zusammen, der genau zu dir passt: deine
+  Übungen, dein Tempo, dein Ziel. Du bekommst dafür einen Code. Gib ihn hier
+  ein." + the "Noch keinen Trainer?" link (JS, `PLAN_REQUEST_URL`); collapsed
+  it reads "Dein persönlicher Trainingsplan / Code eingeben oder individuell
+  angepassten Plan anfragen" (Fabian 07.10.).
 - Client-facing text says "dein Trainer", never "Coach" or a name. The
   dashboard is the "Trainer-Dashboard".
 - A deviation needs a real reason and goes to Fabian as a proposal first.
@@ -266,6 +276,9 @@ everywhere goes here, short.
 | 24-claude-md-langfassung-2026-10-05 | verbatim CLAUDE.md before the 2026-10-05 slimming (reasons, history) |
 | 25-freier-baustein | Freie Bausteine area: model, kinds, Dehnen template, editor, player, Kombi/plan/history wiring |
 | 26-erinnerungen | Push reminders before planned trainings: Grundeinstellungen section, payload, sw.js push, Worker /reminders + cron, deploy |
+| 27-trainingsplanung | Plan model (phases, weeks A-D, pauses, weekOps, Sonderwochen, dayOv), planWeekMap, Mein Plan, scope question, trainer plan code + versions; nothing changes training automatically |
+| 28-farbfelder | Farbfelder (VT, 2x2 mat grid): modes, rule function, Abfolge timing, Kombi/Cardio wiring, generic Hilfsmittel note |
+| 29-huetchen-farbe-zahl | Hütchen · Farbe + Zahl (VT, 3-6 numbered fields): cnFields, colour cap, drawing, Kombi/Cardio/preset wiring |
 
 ## Must-do rules collected from the detail notes
 
@@ -526,5 +539,22 @@ For every new or changed exercise/screen, in the same commit:
   answer button uses it and joins `GAME_TAP_SEL` (never half of a pinch).
   Pause sheets of all four edit timing and "Bei Fehler" for this run only
   (`addPauseChoiceRow` clones the ready row). Test: `tests/nat_pause_tempo_1007_test.py`.
+- Haken & Kreuz (2026-10-07): off by default; An/Aus in every fb exercise's
+  pause sheet; weak green/red contrast on the chosen background asks once at
+  the start (`FB_HINT_STARTS`, NAT). `confirmDialog(text, onYes, {title, yes,
+  no, onNo})`. Details docs/notes/03, test `tests/fb_haken_1007_test.py`.
+- Tippen beim Aufsetzen everywhere (2026-10-07): every game tap target is in
+  `FAST_TAP_SEL` (one delegated pointerdown listener); a new answer button or
+  tap area joins it unless its handler needs the tap coordinates.
+- Hilfsmittel (2026-10-07): an exercise that needs equipment gets one
+  `HILFSMITTEL` entry in app.js (text + optional `link`, shown only when set);
+  the VT ready screen renders it as `.hilfsmittel-note`. Details docs/notes/28.
+- Sanfte Reize (2026-10-07): Grundeinstellungen "Sehen und Reize"
+  (`masterPrefs.softStimuli`, + Schriftgröße `textSize` on top of `--ts`).
+  Every exercise with fast light changes honours it: VT canvas exercises get
+  it for free (`vtShowS`/`softGap`/cross-fade); any other engine adds one
+  `SOFT_EXERCISES` entry (ready screens get the "Sanfte Reize sind an" note +
+  override, the pause sheet the live switch) and reads `softOn(ex)` for
+  longer minimum times / softer fades. Details docs/notes/03.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

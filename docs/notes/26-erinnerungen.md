@@ -60,3 +60,28 @@ Test: `tests/reminders_1005_test.py`.
 
 ## Glocke auf Heute (2026-10-05)
 Fabian: "Kann ja irgendwie nen kleines Symbol drauf hinweisen an den Trainings Terminen für die App?" While reminders are on, every open training in the Heute day panel whose reminder still lies ahead (within the 14 days sent) shows a small brand-coloured bell after its title (`reminderBellHtml`, `.rem-bell`). Own appointments never get a reminder or a bell (Fabian 2026-10-05: they have their own calendars). Test: `tests/reminder_bell_1005_test.py`.
+
+## Atempausen-Erinnerung (2026-10-07, Fabian approved on the decision page)
+- `#reminderBreakGroup` inside `#reminderGroup`: switch `#reminderBreakCheck`
+  "Tagsüber an eine Atempause erinnern", then (only while on) "Wie oft am Tag?"
+  1×/2×/3× (`[data-break-count]`) and up to three `input[type=time]`
+  (`[data-break-time]`, defaults 10:30 / 15:00 / 18:30).
+- Prefs: `fwmc-reminders-v1.breaks = {on, count, times[3]}`. It works on its own:
+  `remState.active()` = trainings `on` OR `breaks.on`; both share ONE push
+  subscription. Switching one off resyncs; DELETE + unsubscribe only when both
+  are off. The Heute bell still follows only the training switch (`prefs.on`).
+- Payload: `computeReminders()` adds, per day of the 14-day window that is not
+  a plan pause day (`pauseOn(date)`), one `{at, title:"Zeit für eine Atempause",
+  body:"2 Min. ruhig atmen: deine Nichtraucher-Pause"}` per chosen time still
+  ahead (minutes from `fwmc-atempause-v1`). No names, no free text. Merged with
+  the training reminders, sorted, capped at `REMINDER_MAX` (60): with 3×/day
+  (42) plus many trainings the latest days drop out and come back on the next
+  sync (every open after 6 h). Title 23 chars, body 43 chars (Worker: 80/160).
+- Tap: the Worker only stores `{title, body}`, so `sw.js` picks the target by
+  the fixed title: `index.html?bereich=atempause` (Heute, scrolled to the
+  Nichtraucher-Pause card, which glows once). An already open window gets a
+  `postMessage({fwmcOpen:"atempause"})` and does the same unless a player runs.
+  No Worker deploy needed. Keep the title string identical in app.js
+  (`BREAK_REMINDER_TITLE`) and sw.js.
+- FAQ/Datenschutz text and the section help mention the Atempausen times.
+Test: `tests/atempause_sanft_1007_test.py` (section C).

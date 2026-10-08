@@ -384,3 +384,18 @@ Remember/Blitz/Flash/MOT all done, every exercise across every domain
 except Test-Bereich (by original design - see the client's own scope
 decision) can now be added to a combo with its own full fine-tuning.
 
+
+## Vollbild durchgehend (Idee 52, gebaut 2026-10-07)
+
+Before, fullscreen hung on the single player element, so every Baustein
+change (hideAllPlayers hides it) ended it. Now `wireFullscreen` asks for
+fullscreen on `document.documentElement` while `comboProgram` is set;
+`fsIsOn(player)` counts that as "on" for every player's button (label
+"Vollbild aus", `refreshFsLabels()` in hideAllPlayers). hideAllPlayers'
+"element got hidden" exit never fires for the page, VT's `leavePlayer` skips
+it inside a Kombi, and `finishComboProgram`/`abortComboProgram` call
+`exitComboFullscreen()`. The end-confirm sheet is already inside the page.
+Single runs keep fullscreen on their own player as before. Without any
+Fullscreen API (iPhone Safari) `html.no-fs-api` hides every `[id$=FsBtn]`;
+embedded views (API present but not allowed) keep the button + hint.
+Test: `tests/nacht_vollbild_atem_reaktion_1007_test.py` (API stubbed).

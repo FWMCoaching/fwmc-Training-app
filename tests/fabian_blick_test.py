@@ -28,6 +28,9 @@ spotting by eye, instead of one test per single case.
                  the page never changes (first config only)
      zurueck     a ‹ is visible but swiping back / the back button does not
                  go back (first config only)
+     verdeckt    an inline form (name + Abbrechen/Speichern) opened on a
+                 tap lands in view, not under the sticky start bar or the
+                 bottom bar, with one filled main button (first config)
      sprung      page jumps after a slide-in (Fabian 2026-10-06, Box-Atmung):
                  on a phone (mobile viewport, transitions on) the page must
                  keep the device width during every slide in, ‹ back and
@@ -164,6 +167,44 @@ async () => {
 """
 
 AUDIT_JS = open(os.path.join(HERE, "fabian_blick_audit.js"), encoding="utf-8").read()
+# verdeckt (Prüfer 07.10. Nr. 1): an inline form that opens on a tap (name
+# field + Abbrechen/Speichern, e.g. "Aktuelle Einstellung speichern") must
+# land fully in view, never under a sticky/fixed bar (start bar, bottom bar),
+# and leave one filled main button on screen. Opens each such form on the
+# current screen, checks it, closes it again.
+FORM_OPENERS_JS = r"""() => [...document.querySelectorAll('.screen:not([hidden]) button[id$="SaveBtn"]')]
+  .filter(b => b.offsetParent && /speichern/i.test(b.textContent) && b.nextElementSibling && b.nextElementSibling.matches('.custom-exercise-form[hidden]'))
+  .map(b => b.id)"""
+FORM_CHECK_JS = r"""(id) => {
+  const opener = document.getElementById(id), form = opener.nextElementSibling;
+  // only links a person can actually see and tap (not inside a collapsed box)
+  const o = opener.getBoundingClientRect(), top = document.elementFromPoint(o.left + o.width / 2, o.top + o.height / 2);
+  if (!top || !(top === opener || opener.contains(top))) return [];
+  opener.click();
+  return new Promise(res => setTimeout(() => {
+    const out = [];
+    if (form.hidden) { res(['Formular öffnet nicht']); return; }
+    const vh = window.innerHeight;
+    const covers = [...document.querySelectorAll('body *')].filter(e => {
+      const p = getComputedStyle(e).position;
+      return (p === 'sticky' || p === 'fixed') && !form.contains(e) && !e.contains(form) && e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden' && !e.closest('[hidden]');
+    }).map(e => [e, e.getBoundingClientRect()]).filter(([e, r]) => r.width > 0 && r.height > 0 && r.top < vh && r.bottom > 0);
+    [...form.querySelectorAll('input, button')].filter(el => el.getClientRects().length && !el.hidden).forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (r.top < 0 || r.bottom > vh) { out.push('Formular-Teil nicht im Bild nach dem Öffnen: ' + (el.textContent.trim() || el.placeholder || el.id).slice(0, 24)); return; }
+      const hit = covers.find(([e, q]) => q.top < r.bottom - 2 && q.bottom > r.top + 2 && q.left < r.right && q.right > r.left);
+      if (hit) out.push('Formular-Teil unter ' + (hit[0].id ? '#' + hit[0].id : '.' + String(hit[0].className).split(' ')[0]) + ': ' + (el.textContent.trim() || el.placeholder || el.id).slice(0, 24));
+    });
+    const prim = [...document.querySelectorAll('.screen:not([hidden]) .start-btn:not(.secondary)')].filter(b => {
+      if (!b.getClientRects().length || b.closest('[hidden]') || getComputedStyle(b).visibility === 'hidden') return false;
+      const r = b.getBoundingClientRect(); return r.bottom > 0 && r.top < vh;
+    });
+    if (prim.length > 1) out.push(prim.length + ' gefüllte Hauptknöpfe bei offenem Formular: ' + prim.map(b => b.textContent.trim().slice(0, 18)).join(' / '));
+    const cancel = [...form.querySelectorAll('button')].find(b => /Abbrechen/.test(b.textContent));
+    if (cancel) cancel.click();
+    res(out);
+  }, 450));
+}"""
 
 
 def key_of(state):
@@ -422,6 +463,12 @@ async def audit_config(b, cfg, states, starts):
                 findings.append({"cat": "lange", "state": k, "el": "", "msg": m})
             if lp is not None and not await replay(pg, entry, clicks):
                 continue
+        if cfg == CONFIGS[0] and not is_start and not st["sheet"] and not st["player"]:
+            for fid in await pg.evaluate(FORM_OPENERS_JS):
+                await pg.evaluate(f"() => document.getElementById('{fid}').scrollIntoView({{block: 'end'}})")
+                await pg.wait_for_timeout(120)
+                for m in await pg.evaluate(FORM_CHECK_JS, fid):
+                    findings.append({"cat": "verdeckt", "state": k, "el": "#" + fid, "msg": m})
         # zurueck (Fabian 2026-10-06): wherever a ‹ is visible, swiping back
         # (Safari edge swipe = browser back, Android back) must go back too.
         if cfg == CONFIGS[0] and not is_start and not st["sheet"] and not st["player"] and await pg.evaluate(BACK_VISIBLE_JS):

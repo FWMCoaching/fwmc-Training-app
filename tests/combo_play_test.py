@@ -46,7 +46,8 @@ async def main():
         # fixed silent 4s - always skippable via #comboTransitionBtn
         # ("Überspringen"), which these waits use to keep this test fast
         # rather than actually waiting out the pause each time.
-        await pg.wait_for_selector("#comboTransition:not([hidden])", timeout=8000)
+        # The breath block holds 10 s at its end ("Weiter atmen", Idee 53, 07.10.).
+        await pg.wait_for_selector("#comboTransition:not([hidden])", timeout=20000)
         await pg.click("#comboTransitionBtn")
         await pg.wait_for_function("() => !document.getElementById('movementPlayer').hidden", timeout=8000)
         print("advanced to movement block")

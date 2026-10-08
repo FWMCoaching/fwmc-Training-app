@@ -64,7 +64,7 @@
 
   <section class="code-card">
     <h2>Dein pers&ouml;nliches Training</h2>
-    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
+    <p>Dein Trainer stellt dir einen Plan zusammen, der genau zu dir passt: deine &Uuml;bungen, dein Tempo, dein Ziel. Du bekommst daf&uuml;r einen Code. Gib ihn hier ein.</p>
     <div class="program-entry-row">
       <input type="text" id="programCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="programGoBtn">&Ouml;ffnen</button>
@@ -225,6 +225,28 @@
         <p>Baue deinen eigenen Richtungs-Aufbau &ndash; die App zeigt nur die Farbe.</p>
         <span class="tag">H&uuml;tchen</span>
       </button>
+
+      <button class="excard" data-exercise="cone-number" data-tags="huetchen">
+        <div class="icon-badge"><svg viewBox="0 0 24 24">
+          <rect x="4.5" y="4.5" width="15" height="15" rx="3.5" fill="none" stroke="#fff" stroke-width="2.2"/>
+          <text x="12" y="16.4" text-anchor="middle" font-family="Magra, sans-serif" font-weight="700" font-size="11.5" fill="#fff">2</text>
+        </svg></div>
+        <h3>H&uuml;tchen &middot; Farbe + Zahl</h3>
+        <p>Farbe und Zahl erscheinen &ndash; stelle das H&uuml;tchen auf das richtige Feld.</p>
+        <span class="tag">H&uuml;tchen</span>
+      </button>
+
+      <button class="excard" data-exercise="farbfelder" data-tags="huetchen">
+        <div class="icon-badge pale"><svg viewBox="0 0 24 24">
+          <rect x="3" y="3" width="8.4" height="8.4" rx="1.6" fill="#d32f2f"/>
+          <rect x="12.6" y="3" width="8.4" height="8.4" rx="1.6" fill="#1565c0"/>
+          <rect x="3" y="12.6" width="8.4" height="8.4" rx="1.6" fill="#f2a900"/>
+          <rect x="12.6" y="12.6" width="8.4" height="8.4" rx="1.6" fill="#2e7d32"/>
+        </svg></div>
+        <h3>Farbfelder</h3>
+        <p>Vier Farbfelder wie auf deiner Matte &ndash; tritt auf das richtige Feld.</p>
+        <span class="tag">Matte</span>
+      </button>
     </div>
   </section>
 
@@ -243,7 +265,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 14:48</p>
+    <p class="app-version">Stand: 08.10.2026, 01:47</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -280,6 +302,8 @@
 
   <section class="today-main" id="todayMain" aria-live="polite"></section>
 
+  <section class="today-main plan-update" id="todayPlanUpdate" hidden></section>
+
   <section class="today-main week-review" id="todayWeekReview" hidden></section>
 
   <section class="today-main event-countdown" id="todayCountdown" hidden></section>
@@ -301,11 +325,31 @@
     <svg class="install-pointer-arrow" viewBox="0 0 40 64" width="40" height="64" aria-hidden="true"><path d="M20 4v52M6 42l14 16 14-16" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </div>
 
+  <section class="today-main today-break" id="todayBreak" aria-labelledby="todayBreakTitle">
+    <div class="today-break-head">
+      <span class="today-break-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h11a3 3 0 1 0-3-3"/><path d="M3 13h15a3 3 0 1 1-3 3"/><path d="M3 17h7"/></svg></span>
+      <div class="today-break-text">
+        <h2 class="today-break-title" id="todayBreakTitle">Nichtraucher-Pause</h2>
+        <p class="today-break-sub"><span id="todayBreakMinText">2 Min.</span> Atempause &middot; ruhig atmen, kurz abschalten</p>
+      </div>
+      <button class="today-break-info" id="todayBreakInfoBtn" type="button" aria-label="Was ist die Nichtraucher-Pause?"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".6" fill="currentColor"/></svg></button>
+    </div>
+    <div class="today-break-actions">
+      <div class="today-break-mins" role="group" aria-label="Dauer der Atempause">
+        <button class="choice" type="button" data-break-min="1">1 Min.</button>
+        <button class="choice" type="button" data-break-min="2">2 Min.</button>
+        <button class="choice" type="button" data-break-min="3">3 Min.</button>
+      </div>
+      <button class="text-link today-break-start" id="todayBreakStartBtn" type="button">Atempause starten &rarr;</button>
+    </div>
+  </section>
+
   <section class="today-week">
     <div class="section-head">
       <h2 id="todayWeekTitle">Diese Woche</h2>
       <span class="section-note" id="todayProgress"></span>
     </div>
+    <button type="button" class="today-plan-line" id="todayPlanLine" hidden></button>
     <div class="week-nav">
       <button class="week-nav-btn" id="todayWeekPrev" type="button" aria-label="Vorherige Woche">&lsaquo;</button>
       <div class="week-range"><span id="todayWeekRange" aria-live="polite"></span><button class="week-today-btn" id="todayWeekTodayBtn" type="button" hidden>Heute</button></div>
@@ -334,6 +378,10 @@
       <button class="text-link small" id="dayEventAddBtn" type="button">+ Eigenen Termin eintragen (z. B. Wettkampf)</button>
     </div>
     <button class="start-btn secondary today-plan-btn" id="todayPlanBtn" type="button">Wochenplan bearbeiten</button>
+    <div class="today-plan-links" id="todayPlanLinks" hidden>
+      <button class="text-link small" id="todayMyPlanBtn" type="button">Mein Plan ansehen</button>
+      <button class="text-link small" id="todayPauseBtn" type="button">Pause eintragen</button>
+    </div>
   </section>
 
   <section class="today-main tips-card" id="todayTipsCard" hidden>
@@ -354,7 +402,7 @@
 
   <section class="code-card today-code">
     <h2>Dein pers&ouml;nliches Training</h2>
-    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
+    <p>Dein Trainer stellt dir einen Plan zusammen, der genau zu dir passt: deine &Uuml;bungen, dein Tempo, dein Ziel. Du bekommst daf&uuml;r einen Code. Gib ihn hier ein.</p>
     <div class="program-entry-row">
       <input type="text" id="todayCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="todayCodeGoBtn">&Ouml;ffnen</button>
@@ -369,7 +417,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 14:48</p>
+    <p class="app-version">Stand: 08.10.2026, 01:47</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -391,7 +439,7 @@
 
   <section class="code-card">
     <h2>Dein pers&ouml;nliches Training</h2>
-    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
+    <p>Dein Trainer stellt dir einen Plan zusammen, der genau zu dir passt: deine &Uuml;bungen, dein Tempo, dein Ziel. Du bekommst daf&uuml;r einen Code. Gib ihn hier ein.</p>
     <div class="program-entry-row">
       <input type="text" id="moreCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="moreCodeGoBtn">&Ouml;ffnen</button>
@@ -405,7 +453,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 14:48</p>
+    <p class="app-version">Stand: 08.10.2026, 01:47</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -455,7 +503,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 14:48</p>
+    <p class="app-version">Stand: 08.10.2026, 01:47</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -485,6 +533,7 @@
       <span class="progress-goal-value" id="progressGoalValue"></span>
       <button class="progress-goal-btn" id="progressGoalPlus" type="button" aria-label="Wochenziel erh&ouml;hen">+</button>
     </div>
+    <p class="group-help" id="progressGoalPlanNote" hidden></p>
     <div class="progress-bar" id="progressWeekBar"></div>
     <p class="group-help" id="progressWeekText"></p>
   </div>
@@ -523,9 +572,81 @@
     <input type="date" id="planStartInput" class="plan-date-input">
     <p class="group-help" id="planStartHelp"></p>
   </div>
+  <div class="plan-source-note" id="planSourceNote" hidden></div>
+  <div class="plan-tools">
+    <button class="plan-tool-btn" id="planOverviewBtn" type="button">Mein Plan</button>
+    <button class="plan-tool-btn" id="planPauseBtn" type="button">Pause eintragen</button>
+    <button class="plan-tool-btn" id="planUndoBtn" type="button" hidden>&#8630; R&uuml;ckg&auml;ngig</button>
+  </div>
+  <div class="plan-tray" id="planTray">
+    <div class="plan-tray-head">
+      <span class="group-label">Ablage</span>
+      <span class="plan-tray-hint" id="planTrayHint">Tippe ein Training an und dann auf einen Tag. Am Laptop kannst du es auch ziehen.</span>
+    </div>
+    <div class="plan-tray-tabs" role="tablist" id="planTrayTabs"></div>
+    <div class="plan-tray-items" id="planTrayItems"></div>
+  </div>
   <div id="planPhaseList"></div>
   <button class="start-btn secondary" id="planAddPhaseBtn" type="button">+ Phase hinzuf&uuml;gen</button>
-  <button class="text-link small plan-clear-btn" id="planClearBtn" type="button">Ganzen Plan l&ouml;schen</button>
+  <button class="text-link plan-insert-btn" id="planAddInsertBtn" type="button">+ Sonderwoche einf&uuml;gen</button>
+  <button class="text-link small danger plan-clear-btn" id="planClearBtn" type="button">Ganzen Plan l&ouml;schen</button>
+</div>
+
+<div class="screen" id="myPlanScreen" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="myPlanBackBtn">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Mein Plan</h1>
+  <p class="page-sub">Dein ganzer Weg auf einen Blick: jede Zeile ist eine Woche. Tippe auf eine Woche, um sie zu wiederholen, zu &uuml;berspringen oder zu verschieben.</p>
+  <div class="myplan-legend" id="myPlanLegend"></div>
+  <div class="myplan-list" id="myPlanList"></div>
+  <div class="group" id="myPlanPausesGroup">
+    <div class="group-label">Pausen</div>
+    <div id="myPlanPauses"></div>
+    <button class="start-btn secondary" id="myPlanPauseAddBtn" type="button">Pause eintragen</button>
+  </div>
+  <div class="group" id="myPlanFocusGroup">
+    <div class="group-label">Auf einen Wettkampf hin</div>
+    <p class="group-help" id="myPlanFocusHelp"></p>
+    <div id="myPlanFocus"></div>
+  </div>
+</div>
+
+<div class="sheet" id="pauseSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="pauseSheetTitle">
+    <h2 id="pauseSheetTitle">Pause eintragen</h2>
+    <p class="group-help">Urlaub, krank oder verletzt: In der Pause gibt es keine Erinnerungen, und deine Serie rei&szlig;t nicht ab.</p>
+    <div class="group-label" id="pauseReasonLabel">Grund</div>
+    <div class="choice-row two" id="pauseReasonRow" role="group" aria-labelledby="pauseReasonLabel"></div>
+    <div class="plan-entry-row">
+      <div>
+        <label class="group-label" for="pauseFromInput">Von</label>
+        <input type="date" id="pauseFromInput" class="plan-input">
+      </div>
+      <div>
+        <label class="group-label" for="pauseToInput">Bis</label>
+        <input type="date" id="pauseToInput" class="plan-input">
+      </div>
+    </div>
+    <label class="checkbox-row tap-row"><input type="checkbox" id="pauseShiftToggle"> Plan nach hinten verschieben</label>
+    <p class="group-help" id="pauseShiftHelp">Nach der Pause geht es dort weiter, wo du aufgeh&ouml;rt hast. Alles Sp&auml;tere r&uuml;ckt nach hinten.</p>
+    <p class="group-help plan-warn" id="pauseWarn" hidden></p>
+    <div class="program-error" id="pauseError" role="alert" hidden></div>
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="pauseCancelBtn" type="button">Abbrechen</button>
+      <button class="start-btn" id="pauseSaveBtn" type="button">Eintragen</button>
+    </div>
+    <button class="text-link small danger" id="pauseDeleteBtn" type="button" hidden>Pause beenden und l&ouml;schen</button>
+  </div>
+</div>
+
+<div class="sheet" id="choiceSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="choiceTitle">
+    <h2 id="choiceTitle"></h2>
+    <p class="group-help" id="choiceText"></p>
+    <div class="choice-sheet-list" id="choiceList"></div>
+    <button class="start-btn secondary" id="choiceCancelBtn" type="button">Abbrechen</button>
+  </div>
 </div>
 
 <div class="sheet" id="planEntrySheet" hidden>
@@ -535,6 +656,10 @@
     <div id="planEntryDayWrap" hidden>
       <label class="group-label" for="planEntryDay">Wochentag</label>
       <select id="planEntryDay" class="plan-select"></select>
+    </div>
+    <div id="planEntryDaysWrap" hidden>
+      <div class="group-label" id="planEntryDaysLabel">An welchen Tagen?</div>
+      <div class="plan-days-pick" id="planEntryDays" role="group" aria-labelledby="planEntryDaysLabel"></div>
     </div>
     <label class="group-label" for="planEntryArea">Bereich</label>
     <select id="planEntryArea" class="plan-select"></select>
@@ -551,6 +676,10 @@
         <label class="group-label" for="planEntryMinutes">Dauer</label>
         <select id="planEntryMinutes" class="plan-select"></select>
       </div>
+    </div>
+    <div id="planEntrySpecialRow" hidden>
+      <label class="checkbox-row tap-row"><input type="checkbox" id="planEntrySpecial"> Sondertraining (mit Stern im Kalender)</label>
+      <p class="group-help">Zum Beispiel Testtag oder Training mit deinem Trainer. Z&auml;hlt als geplant.</p>
     </div>
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="planEntryCancelBtn" type="button">Abbrechen</button>
@@ -577,7 +706,7 @@
         <input type="time" id="eventTimeInput" class="plan-input" lang="de">
       </div>
     </div>
-    <label class="checkbox-row event-goal-row"><input type="checkbox" id="eventGoalToggle"> Gro&szlig;es Ziel: Countdown auf Heute zeigen</label>
+    <label class="checkbox-row tap-row event-goal-row"><input type="checkbox" id="eventGoalToggle"> Gro&szlig;es Ziel: Countdown auf Heute zeigen</label>
     <div class="program-error" id="eventError" role="alert" hidden></div>
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="eventCancelBtn" type="button">Abbrechen</button>
@@ -616,7 +745,7 @@
 
   <section class="code-card">
     <h2>Dein pers&ouml;nliches Atemtraining</h2>
-    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
+    <p>Dein Trainer stellt dir einen Plan zusammen, der genau zu dir passt: deine &Uuml;bungen, dein Tempo, dein Ziel. Du bekommst daf&uuml;r einen Code. Gib ihn hier ein.</p>
     <div class="program-entry-row">
       <input type="text" id="breathProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="breathProgramGoBtn">&Ouml;ffnen</button>
@@ -656,7 +785,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 14:48</p>
+    <p class="app-version">Stand: 08.10.2026, 01:47</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -696,7 +825,7 @@
 
   <section class="code-card">
     <h2>Dein pers&ouml;nliches Bewegungsprogramm</h2>
-    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
+    <p>Dein Trainer stellt dir einen Plan zusammen, der genau zu dir passt: deine &Uuml;bungen, dein Tempo, dein Ziel. Du bekommst daf&uuml;r einen Code. Gib ihn hier ein.</p>
     <div class="program-entry-row">
       <input type="text" id="movementProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="movementProgramGoBtn">&Ouml;ffnen</button>
@@ -731,7 +860,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 14:48</p>
+    <p class="app-version">Stand: 08.10.2026, 01:47</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -788,7 +917,7 @@
 
   <section class="code-card">
     <h2>Dein pers&ouml;nlicher Trainingsplan</h2>
-    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
+    <p>Dein Trainer stellt dir einen Plan zusammen, der genau zu dir passt: deine &Uuml;bungen, dein Tempo, dein Ziel. Du bekommst daf&uuml;r einen Code. Gib ihn hier ein.</p>
     <div class="program-entry-row">
       <input type="text" id="workoutProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="workoutProgramGoBtn">&Ouml;ffnen</button>
@@ -842,7 +971,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 14:48</p>
+    <p class="app-version">Stand: 08.10.2026, 01:47</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -880,7 +1009,7 @@
 
   <section class="code-card">
     <h2>Deine pers&ouml;nliche Ausdauer-Einheit</h2>
-    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
+    <p>Dein Trainer stellt dir einen Plan zusammen, der genau zu dir passt: deine &Uuml;bungen, dein Tempo, dein Ziel. Du bekommst daf&uuml;r einen Code. Gib ihn hier ein.</p>
     <div class="program-entry-row">
       <input type="text" id="cardioProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="cardioProgramGoBtn">&Ouml;ffnen</button>
@@ -914,7 +1043,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 14:48</p>
+    <p class="app-version">Stand: 08.10.2026, 01:47</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -967,7 +1096,7 @@
     <div class="chapter-list" id="cardioList"></div>
     <button class="text-link small" id="cardioSaveBtn">Aktuelle Einheit speichern</button>
     <div class="custom-exercise-form" id="cardioSaveForm" hidden>
-      <input type="text" id="cardioSaveNameInput" placeholder="Name (z.B. &bdquo;Montag Ausdauer&ldquo;)" maxlength="40">
+      <input type="text" id="cardioSaveNameInput" placeholder="Name (z.&#8239;B. Montag Ausdauer)" maxlength="40">
       <div class="custom-exercise-form-actions">
         <button class="start-btn secondary" id="cardioSaveCancelBtn">Abbrechen</button>
         <button class="start-btn" id="cardioSaveConfirmBtn">Speichern</button>
@@ -1030,7 +1159,7 @@
     <summary>Zusatzaufgabe w&auml;hrend des Ausdauertrainings</summary>
     <div class="advanced-body">
       <div class="group">
-        <label class="checkbox-row"><input type="checkbox" id="cardioAddonEnableToggle"> Zusatzaufgaben w&auml;hrend des Ausdauertrainings aktivieren</label>
+        <label class="checkbox-row tap-row"><input type="checkbox" id="cardioAddonEnableToggle"> Zusatzaufgaben w&auml;hrend des Ausdauertrainings aktivieren</label>
         <div class="group-help">Ein Ein/Aus-Schalter wie bei der Zusatzaufgabe sonst auch &ndash; gilt f&uuml;r jede Ausdauer-Einheit, egal ob selbst gebaut oder von deinem Trainer zugewiesen.</div>
       </div>
       <div id="cardioAddonBody" hidden>
@@ -1052,7 +1181,7 @@
           </div>
         </div>
         <div class="group">
-          <label class="checkbox-row"><input type="checkbox" id="cardioAddonWindowToggle"> Nur in einem bestimmten Zeitfenster</label>
+          <label class="checkbox-row tap-row"><input type="checkbox" id="cardioAddonWindowToggle"> Nur in einem bestimmten Zeitfenster</label>
           <div class="group-help">Ohne Zeitfenster kann eine Zusatzaufgabe jederzeit w&auml;hrend der ganzen Ausdauer-Einheit aufblitzen.</div>
           <div id="cardioAddonWindowBody" hidden>
             <div class="slider-row">
@@ -1157,7 +1286,7 @@
 
   <section class="code-card">
     <h2>Dein pers&ouml;nliches Training</h2>
-    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
+    <p>Dein Trainer stellt dir einen Plan zusammen, der genau zu dir passt: deine &Uuml;bungen, dein Tempo, dein Ziel. Du bekommst daf&uuml;r einen Code. Gib ihn hier ein.</p>
     <div class="program-entry-row">
       <input type="text" id="freeProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="freeProgramGoBtn">&Ouml;ffnen</button>
@@ -1210,7 +1339,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 14:48</p>
+    <p class="app-version">Stand: 08.10.2026, 01:47</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1302,6 +1431,12 @@
   <div class="player-bar" id="freePlayerBar">
     <button id="freeBackBtn">&#10005; Beenden</button>
     <button id="freePauseBtn">Pause</button>
+    <button id="freeFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="freeFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="freeFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="freeFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
   </div>
 </div>
 
@@ -1351,7 +1486,7 @@
 
   <section class="code-card">
     <h2>Dein pers&ouml;nliches NAT&#8209;Programm</h2>
-    <p>Du hast einen Trainings-Code von deinem Trainer? Gib ihn hier ein.</p>
+    <p>Dein Trainer stellt dir einen Plan zusammen, der genau zu dir passt: deine &Uuml;bungen, dein Tempo, dein Ziel. Du bekommst daf&uuml;r einen Code. Gib ihn hier ein.</p>
     <div class="program-entry-row">
       <input type="text" id="natProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button id="natProgramGoBtn">&Ouml;ffnen</button>
@@ -1530,7 +1665,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 14:48</p>
+    <p class="app-version">Stand: 08.10.2026, 01:47</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1733,7 +1868,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 07.10.2026, 14:48</p>
+    <p class="app-version">Stand: 08.10.2026, 01:47</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -2877,7 +3012,7 @@
         </div>
         <button class="text-link small" id="rememberBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="rememberBgSaveForm" hidden>
-          <input type="text" id="rememberBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="rememberBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="rememberBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="rememberBgSaveConfirmBtn">Speichern</button>
@@ -2888,6 +3023,19 @@
   </details>
 
   <div class="group-help" id="rememberReadyBestHint"></div>
+
+  <div class="group nat-saved-group" id="rememberReadySavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="rememberReadySavedList"></div>
+  </div>
+  <button class="text-link small" id="rememberReadySaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="rememberReadySaveForm" hidden>
+    <input type="text" id="rememberReadySaveNameInput" placeholder="Name (z.&#8239;B. Schnell, schwer)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="rememberReadySaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="rememberReadySaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
 
   <button class="start-btn" id="rememberReadyStartBtn">Training starten</button>
 </div>
@@ -2975,7 +3123,7 @@
         </div>
         <button class="text-link small" id="rememberTrainingBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="rememberTrainingBgSaveForm" hidden>
-          <input type="text" id="rememberTrainingBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="rememberTrainingBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="rememberTrainingBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="rememberTrainingBgSaveConfirmBtn">Speichern</button>
@@ -2986,6 +3134,19 @@
   </details>
 
   <div class="group-help" id="rememberTrainingBestHint"></div>
+
+  <div class="group nat-saved-group" id="rememberTrainingReadySavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="rememberTrainingReadySavedList"></div>
+  </div>
+  <button class="text-link small" id="rememberTrainingReadySaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="rememberTrainingReadySaveForm" hidden>
+    <input type="text" id="rememberTrainingReadySaveNameInput" placeholder="Name (z.&#8239;B. Schnell, schwer)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="rememberTrainingReadySaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="rememberTrainingReadySaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
 
   <button class="start-btn" id="rememberTrainingStartBtn">Training starten</button>
 </div>
@@ -3087,7 +3248,7 @@
         </div>
         <button class="text-link small" id="blitzBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="blitzBgSaveForm" hidden>
-          <input type="text" id="blitzBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="blitzBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="blitzBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="blitzBgSaveConfirmBtn">Speichern</button>
@@ -3098,6 +3259,19 @@
   </details>
 
   <div class="group-help" id="blitzReadyBestHint"></div>
+
+  <div class="group nat-saved-group" id="blitzReadySavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="blitzReadySavedList"></div>
+  </div>
+  <button class="text-link small" id="blitzReadySaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="blitzReadySaveForm" hidden>
+    <input type="text" id="blitzReadySaveNameInput" placeholder="Name (z.&#8239;B. Schnell, schwer)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="blitzReadySaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="blitzReadySaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
 
   <button class="start-btn" id="blitzReadyStartBtn">Training starten</button>
 </div>
@@ -3231,7 +3405,7 @@
         </div>
         <button class="text-link small" id="flashBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="flashBgSaveForm" hidden>
-          <input type="text" id="flashBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="flashBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="flashBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="flashBgSaveConfirmBtn">Speichern</button>
@@ -3258,6 +3432,19 @@
   </details>
 
   <div class="group-help" id="flashReadyBestHint"></div>
+
+  <div class="group nat-saved-group" id="flashReadySavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="flashReadySavedList"></div>
+  </div>
+  <button class="text-link small" id="flashReadySaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="flashReadySaveForm" hidden>
+    <input type="text" id="flashReadySaveNameInput" placeholder="Name (z.&#8239;B. Schnell, schwer)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="flashReadySaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="flashReadySaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
 
   <button class="start-btn" id="flashReadyStartBtn">Training starten</button>
 </div>
@@ -3361,7 +3548,7 @@
         </div>
         <button class="text-link small" id="flashTrainingBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="flashTrainingBgSaveForm" hidden>
-          <input type="text" id="flashTrainingBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="flashTrainingBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="flashTrainingBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="flashTrainingBgSaveConfirmBtn">Speichern</button>
@@ -3388,6 +3575,19 @@
   </details>
 
   <div class="group-help" id="flashTrainingBestHint"></div>
+
+  <div class="group nat-saved-group" id="flashTrainingReadySavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="flashTrainingReadySavedList"></div>
+  </div>
+  <button class="text-link small" id="flashTrainingReadySaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="flashTrainingReadySaveForm" hidden>
+    <input type="text" id="flashTrainingReadySaveNameInput" placeholder="Name (z.&#8239;B. Schnell, schwer)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="flashTrainingReadySaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="flashTrainingReadySaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
 
   <button class="start-btn" id="flashTrainingStartBtn">Training starten</button>
 </div>
@@ -3507,7 +3707,7 @@
         </div>
         <button class="text-link small" id="motBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="motBgSaveForm" hidden>
-          <input type="text" id="motBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="motBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="motBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="motBgSaveConfirmBtn">Speichern</button>
@@ -3518,6 +3718,19 @@
   </details>
 
   <div class="group-help" id="motReadyBestHint"></div>
+
+  <div class="group nat-saved-group" id="motReadySavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="motReadySavedList"></div>
+  </div>
+  <button class="text-link small" id="motReadySaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="motReadySaveForm" hidden>
+    <input type="text" id="motReadySaveNameInput" placeholder="Name (z.&#8239;B. Schnell, schwer)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="motReadySaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="motReadySaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
 
   <button class="start-btn" id="motReadyStartBtn">Training starten</button>
 </div>
@@ -3619,7 +3832,7 @@
         </div>
         <button class="text-link small" id="motTrainingBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="motTrainingBgSaveForm" hidden>
-          <input type="text" id="motTrainingBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="motTrainingBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="motTrainingBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="motTrainingBgSaveConfirmBtn">Speichern</button>
@@ -3630,6 +3843,19 @@
   </details>
 
   <div class="group-help" id="motTrainingBestHint"></div>
+
+  <div class="group nat-saved-group" id="motTrainingReadySavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="motTrainingReadySavedList"></div>
+  </div>
+  <button class="text-link small" id="motTrainingReadySaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="motTrainingReadySaveForm" hidden>
+    <input type="text" id="motTrainingReadySaveNameInput" placeholder="Name (z.&#8239;B. Schnell, schwer)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="motTrainingReadySaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="motTrainingReadySaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
 
   <button class="start-btn" id="motTrainingStartBtn">Training starten</button>
 </div>
@@ -3792,7 +4018,7 @@
         </div>
         <button class="text-link small" id="balanceBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="balanceBgSaveForm" hidden>
-          <input type="text" id="balanceBgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="balanceBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="balanceBgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="balanceBgSaveConfirmBtn">Speichern</button>
@@ -3810,6 +4036,19 @@
     <p><strong>Erst &auml;rztlich abkl&auml;ren</strong> bei akutem Drehschwindel, Lagerungsschwindel, Gehirnersch&uuml;tterung mit Beschwerden, Erkrankungen von Innenohr, Halswirbels&auml;ule oder Nervensystem oder nach St&uuml;rzen. Pl&ouml;tzlicher Schwindel mit Doppelbildern, Sprach- oder Schluckst&ouml;rung, L&auml;hmung oder H&ouml;rverlust ist ein Notfall (112).</p>
     </div>
   </details>
+
+  <div class="group nat-saved-group" id="balanceReadySavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="balanceReadySavedList"></div>
+  </div>
+  <button class="text-link small" id="balanceReadySaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="balanceReadySaveForm" hidden>
+    <input type="text" id="balanceReadySaveNameInput" placeholder="Name (z.&#8239;B. Schnell, schwer)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="balanceReadySaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="balanceReadySaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
 
   <button class="start-btn" id="balanceReadyStartBtn">Training starten</button>
 </div>
@@ -3853,6 +4092,119 @@
     <span class="setup-thumb" id="setupThumb"></span>
     <span>Aufbau-Beispiele ansehen</span>
   </button>
+  <div class="hilfsmittel-note" id="hilfsmittelNote" hidden>
+    <span class="hilfsmittel-kicker">Hilfsmittel</span>
+    <span id="hilfsmittelText"></span>
+    <a class="text-link small hilfsmittel-link" id="hilfsmittelLink" href="#" target="_blank" rel="noopener" hidden>Passendes Hilfsmittel ansehen &rarr;</a>
+  </div>
+
+  <div id="ffSettings" hidden>
+    <div class="group">
+      <div class="group-label">Modus</div>
+      <div class="choice-row two" id="ffModeRow" role="group" aria-label="Modus">
+        <button type="button" class="choice" data-ff-mode="leuchten">Leuchten<small>ein Feld leuchtet auf</small></button>
+        <button type="button" class="choice" data-ff-mode="regeln">Regeln<small>das Symbol sagt, wohin</small></button>
+        <button type="button" class="choice" data-ff-mode="leer">Das leere Feld<small>tritt aufs freie Feld</small></button>
+        <button type="button" class="choice" data-ff-mode="abfolge">Abfolge merken<small>Folge nachtreten</small></button>
+        <button type="button" class="choice" data-ff-mode="ansage">Ansage<small>die Farbe wird gesagt</small></button>
+        <button type="button" class="choice" data-ff-mode="farbwort">Farbwort<small>die Schriftfarbe z&auml;hlt</small></button>
+        <button type="button" class="choice" data-ff-mode="fusshand">Fu&szlig; und Hand<small>treten und zeigen</small></button>
+        <button type="button" class="choice" data-ff-mode="sehenhoeren">Sehen und H&ouml;ren<small>Bild, Ansage oder beides</small></button>
+      </div>
+      <div class="group-help" id="ffModeHelp"></div>
+    </div>
+
+    <div class="group" id="ffLevelGroup" hidden>
+      <div class="group-label">Stufe</div>
+      <div class="choice-row four" id="ffLevelRow" role="group" aria-label="Stufe">
+        <button type="button" class="choice" data-ff-level="1">Stufe 1</button>
+        <button type="button" class="choice" data-ff-level="2">Stufe 2</button>
+        <button type="button" class="choice" data-ff-level="3">Stufe 3</button>
+        <button type="button" class="choice" data-ff-level="4">Stufe 4</button>
+      </div>
+      <ul class="ff-rules" id="ffRuleList"></ul>
+    </div>
+
+    <div class="group" id="ffSeqGroup" hidden>
+      <div class="group-label">L&auml;nge der ersten Folge</div>
+      <div class="choice-row two" id="ffSeqRow" role="group" aria-label="L&auml;nge der ersten Folge">
+        <button type="button" class="choice" data-ff-seq="2">2 Felder</button>
+        <button type="button" class="choice" data-ff-seq="3">3 Felder</button>
+      </div>
+      <div class="group-help">Jede Runde kommt ein Feld dazu.</div>
+    </div>
+
+    <div class="group" id="ffGiltGroup" hidden>
+      <div class="group-label">Bei beidem gilt</div>
+      <div class="choice-row two" id="ffGiltRow" role="group" aria-label="Bei beidem gilt">
+        <button type="button" class="choice" data-ff-gilt="gesagt">das Gesagte</button>
+        <button type="button" class="choice" data-ff-gilt="gezeigt">das Gezeigte</button>
+      </div>
+      <div class="group-help">Kommen Bild und Ansage zugleich und passen nicht zusammen, z&auml;hlt diese Quelle.</div>
+      <div class="group-label">Mischung</div>
+      <div class="choice-row" id="ffMixRow" role="group" aria-label="Mischung">
+        <button type="button" class="choice" data-ff-mix="ausgewogen">Ausgewogen<small>35 / 35 / 30 %</small></button>
+        <button type="button" class="choice" data-ff-mix="mehrbeides">Mehr beides<small>20 / 20 / 60 %</small></button>
+        <button type="button" class="choice" data-ff-mix="nurbeides">Nur beides<small>0 / 0 / 100 %</small></button>
+      </div>
+      <div class="group-help">Anteile: nur gezeigt / nur gesagt / beides zugleich.</div>
+    </div>
+
+    <div class="group" id="ffFlipGroup" hidden>
+      <div class="group-label">Rhythmus-Umkehr</div>
+      <div class="choice-row" id="ffFlipRow" role="group" aria-label="Rhythmus-Umkehr">
+        <button type="button" class="choice" data-ff-flip="0">Aus</button>
+        <button type="button" class="choice" data-ff-flip="2">Jedes 2. Mal<small>andersherum</small></button>
+        <button type="button" class="choice" data-ff-flip="3">Jedes 3. Mal<small>andersherum</small></button>
+      </div>
+      <div class="group-help" id="ffFlipHelp"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-label">Anordnung wie deine Matte</div>
+      <div class="ff-layout-grid" id="ffLayoutGrid">
+        <button type="button" class="ff-cell" data-ff-cell="0" aria-label="Oben links"></button>
+        <button type="button" class="ff-cell" data-ff-cell="1" aria-label="Oben rechts"></button>
+        <button type="button" class="ff-cell" data-ff-cell="2" aria-label="Unten links"></button>
+        <button type="button" class="ff-cell" data-ff-cell="3" aria-label="Unten rechts"></button>
+      </div>
+      <div class="group-help" id="ffLayoutHelp"></div>
+      <div class="color-picker" id="ffColorPicker"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-label">Fu&szlig;-Vorgabe</div>
+      <div class="choice-row" id="ffFootRow" role="group" aria-label="Fu&szlig;-Vorgabe">
+        <button type="button" class="choice" data-ff-foot="aus">Aus</button>
+        <button type="button" class="choice" data-ff-foot="wechsel">Im Wechsel<small>links, rechts, &hellip;</small></button>
+        <button type="button" class="choice" data-ff-foot="zufall">Zuf&auml;llig<small>L oder R</small></button>
+      </div>
+      <div class="group-help">Die App zeigt L oder R: Mit diesem Fu&szlig; trittst du.</div>
+    </div>
+
+    <div class="group" id="ffHandsGroup">
+      <div class="group-label">H&auml;nde</div>
+      <div class="choice-row two" id="ffHandsRow" role="group" aria-label="H&auml;nde">
+        <button type="button" class="choice" data-ff-hands="0">Aus</button>
+        <button type="button" class="choice" data-ff-hands="1">An<small>Aufgabe je Farbe</small></button>
+      </div>
+      <div id="ffHandBody" hidden>
+        <div class="ff-hand-rows" id="ffHandRows"></div>
+        <div class="group-help">Bei &bdquo;Leuchten&ldquo; und &bdquo;Abfolge merken&ldquo; zeigt und sagt die App die Aufgabe an. Bei den anderen Modi merkst du sie dir selbst, sonst w&uuml;rde die Anzeige die L&ouml;sung verraten.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="group" id="cnFieldsGroup" hidden>
+    <div class="group-label">Anzahl Felder</div>
+    <div class="choice-row four" id="cnFieldsRow" role="group" aria-label="Anzahl Felder">
+      <button type="button" class="choice" data-cn-fields="3">3<small>Felder</small></button>
+      <button type="button" class="choice" data-cn-fields="4">4<small>Felder</small></button>
+      <button type="button" class="choice" data-cn-fields="5">5<small>Felder</small></button>
+      <button type="button" class="choice" data-cn-fields="6">6<small>Felder</small></button>
+    </div>
+    <div class="group-help">Nummeriere deine Felder von 1 bis zu dieser Zahl. Du kannst h&ouml;chstens so viele Farben w&auml;hlen, wie es Felder gibt.</div>
+  </div>
 
   <div class="group" id="colorGroup" hidden>
     <div class="group-label">Farben <span class="group-count" id="colorCount"></span></div>
@@ -3996,7 +4348,7 @@
         </div>
         <button class="text-link small" id="addonSaveBtn">Diese Feineinstellung speichern</button>
         <div class="custom-exercise-form" id="addonSaveForm" hidden>
-          <input type="text" id="addonSaveNameInput" placeholder="Name (z.B. &bdquo;Nur unten, schnell&ldquo;)" maxlength="40">
+          <input type="text" id="addonSaveNameInput" placeholder="Name (z.&#8239;B. Nur unten, schnell)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="addonSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="addonSaveConfirmBtn">Speichern</button>
@@ -4068,7 +4420,7 @@
         </div>
         <button class="text-link small" id="bgSaveBtn">Aktuelle Farbgestaltung speichern</button>
         <div class="custom-exercise-form" id="bgSaveForm" hidden>
-          <input type="text" id="bgSaveNameInput" placeholder="Name (z.B. &bdquo;Warmes Gelb&ldquo;)" maxlength="40">
+          <input type="text" id="bgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
           <div class="custom-exercise-form-actions">
             <button class="start-btn secondary" id="bgSaveCancelBtn">Abbrechen</button>
             <button class="start-btn" id="bgSaveConfirmBtn">Speichern</button>
@@ -4105,7 +4457,7 @@
   </div>
   <button class="text-link small" id="vtSaveBtn">Aktuelle Einstellung speichern</button>
   <div class="custom-exercise-form" id="vtSaveForm" hidden>
-    <input type="text" id="vtSaveNameInput" placeholder="Name (z.B. &bdquo;Schnell, 4 Farben&ldquo;)" maxlength="40">
+    <input type="text" id="vtSaveNameInput" placeholder="Name (z.&#8239;B. Schnell, 4 Farben)" maxlength="40">
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="vtSaveCancelBtn">Abbrechen</button>
       <button class="start-btn" id="vtSaveConfirmBtn">Speichern</button>
@@ -4151,6 +4503,8 @@
       <input type="range" id="breathDurationSlider" min="1" max="20" step="1" aria-label="Dauer in Minuten">
       <span class="slider-value" id="breathDurationValue">5 Min</span>
     </div>
+    <label class="checkbox-row tap-row"><input type="checkbox" id="breathNoLimitCheck"> Ohne Zeitlimit</label>
+    <div class="group-help" id="breathNoLimitHelp" hidden>L&auml;uft, bis du &bdquo;Fertig&ldquo; tippst &ndash; im Kombi-Programm geht es dann zum n&auml;chsten Baustein.</div>
   </div>
 
   <div class="group">
@@ -4169,7 +4523,7 @@
   </div>
   <button class="text-link small" id="breathSaveBtn">Aktuelle Einstellung speichern</button>
   <div class="custom-exercise-form" id="breathSaveForm" hidden>
-    <input type="text" id="breathSaveNameInput" placeholder="Name (z.B. &bdquo;Vor dem Schlafen&ldquo;)" maxlength="40">
+    <input type="text" id="breathSaveNameInput" placeholder="Name (z.&#8239;B. Vor dem Schlafen)" maxlength="40">
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="breathSaveCancelBtn">Abbrechen</button>
       <button class="start-btn" id="breathSaveConfirmBtn">Speichern</button>
@@ -4327,6 +4681,39 @@
           <button class="choice" data-mv-direction="unten">Von unten<small>senkrecht, gespiegelt</small></button>
         </div>
       </div>
+      <div class="group" id="movementSigGroup">
+        <div class="group-label">Signalfarbe</div>
+        <div class="group-help">Farbe der Bewegung, die gerade dran ist. Zum Beispiel bei einer Farbschw&auml;che oder einfach nach Geschmack.</div>
+        <div class="sig-row">
+          <div class="color-picker" id="movementSigPicker"></div>
+          <div class="group-help" id="movementSigStatus"></div>
+        </div>
+        <div class="group-help sig-clash" id="movementSigClash" hidden></div>
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="movementBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="movementBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="movementBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="movementBgContrastHint" hidden></div>
+        <div class="bg-master-status" id="movementBgMasterStatus"></div>
+        <div class="choice-row" id="movementBgSourceRow"></div>
+        <div class="group" id="movementBgPresetGroup" hidden>
+          <div class="group-label">Gespeicherte Farbgestaltungen</div>
+          <div class="bundle-list" id="movementBgPresetList"></div>
+        </div>
+        <button class="text-link small" id="movementBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
+        <div class="custom-exercise-form" id="movementBgSaveForm" hidden>
+          <input type="text" id="movementBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
+          <div class="custom-exercise-form-actions">
+            <button class="start-btn secondary" id="movementBgSaveCancelBtn">Abbrechen</button>
+            <button class="start-btn" id="movementBgSaveConfirmBtn">Speichern</button>
+          </div>
+        </div>
+      </div>
     </div>
   </details>
 
@@ -4336,7 +4723,7 @@
   </div>
   <button class="text-link small" id="movementSaveBtn">Aktuelle Einstellung speichern</button>
   <div class="custom-exercise-form" id="movementSaveForm" hidden>
-    <input type="text" id="movementSaveNameInput" placeholder="Name (z.B. &bdquo;Schnell, 4 Bewegungen&ldquo;)" maxlength="40">
+    <input type="text" id="movementSaveNameInput" placeholder="Name (z.&#8239;B. Schnell, 4 Bewegungen)" maxlength="40">
     <div class="custom-exercise-form-actions">
       <button class="start-btn secondary" id="movementSaveCancelBtn">Abbrechen</button>
       <button class="start-btn" id="movementSaveConfirmBtn">Speichern</button>
@@ -4400,7 +4787,7 @@
     <div class="chapter-list" id="workoutCircuitList"></div>
     <button class="text-link small" id="workoutCircuitSaveBtn">Aktuellen Zirkel speichern</button>
     <div class="custom-exercise-form" id="workoutCircuitSaveForm" hidden>
-      <input type="text" id="workoutCircuitSaveNameInput" placeholder="Name (z.B. &bdquo;Oberkörper kurz&ldquo;)" maxlength="40">
+      <input type="text" id="workoutCircuitSaveNameInput" placeholder="Name (z.&#8239;B. Oberkörper kurz)" maxlength="40">
       <div class="custom-exercise-form-actions">
         <button class="start-btn secondary" id="workoutCircuitSaveCancelBtn">Abbrechen</button>
         <button class="start-btn" id="workoutCircuitSaveConfirmBtn">Speichern</button>
@@ -4503,7 +4890,7 @@
     <div class="chapter-list" id="workoutRepsList"></div>
     <button class="text-link small" id="workoutRepsSaveBtn">Aktuellen Kraftplan speichern</button>
     <div class="custom-exercise-form" id="workoutRepsSaveForm" hidden>
-      <input type="text" id="workoutRepsSaveNameInput" placeholder="Name (z.B. &bdquo;Beine &amp; Rumpf&ldquo;)" maxlength="40">
+      <input type="text" id="workoutRepsSaveNameInput" placeholder="Name (z.&#8239;B. Beine &amp; Rumpf)" maxlength="40">
       <div class="custom-exercise-form-actions">
         <button class="start-btn secondary" id="workoutRepsSaveCancelBtn">Abbrechen</button>
         <button class="start-btn" id="workoutRepsSaveConfirmBtn">Speichern</button>
@@ -4630,6 +5017,27 @@
       <button class="choice" data-wh-recovery="10">10 s</button>
       <button class="choice" data-wh-recovery="15">15 s</button>
       <button class="choice" data-wh-recovery="20">20 s</button>
+    </div>
+  </div>
+  <div class="group" id="wimhofRoundRestGroup">
+    <div class="group-label">Pause zwischen den Runden</div>
+    <div class="slider-row">
+      <input type="range" id="wimhofRoundRestSlider" min="0" max="180" step="5" aria-label="Pause zwischen den Runden">
+      <span class="slider-value" id="wimhofRoundRestValue"></span>
+    </div>
+    <div class="group-help">In der Pause atmest du ganz normal weiter, bevor die n&auml;chste Runde beginnt. 0&nbsp;s = direkt weiter.</div>
+  </div>
+
+  <div class="group" id="wimhofSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="wimhofSavedList"></div>
+  </div>
+  <button class="text-link small" id="wimhofSaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="wimhofSaveForm" hidden>
+    <input type="text" id="wimhofSaveNameInput" placeholder="Name (z.&#8239;B. Morgens)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="wimhofSaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="wimhofSaveConfirmBtn">Speichern</button>
     </div>
   </div>
 
@@ -4770,7 +5178,13 @@
       <div class="breath-phase-count" id="breathPhaseCount">4</div>
     </div>
     <div class="breath-phase-label" id="breathPhaseLabel">Einatmen</div>
-    <button class="breath-pause-btn pause-toggle" id="breathPauseBtn">Pause</button>
+    <div class="breath-actions">
+      <button class="breath-pause-btn pause-toggle" id="breathPauseBtn">Pause</button>
+      <button class="breath-pause-btn breath-primary" id="breathFinishBtn" hidden>Fertig</button>
+      <button class="breath-pause-btn pause-toggle" id="breathEndNowBtn" hidden>Beenden</button>
+      <button class="breath-pause-btn breath-primary" id="breathMoreBtn" hidden>Weiter atmen</button>
+    </div>
+    <div class="breath-end-note" id="breathEndNote" hidden></div>
   </div>
   <div class="breath-listen-layer" id="breathListenLayer" hidden>
     <div class="breath-listen-title">H&ouml;rmodus</div>
@@ -4787,7 +5201,7 @@
         <input type="range" id="breathPauseTempoSlider" min="0.5" max="2" step="0.1" aria-label="Atemtempo">
         <div class="group-help" id="breathPausePhases"></div>
       </div>
-      <div class="group">
+      <div class="group" id="breathPauseRestGroup">
         <div class="group-label">Restdauer <span class="slider-value" id="breathPauseRestValue"></span></div>
         <input type="range" id="breathPauseRestSlider" min="1" max="30" step="1" aria-label="Restdauer">
       </div>
@@ -4800,6 +5214,7 @@
         <div class="group-help">Gilt f&uuml;r dieses Training. Nach &bdquo;Weiter&ldquo; beginnt ein neuer Atemzyklus.</div>
       </div>
       <button class="start-btn" id="breathResumeBtn">Weiter</button>
+      <button class="start-btn secondary" id="breathPauseFinishBtn" hidden>Fertig</button>
     </div>
   </div>
   <div class="player-bar" id="breathPlayerBar">
@@ -4904,6 +5319,15 @@
           <input type="range" id="movementPauseTickVolumeSlider" min="0.1" max="1" step="0.05" aria-label="Lautst&auml;rke des Takt-Tons">
         </div>
         <div class="group-help">Gilt f&uuml;r dieses Training.</div>
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="movementPauseBgValue"></span></div>
+        <input type="range" id="movementPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="movementPauseBgColorPicker"></div>
+        <div class="group-help" id="movementPauseBgContrastHint" hidden></div>
       </div>
       <button class="start-btn" id="movementResumeBtn">Weiter</button>
     </div>
@@ -6644,6 +7068,7 @@
   <h2 id="workoutTransitionTitle"></h2>
   <p class="done-summary" id="workoutTransitionMeta"></p>
   <button class="again" id="workoutTransitionBtn">Weiter</button>
+  <button class="back transition-hold" id="workoutTransitionHoldBtn" type="button">Kurz anhalten</button>
 </div>
 
 <div class="done-panel standalone" id="workoutProgramDonePanel" hidden>
@@ -6660,6 +7085,7 @@
   <h2 id="breathTransitionTitle"></h2>
   <p class="done-summary" id="breathTransitionMeta"></p>
   <button class="again" id="breathTransitionBtn">Weiter</button>
+  <button class="back transition-hold" id="breathTransitionHoldBtn" type="button">Kurz anhalten</button>
 </div>
 
 <div class="done-panel standalone" id="breathProgramDonePanel" hidden>
@@ -6677,16 +7103,27 @@
   </div>
   <h1 class="page-title">Kombi-Programm</h1>
   <p class="page-sub">Stell dir ein Programm aus mehreren Bereichen zusammen &ndash; oder starte eines, das du schon gespeichert hast.</p>
+  <div class="group-help combo-edit-note" id="comboEditNote" hidden></div>
 
   <div class="group" id="comboSavedGroup" hidden>
     <div class="group-label">Deine gespeicherten Programme</div>
     <div class="bundle-list" id="comboSavedList"></div>
+    <button class="text-link small" id="comboSavedMoreBtn" type="button" hidden></button>
   </div>
+
+  <details class="advanced" id="comboInsertGroup">
+    <summary>Fertiges Programm einf&uuml;gen</summary>
+    <div class="advanced-body">
+      <div class="group-help">Die Bausteine werden einzeln in deine Abfolge kopiert. Das Original bleibt unver&auml;ndert.</div>
+      <div id="comboInsertList"></div>
+    </div>
+  </details>
 
   <div class="group">
     <div class="group-label">Baustein hinzuf&uuml;gen</div>
     <div class="combo-add-grid" id="comboAddGrid"></div>
   </div>
+
 
   <div class="group">
     <div class="group-label">Deine Abfolge <span class="group-count" id="comboBlockCount"></span><button class="list-clear-btn" type="button" id="comboClearBtn" hidden aria-label="Ganze Liste leeren">&#10005; Alle entfernen</button></div>
@@ -6699,6 +7136,7 @@
         <button class="start-btn secondary" id="comboSaveCancelBtn">Abbrechen</button>
         <button class="start-btn" id="comboSaveConfirmBtn">Speichern</button>
       </div>
+      <button class="start-btn secondary" id="comboSaveAsNewBtn" type="button" hidden>Als neues Programm speichern</button>
     </div>
   </div>
 
@@ -6872,7 +7310,7 @@
 
     <details class="faq-item" id="privacyReminders">
       <summary>Was passiert bei Erinnerungen?</summary>
-      <div class="faq-body">Nur wenn du in den Grundeinstellungen die Erinnerungen einschaltest: Dann speichert der Server deines Trainers (betrieben bei Cloudflare) die Push-Adresse dieses Ger&auml;ts &ndash; eine zuf&auml;llige Adresse, die dein Browser bzw. Handy-Hersteller f&uuml;r Mitteilungen vergibt &ndash; und die geplanten Zeiten der n&auml;chsten 14 Tage mit einem kurzen Text wie &bdquo;In 10 Minuten: Ausdauertraining &middot; 20 Min.&ldquo;. Beides dient nur dazu, dir die Erinnerung zu schicken. Kein Name, kein Verlauf, keine Ergebnisse. Jede Erinnerung wird nach dem Versenden gel&ouml;scht; schaltest du die Erinnerungen aus, wird alles sofort gel&ouml;scht. Die Mitteilung selbst wird &uuml;ber den Push-Dienst deines Ger&auml;ts zugestellt (z.&nbsp;B. Apple oder Google).</div>
+      <div class="faq-body">Nur wenn du in den Grundeinstellungen die Erinnerungen einschaltest: Dann speichert der Server deines Trainers (betrieben bei Cloudflare) die Push-Adresse dieses Ger&auml;ts &ndash; eine zuf&auml;llige Adresse, die dein Browser bzw. Handy-Hersteller f&uuml;r Mitteilungen vergibt &ndash; und die geplanten Zeiten der n&auml;chsten 14 Tage mit einem kurzen Text wie &bdquo;In 10 Minuten: Ausdauertraining &middot; 20 Min.&ldquo; oder, wenn du Atempausen-Erinnerungen eingeschaltet hast, &bdquo;Zeit f&uuml;r eine Atempause&ldquo; zu den gew&auml;hlten Uhrzeiten. Beides dient nur dazu, dir die Erinnerung zu schicken. Kein Name, kein Verlauf, keine Ergebnisse. Jede Erinnerung wird nach dem Versenden gel&ouml;scht; schaltest du die Erinnerungen aus, wird alles sofort gel&ouml;scht. Die Mitteilung selbst wird &uuml;ber den Push-Dienst deines Ger&auml;ts zugestellt (z.&nbsp;B. Apple oder Google).</div>
     </details>
 
     <details class="faq-item">
@@ -6930,8 +7368,30 @@
 
     <div class="group">
       <div class="group-label">H&ouml;ren</div>
-      <label class="checkbox-row"><input type="checkbox" id="masterHearingCheck"> Geh&ouml;rlosigkeit oder eingeschr&auml;nktes H&ouml;ren</label>
+      <label class="checkbox-row tap-row"><input type="checkbox" id="masterHearingCheck"> Geh&ouml;rlosigkeit oder eingeschr&auml;nktes H&ouml;ren</label>
       <div class="group-help">&Uuml;bungen, die zwingend Ton ben&ouml;tigen (aktuell nur &bdquo;Sehen &amp; H&ouml;ren&ldquo;), werden dann in der &Uuml;bersicht ausgegraut und markiert, statt versteckt.</div>
+    </div>
+
+    <div class="group" id="masterSeeGroup">
+      <div class="group-label">Sehen und Reize</div>
+      <div class="group-help">F&uuml;r alle, denen kleine Schrift oder schnelle Lichtwechsel zu viel sind.</div>
+    </div>
+
+    <div class="group" id="masterTextSizeGroup">
+      <div class="group-label">Schriftgr&ouml;&szlig;e</div>
+      <div class="choice-row" id="masterTextSizeRow">
+        <button class="choice" type="button" data-master-textsize="normal">Standard</button>
+        <button class="choice" type="button" data-master-textsize="gross">Gro&szlig;</button>
+        <button class="choice" type="button" data-master-textsize="sehrgross">Sehr gro&szlig;</button>
+      </div>
+      <div class="group-help">Gilt f&uuml;r die Texte der ganzen App, zus&auml;tzlich zur Textgr&ouml;&szlig;e deines Ger&auml;ts.</div>
+    </div>
+
+    <div class="group" id="masterSoftGroup">
+      <div class="group-label">Sanfte Reize</div>
+      <label class="checkbox-row tap-row"><input type="checkbox" id="masterSoftCheck"> Schnelle Lichtwechsel ruhiger machen</label>
+      <div class="group-help">Reize bleiben l&auml;nger stehen, zwischen ihnen ist mehr Zeit, Farbfl&auml;chen blenden weich &uuml;ber statt aufzublitzen, und die Zusatzaufgabe erscheint sanfter. Betrifft Visuelles Training, Periphere Wahrnehmung, Blitz-Raster und Flash-Speicher-Test; die &Uuml;bungen werden dadurch etwas leichter und sind markiert. In ihren Feineinstellungen und in der Pause kannst du es f&uuml;r eine &Uuml;bung einzeln &auml;ndern.</div>
+      <button class="text-link small" type="button" id="masterSoftResetBtn" hidden>Eigene Einstellungen der &Uuml;bungen zur&uuml;cksetzen</button>
     </div>
 
     <div class="group">
@@ -6963,9 +7423,9 @@
 
     <div class="group">
       <div class="group-label">In allen &Uuml;bungen</div>
-      <label class="checkbox-row"><input type="checkbox" id="masterSoundCheck"> T&ouml;ne und Ansagen</label>
-      <label class="checkbox-row"><input type="checkbox" id="masterStartCountdownCheck"> Countdown 3-2-1 vor dem Start</label>
-      <label class="checkbox-row"><input type="checkbox" id="masterLevelSuggestCheck"> Stufen-Vorschl&auml;ge (n&auml;chste Schwierigkeit vorschlagen)</label>
+      <label class="checkbox-row tap-row"><input type="checkbox" id="masterSoundCheck"> T&ouml;ne und Ansagen</label>
+      <label class="checkbox-row tap-row"><input type="checkbox" id="masterStartCountdownCheck"> Countdown 3-2-1 vor dem Start</label>
+      <label class="checkbox-row tap-row"><input type="checkbox" id="masterLevelSuggestCheck"> Stufen-Vorschl&auml;ge (n&auml;chste Schwierigkeit vorschlagen)</label>
       <div class="group-help">Mit &#128266; in der Steuerleiste schaltest du w&auml;hrend jeder &Uuml;bung alle T&ouml;ne und Ansagen stumm oder wieder an. Im Krafttraining gilt vor dem Start die eigene Vorbereitungszeit aus den Feineinstellungen.</div>
     </div>
 
@@ -6982,7 +7442,7 @@
 
     <div class="group" id="reminderGroup">
       <div class="group-label">Erinnerungen</div>
-      <label class="checkbox-row"><input type="checkbox" id="reminderOnCheck"> Vor geplanten Trainings erinnern</label>
+      <label class="checkbox-row tap-row"><input type="checkbox" id="reminderOnCheck"> Vor geplanten Trainings erinnern</label>
       <div class="group-help reminder-status" id="reminderStatus" role="status"></div>
       <div class="group-label">Wann erinnern?</div>
       <div class="choice-row" id="reminderLeadRow">
@@ -6994,7 +7454,24 @@
       </div>
       <label class="group-label" for="reminderMorningInput">Trainings ohne Uhrzeit: morgens erinnern um</label>
       <input type="time" id="reminderMorningInput" class="plan-input reminder-time" lang="de">
-      <div class="group-help">Die App erinnert dich an die Trainings aus deinem Wochenplan auf &bdquo;Heute&ldquo;. Dazu schickt sie die Uhrzeiten der n&auml;chsten 14 Tage mit einem kurzen Text (z.&nbsp;B. &bdquo;In 10 Minuten: Ausdauertraining &middot; 20 Min.&ldquo;) an den Server deines Trainers, der die Mitteilung p&uuml;nktlich verschickt. &Ouml;ffne die App ab und zu, damit die Erinnerungen weiterlaufen. Mehr dazu unter <button class="privacy-open-btn inline-link" type="button">Datenschutz in der App</button>.</div>
+      <div class="reminder-break" id="reminderBreakGroup">
+        <label class="checkbox-row tap-row"><input type="checkbox" id="reminderBreakCheck"> Tags&uuml;ber an eine Atempause erinnern</label>
+        <div class="reminder-break-body" id="reminderBreakBody" hidden>
+          <div class="group-label">Wie oft am Tag?</div>
+          <div class="choice-row" id="reminderBreakCountRow">
+            <button class="choice" type="button" data-break-count="1">1&times;</button>
+            <button class="choice" type="button" data-break-count="2">2&times;</button>
+            <button class="choice" type="button" data-break-count="3">3&times;</button>
+          </div>
+          <div class="reminder-break-times">
+            <label class="reminder-break-time"><span>1. Atempause um</span><input type="time" class="plan-input reminder-time" data-break-time="0" lang="de"></label>
+            <label class="reminder-break-time"><span>2. Atempause um</span><input type="time" class="plan-input reminder-time" data-break-time="1" lang="de"></label>
+            <label class="reminder-break-time"><span>3. Atempause um</span><input type="time" class="plan-input reminder-time" data-break-time="2" lang="de"></label>
+          </div>
+          <div class="group-help">Die Mitteilung hei&szlig;t &bdquo;Zeit f&uuml;r eine Atempause&ldquo;. Antippen &ouml;ffnet die Nichtraucher-Pause auf &bdquo;Heute&ldquo;. An Tagen mit eingetragener Pause (Urlaub, krank) bleibt es still.</div>
+        </div>
+      </div>
+      <div class="group-help">Die App erinnert dich an die Trainings aus deinem Wochenplan auf &bdquo;Heute&ldquo; und, wenn du magst, an deine Atempausen. Dazu schickt sie die Uhrzeiten der n&auml;chsten 14 Tage mit einem kurzen Text (z.&nbsp;B. &bdquo;In 10 Minuten: Ausdauertraining &middot; 20 Min.&ldquo;) an den Server deines Trainers, der die Mitteilung p&uuml;nktlich verschickt. &Ouml;ffne die App ab und zu, damit die Erinnerungen weiterlaufen. Mehr dazu unter <button class="privacy-open-btn inline-link" type="button">Datenschutz in der App</button>.</div>
     </div>
 
     <div class="group" id="masterCodeHistoryGroup" hidden>
@@ -7022,6 +7499,15 @@
     <h2 id="coachMessageTitle">Nachricht von deinem Trainer</h2>
     <p class="coach-message-text" id="coachMessageText"></p>
     <button class="start-btn" id="coachMessageOkBtn">Alles klar</button>
+  </div>
+</div>
+
+<div class="sheet" id="breakInfoSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="breakInfoTitle">
+    <h2 id="breakInfoTitle">Die Nichtraucher-Pause</h2>
+    <p class="group-help break-info-text">Wer raucht, g&ouml;nnt sich oft etwas, das uns allen guttut: mehrmals am Tag ein paar Minuten nur f&uuml;r sich &ndash; kurz raus, durchatmen, abschalten. Diese kleine Auszeit m&ouml;chten wir dir auch ohne Zigarette schenken, mit ein paar ruhigen Atemz&uuml;gen. Ob zwischen zwei Terminen oder mitten im Alltag: G&ouml;nn dir diese Pause, so oft du magst.</p>
+    <p class="group-help">Gleichm&auml;&szlig;ig ein- und ausatmen, kein Halten (Ruhige Atmung). Auf Wunsch erinnert dich die App tags&uuml;ber daran: <button class="inline-link" type="button" id="breakInfoReminderLink">Erinnerungen einstellen</button>.</p>
+    <button class="start-btn" id="breakInfoCloseBtn" type="button">Alles klar</button>
   </div>
 </div>
 

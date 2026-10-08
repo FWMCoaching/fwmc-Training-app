@@ -428,6 +428,73 @@ sheet returns to the normal view. Kombi blocks and saved presets carry
 `listen`; coach programmes keep the client's own setting.
 Test: `tests/breath_listen_test.py`.
 
+### Atemtraining: Ohne Zeitlimit + "Weiter atmen" (Idee 53, gebaut 2026-10-07)
+
+Fabian 06.10.: "Haken 'Ohne Zeitlimit' unter Dauer + nach Ablauf 'Weiter
+atmen'-Knopf, Kombi geht danach weiter; nur Atmung" (Wim-Hof not: it has
+rounds, not a duration).
+- Ready: `#breathNoLimitCheck` (`.checkbox-row.tap-row`) inside the Dauer
+  group, `breathPrefs.noLimit` (saved in `fwmc-breath-v1`). On = help text
+  `#breathNoLimitHelp`, the duration rows dimmed (`.breath-dur-off`); tapping a
+  duration or the slider switches the limit back on.
+- `startBreathSession(opts)`: `opts.open` wins (Kombi block `noLimit`,
+  Atem-Programm always `false`, Weitermachen), else `breathPrefs.noLimit`.
+  An open session has `open:true, plannedTotal:Infinity`; the bar clock counts
+  up; stage shows Pause + `#breathFinishBtn` "Fertig" (primary), the pause
+  sheet hides Restdauer and shows `#breathPauseFinishBtn` "Fertig" (the way
+  out of Hörmodus). Fertig = completed with the real time (pauses excluded),
+  history `note:"ohne Zeitlimit"`. "✕ Beenden" of a single open run also
+  completes (like Gleichgewicht "Ohne Zeitvorgabe"); in a Kombi it aborts the
+  Kombi as always, Fertig goes to the next Baustein.
+- End of a timed run: `breathEnterEndHold()` holds `BREATH_MORE_HOLD_S` (10 s):
+  "Geschafft", countdown in the circle, `#breathEndNowBtn` "Beenden" +
+  `#breathMoreBtn` "Weiter atmen" in one row, `#breathEndNote` ("Ohne Tippen
+  endet die Übung in N s." / "... geht es in N s weiter."), the bar's ✕ waits
+  (`visibility:hidden`). No tap = ends as before (done panel / next Baustein /
+  next programme block). "Weiter atmen" = same session goes on open-ended
+  (`breathSetOpen`, new cycle, clock continues from the planned time).
+  Neither button id ends in `BackBtn`, so no "Wirklich beenden?".
+- Kombi: block `noLimit:true` (capture/edit via the same checkbox,
+  `comboBlockMeta` "ohne Zeitlimit", `comboBlockSeconds` 0 like Gleichgewicht
+  open). Presets store `noLimit` (label "ohne Zeitlimit · …").
+- Weitermachen: an open run notes `{open:true, played, total:played, rest:0}`
+  (≥ 30 s played); Heute shows "ohne Zeitlimit"; Fortsetzen runs open again.
+- Heute plan entries open the ready screen, so the checkbox applies there.
+Test: `tests/nacht_vollbild_atem_reaktion_1007_test.py`.
+
+### Atempausen: Nichtraucher-Pause + Pause zwischen den Runden (2026-10-07)
+
+Fabian approved on the decision page (07.10. 21:53).
+- **Nichtraucher-Pause** (Heute card `#todayBreak`, `.today-main.today-break`,
+  below the main card stack, above the week): "Nichtraucher-Pause / 2 Min.
+  Atempause · ruhig atmen, kurz abschalten", 1/2/3 Min. (`[data-break-min]`,
+  `fwmc-atempause-v1` `{min}`), secondary button "Atempause starten" (the main
+  card keeps the one primary button), ⓘ opens `#breakInfoSheet` (warm text,
+  no judging; link "Erinnerungen einstellen" opens the Grundeinstellungen at
+  `#reminderBreakGroup`). `startBreakPause(min)`: Ruhige Atmung (Kohärenz
+  5,5/5,5), the client's own Ansage/Hörmodus, calm 3-2-1 if switched on,
+  `startBreathSession({breakMin})` -> `breakRun`; runs `min` minutes (whole
+  cycles: 55 s / 121 s / 176 s), never "ohne Zeitlimit", no Weitermachen record.
+  End hold "Weiter atmen" works as usual. History `kind:"breath"`, title
+  "Nichtraucher-Pause" (so a planned Atemtraining counts as done). "Beenden",
+  "Zur Übersicht" go back to Heute, "Nochmal" restarts the pause.
+  `?bereich=atempause` (push tap) = Heute scrolled to the card (`showBreakCard`).
+- **Wim-Hof "Pause zwischen den Runden"** (`#wimhofRoundRestSlider`, 0-180 s in
+  5 s, default 0 = straight on, `wimhofSettings.roundRestS`, `whRoundRestOf()`):
+  after the recovery hold of every round but the last, phase `"rest"`: circle
+  swells slowly, "Normal atmen" + "0:20" countdown, "Gleich Runde 2 von 3", cue
+  "Ausatmen. Jetzt ganz normal atmen", 3-2-1 beeps, then "Neue Runde". Pause
+  freezes it like every phase. Carried by Kombi blocks (`roundRestS`, meta
+  "3 Runden · 20 s Pause", seconds estimate), trainer Atem-Programm blocks
+  (`roundRestS` optional; dashboard builder does not offer it yet) and the new
+  **Wim-Hof presets** (`fwmc-wimhof-saved-v1`, "Aktuelle Einstellung
+  speichern"; loading fills the settings only - the safety notes still have
+  to be confirmed).
+- The cycle patterns (Ruhige Atmung, Box, 4-7-8, Eigenes Muster) have no rounds
+  (one continuous rhythm over a duration), so no round pause there; Kombi and
+  Atem-Programm already have pauses between blocks.
+Test: `tests/atempause_sanft_1007_test.py` (sections A, B).
+
 ### Datenschutz in der App (2026-10-03)
 
 Every footer's "Datenschutz" is a `.privacy-open-btn` that opens

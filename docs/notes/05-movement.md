@@ -92,3 +92,25 @@ Same day, after the independent review: the player is `.player.calm-dk`
 on every size), "Wandernde Zeilen" fades the row coming up at the bottom
 (mask), short option labels, "Kreise" (abstrakt) hidden but still played for
 old presets/blocks.
+
+**Hintergrund + Signalfarbe (Idee 55, gebaut 2026-10-07)**: Fabian approved
+"Reaktionstraining dunkel" with the addition "auch Hintergrund- und
+Signalfarbe einstellbar". Feineinstellungen: "Signalfarbe" (`#movementSigGroup`,
+SIGNAL_LIB swatches, "Standard: Orange." / "Eigene Farbe: … Standard", clash
+hint on light stages) and "Hintergrund" (the shared `wireBgIntensityControl`,
+"Wie bei …"/saved colour designs, `MASTER_BG_TARGETS` + `BG_SOURCES`
+"Reaktionstraining"). Stored in `movementPrefs.sigColor` (null = Orange
+#ff9110) / `bgColorKey` / `bgIntensity` / `bgCustom`, not in the Test-Bereich
+signal store, so presets, Kombi blocks (`mvLookOf` / `mvColorsOf`) and the
+Weitermachen record carry them; old blocks without the fields use the
+client's colours. `mvSigHex()` replaces the fixed highlight in every symbol
+renderer (white marks on the filled field use `sigInk`, so Gelb stays
+readable); `applyMvSignalCss()` writes `#movementSigStyles` for the active
+field's border/tint (light + dark). `applyMovementBg()` paints
+`#movementPlayer`: light mode mixes with white, dark mode with the dark player
+tone #0b1619 (a tint, never a bright flash). Pause sheet: Hintergrund live
+(the sibling standard); inside a Kombi it is not saved (restoreComboPrefs puts
+the client's values back). Not live: Signalfarbe (no sibling has it live).
+Not in Cardio: Reaktionstraining is no Cardio guest. Trainer movement-plan
+codes do not set colours (dashboard). Test:
+`tests/nacht_vollbild_atem_reaktion_1007_test.py`.

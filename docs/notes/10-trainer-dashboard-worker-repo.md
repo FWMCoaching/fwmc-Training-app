@@ -159,6 +159,71 @@ UI. Added as a `dashboard.html`-only feature (no Worker/API changes needed
   since their config shape isn't confirmed to match the simple block form
   used here; drag-and-drop reordering (up/down buttons only).
 
+**Trainingsplanung im Dashboard (2026-10-07, konzept-trainingsplanung kp17-kp22)**:
+two new panels `#planPanel` (Trainingsplanung) and `#yearPanel`
+(Jahresübersicht) above Kunden-Verlauf, a pill nav `.dash-nav`, and one
+extra `<script>` block at the end of dashboard.html (an IIFE using the
+first script's `api`, `token`, `programsCache`, `switchTab`,
+`randomCodeSuffix`). Decided after the concept: no phase types, no
+Entlastungswoche, nothing changes training by itself; a Wettkampf only shows
+"Empfehlung: in der Woche davor etwas leichter, mit dem Kunden abstimmen.";
+phases can be "aus der Wertung" (`noScore`).
+- **Bausätze (kp17)**: kinds `kombi` ({items:[{area,what,minutes}], asOne,
+  code}), `week` ({days[7]}), `phase` ({name, weeks, days, alt?}); each with
+  tags (Einsteiger, Fortgeschritten, Sportler, Führungskraft, Regeneration,
+  Wettkampf), note "Wofür, für wen", `version` (+1 per edit) and `used`
+  (+1 per placement). Starts empty (no invented plans). Filter by kind and
+  tags (AND). "Als Bausatz speichern" on a phase, a week, and via ⋯ on a day
+  (Kombi-Paket). A Kombi-Paket goes in as one `area:"combo"` entry (optional
+  Kombi-Programm code, minutes = sum) or one entry per exercise.
+- **Plan-Baukasten (kp18)**: Bausätze left, plan right (from 1200 px; a phone
+  stacks Bausätze, plan, preview). HTML5 drag & drop (phase anywhere on the
+  plan = appended, week onto a week row = replaced, Kombi onto a day) or
+  "Einsetzen" + tap on the highlighted target (touch). Entry sheet (Bereich,
+  Übung = the app's `what` values `ex:`/`nat:`, Minuten 5-240, Uhrzeit,
+  Code, Sondertraining), day menu ⋯ (kopieren / einfügen = replaces the day /
+  leeren / als Kombi-Paket), Rückgängig + Ctrl/Cmd+Z (50 steps, in memory),
+  Wochen im Wechsel A-D (new week = copy of A), Wettkämpfe per client.
+  The dashboard keeps its own copy of `PLAN_AREAS`, the visual exercise ids
+  and `NAT_SUBS` (`AREAS`, `VISUAL_EX`, `NAT_SUBS` in the planning script):
+  **add a new area/exercise there too**.
+- **Nacht 2 (2026-10-07)**: a Kombi-Paket placed "als ein Eintrag" gets
+  `entry.title` = the Bausatz name (dashboard `cleanEntry` keeps `title`,
+  max 60); the client's Wettkämpfe (`p.comps`) go out as
+  `plan.events: [{date, title, kind:"wettkampf"}]` (app side: notes/27).
+- **Ausgabe (kp13/kp21)**: "Als Plan-Code ausgeben" builds
+  `{type:"training-plan", name, version, plan:{startDate, phases:[{id, name,
+  weeks, days, alt?, noScore?}], events?}}` and saves it with the existing
+  `POST /admin/program` (active) plus a `client-history` line (Kürzel,
+  "Trainingsplan Version n"). Same code again = `version` = max(local
+  issued, server config.version) + 1; entry ids stay stable so the client's
+  own times survive (`applyTrainerPlan`). A code already used for another
+  type is refused. Without a token ("Ohne Token: nur Trainingsplanung
+  (lokal)" on the gate, `body.local-only` hides the server panels) the def is
+  shown as JSON to copy; the old JSON tab stays the emergency exit ("Im
+  JSON-Feld der Trainings-Codes öffnen"). Only the last phase may have
+  `weeks: 0` (open end).
+- **Jahresübersicht (kp19)**: 12 months (‹ › shift 3 months), one row per
+  Kürzel/Gruppe, phase bars in two neutral brand tones (open end fades,
+  noScore hatched), ◆ Wettkampf, red today line, "Plan endet in n Wochen"
+  (≤ 3 weeks) / "Plan ist beendet"; tapping a bar opens that plan. Grid
+  scrolls inside `.table-scroll` on a phone.
+- **So sieht es dein Kunde (kp22)**: `.pv-phone` 390x700 mock with the app's
+  tokens (light/dark): Heute date, week strip with rings, "Geplant für
+  heute", "Mein Plan" (phase, Woche n von m, A-D), source line; switch
+  Diese Woche / In 3 Wochen / Wettkampf. Simplified, not the real app.
+- **Speichern (kp20, local step)**: only this browser, keys
+  `fwmc-dash-bausaetze-v1`, `fwmc-dash-plans-v1` (by Kürzel; no names or
+  health data, the UI says so), `fwmc-dash-plan-versions-v1` (Stände: per
+  "Stand speichern" and per Ausgabe, last 30, "Stand TT.MM., HH:MM",
+  Zurückholen keeps the issue history), `fwmc-dash-current-v1`. "Alles als
+  Datei sichern" (JSON, `app:"fwmc-trainer-dashboard"`) / "Aus Datei laden"
+  (merge, asks before replacing). **Later step for Fabian**: a server table
+  (`trainer_items`, behind `ADMIN_TOKEN`) + Worker deploy, so it is on every
+  device; nothing was changed in the Worker.
+Test: `tests/dashboard_planung_1007_test.py` (mocked Worker; the issued def
+is entered in the real app and shows "Plan von deinem Trainer übernehmen?").
+
 **Bausteine-Bibliothek + "Alle Übungen im Überblick" (added 2026-09-28)**:
 client tried the dashboard live and pushed back hard on my first
 "reuse-the-app-itself" architecture idea for keeping the dashboard

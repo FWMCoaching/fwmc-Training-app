@@ -43,7 +43,7 @@ async def main():
         await pg.check("#cardioAddonEnableToggle"); await pg.wait_for_timeout(150)
         # 14 as of NAT batch 1 (2026-09-30): the 12 from this file's own
         # batch + periph-flash + blitz-raster (see cardio_addon_nat_batch1_test.py)
-        print("pool grid now offers 18 types:", await pg.locator("#cardioAddonPoolGrid [data-pool]").count() == 18)
+        print("pool grid now offers 20 types:", await pg.locator("#cardioAddonPoolGrid [data-pool]").count() == 20)
         for _, t in NEW_TYPES:
             await pg.check(f'#cardioAddonPoolGrid input[data-pool="{t}"]')
         await pg.wait_for_timeout(200)
@@ -66,7 +66,7 @@ async def main():
         # ---- live picker offers all 12 ----
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(400)
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        print("picker offers all 18 types:", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 18)
+        print("picker offers all 20 types:", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 20)
         await pg.click("#cardioAddonPickerCancelBtn"); await pg.wait_for_timeout(150)
 
         # ---- each new type actually takes over and returns cleanly ----

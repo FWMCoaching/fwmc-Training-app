@@ -302,7 +302,8 @@
     function save(list) { writeJSON(key, list); }
     return { load, save };
   }
-  function renderPresetList(store, listEl, groupEl, filterFn, metaFn, onStart) {
+  // opts.confirmDelete (NAT presets, 2026-10-07): "✕" asks via confirmDialog().
+  function renderPresetList(store, listEl, groupEl, filterFn, metaFn, onStart, opts) {
     const all = store.load();
     const entries = filterFn ? all.filter(filterFn) : all;
     groupEl.hidden = entries.length === 0;
@@ -319,8 +320,12 @@
       rm.title = "Löschen";
       rm.textContent = "✕";
       rm.addEventListener("click", () => {
-        store.save(store.load().filter((e) => e.id !== entry.id));
-        renderPresetList(store, listEl, groupEl, filterFn, metaFn, onStart);
+        const del = () => {
+          store.save(store.load().filter((e) => e.id !== entry.id));
+          renderPresetList(store, listEl, groupEl, filterFn, metaFn, onStart, opts);
+        };
+        if (opts && opts.confirmDelete) confirmDialog(`Die Einstellung „${entry.name}“ löschen?`, del, { yes: "Löschen", no: "Abbrechen" });
+        else del();
       });
       wrap.appendChild(btn);
       wrap.appendChild(rm);
@@ -329,7 +334,17 @@
   }
   function wirePresetSaveForm(cfg) {
     // cfg: { saveBtn, form, nameInput, cancelBtn, confirmBtn, defaultName, onSave }
-    function open() { cfg.form.hidden = false; cfg.saveBtn.hidden = true; cfg.nameInput.value = ""; cfg.nameInput.focus(); }
+    // Prüfer 07.10. Nr. 1: while the form is open the screen's sticky
+    // "Training starten" bar steps aside (CSS: .screen:has(.preset-save-form
+    // :not([hidden])) .start-sticky-bar), so Speichern is the one filled
+    // button and nothing covers it; the form scrolls into view and Enter
+    // saves.
+    cfg.form.classList.add("preset-save-form");
+    function open() {
+      cfg.form.hidden = false; cfg.saveBtn.hidden = true; cfg.nameInput.value = "";
+      try { cfg.nameInput.focus({ preventScroll: true }); } catch (e) { cfg.nameInput.focus(); }
+      revealPresetForm(cfg.form);
+    }
     function close() { cfg.form.hidden = true; cfg.saveBtn.hidden = false; }
     cfg.saveBtn.addEventListener("click", open);
     cfg.cancelBtn.addEventListener("click", close);
@@ -337,6 +352,20 @@
       const name = (cfg.nameInput.value || "").trim() || cfg.defaultName();
       cfg.onSave(name);
       close();
+    });
+    wireEnterToSave(cfg.nameInput, cfg.confirmBtn);
+  }
+  function revealPresetForm(form) {
+    const go = () => { try { form.scrollIntoView({ block: "center" }); } catch (e) { /* old browsers */ } };
+    go();
+    // The on-screen keyboard (iOS) shrinks the viewport a moment later.
+    setTimeout(go, 350);
+  }
+  function wireEnterToSave(input, btn) {
+    input.addEventListener("keydown", (ev) => {
+      if (ev.key !== "Enter" || ev.isComposing) return;
+      ev.preventDefault();
+      btn.click();
     });
   }
 
@@ -583,7 +612,9 @@
     ctx.fillStyle = currentBgFill("#ffffff");
     ctx.fillRect(0, 0, cw, ch);
 
-    if (kind === "blank") {
+    if (kind === "farbfelder" || (kind === "blank" && EXERCISES[state.exercise] && EXERCISES[state.exercise].type === "farbfelder")) {
+      drawFarbfelder(kind === "farbfelder" ? payload : null);
+    } else if (kind === "blank") {
       ctx.fillStyle = currentBgFill(NEUTRAL);
       ctx.fillRect(0, 0, cw, ch);
       drawFixationPoint(cx, cy, unit);
@@ -649,6 +680,10 @@
     } else if (kind === "color") {
       ctx.fillStyle = payload.color;
       ctx.fillRect(0, 0, cw, ch);
+    } else if (kind === "colornum") {
+      ctx.fillStyle = currentBgFill(NEUTRAL);
+      ctx.fillRect(0, 0, cw, ch);
+      drawColorNum(cw, ch, payload);
     } else if (kind === "vrw") {
       const bg = payload.direct ? payload.color : "#ffffff";
       const arrowFill = payload.direct ? "#ffffff" : payload.color;
@@ -661,6 +696,472 @@
       ctx.fillStyle = arrowFill;
       ctx.fill();
     }
+  }
+
+  // ---- Farbfelder (Fabian, 2026-10-07): a 2x2 colour grid that mirrors the
+  // client's 4-colour floor mat. Four modes, all on the shared VT canvas
+  // engine (so Zusatzaufgabe, Kombi, Cardio, presets and history come along).
+  // Fields are indexed 0 = oben links, 1 = oben rechts, 2 = unten links,
+  // 3 = unten rechts; state.ffLayout holds one COLOR_LIB key per field.
+  // Details: docs/notes/28-farbfelder.md.
+  const FF_FIELD_NAMES = ["Oben links", "Oben rechts", "Unten links", "Unten rechts"];
+  const FF_DEFAULT_LAYOUT = ["rot", "blau", "gelb", "gruen"];
+  const FF_MODES = {
+    leuchten: { help: "Ein Feld leuchtet auf. Tritt so schnell wie möglich darauf.", task: "Ein Feld leuchtet auf – tritt darauf." },
+    regeln: { help: "Auf einem Feld erscheint ein Symbol. Das Symbol sagt dir, auf welches Feld du trittst.", task: "Das Symbol sagt dir, auf welches Feld du trittst." },
+    leer: { help: "Auf drei Feldern erscheint dasselbe Symbol. Tritt auf das vierte, leere Feld – gegen den ersten Impuls.", task: "Tritt auf das Feld ohne Symbol." },
+    abfolge: { help: "Die Felder leuchten nacheinander auf. Bei „Jetzt du“ trittst du die Folge nach. Jede Runde wird sie ein Feld länger.", task: "Merk dir die Folge und tritt sie bei „Jetzt du“ nach." },
+    // Reize (Fabian 07.10. 21:53, Varianten A-D): docs/notes/28.
+    ansage: { help: "Die Stimme sagt eine Farbe, der Bildschirm zeigt nur die vier Felder. Tritt auf die gesagte Farbe. Dafür muss der Ton an sein.", task: "Hör zu und tritt auf die gesagte Farbe." },
+    farbwort: { help: "Auf einem Feld steht ein Farbwort in einer anderen Schriftfarbe. Tritt auf das Feld in der Schriftfarbe, nicht auf das, was da steht.", task: "Die Schriftfarbe zählt – tritt auf dieses Feld." },
+    fusshand: { help: "Zwei Felder zeigen ein Zeichen: Auf das Feld mit dem Fuß trittst du, auf das Feld mit der Hand zeigst du mit der Hand.", task: "Fuß: drauftreten. Hand: hinzeigen." },
+    sehenhoeren: { help: "Ein Feld leuchtet auf, eine Farbe wird gesagt oder beides zugleich. Passen Bild und Ansage nicht zusammen, gilt, was du unter „Bei beidem gilt“ eingestellt hast. Dafür muss der Ton an sein.", task: "Bild oder Ansage – bei beidem gilt deine Regel." },
+  };
+  // Each Stufe adds one symbol (rule) to the ones before.
+  const FF_SYMBOLS = {
+    viereck: { name: "Viereck", rule: "auf dasselbe Feld", short: "selbes Feld" },
+    dreieck: { name: "Dreieck", rule: "auf das Feld schräg gegenüber", short: "schräg" },
+    strich: { name: "Strich", rule: "auf das Nachbarfeld in derselben Reihe", short: "daneben" },
+    herz: { name: "Herz", rule: "auf das Feld in derselben Spalte (oben ↔ unten)", short: "drüber/drunter" },
+  };
+  const FF_LEVEL_SYMBOLS = ["viereck", "dreieck", "strich", "herz"];
+  const FF_EMPTY_SYMBOLS = ["kreis", "viereck", "dreieck", "herz"];
+  const FF_MODE_LABELS = { leuchten: "Leuchten", regeln: "Regeln", leer: "Das leere Feld", abfolge: "Abfolge merken", ansage: "Ansage", farbwort: "Farbwort", fusshand: "Fuß und Hand", sehenhoeren: "Sehen und Hören" };
+  // Sehen und Hören: share of only shown / only said / both, in percent.
+  const FF_MIXES = {
+    ausgewogen: { label: "Ausgewogen", weights: [35, 35, 30] },
+    mehrbeides: { label: "Mehr beides", weights: [20, 20, 60] },
+    nurbeides: { label: "Nur beides", weights: [0, 0, 100] },
+  };
+  // Rhythmus-Umkehr (E): only these modes have a rule that can flip.
+  const FF_FLIP_MODES = ["leuchten", "regeln", "sehenhoeren"];
+  const FF_HAND_ACTIONS = { keine: "Keine", hoch: "Hände hoch", seitlich: "Hände seitlich", klatschen: "Klatschen" };
+  const FF_SEQ_MAX = 12;
+  // Pure rule: which field (0-3) a symbol shown on `field` points to.
+  function ffTarget(symbol, field) {
+    if (symbol === "dreieck") return 3 - field; // diagonal
+    if (symbol === "strich") return field ^ 1; // same row
+    if (symbol === "herz") return field ^ 2; // same column
+    return field; // viereck: same field
+  }
+  // Rhythmus-Umkehr: is the n-th stimulus (1-based) a flipped one?
+  function ffIsFlipped(n, every) { return every === 2 || every === 3 ? n > 0 && n % every === 0 : false; }
+  // Leuchten / Regeln: "andersherum" = the field diagonally opposite the
+  // normal target.
+  function ffLeuchtenTarget(lit, flipped) { return flipped ? 3 - lit : lit; }
+  function ffRegelnTarget(symbol, at, flipped) { const t = ffTarget(symbol, at); return flipped ? 3 - t : t; }
+  // Ansage: the said colour's field.
+  function ffAnsageTarget(colorKey, layout) { return layout.indexOf(colorKey); }
+  // Farbwort: the INK colour counts, never the word.
+  function ffFarbwortTarget(inkKey, layout) { return layout.indexOf(inkKey); }
+  // Sehen und Hören: kind bild / ton / beides; with both, `gilt` (gesagt |
+  // gezeigt) decides, a flipped stimulus takes the other source.
+  function ffSehenHoerenTarget(kind, shown, said, gilt, flipped) {
+    if (kind === "bild") return shown;
+    if (kind === "ton") return said;
+    const useSaid = (gilt === "gezeigt") === !!flipped;
+    return useSaid ? said : shown;
+  }
+  // Farbwort pick: ink field + a word colour from the mat that is never the ink.
+  function ffPickFarbwort(layout, rng, avoidField = -1) {
+    let ink;
+    do { ink = Math.floor(rng() * 4); } while (ink === avoidField);
+    const others = layout.filter((k, i) => i !== ink);
+    const wordKey = others[Math.floor(rng() * others.length)];
+    return { inkKey: layout[ink], wordKey, at: Math.floor(rng() * 4), target: ffFarbwortTarget(layout[ink], layout) };
+  }
+  function ffPickWeighted(weights, rng) {
+    const sum = weights.reduce((a, b) => a + b, 0);
+    let r = rng() * sum;
+    for (let i = 0; i < weights.length; i++) { if (weights[i] > 0 && (r -= weights[i]) < 0) return i; }
+    return weights.findIndex((w) => w > 0);
+  }
+  function ffStateSnapshot(src = state) {
+    return {
+      ffLayout: src.ffLayout.slice(), ffMode: src.ffMode, ffLevel: src.ffLevel, ffSeqStart: src.ffSeqStart,
+      ffFoot: src.ffFoot, ffHands: src.ffHands, ffHandRules: { ...src.ffHandRules },
+      ffGilt: src.ffGilt, ffMix: src.ffMix, ffFlip: src.ffFlip,
+    };
+  }
+  function ffNormalize(p) {
+    const lay = Array.isArray(p.ffLayout) ? p.ffLayout : null;
+    p.ffLayout = lay && lay.length === 4 && lay.every((k) => COLOR_BY_KEY[k]) && new Set(lay).size === 4 ? lay.slice() : FF_DEFAULT_LAYOUT.slice();
+    if (!FF_MODES[p.ffMode]) p.ffMode = "leuchten";
+    if (![1, 2, 3, 4].includes(p.ffLevel)) p.ffLevel = 1;
+    if (![2, 3].includes(p.ffSeqStart)) p.ffSeqStart = 2;
+    if (!["aus", "wechsel", "zufall"].includes(p.ffFoot)) p.ffFoot = "aus";
+    if (typeof p.ffHands !== "boolean") p.ffHands = false;
+    if (!["gesagt", "gezeigt"].includes(p.ffGilt)) p.ffGilt = "gesagt";
+    if (!FF_MIXES[p.ffMix]) p.ffMix = "ausgewogen";
+    if (![0, 2, 3].includes(p.ffFlip)) p.ffFlip = 0;
+    const rules = p.ffHandRules && typeof p.ffHandRules === "object" && !Array.isArray(p.ffHandRules) ? p.ffHandRules : { rot: "hoch" };
+    p.ffHandRules = Object.fromEntries(Object.entries(rules).filter(([k, v]) => COLOR_BY_KEY[k] && FF_HAND_ACTIONS[v]));
+  }
+  function ffHandFor(field) {
+    if (!state.ffHands) return null;
+    const a = state.ffHandRules[state.ffLayout[field]];
+    return a && a !== "keine" ? FF_HAND_ACTIONS[a] : null;
+  }
+  let ffSeqResume = null; // sequence length to continue with after a live tempo change
+  function buildFarbfelderSchedule(cfg, rng) {
+    const mode = FF_MODES[state.ffMode] ? state.ffMode : "leuchten";
+    const schedule = [];
+    let t = pushCountdown(schedule, { task: FF_MODES[mode].task });
+    const show = vtShowS();
+    let step = 0;
+    const foot = () => (state.ffFoot === "wechsel" ? (step++ % 2 === 0 ? "L" : "R") : state.ffFoot === "zufall" ? (rng() < 0.5 ? "L" : "R") : null);
+    const rand4 = () => Math.floor(rng() * 4);
+    if (mode === "abfolge") {
+      let len = ffSeqResume || state.ffSeqStart;
+      ffSeqResume = null;
+      const seq = [], feet = [];
+      const stepOn = Math.max(0.5, Math.min(1.5, show * 0.7)), stepGap = 0.3, recallPer = Math.max(1.2, show);
+      let rounds = 0;
+      while (t < state.duration) {
+        // A round that would not finish before the end is not started
+        // (Prüfer 07.10. Nr. 4) - capVtSchedule fills the rest with a blank.
+        if (rounds > 0 && t + 0.8 + len * (stepOn + stepGap + recallPer) > state.duration) break;
+        rounds++;
+        while (seq.length < len) {
+          let f;
+          do { f = rand4(); } while (seq.length && f === seq[seq.length - 1]);
+          seq.push(f);
+          feet.push(state.ffFoot === "wechsel" ? (feet.length % 2 === 0 ? "L" : "R") : state.ffFoot === "zufall" ? (rng() < 0.5 ? "L" : "R") : null);
+        }
+        schedule.push({ t0: t, t1: t + 0.8, kind: "farbfelder", payload: { mode, phase: "intro", caption: `Schau zu · ${len} Felder`, seqLen: len } });
+        t += 0.8;
+        for (let i = 0; i < len; i++) {
+          const f = seq[i], hand = ffHandFor(f);
+          schedule.push({ t0: t, t1: t + stepOn, kind: "farbfelder", payload: { mode, phase: "show", lit: f, target: f, foot: feet[i], hand, say: hand, caption: `Schau zu · ${i + 1}/${len}`, seqLen: len } });
+          t += stepOn;
+          schedule.push({ t0: t, t1: t + stepGap, kind: "farbfelder", payload: { mode, phase: "gap", caption: `Schau zu · ${i + 1}/${len}`, seqLen: len } });
+          t += stepGap;
+        }
+        const recall = len * recallPer;
+        schedule.push({ t0: t, t1: t + recall, kind: "farbfelder", payload: { mode, phase: "recall", caption: `Jetzt du · ${len} Felder`, say: "Jetzt du", seqLen: len } });
+        t += recall;
+        const pause = randInterval(rng);
+        schedule.push({ t0: t, t1: t + pause, kind: "blank", payload: {} });
+        t += pause;
+        if (len < FF_SEQ_MAX) len++;
+      }
+      return { schedule, total: t };
+    }
+    let last = -1;
+    let n = 0; // stimuli counted for the Rhythmus-Umkehr
+    const flipEvery = FF_FLIP_MODES.includes(mode) ? state.ffFlip : 0;
+    const lay = state.ffLayout;
+    const colorName = (f) => (COLOR_BY_KEY[lay[f]] || COLOR_BY_KEY[FF_DEFAULT_LAYOUT[f]]).name;
+    while (t < state.duration) {
+      let payload;
+      if (mode === "regeln") {
+        const syms = FF_LEVEL_SYMBOLS.slice(0, state.ffLevel);
+        const flipped = ffIsFlipped(n + 1, flipEvery);
+        let symbol, at, target, tries = 0;
+        do {
+          symbol = syms[Math.floor(rng() * syms.length)];
+          at = rand4();
+          target = ffRegelnTarget(symbol, at, flipped);
+        } while (target === last && ++tries < 12);
+        n++;
+        payload = { mode, symbol, at, target, flipped, n, foot: foot() };
+      } else if (mode === "ansage") {
+        let f;
+        do { f = rand4(); } while (f === last);
+        payload = { mode, said: lay[f], say: colorName(f), target: ffAnsageTarget(lay[f], lay), foot: foot() };
+      } else if (mode === "farbwort") {
+        payload = { mode, ...ffPickFarbwort(lay, rng, last), foot: foot() };
+      } else if (mode === "fusshand") {
+        let f, h;
+        do { f = rand4(); } while (f === last);
+        do { h = rand4(); } while (h === f);
+        payload = { mode, footAt: f, handAt: h, target: f, handTarget: h, foot: foot() };
+      } else if (mode === "sehenhoeren") {
+        const kind = ["bild", "ton", "beides"][ffPickWeighted((FF_MIXES[state.ffMix] || FF_MIXES.ausgewogen).weights, rng)];
+        const flipped = kind === "beides" ? ffIsFlipped(n + 1, flipEvery) : false;
+        let shown, said, target, tries = 0;
+        do {
+          shown = kind === "ton" ? null : rand4();
+          said = null;
+          if (kind !== "bild") { do { said = rand4(); } while (kind === "beides" && said === shown); }
+          target = ffSehenHoerenTarget(kind, shown, said, state.ffGilt, flipped);
+        } while (target === last && ++tries < 12);
+        if (kind === "beides") n++;
+        payload = { mode, kind, shown, saidField: said, said: said === null ? null : lay[said], say: said === null ? null : colorName(said), target, flipped, n: kind === "beides" ? n : null, foot: foot() };
+        if (shown !== null) payload.lit = shown;
+      } else if (mode === "leer") {
+        let empty;
+        do { empty = rand4(); } while (empty === last);
+        const symbol = FF_EMPTY_SYMBOLS[Math.floor(rng() * FF_EMPTY_SYMBOLS.length)];
+        payload = { mode, symbol, marks: [0, 1, 2, 3].filter((i) => i !== empty), target: empty, foot: foot() };
+      } else {
+        let f;
+        do { f = rand4(); } while (f === last);
+        const hand = ffHandFor(f);
+        const flipped = ffIsFlipped(++n, flipEvery);
+        payload = { mode, lit: f, target: ffLeuchtenTarget(f, flipped), flipped, n, foot: foot(), hand, say: hand };
+      }
+      last = payload.target;
+      const pause = randInterval(rng);
+      schedule.push({ t0: t, t1: t + show, kind: "farbfelder", payload });
+      schedule.push({ t0: t + show, t1: t + show + pause, kind: "blank", payload: {} });
+      t += show + pause;
+    }
+    return { schedule, total: t };
+  }
+
+  // Grid geometry in canvas pixels: always below the player bar (it floats
+  // over the stage) and above a reserved caption band at the bottom, so a
+  // caption or the rule legend never touches a field.
+  function ffGeometry(cw, ch) {
+    const cRect = canvas.getBoundingClientRect();
+    const dpr = cRect.width ? cw / cRect.width : 1;
+    const bar = document.getElementById("playerBar");
+    const barRect = bar && !bar.hidden ? bar.getBoundingClientRect() : null;
+    const m = 14 * dpr;
+    const top = barRect && barRect.height ? Math.max(m, (barRect.bottom - cRect.top) * dpr + 10 * dpr) : m;
+    const capH = Math.max(46, ch * 0.065);
+    const bottom = ch - capH - m;
+    const availW = cw - 2 * m, availH = Math.max(40 * dpr, bottom - top);
+    const side = Math.max(20, Math.min(availW, availH));
+    const x0 = (cw - side) / 2, y0 = top + (availH - side) / 2;
+    const gap = Math.max(4 * dpr, side * 0.025);
+    const cell = (side - gap) / 2;
+    if (navigator.webdriver) window.__ffLastGeom = { top: cRect.top + y0 / dpr, bottom: cRect.top + (y0 + side) / dpr, left: cRect.left + x0 / dpr, right: cRect.left + (x0 + side) / dpr, barBottom: barRect ? barRect.bottom : 0, capTop: cRect.top + (ch - capH) / dpr };
+    return { x0, y0, side, gap, cell, capH };
+  }
+  // Hütchen · Farbe + Zahl: one big colour disc below the floating player
+  // bar with the field number on it. Ink is white or dark, whichever has
+  // more contrast on that colour, with a fixed-hex outline of the other.
+  function cnGeometry(cw, ch) {
+    const cRect = canvas.getBoundingClientRect();
+    const dpr = cRect.width ? cw / cRect.width : 1;
+    const bar = document.getElementById("playerBar");
+    const barRect = bar && !bar.hidden ? bar.getBoundingClientRect() : null;
+    const m = 16 * dpr;
+    const top = barRect && barRect.height ? Math.max(m, (barRect.bottom - cRect.top) * dpr + 12 * dpr) : m;
+    const bottom = ch - m;
+    const r = Math.max(20, Math.min((cw - 2 * m) / 2, (bottom - top) / 2));
+    const cx = cw / 2, cy = top + (bottom - top) / 2;
+    if (navigator.webdriver) window.__cnLastGeom = { top: cRect.top + (cy - r) / dpr, bottom: cRect.top + (cy + r) / dpr, left: cRect.left + (cx - r) / dpr, right: cRect.left + (cx + r) / dpr, barBottom: barRect ? barRect.bottom : 0, stageBottom: cRect.bottom };
+    return { cx, cy, r };
+  }
+  function drawColorNum(cw, ch, payload) {
+    const { cx, cy, r } = cnGeometry(cw, ch);
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = payload.color;
+    ctx.fill();
+    const light = "#ffffff", dark = "#16232a";
+    const ink = contrastRatio(light, payload.color) >= contrastRatio(dark, payload.color) ? light : dark;
+    const text = String(payload.num);
+    const size = Math.round(r * 1.25);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `700 ${size}px Magra, sans-serif`;
+    ctx.lineJoin = "round";
+    ctx.lineWidth = Math.max(3, size * 0.07);
+    ctx.strokeStyle = ink === light ? dark : light;
+    ctx.strokeText(text, cx, cy + size * 0.04);
+    ctx.fillStyle = ink;
+    ctx.fillText(text, cx, cy + size * 0.04);
+    if (navigator.webdriver) window.__cnLast = { color: payload.color, num: payload.num, ink };
+  }
+  function ffRoundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  // One symbol, white with a dark outline so it reads on every field colour.
+  function ffDrawSymbol(kind, cx, cy, r, fill = "#ffffff", stroke = INK) {
+    ctx.save();
+    ctx.lineJoin = "round";
+    ctx.lineWidth = Math.max(2, r * 0.13);
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = stroke;
+    ctx.beginPath();
+    if (kind === "viereck") {
+      const s = r * 1.5;
+      ctx.rect(cx - s / 2, cy - s / 2, s, s);
+    } else if (kind === "dreieck") {
+      ctx.moveTo(cx, cy - r * 0.95);
+      ctx.lineTo(cx + r * 0.98, cy + r * 0.75);
+      ctx.lineTo(cx - r * 0.98, cy + r * 0.75);
+      ctx.closePath();
+    } else if (kind === "strich") {
+      const w = r * 0.42, h = r * 1.9;
+      ctx.rect(cx - w / 2, cy - h / 2, w, h);
+    } else if (kind === "herz") {
+      const s = r * 1.05;
+      ctx.moveTo(cx, cy + s * 0.85);
+      ctx.bezierCurveTo(cx - s * 1.25, cy + s * 0.05, cx - s * 0.95, cy - s * 0.95, cx, cy - s * 0.38);
+      ctx.bezierCurveTo(cx + s * 0.95, cy - s * 0.95, cx + s * 1.25, cy + s * 0.05, cx, cy + s * 0.85);
+      ctx.closePath();
+    } else {
+      ctx.arc(cx, cy, r * 0.85, 0, Math.PI * 2);
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+  function ffDrawBadge(cx, cy, r, letter) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.lineWidth = Math.max(2, r * 0.1);
+    ctx.strokeStyle = INK;
+    ctx.stroke();
+    if (letter) {
+      ctx.fillStyle = INK;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `700 ${Math.round(r * 1.25)}px Magra, sans-serif`;
+      ctx.fillText(letter, cx, cy + r * 0.05);
+    }
+  }
+  // The rule legend of "Regeln" in the caption band: mini symbol + word.
+  function ffDrawLegend(cw, ch, capH) {
+    const syms = FF_LEVEL_SYMBOLS.slice(0, state.ffLevel);
+    const y0 = ch - capH;
+    ctx.fillStyle = "#f5f5f5";
+    ctx.fillRect(0, y0, cw, capH);
+    let size = Math.round(capH * 0.34);
+    const measure = () => {
+      ctx.font = `700 ${size}px 'Public Sans', sans-serif`;
+      return syms.reduce((w, s) => w + size * 1.2 + size * 0.35 + ctx.measureText(FF_SYMBOLS[s].short).width, 0) + (syms.length - 1) * size * 1.1;
+    };
+    let total = measure();
+    while (total > cw * 0.94 && size > 9) { size -= 1; total = measure(); }
+    let x = (cw - total) / 2;
+    const cy = y0 + capH / 2;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    syms.forEach((s) => {
+      ffDrawSymbol(s, x + size * 0.6, cy, size * 0.5, "#ffffff", INK);
+      x += size * 1.2 + size * 0.35;
+      ctx.font = `700 ${size}px 'Public Sans', sans-serif`;
+      ctx.fillStyle = INK;
+      ctx.fillText(FF_SYMBOLS[s].short, x, cy);
+      x += ctx.measureText(FF_SYMBOLS[s].short).width + size * 1.1;
+    });
+  }
+  // Foot and hand marks of "Fuß und Hand": white with a dark outline like
+  // the rule symbols; the outline is stroked first and the fill drawn over
+  // it, so toes/fingers merge into one clean silhouette.
+  function ffDrawFootHand(kind, cx, cy, r) {
+    const parts = [];
+    if (kind === "fuss") {
+      // sole (slightly tilted egg) + five toes, big toe on the left
+      // ball + heel merge into one footprint (outline first, fill over it)
+      parts.push(() => { ctx.moveTo(cx + r * 0.47, cy - r * 0.02); ctx.ellipse(cx + r * 0.07, cy - r * 0.02, r * 0.4, r * 0.4, -0.15, 0, Math.PI * 2); });
+      parts.push(() => { ctx.moveTo(cx + r * 0.27, cy + r * 0.6); ctx.ellipse(cx - r * 0.02, cy + r * 0.6, r * 0.29, r * 0.36, -0.1, 0, Math.PI * 2); });
+      parts.push(() => { ffRoundRectPath(cx - r * 0.25, cy, r * 0.5, r * 0.6, r * 0.1); });
+      [[-0.27, -0.6, 0.15], [0.0, -0.7, 0.11], [0.21, -0.65, 0.095], [0.38, -0.54, 0.083], [0.51, -0.38, 0.07]].forEach(([dx, dy, rr]) =>
+        parts.push(() => { ctx.moveTo(cx + dx * r + rr * r, cy + dy * r); ctx.arc(cx + dx * r, cy + dy * r, rr * r, 0, Math.PI * 2); }));
+    } else {
+      // palm + four fingers + thumb
+      parts.push(() => { ffRoundRectPath(cx - r * 0.46, cy - r * 0.12, r * 0.92, r * 0.86, r * 0.26); });
+      [[-0.36, 0.17, 0.62], [-0.12, 0.18, 0.78], [0.12, 0.18, 0.74], [0.35, 0.16, 0.58]].forEach(([dx, w, h]) =>
+        parts.push(() => { ffRoundRectPath(cx + dx * r - w * r / 2, cy - r * 0.08 - h * r, w * r, h * r + r * 0.2, w * r / 2); }));
+      parts.push(() => {
+        ctx.save(); ctx.translate(cx - r * 0.5, cy + r * 0.22); ctx.rotate(-0.75);
+        ffRoundRectPath(-r * 0.09, -r * 0.5, r * 0.19, r * 0.6, r * 0.09);
+        ctx.restore();
+      });
+    }
+    ctx.save();
+    ctx.lineJoin = "round";
+    ctx.beginPath(); parts.forEach((f) => f());
+    ctx.lineWidth = Math.max(4, r * 0.2);
+    ctx.strokeStyle = INK; ctx.stroke();
+    ctx.beginPath(); parts.forEach((f) => f());
+    ctx.fillStyle = "#ffffff"; ctx.fill();
+    ctx.restore();
+  }
+  function ffRoundRectPath(x, y, w, h, r) {
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  // Farbwort: the colour word on a white plate (so every ink reads on every
+  // field), in the ink colour; light inks get a thin dark edge.
+  function ffDrawWord(x, y, cell, wordKey, inkKey) {
+    const ink = (COLOR_BY_KEY[inkKey] || COLOR_BY_KEY.rot).hex;
+    const word = (COLOR_BY_KEY[wordKey] || COLOR_BY_KEY.blau).name.toUpperCase();
+    const pw = cell * 0.88, ph = cell * 0.4;
+    const px = x + (cell - pw) / 2, py = y + (cell - ph) / 2;
+    ffRoundRect(px, py, pw, ph, ph * 0.18);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.lineWidth = Math.max(1.5, cell * 0.008);
+    ctx.strokeStyle = "rgba(22,35,42,0.25)";
+    ctx.stroke();
+    const size = fitText(ctx, word, pw * 0.86, Math.round(ph * 0.66), "Magra, sans-serif", 700);
+    ctx.font = `700 ${size}px Magra, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    if (relLuma(ink) > 0.45) {
+      ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(1.5, size * 0.06);
+      ctx.strokeStyle = INK;
+      ctx.strokeText(word, x + cell / 2, y + cell / 2 + size * 0.04);
+    }
+    ctx.fillStyle = ink;
+    ctx.fillText(word, x + cell / 2, y + cell / 2 + size * 0.04);
+  }
+  // The caption that stays on for a whole run (rule reminder), if any.
+  function ffRuleCaption() {
+    const m = state.ffMode;
+    const every = FF_FLIP_MODES.includes(m) ? state.ffFlip : 0;
+    if ((m === "ansage" || m === "sehenhoeren") && cueVolume() <= 0) return "Ton ist aus – bitte einschalten";
+    if (m === "sehenhoeren") return `Bei beidem gilt: ${state.ffGilt === "gezeigt" ? "das Gezeigte" : "das Gesagte"}` + (every ? ` · jedes ${every}. Mal andersherum` : "");
+    if (m === "leuchten" && every) return `Jedes ${every}. Mal schräg gegenüber`;
+    if (m === "farbwort") return "Die Schriftfarbe zählt";
+    if (m === "fusshand") return "Fuß: drauftreten · Hand: hinzeigen";
+    return "";
+  }
+  // p = null draws the resting grid (pause between stimuli).
+  function drawFarbfelder(p) {
+    const cw = canvas.width, ch = canvas.height;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, cw, ch);
+    const g = ffGeometry(cw, ch);
+    const full = !!(p && ["regeln", "leer", "ansage", "farbwort", "fusshand"].includes(p.mode));
+    for (let i = 0; i < 4; i++) {
+      const hex = (COLOR_BY_KEY[state.ffLayout[i]] || COLOR_BY_KEY[FF_DEFAULT_LAYOUT[i]]).hex;
+      const x = g.x0 + (i % 2) * (g.cell + g.gap), y = g.y0 + (i >> 1) * (g.cell + g.gap);
+      const lit = !!(p && p.lit === i);
+      ffRoundRect(x, y, g.cell, g.cell, g.cell * 0.06);
+      ctx.fillStyle = full || lit ? hex : mixHex("#ffffff", hex, 0.42);
+      ctx.fill();
+      const cx = x + g.cell / 2, cy = y + g.cell / 2;
+      if (lit) {
+        const lw = g.cell * 0.06;
+        ffRoundRect(x + lw * 1.2, y + lw * 1.2, g.cell - lw * 2.4, g.cell - lw * 2.4, g.cell * 0.04);
+        ctx.lineWidth = lw;
+        ctx.strokeStyle = "#ffffff";
+        ctx.stroke();
+        ffDrawBadge(cx, cy, g.cell * 0.17, p.foot || "");
+      }
+      if (p && p.mode === "regeln" && p.at === i) ffDrawSymbol(p.symbol, cx, cy, g.cell * 0.24);
+      if (p && p.mode === "leer" && p.marks && p.marks.includes(i)) ffDrawSymbol(p.symbol, cx, cy, g.cell * 0.22);
+      if (p && p.mode === "farbwort" && p.at === i) ffDrawWord(x, y, g.cell, p.wordKey, p.inkKey);
+      if (p && p.mode === "fusshand" && p.footAt === i) ffDrawFootHand("fuss", cx, cy, g.cell * 0.3);
+      if (p && p.mode === "fusshand" && p.handAt === i) ffDrawFootHand("hand", cx, cy, g.cell * 0.3);
+    }
+    if (p && p.foot && !p.lit && p.lit !== 0 && p.mode !== "abfolge") ffDrawBadge(g.x0 + g.side / 2, g.y0 + g.side / 2, g.cell * 0.13, p.foot);
+    const hand = p && p.hand ? p.hand : "";
+    const caption = p && p.caption ? [p.caption, hand].filter(Boolean).join(" · ") : [ffRuleCaption(), hand].filter(Boolean).join(" · ");
+    if (caption) barCaption(cw, ch, caption, false);
+    else if (state.ffMode === "regeln") ffDrawLegend(cw, ch, g.capH);
   }
 
   // ---- Exercise catalogue ----
@@ -738,6 +1239,23 @@
       task: "Reagiere auf die Farbe – passend zu deinem eigenen Richtungs-Aufbau am Boden.",
       trains: "Reaktionsschnelligkeit gezielt in frei gewählte Richtungen",
       rules: "Klebe ein Kreuz oder einen Stern mit vier oder acht Richtungen auf den Boden und stelle deine Farbhütchen in die Richtungen, die du trainieren willst. Mehrere Farben auf derselben Richtung lassen diese Richtung häufiger drankommen. Welche Farbe wohin gehört, legst du komplett selbst fest – die App zeigt immer nur die Farbe.",
+    },
+    // Hütchen · Farbe + Zahl (Fabian 2026-10-07, Idee H): 3-6 numbered
+    // fields on the floor, a coloured cup on each; the screen shows a colour
+    // with a big number and the client puts that cup on that field.
+    // state.cnFields = number of fields (3-6); colours = state.colors
+    // (usesColors), at most one per field. Details: docs/notes/29.
+    "cone-number": {
+      title: "Hütchen · Farbe + Zahl", type: "colornum", usesColors: true,
+      task: "Stelle das Hütchen in dieser Farbe auf das Feld mit dieser Zahl.",
+      trains: "Farbe und Zahl gleichzeitig erfassen und schnell umsetzen",
+      rules: "Lege nummerierte Felder (1 bis zur eingestellten Anzahl) auf den Boden und stelle auf jedes ein farbiges Hütchen oder einen Becher. Die App zeigt eine Farbe mit einer großen Zahl – zum Beispiel Gelb mit der 2: Stelle das gelbe Hütchen so schnell wie möglich auf Feld 2. Steht dort schon eins, tausche die beiden.",
+    },
+    "farbfelder": {
+      title: "Farbfelder", type: "farbfelder", bgIsStimulus: true,
+      task: "Tritt auf das richtige Farbfeld deiner Matte.",
+      trains: "Farbwahrnehmung, Fußarbeit und schnelles Umsetzen von Regeln",
+      rules: "Leg deine vier Farbfelder so auf den Boden, wie sie unten unter „Anordnung“ eingestellt sind, und stell dich davor. Der Bildschirm zeigt dieselben vier Felder: Oben ist die Reihe, die näher am Bildschirm liegt. Je nach Modus trittst du auf das Feld, das aufleuchtet, auf das Feld, das ein Symbol dir sagt, auf das leere Feld, eine ganze Abfolge nach, auf die gesagte Farbe, auf die Schriftfarbe eines Farbworts, mit Fuß und Hand zugleich oder nach Bild und Ansage.",
     },
     "periph-flash": {
       title: "Periphere Wahrnehmung", type: "periph",
@@ -853,7 +1371,10 @@
     name: "Kraftvolle Atmung (Wim-Hof-Stil)*",
     short: "Schnelle Atemzüge, dann die Luft anhalten.",
   };
-  const WIMHOF_DEFAULTS = { breaths: 30, rounds: 3, breathPaceS: 1.7, recoveryHoldS: 15 };
+  const WIMHOF_DEFAULTS = { breaths: 30, rounds: 3, breathPaceS: 1.7, recoveryHoldS: 15, roundRestS: 0 };
+  // "Pause zwischen den Runden" (Fabian 07.10., Atempausen B): 0-180 s of
+  // normal breathing after the recovery hold, before the next round.
+  function whRoundRestOf(b) { const v = Number(b && b.roundRestS); return Number.isFinite(v) && v > 0 ? Math.min(180, Math.round(v / 5) * 5) : 0; }
 
   // ---- Coach-authored breathing programmes (mirrors PROGRAMS below): a
   // sequence of breathing blocks delivered by code, or shown here for free
@@ -892,7 +1413,7 @@
       if (b.pattern === "wimhof") {
         const r = b.rounds ?? WIMHOF_DEFAULTS.rounds, n = b.breaths ?? WIMHOF_DEFAULTS.breaths;
         const pace = b.breathPaceS ?? WIMHOF_DEFAULTS.breathPaceS, rec = b.recoveryHoldS ?? WIMHOF_DEFAULTS.recoveryHoldS;
-        return sum + r * (n * pace + 30 + rec); // 30s = rough average retention, for the "ca." estimate only
+        return sum + r * (n * pace + 30 + rec) + Math.max(0, r - 1) * whRoundRestOf(b); // 30s = rough average retention, for the "ca." estimate only
       }
       return sum + (b.durationMin ?? 5) * 60;
     }, 0);
@@ -939,6 +1460,15 @@
   // screen, follows dark mode) or the always-light player stage (fixed
   // dark ink, matching the visual-training canvas).
   const FIG_HIGHLIGHT = "#ff9110";
+  // Signalfarbe (Idee 55, Fabian 06.10.): the highlight colour of the
+  // movement that is due now - movementPrefs.sigColor (a SIGNAL_LIB key,
+  // null = Standard Orange). Kombi blocks/presets/Weitermachen carry it via
+  // mvLookOf, so a block plays in its own colour.
+  function mvSigHex(p) {
+    p = p || movementPrefs;
+    const c = p && p.sigColor ? SIGNAL_BY_KEY[p.sigColor] : null;
+    return c ? c.hex : FIG_HIGHLIGHT;
+  }
   // slots: { armLeft, armRight, legLeft, legRight } - each holds a pose
   // name ("heben"/"strecken") when that screen-side limb is the active one.
   const FIGURE_LIMB = {
@@ -953,7 +1483,7 @@
       const type = slots[key];
       const def = FIGURE_LIMB[key];
       const [x2, y2] = def[type || "neutral"];
-      const color = type ? FIG_HIGHLIGHT : baseColor;
+      const color = type ? mvSigHex() : baseColor;
       const width = type ? 10 : 8;
       return `<line x1="${def.x0}" y1="${def.y0}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${width}" stroke-linecap="round"/>`;
     }).join("");
@@ -979,11 +1509,11 @@
       const type = slots[key];
       const def = ABSTRACT_CELL[key];
       const active = !!type;
-      const ring = active ? FIG_HIGHLIGHT : baseColor;
-      const fill = active ? FIG_HIGHLIGHT : "none";
+      const ring = active ? mvSigHex() : baseColor;
+      const fill = active ? mvSigHex() : "none";
       let mark;
-      if (type === "heben") mark = `<polygon points="${arrowPolygon(def.cx, def.cy, -90, 13)}" fill="#fff"/>`;
-      else if (type === "strecken") mark = `<polygon points="${arrowPolygon(def.cx, def.cy, def.out, 13)}" fill="#fff"/>`;
+      if (type === "heben") mark = `<polygon points="${arrowPolygon(def.cx, def.cy, -90, 13)}" fill="${sigInk(ring)}"/>`;
+      else if (type === "strecken") mark = `<polygon points="${arrowPolygon(def.cx, def.cy, def.out, 13)}" fill="${sigInk(ring)}"/>`;
       else mark = `<circle cx="${def.cx}" cy="${def.cy}" r="3" fill="${baseColor}"/>`;
       return `<circle cx="${def.cx}" cy="${def.cy}" r="19" fill="${fill}" stroke="${ring}" stroke-width="3"/>${mark}`;
     }).join("");
@@ -1015,7 +1545,7 @@
     for (const k in MV_QUAD) {
       const [x, y] = MV_QUAD[k], on = act && act.key === k;
       out += on
-        ? `<rect x="${6 + x * 46}" y="${6 + y * 46}" width="42" height="42" rx="9" fill="${FIG_HIGHLIGHT}" stroke="${FIG_HIGHLIGHT}" stroke-width="3"/>` + mvArrow(27 + x * 46, 27 + y * 46, act.dir, 12, "#fff")
+        ? `<rect x="${6 + x * 46}" y="${6 + y * 46}" width="42" height="42" rx="9" fill="${mvSigHex()}" stroke="${mvSigHex()}" stroke-width="3"/>` + mvArrow(27 + x * 46, 27 + y * 46, act.dir, 12, sigInk(mvSigHex()))
         : `<rect x="${6 + x * 46}" y="${6 + y * 46}" width="42" height="42" rx="9" fill="none" stroke="${baseColor}" stroke-opacity=".3" stroke-width="3"/>`;
     }
     return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">${out}</svg>`;
@@ -1030,9 +1560,9 @@
       const [x, y] = P[k], on = act && act.key === k;
       if (on) {
         const v = { up: [0, -1], left: [-1, 0], right: [1, 0] }[act.dir];
-        out += `<line x1="${x}" y1="${y}" x2="${x + v[0] * 24}" y2="${y + v[1] * 24}" stroke="${FIG_HIGHLIGHT}" stroke-width="9" stroke-linecap="round"/>`;
+        out += `<line x1="${x}" y1="${y}" x2="${x + v[0] * 24}" y2="${y + v[1] * 24}" stroke="${mvSigHex()}" stroke-width="9" stroke-linecap="round"/>`;
       }
-      out += on ? `<circle cx="${x}" cy="${y}" r="10" fill="${FIG_HIGHLIGHT}"/>`
+      out += on ? `<circle cx="${x}" cy="${y}" r="10" fill="${mvSigHex()}"/>`
         : `<circle cx="${x}" cy="${y}" r="9" fill="none" stroke="${baseColor}" stroke-opacity=".5" stroke-width="4"/>`;
     }
     return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">${out}</svg>`;
@@ -1042,7 +1572,7 @@
     const act = mvActiveSlot(slots);
     const Q = { armLeft: [29, 29], armRight: [71, 29], legLeft: [29, 71], legRight: [71, 71] };
     const cross = `<line x1="50" y1="10" x2="50" y2="90" stroke="${baseColor}" stroke-opacity=".3" stroke-width="2.5"/><line x1="10" y1="50" x2="90" y2="50" stroke="${baseColor}" stroke-opacity=".3" stroke-width="2.5"/>`;
-    return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">${cross}${act ? mvArrow(Q[act.key][0], Q[act.key][1], act.dir, 15, FIG_HIGHLIGHT) : ""}</svg>`;
+    return `<svg viewBox="0 0 100 100" class="figure-svg" aria-hidden="true">${cross}${act ? mvArrow(Q[act.key][0], Q[act.key][1], act.dir, 15, mvSigHex()) : ""}</svg>`;
   }
   const MV_STYLE_SVG = { felder: figureSVGFelder, punkte: figureSVGPunkte, pfeil: figureSVGPfeil, figur: figureSVGFigur, abstrakt: figureSVGAbstrakt };
   function figureSVG(slots, baseColor) {
@@ -1240,8 +1770,8 @@
     return block.domain;
   }
   function comboBlockMeta(block) {
-    if (block.domain === "wimhof") return `${block.rounds ?? WIMHOF_DEFAULTS.rounds} Runden`;
-    if (block.domain === "breath") return fmtMinutes((block.durationMin ?? 5) * 60) + (block.listen ? " · Hörmodus" : "");
+    if (block.domain === "wimhof") return `${block.rounds ?? WIMHOF_DEFAULTS.rounds} Runden` + (whRoundRestOf(block) ? ` · ${whRoundRestOf(block)} s Pause` : "");
+    if (block.domain === "breath") return (block.noLimit ? "ohne Zeitlimit" : fmtMinutes((block.durationMin ?? 5) * 60)) + (block.listen ? " · Hörmodus" : "");
     if (block.domain === "movement") return fmtMinutes((block.durationMin ?? 2) * 60);
     if (block.domain === "workout") return workoutBlockMeta(block);
     if (block.domain === "visual") return fmtMinutes((block.duration ?? 60));
@@ -1255,8 +1785,8 @@
     return "";
   }
   function comboBlockSeconds(block) {
-    if (block.domain === "wimhof") { const r = block.rounds ?? WIMHOF_DEFAULTS.rounds, n = block.breaths ?? WIMHOF_DEFAULTS.breaths; return r * (n * (block.breathPaceS ?? WIMHOF_DEFAULTS.breathPaceS) + 30 + (block.recoveryHoldS ?? WIMHOF_DEFAULTS.recoveryHoldS)); }
-    if (block.domain === "breath") return (block.durationMin ?? 5) * 60;
+    if (block.domain === "wimhof") { const r = block.rounds ?? WIMHOF_DEFAULTS.rounds, n = block.breaths ?? WIMHOF_DEFAULTS.breaths; return r * (n * (block.breathPaceS ?? WIMHOF_DEFAULTS.breathPaceS) + 30 + (block.recoveryHoldS ?? WIMHOF_DEFAULTS.recoveryHoldS)) + Math.max(0, r - 1) * whRoundRestOf(block); }
+    if (block.domain === "breath") return block.noLimit ? 0 : (block.durationMin ?? 5) * 60;
     if (block.domain === "movement") return (block.durationMin ?? 2) * 60;
     if (block.domain === "workout") return workoutBlockSeconds(block);
     if (block.domain === "visual") return block.duration ?? 60;
@@ -1364,7 +1894,7 @@
   // ---- Elements ----
   const $ = (id) => document.getElementById(id);
   const els = {
-    todayHome: $("todayHome"), planScreen: $("planScreen"), progressScreen: $("progressScreen"),
+    todayHome: $("todayHome"), planScreen: $("planScreen"), myPlanScreen: $("myPlanScreen"), progressScreen: $("progressScreen"),
     todayProgressCard: $("todayProgressCard"), todayProgressOpenBtn: $("todayProgressOpenBtn"), progressBackBtn: $("progressBackBtn"),
     progressGoalMinus: $("progressGoalMinus"), progressGoalPlus: $("progressGoalPlus"), progressGoalValue: $("progressGoalValue"),
     progressWeekBar: $("progressWeekBar"), progressWeekText: $("progressWeekText"), progressStats: $("progressStats"), progressEmpty: $("progressEmpty"), progressWeeks: $("progressWeeks"),
@@ -1479,6 +2009,7 @@
     breathPlayer: $("breathPlayer"), breathPlayerBar: $("breathPlayerBar"), breathBig: $("breathBig"),
     breathPhaseCount: $("breathPhaseCount"), breathPhaseLabel: $("breathPhaseLabel"), breathTimeEl: $("breathTimeEl"),
     breathBackBtn: $("breathBackBtn"), breathFsBtn: $("breathFsBtn"), breathFsHint: $("breathFsHint"),
+    breathFinishBtn: $("breathFinishBtn"), breathEndNowBtn: $("breathEndNowBtn"), breathMoreBtn: $("breathMoreBtn"), breathEndNote: $("breathEndNote"), breathPauseFinishBtn: $("breathPauseFinishBtn"),
     breathPauseBtn: $("breathPauseBtn"),
     breathListenHelp: $("breathListenHelp"),
     breathListenLayer: $("breathListenLayer"),
@@ -2195,7 +2726,7 @@
 
   els.trainingHub = $("trainingHub"); els.moreScreen = $("moreScreen");
   els.freeHome = $("freeHome"); els.freeReady = $("freeReady"); els.freeEdit = $("freeEdit"); els.freePlayer = $("freePlayer");
-  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
+  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -2212,6 +2743,7 @@
     if (name !== "natHome") els.natProgramError.hidden = true;
     if (name !== "trainingHub") $("moreCodeError").hidden = true;
     syncNatModeRows(name);
+    if (NAT_SAVED) NAT_SAVED(name);
     window.scrollTo(0, 0);
   }
 
@@ -2282,6 +2814,8 @@
       { key: "training", label: "Trainingsmodus", sub: "gezielt üben", card: "motOpenTraining", screen: "motTrainingReady" }] },
   };
   const NAT_MODE_KEY = "fwmc-nat-mode-v1";
+  // Set further down (NAT presets); `var` so showScreen() can test it before.
+  var NAT_SAVED = null;
   const natModesOn = !(navigator.webdriver && !readJSON("fwmc-test-natmodes", false));
   let natModeNav = null; // { ex, mode } while the client came from the NAT tiles
   const natModeScreens = new Set();
@@ -2464,27 +2998,51 @@
     }
     return { n, s, a };
   }
+  // Wochenziel folgt dem Plan (kp2, Fabian 06.10.): with a plan for that
+  // week the goal is what was planned (phases taken out of the rating and
+  // pause days don't count), reached = the planned trainings were done;
+  // more is shown as "zusätzlich" but never rewarded. Without a plan the
+  // client's own number counts as before. A pause week neither reaches nor
+  // breaks the streak.
+  function weekGoalInfo(p, monday, hist) {
+    const w = progressWeek(p, monday);
+    const mon = dStr(monday);
+    let st = null;
+    try { if (planHasEntries() && dAdd(mon, 6) >= plan.startDate) st = weekStats(mon, hist); } catch (e) { st = null; }
+    if (st && st.pauseWeek) return { ...w, goal: 0, planDone: 0, extra: w.n, fromPlan: true, pause: true, reached: false };
+    if (st && st.scored > 0) {
+      const planDone = Math.min(st.scoredDone, st.scored);
+      return { ...w, goal: st.scored, planDone, extra: Math.max(0, w.n - planDone), fromPlan: true, reached: planDone >= st.scored };
+    }
+    if (st && st.planned > 0 && st.scored === 0) return { ...w, goal: 0, planDone: 0, extra: w.n, fromPlan: true, noScore: true, reached: false };
+    return { ...w, goal: p.weekGoal, planDone: Math.min(w.n, p.weekGoal), extra: Math.max(0, w.n - p.weekGoal), fromPlan: false, reached: w.n >= p.weekGoal };
+  }
   function progressSummary(p, now) {
     const thisMon = progressMonday(now || new Date());
     const weekAt = (back) => { const m = new Date(thisMon); m.setDate(m.getDate() - back * 7); return m; };
-    const cur = progressWeek(p, thisMon);
+    const hist = loadHistory();
+    const cur = weekGoalInfo(p, thisMon, hist);
     // Streak: weeks in a row with the goal reached. The running week only
-    // counts once it is reached, so an unfinished week never breaks it.
-    let streak = cur.n >= p.weekGoal ? 1 : 0;
-    for (let back = 1; back < 520; back++) { if (progressWeek(p, weekAt(back)).n >= p.weekGoal) streak++; else break; }
+    // counts once it is reached, so an unfinished week never breaks it;
+    // pause weeks and weeks out of the rating are skipped.
+    const neutral = (g) => g.pause || g.noScore;
+    let streak = cur.reached ? 1 : 0;
+    for (let back = 1; back < 520; back++) { const g = weekGoalInfo(p, weekAt(back), hist); if (neutral(g)) continue; if (g.reached) streak++; else break; }
     const days = Object.keys(p.days).sort();
     let best = 0;
     if (days.length) {
       let run = 0;
       const first = progressMonday(new Date(days[0] + "T12:00:00"));
       for (let m = new Date(first); m <= thisMon; m.setDate(m.getDate() + 7)) {
-        if (progressWeek(p, m).n >= p.weekGoal) { run++; best = Math.max(best, run); } else run = 0;
+        const g = weekGoalInfo(p, m, hist);
+        if (neutral(g)) continue;
+        if (g.reached) { run++; best = Math.max(best, run); } else run = 0;
       }
     }
     let total = 0, totalS = 0;
     Object.values(p.days).forEach((d) => { total += d.n; totalS += d.s; });
     const weeks = [];
-    for (let back = 7; back >= 0; back--) { const m = weekAt(back); weeks.push({ monday: m, ...progressWeek(p, m) }); }
+    for (let back = 7; back >= 0; back--) { const m = weekAt(back); weeks.push({ monday: m, ...weekGoalInfo(p, m, hist) }); }
     const areas = {};
     let areaS = 0;
     for (let back = 0; back < 4; back++) {
@@ -2501,17 +3059,24 @@
     return a ? [a.label, a.color] : (PROGRESS_AREA_LABEL[k] || [k, "#6b7c85"]);
   }
   function progressStreakText(n) { return n === 1 ? "1 Woche" : `${n} Wochen`; }
+  function curGoalText(c) {
+    if (c.pause) return ["Pause", "Diese Woche zählt nicht"];
+    if (c.noScore) return [`${c.n}`, "Diese Woche ohne Wertung"];
+    return [`${c.planDone} von ${c.goal}${c.reached ? " ✓" : ""}`, c.reached ? "Wochenziel erreicht" : c.fromPlan ? "Wochenziel laut Plan" : "Wochenziel"];
+  }
   function renderTodayProgressCard() {
     const p = loadProgress();
     const s = progressSummary(p);
-    const pct = Math.min(100, Math.round((s.cur.n / p.weekGoal) * 100));
+    const c = s.cur;
+    const [big, small] = curGoalText(c);
+    const pct = c.goal ? Math.min(100, Math.round((c.planDone / c.goal) * 100)) : 0;
     els.todayProgressCard.innerHTML = `
       <div class="progress-card-row">
-        <div><strong>${s.cur.n} von ${p.weekGoal}${s.cur.n >= p.weekGoal ? " ✓" : ""}</strong><span>${s.cur.n >= p.weekGoal ? "Wochenziel erreicht" : "Wochenziel"}</span></div>
+        <div><strong>${big}</strong><span>${small}${c.extra && c.goal ? ` · ${c.extra} zusätzlich` : ""}</span></div>
         <div><strong>${progressStreakText(s.streak)}</strong><span>Serie</span></div>
         <div><strong>${s.total}</strong><span>Trainings gesamt</span></div>
       </div>
-      <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${p.weekGoal}" aria-valuenow="${Math.min(s.cur.n, p.weekGoal)}"><span style="width:${pct}%"></span></div>`;
+      <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${c.goal}" aria-valuenow="${Math.min(c.planDone, c.goal)}"><span style="width:${pct}%"></span></div>`;
   }
   function renderProgressScreen() {
     const p = loadProgress();
@@ -2519,12 +3084,18 @@
     els.progressGoalValue.textContent = p.weekGoal === 1 ? "1 Training pro Woche" : `${p.weekGoal} Trainings pro Woche`;
     els.progressGoalMinus.disabled = p.weekGoal <= 1;
     els.progressGoalPlus.disabled = p.weekGoal >= 14;
-    const left = Math.max(0, p.weekGoal - s.cur.n);
-    const pct = Math.min(100, Math.round((s.cur.n / p.weekGoal) * 100));
+    const c = s.cur;
+    const goalNote = $("progressGoalPlanNote");
+    if (goalNote) { goalNote.hidden = !c.fromPlan; goalNote.textContent = c.fromPlan ? "Solange ein Wochenplan läuft, richtet sich dein Wochenziel nach dem Plan. Diese Zahl gilt für Wochen ohne Plan." : ""; }
+    const left = Math.max(0, c.goal - c.planDone);
+    const pct = c.goal ? Math.min(100, Math.round((c.planDone / c.goal) * 100)) : 0;
     els.progressWeekBar.innerHTML = `<span style="width:${pct}%"></span>`;
-    els.progressWeekText.textContent = left
-      ? `Diese Woche ${s.cur.n} von ${p.weekGoal}. Noch ${left} bis zum Ziel.`
-      : `Diese Woche ${s.cur.n} von ${p.weekGoal}. Ziel erreicht, stark!`;
+    const extraTxt = c.extra && c.goal ? ` Dazu ${c.extra} zusätzlich.` : "";
+    els.progressWeekText.textContent = c.pause ? "Diese Woche ist Pause. Deine Serie bleibt erhalten."
+      : c.noScore ? `Diese Woche ist ohne Wertung. ${c.n} ${c.n === 1 ? "Training" : "Trainings"} bisher.`
+      : left
+      ? `Diese Woche ${c.planDone} von ${c.goal}${c.fromPlan ? " geplanten" : ""}. Noch ${left} bis zum Ziel.${extraTxt}`
+      : `Diese Woche ${c.planDone} von ${c.goal}${c.fromPlan ? " geplanten" : ""}. Ziel erreicht, stark!${extraTxt}`;
     // No training yet (Fabian 2026-10-06): one friendly start card instead of
     // zeros and empty bars; the week goal stays adjustable above it.
     const empty = !s.total;
@@ -2535,16 +3106,19 @@
       `<div class="stat"><strong>${progressStreakText(s.best)}</strong><span>Längste Serie</span></div>` +
       `<div class="stat"><strong>${s.total}</strong><span>Trainings gesamt</span></div>` +
       `<div class="stat"><strong>${s.totalS ? fmtMinutes(s.totalS) : "–"}</strong><span>Trainingszeit gesamt</span></div>`;
-    const maxN = Math.max(p.weekGoal * 1.25, ...s.weeks.map((w) => w.n), 1);
+    // Split bars (kp2, Fabian 06.10.): below strong = planned and done,
+    // above lighter and narrower = extra; each week its own goal tick.
+    const maxN = Math.max(...s.weeks.map((w) => Math.max(w.goal * 1.25, w.planDone + w.extra)), 1);
     els.progressWeeks.innerHTML = s.weeks.map((w, i) => {
-      const h = Math.round((w.n / maxN) * 100);
+      const hp = Math.round((w.planDone / maxN) * 100), he = Math.round((w.extra / maxN) * 100);
       const label = i === s.weeks.length - 1 ? "diese" : `${String(w.monday.getDate()).padStart(2, "0")}.${String(w.monday.getMonth() + 1).padStart(2, "0")}.`;
-      return `<div class="progress-week${w.n >= p.weekGoal ? " reached" : ""}" title="${w.n} Trainings">
-        <span class="progress-week-n">${w.n}</span>
-        <span class="progress-week-bar"><span style="height:${h}%"></span></span>
+      const title = w.pause ? "Pause" : `${w.planDone} von ${w.goal}${w.extra ? `, ${w.extra} zusätzlich` : ""}`;
+      return `<div class="progress-week${w.reached ? " reached" : ""}${w.pause ? " pause" : ""}" title="${title}">
+        <span class="progress-week-n">${w.pause ? "–" : w.planDone + w.extra}</span>
+        <span class="progress-week-bar">${w.goal ? `<i class="progress-week-goal" style="bottom:${Math.round((w.goal / maxN) * 100)}%"></i>` : ""}<span class="pw-extra" style="height:${he}%;bottom:${hp}%"></span><span style="height:${hp}%"></span></span>
         <span class="progress-week-label">${label}</span></div>`;
     }).join("");
-    els.progressWeeks.style.setProperty("--goal-pos", `${Math.round((p.weekGoal / maxN) * 100)}%`);
+    els.progressWeeks.style.setProperty("--goal-pos", "-10%");
     const areaRows = Object.entries(s.areas).sort((a, b) => b[1] - a[1]);
     const maxA = Math.max(1, ...areaRows.map((r) => r[1]));
     els.progressAreas.innerHTML = areaRows.length
@@ -2876,6 +3450,7 @@
     schwer: { stimulusS: 0.8, intervalMin: 2, intervalMax: 4 },
   };
   const PREFS_KEY = "fwmc-webapp-v3";
+  const CN_MIN_FIELDS = 3, CN_MAX_FIELDS = 6; // Hütchen · Farbe + Zahl
   const DEFAULTS = {
     exercise: null,
     duration: 60,
@@ -2906,6 +3481,19 @@
     periphColors: ["schwarz"],
     bgColorKey: "gruen",
     bgIntensity: 0,
+    // Farbfelder (see FF_* above): mat layout, mode and options.
+    ffLayout: FF_DEFAULT_LAYOUT.slice(),
+    ffMode: "leuchten",
+    ffLevel: 1,
+    ffSeqStart: 2,
+    ffFoot: "aus",
+    ffHands: false,
+    ffHandRules: { rot: "hoch" },
+    // Hütchen · Farbe + Zahl: number of numbered fields on the floor.
+    cnFields: 4,
+    ffGilt: "gesagt", // Sehen und Hören: what counts when both come
+    ffMix: "ausgewogen", // Sehen und Hören: FF_MIXES key
+    ffFlip: 0, // Rhythmus-Umkehr: 0 = aus, 2 / 3 = every 2nd / 3rd stimulus
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -2933,6 +3521,13 @@
     if (!Array.isArray(state.periphColors) || !state.periphColors.length || !state.periphColors.every((k) => STROOP_COLOR_BY_KEY[k])) state.periphColors = DEFAULTS.periphColors.slice();
     if (!STROOP_COLOR_BY_KEY[state.bgColorKey]) state.bgColorKey = "gruen";
     if (typeof state.bgIntensity !== "number" || state.bgIntensity < 0 || state.bgIntensity > 1) state.bgIntensity = 0;
+    ffNormalize(state); // also copies ffLayout/ffHandRules, so DEFAULTS is never mutated
+    cnNormalize(state);
+  }
+  function cnNormalize(p) {
+    const n = Math.round(Number(p.cnFields));
+    p.cnFields = n >= CN_MIN_FIELDS && n <= CN_MAX_FIELDS ? n : 4;
+    return p;
   }
   function savePrefs() { writeJSON(PREFS_KEY, state); }
   loadPrefs();
@@ -3012,8 +3607,7 @@
   };
 
   function randInterval(rng) {
-    const lo = Math.min(state.intervalMin, state.intervalMax);
-    const hi = Math.max(state.intervalMin, state.intervalMax);
+    const [lo, hi] = softGap(Math.min(state.intervalMin, state.intervalMax), Math.max(state.intervalMin, state.intervalMax), state.exercise);
     return lo + rng() * (hi - lo);
   }
   // ---- Colour picker. Shared by three independent selections: the
@@ -3037,6 +3631,8 @@
     else state.colors = keys;
   }
   function colorModeLimits() {
+    // Hütchen · Farbe + Zahl: one cup per field at most (3-6).
+    if (colorMode === "standard" && EXERCISES[state.exercise] && EXERCISES[state.exercise].type === "colornum") return { min: MIN_COLORS, max: state.cnFields };
     if (colorMode === "arrows") return { min: ARROW_MIN_COLORS, max: ARROW_MAX_COLORS };
     if (colorMode === "stroop") return { min: STROOP_MIN_COLORS, max: STROOP_MAX_COLORS };
     return { min: MIN_COLORS, max: MAX_COLORS };
@@ -3300,6 +3896,7 @@
     { id: "flash", label: "Flash-Speicher-Test", get: () => ({ colorKey: flashPrefs.bgColorKey, intensity: flashPrefs.bgIntensity }) },
     { id: "mot", label: "Objektverfolgung (MOT)", get: () => ({ colorKey: motPrefs.bgColorKey, intensity: motPrefs.bgIntensity }) },
     { id: "balance", label: "Gleichgewicht", get: () => ({ colorKey: balancePrefs.bgColorKey, intensity: balancePrefs.bgIntensity }) },
+    { id: "movement", label: "Reaktionstraining", get: () => ({ colorKey: movementPrefs.bgColorKey, intensity: movementPrefs.bgIntensity }) },
   ];
   const BG_PRESETS_KEY = "fwmc-bg-presets-v1"; // [{ id, name, colorKey, intensity }] - not scoped to a domain, any saved combo applies anywhere
   const bgPresetStore = makePresetStore(BG_PRESETS_KEY);
@@ -3322,6 +3919,7 @@
     () => ({ prefs: flashPrefs, key: FLASH_PREFS_KEY, save: saveFlashPrefsToStorage }),
     () => ({ prefs: motPrefs, key: MOT_PREFS_KEY, save: saveMotPrefsToStorage }),
     () => ({ prefs: balancePrefs, key: BALANCE_PREFS_KEY, save: saveBalancePrefsToStorage }),
+    () => ({ prefs: movementPrefs, key: MOVEMENT_PREFS_KEY, save: saveMovementPrefs }),
     () => ({ prefs: gngPrefs, key: GNG_PREFS_KEY, save: saveGngPrefsToStorage }),
     () => ({ prefs: testNbackPrefs, key: TEST_NBACK_PREFS_KEY, save: saveTestNbackPrefsToStorage }),
     () => ({ prefs: trailPrefs, key: TRAIL_PREFS_KEY, save: saveTrailPrefsToStorage }),
@@ -3966,6 +4564,7 @@
     els.colorGroup.hidden = !ex.usesColors && !ex.usesArrowColors && !ex.usesStroopColors;
     const isConeTap = ex.type === "color-tap";
     const isPeriph = ex.type === "periph";
+    const isFf = ex.type === "farbfelder";
     const bgAllowed = !isConeTap && !ex.bgIsStimulus;
     els.tempoGroup.hidden = isConeTap;
     els.advanced.hidden = isConeTap;
@@ -3973,7 +4572,12 @@
     // The fixation-point Feineinstellung applies to every exercise with
     // this dot (i.e. everything except Hütchen sortieren), not just
     // Periphere Wahrnehmung - it was just built there first.
-    els.periphFixGroup.hidden = isConeTap;
+    els.periphFixGroup.hidden = isConeTap || isFf; // Farbfelder: the grid has no centre dot
+    ffEls.settings.hidden = !isFf;
+    $("cnFieldsGroup").hidden = ex.type !== "colornum";
+    if (ex.type === "colornum") syncCnUI();
+    if (isFf) { ffActiveCell = 0; syncFfUI(); }
+    renderHilfsmittel(id);
     els.periphFieldGroup.hidden = !isPeriph;
     els.periphSizeGroup.hidden = !isPeriph;
     els.periphColorGroup.hidden = !isPeriph;
@@ -3995,8 +4599,174 @@
     els.vtSaveForm.hidden = true;
     els.vtSaveBtn.hidden = false;
     renderVTSaved();
+    applySoftState();
     showScreen("ready");
   }
+
+  // ---- Hilfsmittel note (2026-10-07, first used by Farbfelder): one entry
+  // per exercise that needs equipment; `link` (a product page) is shown only
+  // once Fabian sets a URL. A new exercise that needs something = one entry.
+  const HILFSMITTEL = {
+    "cone-number": {
+      text: "Du brauchst: 3-6 farbige Hütchen oder Becher und nummerierte Felder (z. B. Zettel mit 1-6).",
+      link: "",
+    },
+    farbfelder: {
+      text: "Du brauchst: eine Farbmatte mit 4 Feldern oder 4 farbige Hütchen, Bälle oder Zettel auf dem Boden, angeordnet wie hier eingestellt.",
+      link: "",
+    },
+  };
+  function renderHilfsmittel(exId) {
+    const box = document.getElementById("hilfsmittelNote");
+    const h = HILFSMITTEL[exId];
+    box.hidden = !h;
+    if (!h) return;
+    document.getElementById("hilfsmittelText").textContent = h.text;
+    const a = document.getElementById("hilfsmittelLink");
+    a.hidden = !h.link;
+    if (h.link) a.href = h.link; else a.removeAttribute("href");
+  }
+
+  // ---- Hütchen · Farbe + Zahl: "Anzahl Felder" (stored in `state`) ----
+  function syncCnUI() {
+    document.querySelectorAll("#cnFieldsRow [data-cn-fields]").forEach((b) => setActive(b, Number(b.dataset.cnFields) === state.cnFields));
+  }
+  document.querySelectorAll("#cnFieldsRow [data-cn-fields]").forEach((b) => b.addEventListener("click", () => {
+    state.cnFields = Number(b.dataset.cnFields);
+    cnNormalize(state);
+    // Fewer fields than chosen colours: keep the first ones (one cup per field).
+    if (state.colors.length > state.cnFields) state.colors = state.colors.slice(0, state.cnFields);
+    savePrefs();
+    syncCnUI();
+    syncColorUI();
+  }));
+
+  // ---- Farbfelder ready-screen settings (stored in `state`, PREFS_KEY) ----
+  const ffEls = {
+    settings: $("ffSettings"), modeRow: $("ffModeRow"), modeHelp: $("ffModeHelp"),
+    levelGroup: $("ffLevelGroup"), levelRow: $("ffLevelRow"), ruleList: $("ffRuleList"),
+    seqGroup: $("ffSeqGroup"), seqRow: $("ffSeqRow"),
+    layoutGrid: $("ffLayoutGrid"), layoutHelp: $("ffLayoutHelp"), colorPicker: $("ffColorPicker"),
+    footRow: $("ffFootRow"), handsRow: $("ffHandsRow"), handBody: $("ffHandBody"), handRows: $("ffHandRows"),
+    handsGroup: $("ffHandsGroup"), giltGroup: $("ffGiltGroup"), giltRow: $("ffGiltRow"), mixRow: $("ffMixRow"),
+    flipGroup: $("ffFlipGroup"), flipRow: $("ffFlipRow"), flipHelp: $("ffFlipHelp"),
+  };
+  let ffActiveCell = 0;
+  // Small SVG of a rule symbol for the ready screen (same shapes as the stage).
+  function ffSymbolSvg(kind) {
+    const shape = kind === "viereck" ? '<rect x="5" y="5" width="14" height="14"/>'
+      : kind === "dreieck" ? '<polygon points="12,3.5 21,19.5 3,19.5"/>'
+      : kind === "strich" ? '<rect x="10" y="3" width="4" height="18"/>'
+      : '<path d="M12 20.5C5 15.5 2.5 12 4 8.3 5.4 5 9.6 4.6 12 8c2.4-3.4 6.6-3 8 .3 1.5 3.7-1 7.2-8 12.2z"/>';
+    return `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">${shape}</svg>`;
+  }
+  function ffSave() { savePrefs(); }
+  function syncFfUI() {
+    ffEls.modeRow.querySelectorAll("[data-ff-mode]").forEach((b) => setActive(b, b.dataset.ffMode === state.ffMode));
+    ffEls.modeHelp.textContent = FF_MODES[state.ffMode].help;
+    ffEls.levelGroup.hidden = state.ffMode !== "regeln";
+    ffEls.levelRow.querySelectorAll("[data-ff-level]").forEach((b) => setActive(b, Number(b.dataset.ffLevel) === state.ffLevel));
+    ffEls.ruleList.innerHTML = FF_LEVEL_SYMBOLS.slice(0, state.ffLevel).map((k) =>
+      `<li>${ffSymbolSvg(k)}<span><strong>${esc(FF_SYMBOLS[k].name)}:</strong> ${esc(FF_SYMBOLS[k].rule)}</span></li>`).join("");
+    ffEls.seqGroup.hidden = state.ffMode !== "abfolge";
+    ffEls.seqRow.querySelectorAll("[data-ff-seq]").forEach((b) => setActive(b, Number(b.dataset.ffSeq) === state.ffSeqStart));
+    ffEls.giltGroup.hidden = state.ffMode !== "sehenhoeren";
+    ffEls.giltRow.querySelectorAll("[data-ff-gilt]").forEach((b) => setActive(b, b.dataset.ffGilt === state.ffGilt));
+    ffEls.mixRow.querySelectorAll("[data-ff-mix]").forEach((b) => setActive(b, b.dataset.ffMix === state.ffMix));
+    ffEls.flipGroup.hidden = !FF_FLIP_MODES.includes(state.ffMode);
+    ffEls.flipRow.querySelectorAll("[data-ff-flip]").forEach((b) => setActive(b, Number(b.dataset.ffFlip) === state.ffFlip));
+    ffEls.flipHelp.textContent = state.ffMode === "sehenhoeren"
+      ? "Zähl die Reize mit Bild und Ansage mit: Bei jedem 2. oder 3. davon gilt die andere Quelle. Die App zeigt es nicht an."
+      : state.ffMode === "regeln"
+        ? "Zähl mit: Beim 2. oder 3. Symbol trittst du auf das Feld schräg gegenüber vom eigentlichen Ziel. Die App zeigt es nicht an."
+        : "Zähl mit: Beim 2. oder 3. Mal trittst du auf das Feld schräg gegenüber. Die App zeigt es nicht an.";
+    ffEls.handsGroup.hidden = state.ffMode === "fusshand";
+    ffEls.layoutGrid.querySelectorAll("[data-ff-cell]").forEach((b) => {
+      const i = Number(b.dataset.ffCell);
+      const c = COLOR_BY_KEY[state.ffLayout[i]];
+      b.style.background = c.hex;
+      b.style.color = relLuma(c.hex) > 0.6 ? "#16232a" : "#ffffff";
+      b.textContent = c.name;
+      b.setAttribute("aria-label", `${FF_FIELD_NAMES[i]}: ${c.name}`);
+      setActive(b, i === ffActiveCell);
+    });
+    ffEls.layoutHelp.textContent = `Tippe ein Feld an und wähle seine Farbe. Oben ist die Reihe näher am Bildschirm. Gewählt: ${FF_FIELD_NAMES[ffActiveCell]}.`;
+    ffEls.colorPicker.querySelectorAll(".color-swatch[data-color]").forEach((b) => setActive(b, b.dataset.color === state.ffLayout[ffActiveCell]));
+    ffEls.footRow.querySelectorAll("[data-ff-foot]").forEach((b) => setActive(b, b.dataset.ffFoot === state.ffFoot));
+    ffEls.handsRow.querySelectorAll("[data-ff-hands]").forEach((b) => setActive(b, (b.dataset.ffHands === "1") === state.ffHands));
+    ffEls.handBody.hidden = !state.ffHands;
+    ffEls.handRows.innerHTML = state.ffLayout.map((k) => {
+      const c = COLOR_BY_KEY[k];
+      const cur = state.ffHandRules[k] || "keine";
+      return `<label class="ff-hand-row"><span class="ff-dot" style="background:${c.hex}"></span><span class="ff-hand-name">${esc(c.name)}</span>` +
+        `<select class="plan-select" data-ff-hand="${k}" aria-label="Hände bei ${esc(c.name)}">` +
+        Object.entries(FF_HAND_ACTIONS).map(([v, label]) => `<option value="${v}"${v === cur ? " selected" : ""}>${esc(label)}</option>`).join("") +
+        `</select></label>`;
+    }).join("");
+  }
+  // Single-select swatches for the chosen field; a colour that already sits
+  // on another field swaps places, so all four always stay different.
+  COLOR_LIB.forEach((c) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "color-swatch";
+    btn.dataset.color = c.key;
+    btn.setAttribute("aria-pressed", "false");
+    const stroke = relLuma(c.hex) > 0.75 ? "#16232a" : "#fff";
+    btn.innerHTML = `<span class="swatch" style="background:${c.hex}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="${stroke}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">${c.name}</span>`;
+    btn.addEventListener("click", () => {
+      const lay = state.ffLayout.slice();
+      const other = lay.indexOf(c.key);
+      if (other !== -1 && other !== ffActiveCell) lay[other] = lay[ffActiveCell];
+      lay[ffActiveCell] = c.key;
+      state.ffLayout = lay;
+      ffSave(); syncFfUI();
+    });
+    ffEls.colorPicker.appendChild(btn);
+  });
+  ffEls.layoutGrid.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-ff-cell]");
+    if (!b) return;
+    ffActiveCell = Number(b.dataset.ffCell);
+    syncFfUI();
+  });
+  ffEls.modeRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-mode]"); if (b) { state.ffMode = b.dataset.ffMode; ffSave(); syncFfUI(); } });
+  ffEls.levelRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-level]"); if (b) { state.ffLevel = Number(b.dataset.ffLevel); ffSave(); syncFfUI(); } });
+  ffEls.seqRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-seq]"); if (b) { state.ffSeqStart = Number(b.dataset.ffSeq); ffSave(); syncFfUI(); } });
+  ffEls.footRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-foot]"); if (b) { state.ffFoot = b.dataset.ffFoot; ffSave(); syncFfUI(); } });
+  ffEls.handsRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-hands]"); if (b) { state.ffHands = b.dataset.ffHands === "1"; ffSave(); syncFfUI(); } });
+  ffEls.giltRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-gilt]"); if (b) { state.ffGilt = b.dataset.ffGilt; ffSave(); syncFfUI(); } });
+  ffEls.mixRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-mix]"); if (b) { state.ffMix = b.dataset.ffMix; ffSave(); syncFfUI(); } });
+  ffEls.flipRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-flip]"); if (b) { state.ffFlip = Number(b.dataset.ffFlip); ffSave(); syncFfUI(); } });
+  // Test hooks (automated browsers only): the pure rule and a schedule
+  // built with some settings swapped in for the call.
+  // Test hook (automated browsers only): Farbe + Zahl schedule for given state/colours.
+  if (navigator.webdriver) window.__cn = {
+    build: (over, colorKeys) => {
+      const keep = JSON.parse(JSON.stringify(state)), keepActive = active;
+      Object.assign(state, over || {});
+      active = { ...active, colors: keysToColors(colorKeys || state.colors) };
+      try { return buildColorNumSchedule({}, Math.random).schedule; } finally { Object.assign(state, keep); active = keepActive; }
+    },
+  };
+  if (navigator.webdriver) window.__ff = {
+    target: ffTarget,
+    isFlipped: ffIsFlipped, leuchtenTarget: ffLeuchtenTarget, regelnTarget: ffRegelnTarget,
+    ansageTarget: ffAnsageTarget, farbwortTarget: ffFarbwortTarget, sehenHoerenTarget: ffSehenHoerenTarget,
+    pickFarbwort: (layout) => ffPickFarbwort(layout, Math.random),
+    build: (over) => {
+      const keep = JSON.parse(JSON.stringify(state));
+      Object.assign(state, over || {});
+      try { return buildFarbfelderSchedule({}, Math.random).schedule; } finally { Object.assign(state, keep); }
+    },
+  };
+  ffEls.handRows.addEventListener("change", (e) => {
+    const sel = e.target.closest("[data-ff-hand]");
+    if (!sel) return;
+    state.ffHandRules = { ...state.ffHandRules, [sel.dataset.ffHand]: sel.value };
+    ffSave();
+  });
+
 
   // ---- Kombi-Baukasten capture, same pattern as Cardio/Movement/Breath
   // above: reopen this exact "ready" screen (already reused across every
@@ -4048,7 +4818,11 @@
       state.intervalMin = existingBlock.intervalMin ?? state.intervalMin;
       state.intervalMax = existingBlock.intervalMax ?? state.intervalMax;
       if (existingBlock.periph) Object.assign(state, JSON.parse(JSON.stringify(existingBlock.periph)));
+      if (existingBlock.ff) { Object.assign(state, JSON.parse(JSON.stringify(existingBlock.ff))); ffNormalize(state); }
+      if (existingBlock.cn) { Object.assign(state, existingBlock.cn); cnNormalize(state); }
       renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
+      if (ex.type === "farbfelder") syncFfUI();
+      if (ex.type === "colornum") syncCnUI();
       if (ex.type === "periph") { syncPeriphFixUI(); syncPeriphKindUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); syncPeriphColorUI(); }
     }
     comboVisualEditIndex = editIndex ?? null;
@@ -4079,6 +4853,8 @@
     else if (ex.usesArrowColors) block.colors = state.arrowColors.slice();
     else if (ex.usesStroopColors) { block.colors = state.stroopColors.slice(); if (Object.keys(state.stroopWeights).length) block.stroopWeights = { ...state.stroopWeights }; }
     if (ex.type === "periph") block.periph = periphStateSnapshot();
+    if (ex.type === "farbfelder") block.ff = ffStateSnapshot();
+    if (ex.type === "colornum") block.cn = { cnFields: state.cnFields };
     if (comboVisualEditIndex != null) comboDraftBlocks[comboVisualEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitVisualComboCapture();
@@ -4207,6 +4983,7 @@
     if (t === "cardio-plan") return !nonEmpty(def.items);
     if (t === "breath-program" || t === "workout-plan" || t === "combo-program") return !nonEmpty(def.blocks);
     if (t === "free-template") return freeTemplateDefProblem(def);
+    if (t === "training-plan") return !def.plan || !nonEmpty(def.plan.phases);
     if (t) return true;
     return !nonEmpty(def.blocks) || def.blocks.some((b) => !b || !EXERCISES[b.exercise]);
   }
@@ -4298,6 +5075,7 @@
     }
     if (ctx.errorEl) ctx.errorEl.hidden = true;
     recordCodeUsage(code, def);
+    rememberTrainerProgram(code, def);
     showCoachMessageIfNew(code, def);
     try {
       if (def.type === "bundle") { openBundleOverview(def, code, ctx); return; }
@@ -4312,6 +5090,7 @@
       if (def.type === "combo-bundle") { openComboBundleOverview(def, code); return; }
       if (def.type === "combo-program") { comboOriginBundle = null; startComboProgram(def, code, code, ctx.homeScreen); return; }
       if (def.type === "free-template") { importTrainerTemplates(def, code); return; }
+      if (def.type === "training-plan") { offerTrainerPlan(def, code, ctx); return; }
       originBundle = null;
       renderProgramIntro(def, code, code, ctx);
     } catch (e) {
@@ -4404,6 +5183,7 @@
     const homeScreen = (ctx || VISUAL_CODE_CTX).homeScreen;
     programIntroHomeScreen = homeScreen;
     const title = def.name || def.label || "Dein Programm";
+    introAdaptDef = { def, name: title };
     els.programTitle.textContent = title;
     els.programMeta.textContent = `${exerciseCountLabel(def.blocks.length)} · ca. ${fmtMinutes(programSeconds(def))}`;
     els.programDesc.textContent = def.description || "";
@@ -4579,6 +5359,7 @@
 
   function renderBreathProgramIntro(def, code, key) {
     const title = def.name || def.label || "Dein Atemtraining";
+    introAdaptDef = { def, name: title };
     els.breathProgramTitle.textContent = title;
     els.breathProgramMeta.textContent = `${exerciseCountLabel(def.blocks.length)} · ca. ${fmtMinutes(breathProgramSeconds(def))}`;
     els.breathProgramDesc.textContent = def.description || "";
@@ -4667,6 +5448,7 @@
 
   function renderWorkoutProgramIntro(def, code, key) {
     const title = def.name || def.label || "Dein Trainingsplan";
+    introAdaptDef = { def, name: title };
     els.workoutProgramTitle.textContent = title;
     els.workoutProgramMeta.textContent = `${exerciseCountLabel(def.blocks.length)} · ca. ${fmtMinutes(workoutPlanSeconds(def))}`;
     els.workoutProgramDesc.textContent = def.description || "";
@@ -4718,7 +5500,7 @@
     const schedule = [];
     let t = pushCountdown(schedule, cfg);
     let last = null;
-    const show = state.stimulusS;
+    const show = vtShowS();
     while (t < state.duration) {
       const choices = directions.filter((d) => d[0] !== last);
       const [name, angle] = choices[Math.floor(rng() * choices.length)];
@@ -4743,7 +5525,7 @@
     const schedule = [];
     let t = pushCountdown(schedule, cfg);
     const instruction = "Sag laut die SCHRIFTFARBE (nicht das Wort)";
-    const show = state.stimulusS;
+    const show = vtShowS();
     const colors = active.stroopColors;
     // Ink colour (the answer) follows the client's Farb-Häufigkeit weights;
     // the word is then any other colour, so every stimulus stays incongruent.
@@ -4770,7 +5552,7 @@
   function buildCrossModalSchedule(cfg, rng) {
     const schedule = [];
     let t = pushCountdown(schedule, cfg);
-    const show = state.stimulusS;
+    const show = vtShowS();
     let last = null;
     while (t < state.duration) {
       const roll = rng();
@@ -4807,7 +5589,7 @@
     const colors = active.colors;
     const schedule = [];
     let t = pushCountdown(schedule, cfg);
-    const show = state.stimulusS;
+    const show = vtShowS();
     while (t < state.duration) {
       const color = colors[Math.floor(rng() * colors.length)];
       const angle = rng() < 0.5 ? 90 : 270;
@@ -4823,7 +5605,7 @@
     const colors = active.colors;
     const schedule = [];
     let t = pushCountdown(schedule, cfg);
-    const show = state.stimulusS;
+    const show = vtShowS();
     while (t < state.duration) {
       const color = colors[Math.floor(rng() * colors.length)];
       const pause = randInterval(rng);
@@ -4834,11 +5616,36 @@
     return { schedule, total: t };
   }
 
+  // Hütchen · Farbe + Zahl: a random colour of the chosen ones + a random
+  // field number 1..cnFields, never the same pair twice in a row.
+  function buildColorNumSchedule(cfg, rng) {
+    const colors = active.colors;
+    const n = cnNormalize({ cnFields: state.cnFields }).cnFields;
+    const schedule = [];
+    let t = pushCountdown(schedule, cfg);
+    const show = state.stimulusS;
+    let last = "";
+    while (t < state.duration) {
+      let color, num, key, tries = 0;
+      do {
+        color = colors[Math.floor(rng() * colors.length)];
+        num = 1 + Math.floor(rng() * n);
+        key = color.key + num;
+      } while (key === last && tries++ < 8);
+      last = key;
+      const pause = randInterval(rng);
+      schedule.push({ t0: t, t1: t + show, kind: "colornum", payload: { color: color.hex, num } });
+      schedule.push({ t0: t + show, t1: t + show + pause, kind: "blank", payload: {} });
+      t += show + pause;
+    }
+    return { schedule, total: t };
+  }
+
   function buildVRWRealSchedule(cfg, rng) {
     const colors = active.colors;
     const schedule = [];
     let t = pushCountdown(schedule, cfg);
-    const show = state.stimulusS;
+    const show = vtShowS();
     while (t < state.duration) {
       const color = colors[Math.floor(rng() * colors.length)];
       const angle = rng() < 0.5 ? 90 : 270;
@@ -4851,13 +5658,37 @@
     return { schedule, total: t };
   }
 
+  // Prüfer 07.10. Nr. 4: every builder loops "while (t < duration)" and so
+  // ran up to one stimulus + pause (Abfolge merken: a whole round) past the
+  // chosen time - the clock started at 1:05-1:17 for "1 Min". The run now
+  // ends exactly at the chosen duration: nothing starts after the end, a
+  // stimulus that would be cut off becomes the closing blank, and a short
+  // schedule is padded with a blank (the clock always starts at the choice).
+  function capVtSchedule(built) {
+    const end = Number(state.duration);
+    if (!(end > 0) || !built || !Array.isArray(built.schedule)) return built;
+    const out = [];
+    for (const f of built.schedule) {
+      if (f.t0 >= end - 0.001) continue;
+      if (f.t1 <= end + 0.001) { out.push(f); continue; }
+      out.push(f.kind === "blank" ? { ...f, t1: end } : { t0: f.t0, t1: end, kind: "blank", payload: {} });
+    }
+    const last = out.length ? out[out.length - 1].t1 : 0;
+    if (last < end - 0.001) out.push({ t0: last, t1: end, kind: "blank", payload: {} });
+    return { ...built, schedule: out, total: end };
+  }
   function buildScheduleFor(cfg, rng) {
+    return capVtSchedule(buildScheduleForRaw(cfg, rng));
+  }
+  function buildScheduleForRaw(cfg, rng) {
     return cfg.type === "stroop" ? buildStroopSchedule(cfg, rng) :
       cfg.type === "cross" ? buildCrossModalSchedule(cfg, rng) :
       cfg.type === "vt" ? buildVTSchedule(cfg, rng) :
       cfg.type === "color" ? buildColorSchedule(cfg, rng) :
       cfg.type === "vrw-real" ? buildVRWRealSchedule(cfg, rng) :
       cfg.type === "periph" ? buildPeriphSchedule(cfg, rng) :
+      cfg.type === "farbfelder" ? buildFarbfelderSchedule(cfg, rng) :
+      cfg.type === "colornum" ? buildColorNumSchedule(cfg, rng) :
       cfg.type === "flash-host" ? buildFlashHostSchedule(cfg, rng) :
       buildArrowSchedule(cfg, rng);
   }
@@ -4955,7 +5786,7 @@
   function buildPeriphSchedule(cfg, rng) {
     const schedule = [];
     let t = pushCountdown(schedule, cfg);
-    const show = state.stimulusS;
+    const show = vtShowS();
     // Periph's own background is a flat tint, constant for the whole run
     // (it's never bgIsStimulus), so this only needs computing once.
     const bgHex = currentBgFill(NEUTRAL);
@@ -5047,8 +5878,10 @@
       const avoidHex = frameBgHex(frame);
       const polygon = frameArrowPolygon(cw, ch, frame);
       let t = frame.t0;
-      const show = cfg.stimulusS;
-      const gapMin = Math.min(cfg.intervalMin, cfg.intervalMax), gapMax = Math.max(cfg.intervalMin, cfg.intervalMax);
+      // Sanfte Reize: the Zusatzaufgabe follows its host exercise.
+      const soft = softOn(exId);
+      const show = soft ? Math.max(cfg.stimulusS, SOFT_MIN_SHOW_S) : cfg.stimulusS;
+      const [gapMin, gapMax] = softGap(Math.min(cfg.intervalMin, cfg.intervalMax), Math.max(cfg.intervalMin, cfg.intervalMax), exId);
       while (t + show <= frame.t1) {
         const char = randPeriphChar(cfg.kind, rng);
         let pos = randPosFromCfg(cfg, rng);
@@ -5062,6 +5895,7 @@
   }
 
   function onEnterFrame(frame) {
+    if (frame.kind === "farbfelder") { if (frame.payload.say) speakWord(frame.payload.say); return; }
     if (frame.kind !== "cross") return;
     const p = frame.payload;
     if (p.mode === "audio" || p.mode === "conflict") speakWord(p.word);
@@ -5085,10 +5919,22 @@
     if (idx !== -1) {
       const frame = session.schedule[idx];
       if (idx !== session.lastIndex) {
+        // Sanfte Reize: remember the frame we come from for a cross-fade.
+        session.fadeFrom = session.soft && session.lastIndex >= 0 ? session.schedule[session.lastIndex] : null;
+        session.fadeAt = elapsed;
         session.lastIndex = idx;
         onEnterFrame(frame);
       }
-      drawScene(frame.kind, frame.payload);
+      const fadeP = session.fadeFrom ? (elapsed - session.fadeAt) / Math.min(SOFT_FADE_S, Math.max(0.05, (frame.t1 - frame.t0) * 0.4)) : 1;
+      if (fadeP < 1) {
+        drawScene(session.fadeFrom.kind, session.fadeFrom.payload);
+        ctx.globalAlpha = Math.max(0, fadeP);
+        drawScene(frame.kind, frame.payload);
+        ctx.globalAlpha = 1;
+      } else {
+        session.fadeFrom = null;
+        drawScene(frame.kind, frame.payload);
+      }
       drawAddonOverlay(elapsed);
     } else if (elapsed >= session.total) {
       finishSession();
@@ -5115,7 +5961,11 @@
     if (idx === -1) return;
     const f = session.addonSchedule[idx];
     const cw = canvas.width, ch = canvas.height, unit = Math.min(cw, ch) / 2;
+    // Sanfte Reize: fade in and out instead of popping up.
+    const a = session.soft ? Math.max(0, Math.min(1, (elapsed - f.t0) / SOFT_FADE_S, (f.t1 - elapsed) / SOFT_FADE_S)) : 1;
+    ctx.globalAlpha = a;
     drawPeriphChar(cw, ch, unit, f.fx, f.fy, f.char, session.addonSizeMode, f.color);
+    ctx.globalAlpha = 1;
   }
 
   // Redraws whatever frame is currently frozen on screen (used while the
@@ -5142,6 +5992,8 @@
     state.stimulusS = block.stimulusS ?? 1.5;
     state.intervalMin = block.intervalMin ?? 2;
     state.intervalMax = block.intervalMax ?? 4;
+    if (block.ff) { Object.assign(state, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
+    if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
     active = blockColors(block);
   }
 
@@ -5225,7 +6077,9 @@
     els.breathProgramDonePanel.hidden = true;
     // A player that was just hidden can't stay the fullscreen element
     // (Cardio's guest takeover, its finish/abort, any other exit).
+    // (The whole page is fullscreen only while a Kombi runs - never hidden.)
     if (document.fullscreenElement && document.fullscreenElement.hidden) document.exitFullscreen().catch(() => {});
+    refreshFsLabels();
   }
 
   function runSession() {
@@ -5242,9 +6096,10 @@
     els.periphPauseBtn.hidden = false;
     fitCanvas();
     ensureAudioCtx();
+    softStartRun();
     const built = buildScheduleFor(EXERCISES[state.exercise], Math.random);
     const addon = buildAddonSchedule(EXERCISES[state.exercise], state.exercise, built.schedule, Math.random);
-    session = { ...built, startTime: performance.now(), lastIndex: -1, addonSchedule: addon.schedule, addonSizeMode: addon.sizeMode };
+    session = { ...built, startTime: performance.now(), lastIndex: -1, addonSchedule: addon.schedule, addonSizeMode: addon.sizeMode, soft: softOn(state.exercise) };
     requestWakeLock();
     raf = requestAnimationFrame(tick);
   }
@@ -5549,6 +6404,8 @@
       summary = `${coneTap.count} Durchgänge · ${fmtMinutes(spent)}` + (isRecord && coneTap.count > 0 ? " · Neue Bestleistung!" : "");
     } else {
       summary = `${ex.title} · ${fmtMinutes(spent)}`;
+      // Farbfelder: the history row names the mode (8 very different variants).
+      if (ex.type === "farbfelder") note = FF_MODE_LABELS[state.ffMode] + (FF_FLIP_MODES.includes(state.ffMode) && state.ffFlip ? ` · jedes ${state.ffFlip}. Mal andersherum` : "");
     }
     els.doneSummary.textContent = summary;
     if (coneTap) markBest(els.doneSummary, "", coneTap.count);
@@ -5567,7 +6424,7 @@
     cardioGuestActive = false;
     stopPauseTimers();
     releaseWakeLock();
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    if (document.fullscreenElement && !(comboProgram && document.fullscreenElement === document.documentElement)) document.exitFullscreen().catch(() => {});
     els.fsHint.hidden = true;
     els.liveNav.hidden = true;
     if (window.speechSynthesis) speechSynthesis.cancel();
@@ -5653,6 +6510,8 @@
     } else {
       const remaining = state.duration - elapsed;
       const kept = session.schedule.filter((f) => f.t0 < elapsed).map((f) => (f.t1 > elapsed ? { ...f, t1: elapsed } : f));
+      // Abfolge merken goes on with the sequence length it had reached.
+      if (ex.type === "farbfelder") ffSeqResume = kept.reduce((m, f) => Math.max(m, (f.payload && f.payload.seqLen) || 0), 0) || null;
       let fresh = [], freshEnd = elapsed;
       if (remaining > 0) {
         const savedDuration = state.duration;
@@ -5680,9 +6539,10 @@
     const ex = EXERCISES[state.exercise] || {};
     els.vtPauseTempoGroup.hidden = ex.type === "flash-host";
     els.vtPauseBgIntensityGroup.hidden = els.vtPauseBgColorGroup.hidden = !!ex.bgIsStimulus;
-    els.vtPauseFixColorGroup.hidden = els.vtPauseFixSizeGroup.hidden = !state.periphFixEnabled;
+    els.vtPauseFixColorGroup.hidden = els.vtPauseFixSizeGroup.hidden = !state.periphFixEnabled || ex.type === "farbfelder";
     els.vtPauseStimColorGroup.hidden = ex.type !== "periph";
     vtPauseTempoAtStart = { stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax };
+    applySoftState();
     syncVtPauseTempoUI();
     syncBgUI();
     syncPeriphFixUI();
@@ -5694,9 +6554,11 @@
     if (!session || !periphPausedAt) return;
     const t0 = vtPauseTempoAtStart;
     const elapsed = (periphPausedAt - session.startTime) / 1000;
-    if (t0 && (t0.stimulusS !== state.stimulusS || t0.intervalMin !== state.intervalMin || t0.intervalMax !== state.intervalMax)) {
+    const softNow = softOn(state.exercise);
+    if ((t0 && (t0.stimulusS !== state.stimulusS || t0.intervalMin !== state.intervalMin || t0.intervalMax !== state.intervalMax)) || softNow !== !!session.soft) {
       rebuildVtScheduleFrom(elapsed);
     }
+    session.soft = softNow;
     vtPauseTempoAtStart = null;
     session.startTime += performance.now() - periphPausedAt;
     periphPausedAt = null;
@@ -5713,6 +6575,8 @@
       (e) => {
         const ex = EXERCISES[e.exercise];
         const usedColors = ex && ex.usesArrowColors ? e.arrowColors : ex && ex.usesStroopColors ? e.stroopColors : e.colors;
+        if (e.ff) return `${fmtMinutes(e.duration)} · ${FF_MODE_LABELS[e.ff.ffMode] || ""}`;
+        if (e.cn) return `${fmtMinutes(e.duration)} · ${e.cn.cnFields} Felder · ${(e.colors || []).length} Farben`;
         return `${fmtMinutes(e.duration)}${usedColors && usedColors.length ? ` · ${usedColors.length} Farben` : ""}`;
       },
       (entry) => {
@@ -5723,11 +6587,19 @@
         state.stimulusS = entry.stimulusS;
         state.intervalMin = entry.intervalMin;
         state.intervalMax = entry.intervalMax;
+        if (entry.ff) { Object.assign(state, JSON.parse(JSON.stringify(entry.ff))); ffNormalize(state); }
+        if (entry.cn) { Object.assign(state, entry.cn); cnNormalize(state); }
+        // Periphere Wahrnehmung (NAT presets, 2026-10-07): Zeichen, Bereich,
+        // Fixpunkt, Farben and background travel with the preset too.
+        if (entry.periph) { Object.assign(state, JSON.parse(JSON.stringify(entry.periph))); savePrefs(); loadPrefs(); }
         savePrefs();
         // While capturing a Kombi-Baustein, loading a saved setting should
         // just fill the draft for review, not immediately start a session.
         if (comboVisualCaptureOriginal) {
           renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
+          if (EXERCISES[state.exercise].type === "farbfelder") syncFfUI();
+          if (entry.cn) syncCnUI();
+          if (entry.periph) { syncPeriphKindUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); syncPeriphColorUI(); syncPeriphFixUI(); syncBgUI(); }
           return;
         }
         active = { colors: keysToColors(state.colors), arrowColors: keysToColors(state.arrowColors), stroopColors: keysToColors(state.stroopColors, STROOP_COLOR_LIB) };
@@ -5744,6 +6616,9 @@
         id: String(Date.now()), name, exercise: state.exercise,
         colors: state.colors.slice(), arrowColors: state.arrowColors.slice(), stroopColors: state.stroopColors.slice(), duration: state.duration,
         stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax,
+        ...(EXERCISES[state.exercise].type === "farbfelder" ? { ff: ffStateSnapshot() } : {}),
+        ...(EXERCISES[state.exercise].type === "periph" ? { periph: { ...periphStateSnapshot(), bgColorKey: state.bgColorKey, bgIntensity: state.bgIntensity } } : {}),
+        ...(EXERCISES[state.exercise].type === "colornum" ? { cn: { cnFields: state.cnFields } } : {}),
       });
       vtSavedStore.save(list);
       renderVTSaved();
@@ -5751,16 +6626,40 @@
   });
   els.again.addEventListener("click", startSession);
 
-  // ---- Fullscreen (shared by the visual player and the breath player) ----
+  // ---- Fullscreen (shared by every player) ----
+  // Kombi durchgehend im Vollbild (Idee 52, Fabian 06.10.): each area's
+  // player is its own element, so fullscreen on a player ended at every
+  // Baustein change (hideAllPlayers hides it). While a Kombi runs, the
+  // button asks for fullscreen on the whole page instead; hideAllPlayers
+  // never sees that element hidden, and finish/abort of the Kombi leave it.
+  // The end-confirm sheet lives in the page, so it shows there as well.
+  const fsWired = [];
+  function fsIsOn(player) {
+    const fe = document.fullscreenElement;
+    return !!fe && (fe === player || fe === document.documentElement);
+  }
+  function refreshFsLabels() {
+    fsWired.forEach((c) => { c.btn.textContent = fsIsOn(c.player) ? "Vollbild aus" : "Vollbild"; });
+  }
+  function exitComboFullscreen() {
+    if (document.fullscreenElement === document.documentElement) document.exitFullscreen().catch(() => {});
+  }
+  // iPhone Safari has no Fullscreen API at all (only for videos): the
+  // buttons would only ever show the "eingebettete Ansicht" hint there, so
+  // they are hidden. Embedded views (API present, but not allowed) keep
+  // the button and its hint.
+  if (typeof Element.prototype.requestFullscreen !== "function") document.documentElement.classList.add("no-fs-api");
   function wireFullscreen(cfg) {
+    fsWired.push(cfg);
     function updateLabel() {
-      cfg.btn.textContent = document.fullscreenElement === cfg.player ? "Vollbild aus" : "Vollbild";
+      cfg.btn.textContent = fsIsOn(cfg.player) ? "Vollbild aus" : "Vollbild";
     }
     document.addEventListener("fullscreenchange", updateLabel);
     cfg.btn.addEventListener("click", () => {
-      if (document.fullscreenElement === cfg.player) { document.exitFullscreen().catch(() => {}); return; }
-      if (document.fullscreenEnabled && cfg.player.requestFullscreen) {
-        cfg.player.requestFullscreen().catch(() => { cfg.hint.hidden = false; });
+      if (fsIsOn(cfg.player)) { document.exitFullscreen().catch(() => {}); return; }
+      const target = comboProgram ? document.documentElement : cfg.player;
+      if (document.fullscreenEnabled && target.requestFullscreen) {
+        target.requestFullscreen().catch(() => { cfg.hint.hidden = false; });
       } else {
         cfg.hint.hidden = false;
       }
@@ -5878,6 +6777,8 @@
   // styles.css multiplies every text size of 10.5-22 px by --ts; big numbers
   // and stage visuals stay fixed. Capped so layouts and tabs keep fitting.
   // Tests force a factor with fwmc-test-textscale.
+  var TEXT_SIZE_FACTORS = { normal: 1, gross: 1.12, sehrgross: 1.25 };
+  var TEXT_SCALE_MAX = 1.3;
   function applyTextScale() {
     let ts = 1;
     const forced = readJSON("fwmc-test-textscale", null);
@@ -5892,6 +6793,10 @@
       if (px > 0) ts = px / 17;
     }
     ts = Math.max(0.95, Math.min(1.25, ts));
+    // Grundeinstellungen "Schriftgröße" (Normal/Groß/Sehr groß) multiplies
+    // on top, capped at TEXT_SCALE_MAX so the layouts still fit.
+    const m = readJSON("fwmc-master-v1", null);
+    ts = Math.min(TEXT_SCALE_MAX, ts * (TEXT_SIZE_FACTORS[m && m.textSize] || 1));
     document.documentElement.style.setProperty("--ts", String(Math.round(ts * 100) / 100));
   }
   applyTextScale();
@@ -6012,7 +6917,7 @@
   })();
   function saveCueOverrides() { writeJSON(CUE_OVERRIDES_KEY, cueOverrides); }
 
-  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true, volume: 1 };
+  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true, volume: 1, textSize: "normal", softStimuli: false };
   function loadMasterPrefs() {
     const saved = readJSON(MASTER_PREFS_KEY, null);
     if (saved && typeof saved === "object") {
@@ -6048,6 +6953,8 @@
     if (!Number.isFinite(masterPrefs.defaultPauseS) || masterPrefs.defaultPauseS < 0 || masterPrefs.defaultPauseS > 180) masterPrefs.defaultPauseS = 20;
     masterPrefs.cues = normalizeCueCfg(masterPrefs.cues);
     if (typeof masterPrefs.cuesIgnoreSilent !== "boolean") masterPrefs.cuesIgnoreSilent = false;
+    if (!TEXT_SIZE_FACTORS[masterPrefs.textSize]) masterPrefs.textSize = "normal";
+    masterPrefs.softStimuli = masterPrefs.softStimuli === true;
     // Persist immediately so a migrated (or just-cleaned-up) shape actually
     // lands on disk right away, rather than silently staying in the old
     // shape in storage until the client happens to touch some toggle -
@@ -6270,6 +7177,25 @@
       host.appendChild(group);
     });
   });
+  // Fabian 07.10.: the tick can distract - switch it in the pause too
+  // (same An/Aus buttons, so applyCvdState() marks them and the choice is
+  // the exercise's own setting, exactly like in its Feineinstellungen).
+  Object.entries(CVD_EXERCISES).forEach(([ex, cfg]) => {
+    if (!cfg.fb) return;
+    const panel = document.querySelector(`#${ex}PauseOverlay .pause-panel`);
+    if (!panel) return;
+    const g = document.createElement("div");
+    g.className = "group cvd-group";
+    g.innerHTML = '<div class="group-label">Haken &amp; Kreuz bei richtig/falsch</div>';
+    const row = cvdToggleRow(ex, "fb", "");
+    row.querySelector(".cvd-row-label").remove();
+    row.querySelector(".cvd-status").remove();
+    row.classList.remove("cvd-row");
+    g.appendChild(row);
+    const groups = panel.querySelectorAll(":scope > .group");
+    const last = groups[groups.length - 1];
+    panel.insertBefore(g, last ? last.nextSibling : panel.firstChild);
+  });
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-cvd-ex]");
     if (btn) { cvdSetOverride(btn.dataset.cvdEx, btn.dataset.cvdKind, btn.dataset.cvdVal === "1"); return; }
@@ -6337,6 +7263,176 @@
     });
   }
   function applyColorVisionMode() { applyCvdState(); }
+
+  // ---- Sehen und Reize: Sanfte Reize (Fabian 07.10., Atempausen-Nacht N) ----
+  // Grundeinstellungen switch masterPrefs.softStimuli makes every fast light
+  // change calmer at once: stimuli stay at least SOFT_MIN_SHOW_S, the gap
+  // between them is at least SOFT_MIN_GAP_S, screen-filling colour changes
+  // cross-fade over SOFT_FADE_S instead of flashing, Zusatzaufgabe signs fade
+  // in and out, Blitz-Raster cells and Flash characters fade in.
+  // Affected: every exercise on the VT canvas engine except Hütchen
+  // sortieren (keyed by its own EXERCISES id), Blitz-Raster ("blitz"),
+  // Flash-Speicher-Test ("flash"); Kombi, Cardio guests and the Cardio
+  // Zusatzaufgabe run the same engines, so they follow along.
+  // Per exercise: an override in its Feineinstellungen (fwmc-soft-overrides-v1,
+  // {ex: true|false}, wins over the Grundeinstellungen), and An/Aus in its
+  // pause sheet for the running exercise only (softLive). Ready screens show
+  // "Sanfte Reize sind an · Grundeinstellungen" while it is on.
+  // A new fast-stimulus exercise: one SOFT_EXERCISES entry + read softOn(ex)
+  // in its timing (CLAUDE.md). Test: tests/atempause_sanft_1007_test.py.
+  const SOFT_MIN_SHOW_S = 0.8;
+  const SOFT_MIN_GAP_S = 1.2;
+  const SOFT_FADE_S = 0.3;
+  const SOFT_BLITZ_MIN_S = 1.2;
+  const SOFT_FLASH_MIN_SHOW_S = 0.8;
+  const SOFT_FLASH_MIN_GAP_S = 0.6;
+  const SOFT_OVERRIDE_KEY = "fwmc-soft-overrides-v1";
+  const softOverrides = (() => {
+    const saved = readJSON(SOFT_OVERRIDE_KEY, {});
+    const out = {};
+    if (saved && typeof saved === "object") Object.entries(saved).forEach(([k, v]) => { if (typeof v === "boolean") out[k] = v; });
+    return out;
+  })();
+  // "@vt" = the VT exercise the shared ready screen / player shows right now.
+  const SOFT_EXERCISES = {
+    "@vt": { screens: ["ready"], pause: "periphPauseOverlay", noteAfter: "#hilfsmittelNote" },
+    blitz: { screens: ["blitzReady"], pause: "blitzPauseOverlay", noteAfter: ".page-sub" },
+    flash: { screens: ["flashReady", "flashTrainingReady"], pause: "flashPauseOverlay", noteAfter: ".page-sub" },
+  };
+  let softLive = null; // { ex, on } - pause-sheet choice for the running exercise only
+  function softResolve(ex) { return ex === "@vt" ? state.exercise : ex; }
+  function softApplies(ex) {
+    if (ex === "blitz" || ex === "flash") return true;
+    const e = EXERCISES[ex];
+    return !!e && e.type !== "color-tap";
+  }
+  function softMasterOn() { return masterPrefs.softStimuli === true; }
+  function softOverride(ex) { return typeof softOverrides[ex] === "boolean" ? softOverrides[ex] : null; }
+  function softStored(ex) { const o = softOverride(ex); return o == null ? softMasterOn() : o; }
+  function softOn(ex) { return softLive && softLive.ex === ex ? softLive.on : softStored(ex); }
+  function softSetOverride(ex, value) {
+    if (value == null) delete softOverrides[ex]; else softOverrides[ex] = value;
+    writeJSON(SOFT_OVERRIDE_KEY, softOverrides);
+    applySoftState();
+  }
+  function softStartRun() { softLive = null; applySoftState(); }
+  window.__fwmcSoft = { on: (ex) => softOn(ex), show: () => vtShowS(), gap: (lo, hi, ex) => softGap(lo, hi, ex) }; // used by the test
+  // VT engine timing (every schedule builder reads these two).
+  function vtShowS() { return softOn(state.exercise) ? Math.max(state.stimulusS, SOFT_MIN_SHOW_S) : state.stimulusS; }
+  function softGap(lo, hi, ex) {
+    if (!softOn(ex)) return [lo, hi];
+    const l = Math.max(lo, SOFT_MIN_GAP_S);
+    return [l, Math.max(hi, l)];
+  }
+  function softControlsRow(ex, live) {
+    const row = document.createElement("div");
+    row.className = "choice-row two soft-row";
+    const attr = live ? `data-soft-live="${ex}"` : `data-soft-ex="${ex}"`;
+    row.innerHTML = `<button class="choice" type="button" ${attr} data-soft-val="1">An</button><button class="choice" type="button" ${attr} data-soft-val="0">Aus</button>`;
+    return row;
+  }
+  Object.entries(SOFT_EXERCISES).forEach(([ex, cfg]) => {
+    cfg.screens.forEach((screenId) => {
+      const screen = document.getElementById(screenId);
+      if (!screen) return;
+      // the note under the description
+      const note = document.createElement("div");
+      note.className = "soft-note";
+      note.dataset.softNote = ex;
+      note.hidden = true;
+      note.innerHTML = '<span class="soft-note-text">Sanfte Reize sind an</span> &middot; <button class="inline-link" type="button" data-open-master="masterSoftGroup">Grundeinstellungen</button>';
+      const anchor = screen.querySelector(cfg.noteAfter) || screen.querySelector(".page-title");
+      if (anchor) anchor.after(note);
+      // the per-exercise switch in its Feineinstellungen
+      const host = cvdControlsHost(screenId);
+      if (!host) return;
+      const g = document.createElement("div");
+      g.className = "group soft-group";
+      g.dataset.softGroup = ex;
+      g.innerHTML = '<div class="group-label">Sanfte Reize f&uuml;r diese &Uuml;bung</div>';
+      g.appendChild(softControlsRow(ex, false));
+      const st = document.createElement("div");
+      st.className = "group-help soft-status";
+      st.dataset.softStatus = ex;
+      g.appendChild(st);
+      host.appendChild(g);
+    });
+    // the pause sheet: this run only
+    const panel = document.querySelector(`#${cfg.pause} .pause-panel`);
+    if (!panel) return;
+    const g = document.createElement("div");
+    g.className = "group soft-group";
+    g.innerHTML = '<div class="group-label">Sanfte Reize</div>';
+    g.appendChild(softControlsRow(ex, true));
+    const help = document.createElement("div");
+    help.className = "group-help";
+    help.textContent = "Ruhigere Lichtwechsel, gilt nur für diesen Durchgang.";
+    g.appendChild(help);
+    const groups = panel.querySelectorAll(":scope > .group");
+    const last = groups[groups.length - 1];
+    panel.insertBefore(g, last ? last.nextSibling : panel.firstChild);
+  });
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-soft-ex], [data-soft-live], [data-soft-reset], [data-open-master]");
+    if (!b) return;
+    if (b.dataset.openMaster) { openMasterSettings(b.dataset.openMaster); return; }
+    if (b.dataset.softReset) { softSetOverride(softResolve(b.dataset.softReset), null); return; }
+    const on = b.dataset.softVal === "1";
+    if (b.dataset.softEx) { softSetOverride(softResolve(b.dataset.softEx), on); return; }
+    softLive = { ex: softResolve(b.dataset.softLive), on };
+    applySoftState();
+  });
+  function applySoftState() {
+    ["blitz", "flash"].forEach((ex) => document.body.classList.toggle(`soft-${ex}`, softOn(ex)));
+    document.querySelectorAll("[data-soft-ex]").forEach((b) => setActive(b, (b.dataset.softVal === "1") === softStored(softResolve(b.dataset.softEx))));
+    document.querySelectorAll("[data-soft-live]").forEach((b) => setActive(b, (b.dataset.softVal === "1") === softOn(softResolve(b.dataset.softLive))));
+    document.querySelectorAll("[data-soft-note]").forEach((n) => {
+      const ex = softResolve(n.dataset.softNote);
+      const on = softApplies(ex) && softStored(ex);
+      n.hidden = !on;
+      if (on) n.querySelector(".soft-note-text").textContent = softOverride(ex) != null && !softMasterOn() ? "Sanfte Reize sind für diese Übung an" : "Sanfte Reize sind an";
+    });
+    document.querySelectorAll("[data-soft-group]").forEach((g) => { g.hidden = !softApplies(softResolve(g.dataset.softGroup)); });
+    document.querySelectorAll("[data-soft-status]").forEach((el) => {
+      const key = el.dataset.softStatus, ex = softResolve(key);
+      el.textContent = "";
+      if (softOverride(ex) == null) el.textContent = softMasterOn() ? "Folgt den Grundeinstellungen (Sanfte Reize an)." : "Folgt den Grundeinstellungen.";
+      else {
+        el.append("Eigene Einstellung für diese Übung. ");
+        const link = document.createElement("button");
+        link.className = "text-link";
+        link.type = "button";
+        link.dataset.softReset = key;
+        link.textContent = "Wieder den Grundeinstellungen folgen";
+        el.appendChild(link);
+      }
+    });
+    const reset = document.getElementById("masterSoftResetBtn");
+    if (reset) reset.hidden = !Object.keys(softOverrides).length;
+  }
+  // Grundeinstellungen "Sehen und Reize": Schriftgröße + Sanfte Reize.
+  function syncMasterSeeUI() {
+    document.querySelectorAll("[data-master-textsize]").forEach((b) => setActive(b, b.dataset.masterTextsize === masterPrefs.textSize));
+    $("masterSoftCheck").checked = masterPrefs.softStimuli === true;
+    applySoftState();
+  }
+  document.querySelectorAll("[data-master-textsize]").forEach((b) => b.addEventListener("click", () => {
+    masterPrefs.textSize = b.dataset.masterTextsize;
+    saveMasterPrefs();
+    applyTextScale();
+    syncMasterSeeUI();
+  }));
+  $("masterSoftCheck").addEventListener("change", (e) => {
+    masterPrefs.softStimuli = e.target.checked;
+    saveMasterPrefs();
+    syncMasterSeeUI();
+  });
+  $("masterSoftResetBtn").addEventListener("click", () => {
+    Object.keys(softOverrides).forEach((k) => delete softOverrides[k]);
+    writeJSON(SOFT_OVERRIDE_KEY, softOverrides);
+    applySoftState();
+  });
+  syncMasterSeeUI();
 
   // ---- Ziel-/Signalfarbe pro Übung (Fabian, 2026-10-02: "A. Ja") ----
   // Every Test exercise whose signal is a fixed colour gets a picker for it
@@ -6747,11 +7843,23 @@
   }
 
   let masterSettingsReturnFocus = null;
-  function openMasterSettings() {
+  function openMasterSettings(section) {
     masterSettingsReturnFocus = document.activeElement;
     syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; syncMasterBgUI(); syncMasterPauseUI(); syncMasterVolumeUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
+    syncMasterSeeUI();
     els.masterSettingsSheet.hidden = false;
-    focusFirstIn(els.masterSettingsSheet);
+    // openMasterSettings("someGroupId") opens the sheet at that section
+    // (the "Sanfte Reize sind an" notes, the Nichtraucher-Pause info).
+    const target = typeof section === "string" ? document.getElementById(section) : null;
+    if (target) {
+      const inner = els.masterSettingsSheet.querySelector(".sheet-inner");
+      requestAnimationFrame(() => {
+        if (inner) inner.scrollTop += target.getBoundingClientRect().top - inner.getBoundingClientRect().top - 12;
+        target.classList.remove("is-called"); void target.offsetWidth; target.classList.add("is-called");
+        const f = target.querySelector("input, button");
+        if (f) f.focus({ preventScroll: true });
+      });
+    } else focusFirstIn(els.masterSettingsSheet);
   }
   function closeMasterSettings() {
     els.masterSettingsSheet.hidden = true;
@@ -6789,12 +7897,13 @@
   // rendered as a circle that grows on the in-breath and shrinks on the
   // out-breath, with an optional spoken phase cue.
   const BREATH_PREFS_KEY = "fwmc-breath-v1";
-  const breathPrefs = { durationMin: 5, sound: true, listen: false, custom: { in: 4, hold1: 0, out: 6, hold2: 0 } };
+  const breathPrefs = { durationMin: 5, sound: true, listen: false, noLimit: false, custom: { in: 4, hold1: 0, out: 6, hold2: 0 } };
   function loadBreathPrefs() {
     const saved = readJSON(BREATH_PREFS_KEY, null);
     if (saved && typeof saved === "object") {
       Object.assign(breathPrefs, saved);
       breathPrefs.custom = Object.assign({ in: 4, hold1: 0, out: 6, hold2: 0 }, saved.custom || {});
+      breathPrefs.noLimit = saved.noLimit === true;
     }
   }
   function saveBreathPrefs() { writeJSON(BREATH_PREFS_KEY, breathPrefs); }
@@ -6827,7 +7936,7 @@
 
   function phaseChipsHtml(phases) {
     return PHASE_ORDER.filter((k) => phases[k] > 0)
-      .map((k) => `<span class="phase-chip">${fmtSeconds(phases[k]).replace(" ", "")} ${PHASE_LABELS[k]}</span>`)
+      .map((k) => `<span class="phase-chip">${fmtSeconds(phases[k]).replace(" ", "\u00a0")} ${PHASE_LABELS[k]}</span>`)
       .join("");
   }
   function syncPhaseUI() {
@@ -6850,16 +7959,25 @@
   els.phaseOutSlider.addEventListener("input", () => onPhaseSliderInput("out", els.phaseOutSlider));
   els.phaseHold2Slider.addEventListener("input", () => onPhaseSliderInput("hold2", els.phaseHold2Slider));
 
+  // Picking a duration means "with a time limit" again (Idee 53).
   document.querySelectorAll("[data-breath-dur]").forEach((el) => {
-    el.addEventListener("click", () => { breathPrefs.durationMin = Number(el.dataset.breathDur); saveBreathPrefs(); syncBreathDurationUI(); });
+    el.addEventListener("click", () => { breathPrefs.durationMin = Number(el.dataset.breathDur); breathPrefs.noLimit = false; saveBreathPrefs(); syncBreathDurationUI(); });
   });
   function syncBreathDurationUI() {
-    document.querySelectorAll("[data-breath-dur]").forEach((el) => setActive(el, Number(el.dataset.breathDur) === breathPrefs.durationMin));
+    document.querySelectorAll("[data-breath-dur]").forEach((el) => setActive(el, !breathPrefs.noLimit && Number(el.dataset.breathDur) === breathPrefs.durationMin));
     els.breathDurationSlider.value = breathPrefs.durationMin;
     els.breathDurationValue.textContent = `${breathPrefs.durationMin} Min`;
+    // "Ohne Zeitlimit" (Idee 53, Fabian 06.10.): the pattern runs until
+    // "Fertig"; the duration stays visible (dimmed) for the next timed run.
+    $("breathNoLimitCheck").checked = !!breathPrefs.noLimit;
+    $("breathNoLimitHelp").hidden = !breathPrefs.noLimit;
+    els.breathDurationSlider.closest(".group").classList.toggle("breath-dur-off", !!breathPrefs.noLimit);
   }
   els.breathDurationSlider.addEventListener("input", () => {
-    breathPrefs.durationMin = Number(els.breathDurationSlider.value); saveBreathPrefs(); syncBreathDurationUI();
+    breathPrefs.durationMin = Number(els.breathDurationSlider.value); breathPrefs.noLimit = false; saveBreathPrefs(); syncBreathDurationUI();
+  });
+  $("breathNoLimitCheck").addEventListener("change", (e) => {
+    breathPrefs.noLimit = e.target.checked; saveBreathPrefs(); syncBreathDurationUI();
   });
 
   document.querySelectorAll("[data-breath-sound]").forEach((el) => {
@@ -6905,7 +8023,7 @@
   let comboBreathCaptureOriginal = null;
   let comboBreathEditIndex = null;
   function openBreathComboCapture(patternKey, existingBlock, editIndex) {
-    comboBreathCaptureOriginal = { durationMin: breathPrefs.durationMin, sound: breathPrefs.sound, listen: breathPrefs.listen, custom: { ...breathPrefs.custom } };
+    comboBreathCaptureOriginal = { durationMin: breathPrefs.durationMin, sound: breathPrefs.sound, listen: breathPrefs.listen, noLimit: !!breathPrefs.noLimit, custom: { ...breathPrefs.custom } };
     const key = existingBlock ? existingBlock.pattern : patternKey;
     openBreathReady(key);
     if (existingBlock) {
@@ -6913,6 +8031,7 @@
       breathPrefs.durationMin = existingBlock.durationMin ?? breathPrefs.durationMin;
       breathPrefs.sound = existingBlock.sound !== false;
       breathPrefs.listen = !!existingBlock.listen;
+      breathPrefs.noLimit = !!existingBlock.noLimit;
       syncPhaseUI(); syncBreathDurationUI(); syncBreathSoundUI();
     }
     comboBreathEditIndex = editIndex ?? null;
@@ -6924,6 +8043,7 @@
       breathPrefs.durationMin = comboBreathCaptureOriginal.durationMin;
       breathPrefs.sound = comboBreathCaptureOriginal.sound;
       breathPrefs.listen = comboBreathCaptureOriginal.listen;
+      breathPrefs.noLimit = comboBreathCaptureOriginal.noLimit;
       breathPrefs.custom = comboBreathCaptureOriginal.custom;
       saveBreathPrefs();
       comboBreathCaptureOriginal = null;
@@ -6932,7 +8052,7 @@
     els.breathStartBtn.textContent = "Training starten";
   }
   function commitBreathComboCapture() {
-    const block = { domain: "breath", pattern: breathPatternKey, durationMin: breathPrefs.durationMin, phases: { ...breathWorking }, sound: breathPrefs.sound, listen: breathPrefs.listen };
+    const block = { domain: "breath", pattern: breathPatternKey, durationMin: breathPrefs.durationMin, phases: { ...breathWorking }, sound: breathPrefs.sound, listen: breathPrefs.listen, ...(breathPrefs.noLimit ? { noLimit: true } : {}) };
     if (comboBreathEditIndex != null) comboDraftBlocks[comboBreathEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitBreathComboCapture();
@@ -6948,6 +8068,8 @@
   let breathRaf = null;
   let breathSession = null; // { schedule, cycleLen, plannedTotal, startTime, lastKey, sound }
   let breathPatternName = "";
+  let breakRun = null; // { min } while a Nichtraucher-Pause from Heute runs
+  const BREAK_TITLE = "Nichtraucher-Pause";
   // Set while a coach-authored breathing programme is chaining blocks
   // through this engine and/or the Wim-Hof one below; null for a single
   // freely-chosen pattern. { def, blockIndex, code, key, title, totalPlayedS }
@@ -7003,21 +8125,29 @@
     breathCircle.style.transform = `scale(${scale.toFixed(3)})`;
     els.breathPhaseLabel.textContent = frame.label;
     els.breathPhaseCount.textContent = Math.max(1, Math.ceil(frame.t1 - inCycle));
-    els.breathTimeEl.textContent = fmtClock(breathSession.plannedTotal - elapsed);
+    // Ohne Zeitlimit: the clock counts up (there is no rest to show).
+    els.breathTimeEl.textContent = fmtClock(breathSession.open ? elapsed : breathSession.plannedTotal - elapsed);
     if (breathSession.listen) {
       els.breathListenPhase.textContent = frame.label;
       els.breathListenTime.textContent = els.breathTimeEl.textContent;
     }
-    if (elapsed >= breathSession.plannedTotal) { breathFinishSession(); return; }
+    if (elapsed >= breathSession.plannedTotal) { breathEnterEndHold(); return; }
     breathRaf = requestAnimationFrame(breathTick);
   }
 
-  function startBreathSession() {
+  // opts.open: run without a time limit (default: breathPrefs.noLimit for a
+  // single run; Kombi blocks pass their own value, Atem-Programme false).
+  function startBreathSession(opts) {
     const built = buildBreathCycle(breathWorking);
     if (built.cycleLen <= 0) return;
     resumeSingleBase = null;
+    clearBreathEndHold();
     breathPatternName = BREATH_PATTERNS[breathPatternKey].name;
-    const cycles = Math.max(1, Math.round((breathPrefs.durationMin * 60) / built.cycleLen));
+    // Nichtraucher-Pause (Heute): its own short duration, own title.
+    breakRun = opts && opts.breakMin ? { min: opts.breakMin } : null;
+    if (breakRun) breathPatternName = BREAK_TITLE;
+    const open = breakRun ? false : opts && "open" in opts ? !!opts.open : !!breathPrefs.noLimit;
+    const cycles = Math.max(1, Math.round(((breakRun ? breakRun.min : breathPrefs.durationMin) * 60) / built.cycleLen));
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.breathPlayer.hidden = false;
@@ -7026,7 +8156,8 @@
     breathSession = { schedule: built.schedule, cycleLen: built.cycleLen, plannedTotal: cycles * built.cycleLen, startTime: performance.now(), lastKey: null,
       sound: breathPrefs.sound || breathPrefs.listen, listen: !!breathPrefs.listen, lastSec: 0,
       lastMinuteSaid: Math.ceil((cycles * built.cycleLen) / 60 - 0.01),
-      basePhases: { ...breathWorking }, tempo: 1, cycleBase: 0 };
+      basePhases: { ...breathWorking }, tempo: 1, cycleBase: 0, open: false };
+    if (open) breathSetOpen(breathSession, 0);
     breathPaused = false;
     breathPauseDraft = null;
     els.breathPauseBtn.hidden = false;
@@ -7036,6 +8167,105 @@
     requestWakeLock();
     breathRaf = requestAnimationFrame(breathTick);
   }
+  // ---- Ohne Zeitlimit + "Weiter atmen" (Idee 53, Fabian 06.10.: Haken
+  // unter Dauer, nach Ablauf "Weiter atmen" neben Beenden, im Kombi danach
+  // normal weiter; nur Atmung) ----
+  // An open run has no planned end: the clock counts up, "Fertig" (stage
+  // and pause sheet) ends it as completed with the real time. A timed run
+  // holds at its end for BREATH_MORE_HOLD_S with "Beenden" / "Weiter
+  // atmen"; without a tap it ends as before (done panel, next Baustein,
+  // next programme block). "Weiter atmen" goes on open-ended with the same
+  // pattern, tempo and voice - the seconds already done stay counted.
+  const BREATH_MORE_HOLD_S = 10;
+  let breathEndHold = null; // { left, timer } while the end hold waits
+  function breathSetOpen(bs, fromS) {
+    bs.open = true;
+    bs.plannedTotal = Infinity;
+    bs.lastMinuteSaid = Infinity;
+    if (fromS > 0) { bs.cycleBase = fromS; bs.lastKey = null; }
+    els.breathFinishBtn.hidden = false;
+  }
+  function clearBreathEndHold() {
+    if (breathEndHold) clearInterval(breathEndHold.timer);
+    breathEndHold = null;
+    els.breathEndNowBtn.hidden = true;
+    els.breathMoreBtn.hidden = true;
+    els.breathFinishBtn.hidden = true;
+    els.breathEndNote.hidden = true;
+    els.breathBackBtn.style.visibility = "";
+    els.breathTimeEl.style.visibility = "";
+  }
+  function breathEndNoteText(left) {
+    const s = `${left}\u00a0s`;
+    if (comboProgram || breathProgram) return `Ohne Tippen geht es in ${s} weiter.`;
+    return `Ohne Tippen endet die Übung in ${s}.`;
+  }
+  function breathEnterEndHold() {
+    const bs = breathSession;
+    if (!bs) return;
+    if (breathRaf) cancelAnimationFrame(breathRaf);
+    breathRaf = null;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    clearBreathEndHold();
+    breathEndHold = { left: BREATH_MORE_HOLD_S, timer: null };
+    breathCircle.style.transform = "scale(0.55)";
+    els.breathPhaseLabel.textContent = "Geschafft";
+    // Prüfer 07.10. Nr. 9: one counter only - the note counts down, the
+    // circle shows a check mark and the time pill steps aside.
+    els.breathPhaseCount.textContent = "✓";
+    els.breathTimeEl.textContent = fmtClock(0);
+    els.breathTimeEl.style.visibility = "hidden";
+    els.breathPauseBtn.hidden = true;
+    els.breathListenLayer.hidden = true;
+    resetBreathListenHold();
+    els.breathEndNowBtn.hidden = false;
+    els.breathMoreBtn.hidden = false;
+    els.breathEndNote.textContent = breathEndNoteText(BREATH_MORE_HOLD_S);
+    els.breathEndNote.hidden = false;
+    // One "Beenden" on screen: the bar's ✕ waits until the hold is over.
+    els.breathBackBtn.style.visibility = "hidden";
+    // Measured on performance.now() like the run itself, so a phone that
+    // slept or a throttled background tab never stretches the hold.
+    const t0 = performance.now();
+    breathEndHold.timer = setInterval(() => {
+      if (!breathEndHold || !breathSession || els.breathPlayer.hidden) { clearBreathEndHold(); return; }
+      const left = Math.max(0, Math.ceil(BREATH_MORE_HOLD_S - (performance.now() - t0) / 1000));
+      if (left !== breathEndHold.left) {
+        breathEndHold.left = left;
+        els.breathEndNote.textContent = breathEndNoteText(left);
+      }
+      if (left <= 0) { clearBreathEndHold(); breathFinishSession(); }
+    }, 200);
+  }
+  els.breathEndNowBtn.addEventListener("click", () => { if (breathEndHold) { clearBreathEndHold(); breathFinishSession(); } });
+  els.breathMoreBtn.addEventListener("click", () => {
+    const bs = breathSession;
+    if (!bs || !breathEndHold) return;
+    const done = bs.plannedTotal;
+    clearBreathEndHold();
+    breathSetOpen(bs, done);
+    bs.startTime = performance.now() - done * 1000;
+    els.breathPauseBtn.hidden = false;
+    els.breathListenLayer.hidden = !bs.listen;
+    breathRaf = requestAnimationFrame(breathTick);
+  });
+  function breathOpenElapsed() {
+    const bs = breathSession;
+    if (!bs) return 0;
+    const ref = breathPaused ? breathPauseTime : performance.now();
+    return Math.max(0, (ref - bs.startTime) / 1000);
+  }
+  function breathFinishOpen() {
+    const bs = breathSession;
+    if (!bs || !bs.open) return;
+    bs.playedOpen = breathOpenElapsed();
+    breathPaused = false;
+    breathPauseDraft = null;
+    els.breathPauseOverlay.hidden = true;
+    breathFinishSession();
+  }
+  els.breathFinishBtn.addEventListener("click", breathFinishOpen);
+  els.breathPauseFinishBtn.addEventListener("click", breathFinishOpen);
   els.breathStartBtn.addEventListener("click", () => {
     if (comboBreathCaptureOriginal) { commitBreathComboCapture(); return; }
     startBreathSession();
@@ -7070,7 +8300,7 @@
     if (breathPauseDraft) { breathPauseDraft.sound = el.dataset.breathPauseSound === "on"; syncBreathPauseUI(); }
   }));
   function pauseBreath() {
-    if (!breathSession || breathPaused) return;
+    if (!breathSession || breathPaused || breathEndHold) return;
     breathPaused = true;
     breathPauseTime = performance.now();
     if (breathRaf) cancelAnimationFrame(breathRaf);
@@ -7082,6 +8312,8 @@
     breathPauseDraft = { tempo: breathSession.tempo, restMin, restMinAtStart: restMin, sound: breathSession.sound };
     resumeSingleNote("breath");
     syncBreathPauseUI();
+    $("breathPauseRestGroup").hidden = !!breathSession.open;
+    els.breathPauseFinishBtn.hidden = !breathSession.open;
     els.breathPauseBtn.hidden = true;
     els.breathListenLayer.hidden = true;
     resetBreathListenHold();
@@ -7104,7 +8336,7 @@
           breathSession.cycleLen = built.cycleLen;
           breathSession.cycleBase = elapsed;
           const restS = d.restMin !== d.restMinAtStart ? d.restMin * 60 : breathSession.plannedTotal - elapsed;
-          breathSession.plannedTotal = elapsed + Math.max(1, Math.round(restS / built.cycleLen)) * built.cycleLen;
+          if (!breathSession.open) breathSession.plannedTotal = elapsed + Math.max(1, Math.round(restS / built.cycleLen)) * built.cycleLen;
           breathSession.lastKey = null;
         }
       }
@@ -7143,6 +8375,7 @@
   function breathLeavePlayer() {
     if (breathRaf) cancelAnimationFrame(breathRaf);
     breathRaf = null;
+    clearBreathEndHold();
     breathSession = null;
     breathPaused = false;
     breathPauseDraft = null;
@@ -7159,7 +8392,10 @@
   function breathFinishSession() {
     if (breathRaf) cancelAnimationFrame(breathRaf);
     breathRaf = null;
-    const played = breathSession ? breathSession.plannedTotal : 0;
+    clearBreathEndHold();
+    const wasOpen = !!(breathSession && breathSession.open);
+    // Ohne Zeitlimit / after "Weiter atmen": the real time (pauses excluded).
+    const played = breathSession ? (wasOpen ? (breathSession.playedOpen ?? breathOpenElapsed()) : breathSession.plannedTotal) : 0;
     const wasListen = !!(breathSession && breathSession.listen && breathSession.sound);
     breathSession = null;
     releaseWakeLock();
@@ -7172,7 +8408,7 @@
     if (comboProgram) { advanceComboProgram(played); return; }
     els.breathPlayerBar.hidden = true;
     els.breathDoneSummary.textContent = `${breathPatternName} · ${fmtMinutes(played)}`;
-    const id = addHistory({ kind: "breath", title: breathPatternName, seconds: Math.round(played) });
+    const id = addHistory({ kind: "breath", title: breathPatternName, seconds: Math.round(played), ...(wasOpen ? { note: "ohne Zeitlimit" } : {}) });
     renderRating(els.breathRating, id, "Wie ruhig fühlst du dich gerade?");
     els.breathDonePanel.hidden = false;
   }
@@ -7180,15 +8416,91 @@
   // programme intro if a coach-authored programme was chaining blocks.
   function breathAbort() {
     if (comboProgram) { breathLeavePlayer(); abortComboProgram(); return; }
+    // Ohne Zeitlimit there is nothing to abort: "Beenden" ends it with the
+    // real time, like Gleichgewicht "Ohne Zeitvorgabe".
+    // (Not for « ↻ », which stops silently and starts again.)
+    if (breathSession && breathSession.open && !breathProgram && !stepNavSilent) { breathFinishOpen(); return; }
     const wasProgram = !!breathProgram;
+    if (breakRun && !wasProgram) { breakRun = null; breathLeavePlayer(); goToHeute(); return; }
     resumeSingleNote("breath");
     breathProgram = null;
     breathLeavePlayer();
     showScreen(wasProgram ? "breathProgramIntro" : "breathReady");
   }
   els.breathBackBtn.addEventListener("click", breathAbort);
-  els.breathAgainBtn.addEventListener("click", () => { breathLeavePlayer(); startBreathSession(); });
-  els.breathDoneBackBtn.addEventListener("click", () => { breathLeavePlayer(); showScreen("breathHome"); });
+  els.breathAgainBtn.addEventListener("click", () => {
+    const br = breakRun;
+    breathLeavePlayer();
+    if (br) startBreakPause(br.min); else startBreathSession();
+  });
+  els.breathDoneBackBtn.addEventListener("click", () => {
+    const br = breakRun;
+    breakRun = null;
+    breathLeavePlayer();
+    if (br) goToHeute(); else showScreen("breathHome");
+  });
+
+  // ---- Nichtraucher-Pause (Fabian 07.10., Atempausen A) ----
+  // A short calm breathing pause from Heute: Ruhige Atmung (Kohärenz) for
+  // 1/2/3 min (fwmc-atempause-v1), the client's own voice setting, history
+  // kind "breath" with the title "Nichtraucher-Pause". No Weitermachen
+  // record (too short), "Beenden"/"Fertig" lead back to Heute.
+  // ?bereich=atempause (push "Zeit für eine Atempause") opens Heute at
+  // this card. Details: docs/notes/20 (Atemtraining) + 26.
+  const BREAK_KEY = "fwmc-atempause-v1";
+  const breakPrefs = Object.assign({ min: 2 }, readJSON(BREAK_KEY, {}) || {});
+  if (![1, 2, 3].includes(breakPrefs.min)) breakPrefs.min = 2;
+  function syncBreakCard() {
+    document.querySelectorAll("[data-break-min]").forEach((b) => setActive(b, Number(b.dataset.breakMin) === breakPrefs.min));
+    $("todayBreakMinText").textContent = `${breakPrefs.min} Min.`;
+  }
+  document.querySelectorAll("[data-break-min]").forEach((b) => b.addEventListener("click", () => {
+    breakPrefs.min = Number(b.dataset.breakMin);
+    writeJSON(BREAK_KEY, breakPrefs);
+    syncBreakCard();
+    reminderPlanChanged(); // the reminder text names the minutes
+  }));
+  syncBreakCard();
+  function startBreakPause(min) {
+    breathProgram = null;
+    breathPatternKey = "coherent";
+    breathWorking = { ...BREATH_PATTERNS.coherent.phases };
+    const go = () => startBreathSession({ breakMin: min || breakPrefs.min });
+    if (leadInWanted()) runLeadIn(go, true); else go();
+  }
+  $("todayBreakStartBtn").addEventListener("click", () => startBreakPause(breakPrefs.min));
+  function goToHeute() { activateSectionTab("today"); showScreen("todayHome"); try { renderToday(); } catch (e) {} }
+  let breakInfoReturnFocus = null;
+  function openBreakInfo() {
+    breakInfoReturnFocus = document.activeElement;
+    $("breakInfoSheet").hidden = false;
+    $("breakInfoCloseBtn").focus();
+  }
+  function closeBreakInfo() {
+    $("breakInfoSheet").hidden = true;
+    if (breakInfoReturnFocus) breakInfoReturnFocus.focus();
+  }
+  $("todayBreakInfoBtn").addEventListener("click", openBreakInfo);
+  $("breakInfoCloseBtn").addEventListener("click", closeBreakInfo);
+  $("breakInfoSheet").addEventListener("click", (e) => { if (e.target.id === "breakInfoSheet") closeBreakInfo(); });
+  $("breakInfoSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closeBreakInfo(); else trapTabKey($("breakInfoSheet"), e); });
+  $("breakInfoReminderLink").addEventListener("click", () => { closeBreakInfo(); openMasterSettings("reminderBreakGroup"); });
+  // A push tap while the app is already open: sw.js posts a message instead
+  // of loading the URL (never interrupts a running exercise).
+  if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", (e) => {
+    if (e.data && e.data.fwmcOpen === "atempause" && !document.querySelector(".player:not([hidden])")) showBreakCard();
+  });
+  // Deep link / push tap: Heute, scrolled to the card, which glows briefly.
+  function showBreakCard() {
+    goToHeute();
+    const card = $("todayBreak");
+    setTimeout(() => {
+      try { card.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) {}
+      card.classList.remove("is-called");
+      void card.offsetWidth;
+      card.classList.add("is-called");
+    }, 120);
+  }
 
   // ---- Saved breathing settings: same "save under a name, tap to reuse"
   // pattern as Kombi/Visual Training, scoped per pattern (a saved 4-7-8
@@ -7197,13 +8509,14 @@
   const breathSavedStore = makePresetStore(BREATH_SAVED_KEY);
   function renderBreathSaved() {
     renderPresetList(breathSavedStore, els.breathSavedList, els.breathSavedGroup, (e) => e.patternKey === breathPatternKey,
-      (e) => `${fmtMinutes(e.durationMin * 60)} · ${e.phases.in}-${e.phases.hold1}-${e.phases.out}-${e.phases.hold2}s`,
+      (e) => `${e.noLimit ? "ohne Zeitlimit" : fmtMinutes(e.durationMin * 60)} · ${e.phases.in}-${e.phases.hold1}-${e.phases.out}-${e.phases.hold2}s`,
       (entry) => {
         breathPatternKey = entry.patternKey;
         breathWorking = { ...entry.phases };
         breathPrefs.durationMin = entry.durationMin;
         breathPrefs.sound = entry.sound;
         breathPrefs.listen = !!entry.listen;
+        breathPrefs.noLimit = !!entry.noLimit;
         saveBreathPrefs();
         // While capturing a Kombi-Baustein, loading a saved setting should
         // just fill the draft for review, not immediately start a session.
@@ -7223,6 +8536,7 @@
       list.push({
         id: String(Date.now()), name, patternKey: breathPatternKey,
         phases: { ...breathWorking }, durationMin: breathPrefs.durationMin, sound: breathPrefs.sound, listen: breathPrefs.listen,
+        ...(breathPrefs.noLimit ? { noLimit: true } : {}),
       });
       breathSavedStore.save(list);
       renderBreathSaved();
@@ -7241,16 +8555,32 @@
       wimhofSettings.rounds = block.rounds ?? WIMHOF_DEFAULTS.rounds;
       wimhofSettings.breathPaceS = block.breathPaceS ?? WIMHOF_DEFAULTS.breathPaceS;
       wimhofSettings.recoveryHoldS = block.recoveryHoldS ?? WIMHOF_DEFAULTS.recoveryHoldS;
+      wimhofSettings.roundRestS = whRoundRestOf(block);
       startWimhofSession();
     } else {
       breathPatternKey = block.pattern;
       breathWorking = block.phases ? { ...block.phases } : { ...(BREATH_PATTERNS[block.pattern].phases || breathPrefs.custom) };
       breathPrefs.durationMin = block.durationMin ?? 5;
       breathPrefs.sound = block.sound !== false;
-      startBreathSession();
+      startBreathSession({ open: false });
     }
   }
   let breathTransitionTimer = null;
+  // "Kurz anhalten" on the 4-s "Weiter geht's" panel between the blocks of
+  // an Atem-Programm and a Workout-Plan (Idee 50, Fabian 06.10.): stops the
+  // auto-advance, the panel waits for "Weiter" (the Kombi panel already has
+  // its own "Pause anhalten").
+  function wireTransitionHold(panel, stopTimer) {
+    const btn = panel.querySelector(".transition-hold"), label = panel.querySelector(".next-label");
+    if (!btn) return;
+    btn.hidden = false;
+    if (label) label.textContent = "Weiter geht’s";
+    btn.onclick = () => {
+      stopTimer();
+      btn.hidden = true;
+      if (label) label.textContent = "Angehalten";
+    };
+  }
   function showBreathTransition(nextBlock, onContinue) {
     hideAllPlayers();
     els.breathTransitionTitle.textContent = blockPatternName(nextBlock);
@@ -7264,6 +8594,7 @@
     };
     els.breathTransitionBtn.onclick = go;
     breathTransitionTimer = setTimeout(go, 4000);
+    wireTransitionHold(els.breathTransition, () => { clearTimeout(breathTransitionTimer); breathTransitionTimer = null; });
   }
   function advanceBreathProgram(playedS) {
     if (!breathProgram) return;
@@ -7309,6 +8640,7 @@
   function loadWimhofSettings() {
     const saved = readJSON(WIMHOF_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(wimhofSettings, saved);
+    wimhofSettings.roundRestS = whRoundRestOf(wimhofSettings);
   }
   function saveWimhofSettings() { writeJSON(WIMHOF_PREFS_KEY, wimhofSettings); }
   loadWimhofSettings();
@@ -7318,7 +8650,10 @@
     document.querySelectorAll("[data-wh-rounds]").forEach((el) => setActive(el, Number(el.dataset.whRounds) === wimhofSettings.rounds));
     document.querySelectorAll("[data-wh-pace]").forEach((el) => setActive(el, Number(el.dataset.whPace) === wimhofSettings.breathPaceS));
     document.querySelectorAll("[data-wh-recovery]").forEach((el) => setActive(el, Number(el.dataset.whRecovery) === wimhofSettings.recoveryHoldS));
+    $("wimhofRoundRestSlider").value = wimhofSettings.roundRestS;
+    $("wimhofRoundRestValue").textContent = wimhofSettings.roundRestS > 0 ? `${wimhofSettings.roundRestS} s` : "Keine";
   }
+  $("wimhofRoundRestSlider").addEventListener("input", (e) => { wimhofSettings.roundRestS = whRoundRestOf({ roundRestS: e.target.value }); saveWimhofSettings(); syncWimhofUI(); });
   document.querySelectorAll("[data-wh-breaths]").forEach((el) => el.addEventListener("click", () => { wimhofSettings.breaths = Number(el.dataset.whBreaths); saveWimhofSettings(); syncWimhofUI(); }));
   document.querySelectorAll("[data-wh-rounds]").forEach((el) => el.addEventListener("click", () => { wimhofSettings.rounds = Number(el.dataset.whRounds); saveWimhofSettings(); syncWimhofUI(); }));
   document.querySelectorAll("[data-wh-pace]").forEach((el) => el.addEventListener("click", () => { wimhofSettings.breathPaceS = Number(el.dataset.whPace); saveWimhofSettings(); syncWimhofUI(); }));
@@ -7335,8 +8670,41 @@
     els.wimhofAckCheck.checked = false; // the safety notes are re-confirmed every visit, not just once - capture/edit included
     syncWimhofStartBtn();
     syncWimhofUI();
+    $("wimhofSaveForm").hidden = true;
+    $("wimhofSaveBtn").hidden = false;
+    renderWimhofSaved();
     showScreen("wimhofReady");
   }
+  // ---- Saved Wim-Hof settings (2026-10-07, same pattern as the cycle
+  // patterns' presets). Loading one only fills the settings: the safety
+  // notes still have to be confirmed before the start.
+  const WIMHOF_SAVED_KEY = "fwmc-wimhof-saved-v1";
+  const wimhofSavedStore = makePresetStore(WIMHOF_SAVED_KEY);
+  function wimhofPresetMeta(e) {
+    const r = e.rounds ?? WIMHOF_DEFAULTS.rounds;
+    return `${r} ${r === 1 ? "Runde" : "Runden"} à ${e.breaths ?? WIMHOF_DEFAULTS.breaths} Atemzüge` + (whRoundRestOf(e) ? ` · ${whRoundRestOf(e)} s Pause` : "");
+  }
+  function renderWimhofSaved() {
+    renderPresetList(wimhofSavedStore, $("wimhofSavedList"), $("wimhofSavedGroup"), null, wimhofPresetMeta, (entry) => {
+      ["breaths", "rounds", "breathPaceS", "recoveryHoldS"].forEach((k) => { if (typeof entry[k] === "number") wimhofSettings[k] = entry[k]; });
+      wimhofSettings.roundRestS = whRoundRestOf(entry);
+      if (!comboWimhofCaptureOriginal) saveWimhofSettings();
+      syncWimhofUI();
+      showToast("Einstellung geladen. Bitte oben bestätigen und starten.");
+    });
+  }
+  wirePresetSaveForm({
+    saveBtn: $("wimhofSaveBtn"), form: $("wimhofSaveForm"), nameInput: $("wimhofSaveNameInput"),
+    cancelBtn: $("wimhofSaveCancelBtn"), confirmBtn: $("wimhofSaveConfirmBtn"),
+    defaultName: () => `Eigene Einstellung ${new Date().toLocaleDateString("de-DE")}`,
+    onSave: (name) => {
+      const list = wimhofSavedStore.load();
+      list.push({ id: String(Date.now()), name, breaths: wimhofSettings.breaths, rounds: wimhofSettings.rounds,
+        breathPaceS: wimhofSettings.breathPaceS, recoveryHoldS: wimhofSettings.recoveryHoldS, roundRestS: wimhofSettings.roundRestS });
+      wimhofSavedStore.save(list);
+      renderWimhofSaved();
+    },
+  });
 
   // ---- Kombi-Baukasten capture for Wim-Hof-style breathing: same pattern
   // as the cycle patterns above, reopening wimhofReady. The safety
@@ -7353,6 +8721,7 @@
       wimhofSettings.rounds = existingBlock.rounds ?? wimhofSettings.rounds;
       wimhofSettings.breathPaceS = existingBlock.breathPaceS ?? wimhofSettings.breathPaceS;
       wimhofSettings.recoveryHoldS = existingBlock.recoveryHoldS ?? wimhofSettings.recoveryHoldS;
+      wimhofSettings.roundRestS = whRoundRestOf(existingBlock);
     }
     comboWimhofEditIndex = editIndex ?? null;
     openWimhofReady();
@@ -7369,6 +8738,7 @@
     const block = {
       domain: "wimhof", breaths: wimhofSettings.breaths, rounds: wimhofSettings.rounds,
       breathPaceS: wimhofSettings.breathPaceS, recoveryHoldS: wimhofSettings.recoveryHoldS,
+      ...(wimhofSettings.roundRestS > 0 ? { roundRestS: wimhofSettings.roundRestS } : {}),
     };
     if (comboWimhofEditIndex != null) comboDraftBlocks[comboWimhofEditIndex] = block;
     else comboDraftBlocks.push(block);
@@ -7432,7 +8802,7 @@
       els.wimhofPhaseLabel.textContent = "Anhalten – ausgeatmet";
       els.wimhofPhaseCount.textContent = fmtClock(held);
       els.wimhofSub.textContent = "Drücke unten, sobald du wieder einatmen musst.";
-    } else {
+    } else if (wimhofState.phase === "recovery") {
       const elapsed = (now - wimhofState.phaseStart) / 1000;
       const remain = Math.max(0, s.recoveryHoldS - elapsed);
       wimhofCircle.style.transform = "scale(1)";
@@ -7444,10 +8814,35 @@
       if (sec >= 1 && sec <= 3 && wimhofState.beeped !== sec) { wimhofState.beeped = sec; playWorkoutBeep(false); }
       if (elapsed >= s.recoveryHoldS) {
         if (wimhofState.round >= s.rounds) { wimhofCue("end"); wimhofFinish(); return; }
+        if (s.roundRestS > 0) {
+          // "Pause zwischen den Runden": breathe normally, calm display.
+          wimhofState.phase = "rest";
+          wimhofState.phaseStart = now;
+          wimhofState.beeped = null;
+          wimhofCue("rest");
+        } else {
+          wimhofState.round += 1;
+          wimhofState.phase = "power";
+          wimhofState.phaseStart = now;
+          wimhofCue("round");
+        }
+      }
+    } else if (wimhofState.phase === "rest") {
+      const elapsed = (now - wimhofState.phaseStart) / 1000;
+      const remain = Math.max(0, s.roundRestS - elapsed);
+      // a slow, quiet swell (about 10 s per breath) - no counting along
+      const swell = 0.5 - 0.5 * Math.cos((elapsed / 10) * 2 * Math.PI);
+      wimhofCircle.style.transform = `scale(${(0.7 + 0.12 * swell).toFixed(3)})`;
+      els.wimhofPhaseLabel.textContent = "Normal atmen";
+      els.wimhofPhaseCount.textContent = fmtClock(remain);
+      els.wimhofSub.textContent = `Gleich Runde ${wimhofState.round + 1} von ${s.rounds}`;
+      const sec = Math.ceil(remain);
+      if (sec >= 1 && sec <= 3 && wimhofState.beeped !== sec) { wimhofState.beeped = sec; playWorkoutBeep(false); }
+      if (elapsed >= s.roundRestS) {
         wimhofState.round += 1;
         wimhofState.phase = "power";
         wimhofState.phaseStart = now;
-        wimhofCue("round");
+        wimhofCue("restEnd");
       }
     }
     els.wimhofStatusEl.textContent = `Runde ${wimhofState.round}/${s.rounds}`;
@@ -7471,6 +8866,8 @@
     retention: [true, "Ausatmen und anhalten"],
     recovery: [true, "Einatmen und halten"],
     round: [true, "Ausatmen. Neue Runde"],
+    rest: [true, "Ausatmen. Jetzt ganz normal atmen"],
+    restEnd: [true, "Neue Runde"],
     end: [true, "Ausatmen. Geschafft"],
   };
   function wimhofCue(kind) {
@@ -7562,6 +8959,7 @@
     movements: MOVEMENTS.map((m) => m.id),
     preview: 3, bpm: 60, durationMin: 1, mirror: true, showLabel: true, figureStyle: "felder", direction: "rechts",
     tick: true, tickVolume: 0.7, layout: "zeilen", rowLen: 4,
+    bgColorKey: "gruen", bgIntensity: 0, sigColor: null,
   };
   // Anzeige (Fabian 07.10.): "zeilen" = rows of 3-5 fields that wander up
   // while you work through them (the next row is always visible, the picture
@@ -7578,7 +8976,17 @@
     if (MOVEMENT_DIRECTIONS.includes(src.direction)) o.direction = src.direction;
     o.layout = MV_LAYOUTS.includes(src.layout) ? src.layout : "band";
     if ([3, 4, 5].includes(Number(src.rowLen))) o.rowLen = Number(src.rowLen);
+    // Hintergrund + Signalfarbe (Idee 55): only when the source has them -
+    // older blocks/presets keep the client's current colours.
+    if (STROOP_COLOR_BY_KEY[src.bgColorKey]) o.bgColorKey = src.bgColorKey;
+    if (typeof src.bgIntensity === "number" && src.bgIntensity >= 0 && src.bgIntensity <= 1) o.bgIntensity = src.bgIntensity;
+    if (typeof src.bgCustom === "boolean") o.bgCustom = src.bgCustom;
+    if ("sigColor" in src) o.sigColor = SIGNAL_BY_KEY[src.sigColor] ? src.sigColor : null;
     return o;
+  }
+  // The colour fields a Kombi block / preset / Weitermachen record stores.
+  function mvColorsOf(p) {
+    return { bgColorKey: p.bgColorKey, bgIntensity: p.bgIntensity, bgCustom: !!p.bgCustom, sigColor: p.sigColor || null };
   }
   function loadMovementPrefs() {
     const saved = readJSON(MOVEMENT_PREFS_KEY, null);
@@ -7596,6 +9004,9 @@
     if (![3, 4, 5].includes(Number(movementPrefs.rowLen))) movementPrefs.rowLen = 4;
     if (!MOVEMENT_DIRECTIONS.includes(movementPrefs.direction)) movementPrefs.direction = "rechts";
     if (!Number.isFinite(movementPrefs.durationMin) || movementPrefs.durationMin <= 0) movementPrefs.durationMin = 1;
+    if (!STROOP_COLOR_BY_KEY[movementPrefs.bgColorKey]) movementPrefs.bgColorKey = "gruen";
+    if (!(movementPrefs.bgIntensity >= 0 && movementPrefs.bgIntensity <= 1)) movementPrefs.bgIntensity = 0;
+    if (movementPrefs.sigColor && !SIGNAL_BY_KEY[movementPrefs.sigColor]) movementPrefs.sigColor = null;
     Object.assign(movementPrefs, mvTickOf(movementPrefs));
   }
   // Takt-Ton (Fabian, 2026-10-06, Feinheit 41): one soft tone per movement,
@@ -7742,7 +9153,7 @@
   $("movementTickVolumeSlider").addEventListener("change", () => { saveMovementPrefs(); movementTickSound(movementPrefs.tickVolume); });
 
   function openMovementReady() {
-    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI(); syncMvFigureUI(); syncMvDirectionUI(); syncMvTickUI(); syncMvLayoutUI();
+    syncMvPickerUI(); syncMvPreviewUI(); syncMvTempoUI(); syncMvDurationUI(); syncMvMirrorUI(); syncMvLabelUI(); syncMvFigureUI(); syncMvDirectionUI(); syncMvTickUI(); syncMvLayoutUI(); syncMvColorsUI();
     els.movementSaveForm.hidden = true;
     els.movementSaveBtn.hidden = false;
     renderMovementSaved();
@@ -7794,7 +9205,7 @@
       domain: "movement", movements: movementPrefs.movements.slice(), preview: movementPrefs.preview,
       bpm: movementPrefs.bpm, durationMin: movementPrefs.durationMin, mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel,
       direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle, layout: movementPrefs.layout, rowLen: movementPrefs.rowLen,
-      tick: movementPrefs.tick, tickVolume: movementPrefs.tickVolume,
+      tick: movementPrefs.tick, tickVolume: movementPrefs.tickVolume, ...mvColorsOf(movementPrefs),
     };
     if (comboMovementEditIndex != null) comboDraftBlocks[comboMovementEditIndex] = block;
     else comboDraftBlocks.push(block);
@@ -7858,6 +9269,7 @@
 
   function renderMovementProgramIntro(def, code, key) {
     const title = def.name || def.label || "Dein Bewegungsprogramm";
+    introAdaptDef = { def, name: title };
     els.movementProgramTitle.textContent = title;
     els.movementProgramMeta.textContent = `${def.movements.length} Bewegungen · ${def.durationMin} Min · ${def.bpm} BPM`;
     els.movementProgramDesc.textContent = def.description || "";
@@ -8063,6 +9475,96 @@
     mvRowsDraw(ms, t);
   });
 
+  // ---- Hintergrund + Signalfarbe (Idee 55, Fabian 06.10.: "auch
+  // Hintergrund- und Signalfarbe einstellbar") ----
+  // Background: the shared bg control (makeBgApplier pattern, Master
+  // default cascade via MASTER_BG_TARGETS). The player is dark in dark mode,
+  // so there the colour is mixed into the dark player tone instead of white
+  // - a tint, never a bright flash. Pause-sheet changes inside a Kombi stay
+  // with the block (restoreComboPrefs puts the client's own values back).
+  function mvDarkTheme() {
+    const t = document.documentElement.dataset.theme;
+    return t === "dark" || (t !== "light" && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+  function movementBgHex(p) {
+    p = p || movementPrefs;
+    const c = STROOP_COLOR_BY_KEY[p.bgColorKey];
+    return p.bgIntensity > 0 && c ? mixHex(mvDarkTheme() ? "#0b1619" : "#ffffff", c.hex, p.bgIntensity) : null;
+  }
+  function applyMovementBg() { els.movementPlayer.style.background = movementBgHex() || ""; }
+  if (window.matchMedia) {
+    const mq = matchMedia("(prefers-color-scheme: dark)");
+    const onScheme = () => { if (!els.movementPlayer.hidden) applyMovementBg(); };
+    if (mq.addEventListener) mq.addEventListener("change", onScheme);
+  }
+  const syncMovementBgUI = wireBgIntensityControl(movementPrefs, {
+    pickers: [$("movementBgColorPicker"), $("movementPauseBgColorPicker")],
+    sliders: [$("movementBgIntensitySlider"), $("movementPauseBgSlider")],
+    valueEls: [$("movementBgIntensityValue"), $("movementPauseBgValue")],
+    hintEls: [$("movementBgContrastHint"), $("movementPauseBgContrastHint")],
+    masterStatusEls: [$("movementBgMasterStatus")],
+    transfer: [{
+      sourceRow: $("movementBgSourceRow"), presetGroup: $("movementBgPresetGroup"), presetList: $("movementBgPresetList"),
+      saveBtn: $("movementBgSaveBtn"), form: $("movementBgSaveForm"), nameInput: $("movementBgSaveNameInput"),
+      cancelBtn: $("movementBgSaveCancelBtn"), confirmBtn: $("movementBgSaveConfirmBtn"),
+    }],
+  }, () => { if (!comboProgram) saveMovementPrefs(); applyMovementBg(); syncMvSigUI(); }, "movement");
+  // Signal colour: same swatches, "Standard"-link and clash hint as the
+  // Signalfarbe of the Test exercises (SIGNAL_LIB), but stored in
+  // movementPrefs so presets, Kombi blocks and Weitermachen carry it.
+  const mvSigStyleEl = document.createElement("style");
+  mvSigStyleEl.id = "movementSigStyles";
+  document.head.appendChild(mvSigStyleEl);
+  function hexRgba(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+  }
+  function applyMvSignalCss() {
+    const c = mvSigHex();
+    if (c === FIG_HIGHLIGHT) { mvSigStyleEl.textContent = ""; return; }
+    const dk = mixHex("#0b1619", c, 0.2);
+    mvSigStyleEl.textContent =
+      `#movementPlayer .movement-tile.active{border-color:${c} !important;box-shadow:0 6px 20px -8px ${hexRgba(c, 0.5)} !important}\n` +
+      `#movementPlayer .movement-lane.rows .mv-cell.active{border-color:${c} !important;background:${mixHex("#ffffff", c, 0.1)} !important;box-shadow:0 0 0 3px ${hexRgba(c, 0.35)} !important}\n` +
+      `@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #movementPlayer .movement-lane.rows .mv-cell.active{background:${dk} !important}}\n` +
+      `:root[data-theme="dark"] #movementPlayer .movement-lane.rows .mv-cell.active{background:${dk} !important}`;
+  }
+  buildSingleSelectPicker($("movementSigPicker"), SIGNAL_LIB, (key) => {
+    movementPrefs.sigColor = key;
+    saveMovementPrefs();
+    syncMvSigUI();
+  });
+  document.getElementById("movementSigGroup").addEventListener("click", (e) => {
+    if (!e.target.closest("[data-mv-sig-reset]")) return;
+    movementPrefs.sigColor = null;
+    saveMovementPrefs();
+    syncMvSigUI();
+  });
+  function syncMvSigUI() {
+    syncSingleSelectPicker($("movementSigPicker"), movementPrefs.sigColor);
+    const status = $("movementSigStatus");
+    status.textContent = "";
+    const c = movementPrefs.sigColor ? SIGNAL_BY_KEY[movementPrefs.sigColor] : null;
+    if (c) {
+      status.append(`Eigene Farbe: ${c.name}. `);
+      const reset = document.createElement("button");
+      reset.type = "button"; reset.className = "text-link";
+      reset.dataset.mvSigReset = "1";
+      reset.textContent = "Standard";
+      status.appendChild(reset);
+    } else {
+      status.textContent = "Standard: Orange.";
+    }
+    // Light mode: on the (tinted) light stage; dark mode: on the dark tiles.
+    const lightBg = mvDarkTheme() ? null : (movementBgHex() || "#ffffff");
+    const clash = $("movementSigClash");
+    const txt = lightBg && colorsClash(mvSigHex(), lightBg) ? "Diese Farbe ist auf diesem Hintergrund kaum zu sehen." : "";
+    clash.textContent = txt; clash.hidden = !txt;
+    // The movement chips on this screen draw the signal colour too.
+    if (typeof syncMvPickerUI === "function" && !els.movementReady.hidden) syncMvPickerUI();
+  }
+  function syncMvColorsUI() { syncMovementBgUI(); syncMvSigUI(); }
+
   function startMovementSession() {
     const pool = MOVEMENTS.filter((m) => movementPrefs.movements.includes(m.id));
     if (pool.length < MIN_MOVEMENTS) return;
@@ -8081,6 +9583,8 @@
     els.movementFinishBadge.hidden = true;
     els.movementProgressTrack.innerHTML = `<span class="seg"><span class="fill"></span></span>`;
     els.movementLane.style.paddingTop = "";
+    applyMovementBg();
+    applyMvSignalCss();
     movementSession = { sequence, beatLenS, totalBeats, gridMode, rows, layout: movementPrefs.layout, rowLen: movementPrefs.rowLen, preview: movementPrefs.preview, pool, startTime: performance.now(), lastBeatIdx: 0, finishTimer: null, pausedAt: null, ...mvTickOf(movementPrefs) };
     if (movementSession.tick) silentSwitchHint();
     els.movementPauseOverlay.hidden = true;
@@ -8121,7 +9625,7 @@
         Object.assign(movementPrefs, mvLookOf(entry));
         if ("tick" in entry) Object.assign(movementPrefs, mvTickOf(entry));
         saveMovementPrefs();
-        syncMvDirectionUI(); syncMvFigureUI(); syncMvTickUI(); syncMvLayoutUI();
+        syncMvDirectionUI(); syncMvFigureUI(); syncMvTickUI(); syncMvLayoutUI(); syncMvColorsUI();
         // While capturing a Kombi-Baustein, loading a saved setting should
         // just fill the draft for review/adjustment, not immediately start
         // a live session.
@@ -8143,7 +9647,7 @@
         movements: movementPrefs.movements.slice(), preview: movementPrefs.preview, bpm: movementPrefs.bpm,
         durationMin: movementPrefs.durationMin, mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel,
         direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle, layout: movementPrefs.layout, rowLen: movementPrefs.rowLen,
-        tick: movementPrefs.tick, tickVolume: movementPrefs.tickVolume,
+        tick: movementPrefs.tick, tickVolume: movementPrefs.tickVolume, ...mvColorsOf(movementPrefs),
       });
       movementSavedStore.save(list);
       renderMovementSaved();
@@ -9382,7 +10886,7 @@
     els.blitzLevelEl.textContent = `${blitzState.level} Felder`;
     fitBlitzGrid();
     renderBlitzGrid();
-    scheduleBlitzTimer(blitzCoverRound, blitzState.flashS * 1000);
+    scheduleBlitzTimer(blitzCoverRound, (softOn("blitz") ? Math.max(blitzState.flashS, SOFT_BLITZ_MIN_S) : blitzState.flashS) * 1000);
   }
   function blitzCoverRound() {
     if (!blitzState) return;
@@ -9448,6 +10952,7 @@
     els.blitzDonePanel.hidden = true;
     els.blitzPauseOverlay.hidden = true;
     els.blitzPauseBtn.hidden = false;
+    softStartRun();
     const p = prefsOverride || blitzPrefs;
     blitzState = {
       level: p.startCount, cleared: 0, phase: "reveal", lit: new Set(), tapped: new Set(), eligible: new Set(),
@@ -10108,12 +11613,12 @@
     flashState.timer = setTimeout(fn, delayMs);
   }
   function flashEffectiveStimulusS() {
-    if (flashState.mode !== "constant") return flashState.stimulusS;
-    return Math.max(0.12, flashState.stimulusS * Math.pow(0.85, flashState.speedStep));
+    const v = flashState.mode !== "constant" ? flashState.stimulusS : Math.max(0.12, flashState.stimulusS * Math.pow(0.85, flashState.speedStep));
+    return softOn("flash") ? Math.max(v, SOFT_FLASH_MIN_SHOW_S) : v;
   }
   function flashEffectiveIntervalS() {
-    if (flashState.mode !== "constant") return flashState.intervalS;
-    return Math.max(0.08, flashState.intervalS * Math.pow(0.85, flashState.speedStep));
+    const v = flashState.mode !== "constant" ? flashState.intervalS : Math.max(0.08, flashState.intervalS * Math.pow(0.85, flashState.speedStep));
+    return softOn("flash") ? Math.max(v, SOFT_FLASH_MIN_GAP_S) : v;
   }
   function flashStartRound() {
     const count = flashState.mode === "constant" ? flashState.constantCount : flashState.count;
@@ -10345,6 +11850,7 @@
     els.flashPauseBtn.hidden = false;
     els.flashInputPanel.hidden = true;
     els.flashDigitEl.hidden = true;
+    softStartRun();
     const p = prefsOverride || flashPrefs;
     lastFlashMode = mode;
     flashReturnScreen = mode === "training" ? "flashTrainingReady" : "flashReady";
@@ -11376,6 +12882,29 @@
   if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => { if (balanceState) balanceLayout(); }).observe(balP.stage);
 
   // Cardio-Zusatzaufgabe fields (same choices as the ready screen, compact).
+  // Farbfelder as Cardio-Zusatzaufgabe: the same choices as its ready
+  // screen (Modus, Stufe, Startlänge, Fuß, Hände, Tempo); layout and hand
+  // rules are the client's own (the mat on the floor does not change).
+  function farbfelderCardioFieldsHtml(typeId, cfg) {
+    const row = (field, opts, cls) => `<div class="choice-row${cls ? " " + cls : ""}">` +
+      opts.map(([v, label]) => `<button class="choice${String(cfg[field]) === String(v) ? " active" : ""}" data-type="${typeId}" data-balf="${field}" data-balv="${v}">${label}</button>`).join("") + `</div>`;
+    return `<div class="choice-row two" data-mode-row="${typeId}">` +
+      CARDIO_GUEST_MODE_LISTS.farbfelder.map((m) => `<button class="choice${cfg.mode === m.id ? " active" : ""}" data-type="${typeId}" data-mode="${m.id}">${esc(m.title)}</button>`).join("") + `</div>` +
+      `<div class="cardio-guest-field-row">
+        <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${typeId}" data-f="duration" value="${cfg.duration}"></div>
+        <div><label>Reiz-Dauer (Sek.)</label><input type="number" min="0.3" max="3" step="0.1" data-type="${typeId}" data-f="stimulusS" value="${cfg.stimulusS}"></div>
+        <div><label>Pause min (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${typeId}" data-f="intervalMin" value="${cfg.intervalMin}"></div>
+        <div><label>Pause max (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${typeId}" data-f="intervalMax" value="${cfg.intervalMax}"></div>
+      </div>` +
+      (cfg.mode === "regeln" ? `<div class="group-label">Stufe</div>` + row("level", [[1, "Stufe 1"], [2, "Stufe 2"], [3, "Stufe 3"], [4, "Stufe 4"]], "two") : "") +
+      (cfg.mode === "abfolge" ? `<div class="group-label">Länge der ersten Folge</div>` + row("seqStart", [[2, "2 Felder"], [3, "3 Felder"]], "two") : "") +
+      (cfg.mode === "sehenhoeren" ? `<div class="group-label">Bei beidem gilt</div>` + row("gilt", [["gesagt", "das Gesagte"], ["gezeigt", "das Gezeigte"]], "two") +
+        `<div class="group-label">Mischung</div>` + row("mix", Object.entries(FF_MIXES).map(([k, m]) => [k, m.label])) : "") +
+      (FF_FLIP_MODES.includes(cfg.mode) ? `<div class="group-label">Rhythmus-Umkehr</div>` + row("flip", [[0, "Aus"], [2, "Jedes 2. Mal"], [3, "Jedes 3. Mal"]]) : "") +
+      `<div class="group-label">Fuß-Vorgabe</div>` + row("foot", [["aus", "Aus"], ["wechsel", "Im Wechsel"], ["zufall", "Zufällig"]]) +
+      `<div class="group-label">Hände</div>` + row("hands", [[false, "Aus"], [true, "An"]], "two") +
+      `<div class="group-help">Anordnung und Hand-Aufgaben wie unter Visuelles Training › Farbfelder eingestellt.</div>`;
+  }
   function balanceCardioFieldsHtml(typeId, cfg) {
     const row = (field, opts, cls) => `<div class="choice-row${cls ? " " + cls : ""}">` +
       opts.map(([v, label]) => `<button class="choice${String(cfg[field]) === String(v) ? " active" : ""}" data-type="${typeId}" data-balf="${field}" data-balv="${v}">${label}</button>`).join("") + `</div>`;
@@ -11402,6 +12931,34 @@
   // (ctrl+wheel = trackpad pinch). A standalone run saves the new value;
   // inside a Kombi or as a Cardio-Zusatzaufgabe it only changes this run.
   const GAME_TAP_SEL = ".remember-marker.covered, .blitz-cell.tappable, .mot-object.tappable, .flash-key";
+  // Every other answer tap counts on touch-down too (Fabian 07.10.: "überall,
+  // wo du eine Berührung brauchst" - Hütchen sortieren and the Test-Bereich
+  // reacted only sometimes). One delegated listener: a touch/pen pointerdown
+  // on such an element clicks it at once, the real click that may follow is
+  // swallowed. Only for handlers that ignore the event's coordinates
+  // (Halbierung keeps its click, it measures where the finger was).
+  const FAST_TAP_SEL = [
+    "#coneOrderStage", "#gngStage", "#vorlaufTapzone", "#kippbildArea", "#antizipTapBtn",
+    "[class*='-response-btn']", ".reakt-light", ".hick-box", ".corsi-block", ".subitize-key", ".wcst-ref", "#dsstKeypad > button",
+    "#flankerLeftBtn", "#flankerRightBtn", "#posnerLeftBtn", "#posnerRightBtn", "#alarmLeftBtn", "#alarmRightBtn",
+    "#stopLeftBtn", "#stopRightBtn", "#navonHBtn", "#navonSBtn", "#rotationNormalBtn", "#rotationMirroredBtn",
+    "#merkSameBtn", "#merkChangedBtn", "#simonLeftBtn", "#simonRightBtn", "#tsLeftBtn", "#tsRightBtn", "#antiLeftBtn", "#antiRightBtn",
+  ].join(",");
+  let fastTapEl = null, fastTapAt = 0;
+  document.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse") return;
+    const el = e.target.closest && e.target.closest(FAST_TAP_SEL);
+    if (!el || el.disabled || el.closest("[hidden]") || el.matches(GAME_TAP_SEL)) return;
+    // a button inside a tap area (Beenden, Pause, step bar) keeps its own click
+    const inner = e.target.closest("button, a, input, select, textarea, label, [role=button]");
+    if (inner && inner !== el && el.contains(inner)) return;
+    fastTapEl = el; fastTapAt = performance.now();
+    el.click();
+  }, { capture: true });
+  document.addEventListener("click", (e) => {
+    if (!e.isTrusted || !fastTapEl || performance.now() - fastTapAt > 1000) return;
+    if (fastTapEl.contains(e.target)) { e.stopImmediatePropagation(); e.preventDefault(); fastTapEl = null; }
+  }, { capture: true });
   function wirePinchSize(stage, { get, set, min, max, label }) {
     const pts = new Map();
     let start = null;
@@ -11921,6 +13478,116 @@
     comboMotDurationS = Number(els.motTrainingComboDurationSlider.value);
     els.motTrainingComboDurationValue.textContent = fmtSeconds(comboMotDurationS);
   });
+
+  // ---- NAT: "Aktuelle Einstellung speichern" (Idee 54, Fabian 2026-10-07).
+  // Same list + inline name form as VT/Atem/Reaktion (makePresetStore,
+  // renderPresetList, wirePresetSaveForm) on all eight NAT ready screens
+  // (Periphere Wahrnehmung uses the VT ready screen and its VT presets). A
+  // preset is the exercise's whole prefs object (mode, difficulty, timing,
+  // look, background) + the mode it was saved in. Tap = apply + start, like
+  // the siblings; in Kombi capture it only fills the draft (the capture
+  // restores the client's own prefs on exit, so nothing leaks). Kombi
+  // blocks and Cardio guests keep their own `prefs` snapshot
+  // (prefsOverride) and never read this store. "✕" asks first.
+  NAT_SAVED = (() => {
+    const natStore = makePresetStore("fwmc-nat-saved-v1"); // [{ id, name, ex, mode, prefs }]
+    const deep = (o) => JSON.parse(JSON.stringify(o));
+    const diffName = (table, p, fields) => {
+      const k = Object.keys(table).find((key) => fields.every((f) => Math.abs(table[key][f] - p[f]) < 0.001));
+      return k ? table[k].title : "Eigene Werte";
+    };
+    const modeLabel = (ex, mode) => { const m = NAT_MODES[ex] && NAT_MODES[ex].modes.find((x) => x.key === mode); return m ? m.label : ""; };
+    const EX = {
+      remember: {
+        prefs: rememberPrefs, put: (p) => { Object.assign(rememberPrefs, p); saveRememberPrefsToStorage(); loadRememberPrefs(); },
+        open: (mode) => { if (mode === "training") { syncRememberTrainingUI(); showScreen("rememberTrainingReady"); } else openRememberReady(mode); },
+        capturing: () => (comboRememberCaptureOriginal ? comboRememberCaptureMode : null),
+        meta: (e) => [modeLabel("remember", e.mode), e.mode === "training" ? `ab Zahl ${e.prefs.trainingStart}` : diffName(REMEMBER_DIFFICULTIES, e.prefs, ["revealBaseS", "revealStepS"])],
+      },
+      blitz: {
+        prefs: blitzPrefs, put: (p) => { Object.assign(blitzPrefs, p); saveBlitzPrefsToStorage(); loadBlitzPrefs(); },
+        open: () => openBlitzReady(),
+        capturing: () => (comboBlitzCaptureOriginal ? "-" : null),
+        meta: (e) => [`Raster ${e.prefs.gridSize}×${e.prefs.gridSize}`, diffName(BLITZ_DIFFICULTIES, e.prefs, ["flashS"])],
+      },
+      flash: {
+        prefs: flashPrefs, put: (p) => { Object.assign(flashPrefs, p); saveFlashPrefsToStorage(); loadFlashPrefs(); },
+        open: (mode) => { if (mode === "training") openFlashTrainingReady(); else openFlashReady(mode); },
+        capturing: () => (comboFlashCaptureOriginal ? comboFlashCaptureMode : null),
+        meta: (e) => [modeLabel("flash", e.mode), e.mode === "training" ? `ab ${e.prefs.trainingStart} Zeichen` : diffName(FLASH_DIFFICULTIES, e.prefs, ["stimulusS", "intervalS"])],
+      },
+      mot: {
+        prefs: motPrefs, put: (p) => { Object.assign(motPrefs, p); saveMotPrefsToStorage(); loadMotPrefs(); },
+        open: (mode) => { if (mode === "training") openMotTrainingReady(); else openMotReady(mode); },
+        capturing: () => (comboMotCaptureOriginal ? comboMotCaptureMode : null),
+        meta: (e) => [modeLabel("mot", e.mode), e.mode === "training" ? `${e.prefs.trainingObjects} Objekte` : diffName(MOT_DIFFICULTIES, e.prefs, ["speed", "trackS", "highlightS"])],
+      },
+      balance: {
+        prefs: balancePrefs, put: (p) => { Object.assign(balancePrefs, p); normalizeBalancePrefs(balancePrefs); saveBalancePrefsToStorage(); },
+        open: () => openBalanceReady(),
+        capturing: () => (comboBalanceCaptureOriginal ? "-" : null),
+        meta: (e) => [(BALANCE_MODES[e.prefs.mode] || {}).name || "", `${e.prefs.sticks === 2 ? "2 Stifte" : "1 Stift"}`, `${e.prefs.bpm}/min`],
+      },
+    };
+    // screen id -> exercise, its start button and the mode it currently shows
+    const SCREENS_NAT = {
+      rememberReady: { ex: "remember", start: "rememberReadyStartBtn", mode: () => rememberReadyMode },
+      rememberTrainingReady: { ex: "remember", start: "rememberTrainingStartBtn", mode: () => "training" },
+      blitzReady: { ex: "blitz", start: "blitzReadyStartBtn", mode: () => null },
+      flashReady: { ex: "flash", start: "flashReadyStartBtn", mode: () => flashReadyMode },
+      flashTrainingReady: { ex: "flash", start: "flashTrainingStartBtn", mode: () => "training" },
+      motReady: { ex: "mot", start: "motReadyStartBtn", mode: () => motReadyMode },
+      motTrainingReady: { ex: "mot", start: "motTrainingStartBtn", mode: () => "training" },
+      balanceReady: { ex: "balance", start: "balanceReadyStartBtn", mode: () => null },
+    };
+    const startOf = (ex, mode) => SCREENS_NAT[Object.keys(SCREENS_NAT).find((k) => SCREENS_NAT[k].ex === ex && (mode === "training") === k.includes("Training"))].start;
+    function render(sid) {
+      const c = SCREENS_NAT[sid];
+      const x = EX[c.ex];
+      const cap = x.capturing();
+      renderPresetList(natStore, $(sid + "SavedList"), $(sid + "SavedGroup"),
+        // In Kombi capture only presets of the captured mode fit; otherwise
+        // every preset of this exercise (its mode switches along).
+        (e) => e.ex === c.ex && (!cap || cap === "-" || e.mode === cap),
+        (e) => x.meta(e).filter(Boolean).join(" · "),
+        (entry) => apply(sid, entry), { confirmDelete: true });
+    }
+    function apply(sid, entry) {
+      const c = SCREENS_NAT[sid];
+      const x = EX[c.ex];
+      x.put(deep(entry.prefs));
+      if (x.capturing()) {
+        // Keep the capture's own title/description, only refresh the values.
+        const scr = $(sid);
+        const keep = [scr.querySelector(":scope > h1.page-title"), scr.querySelector(":scope > .page-sub")].filter(Boolean).map((el) => [el, el.textContent]);
+        x.open(entry.mode);
+        keep.forEach(([el, t]) => { el.textContent = t; });
+        return;
+      }
+      if (NAT_MODES[c.ex] && entry.mode) openNatMode(c.ex, entry.mode); else x.open(entry.mode);
+      $(startOf(c.ex, entry.mode)).click();
+    }
+    Object.keys(SCREENS_NAT).forEach((sid) => {
+      const c = SCREENS_NAT[sid];
+      wirePresetSaveForm({
+        saveBtn: $(sid + "SaveBtn"), form: $(sid + "SaveForm"), nameInput: $(sid + "SaveNameInput"),
+        cancelBtn: $(sid + "SaveCancelBtn"), confirmBtn: $(sid + "SaveConfirmBtn"),
+        defaultName: () => `Eigene Einstellung ${new Date().toLocaleDateString("de-DE")}`,
+        onSave: (name) => {
+          const list = natStore.load();
+          list.push({ id: String(Date.now()), name, ex: c.ex, mode: c.mode(), prefs: deep(EX[c.ex].prefs) });
+          natStore.save(list);
+          render(sid);
+        },
+      });
+    });
+    return function syncNatSaved(name) {
+      if (!SCREENS_NAT[name]) return;
+      $(name + "SaveForm").hidden = true;
+      $(name + "SaveBtn").hidden = false;
+      render(name);
+    };
+  })();
 
   // ---- Round engine ----
   function motEffectiveSpeed() { return motState.speed * Math.pow(MOT_SPEED_STEP_FACTOR, motState.speedStep); }
@@ -12537,14 +14204,21 @@
     st.block = strengthItemBlock(st.strength.items[step.itemIndex]);
     st.ex = findWorkoutExercise(st.block.exercise);
     st.setIndex = step.set;
+    if (idx > 0) resumeStrengthNote();
   }
+  // Weitermachen beim Kraftplan (Idee 47, Fabian 06.10.): a standalone
+  // Kraftplan notes its set at every step; resumeRun() starts it again at
+  // that set (strengthResumeAt), with the plan's own "Bereit machen".
+  let strengthResumeAt = null; // { idx, played } while a continued Kraftplan starts
   function startStrengthBlock(plan) {
     const now = performance.now();
+    const at = strengthResumeAt; strengthResumeAt = null;
     workoutState = {
       kind: "reps", strength: plan, steps: buildStrengthSteps(plan), stepIndex: 0,
-      startTime: now, sessionStart: now, achievedByItem: {},
+      startTime: now, sessionStart: now - (at ? at.played * 1000 : 0), achievedByItem: {},
     };
-    strengthApplyStep(0);
+    if (!at && !workoutPlan && !comboProgram) resumeSingleClear("strength");
+    strengthApplyStep(at ? Math.min(at.idx, workoutState.steps.length - 1) : 0);
     requestWakeLock();
     renderRepsView();
     if ((plan.prepS || 0) > 0) startRepsRest(plan.prepS, "start");
@@ -12990,7 +14664,7 @@
   function cueControlsHtml(cfg, labels) {
     const has = (k) => k in labels;
     const choice = (attr, v, cur, text) => `<button type="button" class="choice${v === cur ? " active" : ""}" ${attr}="${v}">${text}</button>`;
-    const check = (k, extraClass = "") => has(k) ? `<label class="checkbox-row${extraClass}"><input type="checkbox" data-cue-key="${k}"${cfg[k] ? " checked" : ""}> ${labels[k]}</label>` : "";
+    const check = (k, extraClass = "") => has(k) ? `<label class="checkbox-row tap-row${extraClass}"><input type="checkbox" data-cue-key="${k}"${cfg[k] ? " checked" : ""}> ${labels[k]}</label>` : "";
     let h = `<div class="cue-sub-label">Countdown-Töne</div><div class="choice-row">` +
       CUE_COUNT_CHOICES.map((v) => choice("data-cue-count", v, cfg.countdownS, v ? `${v} Sek.` : "Aus")).join("") + `</div>`;
     if (cfg.countdownS > 0) h += check("countStart") + check("countEnd");
@@ -13033,7 +14707,7 @@
       `<div class="group-help">Gilt für Tabata-Zirkel, Kraftplan, Ausdauertraining und die Pausen im Kombi-Programm. In den Feineinstellungen jedes Bereichs kannst du davon abweichen.</div>` +
       cueControlsHtml(masterPrefs.cues, CUE_FIELD_LABELS.master) +
       `<div class="cue-sub-label">iPhone/iPad</div>` +
-      `<label class="checkbox-row"><input type="checkbox" data-cue-silent${masterPrefs.cuesIgnoreSilent ? " checked" : ""}> Töne auch bei eingeschaltetem Stummschalter (pausiert Musik, z. B. Spotify)</label>` +
+      `<label class="checkbox-row tap-row"><input type="checkbox" data-cue-silent${masterPrefs.cuesIgnoreSilent ? " checked" : ""}> Töne auch bei eingeschaltetem Stummschalter (pausiert Musik, z. B. Spotify)</label>` +
       `<div class="group-help">Ohne Haken spielt das iPhone Töne über den Lautsprecher nur, wenn der Stummschalter aus ist (mit Kopfhörern immer). Mit Haken klingen sie trotzdem, dafür pausiert iOS dann meist deine Musik.</div>`;
   }
   (() => {
@@ -13292,6 +14966,7 @@
       if (hitTop) suggestion = `Stark – du hast in jedem Satz ${st.block.rangeMax}+ Wiederholungen geschafft. Nächstes Mal schwerer machen (mehr Gewicht, schwerere Variante, oder die Übung tauschen)?`;
     }
     const aborted = !!(st && st.aborted);
+    if (st && st.strength && !workoutPlan && !comboProgram) resumeSingleClear("strength");
     workoutState = null;
     onWorkoutBlockDone(played, doneEx, aborted ? null : suggestion, aborted);
   }
@@ -13331,6 +15006,7 @@
     const go = () => { if (workoutTransitionTimer) clearTimeout(workoutTransitionTimer); els.workoutTransition.hidden = true; onContinue(); };
     els.workoutTransitionBtn.onclick = go;
     workoutTransitionTimer = setTimeout(go, 4000);
+    wireTransitionHold(els.workoutTransition, () => { clearTimeout(workoutTransitionTimer); workoutTransitionTimer = null; });
   }
   function finishWorkoutPlan(aborted) {
     resumeClear();
@@ -14820,6 +16496,7 @@
 
   function renderCardioProgramIntro(def, code, key) {
     const title = def.name || def.label || "Deine Ausdauer-Einheit";
+    introAdaptDef = { def, name: title };
     els.cardioProgramTitle.textContent = title;
     els.cardioProgramMeta.textContent = `${countLabel(def.items.length, "Aktivität", "Aktivitäten")} · ca. ${fmtMinutes(cardioItemsSeconds(def.items))}`;
     els.cardioProgramDesc.textContent = def.description || "";
@@ -14927,6 +16604,8 @@
     { id: "cross-modal", title: "Sehen & Hören", group: "vt" },
     { id: "cone-compass", title: "Hütchen · Kompass-Aufbau", group: "vt" },
     { id: "cone-tap", title: "Hütchen sortieren", group: "vt" },
+    { id: "farbfelder", title: "Farbfelder", group: "vt" },
+    { id: "cone-number", title: "Hütchen · Farbe + Zahl", group: "vt" },
     { id: "periph-flash", title: "Periphere Wahrnehmung", group: "nat" },
     { id: "blitz-raster", title: "Blitz-Raster", group: "nat" },
     { id: "remember", title: "Positionen merken", group: "nat" },
@@ -14979,6 +16658,7 @@
   function cardioGuestIsFlash(guestId) { return guestId === "flash"; }
   function cardioGuestIsMot(guestId) { return guestId === "mot"; }
   function cardioGuestIsBalance(guestId) { return guestId === "balance"; }
+  function cardioGuestIsFarbfelder(guestId) { return guestId === "farbfelder"; }
   // Any type with more than one starting mode (Remember/Flash/MOT each
   // have several - training vs. fixed vs. shuffle vs. ...) needs an extra
   // mode-choice step, both in the live picker (renderCardioAddonPicker())
@@ -14991,6 +16671,7 @@
     flash: [{ id: "constant", title: "Konstant" }, { id: "climb", title: "Steigend, direkt" }, { id: "climbRepeat", title: "Steigend, mit Wiederholung" }, { id: "training", title: "Trainingsmodus" }],
     mot: [{ id: "speed", title: "Tempo steigt" }, { id: "count", title: "Anzahl steigt" }, { id: "both", title: "Beides steigt" }, { id: "training", title: "Trainingsmodus" }],
     balance: Object.entries(BALANCE_MODES).map(([id, m]) => ({ id, title: m.name })),
+    farbfelder: Object.entries(FF_MODE_LABELS).map(([id, title]) => ({ id, title })),
   };
   function cardioGuestModeList(guestId) { return CARDIO_GUEST_MODE_LISTS[guestId] || null; }
   function cardioGuestDefaultCfg(guestId) {
@@ -15009,7 +16690,11 @@
     if (guestId === "remember") return { duration: 20, mode: "fixed", revealBaseS: REMEMBER_DIFFICULTIES.mittel.revealBaseS, revealStepS: REMEMBER_DIFFICULTIES.mittel.revealStepS, errorMode: "reset2", trainingStart: 8, trainingProgress: true, trainingPositionMode: "shuffle", markerScale: 1, numColor: "weiss", ...bg };
     if (guestId === "flash") return { duration: 20, mode: "constant", kind: "zahlen", stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS, intervalS: FLASH_DIFFICULTIES.mittel.intervalS, errorMode: "reset2", axes: PERIPH_AXIS_KEYS.slice(), useZones: false, zones: PERIPH_ZONE_KEYS.slice(), fixEnabled: true, fixChar: "", fixColor: "grau", fixSize: 1, constantCount: 3, startCount: 3, repsPerLevel: 2, trainingStart: 5, trainingProgress: true, charScale: 1, charColor: "standard", ...bg };
     if (guestId === "balance") return { ...JSON.parse(JSON.stringify(BALANCE_DEFAULTS)), duration: 20, ...bg };
+    // Farbfelder: the mat layout and the hand rules always come from the
+    // client's own Farbfelder settings (it is the same mat on the floor).
+    if (guestId === "farbfelder") return { duration: 20, mode: "leuchten", stimulusS: 1.5, intervalMin: 2, intervalMax: 4, level: 1, seqStart: 2, foot: "aus", hands: false, gilt: "gesagt", mix: "ausgewogen", flip: 0 };
     if (guestId === "mot") return { duration: 20, mode: "speed", style: "flach", speed: MOT_DIFFICULTIES.mittel.speed, trackS: MOT_DIFFICULTIES.mittel.trackS, highlightS: MOT_DIFFICULTIES.mittel.highlightS, errorMode: "reset2", colors: ["schwarz"], targetColors: ["gelb"], objectCount: 8, targetCount: 4, growStartObjects: 4, growStartTargets: 1, trainingObjects: 6, trainingTargets: 2, trainingSpeedStep: 0, trainingProgress: true, objScale: 1, ...bg };
+    if (guestId === "cone-number") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "gelb", "gruen", "blau"], fields: 4, ...bg };
     if (guestId === "vt-color" || guestId === "vrw-original") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg };
     if (guestId === "stroop-classic" || guestId === "stroop-bg") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "blau", "gruen"], ...bg };
     if (guestId === "8-vrw" || guestId === "cross-modal") return { duration: 20, stimulusS: 1, intervalMin: 2, intervalMax: 4, ...bg };
@@ -15074,6 +16759,22 @@
       if (cardioGuestIsFlash(t.id)) normalizeLookPrefs("flash", p);
       if (cardioGuestIsMot(t.id)) normalizeLookPrefs("mot", p);
       if (cardioGuestIsBalance(t.id)) { const dur = p.duration; normalizeBalancePrefs(p); p.duration = dur; }
+      if (t.id === "cone-number") {
+        if (!Number.isFinite(p.fields) || p.fields < CN_MIN_FIELDS || p.fields > CN_MAX_FIELDS) p.fields = d.fields;
+        p.fields = Math.round(p.fields);
+      }
+      if (cardioGuestIsFarbfelder(t.id)) {
+        if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
+        if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
+        if (!Number.isFinite(p.intervalMax) || p.intervalMax < 0.5 || p.intervalMax > 15) p.intervalMax = d.intervalMax;
+        if (![1, 2, 3, 4].includes(p.level)) p.level = d.level;
+        if (![2, 3].includes(p.seqStart)) p.seqStart = d.seqStart;
+        if (!["aus", "wechsel", "zufall"].includes(p.foot)) p.foot = d.foot;
+        if (typeof p.hands !== "boolean") p.hands = d.hands;
+        if (!["gesagt", "gezeigt"].includes(p.gilt)) p.gilt = d.gilt;
+        if (!FF_MIXES[p.mix]) p.mix = d.mix;
+        if (![0, 2, 3].includes(p.flip)) p.flip = d.flip;
+      }
       if (cardioGuestIsRemember(t.id)) {
         if (!Number.isFinite(p.revealBaseS) || p.revealBaseS < 0.5 || p.revealBaseS > 3) p.revealBaseS = d.revealBaseS;
         if (!Number.isFinite(p.revealStepS) || p.revealStepS < 0.1 || p.revealStepS > 1) p.revealStepS = d.revealStepS;
@@ -15297,6 +16998,8 @@
           `</div>`;
       } else if (cardioGuestIsBalance(t.id)) {
         html += balanceCardioFieldsHtml(t.id, cfg);
+      } else if (cardioGuestIsFarbfelder(t.id)) {
+        html += farbfelderCardioFieldsHtml(t.id, cfg);
       } else if (cardioGuestIsConeTap(t.id)) {
         html += `<div class="cardio-guest-field-row">
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
@@ -15455,7 +17158,8 @@
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
         <div><label>Reiz-Dauer (Sek.)</label><input type="number" min="0.3" max="3" step="0.1" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"></div>
         <div><label>Pause min (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${t.id}" data-f="intervalMin" value="${cfg.intervalMin}"></div>
-        <div><label>Pause max (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${t.id}" data-f="intervalMax" value="${cfg.intervalMax}"></div>
+        <div><label>Pause max (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${t.id}" data-f="intervalMax" value="${cfg.intervalMax}"></div>${t.id === "cone-number" ? `
+        <div><label>Anzahl Felder</label><input type="number" min="${CN_MIN_FIELDS}" max="${CN_MAX_FIELDS}" step="1" data-type="${t.id}" data-f="fields" value="${cfg.fields}"></div>` : ""}
       </div>`;
       }
       if (cardioGuestIsPeriphLike(t.id) || cardioGuestIsFlash(t.id)) {
@@ -15829,13 +17533,17 @@
   function syncCardioAddonTriggerBtn() {
     els.cardioAddonTriggerBtn.hidden = false;
   }
-  function startStandaloneCardio(items) {
+  function startStandaloneCardio(items, at) {
+    if (!at && !comboProgram) resumeSingleClear("cardio");
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.cardioPlayer.hidden = false;
     els.cardioAddonPicker.hidden = true;
     lastCardioItems = items;
-    cardioState = { items: withCardioPauses(items), realCount: items.length, index: 0, blockStartTime: performance.now(), sessionStartTime: performance.now(), nextGuestAt: null, gallery: null, motivKey: null };
+    const t0 = performance.now();
+    cardioState = at
+      ? { items: at.items, realCount: at.items.filter((b) => !b.pause).length, index: at.index, blockStartTime: t0 - at.blockS * 1000, sessionStartTime: t0 - at.played * 1000, nextGuestAt: null, gallery: null, motivKey: null }
+      : { items: withCardioPauses(items), realCount: items.length, index: 0, blockStartTime: t0, sessionStartTime: t0, nextGuestAt: null, gallery: null, motivKey: null };
     stopCardioInlineFlash();
     els.cardioMotiv.hidden = true;
     applyCardioBg();
@@ -16043,6 +17751,13 @@
     // usesStroopColors one below - same addonDefaultOwn()-shaped cfg as
     // addon-flash (cardioGuestIsPeriphLike()), just written into these
     // fields instead of active.*.
+    if (guestId === "cone-number") { state.cnFields = cfg.fields; cnNormalize(state); }
+    if (guestId === "farbfelder") {
+      state.ffMode = cfg.mode; state.ffLevel = cfg.level; state.ffSeqStart = cfg.seqStart;
+      state.ffFoot = cfg.foot; state.ffHands = cfg.hands;
+      state.ffGilt = cfg.gilt; state.ffMix = cfg.mix; state.ffFlip = cfg.flip;
+      ffNormalize(state);
+    }
     if (guestId === "periph-flash") {
       state.periphKind = cfg.kind;
       state.periphAxes = cfg.axes;
@@ -16403,6 +18118,7 @@
     onRight: () => els.cardioPrevBtn.click(),
   });
   function abortCardio() {
+    resumeCardioNote();
     stopCardioInlineFlash();
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
     cardioRaf = null;
@@ -16436,6 +18152,7 @@
     const totalS = aborted ? Math.min(plannedS, (performance.now() - cardioState.sessionStartTime) / 1000) : plannedS;
     const realItems = items.filter((b) => !b.pause);
     releaseWakeLock();
+    if (!comboProgram) resumeSingleClear("cardio");
     cardioState = null;
     if (comboProgram) { advanceComboProgram(totalS); return; }
     els.cardioPlayer.hidden = true;
@@ -16523,6 +18240,7 @@
       wimhofSettings.rounds = block.rounds ?? WIMHOF_DEFAULTS.rounds;
       wimhofSettings.breathPaceS = block.breathPaceS ?? WIMHOF_DEFAULTS.breathPaceS;
       wimhofSettings.recoveryHoldS = block.recoveryHoldS ?? WIMHOF_DEFAULTS.recoveryHoldS;
+      wimhofSettings.roundRestS = whRoundRestOf(block);
       hideAllPlayers();
       openWimhofReady();
     } else if (block.domain === "breath") {
@@ -16531,7 +18249,7 @@
       breathPrefs.durationMin = block.durationMin ?? 5;
       breathPrefs.sound = block.sound !== false;
       breathPrefs.listen = !!block.listen;
-      startBreathSession();
+      startBreathSession({ open: !!block.noLimit });
     } else if (block.domain === "movement") {
       if (block.movements) movementPrefs.movements = block.movements;
       movementPrefs.preview = block.preview ?? movementPrefs.preview;
@@ -16547,6 +18265,8 @@
       state.exercise = block.exercise;
       const visEx = EXERCISES[block.exercise];
       if (block.periph) Object.assign(state, JSON.parse(JSON.stringify(block.periph)));
+      if (block.ff) { Object.assign(state, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
+      if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
       // Generalized from a visual-only "usesColors" check (the sole shape
       // the original 3 curated presets ever needed) to all 3 colour kinds,
       // now that capture mode lets any exercise's block carry its own
@@ -16988,6 +18708,7 @@
   function finishComboProgram() {
     resumeClear();
     hideAllPlayers();
+    exitComboFullscreen();
     restoreComboPrefs();
     const played = comboProgram.totalPlayedS;
     const title = comboProgram.title;
@@ -17002,6 +18723,7 @@
   }
   function abortComboProgram() {
     hideAllPlayers();
+    exitComboFullscreen();
     restoreComboPrefs();
     comboProgram = null;
     showScreen(comboReturnScreen);
@@ -17058,9 +18780,15 @@
   // one go, after an in-app "Bist du sicher?" Ja/Nein - never the browser's
   // own confirm(), which looks foreign in the installed app.
   let confirmYesFn = null, confirmReturnFocus = null;
-  function confirmDialog(text, onYes) {
+  let confirmNoFn = null;
+  function confirmDialog(text, onYes, opts) {
     const sheet = document.getElementById("confirmSheet");
+    const o = opts || {};
     document.getElementById("confirmText").textContent = text;
+    document.getElementById("confirmTitle").textContent = o.title || "Bist du sicher?";
+    document.getElementById("confirmYesBtn").textContent = o.yes || "Ja";
+    document.getElementById("confirmNoBtn").textContent = o.no || "Nein";
+    confirmNoFn = o.onNo || null;
     confirmYesFn = onYes;
     confirmReturnFocus = document.activeElement;
     sheet.hidden = false;
@@ -17120,6 +18848,42 @@
   // is held back, a 3-2-1 overlay (with the countdown beeps) runs, then the
   // tap goes through. Kombi capture ("Baustein übernehmen") is never held.
   // Grundeinstellungen "Countdown 3-2-1 vor dem Start" switches it off.
+  // ---- Hinweis bei schwachem Kontrast (Fabian 07.10.): Haken & Kreuz is
+  // off unless chosen. When a run starts on a background where the green
+  // (richtig) or red (falsch) feedback stands out poorly (< 3:1), the
+  // first start with that colour/intensity asks once whether to add them.
+  // Registered before the lead-in listener, so it asks before the 3-2-1.
+  const FB_HINT_KEY = "fwmc-fb-hint-v1";
+  const FB_HINT_STARTS = {
+    rememberReadyStartBtn: ["remember", () => rememberPrefs], rememberTrainingStartBtn: ["remember", () => rememberPrefs],
+    blitzReadyStartBtn: ["blitz", () => blitzPrefs], motReadyStartBtn: ["mot", () => motPrefs], motTrainingStartBtn: ["mot", () => motPrefs],
+  };
+  const FB_OK_HEX = "#2e7d32", FB_BAD_HEX = "#d32f2f";
+  let fbHintBypass = false;
+  function fbHintWeak(prefs) {
+    if (!(prefs.bgIntensity > 0) || !STROOP_COLOR_BY_KEY[prefs.bgColorKey]) return false;
+    const bg = mixHex("#ffffff", STROOP_COLOR_BY_KEY[prefs.bgColorKey].hex, prefs.bgIntensity);
+    return Math.min(contrastRatio(FB_OK_HEX, bg), contrastRatio(FB_BAD_HEX, bg)) < 3;
+  }
+  document.addEventListener("click", (e) => {
+    if (fbHintBypass) return;
+    if (navigator.webdriver && !readJSON("fwmc-test-fbhint", false)) return;
+    const b = e.target && e.target.closest ? e.target.closest("button") : null;
+    const hit = b && !b.disabled && FB_HINT_STARTS[b.id];
+    if (!hit || b.textContent.trim() !== "Training starten") return;
+    const [ex, prefsOf] = hit, prefs = prefsOf();
+    if (cvdFbOn(ex) || !fbHintWeak(prefs)) return;
+    const seen = readJSON(FB_HINT_KEY, []);
+    const combo = `${ex}:${prefs.bgColorKey}:${Math.round(prefs.bgIntensity * 20)}`;
+    if (Array.isArray(seen) && seen.includes(combo)) return;
+    writeJSON(FB_HINT_KEY, (Array.isArray(seen) ? seen : []).concat(combo).slice(-60));
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const go = () => { fbHintBypass = true; try { b.click(); } finally { fbHintBypass = false; } };
+    confirmDialog("Auf dieser Hintergrundfarbe sind Grün (richtig) und Rot (falsch) schwer zu erkennen. Möchtest du zusätzlich ein Häkchen bzw. Kreuz als Bestätigung? Du kannst es jederzeit in den Feineinstellungen oder in der Pause ändern.",
+      () => { cvdSetOverride(ex, "fb", true); go(); },
+      { title: "Kontrast könnte schwach sein", yes: "Häkchen einblenden", no: "Ohne starten", onNo: go });
+  }, true);
   const LEADIN_START_IDS = ["movementStartBtn", "movementProgramStartBtn", "breathStartBtn", "breathProgramStartBtn",
     "rememberReadyStartBtn", "rememberTrainingStartBtn", "blitzReadyStartBtn", "flashReadyStartBtn", "flashTrainingStartBtn",
     "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn",
@@ -17852,10 +19616,11 @@
     // The end-of-training question may have moved the sheet into a
     // fullscreen player; put it back so later questions stay visible.
     if (confirmSheetEl.parentNode !== document.body) document.body.appendChild(confirmSheetEl);
-    const fn = confirmYesFn;
-    confirmYesFn = null;
+    const fn = confirmYesFn, noFn = confirmNoFn;
+    confirmYesFn = null; confirmNoFn = null;
     if (confirmReturnFocus && document.body.contains(confirmReturnFocus) && !confirmReturnFocus.hidden) confirmReturnFocus.focus();
     if (yes && fn) fn();
+    else if (!yes && noFn) noFn();
   }
   (() => {
     const sheet = document.getElementById("confirmSheet");
@@ -17946,7 +19711,7 @@
       const main = document.createElement(editOpener ? "button" : "span");
       main.className = "chapter-main";
       if (!editOpener) main.style.cursor = "default";
-      main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(comboBlockLabel(block))}</strong><span>${esc(comboBlockMeta(block))}</span></span>`;
+      main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(comboBlockLabel(block))}</strong><span>${esc(comboBlockMeta(block))}</span>${block.fromProgram ? `<span class="combo-from">aus ${esc(block.fromProgram)}</span>` : ""}</span>`;
       if (editOpener) main.addEventListener("click", () => editOpener(block, i));
       if (comboDraftBlocks.length > 1) row.appendChild(dragHandleEl());
       row.appendChild(main);
@@ -18004,23 +19769,194 @@
     renderComboBlockList();
   }
   wireDragReorder(els.comboBlockList, { row: ".chapter-row", hide: ".combo-pause-row", onMove: moveComboBlock });
+  // ---- Gespeicherte Programme (Fabian 07.10., "Erst Vorschau"): open one
+  // again to change it ("Speichern" replaces it, "Als neues Programm
+  // speichern" keeps the original), newest use first with 5 shown, and any
+  // ready-made or trainer programme can be copied in ("Fertiges Programm
+  // einfügen") or adapted as an own copy - an original is never changed. ----
+  const COMBO_SAVED_SHOW = 5;
+  let comboEditing = null; // { id, name } while a saved programme is open for changes
+  let comboSavedAll = false;
+  const deepCopy = (o) => JSON.parse(JSON.stringify(o));
+  function comboSavedSorted() {
+    return comboSavedStore.load().slice().sort((a, b) => (b.lastUsed || b.createdAt || "").localeCompare(a.lastUsed || a.createdAt || ""));
+  }
+  function comboEntryMeta(e) {
+    return `${countLabel(e.blocks.length, "Baustein", "Bausteine")} · ca. ${fmtMinutes(e.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0))}`;
+  }
   function renderComboSaved() {
-    renderPresetList(comboSavedStore, els.comboSavedList, els.comboSavedGroup, null,
-      (e) => `${countLabel(e.blocks.length, "Baustein", "Bausteine")} · ca. ${fmtMinutes(e.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0))}`,
-      (entry) => {
+    const list = comboSavedSorted();
+    els.comboSavedGroup.hidden = list.length === 0;
+    els.comboSavedList.innerHTML = "";
+    const shown = comboSavedAll ? list : list.slice(0, COMBO_SAVED_SHOW);
+    shown.forEach((entry) => {
+      const wrap = document.createElement("div");
+      wrap.className = "bundle-item-wrap";
+      const btn = document.createElement("button");
+      btn.className = "bundle-item";
+      btn.innerHTML = `<div class="bundle-item-head"><strong>${esc(entry.name)}</strong></div><span class="bundle-meta">${esc(comboEntryMeta(entry))}</span>`;
+      btn.addEventListener("click", () => {
+        const all = comboSavedStore.load();
+        const e = all.find((x) => x.id === entry.id);
+        if (e) { e.lastUsed = new Date().toISOString(); comboSavedStore.save(all); }
         comboOriginBundle = null;
         startComboProgram({ name: entry.name, blocks: entry.blocks }, "local", "local:" + entry.id, currentHomeScreen());
       });
+      const ed = document.createElement("button");
+      ed.className = "combo-saved-edit";
+      ed.title = "Bearbeiten";
+      ed.setAttribute("aria-label", "Bearbeiten");
+      ed.textContent = "✎";
+      ed.addEventListener("click", () => editComboSaved(entry));
+      const rm = document.createElement("button");
+      rm.className = "combo-block-remove";
+      rm.title = "Löschen";
+      rm.setAttribute("aria-label", "Löschen");
+      rm.textContent = "✕";
+      // ✕ deletes at once like every saved-settings list; swiping asks first.
+      rm.addEventListener("click", () => {
+        comboSavedStore.save(comboSavedStore.load().filter((e) => e.id !== entry.id));
+        if (comboEditing && comboEditing.id === entry.id) setComboEditing(null);
+        renderComboSaved();
+      });
+      wrap.appendChild(btn);
+      wrap.appendChild(ed);
+      wrap.appendChild(rm);
+      els.comboSavedList.appendChild(wrap);
+    });
+    const more = $("comboSavedMoreBtn");
+    more.hidden = list.length <= COMBO_SAVED_SHOW;
+    more.textContent = comboSavedAll ? "Weniger anzeigen" : `Alle anzeigen (${list.length})`;
   }
-  function openComboScreen() {
-    comboDraftBlocks = [];
-    els.comboSaveForm.hidden = true;
-    els.comboSaveBtn.hidden = false;
+  $("comboSavedMoreBtn").addEventListener("click", () => { comboSavedAll = !comboSavedAll; renderComboSaved(); });
+  function setComboEditing(ed, note) {
+    comboEditing = ed;
+    const n = $("comboEditNote");
+    const text = ed ? `Du bearbeitest „${ed.name}“. Speichern ersetzt es, oder du speicherst es als neues Programm.` : (note || "");
+    n.textContent = text;
+    n.hidden = !text;
+    els.comboSaveBtn.textContent = ed ? "Änderungen speichern" : "Aktuelles Programm speichern";
+  }
+  function editComboSaved(entry) {
+    comboDraftBlocks = deepCopy(entry.blocks);
+    setComboEditing({ id: entry.id, name: entry.name });
+    closeComboSaveForm();
+    renderComboBlockList();
+    els.comboBlockList.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+  // Ready-made / trainer programmes of every domain as Kombi-Bausteine.
+  function comboBlocksFromDef(def) {
+    if (!def || typeof def !== "object") return [];
+    const t = def.type;
+    if (t === "combo-program") return deepCopy(def.blocks || []);
+    if (t === "breath-program") return def.blocks.map((b) => (b.pattern === "wimhof" ? { ...deepCopy(b), domain: "wimhof" } : { ...deepCopy(b), domain: "breath" }));
+    if (t === "workout-plan") return def.blocks.map((b) => ({ ...deepCopy(b), domain: "workout" }));
+    if (t === "movement-plan") return [{ domain: "movement", movements: def.movements.slice(), preview: def.preview, bpm: def.bpm, durationMin: def.durationMin, mirror: def.mirror, showLabel: def.showLabel }];
+    if (t === "cardio-plan") return [{ domain: "cardio", items: def.items.map(copyCardioItem) }];
+    if (!t && Array.isArray(def.blocks)) {
+      return def.blocks.filter((b) => b && EXERCISES[b.exercise]).map((b, i, arr) => {
+        const o = { ...deepCopy(b), domain: "visual" };
+        if (!Array.isArray(b.colors) && EXERCISES[b.exercise].usesColors) o.colors = blockColors(b).colors.map((c) => c.key || (COLOR_LIB.find((l) => l.name === c.name) || {}).key).filter(Boolean);
+        delete o.palette;
+        delete o.pauseS;
+        if (i < arr.length - 1) o.pauseAfterS = arr[i + 1].pauseS ?? def.pauseS ?? 15;
+        return o;
+      });
+    }
+    return [];
+  }
+  // Trainer programmes stay readable for "einfügen" after the code was
+  // opened once (on this device only, never sent anywhere).
+  const TRAINER_PROGRAMS_KEY = "fwmc-trainer-programs-v1";
+  const BUNDLE_ITEM_TYPE = { "bundle": undefined, "breath-bundle": "breath-program", "workout-bundle": "workout-plan", "movement-bundle": "movement-plan", "cardio-bundle": "cardio-plan", "combo-bundle": "combo-program" };
+  function rememberTrainerProgram(code, def) {
+    if (!def || def.type === "free-template" || def.type === "training-plan" || PROGRAMS[code] || BREATH_PROGRAMS[code] || WORKOUT_PLANS[code]) return;
+    const all = readJSON(TRAINER_PROGRAMS_KEY, {});
+    all[code] = { def, at: new Date().toISOString() };
+    const keep = Object.entries(all).sort((a, b) => b[1].at.localeCompare(a[1].at)).slice(0, CODE_HISTORY_MAX);
+    writeJSON(TRAINER_PROGRAMS_KEY, Object.fromEntries(keep));
+  }
+  function trainerProgramList() {
+    const out = [];
+    Object.values(readJSON(TRAINER_PROGRAMS_KEY, {})).sort((a, b) => b.at.localeCompare(a.at)).forEach(({ def }) => {
+      if (def.type in BUNDLE_ITEM_TYPE) (def.programs || []).forEach((p, i) => out.push({ name: p.label || p.name || `${def.name || "Programm"} ${i + 1}`, def: { ...p, type: BUNDLE_ITEM_TYPE[def.type] } }));
+      else out.push({ name: def.name || def.label || "Programm", def });
+    });
+    return out.filter((x) => comboBlocksFromDef(x.def).length);
+  }
+  function appProgramList() {
+    const out = [];
+    Object.values(PROGRAMS).filter((d) => d.featured).forEach((d) => out.push({ name: d.name, def: d }));
+    Object.values(BREATH_PROGRAMS).forEach((d) => out.push({ name: d.name, def: d }));
+    Object.values(WORKOUT_PLANS).forEach((d) => out.push({ name: d.name, def: d }));
+    return out;
+  }
+  function renderComboInsertList() {
+    const host = $("comboInsertList");
+    host.innerHTML = "";
+    const groups = [
+      ["Deine Programme", comboSavedSorted().filter((e) => !comboEditing || e.id !== comboEditing.id).map((e) => ({ name: e.name, blocks: e.blocks }))],
+      ["Von deinem Trainer", trainerProgramList().map((x) => ({ name: x.name, blocks: comboBlocksFromDef(x.def) }))],
+      ["In der App", appProgramList().map((x) => ({ name: x.name, blocks: comboBlocksFromDef(x.def) }))],
+    ];
+    groups.forEach(([label, items]) => {
+      if (!items.length) return;
+      const h = document.createElement("div");
+      h.className = "group-label";
+      h.textContent = label;
+      host.appendChild(h);
+      const list = document.createElement("div");
+      list.className = "bundle-list";
+      items.forEach((it) => {
+        const b = document.createElement("button");
+        b.className = "bundle-item";
+        b.innerHTML = `<div class="bundle-item-head"><strong>${esc(it.name)}</strong></div><span class="bundle-meta">${esc(comboEntryMeta(it))}</span>`;
+        b.addEventListener("click", () => {
+          // Inserted blocks remember where they came from (Fabian 07.10.:
+          // "nicht mit der Markierung des Ursprungs ... unübersichtlich").
+          comboDraftBlocks.push(...deepCopy(it.blocks).map((bl) => ({ ...bl, fromProgram: bl.fromProgram || it.name })));
+          renderComboBlockList();
+          $("comboInsertGroup").open = false;
+          els.comboBlockList.scrollIntoView({ block: "center", behavior: "smooth" });
+        });
+        list.appendChild(b);
+      });
+      host.appendChild(list);
+    });
+  }
+  $("comboInsertGroup").addEventListener("toggle", () => { if ($("comboInsertGroup").open) renderComboInsertList(); });
+  function openComboScreen(seed) {
+    comboDraftBlocks = seed ? deepCopy(seed.blocks) : [];
+    comboSavedAll = false;
+    setComboEditing(null, seed ? `Kopie von „${seed.name}“. Das Original bleibt, wie es ist. Speichere deine Version unter eigenem Namen.` : "");
+    comboAdaptName = seed ? `${seed.name} (eigene)`.slice(0, 40) : "";
+    closeComboSaveForm();
+    $("comboInsertGroup").open = false;
     renderComboAddGrid();
     renderComboBlockList();
     renderComboSaved();
     showScreen("comboScreen");
   }
+  var comboAdaptName = "";
+  // "Als Kombi-Programm anpassen" under every programme intro (built-in and
+  // trainer programmes): an own, editable copy in the Kombi builder.
+  var introAdaptDef; // var: a programme intro may open during start-up (code link)
+  [["programIntro", "programStartBtn"], ["breathProgramIntro", "breathProgramStartBtn"], ["workoutProgramIntro", "workoutProgramStartBtn"],
+   ["movementProgramIntro", "movementProgramStartBtn"], ["cardioProgramIntro", "cardioProgramStartBtn"]].forEach(([screenId, startId]) => {
+    const screen = $(screenId), startBtn = $(startId);
+    if (!screen || !startBtn) return;
+    const b = document.createElement("button");
+    b.className = "text-link small combo-adapt-link";
+    b.type = "button";
+    b.textContent = "Als Kombi-Programm anpassen";
+    b.addEventListener("click", () => {
+      if (!introAdaptDef) return;
+      const blocks = comboBlocksFromDef(introAdaptDef.def);
+      if (blocks.length) openComboScreen({ name: introAdaptDef.name, blocks });
+    });
+    const anchor = startBtn.closest(".start-sticky-bar") || startBtn;
+    anchor.parentNode.insertBefore(b, anchor);
+  });
   els.comboBackToHome.addEventListener("click", () => showScreen(currentHomeScreen()));
   function comboDraftName() {
     return (els.comboNameInput.value || "").trim() || `Programm ${new Date().toLocaleDateString("de-DE")}`;
@@ -18030,19 +19966,47 @@
     comboOriginBundle = null;
     startComboProgram({ name: comboDraftName(), blocks: comboDraftBlocks.slice() }, "local", "local:draft", currentHomeScreen());
   });
-  wirePresetSaveForm({
-    saveBtn: els.comboSaveBtn, form: els.comboSaveForm, nameInput: els.comboNameInput,
-    cancelBtn: els.comboSaveCancelBtn, confirmBtn: els.comboSaveConfirmBtn,
-    defaultName: () => `Programm ${new Date().toLocaleDateString("de-DE")}`,
-    onSave: (name) => {
-      const list = comboSavedStore.load();
-      list.push({ id: String(Date.now()), name, blocks: comboDraftBlocks.slice(), createdAt: new Date().toISOString() });
-      comboSavedStore.save(list);
-      renderComboSaved();
-      comboDraftBlocks = [];
-      renderComboBlockList();
-    },
+  function closeComboSaveForm() { els.comboSaveForm.hidden = true; els.comboSaveBtn.hidden = false; }
+  els.comboSaveBtn.addEventListener("click", () => {
+    els.comboSaveForm.hidden = false;
+    els.comboSaveBtn.hidden = true;
+    els.comboNameInput.value = comboEditing ? comboEditing.name : comboAdaptName;
+    $("comboSaveAsNewBtn").hidden = !comboEditing;
+    try { els.comboNameInput.focus({ preventScroll: true }); } catch (e) { els.comboNameInput.focus(); }
+    revealPresetForm(els.comboSaveForm);
   });
+  els.comboSaveForm.classList.add("preset-save-form");
+  wireEnterToSave(els.comboNameInput, els.comboSaveConfirmBtn);
+  els.comboSaveCancelBtn.addEventListener("click", closeComboSaveForm);
+  function comboSaveDone() {
+    closeComboSaveForm();
+    setComboEditing(null);
+    comboAdaptName = "";
+    comboSavedAll = false;
+    renderComboSaved();
+    comboDraftBlocks = [];
+    renderComboBlockList();
+  }
+  function comboSaveNew() {
+    const name = comboDraftName();
+    const list = comboSavedStore.load();
+    const now = new Date().toISOString();
+    list.push({ id: String(Date.now()), name, blocks: deepCopy(comboDraftBlocks), createdAt: now, lastUsed: now });
+    comboSavedStore.save(list);
+    comboSaveDone();
+  }
+  els.comboSaveConfirmBtn.addEventListener("click", () => {
+    if (!comboEditing) { comboSaveNew(); return; }
+    const list = comboSavedStore.load();
+    const e = list.find((x) => x.id === comboEditing.id);
+    if (!e) { comboSaveNew(); return; }
+    e.name = comboDraftName();
+    e.blocks = deepCopy(comboDraftBlocks);
+    e.lastUsed = new Date().toISOString();
+    comboSavedStore.save(list);
+    comboSaveDone();
+  });
+  $("comboSaveAsNewBtn").addEventListener("click", comboSaveNew);
 
   // ==== Go/No-Go Reaktionstest (Test-Bereich, first autonomous entry) ====
   // Classic Go/No-Go inhibitory-control paradigm: a series of single
@@ -27864,6 +29828,9 @@
       icon: '<rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M8 12.5l2.8 2.8L16.5 9" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
   ];
   const AREA_BY_KEY = Object.fromEntries(PLAN_AREAS.map((a) => [a.key, a]));
+  // Kombi-Programme are plannable too (kp3 "Planen wie Basteln"): not an
+  // area tile, but a plan entry kind (what "combo:<savedId>").
+  AREA_BY_KEY.combo = { key: "combo", label: "Kombi-Programm", short: "Kombi", color: "#007094", screen: "comboScreen" };
   const AREA_TO_SECTION = { visual: "visual", breath: "breath", movement: "movement", workout: "workout", cardio: "cardio", nat: "nat", test: "test", free: "free" };
   const NAT_SUBS = [["peripher", "Periphere Wahrnehmung"], ["remember", "Positionen merken"], ["blitz", "Blitz-Raster"], ["flash", "Flash-Speicher-Test"], ["mot", "Objektverfolgung (MOT)"], ["balance", "Gleichgewicht"]];
   const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
@@ -27886,47 +29853,166 @@
   function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
   // ---- plan storage ----
-  function emptyPlan() { return { startDate: mondayOf(todayStr()), phases: [], extras: {}, skips: {}, done: {} }; }
+  // Trainingsplanung (Fabian 06./07.10.2026, konzept-trainingsplanung.md,
+  // kp1-kp15): the old model stays and loads unchanged; new fields are
+  // optional. phase.alt = weeks B-D of "Wochen im Wechsel" (ph.days = A),
+  // phase.noScore (aus der Wertung); plan.pauses, plan.weekOps
+  // (repeat/skip/shift), plan.inserts (Sonderwochen), plan.dayOv (nur an
+  // diesem Tag), plan.source (Plan per Code). Nothing ever shortens a
+  // training by itself (Fabian 07.10.): Entlastung/Wettkampf are hints. Details:
+  // docs/notes/27-trainingsplanung.md.
+  function emptyPlan() { return { startDate: mondayOf(todayStr()), phases: [], extras: {}, skips: {}, done: {}, pauses: [], weekOps: [], inserts: [], dayOv: {} }; }
   function cleanEntry(e) {
     if (!e || !AREA_BY_KEY[e.area]) return null;
-    return { id: String(e.id || newId()), area: e.area, what: String(e.what || ""), code: String(e.code || "").slice(0, 60),
+    const o = { id: String(e.id || newId()), area: e.area, what: String(e.what || ""), code: String(e.code || "").slice(0, 60),
       time: /^\d{2}:\d{2}$/.test(e.time || "") ? e.time : "", minutes: Math.max(5, Math.min(240, Number(e.minutes) || 15)) };
+    if (e.special) o.special = String(e.special).slice(0, 40) || "Sondertraining";
+    if (e.locked) o.locked = true;
+    // Optional name from the trainer (e.g. a Kombi-Paket from the dashboard).
+    if (typeof e.title === "string" && e.title.trim()) o.title = e.title.trim().slice(0, 60);
+    return o;
   }
-  function loadPlan() {
-    const raw = readJSON(PLAN_KEY, null);
+  const cleanDays = (days) => [0, 1, 2, 3, 4, 5, 6].map((i) => ((days && days[i]) || []).map(cleanEntry).filter(Boolean));
+  function loadPlan(given) {
+    const raw = given !== undefined ? given : readJSON(PLAN_KEY, null);
     const p = emptyPlan();
     if (!raw || typeof raw !== "object") return p;
     if (/^\d{4}-\d{2}-\d{2}$/.test(raw.startDate || "")) p.startDate = mondayOf(raw.startDate);
-    p.phases = (Array.isArray(raw.phases) ? raw.phases : []).map((ph) => ({
-      id: String(ph.id || newId()), name: String(ph.name || "Phase").slice(0, 40),
-      weeks: Math.max(0, Math.min(104, Number(ph.weeks) || 0)),
-      days: [0, 1, 2, 3, 4, 5, 6].map((i) => ((ph.days && ph.days[i]) || []).map(cleanEntry).filter(Boolean)),
-    }));
-    ["extras", "skips", "done"].forEach((k) => { if (raw[k] && typeof raw[k] === "object") p[k] = raw[k]; });
+    p.phases = (Array.isArray(raw.phases) ? raw.phases : []).map((ph) => {
+      const o = { id: String(ph.id || newId()), name: String(ph.name || "Phase").slice(0, 40),
+        weeks: Math.max(0, Math.min(104, Number(ph.weeks) || 0)), days: cleanDays(ph.days) };
+      if (Array.isArray(ph.alt) && ph.alt.length) o.alt = ph.alt.slice(0, 3).map(cleanDays);
+      if (ph.noScore) o.noScore = true;
+      if (ph.locked) o.locked = true;
+      return o;
+    });
+    ["extras", "skips", "done", "dayOv"].forEach((k) => { if (raw[k] && typeof raw[k] === "object" && !Array.isArray(raw[k])) p[k] = raw[k]; });
     Object.keys(p.extras).forEach((d) => { p.extras[d] = (p.extras[d] || []).map(cleanEntry).filter(Boolean); });
+    Object.keys(p.dayOv).forEach((d) => { p.dayOv[d] = (p.dayOv[d] || []).map(cleanEntry).filter(Boolean); });
+    const isD = (x) => /^\d{4}-\d{2}-\d{2}$/.test(x || "");
+    p.pauses = (Array.isArray(raw.pauses) ? raw.pauses : []).filter((x) => x && isD(x.from) && isD(x.to) && x.to >= x.from)
+      .map((x) => ({ id: String(x.id || newId()), from: x.from, to: x.to, reason: String(x.reason || "sonstiges"), shift: !!x.shift }));
+    p.weekOps = (Array.isArray(raw.weekOps) ? raw.weekOps : []).filter((x) => x && isD(x.at) && ["repeat", "skip", "shift"].includes(x.op))
+      .map((x) => ({ id: String(x.id || newId()), at: mondayOf(x.at), op: x.op }));
+    p.inserts = (Array.isArray(raw.inserts) ? raw.inserts : []).filter((x) => x && isD(x.at))
+      .map((x) => ({ id: String(x.id || newId()), at: mondayOf(x.at), name: String(x.name || "Sonderwoche").slice(0, 40), days: cleanDays(x.days), noScore: !!x.noScore }));
+    if (raw.source && typeof raw.source === "object") p.source = { code: String(raw.source.code || "").slice(0, 60), version: Number(raw.source.version) || 1, at: String(raw.source.at || ""), baseTimes: raw.source.baseTimes && typeof raw.source.baseTimes === "object" ? raw.source.baseTimes : {} };
     return p;
   }
   let plan = loadPlan();
-  function savePlan() { writeJSON(PLAN_KEY, plan); reminderPlanChanged(); }
-  function planHasEntries() { return plan.phases.some((ph) => ph.days.some((d) => d.length)) || Object.values(plan.extras).some((l) => l.length); }
+  // Rückgängig (kp3): snapshots of the saved plan, in memory only (max 20).
+  let planUndo = [];
+  let planSaved = JSON.stringify(plan);
+  function savePlan(opts) {
+    const now = JSON.stringify(plan);
+    if (now !== planSaved && !(opts && opts.noUndo)) { planUndo.push(planSaved); if (planUndo.length > 20) planUndo.shift(); }
+    planSaved = now;
+    planMapCache = null;
+    writeJSON(PLAN_KEY, plan); reminderPlanChanged();
+    if (typeof planUndoChanged === "function") planUndoChanged();
+  }
+  function planUndoLast() {
+    if (!planUndo.length) return false;
+    planSaved = planUndo.pop();
+    plan = loadPlan(JSON.parse(planSaved));
+    planMapCache = null;
+    writeJSON(PLAN_KEY, plan); reminderPlanChanged();
+    planUndoChanged();
+    return true;
+  }
+  function planHasEntries() { return plan.phases.some((ph) => ph.days.some((d) => d.length) || (ph.alt || []).some((a) => a.some((d) => d.length))) || Object.values(plan.extras).some((l) => l.length) || plan.inserts.length > 0; }
 
-  // Which phase covers a date (null before the start / after a limited end).
-  function phaseFor(date) {
-    const w = Math.floor(dDiff(plan.startDate, date) / 7);
-    if (w < 0) return null;
+  // ---- timeline: which plan week runs in which calendar week ----
+  // Calendar week cw (from startDate) maps to a plan week pw. Shifting
+  // pauses, "eine Woche später" and Sonderwochen take a calendar week
+  // without using up a plan week; "wiederholen" shows the previous plan
+  // week again, "überspringen" jumps one ahead. A shifting pause takes a
+  // week when it covers 4 or more of its days (Montag bleibt Montag).
+  let planMapCache = null;
+  function pauseDaysIn(monday, pz) {
+    const a = monday > pz.from ? monday : pz.from, sun = dAdd(monday, 6), b = sun < pz.to ? sun : pz.to;
+    return a > b ? 0 : dDiff(a, b) + 1;
+  }
+  function planWeekMap(cw) {
+    if (cw < 0) return null;
+    if (!planMapCache || planMapCache.start !== plan.startDate) planMapCache = { start: plan.startDate, list: [], pw: 0, pending: null };
+    const c = planMapCache;
+    while (c.list.length <= cw && c.list.length < 1200) {
+      const monday = dAdd(plan.startDate, c.list.length * 7);
+      const ins = plan.inserts.find((x) => x.at === monday);
+      const pz = plan.pauses.find((x) => x.shift && pauseDaysIn(monday, x) >= 4);
+      const op = plan.weekOps.find((x) => x.at === monday);
+      // A repeat/skip that falls on a pause or Sonderwoche waits for the
+      // next plan week.
+      if (op && (op.op === "repeat" || op.op === "skip") && (ins || pz)) c.pending = op;
+      const eff = op && op.op !== "shift" && !ins && !pz ? op : (!ins && !pz && !(op && op.op === "shift") ? c.pending : null);
+      if (ins) c.list.push({ type: "insert", ins, monday });
+      else if (pz) c.list.push({ type: "pause", pause: pz, monday });
+      else if (op && op.op === "shift") c.list.push({ type: "blank", op, monday });
+      else if (eff && eff.op === "repeat" && c.pw > 0) { c.pending = null; c.list.push({ type: "plan", pw: c.pw - 1, repeated: true, op: eff, monday }); }
+      else {
+        if (eff && eff.op === "skip") c.pw += 1;
+        c.pending = null;
+        c.list.push({ type: "plan", pw: c.pw, skipped: !!(eff && eff.op === "skip"), op: eff, monday });
+        c.pw += 1;
+      }
+    }
+    return c.list[cw] || null;
+  }
+  function phaseOfPlanWeek(pw) {
     let acc = 0;
     for (let i = 0; i < plan.phases.length; i++) {
       const ph = plan.phases[i];
-      if (ph.weeks === 0 || w < acc + ph.weeks) return { phase: ph, index: i, weekInPhase: w - acc + 1 };
+      if (ph.weeks === 0 || pw < acc + ph.weeks) return { phase: ph, index: i, weekInPhase: pw - acc + 1 };
       acc += ph.weeks;
     }
     return null;
   }
+  // Wettkampf (kp11): the week before a focus date is "Tapering" (lighter),
+  // the week after "Erholung" (lighter still), as accepted suggestions.
+  // Wettkampf (kp11, Fabian 07.10.: only recommend, never change): weeks
+  // around a goal / Wettkampf appointment get a recommendation label.
+  function focusWeekOf(monday) {
+    let list = [];
+    try { list = loadEvents().filter((e) => e.goal || e.kind === "wettkampf"); } catch (e) { list = []; }
+    for (const f of list) {
+      const fm = mondayOf(f.date);
+      if (monday === dAdd(fm, -7)) return { kind: "taper", f, label: `Woche vor „${f.title}“: Empfehlung eher locker trainieren` };
+      if (monday === fm) return { kind: "race", f, label: `Woche von „${f.title}“: Empfehlung nur kurz und locker` };
+      if (monday === dAdd(fm, 7)) return { kind: "recover", f, label: `Nach „${f.title}“: Empfehlung Erholung einplanen` };
+    }
+    return null;
+  }
+  // Which phase covers a date (null before the start / after a limited end).
+  // Extra fields: week (calendar map entry), deload, focus, variant.
+  function phaseFor(date) {
+    const cw = Math.floor(dDiff(plan.startDate, date) / 7);
+    const wk = planWeekMap(cw);
+    if (!wk || wk.type !== "plan") return null;
+    const r = phaseOfPlanWeek(wk.pw);
+    if (!r) return null;
+    const ph = r.phase;
+    const nVar = 1 + (ph.alt ? ph.alt.length : 0);
+    r.variant = (r.weekInPhase - 1) % nVar;
+    r.focus = focusWeekOf(wk.monday);
+    r.week = wk;
+    r.pw = wk.pw;
+    return r;
+  }
+  function weekInfo(date) {
+    const cw = Math.floor(dDiff(plan.startDate, date) / 7);
+    const wk = planWeekMap(cw);
+    return { cw, wk, ph: phaseFor(date) };
+  }
   function phaseStartDate(index) {
+    // First calendar week whose plan week belongs to this phase.
     let acc = 0;
     for (let i = 0; i < index; i++) acc += plan.phases[i].weeks || 0;
+    for (let cw = 0; cw < 1200; cw++) { const wk = planWeekMap(cw); if (!wk) break; if (wk.type === "plan" && wk.pw >= acc) return wk.monday; }
     return dAdd(plan.startDate, acc * 7);
   }
+  function pauseOn(date) { return plan.pauses.find((x) => date >= x.from && date <= x.to) || null; }
+  function phaseDaysOf(ph, variant) { return variant > 0 && ph.alt && ph.alt[variant - 1] ? ph.alt[variant - 1] : ph.days; }
 
   function historyAreaOf(e) {
     const k = e.kind || "";
@@ -27942,12 +30028,29 @@
     return "test";
   }
   // Planned + extra entries of a date, sorted, with done state.
+  // Order of rules: pause (nothing) > Sonderwoche > "nur an diesem Tag"
+  // (dayOv) > phase week (A/B/C/D) - skips; extras are added as they are.
   function occurrencesOn(date, historyList) {
     const out = [];
+    const pz = pauseOn(date);
+    const cw = Math.floor(dDiff(plan.startDate, date) / 7);
+    const wk = planWeekMap(cw);
     const ph = phaseFor(date);
     const skips = plan.skips[date] || [];
-    if (ph) ph.phase.days[wdIdx(date)].forEach((e) => { if (!skips.includes(e.id)) out.push({ ...e, extra: false, phaseName: ph.phase.name }); });
-    (plan.extras[date] || []).forEach((e) => out.push({ ...e, extra: true }));
+    let base = null, src = null;
+    if (pz) base = [];
+    else if (wk && wk.type === "insert") { base = wk.ins.days[wdIdx(date)]; src = { phaseName: wk.ins.name, insert: true, noScore: wk.ins.noScore }; }
+    else if (plan.dayOv[date]) { base = plan.dayOv[date]; src = { phaseName: ph ? ph.phase.name : "", override: true, noScore: ph && ph.phase.noScore }; }
+    else if (ph) { base = phaseDaysOf(ph.phase, ph.variant)[wdIdx(date)]; src = { phaseName: ph.phase.name, noScore: ph.phase.noScore }; }
+    // Fabian 07.10. 21:17: the app never changes a training by itself
+    // ("Das sollte ein Trainer abstimmen") - Entlastung and Wettkampf are
+    // recommendations only (labels), the minutes stay as planned.
+    (base || []).forEach((e) => {
+      if (skips.includes(e.id)) return;
+      const o = { ...e, extra: false, ...(src || {}) };
+      out.push(o);
+    });
+    (plan.extras[date] || []).forEach((e) => out.push({ ...e, extra: true, noScore: false }));
     out.sort((a, b) => (timeToMin(a.time) ?? 9999) - (timeToMin(b.time) ?? 9999));
     const manual = plan.done[date] || [];
     const hist = (historyList || loadHistory()).filter((h) => !h.aborted && dStr(new Date(h.ts)) === date).map(historyAreaOf);
@@ -27959,13 +30062,20 @@
     });
     return out;
   }
+  // Week numbers for Heute/Fortschritt. "Gewertet" leaves out phases taken
+  // out of the rating (Fabian 06.10.: "keinen falschen Ehrgeiz") and pause
+  // days; extra = trainings beyond the plan (shown, never rewarded).
   function weekStats(monday, historyList) {
-    let planned = 0, done = 0;
+    let planned = 0, done = 0, scored = 0, scoredDone = 0, pauseDays = 0;
     for (let i = 0; i < 7; i++) {
-      const occ = occurrencesOn(dAdd(monday, i), historyList);
+      const date = dAdd(monday, i);
+      if (pauseOn(date)) pauseDays++;
+      const occ = occurrencesOn(date, historyList);
       planned += occ.length; done += occ.filter((o) => o.done).length;
+      occ.forEach((o) => { if (!o.noScore) { scored++; if (o.done) scoredDone++; } });
     }
-    return { planned, done };
+    const wk = planWeekMap(Math.floor(dDiff(plan.startDate, monday) / 7));
+    return { planned, done, scored, scoredDone, pauseDays, pauseWeek: pauseDays >= 4 || !!(wk && wk.type === "pause") };
   }
 
   // ---- labels and launching ----
@@ -27977,12 +30087,15 @@
     if (area === "visual") visualExercises().forEach((x) => opts.push({ v: "ex:" + x.id, t: x.title }));
     if (area === "nat") NAT_SUBS.forEach(([k, t]) => opts.push({ v: "nat:" + k, t }));
     if (area === "free") freeAllBlocks().forEach((b) => opts.push({ v: "free:" + b.id, t: b.title }));
+    if (area === "combo") { opts.length = 0; comboSavedStore.load().forEach((c) => opts.push({ v: "combo:" + c.id, t: c.name })); if (!opts.length) opts.push({ v: "", t: "Noch kein Kombi-Programm gespeichert" }); }
     return opts;
   }
   function entryTitle(e) {
+    if (e.title) return e.title;
     if (e.what && e.what.startsWith("ex:")) { const x = visualExercises().find((v) => v.id === e.what.slice(3)); if (x) return x.title; }
     if (e.what && e.what.startsWith("nat:")) { const n = NAT_SUBS.find(([k]) => k === e.what.slice(4)); if (n) return n[1]; }
     if (e.what && e.what.startsWith("free:")) { const b = freeFind(e.what.slice(5)); if (b) return b.title; }
+    if (e.what && e.what.startsWith("combo:")) { const c = comboSavedStore.load().find((x) => x.id === e.what.slice(6)); return c ? c.name : "Kombi-Programm"; }
     if (e.code) return `${AREA_BY_KEY[e.area].short} · Code ${e.code}`;
     return AREA_BY_KEY[e.area].label;
   }
@@ -27997,6 +30110,13 @@
       const ctx = { goBtn: null, errorEl: els.todayCodeError, homeScreen: "todayHome" };
       activateSectionTab("today");
       openProgramIntro(e.code, ctx);
+      return;
+    }
+    if (e.area === "combo") {
+      const c = comboSavedStore.load().find((x) => x.id === (e.what || "").slice(6));
+      activateSectionTab("today");
+      if (c) { comboOriginBundle = null; startComboProgram({ name: c.name, blocks: c.blocks }, "local", "local:" + c.id, "todayHome"); }
+      else openComboScreen();
       return;
     }
     goArea(e.area);
@@ -28039,22 +30159,24 @@
   let resumeSingleBase = null; // { total, offset } while a continued run plays, so a second break keeps the original length
   function resumeSingleNote(kind) {
     let rec = null;
-    if (kind === "breath" && breathSession && !breathProgram && !comboProgram) {
+    if (kind === "breath" && breathSession && !breathProgram && !comboProgram && !breakRun) {
       const bs = breathSession;
       const ref = breathPaused ? breathPauseTime : performance.now();
       const played = Math.min(Math.max(0, (ref - bs.startTime) / 1000), bs.plannedTotal);
       rec = { kind, title: breathPatternName, total: bs.plannedTotal, played, rest: bs.plannedTotal - played,
         breath: { key: breathPatternKey, phases: breathScaledPhases(bs.basePhases, bs.tempo), sound: !!bs.sound, listen: !!bs.listen } };
+      // Ohne Zeitlimit: no rest to keep - Weitermachen goes on open-ended.
+      if (bs.open) { rec.open = true; rec.breath.open = true; rec.total = played; rec.rest = 0; }
     } else if (kind === "movement" && movementSession && !movementProgram && !comboProgram) {
       const ms = movementSession;
       const total = ms.totalBeats * ms.beatLenS, played = ms.lastBeatIdx * ms.beatLenS;
       rec = { kind, title: "Ganzkörper-Reaktion", total, played, rest: total - played,
         movement: { movements: movementPrefs.movements.slice(), bpm: Math.round(60 / ms.beatLenS), preview: ms.preview,
           mirror: movementPrefs.mirror, showLabel: movementPrefs.showLabel, direction: movementPrefs.direction, figureStyle: movementPrefs.figureStyle, layout: movementPrefs.layout, rowLen: movementPrefs.rowLen,
-          tick: ms.tick, tickVolume: ms.tickVolume } };
+          tick: ms.tick, tickVolume: ms.tickVolume, ...mvColorsOf(movementPrefs) } };
     }
-    if (rec && resumeSingleBase && resumeSingleBase.kind === kind) { rec.played += resumeSingleBase.offset; rec.total = resumeSingleBase.total; }
-    if (!rec || rec.total < 180 || rec.played < 30 || rec.rest < 60) return;
+    if (rec && resumeSingleBase && resumeSingleBase.kind === kind) { rec.played += resumeSingleBase.offset; rec.total = rec.open ? rec.played : resumeSingleBase.total; }
+    if (!rec || (rec.open ? rec.played < 30 : (rec.total < 180 || rec.played < 30 || rec.rest < 60))) return;
     rec.total = Math.round(rec.total); rec.rest = Math.round(rec.rest); rec.played = Math.round(rec.played);
     writeJSON(RESUME_SINGLE_KEY, { ...rec, type: "single", ts: Date.now() });
   }
@@ -28062,8 +30184,34 @@
     const r = readJSON(RESUME_SINGLE_KEY, null);
     if (!kind || (r && r.kind === kind)) { try { localStorage.removeItem(RESUME_SINGLE_KEY); } catch (e) {} }
   }
+  // Kraftplan (Idee 47): at every set, so a page iOS throws away in the
+  // background still knows where it was. pos/total count sets.
+  function resumeStrengthNote() {
+    const st = workoutState;
+    if (!st || !st.strength || workoutPlan || comboProgram) return;
+    const played = Math.round((performance.now() - st.sessionStart) / 1000);
+    writeJSON(RESUME_SINGLE_KEY, { type: "single", kind: "strength", title: workoutBlockLabel(st.strength), plan: st.strength,
+      idx: st.stepIndex, pos: st.stepIndex, total: st.steps.length, played, ts: Date.now() });
+  }
+  // Ausdauer-Einheit (Idee 48): on leaving the app and on "Beenden"; the
+  // rest of the current activity is kept (to the second), pauses included.
+  function resumeCardioNote() {
+    const cs = cardioState;
+    if (!cs || comboProgram) return;
+    const now = performance.now();
+    const total = cs.items.reduce((t, b) => t + b.durationS, 0);
+    const blockS = Math.max(0, (now - cs.blockStartTime) / 1000);
+    const done = cs.items.slice(0, cs.index).reduce((t, b) => t + b.durationS, 0) + blockS;
+    const rec = { type: "single", kind: "cardio", title: cardioProgram ? cardioProgram.title : "Ausdauertraining",
+      program: cardioProgram ? { code: cardioProgram.code, key: cardioProgram.key, title: cardioProgram.title } : null,
+      items: cs.items, index: cs.index, blockS: Math.round(blockS), total: Math.round(total), rest: Math.round(total - done),
+      played: Math.round((now - cs.sessionStartTime) / 1000), ts: Date.now() };
+    if (rec.total < 180 || done < 30 || rec.rest < 60) return;
+    writeJSON(RESUME_SINGLE_KEY, rec);
+  }
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) return;
+    if (cardioState) resumeCardioNote();
     if (breathSession) resumeSingleNote("breath");
     if (movementSession && !movementSession.finishTimer) resumeSingleNote("movement");
   });
@@ -28071,8 +30219,10 @@
     let r = readJSON(RESUME_KEY, null);
     if (!r || !RESUME_UNIT[r.type] || !r.def || !Array.isArray(r.def.blocks) || !(r.pos > 0) || r.pos >= r.total || !(Date.now() - r.ts < RESUME_MAX_AGE_MS)) r = null;
     let s1 = readJSON(RESUME_SINGLE_KEY, null);
-    if (!s1 || !(s1.kind === "breath" ? s1.breath && s1.breath.phases : s1.kind === "movement" ? s1.movement && Array.isArray(s1.movement.movements) : false)
-      || !(s1.rest >= 60) || !(s1.total >= s1.rest) || !(Date.now() - s1.ts < RESUME_MAX_AGE_MS)) s1 = null;
+    const s1ok = (x) => x.kind === "strength" ? x.plan && Array.isArray(x.plan.items) && x.plan.items.length && x.pos > 0 && x.pos < x.total
+      : (x.kind === "breath" ? x.breath && x.breath.phases : x.kind === "movement" ? x.movement && Array.isArray(x.movement.movements) : x.kind === "cardio" ? Array.isArray(x.items) && x.items.length && x.index < x.items.length : false)
+        && (x.open ? x.played >= 30 : x.rest >= 60 && x.total >= x.rest);
+    if (!s1 || !s1ok(s1) || !(Date.now() - s1.ts < RESUME_MAX_AGE_MS)) s1 = null;
     if (r && s1) return s1.ts > r.ts ? s1 : r;
     return r || s1;
   }
@@ -28080,6 +30230,8 @@
     if (r && r.type === "single") resumeSingleClear(); else resumeClear();
   }
   function resumeCount(r) {
+    if (r.type === "single" && r.kind === "strength") return `Satz ${r.pos + 1}\u00a0von\u00a0${r.total}`;
+    if (r.type === "single" && r.open) return "ohne Zeitlimit";
     return r.type === "single" ? `noch ${Math.ceil(r.rest / 60)}\u00a0Min.` : `${RESUME_UNIT[r.type][0]} ${r.pos + 1}\u00a0von\u00a0${r.total}`;
   }
   function resumeAgo(ts) {
@@ -28105,6 +30257,22 @@
     const idx = fromStart ? 0 : r.idx;
     const played = fromStart ? 0 : (r.played || 0);
     hideAllPlayers();
+    if (r.type === "single" && r.kind === "strength") {
+      activateSectionTab("workout");
+      workoutPlan = null; workoutStandaloneReturnScreen = "workoutRepsReady";
+      if (!fromStart) strengthResumeAt = { idx: r.idx, played: r.played || 0 };
+      lastStandaloneWorkoutBlock = r.plan;
+      runWorkoutBlock(r.plan);
+      return;
+    }
+    if (r.type === "single" && r.kind === "cardio") {
+      activateSectionTab("cardio");
+      cardioProgram = r.program ? { ...r.program, def: { items: r.items.filter((b) => !b.pause) } } : null;
+      const real = r.items.filter((b) => !b.pause).map(copyCardioItem);
+      if (fromStart) startStandaloneCardio(real);
+      else { startStandaloneCardio(real, { items: r.items, index: r.index, blockS: r.blockS || 0, played: r.played || 0 }); lastCardioItems = real; }
+      return;
+    }
     if (r.type === "single") {
       const runS = fromStart ? r.total : r.rest;
       if (r.kind === "breath") {
@@ -28112,8 +30280,15 @@
         activateSectionTab("breath");
         breathPatternKey = BREATH_PATTERNS[b.key] ? b.key : "box";
         breathWorking = { ...b.phases };
+        if (r.open) {
+          Object.assign(breathPrefs, { sound: b.sound, listen: b.listen });
+          startBreathSession({ open: true });
+          Object.assign(breathPrefs, keep);
+          resumeSingleBase = { kind: "breath", total: 0, offset: fromStart ? 0 : (r.played || 0) };
+          return;
+        }
         Object.assign(breathPrefs, { durationMin: runS / 60, sound: b.sound, listen: b.listen });
-        startBreathSession();
+        startBreathSession({ open: false });
         Object.assign(breathPrefs, keep);
         resumeSingleBase = { kind: "breath", total: r.total, offset: r.total - runS };
       } else {
@@ -28178,14 +30353,30 @@
     renderTodayMain(today, hist);
     renderWeekReview(today, hist);
     renderCountdown();
-    const st = weekStats(mondayOf(today), hist);
-    els.todayProgress.textContent = st.planned ? `${st.done} von ${st.planned} geplanten Einheiten` : "noch kein App-Training geplant";
+    const st = weekStats(mondayOf(todaySel || today), hist);
+    els.todayProgress.textContent = st.pauseWeek ? "Pause" : st.planned ? `${st.done} von ${st.planned} geplanten Einheiten` : "noch kein App-Training geplant";
+    renderPlanLine(todaySel || today);
+    renderPlanUpdateCard();
+    $("todayPlanLinks").hidden = !planHasEntries();
     renderWeekStrip(hist);
     renderCalendar(hist);
     renderDayPanel(hist);
     renderTodayProgressCard();
     els.todayPlanBtn.textContent = planHasEntries() ? "Wochenplan bearbeiten" : "Wochenplan anlegen";
     if (!els.todayAreaGrid.children.length) renderAreaGrid();
+  }
+  // "Woche 3 von 6 · Grundlage" under the week heading (kp15), tap = Mein Plan.
+  function renderPlanLine(date) {
+    const el = $("todayPlanLine");
+    const pz = pauseOn(date);
+    const wk = planWeekMap(Math.floor(dDiff(plan.startDate, date) / 7));
+    let text = "";
+    if (pz) { const r = PAUSE_BY_KEY[pz.reason] || PAUSE_BY_KEY.sonstiges; text = `Pause (${r[1]}) bis ${shortDate(pz.to)}`; }
+    else if (wk && wk.type === "insert") text = `★ ${wk.ins.name}`;
+    else if (wk && wk.type === "blank") text = "Plan pausiert eine Woche";
+    else if (planHasEntries() && plan.phases.length) { const ph = phaseFor(date); if (ph) text = weekRowLabel(wk, ph); }
+    el.hidden = !text;
+    el.textContent = text ? text + " ›" : "";
   }
   function renderTodayMain(today, hist) {
     const occ = occurrencesOn(today, hist);
@@ -28196,7 +30387,8 @@
     const resume = resumeGet();
     if (open.length) {
       const e = open[0];
-      const meta = [e.time ? `${e.time} Uhr` : "", `${e.minutes} Min.`, AREA_BY_KEY[e.area].label].filter(Boolean).join(" · ");
+      // Prüfer 07.10. Nr. 11: the area name only once (not when it is already the title)
+      const meta = [e.time ? `${e.time} Uhr` : "", `${e.minutes} Min.`, entryTitle(e) === AREA_BY_KEY[e.area].label ? "" : AREA_BY_KEY[e.area].label].filter(Boolean).join(" · ");
       const more = open.length > 1 ? `<p class="today-main-more">Danach heute noch: ${open.slice(1).map((o) => esc(entryTitle(o))).join(", ")}</p>` : "";
       html = `<div class="today-main-kicker">Heutiges Training</div>
         <h2 class="today-main-title">${areaDot(e.area)}${esc(entryTitle(e))}</h2>
@@ -28214,12 +30406,16 @@
       const doneAll = occ.length > 0;
       const lastRow = last ? `<p class="today-main-meta">Zuletzt: ${esc(last.title)} · ${esc(longDate(dStr(new Date(last.ts))))}</p>
         <button class="start-btn" type="button" id="todayContinueBtn">Nochmal trainieren</button>` : "";
+      const starter = starterStage(hist);
       html = `<div class="today-main-kicker">${doneAll ? "Heute alles geschafft" : last ? "Zuletzt trainiert" : "Los geht’s"}</div>
         <h2 class="today-main-title">${doneAll ? "Stark, dein Training für heute ist erledigt." : last ? esc(last.title) : "Schön, dass du da bist."}</h2>
         ${doneAll ? "" : lastRow}
-        <p class="today-main-hint">${doneAll ? "Wenn du magst, findest du unter „Training“ weitere Übungen." : (occ.length ? "" : "Für heute ist nichts geplant. ") + hint}</p>`;
+        ${starter === "new" ? starterAskHtml() : `<p class="today-main-hint">${doneAll ? "Wenn du magst, findest du unter „Training“ weitere Übungen." : (occ.length ? "" : "Für heute ist nichts geplant. ") + hint}</p>`}
+        ${starter && !doneAll ? starterRowHtml() : ""}`;
     }
     els.todayMain.innerHTML = html;
+    wireStarter();
+    applyNewcomerLayout(hist);
     const startBtn = els.todayMain.querySelector("[data-today-start]");
     if (startBtn) startBtn.addEventListener("click", () => { const e = open.find((o) => o.id === startBtn.dataset.todayStart); if (e) startEntry(e); });
     const cont = els.todayMain.querySelector("#todayContinueBtn");
@@ -28231,6 +30427,102 @@
       confirmDialog("Unterbrochenes Training verwerfen? Du kannst es danach nicht mehr an dieser Stelle fortsetzen.", () => { resumeDrop(resume); renderToday(); });
     });
   }
+  // ---- Heute für Neue (Fabian 06.10. "1 bis 3 bauen", 07.10. vorgezogen):
+  // someone who has nothing in the app yet gets "Mit Trainer oder allein?",
+  // alone also "Wofür trainierst du?" (Idee 38), and a swipe row "Zum
+  // Ausprobieren" of exercises to tap straight away, ordered by that goal.
+  // The row stays until about 3 trainings or a plan/code (soft change);
+  // Fortschritt shows only after the first training, the week moves below
+  // the code card while nothing is there yet. Nothing leaves the device. ----
+  const STARTER_KEY = "fwmc-start-v1"; // { who: "trainer"|"allein", goal }
+  const openNatStarter = (ex) => () => {
+    goArea("nat");
+    if (natModesOn) openNatExercise(ex);
+    else { const tab = document.querySelector(`.sub-tab[data-nat-sub="${ex}"]`); if (tab) tab.click(); }
+  };
+  const STARTERS = {
+    box: { area: "breath", title: "Box-Atmung", desc: "Ein, halten, aus, halten. Bringt dich zur Ruhe.", open: () => { goArea("breath"); openBreathReady("box"); } },
+    coherent: { area: "breath", title: "Ruhige Atmung", desc: "Gleichmäßig und langsam atmen.", open: () => { goArea("breath"); openBreathReady("coherent"); } },
+    reset: { area: "breath", title: "Feierabend-Reset", desc: "Zwei Atemübungen zum Runterkommen.", open: () => { goArea("breath"); openProgramIntro("atem-reset", BREATH_CODE_CTX); } },
+    vt: { area: "visual", title: "Farbe & Seite", desc: "Schnell auf Farben reagieren.", open: () => { goArea("visual"); const c = document.querySelector('#home .excard[data-exercise="vt-color"]'); if (c) c.click(); } },
+    remember: { area: "nat", title: "Positionen merken", desc: "Zahlen merken und der Reihe nach antippen.", open: openNatStarter("remember") },
+    blitz: { area: "nat", title: "Blitz-Raster", desc: "Aufleuchtende Felder merken.", open: openNatStarter("blitz") },
+    peripher: { area: "nat", title: "Periphere Wahrnehmung", desc: "Den Blick weiten.", open: openNatStarter("peripher") },
+    balance: { area: "nat", title: "Gleichgewicht", desc: "Stand und Blick im Takt.", open: openNatStarter("balance") },
+    kraft: { area: "workout", title: "Ganzkörper-Einstieg", desc: "Drei Kraftübungen und ein kurzes Intervall.", open: () => { goArea("workout"); openProgramIntro("workout-start", WORKOUT_CODE_CTX); } },
+  };
+  const STARTER_GOALS = [
+    { key: "ruhe", label: "Ruhe", order: ["box", "coherent", "reset", "balance", "peripher", "vt"] },
+    { key: "fokus", label: "Fokus", order: ["remember", "vt", "blitz", "peripher", "box", "balance"] },
+    { key: "sport", label: "Sport", order: ["vt", "peripher", "kraft", "balance", "remember", "blitz"] },
+    { key: "gleichgewicht", label: "Gleichgewicht", order: ["balance", "peripher", "box", "vt", "kraft", "remember"] },
+  ];
+  const STARTER_DEFAULT = ["box", "vt", "remember", "balance", "reset", "kraft"];
+  function starterPrefs() { const p = readJSON(STARTER_KEY, {}); return p && typeof p === "object" ? p : {}; }
+  function starterDone(hist) { return hist.filter((h) => !h.aborted).length; }
+  // "new" = nothing in the app yet, "soft" = first trainings, null = regular Heute.
+  function starterStage(hist) {
+    if (planHasEntries() || loadCodeHistory().length) return null;
+    const n = starterDone(hist);
+    return n === 0 ? "new" : n < 3 ? "soft" : null;
+  }
+  function starterAskHtml() {
+    const p = starterPrefs();
+    if (!p.who) return `<p class="today-main-hint">Trainierst du mit einem Trainer?</p>
+      <div class="choice-row two starter-ask"><button class="choice" type="button" data-starter-who="trainer">Mit Trainer<small>ich habe einen Code</small></button><button class="choice" type="button" data-starter-who="allein">Allein<small>ich schaue mich um</small></button></div>`;
+    if (p.who === "trainer") return `<p class="today-main-hint">Gib unten den Trainings-Code von deinem Trainer ein. Bis dahin kannst du hier schon reinschnuppern.</p>
+      <p class="starter-change"><button class="text-link small" type="button" data-starter-code>Zum Code-Feld</button> <button class="text-link small" type="button" data-starter-reset>Doch allein</button></p>`;
+    if (!p.goal) return `<p class="today-main-hint">Wofür trainierst du?</p>
+      <div class="choice-row starter-goals">${STARTER_GOALS.map((g) => `<button class="choice" type="button" data-starter-goal="${g.key}">${esc(g.label)}</button>`).join("")}</div>`;
+    const g = STARTER_GOALS.find((x) => x.key === p.goal);
+    return `<p class="today-main-hint">Hier sind Übungen für ${esc(g ? g.label : "dich")} zum Ausprobieren. Einfach antippen.</p>
+      <p class="starter-change"><button class="text-link small" type="button" data-starter-reset>Ziel ändern</button></p>`;
+  }
+  function starterRowHtml() {
+    const p = starterPrefs();
+    const g = STARTER_GOALS.find((x) => x.key === p.goal);
+    const order = g ? g.order : STARTER_DEFAULT;
+    return `<div class="starter-head">Zum Ausprobieren</div>
+      <div class="starter-row" role="list">${order.map((k) => {
+        const it = STARTERS[k], a = AREA_BY_KEY[it.area];
+        return `<button class="starter-card" type="button" role="listitem" data-starter="${k}" style="--area:var(--area-${a.key});--area-ink:var(--area-${a.key}-ink)"><span class="starter-area">${esc(a.short)}</span><strong>${esc(it.title)}</strong><span class="starter-desc">${esc(it.desc)}</span></button>`;
+      }).join("")}</div>`;
+  }
+  function wireStarter() {
+    const m = els.todayMain;
+    const save = (patch) => { writeJSON(STARTER_KEY, { ...starterPrefs(), ...patch }); renderToday(); };
+    m.querySelectorAll("[data-starter-who]").forEach((b) => b.addEventListener("click", () => {
+      save({ who: b.dataset.starterWho });
+      if (b.dataset.starterWho === "trainer") openTodayCodeCard();
+    }));
+    m.querySelectorAll("[data-starter-goal]").forEach((b) => b.addEventListener("click", () => save({ goal: b.dataset.starterGoal })));
+    m.querySelectorAll("[data-starter-reset]").forEach((b) => b.addEventListener("click", () => { writeJSON(STARTER_KEY, { who: "allein" }); renderToday(); }));
+    m.querySelectorAll("[data-starter-code]").forEach((b) => b.addEventListener("click", openTodayCodeCard));
+    m.querySelectorAll("[data-starter]").forEach((b) => b.addEventListener("click", () => { const it = STARTERS[b.dataset.starter]; if (it) it.open(); }));
+  }
+  function openTodayCodeCard() {
+    const card = document.querySelector("#todayHome .today-code");
+    if (!card) return;
+    const t = card.querySelector(".code-toggle");
+    if (t && card.classList.contains("is-collapsed")) t.click();
+    card.scrollIntoView({ block: "center", behavior: "smooth" });
+    const inp = card.querySelector("input");
+    if (inp) setTimeout(() => { try { inp.focus({ preventScroll: true }); } catch (e) {} }, 350);
+  }
+  let todayWeekHome = null;
+  function applyNewcomerLayout(hist) {
+    const isNew = starterStage(hist) === "new";
+    const home = els.todayHome || $("todayHome");
+    home.classList.toggle("newcomer", isNew);
+    const prog = home.querySelector(".today-progress");
+    if (prog) prog.hidden = starterDone(hist) === 0;
+    const week = home.querySelector(".today-week"), code = home.querySelector(".today-code");
+    if (!week || !code) return;
+    if (!todayWeekHome) todayWeekHome = { parent: week.parentNode, next: week.nextSibling };
+    if (isNew && week.previousElementSibling !== code) code.after(week);
+    else if (!isNew && week.parentNode === todayWeekHome.parent && code.nextElementSibling === week) todayWeekHome.parent.insertBefore(week, todayWeekHome.next);
+  }
+
   // ---- Wochenabschluss (Fabian, 2026-10-06: "mit Haken ... und nem Satz") ----
   // Sundays: one check per planned unit of the week, one sentence on how it
   // went and an optional "Vorsatz" for next week (fwmc-week-intent-v1, keyed by
@@ -28301,9 +30593,20 @@
     box.hidden = true;
     box.innerHTML = "";
   }
+  // Trainings in the history beyond the plan of that day (kp2: shown as
+  // small light dots, never rewarded).
+  function extraAreasOn(date, hist, occ) {
+    const done = occ.filter((o) => o.auto).map((o) => o.area);
+    const out = [];
+    (hist || loadHistory()).filter((h) => !h.aborted && dStr(new Date(h.ts)) === date).map(historyAreaOf).forEach((a) => {
+      const i = done.indexOf(a);
+      if (i >= 0) done.splice(i, 1); else out.push(a);
+    });
+    return out;
+  }
   function dayStateClass(date, hist) {
     const occ = occurrencesOn(date, hist);
-    if (!occ.length) return { cls: "rest", occ };
+    if (!occ.length) return { cls: pauseOn(date) ? "rest pause" : "rest", occ };
     if (occ.every((o) => o.done)) return { cls: "done", occ };
     if (occ.some((o) => o.done)) return { cls: "partial", occ };
     return { cls: date < todayStr() ? "missed" : "planned", occ };
@@ -28322,8 +30625,10 @@
     for (let i = 0; i < 7; i++) {
       const date = dAdd(monday, i);
       const { cls, occ } = dayStateClass(date, hist);
-      const mark = cls === "done" ? "✓" : cls === "rest" ? "" : `<span class="week-dots">${[...new Set(occ.map((o) => o.area))].slice(0, 3).map((a) => areaDot(a)).join("")}</span>`;
-      const label = `${WD_LONG[i]}, ${dParse(date).getDate()}. ${MONTHS[dParse(date).getMonth()]}: ${cls === "rest" ? "nichts geplant" : `${occ.filter((o) => o.done).length} von ${occ.length} erledigt`}`;
+      const extra = date <= today ? extraAreasOn(date, hist, occ) : [];
+      const dots = occ.filter((o) => o.done).map((o) => areaDot(o.area)).slice(0, 3).join("") + occ.filter((o) => !o.done).map((o) => areaDot(o.area, "ring")).slice(0, Math.max(0, 3 - occ.filter((o) => o.done).length)).join("") + extra.slice(0, 2).map((a) => areaDot(a, "extra")).join("");
+      const mark = cls === "done" && !extra.length ? "✓" : (cls.startsWith("rest") && !extra.length) ? (cls.includes("pause") ? "<span class=\"week-pause\" aria-hidden=\"true\">–</span>" : "") : `<span class="week-dots">${dots}</span>`;
+      const label = `${WD_LONG[i]}, ${dParse(date).getDate()}. ${MONTHS[dParse(date).getMonth()]}: ${cls.includes("pause") ? "Pause" : cls === "rest" ? "nichts geplant" : `${occ.filter((o) => o.done).length} von ${occ.length} erledigt`}${extra.length ? `, ${extra.length} zusätzlich` : ""}`;
       const evCount = eventsOn(date, evList).length;
       const fullLabel = evCount ? `${label}, ${evCount === 1 ? "1 Termin" : evCount + " Termine"}` : label;
       html += `<button type="button" class="week-day ${cls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}" data-date="${date}" aria-label="${esc(fullLabel)}">
@@ -28361,7 +30666,7 @@
       if (ph) phases.set(ph.index, ph.phase.name);
       const band = ph ? `<span class="cal-band" style="background:${PHASE_TINTS[ph.index % PHASE_TINTS.length]}"></span>` : "";
       const dots = mini ? "" : `<span class="cal-dots">${[...new Set(occ.map((o) => o.area))].slice(0, 4).map((a) => areaDot(a)).join("")}</span>`;
-      const check = cls === "done" ? `<span class="cal-check">✓</span>` : "";
+      const check = (cls === "done" ? `<span class="cal-check">✓</span>` : "") + (occ.some((o) => o.special || o.insert) ? `<span class="cal-star" aria-hidden="true">★</span>` : "");
       const evN = eventsOn(date, evList).length;
       const calLabel = longDate(date) + (evN ? `, ${evN === 1 ? "1 Termin" : evN + " Termine"}` : "");
       cells += `<button type="button" class="cal-cell ${cls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}" data-date="${date}" aria-label="${esc(calLabel)}">${band}${eventMarkHtml(date, evList)}<span class="cal-num">${d}</span>${check}${dots}</button>`;
@@ -28424,24 +30729,31 @@
     document.querySelectorAll(".day-view-btn").forEach((b) => b.classList.toggle("active", b.dataset.dayView === dayView));
     const hasEvents = renderDayEvents(date);
     const occ = occurrencesOn(date, hist);
+    const pzDay = pauseOn(date);
+    if (!occ.length && pzDay) {
+      const r = PAUSE_BY_KEY[pzDay.reason] || PAUSE_BY_KEY.sonstiges;
+      els.dayPanelBody.innerHTML = `<p class="day-empty"><span class="pause-ico inline" aria-hidden="true">${r[2]}</span> Pause (${esc(r[1])}) bis ${esc(shortDate(pzDay.to))}. Keine Erinnerungen, deine Serie reißt nicht ab. <button type="button" class="text-link small" id="dayPauseEditBtn">Pause bearbeiten</button></p>`;
+      $("dayPauseEditBtn").addEventListener("click", () => openPauseSheet(pzDay.id));
+      return;
+    }
     if (!occ.length) {
       const ph = phaseFor(date);
       els.dayPanelBody.innerHTML = hasEvents ? `<p class="day-empty">Kein Training aus der App geplant.</p>` : `<p class="day-empty">${ph || planHasEntries() ? "Ruhetag, an diesem Tag ist nichts geplant." : "Noch kein Plan. Lege unten deinen Wochenplan an oder trage ein App-Training nur für diesen Tag ein."}</p>`;
       return;
     }
     const item = (o, style, compact) => {
-      const meta = [o.time ? (o.time + "–" + minToTime(timeToMin(o.time) + o.minutes)) : "ohne Uhrzeit", `${o.minutes} Min.`, AREA_BY_KEY[o.area].short].join(" · ");
+      const meta = [o.time ? (o.time + "–" + minToTime(timeToMin(o.time) + o.minutes)) : "ohne Uhrzeit", `${o.minutes} Min.`, AREA_BY_KEY[o.area].short].concat(o.special ? ["Sondertraining"] : []).join(" · ");
       const status = o.done ? (o.auto && !o.manual ? "erledigt (aus deinem Verlauf)" : "erledigt") : "offen";
       if (compact) return `<div class="day-item compact${o.done ? " done" : ""}" style="${style}" data-occ="${esc(o.id)}">
         <div class="day-item-title">${areaDot(o.area)} ${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div>
         <div class="day-item-meta">${esc(o.time)}–${esc(minToTime(timeToMin(o.time) + o.minutes))} · ${o.done ? "✓ erledigt" : "offen"}</div>
         <div class="day-item-actions"><button type="button" class="day-act" data-act="start">Starten</button><button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}" aria-label="${o.manual ? "Erledigt, zurücknehmen" : "Abhaken"}">✓</button></div></div>`;
       return `<div class="day-item${o.done ? " done" : ""}" ${style ? `style="${style}"` : ""} data-occ="${esc(o.id)}">
-        <div class="day-item-main">${areaDot(o.area)}<div><div class="day-item-title">${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div><div class="day-item-meta">${esc(meta)} · ${status}</div></div></div>
+        <div class="day-item-main">${areaDot(o.area)}<div><div class="day-item-title">${o.special ? "★ " : ""}${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div><div class="day-item-meta">${esc(meta)} · ${status}</div></div></div>
         <div class="day-item-actions">
           <button type="button" class="day-act" data-act="start">Starten</button>
           <button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}">${o.manual ? "✓ Erledigt" : "Abhaken"}</button>
-          ${compact ? "" : `<button type="button" class="day-act subtle" data-act="${o.extra ? "remove" : "skip"}">${o.extra ? "Löschen" : "Heute auslassen"}</button>`}
+          ${compact ? "" : `<button type="button" class="day-act subtle" data-act="change">Ändern</button><button type="button" class="day-act subtle" data-act="${o.extra ? "remove" : "skip"}">${o.extra ? "Löschen" : "Heute auslassen"}</button>`}
         </div></div>`;
     };
     const timed = occ.filter((o) => o.time), untimed = occ.filter((o) => !o.time);
@@ -28495,6 +30807,12 @@
   function dayAction(date, o, act) {
     if (!o) return;
     if (act === "start") { startEntry(o); return; }
+    if (act === "change") {
+      if (o.extra) openPlanEntry({ kind: "extra", date, id: o.id, fromToday: true });
+      else if (o.override) openPlanEntry({ kind: "dayov", date, id: o.id, fromToday: true });
+      else askScope(date, o, "edit");
+      return;
+    }
     if (act === "done") {
       const l = plan.done[date] || [];
       plan.done[date] = l.includes(o.id) ? l.filter((x) => x !== o.id) : [...l, o.id];
@@ -28539,6 +30857,9 @@
   document.querySelectorAll(".day-view-btn").forEach((b) => b.addEventListener("click", () => { dayView = b.dataset.dayView; writeJSON(DAY_VIEW_KEY, dayView); renderDayPanel(loadHistory()); }));
   els.dayAddBtn.addEventListener("click", () => openPlanEntry({ kind: "extra", date: todaySel }));
   els.todayPlanBtn.addEventListener("click", () => openPlanScreen());
+  $("todayPlanLine").addEventListener("click", () => openMyPlan("todayHome"));
+  $("todayMyPlanBtn").addEventListener("click", () => openMyPlan("todayHome"));
+  $("todayPauseBtn").addEventListener("click", () => openPauseSheet());
 
   const TODAY_CODE_CTX = { goBtn: els.todayCodeGoBtn, errorEl: els.todayCodeError, homeScreen: "todayHome" };
   function goTodayCode() { const code = els.todayCodeInput.value.trim(); if (code) openProgramIntro(code, TODAY_CODE_CTX); }
@@ -28657,7 +30978,7 @@
   $("moreCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") goMoreCode(); });
   $("moreSettingsBtn").addEventListener("click", openMasterSettings);
   $("moreTipsBtn").addEventListener("click", () => els.tipsBtn.click());
-  const NAV_TAB_OF = { todayHome: "today", planScreen: "today", trainingHub: "training", progressScreen: "progress", moreScreen: "more" };
+  const NAV_TAB_OF = { todayHome: "today", planScreen: "today", myPlanScreen: "today", trainingHub: "training", progressScreen: "progress", moreScreen: "more" };
   const AREA_HOME_IDS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome"];
   const TEST_TILE = { color: "#5c6b73", label: "Test", text: "Neue Übungen zum Ausprobieren.",
     icon: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' };
@@ -29159,6 +31480,11 @@
     els.freeRunNext.textContent = next ? `Als Nächstes: ${next.text}` : "";
     els.freeRunNext.hidden = !next;
     $("freeSkipBtn").setAttribute("aria-label", r.index < n - 1 ? "Weiter zum nächsten Punkt" : "Beenden");
+    // Idee 51 (Fabian 06.10.): the phone lies on the floor while stretching,
+    // so a checklist with times says each timed point at its start and the
+    // next one 5 s before the end (🔊 / Lautstärke via cueSay).
+    r.saidNext = false;
+    if (r.block.kind === "list" && st.s > 0 && n > 1) cueSay(st.text);
     freeTick();
   }
   function freeTick() {
@@ -29169,6 +31495,8 @@
     const left = st.s - (performance.now() - r.stepT) / 1000;
     els.freeRunCountdown.textContent = fmtClock(left);
     const sec = Math.ceil(left);
+    const nx = r.steps[r.index + 1];
+    if (r.block.kind === "list" && nx && !r.saidNext && st.s >= 15 && left <= 6) { r.saidNext = true; cueSay(`Als Nächstes: ${nx.text}`); }
     if (sec >= 1 && sec <= 3 && !r.beeped.has(sec)) { r.beeped.add(sec); playWorkoutBeep(false); }
     if (left <= 0) { playWorkoutBeep(true); freeAdvance(false); }
   }
@@ -29196,8 +31524,11 @@
     if (r && r.timer) clearInterval(r.timer);
     freeRun = null;
     releaseWakeLock();
+    $("freeFsHint").hidden = true;
     return r;
   }
+  // Vollbild (Idee 52, Fabian 06.10.): same button as every other player.
+  wireFullscreen({ player: $("freePlayer"), btn: $("freeFsBtn"), hint: $("freeFsHint"), hintOpen: $("freeFsHintOpenBtn"), hintClose: $("freeFsHintClose") });
   function freeElapsedS(r) {
     const end = r.pausedAt != null ? r.pausedAt : performance.now();
     return Math.max(0, (end - r.startT - r.pausedMs) / 1000);
@@ -29207,6 +31538,7 @@
     if (!r) return;
     const secs = Math.round(freeElapsedS(r));
     if (comboProgram) { advanceComboProgram(secs); return; }
+    if (document.fullscreenElement === $("freePlayer")) document.exitFullscreen().catch(() => {});
     $("freePlayer").hidden = true;
     const b = r.block;
     const id = addHistory({ kind: "free", title: b.title, freeId: b.id, seconds: secs,
@@ -29249,60 +31581,194 @@
   });
 
   // ---- plan editor ----
+  // ==== Plan-Editor (Trainingsplanung kp1/kp3/kp4/kp6/kp10/kp11) ====
+  // Per phase: Woche A-D ("Wochen im Wechsel"), Entlastungswoche, "aus der
+  // Wertung nehmen"; an Ablage (tray) with Kombi-Programme, areas,
+  // exercises and Eigenes Training to tap onto a day (or drag with a
+  // mouse); copy a day; Rückgängig. Details docs/notes/27.
+  const planVariantSel = {};
+  let trayTab = "combo", traySel = null;
   function openPlanScreen() {
     if (!plan.phases.length) plan.phases.push({ id: newId(), name: "Mein Wochenplan", weeks: 0, days: [[], [], [], [], [], [], []] });
     renderPlanScreen();
     showScreen("planScreen");
   }
-  function removePlanEntry(pi, di, id) {
-    if (!plan.phases[pi]) return;
-    plan.phases[pi].days[di] = plan.phases[pi].days[di].filter((x) => x.id !== id);
+  function planDaysRef(pi, v) {
+    const ph = plan.phases[pi];
+    if (!ph) return null;
+    return v > 0 && ph.alt && ph.alt[v - 1] ? ph.alt[v - 1] : ph.days;
+  }
+  function insertDaysRef(id) { const ins = plan.inserts.find((x) => x.id === id); return ins ? ins.days : null; }
+  function daysRefOf(key) { return key.startsWith("i") ? insertDaysRef(key.slice(1)) : planDaysRef(+key.split("/")[0], +(key.split("/")[1] || 0)); }
+  function removePlanEntry(pi, di, id, v) {
+    const days = planDaysRef(pi, v || 0);
+    if (!days) return;
+    days[di] = days[di].filter((x) => x.id !== id);
     savePlan();
   }
+  const VARIANT_NAMES = ["A", "B", "C", "D"];
+  function planDayHtml(list, di, key) {
+    return `<div class="plan-day${traySel ? " drop-ready" : ""}" data-drop="${key}:${di}">
+      <div class="plan-day-name">${WD_SHORT[di]}</div>
+      <div class="plan-day-items">${list.length ? list.map((e) => `<div class="plan-item">${areaDot(e.area)}<span class="plan-item-text">${e.special ? "★ " : ""}${esc(entryTitle(e))}<small>${esc([e.time ? e.time + " Uhr" : "", e.minutes + " Min."].filter(Boolean).join(" · "))}</small></span>
+          <button type="button" class="plan-item-btn" data-edit="${key}:${di}:${esc(e.id)}" aria-label="Bearbeiten">✎</button>
+          <button type="button" class="plan-item-btn" data-del="${key}:${di}:${esc(e.id)}" aria-label="Entfernen">✕</button></div>`).join("") : `<span class="plan-rest">Ruhetag</span>`}
+        <div class="plan-day-acts"><button type="button" class="text-link small" data-add="${key}:${di}">+ Training</button>${list.length ? `<button type="button" class="text-link small" data-copyday="${key}:${di}">Tag kopieren</button>` : ""}</div></div></div>`;
+  }
   function renderPlanScreen() {
+    planMapCache = null;
     els.planStartInput.value = plan.startDate;
     els.planStartHelp.textContent = `Startet am ${longDate(plan.startDate)}.`;
+    const src = $("planSourceNote");
+    src.hidden = !plan.source;
+    if (plan.source) src.textContent = `Plan von deinem Trainer (Code ${plan.source.code}, Fassung ${plan.source.version}). Uhrzeiten, Tage und Pausen kannst du selbst anpassen.`;
+    renderPlanTray();
     els.planPhaseList.innerHTML = plan.phases.map((ph, pi) => {
       const isLast = pi === plan.phases.length - 1;
       const weekOpts = [`<option value="0"${ph.weeks === 0 ? " selected" : ""}>unbegrenzt</option>`]
         .concat(Array.from({ length: 52 }, (_, i) => i + 1).map((w) => `<option value="${w}"${ph.weeks === w ? " selected" : ""}>${w} ${w === 1 ? "Woche" : "Wochen"}</option>`)).join("");
       const start = phaseStartDate(pi);
       const range = ph.weeks ? `${longDate(start)} bis ${longDate(dAdd(start, ph.weeks * 7 - 1))}` : `ab ${longDate(start)}`;
-      const days = ph.days.map((list, di) => `<div class="plan-day">
-          <div class="plan-day-name">${WD_SHORT[di]}</div>
-          <div class="plan-day-items">${list.length ? list.map((e) => `<div class="plan-item">${areaDot(e.area)}<span class="plan-item-text">${esc(entryTitle(e))}<small>${esc([e.time ? e.time + " Uhr" : "", e.minutes + " Min."].filter(Boolean).join(" · "))}</small></span>
-              <button type="button" class="plan-item-btn" data-edit="${pi}:${di}:${esc(e.id)}" aria-label="Bearbeiten">✎</button>
-              <button type="button" class="plan-item-btn" data-del="${pi}:${di}:${esc(e.id)}" aria-label="Entfernen">✕</button></div>`).join("") : `<span class="plan-rest">Ruhetag</span>`}
-            <button type="button" class="text-link small" data-add="${pi}:${di}">+ Training</button></div></div>`).join("");
+      const nVar = 1 + (ph.alt ? ph.alt.length : 0);
+      const v = Math.min(planVariantSel[ph.id] || 0, nVar - 1);
+      const varRow = `<div class="plan-variant-row" role="group" aria-label="Wochen im Wechsel">
+          <button type="button" class="choice small${nVar === 1 ? " active" : ""}" data-rot="${pi}:1" aria-pressed="${nVar === 1}">Jede Woche gleich</button>
+          <button type="button" class="choice small${nVar > 1 ? " active" : ""}" data-rot="${pi}:2" aria-pressed="${nVar > 1}">Wochen im Wechsel</button>
+        </div>
+        ${nVar > 1 ? `<div class="plan-variant-tabs" role="group" aria-label="Woche wählen"><span class="plan-vtabs-label" aria-hidden="true">Woche</span>${VARIANT_NAMES.slice(0, nVar).map((n, i) => `<button type="button" class="plan-vtab${i === v ? " active" : ""}" data-vsel="${pi}:${i}" aria-pressed="${i === v}" aria-label="Woche ${n}"><span class="plan-vtab-word">Woche </span>${n}</button>`).join("")}${nVar < 4 ? `<button type="button" class="plan-vtab add" data-rot="${pi}:${nVar + 1}" aria-label="Woche ${VARIANT_NAMES[nVar]} dazu">+</button>` : ""}</div>
+          ${nVar > 2 ? `<button type="button" class="text-link small danger plan-vtab-remove" data-rot="${pi}:${nVar - 1}">Woche ${VARIANT_NAMES[nVar - 1]} entfernen</button>` : ""}
+          <p class="group-help">Woche A, B${nVar > 2 ? ", C" : ""}${nVar > 3 ? ", D" : ""} wechseln sich ab: In Woche 1 gilt A, in Woche 2 B und so weiter.</p>` : ""}`;
+      const days = planDaysRef(pi, v).map((list, di) => planDayHtml(list, di, `${pi}/${v}`)).join("");
       return `<section class="plan-phase" style="border-left-color:${PHASE_TINTS[pi % PHASE_TINTS.length]}">
         <div class="plan-phase-head">
           <input type="text" class="plan-input plan-phase-name" data-phase-name="${pi}" value="${esc(ph.name)}" maxlength="40" aria-label="Name der Phase">
           <select class="plan-select" data-phase-weeks="${pi}" aria-label="Dauer der Phase">${weekOpts}</select>
         </div>
         <p class="group-help">${esc(range)}${!ph.weeks && !isLast ? " · Wähle eine Dauer, sonst starten die folgenden Phasen nie." : ""}</p>
+        ${varRow}
         ${days}
+        <div class="plan-phase-opts">
+          <label class="checkbox-row tap-row"><input type="checkbox" data-phase-noscore="${pi}"${ph.noScore ? " checked" : ""}> Aus der Wertung nehmen</label>
+          <p class="group-help">${ph.noScore ? "Diese Phase zählt nicht für Wochenziel und Serie. " : ""}${!ph.weeks || ph.weeks >= 4 ? "Empfehlung: etwa jede 4. Woche etwas leichter trainieren, damit die Erholung nicht zu kurz kommt. Sprich das am besten mit deinem Trainer ab." : ""}</p>
+        </div>
         <div class="plan-phase-actions">
           ${pi > 0 ? `<button type="button" class="text-link small" data-phase-up="${pi}">↑ nach vorne</button>` : ""}
           <button type="button" class="text-link small" data-phase-copy="${pi}">Phase kopieren</button>
           <button type="button" class="text-link small danger" data-phase-del="${pi}">Phase löschen</button>
         </div></section>`;
-    }).join("");
+    }).join("") + plan.inserts.map((ins) => `<section class="plan-phase plan-insert" style="border-left-color:#d4a017">
+        <div class="plan-phase-head"><input type="text" class="plan-input plan-phase-name" data-ins-name="${esc(ins.id)}" value="${esc(ins.name)}" maxlength="40" aria-label="Name der Sonderwoche"></div>
+        <p class="group-help">★ Sonderwoche in der Woche vom ${esc(longDate(ins.at))}. Dein Plan rückt danach eine Woche nach hinten.</p>
+        ${ins.days.map((list, di) => planDayHtml(list, di, "i" + ins.id)).join("")}
+        <label class="checkbox-row tap-row"><input type="checkbox" data-ins-noscore="${esc(ins.id)}"${ins.noScore ? " checked" : ""}> Aus der Wertung nehmen</label>
+        <div class="plan-phase-actions"><button type="button" class="text-link small danger" data-ins-del="${esc(ins.id)}">Sonderwoche löschen</button></div>
+      </section>`).join("");
+    planUndoChanged();
   }
+  function planUndoChanged() {
+    const b = $("planUndoBtn");
+    if (b) b.hidden = !planUndo.length;
+  }
+  $("planUndoBtn").addEventListener("click", () => {
+    if (planUndoLast()) { if (!$("planScreen").hidden) renderPlanScreen(); if (!$("myPlanScreen").hidden) renderMyPlan(); showToast("Rückgängig gemacht"); }
+  });
+  function setRotation(pi, n) {
+    const ph = plan.phases[pi];
+    const cur = 1 + (ph.alt ? ph.alt.length : 0);
+    if (n === cur) return;
+    if (n < cur && ph.alt) {
+      const gone = n === 1 ? ph.alt : ph.alt.slice(n - 1);
+      const doIt = () => { if (n === 1) delete ph.alt; else ph.alt = ph.alt.slice(0, n - 1); planVariantSel[ph.id] = 0; savePlan(); renderPlanScreen(); };
+      if (gone.some((d) => d.some((l) => l.length))) confirmDialog(n === 1 ? "Zurück zu „Jede Woche gleich“? Die Einträge der Wochen B bis D werden gelöscht, Woche A bleibt." : `Woche ${VARIANT_NAMES[n]} mit ihren Einträgen entfernen?`, doIt);
+      else doIt();
+      return;
+    }
+    ph.alt = ph.alt || [];
+    while (1 + ph.alt.length < n) ph.alt.push(ph.days.map((l) => l.map((x) => ({ ...x, id: newId() }))));
+    planVariantSel[ph.id] = n - 1;
+    savePlan(); renderPlanScreen();
+  }
+  // ---- Ablage (tray) ----
+  const TRAY_TABS = [["combo", "Kombi-Programme"], ["area", "Bereiche"], ["ex", "Übungen"], ["free", "Eigenes Training"]];
+  function trayItems(tab) {
+    if (tab === "combo") return comboSavedStore.load().map((c) => ({ area: "combo", what: "combo:" + c.id, t: c.name, minutes: Math.max(5, Math.round(c.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0) / 300) * 5 || 15) }));
+    if (tab === "area") return PLAN_AREAS.map((a) => ({ area: a.key, what: "", t: a.label, minutes: 15 }));
+    if (tab === "ex") return visualExercises().map((x) => ({ area: "visual", what: "ex:" + x.id, t: x.title, minutes: 10 }))
+      .concat(NAT_SUBS.map(([k, t]) => ({ area: "nat", what: "nat:" + k, t, minutes: 10 })));
+    return freeAllBlocks().map((b) => ({ area: "free", what: "free:" + b.id, t: b.title, minutes: 10 }));
+  }
+  function renderPlanTray() {
+    $("planTrayTabs").innerHTML = TRAY_TABS.map(([k, t]) => `<button type="button" class="plan-tray-tab${k === trayTab ? " active" : ""}" role="tab" aria-selected="${k === trayTab}" data-tray-tab="${k}">${esc(t)}</button>`).join("");
+    const items = trayItems(trayTab);
+    $("planTrayItems").innerHTML = items.length ? items.map((it, i) => `<button type="button" class="plan-chip${traySel && traySel.what === it.what && traySel.area === it.area ? " selected" : ""}" data-tray="${i}" draggable="true" aria-pressed="${!!(traySel && traySel.what === it.what && traySel.area === it.area)}">${areaDot(it.area)}<span>${esc(it.t)}</span></button>`).join("")
+      : `<p class="group-help">${trayTab === "combo" ? "Noch kein Kombi-Programm gespeichert. Stell eins unter Training › Alles verbinden zusammen und speichere es, dann liegt es hier." : "Hier ist noch nichts."}</p>`;
+    $("planTray").classList.toggle("armed", !!traySel);
+    $("planTrayHint").textContent = traySel ? `„${traySel.t}“ ausgewählt: Tippe auf einen Tag, um es dort einzutragen.` : "Tippe ein Training an und dann auf einen Tag. Am Laptop kannst du es auch ziehen.";
+  }
+  $("planTrayTabs").addEventListener("click", (e) => { const b = e.target.closest("[data-tray-tab]"); if (!b) return; trayTab = b.dataset.trayTab; renderPlanTray(); });
+  $("planTrayItems").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-tray]"); if (!b) return;
+    const it = trayItems(trayTab)[+b.dataset.tray];
+    traySel = traySel && traySel.what === it.what && traySel.area === it.area ? null : it;
+    renderPlanScreen();
+  });
+  $("planTrayItems").addEventListener("dragstart", (e) => {
+    const b = e.target.closest("[data-tray]"); if (!b) return;
+    traySel = trayItems(trayTab)[+b.dataset.tray];
+    try { e.dataTransfer.setData("text/plain", traySel.t); e.dataTransfer.effectAllowed = "copy"; } catch (err) {}
+  });
+  els.planPhaseList.addEventListener("dragover", (e) => { if (traySel && e.target.closest("[data-drop]")) { e.preventDefault(); e.target.closest("[data-drop]").classList.add("drop-over"); } });
+  els.planPhaseList.addEventListener("dragleave", (e) => { const d = e.target.closest("[data-drop]"); if (d) d.classList.remove("drop-over"); });
+  els.planPhaseList.addEventListener("drop", (e) => { const d = e.target.closest("[data-drop]"); if (!d || !traySel) return; e.preventDefault(); dropTray(d.dataset.drop); });
+  function dropTray(target) {
+    const [key, di] = [target.slice(0, target.lastIndexOf(":")), +target.slice(target.lastIndexOf(":") + 1)];
+    const days = daysRefOf(key);
+    if (!days || !traySel) return;
+    days[di].push(cleanEntry({ id: newId(), area: traySel.area, what: traySel.what, minutes: traySel.minutes }));
+    const t = traySel.t;
+    savePlan(); renderPlanScreen();
+    showToast(`„${t}“ am ${WD_LONG[di]} eingetragen`);
+  }
+  let copyDaySrc = null;
   els.planPhaseList.addEventListener("click", (e) => {
     const t = e.target.closest("button");
-    if (!t) return;
+    const dropZone = e.target.closest("[data-drop]");
+    if (!t && dropZone && traySel) { dropTray(dropZone.dataset.drop); return; }
+    if (!t) { if (dropZone && copyDaySrc) pasteDay(dropZone.dataset.drop); return; }
     const d = t.dataset;
-    if (d.add) { const [pi, di] = d.add.split(":").map(Number); openPlanEntry({ kind: "plan", pi, di }); return; }
-    if (d.edit) { const [pi, di, id] = d.edit.split(":"); openPlanEntry({ kind: "plan", pi: +pi, di: +di, id }); return; }
-    if (d.del) { const [pi, di, id] = d.del.split(":"); removePlanEntry(+pi, +di, id); renderPlanScreen(); return; }
+    const split3 = (v) => { const p = v.split(":"); return [p[0], +p[1], p.slice(2).join(":")]; };
+    if (d.add) {
+      if (traySel) { dropTray(d.add); return; }
+      if (copyDaySrc) { pasteDay(d.add); return; }
+      const [key, di] = split3(d.add); openPlanEntry({ kind: "plan", key, di }); return;
+    }
+    if (d.edit) { const [key, di, id] = split3(d.edit); openPlanEntry({ kind: "plan", key, di, id }); return; }
+    if (d.del) { const [key, di, id] = split3(d.del); const days = daysRefOf(key); if (days) { days[di] = days[di].filter((x) => x.id !== id); savePlan(); } renderPlanScreen(); return; }
+    if (d.copyday) { copyDaySrc = d.copyday; showToast("Tag kopiert: Tippe auf „+ Training“ bei einem anderen Tag, um ihn dort einzufügen."); return; }
+    if (d.rot) { const [pi, n] = d.rot.split(":").map(Number); setRotation(pi, n); return; }
+    if (d.vsel) { const [pi, v] = d.vsel.split(":").map(Number); planVariantSel[plan.phases[pi].id] = v; renderPlanScreen(); return; }
     if (d.phaseUp) { const i = +d.phaseUp; [plan.phases[i - 1], plan.phases[i]] = [plan.phases[i], plan.phases[i - 1]]; savePlan(); renderPlanScreen(); return; }
-    if (d.phaseCopy) { const src = plan.phases[+d.phaseCopy]; const cp = JSON.parse(JSON.stringify(src)); cp.id = newId(); cp.name = (src.name + " (Kopie)").slice(0, 40); cp.days.forEach((l) => l.forEach((x) => { x.id = newId(); })); if (!src.weeks) src.weeks = 4; plan.phases.splice(+d.phaseCopy + 1, 0, cp); savePlan(); renderPlanScreen(); return; }
-    if (d.phaseDel) { const i = +d.phaseDel; confirmDialog(`Phase „${plan.phases[i].name}“ mit allen Trainings löschen?`, () => { plan.phases.splice(i, 1); savePlan(); renderPlanScreen(); }); }
+    if (d.phaseCopy) { const src = plan.phases[+d.phaseCopy]; const cp = JSON.parse(JSON.stringify(src)); cp.id = newId(); cp.name = (src.name + " (Kopie)").slice(0, 40); [cp.days].concat(cp.alt || []).forEach((dd) => dd.forEach((l) => l.forEach((x) => { x.id = newId(); }))); if (!src.weeks) src.weeks = 4; plan.phases.splice(+d.phaseCopy + 1, 0, cp); savePlan(); renderPlanScreen(); return; }
+    if (d.phaseDel) { const i = +d.phaseDel; confirmDialog(`Phase „${plan.phases[i].name}“ mit allen Trainings löschen?`, () => { plan.phases.splice(i, 1); savePlan(); renderPlanScreen(); }); return; }
+    if (d.insDel) { const ins = plan.inserts.find((x) => x.id === d.insDel); if (ins) confirmDialog(`Sonderwoche „${ins.name}“ löschen? Dein Plan rückt dann wieder eine Woche nach vorne.`, () => { plan.inserts = plan.inserts.filter((x) => x !== ins); savePlan(); renderPlanScreen(); }); }
   });
+  function pasteDay(target) {
+    const [sk, sdi] = [copyDaySrc.slice(0, copyDaySrc.lastIndexOf(":")), +copyDaySrc.slice(copyDaySrc.lastIndexOf(":") + 1)];
+    const [tk, tdi] = [target.slice(0, target.lastIndexOf(":")), +target.slice(target.lastIndexOf(":") + 1)];
+    const from = daysRefOf(sk), to = daysRefOf(tk);
+    copyDaySrc = null;
+    if (!from || !to || (sk === tk && sdi === tdi)) return;
+    from[sdi].forEach((x) => to[tdi].push({ ...x, id: newId() }));
+    savePlan(); renderPlanScreen();
+    showToast(`Eingefügt am ${WD_LONG[tdi]}`);
+  }
   els.planPhaseList.addEventListener("change", (e) => {
     const t = e.target;
     if (t.dataset.phaseWeeks != null) { plan.phases[+t.dataset.phaseWeeks].weeks = Number(t.value); savePlan(); renderPlanScreen(); }
     if (t.dataset.phaseName != null) { plan.phases[+t.dataset.phaseName].name = t.value.trim().slice(0, 40) || "Phase"; savePlan(); }
+    if (t.dataset.phaseNoscore != null) { const ph = plan.phases[+t.dataset.phaseNoscore]; if (t.checked) ph.noScore = true; else delete ph.noScore; savePlan(); renderPlanScreen(); }
+    if (t.dataset.insName != null) { const ins = plan.inserts.find((x) => x.id === t.dataset.insName); if (ins) { ins.name = t.value.trim().slice(0, 40) || "Sonderwoche"; savePlan(); } }
+    if (t.dataset.insNoscore != null) { const ins = plan.inserts.find((x) => x.id === t.dataset.insNoscore); if (ins) { ins.noScore = t.checked; savePlan(); renderPlanScreen(); } }
   });
   els.planStartInput.addEventListener("change", () => { if (els.planStartInput.value) { plan.startDate = mondayOf(els.planStartInput.value); savePlan(); renderPlanScreen(); } });
   els.planAddPhaseBtn.addEventListener("click", () => {
@@ -29311,46 +31777,117 @@
     plan.phases.push({ id: newId(), name: `Phase ${plan.phases.length + 1}`, weeks: 0, days: [[], [], [], [], [], [], []] });
     savePlan(); renderPlanScreen();
   });
+  $("planAddInsertBtn").addEventListener("click", () => {
+    // Next free week from today on (or from the plan start).
+    let at = mondayOf(todayStr() > plan.startDate ? todayStr() : plan.startDate);
+    at = dAdd(at, 7);
+    while (plan.inserts.some((x) => x.at === at)) at = dAdd(at, 7);
+    choiceSheet("Sonderwoche einfügen", "Zum Beispiel Trainingslager oder Camp. Die Woche hat ihre eigenen Trainings, dein Plan rückt danach eine Woche nach hinten.",
+      [0, 1, 2, 3, 4].map((k) => { const m = dAdd(at, k * 7); return { label: `Woche vom ${longDate(m)}`, fn: () => {
+        plan.inserts.push({ id: newId(), at: m, name: "Sonderwoche", days: [[], [], [], [], [], [], []], noScore: false });
+        savePlan(); renderPlanScreen();
+        setTimeout(() => { const el = els.planPhaseList.querySelector(".plan-insert:last-of-type"); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); }, 50);
+      } }; }));
+  });
   els.planClearBtn.addEventListener("click", () => confirmDialog("Den ganzen Wochenplan mit allen Phasen und Einträgen löschen?", () => {
     plan = emptyPlan(); savePlan(); openPlanScreen();
   }));
-  els.planBackBtn.addEventListener("click", () => { activateSectionTab("today"); showScreen("todayHome"); });
+  els.planBackBtn.addEventListener("click", () => { traySel = null; copyDaySrc = null; activateSectionTab("today"); showScreen("todayHome"); });
+  $("planOverviewBtn").addEventListener("click", () => openMyPlan("planScreen"));
+  $("planPauseBtn").addEventListener("click", () => openPauseSheet());
+
+  function showToast(text) {
+    document.querySelectorAll(".app-toast").forEach((t) => t.remove());
+    const t = document.createElement("div");
+    t.className = "app-toast";
+    t.setAttribute("role", "status");
+    t.textContent = text;
+    document.body.appendChild(t);
+    setTimeout(() => t.classList.add("out"), 2600);
+    setTimeout(() => t.remove(), 3000);
+  }
+  // ---- choice sheet (kp4 "Wofür gilt das?", Sonderwoche, Wochen-Menü) ----
+  let choiceReturnFocus = null;
+  function choiceSheet(title, text, options) {
+    $("choiceTitle").textContent = title;
+    $("choiceText").textContent = text || "";
+    $("choiceText").hidden = !text;
+    const list = $("choiceList");
+    list.innerHTML = "";
+    options.forEach((o, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "choice-sheet-btn" + (o.danger ? " danger" : "") + (i === 0 && o.primary ? " primary" : "");
+      b.innerHTML = `<strong>${esc(o.label)}</strong>${o.sub ? `<small>${esc(o.sub)}</small>` : ""}`;
+      b.addEventListener("click", () => { closeChoiceSheet(); o.fn(); });
+      list.appendChild(b);
+    });
+    choiceReturnFocus = document.activeElement;
+    $("choiceSheet").hidden = false;
+    $("choiceCancelBtn").focus();
+  }
+  function closeChoiceSheet() { $("choiceSheet").hidden = true; if (choiceReturnFocus && document.contains(choiceReturnFocus)) choiceReturnFocus.focus(); }
+  $("choiceCancelBtn").addEventListener("click", closeChoiceSheet);
+  $("choiceSheet").addEventListener("click", (e) => { if (e.target === $("choiceSheet")) closeChoiceSheet(); });
+  $("choiceSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closeChoiceSheet(); else trapTabKey($("choiceSheet"), e); });
 
   // ---- entry sheet (plan weekday or one-off date) ----
   let planEntryTarget = null;
   let planEntryReturnFocus = null;
-  els.planEntryArea.innerHTML = PLAN_AREAS.map((a) => `<option value="${a.key}">${esc(a.label)}</option>`).join("");
+  let planEntryDaySel = [];
+  els.planEntryArea.innerHTML = PLAN_AREAS.map((a) => `<option value="${a.key}">${esc(a.label)}</option>`).join("") + `<option value="combo">Kombi-Programm</option>`;
   els.planEntryMinutes.innerHTML = [5, 10, 15, 20, 25, 30, 40, 45, 60, 75, 90, 120].map((m) => `<option value="${m}">${m} Min.</option>`).join("");
   function fillWhat(area, value) {
     els.planEntryWhat.innerHTML = whatOptions(area).map((o) => `<option value="${esc(o.v)}">${esc(o.t)}</option>`).join("");
-    els.planEntryWhat.value = whatOptions(area).some((o) => o.v === value) ? value : "";
+    els.planEntryWhat.value = whatOptions(area).some((o) => o.v === value) ? value : (whatOptions(area)[0] || { v: "" }).v;
   }
   els.planEntryArea.addEventListener("change", () => fillWhat(els.planEntryArea.value, ""));
+  function renderEntryDays() {
+    $("planEntryDays").innerHTML = WD_SHORT.map((d, i) => `<button type="button" class="plan-daypick${planEntryDaySel.includes(i) ? " active" : ""}" data-pick="${i}" aria-pressed="${planEntryDaySel.includes(i)}" aria-label="${WD_LONG[i]}">${d}</button>`).join("")
+      + `<button type="button" class="plan-daypick all${planEntryDaySel.length === 7 ? " active" : ""}" data-pick="all" aria-pressed="${planEntryDaySel.length === 7}">Jeden Tag</button>`;
+  }
+  $("planEntryDays").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-pick]"); if (!b) return;
+    if (b.dataset.pick === "all") planEntryDaySel = planEntryDaySel.length === 7 ? [] : [0, 1, 2, 3, 4, 5, 6];
+    else { const i = +b.dataset.pick; planEntryDaySel = planEntryDaySel.includes(i) ? planEntryDaySel.filter((x) => x !== i) : [...planEntryDaySel, i].sort(); }
+    renderEntryDays();
+  });
+  function entryContextName(key) {
+    if (key.startsWith("i")) { const ins = plan.inserts.find((x) => x.id === key.slice(1)); return ins ? ins.name : "Sonderwoche"; }
+    const [pi, v] = key.split("/").map(Number);
+    const ph = plan.phases[pi];
+    return ph ? ph.name + (ph.alt && ph.alt.length ? ` · Woche ${VARIANT_NAMES[v || 0]}` : "") : "Wochenplan";
+  }
   function openPlanEntry(target) {
     planEntryTarget = target;
+    if (target.kind === "plan" && target.key == null && target.pi != null) target.key = `${target.pi}/0`;
     let existing = null;
-    if (target.kind === "plan" && target.id) existing = plan.phases[target.pi].days[target.di].find((x) => x.id === target.id);
+    if (target.kind === "plan" && target.id) { const days = daysRefOf(target.key); existing = days ? days[target.di].find((x) => x.id === target.id) : null; }
     if (target.kind === "extra" && target.id) existing = (plan.extras[target.date] || []).find((x) => x.id === target.id) || null;
+    if (target.kind === "dayov" && target.id) existing = (plan.dayOv[target.date] || []).find((x) => x.id === target.id) || null;
     const e = existing || { area: "visual", what: "", code: "", time: "", minutes: 15, ...(target.preset || {}) };
+    target.origTitle = e.title ? { title: e.title, area: e.area, what: e.what, code: e.code } : null;
     els.planEntryTitle.textContent = existing ? "Training ändern" : "Training eintragen";
-    // pickDay (long-press "In den Wochenplan"): the weekday is chosen in
-    // the sheet; pi -1 = no phase yet, one is created on save.
-    $("planEntryDayWrap").hidden = !target.pickDay;
-    if (target.pickDay) {
-      $("planEntryDay").innerHTML = WD_LONG.map((d, i) => `<option value="${i}">jeden ${d}</option>`).join("");
-      $("planEntryDay").value = String(target.di);
-    }
+    // pickDay (long-press "In den Wochenplan") and every new weekly entry:
+    // several weekdays at once (kp1), "Jeden Tag" in one tap.
+    const multi = (target.kind === "plan" && !existing) || target.pickDay;
+    $("planEntryDayWrap").hidden = true;
+    $("planEntryDaysWrap").hidden = !multi;
+    planEntryDaySel = multi ? [target.di != null ? target.di : 0] : [];
+    if (multi) renderEntryDays();
     els.planEntryContext.textContent = target.pickDay
-      ? (target.pi >= 0 ? `Wochenplan · ${plan.phases[target.pi].name}` : "Wochenplan")
+      ? (target.pi >= 0 && plan.phases[target.pi] ? `Wochenplan · ${plan.phases[target.pi].name}` : "Wochenplan")
       : target.kind === "plan"
-      ? `${plan.phases[target.pi].name} · jeden ${WD_LONG[target.di]}`
+      ? `${entryContextName(target.key)}${multi ? " · jede Woche" : ` · jeden ${WD_LONG[target.di]}`}`
       : `Nur am ${longDate(target.date)}`;
     els.planEntryArea.value = e.area;
     fillWhat(e.area, e.what);
     els.planEntryCode.value = e.code || "";
     els.planEntryTime.value = e.time || "";
-    els.planEntryMinutes.value = String(e.minutes);
+    els.planEntryMinutes.value = String(e.fullMinutes || e.minutes);
     if (!els.planEntryMinutes.value) els.planEntryMinutes.value = "15";
+    $("planEntrySpecialRow").hidden = target.kind !== "extra";
+    $("planEntrySpecial").checked = !!e.special;
     planEntryReturnFocus = document.activeElement;
     els.planEntrySheet.hidden = false;
     focusFirstIn(els.planEntrySheet);
@@ -29363,18 +31900,33 @@
     const t = planEntryTarget;
     if (!t) return;
     const entry = cleanEntry({ id: t.id || newId(), area: els.planEntryArea.value, what: els.planEntryWhat.value, code: els.planEntryCode.value.trim(),
-      time: els.planEntryTime.value, minutes: els.planEntryMinutes.value });
+      time: els.planEntryTime.value, minutes: els.planEntryMinutes.value, special: t.kind === "extra" && $("planEntrySpecial").checked ? "Sondertraining" : "" });
+    if (!entry) return;
+    // The trainer's name for it stays while the training itself is unchanged.
+    const ot = t.origTitle;
+    if (ot && ot.area === entry.area && (ot.what || "") === entry.what && (ot.code || "") === entry.code) entry.title = ot.title;
+    if (t.onSave) { closePlanEntry(); t.onSave(entry); return; }
     if (t.pickDay) {
-      t.di = Number($("planEntryDay").value) || 0;
       if (t.pi < 0 || !plan.phases[t.pi]) {
         plan.phases.push({ id: newId(), name: `Phase ${plan.phases.length + 1}`, weeks: 0, days: [[], [], [], [], [], [], []] });
         t.pi = plan.phases.length - 1;
       }
+      t.key = `${t.pi}/0`;
     }
-    if (t.kind === "plan") {
-      const list = plan.phases[t.pi].days[t.di];
+    if (t.kind === "plan" || t.pickDay) {
+      const days = daysRefOf(t.key);
+      if (t.id) {
+        const i = days[t.di].findIndex((x) => x.id === entry.id);
+        if (i >= 0) days[t.di][i] = entry; else days[t.di].push(entry);
+      } else {
+        const sel = planEntryDaySel.length ? planEntryDaySel : [t.di || 0];
+        sel.forEach((di, k) => days[di].push({ ...entry, id: k ? newId() : entry.id }));
+      }
+    } else if (t.kind === "dayov") {
+      const list = [...(plan.dayOv[t.date] || [])];
       const i = list.findIndex((x) => x.id === entry.id);
       if (i >= 0) list[i] = entry; else list.push(entry);
+      plan.dayOv[t.date] = list;
     } else {
       const list = [...(plan.extras[t.date] || [])];
       const i = list.findIndex((x) => x.id === entry.id);
@@ -29387,6 +31939,347 @@
     else if (t.kind === "plan") renderPlanScreen(); else renderToday();
   });
 
+  // ==== Plan per Code von deinem Trainer (kp13) + neue Fassung (kp21) ====
+  // Code type "training-plan": {plan:{phases, inserts?, startDate?}, version}.
+  // Taking it over replaces the phases (and Sonderwochen); the client's own
+  // things stay: pauses, extras, ticks, "nur an diesem Tag", week moves,
+  // Wettkampf focus, and times he changed himself (kept per entry id).
+  // On start the app quietly asks once a day whether the trainer published
+  // a newer version and offers it on Heute. Docs: docs/notes/27.
+  const PLAN_CHECK_KEY = "fwmc-plan-check-v1";
+  function trainerPlanSummary(def) {
+    const ph = def.plan.phases || [];
+    const weeks = ph.reduce((s, p) => s + (Number(p.weeks) || 0), 0);
+    const n = ((ph[0] && ph[0].days) || []).reduce((a, d) => a + (d || []).length, 0);
+    return `${countLabel(ph.length, "Phase", "Phasen")}${weeks && ph.every((p) => Number(p.weeks)) ? ` über ${countLabel(weeks, "Woche", "Wochen")}` : ""}, zu Beginn ${countLabel(n, "Training", "Trainings")} pro Woche`;
+  }
+  function applyTrainerPlan(def, code) {
+    const incoming = loadPlan({ startDate: def.plan.startDate || mondayOf(todayStr()), phases: def.plan.phases, inserts: def.plan.inserts || [] });
+    const sameSource = plan.source && plan.source.code === code;
+    // client's own time changes survive a new version
+    const ownTimes = {};
+    if (sameSource && plan.source.baseTimes) {
+      plan.phases.forEach((ph) => [ph.days].concat(ph.alt || []).forEach((dd) => dd.forEach((l) => l.forEach((e) => {
+        if (e.id in plan.source.baseTimes && plan.source.baseTimes[e.id] !== e.time) ownTimes[e.id] = e.time;
+      }))));
+    }
+    const baseTimes = {};
+    incoming.phases.forEach((ph) => { ph.locked = true; [ph.days].concat(ph.alt || []).forEach((dd) => dd.forEach((l) => l.forEach((e) => { baseTimes[e.id] = e.time; if (e.id in ownTimes) e.time = ownTimes[e.id]; }))); });
+    plan.phases = incoming.phases;
+    plan.inserts = incoming.inserts;
+    if (!sameSource) plan.startDate = incoming.startDate;
+    plan.source = { code, version: Number(def.version) || 1, at: new Date().toISOString(), baseTimes };
+    savePlan();
+    addTrainerEvents(def.plan.events, code);
+    writeJSON(PLAN_CHECK_KEY, { day: todayStr(), offer: null });
+  }
+  // Wettkampf dates from the trainer (def.plan.events) go into the client's
+  // own calendar (fwmc-events-v1, the Heute calendar's store), marked
+  // `fromTrainer`; same date + title already there = skipped, so a new plan
+  // version never doubles them. focusWeekOf() then picks them up.
+  function addTrainerEvents(list, code) {
+    if (!Array.isArray(list) || !list.length) return 0;
+    const evs = loadEvents();
+    let added = 0;
+    list.slice(0, 50).forEach((x) => {
+      if (!x || !/^\d{4}-\d{2}-\d{2}$/.test(x.date || "")) return;
+      const title = String(x.title || "Wettkampf").trim().slice(0, 60) || "Wettkampf";
+      if (evs.some((e) => e.date === x.date && e.title === title)) return;
+      const kind = EVENT_KIND_BY_KEY[x.kind] ? x.kind : "wettkampf";
+      evs.push({ id: newId(), date: x.date, time: /^\d{2}:\d{2}$/.test(x.time || "") ? x.time : "", title, kind, goal: false, fromTrainer: String(code || "") });
+      added++;
+    });
+    if (added) saveEvents(evs);
+    return added;
+  }
+  function offerTrainerPlan(def, code, ctx) {
+    activateSectionTab("today");
+    showScreen("todayHome");
+    const same = plan.source && plan.source.code === code;
+    const text = `${trainerPlanSummary(def)}. ${same ? "Deine eigenen Uhrzeiten, Pausen und Einträge bleiben erhalten." : planHasEntries() ? "Dein bisheriger Wochenplan wird dabei ersetzt. Deine Pausen, Termine und einzelnen Einträge bleiben." : "Du kannst danach Uhrzeiten, Tage und Pausen selbst anpassen."}`;
+    confirmDialog(text, () => { applyTrainerPlan(def, code); renderToday(); openMyPlan("todayHome"); showToast("Plan von deinem Trainer übernommen."); },
+      { title: same ? "Neue Fassung deines Plans übernehmen?" : "Plan von deinem Trainer übernehmen?", yes: "Übernehmen", no: "Nicht jetzt" });
+  }
+  async function checkTrainerPlanUpdate() {
+    if (!plan.source || !plan.source.code) return;
+    const st = readJSON(PLAN_CHECK_KEY, {}) || {};
+    if (st.day === todayStr()) return;
+    let def = null;
+    try { def = await lookupProgram(plan.source.code); } catch (e) { return; }
+    if (!def || def.__lookupError) return; // offline: try again next start
+    const offer = def.type === "training-plan" && !codeDefProblem(def) && (Number(def.version) || 1) > plan.source.version ? Number(def.version) || 1 : null;
+    writeJSON(PLAN_CHECK_KEY, { day: todayStr(), offer });
+    if (offer && !els.todayHome.hidden) renderToday();
+  }
+  function renderPlanUpdateCard() {
+    const st = readJSON(PLAN_CHECK_KEY, {}) || {};
+    const card = $("todayPlanUpdate");
+    if (!card) return;
+    const show = !!(plan.source && st.offer && st.offer > plan.source.version);
+    card.hidden = !show;
+    if (!show) return;
+    card.innerHTML = `<div class="today-main-kicker">Dein Plan</div>
+      <h2 class="today-main-title">Dein Trainer hat deinen Plan angepasst.</h2>
+      <p class="today-main-hint">Deine eigenen Uhrzeiten, Pausen und Einträge bleiben erhalten.</p>
+      <button class="start-btn" type="button" id="planUpdateTakeBtn">Ansehen und übernehmen</button>
+      <button class="text-link small" type="button" id="planUpdateLaterBtn">Später</button>`;
+    card.querySelector("#planUpdateTakeBtn").addEventListener("click", () => openProgramIntro(plan.source.code, { goBtn: null, errorEl: els.todayCodeError, homeScreen: "todayHome" }));
+    card.querySelector("#planUpdateLaterBtn").addEventListener("click", () => { card.hidden = true; });
+  }
+  setTimeout(() => { checkTrainerPlanUpdate(); }, 2500);
+
+  // ==== Mein Plan (kp15), Woche verschieben (kp8), Pause (kp7),
+  // Wettkampf (kp11) ====
+  let myPlanBack = "todayHome";
+  // Prüfer 07.10. Nr. 5: line icons in the app's style (stroke = currentColor,
+  // like .today-break-icon / the bottom bar) instead of emoji, which render
+  // differently per system and vanish in dark mode. r[2] is HTML, only for
+  // innerHTML spots; plain-text labels name the reason without an icon.
+  const pauseSvg = (d) => `<svg class="pause-svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${d}</svg>`;
+  const PAUSE_REASONS = [
+    ["urlaub", "Urlaub", pauseSvg('<rect x="3" y="7.5" width="18" height="12.5" rx="2"/><path d="M9 7.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5v2"/><path d="M8 7.5v12.5M16 7.5v12.5"/>')],
+    ["krank", "Krank", pauseSvg('<path d="M14 14.5V5a2 2 0 1 0-4 0v9.5a4 4 0 1 0 4 0z"/><path d="M12 11v6"/>')],
+    ["verletzt", "Verletzt", pauseSvg('<rect x="2" y="8.5" width="20" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="M10.6 10.6h.01M13.4 13.4h.01M13.4 10.6h.01M10.6 13.4h.01"/>')],
+    ["sonstiges", "Sonstiges", pauseSvg('<rect x="6.5" y="5" width="3.5" height="14" rx="1"/><rect x="14" y="5" width="3.5" height="14" rx="1"/>')],
+  ];
+  const PAUSE_BY_KEY = Object.fromEntries(PAUSE_REASONS.map((r) => [r[0], r]));
+  function openMyPlan(back) {
+    myPlanBack = back || "todayHome";
+    renderMyPlan();
+    showScreen("myPlanScreen");
+  }
+  $("myPlanBackBtn").addEventListener("click", () => { if (myPlanBack === "planScreen") { renderPlanScreen(); showScreen("planScreen"); } else { activateSectionTab("today"); showScreen("todayHome"); renderToday(); } });
+  function planLastWeek() {
+    // Show the plan up to its end, at most a year; an open-ended plan: 16
+    // weeks from today on.
+    const limited = plan.phases.length && plan.phases.every((p) => p.weeks);
+    const total = plan.phases.reduce((s, p) => s + (p.weeks || 0), 0);
+    let cw = 0, last = 0;
+    if (limited) {
+      for (; cw < 1200; cw++) { const wk = planWeekMap(cw); if (!wk) break; if (wk.type === "plan" && wk.pw >= total) break; last = cw; }
+    } else last = Math.max(0, Math.floor(dDiff(plan.startDate, todayStr()) / 7)) + 16;
+    loadEvents().filter((f) => (f.goal || f.kind === "wettkampf") && f.date >= todayStr()).forEach((f) => { last = Math.max(last, Math.floor(dDiff(plan.startDate, f.date) / 7) + 1); });
+    return Math.min(last, 104);
+  }
+  function weekRowLabel(wk, ph) {
+    if (wk.type === "pause") { const r = PAUSE_BY_KEY[wk.pause.reason] || PAUSE_BY_KEY.sonstiges; return `Pause (${r[1]})`; }
+    if (wk.type === "insert") return `★ ${wk.ins.name}`;
+    if (wk.type === "blank") return "Eine Woche später (verschoben)";
+    if (!ph) return "Plan beendet";
+    const n = ph.phase.weeks ? `Woche ${ph.weekInPhase} von ${ph.phase.weeks}` : `Woche ${ph.weekInPhase}`;
+    const bits = [ph.phase.name, n];
+    if (ph.phase.alt && ph.phase.alt.length) bits[1] += ` (${VARIANT_NAMES[ph.variant]})`;
+    if (ph.focus) bits.push(ph.focus.label);
+    if (wk.repeated) bits.push("wiederholt");
+    if (wk.skipped) bits.push("eine Woche übersprungen");
+    return bits.join(" · ");
+  }
+  function renderMyPlan() {
+    planMapCache = null;
+    const today = todayStr(), thisMon = mondayOf(today);
+    const hist = loadHistory();
+    const last = planLastWeek();
+    const rows = [];
+    for (let cw = 0; cw <= last; cw++) {
+      const wk = planWeekMap(cw);
+      if (!wk) break;
+      const ph = wk.type === "plan" ? phaseFor(wk.monday) : null;
+      const st = weekStats(wk.monday, hist);
+      const color = wk.type === "pause" ? "#9aa7ad" : wk.type === "insert" ? "#d4a017" : wk.type === "blank" ? "#c9d3d6" : ph ? PHASE_TINTS[ph.index % PHASE_TINTS.length] : "#c9d3d6";
+      const cls = ["myplan-week", wk.type, wk.monday === thisMon ? "is-now" : "", wk.monday < thisMon ? "past" : "", ph && ph.focus ? "hint" : ""].filter(Boolean).join(" ");
+      const goal = loadEvents().find((f) => (f.goal || f.kind === "wettkampf") && mondayOf(f.date) === wk.monday);
+      const sun = dAdd(wk.monday, 6);
+      rows.push(`<button type="button" class="${cls}" data-week="${wk.monday}" style="--wk:${color}">
+        <span class="myplan-bar" aria-hidden="true"${wk.type === "pause" ? "" : ` style="background:${color}"`}></span>
+        <span class="myplan-date">${dParse(wk.monday).getDate()}.${dParse(wk.monday).getMonth() + 1}.–${dParse(sun).getDate()}.${dParse(sun).getMonth() + 1}.</span>
+        <span class="myplan-text">${esc(weekRowLabel(wk, ph)).replace(/Woche \d+( von \d+)?( \([A-D]\))?/, (m) => `<span class="nobr">${m}</span>`)}${goal ? ` <span class="myplan-goal">◆ ${esc(goal.title)}</span>` : ""}</span>
+        <span class="myplan-n">${wk.monday === thisMon ? "Du bist hier" : st.planned ? `${st.done}/${st.planned}` : ""}</span></button>`);
+    }
+    // Prüfer 07.10. Nr. 7: no scroll box inside the page - the page scrolls,
+    // long plans show 12 weeks from now on and the rest behind one link.
+    const nowIdx = Math.max(0, rows.findIndex((r) => r.includes(" is-now")));
+    const cut = Math.max(12, nowIdx + 12);
+    const more = rows.length - cut;
+    $("myPlanList").innerHTML = rows.map((r, i) => (i >= cut ? r.replace("<button ", "<button hidden ") : r)).join("")
+      + (more > 0 ? `<button type="button" class="text-link small myplan-more" id="myPlanMoreBtn">Weitere ${more} ${more === 1 ? "Woche" : "Wochen"} anzeigen</button>` : "")
+      || `<p class="group-help">Noch kein Plan. Lege ihn unter „Wochenplan“ an.</p>`;
+    if (more > 0) $("myPlanMoreBtn").addEventListener("click", (ev) => { $("myPlanList").querySelectorAll(".myplan-week[hidden]").forEach((b) => { b.hidden = false; }); ev.currentTarget.remove(); });
+    const kinds = [...new Set(plan.phases.map((p, i) => i))].map((i) => `<span><i style="background:${PHASE_TINTS[i % PHASE_TINTS.length]}"></i>${esc(plan.phases[i].name)}</span>`);
+    if (plan.pauses.length) kinds.push(`<span><i class="pause"></i>Pause</span>`);
+    if (plan.inserts.length) kinds.push(`<span><i style="background:#d4a017"></i>Sonderwoche</span>`);
+    $("myPlanLegend").innerHTML = kinds.join("");
+    $("myPlanPauses").innerHTML = plan.pauses.length ? plan.pauses.slice().sort((a, b) => a.from.localeCompare(b.from)).map((pz) => {
+      const r = PAUSE_BY_KEY[pz.reason] || PAUSE_BY_KEY.sonstiges;
+      return `<div class="day-item"><div class="day-item-main"><span class="pause-ico" aria-hidden="true">${r[2]}</span><div><div class="day-item-title">${esc(r[1])}: ${esc(shortDate(pz.from))} bis ${esc(shortDate(pz.to))}</div><div class="day-item-meta">${pz.shift ? "Plan rückt nach hinten" : "Plan läuft weiter, Tage bleiben leer"}</div></div></div>
+        <div class="day-item-actions"><button type="button" class="day-act" data-pause-edit="${esc(pz.id)}">Bearbeiten</button>${pz.from <= today && pz.to >= today ? `<button type="button" class="day-act" data-pause-end="${esc(pz.id)}">Ich bin wieder fit</button>` : ""}</div></div>`;
+    }).join("") : `<p class="group-help">Keine Pause eingetragen.</p>`;
+    // Wettkampf: goal events from Termine
+    const goals = loadEvents().filter((e) => e.date >= today && (e.goal || e.kind === "wettkampf")).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
+    $("myPlanFocusHelp").textContent = goals.length
+      ? "Unsere Empfehlung: in der Woche davor eher locker trainieren, in der Wettkampfwoche nur kurz, danach Erholung einplanen. Dein Plan ändert sich dadurch nicht von selbst. Passe ihn an, wie du es mit deinem Trainer abgesprochen hast."
+      : "Trage einen Wettkampf, ein Spiel oder eine Prüfung als Termin auf Heute ein. Dann steht hier und in deinem Plan, wie du die Wochen davor und danach am besten angehst.";
+    $("myPlanFocus").innerHTML = goals.map((g) => `<div class="day-item"><div class="day-item-main"><span class="myplan-goal">◆</span><div><div class="day-item-title">${esc(g.title)}</div><div class="day-item-meta">${esc(longDate(g.date))}${daysUntil(g.date) > 0 ? ` · noch ${daysUntil(g.date)} Tage` : ""}</div></div></div></div>`).join("");
+  }
+  function shortDate(d) { const x = dParse(d); return `${x.getDate()}.${x.getMonth() + 1}.${x.getFullYear()}`; }
+  function goalOverrun(note) {
+    // Plan end after a focus date?
+    const f = loadEvents().filter((x) => x.goal && x.date >= todayStr()).sort((a, b) => a.date.localeCompare(b.date))[0];
+    if (!f || !plan.phases.length || !plan.phases.every((p) => p.weeks)) return "";
+    const total = plan.phases.reduce((s, p) => s + p.weeks, 0);
+    let endMon = null;
+    for (let cw = 0; cw < 1200; cw++) { const wk = planWeekMap(cw); if (!wk) break; if (wk.type === "plan" && wk.pw === total - 1) { endMon = wk.monday; break; } }
+    return endMon && dAdd(endMon, 6) > f.date ? `${note || ""}Dein Plan endet jetzt erst nach „${f.title}“ am ${shortDate(f.date)}. Wenn du magst, verkürze eine Phase um eine Woche.` : "";
+  }
+  $("myPlanList").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-week]"); if (!b) return;
+    const mon = b.dataset.week;
+    const next = dAdd(mon, 7);
+    const ops = plan.weekOps.filter((x) => x.at === mon || x.at === next);
+    const opts = [];
+    if (ops.length) opts.push({ label: "Änderung dieser Woche zurücknehmen", fn: () => { plan.weekOps = plan.weekOps.filter((x) => !ops.includes(x)); afterWeekOp(); } });
+    opts.push(
+      { label: "Diese Woche wiederholen", sub: "War zu schwer oder ist ausgefallen. Die Woche kommt noch einmal, der Plan rückt eine Woche nach hinten.", fn: () => { plan.weekOps = plan.weekOps.filter((x) => x.at !== next); plan.weekOps.push({ id: newId(), at: next, op: "repeat" }); afterWeekOp(); } },
+      { label: "Diese Woche überspringen", sub: "Läuft gut: Diese Woche gilt schon die nächste Planwoche.", fn: () => { plan.weekOps = plan.weekOps.filter((x) => x.at !== mon); plan.weekOps.push({ id: newId(), at: mon, op: "skip" }); afterWeekOp(); } },
+      { label: "Plan ab hier eine Woche später", sub: "Diese Woche bleibt frei, alles Weitere rückt eine Woche nach hinten.", fn: () => { plan.weekOps = plan.weekOps.filter((x) => x.at !== mon); plan.weekOps.push({ id: newId(), at: mon, op: "shift" }); afterWeekOp(); } },
+      { label: "Diese Woche ansehen", fn: () => { todaySel = mon < todayStr() && dAdd(mon, 6) >= todayStr() ? todayStr() : mon; activateSectionTab("today"); showScreen("todayHome"); renderToday(); } },
+    );
+    choiceSheet(`Woche vom ${longDate(mon)}`, "", opts);
+  });
+  function afterWeekOp() {
+    savePlan(); renderMyPlan();
+    const w = goalOverrun();
+    showToast(w || "Plan angepasst. Rückgängig geht oben im Wochenplan.");
+  }
+  $("myPlanPauses").addEventListener("click", (e) => {
+    const ed = e.target.closest("[data-pause-edit]"); if (ed) { openPauseSheet(ed.dataset.pauseEdit); return; }
+    const end = e.target.closest("[data-pause-end]");
+    if (end) { const pz = plan.pauses.find((x) => x.id === end.dataset.pauseEnd); if (pz) { pz.to = dAdd(todayStr(), -1); if (pz.to < pz.from) plan.pauses = plan.pauses.filter((x) => x !== pz); savePlan(); renderMyPlan(); showToast("Willkommen zurück! Ab heute läuft dein Plan wieder."); } }
+  });
+  $("myPlanPauseAddBtn").addEventListener("click", () => openPauseSheet());
+  // ---- Pause eintragen ----
+  let pauseEditId = null, pauseReason = "urlaub", pauseReturnFocus = null;
+  function renderPauseReasons() {
+    $("pauseReasonRow").innerHTML = PAUSE_REASONS.map(([k, t, ic]) => `<button type="button" class="choice${k === pauseReason ? " active" : ""}" data-reason="${k}" aria-pressed="${k === pauseReason}"><span class="pause-ico" aria-hidden="true">${ic}</span><span>${esc(t)}</span></button>`).join("");
+  }
+  function pauseShiftDefault() {
+    const f = $("pauseFromInput").value, t = $("pauseToInput").value;
+    return f && t ? dDiff(f, t) + 1 > 3 : true;
+  }
+  function updatePauseHelp() {
+    const f = $("pauseFromInput").value, t = $("pauseToInput").value;
+    const days = f && t && t >= f ? dDiff(f, t) + 1 : 0;
+    $("pauseShiftHelp").textContent = $("pauseShiftToggle").checked
+      ? "Nach der Pause geht es dort weiter, wo du aufgehört hast. Alles Spätere rückt nach hinten (ab 4 Pausentagen um eine ganze Woche)."
+      : "Der Plan läuft im Hintergrund weiter, die Tage in der Pause bleiben nur leer. Passt für kurze Pausen.";
+    const warn = $("pauseWarn");
+    warn.hidden = !(days > 7);
+    warn.textContent = days > 7 ? "Nach mehr als einer Woche Pause empfehle ich, es danach ruhig angehen zu lassen. In „Mein Plan“ kannst du die erste Woche danach auch wiederholen." : "";
+  }
+  function openPauseSheet(id) {
+    const pz = id ? plan.pauses.find((x) => x.id === id) : null;
+    pauseEditId = pz ? pz.id : null;
+    pauseReason = pz ? pz.reason : "urlaub";
+    $("pauseSheetTitle").textContent = pz ? "Pause bearbeiten" : "Pause eintragen";
+    $("pauseSaveBtn").textContent = pz ? "Speichern" : "Eintragen";
+    $("pauseFromInput").value = pz ? pz.from : todayStr();
+    $("pauseToInput").value = pz ? pz.to : dAdd(todayStr(), 6);
+    $("pauseShiftToggle").checked = pz ? pz.shift : true;
+    $("pauseDeleteBtn").hidden = !pz;
+    $("pauseError").hidden = true;
+    renderPauseReasons();
+    updatePauseHelp();
+    pauseReturnFocus = document.activeElement;
+    $("pauseSheet").hidden = false;
+    $("pauseCancelBtn").focus();
+  }
+  function closePauseSheet() { $("pauseSheet").hidden = true; if (pauseReturnFocus && document.contains(pauseReturnFocus)) pauseReturnFocus.focus(); }
+  $("pauseReasonRow").addEventListener("click", (e) => { const b = e.target.closest("[data-reason]"); if (b) { pauseReason = b.dataset.reason; renderPauseReasons(); } });
+  ["pauseFromInput", "pauseToInput"].forEach((id) => $(id).addEventListener("change", () => { if (!pauseEditId) $("pauseShiftToggle").checked = pauseShiftDefault(); updatePauseHelp(); }));
+  $("pauseShiftToggle").addEventListener("change", updatePauseHelp);
+  $("pauseCancelBtn").addEventListener("click", closePauseSheet);
+  $("pauseSheet").addEventListener("click", (e) => { if (e.target === $("pauseSheet")) closePauseSheet(); });
+  $("pauseSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closePauseSheet(); else trapTabKey($("pauseSheet"), e); });
+  $("pauseSaveBtn").addEventListener("click", () => {
+    const from = $("pauseFromInput").value, to = $("pauseToInput").value;
+    const err = $("pauseError");
+    if (!from || !to || to < from) { err.textContent = "Bitte ein gültiges Von- und Bis-Datum wählen (Bis nicht vor Von)."; err.hidden = false; return; }
+    if (dDiff(from, to) > 365) { err.textContent = "Eine Pause kann höchstens ein Jahr lang sein."; err.hidden = false; return; }
+    const rec = { id: pauseEditId || newId(), from, to, reason: pauseReason, shift: $("pauseShiftToggle").checked };
+    plan.pauses = plan.pauses.filter((x) => x.id !== rec.id).concat(rec);
+    savePlan();
+    closePauseSheet();
+    if (!$("myPlanScreen").hidden) renderMyPlan();
+    if (!els.todayHome.hidden) renderToday();
+    const w = goalOverrun();
+    showToast(w || (rec.shift ? "Pause eingetragen, dein Plan rückt nach hinten." : "Pause eingetragen."));
+  });
+  $("pauseDeleteBtn").addEventListener("click", () => {
+    const id = pauseEditId;
+    confirmDialog("Diese Pause löschen? Dein Plan läuft dann wieder wie vorher.", () => {
+      plan.pauses = plan.pauses.filter((x) => x.id !== id); savePlan(); closePauseSheet();
+      if (!$("myPlanScreen").hidden) renderMyPlan();
+      if (!els.todayHome.hidden) renderToday();
+    });
+  });
+
+  // ---- kp4: "Wofür gilt das?" when a planned training is changed on Heute ----
+  function askScope(date, o, action) {
+    // action: "edit" | "remove"
+    const ph = phaseFor(date);
+    const label = action === "edit" ? "ändern" : "entfernen";
+    const opts = [
+      { label: "Nur an diesem Tag", sub: longDate(date), primary: true, fn: () => scopeDay(date, o, action) },
+    ];
+    if (ph && !o.override && !o.insert) {
+      opts.push({ label: "Ab jetzt immer", sub: `Ab dieser Woche jeden ${WD_LONG[wdIdx(date)]}`, fn: () => scopeFromNow(date, o, action, ph) });
+      opts.push({ label: `In der ganzen Phase „${ph.phase.name}“`, sub: "Auch in den Wochen davor", fn: () => scopePhase(date, o, action, ph) });
+    }
+    choiceSheet(`Training ${label}: Wofür gilt das?`, "", opts);
+  }
+  function dayListForOverride(date) {
+    if (plan.dayOv[date]) return plan.dayOv[date];
+    const ph = phaseFor(date);
+    const base = ph ? phaseDaysOf(ph.phase, ph.variant)[wdIdx(date)] : [];
+    const skips = plan.skips[date] || [];
+    plan.dayOv[date] = base.filter((e) => !skips.includes(e.id)).map((e) => ({ ...e }));
+    delete plan.skips[date];
+    return plan.dayOv[date];
+  }
+  function scopeDay(date, o, action) {
+    const list = dayListForOverride(date);
+    if (action === "remove") { plan.dayOv[date] = list.filter((x) => x.id !== o.id); savePlan(); renderToday(); return; }
+    const cur = list.find((x) => x.id === o.id) || o;
+    openPlanEntry({ kind: "dayov", date, id: o.id, preset: cur, fromToday: true });
+  }
+  function splitPhaseAt(date, ph) {
+    // "Ab jetzt immer": the phase ends before this week, a copy starts here.
+    const i = ph.index, p = ph.phase;
+    const doneWeeks = ph.weekInPhase - 1;
+    if (doneWeeks <= 0) return i;
+    const cp = JSON.parse(JSON.stringify(p));
+    cp.id = newId();
+    cp.weeks = p.weeks ? p.weeks - doneWeeks : 0;
+    p.weeks = doneWeeks;
+    // keep the A/B rhythm in step
+    if (cp.alt && cp.alt.length) { const all = [cp.days].concat(cp.alt); const sh = doneWeeks % all.length; const rot = all.slice(sh).concat(all.slice(0, sh)); cp.days = rot[0]; cp.alt = rot.slice(1); }
+    plan.phases.splice(i + 1, 0, cp);
+    return i + 1;
+  }
+  function scopeFromNow(date, o, action, ph) {
+    const ni = splitPhaseAt(date, ph);
+    const np = plan.phases[ni];
+    const v = ni === ph.index ? ph.variant : 0;
+    const days = phaseDaysOf(np, v);
+    const di = wdIdx(date);
+    if (action === "remove") { days[di] = days[di].filter((x) => x.id !== o.id); savePlan(); renderToday(); showToast("Ab dieser Woche entfernt."); return; }
+    openPlanEntry({ kind: "plan", key: `${ni}/${v}`, di, id: o.id, fromToday: true });
+  }
+  function scopePhase(date, o, action, ph) {
+    const days = phaseDaysOf(ph.phase, ph.variant), di = wdIdx(date);
+    if (action === "remove") { days[di] = days[di].filter((x) => x.id !== o.id); savePlan(); renderToday(); return; }
+    openPlanEntry({ kind: "plan", key: `${ph.index}/${ph.variant}`, di, id: o.id, fromToday: true });
+  }
+
   // Start screen: always "Heute", unless the URL names an area
   // (?bereich=visual|breath|movement|workout|cardio|nat|test) - used for
   // direct links and by the test suite.
@@ -29394,6 +32287,8 @@
     let sec = "today";
     try { sec = new URLSearchParams(location.search).get("bereich") || "today"; } catch (e) {}
     if (sec === "test" && !readJSON(TEST_UNLOCK_KEY, false)) sec = "visual";
+    // Push "Zeit für eine Atempause" (sw.js): Heute at the Nichtraucher-Pause.
+    if (sec === "atempause") { showBreakCard(); return; }
     // App-icon shortcuts (manifest.json "shortcuts", Android/Chrome): the
     // bottom bar's own pages.
     if (sec === "training" || sec === "fortschritt") {
@@ -30019,12 +32914,14 @@
         { label: "Löschen", del: true, run: () => askDeleteFree(id) }];
     } },
     { sel: "#freeTrainerGrid [data-free-id]", acts: (row) => [{ label: "Löschen", del: true, run: () => askRemoveTrainerTemplate(row.dataset.freeId) }] },
-    // Saved settings / saved Kombi-Programme (renderPresetList): only delete exists there.
+    // Saved settings (renderPresetList): only delete; saved Kombi-Programme also Bearbeiten (07.10.).
     { sel: ".bundle-item-wrap", acts: (row) => {
       const rm = row.querySelector(':scope > .combo-block-remove[title="Löschen"]');
       if (!rm) return null;
       const name = ((row.querySelector(".bundle-item strong") || {}).textContent || "").trim();
-      return [{ label: "Löschen", del: true, run: () => confirmDialog(`„${name}“ löschen?`, () => rm.click()) }];
+      const ed = row.querySelector(":scope > .combo-saved-edit");
+      return [...(ed ? [{ label: "Bearbeiten", run: () => ed.click() }] : []),
+        { label: "Löschen", del: true, run: () => confirmDialog(`„${name}“ löschen?`, () => rm.click()) }];
     } },
   ];
   const SWIPE_SEL = SWIPE_ROWS.map((r) => r.sel).join(", ");
@@ -30204,18 +33101,34 @@
   const REMINDER_DAYS = 14;
   const REMINDER_MAX = 60;
   var remState = null; // var: savePlan()/addHistory() may run before this block
-  function reminderPlanChanged() { if (remState && remState.prefs.on) remState.schedule(1500); }
+  function reminderPlanChanged() { if (remState && remState.active()) remState.schedule(1500); }
+  // Atempausen-Erinnerung (Fabian 07.10., Atempausen C): 1-3 fixed times a
+  // day, title "Zeit für eine Atempause" (sw.js opens the Nichtraucher-Pause
+  // for exactly this title), body names only the minutes. Skipped on plan
+  // pause days. Same 14-day window and the same POST as the trainings.
+  const BREAK_REMINDER_TITLE = "Zeit für eine Atempause";
+  const BREAK_TIME_DEFAULTS = ["10:30", "15:00", "18:30"];
   (function initReminders() {
     const prefs = Object.assign({ on: false, lead: 10, morning: "08:00" }, readJSON(REMINDER_KEY, {}) || {});
     if (!REMINDER_LEADS.includes(prefs.lead)) prefs.lead = 10;
     if (!/^\d{2}:\d{2}$/.test(prefs.morning || "")) prefs.morning = "08:00";
     prefs.on = prefs.on === true;
-    remState = { prefs, timer: null, lastSync: 0, lastResult: null, busy: false, again: false };
+    // prefs.breaks: the Atempausen reminders, independent of the trainings.
+    const br = prefs.breaks && typeof prefs.breaks === "object" ? prefs.breaks : {};
+    prefs.breaks = {
+      on: br.on === true,
+      count: [1, 2, 3].includes(br.count) ? br.count : 2,
+      times: BREAK_TIME_DEFAULTS.map((d, i) => (Array.isArray(br.times) && /^\d{2}:\d{2}$/.test(br.times[i] || "") ? br.times[i] : d)),
+    };
+    // One push subscription serves both kinds of reminders.
+    const active = () => prefs.on || prefs.breaks.on;
+    remState = { prefs, active, timer: null, lastSync: 0, lastResult: null, busy: false, again: false };
     // The bell on Heute's trainings follows the switch at once.
     const savePrefs = () => { writeJSON(REMINDER_KEY, prefs); try { renderToday(); } catch (e) {} };
     const vapidKey = () => { const ov = readJSON("fwmc-test-reminder-key", ""); return ov === "off" ? "" : (ov || REMINDER_VAPID_PUBLIC_KEY || ""); };
     const groupEl = $("reminderGroup"), onCheck = $("reminderOnCheck"), statusEl = $("reminderStatus");
     const morningInput = $("reminderMorningInput");
+    const breakCheck = $("reminderBreakCheck"), breakBody = $("reminderBreakBody");
 
     function support() {
       if (!vapidKey()) return "setup";
@@ -30234,12 +33147,22 @@
     function setStatus(text, ok) { statusEl.textContent = text; statusEl.classList.toggle("ok", !!ok); }
     function syncUI() {
       const s = support();
+      const blocked = s === "setup" || s === "ios-install" || s === "unsupported";
       onCheck.checked = prefs.on;
-      onCheck.disabled = (s === "setup" || s === "ios-install" || s === "unsupported") && !prefs.on;
-      groupEl.classList.toggle("unavailable", s !== "ok" && !prefs.on);
+      onCheck.disabled = blocked && !prefs.on;
+      breakCheck.checked = prefs.breaks.on;
+      breakCheck.disabled = blocked && !prefs.breaks.on;
+      breakBody.hidden = !prefs.breaks.on;
+      document.querySelectorAll("[data-break-count]").forEach((b) => setActive(b, Number(b.dataset.breakCount) === prefs.breaks.count));
+      document.querySelectorAll("[data-break-time]").forEach((inp) => {
+        const i = Number(inp.dataset.breakTime);
+        inp.value = prefs.breaks.times[i];
+        inp.closest(".reminder-break-time").hidden = i >= prefs.breaks.count;
+      });
+      groupEl.classList.toggle("unavailable", s !== "ok" && !active());
       document.querySelectorAll("[data-reminder-lead]").forEach((b) => setActive(b, Number(b.dataset.reminderLead) === prefs.lead));
       morningInput.value = prefs.morning;
-      if (prefs.on) {
+      if (active()) {
         const r = remState.lastResult;
         if (r && r.error) setStatus("Aktiv – die Erinnerungen konnten gerade nicht übertragen werden. Die App versucht es beim nächsten Öffnen noch einmal.", false);
         else if (r) setStatus(r.count ? `Aktiv – ${r.count === 1 ? "1 Erinnerung" : r.count + " Erinnerungen"} in den nächsten 14 Tagen.` : "Aktiv – in den nächsten 14 Tagen ist noch kein Training geplant.", true);
@@ -30259,8 +33182,17 @@
       const hist = loadHistory();
       const out = [];
       const today = dStr(now);
+      const breakMin = (readJSON("fwmc-atempause-v1", {}) || {}).min;
+      const breakBody = `${[1, 2, 3].includes(breakMin) ? breakMin : 2} Min. ruhig atmen: deine Nichtraucher-Pause`;
       for (let i = 0; i < REMINDER_DAYS; i++) {
         const date = dAdd(today, i);
+        if (prefs.breaks.on && !pauseOn(date)) {
+          [...new Set(prefs.breaks.times.slice(0, prefs.breaks.count))].forEach((t) => {
+            const at = localAt(date, t);
+            if (at > now) out.push({ at: at.toISOString(), title: BREAK_REMINDER_TITLE, body: breakBody });
+          });
+        }
+        if (!prefs.on) continue;
         const occ = occurrencesOn(date, hist).filter((o) => !o.done);
         occ.filter((o) => o.time).forEach((o) => {
           const at = new Date(localAt(date, o.time).getTime() - prefs.lead * 60000);
@@ -30303,16 +33235,16 @@
       } catch (e) { return false; } finally { if (t) clearTimeout(t); }
     }
     async function syncNow() {
-      if (!prefs.on || support() !== "ok") return;
+      if (!active() || support() !== "ok") return;
       if (remState.busy) { remState.again = true; return; }
       remState.busy = true;
       try {
         let sub = null;
-        try { sub = await getSubscription(Notification.permission === "granted"); } catch (e) { sub = null; }
+        try { sub = await withTimeout(getSubscription(Notification.permission === "granted"), 12000); } catch (e) { sub = null; }
         if (!sub) { remState.lastResult = { error: true }; return; }
         const reminders = computeReminders();
         const ok = await sendJSON("POST", { subscription: sub.toJSON ? sub.toJSON() : sub, reminders });
-        if (!prefs.on) return; // switched off meanwhile
+        if (!active()) return; // switched off meanwhile
         remState.lastResult = ok ? { count: reminders.length } : { error: true };
         remState.lastSync = Date.now();
       } finally {
@@ -30326,32 +33258,51 @@
     }
     remState.schedule = schedule;
 
-    async function enable() {
+    // kind: "on" (trainings) or "breaks" (Atempausen); both share one
+    // push subscription, so the second switch only resyncs.
+    const setFlag = (kind, v) => { if (kind === "breaks") prefs.breaks.on = v; else prefs.on = v; };
+    async function enable(kind) {
+      kind = kind || "on";
       const s = support();
-      if (s !== "ok") { prefs.on = false; syncUI(); return; }
+      if (s !== "ok") { setFlag(kind, false); syncUI(); return; }
+      if (active()) { setFlag(kind, true); savePrefs(); remState.lastResult = null; syncUI(); await syncNow(); return; }
       setStatus("Einen Moment …", false);
       let perm = Notification.permission;
       if (perm !== "granted") { try { perm = await Notification.requestPermission(); } catch (e) { perm = "denied"; } }
       if (perm !== "granted") {
-        prefs.on = false; savePrefs(); syncUI();
+        setFlag(kind, false); savePrefs(); syncUI();
         if (perm !== "denied") setStatus("Ohne deine Erlaubnis für Mitteilungen kann die App nicht erinnern. Schalte die Erinnerungen ein und tippe dann auf „Erlauben“.", false);
         return;
       }
       let sub = null;
-      try { sub = await getSubscription(true); } catch (e) { sub = null; }
-      if (!sub) { prefs.on = false; savePrefs(); syncUI(); setStatus("Das Einschalten hat gerade nicht geklappt. Bitte versuche es später noch einmal.", false); return; }
-      prefs.on = true; savePrefs(); remState.lastResult = null;
+      // Prüfer 07.10. Nr. 12: the push subscription can hang without a
+      // network - after 12 s (like lookupProgram) a friendly message instead
+      // of "Einen Moment …" for ever.
+      try { sub = await withTimeout(getSubscription(true), 12000); } catch (e) { sub = null; }
+      if (!sub) { setFlag(kind, false); savePrefs(); syncUI(); setStatus("Das Einschalten hat gerade nicht geklappt. Prüfe bitte deine Internetverbindung und versuche es dann noch einmal.", false); return; }
+      setFlag(kind, true); savePrefs(); remState.lastResult = null;
       await syncNow();
     }
-    async function disable() {
-      prefs.on = false; savePrefs(); remState.lastResult = null; clearTimeout(remState.timer);
+    async function disable(kind) {
+      setFlag(kind || "on", false); savePrefs(); remState.lastResult = null;
+      if (active()) { syncUI(); await syncNow(); return; }
+      clearTimeout(remState.timer);
       syncUI();
       try {
         const sub = "serviceWorker" in navigator && "PushManager" in window ? await getSubscription(false) : null;
         if (sub) { await sendJSON("DELETE", { endpoint: sub.endpoint }); try { await sub.unsubscribe(); } catch (e) {} }
       } catch (e) {}
     }
-    onCheck.addEventListener("change", () => { if (onCheck.checked) enable(); else disable(); });
+    onCheck.addEventListener("change", () => { if (onCheck.checked) enable("on"); else disable("on"); });
+    breakCheck.addEventListener("change", () => { if (breakCheck.checked) enable("breaks"); else disable("breaks"); });
+    document.querySelectorAll("[data-break-count]").forEach((b) => b.addEventListener("click", () => {
+      prefs.breaks.count = Number(b.dataset.breakCount); savePrefs(); syncUI(); reminderPlanChanged();
+    }));
+    document.querySelectorAll("[data-break-time]").forEach((inp) => inp.addEventListener("change", () => {
+      const i = Number(inp.dataset.breakTime);
+      if (!/^\d{2}:\d{2}$/.test(inp.value)) { inp.value = prefs.breaks.times[i]; return; }
+      prefs.breaks.times[i] = inp.value; savePrefs(); reminderPlanChanged();
+    }));
     document.querySelectorAll("[data-reminder-lead]").forEach((b) => b.addEventListener("click", () => {
       prefs.lead = Number(b.dataset.reminderLead); savePrefs(); syncUI(); reminderPlanChanged();
     }));
@@ -30362,10 +33313,10 @@
     // Keep the 14-day window rolling: on start, and when the app comes back
     // after six hours or more.
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible" && prefs.on && Date.now() - remState.lastSync > 6 * 3600000) schedule(1000);
+      if (document.visibilityState === "visible" && active() && Date.now() - remState.lastSync > 6 * 3600000) schedule(1000);
     });
     syncUI();
-    if (prefs.on) schedule(2000);
+    if (active()) schedule(2000);
   })();
 
   $("progressEmptyBtn").addEventListener("click", () => {
@@ -30378,6 +33329,18 @@
   // loudest thing on every area page although most clients rarely need it.
   // Off in automated browsers unless fwmc-test-codequiet, so the many code
   // tests keep typing straight into the open card.
+  // "Noch keinen Trainer?" under every code card (Fabian 07.10.: the card
+  // should make people without a code curious about a personal plan).
+  const PLAN_REQUEST_URL = "https://www.fabian-westermann.de/#Kontakt";
+  document.querySelectorAll(".code-card").forEach((card) => {
+    const a = document.createElement("a");
+    a.className = "text-link small code-ask-link";
+    a.href = PLAN_REQUEST_URL;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = "Noch keinen Trainer? So bekommst du deinen\u00a0Plan\u00a0→";
+    card.appendChild(a);
+  });
   (function quietCodeCards() {
     if (navigator.webdriver && !readJSON("fwmc-test-codequiet", false)) return;
     const KEY = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="8" cy="15" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 12l8-8M16 7l2.5 2.5M14 9l2 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
@@ -30387,7 +33350,7 @@
       btn.type = "button";
       btn.className = "code-toggle";
       btn.setAttribute("aria-expanded", "false");
-      btn.innerHTML = `<span class="code-toggle-icon">${KEY}</span><span class="code-toggle-text"><span class="code-toggle-title">Trainings-Code eingeben</span><span class="code-toggle-sub">von deinem Trainer</span></span><span class="code-toggle-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+      btn.innerHTML = `<span class="code-toggle-icon">${KEY}</span><span class="code-toggle-text"><span class="code-toggle-title">Dein persönlicher Trainingsplan</span><span class="code-toggle-sub">Code eingeben oder individuell angepassten Plan anfragen</span></span><span class="code-toggle-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
       card.insertBefore(btn, card.firstChild);
       btn.addEventListener("click", () => {
         const open = card.classList.contains("is-collapsed");

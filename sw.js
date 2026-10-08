@@ -90,22 +90,29 @@ self.addEventListener("push", (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch (e) { data = { body: event.data ? event.data.text() : "" }; }
   const title = data.title || "FWMC Online-Training";
+  // Atempausen-Erinnerung (2026-10-07): the Worker only stores {title, body},
+  // so the fixed title picks the target - the Nichtraucher-Pause on Heute.
+  const isBreak = title === "Zeit für eine Atempause";
   event.waitUntil(self.registration.showNotification(title, {
     body: data.body || "",
     icon: "./icon-192.png",
     badge: "./icon-192.png",
     tag: data.tag || undefined,
-    data: { url: "./index.html?bereich=heute" },
+    data: { url: isBreak ? "./index.html?bereich=atempause" : "./index.html?bereich=heute", open: isBreak ? "atempause" : "" },
   }));
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const target = new URL((event.notification.data && event.notification.data.url) || "./index.html?bereich=heute", self.registration.scope).href;
+  const nd = event.notification.data || {};
+  const target = new URL(nd.url || "./index.html?bereich=heute", self.registration.scope).href;
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
       for (const c of list) {
-        if (c.url.startsWith(self.registration.scope) && "focus" in c) return c.focus();
+        if (c.url.startsWith(self.registration.scope) && "focus" in c) {
+          if (nd.open) { try { c.postMessage({ fwmcOpen: nd.open }); } catch (e) {} }
+          return c.focus();
+        }
       }
       return self.clients.openWindow ? self.clients.openWindow(target) : undefined;
     })

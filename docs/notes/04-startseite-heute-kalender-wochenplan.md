@@ -6,7 +6,7 @@ The app now **always opens on `#todayHome`**. "Heute" is the first tab
 (`data-section="today"`) in every section bar, and `#home` (Visual
 Training) is no longer the default.
 - **`?bereich=` start parameter** (`initStartScreen()`): accepted values
-  are `visual|breath|movement|workout|cardio|nat|test|heute`. `test` works
+  are `visual|breath|movement|workout|cardio|nat|test|heute` (+ `atempause`, 2026-10-07). `test` works
   only when unlocked, otherwise it falls back to visual. An unknown value
   opens Heute. **Every test that expects to land on Visual Training loads
   `index.html?bereich=visual`.** All existing tests were switched over;
@@ -104,3 +104,10 @@ exercises. Test: `tests/resume_install_1006_test.py`.
   optional "Mein Vorsatz für nächste Woche" (120 chars) saved under next
   Monday's date in `fwmc-week-intent-v1` (entries older than 21 days are
   pruned). Mon-Sat the Vorsatz shows with "Ausblenden".
+
+
+## Nichtraucher-Pause (2026-10-07)
+Card `#todayBreak` between the main cards (install hint) and the week: a short
+calm breathing pause (1/2/3 Min.) with an ⓘ sheet. `?bereich=atempause` opens
+Heute scrolled to it (push "Zeit für eine Atempause"). Details: docs/notes/20
+(Atemtraining) and 26 (reminder).

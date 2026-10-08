@@ -155,8 +155,14 @@ async def main():
         await pg.click('#tileActionList [data-tile-act="plan"]'); await pg.wait_for_timeout(300)
         check("plan sheet opens", await pg.is_visible("#planEntrySheet"))
         check("plan sheet prefilled with the exercise", await pg.input_value("#planEntryArea") == "visual" and await pg.input_value("#planEntryWhat") == "ex:" + card)
-        check("weekday picker shown", await pg.is_visible("#planEntryDay"))
-        await pg.select_option("#planEntryDay", "2")
+        # Trainingsplanung kp1 (07.10.): the weekday select became the
+        # multi-day picker #planEntryDays (today preselected) - pick only Wednesday.
+        check("weekday picker shown", await pg.is_visible("#planEntryDays"))
+        for i in await pg.evaluate("[...document.querySelectorAll('#planEntryDays .plan-daypick.active[data-pick]')].map(b => b.dataset.pick)"):
+            if i != "2": await pg.click(f'#planEntryDays [data-pick="{i}"]')
+        if not await pg.locator('#planEntryDays [data-pick="2"].active').count():
+            await pg.click('#planEntryDays [data-pick="2"]')
+        check("only Wednesday picked", await pg.evaluate("[...document.querySelectorAll('#planEntryDays .plan-daypick.active')].map(b => b.dataset.pick)") == ["2"])
         await pg.click("#planEntrySaveBtn"); await pg.wait_for_timeout(300)
         planv = await pg.evaluate("JSON.parse(localStorage.getItem('fwmc-plan-v1'))")
         ok = planv and planv["phases"] and any(e["what"] == "ex:" + card for e in planv["phases"][0]["days"][2])
@@ -168,7 +174,7 @@ async def main():
         # the plain plan sheet (from Heute) has no weekday picker
         await pg.click(tab("today")); await pg.wait_for_timeout(250)
         await pg.click("#dayAddBtn"); await pg.wait_for_timeout(250)
-        check("normal one-day entry sheet has no weekday picker", not await pg.is_visible("#planEntryDay"))
+        check("normal one-day entry sheet has no weekday picker", not await pg.is_visible("#planEntryDay") and not await pg.is_visible("#planEntryDays"))
         await pg.click("#planEntryCancelBtn"); await pg.wait_for_timeout(150)
         # Zum Kombi-Programm from an exercise card
         await pg.click(tab("training")); await pg.wait_for_timeout(200)
