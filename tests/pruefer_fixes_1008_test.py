@@ -99,6 +99,18 @@ def entry(i, minutes_ago, title):
     return {"id": str(1759900000000 + i), "ts": ts, "rating": None, "kind": "exercise", "title": title, "seconds": 300, "exId": "farbfelder"}
 
 
+async def tm_menu(pg):
+    """Trainer-Menü oben links (08.10. abends): trainer buttons live there."""
+    if not await pg.is_visible("#trainerMenuSheet"):
+        await pg.locator(".trainer-mode-btn:visible").first.click()
+        await pg.wait_for_timeout(150)
+
+
+async def tm_click(pg, sel):
+    await tm_menu(pg)
+    await pg.click(sel)
+
+
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"])
@@ -230,8 +242,8 @@ async def main():
         # ================= 7 QR-Übergabe: unlock + scanner =================
         seed = "localStorage.setItem('fwmc-history-v1', JSON.stringify(%s));" % json.dumps([entry(1, 10, "Farbfelder · Antippen"), entry(2, 30, "Gleichgewicht · Wörter")]).replace("'", "\\'")
         ctx, pg = await new_ctx(extra=seed)
-        await pg.goto(BASE + "?bereich=fortschritt"); await pg.wait_for_timeout(350)
-        check("7 default: trainer tools hidden", not await pg.is_visible("#handoverOpenBtn") and not await pg.is_visible("#clientRunStartBtn"))
+        await pg.goto(BASE + "?bereich=training"); await pg.wait_for_timeout(350)
+        check("7 default: trainer menu button hidden", not (await pg.locator(".trainer-mode-btn:visible").count() > 0))
         scan_btn = await pg.evaluate("(() => { const b = document.getElementById('handoverScanOpenBtn'); const r = b.getBoundingClientRect(); return { vis: b.offsetParent !== null, cls: b.className, h: r.height, text: b.textContent.trim() }; })()")
         check("7 'Trainer-QR-Code scannen' always visible, quiet, >= 44 px", scan_btn["vis"] and "text-link" in scan_btn["cls"] and scan_btn["h"] >= 44 and scan_btn["text"] == "Trainer-QR-Code scannen", scan_btn)
         check("7 no top-level paste button any more", await pg.locator("#handoverPasteOpenBtn").count() == 0)
@@ -243,12 +255,12 @@ async def main():
         await pg.fill("#moreCodeInput", "tools-an"); await pg.click("#moreCodeGoBtn"); await pg.wait_for_timeout(700)
         toast = await pg.evaluate("(document.querySelector('.app-toast') || {}).textContent || ''")
         vis_screen = await pg.evaluate("[...document.querySelectorAll('.screen')].find((s) => !s.hidden).id")
-        check("7 unlock code: toast in Du-form, Fortschritt shown, tools visible", "Trainer-Werkzeuge sind jetzt freigeschaltet" in toast and vis_screen == "progressScreen"
-              and await pg.is_visible("#handoverOpenBtn") and await pg.is_visible("#clientRunStartBtn"), (toast, vis_screen))
+        check("7 unlock code: toast in Du-form, Training shown, tools visible", "Trainer-Werkzeuge sind jetzt freigeschaltet" in toast and vis_screen == "trainingHub"
+              and (await pg.locator(".trainer-mode-btn:visible").count() > 0), (toast, vis_screen))
         check("7 unlock stored in fwmc-features-v1", (await pg.evaluate("JSON.parse(localStorage.getItem('fwmc-features-v1'))")).get("trainer-tools") is True)
-        await pg.goto(BASE + "?bereich=fortschritt"); await pg.wait_for_timeout(350)
-        check("7 unlock persists across reload", await pg.is_visible("#handoverOpenBtn"))
-        await pg.click("#handoverOpenBtn"); await pg.wait_for_timeout(250)
+        await pg.goto(BASE + "?bereich=training"); await pg.wait_for_timeout(350)
+        check("7 unlock persists across reload", (await pg.locator(".trainer-mode-btn:visible").count() > 0))
+        await tm_click(pg, "#handoverOpenBtn"); await pg.wait_for_timeout(250)
         pre = await pg.evaluate("document.getElementById('handoverPrecheck').textContent")
         check("7 trainer pre-check card above the button", "Bevor dein Kunde scannt" in pre and "Startbildschirm" in pre and "„Trainer-QR-Code scannen“" in pre, pre)
         await shot(pg, "uebergabe_zeitraum_390_light.png", True)
@@ -257,13 +269,15 @@ async def main():
         check("7 line under the QR code names the in-app scanner", "„Trainer-QR-Code scannen“" in sub and "Kamera" not in sub, sub)
         qurl = await pg.get_attribute("#handoverQrCanvas", "data-url")
         await shot(pg, "uebergabe_qr_390_light.png", True)
-        await pg.click("#handoverDoneBtn"); await pg.wait_for_timeout(200); await pg.click("#confirmNoBtn"); await pg.wait_for_timeout(150)
-        await pg.click("#clientRunStartBtn"); await pg.wait_for_timeout(250)
+        await pg.click("#handoverDoneBtn"); await pg.wait_for_timeout(300)
+        await tm_click(pg, '#tmModes [data-tm="client"]'); await pg.wait_for_timeout(250)
         await pg.goto(BASE + "?bereich=training"); await pg.wait_for_timeout(300)
         await pg.evaluate("document.querySelector('#trainingHub .code-toggle') && document.querySelector('#trainingHub .code-toggle').click()")
         await pg.fill("#moreCodeInput", "tools-aus"); await pg.click("#moreCodeGoBtn"); await pg.wait_for_timeout(700)
-        check("7 lock code hides the tools, a running Kunden-Training stays endable", not await pg.is_visible("#handoverOpenBtn") and not await pg.is_visible("#clientRunStartBtn")
-              and await pg.is_visible("#clientRunActiveNote") and await pg.is_visible("#clientRunEndBtn"))
+        await tm_menu(pg)
+        check("7 lock code hides the tools, a running Kunden-Training stays endable (menu button shows 'Kunde')", not await pg.is_visible("#handoverOpenBtn")
+              and await pg.is_visible("#clientRunActiveNote") and await pg.is_visible("#clientRunEndBtn")
+              and "Kunde" in await pg.locator(".trainer-mode-btn:visible").first.inner_text())
         await ctx.close()
         token = qurl.split("#import=")[1] if qurl and "#import=" in qurl else ""
         check("7 trainer produced a token", bool(token), qurl)
@@ -271,7 +285,7 @@ async def main():
         # client, jsQR path
         for scheme in ["light", "dark"]:
             ctx, pg = await new_ctx(scheme=scheme, extra=FAKE_CAM + NO_DETECTOR)
-            await pg.goto(BASE + "?bereich=fortschritt"); await pg.wait_for_timeout(350)
+            await pg.goto(BASE + "?bereich=training"); await pg.wait_for_timeout(350)
             await pg.click("#handoverScanOpenBtn"); await pg.wait_for_timeout(900)
             st = await pg.evaluate("window.__hoScan()")
             asked = await pg.evaluate("window.__camAsked")
@@ -299,7 +313,7 @@ async def main():
 
         # client, BarcodeDetector stub
         ctx, pg = await new_ctx(extra=FAKE_CAM + STUB_DETECTOR)
-        await pg.goto(BASE + "?bereich=fortschritt"); await pg.wait_for_timeout(350)
+        await pg.goto(BASE + "?bereich=training"); await pg.wait_for_timeout(350)
         await pg.evaluate("(t) => { window.__fakeQr = 'x#import=' + t; }", token)
         await pg.click("#handoverScanOpenBtn")
         for _ in range(30):
@@ -312,7 +326,7 @@ async def main():
         # client, permission denied
         for scheme in ["light", "dark"]:
             ctx, pg = await new_ctx(scheme=scheme, extra=FAKE_CAM + "window.__camDeny = true;")
-            await pg.goto(BASE + "?bereich=fortschritt"); await pg.wait_for_timeout(350)
+            await pg.goto(BASE + "?bereich=training"); await pg.wait_for_timeout(350)
             await pg.click("#handoverScanOpenBtn"); await pg.wait_for_timeout(500)
             err = await pg.inner_text("#handoverScanError") if await pg.is_visible("#handoverScanError") else ""
             if scheme == "light":
@@ -324,7 +338,7 @@ async def main():
             await ctx.close()
         # trainer code as QR (Fabian 08.10.): scan "<app>#code=…" / bare code
         ctx, pg = await new_ctx(extra=FAKE_CAM + NO_DETECTOR + "localStorage.setItem('fwmc-test-codequiet','true');")
-        await pg.goto(BASE + "?bereich=fortschritt"); await pg.wait_for_timeout(350)
+        await pg.goto(BASE + "?bereich=training"); await pg.wait_for_timeout(350)
         await pg.evaluate("window.__fakeQr = location.origin + location.pathname + '#code=tools-an'")
         await pg.click("#handoverScanOpenBtn")
         for _ in range(30):
@@ -335,7 +349,7 @@ async def main():
         toast = await pg.evaluate("(document.querySelector('.app-toast') || {}).textContent || ''")
         check("7 code QR scan (#code=) runs the code card path: unlocked, toast, camera off",
               (await pg.evaluate("JSON.parse(localStorage.getItem('fwmc-features-v1') || '{}')")).get("trainer-tools") is True
-              and "freigeschaltet" in toast and not st["running"] and not st["open"] and await pg.is_visible("#handoverOpenBtn"), (toast, st))
+              and "freigeschaltet" in toast and not st["running"] and not st["open"] and (await pg.locator(".trainer-mode-btn:visible").count() > 0), (toast, st))
         await pg.evaluate("window.__fakeQr = 'unbekannt-77'")
         await pg.click("#handoverScanOpenBtn")
         for _ in range(30):
@@ -352,8 +366,8 @@ async def main():
               await pg.evaluate("[...document.querySelectorAll('.player')].some((p) => !p.hidden)") and "code=" not in await pg.evaluate("location.hash"))
         await ctx.close()
         ctx, pg = await new_ctx()
-        await pg.goto(BASE + "?bereich=fortschritt"); await pg.wait_for_timeout(300)
-        await pg.evaluate("history.replaceState(null, '', location.pathname + '?bereich=fortschritt'); location.hash = 'code=tools-an'"); await pg.wait_for_timeout(900)
+        await pg.goto(BASE + "?bereich=training"); await pg.wait_for_timeout(300)
+        await pg.evaluate("history.replaceState(null, '', location.pathname + '?bereich=training'); location.hash = 'code=tools-an'"); await pg.wait_for_timeout(900)
         check("7 #code= as hashchange (app already open) unlocks too", (await pg.evaluate("JSON.parse(localStorage.getItem('fwmc-features-v1') || '{}')")).get("trainer-tools") is True)
         await ctx.close()
 

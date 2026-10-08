@@ -3459,6 +3459,8 @@
     const item = { id: String(Date.now()), ts: new Date().toISOString(), rating: null, ...entry };
     // Kunden-Training (QR-Übergabe, docs/notes/36): a client's run goes to
     // its own store, never into this device's history or progress.
+    // Trainer-Menü "Ausprobieren" (08.10. abends): eigene Test-Ablage, 14 Tage.
+    if (tmTry()) return tmAddTryRun(item);
     if (hoClientRunActive()) return hoAddClientRun(item);
     const list = loadHistory();
     list.unshift(item);
@@ -3471,7 +3473,7 @@
     const list = loadHistory();
     const item = list.find((e) => e.id === id);
     if (item) { item.rating = rating; writeJSON(HISTORY_KEY, list); }
-    else hoPatchClientRun(id, (e) => { e.rating = rating; });
+    else { hoPatchClientRun(id, (e) => { e.rating = rating; }); tmPatchTryRun(id, (e) => { e.rating = rating; }); }
   }
   // ==== Mein Fortschritt (Fabian, 2026-10-03: "umsetzen") ====
   // Weekly goal, a week streak, milestones and an overview across all areas.
@@ -6050,7 +6052,7 @@
       // iPhone camera app opens Safari, whose storage is not the home-screen
       // app's (Fabian 08.10.): say so once before the code lands here.
       if (hoIosBrowser()) {
-        confirmDialog("Du bist gerade in Safari. Hast du die App auf dem Startbildschirm, landet der Code sonst nicht dort. Öffne dann lieber die App und scanne unter Fortschritt mit „Trainer-QR-Code scannen“.",
+        confirmDialog("Du bist gerade in Safari. Hast du die App auf dem Startbildschirm, landet der Code sonst nicht dort. Öffne dann lieber die App und scanne auf Heute oder Training unter dem Code-Feld mit „Trainer-QR-Code scannen“.",
           () => openCodeAsTyped(c), { title: "Lieber in der App scannen", yes: "Hier in Safari öffnen", no: "Abbrechen" });
         return;
       }
@@ -38378,6 +38380,11 @@
       return [...(ed ? [{ label: "Bearbeiten", run: () => ed.click() }] : []),
         { label: "Löschen", del: true, run: () => confirmDialog(`„${name}“ löschen?`, () => rm.click()) }];
     } },
+    // Gespeicherte Trainings / Übergabe-Auswahl (08.10. abends): nur Löschen.
+    { sel: "#handoverList li:has(input[data-ho-id])", acts: (row) => {
+      const id = row.querySelector("input[data-ho-id]").dataset.hoId;
+      return [{ label: "Löschen", del: true, run: () => row.parentElement.dispatchEvent(new CustomEvent("ho-del", { detail: id })) }];
+    } },
   ];
   const SWIPE_SEL = SWIPE_ROWS.map((r) => r.sel).join(", ");
   (function wireListSwipe() {
@@ -38541,10 +38548,10 @@
   var FEATURE_UNLOCKS = {
     "trainer-tools": {
       label: "Trainer-Werkzeuge",
-      on: "Trainer-Werkzeuge sind jetzt freigeschaltet. Du findest sie unter Fortschritt.",
+      on: "Trainer-Werkzeuge sind jetzt freigeschaltet. Du findest sie oben links im Trainer-Menü.",
       off: "Trainer-Werkzeuge sind wieder ausgeblendet.",
-      tab: "today", screen: "progressScreen", focus: "handoverGroup",
-      apply: () => hoRenderProgressGroup(),
+      tab: "today", screen: "trainingHub",
+      apply: () => { hoRenderProgressGroup(); tmSync(); },
     },
   };
   function featureOn(f) {
@@ -38586,7 +38593,15 @@
     return s && typeof s.start === "number" ? s : null;
   }
   function hoClientRunActive() { return !!hoSession(); }
-  function hoClientRuns() { const l = readJSON("fwmc-client-runs-v1", []); return Array.isArray(l) ? l : []; }
+  // Nicht übergebene Kunden-Trainings bleiben 14 Tage (Fabian 08.10. abends).
+  const HO_KEEP_MS = 14 * 86400e3;
+  function hoClientRuns() {
+    const l = readJSON("fwmc-client-runs-v1", []);
+    if (!Array.isArray(l)) return [];
+    const keep = l.filter((e) => !(Date.now() - new Date(e.ts).getTime() > HO_KEEP_MS));
+    if (keep.length !== l.length) writeJSON("fwmc-client-runs-v1", keep);
+    return keep;
+  }
   function hoAddClientRun(item) {
     const s = hoSession();
     item.client = s ? s.start : 1;
@@ -38608,7 +38623,7 @@
   function hoWhen(ts) {
     const d = new Date(ts);
     const today = new Date();
-    if (d.toDateString() === today.toDateString()) return hoHM(d);
+    if (d.toDateString() === today.toDateString()) return `Heute, ${hoHM(d)}`;
     return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}. ${hoHM(d)}`;
   }
 
@@ -38861,7 +38876,7 @@
     if (!p) return;
     const ok = await hoCopy(`1.1.code.${p.data}`);
     $("handoverImportCopyBtn").textContent = ok ? "Kopiert ✓" : "Kopieren ging nicht";
-    if (ok) showToast("Kopiert. Öffne jetzt die App vom Startbildschirm: Fortschritt › Trainer-QR-Code scannen › Code von Hand einfügen.");
+    if (ok) showToast("Kopiert. Öffne jetzt die App vom Startbildschirm: Training › Trainer-QR-Code scannen › Code von Hand einfügen.");
   });
   // Paste field (home-screen app on the iPhone: Safari has its own storage)
   function hoOpenPaste() {
@@ -39030,6 +39045,7 @@
   let hoSinceMin = null; // minutes after midnight
   let hoChecked = new Set();
   let hoRangeIds = [];
+  const HO_HIDDEN_KEY = "fwmc-trainer-hidden-v1"; // eigene, nur aus der Trainer-Liste ausgeblendet
   let hoQr = null; // {ids, source:"history"|"client", tokens, idx, meta}
   function hoDefaultSince() {
     const now = Date.now();
@@ -39047,9 +39063,44 @@
   const hoMinText = (m) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
   function hoRenderPick(resetChecks) {
     const from = hoRangeFrom();
-    const list = loadHistory().filter((e) => new Date(e.ts).getTime() >= from);
+    // Test-Trainings aus dem Zeitraum stehen mit drin, aber ohne Haken
+    // (Hintertür, Fabian 08.10. abends): sie gehen nur bewusst mit.
+    // Nach einem Kunden-Training (hoPick "client", Fabian 08.10. abends): seine
+    // Trainings angehakt, Test und Liegengebliebenes ohne Haken darunter.
+    // Alle drei Ablagen 14 Tage (Fabian 08.10. abends): auch eigene und
+    // Test-Trainings lassen sich nachträglich anhaken ("falls man gepennt hat").
+    // "store" = Übersicht "Gespeicherte Trainings" zum Aufräumen (nichts angehakt).
+    const clientPick = hoPick === "client", storePick = hoPick === "store";
+    // Eigene Trainings, die man hier "löscht", verschwinden nur aus dieser Liste
+    // (fwmc-trainer-hidden-v1); Verlauf und Fortschritt behalten sie. Nur
+    // Verschicken nimmt sie auch dort heraus (Fabian 08.10. abends).
+    const hidden = new Set(readJSON(HO_HIDDEN_KEY, []));
+    const recentOwn = () => loadHistory().filter((e) => !hidden.has(e.id) && Date.now() - new Date(e.ts).getTime() < HO_KEEP_MS);
+    const kindOf = (e) => (e.tryRun ? "try" : e.client ? "client" : "own");
+    let list = clientPick || storePick ? hoClientRuns().concat(tmTryRuns(), recentOwn())
+      : loadHistory().filter((e) => !hidden.has(e.id)).concat(tmTryRuns()).filter((e) => new Date(e.ts).getTime() >= from);
+    if (storePick && hoKind !== "all") list = list.filter((e) => kindOf(e) === hoKind);
+    list.sort((a, b) => new Date(b.ts) - new Date(a.ts));
     hoRangeIds = list.map((e) => e.id);
-    if (resetChecks) hoChecked = new Set(hoRangeIds);
+    const mine = (e) => (storePick ? false : clientPick ? kindOf(e) === "client" && e.client === hoPickClient : !e.tryRun);
+    if (resetChecks) hoChecked = new Set(list.filter(mine).map((e) => e.id));
+    $("handoverRangeGroup").hidden = clientPick || storePick;
+    $("handoverKindGroup").hidden = !storePick;
+    $("handoverPrecheck").hidden = storePick;
+    document.querySelectorAll("#handoverKindRow .choice").forEach((b) => {
+      const on = b.dataset.hoKind === hoKind;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    const clr = $("handoverClearBtn");
+    clr.hidden = !storePick || !list.length;
+    clr.textContent = { all: "Alles löschen", client: "Alle Kunden-Trainings löschen", try: "Alle Test-Trainings löschen", own: "Alle eigenen löschen" }[hoKind];
+    $("handoverPickTitle").textContent = storePick ? "Gespeicherte Trainings" : clientPick ? "Kunden-Training übergeben" : "An Kunden übergeben";
+    $("handoverPickSub").textContent = storePick
+      ? "Alles der letzten 14 Tage auf diesem Gerät. Hake an, was du übergeben oder löschen willst. Nach links wischen löscht ein einzelnes Training."
+      : clientPick
+      ? "Angehakt ist dieses Kunden-Training. Test-Trainings, eigene und Liegengebliebenes von früher kannst du dazunehmen oder löschen."
+      : "Welche Trainings bekommt dein Kunde? Wähle den Zeitraum und nimm einzelne Trainings heraus, die nicht zu ihm gehören.";
     $("handoverSinceLabel").textContent = `seit ${hoMinText(hoSinceMin)}`;
     $("handoverSinceInput").value = hoMinText(hoSinceMin);
     $("handoverSinceRow").hidden = hoRange !== "since";
@@ -39060,13 +39111,18 @@
     });
     const ul = $("handoverList");
     ul.innerHTML = list.length ? list.map((e) => `<li><label class="checkbox-row tap-row handover-check"><input type="checkbox" data-ho-id="${esc(e.id)}"${hoChecked.has(e.id) ? " checked" : ""}>
-        <span class="handover-check-text"><span class="h-title">${esc(e.title)}</span><span class="h-meta">${hoWhen(e.ts)}${e.seconds ? " · " + fmtMinutes(e.seconds) : ""}${e.aborted ? " · abgebrochen" : ""}</span></span></label></li>`).join("")
-      : '<li class="history-empty">In diesem Zeitraum gibt es kein Training. Wähle einen früheren Zeitpunkt.</li>';
+        <span class="handover-check-text"><span class="h-title">${esc(e.title)}${hoTag(e, kindOf(e), clientPick, storePick)}</span><span class="h-meta">${hoWhen(e.ts)}${e.seconds ? " · " + fmtMinutes(e.seconds) : ""}${e.aborted ? " · abgebrochen" : ""}</span></span></label></li>`).join("")
+      : `<li class="history-empty">${clientPick || storePick ? "Hier liegt nichts mehr." : "In diesem Zeitraum gibt es kein Training. Wähle einen früheren Zeitpunkt."}</li>`;
     ul.querySelectorAll("input[data-ho-id]").forEach((cb) => cb.addEventListener("change", () => {
       if (cb.checked) hoChecked.add(cb.dataset.hoId); else hoChecked.delete(cb.dataset.hoId);
       hoSyncGo();
     }));
     hoSyncGo();
+  }
+  function hoTag(e, kind, clientPick, storePick) {
+    if (kind === "try") return '<span class="h-tag tm-tag-try">Test</span>';
+    if (kind === "client") return storePick ? '<span class="h-tag tm-tag-client">Kunde</span>' : clientPick && e.client !== hoPickClient ? '<span class="h-tag">früher</span>' : "";
+    return clientPick || storePick ? '<span class="h-tag tm-tag-own">Eigenes</span>' : "";
   }
   function hoSelectedIds() { return hoRangeIds.filter((id) => hoChecked.has(id)); }
   function hoSyncGo() {
@@ -39074,8 +39130,54 @@
     const btn = $("handoverGoBtn");
     btn.disabled = n === 0;
     btn.textContent = `${hoCount(n)} übergeben`;
+    $("handoverDeleteBtn").disabled = n === 0;
   }
+  let hoPick = "range"; // "range" (Zeitfenster) | "client" (nach einem Kunden-Training) | "store" (Übersicht)
+  let hoKind = "all"; // Übersicht-Filter: all | client | try | own
+  let hoPickClient = 0; // start of the Kunden-Training whose runs are ticked
+  function hoOpenClientPick(start) {
+    hoPick = "client";
+    hoPickClient = start;
+    hoRenderPick(true);
+    showScreen("handoverScreen");
+  }
+  function hoOpenStore() {
+    hoPick = "store";
+    hoKind = "all";
+    hoRenderPick(true);
+    showScreen("handoverScreen");
+  }
+  document.querySelectorAll("#handoverKindRow .choice").forEach((b) => b.addEventListener("click", () => {
+    hoKind = b.dataset.hoKind;
+    hoRenderPick(true);
+  }));
+  function hoAskDelete(ids, title) {
+    const ownIds = new Set(loadHistory().map((e) => e.id));
+    const own = ids.filter((id) => ownIds.has(id)), other = ids.filter((id) => !ownIds.has(id));
+    const text = !own.length ? "Sie sind danach auf diesem Gerät weg und lassen sich nicht mehr übergeben."
+      : !other.length ? "Eigene Trainings verschwinden nur aus dieser Liste. In deinem Verlauf und Fortschritt bleiben sie."
+      : "Kunden- und Test-Trainings sind danach weg. Eigene verschwinden nur aus dieser Liste, in deinem Verlauf und Fortschritt bleiben sie.";
+    confirmDialog(text, () => {
+      if (own.length) {
+        const keep = new Set(loadHistory().map((e) => e.id));
+        writeJSON(HO_HIDDEN_KEY, readJSON(HO_HIDDEN_KEY, []).filter((id) => keep.has(id)).concat(own));
+      }
+      if (other.length) hoDeleteEverywhere(other);
+      hoRefreshViews();
+      hoRenderProgressGroup();
+      showToast(other.length ? `${hoCount(ids.length)} gelöscht.` : `${hoCount(ids.length)} ausgeblendet.`);
+      if (hoPick === "client" && !hoClientRuns().length && !tmTryRuns().length) { showScreen(hoHomeId); return; }
+      hoRenderPick(true);
+    }, { title: title || `${ids.length === 1 ? "Dieses Training" : `Diese ${ids.length} Trainings`} löschen?`, yes: "Löschen", no: "Behalten" });
+  }
+  $("handoverClearBtn").addEventListener("click", () => {
+    if (!hoRangeIds.length) return;
+    hoAskDelete(hoRangeIds.slice(), `${$("handoverClearBtn").textContent}? (${hoCount(hoRangeIds.length)})`);
+  });
+  // Nach links wischen (SWIPE_ROWS) löscht ein einzelnes Training.
+  $("handoverList").addEventListener("ho-del", (e) => hoAskDelete([e.detail]));
   function hoOpenPick() {
+    hoPick = "range";
     hoRange = "since";
     hoSinceMin = hoDefaultSince();
     hoRenderPick(true);
@@ -39093,12 +39195,18 @@
     hoRenderPick(true);
   });
   $("handoverOpenBtn").addEventListener("click", hoOpenPick);
-  $("handoverBackBtn").addEventListener("click", () => showScreen("progressScreen"));
+  $("handoverBackBtn").addEventListener("click", () => showScreen(hoHomeId));
   $("handoverGoBtn").addEventListener("click", () => {
     const ids = hoSelectedIds();
     if (!ids.length) return;
-    const meta = hoRange === "since" ? `seit ${hoMinText(hoSinceMin)} Uhr` : `letzte ${hoRange} Min.`;
-    hoStartQr(ids, "history", meta);
+    const meta = hoPick === "store" ? "aus der Übersicht" : hoPick === "client" ? `Kunden-Training ${hoHM(new Date(hoPickClient))} Uhr`
+      : hoRange === "since" ? `seit ${hoMinText(hoSinceMin)} Uhr` : `letzte ${hoRange} Min.`;
+    hoStartQr(ids, hoPick === "client" ? "client" : "history", meta);
+  });
+  $("handoverDeleteBtn").addEventListener("click", () => {
+    const ids = hoSelectedIds();
+    if (!ids.length) return;
+    hoAskDelete(ids);
   });
 
   // ---- QR screen ----
@@ -39116,7 +39224,7 @@
     return hoQrLib;
   }
   function hoEntriesFor(ids, source) {
-    const all = source === "client" ? hoClientRuns() : loadHistory();
+    const all = loadHistory().concat(hoClientRuns(), tmTryRuns());
     return all.filter((e) => ids.includes(e.id));
   }
   async function hoStartQr(ids, source, meta) {
@@ -39163,9 +39271,16 @@
   $("handoverPrevBtn").addEventListener("click", () => { if (hoQr && hoQr.idx > 0) { hoQr.idx--; hoDrawQr(); } });
   $("handoverNextBtn").addEventListener("click", () => { if (hoQr && hoQr.idx < hoQr.tokens.length - 1) { hoQr.idx++; hoDrawQr(); } });
   $("handoverQrBackBtn").addEventListener("click", () => {
-    if (hoQr && hoQr.source === "history") showScreen("handoverScreen"); else showScreen("progressScreen");
+    if (hoQr) { hoRenderPick(false); showScreen("handoverScreen"); } else showScreen(hoHomeId);
   });
+  function hoDeleteEverywhere(ids) {
+    const cl = hoClientRuns();
+    if (cl.some((e) => ids.includes(e.id))) writeJSON(HO_RUNS_KEY, cl.filter((e) => !ids.includes(e.id)));
+    hoDeleteFromHistory(ids);
+  }
   function hoDeleteFromHistory(ids) {
+    const tr = tmTryRuns();
+    if (tr.some((e) => ids.includes(e.id))) writeJSON(TM_TRY_KEY, tr.filter((e) => !ids.includes(e.id)));
     const p = loadProgress();
     const list = loadHistory();
     const keep = [];
@@ -39188,21 +39303,21 @@
   $("handoverDoneBtn").addEventListener("click", () => {
     const q = hoQr;
     hoQr = null;
-    if (!q) { showScreen("progressScreen"); return; }
+    if (!q) { showScreen(hoHomeId); return; }
     if (q.source === "client") {
-      const left = hoClientRuns().filter((e) => !q.ids.includes(e.id));
-      writeJSON(HO_RUNS_KEY, left);
-      showScreen("progressScreen");
+      hoDeleteEverywhere(q.ids);
+      hoRenderProgressGroup();
+      showScreen(hoHomeId);
       showToast(`Übergeben. ${q.n === 1 ? "Das Kunden-Training ist" : "Die Kunden-Trainings sind"} von deinem Gerät gelöscht.`);
       return;
     }
-    showScreen("progressScreen");
+    showScreen(hoHomeId);
+    // Fabian 08.10. abends: übergeben = nicht dein Training, also ohne Frage
+    // aus deinem Verlauf und Fortschritt.
     const n = q.ids.length;
-    confirmDialog("Dein Kunde hat sie jetzt in seiner App.", () => {
-      hoDeleteFromHistory(q.ids);
-      hoRefreshViews();
-      showToast(`${hoCount(n)} gelöscht.`);
-    }, { title: `${n === 1 ? "Dieses Training" : `Diese ${n} Trainings`} auf deinem Gerät löschen?`, yes: "Löschen", no: "Behalten" });
+    hoDeleteEverywhere(q.ids);
+    hoRefreshViews();
+    showToast(`Übergeben. ${n === 1 ? "Das Training ist" : `Die ${n} Trainings sind`} aus deinem Verlauf entfernt.`);
   });
 
   // ---- Kunden-Training ----
@@ -39237,58 +39352,252 @@
     try { localStorage.removeItem(HO_SESSION_KEY); } catch (e) { /* ignore */ }
     hoRestoreSnapshot(s.snap || {});
     hoSyncStrip();
-    const runs = hoClientRuns();
+    // Only this session's runs: leftovers of an earlier client stay apart
+    // (they wait in the Trainer-Menü), so a new client never gets them.
+    const runs = hoClientRuns().filter((e) => e.client === s.start);
     if (!runs.length) {
-      showScreen("progressScreen");
+      showScreen(hoHomeId);
       showToast("Kunden-Training beendet. Es wurde kein Training aufgezeichnet.");
       return;
     }
-    hoStartQr(runs.map((e) => e.id), "client", `Kunden-Training seit ${hoHM(new Date(Math.min(...runs.map((e) => e.client || s.start))))} Uhr`);
+    hoOpenClientPick(s.start);
+  }
+  // Leftovers = runs of earlier Kunden-Trainings; one QR per client
+  // (the most recent first), never mixed with each other.
+  function hoLeftovers() {
+    const s = hoSession();
+    return hoClientRuns().filter((e) => !s || e.client !== s.start);
   }
   function hoShowPendingQr() {
-    const runs = hoClientRuns();
+    const runs = hoLeftovers();
     if (!runs.length) return;
-    hoStartQr(runs.map((e) => e.id), "client", "Kunden-Training");
+    hoOpenClientPick(Math.max(...runs.map((e) => e.client || 0)));
   }
   $("clientRunStartBtn").addEventListener("click", hoStartClientRun);
-  $("clientRunEndBtn").addEventListener("click", hoEndClientRun);
+  $("clientRunEndBtn").addEventListener("click", () => { if (tmTry()) tmEndTry(true); else hoEndClientRun(); });
   $("clientRunPendingBtn").addEventListener("click", hoShowPendingQr);
   $("clientRunDropBtn").addEventListener("click", () => {
-    const n = hoClientRuns().length;
+    const n = hoLeftovers().length;
     confirmDialog(`${n === 1 ? "Das Kunden-Training" : `Die ${n} Kunden-Trainings`} löschen, ohne sie zu übergeben?`, () => {
-      try { localStorage.removeItem(HO_RUNS_KEY); } catch (e) { /* ignore */ }
+      const left = hoLeftovers().map((e) => e.id);
+      writeJSON(HO_RUNS_KEY, hoClientRuns().filter((e) => !left.includes(e.id)));
       hoRenderProgressGroup();
     }, { yes: "Löschen", no: "Behalten" });
   });
   function hoRenderProgressGroup() {
     const active = hoClientRunActive();
-    const pending = active ? 0 : hoClientRuns().length;
+    const pending = hoLeftovers().length;
     // Freischaltung per Code (Fabian 08.10., code type "feature-unlock"):
     // "trainer-tools" shows the two trainer buttons; "Trainer-QR-Code
     // scannen" is for everyone. A running or unsent Kunden-Training stays
     // reachable after a lock.
     const tools = featureOn("trainer-tools");
     $("handoverOpenItem").hidden = !tools;
-    $("clientRunItem").hidden = !(tools || active || pending);
-    $("clientRunStartHelp").hidden = active || !tools;
-    $("clientRunStartBtn").hidden = active || !tools;
+    $("tmStoreItem").hidden = !tools;
+    // Start/Ende des Kunden-Trainings: Modus im Trainer-Menü (08.10. abends).
+    $("clientRunItem").hidden = !(active || pending);
+    $("clientRunStartHelp").hidden = true;
+    $("clientRunStartBtn").hidden = true;
     $("clientRunActiveNote").hidden = !active;
     $("clientRunPending").hidden = !pending;
     if (pending) $("clientRunPendingText").textContent = `${hoCount(pending)} aus dem Kunden-Training ${pending === 1 ? "ist" : "sind"} noch nicht übergeben.`;
   }
+  // Ort (Fabian 08.10. abends): "Training beim Trainer" (Scanner für alle,
+  // Trainer-Knöpfe nach Freischaltung) steht dort, wo Codes eingegeben
+  // werden: direkt unter dem Code-Feld auf Heute und auf Training. Es gibt
+  // den Block nur einmal; er wandert mit unter die Code-Karte des gerade
+  // sichtbaren Bildschirms.
+  const HO_HOSTS = [["todayHome", ".code-card.today-code"], ["trainingHub", ".code-card"]];
+  // hoHomeId: where the handover screens go back to (the page the trainer came from).
+  let hoHomeId = "trainingHub";
+  function hoPlaceGroup() {
+    const g = $("handoverGroup");
+    for (const [id, sel] of HO_HOSTS) {
+      const scr = $(id);
+      if (!scr || scr.hidden) continue;
+      const card = scr.querySelector(sel);
+      if (card && card.nextElementSibling !== g) card.after(g);
+      hoHomeId = id;
+      hoRenderProgressGroup();
+      return;
+    }
+  }
+  HO_HOSTS.forEach(([id]) => { const scr = $(id); if (scr) new MutationObserver(hoPlaceGroup).observe(scr, { attributes: true, attributeFilter: ["hidden"] }); });
+  hoPlaceGroup();
+  // ---- Trainer-Menü (Fabian 08.10. abends, docs/notes/36) ----
+  // Oben links auf den Hauptseiten (dort ist der ‹-Platz frei), nur nach der
+  // Freischaltung "trainer-tools" oder solange ein Modus läuft. Modi:
+  // Mein Training (normal), Mit Kunde (= Kunden-Training) und Ausprobieren
+  // (nichts zählt; Test-Ablage 14 Tage, über die Auswahl übergebbar).
+  // Ausprobieren während eines Kunden-Trainings pausiert es; die Lücke geht
+  // nicht mit. Ein Modus endet nach 3 h von selbst; nach 30 min im
+  // Hintergrund fragt die App "weiter oder beenden".
+  var TM_KEY = "fwmc-trainer-mode-v1"; // {mode:"try", since, snap}
+  var TM_TRY_KEY = "fwmc-try-runs-v1";
+  var TM_SEEN_KEY = "fwmc-trainer-seen-v1"; // last time the app went to the background
+  const TM_MAX_MS = 3 * 3600e3, TM_TRY_KEEP_MS = 14 * 86400e3, TM_ASK_MS = 30 * 60e3;
+  const TM_MAIN = ["todayHome", "trainingHub", "progressScreen", "moreScreen"];
+  function tmTry() {
+    const t = readJSON(TM_KEY, null);
+    return t && t.mode === "try" && typeof t.since === "number" ? t : null;
+  }
+  function tmMode() { return tmTry() ? "try" : hoSession() ? "client" : "own"; }
+  function tmTryRuns() {
+    const l = readJSON(TM_TRY_KEY, []);
+    if (!Array.isArray(l)) return [];
+    const keep = l.filter((e) => Date.now() - new Date(e.ts).getTime() < TM_TRY_KEEP_MS);
+    if (keep.length !== l.length) writeJSON(TM_TRY_KEY, keep);
+    return keep;
+  }
+  function tmAddTryRun(item) {
+    item.tryRun = true;
+    const l = tmTryRuns();
+    l.unshift(item);
+    writeJSON(TM_TRY_KEY, l.slice(0, 200));
+    return item.id;
+  }
+  function tmPatchTryRun(id, fn) {
+    const l = tmTryRuns();
+    const it = l.find((e) => e.id === id);
+    if (!it) return;
+    fn(it);
+    writeJSON(TM_TRY_KEY, l);
+  }
+  function tmStartTry() {
+    if (tmTry()) return;
+    writeJSON(TM_KEY, { mode: "try", since: Date.now(), snap: hoSnapshot() });
+    hoSyncStrip();
+    showToast(hoSession() ? "Ausprobieren läuft. Das Kunden-Training ist so lange pausiert." : "Ausprobieren läuft. Nichts davon zählt für dich.");
+  }
+  function tmEndTry(toast) {
+    const t = tmTry();
+    if (!t) return;
+    try { localStorage.removeItem(TM_KEY); } catch (e) { /* ignore */ }
+    hoRestoreSnapshot(t.snap || {});
+    hoSyncStrip();
+    hoRenderProgressGroup();
+    if (toast) showToast(hoSession() ? "Ausprobieren beendet. Das Kunden-Training läuft weiter." : "Ausprobieren beendet.");
+  }
+  function tmSetMode(m) {
+    const cur = tmMode();
+    tmCloseMenu();
+    if (m === cur) return;
+    if (m === "try") { tmStartTry(); return; }
+    if (cur === "try") tmEndTry(false);
+    if (m === "client") {
+      if (hoSession()) { hoSyncStrip(); showToast("Das Kunden-Training läuft weiter."); }
+      else hoStartClientRun();
+      return;
+    }
+    // m === "own"
+    if (hoSession()) hoEndClientRun();
+    else { hoSyncStrip(); showToast("Mein Training: alles zählt wieder für dich."); }
+  }
+  const TM_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M3.5 19.5c.6-3.4 2.8-5.3 5.5-5.3 1.4 0 2.6.5 3.6 1.4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M17.5 12.5l1.2 2.4 2.6.4-1.9 1.8.5 2.6-2.4-1.3-2.3 1.3.4-2.6-1.9-1.8 2.6-.4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+  TM_MAIN.forEach((id) => {
+    const bar = $(id) && $(id).querySelector(":scope > .brandbar");
+    if (!bar) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "trainer-mode-btn";
+    btn.hidden = true;
+    btn.addEventListener("click", tmOpenMenu);
+    // after a (hidden) ‹ of the bar, which stays its first child; CSS hides that ‹
+    const back = bar.querySelector(":scope > .bar-back-btn");
+    if (back) back.after(btn); else bar.insertBefore(btn, bar.firstChild);
+  });
+  function tmSync() {
+    const m = tmMode();
+    const on = featureOn("trainer-tools") || m !== "own";
+    document.querySelectorAll(".trainer-mode-btn").forEach((btn) => {
+      btn.hidden = !on;
+      btn.classList.toggle("tm-client", m === "client");
+      btn.classList.toggle("tm-try", m === "try");
+      const html = m === "own" ? TM_ICON : `<span class="tm-btn-word">${m === "try" ? "Test" : "Kunde"}</span>`;
+      if (btn.dataset.tm !== m) { btn.innerHTML = html; btn.dataset.tm = m; }
+      btn.setAttribute("aria-label", m === "own" ? "Trainer-Menü" : `Trainer-Menü, Modus ${m === "try" ? "Ausprobieren" : "Mit Kunde"}`);
+    });
+    document.body.classList.toggle("tm-btn-on", on);
+    document.querySelectorAll("#tmModes .tm-mode").forEach((b) => {
+      const act = b.dataset.tm === m;
+      b.classList.toggle("active", act);
+      b.setAttribute("aria-pressed", act ? "true" : "false");
+    });
+    const note = $("tmModeNote");
+    const s = hoSession(), t = tmTry();
+    const txt = t ? `Ausprobieren seit ${hoHM(new Date(t.since))} Uhr${s ? ". Das Kunden-Training ist pausiert, „Mit Kunde“ setzt es fort." : "."}`
+      : s ? `Kunden-Training seit ${hoHM(new Date(s.start))} Uhr. „Mein Training“ beendet es und zeigt den QR-Code.` : "";
+    note.textContent = txt;
+    note.hidden = !txt;
+  }
+  function tmOpenMenu() {
+    const from = TM_MAIN.find((id) => $(id) && !$(id).hidden);
+    if (from) hoHomeId = from; // handover/overview screens return here
+    tmSync();
+    hoRenderProgressGroup();
+    $("trainerMenuSheet").hidden = false;
+  }
+  function tmCloseMenu() { $("trainerMenuSheet").hidden = true; }
+  $("tmToolsHost").append($("handoverOpenItem"), $("tmStoreItem"), $("clientRunItem"));
+  document.querySelectorAll("#tmModes .tm-mode").forEach((b) => b.addEventListener("click", () => tmSetMode(b.dataset.tm)));
+  $("tmCloseBtn").addEventListener("click", tmCloseMenu);
+  $("trainerMenuSheet").addEventListener("click", (e) => { if (e.target === e.currentTarget) tmCloseMenu(); });
+  $("handoverOpenBtn").addEventListener("click", tmCloseMenu);
+  $("tmStoreBtn").addEventListener("click", () => { tmCloseMenu(); hoOpenStore(); });
+  $("clientRunPendingBtn").addEventListener("click", tmCloseMenu);
+  // 3 h limit + "weiter oder beenden?" after 30 min in the background.
+  function tmCheckReturn() {
+    const m = tmMode();
+    if (m === "own") return;
+    const since = m === "try" ? tmTry().since : hoSession().start;
+    if (Date.now() - since > TM_MAX_MS) {
+      if (m === "try") { tmEndTry(false); showToast("Ausprobieren wurde nach 3 Stunden beendet."); return; }
+      const sess = hoSession();
+      try { localStorage.removeItem(HO_SESSION_KEY); } catch (e) { /* ignore */ }
+      hoRestoreSnapshot(sess.snap || {});
+      hoSyncStrip();
+      hoRenderProgressGroup();
+      if (hoClientRuns().length) showToast("Das Kunden-Training wurde nach 3 Stunden beendet. Die Trainings warten im Trainer-Menü auf die Übergabe.");
+      return;
+    }
+    const seen = Number(readJSON(TM_SEEN_KEY, 0)) || 0;
+    if (!seen || Date.now() - seen < TM_ASK_MS) return;
+    writeJSON(TM_SEEN_KEY, 0);
+    const word = m === "try" ? "Ausprobieren" : "Kunden-Training";
+    confirmDialog(`Seit ${hoHM(new Date(since))} Uhr läuft noch „${word}“. ${m === "try" ? "Solange zählt nichts für dich." : "Solange zählt nichts für deinen Fortschritt."}`,
+      () => {}, { title: `${word} fortsetzen?`, yes: "Weiter", no: "Beenden", onNo: () => (m === "try" ? tmEndTry(true) : hoEndClientRun()) });
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) { if (tmMode() !== "own") writeJSON(TM_SEEN_KEY, Date.now()); }
+    else tmCheckReturn();
+  });
+  if (navigator.webdriver) window.__tm = { mode: tmMode, tryRuns: tmTryRuns, check: tmCheckReturn };
   let hoStripRaf = 0;
   function hoSyncStrip() {
     const strip = $("clientRunStrip");
     const s = hoSession();
+    const t = tmTry();
     const onScreen = !!document.querySelector(".screen:not([hidden])");
-    const show = !!s && onScreen;
-    if (s) {
+    // In a player the strip shrinks to a thin coloured line (mode always visible).
+    const show = !!(s || t) && onScreen;
+    const slim = !!(s || t) && !onScreen;
+    if (t) {
+      $("clientRunLabel").textContent = s ? "Ausprobieren · Kunde pausiert" : "Ausprobieren · zählt nicht";
+      $("clientRunSince").textContent = "";
+      $("clientRunCount").textContent = "";
+      $("clientRunSep").hidden = true;
+    } else if (s) {
       const n = hoClientRuns().filter((e) => e.client === s.start).length;
+      $("clientRunLabel").textContent = "Kunden-Training";
+      $("clientRunSep").hidden = false;
       $("clientRunSince").textContent = hoHM(new Date(s.start));
       $("clientRunCount").textContent = n ? ` · ${hoCount(n)}` : "";
     }
-    if (strip.hidden !== !show) strip.hidden = !show;
+    strip.classList.toggle("tm-try", !!t);
+    strip.classList.toggle("slim", slim);
+    if (strip.hidden !== !(show || slim)) strip.hidden = !(show || slim);
     document.body.classList.toggle("client-run-on", show);
+    tmSync();
   }
   new MutationObserver(() => {
     if (hoStripRaf) return;
@@ -39297,9 +39606,10 @@
   els.handoverScreen = $("handoverScreen");
   els.handoverQrScreen = $("handoverQrScreen");
   SCREENS.push("handoverScreen", "handoverQrScreen");
-  NAV_TAB_OF.handoverScreen = "progress";
-  NAV_TAB_OF.handoverQrScreen = "progress";
+  // The bottom tab stays on the page the trainer came from (Heute, Training, ...).
+  ["handoverScreen", "handoverQrScreen"].forEach((id) => Object.defineProperty(NAV_TAB_OF, id, { get: () => NAV_TAB_OF[hoHomeId] || "training", configurable: true }));
   hoSyncStrip();
+  tmCheckReturn();
 
   // ---- Start-up ----
   applyFeatureClasses();

@@ -1955,8 +1955,10 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .code-quiet .program-entry-row input::placeholder{color:var(--ink-soft)}
 .code-quiet .program-entry-row button{background:var(--brand);color:#ffffff;min-height:48px}
 .code-quiet .program-error{margin:0 14px 14px;background:var(--surface-2);color:var(--warn)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .code-quiet .program-entry-row button{color:#0f1a1e}}
-:root[data-theme="dark"] .code-quiet .program-entry-row button{color:#0f1a1e}
+/* dark: the generic dark rule above set background:var(--bg), which beat this
+   one and left "Öffnen" invisible (Fabian 08.10. abends) - repeat the brand fill */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .code-quiet .program-entry-row button{background:var(--brand);color:#0f1a1e}}
+:root[data-theme="dark"] .code-quiet .program-entry-row button{background:var(--brand);color:#0f1a1e}
 @media (hover:hover){.code-quiet .code-toggle:hover{background:var(--surface-2)}}
 .code-quiet .code-toggle:active{background:var(--surface-2)}
 /* Fortschritt ohne Training (2026-10-06) */
@@ -2956,8 +2958,8 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 .combo-from::before{content:"↳ "}
 
 /* Code-Karte: "Noch keinen Trainer?" (Fabian 07.10.) */
-.code-card .code-ask-link{display:block;margin-top:12px;color:inherit;text-decoration:underline;text-underline-offset:3px;min-height:44px;line-height:44px}
-.code-card.code-quiet .code-ask-link{margin:0;padding:0 16px 8px;color:var(--brand);text-decoration:none;font-weight:700}
+.code-card .code-ask-link{display:block;margin-top:12px;color:inherit;text-decoration:underline;text-underline-offset:3px;min-height:44px;line-height:1.35;padding:12px 0;box-sizing:border-box}
+.code-card.code-quiet .code-ask-link{margin:0;padding:10px 16px 12px;color:var(--brand);text-decoration:none;font-weight:700}
 
 /* Heute für Neue (07.10.): Frage + Wischreihe "Zum Ausprobieren" */
 .starter-ask,.starter-goals{margin:4px 0 6px}
@@ -3363,6 +3365,18 @@ html:root body .start-btn.gear-missing:not(.secondary){background:var(--surface)
 .handover-group .handover-item + .handover-item{margin-top:8px}
 .handover-group .start-btn.secondary{font-size:calc(17px * var(--ts,1));padding:13px 16px;min-height:48px}
 .handover-paste-link{align-self:flex-start}
+/* Unter dem Code-Feld (Fabian 08.10. abends): ruhig und kompakt, die zwei
+   Trainer-Knöpfe nebeneinander ohne lange Erklärung, der Scanner mit QR-Symbol. */
+.code-card + .handover-group{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;margin:-6px 0 22px}
+.code-card + .handover-group > .group-label,.code-card + .handover-group > #handoverScanItem{grid-column:1 / -1}
+.code-card + .handover-group > .handover-item + .handover-item{margin-top:0}
+.code-card + .handover-group #handoverOpenItem .group-help,.code-card + .handover-group #clientRunStartHelp{display:none}
+.code-card + .handover-group .start-btn.secondary{font-size:calc(15px * var(--ts,1));padding:10px 8px;min-height:48px;height:100%;line-height:1.2}
+.code-card + .handover-group #clientRunItem:has(#clientRunPending:not([hidden])),.code-card + .handover-group #clientRunItem:has(#clientRunActiveNote:not([hidden])){grid-column:1 / -1}
+.code-card + .handover-group #handoverOpenItem[hidden] + #clientRunItem{grid-column:1 / -1}
+.code-card + .handover-group #handoverScanItem{gap:0}
+.code-card + .handover-group #handoverScanOpenBtn{min-height:44px;display:inline-flex;align-items:center;gap:8px}
+.code-card + .handover-group #handoverScanItem .group-help{margin-top:-4px}
 .handover-pending{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 14px;margin-top:4px}
 .handover-pending-actions{display:flex;gap:16px;flex-wrap:wrap}
 .h-tag{display:inline-block;vertical-align:1px;margin-left:4px;font-size:calc(11px * var(--ts,1));font-weight:700;line-height:1.3;color:var(--brand-deep);background:var(--brand-pale);border-radius:6px;padding:1px 6px;white-space:nowrap}
@@ -3389,7 +3403,12 @@ html:root body .start-btn.gear-missing:not(.secondary){background:var(--surface)
 .handover-paste-input{width:100%;font-family:ui-monospace,Menlo,monospace;font-size:16px;resize:vertical;word-break:break-all}
 /* Kunden-Training strip: slim, on top of every page (not in players) */
 .client-run-strip{position:fixed;top:0;left:0;right:0;z-index:36;display:flex;align-items:center;justify-content:space-between;gap:12px;
-  box-sizing:border-box;height:calc(48px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 16px 0;background:#007094;color:#ffffff;font-weight:700;font-size:calc(14px * var(--ts,1))}
+  box-sizing:border-box;height:calc(48px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 16px 0;background:#a85a12;color:#ffffff;font-weight:700;font-size:calc(14px * var(--ts,1))}
+/* Trainer-Menü modes (08.10. abends): Kunde = warm orange, Test = violet;
+   in a player only a thin line in the mode colour */
+.client-run-strip.tm-try{background:#5d4a8f}
+.client-run-strip.slim{height:calc(5px + env(safe-area-inset-top,0px));padding:0;pointer-events:none}
+.client-run-strip.slim > *{display:none}
 .client-run-text{min-width:0;font-variant-numeric:tabular-nums}
 .client-run-end{flex:none;min-height:44px;min-width:44px;padding:0 14px;border:1.5px solid rgba(255,255,255,.75);border-radius:999px;background:transparent;color:#ffffff;font-weight:700;font-size:calc(14px * var(--ts,1));cursor:pointer}
 .client-run-end:active{background:rgba(255,255,255,.18)}
@@ -3444,3 +3463,34 @@ input[type=checkbox]{accent-color:var(--brand)}
 .scan-paste-link{align-self:center;min-height:44px}
 #handoverScanCancelBtn{margin-top:auto}
 
+
+/* ---- Trainer-Menü (Fabian 08.10. abends, docs/notes/36) ----
+   Round 44 px button in the free ‹ slot of the main pages; the mode word
+   ("Kunde"/"Test") sits inside the circle so the logo never moves. */
+.trainer-mode-btn{flex:0 0 44px;width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--brand-deep);
+  display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.trainer-mode-btn[hidden]{display:none}
+.trainer-mode-btn:active{transform:scale(.94);background:var(--surface-2)}
+.trainer-mode-btn.tm-client{background:#a85a12;border-color:#a85a12;color:#ffffff}
+.trainer-mode-btn.tm-try{background:#5d4a8f;border-color:#5d4a8f;color:#ffffff}
+.tm-btn-word{font-size:10.5px;font-weight:800;letter-spacing:.01em;line-height:1}
+.brandbar:has(.trainer-mode-btn:not([hidden]))::before{display:none}
+.brandbar:has(.trainer-mode-btn:not([hidden])) .bar-back-btn{display:none}
+.tm-modes{display:flex;flex-direction:column;gap:8px}
+.tm-mode{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;min-height:56px;padding:10px 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);cursor:pointer;font:inherit}
+.tm-mode:active{background:var(--surface-2)}
+.tm-mode.active{border-color:var(--brand);box-shadow:inset 0 0 0 1px var(--brand)}
+.tm-mode-title{font-weight:700;font-size:calc(16px * var(--ts,1));display:inline-flex;align-items:center;gap:8px}
+.tm-mode-sub{font-size:calc(13.5px * var(--ts,1));color:var(--ink-soft);line-height:1.35}
+.tm-dot{width:10px;height:10px;border-radius:50%;flex:none}
+.tm-dot-client{background:#a85a12}
+.tm-dot-try{background:#5d4a8f}
+.tm-tools{margin:14px 0 0}
+.tm-tools:empty{display:none}
+.h-tag.tm-tag-try{color:#ffffff;background:#5d4a8f}
+.h-tag.tm-tag-client{color:#ffffff;background:#a85a12}
+.h-tag.tm-tag-own{color:#ffffff;background:#007094}
+#tmCloseBtn{margin-top:18px}
+#handoverList li{touch-action:pan-y}
+.handover-del{display:block;margin:12px auto 0;min-height:44px;padding:0 12px}
+.handover-del:disabled{opacity:.45}

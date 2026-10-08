@@ -192,3 +192,44 @@ app's. A `#code=` link in iOS Safari (`hoIosBrowser()`) therefore asks once via
 before `openCodeAsTyped`; everywhere else it runs at once. The trainer pre-check
 card and the dashboard QR hint both say: scan in the app, not with the camera app.
 Test: `tests/safari_code_hinweis_1008_test.py`.
+
+## Trainer-Menü (2026-10-08 abends, Fabian)
+
+Everything the `trainer-tools` unlock gives lives in one sheet `#trainerMenuSheet`,
+opened by the round `.trainer-mode-btn` in the free ‹ slot of the four main pages
+(Heute, Training, Fortschritt, Mehr; never on area pages). Without the unlock
+(and no mode running) the slot stays empty. Placement of the handover/scan items
+next to the code cards: `HO_HOSTS` + `hoPlaceGroup()`; the trainer items
+(`#handoverOpenItem`, `#tmStoreItem`, `#clientRunItem`) are moved into `#tmToolsHost`.
+
+Modes (`tmSetMode`):
+- **Mein Training** (`own`): everything counts. Button shows the icon.
+- **Mit Kunde** (`client`): Kunden-Training (`fwmc-client-session-v1`), runs go to
+  `fwmc-client-runs-v1` stamped `client: <session start>`; orange `#a85a12`,
+  button word "Kunde". Ending it opens the selection with exactly this session ticked.
+- **Ausprobieren** (`try`): nothing counts, runs go to `fwmc-try-runs-v1`
+  (`tryRun: true`), bests snapshot/restore; violet `#5d4a8f`, button/tag word
+  **"Test"** (was "Probe", Fabian found it odd). Starting it during a Kunden-
+  Training pauses that session; the gap is never ticked.
+- 3 h limit per mode, "… fortsetzen?" after 30 min in the background
+  (`tmCheckReturn`, `fwmc-trainer-seen-v1`). In a player only a thin line (`.slim`).
+
+Retention: client runs and test runs 14 days (`HO_KEEP_MS`, `TM_TRY_KEEP_MS`); own
+history is kept as always, but only its last 14 days are listed for trainers.
+
+Selection before every QR (`hoRenderPick`, `hoPick`):
+- `range` ("An Kunden übergeben"): time window; own runs ticked, test runs unticked.
+- `client` (after a Kunden-Training): its runs ticked; test, own (tag "eigenes")
+  and earlier client leftovers ("früher") unticked, so a run done in the wrong
+  mode can still go along.
+- `store` (**Gespeicherte Trainings**, `#tmStoreBtn`): every kind of the last 14
+  days, nothing ticked, filter chips Alle/Kunde/Test/Eigene (`hoKind`), button
+  "Alle … löschen" for the filter shown (`#handoverClearBtn`), swipe left on a row
+  = Löschen (`SWIPE_ROWS`, event `ho-del`).
+
+Deleting vs sending (Fabian): whatever is **sent** is removed everywhere
+(`hoDeleteEverywhere`, own runs also leave Fortschritt). **Deleting** client/test
+runs removes them; deleting **own** runs only hides them from the trainer lists
+(`fwmc-trainer-hidden-v1`), history and Fortschritt keep them (`hoAskDelete`).
+Test: `tests/trainer_menu_1008_test.py`; readability of every button on every
+main page, light/dark: `tests/knopf_lesbar_1008_test.py`.

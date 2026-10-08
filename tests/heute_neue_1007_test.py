@@ -52,8 +52,8 @@ async def main():
         check("row 'Zum Ausprobieren' shown", await pg.is_visible("#todayMain .starter-head"))
         check("default order", (await row_order(pg))[:3] == ["box", "vt", "remember"], str(await row_order(pg)))
         check("Fortschritt hidden at 0 trainings", await pg.is_hidden("#todayHome .today-progress"))
-        below = await pg.evaluate("() => { const c = document.querySelector('#todayHome .today-code'); return c && c.nextElementSibling === document.querySelector('#todayHome .today-week'); }")
-        check("week sits below the code card", below)
+        below = await pg.evaluate("() => { const c = document.querySelector('#todayHome .today-code'); let n = c && c.nextElementSibling; if (n && n.classList.contains('handover-group')) n = n.nextElementSibling; return n === document.querySelector('#todayHome .today-week'); }")
+        check("week sits below the code card (scan link group in between)", below)
         check("todayHome.newcomer", await pg.evaluate("() => document.getElementById('todayHome').classList.contains('newcomer')"))
         await pg.screenshot(path="screenshots/heute_neue_start.png")
 

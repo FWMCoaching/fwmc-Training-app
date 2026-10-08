@@ -126,7 +126,7 @@ async def main():
                     await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/scannen", problems)
                     await pg.evaluate("() => document.getElementById('handoverScanPasteBtn').click()"); await pg.wait_for_timeout(100)
                     await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/einfuegen", problems)
-                    await pg.evaluate("() => { document.getElementById('handoverPasteCancelBtn').click(); document.getElementById('clientRunStartBtn').click(); }"); await pg.wait_for_timeout(150)
+                    await pg.evaluate("() => { document.getElementById('handoverPasteCancelBtn').click(); document.querySelector('#tmModes [data-tm=client]').click(); }"); await pg.wait_for_timeout(150)
                     await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/kunden-training", problems)
                     await pg.evaluate("() => { localStorage.removeItem('fwmc-client-session-v1'); localStorage.removeItem('fwmc-test-trainer-tools'); }")
                 if area == "hilfsmittel":
