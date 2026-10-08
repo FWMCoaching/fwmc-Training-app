@@ -2004,6 +2004,7 @@
     if (block.domain === "cardio") return `Ausdauertraining · ${countLabel(block.items.length, "Aktivität", "Aktivitäten")}`;
     if (block.domain === "free") return block.free.title;
     if (block.domain === "optodrum") return `Optodrum · ${OPTO_PATTERNS[optoBlockPrefs(block).pattern].name}`;
+    if (block.domain === "neuro") return neuroTitle(block.ex); // Neuro-Aktivierung
     return block.domain;
   }
   function comboBlockMeta(block) {
@@ -2020,6 +2021,7 @@
     if (block.domain === "cardio") return fmtMinutes(cardioItemsSeconds(block.items));
     if (block.domain === "free") return freeBlockMeta(block.free);
     if (block.domain === "optodrum") { const p = optoBlockPrefs(block); return `${optoTimeLabel(p)} · ${optoDirName(p)} · Stufe ${p.speed}`; }
+    if (block.domain === "neuro") return neuroMeta(block.ex, neuroBlockPrefs(block)) + (neuroBlockIsSpecial(block) ? " · Spezialübung" : "");
     return "";
   }
   function comboBlockSeconds(block) {
@@ -2036,6 +2038,7 @@
     if (block.domain === "cardio") return cardioItemsSeconds(block.items);
     if (block.domain === "free") return freeBlockSeconds(block.free);
     if (block.domain === "optodrum") { const p = optoBlockPrefs(block); return p.noLimit ? 0 : p.durationS; }
+    if (block.domain === "neuro") return NEURO_EXERCISES[block.ex] ? neuroTotalS(block.ex, neuroBlockPrefs(block)) : 0;
     return 0;
   }
   // Curated quick-add presets the combo builder offers per section - not the
@@ -2046,9 +2049,9 @@
   // place (rather than removing the mechanism) in case a future domain
   // ever wants a plain one-click preset again.
   const COMBO_PRESETS = {};
-  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Reaktionstraining", visual: "Visuelles Training", workout: "Krafttraining", cardio: "Ausdauertraining", nat: "NAT", free: "Eigenes Training", activation: "Aktivierung" };
+  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Reaktionstraining", visual: "Visuelles Training", workout: "Krafttraining", cardio: "Ausdauertraining", nat: "NAT", free: "Eigenes Training", activation: "Aktivierung", neuro: "Neuro-Aktivierung" };
   const PERIPH_ICON_HTML = '<div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg></div>';
-  const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat", "free", "activation"];
+  const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat", "free", "activation", "neuro"];
   // Blitz-Raster/Flash-Speicher-Test/Objektverfolgung (MOT) render inside the same
   // "NAT" group as Remember (all 4 are NAT sub-exercises) but need their
   // own domain KEY for the block dispatch, since "nat" is Remember's alone
@@ -2116,6 +2119,8 @@
     free: () => comboFreeCaptureEntries(),
     // Aktivierung (2026-10-08): its own exercises (Optodrum); block domain per exercise.
     activation: () => comboActivationCaptureEntries(),
+    // Neuro-Aktivierung (2026-10-08): empty (= no group) unless unlocked.
+    neuro: () => comboNeuroCaptureEntries(),
   };
   const COMBO_EDIT_OPENERS = {
     cardio: (block, i) => openCardioComboCapture(block, i),
@@ -2131,6 +2136,7 @@
     balance: (block, i) => openBalanceComboCapture(block, i),
     free: (block, i) => openFreeComboCapture(block.free, i),
     optodrum: (block, i) => openOptoComboCapture(block, i),
+    neuro: (block, i) => openNeuroComboCapture(block.ex, block, i),
   };
 
   // ---- Elements ----
@@ -2971,14 +2977,19 @@
   els.trainingHub = $("trainingHub"); els.moreScreen = $("moreScreen"); els.gearScreen = $("gearScreen");
   els.freeHome = $("freeHome"); els.freeReady = $("freeReady"); els.freeEdit = $("freeEdit"); els.freePlayer = $("freePlayer");
   els.activationHome = $("activationHome"); els.optoReady = $("optoReady"); els.optoPlayer = $("optoPlayer");
-  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "gearScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "activationHome", "optoReady", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady", "eyecountReady", "tonReady"];
+  els.neuroHome = $("neuroHome"); els.neuroReady = $("neuroReady"); els.neuroPlayer = $("neuroPlayer");
+  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "gearScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "activationHome", "optoReady", "neuroHome", "neuroReady", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady", "eyecountReady", "tonReady"];
   function showScreen(name) {
+    // Neuro-Aktivierung is hidden without the trainer's unlock code.
+    if ((name === "neuroHome" || name === "neuroReady") && !neuroUnlocked() && !comboNeuroCapture) { activateSectionTab("today"); name = "todayHome"; }
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
     if (name === "todayHome") renderToday();
     if (name === "progressScreen") renderProgressScreen();
     if (name === "freeHome") renderFreeHome();
     if (name === "activationHome") renderActivationHome();
+    if (name === "neuroHome") renderNeuroHome();
+    if (name !== "neuroHome") $("neuroProgramError").hidden = true;
     if (name !== "activationHome") $("activationProgramError").hidden = true;
     if (name !== "freeHome") $("freeProgramError").hidden = true;
     if (name !== "todayHome" && els.todayCodeError) els.todayCodeError.hidden = true;
@@ -2997,9 +3008,11 @@
   // ---- Section switcher (Visual Training / Atemtraining) ----
   let freeAreaActive = false; // "Freie Bausteine" has no tab of its own (reached via Training / Heute)
   let activationAreaActive = false; // Aktivierung: no tab either (2026-10-08)
+  let neuroAreaActive = false; // Neuro-Aktivierung: no tab either (2026-10-08)
   function activateSectionTab(sec) {
     freeAreaActive = sec === "free";
     activationAreaActive = sec === "activation";
+    neuroAreaActive = sec === "neuro";
     document.querySelectorAll(".section-tab").forEach((b) => {
       const on = b.dataset.section === sec;
       b.classList.toggle("active", on);
@@ -3443,7 +3456,7 @@
   // One "Gesamter Trainingsverlauf" section per area home (Fabian, 2026-10-04:
   // it was missing in Cardio, NAT and Test). A new area adds its prefix here
   // and the same markup block (ids <prefix>HistorySection/Stats/List/MoreBtn/ClearBtn).
-  const HISTORY_PREFIXES = ["", "breath", "movement", "workout", "cardio", "nat", "test", "free", "activation"];
+  const HISTORY_PREFIXES = ["", "breath", "movement", "workout", "cardio", "nat", "test", "free", "activation", "neuro"];
   const historyEl = (prefix, part) => document.getElementById(prefix ? prefix + "History" + part : "history" + part);
   function renderHistory() {
     const list = loadHistory();
@@ -4911,6 +4924,11 @@
       text: "Du brauchst eine Rot-Grün-Brille.",
       link: "", gear: ["glasses"],
     },
+    // Neuro-Aktivierung (2026-10-08, only shown with the area unlocked;
+    // the ready screen reads NEURO_EXERCISES[..].need, the chips read gear).
+    "neuro-vibration": { text: "Du brauchst: ein kleines Vibrationsgerät (z. B. Z-Vibe).", link: "", gear: ["vibration"] },
+    "neuro-ball-fuss": { text: "Du brauchst: einen Massageball oder Massagepilz.", link: "", gear: ["massageball"] },
+    "neuro-ball-hand": { text: "Du brauchst: einen Massageball oder Massagepilz.", link: "", gear: ["massageball"] },
   };
   function renderHilfsmittel(exId) {
     const box = document.getElementById("hilfsmittelNote");
@@ -5415,6 +5433,7 @@
     if (t === "cardio-plan") return !nonEmpty(def.items);
     if (t === "breath-program" || t === "workout-plan" || t === "combo-program") return !nonEmpty(def.blocks);
     if (t === "free-template") return freeTemplateDefProblem(def);
+    if (t === "neuro-unlock") return false;
     if (t === "training-plan") return !def.plan || !nonEmpty(def.plan.phases);
     if (t) return true;
     return !nonEmpty(def.blocks) || def.blocks.some((b) => !b || !EXERCISES[b.exercise]);
@@ -5522,6 +5541,7 @@
       if (def.type === "combo-bundle") { openComboBundleOverview(def, code); return; }
       if (def.type === "combo-program") { comboOriginBundle = null; startComboProgram(def, code, code, ctx.homeScreen); return; }
       if (def.type === "free-template") { importTrainerTemplates(def, code); return; }
+      if (def.type === "neuro-unlock") { applyNeuroUnlockCode(def); return; }
       if (def.type === "training-plan") { offerTrainerPlan(def, code, ctx); return; }
       originBundle = null;
       renderProgramIntro(def, code, code, ctx);
@@ -6800,6 +6820,7 @@
     els.cardioPlayer.hidden = true;
     els.freePlayer.hidden = true;
     els.optoPlayer.hidden = true;
+    els.neuroPlayer.hidden = true;
     els.programVideoPlayer.hidden = true;
     els.programVideoEl.pause();
     els.breathTransition.hidden = true;
@@ -19513,6 +19534,7 @@
   function currentHomeScreen() {
     if (freeAreaActive) return "freeHome";
     if (activationAreaActive) return "activationHome";
+    if (neuroAreaActive) return "neuroHome";
     const active = document.querySelector(".section-tab.active");
     const sec = active ? active.dataset.section : "visual";
     return sec === "today" ? "todayHome" : sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "cardio" ? "cardioHome" : sec === "nat" ? "natHome" : sec === "test" ? "testHome" : "home";
@@ -19533,7 +19555,7 @@
     const own = !first || first.domain === "wimhof" || first.domain === "workout" ||
       (first.domain === "visual" && !(EXERCISES[first.exercise] && /^(color-tap|laufweg)$/.test(EXERCISES[first.exercise].type)));
     if (own || !leadInWanted()) { go(); return; }
-    runLeadIn(go, /^(breath|cardio|free)$/.test(first.domain));
+    runLeadIn(go, /^(breath|cardio|free|neuro)$/.test(first.domain));
   }
   function startComboBlock(idx) {
     if (!comboProgram) return;
@@ -19629,6 +19651,9 @@
       startFreeRun(block.free);
     } else if (block.domain === "optodrum") {
       startOptoRun(optoBlockPrefs(block));
+    } else if (block.domain === "neuro" && NEURO_EXERCISES[block.ex]) {
+      // Plays with or without the unlock: a trainer code's Spezialübung.
+      startNeuroRun(block.ex, neuroBlockPrefs(block), { special: neuroBlockIsSpecial(block) });
     } else {
       startComboBlock(idx + 1); // unknown domain - skip rather than get stuck
     }
@@ -19651,6 +19676,7 @@
     if (!(pauseS > 0)) { onContinue(); return; }
     els.comboTransitionTitle.textContent = comboBlockLabel(nextBlock);
     els.comboTransitionMeta.textContent = comboBlockMeta(nextBlock);
+    $("comboTransitionSpecial").hidden = !neuroBlockIsSpecial(nextBlock);
     showBlockResult($("comboTransitionResult"), comboProgram);
     els.comboTransition.hidden = false;
     const cfg = cueCfg("kombi");
@@ -20106,6 +20132,7 @@
         `<div class="bundle-item-head"><strong>${esc(p.label || ("Programm " + (i + 1)))}</strong>${dateLabel ? `<span class="bundle-date">${dateLabel}</span>` : ""}</div>` +
         (badges ? `<div class="badges">${badges}</div>` : "") +
         `<span class="bundle-meta">${exerciseCountLabel(p.blocks.length)} · ca. ${fmtMinutes(p.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0))}</span>` +
+        (neuroDefHasSpecial(p) ? `<span class="special-tag">${NEURO_SPECIAL_LABEL}</span>` : "") +
         (p.description ? `<span class="bundle-desc">${esc(p.description)}</span>` : "");
       item.addEventListener("click", () => {
         comboOriginBundle = { def: bundleDef, code };
@@ -20234,7 +20261,7 @@
   }, true);
   const LEADIN_START_IDS = ["movementStartBtn", "movementProgramStartBtn", "breathStartBtn", "breathProgramStartBtn",
     "rememberReadyStartBtn", "rememberTrainingStartBtn", "blitzReadyStartBtn", "flashReadyStartBtn", "flashTrainingStartBtn",
-    "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn", "optoStartBtn",
+    "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn", "optoStartBtn", "neuroStartBtn",
     "wimhofStartBtn"];
   let leadInBypass = false, leadInTimer = null;
   function stopLeadIn() { clearTimeout(leadInTimer); leadInTimer = null; $("leadIn").hidden = true; }
@@ -20419,7 +20446,7 @@
   // after a click) unless fwmc-test-transitions is set.
   // Swipe from the left edge (first 28 px) to the right = the visible
   // ‹ button: the page follows the finger and slides out.
-  const HOME_SCREENS = new Set(["todayHome", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "activationHome", "progressScreen"]);
+  const HOME_SCREENS = new Set(["todayHome", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "activationHome", "neuroHome", "progressScreen"]);
   // With the bottom bar the four tabs are the top level; the area homes sit
   // one level deeper, under "Training".
   const NAV_TOP_SCREENS = new Set(["todayHome", "trainingHub", "progressScreen", "moreScreen"]);
@@ -20832,6 +20859,7 @@
     }
     if (player.id === "cardioPlayer") return { host: player, prev: id("cardioPrevBtn"), restart: id("cardioRestartBtn"), next: id("cardioSkipBtn") };
     if (player.id === "freePlayer") return { host: player, prev: id("freePrevBtn"), restart: id("freeRestartBtn"), next: id("freeSkipBtn") };
+    if (player.id === "neuroPlayer") return { host: player, prev: id("neuroPrevBtn"), restart: id("neuroRestartBtn"), next: id("neuroSkipBtn") };
     if (player.id === "workoutPlayer") {
       if (stepVis(id("workoutTabataView"))) return { host: player, prev: id("tabataPrevBtn"), restart: id("tabataRestartBtn"), next: id("tabataSkipBtn") };
       if (stepVis(id("workoutRepsView")) && workoutState && workoutState.kind === "reps") return { host: player, ...stepRepsCtx() };
@@ -21225,7 +21253,7 @@
   const TRAINER_PROGRAMS_KEY = "fwmc-trainer-programs-v1";
   const BUNDLE_ITEM_TYPE = { "bundle": undefined, "breath-bundle": "breath-program", "workout-bundle": "workout-plan", "movement-bundle": "movement-plan", "cardio-bundle": "cardio-plan", "combo-bundle": "combo-program" };
   function rememberTrainerProgram(code, def) {
-    if (!def || def.type === "free-template" || def.type === "training-plan" || PROGRAMS[code] || BREATH_PROGRAMS[code] || WORKOUT_PLANS[code]) return;
+    if (!def || def.type === "free-template" || def.type === "training-plan" || def.type === "neuro-unlock" || PROGRAMS[code] || BREATH_PROGRAMS[code] || WORKOUT_PLANS[code]) return;
     const all = readJSON(TRAINER_PROGRAMS_KEY, {});
     all[code] = { def, at: new Date().toISOString() };
     const keep = Object.entries(all).sort((a, b) => b[1].at.localeCompare(a[1].at)).slice(0, CODE_HISTORY_MAX);
@@ -21251,7 +21279,7 @@
     host.innerHTML = "";
     const groups = [
       ["Deine Programme", comboSavedSorted().filter((e) => !comboEditing || e.id !== comboEditing.id).map((e) => ({ name: e.name, blocks: e.blocks }))],
-      ["Von deinem Trainer", trainerProgramList().map((x) => ({ name: x.name, blocks: comboBlocksFromDef(x.def) }))],
+      ["Von deinem Trainer", trainerProgramList().map((x) => ({ name: x.name, blocks: neuroStripBlocks(comboBlocksFromDef(x.def)) })).filter((x) => x.blocks.length)],
       ["In der App", appProgramList().map((x) => ({ name: x.name, blocks: comboBlocksFromDef(x.def) }))],
     ];
     groups.forEach(([label, items]) => {
@@ -21281,7 +21309,7 @@
   }
   $("comboInsertGroup").addEventListener("toggle", () => { if ($("comboInsertGroup").open) renderComboInsertList(); });
   function openComboScreen(seed) {
-    comboDraftBlocks = seed ? deepCopy(seed.blocks) : [];
+    comboDraftBlocks = seed ? neuroStripBlocks(deepCopy(seed.blocks)) : [];
     comboSavedAll = false;
     setComboEditing(null, seed ? `Kopie von „${seed.name}“. Das Original bleibt, wie es ist. Speichere deine Version unter eigenem Namen.` : "");
     comboAdaptName = seed ? `${seed.name} (eigene)`.slice(0, 40) : "";
@@ -26586,10 +26614,21 @@
       desc: "Damit klebst du ein Kreuz oder einen Stern auf den Boden. Malerkrepp lässt sich leicht wieder ablösen.", link: "" },
     { id: "glasses", test: true, name: "Rot-Grün-Brille",
       desc: "Eine Brille mit einem roten und einem grünen Glas. Vor dem ersten Training stellst du sie in der App einmal ein.", link: "" },
+    // Neuro-Aktivierung (2026-10-08): `neuro: true` = only with that area unlocked.
+    { id: "vibration", neuro: true, name: "Vibrationsgerät",
+      desc: "Ein kleines, handliches Vibrationsgerät mit glattem Aufsatz, z. B. ein Z-Vibe.", link: "" },
+    { id: "massageball", neuro: true, name: "Massageball oder Massagepilz",
+      desc: "Ein fester Ball mit Noppen (Igelball) oder ein Massagepilz, etwa so groß wie ein Tennisball.", link: "" },
+    // Prepared for a later exercise (no exercise yet, Fabian 08.10.).
+    { id: "bonephones", neuro: true, name: "Knochenschall-Kopfhörer",
+      desc: "Kopfhörer, die den Ton über die Knochen vor dem Ohr übertragen; das Ohr bleibt frei. Übungen dazu folgen.", link: "" },
   ];
   // HILFSMITTEL keys that are not VT exercise ids: title + opener.
   const GEAR_EX_OPEN = {
     farbbrille: { title: "Jedes Auge zählt", open: () => { $("eyecountOpenBtn").click(); eyecountReturnScreen = "gearScreen"; } },
+    "neuro-vibration": { title: "Vibration links / rechts", open: () => openNeuroReady("vibration") },
+    "neuro-ball-fuss": { title: "Massageball: Fußsohlen", open: () => openNeuroReady("ball-fuss") },
+    "neuro-ball-hand": { title: "Massageball: Hände", open: () => openNeuroReady("ball-hand") },
   };
   function gearExercises(itemId) {
     return Object.keys(HILFSMITTEL).filter((k) => (HILFSMITTEL[k].gear || []).includes(itemId)).map((k) => {
@@ -26604,7 +26643,7 @@
   }
   let gearReturnScreen = "moreScreen";
   function renderGearScreen() {
-    const items = GEAR_ITEMS.filter((g) => !g.test || isTestUnlocked());
+    const items = GEAR_ITEMS.filter((g) => (!g.test || isTestUnlocked()) && (!g.neuro || neuroUnlocked()));
     const card = (g) => {
       const exs = gearExercises(g.id);
       return `<div class="gear-card" data-gear="${g.id}">
@@ -32630,6 +32669,7 @@
     if (k === "combo") return "combo";
     if (k === "free") return "free";
     if (k === "optodrum") return "activation";
+    if (k === "neuro") return "neuro";
     return "test";
   }
   // Planned + extra entries of a date, sorted, with done state.
@@ -32693,6 +32733,7 @@
     if (area === "nat") NAT_SUBS.forEach(([k, t]) => opts.push({ v: "nat:" + k, t }));
     if (area === "free") freeAllBlocks().forEach((b) => opts.push({ v: "free:" + b.id, t: b.title }));
     if (area === "activation") Object.entries(ACTIVATION_EXERCISES).forEach(([k, x]) => opts.push({ v: "act:" + k, t: x.title }));
+    if (area === "neuro" && neuroUnlocked()) Object.entries(NEURO_EXERCISES).forEach(([k, x]) => opts.push({ v: "neuro:" + k, t: x.title }));
     if (area === "combo") { opts.length = 0; comboSavedStore.load().forEach((c) => opts.push({ v: "combo:" + c.id, t: c.name })); if (!opts.length) opts.push({ v: "", t: "Noch kein Kombi-Programm gespeichert" }); }
     return opts;
   }
@@ -32702,6 +32743,7 @@
     if (e.what && e.what.startsWith("nat:")) { const n = NAT_SUBS.find(([k]) => k === e.what.slice(4)); if (n) return n[1]; }
     if (e.what && e.what.startsWith("free:")) { const b = freeFind(e.what.slice(5)); if (b) return b.title; }
     if (e.what && e.what.startsWith("act:") && ACTIVATION_EXERCISES[e.what.slice(4)]) return ACTIVATION_EXERCISES[e.what.slice(4)].title;
+    if (e.what && e.what.startsWith("neuro:") && NEURO_EXERCISES[e.what.slice(6)]) return NEURO_EXERCISES[e.what.slice(6)].title;
     if (e.what && e.what.startsWith("combo:")) { const c = comboSavedStore.load().find((x) => x.id === e.what.slice(6)); return c ? c.name : "Kombi-Programm"; }
     if (e.code) return `${AREA_BY_KEY[e.area].short} · Code ${e.code}`;
     return AREA_BY_KEY[e.area].label;
@@ -32709,6 +32751,7 @@
   function goArea(area) {
     const sec = AREA_TO_SECTION[area] || "visual";
     if (sec === "test" && !readJSON(TEST_UNLOCK_KEY, false)) { activateSectionTab("visual"); showScreen("home"); return; }
+    if (sec === "neuro" && !neuroUnlocked()) { activateSectionTab("today"); showScreen("todayHome"); return; }
     activateSectionTab(sec);
     showScreen(AREA_BY_KEY[area] ? AREA_BY_KEY[area].screen : sec === "test" ? "testHome" : "home");
   }
@@ -32731,6 +32774,8 @@
       if (freeFind(e.what.slice(5))) openFreeReady(e.what.slice(5));
     } else if (e.what && e.what.startsWith("act:")) {
       openActivationExercise(e.what.slice(4));
+    } else if (e.what && e.what.startsWith("neuro:")) {
+      if (neuroUnlocked() && NEURO_EXERCISES[e.what.slice(6)]) openNeuroReady(e.what.slice(6));
     } else if (e.what && e.what.startsWith("ex:")) {
       const card = document.querySelector(`#home .excard[data-exercise="${CSS.escape(e.what.slice(3))}"]`);
       if (card) card.click();
@@ -32938,6 +32983,7 @@
     if (natSub) { startEntry({ area: "nat", what: "nat:" + natSub }); return; }
     if (h.kind === "free" && h.freeId && freeFind(h.freeId)) { startEntry({ area: "free", what: "free:" + h.freeId }); return; }
     if (h.kind === "optodrum") { startEntry({ area: "activation", what: "act:optodrum" }); return; }
+    if (h.kind === "neuro") { startEntry({ area: "neuro", what: h.neuroEx ? "neuro:" + h.neuroEx : "" }); return; }
     if (area === "combo") { activateSectionTab("visual"); showScreen("home"); openComboScreen(); return; }
     goArea(area);
   }
@@ -33649,7 +33695,7 @@
   $("moreSettingsBtn").addEventListener("click", openMasterSettings);
   $("moreTipsBtn").addEventListener("click", () => els.tipsBtn.click());
   const NAV_TAB_OF = { todayHome: "today", planScreen: "today", myPlanScreen: "today", trainingHub: "training", progressScreen: "progress", moreScreen: "more", gearScreen: "more" };
-  const AREA_HOME_IDS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "activationHome"];
+  const AREA_HOME_IDS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "activationHome", "neuroHome"];
   const TEST_TILE = { color: "#5c6b73", label: "Test", text: "Neue Übungen zum Ausprobieren.",
     icon: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' };
   const HUB_CORE = ["visual", "breath", "nat", "movement"];
@@ -33659,17 +33705,22 @@
   const HUB_TEST_MARK = ["movement"];
   function renderHubAreaGrid() {
     const grid = $("hubAreaGrid");
-    const tiles = PLAN_AREAS.map((a) => ({ key: a.key, ...a }));
+    // Neuro-Aktivierung (2026-10-08) gets its own row "Für dich freigeschaltet"
+    // under the core tiles, only when unlocked; it never takes a core place.
+    const tiles = PLAN_AREAS.filter((a) => a.key !== "neuro").map((a) => ({ key: a.key, ...a }));
+    const unlockedTiles = neuroUnlocked() ? [NEURO_AREA] : [];
     if (readJSON(TEST_UNLOCK_KEY, false)) tiles.push({ key: "test", ...TEST_TILE });
     // Fabian 2026-10-05 (Entwurf E2): the four core areas as tinted 2x2
     // tiles, below them "Dazu: dein klassisches Training" with smaller
     // tiles (Workout, Cardio, Eigenes Training, Test when unlocked).
     const tile = (a, core) => `<button type="button" class="area-tile${core ? " hub-core-tile" : ""}" data-area="${a.key}"${core ? ` style="--tile-c:${a.color}"` : ""}>
       <span class="area-icon" style="background:${a.color}"><svg viewBox="0 0 24 24" aria-hidden="true">${a.icon}</svg></span>
-      ${core ? "" : '<span class="t-wrap">'}<span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(HUB_TEXT[a.key] || (a.key === "nat" ? "Neuroathletik: " + a.text : a.text))}</span>${a.key === "test" ? '<span class="test-unlock-badge">Mit Code freigeschaltet</span>' : ""}${core ? "" : "</span>"}${HUB_TEST_MARK.includes(a.key) ? '<span class="hub-test-mark">Test</span>' : ""}</button>`;
+      ${core ? "" : '<span class="t-wrap">'}<span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(HUB_TEXT[a.key] || (a.key === "nat" ? "Neuroathletik: " + a.text : a.text))}</span>${a.key === "test" || a.key === "neuro" ? '<span class="test-unlock-badge">Mit Code freigeschaltet</span>' : ""}${core ? "" : "</span>"}${HUB_TEST_MARK.includes(a.key) ? '<span class="hub-test-mark">Test</span>' : ""}</button>`;
     const core = tiles.filter((a) => HUB_CORE.includes(a.key)), extra = tiles.filter((a) => !HUB_CORE.includes(a.key));
     grid.innerHTML = `<div class="hub-group-title hub-first">Unser Schwerpunkttraining</div><p class="hub-sub">Neurozentrierte Grundlagen gezielt trainieren.</p>
       <div class="area-grid hub-core">${core.map((a) => tile(a, true)).join("")}</div>
+      ${unlockedTiles.length ? `<div class="hub-group-title">Für dich freigeschaltet</div><p class="hub-sub">Von deinem Trainer, nur mit Code.</p>
+      <div class="area-grid hub-extra hub-unlocked">${unlockedTiles.map((a) => tile(a, false)).join("")}</div>` : ""}
       <div class="hub-group-title">Dazu: dein klassisches Training</div><p class="hub-sub">Frei kombinierbar, auch mit den Bereichen oben.</p>
       <div class="area-grid hub-extra">${extra.map((a) => tile(a, false)).join("")}</div>`;
     // Kombi tile icon (Fabian 07.10., Variante H): one square per core area in
@@ -34365,7 +34416,8 @@
     if (tab === "area") return PLAN_AREAS.map((a) => ({ area: a.key, what: "", t: a.label, minutes: 15 }));
     if (tab === "ex") return visualExercises().map((x) => ({ area: "visual", what: "ex:" + x.id, t: x.title, minutes: 10 }))
       .concat(NAT_SUBS.map(([k, t]) => ({ area: "nat", what: "nat:" + k, t, minutes: 10 })))
-      .concat(Object.entries(ACTIVATION_EXERCISES).map(([k, x]) => ({ area: "activation", what: "act:" + k, t: x.title, minutes: 5 })));
+      .concat(Object.entries(ACTIVATION_EXERCISES).map(([k, x]) => ({ area: "activation", what: "act:" + k, t: x.title, minutes: 5 })))
+      .concat(neuroUnlocked() ? Object.entries(NEURO_EXERCISES).map(([k, x]) => ({ area: "neuro", what: "neuro:" + k, t: x.title, minutes: 5 })) : []);
     return freeAllBlocks().map((b) => ({ area: "free", what: "free:" + b.id, t: b.title, minutes: 10 }));
   }
   function renderPlanTray() {
@@ -35696,6 +35748,535 @@
     };
   }
 
+  // ==== Neuro-Aktivierung (Idee 68, Fabian 2026-10-08: "Neuro-Aktivierung") ====
+  // A hidden 9th area `neuro`: guided activations with equipment (Vibration,
+  // Massageball, Gelenke kreisen). Only visible after a trainer code of type
+  // "neuro-unlock" (state NEURO_UNLOCK_KEY; tests: fwmc-test-neuro). Hidden =
+  // no hub tile, no ?bereich=, no Wochenplan / Kombi entries. A trainer Kombi
+  // code may still carry neuro blocks ({domain:"neuro", ex, prefs}); for a
+  // client without the unlock they play inside that run as "Spezialübung von
+  // deinem Trainer" and can never be copied into own Kombis or plans.
+  // One generic step player (#neuroPlayer): instruction, side cue (links /
+  // rechts / beide / abwechselnd / Richtung), time per step, optional Takt,
+  // Durchgänge, Umsetzen between steps. Templates: NEURO_EXERCISES.
+  // Details: docs/notes/37-neuro-aktivierung.md (incl. texts Fabian reviews).
+  const NEURO_UNLOCK_KEY = "fwmc-neuro-unlocked-v1";
+  const NEURO_PREFS_KEY = "fwmc-neuro-prefs-v1";
+  const NEURO_SPECIAL_LABEL = "Spezialübung von deinem Trainer";
+  function neuroUnlocked() {
+    if (readJSON(NEURO_UNLOCK_KEY, false)) return true;
+    return !!(navigator.webdriver && readJSON("fwmc-test-neuro", false));
+  }
+  const NEURO_AREA = { key: "neuro", label: "Neuro-Aktivierung", short: "Neuro", color: "#8a4b2a", screen: "neuroHome",
+    text: "Geführt mit Hilfsmitteln, für dich freigeschaltet.",
+    icon: '<circle cx="12" cy="12" r="2.6" fill="#fff"/><path d="M8.2 8.2a5.4 5.4 0 0 0 0 7.6M15.8 8.2a5.4 5.4 0 0 1 0 7.6M5.4 5.4a9.4 9.4 0 0 0 0 13.2M18.6 5.4a9.4 9.4 0 0 1 0 13.2" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' };
+  // Simple stick figure (same style as STRETCH_ICONS) with the joint marked.
+  const NEURO_FIG = '<circle cx="12" cy="3.6" r="2" fill="#fff"/><path d="M12 5.6V13M12 7.6l-3.4 3-1.4 3.6M12 7.6l3.4 3 1.4 3.6M12 13l-2 4-0.6 4M12 13l2 4 0.6 4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>';
+  const neuroJoint = (pts) => NEURO_FIG + pts.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r || 2.1}" fill="none" stroke="#ffd166" stroke-width="1.3" stroke-dasharray="2 1.4"/>`).join("");
+  const NEURO_ICONS = {
+    kopf: neuroJoint([[12, 3.6, 3.3]]),
+    schulter: neuroJoint([[9.6, 7.8], [14.4, 7.8]]),
+    ellbogen: neuroJoint([[8.6, 10.6], [15.4, 10.6]]),
+    hand: neuroJoint([[7.2, 14.2], [16.8, 14.2]]),
+    huefte: neuroJoint([[12, 13, 2.6]]),
+    knie: neuroJoint([[10, 17], [14, 17]]),
+    fuss: neuroJoint([[9.4, 21], [14.6, 21]]),
+  };
+  // side: lr = left and right one after the other (order = Feineinstellung),
+  // dir = two directions one after the other (dirs), beide = both at once,
+  // wechsel = alternating (side cue flips every altS), none = no side.
+  // Texts are neutral (no efficacy/therapy claims) - Fabian reviews them
+  // (docs/notes/37 "Texte von Fabian prüfen").
+  const NEURO_EXERCISES = {
+    vibration: {
+      title: "Vibration links / rechts", tag: "Vibration", gear: ["vibration"],
+      desc: "Ein Vibrationsgerät nacheinander an verschiedene Stellen, Seite für Seite.",
+      intro: "Halte das Vibrationsgerät mit leichtem Druck an die genannte Stelle. Die App sagt dir, welche Seite dran ist, und zählt die Zeit.",
+      need: "Du brauchst: ein kleines Vibrationsgerät (z. B. Z-Vibe) mit glattem Aufsatz.",
+      safety: "Nicht an die Augen, nicht vorne an den Hals und nicht auf Wunden halten. Leichter Druck reicht.",
+      defaults: { stepS: 20, moveS: 5 },
+      icon: '<path d="M9 4.5h6v15H9z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M5.5 8.5v7M18.5 8.5v7M3 10.5v3M21 10.5v3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>',
+      steps: [
+        { t: "Wange, außen neben dem Mundwinkel", side: "lr" },
+        { t: "Kiefergelenk, direkt vor dem Ohr", side: "lr" },
+        { t: "Nacken, seitlich am Haaransatz", side: "lr" },
+        { t: "Handinnenfläche", side: "lr" },
+        { t: "Fußsohle", side: "lr" },
+      ],
+    },
+    "ball-fuss": {
+      title: "Massageball: Fußsohlen", tag: "Füße", gear: ["massageball"],
+      desc: "Mit dem Massageball die Fußsohlen wach machen, im Stehen oder Sitzen.",
+      intro: "Stell dich hin oder setz dich auf einen Stuhl, den Ball unter dem Fuß. Rolle mit so viel Druck, wie es angenehm ist.",
+      need: "Du brauchst: einen Massageball oder Massagepilz (Igelball geht auch).",
+      safety: "Im Stehen etwas zum Festhalten in Reichweite haben (Wand, Stuhllehne).",
+      defaults: { stepS: 30, moveS: 5 },
+      icon: '<path d="M6 19c0-6 2-12 6-13 3-.7 4 2 3.5 5S13 16 14 19" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><circle cx="16.5" cy="17.5" r="3" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="1.6 1.3"/>',
+      steps: [
+        { t: "Ball langsam von der Ferse zu den Zehen rollen", side: "lr" },
+        { t: "Ball unter dem Fußballen kreisen", side: "lr" },
+        { t: "Ball unter dem Fußgewölbe: Druck halten und lösen", side: "lr" },
+        { t: "Beide Füße barfuß auf den Boden, Zehen spreizen und wieder lösen", side: "beide" },
+      ],
+    },
+    "ball-hand": {
+      title: "Massageball: Hände", tag: "Hände", gear: ["massageball"],
+      desc: "Hände und Finger mit dem Massageball aktivieren, gut im Sitzen.",
+      intro: "Setz dich bequem hin und nimm den Ball in die Hand. Arbeite mit leichtem bis mittlerem Druck.",
+      need: "Du brauchst: einen Massageball oder Massagepilz (Igelball geht auch).",
+      safety: "Nicht über schmerzende oder verletzte Stellen rollen.",
+      defaults: { stepS: 30, moveS: 0 },
+      icon: '<path d="M8 20v-6.5L5.6 11a1.4 1.4 0 0 1 2-2L9 10.3V5a1.3 1.3 0 0 1 2.6 0v4.5M11.6 9V4a1.3 1.3 0 0 1 2.6 0v5M14.2 9.2V5.6a1.3 1.3 0 0 1 2.6 0V15c0 3-2 5-4.6 5H8" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+      steps: [
+        { t: "Ball zwischen beiden Handflächen rollen", side: "beide" },
+        { t: "Ball in der Hand fest drücken und wieder lösen", side: "lr" },
+        { t: "Ball über den Handrücken rollen", side: "lr" },
+        { t: "Ball mit den Fingerspitzen rollen, Finger für Finger", side: "lr" },
+        { t: "Ball von Hand zu Hand geben", side: "wechsel" },
+      ],
+    },
+    gelenke: {
+      title: "Gelenke kreisen", tag: "ohne Hilfsmittel", gear: [],
+      desc: "Alle großen Gelenke nacheinander langsam kreisen, ohne Hilfsmittel.",
+      intro: "Stell dich hüftbreit hin. Kreise jedes Gelenk langsam und nur so weit, wie es angenehm ist. Die App sagt dir Gelenk und Richtung an.",
+      need: "",
+      safety: "Den Kopf nur im Halbkreis vorne bewegen, nicht nach hinten in den Nacken.",
+      defaults: { stepS: 20, moveS: 0 },
+      icon: neuroJoint([[12, 13, 2.6]]),
+      steps: [
+        { t: "Kopf im Halbkreis von Schulter zu Schulter", side: "none", icon: "kopf" },
+        { t: "Schultern kreisen", side: "dir", dirs: ["nach hinten", "nach vorne"], icon: "schulter" },
+        { t: "Ellbogen kreisen", side: "lr", icon: "ellbogen" },
+        { t: "Handgelenke kreisen", side: "dir", dirs: ["nach außen", "nach innen"], icon: "hand" },
+        { t: "Hüfte kreisen", side: "dir", dirs: ["rechts herum", "links herum"], icon: "huefte" },
+        { t: "Knie kreisen, Hände auf den Knien", side: "dir", dirs: ["rechts herum", "links herum"], icon: "knie" },
+        { t: "Fußgelenke kreisen, Fußspitze am Boden", side: "lr", icon: "fuss" },
+      ],
+    },
+  };
+  const NEURO_DEFAULTS = { stepS: 30, reps: 1, order: "lr", altS: 4, moveS: 5, takt: false, bpm: 60 };
+  const neuroClamp = (v, lo, hi, d) => (Number.isFinite(Number(v)) ? Math.min(hi, Math.max(lo, Number(v))) : d);
+  function normalizeNeuroPrefs(p, ex) {
+    const d = { ...NEURO_DEFAULTS, ...((NEURO_EXERCISES[ex] || {}).defaults || {}) };
+    p.stepS = Math.round(neuroClamp(p.stepS, 10, 120, d.stepS) / 5) * 5;
+    p.reps = Math.round(neuroClamp(p.reps, 1, 3, d.reps));
+    if (p.order !== "lr" && p.order !== "rl") p.order = d.order;
+    p.altS = Math.round(neuroClamp(p.altS, 2, 15, d.altS));
+    p.moveS = Math.round(neuroClamp(p.moveS, 0, 30, d.moveS) / 5) * 5;
+    if (typeof p.takt !== "boolean") p.takt = d.takt;
+    p.bpm = Math.round(neuroClamp(p.bpm, 30, 120, d.bpm) / 5) * 5;
+    return p;
+  }
+  function neuroDefaultsOf(ex) { return normalizeNeuroPrefs({ ...NEURO_DEFAULTS, ...((NEURO_EXERCISES[ex] || {}).defaults || {}) }, ex); }
+  const neuroAllPrefs = readJSON(NEURO_PREFS_KEY, {}) || {};
+  function neuroPrefsOf(ex) {
+    const p = normalizeNeuroPrefs({ ...neuroDefaultsOf(ex), ...(neuroAllPrefs[ex] || {}) }, ex);
+    neuroAllPrefs[ex] = p;
+    return p;
+  }
+  function saveNeuroPrefs() { writeJSON(NEURO_PREFS_KEY, neuroAllPrefs); }
+  function neuroBlockPrefs(block) { return normalizeNeuroPrefs({ ...neuroDefaultsOf(block.ex), ...deepCopy((block && block.prefs) || {}) }, block.ex); }
+  const NEURO_SIDE_WORD = { L: "Links", R: "Rechts" };
+  // One template + prefs -> the run's steps [{t, label, say, side, icon, alt}].
+  function neuroSteps(ex, p) {
+    const x = NEURO_EXERCISES[ex];
+    if (!x) return [];
+    const first = p.order === "rl" ? ["R", "L"] : ["L", "R"];
+    const out = [];
+    for (let r = 0; r < p.reps; r++) {
+      x.steps.forEach((s) => {
+        if (s.side === "lr") first.forEach((sd) => out.push({ t: s.t, label: NEURO_SIDE_WORD[sd], say: NEURO_SIDE_WORD[sd].toLowerCase(), icon: s.icon, rep: r }));
+        else if (s.side === "dir") (s.dirs || []).forEach((dd) => out.push({ t: s.t, label: dd.charAt(0).toUpperCase() + dd.slice(1), say: dd, icon: s.icon, rep: r }));
+        else if (s.side === "beide") out.push({ t: s.t, label: "Beide Seiten", say: "beide Seiten", icon: s.icon, rep: r });
+        else if (s.side === "wechsel") out.push({ t: s.t, label: "Abwechselnd", say: "abwechselnd", alt: first.slice(), icon: s.icon, rep: r });
+        else out.push({ t: s.t, label: "", say: "", icon: s.icon, rep: r });
+      });
+    }
+    return out;
+  }
+  function neuroTotalS(ex, p) {
+    const n = neuroSteps(ex, p).length;
+    return n * p.stepS + Math.max(0, n - 1) * p.moveS;
+  }
+  function neuroMeta(ex, p) {
+    const n = neuroSteps(ex, p).length;
+    return `${countLabel(n, "Schritt", "Schritte")} · ${p.stepS} s · ca. ${fmtMinutes(neuroTotalS(ex, p))}` + (p.reps > 1 ? ` · ${p.reps} Durchgänge` : "");
+  }
+  function neuroTitle(ex) { return (NEURO_EXERCISES[ex] || {}).title || "Neuro-Aktivierung"; }
+
+  // ---- area visibility (PLAN_AREAS / hub / gear cards follow the unlock) ----
+  AREA_BY_KEY.neuro = NEURO_AREA; // labels/colours of existing entries always resolve
+  AREA_TO_SECTION.neuro = "neuro";
+  function syncNeuroArea() {
+    const on = neuroUnlocked();
+    const i = PLAN_AREAS.findIndex((a) => a.key === "neuro");
+    if (on && i < 0) PLAN_AREAS.push(NEURO_AREA);
+    if (!on && i >= 0) PLAN_AREAS.splice(i, 1);
+    if (els.trainingHub) delete els.trainingHub.dataset.rendered;
+  }
+  syncNeuroArea();
+  function neuroTileHtml(id) {
+    const x = NEURO_EXERCISES[id];
+    return `<button class="nat-tile neuro-tile" type="button" data-neuro-ex="${id}">
+      <div class="icon-badge neuro-badge"><svg viewBox="0 0 24 24" aria-hidden="true">${x.icon}</svg></div>
+      <h3>${esc(x.title)}</h3><p>${esc(x.desc)}</p><span class="tag">${esc(x.tag)}</span></button>`;
+  }
+  $("neuroGrid").innerHTML = Object.keys(NEURO_EXERCISES).map(neuroTileHtml).join("");
+  $("neuroGrid").addEventListener("click", (e) => {
+    const t = e.target.closest("[data-neuro-ex]");
+    if (t) openNeuroReady(t.dataset.neuroEx);
+  });
+  function renderNeuroHome() {
+    const n = $("neuroUnlockNotice");
+    if (n.dataset.show === "1") { n.hidden = false; n.dataset.show = ""; } else n.hidden = true;
+    renderHistory();
+  }
+  const NEURO_CODE_CTX = { goBtn: $("neuroProgramGoBtn"), errorEl: $("neuroProgramError"), homeScreen: "neuroHome" };
+  function goNeuroCode() { const code = $("neuroProgramCodeInput").value.trim(); if (code) openProgramIntro(code, NEURO_CODE_CTX); }
+  $("neuroProgramGoBtn").addEventListener("click", goNeuroCode);
+  $("neuroProgramCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") goNeuroCode(); });
+  // Code type "neuro-unlock" ({type, name, lock?}): unlocks (or with
+  // lock:true hides again) the area on this device; nothing else is stored.
+  function applyNeuroUnlockCode(def) {
+    if (def.lock) {
+      try { localStorage.removeItem(NEURO_UNLOCK_KEY); } catch (e) {}
+      syncNeuroArea();
+      activateSectionTab("today");
+      showScreen(bottomNavOn ? "trainingHub" : "todayHome");
+      return;
+    }
+    const was = readJSON(NEURO_UNLOCK_KEY, false);
+    writeJSON(NEURO_UNLOCK_KEY, true);
+    syncNeuroArea();
+    $("neuroUnlockNotice").textContent = was ? "Neuro-Aktivierung ist für dich freigeschaltet." : "Neu für dich freigeschaltet: Neuro-Aktivierung.";
+    $("neuroUnlockNotice").dataset.show = "1";
+    activateSectionTab("neuro");
+    showScreen("neuroHome");
+  }
+
+  // ---- ready screen (Einzeln) + Kombi capture ----
+  let neuroEx = "vibration";
+  let comboNeuroCapture = null; // { prefs, editIndex } while a Kombi-Baustein is captured
+  function neuroCurPrefs() { return comboNeuroCapture ? comboNeuroCapture.prefs : neuroPrefsOf(neuroEx); }
+  function neuroParse(f, raw) { return f === "takt" ? raw === "1" : f === "order" ? raw : Number(raw); }
+  function neuroBind(root, set) {
+    root.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-nr-f]");
+      if (b && root.contains(b)) set(b.dataset.nrF, neuroParse(b.dataset.nrF, b.dataset.nrV));
+    });
+    root.querySelectorAll("input[data-nr-r]").forEach((inp) => inp.addEventListener("input", () => set(inp.dataset.nrR, Number(inp.value))));
+  }
+  function neuroSyncControls(root, p, ex) {
+    root.querySelectorAll("[data-nr-f]").forEach((b) => {
+      const f = b.dataset.nrF;
+      const cur = f === "takt" ? (p.takt ? "1" : "0") : String(p[f]);
+      setActive(b, cur === b.dataset.nrV);
+    });
+    root.querySelectorAll("input[data-nr-r]").forEach((inp) => { inp.value = p[inp.dataset.nrR]; });
+    const out = { stepS: `${p.stepS} s`, altS: `${p.altS} s`, moveS: p.moveS ? `${p.moveS} s` : "direkt weiter", bpm: `${p.bpm} pro Min.`,
+      total: `${countLabel(neuroSteps(ex, p).length, "Schritt", "Schritte")} · zusammen ca. ${fmtMinutes(neuroTotalS(ex, p))}` };
+    root.querySelectorAll("[data-nr-out]").forEach((el) => { const t = out[el.dataset.nrOut]; if (t != null && el.textContent !== t) el.textContent = t; });
+    const hasAlt = (NEURO_EXERCISES[ex] || { steps: [] }).steps.some((s) => s.side === "wechsel");
+    root.querySelectorAll("[data-nr-show]").forEach((el) => { el.hidden = el.dataset.nrShow === "takt" ? !p.takt : el.dataset.nrShow === "hasAlt" ? !hasAlt : false; });
+  }
+  const neuroUi = { title: $("neuroReadyTitle"), desc: $("neuroReadyDesc"), controls: $("neuroReadyControls"), start: $("neuroStartBtn") };
+  function renderNeuroReadySteps() {
+    const steps = neuroSteps(neuroEx, { ...neuroCurPrefs(), reps: 1 });
+    $("neuroStepCount").textContent = countLabel(steps.length, "Schritt", "Schritte");
+    $("neuroReadySteps").innerHTML = steps.map((s, i) => `<div class="chapter-row"><span class="chapter-main" style="cursor:default"><span class="num">${i + 1}</span>` +
+      (s.icon ? `<span class="free-ready-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${NEURO_ICONS[s.icon]}</svg></span>` : "") +
+      `<span class="info"><strong>${esc(s.t)}</strong>${s.label ? `<span>${esc(s.label)}</span>` : ""}</span></span></div>`).join("");
+  }
+  function syncNeuroReadyUI() {
+    neuroSyncControls(neuroUi.controls, neuroCurPrefs(), neuroEx);
+    renderNeuroReadySteps();
+  }
+  neuroBind(neuroUi.controls, (f, v) => {
+    const p = neuroCurPrefs();
+    p[f] = v;
+    normalizeNeuroPrefs(p, neuroEx);
+    if (!comboNeuroCapture) saveNeuroPrefs();
+    syncNeuroReadyUI();
+  });
+  function openNeuroReady(ex, opts) {
+    if (!NEURO_EXERCISES[ex]) ex = "vibration";
+    const capture = !!(opts && opts.capture);
+    if (!capture && !neuroUnlocked()) { showScreen("neuroHome"); return; }
+    neuroEx = ex;
+    const x = NEURO_EXERCISES[ex];
+    neuroUi.title.textContent = capture ? `Baustein: ${x.title}` : x.title;
+    neuroUi.desc.textContent = capture ? "Stelle Dauer, Durchgänge und Takt für diesen Baustein ein. Deine eigenen Einstellungen bleiben, wie sie sind." : x.intro;
+    neuroUi.start.textContent = capture ? "Baustein übernehmen" : "Training starten";
+    $("neuroHilfsmittel").hidden = !x.need;
+    $("neuroHilfsmittelText").textContent = x.need;
+    $("neuroSafetyText").textContent = `${x.safety} Arbeite nur so lange und mit so viel Druck, wie es angenehm ist. Bei Schmerzen, Taubheit, Schwindel oder Unwohlsein sofort aufhören.`;
+    $("neuroSaveForm").hidden = true;
+    $("neuroSaveBtn").hidden = false;
+    syncNeuroReadyUI();
+    renderNeuroSaved();
+    showScreen("neuroReady");
+  }
+  $("neuroBackToHome").addEventListener("click", () => {
+    if (comboNeuroCapture) { comboNeuroCapture = null; showScreen("comboScreen"); return; }
+    showScreen("neuroHome");
+  });
+  neuroUi.start.addEventListener("click", () => {
+    if (comboNeuroCapture) { commitNeuroComboCapture(); return; }
+    startNeuroRun(neuroEx, null);
+  });
+  // ---- presets ("Aktuelle Einstellung speichern", per exercise) ----
+  const neuroStore = makePresetStore("fwmc-neuro-saved-v1"); // [{ id, name, ex, prefs }]
+  function renderNeuroSaved() {
+    renderPresetList(neuroStore, $("neuroSavedList"), $("neuroSavedGroup"), (e) => e.ex === neuroEx,
+      (e) => neuroMeta(e.ex, normalizeNeuroPrefs({ ...neuroDefaultsOf(e.ex), ...e.prefs }, e.ex)),
+      (entry) => {
+        const p = neuroCurPrefs();
+        Object.assign(p, normalizeNeuroPrefs({ ...neuroDefaultsOf(entry.ex), ...deepCopy(entry.prefs) }, entry.ex));
+        if (!comboNeuroCapture) saveNeuroPrefs();
+        syncNeuroReadyUI();
+        if (!comboNeuroCapture) neuroUi.start.click();
+      }, { confirmDelete: true });
+  }
+  wirePresetSaveForm({
+    saveBtn: $("neuroSaveBtn"), form: $("neuroSaveForm"), nameInput: $("neuroSaveNameInput"),
+    cancelBtn: $("neuroSaveCancelBtn"), confirmBtn: $("neuroSaveConfirmBtn"),
+    defaultName: () => `Eigene Einstellung ${new Date().toLocaleDateString("de-DE")}`,
+    onSave: (name) => {
+      const list = neuroStore.load();
+      list.push({ id: String(Date.now()), name, ex: neuroEx, prefs: deepCopy(neuroCurPrefs()) });
+      neuroStore.save(list);
+      renderNeuroSaved();
+    },
+  });
+  // ---- Kombi-Baustein (only offered while the area is unlocked) ----
+  function openNeuroComboCapture(ex, block, editIndex) {
+    const e = block ? block.ex : ex;
+    comboNeuroCapture = { prefs: block ? neuroBlockPrefs(block) : deepCopy(neuroPrefsOf(e)), editIndex: editIndex ?? null };
+    openNeuroReady(e, { capture: true });
+  }
+  function commitNeuroComboCapture() {
+    const cap = comboNeuroCapture;
+    const block = { domain: "neuro", ex: neuroEx, prefs: deepCopy(cap.prefs) };
+    if (cap.editIndex != null && comboDraftBlocks[cap.editIndex]) {
+      block.pauseAfterS = comboDraftBlocks[cap.editIndex].pauseAfterS;
+      comboDraftBlocks[cap.editIndex] = block;
+    } else comboDraftBlocks.push(block);
+    comboNeuroCapture = null;
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+  function comboNeuroCaptureEntries() {
+    if (!neuroUnlocked()) return [];
+    return Object.keys(NEURO_EXERCISES).map((ex) => ({ label: NEURO_EXERCISES[ex].title, meta: "Dauer, Durchgänge & Takt einstellen", open: () => openNeuroComboCapture(ex, null, null) }));
+  }
+  // Trainer programmes inserted into an own Kombi: without the unlock the
+  // Spezialübung stays inside the trainer's code only.
+  function neuroStripBlocks(blocks) { return neuroUnlocked() ? blocks : blocks.filter((b) => !b || b.domain !== "neuro"); }
+  function neuroBlockIsSpecial(block) { return !!block && block.domain === "neuro" && !neuroUnlocked(); }
+  function neuroDefHasSpecial(def) {
+    const bl = def && Array.isArray(def.blocks) ? def.blocks : [];
+    return !neuroUnlocked() && bl.some((b) => b && b.domain === "neuro");
+  }
+
+  // ---- the run ----
+  const neuroP = {
+    player: els.neuroPlayer, progress: $("neuroRunProgress"), title: $("neuroRunTitle"), special: $("neuroRunSpecial"), icon: $("neuroRunIcon"),
+    item: $("neuroRunItem"), side: $("neuroRunSide"), countdown: $("neuroRunCountdown"), next: $("neuroRunNext"),
+    bar: $("neuroPlayerBar"), pauseBtn: $("neuroPauseBtn"), backBtn: $("neuroBackBtn"), pauseOverlay: $("neuroPauseOverlay"),
+    pauseControls: $("neuroPauseControls"), done: $("neuroDonePanel"),
+  };
+  wireFullscreen({ player: neuroP.player, btn: $("neuroFsBtn"), hint: $("neuroFsHint"), hintOpen: $("neuroFsHintOpenBtn"), hintClose: $("neuroFsHintClose") });
+  let neuroRun = null; // { ex, p, steps, index, phase: "work"|"move", phaseT, startT, pausedAt, pausedMs, timer, own, special, beeped, nextBeat, altIdx }
+  let neuroLast = null;
+  function startNeuroRun(ex, prefsOverride, opts) {
+    if (!NEURO_EXERCISES[ex]) return false;
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    neuroP.done.hidden = true;
+    const p = normalizeNeuroPrefs({ ...neuroDefaultsOf(ex), ...deepCopy(prefsOverride || neuroPrefsOf(ex)) }, ex);
+    const now = performance.now();
+    const r = neuroRun = { ex, p, steps: neuroSteps(ex, p), index: 0, phase: "work", phaseT: now, startT: now, pausedAt: null, pausedMs: 0,
+      timer: null, own: !prefsOverride, special: !!(opts && opts.special), beeped: new Set(), nextBeat: 0, altIdx: -1 };
+    neuroLast = { ex, prefs: prefsOverride ? deepCopy(p) : null };
+    neuroP.title.textContent = neuroTitle(ex);
+    neuroP.special.hidden = !r.special;
+    neuroP.player.hidden = false;
+    neuroP.bar.hidden = false;
+    neuroP.pauseOverlay.hidden = true;
+    neuroP.pauseBtn.hidden = false;
+    requestWakeLock();
+    if (r.p.takt) silentSwitchHint();
+    neuroShow();
+    r.timer = setInterval(neuroTick, 100);
+    return true;
+  }
+  function neuroSideText(st, r, elapsed) {
+    if (!st.alt) return st.label;
+    const k = Math.floor(elapsed / r.p.altS) % 2;
+    return `Abwechselnd · ${NEURO_SIDE_WORD[st.alt[k]]}`;
+  }
+  function neuroShow() {
+    const r = neuroRun;
+    if (!r) return;
+    const n = r.steps.length;
+    const st = r.steps[r.index];
+    const moving = r.phase === "move";
+    r.beeped = new Set();
+    r.curDur = moving ? r.p.moveS : r.p.stepS; // a live change of stepS applies from the next step on
+    r.altIdx = -1;
+    r.nextBeat = 0;
+    neuroP.progress.textContent = `Schritt ${r.index + 1} von ${n}` + (r.p.reps > 1 ? ` · Durchgang ${st.rep + 1} von ${r.p.reps}` : "");
+    neuroP.item.textContent = moving ? `Gleich: ${st.t}` : st.t;
+    neuroP.item.classList.toggle("neuro-moving", moving);
+    neuroP.icon.hidden = !st.icon;
+    neuroP.icon.innerHTML = st.icon ? `<svg viewBox="0 0 24 24" aria-hidden="true">${NEURO_ICONS[st.icon]}</svg>` : "";
+    neuroP.side.hidden = !st.label;
+    neuroP.side.textContent = moving ? (st.label ? `Umsetzen · ${st.alt ? "abwechselnd" : st.label}` : "Umsetzen") : neuroSideText(st, r, 0);
+    neuroP.side.classList.toggle("neuro-moving", moving);
+    if (moving && !st.label) neuroP.side.hidden = false;
+    const nx = r.steps[r.index + 1];
+    neuroP.next.textContent = nx && !moving ? `Als Nächstes: ${nx.t}${nx.label ? " · " + nx.label : ""}` : "";
+    neuroP.next.hidden = !(nx && !moving);
+    $("neuroSkipBtn").setAttribute("aria-label", r.index < n - 1 ? "Weiter zum nächsten Schritt" : "Beenden");
+    if (moving) cueSay(`Umsetzen. Gleich: ${st.t}${st.say ? ", " + st.say : ""}.`);
+    else cueSay(`${st.t}${st.say ? ". " + st.say : ""}.`);
+    window.__neuroLog = window.__neuroLog || [];
+    window.__neuroLog.push({ i: r.index, phase: r.phase, t: st.t, side: neuroP.side.textContent });
+    neuroTick();
+  }
+  function neuroTick() {
+    const r = neuroRun;
+    if (!r) return;
+    if (neuroP.player.hidden) { neuroStop(); return; }
+    if (r.pausedAt != null) return;
+    const st = r.steps[r.index];
+    const dur = r.curDur;
+    const el = (performance.now() - r.phaseT) / 1000;
+    const left = dur - el;
+    const txt = fmtClock(Math.max(0, left));
+    if (neuroP.countdown.textContent !== txt) neuroP.countdown.textContent = txt;
+    if (r.phase === "work" && st.alt) {
+      const k = Math.floor(el / r.p.altS);
+      if (k !== r.altIdx) {
+        if (r.altIdx >= 0) cueSay(NEURO_SIDE_WORD[st.alt[k % 2]]);
+        r.altIdx = k;
+        neuroP.side.textContent = neuroSideText(st, r, el);
+      }
+    }
+    if (r.phase === "work" && r.p.takt && left > 3.2) {
+      const beat = 60 / r.p.bpm;
+      if (el >= r.nextBeat) { playCueTickTone(); window.__neuroTicks = (window.__neuroTicks || 0) + 1; r.nextBeat = (Math.floor(el / beat) + 1) * beat; }
+    }
+    const sec = Math.ceil(left);
+    if (sec >= 1 && sec <= 3 && !r.beeped.has(sec)) { r.beeped.add(sec); playWorkoutBeep(false); }
+    if (left <= 0) { playWorkoutBeep(true); neuroAdvance(false); }
+  }
+  function neuroAdvance(skipped) {
+    const r = neuroRun;
+    if (!r) return;
+    if (r.phase === "move") { r.phase = "work"; r.phaseT = performance.now(); neuroShow(); return; }
+    if (r.index >= r.steps.length - 1) { neuroFinish(!!skipped); return; }
+    r.index++;
+    r.phase = r.p.moveS > 0 && !skipped ? "move" : "work";
+    r.phaseT = performance.now();
+    neuroShow();
+  }
+  function neuroJump(i) {
+    const r = neuroRun;
+    if (!r) return;
+    r.index = Math.max(0, Math.min(r.steps.length - 1, i));
+    r.phase = "work";
+    r.phaseT = performance.now();
+    if (r.pausedAt != null) r.pausedAt = performance.now();
+    neuroShow();
+  }
+  $("neuroPrevBtn").addEventListener("click", () => { if (neuroRun) neuroJump(neuroRun.index - 1); });
+  $("neuroRestartBtn").addEventListener("click", () => { if (neuroRun) neuroJump(neuroRun.index); });
+  $("neuroSkipBtn").addEventListener("click", () => neuroAdvance(true));
+  wireSwipeNav(neuroP.player, { onLeft: () => $("neuroSkipBtn").click(), onRight: () => $("neuroPrevBtn").click() });
+  function neuroStop() {
+    const r = neuroRun;
+    if (r && r.timer) clearInterval(r.timer);
+    neuroRun = null;
+    neuroP.pauseOverlay.hidden = true;
+    releaseWakeLock();
+    $("neuroFsHint").hidden = true;
+    return r;
+  }
+  function neuroElapsedS(r) {
+    const end = r.pausedAt != null ? r.pausedAt : performance.now();
+    return Math.max(0, (end - r.startT - r.pausedMs) / 1000);
+  }
+  // aborted: "»" past the last step (like Eigenes Training). "Beenden" leaves
+  // no entry (single) or quits the Kombi.
+  function neuroFinish(aborted) {
+    const r = neuroStop();
+    if (!r) return;
+    const secs = Math.round(neuroElapsedS(r));
+    const title = `Neuro-Aktivierung · ${neuroTitle(r.ex)}`;
+    if (comboProgram) {
+      if (r.special) blockResultPush(comboProgram, neuroTitle(r.ex), `${NEURO_SPECIAL_LABEL} · ${fmtClock(secs)}`);
+      advanceComboProgram(secs);
+      return;
+    }
+    if (document.fullscreenElement === neuroP.player) document.exitFullscreen().catch(() => {});
+    neuroP.player.hidden = true;
+    const id = addHistory({ kind: "neuro", title, neuroEx: r.ex, seconds: secs,
+      note: aborted ? "abgebrochen" : `${countLabel(r.steps.length, "Schritt", "Schritte")} · ${r.p.stepS} s`, ...(aborted ? { aborted: true } : {}) });
+    renderRating($("neuroRating"), id, "Wie fühlst du dich jetzt?");
+    setDonePanelAborted(neuroP.done, aborted, "Neuro-Aktivierung beendet");
+    $("neuroDoneSummary").textContent = aborted ? `Abgebrochen · ${fmtMinutes(secs)} Training` : `${neuroTitle(r.ex)} · ${countLabel(r.steps.length, "Schritt", "Schritte")} · ${fmtMinutes(secs)} Training`;
+    neuroP.done.hidden = false;
+  }
+  function abortNeuroRun() {
+    neuroStop();
+    hideAllPlayers();
+    if (comboProgram) { abortComboProgram(); return; }
+    if (neuroUnlocked()) openNeuroReady(neuroEx); else showScreen("todayHome");
+  }
+  neuroP.backBtn.addEventListener("click", abortNeuroRun);
+  function pauseNeuro() {
+    const r = neuroRun;
+    if (!r || r.pausedAt != null) return;
+    r.pausedAt = performance.now();
+    neuroP.pauseBtn.hidden = true;
+    $("neuroPauseHelp").textContent = r.own ? "Gilt sofort und bleibt gespeichert, wie auf der Übungsseite." : "Gilt sofort, nur für diesen Durchgang.";
+    neuroSyncControls(neuroP.pauseControls, r.p, r.ex);
+    neuroP.pauseOverlay.hidden = false;
+  }
+  function resumeNeuro() {
+    const r = neuroRun;
+    if (!r || r.pausedAt == null) return;
+    const d = performance.now() - r.pausedAt;
+    r.phaseT += d; r.pausedMs += d; r.pausedAt = null;
+    neuroP.pauseOverlay.hidden = true;
+    neuroP.pauseBtn.hidden = false;
+    neuroTick();
+  }
+  neuroP.pauseBtn.addEventListener("click", pauseNeuro);
+  $("neuroResumeBtn").addEventListener("click", resumeNeuro);
+  // Live in the pause sheet: Takt, tempo, time per step (from the next step on;
+  // a running step keeps its own length), Seitenwechsel.
+  neuroBind(neuroP.pauseControls, (f, v) => {
+    const r = neuroRun;
+    if (!r) return;
+    r.p[f] = v;
+    normalizeNeuroPrefs(r.p, r.ex);
+    if (r.own) { const own = neuroPrefsOf(r.ex); own[f] = r.p[f]; normalizeNeuroPrefs(own, r.ex); saveNeuroPrefs(); }
+    neuroSyncControls(neuroP.pauseControls, r.p, r.ex);
+  });
+  $("neuroAgainBtn").addEventListener("click", () => { neuroP.done.hidden = true; if (neuroLast) startNeuroRun(neuroLast.ex, neuroLast.prefs); });
+  $("neuroDoneBackBtn").addEventListener("click", () => {
+    neuroP.done.hidden = true;
+    if (neuroUnlocked()) openNeuroReady(neuroEx); else showScreen("todayHome");
+  });
+  if (navigator.webdriver) {
+    window.__neuro = () => (neuroRun ? { ex: neuroRun.ex, index: neuroRun.index, phase: neuroRun.phase, n: neuroRun.steps.length, own: neuroRun.own,
+      special: neuroRun.special, paused: neuroRun.pausedAt != null, p: { ...neuroRun.p }, side: neuroP.side.textContent } : null);
+    window.__neuroSkipTime = (s) => { if (neuroRun) neuroRun.phaseT -= s * 1000; };
+  }
+  // ==== /Neuro-Aktivierung ====
+
   function comboActivationCaptureEntries() {
     return [{ label: "Optodrum", meta: "Muster, Richtung, Tempo & Dauer einstellen", open: () => openOptoComboCapture(null, null) }];
   }
@@ -35716,6 +36297,9 @@
     const screens = { today: "todayHome", heute: "todayHome", visual: "home", breath: "breathHome", movement: "movementHome", workout: "workoutHome", cardio: "cardioHome", nat: "natHome", test: "testHome", free: "freeHome", frei: "freeHome", activation: "activationHome", aktivierung: "activationHome" };
     if (sec === "frei") sec = "free";
     if (sec === "aktivierung") sec = "activation";
+    if (sec === "neuro-aktivierung") sec = "neuro";
+    if (sec === "neuro" && !neuroUnlocked()) sec = "today";
+    screens.neuro = "neuroHome";
     if (!screens[sec]) sec = "today";
     if (sec === "heute") sec = "today";
     activateSectionTab(sec);
@@ -35869,7 +36453,7 @@
   // Training cards) opens a small action sheet. A finger that moves more
   // than 10 px is scrolling and cancels it; a short tap still clicks.
   // Only actions that really work for that item are offered.
-  const LP_SEL = "#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #freeOwnGrid [data-free-id], #freeTrainerGrid [data-free-id], #freeTplGrid [data-free-id], #activationGrid [data-act-ex]";
+  const LP_SEL = "#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #freeOwnGrid [data-free-id], #freeTrainerGrid [data-free-id], #freeTplGrid [data-free-id], #activationGrid [data-act-ex], #neuroGrid [data-neuro-ex]";
   const tileSheet = $("tileActionSheet");
   let tileSheetReturnFocus = null;
   let lpSuppressUntil = 0; // swallow the click that may follow a long press
@@ -35907,6 +36491,15 @@
         start: ok ? () => { tile.click(); clickVisibleStart(); } : null,
         plan: { area: "visual", what: "ex:" + id },
         kombi: ok ? () => startKombiWith("visual", () => openVisualComboCapture(id, icon ? icon.outerHTML : "", null, null)) : null,
+      };
+    }
+    if (tile.dataset.neuroEx) {
+      const nx = tile.dataset.neuroEx;
+      return {
+        title: name("h3"), open: () => tile.click(),
+        start: () => { openNeuroReady(nx); clickVisibleStart(); },
+        plan: { area: "neuro", what: "neuro:" + nx },
+        kombi: () => startKombiWith("neuro", () => openNeuroComboCapture(nx, null, null)),
       };
     }
     if (tile.dataset.actEx) {

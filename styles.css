@@ -33,9 +33,9 @@
   /* Area colours (AREA_BY_KEY in app.js) as tokens, + a text variant with
      >= 4.5:1 on the cards (darker in light mode, lighter in dark mode). */
   --area-visual:#1f7ab8;--area-breath:#2a9d8f;--area-nat:#3a7d2c;--area-movement:#c77d12;
-  --area-workout:#c0392b;--area-cardio:#7b4fb8;--area-free:#a0527a;--area-activation:#3b4fa8;
+  --area-workout:#c0392b;--area-cardio:#7b4fb8;--area-free:#a0527a;--area-activation:#3b4fa8;--area-neuro:#8a4b2a;
   --area-visual-ink:#1c6ea6;--area-breath-ink:#20766b;--area-nat-ink:#37772a;--area-movement-ink:#955e0e;
-  --area-workout-ink:#c0392b;--area-cardio-ink:#7b4fb8;--area-free-ink:#9d5078;--area-activation-ink:#3b4fa8;
+  --area-workout-ink:#c0392b;--area-cardio-ink:#7b4fb8;--area-free-ink:#9d5078;--area-activation-ink:#3b4fa8;--area-neuro-ink:#8a4b2a;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
@@ -57,7 +57,7 @@
     --warn:#ef9a9a;
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
     --area-visual-ink:#60a1cd;--area-breath-ink:#44a99c;--area-nat-ink:#77a56d;--area-movement-ink:#cd8b2c;
-    --area-workout-ink:#d78279;--area-cardio-ink:#a98dd1;--area-free-ink:#bf8ba6;--area-activation-ink:#9aa7e0;
+    --area-workout-ink:#d78279;--area-cardio-ink:#a98dd1;--area-free-ink:#bf8ba6;--area-activation-ink:#9aa7e0;--area-neuro-ink:#d39a78;
     color-scheme:dark;
   }
 }
@@ -79,7 +79,7 @@
   --warn:#ef9a9a;
   --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
   --area-visual-ink:#60a1cd;--area-breath-ink:#44a99c;--area-nat-ink:#77a56d;--area-movement-ink:#cd8b2c;
-  --area-workout-ink:#d78279;--area-cardio-ink:#a98dd1;--area-free-ink:#bf8ba6;--area-activation-ink:#9aa7e0;
+  --area-workout-ink:#d78279;--area-cardio-ink:#a98dd1;--area-free-ink:#bf8ba6;--area-activation-ink:#9aa7e0;--area-neuro-ink:#d39a78;
   color-scheme:dark;
 }
 
@@ -2565,10 +2565,10 @@ body.drag-busy{user-select:none;-webkit-user-select:none}
 .cal-slide-next{animation:calSlideNext .32s cubic-bezier(.2,.8,.2,1)}
 .cal-slide-prev{animation:calSlidePrev .32s cubic-bezier(.2,.8,.2,1)}
 .today-week .week-nav{overflow:hidden;padding:3px;margin:-3px}
-#hubAreaGrid .area-tile,#todayAreaGrid .area-tile,#home .excard,#natExercises .nat-tile,#activationGrid .nat-tile,#freeOwnGrid .featured-card,#freeTplGrid .featured-card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#hubAreaGrid .area-tile,#todayAreaGrid .area-tile,#home .excard,#natExercises .nat-tile,#activationGrid .nat-tile,#neuroGrid .nat-tile,#freeOwnGrid .featured-card,#freeTplGrid .featured-card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .lp-pressing{transform:scale(.97)!important;transition:transform .35s ease!important}
 /* Long press: no iOS text selection, loupe or link preview on the tiles (2026-10-06) */
-#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #activationGrid [data-act-ex], [data-free-id]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #activationGrid [data-act-ex], #neuroGrid [data-neuro-ex], [data-free-id]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .tile-action-list{display:flex;flex-direction:column;gap:8px}
 .tile-action-list .text-link{min-height:44px;align-self:center;padding:6px 18px}
 /* Schritt-Nummern im Dunkelmodus lesbar (Fabian-Blick 2026-10-05: weiß auf
@@ -3214,3 +3214,20 @@ body.soft-flash .flash-digit:not([hidden]){animation:fwmcSoftIn .3s ease-out 1}
 .balance-word.light-ink{-webkit-text-stroke:.035em #16232a}
 .balance-word[hidden]{display:none}
 .balance-word::after{content:attr(data-cap);display:block;text-align:center;font-family:"Public Sans",sans-serif;font-weight:600;font-size:max(12px,.26em);color:#4f6168;-webkit-text-stroke:0;margin-top:.15em;letter-spacing:0}
+
+/* ---- Neuro-Aktivierung (2026-10-08, docs/notes/37) ----
+   Hidden area unlocked by a trainer code: tiles reuse the NAT/VT tile look
+   with the area colour on the badge; the player reuses the Eigenes-Training
+   stage (.free-stage, calm-dk) plus a big side pill. Player = fixed hex. */
+#neuroGrid .neuro-badge{background:var(--area-neuro)}
+.special-tag{display:inline-block;align-self:center;margin:4px 0 2px;padding:3px 10px;border-radius:999px;border:1px solid var(--brand);color:var(--brand);background:var(--surface);font-size:calc(12px * var(--ts,1));font-weight:700;line-height:1.35}
+.special-tag[hidden]{display:none}
+.bundle-item .special-tag{align-self:flex-start;margin-top:6px}
+.player .special-tag{border-color:#e0a43a;color:#7a4b00;background:#fff3d6}
+.neuro-side{display:inline-block;margin:10px auto 2px;padding:8px 22px;border-radius:999px;background:#007094;color:#ffffff;font-family:"Magra",sans-serif;font-weight:700;font-size:calc(26px * var(--ts,1));line-height:1.2;max-width:100%;overflow-wrap:break-word}
+.neuro-side[hidden]{display:none}
+.neuro-side.neuro-moving{background:#5c6b73}
+.free-run-item.neuro-moving{opacity:.75}
+.neuro-stage .free-run-item{font-size:calc(28px * var(--ts,1))}
+@media (max-width:380px){.neuro-stage .free-run-item{font-size:calc(24px * var(--ts,1))}.neuro-side{font-size:calc(22px * var(--ts,1))}}
+.neuro-controls .chapter-row .info span{white-space:normal}
