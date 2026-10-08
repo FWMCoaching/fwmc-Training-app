@@ -89,9 +89,9 @@ die Geschwindigkeit ... vor und auch während der Übung wieder in der Pause").
 - Not wired on purpose: `MASTER_BG_TARGETS` (the background colour is part of
   the stimulus, like Farbfelder), CVD (no right/wrong), Cardio-Zusatzaufgabe,
   Weitermachen, pinch-to-resize (slider in the pause sheet instead).
-- Dashboard catalog (dashboard.html): not added yet (another thread was
-  working on dashboard.html) - add "Aktivierung"/Optodrum to its copies when
-  trainer codes should carry it.
+- Dashboard catalog (dashboard.html, 08.10.): `AREAS` has `activation`
+  (plan entries "Aktivierung", what `act:optodrum` via `ACT_EX`), the
+  overview lists "Aktivierung · Optodrum" (no code type yet).
 - Test hook `window.__opto()` (automated browsers only).
 
 Test: `tests/aktivierung_optodrum_1008_test.py` (screenshots

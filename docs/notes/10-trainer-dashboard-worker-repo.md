@@ -465,3 +465,11 @@ solid bars, matching what proved immune) unless asked again.
   `CLOUDFLARE_API_TOKEN`/session setup is fine for this, no new token
   needed.
 
+
+**Katalog-Stand 08.10.2026**: plan `AREAS` gained `activation` (Aktivierung,
+`#3b4fa8`, what `act:optodrum` from `ACT_EX` = the app's
+`ACTIVATION_EXERCISES`); "Alle Übungen im Überblick" (Stand 08.10.2026) lists
+Hütchen · Farbe + Zahl and Farbfelder (JSON), Aktivierung · Optodrum and
+Test-Bereich "Jedes Auge zählt (Farbbrille)" (not in the dashboard). The app's
+privacy sheet says the trainer may keep the plan under a Kürzel on the FWMC
+server (kp20). Test: `tests/hilfsmittel_texte_1008_test.py`.

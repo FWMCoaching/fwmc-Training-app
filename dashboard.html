@@ -369,7 +369,7 @@
 
     <details class="panel" id="overviewDetails" style="padding:16px">
       <summary style="cursor:pointer;list-style:none"><h2 style="display:inline">Alle Übungen im Überblick</h2></summary>
-      <p class="hint">Stand: 06.10.2026 · von Hand gepflegt, kein Live-Abgleich mit der App - bei Fragen zu neuen Übungen einfach fragen. <span class="ov-pill full"><span class="dot"></span>im Baukasten nutzbar</span> <span class="ov-pill json"><span class="dot"></span>nur über den JSON-Tab</span> <span class="ov-pill none"><span class="dot"></span>noch nicht im Dashboard, nur in der App</span></p>
+      <p class="hint">Stand: 08.10.2026 · von Hand gepflegt, kein Live-Abgleich mit der App - bei Fragen zu neuen Übungen einfach fragen. <span class="ov-pill full"><span class="dot"></span>im Baukasten nutzbar</span> <span class="ov-pill json"><span class="dot"></span>nur über den JSON-Tab</span> <span class="ov-pill none"><span class="dot"></span>noch nicht im Dashboard, nur in der App</span></p>
       <div id="overviewBody"></div>
     </details>
 
@@ -874,7 +874,8 @@
       ["8 Pfeile", "full"], ["8 Pfeile · Rot/Grün", "full"],
       ["Stroop · klassisch", "full"], ["Stroop · mit Hintergrund", "full"],
       ["Sehen & Hören", "json"], ["Hütchen sortieren", "json"],
-      ["Hütchen · Kompass-Aufbau", "json"], ["Periphere Wahrnehmung", "json"],
+      ["Hütchen · Kompass-Aufbau", "json"], ["Hütchen · Farbe + Zahl", "json"],
+      ["Farbfelder", "json"], ["Periphere Wahrnehmung", "json"],
     ]},
     { domain: "NAT (neuroathletisch)", items: [
       ["Positionen merken", "none"], ["Blitz-Raster", "none"],
@@ -895,6 +896,7 @@
       ["Sätze × Wiederholungen oder Intervall pro Übung", "full"], ["Zirkel und Kraftplan mit mehreren Übungen", "json"],
     ]},
     { domain: "Eigenes Training", items: [["Vorlagen: Abhaken, Mit Zeit, Checkliste (mehrere pro Code)", "full"]] },
+    { domain: "Aktivierung", items: [["Optodrum", "none"]] },
     { domain: "Test-Bereich (wächst laufend)", items: [
       ["Go/No-Go Reaktionstest", "none"], ["Positions-Gedächtnis (N-Back)", "none"],
       ["Verbindungstest (Trail Making)", "none"], ["Ablenkungstest (Flanker)", "none"],
@@ -907,6 +909,7 @@
       ["Gegenrichtungs-Test (Antisakkaden)", "none"], ["Wortfarben-Test (Stroop-Aufgabe)", "none"],
       ["Sofortmengen-Test (Subitizing)", "none"], ["Alarmierungs-Test (Alerting-Netzwerk)", "none"],
       ["Vorlaufzeit-Test (Foreperiod-Effekt)", "none"],
+      ["Jedes Auge zählt (Farbbrille)", "none"],
     ]},
   ];
   function renderOverview() {
@@ -1643,6 +1646,7 @@
     { key: "workout", label: "Krafttraining", short: "Kraft", color: "#c0392b" },
     { key: "cardio", label: "Ausdauertraining", short: "Ausdauer", color: "#7b4fb8" },
     { key: "free", label: "Eigenes Training", short: "Eigenes Training", color: "#a0527a" },
+    { key: "activation", label: "Aktivierung", short: "Aktivierung", color: "#3b4fa8" },
     { key: "combo", label: "Kombi-Programm", short: "Kombi", color: "#007094" },
   ];
   const AREA = Object.fromEntries(AREAS.map((a) => [a.key, a]));
@@ -1650,6 +1654,7 @@
   const VISUAL_EX = [["vt-color", "VT · Farbe & Seite"], ["vrw-original", "VRW · Direkt & Umgekehrt"], ["4-straight", "4 Pfeile · gerade"],
     ["4-diag", "4 Pfeile · diagonal"], ["8-solo", "8 Pfeile"], ["8-vrw", "8 Pfeile · Rot/Grün"], ["stroop-classic", "Stroop · klassisch"],
     ["stroop-bg", "Stroop · mit Hintergrund"], ["cross-modal", "Sehen & Hören"], ["cone-tap", "Hütchen sortieren"], ["cone-compass", "Hütchen · Kompass-Aufbau"], ["cone-number", "Hütchen · Farbe + Zahl"], ["farbfelder", "Farbfelder"]];
+  const ACT_EX = [["optodrum", "Optodrum"]]; // ACTIVATION_EXERCISES in app.js
   const NAT_SUBS = [["peripher", "Periphere Wahrnehmung"], ["remember", "Positionen merken"], ["blitz", "Blitz-Raster"], ["flash", "Flash-Speicher-Test"], ["mot", "Objektverfolgung (MOT)"], ["balance", "Gleichgewicht"]];
   const TAGS = ["Einsteiger", "Fortgeschritten", "Sportler", "Führungskraft", "Regeneration", "Wettkampf"];
   const BS_KINDS = { kombi: "Kombi-Paket", week: "Wochen-Vorlage", phase: "Phasen-Vorlage" };
@@ -1705,6 +1710,7 @@
     const o = [["", "Freie Wahl im Bereich"]];
     if (area === "visual") VISUAL_EX.forEach(([k, t]) => o.push(["ex:" + k, t]));
     if (area === "nat") NAT_SUBS.forEach(([k, t]) => o.push(["nat:" + k, t]));
+    if (area === "activation") ACT_EX.forEach(([k, t]) => o.push(["act:" + k, t]));
     return o;
   }
   function entryTitle(e) {

@@ -569,7 +569,7 @@ weak run resets it too. Covered: Positionen merken, Blitz-Raster (standard),
 Flash, MOT. "Very good" thresholds are ASSUMPTIONS, not from Fabian or a
 study - adjust if he finds them too easy/hard: Positionen merken ≥ 7 reached
 (≥ 6 with shuffled positions), Blitz ≥ 6, Flash climbing ≥ 7, Flash constant
-≥ 8 rounds with ≥ 90 % correct, MOT ≥ 8.
+≥ 8 rounds with ≥ 90 % correct, MOT ≥ 8. Farbfelder · Antippen (08.10.): ≥ 90 % right with ≥ 5 fields, Abfolge all rounds right (≥ 2), on the shared VT tempo.
 
 ## Gleichgewicht (6th NAT exercise, built 2026-10-06, Fabian's build order 12:31/12:33)
 

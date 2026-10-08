@@ -3688,6 +3688,12 @@
     mittel: { stimulusS: 1.5, intervalMin: 3, intervalMax: 6 },
     schwer: { stimulusS: 0.8, intervalMin: 2, intervalMax: 4 },
   };
+  // The same presets with titles, for the Stufen-Vorschlag (Farbfelder).
+  const VT_TEMPO_DIFFS = {
+    leicht: { title: "Leicht", ...TEMPO_PRESETS.leicht },
+    mittel: { title: "Mittel", ...TEMPO_PRESETS.mittel },
+    schwer: { title: "Schwer", ...TEMPO_PRESETS.schwer },
+  };
   const PREFS_KEY = "fwmc-webapp-v3";
   const CN_MIN_FIELDS = 3, CN_MAX_FIELDS = 6; // Hütchen · Farbe + Zahl
   const DEFAULTS = {
@@ -4748,6 +4754,13 @@
   document.querySelectorAll("[data-tempo]").forEach((el) => {
     el.addEventListener("click", () => { Object.assign(state, TEMPO_PRESETS[el.dataset.tempo]); savePrefs(); syncTempoUI(); });
   });
+  function vtTempoBucket() {
+    for (const k of Object.keys(TEMPO_PRESETS)) {
+      const p = TEMPO_PRESETS[k];
+      if (p.stimulusS === state.stimulusS && p.intervalMin === state.intervalMin && p.intervalMax === state.intervalMax) return k;
+    }
+    return "custom";
+  }
   function syncTempoUI() {
     let any = false;
     document.querySelectorAll("[data-tempo]").forEach((el) => {
@@ -4848,6 +4861,15 @@
   // per exercise that needs equipment; `link` (a product page) is shown only
   // once Fabian sets a URL. A new exercise that needs something = one entry.
   const HILFSMITTEL = {
+    // Hütchen exercises (Fabian 08.10.): every one names its equipment.
+    "cone-compass": {
+      text: "Du brauchst: Hütchen oder Becher in den eingestellten Farben und ein Kreuz oder einen Stern aus Klebeband auf dem Boden.",
+      link: "",
+    },
+    "cone-tap": {
+      text: "Du brauchst: vier Hütchen oder Becher in Rot, Gelb, Grün und Blau, nebeneinander vor dir.",
+      link: "",
+    },
     "cone-number": {
       text: "Du brauchst: 3-6 farbige Hütchen oder Becher und nummerierte Felder (z. B. Zettel mit 1-6).",
       link: "",
@@ -6714,6 +6736,7 @@
     const ex = EXERCISES[nextBlock.exercise];
     els.nextTitle.textContent = ex.title;
     els.nextTask.textContent = ex.task || "";
+    showBlockResult($("pauseResult"), program);
     els.pauseScreen.hidden = false;
     els.playerBar.hidden = true;
     els.liveNav.hidden = true;
@@ -6774,7 +6797,9 @@
     els.programDoneSummary.textContent = aborted
       ? `Abgebrochen · ${fmtMinutes(played)} Training`
       : `${exerciseCountLabel(program.def.blocks.length)} · ${fmtMinutes(played)} Training`;
-    const id = addHistory({ kind: "program", title: program.title, progKey: program.key, seconds: Math.round(played), note: aborted ? "abgebrochen" : undefined, aborted: !!aborted });
+    renderBlockResults($("programDoneResults"), program);
+    const resNote = blockResultsNote(program);
+    const id = addHistory({ kind: "program", title: program.title, progKey: program.key, seconds: Math.round(played), note: aborted ? (resNote ? `abgebrochen; ${resNote}` : "abgebrochen") : resNote, aborted: !!aborted });
     renderRating(els.programRating, id);
     els.programDoneBackBtn.textContent = originBundle ? "Zurück zu meinen Programmen" : "Zur Startseite";
     els.programDonePanel.hidden = false;
@@ -6782,6 +6807,8 @@
   els.programAgainBtn.addEventListener("click", () => {
     if (!program) return;
     program.playedS = 0;
+    program.results = [];
+    program.lastResult = null;
     playChapter(0);
   });
   els.programDoneBackBtn.addEventListener("click", () => {
@@ -6815,6 +6842,9 @@
     const spent = accountSession();
     if (window.speechSynthesis) speechSynthesis.cancel();
     els.liveNav.hidden = true;
+    // Kombi / coach programme: the block's score goes into the run's results
+    // (shown in the next pause and in the closing summary + history note).
+    if (ffScore && (program || comboProgram)) blockResultPush(program || comboProgram, `${EXERCISES[state.exercise].title} · ${FF_MODE_LABELS[state.ffMode]}`, ffScore.text);
     if (program) { advanceProgramStep(); return; }
     if (comboProgram) { coneTap = null; advanceComboProgram(spent); return; }
     if (cardioGuestActive) { coneTap = null; returnFromCardioGuest(); return; }
@@ -6837,6 +6867,10 @@
     if (coneTap) markBest(els.doneSummary, "", coneTap.count);
     const id = addHistory({ kind: "exercise", exId: state.exercise, title: ex.title, seconds: Math.round(spent), note });
     renderRating(els.doneRating, id);
+    // Stufen-Vorschlag (Farbfelder · Antippen): the shared VT done panel, so
+    // an old suggestion never lingers on another exercise's result.
+    els.donePanel.querySelectorAll(".level-suggest").forEach((n) => n.remove());
+    if (ffScore) levelSuggestAfter("farbfelder", state.ffMode, ffScore, els.donePanel, els.doneRating);
     els.donePanel.hidden = false;
     els.playerBar.hidden = true;
     coneTap = null;
@@ -18772,6 +18806,7 @@
     if (!(pauseS > 0)) { onContinue(); return; }
     els.comboTransitionTitle.textContent = comboBlockLabel(nextBlock);
     els.comboTransitionMeta.textContent = comboBlockMeta(nextBlock);
+    showBlockResult($("comboTransitionResult"), comboProgram);
     els.comboTransition.hidden = false;
     const cfg = cueCfg("kombi");
     const parts = [];
@@ -19129,6 +19164,32 @@
     });
   });
 
+  // ---- Wertung einzelner Bausteine (Fabian 08.10.: Farbfelder · Antippen
+  // im Kombi-Programm und im Trainer-Programm). A scored block pushes
+  // {label, text} into the run; the next pause shows it once ("Eben: …"),
+  // the closing panel lists all of them and the history note keeps them.
+  // A new scored block only needs one blockResultPush() call. ----
+  function blockResultPush(run, label, text) {
+    if (!run) return;
+    run.results = run.results || [];
+    run.results.push({ label, text });
+    run.lastResult = { label, text };
+  }
+  function showBlockResult(el, run) {
+    const r = run && run.lastResult;
+    if (run) run.lastResult = null;
+    el.hidden = !r;
+    el.innerHTML = r ? `<span class="block-result-label">Eben: ${esc(r.label)}</span><span>${esc(r.text)}</span>` : "";
+  }
+  function renderBlockResults(listEl, run) {
+    const rs = (run && run.results) || [];
+    listEl.hidden = !rs.length;
+    listEl.innerHTML = rs.map((r) => `<li><span class="block-results-label">${esc(r.label)}</span><span>${esc(r.text)}</span></li>`).join("");
+  }
+  function blockResultsNote(run) {
+    const rs = (run && run.results) || [];
+    return rs.length ? rs.map((r) => `${r.label}: ${r.text}`).join("; ") : undefined;
+  }
   function advanceComboProgram(playedS) {
     if (!comboProgram) return;
     comboProgram.totalPlayedS += playedS;
@@ -19155,7 +19216,8 @@
     const title = comboProgram.title;
     const key = comboProgram.key;
     els.comboDoneSummary.textContent = `${countLabel(comboProgram.def.blocks.length, "Baustein", "Bausteine")} · ${fmtMinutes(played)} Training`;
-    const id = addHistory({ kind: "combo", title, progKey: key, seconds: Math.round(played) });
+    renderBlockResults($("comboDoneResults"), comboProgram);
+    const id = addHistory({ kind: "combo", title, progKey: key, seconds: Math.round(played), note: blockResultsNote(comboProgram) });
     renderRating(els.comboRating, id, "Wie fühlst du dich nach dem Programm?");
     els.comboDoneBackBtn.textContent = comboOriginBundle ? "Zurück zu meinen Programmen" : "Zur Startseite";
     els.comboDonePanel.hidden = false;
@@ -19172,7 +19234,7 @@
   els.comboAgainBtn.addEventListener("click", () => {
     if (!lastComboProgram) return;
     els.comboDonePanel.hidden = true;
-    comboProgram = { ...lastComboProgram, blockIndex: 0, totalPlayedS: 0 };
+    comboProgram = { ...lastComboProgram, blockIndex: 0, totalPlayedS: 0, results: [], lastResult: null };
     startComboBlock(0);
   });
   els.comboDoneBackBtn.addEventListener("click", () => {
@@ -19402,6 +19464,10 @@
       apply: (d) => { flashPrefs.stimulusS = d.stimulusS; flashPrefs.intervalS = d.intervalS; saveFlashPrefsToStorage(); } },
     mot: { title: "Objektverfolgung (MOT)", diffs: MOT_DIFFICULTIES, bucket: () => motDifficultyBucket(),
       apply: (d) => { motPrefs.speed = d.speed; motPrefs.trackS = d.trackS; motPrefs.highlightS = d.highlightS; saveMotPrefsToStorage(); } },
+    // Farbfelder · Antippen (Fabian 08.10.): the shared VT tempo (Leicht/
+    // Mittel/Schwer); streaks are kept per mode. Only single tap runs count.
+    farbfelder: { title: "Farbfelder", where: "Tempo", diffs: VT_TEMPO_DIFFS, bucket: () => vtTempoBucket(),
+      apply: (d) => { state.stimulusS = d.stimulusS; state.intervalMin = d.intervalMin; state.intervalMax = d.intervalMax; savePrefs(); syncTempoUI(); } },
   };
   // What counts as a very good run, per exercise and mode.
   function levelRunIsGood(ex, mode, st) {
@@ -19409,6 +19475,9 @@
     if (ex === "blitz") return st.cleared >= 6;
     if (ex === "flash") return mode === "constant" ? (st.roundsPlayed >= 8 && st.hits / st.roundsPlayed >= 0.9) : st.cleared >= 7;
     if (ex === "mot") return st.cleared >= 8;
+    // Farbfelder · Antippen: Abfolge = every round right (at least 2 rounds),
+    // else ≥ 90 % right with at least 5 fields shown.
+    if (ex === "farbfelder") return mode === "abfolge" ? (st.rounds >= 2 && st.roundsOk === st.rounds) : (st.total >= 5 && st.hits / st.total >= 0.9);
     return false;
   }
   function levelSuggestAfter(ex, mode, st, panel, beforeEl) {
@@ -19437,7 +19506,7 @@
       <button type="button" class="text-link small level-suggest-off">Alle Vorschläge ausschalten</button>`;
     box.querySelector(".level-suggest-yes").addEventListener("click", () => {
       def.apply(def.diffs[next]);
-      box.innerHTML = `<div class="level-suggest-title">Eingestellt: ${esc(def.diffs[next].title)}</div><p>Viel Erfolg beim nächsten Training. Zurückstellen kannst du jederzeit bei „Schwierigkeit“.</p>`;
+      box.innerHTML = `<div class="level-suggest-title">Eingestellt: ${esc(def.diffs[next].title)}</div><p>Viel Erfolg beim nächsten Training. Zurückstellen kannst du jederzeit bei „${esc(def.where || "Schwierigkeit")}“.</p>`;
     });
     box.querySelector(".level-suggest-mute").addEventListener("click", () => {
       const t = readJSON(LEVEL_SUGGEST_KEY, {}); t.muted = t.muted || {}; t.muted[ex] = true; writeJSON(LEVEL_SUGGEST_KEY, t);

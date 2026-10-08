@@ -138,7 +138,19 @@ Cardio guest always treads (`state.ffAnswer = "treten"` in the guest setup,
 - Score (`ffTapScore`): "18 von 22 richtig · Ø 0,84 s" (Ø over correct taps,
   stimulus start → tap) / Abfolge "5 von 7 Runden richtig · längste Folge 6".
   Single runs: done summary + history note (`Leuchten · Antippen · …`). In a
-  Kombi or coach programme the taps get feedback but no score summary (open).
+  Kombi or coach programme (Fabian 08.10.) the score goes through
+  `blockResultPush(run, "Farbfelder · Leuchten", text)`: the next pause shows
+  it once ("Eben: …", `#comboTransitionResult` / `#pauseResult`), the closing
+  panel lists every scored block (`#comboDoneResults` / `#programDoneResults`,
+  `.block-results`) and the combo/program history note keeps them
+  ("Farbfelder · Leuchten: 18 von 22 richtig · Ø 0,84 s; …"). "Nochmal von
+  vorne" starts with an empty list; Weitermachen does not carry earlier
+  results. A new scored Kombi block = one `blockResultPush` call.
+- Stufen-Vorschlag (Fabian 08.10.): `LEVEL_SUGGEST_EX.farbfelder` on the VT
+  tempo (`VT_TEMPO_DIFFS`, `vtTempoBucket()`), streak per mode. Very good =
+  ≥ 90 % right with ≥ 5 fields shown; Abfolge = every round right, ≥ 2
+  rounds. Only single tap runs count (Treten, Kombi, Cardio never); accepting
+  sets the shared VT tempo (all VT exercises), the text names "Tempo".
   No markBest (no obvious per-mode best yet).
 - Test hooks (automated browsers): `window.__ffTap()` (current window/round/
   items/score), `window.__ffTapFinish()`, `window.__ffTapLastScore`, `__ff.snapshot()`.
@@ -156,7 +168,9 @@ follows the pointer, source `.ff-drag-src`, target `.ff-drop-target`, drop swaps
 `state.ffLayout` (+ `.ff-swapped` pop), outside = cancel, a click right after a
 drag is swallowed. Hand rules are keyed by colour and move with it. The edge
 swipe back ignores touches that start on `.ff-layout-grid`.
-Test: `tests/farbfelder_tippen_1008_test.py`, screenshots `tests/screenshots/farbfelder_tippen/`.
+Test: `tests/farbfelder_tippen_1008_test.py`, screenshots `tests/screenshots/farbfelder_tippen/`;
+Kombi-Wertung + Stufen-Vorschlag: `tests/farbfelder_wertung_1008_test.py`
+(`tests/screenshots/farbfelder_wertung/`).
 
 ## Einblenden (Fabian 08.10., "immer nur ein Feld angeblendet")
 9th mode `einblenden` in the same "Modus" row, placed right after Leuchten

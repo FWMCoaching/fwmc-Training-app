@@ -3106,3 +3106,11 @@ body.soft-flash .flash-digit:not([hidden]){animation:fwmcSoftIn .3s ease-out 1}
 .opto-dir-row{grid-template-columns:repeat(3,1fr)}
 .opto-sub{margin-top:12px}
 .opto-sub .choice-row + .group-label{margin-top:12px}
+/* Wertung einzelner Bausteine im Kombi-/Trainer-Programm (2026-10-08) */
+.block-result{margin:0;width:100%;max-width:340px;padding:10px 14px;border-radius:12px;background:rgba(46,125,50,.10);border:1px solid rgba(46,125,50,.30);font-size:calc(14px * var(--ts,1));font-weight:600;line-height:1.4;color:inherit;text-align:center}
+.pause-screen .block-result{color:#16232a}
+.block-results{list-style:none;margin:0 0 8px;padding:0;width:100%;max-width:340px;display:flex;flex-direction:column;gap:6px;text-align:left}
+.block-results li{padding:10px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--line);font-size:calc(14px * var(--ts,1));line-height:1.4;color:var(--ink);display:flex;flex-direction:column;gap:2px}
+.block-results-label{font-size:calc(11.5px * var(--ts,1));font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--brand-deep)}
+.block-result{display:flex;flex-direction:column;gap:2px}
+.block-result-label{font-size:calc(12px * var(--ts,1));font-weight:700;opacity:.8}
