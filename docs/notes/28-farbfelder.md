@@ -76,6 +76,44 @@ partner link goes live. Test hook `window.__gear` (`items`, `render`).
 A new Hilfsmittel = one HILFSMITTEL entry (with `gear`) + its GEAR_ITEMS card.
 Test: `tests/hilfsmittel_liste_1008_test.py`, screenshots `tests/screenshots/hilfsmittel_liste/`.
 
+### Meine Hilfsmittel (Idee 67, Fabian 08.10.)
+The client ticks what they have; stored in `fwmc-gear-v1` (`{itemId: true}`,
+in backups). Three places, always in sync (`gearSetOwned` -> `gearSyncAll`):
+Grundeinstellungen group `#masterGearGroup` (checkboxes from GEAR_ITEMS, the
+`test` item only with the Test-Bereich unlocked, + "Alle Hilfsmittel ansehen"),
+a "Hab ich" checkbox on every `#gearScreen` card, and a "Hab ich" button in a
+ready screen's `.hilfsmittel-note` (ticks every missing item in one tap; with
+`anyOf` one button per option, "Hab ich: Farbmatte").
+Rule (Fabian): nothing ticked = the client has nothing. HILFSMITTEL entries:
+every `gear` id is needed; `anyOf: true` = one of them is enough (Farbfelder:
+mat or cups); `optional: true` = works without, never greyed. Farbfelder in
+"Antippen" needs nothing (note hidden, card/Kombi block not greyed).
+Missing equipment: card `.gear-missing` (dimmed, still opens) + pill
+`.excard-gear-note` "Braucht: Hütchen und Klebeband" (names = GEAR_ITEMS
+`short`); cards are `.excard[data-exercise=key]` plus `GEAR_EX_OPEN[key].card`
+(element id, e.g. Jedes Auge zählt). Ready screen: the start button (`#startBtn`
+or the screen's `.start-btn[id$=StartBtn]`) reads "Braucht: …" in the
+secondary look; a tap asks via `confirmDialog` "Du hast X noch nicht abgehakt.
+Trotzdem starten?" (Trotzdem starten / Abbrechen), every tap once - a window
+capture listener that runs before the lead-in/Haken listeners, then clicks the
+button again as "Training starten". The label comes back whenever the screen is
+shown (MutationObserver on `hidden`). Kombi capture mode ("Baustein
+übernehmen") is never relabelled or asked. Kombi list: `.gear-need-tag`
+"Braucht: …" per block (`gearKeyOfComboBlock`), playback never blocked. Trainer
+code intro (`renderProgramIntro`): `#programGearNote` "Dafür brauchst du: …"
+(full GEAR_ITEMS names, missing only), never blocked.
+Area hint: every area home with an equipment card gets one `.gear-ask-card`
+"Welche Hilfsmittel hast du?" (after the section head of that card's section;
+"Hilfsmittel abhaken" opens the page, "Ausblenden" sets
+`fwmc-gear-hint-dismissed`), only while nothing is ticked.
+Automated browsers treat everything as owned unless localStorage
+`fwmc-test-gear` is set (keeps the suite's start labels valid). Test hook
+`window.__myGear` (`owned`, `set`, `missing`, `sync`, `hilfsmittel`).
+A new Hilfsmittel exercise needs nothing extra: its HILFSMITTEL entry (`gear`,
+optionally `anyOf`/`optional`) drives card, ready screen, Kombi tag and intro;
+a non-VT one adds `card` to its GEAR_EX_OPEN entry.
+Test: `tests/meine_hilfsmittel_1008_test.py`, screenshots `tests/screenshots/meine_hilfsmittel/`.
+
 Test: `tests/farbfelder_1007_test.py`; screenshots `tests/screenshots/farbfelder/`.
 
 ## Reize A-E (Fabian 07.10. 21:53, built the same night)

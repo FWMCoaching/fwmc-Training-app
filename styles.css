@@ -369,7 +369,11 @@ section{margin-bottom:26px}
    mirrors this exercise-level check rather than filtering blocked
    exercises away silently. */
 .combo-add-btn.incompatible{opacity:.5}
-.excard-blocked-note{
+/* Meine Hilfsmittel (Idee 67): equipment not ticked = slightly greyed, still
+   openable; the "Braucht: …" pill stays fully readable. */
+.excard.gear-missing > :not(.excard-gear-note),.featured-card.gear-missing > :not(.excard-gear-note){opacity:.55}
+.excard.gear-missing .icon-badge,.excard.gear-missing .icon-tile{filter:grayscale(.7)}
+.excard-blocked-note,.excard-gear-note,.gear-need-tag{
   display:inline-block;font-size:calc(10.5px * var(--ts,1));font-weight:700;color:#fff;
   background:var(--ink-soft);padding:3px 8px;border-radius:999px;align-self:flex-start;
 }
@@ -3214,3 +3218,21 @@ body.soft-flash .flash-digit:not([hidden]){animation:fwmcSoftIn .3s ease-out 1}
 .balance-word.light-ink{-webkit-text-stroke:.035em #16232a}
 .balance-word[hidden]{display:none}
 .balance-word::after{content:attr(data-cap);display:block;text-align:center;font-family:"Public Sans",sans-serif;font-weight:600;font-size:max(12px,.26em);color:#4f6168;-webkit-text-stroke:0;margin-top:.15em;letter-spacing:0}
+
+/* ---- Meine Hilfsmittel (Idee 67, 2026-10-08) ---- */
+.featured-card .excard-gear-note{margin-top:6px}
+.excard-gear-note{color:var(--bg)}
+.gear-need-tag,.chapter-row .info > .gear-need-tag{margin-top:5px;line-height:1.35;color:var(--bg);font-size:calc(10.5px * var(--ts,1))}
+html:root body .start-btn.gear-missing:not(.secondary){background:var(--surface);color:var(--brand-deep);border:1.5px solid var(--brand);box-shadow:none}
+@media (hover:hover){.start-btn.gear-missing:hover{background:var(--brand-pale)}}
+.hilfsmittel-have-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
+.hilfsmittel-missing{flex-basis:100%;font-weight:700;color:var(--ink)}
+.hilfsmittel-have{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:12px;border:1.5px solid var(--brand);background:var(--surface);color:var(--brand-deep);font-weight:700;font-size:calc(15px * var(--ts,1));font-family:inherit;cursor:pointer;max-width:100%}
+.hilfsmittel-have:active{background:var(--brand-pale)}
+.gear-ask-card{margin:0 0 14px}
+.gear-ask-card[hidden]{display:none}
+.gear-ask-title{font-size:calc(16px * var(--ts,1));line-height:1.3;color:var(--ink)}
+.gear-ask-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:6px}
+.gear-ask-actions .text-link{min-height:44px;display:inline-flex;align-items:center}
+.gear-have{margin-top:8px}
+.gear-program-note{font-weight:700;color:var(--ink)}

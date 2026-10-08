@@ -4887,6 +4887,10 @@
   // once Fabian sets a URL. A new exercise that needs something = one entry.
   // `gear` names its GEAR_ITEMS cards (page "Hilfsmittel und Starterpaket"
   // under Mehr): the exercise chips on those cards are read from here.
+  // Meine Hilfsmittel (Idee 67, Fabian 08.10.): every id in `gear` is needed
+  // (missing = card greyed, start button "Braucht: …"); `anyOf: true` = one
+  // of them is enough; `optional: true` = works without, never greyed.
+  var gearModuleReady = false; // set by "Meine Hilfsmittel" (after GEAR_ITEMS)
   const HILFSMITTEL = {
     // Hütchen exercises (Fabian 08.10.): every one names its equipment.
     "cone-compass": {
@@ -4904,7 +4908,7 @@
     },
     farbfelder: {
       text: "Du brauchst: eine Farbmatte mit 4 Feldern oder 4 farbige Hütchen, Bälle oder Zettel auf dem Boden, angeordnet wie hier eingestellt.",
-      link: "", gear: ["mat", "cups"],
+      link: "", gear: ["mat", "cups"], anyOf: true,
     },
     // Farbbrille exercises (Test-Bereich); a shop link can go into `link`.
     farbbrille: {
@@ -4916,6 +4920,8 @@
     const box = document.getElementById("hilfsmittelNote");
     const h = HILFSMITTEL[exId];
     box.hidden = !h;
+    box.dataset.gearKey = h ? exId : "";
+    gearSyncScreen(box.closest(".screen"));
     if (!h) return;
     document.getElementById("hilfsmittelText").textContent = h.text;
     const a = document.getElementById("hilfsmittelLink");
@@ -5259,6 +5265,7 @@
     comboVisualEditIndex = editIndex ?? null;
     els.readyTitle.textContent = "Baustein: " + ex.title;
     els.startBtn.textContent = "Baustein übernehmen";
+    gearSyncScreen(els.ready); // capture mode: no "Braucht:" label, no question
   }
   function periphStateSnapshot() {
     const out = {};
@@ -5661,6 +5668,12 @@
       els.chapterList.appendChild(row);
     });
     els.programStartBtn.onclick = () => start(0);
+    // Meine Hilfsmittel: name what is still missing, never block the code.
+    { const need = [];
+      def.blocks.forEach((b) => gearMissing(gearKeyOfComboBlock({ domain: "visual", exercise: b.exercise, ff: b.ff })).forEach((id) => { if (!need.includes(id)) need.push(id); }));
+      const note = $("programGearNote");
+      note.hidden = !need.length;
+      note.textContent = need.length ? "Dafür brauchst du: " + need.map((id) => (GEAR_ITEMS.find((g) => g.id === id) || {}).name || id).join(", ") + "." : ""; }
     showScreen("programIntro");
   }
 
@@ -9021,6 +9034,7 @@
     syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; syncMasterBgUI(); syncMasterPauseUI(); syncMasterVolumeUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
     syncMasterSeeUI();
     syncAnaglyphMasterUI();
+    gearRenderMaster();
     { const mn = $("masterNameInput"); if (mn) mn.value = getUserName(); }
     els.masterSettingsSheet.hidden = false;
     // openMasterSettings("someGroupId") opens the sheet at that section
@@ -21068,7 +21082,7 @@
       const main = document.createElement(editOpener ? "button" : "span");
       main.className = "chapter-main";
       if (!editOpener) main.style.cursor = "default";
-      main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(comboBlockLabel(block))}</strong><span>${esc(comboBlockMeta(block))}</span>${block.fromProgram ? `<span class="combo-from">aus ${esc(block.fromProgram)}</span>` : ""}</span>`;
+      main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(comboBlockLabel(block))}</strong><span>${esc(comboBlockMeta(block))}</span>${block.fromProgram ? `<span class="combo-from">aus ${esc(block.fromProgram)}</span>` : ""}${gearTagHtml(gearKeyOfComboBlock(block))}</span>`;
       if (editOpener) main.addEventListener("click", () => editOpener(block, i));
       if (comboDraftBlocks.length > 1) row.appendChild(dragHandleEl());
       row.appendChild(main);
@@ -26561,6 +26575,7 @@
   function renderHilfsmittelBox(box) {
     const h = HILFSMITTEL[box.dataset.hilfsmittel];
     box.hidden = !h;
+    box.dataset.gearKey = h ? box.dataset.hilfsmittel : "";
     if (!h) return;
     box.querySelector(".hilfsmittel-text").textContent = h.text;
     const a = box.querySelector(".hilfsmittel-link");
@@ -26576,22 +26591,23 @@
   // (partner link): empty = no button at all; with one, "Ansehen" + the
   // "Werbung · Partner-Link" marker, and the page shows the Provision
   // sentence. `test: true` = only with the Test-Bereich unlocked.
-  // A new Hilfsmittel = one HILFSMITTEL entry (with `gear`) + its card here.
+  // A new Hilfsmittel = one HILFSMITTEL entry (with `gear`) + its card here
+  // (`short` = the word on "Braucht: …" labels, Meine Hilfsmittel).
   const GEAR_ITEMS = [
-    { id: "cups", starter: true, name: "Hütchen oder Becher in 4 Farben",
+    { id: "cups", starter: true, short: "Hütchen", name: "Hütchen oder Becher in 4 Farben",
       desc: "Je ein Hütchen oder Becher in Rot, Gelb, Grün und Blau. Kleine Markierungshütchen aus dem Sportbedarf reichen, einfache Plastikbecher auch.", link: "" },
-    { id: "mat", starter: true, name: "Farbmatte mit 4 Feldern",
+    { id: "mat", starter: true, short: "Farbmatte", name: "Farbmatte mit 4 Feldern",
       desc: "Eine Matte mit vier farbigen Feldern in Rot, Gelb, Grün und Blau. Für den Anfang gehen auch vier farbige Zettel auf dem Boden.", link: "" },
-    { id: "numbers", name: "Nummerierte Felder 1–6",
+    { id: "numbers", short: "Zahlenfelder", name: "Nummerierte Felder 1–6",
       desc: "Sechs Zettel oder Karten mit den Zahlen 1 bis 6, auf dem Boden ausgelegt. Selbst geschrieben reicht.", link: "" },
-    { id: "tape", name: "Klebeband für den Boden",
+    { id: "tape", short: "Klebeband", name: "Klebeband für den Boden",
       desc: "Damit klebst du ein Kreuz oder einen Stern auf den Boden. Malerkrepp lässt sich leicht wieder ablösen.", link: "" },
-    { id: "glasses", test: true, name: "Rot-Grün-Brille",
+    { id: "glasses", test: true, short: "Rot-Grün-Brille", name: "Rot-Grün-Brille",
       desc: "Eine Brille mit einem roten und einem grünen Glas. Vor dem ersten Training stellst du sie in der App einmal ein.", link: "" },
   ];
   // HILFSMITTEL keys that are not VT exercise ids: title + opener.
   const GEAR_EX_OPEN = {
-    farbbrille: { title: "Jedes Auge zählt", open: () => { $("eyecountOpenBtn").click(); eyecountReturnScreen = "gearScreen"; } },
+    farbbrille: { title: "Jedes Auge zählt", card: "eyecountOpenBtn", open: () => { $("eyecountOpenBtn").click(); eyecountReturnScreen = "gearScreen"; } },
   };
   function gearExercises(itemId) {
     return Object.keys(HILFSMITTEL).filter((k) => (HILFSMITTEL[k].gear || []).includes(itemId)).map((k) => {
@@ -26612,6 +26628,7 @@
       return `<div class="gear-card" data-gear="${g.id}">
         <div class="fc-title">${esc(g.name)}</div>
         <div class="fc-desc">${esc(g.desc)}</div>
+        <label class="checkbox-row tap-row gear-have"><input type="checkbox" data-gear-have="${g.id}"${gearOwnedRaw()[g.id] ? " checked" : ""}> Hab ich</label>
         ${exs.length ? `<div class="gear-uses-label">Dafür brauchst du es</div><div class="gear-chips">${exs.map((x) => `<button type="button" class="filter-chip gear-ex-chip" data-gear-ex="${x.key}">${esc(x.title)}</button>`).join("")}</div>` : ""}
         ${g.link ? `<div class="gear-shop"><a class="gear-shop-btn" href="${esc(g.link)}" target="_blank" rel="noopener sponsored">Ansehen</a><span class="gear-ad">Werbung · Partner-Link</span></div>` : ""}
       </div>`;
@@ -26641,6 +26658,224 @@
     openGearScreen(scr ? scr.id : "moreScreen");
   }));
   window.__gear = { items: GEAR_ITEMS, render: renderGearScreen, exercises: gearExercises };
+
+  // ---- Meine Hilfsmittel (Idee 67, Fabian 08.10.) ----
+  // The client ticks what they have (Grundeinstellungen group "Meine
+  // Hilfsmittel" + "Hab ich" on every card of the Hilfsmittel page + "Hab
+  // ich" in a ready screen's Hilfsmittel note); stored in fwmc-gear-v1
+  // {itemId: true}. Rule (Fabian): nothing ticked = the client has nothing.
+  // An exercise whose HILFSMITTEL `gear` is not owned stays visible and
+  // openable but is greyed (`.gear-missing` + "Braucht: …" pill on its card),
+  // its start button reads "Braucht: …" and asks once via confirmDialog.
+  // `optional: true` entries are never greyed, `anyOf: true` needs one item.
+  // Everything is read from HILFSMITTEL / GEAR_ITEMS / GEAR_EX_OPEN (`card`),
+  // so a new entry is picked up without extra code. Automated browsers treat
+  // everything as owned unless localStorage fwmc-test-gear is set.
+  const GEAR_KEY = "fwmc-gear-v1";
+  const GEAR_HINT_KEY = "fwmc-gear-hint-dismissed";
+  function gearOwnedRaw() {
+    const o = readJSON(GEAR_KEY, {});
+    return o && typeof o === "object" && !Array.isArray(o) ? o : {};
+  }
+  function gearAllOwned() {
+    if (!navigator.webdriver) return false;
+    try { return localStorage.getItem("fwmc-test-gear") === null; } catch (e) { return true; }
+  }
+  function gearHas(id) { return gearAllOwned() || gearOwnedRaw()[id] === true; }
+  function gearAnyTicked() { const o = gearOwnedRaw(); return Object.keys(o).some((k) => o[k] === true); }
+  function gearSetOwned(ids, on) {
+    const o = gearOwnedRaw();
+    ids.forEach((id) => { if (on) o[id] = true; else delete o[id]; });
+    writeJSON(GEAR_KEY, o);
+    gearSyncAll();
+  }
+  function gearItem(id) { return GEAR_ITEMS.find((g) => g.id === id); }
+  function gearShort(id) { const g = gearItem(id); return g ? (g.short || g.name) : id; }
+  // Missing item ids of one HILFSMITTEL key ([] = nothing missing).
+  function gearMissing(key) {
+    if (!gearModuleReady || !key) return [];
+    const h = HILFSMITTEL[key];
+    if (!h || h.optional || !Array.isArray(h.gear) || !h.gear.length) return [];
+    const ids = h.gear.filter((id) => gearItem(id));
+    if (!ids.length) return [];
+    if (h.anyOf) return ids.some(gearHas) ? [] : ids;
+    return ids.filter((id) => !gearHas(id));
+  }
+  function gearMissingText(key) {
+    const h = HILFSMITTEL[key] || {};
+    const names = gearMissing(key).map(gearShort);
+    if (names.length < 2) return names.join("");
+    return names.slice(0, -1).join(", ") + (h.anyOf ? " oder " : " und ") + names[names.length - 1];
+  }
+  // Farbfelder in "Antippen" needs no mat (the note hides there as well).
+  function gearKeyOfExercise(exId) {
+    if (exId === "farbfelder" && typeof state !== "undefined" && state.ffAnswer === "tippen") return null;
+    return HILFSMITTEL[exId] ? exId : null;
+  }
+  function gearKeyOfComboBlock(block) {
+    if (!block) return null;
+    if (block.domain === "visual") {
+      if (block.exercise === "farbfelder" && block.ff && block.ff.ffAnswer === "tippen") return null;
+      return HILFSMITTEL[block.exercise] ? block.exercise : null;
+    }
+    return HILFSMITTEL[block.domain] ? block.domain : null;
+  }
+  function gearTagHtml(key) {
+    const t = gearMissingText(key);
+    return t ? `<span class="gear-need-tag">Braucht: ${esc(t)}</span>` : "";
+  }
+  // Cards: VT `.excard[data-exercise]` plus GEAR_EX_OPEN[key].card.
+  function gearCards() {
+    const out = [];
+    Object.keys(HILFSMITTEL).forEach((k) => {
+      document.querySelectorAll(`.excard[data-exercise="${k}"]`).forEach((el) => out.push({ key: k, el }));
+      const c = GEAR_EX_OPEN[k] && GEAR_EX_OPEN[k].card && document.getElementById(GEAR_EX_OPEN[k].card);
+      if (c) out.push({ key: k, el: c });
+    });
+    return out;
+  }
+  function gearSyncCards() {
+    gearCards().forEach(({ key, el }) => {
+      const kk = el.classList.contains("excard") ? gearKeyOfExercise(key) : key;
+      const t = gearMissingText(kk);
+      el.classList.toggle("gear-missing", !!t);
+      let pill = el.querySelector(".excard-gear-note");
+      if (t) {
+        if (!pill) { pill = document.createElement("span"); pill.className = "excard-gear-note"; el.appendChild(pill); }
+        pill.textContent = "Braucht: " + t;
+      } else if (pill) pill.remove();
+    });
+  }
+  // A ready screen: the visible .hilfsmittel-note names the key; its start
+  // button reads "Braucht: …" and the note offers "Hab ich".
+  function gearStartBtnOf(screen) {
+    return screen.querySelector("#startBtn") || screen.querySelector('.start-btn[id$="StartBtn"]:not(.secondary)');
+  }
+  function gearSyncScreen(screen) {
+    if (!gearModuleReady || !screen) return;
+    const box = screen.querySelector(".hilfsmittel-note");
+    if (!box) return;
+    const key = !box.hidden && box.dataset.gearKey ? box.dataset.gearKey : null;
+    const missing = gearMissing(key);
+    const text = gearMissingText(key);
+    let row = box.querySelector(".hilfsmittel-have-row");
+    if (missing.length) {
+      if (!row) {
+        row = document.createElement("div");
+        row.className = "hilfsmittel-have-row";
+        const all = box.querySelector(".hilfsmittel-all");
+        box.insertBefore(row, all || null);
+      }
+      const h = HILFSMITTEL[key];
+      const btns = h.anyOf && missing.length > 1
+        ? missing.map((id) => `<button type="button" class="hilfsmittel-have" data-gear-tick="${id}">Hab ich: ${esc(gearShort(id))}</button>`)
+        : [`<button type="button" class="hilfsmittel-have" data-gear-tick="${missing.join(" ")}">Hab ich</button>`];
+      row.innerHTML = `<span class="hilfsmittel-missing">Noch nicht abgehakt: ${esc(text)}</span>` + btns.join("");
+    } else if (row) row.remove();
+    const b = gearStartBtnOf(screen);
+    if (!b) return;
+    const label = b.textContent.replace(/\u00ad/g, "").trim();
+    const canLabel = label === "Training starten" || label.startsWith("Braucht: ");
+    if (missing.length && canLabel) {
+      b.classList.add("gear-missing");
+      b.textContent = "Braucht: " + text;
+      b.dataset.gearKey = key;
+    } else {
+      b.classList.remove("gear-missing");
+      if (label.startsWith("Braucht: ")) b.textContent = "Training starten";
+    }
+  }
+  // "Welche Hilfsmittel hast du?" once on every area home with equipment
+  // exercises, while nothing is ticked, until "Ausblenden".
+  function gearSyncAreaHints() {
+    const show = !gearAllOwned() && !gearAnyTicked() && !readJSON(GEAR_HINT_KEY, false);
+    const homes = new Set();
+    gearCards().forEach(({ key, el }) => {
+      const h = HILFSMITTEL[key];
+      if (!h || h.optional) return;
+      const scr = el.closest(".screen");
+      if (!scr || homes.has(scr)) return;
+      homes.add(scr);
+      let card = scr.querySelector(".gear-ask-card");
+      if (!card) {
+        card = document.createElement("div");
+        card.className = "hilfsmittel-note gear-ask-card";
+        card.innerHTML = '<span class="hilfsmittel-kicker">Hilfsmittel</span>' +
+          '<strong class="gear-ask-title">Welche Hilfsmittel hast du?</strong>' +
+          '<span>Hak an, was du zu Hause hast. Übungen, für die dir noch etwas fehlt, sind leicht ausgegraut. Du kannst sie trotzdem öffnen und starten.</span>' +
+          '<div class="gear-ask-actions"><button type="button" class="hilfsmittel-have gear-ask-open">Hilfsmittel abhaken</button>' +
+          '<button type="button" class="text-link small gear-ask-hide">Ausblenden</button></div>';
+        card.querySelector(".gear-ask-open").addEventListener("click", () => openGearScreen(scr.id));
+        card.querySelector(".gear-ask-hide").addEventListener("click", () => { writeJSON(GEAR_HINT_KEY, true); gearSyncAreaHints(); });
+        const sec = el.closest("section") || el.parentElement;
+        const head = sec.querySelector(":scope > .section-head");
+        if (head) head.after(card); else sec.insertBefore(card, sec.firstChild);
+      }
+      card.hidden = !show;
+    });
+  }
+  // Grundeinstellungen group: one checkbox per GEAR_ITEMS entry (the
+  // Rot-Grün-Brille only with the Test-Bereich unlocked).
+  function gearRenderMaster() {
+    const list = $("masterGearList");
+    if (!list) return;
+    const o = gearOwnedRaw();
+    list.innerHTML = GEAR_ITEMS.filter((g) => !g.test || isTestUnlocked()).map((g) =>
+      `<label class="checkbox-row tap-row"><input type="checkbox" data-gear-have="${g.id}"${o[g.id] ? " checked" : ""}> ${esc(g.name)}</label>`).join("");
+  }
+  function gearSyncToggles() {
+    const o = gearOwnedRaw();
+    document.querySelectorAll("input[data-gear-have]").forEach((c) => { c.checked = o[c.dataset.gearHave] === true; });
+  }
+  function gearSyncAll() {
+    if (!gearModuleReady) return;
+    gearSyncToggles();
+    gearSyncCards();
+    document.querySelectorAll(".screen").forEach((scr) => { if (scr.querySelector(".hilfsmittel-note")) gearSyncScreen(scr); });
+    gearSyncAreaHints();
+    if (els.comboScreen && !els.comboScreen.hidden && typeof renderComboBlockList === "function") renderComboBlockList();
+  }
+  document.addEventListener("change", (e) => {
+    const c = e.target;
+    if (!c || !c.matches || !c.matches("input[data-gear-have]")) return;
+    gearSetOwned([c.dataset.gearHave], c.checked);
+  });
+  document.addEventListener("click", (e) => {
+    const b = e.target && e.target.closest ? e.target.closest("[data-gear-tick]") : null;
+    if (!b) return;
+    gearSetOwned(b.dataset.gearTick.split(" "), true);
+    showToast("Abgehakt. Du findest es unter Grundeinstellungen.");
+  });
+  $("masterGearOpenBtn").addEventListener("click", () => {
+    closeMasterSettings();
+    const vis = document.querySelector(".screen:not([hidden])");
+    openGearScreen(vis && vis.id !== "gearScreen" ? vis.id : "moreScreen");
+  });
+  // Start with missing equipment: ask once, then start as usual (window
+  // capture runs before the lead-in / Haken-Hinweis listeners on document).
+  let gearStartBypass = false;
+  window.addEventListener("click", (e) => {
+    if (gearStartBypass || leadInBypass || fbHintBypass) return;
+    const b = e.target && e.target.closest ? e.target.closest(".start-btn.gear-missing") : null;
+    if (!b || b.disabled || !b.textContent.trim().startsWith("Braucht: ")) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const what = gearMissingText(b.dataset.gearKey) || b.textContent.trim().replace(/^Braucht: /, "");
+    confirmDialog(`Du hast ${what} noch nicht abgehakt. Trotzdem starten?`, () => {
+      b.classList.remove("gear-missing");
+      b.textContent = "Training starten";
+      gearStartBypass = true;
+      try { b.click(); } finally { gearStartBypass = false; }
+    }, { title: "Hilfsmittel", yes: "Trotzdem starten", no: "Abbrechen" });
+  }, true);
+  // Back on a ready screen: label again (after "Trotzdem starten").
+  document.querySelectorAll(".screen").forEach((scr) => {
+    if (!scr.querySelector(".hilfsmittel-note")) return;
+    new MutationObserver(() => { if (!scr.hidden) gearSyncScreen(scr); }).observe(scr, { attributes: true, attributeFilter: ["hidden"] });
+  });
+  gearModuleReady = true;
+  gearSyncAll();
+  window.__myGear = { owned: gearOwnedRaw, set: gearSetOwned, missing: gearMissing, sync: gearSyncAll, hilfsmittel: HILFSMITTEL };
 
   // ---- Grundeinstellungen group "Farbbrille" (only with the Test-Bereich
   // unlocked: .test-teaser, same gate as the tab) ----

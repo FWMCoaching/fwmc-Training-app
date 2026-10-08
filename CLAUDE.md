@@ -556,6 +556,11 @@ For every new or changed exercise/screen, in the same commit:
   the VT ready screen renders it as `.hilfsmittel-note`. Details docs/notes/28.
   A new Hilfsmittel = one HILFSMITTEL entry (`gear`) + its `GEAR_ITEMS` card
   (page "Hilfsmittel und Starterpaket" under Mehr, `#gearScreen`, 2026-10-08).
+  Meine Hilfsmittel (2026-10-08): ticks in `fwmc-gear-v1` (Grundeinstellungen,
+  page, "Hab ich"); unticked `gear` = card greyed + start "Braucht: …" with
+  one confirmDialog, never blocked; `optional: true` never greys, `anyOf: true`
+  needs one. Automated browsers own everything unless `fwmc-test-gear`.
+  Details docs/notes/28, test `tests/meine_hilfsmittel_1008_test.py`.
 - Sanfte Reize (2026-10-07): Grundeinstellungen "Sehen und Reize"
   (`masterPrefs.softStimuli`, + Schriftgröße `textSize` on top of `--ts`).
   Every exercise with fast light changes honours it: VT canvas exercises get
