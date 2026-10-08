@@ -2021,7 +2021,7 @@
     if (block.domain === "cardio") return fmtMinutes(cardioItemsSeconds(block.items));
     if (block.domain === "free") return freeBlockMeta(block.free);
     if (block.domain === "optodrum") { const p = optoBlockPrefs(block); return `${optoTimeLabel(p)} · ${optoDirName(p)} · Stufe ${p.speed}`; }
-    if (block.domain === "neuro") return neuroMeta(block.ex, neuroBlockPrefs(block)) + (neuroBlockIsSpecial(block) ? " · Spezialübung" : "");
+    if (block.domain === "neuro") return NEURO_EXERCISES[block.ex] ? neuroMeta(block.ex, neuroBlockPrefs(block)) : "";
     return "";
   }
   function comboBlockSeconds(block) {
