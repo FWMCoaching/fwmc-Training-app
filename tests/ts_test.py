@@ -47,7 +47,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#tsBgColorPicker .color-swatch").count())
         await pg.click('#tsBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
         await pg.fill("#tsBgIntensitySlider", "0.6"); await pg.dispatch_event("#tsBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#tsBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#tsBgIntensityValue")))
 
         # "schwer" = shortest CSI/ISI/timeout, fastest test run.
         await pg.click('#tsDifficultyRow [data-ts-diff="schwer"]'); await pg.wait_for_timeout(60)

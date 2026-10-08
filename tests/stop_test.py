@@ -40,7 +40,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#stopBgColorPicker .color-swatch").count())
         await pg.click('#stopBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
         await pg.fill("#stopBgIntensitySlider", "0.6"); await pg.dispatch_event("#stopBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#stopBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#stopBgIntensityValue")))
 
         # "leicht" = longest response window, so a slow Playwright click
         # still reliably lands as a normal Go tap rather than a timeout.

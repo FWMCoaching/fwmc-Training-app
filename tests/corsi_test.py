@@ -44,7 +44,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#corsiBgColorPicker .color-swatch").count())
         await pg.click('#corsiBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
         await pg.fill("#corsiBgIntensitySlider", "0.6"); await pg.dispatch_event("#corsiBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#corsiBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#corsiBgIntensityValue")))
 
         # "schwer" = fastest flashes (500ms lit / 250ms gap), so the run
         # advances through several sequence lengths quickly in a test.

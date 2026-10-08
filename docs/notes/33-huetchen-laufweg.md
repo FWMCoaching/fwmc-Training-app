@@ -38,6 +38,14 @@ cone ≥ 0.25 grid units (tested on many seeds). Drawn by `lwMapSvg`: white
 card, "hinten" label, cones in row colours, white underlay + #16232a path,
 small direction triangles (`.lw-chevron`) every ~1.1 units, end arrow,
 start circle #007094 "Start". New random path every round.
+Calm paths (Prüfer 08.10., Mittel 3×3 on a phone was a knot): `lwPickPath`
+draws up to 400 candidates and takes the first with tangle ≤ limit and
+clearance ≥ 0.25 (else the calmest); tangle = self-crossings minus full
+loops (`lwPathScore`); limit 0 on a narrow stage (`lwNarrow`, < 560 px),
+else 1. Raw drafts average ~23 extra crossings, only ~1 % are calm, so the
+400 tries cost ~8 ms once per round. On a narrow stage `lwMapSvg` draws a
+thinner line (0.11 / underlay 0.05), triangles every 1.6 units and none
+within 0.45 of a cone. Test hooks `window.__lw.score/pick`.
 
 ## Run
 `startLaufweg` / `lwTick` / `lwComplete`; pause via `#lwPauseBtn` +

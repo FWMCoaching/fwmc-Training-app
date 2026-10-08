@@ -41,7 +41,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#trailBgColorPicker .color-swatch").count())
         await pg.click('#trailBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
         await pg.fill("#trailBgIntensitySlider", "0.6"); await pg.dispatch_event("#trailBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#trailBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#trailBgIntensityValue")))
 
         # --- Teil A, full completion in correct order ---
         await pg.click('#trailTeilRow [data-trail-teil="a"]'); await pg.wait_for_timeout(60)

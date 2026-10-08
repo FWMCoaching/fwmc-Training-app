@@ -51,7 +51,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#antizipBgColorPicker .color-swatch").count())
         await pg.click('#antizipBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
         await pg.fill("#antizipBgIntensitySlider", "0.6"); await pg.dispatch_event("#antizipBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#antizipBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#antizipBgIntensityValue")))
 
         # "schwer" = shortest travel/tail time, so a short test window still
         # reliably samples several trials, including a timeout.

@@ -13,6 +13,9 @@ A 2x2 colour grid that mirrors the client's 4-colour floor mat.
   gelb, grün), `ffMode` (leuchten / regeln / leer / abfolge), `ffLevel` 1-4,
   `ffSeqStart` 2|3, `ffFoot` (aus / wechsel / zufall), `ffHands`,
   `ffHandRules` ({colourKey: keine|hoch|seitlich|klatschen}, default rot = hoch).
+  Since 08.10. the hand rules are chip rows per colour (`colorChoiceRowsHtml`,
+  `data-ff-hand` + `data-val`), never a `<select>` (same helper as the
+  Richtungskreuz Farbregel). The explanation text is three short sentences.
   `ffNormalize()` validates, `ffStateSnapshot()` copies them.
 - Rule (pure, `ffTarget(symbol, field)`): Viereck = same field, Dreieck =
   `3 - f` (diagonal), Strich = `f ^ 1` (same row), Herz = `f ^ 2` (same column).

@@ -108,6 +108,7 @@ async def main():
                     await pg.evaluate("() => { document.getElementById('confirmCancelBtn').click(); document.getElementById('eventCancelBtn').click(); localStorage.removeItem('fwmc-events-v1'); }")
                 if area == "fortschritt":
                     # QR-Übergabe (2026-10-08): range screen, QR code, import sheet, paste sheet, Kunden-Training strip
+                    await pg.evaluate("() => localStorage.setItem('fwmc-test-trainer-tools', 'true')")
                     await pg.evaluate("""() => { const t = Date.now(); localStorage.setItem('fwmc-history-v1', JSON.stringify([0, 1, 2].map(i => ({id: 'w' + i, ts: new Date(t - (5 + i * 20) * 60000).toISOString(), kind: 'exercise', title: ['Objektverfolgung (MOT) · Geschwindigkeit', 'Farbfelder · Antippen', 'Gleichgewicht · Wörter'][i], seconds: 300, rating: null})))); }""")
                     await pg.goto(BASE + "fortschritt"); await pg.wait_for_timeout(250)
                     await audit(pg, f"{w}px{ts_tag(ts)} fortschritt/verlauf", problems)
@@ -121,11 +122,13 @@ async def main():
                     await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/import-sheet", problems)
                     await pg.evaluate("() => { localStorage.removeItem('fwmc-test-ios-browser'); document.getElementById('handoverImportNoBtn').click(); }")
                     await pg.goto(BASE + "fortschritt"); await pg.wait_for_timeout(250)
-                    await pg.evaluate("() => document.getElementById('handoverPasteOpenBtn').click()"); await pg.wait_for_timeout(100)
+                    await pg.evaluate("() => document.getElementById('handoverScanOpenBtn').click()"); await pg.wait_for_timeout(300)
+                    await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/scannen", problems)
+                    await pg.evaluate("() => document.getElementById('handoverScanPasteBtn').click()"); await pg.wait_for_timeout(100)
                     await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/einfuegen", problems)
                     await pg.evaluate("() => { document.getElementById('handoverPasteCancelBtn').click(); document.getElementById('clientRunStartBtn').click(); }"); await pg.wait_for_timeout(150)
                     await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/kunden-training", problems)
-                    await pg.evaluate("() => localStorage.removeItem('fwmc-client-session-v1')")
+                    await pg.evaluate("() => { localStorage.removeItem('fwmc-client-session-v1'); localStorage.removeItem('fwmc-test-trainer-tools'); }")
                 if area == "hilfsmittel":
                     # with a shop link: "Ansehen" + "Werbung · Partner-Link" + partner sentence
                     await pg.evaluate("() => { window.__gear.items.forEach(g => { g.link = 'https://example.com/' + g.id; }); window.__gear.render(); }")

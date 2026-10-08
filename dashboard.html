@@ -275,6 +275,11 @@
   /* sheets (dialogs) */
   .dsheet { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,0.45); display: flex; align-items: flex-end; justify-content: center; padding: 10px; }
   .dsheet[hidden] { display: none; }
+  .code-qr-canvas { display: block; width: min(340px, 100%); height: auto; aspect-ratio: 1; margin: 14px auto 8px; border-radius: 10px; background: #fff; }
+  .code-qr-text { text-align: center; font-size: 1.15rem; margin: 6px 0; word-break: break-all; }
+  .code-qr-text strong { font-family: ui-monospace, Menlo, monospace; letter-spacing: 0.04em; }
+  #codeQrHint { text-align: center; }
+  #pQrBtn[hidden] { display: none; }
   .dsheet.top { z-index: 70; }
   .dsheet-card { background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 14px; width: min(640px, 100%); max-height: calc(100vh - 20px); overflow-y: auto; padding: 16px; }
   @media (min-width: 700px) { .dsheet { align-items: center; } }
@@ -328,6 +333,7 @@
   .pv-tabbar span { padding: 10px 0 12px; }
   .pv-tabbar .on { color: var(--pv-brand); font-weight: 700; }
 </style>
+<script src="qrcode.js"></script>
 </head>
 <body>
 
@@ -585,6 +591,7 @@
           <button class="kind-btn" type="button" data-kind="workout">Krafttraining</button>
           <button class="kind-btn" type="button" data-kind="free">Eigenes Training</button>
           <button class="kind-btn" type="button" data-kind="neuro">Neuro-Aktivierung</button>
+          <button class="kind-btn" type="button" data-kind="unlock">Freischaltung</button>
         </div>
         <p class="hint" id="kindHint">Der Code landet in der App automatisch im passenden Bereich.</p>
 
@@ -624,13 +631,22 @@
           <p class="empty-hint" id="freeEmptyHint">Noch kein Training hinzugefügt.</p>
         </div>
 
+        <!-- Freischaltung (2026-10-08, docs/notes/36): code type "feature-unlock"
+             switches single app features on (lock: off) on the device that enters it. -->
+        <div id="unlockBuilder" hidden>
+          <label style="margin-top:14px">Was wird freigeschaltet?</label>
+          <div id="unlockFeatureList"><!-- filled from FEATURE_UNLOCKS --></div>
+          <label class="inline-check" style="margin-top:12px"><input type="checkbox" id="unlockLock" /> Sperr-Code: wieder ausblenden</label>
+          <p class="hint" id="unlockFeatureHints"></p>
+        </div>
+
         <!-- Neuro-Aktivierung (2026-10-08, docs/notes/37): a hidden area in the app.
              "Spezialübung" = combo-program with neuro blocks (plays for every client,
              tagged "Spezialübung von deinem Trainer"); "Bereich freischalten" =
              neuro-unlock code (shows the area on that device). -->
         <div id="neuroBuilder" hidden>
           <div class="kind-row" id="neuroModeRow" style="grid-template-columns:repeat(2,1fr)">
-            <button class="kind-btn active" type="button" data-neuro-mode="kombi">Spezialübung (Kombi-Code)</button>
+            <button class="kind-btn active" type="button" data-neuro-mode="kombi">Spezialübung · Kombi</button>
             <button class="kind-btn" type="button" data-neuro-mode="unlock">Bereich freischalten</button>
           </div>
           <p class="hint" id="neuroModeHint"></p>
@@ -674,7 +690,7 @@
         <label for="pConfig" style="margin-top:14px">Konfiguration (JSON - gleiche Struktur wie dig01/dig02/xppbsp-1)</label>
         <textarea id="pConfig" placeholder='{"name":"Dig03 · …","pauseS":15,"blocks":[{"exercise":"vt-color","colors":["orange","rot","lila"],"duration":60,"stimulusS":1,"intervalMin":3,"intervalMax":5}]}'></textarea>
         <p class="hint">Gültige <code>exercise</code>-Werte im Baukasten: vt-color, vrw-original, 4-straight, 4-diag, 8-solo, 8-vrw, stroop-classic, stroop-bg. Weitere Einzelübungen (cross-modal, cone-tap, …) sowie <code>periph-flash</code> (Periphere Wahrnehmung, NAT) funktionieren im selben <code>blocks</code>-Format, aber nur hier im JSON-Tab - der Code landet dann automatisch auf der Startseite des jeweiligen Bereichs (NAT bei <code>periph-flash</code>, sonst Visuelles Training). Pro Baustein optional (08.10.): <code>"trainerNote"</code> (Notiz von dir an den Kunden, bis 300 Zeichen, erscheint unter &bdquo;Regeln&ldquo;) und <code>"zus":{"ids":["ball-kreisen","gang","prellen","kreis-signal"]}</code> (Zus&auml;tze f&uuml;r oben, erscheinen als &bdquo;Von deinem Trainer&ldquo;). Programmübersichten mit mehreren Programmen: <code>{"type":"bundle","name":"…","programs":[{"label":"…","blocks":[…]}, …]}</code>.</p>
-        <p class="hint">Andere Bereiche brauchen einen eigenen <code>type</code>: Krafttraining-Plan <code>{"type":"workout-plan","name":"…","blocks":[…]}</code> (Blockformat wie im Krafttraining-Baukasten, gleiche Feldnamen) bzw. <code>{"type":"workout-bundle","programs":[…]}</code>. Bewegungsprogramm (Reaktionstraining) <code>{"type":"movement-plan","name":"…","movements":["armL-heben","armR-heben","legL-strecken",…],"bpm":90,"durationMin":8,"preview":3,"mirror":true,"showLabel":true}</code> (mind. 2 Bewegungen aus den 8 Grund-IDs: armL/armR/legL/legR jeweils -heben/-strecken) bzw. <code>{"type":"movement-bundle","programs":[…]}</code>. Ausdauer-Einheit <code>{"type":"cardio-plan","name":"…","items":[{"activity":"joggen","durationS":600,"label":"","interval":null}, …]}</code> (<code>activity</code> aus joggen/rad/cross/rudern/walking/treppe/schwimmen, <code>interval</code> optional <code>{"onS":30,"offS":30}</code> - die Zusatzaufgabe während des Ausdauertrainings bleibt eine reine Klienten-Einstellung, kein Coach-Feld) bzw. <code>{"type":"cardio-bundle","programs":[…]}</code>. Vorlagen für „Eigenes Training“ <code>{"type":"free-template","name":"…","trainings":[{"kind":"list","title":"Mobilisation","note":"…","items":[{"text":"Schultern kreisen","s":30}]},{"kind":"timer","title":"Eisbad","minutes":3},{"kind":"check","title":"Journal"}]}</code> (<code>kind</code> check = Abhaken, timer = Mit Zeit mit <code>minutes</code> 1-60, list = Checkliste mit Punkten, <code>s</code> 0-600 Sekunden, 0 = selbst abhaken). Positionen merken/Blitz-Raster/Flash-Speicher-Test/MOT (NAT) sowie der Test-Bereich haben noch keinen Code-Typ. Neuro-Aktivierung: Freischalten <code>{"type":"neuro-unlock","name":"…"}</code> (mit <code>"lock":true</code> wieder verbergen), Spezialübung als Kombi-Code <code>{"type":"combo-program","name":"…","blocks":[{"domain":"neuro","ex":"vibration","prefs":{"stepS":20,"reps":1,"takt":false,"bpm":60}}]}</code> (<code>ex</code> aus vibration/ball-fuss/ball-hand/gelenke; Neuro-Bausteine dürfen auch zwischen anderen Kombi-Bausteinen stehen).</p>
+        <p class="hint">Andere Bereiche brauchen einen eigenen <code>type</code>: Krafttraining-Plan <code>{"type":"workout-plan","name":"…","blocks":[…]}</code> (Blockformat wie im Krafttraining-Baukasten, gleiche Feldnamen) bzw. <code>{"type":"workout-bundle","programs":[…]}</code>. Bewegungsprogramm (Reaktionstraining) <code>{"type":"movement-plan","name":"…","movements":["armL-heben","armR-heben","legL-strecken",…],"bpm":90,"durationMin":8,"preview":3,"mirror":true,"showLabel":true}</code> (mind. 2 Bewegungen aus den 8 Grund-IDs: armL/armR/legL/legR jeweils -heben/-strecken) bzw. <code>{"type":"movement-bundle","programs":[…]}</code>. Ausdauer-Einheit <code>{"type":"cardio-plan","name":"…","items":[{"activity":"joggen","durationS":600,"label":"","interval":null}, …]}</code> (<code>activity</code> aus joggen/rad/cross/rudern/walking/treppe/schwimmen, <code>interval</code> optional <code>{"onS":30,"offS":30}</code> - die Zusatzaufgabe während des Ausdauertrainings bleibt eine reine Klienten-Einstellung, kein Coach-Feld) bzw. <code>{"type":"cardio-bundle","programs":[…]}</code>. Vorlagen für „Eigenes Training“ <code>{"type":"free-template","name":"…","trainings":[{"kind":"list","title":"Mobilisation","note":"…","items":[{"text":"Schultern kreisen","s":30}]},{"kind":"timer","title":"Eisbad","minutes":3},{"kind":"check","title":"Journal"}]}</code> (<code>kind</code> check = Abhaken, timer = Mit Zeit mit <code>minutes</code> 1-60, list = Checkliste mit Punkten, <code>s</code> 0-600 Sekunden, 0 = selbst abhaken). Positionen merken/Blitz-Raster/Flash-Speicher-Test/MOT (NAT) sowie der Test-Bereich haben noch keinen Code-Typ. Neuro-Aktivierung: Freischalten <code>{"type":"neuro-unlock","name":"…"}</code> (mit <code>"lock":true</code> wieder verbergen), Spezialübung als Kombi-Code <code>{"type":"combo-program","name":"…","blocks":[{"domain":"neuro","ex":"vibration","prefs":{"stepS":20,"reps":1,"takt":false,"bpm":60}}]}</code> (<code>ex</code> aus vibration/ball-fuss/ball-hand/gelenke; Neuro-Bausteine dürfen auch zwischen anderen Kombi-Bausteinen stehen). Freischaltungen <code>{"type":"feature-unlock","name":"…","features":["trainer-tools"]}</code> (mehrere Einträge in <code>features</code> erlaubt; <code>trainer-tools</code> = Trainer-Werkzeuge: „An Kunden übergeben“ + „Kunden-Training starten“ unter Fortschritt; mit <code>"lock":true</code> wieder ausblenden).</p>
         <p class="hint">Optionale Video-Links (nur beim Standard-/Bundle-Typ): <code>introVideo</code> (Programmebene, vor Start), <code>endVideo</code> (Programmebene, nach der letzten Übung), <code>videoAfter</code> (pro Block, läuft nach dieser Übung) - reine URL-Strings, Abspielung in der App folgt noch.</p>
       </div>
 
@@ -684,8 +700,22 @@
       <div class="row" style="margin-top:12px">
         <button id="pSaveBtn" style="margin-top:0">Speichern</button>
         <button id="pNewBtn" class="secondary" style="margin-top:0" type="button">Neuer Code</button>
+        <button id="pQrBtn" class="secondary" style="margin-top:0" type="button" hidden>QR-Code zeigen</button>
       </div>
       <div id="pMsg" class="msg"></div>
+    </div>
+  </div>
+
+  <!-- QR-Code zu einem Trainings-Code (2026-10-08, docs/notes/36 + 10):
+       <app url>#code=<CODE>; the client scans it in the app ("Trainer-QR-Code
+       scannen") or with the phone camera. qrcode.js is the app's vendored copy. -->
+  <div class="dsheet" id="codeQrSheet" hidden>
+    <div class="dsheet-card" role="dialog" aria-modal="true" aria-labelledby="codeQrTitle">
+      <div class="pl-headrow"><h2 id="codeQrTitle">QR-Code für deinen Kunden</h2><button type="button" class="secondary" data-close="codeQrSheet">Schließen</button></div>
+      <canvas id="codeQrCanvas" class="code-qr-canvas" width="300" height="300" role="img" aria-label="QR-Code"></canvas>
+      <p class="code-qr-text">Code: <strong id="codeQrText"></strong></p>
+      <p class="hint" id="codeQrHint">Dein Kunde scannt in seiner App unter Fortschritt mit „Trainer-QR-Code scannen“ oder tippt den Code ein.</p>
+      <p class="msg err" id="codeQrError" hidden>Der QR-Code konnte nicht erstellt werden. Gib deinem Kunden den Code als Text.</p>
     </div>
   </div>
 
@@ -762,6 +792,17 @@
   <div class="pl-toast" id="plToast" role="status" aria-live="polite" hidden></div>
 
 <script>
+  // Copy of app.js FEATURE_UNLOCKS (label + what it shows): a new feature =
+  // one entry there + one here (docs/notes/36). A code may carry several.
+  const FEATURE_UNLOCKS = {
+    "trainer-tools": { label: "Trainer-Werkzeuge (für dich)", hint: "Trainer-Werkzeuge: „An Kunden übergeben“ und „Kunden-Training starten“ unter Fortschritt, für dein eigenes Gerät. „Trainer-QR-Code scannen“ hat jeder Kunde ohne Freischaltung." },
+  };
+  function featureBoxes() { return [...document.querySelectorAll("#unlockFeatureList input[data-feature]")]; }
+  (function renderFeatureUnlocks() {
+    document.getElementById("unlockFeatureList").innerHTML = Object.entries(FEATURE_UNLOCKS).map(([f, x]) =>
+      `<label class="inline-check" style="margin-top:6px"><input type="checkbox" data-feature="${f}" /> ${x.label}</label>`).join("");
+    document.getElementById("unlockFeatureHints").textContent = Object.values(FEATURE_UNLOCKS).map((x) => x.hint).join(" ");
+  })();
   const TOKEN_KEY = "fwmc-admin-token";
   const API_BASE = "https://online-training.fwmc.workers.dev";
 
@@ -866,9 +907,10 @@
       tr.innerHTML = `<td>${escapeHtml(p.code)}</td><td>${escapeHtml(p.name)}${mark ? `<span class="pill sp">${mark}</span>` : ""}</td>` +
         `<td><span class="pill ${p.active ? "on" : "off"}">${p.active ? "aktiv" : "inaktiv"}</span></td>` +
         `<td>${escapeHtml(codeRunText(p))}</td>` +
-        `<td>${fmtDate(p.updatedAt)}</td><td><a class="copy-link" data-toggle="${p.code}">${p.active ? "deaktivieren" : "aktivieren"}</a></td>`;
+        `<td>${fmtDate(p.updatedAt)}</td><td><a class="copy-link" data-toggle="${p.code}">${p.active ? "deaktivieren" : "aktivieren"}</a> · <a class="copy-link" data-qr="${escapeHtml(p.code)}">QR-Code zeigen</a></td>`;
       tr.addEventListener("click", (ev) => {
         if (ev.target.dataset.toggle) return;
+        if (ev.target.dataset.qr) { showCodeQr(ev.target.dataset.qr); return; }
         editProgram(p.code);
       });
       tbody.appendChild(tr);
@@ -993,7 +1035,7 @@
       const known = EXERCISE_BY_ID[b.exercise];
       const title = known ? known.title : b.exercise;
       row.innerHTML = `<div><div class="lib-block-title">${escapeHtml(title)}</div>` +
-        `<div class="lib-block-meta">${b.duration ?? "?"}s · Reiz ${b.stimulusS ?? "?"}s · Pause ${b.intervalMin ?? "?"}-${b.intervalMax ?? "?"}s${b.videoAfter ? " · 🎬 Video" : ""}</div></div>` +
+        `<div class="lib-block-meta">${deNum(b.duration)} s · Reiz ${deNum(b.stimulusS)} s · Pause ${deNum(b.intervalMin)}–${deNum(b.intervalMax)} s${b.videoAfter ? " · 🎬 Video" : ""}</div></div>` +
         `<button class="secondary" data-copy="${i}" ${known ? "" : "disabled"}>${known ? "Übernehmen" : "nicht unterstützt"}</button>`;
       list.appendChild(row);
     });
@@ -1079,6 +1121,7 @@
     document.getElementById("workoutBuilder").hidden = kind !== "workout";
     document.getElementById("freeBuilder").hidden = kind !== "free";
     document.getElementById("neuroBuilder").hidden = kind !== "neuro";
+    document.getElementById("unlockBuilder").hidden = kind !== "unlock";
   }
   document.querySelectorAll("#kindRow [data-kind]").forEach((b) => b.addEventListener("click", () => setBuilderKind(b.dataset.kind)));
 
@@ -1323,6 +1366,7 @@
   function neuroCfgMark(c) {
     if (!c || typeof c !== "object") return "";
     if (c.type === "neuro-unlock") return "Neuro freischalten";
+    if (c.type === "feature-unlock") return c.lock ? "Freischaltung sperren" : "Freischaltung";
     const blocks = c.type === "combo-program" ? c.blocks : c.type === "combo-bundle" ? (c.programs || []).flatMap((p) => (p && p.blocks) || []) : [];
     return Array.isArray(blocks) && blocks.some((b) => b && b.domain === "neuro") ? "Spezialübung" : "";
   }
@@ -1441,6 +1485,12 @@
       return { type: "free-template", name, description, trainings: freeTrainingsConfig() };
     }
     if (builderKind === "neuro") return neuroConfig(name, description);
+    if (builderKind === "unlock") {
+      const features = featureBoxes().filter((b) => b.checked).map((b) => b.dataset.feature);
+      const o = { type: "feature-unlock", name: name || "Freischaltung", description, features };
+      if (document.getElementById("unlockLock").checked) o.lock = true;
+      return o;
+    }
     if (builderKind === "workout") {
       return { type: "workout-plan", name, description, blocks: workoutBlocks.map((b) => b.kind === "reps"
         ? { kind: "reps", exercise: b.exercise, sets: b.sets, reps: b.reps, restS: b.restS }
@@ -1473,6 +1523,7 @@
     else if (t === "cardio-plan" && Array.isArray(config.items) && config.items.every((it) => it && CARDIO_BY_ID[it.activity])) kind = "cardio";
     else if (t === "free-template" && Array.isArray(config.trainings) && config.trainings.every((x) => x && typeof x === "object" && (!x.items || Array.isArray(x.items)))) kind = "free";
     else if (t === "workout-plan" && Array.isArray(config.blocks) && config.blocks.every((b) => b && (b.kind === "reps" || b.kind === "tabata") && b.rangeMin == null && WORKOUT_BY_ID[b.exercise])) kind = "workout";
+    else if (t === "feature-unlock" && Array.isArray(config.features) && config.features.every((f) => FEATURE_UNLOCKS[f])) kind = "unlock";
     else if (t === "neuro-unlock" || (t === "combo-program" && Array.isArray(config.blocks) && config.blocks.length && config.blocks.every((b) => b && b.domain === "neuro" && NEURO_BY_ID[b.ex]))) kind = "neuro";
     const fits = !!kind;
     document.getElementById("builderFallbackHint").hidden = !!fits;
@@ -1504,6 +1555,11 @@
       }));
       freeTrainings.forEach((x) => { if (x.kind === "list" && !x.items.length) x.items.push({ text: "", s: 30 }); });
       renderFreeList();
+      return;
+    }
+    if (kind === "unlock") {
+      featureBoxes().forEach((b) => { b.checked = config.features.includes(b.dataset.feature); });
+      document.getElementById("unlockLock").checked = !!config.lock;
       return;
     }
     if (kind === "neuro") {
@@ -1540,7 +1596,7 @@
     document.getElementById("pIntroVideo").value = "";
     document.getElementById("pEndVideo").value = "";
     builderBlocks = [];
-    cardioItems = []; workoutBlocks = []; freeTrainings = []; neuroBlocks = []; setNeuroMode("kombi");
+    cardioItems = []; workoutBlocks = []; freeTrainings = []; neuroBlocks = []; setNeuroMode("kombi"); featureBoxes().forEach((b) => { b.checked = false; }); document.getElementById("unlockLock").checked = false;
     renderMovementChecks([]); renderCardioList(); renderWorkoutList(); renderFreeList(); renderNeuroList();
     document.getElementById("mvBpm").value = 60; document.getElementById("mvDuration").value = 5;
     document.getElementById("mvPreview").value = "3";
@@ -1671,8 +1727,8 @@
         const problem = freeTrainingsProblem(config);
         if (problem) { msg.textContent = problem; msg.className = "msg err"; return; }
       }
-      const empty = builderKind === "free" || (builderKind === "neuro" && config.type === "neuro-unlock") ? false : builderKind === "movement" ? config.movements.length < 2 : builderKind === "cardio" ? !config.items.length : !config.blocks.length;
-      if (empty) { msg.textContent = builderKind === "movement" ? "Mindestens zwei Bewegungen auswählen." : builderKind === "cardio" ? "Mindestens eine Aktivität hinzufügen." : "Mindestens eine Übung hinzufügen."; msg.className = "msg err"; return; }
+      const empty = builderKind === "free" || (builderKind === "neuro" && config.type === "neuro-unlock") ? false : builderKind === "unlock" ? !config.features.length : builderKind === "movement" ? config.movements.length < 2 : builderKind === "cardio" ? !config.items.length : !config.blocks.length;
+      if (empty) { msg.textContent = builderKind === "unlock" ? "Mindestens eine Freischaltung auswählen." : builderKind === "movement" ? "Mindestens zwei Bewegungen auswählen." : builderKind === "cardio" ? "Mindestens eine Aktivität hinzufügen." : "Mindestens eine Übung hinzufügen."; msg.className = "msg err"; return; }
       document.getElementById("pConfig").value = JSON.stringify(config, null, 2); // keep JSON tab in sync
     } else {
       try { config = JSON.parse(document.getElementById("pConfig").value); }
@@ -1686,9 +1742,47 @@
     try {
       const data = await api("/admin/program", { method: "POST", body: { code, config, active } });
       msg.textContent = data.created ? "Neu angelegt." : "Gespeichert."; msg.className = "msg ok";
+      const qb = document.getElementById("pQrBtn"); qb.hidden = false; qb.dataset.code = code;
       loadPrograms();
     } catch (e) { msg.textContent = "Fehler: " + e.message; msg.className = "msg err"; }
   });
+
+  // ---- QR-Code zeigen (2026-10-08): "<app url>#code=<CODE>", same QR
+  // library as the app's QR-Übergabe (qrcode.js next to this file).
+  function appBaseUrl() {
+    const h = location.hostname;
+    const own = /^https?:$/.test(location.protocol) && (/github\.io$/.test(h) || /fabian-westermann\.de$/.test(h) || h === "localhost" || h === "127.0.0.1");
+    return own ? new URL("./", location.href).href : "https://fwmcoaching.github.io/fwmc-Training-app/";
+  }
+  function codeQrUrl(code) { return appBaseUrl() + "#code=" + encodeURIComponent(code); }
+  function showCodeQr(code) {
+    const sheet = document.getElementById("codeQrSheet");
+    const cv = document.getElementById("codeQrCanvas");
+    const url = codeQrUrl(code);
+    document.getElementById("codeQrText").textContent = code;
+    document.getElementById("codeQrError").hidden = true;
+    cv.dataset.url = url;
+    try {
+      const qr = qrcode(0, "M");
+      qr.addData(url, "Byte");
+      qr.make();
+      const n = qr.getModuleCount(), quiet = 4, total = n + quiet * 2;
+      const scale = Math.max(2, Math.floor(720 / total));
+      cv.width = cv.height = total * scale;
+      const g = cv.getContext("2d");
+      g.fillStyle = "#ffffff"; g.fillRect(0, 0, cv.width, cv.height);
+      g.fillStyle = "#0b1a1f";
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect((c + quiet) * scale, (r + quiet) * scale, scale, scale);
+      cv.dataset.modules = String(n);
+      cv.setAttribute("aria-label", "QR-Code für den Code " + code);
+    } catch (e) {
+      document.getElementById("codeQrError").hidden = false;
+    }
+    sheet.hidden = false;
+    const close = sheet.querySelector("[data-close]"); if (close) close.focus();
+  }
+  document.getElementById("pQrBtn").addEventListener("click", (ev) => showCodeQr(ev.currentTarget.dataset.code || document.getElementById("pCode").value.trim()));
+  document.getElementById("codeQrSheet").addEventListener("keydown", (ev) => { if (ev.key === "Escape") document.getElementById("codeQrSheet").hidden = true; });
 
   // Random suffix so a public training-code can't be guessed/enumerated
   // (e.g. "dig01", "dig02", ...) by anyone hitting the public, unauthenticated
@@ -1709,6 +1803,7 @@
   });
 
   document.getElementById("pNewBtn").addEventListener("click", () => {
+    document.getElementById("pQrBtn").hidden = true;
     document.getElementById("pCode").value = "";
     document.getElementById("pConfig").value = "";
     document.getElementById("pActive").checked = true;
@@ -1718,6 +1813,8 @@
     document.getElementById("pCode").focus();
   });
 
+  // German decimal comma in value lines (Prüfer 08.10.: "1.5 s" -> "1,5 s").
+  function deNum(v) { return v == null || v === "" ? "?" : String(v).replace(".", ","); }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }

@@ -47,7 +47,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#rotationBgColorPicker .color-swatch").count())
         await pg.click('#rotationBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
         await pg.fill("#rotationBgIntensitySlider", "0.6"); await pg.dispatch_event("#rotationBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#rotationBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#rotationBgIntensityValue")))
 
         # "schwer" = shortest response window, so a short test window still
         # reliably samples several trials, including a timeout.
