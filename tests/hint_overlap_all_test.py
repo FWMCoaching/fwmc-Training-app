@@ -119,6 +119,21 @@ async def run_opto(b,vp):
     print(vp['width'],"optodrum","OK" if not found else sorted(found))
     if found: BAD.append((vp['width'],"optodrum"))
     await ctx.close()
+# Neuro-Aktivierung (2026-10-08): step text, side pill and countdown sit
+# below the floating player bar (flow layout like Eigenes Training).
+async def run_neuro(b,vp):
+    ctx=await b.new_context(viewport=vp,service_workers="block"); pg=await ctx.new_page()
+    await pg.add_init_script("localStorage.setItem('fwmc-tips-seen','true');localStorage.setItem('fwmc-test-neuro','true');localStorage.setItem('fwmc-master-v1',JSON.stringify({startCountdown:false}))")
+    errs=[]; pg.on("pageerror", lambda e: errs.append(str(e)))
+    for ex in ["vibration","gelenke"]:
+        await pg.goto(URL.replace("bereich=visual","bereich=neuro")); await pg.wait_for_timeout(250)
+        await pg.click(f'[data-neuro-ex="{ex}"]'); await pg.click("#neuroStartBtn"); await pg.wait_for_timeout(300)
+        bad=set(await pg.evaluate("()=>{const bar=[...document.getElementById('neuroPlayerBar').children].map(c=>c.getBoundingClientRect()).filter(r=>r.height);const bb=Math.max(...bar.map(r=>r.bottom));return ['neuroRunProgress','neuroRunTitle','neuroRunIcon','neuroRunItem','neuroRunSide','neuroRunCountdown'].filter(id=>{const e=document.getElementById(id);const r=e.getBoundingClientRect();return r.height&&r.top<bb-1;});}"))
+        if errs: bad.add("pageerror: "+errs[0][:80])
+        print(vp['width'],"neuro",ex,"OK" if not bad else sorted(bad))
+        if bad: BAD.append((vp['width'],"neuro "+ex))
+        await pg.click("#neuroBackBtn"); await pg.wait_for_timeout(200)
+    await ctx.close()
 # Hütchen · Laufweg (2026-10-08): caption, map and buttons sit below the
 # floating player bar, in both variants (Karte / Weg merken).
 async def run_lw(b,vp):
@@ -152,6 +167,7 @@ async def main():
             await run_ff(b,vp)
             await run_cn(b,vp)
             await run_opto(b,vp)
+            await run_neuro(b,vp)
             await run_lw(b,vp)
         await b.close()
     print("all exercises clear of hint/bar:", not BAD)
