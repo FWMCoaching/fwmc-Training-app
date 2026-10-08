@@ -835,13 +835,18 @@
     <div class="choice-row two" id="eventKindRow" role="group" aria-labelledby="eventKindLabel"></div>
     <div class="plan-entry-row">
       <div>
-        <label class="group-label" for="eventDateInput">Datum</label>
+        <label class="group-label" for="eventDateInput" id="eventDateLabel">Datum</label>
         <input type="date" id="eventDateInput" class="plan-input" lang="de">
       </div>
       <div>
         <label class="group-label" for="eventTimeInput">Uhrzeit (optional)</label>
         <input type="time" id="eventTimeInput" class="plan-input" lang="de">
       </div>
+    </div>
+    <div id="eventRepeatGroup">
+      <div class="group-label" id="eventRepeatLabel">Wiederholen</div>
+      <div class="choice-row" id="eventRepeatRow" role="group" aria-labelledby="eventRepeatLabel"></div>
+      <div class="group-help" id="eventRepeatHint" hidden></div>
     </div>
     <label class="checkbox-row tap-row event-goal-row"><input type="checkbox" id="eventGoalToggle"> Gro&szlig;es Ziel: Countdown auf Heute zeigen</label>
     <div class="program-error" id="eventError" role="alert" hidden></div>
@@ -8929,6 +8934,7 @@
       <button class="start-btn secondary" id="confirmNoBtn">Nein</button>
       <button class="start-btn" id="confirmYesBtn">Ja</button>
     </div>
+    <button class="text-link small confirm-cancel-btn" id="confirmCancelBtn" type="button" hidden>Abbrechen</button>
   </div>
 </div>
 

@@ -3380,3 +3380,7 @@ body.client-run-on .screen>.brandbar{top:calc(48px + env(safe-area-inset-top,0px
 .neuro-stage .free-run-item{font-size:calc(28px * var(--ts,1))}
 @media (max-width:380px){.neuro-stage .free-run-item{font-size:calc(24px * var(--ts,1))}.neuro-side{font-size:calc(22px * var(--ts,1))}}
 .neuro-controls .chapter-row .info span{white-space:normal}
+/* confirmDialog with opts.cancel (Termin-Serien 2026-10-08): neutral third way out */
+.confirm-cancel-btn{display:block;margin:12px auto 0;min-height:44px}
+/* Termin-Serien: "Alle 2 Wochen" stays on one line on a phone */
+#eventRepeatRow{grid-template-columns:.7fr 1fr 1.25fr}
