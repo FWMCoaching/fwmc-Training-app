@@ -8656,7 +8656,11 @@
   function cvdControlsHost(screenId) {
     const screen = document.getElementById(screenId);
     if (!screen) return null;
-    let body = screen.querySelector("details.advanced .advanced-body");
+    // The VT ready screen holds a second, nested Feineinstellungen for
+    // Hütchen-Laufweg (#lwAdvanced inside the hidden #lwSettings, 08.10.) that
+    // comes first in the DOM - the shared controls (Farbschwäche, Signalfarbe,
+    // Sanfte Reize) belong in the shared #advanced, not in Laufweg's.
+    let body = (screenId === "ready" && screen.querySelector("#advanced .advanced-body")) || screen.querySelector("details.advanced .advanced-body");
     if (!body) {
       const det = document.createElement("details");
       det.className = "advanced";
