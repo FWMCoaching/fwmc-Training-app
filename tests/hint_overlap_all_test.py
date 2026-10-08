@@ -79,6 +79,31 @@ async def run_ff(b,vp):
 # Hütchen · Farbe + Zahl (2026-10-07): the colour disc on the shared VT
 # canvas stays below the floating player bar and inside the stage, at every
 # field count (window.__cnLastGeom, CSS px).
+# Richtungskreuz (2026-10-08): cross overview and signs stay below the player
+# bar (now with ⓘ) and above the caption band (shares ffGeometry).
+async def run_rk(b,vp):
+    ctx=await b.new_context(viewport=vp,service_workers="block"); pg=await ctx.new_page()
+    await pg.add_init_script("localStorage.setItem('fwmc-tips-seen','true');localStorage.setItem('fwmc-master-v1',JSON.stringify({startCountdown:false}))")
+    errs=[]; pg.on("pageerror", lambda e: errs.append(str(e)))
+    await pg.goto(URL); await pg.wait_for_timeout(250)
+    for mode in ["zeigen","abfolge"]:
+        await pg.click('.excard[data-exercise="richtungskreuz"]'); await pg.wait_for_timeout(150)
+        await pg.evaluate("(m)=>{document.querySelector(`[data-rk-mode=${m}]`).click();document.querySelector('[data-rk-signs=beide]').click()}",mode)
+        await pg.evaluate("()=>{window.__ffLastGeom=null;document.getElementById('startBtn').click()}")
+        bad=set(); seen=0
+        for i in range(25):
+            await pg.wait_for_timeout(200)
+            g=await pg.evaluate("()=>window.__ffLastGeom")
+            if g:
+                seen+=1
+                if not (g['top']>=g['barBottom'] and g['bottom']<=g['capTop']+0.5): bad.add("cross/sign <> bar/caption")
+        if not seen: bad.add("nothing drawn")
+        if errs: bad.add("pageerror: "+errs[0][:80])
+        print(vp['width'],"richtungskreuz",mode,"OK" if not bad else sorted(bad))
+        if bad: BAD.append((vp['width'],"richtungskreuz "+mode))
+        await pg.click("#backBtn"); await pg.wait_for_timeout(250)
+        await pg.click("#backToHome"); await pg.wait_for_timeout(150)
+    await ctx.close()
 async def run_cn(b,vp):
     ctx=await b.new_context(viewport=vp,service_workers="block"); pg=await ctx.new_page()
     await pg.add_init_script("localStorage.setItem('fwmc-tips-seen','true');localStorage.setItem('fwmc-master-v1',JSON.stringify({startCountdown:false}))")
@@ -151,6 +176,7 @@ async def main():
             await run(b,vp,"bisect",worst=True)
             await run_ff(b,vp)
             await run_cn(b,vp)
+            await run_rk(b,vp)
             await run_opto(b,vp)
             await run_lw(b,vp)
         await b.close()

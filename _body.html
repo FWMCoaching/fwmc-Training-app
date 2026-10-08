@@ -222,6 +222,18 @@
         <p>Vier Farbfelder wie auf deiner Matte &ndash; tritt auf das richtige Feld.</p>
         <span class="tag">Matte</span>
       </button>
+      <button class="excard" data-exercise="richtungskreuz" data-tags="huetchen">
+        <div class="icon-badge pale"><svg viewBox="0 0 24 24">
+          <path d="M12 7v10M7 12h10" stroke="#9aa9ae" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="12" cy="4.6" r="3" fill="#d32f2f"/>
+          <circle cx="19.4" cy="12" r="3" fill="#f2a900"/>
+          <circle cx="12" cy="19.4" r="3" fill="#1565c0"/>
+          <circle cx="4.6" cy="12" r="3" fill="#2e7d32"/>
+        </svg></div>
+        <h3>Richtungskreuz</h3>
+        <p>Vorne, hinten, links, rechts &ndash; jedes Zeichen hat seine Richtung.</p>
+        <span class="tag">Schritte</span>
+      </button>
     </div>
   </section>
 
@@ -638,6 +650,48 @@
       <button class="start-btn" id="pauseSaveBtn" type="button">Eintragen</button>
     </div>
     <button class="text-link small danger" id="pauseDeleteBtn" type="button" hidden>Pause beenden und l&ouml;schen</button>
+  </div>
+</div>
+
+<!-- Regeln + Meine Notiz (Idee 72, 2026-10-08), docs/notes/35 -->
+<div class="sheet" id="regelnSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="regelnTitle">
+    <h2 id="regelnTitle">Regeln</h2>
+    <div class="regeln-ex" id="regelnEx"></div>
+    <div class="group-label">So geht&rsquo;s gerade</div>
+    <ul class="regeln-list" id="regelnList"></ul>
+    <div class="regeln-zus" id="regelnZusBox" hidden>
+      <div class="group-label">Zus&auml;tze f&uuml;r oben</div>
+      <ul class="regeln-list" id="regelnZusList"></ul>
+    </div>
+    <div class="regeln-trainer" id="regelnTrainerBox" hidden>
+      <div class="group-label">Notiz von deinem Trainer</div>
+      <p class="regeln-trainer-text" id="regelnTrainerText"></p>
+    </div>
+    <label class="group-label" for="regelnNoteInput">Meine Notiz</label>
+    <textarea class="regeln-note" id="regelnNoteInput" maxlength="300" rows="3" placeholder="z.&#8239;B. Blau hei&szlig;t bei mir: zur&uuml;ck"></textarea>
+    <div class="group-help regeln-note-help" id="regelnNoteHelp"></div>
+    <button class="start-btn" id="regelnDoneBtn" type="button">Weiter</button>
+  </div>
+</div>
+
+<!-- Zusatz für oben (Idee 71, 2026-10-08) -->
+<div class="sheet" id="zusatzSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="zusatzTitle">
+    <h2 id="zusatzTitle">Zusatz f&uuml;r oben</h2>
+    <p class="group-help">Tippe an, was dein Oberk&ouml;rper dazu macht. Du kannst mehrere kombinieren.</p>
+    <div class="zus-card-list" id="zusCardList"></div>
+    <div class="group-help zus-warn" id="zusSheetWarn" hidden>Pr&uuml;fe, ob sich deine Zus&auml;tze gegenseitig ausschlie&szlig;en oder aufheben.</div>
+    <div class="group" id="zusSigGroup" hidden>
+      <div class="group-label">Signal kommt alle</div>
+      <div class="slider-row two-line">
+        <div class="slider-line"><span class="slider-label">Min</span><input type="range" id="zusSigMinSlider" min="3" max="60" step="1" aria-label="Signal fr&uuml;hestens nach"></div>
+        <div class="slider-line"><span class="slider-label">Max</span><input type="range" id="zusSigMaxSlider" min="3" max="60" step="1" aria-label="Signal sp&auml;testens nach"></div>
+        <span class="slider-value" id="zusSigValue"></span>
+      </div>
+      <div class="group-help">Zuf&auml;llig dazwischen: ein kurzer Doppelton und das Zeichen &#8635;.</div>
+    </div>
+    <button class="start-btn" id="zusatzDoneBtn" type="button">Fertig</button>
   </div>
 </div>
 
@@ -4694,7 +4748,7 @@
     <span>Aufbau-Beispiele ansehen</span>
   </button>
   <div class="hilfsmittel-note" id="hilfsmittelNote" hidden>
-    <span class="hilfsmittel-kicker">Hilfsmittel</span>
+    <span class="hilfsmittel-kicker" id="hilfsmittelKicker">Hilfsmittel</span>
     <span id="hilfsmittelText"></span>
     <a class="text-link small hilfsmittel-link" id="hilfsmittelLink" href="#" target="_blank" rel="noopener" hidden>Passendes Hilfsmittel ansehen &rarr;</a>
     <button class="text-link small hilfsmittel-all" type="button">Alle Hilfsmittel</button>
@@ -4818,6 +4872,78 @@
       <div id="ffHandBody" hidden>
         <div class="ff-hand-rows" id="ffHandRows"></div>
         <div class="group-help">Bei &bdquo;Leuchten&ldquo; und &bdquo;Abfolge merken&ldquo; zeigt und sagt die App die Aufgabe an. Bei den anderen Modi merkst du sie dir selbst, sonst w&uuml;rde die Anzeige die L&ouml;sung verraten.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="zus-note" id="zusNote" hidden></div>
+
+  <!-- Richtungskreuz (Idee 70, 2026-10-08), docs/notes/35 -->
+  <div id="rkSettings" hidden>
+    <div class="group">
+      <div class="group-label">Modus</div>
+      <div class="choice-row two" id="rkModeRow" role="group" aria-label="Modus">
+        <button type="button" class="choice" data-rk-mode="zeigen">Zeichen zeigen<small>ein Zeichen, ein Schritt</small></button>
+        <button type="button" class="choice" data-rk-mode="abfolge">Abfolge merken<small>Folge nachgehen</small></button>
+      </div>
+      <div class="group-help" id="rkModeHelp"></div>
+    </div>
+    <div class="group">
+      <div class="group-label">Zeichen</div>
+      <div class="choice-row" id="rkSignsRow" role="group" aria-label="Zeichen">
+        <button type="button" class="choice" data-rk-signs="farben">Farben</button>
+        <button type="button" class="choice" data-rk-signs="zahlen">Zahlen</button>
+        <button type="button" class="choice" data-rk-signs="beide">Farbe + Zahl</button>
+      </div>
+    </div>
+    <div class="group">
+      <div class="group-label">Deine Richtungen <span class="tag ff-tag">ver&auml;nderbar</span></div>
+      <div class="rk-cross" id="rkCross">
+        <button type="button" class="rk-cell" data-rk-dir="vorne"></button>
+        <button type="button" class="rk-cell" data-rk-dir="links"></button>
+        <div class="rk-me" aria-hidden="true">Du</div>
+        <button type="button" class="rk-cell" data-rk-dir="rechts"></button>
+        <button type="button" class="rk-cell" data-rk-dir="hinten"></button>
+      </div>
+      <div class="group-help" id="rkCrossHelp"></div>
+      <div class="color-picker" id="rkColorPicker"></div>
+      <div class="rk-num-line"><span class="slider-label">Zahl</span>
+        <div class="choice-row rk-num-row" id="rkNumRow" role="group" aria-label="Zahl"></div>
+      </div>
+    </div>
+    <div class="group">
+      <div class="group-label">Hilfsmittel</div>
+      <div class="choice-row" id="rkGearRow" role="group" aria-label="Hilfsmittel">
+        <button type="button" class="choice" data-rk-gear="matte">Farbmatte<small>Felder um dich</small></button>
+        <button type="button" class="choice" data-rk-gear="huetchen">H&uuml;tchen<small>vier H&uuml;tchen</small></button>
+        <button type="button" class="choice" data-rk-gear="keine">Ohne<small>Richtungen merken</small></button>
+      </div>
+      <div class="group-help" id="rkGearHelp"></div>
+    </div>
+    <div class="group" id="rkSeqGroup" hidden>
+      <div class="group-label">L&auml;nge der ersten Folge</div>
+      <div class="choice-row two" id="rkSeqRow" role="group" aria-label="L&auml;nge der ersten Folge">
+        <button type="button" class="choice" data-rk-seq="2">2 Zeichen</button>
+        <button type="button" class="choice" data-rk-seq="3">3 Zeichen</button>
+      </div>
+      <div class="group-help">Jede Runde kommt ein Zeichen dazu.</div>
+    </div>
+    <div class="group" id="rkRuleGroup">
+      <div class="group-label">Farbregel</div>
+      <div class="choice-row two" id="rkRuleRow" role="group" aria-label="Farbregel">
+        <button type="button" class="choice" data-rk-rule="0">Aus</button>
+        <button type="button" class="choice" data-rk-rule="1">An<small>jede Farbe hat eine Bedeutung</small></button>
+      </div>
+      <div id="rkRuleBody" hidden>
+        <div class="ff-hand-rows" id="rkRuleRows"></div>
+      </div>
+      <div class="group-help" id="rkRuleHelp"></div>
+    </div>
+    <div class="group">
+      <div class="group-label">Zeichen ansagen</div>
+      <div class="choice-row two" id="rkSpeakRow" role="group" aria-label="Zeichen ansagen">
+        <button type="button" class="choice" data-rk-speak="0">Aus</button>
+        <button type="button" class="choice" data-rk-speak="1">An<small>die App sagt das Zeichen</small></button>
       </div>
     </div>
   </div>
@@ -5114,6 +5240,14 @@
   <details class="advanced" id="advanced">
     <summary>Feineinstellungen</summary>
     <div class="advanced-body">
+      <div class="group" id="zusGroup" hidden>
+        <div class="zus-row">
+          <span class="zus-row-label">Zusatz f&uuml;r oben:</span>
+          <span class="zus-chips" id="zusChips"></span>
+          <button type="button" class="zus-add-btn" id="zusAddBtn">+ Zusatz</button>
+        </div>
+        <div class="group-help zus-warn" id="zusRowWarn" hidden>Pr&uuml;fe, ob sich deine Zus&auml;tze gegenseitig ausschlie&szlig;en oder aufheben.</div>
+      </div>
       <div class="group">
         <div class="group-label">Gesamtdauer</div>
         <div class="slider-row">

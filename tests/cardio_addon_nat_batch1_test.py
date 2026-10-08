@@ -73,7 +73,7 @@ async def main():
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
         picker_groups = await pg.locator("#cardioAddonPickerTypeRow .cardio-addon-picker-group-label").all_inner_texts()
         print("picker grouped Visual Training, Neuroathletik, Weitere (Rechnen):", picker_groups == ["Visuelles Training", "Neuroathletik (NAT)", "Weitere Zusatzaufgaben"])
-        print("picker offers 21 choices total (incl. Rechnen):", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 21)
+        print("picker offers 22 choices total (incl. Rechnen, Richtungskreuz):", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 22)
 
         # index 14 = periph-flash (first NAT entry, right after the 14 VT ones)
         await pg.locator("#cardioAddonPickerTypeRow .choice").nth(14).click(); await pg.wait_for_timeout(80)

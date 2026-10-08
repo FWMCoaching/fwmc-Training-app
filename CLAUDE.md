@@ -284,6 +284,7 @@ everywhere goes here, short.
 | 32-zusatz-rechnen | Zusatzaufgabe "Rechnen" (VT canvas + Cardio `addon-math`): statements, Doppelkreis/Nur stimmt/Laut, placement, scoring |
 | 33-huetchen-laufweg | Hütchen · Laufweg (VT, cone map with drawn path): why VT-catalog architecture, path maker, variants, what is not wired |
 | 34-ton-sequenz | Ton-Sequenz (Test-Bereich): step model, audio graph (merger, fades, cueVolume), Kanal-Test, Suchlauf, presets, safety, iPhone checks |
+| 35-richtungskreuz-zusaetze-regeln | Richtungskreuz (VT, 4 directions, Farbregel), Zusätze für oben (`ZUSAETZE`, signal), ⓘ Regeln + Meine Notiz (`REGELN_EXERCISES`, notes in presets/Kombi, trainer note) |
 
 ## Must-do rules collected from the detail notes
 
@@ -586,5 +587,14 @@ For every new or changed exercise/screen, in the same commit:
 - Tones on purpose (Ton-Sequenz, 2026-10-08): every audible tone goes
   through `cueVolume()`, starts with a fade-in, ear choice via
   ChannelMerger; docs/notes/34.
+- Zusätze für oben (2026-10-08): a new Zusatz = one `ZUSAETZE` entry (sheet,
+  chips, notes, Regeln, presets, Kombi, codes follow); an exercise done by
+  stepping joins `ZUS_EXERCISES`. Signal Zusätze only through cueVolume().
+- ⓘ Regeln + Meine Notiz (2026-10-08): every exercise with rules gets ⓘ via
+  `REGELN_EXERCISES` (VT catalog exercises automatically via "@vt" +
+  `vtRuleLines`, which must describe a new VT type's settings; NAT/other
+  engines one entry: ready screens, bar, pause overlays, domain). The bar ⓘ
+  pauses via the visible `…PauseBtn` and resumes via `…ResumeBtn`.
+  Details docs/notes/35.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

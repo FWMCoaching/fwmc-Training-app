@@ -245,8 +245,9 @@ async def main():
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
         heads = await pg.locator("#cardioAddonPickerTypeRow .cardio-addon-picker-group-label").all_inner_texts()
         check("picker: own group 'Weitere Zusatzaufgaben' at the end", heads[-1] == "Weitere Zusatzaufgaben", str(heads))
-        last = pg.locator("#cardioAddonPickerTypeRow .choice").last
-        check("picker: last choice is Rechnen", "Rechnen" in await last.inner_text())
+        # Richtungskreuz (08.10.) follows Rechnen in the same group
+        last = pg.locator("#cardioAddonPickerTypeRow .choice").nth(20)
+        check("picker: Rechnen is the first of the last group", "Rechnen" in await last.inner_text())
         await last.click(); await pg.wait_for_timeout(100)
         det = pg.locator("#cardioAddonPickerDetail")
         check("picker: Rechenart + So antwortest du offered", await det.locator('[data-balf="level"]').count() == 3 and await det.locator('[data-balf="answer"]').count() == 3)

@@ -148,6 +148,22 @@ async def main():
                     await pg.wait_for_timeout(100)
                     await audit(pg, f"{w}px{ts_tag(ts)} visual/addon-rechnen", problems)
                     await pg.evaluate("() => { const t = document.querySelector('[data-addon-task=periph]'); if (t) t.click(); }")
+                    # Zusätze für oben (2026-10-08): two chips + hint in the open Feineinstellungen
+                    await pg.evaluate("() => { document.getElementById('advanced').open = true; document.getElementById('zusAddBtn').click(); ['ball-kreisen','kreis-signal'].forEach(id => document.querySelector(`[data-zus-card=${id}]`).click()); }")
+                    await pg.wait_for_timeout(100)
+                    await audit(pg, f"{w}px{ts_tag(ts)} visual/zusatz-sheet", problems)
+                    await pg.evaluate("() => document.getElementById('zusatzDoneBtn').click()")
+                    await audit(pg, f"{w}px{ts_tag(ts)} visual/zusatz-row", problems)
+                    await pg.evaluate("() => { ['ball-kreisen','kreis-signal'].forEach(id => { const x = document.querySelector(`[data-zus-remove=${id}]`); if (x) x.click(); }); document.getElementById('advanced').open = false; }")
+                    # Richtungskreuz ready screen (2026-10-08): Farbe + Zahl, Farbregel open, Regeln sheet
+                    await pg.click("#backToHome"); await pg.wait_for_timeout(150)
+                    await pg.click('.excard[data-exercise="richtungskreuz"]'); await pg.wait_for_timeout(150)
+                    await pg.evaluate("() => ['[data-rk-signs=beide]','[data-rk-rule=\"1\"]'].forEach(s => document.querySelector(s).click())")
+                    await pg.wait_for_timeout(100)
+                    await audit(pg, f"{w}px{ts_tag(ts)} visual/richtungskreuz", problems)
+                    await pg.evaluate("() => document.querySelector('#ready .regeln-btn').click()"); await pg.wait_for_timeout(150)
+                    await audit(pg, f"{w}px{ts_tag(ts)} visual/regeln-sheet", problems)
+                    await pg.evaluate("() => { document.getElementById('regelnDoneBtn').click(); ['[data-rk-signs=farben]','[data-rk-rule=\"0\"]'].forEach(s => document.querySelector(s).click()); }")
                 if area == "test":
                     # Ton-Sequenz ready screen (2026-10-08): safety note open, Wechsel + Puls + Gleiten rows
                     await pg.click("#tonOpenBtn"); await pg.wait_for_timeout(150)

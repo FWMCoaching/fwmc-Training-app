@@ -614,6 +614,8 @@
 
     if (kind === "farbfelder" || (kind === "blank" && EXERCISES[state.exercise] && EXERCISES[state.exercise].type === "farbfelder")) {
       drawFarbfelder(kind === "farbfelder" ? payload : null);
+    } else if (kind === "rk" || (kind === "blank" && EXERCISES[state.exercise] && EXERCISES[state.exercise].type === "richtungskreuz")) {
+      drawRk(kind === "rk" ? payload : null);
     } else if (kind === "blank") {
       ctx.fillStyle = currentBgFill(NEUTRAL);
       ctx.fillRect(0, 0, cw, ch);
@@ -837,6 +839,112 @@
     if (prev && run >= FF_COUNT_RUN_MAX) return prev === 1 ? 2 : 1;
     return rng() < 0.5 ? 1 : 2;
   }
+  // ---- Richtungskreuz (Idee 70, Fabian 08.10.): four directions around the
+  // client (vorne/hinten/links/rechts), each with a colour and a number. The
+  // app shows a sign, the client steps there. Sibling of Farbfelder on the
+  // shared VT canvas engine (ffGeometry, seqTiming, caption band, capVtSchedule).
+  // State `rk*` in the VT state, normalized by rkNormalize. docs/notes/35.
+  const RK_DIRS = ["vorne", "rechts", "hinten", "links"];
+  const RK_DIR_NAMES = { vorne: "Vorne", rechts: "Rechts", hinten: "Hinten", links: "Links" };
+  const RK_OPPOSITE = { vorne: "hinten", hinten: "vorne", links: "rechts", rechts: "links" };
+  const RK_DEFAULT_COLORS = { vorne: "rot", rechts: "gelb", hinten: "blau", links: "gruen" };
+  const RK_DEFAULT_NUMS = { vorne: 4, hinten: 1, links: 2, rechts: 3 };
+  const RK_MODES = {
+    zeigen: { label: "Zeichen zeigen", small: "ein Zeichen, ein Schritt", help: "Die App zeigt ein Zeichen. Mach so schnell wie möglich einen Schritt in die Richtung, zu der es gehört, und komm zurück in die Mitte.", task: "Schritt in die Richtung des Zeichens." },
+    abfolge: { label: "Abfolge merken", small: "Folge nachgehen", help: "Die Zeichen kommen nacheinander. Bei „Jetzt du“ gehst du die Folge in derselben Reihenfolge nach. Jede Runde kommt ein Zeichen dazu.", task: "Merk dir die Folge und geh sie bei „Jetzt du“ nach." },
+  };
+  const RK_SIGNS = { farben: "Farben", zahlen: "Zahlen", beide: "Farbe + Zahl" };
+  const RK_GEARS = {
+    matte: { label: "Farbmatte", small: "Felder um dich herum", help: "Leg vier Farbfelder vorne, hinten, links und rechts um dich, in den Farben unten." },
+    huetchen: { label: "Hütchen", small: "vier Hütchen", help: "Stell vier Hütchen in den Farben unten vorne, hinten, links und rechts um dich, etwa einen großen Schritt entfernt." },
+    keine: { label: "Ohne", small: "Richtungen merken", help: "Du brauchst nichts. Merk dir, welches Zeichen zu welcher Richtung gehört. Am Anfang zeigt die App das Kreuz kurz." },
+  };
+  // Farbregel: each colour can mean something else than "normal".
+  const RK_MEANINGS = { normal: "normal", gegen: "Gegenrichtung", stehen: "stehen bleiben", kreis: "Kreisrichtung wechseln" };
+  const RK_MEANING_RULES = { normal: "Schritt in die gezeigte Richtung", gegen: "Schritt in die Gegenrichtung", stehen: "stehen bleiben, kein Schritt", kreis: "kein Schritt, die Kreisrichtung des Balls wechseln" };
+  const RK_DEFAULT_RULES = { blau: "gegen" };
+  const RK_ORIENT_S = 3; // the cross overview at the start of a run
+  const RK_NUM_MAX = 9;
+  function rkNormalize(p) {
+    if (!RK_MODES[p.rkMode]) p.rkMode = "zeigen";
+    if (!RK_SIGNS[p.rkSigns]) p.rkSigns = "farben";
+    if (!RK_GEARS[p.rkGear]) p.rkGear = "huetchen";
+    if (![2, 3].includes(p.rkSeqStart)) p.rkSeqStart = 2;
+    if (typeof p.rkRuleOn !== "boolean") p.rkRuleOn = false;
+    if (typeof p.rkSpeak !== "boolean") p.rkSpeak = false;
+    const c = p.rkColors && typeof p.rkColors === "object" ? p.rkColors : {};
+    const cols = RK_DIRS.map((d) => c[d]);
+    p.rkColors = cols.every((k) => COLOR_BY_KEY[k]) && new Set(cols).size === 4 ? Object.fromEntries(RK_DIRS.map((d) => [d, c[d]])) : { ...RK_DEFAULT_COLORS };
+    const n = p.rkNums && typeof p.rkNums === "object" ? p.rkNums : {};
+    const nums = RK_DIRS.map((d) => Number(n[d]));
+    p.rkNums = nums.every((v) => Number.isInteger(v) && v >= 1 && v <= RK_NUM_MAX) && new Set(nums).size === 4 ? Object.fromEntries(RK_DIRS.map((d, i) => [d, nums[i]])) : { ...RK_DEFAULT_NUMS };
+    const r = p.rkRules && typeof p.rkRules === "object" && !Array.isArray(p.rkRules) ? p.rkRules : RK_DEFAULT_RULES;
+    p.rkRules = Object.fromEntries(Object.entries(r).filter(([k, v]) => COLOR_BY_KEY[k] && RK_MEANINGS[v]));
+    return p;
+  }
+  function rkStateSnapshot(src) {
+    const s = src || state;
+    return { rkMode: s.rkMode, rkSigns: s.rkSigns, rkGear: s.rkGear, rkSeqStart: s.rkSeqStart, rkRuleOn: s.rkRuleOn, rkSpeak: s.rkSpeak,
+      rkColors: { ...s.rkColors }, rkNums: { ...s.rkNums }, rkRules: { ...s.rkRules } };
+  }
+  // The Farbregel needs a visible colour: not with "Zahlen" and only when
+  // showing single signs (Abfolge merken stays plain).
+  function rkRuleActive(s) { const p = s || state; return !!p.rkRuleOn && p.rkSigns !== "zahlen" && p.rkMode === "zeigen"; }
+  // Pure rule: what the client does for a sign of `dir` shown in `colorKey`.
+  function rkTarget(dir, colorKey, rules, ruleOn) {
+    const m = ruleOn ? (rules[colorKey] || "normal") : "normal";
+    if (m === "gegen") return { meaning: m, action: "schritt", target: RK_OPPOSITE[dir] };
+    if (m === "stehen") return { meaning: m, action: "stehen", target: null };
+    if (m === "kreis") return { meaning: m, action: "kreis", target: null };
+    return { meaning: "normal", action: "schritt", target: dir };
+  }
+  // Abfolge timing shared by Farbfelder and Richtungskreuz.
+  function seqTiming(show) {
+    return { intro: 0.8, stepOn: Math.max(0.5, Math.min(1.5, show * 0.7)), stepGap: 0.3, recallPer: Math.max(1.2, show) };
+  }
+
+  // ---- Zusätze für oben (Idee 71, Fabian 08.10.): something the upper body
+  // does while the feet step. ONE list: a new Zusatz is one entry here and
+  // shows up in the sheet, the chips, the ready-screen note, the rules sheet,
+  // presets, Kombi blocks and trainer codes. `signal: true` = the app gives a
+  // cue (tone through cueVolume() + a small mark) at random intervals.
+  // Begleit-Zusätze are only explained, nothing is checked. docs/notes/35.
+  const ZUSAETZE = [
+    { id: "ball-kreisen", title: "Ball um den Körper kreisen", short: "vorne und hinten übergeben",
+      text: "Lass einen Ball um deinen Körper kreisen: Vorne und hinten gibst du ihn von einer Hand in die andere." },
+    { id: "gang", title: "Gang einlegen", short: "Ballhand nach Richtung",
+      text: "Halte einen Ball. Die Richtung bestimmt die Hand: vorne und rechts = Ball links, hinten und links = Ball rechts." },
+    { id: "prellen", title: "Prellen", short: "nach jedem Schritt",
+      text: "Nach jedem Schritt prellst du den Ball einmal auf den Boden." },
+    { id: "kreis-signal", title: "Kreisrichtung wechseln auf Signal", short: "Ton und Zeichen ↻", signal: true,
+      text: "Bei einem kurzen Doppelton und dem Zeichen ↻ wechselst du die Richtung, in der der Ball um dich kreist." },
+  ];
+  const ZUS_BY_ID = Object.fromEntries(ZUSAETZE.map((z) => [z.id, z]));
+  // Exercises done by stepping (decided 08.10., docs/notes/35): the VT arrow/
+  // side exercises, Sehen & Hören, Kompass-Aufbau, Laufweg, Farbfelder and
+  // Richtungskreuz. Not: Stroop (spoken), Periphere Wahrnehmung (fixation),
+  // Hütchen sortieren / Farbe + Zahl (the hands move the cups).
+  const ZUS_EXERCISES = ["vt-color", "vrw-original", "4-straight", "4-diag", "8-solo", "8-vrw", "cross-modal", "cone-compass", "cone-path", "farbfelder", "richtungskreuz"];
+  const ZUS_SIG_DEFAULT = { sigMin: 6, sigMax: 15 };
+  function zusNormalizeEntry(e) {
+    const o = e && typeof e === "object" ? e : {};
+    const ids = Array.isArray(o.ids) ? [...new Set(o.ids.filter((id) => ZUS_BY_ID[id]))] : [];
+    let sigMin = Number(o.sigMin), sigMax = Number(o.sigMax);
+    if (!Number.isFinite(sigMin) || sigMin < 3 || sigMin > 60) sigMin = ZUS_SIG_DEFAULT.sigMin;
+    if (!Number.isFinite(sigMax) || sigMax < 3 || sigMax > 60) sigMax = ZUS_SIG_DEFAULT.sigMax;
+    if (sigMax < sigMin) sigMax = sigMin;
+    const trainerIds = Array.isArray(o.trainerIds) ? o.trainerIds.filter((id) => ids.includes(id)) : [];
+    return { ids, sigMin, sigMax, trainerIds };
+  }
+  function zusNormalizeMap(m) {
+    const src = m && typeof m === "object" && !Array.isArray(m) ? m : {};
+    return Object.fromEntries(Object.entries(src).filter(([k]) => ZUS_EXERCISES.includes(k)).map(([k, v]) => [k, zusNormalizeEntry(v)]));
+  }
+  const NOTE_MAX = 300;
+  function notesNormalizeMap(m) {
+    const src = m && typeof m === "object" && !Array.isArray(m) ? m : {};
+    return Object.fromEntries(Object.entries(src).filter(([, v]) => typeof v === "string" && v.trim()).map(([k, v]) => [k, v.slice(0, NOTE_MAX)]));
+  }
   let ffSeqResume = null;
   let ffSkipOrient = false; // Einblenden: no second orientation grid after a live tempo change // sequence length to continue with after a live tempo change
   function buildFarbfelderSchedule(cfg, rng) {
@@ -856,7 +964,7 @@
       let len = ffSeqResume || state.ffSeqStart;
       ffSeqResume = null;
       const seq = [], feet = [];
-      const stepOn = Math.max(0.5, Math.min(1.5, show * 0.7)), stepGap = 0.3, recallPer = Math.max(1.2, show);
+      const { stepOn, stepGap, recallPer } = seqTiming(show);
       let rounds = 0;
       while (t < state.duration) {
         // A round that would not finish before the end is not started
@@ -972,6 +1080,79 @@
     return { schedule, total: t };
   }
 
+  // ---- Richtungskreuz schedule (Idee 70): cross overview, then signs (or a
+  // growing sequence like Farbfelder · Abfolge merken). Payload kind "rk".
+  let rkSkipOrient = false; // no second overview after a live tempo change
+  let rkSeqResume = null;
+  function rkSayText(colorKey, num) {
+    const c = COLOR_BY_KEY[colorKey];
+    if (state.rkSigns === "zahlen") return String(num);
+    if (state.rkSigns === "beide") return `${c ? c.name : ""} ${num}`;
+    return c ? c.name : "";
+  }
+  function rkSign(dir, rng, withRule) {
+    let colorKey = state.rkColors[dir];
+    // Farbe + Zahl with the Farbregel: the number names the direction, the
+    // colour (any of the four) names what to do - colour and number differ.
+    if (withRule && state.rkSigns === "beide") colorKey = state.rkColors[RK_DIRS[Math.floor(rng() * 4)]];
+    const num = state.rkNums[dir];
+    const res = rkTarget(dir, colorKey, state.rkRules, withRule);
+    return { dir, colorKey, num, signs: state.rkSigns, ...res, say: state.rkSpeak ? rkSayText(colorKey, num) : null };
+  }
+  function buildRkSchedule(cfg, rng) {
+    rkNormalize(state);
+    const mode = state.rkMode;
+    const orient = !rkSkipOrient;
+    rkSkipOrient = false;
+    const schedule = [];
+    let t = pushCountdown(schedule, { task: RK_MODES[mode].task });
+    if (orient) {
+      schedule.push({ t0: t, t1: t + RK_ORIENT_S, kind: "rk", payload: { phase: "orient", caption: "So liegen deine Richtungen" } });
+      t += RK_ORIENT_S;
+    }
+    const show = vtShowS();
+    const pick = (avoid) => { let d; do { d = RK_DIRS[Math.floor(rng() * 4)]; } while (d === avoid); return d; };
+    if (mode === "abfolge") {
+      let len = rkSeqResume || state.rkSeqStart;
+      rkSeqResume = null;
+      const seq = [];
+      const { intro, stepOn, stepGap, recallPer } = seqTiming(show);
+      let rounds = 0;
+      while (t < state.duration) {
+        if (rounds > 0 && t + intro + len * (stepOn + stepGap + recallPer) > state.duration) break;
+        rounds++;
+        while (seq.length < len) seq.push(pick(seq[seq.length - 1]));
+        schedule.push({ t0: t, t1: t + intro, kind: "rk", payload: { phase: "intro", caption: `Schau zu · ${len} Zeichen`, seqLen: len } });
+        t += intro;
+        for (let i = 0; i < len; i++) {
+          schedule.push({ t0: t, t1: t + stepOn, kind: "rk", payload: { phase: "show", ...rkSign(seq[i], rng, false), caption: `Schau zu · ${i + 1}/${len}`, seqLen: len } });
+          t += stepOn;
+          schedule.push({ t0: t, t1: t + stepGap, kind: "rk", payload: { phase: "gap", caption: `Schau zu · ${i + 1}/${len}`, seqLen: len } });
+          t += stepGap;
+        }
+        const recall = len * recallPer;
+        schedule.push({ t0: t, t1: t + recall, kind: "rk", payload: { phase: "recall", caption: `Jetzt du · ${len} Zeichen`, say: "Jetzt du", seqLen: len } });
+        t += recall;
+        const pause = randInterval(rng);
+        schedule.push({ t0: t, t1: t + pause, kind: "blank", payload: {} });
+        t += pause;
+        if (len < FF_SEQ_MAX) len++;
+      }
+      return { schedule, total: t };
+    }
+    const withRule = rkRuleActive();
+    let last = null;
+    while (t < state.duration) {
+      const dir = pick(last);
+      last = dir;
+      const payload = { phase: "show", ...rkSign(dir, rng, withRule) };
+      const pause = randInterval(rng);
+      schedule.push({ t0: t, t1: t + show, kind: "rk", payload });
+      schedule.push({ t0: t + show, t1: t + show + pause, kind: "blank", payload: {} });
+      t += show + pause;
+    }
+    return { schedule, total: t };
+  }
   // Grid geometry in canvas pixels: always below the player bar (it floats
   // over the stage) and above a reserved caption band at the bottom, so a
   // caption or the rule legend never touches a field.
@@ -1028,6 +1209,71 @@
     ctx.fillStyle = ink;
     ctx.fillText(text, cx, cy + size * 0.04);
     if (navigator.webdriver) window.__cnLast = { color: payload.color, num: payload.num, ink };
+  }
+  // ---- Richtungskreuz drawing: one big sign in the free square below the
+  // player bar (same geometry as Farbfelder), or the cross overview (vorne =
+  // top, towards the screen). Fixed hex colours only (player rule).
+  function rkDrawSign(cx, cy, r, colorKey, num, signs) {
+    const light = "#ffffff", dark = "#16232a";
+    const hex = (COLOR_BY_KEY[colorKey] || COLOR_BY_KEY.rot).hex;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    if (signs === "zahlen") {
+      ctx.fillStyle = light; ctx.fill();
+      ctx.lineWidth = Math.max(2, r * 0.07); ctx.strokeStyle = dark; ctx.stroke();
+    } else {
+      ctx.fillStyle = hex; ctx.fill();
+    }
+    if (signs === "farben") return;
+    const ink = signs === "zahlen" ? dark : contrastRatio(light, hex) >= contrastRatio(dark, hex) ? light : dark;
+    const size = Math.round(r * 1.2);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `700 ${size}px Magra, sans-serif`;
+    if (signs === "beide") {
+      ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(3, size * 0.07);
+      ctx.strokeStyle = ink === light ? dark : light;
+      ctx.strokeText(String(num), cx, cy + size * 0.04);
+    }
+    ctx.fillStyle = ink;
+    ctx.fillText(String(num), cx, cy + size * 0.04);
+  }
+  function drawRk(p) {
+    const cw = canvas.width, ch = canvas.height;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, cw, ch);
+    const g = ffGeometry(cw, ch);
+    const mx = g.x0 + g.side / 2, my = g.y0 + g.side / 2;
+    const phase = p ? p.phase : "rest";
+    if (phase === "orient") {
+      // Cross: arms in light grey, "Du" in the middle, one sign per direction.
+      const arm = g.side * 0.36, r = g.side * 0.13;
+      ctx.strokeStyle = "#d5dde0";
+      ctx.lineWidth = Math.max(4, g.side * 0.04);
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(mx, my - arm); ctx.lineTo(mx, my + arm);
+      ctx.moveTo(mx - arm, my); ctx.lineTo(mx + arm, my);
+      ctx.stroke();
+      ctx.beginPath(); ctx.arc(mx, my, r * 0.75, 0, Math.PI * 2);
+      ctx.fillStyle = "#16232a"; ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.font = `700 ${Math.round(r * 0.6)}px 'Public Sans', sans-serif`;
+      ctx.fillText("Du", mx, my);
+      const pos = { vorne: [mx, my - arm], hinten: [mx, my + arm], links: [mx - arm, my], rechts: [mx + arm, my] };
+      RK_DIRS.forEach((d) => rkDrawSign(pos[d][0], pos[d][1], r, state.rkColors[d], state.rkNums[d], state.rkSigns));
+    } else if (phase === "show") {
+      rkDrawSign(mx, my, g.side * 0.42, p.colorKey, p.num, p.signs);
+    } else {
+      // resting frame / gaps: an empty stage with a small grey centre point
+      ctx.beginPath(); ctx.arc(mx, my, Math.max(4, g.side * 0.015), 0, Math.PI * 2);
+      ctx.fillStyle = "#b8c3c7"; ctx.fill();
+    }
+    if (navigator.webdriver) window.__rkLastDrawn = p ? { phase, dir: p.dir || null, colorKey: p.colorKey || null, num: p.num || null, meaning: p.meaning || null, target: p.target || null, action: p.action || null } : { phase: "rest" };
+    const cap = p && p.caption ? p.caption : "";
+    if (cap) barCaption(cw, ch, cap, false);
   }
   function ffRoundRect(x, y, w, h, r) {
     ctx.beginPath();
@@ -1488,6 +1734,14 @@
       task: "Tritt auf das richtige Farbfeld deiner Matte.",
       trains: "Farbwahrnehmung, Fußarbeit und schnelles Umsetzen von Regeln",
       rules: "Leg deine vier Farbfelder so auf den Boden, wie sie unten unter „Anordnung deiner Matte“ eingestellt sind, und stell dich davor. Der Bildschirm zeigt dieselben vier Felder: Oben ist die Reihe, die näher am Bildschirm liegt. Je nach Modus trittst du auf das Feld, das aufleuchtet oder erscheint, auf das Feld, das ein Symbol dir sagt, auf das leere Feld, eine ganze Abfolge nach, auf die gesagte Farbe, auf die Schriftfarbe eines Farbworts, mit Fuß und Hand zugleich oder nach Bild und Ansage.",
+    },
+    // Richtungskreuz (Idee 70, Fabian 08.10.): four directions around the
+    // client, each with a colour and/or number; docs/notes/35.
+    "richtungskreuz": {
+      title: "Richtungskreuz", type: "richtungskreuz", bgIsStimulus: true,
+      task: "Schritt in die Richtung des Zeichens.",
+      trains: "Richtungen schnell zuordnen, Fußarbeit und Umsetzen von Regeln",
+      rules: "Vorne, hinten, links und rechts um dich herum hat jede Richtung ein Zeichen: eine Farbe, eine Zahl oder beides. Vorne ist die Richtung zum Bildschirm. Die App zeigt ein Zeichen, du machst einen Schritt in diese Richtung und kommst zurück in die Mitte. Am Anfang zeigt sie kurz das ganze Kreuz.",
     },
     "periph-flash": {
       title: "Periphere Wahrnehmung", type: "periph",
@@ -1994,6 +2248,7 @@
     if (block.domain === "visual") {
       const t = EXERCISES[block.exercise] ? EXERCISES[block.exercise].title : block.exercise;
       // Farbfelder: name the mode like the NAT blocks do (9 very different modes).
+      if (block.rk && RK_MODES[block.rk.rkMode]) return `${t} · ${RK_MODES[block.rk.rkMode].label}`;
       return block.ff && FF_MODE_LABELS[block.ff.ffMode] ? `${t} · ${FF_MODE_LABELS[block.ff.ffMode]}` : t;
     }
     if (block.domain === "nat") return `Positionen merken · ${REMEMBER_MODES[block.mode] ? REMEMBER_MODES[block.mode].title : block.mode}`;
@@ -3754,6 +4009,12 @@
     // Hütchen · Laufweg (2026-10-08), see lwNormalize()
     lwVariant: "karte", lwRows: 3, lwCols: 3, lwRowColors: ["gelb", "blau", "rot"], lwLength: "mittel",
     lwShowS: 8, lwEnd: "runden", lwRounds: 5, lwDurS: 300,
+    // Richtungskreuz (Idee 70, 2026-10-08), see rkNormalize()
+    rkMode: "zeigen", rkSigns: "farben", rkGear: "huetchen", rkSeqStart: 2, rkRuleOn: false, rkSpeak: false,
+    rkColors: { ...RK_DEFAULT_COLORS }, rkNums: { ...RK_DEFAULT_NUMS }, rkRules: { ...RK_DEFAULT_RULES },
+    // Zusätze für oben per exercise ({exId: {ids, sigMin, sigMax, trainerIds}})
+    // and "Meine Notiz" per exercise ({exId: text}) - Idee 71/72.
+    zusOben: {}, exNotes: {},
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -3784,6 +4045,9 @@
     ffNormalize(state); // also copies ffLayout/ffHandRules, so DEFAULTS is never mutated
     cnNormalize(state);
     lwNormalize(state); // Hütchen · Laufweg (copies lwRowColors too)
+    rkNormalize(state); // Richtungskreuz (copies its objects, DEFAULTS stays untouched)
+    state.zusOben = zusNormalizeMap(state.zusOben);
+    state.exNotes = notesNormalizeMap(state.exNotes);
   }
   function cnNormalize(p) {
     const n = Math.round(Number(p.cnFields));
@@ -4850,12 +5114,16 @@
     // The fixation-point Feineinstellung applies to every exercise with
     // this dot (i.e. everything except Hütchen sortieren), not just
     // Periphere Wahrnehmung - it was just built there first.
-    els.periphFixGroup.hidden = isConeTap || isFf; // Farbfelder: the grid has no centre dot
+    els.periphFixGroup.hidden = isConeTap || isFf || ex.type === "richtungskreuz"; // Farbfelder/Richtungskreuz: no centre dot
     ffEls.settings.hidden = !isFf;
     $("cnFieldsGroup").hidden = ex.type !== "colornum";
     if (ex.type === "colornum") syncCnUI();
     renderHilfsmittel(id);
     if (isFf) { ffActiveCell = 0; syncFfUI(); } // after the note: Antippen hides it
+    $("rkSettings").hidden = ex.type !== "richtungskreuz";
+    if (ex.type === "richtungskreuz") { rkActiveDir = "vorne"; syncRkUI(); }
+    vtRunTrainer = null;
+    syncZusUI();
     els.periphFieldGroup.hidden = !isPeriph;
     els.periphSizeGroup.hidden = !isPeriph;
     els.periphColorGroup.hidden = !isPeriph;
@@ -4879,6 +5147,7 @@
     els.vtSaveBtn.hidden = false;
     renderVTSaved();
     applySoftState();
+    regelnSyncPreviews();
     showScreen("ready");
   }
 
@@ -4906,6 +5175,12 @@
       text: "Du brauchst: eine Farbmatte mit 4 Feldern oder 4 farbige Hütchen, Bälle oder Zettel auf dem Boden, angeordnet wie hier eingestellt.",
       link: "", gear: ["mat", "cups"],
     },
+    // Richtungskreuz: equipment is optional (`optional: true`), it also
+    // works without ("Richtungen merken").
+    richtungskreuz: {
+      text: "Optional: eine Farbmatte oder vier Hütchen in den eingestellten Farben, vorne, hinten, links und rechts um dich. Es geht auch ohne: Dann merkst du dir die Richtungen.",
+      link: "", gear: ["mat", "cups"], optional: true,
+    },
     // Farbbrille exercises (Test-Bereich); a shop link can go into `link`.
     farbbrille: {
       text: "Du brauchst eine Rot-Grün-Brille.",
@@ -4918,6 +5193,7 @@
     box.hidden = !h;
     if (!h) return;
     document.getElementById("hilfsmittelText").textContent = h.text;
+    document.getElementById("hilfsmittelKicker").textContent = h.optional ? "Hilfsmittel (optional)" : "Hilfsmittel";
     const a = document.getElementById("hilfsmittelLink");
     a.hidden = !h.link;
     if (h.link) a.href = h.link; else a.removeAttribute("href");
@@ -5251,6 +5527,9 @@
       if (existingBlock.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(existingBlock.ff))); ffNormalize(state); }
       if (existingBlock.cn) { Object.assign(state, existingBlock.cn); cnNormalize(state); }
       if (existingBlock.lw) { lwApply(existingBlock.lw); syncLwUI(); }
+      vtExtrasApply(existingBlock, {});
+      if (ex.type === "richtungskreuz") syncRkUI();
+      syncZusUI();
       renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
       if (ex.type === "farbfelder") syncFfUI();
       if (ex.type === "colornum") syncCnUI();
@@ -5287,6 +5566,7 @@
     if (ex.type === "farbfelder") block.ff = ffStateSnapshot();
     if (ex.type === "colornum") block.cn = { cnFields: state.cnFields };
     if (ex.type === "laufweg") { block.lw = lwSnapshot(); block.duration = lwEstimateS(); }
+    Object.assign(block, vtExtrasSnapshot(state.exercise, true));
     if (comboVisualEditIndex != null) comboDraftBlocks[comboVisualEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitVisualComboCapture();
@@ -6120,6 +6400,7 @@
       cfg.type === "vrw-real" ? buildVRWRealSchedule(cfg, rng) :
       cfg.type === "periph" ? buildPeriphSchedule(cfg, rng) :
       cfg.type === "farbfelder" ? buildFarbfelderSchedule(cfg, rng) :
+      cfg.type === "richtungskreuz" ? buildRkSchedule(cfg, rng) :
       cfg.type === "colornum" ? buildColorNumSchedule(cfg, rng) :
       cfg.type === "flash-host" ? buildFlashHostSchedule(cfg, rng) :
       buildArrowSchedule(cfg, rng);
@@ -6332,6 +6613,7 @@
 
   function onEnterFrame(frame) {
     if (frame.kind === "farbfelder") { if (frame.payload.say) speakWord(frame.payload.say); return; }
+    if (frame.kind === "rk") { if (frame.payload.say) speakWord(frame.payload.say); return; }
     if (frame.kind !== "cross") return;
     const p = frame.payload;
     if (p.mode === "audio" || p.mode === "conflict") speakWord(p.word);
@@ -6723,6 +7005,7 @@
     if (block.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
     if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
     if (block.lw) lwApply(block.lw);
+    vtExtrasApply(block, { fromCode: true });
     active = blockColors(block);
   }
 
@@ -6757,6 +7040,7 @@
     // inside that player); guarded since this runs during start-up too.
     try { closeTrainPause(); } catch (e) {}
     try { lwStop(); } catch (e) {} // Hütchen · Laufweg stage lives inside #player
+    try { zusSignalStop(); } catch (e) {} // Zusatz für oben: signal timer
     els.player.hidden = true;
     els.breathPlayer.hidden = true;
     els.wimhofPlayer.hidden = true;
@@ -6837,6 +7121,8 @@
     // Farbfelder · Antippen: the canvas takes taps and scores them.
     session.ffTap = EXERCISES[state.exercise].type === "farbfelder" && ffTapMode() ? ffTapNew() : null;
     els.player.classList.toggle("ff-tap", !!session.ffTap);
+    regelnBarSync();
+    zusSignalStart("player"); // Zusatz "Kreisrichtung wechseln auf Signal"
     requestWakeLock();
     raf = requestAnimationFrame(tick);
   }
@@ -7255,6 +7541,8 @@
     // keep the map below the floating player bar
     const bar = els.playerBar.getBoundingClientRect();
     $("lwStage").style.paddingTop = Math.round(Math.max(64, bar.bottom + 6)) + "px";
+    regelnBarSync();
+    zusSignalStart("player");
     requestWakeLock();
     lwNewPath();
     raf = requestAnimationFrame(lwTick);
@@ -7559,6 +7847,11 @@
       // Farbfelder: the history row names the mode (8 very different variants).
       if (ex.type === "farbfelder") note = FF_MODE_LABELS[state.ffMode] + (FF_FLIP_MODES.includes(state.ffMode) && state.ffFlip ? ` · jedes ${state.ffFlip}. Mal andersherum` : "")
         + (state.ffMode === "einblenden" ? ` · ${FF_COUNT_NOTES[state.ffCount] || FF_COUNT_NOTES.wechsel}` : "");
+      if (ex.type === "richtungskreuz") note = `${RK_MODES[state.rkMode].label} · ${RK_SIGNS[state.rkSigns]}` + (rkRuleActive() ? " · mit Farbregel" : "");
+      if (ZUS_EXERCISES.includes(state.exercise) && !cardioGuestActive) {
+        const zz = zusGet(state.exercise);
+        if (zz.ids.length) note = (note ? note + " · " : "") + "Zusatz: " + zz.ids.map((id) => ZUS_BY_ID[id].title).join(", ");
+      }
       if (ffScore) { summary = `${ffScore.text} · ${fmtMinutes(spent)}`; note = `${note} · Antippen · ${ffScore.text}`; }
       if (mathScore) { summary += ` · ${mathScore.text}`; note = note ? `${note} · ${mathScore.text}` : mathScore.text; }
     }
@@ -7673,6 +7966,7 @@
       // Abfolge merken goes on with the sequence length it had reached.
       if (ex.type === "farbfelder") ffSeqResume = kept.reduce((m, f) => Math.max(m, (f.payload && f.payload.seqLen) || 0), 0) || null;
       if (ex.type === "farbfelder") ffSkipOrient = true;
+      if (ex.type === "richtungskreuz") { rkSeqResume = kept.reduce((m, f) => Math.max(m, (f.payload && f.payload.seqLen) || 0), 0) || null; rkSkipOrient = true; }
       let fresh = [], freshEnd = elapsed;
       if (remaining > 0) {
         const savedDuration = state.duration;
@@ -7740,6 +8034,7 @@
         const ex = EXERCISES[e.exercise];
         const usedColors = ex && ex.usesArrowColors ? e.arrowColors : ex && ex.usesStroopColors ? e.stroopColors : e.colors;
         if (e.ff) return `${fmtMinutes(e.duration)} · ${FF_MODE_LABELS[e.ff.ffMode] || ""}`;
+        if (e.rk) return `${fmtMinutes(e.duration)} · ${RK_MODES[e.rk.rkMode] ? RK_MODES[e.rk.rkMode].label : ""} · ${RK_SIGNS[e.rk.rkSigns] || ""}`;
         if (e.cn) return `${fmtMinutes(e.duration)} · ${e.cn.cnFields} Felder · ${(e.colors || []).length} Farben`;
         if (e.lw) return `${LW_VARIANT_LABELS[e.lw.lwVariant] || ""} · ${e.lw.lwRows}×${e.lw.lwCols} · ${(LW_LENGTHS[e.lw.lwLength] || LW_LENGTHS.mittel).label}`;
         return `${fmtMinutes(e.duration)}${usedColors && usedColors.length ? ` · ${usedColors.length} Farben` : ""}`;
@@ -7755,6 +8050,7 @@
         if (entry.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(entry.ff))); ffNormalize(state); }
         if (entry.cn) { Object.assign(state, entry.cn); cnNormalize(state); }
         if (entry.lw) lwApply(entry.lw);
+        vtExtrasApply(entry, { preset: true });
         // Periphere Wahrnehmung (NAT presets, 2026-10-07): Zeichen, Bereich,
         // Fixpunkt, Farben and background travel with the preset too.
         if (entry.periph) { Object.assign(state, JSON.parse(JSON.stringify(entry.periph))); savePrefs(); loadPrefs(); }
@@ -7766,6 +8062,8 @@
           if (EXERCISES[state.exercise].type === "farbfelder") syncFfUI();
           if (entry.cn) syncCnUI();
           if (entry.lw) syncLwUI();
+          if (entry.rk) syncRkUI();
+          syncZusUI();
           if (entry.periph) { syncPeriphKindUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); syncPeriphColorUI(); syncPeriphFixUI(); syncBgUI(); }
           return;
         }
@@ -7787,6 +8085,7 @@
         ...(EXERCISES[state.exercise].type === "periph" ? { periph: { ...periphStateSnapshot(), bgColorKey: state.bgColorKey, bgIntensity: state.bgIntensity } } : {}),
         ...(EXERCISES[state.exercise].type === "colornum" ? { cn: { cnFields: state.cnFields } } : {}),
         ...(EXERCISES[state.exercise].type === "laufweg" ? { lw: lwSnapshot() } : {}),
+        ...vtExtrasSnapshot(state.exercise, true),
       });
       vtSavedStore.save(list);
       renderVTSaved();
@@ -8606,6 +8905,572 @@
     applySoftState();
   });
   syncMasterSeeUI();
+
+  // ==== Richtungskreuz ready screen, Zusätze für oben, Regeln + Meine Notiz
+  // (Ideen 70-72, Fabian 08.10. abends). docs/notes/35. ====
+
+  // ---- What a VT preset / Kombi block carries besides the classic fields:
+  // `rk` (Richtungskreuz), `zus` (Zusätze für oben), `note` (Meine Notiz).
+  // Blocks from a trainer code may carry `trainerNote`; their `zus` is shown
+  // as "Von deinem Trainer". vtRunTrainer = trainer note of the running block.
+  let vtRunTrainer = null;
+  function vtExtrasSnapshot(exId, withEmpty) {
+    const out = {};
+    const ex = EXERCISES[exId];
+    if (ex && ex.type === "richtungskreuz") out.rk = rkStateSnapshot();
+    if (ZUS_EXERCISES.includes(exId)) {
+      const z = zusGet(exId);
+      if (z.ids.length || withEmpty) out.zus = JSON.parse(JSON.stringify(z));
+    }
+    const n = (state.exNotes || {})[exId];
+    if (n) out.note = n;
+    return out;
+  }
+  // opts.fromCode: a trainer's block (its note is the trainer's note, the
+  // client's own note for the exercise stays); opts.block: an own Kombi
+  // block (block note replaces the note for this run); opts.preset: a saved
+  // setting (older ones without zus/note leave the current ones alone).
+  function vtExtrasApply(src, opts) {
+    const o = opts || {};
+    const exId = src.exercise || state.exercise;
+    if (src.rk) { Object.assign(state, JSON.parse(JSON.stringify(src.rk))); rkNormalize(state); }
+    if (ZUS_EXERCISES.includes(exId) && (src.zus || !o.preset)) {
+      const z = zusNormalizeEntry(src.zus);
+      if (o.fromCode && src.zus) z.trainerIds = z.ids.slice();
+      state.zusOben = { ...state.zusOben, [exId]: z };
+    }
+    if (!o.fromCode && (typeof src.note === "string" || !o.preset)) {
+      state.exNotes = { ...state.exNotes, [exId]: typeof src.note === "string" ? src.note.slice(0, NOTE_MAX) : "" };
+    }
+    const tn = o.fromCode ? (src.trainerNote || src.note) : src.trainerNote;
+    vtRunTrainer = tn ? { note: String(tn).slice(0, NOTE_MAX) } : null;
+  }
+
+  // ---- Richtungskreuz ready screen ----
+  let rkActiveDir = "vorne";
+  function syncRkUI() {
+    rkNormalize(state);
+    const root = $("rkSettings");
+    root.querySelectorAll("[data-rk-mode]").forEach((b) => setActive(b, b.dataset.rkMode === state.rkMode));
+    $("rkModeHelp").textContent = RK_MODES[state.rkMode].help;
+    root.querySelectorAll("[data-rk-signs]").forEach((b) => setActive(b, b.dataset.rkSigns === state.rkSigns));
+    root.querySelectorAll("[data-rk-gear]").forEach((b) => setActive(b, b.dataset.rkGear === state.rkGear));
+    $("rkGearHelp").textContent = RK_GEARS[state.rkGear].help;
+    $("rkSeqGroup").hidden = state.rkMode !== "abfolge";
+    root.querySelectorAll("[data-rk-seq]").forEach((b) => setActive(b, Number(b.dataset.rkSeq) === state.rkSeqStart));
+    root.querySelectorAll("[data-rk-speak]").forEach((b) => setActive(b, (b.dataset.rkSpeak === "1") === state.rkSpeak));
+    const showCol = state.rkSigns !== "zahlen", showNum = state.rkSigns !== "farben";
+    root.querySelectorAll("[data-rk-dir]").forEach((b) => {
+      const d = b.dataset.rkDir, c = COLOR_BY_KEY[state.rkColors[d]], n = state.rkNums[d];
+      b.style.background = showCol ? c.hex : "";
+      b.style.color = showCol ? (relLuma(c.hex) > 0.6 ? "#16232a" : "#ffffff") : "";
+      b.classList.toggle("rk-plain", !showCol);
+      const sign = [showCol ? c.name : "", showNum ? String(n) : ""].filter(Boolean).join(" ");
+      b.innerHTML = `<span class="rk-dir-name">${esc(RK_DIR_NAMES[d])}</span><span class="rk-dir-sign">${esc(sign)}</span>`;
+      b.setAttribute("aria-label", `${RK_DIR_NAMES[d]}: ${sign}. Antippen zum Ändern.`);
+      setActive(b, d === rkActiveDir);
+    });
+    $("rkCrossHelp").textContent = `Tippe eine Richtung an und wähle unten ${showCol && showNum ? "Farbe und Zahl" : showCol ? "die Farbe" : "die Zahl"} (gewählt: ${RK_DIR_NAMES[rkActiveDir]}). Vorne ist die Richtung zum Bildschirm.`;
+    $("rkColorPicker").hidden = !showCol;
+    $("rkColorPicker").querySelectorAll("[data-color]").forEach((b) => setActive(b, b.dataset.color === state.rkColors[rkActiveDir]));
+    $("rkNumRow").closest(".rk-num-line").hidden = !showNum;
+    $("rkNumRow").querySelectorAll("[data-rk-num]").forEach((b) => setActive(b, Number(b.dataset.rkNum) === state.rkNums[rkActiveDir]));
+    // Farbregel: only with visible colours and single signs.
+    const ruleGroup = $("rkRuleGroup");
+    ruleGroup.hidden = state.rkSigns === "zahlen" || state.rkMode !== "zeigen";
+    root.querySelectorAll("[data-rk-rule]").forEach((b) => setActive(b, (b.dataset.rkRule === "1") === state.rkRuleOn));
+    $("rkRuleBody").hidden = !state.rkRuleOn;
+    $("rkRuleHelp").textContent = state.rkRuleOn
+      ? (state.rkSigns === "beide" ? "Die Zahl zeigt die Richtung, die Farbe sagt, was du tust. „Kreisrichtung wechseln“ passt zum Zusatz „Ball um den Körper kreisen“." : "Die Farbe zeigt die Richtung und sagt, was du tust. „Kreisrichtung wechseln“ passt zum Zusatz „Ball um den Körper kreisen“.")
+      : "Jede Farbe kann eine eigene Bedeutung bekommen, zum Beispiel Blau = Gegenrichtung.";
+    $("rkRuleRows").innerHTML = RK_DIRS.map((d) => state.rkColors[d]).map((k) => {
+      const c = COLOR_BY_KEY[k], cur = state.rkRules[k] || "normal";
+      return `<label class="ff-hand-row"><span class="ff-dot" style="background:${c.hex}"></span><span class="ff-hand-name">${esc(c.name)}</span>` +
+        `<select class="plan-select" data-rk-rulecol="${k}" aria-label="Bedeutung von ${esc(c.name)}">` +
+        Object.entries(RK_MEANINGS).map(([v, label]) => `<option value="${v}"${v === cur ? " selected" : ""}>${esc(label)}</option>`).join("") + `</select></label>`;
+    }).join("");
+  }
+  (function wireRkUI() {
+    const root = $("rkSettings");
+    const save = () => { rkNormalize(state); savePrefs(); syncRkUI(); };
+    COLOR_LIB.slice(0, 7).forEach((c) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "color-swatch";
+      btn.dataset.color = c.key;
+      const stroke = relLuma(c.hex) > 0.75 ? "#16232a" : "#fff";
+      btn.innerHTML = `<span class="swatch" style="background:${c.hex}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="${stroke}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">${c.name}</span>`;
+      btn.addEventListener("click", () => {
+        // A colour already on another direction swaps places (all four differ).
+        const cols = { ...state.rkColors };
+        const other = RK_DIRS.find((d) => d !== rkActiveDir && cols[d] === c.key);
+        if (other) cols[other] = cols[rkActiveDir];
+        cols[rkActiveDir] = c.key;
+        state.rkColors = cols;
+        save();
+      });
+      $("rkColorPicker").appendChild(btn);
+    });
+    $("rkNumRow").innerHTML = Array.from({ length: RK_NUM_MAX }, (_, i) => `<button type="button" class="choice" data-rk-num="${i + 1}">${i + 1}</button>`).join("");
+    $("rkNumRow").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-rk-num]");
+      if (!b) return;
+      const v = Number(b.dataset.rkNum), nums = { ...state.rkNums };
+      const other = RK_DIRS.find((d) => d !== rkActiveDir && nums[d] === v);
+      if (other) nums[other] = nums[rkActiveDir];
+      nums[rkActiveDir] = v;
+      state.rkNums = nums;
+      save();
+    });
+    $("rkCross").addEventListener("click", (e) => { const b = e.target.closest("[data-rk-dir]"); if (b) { rkActiveDir = b.dataset.rkDir; syncRkUI(); } });
+    root.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-rk-mode],[data-rk-signs],[data-rk-gear],[data-rk-seq],[data-rk-rule],[data-rk-speak]");
+      if (!b) return;
+      if (b.dataset.rkMode) state.rkMode = b.dataset.rkMode;
+      if (b.dataset.rkSigns) state.rkSigns = b.dataset.rkSigns;
+      if (b.dataset.rkGear) state.rkGear = b.dataset.rkGear;
+      if (b.dataset.rkSeq) state.rkSeqStart = Number(b.dataset.rkSeq);
+      if (b.dataset.rkSpeak) state.rkSpeak = b.dataset.rkSpeak === "1";
+      if (b.dataset.rkRule) {
+        const on = b.dataset.rkRule === "1";
+        // Switching on with no meaning set yet: Blau = Gegenrichtung.
+        if (on && !Object.values(state.rkRules).some((v) => v !== "normal")) state.rkRules = { ...RK_DEFAULT_RULES };
+        state.rkRuleOn = on;
+      }
+      save();
+    });
+    $("rkRuleRows").addEventListener("change", (e) => {
+      const sel = e.target.closest("[data-rk-rulecol]");
+      if (!sel) return;
+      state.rkRules = { ...state.rkRules, [sel.dataset.rkRulecol]: sel.value };
+      save();
+    });
+  })();
+  if (navigator.webdriver) window.__rk = {
+    target: rkTarget, snapshot: () => rkStateSnapshot(),
+    build: (over) => {
+      const keep = JSON.parse(JSON.stringify(state));
+      Object.assign(state, over || {});
+      try { return buildRkSchedule({}, Math.random).schedule; } finally { Object.assign(state, keep); }
+    },
+  };
+
+  // ---- Zusätze für oben: one row in the Feineinstellungen + the sheet ----
+  function zusGet(exId) { return zusNormalizeEntry((state.zusOben || {})[exId]); }
+  function zusSet(exId, entry) {
+    state.zusOben = { ...(state.zusOben || {}), [exId]: zusNormalizeEntry(entry) };
+    savePrefs();
+    syncZusUI();
+  }
+  function zusTrainerMark(z, id) { return (z.trainerIds || []).includes(id); }
+  function syncZusUI() {
+    const exId = state.exercise;
+    const ex = EXERCISES[exId];
+    const on = !!ex && ZUS_EXERCISES.includes(exId);
+    const group = $("zusGroup");
+    group.hidden = !on;
+    // Laufweg has its own Feineinstellungen (the shared ones are hidden there).
+    const host = ex && ex.type === "laufweg" ? document.querySelector("#lwAdvanced .advanced-body") : document.querySelector("#advanced .advanced-body");
+    if (host && group.parentElement !== host) host.insertBefore(group, host.firstChild);
+    const z = on ? zusGet(exId) : zusNormalizeEntry(null);
+    $("zusChips").innerHTML = z.ids.length
+      ? z.ids.map((id) => `<span class="zus-chip">${esc(ZUS_BY_ID[id].title)}${zusTrainerMark(z, id) ? '<small class="zus-from">Von deinem Trainer</small>' : ""}<button type="button" class="zus-chip-x" data-zus-remove="${id}" aria-label="${esc(ZUS_BY_ID[id].title)} entfernen">&#10005;</button></span>`).join("")
+      : '<span class="zus-none">keiner</span>';
+    $("zusRowWarn").hidden = z.ids.length < 2;
+    // The instructions on the ready screen (Begleit-Zusätze are not checked).
+    const note = $("zusNote");
+    note.hidden = !on || !z.ids.length;
+    note.innerHTML = z.ids.length ? `<span class="hilfsmittel-kicker">Zusatz für oben</span>` + z.ids.map((id) => {
+      const d = ZUS_BY_ID[id];
+      return `<span class="zus-note-line"><strong>${esc(d.title)}:</strong> ${esc(d.text)}${d.signal ? ` Alle ${z.sigMin}–${z.sigMax} s.` : ""}${zusTrainerMark(z, id) ? " <em>(von deinem Trainer)</em>" : ""}</span>`;
+    }).join("") + `<span class="zus-note-line zus-note-small">Ein Ball liegt bereit. Die App prüft die Zusätze nicht.</span>` : "";
+    if (!$("zusatzSheet").hidden) renderZusSheet();
+  }
+  function renderZusSheet() {
+    const z = zusGet(state.exercise);
+    $("zusCardList").innerHTML = ZUSAETZE.map((d) => {
+      const sel = z.ids.includes(d.id);
+      return `<button type="button" class="zus-card${sel ? " active" : ""}" data-zus-card="${d.id}" aria-pressed="${sel}">` +
+        `<span class="zus-card-check" aria-hidden="true">${sel ? "&#10003;" : "+"}</span>` +
+        `<span class="zus-card-body"><span class="zus-card-title">${esc(d.title)}</span><span class="zus-card-text">${esc(d.text)}</span>${zusTrainerMark(z, d.id) ? '<span class="zus-from">Von deinem Trainer</span>' : ""}</span></button>`;
+    }).join("");
+    $("zusSheetWarn").hidden = z.ids.length < 2;
+    const sig = z.ids.some((id) => ZUS_BY_ID[id].signal);
+    $("zusSigGroup").hidden = !sig;
+    $("zusSigMinSlider").value = z.sigMin;
+    $("zusSigMaxSlider").value = z.sigMax;
+    $("zusSigValue").textContent = `${z.sigMin}–${z.sigMax} s`;
+  }
+  let zusSheetOpener = null;
+  function openZusSheet() {
+    zusSheetOpener = document.activeElement;
+    renderZusSheet();
+    $("zusatzSheet").hidden = false;
+    setTimeout(() => { const f = $("zusCardList").querySelector("button"); if (f) f.focus({ preventScroll: true }); }, 30);
+  }
+  function closeZusSheet() {
+    $("zusatzSheet").hidden = true;
+    if (zusSheetOpener && zusSheetOpener.focus) zusSheetOpener.focus({ preventScroll: true });
+  }
+  $("zusAddBtn").addEventListener("click", openZusSheet);
+  $("zusatzDoneBtn").addEventListener("click", closeZusSheet);
+  $("zusatzSheet").addEventListener("click", (e) => { if (e.target === $("zusatzSheet")) closeZusSheet(); });
+  $("zusatzSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closeZusSheet(); else trapTabKey($("zusatzSheet"), e); });
+  $("zusCardList").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-zus-card]");
+    if (!b) return;
+    const z = zusGet(state.exercise), id = b.dataset.zusCard;
+    z.ids = z.ids.includes(id) ? z.ids.filter((x) => x !== id) : z.ids.concat(id);
+    zusSet(state.exercise, z);
+  });
+  $("zusChips").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-zus-remove]");
+    if (!b) return;
+    const z = zusGet(state.exercise);
+    z.ids = z.ids.filter((x) => x !== b.dataset.zusRemove);
+    zusSet(state.exercise, z);
+  });
+  ["zusSigMinSlider", "zusSigMaxSlider"].forEach((id) => $(id).addEventListener("input", () => {
+    const z = zusGet(state.exercise);
+    let mn = Number($("zusSigMinSlider").value), mx = Number($("zusSigMaxSlider").value);
+    if (id === "zusSigMinSlider" && mn > mx) mx = mn;
+    if (id === "zusSigMaxSlider" && mx < mn) mn = mx;
+    z.sigMin = mn; z.sigMax = mx;
+    zusSet(state.exercise, z);
+  }));
+
+  // "Kreisrichtung wechseln auf Signal": a short double tone (cueVolume) and
+  // a small ↻ mark at random intervals. Counts only running time (not while
+  // a pause sheet, the Regeln sheet or a done panel is open, not hidden).
+  const zusSig = { timer: 0, host: null, acc: 0, next: 0, last: 0, count: 0, cfg: null };
+  function zusSigInterval() { const c = zusSig.cfg; return c.sigMin + Math.random() * (c.sigMax - c.sigMin); }
+  function zusSignalStop() {
+    if (zusSig.timer) clearInterval(zusSig.timer);
+    zusSig.timer = 0;
+    zusSig.host = null;
+    const cue = document.getElementById("zusSigCue");
+    if (cue) cue.hidden = true;
+  }
+  function zusSignalStart(hostId) {
+    zusSignalStop();
+    zusSig.count = 0;
+    if (cardioGuestActive || !ZUS_EXERCISES.includes(state.exercise)) return;
+    const z = zusGet(state.exercise);
+    if (!z.ids.some((id) => ZUS_BY_ID[id].signal)) return;
+    zusSig.cfg = z;
+    zusSig.host = $(hostId);
+    zusSig.acc = 0;
+    zusSig.next = zusSigInterval();
+    zusSig.last = performance.now();
+    zusSig.timer = setInterval(zusSignalTick, 200);
+  }
+  function zusSignalPaused(host) {
+    if (document.hidden || !$("regelnSheet").hidden) return true;
+    if (host.id === "player" && session && session.startTime && (performance.now() - session.startTime) / 1000 < vtLeadS()) return true;
+    return [...host.querySelectorAll(".pause-overlay, .done-panel, .pause-screen")].some((el) => !el.hidden);
+  }
+  function zusSignalTick() {
+    const now = performance.now(), dt = (now - zusSig.last) / 1000;
+    zusSig.last = now;
+    const host = zusSig.host;
+    if (!host || host.hidden) { zusSignalStop(); return; }
+    if (zusSignalPaused(host)) return;
+    zusSig.acc += dt;
+    if (zusSig.acc >= zusSig.next) { zusSig.acc = 0; zusSig.next = zusSigInterval(); zusSignalFire(); }
+  }
+  function zusSignalFire() {
+    zusSig.count++;
+    playCueTone(1175, 0.12, 0.35);
+    setTimeout(() => playCueTone(880, 0.16, 0.35), 170);
+    let cue = document.getElementById("zusSigCue");
+    if (!cue) {
+      cue = document.createElement("div");
+      cue.id = "zusSigCue";
+      cue.className = "zus-sig-cue";
+      cue.setAttribute("role", "status");
+      cue.innerHTML = '<span class="zus-sig-icon" aria-hidden="true">&#8635;</span>Kreisrichtung wechseln';
+    }
+    if (zusSig.host && cue.parentElement !== zusSig.host) zusSig.host.appendChild(cue);
+    cue.hidden = false;
+    cue.classList.remove("zus-sig-pop"); void cue.offsetWidth; cue.classList.add("zus-sig-pop");
+    clearTimeout(zusSignalFire.t);
+    zusSignalFire.t = setTimeout(() => { cue.hidden = true; }, 1600);
+  }
+  if (navigator.webdriver) window.__zusSig = { state: () => ({ running: !!zusSig.timer, count: zusSig.count, next: zusSig.next, acc: zusSig.acc }), fire: () => zusSignalFire() };
+
+  // ---- ⓘ Regeln + Meine Notiz (Idee 72) ----
+  // One entry per exercise family with rules: where its ⓘ goes (ready
+  // screens, player bar, pause sheets), its Kombi domain and how the
+  // "So geht's gerade" lines are made. "@vt" = the VT exercise on the shared
+  // ready screen / player right now. A new exercise with rules = one entry
+  // (or nothing for a VT catalog exercise: vtRuleLines reads its settings).
+  const REGELN_EXERCISES = {
+    "@vt": { domain: "visual", screens: ["ready"], anchor: "#rulesBox", bar: "playerBar", pauses: ["periphPauseOverlay", "lwPauseOverlay"] },
+    "nat:remember": { domain: "nat", title: "Positionen merken", screens: ["rememberReady"], anchor: "#rememberReadyDesc", bar: "rememberPlayerBar", pauses: ["rememberPauseOverlay"], desc: "rememberReadyDesc" },
+    "nat:blitz": { domain: "blitz", title: "Blitz-Raster", screens: ["blitzReady"], anchor: "#blitzReadyDesc", bar: "blitzPlayerBar", pauses: ["blitzPauseOverlay"], desc: "blitzReadyDesc" },
+    "nat:flash": { domain: "flash", title: "Flash-Speicher-Test", screens: ["flashReady", "flashTrainingReady"], anchor: ".page-sub", bar: "flashPlayerBar", pauses: ["flashPauseOverlay"], desc: "flashReadyDesc" },
+    "nat:mot": { domain: "mot", title: "Objektverfolgung (MOT)", screens: ["motReady"], anchor: "#motReadyDesc", bar: "motPlayerBar", pauses: ["motPauseOverlay"], desc: "motReadyDesc" },
+    "nat:balance": { domain: "balance", title: "Gleichgewicht", screens: ["balanceReady"], anchor: "#balanceReadyDesc", bar: "balancePlayerBar", pauses: ["balancePauseOverlay"], desc: "balanceReadyDesc" },
+  };
+  const REGELN_DOMAIN_KEY = Object.fromEntries(Object.entries(REGELN_EXERCISES).map(([k, c]) => [c.domain, k]));
+  const NAT_NOTES_KEY = "fwmc-notes-v1";
+  const natNotes = notesNormalizeMap(readJSON(NAT_NOTES_KEY, {}));
+  const REGELN_I_SVG = '<svg class="regeln-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 10.6v6.2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="7.3" r="1.5" fill="currentColor"/></svg>';
+  function regelnNoteKey(key) { return key === "@vt" ? state.exercise : key; }
+  // Sentences of a text as list lines.
+  function regelnSplit(text) { return String(text || "").split(/(?<=[.!?])\s+(?=[A-ZÄÖÜ„])/).map((x) => x.trim()).filter(Boolean); }
+  function vtRuleLines(exId) {
+    const ex = EXERCISES[exId];
+    if (!ex) return [];
+    const L = [];
+    const tap = ex.type === "farbfelder" && state.ffAnswer === "tippen";
+    if (ex.type === "arrows" && ex.dual) L.push("Grüner Pfeil: in Pfeilrichtung.", "Roter Pfeil: Gegenrichtung.");
+    else if (ex.type === "vrw-real") L.push("Weißer Pfeil auf Farbe: gezeigte Seite (direkt).", "Farbiger Pfeil auf Weiß: Gegenseite (umgekehrt).");
+    else if (ex.type === "stroop") L.push("Sag laut die Schriftfarbe, nicht das Wort." + (ex.bg ? " Auch nicht den Hintergrund." : ""));
+    else if (ex.type === "farbfelder") {
+      const m = FF_MODES[state.ffMode] ? state.ffMode : "leuchten";
+      L.push(`Modus ${FF_MODE_LABELS[m]}: ${tap ? FF_MODES[m].tapHelp : FF_MODES[m].help}`);
+      if (m === "regeln") FF_LEVEL_SYMBOLS.slice(0, state.ffLevel).forEach((k) => L.push(`${FF_SYMBOLS[k].name}: ${FF_SYMBOLS[k].rule}.`));
+      if (m === "sehenhoeren") L.push(`Bei Bild und Ansage zugleich gilt ${state.ffGilt === "gezeigt" ? "das Gezeigte" : "das Gesagte"}.`);
+      if (FF_FLIP_MODES.includes(m) && state.ffFlip) L.push(`Jedes ${state.ffFlip}. Mal andersherum (die App zeigt es nicht an).`);
+      if (!tap && state.ffFoot !== "aus") L.push("L oder R auf dem Feld: Mit diesem Fuß trittst du.");
+      if (!tap && state.ffHands && m !== "fusshand") state.ffLayout.forEach((k) => { const a = state.ffHandRules[k]; if (a && a !== "keine") L.push(`${COLOR_BY_KEY[k].name}: ${FF_HAND_ACTIONS[a]}.`); });
+      L.push(`Deine Matte: oben ${COLOR_BY_KEY[state.ffLayout[0]].name} und ${COLOR_BY_KEY[state.ffLayout[1]].name}, unten ${COLOR_BY_KEY[state.ffLayout[2]].name} und ${COLOR_BY_KEY[state.ffLayout[3]].name}.`);
+    } else if (ex.type === "richtungskreuz") {
+      rkNormalize(state);
+      L.push(RK_MODES[state.rkMode].help);
+      RK_DIRS.forEach((d) => {
+        const sign = state.rkSigns === "zahlen" ? String(state.rkNums[d]) : state.rkSigns === "beide" ? `${COLOR_BY_KEY[state.rkColors[d]].name} ${state.rkNums[d]}` : COLOR_BY_KEY[state.rkColors[d]].name;
+        L.push(`${sign}: ${RK_DIR_NAMES[d].toLowerCase()}.`);
+      });
+      if (rkRuleActive()) {
+        if (state.rkSigns === "beide") L.push("Farbregel: Die Zahl zeigt die Richtung, die Farbe sagt, was du tust.");
+        RK_DIRS.map((d) => state.rkColors[d]).forEach((k) => L.push(`${COLOR_BY_KEY[k].name}: ${RK_MEANING_RULES[state.rkRules[k] || "normal"]}.`));
+      }
+    } else if (ex.type === "laufweg") {
+      L.push(ex.task, state.lwVariant === "merken" ? "Weg merken: Präg dir den Weg ein und lauf ihn ohne Karte." : "Karte in der Hand: Nimm das Handy mit und lauf den Weg ab.");
+    } else if (ex.type === "color") {
+      L.push(ex.task, "Welche Farbe wohin gehört, legst du selbst fest. Die App zeigt nur die Farbe.");
+    } else if (ex.type === "colornum") {
+      L.push(ex.task, `Deine Felder: 1 bis ${state.cnFields}. Steht dort schon ein Hütchen, tausche die beiden.`);
+    } else if (ex.type === "periph") {
+      L.push(ex.task);
+    } else {
+      regelnSplit(ex.rules || ex.task).forEach((x) => L.push(x));
+    }
+    return L;
+  }
+  function vtHasRegeln(exId) { return !!(EXERCISES[exId] && (EXERCISES[exId].rules || EXERCISES[exId].task)); }
+  function zusRuleLines(z) {
+    return z.ids.map((id) => {
+      const d = ZUS_BY_ID[id];
+      return `${d.title}: ${d.text}${d.signal ? ` Alle ${z.sigMin}–${z.sigMax} s.` : ""}${zusTrainerMark(z, id) ? " (Von deinem Trainer)" : ""}`;
+    });
+  }
+  function regelnTitle(key) { return key === "@vt" ? (EXERCISES[state.exercise] || {}).title || "" : REGELN_EXERCISES[key].title; }
+  function regelnLines(key) {
+    if (key === "@vt") return vtRuleLines(state.exercise);
+    const el = $(REGELN_EXERCISES[key].desc);
+    return regelnSplit(el ? el.textContent : "");
+  }
+  // Notes: VT in the VT state (so presets / Kombi capture carry them),
+  // NAT exercises in their own store.
+  function noteGet(key) { const k = regelnNoteKey(key); return key === "@vt" ? (state.exNotes || {})[k] || "" : natNotes[k] || ""; }
+  function notePersist(key, text) {
+    const k = regelnNoteKey(key), t = String(text || "").slice(0, NOTE_MAX);
+    if (key === "@vt") {
+      state.exNotes = { ...(state.exNotes || {}), [k]: t };
+      // Only the note goes to storage: during a run `state` may hold a block's values.
+      const saved = readJSON(PREFS_KEY, null);
+      const base = saved && typeof saved === "object" ? saved : JSON.parse(JSON.stringify(state));
+      base.exNotes = { ...(base.exNotes || {}), [k]: t };
+      writeJSON(PREFS_KEY, base);
+    } else {
+      if (t.trim()) natNotes[k] = t; else delete natNotes[k];
+      writeJSON(NAT_NOTES_KEY, natNotes);
+    }
+  }
+  // The running Kombi / programme block, if any (own Kombi: note lives in it).
+  function regelnRunBlock(key) {
+    const dom = REGELN_EXERCISES[key].domain;
+    if (comboProgram && comboProgram.def && comboProgram.def.blocks) {
+      const b = comboProgram.def.blocks[comboProgram.blockIndex];
+      if (b && b.domain === dom) return { block: b, own: !comboProgram.code || comboProgram.code === "local" };
+    }
+    if (program && key === "@vt") {
+      const st = program.steps && program.steps[program.chapterIndex];
+      const b = st && program.def.blocks[st.exIdx];
+      if (b) return { block: b, own: false };
+    }
+    return null;
+  }
+  function persistComboBlockNote(block) {
+    const key = comboProgram && comboProgram.key;
+    if (!key || !/^local:/.test(key) || key === "local:draft") return;
+    const id = key.slice(6), list = comboSavedStore.load();
+    const entry = list.find((x) => String(x.id) === id);
+    if (!entry) return;
+    const i = comboProgram.blockIndex;
+    if (entry.blocks[i]) { entry.blocks[i].note = block.note; comboSavedStore.save(list); }
+  }
+  // ctx: { key, mode: "ready" | "run" | "pause" | "block", pausedByUs, player, block, blockIndex }
+  let regelnCtx = null;
+  function regelnBlockLines(block) {
+    const keep = JSON.parse(JSON.stringify(state));
+    try {
+      if (block.domain !== "visual") { const k = REGELN_DOMAIN_KEY[block.domain]; return { title: comboBlockLabel(block), lines: k ? regelnLines(k) : [], zus: [] }; }
+      state.exercise = block.exercise;
+      if (block.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
+      if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
+      if (block.lw) lwApply(block.lw);
+      if (block.rk) { Object.assign(state, JSON.parse(JSON.stringify(block.rk))); rkNormalize(state); }
+      const z = zusNormalizeEntry(block.zus);
+      return { title: comboBlockLabel(block), lines: vtRuleLines(block.exercise), zus: ZUS_EXERCISES.includes(block.exercise) ? zusRuleLines(z) : [] };
+    } finally { Object.keys(state).forEach((k) => { if (!(k in keep)) delete state[k]; }); Object.assign(state, keep); }
+  }
+  function openRegeln(ctx) {
+    regelnCtx = ctx;
+    const key = ctx.key;
+    let title, lines, zus = [], trainer = "", note = "";
+    if (ctx.mode === "block") {
+      const r = regelnBlockLines(ctx.block);
+      title = r.title; lines = r.lines; zus = r.zus;
+      note = ctx.block.note || "";
+      trainer = ctx.block.trainerNote || "";
+    } else {
+      title = regelnTitle(key);
+      lines = regelnLines(key);
+      if (key === "@vt" && ZUS_EXERCISES.includes(state.exercise)) zus = zusRuleLines(zusGet(state.exercise));
+      const rb = ctx.mode === "ready" ? null : regelnRunBlock(key);
+      ctx.runBlock = rb && rb.own ? rb.block : null;
+      if (ctx.runBlock) note = ctx.runBlock.note || "";
+      else note = noteGet(key);
+      if (key === "@vt" && vtRunTrainer && ctx.mode !== "ready") trainer = vtRunTrainer.note;
+      else if (rb && !rb.own) trainer = rb.block.trainerNote || rb.block.note || "";
+    }
+    $("regelnEx").textContent = title;
+    $("regelnList").innerHTML = lines.map((l) => `<li>${esc(l)}</li>`).join("") || "<li>Für diese Übung gibt es keine besonderen Regeln.</li>";
+    $("regelnZusBox").hidden = !zus.length;
+    $("regelnZusList").innerHTML = zus.map((l) => `<li>${esc(l)}</li>`).join("");
+    $("regelnTrainerBox").hidden = !trainer;
+    $("regelnTrainerText").textContent = trainer;
+    const input = $("regelnNoteInput");
+    input.value = note;
+    regelnNoteHelp();
+    $("regelnDoneBtn").textContent = ctx.mode === "run" ? "Weiter" : "Fertig";
+    const sheet = $("regelnSheet");
+    // In fullscreen the sheet has to live inside the fullscreen element.
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    if (fsEl && !fsEl.contains(sheet)) fsEl.appendChild(sheet);
+    regelnCtx.opener = document.activeElement;
+    sheet.hidden = false;
+    setTimeout(() => { try { $("regelnDoneBtn").focus({ preventScroll: true }); } catch (e) {} }, 30);
+  }
+  function regelnNoteHelp() {
+    const ctx = regelnCtx || {};
+    const n = $("regelnNoteInput").value.length;
+    const where = ctx.mode === "block" || ctx.runBlock ? "Gilt für diesen Baustein." : comboVisualCaptureOriginal && ctx.key === "@vt" ? "Gilt für diesen Baustein." : "Gilt für diese Übung und wird mit gespeicherten Einstellungen mitgespeichert.";
+    $("regelnNoteHelp").textContent = `${where} Nur auf diesem Gerät. ${n}/${NOTE_MAX}`;
+  }
+  $("regelnNoteInput").addEventListener("input", () => {
+    const ctx = regelnCtx;
+    if (!ctx) return;
+    const t = $("regelnNoteInput").value.slice(0, NOTE_MAX);
+    if (ctx.mode === "block") { ctx.block.note = t; }
+    else if (ctx.runBlock) { ctx.runBlock.note = t; if (ctx.key === "@vt") state.exNotes = { ...state.exNotes, [state.exercise]: t }; persistComboBlockNote(ctx.runBlock); }
+    else if (ctx.key === "@vt" && ctx.mode === "ready") { state.exNotes = { ...state.exNotes, [state.exercise]: t }; savePrefs(); }
+    else notePersist(ctx.key, t);
+    regelnNoteHelp();
+  });
+  function closeRegeln() {
+    const ctx = regelnCtx;
+    const sheet = $("regelnSheet");
+    sheet.hidden = true;
+    if (sheet.parentElement !== document.body) document.body.appendChild(sheet);
+    regelnCtx = null;
+    regelnSyncPreviews();
+    if (ctx && ctx.mode === "block") renderComboBlockList();
+    // Opened from the running exercise: it paused, now it goes on.
+    if (ctx && ctx.mode === "run" && ctx.pausedByUs && ctx.player) {
+      const ov = [...ctx.player.querySelectorAll(".pause-overlay")].find((o) => !o.hidden);
+      const resume = ov && (ov.querySelector("button[id$='ResumeBtn']") || ov.querySelector(".start-btn"));
+      if (resume) resume.click();
+    }
+    if (ctx && ctx.opener && ctx.opener.isConnected && ctx.opener.focus) { try { ctx.opener.focus({ preventScroll: true }); } catch (e) {} }
+  }
+  $("regelnDoneBtn").addEventListener("click", closeRegeln);
+  $("regelnSheet").addEventListener("click", (e) => { if (e.target === $("regelnSheet")) closeRegeln(); });
+  $("regelnSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closeRegeln(); else trapTabKey($("regelnSheet"), e); });
+  function regelnOpenFromRun(key, btn) {
+    const player = btn.closest(".player");
+    const visible = (el) => el && !el.hidden && el.getClientRects().length > 0;
+    const open = player && [...player.querySelectorAll(".pause-overlay")].some(visible);
+    let pausedByUs = false;
+    if (player && !open) {
+      const p = [...player.querySelectorAll("button[id$='PauseBtn']")].find((b) => visible(b) && !b.disabled && b.textContent.trim().startsWith("Pause"));
+      if (p) { p.click(); pausedByUs = true; }
+    }
+    openRegeln({ key, mode: open ? "pause" : "run", pausedByUs, player });
+  }
+  // Inject the buttons: ready screens (+ note preview), player bars, pause sheets.
+  Object.entries(REGELN_EXERCISES).forEach(([key, cfg]) => {
+    cfg.screens.forEach((screenId) => {
+      const screen = $(screenId);
+      if (!screen) return;
+      const wrap = document.createElement("div");
+      wrap.className = "regeln-ready";
+      wrap.dataset.regelnWrap = key;
+      wrap.innerHTML = `<button type="button" class="regeln-btn" data-regeln="${key}">${REGELN_I_SVG}<span>Regeln</span></button><span class="regeln-preview" data-regeln-preview="${key}" hidden></span>`;
+      const anchor = screen.querySelector(cfg.anchor) || screen.querySelector(".page-title");
+      if (anchor) anchor.after(wrap);
+      wrap.querySelector("button").addEventListener("click", () => openRegeln({ key, mode: "ready" }));
+    });
+    const bar = $(cfg.bar);
+    if (bar) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "regeln-bar-btn";
+      b.dataset.regelnBar = key;
+      b.setAttribute("aria-label", "Regeln");
+      b.title = "Regeln";
+      b.innerHTML = REGELN_I_SVG;
+      const fs = [...bar.children].find((c) => /fsbtn$/i.test(c.id || ""));
+      bar.insertBefore(b, fs || null);
+      b.addEventListener("click", () => regelnOpenFromRun(key, b));
+    }
+    cfg.pauses.forEach((pid) => {
+      const panel = document.querySelector(`#${pid} .pause-panel`);
+      if (!panel) return;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "text-link regeln-pause-btn";
+      b.innerHTML = `${REGELN_I_SVG}<span>Regeln und Notiz</span>`;
+      const resume = panel.querySelector("button[id$='ResumeBtn']") || panel.querySelector(".start-btn");
+      panel.insertBefore(b, resume || null);
+      b.addEventListener("click", () => openRegeln({ key, mode: "pause", player: panel.closest(".player") }));
+    });
+  });
+  function regelnSyncPreviews() {
+    document.querySelectorAll("[data-regeln-preview]").forEach((el) => {
+      const key = el.dataset.regelnPreview;
+      const n = key === "@vt" && !vtHasRegeln(state.exercise) ? "" : noteGet(key);
+      el.hidden = !n;
+      el.textContent = n ? `Meine Notiz: ${n}` : "";
+    });
+    const vtWrap = document.querySelector('[data-regeln-wrap="@vt"]');
+    if (vtWrap) vtWrap.hidden = !vtHasRegeln(state.exercise);
+  }
+  // The VT bar button: not while the player hosts a Cardio guest.
+  function regelnBarSync() {
+    const b = document.querySelector('[data-regeln-bar="@vt"]');
+    if (b) b.hidden = cardioGuestActive || !vtHasRegeln(state.exercise);
+  }
+  // NAT ready screens: refresh the preview whenever one opens.
+  Object.values(REGELN_EXERCISES).forEach((cfg) => cfg.screens.forEach((id) => {
+    const scr = $(id);
+    if (scr) new MutationObserver(() => { if (!scr.hidden) regelnSyncPreviews(); }).observe(scr, { attributes: true, attributeFilter: ["hidden"] });
+  }));
+  if (navigator.webdriver) window.__regeln = { lines: (key) => regelnLines(key || "@vt"), vtLines: (ex) => vtRuleLines(ex), note: (key) => noteGet(key || "@vt"), ctx: () => regelnCtx && { key: regelnCtx.key, mode: regelnCtx.mode, pausedByUs: !!regelnCtx.pausedByUs }, startCombo: (def, code) => startComboProgram(def, code, code, "home") };
 
   // ---- Ziel-/Signalfarbe pro Übung (Fabian, 2026-10-02: "A. Ja") ----
   // Every Test exercise whose signal is a fixed colour gets a picker for it
@@ -14179,6 +15044,25 @@
   // Farbfelder as Cardio-Zusatzaufgabe: the same choices as its ready
   // screen (Modus, Stufe, Startlänge, Fuß, Hände, Tempo); layout and hand
   // rules are the client's own (the mat on the floor does not change).
+  // Richtungskreuz as Cardio guest: Modus, Zeichen, tempo, Farbregel on/off,
+  // Ansage; the cross itself (colours, numbers, meanings) is the client's own.
+  function rkCardioFieldsHtml(typeId, cfg) {
+    const row = (field, opts, cls) => `<div class="choice-row${cls ? " " + cls : ""}">` +
+      opts.map(([v, label]) => `<button class="choice${String(cfg[field]) === String(v) ? " active" : ""}" data-type="${typeId}" data-balf="${field}" data-balv="${v}">${label}</button>`).join("") + `</div>`;
+    return `<div class="choice-row two" data-mode-row="${typeId}">` +
+      Object.entries(RK_MODES).map(([id, m]) => `<button class="choice${cfg.mode === id ? " active" : ""}" data-type="${typeId}" data-mode="${id}">${esc(m.label)}</button>`).join("") + `</div>` +
+      `<div class="cardio-guest-field-row">
+        <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${typeId}" data-f="duration" value="${cfg.duration}"></div>
+        <div><label>Reiz-Dauer (Sek.)</label><input type="number" min="0.3" max="3" step="0.1" data-type="${typeId}" data-f="stimulusS" value="${cfg.stimulusS}"></div>
+        <div><label>Pause min (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${typeId}" data-f="intervalMin" value="${cfg.intervalMin}"></div>
+        <div><label>Pause max (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${typeId}" data-f="intervalMax" value="${cfg.intervalMax}"></div>
+      </div>` +
+      `<div class="group-label">Zeichen</div>` + row("signs", Object.entries(RK_SIGNS)) +
+      (cfg.mode === "abfolge" ? `<div class="group-label">Länge der ersten Folge</div>` + row("seqStart", [[2, "2 Zeichen"], [3, "3 Zeichen"]], "two") : "") +
+      (cfg.mode === "zeigen" && cfg.signs !== "zahlen" ? `<div class="group-label">Farbregel</div>` + row("rule", [[false, "Aus"], [true, "An"]], "two") : "") +
+      `<div class="group-label">Zeichen ansagen</div>` + row("speak", [[false, "Aus"], [true, "An"]], "two") +
+      `<div class="group-help">Farben, Zahlen und die Bedeutung der Farben kommen aus deinen eigenen Einstellungen beim Richtungskreuz.</div>`;
+  }
   function farbfelderCardioFieldsHtml(typeId, cfg) {
     const row = (field, opts, cls) => `<div class="choice-row${cls ? " " + cls : ""}">` +
       opts.map(([v, label]) => `<button class="choice${String(cfg[field]) === String(v) ? " active" : ""}" data-type="${typeId}" data-balf="${field}" data-balv="${v}">${label}</button>`).join("") + `</div>`;
@@ -17909,6 +18793,9 @@
     { id: "balance", title: "Gleichgewicht", group: "nat" },
     // Zusatzaufgabe Rechnen (2026-10-08): last, so older picker positions stay.
     { id: "addon-math", title: "Zusatzaufgabe · Rechnen", group: "extra" },
+    // Richtungskreuz (Idee 70, 2026-10-08): appended last in the "Weitere"
+    // group, so older picker positions and group headings stay.
+    { id: "richtungskreuz", title: "Richtungskreuz", group: "extra" },
   ];
   // "addon-flash" and "periph-flash" both flash a coloured digit/letter at
   // a random peripheral position (the former as a Zusatzaufgabe overlay on
@@ -17990,6 +18877,9 @@
     if (guestId === "balance") return { ...JSON.parse(JSON.stringify(BALANCE_DEFAULTS)), duration: 20, ...bg };
     // Farbfelder: the mat layout and the hand rules always come from the
     // client's own Farbfelder settings (it is the same mat on the floor).
+    // Richtungskreuz: colours/numbers/Farbregel meanings come from the
+    // client's own settings (the same cross on the floor).
+    if (guestId === "richtungskreuz") return { duration: 20, mode: "zeigen", stimulusS: 1.5, intervalMin: 2, intervalMax: 4, signs: "farben", seqStart: 2, rule: false, speak: false };
     if (guestId === "farbfelder") return { duration: 20, mode: "leuchten", stimulusS: 1.5, intervalMin: 2, intervalMax: 4, level: 1, seqStart: 2, foot: "aus", hands: false, gilt: "gesagt", mix: "ausgewogen", flip: 0, count: "wechsel" };
     if (guestId === "mot") return { duration: 20, mode: "speed", style: "flach", speed: MOT_DIFFICULTIES.mittel.speed, trackS: MOT_DIFFICULTIES.mittel.trackS, highlightS: MOT_DIFFICULTIES.mittel.highlightS, errorMode: "reset2", colors: ["schwarz"], targetColors: ["gelb"], objectCount: 8, targetCount: 4, growStartObjects: 4, growStartTargets: 1, trainingObjects: 6, trainingTargets: 2, trainingSpeedStep: 0, trainingProgress: true, objScale: 1, ...bg };
     if (guestId === "cone-number") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "gelb", "gruen", "blau"], fields: 4, ...bg };
@@ -18061,6 +18951,16 @@
       if (t.id === "cone-number") {
         if (!Number.isFinite(p.fields) || p.fields < CN_MIN_FIELDS || p.fields > CN_MAX_FIELDS) p.fields = d.fields;
         p.fields = Math.round(p.fields);
+      }
+      if (t.id === "richtungskreuz") {
+        if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
+        if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
+        if (!Number.isFinite(p.intervalMax) || p.intervalMax < 0.5 || p.intervalMax > 15) p.intervalMax = d.intervalMax;
+        if (!RK_MODES[p.mode]) p.mode = d.mode;
+        if (!RK_SIGNS[p.signs]) p.signs = d.signs;
+        if (![2, 3].includes(p.seqStart)) p.seqStart = d.seqStart;
+        if (typeof p.rule !== "boolean") p.rule = d.rule;
+        if (typeof p.speak !== "boolean") p.speak = d.speak;
       }
       if (cardioGuestIsFarbfelder(t.id)) {
         if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
@@ -18312,6 +19212,8 @@
           `</div>`;
       } else if (cardioGuestIsBalance(t.id)) {
         html += balanceCardioFieldsHtml(t.id, cfg);
+      } else if (t.id === "richtungskreuz") {
+        html += rkCardioFieldsHtml(t.id, cfg);
       } else if (cardioGuestIsFarbfelder(t.id)) {
         html += farbfelderCardioFieldsHtml(t.id, cfg);
       } else if (cardioGuestIsConeTap(t.id)) {
@@ -19066,6 +19968,11 @@
     // addon-flash (cardioGuestIsPeriphLike()), just written into these
     // fields instead of active.*.
     if (guestId === "cone-number") { state.cnFields = cfg.fields; cnNormalize(state); }
+    if (guestId === "richtungskreuz") {
+      state.rkMode = cfg.mode; state.rkSigns = cfg.signs; state.rkSeqStart = cfg.seqStart;
+      state.rkRuleOn = cfg.rule; state.rkSpeak = cfg.speak;
+      rkNormalize(state);
+    }
     if (guestId === "farbfelder") {
       state.ffMode = cfg.mode; state.ffLevel = cfg.level; state.ffSeqStart = cfg.seqStart;
       state.ffFoot = cfg.foot; state.ffHands = cfg.hands;
@@ -19585,6 +20492,7 @@
       if (block.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
       if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
       if (block.lw) lwApply(block.lw);
+      vtExtrasApply(block, { fromCode: !!comboProgram.code && comboProgram.code !== "local", block: true });
       // Generalized from a visual-only "usesColors" check (the sole shape
       // the original 3 curated presets ever needed) to all 3 colour kinds,
       // now that capture mode lets any exercise's block carry its own
@@ -21070,6 +21978,17 @@
       if (editOpener) main.addEventListener("click", () => editOpener(block, i));
       if (comboDraftBlocks.length > 1) row.appendChild(dragHandleEl());
       row.appendChild(main);
+      // ⓘ Regeln + Notiz for this Baustein (Idee 72)
+      if ((block.domain === "visual" && vtHasRegeln(block.exercise)) || (block.domain !== "visual" && REGELN_DOMAIN_KEY[block.domain])) {
+        const info = document.createElement("button");
+        info.type = "button";
+        info.className = "combo-block-remove combo-block-info";
+        info.title = "Regeln und Notiz";
+        info.setAttribute("aria-label", `Regeln und Notiz zu Baustein ${i + 1}`);
+        info.innerHTML = REGELN_I_SVG + (block.note ? '<span class="combo-info-dot" aria-hidden="true"></span>' : "");
+        info.addEventListener("click", () => openRegeln({ key: block.domain === "visual" ? "@vt" : REGELN_DOMAIN_KEY[block.domain], mode: "block", block, blockIndex: i }));
+        row.appendChild(info);
+      }
       // Reorder: swap with the neighbour (its own "Pause danach" travels
       // with the block). Only shown where a move is possible.
       [["up", -1, "\u2191", "Nach oben"], ["down", 1, "\u2193", "Nach unten"]].forEach(([dir, d, sym, label]) => {
@@ -26596,7 +27515,7 @@
       if (GEAR_EX_OPEN[k]) return { key: k, ...GEAR_EX_OPEN[k] };
       const card = document.querySelector(`.excard[data-exercise="${k}"]`);
       if (!EXERCISES[k] || !card) return null;
-      return { key: k, title: EXERCISES[k].title, open: () => {
+      return { key: k, title: EXERCISES[k].title + (HILFSMITTEL[k].optional ? " (optional)" : ""), open: () => {
         card.click();
         if (!els.ready.hidden) readyReturnScreen = "gearScreen";
       } };

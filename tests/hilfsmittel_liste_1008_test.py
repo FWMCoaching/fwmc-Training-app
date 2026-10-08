@@ -31,8 +31,8 @@ CARDS_JS = """() => [...document.querySelectorAll('#gearScreen .gear-card')].map
   shop: c.querySelectorAll('.gear-shop-btn').length, ad: c.querySelectorAll('.gear-ad').length }))"""
 
 EXPECTED = {
-    "cups": {"cone-compass", "cone-tap", "cone-path", "cone-number", "farbfelder"},
-    "mat": {"farbfelder"},
+    "cups": {"cone-compass", "cone-tap", "cone-path", "cone-number", "farbfelder", "richtungskreuz"},
+    "mat": {"farbfelder", "richtungskreuz"},  # Richtungskreuz (08.10.): optional
     "numbers": {"cone-number"},
     "tape": {"cone-compass"},
 }
@@ -86,7 +86,7 @@ async def main():
                 await pg.click(f'#gearScreen .gear-card[data-gear="{c["id"]}"] [data-gear-ex="{x["key"]}"]'); await pg.wait_for_timeout(200)
                 scr = await visible_screen(pg)
                 rt = (await pg.inner_text("#readyTitle")).strip() if scr == "ready" else ""
-                check(f"chip {c['id']}/{x['key']} opens its ready screen", scr == "ready" and rt == x["text"], f"{scr} {rt!r}")
+                check(f"chip {c['id']}/{x['key']} opens its ready screen", scr == "ready" and rt == x["text"].replace(" (optional)", ""), f"{scr} {rt!r}")
                 await pg.click("#backToHome"); await pg.wait_for_timeout(200)
                 check(f"chip {c['id']}/{x['key']}: back returns to the page", await visible_screen(pg) == "gearScreen")
 

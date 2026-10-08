@@ -3214,3 +3214,85 @@ body.soft-flash .flash-digit:not([hidden]){animation:fwmcSoftIn .3s ease-out 1}
 .balance-word.light-ink{-webkit-text-stroke:.035em #16232a}
 .balance-word[hidden]{display:none}
 .balance-word::after{content:attr(data-cap);display:block;text-align:center;font-family:"Public Sans",sans-serif;font-weight:600;font-size:max(12px,.26em);color:#4f6168;-webkit-text-stroke:0;margin-top:.15em;letter-spacing:0}
+
+/* ==== Ideen 70-72 (2026-10-08 abends): Richtungskreuz, Zusätze für oben,
+   ⓘ Regeln + Meine Notiz. docs/notes/35. ==== */
+/* ⓘ Regeln on ready screens (quiet pill like .explainer-link) */
+.regeln-ready{display:flex;flex-direction:column;align-items:flex-start;gap:4px;margin:0 0 14px}
+.regeln-ready[hidden]{display:none}
+.regeln-btn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:8px 14px;border:1.5px solid var(--line);border-radius:999px;background:var(--surface);color:var(--brand);font:inherit;font-weight:700;font-size:calc(14px * var(--ts,1));cursor:pointer}
+.regeln-btn .regeln-i,.regeln-pause-btn .regeln-i{width:20px;height:20px;flex:none}
+.regeln-preview{font-size:calc(13px * var(--ts,1));color:var(--ink-soft);line-height:1.45;overflow-wrap:anywhere;font-style:italic}
+.regeln-preview[hidden]{display:none}
+/* ⓘ in the player bar: round, 44 px, fixed colours like the other chips */
+.player-bar .regeln-bar-btn{width:44px;min-width:44px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.player-bar .regeln-bar-btn .regeln-i{width:22px;height:22px;color:#007094}
+.player-bar .regeln-bar-btn[hidden]{display:none}
+.regeln-pause-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin:4px 0 10px}
+/* the sheet */
+.regeln-ex{font-weight:700;color:var(--ink-soft);font-size:calc(14px * var(--ts,1));margin:-6px 0 12px}
+.regeln-list{margin:4px 0 16px;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:calc(14.5px * var(--ts,1));line-height:1.5;color:var(--ink)}
+.regeln-trainer{background:var(--surface-2);border-radius:12px;padding:10px 14px;margin-bottom:16px}
+.regeln-trainer .group-label{margin-bottom:4px}
+.regeln-trainer-text{margin:0;font-size:calc(14.5px * var(--ts,1));line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.regeln-note{font:inherit;font-size:calc(15px * var(--ts,1));width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface);color:var(--ink);resize:vertical;line-height:1.4;min-height:84px;margin-top:6px}
+@media (pointer:coarse){.regeln-note{font-size:16px}}
+.regeln-note-help{margin:6px 0 16px}
+/* Kombi overview: ⓘ per Baustein */
+.combo-block-info{position:relative;color:var(--brand)}
+.combo-block-info .regeln-i{width:20px;height:20px}
+.combo-info-dot{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--brand)}
+/* Zusatz für oben: one row with chips + "+ Zusatz" */
+.zus-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.zus-row-label{font-weight:700;font-size:calc(14px * var(--ts,1));color:var(--ink)}
+.zus-chips{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.zus-none{color:var(--ink-soft);font-size:calc(14px * var(--ts,1))}
+.zus-chip{display:inline-flex;align-items:center;gap:2px;min-height:44px;padding:0 0 0 12px;border-radius:999px;background:var(--surface-2);color:var(--ink);font-weight:600;font-size:calc(13.5px * var(--ts,1));max-width:100%}
+.zus-chip .zus-from{display:block}
+.zus-chip-x{width:44px;height:44px;border:none;background:none;color:var(--ink-soft);font-size:calc(14px * var(--ts,1));cursor:pointer;flex:none;border-radius:50%}
+.zus-add-btn{min-height:44px;padding:8px 14px;border:1.5px dashed var(--brand);border-radius:999px;background:none;color:var(--brand);font:inherit;font-weight:700;font-size:calc(14px * var(--ts,1));cursor:pointer;white-space:nowrap}
+.zus-from{font-size:calc(11.5px * var(--ts,1));font-weight:700;color:var(--brand);margin-left:6px}
+.zus-warn{color:var(--ink);background:var(--surface-2);border-radius:10px;padding:8px 12px;margin-top:8px}
+.zus-warn[hidden]{display:none}
+.zus-note{display:flex;flex-direction:column;gap:4px;font-size:calc(14px * var(--ts,1));line-height:1.5;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:16px}
+.zus-note[hidden]{display:none}
+.zus-note-small{font-size:calc(12.5px * var(--ts,1));color:var(--ink-soft)}
+.zus-card-list{display:flex;flex-direction:column;gap:8px;margin:6px 0 12px}
+.zus-card{display:flex;align-items:flex-start;gap:12px;width:100%;text-align:left;padding:12px 14px;min-height:56px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;cursor:pointer}
+.zus-card.active{border-color:var(--brand);background:var(--brand-pale,var(--surface-2))}
+.zus-card-check{flex:none;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--surface-2);color:var(--brand);font-weight:700;font-size:calc(16px * var(--ts,1))}
+.zus-card.active .zus-card-check{background:var(--brand);color:#fff}
+.zus-card-body{display:flex;flex-direction:column;gap:2px;min-width:0}
+.zus-card-title{font-weight:700;font-size:calc(15px * var(--ts,1))}
+.zus-card-text{font-size:calc(13px * var(--ts,1));color:var(--ink-soft);line-height:1.45}
+.zus-card .zus-from{margin-left:0}
+#zusSigGroup{margin-bottom:12px}
+/* the signal mark during a run (fixed colours: it sits on the stage) */
+.zus-sig-cue{position:absolute;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:26;display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;background:#16232a;color:#ffffff;font-weight:700;font-size:calc(16px * var(--ts,1));box-shadow:0 2px 10px rgba(0,0,0,.25);pointer-events:none;white-space:nowrap}
+.zus-sig-cue[hidden]{display:none}
+.zus-sig-icon{font-size:calc(22px * var(--ts,1));line-height:1}
+.zus-sig-pop{animation:zusSigPop .35s ease}
+@keyframes zusSigPop{from{transform:translateX(-50%) scale(.8);opacity:0}}
+@media (prefers-reduced-motion:reduce){.zus-sig-pop{animation:none}}
+/* Richtungskreuz: the cross of the four directions */
+.rk-cross{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:". v ." "l m r" ". h .";gap:6px;max-width:300px}
+.rk-cross [data-rk-dir="vorne"]{grid-area:v}
+.rk-cross [data-rk-dir="links"]{grid-area:l}
+.rk-cross [data-rk-dir="rechts"]{grid-area:r}
+.rk-cross [data-rk-dir="hinten"]{grid-area:h}
+.rk-cell{min-height:64px;border:none;border-radius:10px;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 4px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.rk-cell.rk-plain{background:var(--surface);color:var(--ink);box-shadow:0 0 0 1.5px var(--line)}
+.rk-cell.active{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--brand)}
+.rk-dir-name{font-size:calc(12px * var(--ts,1));font-weight:600;opacity:.9}
+.rk-dir-sign{font-size:calc(15px * var(--ts,1));font-weight:700;white-space:nowrap}
+.rk-me{grid-area:m;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--ink);color:var(--surface);font-weight:700;font-size:calc(14px * var(--ts,1));aspect-ratio:1;max-width:56px;justify-self:center;align-self:center;width:100%}
+#rkColorPicker{margin-top:12px}
+.rk-num-line{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.rk-num-line[hidden]{display:none}
+.rk-num-row{grid-template-columns:repeat(9,minmax(0,1fr))!important}
+.rk-num-row .choice{padding-left:0;padding-right:0;min-width:0}
+@media (max-width:420px){.rk-num-row{grid-template-columns:repeat(5,minmax(0,1fr))!important}}
+.combo-block-info + .combo-block-remove{margin-left:4px}
+/* With ⓘ the bar has five chips: on small phones they move closer so the
+   row still fits from 360 px (Idee 72). */
+@media (max-width:400px){.player-bar:has(.regeln-bar-btn:not([hidden])){gap:4px;padding-left:8px;padding-right:8px}.player-bar:has(.regeln-bar-btn:not([hidden])) button:not(.regeln-bar-btn),.player-bar:has(.regeln-bar-btn:not([hidden])) .player-status{padding-left:10px;padding-right:10px}}
