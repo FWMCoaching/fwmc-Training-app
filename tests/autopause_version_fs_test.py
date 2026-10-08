@@ -36,7 +36,11 @@ with sync_playwright() as p:
 
     # 14: version stamp
     stamps = pg.evaluate("[...document.querySelectorAll('.site-footer .app-version')].map(e=>e.textContent.trim())")
-    check("every footer has a Stand line", len(stamps) == 11)
+    # 08.10.: the fixed 11 went stale as screens with their own footer were added
+    # (Eigenes Training, Aktivierung, Hilfsmittel ... now 13). Check the real
+    # contract instead: every .site-footer carries exactly one Stand line.
+    per_footer = pg.evaluate("[...document.querySelectorAll('.site-footer')].map(f=>f.querySelectorAll('.app-version').length)")
+    check("every footer has a Stand line", len(per_footer) >= 11 and all(n == 1 for n in per_footer) and len(stamps) == len(per_footer))
     check("Stand looks like a date and time", all(re.fullmatch(r"Stand: \d\d\.\d\d\.\d{4}, \d\d:\d\d", s) for s in stamps))
     check("version visible on home", pg.locator("#home .app-version").is_visible())
 

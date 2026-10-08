@@ -24,6 +24,10 @@ nothing flashes).
 - Aufbau Reihen × Spalten 2-4 × 2-4 (default 3 × 3) with preview.
 - Reihenfarben (Feineinstellungen `#lwAdvanced`): one colour per row,
   default hinten gelb / Mitte blau / vorne rot.
+  `#lwAdvanced` sits in `#ready` BEFORE the shared `#advanced`, so code that
+  looks for "the" Feineinstellungen of `#ready` must name `#advanced`
+  (`cvdControlsHost` does since 08.10.; before, Farbschwäche/Signalfarbe/
+  Sanfte Reize of every VT exercise vanished into the hidden Laufweg block).
 - Ende: nach Wegen (rounds slider) or nach Zeit (2/3/5/10 Min).
 - Hilfsmittel note: "Du brauchst Hütchen in den eingestellten Farben"
   (`HILFSMITTEL["cone-path"]`).

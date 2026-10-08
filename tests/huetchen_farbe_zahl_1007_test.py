@@ -60,7 +60,15 @@ async def main():
         check("Zusatzaufgabe offered", await pg.is_visible("#addonGroup"))
         check("start button reads Training starten", (await pg.inner_text("#startBtn")).strip() == "Training starten")
         await pg.click("#backToHome"); await pg.wait_for_timeout(150)
+        # 08.10.: every Hütchen exercise (incl. Hütchen-Kompass) has its own
+        # Hilfsmittel note now, so the Kompass sibling keeps only the Felder check
+        # and must not show *this* exercise's note text; the "no note at all"
+        # check moves to vt-color (same fix as farbfelder_1007, 724a0a5).
         await pg.click('.excard[data-exercise="cone-compass"]'); await pg.wait_for_timeout(200)
+        note_txt = await pg.inner_text("#hilfsmittelNote") if await pg.is_visible("#hilfsmittelNote") else ""
+        check("Kompass sibling has no Felder row and not our note", not await pg.is_visible("#cnFieldsGroup") and "nummerierte Felder" not in note_txt, note_txt)
+        await pg.click("#backToHome"); await pg.wait_for_timeout(150)
+        await pg.click('.excard[data-exercise="vt-color"]'); await pg.wait_for_timeout(200)
         check("sibling has no Felder row / note", not await pg.is_visible("#cnFieldsGroup") and not await pg.is_visible("#hilfsmittelNote"))
         await pg.click("#backToHome"); await pg.wait_for_timeout(150)
 
