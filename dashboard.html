@@ -258,6 +258,15 @@
   .pl-comp > div { min-width: 0; flex: 1 1 200px; }
   .pl-comp button { margin: 0; }
   .pl-diamond { color: #c77d12; }
+  /* kp20 server storage: one quiet status line under the privacy hint */
+  .sync-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 0.78rem; color: var(--muted); margin: 8px 0 0; }
+  .sync-line .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); flex: none; }
+  .sync-line[data-state="saving"] .sync-dot { background: var(--accent); }
+  .sync-line[data-state="offline"] .sync-dot, .sync-line[data-state="later"] .sync-dot { background: var(--muted); }
+  .sync-line[data-state="error"] .sync-dot { background: var(--danger); }
+  .sync-line #plSyncText { flex: 1 1 220px; min-width: 0; }
+  .sync-line button { margin: 0; }
+  body.local-only .sync-line { display: none; }
   .pl-file { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; border-top: 1px solid var(--border); padding-top: 12px; align-items: center; }
   .pl-file button { margin: 0; }
   #plJson { min-height: 140px; }
@@ -343,7 +352,7 @@
         <div class="brand-logo-box"><img src="logo-full.png" alt="Fabian Westermann Mentalcoaching" /></div>
         <div>
           <h1>Trainer-Dashboard</h1>
-          <p class="sub">Trainingspläne bauen, Trainings-Codes verwalten &amp; Kunden-Verlauf. Codes und Verlauf liegen in der Cloudflare-Datenbank, die Trainingsplanung vorerst nur in diesem Browser.</p>
+          <p class="sub">Trainingspläne bauen, Trainings-Codes verwalten &amp; Kunden-Verlauf. Codes, Verlauf und Trainingsplanung liegen auf deinem Server (Cloudflare), geschützt mit deinem Admin-Token, und sind auf jedem Gerät gleich.</p>
         </div>
       </div>
       <button class="secondary" id="logoutBtn">Abmelden</button>
@@ -382,7 +391,8 @@
           </div>
         </div>
       </div>
-      <p class="hint pl-privacy">Nur ein Kürzel wie „TS-07“, nie Namen oder Gesundheitsangaben. Wer dahinter steckt, weißt nur du. Alles liegt vorerst nur in diesem Browser; sichere es mit „Alles als Datei sichern“ (unten).</p>
+      <p class="hint pl-privacy">Nur ein Kürzel wie „TS-07“, nie Namen oder Gesundheitsangaben. Wer dahinter steckt, weißt nur du. Bausätze, Pläne und Stände liegen auf deinem Server (nur mit deinem Admin-Token erreichbar) und sind auf jedem Gerät gleich; „Alles als Datei sichern“ (unten) bleibt für deinen Rechner.</p>
+      <div class="sync-line" id="plSyncLine" role="status" aria-live="polite" hidden><span class="sync-dot" aria-hidden="true"></span><span id="plSyncText"></span><button type="button" class="secondary" id="plSyncNowBtn" hidden>Jetzt auf den Server übernehmen</button></div>
       <div class="msg" id="plClientMsg"></div>
 
       <div class="pl-layout">
@@ -471,7 +481,7 @@
         <button type="button" class="secondary" id="plExportBtn">Alles als Datei sichern</button>
         <button type="button" class="secondary" id="plImportBtn">Aus Datei laden</button>
         <input type="file" id="plImportFile" accept="application/json,.json" hidden />
-        <span class="hint" style="margin:0">Bausätze und Kunden-Pläne als eine JSON-Datei für deinen Rechner.</span>
+        <span class="hint" style="margin:0">Bausätze und Kunden-Pläne zusätzlich als eine JSON-Datei für deinen Rechner.</span>
       </div>
     </div>
 
@@ -1602,7 +1612,7 @@
   }
   function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
-  function loadEverything() { loadPrograms(); loadHistory(); }
+  function loadEverything() { loadPrograms(); loadHistory(); if (window.fwmcDashSyncStart) window.fwmcDashSyncStart(); }
 
   if (token) {
     showApp();
@@ -1653,11 +1663,17 @@
   const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
   const VAR = ["A", "B", "C", "D"];
   const K_BS = "fwmc-dash-bausaetze-v1", K_PLANS = "fwmc-dash-plans-v1", K_VERS = "fwmc-dash-plan-versions-v1", K_CUR = "fwmc-dash-current-v1";
+  const K_SYNC = "fwmc-dash-sync-v1"; // kp20: per item hash + time + "was on the server", pending deletes
+  const SYNC_KEYS = [K_BS, K_PLANS, K_VERS, K_CUR];
   const REC_TEXT = "Empfehlung: in der Woche davor etwas leichter, mit dem Kunden abstimmen.";
 
   // ---- helpers ----
   function rj(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
-  function wj(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { toast("Speichern in diesem Browser ist fehlgeschlagen. Bitte „Alles als Datei sichern“."); return false; } }
+  function wj(k, v) {
+    try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { toast("Speichern in diesem Browser ist fehlgeschlagen. Bitte „Alles als Datei sichern“."); return false; }
+    if (SYNC_KEYS.includes(k) && window.fwmcDashSyncSchedule) window.fwmcDashSyncSchedule(); // kp20 write-through
+    return true;
+  }
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const pad = (n) => String(n).padStart(2, "0");
   function dStr(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
@@ -1724,13 +1740,17 @@
     const inField = /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || "");
     if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && (ev.key || "").toLowerCase() === "z" && !inField && !sheetStack.length && P()) { ev.preventDefault(); undo(); }
   });
-  let confirmYes = null;
-  function confirmSheet(title, text, yesLabel, onYes) {
+  let confirmYes = null, confirmNo = null;
+  // opts: {no: label of the second button, onNo, safe: the yes button is not red}
+  function confirmSheet(title, text, yesLabel, onYes, opts) {
+    opts = opts || {};
     $("plConfirmTitle").textContent = title; $("plConfirmText").textContent = text; $("plConfirmYes").textContent = yesLabel || "Ja";
-    confirmYes = onYes; openSheet("plConfirmSheet");
+    $("plConfirmNo").textContent = opts.no || "Abbrechen";
+    $("plConfirmYes").className = opts.safe ? "" : "danger";
+    confirmYes = onYes; confirmNo = opts.onNo || null; openSheet("plConfirmSheet");
   }
-  $("plConfirmYes").addEventListener("click", () => { const f = confirmYes; confirmYes = null; closeSheet("plConfirmSheet"); if (f) f(); });
-  $("plConfirmNo").addEventListener("click", () => { confirmYes = null; closeSheet("plConfirmSheet"); });
+  $("plConfirmYes").addEventListener("click", () => { const f = confirmYes; confirmYes = confirmNo = null; closeSheet("plConfirmSheet"); if (f) f(); });
+  $("plConfirmNo").addEventListener("click", () => { const f = confirmNo; confirmYes = confirmNo = null; closeSheet("plConfirmSheet"); if (f) f(); });
 
   // ---- state (kp20: localStorage, keys fwmc-dash-*) ----
   let lib = rj(K_BS, []); if (!Array.isArray(lib)) lib = [];
@@ -2385,7 +2405,7 @@
   });
   $("plDeleteClientBtn").addEventListener("click", () => {
     const p = P(); if (!p) return;
-    confirmSheet("Kunden-Plan löschen?", `Der Plan von „${p.kuerzel}“ und seine gespeicherten Stände werden aus diesem Browser gelöscht. Ein schon ausgegebener Plan-Code bleibt beim Kunden.`, "Löschen", () => {
+    confirmSheet("Kunden-Plan löschen?", `Der Plan von „${p.kuerzel}“ und seine gespeicherten Stände werden gelöscht${syncActive() ? ", auch auf dem Server" : ""}. Ein schon ausgegebener Plan-Code bleibt beim Kunden.`, "Löschen", () => {
       delete plans[cur]; delete versions[cur]; wj(K_VERS, versions);
       cur = Object.keys(plans).sort()[0] || ""; undoStack = []; savePlans(); renderAll(); toast("Kunden-Plan gelöscht.");
     });
@@ -2510,6 +2530,232 @@
   function renderPlanSide() { renderPlan(); renderPreview(); renderTimeline(); renderLib(); }
   function renderAll() { renderClients(); renderPlanSide(); }
 
+  // ---- Server-Speicher (kp20, 2026-10-08): same data on every device ----
+  // Worker /admin/items (admin token). One server item per Bausatz
+  // (bausaetze/<id>), per client plan and per client's Stände (plans/<Kürzel>,
+  // plan-versions/<Kürzel>) and the selected client (current/current).
+  // K_SYNC keeps per item a hash of what is on the server (h), its time (u,
+  // ms), whether the server has it (s) and whether it still has to go up (d);
+  // del = deletes still to send. Open: load everything, newer updated_at wins,
+  // local-only items go up (unless they were on the server before, then they
+  // were deleted on another device). Every local save goes up (debounced).
+  // Offline: everything stays local, a status line says so, retried later.
+  const SYNC_KIND_ORDER = ["bausaetze", "plans", "plan-versions", "current"];
+  const SYNC_MAX_BYTES = 250 * 1024; // the Worker allows 256 KB per item
+  const SYNC = { loaded: false, starting: false, busy: false, again: false, deferred: false, timer: null, retry: null, lastPull: 0 };
+  let syncMeta = rj(K_SYNC, null);
+  if (!syncMeta || typeof syncMeta !== "object" || !syncMeta.items) syncMeta = { items: {}, del: {} };
+  if (!syncMeta.del) syncMeta.del = {};
+  function saveSyncMeta() { try { localStorage.setItem(K_SYNC, JSON.stringify(syncMeta)); } catch (e) {} }
+  const syncAllowed = () => !!token && !document.body.classList.contains("local-only");
+  function syncActive() { return syncAllowed() && SYNC.loaded && !SYNC.deferred; }
+  function hashStr(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ":" + str.length; }
+  const tms = (iso) => { const t = Date.parse(iso || ""); return isNaN(t) ? 0 : t; };
+  // everything that lives on the server, as {key: {kind, id, data, t0}}
+  function syncCollect() {
+    const m = {};
+    lib.forEach((b) => { if (b && b.id) m["bausaetze/" + b.id] = { kind: "bausaetze", id: String(b.id), data: b, t0: tms(b.updatedAt || b.createdAt) }; });
+    Object.keys(plans).forEach((k) => { m["plans/" + k] = { kind: "plans", id: k, data: plans[k], t0: tms(plans[k].updatedAt) }; });
+    Object.keys(versions).forEach((k) => { const l = versions[k]; if (Array.isArray(l) && l.length) m["plan-versions/" + k] = { kind: "plan-versions", id: k, data: l, t0: tms(l[l.length - 1].at) }; });
+    m["current/current"] = { kind: "current", id: "current", data: { kuerzel: cur || "" }, t0: 0 };
+    return m;
+  }
+  // first sight of an item: its own time (so old local data never beats newer
+  // server data); a change afterwards: now.
+  function syncScan(firstSight) {
+    const all = syncCollect();
+    Object.entries(all).forEach(([key, it]) => {
+      const h = hashStr(JSON.stringify(it.data)), m = syncMeta.items[key];
+      if (!m) syncMeta.items[key] = { h, u: firstSight ? it.t0 : Date.now(), s: false, d: true };
+      else if (m.h !== h) { m.h = h; m.u = Date.now(); m.d = true; }
+      delete syncMeta.del[key];
+    });
+    Object.keys(syncMeta.items).forEach((key) => {
+      if (all[key]) return;
+      if (syncMeta.items[key].s) syncMeta.del[key] = true;
+      delete syncMeta.items[key];
+    });
+    saveSyncMeta();
+  }
+  syncScan(true);
+
+  function setSync(state) {
+    const line = $("plSyncLine");
+    if (!syncAllowed() || !state) { line.hidden = true; return; }
+    const text = {
+      ok: "Auf dem Server gespeichert, auf jedem Gerät gleich.",
+      saving: "Wird auf den Server übertragen …",
+      offline: "Nur auf diesem Gerät gespeichert – wird übertragen, sobald der Server erreichbar ist",
+      later: "Nur auf diesem Gerät gespeichert. Beim nächsten Öffnen fragt das Dashboard noch einmal.",
+      error: "Ein Eintrag ist zu groß für den Server und bleibt nur auf diesem Gerät. Bitte „Alles als Datei sichern“.",
+    }[state] || "";
+    line.hidden = false; line.dataset.state = state; $("plSyncText").textContent = text;
+    $("plSyncNowBtn").hidden = state !== "later";
+  }
+  // fetch without api()'s throw on 4xx; 401 = back to the gate like api()
+  async function srv(path, method, body) {
+    const res = await fetch(API_BASE + path, {
+      method: method || "GET",
+      headers: Object.assign({ "Authorization": "Bearer " + token }, body ? { "Content-Type": "application/json" } : {}),
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (res.status === 401) {
+      localStorage.removeItem(TOKEN_KEY); token = ""; SYNC.loaded = false; setSync("");
+      showGate("Token abgelehnt - bitte erneut eintragen.");
+      throw new Error("unauthorized");
+    }
+    const data = await res.json().catch(() => ({}));
+    return { status: res.status, ok: res.ok, data };
+  }
+  async function syncFetchAll() {
+    const parts = await Promise.all(SYNC_KIND_ORDER.map((k) => srv("/admin/items?kind=" + k)));
+    if (parts.some((r) => !r.ok)) throw new Error("server");
+    return [].concat(...parts.map((r) => r.data.items || []));
+  }
+  function syncLater(ms) {
+    clearTimeout(SYNC.retry);
+    SYNC.retry = setTimeout(() => { SYNC.retry = null; SYNC.loaded ? syncFlush() : syncStart(); }, ms || 30000);
+  }
+  // take one server item into the local stores (no write yet)
+  function syncApply(it) {
+    const d = it.data;
+    if (it.kind === "bausaetze" && d && typeof d === "object") {
+      const b = Object.assign({}, d, { id: it.id }); const i = lib.findIndex((x) => x.id === it.id);
+      if (i >= 0) lib[i] = b; else lib.push(b);
+    } else if (it.kind === "plans" && d && typeof d === "object") plans[it.id] = normPlan(d, it.id);
+    else if (it.kind === "plan-versions" && Array.isArray(d)) versions[it.id] = d;
+    else if (it.kind === "current" && d && plans[d.kuerzel]) cur = d.kuerzel;
+  }
+  function syncRemoveLocal(key) {
+    const [kind, ...rest] = key.split("/"); const id = rest.join("/");
+    if (kind === "bausaetze") lib = lib.filter((b) => b.id !== id);
+    else if (kind === "plans") delete plans[id];
+    else if (kind === "plan-versions") delete versions[id];
+  }
+  function syncMerge(server) {
+    syncScan(false);
+    const local = syncCollect();
+    const srvMap = {};
+    server.forEach((it) => { if (SYNC_KIND_ORDER.includes(it.kind)) srvMap[it.kind + "/" + it.id] = it; });
+    let changed = false; const taken = {};
+    Object.values(srvMap).sort((a, b) => SYNC_KIND_ORDER.indexOf(a.kind) - SYNC_KIND_ORDER.indexOf(b.kind)).forEach((it) => {
+      const key = it.kind + "/" + it.id, m = syncMeta.items[key];
+      if (!local[key]) {
+        if (syncMeta.del[key]) return; // deleted here, the delete goes up
+        syncApply(it); taken[key] = it.updatedAt; changed = true; return;
+      }
+      const sameData = m && hashStr(JSON.stringify(it.data)) === m.h;
+      if (sameData) { m.s = true; m.d = false; m.u = Math.max(m.u, it.updatedAt || 0); return; }
+      if ((it.updatedAt || 0) > ((m && m.u) || 0)) { syncApply(it); taken[key] = it.updatedAt; changed = true; }
+      else if (m) { m.s = true; m.d = true; } // local is newer: goes up
+    });
+    Object.keys(local).forEach((key) => {
+      const m = syncMeta.items[key];
+      if (srvMap[key] || !m || key === "current/current") return;
+      if (m.s && !m.d) { syncRemoveLocal(key); delete syncMeta.items[key]; changed = true; } // deleted on another device
+      else m.d = true;
+    });
+    if (changed) {
+      if (!plans[cur]) cur = Object.keys(plans).sort()[0] || "";
+      try {
+        localStorage.setItem(K_BS, JSON.stringify(lib)); localStorage.setItem(K_PLANS, JSON.stringify(plans));
+        localStorage.setItem(K_VERS, JSON.stringify(versions)); localStorage.setItem(K_CUR, JSON.stringify(cur));
+      } catch (e) {}
+      const now = syncCollect();
+      Object.keys(taken).forEach((key) => { if (now[key]) syncMeta.items[key] = { h: hashStr(JSON.stringify(now[key].data)), u: taken[key] || Date.now(), s: true, d: false }; });
+      undoStack = [];
+      renderAll();
+    }
+    saveSyncMeta();
+  }
+  function syncPayload(kind, data) {
+    if (kind !== "plan-versions") return data;
+    const a = data.slice(); // too many Stände for one item: the oldest stay only here
+    while (a.length > 1 && new Blob([JSON.stringify(a)]).size > SYNC_MAX_BYTES) a.shift();
+    return a;
+  }
+  async function syncFlush() {
+    if (!syncAllowed() || !SYNC.loaded || SYNC.deferred) return;
+    if (SYNC.busy) { SYNC.again = true; return; }
+    SYNC.busy = true; SYNC.again = false;
+    syncScan(false);
+    const local = syncCollect();
+    const dirty = Object.keys(syncMeta.items).filter((k) => syncMeta.items[k].d && local[k]);
+    const dels = Object.keys(syncMeta.del);
+    let tooBig = false;
+    try {
+      if (dirty.length || dels.length) setSync("saving");
+      for (const key of dirty) {
+        const it = local[key], m = syncMeta.items[key];
+        const r = await srv(`/admin/items/${encodeURIComponent(it.kind)}/${encodeURIComponent(it.id)}`, "PUT", { data: syncPayload(it.kind, it.data), updatedAt: m.u });
+        if (r.ok) { m.s = true; m.d = false; m.u = r.data.updatedAt || m.u; }
+        else if (r.status >= 400 && r.status < 500) { m.d = false; tooBig = true; } // refused (size, id): stays local
+        else throw new Error("server");
+        saveSyncMeta();
+      }
+      for (const key of dels) {
+        const [kind, ...rest] = key.split("/");
+        const r = await srv(`/admin/items/${encodeURIComponent(kind)}/${encodeURIComponent(rest.join("/"))}`, "DELETE");
+        if (!r.ok && r.status >= 500) throw new Error("server");
+        delete syncMeta.del[key]; saveSyncMeta();
+      }
+      setSync(tooBig ? "error" : "ok");
+    } catch (e) {
+      if (e.message !== "unauthorized") { setSync("offline"); syncLater(); }
+    } finally {
+      SYNC.busy = false;
+      if (SYNC.again) syncFlush();
+    }
+  }
+  function syncSchedule() {
+    if (!syncAllowed() || SYNC.deferred) return;
+    clearTimeout(SYNC.timer);
+    SYNC.timer = setTimeout(() => { SYNC.timer = null; SYNC.loaded ? syncFlush() : syncStart(); }, 800);
+  }
+  async function syncStart() {
+    if (!syncAllowed() || SYNC.starting || SYNC.deferred || SYNC.loaded) return;
+    SYNC.starting = true;
+    let server;
+    try { server = await syncFetchAll(); }
+    catch (e) { SYNC.starting = false; if (e.message !== "unauthorized") { setSync("offline"); syncLater(); } return; }
+    SYNC.starting = false; SYNC.lastPull = Date.now();
+    syncScan(false);
+    const localHas = lib.length > 0 || Object.keys(plans).length > 0;
+    const everSynced = Object.values(syncMeta.items).some((m) => m.s) || Object.keys(syncMeta.del).length > 0;
+    if (!server.length && localHas && !everSynced && !SYNC.loaded) {
+      SYNC.deferred = true; setSync("later"); // closing the question any other way = Später
+      confirmSheet("Deine Dashboard-Daten auf den Server übernehmen?",
+        "Bisher liegen deine Bausätze und Kunden-Pläne nur in diesem Browser. Auf dem Server sind sie auf jedem Gerät gleich, geschützt mit deinem Admin-Token. Nur Kürzel, keine Namen.",
+        "Ja", syncUploadNow, { no: "Später", safe: true });
+      return;
+    }
+    SYNC.loaded = true; SYNC.deferred = false;
+    syncMerge(server);
+    await syncFlush();
+    if (!SYNC.busy && $("plSyncLine").dataset.state !== "offline" && $("plSyncLine").dataset.state !== "error") setSync("ok");
+  }
+  function syncUploadNow() {
+    SYNC.deferred = false; SYNC.loaded = true;
+    Object.values(syncMeta.items).forEach((m) => { m.d = true; });
+    saveSyncMeta(); syncFlush();
+  }
+  $("plSyncNowBtn").addEventListener("click", syncUploadNow);
+  window.addEventListener("online", () => { if (syncAllowed() && !SYNC.deferred) (SYNC.loaded ? syncFlush() : syncStart()); });
+  // leaving the page: send what is still waiting in the debounce right away
+  function syncNowIfPending() { if (SYNC.timer && SYNC.loaded) { clearTimeout(SYNC.timer); SYNC.timer = null; syncFlush(); } }
+  window.addEventListener("pagehide", syncNowIfPending);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") { syncNowIfPending(); return; }
+    if (document.visibilityState === "visible" && SYNC.loaded && !SYNC.busy && Date.now() - SYNC.lastPull > 120000) {
+      SYNC.loaded = false; syncStart();
+    }
+  });
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    SYNC.loaded = false; SYNC.deferred = false; clearTimeout(SYNC.timer); clearTimeout(SYNC.retry); setSync("");
+  });
+  window.fwmcDashSyncSchedule = syncSchedule;
+  window.fwmcDashSyncStart = () => syncStart();
+
   // ---- local-only mode (no admin token): only the planning, JSON to copy ----
   const gl = document.getElementById("gateLocalBtn");
   if (gl) gl.addEventListener("click", () => {
@@ -2521,6 +2767,7 @@
   document.getElementById("connectBtn").addEventListener("click", () => { document.body.classList.remove("local-only"); $("localNote").hidden = true; });
   window.fwmcPlanRender = renderAll; // for tests / after a login
   renderAll();
+  if (token) syncStart(); // kp20: load from the server on open
 })();
 </script>
 </body>

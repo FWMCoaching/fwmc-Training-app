@@ -31,8 +31,13 @@
 // Erinnerungen (2026-10-05): POST/DELETE /reminders (public, rate limited
 // through REMINDER_LIMITER) and a cron trigger every 5 minutes that sends
 // due reminders via Web Push - see reminders.js and README.md.
+//
+// Trainer-Dashboard storage (kp20, 2026-10-08): GET /admin/items,
+// PUT/DELETE /admin/items/<kind>/<id> (admin token) - see items.js.
+//   trainer_items(kind TEXT, id TEXT, data TEXT, updated_at INTEGER, PRIMARY KEY (kind, id))
 
 import { handleReminders, sendDueReminders } from "./reminders.js";
+import { handleItems } from "./items.js";
 
 const ADMIN_ORIGINS = [
   "https://fwmcoaching.github.io",
@@ -65,6 +70,8 @@ export default {
       res = await withAuth(request, env, () => handleAdminProgramUpsert(request, env));
     } else if (url.pathname === "/admin/code-seats-reset") {
       res = await withAuth(request, env, () => handleSeatsReset(request, env));
+    } else if (url.pathname === "/admin/items" || url.pathname.startsWith("/admin/items/")) {
+      res = await withAuth(request, env, () => handleItems(request, env, json));
     } else if (url.pathname === "/admin/client-history") {
       res = request.method === "POST"
         ? await withAuth(request, env, () => handleClientHistoryCreate(request, env))
@@ -254,7 +261,7 @@ function corsHeaders() {
 
 function adminCorsHeaders(origin) {
   const headers = {
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Vary": "Origin",
   };

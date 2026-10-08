@@ -35,6 +35,8 @@ async def main():
                 await route.fulfill(status=200, content_type="application/json", body=json.dumps({"created": True}))
             elif "/admin/client-history" in url:
                 await route.fulfill(status=200, content_type="application/json", body=json.dumps({"history": []}))
+            elif "/admin/items" in url:  # kp20 server storage: empty, accepts writes
+                await route.fulfill(status=200, content_type="application/json", body=json.dumps({"items": [], "ok": True}))
             else:
                 await route.fulfill(status=404, body="{}")
         await pg.route("https://online-training.fwmc.workers.dev/**", api)
