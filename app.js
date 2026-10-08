@@ -3816,6 +3816,7 @@
       if (typeof e.own.intervalMax !== "number" || e.own.intervalMax < 0.5 || e.own.intervalMax > 15) e.own.intervalMax = d.intervalMax;
       if (!Array.isArray(e.own.colors) || !e.own.colors.length || !e.own.colors.every((k) => STROOP_COLOR_BY_KEY[k])) e.own.colors = d.colors.slice();
     }
+    addonMathNormalizeEntry(e); // Zusatzaufgabe Rechnen (2026-10-08)
     return e;
   }
   function loadAddonStore() {
@@ -4677,6 +4678,11 @@
     els.addonPhaseHint.textContent = enabled ? "" : "Aus – wähle „Beim Reiz“, „In der Pause“ oder beides, um die Zusatzaufgabe zu aktivieren.";
     els.addonConfigBody.hidden = !enabled;
     if (!enabled) return;
+    // Zusatzaufgabe Rechnen (2026-10-08): which add-on, then its own body.
+    document.querySelectorAll("#addonTaskRow [data-addon-task]").forEach((el) => setActive(el, el.dataset.addonTask === entry.task));
+    $("addonMathBody").hidden = entry.task !== "rechnen";
+    $("addonPeriphBody").hidden = entry.task === "rechnen";
+    if (entry.task === "rechnen") { syncAddonMathUI(entry); return; }
     document.querySelectorAll("#addonModeRow [data-addon-mode]").forEach((el) => setActive(el, el.dataset.addonMode === entry.mode));
     els.addonOwnBody.hidden = entry.mode !== "eigen";
     if (entry.mode !== "eigen") return;
@@ -6240,12 +6246,16 @@
     // store, and its single synthetic "blank" frame is always active -
     // everything past this branch (the actual flash placement/timing) is
     // the exact same logic every other exercise's own add-on uses.
+    if (exId === "cardio-flash-host" && cardioHostAddonId === "addon-math") {
+      return buildMathAddonSchedule(exId, hostSchedule, cardioHostAddonCfg || cardioAddonPrefs.perType["addon-math"] || cardioGuestDefaultCfg("addon-math"), new Set(["pause"]), rng);
+    }
     if (exId === "cardio-flash-host") {
       cfg = cardioAddonPrefs.perType["addon-flash"] || cardioGuestDefaultCfg("addon-flash");
       phaseSet = new Set(["pause"]);
     } else {
       const entry = getAddonEntry(exId);
       if (!entry.phases.length) return { schedule: [], sizeMode: "gleich" };
+      if (entry.task === "rechnen") return buildMathAddonSchedule(exId, hostSchedule, entry.math, new Set(entry.phases), rng);
       cfg = entry.mode === "eigen" ? entry.own : addonConfigFromState();
       phaseSet = new Set(entry.phases);
     }
@@ -6337,6 +6347,7 @@
   // drew - an independent overlay schedule, gated to the phases the client
   // enabled it for, see buildAddonSchedule().
   function drawAddonOverlay(elapsed) {
+    if (session.addonMath) { mathDrawOverlay(elapsed); return; } // Zusatzaufgabe Rechnen
     if (!session.addonSchedule || !session.addonSchedule.length) return;
     const idx = session.addonSchedule.findIndex((f) => elapsed >= f.t0 && elapsed < f.t1);
     if (idx === -1) return;
@@ -6348,6 +6359,284 @@
     drawPeriphChar(cw, ch, unit, f.fx, f.fy, f.char, session.addonSizeMode, f.color);
     ctx.globalAlpha = 1;
   }
+
+  // ==== Zusatzaufgabe "Rechnen" (Fabian 2026-10-08) ====
+  // A second kind of Zusatzaufgabe next to the peripheral characters: a
+  // statement like "2 + 3 > 6" or "7 − 4 = 3" appears where the host shows
+  // nothing; about half are true. Answer modes: Doppelkreis (inner disc =
+  // stimmt, outer ring = stimmt nicht), Nur bei "stimmt" antippen (go/no-go)
+  // and Laut sagen (no tap). Per exercise in the add-on store
+  // (entry.task = "periph" | "rechnen", entry.math), Cardio guest
+  // "addon-math". Taps count on pointerdown and never reach the host
+  // (capture listener on #stageWrap). Details: docs/notes/32.
+  function addonMathDefault() { return { level: "plus10", answer: "doppelkreis", stimulusS: 3, intervalMin: 2, intervalMax: 4 }; }
+  function addonMathNormalize(m) {
+    const d = addonMathDefault();
+    const o = m && typeof m === "object" ? { ...m } : {};
+    if (!["plus10", "plus20", "mal"].includes(o.level)) o.level = d.level;
+    if (!["doppelkreis", "gonogo", "laut"].includes(o.answer)) o.answer = d.answer;
+    if (!Number.isFinite(o.stimulusS) || o.stimulusS < 1.5 || o.stimulusS > 6) o.stimulusS = d.stimulusS;
+    if (!Number.isFinite(o.intervalMin) || o.intervalMin < 1 || o.intervalMin > 15) o.intervalMin = d.intervalMin;
+    if (!Number.isFinite(o.intervalMax) || o.intervalMax < 1 || o.intervalMax > 15) o.intervalMax = d.intervalMax;
+    return o;
+  }
+  function addonMathNormalizeEntry(e) {
+    if (!["periph", "rechnen"].includes(e.task)) e.task = "periph";
+    const n = addonMathNormalize(e.math);
+    if (e.math && typeof e.math === "object") Object.assign(e.math, n); else e.math = n;
+  }
+  // One statement. Values stay small and never negative; the shown number of
+  // a false statement is 1-3 off (1-6 for Mal), so it is not obvious.
+  function mathMakeStatement(level, rng) {
+    const ri = (a, b) => a + Math.floor(rng() * (b - a + 1));
+    const max = level === "plus10" ? 10 : 20;
+    let a, b, op, res;
+    if (level === "mal" && rng() < 0.6) { a = ri(2, 10); b = ri(2, 10); op = "·"; res = a * b; }
+    else if (rng() < 0.5) { res = ri(2, max); a = ri(0, res); b = res - a; op = "+"; }
+    else { a = ri(2, max); b = ri(0, a); op = "−"; res = a - b; }
+    const wantTrue = rng() < 0.5;
+    let rel = rng() < 0.6 ? "=" : rng() < 0.5 ? ">" : "<";
+    const k = ri(1, op === "·" ? 6 : 3);
+    let c;
+    if (rel === ">" && wantTrue && res === 0) rel = "<";
+    if (rel === "=") c = wantTrue ? res : res - k >= 0 && rng() < 0.5 ? res - k : res + k;
+    else if (rel === ">") c = wantTrue ? Math.max(0, res - k) : res + ri(0, k);
+    else c = wantTrue ? res + k : Math.max(0, res - ri(0, k));
+    const truth = rel === "=" ? res === c : rel === ">" ? res > c : res < c;
+    return { text: `${a} ${op} ${b} ${rel} ${c}`, truth, a, b, op, rel, c, res };
+  }
+  // Sizes in canvas px. Doppelkreis: ring and inner disc both >= 44 css px.
+  function mathGeometry(cw, ch, answer) {
+    const r = canvas.getBoundingClientRect();
+    const k = r.width ? cw / r.width : 1;
+    const minCss = Math.min(r.width || cw / k, r.height || ch / k);
+    const bar = els.playerBar.getBoundingClientRect();
+    const top = Math.max(0, (bar.height ? bar.bottom - r.top : 60) + 10) * k;
+    if (answer === "doppelkreis") {
+      const R = Math.max(106, Math.min(150, minCss * 0.3));
+      const ring = Math.max(46, R * 0.4);
+      return { R: R * k, rIn: (R - ring) * k, k, top };
+    }
+    const R = Math.max(64, Math.min(104, minCss * 0.21));
+    return { R: R * k, rIn: R * k, k, top };
+  }
+  // What the host draws in these frames, as polygons / boxes to keep clear
+  // of: arrows exactly (frameArrowPolygon, as for the characters), centred
+  // words/discs/icons as a centre box, the fixation point on blank frames.
+  function mathObstacles(cw, ch, frames, k) {
+    const obs = [];
+    frames.forEach((f) => {
+      const poly = frameArrowPolygon(cw, ch, f);
+      if (poly) { obs.push({ poly }); return; }
+      if (f.kind === "blank" || f.kind === "color") obs.push({ box: [cw / 2 - 26 * k, ch / 2 - 26 * k, cw / 2 + 26 * k, ch / 2 + 26 * k] });
+      else if (f.kind !== "flash-host") obs.push({ box: [cw * 0.12, ch * 0.36, cw * 0.88, ch * 0.64] });
+    });
+    return obs;
+  }
+  function mathOverlap(x, y, R, obs) {
+    if (!obs.length) return 0;
+    const pts = [[x, y]];
+    for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2; pts.push([x + Math.cos(a) * R, y + Math.sin(a) * R]); if (i % 2 === 0) pts.push([x + Math.cos(a) * R * 0.55, y + Math.sin(a) * R * 0.55]); }
+    let n = 0;
+    obs.forEach((o) => {
+      if (o.poly) {
+        pts.forEach(([px, py]) => { if (pointInPolygon(px, py, o.poly)) n++; });
+        o.poly.forEach(([px, py]) => { if (Math.hypot(px - x, py - y) < R) n++; });
+      } else {
+        const [x0, y0, x1, y1] = o.box;
+        const nx = Math.max(x0, Math.min(x, x1)), ny = Math.max(y0, Math.min(y, y1));
+        const dd = Math.hypot(nx - x, ny - y);
+        if (dd < R) n += 1 + Math.round((R - dd) / (R / 4));
+      }
+    });
+    return n;
+  }
+  function mathPlace(cw, ch, g, frames, rng) {
+    const m = 8 * g.k;
+    const xMin = g.R + m, xMax = cw - g.R - m;
+    const yMin = Math.max(g.top + g.R, g.R + m), yMax = ch - g.R - m;
+    const obs = mathObstacles(cw, ch, frames, g.k);
+    let best = null;
+    for (let i = 0; i < 48; i++) {
+      const x = xMax > xMin ? xMin + rng() * (xMax - xMin) : cw / 2;
+      const y = yMax > yMin ? yMin + rng() * (yMax - yMin) : Math.min(ch - g.R, yMin);
+      const score = mathOverlap(x, y, g.R + 8 * g.k, obs); // a little air around the circle
+      if (!best || score < best.score) best = { x, y, score };
+      if (score === 0) break;
+    }
+    return best;
+  }
+  // Statements are placed in runs of consecutive frames of the chosen
+  // phase(s); a run shorter than 1 s gets none, a statement never outlasts
+  // its run (so "In der Pause" keeps it out of the stimulus).
+  function buildMathAddonSchedule(exId, hostSchedule, cfg, phaseSet, rng) {
+    const m = addonMathNormalize(cfg);
+    const cw = canvas.width, ch = canvas.height;
+    const wins = [];
+    hostSchedule.forEach((f) => {
+      if (f.kind === "count") return;
+      if (!phaseSet.has(f.kind === "blank" ? "pause" : "reiz")) return;
+      const last = wins[wins.length - 1];
+      if (last && Math.abs(last.t1 - f.t0) < 1e-6) { last.t1 = f.t1; last.frames.push(f); } else wins.push({ t0: f.t0, t1: f.t1, frames: [f] });
+    });
+    const soft = softOn(exId);
+    const show = soft ? Math.max(m.stimulusS, SOFT_MIN_SHOW_S) : m.stimulusS;
+    const [gMin, gMax] = softGap(Math.min(m.intervalMin, m.intervalMax), Math.max(m.intervalMin, m.intervalMax), exId);
+    const geo = mathGeometry(cw, ch, m.answer);
+    const schedule = [];
+    let id = 0;
+    wins.forEach((w) => {
+      let t = w.t0 + Math.min(0.4, (w.t1 - w.t0) * 0.1);
+      while (t < w.t1 - 1) {
+        const t1 = Math.min(t + show, w.t1);
+        if (t1 - t < 1) break;
+        const st = mathMakeStatement(m.level, rng);
+        const frames = w.frames.filter((f) => f.t1 > t && f.t0 < t1);
+        const pos = mathPlace(cw, ch, geo, frames, rng);
+        schedule.push({ id: ++id, t0: t, t1, text: st.text, truth: st.truth, x: pos.x, y: pos.y, overlap: pos.score });
+        t = t1 + gMin + rng() * (gMax - gMin);
+      }
+    });
+    return { schedule, sizeMode: "gleich", math: { answer: m.answer, R: geo.R, rIn: geo.rIn, k: geo.k } };
+  }
+  function mathSessionNew(info) {
+    return { ...info, cur: null, answered: {}, ok: 0, bad: 0, miss: 0, minT0: 0, flash: null, log: [] };
+  }
+  function mathClose(m, it) {
+    if (!it || m.answered[it.id] || m.answer === "laut") return;
+    if (m.answer === "gonogo" && !it.truth) { m.ok++; m.log.push({ text: it.text, truth: it.truth, result: "richtig", tapped: false }); return; }
+    m.miss++;
+    m.log.push({ text: it.text, truth: it.truth, result: "verpasst", tapped: false });
+  }
+  function mathCurrent(m, elapsed) {
+    const sch = (session && session.addonSchedule) || [];
+    return sch.find((f) => f.t0 >= m.minT0 && elapsed >= f.t0 && elapsed < f.t1) || null;
+  }
+  function mathTrack(m, elapsed) {
+    const it = mathCurrent(m, elapsed);
+    if (it !== m.cur) { mathClose(m, m.cur); m.cur = it; }
+    return it;
+  }
+  function mathAbandon(m, elapsed) { m.cur = null; m.minT0 = elapsed; }
+  // said: true = "stimmt" (inner disc / the go tap), false = "stimmt nicht".
+  function mathAnswer(m, it, said, elapsed) {
+    if (!it || m.answered[it.id] || m.answer === "laut") return false;
+    m.answered[it.id] = true;
+    const right = said === it.truth;
+    if (right) m.ok++; else m.bad++;
+    m.log.push({ text: it.text, truth: it.truth, result: right ? "richtig" : "falsch", tapped: true, said });
+    m.flash = { x: it.x, y: it.y, r: said || m.answer !== "doppelkreis" ? m.rIn : m.R, until: elapsed + 0.3 };
+    return true;
+  }
+  function mathFinish(m) {
+    if (navigator.webdriver) window.__mathLastScore = { ok: m.ok, bad: m.bad, miss: m.miss, answer: m.answer, log: m.log.slice() };
+    if (m.answer === "laut") return null;
+    return { ok: m.ok, bad: m.bad, miss: m.miss, text: `Rechnen: ${m.ok} richtig, ${m.bad} falsch, ${m.miss} verpasst` };
+  }
+  function mathDrawOverlay(elapsed) {
+    const m = session.addonMath;
+    const it = mathTrack(m, elapsed);
+    const k = m.k || 1;
+    if (it && !m.answered[it.id]) {
+      const a = session.soft ? Math.max(0, Math.min(1, (elapsed - it.t0) / SOFT_FADE_S, (it.t1 - elapsed) / SOFT_FADE_S)) : 1;
+      ctx.save();
+      ctx.globalAlpha = a;
+      if (m.answer === "doppelkreis") {
+        ctx.beginPath(); ctx.arc(it.x, it.y, m.R, 0, Math.PI * 2);
+        ctx.fillStyle = "#37474f"; ctx.fill();
+        ctx.lineWidth = 2 * k; ctx.strokeStyle = "#ffffff"; ctx.stroke();
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        const ringMid = (m.R + m.rIn) / 2;
+        ctx.font = `700 ${Math.round(Math.max(12 * k, (m.R - m.rIn) * 0.27))}px 'Public Sans', sans-serif`;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText("stimmt nicht", it.x, it.y + ringMid);
+      }
+      ctx.beginPath(); ctx.arc(it.x, it.y, m.rIn, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff"; ctx.fill();
+      ctx.lineWidth = 3 * k; ctx.strokeStyle = "#16232a"; ctx.stroke();
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const size = fitText(ctx, it.text, m.rIn * 1.62, Math.round(m.rIn * 0.42), "Magra, sans-serif", 700);
+      ctx.font = `700 ${size}px Magra, sans-serif`;
+      ctx.fillStyle = "#16232a";
+      ctx.fillText(it.text, it.x, it.y - (m.answer === "doppelkreis" ? m.rIn * 0.08 : 0));
+      if (m.answer === "doppelkreis") {
+        ctx.font = `600 ${Math.round(Math.max(11 * k, m.rIn * 0.2))}px 'Public Sans', sans-serif`;
+        ctx.fillStyle = "#4a5a61";
+        ctx.fillText("stimmt", it.x, it.y + m.rIn * 0.5);
+      }
+      ctx.restore();
+    }
+    if (m.flash && elapsed < m.flash.until) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, (m.flash.until - elapsed) / 0.3);
+      ctx.beginPath(); ctx.arc(m.flash.x, m.flash.y, m.flash.r, 0, Math.PI * 2);
+      ctx.lineWidth = 6 * k; ctx.strokeStyle = "#ffffff"; ctx.stroke();
+      ctx.lineWidth = 2 * k; ctx.strokeStyle = "#16232a"; ctx.stroke();
+      ctx.restore();
+    }
+  }
+  // Taps: capture phase on the stage wrapper, so a tap on the statement is
+  // never also a tap for the host exercise (e.g. Farbfelder · Antippen); a
+  // tap outside the circle passes on untouched.
+  els.stageWrap.addEventListener("pointerdown", (e) => {
+    const m = session && session.addonMath;
+    if (!m || m.answer === "laut" || periphPausedAt || els.player.hidden) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (e.target !== canvas) return;
+    const elapsed = (performance.now() - session.startTime) / 1000;
+    const it = mathTrack(m, elapsed);
+    if (!it || m.answered[it.id]) return;
+    const r = canvas.getBoundingClientRect();
+    if (!r.width) return;
+    const kk = canvas.width / r.width;
+    const d = Math.hypot((e.clientX - r.left) * kk - it.x, (e.clientY - r.top) * kk - it.y);
+    if (d > m.R + 4 * kk) return;
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    mathAnswer(m, it, m.answer === "doppelkreis" ? d <= m.rIn : true, elapsed);
+  }, { capture: true });
+  // Ready-screen controls (#addonMathBody) - per exercise like the rest.
+  function syncAddonMathUI(entry) {
+    const mm = entry.math;
+    document.querySelectorAll("#addonMathLevelRow [data-addon-mathlevel]").forEach((el) => setActive(el, el.dataset.addonMathlevel === mm.level));
+    document.querySelectorAll("#addonMathAnswerRow [data-addon-mathanswer]").forEach((el) => setActive(el, el.dataset.addonMathanswer === mm.answer));
+    $("addonMathShowSlider").value = mm.stimulusS;
+    $("addonMathShowValue").textContent = fmtSeconds(mm.stimulusS);
+    $("addonMathGapMinSlider").value = mm.intervalMin;
+    $("addonMathGapMaxSlider").value = mm.intervalMax;
+    $("addonMathGapValue").textContent = `${fmtSeconds(Math.min(mm.intervalMin, mm.intervalMax))}–${fmtSeconds(Math.max(mm.intervalMin, mm.intervalMax))}`;
+  }
+  const addonMathEdit = (fn) => { const entry = getAddonEntry(state.exercise); fn(entry); saveAddonStore(); syncAddonUI(); };
+  document.querySelectorAll("#addonTaskRow [data-addon-task]").forEach((el) => el.addEventListener("click", () => addonMathEdit((e) => { e.task = el.dataset.addonTask; })));
+  document.querySelectorAll("#addonMathLevelRow [data-addon-mathlevel]").forEach((el) => el.addEventListener("click", () => addonMathEdit((e) => { e.math.level = el.dataset.addonMathlevel; })));
+  document.querySelectorAll("#addonMathAnswerRow [data-addon-mathanswer]").forEach((el) => el.addEventListener("click", () => addonMathEdit((e) => { e.math.answer = el.dataset.addonMathanswer; })));
+  [["addonMathShowSlider", "stimulusS"], ["addonMathGapMinSlider", "intervalMin"], ["addonMathGapMaxSlider", "intervalMax"]].forEach(([id, f]) => {
+    $(id).addEventListener("input", () => {
+      const entry = getAddonEntry(state.exercise);
+      entry.math[f] = Number($(id).value);
+      saveAddonStore();
+      syncAddonMathUI(entry);
+    });
+  });
+  // Cardio "+ Zusatzaufgabe" · Rechnen runs on the blank host
+  // (cardio-flash-host); triggerCardioGuest() names which add-on it carries.
+  let cardioHostAddonId = null, cardioHostAddonCfg = null;
+  if (navigator.webdriver) window.__mathFinishRun = () => { if (session && session.addonMath) finishSession(); };
+  if (navigator.webdriver) window.__math = {
+    make: (level, n, seed) => { let x = seed || 1; const rng = () => ((x = (x * 16807) % 2147483647) / 2147483647); return Array.from({ length: n }, () => mathMakeStatement(level, rng)); },
+    state: () => {
+      const m = session && session.addonMath;
+      if (!m) return null;
+      const r = canvas.getBoundingClientRect(), kk = canvas.width / (r.width || 1);
+      const elapsed = (performance.now() - session.startTime) / 1000;
+      const it = mathCurrent(m, elapsed);
+      const css = (v) => v / kk;
+      return {
+        answer: m.answer, ok: m.ok, bad: m.bad, miss: m.miss, R: css(m.R), rIn: css(m.rIn), count: session.addonSchedule.length,
+        cur: it ? { id: it.id, text: it.text, truth: it.truth, answered: !!m.answered[it.id], cx: r.left + css(it.x), cy: r.top + css(it.y), overlap: it.overlap } : null,
+        items: session.addonSchedule.map((f) => ({ t0: f.t0, t1: f.t1, text: f.text, truth: f.truth, overlap: f.overlap, cx: r.left + css(f.x), cy: r.top + css(f.y) })),
+      };
+    },
+  };
 
   // Redraws whatever frame is currently frozen on screen (used while the
   // Periph pause overlay is open) without touching the schedule/elapsed
@@ -6483,6 +6772,7 @@
     const built = buildScheduleFor(EXERCISES[state.exercise], Math.random);
     const addon = buildAddonSchedule(EXERCISES[state.exercise], state.exercise, built.schedule, Math.random);
     session = { ...built, startTime: performance.now(), lastIndex: -1, addonSchedule: addon.schedule, addonSizeMode: addon.sizeMode, soft: softOn(state.exercise) };
+    session.addonMath = addon.math ? mathSessionNew(addon.math) : null; // Zusatzaufgabe Rechnen
     // Farbfelder · Antippen: the canvas takes taps and scores them.
     session.ffTap = EXERCISES[state.exercise].type === "farbfelder" && ffTapMode() ? ffTapNew() : null;
     els.player.classList.toggle("ff-tap", !!session.ffTap);
@@ -6812,6 +7102,7 @@
     if (ffTap) ffTapFinish(ffTap);
     const ffScore = ffTap ? ffTapScore(ffTap, state.ffMode) : null;
     if (ffScore && navigator.webdriver) window.__ffTapLastScore = ffScore;
+    const mathScore = session && session.addonMath ? mathFinish(session.addonMath) : null; // Zusatzaufgabe Rechnen
     const spent = accountSession();
     if (window.speechSynthesis) speechSynthesis.cancel();
     els.liveNav.hidden = true;
@@ -6832,6 +7123,7 @@
       if (ex.type === "farbfelder") note = FF_MODE_LABELS[state.ffMode] + (FF_FLIP_MODES.includes(state.ffMode) && state.ffFlip ? ` · jedes ${state.ffFlip}. Mal andersherum` : "")
         + (state.ffMode === "einblenden" ? ` · ${FF_COUNT_NOTES[state.ffCount] || FF_COUNT_NOTES.wechsel}` : "");
       if (ffScore) { summary = `${ffScore.text} · ${fmtMinutes(spent)}`; note = `${note} · Antippen · ${ffScore.text}`; }
+      if (mathScore) { summary += ` · ${mathScore.text}`; note = note ? `${note} · ${mathScore.text}` : mathScore.text; }
     }
     els.doneSummary.textContent = summary;
     if (coneTap) markBest(els.doneSummary, "", coneTap.count);
@@ -6957,6 +7249,7 @@
     if (session.ffTap) ffTapAbandon(session.ffTap);
     const addon = buildAddonSchedule(ex, state.exercise, session.schedule, Math.random);
     session.addonSchedule = addon.schedule; session.addonSizeMode = addon.sizeMode;
+    if (session.addonMath) mathAbandon(session.addonMath, elapsed); // Zusatzaufgabe Rechnen: drop the open question
   }
 
   els.periphPauseBtn.addEventListener("click", () => {
@@ -17026,7 +17319,7 @@
   // `group` sorts both the Feineinstellungen pool grid and the live
   // picker into their parent domain, so the list stays legible as it
   // grows instead of one long flat run of choices.
-  const CARDIO_GUEST_GROUPS = { vt: "Visuelles Training", nat: "Neuroathletik (NAT)" };
+  const CARDIO_GUEST_GROUPS = { vt: "Visuelles Training", nat: "Neuroathletik (NAT)", extra: "Weitere Zusatzaufgaben" };
   const CARDIO_GUEST_TYPES = [
     { id: "addon-flash", title: "Zusatzaufgabe · Ziffer/Buchstabe", group: "vt" },
     { id: "vt-color", title: "VT · Farbe & Seite", group: "vt" },
@@ -17048,6 +17341,8 @@
     { id: "flash", title: "Flash-Speicher-Test", group: "nat" },
     { id: "mot", title: "Objektverfolgung (MOT)", group: "nat" },
     { id: "balance", title: "Gleichgewicht", group: "nat" },
+    // Zusatzaufgabe Rechnen (2026-10-08): last, so older picker positions stay.
+    { id: "addon-math", title: "Zusatzaufgabe · Rechnen", group: "extra" },
   ];
   // "addon-flash" and "periph-flash" both flash a coloured digit/letter at
   // a random peripheral position (the former as a Zusatzaufgabe overlay on
@@ -17064,7 +17359,7 @@
   function cardioGuestColorLib(guestId) {
     return cardioGuestIsPeriphLike(guestId) || guestId === "stroop-classic" || guestId === "stroop-bg" || guestId === "mot" ? STROOP_COLOR_LIB : COLOR_LIB;
   }
-  function cardioGuestRealId(guestId) { return guestId === "addon-flash" ? "cardio-flash-host" : guestId; }
+  function cardioGuestRealId(guestId) { return guestId === "addon-flash" || guestId === "addon-math" ? "cardio-flash-host" : guestId; }
   // Mirrors currentBgFill()'s own exclusion exactly (ex.type === "color-tap"
   // || ex.bgIsStimulus): cone-tap's stage is plain hard-coded white in CSS
   // (never reads state.bgColorKey/bgIntensity) and vt-color/vrw-original/
@@ -17118,6 +17413,7 @@
     // data for addon-flash, which never had this control standalone either.
     if (cardioGuestIsPeriphLike(guestId)) return { duration: 20, ...addonDefaultOwn(), zoneWeights: { tl: 1, tm: 1, tr: 1, ml: 1, mr: 1, bl: 1, bm: 1, br: 1 }, ...bg };
     if (guestId === "cone-tap") return { duration: 20 };
+    if (guestId === "addon-math") return { duration: 30, ...addonMathDefault(), ...bg };
     if (guestId === "blitz-raster") return { duration: 20, flashS: BLITZ_DIFFICULTIES.mittel.flashS, errorMode: "reset2", gridSize: 4, startCount: 3, zones: PERIPH_ZONE_KEYS.slice(), ...bg };
     // Remember/Flash/MOT: training-mode start values added here (Batch D) -
     // the OTHER modes' own numeric fields (Flash's constantCount/startCount/
@@ -17159,7 +17455,8 @@
       if (modeList) {
         if (!modeList.some((m) => m.id === p.mode)) p.mode = d.mode;
       }
-      if (!cardioGuestIsConeTap(t.id) && !cardioGuestIsBlitz(t.id) && !modeList) {
+      if (t.id === "addon-math") { const dur = p.duration; Object.assign(p, addonMathNormalize(p)); p.duration = dur; }
+      if (!cardioGuestIsConeTap(t.id) && !cardioGuestIsBlitz(t.id) && !modeList && t.id !== "addon-math") {
         if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
         if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
         if (!Number.isFinite(p.intervalMax) || p.intervalMax < 0.5 || p.intervalMax > 15) p.intervalMax = d.intervalMax;
@@ -17400,7 +17697,21 @@
       // for it would adjust something with zero visible effect, so they're
       // simply left out rather than shown-but-inert. Blitz-Raster has its
       // own entirely different field set (see below), not this one at all.
-      if (cardioGuestIsBlitz(t.id)) {
+      if (t.id === "addon-math") {
+        // Zusatzaufgabe Rechnen: the same choices as on the ready screens.
+        const row = (f, items) => `<div class="choice-row${items.length > 3 ? " two" : ""}">` + items.map(([v, title, small]) =>
+          `<button class="choice${cfg[f] === v ? " active" : ""}" data-type="${t.id}" data-balf="${f}" data-balv="${v}">${esc(title)}${small ? `<small>${esc(small)}</small>` : ""}</button>`).join("") + `</div>`;
+        html += `<div class="cardio-guest-field-row">
+        <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
+        <div><label>Anzeigedauer (Sek.)</label><input type="number" min="1.5" max="6" step="0.5" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"></div>
+        <div><label>Pause min (Sek.)</label><input type="number" min="1" max="15" step="0.5" data-type="${t.id}" data-f="intervalMin" value="${cfg.intervalMin}"></div>
+        <div><label>Pause max (Sek.)</label><input type="number" min="1" max="15" step="0.5" data-type="${t.id}" data-f="intervalMax" value="${cfg.intervalMax}"></div>
+      </div>` +
+          `<div class="group-label">Rechenart</div>` + row("level", [["plus10", "Plus/Minus", "bis 10"], ["plus20", "Plus/Minus", "bis 20"], ["mal", "Mit Mal", "bis 10 · 10"]]) +
+          `<div class="group-label">So antwortest du</div>` +
+          `<div class="choice-row" style="grid-template-columns:1fr">` + [["doppelkreis", "Doppelkreis", "innen tippen = stimmt, Ring tippen = stimmt nicht"], ["gonogo", "Nur bei „stimmt“ antippen", "stimmt es nicht, tippst du nichts"], ["laut", "Laut sagen", "ohne Tippen"]].map(([v, title, small]) =>
+            `<button class="choice${cfg.answer === v ? " active" : ""}" data-type="${t.id}" data-balf="answer" data-balv="${v}">${esc(title)}<small>${esc(small)}</small></button>`).join("") + `</div>`;
+      } else if (cardioGuestIsBlitz(t.id)) {
         html += `<div class="cardio-guest-field-row">
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
         <div><label>Startanzahl</label><input type="number" min="2" max="12" step="1" data-type="${t.id}" data-f="startCount" value="${cfg.startCount}"></div>
@@ -18351,6 +18662,7 @@
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
     cardioRaf = null;
     const realId = cardioGuestRealId(guestId);
+    cardioHostAddonId = guestId; cardioHostAddonCfg = cfg; // Zusatzaufgabe Rechnen rides on the blank host too
     cardioGuestActive = true;
     const comboOpts = { comboDurationS: cfg.duration };
     // Blitz-Raster/Remember/Flash/MOT don't touch state.exercise/
