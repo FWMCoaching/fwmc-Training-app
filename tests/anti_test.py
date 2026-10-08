@@ -47,7 +47,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#antiBgColorPicker .color-swatch").count())
         await pg.click('#antiBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
         await pg.fill("#antiBgIntensitySlider", "0.6"); await pg.dispatch_event("#antiBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#antiBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#antiBgIntensityValue")))
 
         # "schwer" = shortest ISI/timeout, fastest test run (block-intro
         # delay is fixed regardless of difficulty, see ANTI_BLOCK_INTRO_MS).

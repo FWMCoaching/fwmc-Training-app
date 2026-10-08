@@ -32,7 +32,7 @@ async def main():
         # ---- pool grid + fine-tune panels ----
         await pg.click("#cardioAddonAdvanced summary"); await pg.wait_for_timeout(150)
         await pg.check("#cardioAddonEnableToggle"); await pg.wait_for_timeout(150)
-        print("pool grid now offers 20 types:", await pg.locator("#cardioAddonPoolGrid [data-pool]").count() == 20)
+        print("pool grid now offers 22 types (incl. Rechnen, Richtungskreuz):", await pg.locator("#cardioAddonPoolGrid [data-pool]").count() == 22)
         for t in ("remember", "flash", "mot"):
             await pg.check(f'#cardioAddonPoolGrid input[data-pool="{t}"]')
         await pg.wait_for_timeout(200)
@@ -61,7 +61,7 @@ async def main():
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(400)
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
         print("no mode-row for the first (VT) type by default:", await pg.locator("#cardioAddonPickerDetail [data-mode-row]").count() == 0)
-        print("picker offers 20 choices total:", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 20)
+        print("picker offers 22 choices total (incl. Rechnen, Richtungskreuz):", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 22)
 
         # index 16 = remember (13 VT + periph-flash + blitz-raster + remember)
         await pg.locator("#cardioAddonPickerTypeRow .choice").nth(16).click(); await pg.wait_for_timeout(80)

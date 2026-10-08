@@ -42,7 +42,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#gngBgColorPicker .color-swatch").count())
         await pg.click('#gngBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
         await pg.fill("#gngBgIntensitySlider", "0.6"); await pg.dispatch_event("#gngBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#gngBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#gngBgIntensityValue")))
 
         # "schwer" = shortest ISI/stimulus duration, so a short test window
         # still reliably samples several trials (needed to actually observe

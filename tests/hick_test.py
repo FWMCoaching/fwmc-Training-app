@@ -44,7 +44,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#hickBgColorPicker .color-swatch").count())
         await pg.click('#hickBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
         await pg.fill("#hickBgIntensitySlider", "0.6"); await pg.dispatch_event("#hickBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#hickBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#hickBgIntensityValue")))
 
         # "kurz" = 3 reps * (2+4+8) = 42 trials, fast enough for a short test run.
         await pg.click('#hickLengthRow [data-hick-length="kurz"]'); await pg.wait_for_timeout(60)

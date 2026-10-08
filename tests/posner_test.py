@@ -48,7 +48,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#posnerBgColorPicker .color-swatch").count())
         await pg.click('#posnerBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
         await pg.fill("#posnerBgIntensitySlider", "0.6"); await pg.dispatch_event("#posnerBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#posnerBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#posnerBgIntensityValue")))
 
         # "schwer" = shortest cue/SOA/response window, so a short test window
         # still reliably samples several trials, including a timeout.

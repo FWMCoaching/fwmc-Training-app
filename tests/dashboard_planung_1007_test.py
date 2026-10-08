@@ -70,6 +70,7 @@ async def main():
     os.makedirs(SHOTS, exist_ok=True)
     server = {}      # code -> {code, name, active, config}
     posts, hist = [], []
+    items = {}       # (kind, id) -> {data, updatedAt}  (kp20 /admin/items)
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"])
         ctx = await b.new_context(viewport={"width": 1440, "height": 1000}, service_workers="block", accept_downloads=True)
@@ -80,7 +81,19 @@ async def main():
         async def api(route):
             req = route.request; url = req.url
             q = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
-            if "/admin/programs" in url:
+            if "/admin/items" in url:  # kp20 server storage (2026-10-08): a small in-memory store
+                parts = [urllib.parse.unquote(x) for x in urllib.parse.urlparse(url).path.split("/")[3:] if x]
+                if req.method == "PUT":
+                    d = json.loads(req.post_data); items[tuple(parts)] = {"data": d["data"], "updatedAt": d.get("updatedAt") or 0}
+                    await route.fulfill(status=200, content_type="application/json", body=json.dumps({"ok": True, "updatedAt": items[tuple(parts)]["updatedAt"]}))
+                elif req.method == "DELETE":
+                    items.pop(tuple(parts), None)
+                    await route.fulfill(status=200, content_type="application/json", body='{"ok":true}')
+                else:
+                    kind = (q.get("kind") or [""])[0]
+                    body = {"items": [{"kind": k, "id": i, **v} for (k, i), v in items.items() if not kind or k == kind]}
+                    await route.fulfill(status=200, content_type="application/json", body=json.dumps(body))
+            elif "/admin/programs" in url:
                 body = {"programs": [{"code": c, "name": v["config"].get("name", ""), "active": v["active"], "config": v["config"], "updatedAt": "2026-10-07T10:00:00Z"} for c, v in server.items()]}
                 await route.fulfill(status=200, content_type="application/json", body=json.dumps(body))
             elif "/admin/program" in url and req.method == "POST":
@@ -312,8 +325,12 @@ async def main():
         data = json.load(open(path))
         check("kp20: export file has everything", data["app"] == "fwmc-trainer-dashboard" and len(data["bausaetze"]) == 3 and set(data["plans"]) == {"TS-07", "MK-02"} and len(data["versions"]["TS-07"]) == 3)
         keys = await pg.evaluate("Object.keys(localStorage).filter(k => k.startsWith('fwmc-dash-')).sort()")
-        check("kp20: keys start with fwmc-dash-", keys == ["fwmc-dash-bausaetze-v1", "fwmc-dash-current-v1", "fwmc-dash-plan-versions-v1", "fwmc-dash-plans-v1"], keys)
+        check("kp20: keys start with fwmc-dash-", keys == ["fwmc-dash-bausaetze-v1", "fwmc-dash-current-v1", "fwmc-dash-plan-versions-v1", "fwmc-dash-plans-v1", "fwmc-dash-sync-v1"], keys)
+        await pg.wait_for_timeout(1200)  # write-through is debounced (0.8 s)
+        check("kp20: everything also went to the server (mock)", {k for k, _ in items} == {"bausaetze", "plans", "plan-versions", "current"} and ("plans", "MK-02") in items, sorted(items))
+        # an empty device with an empty server (otherwise the server would bring it all back)
         await pg.evaluate("Object.keys(localStorage).filter(k => k.startsWith('fwmc-dash-')).forEach(k => localStorage.removeItem(k))")
+        items.clear()
         await pg.reload(); await pg.wait_for_timeout(400)
         check("after wipe: empty", await pg.locator(".bs-card").count() == 0 and await pg.is_visible("#plNoClient"))
         await pg.set_input_files("#plImportFile", path); await pg.wait_for_timeout(300)

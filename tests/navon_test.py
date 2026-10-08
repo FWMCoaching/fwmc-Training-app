@@ -38,7 +38,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#navonBgColorPicker .color-swatch").count())
         await pg.click('#navonBgColorPicker .color-swatch[data-key="gelb"]'); await pg.wait_for_timeout(80)
         await pg.fill("#navonBgIntensitySlider", "0.5"); await pg.dispatch_event("#navonBgIntensitySlider", "input")
-        print("intensity value label updated:", "50%" in (await pg.inner_text("#navonBgIntensityValue")))
+        print("intensity value label updated:", "50 %" in (await pg.inner_text("#navonBgIntensityValue")))
 
         # "leicht" = longest cue time, so a slow Playwright click still
         # reliably lands during the response window rather than timing out.

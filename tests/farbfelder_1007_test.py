@@ -60,7 +60,7 @@ async def main():
         check("Zusatzaufgabe offered", await pg.is_visible("#addonGroup"))
         # other exercises don't show the Farbfelder block or the note
         await pg.click("#backToHome"); await pg.wait_for_timeout(200)
-        await pg.click('.excard[data-exercise="cone-compass"]'); await pg.wait_for_timeout(200)
+        await pg.click('.excard[data-exercise="vt-color"]'); await pg.wait_for_timeout(200)
         check("sibling has no Farbfelder block/note", not await pg.is_visible("#ffSettings") and not await pg.is_visible("#hilfsmittelNote"))
         await pg.click("#backToHome"); await pg.wait_for_timeout(200)
 
@@ -118,7 +118,7 @@ async def main():
         await pg.click('[data-ff-mode="regeln"]'); await pg.click('[data-ff-level="3"]'); await pg.wait_for_timeout(80)
         check("Stufe 3 lists three rules", await pg.locator("#ffRuleList li").count() == 3)
         await pg.click('[data-ff-hands="1"]'); await pg.wait_for_timeout(80)
-        check("hand rows for the 4 layout colours", await pg.locator("#ffHandRows select").count() == 4)
+        check("hand rows for the 4 layout colours (chips)", await pg.locator("#ffHandRows .color-choice-line").count() == 4)
         await pg.goto(URL); await pg.wait_for_timeout(400)
         await open_ff(pg)
         check("arrangement persists across reload", [ (await pg.inner_text(f'#ffLayoutGrid [data-ff-cell="{i}"]')).strip() for i in range(4)] == ["Blau", "Lila", "Gelb", "Grün"])

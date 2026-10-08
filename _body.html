@@ -1,4 +1,8 @@
 <div class="app-splash" id="appSplash" aria-hidden="true"><img src="logo-white.png" width="900" height="177" alt=""></div>
+<div class="client-run-strip" id="clientRunStrip" role="status" hidden>
+  <span class="client-run-text">Kunden-Training &middot; seit <span id="clientRunSince"></span><span id="clientRunCount"></span></span>
+  <button class="client-run-end" id="clientRunEndBtn" type="button">Beenden</button>
+</div>
 <div class="screen" id="home" hidden>
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" width="900" height="177" alt="Fabian Westermann Mentalcoaching">
@@ -200,6 +204,17 @@
         <span class="tag">H&uuml;tchen</span>
       </button>
 
+      <button class="excard" data-exercise="cone-path" data-tags="huetchen">
+        <div class="icon-badge"><svg viewBox="0 0 24 24">
+          <path d="M5 20 C5 14, 11 15, 11 11 S6 5, 12 4.5 S19 8, 18 12 S14 17, 19 19" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+          <polygon points="17,16.2 20.6,19.6 16.2,20.4" fill="#fff"/>
+          <circle cx="5" cy="20" r="1.8" fill="#fff"/>
+        </svg></div>
+        <h3>H&uuml;tchen &middot; Laufweg</h3>
+        <p>Folge der Karte: Lauf den gezeichneten Weg durch deine H&uuml;tchen &ndash; mit der Karte in der Hand oder aus dem Kopf.</p>
+        <span class="tag">H&uuml;tchen</span>
+      </button>
+
       <button class="excard" data-exercise="farbfelder" data-tags="huetchen">
         <div class="icon-badge pale"><svg viewBox="0 0 24 24">
           <rect x="3" y="3" width="8.4" height="8.4" rx="1.6" fill="#d32f2f"/>
@@ -210,6 +225,18 @@
         <h3>Farbfelder</h3>
         <p>Vier Farbfelder wie auf deiner Matte &ndash; tritt auf das richtige Feld.</p>
         <span class="tag">Matte</span>
+      </button>
+      <button class="excard" data-exercise="richtungskreuz" data-tags="huetchen">
+        <div class="icon-badge pale"><svg viewBox="0 0 24 24">
+          <path d="M12 7v10M7 12h10" stroke="#9aa9ae" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="12" cy="4.6" r="3" fill="#d32f2f"/>
+          <circle cx="19.4" cy="12" r="3" fill="#f2a900"/>
+          <circle cx="12" cy="19.4" r="3" fill="#1565c0"/>
+          <circle cx="4.6" cy="12" r="3" fill="#2e7d32"/>
+        </svg></div>
+        <h3>Richtungskreuz</h3>
+        <p>Vorne, hinten, links, rechts &ndash; jedes Zeichen hat seine Richtung.</p>
+        <span class="tag">Schritte</span>
       </button>
     </div>
   </section>
@@ -262,6 +289,14 @@
   <section class="today-hello">
     <h1 class="today-greeting" id="todayGreeting">Guten Tag</h1>
     <p class="today-date" id="todayDate"></p>
+    <button class="text-link small hello-name-btn" id="helloNameBtn" type="button" hidden>+ Wie hei&szlig;t du?</button>
+    <form class="hello-name-form" id="helloNameForm" hidden>
+      <div class="hello-name-row">
+        <input type="text" id="helloNameInput" class="plan-input" maxlength="30" autocomplete="given-name" autocapitalize="words" spellcheck="false" placeholder="Dein Vorname" aria-label="Dein Vorname">
+        <button class="start-btn secondary hello-name-save" id="helloNameSaveBtn" type="submit">Speichern</button>
+      </div>
+      <button class="text-link small hello-name-cancel" id="helloNameCancelBtn" type="button">Abbrechen</button>
+    </form>
   </section>
 
   <section class="today-main" id="todayMain" aria-live="polite"></section>
@@ -447,6 +482,10 @@
       <span class="fc-title">So trainierst du richtig</span>
       <span class="fc-desc">Kurze Tipps f&uuml;r dein Training und wie du die App nutzt.</span>
     </button>
+    <button class="featured-card" id="moreGearBtn" type="button">
+      <span class="fc-title">Hilfsmittel</span>
+      <span class="fc-desc">Was du f&uuml;r die &Uuml;bungen mit H&uuml;tchen oder Farbmatte brauchst, mit Starterpaket f&uuml;r den Anfang.</span>
+    </button>
     <button class="featured-card faq-open-btn" type="button">
       <span class="fc-title">H&auml;ufige Fragen</span>
       <span class="fc-desc">Antworten rund um Training, Codes, Daten und Offline-Nutzung.</span>
@@ -475,6 +514,20 @@
       <button class="privacy-open-btn" type="button">Datenschutz</button>
     </nav>
   </footer>
+</div>
+
+<div class="screen" id="gearScreen" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="gearBackBtn">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Hilfsmittel und Starterpaket</h1>
+  <p class="page-sub">F&uuml;r einige &Uuml;bungen brauchst du ein paar einfache Dinge, zum Beispiel H&uuml;tchen oder eine Farbmatte. Hier siehst du, was wof&uuml;r gebraucht wird. Tippe auf eine &Uuml;bung, um sie zu &ouml;ffnen. Hak ab, was du hast. Dann siehst du bei jeder &Uuml;bung, was dir noch fehlt.</p>
+  <div class="hub-group-title hub-first">Starterpaket</div>
+  <p class="hub-sub">Ein Starterpaket f&uuml;r den Anfang: Diese Dinge brauchst du am h&auml;ufigsten.</p>
+  <div class="gear-list" id="gearStarterList"></div>
+  <div class="hub-group-title" id="gearMoreTitle">F&uuml;r einzelne &Uuml;bungen</div>
+  <div class="gear-list" id="gearMoreList"></div>
+  <p class="group-help gear-partner-note" id="gearPartnerNote" hidden>Wenn du &uuml;ber einen Link kaufst, bekommt dein Trainer eine kleine Provision. F&uuml;r dich &auml;ndert sich der Preis nicht.</p>
 </div>
 
 <nav class="bottom-nav" id="bottomNav" aria-label="Hauptnavigation" hidden>
@@ -523,6 +576,92 @@
     <div class="progress-milestones" id="progressMilestones"></div>
     <p class="group-help" id="progressNextText"></p>
   </div>
+  <section class="history" id="progressHistorySection" hidden>
+    <div class="section-head">
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
+    </div>
+    <div class="history-stats" id="progressHistoryStats"></div>
+    <ul class="history-list" id="progressHistoryList"></ul>
+    <div class="history-actions">
+      <button class="text-link small" id="progressHistoryMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="progressHistoryClearBtn">Verlauf l&ouml;schen</button>
+    </div>
+  </section>
+  <div class="group handover-group" id="handoverGroup">
+    <div class="group-label" id="handoverGroupLabel">Training beim Trainer</div>
+    <div class="handover-item" id="handoverOpenItem">
+      <button class="start-btn secondary" id="handoverOpenBtn" type="button">An Kunden &uuml;bergeben</button>
+      <p class="group-help">Schickt Trainings per QR-Code auf das Handy deines Kunden.</p>
+    </div>
+    <div class="handover-item" id="clientRunItem">
+      <button class="start-btn secondary" id="clientRunStartBtn" type="button">Kunden-Training starten</button>
+      <p class="group-help" id="clientRunActiveNote" hidden>Ein Kunden-Training l&auml;uft. Beenden kannst du es oben im Streifen.</p>
+      <p class="group-help" id="clientRunStartHelp">Trainiert jetzt ein Kunde auf deinem Ger&auml;t? Dann z&auml;hlt nichts davon f&uuml;r deinen Fortschritt, und am Ende kommt direkt der QR-Code.</p>
+      <div class="handover-pending" id="clientRunPending" hidden>
+        <p class="group-help" id="clientRunPendingText"></p>
+        <div class="handover-pending-actions">
+          <button class="text-link small" id="clientRunPendingBtn" type="button">QR-Code zeigen</button>
+          <button class="text-link small danger" id="clientRunDropBtn" type="button">L&ouml;schen</button>
+        </div>
+      </div>
+    </div>
+    <div class="handover-item" id="handoverScanItem">
+      <button class="text-link small handover-paste-link" id="handoverScanOpenBtn" type="button">Trainer-QR-Code scannen</button>
+      <p class="group-help">Zeigt dir dein Trainer einen QR-Code mit deinen Trainings? Scanne ihn hier, dann landen sie in dieser App.</p>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="handoverScreen" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="handoverBackBtn">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">An Kunden &uuml;bergeben</h1>
+  <p class="page-sub">Welche Trainings bekommt dein Kunde? W&auml;hle den Zeitraum und nimm einzelne Trainings heraus, die nicht zu ihm geh&ouml;ren.</p>
+  <div class="group">
+    <div class="group-label">Zeitraum</div>
+    <div class="choice-row handover-range" id="handoverRangeRow">
+      <button class="choice" type="button" data-ho-range="since"><span id="handoverSinceLabel">seit</span></button>
+      <button class="choice" type="button" data-ho-range="30">30 Min</button>
+      <button class="choice" type="button" data-ho-range="60">60 Min</button>
+      <button class="choice" type="button" data-ho-range="90">90 Min</button>
+    </div>
+    <label class="handover-since" id="handoverSinceRow"><span>Seit</span> <input type="time" id="handoverSinceInput" class="plan-date-input" step="300"> <span>Uhr</span></label>
+  </div>
+  <div class="group">
+    <div class="group-label">Trainings</div>
+    <ul class="history-list handover-list" id="handoverList"></ul>
+  </div>
+  <div class="handover-precheck" id="handoverPrecheck">
+    <div class="hilfsmittel-kicker">Bevor dein Kunde scannt:</div>
+    <ul>
+      <li>Hat er die App auf seinem Handy (am besten auf dem Startbildschirm)?</li>
+      <li>Er tippt in seiner App unter Fortschritt auf &bdquo;Trainer-QR-Code scannen&ldquo;.</li>
+      <li>Nicht mit der normalen Kamera-App scannen: Auf dem iPhone landen die Trainings sonst im Browser statt in seiner App.</li>
+    </ul>
+  </div>
+  <button class="start-btn" id="handoverGoBtn" type="button" disabled>0 Trainings &uuml;bergeben</button>
+</div>
+
+<div class="screen" id="handoverQrScreen" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="handoverQrBackBtn">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Scannen lassen</h1>
+  <p class="page-sub">Dein Kunde tippt in seiner App unter Fortschritt auf &bdquo;Trainer-QR-Code scannen&ldquo;. Seine App fragt dann einmal, ob er die Trainings &uuml;bernehmen m&ouml;chte.</p>
+  <div class="handover-qr-card">
+    <canvas class="handover-qr" id="handoverQrCanvas" role="img" aria-label="QR-Code f&uuml;r die &Uuml;bergabe" width="10" height="10"></canvas>
+    <p class="handover-qr-error" id="handoverQrError" hidden>Der QR-Code konnte nicht erzeugt werden. Bitte lade die Seite neu und versuche es noch einmal.</p>
+  </div>
+  <div class="handover-part-nav" id="handoverPartNav" hidden>
+    <button class="progress-goal-btn" id="handoverPrevBtn" type="button" aria-label="Vorheriger Code">&lsaquo;</button>
+    <span class="handover-part-label" id="handoverPartLabel"></span>
+    <button class="progress-goal-btn" id="handoverNextBtn" type="button" aria-label="N&auml;chster Code">&rsaquo;</button>
+  </div>
+  <p class="group-help handover-qr-hint" id="handoverQrHint" hidden></p>
+  <p class="group-help handover-qr-meta" id="handoverQrMeta"></p>
+  <button class="start-btn" id="handoverDoneBtn" type="button">Fertig</button>
 </div>
 
 <div class="screen" id="planScreen" hidden>
@@ -604,6 +743,48 @@
   </div>
 </div>
 
+<!-- Regeln + Meine Notiz (Idee 72, 2026-10-08), docs/notes/35 -->
+<div class="sheet" id="regelnSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="regelnTitle">
+    <h2 id="regelnTitle">Regeln und Notiz</h2>
+    <div class="regeln-ex" id="regelnEx"></div>
+    <div class="group-label">So geht&rsquo;s gerade</div>
+    <ul class="regeln-list" id="regelnList"></ul>
+    <div class="regeln-zus" id="regelnZusBox" hidden>
+      <div class="group-label">Zus&auml;tze f&uuml;r oben</div>
+      <ul class="regeln-list" id="regelnZusList"></ul>
+    </div>
+    <div class="regeln-trainer" id="regelnTrainerBox" hidden>
+      <div class="group-label">Notiz von deinem Trainer</div>
+      <p class="regeln-trainer-text" id="regelnTrainerText"></p>
+    </div>
+    <label class="group-label" for="regelnNoteInput">Meine Notiz</label>
+    <textarea class="regeln-note" id="regelnNoteInput" maxlength="300" rows="3" placeholder="z.&#8239;B. Blau hei&szlig;t bei mir: zur&uuml;ck"></textarea>
+    <div class="group-help regeln-note-help" id="regelnNoteHelp"></div>
+    <button class="start-btn" id="regelnDoneBtn" type="button">Weiter</button>
+  </div>
+</div>
+
+<!-- Zusatz für oben (Idee 71, 2026-10-08) -->
+<div class="sheet" id="zusatzSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="zusatzTitle">
+    <h2 id="zusatzTitle">Zusatz f&uuml;r oben</h2>
+    <p class="group-help">Tippe an, was dein Oberk&ouml;rper dazu macht. Du kannst mehrere kombinieren.</p>
+    <div class="zus-card-list" id="zusCardList"></div>
+    <div class="group-help zus-warn" id="zusSheetWarn" hidden>Pr&uuml;fe, ob sich deine Zus&auml;tze gegenseitig ausschlie&szlig;en oder aufheben.</div>
+    <div class="group" id="zusSigGroup" hidden>
+      <div class="group-label">Signal kommt alle</div>
+      <div class="slider-row two-line">
+        <div class="slider-line"><span class="slider-label">Min</span><input type="range" id="zusSigMinSlider" min="3" max="60" step="1" aria-label="Signal fr&uuml;hestens nach"></div>
+        <div class="slider-line"><span class="slider-label">Max</span><input type="range" id="zusSigMaxSlider" min="3" max="60" step="1" aria-label="Signal sp&auml;testens nach"></div>
+        <span class="slider-value" id="zusSigValue"></span>
+      </div>
+      <div class="group-help">Zuf&auml;llig dazwischen: ein kurzer Doppelton und das Zeichen &#8635;.</div>
+    </div>
+    <button class="start-btn" id="zusatzDoneBtn" type="button">Fertig</button>
+  </div>
+</div>
+
 <div class="sheet" id="choiceSheet" hidden>
   <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="choiceTitle">
     <h2 id="choiceTitle"></h2>
@@ -662,13 +843,18 @@
     <div class="choice-row two" id="eventKindRow" role="group" aria-labelledby="eventKindLabel"></div>
     <div class="plan-entry-row">
       <div>
-        <label class="group-label" for="eventDateInput">Datum</label>
+        <label class="group-label" for="eventDateInput" id="eventDateLabel">Datum</label>
         <input type="date" id="eventDateInput" class="plan-input" lang="de">
       </div>
       <div>
         <label class="group-label" for="eventTimeInput">Uhrzeit (optional)</label>
         <input type="time" id="eventTimeInput" class="plan-input" lang="de">
       </div>
+    </div>
+    <div id="eventRepeatGroup">
+      <div class="group-label" id="eventRepeatLabel">Wiederholen</div>
+      <div class="choice-row" id="eventRepeatRow" role="group" aria-labelledby="eventRepeatLabel"></div>
+      <div class="group-help" id="eventRepeatHint" hidden></div>
     </div>
     <label class="checkbox-row tap-row event-goal-row"><input type="checkbox" id="eventGoalToggle"> Gro&szlig;es Ziel: Countdown auf Heute zeigen</label>
     <div class="program-error" id="eventError" role="alert" hidden></div>
@@ -1173,7 +1359,8 @@
     <div class="cardio-block-progress" id="cardioBlockProgress"></div>
     <h2 class="cardio-activity-title" id="cardioActivityTitle"></h2>
     <div class="cardio-activity-label" id="cardioActivityLabel" hidden></div>
-    <div class="cardio-countdown" id="cardioCountdown">0:00</div>
+    <div class="breath-host" id="cardioBreath"><div class="breath-circle"></div><div class="cardio-countdown" id="cardioCountdown">0:00</div></div>
+    <div class="breath-label" id="cardioBreathLabel" hidden></div>
     <div class="cardio-phase-label" id="cardioPhaseLabel" hidden></div>
     <div class="cardio-motiv" id="cardioMotiv" hidden>
       <img id="cardioMotivImg" alt="" hidden>
@@ -1412,6 +1599,547 @@
   <button class="again" id="freeAgainBtn">Nochmal</button>
   <button class="back" id="freeDoneBackBtn">Zur &Uuml;bersicht</button>
 </div>
+
+<div class="screen" id="activationHome" hidden>
+  <header class="brandbar">
+    <img class="brand-logo" src="logo-full.png" width="900" height="177" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC <span class="nowrap">Online-Training</span></em>
+    <button class="master-settings-btn" type="button" aria-label="Grundeinstellungen"><svg class="gear-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+  </header>
+
+  <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visuell</button>
+    <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Reaktion</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Kraft</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Ausdauer</button>
+    <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
+    <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
+  </nav>
+
+  <button class="combo-entry-link" data-open-combo="1">Kombi-Programm aus mehreren Bereichen &rarr;</button>
+
+  <section class="hero">
+    <div class="hero-kicker">Aktivierung</div>
+    <h1 class="hero-title">Kurz aktivieren, dann loslegen.</h1>
+    <p class="hero-text">Kurze Aktivierungen f&uuml;r zwischendurch: allein, vor einer &Uuml;bung oder als Baustein im Kombi-Programm.</p>
+  </section>
+
+  <section class="code-card">
+    <h2>Dein pers&ouml;nliches Training</h2>
+    <p>Dein Trainer stellt dir einen Plan zusammen, der genau zu dir passt: deine &Uuml;bungen, dein Tempo, dein Ziel. Du bekommst daf&uuml;r einen Code. Gib ihn hier ein.</p>
+    <div class="program-entry-row">
+      <input type="text" id="activationProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <button id="activationProgramGoBtn">&Ouml;ffnen</button>
+    </div>
+    <div class="program-error" id="activationProgramError" role="alert" hidden>Zu diesem Code wurde kein Training gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
+  </section>
+
+  <section class="patterns">
+    <div class="section-head">
+      <h2>Aktivierungen</h2>
+      <span class="section-note">30 Sekunden bis 2 Minuten</span>
+    </div>
+    <div class="card-grid" id="activationGrid">
+      <button class="nat-tile act-tile" type="button" id="optoOpenBtn" data-act-ex="optodrum">
+        <div class="icon-badge act-badge"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="3" height="14" rx="1" fill="#fff"/><rect x="9" y="5" width="3" height="14" rx="1" fill="#fff"/><rect x="14.5" y="5" width="3" height="14" rx="1" fill="none" stroke="#fff" stroke-width="1.4"/><path d="M19 9.5l2.5 2.5-2.5 2.5" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h3>Optodrum</h3>
+        <p>Ein Muster zieht &uuml;ber den Bildschirm, die Augen laufen mit.</p>
+        <span class="tag">Augen</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="history" id="activationHistorySection" hidden>
+    <div class="section-head">
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
+    </div>
+    <div class="history-stats" id="activationHistoryStats"></div>
+    <ul class="history-list" id="activationHistoryList"></ul>
+    <div class="history-actions">
+      <button class="text-link small" id="activationHistoryMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="activationHistoryClearBtn">Verlauf l&ouml;schen</button>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
+    <p class="app-version">Stand: __APP_STAND__</p>
+    <nav>
+      <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
+      <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
+      <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a>
+      <button class="privacy-open-btn" type="button">Datenschutz</button>
+    </nav>
+  </footer>
+</div>
+
+<div class="screen" id="optoReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="optoBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="optoReadyTitle">Optodrum</h1>
+  <p class="page-sub" id="optoReadyDesc">Ein Muster zieht gleichm&auml;&szlig;ig &uuml;ber den Bildschirm. Schau entspannt hin und lass die Augen mitlaufen &ndash; sie springen von selbst zur&uuml;ck. Mit Fixierpunkt bleibt der Blick in der Mitte.</p>
+
+  <div class="opto-controls" id="optoReadyControls">
+  <div class="group">
+    <div class="group-label">Muster</div>
+    <div class="choice-row" data-opto-row="pattern">
+      <button type="button" class="choice" data-opto-f="pattern" data-opto-v="streifen">Streifen<small>klassisch</small></button>
+      <button type="button" class="choice" data-opto-f="pattern" data-opto-v="punkte">Punkte<small>Raster</small></button>
+      <button type="button" class="choice" data-opto-f="pattern" data-opto-v="schach">Schachbrett<small>Felder</small></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Richtung</div>
+    <div class="choice-row opto-dir-row" data-opto-row="dir">
+      <button type="button" class="choice" data-opto-f="dir" data-opto-v="links">Links<small>&larr;</small></button>
+      <button type="button" class="choice" data-opto-f="dir" data-opto-v="rechts">Rechts<small>&rarr;</small></button>
+      <button type="button" class="choice" data-opto-f="dir" data-opto-v="hoch">Hoch<small>&uarr;</small></button>
+      <button type="button" class="choice" data-opto-f="dir" data-opto-v="runter">Runter<small>&darr;</small></button>
+      <button type="button" class="choice" data-opto-f="dir" data-opto-v="schraeg">Schr&auml;g<small>diagonal</small></button>
+      <button type="button" class="choice" data-opto-f="dir" data-opto-v="wechsel">Wechsel<small>hin und her</small></button>
+    </div>
+    <div class="opto-sub" data-opto-show="dir:schraeg" hidden>
+      <div class="group-label">Schr&auml;g nach</div>
+      <div class="choice-row two" data-opto-row="diag">
+        <button type="button" class="choice" data-opto-f="diag" data-opto-v="lo">&nwarr; links oben</button>
+        <button type="button" class="choice" data-opto-f="diag" data-opto-v="ro">&nearr; rechts oben</button>
+        <button type="button" class="choice" data-opto-f="diag" data-opto-v="lu">&swarr; links unten</button>
+        <button type="button" class="choice" data-opto-f="diag" data-opto-v="ru">&searr; rechts unten</button>
+      </div>
+    </div>
+    <div class="opto-sub" data-opto-show="dir:wechsel" hidden>
+      <div class="group-label">Wechsel zwischen</div>
+      <div class="choice-row two" data-opto-row="axis">
+        <button type="button" class="choice" data-opto-f="axis" data-opto-v="h">links &harr; rechts</button>
+        <button type="button" class="choice" data-opto-f="axis" data-opto-v="v">hoch &varr; runter</button>
+      </div>
+      <div class="group-label">Richtung wechselt alle</div>
+      <div class="slider-row"><input type="range" data-opto-r="swapS" min="5" max="30" step="1" aria-label="Richtung wechselt alle ... Sekunden"><span class="slider-value" data-opto-out="swapS"></span></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Tempo</div>
+    <div class="choice-row" data-opto-row="speed">
+      <button type="button" class="choice" data-opto-f="speed" data-opto-v="3">Leicht<small>ruhig</small></button>
+      <button type="button" class="choice" data-opto-f="speed" data-opto-v="5">Mittel<small>z&uuml;gig</small></button>
+      <button type="button" class="choice" data-opto-f="speed" data-opto-v="8">Schwer<small>schnell</small></button>
+    </div>
+    <div class="group-help" data-opto-out="speedHelp"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Dauer</div>
+    <div class="choice-row" data-opto-row="durationS">
+      <button type="button" class="choice" data-opto-f="durationS" data-opto-v="30">30 Sek</button>
+      <button type="button" class="choice" data-opto-f="durationS" data-opto-v="60">1 Min</button>
+      <button type="button" class="choice" data-opto-f="durationS" data-opto-v="120">2 Min</button>
+    </div>
+    <div class="slider-row"><input type="range" data-opto-r="durationS" min="10" max="300" step="10" aria-label="Dauer in Sekunden"><span class="slider-value" data-opto-out="durationS"></span></div>
+    <label class="checkbox-row tap-row"><input type="checkbox" data-opto-chk="noLimit" id="optoNoLimitCheck"> Ohne Zeitlimit</label>
+    <div class="group-help" data-opto-show="noLimit" hidden>L&auml;uft, bis du &bdquo;Fertig&ldquo; tippst &ndash; im Kombi-Programm geht es dann zum n&auml;chsten Baustein.</div>
+  </div>
+
+  <details class="advanced" id="optoAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Tempo genau</div>
+        <div class="slider-row"><input type="range" data-opto-r="speed" min="1" max="10" step="1" aria-label="Tempo-Stufe 1 bis 10"><span class="slider-value" data-opto-out="speed"></span></div>
+      </div>
+      <div class="group">
+        <div class="group-label" data-opto-lbl="size">Streifenbreite</div>
+        <div class="slider-row"><input type="range" data-opto-r="size" min="10" max="160" step="2" aria-label="Breite"><span class="slider-value" data-opto-out="size"></span></div>
+      </div>
+      <div class="group" data-opto-show="notpattern:schach">
+        <div class="group-label" data-opto-lbl="gap">Abstand zwischen den Streifen</div>
+        <div class="slider-row"><input type="range" data-opto-r="gap" min="10" max="200" step="2" aria-label="Abstand"><span class="slider-value" data-opto-out="gap"></span></div>
+      </div>
+      <div class="group">
+        <div class="group-label" data-opto-lbl="fg">Farbe der Streifen</div>
+        <div class="color-picker" data-opto-c="fg"></div>
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" data-opto-c="bg"></div>
+        <div class="group-help look-contrast-hint" data-opto-out="contrast" hidden>Tipp: Die beiden Farben heben sich kaum voneinander ab.</div>
+      </div>
+      <div class="group">
+        <div class="group-label">Fixierpunkt in der Mitte</div>
+        <div class="choice-row two" data-opto-row="fix">
+          <button type="button" class="choice" data-opto-f="fix" data-opto-v="0">Aus<small>Blick l&auml;uft mit</small></button>
+          <button type="button" class="choice" data-opto-f="fix" data-opto-v="1">An<small>Blick bleibt in der Mitte</small></button>
+        </div>
+      </div>
+
+    </div>
+  </details>
+  </div>
+
+  <details class="advanced balance-safety" id="optoSafety">
+    <summary>Sicherheitshinweis</summary>
+    <div class="advanced-body">
+    <p>Bewegte Muster mit starkem Kontrast k&ouml;nnen bei Lichtempfindlichkeit oder Epilepsie Anf&auml;lle ausl&ouml;sen. Kl&auml;re das in diesem Fall vorher &auml;rztlich ab und verzichte im Zweifel auf diese &Uuml;bung.</p>
+    <p>Leichter Schwindel oder ein Gef&uuml;hl von Bewegung ist normal. Stehst du, halte etwas in Reichweite (Wand, Tisch, Stuhllehne) oder &uuml;be im Sitzen.</p>
+    <p><strong>Sofort aufh&ouml;ren</strong>, wenn dir &uuml;bel wird, der Schwindel stark wird, du Kopfschmerzen bekommst oder etwas doppelt siehst. Ruhigere Einstellungen: niedriges Tempo, breitere Streifen, weniger Kontrast oder &bdquo;Sanfte Reize&ldquo; in den Grundeinstellungen.</p>
+    </div>
+  </details>
+
+  <div class="group nat-saved-group" id="optoSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="optoSavedList"></div>
+  </div>
+  <button class="text-link small" id="optoSaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="optoSaveForm" hidden>
+    <input type="text" id="optoSaveNameInput" placeholder="Name (z.&#8239;B. Langsam, breite Streifen)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="optoSaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="optoSaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
+
+  <button class="start-btn" id="optoStartBtn">Training starten</button>
+</div>
+
+<div class="player" id="optoPlayer" hidden>
+  <div class="opto-stage" id="optoStage">
+    <canvas id="optoCanvas" aria-label="Bewegtes Muster"></canvas>
+    <button type="button" class="balance-chip balance-finish opto-finish" id="optoFinishBtn" hidden>Fertig</button>
+  </div>
+  <div class="pause-overlay" id="optoPauseOverlay" hidden>
+    <div class="pause-panel opto-controls" id="optoPauseControls">
+      <h3>Pausiert</h3>
+  <div class="group">
+    <div class="group-label">Muster</div>
+    <div class="choice-row" data-opto-row="pattern">
+      <button type="button" class="choice" data-opto-f="pattern" data-opto-v="streifen">Streifen<small>klassisch</small></button>
+      <button type="button" class="choice" data-opto-f="pattern" data-opto-v="punkte">Punkte<small>Raster</small></button>
+      <button type="button" class="choice" data-opto-f="pattern" data-opto-v="schach">Schachbrett<small>Felder</small></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Richtung</div>
+    <div class="choice-row opto-dir-row" data-opto-row="dir">
+      <button type="button" class="choice" data-opto-f="dir" data-opto-v="links">Links<small>&larr;</small></button>
+      <button type="button" class="choice" data-opto-f="dir" data-opto-v="rechts">Rechts<small>&rarr;</small></button>
+      <button type="button" class="choice" data-opto-f="dir" data-opto-v="hoch">Hoch<small>&uarr;</small></button>
+      <button type="button" class="choice" data-opto-f="dir" data-opto-v="runter">Runter<small>&darr;</small></button>
+      <button type="button" class="choice" data-opto-f="dir" data-opto-v="schraeg">Schr&auml;g<small>diagonal</small></button>
+      <button type="button" class="choice" data-opto-f="dir" data-opto-v="wechsel">Wechsel<small>hin und her</small></button>
+    </div>
+    <div class="opto-sub" data-opto-show="dir:schraeg" hidden>
+      <div class="group-label">Schr&auml;g nach</div>
+      <div class="choice-row two" data-opto-row="diag">
+        <button type="button" class="choice" data-opto-f="diag" data-opto-v="lo">&nwarr; links oben</button>
+        <button type="button" class="choice" data-opto-f="diag" data-opto-v="ro">&nearr; rechts oben</button>
+        <button type="button" class="choice" data-opto-f="diag" data-opto-v="lu">&swarr; links unten</button>
+        <button type="button" class="choice" data-opto-f="diag" data-opto-v="ru">&searr; rechts unten</button>
+      </div>
+    </div>
+    <div class="opto-sub" data-opto-show="dir:wechsel" hidden>
+      <div class="group-label">Wechsel zwischen</div>
+      <div class="choice-row two" data-opto-row="axis">
+        <button type="button" class="choice" data-opto-f="axis" data-opto-v="h">links &harr; rechts</button>
+        <button type="button" class="choice" data-opto-f="axis" data-opto-v="v">hoch &varr; runter</button>
+      </div>
+      <div class="group-label">Richtung wechselt alle</div>
+      <div class="slider-row"><input type="range" data-opto-r="swapS" min="5" max="30" step="1" aria-label="Richtung wechselt alle ... Sekunden"><span class="slider-value" data-opto-out="swapS"></span></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Tempo</div>
+    <div class="choice-row" data-opto-row="speed">
+      <button type="button" class="choice" data-opto-f="speed" data-opto-v="3">Leicht<small>ruhig</small></button>
+      <button type="button" class="choice" data-opto-f="speed" data-opto-v="5">Mittel<small>z&uuml;gig</small></button>
+      <button type="button" class="choice" data-opto-f="speed" data-opto-v="8">Schwer<small>schnell</small></button>
+    </div>
+    <div class="group-help" data-opto-out="speedHelp"></div>
+  </div>
+
+      <div class="group">
+        <div class="group-label">Tempo genau</div>
+        <div class="slider-row"><input type="range" data-opto-r="speed" min="1" max="10" step="1" aria-label="Tempo-Stufe 1 bis 10"><span class="slider-value" data-opto-out="speed"></span></div>
+      </div>
+      <div class="group">
+        <div class="group-label" data-opto-lbl="size">Streifenbreite</div>
+        <div class="slider-row"><input type="range" data-opto-r="size" min="10" max="160" step="2" aria-label="Breite"><span class="slider-value" data-opto-out="size"></span></div>
+      </div>
+      <div class="group" data-opto-show="notpattern:schach">
+        <div class="group-label" data-opto-lbl="gap">Abstand zwischen den Streifen</div>
+        <div class="slider-row"><input type="range" data-opto-r="gap" min="10" max="200" step="2" aria-label="Abstand"><span class="slider-value" data-opto-out="gap"></span></div>
+      </div>
+      <div class="group">
+        <div class="group-label" data-opto-lbl="fg">Farbe der Streifen</div>
+        <div class="color-picker" data-opto-c="fg"></div>
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" data-opto-c="bg"></div>
+        <div class="group-help look-contrast-hint" data-opto-out="contrast" hidden>Tipp: Die beiden Farben heben sich kaum voneinander ab.</div>
+      </div>
+      <div class="group">
+        <div class="group-label">Fixierpunkt in der Mitte</div>
+        <div class="choice-row two" data-opto-row="fix">
+          <button type="button" class="choice" data-opto-f="fix" data-opto-v="0">Aus<small>Blick l&auml;uft mit</small></button>
+          <button type="button" class="choice" data-opto-f="fix" data-opto-v="1">An<small>Blick bleibt in der Mitte</small></button>
+        </div>
+      </div>
+
+      <div class="group-help" id="optoPauseHelp">Gilt sofort und bleibt gespeichert, wie auf der &Uuml;bungsseite.</div>
+      <button class="start-btn" id="optoResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="optoPlayerBar">
+    <button id="optoBackBtn">&#10005; Beenden</button>
+    <button id="optoPauseBtn">Pause</button>
+    <span class="player-status" id="optoStatusEl"></span>
+    <button id="optoFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="optoFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="optoFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="optoFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="optoDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="optoDoneSummary"></p>
+    <div class="rating" id="optoRating"></div>
+    <button class="again" id="optoAgainBtn">Nochmal</button>
+    <button class="back" id="optoDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="screen" id="neuroHome" hidden>
+  <header class="brandbar">
+    <img class="brand-logo" src="logo-full.png" width="900" height="177" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC <span class="nowrap">Online-Training</span></em>
+    <button class="master-settings-btn" type="button" aria-label="Grundeinstellungen"><svg class="gear-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+  </header>
+
+  <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visuell</button>
+    <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Reaktion</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Kraft</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Ausdauer</button>
+    <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
+    <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
+  </nav>
+
+  <button class="combo-entry-link" data-open-combo="1">Kombi-Programm aus mehreren Bereichen &rarr;</button>
+
+  <!-- ==== Neuro-Aktivierung (Idee 68, Fabian 08.10.) - only with the area unlocked by a trainer code ==== -->
+  <section class="hero">
+    <div class="hero-kicker">Neuro-Aktivierung</div>
+    <h1 class="hero-title">Gezielt aktivieren, Schritt f&uuml;r Schritt.</h1>
+    <p class="hero-text">Gef&uuml;hrte Aktivierungen, meist mit Hilfsmitteln wie Vibrationsger&auml;t oder Massageball.</p>
+  </section>
+
+  <p class="group-help free-trainer-notice" id="neuroUnlockNotice" role="status" hidden>Neu f&uuml;r dich freigeschaltet: Neuro-Aktivierung.</p>
+
+  <section class="code-card">
+    <h2>Dein pers&ouml;nliches Training</h2>
+    <p>Dein Trainer stellt dir einen Plan zusammen, der genau zu dir passt: deine &Uuml;bungen, dein Tempo, dein Ziel. Du bekommst daf&uuml;r einen Code. Gib ihn hier ein.</p>
+    <div class="program-entry-row">
+      <input type="text" id="neuroProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <button id="neuroProgramGoBtn">&Ouml;ffnen</button>
+    </div>
+    <div class="program-error" id="neuroProgramError" role="alert" hidden>Zu diesem Code wurde kein Training gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
+  </section>
+
+  <section class="patterns">
+    <div class="section-head">
+      <h2>&Uuml;bungen</h2>
+      <span class="section-note">gef&uuml;hrt, Schritt f&uuml;r Schritt</span>
+    </div>
+    <div class="card-grid" id="neuroGrid"></div>
+  </section>
+
+  <section class="history" id="neuroHistorySection" hidden>
+    <div class="section-head">
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
+    </div>
+    <div class="history-stats" id="neuroHistoryStats"></div>
+    <ul class="history-list" id="neuroHistoryList"></ul>
+    <div class="history-actions">
+      <button class="text-link small" id="neuroHistoryMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="neuroHistoryClearBtn">Verlauf l&ouml;schen</button>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
+    <p class="app-version">Stand: __APP_STAND__</p>
+    <nav>
+      <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
+      <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
+      <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a>
+      <button class="privacy-open-btn" type="button">Datenschutz</button>
+    </nav>
+  </footer>
+</div>
+
+<div class="screen" id="neuroReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="neuroBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="neuroReadyTitle">Neuro-Aktivierung</h1>
+  <p class="page-sub" id="neuroReadyDesc"></p>
+
+  <div class="hilfsmittel-note" id="neuroHilfsmittel" hidden>
+    <span class="hilfsmittel-kicker">Hilfsmittel</span>
+    <span id="neuroHilfsmittelText"></span>
+    <button class="text-link small hilfsmittel-all" type="button">Alle Hilfsmittel</button>
+  </div>
+
+  <div class="neuro-controls" id="neuroReadyControls">
+
+  <div class="group">
+    <div class="group-label">Dauer pro Schritt</div>
+    <div class="slider-row"><input type="range" data-nr-r="stepS" min="10" max="120" step="5" aria-label="Dauer pro Schritt in Sekunden"><span class="slider-value" data-nr-out="stepS"></span></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Durchg&auml;nge</div>
+    <div class="choice-row" data-nr-row="reps">
+      <button type="button" class="choice" data-nr-f="reps" data-nr-v="1">1&times;</button>
+      <button type="button" class="choice" data-nr-f="reps" data-nr-v="2">2&times;</button>
+      <button type="button" class="choice" data-nr-f="reps" data-nr-v="3">3&times;</button>
+    </div>
+    <div class="group-help" data-nr-out="total"></div>
+  </div>
+
+  <details class="advanced" id="neuroAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Seite zuerst</div>
+        <div class="choice-row two" data-nr-row="order">
+          <button type="button" class="choice" data-nr-f="order" data-nr-v="lr">Links zuerst</button>
+          <button type="button" class="choice" data-nr-f="order" data-nr-v="rl">Rechts zuerst</button>
+        </div>
+      </div>
+      <div class="group" data-nr-show="hasAlt">
+        <div class="group-label">Seitenwechsel bei &bdquo;abwechselnd&ldquo; alle</div>
+        <div class="slider-row"><input type="range" data-nr-r="altS" min="2" max="15" step="1" aria-label="Seitenwechsel alle ... Sekunden"><span class="slider-value" data-nr-out="altS"></span></div>
+      </div>
+      <div class="group">
+        <div class="group-label">Umsetzen zwischen den Schritten</div>
+        <div class="slider-row"><input type="range" data-nr-r="moveS" min="0" max="30" step="5" aria-label="Zeit zum Umsetzen zwischen den Schritten in Sekunden"><span class="slider-value" data-nr-out="moveS"></span></div>
+        <div class="group-help">Zeit, um das Hilfsmittel umzusetzen oder die Seite zu wechseln. 0 = direkt weiter.</div>
+      </div>
+      <div class="group">
+        <div class="group-label">Takt</div>
+        <div class="choice-row two" data-nr-row="takt">
+          <button type="button" class="choice" data-nr-f="takt" data-nr-v="0">Aus<small>nur Ansagen</small></button>
+          <button type="button" class="choice" data-nr-f="takt" data-nr-v="1">An<small>leiser Ton im Takt</small></button>
+        </div>
+        <div class="slider-row" data-nr-show="takt"><input type="range" data-nr-r="bpm" min="30" max="120" step="5" aria-label="Takt in Schl&auml;gen pro Minute"><span class="slider-value" data-nr-out="bpm"></span></div>
+      </div>
+    </div>
+  </details>
+  </div>
+
+  <div class="group neuro-steps-group">
+    <div class="group-label">Ablauf <span class="group-count" id="neuroStepCount"></span></div>
+    <div class="chapter-list" id="neuroReadySteps"></div>
+  </div>
+
+  <details class="advanced balance-safety" id="neuroSafety">
+    <summary>Sicherheitshinweis</summary>
+    <div class="advanced-body">
+    <p id="neuroSafetyText">Arbeite mit leichtem Druck und nur so lange, wie es angenehm ist. Bei Schmerzen, Taubheit, Schwindel oder Unwohlsein sofort aufh&ouml;ren.</p>
+    <p>Nicht auf Wunden, Entz&uuml;ndungen, frischen Verletzungen oder Krampfadern. Mit einem Herzschrittmacher, in der Schwangerschaft oder bei einer bekannten Erkrankung kl&auml;re die &Uuml;bung vorher &auml;rztlich ab.</p>
+    </div>
+  </details>
+
+  <div class="group nat-saved-group" id="neuroSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="neuroSavedList"></div>
+  </div>
+  <button class="text-link small" id="neuroSaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="neuroSaveForm" hidden>
+    <input type="text" id="neuroSaveNameInput" placeholder="Name (z.&#8239;B. Kurz am Morgen)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="neuroSaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="neuroSaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
+
+  <button class="start-btn" id="neuroStartBtn">Training starten</button>
+</div>
+
+<div class="player calm-dk" id="neuroPlayer" hidden>
+  <div class="cardio-stage free-stage neuro-stage">
+    <div class="cardio-block-progress" id="neuroRunProgress"></div>
+    <h2 class="cardio-activity-title" id="neuroRunTitle"></h2>
+    <span class="special-tag" id="neuroRunSpecial" hidden>Spezialübung von deinem Trainer</span>
+    <div class="tabata-icon free-run-icon" id="neuroRunIcon" hidden></div>
+    <div class="free-run-item" id="neuroRunItem"></div>
+    <div class="neuro-side" id="neuroRunSide" hidden></div>
+    <div class="cardio-countdown" id="neuroRunCountdown">0:00</div>
+    <div class="cardio-activity-label" id="neuroRunNext" hidden></div>
+    <div class="chapter-nav">
+      <button id="neuroPrevBtn" title="Vorheriger Schritt" aria-label="Vorheriger Schritt">&laquo;</button>
+      <button id="neuroRestartBtn" title="Schritt neu starten" aria-label="Schritt neu starten">&#8635;</button>
+      <button id="neuroSkipBtn" title="Weiter zum n&auml;chsten Schritt" aria-label="Weiter zum n&auml;chsten Schritt">&raquo;</button>
+    </div>
+  </div>
+  <div class="pause-overlay" id="neuroPauseOverlay" hidden>
+    <div class="pause-panel neuro-controls" id="neuroPauseControls">
+      <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Takt</div>
+        <div class="choice-row two" data-nr-row="takt">
+          <button type="button" class="choice" data-nr-f="takt" data-nr-v="0">Aus<small>nur Ansagen</small></button>
+          <button type="button" class="choice" data-nr-f="takt" data-nr-v="1">An<small>leiser Ton im Takt</small></button>
+        </div>
+        <div class="slider-row" data-nr-show="takt"><input type="range" data-nr-r="bpm" min="30" max="120" step="5" aria-label="Takt in Schl&auml;gen pro Minute"><span class="slider-value" data-nr-out="bpm"></span></div>
+      </div>
+      <div class="group">
+        <div class="group-label">Dauer pro Schritt</div>
+        <div class="slider-row"><input type="range" data-nr-r="stepS" min="10" max="120" step="5" aria-label="Dauer pro Schritt in Sekunden"><span class="slider-value" data-nr-out="stepS"></span></div>
+      </div>
+      <div class="group" data-nr-show="hasAlt">
+        <div class="group-label">Seitenwechsel bei &bdquo;abwechselnd&ldquo; alle</div>
+        <div class="slider-row"><input type="range" data-nr-r="altS" min="2" max="15" step="1" aria-label="Seitenwechsel alle ... Sekunden"><span class="slider-value" data-nr-out="altS"></span></div>
+      </div>
+      <div class="group-help" id="neuroPauseHelp">Der Takt gilt sofort, die Dauer ab dem n&auml;chsten Schritt. Beides bleibt gespeichert, wie auf der &Uuml;bungsseite.</div>
+      <button class="start-btn" id="neuroResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="neuroPlayerBar">
+    <button id="neuroBackBtn">&#10005; Beenden</button>
+    <button id="neuroPauseBtn">Pause</button>
+    <button id="neuroFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="neuroFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="neuroFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="neuroFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+</div>
+
+<div class="done-panel" id="neuroDonePanel" hidden>
+  <div class="done-check">&#10003;</div>
+  <h2>Geschafft!</h2>
+  <p class="done-summary" id="neuroDoneSummary"></p>
+  <div class="rating" id="neuroRating"></div>
+  <button class="again" id="neuroAgainBtn">Nochmal</button>
+  <button class="back" id="neuroDoneBackBtn">Zur &Uuml;bersicht</button>
+</div>
+<!-- ==== /Neuro-Aktivierung ==== -->
 
 <div class="screen" id="natHome" hidden>
   <header class="brandbar">
@@ -1814,6 +2542,16 @@
     <button class="featured-card" id="kippbildOpenBtn">
       <span class="fc-title">Kippbild-Test</span>
       <span class="fc-desc">Ein einfacher Drahtw&uuml;rfel (Necker-W&uuml;rfel) wird dauerhaft angezeigt &ndash; das Bild selbst &auml;ndert sich nie, aber deine Wahrnehmung seiner Ausrichtung kippt von selbst immer wieder um. Tippe jedes Mal, wenn du so einen Wechsel bemerkst. Klassisches Verfahren zur multistabilen Wahrnehmung (Necker-W&uuml;rfel, Necker 1832) &ndash; wie oft das kippt, ist von Mensch zu Mensch sehr unterschiedlich und weder Erfolg noch Misserfolg.</span>
+    </button>
+    <button class="featured-card" id="eyecountOpenBtn">
+      <span class="fc-title">Jedes Auge z&auml;hlt</span>
+      <span class="fc-desc">Mit Rot-Gr&uuml;n-Brille: Auf schwarzem Grund erscheinen nacheinander Punkte, jeder ist nur f&uuml;r ein Auge sichtbar. Tippe jeden Punkt an, sobald du ihn siehst &ndash; am Ende siehst du, wie viele Punkte jedes Auge erwischt hat und wie schnell.</span>
+      <span class="fc-meta" id="eyecountBestHint"></span>
+    </button>
+    <button class="featured-card" id="tonOpenBtn">
+      <span class="fc-title">Ton-Sequenz</span>
+      <span class="fc-desc">Werkzeug f&uuml;r dein Neuroathletik-Training mit deinem Trainer: T&ouml;ne mit einstellbarer Frequenz auf dem linken, rechten oder auf beiden Ohren &ndash; als Folge von Schritten mit Dauerton, Puls oder Gleiten und Pausen dazwischen. Mit Kopfh&ouml;rern. Training, keine Therapie.</span>
+      <span class="fc-meta" id="tonBestHint"></span>
     </button>
   </section>
 
@@ -2430,6 +3168,248 @@
   <button class="start-btn" id="kippbildReadyStartBtn">Training starten</button>
 </div>
 
+<div class="screen" id="eyecountReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="eyecountReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Jedes Auge z&auml;hlt</h1>
+  <p class="page-sub">Setz deine Rot-Gr&uuml;n-Brille auf. Auf schwarzem Grund erscheinen nacheinander Punkte &ndash; jeder ist nur f&uuml;r ein Auge sichtbar, das andere Auge sieht ihn nicht. Lass den Blick auf dem Kreuz in der Mitte ruhen und tippe jeden Punkt an, sobald du ihn siehst. Am Ende siehst du f&uuml;r jedes Auge, wie viele Punkte du erwischt hast und wie schnell.</p>
+
+  <div class="hilfsmittel-note" id="eyecountHilfsmittel" data-hilfsmittel="farbbrille" hidden>
+    <span class="hilfsmittel-kicker">Hilfsmittel</span>
+    <span class="hilfsmittel-text"></span>
+    <a class="text-link small hilfsmittel-link" href="#" target="_blank" rel="noopener" hidden>Passendes Hilfsmittel ansehen &rarr;</a>
+    <button class="text-link small hilfsmittel-all" type="button">Alle Hilfsmittel</button>
+    <button class="text-link small anaglyph-set-link" type="button" data-anaglyph-calib>Farbbrille einstellen</button>
+  </div>
+
+  <div class="anaglyph-lock" id="eyecountLock" hidden>
+    <div class="anaglyph-lock-title">Erst die Farbbrille abgleichen</div>
+    <div class="group-help">Einmal pro Ger&auml;t, dauert etwa eine Minute: Du stellst Rot und Gr&uuml;n so ein, dass jedes Auge nur seine Farbe sieht.</div>
+    <button class="start-btn secondary" type="button" data-anaglyph-calib>Jetzt abgleichen</button>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Dauer</div>
+    <div class="choice-row" id="eyecountLengthRow">
+      <button class="choice" data-eyecount-length="1">1 Min</button>
+      <button class="choice" data-eyecount-length="2">2 Min</button>
+      <button class="choice" data-eyecount-length="3">3 Min</button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Tempo</div>
+    <div class="choice-row" id="eyecountTempoRow">
+      <button class="choice" data-eyecount-tempo="leicht">Leicht<small>2 s pro Punkt</small></button>
+      <button class="choice" data-eyecount-tempo="mittel">Mittel<small>1,4 s pro Punkt</small></button>
+      <button class="choice" data-eyecount-tempo="schwer">Schwer<small>0,9 s pro Punkt</small></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Verteilung</div>
+    <div class="choice-row" id="eyecountSplitRow">
+      <button class="choice" data-eyecount-split="gleich">Ausgewogen<small>50 / 50</small></button>
+      <button class="choice" data-eyecount-split="links">Linkes Auge<small>bekommt 70 %</small></button>
+      <button class="choice" data-eyecount-split="rechts">Rechtes Auge<small>bekommt 70 %</small></button>
+    </div>
+    <div class="group-help">Welches Auge mehr Punkte bekommt. Die Seiten deiner Brille stellst du unter &bdquo;Farbbrille einstellen&ldquo; ein.</div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Gr&ouml;&szlig;e der Punkte</div>
+    <div class="choice-row" id="eyecountSizeRow">
+      <button class="choice" data-eyecount-size="klein">Klein</button>
+      <button class="choice" data-eyecount-size="mittel">Mittel</button>
+      <button class="choice" data-eyecount-size="gross">Gro&szlig;</button>
+    </div>
+  </div>
+
+  <button class="start-btn" id="eyecountReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="tonReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="tonReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Ton-Sequenz</h1>
+  <p class="page-sub">Spiel T&ouml;ne gezielt auf dem linken, rechten oder auf beiden Ohren ab &ndash; als Folge von Schritten, f&uuml;r &Uuml;bungen mit deinem Trainer. Am besten mit Kopfh&ouml;rern.</p>
+
+  <details class="advanced balance-safety" id="tonSafety">
+    <summary>Sicherheitshinweis &middot; Training, keine Therapie</summary>
+    <div class="advanced-body">
+    <p>Die Ton-Sequenzen sind ein Trainingswerkzeug f&uuml;r dein Neuroathletik-Training mit deinem Trainer. Sie sind keine Therapie und keine Diagnose. Dass bestimmte T&ouml;ne &uuml;ber Kopfh&ouml;rer das Gleichgewichtsorgan trainieren, ist wissenschaftlich nicht belegt.</p>
+    <p>Stell die Lautst&auml;rke leise ein: so leise, dass du den Ton gerade deutlich h&ouml;rst. Nie unangenehm laut. Jeder Ton beginnt leise und wird langsam lauter.</p>
+    <p><strong>Sofort aufh&ouml;ren</strong>, wenn dir schwindlig oder &uuml;bel wird, du Druck auf dem Ohr sp&uuml;rst oder ein Ohrger&auml;usch auftritt.</p>
+    <p><strong>Erst &auml;rztlich abkl&auml;ren</strong>, wenn du Schwindel- oder Ohrerkrankungen, Tinnitus, eine H&ouml;rminderung oder Epilepsie hast. Nicht im Stra&szlig;enverkehr und nicht bei &Uuml;bungen mit Sturzgefahr ohne Halt in Reichweite.</p>
+    </div>
+  </details>
+
+  <div class="group">
+    <div class="group-label">Vorlagen</div>
+    <div class="choice-row" id="tonPresetRow">
+      <button type="button" class="choice" data-ton-preset="ref500">Referenz 500&nbsp;Hz<small>Diagnostik-Referenz</small></button>
+      <button type="button" class="choice" data-ton-preset="ref100">Referenz 100&nbsp;Hz<small>Diagnostik-Referenz</small></button>
+      <button type="button" class="choice" data-ton-preset="lr">Links / Rechts<small>Seitenvergleich</small></button>
+    </div>
+    <div class="group-help">500&nbsp;Hz und 100&nbsp;Hz sind Referenzfrequenzen aus der Diagnostik des Gleichgewichtsorgans. Eine Wirkung im Training ist damit nicht verbunden. Deine eigenen Abl&auml;ufe legst du unten als Schritte an.</div>
+  </div>
+
+  <div class="group" id="tonSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Sequenzen</div>
+    <div class="bundle-list" id="tonSavedList"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Kanal-Test</div>
+    <div class="group-help">Pr&uuml;f vor dem ersten Mal, ob links und rechts richtig ankommen. Ist am iPhone &bdquo;Mono-Audio&ldquo; an (Bedienungshilfen), h&ouml;rst du beides auf beiden Ohren.</div>
+    <button type="button" class="start-btn secondary" id="tonChannelBtn">Kanal-Test starten</button>
+    <div class="ton-channel-status" id="tonChannelStatus" role="status" aria-live="polite"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Schritte</div>
+    <div class="ton-step-list" id="tonStepList"></div>
+    <button type="button" class="text-link small" id="tonAddStepBtn">+ Schritt</button>
+  </div>
+
+  <div class="group ton-editor" id="tonEditor">
+    <div class="group-label" id="tonEditorTitle">Schritt 1 bearbeiten</div>
+
+    <div class="ton-field-label">Frequenz</div>
+    <div class="slider-row">
+      <input type="range" id="tonFreqSlider" min="0" max="1000" step="1" aria-label="Frequenz">
+      <span class="slider-value" id="tonFreqValue"></span>
+    </div>
+    <div class="ton-freq-line">
+      <button type="button" class="ton-step-btn" data-ton-fstep="-10">&minus;10</button>
+      <button type="button" class="ton-step-btn" data-ton-fstep="-1">&minus;1</button>
+      <input type="number" id="tonFreqInput" min="20" max="2000" step="1" inputmode="numeric" aria-label="Frequenz in Hertz">
+      <span class="ton-unit">Hz</span>
+      <button type="button" class="ton-step-btn" data-ton-fstep="1">+1</button>
+      <button type="button" class="ton-step-btn" data-ton-fstep="10">+10</button>
+    </div>
+    <div class="group-help ton-low-hint" id="tonLowHint" hidden>Tiefe T&ouml;ne sind &uuml;ber Handy und viele Kopfh&ouml;rer kaum h&ouml;rbar &ndash; nicht lauter drehen.</div>
+
+    <div class="ton-field-label">Klang</div>
+    <div class="choice-row" id="tonWaveRow">
+      <button type="button" class="choice" data-ton-wave="sine">Sinus<small>weich</small></button>
+      <button type="button" class="choice" data-ton-wave="triangle">Dreieck<small>etwas heller</small></button>
+      <button type="button" class="choice" data-ton-wave="square">Rechteck<small>hart</small></button>
+    </div>
+
+    <div class="ton-field-label">Ohr</div>
+    <div class="choice-row two" id="tonEarRow">
+      <button type="button" class="choice" data-ton-ear="left">Links</button>
+      <button type="button" class="choice" data-ton-ear="right">Rechts</button>
+      <button type="button" class="choice" data-ton-ear="both">Beide</button>
+      <button type="button" class="choice" data-ton-ear="alt">Wechsel<small>links, rechts, links &hellip;</small></button>
+    </div>
+    <div id="tonAltGroup" hidden>
+      <div class="ton-field-label">Wechsel alle</div>
+      <div class="slider-row">
+        <input type="range" id="tonAltSlider" min="0.5" max="10" step="0.5" aria-label="Wechsel alle">
+        <span class="slider-value" id="tonAltValue"></span>
+      </div>
+    </div>
+
+    <div class="ton-field-label">Muster</div>
+    <div class="choice-row" id="tonPatternRow">
+      <button type="button" class="choice" data-ton-pattern="steady">Dauerton</button>
+      <button type="button" class="choice" data-ton-pattern="pulse">Puls<small>an / aus</small></button>
+      <button type="button" class="choice" data-ton-pattern="glide">Gleiten<small>von &rarr; bis</small></button>
+    </div>
+    <div id="tonPulseGroup" hidden>
+      <div class="choice-row two" id="tonPulseUnitRow">
+        <button type="button" class="choice" data-ton-pulseunit="ms">An / Aus<small>in Millisekunden</small></button>
+        <button type="button" class="choice" data-ton-pulseunit="bpm">Takt<small>Schl&auml;ge pro Minute</small></button>
+      </div>
+      <div id="tonPulseMsGroup">
+        <div class="ton-field-label">An</div>
+        <div class="slider-row">
+          <input type="range" id="tonOnSlider" min="50" max="2000" step="50" aria-label="Ton an">
+          <span class="slider-value" id="tonOnValue"></span>
+        </div>
+        <div class="ton-field-label">Aus</div>
+        <div class="slider-row">
+          <input type="range" id="tonOffSlider" min="50" max="2000" step="50" aria-label="Ton aus">
+          <span class="slider-value" id="tonOffValue"></span>
+        </div>
+      </div>
+      <div id="tonPulseBpmGroup" hidden>
+        <div class="ton-field-label">Takt</div>
+        <div class="slider-row">
+          <input type="range" id="tonBpmSlider" min="20" max="240" step="1" aria-label="Takt in Schl&auml;gen pro Minute">
+          <span class="slider-value" id="tonBpmValue"></span>
+        </div>
+      </div>
+    </div>
+    <div id="tonGlideGroup" hidden>
+      <div class="ton-field-label">Gleiten bis</div>
+      <div class="slider-row">
+        <input type="range" id="tonGlideSlider" min="0" max="1000" step="1" aria-label="Gleiten bis">
+        <span class="slider-value" id="tonGlideValue"></span>
+      </div>
+      <div class="group-help">Der Ton gleitet w&auml;hrend der Dauer des Schritts von der Frequenz oben bis hierher.</div>
+    </div>
+
+    <div class="ton-field-label">Dauer</div>
+    <div class="slider-row">
+      <input type="range" id="tonDurSlider" min="5" max="300" step="5" aria-label="Dauer des Schritts">
+      <span class="slider-value" id="tonDurValue"></span>
+    </div>
+    <div class="ton-field-label">Pause danach</div>
+    <div class="slider-row">
+      <input type="range" id="tonPauseSlider" min="0" max="180" step="5" aria-label="Pause danach">
+      <span class="slider-value" id="tonPauseValue"></span>
+    </div>
+    <div class="ton-field-label">Lautst&auml;rke</div>
+    <div class="slider-row">
+      <input type="range" id="tonVolSlider" min="5" max="100" step="5" aria-label="Lautst&auml;rke des Schritts">
+      <span class="slider-value" id="tonVolValue"></span>
+    </div>
+    <div class="group-help">So leise, dass du den Ton gerade deutlich h&ouml;rst. Nie unangenehm laut. Die Lautst&auml;rke deines Ger&auml;ts und die in den Grundeinstellungen gelten zus&auml;tzlich.</div>
+    <button type="button" class="start-btn secondary" id="tonPreviewBtn">Probeh&ouml;ren</button>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Frequenz-Suchlauf</div>
+    <div class="group-help">Der Ton steigt langsam von 100 auf 1000&nbsp;Hz (1 Minute). Tipp auf &bdquo;Merken&ldquo;, wenn du eine Frequenz &uuml;bernehmen willst &ndash; sie kommt in den Schritt, den du gerade bearbeitest.</div>
+    <div class="ton-sweep-line">
+      <button type="button" class="start-btn secondary" id="tonSweepBtn">Suchlauf starten</button>
+      <button type="button" class="start-btn secondary" id="tonSweepMarkBtn" hidden>Merken</button>
+    </div>
+    <div class="ton-sweep-hz" id="tonSweepHz" aria-live="off"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Wiederholungen</div>
+    <div class="slider-row">
+      <input type="range" id="tonRepeatSlider" min="1" max="10" step="1" aria-label="Wiederholungen der ganzen Sequenz">
+      <span class="slider-value" id="tonRepeatValue"></span>
+    </div>
+    <div class="group-help" id="tonTotalHelp"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Vorher / Nachher</div>
+    <input type="text" id="tonBeforeInput" class="ton-text-input" maxlength="80" placeholder="Vorher (z.&#8239;B. Einbeinstand links 12 s)" aria-label="Vorher-Wert">
+    <div class="group-help">Freiwillig: Mach vor der Sequenz deinen Test und trag das Ergebnis ein. Den Nachher-Wert erg&auml;nzt du am Ende. Beides steht im Verlauf.</div>
+  </div>
+
+  <button class="text-link small" id="tonSaveBtn">Sequenz speichern</button>
+  <div class="custom-exercise-form" id="tonSaveForm" hidden>
+    <input type="text" id="tonSaveNameInput" placeholder="Name (z.&#8239;B. Seitenvergleich 300 Hz)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="tonSaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="tonSaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
+
+  <button class="start-btn" id="tonReadyStartBtn">Training starten</button>
+</div>
+
 <div class="screen" id="simonReady" hidden>
   <div class="readyhead">
     <button class="back-link" id="simonReadyBackToHome">&larr; Zur&uuml;ck</button>
@@ -2663,7 +3643,7 @@
     <button class="back-link" id="corsiReadyBackToHome">&larr; Zur&uuml;ck</button>
   </div>
   <h1 class="page-title">Blockspanne-Test (Corsi)</h1>
-  <p class="page-sub">Neun Bl&ouml;cke sind verstreut &ndash; einige davon leuchten nacheinander in einer bestimmten Reihenfolge auf. Merke dir die Reihenfolge und tippe die Bl&ouml;cke danach genau in dieser Reihenfolge nochmal an. Jede LNach jeder richtig erinnerten Folge wird sie um einen Block l&auml;nger, bis ein Tipp daneben geht.auml;nge kommt zweimal. Ist mindestens eine der beiden Folgen richtig, wird es um einen Block lNach jeder richtig erinnerten Folge wird sie um einen Block l&auml;nger, bis ein Tipp daneben geht.auml;nger; gehen beide daneben, ist der Test vorbei (wie im Standard-Test). Klassisches Paradigma zur visuell-r&auml;umlichen Merkspanne (Corsi, 1972), h&auml;ufig eingesetzt zur Messung des r&auml;umlichen Arbeitsged&auml;chtnisses.</p>
+  <p class="page-sub">Neun Bl&ouml;cke sind verstreut &ndash; einige davon leuchten nacheinander in einer bestimmten Reihenfolge auf. Merke dir die Reihenfolge und tippe die Bl&ouml;cke danach genau in dieser Reihenfolge nochmal an. Jede L&auml;nge kommt zweimal. Ist mindestens eine der beiden Folgen richtig, wird es um einen Block l&auml;nger; gehen beide daneben, ist der Test vorbei (wie im Standard-Test). Klassisches Paradigma zur visuell-r&auml;umlichen Merkspanne (Corsi, 1972), h&auml;ufig eingesetzt zur Messung des r&auml;umlichen Arbeitsged&auml;chtnisses.</p>
 
   <div class="group">
     <div class="group-label">Tempo</div>
@@ -3843,7 +4823,41 @@
     <div class="group-help" id="balanceModeHelp"></div>
   </div>
 
-  <div class="group">
+  <div class="group" id="balanceContentGroup">
+    <div class="group-label">Inhalt</div>
+    <div class="choice-row two" id="balanceContentRow">
+      <button class="choice" data-bal-content="stifte">Buchstaben-Stifte<small>Blick auf einen Buchstaben</small></button>
+      <button class="choice" data-bal-content="woerter">W&ouml;rter<small>wechseln im Takt</small></button>
+    </div>
+  </div>
+  <div id="balanceWordBox" hidden>
+    <div class="group">
+      <div class="group-label">W&ouml;rter</div>
+      <div class="choice-row" id="balanceWordListRow">
+        <button class="choice" data-bal-wordlist="tiere">Tiere<small>Hund, Adler &hellip;</small></button>
+        <button class="choice" data-bal-wordlist="alltag">Alltag<small>Tisch, Tasse &hellip;</small></button>
+        <button class="choice" data-bal-wordlist="farben">Farbw&ouml;rter<small>in anderer Farbe</small></button>
+      </div>
+    </div>
+    <div class="group" id="balanceWordReadBox" hidden>
+      <div class="group-label">Lies</div>
+      <div class="choice-row two" id="balanceWordReadRow">
+        <button class="choice" data-bal-wordread="wort">das Wort<small>was da steht</small></button>
+        <button class="choice" data-bal-wordread="farbe">die Farbe<small>in der es steht</small></button>
+      </div>
+    </div>
+    <div class="group">
+      <div class="group-label">Wort wechselt</div>
+      <div class="choice-row" id="balanceWordEveryRow">
+        <button class="choice" data-bal-wordevery="1">jeden Schlag</button>
+        <button class="choice" data-bal-wordevery="2">jeden 2.</button>
+        <button class="choice" data-bal-wordevery="4">jeden 4.</button>
+      </div>
+      <div class="group-help" id="balanceWordHelp"></div>
+    </div>
+  </div>
+
+  <div class="group" id="balanceSticksGroup">
     <div class="group-label">Stifte</div>
     <div class="choice-row two" id="balanceSticksRow">
       <button class="choice" data-bal-sticks="1">1 Stift</button>
@@ -3852,7 +4866,7 @@
     <div class="group-help">W&auml;hrend der &Uuml;bung kannst du die Stifte mit dem Finger verschieben &ndash; auf dem iPad quer oder am Fernseher auch weit auseinander.</div>
   </div>
 
-  <div class="group">
+  <div class="group" id="balanceLettersGroup">
     <div class="group-label">Buchstaben</div>
     <div class="choice-row" id="balanceLettersRow">
       <button class="choice" data-bal-letters="zufall">Zuf&auml;llig<small>neu gemischt</small></button>
@@ -4035,6 +5049,7 @@
   <p class="page-sub" id="programDesc"></p>
   <video class="intro-video" id="introVideo" hidden controls playsinline></video>
   <div class="chapter-list" id="chapterList"></div>
+  <p class="program-hint gear-program-note" id="programGearNote" hidden></p>
   <p class="program-hint">Das Programm l&auml;uft automatisch durch alle &Uuml;bungen, mit kurzer Pause dazwischen. Tippe auf eine &Uuml;bung, um direkt dort einzusteigen.</p>
   <button class="start-btn" id="programStartBtn">Training starten</button>
 </div>
@@ -4057,16 +5072,18 @@
     <span>Aufbau-Beispiele ansehen</span>
   </button>
   <div class="hilfsmittel-note" id="hilfsmittelNote" hidden>
-    <span class="hilfsmittel-kicker">Hilfsmittel</span>
+    <span class="hilfsmittel-kicker" id="hilfsmittelKicker">Hilfsmittel</span>
     <span id="hilfsmittelText"></span>
     <a class="text-link small hilfsmittel-link" id="hilfsmittelLink" href="#" target="_blank" rel="noopener" hidden>Passendes Hilfsmittel ansehen &rarr;</a>
+    <button class="text-link small hilfsmittel-all" type="button">Alle Hilfsmittel</button>
   </div>
 
   <div id="ffSettings" hidden>
     <div class="group">
       <div class="group-label">Modus</div>
-      <div class="choice-row two" id="ffModeRow" role="group" aria-label="Modus">
+      <div class="choice-row two ff-mode-row" id="ffModeRow" role="group" aria-label="Modus">
         <button type="button" class="choice" data-ff-mode="leuchten">Leuchten<small>ein Feld leuchtet auf</small></button>
+        <button type="button" class="choice" data-ff-mode="einblenden">Einblenden<small>nur das Feld ist zu sehen</small></button>
         <button type="button" class="choice" data-ff-mode="regeln">Regeln<small>das Symbol sagt, wohin</small></button>
         <button type="button" class="choice" data-ff-mode="leer">Das leere Feld<small>tritt aufs freie Feld</small></button>
         <button type="button" class="choice" data-ff-mode="abfolge">Abfolge merken<small>Folge nachtreten</small></button>
@@ -4076,6 +5093,30 @@
         <button type="button" class="choice" data-ff-mode="sehenhoeren">Sehen und H&ouml;ren<small>Bild, Ansage oder beides</small></button>
       </div>
       <div class="group-help" id="ffModeHelp"></div>
+    </div>
+
+    <div class="group" id="ffAnswerGroup">
+      <div class="group-label">So antwortest du</div>
+      <div class="choice-row two" id="ffAnswerRow" role="group" aria-label="So antwortest du">
+        <button type="button" class="choice" data-ff-answer="treten">Treten<small>auf der Matte</small></button>
+        <button type="button" class="choice" data-ff-answer="tippen">Antippen<small>auf dem Bildschirm, mit Wertung</small></button>
+      </div>
+      <div class="group-help" id="ffAnswerHelp"></div>
+      <div class="cvd-row" id="ffFbRow" hidden>
+        <div class="cvd-row-label">Haken &amp; Kreuz bei richtig/falsch</div>
+        <div class="choice-row"><button type="button" class="choice" data-cvd-ex="farbfelder" data-cvd-kind="fb" data-cvd-val="1">An</button><button type="button" class="choice" data-cvd-ex="farbfelder" data-cvd-kind="fb" data-cvd-val="0">Aus</button></div>
+        <div class="group-help cvd-status" data-cvd-status="farbfelder:fb"></div>
+      </div>
+    </div>
+
+    <div class="group" id="ffCountGroup" hidden>
+      <div class="group-label">Wie viele Felder</div>
+      <div class="choice-row" id="ffCountRow" role="group" aria-label="Wie viele Felder">
+        <button type="button" class="choice" data-ff-count="eins">Nur eins<small>immer ein Feld</small></button>
+        <button type="button" class="choice" data-ff-count="wechsel">Im Wechsel<small>eins und zwei</small></button>
+        <button type="button" class="choice" data-ff-count="phasen">Phasenweise<small>erst eins, dann zwei</small></button>
+      </div>
+      <div class="group-help" id="ffCountHelp"></div>
     </div>
 
     <div class="group" id="ffLevelGroup" hidden>
@@ -4124,8 +5165,8 @@
       <div class="group-help" id="ffFlipHelp"></div>
     </div>
 
-    <div class="group">
-      <div class="group-label">Anordnung wie deine Matte</div>
+    <div class="group" id="ffLayoutGroup">
+      <div class="group-label"><span id="ffLayoutLabel">Anordnung deiner Matte</span> <span class="tag ff-tag">ver&auml;nderbar</span></div>
       <div class="ff-layout-grid" id="ffLayoutGrid">
         <button type="button" class="ff-cell" data-ff-cell="0" aria-label="Oben links"></button>
         <button type="button" class="ff-cell" data-ff-cell="1" aria-label="Oben rechts"></button>
@@ -4136,7 +5177,7 @@
       <div class="color-picker" id="ffColorPicker"></div>
     </div>
 
-    <div class="group">
+    <div class="group" id="ffFootGroup">
       <div class="group-label">Fu&szlig;-Vorgabe</div>
       <div class="choice-row" id="ffFootRow" role="group" aria-label="Fu&szlig;-Vorgabe">
         <button type="button" class="choice" data-ff-foot="aus">Aus</button>
@@ -4159,6 +5200,78 @@
     </div>
   </div>
 
+  <div class="zus-note" id="zusNote" hidden></div>
+
+  <!-- Richtungskreuz (Idee 70, 2026-10-08), docs/notes/35 -->
+  <div id="rkSettings" hidden>
+    <div class="group">
+      <div class="group-label">Modus</div>
+      <div class="choice-row two" id="rkModeRow" role="group" aria-label="Modus">
+        <button type="button" class="choice" data-rk-mode="zeigen">Zeichen zeigen<small>ein Zeichen, ein Schritt</small></button>
+        <button type="button" class="choice" data-rk-mode="abfolge">Abfolge merken<small>Folge nachgehen</small></button>
+      </div>
+      <div class="group-help" id="rkModeHelp"></div>
+    </div>
+    <div class="group">
+      <div class="group-label">Zeichen</div>
+      <div class="choice-row" id="rkSignsRow" role="group" aria-label="Zeichen">
+        <button type="button" class="choice" data-rk-signs="farben">Farben</button>
+        <button type="button" class="choice" data-rk-signs="zahlen">Zahlen</button>
+        <button type="button" class="choice" data-rk-signs="beide">Farbe + Zahl</button>
+      </div>
+    </div>
+    <div class="group">
+      <div class="group-label">Deine Richtungen <span class="tag ff-tag">ver&auml;nderbar</span></div>
+      <div class="rk-cross" id="rkCross">
+        <button type="button" class="rk-cell" data-rk-dir="vorne"></button>
+        <button type="button" class="rk-cell" data-rk-dir="links"></button>
+        <div class="rk-me" aria-hidden="true">Du</div>
+        <button type="button" class="rk-cell" data-rk-dir="rechts"></button>
+        <button type="button" class="rk-cell" data-rk-dir="hinten"></button>
+      </div>
+      <div class="group-help" id="rkCrossHelp"></div>
+      <div class="color-picker" id="rkColorPicker"></div>
+      <div class="rk-num-line"><span class="slider-label">Zahl</span>
+        <div class="choice-row rk-num-row" id="rkNumRow" role="group" aria-label="Zahl"></div>
+      </div>
+    </div>
+    <div class="group">
+      <div class="group-label">Hilfsmittel</div>
+      <div class="choice-row" id="rkGearRow" role="group" aria-label="Hilfsmittel">
+        <button type="button" class="choice" data-rk-gear="matte">Farbmatte<small>Felder um dich</small></button>
+        <button type="button" class="choice" data-rk-gear="huetchen">H&uuml;tchen<small>vier H&uuml;tchen</small></button>
+        <button type="button" class="choice" data-rk-gear="keine">Ohne<small>Richtungen merken</small></button>
+      </div>
+      <div class="group-help" id="rkGearHelp"></div>
+    </div>
+    <div class="group" id="rkSeqGroup" hidden>
+      <div class="group-label">L&auml;nge der ersten Folge</div>
+      <div class="choice-row two" id="rkSeqRow" role="group" aria-label="L&auml;nge der ersten Folge">
+        <button type="button" class="choice" data-rk-seq="2">2 Zeichen</button>
+        <button type="button" class="choice" data-rk-seq="3">3 Zeichen</button>
+      </div>
+      <div class="group-help">Jede Runde kommt ein Zeichen dazu.</div>
+    </div>
+    <div class="group" id="rkRuleGroup">
+      <div class="group-label">Farbregel</div>
+      <div class="choice-row two" id="rkRuleRow" role="group" aria-label="Farbregel">
+        <button type="button" class="choice" data-rk-rule="0">Aus</button>
+        <button type="button" class="choice" data-rk-rule="1">An<small>jede Farbe hat eine Bedeutung</small></button>
+      </div>
+      <div id="rkRuleBody" hidden>
+        <div class="ff-hand-rows" id="rkRuleRows"></div>
+      </div>
+      <div class="group-help" id="rkRuleHelp"></div>
+    </div>
+    <div class="group">
+      <div class="group-label">Zeichen ansagen</div>
+      <div class="choice-row two" id="rkSpeakRow" role="group" aria-label="Zeichen ansagen">
+        <button type="button" class="choice" data-rk-speak="0">Aus</button>
+        <button type="button" class="choice" data-rk-speak="1">An<small>die App sagt das Zeichen</small></button>
+      </div>
+    </div>
+  </div>
+
   <div class="group" id="cnFieldsGroup" hidden>
     <div class="group-label">Anzahl Felder</div>
     <div class="choice-row four" id="cnFieldsRow" role="group" aria-label="Anzahl Felder">
@@ -4168,6 +5281,71 @@
       <button type="button" class="choice" data-cn-fields="6">6<small>Felder</small></button>
     </div>
     <div class="group-help">Nummeriere deine Felder von 1 bis zu dieser Zahl. Du kannst h&ouml;chstens so viele Farben w&auml;hlen, wie es Felder gibt.</div>
+  </div>
+
+  <!-- Hütchen · Laufweg (2026-10-08), docs/notes/33 -->
+  <div id="lwSettings" hidden>
+    <div class="group">
+      <div class="group-label">So l&auml;ufst du</div>
+      <div class="choice-row two" id="lwVariantRow">
+        <button type="button" class="choice" data-lw-variant="karte">Karte in der Hand<small>der Weg bleibt sichtbar</small></button>
+        <button type="button" class="choice" data-lw-variant="merken">Weg merken<small>ansehen, dann ohne Karte</small></button>
+      </div>
+      <div class="group-help" id="lwVariantHelp"></div>
+    </div>
+    <div class="group" id="lwShowGroup" hidden>
+      <div class="group-label">Zeit zum Merken</div>
+      <div class="slider-row">
+        <input type="range" id="lwShowSlider" min="3" max="20" step="1" aria-label="Zeit zum Merken">
+        <span class="slider-value" id="lwShowValue"></span>
+      </div>
+    </div>
+    <div class="group">
+      <div class="group-label">Wegl&auml;nge</div>
+      <div class="choice-row" id="lwLengthRow">
+        <button type="button" class="choice" data-lw-length="kurz">Kurz<small>3 H&uuml;tchen</small></button>
+        <button type="button" class="choice" data-lw-length="mittel">Mittel<small>5 H&uuml;tchen</small></button>
+        <button type="button" class="choice" data-lw-length="lang">Lang<small>7 H&uuml;tchen</small></button>
+      </div>
+    </div>
+    <div class="group">
+      <div class="group-label">Aufbau</div>
+      <div class="lw-size-line"><span class="lw-size-label">Reihen</span>
+        <div class="choice-row" id="lwRowsRow"><button type="button" class="choice" data-lw-rows="2">2</button><button type="button" class="choice" data-lw-rows="3">3</button><button type="button" class="choice" data-lw-rows="4">4</button></div>
+      </div>
+      <div class="lw-size-line"><span class="lw-size-label">Spalten</span>
+        <div class="choice-row" id="lwColsRow"><button type="button" class="choice" data-lw-cols="2">2</button><button type="button" class="choice" data-lw-cols="3">3</button><button type="button" class="choice" data-lw-cols="4">4</button></div>
+      </div>
+      <div class="lw-preview" id="lwPreview"></div>
+      <div class="group-help" id="lwSizeHelp"></div>
+    </div>
+    <div class="group">
+      <div class="group-label">Ende</div>
+      <div class="choice-row two" id="lwEndRow">
+        <button type="button" class="choice" data-lw-end="runden">Nach Wegen<small>feste Anzahl</small></button>
+        <button type="button" class="choice" data-lw-end="dauer">Nach Zeit<small>so viele Wege wie m&ouml;glich</small></button>
+      </div>
+      <div class="slider-row" id="lwRoundsLine">
+        <input type="range" id="lwRoundsSlider" min="1" max="20" step="1" aria-label="Anzahl Wege">
+        <span class="slider-value" id="lwRoundsValue"></span>
+      </div>
+      <div class="choice-row four" id="lwDurRow" hidden>
+        <button type="button" class="choice" data-lw-dur="120">2 Min</button>
+        <button type="button" class="choice" data-lw-dur="180">3 Min</button>
+        <button type="button" class="choice" data-lw-dur="300">5 Min</button>
+        <button type="button" class="choice" data-lw-dur="600">10 Min</button>
+      </div>
+    </div>
+    <details class="advanced" id="lwAdvanced">
+      <summary>Feineinstellungen</summary>
+      <div class="advanced-body">
+        <div class="group">
+          <div class="group-label">Farbe der H&uuml;tchen je Reihe</div>
+          <div id="lwRowColors"></div>
+          <div class="group-help">Stell deine H&uuml;tchen in genau diesen Farben auf. Voreingestellt: hinten Gelb, Mitte Blau, vorne Rot.</div>
+        </div>
+      </div>
+    </details>
   </div>
 
   <div class="group" id="colorGroup" hidden>
@@ -4227,7 +5405,7 @@
   </div>
 
   <div class="group" id="addonGroup" hidden>
-    <div class="group-label">Zusatzaufgabe: Periphere Wahrnehmung</div>
+    <div class="group-label">Zusatzaufgabe</div>
     <div class="choice-row two" id="addonPhaseRow">
       <button class="choice" data-addon-phase="reiz">Beim Reiz</button>
       <button class="choice" data-addon-phase="pause">In der Pause</button>
@@ -4236,6 +5414,47 @@
     <div class="color-hint" id="addonPhaseHint"></div>
 
     <div id="addonConfigBody" hidden>
+      <!-- Zusatzaufgabe Rechnen (2026-10-08): which add-on runs -->
+      <div class="group-label addon-task-label">Art der Zusatzaufgabe</div>
+      <div class="choice-row two" id="addonTaskRow">
+        <button class="choice" data-addon-task="periph">Zeichen am Rand<small>Periphere Wahrnehmung</small></button>
+        <button class="choice" data-addon-task="rechnen">Rechnen<small>stimmt die Aufgabe?</small></button>
+      </div>
+      <div id="addonMathBody" hidden>
+        <div class="group-help" style="margin-top:8px">Eine Rechnung mit Ergebnis oder Vergleich erscheint, z.&#8239;B. &bdquo;7 &minus; 4 = 3&ldquo; oder &bdquo;2 + 3 &gt; 6&ldquo;. Etwa die H&auml;lfte stimmt. Sie erscheint dort, wo gerade nichts von der &Uuml;bung zu sehen ist.</div>
+        <div class="group" style="margin-top:10px">
+          <div class="group-label">Rechenart</div>
+          <div class="choice-row" id="addonMathLevelRow">
+            <button class="choice" data-addon-mathlevel="plus10">Plus/Minus<small>bis 10</small></button>
+            <button class="choice" data-addon-mathlevel="plus20">Plus/Minus<small>bis 20</small></button>
+            <button class="choice" data-addon-mathlevel="mal">Mit Mal<small>bis 10 &middot; 10</small></button>
+          </div>
+        </div>
+        <div class="group">
+          <div class="group-label">So antwortest du</div>
+          <div class="choice-row" style="grid-template-columns:1fr" id="addonMathAnswerRow">
+            <button class="choice" data-addon-mathanswer="doppelkreis">Doppelkreis<small>innen tippen = stimmt, Ring tippen = stimmt nicht</small></button>
+            <button class="choice" data-addon-mathanswer="gonogo">Nur bei &bdquo;stimmt&ldquo; antippen<small>stimmt es nicht, tippst du nichts</small></button>
+            <button class="choice" data-addon-mathanswer="laut">Laut sagen<small>ohne Tippen, &bdquo;stimmt&ldquo; oder &bdquo;stimmt nicht&ldquo;</small></button>
+          </div>
+        </div>
+        <div class="group">
+          <div class="group-label">Anzeigedauer</div>
+          <div class="slider-row">
+            <input type="range" id="addonMathShowSlider" min="1.5" max="6" step="0.5" aria-label="Anzeigedauer der Rechnung">
+            <span class="slider-value" id="addonMathShowValue"></span>
+          </div>
+        </div>
+        <div class="group">
+          <div class="group-label">Pause zwischen den Rechnungen</div>
+          <div class="slider-row two-line">
+            <div class="slider-line"><span class="slider-label">Min</span><input type="range" id="addonMathGapMinSlider" min="1" max="15" step="0.5" aria-label="Pause minimal"></div>
+            <div class="slider-line"><span class="slider-label">Max</span><input type="range" id="addonMathGapMaxSlider" min="1" max="15" step="0.5" aria-label="Pause maximal"></div>
+            <span class="slider-value" id="addonMathGapValue"></span>
+          </div>
+        </div>
+      </div>
+      <div id="addonPeriphBody">
       <div class="choice-row two" style="margin-top:10px" id="addonModeRow">
         <button class="choice" data-addon-mode="uebernehmen">Wie Periphere Wahrnehmung<small>&uuml;bernimmt Bereich, Zeichentyp &amp; Tempo</small></button>
         <button class="choice" data-addon-mode="eigen">Eigene Feineinstellung<small>weicht f&uuml;r diese &Uuml;bung ab</small></button>
@@ -4319,6 +5538,7 @@
           </div>
         </div>
       </div>
+      </div>
     </div>
   </div>
 
@@ -4345,6 +5565,14 @@
   <details class="advanced" id="advanced">
     <summary>Feineinstellungen</summary>
     <div class="advanced-body">
+      <div class="group" id="zusGroup" hidden>
+        <div class="zus-row">
+          <span class="zus-row-label">Zusatz f&uuml;r oben</span>
+          <span class="zus-chips" id="zusChips"></span>
+          <button type="button" class="zus-add-btn" id="zusAddBtn">+ Zusatz</button>
+        </div>
+        <div class="group-help zus-warn" id="zusRowWarn" hidden>Pr&uuml;fe, ob sich deine Zus&auml;tze gegenseitig ausschlie&szlig;en oder aufheben.</div>
+      </div>
       <div class="group">
         <div class="group-label">Gesamtdauer</div>
         <div class="slider-row">
@@ -5022,6 +6250,10 @@
           <div class="slider-line"><span class="slider-label">Max</span><input type="range" id="vtPauseIntervalMaxSlider" min="1" max="30" step="1" aria-label="Pause maximal"></div>
           <div class="group-help">Gilt ab &bdquo;Weiter&ldquo; f&uuml;r den Rest dieser &Uuml;bung.</div>
         </div>
+        <div class="group" id="vtPauseFfFbGroup" hidden>
+          <div class="group-label">Haken &amp; Kreuz bei richtig/falsch</div>
+          <div class="choice-row"><button type="button" class="choice" data-cvd-ex="farbfelder" data-cvd-kind="fb" data-cvd-val="1">An</button><button type="button" class="choice" data-cvd-ex="farbfelder" data-cvd-kind="fb" data-cvd-val="0">Aus</button></div>
+        </div>
         <div class="group" id="vtPauseBgIntensityGroup">
           <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="periphPauseBgValue"></span></div>
           <input type="range" id="periphPauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
@@ -5052,10 +6284,27 @@
     <div class="cone-order-count" id="coneOrderCount"></div>
     <div class="cone-order-row" id="coneOrderRow"></div>
   </div>
+  <!-- Hütchen · Laufweg (2026-10-08): map + buttons, no canvas -->
+  <div class="lw-stage" id="lwStage" hidden>
+    <div class="lw-caption" id="lwCaption"></div>
+    <div class="lw-map" id="lwMap"></div>
+    <div class="lw-actions">
+      <button type="button" class="lw-btn secondary" id="lwRevealBtn" hidden>Weg zeigen</button>
+      <button type="button" class="lw-btn" id="lwNextBtn">N&auml;chster Weg</button>
+    </div>
+    <div class="pause-overlay" id="lwPauseOverlay" hidden>
+      <div class="pause-panel">
+        <h3>Pausiert</h3>
+        <div class="group-help" style="text-align:center;margin-bottom:12px">Die Zeit steht, bis du weitermachst.</div>
+        <button class="start-btn" id="lwResumeBtn">Weiter</button>
+      </div>
+    </div>
+  </div>
   <div class="progress-track" id="progressTrack"></div>
   <div class="player-bar" id="playerBar">
     <button id="backBtn">&#10005; Beenden</button>
     <button id="periphPauseBtn" hidden>Pause</button>
+    <button id="lwPauseBtn" hidden>Pause</button>
     <span class="player-status" id="timeEl">0:00</span>
     <button id="fsBtn">Vollbild</button>
   </div>
@@ -5086,6 +6335,7 @@
       <span class="pause-progress" id="pauseProgress"></span>
     </div>
     <div class="pause-main">
+      <p class="block-result" id="pauseResult" hidden></p>
       <div class="pause-label">Kurze Pause</div>
       <div class="breath" id="breath">
         <div class="breath-circle"></div>
@@ -5129,6 +6379,7 @@
     <div class="done-check">&#10003;</div>
     <h2>Programm geschafft!</h2>
     <p class="done-summary" id="programDoneSummary"></p>
+    <ul class="block-results" id="programDoneResults" hidden></ul>
     <div class="rating" id="programRating"></div>
     <button class="again" id="programAgainBtn">Nochmal von vorne</button>
     <button class="back" id="programDoneBackBtn">Zur Startseite</button>
@@ -5527,6 +6778,7 @@
     <div class="remember-hint" id="balanceHint"></div>
     <div class="balance-stick" id="balanceStick0" data-i="0"></div>
     <div class="balance-stick" id="balanceStick1" data-i="1" hidden></div>
+    <div class="balance-word" id="balanceWord" hidden></div>
     <div class="balance-rest" id="balanceRest" hidden>
       <div class="balance-rest-label">Pause</div>
       <div class="balance-rest-count" id="balanceRestCount">0:30</div>
@@ -5555,7 +6807,7 @@
   <div class="pause-overlay" id="balancePauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
-      <div class="group">
+      <div class="group" id="balancePauseTempoGroup">
         <div class="group-label">Tempo <span class="slider-value" id="balancePauseBpmValue"></span></div>
         <input type="range" id="balancePauseBpmSlider" min="30" max="200" step="5" aria-label="Tempo in Schl&auml;gen pro Minute">
       </div>
@@ -5563,7 +6815,7 @@
         <div class="group-label">Lautst&auml;rke <span class="slider-value" id="balancePauseVolumeValue"></span></div>
         <input type="range" id="balancePauseVolumeSlider" min="0" max="1" step="0.05" aria-label="Lautst&auml;rke">
       </div>
-      <div class="group">
+      <div class="group" id="balancePauseStick1Group">
         <div class="group-label" id="balancePauseColor1Label">Farbe des Stifts</div>
         <div class="color-picker" id="balancePauseColor1Picker"></div>
         <div class="group-label" id="balancePauseLetter1Label">Farbe der Buchstaben</div>
@@ -5575,7 +6827,7 @@
         <div class="group-label">Farbe der Buchstaben &middot; Stift 2</div>
         <div class="color-picker" id="balancePauseLetterColor2Picker"></div>
       </div>
-      <div class="group">
+      <div class="group" id="balancePauseStickSizeGroup">
         <div class="group-label">L&auml;nge der Stifte <span class="slider-value" id="balancePauseLengthValue"></span></div>
         <input type="range" id="balancePauseLengthSlider" min="30" max="100" step="5" aria-label="L&auml;nge der Stifte">
         <div class="group-label">Breite der Stifte <span class="slider-value" id="balancePauseWidthValue"></span></div>
@@ -6360,6 +7612,87 @@
   </div>
 </div>
 
+<div class="player" id="eyecountPlayer" hidden>
+  <div class="eyecount-stage" id="eyecountStage">
+    <div class="remember-hint" id="eyecountHint"></div>
+    <div class="eyecount-cross" id="eyecountCross" aria-hidden="true"></div>
+    <div class="eyecount-dot" id="eyecountDot" hidden></div>
+  </div>
+  <div class="pause-overlay" id="eyecountPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <p class="group-help">Nimm die Brille kurz ab, wenn du magst. Mit &bdquo;Weiter&ldquo; kommt der n&auml;chste Punkt.</p>
+      <button class="start-btn" id="eyecountResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="eyecountPlayerBar">
+    <button id="eyecountBackBtn">&#10005; Beenden</button>
+    <button id="eyecountPauseBtn">Pause</button>
+    <span class="player-status" id="eyecountProgressEl"></span>
+    <button id="eyecountFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="eyecountFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="eyecountFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="eyecountFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="eyecountDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="eyecountDoneSummary"></p>
+    <div class="eyecount-eyes" id="eyecountEyes"></div>
+    <div class="rating" id="eyecountRating"></div>
+    <button class="again" id="eyecountAgainBtn">Nochmal</button>
+    <button class="back" id="eyecountDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
+<div class="player calm" id="tonPlayer" hidden>
+  <div class="ton-stage" id="tonStage">
+    <div class="remember-hint" id="tonHint"></div>
+    <div class="ton-now" id="tonNow">
+      <div class="ton-now-step" id="tonNowStep"></div>
+      <div class="ton-now-hz" id="tonNowHz"></div>
+      <div class="ton-now-ear" id="tonNowEar"></div>
+      <div class="ton-now-pattern" id="tonNowPattern"></div>
+      <div class="ton-now-time" id="tonNowTime"></div>
+      <div class="ton-now-mute" id="tonNowMute" hidden>T&ouml;ne sind ausgeschaltet. Mit &#128264; unten oder in den Grundeinstellungen einschalten.</div>
+    </div>
+  </div>
+  <div class="pause-overlay" id="tonPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <div class="ton-field-label">Lautst&auml;rke dieses Schritts</div>
+      <div class="slider-row">
+        <input type="range" id="tonLiveVolSlider" min="5" max="100" step="5" aria-label="Lautst&auml;rke dieses Schritts">
+        <span class="slider-value" id="tonLiveVolValue"></span>
+      </div>
+      <p class="group-help">Gilt nur f&uuml;r diesen Durchgang. Bei Schwindel, &Uuml;belkeit, Druck oder Ohrger&auml;usch beende die Sequenz.</p>
+      <button class="start-btn" id="tonResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="tonPlayerBar">
+    <button id="tonBackBtn">&#10005; Beenden</button>
+    <button id="tonPauseBtn">Pause</button>
+    <span class="player-status" id="tonProgressEl"></span>
+  </div>
+
+  <div class="done-panel" id="tonDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="tonDoneSummary"></p>
+    <div class="ton-after" id="tonAfterGroup">
+      <input type="text" id="tonAfterInput" class="ton-text-input" maxlength="80" placeholder="Nachher (z.&#8239;B. Einbeinstand links 15 s)" aria-label="Nachher-Wert">
+      <button class="start-btn secondary" id="tonAfterSaveBtn">Nachher speichern</button>
+      <div class="ton-after-saved" id="tonAfterSaved" hidden>Gespeichert &ndash; steht im Verlauf.</div>
+    </div>
+    <div class="rating" id="tonRating"></div>
+    <button class="again" id="tonAgainBtn">Nochmal</button>
+    <button class="back" id="tonDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
 <div class="player" id="simonPlayer" hidden>
   <div class="simon-stage" id="simonStage">
     <div class="remember-hint" id="simonHint"></div>
@@ -6981,7 +8314,8 @@
       <button class="start-btn" id="workoutSetDoneBtn">Satz erledigt</button>
       <div class="workout-rest" id="workoutRestBox" hidden>
         <div class="pause-label" id="workoutRestLabel">Pause</div>
-        <div class="pause-countdown" id="workoutRestCountdown">30</div>
+        <div class="breath-host" id="workoutRestBreath"><div class="breath-circle"></div><div class="pause-countdown" id="workoutRestCountdown">30</div></div>
+        <div class="breath-label" id="workoutRestBreathLabel" hidden></div>
         <div class="workout-rest-next" id="workoutRestNext" hidden></div>
         <button class="pause-skip" id="workoutRestSkipBtn">Jetzt weiter</button>
       </div>
@@ -6989,7 +8323,8 @@
     <div class="workout-tabata-view" id="workoutTabataView" hidden>
       <div class="tabata-phase-label" id="tabataPhaseLabel">Bereit machen</div>
       <div class="tabata-icon" id="tabataExerciseIcon"></div>
-      <div class="tabata-countdown" id="tabataCountdown">5</div>
+      <div class="breath-host" id="tabataBreath"><div class="breath-circle"></div><div class="tabata-countdown" id="tabataCountdown">5</div></div>
+      <div class="breath-label" id="tabataBreathLabel" hidden></div>
       <div class="tabata-exercise" id="tabataExerciseName"></div>
       <div class="tabata-round" id="tabataRoundLabel"></div>
       <div class="tabata-note" id="tabataExerciseNote"></div>
@@ -7124,10 +8459,13 @@
 </div>
 
 <div class="done-panel standalone" id="comboTransition" hidden>
+  <p class="block-result" id="comboTransitionResult" hidden></p>
   <div class="next-label">Pause &ndash; als N&auml;chstes:</div>
+  <span class="special-tag" id="comboTransitionSpecial" hidden>Spezialübung von deinem Trainer</span>
   <h2 id="comboTransitionTitle"></h2>
   <p class="done-summary" id="comboTransitionMeta"></p>
-  <div class="pause-countdown" id="comboTransitionCountdown"></div>
+  <div class="breath-host" id="comboTransitionBreath"><div class="breath-circle"></div><div class="pause-countdown" id="comboTransitionCountdown"></div></div>
+  <div class="breath-label" id="comboTransitionBreathLabel" hidden></div>
   <button class="again" id="comboTransitionBtn">&Uuml;berspringen</button>
   <button class="back" id="comboTransitionPauseBtn">Pause anhalten &amp; Pausen bearbeiten</button>
 </div>
@@ -7156,6 +8494,7 @@
   <div class="done-check">&#10003;</div>
   <h2>Programm geschafft!</h2>
   <p class="done-summary" id="comboDoneSummary"></p>
+  <ul class="block-results" id="comboDoneResults" hidden></ul>
   <div class="rating" id="comboRating"></div>
   <button class="again" id="comboAgainBtn">Nochmal von vorne</button>
   <button class="back" id="comboDoneBackBtn">Zur Startseite</button>
@@ -7264,12 +8603,12 @@
 
     <details class="faq-item">
       <summary>Was wird auf deinem Ger&auml;t gespeichert?</summary>
-      <div class="faq-body">Dein Trainingsverlauf, dein Fortschritt, dein Wochenplan, deine Termine, deine Einstellungen, gespeicherte Programme und Bilder, die du f&uuml;r Ausdauertraining ausw&auml;hlst. Alles liegt nur im Speicher dieses Browsers auf diesem Ger&auml;t, nicht in einer Cloud. L&ouml;schst du die Browserdaten, ist es weg. In den Grundeinstellungen kannst du eine Sicherung als Datei speichern und wieder einlesen &ndash; die Datei liegt dann nur bei dir.</div>
+      <div class="faq-body">Dein Vorname (wenn du ihn f&uuml;r die Begr&uuml;&szlig;ung eingibst), dein Trainingsverlauf, dein Fortschritt, dein Wochenplan, deine Termine, deine Einstellungen, gespeicherte Programme und Bilder, die du f&uuml;r Ausdauertraining ausw&auml;hlst. Alles liegt nur im Speicher dieses Browsers auf diesem Ger&auml;t, nicht in einer Cloud. L&ouml;schst du die Browserdaten, ist es weg. In den Grundeinstellungen kannst du eine Sicherung als Datei speichern und wieder einlesen &ndash; die Datei liegt dann nur bei dir. Bei der &Uuml;bergabe an einen Kunden wandern Trainings per QR-Code direkt von Ger&auml;t zu Ger&auml;t, ohne Server. Beim Scannen des Trainer-QR-Codes nutzt die App die Kamera nur, um den Code auf deinem Ger&auml;t zu lesen. Kein Bild wird gespeichert oder verschickt.</div>
     </details>
 
     <details class="faq-item">
       <summary>Was passiert, wenn du einen Trainings-Code eingibst?</summary>
-      <div class="faq-body">Die App fragt den Code bei unserem Server ab (betrieben bei Cloudflare) und l&auml;dt das Programm deines Trainers. Mitgeschickt werden nur der Code und eine zuf&auml;llige Ger&auml;te-Kennung: 20 zuf&auml;llige Zeichen, die die App beim ersten Mal erzeugt, ohne Bezug zu deinem Namen, deinem Ger&auml;t oder deiner Telefonnummer. Gespeichert wird die Kennung nur bei einem Gruppen-Code mit begrenzten Pl&auml;tzen, damit dein Ger&auml;t seinen Platz beh&auml;lt. Deine Ergebnisse, dein Verlauf und deine Einstellungen werden nie &uuml;bertragen &ndash; dein Trainer sieht davon nichts.</div>
+      <div class="faq-body">Die App fragt den Code bei unserem Server ab (betrieben bei Cloudflare) und l&auml;dt das Programm deines Trainers. Mitgeschickt werden nur der Code und eine zuf&auml;llige Ger&auml;te-Kennung: 20 zuf&auml;llige Zeichen, die die App beim ersten Mal erzeugt, ohne Bezug zu deinem Namen, deinem Ger&auml;t oder deiner Telefonnummer. Gespeichert wird die Kennung nur bei einem Gruppen-Code mit begrenzten Pl&auml;tzen, damit dein Ger&auml;t seinen Platz beh&auml;lt. Deine Ergebnisse, dein Verlauf und deine Einstellungen werden nie &uuml;bertragen &ndash; dein Trainer sieht davon nichts. Deinen Trainingsplan kann dein Trainer auf dem FWMC-Server unter einem K&uuml;rzel ablegen (z.&nbsp;B. &bdquo;AB&ldquo;), nie unter deinem Namen.</div>
     </details>
 
     <details class="faq-item" id="privacyReminders">
@@ -7284,7 +8623,7 @@
 
     <details class="faq-item">
       <summary>Videos und Links</summary>
-      <div class="faq-body">Videos, die dein Trainer in ein Programm einbindet, und Links zur Website werden vom jeweiligen Anbieter geladen. Dort gelten dessen Datenschutzregeln. Ohne solche Inhalte l&auml;dt die App nichts von fremden Anbietern, auch die Schriften nicht.</div>
+      <div class="faq-body">Videos, die dein Trainer in ein Programm einbindet, und Links zur Website werden vom jeweiligen Anbieter geladen. Dort gelten dessen Datenschutzregeln. Kauf-Links f&uuml;hren zu externen Shops; dort gelten deren Datenschutzregeln. Ohne solche Inhalte l&auml;dt die App nichts von fremden Anbietern, auch die Schriften nicht.</div>
     </details>
 
     <p class="group-help">Die vollst&auml;ndige <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutzerkl&auml;rung</a> und das <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a> findest du auf der Website.</p>
@@ -7296,6 +8635,12 @@
   <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="masterSettingsTitle">
     <h2 id="masterSettingsTitle">Grundeinstellungen</h2>
     <p class="group-help">Diese Einstellungen werden nur in diesem Browser auf diesem Ger&auml;t gespeichert &ndash; nicht in einer Cloud, nicht bei einem Server, und nicht automatisch mit deinem Trainer geteilt.</p>
+
+    <div class="group" id="masterNameGroup">
+      <label class="group-label" for="masterNameInput">Dein Name</label>
+      <input type="text" id="masterNameInput" class="plan-input" maxlength="30" autocomplete="given-name" autocapitalize="words" spellcheck="false" placeholder="Dein Vorname">
+      <div class="group-help">Nur f&uuml;r die Begr&uuml;&szlig;ung. Bleibt auf diesem Ger&auml;t.</div>
+    </div>
 
     <div class="group">
       <div class="group-label">Vorhandene Einschr&auml;nkungen</div>
@@ -7336,6 +8681,13 @@
       <div class="group-help">&Uuml;bungen, die zwingend Ton ben&ouml;tigen (aktuell nur &bdquo;Sehen &amp; H&ouml;ren&ldquo;), werden dann in der &Uuml;bersicht ausgegraut und markiert, statt versteckt.</div>
     </div>
 
+    <div class="group" id="masterGearGroup">
+      <div class="group-label">Meine Hilfsmittel</div>
+      <div class="group-help">Hak an, was du zum Training da hast. &Uuml;bungen, f&uuml;r die dir noch etwas fehlt, sind leicht ausgegraut &ndash; du kannst sie trotzdem &ouml;ffnen und starten.</div>
+      <div id="masterGearList"></div>
+      <button class="text-link small" type="button" id="masterGearOpenBtn">Alle Hilfsmittel ansehen</button>
+    </div>
+
     <div class="group" id="masterSeeGroup">
       <div class="group-label">Sehen und Reize</div>
       <div class="group-help">F&uuml;r alle, denen kleine Schrift oder schnelle Lichtwechsel zu viel sind.</div>
@@ -7356,6 +8708,20 @@
       <label class="checkbox-row tap-row"><input type="checkbox" id="masterSoftCheck"> Schnelle Lichtwechsel ruhiger machen</label>
       <div class="group-help">Reize bleiben l&auml;nger stehen, zwischen ihnen ist mehr Zeit, Farbfl&auml;chen blenden weich &uuml;ber statt aufzublitzen, und die Zusatzaufgabe erscheint sanfter. Betrifft Visuelles Training, Periphere Wahrnehmung, Blitz-Raster und Flash-Speicher-Test; die &Uuml;bungen werden dadurch etwas leichter und sind markiert. In ihren Feineinstellungen und in der Pause kannst du es f&uuml;r eine &Uuml;bung einzeln &auml;ndern.</div>
       <button class="text-link small" type="button" id="masterSoftResetBtn" hidden>Eigene Einstellungen der &Uuml;bungen zur&uuml;cksetzen</button>
+    </div>
+
+    <div class="group test-teaser" id="masterAnaglyphGroup" hidden>
+      <div class="group-label">Farbbrille</div>
+      <div class="group-help">F&uuml;r &Uuml;bungen mit Rot-Gr&uuml;n-Brille. Einmal einstellen, gilt dann f&uuml;r alle Farbbrillen-&Uuml;bungen auf diesem Ger&auml;t.</div>
+      <div class="group-label">Welches Glas sitzt links?</div>
+      <div class="choice-row two" id="masterAnaglyphSideRow">
+        <button class="choice" type="button" data-anaglyph-left="rot">Rot</button>
+        <button class="choice" type="button" data-anaglyph-left="gruen">Gr&uuml;n</button>
+      </div>
+      <div class="group-help">Brille umgedreht? Dann hier tauschen.</div>
+      <div class="group-help anaglyph-status" id="masterAnaglyphStatus"></div>
+      <button class="start-btn secondary" type="button" id="masterAnaglyphCalibBtn" data-anaglyph-calib>Farbbrille abgleichen</button>
+      <label class="checkbox-row tap-row"><input type="checkbox" id="masterAnaglyphHintCheck"> Vor jeder Farbbrillen-&Uuml;bung an Helligkeit, Night Shift und True Tone erinnern</label>
     </div>
 
     <div class="group">
@@ -7383,6 +8749,8 @@
         <input type="range" id="masterPauseSlider" min="0" max="180" step="5" aria-label="Standard-Pause zwischen &Uuml;bungen">
         <span class="slider-value" id="masterPauseValue"></span>
       </div>
+      <label class="checkbox-row tap-row"><input type="checkbox" id="masterPauseBreathCheck"> Pausen mit Atemf&uuml;hrung</label>
+      <div class="group-help">In Pausen ab 10 Sekunden im Kombi-Programm, im Krafttraining und im Ausdauertraining zeigt ein ruhiger Kreis, wann du einatmest und ausatmest &ndash; wie in der Pause eines Trainer-Programms. Die verbleibende Pausenzeit siehst du weiter in der Mitte.</div>
     </div>
 
     <div class="group">
@@ -7458,6 +8826,62 @@
   </div>
 </div>
 
+<div class="sheet" id="anaglyphHintSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="anaglyphHintTitle">
+    <h2 id="anaglyphHintTitle">F&uuml;r die Farbbrille</h2>
+    <p class="group-help">Bildschirm ganz hell, Night Shift und True Tone aus (Kontrollzentrum bzw. Einstellungen &rsaquo; Anzeige &amp; Helligkeit). Sonst sieht ein Auge die Farbe des anderen mit.</p>
+    <p class="group-help">Dann die Brille aufsetzen.</p>
+    <button class="start-btn" type="button" id="anaglyphHintOkBtn">Erledigt</button>
+    <button class="text-link anaglyph-hint-off" type="button" id="anaglyphHintOffBtn">Nicht mehr anzeigen</button>
+  </div>
+</div>
+
+<div class="anaglyph-calib" id="anaglyphCalib" role="dialog" aria-modal="true" aria-labelledby="anaglyphCalibTitle" hidden>
+  <div class="anaglyph-calib-bar">
+    <button type="button" class="anaglyph-calib-close" id="anaglyphCalibCloseBtn">&#10005; Schlie&szlig;en</button>
+    <span class="anaglyph-calib-step" id="anaglyphCalibStepEl"></span>
+  </div>
+  <div class="anaglyph-calib-body">
+    <h2 class="anaglyph-calib-title" id="anaglyphCalibTitle"></h2>
+    <p class="anaglyph-calib-text" id="anaglyphCalibText"></p>
+
+    <div class="anaglyph-calib-pane" data-calib-pane="side">
+      <div class="anaglyph-calib-choice" id="anaglyphCalibSideRow">
+        <button type="button" data-anaglyph-left="rot">Links Rot<small>rechts Gr&uuml;n</small></button>
+        <button type="button" data-anaglyph-left="gruen">Links Gr&uuml;n<small>rechts Rot</small></button>
+      </div>
+    </div>
+
+    <div class="anaglyph-calib-pane" data-calib-pane="tune" hidden>
+      <div class="anaglyph-calib-square" id="anaglyphCalibSquare"></div>
+      <div class="anaglyph-calib-label">Helligkeit</div>
+      <div class="anaglyph-calib-slider">
+        <button type="button" class="anaglyph-calib-step-btn" data-calib-nudge="v:-2" aria-label="Dunkler">&minus;</button>
+        <input type="range" id="anaglyphCalibV" min="10" max="100" step="1" aria-label="Helligkeit der Farbe">
+        <button type="button" class="anaglyph-calib-step-btn" data-calib-nudge="v:2" aria-label="Heller">+</button>
+      </div>
+      <div class="anaglyph-calib-label">Farbton</div>
+      <div class="anaglyph-calib-slider">
+        <button type="button" class="anaglyph-calib-step-btn" data-calib-nudge="h:-1" aria-label="Farbton zur einen Seite">&minus;</button>
+        <input type="range" id="anaglyphCalibH" min="-20" max="20" step="1" aria-label="Farbton der Farbe">
+        <button type="button" class="anaglyph-calib-step-btn" data-calib-nudge="h:1" aria-label="Farbton zur anderen Seite">+</button>
+      </div>
+    </div>
+
+    <div class="anaglyph-calib-pane" data-calib-pane="check" hidden>
+      <div class="anaglyph-calib-words">
+        <span class="anaglyph-calib-word" id="anaglyphCalibWordL">Links</span>
+        <span class="anaglyph-calib-word" id="anaglyphCalibWordR">Rechts</span>
+      </div>
+    </div>
+
+    <div class="anaglyph-calib-actions">
+      <button type="button" class="anaglyph-calib-btn secondary" id="anaglyphCalibPrevBtn">Zur&uuml;ck</button>
+      <button type="button" class="anaglyph-calib-btn" id="anaglyphCalibNextBtn">Weiter</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet" id="coachMessageSheet" hidden>
   <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="coachMessageTitle">
     <h2 id="coachMessageTitle">Nachricht von deinem Trainer</h2>
@@ -7469,7 +8893,7 @@
 <div class="sheet" id="breakInfoSheet" hidden>
   <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="breakInfoTitle">
     <h2 id="breakInfoTitle">Die Nichtraucher-Pause</h2>
-    <p class="group-help break-info-text">Wer raucht, g&ouml;nnt sich oft etwas, das uns allen guttut: mehrmals am Tag ein paar Minuten nur f&uuml;r sich &ndash; kurz raus, durchatmen, abschalten. Diese kleine Auszeit m&ouml;chten wir dir auch ohne Zigarette schenken, mit ein paar ruhigen Atemz&uuml;gen. Ob zwischen zwei Terminen oder mitten im Alltag: G&ouml;nn dir diese Pause, so oft du magst.</p>
+    <p class="group-help break-info-text">Wer raucht, g&ouml;nnt sich oft etwas, das jedem guttut: mehrmals am Tag ein paar Minuten nur f&uuml;r sich &ndash; kurz raus, durchatmen, abschalten. Diese kleine Auszeit kannst du dir auch ohne Zigarette nehmen, mit ein paar ruhigen Atemz&uuml;gen. Ob zwischen zwei Terminen oder mitten im Alltag: G&ouml;nn dir diese Pause, so oft du magst.</p>
     <p class="group-help">Gleichm&auml;&szlig;ig ein- und ausatmen, kein Halten (Ruhige Atmung). Auf Wunsch erinnert dich die App tags&uuml;ber daran: <button class="inline-link" type="button" id="breakInfoReminderLink">Erinnerungen einstellen</button>.</p>
     <button class="start-btn" id="breakInfoCloseBtn" type="button">Alles klar</button>
   </div>
@@ -7482,6 +8906,51 @@
   </div>
 </div>
 
+<div class="sheet" id="handoverImportSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="handoverImportTitle">
+    <h2 id="handoverImportTitle"></h2>
+    <p class="group-help" id="handoverImportText"></p>
+    <ul class="history-list handover-import-list" id="handoverImportList"></ul>
+    <p class="group-help handover-ios-note" id="handoverImportIos" hidden>Nutzt du die App vom Startbildschirm? Safari und die App haben getrennte Speicher. Tippe dann auf &bdquo;Code kopieren&ldquo;, &ouml;ffne die App und f&uuml;ge ihn unter Fortschritt &rsaquo; &bdquo;Trainer-QR-Code scannen&ldquo; &rsaquo; &bdquo;Code von Hand einf&uuml;gen&ldquo; ein.</p>
+    <div class="handover-sheet-actions">
+      <button class="start-btn" id="handoverImportYesBtn" type="button">&Uuml;bernehmen</button>
+      <button class="start-btn secondary" id="handoverImportCopyBtn" type="button" hidden>Code kopieren</button>
+      <button class="start-btn secondary" id="handoverImportNoBtn" type="button">Nicht jetzt</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="handoverPasteSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="handoverPasteTitle">
+    <h2 id="handoverPasteTitle">&Uuml;bergabe-Code einf&uuml;gen</h2>
+    <p class="group-help">Den Code hast du in Safari mit &bdquo;Code kopieren&ldquo; kopiert. Halte den Finger in das Feld und tippe auf &bdquo;Einsetzen&ldquo;.</p>
+    <textarea class="plan-input handover-paste-input" id="handoverPasteInput" rows="4" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="&Uuml;bergabe-Code"></textarea>
+    <div class="program-error" id="handoverPasteError" role="alert" hidden></div>
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="handoverPasteCancelBtn" type="button">Abbrechen</button>
+      <button class="start-btn" id="handoverPasteGoBtn" type="button">Weiter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Trainer-QR-Code scannen (Fabian 08.10.): in-app camera, so the runs land
+     in this app (on the iPhone Safari and the home-screen app have separate
+     storage). jsqr.js is loaded only when this opens. docs/notes/36. -->
+<div class="sheet scan-sheet" id="handoverScanSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="handoverScanTitle">
+    <h2 id="handoverScanTitle">Trainer-QR-Code scannen</h2>
+    <p class="group-help" id="handoverScanHelp">Halte die Kamera auf den QR-Code deines Trainers.</p>
+    <div class="scan-view" id="handoverScanView">
+      <video id="handoverScanVideo" playsinline muted autoplay></video>
+      <div class="scan-frame" aria-hidden="true"></div>
+    </div>
+    <p class="group-help scan-status" id="handoverScanStatus" role="status"></p>
+    <p class="scan-error" id="handoverScanError" role="alert" hidden></p>
+    <button class="text-link small scan-paste-link" id="handoverScanPasteBtn" type="button">Code von Hand einf&uuml;gen</button>
+    <button class="start-btn secondary" id="handoverScanCancelBtn" type="button">Abbrechen</button>
+  </div>
+</div>
+
 <div class="sheet" id="confirmSheet" hidden>
   <div class="sheet-inner" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
     <h2 id="confirmTitle">Bist du sicher?</h2>
@@ -7490,6 +8959,7 @@
       <button class="start-btn secondary" id="confirmNoBtn">Nein</button>
       <button class="start-btn" id="confirmYesBtn">Ja</button>
     </div>
+    <button class="text-link small confirm-cancel-btn" id="confirmCancelBtn" type="button" hidden>Abbrechen</button>
   </div>
 </div>
 

@@ -47,7 +47,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#abBgColorPicker .color-swatch").count())
         await pg.click('#abBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
         await pg.fill("#abBgIntensitySlider", "0.6"); await pg.dispatch_event("#abBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#abBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#abBgIntensityValue")))
 
         async def wait_for_visible(sel, max_ms=6000, poll_ms=25):
             waited = 0

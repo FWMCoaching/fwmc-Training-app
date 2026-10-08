@@ -101,7 +101,7 @@ async def main():
         await pg.fill("#flashConstantSlider", "2"); await pg.dispatch_event("#flashConstantSlider", "input")
         await pg.wait_for_timeout(100)
         await pg.click("#flashReadyStartBtn"); await pg.wait_for_timeout(200)
-        print("level shows Runde 1/5:", "Runde 1/5" in await pg.inner_text("#flashLevelEl"))
+        print("level shows Runde 1/5:", (await pg.inner_text("#flashLevelEl")).startswith(("Runde 1/5", "1/5")))
 
         async def capture_sequence(max_polls=150, poll_ms=40):
             seq, last_txt, was_visible = [], None, False

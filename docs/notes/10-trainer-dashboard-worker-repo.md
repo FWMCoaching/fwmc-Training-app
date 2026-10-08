@@ -212,17 +212,96 @@ phases can be "aus der Wertung" (`noScore`).
   tokens (light/dark): Heute date, week strip with rings, "Geplant für
   heute", "Mein Plan" (phase, Woche n von m, A-D), source line; switch
   Diese Woche / In 3 Wochen / Wettkampf. Simplified, not the real app.
-- **Speichern (kp20, local step)**: only this browser, keys
-  `fwmc-dash-bausaetze-v1`, `fwmc-dash-plans-v1` (by Kürzel; no names or
-  health data, the UI says so), `fwmc-dash-plan-versions-v1` (Stände: per
-  "Stand speichern" and per Ausgabe, last 30, "Stand TT.MM., HH:MM",
-  Zurückholen keeps the issue history), `fwmc-dash-current-v1`. "Alles als
-  Datei sichern" (JSON, `app:"fwmc-trainer-dashboard"`) / "Aus Datei laden"
-  (merge, asks before replacing). **Later step for Fabian**: a server table
-  (`trainer_items`, behind `ADMIN_TOKEN`) + Worker deploy, so it is on every
-  device; nothing was changed in the Worker.
+- **Speichern (kp20)**: local keys `fwmc-dash-bausaetze-v1`,
+  `fwmc-dash-plans-v1` (by Kürzel; no names or health data, the UI says so),
+  `fwmc-dash-plan-versions-v1` (Stände: per "Stand speichern" and per Ausgabe,
+  last 30, "Stand TT.MM., HH:MM", Zurückholen keeps the issue history),
+  `fwmc-dash-current-v1`. "Alles als Datei sichern" (JSON,
+  `app:"fwmc-trainer-dashboard"`) / "Aus Datei laden" (merge, asks before
+  replacing) stay. **Server-backed since 2026-10-08** (next section).
 Test: `tests/dashboard_planung_1007_test.py` (mocked Worker; the issued def
 is entered in the real app and shows "Plan von deinem Trainer übernehmen?").
+
+**Dashboard auf dem Server (kp20, 2026-10-08, Fabian approved)**: with an
+admin token the planning data is the same on every device.
+- **Worker**: table `trainer_items(kind, id, data JSON, updated_at INTEGER ms,
+  PRIMARY KEY(kind,id))` (`worker/migrations/0002_trainer_items.sql`; the
+  Worker also creates it on first use). Routes in `worker/src/items.js`,
+  behind the same `withAuth` (Bearer `ADMIN_TOKEN`, constant-time) and admin
+  CORS (`ADMIN_ORIGINS`, methods now incl. PUT/DELETE) as every admin route:
+  `GET /admin/items?kind=` (list; without kind = all), `PUT
+  /admin/items/<kind>/<id>` body `{data, updatedAt?}` (upsert; kind whitelist
+  `bausaetze|plans|plan-versions|current`, id `[letters digits . _ -]{1,80}`,
+  `current` only as id `current`, data must be object/array, 256 KB per item
+  → 413, 2000 items per kind → 409; `updatedAt` = the dashboard's clock,
+  absurd values become server time), `DELETE /admin/items/<kind>/<id>`.
+  Kürzel only, never names (as before). Tests: `worker/test/items.mjs` (real
+  SQLite via `node:sqlite`, Node ≥ 22.5), part of `npm test`.
+- **Dashboard** (sync block in the planning IIFE, "Server-Speicher (kp20)"):
+  one server item per Bausatz (`bausaetze/<id>`), per client plan and per
+  client's Stände (`plans/<Kürzel>`, `plan-versions/<Kürzel>`) and the
+  selected client (`current/current`). `fwmc-dash-sync-v1` keeps per item a
+  hash of the synced state, its time, "was on the server" and "still has to
+  go up", plus pending deletes. On open (token, not local-only): load all 4
+  kinds, newer `updated_at` wins, local-only items go up unless they were on
+  the server before (then they were deleted on another device and go here
+  too); items first seen locally get their own time (plan `updatedAt`,
+  Bausatz `updatedAt`, last Stand), never "now", so old local data never
+  beats newer server data. Every `wj()` of the four keys schedules a
+  write-through (0.8 s debounce; pagehide/hidden sends at once). Offline or
+  5xx: everything stays local, status line `#plSyncLine` "Nur auf diesem
+  Gerät gespeichert – wird übertragen, sobald der Server erreichbar ist",
+  retry every 30 s and on `online`; reopening after > 2 min hidden re-loads.
+  First run (server empty, local data, never synced): `confirmSheet`
+  "Deine Dashboard-Daten auf den Server übernehmen?" Ja / Später (Später or
+  closing = nothing goes up this session, line + "Jetzt auf den Server
+  übernehmen"; asked again next open). A Stände item over 250 KB drops its
+  oldest Stände on the server copy only. 401 = back to the gate. Local-only
+  mode (no token) never calls the server and hides the line.
+  `confirmSheet(title, text, yes, onYes, {no, onNo, safe})` gained the
+  optional second label / non-red Ja.
+- **Open for Fabian**: the app's Datenschutz sheet should get one sentence
+  that the trainer keeps plans under a Kürzel on his own server (concept
+  kp20: "Datenschutztext vorher kurz ergänzen") - not changed here.
+Test: `tests/dashboard_server_1008_test.py` (mocked `/admin/items`: first-run
+question Ja/Später, write-through + debounce, second device in a fresh
+context, newer wins, delete across devices, offline line + upload when back,
+390 px light/dark, local-only, wrong token). `tests/dashboard_planung_1007_test.py`
+and `tests/dashboard_builder_test.py` mock `/admin/items` too.
+
+**Deploy kp20 (not done yet - tonight, after the full suite)**. From a session
+with `CLOUDFLARE_API_TOKEN` and network "Voll" (see above):
+```sh
+cd worker
+npm install
+npm test                                   # every line True
+npx wrangler deploy --dry-run              # bundles, lists DB + limiters + vars
+# 1. table (0001 was once applied by hand with d1 execute; migrations apply
+#    runs it again - harmless, IF NOT EXISTS - and records both)
+npx wrangler d1 migrations apply fwmc-training-codes --remote
+npx wrangler d1 execute fwmc-training-codes --remote --command "SELECT name FROM sqlite_master WHERE name='trainer_items'"
+# 2. Worker
+npx wrangler deploy
+```
+Smoke checks (`T` = the ADMIN_TOKEN, `O="Origin: https://fwmcoaching.github.io"`,
+`B=https://online-training.fwmc.workers.dev`):
+```sh
+curl -s -o /dev/null -w "%{http_code}\n" "$B/program?code=dig01"                  # 200 (public lookup unchanged)
+curl -s -o /dev/null -w "%{http_code}\n" -X OPTIONS "$B/reminders"                 # 204
+curl -s -o /dev/null -w "%{http_code}\n" -H "$O" "$B/admin/items?kind=plans"       # 401 without token
+curl -s -o /dev/null -w "%{http_code}\n" -H "$O" -H "Authorization: Bearer wrong" "$B/admin/items?kind=plans"  # 401
+curl -s -H "$O" -H "Authorization: Bearer $T" "$B/admin/items?kind=plans"          # 200 {"items":[...]}
+curl -s -H "$O" -H "Authorization: Bearer $T" -H "Content-Type: application/json" -X PUT \
+  --data '{"data":{"smoke":1}}' "$B/admin/items/bausaetze/smoke-test"              # 200 {"ok":true,...}
+curl -s -H "$O" -H "Authorization: Bearer $T" -X DELETE "$B/admin/items/bausaetze/smoke-test"  # {"ok":true,"deleted":true}
+curl -s -D - -o /dev/null -X OPTIONS -H "$O" "$B/admin/items/plans/x" | grep -i allow-methods  # ... PUT, DELETE ...
+curl -s -o /dev/null -w "%{http_code}\n" -H "$O" -H "Authorization: Bearer $T" "$B/admin/programs"  # 200 (old admin route)
+```
+Then open the live dashboard with the token: on the device that has the
+data, the question appears once - Fabian answers "Ja"; on a second device
+the plans show up. Verified before commit (2026-10-08): `npm test`, `wrangler
+deploy --dry-run` (wrangler 4.148), `d1 migrations apply --local` and the
+smoke checks above against `wrangler dev --local` (all as expected).
 
 **Bausteine-Bibliothek + "Alle Übungen im Überblick" (added 2026-09-28)**:
 client tried the dashboard live and pushed back hard on my first
@@ -386,3 +465,25 @@ solid bars, matching what proved immune) unless asked again.
   `CLOUDFLARE_API_TOKEN`/session setup is fine for this, no new token
   needed.
 
+
+**Katalog-Stand 08.10.2026**: plan `AREAS` gained `activation` (Aktivierung,
+`#3b4fa8`, what `act:optodrum` from `ACT_EX` = the app's
+`ACTIVATION_EXERCISES`); "Alle Übungen im Überblick" (Stand 08.10.2026) lists
+Hütchen · Farbe + Zahl and Farbfelder (JSON), Aktivierung · Optodrum and
+Test-Bereich "Jedes Auge zählt (Farbbrille)" (not in the dashboard). The app's
+privacy sheet says the trainer may keep the plan under a Kürzel on the FWMC
+server (kp20). Test: `tests/hilfsmittel_texte_1008_test.py`.
+
+**Freischaltung + QR-Code zeigen (08.10.2026, details docs/notes/36)**:
+kind "Freischaltung" (`data-kind="unlock"`, `#unlockBuilder`) builds its
+checkboxes from dashboard.html's `FEATURE_UNLOCKS` copy (label + hint; a
+new feature = one entry there + one in app.js) plus "Sperr-Code" (`lock`);
+saves `{"type":"feature-unlock","features":[…]}`, `configToBuilder`
+recognises it, the codes table marks it "Freischaltung"/"Freischaltung
+sperren". Every row of the codes table has "QR-Code zeigen" (`data-qr`,
+does not open the editor), and after "Speichern" `#pQrBtn` appears:
+`#codeQrSheet` shows a big QR (`qrcode.js` from the app folder, loaded in
+`<head>`) for `<app url>#code=<CODE>`, the code as text and the hint for the
+client. App URL = the dashboard's own folder on github.io /
+fabian-westermann.de / localhost, else the Pages URL. Test:
+`tests/pruefer_fixes_1008_test.py` (decodes the canvas with jsQR).

@@ -569,7 +569,7 @@ weak run resets it too. Covered: Positionen merken, Blitz-Raster (standard),
 Flash, MOT. "Very good" thresholds are ASSUMPTIONS, not from Fabian or a
 study - adjust if he finds them too easy/hard: Positionen merken ≥ 7 reached
 (≥ 6 with shuffled positions), Blitz ≥ 6, Flash climbing ≥ 7, Flash constant
-≥ 8 rounds with ≥ 90 % correct, MOT ≥ 8.
+≥ 8 rounds with ≥ 90 % correct, MOT ≥ 8. Farbfelder · Antippen (08.10.): ≥ 90 % right with ≥ 5 fields, Abfolge all rounds right (≥ 2), on the shared VT tempo.
 
 ## Gleichgewicht (6th NAT exercise, built 2026-10-06, Fabian's build order 12:31/12:33)
 
@@ -603,6 +603,24 @@ study - adjust if he finds them too easy/hard: Positionen merken ≥ 7 reached
   history kind `balance`, BG_SOURCES/MASTER_BG_TARGETS, LEADIN_START_IDS, dashboard
   overview. No CVD entry (no right/wrong feedback), no Stufen-Vorschlag (no levels).
 - Test: tests/gleichgewicht_1006_test.py.
+- **Wörter (VOR, Fabian 08.10.)**: `balancePrefs.content` stifte|woerter, `wordList`
+  tiere|alltag|farben (`BALANCE_WORDS`, Farbwörter from `BALANCE_WORD_INKS`, never in their own
+  colour, never word+ink twice in a row: `balancePickWord`), `wordEvery` 1|2|4, `wordRead`
+  wort|farbe. Ready group "Inhalt" (`#balanceContentGroup`, hidden for Sakkaden; words need the
+  sticks there). One `#balanceWord` (white plate, Magra, caption via `data-cap` "Lies laut" /
+  "Lies das Wort" / "Sag die Farbe") in the centre of `balanceArea()`; `balanceLayoutWord` sizes
+  it from `size` (LOOK, live + pinch) × `fontF`, capped to the free width/height. The first
+  beat keeps the opening word, then a new one every 1st/2nd/4th beat (`balanceBeat`); without
+  Takt the same rhythm runs silently (`nextWordAt`, tempo row stays visible). Stick groups are
+  hidden in words mode; history note "… · Wörter (Tiere)". Kombi/presets carry the fields;
+  Cardio guest: sticks only. Test: tests/gleichgewicht_woerter_1008_test.py.
+  Prüfer-Runde 08.10.: words mode has ONE size ("Größe der Wörter", the LOOK size;
+  `fontF`/"Schriftgröße" is hidden and ignored, `fsWanted = 46 * size`). `#balanceWordBox` is
+  its own set of `.group`s (normal group spacing). The pause sheet in words mode hides the
+  stick rows + "Stifte zurück in die Mitte", relabels the live size "Größe der Wörter" and adds
+  the word rows (Wörter, Wort wechselt, Lies [Farbwörter only]) via `addPauseChoiceRow`, which
+  now returns its sync function.
+- **Bewegter Hintergrund (08.10.)**: `balancePrefs.mbg` (shared module, see docs/notes/31).
 
 - 2026-10-06 evening (Fabian): status shows "⏸ m:ss" while the clock is held (no word, the bar stays one line); `balanceLayout` sizes letters with the stick and shows only `st.visN` letters (`.balance-letter.off`) when they would not fit; the "Regler" chip is hidden, size/colours/length/width/font are live in the pause sheet (`balPauseLook`, `balanceLiveLook`, `syncBalancePauseLook`, saved for own runs); `letterColor2` = letter colour of stick 2 (falls back to `letterColor`); beat runs keep the "auto" audio session so the client's music (Spotify) keeps playing; the first beat run on an iPhone/iPad shows a one-time silent-switch hint (`silentSwitchHint`, `fwmc-silent-hint-v1`, test flag `fwmc-test-silenthint`); "playback" only via the Grundeinstellungen opt-in, labelled "pausiert Musik" and `unlockCueAudio` resumes/recreates a dead AudioContext on every tap.
 

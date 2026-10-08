@@ -279,6 +279,14 @@ everywhere goes here, short.
 | 27-trainingsplanung | Plan model (phases, weeks A-D, pauses, weekOps, Sonderwochen, dayOv), planWeekMap, Mein Plan, scope question, trainer plan code + versions; nothing changes training automatically |
 | 28-farbfelder | Farbfelder (VT, 2x2 mat grid): modes, rule function, Abfolge timing, Kombi/Cardio wiring, generic Hilfsmittel note |
 | 29-huetchen-farbe-zahl | Hütchen · Farbe + Zahl (VT, 3-6 numbered fields): cnFields, colour cap, drawing, Kombi/Cardio/preset wiring |
+| 30-farbbrille | Farbbrille (Rot-Grün-Brille, Test-Bereich): shared settings `fwmc-anaglyph-v1`, mandatory calibration `#anaglyphCalib`, lock `anaglyphGate`/`anaglyphStart`, pre-start hint, exercise "Jedes Auge zählt" |
+| 31-aktivierung-optodrum | Aktivierung (8th area `activation`): frame, `ACTIVATION_LINKS` for later link cards; Optodrum: prefs, shared ready/pause controls, canvas engine, Wechsel, Sanfte Reize cap, Kombi/plan/history; shared renderer `optoPaint` + Bewegter Hintergrund (`MOVING_BG`) |
+| 32-zusatz-rechnen | Zusatzaufgabe "Rechnen" (VT canvas + Cardio `addon-math`): statements, Doppelkreis/Nur stimmt/Laut, placement, scoring |
+| 33-huetchen-laufweg | Hütchen · Laufweg (VT, cone map with drawn path): why VT-catalog architecture, path maker, variants, what is not wired |
+| 34-ton-sequenz | Ton-Sequenz (Test-Bereich): step model, audio graph (merger, fades, cueVolume), Kanal-Test, Suchlauf, presets, safety, iPhone checks |
+| 35-richtungskreuz-zusaetze-regeln | Richtungskreuz (VT, 4 directions, Farbregel), Zusätze für oben (`ZUSAETZE`, signal), ⓘ Regeln + Meine Notiz (`REGELN_EXERCISES`, notes in presets/Kombi, trainer note) |
+| 36-qr-uebergabe | QR-Übergabe trainer → client: range screen, payload fields, split codes, import/dedupe, iPhone Safari copy + paste field, Kunden-Training (own store, snapshot of bests), in-app scanner, trainer codes as QR (`#code=`), Freischaltungen (`FEATURE_UNLOCKS`) |
+| 37-neuro-aktivierung | Neuro-Aktivierung (hidden 9th area `neuro`, unlocked by code type `neuro-unlock`): step player, `NEURO_EXERCISES`, Kombi/plan only when unlocked, "Spezialübung von deinem Trainer" in trainer Kombi codes, dashboard builder, texts Fabian reviews |
 
 ## Must-do rules collected from the detail notes
 
@@ -291,7 +299,9 @@ For every new or changed exercise/screen, in the same commit:
   new screens go into `tests/text_wrap_audit_test.py` (AREAS). Never give a
   text label a fixed width.
 - Every area has the same frame (code card, tiles, Kombi-Programm,
-  Gesamter Trainingsverlauf) - compare with a sibling before shipping.
+  Gesamter Trainingsverlauf) - compare with a sibling before shipping. Order
+  (hero, code card, Beispiel-Programme, exercises, Kombi, Verlauf; Kraft/
+  Ausdauer exempt) is enforced by `tests/bereiche_reihenfolge_1008_test.py`.
 - Right/wrong feedback or fixed colours: `CVD_EXERCISES`/`CVD_FB_SELECTORS`;
   fixed signal colour: `SIGNAL_DEFS` + `SIGNAL_CSS` + `data-sig` spans.
 - Background colour: `makeBgApplier` + `wireBgIntensityControl` + `MASTER_BG_TARGETS`.
@@ -366,7 +376,7 @@ For every new or changed exercise/screen, in the same commit:
   with Heute / Training (`#trainingHub`: code card - moved here from Mehr,
   Fabian 2026-10-05, ids still `moreCode*` - and tiles from `PLAN_AREAS` + Test
   when unlocked) / Fortschritt / Mehr (`#moreScreen`: Grundeinstellungen,
-  Tipps, FAQ, Datenschutz, Website, Impressum). The old 8-tab grid and the
+  Tipps, Hilfsmittel, FAQ, Datenschutz, Website, Impressum). The old 8-tab grid and the
   Heute "Bereiche" tiles are hidden via `body.has-bottom-nav`; area homes get
   a ‹ back to Training. Shown only while a `.screen` is visible (never in a
   player). Off in automated browsers unless `fwmc-test-bottomnav`. **Undo if
@@ -549,6 +559,13 @@ For every new or changed exercise/screen, in the same commit:
 - Hilfsmittel (2026-10-07): an exercise that needs equipment gets one
   `HILFSMITTEL` entry in app.js (text + optional `link`, shown only when set);
   the VT ready screen renders it as `.hilfsmittel-note`. Details docs/notes/28.
+  A new Hilfsmittel = one HILFSMITTEL entry (`gear`) + its `GEAR_ITEMS` card
+  (page "Hilfsmittel und Starterpaket" under Mehr, `#gearScreen`, 2026-10-08).
+  Meine Hilfsmittel (2026-10-08): ticks in `fwmc-gear-v1` (Grundeinstellungen,
+  page, "Hab ich"); unticked `gear` = card greyed + start "Braucht: …" with
+  one confirmDialog, never blocked; `optional: true` never greys, `anyOf: true`
+  needs one. Automated browsers own everything unless `fwmc-test-gear`.
+  Details docs/notes/28, test `tests/meine_hilfsmittel_1008_test.py`.
 - Sanfte Reize (2026-10-07): Grundeinstellungen "Sehen und Reize"
   (`masterPrefs.softStimuli`, + Schriftgröße `textSize` on top of `--ts`).
   Every exercise with fast light changes honours it: VT canvas exercises get
@@ -556,5 +573,78 @@ For every new or changed exercise/screen, in the same commit:
   `SOFT_EXERCISES` entry (ready screens get the "Sanfte Reize sind an" note +
   override, the pause sheet the live switch) and reads `softOn(ex)` for
   longer minimum times / softer fades. Details docs/notes/03.
+- Aktivierung (2026-10-08): 8th area `activation` (`#activationHome`, hub
+  "Dazu" tile, `?bereich=aktivierung`), own exercises in `ACTIVATION_EXERCISES`
+  (plan `what: "act:<id>"`), existing exercises later as one
+  `ACTIVATION_LINKS` entry each (never a copied engine). First exercise
+  Optodrum (`#optoReady`/`#optoPlayer`, Kombi domain `optodrum`). A new area
+  needs: PLAN_AREAS + `--area-<key>` token, home screen in SCREENS/
+  AREA_HOME_IDS/HOME_SCREENS/HISTORY_PREFIXES, `?bereich=`, a Kombi group,
+  `historyAreaOf`. Details docs/notes/31, test `tests/aktivierung_optodrum_1008_test.py`.
+- Bewegter Hintergrund (2026-10-08): the Optodrum pattern (`optoPaint`/`optoAdvance`, one
+  renderer) behind Gleichgewicht, Positionen merken, Flash. A new exercise gets it via one
+  `MOVING_BG` entry + `mbg: mbgCopy(p.mbg)` in its run state + `mbgStart(kind)` (controls in
+  Feineinstellungen and the pause sheet come for free). Gleichgewicht also has "Wörter"
+  (`content`). Kombi/Trainer-Programm block scores: `blockResultPush(run, label, text)`.
+  Details docs/notes/31 + 02.
+- Zusatzaufgabe-Arten (2026-10-08): "Zeichen am Rand" and "Rechnen"
+  (`#addonTaskRow`, entry `task`); a new kind = one `task` value, its body
+  in `#addonGroup`, a branch in `buildAddonSchedule`/`drawAddonOverlay`/
+  `finishSession`, a Cardio type appended LAST to `CARDIO_GUEST_TYPES`
+  (picker tests count the types). Overlay taps stop propagation on
+  pointerdown so host taps never see them. Details docs/notes/32.
+- Tones on purpose (Ton-Sequenz, 2026-10-08): every audible tone goes
+  through `cueVolume()`, starts with a fade-in, ear choice via
+  ChannelMerger; docs/notes/34.
+- Zusätze für oben (2026-10-08): a new Zusatz = one `ZUSAETZE` entry (sheet,
+  chips, notes, Regeln, presets, Kombi, codes follow); an exercise done by
+  stepping joins `ZUS_EXERCISES`. Signal Zusätze only through cueVolume().
+- ⓘ Regeln + Meine Notiz (2026-10-08): every exercise with rules gets ⓘ via
+  `REGELN_EXERCISES` (VT catalog exercises automatically via "@vt" +
+  `vtRuleLines`, which must describe a new VT type's settings; NAT/other
+  engines one entry: ready screens, bar, pause overlays, domain). The bar ⓘ
+  pauses via the visible `…PauseBtn` and resumes via `…ResumeBtn`.
+  Details docs/notes/35.
+- QR-Übergabe (2026-10-08): history entries travel only in the URL
+  fragment (`#import=`), never via a server; a new history field that
+  Fortschritt needs goes into `hoPack`/`hoUnpack`. Anything that records a
+  run goes through `addHistory()` (Kunden-Training diverts it there), and a
+  new per-exercise best/level store is named `fwmc-…-best-v1` or added to
+  `HO_SNAP_RE`. `qrcode.js` and `jsqr.js` (vendored) belong in every
+  Artifact publish. Trainer tools ("An Kunden übergeben", "Kunden-Training
+  starten") only after a `feature-unlock` code with `trainer-tools`
+  (`fwmc-features-v1`); "Trainer-QR-Code scannen" (in-app camera,
+  BarcodeDetector or lazy jsQR) is always there and reads handover codes
+  and trainer codes (`#code=<CODE>` or bare; same path as the code card,
+  `openCodeAsTyped`). Details docs/notes/36, tests
+  `tests/qr_uebergabe_1008_test.py`, `tests/pruefer_fixes_1008_test.py`.
+- Freischaltungen (2026-10-08): code type `feature-unlock` (several
+  features per code, `lock` hides again); a new unlockable feature = one
+  `FEATURE_UNLOCKS` entry in app.js (label, toast texts, screen, `apply`,
+  automatic `body.feat-<key>`) + one entry in dashboard.html's copy. Every
+  trainer code can be shown as QR in the dashboard ("QR-Code zeigen").
+- Prüfer-Runde (2026-10-08), everywhere: one checkbox style (brand accent,
+  22 px in rows); a player bar with ⓘ stays one row from 360 px (icon
+  buttons ≤ 480 px, short status via `barCompact()`); colour meanings are
+  chip rows (`colorChoiceRowsHtml`), never a `<select>`; German "1,5 s" and
+  "80 %". Details docs/notes/01.
+- Neuro-Aktivierung (2026-10-08): hidden area `neuro`, visible only after a
+  `neuro-unlock` code (`fwmc-neuro-unlocked-v1`; tests seed `fwmc-test-neuro`).
+  Anything that lists areas/exercises (hub, PLAN_AREAS, Kombi groups, tray,
+  gear cards) must follow `neuroUnlocked()`; neuro blocks in a trainer Kombi
+  code always play, tagged "Spezialübung von deinem Trainer" when locked, and
+  never get copied into own Kombis (`neuroStripBlocks`). A new template = one
+  `NEURO_EXERCISES` entry + dashboard `NEURO_EX`. Details docs/notes/37, test
+  `tests/neuro_aktivierung_1008_test.py`.
+- Pausen mit Atemführung (2026-10-08): `masterPrefs.pauseBreath` (Grundeinstellungen,
+  off). A new rest pause wraps its countdown in `.breath-host` + a hidden
+  `.breath-label` and calls `breathGuideFor(host, label, pauseS)` / `breathGuideStop`
+  (one helper, also the trainer pause; < 10 s = plain countdown; the countdown
+  stays full size inside the circle). Details docs/notes/03, test
+  `tests/atemfuehrung_1008_test.py`.
+- Termin-Serien (2026-10-08): own events `repeat` weekly/biweekly (no end, `skip[]`);
+  anything reading events by date uses `eventsOn`/`eventNextDate`, planning
+  recommendations `loadSingleEvents`. A choice "only this / all" uses
+  `confirmDialog(..., {cancel})` so tapping beside never deletes. docs/notes/04.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

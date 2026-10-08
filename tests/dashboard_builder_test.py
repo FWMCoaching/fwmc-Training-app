@@ -35,13 +35,17 @@ async def main():
                 await route.fulfill(status=200, content_type="application/json", body=json.dumps({"created": True}))
             elif "/admin/client-history" in url:
                 await route.fulfill(status=200, content_type="application/json", body=json.dumps({"history": []}))
+            elif "/admin/items" in url:  # kp20 server storage: empty, accepts writes
+                await route.fulfill(status=200, content_type="application/json", body=json.dumps({"items": [], "ok": True}))
             else:
                 await route.fulfill(status=404, body="{}")
         await pg.route("https://online-training.fwmc.workers.dev/**", api)
         await pg.add_init_script("localStorage.setItem('fwmc-admin-token','test')")
         await pg.goto(DASH); await pg.wait_for_timeout(500)
 
-        print("kind row with 5 areas:", await pg.locator("#kindRow [data-kind]").count() == 5)
+        # 08.10.: the Baukasten got a 6th kind "Neuro-Aktivierung" (data-kind="neuro").
+        kinds = await pg.eval_on_selector_all("#kindRow [data-kind]", "els => els.map(e => e.dataset.kind)")
+        print("kind row with 7 kinds:", kinds == ["visual", "movement", "cardio", "workout", "free", "neuro", "unlock"], kinds)
         print("visual builder shown by default:", await pg.is_visible("#visualBuilder") and await pg.is_hidden("#movementBuilder"))
 
         # ---- Movement ----

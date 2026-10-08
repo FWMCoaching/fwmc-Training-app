@@ -36,7 +36,7 @@ async def main():
         await pg.click("#cardioAddonAdvanced summary"); await pg.wait_for_timeout(150)
         await pg.check("#cardioAddonEnableToggle"); await pg.wait_for_timeout(150)
         group_labels = await pg.locator("#cardioAddonPoolGrid .cardio-pool-group-label").all_inner_texts()
-        print("pool grid grouped Visual Training then Neuroathletik:", group_labels == ["Visuelles Training", "Neuroathletik (NAT)"])
+        print("pool grid grouped Visual Training, Neuroathletik, Weitere (Rechnen):", group_labels == ["Visuelles Training", "Neuroathletik (NAT)", "Weitere Zusatzaufgaben"])
         print("periph-flash offered:", await pg.locator('#cardioAddonPoolGrid input[data-pool="periph-flash"]').count() == 1)
         print("blitz-raster offered:", await pg.locator('#cardioAddonPoolGrid input[data-pool="blitz-raster"]').count() == 1)
 
@@ -72,8 +72,8 @@ async def main():
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(400)
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
         picker_groups = await pg.locator("#cardioAddonPickerTypeRow .cardio-addon-picker-group-label").all_inner_texts()
-        print("picker grouped Visual Training then Neuroathletik:", picker_groups == ["Visuelles Training", "Neuroathletik (NAT)"])
-        print("picker offers 20 choices total:", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 20)
+        print("picker grouped Visual Training, Neuroathletik, Weitere (Rechnen):", picker_groups == ["Visuelles Training", "Neuroathletik (NAT)", "Weitere Zusatzaufgaben"])
+        print("picker offers 22 choices total (incl. Rechnen, Richtungskreuz):", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 22)
 
         # index 14 = periph-flash (first NAT entry, right after the 14 VT ones)
         await pg.locator("#cardioAddonPickerTypeRow .choice").nth(14).click(); await pg.wait_for_timeout(80)

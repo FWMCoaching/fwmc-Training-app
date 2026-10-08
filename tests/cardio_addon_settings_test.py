@@ -59,7 +59,7 @@ async def main():
         await flash_panel.locator('input[data-bgintensity]').fill("0.4")
         await flash_panel.locator('input[data-bgintensity]').dispatch_event("input")
         await pg.wait_for_timeout(100)
-        print("bg intensity value label updated:", "40%" in await flash_panel.locator("[data-bgintensityvalue]").inner_text())
+        print("bg intensity value label updated:", "40 %" in await flash_panel.locator("[data-bgintensityvalue]").inner_text())
 
         await pg.goto(URL); await pg.wait_for_timeout(500)
         await pg.click('.section-tab[data-section="cardio"]'); await pg.wait_for_timeout(200)

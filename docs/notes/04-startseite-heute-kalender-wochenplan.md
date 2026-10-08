@@ -70,6 +70,29 @@ Kalender, ein großes Ziel als Motivations-Countdown auf Heute.
   should affect Trainingssteuerung).
 Test: `tests/events_countdown_1005_test.py`.
 
+### Termine wiederholen (Serien, 2026-10-08)
+- Termin sheet: "Wiederholen" `#eventRepeatRow` Nie / Jede Woche / Alle 2
+  Wochen (default Nie); field `repeat: "weekly"|"biweekly"`, missing = once
+  (old events). No end date (Fabian: unlimited + deleting). With a series the
+  date label reads "Erster Termin" and `#eventRepeatHint` says it repeats
+  without end / that editing changes all dates of the series.
+- `eventOccursOn(e, date)`, `eventNextDate(e, from)`; `eventsOn()` returns one
+  copy per day with `date` = that day (`seriesDate` = first date), so week
+  strip, month/quarter/year cells and the day panel need nothing extra. Day
+  rows carry `data-event-date` for the swipe actions.
+- Delete (sheet "Termin löschen" or list swipe) of a series: `confirmDialog`
+  with "Nur diesen Termin" (date into `skip[]`) / "Alle Termine dieser Serie" /
+  "Abbrechen". New `confirmDialog` option `cancel`: shows `#confirmCancelBtn`
+  and makes tapping beside the sheet / Escape cancel instead of running onNo.
+- Trainer events (`fromTrainer`, def.plan.events) never repeat; their sheet
+  hides `#eventRepeatGroup`. Editing keeps unknown fields (e.g. fromTrainer).
+- `nextGoalEvent` counts a repeating goal down to its next date.
+  Trainingsplanung (`focusWeekOf`, Mein Plan goals/markers, plan length,
+  `goalOverrun`) uses `loadSingleEvents()` only, so a weekly game does not
+  mark every week as Wettkampfwoche. Reminders only cover plan entries, events
+  were never part of them.
+Test: `tests/termin_serien_1008_test.py`.
+
 
 ## Weitermachen nach Unterbrechung (2026-10-06)
 
@@ -111,3 +134,22 @@ Card `#todayBreak` between the main cards (install hint) and the week: a short
 calm breathing pause (1/2/3 Min.) with an ⓘ sheet. `?bereich=atempause` opens
 Heute scrolled to it (push "Zeit für eine Atempause"). Details: docs/notes/20
 (Atemtraining) and 26 (reminder).
+
+## Vorname in der Begrüßung (2026-10-08, Fabian approved)
+- `.today-hello`: `renderHello()` (called by `renderToday()`) writes
+  `greetingFor(hour)` and, with a name, ", " + `span.today-greeting-name`
+  (textContent only, never innerHTML). Names over 12 chars get
+  `.has-long-name` (24 px instead of 28 px).
+- Storage: `fwmc-name-v1`, plain string, `cleanName()` = whitespace
+  collapsed, trimmed, max 30 chars (`NAME_MAX`); empty = key removed. Only on
+  the device; in backups through the fwmc- prefix (not in `BACKUP_EXCLUDE`).
+  Never read by the reminder payload (`computeReminders`) or any Worker call.
+- Without a name: `#helloNameBtn` "+ Wie dürfen wir dich nennen?" (text-link
+  small, 44 px) opens `#helloNameForm` inline (`.plan-input`
+  autocomplete=given-name + `.start-btn.secondary` "Speichern", Enter saves,
+  "Abbrechen"/Escape closes). Empty/whitespace saves nothing. Once saved the
+  button is gone; clearing the name in Grundeinstellungen brings it back.
+- Grundeinstellungen "Dein Name": docs/notes/03. Privacy sheet: the first
+  name is listed under "Was wird auf deinem Gerät gespeichert?".
+Test: `tests/vorname_heute_1008_test.py`; the wrap audit covers the open form
+and a 30-char name on Heute.

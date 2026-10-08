@@ -43,7 +43,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#reaktBgColorPicker .color-swatch").count())
         await pg.click('#reaktBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
         await pg.fill("#reaktBgIntensitySlider", "0.6"); await pg.dispatch_event("#reaktBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#reaktBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#reaktBgIntensityValue")))
 
         # --- proaktiv mode, kurz length, schwer difficulty (fast, but light
         # never times out - only a real tap advances it) ---

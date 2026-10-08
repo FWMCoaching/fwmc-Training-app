@@ -20,6 +20,12 @@ only as deployed code with no repo - this folder is that repo.
   programs:[...]}`).
 - `client_history(id, client_code, program_code, note, created_at)` - a log
   of which client (Kürzel only, no names) received which code and when.
+- `trainer_items(kind, id, data, updated_at)` - the Trainer-Dashboard's
+  Bausätze, plans (by Kürzel), Stände and selected client (kp20, 2026-10-08),
+  via `GET /admin/items?kind=`, `PUT/DELETE /admin/items/<kind>/<id>` (admin
+  token). Code `src/items.js`, migration `migrations/0002_trainer_items.sql`
+  (`npx wrangler d1 migrations apply fwmc-training-codes --remote`), deploy
+  steps and smoke checks in `docs/notes/10-trainer-dashboard-worker-repo.md`.
 
 ## First-time deploy / setup
 

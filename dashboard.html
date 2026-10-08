@@ -87,6 +87,8 @@
   .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; }
   .pill.on { background: rgba(60,194,122,0.18); color: var(--good); }
   .pill.off { background: rgba(229,88,79,0.18); color: var(--danger); }
+  /* Neuro-Aktivierung (2026-10-08): "Spezialübung" marker */
+  .pill.sp { background: rgba(138,75,42,0.16); color: var(--text); border: 1px solid rgba(138,75,42,0.55); margin-left: 6px; }
   .msg { font-size: 0.85rem; margin-top: 10px; }
   .msg.err { color: var(--danger); }
   .msg.ok { color: var(--good); }
@@ -258,12 +260,26 @@
   .pl-comp > div { min-width: 0; flex: 1 1 200px; }
   .pl-comp button { margin: 0; }
   .pl-diamond { color: #c77d12; }
+  /* kp20 server storage: one quiet status line under the privacy hint */
+  .sync-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 0.78rem; color: var(--muted); margin: 8px 0 0; }
+  .sync-line .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); flex: none; }
+  .sync-line[data-state="saving"] .sync-dot { background: var(--accent); }
+  .sync-line[data-state="offline"] .sync-dot, .sync-line[data-state="later"] .sync-dot { background: var(--muted); }
+  .sync-line[data-state="error"] .sync-dot { background: var(--danger); }
+  .sync-line #plSyncText { flex: 1 1 220px; min-width: 0; }
+  .sync-line button { margin: 0; }
+  body.local-only .sync-line { display: none; }
   .pl-file { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; border-top: 1px solid var(--border); padding-top: 12px; align-items: center; }
   .pl-file button { margin: 0; }
   #plJson { min-height: 140px; }
   /* sheets (dialogs) */
   .dsheet { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,0.45); display: flex; align-items: flex-end; justify-content: center; padding: 10px; }
   .dsheet[hidden] { display: none; }
+  .code-qr-canvas { display: block; width: min(340px, 100%); height: auto; aspect-ratio: 1; margin: 14px auto 8px; border-radius: 10px; background: #fff; }
+  .code-qr-text { text-align: center; font-size: 1.15rem; margin: 6px 0; word-break: break-all; }
+  .code-qr-text strong { font-family: ui-monospace, Menlo, monospace; letter-spacing: 0.04em; }
+  #codeQrHint { text-align: center; }
+  #pQrBtn[hidden] { display: none; }
   .dsheet.top { z-index: 70; }
   .dsheet-card { background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 14px; width: min(640px, 100%); max-height: calc(100vh - 20px); overflow-y: auto; padding: 16px; }
   @media (min-width: 700px) { .dsheet { align-items: center; } }
@@ -317,6 +333,7 @@
   .pv-tabbar span { padding: 10px 0 12px; }
   .pv-tabbar .on { color: var(--pv-brand); font-weight: 700; }
 </style>
+<script src="qrcode.js"></script>
 </head>
 <body>
 
@@ -343,7 +360,7 @@
         <div class="brand-logo-box"><img src="logo-full.png" alt="Fabian Westermann Mentalcoaching" /></div>
         <div>
           <h1>Trainer-Dashboard</h1>
-          <p class="sub">Trainingspläne bauen, Trainings-Codes verwalten &amp; Kunden-Verlauf. Codes und Verlauf liegen in der Cloudflare-Datenbank, die Trainingsplanung vorerst nur in diesem Browser.</p>
+          <p class="sub">Trainingspläne bauen, Trainings-Codes verwalten &amp; Kunden-Verlauf. Codes, Verlauf und Trainingsplanung liegen auf deinem Server (Cloudflare), geschützt mit deinem Admin-Token, und sind auf jedem Gerät gleich.</p>
         </div>
       </div>
       <button class="secondary" id="logoutBtn">Abmelden</button>
@@ -360,7 +377,7 @@
 
     <details class="panel" id="overviewDetails" style="padding:16px">
       <summary style="cursor:pointer;list-style:none"><h2 style="display:inline">Alle Übungen im Überblick</h2></summary>
-      <p class="hint">Stand: 06.10.2026 · von Hand gepflegt, kein Live-Abgleich mit der App - bei Fragen zu neuen Übungen einfach fragen. <span class="ov-pill full"><span class="dot"></span>im Baukasten nutzbar</span> <span class="ov-pill json"><span class="dot"></span>nur über den JSON-Tab</span> <span class="ov-pill none"><span class="dot"></span>noch nicht im Dashboard, nur in der App</span></p>
+      <p class="hint">Stand: 08.10.2026 · von Hand gepflegt, kein Live-Abgleich mit der App - bei Fragen zu neuen Übungen einfach fragen. <span class="ov-pill full"><span class="dot"></span>im Baukasten nutzbar</span> <span class="ov-pill json"><span class="dot"></span>nur über den JSON-Tab</span> <span class="ov-pill none"><span class="dot"></span>noch nicht im Dashboard, nur in der App</span></p>
       <div id="overviewBody"></div>
     </details>
 
@@ -382,7 +399,8 @@
           </div>
         </div>
       </div>
-      <p class="hint pl-privacy">Nur ein Kürzel wie „TS-07“, nie Namen oder Gesundheitsangaben. Wer dahinter steckt, weißt nur du. Alles liegt vorerst nur in diesem Browser; sichere es mit „Alles als Datei sichern“ (unten).</p>
+      <p class="hint pl-privacy">Nur ein Kürzel wie „TS-07“, nie Namen oder Gesundheitsangaben. Wer dahinter steckt, weißt nur du. Bausätze, Pläne und Stände liegen auf deinem Server (nur mit deinem Admin-Token erreichbar) und sind auf jedem Gerät gleich; „Alles als Datei sichern“ (unten) bleibt für deinen Rechner.</p>
+      <div class="sync-line" id="plSyncLine" role="status" aria-live="polite" hidden><span class="sync-dot" aria-hidden="true"></span><span id="plSyncText"></span><button type="button" class="secondary" id="plSyncNowBtn" hidden>Jetzt auf den Server übernehmen</button></div>
       <div class="msg" id="plClientMsg"></div>
 
       <div class="pl-layout">
@@ -471,7 +489,7 @@
         <button type="button" class="secondary" id="plExportBtn">Alles als Datei sichern</button>
         <button type="button" class="secondary" id="plImportBtn">Aus Datei laden</button>
         <input type="file" id="plImportFile" accept="application/json,.json" hidden />
-        <span class="hint" style="margin:0">Bausätze und Kunden-Pläne als eine JSON-Datei für deinen Rechner.</span>
+        <span class="hint" style="margin:0">Bausätze und Kunden-Pläne zusätzlich als eine JSON-Datei für deinen Rechner.</span>
       </div>
     </div>
 
@@ -572,6 +590,8 @@
           <button class="kind-btn" type="button" data-kind="cardio">Ausdauertraining</button>
           <button class="kind-btn" type="button" data-kind="workout">Krafttraining</button>
           <button class="kind-btn" type="button" data-kind="free">Eigenes Training</button>
+          <button class="kind-btn" type="button" data-kind="neuro">Neuro-Aktivierung</button>
+          <button class="kind-btn" type="button" data-kind="unlock">Freischaltung</button>
         </div>
         <p class="hint" id="kindHint">Der Code landet in der App automatisch im passenden Bereich.</p>
 
@@ -611,6 +631,34 @@
           <p class="empty-hint" id="freeEmptyHint">Noch kein Training hinzugefügt.</p>
         </div>
 
+        <!-- Freischaltung (2026-10-08, docs/notes/36): code type "feature-unlock"
+             switches single app features on (lock: off) on the device that enters it. -->
+        <div id="unlockBuilder" hidden>
+          <label style="margin-top:14px">Was wird freigeschaltet?</label>
+          <div id="unlockFeatureList"><!-- filled from FEATURE_UNLOCKS --></div>
+          <label class="inline-check" style="margin-top:12px"><input type="checkbox" id="unlockLock" /> Sperr-Code: wieder ausblenden</label>
+          <p class="hint" id="unlockFeatureHints"></p>
+        </div>
+
+        <!-- Neuro-Aktivierung (2026-10-08, docs/notes/37): a hidden area in the app.
+             "Spezialübung" = combo-program with neuro blocks (plays for every client,
+             tagged "Spezialübung von deinem Trainer"); "Bereich freischalten" =
+             neuro-unlock code (shows the area on that device). -->
+        <div id="neuroBuilder" hidden>
+          <div class="kind-row" id="neuroModeRow" style="grid-template-columns:repeat(2,1fr)">
+            <button class="kind-btn active" type="button" data-neuro-mode="kombi">Spezialübung · Kombi</button>
+            <button class="kind-btn" type="button" data-neuro-mode="unlock">Bereich freischalten</button>
+          </div>
+          <p class="hint" id="neuroModeHint"></p>
+          <div id="neuroKombiPart">
+            <label style="margin-top:14px">Übung hinzufügen - antippen fügt sie ans Ende an <span class="pill sp">Spezialübung</span></label>
+            <div class="ex-grid" id="neuroGrid"></div>
+            <label style="margin-top:16px">Dein Kombi-Programm <span id="neuroCount" class="hint"></span></label>
+            <div id="neuroList"></div>
+            <p class="empty-hint" id="neuroEmptyHint">Noch keine Übung hinzugefügt.</p>
+          </div>
+        </div>
+
         <div id="visualBuilder">
         <label for="pPauseS">Pause zwischen den Übungen (Sekunden)</label>
         <input id="pPauseS" type="number" min="0" step="5" value="15" style="max-width:140px" />
@@ -641,8 +689,8 @@
       <div id="jsonView" hidden>
         <label for="pConfig" style="margin-top:14px">Konfiguration (JSON - gleiche Struktur wie dig01/dig02/xppbsp-1)</label>
         <textarea id="pConfig" placeholder='{"name":"Dig03 · …","pauseS":15,"blocks":[{"exercise":"vt-color","colors":["orange","rot","lila"],"duration":60,"stimulusS":1,"intervalMin":3,"intervalMax":5}]}'></textarea>
-        <p class="hint">Gültige <code>exercise</code>-Werte im Baukasten: vt-color, vrw-original, 4-straight, 4-diag, 8-solo, 8-vrw, stroop-classic, stroop-bg. Weitere Einzelübungen (cross-modal, cone-tap, …) sowie <code>periph-flash</code> (Periphere Wahrnehmung, NAT) funktionieren im selben <code>blocks</code>-Format, aber nur hier im JSON-Tab - der Code landet dann automatisch auf der Startseite des jeweiligen Bereichs (NAT bei <code>periph-flash</code>, sonst Visuelles Training). Programmübersichten mit mehreren Programmen: <code>{"type":"bundle","name":"…","programs":[{"label":"…","blocks":[…]}, …]}</code>.</p>
-        <p class="hint">Andere Bereiche brauchen einen eigenen <code>type</code>: Krafttraining-Plan <code>{"type":"workout-plan","name":"…","blocks":[…]}</code> (Blockformat wie im Krafttraining-Baukasten, gleiche Feldnamen) bzw. <code>{"type":"workout-bundle","programs":[…]}</code>. Bewegungsprogramm (Reaktionstraining) <code>{"type":"movement-plan","name":"…","movements":["armL-heben","armR-heben","legL-strecken",…],"bpm":90,"durationMin":8,"preview":3,"mirror":true,"showLabel":true}</code> (mind. 2 Bewegungen aus den 8 Grund-IDs: armL/armR/legL/legR jeweils -heben/-strecken) bzw. <code>{"type":"movement-bundle","programs":[…]}</code>. Ausdauer-Einheit <code>{"type":"cardio-plan","name":"…","items":[{"activity":"joggen","durationS":600,"label":"","interval":null}, …]}</code> (<code>activity</code> aus joggen/rad/cross/rudern/walking/treppe/schwimmen, <code>interval</code> optional <code>{"onS":30,"offS":30}</code> - die Zusatzaufgabe während des Ausdauertrainings bleibt eine reine Klienten-Einstellung, kein Coach-Feld) bzw. <code>{"type":"cardio-bundle","programs":[…]}</code>. Vorlagen für „Eigenes Training“ <code>{"type":"free-template","name":"…","trainings":[{"kind":"list","title":"Mobilisation","note":"…","items":[{"text":"Schultern kreisen","s":30}]},{"kind":"timer","title":"Eisbad","minutes":3},{"kind":"check","title":"Journal"}]}</code> (<code>kind</code> check = Abhaken, timer = Mit Zeit mit <code>minutes</code> 1-60, list = Checkliste mit Punkten, <code>s</code> 0-600 Sekunden, 0 = selbst abhaken). Positionen merken/Blitz-Raster/Flash-Speicher-Test/MOT (NAT) sowie der Test-Bereich haben noch keinen Code-Typ.</p>
+        <p class="hint">Gültige <code>exercise</code>-Werte im Baukasten: vt-color, vrw-original, 4-straight, 4-diag, 8-solo, 8-vrw, stroop-classic, stroop-bg. Weitere Einzelübungen (cross-modal, cone-tap, …) sowie <code>periph-flash</code> (Periphere Wahrnehmung, NAT) funktionieren im selben <code>blocks</code>-Format, aber nur hier im JSON-Tab - der Code landet dann automatisch auf der Startseite des jeweiligen Bereichs (NAT bei <code>periph-flash</code>, sonst Visuelles Training). Pro Baustein optional (08.10.): <code>"trainerNote"</code> (Notiz von dir an den Kunden, bis 300 Zeichen, erscheint unter &bdquo;Regeln&ldquo;) und <code>"zus":{"ids":["ball-kreisen","gang","prellen","kreis-signal"]}</code> (Zus&auml;tze f&uuml;r oben, erscheinen als &bdquo;Von deinem Trainer&ldquo;). Programmübersichten mit mehreren Programmen: <code>{"type":"bundle","name":"…","programs":[{"label":"…","blocks":[…]}, …]}</code>.</p>
+        <p class="hint">Andere Bereiche brauchen einen eigenen <code>type</code>: Krafttraining-Plan <code>{"type":"workout-plan","name":"…","blocks":[…]}</code> (Blockformat wie im Krafttraining-Baukasten, gleiche Feldnamen) bzw. <code>{"type":"workout-bundle","programs":[…]}</code>. Bewegungsprogramm (Reaktionstraining) <code>{"type":"movement-plan","name":"…","movements":["armL-heben","armR-heben","legL-strecken",…],"bpm":90,"durationMin":8,"preview":3,"mirror":true,"showLabel":true}</code> (mind. 2 Bewegungen aus den 8 Grund-IDs: armL/armR/legL/legR jeweils -heben/-strecken) bzw. <code>{"type":"movement-bundle","programs":[…]}</code>. Ausdauer-Einheit <code>{"type":"cardio-plan","name":"…","items":[{"activity":"joggen","durationS":600,"label":"","interval":null}, …]}</code> (<code>activity</code> aus joggen/rad/cross/rudern/walking/treppe/schwimmen, <code>interval</code> optional <code>{"onS":30,"offS":30}</code> - die Zusatzaufgabe während des Ausdauertrainings bleibt eine reine Klienten-Einstellung, kein Coach-Feld) bzw. <code>{"type":"cardio-bundle","programs":[…]}</code>. Vorlagen für „Eigenes Training“ <code>{"type":"free-template","name":"…","trainings":[{"kind":"list","title":"Mobilisation","note":"…","items":[{"text":"Schultern kreisen","s":30}]},{"kind":"timer","title":"Eisbad","minutes":3},{"kind":"check","title":"Journal"}]}</code> (<code>kind</code> check = Abhaken, timer = Mit Zeit mit <code>minutes</code> 1-60, list = Checkliste mit Punkten, <code>s</code> 0-600 Sekunden, 0 = selbst abhaken). Positionen merken/Blitz-Raster/Flash-Speicher-Test/MOT (NAT) sowie der Test-Bereich haben noch keinen Code-Typ. Neuro-Aktivierung: Freischalten <code>{"type":"neuro-unlock","name":"…"}</code> (mit <code>"lock":true</code> wieder verbergen), Spezialübung als Kombi-Code <code>{"type":"combo-program","name":"…","blocks":[{"domain":"neuro","ex":"vibration","prefs":{"stepS":20,"reps":1,"takt":false,"bpm":60}}]}</code> (<code>ex</code> aus vibration/ball-fuss/ball-hand/gelenke; Neuro-Bausteine dürfen auch zwischen anderen Kombi-Bausteinen stehen). Freischaltungen <code>{"type":"feature-unlock","name":"…","features":["trainer-tools"]}</code> (mehrere Einträge in <code>features</code> erlaubt; <code>trainer-tools</code> = Trainer-Werkzeuge: „An Kunden übergeben“ + „Kunden-Training starten“ unter Fortschritt; mit <code>"lock":true</code> wieder ausblenden).</p>
         <p class="hint">Optionale Video-Links (nur beim Standard-/Bundle-Typ): <code>introVideo</code> (Programmebene, vor Start), <code>endVideo</code> (Programmebene, nach der letzten Übung), <code>videoAfter</code> (pro Block, läuft nach dieser Übung) - reine URL-Strings, Abspielung in der App folgt noch.</p>
       </div>
 
@@ -652,8 +700,22 @@
       <div class="row" style="margin-top:12px">
         <button id="pSaveBtn" style="margin-top:0">Speichern</button>
         <button id="pNewBtn" class="secondary" style="margin-top:0" type="button">Neuer Code</button>
+        <button id="pQrBtn" class="secondary" style="margin-top:0" type="button" hidden>QR-Code zeigen</button>
       </div>
       <div id="pMsg" class="msg"></div>
+    </div>
+  </div>
+
+  <!-- QR-Code zu einem Trainings-Code (2026-10-08, docs/notes/36 + 10):
+       <app url>#code=<CODE>; the client scans it in the app ("Trainer-QR-Code
+       scannen") or with the phone camera. qrcode.js is the app's vendored copy. -->
+  <div class="dsheet" id="codeQrSheet" hidden>
+    <div class="dsheet-card" role="dialog" aria-modal="true" aria-labelledby="codeQrTitle">
+      <div class="pl-headrow"><h2 id="codeQrTitle">QR-Code für deinen Kunden</h2><button type="button" class="secondary" data-close="codeQrSheet">Schließen</button></div>
+      <canvas id="codeQrCanvas" class="code-qr-canvas" width="300" height="300" role="img" aria-label="QR-Code"></canvas>
+      <p class="code-qr-text">Code: <strong id="codeQrText"></strong></p>
+      <p class="hint" id="codeQrHint">Dein Kunde scannt in seiner App unter Fortschritt mit „Trainer-QR-Code scannen“ oder tippt den Code ein. Nicht mit der normalen Kamera-App scannen: Auf dem iPhone landet der Code sonst im Browser statt in seiner App.</p>
+      <p class="msg err" id="codeQrError" hidden>Der QR-Code konnte nicht erstellt werden. Gib deinem Kunden den Code als Text.</p>
     </div>
   </div>
 
@@ -730,6 +792,17 @@
   <div class="pl-toast" id="plToast" role="status" aria-live="polite" hidden></div>
 
 <script>
+  // Copy of app.js FEATURE_UNLOCKS (label + what it shows): a new feature =
+  // one entry there + one here (docs/notes/36). A code may carry several.
+  const FEATURE_UNLOCKS = {
+    "trainer-tools": { label: "Trainer-Werkzeuge (für dich)", hint: "Trainer-Werkzeuge: „An Kunden übergeben“ und „Kunden-Training starten“ unter Fortschritt, für dein eigenes Gerät. „Trainer-QR-Code scannen“ hat jeder Kunde ohne Freischaltung." },
+  };
+  function featureBoxes() { return [...document.querySelectorAll("#unlockFeatureList input[data-feature]")]; }
+  (function renderFeatureUnlocks() {
+    document.getElementById("unlockFeatureList").innerHTML = Object.entries(FEATURE_UNLOCKS).map(([f, x]) =>
+      `<label class="inline-check" style="margin-top:6px"><input type="checkbox" data-feature="${f}" /> ${x.label}</label>`).join("");
+    document.getElementById("unlockFeatureHints").textContent = Object.values(FEATURE_UNLOCKS).map((x) => x.hint).join(" ");
+  })();
   const TOKEN_KEY = "fwmc-admin-token";
   const API_BASE = "https://online-training.fwmc.workers.dev";
 
@@ -830,12 +903,14 @@
     programsCache.forEach((p) => {
       const tr = document.createElement("tr");
       tr.className = "clickable";
-      tr.innerHTML = `<td>${escapeHtml(p.code)}</td><td>${escapeHtml(p.name)}</td>` +
+      const mark = neuroCfgMark(p.config);
+      tr.innerHTML = `<td>${escapeHtml(p.code)}</td><td>${escapeHtml(p.name)}${mark ? `<span class="pill sp">${mark}</span>` : ""}</td>` +
         `<td><span class="pill ${p.active ? "on" : "off"}">${p.active ? "aktiv" : "inaktiv"}</span></td>` +
         `<td>${escapeHtml(codeRunText(p))}</td>` +
-        `<td>${fmtDate(p.updatedAt)}</td><td><a class="copy-link" data-toggle="${p.code}">${p.active ? "deaktivieren" : "aktivieren"}</a></td>`;
+        `<td>${fmtDate(p.updatedAt)}</td><td><a class="copy-link" data-toggle="${p.code}">${p.active ? "deaktivieren" : "aktivieren"}</a> · <a class="copy-link" data-qr="${escapeHtml(p.code)}">QR-Code zeigen</a></td>`;
       tr.addEventListener("click", (ev) => {
         if (ev.target.dataset.toggle) return;
+        if (ev.target.dataset.qr) { showCodeQr(ev.target.dataset.qr); return; }
         editProgram(p.code);
       });
       tbody.appendChild(tr);
@@ -864,7 +939,8 @@
       ["8 Pfeile", "full"], ["8 Pfeile · Rot/Grün", "full"],
       ["Stroop · klassisch", "full"], ["Stroop · mit Hintergrund", "full"],
       ["Sehen & Hören", "json"], ["Hütchen sortieren", "json"],
-      ["Hütchen · Kompass-Aufbau", "json"], ["Periphere Wahrnehmung", "json"],
+      ["Hütchen · Kompass-Aufbau", "json"], ["Hütchen · Farbe + Zahl", "json"],
+      ["Farbfelder", "json"], ["Periphere Wahrnehmung", "json"],
     ]},
     { domain: "NAT (neuroathletisch)", items: [
       ["Positionen merken", "none"], ["Blitz-Raster", "none"],
@@ -885,6 +961,7 @@
       ["Sätze × Wiederholungen oder Intervall pro Übung", "full"], ["Zirkel und Kraftplan mit mehreren Übungen", "json"],
     ]},
     { domain: "Eigenes Training", items: [["Vorlagen: Abhaken, Mit Zeit, Checkliste (mehrere pro Code)", "full"]] },
+    { domain: "Aktivierung", items: [["Optodrum", "none"]] },
     { domain: "Test-Bereich (wächst laufend)", items: [
       ["Go/No-Go Reaktionstest", "none"], ["Positions-Gedächtnis (N-Back)", "none"],
       ["Verbindungstest (Trail Making)", "none"], ["Ablenkungstest (Flanker)", "none"],
@@ -897,6 +974,7 @@
       ["Gegenrichtungs-Test (Antisakkaden)", "none"], ["Wortfarben-Test (Stroop-Aufgabe)", "none"],
       ["Sofortmengen-Test (Subitizing)", "none"], ["Alarmierungs-Test (Alerting-Netzwerk)", "none"],
       ["Vorlaufzeit-Test (Foreperiod-Effekt)", "none"],
+      ["Jedes Auge zählt (Farbbrille)", "none"],
     ]},
   ];
   function renderOverview() {
@@ -957,7 +1035,7 @@
       const known = EXERCISE_BY_ID[b.exercise];
       const title = known ? known.title : b.exercise;
       row.innerHTML = `<div><div class="lib-block-title">${escapeHtml(title)}</div>` +
-        `<div class="lib-block-meta">${b.duration ?? "?"}s · Reiz ${b.stimulusS ?? "?"}s · Pause ${b.intervalMin ?? "?"}-${b.intervalMax ?? "?"}s${b.videoAfter ? " · 🎬 Video" : ""}</div></div>` +
+        `<div class="lib-block-meta">${deNum(b.duration)} s · Reiz ${deNum(b.stimulusS)} s · Pause ${deNum(b.intervalMin)}–${deNum(b.intervalMax)} s${b.videoAfter ? " · 🎬 Video" : ""}</div></div>` +
         `<button class="secondary" data-copy="${i}" ${known ? "" : "disabled"}>${known ? "Übernehmen" : "nicht unterstützt"}</button>`;
       list.appendChild(row);
     });
@@ -1042,6 +1120,8 @@
     document.getElementById("cardioBuilder").hidden = kind !== "cardio";
     document.getElementById("workoutBuilder").hidden = kind !== "workout";
     document.getElementById("freeBuilder").hidden = kind !== "free";
+    document.getElementById("neuroBuilder").hidden = kind !== "neuro";
+    document.getElementById("unlockBuilder").hidden = kind !== "unlock";
   }
   document.querySelectorAll("#kindRow [data-kind]").forEach((b) => b.addEventListener("click", () => setBuilderKind(b.dataset.kind)));
 
@@ -1218,6 +1298,79 @@
     return "";
   }
 
+  // Neuro-Aktivierung (2026-10-08): copy of NEURO_EXERCISES in app.js
+  // (id, title, default seconds per step). Keep both lists in sync.
+  const NEURO_EX = [
+    { id: "vibration", title: "Vibration links / rechts", stepS: 20 },
+    { id: "ball-fuss", title: "Massageball: Fußsohlen", stepS: 30 },
+    { id: "ball-hand", title: "Massageball: Hände", stepS: 30 },
+    { id: "gelenke", title: "Gelenke kreisen", stepS: 20 },
+  ];
+  const NEURO_BY_ID = Object.fromEntries(NEURO_EX.map((e) => [e.id, e]));
+  let neuroMode = "kombi";
+  let neuroBlocks = [];
+  const neuroNum = (v, lo, hi, d) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : d; };
+  function setNeuroMode(m) {
+    neuroMode = m === "unlock" ? "unlock" : "kombi";
+    document.querySelectorAll("#neuroModeRow [data-neuro-mode]").forEach((b) => b.classList.toggle("active", b.dataset.neuroMode === neuroMode));
+    document.getElementById("neuroKombiPart").hidden = neuroMode !== "kombi";
+    document.getElementById("neuroModeHint").textContent = neuroMode === "unlock"
+      ? "Freischalt-Code: Gibt dein Kunde ihn ein, erscheint auf seinem Gerät der Bereich „Neuro-Aktivierung“ (Training, Kombi, Wochenplan). Sonst bleibt der Bereich unsichtbar. Es wird nichts weiter gespeichert."
+      : "Spezialübung: ein Kombi-Code mit Neuro-Übungen. Er läuft bei jedem Kunden, auch ohne freigeschalteten Bereich, und ist dort als „Spezialübung von deinem Trainer“ markiert. Der Kunde kann sie nicht in eigene Kombis oder Pläne übernehmen.";
+  }
+  document.querySelectorAll("#neuroModeRow [data-neuro-mode]").forEach((b) => b.addEventListener("click", () => setNeuroMode(b.dataset.neuroMode)));
+  function renderNeuroGrid() {
+    const grid = document.getElementById("neuroGrid");
+    grid.innerHTML = "";
+    NEURO_EX.forEach((x) => {
+      const btn = document.createElement("button");
+      btn.className = "ex-btn"; btn.type = "button"; btn.textContent = x.title;
+      btn.addEventListener("click", () => { neuroBlocks.push({ ex: x.id, stepS: x.stepS, reps: 1, takt: false, bpm: 60, pauseAfterS: 15 }); renderNeuroList(); });
+      grid.appendChild(btn);
+    });
+  }
+  function renderNeuroList() {
+    const list = document.getElementById("neuroList");
+    list.innerHTML = "";
+    document.getElementById("neuroCount").textContent = neuroBlocks.length ? `(${neuroBlocks.length})` : "";
+    document.getElementById("neuroEmptyHint").hidden = neuroBlocks.length > 0;
+    neuroBlocks.forEach((b, i) => {
+      const card = document.createElement("div");
+      card.className = "block-card neuro-card";
+      card.innerHTML = `<div class="block-head"><strong>${i + 1}. ${escapeHtml((NEURO_BY_ID[b.ex] || { title: b.ex }).title)}<span class="pill sp">Spezialübung</span></strong>${moveButtons(i, neuroBlocks.length)}</div>
+        <div class="block-fields">
+          <div><label>Sek. pro Schritt</label><input type="number" min="10" max="120" step="5" data-n="stepS" value="${b.stepS}" /></div>
+          <div><label>Durchgänge</label><input type="number" min="1" max="3" step="1" data-n="reps" value="${b.reps}" /></div>
+          <div><label>Takt (pro Min.)</label><input type="number" min="30" max="120" step="5" data-n="bpm" value="${b.bpm}" /></div>
+          ${i < neuroBlocks.length - 1 ? `<div><label>Pause danach (Sek.)</label><input type="number" min="0" max="180" step="5" data-n="pauseAfterS" value="${b.pauseAfterS}" /></div>` : ""}
+        </div>
+        <label class="inline-check" style="margin-top:8px"><input type="checkbox" data-n="takt" ${b.takt ? "checked" : ""} /> Takt-Ton an</label>`;
+      list.appendChild(card);
+      card.querySelectorAll("input[data-n]").forEach((inp) => inp.addEventListener(inp.type === "checkbox" ? "change" : "input", () => {
+        const k = inp.dataset.n;
+        if (k === "takt") b.takt = inp.checked;
+        else b[k] = Number(inp.value);
+      }));
+      wireMoveButtons(card, neuroBlocks, i, renderNeuroList);
+    });
+  }
+  function neuroConfig(name, description) {
+    if (neuroMode === "unlock") return { type: "neuro-unlock", name: name || "Neuro-Aktivierung freischalten", description };
+    return { type: "combo-program", name, description, blocks: neuroBlocks.map((b, i, arr) => {
+      const o = { domain: "neuro", ex: b.ex, prefs: { stepS: neuroNum(b.stepS, 10, 120, 30), reps: neuroNum(b.reps, 1, 3, 1), takt: !!b.takt, bpm: neuroNum(b.bpm, 30, 120, 60) } };
+      if (i < arr.length - 1) o.pauseAfterS = neuroNum(b.pauseAfterS, 0, 180, 15);
+      return o;
+    }) };
+  }
+  // "Spezialübung" / "Freischaltung" marker for the codes table.
+  function neuroCfgMark(c) {
+    if (!c || typeof c !== "object") return "";
+    if (c.type === "neuro-unlock") return "Neuro freischalten";
+    if (c.type === "feature-unlock") return c.lock ? "Freischaltung sperren" : "Freischaltung";
+    const blocks = c.type === "combo-program" ? c.blocks : c.type === "combo-bundle" ? (c.programs || []).flatMap((p) => (p && p.blocks) || []) : [];
+    return Array.isArray(blocks) && blocks.some((b) => b && b.domain === "neuro") ? "Spezialübung" : "";
+  }
+
   let builderBlocks = [];
   let builderUsable = true; // false when an edited code's config doesn't fit this builder's shape
 
@@ -1331,6 +1484,13 @@
     if (builderKind === "free") {
       return { type: "free-template", name, description, trainings: freeTrainingsConfig() };
     }
+    if (builderKind === "neuro") return neuroConfig(name, description);
+    if (builderKind === "unlock") {
+      const features = featureBoxes().filter((b) => b.checked).map((b) => b.dataset.feature);
+      const o = { type: "feature-unlock", name: name || "Freischaltung", description, features };
+      if (document.getElementById("unlockLock").checked) o.lock = true;
+      return o;
+    }
     if (builderKind === "workout") {
       return { type: "workout-plan", name, description, blocks: workoutBlocks.map((b) => b.kind === "reps"
         ? { kind: "reps", exercise: b.exercise, sets: b.sets, reps: b.reps, restS: b.restS }
@@ -1363,6 +1523,8 @@
     else if (t === "cardio-plan" && Array.isArray(config.items) && config.items.every((it) => it && CARDIO_BY_ID[it.activity])) kind = "cardio";
     else if (t === "free-template" && Array.isArray(config.trainings) && config.trainings.every((x) => x && typeof x === "object" && (!x.items || Array.isArray(x.items)))) kind = "free";
     else if (t === "workout-plan" && Array.isArray(config.blocks) && config.blocks.every((b) => b && (b.kind === "reps" || b.kind === "tabata") && b.rangeMin == null && WORKOUT_BY_ID[b.exercise])) kind = "workout";
+    else if (t === "feature-unlock" && Array.isArray(config.features) && config.features.every((f) => FEATURE_UNLOCKS[f])) kind = "unlock";
+    else if (t === "neuro-unlock" || (t === "combo-program" && Array.isArray(config.blocks) && config.blocks.length && config.blocks.every((b) => b && b.domain === "neuro" && NEURO_BY_ID[b.ex]))) kind = "neuro";
     const fits = !!kind;
     document.getElementById("builderFallbackHint").hidden = !!fits;
     document.getElementById("tabBuilderBtn").disabled = !fits;
@@ -1395,6 +1557,20 @@
       renderFreeList();
       return;
     }
+    if (kind === "unlock") {
+      featureBoxes().forEach((b) => { b.checked = config.features.includes(b.dataset.feature); });
+      document.getElementById("unlockLock").checked = !!config.lock;
+      return;
+    }
+    if (kind === "neuro") {
+      setNeuroMode(t === "neuro-unlock" ? "unlock" : "kombi");
+      neuroBlocks = t === "neuro-unlock" ? [] : config.blocks.map((b) => {
+        const p = b.prefs || {};
+        return { ex: b.ex, stepS: neuroNum(p.stepS, 10, 120, NEURO_BY_ID[b.ex].stepS), reps: neuroNum(p.reps, 1, 3, 1), takt: !!p.takt, bpm: neuroNum(p.bpm, 30, 120, 60), pauseAfterS: neuroNum(b.pauseAfterS, 0, 180, 15) };
+      });
+      renderNeuroList();
+      return;
+    }
     if (kind === "workout") {
       workoutBlocks = config.blocks.map((b) => ({ kind: b.kind, exercise: b.exercise, sets: b.sets ?? 3, reps: b.reps ?? 12, restS: b.restS ?? 30, workS: b.workS ?? 20, rounds: b.rounds ?? 8 }));
       renderWorkoutList();
@@ -1420,8 +1596,8 @@
     document.getElementById("pIntroVideo").value = "";
     document.getElementById("pEndVideo").value = "";
     builderBlocks = [];
-    cardioItems = []; workoutBlocks = []; freeTrainings = [];
-    renderMovementChecks([]); renderCardioList(); renderWorkoutList(); renderFreeList();
+    cardioItems = []; workoutBlocks = []; freeTrainings = []; neuroBlocks = []; setNeuroMode("kombi"); featureBoxes().forEach((b) => { b.checked = false; }); document.getElementById("unlockLock").checked = false;
+    renderMovementChecks([]); renderCardioList(); renderWorkoutList(); renderFreeList(); renderNeuroList();
     document.getElementById("mvBpm").value = 60; document.getElementById("mvDuration").value = 5;
     document.getElementById("mvPreview").value = "3";
     document.getElementById("mvMirror").checked = true; document.getElementById("mvShowLabel").checked = true;
@@ -1458,6 +1634,7 @@
   renderCardioGrid(); renderCardioList();
   renderWorkoutGrid(); renderWorkoutList();
   renderFreeList();
+  renderNeuroGrid(); renderNeuroList(); setNeuroMode("kombi");
 
   // Code-level fields (any code type): live outside the Baukasten/JSON tabs
   // and are written into the config on save, so they work for every type.
@@ -1550,8 +1727,8 @@
         const problem = freeTrainingsProblem(config);
         if (problem) { msg.textContent = problem; msg.className = "msg err"; return; }
       }
-      const empty = builderKind === "free" ? false : builderKind === "movement" ? config.movements.length < 2 : builderKind === "cardio" ? !config.items.length : !config.blocks.length;
-      if (empty) { msg.textContent = builderKind === "movement" ? "Mindestens zwei Bewegungen auswählen." : builderKind === "cardio" ? "Mindestens eine Aktivität hinzufügen." : "Mindestens eine Übung hinzufügen."; msg.className = "msg err"; return; }
+      const empty = builderKind === "free" || (builderKind === "neuro" && config.type === "neuro-unlock") ? false : builderKind === "unlock" ? !config.features.length : builderKind === "movement" ? config.movements.length < 2 : builderKind === "cardio" ? !config.items.length : !config.blocks.length;
+      if (empty) { msg.textContent = builderKind === "unlock" ? "Mindestens eine Freischaltung auswählen." : builderKind === "movement" ? "Mindestens zwei Bewegungen auswählen." : builderKind === "cardio" ? "Mindestens eine Aktivität hinzufügen." : "Mindestens eine Übung hinzufügen."; msg.className = "msg err"; return; }
       document.getElementById("pConfig").value = JSON.stringify(config, null, 2); // keep JSON tab in sync
     } else {
       try { config = JSON.parse(document.getElementById("pConfig").value); }
@@ -1565,9 +1742,47 @@
     try {
       const data = await api("/admin/program", { method: "POST", body: { code, config, active } });
       msg.textContent = data.created ? "Neu angelegt." : "Gespeichert."; msg.className = "msg ok";
+      const qb = document.getElementById("pQrBtn"); qb.hidden = false; qb.dataset.code = code;
       loadPrograms();
     } catch (e) { msg.textContent = "Fehler: " + e.message; msg.className = "msg err"; }
   });
+
+  // ---- QR-Code zeigen (2026-10-08): "<app url>#code=<CODE>", same QR
+  // library as the app's QR-Übergabe (qrcode.js next to this file).
+  function appBaseUrl() {
+    const h = location.hostname;
+    const own = /^https?:$/.test(location.protocol) && (/github\.io$/.test(h) || /fabian-westermann\.de$/.test(h) || h === "localhost" || h === "127.0.0.1");
+    return own ? new URL("./", location.href).href : "https://fwmcoaching.github.io/fwmc-Training-app/";
+  }
+  function codeQrUrl(code) { return appBaseUrl() + "#code=" + encodeURIComponent(code); }
+  function showCodeQr(code) {
+    const sheet = document.getElementById("codeQrSheet");
+    const cv = document.getElementById("codeQrCanvas");
+    const url = codeQrUrl(code);
+    document.getElementById("codeQrText").textContent = code;
+    document.getElementById("codeQrError").hidden = true;
+    cv.dataset.url = url;
+    try {
+      const qr = qrcode(0, "M");
+      qr.addData(url, "Byte");
+      qr.make();
+      const n = qr.getModuleCount(), quiet = 4, total = n + quiet * 2;
+      const scale = Math.max(2, Math.floor(720 / total));
+      cv.width = cv.height = total * scale;
+      const g = cv.getContext("2d");
+      g.fillStyle = "#ffffff"; g.fillRect(0, 0, cv.width, cv.height);
+      g.fillStyle = "#0b1a1f";
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect((c + quiet) * scale, (r + quiet) * scale, scale, scale);
+      cv.dataset.modules = String(n);
+      cv.setAttribute("aria-label", "QR-Code für den Code " + code);
+    } catch (e) {
+      document.getElementById("codeQrError").hidden = false;
+    }
+    sheet.hidden = false;
+    const close = sheet.querySelector("[data-close]"); if (close) close.focus();
+  }
+  document.getElementById("pQrBtn").addEventListener("click", (ev) => showCodeQr(ev.currentTarget.dataset.code || document.getElementById("pCode").value.trim()));
+  document.getElementById("codeQrSheet").addEventListener("keydown", (ev) => { if (ev.key === "Escape") document.getElementById("codeQrSheet").hidden = true; });
 
   // Random suffix so a public training-code can't be guessed/enumerated
   // (e.g. "dig01", "dig02", ...) by anyone hitting the public, unauthenticated
@@ -1588,6 +1803,7 @@
   });
 
   document.getElementById("pNewBtn").addEventListener("click", () => {
+    document.getElementById("pQrBtn").hidden = true;
     document.getElementById("pCode").value = "";
     document.getElementById("pConfig").value = "";
     document.getElementById("pActive").checked = true;
@@ -1597,12 +1813,14 @@
     document.getElementById("pCode").focus();
   });
 
+  // German decimal comma in value lines (Prüfer 08.10.: "1.5 s" -> "1,5 s").
+  function deNum(v) { return v == null || v === "" ? "?" : String(v).replace(".", ","); }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
   function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
-  function loadEverything() { loadPrograms(); loadHistory(); }
+  function loadEverything() { loadPrograms(); loadHistory(); if (window.fwmcDashSyncStart) window.fwmcDashSyncStart(); }
 
   if (token) {
     showApp();
@@ -1633,13 +1851,15 @@
     { key: "workout", label: "Krafttraining", short: "Kraft", color: "#c0392b" },
     { key: "cardio", label: "Ausdauertraining", short: "Ausdauer", color: "#7b4fb8" },
     { key: "free", label: "Eigenes Training", short: "Eigenes Training", color: "#a0527a" },
+    { key: "activation", label: "Aktivierung", short: "Aktivierung", color: "#3b4fa8" },
     { key: "combo", label: "Kombi-Programm", short: "Kombi", color: "#007094" },
   ];
   const AREA = Object.fromEntries(AREAS.map((a) => [a.key, a]));
   // what values the app understands for a plan entry (whatOptions in app.js)
   const VISUAL_EX = [["vt-color", "VT · Farbe & Seite"], ["vrw-original", "VRW · Direkt & Umgekehrt"], ["4-straight", "4 Pfeile · gerade"],
     ["4-diag", "4 Pfeile · diagonal"], ["8-solo", "8 Pfeile"], ["8-vrw", "8 Pfeile · Rot/Grün"], ["stroop-classic", "Stroop · klassisch"],
-    ["stroop-bg", "Stroop · mit Hintergrund"], ["cross-modal", "Sehen & Hören"], ["cone-tap", "Hütchen sortieren"], ["cone-compass", "Hütchen · Kompass-Aufbau"], ["cone-number", "Hütchen · Farbe + Zahl"], ["farbfelder", "Farbfelder"]];
+    ["stroop-bg", "Stroop · mit Hintergrund"], ["cross-modal", "Sehen & Hören"], ["cone-tap", "Hütchen sortieren"], ["cone-compass", "Hütchen · Kompass-Aufbau"], ["cone-number", "Hütchen · Farbe + Zahl"], ["cone-path", "Hütchen · Laufweg"], ["farbfelder", "Farbfelder"], ["richtungskreuz", "Richtungskreuz"]];
+  const ACT_EX = [["optodrum", "Optodrum"]]; // ACTIVATION_EXERCISES in app.js
   const NAT_SUBS = [["peripher", "Periphere Wahrnehmung"], ["remember", "Positionen merken"], ["blitz", "Blitz-Raster"], ["flash", "Flash-Speicher-Test"], ["mot", "Objektverfolgung (MOT)"], ["balance", "Gleichgewicht"]];
   const TAGS = ["Einsteiger", "Fortgeschritten", "Sportler", "Führungskraft", "Regeneration", "Wettkampf"];
   const BS_KINDS = { kombi: "Kombi-Paket", week: "Wochen-Vorlage", phase: "Phasen-Vorlage" };
@@ -1653,11 +1873,17 @@
   const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
   const VAR = ["A", "B", "C", "D"];
   const K_BS = "fwmc-dash-bausaetze-v1", K_PLANS = "fwmc-dash-plans-v1", K_VERS = "fwmc-dash-plan-versions-v1", K_CUR = "fwmc-dash-current-v1";
+  const K_SYNC = "fwmc-dash-sync-v1"; // kp20: per item hash + time + "was on the server", pending deletes
+  const SYNC_KEYS = [K_BS, K_PLANS, K_VERS, K_CUR];
   const REC_TEXT = "Empfehlung: in der Woche davor etwas leichter, mit dem Kunden abstimmen.";
 
   // ---- helpers ----
   function rj(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
-  function wj(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { toast("Speichern in diesem Browser ist fehlgeschlagen. Bitte „Alles als Datei sichern“."); return false; } }
+  function wj(k, v) {
+    try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { toast("Speichern in diesem Browser ist fehlgeschlagen. Bitte „Alles als Datei sichern“."); return false; }
+    if (SYNC_KEYS.includes(k) && window.fwmcDashSyncSchedule) window.fwmcDashSyncSchedule(); // kp20 write-through
+    return true;
+  }
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const pad = (n) => String(n).padStart(2, "0");
   function dStr(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
@@ -1689,6 +1915,7 @@
     const o = [["", "Freie Wahl im Bereich"]];
     if (area === "visual") VISUAL_EX.forEach(([k, t]) => o.push(["ex:" + k, t]));
     if (area === "nat") NAT_SUBS.forEach(([k, t]) => o.push(["nat:" + k, t]));
+    if (area === "activation") ACT_EX.forEach(([k, t]) => o.push(["act:" + k, t]));
     return o;
   }
   function entryTitle(e) {
@@ -1724,13 +1951,17 @@
     const inField = /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || "");
     if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && (ev.key || "").toLowerCase() === "z" && !inField && !sheetStack.length && P()) { ev.preventDefault(); undo(); }
   });
-  let confirmYes = null;
-  function confirmSheet(title, text, yesLabel, onYes) {
+  let confirmYes = null, confirmNo = null;
+  // opts: {no: label of the second button, onNo, safe: the yes button is not red}
+  function confirmSheet(title, text, yesLabel, onYes, opts) {
+    opts = opts || {};
     $("plConfirmTitle").textContent = title; $("plConfirmText").textContent = text; $("plConfirmYes").textContent = yesLabel || "Ja";
-    confirmYes = onYes; openSheet("plConfirmSheet");
+    $("plConfirmNo").textContent = opts.no || "Abbrechen";
+    $("plConfirmYes").className = opts.safe ? "" : "danger";
+    confirmYes = onYes; confirmNo = opts.onNo || null; openSheet("plConfirmSheet");
   }
-  $("plConfirmYes").addEventListener("click", () => { const f = confirmYes; confirmYes = null; closeSheet("plConfirmSheet"); if (f) f(); });
-  $("plConfirmNo").addEventListener("click", () => { confirmYes = null; closeSheet("plConfirmSheet"); });
+  $("plConfirmYes").addEventListener("click", () => { const f = confirmYes; confirmYes = confirmNo = null; closeSheet("plConfirmSheet"); if (f) f(); });
+  $("plConfirmNo").addEventListener("click", () => { const f = confirmNo; confirmYes = confirmNo = null; closeSheet("plConfirmSheet"); if (f) f(); });
 
   // ---- state (kp20: localStorage, keys fwmc-dash-*) ----
   let lib = rj(K_BS, []); if (!Array.isArray(lib)) lib = [];
@@ -2385,7 +2616,7 @@
   });
   $("plDeleteClientBtn").addEventListener("click", () => {
     const p = P(); if (!p) return;
-    confirmSheet("Kunden-Plan löschen?", `Der Plan von „${p.kuerzel}“ und seine gespeicherten Stände werden aus diesem Browser gelöscht. Ein schon ausgegebener Plan-Code bleibt beim Kunden.`, "Löschen", () => {
+    confirmSheet("Kunden-Plan löschen?", `Der Plan von „${p.kuerzel}“ und seine gespeicherten Stände werden gelöscht${syncActive() ? ", auch auf dem Server" : ""}. Ein schon ausgegebener Plan-Code bleibt beim Kunden.`, "Löschen", () => {
       delete plans[cur]; delete versions[cur]; wj(K_VERS, versions);
       cur = Object.keys(plans).sort()[0] || ""; undoStack = []; savePlans(); renderAll(); toast("Kunden-Plan gelöscht.");
     });
@@ -2510,6 +2741,232 @@
   function renderPlanSide() { renderPlan(); renderPreview(); renderTimeline(); renderLib(); }
   function renderAll() { renderClients(); renderPlanSide(); }
 
+  // ---- Server-Speicher (kp20, 2026-10-08): same data on every device ----
+  // Worker /admin/items (admin token). One server item per Bausatz
+  // (bausaetze/<id>), per client plan and per client's Stände (plans/<Kürzel>,
+  // plan-versions/<Kürzel>) and the selected client (current/current).
+  // K_SYNC keeps per item a hash of what is on the server (h), its time (u,
+  // ms), whether the server has it (s) and whether it still has to go up (d);
+  // del = deletes still to send. Open: load everything, newer updated_at wins,
+  // local-only items go up (unless they were on the server before, then they
+  // were deleted on another device). Every local save goes up (debounced).
+  // Offline: everything stays local, a status line says so, retried later.
+  const SYNC_KIND_ORDER = ["bausaetze", "plans", "plan-versions", "current"];
+  const SYNC_MAX_BYTES = 250 * 1024; // the Worker allows 256 KB per item
+  const SYNC = { loaded: false, starting: false, busy: false, again: false, deferred: false, timer: null, retry: null, lastPull: 0 };
+  let syncMeta = rj(K_SYNC, null);
+  if (!syncMeta || typeof syncMeta !== "object" || !syncMeta.items) syncMeta = { items: {}, del: {} };
+  if (!syncMeta.del) syncMeta.del = {};
+  function saveSyncMeta() { try { localStorage.setItem(K_SYNC, JSON.stringify(syncMeta)); } catch (e) {} }
+  const syncAllowed = () => !!token && !document.body.classList.contains("local-only");
+  function syncActive() { return syncAllowed() && SYNC.loaded && !SYNC.deferred; }
+  function hashStr(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ":" + str.length; }
+  const tms = (iso) => { const t = Date.parse(iso || ""); return isNaN(t) ? 0 : t; };
+  // everything that lives on the server, as {key: {kind, id, data, t0}}
+  function syncCollect() {
+    const m = {};
+    lib.forEach((b) => { if (b && b.id) m["bausaetze/" + b.id] = { kind: "bausaetze", id: String(b.id), data: b, t0: tms(b.updatedAt || b.createdAt) }; });
+    Object.keys(plans).forEach((k) => { m["plans/" + k] = { kind: "plans", id: k, data: plans[k], t0: tms(plans[k].updatedAt) }; });
+    Object.keys(versions).forEach((k) => { const l = versions[k]; if (Array.isArray(l) && l.length) m["plan-versions/" + k] = { kind: "plan-versions", id: k, data: l, t0: tms(l[l.length - 1].at) }; });
+    m["current/current"] = { kind: "current", id: "current", data: { kuerzel: cur || "" }, t0: 0 };
+    return m;
+  }
+  // first sight of an item: its own time (so old local data never beats newer
+  // server data); a change afterwards: now.
+  function syncScan(firstSight) {
+    const all = syncCollect();
+    Object.entries(all).forEach(([key, it]) => {
+      const h = hashStr(JSON.stringify(it.data)), m = syncMeta.items[key];
+      if (!m) syncMeta.items[key] = { h, u: firstSight ? it.t0 : Date.now(), s: false, d: true };
+      else if (m.h !== h) { m.h = h; m.u = Date.now(); m.d = true; }
+      delete syncMeta.del[key];
+    });
+    Object.keys(syncMeta.items).forEach((key) => {
+      if (all[key]) return;
+      if (syncMeta.items[key].s) syncMeta.del[key] = true;
+      delete syncMeta.items[key];
+    });
+    saveSyncMeta();
+  }
+  syncScan(true);
+
+  function setSync(state) {
+    const line = $("plSyncLine");
+    if (!syncAllowed() || !state) { line.hidden = true; return; }
+    const text = {
+      ok: "Auf dem Server gespeichert, auf jedem Gerät gleich.",
+      saving: "Wird auf den Server übertragen …",
+      offline: "Nur auf diesem Gerät gespeichert – wird übertragen, sobald der Server erreichbar ist",
+      later: "Nur auf diesem Gerät gespeichert. Beim nächsten Öffnen fragt das Dashboard noch einmal.",
+      error: "Ein Eintrag ist zu groß für den Server und bleibt nur auf diesem Gerät. Bitte „Alles als Datei sichern“.",
+    }[state] || "";
+    line.hidden = false; line.dataset.state = state; $("plSyncText").textContent = text;
+    $("plSyncNowBtn").hidden = state !== "later";
+  }
+  // fetch without api()'s throw on 4xx; 401 = back to the gate like api()
+  async function srv(path, method, body) {
+    const res = await fetch(API_BASE + path, {
+      method: method || "GET",
+      headers: Object.assign({ "Authorization": "Bearer " + token }, body ? { "Content-Type": "application/json" } : {}),
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (res.status === 401) {
+      localStorage.removeItem(TOKEN_KEY); token = ""; SYNC.loaded = false; setSync("");
+      showGate("Token abgelehnt - bitte erneut eintragen.");
+      throw new Error("unauthorized");
+    }
+    const data = await res.json().catch(() => ({}));
+    return { status: res.status, ok: res.ok, data };
+  }
+  async function syncFetchAll() {
+    const parts = await Promise.all(SYNC_KIND_ORDER.map((k) => srv("/admin/items?kind=" + k)));
+    if (parts.some((r) => !r.ok)) throw new Error("server");
+    return [].concat(...parts.map((r) => r.data.items || []));
+  }
+  function syncLater(ms) {
+    clearTimeout(SYNC.retry);
+    SYNC.retry = setTimeout(() => { SYNC.retry = null; SYNC.loaded ? syncFlush() : syncStart(); }, ms || 30000);
+  }
+  // take one server item into the local stores (no write yet)
+  function syncApply(it) {
+    const d = it.data;
+    if (it.kind === "bausaetze" && d && typeof d === "object") {
+      const b = Object.assign({}, d, { id: it.id }); const i = lib.findIndex((x) => x.id === it.id);
+      if (i >= 0) lib[i] = b; else lib.push(b);
+    } else if (it.kind === "plans" && d && typeof d === "object") plans[it.id] = normPlan(d, it.id);
+    else if (it.kind === "plan-versions" && Array.isArray(d)) versions[it.id] = d;
+    else if (it.kind === "current" && d && plans[d.kuerzel]) cur = d.kuerzel;
+  }
+  function syncRemoveLocal(key) {
+    const [kind, ...rest] = key.split("/"); const id = rest.join("/");
+    if (kind === "bausaetze") lib = lib.filter((b) => b.id !== id);
+    else if (kind === "plans") delete plans[id];
+    else if (kind === "plan-versions") delete versions[id];
+  }
+  function syncMerge(server) {
+    syncScan(false);
+    const local = syncCollect();
+    const srvMap = {};
+    server.forEach((it) => { if (SYNC_KIND_ORDER.includes(it.kind)) srvMap[it.kind + "/" + it.id] = it; });
+    let changed = false; const taken = {};
+    Object.values(srvMap).sort((a, b) => SYNC_KIND_ORDER.indexOf(a.kind) - SYNC_KIND_ORDER.indexOf(b.kind)).forEach((it) => {
+      const key = it.kind + "/" + it.id, m = syncMeta.items[key];
+      if (!local[key]) {
+        if (syncMeta.del[key]) return; // deleted here, the delete goes up
+        syncApply(it); taken[key] = it.updatedAt; changed = true; return;
+      }
+      const sameData = m && hashStr(JSON.stringify(it.data)) === m.h;
+      if (sameData) { m.s = true; m.d = false; m.u = Math.max(m.u, it.updatedAt || 0); return; }
+      if ((it.updatedAt || 0) > ((m && m.u) || 0)) { syncApply(it); taken[key] = it.updatedAt; changed = true; }
+      else if (m) { m.s = true; m.d = true; } // local is newer: goes up
+    });
+    Object.keys(local).forEach((key) => {
+      const m = syncMeta.items[key];
+      if (srvMap[key] || !m || key === "current/current") return;
+      if (m.s && !m.d) { syncRemoveLocal(key); delete syncMeta.items[key]; changed = true; } // deleted on another device
+      else m.d = true;
+    });
+    if (changed) {
+      if (!plans[cur]) cur = Object.keys(plans).sort()[0] || "";
+      try {
+        localStorage.setItem(K_BS, JSON.stringify(lib)); localStorage.setItem(K_PLANS, JSON.stringify(plans));
+        localStorage.setItem(K_VERS, JSON.stringify(versions)); localStorage.setItem(K_CUR, JSON.stringify(cur));
+      } catch (e) {}
+      const now = syncCollect();
+      Object.keys(taken).forEach((key) => { if (now[key]) syncMeta.items[key] = { h: hashStr(JSON.stringify(now[key].data)), u: taken[key] || Date.now(), s: true, d: false }; });
+      undoStack = [];
+      renderAll();
+    }
+    saveSyncMeta();
+  }
+  function syncPayload(kind, data) {
+    if (kind !== "plan-versions") return data;
+    const a = data.slice(); // too many Stände for one item: the oldest stay only here
+    while (a.length > 1 && new Blob([JSON.stringify(a)]).size > SYNC_MAX_BYTES) a.shift();
+    return a;
+  }
+  async function syncFlush() {
+    if (!syncAllowed() || !SYNC.loaded || SYNC.deferred) return;
+    if (SYNC.busy) { SYNC.again = true; return; }
+    SYNC.busy = true; SYNC.again = false;
+    syncScan(false);
+    const local = syncCollect();
+    const dirty = Object.keys(syncMeta.items).filter((k) => syncMeta.items[k].d && local[k]);
+    const dels = Object.keys(syncMeta.del);
+    let tooBig = false;
+    try {
+      if (dirty.length || dels.length) setSync("saving");
+      for (const key of dirty) {
+        const it = local[key], m = syncMeta.items[key];
+        const r = await srv(`/admin/items/${encodeURIComponent(it.kind)}/${encodeURIComponent(it.id)}`, "PUT", { data: syncPayload(it.kind, it.data), updatedAt: m.u });
+        if (r.ok) { m.s = true; m.d = false; m.u = r.data.updatedAt || m.u; }
+        else if (r.status >= 400 && r.status < 500) { m.d = false; tooBig = true; } // refused (size, id): stays local
+        else throw new Error("server");
+        saveSyncMeta();
+      }
+      for (const key of dels) {
+        const [kind, ...rest] = key.split("/");
+        const r = await srv(`/admin/items/${encodeURIComponent(kind)}/${encodeURIComponent(rest.join("/"))}`, "DELETE");
+        if (!r.ok && r.status >= 500) throw new Error("server");
+        delete syncMeta.del[key]; saveSyncMeta();
+      }
+      setSync(tooBig ? "error" : "ok");
+    } catch (e) {
+      if (e.message !== "unauthorized") { setSync("offline"); syncLater(); }
+    } finally {
+      SYNC.busy = false;
+      if (SYNC.again) syncFlush();
+    }
+  }
+  function syncSchedule() {
+    if (!syncAllowed() || SYNC.deferred) return;
+    clearTimeout(SYNC.timer);
+    SYNC.timer = setTimeout(() => { SYNC.timer = null; SYNC.loaded ? syncFlush() : syncStart(); }, 800);
+  }
+  async function syncStart() {
+    if (!syncAllowed() || SYNC.starting || SYNC.deferred || SYNC.loaded) return;
+    SYNC.starting = true;
+    let server;
+    try { server = await syncFetchAll(); }
+    catch (e) { SYNC.starting = false; if (e.message !== "unauthorized") { setSync("offline"); syncLater(); } return; }
+    SYNC.starting = false; SYNC.lastPull = Date.now();
+    syncScan(false);
+    const localHas = lib.length > 0 || Object.keys(plans).length > 0;
+    const everSynced = Object.values(syncMeta.items).some((m) => m.s) || Object.keys(syncMeta.del).length > 0;
+    if (!server.length && localHas && !everSynced && !SYNC.loaded) {
+      SYNC.deferred = true; setSync("later"); // closing the question any other way = Später
+      confirmSheet("Deine Dashboard-Daten auf den Server übernehmen?",
+        "Bisher liegen deine Bausätze und Kunden-Pläne nur in diesem Browser. Auf dem Server sind sie auf jedem Gerät gleich, geschützt mit deinem Admin-Token. Nur Kürzel, keine Namen.",
+        "Ja", syncUploadNow, { no: "Später", safe: true });
+      return;
+    }
+    SYNC.loaded = true; SYNC.deferred = false;
+    syncMerge(server);
+    await syncFlush();
+    if (!SYNC.busy && $("plSyncLine").dataset.state !== "offline" && $("plSyncLine").dataset.state !== "error") setSync("ok");
+  }
+  function syncUploadNow() {
+    SYNC.deferred = false; SYNC.loaded = true;
+    Object.values(syncMeta.items).forEach((m) => { m.d = true; });
+    saveSyncMeta(); syncFlush();
+  }
+  $("plSyncNowBtn").addEventListener("click", syncUploadNow);
+  window.addEventListener("online", () => { if (syncAllowed() && !SYNC.deferred) (SYNC.loaded ? syncFlush() : syncStart()); });
+  // leaving the page: send what is still waiting in the debounce right away
+  function syncNowIfPending() { if (SYNC.timer && SYNC.loaded) { clearTimeout(SYNC.timer); SYNC.timer = null; syncFlush(); } }
+  window.addEventListener("pagehide", syncNowIfPending);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") { syncNowIfPending(); return; }
+    if (document.visibilityState === "visible" && SYNC.loaded && !SYNC.busy && Date.now() - SYNC.lastPull > 120000) {
+      SYNC.loaded = false; syncStart();
+    }
+  });
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    SYNC.loaded = false; SYNC.deferred = false; clearTimeout(SYNC.timer); clearTimeout(SYNC.retry); setSync("");
+  });
+  window.fwmcDashSyncSchedule = syncSchedule;
+  window.fwmcDashSyncStart = () => syncStart();
+
   // ---- local-only mode (no admin token): only the planning, JSON to copy ----
   const gl = document.getElementById("gateLocalBtn");
   if (gl) gl.addEventListener("click", () => {
@@ -2521,6 +2978,7 @@
   document.getElementById("connectBtn").addEventListener("click", () => { document.body.classList.remove("local-only"); $("localNote").hidden = true; });
   window.fwmcPlanRender = renderAll; // for tests / after a login
   renderAll();
+  if (token) syncStart(); // kp20: load from the server on open
 })();
 </script>
 </body>

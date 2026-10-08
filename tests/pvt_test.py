@@ -37,7 +37,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#pvtBgColorPicker .color-swatch").count())
         await pg.click('#pvtBgColorPicker .color-swatch[data-key="blau"]'); await pg.wait_for_timeout(80)
         await pg.fill("#pvtBgIntensitySlider", "0.5"); await pg.dispatch_event("#pvtBgIntensitySlider", "input")
-        print("intensity value label updated:", "50%" in (await pg.inner_text("#pvtBgIntensityValue")))
+        print("intensity value label updated:", "50 %" in (await pg.inner_text("#pvtBgIntensityValue")))
 
         await pg.click('#pvtLengthRow [data-pvt-length="kurz"]'); await pg.wait_for_timeout(60)
         print("kurz marked active:", "active" in (await pg.get_attribute('#pvtLengthRow [data-pvt-length="kurz"]', "class") or ""))

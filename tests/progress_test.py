@@ -114,7 +114,10 @@ async def main():
         await pg.click("#programDoneBackBtn"); await pg.wait_for_timeout(300)
         await pg.click('#home .section-tab[data-section="today"]'); await pg.wait_for_timeout(300)
         card = await pg.inner_text("#todayProgressCard")
-        check("finished run counted", "4 von 3" in card and str(TOTAL + 1) in card, card)
+        # Since 07.10. (Trainingsplanung, 87e61a4) the week shows at most the goal
+        # ("3 von 3 ✓") and anything beyond it as "· 1 zusätzlich" (weekGoalInfo:
+        # more is shown but never rewarded) - was "4 von 3". Updated 08.10.
+        check("finished run counted", "3 von 3" in card and "1 zusätzlich" in card and str(TOTAL + 1) in card, card)
 
         await pg.click("#todayProgressOpenBtn"); await pg.wait_for_timeout(200)
         await pg.click("#progressBackBtn"); await pg.wait_for_timeout(200)

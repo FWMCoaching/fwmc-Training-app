@@ -93,6 +93,11 @@ list, extremities needed the same treatment):
   yes/no is what actually does something. Checkbox label deliberately
   spans both ("Gehörlosigkeit oder eingeschränktes Hören") so a client
   doesn't have to self-diagnose which exact category before ticking it.
+- **Meine Hilfsmittel** (`#masterGearGroup`, after Hören, 2026-10-08): one
+  checkbox per GEAR_ITEMS entry (Rot-Grün-Brille only with the Test-Bereich
+  unlocked), rendered on every open (`gearRenderMaster`), stored in
+  `fwmc-gear-v1`, synced with the Hilfsmittel page. Unlike Hören this never
+  blocks: missing equipment only greys + labels. Details docs/notes/28.
 - **Trainings-Code-Verlauf**: every successful code lookup
   (`openProgramIntro()`, regardless of which of the four programme/bundle
   types it resolves to) calls `recordCodeUsage(code)`, which upserts
@@ -243,3 +248,35 @@ Header group `#masterSeeGroup` after "Hören", then two groups:
   screens, pause overlay, where the note goes) and reads `softOn(ex)` in its
   timing (VT canvas exercises get it for free).
 Test: `tests/atempause_sanft_1007_test.py` (section N).
+
+## Dein Name (2026-10-08)
+First group of the sheet `#masterNameGroup`: `#masterNameInput`
+(`.plan-input`, maxlength 30, autocomplete=given-name), filled from
+`getUserName()` in `openMasterSettings()`, saved on change/blur/Enter via
+`setUserName()` (`fwmc-name-v1`), then `renderHello()` updates Heute; an
+empty field removes the key and the Heute button comes back. Help text "Nur
+für die Begrüßung. Bleibt auf diesem Gerät." The sheet never opens with focus
+in this field (iPhone keyboard): `openMasterSettings()` focuses the first
+other control. Details: docs/notes/04. Test: `tests/vorname_heute_1008_test.py`.
+
+## Pausen mit Atemführung (2026-10-08, Idee 16)
+Checkbox `#masterPauseBreathCheck` in the group "Standard-Pause zwischen
+Übungen" (`masterPrefs.pauseBreath`, default off). When on, pauses of at least
+`PAUSE_BREATH_MIN_S` (10 s) show the breathing circle of the trainer-programme
+pause: Kombi pause between Bausteine (`#comboTransitionBreath`), Tabata/Zirkel
+rest + Satzpause (`#tabataBreath`, not "Bereit machen"/cool-down), Kraftplan
+rest between sets/exercises (`#workoutRestBreath`, modes `set`/`item`, not the
+start, Supersatz or side switch) and Ausdauer pauses (`#cardioBreath`).
+One helper in app.js: `breathGuideStart/Stop/For` (the trainer pause `#breath`
+uses it too). Each pause wraps its countdown in `.breath-host` + a hidden
+`.breath-label`; the host only becomes `.breath.run` (190 px circle, 8 s CSS
+animation, reduced motion = still circle) while the guide runs, and the
+countdown stays inside at its own full size (Fabian 08.10.: remaining time
+always clearly readable). No tone. `hideAllPlayers()`/`workoutLeavePlayer()`/
+`finishCardio()` stop it. Dark mode: `.player.calm-dk` circle/label like
+`.player.calm`; the Kombi pause countdown follows `--ink`.
+Not built (proposals): Gleichgewicht set rest, Atem-Programm/Wim-Hof (already
+breathing), Krafttraining-Plan transition (4 s), Eigenes Training.
+A new pause: wrap its countdown in `.breath-host`, add a `.breath-label`, call
+`breathGuideFor(host, label, pauseS)` when it starts and `breathGuideStop` when
+it ends. Test: `tests/atemfuehrung_1008_test.py`.

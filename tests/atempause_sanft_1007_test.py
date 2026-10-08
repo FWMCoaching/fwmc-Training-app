@@ -272,7 +272,9 @@ async def main():
         in_view = await pg.evaluate("() => { const g = document.getElementById('masterSoftGroup').getBoundingClientRect(); return !document.getElementById('masterSettingsSheet').hidden && g.top >= 0 && g.top < innerHeight; }")
         check("N: link opens Grundeinstellungen at the section", in_view)
         await pg.click("#masterSettingsCloseBtn"); await pg.wait_for_timeout(200)
-        await pg.evaluate("() => { const d = document.querySelector('#ready details.advanced'); if (d) d.open = true; }")
+        # 08.10.: #ready now also holds Hütchen-Laufweg's own (hidden) #lwAdvanced
+        # before the shared one, so open the shared Feineinstellungen by id.
+        await pg.evaluate("() => { const d = document.querySelector('#ready #advanced'); if (d) d.open = true; }")
         check("N: Feineinstellungen have 'Sanfte Reize für diese Übung'", await pg.is_visible('#ready [data-soft-group]') and "Sanfte Reize für diese Übung" in await pg.inner_text('#ready [data-soft-group]'))
         check("N: soft min display time applies (0.8 s)", await pg.evaluate("() => { return window.__fwmcSoft.on('vt-color') && window.__fwmcSoft.show() >= 0.8; }"))
         await pg.click('#ready [data-soft-ex][data-soft-val="0"]'); await pg.wait_for_timeout(100)

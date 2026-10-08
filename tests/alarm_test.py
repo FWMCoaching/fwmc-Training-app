@@ -42,7 +42,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#alarmBgColorPicker .color-swatch").count())
         await pg.click('#alarmBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
         await pg.fill("#alarmBgIntensitySlider", "0.6"); await pg.dispatch_event("#alarmBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#alarmBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#alarmBgIntensityValue")))
 
         # "schwer" = shortest response window, so a short test window still
         # reliably samples several trials, including a timeout.

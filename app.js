@@ -614,6 +614,8 @@
 
     if (kind === "farbfelder" || (kind === "blank" && EXERCISES[state.exercise] && EXERCISES[state.exercise].type === "farbfelder")) {
       drawFarbfelder(kind === "farbfelder" ? payload : null);
+    } else if (kind === "rk" || (kind === "blank" && EXERCISES[state.exercise] && EXERCISES[state.exercise].type === "richtungskreuz")) {
+      drawRk(kind === "rk" ? payload : null);
     } else if (kind === "blank") {
       ctx.fillStyle = currentBgFill(NEUTRAL);
       ctx.fillRect(0, 0, cw, ch);
@@ -707,15 +709,27 @@
   const FF_FIELD_NAMES = ["Oben links", "Oben rechts", "Unten links", "Unten rechts"];
   const FF_DEFAULT_LAYOUT = ["rot", "blau", "gelb", "gruen"];
   const FF_MODES = {
-    leuchten: { help: "Ein Feld leuchtet auf. Tritt so schnell wie möglich darauf.", task: "Ein Feld leuchtet auf – tritt darauf." },
-    regeln: { help: "Auf einem Feld erscheint ein Symbol. Das Symbol sagt dir, auf welches Feld du trittst.", task: "Das Symbol sagt dir, auf welches Feld du trittst." },
-    leer: { help: "Auf drei Feldern erscheint dasselbe Symbol. Tritt auf das vierte, leere Feld – gegen den ersten Impuls.", task: "Tritt auf das Feld ohne Symbol." },
-    abfolge: { help: "Die Felder leuchten nacheinander auf. Bei „Jetzt du“ trittst du die Folge nach. Jede Runde wird sie ein Feld länger.", task: "Merk dir die Folge und tritt sie bei „Jetzt du“ nach." },
+    leuchten: { help: "Ein Feld leuchtet auf. Tritt so schnell wie möglich darauf.", task: "Ein Feld leuchtet auf – tritt darauf.",
+      tapHelp: "Ein Feld leuchtet auf. Tippe es so schnell wie möglich an.", tapTask: "Ein Feld leuchtet auf: Tippe es an." },
+    regeln: { help: "Auf einem Feld erscheint ein Symbol. Das Symbol sagt dir, auf welches Feld du trittst.", task: "Das Symbol sagt dir, auf welches Feld du trittst.",
+      tapHelp: "Auf einem Feld erscheint ein Symbol. Das Symbol sagt dir, welches Feld du antippst.", tapTask: "Das Symbol sagt dir, welches Feld du antippst." },
+    leer: { help: "Auf drei Feldern erscheint dasselbe Symbol. Tritt auf das vierte, leere Feld – gegen den ersten Impuls.", task: "Tritt auf das Feld ohne Symbol.",
+      tapHelp: "Auf drei Feldern erscheint dasselbe Symbol. Tippe das vierte, leere Feld an, gegen den ersten Impuls.", tapTask: "Tippe das Feld ohne Symbol an." },
+    abfolge: { help: "Die Felder leuchten nacheinander auf. Bei „Jetzt du“ trittst du die Folge nach. Jede Runde wird sie ein Feld länger.", task: "Merk dir die Folge und tritt sie bei „Jetzt du“ nach.",
+      tapHelp: "Die Felder leuchten nacheinander auf. Bei „Jetzt du“ tippst du die Folge in derselben Reihenfolge nach. Jede Runde wird sie ein Feld länger.", tapTask: "Merk dir die Folge und tippe sie bei „Jetzt du“ nach." },
+    // Einblenden (Fabian 08.10.): the stage stays empty, only the shown
+    // field(s) appear at their place - one, two or both in a mix (ffCount).
+    einblenden: { help: "Am Anfang siehst du kurz alle vier Felder. Dann bleibt der Bildschirm leer, und nur das Feld, auf das du trittst, erscheint an seinem Platz, manchmal zwei zugleich. Bei zwei Feldern trittst du mit beiden Füßen.", task: "Tritt auf das Feld, das erscheint. Bei zwei Feldern: mit beiden Füßen.",
+      tapHelp: "Am Anfang siehst du kurz alle vier Felder. Dann bleibt der Bildschirm leer, und nur einzelne Felder erscheinen an ihrem Platz, manchmal zwei zugleich. Tippe sie an, bei zwei Feldern beide.", tapTask: "Tippe das Feld an. Bei zwei Feldern: beide." },
     // Reize (Fabian 07.10. 21:53, Varianten A-D): docs/notes/28.
-    ansage: { help: "Die Stimme sagt eine Farbe, der Bildschirm zeigt nur die vier Felder. Tritt auf die gesagte Farbe. Dafür muss der Ton an sein.", task: "Hör zu und tritt auf die gesagte Farbe." },
-    farbwort: { help: "Auf einem Feld steht ein Farbwort in einer anderen Schriftfarbe. Tritt auf das Feld in der Schriftfarbe, nicht auf das, was da steht.", task: "Die Schriftfarbe zählt – tritt auf dieses Feld." },
-    fusshand: { help: "Zwei Felder zeigen ein Zeichen: Auf das Feld mit dem Fuß trittst du, auf das Feld mit der Hand zeigst du mit der Hand.", task: "Fuß: drauftreten. Hand: hinzeigen." },
-    sehenhoeren: { help: "Ein Feld leuchtet auf, eine Farbe wird gesagt oder beides zugleich. Passen Bild und Ansage nicht zusammen, gilt, was du unter „Bei beidem gilt“ eingestellt hast. Dafür muss der Ton an sein.", task: "Bild oder Ansage – bei beidem gilt deine Regel." },
+    ansage: { help: "Die Stimme sagt eine Farbe, der Bildschirm zeigt nur die vier Felder. Tritt auf die gesagte Farbe. Dafür muss der Ton an sein.", task: "Hör zu und tritt auf die gesagte Farbe.",
+      tapHelp: "Die Stimme sagt eine Farbe, der Bildschirm zeigt nur die vier Felder. Tippe die gesagte Farbe an. Dafür muss der Ton an sein.", tapTask: "Hör zu und tippe die gesagte Farbe an." },
+    farbwort: { help: "Auf einem Feld steht ein Farbwort in einer anderen Schriftfarbe. Tritt auf das Feld in der Schriftfarbe, nicht auf das, was da steht.", task: "Die Schriftfarbe zählt – tritt auf dieses Feld.",
+      tapHelp: "Auf einem Feld steht ein Farbwort in einer anderen Schriftfarbe. Tippe das Feld in der Schriftfarbe an, nicht das, was da steht.", tapTask: "Die Schriftfarbe zählt: Tippe dieses Feld an." },
+    fusshand: { help: "Zwei Felder zeigen ein Zeichen: Auf das Feld mit dem Fuß trittst du, auf das Feld mit der Hand zeigst du mit der Hand.", task: "Fuß: drauftreten. Hand: hinzeigen.",
+      tapHelp: "Zwei Felder zeigen ein Zeichen, einen Fuß und eine Hand. Beim Antippen zählt nur der Fuß: Tippe sein Feld an, die Hand lenkt nur ab.", tapTask: "Tippe das Feld mit dem Fuß an." },
+    sehenhoeren: { help: "Ein Feld leuchtet auf, eine Farbe wird gesagt oder beides zugleich. Passen Bild und Ansage nicht zusammen, gilt, was du unter „Bei beidem gilt“ eingestellt hast. Dafür muss der Ton an sein.", task: "Bild oder Ansage – bei beidem gilt deine Regel.",
+      tapHelp: "Ein Feld leuchtet auf, eine Farbe wird gesagt oder beides zugleich. Tippe das passende Feld an. Passen Bild und Ansage nicht zusammen, gilt, was du unter „Bei beidem gilt“ eingestellt hast. Dafür muss der Ton an sein.", tapTask: "Bild oder Ansage: Bei beidem gilt deine Regel." },
   };
   // Each Stufe adds one symbol (rule) to the ones before.
   const FF_SYMBOLS = {
@@ -726,7 +740,7 @@
   };
   const FF_LEVEL_SYMBOLS = ["viereck", "dreieck", "strich", "herz"];
   const FF_EMPTY_SYMBOLS = ["kreis", "viereck", "dreieck", "herz"];
-  const FF_MODE_LABELS = { leuchten: "Leuchten", regeln: "Regeln", leer: "Das leere Feld", abfolge: "Abfolge merken", ansage: "Ansage", farbwort: "Farbwort", fusshand: "Fuß und Hand", sehenhoeren: "Sehen und Hören" };
+  const FF_MODE_LABELS = { leuchten: "Leuchten", einblenden: "Einblenden", regeln: "Regeln", leer: "Das leere Feld", abfolge: "Abfolge merken", ansage: "Ansage", farbwort: "Farbwort", fusshand: "Fuß und Hand", sehenhoeren: "Sehen und Hören" };
   // Sehen und Hören: share of only shown / only said / both, in percent.
   const FF_MIXES = {
     ausgewogen: { label: "Ausgewogen", weights: [35, 35, 30] },
@@ -735,8 +749,28 @@
   };
   // Rhythmus-Umkehr (E): only these modes have a rule that can flip.
   const FF_FLIP_MODES = ["leuchten", "regeln", "sehenhoeren"];
+  // Einblenden: how many fields come at once. Wechsel = random 1/2 (never more
+  // than FF_COUNT_RUN_MAX of one count in a row), Phasen = blocks of
+  // FF_COUNT_PHASE stimuli with one field, then as many with two, and so on.
+  const FF_COUNTS = { eins: "Nur eins", wechsel: "Im Wechsel", phasen: "Phasenweise" };
+  const FF_COUNT_NOTES = { eins: "ein Feld", wechsel: "ein und zwei Felder im Wechsel", phasen: "ein und zwei Felder phasenweise" };
+  const FF_COUNT_RUN_MAX = 3;
+  const FF_COUNT_PHASE = 6;
+  const FF_ORIENT_S = 2; // Einblenden: the full grid once at the start
   const FF_HAND_ACTIONS = { keine: "Keine", hoch: "Hände hoch", seitlich: "Hände seitlich", klatschen: "Klatschen" };
+  // One chip row per colour (Prüfer 08.10.: no native <select> for a colour's
+  // meaning; same chips as every other choice). Used by the Farbfelder hand
+  // rows and the Richtungskreuz Farbregel.
+  function colorChoiceRowsHtml(keys, options, curOf, attr, aria) {
+    return keys.map((k) => {
+      const c = COLOR_BY_KEY[k], cur = curOf(k);
+      return `<div class="color-choice-line" role="group" aria-label="${esc(aria(c.name))}"><div class="color-choice-head"><span class="ff-dot" style="background:${c.hex}"></span><span class="ff-hand-name">${esc(c.name)}</span></div>` +
+        `<div class="choice-row two">` + Object.entries(options).map(([v, label]) =>
+          `<button type="button" class="choice${v === cur ? " active" : ""}" data-${attr}="${k}" data-val="${v}" aria-pressed="${v === cur}">${esc(label)}</button>`).join("") + `</div></div>`;
+    }).join("");
+  }
   const FF_SEQ_MAX = 12;
+  const FF_ANSWERS = ["treten", "tippen"];
   // Pure rule: which field (0-3) a symbol shown on `field` points to.
   function ffTarget(symbol, field) {
     if (symbol === "dreieck") return 3 - field; // diagonal
@@ -780,7 +814,8 @@
     return {
       ffLayout: src.ffLayout.slice(), ffMode: src.ffMode, ffLevel: src.ffLevel, ffSeqStart: src.ffSeqStart,
       ffFoot: src.ffFoot, ffHands: src.ffHands, ffHandRules: { ...src.ffHandRules },
-      ffGilt: src.ffGilt, ffMix: src.ffMix, ffFlip: src.ffFlip,
+      ffGilt: src.ffGilt, ffMix: src.ffMix, ffFlip: src.ffFlip, ffAnswer: src.ffAnswer,
+      ffCount: src.ffCount,
     };
   }
   function ffNormalize(p) {
@@ -794,28 +829,154 @@
     if (!["gesagt", "gezeigt"].includes(p.ffGilt)) p.ffGilt = "gesagt";
     if (!FF_MIXES[p.ffMix]) p.ffMix = "ausgewogen";
     if (![0, 2, 3].includes(p.ffFlip)) p.ffFlip = 0;
+    if (!FF_ANSWERS.includes(p.ffAnswer)) p.ffAnswer = "treten";
+    if (!FF_COUNTS[p.ffCount]) p.ffCount = "wechsel";
     const rules = p.ffHandRules && typeof p.ffHandRules === "object" && !Array.isArray(p.ffHandRules) ? p.ffHandRules : { rot: "hoch" };
     p.ffHandRules = Object.fromEntries(Object.entries(rules).filter(([k, v]) => COLOR_BY_KEY[k] && FF_HAND_ACTIONS[v]));
   }
+  // Antippen (Fabian 08.10.): the client taps the field on the screen and the
+  // app checks it. Never as a Cardio-Zusatzaufgabe (the guest always treads).
+  function ffTapMode() { return state.ffAnswer === "tippen" && !cardioGuestActive; }
   function ffHandFor(field) {
-    if (!state.ffHands) return null;
+    if (!state.ffHands || ffTapMode()) return null;
     const a = state.ffHandRules[state.ffLayout[field]];
     return a && a !== "keine" ? FF_HAND_ACTIONS[a] : null;
   }
-  let ffSeqResume = null; // sequence length to continue with after a live tempo change
+  // Einblenden: how many fields the i-th stimulus (0-based) shows; `prev` /
+  // `run` = count of the stimulus before and how often it came in a row.
+  function ffEinCount(kind, i, prev, run, rng) {
+    if (kind === "eins") return 1;
+    if (kind === "phasen") return Math.floor(i / FF_COUNT_PHASE) % 2 === 0 ? 1 : 2;
+    if (prev && run >= FF_COUNT_RUN_MAX) return prev === 1 ? 2 : 1;
+    return rng() < 0.5 ? 1 : 2;
+  }
+  // ---- Richtungskreuz (Idee 70, Fabian 08.10.): four directions around the
+  // client (vorne/hinten/links/rechts), each with a colour and a number. The
+  // app shows a sign, the client steps there. Sibling of Farbfelder on the
+  // shared VT canvas engine (ffGeometry, seqTiming, caption band, capVtSchedule).
+  // State `rk*` in the VT state, normalized by rkNormalize. docs/notes/35.
+  const RK_DIRS = ["vorne", "rechts", "hinten", "links"];
+  const RK_DIR_NAMES = { vorne: "Vorne", rechts: "Rechts", hinten: "Hinten", links: "Links" };
+  const RK_OPPOSITE = { vorne: "hinten", hinten: "vorne", links: "rechts", rechts: "links" };
+  const RK_DEFAULT_COLORS = { vorne: "rot", rechts: "gelb", hinten: "blau", links: "gruen" };
+  const RK_DEFAULT_NUMS = { vorne: 4, hinten: 1, links: 2, rechts: 3 };
+  const RK_MODES = {
+    zeigen: { label: "Zeichen zeigen", small: "ein Zeichen, ein Schritt", help: "Die App zeigt ein Zeichen. Mach so schnell wie möglich einen Schritt in die Richtung, zu der es gehört, und komm zurück in die Mitte.", task: "Schritt in die Richtung des Zeichens." },
+    abfolge: { label: "Abfolge merken", small: "Folge nachgehen", help: "Die Zeichen kommen nacheinander. Bei „Jetzt du“ gehst du die Folge in derselben Reihenfolge nach. Jede Runde kommt ein Zeichen dazu.", task: "Merk dir die Folge und geh sie bei „Jetzt du“ nach." },
+  };
+  const RK_SIGNS = { farben: "Farben", zahlen: "Zahlen", beide: "Farbe + Zahl" };
+  const RK_GEARS = {
+    matte: { label: "Farbmatte", small: "Felder um dich herum", help: "Leg vier Farbfelder vorne, hinten, links und rechts um dich, in den Farben unten." },
+    huetchen: { label: "Hütchen", small: "vier Hütchen", help: "Stell vier Hütchen in den Farben unten vorne, hinten, links und rechts um dich, etwa einen großen Schritt entfernt." },
+    keine: { label: "Ohne", small: "Richtungen merken", help: "Du brauchst nichts. Merk dir, welches Zeichen zu welcher Richtung gehört. Am Anfang zeigt die App das Kreuz kurz." },
+  };
+  // Farbregel: each colour can mean something else than "normal".
+  const RK_MEANINGS = { normal: "normal", gegen: "Gegenrichtung", stehen: "stehen bleiben", kreis: "Kreisrichtung wechseln" };
+  const RK_MEANING_RULES = { normal: "Schritt in die gezeigte Richtung", gegen: "Schritt in die Gegenrichtung", stehen: "stehen bleiben, kein Schritt", kreis: "kein Schritt, die Kreisrichtung des Balls wechseln" };
+  const RK_MEANING_CHIPS = { normal: "Normal", gegen: "Gegenrichtung", stehen: "Stehen bleiben", kreis: "Kreis wechseln" };
+  const RK_DEFAULT_RULES = { blau: "gegen" };
+  const RK_ORIENT_S = 3; // the cross overview at the start of a run
+  const RK_NUM_MAX = 9;
+  function rkNormalize(p) {
+    if (!RK_MODES[p.rkMode]) p.rkMode = "zeigen";
+    if (!RK_SIGNS[p.rkSigns]) p.rkSigns = "farben";
+    if (!RK_GEARS[p.rkGear]) p.rkGear = "huetchen";
+    if (![2, 3].includes(p.rkSeqStart)) p.rkSeqStart = 2;
+    if (typeof p.rkRuleOn !== "boolean") p.rkRuleOn = false;
+    if (typeof p.rkSpeak !== "boolean") p.rkSpeak = false;
+    const c = p.rkColors && typeof p.rkColors === "object" ? p.rkColors : {};
+    const cols = RK_DIRS.map((d) => c[d]);
+    p.rkColors = cols.every((k) => COLOR_BY_KEY[k]) && new Set(cols).size === 4 ? Object.fromEntries(RK_DIRS.map((d) => [d, c[d]])) : { ...RK_DEFAULT_COLORS };
+    const n = p.rkNums && typeof p.rkNums === "object" ? p.rkNums : {};
+    const nums = RK_DIRS.map((d) => Number(n[d]));
+    p.rkNums = nums.every((v) => Number.isInteger(v) && v >= 1 && v <= RK_NUM_MAX) && new Set(nums).size === 4 ? Object.fromEntries(RK_DIRS.map((d, i) => [d, nums[i]])) : { ...RK_DEFAULT_NUMS };
+    const r = p.rkRules && typeof p.rkRules === "object" && !Array.isArray(p.rkRules) ? p.rkRules : RK_DEFAULT_RULES;
+    p.rkRules = Object.fromEntries(Object.entries(r).filter(([k, v]) => COLOR_BY_KEY[k] && RK_MEANINGS[v]));
+    return p;
+  }
+  function rkStateSnapshot(src) {
+    const s = src || state;
+    return { rkMode: s.rkMode, rkSigns: s.rkSigns, rkGear: s.rkGear, rkSeqStart: s.rkSeqStart, rkRuleOn: s.rkRuleOn, rkSpeak: s.rkSpeak,
+      rkColors: { ...s.rkColors }, rkNums: { ...s.rkNums }, rkRules: { ...s.rkRules } };
+  }
+  // The Farbregel needs a visible colour: not with "Zahlen" and only when
+  // showing single signs (Abfolge merken stays plain).
+  function rkRuleActive(s) { const p = s || state; return !!p.rkRuleOn && p.rkSigns !== "zahlen" && p.rkMode === "zeigen"; }
+  // Pure rule: what the client does for a sign of `dir` shown in `colorKey`.
+  function rkTarget(dir, colorKey, rules, ruleOn) {
+    const m = ruleOn ? (rules[colorKey] || "normal") : "normal";
+    if (m === "gegen") return { meaning: m, action: "schritt", target: RK_OPPOSITE[dir] };
+    if (m === "stehen") return { meaning: m, action: "stehen", target: null };
+    if (m === "kreis") return { meaning: m, action: "kreis", target: null };
+    return { meaning: "normal", action: "schritt", target: dir };
+  }
+  // Abfolge timing shared by Farbfelder and Richtungskreuz.
+  function seqTiming(show) {
+    return { intro: 0.8, stepOn: Math.max(0.5, Math.min(1.5, show * 0.7)), stepGap: 0.3, recallPer: Math.max(1.2, show) };
+  }
+
+  // ---- Zusätze für oben (Idee 71, Fabian 08.10.): something the upper body
+  // does while the feet step. ONE list: a new Zusatz is one entry here and
+  // shows up in the sheet, the chips, the ready-screen note, the rules sheet,
+  // presets, Kombi blocks and trainer codes. `signal: true` = the app gives a
+  // cue (tone through cueVolume() + a small mark) at random intervals.
+  // Begleit-Zusätze are only explained, nothing is checked. docs/notes/35.
+  const ZUSAETZE = [
+    { id: "ball-kreisen", title: "Ball um den Körper kreisen", short: "vorne und hinten übergeben",
+      text: "Lass einen Ball um deinen Körper kreisen: Vorne und hinten gibst du ihn von einer Hand in die andere." },
+    { id: "gang", title: "Gang einlegen", short: "Ballhand nach Richtung",
+      text: "Halte einen Ball. Die Richtung bestimmt die Hand: vorne und rechts = Ball links, hinten und links = Ball rechts." },
+    { id: "prellen", title: "Prellen", short: "nach jedem Schritt",
+      text: "Nach jedem Schritt prellst du den Ball einmal auf den Boden." },
+    { id: "kreis-signal", title: "Kreisrichtung wechseln auf Signal", short: "Ton und Zeichen ↻", signal: true,
+      text: "Bei einem kurzen Doppelton und dem Zeichen ↻ wechselst du die Richtung, in der der Ball um dich kreist." },
+  ];
+  const ZUS_BY_ID = Object.fromEntries(ZUSAETZE.map((z) => [z.id, z]));
+  // Exercises done by stepping (decided 08.10., docs/notes/35): the VT arrow/
+  // side exercises, Sehen & Hören, Kompass-Aufbau, Laufweg, Farbfelder and
+  // Richtungskreuz. Not: Stroop (spoken), Periphere Wahrnehmung (fixation),
+  // Hütchen sortieren / Farbe + Zahl (the hands move the cups).
+  const ZUS_EXERCISES = ["vt-color", "vrw-original", "4-straight", "4-diag", "8-solo", "8-vrw", "cross-modal", "cone-compass", "cone-path", "farbfelder", "richtungskreuz"];
+  const ZUS_SIG_DEFAULT = { sigMin: 6, sigMax: 15 };
+  function zusNormalizeEntry(e) {
+    const o = e && typeof e === "object" ? e : {};
+    const ids = Array.isArray(o.ids) ? [...new Set(o.ids.filter((id) => ZUS_BY_ID[id]))] : [];
+    let sigMin = Number(o.sigMin), sigMax = Number(o.sigMax);
+    if (!Number.isFinite(sigMin) || sigMin < 3 || sigMin > 60) sigMin = ZUS_SIG_DEFAULT.sigMin;
+    if (!Number.isFinite(sigMax) || sigMax < 3 || sigMax > 60) sigMax = ZUS_SIG_DEFAULT.sigMax;
+    if (sigMax < sigMin) sigMax = sigMin;
+    const trainerIds = Array.isArray(o.trainerIds) ? o.trainerIds.filter((id) => ids.includes(id)) : [];
+    return { ids, sigMin, sigMax, trainerIds };
+  }
+  function zusNormalizeMap(m) {
+    const src = m && typeof m === "object" && !Array.isArray(m) ? m : {};
+    return Object.fromEntries(Object.entries(src).filter(([k]) => ZUS_EXERCISES.includes(k)).map(([k, v]) => [k, zusNormalizeEntry(v)]));
+  }
+  const NOTE_MAX = 300;
+  function notesNormalizeMap(m) {
+    const src = m && typeof m === "object" && !Array.isArray(m) ? m : {};
+    return Object.fromEntries(Object.entries(src).filter(([, v]) => typeof v === "string" && v.trim()).map(([k, v]) => [k, v.slice(0, NOTE_MAX)]));
+  }
+  let ffSeqResume = null;
+  let ffSkipOrient = false; // Einblenden: no second orientation grid after a live tempo change // sequence length to continue with after a live tempo change
   function buildFarbfelderSchedule(cfg, rng) {
     const mode = FF_MODES[state.ffMode] ? state.ffMode : "leuchten";
+    const orient = !ffSkipOrient;
+    ffSkipOrient = false;
     const schedule = [];
-    let t = pushCountdown(schedule, { task: FF_MODES[mode].task });
+    const tap = ffTapMode();
+    let t = pushCountdown(schedule, { task: tap ? FF_MODES[mode].tapTask : FF_MODES[mode].task });
     const show = vtShowS();
     let step = 0;
-    const foot = () => (state.ffFoot === "wechsel" ? (step++ % 2 === 0 ? "L" : "R") : state.ffFoot === "zufall" ? (rng() < 0.5 ? "L" : "R") : null);
+    // Antippen: no L/R foot badge (nothing to tread with).
+    const footMode = tap ? "aus" : state.ffFoot;
+    const foot = () => (footMode === "wechsel" ? (step++ % 2 === 0 ? "L" : "R") : footMode === "zufall" ? (rng() < 0.5 ? "L" : "R") : null);
     const rand4 = () => Math.floor(rng() * 4);
     if (mode === "abfolge") {
       let len = ffSeqResume || state.ffSeqStart;
       ffSeqResume = null;
       const seq = [], feet = [];
-      const stepOn = Math.max(0.5, Math.min(1.5, show * 0.7)), stepGap = 0.3, recallPer = Math.max(1.2, show);
+      const { stepOn, stepGap, recallPer } = seqTiming(show);
       let rounds = 0;
       while (t < state.duration) {
         // A round that would not finish before the end is not started
@@ -826,7 +987,7 @@
           let f;
           do { f = rand4(); } while (seq.length && f === seq[seq.length - 1]);
           seq.push(f);
-          feet.push(state.ffFoot === "wechsel" ? (feet.length % 2 === 0 ? "L" : "R") : state.ffFoot === "zufall" ? (rng() < 0.5 ? "L" : "R") : null);
+          feet.push(footMode === "wechsel" ? (feet.length % 2 === 0 ? "L" : "R") : footMode === "zufall" ? (rng() < 0.5 ? "L" : "R") : null);
         }
         schedule.push({ t0: t, t1: t + 0.8, kind: "farbfelder", payload: { mode, phase: "intro", caption: `Schau zu · ${len} Felder`, seqLen: len } });
         t += 0.8;
@@ -849,6 +1010,12 @@
     }
     let last = -1;
     let n = 0; // stimuli counted for the Rhythmus-Umkehr
+    // Einblenden: the whole grid once for orientation, then single fields.
+    let einLastKey = "", einRun = 0, einPrev = 0, einI = 0;
+    if (mode === "einblenden" && orient) {
+      schedule.push({ t0: t, t1: t + FF_ORIENT_S, kind: "farbfelder", payload: { mode, phase: "orient", caption: "So liegen deine Felder" } });
+      t += FF_ORIENT_S;
+    }
     const flipEvery = FF_FLIP_MODES.includes(mode) ? state.ffFlip : 0;
     const lay = state.ffLayout;
     const colorName = (f) => (COLOR_BY_KEY[lay[f]] || COLOR_BY_KEY[FF_DEFAULT_LAYOUT[f]]).name;
@@ -889,6 +1056,21 @@
         if (kind === "beides") n++;
         payload = { mode, kind, shown, saidField: said, said: said === null ? null : lay[said], say: said === null ? null : colorName(said), target, flipped, n: kind === "beides" ? n : null, foot: foot() };
         if (shown !== null) payload.lit = shown;
+      } else if (mode === "einblenden") {
+        const count = ffEinCount(state.ffCount, einI++, einPrev, einRun, rng);
+        einRun = count === einPrev ? einRun + 1 : 1;
+        einPrev = count;
+        let fields, key, tries = 0;
+        do {
+          const a = rand4();
+          fields = [a];
+          if (count === 2) { let b; do { b = rand4(); } while (b === a); fields.push(b); }
+          key = fields.slice().sort().join(",");
+        } while (key === einLastKey && ++tries < 20);
+        einLastKey = key;
+        const single = fields.length === 1;
+        const hand = single ? ffHandFor(fields[0]) : null;
+        payload = { mode, phase: "show", fields, count: fields.length, target: fields[0], targets: fields.slice(), foot: single ? foot() : null, hand, say: hand };
       } else if (mode === "leer") {
         let empty;
         do { empty = rand4(); } while (empty === last);
@@ -910,6 +1092,79 @@
     return { schedule, total: t };
   }
 
+  // ---- Richtungskreuz schedule (Idee 70): cross overview, then signs (or a
+  // growing sequence like Farbfelder · Abfolge merken). Payload kind "rk".
+  let rkSkipOrient = false; // no second overview after a live tempo change
+  let rkSeqResume = null;
+  function rkSayText(colorKey, num) {
+    const c = COLOR_BY_KEY[colorKey];
+    if (state.rkSigns === "zahlen") return String(num);
+    if (state.rkSigns === "beide") return `${c ? c.name : ""} ${num}`;
+    return c ? c.name : "";
+  }
+  function rkSign(dir, rng, withRule) {
+    let colorKey = state.rkColors[dir];
+    // Farbe + Zahl with the Farbregel: the number names the direction, the
+    // colour (any of the four) names what to do - colour and number differ.
+    if (withRule && state.rkSigns === "beide") colorKey = state.rkColors[RK_DIRS[Math.floor(rng() * 4)]];
+    const num = state.rkNums[dir];
+    const res = rkTarget(dir, colorKey, state.rkRules, withRule);
+    return { dir, colorKey, num, signs: state.rkSigns, ...res, say: state.rkSpeak ? rkSayText(colorKey, num) : null };
+  }
+  function buildRkSchedule(cfg, rng) {
+    rkNormalize(state);
+    const mode = state.rkMode;
+    const orient = !rkSkipOrient;
+    rkSkipOrient = false;
+    const schedule = [];
+    let t = pushCountdown(schedule, { task: RK_MODES[mode].task });
+    if (orient) {
+      schedule.push({ t0: t, t1: t + RK_ORIENT_S, kind: "rk", payload: { phase: "orient", caption: "So liegen deine Richtungen" } });
+      t += RK_ORIENT_S;
+    }
+    const show = vtShowS();
+    const pick = (avoid) => { let d; do { d = RK_DIRS[Math.floor(rng() * 4)]; } while (d === avoid); return d; };
+    if (mode === "abfolge") {
+      let len = rkSeqResume || state.rkSeqStart;
+      rkSeqResume = null;
+      const seq = [];
+      const { intro, stepOn, stepGap, recallPer } = seqTiming(show);
+      let rounds = 0;
+      while (t < state.duration) {
+        if (rounds > 0 && t + intro + len * (stepOn + stepGap + recallPer) > state.duration) break;
+        rounds++;
+        while (seq.length < len) seq.push(pick(seq[seq.length - 1]));
+        schedule.push({ t0: t, t1: t + intro, kind: "rk", payload: { phase: "intro", caption: `Schau zu · ${len} Zeichen`, seqLen: len } });
+        t += intro;
+        for (let i = 0; i < len; i++) {
+          schedule.push({ t0: t, t1: t + stepOn, kind: "rk", payload: { phase: "show", ...rkSign(seq[i], rng, false), caption: `Schau zu · ${i + 1}/${len}`, seqLen: len } });
+          t += stepOn;
+          schedule.push({ t0: t, t1: t + stepGap, kind: "rk", payload: { phase: "gap", caption: `Schau zu · ${i + 1}/${len}`, seqLen: len } });
+          t += stepGap;
+        }
+        const recall = len * recallPer;
+        schedule.push({ t0: t, t1: t + recall, kind: "rk", payload: { phase: "recall", caption: `Jetzt du · ${len} Zeichen`, say: "Jetzt du", seqLen: len } });
+        t += recall;
+        const pause = randInterval(rng);
+        schedule.push({ t0: t, t1: t + pause, kind: "blank", payload: {} });
+        t += pause;
+        if (len < FF_SEQ_MAX) len++;
+      }
+      return { schedule, total: t };
+    }
+    const withRule = rkRuleActive();
+    let last = null;
+    while (t < state.duration) {
+      const dir = pick(last);
+      last = dir;
+      const payload = { phase: "show", ...rkSign(dir, rng, withRule) };
+      const pause = randInterval(rng);
+      schedule.push({ t0: t, t1: t + show, kind: "rk", payload });
+      schedule.push({ t0: t + show, t1: t + show + pause, kind: "blank", payload: {} });
+      t += show + pause;
+    }
+    return { schedule, total: t };
+  }
   // Grid geometry in canvas pixels: always below the player bar (it floats
   // over the stage) and above a reserved caption band at the bottom, so a
   // caption or the rule legend never touches a field.
@@ -966,6 +1221,71 @@
     ctx.fillStyle = ink;
     ctx.fillText(text, cx, cy + size * 0.04);
     if (navigator.webdriver) window.__cnLast = { color: payload.color, num: payload.num, ink };
+  }
+  // ---- Richtungskreuz drawing: one big sign in the free square below the
+  // player bar (same geometry as Farbfelder), or the cross overview (vorne =
+  // top, towards the screen). Fixed hex colours only (player rule).
+  function rkDrawSign(cx, cy, r, colorKey, num, signs) {
+    const light = "#ffffff", dark = "#16232a";
+    const hex = (COLOR_BY_KEY[colorKey] || COLOR_BY_KEY.rot).hex;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    if (signs === "zahlen") {
+      ctx.fillStyle = light; ctx.fill();
+      ctx.lineWidth = Math.max(2, r * 0.07); ctx.strokeStyle = dark; ctx.stroke();
+    } else {
+      ctx.fillStyle = hex; ctx.fill();
+    }
+    if (signs === "farben") return;
+    const ink = signs === "zahlen" ? dark : contrastRatio(light, hex) >= contrastRatio(dark, hex) ? light : dark;
+    const size = Math.round(r * 1.2);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `700 ${size}px Magra, sans-serif`;
+    if (signs === "beide") {
+      ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(3, size * 0.07);
+      ctx.strokeStyle = ink === light ? dark : light;
+      ctx.strokeText(String(num), cx, cy + size * 0.04);
+    }
+    ctx.fillStyle = ink;
+    ctx.fillText(String(num), cx, cy + size * 0.04);
+  }
+  function drawRk(p) {
+    const cw = canvas.width, ch = canvas.height;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, cw, ch);
+    const g = ffGeometry(cw, ch);
+    const mx = g.x0 + g.side / 2, my = g.y0 + g.side / 2;
+    const phase = p ? p.phase : "rest";
+    if (phase === "orient") {
+      // Cross: arms in light grey, "Du" in the middle, one sign per direction.
+      const arm = g.side * 0.36, r = g.side * 0.13;
+      ctx.strokeStyle = "#d5dde0";
+      ctx.lineWidth = Math.max(4, g.side * 0.04);
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(mx, my - arm); ctx.lineTo(mx, my + arm);
+      ctx.moveTo(mx - arm, my); ctx.lineTo(mx + arm, my);
+      ctx.stroke();
+      ctx.beginPath(); ctx.arc(mx, my, r * 0.75, 0, Math.PI * 2);
+      ctx.fillStyle = "#16232a"; ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.font = `700 ${Math.round(r * 0.6)}px 'Public Sans', sans-serif`;
+      ctx.fillText("Du", mx, my);
+      const pos = { vorne: [mx, my - arm], hinten: [mx, my + arm], links: [mx - arm, my], rechts: [mx + arm, my] };
+      RK_DIRS.forEach((d) => rkDrawSign(pos[d][0], pos[d][1], r, state.rkColors[d], state.rkNums[d], state.rkSigns));
+    } else if (phase === "show") {
+      rkDrawSign(mx, my, g.side * 0.42, p.colorKey, p.num, p.signs);
+    } else {
+      // resting frame / gaps: an empty stage with a small grey centre point
+      ctx.beginPath(); ctx.arc(mx, my, Math.max(4, g.side * 0.015), 0, Math.PI * 2);
+      ctx.fillStyle = "#b8c3c7"; ctx.fill();
+    }
+    if (navigator.webdriver) window.__rkLastDrawn = p ? { phase, dir: p.dir || null, colorKey: p.colorKey || null, num: p.num || null, meaning: p.meaning || null, target: p.target || null, action: p.action || null } : { phase: "rest" };
+    const cap = p && p.caption ? p.caption : "";
+    if (cap) barCaption(cw, ch, cap, false);
   }
   function ffRoundRect(x, y, w, h, r) {
     ctx.beginPath();
@@ -1125,7 +1445,7 @@
     if (m === "sehenhoeren") return `Bei beidem gilt: ${state.ffGilt === "gezeigt" ? "das Gezeigte" : "das Gesagte"}` + (every ? ` · jedes ${every}. Mal andersherum` : "");
     if (m === "leuchten" && every) return `Jedes ${every}. Mal schräg gegenüber`;
     if (m === "farbwort") return "Die Schriftfarbe zählt";
-    if (m === "fusshand") return "Fuß: drauftreten · Hand: hinzeigen";
+    if (m === "fusshand") return ffTapMode() ? "Tippe das Feld mit dem Fuß an" : "Fuß: drauftreten · Hand: hinzeigen";
     return "";
   }
   // p = null draws the resting grid (pause between stimuli).
@@ -1134,6 +1454,24 @@
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, cw, ch);
     const g = ffGeometry(cw, ch);
+    // Einblenden: empty stage, only the shown field(s) at their place (the
+    // orientation frame shows all four). Resting frames stay empty.
+    if (p ? p.mode === "einblenden" : state.ffMode === "einblenden") {
+      const shown = !p ? [] : p.phase === "orient" ? [0, 1, 2, 3] : p.fields || [];
+      shown.forEach((i) => {
+        const hex = (COLOR_BY_KEY[state.ffLayout[i]] || COLOR_BY_KEY[FF_DEFAULT_LAYOUT[i]]).hex;
+        const x = g.x0 + (i % 2) * (g.cell + g.gap), y = g.y0 + (i >> 1) * (g.cell + g.gap);
+        ffRoundRect(x, y, g.cell, g.cell, g.cell * 0.06);
+        ctx.fillStyle = hex;
+        ctx.fill();
+        if (p.foot && shown.length === 1) ffDrawBadge(x + g.cell / 2, y + g.cell / 2, g.cell * 0.17, p.foot);
+      });
+      if (navigator.webdriver) window.__ffLastDrawn = { mode: "einblenden", shown: shown.slice(), phase: p ? p.phase || null : "rest" };
+      const cap = p ? [p.caption, p.hand].filter(Boolean).join(" · ") : "";
+      if (cap) barCaption(cw, ch, cap, false);
+      ffDrawTapFlash(g, shown);
+      return;
+    }
     const full = !!(p && ["regeln", "leer", "ansage", "farbwort", "fusshand"].includes(p.mode));
     for (let i = 0; i < 4; i++) {
       const hex = (COLOR_BY_KEY[state.ffLayout[i]] || COLOR_BY_KEY[FF_DEFAULT_LAYOUT[i]]).hex;
@@ -1162,6 +1500,149 @@
     const caption = p && p.caption ? [p.caption, hand].filter(Boolean).join(" · ") : [ffRuleCaption(), hand].filter(Boolean).join(" · ");
     if (caption) barCaption(cw, ch, caption, false);
     else if (state.ffMode === "regeln") ffDrawLegend(cw, ch, g.capH);
+    ffDrawTapFlash(g);
+  }
+
+  // ---- Farbfelder · Antippen (Fabian 08.10.): the client taps the field on
+  // the screen, the app checks it. Answer window of a stimulus = from its
+  // start until the next stimulus starts (the blank after it included); the
+  // first tap counts, later ones in that window are ignored, no tap = missed.
+  // Abfolge merken: during "Jetzt du" (until the next round) the taps must
+  // follow the shown sequence; a wrong tap ends that round's input.
+  // State lives in session.ffTap (only while a Farbfelder run answers by tap).
+  const FF_TAP_FLASH_MS = 420;
+  function ffTapNew() { return { items: [], cur: null, rounds: [], round: null, flash: null }; }
+  function ffTapCloseItem(tp) {
+    if (tp.cur) { tp.items.push(tp.cur); tp.cur = null; }
+  }
+  function ffTapCloseRound(tp) {
+    const r = tp.round;
+    tp.round = null;
+    if (!r || !r.input) return; // a round whose "Jetzt du" never came is not scored
+    r.ok = !r.failed && r.pos === r.seq.length;
+    tp.rounds.push(r);
+  }
+  // Called on every frame change of a tapping run.
+  function ffTapEnter(tp, frame) {
+    if (frame.kind !== "farbfelder") return;
+    const p = frame.payload || {};
+    if (p.mode === "abfolge") {
+      if (p.phase === "intro") { ffTapCloseRound(tp); tp.round = { seq: [], pos: 0, input: false, failed: false, len: p.seqLen }; }
+      else if (p.phase === "show" && tp.round) tp.round.seq.push(p.target);
+      else if (p.phase === "recall" && tp.round) { tp.round.input = true; tp.round.t0 = frame.t0; }
+      return;
+    }
+    if (p.phase === "orient") return; // Einblenden: the orientation grid asks for nothing
+    ffTapCloseItem(tp);
+    tp.cur = { target: p.target, t0: frame.t0, done: false, ok: false, field: null, rt: null };
+    // Einblenden with two fields: both must be tapped (any order).
+    if (Array.isArray(p.targets) && p.targets.length > 1) { tp.cur.targets = p.targets.slice(); tp.cur.got = []; }
+  }
+  // A live tempo change rebuilds the schedule: an unanswered stimulus or an
+  // unfinished round at that moment is dropped instead of scored.
+  function ffTapAbandon(tp) {
+    if (tp.cur && !tp.cur.done) tp.cur = null;
+    if (tp.round && !(tp.round.input && (tp.round.failed || tp.round.pos === tp.round.seq.length))) tp.round = null;
+  }
+  // One tap on `field` (0-3) at run time `elapsed` (s). Returns true if it counted.
+  function ffTapAnswer(tp, field, elapsed) {
+    if (field == null) return false;
+    const r = tp.round;
+    if (r) {
+      if (!r.input || r.failed || r.pos >= r.seq.length) return false;
+      const ok = field === r.seq[r.pos];
+      if (ok) r.pos++; else r.failed = true;
+      tp.flash = { field, ok, at: performance.now() };
+      return true;
+    }
+    const it = tp.cur;
+    if (!it || it.done || elapsed < it.t0) return false;
+    if (it.targets) {
+      // Two fields: a shown one counts once, the stimulus is right when both
+      // came (reaction time = the last needed tap); any other field = wrong.
+      if (it.got.includes(field)) return false;
+      const hit = it.targets.includes(field);
+      if (hit) it.got.push(field);
+      if (!hit || it.got.length === it.targets.length) {
+        it.done = true;
+        it.field = field;
+        it.ok = hit;
+        it.rt = Math.max(0, elapsed - it.t0);
+      }
+      tp.flash = { field, ok: hit, at: performance.now() };
+      return true;
+    }
+    it.done = true;
+    it.field = field;
+    it.ok = field === it.target;
+    it.rt = Math.max(0, elapsed - it.t0);
+    tp.flash = { field, ok: it.ok, at: performance.now() };
+    return true;
+  }
+  function ffTapFinish(tp) { ffTapCloseItem(tp); ffTapCloseRound(tp); }
+  function ffTapScore(tp, mode) {
+    if (mode === "abfolge") {
+      const ok = tp.rounds.filter((r) => r.ok);
+      const longest = ok.reduce((m, r) => Math.max(m, r.seq.length), 0);
+      return { rounds: tp.rounds.length, roundsOk: ok.length, longest,
+        text: `${ok.length} von ${tp.rounds.length} Runden richtig` + (longest ? ` · längste Folge ${longest}` : "") };
+    }
+    const hits = tp.items.filter((i) => i.ok);
+    const rts = hits.map((i) => i.rt).filter((v) => v != null);
+    const avg = rts.length ? rts.reduce((a, b) => a + b, 0) / rts.length : null;
+    return { total: tp.items.length, hits: hits.length, missed: tp.items.filter((i) => !i.done).length, avg,
+      text: `${hits.length} von ${tp.items.length} richtig` + (avg != null ? ` · Ø ${avg.toFixed(2).replace(".", ",")} s` : "") };
+  }
+  // Which field (0-3) a canvas point (canvas px) is on; the thin gap between
+  // fields goes to the nearer one, outside the grid = null.
+  function ffFieldAt(g, x, y) {
+    if (x < g.x0 || x > g.x0 + g.side || y < g.y0 || y > g.y0 + g.side) return null;
+    const col = x - g.x0 < g.side / 2 ? 0 : 1, row = y - g.y0 < g.side / 2 ? 0 : 1;
+    return row * 2 + col;
+  }
+  // Short mark on the tapped field. Haken & Kreuz off (default): a neutral
+  // white ring ("angenommen"); on: green/red ring plus a white disc with a
+  // dark tick/cross, so the meaning never rests on colour alone.
+  // `shown` (Einblenden): the fields on screen; a tap on an empty spot gets a
+  // dark neutral ring, since a white one would vanish on the white stage.
+  function ffDrawTapFlash(g, shown) {
+    const tp = session && session.ffTap;
+    const f = tp && tp.flash;
+    if (!f) return;
+    const age = performance.now() - f.at;
+    if (age > FF_TAP_FLASH_MS) { tp.flash = null; return; }
+    const a = 1 - age / FF_TAP_FLASH_MS;
+    const x = g.x0 + (f.field % 2) * (g.cell + g.gap), y = g.y0 + (f.field >> 1) * (g.cell + g.gap);
+    const fb = cvdFbOn("farbfelder");
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, a * 1.6);
+    const lw = g.cell * 0.05;
+    ffRoundRect(x + lw / 2, y + lw / 2, g.cell - lw, g.cell - lw, g.cell * 0.06);
+    ctx.lineWidth = lw;
+    const bare = Array.isArray(shown) && !shown.includes(f.field);
+    ctx.strokeStyle = bare ? "#8a969c" : "#ffffff";
+    ctx.stroke();
+    if (fb) {
+      ffRoundRect(x + lw * 1.5, y + lw * 1.5, g.cell - lw * 3, g.cell - lw * 3, g.cell * 0.05);
+      ctx.strokeStyle = f.ok ? "#2e7d32" : "#d32f2f";
+      ctx.stroke();
+      const cx = x + g.cell / 2, cy = y + g.cell / 2, r = g.cell * 0.16;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff"; ctx.fill();
+      ctx.lineWidth = Math.max(2, r * 0.12); ctx.strokeStyle = "#16232a"; ctx.stroke();
+      ctx.beginPath();
+      ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(3, r * 0.26);
+      if (f.ok) { ctx.moveTo(cx - r * 0.48, cy + r * 0.04); ctx.lineTo(cx - r * 0.12, cy + r * 0.38); ctx.lineTo(cx + r * 0.5, cy - r * 0.34); }
+      else { ctx.moveTo(cx - r * 0.38, cy - r * 0.38); ctx.lineTo(cx + r * 0.38, cy + r * 0.38); ctx.moveTo(cx + r * 0.38, cy - r * 0.38); ctx.lineTo(cx - r * 0.38, cy + r * 0.38); }
+      ctx.stroke();
+    } else {
+      ctx.globalAlpha = a * (bare ? 0.18 : 0.35);
+      ffRoundRect(x, y, g.cell, g.cell, g.cell * 0.06);
+      ctx.fillStyle = bare ? "#8a969c" : "#ffffff";
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   // ---- Exercise catalogue ----
@@ -1190,19 +1671,19 @@
       title: "4 Pfeile · gerade", type: "arrows", dirset: 4, dual: false, usesArrowColors: true,
       task: "Reagiere so schnell wie möglich in die gezeigte Richtung.",
       trains: "Reaktionsgeschwindigkeit und Richtungserkennung",
-      rules: "Ein Pfeil zeigt nach vorne, rechts, hinten oder links. Reagiere so schnell wie möglich in diese Richtung.",
+      rules: "Ein Pfeil zeigt nach vorne, rechts, hinten oder links. Beweg dich so schnell wie möglich in die Richtung, in die er zeigt.",
     },
     "4-diag": {
       title: "4 Pfeile · diagonal", type: "arrows", dirset: "diag", dual: false, usesArrowColors: true,
       task: "Reagiere so schnell wie möglich in die gezeigte Schrägrichtung.",
       trains: "Reaktionsgeschwindigkeit und Orientierung",
-      rules: "Ein Pfeil zeigt in eine der vier Schrägrichtungen. Reagiere so schnell wie möglich in diese Richtung.",
+      rules: "Ein Pfeil zeigt in eine der vier Schrägrichtungen. Beweg dich so schnell wie möglich in die Richtung, in die er zeigt.",
     },
     "8-solo": {
       title: "8 Pfeile", type: "arrows", dirset: 8, dual: false, usesArrowColors: true,
       task: "Reagiere so schnell wie möglich in die gezeigte Richtung.",
       trains: "Reaktion in alle Richtungen",
-      rules: "Ein Pfeil zeigt in eine von acht Richtungen – gerade oder schräg. Reagiere so schnell wie möglich in diese Richtung.",
+      rules: "Ein Pfeil zeigt in eine von acht Richtungen – gerade oder schräg. Beweg dich so schnell wie möglich in die Richtung, in die er zeigt.",
     },
     "8-vrw": {
       title: "8 Pfeile · Rot/Grün", type: "arrows", dirset: 8, dual: true,
@@ -1251,11 +1732,28 @@
       trains: "Farbe und Zahl gleichzeitig erfassen und schnell umsetzen",
       rules: "Lege nummerierte Felder (1 bis zur eingestellten Anzahl) auf den Boden und stelle auf jedes ein farbiges Hütchen oder einen Becher. Die App zeigt eine Farbe mit einer großen Zahl – zum Beispiel Gelb mit der 2: Stelle das gelbe Hütchen so schnell wie möglich auf Feld 2. Steht dort schon eins, tausche die beiden.",
     },
+    // Hütchen · Laufweg "Folge der Karte" (Fabian 2026-10-08): a cone grid
+    // and a drawn path to walk; own DOM stage like Hütchen sortieren, no
+    // scoring (the app can't see the walk). docs/notes/33.
+    "cone-path": {
+      title: "Hütchen · Laufweg", type: "laufweg",
+      task: "Lauf den Weg auf der Karte durch deine Hütchen.",
+      trains: "Orientierung im Raum, Wege lesen, merken und umsetzen",
+      rules: "Stell deine Hütchen in Reihen auf, wie unten eingestellt – oben auf der Karte ist die hintere Reihe, du startest unten am Startpunkt. Die App zeichnet einen Weg zwischen und um die Hütchen, mit Schleifen um einzelne Hütchen; der Pfeil zeigt das Ende. Lauf ihn genau so ab. Bei „Karte in der Hand“ nimmst du das Handy mit, bei „Weg merken“ prägst du dir den Weg ein und läufst ohne Karte. Mit „Nächster Weg“ kommt jedes Mal ein neuer Weg.",
+    },
     "farbfelder": {
       title: "Farbfelder", type: "farbfelder", bgIsStimulus: true,
       task: "Tritt auf das richtige Farbfeld deiner Matte.",
       trains: "Farbwahrnehmung, Fußarbeit und schnelles Umsetzen von Regeln",
-      rules: "Leg deine vier Farbfelder so auf den Boden, wie sie unten unter „Anordnung“ eingestellt sind, und stell dich davor. Der Bildschirm zeigt dieselben vier Felder: Oben ist die Reihe, die näher am Bildschirm liegt. Je nach Modus trittst du auf das Feld, das aufleuchtet, auf das Feld, das ein Symbol dir sagt, auf das leere Feld, eine ganze Abfolge nach, auf die gesagte Farbe, auf die Schriftfarbe eines Farbworts, mit Fuß und Hand zugleich oder nach Bild und Ansage.",
+      rules: "Leg deine vier Farbfelder so auf den Boden, wie unten unter „Anordnung deiner Matte“ eingestellt, und stell dich davor. Der Bildschirm zeigt dieselben vier Felder, oben ist die Reihe nahe am Bildschirm. Was du tust, bestimmt der Modus.",
+    },
+    // Richtungskreuz (Idee 70, Fabian 08.10.): four directions around the
+    // client, each with a colour and/or number; docs/notes/35.
+    "richtungskreuz": {
+      title: "Richtungskreuz", type: "richtungskreuz", bgIsStimulus: true,
+      task: "Schritt in die Richtung des Zeichens.",
+      trains: "Richtungen schnell zuordnen, Fußarbeit und Umsetzen von Regeln",
+      rules: "Vorne, hinten, links und rechts um dich herum hat jede Richtung ein Zeichen: eine Farbe, eine Zahl oder beides. Vorne ist die Richtung zum Bildschirm. Die App zeigt ein Zeichen, du machst einen Schritt in diese Richtung und kommst zurück in die Mitte. Am Anfang zeigt sie kurz das ganze Kreuz.",
     },
     "periph-flash": {
       title: "Periphere Wahrnehmung", type: "periph",
@@ -1759,7 +2257,12 @@
     if (block.domain === "breath") return BREATH_PATTERNS[block.pattern].name;
     if (block.domain === "movement") return "Reaktionstraining · Ganzkörper-Reaktion";
     if (block.domain === "workout") return workoutBlockLabel(block);
-    if (block.domain === "visual") return EXERCISES[block.exercise] ? EXERCISES[block.exercise].title : block.exercise;
+    if (block.domain === "visual") {
+      const t = EXERCISES[block.exercise] ? EXERCISES[block.exercise].title : block.exercise;
+      // Farbfelder: name the mode like the NAT blocks do (9 very different modes).
+      if (block.rk && RK_MODES[block.rk.rkMode]) return `${t} · ${RK_MODES[block.rk.rkMode].label}`;
+      return block.ff && FF_MODE_LABELS[block.ff.ffMode] ? `${t} · ${FF_MODE_LABELS[block.ff.ffMode]}` : t;
+    }
     if (block.domain === "nat") return `Positionen merken · ${REMEMBER_MODES[block.mode] ? REMEMBER_MODES[block.mode].title : block.mode}`;
     if (block.domain === "blitz") return "Blitz-Raster";
     if (block.domain === "flash") return `Flash-Speicher-Test · ${flashModeTitle(block.mode)}`;
@@ -1767,6 +2270,8 @@
     if (block.domain === "balance") return `Gleichgewicht · ${BALANCE_MODES[balanceBlockPrefs(block).mode].name}`;
     if (block.domain === "cardio") return `Ausdauertraining · ${countLabel(block.items.length, "Aktivität", "Aktivitäten")}`;
     if (block.domain === "free") return block.free.title;
+    if (block.domain === "optodrum") return `Optodrum · ${OPTO_PATTERNS[optoBlockPrefs(block).pattern].name}`;
+    if (block.domain === "neuro") return neuroTitle(block.ex); // Neuro-Aktivierung
     return block.domain;
   }
   function comboBlockMeta(block) {
@@ -1782,6 +2287,8 @@
     if (block.domain === "balance") return balanceMeta(balanceBlockPrefs(block));
     if (block.domain === "cardio") return fmtMinutes(cardioItemsSeconds(block.items));
     if (block.domain === "free") return freeBlockMeta(block.free);
+    if (block.domain === "optodrum") { const p = optoBlockPrefs(block); return `${optoTimeLabel(p)} · ${optoDirName(p)} · Stufe ${p.speed}`; }
+    if (block.domain === "neuro") return NEURO_EXERCISES[block.ex] ? neuroMeta(block.ex, neuroBlockPrefs(block)) : "";
     return "";
   }
   function comboBlockSeconds(block) {
@@ -1797,6 +2304,8 @@
     if (block.domain === "balance") return balanceTotalSeconds(balanceBlockPrefs(block));
     if (block.domain === "cardio") return cardioItemsSeconds(block.items);
     if (block.domain === "free") return freeBlockSeconds(block.free);
+    if (block.domain === "optodrum") { const p = optoBlockPrefs(block); return p.noLimit ? 0 : p.durationS; }
+    if (block.domain === "neuro") return NEURO_EXERCISES[block.ex] ? neuroTotalS(block.ex, neuroBlockPrefs(block)) : 0;
     return 0;
   }
   // Curated quick-add presets the combo builder offers per section - not the
@@ -1807,9 +2316,9 @@
   // place (rather than removing the mechanism) in case a future domain
   // ever wants a plain one-click preset again.
   const COMBO_PRESETS = {};
-  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Reaktionstraining", visual: "Visuelles Training", workout: "Krafttraining", cardio: "Ausdauertraining", nat: "NAT", free: "Eigenes Training" };
+  const COMBO_DOMAIN_TITLE = { breath: "Atemtraining", movement: "Reaktionstraining", visual: "Visuelles Training", workout: "Krafttraining", cardio: "Ausdauertraining", nat: "NAT", free: "Eigenes Training", activation: "Aktivierung", neuro: "Neuro-Aktivierung" };
   const PERIPH_ICON_HTML = '<div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg></div>';
-  const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat", "free"];
+  const COMBO_DOMAIN_ORDER = ["breath", "movement", "visual", "workout", "cardio", "nat", "free", "activation", "neuro"];
   // Blitz-Raster/Flash-Speicher-Test/Objektverfolgung (MOT) render inside the same
   // "NAT" group as Remember (all 4 are NAT sub-exercises) but need their
   // own domain KEY for the block dispatch, since "nat" is Remember's alone
@@ -1875,6 +2384,10 @@
     // Freie Bausteine: the client's own saved ones + the templates, each
     // opening the editor in capture mode (the block keeps its own copy).
     free: () => comboFreeCaptureEntries(),
+    // Aktivierung (2026-10-08): its own exercises (Optodrum); block domain per exercise.
+    activation: () => comboActivationCaptureEntries(),
+    // Neuro-Aktivierung (2026-10-08): empty (= no group) unless unlocked.
+    neuro: () => comboNeuroCaptureEntries(),
   };
   const COMBO_EDIT_OPENERS = {
     cardio: (block, i) => openCardioComboCapture(block, i),
@@ -1889,6 +2402,8 @@
     mot: (block, i) => openMotComboCapture(block.mode, block, i),
     balance: (block, i) => openBalanceComboCapture(block, i),
     free: (block, i) => openFreeComboCapture(block.free, i),
+    optodrum: (block, i) => openOptoComboCapture(block, i),
+    neuro: (block, i) => openNeuroComboCapture(block.ex, block, i),
   };
 
   // ---- Elements ----
@@ -2443,6 +2958,8 @@
     kippbildFsBtn: $("kippbildFsBtn"), kippbildFsHint: $("kippbildFsHint"), kippbildFsHintOpenBtn: $("kippbildFsHintOpenBtn"), kippbildFsHintClose: $("kippbildFsHintClose"),
     kippbildDonePanel: $("kippbildDonePanel"), kippbildDoneSummary: $("kippbildDoneSummary"), kippbildRating: $("kippbildRating"),
     kippbildAgainBtn: $("kippbildAgainBtn"), kippbildDoneBackBtn: $("kippbildDoneBackBtn"),
+    eyecountReady: $("eyecountReady"), eyecountPlayer: $("eyecountPlayer"),
+    tonReady: $("tonReady"), tonPlayer: $("tonPlayer"), // Ton-Sequenz
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
@@ -2724,15 +3241,23 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  els.trainingHub = $("trainingHub"); els.moreScreen = $("moreScreen");
+  els.trainingHub = $("trainingHub"); els.moreScreen = $("moreScreen"); els.gearScreen = $("gearScreen");
   els.freeHome = $("freeHome"); els.freeReady = $("freeReady"); els.freeEdit = $("freeEdit"); els.freePlayer = $("freePlayer");
-  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
+  els.activationHome = $("activationHome"); els.optoReady = $("optoReady"); els.optoPlayer = $("optoPlayer");
+  els.neuroHome = $("neuroHome"); els.neuroReady = $("neuroReady"); els.neuroPlayer = $("neuroPlayer");
+  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "gearScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "activationHome", "optoReady", "neuroHome", "neuroReady", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady", "eyecountReady", "tonReady"];
   function showScreen(name) {
+    // Neuro-Aktivierung is hidden without the trainer's unlock code.
+    if ((name === "neuroHome" || name === "neuroReady") && !neuroUnlocked() && !comboNeuroCapture) { activateSectionTab("today"); name = "todayHome"; }
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
     if (name === "todayHome") renderToday();
-    if (name === "progressScreen") renderProgressScreen();
+    if (name === "progressScreen") { renderProgressScreen(); renderHistory(); hoRenderProgressGroup(); }
     if (name === "freeHome") renderFreeHome();
+    if (name === "activationHome") renderActivationHome();
+    if (name === "neuroHome") renderNeuroHome();
+    if (name !== "neuroHome") $("neuroProgramError").hidden = true;
+    if (name !== "activationHome") $("activationProgramError").hidden = true;
     if (name !== "freeHome") $("freeProgramError").hidden = true;
     if (name !== "todayHome" && els.todayCodeError) els.todayCodeError.hidden = true;
     if (name !== "home") els.programError.hidden = true;
@@ -2749,8 +3274,12 @@
 
   // ---- Section switcher (Visual Training / Atemtraining) ----
   let freeAreaActive = false; // "Freie Bausteine" has no tab of its own (reached via Training / Heute)
+  let activationAreaActive = false; // Aktivierung: no tab either (2026-10-08)
+  let neuroAreaActive = false; // Neuro-Aktivierung: no tab either (2026-10-08)
   function activateSectionTab(sec) {
     freeAreaActive = sec === "free";
+    activationAreaActive = sec === "activation";
+    neuroAreaActive = sec === "neuro";
     document.querySelectorAll(".section-tab").forEach((b) => {
       const on = b.dataset.section === sec;
       b.classList.toggle("active", on);
@@ -2927,8 +3456,11 @@
   let stepNavSilent = false;
   function addHistory(entry) {
     if (stepNavSilent) return null;
-    const list = loadHistory();
     const item = { id: String(Date.now()), ts: new Date().toISOString(), rating: null, ...entry };
+    // Kunden-Training (QR-Übergabe, docs/notes/36): a client's run goes to
+    // its own store, never into this device's history or progress.
+    if (hoClientRunActive()) return hoAddClientRun(item);
+    const list = loadHistory();
     list.unshift(item);
     writeJSON(HISTORY_KEY, list.slice(0, 200));
     recordProgress(item);
@@ -2939,6 +3471,7 @@
     const list = loadHistory();
     const item = list.find((e) => e.id === id);
     if (item) { item.rating = rating; writeJSON(HISTORY_KEY, list); }
+    else hoPatchClientRun(id, (e) => { e.rating = rating; });
   }
   // ==== Mein Fortschritt (Fabian, 2026-10-03: "umsetzen") ====
   // Weekly goal, a week streak, milestones and an overview across all areas.
@@ -3186,7 +3719,8 @@
       const date = `${WEEKDAYS[d.getDay()]}, ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
       const rating = e.rating ? ` · ${ratingLabel(e.kind)} ${e.rating}/5` : "";
       const note = e.note ? ` · ${esc(e.note)}` : "";
-      return `<li><span class="h-date">${date}</span><span class="h-title">${esc(e.title)}</span><span class="h-meta">${fmtMinutes(e.seconds || 0)}${note}${rating}</span></li>`;
+      const tag = e.trainer ? ' <span class="h-tag">bei deinem Trainer</span>' : "";
+      return `<li><span class="h-date">${date}</span><span class="h-title">${esc(e.title)}${tag}</span><span class="h-meta">${fmtMinutes(e.seconds || 0)}${note}${rating}</span></li>`;
     }).join("");
     moreBtn.hidden = list.length <= HISTORY_VISIBLE_SHORT;
     moreBtn.textContent = expanded ? "Weniger anzeigen" : "Alle anzeigen";
@@ -3194,7 +3728,7 @@
   // One "Gesamter Trainingsverlauf" section per area home (Fabian, 2026-10-04:
   // it was missing in Cardio, NAT and Test). A new area adds its prefix here
   // and the same markup block (ids <prefix>HistorySection/Stats/List/MoreBtn/ClearBtn).
-  const HISTORY_PREFIXES = ["", "breath", "movement", "workout", "cardio", "nat", "test", "free"];
+  const HISTORY_PREFIXES = ["", "breath", "movement", "workout", "cardio", "nat", "test", "free", "activation", "neuro", "progress"];
   const historyEl = (prefix, part) => document.getElementById(prefix ? prefix + "History" + part : "history" + part);
   function renderHistory() {
     const list = loadHistory();
@@ -3449,6 +3983,12 @@
     mittel: { stimulusS: 1.5, intervalMin: 3, intervalMax: 6 },
     schwer: { stimulusS: 0.8, intervalMin: 2, intervalMax: 4 },
   };
+  // The same presets with titles, for the Stufen-Vorschlag (Farbfelder).
+  const VT_TEMPO_DIFFS = {
+    leicht: { title: "Leicht", ...TEMPO_PRESETS.leicht },
+    mittel: { title: "Mittel", ...TEMPO_PRESETS.mittel },
+    schwer: { title: "Schwer", ...TEMPO_PRESETS.schwer },
+  };
   const PREFS_KEY = "fwmc-webapp-v3";
   const CN_MIN_FIELDS = 3, CN_MAX_FIELDS = 6; // Hütchen · Farbe + Zahl
   const DEFAULTS = {
@@ -3494,6 +4034,17 @@
     ffGilt: "gesagt", // Sehen und Hören: what counts when both come
     ffMix: "ausgewogen", // Sehen und Hören: FF_MIXES key
     ffFlip: 0, // Rhythmus-Umkehr: 0 = aus, 2 / 3 = every 2nd / 3rd stimulus
+    ffAnswer: "treten", // So antwortest du: treten (mat) | tippen (screen, scored)
+    ffCount: "wechsel", // Einblenden: eins | wechsel | phasen (FF_COUNTS)
+    // Hütchen · Laufweg (2026-10-08), see lwNormalize()
+    lwVariant: "karte", lwRows: 3, lwCols: 3, lwRowColors: ["gelb", "blau", "rot"], lwLength: "mittel",
+    lwShowS: 8, lwEnd: "runden", lwRounds: 5, lwDurS: 300,
+    // Richtungskreuz (Idee 70, 2026-10-08), see rkNormalize()
+    rkMode: "zeigen", rkSigns: "farben", rkGear: "huetchen", rkSeqStart: 2, rkRuleOn: false, rkSpeak: false,
+    rkColors: { ...RK_DEFAULT_COLORS }, rkNums: { ...RK_DEFAULT_NUMS }, rkRules: { ...RK_DEFAULT_RULES },
+    // Zusätze für oben per exercise ({exId: {ids, sigMin, sigMax, trainerIds}})
+    // and "Meine Notiz" per exercise ({exId: text}) - Idee 71/72.
+    zusOben: {}, exNotes: {},
   };
   const state = { ...DEFAULTS };
   function loadPrefs() {
@@ -3523,6 +4074,10 @@
     if (typeof state.bgIntensity !== "number" || state.bgIntensity < 0 || state.bgIntensity > 1) state.bgIntensity = 0;
     ffNormalize(state); // also copies ffLayout/ffHandRules, so DEFAULTS is never mutated
     cnNormalize(state);
+    lwNormalize(state); // Hütchen · Laufweg (copies lwRowColors too)
+    rkNormalize(state); // Richtungskreuz (copies its objects, DEFAULTS stays untouched)
+    state.zusOben = zusNormalizeMap(state.zusOben);
+    state.exNotes = notesNormalizeMap(state.exNotes);
   }
   function cnNormalize(p) {
     const n = Math.round(Number(p.cnFields));
@@ -3575,6 +4130,7 @@
       if (typeof e.own.intervalMax !== "number" || e.own.intervalMax < 0.5 || e.own.intervalMax > 15) e.own.intervalMax = d.intervalMax;
       if (!Array.isArray(e.own.colors) || !e.own.colors.length || !e.own.colors.every((k) => STROOP_COLOR_BY_KEY[k])) e.own.colors = d.colors.slice();
     }
+    addonMathNormalizeEntry(e); // Zusatzaufgabe Rechnen (2026-10-08)
     return e;
   }
   function loadAddonStore() {
@@ -4078,14 +4634,14 @@
           }
         } catch (e) {}
         renderPresetList(bgPresetStore, t.presetList, t.presetGroup, null,
-          (p) => `${STROOP_COLOR_BY_KEY[p.colorKey].name} · ${Math.round(p.intensity * 100)}%`,
+          (p) => `${STROOP_COLOR_BY_KEY[p.colorKey].name} · ${Math.round(p.intensity * 100)} %`,
           (p) => apply(p.colorKey, p.intensity));
       });
     }
     function sync() {
       refs.pickers.forEach((el) => syncSingleSelectPicker(el, store.bgColorKey));
       refs.sliders.forEach((el) => { el.value = store.bgIntensity; });
-      const pct = Math.round(store.bgIntensity * 100) + "%";
+      const pct = Math.round(store.bgIntensity * 100) + " %";
       refs.valueEls.forEach((el) => { el.textContent = pct; });
       const tip = bgContrastHintText(store.bgColorKey, store.bgIntensity);
       (refs.hintEls || []).forEach((el) => {
@@ -4145,7 +4701,7 @@
       wirePresetSaveForm({
         saveBtn: t.saveBtn, form: t.form, nameInput: t.nameInput,
         cancelBtn: t.cancelBtn, confirmBtn: t.confirmBtn,
-        defaultName: () => `${STROOP_COLOR_BY_KEY[store.bgColorKey].name} ${Math.round(store.bgIntensity * 100)}%`,
+        defaultName: () => `${STROOP_COLOR_BY_KEY[store.bgColorKey].name} ${Math.round(store.bgIntensity * 100)} %`,
         onSave: (name) => {
           const list = bgPresetStore.load();
           list.push({ id: String(Date.now()), name, colorKey: store.bgColorKey, intensity: store.bgIntensity });
@@ -4436,6 +4992,11 @@
     els.addonPhaseHint.textContent = enabled ? "" : "Aus – wähle „Beim Reiz“, „In der Pause“ oder beides, um die Zusatzaufgabe zu aktivieren.";
     els.addonConfigBody.hidden = !enabled;
     if (!enabled) return;
+    // Zusatzaufgabe Rechnen (2026-10-08): which add-on, then its own body.
+    document.querySelectorAll("#addonTaskRow [data-addon-task]").forEach((el) => setActive(el, el.dataset.addonTask === entry.task));
+    $("addonMathBody").hidden = entry.task !== "rechnen";
+    $("addonPeriphBody").hidden = entry.task === "rechnen";
+    if (entry.task === "rechnen") { syncAddonMathUI(entry); return; }
     document.querySelectorAll("#addonModeRow [data-addon-mode]").forEach((el) => setActive(el, el.dataset.addonMode === entry.mode));
     els.addonOwnBody.hidden = entry.mode !== "eigen";
     if (entry.mode !== "eigen") return;
@@ -4507,6 +5068,13 @@
   document.querySelectorAll("[data-tempo]").forEach((el) => {
     el.addEventListener("click", () => { Object.assign(state, TEMPO_PRESETS[el.dataset.tempo]); savePrefs(); syncTempoUI(); });
   });
+  function vtTempoBucket() {
+    for (const k of Object.keys(TEMPO_PRESETS)) {
+      const p = TEMPO_PRESETS[k];
+      if (p.stimulusS === state.stimulusS && p.intervalMin === state.intervalMin && p.intervalMax === state.intervalMax) return k;
+    }
+    return "custom";
+  }
   function syncTempoUI() {
     let any = false;
     document.querySelectorAll("[data-tempo]").forEach((el) => {
@@ -4562,22 +5130,30 @@
     els.setupBtn.onclick = ex.setupDiagram ? openSetupModal : null;
     colorMode = ex.usesArrowColors ? "arrows" : ex.usesStroopColors ? "stroop" : "standard";
     els.colorGroup.hidden = !ex.usesColors && !ex.usesArrowColors && !ex.usesStroopColors;
-    const isConeTap = ex.type === "color-tap";
+    const isLw = ex.type === "laufweg"; // Hütchen · Laufweg: own settings, no tempo/bg/add-on
+    const isConeTap = ex.type === "color-tap" || isLw;
     const isPeriph = ex.type === "periph";
     const isFf = ex.type === "farbfelder";
     const bgAllowed = !isConeTap && !ex.bgIsStimulus;
     els.tempoGroup.hidden = isConeTap;
     els.advanced.hidden = isConeTap;
+    $("lwSettings").hidden = !isLw;
+    $("durationGroup").hidden = isLw;
+    if (isLw) syncLwUI();
     els.periphKindGroup.hidden = !isPeriph;
     // The fixation-point Feineinstellung applies to every exercise with
     // this dot (i.e. everything except Hütchen sortieren), not just
     // Periphere Wahrnehmung - it was just built there first.
-    els.periphFixGroup.hidden = isConeTap || isFf; // Farbfelder: the grid has no centre dot
+    els.periphFixGroup.hidden = isConeTap || isFf || ex.type === "richtungskreuz"; // Farbfelder/Richtungskreuz: no centre dot
     ffEls.settings.hidden = !isFf;
     $("cnFieldsGroup").hidden = ex.type !== "colornum";
     if (ex.type === "colornum") syncCnUI();
-    if (isFf) { ffActiveCell = 0; syncFfUI(); }
     renderHilfsmittel(id);
+    if (isFf) { ffActiveCell = 0; syncFfUI(); } // after the note: Antippen hides it
+    $("rkSettings").hidden = ex.type !== "richtungskreuz";
+    if (ex.type === "richtungskreuz") { rkActiveDir = "vorne"; syncRkUI(); }
+    vtRunTrainer = null;
+    syncZusUI();
     els.periphFieldGroup.hidden = !isPeriph;
     els.periphSizeGroup.hidden = !isPeriph;
     els.periphColorGroup.hidden = !isPeriph;
@@ -4595,33 +5171,70 @@
     if (bgAllowed) syncBgUI();
     if (!isConeTap && !isPeriph) syncAddonUI();
     syncDurationUI();
+    if (isLw) els.coneBestHint.hidden = true;
     syncTempoUI();
     els.vtSaveForm.hidden = true;
     els.vtSaveBtn.hidden = false;
     renderVTSaved();
     applySoftState();
+    regelnSyncPreviews();
     showScreen("ready");
   }
 
   // ---- Hilfsmittel note (2026-10-07, first used by Farbfelder): one entry
   // per exercise that needs equipment; `link` (a product page) is shown only
   // once Fabian sets a URL. A new exercise that needs something = one entry.
+  // `gear` names its GEAR_ITEMS cards (page "Hilfsmittel und Starterpaket"
+  // under Mehr): the exercise chips on those cards are read from here.
+  // Meine Hilfsmittel (Idee 67, Fabian 08.10.): every id in `gear` is needed
+  // (missing = card greyed, start button "Braucht: …"); `anyOf: true` = one
+  // of them is enough; `optional: true` = works without, never greyed.
+  var gearModuleReady = false; // set by "Meine Hilfsmittel" (after GEAR_ITEMS)
   const HILFSMITTEL = {
+    // Hütchen exercises (Fabian 08.10.): every one names its equipment.
+    "cone-compass": {
+      text: "Du brauchst: Hütchen oder Becher in den eingestellten Farben und ein Kreuz oder einen Stern aus Klebeband auf dem Boden.",
+      link: "", gear: ["cups", "tape"],
+    },
+    "cone-tap": {
+      text: "Du brauchst: vier Hütchen oder Becher in Rot, Gelb, Grün und Blau, nebeneinander vor dir.",
+      link: "", gear: ["cups"],
+    },
+    "cone-path": { text: "Du brauchst: Hütchen oder Becher in den eingestellten Farben, ausgelegt wie auf der Karte.", link: "", gear: ["cups"] },
     "cone-number": {
       text: "Du brauchst: 3-6 farbige Hütchen oder Becher und nummerierte Felder (z. B. Zettel mit 1-6).",
-      link: "",
+      link: "", gear: ["cups", "numbers"],
     },
     farbfelder: {
       text: "Du brauchst: eine Farbmatte mit 4 Feldern oder 4 farbige Hütchen, Bälle oder Zettel auf dem Boden, angeordnet wie hier eingestellt.",
-      link: "",
+      link: "", gear: ["mat", "cups"], anyOf: true,
     },
+    // Richtungskreuz: equipment is optional (`optional: true`), it also
+    // works without ("Richtungen merken").
+    richtungskreuz: {
+      text: "Eine Farbmatte oder vier Hütchen in den eingestellten Farben, vorne, hinten, links und rechts um dich. Es geht auch ohne: Dann merkst du dir die Richtungen.",
+      link: "", gear: ["mat", "cups"], optional: true,
+    },
+    // Farbbrille exercises (Test-Bereich); a shop link can go into `link`.
+    farbbrille: {
+      text: "Du brauchst eine Rot-Grün-Brille.",
+      link: "", gear: ["glasses"],
+    },
+    // Neuro-Aktivierung (2026-10-08, only shown with the area unlocked;
+    // the ready screen reads NEURO_EXERCISES[..].need, the chips read gear).
+    "neuro-vibration": { text: "Du brauchst: ein kleines Vibrationsgerät (z. B. Z‑Vibe).", link: "", gear: ["vibration"] },
+    "neuro-ball-fuss": { text: "Du brauchst: einen Massageball oder Massagepilz.", link: "", gear: ["massageball"] },
+    "neuro-ball-hand": { text: "Du brauchst: einen Massageball oder Massagepilz.", link: "", gear: ["massageball"] },
   };
   function renderHilfsmittel(exId) {
     const box = document.getElementById("hilfsmittelNote");
     const h = HILFSMITTEL[exId];
     box.hidden = !h;
+    box.dataset.gearKey = h ? exId : "";
+    gearSyncScreen(box.closest(".screen"));
     if (!h) return;
     document.getElementById("hilfsmittelText").textContent = h.text;
+    document.getElementById("hilfsmittelKicker").textContent = h.optional ? "Hilfsmittel (optional)" : "Hilfsmittel";
     const a = document.getElementById("hilfsmittelLink");
     a.hidden = !h.link;
     if (h.link) a.href = h.link; else a.removeAttribute("href");
@@ -4650,7 +5263,19 @@
     footRow: $("ffFootRow"), handsRow: $("ffHandsRow"), handBody: $("ffHandBody"), handRows: $("ffHandRows"),
     handsGroup: $("ffHandsGroup"), giltGroup: $("ffGiltGroup"), giltRow: $("ffGiltRow"), mixRow: $("ffMixRow"),
     flipGroup: $("ffFlipGroup"), flipRow: $("ffFlipRow"), flipHelp: $("ffFlipHelp"),
+    answerRow: $("ffAnswerRow"), answerHelp: $("ffAnswerHelp"), fbRow: $("ffFbRow"),
+    footGroup: $("ffFootGroup"), layoutLabel: $("ffLayoutLabel"),
+    countGroup: $("ffCountGroup"), countRow: $("ffCountRow"), countHelp: $("ffCountHelp"),
   };
+  // Mode buttons' small line, treten / tippen wording.
+  const FF_MODE_SMALL = {
+    leer: ["tritt aufs freie Feld", "tippe aufs freie Feld"],
+    abfolge: ["Folge nachtreten", "Folge nachtippen"],
+    fusshand: ["treten und zeigen", "nur der Fuß zählt"],
+  };
+  const FF_RULES_TAP = "Der Bildschirm zeigt vier Farbfelder, angeordnet wie unten unter „Anordnung deiner Matte“. Je nach Modus tippst du das Feld an, das aufleuchtet oder erscheint, das ein Symbol dir sagt, das leere Feld, eine ganze Abfolge, die gesagte Farbe, die Schriftfarbe eines Farbworts, das Feld mit dem Fuß oder das nach Bild und Ansage. Die App prüft jede Antwort und zeigt dir am Ende, wie viele richtig waren.";
+  // Small move icon in each layout cell, drawn in the cell's ink colour.
+  const FF_GRIP_SVG = '<svg class="ff-grip" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg>';
   let ffActiveCell = 0;
   // Small SVG of a rule symbol for the ready screen (same shapes as the stage).
   function ffSymbolSvg(kind) {
@@ -4662,8 +5287,30 @@
   }
   function ffSave() { savePrefs(); }
   function syncFfUI() {
-    ffEls.modeRow.querySelectorAll("[data-ff-mode]").forEach((b) => setActive(b, b.dataset.ffMode === state.ffMode));
-    ffEls.modeHelp.textContent = FF_MODES[state.ffMode].help;
+    const tap = state.ffAnswer === "tippen";
+    ffEls.modeRow.querySelectorAll("[data-ff-mode]").forEach((b) => {
+      setActive(b, b.dataset.ffMode === state.ffMode);
+      const sm = FF_MODE_SMALL[b.dataset.ffMode], small = b.querySelector("small");
+      if (sm && small) small.textContent = sm[tap ? 1 : 0];
+    });
+    ffEls.modeHelp.textContent = tap ? FF_MODES[state.ffMode].tapHelp : FF_MODES[state.ffMode].help;
+    ffEls.answerRow.querySelectorAll("[data-ff-answer]").forEach((b) => setActive(b, b.dataset.ffAnswer === state.ffAnswer));
+    ffEls.answerHelp.textContent = tap
+      ? "Tippe das richtige Feld auf dem Bildschirm an. Es zählt die erste Berührung. Am Ende siehst du, wie viele richtig waren und wie schnell du warst."
+      : "Du trittst auf deiner Matte. Die App zeigt nur an und prüft nichts.";
+    ffEls.fbRow.hidden = !tap;
+    // Antippen needs no mat, no foot or hand rule.
+    ffEls.footGroup.hidden = tap;
+    if (EXERCISES[state.exercise] && EXERCISES[state.exercise].type === "farbfelder") {
+      renderHilfsmittel(tap ? null : state.exercise);
+      els.rulesBox.textContent = tap ? FF_RULES_TAP : EXERCISES[state.exercise].rules;
+    }
+    ffEls.layoutLabel.textContent = tap ? "Anordnung der Felder" : "Anordnung deiner Matte";
+    ffEls.countGroup.hidden = state.ffMode !== "einblenden";
+    ffEls.countRow.querySelectorAll("[data-ff-count]").forEach((b) => setActive(b, b.dataset.ffCount === state.ffCount));
+    ffEls.countHelp.textContent = state.ffCount === "eins" ? "Es erscheint immer nur ein Feld."
+      : state.ffCount === "phasen" ? `Erst ${FF_COUNT_PHASE}-mal nur ein Feld, dann ${FF_COUNT_PHASE}-mal zwei Felder zugleich, immer so weiter.`
+      : "Mal erscheint ein Feld, mal zwei zugleich, bunt gemischt.";
     ffEls.levelGroup.hidden = state.ffMode !== "regeln";
     ffEls.levelRow.querySelectorAll("[data-ff-level]").forEach((b) => setActive(b, Number(b.dataset.ffLevel) === state.ffLevel));
     ffEls.ruleList.innerHTML = FF_LEVEL_SYMBOLS.slice(0, state.ffLevel).map((k) =>
@@ -4680,29 +5327,23 @@
       : state.ffMode === "regeln"
         ? "Zähl mit: Beim 2. oder 3. Symbol trittst du auf das Feld schräg gegenüber vom eigentlichen Ziel. Die App zeigt es nicht an."
         : "Zähl mit: Beim 2. oder 3. Mal trittst du auf das Feld schräg gegenüber. Die App zeigt es nicht an.";
-    ffEls.handsGroup.hidden = state.ffMode === "fusshand";
+    ffEls.handsGroup.hidden = state.ffMode === "fusshand" || tap;
     ffEls.layoutGrid.querySelectorAll("[data-ff-cell]").forEach((b) => {
       const i = Number(b.dataset.ffCell);
       const c = COLOR_BY_KEY[state.ffLayout[i]];
       b.style.background = c.hex;
       b.style.color = relLuma(c.hex) > 0.6 ? "#16232a" : "#ffffff";
-      b.textContent = c.name;
-      b.setAttribute("aria-label", `${FF_FIELD_NAMES[i]}: ${c.name}`);
+      b.innerHTML = `<span class="ff-cell-name">${esc(c.name)}</span>${FF_GRIP_SVG}`;
+      b.setAttribute("aria-label", `${FF_FIELD_NAMES[i]}: ${c.name}. Gedrückt halten und ziehen zum Tauschen.`);
       setActive(b, i === ffActiveCell);
     });
-    ffEls.layoutHelp.textContent = `Tippe ein Feld an und wähle seine Farbe. Oben ist die Reihe näher am Bildschirm. Gewählt: ${FF_FIELD_NAMES[ffActiveCell]}.`;
+    ffEls.layoutHelp.textContent = "Halte ein Feld gedrückt und zieh es auf ein anderes: Die beiden Farben tauschen den Platz. Eine Farbe änderst du, indem du das Feld antippst und unten die Farbe wählst"
+      + ` (gewählt: ${FF_FIELD_NAMES[ffActiveCell]}).` + (tap ? "" : " Leg deine Matte genauso hin: Oben ist die Reihe näher am Bildschirm.");
     ffEls.colorPicker.querySelectorAll(".color-swatch[data-color]").forEach((b) => setActive(b, b.dataset.color === state.ffLayout[ffActiveCell]));
     ffEls.footRow.querySelectorAll("[data-ff-foot]").forEach((b) => setActive(b, b.dataset.ffFoot === state.ffFoot));
     ffEls.handsRow.querySelectorAll("[data-ff-hands]").forEach((b) => setActive(b, (b.dataset.ffHands === "1") === state.ffHands));
     ffEls.handBody.hidden = !state.ffHands;
-    ffEls.handRows.innerHTML = state.ffLayout.map((k) => {
-      const c = COLOR_BY_KEY[k];
-      const cur = state.ffHandRules[k] || "keine";
-      return `<label class="ff-hand-row"><span class="ff-dot" style="background:${c.hex}"></span><span class="ff-hand-name">${esc(c.name)}</span>` +
-        `<select class="plan-select" data-ff-hand="${k}" aria-label="Hände bei ${esc(c.name)}">` +
-        Object.entries(FF_HAND_ACTIONS).map(([v, label]) => `<option value="${v}"${v === cur ? " selected" : ""}>${esc(label)}</option>`).join("") +
-        `</select></label>`;
-    }).join("");
+    ffEls.handRows.innerHTML = colorChoiceRowsHtml(state.ffLayout, FF_HAND_ACTIONS, (k) => state.ffHandRules[k] || "keine", "ff-hand", (n) => `Hände bei ${n}`);
   }
   // Single-select swatches for the chosen field; a colour that already sits
   // on another field swaps places, so all four always stay different.
@@ -4724,13 +5365,110 @@
     });
     ffEls.colorPicker.appendChild(btn);
   });
+  let ffDragClickBlockUntil = 0;
   ffEls.layoutGrid.addEventListener("click", (e) => {
     const b = e.target.closest("[data-ff-cell]");
-    if (!b) return;
+    if (!b || performance.now() < ffDragClickBlockUntil) return;
     ffActiveCell = Number(b.dataset.ffCell);
     syncFfUI();
   });
+  // Matten-Anordnung: hold and drag a field onto another to swap the two
+  // colours (Fabian 08.10.). Mouse: the drag starts after 6 px; touch/pen:
+  // after a 250 ms long press (the cell lifts), so normal scrolling over the
+  // grid keeps working (cells are touch-action:pan-y; while dragging the
+  // page must not scroll). Drop outside the grid = cancel. A plain tap still
+  // selects the field for the colour picker. Hand rules are keyed by colour,
+  // so they move with it. Lift look follows wireDragReorder (.drag-lifted).
+  (function wireFfLayoutDrag() {
+    const grid = ffEls.layoutGrid;
+    let p = null;
+    const cellAt = (x, y) => {
+      const el = document.elementFromPoint(x, y);
+      const c = el && el.closest && el.closest("[data-ff-cell]");
+      return c && grid.contains(c) ? c : null;
+    };
+    const clearMarks = () => grid.querySelectorAll(".ff-drop-target, .ff-drag-src").forEach((c) => c.classList.remove("ff-drop-target", "ff-drag-src"));
+    const end = () => {
+      if (!p) return;
+      clearTimeout(p.timer);
+      if (p.ghost) p.ghost.remove();
+      if (p.dragging) { document.body.classList.remove("drag-busy"); grid.classList.remove("ff-dragging"); }
+      clearMarks();
+      p = null;
+    };
+    const startDrag = () => {
+      if (!p || p.dragging) return;
+      p.dragging = true;
+      const r = p.cell.getBoundingClientRect();
+      const ghost = p.cell.cloneNode(true);
+      ghost.removeAttribute("data-ff-cell");
+      ghost.removeAttribute("aria-label");
+      ghost.classList.remove("active");
+      ghost.classList.add("ff-ghost", "drag-lifted");
+      ghost.setAttribute("aria-hidden", "true");
+      ghost.style.width = r.width + "px";
+      ghost.style.height = r.height + "px";
+      p.offX = p.x - r.left; p.offY = p.y - r.top;
+      p.ghost = ghost;
+      document.body.appendChild(ghost);
+      place();
+      p.cell.classList.add("ff-drag-src");
+      grid.classList.add("ff-dragging");
+      document.body.classList.add("drag-busy");
+      if (p.type !== "mouse") { try { if (navigator.vibrate) navigator.vibrate(10); } catch (err) {} }
+    };
+    const place = () => {
+      p.ghost.style.left = (p.x - p.offX) + "px";
+      p.ghost.style.top = (p.y - p.offY) + "px";
+      const over = cellAt(p.x, p.y);
+      grid.querySelectorAll(".ff-drop-target").forEach((c) => { if (c !== over) c.classList.remove("ff-drop-target"); });
+      if (over && over !== p.cell) over.classList.add("ff-drop-target");
+    };
+    grid.addEventListener("pointerdown", (e) => {
+      const cell = e.target.closest("[data-ff-cell]");
+      if (!cell || p || (e.pointerType === "mouse" && e.button !== 0)) return;
+      p = { id: e.pointerId, type: e.pointerType, cell, from: Number(cell.dataset.ffCell), x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, dragging: false, timer: 0, ghost: null };
+      if (e.pointerType !== "mouse") p.timer = setTimeout(startDrag, 250);
+    });
+    document.addEventListener("pointermove", (e) => {
+      if (!p || e.pointerId !== p.id) return;
+      p.x = e.clientX; p.y = e.clientY;
+      if (!p.dragging) {
+        const d = Math.hypot(p.x - p.x0, p.y - p.y0);
+        if (p.type === "mouse") { if (d > 6) startDrag(); }
+        else if (d > 10) end(); // the finger moved before the long press: a scroll
+        return;
+      }
+      place();
+    });
+    document.addEventListener("pointerup", (e) => {
+      if (!p || e.pointerId !== p.id) return;
+      if (!p.dragging) { end(); return; }
+      const over = cellAt(e.clientX, e.clientY);
+      const from = p.from, to = over ? Number(over.dataset.ffCell) : -1;
+      ffDragClickBlockUntil = performance.now() + 400;
+      end();
+      if (to < 0 || to === from) return;
+      const lay = state.ffLayout.slice();
+      [lay[from], lay[to]] = [lay[to], lay[from]];
+      state.ffLayout = lay;
+      ffActiveCell = to;
+      ffSave();
+      syncFfUI();
+      [from, to].forEach((i) => {
+        const c = grid.querySelector(`[data-ff-cell="${i}"]`);
+        c.classList.remove("ff-swapped"); void c.offsetWidth; c.classList.add("ff-swapped");
+        setTimeout(() => c.classList.remove("ff-swapped"), 400);
+      });
+    });
+    document.addEventListener("pointercancel", (e) => { if (p && e.pointerId === p.id) end(); });
+    // While a field is lifted the page must not scroll under the finger.
+    grid.addEventListener("touchmove", (e) => { if (p && p.dragging && e.cancelable) e.preventDefault(); }, { passive: false });
+    // No context menu / callout from the long press.
+    grid.addEventListener("contextmenu", (e) => { if (e.target.closest("[data-ff-cell]")) e.preventDefault(); });
+  })();
   ffEls.modeRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-mode]"); if (b) { state.ffMode = b.dataset.ffMode; ffSave(); syncFfUI(); } });
+  ffEls.countRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-count]"); if (b) { state.ffCount = b.dataset.ffCount; ffSave(); syncFfUI(); } });
   ffEls.levelRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-level]"); if (b) { state.ffLevel = Number(b.dataset.ffLevel); ffSave(); syncFfUI(); } });
   ffEls.seqRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-seq]"); if (b) { state.ffSeqStart = Number(b.dataset.ffSeq); ffSave(); syncFfUI(); } });
   ffEls.footRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-foot]"); if (b) { state.ffFoot = b.dataset.ffFoot; ffSave(); syncFfUI(); } });
@@ -4738,6 +5476,7 @@
   ffEls.giltRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-gilt]"); if (b) { state.ffGilt = b.dataset.ffGilt; ffSave(); syncFfUI(); } });
   ffEls.mixRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-mix]"); if (b) { state.ffMix = b.dataset.ffMix; ffSave(); syncFfUI(); } });
   ffEls.flipRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-flip]"); if (b) { state.ffFlip = Number(b.dataset.ffFlip); ffSave(); syncFfUI(); } });
+  ffEls.answerRow.addEventListener("click", (e) => { const b = e.target.closest("[data-ff-answer]"); if (b) { state.ffAnswer = b.dataset.ffAnswer; ffSave(); syncFfUI(); } });
   // Test hooks (automated browsers only): the pure rule and a schedule
   // built with some settings swapped in for the call.
   // Test hook (automated browsers only): Farbe + Zahl schedule for given state/colours.
@@ -4754,17 +5493,18 @@
     isFlipped: ffIsFlipped, leuchtenTarget: ffLeuchtenTarget, regelnTarget: ffRegelnTarget,
     ansageTarget: ffAnsageTarget, farbwortTarget: ffFarbwortTarget, sehenHoerenTarget: ffSehenHoerenTarget,
     pickFarbwort: (layout) => ffPickFarbwort(layout, Math.random),
+    snapshot: () => ffStateSnapshot(),
     build: (over) => {
       const keep = JSON.parse(JSON.stringify(state));
       Object.assign(state, over || {});
       try { return buildFarbfelderSchedule({}, Math.random).schedule; } finally { Object.assign(state, keep); }
     },
   };
-  ffEls.handRows.addEventListener("change", (e) => {
-    const sel = e.target.closest("[data-ff-hand]");
-    if (!sel) return;
-    state.ffHandRules = { ...state.ffHandRules, [sel.dataset.ffHand]: sel.value };
-    ffSave();
+  ffEls.handRows.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-ff-hand][data-val]");
+    if (!b) return;
+    state.ffHandRules = { ...state.ffHandRules, [b.dataset.ffHand]: b.dataset.val };
+    ffSave(); syncFfUI();
   });
 
 
@@ -4818,8 +5558,12 @@
       state.intervalMin = existingBlock.intervalMin ?? state.intervalMin;
       state.intervalMax = existingBlock.intervalMax ?? state.intervalMax;
       if (existingBlock.periph) Object.assign(state, JSON.parse(JSON.stringify(existingBlock.periph)));
-      if (existingBlock.ff) { Object.assign(state, JSON.parse(JSON.stringify(existingBlock.ff))); ffNormalize(state); }
+      if (existingBlock.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(existingBlock.ff))); ffNormalize(state); }
       if (existingBlock.cn) { Object.assign(state, existingBlock.cn); cnNormalize(state); }
+      if (existingBlock.lw) { lwApply(existingBlock.lw); syncLwUI(); }
+      vtExtrasApply(existingBlock, {});
+      if (ex.type === "richtungskreuz") syncRkUI();
+      syncZusUI();
       renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
       if (ex.type === "farbfelder") syncFfUI();
       if (ex.type === "colornum") syncCnUI();
@@ -4828,6 +5572,7 @@
     comboVisualEditIndex = editIndex ?? null;
     els.readyTitle.textContent = "Baustein: " + ex.title;
     els.startBtn.textContent = "Baustein übernehmen";
+    gearSyncScreen(els.ready); // capture mode: no "Braucht:" label, no question
   }
   function periphStateSnapshot() {
     const out = {};
@@ -4855,6 +5600,8 @@
     if (ex.type === "periph") block.periph = periphStateSnapshot();
     if (ex.type === "farbfelder") block.ff = ffStateSnapshot();
     if (ex.type === "colornum") block.cn = { cnFields: state.cnFields };
+    if (ex.type === "laufweg") { block.lw = lwSnapshot(); block.duration = lwEstimateS(); }
+    Object.assign(block, vtExtrasSnapshot(state.exercise, true));
     if (comboVisualEditIndex != null) comboDraftBlocks[comboVisualEditIndex] = block;
     else comboDraftBlocks.push(block);
     exitVisualComboCapture();
@@ -4983,6 +5730,8 @@
     if (t === "cardio-plan") return !nonEmpty(def.items);
     if (t === "breath-program" || t === "workout-plan" || t === "combo-program") return !nonEmpty(def.blocks);
     if (t === "free-template") return freeTemplateDefProblem(def);
+    if (t === "neuro-unlock") return false;
+    if (t === "feature-unlock") return !Array.isArray(def.features) || !def.features.length || def.features.some((f) => !FEATURE_UNLOCKS[f]);
     if (t === "training-plan") return !def.plan || !nonEmpty(def.plan.phases);
     if (t) return true;
     return !nonEmpty(def.blocks) || def.blocks.some((b) => !b || !EXERCISES[b.exercise]);
@@ -5000,6 +5749,22 @@
     };
     el.textContent = texts[kind] || el.dataset.defaultText;
     el.hidden = false;
+    // A collapsed code card (quiet layout) opens, so the message is seen.
+    const card = el.closest(".code-card.is-collapsed");
+    if (card) {
+      card.classList.remove("is-collapsed");
+      const t = card.querySelector(".code-toggle");
+      if (t) t.setAttribute("aria-expanded", "true");
+    }
+  }
+  // Trainer codes as QR (Fabian 08.10.): "<app url>#code=<CODE>" (dashboard
+  // "QR-Code zeigen") or the bare code text. Returns the code or "".
+  function codeFromQrText(raw) {
+    const s = String(raw || "").trim();
+    const m = /[#?&]code=([^&#\s]+)/.exec(s);
+    let c = m ? m[1] : (/^[A-Za-z0-9][A-Za-z0-9_-]{1,39}$/.test(s) ? s : "");
+    try { c = decodeURIComponent(c); } catch (e) { return ""; }
+    return normCode(c);
   }
 
   // ---- Codes with a run time and seats (config.validFrom / validUntil as
@@ -5090,6 +5855,8 @@
       if (def.type === "combo-bundle") { openComboBundleOverview(def, code); return; }
       if (def.type === "combo-program") { comboOriginBundle = null; startComboProgram(def, code, code, ctx.homeScreen); return; }
       if (def.type === "free-template") { importTrainerTemplates(def, code); return; }
+      if (def.type === "neuro-unlock") { applyNeuroUnlockCode(def); return; }
+      if (def.type === "feature-unlock") { applyFeatureUnlockCode(def); return; }
       if (def.type === "training-plan") { offerTrainerPlan(def, code, ctx); return; }
       originBundle = null;
       renderProgramIntro(def, code, code, ctx);
@@ -5229,6 +5996,12 @@
       els.chapterList.appendChild(row);
     });
     els.programStartBtn.onclick = () => start(0);
+    // Meine Hilfsmittel: name what is still missing, never block the code.
+    { const need = [];
+      def.blocks.forEach((b) => gearMissing(gearKeyOfComboBlock({ domain: "visual", exercise: b.exercise, ff: b.ff })).forEach((id) => { if (!need.includes(id)) need.push(id); }));
+      const note = $("programGearNote");
+      note.hidden = !need.length;
+      note.textContent = need.length ? "Dafür brauchst du: " + need.map((id) => (GEAR_ITEMS.find((g) => g.id === id) || {}).name || id).join(", ") + "." : ""; }
     showScreen("programIntro");
   }
 
@@ -5269,6 +6042,21 @@
   // box, home screen) if the code isn't found assumes Visual Training.
   function openFromHash() {
     if (!location.hash || location.hash.length < 2) return;
+    if (/^#import=/.test(location.hash)) return; // QR-Übergabe, see hoCheckHash (docs/notes/36)
+    if (/^#code=/.test(location.hash)) {
+      // Trainer code QR scanned with the phone's own camera (docs/notes/36).
+      const c = codeFromQrText(location.hash);
+      try { history.replaceState(history.state, "", location.pathname + location.search); } catch (e) { /* ignore */ }
+      // iPhone camera app opens Safari, whose storage is not the home-screen
+      // app's (Fabian 08.10.): say so once before the code lands here.
+      if (hoIosBrowser()) {
+        confirmDialog("Du bist gerade in Safari. Hast du die App auf dem Startbildschirm, landet der Code sonst nicht dort. Öffne dann lieber die App und scanne unter Fortschritt mit „Trainer-QR-Code scannen“.",
+          () => openCodeAsTyped(c), { title: "Lieber in der App scannen", yes: "Hier in Safari öffnen", no: "Abbrechen" });
+        return;
+      }
+      openCodeAsTyped(c);
+      return;
+    }
     const tokenCode = normCode(decodeURIComponent(location.hash.slice(1)));
     if (!tokenCode) return;
     els.programCodeInput.value = tokenCode;
@@ -5688,6 +6476,7 @@
       cfg.type === "vrw-real" ? buildVRWRealSchedule(cfg, rng) :
       cfg.type === "periph" ? buildPeriphSchedule(cfg, rng) :
       cfg.type === "farbfelder" ? buildFarbfelderSchedule(cfg, rng) :
+      cfg.type === "richtungskreuz" ? buildRkSchedule(cfg, rng) :
       cfg.type === "colornum" ? buildColorNumSchedule(cfg, rng) :
       cfg.type === "flash-host" ? buildFlashHostSchedule(cfg, rng) :
       buildArrowSchedule(cfg, rng);
@@ -5860,12 +6649,16 @@
     // store, and its single synthetic "blank" frame is always active -
     // everything past this branch (the actual flash placement/timing) is
     // the exact same logic every other exercise's own add-on uses.
+    if (exId === "cardio-flash-host" && cardioHostAddonId === "addon-math") {
+      return buildMathAddonSchedule(exId, hostSchedule, cardioHostAddonCfg || cardioAddonPrefs.perType["addon-math"] || cardioGuestDefaultCfg("addon-math"), new Set(["pause"]), rng);
+    }
     if (exId === "cardio-flash-host") {
       cfg = cardioAddonPrefs.perType["addon-flash"] || cardioGuestDefaultCfg("addon-flash");
       phaseSet = new Set(["pause"]);
     } else {
       const entry = getAddonEntry(exId);
       if (!entry.phases.length) return { schedule: [], sizeMode: "gleich" };
+      if (entry.task === "rechnen") return buildMathAddonSchedule(exId, hostSchedule, entry.math, new Set(entry.phases), rng);
       cfg = entry.mode === "eigen" ? entry.own : addonConfigFromState();
       phaseSet = new Set(entry.phases);
     }
@@ -5896,6 +6689,7 @@
 
   function onEnterFrame(frame) {
     if (frame.kind === "farbfelder") { if (frame.payload.say) speakWord(frame.payload.say); return; }
+    if (frame.kind === "rk") { if (frame.payload.say) speakWord(frame.payload.say); return; }
     if (frame.kind !== "cross") return;
     const p = frame.payload;
     if (p.mode === "audio" || p.mode === "conflict") speakWord(p.word);
@@ -5923,6 +6717,7 @@
         session.fadeFrom = session.soft && session.lastIndex >= 0 ? session.schedule[session.lastIndex] : null;
         session.fadeAt = elapsed;
         session.lastIndex = idx;
+        if (session.ffTap) ffTapEnter(session.ffTap, frame);
         onEnterFrame(frame);
       }
       const fadeP = session.fadeFrom ? (elapsed - session.fadeAt) / Math.min(SOFT_FADE_S, Math.max(0.05, (frame.t1 - frame.t0) * 0.4)) : 1;
@@ -5956,6 +6751,7 @@
   // drew - an independent overlay schedule, gated to the phases the client
   // enabled it for, see buildAddonSchedule().
   function drawAddonOverlay(elapsed) {
+    if (session.addonMath) { mathDrawOverlay(elapsed); return; } // Zusatzaufgabe Rechnen
     if (!session.addonSchedule || !session.addonSchedule.length) return;
     const idx = session.addonSchedule.findIndex((f) => elapsed >= f.t0 && elapsed < f.t1);
     if (idx === -1) return;
@@ -5967,6 +6763,296 @@
     drawPeriphChar(cw, ch, unit, f.fx, f.fy, f.char, session.addonSizeMode, f.color);
     ctx.globalAlpha = 1;
   }
+
+  // ==== Zusatzaufgabe "Rechnen" (Fabian 2026-10-08) ====
+  // A second kind of Zusatzaufgabe next to the peripheral characters: a
+  // statement like "2 + 3 > 6" or "7 − 4 = 3" appears where the host shows
+  // nothing; about half are true. Answer modes: Doppelkreis (inner disc =
+  // stimmt, outer ring = stimmt nicht), Nur bei "stimmt" antippen (go/no-go)
+  // and Laut sagen (no tap). Per exercise in the add-on store
+  // (entry.task = "periph" | "rechnen", entry.math), Cardio guest
+  // "addon-math". Taps count on pointerdown and never reach the host
+  // (capture listener on #stageWrap). Details: docs/notes/32.
+  function addonMathDefault() { return { level: "plus10", answer: "doppelkreis", stimulusS: 3, intervalMin: 2, intervalMax: 4 }; }
+  function addonMathNormalize(m) {
+    const d = addonMathDefault();
+    const o = m && typeof m === "object" ? { ...m } : {};
+    if (!["plus10", "plus20", "mal"].includes(o.level)) o.level = d.level;
+    if (!["doppelkreis", "gonogo", "laut"].includes(o.answer)) o.answer = d.answer;
+    if (!Number.isFinite(o.stimulusS) || o.stimulusS < 1.5 || o.stimulusS > 6) o.stimulusS = d.stimulusS;
+    if (!Number.isFinite(o.intervalMin) || o.intervalMin < 1 || o.intervalMin > 15) o.intervalMin = d.intervalMin;
+    if (!Number.isFinite(o.intervalMax) || o.intervalMax < 1 || o.intervalMax > 15) o.intervalMax = d.intervalMax;
+    return o;
+  }
+  function addonMathNormalizeEntry(e) {
+    if (!["periph", "rechnen"].includes(e.task)) e.task = "periph";
+    const n = addonMathNormalize(e.math);
+    if (e.math && typeof e.math === "object") Object.assign(e.math, n); else e.math = n;
+  }
+  // One statement. Values stay small and never negative; the shown number of
+  // a false statement is 1-3 off (1-6 for Mal), so it is not obvious.
+  function mathMakeStatement(level, rng) {
+    const ri = (a, b) => a + Math.floor(rng() * (b - a + 1));
+    const max = level === "plus10" ? 10 : 20;
+    let a, b, op, res;
+    if (level === "mal" && rng() < 0.6) { a = ri(2, 10); b = ri(2, 10); op = "·"; res = a * b; }
+    else if (rng() < 0.5) { res = ri(2, max); a = ri(0, res); b = res - a; op = "+"; }
+    else { a = ri(2, max); b = ri(0, a); op = "−"; res = a - b; }
+    const wantTrue = rng() < 0.5;
+    let rel = rng() < 0.6 ? "=" : rng() < 0.5 ? ">" : "<";
+    const k = ri(1, op === "·" ? 6 : 3);
+    let c;
+    if (rel === ">" && wantTrue && res === 0) rel = "<";
+    if (rel === "=") c = wantTrue ? res : res - k >= 0 && rng() < 0.5 ? res - k : res + k;
+    else if (rel === ">") c = wantTrue ? Math.max(0, res - k) : res + ri(0, k);
+    else c = wantTrue ? res + k : Math.max(0, res - ri(0, k));
+    const truth = rel === "=" ? res === c : rel === ">" ? res > c : res < c;
+    return { text: `${a} ${op} ${b} ${rel} ${c}`, truth, a, b, op, rel, c, res };
+  }
+  // Sizes in canvas px. Doppelkreis: ring and inner disc both >= 44 css px.
+  function mathGeometry(cw, ch, answer) {
+    const r = canvas.getBoundingClientRect();
+    const k = r.width ? cw / r.width : 1;
+    const minCss = Math.min(r.width || cw / k, r.height || ch / k);
+    const bar = els.playerBar.getBoundingClientRect();
+    const top = Math.max(0, (bar.height ? bar.bottom - r.top : 60) + 10) * k;
+    if (answer === "doppelkreis") {
+      const R = Math.max(106, Math.min(150, minCss * 0.3));
+      const ring = Math.max(46, R * 0.4);
+      return { R: R * k, rIn: (R - ring) * k, k, top };
+    }
+    const R = Math.max(64, Math.min(104, minCss * 0.21));
+    return { R: R * k, rIn: R * k, k, top };
+  }
+  // What the host draws in these frames, as polygons / boxes to keep clear
+  // of: arrows exactly (frameArrowPolygon, as for the characters), centred
+  // words/discs/icons as a centre box, the fixation point on blank frames.
+  function mathObstacles(cw, ch, frames, k) {
+    const obs = [];
+    frames.forEach((f) => {
+      const poly = frameArrowPolygon(cw, ch, f);
+      if (poly) { obs.push({ poly }); return; }
+      if (f.kind === "blank" || f.kind === "color") obs.push({ box: [cw / 2 - 26 * k, ch / 2 - 26 * k, cw / 2 + 26 * k, ch / 2 + 26 * k] });
+      else if (f.kind !== "flash-host") obs.push({ box: [cw * 0.12, ch * 0.36, cw * 0.88, ch * 0.64] });
+    });
+    return obs;
+  }
+  function mathOverlap(x, y, R, obs) {
+    if (!obs.length) return 0;
+    const pts = [[x, y]];
+    for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2; pts.push([x + Math.cos(a) * R, y + Math.sin(a) * R]); if (i % 2 === 0) pts.push([x + Math.cos(a) * R * 0.55, y + Math.sin(a) * R * 0.55]); }
+    let n = 0;
+    obs.forEach((o) => {
+      if (o.poly) {
+        pts.forEach(([px, py]) => { if (pointInPolygon(px, py, o.poly)) n++; });
+        o.poly.forEach(([px, py]) => { if (Math.hypot(px - x, py - y) < R) n++; });
+      } else {
+        const [x0, y0, x1, y1] = o.box;
+        const nx = Math.max(x0, Math.min(x, x1)), ny = Math.max(y0, Math.min(y, y1));
+        const dd = Math.hypot(nx - x, ny - y);
+        if (dd < R) n += 1 + Math.round((R - dd) / (R / 4));
+      }
+    });
+    return n;
+  }
+  function mathPlace(cw, ch, g, frames, rng) {
+    const m = 8 * g.k;
+    const xMin = g.R + m, xMax = cw - g.R - m;
+    const yMin = Math.max(g.top + g.R, g.R + m), yMax = ch - g.R - m;
+    const obs = mathObstacles(cw, ch, frames, g.k);
+    let best = null;
+    for (let i = 0; i < 48; i++) {
+      const x = xMax > xMin ? xMin + rng() * (xMax - xMin) : cw / 2;
+      const y = yMax > yMin ? yMin + rng() * (yMax - yMin) : Math.min(ch - g.R, yMin);
+      const score = mathOverlap(x, y, g.R + 8 * g.k, obs); // a little air around the circle
+      if (!best || score < best.score) best = { x, y, score };
+      if (score === 0) break;
+    }
+    // Random tries missed: scan a grid (with, then without the extra air)
+    // before accepting an overlap - small stages leave few free spots.
+    for (const air of [8, 0]) {
+      if (best.score === 0) break;
+      for (let gy = 0; gy <= 14 && best.score > 0; gy++) for (let gx = 0; gx <= 10; gx++) {
+        const x = xMax > xMin ? xMin + (gx / 10) * (xMax - xMin) : cw / 2;
+        const y = yMax > yMin ? yMin + (gy / 14) * (yMax - yMin) : Math.min(ch - g.R, yMin);
+        const score = mathOverlap(x, y, g.R + air * g.k, obs);
+        if (score < best.score) best = { x, y, score };
+        if (score === 0) break;
+      }
+    }
+    return best;
+  }
+  // Statements are placed in runs of consecutive frames of the chosen
+  // phase(s); a run shorter than 1 s gets none, a statement never outlasts
+  // its run (so "In der Pause" keeps it out of the stimulus).
+  function buildMathAddonSchedule(exId, hostSchedule, cfg, phaseSet, rng) {
+    const m = addonMathNormalize(cfg);
+    const cw = canvas.width, ch = canvas.height;
+    const wins = [];
+    hostSchedule.forEach((f) => {
+      if (f.kind === "count") return;
+      if (!phaseSet.has(f.kind === "blank" ? "pause" : "reiz")) return;
+      const last = wins[wins.length - 1];
+      if (last && Math.abs(last.t1 - f.t0) < 1e-6) { last.t1 = f.t1; last.frames.push(f); } else wins.push({ t0: f.t0, t1: f.t1, frames: [f] });
+    });
+    const soft = softOn(exId);
+    const show = soft ? Math.max(m.stimulusS, SOFT_MIN_SHOW_S) : m.stimulusS;
+    const [gMin, gMax] = softGap(Math.min(m.intervalMin, m.intervalMax), Math.max(m.intervalMin, m.intervalMax), exId);
+    const geo = mathGeometry(cw, ch, m.answer);
+    const schedule = [];
+    let id = 0;
+    wins.forEach((w) => {
+      let t = w.t0 + Math.min(0.4, (w.t1 - w.t0) * 0.1);
+      while (t < w.t1 - 1) {
+        const t1 = Math.min(t + show, w.t1);
+        if (t1 - t < 1) break;
+        const st = mathMakeStatement(m.level, rng);
+        const frames = w.frames.filter((f) => f.t1 > t && f.t0 < t1);
+        const pos = mathPlace(cw, ch, geo, frames, rng);
+        schedule.push({ id: ++id, t0: t, t1, text: st.text, truth: st.truth, x: pos.x, y: pos.y, overlap: pos.score });
+        t = t1 + gMin + rng() * (gMax - gMin);
+      }
+    });
+    return { schedule, sizeMode: "gleich", math: { answer: m.answer, R: geo.R, rIn: geo.rIn, k: geo.k } };
+  }
+  function mathSessionNew(info) {
+    return { ...info, cur: null, answered: {}, ok: 0, bad: 0, miss: 0, minT0: 0, flash: null, log: [] };
+  }
+  function mathClose(m, it) {
+    if (!it || m.answered[it.id] || m.answer === "laut") return;
+    if (m.answer === "gonogo" && !it.truth) { m.ok++; m.log.push({ text: it.text, truth: it.truth, result: "richtig", tapped: false }); return; }
+    m.miss++;
+    m.log.push({ text: it.text, truth: it.truth, result: "verpasst", tapped: false });
+  }
+  function mathCurrent(m, elapsed) {
+    const sch = (session && session.addonSchedule) || [];
+    return sch.find((f) => f.t0 >= m.minT0 && elapsed >= f.t0 && elapsed < f.t1) || null;
+  }
+  function mathTrack(m, elapsed) {
+    const it = mathCurrent(m, elapsed);
+    if (it !== m.cur) { mathClose(m, m.cur); m.cur = it; }
+    return it;
+  }
+  function mathAbandon(m, elapsed) { m.cur = null; m.minT0 = elapsed; }
+  // said: true = "stimmt" (inner disc / the go tap), false = "stimmt nicht".
+  function mathAnswer(m, it, said, elapsed) {
+    if (!it || m.answered[it.id] || m.answer === "laut") return false;
+    m.answered[it.id] = true;
+    const right = said === it.truth;
+    if (right) m.ok++; else m.bad++;
+    m.log.push({ text: it.text, truth: it.truth, result: right ? "richtig" : "falsch", tapped: true, said });
+    m.flash = { x: it.x, y: it.y, r: said || m.answer !== "doppelkreis" ? m.rIn : m.R, until: elapsed + 0.3 };
+    return true;
+  }
+  function mathFinish(m) {
+    if (navigator.webdriver) window.__mathLastScore = { ok: m.ok, bad: m.bad, miss: m.miss, answer: m.answer, log: m.log.slice() };
+    if (m.answer === "laut") return null;
+    return { ok: m.ok, bad: m.bad, miss: m.miss, text: `Rechnen: ${m.ok} richtig, ${m.bad} falsch, ${m.miss} verpasst` };
+  }
+  function mathDrawOverlay(elapsed) {
+    const m = session.addonMath;
+    const it = mathTrack(m, elapsed);
+    const k = m.k || 1;
+    if (it && !m.answered[it.id]) {
+      const a = session.soft ? Math.max(0, Math.min(1, (elapsed - it.t0) / SOFT_FADE_S, (it.t1 - elapsed) / SOFT_FADE_S)) : 1;
+      ctx.save();
+      ctx.globalAlpha = a;
+      if (m.answer === "doppelkreis") {
+        ctx.beginPath(); ctx.arc(it.x, it.y, m.R, 0, Math.PI * 2);
+        ctx.fillStyle = "#37474f"; ctx.fill();
+        ctx.lineWidth = 2 * k; ctx.strokeStyle = "#ffffff"; ctx.stroke();
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        const ringMid = (m.R + m.rIn) / 2;
+        ctx.font = `700 ${Math.round(Math.max(12 * k, (m.R - m.rIn) * 0.27))}px 'Public Sans', sans-serif`;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText("stimmt nicht", it.x, it.y + ringMid);
+      }
+      ctx.beginPath(); ctx.arc(it.x, it.y, m.rIn, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff"; ctx.fill();
+      ctx.lineWidth = 3 * k; ctx.strokeStyle = "#16232a"; ctx.stroke();
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const size = fitText(ctx, it.text, m.rIn * 1.62, Math.round(m.rIn * 0.42), "Magra, sans-serif", 700);
+      ctx.font = `700 ${size}px Magra, sans-serif`;
+      ctx.fillStyle = "#16232a";
+      ctx.fillText(it.text, it.x, it.y - (m.answer === "doppelkreis" ? m.rIn * 0.08 : 0));
+      if (m.answer === "doppelkreis") {
+        ctx.font = `600 ${Math.round(Math.max(11 * k, m.rIn * 0.2))}px 'Public Sans', sans-serif`;
+        ctx.fillStyle = "#4a5a61";
+        ctx.fillText("stimmt", it.x, it.y + m.rIn * 0.5);
+      }
+      ctx.restore();
+    }
+    if (m.flash && elapsed < m.flash.until) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, (m.flash.until - elapsed) / 0.3);
+      ctx.beginPath(); ctx.arc(m.flash.x, m.flash.y, m.flash.r, 0, Math.PI * 2);
+      ctx.lineWidth = 6 * k; ctx.strokeStyle = "#ffffff"; ctx.stroke();
+      ctx.lineWidth = 2 * k; ctx.strokeStyle = "#16232a"; ctx.stroke();
+      ctx.restore();
+    }
+  }
+  // Taps: capture phase on the stage wrapper, so a tap on the statement is
+  // never also a tap for the host exercise (e.g. Farbfelder · Antippen); a
+  // tap outside the circle passes on untouched.
+  els.stageWrap.addEventListener("pointerdown", (e) => {
+    const m = session && session.addonMath;
+    if (!m || m.answer === "laut" || periphPausedAt || els.player.hidden) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (e.target !== canvas) return;
+    const elapsed = (performance.now() - session.startTime) / 1000;
+    const it = mathTrack(m, elapsed);
+    if (!it || m.answered[it.id]) return;
+    const r = canvas.getBoundingClientRect();
+    if (!r.width) return;
+    const kk = canvas.width / r.width;
+    const d = Math.hypot((e.clientX - r.left) * kk - it.x, (e.clientY - r.top) * kk - it.y);
+    if (d > m.R + 4 * kk) return;
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    mathAnswer(m, it, m.answer === "doppelkreis" ? d <= m.rIn : true, elapsed);
+  }, { capture: true });
+  // Ready-screen controls (#addonMathBody) - per exercise like the rest.
+  function syncAddonMathUI(entry) {
+    const mm = entry.math;
+    document.querySelectorAll("#addonMathLevelRow [data-addon-mathlevel]").forEach((el) => setActive(el, el.dataset.addonMathlevel === mm.level));
+    document.querySelectorAll("#addonMathAnswerRow [data-addon-mathanswer]").forEach((el) => setActive(el, el.dataset.addonMathanswer === mm.answer));
+    $("addonMathShowSlider").value = mm.stimulusS;
+    $("addonMathShowValue").textContent = fmtSeconds(mm.stimulusS);
+    $("addonMathGapMinSlider").value = mm.intervalMin;
+    $("addonMathGapMaxSlider").value = mm.intervalMax;
+    $("addonMathGapValue").textContent = `${fmtSeconds(Math.min(mm.intervalMin, mm.intervalMax))}–${fmtSeconds(Math.max(mm.intervalMin, mm.intervalMax))}`;
+  }
+  const addonMathEdit = (fn) => { const entry = getAddonEntry(state.exercise); fn(entry); saveAddonStore(); syncAddonUI(); };
+  document.querySelectorAll("#addonTaskRow [data-addon-task]").forEach((el) => el.addEventListener("click", () => addonMathEdit((e) => { e.task = el.dataset.addonTask; })));
+  document.querySelectorAll("#addonMathLevelRow [data-addon-mathlevel]").forEach((el) => el.addEventListener("click", () => addonMathEdit((e) => { e.math.level = el.dataset.addonMathlevel; })));
+  document.querySelectorAll("#addonMathAnswerRow [data-addon-mathanswer]").forEach((el) => el.addEventListener("click", () => addonMathEdit((e) => { e.math.answer = el.dataset.addonMathanswer; })));
+  [["addonMathShowSlider", "stimulusS"], ["addonMathGapMinSlider", "intervalMin"], ["addonMathGapMaxSlider", "intervalMax"]].forEach(([id, f]) => {
+    $(id).addEventListener("input", () => {
+      const entry = getAddonEntry(state.exercise);
+      entry.math[f] = Number($(id).value);
+      saveAddonStore();
+      syncAddonMathUI(entry);
+    });
+  });
+  // Cardio "+ Zusatzaufgabe" · Rechnen runs on the blank host
+  // (cardio-flash-host); triggerCardioGuest() names which add-on it carries.
+  let cardioHostAddonId = null, cardioHostAddonCfg = null;
+  if (navigator.webdriver) window.__mathFinishRun = () => { if (session && session.addonMath) finishSession(); };
+  if (navigator.webdriver) window.__math = {
+    make: (level, n, seed) => { let x = seed || 1; const rng = () => ((x = (x * 16807) % 2147483647) / 2147483647); return Array.from({ length: n }, () => mathMakeStatement(level, rng)); },
+    state: () => {
+      const m = session && session.addonMath;
+      if (!m) return null;
+      const r = canvas.getBoundingClientRect(), kk = canvas.width / (r.width || 1);
+      const elapsed = (performance.now() - session.startTime) / 1000;
+      const it = mathCurrent(m, elapsed);
+      const css = (v) => v / kk;
+      return {
+        answer: m.answer, ok: m.ok, bad: m.bad, miss: m.miss, R: css(m.R), rIn: css(m.rIn), count: session.addonSchedule.length,
+        cur: it ? { id: it.id, text: it.text, truth: it.truth, answered: !!m.answered[it.id], cx: r.left + css(it.x), cy: r.top + css(it.y), overlap: it.overlap } : null,
+        items: session.addonSchedule.map((f) => ({ t0: f.t0, t1: f.t1, text: f.text, truth: f.truth, overlap: f.overlap, cx: r.left + css(f.x), cy: r.top + css(f.y) })),
+      };
+    },
+  };
 
   // Redraws whatever frame is currently frozen on screen (used while the
   // Periph pause overlay is open) without touching the schedule/elapsed
@@ -5992,8 +7078,10 @@
     state.stimulusS = block.stimulusS ?? 1.5;
     state.intervalMin = block.intervalMin ?? 2;
     state.intervalMax = block.intervalMax ?? 4;
-    if (block.ff) { Object.assign(state, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
+    if (block.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
     if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
+    if (block.lw) lwApply(block.lw);
+    vtExtrasApply(block, { fromCode: true });
     active = blockColors(block);
   }
 
@@ -6027,6 +7115,9 @@
     // Leaving a player always drops an open "Pausiert" sheet (it lives
     // inside that player); guarded since this runs during start-up too.
     try { closeTrainPause(); } catch (e) {}
+    try { lwStop(); } catch (e) {} // Hütchen · Laufweg stage lives inside #player
+    try { zusSignalStop(); } catch (e) {} // Zusatz für oben: signal timer
+    try { breathGuideRuns.forEach((r, h) => { if (r.guest) breathGuideStop(h); }); } catch (e) {} // Pausen mit Atemführung
     els.player.hidden = true;
     els.breathPlayer.hidden = true;
     els.wimhofPlayer.hidden = true;
@@ -6064,9 +7155,13 @@
     els.pvtPlayer.hidden = true;
     els.bisectPlayer.hidden = true;
     els.kippbildPlayer.hidden = true;
+    els.eyecountPlayer.hidden = true;
+    els.tonPlayer.hidden = true; tonHaltSilently(); // Ton-Sequenz
     els.workoutPlayer.hidden = true;
     els.cardioPlayer.hidden = true;
     els.freePlayer.hidden = true;
+    els.optoPlayer.hidden = true;
+    els.neuroPlayer.hidden = true;
     els.programVideoPlayer.hidden = true;
     els.programVideoEl.pause();
     els.breathTransition.hidden = true;
@@ -6100,9 +7195,48 @@
     const built = buildScheduleFor(EXERCISES[state.exercise], Math.random);
     const addon = buildAddonSchedule(EXERCISES[state.exercise], state.exercise, built.schedule, Math.random);
     session = { ...built, startTime: performance.now(), lastIndex: -1, addonSchedule: addon.schedule, addonSizeMode: addon.sizeMode, soft: softOn(state.exercise) };
+    session.addonMath = addon.math ? mathSessionNew(addon.math) : null; // Zusatzaufgabe Rechnen
+    // Farbfelder · Antippen: the canvas takes taps and scores them.
+    session.ffTap = EXERCISES[state.exercise].type === "farbfelder" && ffTapMode() ? ffTapNew() : null;
+    els.player.classList.toggle("ff-tap", !!session.ffTap);
+    regelnBarSync();
+    zusSignalStart("player"); // Zusatz "Kreisrichtung wechseln auf Signal"
     requestWakeLock();
     raf = requestAnimationFrame(tick);
   }
+
+  // Farbfelder · Antippen: the tap counts on touch-down (like every game
+  // answer, see onGameTap) and needs its coordinates, so it has its own
+  // listener instead of FAST_TAP_SEL. Only active while a tapping run is on
+  // screen; the paused sheet covers the canvas anyway.
+  canvas.addEventListener("pointerdown", (e) => {
+    const tp = session && session.ffTap;
+    if (!tp || periphPausedAt || els.player.hidden) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    e.preventDefault();
+    const r = canvas.getBoundingClientRect();
+    if (!r.width) return;
+    const k = canvas.width / r.width;
+    const g = ffGeometry(canvas.width, canvas.height);
+    const field = ffFieldAt(g, (e.clientX - r.left) * k, (e.clientY - r.top) * k);
+    ffTapAnswer(tp, field, (performance.now() - session.startTime) / 1000);
+  });
+  if (navigator.webdriver) window.__ffTap = () => {
+    const tp = session && session.ffTap;
+    if (!tp) return null;
+    const fr = session.lastIndex >= 0 ? session.schedule[session.lastIndex] : null;
+    return {
+      elapsed: (performance.now() - session.startTime) / 1000,
+      frame: fr ? { kind: fr.kind, t0: fr.t0, t1: fr.t1, phase: fr.payload && fr.payload.phase, target: fr.payload && fr.payload.target } : null,
+      cur: tp.cur ? { ...tp.cur } : null,
+      round: tp.round ? JSON.parse(JSON.stringify(tp.round)) : null,
+      items: tp.items.map((i) => ({ ...i })),
+      rounds: tp.rounds.map((r) => ({ len: r.seq.length, ok: r.ok })),
+      flash: tp.flash ? { field: tp.flash.field, ok: tp.flash.ok } : null,
+      score: ffTapScore(tp, state.ffMode),
+    };
+  };
+  if (navigator.webdriver) window.__ffTapFinish = () => { if (session && session.ffTap) finishSession(); };
 
   // Tap-paced cone-order exercise ("Hütchen sortieren"): four big colour
   // dots show the order the client's four cones should be sorted into. Runs
@@ -6172,6 +7306,417 @@
     renderConeOrderRound();
   }
   els.coneOrderStage.addEventListener("click", () => coneTapAdvance());
+
+  // ==== Hütchen · Laufweg "Folge der Karte" (Fabian 2026-10-08) ====
+  // A VT catalog exercise like Hütchen sortieren / Kompass-Aufbau (same ready
+  // screen, Kombi, presets, Wochenplan, history), but tap-paced with its own
+  // DOM/SVG stage instead of the canvas schedule: the app can't see the walk,
+  // so there is no stimulus timing and no scoring. Settings live in the VT
+  // state (lw*), snapshot `lw` in Kombi blocks and presets. docs/notes/33.
+  // Phones: player bars with ⓘ use short status texts (one row from 360 px).
+  function barCompact() { return window.innerWidth <= 480; }
+  const LW_LENGTHS = { kurz: { n: 3, label: "Kurz" }, mittel: { n: 5, label: "Mittel" }, lang: { n: 7, label: "Lang" } };
+  const LW_ROW_DEFAULTS = ["gelb", "blau", "rot", "gruen"];
+  const LW_VARIANT_LABELS = { karte: "Karte in der Hand", merken: "Weg merken" };
+  // Hoisted, literal-only: loadPrefs() runs before this block is reached.
+  function lwNormalize(p) {
+    if (!["karte", "merken"].includes(p.lwVariant)) p.lwVariant = "karte";
+    const rr = Math.round(Number(p.lwRows)), cc = Math.round(Number(p.lwCols));
+    p.lwRows = rr >= 2 && rr <= 4 ? rr : 3;
+    p.lwCols = cc >= 2 && cc <= 4 ? cc : 3;
+    const lib = ["rot", "gelb", "gruen", "blau", "orange", "lila", "pink"];
+    const defs = p.lwRows === 2 ? ["gelb", "rot"] : p.lwRows === 4 ? ["gelb", "blau", "rot", "gruen"] : ["gelb", "blau", "rot"];
+    const cur = Array.isArray(p.lwRowColors) ? p.lwRowColors.slice() : [];
+    p.lwRowColors = Array.from({ length: p.lwRows }, (_, i) => (lib.includes(cur[i]) ? cur[i] : defs[i]));
+    if (!["kurz", "mittel", "lang"].includes(p.lwLength)) p.lwLength = "mittel";
+    const sh = Math.round(Number(p.lwShowS));
+    p.lwShowS = sh >= 3 && sh <= 20 ? sh : 8;
+    if (!["runden", "dauer"].includes(p.lwEnd)) p.lwEnd = "runden";
+    const ro = Math.round(Number(p.lwRounds));
+    p.lwRounds = ro >= 1 && ro <= 20 ? ro : 5;
+    p.lwDurS = [120, 180, 300, 600].includes(Number(p.lwDurS)) ? Number(p.lwDurS) : 300;
+    return p;
+  }
+  function lwSnapshot(p = state) {
+    return { lwVariant: p.lwVariant, lwRows: p.lwRows, lwCols: p.lwCols, lwRowColors: p.lwRowColors.slice(), lwLength: p.lwLength, lwShowS: p.lwShowS, lwEnd: p.lwEnd, lwRounds: p.lwRounds, lwDurS: p.lwDurS };
+  }
+  function lwApply(snap) { if (snap) { Object.assign(state, JSON.parse(JSON.stringify(snap))); lwNormalize(state); } }
+  // Rough run length for the Kombi list (Runden: ~40 s per path).
+  function lwEstimateS(p = state) { return p.lwEnd === "dauer" ? p.lwDurS : p.lwRounds * (p.lwVariant === "merken" ? p.lwShowS + 35 : 40); }
+
+  // ---- Path maker (pure; units: cone (col c, row r) sits at x = c, y = r,
+  // row 0 = back row = top of the map, the client starts below the front row).
+  // Targets are cones; around each the path makes a full loop or wraps round
+  // the far side; between cones it runs along the gaps (half-unit lattice
+  // lines), so it never crosses a cone; Catmull-Rom smoothing plus a little
+  // jitter gives the hand-drawn look.
+  const LW_RHO = 0.36;
+  function lwMakePath(rows, cols, length, rng) {
+    const ri = (a, b) => a + Math.floor(rng() * (b - a + 1));
+    const n = (LW_LENGTHS[length] || LW_LENGTHS.mittel).n;
+    const cones = [];
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) cones.push({ r, c });
+    const targets = [];
+    let prev = null, prev2 = null;
+    for (let i = 0; i < n; i++) {
+      let pool = cones.filter((k) => k !== prev && (cones.length <= 2 || k !== prev2));
+      if (i === 0) pool = pool.filter((k) => k.r >= rows - 2); // start near the front
+      const t = pool[Math.floor(rng() * pool.length)];
+      targets.push(t); prev2 = prev; prev = t;
+    }
+    const start = { x: ri(0, cols - 1) + (rng() < 0.5 ? 0 : 0.5) * (cols > 1 ? 1 : 0), y: rows - 1 + 0.95 };
+    if (start.x > cols - 1) start.x = cols - 1;
+    const sides = [{ x: -0.95, y: ri(0, rows - 1) }, { x: cols - 1 + 0.95, y: ri(0, rows - 1) }, { x: ri(0, cols - 1), y: -0.85 }];
+    const end = sides[Math.floor(rng() * sides.length)];
+    const clampG = (v, n2) => Math.max(-0.5, Math.min(n2 - 0.5, v));
+    const cornerOf = (cone, toward) => ({ x: cone.c + (toward.x >= cone.c ? 0.5 : -0.5), y: cone.r + (toward.y >= cone.r ? 0.5 : -0.5) });
+    const snap = (p) => ({ x: clampG(Math.round(p.x - 0.5) + 0.5, cols), y: clampG(Math.round(p.y - 0.5) + 0.5, rows) });
+    const clear = (a, b, skip) => {
+      for (let s = 0; s <= 20; s++) {
+        const x = a.x + (b.x - a.x) * (s / 20), y = a.y + (b.y - a.y) * (s / 20);
+        if (cones.some((k) => Math.hypot(k.c - x, k.r - y) < (k === skip ? 0.3 : 0.36))) return false;
+      }
+      return true;
+    };
+    // L-shaped run along gap lines from lattice point a to lattice point b.
+    const lattice = (a, b) => (Math.abs(a.x - b.x) < 1e-9 || Math.abs(a.y - b.y) < 1e-9 ? [a, b] : rng() < 0.5 ? [a, { x: b.x, y: a.y }, b] : [a, { x: a.x, y: b.y }, b]);
+    const pts = [{ x: start.x, y: start.y, kind: "start" }];
+    let cur = { x: start.x, y: start.y };
+    let curCone = null;
+    const push = (p, kind) => {
+      const last = pts[pts.length - 1];
+      if (Math.hypot(last.x - p.x, last.y - p.y) > 1e-6) pts.push({ x: p.x, y: p.y, kind });
+    };
+    let lane = 0;
+    const travel = (to, toCone) => {
+      // from cur (start or a loop point of curCone) to lattice corner `to`;
+      // each run gets its own small lane offset so two passes along the same
+      // gap stay apart on the map
+      lane = (lane + 1) % 3;
+      const off = (lane - 1) * 0.07;
+      const laneP = (p) => ({ x: p.x + off, y: p.y + off });
+      if (!clear(cur, to, curCone)) {
+        const from = curCone ? cornerOf(curCone, to) : snap(cur);
+        if (curCone) {
+          // stay on the loop circle until facing that corner, never across the cone
+          const th = Math.atan2(cur.y - curCone.r, cur.x - curCone.c), ph = Math.atan2(from.y - curCone.r, from.x - curCone.c);
+          let dd = ph - th; while (dd > Math.PI) dd -= 2 * Math.PI; while (dd < -Math.PI) dd += 2 * Math.PI;
+          const k = Math.floor(Math.abs(dd) / (Math.PI / 5));
+          for (let s2 = 1; s2 <= k; s2++) push({ x: curCone.c + Math.cos(th + dd * (s2 / (k + 1))) * LW_RHO, y: curCone.r + Math.sin(th + dd * (s2 / (k + 1))) * LW_RHO }, "loop");
+        }
+        if (Math.hypot(from.x - cur.x, from.y - cur.y) > 1e-6) push(from, "gap");
+        const run = lattice(from, to).slice(1);
+        run.forEach((p, i) => push(i < run.length - 1 ? laneP(p) : p, "gap"));
+      } else push(to, "gap");
+      cur = { x: to.x, y: to.y };
+    };
+    targets.forEach((t, i) => {
+      const next = targets[i + 1];
+      const entryCorner = cornerOf(t, cur);
+      travel(entryCorner, t);
+      const exitToward = next ? { x: next.c, y: next.r } : end;
+      const thIn = Math.atan2(entryCorner.y - t.r, entryCorner.x - t.c);
+      const exitCorner = cornerOf(t, exitToward);
+      const thOut = Math.atan2(exitCorner.y - t.r, exitCorner.x - t.c);
+      const full = rng() < 0.5;
+      let dir = rng() < 0.5 ? 1 : -1;
+      const sweep = (d) => { let v = (thOut - thIn) * d; v = ((v % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI); return v; };
+      let total;
+      if (full) total = 2 * Math.PI + sweep(dir);
+      else { if (sweep(dir) < Math.PI * 0.9) dir = -dir; total = Math.max(sweep(dir), Math.PI * 0.9); }
+      const steps = Math.max(3, Math.ceil(total / (Math.PI / 5)));
+      for (let s = 0; s <= steps; s++) {
+        const a = thIn + dir * total * (s / steps);
+        push({ x: t.c + Math.cos(a) * LW_RHO, y: t.r + Math.sin(a) * LW_RHO }, "loop");
+      }
+      t.loop = full ? "full" : "half"; t.dir = dir;
+      cur = { ...pts[pts.length - 1] };
+      curCone = t;
+    });
+    // to the end mark (outside the field)
+    const endLattice = snap({ x: Math.max(-0.5, Math.min(cols - 0.5, end.x)), y: Math.max(-0.5, Math.min(rows - 0.5, end.y)) });
+    travel(endLattice, null);
+    push(end, "end");
+    // Long straight runs get extra points, so the smoothing keeps the corners
+    // tight instead of bulging towards a cone; then a little jitter on the
+    // gap points only (loops stay round) for the hand-drawn look.
+    const dense = [pts[0]];
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i], L = Math.hypot(b.x - a.x, b.y - a.y);
+      if (a.kind !== "loop" && b.kind !== "loop" && L > 0.6) {
+        const k = Math.ceil(L / 0.45);
+        for (let j = 1; j < k; j++) dense.push({ x: a.x + (b.x - a.x) * (j / k), y: a.y + (b.y - a.y) * (j / k), kind: "gap" });
+      }
+      dense.push(b);
+    }
+    dense.forEach((p) => { if (p.kind === "gap") { p.x += (rng() - 0.5) * 0.05; p.y += (rng() - 0.5) * 0.05; } });
+    return { rows, cols, cones, targets: targets.map((t) => ({ r: t.r, c: t.c, loop: t.loop, dir: t.dir })), start, end, pts: dense, d: lwSmoothPath(dense) };
+  }
+  function lwSmoothPath(pts) {
+    const f = (v) => Math.round(v * 1000) / 1000;
+    let d = `M${f(pts[0].x)} ${f(pts[0].y)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+      const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 };
+      const c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 };
+      d += ` C${f(c1.x)} ${f(c1.y)} ${f(c2.x)} ${f(c2.y)} ${f(p2.x)} ${f(p2.y)}`;
+    }
+    return d;
+  }
+  // SVG map: cones in their row colours, start mark, path + arrow (or none).
+  function lwConeSvg(x, y, hex) {
+    return `<g class="lw-cone"><ellipse cx="${x}" cy="${y + 0.13}" rx="0.19" ry="0.055" fill="${hex}" stroke="#16232a" stroke-width="0.022"/>` +
+      `<path d="M${x} ${y - 0.2} L${x + 0.13} ${y + 0.12} L${x - 0.13} ${y + 0.12} Z" fill="${hex}" stroke="#16232a" stroke-width="0.022" stroke-linejoin="round"/>` +
+      `<path d="M${x - 0.075} ${y - 0.03} L${x + 0.075} ${y - 0.03}" stroke="#ffffff" stroke-width="0.035" stroke-linecap="round" opacity="0.85"/></g>`;
+  }
+  function lwMapSvg(path, rowColors, showPath, opts = {}) {
+    const { rows, cols } = path;
+    const x0 = -1.15, y0 = -1.0, w = cols - 1 + 2.3, h = rows - 1 + 2.25;
+    let svg = `<svg class="lw-svg" viewBox="${x0} ${y0} ${w} ${h}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(opts.label || "Karte mit Hütchen")}">`;
+    svg += `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="#ffffff"/>`;
+    svg += `<text x="${x0 + 0.12}" y="${y0 + 0.3}" font-size="0.2" font-family="'Public Sans',sans-serif" font-weight="600" fill="#5c6e75">hinten</text>`;
+    path.cones.forEach((k) => { svg += lwConeSvg(k.c, k.r, (COLOR_BY_KEY[rowColors[k.r]] || COLOR_BY_KEY.rot).hex); });
+    if (showPath && path.d) {
+      // Phone (narrow map): thinner line and fewer direction marks, so the
+      // way stays readable (Prüfer 08.10.).
+      const thin = !!opts.narrow;
+      svg += `<path class="lw-path" d="${path.d}" fill="none" stroke="#ffffff" stroke-width="${thin ? 0.11 : 0.13}" stroke-linecap="round" stroke-linejoin="round"/>`;
+      svg += `<path class="lw-path" data-lw-path="1" d="${path.d}" fill="none" stroke="#16232a" stroke-width="${thin ? 0.05 : 0.065}" stroke-linecap="round" stroke-linejoin="round"/>`;
+      // small direction marks along the way (every ~1.1 units, 1.6 on a
+      // phone, not at the ends, never two on top of each other)
+      const P = path.pts;
+      const step = thin ? 1.6 : 1.1, marks = [];
+      let total = 0;
+      for (let i = 1; i < P.length; i++) total += Math.hypot(P[i].x - P[i - 1].x, P[i].y - P[i - 1].y);
+      let acc = 0, nextAt = 0.9;
+      for (let i = 1; i < P.length; i++) {
+        const seg = Math.hypot(P[i].x - P[i - 1].x, P[i].y - P[i - 1].y);
+        while (seg > 0 && acc + seg >= nextAt && nextAt < total - 0.6) {
+          const t = (nextAt - acc) / seg, x = P[i - 1].x + (P[i].x - P[i - 1].x) * t, y = P[i - 1].y + (P[i].y - P[i - 1].y) * t;
+          const an = Math.atan2(P[i].y - P[i - 1].y, P[i].x - P[i - 1].x), cs = Math.cos(an), sn = Math.sin(an);
+          const pt = (f, l) => `${(x + cs * f - sn * l).toFixed(3)} ${(y + sn * f + cs * l).toFixed(3)}`;
+          if (!marks.some((m) => Math.hypot(m.x - x, m.y - y) < 0.45)) {
+            marks.push({ x, y });
+            svg += `<path class="lw-chevron" d="M${pt(-0.08, -0.1)} L${pt(0.1, 0)} L${pt(-0.08, 0.1)} Z" fill="#16232a" stroke="#ffffff" stroke-width="0.02" stroke-linejoin="round"/>`;
+          }
+          nextAt += step;
+        }
+        acc += seg;
+      }
+      const a = path.pts[path.pts.length - 2], b = path.pts[path.pts.length - 1];
+      const ang = Math.atan2(b.y - a.y, b.x - a.x), L = 0.26, W = 0.16;
+      const tip = { x: b.x + Math.cos(ang) * 0.08, y: b.y + Math.sin(ang) * 0.08 };
+      const bx = tip.x - Math.cos(ang) * L, by = tip.y - Math.sin(ang) * L;
+      svg += `<path class="lw-arrow" d="M${tip.x} ${tip.y} L${bx + Math.sin(ang) * W} ${by - Math.cos(ang) * W} L${bx - Math.sin(ang) * W} ${by + Math.cos(ang) * W} Z" fill="#16232a"/>`;
+    }
+    const s = path.start;
+    svg += `<circle class="lw-start" cx="${s.x}" cy="${s.y}" r="0.15" fill="#007094" stroke="#ffffff" stroke-width="0.04"/>`;
+    const lx = s.x + 0.24 + 0.62 > x0 + w ? s.x - 0.24 - 0.62 : s.x + 0.24;
+    svg += `<text x="${lx}" y="${s.y + 0.08}" font-size="0.22" font-family="'Public Sans',sans-serif" font-weight="700" fill="#007094">Start</text>`;
+    return svg + `</svg>`;
+  }
+
+  // ---- Ready screen (#lwSettings) ----
+  function syncLwUI() {
+    lwNormalize(state);
+    document.querySelectorAll("#lwVariantRow [data-lw-variant]").forEach((b) => setActive(b, b.dataset.lwVariant === state.lwVariant));
+    $("lwVariantHelp").textContent = state.lwVariant === "merken"
+      ? "Du siehst den Weg kurz, dann verschwindet er. Lauf ihn aus dem Kopf, mit „Weg zeigen“ prüfst du danach."
+      : "Nimm das Handy mit und lauf den Weg, den die Karte zeigt.";
+    $("lwShowGroup").hidden = state.lwVariant !== "merken";
+    $("lwShowSlider").value = state.lwShowS;
+    $("lwShowValue").textContent = `${state.lwShowS} s`;
+    document.querySelectorAll("#lwLengthRow [data-lw-length]").forEach((b) => setActive(b, b.dataset.lwLength === state.lwLength));
+    document.querySelectorAll("#lwRowsRow [data-lw-rows]").forEach((b) => setActive(b, Number(b.dataset.lwRows) === state.lwRows));
+    document.querySelectorAll("#lwColsRow [data-lw-cols]").forEach((b) => setActive(b, Number(b.dataset.lwCols) === state.lwCols));
+    document.querySelectorAll("#lwEndRow [data-lw-end]").forEach((b) => setActive(b, b.dataset.lwEnd === state.lwEnd));
+    $("lwRoundsLine").hidden = state.lwEnd !== "runden";
+    $("lwDurRow").hidden = state.lwEnd !== "dauer";
+    $("lwRoundsSlider").value = state.lwRounds;
+    $("lwRoundsValue").textContent = `${state.lwRounds} ${state.lwRounds === 1 ? "Weg" : "Wege"}`;
+    document.querySelectorAll("#lwDurRow [data-lw-dur]").forEach((b) => setActive(b, Number(b.dataset.lwDur) === state.lwDurS));
+    $("lwSizeHelp").textContent = `${state.lwRows * state.lwCols} Hütchen: ${state.lwRows} Reihen mit je ${state.lwCols}. Oben ist die hintere Reihe, unten die vordere – du startest unten.`;
+    const names = ["hinten", "Mitte", "vorne"];
+    const rowName = (i) => (state.lwRows === 2 ? ["hinten", "vorne"][i] : state.lwRows === 3 ? names[i] : ["hinten", "2. Reihe", "3. Reihe", "vorne"][i]);
+    $("lwRowColors").innerHTML = state.lwRowColors.map((key, i) =>
+      `<div class="lw-row-colors"><span class="lw-row-name">Reihe ${rowName(i)}</span><div class="lw-row-swatches" role="group" aria-label="Farbe Reihe ${rowName(i)}">` +
+      COLOR_LIB.map((c) => `<button type="button" class="lw-swatch${c.key === key ? " active" : ""}" data-lw-row="${i}" data-lw-color="${c.key}" style="background:${c.hex}" aria-label="${c.name}" aria-pressed="${c.key === key}"></button>`).join("") +
+      `</div></div>`).join("");
+    const demo = lwMakePath(state.lwRows, state.lwCols, "kurz", () => 0.5);
+    $("lwPreview").innerHTML = lwMapSvg({ ...demo, d: "" }, state.lwRowColors, false, { label: "So stellst du die Hütchen auf" });
+  }
+  const lwSet = (fn) => { fn(); lwNormalize(state); savePrefs(); syncLwUI(); };
+  document.querySelectorAll("#lwVariantRow [data-lw-variant]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwVariant = b.dataset.lwVariant; })));
+  document.querySelectorAll("#lwLengthRow [data-lw-length]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwLength = b.dataset.lwLength; })));
+  document.querySelectorAll("#lwRowsRow [data-lw-rows]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwRows = Number(b.dataset.lwRows); })));
+  document.querySelectorAll("#lwColsRow [data-lw-cols]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwCols = Number(b.dataset.lwCols); })));
+  document.querySelectorAll("#lwEndRow [data-lw-end]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwEnd = b.dataset.lwEnd; })));
+  document.querySelectorAll("#lwDurRow [data-lw-dur]").forEach((b) => b.addEventListener("click", () => lwSet(() => { state.lwDurS = Number(b.dataset.lwDur); })));
+  $("lwShowSlider").addEventListener("input", () => lwSet(() => { state.lwShowS = Number($("lwShowSlider").value); }));
+  $("lwRoundsSlider").addEventListener("input", () => lwSet(() => { state.lwRounds = Number($("lwRoundsSlider").value); }));
+  $("lwRowColors").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-lw-color]");
+    if (!b) return;
+    lwSet(() => { state.lwRowColors[Number(b.dataset.lwRow)] = b.dataset.lwColor; });
+  });
+
+  // ---- Run ----
+  let lwRun = null;  // { round, path, phase: show|walk|check|karte, showEnd, pausedAt }
+  let lwLast = null; // result handed to finishSession()
+  function lwStop() {
+    if (!lwRun && $("lwStage").hidden) return;
+    lwRun = null;
+    $("lwStage").hidden = true;
+    $("lwPauseOverlay").hidden = true;
+    $("lwPauseBtn").hidden = true;
+  }
+  function lwRender() {
+    const r = lwRun;
+    if (!r) return;
+    const show = r.phase !== "walk";
+    $("lwMap").innerHTML = lwMapSvg(r.path, r.cfg.lwRowColors, show, { label: show ? "Karte mit deinem Weg" : "Karte ohne Weg", narrow: lwNarrow() });
+    const of = r.cfg.lwEnd === "runden" ? ` von ${r.cfg.lwRounds}` : "";
+    const left = Math.max(0, Math.ceil(r.showEnd - lwNow()));
+    $("lwCaption").textContent = r.phase === "show" ? `Weg ${r.round}${of} · merk dir den Weg · noch ${left} s`
+      : r.phase === "walk" ? `Weg ${r.round}${of} · lauf ihn aus dem Kopf`
+      : r.phase === "check" ? `Weg ${r.round}${of} · so war der Weg` : `Weg ${r.round}${of}`;
+    const reveal = $("lwRevealBtn");
+    reveal.hidden = !(r.phase === "walk" || r.phase === "check");
+    reveal.textContent = r.phase === "check" ? "Weg ausblenden" : "Weg zeigen";
+    const last = r.cfg.lwEnd === "runden" && r.round >= r.cfg.lwRounds;
+    $("lwNextBtn").textContent = last ? "Fertig" : "Nächster Weg";
+    $("lwNextBtn").hidden = r.phase === "show";
+  }
+  function lwNow() { return (performance.now() - session.startTime) / 1000; }
+  // How tangled a path looks (Prüfer 08.10.: "Weg verknotet" at 390 px):
+  // crossings of the drawn line with itself, minus one per full loop (a full
+  // loop round a cone always crosses its own entry once), and the closest
+  // the line comes to any cone.
+  function lwPathScore(path) {
+    const P = path.pts, n = P.length;
+    const cross = (a, b, c, d) => {
+      const o = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+      const d1 = o(c, d, a), d2 = o(c, d, b), d3 = o(a, b, c), d4 = o(a, b, d);
+      return ((d1 > 0) !== (d2 > 0)) && ((d3 > 0) !== (d4 > 0)) && d1 * d2 < 0 && d3 * d4 < 0;
+    };
+    let crossings = 0;
+    for (let i = 0; i < n - 1; i++) for (let j = i + 3; j < n - 1; j++) if (cross(P[i], P[i + 1], P[j], P[j + 1])) crossings++;
+    const full = path.targets.filter((t) => t.loop === "full").length;
+    let clearance = Infinity;
+    P.forEach((p) => path.cones.forEach((k) => { clearance = Math.min(clearance, Math.hypot(k.c - p.x, k.r - p.y)); }));
+    return { tangle: Math.max(0, crossings - full), crossings, clearance };
+  }
+  // Several candidates, the calmest wins; a narrow stage (phone) is
+  // stricter: no extra crossing at all.
+  function lwPickPath(rows, cols, length, narrow, avoidD) {
+    const limit = narrow ? 0 : 1;
+    let best = null;
+    // 400 tries: a long Mittel/Lang path is calm in only ~1 of 100 raw
+    // drafts; scoring all 400 takes a few ms once per round.
+    for (let i = 0; i < 400; i++) {
+      const p = lwMakePath(rows, cols, length, Math.random);
+      if (avoidD && p.d === avoidD) continue;
+      const sc = lwPathScore(p);
+      p.score = sc;
+      if (sc.tangle <= limit && sc.clearance >= 0.25) return p;
+      if (!best || sc.tangle < best.score.tangle || (sc.tangle === best.score.tangle && sc.clearance > best.score.clearance)) best = p;
+    }
+    return best;
+  }
+  const lwNarrow = () => { const w = $("lwStage").clientWidth || window.innerWidth; return w < 560; };
+  function lwNewPath() {
+    const r = lwRun;
+    const p = lwPickPath(r.cfg.lwRows, r.cfg.lwCols, r.cfg.lwLength, lwNarrow(), r.path && r.path.d);
+    r.path = p;
+    if (navigator.webdriver) window.__lwLast = p;
+    if (r.cfg.lwVariant === "merken") { r.phase = "show"; r.showEnd = lwNow() + r.cfg.lwShowS; } else r.phase = "karte";
+    lwRender();
+  }
+  function lwTick() {
+    const r = lwRun;
+    if (!r || r.pausedAt) return;
+    const el = lwNow();
+    if (r.cfg.lwEnd === "dauer" && el >= session.total) { lwComplete(); return; }
+    if (r.phase === "show" && el >= r.showEnd) { r.phase = "walk"; lwRender(); }
+    else if (r.phase === "show") {
+      const txt = $("lwCaption").textContent, left = Math.max(0, Math.ceil(r.showEnd - el));
+      if (!txt.endsWith(`noch ${left} s`)) lwRender();
+    }
+    els.timeEl.textContent = r.cfg.lwEnd === "dauer" ? fmtClock(session.total - el) : fmtClock(el);
+    raf = requestAnimationFrame(lwTick);
+  }
+  function startLaufweg() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.player.hidden = false;
+    els.playerBar.hidden = false;
+    els.progressTrack.hidden = !comboProgram && !program;
+    els.stageWrap.hidden = true;
+    els.coneOrderStage.hidden = true;
+    els.periphPauseBtn.hidden = true;
+    $("lwStage").hidden = false;
+    $("lwPauseBtn").hidden = false;
+    $("lwPauseOverlay").hidden = true;
+    if (raf) cancelAnimationFrame(raf);
+    const cfg = lwNormalize(lwSnapshot());
+    session = { startTime: performance.now(), total: cfg.lwEnd === "dauer" ? cfg.lwDurS : 3600, schedule: [] };
+    lwRun = { cfg, round: 1, path: null, phase: "karte", showEnd: 0, pausedAt: null };
+    // keep the map below the floating player bar
+    const bar = els.playerBar.getBoundingClientRect();
+    $("lwStage").style.paddingTop = Math.round(Math.max(64, bar.bottom + 6)) + "px";
+    regelnBarSync();
+    zusSignalStart("player");
+    requestWakeLock();
+    lwNewPath();
+    raf = requestAnimationFrame(lwTick);
+  }
+  function lwComplete() {
+    const r = lwRun;
+    if (!r) return;
+    lwLast = { cfg: r.cfg, count: r.round };
+    lwStop();
+    finishSession();
+  }
+  $("lwNextBtn").addEventListener("click", () => {
+    const r = lwRun;
+    if (!r || r.pausedAt) return;
+    if (r.cfg.lwEnd === "runden" && r.round >= r.cfg.lwRounds) { lwComplete(); return; }
+    r.round++;
+    lwNewPath();
+  });
+  $("lwRevealBtn").addEventListener("click", () => {
+    const r = lwRun;
+    if (!r || r.pausedAt) return;
+    r.phase = r.phase === "check" ? "walk" : "check";
+    lwRender();
+  });
+  $("lwPauseBtn").addEventListener("click", () => {
+    const r = lwRun;
+    if (!r || r.pausedAt) return;
+    r.pausedAt = performance.now();
+    if (raf) cancelAnimationFrame(raf);
+    raf = null;
+    $("lwPauseOverlay").hidden = false;
+    $("lwPauseBtn").hidden = true;
+  });
+  $("lwResumeBtn").addEventListener("click", () => {
+    const r = lwRun;
+    if (!r || !r.pausedAt) return;
+    session.startTime += performance.now() - r.pausedAt;
+    r.pausedAt = null;
+    $("lwPauseOverlay").hidden = true;
+    $("lwPauseBtn").hidden = false;
+    raf = requestAnimationFrame(lwTick);
+  });
+  function lwResultText(d) { return `${d.count} ${d.count === 1 ? "Weg" : "Wege"}`; }
+  function lwNote(d) { return `${LW_VARIANT_LABELS[d.cfg.lwVariant]} · ${d.cfg.lwRows}×${d.cfg.lwCols} Hütchen · ${LW_LENGTHS[d.cfg.lwLength].label} · ${lwResultText(d)}`; }
+  if (navigator.webdriver) window.__lw = {
+    make: (rows, cols, length, seed) => { let x = seed || 1; const rng = () => ((x = (x * 16807) % 2147483647) / 2147483647); return lwMakePath(rows, cols, length, rng); },
+    run: () => (lwRun ? { round: lwRun.round, phase: lwRun.phase, cfg: lwRun.cfg, paused: !!lwRun.pausedAt, d: lwRun.path && lwRun.path.d } : null),
+    finish: () => { if (lwRun) lwComplete(); },
+    score: (path) => lwPathScore(path),
+    pick: (rows, cols, length, narrow) => { const p = lwPickPath(rows, cols, length, narrow, null); return { score: p.score, d: p.d }; },
+  };
 
   // idx indexes program.steps (exercises and video steps interleaved).
   // Used for every direct/manual chapter jump (chapter list, prev/next,
@@ -6266,16 +7811,56 @@
 
   // ---- Pause between programme exercises ----
   let pauseTimer = null;
-  let breathTimer = null;
   let pauseRemaining = 0;
   let pausePaused = false;
   let pauseNextIdx = 0; // steps-index to advance to once the pause countdown ends
 
   function stopPauseTimers() {
     if (pauseTimer) clearTimeout(pauseTimer);
-    if (breathTimer) clearInterval(breathTimer);
-    pauseTimer = breathTimer = null;
-    els.breath.classList.remove("run");
+    pauseTimer = null;
+    breathGuideStop(els.breath);
+  }
+
+  // ---- Atemführung: one breathing guide (circle 4 s in / 4 s out, CSS
+  // animation .breath.run + the "Einatmen"/"Ausatmen" label) for the
+  // trainer-programme pause and - with "Pausen mit Atemführung" in the
+  // Grundeinstellungen (masterPrefs.pauseBreath, Fabian 08.10.) - the
+  // pauses of the Kombi-Programm, Krafttraining and Ausdauertraining.
+  // Those wrap their countdown in a .breath-host; it only becomes a
+  // .breath circle while the guide runs, the countdown stays inside at its
+  // full size. Pauses under PAUSE_BREATH_MIN_S keep the plain countdown.
+  // A new pause: wrap its countdown in .breath-host + a hidden .breath-label
+  // and call breathGuideFor(host, label, pauseSeconds) / breathGuideStop.
+  const PAUSE_BREATH_MIN_S = 10;
+  const breathGuideRuns = new Map(); // host -> { timer, label }
+  function breathGuideStart(host, label) {
+    if (!host || breathGuideRuns.has(host)) return;
+    const guest = host.classList.contains("breath-host");
+    if (guest) host.classList.add("breath");
+    host.classList.remove("run");
+    void host.offsetWidth;
+    host.classList.add("run");
+    let inhale = true;
+    label.textContent = "Einatmen";
+    label.hidden = false;
+    const timer = setInterval(() => {
+      inhale = !inhale;
+      label.textContent = inhale ? "Einatmen" : "Ausatmen";
+    }, 4000);
+    breathGuideRuns.set(host, { timer, label, guest });
+  }
+  function breathGuideStop(host) {
+    if (!host) return;
+    const r = breathGuideRuns.get(host);
+    host.classList.remove("run");
+    if (!r) return;
+    clearInterval(r.timer);
+    breathGuideRuns.delete(host);
+    if (r.guest) { host.classList.remove("breath"); r.label.hidden = true; }
+  }
+  function breathGuideFor(host, label, pauseS) {
+    if (masterPrefs.pauseBreath === true && pauseS >= PAUSE_BREATH_MIN_S) breathGuideStart(host, label);
+    else breathGuideStop(host);
   }
 
   function startPause(nextIdx) {
@@ -6295,20 +7880,14 @@
     const ex = EXERCISES[nextBlock.exercise];
     els.nextTitle.textContent = ex.title;
     els.nextTask.textContent = ex.task || "";
+    showBlockResult($("pauseResult"), program);
     els.pauseScreen.hidden = false;
     els.playerBar.hidden = true;
     els.liveNav.hidden = true;
     setProgress(doneCount, 0);
     // Breathing guide: 4 s in, 4 s out, synced with the CSS animation.
-    let inhale = true;
-    els.breathLabel.textContent = "Einatmen";
-    els.breath.classList.remove("run");
-    void els.breath.offsetWidth;
-    els.breath.classList.add("run");
-    breathTimer = setInterval(() => {
-      inhale = !inhale;
-      els.breathLabel.textContent = inhale ? "Einatmen" : "Ausatmen";
-    }, 4000);
+    breathGuideStop(els.breath);
+    breathGuideStart(els.breath, els.breathLabel);
     tickPause();
   }
   function tickPause() {
@@ -6355,7 +7934,9 @@
     els.programDoneSummary.textContent = aborted
       ? `Abgebrochen · ${fmtMinutes(played)} Training`
       : `${exerciseCountLabel(program.def.blocks.length)} · ${fmtMinutes(played)} Training`;
-    const id = addHistory({ kind: "program", title: program.title, progKey: program.key, seconds: Math.round(played), note: aborted ? "abgebrochen" : undefined, aborted: !!aborted });
+    renderBlockResults($("programDoneResults"), program);
+    const resNote = blockResultsNote(program);
+    const id = addHistory({ kind: "program", title: program.title, progKey: program.key, seconds: Math.round(played), note: aborted ? (resNote ? `abgebrochen; ${resNote}` : "abgebrochen") : resNote, aborted: !!aborted });
     renderRating(els.programRating, id);
     els.programDoneBackBtn.textContent = originBundle ? "Zurück zu meinen Programmen" : "Zur Startseite";
     els.programDonePanel.hidden = false;
@@ -6363,6 +7944,8 @@
   els.programAgainBtn.addEventListener("click", () => {
     if (!program) return;
     program.playedS = 0;
+    program.results = [];
+    program.lastResult = null;
     playChapter(0);
   });
   els.programDoneBackBtn.addEventListener("click", () => {
@@ -6383,14 +7966,26 @@
     buildProgressTrack(1);
     els.liveNav.hidden = true;
     if (EXERCISES[state.exercise].type === "color-tap") startConeTap();
+    else if (EXERCISES[state.exercise].type === "laufweg") startLaufweg();
     else runSession();
   }
 
   function finishSession() {
     if (raf) cancelAnimationFrame(raf);
+    const lwDone = lwLast; lwLast = null; // Hütchen · Laufweg result (lwComplete)
+    // Farbfelder · Antippen: close the last answer window before the session goes.
+    const ffTap = session && session.ffTap;
+    if (ffTap) ffTapFinish(ffTap);
+    const ffScore = ffTap ? ffTapScore(ffTap, state.ffMode) : null;
+    if (ffScore && navigator.webdriver) window.__ffTapLastScore = ffScore;
+    const mathScore = session && session.addonMath ? mathFinish(session.addonMath) : null; // Zusatzaufgabe Rechnen
     const spent = accountSession();
     if (window.speechSynthesis) speechSynthesis.cancel();
     els.liveNav.hidden = true;
+    // Kombi / coach programme: the block's score goes into the run's results
+    // (shown in the next pause and in the closing summary + history note).
+    if (ffScore && (program || comboProgram)) blockResultPush(program || comboProgram, `${EXERCISES[state.exercise].title} · ${FF_MODE_LABELS[state.ffMode]}`, ffScore.text);
+    if (mathScore && (program || comboProgram)) blockResultPush(program || comboProgram, `${EXERCISES[state.exercise].title} · Zusatzaufgabe`, mathScore.text);
     if (program) { advanceProgramStep(); return; }
     if (comboProgram) { coneTap = null; advanceComboProgram(spent); return; }
     if (cardioGuestActive) { coneTap = null; returnFromCardioGuest(); return; }
@@ -6402,15 +7997,30 @@
       const isRecord = saveConeBest(coneTap.duration, coneTap.count);
       note = `${coneTap.count} Durchgänge`;
       summary = `${coneTap.count} Durchgänge · ${fmtMinutes(spent)}` + (isRecord && coneTap.count > 0 ? " · Neue Bestleistung!" : "");
+    } else if (lwDone) {
+      summary = `${lwResultText(lwDone)} · ${fmtMinutes(spent)}`;
+      note = lwNote(lwDone);
     } else {
       summary = `${ex.title} · ${fmtMinutes(spent)}`;
       // Farbfelder: the history row names the mode (8 very different variants).
-      if (ex.type === "farbfelder") note = FF_MODE_LABELS[state.ffMode] + (FF_FLIP_MODES.includes(state.ffMode) && state.ffFlip ? ` · jedes ${state.ffFlip}. Mal andersherum` : "");
+      if (ex.type === "farbfelder") note = FF_MODE_LABELS[state.ffMode] + (FF_FLIP_MODES.includes(state.ffMode) && state.ffFlip ? ` · jedes ${state.ffFlip}. Mal andersherum` : "")
+        + (state.ffMode === "einblenden" ? ` · ${FF_COUNT_NOTES[state.ffCount] || FF_COUNT_NOTES.wechsel}` : "");
+      if (ex.type === "richtungskreuz") note = `${RK_MODES[state.rkMode].label} · ${RK_SIGNS[state.rkSigns]}` + (rkRuleActive() ? " · mit Farbregel" : "");
+      if (ZUS_EXERCISES.includes(state.exercise) && !cardioGuestActive) {
+        const zz = zusGet(state.exercise);
+        if (zz.ids.length) note = (note ? note + " · " : "") + "Zusatz: " + zz.ids.map((id) => ZUS_BY_ID[id].title).join(", ");
+      }
+      if (ffScore) { summary = `${ffScore.text} · ${fmtMinutes(spent)}`; note = `${note} · Antippen · ${ffScore.text}`; }
+      if (mathScore) { summary += ` · ${mathScore.text}`; note = note ? `${note} · ${mathScore.text}` : mathScore.text; }
     }
     els.doneSummary.textContent = summary;
     if (coneTap) markBest(els.doneSummary, "", coneTap.count);
     const id = addHistory({ kind: "exercise", exId: state.exercise, title: ex.title, seconds: Math.round(spent), note });
     renderRating(els.doneRating, id);
+    // Stufen-Vorschlag (Farbfelder · Antippen): the shared VT done panel, so
+    // an old suggestion never lingers on another exercise's result.
+    els.donePanel.querySelectorAll(".level-suggest").forEach((n) => n.remove());
+    if (ffScore) levelSuggestAfter("farbfelder", state.ffMode, ffScore, els.donePanel, els.doneRating);
     els.donePanel.hidden = false;
     els.playerBar.hidden = true;
     coneTap = null;
@@ -6418,6 +8028,7 @@
 
   function leavePlayer() {
     if (raf) cancelAnimationFrame(raf);
+    lwStop(); // Hütchen · Laufweg
     session = null;
     coneTap = null;
     program = null;
@@ -6512,6 +8123,8 @@
       const kept = session.schedule.filter((f) => f.t0 < elapsed).map((f) => (f.t1 > elapsed ? { ...f, t1: elapsed } : f));
       // Abfolge merken goes on with the sequence length it had reached.
       if (ex.type === "farbfelder") ffSeqResume = kept.reduce((m, f) => Math.max(m, (f.payload && f.payload.seqLen) || 0), 0) || null;
+      if (ex.type === "farbfelder") ffSkipOrient = true;
+      if (ex.type === "richtungskreuz") { rkSeqResume = kept.reduce((m, f) => Math.max(m, (f.payload && f.payload.seqLen) || 0), 0) || null; rkSkipOrient = true; }
       let fresh = [], freshEnd = elapsed;
       if (remaining > 0) {
         const savedDuration = state.duration;
@@ -6527,8 +8140,10 @@
       session.total = Math.max(freshEnd, elapsed);
       session.lastIndex = Math.min(session.lastIndex, kept.length - 1);
     }
+    if (session.ffTap) ffTapAbandon(session.ffTap);
     const addon = buildAddonSchedule(ex, state.exercise, session.schedule, Math.random);
     session.addonSchedule = addon.schedule; session.addonSizeMode = addon.sizeMode;
+    if (session.addonMath) mathAbandon(session.addonMath, elapsed); // Zusatzaufgabe Rechnen: drop the open question
   }
 
   els.periphPauseBtn.addEventListener("click", () => {
@@ -6541,6 +8156,7 @@
     els.vtPauseBgIntensityGroup.hidden = els.vtPauseBgColorGroup.hidden = !!ex.bgIsStimulus;
     els.vtPauseFixColorGroup.hidden = els.vtPauseFixSizeGroup.hidden = !state.periphFixEnabled || ex.type === "farbfelder";
     els.vtPauseStimColorGroup.hidden = ex.type !== "periph";
+    document.getElementById("vtPauseFfFbGroup").hidden = !session.ffTap;
     vtPauseTempoAtStart = { stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax };
     applySoftState();
     syncVtPauseTempoUI();
@@ -6576,7 +8192,9 @@
         const ex = EXERCISES[e.exercise];
         const usedColors = ex && ex.usesArrowColors ? e.arrowColors : ex && ex.usesStroopColors ? e.stroopColors : e.colors;
         if (e.ff) return `${fmtMinutes(e.duration)} · ${FF_MODE_LABELS[e.ff.ffMode] || ""}`;
+        if (e.rk) return `${fmtMinutes(e.duration)} · ${RK_MODES[e.rk.rkMode] ? RK_MODES[e.rk.rkMode].label : ""} · ${RK_SIGNS[e.rk.rkSigns] || ""}`;
         if (e.cn) return `${fmtMinutes(e.duration)} · ${e.cn.cnFields} Felder · ${(e.colors || []).length} Farben`;
+        if (e.lw) return `${LW_VARIANT_LABELS[e.lw.lwVariant] || ""} · ${e.lw.lwRows}×${e.lw.lwCols} · ${(LW_LENGTHS[e.lw.lwLength] || LW_LENGTHS.mittel).label}`;
         return `${fmtMinutes(e.duration)}${usedColors && usedColors.length ? ` · ${usedColors.length} Farben` : ""}`;
       },
       (entry) => {
@@ -6587,8 +8205,10 @@
         state.stimulusS = entry.stimulusS;
         state.intervalMin = entry.intervalMin;
         state.intervalMax = entry.intervalMax;
-        if (entry.ff) { Object.assign(state, JSON.parse(JSON.stringify(entry.ff))); ffNormalize(state); }
+        if (entry.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(entry.ff))); ffNormalize(state); }
         if (entry.cn) { Object.assign(state, entry.cn); cnNormalize(state); }
+        if (entry.lw) lwApply(entry.lw);
+        vtExtrasApply(entry, { preset: true });
         // Periphere Wahrnehmung (NAT presets, 2026-10-07): Zeichen, Bereich,
         // Fixpunkt, Farben and background travel with the preset too.
         if (entry.periph) { Object.assign(state, JSON.parse(JSON.stringify(entry.periph))); savePrefs(); loadPrefs(); }
@@ -6599,6 +8219,9 @@
           renderColorSwatches(); syncColorUI(); syncDurationUI(); syncTempoUI();
           if (EXERCISES[state.exercise].type === "farbfelder") syncFfUI();
           if (entry.cn) syncCnUI();
+          if (entry.lw) syncLwUI();
+          if (entry.rk) syncRkUI();
+          syncZusUI();
           if (entry.periph) { syncPeriphKindUI(); syncPeriphFieldUI(); syncPeriphSizeUI(); syncPeriphColorUI(); syncPeriphFixUI(); syncBgUI(); }
           return;
         }
@@ -6619,6 +8242,8 @@
         ...(EXERCISES[state.exercise].type === "farbfelder" ? { ff: ffStateSnapshot() } : {}),
         ...(EXERCISES[state.exercise].type === "periph" ? { periph: { ...periphStateSnapshot(), bgColorKey: state.bgColorKey, bgIntensity: state.bgIntensity } } : {}),
         ...(EXERCISES[state.exercise].type === "colornum" ? { cn: { cnFields: state.cnFields } } : {}),
+        ...(EXERCISES[state.exercise].type === "laufweg" ? { lw: lwSnapshot() } : {}),
+        ...vtExtrasSnapshot(state.exercise, true),
       });
       vtSavedStore.save(list);
       renderVTSaved();
@@ -6917,7 +8542,7 @@
   })();
   function saveCueOverrides() { writeJSON(CUE_OVERRIDES_KEY, cueOverrides); }
 
-  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true, volume: 1, textSize: "normal", softStimuli: false };
+  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true, volume: 1, textSize: "normal", softStimuli: false, pauseBreath: false };
   function loadMasterPrefs() {
     const saved = readJSON(MASTER_PREFS_KEY, null);
     if (saved && typeof saved === "object") {
@@ -7047,6 +8672,9 @@
     wcst: { screens: ["wcstReady"], fb: true, pal: true },
     navon: { screens: ["navonReady"], fb: true },
     iconic: { screens: ["iconicReady"], fb: true },
+    // Farbfelder · Antippen draws its tick/cross on the canvas (no selectors);
+    // its An/Aus rows sit in #ffFbRow (ready) and #vtPauseFfFbGroup (pause).
+    farbfelder: { screens: [], fb: true },
   };
   // Feedback selectors per exercise: [okSelectors, badSelectors].
   const CVD_FB_SELECTORS = {
@@ -7146,7 +8774,11 @@
   function cvdControlsHost(screenId) {
     const screen = document.getElementById(screenId);
     if (!screen) return null;
-    let body = screen.querySelector("details.advanced .advanced-body");
+    // The VT ready screen holds a second, nested Feineinstellungen for
+    // Hütchen-Laufweg (#lwAdvanced inside the hidden #lwSettings, 08.10.) that
+    // comes first in the DOM - the shared controls (Farbschwäche, Signalfarbe,
+    // Sanfte Reize) belong in the shared #advanced, not in Laufweg's.
+    let body = (screenId === "ready" && screen.querySelector("#advanced .advanced-body")) || screen.querySelector("details.advanced .advanced-body");
     if (!body) {
       const det = document.createElement("details");
       det.className = "advanced";
@@ -7298,13 +8930,15 @@
     "@vt": { screens: ["ready"], pause: "periphPauseOverlay", noteAfter: "#hilfsmittelNote" },
     blitz: { screens: ["blitzReady"], pause: "blitzPauseOverlay", noteAfter: ".page-sub" },
     flash: { screens: ["flashReady", "flashTrainingReady"], pause: "flashPauseOverlay", noteAfter: ".page-sub" },
+    // Optodrum (Aktivierung, 2026-10-08): tempo capped, softer contrast.
+    optodrum: { screens: ["optoReady"], pause: "optoPauseOverlay", noteAfter: ".page-sub" },
   };
   let softLive = null; // { ex, on } - pause-sheet choice for the running exercise only
   function softResolve(ex) { return ex === "@vt" ? state.exercise : ex; }
   function softApplies(ex) {
-    if (ex === "blitz" || ex === "flash") return true;
+    if (ex === "blitz" || ex === "flash" || ex === "optodrum") return true;
     const e = EXERCISES[ex];
-    return !!e && e.type !== "color-tap";
+    return !!e && e.type !== "color-tap" && e.type !== "laufweg";
   }
   function softMasterOn() { return masterPrefs.softStimuli === true; }
   function softOverride(ex) { return typeof softOverrides[ex] === "boolean" ? softOverrides[ex] : null; }
@@ -7433,6 +9067,572 @@
     applySoftState();
   });
   syncMasterSeeUI();
+
+  // ==== Richtungskreuz ready screen, Zusätze für oben, Regeln + Meine Notiz
+  // (Ideen 70-72, Fabian 08.10. abends). docs/notes/35. ====
+
+  // ---- What a VT preset / Kombi block carries besides the classic fields:
+  // `rk` (Richtungskreuz), `zus` (Zusätze für oben), `note` (Meine Notiz).
+  // Blocks from a trainer code may carry `trainerNote`; their `zus` is shown
+  // as "Von deinem Trainer". vtRunTrainer = trainer note of the running block.
+  let vtRunTrainer = null;
+  function vtExtrasSnapshot(exId, withEmpty) {
+    const out = {};
+    const ex = EXERCISES[exId];
+    if (ex && ex.type === "richtungskreuz") out.rk = rkStateSnapshot();
+    if (ZUS_EXERCISES.includes(exId)) {
+      const z = zusGet(exId);
+      if (z.ids.length || withEmpty) out.zus = JSON.parse(JSON.stringify(z));
+    }
+    const n = (state.exNotes || {})[exId];
+    if (n) out.note = n;
+    return out;
+  }
+  // opts.fromCode: a trainer's block (its note is the trainer's note, the
+  // client's own note for the exercise stays); opts.block: an own Kombi
+  // block (block note replaces the note for this run); opts.preset: a saved
+  // setting (older ones without zus/note leave the current ones alone).
+  function vtExtrasApply(src, opts) {
+    const o = opts || {};
+    const exId = src.exercise || state.exercise;
+    if (src.rk) { Object.assign(state, JSON.parse(JSON.stringify(src.rk))); rkNormalize(state); }
+    if (ZUS_EXERCISES.includes(exId) && (src.zus || !o.preset)) {
+      const z = zusNormalizeEntry(src.zus);
+      if (o.fromCode && src.zus) z.trainerIds = z.ids.slice();
+      state.zusOben = { ...state.zusOben, [exId]: z };
+    }
+    if (!o.fromCode && (typeof src.note === "string" || !o.preset)) {
+      state.exNotes = { ...state.exNotes, [exId]: typeof src.note === "string" ? src.note.slice(0, NOTE_MAX) : "" };
+    }
+    const tn = o.fromCode ? (src.trainerNote || src.note) : src.trainerNote;
+    vtRunTrainer = tn ? { note: String(tn).slice(0, NOTE_MAX) } : null;
+  }
+
+  // ---- Richtungskreuz ready screen ----
+  let rkActiveDir = "vorne";
+  function syncRkUI() {
+    rkNormalize(state);
+    const root = $("rkSettings");
+    root.querySelectorAll("[data-rk-mode]").forEach((b) => setActive(b, b.dataset.rkMode === state.rkMode));
+    $("rkModeHelp").textContent = RK_MODES[state.rkMode].help;
+    root.querySelectorAll("[data-rk-signs]").forEach((b) => setActive(b, b.dataset.rkSigns === state.rkSigns));
+    root.querySelectorAll("[data-rk-gear]").forEach((b) => setActive(b, b.dataset.rkGear === state.rkGear));
+    $("rkGearHelp").textContent = RK_GEARS[state.rkGear].help;
+    $("rkSeqGroup").hidden = state.rkMode !== "abfolge";
+    root.querySelectorAll("[data-rk-seq]").forEach((b) => setActive(b, Number(b.dataset.rkSeq) === state.rkSeqStart));
+    root.querySelectorAll("[data-rk-speak]").forEach((b) => setActive(b, (b.dataset.rkSpeak === "1") === state.rkSpeak));
+    const showCol = state.rkSigns !== "zahlen", showNum = state.rkSigns !== "farben";
+    root.querySelectorAll("[data-rk-dir]").forEach((b) => {
+      const d = b.dataset.rkDir, c = COLOR_BY_KEY[state.rkColors[d]], n = state.rkNums[d];
+      b.style.background = showCol ? c.hex : "";
+      b.style.color = showCol ? (relLuma(c.hex) > 0.6 ? "#16232a" : "#ffffff") : "";
+      b.classList.toggle("rk-plain", !showCol);
+      const sign = [showCol ? c.name : "", showNum ? String(n) : ""].filter(Boolean).join(" ");
+      b.innerHTML = `<span class="rk-dir-name">${esc(RK_DIR_NAMES[d])}</span><span class="rk-dir-sign">${esc(sign)}</span>`;
+      b.setAttribute("aria-label", `${RK_DIR_NAMES[d]}: ${sign}. Antippen zum Ändern.`);
+      setActive(b, d === rkActiveDir);
+    });
+    $("rkCrossHelp").textContent = `Tippe eine Richtung an und wähle unten ${showCol && showNum ? "Farbe und Zahl" : showCol ? "die Farbe" : "die Zahl"} (gewählt: ${RK_DIR_NAMES[rkActiveDir]}). Vorne ist die Richtung zum Bildschirm.`;
+    $("rkColorPicker").hidden = !showCol;
+    $("rkColorPicker").querySelectorAll("[data-color]").forEach((b) => setActive(b, b.dataset.color === state.rkColors[rkActiveDir]));
+    $("rkNumRow").closest(".rk-num-line").hidden = !showNum;
+    $("rkNumRow").querySelectorAll("[data-rk-num]").forEach((b) => setActive(b, Number(b.dataset.rkNum) === state.rkNums[rkActiveDir]));
+    // Farbregel: only with visible colours and single signs.
+    const ruleGroup = $("rkRuleGroup");
+    ruleGroup.hidden = state.rkSigns === "zahlen" || state.rkMode !== "zeigen";
+    root.querySelectorAll("[data-rk-rule]").forEach((b) => setActive(b, (b.dataset.rkRule === "1") === state.rkRuleOn));
+    $("rkRuleBody").hidden = !state.rkRuleOn;
+    $("rkRuleHelp").textContent = state.rkRuleOn
+      ? (state.rkSigns === "beide" ? "Die Zahl zeigt die Richtung, die Farbe sagt, was du tust. „Kreis wechseln“ heißt: Kreisrichtung des Balls wechseln, passend zum Zusatz „Ball um den Körper kreisen“." : "Die Farbe zeigt die Richtung und sagt, was du tust. „Kreis wechseln“ heißt: Kreisrichtung des Balls wechseln, passend zum Zusatz „Ball um den Körper kreisen“.")
+      : "Jede Farbe kann eine eigene Bedeutung bekommen, zum Beispiel Blau = Gegenrichtung.";
+    $("rkRuleRows").innerHTML = colorChoiceRowsHtml(RK_DIRS.map((d) => state.rkColors[d]), RK_MEANING_CHIPS, (k) => state.rkRules[k] || "normal", "rk-rulecol", (n) => `Bedeutung von ${n}`);
+  }
+  (function wireRkUI() {
+    const root = $("rkSettings");
+    const save = () => { rkNormalize(state); savePrefs(); syncRkUI(); };
+    COLOR_LIB.slice(0, 7).forEach((c) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "color-swatch";
+      btn.dataset.color = c.key;
+      const stroke = relLuma(c.hex) > 0.75 ? "#16232a" : "#fff";
+      btn.innerHTML = `<span class="swatch" style="background:${c.hex}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="${stroke}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swatch-name">${c.name}</span>`;
+      btn.addEventListener("click", () => {
+        // A colour already on another direction swaps places (all four differ).
+        const cols = { ...state.rkColors };
+        const other = RK_DIRS.find((d) => d !== rkActiveDir && cols[d] === c.key);
+        if (other) cols[other] = cols[rkActiveDir];
+        cols[rkActiveDir] = c.key;
+        state.rkColors = cols;
+        save();
+      });
+      $("rkColorPicker").appendChild(btn);
+    });
+    $("rkNumRow").innerHTML = Array.from({ length: RK_NUM_MAX }, (_, i) => `<button type="button" class="choice" data-rk-num="${i + 1}">${i + 1}</button>`).join("");
+    $("rkNumRow").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-rk-num]");
+      if (!b) return;
+      const v = Number(b.dataset.rkNum), nums = { ...state.rkNums };
+      const other = RK_DIRS.find((d) => d !== rkActiveDir && nums[d] === v);
+      if (other) nums[other] = nums[rkActiveDir];
+      nums[rkActiveDir] = v;
+      state.rkNums = nums;
+      save();
+    });
+    $("rkCross").addEventListener("click", (e) => { const b = e.target.closest("[data-rk-dir]"); if (b) { rkActiveDir = b.dataset.rkDir; syncRkUI(); } });
+    root.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-rk-mode],[data-rk-signs],[data-rk-gear],[data-rk-seq],[data-rk-rule],[data-rk-speak]");
+      if (!b) return;
+      if (b.dataset.rkMode) state.rkMode = b.dataset.rkMode;
+      if (b.dataset.rkSigns) state.rkSigns = b.dataset.rkSigns;
+      if (b.dataset.rkGear) state.rkGear = b.dataset.rkGear;
+      if (b.dataset.rkSeq) state.rkSeqStart = Number(b.dataset.rkSeq);
+      if (b.dataset.rkSpeak) state.rkSpeak = b.dataset.rkSpeak === "1";
+      if (b.dataset.rkRule) {
+        const on = b.dataset.rkRule === "1";
+        // Switching on with no meaning set yet: Blau = Gegenrichtung.
+        if (on && !Object.values(state.rkRules).some((v) => v !== "normal")) state.rkRules = { ...RK_DEFAULT_RULES };
+        state.rkRuleOn = on;
+      }
+      save();
+    });
+    $("rkRuleRows").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-rk-rulecol][data-val]");
+      if (!b) return;
+      state.rkRules = { ...state.rkRules, [b.dataset.rkRulecol]: b.dataset.val };
+      save();
+    });
+  })();
+  if (navigator.webdriver) window.__rk = {
+    target: rkTarget, snapshot: () => rkStateSnapshot(),
+    build: (over) => {
+      const keep = JSON.parse(JSON.stringify(state));
+      Object.assign(state, over || {});
+      try { return buildRkSchedule({}, Math.random).schedule; } finally { Object.assign(state, keep); }
+    },
+  };
+
+  // ---- Zusätze für oben: one row in the Feineinstellungen + the sheet ----
+  function zusGet(exId) { return zusNormalizeEntry((state.zusOben || {})[exId]); }
+  function zusSet(exId, entry) {
+    state.zusOben = { ...(state.zusOben || {}), [exId]: zusNormalizeEntry(entry) };
+    savePrefs();
+    syncZusUI();
+  }
+  function zusTrainerMark(z, id) { return (z.trainerIds || []).includes(id); }
+  function syncZusUI() {
+    const exId = state.exercise;
+    const ex = EXERCISES[exId];
+    const on = !!ex && ZUS_EXERCISES.includes(exId);
+    const group = $("zusGroup");
+    group.hidden = !on;
+    // Laufweg has its own Feineinstellungen (the shared ones are hidden there).
+    const host = ex && ex.type === "laufweg" ? document.querySelector("#lwAdvanced .advanced-body") : document.querySelector("#advanced .advanced-body");
+    if (host && group.parentElement !== host) host.insertBefore(group, host.firstChild);
+    const z = on ? zusGet(exId) : zusNormalizeEntry(null);
+    $("zusChips").innerHTML = z.ids.length
+      ? z.ids.map((id) => `<span class="zus-chip">${esc(ZUS_BY_ID[id].title)}${zusTrainerMark(z, id) ? '<small class="zus-from">Von deinem Trainer</small>' : ""}<button type="button" class="zus-chip-x" data-zus-remove="${id}" aria-label="${esc(ZUS_BY_ID[id].title)} entfernen">&#10005;</button></span>`).join("")
+      : '<span class="zus-none">keiner</span>';
+    $("zusRowWarn").hidden = z.ids.length < 2;
+    // The instructions on the ready screen (Begleit-Zusätze are not checked).
+    const note = $("zusNote");
+    note.hidden = !on || !z.ids.length;
+    note.innerHTML = z.ids.length ? `<span class="hilfsmittel-kicker">Zusatz für oben</span>` + z.ids.map((id) => {
+      const d = ZUS_BY_ID[id];
+      return `<span class="zus-note-line"><strong>${esc(d.title)}:</strong> ${esc(d.text)}${d.signal ? ` Alle ${z.sigMin}–${z.sigMax} s.` : ""}${zusTrainerMark(z, id) ? " <em>(von deinem Trainer)</em>" : ""}</span>`;
+    }).join("") + `<span class="zus-note-line zus-note-small">Ein Ball liegt bereit. Die App prüft die Zusätze nicht.</span>` : "";
+    if (!$("zusatzSheet").hidden) renderZusSheet();
+  }
+  function renderZusSheet() {
+    const z = zusGet(state.exercise);
+    $("zusCardList").innerHTML = ZUSAETZE.map((d) => {
+      const sel = z.ids.includes(d.id);
+      return `<button type="button" class="zus-card${sel ? " active" : ""}" data-zus-card="${d.id}" aria-pressed="${sel}">` +
+        `<span class="zus-card-check" aria-hidden="true">${sel ? "&#10003;" : "+"}</span>` +
+        `<span class="zus-card-body"><span class="zus-card-title">${esc(d.title)}</span><span class="zus-card-text">${esc(d.text)}</span>${zusTrainerMark(z, d.id) ? '<span class="zus-from">Von deinem Trainer</span>' : ""}</span></button>`;
+    }).join("");
+    $("zusSheetWarn").hidden = z.ids.length < 2;
+    const sig = z.ids.some((id) => ZUS_BY_ID[id].signal);
+    $("zusSigGroup").hidden = !sig;
+    $("zusSigMinSlider").value = z.sigMin;
+    $("zusSigMaxSlider").value = z.sigMax;
+    $("zusSigValue").textContent = `${z.sigMin}–${z.sigMax} s`;
+  }
+  let zusSheetOpener = null;
+  function openZusSheet() {
+    zusSheetOpener = document.activeElement;
+    renderZusSheet();
+    $("zusatzSheet").hidden = false;
+    setTimeout(() => { const f = $("zusCardList").querySelector("button"); if (f) f.focus({ preventScroll: true }); }, 30);
+  }
+  function closeZusSheet() {
+    $("zusatzSheet").hidden = true;
+    if (zusSheetOpener && zusSheetOpener.focus) zusSheetOpener.focus({ preventScroll: true });
+  }
+  $("zusAddBtn").addEventListener("click", openZusSheet);
+  $("zusatzDoneBtn").addEventListener("click", closeZusSheet);
+  $("zusatzSheet").addEventListener("click", (e) => { if (e.target === $("zusatzSheet")) closeZusSheet(); });
+  $("zusatzSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closeZusSheet(); else trapTabKey($("zusatzSheet"), e); });
+  $("zusCardList").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-zus-card]");
+    if (!b) return;
+    const z = zusGet(state.exercise), id = b.dataset.zusCard;
+    z.ids = z.ids.includes(id) ? z.ids.filter((x) => x !== id) : z.ids.concat(id);
+    zusSet(state.exercise, z);
+  });
+  $("zusChips").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-zus-remove]");
+    if (!b) return;
+    const z = zusGet(state.exercise);
+    z.ids = z.ids.filter((x) => x !== b.dataset.zusRemove);
+    zusSet(state.exercise, z);
+  });
+  ["zusSigMinSlider", "zusSigMaxSlider"].forEach((id) => $(id).addEventListener("input", () => {
+    const z = zusGet(state.exercise);
+    let mn = Number($("zusSigMinSlider").value), mx = Number($("zusSigMaxSlider").value);
+    if (id === "zusSigMinSlider" && mn > mx) mx = mn;
+    if (id === "zusSigMaxSlider" && mx < mn) mn = mx;
+    z.sigMin = mn; z.sigMax = mx;
+    zusSet(state.exercise, z);
+  }));
+
+  // "Kreisrichtung wechseln auf Signal": a short double tone (cueVolume) and
+  // a small ↻ mark at random intervals. Counts only running time (not while
+  // a pause sheet, the Regeln sheet or a done panel is open, not hidden).
+  const zusSig = { timer: 0, host: null, acc: 0, next: 0, last: 0, count: 0, cfg: null };
+  function zusSigInterval() { const c = zusSig.cfg; return c.sigMin + Math.random() * (c.sigMax - c.sigMin); }
+  function zusSignalStop() {
+    if (zusSig.timer) clearInterval(zusSig.timer);
+    zusSig.timer = 0;
+    zusSig.host = null;
+    const cue = document.getElementById("zusSigCue");
+    if (cue) cue.hidden = true;
+  }
+  function zusSignalStart(hostId) {
+    zusSignalStop();
+    zusSig.count = 0;
+    if (cardioGuestActive || !ZUS_EXERCISES.includes(state.exercise)) return;
+    const z = zusGet(state.exercise);
+    if (!z.ids.some((id) => ZUS_BY_ID[id].signal)) return;
+    zusSig.cfg = z;
+    zusSig.host = $(hostId);
+    zusSig.acc = 0;
+    zusSig.next = zusSigInterval();
+    zusSig.last = performance.now();
+    zusSig.timer = setInterval(zusSignalTick, 200);
+  }
+  function zusSignalPaused(host) {
+    if (document.hidden || !$("regelnSheet").hidden) return true;
+    if (host.id === "player" && session && session.startTime && (performance.now() - session.startTime) / 1000 < vtLeadS()) return true;
+    return [...host.querySelectorAll(".pause-overlay, .done-panel, .pause-screen")].some((el) => !el.hidden);
+  }
+  function zusSignalTick() {
+    const now = performance.now(), dt = (now - zusSig.last) / 1000;
+    zusSig.last = now;
+    const host = zusSig.host;
+    if (!host || host.hidden) { zusSignalStop(); return; }
+    if (zusSignalPaused(host)) return;
+    zusSig.acc += dt;
+    if (zusSig.acc >= zusSig.next) { zusSig.acc = 0; zusSig.next = zusSigInterval(); zusSignalFire(); }
+  }
+  function zusSignalFire() {
+    zusSig.count++;
+    playCueTone(1175, 0.12, 0.35);
+    setTimeout(() => playCueTone(880, 0.16, 0.35), 170);
+    let cue = document.getElementById("zusSigCue");
+    if (!cue) {
+      cue = document.createElement("div");
+      cue.id = "zusSigCue";
+      cue.className = "zus-sig-cue";
+      cue.setAttribute("role", "status");
+      cue.innerHTML = '<span class="zus-sig-icon" aria-hidden="true">&#8635;</span>Kreisrichtung wechseln';
+    }
+    if (zusSig.host && cue.parentElement !== zusSig.host) zusSig.host.appendChild(cue);
+    cue.hidden = false;
+    cue.classList.remove("zus-sig-pop"); void cue.offsetWidth; cue.classList.add("zus-sig-pop");
+    clearTimeout(zusSignalFire.t);
+    zusSignalFire.t = setTimeout(() => { cue.hidden = true; }, 1600);
+  }
+  if (navigator.webdriver) window.__zusSig = { state: () => ({ running: !!zusSig.timer, count: zusSig.count, next: zusSig.next, acc: zusSig.acc }), fire: () => zusSignalFire() };
+
+  // ---- ⓘ Regeln + Meine Notiz (Idee 72) ----
+  // One entry per exercise family with rules: where its ⓘ goes (ready
+  // screens, player bar, pause sheets), its Kombi domain and how the
+  // "So geht's gerade" lines are made. "@vt" = the VT exercise on the shared
+  // ready screen / player right now. A new exercise with rules = one entry
+  // (or nothing for a VT catalog exercise: vtRuleLines reads its settings).
+  const REGELN_EXERCISES = {
+    "@vt": { domain: "visual", screens: ["ready"], anchor: "#rulesBox", bar: "playerBar", pauses: ["periphPauseOverlay", "lwPauseOverlay"] },
+    "nat:remember": { domain: "nat", title: "Positionen merken", screens: ["rememberReady"], anchor: "#rememberReadyDesc", bar: "rememberPlayerBar", pauses: ["rememberPauseOverlay"], desc: "rememberReadyDesc" },
+    "nat:blitz": { domain: "blitz", title: "Blitz-Raster", screens: ["blitzReady"], anchor: "#blitzReadyDesc", bar: "blitzPlayerBar", pauses: ["blitzPauseOverlay"], desc: "blitzReadyDesc" },
+    "nat:flash": { domain: "flash", title: "Flash-Speicher-Test", screens: ["flashReady", "flashTrainingReady"], anchor: ".page-sub", bar: "flashPlayerBar", pauses: ["flashPauseOverlay"], desc: "flashReadyDesc" },
+    "nat:mot": { domain: "mot", title: "Objektverfolgung (MOT)", screens: ["motReady"], anchor: "#motReadyDesc", bar: "motPlayerBar", pauses: ["motPauseOverlay"], desc: "motReadyDesc" },
+    "nat:balance": { domain: "balance", title: "Gleichgewicht", screens: ["balanceReady"], anchor: "#balanceReadyDesc", bar: "balancePlayerBar", pauses: ["balancePauseOverlay"], desc: "balanceReadyDesc" },
+  };
+  const REGELN_DOMAIN_KEY = Object.fromEntries(Object.entries(REGELN_EXERCISES).map(([k, c]) => [c.domain, k]));
+  const NAT_NOTES_KEY = "fwmc-notes-v1";
+  const natNotes = notesNormalizeMap(readJSON(NAT_NOTES_KEY, {}));
+  const REGELN_I_SVG = '<svg class="regeln-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 10.6v6.2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="7.3" r="1.5" fill="currentColor"/></svg>';
+  function regelnNoteKey(key) { return key === "@vt" ? state.exercise : key; }
+  // Sentences of a text as list lines.
+  function regelnSplit(text) { return String(text || "").split(/(?<=[.!?])\s+(?=[A-ZÄÖÜ„])/).map((x) => x.trim()).filter(Boolean); }
+  function vtRuleLines(exId) {
+    const ex = EXERCISES[exId];
+    if (!ex) return [];
+    const L = [];
+    const tap = ex.type === "farbfelder" && state.ffAnswer === "tippen";
+    if (ex.type === "arrows" && ex.dual) L.push("Grüner Pfeil: in Pfeilrichtung.", "Roter Pfeil: Gegenrichtung.");
+    else if (ex.type === "vrw-real") L.push("Weißer Pfeil auf Farbe: gezeigte Seite (direkt).", "Farbiger Pfeil auf Weiß: Gegenseite (umgekehrt).");
+    else if (ex.type === "stroop") L.push("Sag laut die Schriftfarbe, nicht das Wort." + (ex.bg ? " Auch nicht den Hintergrund." : ""));
+    else if (ex.type === "farbfelder") {
+      const m = FF_MODES[state.ffMode] ? state.ffMode : "leuchten";
+      L.push(`Modus ${FF_MODE_LABELS[m]}: ${tap ? FF_MODES[m].tapHelp : FF_MODES[m].help}`);
+      if (m === "regeln") FF_LEVEL_SYMBOLS.slice(0, state.ffLevel).forEach((k) => L.push(`${FF_SYMBOLS[k].name}: ${FF_SYMBOLS[k].rule}.`));
+      if (m === "sehenhoeren") L.push(`Bei Bild und Ansage zugleich gilt ${state.ffGilt === "gezeigt" ? "das Gezeigte" : "das Gesagte"}.`);
+      if (FF_FLIP_MODES.includes(m) && state.ffFlip) L.push(`Jedes ${state.ffFlip}. Mal andersherum (die App zeigt es nicht an).`);
+      if (!tap && state.ffFoot !== "aus") L.push("L oder R auf dem Feld: Mit diesem Fuß trittst du.");
+      if (!tap && state.ffHands && m !== "fusshand") state.ffLayout.forEach((k) => { const a = state.ffHandRules[k]; if (a && a !== "keine") L.push(`${COLOR_BY_KEY[k].name}: ${FF_HAND_ACTIONS[a]}.`); });
+      L.push(`Deine Matte: oben ${COLOR_BY_KEY[state.ffLayout[0]].name} und ${COLOR_BY_KEY[state.ffLayout[1]].name}, unten ${COLOR_BY_KEY[state.ffLayout[2]].name} und ${COLOR_BY_KEY[state.ffLayout[3]].name}.`);
+    } else if (ex.type === "richtungskreuz") {
+      rkNormalize(state);
+      L.push(RK_MODES[state.rkMode].help);
+      RK_DIRS.forEach((d) => {
+        const sign = state.rkSigns === "zahlen" ? String(state.rkNums[d]) : state.rkSigns === "beide" ? `${COLOR_BY_KEY[state.rkColors[d]].name} ${state.rkNums[d]}` : COLOR_BY_KEY[state.rkColors[d]].name;
+        L.push(`${sign}: ${RK_DIR_NAMES[d].toLowerCase()}.`);
+      });
+      if (rkRuleActive()) {
+        if (state.rkSigns === "beide") L.push("Farbregel: Die Zahl zeigt die Richtung, die Farbe sagt, was du tust.");
+        // Only the colours that differ from "normal" (Prüfer 08.10.).
+        RK_DIRS.map((d) => state.rkColors[d]).filter((k) => (state.rkRules[k] || "normal") !== "normal").forEach((k) => L.push(`${COLOR_BY_KEY[k].name}: ${RK_MEANING_RULES[state.rkRules[k]]}.`));
+        if (RK_DIRS.some((d) => (state.rkRules[state.rkColors[d]] || "normal") === "normal")) L.push("Alle anderen Farben: Schritt in die gezeigte Richtung.");
+      }
+    } else if (ex.type === "laufweg") {
+      L.push(ex.task, state.lwVariant === "merken" ? "Weg merken: Präg dir den Weg ein und lauf ihn ohne Karte." : "Karte in der Hand: Nimm das Handy mit und lauf den Weg ab.");
+    } else if (ex.type === "color") {
+      L.push(ex.task, "Welche Farbe wohin gehört, legst du selbst fest. Die App zeigt nur die Farbe.");
+    } else if (ex.type === "colornum") {
+      L.push(ex.task, `Deine Felder: 1 bis ${state.cnFields}. Steht dort schon ein Hütchen, tausche die beiden.`);
+    } else if (ex.type === "periph") {
+      L.push(ex.task);
+    } else {
+      regelnSplit(ex.rules || ex.task).forEach((x) => L.push(x));
+    }
+    return L;
+  }
+  function vtHasRegeln(exId) { return !!(EXERCISES[exId] && (EXERCISES[exId].rules || EXERCISES[exId].task)); }
+  function zusRuleLines(z) {
+    return z.ids.map((id) => {
+      const d = ZUS_BY_ID[id];
+      return `${d.title}: ${d.text}${d.signal ? ` Alle ${z.sigMin}–${z.sigMax} s.` : ""}${zusTrainerMark(z, id) ? " (Von deinem Trainer)" : ""}`;
+    });
+  }
+  function regelnTitle(key) { return key === "@vt" ? (EXERCISES[state.exercise] || {}).title || "" : REGELN_EXERCISES[key].title; }
+  function regelnLines(key) {
+    if (key === "@vt") return vtRuleLines(state.exercise);
+    const el = $(REGELN_EXERCISES[key].desc);
+    return regelnSplit(el ? el.textContent : "");
+  }
+  // Notes: VT in the VT state (so presets / Kombi capture carry them),
+  // NAT exercises in their own store.
+  function noteGet(key) { const k = regelnNoteKey(key); return key === "@vt" ? (state.exNotes || {})[k] || "" : natNotes[k] || ""; }
+  function notePersist(key, text) {
+    const k = regelnNoteKey(key), t = String(text || "").slice(0, NOTE_MAX);
+    if (key === "@vt") {
+      state.exNotes = { ...(state.exNotes || {}), [k]: t };
+      // Only the note goes to storage: during a run `state` may hold a block's values.
+      const saved = readJSON(PREFS_KEY, null);
+      const base = saved && typeof saved === "object" ? saved : JSON.parse(JSON.stringify(state));
+      base.exNotes = { ...(base.exNotes || {}), [k]: t };
+      writeJSON(PREFS_KEY, base);
+    } else {
+      if (t.trim()) natNotes[k] = t; else delete natNotes[k];
+      writeJSON(NAT_NOTES_KEY, natNotes);
+    }
+  }
+  // The running Kombi / programme block, if any (own Kombi: note lives in it).
+  function regelnRunBlock(key) {
+    const dom = REGELN_EXERCISES[key].domain;
+    if (comboProgram && comboProgram.def && comboProgram.def.blocks) {
+      const b = comboProgram.def.blocks[comboProgram.blockIndex];
+      if (b && b.domain === dom) return { block: b, own: !comboProgram.code || comboProgram.code === "local" };
+    }
+    if (program && key === "@vt") {
+      const st = program.steps && program.steps[program.chapterIndex];
+      const b = st && program.def.blocks[st.exIdx];
+      if (b) return { block: b, own: false };
+    }
+    return null;
+  }
+  function persistComboBlockNote(block) {
+    const key = comboProgram && comboProgram.key;
+    if (!key || !/^local:/.test(key) || key === "local:draft") return;
+    const id = key.slice(6), list = comboSavedStore.load();
+    const entry = list.find((x) => String(x.id) === id);
+    if (!entry) return;
+    const i = comboProgram.blockIndex;
+    if (entry.blocks[i]) { entry.blocks[i].note = block.note; comboSavedStore.save(list); }
+  }
+  // ctx: { key, mode: "ready" | "run" | "pause" | "block", pausedByUs, player, block, blockIndex }
+  let regelnCtx = null;
+  function regelnBlockLines(block) {
+    const keep = JSON.parse(JSON.stringify(state));
+    try {
+      if (block.domain !== "visual") { const k = REGELN_DOMAIN_KEY[block.domain]; return { title: comboBlockLabel(block), lines: k ? regelnLines(k) : [], zus: [] }; }
+      state.exercise = block.exercise;
+      if (block.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
+      if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
+      if (block.lw) lwApply(block.lw);
+      if (block.rk) { Object.assign(state, JSON.parse(JSON.stringify(block.rk))); rkNormalize(state); }
+      const z = zusNormalizeEntry(block.zus);
+      return { title: comboBlockLabel(block), lines: vtRuleLines(block.exercise), zus: ZUS_EXERCISES.includes(block.exercise) ? zusRuleLines(z) : [] };
+    } finally { Object.keys(state).forEach((k) => { if (!(k in keep)) delete state[k]; }); Object.assign(state, keep); }
+  }
+  function openRegeln(ctx) {
+    regelnCtx = ctx;
+    const key = ctx.key;
+    let title, lines, zus = [], trainer = "", note = "";
+    if (ctx.mode === "block") {
+      const r = regelnBlockLines(ctx.block);
+      title = r.title; lines = r.lines; zus = r.zus;
+      note = ctx.block.note || "";
+      trainer = ctx.block.trainerNote || "";
+    } else {
+      title = regelnTitle(key);
+      lines = regelnLines(key);
+      if (key === "@vt" && ZUS_EXERCISES.includes(state.exercise)) zus = zusRuleLines(zusGet(state.exercise));
+      const rb = ctx.mode === "ready" ? null : regelnRunBlock(key);
+      ctx.runBlock = rb && rb.own ? rb.block : null;
+      if (ctx.runBlock) note = ctx.runBlock.note || "";
+      else note = noteGet(key);
+      if (key === "@vt" && vtRunTrainer && ctx.mode !== "ready") trainer = vtRunTrainer.note;
+      else if (rb && !rb.own) trainer = rb.block.trainerNote || rb.block.note || "";
+    }
+    $("regelnEx").textContent = title;
+    $("regelnList").innerHTML = lines.map((l) => `<li>${esc(l)}</li>`).join("") || "<li>Für diese Übung gibt es keine besonderen Regeln.</li>";
+    $("regelnZusBox").hidden = !zus.length;
+    $("regelnZusList").innerHTML = zus.map((l) => `<li>${esc(l)}</li>`).join("");
+    $("regelnTrainerBox").hidden = !trainer;
+    $("regelnTrainerText").textContent = trainer;
+    const input = $("regelnNoteInput");
+    input.value = note;
+    regelnNoteHelp();
+    $("regelnDoneBtn").textContent = ctx.mode === "run" ? "Weiter" : "Fertig";
+    // Colour example only where colours carry a meaning (Prüfer 08.10.).
+    input.placeholder = /\b(Rot|Blau|Grün|Gelb|Farbe|Farben|Pfeil auf Farbe)\b/.test(lines.join(" "))
+      ? "z.\u202fB. Blau heißt bei mir: zurück" : "z.\u202fB. Erst ruhig anfangen, dann schneller werden";
+    const sheet = $("regelnSheet");
+    // In fullscreen the sheet has to live inside the fullscreen element.
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    if (fsEl && !fsEl.contains(sheet)) fsEl.appendChild(sheet);
+    regelnCtx.opener = document.activeElement;
+    sheet.hidden = false;
+    setTimeout(() => { try { const inner = sheet.querySelector(".sheet-inner"); inner.tabIndex = -1; inner.focus({ preventScroll: true }); } catch (e) {} }, 30);
+  }
+  function regelnNoteHelp() {
+    const ctx = regelnCtx || {};
+    const n = $("regelnNoteInput").value.length;
+    const where = ctx.mode === "block" || ctx.runBlock ? "Gilt für diesen Baustein." : comboVisualCaptureOriginal && ctx.key === "@vt" ? "Gilt für diesen Baustein." : "Gilt für diese Übung und wird mit gespeicherten Einstellungen mitgespeichert.";
+    $("regelnNoteHelp").textContent = `${where} Nur auf diesem Gerät. ${n}/${NOTE_MAX}`;
+  }
+  $("regelnNoteInput").addEventListener("input", () => {
+    const ctx = regelnCtx;
+    if (!ctx) return;
+    const t = $("regelnNoteInput").value.slice(0, NOTE_MAX);
+    if (ctx.mode === "block") { ctx.block.note = t; }
+    else if (ctx.runBlock) { ctx.runBlock.note = t; if (ctx.key === "@vt") state.exNotes = { ...state.exNotes, [state.exercise]: t }; persistComboBlockNote(ctx.runBlock); }
+    else if (ctx.key === "@vt" && ctx.mode === "ready") { state.exNotes = { ...state.exNotes, [state.exercise]: t }; savePrefs(); }
+    else notePersist(ctx.key, t);
+    regelnNoteHelp();
+  });
+  function closeRegeln() {
+    const ctx = regelnCtx;
+    const sheet = $("regelnSheet");
+    sheet.hidden = true;
+    if (sheet.parentElement !== document.body) document.body.appendChild(sheet);
+    regelnCtx = null;
+    regelnSyncPreviews();
+    if (ctx && ctx.mode === "block") renderComboBlockList();
+    // Opened from the running exercise: it paused, now it goes on.
+    if (ctx && ctx.mode === "run" && ctx.pausedByUs && ctx.player) {
+      const ov = [...ctx.player.querySelectorAll(".pause-overlay")].find((o) => !o.hidden);
+      const resume = ov && (ov.querySelector("button[id$='ResumeBtn']") || ov.querySelector(".start-btn"));
+      if (resume) resume.click();
+    }
+    if (ctx && ctx.opener && ctx.opener.isConnected && ctx.opener.focus) { try { ctx.opener.focus({ preventScroll: true }); } catch (e) {} }
+  }
+  $("regelnDoneBtn").addEventListener("click", closeRegeln);
+  $("regelnSheet").addEventListener("click", (e) => { if (e.target === $("regelnSheet")) closeRegeln(); });
+  $("regelnSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closeRegeln(); else trapTabKey($("regelnSheet"), e); });
+  function regelnOpenFromRun(key, btn) {
+    const player = btn.closest(".player");
+    const visible = (el) => el && !el.hidden && el.getClientRects().length > 0;
+    const open = player && [...player.querySelectorAll(".pause-overlay")].some(visible);
+    let pausedByUs = false;
+    if (player && !open) {
+      const p = [...player.querySelectorAll("button[id$='PauseBtn']")].find((b) => visible(b) && !b.disabled && b.textContent.trim().startsWith("Pause"));
+      if (p) { p.click(); pausedByUs = true; }
+    }
+    openRegeln({ key, mode: open ? "pause" : "run", pausedByUs, player });
+  }
+  // Inject the buttons: ready screens (+ note preview), player bars, pause sheets.
+  Object.entries(REGELN_EXERCISES).forEach(([key, cfg]) => {
+    cfg.screens.forEach((screenId) => {
+      const screen = $(screenId);
+      if (!screen) return;
+      const wrap = document.createElement("div");
+      wrap.className = "regeln-ready";
+      wrap.dataset.regelnWrap = key;
+      wrap.innerHTML = `<button type="button" class="regeln-btn" data-regeln="${key}">${REGELN_I_SVG}<span>Regeln und Notiz</span></button><span class="regeln-preview" data-regeln-preview="${key}" hidden></span>`;
+      const anchor = screen.querySelector(cfg.anchor) || screen.querySelector(".page-title");
+      if (anchor) anchor.after(wrap);
+      wrap.querySelector("button").addEventListener("click", () => openRegeln({ key, mode: "ready" }));
+    });
+    const bar = $(cfg.bar);
+    if (bar) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "regeln-bar-btn";
+      b.dataset.regelnBar = key;
+      b.setAttribute("aria-label", "Regeln und Notiz");
+      b.title = "Regeln und Notiz";
+      b.innerHTML = REGELN_I_SVG;
+      const fs = [...bar.children].find((c) => /fsbtn$/i.test(c.id || ""));
+      bar.insertBefore(b, fs || null);
+      b.addEventListener("click", () => regelnOpenFromRun(key, b));
+    }
+    cfg.pauses.forEach((pid) => {
+      const panel = document.querySelector(`#${pid} .pause-panel`);
+      if (!panel) return;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "text-link regeln-pause-btn";
+      b.innerHTML = `${REGELN_I_SVG}<span>Regeln und Notiz</span>`;
+      const resume = panel.querySelector("button[id$='ResumeBtn']") || panel.querySelector(".start-btn");
+      panel.insertBefore(b, resume || null);
+      b.addEventListener("click", () => openRegeln({ key, mode: "pause", player: panel.closest(".player") }));
+    });
+  });
+  function regelnSyncPreviews() {
+    document.querySelectorAll("[data-regeln-preview]").forEach((el) => {
+      const key = el.dataset.regelnPreview;
+      const n = key === "@vt" && !vtHasRegeln(state.exercise) ? "" : noteGet(key);
+      el.hidden = !n;
+      el.textContent = n ? `Meine Notiz: ${n}` : "";
+    });
+    const vtWrap = document.querySelector('[data-regeln-wrap="@vt"]');
+    if (vtWrap) vtWrap.hidden = !vtHasRegeln(state.exercise);
+  }
+  // The VT bar button: not while the player hosts a Cardio guest.
+  function regelnBarSync() {
+    const b = document.querySelector('[data-regeln-bar="@vt"]');
+    if (b) b.hidden = cardioGuestActive || !vtHasRegeln(state.exercise);
+  }
+  // NAT ready screens: refresh the preview whenever one opens.
+  Object.values(REGELN_EXERCISES).forEach((cfg) => cfg.screens.forEach((id) => {
+    const scr = $(id);
+    if (scr) new MutationObserver(() => { if (!scr.hidden) regelnSyncPreviews(); }).observe(scr, { attributes: true, attributeFilter: ["hidden"] });
+  }));
+  if (navigator.webdriver) window.__regeln = { lines: (key) => regelnLines(key || "@vt"), vtLines: (ex) => vtRuleLines(ex), note: (key) => noteGet(key || "@vt"), ctx: () => regelnCtx && { key: regelnCtx.key, mode: regelnCtx.mode, pausedByUs: !!regelnCtx.pausedByUs }, startCombo: (def, code) => startComboProgram(def, code, code, "home") };
 
   // ---- Ziel-/Signalfarbe pro Übung (Fabian, 2026-10-02: "A. Ja") ----
   // Every Test exercise whose signal is a fixed colour gets a picker for it
@@ -7683,7 +9883,7 @@
     els.masterBgNoneBtn.hidden = !masterPrefs.defaultBgColorKey;
     els.masterBgIntensityRow.hidden = !masterPrefs.defaultBgColorKey;
     els.masterBgIntensitySlider.value = masterPrefs.defaultBgIntensity;
-    els.masterBgIntensityValue.textContent = `${Math.round(masterPrefs.defaultBgIntensity * 100)}%`;
+    els.masterBgIntensityValue.textContent = `${Math.round(masterPrefs.defaultBgIntensity * 100)} %`;
     const tip = masterPrefs.defaultBgColorKey ? bgContrastHintText(masterPrefs.defaultBgColorKey, masterPrefs.defaultBgIntensity) : null;
     els.masterBgContrastHint.hidden = !tip;
     els.masterBgContrastHint.textContent = tip || "";
@@ -7845,8 +10045,11 @@
   let masterSettingsReturnFocus = null;
   function openMasterSettings(section) {
     masterSettingsReturnFocus = document.activeElement;
-    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; syncMasterBgUI(); syncMasterPauseUI(); syncMasterVolumeUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
+    syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; $("masterPauseBreathCheck").checked = masterPrefs.pauseBreath === true; syncMasterBgUI(); syncMasterPauseUI(); syncMasterVolumeUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
     syncMasterSeeUI();
+    syncAnaglyphMasterUI();
+    gearRenderMaster();
+    { const mn = $("masterNameInput"); if (mn) mn.value = getUserName(); }
     els.masterSettingsSheet.hidden = false;
     // openMasterSettings("someGroupId") opens the sheet at that section
     // (the "Sanfte Reize sind an" notes, the Nichtraucher-Pause info).
@@ -7859,7 +10062,14 @@
         const f = target.querySelector("input, button");
         if (f) f.focus({ preventScroll: true });
       });
-    } else focusFirstIn(els.masterSettingsSheet);
+    } else {
+      // Never start in "Dein Name": a focused text field opens the iPhone keyboard.
+      const sh = els.masterSettingsSheet;
+      const f = [...sh.querySelectorAll(FOCUSABLE)].find((e) => e.id !== "masterNameInput");
+      if (f) f.focus({ preventScroll: true });
+      sh.scrollTop = 0;
+      sh.querySelectorAll(".sheet-inner").forEach((el) => { el.scrollTop = 0; });
+    }
   }
   function closeMasterSettings() {
     els.masterSettingsSheet.hidden = true;
@@ -10261,11 +12471,13 @@
       errorMode: p.errorMode,
       trainingStart: p.trainingStart, trainingProgress: p.trainingProgress,
       markerScale: p.markerScale || 1,
+      mbg: mbgCopy(p.mbg),
       paused: false,
     };
     els.rememberStage.style.setProperty("--remember-num-color", lookColorHex("remember", p.numColor));
     els.rememberStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
     requestWakeLock();
+    mbgStart("remember");
     startRememberLevel();
     // Kombi block: Remember has no natural end of its own (unlike VT's
     // fixed-length schedule), so a Kombi block gives it a duration and just
@@ -11626,8 +13838,11 @@
     flashState.shownIndex = 0;
     els.flashInputPanel.hidden = true;
     els.flashHint.textContent = "Merken …";
+    // Phone: short status so the bar with ⓘ stays one row (Prüfer 08.10.).
     els.flashLevelEl.textContent = flashState.mode === "constant"
-      ? (flashState.roundLimit ? `Runde ${flashState.roundsPlayed + 1}/${flashState.roundLimit} · ` : "") + `Tempo-Stufe ${flashState.speedStep + 1}`
+      ? (barCompact()
+        ? (flashState.roundLimit ? `${flashState.roundsPlayed + 1}/${flashState.roundLimit} · ` : "") + `Stufe ${flashState.speedStep + 1}`
+        : (flashState.roundLimit ? `Runde ${flashState.roundsPlayed + 1}/${flashState.roundLimit} · ` : "") + `Tempo-Stufe ${flashState.speedStep + 1}`)
       : `${flashState.count} ${flashUnitLabel(flashState.kind)}`;
     flashShowDigit();
   }
@@ -11866,8 +14081,10 @@
       charScale: p.charScale || 1, charColor: p.charColor,
       trainingProgress: p.trainingProgress, startLevel: p.startCount, trainingStartLevel: p.trainingStart,
       startTime: performance.now(), paused: false,
+      mbg: mbgCopy(p.mbg),
     };
     renderFlashKeypad();
+    mbgStart("flash");
     els.flashStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
     renderFlashFixpoint();
     requestWakeLock();
@@ -12146,8 +14363,37 @@
     metro: true, bpm: 60, timing: "timed", setS: 30, sets: 3, restS: 30, stance: "normal", stanceSpeak: false,
     size: 1, lengthPct: 70, widthF: 1, fontF: 1, color1: "blau", color2: "gelb", letterColor: "auto", letterColor2: "auto", volume: 0.8,
     pos: null, bgColorKey: "gruen", bgIntensity: 0,
+    // Wörter (VOR, Fabian 2026-10-08): a word in the centre instead of the sticks.
+    content: "stifte", wordList: "tiere", wordEvery: 1, wordRead: "wort",
   };
   const balancePrefs = JSON.parse(JSON.stringify(BALANCE_DEFAULTS));
+  const BALANCE_WORDS = {
+    tiere: { name: "Tiere", words: ["Hund", "Katze", "Maus", "Pferd", "Kuh", "Schaf", "Ziege", "Fuchs", "Hase", "Igel", "Bär", "Wolf", "Adler", "Eule", "Fisch", "Frosch", "Ente", "Gans", "Huhn", "Löwe", "Tiger", "Zebra", "Affe", "Biene"] },
+    alltag: { name: "Alltag", words: ["Tisch", "Stuhl", "Tasse", "Brot", "Schuh", "Jacke", "Uhr", "Lampe", "Buch", "Stift", "Glas", "Teller", "Löffel", "Gabel", "Bett", "Tür", "Fenster", "Auto", "Rad", "Ball", "Brief", "Handy", "Kissen", "Schal"] },
+    farben: { name: "Farbwörter", words: [] },
+  };
+  // Farbwörter: the word names one colour and is printed in another.
+  const BALANCE_WORD_INKS = [
+    { key: "rot", word: "ROT", hex: "#d32f2f" }, { key: "blau", word: "BLAU", hex: "#1f5fbf" },
+    { key: "gruen", word: "GRÜN", hex: "#2e7d32" }, { key: "gelb", word: "GELB", hex: "#f2c200" },
+    { key: "lila", word: "LILA", hex: "#7b3fa0" }, { key: "schwarz", word: "SCHWARZ", hex: "#16232a" },
+  ];
+  // Next word, never the same as the last one (Farbwörter: never the same
+  // word and ink, never the word printed in its own colour).
+  function balancePickWord(p, prev) {
+    if (p.wordList === "farben") {
+      for (let k = 0; k < 50; k++) {
+        const w = BALANCE_WORD_INKS[Math.floor(Math.random() * BALANCE_WORD_INKS.length)];
+        const inks = BALANCE_WORD_INKS.filter((c) => c.key !== w.key);
+        const ink = inks[Math.floor(Math.random() * inks.length)];
+        if (!prev || prev.text !== w.word || prev.ink !== ink.hex) return { text: w.word, ink: ink.hex, inkKey: ink.key, wordKey: w.key };
+      }
+    }
+    const list = (BALANCE_WORDS[p.wordList] || BALANCE_WORDS.tiere).words;
+    let t = list[Math.floor(Math.random() * list.length)];
+    for (let k = 0; k < 20 && prev && t === prev.text; k++) t = list[Math.floor(Math.random() * list.length)];
+    return { text: t, ink: "#16232a" };
+  }
   const balClamp = (v, lo, hi, d) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
   function normalizeBalancePrefs(p) {
     const d = BALANCE_DEFAULTS;
@@ -12179,8 +14425,14 @@
     if (!Array.isArray(p.pos) || !p.pos.every((q) => q && Number.isFinite(q.x) && Number.isFinite(q.y))) p.pos = null;
     if (!STROOP_COLOR_BY_KEY[p.bgColorKey]) p.bgColorKey = d.bgColorKey;
     if (!Number.isFinite(p.bgIntensity) || p.bgIntensity < 0 || p.bgIntensity > 1) p.bgIntensity = 0;
+    if (p.content !== "stifte" && p.content !== "woerter") p.content = d.content;
+    if (!BALANCE_WORDS[p.wordList]) p.wordList = d.wordList;
+    if (![1, 2, 4].includes(p.wordEvery)) p.wordEvery = d.wordEvery;
+    if (p.wordRead !== "wort" && p.wordRead !== "farbe") p.wordRead = d.wordRead;
     return p;
   }
+  // Sakkaden live on the sticks: words only for the head-movement modes.
+  const balanceWordsOn = (p) => p.content === "woerter" && p.mode !== "sakk";
   (function loadBalancePrefs() {
     const saved = readJSON(BALANCE_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(balancePrefs, saved);
@@ -12257,6 +14509,10 @@
   }));
   document.querySelectorAll("#balanceSticksRow [data-bal-sticks]").forEach((b) => b.addEventListener("click", () => balanceSet("sticks", Number(b.dataset.balSticks))));
   document.querySelectorAll("#balanceLettersRow [data-bal-letters]").forEach((b) => b.addEventListener("click", () => balanceSet("letters", b.dataset.balLetters)));
+  document.querySelectorAll("#balanceContentRow [data-bal-content]").forEach((b) => b.addEventListener("click", () => balanceSet("content", b.dataset.balContent)));
+  document.querySelectorAll("#balanceWordListRow [data-bal-wordlist]").forEach((b) => b.addEventListener("click", () => balanceSet("wordList", b.dataset.balWordlist)));
+  document.querySelectorAll("#balanceWordEveryRow [data-bal-wordevery]").forEach((b) => b.addEventListener("click", () => balanceSet("wordEvery", Number(b.dataset.balWordevery))));
+  document.querySelectorAll("#balanceWordReadRow [data-bal-wordread]").forEach((b) => b.addEventListener("click", () => balanceSet("wordRead", b.dataset.balWordread)));
   document.querySelectorAll("#balanceSingleRow [data-bal-single]").forEach((b) => b.addEventListener("click", () => balanceSet("singleS", Number(b.dataset.balSingle))));
   document.querySelectorAll("#balanceMetroRow [data-bal-metro]").forEach((b) => b.addEventListener("click", () => balanceSet("metro", b.dataset.balMetro === "1")));
   document.querySelectorAll("#balanceTimingRow [data-bal-timing]").forEach((b) => b.addEventListener("click", () => balanceSet("timing", b.dataset.balTiming)));
@@ -12288,7 +14544,22 @@
     act("#balanceMetroRow [data-bal-metro]", "balMetro", p.metro ? 1 : 0);
     act("#balanceTimingRow [data-bal-timing]", "balTiming", p.timing);
     act("#balanceStanceRow [data-bal-stance]", "balStance", p.stance);
-    balanceUi.modeHelp.textContent = BALANCE_MODES[p.mode].help;
+    act("#balanceContentRow [data-bal-content]", "balContent", p.content);
+    act("#balanceWordListRow [data-bal-wordlist]", "balWordlist", p.wordList);
+    act("#balanceWordEveryRow [data-bal-wordevery]", "balWordevery", p.wordEvery);
+    act("#balanceWordReadRow [data-bal-wordread]", "balWordread", p.wordRead);
+    const words = balanceWordsOn(p);
+    balEl("balanceContentGroup").hidden = p.mode === "sakk";
+    balEl("balanceWordBox").hidden = !words;
+    balEl("balanceWordReadBox").hidden = p.wordList !== "farben";
+    balEl("balanceWordHelp").textContent = !p.metro
+      ? "Ohne Takt wechselt das Wort im eingestellten Tempo, nur ohne Ton. Lies jedes Wort laut, während du den Kopf bewegst."
+      : p.wordList === "farben"
+        ? (p.wordRead === "farbe" ? "Das Wort steht in einer anderen Farbe. Sag laut die Farbe, in der es geschrieben ist, nicht das Wort." : "Das Wort steht in einer anderen Farbe. Lies laut das Wort, nicht die Farbe.")
+        : "Lies jedes neue Wort laut, während du den Kopf im Takt bewegst. Bleibt es scharf, passt das Tempo.";
+    document.querySelectorAll('[data-look-size="balance"] .group-label').forEach((el) => { el.textContent = words ? "Größe der Wörter" : "Größe der Stifte"; });
+    document.querySelectorAll('[data-look-size="balance"] .group-help').forEach((el) => { el.textContent = words ? "Die Schrift wächst mit und bleibt immer ganz auf dem Bildschirm. Während der Übung: mit zwei Fingern ziehen." : LOOK_SPECS.balance.size.help; });
+    balanceUi.modeHelp.textContent = BALANCE_MODES[p.mode].help + (words ? " Statt auf einen Buchstaben schaust du auf das Wort in der Mitte." : "");
     balanceUi.customBox.hidden = p.letters !== "eigen";
     balanceUi.custom.value = p.custom;
     balanceUi.custom2.value = p.custom2;
@@ -12298,7 +14569,7 @@
     balanceUi.singleHelp.textContent = p.mode === "sakk"
       ? (p.sticks === 2 ? "Nur ein Buchstabe ist zu sehen. Er springt mit jedem Schlag zum anderen Stift, jedes Mal an eine andere Höhe." : "Nur ein Buchstabe ist zu sehen. Er springt mit jedem Schlag an eine andere Höhe.")
       : "Nur ein Buchstabe ist zu sehen, jedes Mal an einer anderen Höhe.";
-    balanceUi.bpmRow.hidden = !p.metro;
+    balanceUi.bpmRow.hidden = !p.metro && !balanceWordsOn(p);
     balanceUi.bpm.value = p.bpm;
     balanceUi.bpmValue.textContent = `${p.bpm}/min`;
     balanceUi.timedBox.hidden = p.timing !== "timed";
@@ -12325,6 +14596,16 @@
     balanceUi.count.value = p.letterCount; balanceUi.countValue.textContent = String(p.letterCount);
     balanceUi.volume.value = p.volume; balanceUi.volumeValue.textContent = fmtPct(p.volume);
     balanceUi.posHelp.textContent = p.pos ? "Du hast die Stifte verschoben. Die Position bleibt gespeichert." : "Die Stifte stehen in der Mitte. Verschieben geht während der Übung mit dem Finger.";
+    // The stick groups make no sense for words.
+    if (words) {
+      ["balanceSticksGroup", "balanceLettersGroup"].forEach((id) => { balEl(id).hidden = true; });
+      // One size control for words: "Größe der Wörter" (Prüfer 08.10.);
+      // the letter "Schriftgröße" belongs to the sticks.
+      [balanceUi.color1, balanceUi.letterColor, balanceUi.length, balanceUi.width, balanceUi.font, balanceUi.count, balEl("balanceResetPosBtn"), balanceUi.color2, balanceUi.letterColor2].forEach((el) => { const g = el.closest(".group"); if (g) g.hidden = true; });
+    } else {
+      ["balanceSticksGroup", "balanceLettersGroup"].forEach((id) => { balEl(id).hidden = false; });
+      [balanceUi.color1, balanceUi.letterColor, balanceUi.length, balanceUi.width, balanceUi.font, balEl("balanceResetPosBtn")].forEach((el) => { const g = el.closest(".group"); if (g) g.hidden = false; });
+    }
     syncLook("balance");
   }
   const applyBalanceBg = makeBgApplier(balEl("balanceStage"), balancePrefs);
@@ -12400,7 +14681,7 @@
 
   // ---- Player ----
   const balP = {
-    player: els.balancePlayer, stage: balEl("balanceStage"), hint: balEl("balanceHint"), sticks: [balEl("balanceStick0"), balEl("balanceStick1")],
+    player: els.balancePlayer, stage: balEl("balanceStage"), hint: balEl("balanceHint"), sticks: [balEl("balanceStick0"), balEl("balanceStick1")], word: balEl("balanceWord"),
     rest: balEl("balanceRest"), restCount: balEl("balanceRestCount"), restNext: balEl("balanceRestNext"), toast: balEl("balanceToast"),
     live: balEl("balanceLive"), cue: balEl("balanceCue"), bpmMinus: balEl("balanceBpmMinus"), bpmPlus: balEl("balanceBpmPlus"), bpmLive: balEl("balanceBpmLive"),
     metroBtn: balEl("balanceMetroBtn"), clockBtn: balEl("balanceClockBtn"), knobBtn: balEl("balanceKnobBtn"), finishBtn: balEl("balanceFinishBtn"),
@@ -12459,7 +14740,7 @@
   function balanceRenderSticks() {
     const st = balanceState;
     balP.sticks.forEach((el, i) => {
-      el.hidden = i >= st.sticks;
+      el.hidden = i >= st.sticks || st.content === "woerter";
       if (el.hidden) return;
       const letters = st.letterSets[i];
       el.innerHTML = letters.map((ch, j) => `<span class="balance-letter" data-j="${j}">${esc(ch)}</span>`).join("");
@@ -12503,9 +14784,39 @@
     const bottom = Math.max(top + 80, (liveTop > 0 ? liveTop : rect.height) - 12);
     return { rect, x0: 12, x1: Math.max(60, rect.width - 12), y0: top, y1: bottom };
   }
+  // Wörter: the next word (Farbwörter: in another ink), drawn on a white
+  // plate in the centre of the free area (readable on any background, also
+  // on the moving one); its size follows "Größe" and the Schriftgröße and
+  // is capped so the longest word always fits.
+  function balanceNextWord() {
+    const st = balanceState;
+    if (!st || st.content !== "woerter") return;
+    st.word = balancePickWord(st, st.word);
+    st.wordCount = (st.wordCount || 0) + 1;
+    balP.word.textContent = st.word.text;
+    balP.word.dataset.cap = st.wordList === "farben" ? (st.wordRead === "farbe" ? "Sag die Farbe" : "Lies das Wort") : "Lies laut";
+    balP.word.style.color = st.word.ink;
+    balP.word.classList.toggle("light-ink", st.word.inkKey === "gelb");
+    balanceLayoutWord();
+  }
+  function balanceLayoutWord() {
+    const st = balanceState;
+    if (!st || st.content !== "woerter" || !st.word) return;
+    const a = balanceArea();
+    const aw = a.x1 - a.x0, ah = a.y1 - a.y0;
+    const len = Math.max(3, [...st.word.text].length);
+    // Words have one size control ("Größe der Wörter" = st.size); the
+    // stick font factor stays with the sticks.
+    const fsWanted = 46 * st.size;
+    const fs = Math.round(Math.max(16, Math.min(fsWanted, (aw * 0.9) / (len * 0.66 + 1.1), ah * 0.45)));
+    balP.word.style.fontSize = fs + "px";
+    balP.word.style.left = Math.round(a.x0 + aw / 2) + "px";
+    balP.word.style.top = Math.round(a.y0 + ah / 2) + "px";
+  }
   function balanceLayout() {
     const st = balanceState;
     if (!st) return;
+    if (st.content === "woerter") { balanceLayoutWord(); return; }
     const a = balanceArea();
     const aw = a.x1 - a.x0, ah = a.y1 - a.y0;
     const z = st.size;
@@ -12562,7 +14873,7 @@
     balP.liveSizeValue.textContent = st.size.toFixed(1).replace(".", ",") + "×";
     balP.pauseBpm.value = st.bpm; balP.pauseBpmValue.textContent = `${st.bpm}/min`;
     balP.pauseVolume.value = st.volume; balP.pauseVolumeValue.textContent = fmtPct(st.volume);
-    balP.live.querySelector(".balance-tempo").classList.toggle("is-off", !st.metro);
+    balP.live.querySelector(".balance-tempo").classList.toggle("is-off", !st.metro && st.content !== "woerter"); // words keep their rhythm without the click
     if (!st.metro) { balP.cue.textContent = ""; }
   }
   // Live changes during a standalone run are saved to the client's own
@@ -12606,6 +14917,13 @@
     ["color1", "color2", "letterColor"].forEach((f) => syncSingleSelectPicker(balPauseLook[f], st[f]));
     syncSingleSelectPicker(balPauseLook.letterColor2, st.letterColor2 || st.letterColor);
     ["lengthPct", "widthF", "fontF"].forEach((f) => { const [inp, val, fmt] = balPauseLook[f]; inp.value = st[f]; val.textContent = fmt(st[f]); });
+    // Words (Prüfer 08.10.): no stick rows; the size is "Größe der Wörter",
+    // the word rows (Liste / Wechsel) come from addPauseChoiceRow below.
+    const words = st.content === "woerter";
+    ["balancePauseStick1Group", "balancePauseStickSizeGroup", "balancePauseResetPosBtn"].forEach((id) => { balEl(id).hidden = words; });
+    if (words) balPauseLook.stick2.hidden = true;
+    const sizeLabel = balP.pauseOverlay.querySelector('[data-live-look="balance"] .group-label');
+    if (sizeLabel && sizeLabel.firstChild) sizeLabel.firstChild.textContent = (words ? "Größe der Wörter" : LOOK_SPECS.balance.size.label) + " ";
   }
   buildSingleSelectPicker(balPauseLook.color1, BALANCE_STICK_COLORS, (k) => balanceLiveLook("color1", k));
   buildSingleSelectPicker(balPauseLook.color2, BALANCE_STICK_COLORS, (k) => balanceLiveLook("color2", k));
@@ -12698,8 +15016,10 @@
     st.phaseElapsed = 0;
     st.beatCount = 0;
     balP.rest.hidden = true;
-    balP.sticks.forEach((el, i) => { el.hidden = i >= st.sticks; });
+    balP.sticks.forEach((el, i) => { el.hidden = i >= st.sticks || st.content === "woerter"; });
+    balP.word.hidden = st.content !== "woerter";
     balanceSetHint();
+    if (st.content === "woerter") { balanceNextWord(); st.nextWordAt = performance.now() + (st.wordEvery * 60000) / st.bpm; }
     balanceLayout();
     if (st.letters === "einzeln") balanceNextSingle();
     st.nextSingleAt = performance.now() + st.singleS * 1000;
@@ -12714,6 +15034,7 @@
     st.restBeeped = new Set();
     balP.cue.textContent = "";
     balP.sticks.forEach((el) => { el.hidden = true; });
+    balP.word.hidden = true;
     balP.rest.hidden = false;
     balP.restNext.textContent = `Als Nächstes: Satz ${st.setIdx + 2} · ${balanceStanceLabel(st, st.setIdx + 1)}`;
     balanceStatus();
@@ -12723,6 +15044,9 @@
     const even = st.beatCount % 2 === 0;
     st.beatCount++;
     balanceClick(even);
+    // Wörter: the first beat keeps the opening word, then a new one every
+    // 1st/2nd/4th beat.
+    if (st.content === "woerter" && st.beatCount > 1 && (st.beatCount - 1) % st.wordEvery === 0) balanceNextWord();
     let cue = BALANCE_MODES[st.mode].cue[even ? 0 : 1];
     if (st.mode === "sakk" && st.sticks === 1) cue = even ? "▲ oben" : "▼ unten";
     // Sakkaden with one visible letter: the letter jumps on the beat and
@@ -12751,6 +15075,11 @@
         balanceBeat();
         const step = 60000 / st.bpm;
         st.nextBeatAt = Math.max(st.nextBeatAt + step, now + step * 0.5);
+      }
+      // Wörter without the audible beat: same rhythm, silent.
+      if (st.content === "woerter" && !st.metro && now >= st.nextWordAt) {
+        balanceNextWord();
+        st.nextWordAt = now + (st.wordEvery * 60000) / st.bpm;
       }
       if (st.letters === "einzeln" && !(st.mode === "sakk" && st.metro) && now >= st.nextSingleAt) {
         balanceNextSingle();
@@ -12782,6 +15111,11 @@
       beatCount: 0, single: null, raf: null, lastNow: 0,
     };
     if (guest) { st.timing = "timed"; st.sets = 1; st.setS = opts.comboDurationS; st.restS = 0; }
+    st.mbg = mbgCopy(p.mbg);
+    st.content = balanceWordsOn(st) ? "woerter" : "stifte";
+    st.word = null;
+    st.wordCount = 0;
+    balP.word.hidden = true;
     const posOk = Array.isArray(p.pos) && p.pos.length >= st.sticks;
     st.pos = posOk ? p.pos.slice(0, st.sticks).map((q) => ({ ...q })) : balanceDefaultPos(st.sticks);
     st.letterSets = [0, 1].map((i) => balanceLettersFor(p, i));
@@ -12801,6 +15135,7 @@
     balanceBeginSet();
     st.lastNow = performance.now();
     st.raf = requestAnimationFrame(balanceTick);
+    mbgStart("balance");
     if (st.metro) silentSwitchHint();
   }
   function balanceCleanup() {
@@ -12834,6 +15169,7 @@
     if (aborted) note = "abgebrochen";
     else if (st.timing === "open") note = `${fmtClock(played)}${beat}`;
     else note = `${countLabel(st.sets, "Satz", "Sätze")} à ${fmtClock(st.setS)}${beat}`;
+    if (!aborted && st.content === "woerter") note += ` · Wörter (${BALANCE_WORDS[st.wordList].name}${st.wordList === "farben" && st.wordRead === "farbe" ? ", Farbe lesen" : ""})`;
     balP.bar.hidden = true;
     setDonePanelAborted(balP.done, aborted, "Gleichgewicht beendet");
     balP.doneSummary.textContent = aborted ? `Abgebrochen · ${fmtClock(played)}` : `${title} · ${note}`;
@@ -12885,10 +15221,29 @@
   // Farbfelder as Cardio-Zusatzaufgabe: the same choices as its ready
   // screen (Modus, Stufe, Startlänge, Fuß, Hände, Tempo); layout and hand
   // rules are the client's own (the mat on the floor does not change).
-  function farbfelderCardioFieldsHtml(typeId, cfg) {
+  // Richtungskreuz as Cardio guest: Modus, Zeichen, tempo, Farbregel on/off,
+  // Ansage; the cross itself (colours, numbers, meanings) is the client's own.
+  function rkCardioFieldsHtml(typeId, cfg) {
     const row = (field, opts, cls) => `<div class="choice-row${cls ? " " + cls : ""}">` +
       opts.map(([v, label]) => `<button class="choice${String(cfg[field]) === String(v) ? " active" : ""}" data-type="${typeId}" data-balf="${field}" data-balv="${v}">${label}</button>`).join("") + `</div>`;
     return `<div class="choice-row two" data-mode-row="${typeId}">` +
+      Object.entries(RK_MODES).map(([id, m]) => `<button class="choice${cfg.mode === id ? " active" : ""}" data-type="${typeId}" data-mode="${id}">${esc(m.label)}</button>`).join("") + `</div>` +
+      `<div class="cardio-guest-field-row">
+        <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${typeId}" data-f="duration" value="${cfg.duration}"></div>
+        <div><label>Reiz-Dauer (Sek.)</label><input type="number" min="0.3" max="3" step="0.1" data-type="${typeId}" data-f="stimulusS" value="${cfg.stimulusS}"></div>
+        <div><label>Pause min (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${typeId}" data-f="intervalMin" value="${cfg.intervalMin}"></div>
+        <div><label>Pause max (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${typeId}" data-f="intervalMax" value="${cfg.intervalMax}"></div>
+      </div>` +
+      `<div class="group-label">Zeichen</div>` + row("signs", Object.entries(RK_SIGNS)) +
+      (cfg.mode === "abfolge" ? `<div class="group-label">Länge der ersten Folge</div>` + row("seqStart", [[2, "2 Zeichen"], [3, "3 Zeichen"]], "two") : "") +
+      (cfg.mode === "zeigen" && cfg.signs !== "zahlen" ? `<div class="group-label">Farbregel</div>` + row("rule", [[false, "Aus"], [true, "An"]], "two") : "") +
+      `<div class="group-label">Zeichen ansagen</div>` + row("speak", [[false, "Aus"], [true, "An"]], "two") +
+      `<div class="group-help">Farben, Zahlen und die Bedeutung der Farben kommen aus deinen eigenen Einstellungen beim Richtungskreuz.</div>`;
+  }
+  function farbfelderCardioFieldsHtml(typeId, cfg) {
+    const row = (field, opts, cls) => `<div class="choice-row${cls ? " " + cls : ""}">` +
+      opts.map(([v, label]) => `<button class="choice${String(cfg[field]) === String(v) ? " active" : ""}" data-type="${typeId}" data-balf="${field}" data-balv="${v}">${label}</button>`).join("") + `</div>`;
+    return `<div class="choice-row two ff-mode-row" data-mode-row="${typeId}">` +
       CARDIO_GUEST_MODE_LISTS.farbfelder.map((m) => `<button class="choice${cfg.mode === m.id ? " active" : ""}" data-type="${typeId}" data-mode="${m.id}">${esc(m.title)}</button>`).join("") + `</div>` +
       `<div class="cardio-guest-field-row">
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${typeId}" data-f="duration" value="${cfg.duration}"></div>
@@ -12896,6 +15251,7 @@
         <div><label>Pause min (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${typeId}" data-f="intervalMin" value="${cfg.intervalMin}"></div>
         <div><label>Pause max (Sek.)</label><input type="number" min="0.5" max="15" step="0.5" data-type="${typeId}" data-f="intervalMax" value="${cfg.intervalMax}"></div>
       </div>` +
+      (cfg.mode === "einblenden" ? `<div class="group-label">Wie viele Felder</div>` + row("count", Object.entries(FF_COUNTS)) : "") +
       (cfg.mode === "regeln" ? `<div class="group-label">Stufe</div>` + row("level", [[1, "Stufe 1"], [2, "Stufe 2"], [3, "Stufe 3"], [4, "Stufe 4"]], "two") : "") +
       (cfg.mode === "abfolge" ? `<div class="group-label">Länge der ersten Folge</div>` + row("seqStart", [[2, "2 Felder"], [3, "3 Felder"]], "two") : "") +
       (cfg.mode === "sehenhoeren" ? `<div class="group-label">Bei beidem gilt</div>` + row("gilt", [["gesagt", "das Gesagte"], ["gezeigt", "das Gezeigte"]], "two") +
@@ -12914,14 +15270,14 @@
       `<div class="group-label">Stifte</div>` + row("sticks", [[1, "1 Stift"], [2, "2 Stifte"]], "two") +
       `<div class="group-label">Buchstaben</div>` + row("letters", [["zufall", "Zufällig"], ["einzeln", "Nur einer"]], "two") +
       `<div class="group-label">Takt</div>` + row("metro", [[true, "Mit Takt"], [false, "Ohne Takt"]], "two") +
-      (cfg.metro ? `<div class="slider-row"><span class="slider-label">Tempo</span><input type="range" min="30" max="200" step="5" data-type="${typeId}" data-f="bpm" value="${cfg.bpm}"><span class="slider-value" data-fvalue="${typeId}-bpm">${cfg.bpm}</span></div>` : "") +
+      (cfg.metro ? `<div class="slider-row"><span class="slider-label">Tempo</span><input type="range" min="30" max="200" step="5" data-type="${typeId}" data-f="bpm" value="${cfg.bpm}"><span class="slider-value" data-fvalue="${typeId}-bpm">${cgFmt("bpm", cfg.bpm)}</span></div>` : "") +
       `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` +
       `<div class="group-label">${esc(LOOK_SPECS.balance.size.label)}</div>` +
-      `<div class="slider-row"><input type="range" min="0.6" max="2" step="0.1" data-type="${typeId}" data-f="size" value="${cfg.size}"><span class="slider-value" data-fvalue="${typeId}-size">${cfg.size}</span></div>` +
+      `<div class="slider-row"><input type="range" min="0.6" max="2" step="0.1" data-type="${typeId}" data-f="size" value="${cfg.size}"><span class="slider-value" data-fvalue="${typeId}-size">${cgFmt("size", cfg.size)}</span></div>` +
       `<div class="group-label">Farbe des Stifts</div><div class="cardio-guest-colors">` +
       BALANCE_STICK_COLORS.map((c) => `<label><input type="radio" name="cardioBalColor-${typeId}" data-looktype="${typeId}" data-lookfield="color1" data-lookcolor="${c.key}" ${cfg.color1 === c.key ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") + `</div>` +
       `<div class="group-label">Lautstärke</div>` +
-      `<div class="slider-row"><input type="range" min="0" max="1" step="0.05" data-type="${typeId}" data-f="volume" value="${cfg.volume}"><span class="slider-value" data-fvalue="${typeId}-volume">${cfg.volume}</span></div>` +
+      `<div class="slider-row"><input type="range" min="0" max="1" step="0.05" data-type="${typeId}" data-f="volume" value="${cfg.volume}"><span class="slider-value" data-fvalue="${typeId}-volume">${cgFmt("volume", cfg.volume)}</span></div>` +
       `</div></details>`;
   }
 
@@ -13127,6 +15483,7 @@
       row.querySelectorAll("[data-pause-val]").forEach((c) => setActive(c, c.dataset.pauseVal === v));
     }
     new MutationObserver(() => { if (!overlay.hidden) sync(); }).observe(overlay, { attributes: true, attributeFilter: ["hidden"] });
+    return sync;
   }
   addPauseChoiceRow(els.rememberPauseOverlay, { label: "Bei Fehler", sourceRow: "rememberErrorRow", attr: "remember-error",
     visible: () => !!rememberState && rememberState.mode !== "training", get: () => rememberState.errorMode, set: (v) => { if (rememberState) rememberState.errorMode = v; } });
@@ -13138,6 +15495,15 @@
     visible: () => !!flashState && flashState.mode !== "training", get: () => flashState.errorMode, set: (v) => { if (flashState) flashState.errorMode = v; } });
   addPauseChoiceRow(els.motPauseOverlay, { label: "Bei Fehler", sourceRow: "motErrorRow", attr: "mot-error",
     visible: () => !!motState, get: () => motState.errorMode, set: (v) => { if (motState) motState.errorMode = v; } });
+  // Gleichgewicht with words: the word rows live in the pause sheet too
+  // (inserted after Tempo, so added in reverse order).
+  const balWordsLive = () => !!balanceState && balanceState.content === "woerter";
+  addPauseChoiceRow(balP.pauseOverlay, { label: "Wort wechselt", sourceRow: "balanceWordEveryRow", attr: "bal-wordevery",
+    visible: balWordsLive, get: () => String(balanceState.wordEvery), set: (v) => balanceLive("wordEvery", Number(v)) });
+  const balReadSync = addPauseChoiceRow(balP.pauseOverlay, { label: "Lies", sourceRow: "balanceWordReadRow", attr: "bal-wordread",
+    visible: () => balWordsLive() && balanceState.wordList === "farben", get: () => balanceState.wordRead, set: (v) => { balanceLive("wordRead", v); balanceNextWord(); } });
+  addPauseChoiceRow(balP.pauseOverlay, { label: "Wörter", sourceRow: "balanceWordListRow", attr: "bal-wordlist",
+    visible: balWordsLive, get: () => balanceState.wordList, set: (v) => { balanceLive("wordList", v); balanceNextWord(); if (balReadSync) balReadSync(); } });
 
   initLookControls({
     balance: { prefs: balancePrefs, save: saveBalancePrefsToStorage },
@@ -13242,7 +15608,7 @@
   function syncMotSpeedUI() {
     [[els.motSpeedSlider, els.motSpeedValue], [els.motTrainingSpeedSlider, els.motTrainingSpeedValue]].forEach(([slider, value]) => {
       slider.value = motPrefs.speed;
-      value.textContent = Math.round(motPrefs.speed * 100) + "%";
+      value.textContent = Math.round(motPrefs.speed * 100) + " %";
     });
     [[els.motTrackSlider, els.motTrackValue], [els.motTrainingTrackSlider, els.motTrainingTrackValue]].forEach(([slider, value]) => {
       slider.value = motPrefs.trackS;
@@ -13757,6 +16123,9 @@
   }
   function motLevelLabel() {
     const { n, k } = motCountsForRound();
+    if (barCompact()) {
+      return motState.mode === "count" ? `${k} aus ${n}` : `${k}/${n} · Stufe ${motState.speedStep + 1}`;
+    }
     const base = `${n} Objekte · ${k} Ziel${k > 1 ? "e" : ""}`;
     return motState.mode === "count" ? base : `${base} · Tempo-Stufe ${motState.speedStep + 1}`;
   }
@@ -13881,8 +16250,10 @@
       errorMode: p.errorMode, style: p.style, colors: p.colors.slice(), targetColors: p.targetColors.slice(),
       objScale: p.objScale || 1,
       startTime: performance.now(), timer: null, comboDurationTimer: null, raf: null, paused: false,
+      mbg: mbgCopy(p.mbg),
     };
     els.motStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
+    mbgStart("mot");
     requestWakeLock();
     motStartRound();
     // Kombi block: Objektverfolgung (MOT) has no natural end of its own, same as
@@ -13944,7 +16315,7 @@
   // settings stay as they are.
   function syncMotPauseSpeed() {
     $("motPauseSpeedSlider").value = motState.speed;
-    $("motPauseSpeedValue").textContent = Math.round(motState.speed * 100) + "%";
+    $("motPauseSpeedValue").textContent = Math.round(motState.speed * 100) + " %";
   }
   $("motPauseSpeedSlider").addEventListener("input", (e) => { if (motState) { motState.speed = Number(e.target.value); syncMotPauseSpeed(); } });
   function resumeMot() {
@@ -14288,6 +16659,7 @@
     els.workoutSetDoneBtn.hidden = false;
     els.workoutSetDoneBtn.textContent = mode === "time" ? "Halten starten" : "Satz erledigt";
     els.workoutRestBox.hidden = true;
+    breathGuideStop($("workoutRestBreath"));
     workoutState.holding = null;
     const logs = mode === "range" || mode === "pyramid" || mode === "amrap";
     els.workoutRepsInputRow.hidden = !logs;
@@ -14376,6 +16748,10 @@
     els.workoutRestNext.hidden = !nextText;
     els.workoutRestNext.textContent = nextText;
     els.workoutRestSkipBtn.textContent = mode === "start" ? "Sofort starten" : "Jetzt weiter";
+    // Atemführung only in real rests (between sets / exercises), never in
+    // "Bereit machen", a Supersatz or side switch.
+    breathGuideStop($("workoutRestBreath"));
+    breathGuideFor($("workoutRestBreath"), $("workoutRestBreathLabel"), mode === "set" || mode === "item" ? restS : 0);
     const cfg = cueCfg("strength");
     cueStrengthRestStart(mode, restS, cfg);
     const countOn = cfg.countStart && cfg.countdownS > 0;
@@ -14825,6 +17201,10 @@
         // a long beep marks the instant of every work start AND end
         if (prevFrame && (frame.type === "work" || prevFrame.type === "work") && cueTransitionBeeps(cfg)) playWorkoutBeep(true);
         cueTabataFrameStart(frame, frameIdx, cfg);
+        // Atemführung in the real rests (between exercises / sets), not in
+        // "Bereit machen" or the cool-down.
+        breathGuideStop($("tabataBreath"));
+        breathGuideFor($("tabataBreath"), $("tabataBreathLabel"), frame.type === "rest" || frame.type === "setrest" ? frame.t1 - frame.t0 : 0);
       }
       // Countdown (Töne & Ansagen, default 3 s) to every work start and end.
       const countEnd = frame.type === "work" && cfg.countEnd;
@@ -14939,6 +17319,8 @@
     if (workoutRestTimer) clearTimeout(workoutRestTimer);
     workoutRestTimer = null;
     stopWorkoutSetTimer();
+    breathGuideStop($("workoutRestBreath"));
+    breathGuideStop($("tabataBreath"));
     const st = workoutState;
     const played = st ? (performance.now() - (st.sessionStart || st.startTime)) / 1000 : 0;
     // Double-progression check (see the Kraft-/Wiederholungstraining note
@@ -15044,6 +17426,8 @@
     if (workoutTransitionTimer) clearTimeout(workoutTransitionTimer);
     workoutTransitionTimer = null;
     workoutState = null;
+    breathGuideStop($("workoutRestBreath"));
+    breathGuideStop($("tabataBreath"));
     releaseWakeLock();
     if (document.fullscreenElement === els.workoutPlayer) document.exitFullscreen().catch(() => {});
     els.workoutFsHint.hidden = true;
@@ -16590,7 +18974,7 @@
   // `group` sorts both the Feineinstellungen pool grid and the live
   // picker into their parent domain, so the list stays legible as it
   // grows instead of one long flat run of choices.
-  const CARDIO_GUEST_GROUPS = { vt: "Visuelles Training", nat: "Neuroathletik (NAT)" };
+  const CARDIO_GUEST_GROUPS = { vt: "Visuelles Training", nat: "Neuroathletik (NAT)", extra: "Weitere Zusatzaufgaben" };
   const CARDIO_GUEST_TYPES = [
     { id: "addon-flash", title: "Zusatzaufgabe · Ziffer/Buchstabe", group: "vt" },
     { id: "vt-color", title: "VT · Farbe & Seite", group: "vt" },
@@ -16612,6 +18996,11 @@
     { id: "flash", title: "Flash-Speicher-Test", group: "nat" },
     { id: "mot", title: "Objektverfolgung (MOT)", group: "nat" },
     { id: "balance", title: "Gleichgewicht", group: "nat" },
+    // Zusatzaufgabe Rechnen (2026-10-08): last, so older picker positions stay.
+    { id: "addon-math", title: "Zusatzaufgabe · Rechnen", group: "extra" },
+    // Richtungskreuz (Idee 70, 2026-10-08): appended last in the "Weitere"
+    // group, so older picker positions and group headings stay.
+    { id: "richtungskreuz", title: "Richtungskreuz", group: "extra" },
   ];
   // "addon-flash" and "periph-flash" both flash a coloured digit/letter at
   // a random peripheral position (the former as a Zusatzaufgabe overlay on
@@ -16628,7 +19017,7 @@
   function cardioGuestColorLib(guestId) {
     return cardioGuestIsPeriphLike(guestId) || guestId === "stroop-classic" || guestId === "stroop-bg" || guestId === "mot" ? STROOP_COLOR_LIB : COLOR_LIB;
   }
-  function cardioGuestRealId(guestId) { return guestId === "addon-flash" ? "cardio-flash-host" : guestId; }
+  function cardioGuestRealId(guestId) { return guestId === "addon-flash" || guestId === "addon-math" ? "cardio-flash-host" : guestId; }
   // Mirrors currentBgFill()'s own exclusion exactly (ex.type === "color-tap"
   // || ex.bgIsStimulus): cone-tap's stage is plain hard-coded white in CSS
   // (never reads state.bgColorKey/bgIntensity) and vt-color/vrw-original/
@@ -16682,6 +19071,7 @@
     // data for addon-flash, which never had this control standalone either.
     if (cardioGuestIsPeriphLike(guestId)) return { duration: 20, ...addonDefaultOwn(), zoneWeights: { tl: 1, tm: 1, tr: 1, ml: 1, mr: 1, bl: 1, bm: 1, br: 1 }, ...bg };
     if (guestId === "cone-tap") return { duration: 20 };
+    if (guestId === "addon-math") return { duration: 30, ...addonMathDefault(), ...bg };
     if (guestId === "blitz-raster") return { duration: 20, flashS: BLITZ_DIFFICULTIES.mittel.flashS, errorMode: "reset2", gridSize: 4, startCount: 3, zones: PERIPH_ZONE_KEYS.slice(), ...bg };
     // Remember/Flash/MOT: training-mode start values added here (Batch D) -
     // the OTHER modes' own numeric fields (Flash's constantCount/startCount/
@@ -16692,7 +19082,10 @@
     if (guestId === "balance") return { ...JSON.parse(JSON.stringify(BALANCE_DEFAULTS)), duration: 20, ...bg };
     // Farbfelder: the mat layout and the hand rules always come from the
     // client's own Farbfelder settings (it is the same mat on the floor).
-    if (guestId === "farbfelder") return { duration: 20, mode: "leuchten", stimulusS: 1.5, intervalMin: 2, intervalMax: 4, level: 1, seqStart: 2, foot: "aus", hands: false, gilt: "gesagt", mix: "ausgewogen", flip: 0 };
+    // Richtungskreuz: colours/numbers/Farbregel meanings come from the
+    // client's own settings (the same cross on the floor).
+    if (guestId === "richtungskreuz") return { duration: 20, mode: "zeigen", stimulusS: 1.5, intervalMin: 2, intervalMax: 4, signs: "farben", seqStart: 2, rule: false, speak: false };
+    if (guestId === "farbfelder") return { duration: 20, mode: "leuchten", stimulusS: 1.5, intervalMin: 2, intervalMax: 4, level: 1, seqStart: 2, foot: "aus", hands: false, gilt: "gesagt", mix: "ausgewogen", flip: 0, count: "wechsel" };
     if (guestId === "mot") return { duration: 20, mode: "speed", style: "flach", speed: MOT_DIFFICULTIES.mittel.speed, trackS: MOT_DIFFICULTIES.mittel.trackS, highlightS: MOT_DIFFICULTIES.mittel.highlightS, errorMode: "reset2", colors: ["schwarz"], targetColors: ["gelb"], objectCount: 8, targetCount: 4, growStartObjects: 4, growStartTargets: 1, trainingObjects: 6, trainingTargets: 2, trainingSpeedStep: 0, trainingProgress: true, objScale: 1, ...bg };
     if (guestId === "cone-number") return { duration: 20, stimulusS: 1.5, intervalMin: 2, intervalMax: 4, colors: ["rot", "gelb", "gruen", "blau"], fields: 4, ...bg };
     if (guestId === "vt-color" || guestId === "vrw-original") return { duration: 20, stimulusS: 1.2, intervalMin: 2, intervalMax: 4, colors: ["orange", "rot", "lila"], ...bg };
@@ -16723,7 +19116,8 @@
       if (modeList) {
         if (!modeList.some((m) => m.id === p.mode)) p.mode = d.mode;
       }
-      if (!cardioGuestIsConeTap(t.id) && !cardioGuestIsBlitz(t.id) && !modeList) {
+      if (t.id === "addon-math") { const dur = p.duration; Object.assign(p, addonMathNormalize(p)); p.duration = dur; }
+      if (!cardioGuestIsConeTap(t.id) && !cardioGuestIsBlitz(t.id) && !modeList && t.id !== "addon-math") {
         if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
         if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
         if (!Number.isFinite(p.intervalMax) || p.intervalMax < 0.5 || p.intervalMax > 15) p.intervalMax = d.intervalMax;
@@ -16763,6 +19157,16 @@
         if (!Number.isFinite(p.fields) || p.fields < CN_MIN_FIELDS || p.fields > CN_MAX_FIELDS) p.fields = d.fields;
         p.fields = Math.round(p.fields);
       }
+      if (t.id === "richtungskreuz") {
+        if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
+        if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
+        if (!Number.isFinite(p.intervalMax) || p.intervalMax < 0.5 || p.intervalMax > 15) p.intervalMax = d.intervalMax;
+        if (!RK_MODES[p.mode]) p.mode = d.mode;
+        if (!RK_SIGNS[p.signs]) p.signs = d.signs;
+        if (![2, 3].includes(p.seqStart)) p.seqStart = d.seqStart;
+        if (typeof p.rule !== "boolean") p.rule = d.rule;
+        if (typeof p.speak !== "boolean") p.speak = d.speak;
+      }
       if (cardioGuestIsFarbfelder(t.id)) {
         if (!Number.isFinite(p.stimulusS) || p.stimulusS < 0.3 || p.stimulusS > 3) p.stimulusS = d.stimulusS;
         if (!Number.isFinite(p.intervalMin) || p.intervalMin < 0.5 || p.intervalMin > 15) p.intervalMin = d.intervalMin;
@@ -16774,6 +19178,7 @@
         if (!["gesagt", "gezeigt"].includes(p.gilt)) p.gilt = d.gilt;
         if (!FF_MIXES[p.mix]) p.mix = d.mix;
         if (![0, 2, 3].includes(p.flip)) p.flip = d.flip;
+        if (!FF_COUNTS[p.count]) p.count = d.count;
       }
       if (cardioGuestIsRemember(t.id)) {
         if (!Number.isFinite(p.revealBaseS) || p.revealBaseS < 0.5 || p.revealBaseS > 3) p.revealBaseS = d.revealBaseS;
@@ -16947,7 +19352,7 @@
   function cardioLookFieldsHtml(kind, typeId, cfg) {
     const { size, color } = LOOK_SPECS[kind];
     let html = `<div class="group-label">${esc(size.label)}</div>` +
-      `<div class="slider-row"><input type="range" min="${size.min}" max="${size.max}" step="${size.step}" data-type="${typeId}" data-f="${size.field}" value="${cfg[size.field]}" aria-label="${esc(size.label)}"><span class="slider-value" data-fvalue="${typeId}-${size.field}">${cfg[size.field]}</span></div>`;
+      `<div class="slider-row"><input type="range" min="${size.min}" max="${size.max}" step="${size.step}" data-type="${typeId}" data-f="${size.field}" value="${cfg[size.field]}" aria-label="${esc(size.label)}"><span class="slider-value" data-fvalue="${typeId}-${size.field}">${cgFmt(size.field, cfg[size.field])}</span></div>`;
     if (color) {
       html += `<div class="group-label">${esc(color.label)}</div><div class="cardio-guest-colors">` +
         color.lib.map((c) => `<label><input type="radio" name="cardioGuestLook-${typeId}" data-looktype="${typeId}" data-lookfield="${color.field}" data-lookcolor="${c.key}" ${cfg[color.field] === c.key ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
@@ -16963,7 +19368,21 @@
       // for it would adjust something with zero visible effect, so they're
       // simply left out rather than shown-but-inert. Blitz-Raster has its
       // own entirely different field set (see below), not this one at all.
-      if (cardioGuestIsBlitz(t.id)) {
+      if (t.id === "addon-math") {
+        // Zusatzaufgabe Rechnen: the same choices as on the ready screens.
+        const row = (f, items) => `<div class="choice-row${items.length > 3 ? " two" : ""}">` + items.map(([v, title, small]) =>
+          `<button class="choice${cfg[f] === v ? " active" : ""}" data-type="${t.id}" data-balf="${f}" data-balv="${v}">${esc(title)}${small ? `<small>${esc(small)}</small>` : ""}</button>`).join("") + `</div>`;
+        html += `<div class="cardio-guest-field-row">
+        <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
+        <div><label>Anzeigedauer (Sek.)</label><input type="number" min="1.5" max="6" step="0.5" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"></div>
+        <div><label>Pause min (Sek.)</label><input type="number" min="1" max="15" step="0.5" data-type="${t.id}" data-f="intervalMin" value="${cfg.intervalMin}"></div>
+        <div><label>Pause max (Sek.)</label><input type="number" min="1" max="15" step="0.5" data-type="${t.id}" data-f="intervalMax" value="${cfg.intervalMax}"></div>
+      </div>` +
+          `<div class="group-label">Rechenart</div>` + row("level", [["plus10", "Plus/Minus", "bis 10"], ["plus20", "Plus/Minus", "bis 20"], ["mal", "Mit Mal", "bis 10 · 10"]]) +
+          `<div class="group-label">So antwortest du</div>` +
+          `<div class="choice-row" style="grid-template-columns:1fr">` + [["doppelkreis", "Doppelkreis", "innen tippen = stimmt, Ring tippen = stimmt nicht"], ["gonogo", "Nur bei „stimmt“ antippen", "stimmt es nicht, tippst du nichts"], ["laut", "Laut sagen", "ohne Tippen"]].map(([v, title, small]) =>
+            `<button class="choice${cfg.answer === v ? " active" : ""}" data-type="${t.id}" data-balf="answer" data-balv="${v}">${esc(title)}<small>${esc(small)}</small></button>`).join("") + `</div>`;
+      } else if (cardioGuestIsBlitz(t.id)) {
         html += `<div class="cardio-guest-field-row">
         <div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${t.id}" data-f="duration" value="${cfg.duration}"></div>
         <div><label>Startanzahl</label><input type="number" min="2" max="12" step="1" data-type="${t.id}" data-f="startCount" value="${cfg.startCount}"></div>
@@ -16998,6 +19417,8 @@
           `</div>`;
       } else if (cardioGuestIsBalance(t.id)) {
         html += balanceCardioFieldsHtml(t.id, cfg);
+      } else if (t.id === "richtungskreuz") {
+        html += rkCardioFieldsHtml(t.id, cfg);
       } else if (cardioGuestIsFarbfelder(t.id)) {
         html += farbfelderCardioFieldsHtml(t.id, cfg);
       } else if (cardioGuestIsConeTap(t.id)) {
@@ -17027,14 +19448,14 @@
           // continuously.
           html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` + cardioLookFieldsHtml("remember", t.id, cfg) +
             `<div class="group-label">Einblenddauer bei 2 Zahlen</div>` +
-            `<div class="slider-row"><input type="range" min="0.4" max="3" step="0.1" data-type="${t.id}" data-f="revealBaseS" value="${cfg.revealBaseS}"><span class="slider-value" data-fvalue="${t.id}-revealBaseS">${cfg.revealBaseS}</span></div>` +
+            `<div class="slider-row"><input type="range" min="0.4" max="3" step="0.1" data-type="${t.id}" data-f="revealBaseS" value="${cfg.revealBaseS}"><span class="slider-value" data-fvalue="${t.id}-revealBaseS">${cgFmt("revealBaseS", cfg.revealBaseS)}</span></div>` +
             `<div class="group-label">Zusätzliche Zeit je weiterer Zahl</div>` +
-            `<div class="slider-row"><input type="range" min="0.05" max="0.6" step="0.05" data-type="${t.id}" data-f="revealStepS" value="${cfg.revealStepS}"><span class="slider-value" data-fvalue="${t.id}-revealStepS">${cfg.revealStepS}</span></div>` +
+            `<div class="slider-row"><input type="range" min="0.05" max="0.6" step="0.05" data-type="${t.id}" data-f="revealStepS" value="${cfg.revealStepS}"><span class="slider-value" data-fvalue="${t.id}-revealStepS">${cgFmt("revealStepS", cfg.revealStepS)}</span></div>` +
             // Trainingsmodus-eigene Startwerte - nur relevant, wenn der
             // Modus oben auch tatsächlich auf Trainingsmodus steht.
             (cfg.mode === "training" ? (
               `<div class="group-label">Startzahl <span class="group-count">${cfg.trainingStart}</span></div>` +
-              `<div class="slider-row"><input type="range" min="2" max="16" step="1" data-type="${t.id}" data-f="trainingStart" value="${cfg.trainingStart}"><span class="slider-value" data-fvalue="${t.id}-trainingStart">${cfg.trainingStart}</span></div>` +
+              `<div class="slider-row"><input type="range" min="2" max="16" step="1" data-type="${t.id}" data-f="trainingStart" value="${cfg.trainingStart}"><span class="slider-value" data-fvalue="${t.id}-trainingStart">${cgFmt("trainingStart", cfg.trainingStart)}</span></div>` +
               `<div class="group-label">Positionsart</div>` +
               `<div class="choice-row two">` +
               `<button class="choice${cfg.trainingPositionMode === "fixed" ? " active" : ""}" data-type="${t.id}" data-posmode="fixed">Feste Positionen<small>bisherige bleiben</small></button>` +
@@ -17056,9 +19477,9 @@
           // Feineinstellungen (#flashAdvanced).
           html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` + cardioLookFieldsHtml("flash", t.id, cfg) +
             `<div class="group-label">Einblenddauer je Zahl</div>` +
-            `<div class="slider-row"><input type="range" min="0.3" max="2" step="0.1" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"><span class="slider-value" data-fvalue="${t.id}-stimulusS">${cfg.stimulusS}</span></div>` +
+            `<div class="slider-row"><input type="range" min="0.3" max="2" step="0.1" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"><span class="slider-value" data-fvalue="${t.id}-stimulusS">${cgFmt("stimulusS", cfg.stimulusS)}</span></div>` +
             `<div class="group-label">Pause zwischen den Zahlen</div>` +
-            `<div class="slider-row"><input type="range" min="0.2" max="2" step="0.1" data-type="${t.id}" data-f="intervalS" value="${cfg.intervalS}"><span class="slider-value" data-fvalue="${t.id}-intervalS">${cfg.intervalS}</span></div>` +
+            `<div class="slider-row"><input type="range" min="0.2" max="2" step="0.1" data-type="${t.id}" data-f="intervalS" value="${cfg.intervalS}"><span class="slider-value" data-fvalue="${t.id}-intervalS">${cgFmt("intervalS", cfg.intervalS)}</span></div>` +
             `<div class="group-label">Fixpunkt in der Mitte</div>` +
             `<div class="choice-row two" data-fixtoggle-row="${t.id}">` +
             `<button class="choice${cfg.fixEnabled ? " active" : ""}" data-type="${t.id}" data-fixtoggle="1">Anzeigen</button>` +
@@ -17069,7 +19490,7 @@
               `<div class="cardio-guest-colors" data-fixcolors="${t.id}">` +
               FIX_COLOR_LIB.map((c) => `<label><input type="radio" name="cardioGuestFix-${t.id}" data-fixtype="${t.id}" data-fixcolor="${c.key}" ${cfg.fixColor === c.key ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
               `</div>` +
-              `<div class="slider-row"><span class="slider-label">Größe</span><input type="range" min="0.6" max="2" step="0.1" data-type="${t.id}" data-f="fixSize" value="${cfg.fixSize}"><span class="slider-value" data-fvalue="${t.id}-fixSize">${cfg.fixSize}</span></div>`
+              `<div class="slider-row"><span class="slider-label">Größe</span><input type="range" min="0.6" max="2" step="0.1" data-type="${t.id}" data-f="fixSize" value="${cfg.fixSize}"><span class="slider-value" data-fvalue="${t.id}-fixSize">${cgFmt("fixSize", cfg.fixSize)}</span></div>`
             ) : "") +
             // Modus-eigene Startwerte - welches Feld gezeigt wird, hängt
             // vom oben gewählten Modus ab, genau wie auf den jeweils
@@ -17077,10 +19498,10 @@
             // flashRepsGroup/flashTrainingReady).
             (cfg.mode === "constant" ? (
               `<div class="group-label">Anzahl der Zeichen <span class="group-count">${cfg.constantCount}</span></div>` +
-              `<div class="slider-row"><input type="range" min="2" max="6" step="1" data-type="${t.id}" data-f="constantCount" value="${cfg.constantCount}"><span class="slider-value" data-fvalue="${t.id}-constantCount">${cfg.constantCount}</span></div>`
+              `<div class="slider-row"><input type="range" min="2" max="6" step="1" data-type="${t.id}" data-f="constantCount" value="${cfg.constantCount}"><span class="slider-value" data-fvalue="${t.id}-constantCount">${cgFmt("constantCount", cfg.constantCount)}</span></div>`
             ) : cfg.mode === "climb" || cfg.mode === "climbRepeat" ? (
               `<div class="group-label">Startanzahl <span class="group-count">${cfg.startCount}</span></div>` +
-              `<div class="slider-row"><input type="range" min="2" max="9" step="1" data-type="${t.id}" data-f="startCount" value="${cfg.startCount}"><span class="slider-value" data-fvalue="${t.id}-startCount">${cfg.startCount}</span></div>` +
+              `<div class="slider-row"><input type="range" min="2" max="9" step="1" data-type="${t.id}" data-f="startCount" value="${cfg.startCount}"><span class="slider-value" data-fvalue="${t.id}-startCount">${cgFmt("startCount", cfg.startCount)}</span></div>` +
               (cfg.mode === "climbRepeat" ? (
                 `<div class="group-label">Wiederholungen je Stufe</div>` +
                 `<div class="choice-row two">` +
@@ -17089,7 +19510,7 @@
               ) : "")
             ) : cfg.mode === "training" ? (
               `<div class="group-label">Start mit <span class="group-count">${cfg.trainingStart} Zeichen</span></div>` +
-              `<div class="slider-row"><input type="range" min="2" max="9" step="1" data-type="${t.id}" data-f="trainingStart" value="${cfg.trainingStart}"><span class="slider-value" data-fvalue="${t.id}-trainingStart">${cfg.trainingStart}</span></div>` +
+              `<div class="slider-row"><input type="range" min="2" max="9" step="1" data-type="${t.id}" data-f="trainingStart" value="${cfg.trainingStart}"><span class="slider-value" data-fvalue="${t.id}-trainingStart">${cgFmt("trainingStart", cfg.trainingStart)}</span></div>` +
               `<div class="group-label">Nach Erfolg</div>` +
               `<div class="choice-row two">` +
               `<button class="choice${cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="1">Weiter steigern<small>wie gewohnt +1</small></button>` +
@@ -17105,32 +19526,32 @@
           // screen nests them under its own Feineinstellungen (#motAdvanced).
           html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` + cardioLookFieldsHtml("mot", t.id, cfg) +
             `<div class="group-label">Geschwindigkeit</div>` +
-            `<div class="slider-row"><input type="range" min="0.05" max="0.4" step="0.01" data-type="${t.id}" data-f="speed" value="${cfg.speed}"><span class="slider-value" data-fvalue="${t.id}-speed">${cfg.speed}</span></div>` +
+            `<div class="slider-row"><input type="range" min="0.05" max="0.4" step="0.01" data-type="${t.id}" data-f="speed" value="${cfg.speed}"><span class="slider-value" data-fvalue="${t.id}-speed">${cgFmt("speed", cfg.speed)}</span></div>` +
             `<div class="group-label">Verfolgungsdauer</div>` +
-            `<div class="slider-row"><input type="range" min="3" max="15" step="0.5" data-type="${t.id}" data-f="trackS" value="${cfg.trackS}"><span class="slider-value" data-fvalue="${t.id}-trackS">${cfg.trackS}</span></div>` +
+            `<div class="slider-row"><input type="range" min="3" max="15" step="0.5" data-type="${t.id}" data-f="trackS" value="${cfg.trackS}"><span class="slider-value" data-fvalue="${t.id}-trackS">${cgFmt("trackS", cfg.trackS)}</span></div>` +
             `<div class="group-label">Markierdauer</div>` +
-            `<div class="slider-row"><input type="range" min="1" max="4" step="0.1" data-type="${t.id}" data-f="highlightS" value="${cfg.highlightS}"><span class="slider-value" data-fvalue="${t.id}-highlightS">${cfg.highlightS}</span></div>` +
+            `<div class="slider-row"><input type="range" min="1" max="4" step="0.1" data-type="${t.id}" data-f="highlightS" value="${cfg.highlightS}"><span class="slider-value" data-fvalue="${t.id}-highlightS">${cgFmt("highlightS", cfg.highlightS)}</span></div>` +
             // Modus-eigene Objekt-/Ziel-Anzahlen - welches Feldpaar gezeigt
             // wird, hängt vom oben gewählten Modus ab, genau wie auf den
             // jeweils eigenen Ready-Seiten (motFixedCountGroup/
             // motGrowStartGroup/motTrainingReady).
             (cfg.mode === "speed" ? (
               `<div class="group-label">Anzahl Objekte <span class="group-count">${cfg.objectCount}</span></div>` +
-              `<div class="slider-row"><input type="range" min="4" max="12" step="1" data-type="${t.id}" data-f="objectCount" value="${cfg.objectCount}"><span class="slider-value" data-fvalue="${t.id}-objectCount">${cfg.objectCount}</span></div>` +
+              `<div class="slider-row"><input type="range" min="4" max="12" step="1" data-type="${t.id}" data-f="objectCount" value="${cfg.objectCount}"><span class="slider-value" data-fvalue="${t.id}-objectCount">${cgFmt("objectCount", cfg.objectCount)}</span></div>` +
               `<div class="group-label">Anzahl Ziele <span class="group-count">${cfg.targetCount}</span></div>` +
-              `<div class="slider-row"><input type="range" min="1" max="4" step="1" data-type="${t.id}" data-f="targetCount" value="${cfg.targetCount}"><span class="slider-value" data-fvalue="${t.id}-targetCount">${cfg.targetCount}</span></div>`
+              `<div class="slider-row"><input type="range" min="1" max="4" step="1" data-type="${t.id}" data-f="targetCount" value="${cfg.targetCount}"><span class="slider-value" data-fvalue="${t.id}-targetCount">${cgFmt("targetCount", cfg.targetCount)}</span></div>`
             ) : cfg.mode === "count" || cfg.mode === "both" ? (
               `<div class="group-label">Start-Anzahl Objekte <span class="group-count">${cfg.growStartObjects}</span></div>` +
-              `<div class="slider-row"><input type="range" min="3" max="8" step="1" data-type="${t.id}" data-f="growStartObjects" value="${cfg.growStartObjects}"><span class="slider-value" data-fvalue="${t.id}-growStartObjects">${cfg.growStartObjects}</span></div>` +
+              `<div class="slider-row"><input type="range" min="3" max="8" step="1" data-type="${t.id}" data-f="growStartObjects" value="${cfg.growStartObjects}"><span class="slider-value" data-fvalue="${t.id}-growStartObjects">${cgFmt("growStartObjects", cfg.growStartObjects)}</span></div>` +
               `<div class="group-label">Start-Anzahl Ziele <span class="group-count">${cfg.growStartTargets}</span></div>` +
-              `<div class="slider-row"><input type="range" min="1" max="3" step="1" data-type="${t.id}" data-f="growStartTargets" value="${cfg.growStartTargets}"><span class="slider-value" data-fvalue="${t.id}-growStartTargets">${cfg.growStartTargets}</span></div>`
+              `<div class="slider-row"><input type="range" min="1" max="3" step="1" data-type="${t.id}" data-f="growStartTargets" value="${cfg.growStartTargets}"><span class="slider-value" data-fvalue="${t.id}-growStartTargets">${cgFmt("growStartTargets", cfg.growStartTargets)}</span></div>`
             ) : cfg.mode === "training" ? (
               `<div class="group-label">Start-Anzahl Objekte <span class="group-count">${cfg.trainingObjects}</span></div>` +
-              `<div class="slider-row"><input type="range" min="3" max="12" step="1" data-type="${t.id}" data-f="trainingObjects" value="${cfg.trainingObjects}"><span class="slider-value" data-fvalue="${t.id}-trainingObjects">${cfg.trainingObjects}</span></div>` +
+              `<div class="slider-row"><input type="range" min="3" max="12" step="1" data-type="${t.id}" data-f="trainingObjects" value="${cfg.trainingObjects}"><span class="slider-value" data-fvalue="${t.id}-trainingObjects">${cgFmt("trainingObjects", cfg.trainingObjects)}</span></div>` +
               `<div class="group-label">Start-Anzahl Ziele <span class="group-count">${cfg.trainingTargets}</span></div>` +
-              `<div class="slider-row"><input type="range" min="1" max="4" step="1" data-type="${t.id}" data-f="trainingTargets" value="${cfg.trainingTargets}"><span class="slider-value" data-fvalue="${t.id}-trainingTargets">${cfg.trainingTargets}</span></div>` +
+              `<div class="slider-row"><input type="range" min="1" max="4" step="1" data-type="${t.id}" data-f="trainingTargets" value="${cfg.trainingTargets}"><span class="slider-value" data-fvalue="${t.id}-trainingTargets">${cgFmt("trainingTargets", cfg.trainingTargets)}</span></div>` +
               `<div class="group-label">Start-Tempo-Stufe <span class="group-count">${cfg.trainingSpeedStep}</span></div>` +
-              `<div class="slider-row"><input type="range" min="0" max="20" step="1" data-type="${t.id}" data-f="trainingSpeedStep" value="${cfg.trainingSpeedStep}"><span class="slider-value" data-fvalue="${t.id}-trainingSpeedStep">${cfg.trainingSpeedStep}</span></div>` +
+              `<div class="slider-row"><input type="range" min="0" max="20" step="1" data-type="${t.id}" data-f="trainingSpeedStep" value="${cfg.trainingSpeedStep}"><span class="slider-value" data-fvalue="${t.id}-trainingSpeedStep">${cgFmt("trainingSpeedStep", cfg.trainingSpeedStep)}</span></div>` +
               `<div class="group-label">Nach Erfolg</div>` +
               `<div class="choice-row two">` +
               `<button class="choice${cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="1">Weiter steigern<small>wie gewohnt</small></button>` +
@@ -17265,6 +19686,18 @@
   // bg radio/bg slider) - native input state already reflects the change, so
   // no re-render is forced (matters most for the bg-intensity slider: a full
   // rebuild on every "input" tick while dragging would be janky).
+  // Value labels of the Cardio guest sliders in German form (Prüfer 08.10.:
+  // "1.5 s" -> "1,5 s", "0.8" -> "80 %").
+  function cgFmt(field, v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return String(v);
+    const de = (x) => String(Math.round(x * 100) / 100).replace(".", ",");
+    if (/S$/.test(field)) return `${de(n)} s`;
+    if (field === "volume" || field === "speed") return `${Math.round(n * 100)} %`;
+    if (field === "bpm") return `${n}/min`;
+    if (/(size|Scale)$/i.test(field)) return `${de(n)}×`;
+    return de(n);
+  }
   function wireCardioGuestFields(container, getCfg, { onSelect, onPersist } = {}) {
     const select = onSelect || (() => {});
     const persist = onPersist || (() => {});
@@ -17279,7 +19712,7 @@
         // for those.
         if (input.type === "range") {
           const valueEl = container.querySelector(`[data-fvalue="${input.dataset.type}-${input.dataset.f}"]`);
-          if (valueEl) valueEl.textContent = input.value;
+          if (valueEl) valueEl.textContent = cgFmt(input.dataset.f, Number(input.value));
         }
       });
     });
@@ -17468,7 +19901,7 @@
         cfg.bgIntensity = Number(slider.value);
         persist();
         const valueEl = container.querySelector(`[data-bgintensityvalue="${slider.dataset.bgintensity}"]`);
-        if (valueEl) valueEl.textContent = `${Math.round(cfg.bgIntensity * 100)}%`;
+        if (valueEl) valueEl.textContent = `${Math.round(cfg.bgIntensity * 100)} %`;
       });
     });
   }
@@ -17632,6 +20065,11 @@
       return;
     }
     cueCardioTick(block, blockElapsed);
+    if (cardioState.breathBlock !== cardioState.index) {
+      cardioState.breathBlock = cardioState.index;
+      breathGuideStop($("cardioBreath"));
+      breathGuideFor($("cardioBreath"), $("cardioBreathLabel"), block.pause ? block.durationS : 0);
+    }
     if (block.pause) {
       const nextBlock = cardioState.items[cardioState.index + 1];
       const nextAct = nextBlock ? findCardioActivity(nextBlock.activity) : null;
@@ -17752,10 +20190,16 @@
     // addon-flash (cardioGuestIsPeriphLike()), just written into these
     // fields instead of active.*.
     if (guestId === "cone-number") { state.cnFields = cfg.fields; cnNormalize(state); }
+    if (guestId === "richtungskreuz") {
+      state.rkMode = cfg.mode; state.rkSigns = cfg.signs; state.rkSeqStart = cfg.seqStart;
+      state.rkRuleOn = cfg.rule; state.rkSpeak = cfg.speak;
+      rkNormalize(state);
+    }
     if (guestId === "farbfelder") {
       state.ffMode = cfg.mode; state.ffLevel = cfg.level; state.ffSeqStart = cfg.seqStart;
       state.ffFoot = cfg.foot; state.ffHands = cfg.hands;
-      state.ffGilt = cfg.gilt; state.ffMix = cfg.mix; state.ffFlip = cfg.flip;
+      state.ffGilt = cfg.gilt; state.ffMix = cfg.mix; state.ffFlip = cfg.flip; state.ffCount = cfg.count;
+      state.ffAnswer = "treten"; // tapping the screen while running makes no sense
       ffNormalize(state);
     }
     if (guestId === "periph-flash") {
@@ -17820,7 +20264,7 @@
       const r = el.getBoundingClientRect();
       if (r.width > 0 && r.height > 0) rects.push(r);
     };
-    [els.cardioBlockProgress, els.cardioActivityTitle, els.cardioActivityLabel, els.cardioCountdown,
+    [els.cardioBlockProgress, els.cardioActivityTitle, els.cardioActivityLabel, els.cardioCountdown, $("cardioBreath"), $("cardioBreathLabel"),
       els.cardioPhaseLabel, els.cardioMotivImg, els.cardioPlayer.querySelector(".chapter-nav")].forEach(add);
     els.cardioPlayer.querySelectorAll("#cardioPlayerBar button").forEach(add);
     if (!els.cardioMotiv.hidden && !els.cardioMotivText.hidden) {
@@ -17913,6 +20357,7 @@
     if (cardioRaf) cancelAnimationFrame(cardioRaf);
     cardioRaf = null;
     const realId = cardioGuestRealId(guestId);
+    cardioHostAddonId = guestId; cardioHostAddonCfg = cfg; // Zusatzaufgabe Rechnen rides on the blank host too
     cardioGuestActive = true;
     const comboOpts = { comboDurationS: cfg.duration };
     // Blitz-Raster/Remember/Flash/MOT don't touch state.exercise/
@@ -18154,6 +20599,7 @@
     releaseWakeLock();
     if (!comboProgram) resumeSingleClear("cardio");
     cardioState = null;
+    breathGuideStop($("cardioBreath"));
     if (comboProgram) { advanceComboProgram(totalS); return; }
     els.cardioPlayer.hidden = true;
     if (document.fullscreenElement === els.cardioPlayer) document.exitFullscreen().catch(() => {});
@@ -18196,6 +20642,8 @@
 
   function currentHomeScreen() {
     if (freeAreaActive) return "freeHome";
+    if (activationAreaActive) return "activationHome";
+    if (neuroAreaActive) return "neuroHome";
     const active = document.querySelector(".section-tab.active");
     const sec = active ? active.dataset.section : "visual";
     return sec === "today" ? "todayHome" : sec === "breath" ? "breathHome" : sec === "movement" ? "movementHome" : sec === "workout" ? "workoutHome" : sec === "cardio" ? "cardioHome" : sec === "nat" ? "natHome" : sec === "test" ? "testHome" : "home";
@@ -18214,9 +20662,9 @@
     // start after the Kombi pause.
     const first = def.blocks && def.blocks[0];
     const own = !first || first.domain === "wimhof" || first.domain === "workout" ||
-      (first.domain === "visual" && !(EXERCISES[first.exercise] && EXERCISES[first.exercise].type === "color-tap"));
+      (first.domain === "visual" && !(EXERCISES[first.exercise] && /^(color-tap|laufweg)$/.test(EXERCISES[first.exercise].type)));
     if (own || !leadInWanted()) { go(); return; }
-    runLeadIn(go, /^(breath|cardio|free)$/.test(first.domain));
+    runLeadIn(go, /^(breath|cardio|free|neuro)$/.test(first.domain));
   }
   function startComboBlock(idx) {
     if (!comboProgram) return;
@@ -18265,8 +20713,10 @@
       state.exercise = block.exercise;
       const visEx = EXERCISES[block.exercise];
       if (block.periph) Object.assign(state, JSON.parse(JSON.stringify(block.periph)));
-      if (block.ff) { Object.assign(state, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
+      if (block.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
       if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
+      if (block.lw) lwApply(block.lw);
+      vtExtrasApply(block, { fromCode: !!comboProgram.code && comboProgram.code !== "local", block: true });
       // Generalized from a visual-only "usesColors" check (the sole shape
       // the original 3 curated presets ever needed) to all 3 colour kinds,
       // now that capture mode lets any exercise's block carry its own
@@ -18309,6 +20759,11 @@
       startStandaloneCardio(block.items.map(copyCardioItem));
     } else if (block.domain === "free" && block.free) {
       startFreeRun(block.free);
+    } else if (block.domain === "optodrum") {
+      startOptoRun(optoBlockPrefs(block));
+    } else if (block.domain === "neuro" && NEURO_EXERCISES[block.ex]) {
+      // Plays with or without the unlock: a trainer code's Spezialübung.
+      startNeuroRun(block.ex, neuroBlockPrefs(block), { special: neuroBlockIsSpecial(block) });
     } else {
       startComboBlock(idx + 1); // unknown domain - skip rather than get stuck
     }
@@ -18331,6 +20786,8 @@
     if (!(pauseS > 0)) { onContinue(); return; }
     els.comboTransitionTitle.textContent = comboBlockLabel(nextBlock);
     els.comboTransitionMeta.textContent = comboBlockMeta(nextBlock);
+    $("comboTransitionSpecial").hidden = !neuroBlockIsSpecial(nextBlock);
+    showBlockResult($("comboTransitionResult"), comboProgram);
     els.comboTransition.hidden = false;
     const cfg = cueCfg("kombi");
     const parts = [];
@@ -18341,10 +20798,13 @@
     const countOn = cfg.countStart && cfg.countdownS > 0;
     const ts = comboTransitionState = { remaining: pauseS };
     els.comboTransitionCountdown.textContent = fmtClock(ts.remaining);
+    breathGuideStop($("comboTransitionBreath"));
+    breathGuideFor($("comboTransitionBreath"), $("comboTransitionBreathLabel"), pauseS);
     const go = () => {
       clearTimeout(comboTransitionTimer);
       clearInterval(comboTransitionInterval);
       comboTransitionState = null;
+      breathGuideStop($("comboTransitionBreath"));
       closeTrainPause();
       els.comboTransition.hidden = true;
       onContinue();
@@ -18688,6 +21148,32 @@
     });
   });
 
+  // ---- Wertung einzelner Bausteine (Fabian 08.10.: Farbfelder · Antippen
+  // im Kombi-Programm und im Trainer-Programm). A scored block pushes
+  // {label, text} into the run; the next pause shows it once ("Eben: …"),
+  // the closing panel lists all of them and the history note keeps them.
+  // A new scored block only needs one blockResultPush() call. ----
+  function blockResultPush(run, label, text, note) {
+    if (!run) return;
+    run.results = run.results || [];
+    run.results.push(note ? { label, text, note } : { label, text });
+    run.lastResult = { label, text };
+  }
+  function showBlockResult(el, run) {
+    const r = run && run.lastResult;
+    if (run) run.lastResult = null;
+    el.hidden = !r;
+    el.innerHTML = r ? `<span class="block-result-label">Eben: ${esc(r.label)}</span><span>${esc(r.text)}</span>` : "";
+  }
+  function renderBlockResults(listEl, run) {
+    const rs = (run && run.results) || [];
+    listEl.hidden = !rs.length;
+    listEl.innerHTML = rs.map((r) => `<li><span class="block-results-label">${esc(r.label)}</span><span>${esc(r.text)}</span></li>`).join("");
+  }
+  function blockResultsNote(run) {
+    const rs = (run && run.results) || [];
+    return rs.length ? rs.map((r) => r.note || `${r.label}: ${r.text}`).join("; ") : undefined;
+  }
   function advanceComboProgram(playedS) {
     if (!comboProgram) return;
     comboProgram.totalPlayedS += playedS;
@@ -18714,7 +21200,8 @@
     const title = comboProgram.title;
     const key = comboProgram.key;
     els.comboDoneSummary.textContent = `${countLabel(comboProgram.def.blocks.length, "Baustein", "Bausteine")} · ${fmtMinutes(played)} Training`;
-    const id = addHistory({ kind: "combo", title, progKey: key, seconds: Math.round(played) });
+    renderBlockResults($("comboDoneResults"), comboProgram);
+    const id = addHistory({ kind: "combo", title, progKey: key, seconds: Math.round(played), note: blockResultsNote(comboProgram) });
     renderRating(els.comboRating, id, "Wie fühlst du dich nach dem Programm?");
     els.comboDoneBackBtn.textContent = comboOriginBundle ? "Zurück zu meinen Programmen" : "Zur Startseite";
     els.comboDonePanel.hidden = false;
@@ -18731,7 +21218,7 @@
   els.comboAgainBtn.addEventListener("click", () => {
     if (!lastComboProgram) return;
     els.comboDonePanel.hidden = true;
-    comboProgram = { ...lastComboProgram, blockIndex: 0, totalPlayedS: 0 };
+    comboProgram = { ...lastComboProgram, blockIndex: 0, totalPlayedS: 0, results: [], lastResult: null };
     startComboBlock(0);
   });
   els.comboDoneBackBtn.addEventListener("click", () => {
@@ -18758,6 +21245,7 @@
         `<div class="bundle-item-head"><strong>${esc(p.label || ("Programm " + (i + 1)))}</strong>${dateLabel ? `<span class="bundle-date">${dateLabel}</span>` : ""}</div>` +
         (badges ? `<div class="badges">${badges}</div>` : "") +
         `<span class="bundle-meta">${exerciseCountLabel(p.blocks.length)} · ca. ${fmtMinutes(p.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0))}</span>` +
+        (neuroDefHasSpecial(p) ? `<span class="special-tag">${NEURO_SPECIAL_LABEL}</span>` : "") +
         (p.description ? `<span class="bundle-desc">${esc(p.description)}</span>` : "");
       item.addEventListener("click", () => {
         comboOriginBundle = { def: bundleDef, code };
@@ -18781,6 +21269,7 @@
   // own confirm(), which looks foreign in the installed app.
   let confirmYesFn = null, confirmReturnFocus = null;
   let confirmNoFn = null;
+  let confirmHasCancel = false;
   function confirmDialog(text, onYes, opts) {
     const sheet = document.getElementById("confirmSheet");
     const o = opts || {};
@@ -18788,6 +21277,12 @@
     document.getElementById("confirmTitle").textContent = o.title || "Bist du sicher?";
     document.getElementById("confirmYesBtn").textContent = o.yes || "Ja";
     document.getElementById("confirmNoBtn").textContent = o.no || "Nein";
+    // opts.cancel (label): a third, neutral way out; then tapping beside the
+    // sheet or Escape cancels too instead of running onNo.
+    const cancelBtn = document.getElementById("confirmCancelBtn");
+    cancelBtn.hidden = !o.cancel;
+    cancelBtn.textContent = o.cancel || "Abbrechen";
+    confirmHasCancel = !!o.cancel;
     confirmNoFn = o.onNo || null;
     confirmYesFn = onYes;
     confirmReturnFocus = document.activeElement;
@@ -18886,7 +21381,7 @@
   }, true);
   const LEADIN_START_IDS = ["movementStartBtn", "movementProgramStartBtn", "breathStartBtn", "breathProgramStartBtn",
     "rememberReadyStartBtn", "rememberTrainingStartBtn", "blitzReadyStartBtn", "flashReadyStartBtn", "flashTrainingStartBtn",
-    "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn",
+    "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn", "optoStartBtn", "neuroStartBtn",
     "wimhofStartBtn"];
   let leadInBypass = false, leadInTimer = null;
   function stopLeadIn() { clearTimeout(leadInTimer); leadInTimer = null; $("leadIn").hidden = true; }
@@ -18899,7 +21394,7 @@
     if (!b || b.disabled) return;
     // Hütchen sortieren shares Visual Training's start button but has no
     // canvas, so it never got VT's own countdown (Feinheit 10, 2026-10-06).
-    const coneStart = b.id === "startBtn" && EXERCISES[state.exercise] && EXERCISES[state.exercise].type === "color-tap";
+    const coneStart = b.id === "startBtn" && EXERCISES[state.exercise] && /^(color-tap|laufweg)$/.test(EXERCISES[state.exercise].type);
     if (!LEADIN_START_IDS.includes(b.id) && !coneStart) return;
     if (b.textContent.replace(/­/g, "").trim() !== "Training starten") return;
     e.preventDefault();
@@ -18936,6 +21431,10 @@
     masterPrefs.startCountdown = els.masterStartCountdownCheck.checked;
     saveMasterPrefs();
   });
+  $("masterPauseBreathCheck").addEventListener("change", () => {
+    masterPrefs.pauseBreath = $("masterPauseBreathCheck").checked;
+    saveMasterPrefs();
+  });
   $("masterLevelSuggestCheck").addEventListener("change", () => {
     masterPrefs.levelSuggest = $("masterLevelSuggestCheck").checked;
     if (masterPrefs.levelSuggest) { const s = readJSON(LEVEL_SUGGEST_KEY, {}); s.muted = {}; writeJSON(LEVEL_SUGGEST_KEY, s); }
@@ -18961,6 +21460,10 @@
       apply: (d) => { flashPrefs.stimulusS = d.stimulusS; flashPrefs.intervalS = d.intervalS; saveFlashPrefsToStorage(); } },
     mot: { title: "Objektverfolgung (MOT)", diffs: MOT_DIFFICULTIES, bucket: () => motDifficultyBucket(),
       apply: (d) => { motPrefs.speed = d.speed; motPrefs.trackS = d.trackS; motPrefs.highlightS = d.highlightS; saveMotPrefsToStorage(); } },
+    // Farbfelder · Antippen (Fabian 08.10.): the shared VT tempo (Leicht/
+    // Mittel/Schwer); streaks are kept per mode. Only single tap runs count.
+    farbfelder: { title: "Farbfelder", where: "Tempo", diffs: VT_TEMPO_DIFFS, bucket: () => vtTempoBucket(),
+      apply: (d) => { state.stimulusS = d.stimulusS; state.intervalMin = d.intervalMin; state.intervalMax = d.intervalMax; savePrefs(); syncTempoUI(); } },
   };
   // What counts as a very good run, per exercise and mode.
   function levelRunIsGood(ex, mode, st) {
@@ -18968,12 +21471,16 @@
     if (ex === "blitz") return st.cleared >= 6;
     if (ex === "flash") return mode === "constant" ? (st.roundsPlayed >= 8 && st.hits / st.roundsPlayed >= 0.9) : st.cleared >= 7;
     if (ex === "mot") return st.cleared >= 8;
+    // Farbfelder · Antippen: Abfolge = every round right (at least 2 rounds),
+    // else ≥ 90 % right with at least 5 fields shown.
+    if (ex === "farbfelder") return mode === "abfolge" ? (st.rounds >= 2 && st.roundsOk === st.rounds) : (st.total >= 5 && st.hits / st.total >= 0.9);
     return false;
   }
   function levelSuggestAfter(ex, mode, st, panel, beforeEl) {
     panel.querySelectorAll(".level-suggest").forEach((n) => n.remove());
     const def = LEVEL_SUGGEST_EX[ex];
     if (!def || mode === "training") return;
+    if (hoClientRunActive()) return; // a client's runs never change this device's levels (docs/notes/36)
     const diff = def.bucket();
     const order = ["leicht", "mittel", "schwer"];
     if (!order.includes(diff)) return;
@@ -18996,7 +21503,7 @@
       <button type="button" class="text-link small level-suggest-off">Alle Vorschläge ausschalten</button>`;
     box.querySelector(".level-suggest-yes").addEventListener("click", () => {
       def.apply(def.diffs[next]);
-      box.innerHTML = `<div class="level-suggest-title">Eingestellt: ${esc(def.diffs[next].title)}</div><p>Viel Erfolg beim nächsten Training. Zurückstellen kannst du jederzeit bei „Schwierigkeit“.</p>`;
+      box.innerHTML = `<div class="level-suggest-title">Eingestellt: ${esc(def.diffs[next].title)}</div><p>Viel Erfolg beim nächsten Training. Zurückstellen kannst du jederzeit bei „${esc(def.where || "Schwierigkeit")}“.</p>`;
     });
     box.querySelector(".level-suggest-mute").addEventListener("click", () => {
       const t = readJSON(LEVEL_SUGGEST_KEY, {}); t.muted = t.muted || {}; t.muted[ex] = true; writeJSON(LEVEL_SUGGEST_KEY, t);
@@ -19064,7 +21571,7 @@
   // after a click) unless fwmc-test-transitions is set.
   // Swipe from the left edge (first 28 px) to the right = the visible
   // ‹ button: the page follows the finger and slides out.
-  const HOME_SCREENS = new Set(["todayHome", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "progressScreen"]);
+  const HOME_SCREENS = new Set(["todayHome", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "activationHome", "neuroHome", "progressScreen"]);
   // With the bottom bar the four tabs are the top level; the area homes sit
   // one level deeper, under "Training".
   const NAV_TOP_SCREENS = new Set(["todayHome", "trainingHub", "progressScreen", "moreScreen"]);
@@ -19230,7 +21737,7 @@
       if (e.touches.length !== 1) return;
       const t = e.touches[0];
       if (t.clientX > 28) return;
-      if (e.target.closest && e.target.closest("input, textarea, select, .sheet:not([hidden]), .swipe-open")) return; // .swipe-open: closing a swiped list row
+      if (e.target.closest && e.target.closest("input, textarea, select, .sheet:not([hidden]), .swipe-open, .ff-layout-grid")) return; // .swipe-open: closing a swiped list row
       const bt = backTarget();
       if (!bt) return;
       start = { x: t.clientX, y: t.clientY, time: Date.now() };
@@ -19477,6 +21984,7 @@
     }
     if (player.id === "cardioPlayer") return { host: player, prev: id("cardioPrevBtn"), restart: id("cardioRestartBtn"), next: id("cardioSkipBtn") };
     if (player.id === "freePlayer") return { host: player, prev: id("freePrevBtn"), restart: id("freeRestartBtn"), next: id("freeSkipBtn") };
+    if (player.id === "neuroPlayer") return { host: player, prev: id("neuroPrevBtn"), restart: id("neuroRestartBtn"), next: id("neuroSkipBtn") };
     if (player.id === "workoutPlayer") {
       if (stepVis(id("workoutTabataView"))) return { host: player, prev: id("tabataPrevBtn"), restart: id("tabataRestartBtn"), next: id("tabataSkipBtn") };
       if (stepVis(id("workoutRepsView")) && workoutState && workoutState.kind === "reps") return { host: player, ...stepRepsCtx() };
@@ -19552,7 +22060,7 @@
   // Keys that must never travel in a client backup file: the coach
   // dashboard (dashboard.html, same origin) keeps its admin token under an
   // fwmc- key in this same localStorage.
-  const BACKUP_EXCLUDE = ["fwmc-admin-token", "fwmc-reminders-v1"]; // reminders belong to this device's push subscription
+  const BACKUP_EXCLUDE = ["fwmc-admin-token", "fwmc-reminders-v1", "fwmc-import-parts-v1"]; // reminders belong to this device's push subscription
   function buildBackup() {
     const data = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -19616,8 +22124,8 @@
     // The end-of-training question may have moved the sheet into a
     // fullscreen player; put it back so later questions stay visible.
     if (confirmSheetEl.parentNode !== document.body) document.body.appendChild(confirmSheetEl);
-    const fn = confirmYesFn, noFn = confirmNoFn;
-    confirmYesFn = null; confirmNoFn = null;
+    const fn = confirmYesFn, noFn = yes === null ? null : confirmNoFn;
+    confirmYesFn = null; confirmNoFn = null; confirmHasCancel = false;
     if (confirmReturnFocus && document.body.contains(confirmReturnFocus) && !confirmReturnFocus.hidden) confirmReturnFocus.focus();
     if (yes && fn) fn();
     else if (!yes && noFn) noFn();
@@ -19626,8 +22134,9 @@
     const sheet = document.getElementById("confirmSheet");
     document.getElementById("confirmYesBtn").addEventListener("click", () => closeConfirmDialog(true));
     document.getElementById("confirmNoBtn").addEventListener("click", () => closeConfirmDialog(false));
-    sheet.addEventListener("click", (e) => { if (e.target === sheet) closeConfirmDialog(false); });
-    sheet.addEventListener("keydown", (e) => { if (e.key === "Escape") closeConfirmDialog(false); else trapTabKey(sheet, e); });
+    document.getElementById("confirmCancelBtn").addEventListener("click", () => closeConfirmDialog(null));
+    sheet.addEventListener("click", (e) => { if (e.target === sheet) closeConfirmDialog(confirmHasCancel ? null : false); });
+    sheet.addEventListener("keydown", (e) => { if (e.key === "Escape") closeConfirmDialog(confirmHasCancel ? null : false); else trapTabKey(sheet, e); });
   })();
   document.getElementById("workoutCircuitClearBtn").addEventListener("click", () => confirmDialog("Willst du alle Übungen aus deinem Zirkel entfernen?", () => {
     workoutCircuitPrefs.items = [];
@@ -19711,10 +22220,21 @@
       const main = document.createElement(editOpener ? "button" : "span");
       main.className = "chapter-main";
       if (!editOpener) main.style.cursor = "default";
-      main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(comboBlockLabel(block))}</strong><span>${esc(comboBlockMeta(block))}</span>${block.fromProgram ? `<span class="combo-from">aus ${esc(block.fromProgram)}</span>` : ""}</span>`;
+      main.innerHTML = `<span class="num">${i + 1}</span><span class="info"><strong>${esc(comboBlockLabel(block))}</strong><span>${esc(comboBlockMeta(block))}</span>${block.fromProgram ? `<span class="combo-from">aus ${esc(block.fromProgram)}</span>` : ""}${gearTagHtml(gearKeyOfComboBlock(block))}</span>`;
       if (editOpener) main.addEventListener("click", () => editOpener(block, i));
       if (comboDraftBlocks.length > 1) row.appendChild(dragHandleEl());
       row.appendChild(main);
+      // ⓘ Regeln + Notiz for this Baustein (Idee 72)
+      if ((block.domain === "visual" && vtHasRegeln(block.exercise)) || (block.domain !== "visual" && REGELN_DOMAIN_KEY[block.domain])) {
+        const info = document.createElement("button");
+        info.type = "button";
+        info.className = "combo-block-remove combo-block-info";
+        info.title = "Regeln und Notiz";
+        info.setAttribute("aria-label", `Regeln und Notiz zu Baustein ${i + 1}`);
+        info.innerHTML = REGELN_I_SVG + (block.note ? '<span class="combo-info-dot" aria-hidden="true"></span>' : "");
+        info.addEventListener("click", () => openRegeln({ key: block.domain === "visual" ? "@vt" : REGELN_DOMAIN_KEY[block.domain], mode: "block", block, blockIndex: i }));
+        row.appendChild(info);
+      }
       // Reorder: swap with the neighbour (its own "Pause danach" travels
       // with the block). Only shown where a move is possible.
       [["up", -1, "\u2191", "Nach oben"], ["down", 1, "\u2193", "Nach unten"]].forEach(([dir, d, sym, label]) => {
@@ -19870,7 +22390,7 @@
   const TRAINER_PROGRAMS_KEY = "fwmc-trainer-programs-v1";
   const BUNDLE_ITEM_TYPE = { "bundle": undefined, "breath-bundle": "breath-program", "workout-bundle": "workout-plan", "movement-bundle": "movement-plan", "cardio-bundle": "cardio-plan", "combo-bundle": "combo-program" };
   function rememberTrainerProgram(code, def) {
-    if (!def || def.type === "free-template" || def.type === "training-plan" || PROGRAMS[code] || BREATH_PROGRAMS[code] || WORKOUT_PLANS[code]) return;
+    if (!def || def.type === "free-template" || def.type === "training-plan" || def.type === "neuro-unlock" || def.type === "feature-unlock" || PROGRAMS[code] || BREATH_PROGRAMS[code] || WORKOUT_PLANS[code]) return;
     const all = readJSON(TRAINER_PROGRAMS_KEY, {});
     all[code] = { def, at: new Date().toISOString() };
     const keep = Object.entries(all).sort((a, b) => b[1].at.localeCompare(a[1].at)).slice(0, CODE_HISTORY_MAX);
@@ -19896,7 +22416,7 @@
     host.innerHTML = "";
     const groups = [
       ["Deine Programme", comboSavedSorted().filter((e) => !comboEditing || e.id !== comboEditing.id).map((e) => ({ name: e.name, blocks: e.blocks }))],
-      ["Von deinem Trainer", trainerProgramList().map((x) => ({ name: x.name, blocks: comboBlocksFromDef(x.def) }))],
+      ["Von deinem Trainer", trainerProgramList().map((x) => ({ name: x.name, blocks: neuroStripBlocks(comboBlocksFromDef(x.def)) })).filter((x) => x.blocks.length)],
       ["In der App", appProgramList().map((x) => ({ name: x.name, blocks: comboBlocksFromDef(x.def) }))],
     ];
     groups.forEach(([label, items]) => {
@@ -19926,7 +22446,7 @@
   }
   $("comboInsertGroup").addEventListener("toggle", () => { if ($("comboInsertGroup").open) renderComboInsertList(); });
   function openComboScreen(seed) {
-    comboDraftBlocks = seed ? deepCopy(seed.blocks) : [];
+    comboDraftBlocks = seed ? neuroStripBlocks(deepCopy(seed.blocks)) : [];
     comboSavedAll = false;
     setComboEditing(null, seed ? `Kopie von „${seed.name}“. Das Original bleibt, wie es ist. Speichere deine Version unter eigenem Namen.` : "");
     comboAdaptName = seed ? `${seed.name} (eigene)`.slice(0, 40) : "";
@@ -25108,6 +27628,1485 @@
   els.kippbildDoneBackBtn.addEventListener("click", () => { els.kippbildPlayer.hidden = true; els.kippbildDonePanel.hidden = true; showScreen("testHome"); });
   wireFullscreen({ player: els.kippbildPlayer, btn: els.kippbildFsBtn, hint: els.kippbildFsHint, hintOpen: els.kippbildFsHintOpenBtn, hintClose: els.kippbildFsHintClose });
 
+  // ==== Farbbrille (Rot-Grün-Brille, Fabian 2026-10-08) ====
+  // Shared settings for every exercise that is played with red-green
+  // anaglyph glasses: which lens sits left (glasses can be flipped) and the
+  // calibrated red/green (each colour tuned until the eye behind the OTHER
+  // lens no longer sees it). One key per device, part of the backup.
+  // Calibration is mandatory (Fabian 08.10.): until it was done once, every
+  // Farbbrille start is locked (anaglyphGate). Details: docs/notes/30.
+  const ANAGLYPH_KEY = "fwmc-anaglyph-v1";
+  const ANAGLYPH_DEFAULT = { left: "rot", red: "#ff0000", green: "#00ff00", calibrated: false, hintOff: false,
+    redCal: { v: 100, h: 0 }, greenCal: { v: 100, h: 0 }, calibratedAt: null };
+  const anaglyphPrefs = JSON.parse(JSON.stringify(ANAGLYPH_DEFAULT));
+  (function loadAnaglyphPrefs() {
+    const saved = readJSON(ANAGLYPH_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(anaglyphPrefs, saved);
+    if (anaglyphPrefs.left !== "rot" && anaglyphPrefs.left !== "gruen") anaglyphPrefs.left = "rot";
+    const hex = /^#[0-9a-f]{6}$/i;
+    if (!hex.test(anaglyphPrefs.red)) anaglyphPrefs.red = ANAGLYPH_DEFAULT.red;
+    if (!hex.test(anaglyphPrefs.green)) anaglyphPrefs.green = ANAGLYPH_DEFAULT.green;
+    ["redCal", "greenCal"].forEach((k) => {
+      const c = anaglyphPrefs[k];
+      if (!c || typeof c.v !== "number" || typeof c.h !== "number") anaglyphPrefs[k] = { v: 100, h: 0 };
+    });
+    anaglyphPrefs.calibrated = anaglyphPrefs.calibrated === true;
+    anaglyphPrefs.hintOff = anaglyphPrefs.hintOff === true;
+  })();
+  function saveAnaglyphPrefs() { writeJSON(ANAGLYPH_KEY, anaglyphPrefs); }
+  // HSV -> hex; red sits at hue 0, green at 120, the "Farbton" slider shifts
+  // that by up to ±20°, "Helligkeit" is V in percent.
+  function anaglyphHex(base, cal) {
+    const h = (((base + cal.h) % 360) + 360) % 360, v = Math.max(0, Math.min(100, cal.v)) / 100;
+    const f = (n) => { const k = (n + h / 60) % 6; return v - v * Math.max(0, Math.min(k, 4 - k, 1)); };
+    return "#" + [f(5), f(3), f(1)].map((x) => Math.round(x * 255).toString(16).padStart(2, "0")).join("");
+  }
+  // Which colour an eye sees: the eye behind the red lens sees red stimuli
+  // (green ones are blocked and vanish on black), and vice versa.
+  function anaglyphLensOf(eye, prefs) {
+    const p = prefs || anaglyphPrefs;
+    if (eye === "left") return p.left;
+    return p.left === "rot" ? "gruen" : "rot";
+  }
+  function anaglyphColorForEye(eye, prefs) {
+    const p = prefs || anaglyphPrefs;
+    return anaglyphLensOf(eye, p) === "rot" ? p.red : p.green;
+  }
+  function anaglyphReady() { return anaglyphPrefs.calibrated === true; }
+
+  // Lock: a start button of a Farbbrille exercise looks disabled and its
+  // lock box ("Erst die Farbbrille abgleichen" + "Jetzt abgleichen") shows
+  // until the calibration was done once. A later "Mit Farbbrille" switch in
+  // another exercise registers its start button here too.
+  const ANAGLYPH_GATES = [];
+  function anaglyphGate(startBtn, lockEl) {
+    ANAGLYPH_GATES.push({ startBtn, lockEl });
+    syncAnaglyphGates();
+  }
+  function syncAnaglyphGates() {
+    const ok = anaglyphReady();
+    ANAGLYPH_GATES.forEach(({ startBtn, lockEl }) => {
+      startBtn.classList.toggle("is-locked", !ok);
+      startBtn.setAttribute("aria-disabled", ok ? "false" : "true");
+      if (lockEl) lockEl.hidden = ok;
+    });
+  }
+  // Every Farbbrille start goes through here: locked -> calibration;
+  // otherwise the brightness / Night Shift / True Tone hint (until "Nicht
+  // mehr anzeigen"), then the shared 3-2-1 (dark), then the run.
+  let anaglyphHintGo = null;
+  function anaglyphStart(go) {
+    if (!anaglyphReady()) { openAnaglyphCalib(); return; }
+    const run = () => { if (leadInWanted()) runLeadIn(go, true); else go(); };
+    if (anaglyphPrefs.hintOff) { run(); return; }
+    anaglyphHintGo = run;
+    $("anaglyphHintSheet").hidden = false;
+    $("anaglyphHintOkBtn").focus();
+  }
+  function closeAnaglyphHint(start) {
+    $("anaglyphHintSheet").hidden = true;
+    const go = anaglyphHintGo;
+    anaglyphHintGo = null;
+    if (start && go) go();
+  }
+  $("anaglyphHintOkBtn").addEventListener("click", () => closeAnaglyphHint(true));
+  $("anaglyphHintOffBtn").addEventListener("click", () => {
+    anaglyphPrefs.hintOff = true;
+    saveAnaglyphPrefs();
+    syncAnaglyphMasterUI();
+    closeAnaglyphHint(true);
+  });
+  $("anaglyphHintSheet").addEventListener("click", (e) => { if (e.target === $("anaglyphHintSheet")) closeAnaglyphHint(false); });
+  $("anaglyphHintSheet").addEventListener("keydown", (e) => trapTabKey($("anaglyphHintSheet"), e));
+
+  // Hilfsmittel note on a ready screen outside VT: same HILFSMITTEL map,
+  // `<div class="hilfsmittel-note" data-hilfsmittel="key">`.
+  function renderHilfsmittelBox(box) {
+    const h = HILFSMITTEL[box.dataset.hilfsmittel];
+    box.hidden = !h;
+    box.dataset.gearKey = h ? box.dataset.hilfsmittel : "";
+    if (!h) return;
+    box.querySelector(".hilfsmittel-text").textContent = h.text;
+    const a = box.querySelector(".hilfsmittel-link");
+    a.hidden = !h.link;
+    if (h.link) a.href = h.link; else a.removeAttribute("href");
+  }
+  document.querySelectorAll("[data-hilfsmittel]").forEach(renderHilfsmittelBox);
+
+  // ---- Hilfsmittel und Starterpaket (Fabian 08.10., "Starterpaket Stufe 1") ----
+  // Page #gearScreen under Mehr: one card per GEAR_ITEMS entry, starter items
+  // first. Which exercises use an item is read from HILFSMITTEL[...].gear, so
+  // the chips stay in sync with the ready-screen notes. `link` = shop page
+  // (partner link): empty = no button at all; with one, "Ansehen" + the
+  // "Werbung · Partner-Link" marker, and the page shows the Provision
+  // sentence. `test: true` = only with the Test-Bereich unlocked.
+  // A new Hilfsmittel = one HILFSMITTEL entry (with `gear`) + its card here
+  // (`short` = the word on "Braucht: …" labels, Meine Hilfsmittel).
+  const GEAR_ITEMS = [
+    { id: "cups", starter: true, short: "Hütchen", name: "Hütchen oder Becher in 4 Farben",
+      desc: "Je ein Hütchen oder Becher in Rot, Gelb, Grün und Blau. Kleine Markierungshütchen aus dem Sportbedarf reichen, einfache Plastikbecher auch.", link: "" },
+    { id: "mat", starter: true, short: "Farbmatte", name: "Farbmatte mit 4 Feldern",
+      desc: "Eine Matte mit vier farbigen Feldern in Rot, Gelb, Grün und Blau. Für den Anfang gehen auch vier farbige Zettel auf dem Boden.", link: "" },
+    { id: "numbers", short: "Zahlenfelder", name: "Nummerierte Felder 1–6",
+      desc: "Sechs Zettel oder Karten mit den Zahlen 1 bis 6, auf dem Boden ausgelegt. Selbst geschrieben reicht.", link: "" },
+    { id: "tape", short: "Klebeband", name: "Klebeband für den Boden",
+      desc: "Damit klebst du ein Kreuz oder einen Stern auf den Boden. Malerkrepp lässt sich leicht wieder ablösen.", link: "" },
+    { id: "glasses", test: true, short: "Rot-Grün-Brille", name: "Rot-Grün-Brille",
+      desc: "Eine Brille mit einem roten und einem grünen Glas. Vor dem ersten Training stellst du sie in der App einmal ein.", link: "" },
+    // Neuro-Aktivierung (2026-10-08): `neuro: true` = only with that area unlocked.
+    { id: "vibration", neuro: true, name: "Vibrationsgerät",
+      desc: "Ein kleines, handliches Vibrationsgerät mit glattem Aufsatz, z. B. ein Z‑Vibe.", link: "" },
+    { id: "massageball", neuro: true, name: "Massageball oder Massagepilz",
+      desc: "Ein fester Ball mit Noppen (Igelball) oder ein Massagepilz, etwa so groß wie ein Tennisball.", link: "" },
+    // Prepared for a later exercise (no exercise yet, Fabian 08.10.).
+    { id: "bonephones", neuro: true, name: "Knochenschall-Kopfhörer",
+      desc: "Kopfhörer, die den Ton über die Knochen vor dem Ohr übertragen; das Ohr bleibt frei. Übungen dazu folgen.", link: "" },
+  ];
+  // HILFSMITTEL keys that are not VT exercise ids: title + opener.
+  const GEAR_EX_OPEN = {
+    farbbrille: { title: "Jedes Auge zählt", card: "eyecountOpenBtn", open: () => { $("eyecountOpenBtn").click(); eyecountReturnScreen = "gearScreen"; } },
+    "neuro-vibration": { title: "Vibration links / rechts", open: () => openNeuroReady("vibration") },
+    "neuro-ball-fuss": { title: "Massageball: Fußsohlen", open: () => openNeuroReady("ball-fuss") },
+    "neuro-ball-hand": { title: "Massageball: Hände", open: () => openNeuroReady("ball-hand") },
+  };
+  function gearExercises(itemId) {
+    return Object.keys(HILFSMITTEL).filter((k) => (HILFSMITTEL[k].gear || []).includes(itemId)).map((k) => {
+      if (GEAR_EX_OPEN[k]) return { key: k, ...GEAR_EX_OPEN[k] };
+      const card = document.querySelector(`.excard[data-exercise="${k}"]`);
+      if (!EXERCISES[k] || !card) return null;
+      return { key: k, title: EXERCISES[k].title + (HILFSMITTEL[k].optional ? " (optional)" : ""), open: () => {
+        card.click();
+        if (!els.ready.hidden) readyReturnScreen = "gearScreen";
+      } };
+    }).filter(Boolean);
+  }
+  let gearReturnScreen = "moreScreen";
+  function renderGearScreen() {
+    const items = GEAR_ITEMS.filter((g) => (!g.test || isTestUnlocked()) && (!g.neuro || neuroUnlocked()));
+    const card = (g) => {
+      const exs = gearExercises(g.id);
+      return `<div class="gear-card" data-gear="${g.id}">
+        <div class="fc-title">${esc(g.name)}</div>
+        <div class="fc-desc">${esc(g.desc)}</div>
+        <label class="checkbox-row tap-row gear-have"><input type="checkbox" data-gear-have="${g.id}"${gearOwnedRaw()[g.id] ? " checked" : ""}> Hab ich</label>
+        ${exs.length ? `<div class="gear-uses-label">Dafür brauchst du es</div><div class="gear-chips">${exs.map((x) => `<button type="button" class="filter-chip gear-ex-chip" data-gear-ex="${x.key}">${esc(x.title)}</button>`).join("")}</div>` : ""}
+        ${g.link ? `<div class="gear-shop"><a class="gear-shop-btn" href="${esc(g.link)}" target="_blank" rel="noopener sponsored">Ansehen</a><span class="gear-ad">Werbung · Partner-Link</span></div>` : ""}
+      </div>`;
+    };
+    $("gearStarterList").innerHTML = items.filter((g) => g.starter).map(card).join("");
+    const more = items.filter((g) => !g.starter);
+    $("gearMoreList").innerHTML = more.map(card).join("");
+    $("gearMoreTitle").hidden = !more.length;
+    $("gearPartnerNote").hidden = !items.some((g) => g.link);
+    els.gearScreen.querySelectorAll(".gear-ex-chip").forEach((b) => b.addEventListener("click", () => {
+      const x = gearExercises(b.closest(".gear-card").dataset.gear).find((e) => e.key === b.dataset.gearEx);
+      gearReturnScreen = "moreScreen";
+      if (x) x.open();
+    }));
+  }
+  function openGearScreen(from) {
+    gearReturnScreen = from || "moreScreen";
+    renderGearScreen();
+    showScreen("gearScreen");
+    window.scrollTo(0, 0);
+  }
+  $("moreGearBtn").addEventListener("click", () => openGearScreen("moreScreen"));
+  $("gearBackBtn").addEventListener("click", () => showScreen(gearReturnScreen));
+  // "Alle Hilfsmittel" in every .hilfsmittel-note: back returns to that page.
+  document.querySelectorAll(".hilfsmittel-all").forEach((b) => b.addEventListener("click", () => {
+    const scr = b.closest(".screen");
+    openGearScreen(scr ? scr.id : "moreScreen");
+  }));
+  window.__gear = { items: GEAR_ITEMS, render: renderGearScreen, exercises: gearExercises };
+
+  // ---- Meine Hilfsmittel (Idee 67, Fabian 08.10.) ----
+  // The client ticks what they have (Grundeinstellungen group "Meine
+  // Hilfsmittel" + "Hab ich" on every card of the Hilfsmittel page + "Hab
+  // ich" in a ready screen's Hilfsmittel note); stored in fwmc-gear-v1
+  // {itemId: true}. Rule (Fabian): nothing ticked = the client has nothing.
+  // An exercise whose HILFSMITTEL `gear` is not owned stays visible and
+  // openable but is greyed (`.gear-missing` + "Braucht: …" pill on its card),
+  // its start button reads "Braucht: …" and asks once via confirmDialog.
+  // `optional: true` entries are never greyed, `anyOf: true` needs one item.
+  // Everything is read from HILFSMITTEL / GEAR_ITEMS / GEAR_EX_OPEN (`card`),
+  // so a new entry is picked up without extra code. Automated browsers treat
+  // everything as owned unless localStorage fwmc-test-gear is set.
+  const GEAR_KEY = "fwmc-gear-v1";
+  const GEAR_HINT_KEY = "fwmc-gear-hint-dismissed";
+  function gearOwnedRaw() {
+    const o = readJSON(GEAR_KEY, {});
+    return o && typeof o === "object" && !Array.isArray(o) ? o : {};
+  }
+  function gearAllOwned() {
+    if (!navigator.webdriver) return false;
+    try { return localStorage.getItem("fwmc-test-gear") === null; } catch (e) { return true; }
+  }
+  function gearHas(id) { return gearAllOwned() || gearOwnedRaw()[id] === true; }
+  function gearAnyTicked() { const o = gearOwnedRaw(); return Object.keys(o).some((k) => o[k] === true); }
+  function gearSetOwned(ids, on) {
+    const o = gearOwnedRaw();
+    ids.forEach((id) => { if (on) o[id] = true; else delete o[id]; });
+    writeJSON(GEAR_KEY, o);
+    gearSyncAll();
+  }
+  function gearItem(id) { return GEAR_ITEMS.find((g) => g.id === id); }
+  function gearShort(id) { const g = gearItem(id); return g ? (g.short || g.name) : id; }
+  // Missing item ids of one HILFSMITTEL key ([] = nothing missing).
+  function gearMissing(key) {
+    if (!gearModuleReady || !key) return [];
+    const h = HILFSMITTEL[key];
+    if (!h || h.optional || !Array.isArray(h.gear) || !h.gear.length) return [];
+    const ids = h.gear.filter((id) => gearItem(id));
+    if (!ids.length) return [];
+    if (h.anyOf) return ids.some(gearHas) ? [] : ids;
+    return ids.filter((id) => !gearHas(id));
+  }
+  function gearMissingText(key) {
+    const h = HILFSMITTEL[key] || {};
+    const names = gearMissing(key).map(gearShort);
+    if (names.length < 2) return names.join("");
+    return names.slice(0, -1).join(", ") + (h.anyOf ? " oder " : " und ") + names[names.length - 1];
+  }
+  // Farbfelder in "Antippen" needs no mat (the note hides there as well).
+  function gearKeyOfExercise(exId) {
+    if (exId === "farbfelder" && typeof state !== "undefined" && state.ffAnswer === "tippen") return null;
+    return HILFSMITTEL[exId] ? exId : null;
+  }
+  function gearKeyOfComboBlock(block) {
+    if (!block) return null;
+    if (block.domain === "visual") {
+      if (block.exercise === "farbfelder" && block.ff && block.ff.ffAnswer === "tippen") return null;
+      return HILFSMITTEL[block.exercise] ? block.exercise : null;
+    }
+    return HILFSMITTEL[block.domain] ? block.domain : null;
+  }
+  function gearTagHtml(key) {
+    const t = gearMissingText(key);
+    return t ? `<span class="gear-need-tag">Braucht: ${esc(t)}</span>` : "";
+  }
+  // Cards: VT `.excard[data-exercise]` plus GEAR_EX_OPEN[key].card.
+  function gearCards() {
+    const out = [];
+    Object.keys(HILFSMITTEL).forEach((k) => {
+      document.querySelectorAll(`.excard[data-exercise="${k}"]`).forEach((el) => out.push({ key: k, el }));
+      const c = GEAR_EX_OPEN[k] && GEAR_EX_OPEN[k].card && document.getElementById(GEAR_EX_OPEN[k].card);
+      if (c) out.push({ key: k, el: c });
+    });
+    return out;
+  }
+  function gearSyncCards() {
+    gearCards().forEach(({ key, el }) => {
+      const kk = el.classList.contains("excard") ? gearKeyOfExercise(key) : key;
+      const t = gearMissingText(kk);
+      el.classList.toggle("gear-missing", !!t);
+      let pill = el.querySelector(".excard-gear-note");
+      if (t) {
+        if (!pill) { pill = document.createElement("span"); pill.className = "excard-gear-note"; el.appendChild(pill); }
+        pill.textContent = "Braucht: " + t;
+      } else if (pill) pill.remove();
+    });
+  }
+  // A ready screen: the visible .hilfsmittel-note names the key; its start
+  // button reads "Braucht: …" and the note offers "Hab ich".
+  function gearStartBtnOf(screen) {
+    return screen.querySelector("#startBtn") || screen.querySelector('.start-btn[id$="StartBtn"]:not(.secondary)');
+  }
+  function gearSyncScreen(screen) {
+    if (!gearModuleReady || !screen) return;
+    const box = screen.querySelector(".hilfsmittel-note");
+    if (!box) return;
+    const key = !box.hidden && box.dataset.gearKey ? box.dataset.gearKey : null;
+    const missing = gearMissing(key);
+    const text = gearMissingText(key);
+    let row = box.querySelector(".hilfsmittel-have-row");
+    if (missing.length) {
+      if (!row) {
+        row = document.createElement("div");
+        row.className = "hilfsmittel-have-row";
+        const all = box.querySelector(".hilfsmittel-all");
+        box.insertBefore(row, all || null);
+      }
+      const h = HILFSMITTEL[key];
+      const btns = h.anyOf && missing.length > 1
+        ? missing.map((id) => `<button type="button" class="hilfsmittel-have" data-gear-tick="${id}">Hab ich: ${esc(gearShort(id))}</button>`)
+        : [`<button type="button" class="hilfsmittel-have" data-gear-tick="${missing.join(" ")}">Hab ich</button>`];
+      row.innerHTML = `<span class="hilfsmittel-missing">Noch nicht abgehakt: ${esc(text)}</span>` + btns.join("");
+    } else if (row) row.remove();
+    const b = gearStartBtnOf(screen);
+    if (!b) return;
+    const label = b.textContent.replace(/\u00ad/g, "").trim();
+    const canLabel = label === "Training starten" || label.startsWith("Braucht: ");
+    if (missing.length && canLabel) {
+      b.classList.add("gear-missing");
+      b.textContent = "Braucht: " + text;
+      b.dataset.gearKey = key;
+    } else {
+      b.classList.remove("gear-missing");
+      if (label.startsWith("Braucht: ")) b.textContent = "Training starten";
+    }
+  }
+  // "Welche Hilfsmittel hast du?" once on every area home with equipment
+  // exercises, while nothing is ticked, until "Ausblenden".
+  function gearSyncAreaHints() {
+    const show = !gearAllOwned() && !gearAnyTicked() && !readJSON(GEAR_HINT_KEY, false);
+    const homes = new Set();
+    gearCards().forEach(({ key, el }) => {
+      const h = HILFSMITTEL[key];
+      if (!h || h.optional) return;
+      const scr = el.closest(".screen");
+      if (!scr || homes.has(scr)) return;
+      homes.add(scr);
+      let card = scr.querySelector(".gear-ask-card");
+      if (!card) {
+        card = document.createElement("div");
+        card.className = "hilfsmittel-note gear-ask-card";
+        card.innerHTML = '<span class="hilfsmittel-kicker">Hilfsmittel</span>' +
+          '<strong class="gear-ask-title">Welche Hilfsmittel hast du?</strong>' +
+          '<span>Hak an, was du zu Hause hast. Übungen, für die dir noch etwas fehlt, sind leicht ausgegraut. Du kannst sie trotzdem öffnen und starten.</span>' +
+          '<div class="gear-ask-actions"><button type="button" class="hilfsmittel-have gear-ask-open">Hilfsmittel abhaken</button>' +
+          '<button type="button" class="text-link small gear-ask-hide">Ausblenden</button></div>';
+        card.querySelector(".gear-ask-open").addEventListener("click", () => openGearScreen(scr.id));
+        card.querySelector(".gear-ask-hide").addEventListener("click", () => { writeJSON(GEAR_HINT_KEY, true); gearSyncAreaHints(); });
+        const sec = el.closest("section") || el.parentElement;
+        const head = sec.querySelector(":scope > .section-head");
+        if (head) head.after(card); else sec.insertBefore(card, sec.firstChild);
+      }
+      card.hidden = !show;
+    });
+  }
+  // Grundeinstellungen group: one checkbox per GEAR_ITEMS entry (the
+  // Rot-Grün-Brille only with the Test-Bereich unlocked).
+  function gearRenderMaster() {
+    const list = $("masterGearList");
+    if (!list) return;
+    const o = gearOwnedRaw();
+    list.innerHTML = GEAR_ITEMS.filter((g) => !g.test || isTestUnlocked()).map((g) =>
+      `<label class="checkbox-row tap-row"><input type="checkbox" data-gear-have="${g.id}"${o[g.id] ? " checked" : ""}> ${esc(g.name)}</label>`).join("");
+  }
+  function gearSyncToggles() {
+    const o = gearOwnedRaw();
+    document.querySelectorAll("input[data-gear-have]").forEach((c) => { c.checked = o[c.dataset.gearHave] === true; });
+  }
+  function gearSyncAll() {
+    if (!gearModuleReady) return;
+    gearSyncToggles();
+    gearSyncCards();
+    document.querySelectorAll(".screen").forEach((scr) => { if (scr.querySelector(".hilfsmittel-note")) gearSyncScreen(scr); });
+    gearSyncAreaHints();
+    if (els.comboScreen && !els.comboScreen.hidden && typeof renderComboBlockList === "function") renderComboBlockList();
+  }
+  document.addEventListener("change", (e) => {
+    const c = e.target;
+    if (!c || !c.matches || !c.matches("input[data-gear-have]")) return;
+    gearSetOwned([c.dataset.gearHave], c.checked);
+  });
+  document.addEventListener("click", (e) => {
+    const b = e.target && e.target.closest ? e.target.closest("[data-gear-tick]") : null;
+    if (!b) return;
+    gearSetOwned(b.dataset.gearTick.split(" "), true);
+    showToast("Abgehakt. Du findest es unter Grundeinstellungen.");
+  });
+  $("masterGearOpenBtn").addEventListener("click", () => {
+    closeMasterSettings();
+    const vis = document.querySelector(".screen:not([hidden])");
+    openGearScreen(vis && vis.id !== "gearScreen" ? vis.id : "moreScreen");
+  });
+  // Start with missing equipment: ask once, then start as usual (window
+  // capture runs before the lead-in / Haken-Hinweis listeners on document).
+  let gearStartBypass = false;
+  window.addEventListener("click", (e) => {
+    if (gearStartBypass || leadInBypass || fbHintBypass) return;
+    const b = e.target && e.target.closest ? e.target.closest(".start-btn.gear-missing") : null;
+    if (!b || b.disabled || !b.textContent.trim().startsWith("Braucht: ")) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const what = gearMissingText(b.dataset.gearKey) || b.textContent.trim().replace(/^Braucht: /, "");
+    confirmDialog(`Du hast ${what} noch nicht abgehakt. Trotzdem starten?`, () => {
+      b.classList.remove("gear-missing");
+      b.textContent = "Training starten";
+      gearStartBypass = true;
+      try { b.click(); } finally { gearStartBypass = false; }
+    }, { title: "Hilfsmittel", yes: "Trotzdem starten", no: "Abbrechen" });
+  }, true);
+  // Back on a ready screen: label again (after "Trotzdem starten").
+  document.querySelectorAll(".screen").forEach((scr) => {
+    if (!scr.querySelector(".hilfsmittel-note")) return;
+    new MutationObserver(() => { if (!scr.hidden) gearSyncScreen(scr); }).observe(scr, { attributes: true, attributeFilter: ["hidden"] });
+  });
+  gearModuleReady = true;
+  gearSyncAll();
+  window.__myGear = { owned: gearOwnedRaw, set: gearSetOwned, missing: gearMissing, sync: gearSyncAll, hilfsmittel: HILFSMITTEL };
+
+  // ---- Grundeinstellungen group "Farbbrille" (only with the Test-Bereich
+  // unlocked: .test-teaser, same gate as the tab) ----
+  function syncAnaglyphMasterUI() {
+    document.querySelectorAll("#masterAnaglyphSideRow [data-anaglyph-left]").forEach((b) => setActive(b, b.dataset.anaglyphLeft === anaglyphPrefs.left));
+    const st = $("masterAnaglyphStatus");
+    if (anaglyphPrefs.calibrated) {
+      const d = anaglyphPrefs.calibratedAt ? new Date(anaglyphPrefs.calibratedAt) : null;
+      const when = d && !isNaN(d) ? ` am ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}` : "";
+      st.textContent = `Abgeglichen${when}. Rot und Grün sind auf deine Brille eingestellt.`;
+    } else {
+      st.textContent = "Noch nicht abgeglichen. Farbbrillen-Übungen starten erst danach.";
+    }
+    $("masterAnaglyphCalibBtn").textContent = anaglyphPrefs.calibrated ? "Neu abgleichen" : "Farbbrille abgleichen";
+    $("masterAnaglyphHintCheck").checked = !anaglyphPrefs.hintOff;
+  }
+  document.querySelectorAll("#masterAnaglyphSideRow [data-anaglyph-left]").forEach((b) => b.addEventListener("click", () => {
+    anaglyphPrefs.left = b.dataset.anaglyphLeft;
+    saveAnaglyphPrefs();
+    syncAnaglyphMasterUI();
+  }));
+  $("masterAnaglyphHintCheck").addEventListener("change", () => {
+    anaglyphPrefs.hintOff = !$("masterAnaglyphHintCheck").checked;
+    saveAnaglyphPrefs();
+  });
+  syncAnaglyphMasterUI();
+
+  // ---- Abgleich (#anaglyphCalib): 1 Brille (side), 2 Rot ausblenden,
+  // 3 Grün ausblenden, 4 Probe. Works on a copy; "Fertig" saves it,
+  // "Schließen" discards. Black stage, fixed hex colours. ----
+  const CALIB_STEPS = ["side", "red", "green", "check"];
+  let calib = null;
+  const eyeAcc = { left: "linke", right: "rechte" };
+  const eyeDat = { left: "linken", right: "rechten" };
+  function calibEyeBehind(lens, p) { return anaglyphLensOf("left", p) === lens ? "left" : "right"; }
+  function openAnaglyphCalib() {
+    calib = {
+      step: 0, returnFocus: document.activeElement,
+      p: { left: anaglyphPrefs.left, redCal: { ...anaglyphPrefs.redCal }, greenCal: { ...anaglyphPrefs.greenCal } },
+    };
+    $("anaglyphCalib").hidden = false;
+    requestWakeLock();
+    renderCalib();
+    $("anaglyphCalibNextBtn").focus();
+  }
+  function closeAnaglyphCalib() {
+    if (!calib) return;
+    const back = calib.returnFocus;
+    calib = null;
+    $("anaglyphCalib").hidden = true;
+    releaseWakeLock();
+    if (back && back.focus && back.getClientRects().length) back.focus();
+  }
+  function calibColors() {
+    return { left: calib.p.left, red: anaglyphHex(0, calib.p.redCal), green: anaglyphHex(120, calib.p.greenCal) };
+  }
+  function renderCalib() {
+    if (!calib) return;
+    const step = CALIB_STEPS[calib.step];
+    const col = calibColors();
+    $("anaglyphCalibStepEl").textContent = `Schritt ${calib.step + 1} von ${CALIB_STEPS.length}`;
+    document.querySelectorAll("#anaglyphCalib [data-calib-pane]").forEach((el) => {
+      el.hidden = el.dataset.calibPane !== (step === "red" || step === "green" ? "tune" : step);
+    });
+    const title = $("anaglyphCalibTitle"), text = $("anaglyphCalibText");
+    const prev = $("anaglyphCalibPrevBtn"), next = $("anaglyphCalibNextBtn");
+    prev.hidden = calib.step === 0;
+    prev.textContent = step === "check" ? "Neu abgleichen" : "Zurück";
+    next.textContent = step === "check" ? "Fertig" : "Weiter";
+    if (step === "side") {
+      title.textContent = "Brille aufsetzen";
+      text.textContent = "Setz deine Rot-Grün-Brille auf. Welches Glas sitzt vor deinem linken Auge?";
+      document.querySelectorAll("#anaglyphCalibSideRow [data-anaglyph-left]").forEach((b) => setActive(b, b.dataset.anaglyphLeft === calib.p.left));
+    } else if (step === "red" || step === "green") {
+      const isRed = step === "red";
+      const shut = calibEyeBehind(isRed ? "rot" : "gruen", col);
+      const look = shut === "left" ? "right" : "left";
+      const cal = isRed ? calib.p.redCal : calib.p.greenCal;
+      title.textContent = isRed ? "Rot ausblenden" : "Grün ausblenden";
+      text.textContent = `Halte dir das ${eyeAcc[shut]} Auge zu (${isRed ? "rotes" : "grünes"} Glas) und schau nur mit dem ${eyeDat[look]} Auge durch das ${isRed ? "grüne" : "rote"} Glas. ` +
+        `Stell die Regler so ein, dass das ${isRed ? "rote" : "grüne"} Quadrat verschwindet oder kaum noch zu sehen ist. Meist hilft es, die Helligkeit zu senken – nimm die hellste Einstellung, bei der es gerade verschwindet.`;
+      $("anaglyphCalibSquare").style.background = isRed ? col.red : col.green;
+      $("anaglyphCalibV").value = String(cal.v);
+      $("anaglyphCalibH").value = String(cal.h);
+    } else {
+      title.textContent = "Probe";
+      text.textContent = "Mit beiden Augen offen siehst du beide Wörter. Hältst du dir das rechte Auge zu, siehst du nur „Links“ – hältst du dir das linke zu, nur „Rechts“. Siehst du ein Wort mit dem falschen Auge noch deutlich, tippe auf „Neu abgleichen“.";
+      $("anaglyphCalibWordL").style.color = anaglyphColorForEye("left", col);
+      $("anaglyphCalibWordR").style.color = anaglyphColorForEye("right", col);
+    }
+  }
+  function calibCurrentCal() {
+    const step = CALIB_STEPS[calib.step];
+    return step === "red" ? calib.p.redCal : step === "green" ? calib.p.greenCal : null;
+  }
+  function calibSet(kind, value) {
+    const cal = calibCurrentCal();
+    if (!cal) return;
+    if (kind === "v") cal.v = Math.max(10, Math.min(100, Math.round(value)));
+    else cal.h = Math.max(-20, Math.min(20, Math.round(value)));
+    renderCalib();
+  }
+  $("anaglyphCalibV").addEventListener("input", (e) => calibSet("v", Number(e.target.value)));
+  $("anaglyphCalibH").addEventListener("input", (e) => calibSet("h", Number(e.target.value)));
+  document.querySelectorAll("#anaglyphCalib [data-calib-nudge]").forEach((b) => b.addEventListener("click", () => {
+    const cal = calibCurrentCal();
+    if (!cal) return;
+    const [kind, d] = b.dataset.calibNudge.split(":");
+    calibSet(kind, cal[kind] + Number(d));
+  }));
+  document.querySelectorAll("#anaglyphCalibSideRow [data-anaglyph-left]").forEach((b) => b.addEventListener("click", () => {
+    if (!calib) return;
+    calib.p.left = b.dataset.anaglyphLeft;
+    renderCalib();
+  }));
+  $("anaglyphCalibPrevBtn").addEventListener("click", () => {
+    if (!calib) return;
+    calib.step = CALIB_STEPS[calib.step] === "check" ? 1 : Math.max(0, calib.step - 1);
+    renderCalib();
+  });
+  $("anaglyphCalibNextBtn").addEventListener("click", () => {
+    if (!calib) return;
+    if (calib.step < CALIB_STEPS.length - 1) { calib.step += 1; renderCalib(); return; }
+    const col = calibColors();
+    Object.assign(anaglyphPrefs, {
+      left: col.left, red: col.red, green: col.green, redCal: { ...calib.p.redCal }, greenCal: { ...calib.p.greenCal },
+      calibrated: true, calibratedAt: new Date().toISOString(),
+    });
+    saveAnaglyphPrefs();
+    syncAnaglyphMasterUI();
+    syncAnaglyphGates();
+    closeAnaglyphCalib();
+  });
+  $("anaglyphCalibCloseBtn").addEventListener("click", closeAnaglyphCalib);
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (calib) { closeAnaglyphCalib(); return; }
+    if (!$("anaglyphHintSheet").hidden) closeAnaglyphHint(false);
+  });
+  document.querySelectorAll("[data-anaglyph-calib]").forEach((b) => b.addEventListener("click", openAnaglyphCalib));
+
+  // ==== Jedes Auge zählt (Test-Bereich, Farbbrille, 2026-10-08) ====
+  // Black stage, white fixation cross (both eyes see white). Dots appear one
+  // at a time at random places, each in the calibrated red OR green, so only
+  // the eye behind that lens sees it. Tap the dot (pointerdown, by
+  // coordinates); it stays until tapped or the tempo's time runs out.
+  // Result per eye: found/shown and mean reaction time. Training, no
+  // diagnosis: one neutral sentence if one eye is clearly behind.
+  const EYECOUNT_PREFS_KEY = "fwmc-eyecount-prefs-v1";
+  const EYECOUNT_LAST_KEY = "fwmc-eyecount-last-v1";
+  const EYECOUNT_TEMPOS = {
+    leicht: { title: "Leicht", showMs: 2000, gapMin: 600, gapMax: 1200 },
+    mittel: { title: "Mittel", showMs: 1400, gapMin: 400, gapMax: 900 },
+    schwer: { title: "Schwer", showMs: 900, gapMin: 250, gapMax: 600 },
+  };
+  const EYECOUNT_SIZES = { klein: 28, mittel: 40, gross: 56 };
+  // left = how many of every 10 dots go to the left eye
+  const EYECOUNT_SPLITS = { gleich: { title: "Ausgewogen", left: 5 }, links: { title: "mehr links", left: 7 }, rechts: { title: "mehr rechts", left: 3 } };
+  const EYECOUNT_MIN_PLAYED_S = 10;
+  const eyecountPrefs = { length: 2, tempo: "mittel", split: "gleich", size: "mittel" };
+  (function loadEyecountPrefs() {
+    const saved = readJSON(EYECOUNT_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(eyecountPrefs, saved);
+    if (![1, 2, 3].includes(eyecountPrefs.length)) eyecountPrefs.length = 2;
+    if (!EYECOUNT_TEMPOS[eyecountPrefs.tempo]) eyecountPrefs.tempo = "mittel";
+    if (!EYECOUNT_SPLITS[eyecountPrefs.split]) eyecountPrefs.split = "gleich";
+    if (!EYECOUNT_SIZES[eyecountPrefs.size]) eyecountPrefs.size = "mittel";
+  })();
+  function saveEyecountPrefs() { writeJSON(EYECOUNT_PREFS_KEY, eyecountPrefs); }
+  const ecEl = (id) => document.getElementById("eyecount" + id);
+  function syncEyecountUI() {
+    ecEl("LengthRow").querySelectorAll("[data-eyecount-length]").forEach((b) => setActive(b, Number(b.dataset.eyecountLength) === eyecountPrefs.length));
+    ecEl("TempoRow").querySelectorAll("[data-eyecount-tempo]").forEach((b) => setActive(b, b.dataset.eyecountTempo === eyecountPrefs.tempo));
+    ecEl("SplitRow").querySelectorAll("[data-eyecount-split]").forEach((b) => setActive(b, b.dataset.eyecountSplit === eyecountPrefs.split));
+    ecEl("SizeRow").querySelectorAll("[data-eyecount-size]").forEach((b) => setActive(b, b.dataset.eyecountSize === eyecountPrefs.size));
+  }
+  [["LengthRow", "length", (v) => Number(v)], ["TempoRow", "tempo", String], ["SplitRow", "split", String], ["SizeRow", "size", String]].forEach(([row, key, conv]) => {
+    ecEl(row).querySelectorAll(`[data-eyecount-${key}]`).forEach((b) => b.addEventListener("click", () => {
+      eyecountPrefs[key] = conv(b.dataset["eyecount" + key[0].toUpperCase() + key.slice(1)]);
+      saveEyecountPrefs();
+      syncEyecountUI();
+    }));
+  });
+  function eyecountPct(hit, shown) { return shown ? Math.round((hit / shown) * 100) : 0; }
+  function renderEyecountBest() {
+    const last = readJSON(EYECOUNT_LAST_KEY, null);
+    ecEl("BestHint").textContent = last && typeof last.l === "number" && typeof last.r === "number"
+      ? `Zuletzt: linkes Auge ${last.l} %, rechtes Auge ${last.r} %` : "";
+  }
+  renderEyecountBest();
+  anaglyphGate(ecEl("ReadyStartBtn"), ecEl("Lock"));
+  ecEl("OpenBtn").addEventListener("click", () => {
+    syncEyecountUI();
+    syncAnaglyphGates();
+    showScreen("eyecountReady");
+  });
+  // From the Hilfsmittel page (chip "Jedes Auge zählt") back goes there.
+  let eyecountReturnScreen = "testHome";
+  ecEl("OpenBtn").addEventListener("click", () => { eyecountReturnScreen = "testHome"; }, true);
+  ecEl("ReadyBackToHome").addEventListener("click", () => showScreen(eyecountReturnScreen));
+
+  let eyecountState = null;
+  function ecSchedule(name, fn, delayMs) {
+    const st = eyecountState;
+    if (st.timers[name]) clearTimeout(st.timers[name].id);
+    const t = { fn, at: performance.now() + delayMs, id: 0, left: null };
+    t.id = setTimeout(() => { if (st.timers[name] === t) st.timers[name] = null; fn(); }, delayMs);
+    st.timers[name] = t;
+  }
+  function ecClearTimers(st) { Object.keys(st.timers).forEach((k) => { if (st.timers[k]) clearTimeout(st.timers[k].id); st.timers[k] = null; }); }
+  function ecFmtTime(ms) { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
+  function ecRenderStatus() {
+    const st = eyecountState;
+    if (!st || st.paused) return;
+    const left = st.totalMs - (performance.now() - st.startTime);
+    ecEl("ProgressEl").textContent = `${st.stats.left.hit + st.stats.right.hit} Treffer · ${ecFmtTime(left)}`;
+  }
+  function ecDrawEye(st) {
+    if (!st.deck.length) {
+      const n = st.split.left;
+      st.deck = Array.from({ length: 10 }, (_, i) => (i < n ? "left" : "right"));
+      for (let i = st.deck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [st.deck[i], st.deck[j]] = [st.deck[j], st.deck[i]]; }
+    }
+    return st.deck.pop();
+  }
+  // Random place on the stage: below the hint/player-bar, clear of the
+  // fixation cross, inside the edges.
+  function ecPlace(st) {
+    const stage = ecEl("Stage");
+    const rect = stage.getBoundingClientRect();
+    const r = st.sizePx / 2;
+    const margin = Math.max(16, 22 - r + 8);
+    const minY = stageTopClearanceY(rect, ecEl("Hint"), ecEl("PlayerBar"), r + margin, r);
+    const maxY = rect.height - r - margin;
+    const minX = r + margin, maxX = rect.width - r - margin;
+    const cx = rect.width / 2, cy = rect.height / 2;
+    let x = cx, y = Math.max(minY, cy - 90);
+    for (let i = 0; i < 40; i++) {
+      const tx = minX + Math.random() * Math.max(0, maxX - minX);
+      const ty = minY + Math.random() * Math.max(0, maxY - minY);
+      x = tx; y = ty;
+      if (Math.hypot(tx - cx, ty - cy) >= r + 44) break;
+    }
+    return { x, y };
+  }
+  function ecShowDot() {
+    const st = eyecountState;
+    if (!st || st.paused) return;
+    const eye = ecDrawEye(st);
+    const pos = ecPlace(st);
+    const dot = ecEl("Dot");
+    dot.style.width = dot.style.height = st.sizePx + "px";
+    dot.style.left = Math.round(pos.x) + "px";
+    dot.style.top = Math.round(pos.y) + "px";
+    dot.style.background = anaglyphColorForEye(eye);
+    dot.dataset.eye = eye;
+    dot.hidden = false;
+    st.dot = { eye, x: pos.x, y: pos.y, shownAt: performance.now() };
+    st.stats[eye].shown += 1;
+    ecSchedule("trial", ecDotTimeout, st.tempo.showMs);
+  }
+  function ecHideDot(st) {
+    ecEl("Dot").hidden = true;
+    st.dot = null;
+  }
+  function ecGapThenNext(st) {
+    const gap = st.tempo.gapMin + Math.random() * (st.tempo.gapMax - st.tempo.gapMin);
+    ecSchedule("trial", ecShowDot, gap);
+  }
+  function ecDotTimeout() {
+    const st = eyecountState;
+    if (!st) return;
+    ecHideDot(st);
+    ecGapThenNext(st);
+  }
+  function startEyecountGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    ecEl("Player").hidden = false;
+    ecEl("PlayerBar").hidden = false;
+    ecEl("DonePanel").hidden = true;
+    ecEl("PauseOverlay").hidden = true;
+    ecEl("PauseBtn").hidden = false;
+    ecEl("Dot").hidden = true;
+    const tempo = EYECOUNT_TEMPOS[eyecountPrefs.tempo];
+    eyecountState = {
+      tempo, split: EYECOUNT_SPLITS[eyecountPrefs.split], sizePx: EYECOUNT_SIZES[eyecountPrefs.size],
+      minutes: eyecountPrefs.length, totalMs: eyecountPrefs.length * 60000,
+      startTime: performance.now(), paused: false, pausedAt: 0, timers: { trial: null, end: null },
+      deck: [], dot: null, misses: 0,
+      stats: { left: { shown: 0, hit: 0, rts: [] }, right: { shown: 0, hit: 0, rts: [] } },
+      displayInterval: null,
+    };
+    ecEl("Hint").textContent = "Blick aufs Kreuz · tippe jeden Punkt an, sobald du ihn siehst";
+    ecRenderStatus();
+    placeHintBelowBar(ecEl("Hint"), ecEl("PlayerBar"));
+    requestWakeLock();
+    eyecountState.displayInterval = setInterval(ecRenderStatus, 250);
+    ecSchedule("end", eyecountFinish, eyecountState.totalMs);
+    ecSchedule("trial", ecShowDot, 700);
+  }
+  ecEl("ReadyStartBtn").addEventListener("click", () => anaglyphStart(startEyecountGame));
+
+  ecEl("Stage").addEventListener("pointerdown", (e) => {
+    const st = eyecountState;
+    if (!st || st.paused || !ecEl("DonePanel").hidden) return;
+    if (e.target.closest("button")) return;
+    const rect = ecEl("Stage").getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    if (st.dot) {
+      const hitR = Math.max(st.sizePx / 2, 22) + 10;
+      if (Math.hypot(x - st.dot.x, y - st.dot.y) <= hitR) {
+        const s = st.stats[st.dot.eye];
+        s.hit += 1;
+        s.rts.push(performance.now() - st.dot.shownAt);
+        ecHideDot(st);
+        ecGapThenNext(st);
+        ecRenderStatus();
+        return;
+      }
+    }
+    st.misses += 1;
+  });
+
+  function pauseEyecount() {
+    const st = eyecountState;
+    if (!st || st.paused) return;
+    st.paused = true;
+    st.pausedAt = performance.now();
+    if (st.timers.end) { clearTimeout(st.timers.end.id); st.endLeft = Math.max(0, st.timers.end.at - st.pausedAt); st.timers.end = null; }
+    if (st.timers.trial) { clearTimeout(st.timers.trial.id); st.timers.trial = null; }
+    // the dot on screen during the pause is not counted
+    if (st.dot) { st.stats[st.dot.eye].shown -= 1; ecHideDot(st); }
+    ecEl("PauseBtn").hidden = true;
+    ecEl("PauseOverlay").hidden = false;
+  }
+  function resumeEyecount() {
+    const st = eyecountState;
+    if (!st || !st.paused) return;
+    st.startTime += performance.now() - st.pausedAt;
+    st.paused = false;
+    ecSchedule("end", eyecountFinish, st.endLeft != null ? st.endLeft : Math.max(0, st.totalMs - (performance.now() - st.startTime)));
+    st.endLeft = null;
+    ecSchedule("trial", ecShowDot, 600);
+    ecEl("PauseOverlay").hidden = true;
+    ecEl("PauseBtn").hidden = false;
+    ecRenderStatus();
+  }
+  ecEl("PauseBtn").addEventListener("click", pauseEyecount);
+  ecEl("ResumeBtn").addEventListener("click", resumeEyecount);
+
+  function ecEyeLine(label, s) {
+    const avg = s.rts.length ? s.rts.reduce((a, b) => a + b, 0) / s.rts.length : null;
+    const avgTxt = avg == null ? "–" : (avg / 1000).toFixed(2).replace(".", ",") + " s";
+    return { text: `${label}: ${s.hit} von ${s.shown} · Ø ${avgTxt}`, avg };
+  }
+  // Neutral, no diagnosis: only when one eye is clearly behind.
+  function ecCompareSentence(st, L, R) {
+    const l = st.stats.left, r = st.stats.right;
+    if (l.shown < 5 || r.shown < 5) return "";
+    const rl = l.hit / l.shown, rr = r.hit / r.shown;
+    const talk = " Sprich das bei Bedarf mit deinem Trainer ab.";
+    if (Math.abs(rl - rr) >= 0.15) return `Dein ${rl < rr ? "linkes" : "rechtes"} Auge hat weniger Punkte erwischt.${talk}`;
+    if (l.rts.length >= 3 && r.rts.length >= 3 && L.avg && R.avg) {
+      const slow = Math.max(L.avg, R.avg), fast = Math.min(L.avg, R.avg);
+      if (slow / fast >= 1.2 && slow - fast >= 80) return `Dein ${L.avg > R.avg ? "linkes" : "rechtes"} Auge war langsamer.${talk}`;
+    }
+    return "Beide Augen lagen ungefähr gleichauf.";
+  }
+  function finalizeEyecountRun(st, playedS, aborted) {
+    ecEl("PauseOverlay").hidden = true;
+    ecEl("PlayerBar").hidden = true;
+    ecEl("Dot").hidden = true;
+    const L = ecEyeLine("Linkes Auge", st.stats.left), R = ecEyeLine("Rechtes Auge", st.stats.right);
+    const hits = st.stats.left.hit + st.stats.right.hit, shown = st.stats.left.shown + st.stats.right.shown;
+    const panel = ecEl("DonePanel");
+    setDonePanelAborted(panel, aborted, "Jedes Auge zählt beendet");
+    ecEl("DoneSummary").textContent = `${aborted ? "Abgebrochen · " : ""}Jedes Auge zählt (${st.tempo.title}, ${aborted ? Math.round(playedS) + " s" : st.minutes + " Min"}) · ${hits} von ${shown} Punkten`;
+    const box = ecEl("Eyes");
+    box.textContent = "";
+    [L.text, R.text].forEach((t) => { const p = document.createElement("p"); p.className = "eyecount-eye-line"; p.textContent = t; box.appendChild(p); });
+    const sentence = ecCompareSentence(st, L, R);
+    if (sentence) { const p = document.createElement("p"); p.className = "eyecount-eye-note"; p.textContent = sentence; box.appendChild(p); }
+    if (st.misses) { const p = document.createElement("p"); p.className = "eyecount-eye-note"; p.textContent = `Daneben getippt: ${st.misses}`; box.appendChild(p); }
+    const entry = { kind: "eyecount", title: "Jedes Auge zählt", seconds: Math.round(playedS), note: `${L.text}; ${R.text}` };
+    if (aborted) { entry.aborted = true; entry.note = "abgebrochen"; }
+    const id = addHistory(entry);
+    if (!aborted) {
+      writeJSON(EYECOUNT_LAST_KEY, { l: eyecountPct(st.stats.left.hit, st.stats.left.shown), r: eyecountPct(st.stats.right.hit, st.stats.right.shown), ts: Date.now() });
+      renderEyecountBest();
+    }
+    renderRating(ecEl("Rating"), id, "Wie gut hast du die Punkte gesehen?");
+    panel.hidden = false;
+  }
+  function ecTeardown(st) {
+    ecClearTimers(st);
+    if (st.displayInterval) clearInterval(st.displayInterval);
+    releaseWakeLock();
+    if (document.fullscreenElement === ecEl("Player")) document.exitFullscreen().catch(() => {});
+    ecEl("FsHint").hidden = true;
+  }
+  function eyecountFinish() {
+    const st = eyecountState;
+    if (!st) return;
+    eyecountState = null;
+    // a dot still on screen at the end does not count
+    if (st.dot) st.stats[st.dot.eye].shown -= 1;
+    ecTeardown(st);
+    finalizeEyecountRun(st, st.totalMs / 1000, false);
+  }
+  function eyecountStop() {
+    const st = eyecountState;
+    if (!st) return;
+    const playedS = ((st.paused ? st.pausedAt : performance.now()) - st.startTime) / 1000;
+    eyecountState = null;
+    if (st.dot) st.stats[st.dot.eye].shown -= 1;
+    ecTeardown(st);
+    ecEl("PauseOverlay").hidden = true;
+    if (playedS >= EYECOUNT_MIN_PLAYED_S && st.stats.left.shown + st.stats.right.shown > 0) {
+      finalizeEyecountRun(st, playedS, true);
+    } else {
+      ecEl("Player").hidden = true;
+      showScreen("testHome");
+    }
+  }
+  ecEl("BackBtn").addEventListener("click", eyecountStop);
+  ecEl("AgainBtn").addEventListener("click", () => anaglyphStart(startEyecountGame));
+  ecEl("DoneBackBtn").addEventListener("click", () => { ecEl("Player").hidden = true; ecEl("DonePanel").hidden = true; showScreen("testHome"); });
+  wireFullscreen({ player: ecEl("Player"), btn: ecEl("FsBtn"), hint: ecEl("FsHint"), hintOpen: ecEl("FsHintOpenBtn"), hintClose: ecEl("FsHintClose") });
+
+  // ==== Ton-Sequenz (Test-Bereich, Fabian 2026-10-08) ====
+  // A tool, not a scored test: plays tones on the left, right or both ears
+  // as a sequence of steps (Dauerton / Puls / Gleiten, pause after each
+  // step, whole sequence repeated). Spec: the "Empfehlung" section of
+  // /mnt/project-files/app/recherche/ton-sequenzen-2026-10-08.md; no effect
+  // claims, no dB, always starts quiet, max 10 min per run.
+  // Audio graph per tone (one "voice"):
+  //   Oscillator -> pulse gain -> fade gain -> L gain / R gain
+  //   -> ChannelMerger(2) (input 0 = left, 1 = right) -> master gain
+  //   (step volume x wave factor x cueVolume()) -> destination.
+  // The merger (not a StereoPanner) keeps "Links" strictly on channel 0.
+  // Details: docs/notes/34-ton-sequenz.md. Test: tests/ton_sequenz_1008_test.py.
+  const TON_SEQ_KEY = "fwmc-ton-seq-v1";        // saved sequences (presets list)
+  const TON_CUR_KEY = "fwmc-ton-current-v1";    // the sequence being edited
+  const TON_CHANTEST_KEY = "fwmc-ton-chantest-v1";
+  const TON_LAST_KEY = "fwmc-ton-last-v1";
+  const TON_MAX_S = 600;
+  const TON_MAX_STEPS = 12;
+  const TON_FADE_IN_S = 1.5;
+  const TON_MIN_PLAYED_S = 5;
+  const TON_WAVES = { sine: "Sinus", triangle: "Dreieck", square: "Rechteck" };
+  // Square/triangle sound much louder than a sine at the same gain.
+  const TON_WAVE_GAIN = { sine: 1, triangle: 0.85, square: 0.45 };
+  const TON_EARS = { left: "Links", right: "Rechts", both: "Beide Ohren", alt: "Wechsel" };
+  const TON_PATTERNS = { steady: "Dauerton", pulse: "Puls", glide: "Gleiten" };
+  const TON_SWEEP = { from: 100, to: 1000, s: 60 };
+  const tonEl = (id) => document.getElementById("ton" + id);
+  function tonClamp(v, lo, hi, d) { v = Number(v); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; }
+  function tonStepDefault() {
+    return { freq: 500, wave: "sine", ear: "both", altS: 2, pattern: "steady", pulseUnit: "ms", onMs: 500, offMs: 500, bpm: 60, glideTo: 1000, dur: 30, pause: 0, vol: 20 };
+  }
+  function tonNormStep(s) {
+    const d = tonStepDefault();
+    s = s && typeof s === "object" ? s : {};
+    const r5 = (v, lo, hi, def, step) => Math.round(tonClamp(v, lo, hi, def) / step) * step;
+    return {
+      freq: Math.round(tonClamp(s.freq, 20, 2000, d.freq)),
+      wave: TON_WAVES[s.wave] ? s.wave : d.wave,
+      ear: TON_EARS[s.ear] ? s.ear : d.ear,
+      altS: r5(s.altS, 0.5, 10, d.altS, 0.5),
+      pattern: TON_PATTERNS[s.pattern] ? s.pattern : d.pattern,
+      pulseUnit: s.pulseUnit === "bpm" ? "bpm" : "ms",
+      onMs: r5(s.onMs, 50, 2000, d.onMs, 50),
+      offMs: r5(s.offMs, 50, 2000, d.offMs, 50),
+      bpm: Math.round(tonClamp(s.bpm, 20, 240, d.bpm)),
+      glideTo: Math.round(tonClamp(s.glideTo, 20, 2000, d.glideTo)),
+      dur: r5(s.dur, 5, 300, d.dur, 5),
+      pause: r5(s.pause, 0, 180, d.pause, 5),
+      vol: r5(s.vol, 5, 100, d.vol, 5),
+    };
+  }
+  function tonNormSeq(q) {
+    q = q && typeof q === "object" ? q : {};
+    const steps = Array.isArray(q.steps) && q.steps.length ? q.steps.slice(0, TON_MAX_STEPS).map(tonNormStep) : [tonStepDefault()];
+    return { name: typeof q.name === "string" ? q.name.slice(0, 40) : "", repeat: Math.round(tonClamp(q.repeat, 1, 10, 1)), steps };
+  }
+  // Only what sources carry (research §5.3): two diagnostic reference
+  // frequencies and a pure procedure template. No "Sacculus/Utriculus".
+  const TON_PRESETS = {
+    ref500: { name: "Referenz 500 Hz", repeat: 1, steps: [{ freq: 500, dur: 30 }] },
+    ref100: { name: "Referenz 100 Hz", repeat: 1, steps: [{ freq: 100, dur: 30 }] },
+    lr: { name: "Seitenvergleich L/R", repeat: 1, steps: [{ freq: 500, ear: "left", dur: 20, pause: 10 }, { freq: 500, ear: "right", dur: 20 }] },
+  };
+  let tonSeq = tonNormSeq(readJSON(TON_CUR_KEY, null));
+  let tonSel = 0;
+  // var, not let: hideAllPlayers() may run before this block is reached.
+  var tonRun = null, tonTool = null, tonLastRun = null;
+  function tonSaveCur() { writeJSON(TON_CUR_KEY, tonSeq); }
+  // Log slider 0..1000 <-> 20..2000 Hz.
+  function tonPosToHz(p) { return Math.round(20 * Math.pow(100, tonClamp(p, 0, 1000, 500) / 1000)); }
+  function tonHzToPos(hz) { return Math.round((Math.log(tonClamp(hz, 20, 2000, 500) / 20) / Math.log(100)) * 1000); }
+  function tonFmtS(s) {
+    s = Math.max(0, Math.round(s));
+    return s < 60 ? `${s} s` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} Min`;
+  }
+  function tonDec(v) { return String(v).replace(".", ","); }
+  function tonPulseTimes(st) {
+    if (st.pulseUnit === "bpm") {
+      const per = 60 / st.bpm;
+      const on = Math.max(0.05, Math.min(0.5 * per, 0.6));
+      return { on, off: per - on };
+    }
+    return { on: st.onMs / 1000, off: st.offMs / 1000 };
+  }
+  function tonPatternText(st) {
+    if (st.pattern === "pulse") return st.pulseUnit === "bpm" ? `Puls ${st.bpm} pro Minute` : `Puls ${st.onMs} ms an, ${st.offMs} ms aus`;
+    if (st.pattern === "glide") return `Gleiten ${st.freq} → ${st.glideTo} Hz`;
+    return "Dauerton";
+  }
+  function tonEarText(st) { return st.ear === "alt" ? `Wechsel alle ${tonDec(st.altS)} s` : TON_EARS[st.ear]; }
+  function tonStepSummary(st) {
+    const hz = st.pattern === "glide" ? `${st.freq} → ${st.glideTo} Hz` : `${st.freq} Hz`;
+    const pat = st.pattern === "pulse" ? (st.pulseUnit === "bpm" ? `Puls ${st.bpm}/Min` : `Puls ${st.onMs}/${st.offMs} ms`) : st.pattern === "glide" ? "Gleiten" : "Dauerton";
+    return `${hz} · ${tonEarText(st)} · ${pat} · ${tonFmtS(st.dur)}${st.pause ? ` · Pause ${tonFmtS(st.pause)}` : ""}`;
+  }
+  function tonSeqSeconds(q) {
+    let t = 0;
+    for (let r = 0; r < q.repeat; r++) q.steps.forEach((s) => { t += s.dur + s.pause; });
+    const last = q.steps[q.steps.length - 1];
+    return t - (last ? last.pause : 0);
+  }
+
+  // ---- audio ----
+  function tonCtx() {
+    try {
+      applyCueAudioSession();
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!workoutAudioCtx) workoutAudioCtx = new AC();
+      if (workoutAudioCtx.state !== "running") workoutAudioCtx.resume().catch(() => {});
+      return workoutAudioCtx;
+    } catch (e) { return null; }
+  }
+  // Plays step `st` from `fromS` seconds into it for `lenS` seconds.
+  // opts: vol (overrides st.vol), fadeIn (s), total (glide/alt reference length).
+  function tonVoice(st, fromS, lenS, opts) {
+    opts = opts || {};
+    const ctx = tonCtx();
+    if (!ctx || lenS <= 0) return null;
+    try {
+      const t0 = ctx.currentTime + 0.02;
+      const end = t0 + lenS;
+      const total = opts.total || st.dur;
+      const osc = ctx.createOscillator();
+      osc.type = st.wave;
+      if (st.pattern === "glide") {
+        const f = (x) => st.freq * Math.pow(st.glideTo / st.freq, Math.min(1, Math.max(0, x / total)));
+        osc.frequency.setValueAtTime(f(fromS), t0);
+        osc.frequency.exponentialRampToValueAtTime(f(fromS + lenS), end);
+      } else {
+        osc.frequency.setValueAtTime(st.freq, t0);
+      }
+      const pulse = ctx.createGain(), fade = ctx.createGain(), gL = ctx.createGain(), gR = ctx.createGain();
+      const merger = ctx.createChannelMerger(2);
+      const master = ctx.createGain();
+      osc.connect(pulse); pulse.connect(fade); fade.connect(gL); fade.connect(gR);
+      gL.connect(merger, 0, 0); gR.connect(merger, 0, 1);
+      merger.connect(master); master.connect(ctx.destination);
+      const level = () => ((opts.vol != null ? opts.vol : st.vol) / 100) * 0.5 * (TON_WAVE_GAIN[st.wave] || 1) * cueVolume();
+      master.gain.setValueAtTime(level(), t0);
+      // Always starts quiet: a slow fade-in on a fresh start, a short one on resume.
+      const fin = Math.min(opts.fadeIn != null ? opts.fadeIn : (fromS < 0.01 ? TON_FADE_IN_S : 0.3), lenS / 2);
+      fade.gain.setValueAtTime(0.0001, t0);
+      fade.gain.exponentialRampToValueAtTime(1, t0 + Math.max(0.01, fin));
+      fade.gain.setValueAtTime(1, Math.max(t0 + Math.max(0.01, fin), end - 0.06));
+      fade.gain.linearRampToValueAtTime(0, end);
+      if (st.pattern === "pulse") {
+        // 8 ms ramps on every edge against clicks.
+        const { on, off } = tonPulseTimes(st);
+        const per = on + off;
+        pulse.gain.setValueAtTime(0, t0);
+        for (let ts = Math.floor(fromS / per) * per - fromS; ts < lenS; ts += per) {
+          const b = t0 + ts + on;
+          if (b <= t0 + 0.01) continue;
+          const a = t0 + Math.max(0, ts);
+          pulse.gain.setValueAtTime(0, a);
+          pulse.gain.linearRampToValueAtTime(1, a + 0.008);
+          pulse.gain.setValueAtTime(1, Math.max(a + 0.008, b - 0.008));
+          pulse.gain.linearRampToValueAtTime(0, b);
+        }
+      } else {
+        pulse.gain.setValueAtTime(1, t0);
+      }
+      if (st.ear === "alt") {
+        // Starts left; each switch glides over ~5 ms (setTargetAtTime).
+        let k = Math.floor(fromS / st.altS);
+        let first = true;
+        for (let ts = k * st.altS - fromS; ts < lenS; ts += st.altS, k++) {
+          const leftOn = k % 2 === 0 ? 1 : 0;
+          const a = t0 + Math.max(0, ts);
+          if (first) { gL.gain.setValueAtTime(leftOn, a); gR.gain.setValueAtTime(1 - leftOn, a); first = false; }
+          else { gL.gain.setTargetAtTime(leftOn, a, 0.005); gR.gain.setTargetAtTime(1 - leftOn, a, 0.005); }
+        }
+      } else {
+        gL.gain.setValueAtTime(st.ear === "right" ? 0 : 1, t0);
+        gR.gain.setValueAtTime(st.ear === "left" ? 0 : 1, t0);
+      }
+      osc.start(t0);
+      osc.stop(end + 0.05);
+      const voice = {
+        stopped: false, st, t0, end,
+        stop() {
+          if (voice.stopped) return;
+          voice.stopped = true;
+          try {
+            const n = ctx.currentTime;
+            fade.gain.cancelScheduledValues(n);
+            fade.gain.setValueAtTime(Math.max(0.0001, Number(fade.gain.value) || 0.0001), n);
+            fade.gain.linearRampToValueAtTime(0, n + 0.04);
+            osc.stop(n + 0.06);
+          } catch (e) {}
+          setTimeout(() => { try { master.disconnect(); } catch (e) {} }, 250);
+        },
+        setVol(v) {
+          opts.vol = v;
+          try { master.gain.setTargetAtTime(level(), ctx.currentTime, 0.05); } catch (e) {}
+        },
+      };
+      return voice;
+    } catch (e) { return null; }
+  }
+  function tonMuted() { return cueVolume() <= 0; }
+  const TON_MUTED_TEXT = "Töne sind ausgeschaltet. Schalte sie mit 🔊 oder in den Grundeinstellungen ein.";
+
+  // ---- ready-screen helpers (only one sound at a time) ----
+  function tonToolStop() {
+    const tool = tonTool;
+    tonTool = null;
+    if (tool) {
+      (tool.timers || []).forEach((t) => clearTimeout(t));
+      if (tool.iv) clearInterval(tool.iv);
+      if (tool.voice) tool.voice.stop();
+      if (tool.kind === "chan") { const s = tonEl("ChannelStatus"); if (s && s.dataset.ear) { s.textContent = ""; delete s.dataset.ear; } }
+    }
+    const set = (id, txt) => { const b = tonEl(id); if (b) b.textContent = txt; };
+    set("ChannelBtn", "Kanal-Test starten");
+    set("PreviewBtn", "Probehören");
+    set("SweepBtn", "Suchlauf starten");
+    const m = tonEl("SweepMarkBtn");
+    if (m) m.hidden = true;
+  }
+  function tonChannelTest() {
+    if (tonTool && tonTool.kind === "chan") { tonToolStop(); return; }
+    tonToolStop();
+    const status = tonEl("ChannelStatus");
+    if (tonMuted()) { status.textContent = TON_MUTED_TEXT; return; }
+    unlockCueAudio();
+    silentSwitchHint();
+    const tool = { kind: "chan", timers: [], voice: null };
+    tonTool = tool;
+    tonEl("ChannelBtn").textContent = "Kanal-Test stoppen";
+    const beep = (ear, label) => {
+      if (tool.voice) tool.voice.stop();
+      status.textContent = label;
+      status.dataset.ear = ear;
+      tool.voice = tonVoice({ ...tonStepDefault(), freq: 600, ear, pattern: "pulse", onMs: 250, offMs: 150, dur: 2 }, 0, 2, { fadeIn: 0.02, vol: 25 });
+    };
+    beep("left", "Jetzt links …");
+    tool.timers.push(setTimeout(() => beep("right", "Jetzt rechts …"), 2600));
+    tool.timers.push(setTimeout(() => {
+      if (tonTool !== tool) return;
+      tool.voice = null;
+      tonToolStop();
+      delete status.dataset.ear;
+      status.textContent = "Fertig. Kam „links“ nur links und „rechts“ nur rechts an? Wenn nicht: Kopfhörer richtig herum aufsetzen und am iPhone Mono-Audio ausschalten.";
+      try { localStorage.setItem(TON_CHANTEST_KEY, "1"); } catch (e) {}
+    }, 4800));
+  }
+  function tonPreview() {
+    if (tonTool && tonTool.kind === "preview") { tonToolStop(); return; }
+    tonToolStop();
+    if (tonMuted()) { showToast(TON_MUTED_TEXT); return; }
+    unlockCueAudio();
+    silentSwitchHint();
+    const st = tonSeq.steps[tonSel];
+    const len = Math.min(st.dur, 10);
+    const tool = { kind: "preview", timers: [], voice: tonVoice(st, 0, len, { fadeIn: 0.6, total: len }) };
+    tonTool = tool;
+    tonEl("PreviewBtn").textContent = "Probehören stoppen";
+    tool.timers.push(setTimeout(() => { if (tonTool === tool) tonToolStop(); }, len * 1000 + 100));
+  }
+  function tonSweepHzAt(t) { return TON_SWEEP.from * Math.pow(TON_SWEEP.to / TON_SWEEP.from, Math.min(1, Math.max(0, t / TON_SWEEP.s))); }
+  function tonSweep() {
+    if (tonTool && tonTool.kind === "sweep") { tonToolStop(); tonEl("SweepHz").textContent = ""; return; }
+    tonToolStop();
+    if (tonMuted()) { tonEl("SweepHz").textContent = TON_MUTED_TEXT; return; }
+    unlockCueAudio();
+    silentSwitchHint();
+    const base = tonSeq.steps[tonSel];
+    const st = { ...base, freq: TON_SWEEP.from, glideTo: TON_SWEEP.to, pattern: "glide", ear: base.ear === "alt" ? "both" : base.ear, dur: TON_SWEEP.s };
+    const tool = { kind: "sweep", timers: [], voice: tonVoice(st, 0, TON_SWEEP.s, { fadeIn: 0.8 }), t0: performance.now(), iv: null };
+    tonTool = tool;
+    tonEl("SweepBtn").textContent = "Suchlauf stoppen";
+    tonEl("SweepMarkBtn").hidden = false;
+    const show = () => { tonEl("SweepHz").textContent = `${Math.round(tonSweepHzAt((performance.now() - tool.t0) / 1000))} Hz`; };
+    show();
+    tool.iv = setInterval(show, 100);
+    tool.timers.push(setTimeout(() => { if (tonTool !== tool) return; tonToolStop(); tonEl("SweepHz").textContent = "Suchlauf zu Ende."; }, TON_SWEEP.s * 1000 + 100));
+  }
+  function tonSweepMark() {
+    if (!tonTool || tonTool.kind !== "sweep") return;
+    const hz = Math.round(tonSweepHzAt((performance.now() - tonTool.t0) / 1000));
+    tonToolStop();
+    tonSeq.steps[tonSel].freq = hz;
+    tonSaveCur();
+    tonRender();
+    tonEl("SweepHz").textContent = `${hz} Hz gemerkt – steht jetzt in Schritt ${tonSel + 1}.`;
+  }
+
+  // ---- ready screen ----
+  function renderTonBest() {
+    const last = readJSON(TON_LAST_KEY, null);
+    const el = tonEl("BestHint");
+    if (el) el.textContent = last && last.name ? `Zuletzt: ${last.name}` : "";
+  }
+  renderTonBest();
+  function tonRenderList() {
+    const list = tonEl("StepList");
+    const n = tonSeq.steps.length;
+    list.innerHTML = tonSeq.steps.map((st, i) =>
+      `<div class="ton-step-row${i === tonSel ? " active" : ""}">` +
+      `<button type="button" class="ton-step-main" data-ton-sel="${i}" aria-pressed="${i === tonSel}"><strong>Schritt ${i + 1}</strong><span>${esc(tonStepSummary(st))}</span></button>` +
+      `<div class="ton-step-actions">` +
+      `<button type="button" class="combo-block-move" data-ton-up="${i}" aria-label="Schritt ${i + 1} nach oben"${i === 0 ? " disabled" : ""}>↑</button>` +
+      `<button type="button" class="combo-block-move" data-ton-down="${i}" aria-label="Schritt ${i + 1} nach unten"${i === n - 1 ? " disabled" : ""}>↓</button>` +
+      `<button type="button" class="combo-block-move" data-ton-dup="${i}" aria-label="Schritt ${i + 1} duplizieren"${n >= TON_MAX_STEPS ? " disabled" : ""}>⧉</button>` +
+      `<button type="button" class="combo-block-remove" data-ton-del="${i}" aria-label="Schritt ${i + 1} entfernen"${n <= 1 ? " disabled" : ""}>✕</button>` +
+      `</div></div>`).join("");
+    tonEl("AddStepBtn").hidden = n >= TON_MAX_STEPS;
+  }
+  function tonRenderEditor() {
+    const st = tonSeq.steps[tonSel];
+    tonEl("EditorTitle").textContent = `Schritt ${tonSel + 1} bearbeiten`;
+    tonEl("FreqSlider").value = tonHzToPos(st.freq);
+    tonEl("FreqValue").textContent = `${st.freq} Hz`;
+    if (document.activeElement !== tonEl("FreqInput")) tonEl("FreqInput").value = st.freq;
+    tonEl("LowHint").hidden = Math.min(st.freq, st.pattern === "glide" ? st.glideTo : st.freq) >= 150;
+    const act = (row, attr, val) => tonEl(row).querySelectorAll(`[${attr}]`).forEach((b) => setActive(b, b.getAttribute(attr) === val));
+    act("WaveRow", "data-ton-wave", st.wave);
+    act("EarRow", "data-ton-ear", st.ear);
+    act("PatternRow", "data-ton-pattern", st.pattern);
+    act("PulseUnitRow", "data-ton-pulseunit", st.pulseUnit);
+    tonEl("AltGroup").hidden = st.ear !== "alt";
+    tonEl("AltSlider").value = st.altS;
+    tonEl("AltValue").textContent = `${tonDec(st.altS)} s`;
+    tonEl("PulseGroup").hidden = st.pattern !== "pulse";
+    tonEl("PulseMsGroup").hidden = st.pulseUnit !== "ms";
+    tonEl("PulseBpmGroup").hidden = st.pulseUnit !== "bpm";
+    tonEl("OnSlider").value = st.onMs; tonEl("OnValue").textContent = `${st.onMs} ms`;
+    tonEl("OffSlider").value = st.offMs; tonEl("OffValue").textContent = `${st.offMs} ms`;
+    tonEl("BpmSlider").value = st.bpm; tonEl("BpmValue").textContent = `${st.bpm}/Min`;
+    tonEl("GlideGroup").hidden = st.pattern !== "glide";
+    tonEl("GlideSlider").value = tonHzToPos(st.glideTo); tonEl("GlideValue").textContent = `${st.glideTo} Hz`;
+    tonEl("DurSlider").value = st.dur; tonEl("DurValue").textContent = tonFmtS(st.dur);
+    tonEl("PauseSlider").value = st.pause; tonEl("PauseValue").textContent = st.pause ? tonFmtS(st.pause) : "direkt weiter";
+    tonEl("VolSlider").value = st.vol; tonEl("VolValue").textContent = `${st.vol} %`;
+  }
+  function tonRender() {
+    if (tonSel >= tonSeq.steps.length) tonSel = tonSeq.steps.length - 1;
+    tonRenderList();
+    tonRenderEditor();
+    tonEl("RepeatSlider").value = tonSeq.repeat;
+    tonEl("RepeatValue").textContent = `${tonSeq.repeat}×`;
+    const total = tonSeqSeconds(tonSeq);
+    tonEl("TotalHelp").textContent = `Wie oft die ganze Sequenz läuft. Gesamt: ${tonFmtS(Math.min(total, TON_MAX_S))}` +
+      (total > TON_MAX_S ? ` – die Sequenz endet nach 10 Minuten (Obergrenze, damit es keine Dauerbeschallung wird).` : ".");
+  }
+  function tonEdit(fn) { fn(tonSeq.steps[tonSel]); tonSeq.steps[tonSel] = tonNormStep(tonSeq.steps[tonSel]); tonSaveCur(); tonRender(); }
+  tonEl("StepList").addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b || b.disabled) return;
+    const d = b.dataset;
+    const steps = tonSeq.steps;
+    if (d.tonSel != null) tonSel = Number(d.tonSel);
+    else if (d.tonUp != null) { const i = Number(d.tonUp); if (i > 0) { [steps[i - 1], steps[i]] = [steps[i], steps[i - 1]]; tonSel = i - 1; } }
+    else if (d.tonDown != null) { const i = Number(d.tonDown); if (i < steps.length - 1) { [steps[i + 1], steps[i]] = [steps[i], steps[i + 1]]; tonSel = i + 1; } }
+    else if (d.tonDup != null) { const i = Number(d.tonDup); if (steps.length < TON_MAX_STEPS) { steps.splice(i + 1, 0, { ...steps[i] }); tonSel = i + 1; } }
+    else if (d.tonDel != null) { const i = Number(d.tonDel); if (steps.length > 1) { steps.splice(i, 1); if (tonSel >= i && tonSel > 0) tonSel -= 1; } }
+    else return;
+    tonToolStop();
+    tonSaveCur();
+    tonRender();
+  });
+  tonEl("AddStepBtn").addEventListener("click", () => {
+    if (tonSeq.steps.length >= TON_MAX_STEPS) return;
+    const last = tonSeq.steps[tonSeq.steps.length - 1];
+    tonSeq.steps.push(tonNormStep({ ...last }));
+    tonSel = tonSeq.steps.length - 1;
+    tonSaveCur();
+    tonRender();
+  });
+  tonEl("FreqSlider").addEventListener("input", (e) => tonEdit((st) => { st.freq = tonPosToHz(e.target.value); }));
+  tonEl("FreqInput").addEventListener("change", (e) => tonEdit((st) => { st.freq = Math.round(tonClamp(e.target.value, 20, 2000, st.freq)); e.target.value = Math.round(tonClamp(e.target.value, 20, 2000, st.freq)); }));
+  tonEl("FreqInput").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } });
+  document.querySelectorAll("[data-ton-fstep]").forEach((b) => b.addEventListener("click", () => tonEdit((st) => { st.freq = st.freq + Number(b.dataset.tonFstep); })));
+  const tonChoice = (row, attr, key) => tonEl(row).querySelectorAll(`[${attr}]`).forEach((b) => b.addEventListener("click", () => tonEdit((st) => { st[key] = b.getAttribute(attr); })));
+  tonChoice("WaveRow", "data-ton-wave", "wave");
+  tonChoice("EarRow", "data-ton-ear", "ear");
+  tonChoice("PatternRow", "data-ton-pattern", "pattern");
+  tonChoice("PulseUnitRow", "data-ton-pulseunit", "pulseUnit");
+  const tonSlider = (id, key, conv) => tonEl(id).addEventListener("input", (e) => tonEdit((st) => { st[key] = conv ? conv(e.target.value) : Number(e.target.value); }));
+  tonSlider("AltSlider", "altS");
+  tonSlider("OnSlider", "onMs");
+  tonSlider("OffSlider", "offMs");
+  tonSlider("BpmSlider", "bpm");
+  tonSlider("GlideSlider", "glideTo", tonPosToHz);
+  tonSlider("DurSlider", "dur");
+  tonSlider("PauseSlider", "pause");
+  tonSlider("VolSlider", "vol");
+  tonEl("RepeatSlider").addEventListener("input", (e) => { tonSeq.repeat = Math.round(tonClamp(e.target.value, 1, 10, 1)); tonSaveCur(); tonRender(); });
+  tonEl("PresetRow").querySelectorAll("[data-ton-preset]").forEach((b) => b.addEventListener("click", () => {
+    tonToolStop();
+    tonSeq = tonNormSeq(JSON.parse(JSON.stringify(TON_PRESETS[b.dataset.tonPreset])));
+    tonSel = 0;
+    tonSaveCur();
+    tonRender();
+    showToast(`Vorlage „${tonSeq.name}“ geladen.`);
+  }));
+  tonEl("ChannelBtn").addEventListener("click", tonChannelTest);
+  tonEl("PreviewBtn").addEventListener("click", tonPreview);
+  tonEl("SweepBtn").addEventListener("click", tonSweep);
+  tonEl("SweepMarkBtn").addEventListener("click", tonSweepMark);
+
+  const tonSavedStore = makePresetStore(TON_SEQ_KEY);
+  function renderTonSaved() {
+    renderPresetList(tonSavedStore, tonEl("SavedList"), tonEl("SavedGroup"), null,
+      (e) => { const q = tonNormSeq(e.seq); return `${q.steps.length} ${q.steps.length === 1 ? "Schritt" : "Schritte"} · ${tonFmtS(Math.min(tonSeqSeconds(q), TON_MAX_S))}`; },
+      (e) => { tonToolStop(); tonSeq = tonNormSeq(JSON.parse(JSON.stringify(e.seq))); tonSeq.name = e.name; tonSel = 0; tonSaveCur(); tonRender(); showToast(`„${e.name}“ geladen.`); },
+      { confirmDelete: true });
+  }
+  wirePresetSaveForm({
+    saveBtn: tonEl("SaveBtn"), form: tonEl("SaveForm"), nameInput: tonEl("SaveNameInput"),
+    cancelBtn: tonEl("SaveCancelBtn"), confirmBtn: tonEl("SaveConfirmBtn"),
+    defaultName: () => tonSeq.name || `Sequenz ${tonSavedStore.load().length + 1}`,
+    onSave: (name) => {
+      const list = tonSavedStore.load();
+      tonSeq.name = name;
+      tonSaveCur();
+      list.push({ id: String(Date.now()), name, seq: JSON.parse(JSON.stringify(tonSeq)) });
+      tonSavedStore.save(list.slice(-20));
+      renderTonSaved();
+      showToast(`„${name}“ gespeichert.`);
+    },
+  });
+
+  tonEl("OpenBtn").addEventListener("click", () => {
+    tonRender();
+    renderTonSaved();
+    tonEl("ChannelStatus").textContent = "";
+    tonEl("SweepHz").textContent = "";
+    showScreen("tonReady");
+  });
+  tonEl("ReadyBackToHome").addEventListener("click", () => { tonToolStop(); showScreen("testHome"); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") tonToolStop(); });
+
+  // ---- player ----
+  function tonBuildSegs(q) {
+    const segs = [];
+    for (let r = 0; r < q.repeat; r++) q.steps.forEach((st, i) => {
+      segs.push({ kind: "tone", st, i, r, dur: st.dur });
+      if (st.pause) segs.push({ kind: "pause", st, i, r, dur: st.pause });
+    });
+    if (segs.length && segs[segs.length - 1].kind === "pause") segs.pop();
+    const out = [];
+    let acc = 0;
+    for (const s of segs) {
+      if (acc >= TON_MAX_S) break;
+      const d = Math.min(s.dur, TON_MAX_S - acc);
+      out.push({ ...s, dur: d });
+      acc += d;
+    }
+    return out;
+  }
+  function tonSegElapsed(run) { return run.segOff + (run.paused ? 0 : (performance.now() - run.segStart) / 1000); }
+  function tonPlayedS(run) { return ((run.paused ? run.pausedAt : performance.now()) - run.startTime - run.pausedTotal) / 1000; }
+  function tonRenderNow() {
+    const run = tonRun;
+    if (!run) return;
+    const seg = run.segs[run.idx];
+    if (!seg) return;
+    const n = run.q.steps.length;
+    const el = tonSegElapsed(run);
+    const left = Math.max(0, Math.ceil(seg.dur - el - 0.001));
+    const rep = run.q.repeat > 1 ? ` · Durchgang ${seg.r + 1} von ${run.q.repeat}` : "";
+    const st = seg.st;
+    if (seg.kind === "pause") {
+      tonEl("NowStep").textContent = `Pause nach Schritt ${seg.i + 1}${rep}`;
+      tonEl("NowHz").textContent = "Pause";
+      const next = run.segs[run.idx + 1];
+      tonEl("NowEar").textContent = next ? `Danach: ${next.st.freq} Hz · ${tonEarText(next.st)}` : "";
+      tonEl("NowPattern").textContent = "";
+    } else {
+      tonEl("NowStep").textContent = `Schritt ${seg.i + 1} von ${n}${rep}`;
+      const hz = st.pattern === "glide" ? Math.round(st.freq * Math.pow(st.glideTo / st.freq, Math.min(1, el / st.dur))) : st.freq;
+      tonEl("NowHz").textContent = `${hz} Hz`;
+      tonEl("NowEar").textContent = st.ear === "alt" ? `Wechsel · jetzt ${Math.floor(el / st.altS) % 2 === 0 ? "links" : "rechts"}` : TON_EARS[st.ear];
+      tonEl("NowPattern").textContent = `${tonPatternText(st)} · ${TON_WAVES[st.wave]}`;
+    }
+    tonEl("NowTime").textContent = `noch ${tonFmtS(left)}`;
+    tonEl("NowMute").hidden = !tonMuted();
+    const totalLeft = run.segs.slice(run.idx).reduce((a, s) => a + s.dur, 0) - el;
+    tonEl("ProgressEl").textContent = `Gesamt noch ${tonFmtS(totalLeft)}`;
+  }
+  function tonPlaySeg() {
+    const run = tonRun;
+    const seg = run.segs[run.idx];
+    run.segStart = performance.now();
+    const left = seg.dur - run.segOff;
+    if (seg.kind === "tone") run.voice = tonVoice(seg.st, run.segOff, left, { vol: run.vols[seg.i] != null ? run.vols[seg.i] : seg.st.vol });
+    clearTimeout(run.timer);
+    run.timer = setTimeout(tonNextSeg, Math.max(0, left * 1000));
+    tonRenderNow();
+  }
+  function tonNextSeg() {
+    const run = tonRun;
+    if (!run) return;
+    if (run.voice) { run.voice.stop(); run.voice = null; }
+    run.idx += 1;
+    if (run.idx >= run.segs.length) { tonFinish(); return; }
+    run.segOff = 0;
+    tonPlaySeg();
+  }
+  function startTon() {
+    tonToolStop();
+    unlockCueAudio();
+    silentSwitchHint();
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    tonEl("Player").hidden = false;
+    tonEl("PlayerBar").hidden = false;
+    tonEl("DonePanel").hidden = true;
+    tonEl("PauseOverlay").hidden = true;
+    tonEl("PauseBtn").hidden = false;
+    const q = tonNormSeq(JSON.parse(JSON.stringify(tonSeq)));
+    tonRun = {
+      q, segs: tonBuildSegs(q), idx: -1, segStart: 0, segOff: 0, paused: false, pausedAt: 0, pausedTotal: 0,
+      startTime: performance.now(), voice: null, timer: null, iv: null, vols: {},
+      before: tonEl("BeforeInput").value.trim().slice(0, 80),
+    };
+    tonEl("Hint").textContent = "Bei Schwindel, Übelkeit, Druck oder Ohrgeräusch sofort stoppen.";
+    tonNextSeg();
+    placeHintBelowBar(tonEl("Hint"), tonEl("PlayerBar"));
+    requestWakeLock();
+    tonRun.iv = setInterval(tonRenderNow, 250);
+  }
+  // Before the first run with one-sided tones: offer the Kanal-Test once.
+  tonEl("ReadyStartBtn").addEventListener("click", () => {
+    let tested = false;
+    try { tested = !!localStorage.getItem(TON_CHANTEST_KEY); } catch (e) {}
+    if (tested || !tonSeq.steps.some((s) => s.ear !== "both")) { startTon(); return; }
+    confirmDialog("Deine Sequenz spielt Töne nur links oder rechts. Der Kanal-Test zeigt dir in 5 Sekunden, ob die Seiten richtig ankommen.",
+      () => { const g = tonEl("ChannelBtn"); try { g.scrollIntoView({ block: "center" }); } catch (e) {} tonChannelTest(); },
+      { title: "Erst den Kanal-Test?", yes: "Kanal-Test machen", no: "Ohne Test starten", onNo: () => { try { localStorage.setItem(TON_CHANTEST_KEY, "skip"); } catch (e) {} startTon(); } });
+  });
+  function tonPause() {
+    const run = tonRun;
+    if (!run || run.paused) return;
+    run.segOff = tonSegElapsed(run);
+    run.paused = true;
+    run.pausedAt = performance.now();
+    clearTimeout(run.timer);
+    if (run.voice) { run.voice.stop(); run.voice = null; }
+    const seg = run.segs[run.idx];
+    const v = run.vols[seg.i] != null ? run.vols[seg.i] : seg.st.vol;
+    tonEl("LiveVolSlider").value = v;
+    tonEl("LiveVolValue").textContent = `${v} %`;
+    tonEl("PauseBtn").hidden = true;
+    tonEl("PauseOverlay").hidden = false;
+    tonRenderNow();
+  }
+  function tonResume() {
+    const run = tonRun;
+    if (!run || !run.paused) return;
+    unlockCueAudio();
+    run.pausedTotal += performance.now() - run.pausedAt;
+    run.paused = false;
+    tonEl("PauseOverlay").hidden = true;
+    tonEl("PauseBtn").hidden = false;
+    tonPlaySeg();
+  }
+  tonEl("PauseBtn").addEventListener("click", tonPause);
+  tonEl("ResumeBtn").addEventListener("click", tonResume);
+  tonEl("LiveVolSlider").addEventListener("input", (e) => {
+    const run = tonRun;
+    if (!run) return;
+    const seg = run.segs[run.idx];
+    const v = Math.round(tonClamp(e.target.value, 5, 100, 20) / 5) * 5;
+    run.vols[seg.i] = v;
+    tonEl("LiveVolValue").textContent = `${v} %`;
+  });
+  function tonTeardown(run) {
+    clearTimeout(run.timer);
+    clearInterval(run.iv);
+    if (run.voice) { run.voice.stop(); run.voice = null; }
+    releaseWakeLock();
+  }
+  function tonNoteBase(run) {
+    const name = run.q.name || "Eigene Sequenz";
+    const freqs = [...new Set(run.q.steps.map((s) => s.freq))].slice(0, 4).join(" / ");
+    return `${name} · ${freqs} Hz${run.before ? ` · Vorher: ${run.before}` : ""}`;
+  }
+  function tonFinalize(run, playedS, aborted) {
+    tonEl("PauseOverlay").hidden = true;
+    tonEl("PlayerBar").hidden = true;
+    const panel = tonEl("DonePanel");
+    setDonePanelAborted(panel, aborted, "Ton-Sequenz beendet");
+    const name = run.q.name || "Eigene Sequenz";
+    const n = run.q.steps.length;
+    tonEl("DoneSummary").textContent = `${aborted ? "Abgebrochen · " : ""}Ton-Sequenz „${name}“ · ${n} ${n === 1 ? "Schritt" : "Schritte"} · ${tonFmtS(playedS)}`;
+    const base = tonNoteBase(run);
+    const entry = { kind: "tonseq", title: "Ton-Sequenz", seconds: Math.round(playedS), note: base };
+    if (run.before) entry.before = run.before;
+    if (aborted) { entry.aborted = true; entry.note = `abgebrochen · ${base}`; }
+    run.histId = addHistory(entry);
+    run.noteBase = entry.note;
+    tonLastRun = run;
+    tonEl("AfterInput").value = "";
+    tonEl("AfterSaved").hidden = true;
+    if (!aborted) { writeJSON(TON_LAST_KEY, { name, ts: Date.now() }); renderTonBest(); }
+    renderRating(tonEl("Rating"), run.histId, "Wie ging es dir mit den Tönen?");
+    panel.hidden = false;
+  }
+  tonEl("AfterSaveBtn").addEventListener("click", () => {
+    const v = tonEl("AfterInput").value.trim().slice(0, 80);
+    const run = tonLastRun;
+    if (!v || !run || !run.histId) return;
+    const list = loadHistory();
+    const item = list.find((e) => e.id === run.histId);
+    if (item) { item.after = v; item.note = `${run.noteBase} · Nachher: ${v}`; writeJSON(HISTORY_KEY, list); }
+    else hoPatchClientRun(run.histId, (e) => { e.after = v; e.note = `${run.noteBase} · Nachher: ${v}`; });
+    tonEl("AfterSaved").hidden = false;
+  });
+  wireEnterToSave(tonEl("AfterInput"), tonEl("AfterSaveBtn"));
+  function tonFinish() {
+    const run = tonRun;
+    if (!run) return;
+    tonRun = null;
+    tonTeardown(run);
+    tonFinalize(run, tonPlayedS(run), false);
+  }
+  function tonStop() {
+    const run = tonRun;
+    if (!run) return;
+    const played = tonPlayedS(run);
+    tonRun = null;
+    tonTeardown(run);
+    tonEl("PauseOverlay").hidden = true;
+    if (played >= TON_MIN_PLAYED_S) tonFinalize(run, played, true);
+    else { tonEl("Player").hidden = true; showScreen("testHome"); }
+  }
+  // hideAllPlayers() (another player starting, Cardio takeover ...) silences everything.
+  function tonHaltSilently() {
+    if (tonRun) { const r = tonRun; tonRun = null; tonTeardown(r); }
+    if (tonTool) tonToolStop();
+  }
+  tonEl("BackBtn").addEventListener("click", tonStop);
+  tonEl("AgainBtn").addEventListener("click", () => { tonEl("DonePanel").hidden = true; startTon(); });
+  tonEl("DoneBackBtn").addEventListener("click", () => { tonEl("Player").hidden = true; tonEl("DonePanel").hidden = true; showScreen("testHome"); });
+  if (navigator.webdriver) window.__ton = { seq: () => tonSeq, run: () => tonRun, tool: () => tonTool, sel: () => tonSel, finish: () => tonFinish() };
+  // ==== Ende Ton-Sequenz ====
+
   // Rotationstest (Mentale Rotation) - grounded in the classic mental-
   // rotation/character-rotation chronometric paradigm (Cooper & Shepard,
   // 1973): a letter or digit is shown rotated out of its upright
@@ -29795,13 +33794,44 @@
     return Array.isArray(l) ? l.filter((e) => e && typeof e.date === "string" && e.title) : [];
   }
   function saveEvents(list) { writeJSON(EVENT_KEY, list); }
+  // Serien (Fabian 08.10.): an own event may repeat every week or every
+  // second week from its date on, without an end (`repeat`: "weekly" /
+  // "biweekly"; missing = "none" = once). Deleting a single date of a series
+  // adds it to `skip`; editing always changes the whole series. Trainer
+  // events (fromTrainer) never repeat. Each occurrence is the stored event
+  // with `date` set to that day (`seriesDate` = the first date).
+  const EVENT_REPEATS = [["none", "Nie"], ["weekly", "Jede Woche"], ["biweekly", "Alle 2 Wochen"]];
+  const EVENT_REPEAT_META = { weekly: "jede Woche", biweekly: "alle 2 Wochen" };
+  function eventRepeatDays(e) {
+    if (!e || e.fromTrainer) return 0;
+    return e.repeat === "weekly" ? 7 : e.repeat === "biweekly" ? 14 : 0;
+  }
+  function eventSkipped(e, date) { return Array.isArray(e.skip) && e.skip.includes(date); }
+  function eventOccursOn(e, date) {
+    if (eventSkipped(e, date)) return false;
+    if (e.date === date) return true;
+    const n = eventRepeatDays(e);
+    return n > 0 && date > e.date && dDiff(e.date, date) % n === 0;
+  }
+  // First date on/after `from` the event takes place (null = none left).
+  function eventNextDate(e, from) {
+    const n = eventRepeatDays(e);
+    if (!n) return e.date >= from && !eventSkipped(e, e.date) ? e.date : null;
+    let d = e.date >= from ? e.date : dAdd(e.date, Math.ceil(dDiff(e.date, from) / n) * n);
+    for (let i = 0; i < 400; i++, d = dAdd(d, n)) if (!eventSkipped(e, d)) return d;
+    return null;
+  }
+  function eventAt(e, date) { return date === e.date ? e : { ...e, date, seriesDate: e.date }; }
+  // Wettkampf recommendations and Mein Plan only look at single dates: a
+  // weekly game would otherwise mark every week.
+  function loadSingleEvents() { return loadEvents().filter((e) => !eventRepeatDays(e)); }
   function eventsOn(date, list) {
-    return (list || loadEvents()).filter((e) => e.date === date)
+    return (list || loadEvents()).filter((e) => eventOccursOn(e, date)).map((e) => eventAt(e, date))
       .sort((x, y) => (x.time || "99:99").localeCompare(y.time || "99:99"));
   }
   function nextGoalEvent(list) {
     const today = todayStr();
-    return (list || loadEvents()).filter((e) => e.goal && e.date >= today)
+    return (list || loadEvents()).filter((e) => e.goal).map((e) => { const d = eventNextDate(e, today); return d ? eventAt(e, d) : null; }).filter(Boolean)
       .sort((x, y) => x.date.localeCompare(y.date) || (x.time || "").localeCompare(y.time || ""))[0] || null;
   }
   function eventMarkHtml(date, list) {
@@ -29826,12 +33856,15 @@
       icon: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' },
     { key: "free", label: "Eigenes Training", short: "Eigenes Training", color: "#a0527a", screen: "freeHome", text: "Eigenes wie Dehnen, Eisbad oder Journal.",
       icon: '<rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M8 12.5l2.8 2.8L16.5 9" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
+    // Aktivierung (Fabian 2026-10-08): short activations, 8th area.
+    { key: "activation", label: "Aktivierung", short: "Aktivierung", color: "#3b4fa8", screen: "activationHome", text: "Kurze Aktivierungen für zwischendurch.",
+      icon: '<path d="M13 3L5 13.5h6L10 21l8-10.5h-6L13 3z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' },
   ];
   const AREA_BY_KEY = Object.fromEntries(PLAN_AREAS.map((a) => [a.key, a]));
   // Kombi-Programme are plannable too (kp3 "Planen wie Basteln"): not an
   // area tile, but a plan entry kind (what "combo:<savedId>").
   AREA_BY_KEY.combo = { key: "combo", label: "Kombi-Programm", short: "Kombi", color: "#007094", screen: "comboScreen" };
-  const AREA_TO_SECTION = { visual: "visual", breath: "breath", movement: "movement", workout: "workout", cardio: "cardio", nat: "nat", test: "test", free: "free" };
+  const AREA_TO_SECTION = { visual: "visual", breath: "breath", movement: "movement", workout: "workout", cardio: "cardio", nat: "nat", test: "test", free: "free", activation: "activation" };
   const NAT_SUBS = [["peripher", "Periphere Wahrnehmung"], ["remember", "Positionen merken"], ["blitz", "Blitz-Raster"], ["flash", "Flash-Speicher-Test"], ["mot", "Objektverfolgung (MOT)"], ["balance", "Gleichgewicht"]];
   const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
   const WD_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
@@ -29974,7 +34007,7 @@
   // around a goal / Wettkampf appointment get a recommendation label.
   function focusWeekOf(monday) {
     let list = [];
-    try { list = loadEvents().filter((e) => e.goal || e.kind === "wettkampf"); } catch (e) { list = []; }
+    try { list = loadSingleEvents().filter((e) => e.goal || e.kind === "wettkampf"); } catch (e) { list = []; }
     for (const f of list) {
       const fm = mondayOf(f.date);
       if (monday === dAdd(fm, -7)) return { kind: "taper", f, label: `Woche vor „${f.title}“: Empfehlung eher locker trainieren` };
@@ -30025,6 +34058,8 @@
     if (k === "program") return "visual";
     if (k === "combo") return "combo";
     if (k === "free") return "free";
+    if (k === "optodrum") return "activation";
+    if (k === "neuro") return "neuro";
     return "test";
   }
   // Planned + extra entries of a date, sorted, with done state.
@@ -30087,6 +34122,8 @@
     if (area === "visual") visualExercises().forEach((x) => opts.push({ v: "ex:" + x.id, t: x.title }));
     if (area === "nat") NAT_SUBS.forEach(([k, t]) => opts.push({ v: "nat:" + k, t }));
     if (area === "free") freeAllBlocks().forEach((b) => opts.push({ v: "free:" + b.id, t: b.title }));
+    if (area === "activation") Object.entries(ACTIVATION_EXERCISES).forEach(([k, x]) => opts.push({ v: "act:" + k, t: x.title }));
+    if (area === "neuro" && neuroUnlocked()) Object.entries(NEURO_EXERCISES).forEach(([k, x]) => opts.push({ v: "neuro:" + k, t: x.title }));
     if (area === "combo") { opts.length = 0; comboSavedStore.load().forEach((c) => opts.push({ v: "combo:" + c.id, t: c.name })); if (!opts.length) opts.push({ v: "", t: "Noch kein Kombi-Programm gespeichert" }); }
     return opts;
   }
@@ -30095,6 +34132,8 @@
     if (e.what && e.what.startsWith("ex:")) { const x = visualExercises().find((v) => v.id === e.what.slice(3)); if (x) return x.title; }
     if (e.what && e.what.startsWith("nat:")) { const n = NAT_SUBS.find(([k]) => k === e.what.slice(4)); if (n) return n[1]; }
     if (e.what && e.what.startsWith("free:")) { const b = freeFind(e.what.slice(5)); if (b) return b.title; }
+    if (e.what && e.what.startsWith("act:") && ACTIVATION_EXERCISES[e.what.slice(4)]) return ACTIVATION_EXERCISES[e.what.slice(4)].title;
+    if (e.what && e.what.startsWith("neuro:") && NEURO_EXERCISES[e.what.slice(6)]) return NEURO_EXERCISES[e.what.slice(6)].title;
     if (e.what && e.what.startsWith("combo:")) { const c = comboSavedStore.load().find((x) => x.id === e.what.slice(6)); return c ? c.name : "Kombi-Programm"; }
     if (e.code) return `${AREA_BY_KEY[e.area].short} · Code ${e.code}`;
     return AREA_BY_KEY[e.area].label;
@@ -30102,6 +34141,7 @@
   function goArea(area) {
     const sec = AREA_TO_SECTION[area] || "visual";
     if (sec === "test" && !readJSON(TEST_UNLOCK_KEY, false)) { activateSectionTab("visual"); showScreen("home"); return; }
+    if (sec === "neuro" && !neuroUnlocked()) { activateSectionTab("today"); showScreen("todayHome"); return; }
     activateSectionTab(sec);
     showScreen(AREA_BY_KEY[area] ? AREA_BY_KEY[area].screen : sec === "test" ? "testHome" : "home");
   }
@@ -30122,6 +34162,10 @@
     goArea(e.area);
     if (e.what && e.what.startsWith("free:")) {
       if (freeFind(e.what.slice(5))) openFreeReady(e.what.slice(5));
+    } else if (e.what && e.what.startsWith("act:")) {
+      openActivationExercise(e.what.slice(4));
+    } else if (e.what && e.what.startsWith("neuro:")) {
+      if (neuroUnlocked() && NEURO_EXERCISES[e.what.slice(6)]) openNeuroReady(e.what.slice(6));
     } else if (e.what && e.what.startsWith("ex:")) {
       const card = document.querySelector(`#home .excard[data-exercise="${CSS.escape(e.what.slice(3))}"]`);
       if (card) card.click();
@@ -30328,6 +34372,8 @@
     const natSub = { remember: "remember", blitz: "blitz", flash: "flash", mot: "mot", balance: "balance" }[h.kind];
     if (natSub) { startEntry({ area: "nat", what: "nat:" + natSub }); return; }
     if (h.kind === "free" && h.freeId && freeFind(h.freeId)) { startEntry({ area: "free", what: "free:" + h.freeId }); return; }
+    if (h.kind === "optodrum") { startEntry({ area: "activation", what: "act:optodrum" }); return; }
+    if (h.kind === "neuro") { startEntry({ area: "neuro", what: h.neuroEx ? "neuro:" + h.neuroEx : "" }); return; }
     if (area === "combo") { activateSectionTab("visual"); showScreen("home"); openComboScreen(); return; }
     goArea(area);
   }
@@ -30344,10 +34390,70 @@
     const a = AREA_BY_KEY[area];
     return `<span class="area-dot ${extraClass || ""}" style="background:${a ? a.color : "#888"}" aria-hidden="true"></span>`;
   }
+  // Vorname in der Begrüßung (Fabian 08.10.): stored only on this device
+  // (fwmc-name-v1, plain string, trimmed, max 30 chars; in backups via the
+  // fwmc- prefix). Never part of a reminder payload or any Worker call.
+  // Without a name the hello card offers "+ Wie heißt du?",
+  // which opens an inline form; Grundeinstellungen "Dein Name" edits/clears it.
+  const NAME_KEY = "fwmc-name-v1";
+  const NAME_MAX = 30;
+  function cleanName(v) { return String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, NAME_MAX).trim(); }
+  function getUserName() { try { return cleanName(localStorage.getItem(NAME_KEY)); } catch (e) { return ""; } }
+  function setUserName(v) {
+    const n = cleanName(v);
+    try { if (n) localStorage.setItem(NAME_KEY, n); else localStorage.removeItem(NAME_KEY); } catch (e) {}
+    return n;
+  }
+  function renderHello(now) {
+    const g = els.todayGreeting;
+    const name = getUserName();
+    g.textContent = greetingFor((now || new Date()).getHours()) + (name ? "," : "");
+    if (name) {
+      g.appendChild(document.createTextNode(" "));
+      const sp = document.createElement("span");
+      sp.className = "today-greeting-name";
+      sp.textContent = name;
+      g.appendChild(sp);
+    }
+    g.classList.toggle("has-long-name", name.length > 12);
+    const btn = $("helloNameBtn"), form = $("helloNameForm");
+    if (!btn || !form) return;
+    if (name) { btn.hidden = true; form.hidden = true; }
+    else if (form.hidden) btn.hidden = false;
+  }
+  (function initHelloName() {
+    const btn = $("helloNameBtn"), form = $("helloNameForm"), inp = $("helloNameInput");
+    if (!btn || !form || !inp) return;
+    btn.addEventListener("click", () => {
+      btn.hidden = true; form.hidden = false; inp.value = "";
+      inp.focus();
+    });
+    const close = () => { form.hidden = true; inp.value = ""; renderHello(); };
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const n = cleanName(inp.value);
+      if (!n) { inp.value = ""; inp.focus(); return; }
+      setUserName(n);
+      close();
+    });
+    $("helloNameCancelBtn").addEventListener("click", close);
+    inp.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } });
+    const mInp = $("masterNameInput");
+    if (mInp) {
+      const save = () => {
+        const n = setUserName(mInp.value);
+        mInp.value = n;
+        renderHello();
+      };
+      mInp.addEventListener("change", save);
+      mInp.addEventListener("blur", save);
+      mInp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); save(); mInp.blur(); } });
+    }
+  })();
   function renderToday() {
     const now = new Date();
     const today = todayStr();
-    els.todayGreeting.textContent = greetingFor(now.getHours());
+    renderHello(now);
     els.todayDate.textContent = longDate(today);
     const hist = loadHistory();
     renderTodayMain(today, hist);
@@ -30893,21 +34999,35 @@
     const ev = eventsOn(date);
     box.innerHTML = ev.map((e) => {
       const k = EVENT_KIND_BY_KEY[e.kind] || EVENT_KINDS[3];
-      const meta = [e.time ? `${e.time} Uhr` : "ohne Uhrzeit", k.label, e.goal ? "Ziel mit Countdown" : ""].filter(Boolean).join(" · ");
-      return `<div class="day-item event-item" style="border-left-color:${k.color}" data-event="${esc(e.id)}">
+      const meta = [e.time ? `${e.time} Uhr` : "ohne Uhrzeit", k.label, EVENT_REPEAT_META[eventRepeatDays(e) ? e.repeat : ""] || "", e.goal ? "Ziel mit Countdown" : ""].filter(Boolean).join(" · ");
+      return `<div class="day-item event-item" style="border-left-color:${k.color}" data-event="${esc(e.id)}" data-event-date="${esc(date)}">
         <div class="day-item-main"><span class="area-dot event-dot" style="background:${k.color}" aria-hidden="true"></span><div><div class="day-item-title">${esc(e.title)}</div><div class="day-item-meta">${esc(meta)}</div></div></div>
         <div class="day-item-actions"><button type="button" class="day-act" data-event-edit="${esc(e.id)}">Bearbeiten</button></div></div>`;
     }).join("");
-    box.querySelectorAll("[data-event-edit]").forEach((b) => b.addEventListener("click", () => openEventSheet(b.dataset.eventEdit)));
+    box.querySelectorAll("[data-event-edit]").forEach((b) => b.addEventListener("click", () => openEventSheet(b.dataset.eventEdit, date)));
     return ev.length > 0;
   }
-  let eventEditId = null, eventKind = "wettkampf", eventReturnFocus = null;
+  let eventEditId = null, eventEditDate = null, eventKind = "wettkampf", eventRepeat = "none", eventEditTrainer = false, eventReturnFocus = null;
+  function renderEventRepeat() {
+    $("eventRepeatRow").innerHTML = EVENT_REPEATS.map(([k, label]) => `<button type="button" class="choice${k === eventRepeat ? " active" : ""}" data-repeat="${k}" aria-pressed="${k === eventRepeat}">${esc(label)}</button>`).join("");
+    const series = eventRepeat !== "none";
+    $("eventDateLabel").textContent = series ? "Erster Termin" : "Datum";
+    const hint = $("eventRepeatHint");
+    hint.hidden = !series;
+    hint.textContent = eventEditId
+      ? "Änderungen gelten für alle Termine dieser Serie. Einen einzelnen Termin löschst du über „Termin löschen“."
+      : "Wiederholt sich ab dem ersten Termin ohne Ende. Einzelne Termine oder die ganze Serie löschst du später über „Bearbeiten“.";
+  }
   function renderEventKinds() {
     $("eventKindRow").innerHTML = EVENT_KINDS.map((k) => `<button type="button" class="choice${k.key === eventKind ? " active" : ""}" data-kind="${k.key}" aria-pressed="${k.key === eventKind}"><span class="event-kind-dot" style="background:${k.color}" aria-hidden="true"></span>${esc(k.label)}</button>`).join("");
   }
-  function openEventSheet(id) {
+  function openEventSheet(id, date) {
     const e = id ? loadEvents().find((x) => x.id === id) : null;
     eventEditId = e ? e.id : null;
+    eventEditDate = e ? (date || e.date) : null;
+    eventEditTrainer = !!(e && e.fromTrainer);
+    eventRepeat = e && eventRepeatDays(e) ? e.repeat : "none";
+    $("eventRepeatGroup").hidden = eventEditTrainer;
     eventKind = e ? (EVENT_KIND_BY_KEY[e.kind] ? e.kind : "sonstiges") : "wettkampf";
     $("eventSheetTitle").textContent = e ? "Termin bearbeiten" : "Termin eintragen";
     $("eventSaveBtn").textContent = e ? "Speichern" : "Eintragen";
@@ -30918,13 +35038,14 @@
     $("eventDeleteBtn").hidden = !e;
     $("eventError").hidden = true;
     renderEventKinds();
+    renderEventRepeat();
     eventReturnFocus = document.activeElement;
     $("eventSheet").hidden = false;
     // Editing: no keyboard popping up over the sheet on a phone.
     (e ? $("eventCancelBtn") : $("eventTitleInput")).focus();
   }
   function closeEventSheet() {
-    $("eventSheet").hidden = true; eventEditId = null;
+    $("eventSheet").hidden = true; eventEditId = null; eventEditDate = null;
     if (eventReturnFocus && document.contains(eventReturnFocus)) eventReturnFocus.focus();
   }
   function saveEventFromSheet() {
@@ -30935,7 +35056,10 @@
       err.textContent = !title ? "Bitte gib ein, was ansteht." : "Bitte wähle ein Datum.";
       err.hidden = false; return;
     }
-    const item = { id: eventEditId || newId(), date, time: $("eventTimeInput").value || "", title, kind: eventKind, goal: $("eventGoalToggle").checked };
+    const old = eventEditId ? loadEvents().find((x) => x.id === eventEditId) : null;
+    const item = { ...(old || {}), id: eventEditId || newId(), date, time: $("eventTimeInput").value || "", title, kind: eventKind, goal: $("eventGoalToggle").checked };
+    if (!eventEditTrainer && eventRepeat !== "none") item.repeat = eventRepeat; else delete item.repeat;
+    if (!item.repeat) delete item.skip;
     const list = loadEvents().filter((x) => x.id !== item.id);
     list.push(item);
     saveEvents(list);
@@ -30943,21 +35067,34 @@
     selectDay(date);
   }
   $("eventKindRow").addEventListener("click", (e) => { const b = e.target.closest("[data-kind]"); if (b) { eventKind = b.dataset.kind; renderEventKinds(); } });
+  $("eventRepeatRow").addEventListener("click", (e) => { const b = e.target.closest("[data-repeat]"); if (b) { eventRepeat = b.dataset.repeat; renderEventRepeat(); } });
   $("dayEventAddBtn").addEventListener("click", () => openEventSheet(null));
   $("eventCancelBtn").addEventListener("click", closeEventSheet);
   $("eventSaveBtn").addEventListener("click", saveEventFromSheet);
   $("eventTitleInput").addEventListener("keydown", (e) => { if (e.key === "Enter") saveEventFromSheet(); });
   // One delete path for "Termin löschen" in the sheet and the list swipe.
-  function askDeleteEvent(id) {
+  // A series asks "Nur diesen Termin" (adds `date` to skip) or "Alle
+  // Termine dieser Serie"; tapping beside the sheet deletes nothing.
+  function askDeleteEvent(id, date) {
     const e = loadEvents().find((x) => x.id === id);
     if (!e) return;
-    confirmDialog(`„${e.title}“ wirklich löschen?`, () => {
-      saveEvents(loadEvents().filter((x) => x.id !== id));
-      if (!$("eventSheet").hidden) closeEventSheet();
-      renderToday();
+    const done = () => { if (!$("eventSheet").hidden) closeEventSheet(); renderToday(); };
+    const removeAll = () => { saveEvents(loadEvents().filter((x) => x.id !== id)); done(); };
+    if (!eventRepeatDays(e)) { confirmDialog(`„${e.title}“ wirklich löschen?`, removeAll); return; }
+    const day = date && eventOccursOn(e, date) ? date : eventNextDate(e, todayStr()) || e.date;
+    confirmDialog(`„${e.title}“ wiederholt sich ${EVENT_REPEAT_META[e.repeat]}. Möchtest du nur den Termin am ${longDate(day)} löschen oder alle Termine dieser Serie?`, removeAll, {
+      title: "Termin löschen", yes: "Alle Termine dieser Serie", no: "Nur diesen Termin", cancel: "Abbrechen",
+      onNo: () => {
+        const list = loadEvents();
+        const x = list.find((y) => y.id === id);
+        if (!x) return;
+        x.skip = [...new Set([...(Array.isArray(x.skip) ? x.skip : []), day])].sort();
+        saveEvents(list);
+        done();
+      },
     });
   }
-  $("eventDeleteBtn").addEventListener("click", () => askDeleteEvent(eventEditId));
+  $("eventDeleteBtn").addEventListener("click", () => askDeleteEvent(eventEditId, eventEditDate));
   $("eventSheet").addEventListener("click", (e) => { if (e.target === $("eventSheet")) closeEventSheet(); });
   $("eventSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closeEventSheet(); else trapTabKey($("eventSheet"), e); });
 
@@ -30974,22 +35111,33 @@
   // Code entry sits on Training (Fabian 2026-10-05: "eher oben bei Training"; ids kept from its time on Mehr)
   const MORE_CODE_CTX = { goBtn: $("moreCodeGoBtn"), errorEl: $("moreCodeError"), homeScreen: "trainingHub" };
   function goMoreCode() { const code = $("moreCodeInput").value.trim(); if (code) openProgramIntro(code, MORE_CODE_CTX); }
+  // A trainer code from a QR (scanner) or a #code= link runs exactly the
+  // code card's path: Training page, code in the field, goMoreCode().
+  function openCodeAsTyped(code) {
+    if (!code) return;
+    showScreen("trainingHub");
+    $("moreCodeInput").value = code;
+    goMoreCode();
+  }
   $("moreCodeGoBtn").addEventListener("click", goMoreCode);
   $("moreCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") goMoreCode(); });
   $("moreSettingsBtn").addEventListener("click", openMasterSettings);
   $("moreTipsBtn").addEventListener("click", () => els.tipsBtn.click());
-  const NAV_TAB_OF = { todayHome: "today", planScreen: "today", myPlanScreen: "today", trainingHub: "training", progressScreen: "progress", moreScreen: "more" };
-  const AREA_HOME_IDS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome"];
+  const NAV_TAB_OF = { todayHome: "today", planScreen: "today", myPlanScreen: "today", trainingHub: "training", progressScreen: "progress", moreScreen: "more", gearScreen: "more" };
+  const AREA_HOME_IDS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "activationHome", "neuroHome"];
   const TEST_TILE = { color: "#5c6b73", label: "Test", text: "Neue Übungen zum Ausprobieren.",
     icon: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' };
   const HUB_CORE = ["visual", "breath", "nat", "movement"];
-  const HUB_TEXT = { free: "z. B. Dehnen, Eisbad oder Journal." };
+  const HUB_TEXT = { free: "z. B. Dehnen, Eisbad oder Journal.", activation: "Kurz und knackig, z. B. vor dem Training." };
   // Fabian 07.10.: Reaktionstraining is being reworked, its tile keeps its
   // place but carries a "Test" mark (Test-Bereich colours) until then.
   const HUB_TEST_MARK = ["movement"];
   function renderHubAreaGrid() {
     const grid = $("hubAreaGrid");
-    const tiles = PLAN_AREAS.map((a) => ({ key: a.key, ...a }));
+    // Neuro-Aktivierung (2026-10-08) gets its own row "Für dich freigeschaltet"
+    // under the core tiles, only when unlocked; it never takes a core place.
+    const tiles = PLAN_AREAS.filter((a) => a.key !== "neuro").map((a) => ({ key: a.key, ...a }));
+    const unlockedTiles = neuroUnlocked() ? [NEURO_AREA] : [];
     if (readJSON(TEST_UNLOCK_KEY, false)) tiles.push({ key: "test", ...TEST_TILE });
     // Fabian 2026-10-05 (Entwurf E2): the four core areas as tinted 2x2
     // tiles, below them "Dazu: dein klassisches Training" with smaller
@@ -31000,6 +35148,8 @@
     const core = tiles.filter((a) => HUB_CORE.includes(a.key)), extra = tiles.filter((a) => !HUB_CORE.includes(a.key));
     grid.innerHTML = `<div class="hub-group-title hub-first">Unser Schwerpunkttraining</div><p class="hub-sub">Neurozentrierte Grundlagen gezielt trainieren.</p>
       <div class="area-grid hub-core">${core.map((a) => tile(a, true)).join("")}</div>
+      ${unlockedTiles.length ? `<div class="hub-group-title">Für dich freigeschaltet</div><p class="hub-sub">Von deinem Trainer, nur mit Code.</p>
+      <div class="area-grid hub-extra hub-unlocked">${unlockedTiles.map((a) => tile(a, false)).join("")}</div>` : ""}
       <div class="hub-group-title">Dazu: dein klassisches Training</div><p class="hub-sub">Frei kombinierbar, auch mit den Bereichen oben.</p>
       <div class="area-grid hub-extra">${extra.map((a) => tile(a, false)).join("")}</div>`;
     // Kombi tile icon (Fabian 07.10., Variante H): one square per core area in
@@ -31694,7 +35844,9 @@
     if (tab === "combo") return comboSavedStore.load().map((c) => ({ area: "combo", what: "combo:" + c.id, t: c.name, minutes: Math.max(5, Math.round(c.blocks.reduce((s, b) => s + comboBlockSeconds(b), 0) / 300) * 5 || 15) }));
     if (tab === "area") return PLAN_AREAS.map((a) => ({ area: a.key, what: "", t: a.label, minutes: 15 }));
     if (tab === "ex") return visualExercises().map((x) => ({ area: "visual", what: "ex:" + x.id, t: x.title, minutes: 10 }))
-      .concat(NAT_SUBS.map(([k, t]) => ({ area: "nat", what: "nat:" + k, t, minutes: 10 })));
+      .concat(NAT_SUBS.map(([k, t]) => ({ area: "nat", what: "nat:" + k, t, minutes: 10 })))
+      .concat(Object.entries(ACTIVATION_EXERCISES).map(([k, x]) => ({ area: "activation", what: "act:" + k, t: x.title, minutes: 5 })))
+      .concat(neuroUnlocked() ? Object.entries(NEURO_EXERCISES).map(([k, x]) => ({ area: "neuro", what: "neuro:" + k, t: x.title, minutes: 5 })) : []);
     return freeAllBlocks().map((b) => ({ area: "free", what: "free:" + b.id, t: b.title, minutes: 10 }));
   }
   function renderPlanTray() {
@@ -32058,7 +36210,7 @@
     if (limited) {
       for (; cw < 1200; cw++) { const wk = planWeekMap(cw); if (!wk) break; if (wk.type === "plan" && wk.pw >= total) break; last = cw; }
     } else last = Math.max(0, Math.floor(dDiff(plan.startDate, todayStr()) / 7)) + 16;
-    loadEvents().filter((f) => (f.goal || f.kind === "wettkampf") && f.date >= todayStr()).forEach((f) => { last = Math.max(last, Math.floor(dDiff(plan.startDate, f.date) / 7) + 1); });
+    loadSingleEvents().filter((f) => (f.goal || f.kind === "wettkampf") && f.date >= todayStr()).forEach((f) => { last = Math.max(last, Math.floor(dDiff(plan.startDate, f.date) / 7) + 1); });
     return Math.min(last, 104);
   }
   function weekRowLabel(wk, ph) {
@@ -32087,7 +36239,7 @@
       const st = weekStats(wk.monday, hist);
       const color = wk.type === "pause" ? "#9aa7ad" : wk.type === "insert" ? "#d4a017" : wk.type === "blank" ? "#c9d3d6" : ph ? PHASE_TINTS[ph.index % PHASE_TINTS.length] : "#c9d3d6";
       const cls = ["myplan-week", wk.type, wk.monday === thisMon ? "is-now" : "", wk.monday < thisMon ? "past" : "", ph && ph.focus ? "hint" : ""].filter(Boolean).join(" ");
-      const goal = loadEvents().find((f) => (f.goal || f.kind === "wettkampf") && mondayOf(f.date) === wk.monday);
+      const goal = loadSingleEvents().find((f) => (f.goal || f.kind === "wettkampf") && mondayOf(f.date) === wk.monday);
       const sun = dAdd(wk.monday, 6);
       rows.push(`<button type="button" class="${cls}" data-week="${wk.monday}" style="--wk:${color}">
         <span class="myplan-bar" aria-hidden="true"${wk.type === "pause" ? "" : ` style="background:${color}"`}></span>
@@ -32114,7 +36266,7 @@
         <div class="day-item-actions"><button type="button" class="day-act" data-pause-edit="${esc(pz.id)}">Bearbeiten</button>${pz.from <= today && pz.to >= today ? `<button type="button" class="day-act" data-pause-end="${esc(pz.id)}">Ich bin wieder fit</button>` : ""}</div></div>`;
     }).join("") : `<p class="group-help">Keine Pause eingetragen.</p>`;
     // Wettkampf: goal events from Termine
-    const goals = loadEvents().filter((e) => e.date >= today && (e.goal || e.kind === "wettkampf")).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
+    const goals = loadSingleEvents().filter((e) => e.date >= today && (e.goal || e.kind === "wettkampf")).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
     $("myPlanFocusHelp").textContent = goals.length
       ? "Unsere Empfehlung: in der Woche davor eher locker trainieren, in der Wettkampfwoche nur kurz, danach Erholung einplanen. Dein Plan ändert sich dadurch nicht von selbst. Passe ihn an, wie du es mit deinem Trainer abgesprochen hast."
       : "Trage einen Wettkampf, ein Spiel oder eine Prüfung als Termin auf Heute ein. Dann steht hier und in deinem Plan, wie du die Wochen davor und danach am besten angehst.";
@@ -32123,7 +36275,7 @@
   function shortDate(d) { const x = dParse(d); return `${x.getDate()}.${x.getMonth() + 1}.${x.getFullYear()}`; }
   function goalOverrun(note) {
     // Plan end after a focus date?
-    const f = loadEvents().filter((x) => x.goal && x.date >= todayStr()).sort((a, b) => a.date.localeCompare(b.date))[0];
+    const f = loadSingleEvents().filter((x) => x.goal && x.date >= todayStr()).sort((a, b) => a.date.localeCompare(b.date))[0];
     if (!f || !plan.phases.length || !plan.phases.every((p) => p.weeks)) return "";
     const total = plan.phases.reduce((s, p) => s + p.weeks, 0);
     let endMon = null;
@@ -32283,6 +36435,1287 @@
   // Start screen: always "Heute", unless the URL names an area
   // (?bereich=visual|breath|movement|workout|cardio|nat|test) - used for
   // direct links and by the test suite.
+  // ==== Aktivierung (8th area, Fabian 2026-10-08: "Ja so") ====
+  // Short activations (30 s - 2 min) on their own, as a Kombi-Baustein or
+  // planned on Heute. Area key "activation" (PLAN_AREAS, #activationHome,
+  // ?bereich=aktivierung). Own exercises are tiles in #activationGrid
+  // (ACTIVATION_EXERCISES); ACTIVATION_LINKS will later list existing
+  // exercises of other areas with a short preset ("Gleichgewicht kurz"),
+  // one entry each, rendered as the same tile with a small "aus NAT" tag:
+  //   { id, title, desc, tag, area, open: () => …, plan: { area, what } }
+  // Empty on purpose for now (Fabian: build the area + Optodrum first).
+  // Details: docs/notes/31-aktivierung-optodrum.md.
+  const ACTIVATION_EXERCISES = { optodrum: { title: "Optodrum", open: () => openOptoReady() } };
+  const ACTIVATION_LINKS = [];
+  function renderActivationHome() {
+    const grid = $("activationGrid");
+    grid.querySelectorAll(".act-link").forEach((el) => el.remove());
+    ACTIVATION_LINKS.forEach((l, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "nat-tile act-tile act-link";
+      b.dataset.actLink = String(i);
+      const a = AREA_BY_KEY[l.area];
+      b.innerHTML = `<div class="icon-badge act-badge"${a ? ` style="background:${a.color}"` : ""}>${l.icon || ""}</div><h3>${esc(l.title)}</h3><p>${esc(l.desc || "")}</p><span class="tag">${esc(a ? "aus " + a.short : l.tag || "")}</span>`;
+      b.addEventListener("click", () => l.open());
+      grid.appendChild(b);
+    });
+    renderHistory();
+  }
+  function openActivationExercise(id) {
+    const x = ACTIVATION_EXERCISES[id];
+    if (x) x.open(); else showScreen("activationHome");
+  }
+  const ACTIVATION_CODE_CTX = { goBtn: $("activationProgramGoBtn"), errorEl: $("activationProgramError"), homeScreen: "activationHome" };
+  function goActivationCode() { const code = $("activationProgramCodeInput").value.trim(); if (code) openProgramIntro(code, ACTIVATION_CODE_CTX); }
+  $("activationProgramGoBtn").addEventListener("click", goActivationCode);
+  $("activationProgramCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") goActivationCode(); });
+
+  // ==== Optodrum (Aktivierung, Fabian 2026-10-08) ====
+  // An optokinetic drum on the phone: stripes (default), a dot raster or a
+  // checkerboard drift across the whole stage. Everything is adjustable on
+  // the ready screen and live in the pause sheet (pattern, direction incl.
+  // "schräg" and "Wechsel" every N s, tempo 1-10, size, gap, two colours,
+  // fixation point). Canvas + requestAnimationFrame, DPR-aware; the motion
+  // state is kept in CSS px, so a resize never makes the pattern jump.
+  // Sanfte Reize: tempo capped at OPTO_SOFT_MAX, pattern colour 45 % toward
+  // the background (less contrast). Kombi blocks / presets carry the whole
+  // prefs object; a Kombi run only changes its own copy (st.own = false).
+  const OPTO_PREFS_KEY = "fwmc-optodrum-prefs-v1";
+  const OPTO_COLORS = [
+    { key: "schwarz", name: "Schwarz", hex: "#000000" }, { key: "weiss", name: "Weiß", hex: "#ffffff" },
+    { key: "grau", name: "Grau", hex: "#7a7a7a" }, { key: "rot", name: "Rot", hex: "#d32f2f" },
+    { key: "gruen", name: "Grün", hex: "#2e7d32" }, { key: "blau", name: "Blau", hex: "#1f5fbf" },
+    { key: "gelb", name: "Gelb", hex: "#f2c200" }, { key: "orange", name: "Orange", hex: "#ff9110" },
+  ];
+  // Tempo-Stufe 1-10 in CSS px per second (Leicht 3, Mittel 5, Schwer 8).
+  const OPTO_SPEEDS = [30, 45, 65, 90, 120, 160, 210, 270, 350, 450];
+  const OPTO_SOFT_MAX = 4;
+  const OPTO_FLIP_RAMP_S = 0.35; // "Wechsel": slow down and turn round instead of a hard jump
+  const OPTO_PATTERNS = {
+    streifen: { name: "Streifen", unit: "Streifen", size: "Streifenbreite", gap: "Abstand zwischen den Streifen", fg: "Farbe der Streifen" },
+    punkte: { name: "Punkte", unit: "Punkte", size: "Punktgröße", gap: "Abstand zwischen den Punkten", fg: "Farbe der Punkte" },
+    schach: { name: "Schachbrett", unit: "Felder", size: "Feldgröße", gap: "", fg: "Farbe der Felder" },
+  };
+  const OPTO_DIRS = {
+    links: { a: Math.PI, arrow: "←", name: "nach links" }, rechts: { a: 0, arrow: "→", name: "nach rechts" },
+    hoch: { a: -Math.PI / 2, arrow: "↑", name: "nach oben" }, runter: { a: Math.PI / 2, arrow: "↓", name: "nach unten" },
+  };
+  const OPTO_DIAGS = {
+    ro: { a: -Math.PI / 4, arrow: "↗", name: "nach rechts oben" }, ru: { a: Math.PI / 4, arrow: "↘", name: "nach rechts unten" },
+    lu: { a: (3 * Math.PI) / 4, arrow: "↙", name: "nach links unten" }, lo: { a: (-3 * Math.PI) / 4, arrow: "↖", name: "nach links oben" },
+  };
+  const OPTO_DEFAULTS = { pattern: "streifen", dir: "links", diag: "ro", axis: "h", swapS: 10, speed: 5, size: 40, gap: 40, fg: "schwarz", bg: "weiss", fix: false, durationS: 60, noLimit: false };
+  const optoClamp = (v, lo, hi, d) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
+  function normalizeOptoPrefs(p) {
+    const d = OPTO_DEFAULTS;
+    if (!OPTO_PATTERNS[p.pattern]) p.pattern = d.pattern;
+    if (!OPTO_DIRS[p.dir] && p.dir !== "schraeg" && p.dir !== "wechsel") p.dir = d.dir;
+    if (!OPTO_DIAGS[p.diag]) p.diag = d.diag;
+    if (p.axis !== "h" && p.axis !== "v") p.axis = d.axis;
+    p.swapS = Math.round(optoClamp(p.swapS, 5, 30, d.swapS));
+    p.speed = Math.round(optoClamp(p.speed, 1, 10, d.speed));
+    p.size = Math.round(optoClamp(p.size, 10, 160, d.size));
+    p.gap = Math.round(optoClamp(p.gap, 10, 200, d.gap));
+    if (!OPTO_COLORS.some((c) => c.key === p.fg)) p.fg = d.fg;
+    if (!OPTO_COLORS.some((c) => c.key === p.bg)) p.bg = d.bg;
+    if (typeof p.fix !== "boolean") p.fix = d.fix;
+    p.durationS = Math.round(optoClamp(p.durationS, 10, 300, d.durationS) / 10) * 10;
+    if (typeof p.noLimit !== "boolean") p.noLimit = d.noLimit;
+    return p;
+  }
+  const optoPrefs = normalizeOptoPrefs({ ...OPTO_DEFAULTS, ...(readJSON(OPTO_PREFS_KEY, null) || {}) });
+  function saveOptoPrefs() { writeJSON(OPTO_PREFS_KEY, optoPrefs); }
+  const optoHex = (key) => (OPTO_COLORS.find((c) => c.key === key) || OPTO_COLORS[0]).hex;
+  const optoDeep = (o) => JSON.parse(JSON.stringify(o));
+  function optoEffSpeed(p) { return softOn("optodrum") ? Math.min(p.speed, OPTO_SOFT_MAX) : p.speed; }
+  // Base direction (the one "Wechsel" starts with); the sign flips it.
+  function optoBase(p) {
+    if (p.dir === "schraeg") return OPTO_DIAGS[p.diag];
+    if (p.dir === "wechsel") return p.axis === "v" ? OPTO_DIRS.hoch : OPTO_DIRS.links;
+    return OPTO_DIRS[p.dir];
+  }
+  function optoDirName(p) {
+    if (p.dir === "wechsel") return p.axis === "v" ? `hoch und runter im Wechsel (${p.swapS} s)` : `links und rechts im Wechsel (${p.swapS} s)`;
+    return optoBase(p).name;
+  }
+  function optoPeriod(p) { return p.pattern === "schach" ? 2 * p.size : p.size + p.gap; }
+  function optoSpeedHelp(p) {
+    const eff = optoEffSpeed(p);
+    const per = OPTO_SPEEDS[eff - 1] / optoPeriod(p);
+    const n = per >= 10 ? Math.round(per) : Math.round(per * 10) / 10;
+    let t = `Stufe ${p.speed} von 10 · etwa ${String(n).replace(".", ",")} ${OPTO_PATTERNS[p.pattern].unit} pro Sekunde`;
+    if (eff < p.speed) t = `Sanfte Reize: höchstens Stufe ${OPTO_SOFT_MAX} · etwa ${String(n).replace(".", ",")} ${OPTO_PATTERNS[p.pattern].unit} pro Sekunde`;
+    return t;
+  }
+  function optoTimeLabel(p) { return p.noLimit ? "ohne Zeitlimit" : fmtMinutes(p.durationS); }
+  function optoMeta(p) { return `${optoTimeLabel(p)} · ${OPTO_PATTERNS[p.pattern].name} · Stufe ${p.speed}`; }
+  function optoBlockPrefs(block) { return normalizeOptoPrefs({ ...optoDeep(OPTO_DEFAULTS), ...optoDeep((block && block.prefs) || {}) }); }
+
+  // ---- shared controls (ready screen + pause sheet use the same markup) ----
+  function optoParse(f, raw) {
+    if (f === "fix") return raw === "1";
+    if (["speed", "durationS", "swapS"].includes(f)) return Number(raw);
+    return raw;
+  }
+  function optoBind(root, set) {
+    root.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-opto-f]");
+      if (b && root.contains(b)) set(b.dataset.optoF, optoParse(b.dataset.optoF, b.dataset.optoV));
+    });
+    root.querySelectorAll("input[data-opto-r]").forEach((inp) => inp.addEventListener("input", () => set(inp.dataset.optoR, Number(inp.value))));
+    root.querySelectorAll("input[data-opto-chk]").forEach((inp) => inp.addEventListener("change", () => set(inp.dataset.optoChk, inp.checked)));
+    root.querySelectorAll("[data-opto-c]").forEach((el) => buildSingleSelectPicker(el, OPTO_COLORS, (k) => set(el.dataset.optoC, k)));
+  }
+  function optoSyncControls(root, p) {
+    root.querySelectorAll("[data-opto-f]").forEach((b) => {
+      const f = b.dataset.optoF;
+      const cur = f === "fix" ? (p.fix ? "1" : "0") : String(p[f]);
+      setActive(b, cur === b.dataset.optoV && !(f === "durationS" && p.noLimit));
+    });
+    root.querySelectorAll("input[data-opto-r]").forEach((inp) => { inp.value = p[inp.dataset.optoR]; });
+    root.querySelectorAll("input[data-opto-chk]").forEach((inp) => { inp.checked = !!p[inp.dataset.optoChk]; });
+    root.querySelectorAll("[data-opto-c]").forEach((el) => syncSingleSelectPicker(el, p[el.dataset.optoC]));
+    const out = {
+      swapS: `${p.swapS} s`, speed: `Stufe ${p.speed}`, size: `${p.size} px`, gap: `${p.gap} px`,
+      durationS: fmtMinutes(p.durationS), speedHelp: root.querySelector('[data-opto-out="speedHelp"]') ? optoSpeedHelp(p) : "",
+      fgInt: `${p.fgInt} %`, bgInt: `${p.bgInt} %`,
+    };
+    root.querySelectorAll("[data-opto-out]").forEach((el) => {
+      const k = el.dataset.optoOut;
+      if (k === "contrast") { el.hidden = contrastRatio(optoHex(p.fg), optoHex(p.bg)) >= 1.6; return; }
+      if (!(k in out)) return; // e.g. the moving background's own outputs
+      if (el.textContent !== out[k]) el.textContent = out[k];
+    });
+    const pat = OPTO_PATTERNS[p.pattern] || OPTO_PATTERNS.streifen; // "aus" (Bewegter Hintergrund)
+    root.querySelectorAll("[data-opto-lbl]").forEach((el) => { el.textContent = pat[el.dataset.optoLbl]; });
+    root.querySelectorAll("[data-opto-show]").forEach((el) => {
+      const [k, v] = el.dataset.optoShow.split(":");
+      el.hidden = k === "noLimit" ? !p.noLimit : k === "notpattern" ? p.pattern === v : p[k] !== v;
+    });
+    const dur = root.querySelector('[data-opto-r="durationS"]');
+    if (dur) dur.closest(".group").classList.toggle("breath-dur-off", !!p.noLimit);
+  }
+
+  // ---- ready screen ----
+  const optoUi = {
+    ready: $("optoReady"), controls: $("optoReadyControls"), title: $("optoReadyTitle"), desc: $("optoReadyDesc"),
+    start: $("optoStartBtn"), back: $("optoBackToHome"),
+  };
+  const OPTO_READY_DESC = optoUi.desc.textContent;
+  function syncOptoReadyUI() { optoSyncControls(optoUi.controls, optoPrefs); }
+  optoBind(optoUi.controls, (f, v) => {
+    optoPrefs[f] = v;
+    if (f === "durationS") optoPrefs.noLimit = false;
+    normalizeOptoPrefs(optoPrefs);
+    saveOptoPrefs();
+    syncOptoReadyUI();
+  });
+  let optoReturnScreen = "activationHome";
+  function openOptoReady() {
+    normalizeOptoPrefs(optoPrefs);
+    syncOptoReadyUI();
+    renderOptoSaved();
+    $("optoSaveForm").hidden = true;
+    $("optoSaveBtn").hidden = false;
+    showScreen("optoReady");
+    try { applySoftState(); } catch (e) {}
+  }
+  $("optoOpenBtn").addEventListener("click", openOptoReady);
+  optoUi.back.addEventListener("click", () => {
+    if (comboOptoCaptureOriginal) { exitOptoComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("activationHome");
+  });
+
+  // ---- saved presets ("Aktuelle Einstellung speichern", like NAT/Atem) ----
+  const optoStore = makePresetStore("fwmc-optodrum-saved-v1"); // [{ id, name, prefs }]
+  function renderOptoSaved() {
+    renderPresetList(optoStore, $("optoSavedList"), $("optoSavedGroup"), null,
+      (e) => optoMeta(normalizeOptoPrefs({ ...OPTO_DEFAULTS, ...e.prefs })),
+      (entry) => {
+        Object.assign(optoPrefs, normalizeOptoPrefs({ ...OPTO_DEFAULTS, ...optoDeep(entry.prefs) }));
+        saveOptoPrefs();
+        syncOptoReadyUI();
+        // In Kombi capture a preset only fills the draft; otherwise it starts, like the siblings.
+        if (!comboOptoCaptureOriginal) optoUi.start.click();
+      }, { confirmDelete: true });
+  }
+  wirePresetSaveForm({
+    saveBtn: $("optoSaveBtn"), form: $("optoSaveForm"), nameInput: $("optoSaveNameInput"),
+    cancelBtn: $("optoSaveCancelBtn"), confirmBtn: $("optoSaveConfirmBtn"),
+    defaultName: () => `Eigene Einstellung ${new Date().toLocaleDateString("de-DE")}`,
+    onSave: (name) => {
+      const list = optoStore.load();
+      list.push({ id: String(Date.now()), name, prefs: optoDeep(optoPrefs) });
+      optoStore.save(list);
+      renderOptoSaved();
+    },
+  });
+
+  // ---- Kombi-Baustein capture (same pattern as Gleichgewicht) ----
+  let comboOptoCaptureOriginal = null;
+  let comboOptoEditIndex = null;
+  function openOptoComboCapture(existingBlock, editIndex) {
+    comboOptoCaptureOriginal = optoDeep(optoPrefs);
+    comboOptoEditIndex = editIndex ?? null;
+    if (existingBlock && existingBlock.prefs) Object.assign(optoPrefs, optoBlockPrefs(existingBlock));
+    openOptoReady();
+    optoUi.title.textContent = "Baustein: Optodrum";
+    optoUi.desc.textContent = "Stelle Muster, Richtung, Tempo und Dauer für diesen Baustein ein. Deine eigenen Einstellungen bleiben, wie sie sind.";
+    optoUi.start.textContent = "Baustein übernehmen";
+  }
+  function exitOptoComboCapture() {
+    if (comboOptoCaptureOriginal) {
+      Object.keys(optoPrefs).forEach((k) => { delete optoPrefs[k]; });
+      Object.assign(optoPrefs, comboOptoCaptureOriginal);
+      saveOptoPrefs();
+      comboOptoCaptureOriginal = null;
+    }
+    comboOptoEditIndex = null;
+    optoUi.title.textContent = "Optodrum";
+    optoUi.desc.textContent = OPTO_READY_DESC;
+    optoUi.start.textContent = "Training starten";
+  }
+  function commitOptoComboCapture() {
+    const block = { domain: "optodrum", prefs: optoDeep(optoPrefs) };
+    if (comboOptoEditIndex != null && comboDraftBlocks[comboOptoEditIndex]) {
+      block.pauseAfterS = comboDraftBlocks[comboOptoEditIndex].pauseAfterS;
+      comboDraftBlocks[comboOptoEditIndex] = block;
+    } else comboDraftBlocks.push(block);
+    exitOptoComboCapture();
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+
+  // ---- player ----
+  const optoP = {
+    player: els.optoPlayer, stage: $("optoStage"), canvas: $("optoCanvas"), bar: $("optoPlayerBar"), status: $("optoStatusEl"),
+    backBtn: $("optoBackBtn"), pauseBtn: $("optoPauseBtn"), finishBtn: $("optoFinishBtn"),
+    pauseOverlay: $("optoPauseOverlay"), pauseControls: $("optoPauseControls"), pauseHelp: $("optoPauseHelp"), resumeBtn: $("optoResumeBtn"),
+    fsBtn: $("optoFsBtn"), fsHint: $("optoFsHint"), done: $("optoDonePanel"), doneSummary: $("optoDoneSummary"),
+    rating: $("optoRating"), againBtn: $("optoAgainBtn"), doneBackBtn: $("optoDoneBackBtn"),
+  };
+  wireFullscreen({ player: optoP.player, btn: optoP.fsBtn, hint: optoP.fsHint, hintOpen: $("optoFsHintOpenBtn"), hintClose: $("optoFsHintClose") });
+  let optoState = null;
+  let optoLastRunPrefs = null;
+  function optoSize() {
+    const st = optoState;
+    if (!st) return;
+    const r = optoP.stage.getBoundingClientRect();
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+    if (st.w === w && st.h === h && st.dpr === dpr) return;
+    st.w = w; st.h = h; st.dpr = dpr;
+    optoP.canvas.width = Math.round(w * dpr);
+    optoP.canvas.height = Math.round(h * dpr);
+    optoP.canvas.style.width = w + "px";
+    optoP.canvas.style.height = h + "px";
+    optoDraw();
+  }
+  const optoMod = (a, m) => ((a % m) + m) % m;
+  // Shared pattern renderer (Optodrum + "Bewegter Hintergrund", 2026-10-08):
+  // m = { pattern: streifen|punkte|schach, size, gap, s, dx, dy, a } in CSS
+  // px, fg/bg hex. Stripes stand across the direction of travel `a` and
+  // move by `s`; raster/checkerboard stay axis-aligned and drift by dx/dy.
+  function optoPaint(ctx, W, H, m, fg, bg) {
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = fg;
+    if (m.pattern === "streifen") {
+      const P = m.size + m.gap;
+      const D = Math.hypot(W, H) / 2 + P;
+      ctx.save();
+      ctx.translate(W / 2, H / 2);
+      ctx.rotate(m.a);
+      const s = optoMod(m.s, P);
+      for (let x = s - Math.ceil((D + s) / P) * P; x < D; x += P) ctx.fillRect(x, -D, m.size, 2 * D);
+      ctx.restore();
+    } else if (m.pattern === "punkte") {
+      const P = m.size + m.gap;
+      const ox = optoMod(m.dx, P) - P, oy = optoMod(m.dy, P) - P;
+      for (let y = oy; y < H; y += P) for (let x = ox; x < W; x += P) ctx.fillRect(x, y, m.size, m.size);
+    } else if (m.pattern === "schach") {
+      const L = m.size;
+      const ox = optoMod(m.dx, 2 * L) - 2 * L, oy = optoMod(m.dy, 2 * L) - 2 * L;
+      for (let r = 0, y = oy; y < H; r++, y += L) for (let q = 0, x = ox; x < W; q++, x += L) if (((r + q) & 1) === 0) ctx.fillRect(x, y, L, L);
+    }
+  }
+  // Moves m by v px/s along angle a for dt s; keeps the numbers small (the
+  // drawing only uses them modulo the period).
+  function optoAdvance(m, v, a, dt) {
+    m.s += v * dt;
+    m.dx += v * dt * Math.cos(a);
+    m.dy += v * dt * Math.sin(a);
+    const M = (m.size + m.gap) * 2 * m.size;
+    if (Math.abs(m.dx) > M * 50) m.dx = optoMod(m.dx, M);
+    if (Math.abs(m.dy) > M * 50) m.dy = optoMod(m.dy, M);
+    if (Math.abs(m.s) > M * 50) m.s = optoMod(m.s, m.size + m.gap);
+  }
+  function optoDraw() {
+    const st = optoState;
+    if (!st || !st.w) return;
+    const ctx = optoP.canvas.getContext("2d");
+    const W = st.w, H = st.h;
+    ctx.setTransform(st.dpr, 0, 0, st.dpr, 0, 0);
+    const bg = optoHex(st.bg);
+    const fg = softOn("optodrum") ? mixHex(optoHex(st.fg), bg, 0.45) : optoHex(st.fg);
+    st.a = optoBase(st).a;
+    optoPaint(ctx, W, H, st, fg, bg);
+    if (st.fix) {
+      // Fixation point: red dot with a white and a thin dark ring, visible on any colour.
+      ctx.beginPath();
+      ctx.arc(W / 2, H / 2, 8, 0, Math.PI * 2);
+      ctx.fillStyle = "#d32f2f";
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "#ffffff";
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(W / 2, H / 2, 10.5, 0, Math.PI * 2);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "#16232a";
+      ctx.stroke();
+    }
+  }
+  function optoSign(st) {
+    if (st.dir !== "wechsel") return 1;
+    const since = st.t - st.flipAt;
+    if (st.flips > 0 && since < OPTO_FLIP_RAMP_S) return -st.sign + (2 * st.sign) * (since / OPTO_FLIP_RAMP_S);
+    return st.sign;
+  }
+  function optoArrow(st) {
+    const sg = optoSign(st);
+    if (st.dir !== "wechsel") return optoBase(st).arrow;
+    if (st.axis === "v") return sg >= 0 ? "↑" : "↓";
+    return sg >= 0 ? "←" : "→";
+  }
+  function optoStatus() {
+    const st = optoState;
+    if (!st) return;
+    const t = `${optoArrow(st)} ${fmtClock(st.noLimit ? st.t : st.durationS - st.t)}`;
+    if (optoP.status.textContent !== t) optoP.status.textContent = t;
+  }
+  function optoTick(now) {
+    const st = optoState;
+    if (!st) return;
+    if (optoP.player.hidden) { optoCleanup(); return; }
+    st.raf = requestAnimationFrame(optoTick);
+    const dt = Math.min(0.1, Math.max(0, (now - (st.lastNow || now)) / 1000));
+    st.lastNow = now;
+    if (st.paused) return;
+    st.t += dt;
+    if (st.dir === "wechsel" && st.t >= st.nextFlip) {
+      st.sign = -st.sign;
+      st.flipAt = st.t;
+      st.flips++;
+      st.nextFlip = st.t + st.swapS;
+    }
+    optoAdvance(st, OPTO_SPEEDS[optoEffSpeed(st) - 1] * optoSign(st), optoBase(st).a, dt);
+    optoDraw();
+    optoStatus();
+    if (!st.noLimit && st.t >= st.durationS) optoFinish(false);
+  }
+  // prefsOverride: Kombi block - never touches the client's own settings.
+  function startOptoRun(prefsOverride) {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    softStartRun();
+    const p = normalizeOptoPrefs({ ...OPTO_DEFAULTS, ...optoDeep(prefsOverride || optoPrefs) });
+    optoLastRunPrefs = prefsOverride ? optoDeep(p) : null;
+    const st = optoState = { ...p, own: !prefsOverride, t: 0, s: 0, dx: 0, dy: 0, sign: 1, flips: 0, flipAt: 0, nextFlip: p.swapS, paused: false, raf: null, lastNow: 0, w: 0, h: 0, dpr: 1 };
+    optoP.player.hidden = false;
+    optoP.bar.hidden = false;
+    optoP.done.hidden = true;
+    optoP.pauseOverlay.hidden = true;
+    optoP.pauseBtn.hidden = false;
+    optoP.finishBtn.hidden = !st.noLimit;
+    requestWakeLock();
+    optoSize();
+    optoStatus();
+    st.lastNow = performance.now();
+    st.raf = requestAnimationFrame(optoTick);
+  }
+  function optoCleanup() {
+    const st = optoState;
+    if (!st) return null;
+    if (st.raf) cancelAnimationFrame(st.raf);
+    optoState = null;
+    optoP.pauseOverlay.hidden = true;
+    releaseWakeLock();
+    if (document.fullscreenElement === optoP.player) document.exitFullscreen().catch(() => {});
+    optoP.fsHint.hidden = true;
+    return st;
+  }
+  // aborted: "Beenden" before the time ran out. "Ohne Zeitlimit" and
+  // "Fertig" always count as done.
+  function optoFinish(aborted) {
+    const st = optoCleanup();
+    if (!st) return;
+    const played = st.t;
+    if (comboProgram) {
+      if (aborted) { abortComboProgram(); return; }
+      advanceComboProgram(played);
+      return;
+    }
+    if (aborted && played < 5) { optoP.player.hidden = true; showScreen("optoReady"); return; }
+    const title = `Optodrum · ${OPTO_PATTERNS[st.pattern].name}`;
+    const note = aborted ? "abgebrochen" : `${optoDirName(st)} · Stufe ${optoEffSpeed(st)}`;
+    optoP.bar.hidden = true;
+    setDonePanelAborted(optoP.done, aborted, "Optodrum beendet");
+    optoP.doneSummary.textContent = aborted ? `Abgebrochen · ${fmtClock(played)}` : `${title} · ${fmtClock(played)} · ${note}`;
+    const id = addHistory({ kind: "optodrum", title, seconds: Math.round(played), note, ...(aborted ? { aborted: true } : {}) });
+    renderRating(optoP.rating, id);
+    optoP.done.hidden = false;
+  }
+  optoP.backBtn.addEventListener("click", () => {
+    const st = optoState;
+    if (!st) return;
+    // Inside a Kombi "Beenden" quits the whole programme (like every other
+    // block); "Fertig" is the way on to the next Baustein.
+    optoFinish(!!comboProgram || !st.noLimit);
+  });
+  optoP.finishBtn.addEventListener("click", () => optoFinish(false));
+  function pauseOpto() {
+    const st = optoState;
+    if (!st || st.paused) return;
+    st.paused = true;
+    optoP.pauseBtn.hidden = true;
+    optoP.pauseHelp.textContent = st.own ? "Gilt sofort und bleibt gespeichert, wie auf der Übungsseite." : "Gilt sofort, nur für diesen Durchgang.";
+    optoSyncControls(optoP.pauseControls, st);
+    optoP.pauseOverlay.hidden = false;
+    try { applySoftState(); } catch (e) {}
+  }
+  function resumeOpto() {
+    const st = optoState;
+    if (!st || !st.paused) return;
+    st.paused = false;
+    st.lastNow = performance.now();
+    optoP.pauseOverlay.hidden = true;
+    optoP.pauseBtn.hidden = false;
+  }
+  optoP.pauseBtn.addEventListener("click", pauseOpto);
+  optoP.resumeBtn.addEventListener("click", resumeOpto);
+  // Live changes from the pause sheet: a standalone run saves them to the
+  // client's own settings (like Gleichgewicht), a Kombi run only this run.
+  optoBind(optoP.pauseControls, (f, v) => {
+    const st = optoState;
+    if (!st) return;
+    st[f] = v;
+    normalizeOptoPrefs(st);
+    if (f === "dir" || f === "axis") { st.sign = 1; st.flips = 0; st.flipAt = st.t; st.nextFlip = st.t + st.swapS; }
+    if (f === "swapS") st.nextFlip = st.t + st.swapS;
+    if (st.own) { optoPrefs[f] = st[f]; normalizeOptoPrefs(optoPrefs); saveOptoPrefs(); syncOptoReadyUI(); }
+    optoSyncControls(optoP.pauseControls, st);
+    optoDraw();
+    optoStatus();
+  });
+  // Sanfte Reize switched live in the pause sheet: redraw with the new contrast.
+  optoP.pauseOverlay.addEventListener("click", (e) => {
+    if (e.target.closest("[data-soft-live]")) setTimeout(() => { if (optoState) { optoSyncControls(optoP.pauseControls, optoState); optoDraw(); } }, 0);
+  });
+  optoUi.ready.addEventListener("click", (e) => {
+    if (e.target.closest("[data-soft-ex], [data-soft-reset]")) setTimeout(syncOptoReadyUI, 0);
+  });
+  optoUi.start.addEventListener("click", () => {
+    if (comboOptoCaptureOriginal) { commitOptoComboCapture(); return; }
+    optoReturnScreen = "activationHome";
+    startOptoRun();
+  });
+  optoP.againBtn.addEventListener("click", () => { optoP.done.hidden = true; startOptoRun(optoLastRunPrefs || undefined); });
+  optoP.doneBackBtn.addEventListener("click", () => { optoP.player.hidden = true; optoP.done.hidden = true; showScreen(optoReturnScreen); });
+  if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => { if (optoState) optoSize(); }).observe(optoP.stage);
+  window.addEventListener("resize", () => { if (optoState) optoSize(); });
+  if (navigator.webdriver) {
+    window.__opto = () => (optoState ? { t: optoState.t, s: optoState.s, dx: optoState.dx, dy: optoState.dy, sign: optoSign(optoState), flips: optoState.flips,
+      speed: optoState.speed, eff: optoEffSpeed(optoState), pxs: OPTO_SPEEDS[optoEffSpeed(optoState) - 1], dir: optoState.dir, pattern: optoState.pattern,
+      w: optoState.w, h: optoState.h, own: optoState.own, paused: optoState.paused } : null);
+  }
+  // ==== Bewegter Hintergrund (Fabian 2026-10-08) ====
+  // The Optodrum pattern (optoPaint/optoAdvance, one renderer) as a slowly
+  // moving layer BEHIND an exercise's content: Gleichgewicht, Positionen
+  // merken, Flash-Speicher-Test and Objektverfolgung (MOT, the balls are DOM
+  // elements above the canvas and keep their own tap targets). Each exercise keeps its own `mbg`
+  // object in its prefs ({pattern: aus|streifen|punkte, dir, diag, speed
+  // 1-10, size, gap, fg, bg, fgInt, bgInt in %}), so presets, Kombi blocks
+  // (prefsOverride snapshot) and "Nochmal" carry it; the run's state gets
+  // its own copy (st.mbg), which the pause sheet changes live (saved for
+  // standalone runs only). Controls reuse the Optodrum markup attributes
+  // (data-opto-*) and optoBind/optoSyncControls. The canvas sits first in
+  // the stage with z-index -1 (the stage isolates), so every number, key
+  // and stick paints above it and stays tappable (pointer-events none).
+  // Sanfte Reize: tempo capped at OPTO_SOFT_MAX and a softer pattern, like
+  // Optodrum. A new exercise = one MOVING_BG entry + mbgStart(kind) in its
+  // start function + `mbg: mbgCopy(p.mbg)` in its run state.
+  const MBG_DEFAULTS = { pattern: "aus", dir: "links", diag: "ro", speed: 3, size: 40, gap: 40, fg: "grau", bg: "weiss", fgInt: 35, bgInt: 100 };
+  const MBG_DIRS = ["links", "rechts", "hoch", "runter", "schraeg"];
+  function normalizeMbg(m) {
+    const d = MBG_DEFAULTS;
+    const p = Object.assign({}, d, m && typeof m === "object" ? m : {});
+    if (!["aus", "streifen", "punkte"].includes(p.pattern)) p.pattern = d.pattern;
+    if (!MBG_DIRS.includes(p.dir)) p.dir = d.dir;
+    if (!OPTO_DIAGS[p.diag]) p.diag = d.diag;
+    p.speed = Math.round(optoClamp(p.speed, 1, 10, d.speed));
+    p.size = Math.round(optoClamp(p.size, 10, 160, d.size));
+    p.gap = Math.round(optoClamp(p.gap, 10, 200, d.gap));
+    if (!OPTO_COLORS.some((c) => c.key === p.fg)) p.fg = d.fg;
+    if (!OPTO_COLORS.some((c) => c.key === p.bg)) p.bg = d.bg;
+    p.fgInt = Math.round(optoClamp(p.fgInt, 10, 100, d.fgInt) / 5) * 5;
+    p.bgInt = Math.round(optoClamp(p.bgInt, 10, 100, d.bgInt) / 5) * 5;
+    return p;
+  }
+  const mbgCopy = (m) => normalizeMbg(m ? JSON.parse(JSON.stringify(m)) : null);
+  function mbgColors(m, kind) {
+    const bg = mixHex("#ffffff", optoHex(m.bg), m.bgInt / 100);
+    let fg = mixHex(bg, optoHex(m.fg), m.fgInt / 100);
+    if (softOn(kind)) fg = mixHex(fg, bg, 0.45);
+    return { fg, bg };
+  }
+  function mbgEffSpeed(m, kind) { return softOn(kind) ? Math.min(m.speed, OPTO_SOFT_MAX) : m.speed; }
+  const MOVING_BG = {
+    balance: { label: "Gleichgewicht", stage: () => balP.stage, overlay: () => balP.pauseOverlay, state: () => balanceState,
+      prefs: () => balancePrefs, save: () => saveBalancePrefsToStorage(), own: () => !!(balanceState && balanceState.own) && !comboProgram && !cardioGuestActive,
+      readies: ["balanceReady"] },
+    remember: { label: "Positionen merken", stage: () => els.rememberStage, overlay: () => els.rememberPauseOverlay, state: () => rememberState,
+      prefs: () => rememberPrefs, save: () => saveRememberPrefsToStorage(), own: () => !comboProgram && !cardioGuestActive,
+      readies: ["rememberReady", "rememberTrainingReady"] },
+    flash: { label: "Flash-Speicher-Test", stage: () => els.flashStage, overlay: () => els.flashPauseOverlay, state: () => flashState,
+      prefs: () => flashPrefs, save: () => saveFlashPrefsToStorage(), own: () => !comboProgram && !cardioGuestActive,
+      readies: ["flashReady", "flashTrainingReady"] },
+    mot: { label: "Objektverfolgung (MOT)", stage: () => els.motStage, overlay: () => els.motPauseOverlay, state: () => motState,
+      prefs: () => motPrefs, save: () => saveMotPrefsToStorage(), own: () => !comboProgram && !cardioGuestActive,
+      readies: ["motReady", "motTrainingReady"] },
+  };
+  const MBG_CONTROLS_HTML = `
+    <div class="choice-row" data-opto-row="pattern">
+      <button type="button" class="choice" data-opto-f="pattern" data-opto-v="aus">Aus<small>ruhig</small></button>
+      <button type="button" class="choice" data-opto-f="pattern" data-opto-v="streifen">Streifen<small>klassisch</small></button>
+      <button type="button" class="choice" data-opto-f="pattern" data-opto-v="punkte">Punkte<small>Raster</small></button>
+    </div>
+    <div class="group-help" data-mbg-help>Ein Muster zieht langsam hinter der Übung durch und fordert Augen und Gleichgewicht zusätzlich. Alles, was du lesen oder antippen musst, bleibt davor.</div>
+    <div class="mbg-more" data-opto-show="notpattern:aus" hidden>
+      <div class="group-label">Richtung</div>
+      <div class="choice-row opto-dir-row mbg-dir-row" data-opto-row="dir">
+        <button type="button" class="choice" data-opto-f="dir" data-opto-v="links">Links<small>&larr;</small></button>
+        <button type="button" class="choice" data-opto-f="dir" data-opto-v="rechts">Rechts<small>&rarr;</small></button>
+        <button type="button" class="choice" data-opto-f="dir" data-opto-v="hoch">Hoch<small>&uarr;</small></button>
+        <button type="button" class="choice" data-opto-f="dir" data-opto-v="runter">Runter<small>&darr;</small></button>
+        <button type="button" class="choice" data-opto-f="dir" data-opto-v="schraeg">Schr&auml;g<small>diagonal</small></button>
+      </div>
+      <div class="opto-sub" data-opto-show="dir:schraeg" hidden>
+        <div class="group-label">Schr&auml;g nach</div>
+        <div class="choice-row two" data-opto-row="diag">
+          <button type="button" class="choice" data-opto-f="diag" data-opto-v="lo">&nwarr; links oben</button>
+          <button type="button" class="choice" data-opto-f="diag" data-opto-v="ro">&nearr; rechts oben</button>
+          <button type="button" class="choice" data-opto-f="diag" data-opto-v="lu">&swarr; links unten</button>
+          <button type="button" class="choice" data-opto-f="diag" data-opto-v="ru">&searr; rechts unten</button>
+        </div>
+      </div>
+      <div class="group-label">Tempo</div>
+      <div class="slider-row"><input type="range" data-opto-r="speed" min="1" max="10" step="1" aria-label="Tempo des Hintergrunds, Stufe 1 bis 10"><span class="slider-value" data-opto-out="speed"></span></div>
+      <div class="group-help" data-mbg-out="soft" hidden></div>
+      <div class="group-label" data-opto-lbl="size">Streifenbreite</div>
+      <div class="slider-row"><input type="range" data-opto-r="size" min="10" max="160" step="2" aria-label="Breite oder Punktgr&ouml;&szlig;e"><span class="slider-value" data-opto-out="size"></span></div>
+      <div class="group-label" data-opto-lbl="gap">Abstand zwischen den Streifen</div>
+      <div class="slider-row"><input type="range" data-opto-r="gap" min="10" max="200" step="2" aria-label="Abstand"><span class="slider-value" data-opto-out="gap"></span></div>
+      <div class="group-label" data-opto-lbl="fg">Farbe der Streifen</div>
+      <div class="color-picker" data-opto-c="fg"></div>
+      <div class="slider-row"><span class="slider-label">Intensit&auml;t</span><input type="range" data-opto-r="fgInt" min="10" max="100" step="5" aria-label="Intensit&auml;t des Musters"><span class="slider-value" data-opto-out="fgInt"></span></div>
+      <div class="group-label">Hintergrundfarbe</div>
+      <div class="color-picker" data-opto-c="bg"></div>
+      <div class="slider-row"><span class="slider-label">Intensit&auml;t</span><input type="range" data-opto-r="bgInt" min="10" max="100" step="5" aria-label="Intensit&auml;t der Hintergrundfarbe"><span class="slider-value" data-opto-out="bgInt"></span></div>
+      <div class="group-help look-contrast-hint" data-mbg-out="contrast" hidden></div>
+      <div class="group-help">Solange der bewegte Hintergrund an ist, gilt seine Hintergrundfarbe statt der normalen. Bewegte Muster k&ouml;nnen bei Lichtempfindlichkeit oder Epilepsie Anf&auml;lle ausl&ouml;sen: Kl&auml;re das in diesem Fall vorher &auml;rztlich ab. Bei Schwindel oder &Uuml;belkeit sofort aufh&ouml;ren.</div>
+    </div>`;
+  function mbgSyncRoot(root, m, kind) {
+    optoSyncControls(root, m);
+    const soft = root.querySelector('[data-mbg-out="soft"]');
+    if (soft) { soft.hidden = !softOn(kind) || m.speed <= OPTO_SOFT_MAX; soft.textContent = `Sanfte Reize: höchstens Stufe ${OPTO_SOFT_MAX}.`; }
+    const tip = root.querySelector('[data-mbg-out="contrast"]');
+    if (tip) {
+      const c = mbgColors(m, kind);
+      const t = contrastRatio(c.fg, c.bg) < 1.15 ? "Tipp: Muster und Hintergrund heben sich kaum voneinander ab."
+        : m.fgInt > 60 ? "Tipp: Ein kräftiges Muster lenkt stark ab. Sind Zahlen, Tasten oder Stifte schwer zu lesen, nimm die Intensität des Musters zurück." : "";
+      tip.hidden = !t;
+      if (tip.textContent !== t) tip.textContent = t;
+    }
+  }
+  const mbgReadyRoots = {}; // kind -> [root]
+  function syncMbgReady(kind) { (mbgReadyRoots[kind] || []).forEach((r) => mbgSyncRoot(r, mbgCopy(MOVING_BG[kind].prefs().mbg), kind)); }
+  const mbgRuns = {}; // kind -> { canvas, m (motion), w, h, dpr, last, raf }
+  function mbgCanvas(kind) {
+    const stage = MOVING_BG[kind].stage();
+    let c = stage.querySelector(":scope > canvas.mbg-canvas");
+    if (!c) {
+      c = document.createElement("canvas");
+      c.className = "mbg-canvas";
+      c.setAttribute("aria-hidden", "true");
+      c.hidden = true;
+      stage.insertBefore(c, stage.firstChild);
+    }
+    return c;
+  }
+  function mbgDraw(kind) {
+    const run = mbgRuns[kind];
+    const st = MOVING_BG[kind].state();
+    if (!run || !st || !st.mbg) return;
+    const stage = MOVING_BG[kind].stage();
+    const r = stage.getBoundingClientRect();
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+    if (run.w !== w || run.h !== h || run.dpr !== dpr) {
+      run.w = w; run.h = h; run.dpr = dpr;
+      run.canvas.width = Math.round(w * dpr);
+      run.canvas.height = Math.round(h * dpr);
+    }
+    const m = st.mbg;
+    Object.assign(run.m, { pattern: m.pattern, size: m.size, gap: m.gap, a: optoBase(m).a });
+    const ctx = run.canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const c = mbgColors(m, kind);
+    optoPaint(ctx, w, h, run.m, c.fg, c.bg);
+  }
+  function mbgStop(kind) {
+    const run = mbgRuns[kind];
+    if (run && run.raf) cancelAnimationFrame(run.raf);
+    delete mbgRuns[kind];
+    const stage = MOVING_BG[kind].stage();
+    const c = stage && stage.querySelector(":scope > canvas.mbg-canvas");
+    if (c) c.hidden = true;
+    if (stage) stage.classList.remove("has-mbg");
+  }
+  function mbgTick(kind, now) {
+    const run = mbgRuns[kind];
+    if (!run) return;
+    const L = MOVING_BG[kind];
+    const st = L.state();
+    const player = L.stage().closest(".player");
+    if (!st || !st.mbg || st.mbg.pattern === "aus" || (player && player.hidden)) { mbgStop(kind); return; }
+    run.raf = requestAnimationFrame((t) => mbgTick(kind, t));
+    const dt = Math.min(0.1, Math.max(0, (now - (run.last || now)) / 1000));
+    run.last = now;
+    const ov = L.overlay();
+    const frozen = st.paused || (ov && !ov.hidden);
+    if (!frozen) optoAdvance(run.m, OPTO_SPEEDS[mbgEffSpeed(st.mbg, kind) - 1], optoBase(st.mbg).a, dt);
+    mbgDraw(kind);
+  }
+  // Called by each exercise's start function (after its run state exists)
+  // and after every live change: starts, redraws or stops the layer.
+  function mbgStart(kind) {
+    const L = MOVING_BG[kind];
+    const st = L.state();
+    if (!st || !st.mbg || st.mbg.pattern === "aus") { mbgStop(kind); return; }
+    const canvas = mbgCanvas(kind);
+    canvas.hidden = false;
+    L.stage().classList.add("has-mbg");
+    if (!mbgRuns[kind]) {
+      mbgRuns[kind] = { canvas, m: { s: 0, dx: 0, dy: 0, size: st.mbg.size, gap: st.mbg.gap }, w: 0, h: 0, dpr: 0, last: 0, raf: null };
+      mbgRuns[kind].raf = requestAnimationFrame((t) => mbgTick(kind, t));
+    }
+    mbgDraw(kind);
+  }
+  Object.entries(MOVING_BG).forEach(([kind, L]) => {
+    // Ready screens: one group in Feineinstellungen, right after "Hintergrund".
+    mbgReadyRoots[kind] = [];
+    L.readies.forEach((screenId) => {
+      const scr = document.getElementById(screenId);
+      const body = scr && scr.querySelector("details.advanced .advanced-body");
+      if (!body) return;
+      const g = document.createElement("div");
+      g.className = "group mbg-group";
+      g.dataset.mbg = kind;
+      g.innerHTML = `<div class="group-label">Bewegter Hintergrund</div>${MBG_CONTROLS_HTML}`;
+      const bgGroup = [...body.querySelectorAll(":scope > .group")].find((x) => x.querySelector('[id$="BgIntensitySlider"]'));
+      if (bgGroup) bgGroup.after(g); else body.appendChild(g);
+      optoBind(g, (f, v) => {
+        const p = L.prefs();
+        p.mbg = normalizeMbg({ ...mbgCopy(p.mbg), [f]: v }); // a new object: Kombi capture backups stay untouched
+        L.save();
+        syncMbgReady(kind);
+      });
+      mbgReadyRoots[kind].push(g);
+      scr.addEventListener("click", (e) => { if (e.target.closest("[data-soft-ex], [data-soft-reset]")) setTimeout(() => syncMbgReady(kind), 0); });
+    });
+    // Pause sheet: the same controls, live, in a closed "Bewegter Hintergrund" box.
+    const ov = L.overlay();
+    const panel = ov && ov.querySelector(".pause-panel");
+    if (panel) {
+      const d = document.createElement("details");
+      d.className = "advanced mbg-pause";
+      d.dataset.mbg = kind;
+      d.innerHTML = `<summary>Bewegter Hintergrund</summary><div class="advanced-body"><div class="group mbg-group">${MBG_CONTROLS_HTML}<div class="group-help" data-mbg-live></div></div></div>`;
+      const anchor = panel.querySelector('[id$="ResumeBtn"]') || panel.querySelector(".start-btn");
+      panel.insertBefore(d, anchor);
+      const root = d.querySelector(".mbg-group");
+      optoBind(root, (f, v) => {
+        const st = L.state();
+        if (!st) return;
+        st.mbg = normalizeMbg({ ...mbgCopy(st.mbg), [f]: v });
+        if (L.own()) { L.prefs().mbg = mbgCopy(st.mbg); L.save(); syncMbgReady(kind); }
+        mbgSyncRoot(root, st.mbg, kind);
+        mbgStart(kind);
+      });
+      new MutationObserver(() => {
+        const st = L.state();
+        if (ov.hidden || !st) return;
+        if (!st.mbg) st.mbg = mbgCopy(null);
+        mbgSyncRoot(root, st.mbg, kind);
+        d.querySelector("[data-mbg-live]").textContent = L.own() ? "Gilt sofort und bleibt gespeichert, wie auf der Übungsseite." : "Gilt sofort, nur für diesen Durchgang.";
+      }).observe(ov, { attributes: true, attributeFilter: ["hidden"] });
+      ov.addEventListener("click", (e) => { if (e.target.closest("[data-soft-live]")) setTimeout(() => { const st = L.state(); if (st && st.mbg) { mbgSyncRoot(root, st.mbg, kind); mbgDraw(kind); } }, 0); });
+    }
+    const p = L.prefs();
+    p.mbg = mbgCopy(p.mbg);
+    syncMbgReady(kind);
+  });
+  if (typeof ResizeObserver !== "undefined") {
+    const ro = new ResizeObserver(() => Object.keys(mbgRuns).forEach(mbgDraw));
+    Object.values(MOVING_BG).forEach((L) => ro.observe(L.stage()));
+  }
+  if (navigator.webdriver) {
+    window.__balWord = () => (balanceState ? { content: balanceState.content, word: balanceState.word, count: balanceState.wordCount, beats: balanceState.beatCount, every: balanceState.wordEvery, hidden: balP.word.hidden, size: balanceState.size } : null);
+    window.__mbg = (kind) => {
+      const run = mbgRuns[kind], st = MOVING_BG[kind].state();
+      return { running: !!run, m: run ? { s: run.m.s, dx: run.m.dx, dy: run.m.dy } : null, st: st && st.mbg ? { ...st.mbg } : null,
+        eff: st && st.mbg ? mbgEffSpeed(st.mbg, kind) : null, colors: st && st.mbg ? mbgColors(st.mbg, kind) : null,
+        prefs: { ...MOVING_BG[kind].prefs().mbg } };
+    };
+  }
+
+  // ==== Neuro-Aktivierung (Idee 68, Fabian 2026-10-08: "Neuro-Aktivierung") ====
+  // A hidden 9th area `neuro`: guided activations with equipment (Vibration,
+  // Massageball, Gelenke kreisen). Only visible after a trainer code of type
+  // "neuro-unlock" (state NEURO_UNLOCK_KEY; tests: fwmc-test-neuro). Hidden =
+  // no hub tile, no ?bereich=, no Wochenplan / Kombi entries. A trainer Kombi
+  // code may still carry neuro blocks ({domain:"neuro", ex, prefs}); for a
+  // client without the unlock they play inside that run as "Spezialübung von
+  // deinem Trainer" and can never be copied into own Kombis or plans.
+  // One generic step player (#neuroPlayer): instruction, side cue (links /
+  // rechts / beide / abwechselnd / Richtung), time per step, optional Takt,
+  // Durchgänge, Umsetzen between steps. Templates: NEURO_EXERCISES.
+  // Details: docs/notes/37-neuro-aktivierung.md (incl. texts Fabian reviews).
+  const NEURO_UNLOCK_KEY = "fwmc-neuro-unlocked-v1";
+  const NEURO_PREFS_KEY = "fwmc-neuro-prefs-v1";
+  const NEURO_SPECIAL_LABEL = "Spezialübung von deinem Trainer";
+  function neuroUnlocked() {
+    if (readJSON(NEURO_UNLOCK_KEY, false)) return true;
+    return !!(navigator.webdriver && readJSON("fwmc-test-neuro", false));
+  }
+  const NEURO_AREA = { key: "neuro", label: "Neuro-Aktivierung", short: "Neuro", color: "#8a4b2a", screen: "neuroHome",
+    text: "Geführt mit Vibration oder Massageball.",
+    icon: '<circle cx="12" cy="12" r="2.6" fill="#fff"/><path d="M8.2 8.2a5.4 5.4 0 0 0 0 7.6M15.8 8.2a5.4 5.4 0 0 1 0 7.6M5.4 5.4a9.4 9.4 0 0 0 0 13.2M18.6 5.4a9.4 9.4 0 0 1 0 13.2" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' };
+  // Simple stick figure (same style as STRETCH_ICONS) with the joint marked.
+  const NEURO_FIG = '<circle cx="12" cy="3.6" r="2" fill="#fff"/><path d="M12 5.6V13M12 7.6l-3.4 3-1.4 3.6M12 7.6l3.4 3 1.4 3.6M12 13l-2 4-0.6 4M12 13l2 4 0.6 4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>';
+  const neuroJoint = (pts) => NEURO_FIG + pts.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r || 2.1}" fill="none" stroke="#ffd166" stroke-width="1.3" stroke-dasharray="2 1.4"/>`).join("");
+  const NEURO_ICONS = {
+    kopf: neuroJoint([[12, 3.6, 3.3]]),
+    schulter: neuroJoint([[9.6, 7.8], [14.4, 7.8]]),
+    ellbogen: neuroJoint([[8.6, 10.6], [15.4, 10.6]]),
+    hand: neuroJoint([[7.2, 14.2], [16.8, 14.2]]),
+    huefte: neuroJoint([[12, 13, 2.6]]),
+    knie: neuroJoint([[10, 17], [14, 17]]),
+    fuss: neuroJoint([[9.4, 21], [14.6, 21]]),
+  };
+  // side: lr = left and right one after the other (order = Feineinstellung),
+  // dir = two directions one after the other (dirs), beide = both at once,
+  // wechsel = alternating (side cue flips every altS), none = no side.
+  // Texts are neutral (no efficacy/therapy claims) - Fabian reviews them
+  // (docs/notes/37 "Texte von Fabian prüfen").
+  const NEURO_EXERCISES = {
+    vibration: {
+      title: "Vibration links / rechts", tag: "Vibration", gear: ["vibration"],
+      desc: "Ein Vibrationsgerät nacheinander an verschiedene Stellen, Seite für Seite.",
+      intro: "Halte das Vibrationsgerät mit leichtem Druck an die genannte Stelle. Die App sagt dir, welche Seite dran ist, und zählt die Zeit.",
+      need: "Du brauchst: ein kleines Vibrationsgerät (z. B. Z‑Vibe) mit glattem Aufsatz.",
+      safety: "Nicht an die Augen, nicht vorne an den Hals und nicht auf Wunden halten. Leichter Druck reicht.",
+      defaults: { stepS: 20, moveS: 5 },
+      icon: '<path d="M9 4.5h6v15H9z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M5.5 8.5v7M18.5 8.5v7M3 10.5v3M21 10.5v3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>',
+      steps: [
+        { t: "Wange, außen neben dem Mundwinkel", side: "lr" },
+        { t: "Kiefergelenk, direkt vor dem Ohr", side: "lr" },
+        { t: "Nacken, seitlich am Haaransatz", side: "lr" },
+        { t: "Handinnenfläche", side: "lr" },
+        { t: "Fußsohle", side: "lr" },
+      ],
+    },
+    "ball-fuss": {
+      title: "Massageball: Fußsohlen", tag: "Füße", gear: ["massageball"],
+      desc: "Mit dem Massageball die Fußsohlen wach machen, im Stehen oder Sitzen.",
+      intro: "Stell dich hin oder setz dich auf einen Stuhl, den Ball unter dem Fuß. Rolle mit so viel Druck, wie es angenehm ist.",
+      need: "Du brauchst: einen Massageball oder Massagepilz (Igelball geht auch).",
+      safety: "Im Stehen etwas zum Festhalten in Reichweite haben (Wand, Stuhllehne).",
+      defaults: { stepS: 30, moveS: 5 },
+      icon: '<path d="M6 19c0-6 2-12 6-13 3-.7 4 2 3.5 5S13 16 14 19" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><circle cx="16.5" cy="17.5" r="3" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="1.6 1.3"/>',
+      steps: [
+        { t: "Ball langsam von der Ferse zu den Zehen rollen", side: "lr" },
+        { t: "Ball unter dem Fußballen kreisen", side: "lr" },
+        { t: "Ball unter dem Fußgewölbe: Druck halten und lösen", side: "lr" },
+        { t: "Beide Füße barfuß auf den Boden, Zehen spreizen und wieder lösen", side: "beide" },
+      ],
+    },
+    "ball-hand": {
+      title: "Massageball: Hände", tag: "Hände", gear: ["massageball"],
+      desc: "Hände und Finger mit dem Massageball aktivieren, gut im Sitzen.",
+      intro: "Setz dich bequem hin und nimm den Ball in die Hand. Arbeite mit leichtem bis mittlerem Druck.",
+      need: "Du brauchst: einen Massageball oder Massagepilz (Igelball geht auch).",
+      safety: "Nicht über schmerzende oder verletzte Stellen rollen.",
+      defaults: { stepS: 30, moveS: 0 },
+      icon: '<path d="M8 20v-6.5L5.6 11a1.4 1.4 0 0 1 2-2L9 10.3V5a1.3 1.3 0 0 1 2.6 0v4.5M11.6 9V4a1.3 1.3 0 0 1 2.6 0v5M14.2 9.2V5.6a1.3 1.3 0 0 1 2.6 0V15c0 3-2 5-4.6 5H8" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+      steps: [
+        { t: "Ball zwischen beiden Handflächen rollen", side: "beide" },
+        { t: "Ball in der Hand fest drücken und wieder lösen", side: "lr" },
+        { t: "Ball über den Handrücken rollen", side: "lr" },
+        { t: "Ball mit den Fingerspitzen rollen, Finger für Finger", side: "lr" },
+        { t: "Ball von Hand zu Hand geben", side: "wechsel" },
+      ],
+    },
+    gelenke: {
+      title: "Gelenke kreisen", tag: "ohne Hilfsmittel", gear: [],
+      desc: "Alle großen Gelenke nacheinander langsam kreisen, ohne Hilfsmittel.",
+      intro: "Stell dich hüftbreit hin. Kreise jedes Gelenk langsam und nur so weit, wie es angenehm ist. Die App sagt dir Gelenk und Richtung an.",
+      need: "",
+      safety: "Den Kopf nur im Halbkreis vorne bewegen, nicht nach hinten in den Nacken.",
+      defaults: { stepS: 20, moveS: 0 },
+      icon: neuroJoint([[12, 13, 2.6]]),
+      steps: [
+        { t: "Kopf im Halbkreis von Schulter zu Schulter", side: "none", icon: "kopf" },
+        { t: "Schultern kreisen", side: "dir", dirs: ["nach hinten", "nach vorne"], icon: "schulter" },
+        { t: "Ellbogen kreisen", side: "lr", icon: "ellbogen" },
+        { t: "Handgelenke kreisen", side: "dir", dirs: ["nach außen", "nach innen"], icon: "hand" },
+        { t: "Hüfte kreisen", side: "dir", dirs: ["rechts herum", "links herum"], icon: "huefte" },
+        { t: "Knie kreisen, Hände auf den Knien", side: "dir", dirs: ["rechts herum", "links herum"], icon: "knie" },
+        { t: "Fußgelenke kreisen, Fußspitze am Boden", side: "lr", icon: "fuss" },
+      ],
+    },
+  };
+  const NEURO_DEFAULTS = { stepS: 30, reps: 1, order: "lr", altS: 4, moveS: 5, takt: false, bpm: 60 };
+  const neuroClamp = (v, lo, hi, d) => (Number.isFinite(Number(v)) ? Math.min(hi, Math.max(lo, Number(v))) : d);
+  function normalizeNeuroPrefs(p, ex) {
+    const d = { ...NEURO_DEFAULTS, ...((NEURO_EXERCISES[ex] || {}).defaults || {}) };
+    p.stepS = Math.round(neuroClamp(p.stepS, 10, 120, d.stepS) / 5) * 5;
+    p.reps = Math.round(neuroClamp(p.reps, 1, 3, d.reps));
+    if (p.order !== "lr" && p.order !== "rl") p.order = d.order;
+    p.altS = Math.round(neuroClamp(p.altS, 2, 15, d.altS));
+    p.moveS = Math.round(neuroClamp(p.moveS, 0, 30, d.moveS) / 5) * 5;
+    if (typeof p.takt !== "boolean") p.takt = d.takt;
+    p.bpm = Math.round(neuroClamp(p.bpm, 30, 120, d.bpm) / 5) * 5;
+    return p;
+  }
+  function neuroDefaultsOf(ex) { return normalizeNeuroPrefs({ ...NEURO_DEFAULTS, ...((NEURO_EXERCISES[ex] || {}).defaults || {}) }, ex); }
+  const neuroAllPrefs = readJSON(NEURO_PREFS_KEY, {}) || {};
+  function neuroPrefsOf(ex) {
+    const p = normalizeNeuroPrefs({ ...neuroDefaultsOf(ex), ...(neuroAllPrefs[ex] || {}) }, ex);
+    neuroAllPrefs[ex] = p;
+    return p;
+  }
+  function saveNeuroPrefs() { writeJSON(NEURO_PREFS_KEY, neuroAllPrefs); }
+  function neuroBlockPrefs(block) { return normalizeNeuroPrefs({ ...neuroDefaultsOf(block.ex), ...deepCopy((block && block.prefs) || {}) }, block.ex); }
+  const NEURO_SIDE_WORD = { L: "Links", R: "Rechts" };
+  // One template + prefs -> the run's steps [{t, label, say, side, icon, alt}].
+  function neuroSteps(ex, p) {
+    const x = NEURO_EXERCISES[ex];
+    if (!x) return [];
+    const first = p.order === "rl" ? ["R", "L"] : ["L", "R"];
+    const out = [];
+    for (let r = 0; r < p.reps; r++) {
+      x.steps.forEach((s) => {
+        if (s.side === "lr") first.forEach((sd) => out.push({ t: s.t, label: NEURO_SIDE_WORD[sd], say: NEURO_SIDE_WORD[sd].toLowerCase(), icon: s.icon, rep: r }));
+        else if (s.side === "dir") (s.dirs || []).forEach((dd) => out.push({ t: s.t, label: dd.charAt(0).toUpperCase() + dd.slice(1), say: dd, icon: s.icon, rep: r }));
+        else if (s.side === "beide") out.push({ t: s.t, label: "Beide Seiten", say: "beide Seiten", icon: s.icon, rep: r });
+        else if (s.side === "wechsel") out.push({ t: s.t, label: "Abwechselnd", say: "abwechselnd", alt: first.slice(), icon: s.icon, rep: r });
+        else out.push({ t: s.t, label: "", say: "", icon: s.icon, rep: r });
+      });
+    }
+    return out;
+  }
+  function neuroTotalS(ex, p) {
+    const n = neuroSteps(ex, p).length;
+    return n * p.stepS + Math.max(0, n - 1) * p.moveS;
+  }
+  function neuroMeta(ex, p) {
+    const n = neuroSteps(ex, p).length;
+    return `${countLabel(n, "Schritt", "Schritte")} · ${p.stepS} s · ca. ${fmtMinutes(neuroTotalS(ex, p))}` + (p.reps > 1 ? ` · ${p.reps} Durchgänge` : "");
+  }
+  function neuroTitle(ex) { return (NEURO_EXERCISES[ex] || {}).title || "Neuro-Aktivierung"; }
+
+  // ---- area visibility (PLAN_AREAS / hub / gear cards follow the unlock) ----
+  AREA_BY_KEY.neuro = NEURO_AREA; // labels/colours of existing entries always resolve
+  AREA_TO_SECTION.neuro = "neuro";
+  function syncNeuroArea() {
+    const on = neuroUnlocked();
+    const i = PLAN_AREAS.findIndex((a) => a.key === "neuro");
+    if (on && i < 0) PLAN_AREAS.push(NEURO_AREA);
+    if (!on && i >= 0) PLAN_AREAS.splice(i, 1);
+    if (els.trainingHub) delete els.trainingHub.dataset.rendered;
+  }
+  syncNeuroArea();
+  function neuroTileHtml(id) {
+    const x = NEURO_EXERCISES[id];
+    return `<button class="nat-tile neuro-tile" type="button" data-neuro-ex="${id}">
+      <div class="icon-badge neuro-badge"><svg viewBox="0 0 24 24" aria-hidden="true">${x.icon}</svg></div>
+      <h3>${esc(x.title)}</h3><p>${esc(x.desc)}</p><span class="tag">${esc(x.tag)}</span></button>`;
+  }
+  $("neuroGrid").innerHTML = Object.keys(NEURO_EXERCISES).map(neuroTileHtml).join("");
+  $("neuroGrid").addEventListener("click", (e) => {
+    const t = e.target.closest("[data-neuro-ex]");
+    if (t) openNeuroReady(t.dataset.neuroEx);
+  });
+  function renderNeuroHome() {
+    const n = $("neuroUnlockNotice");
+    if (n.dataset.show === "1") { n.hidden = false; n.dataset.show = ""; } else n.hidden = true;
+    renderHistory();
+  }
+  const NEURO_CODE_CTX = { goBtn: $("neuroProgramGoBtn"), errorEl: $("neuroProgramError"), homeScreen: "neuroHome" };
+  function goNeuroCode() { const code = $("neuroProgramCodeInput").value.trim(); if (code) openProgramIntro(code, NEURO_CODE_CTX); }
+  $("neuroProgramGoBtn").addEventListener("click", goNeuroCode);
+  $("neuroProgramCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") goNeuroCode(); });
+  // Code type "neuro-unlock" ({type, name, lock?}): unlocks (or with
+  // lock:true hides again) the area on this device; nothing else is stored.
+  function applyNeuroUnlockCode(def) {
+    if (def.lock) {
+      try { localStorage.removeItem(NEURO_UNLOCK_KEY); } catch (e) {}
+      syncNeuroArea();
+      activateSectionTab("today");
+      showScreen(bottomNavOn ? "trainingHub" : "todayHome");
+      return;
+    }
+    const was = readJSON(NEURO_UNLOCK_KEY, false);
+    writeJSON(NEURO_UNLOCK_KEY, true);
+    syncNeuroArea();
+    $("neuroUnlockNotice").textContent = was ? "Neuro-Aktivierung ist für dich freigeschaltet." : "Neu für dich freigeschaltet: Neuro-Aktivierung.";
+    $("neuroUnlockNotice").dataset.show = "1";
+    activateSectionTab("neuro");
+    showScreen("neuroHome");
+  }
+
+  // ---- ready screen (Einzeln) + Kombi capture ----
+  let neuroEx = "vibration";
+  let comboNeuroCapture = null; // { prefs, editIndex } while a Kombi-Baustein is captured
+  function neuroCurPrefs() { return comboNeuroCapture ? comboNeuroCapture.prefs : neuroPrefsOf(neuroEx); }
+  function neuroParse(f, raw) { return f === "takt" ? raw === "1" : f === "order" ? raw : Number(raw); }
+  function neuroBind(root, set) {
+    root.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-nr-f]");
+      if (b && root.contains(b)) set(b.dataset.nrF, neuroParse(b.dataset.nrF, b.dataset.nrV));
+    });
+    root.querySelectorAll("input[data-nr-r]").forEach((inp) => inp.addEventListener("input", () => set(inp.dataset.nrR, Number(inp.value))));
+  }
+  function neuroSyncControls(root, p, ex) {
+    root.querySelectorAll("[data-nr-f]").forEach((b) => {
+      const f = b.dataset.nrF;
+      const cur = f === "takt" ? (p.takt ? "1" : "0") : String(p[f]);
+      setActive(b, cur === b.dataset.nrV);
+    });
+    root.querySelectorAll("input[data-nr-r]").forEach((inp) => { inp.value = p[inp.dataset.nrR]; });
+    const out = { stepS: `${p.stepS} s`, altS: `${p.altS} s`, moveS: p.moveS ? `${p.moveS} s` : "direkt weiter", bpm: `${p.bpm} pro Min.`,
+      total: `${countLabel(neuroSteps(ex, p).length, "Schritt", "Schritte")} · zusammen ca. ${fmtMinutes(neuroTotalS(ex, p))}` };
+    root.querySelectorAll("[data-nr-out]").forEach((el) => { const t = out[el.dataset.nrOut]; if (t != null && el.textContent !== t) el.textContent = t; });
+    const hasAlt = (NEURO_EXERCISES[ex] || { steps: [] }).steps.some((s) => s.side === "wechsel");
+    root.querySelectorAll("[data-nr-show]").forEach((el) => { el.hidden = el.dataset.nrShow === "takt" ? !p.takt : el.dataset.nrShow === "hasAlt" ? !hasAlt : false; });
+  }
+  const neuroUi = { title: $("neuroReadyTitle"), desc: $("neuroReadyDesc"), controls: $("neuroReadyControls"), start: $("neuroStartBtn") };
+  function renderNeuroReadySteps() {
+    const steps = neuroSteps(neuroEx, { ...neuroCurPrefs(), reps: 1 });
+    $("neuroStepCount").textContent = countLabel(steps.length, "Schritt", "Schritte");
+    $("neuroReadySteps").innerHTML = steps.map((s, i) => `<div class="chapter-row"><span class="chapter-main" style="cursor:default"><span class="num">${i + 1}</span>` +
+      (s.icon ? `<span class="free-ready-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${NEURO_ICONS[s.icon]}</svg></span>` : "") +
+      `<span class="info"><strong>${esc(s.t)}</strong>${s.label ? `<span>${esc(s.label)}</span>` : ""}</span></span></div>`).join("");
+  }
+  function syncNeuroReadyUI() {
+    neuroSyncControls(neuroUi.controls, neuroCurPrefs(), neuroEx);
+    renderNeuroReadySteps();
+  }
+  neuroBind(neuroUi.controls, (f, v) => {
+    const p = neuroCurPrefs();
+    p[f] = v;
+    normalizeNeuroPrefs(p, neuroEx);
+    if (!comboNeuroCapture) saveNeuroPrefs();
+    syncNeuroReadyUI();
+  });
+  function openNeuroReady(ex, opts) {
+    if (!NEURO_EXERCISES[ex]) ex = "vibration";
+    const capture = !!(opts && opts.capture);
+    if (!capture && !neuroUnlocked()) { showScreen("neuroHome"); return; }
+    neuroEx = ex;
+    const x = NEURO_EXERCISES[ex];
+    neuroUi.title.textContent = capture ? `Baustein: ${x.title}` : x.title;
+    neuroUi.desc.textContent = capture ? "Stelle Dauer, Durchgänge und Takt für diesen Baustein ein. Deine eigenen Einstellungen bleiben, wie sie sind." : x.intro;
+    neuroUi.start.textContent = capture ? "Baustein übernehmen" : "Training starten";
+    $("neuroHilfsmittel").hidden = !x.need;
+    $("neuroHilfsmittelText").textContent = x.need;
+    $("neuroSafetyText").textContent = `${x.safety} Arbeite nur so lange und mit so viel Druck, wie es angenehm ist. Bei Schmerzen, Taubheit, Schwindel oder Unwohlsein sofort aufhören.`;
+    $("neuroSaveForm").hidden = true;
+    $("neuroSaveBtn").hidden = false;
+    syncNeuroReadyUI();
+    renderNeuroSaved();
+    showScreen("neuroReady");
+  }
+  $("neuroBackToHome").addEventListener("click", () => {
+    if (comboNeuroCapture) { comboNeuroCapture = null; showScreen("comboScreen"); return; }
+    showScreen("neuroHome");
+  });
+  neuroUi.start.addEventListener("click", () => {
+    if (comboNeuroCapture) { commitNeuroComboCapture(); return; }
+    startNeuroRun(neuroEx, null);
+  });
+  // ---- presets ("Aktuelle Einstellung speichern", per exercise) ----
+  const neuroStore = makePresetStore("fwmc-neuro-saved-v1"); // [{ id, name, ex, prefs }]
+  function renderNeuroSaved() {
+    renderPresetList(neuroStore, $("neuroSavedList"), $("neuroSavedGroup"), (e) => e.ex === neuroEx,
+      (e) => neuroMeta(e.ex, normalizeNeuroPrefs({ ...neuroDefaultsOf(e.ex), ...e.prefs }, e.ex)),
+      (entry) => {
+        const p = neuroCurPrefs();
+        Object.assign(p, normalizeNeuroPrefs({ ...neuroDefaultsOf(entry.ex), ...deepCopy(entry.prefs) }, entry.ex));
+        if (!comboNeuroCapture) saveNeuroPrefs();
+        syncNeuroReadyUI();
+        if (!comboNeuroCapture) neuroUi.start.click();
+      }, { confirmDelete: true });
+  }
+  wirePresetSaveForm({
+    saveBtn: $("neuroSaveBtn"), form: $("neuroSaveForm"), nameInput: $("neuroSaveNameInput"),
+    cancelBtn: $("neuroSaveCancelBtn"), confirmBtn: $("neuroSaveConfirmBtn"),
+    defaultName: () => `Eigene Einstellung ${new Date().toLocaleDateString("de-DE")}`,
+    onSave: (name) => {
+      const list = neuroStore.load();
+      list.push({ id: String(Date.now()), name, ex: neuroEx, prefs: deepCopy(neuroCurPrefs()) });
+      neuroStore.save(list);
+      renderNeuroSaved();
+    },
+  });
+  // ---- Kombi-Baustein (only offered while the area is unlocked) ----
+  function openNeuroComboCapture(ex, block, editIndex) {
+    const e = block ? block.ex : ex;
+    comboNeuroCapture = { prefs: block ? neuroBlockPrefs(block) : deepCopy(neuroPrefsOf(e)), editIndex: editIndex ?? null };
+    openNeuroReady(e, { capture: true });
+  }
+  function commitNeuroComboCapture() {
+    const cap = comboNeuroCapture;
+    const block = { domain: "neuro", ex: neuroEx, prefs: deepCopy(cap.prefs) };
+    if (cap.editIndex != null && comboDraftBlocks[cap.editIndex]) {
+      block.pauseAfterS = comboDraftBlocks[cap.editIndex].pauseAfterS;
+      comboDraftBlocks[cap.editIndex] = block;
+    } else comboDraftBlocks.push(block);
+    comboNeuroCapture = null;
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+  function comboNeuroCaptureEntries() {
+    if (!neuroUnlocked()) return [];
+    return Object.keys(NEURO_EXERCISES).map((ex) => ({ label: NEURO_EXERCISES[ex].title, meta: "Dauer, Durchgänge & Takt einstellen", open: () => openNeuroComboCapture(ex, null, null) }));
+  }
+  // Trainer programmes inserted into an own Kombi: without the unlock the
+  // Spezialübung stays inside the trainer's code only.
+  function neuroStripBlocks(blocks) { return neuroUnlocked() ? blocks : blocks.filter((b) => !b || b.domain !== "neuro"); }
+  function neuroBlockIsSpecial(block) { return !!block && block.domain === "neuro" && !neuroUnlocked(); }
+  function neuroDefHasSpecial(def) {
+    const bl = def && Array.isArray(def.blocks) ? def.blocks : [];
+    return !neuroUnlocked() && bl.some((b) => b && b.domain === "neuro");
+  }
+
+  // ---- the run ----
+  const neuroP = {
+    player: els.neuroPlayer, progress: $("neuroRunProgress"), title: $("neuroRunTitle"), special: $("neuroRunSpecial"), icon: $("neuroRunIcon"),
+    item: $("neuroRunItem"), side: $("neuroRunSide"), countdown: $("neuroRunCountdown"), next: $("neuroRunNext"),
+    bar: $("neuroPlayerBar"), pauseBtn: $("neuroPauseBtn"), backBtn: $("neuroBackBtn"), pauseOverlay: $("neuroPauseOverlay"),
+    pauseControls: $("neuroPauseControls"), done: $("neuroDonePanel"),
+  };
+  wireFullscreen({ player: neuroP.player, btn: $("neuroFsBtn"), hint: $("neuroFsHint"), hintOpen: $("neuroFsHintOpenBtn"), hintClose: $("neuroFsHintClose") });
+  let neuroRun = null; // { ex, p, steps, index, phase: "work"|"move", phaseT, startT, pausedAt, pausedMs, timer, own, special, beeped, nextBeat, altIdx }
+  let neuroLast = null;
+  function startNeuroRun(ex, prefsOverride, opts) {
+    if (!NEURO_EXERCISES[ex]) return false;
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    neuroP.done.hidden = true;
+    const p = normalizeNeuroPrefs({ ...neuroDefaultsOf(ex), ...deepCopy(prefsOverride || neuroPrefsOf(ex)) }, ex);
+    const now = performance.now();
+    const r = neuroRun = { ex, p, steps: neuroSteps(ex, p), index: 0, phase: "work", phaseT: now, startT: now, pausedAt: null, pausedMs: 0,
+      timer: null, own: !prefsOverride, special: !!(opts && opts.special), beeped: new Set(), nextBeat: 0, altIdx: -1 };
+    neuroLast = { ex, prefs: prefsOverride ? deepCopy(p) : null };
+    neuroP.title.textContent = neuroTitle(ex);
+    neuroP.special.hidden = !r.special;
+    neuroP.player.hidden = false;
+    neuroP.bar.hidden = false;
+    neuroP.pauseOverlay.hidden = true;
+    neuroP.pauseBtn.hidden = false;
+    requestWakeLock();
+    if (r.p.takt) silentSwitchHint();
+    neuroShow();
+    r.timer = setInterval(neuroTick, 100);
+    return true;
+  }
+  function neuroSideText(st, r, elapsed) {
+    if (!st.alt) return st.label;
+    const k = Math.floor(elapsed / r.p.altS) % 2;
+    return `Abwechselnd · ${NEURO_SIDE_WORD[st.alt[k]]}`;
+  }
+  function neuroShow() {
+    const r = neuroRun;
+    if (!r) return;
+    const n = r.steps.length;
+    const st = r.steps[r.index];
+    const moving = r.phase === "move";
+    r.beeped = new Set();
+    r.curDur = moving ? r.p.moveS : r.p.stepS; // a live change of stepS applies from the next step on
+    r.altIdx = -1;
+    r.nextBeat = 0;
+    neuroP.progress.textContent = `Schritt ${r.index + 1} von ${n}` + (r.p.reps > 1 ? ` · Durchgang ${st.rep + 1} von ${r.p.reps}` : "");
+    neuroP.item.textContent = moving ? `Gleich: ${st.t}` : st.t;
+    neuroP.item.classList.toggle("neuro-moving", moving);
+    neuroP.icon.hidden = !st.icon;
+    neuroP.icon.innerHTML = st.icon ? `<svg viewBox="0 0 24 24" aria-hidden="true">${NEURO_ICONS[st.icon]}</svg>` : "";
+    neuroP.side.hidden = !st.label;
+    neuroP.side.textContent = moving ? (st.label ? `Umsetzen · ${st.alt ? "abwechselnd" : st.label}` : "Umsetzen") : neuroSideText(st, r, 0);
+    neuroP.side.classList.toggle("neuro-moving", moving);
+    if (moving && !st.label) neuroP.side.hidden = false;
+    const nx = r.steps[r.index + 1];
+    neuroP.next.textContent = nx && !moving ? `Als Nächstes: ${nx.t}${nx.label ? " · " + nx.label : ""}` : "";
+    neuroP.next.hidden = !(nx && !moving);
+    $("neuroSkipBtn").setAttribute("aria-label", r.index < n - 1 ? "Weiter zum nächsten Schritt" : "Beenden");
+    if (moving) cueSay(`Umsetzen. Gleich: ${st.t}${st.say ? ", " + st.say : ""}.`);
+    else cueSay(`${st.t}${st.say ? ". " + st.say : ""}.`);
+    window.__neuroLog = window.__neuroLog || [];
+    window.__neuroLog.push({ i: r.index, phase: r.phase, t: st.t, side: neuroP.side.textContent });
+    neuroTick();
+  }
+  function neuroTick() {
+    const r = neuroRun;
+    if (!r) return;
+    if (neuroP.player.hidden) { neuroStop(); return; }
+    if (r.pausedAt != null) return;
+    const st = r.steps[r.index];
+    const dur = r.curDur;
+    const el = (performance.now() - r.phaseT) / 1000;
+    const left = dur - el;
+    const txt = fmtClock(Math.max(0, left));
+    if (neuroP.countdown.textContent !== txt) neuroP.countdown.textContent = txt;
+    if (r.phase === "work" && st.alt) {
+      const k = Math.floor(el / r.p.altS);
+      if (k !== r.altIdx) {
+        if (r.altIdx >= 0) cueSay(NEURO_SIDE_WORD[st.alt[k % 2]]);
+        r.altIdx = k;
+        neuroP.side.textContent = neuroSideText(st, r, el);
+      }
+    }
+    if (r.phase === "work" && r.p.takt && left > 3.2) {
+      const beat = 60 / r.p.bpm;
+      if (el >= r.nextBeat) { playCueTickTone(); window.__neuroTicks = (window.__neuroTicks || 0) + 1; r.nextBeat = (Math.floor(el / beat) + 1) * beat; }
+    }
+    const sec = Math.ceil(left);
+    if (sec >= 1 && sec <= 3 && !r.beeped.has(sec)) { r.beeped.add(sec); playWorkoutBeep(false); }
+    if (left <= 0) { playWorkoutBeep(true); neuroAdvance(false); }
+  }
+  function neuroAdvance(skipped) {
+    const r = neuroRun;
+    if (!r) return;
+    if (r.phase === "move") { r.phase = "work"; r.phaseT = performance.now(); neuroShow(); return; }
+    if (r.index >= r.steps.length - 1) { neuroFinish(!!skipped); return; }
+    r.index++;
+    r.phase = r.p.moveS > 0 && !skipped ? "move" : "work";
+    r.phaseT = performance.now();
+    neuroShow();
+  }
+  function neuroJump(i) {
+    const r = neuroRun;
+    if (!r) return;
+    r.index = Math.max(0, Math.min(r.steps.length - 1, i));
+    r.phase = "work";
+    r.phaseT = performance.now();
+    if (r.pausedAt != null) r.pausedAt = performance.now();
+    neuroShow();
+  }
+  $("neuroPrevBtn").addEventListener("click", () => { if (neuroRun) neuroJump(neuroRun.index - 1); });
+  $("neuroRestartBtn").addEventListener("click", () => { if (neuroRun) neuroJump(neuroRun.index); });
+  $("neuroSkipBtn").addEventListener("click", () => neuroAdvance(true));
+  wireSwipeNav(neuroP.player, { onLeft: () => $("neuroSkipBtn").click(), onRight: () => $("neuroPrevBtn").click() });
+  function neuroStop() {
+    const r = neuroRun;
+    if (r && r.timer) clearInterval(r.timer);
+    neuroRun = null;
+    neuroP.pauseOverlay.hidden = true;
+    releaseWakeLock();
+    $("neuroFsHint").hidden = true;
+    return r;
+  }
+  function neuroElapsedS(r) {
+    const end = r.pausedAt != null ? r.pausedAt : performance.now();
+    return Math.max(0, (end - r.startT - r.pausedMs) / 1000);
+  }
+  // aborted: "»" past the last step (like Eigenes Training). "Beenden" leaves
+  // no entry (single) or quits the Kombi.
+  function neuroFinish(aborted) {
+    const r = neuroStop();
+    if (!r) return;
+    const secs = Math.round(neuroElapsedS(r));
+    const title = `Neuro-Aktivierung · ${neuroTitle(r.ex)}`;
+    if (comboProgram) {
+      // The pause line stays short ("Eben: Gelenke kreisen / erledigt · 0:09",
+      // Prüfer 08.10.); the history note still names the Spezialübung.
+      if (r.special) blockResultPush(comboProgram, neuroTitle(r.ex), `erledigt · ${fmtClock(secs)}`, `${neuroTitle(r.ex)}: ${NEURO_SPECIAL_LABEL} · ${fmtClock(secs)}`);
+      advanceComboProgram(secs);
+      return;
+    }
+    if (document.fullscreenElement === neuroP.player) document.exitFullscreen().catch(() => {});
+    neuroP.player.hidden = true;
+    const id = addHistory({ kind: "neuro", title, neuroEx: r.ex, seconds: secs,
+      note: aborted ? "abgebrochen" : `${countLabel(r.steps.length, "Schritt", "Schritte")} · ${r.p.stepS} s`, ...(aborted ? { aborted: true } : {}) });
+    renderRating($("neuroRating"), id, "Wie fühlst du dich jetzt?");
+    setDonePanelAborted(neuroP.done, aborted, "Neuro-Aktivierung beendet");
+    $("neuroDoneSummary").textContent = aborted ? `Abgebrochen · ${fmtMinutes(secs)} Training` : `${neuroTitle(r.ex)} · ${countLabel(r.steps.length, "Schritt", "Schritte")} · ${fmtMinutes(secs)} Training`;
+    neuroP.done.hidden = false;
+  }
+  function abortNeuroRun() {
+    neuroStop();
+    hideAllPlayers();
+    if (comboProgram) { abortComboProgram(); return; }
+    if (neuroUnlocked()) openNeuroReady(neuroEx); else showScreen("todayHome");
+  }
+  neuroP.backBtn.addEventListener("click", abortNeuroRun);
+  function pauseNeuro() {
+    const r = neuroRun;
+    if (!r || r.pausedAt != null) return;
+    r.pausedAt = performance.now();
+    neuroP.pauseBtn.hidden = true;
+    $("neuroPauseHelp").textContent = r.own ? "Der Takt gilt sofort, die Dauer ab dem nächsten Schritt. Beides bleibt gespeichert, wie auf der Übungsseite." : "Der Takt gilt sofort, die Dauer ab dem nächsten Schritt. Nur für diesen Durchgang.";
+    neuroSyncControls(neuroP.pauseControls, r.p, r.ex);
+    neuroP.pauseOverlay.hidden = false;
+  }
+  function resumeNeuro() {
+    const r = neuroRun;
+    if (!r || r.pausedAt == null) return;
+    const d = performance.now() - r.pausedAt;
+    r.phaseT += d; r.pausedMs += d; r.pausedAt = null;
+    neuroP.pauseOverlay.hidden = true;
+    neuroP.pauseBtn.hidden = false;
+    neuroTick();
+  }
+  neuroP.pauseBtn.addEventListener("click", pauseNeuro);
+  $("neuroResumeBtn").addEventListener("click", resumeNeuro);
+  // Live in the pause sheet: Takt, tempo, time per step (from the next step on;
+  // a running step keeps its own length), Seitenwechsel.
+  neuroBind(neuroP.pauseControls, (f, v) => {
+    const r = neuroRun;
+    if (!r) return;
+    r.p[f] = v;
+    normalizeNeuroPrefs(r.p, r.ex);
+    if (r.own) { const own = neuroPrefsOf(r.ex); own[f] = r.p[f]; normalizeNeuroPrefs(own, r.ex); saveNeuroPrefs(); }
+    neuroSyncControls(neuroP.pauseControls, r.p, r.ex);
+  });
+  $("neuroAgainBtn").addEventListener("click", () => { neuroP.done.hidden = true; if (neuroLast) startNeuroRun(neuroLast.ex, neuroLast.prefs); });
+  $("neuroDoneBackBtn").addEventListener("click", () => {
+    neuroP.done.hidden = true;
+    if (neuroUnlocked()) openNeuroReady(neuroEx); else showScreen("todayHome");
+  });
+  if (navigator.webdriver) {
+    window.__neuro = () => (neuroRun ? { ex: neuroRun.ex, index: neuroRun.index, phase: neuroRun.phase, n: neuroRun.steps.length, own: neuroRun.own,
+      special: neuroRun.special, paused: neuroRun.pausedAt != null, p: { ...neuroRun.p }, side: neuroP.side.textContent } : null);
+    window.__neuroSkipTime = (s) => { if (neuroRun) neuroRun.phaseT -= s * 1000; };
+  }
+  // ==== /Neuro-Aktivierung ====
+
+  function comboActivationCaptureEntries() {
+    return [{ label: "Optodrum", meta: "Muster, Richtung, Tempo & Dauer einstellen", open: () => openOptoComboCapture(null, null) }];
+  }
+
   function initStartScreen() {
     let sec = "today";
     try { sec = new URLSearchParams(location.search).get("bereich") || "today"; } catch (e) {}
@@ -32296,8 +37729,12 @@
       showScreen(sec === "fortschritt" ? "progressScreen" : bottomNavOn ? "trainingHub" : "todayHome");
       return;
     }
-    const screens = { today: "todayHome", heute: "todayHome", visual: "home", breath: "breathHome", movement: "movementHome", workout: "workoutHome", cardio: "cardioHome", nat: "natHome", test: "testHome", free: "freeHome", frei: "freeHome" };
+    const screens = { today: "todayHome", heute: "todayHome", visual: "home", breath: "breathHome", movement: "movementHome", workout: "workoutHome", cardio: "cardioHome", nat: "natHome", test: "testHome", free: "freeHome", frei: "freeHome", activation: "activationHome", aktivierung: "activationHome" };
     if (sec === "frei") sec = "free";
+    if (sec === "aktivierung") sec = "activation";
+    if (sec === "neuro-aktivierung") sec = "neuro";
+    if (sec === "neuro" && !neuroUnlocked()) sec = "today";
+    screens.neuro = "neuroHome";
     if (!screens[sec]) sec = "today";
     if (sec === "heute") sec = "today";
     activateSectionTab(sec);
@@ -32451,7 +37888,7 @@
   // Training cards) opens a small action sheet. A finger that moves more
   // than 10 px is scrolling and cancels it; a short tap still clicks.
   // Only actions that really work for that item are offered.
-  const LP_SEL = "#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #freeOwnGrid [data-free-id], #freeTrainerGrid [data-free-id], #freeTplGrid [data-free-id]";
+  const LP_SEL = "#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #freeOwnGrid [data-free-id], #freeTrainerGrid [data-free-id], #freeTplGrid [data-free-id], #activationGrid [data-act-ex], #neuroGrid [data-neuro-ex]";
   const tileSheet = $("tileActionSheet");
   let tileSheetReturnFocus = null;
   let lpSuppressUntil = 0; // swallow the click that may follow a long press
@@ -32489,6 +37926,24 @@
         start: ok ? () => { tile.click(); clickVisibleStart(); } : null,
         plan: { area: "visual", what: "ex:" + id },
         kombi: ok ? () => startKombiWith("visual", () => openVisualComboCapture(id, icon ? icon.outerHTML : "", null, null)) : null,
+      };
+    }
+    if (tile.dataset.neuroEx) {
+      const nx = tile.dataset.neuroEx;
+      return {
+        title: name("h3"), open: () => tile.click(),
+        start: () => { openNeuroReady(nx); clickVisibleStart(); },
+        plan: { area: "neuro", what: "neuro:" + nx },
+        kombi: () => startKombiWith("neuro", () => openNeuroComboCapture(nx, null, null)),
+      };
+    }
+    if (tile.dataset.actEx) {
+      const ax = tile.dataset.actEx;
+      return {
+        title: name("h3"), open: () => tile.click(),
+        start: () => { openActivationExercise(ax); clickVisibleStart(); },
+        plan: { area: "activation", what: "act:" + ax },
+        kombi: ax === "optodrum" ? () => startKombiWith("activation", () => openOptoComboCapture(null, null)) : null,
       };
     }
     if (tile.classList.contains("nat-tile")) {
@@ -32882,8 +38337,8 @@
   const SWIPE_BTN_W = 84, SWIPE_GAP = 8;
   const SWIPE_ROWS = [
     { sel: "#dayEvents .event-item", acts: (row) => {
-      const id = row.dataset.event;
-      return [{ label: "Bearbeiten", run: () => openEventSheet(id) }, { label: "Löschen", del: true, run: () => askDeleteEvent(id) }];
+      const id = row.dataset.event, date = row.dataset.eventDate;
+      return [{ label: "Bearbeiten", run: () => openEventSheet(id, date) }, { label: "Löschen", del: true, run: () => askDeleteEvent(id, date) }];
     } },
     { sel: "#dayPanelBody .day-item:not(.compact)", acts: (row) => {
       const date = todaySel;
@@ -33063,11 +38518,799 @@
       .observe(document.body, { subtree: true, attributes: true, attributeFilter: ["hidden"], childList: true });
   })();
 
+  // ==== QR-Übergabe (Idee 69, Fabian 2026-10-08, Variante A + Kunden-Training) ====
+  // A client trains on the trainer's phone; at the end the trainer shows one
+  // QR code (or 2-3 in a row) and the client's app takes the runs into its
+  // own history, tagged "bei deinem Trainer". No server: the data travels in
+  // the URL fragment (#import=…), which browsers never send anywhere.
+  // Payload = {v:1, e:[[id, tsSeconds, kind, title, seconds, note, rating,
+  // aborted, exId, progKey], …]} (trailing empty fields dropped), deflate-raw
+  // when CompressionStream exists ("z…") or plain ("j…"), base64url.
+  // Never the name (fwmc-name-v1), settings, plan or anything else.
+  // Token: "<part>.<parts>.<group>.<data chunk>". Details: docs/notes/36.
+  // ---- Freischaltungen per Code (Fabian 08.10.): code type
+  // "feature-unlock" {type, name, features:[…], lock?} switches app features
+  // on (or off with lock:true) on this device, like "neuro-unlock"; one code
+  // may carry several. Registry FEATURE_UNLOCKS: a new feature = one entry
+  // here + its checkbox in dashboard.html's FEATURE_UNLOCKS copy. Per entry:
+  // label, on/off (toast text), screen (+ tab, focus element) shown after
+  // an unlock, apply() re-renders what depends on it. Every active feature
+  // also sets body.feat-<key>, so CSS alone can show/hide things.
+  // Store fwmc-features-v1 = {feature: true}; tests: fwmc-test-<feature>.
+  var FEATURES_KEY = "fwmc-features-v1";
+  var FEATURE_UNLOCKS = {
+    "trainer-tools": {
+      label: "Trainer-Werkzeuge",
+      on: "Trainer-Werkzeuge sind jetzt freigeschaltet. Du findest sie unter Fortschritt.",
+      off: "Trainer-Werkzeuge sind wieder ausgeblendet.",
+      tab: "today", screen: "progressScreen", focus: "handoverGroup",
+      apply: () => hoRenderProgressGroup(),
+    },
+  };
+  function featureOn(f) {
+    if (readJSON(FEATURES_KEY, {})[f] === true) return true;
+    return !!(navigator.webdriver && readJSON("fwmc-test-" + f, false));
+  }
+  function applyFeatureClasses() {
+    Object.keys(FEATURE_UNLOCKS).forEach((f) => document.body.classList.toggle("feat-" + f, featureOn(f)));
+  }
+  function applyFeatureUnlockCode(def) {
+    const cur = readJSON(FEATURES_KEY, {});
+    const fs = def.features.filter((f) => FEATURE_UNLOCKS[f]);
+    fs.forEach((f) => { if (def.lock) delete cur[f]; else cur[f] = true; });
+    writeJSON(FEATURES_KEY, cur);
+    applyFeatureClasses();
+    fs.forEach((f) => { try { FEATURE_UNLOCKS[f].apply && FEATURE_UNLOCKS[f].apply(); } catch (e) { /* ignore */ } });
+    const first = FEATURE_UNLOCKS[fs[0]];
+    const labels = fs.map((f) => FEATURE_UNLOCKS[f].label).join(", ");
+    const msg = fs.length === 1 ? first[def.lock ? "off" : "on"]
+      : def.lock ? `Wieder ausgeblendet: ${labels}.` : `Jetzt freigeschaltet: ${labels}.`;
+    if (first.screen) {
+      if (first.tab) activateSectionTab(first.tab);
+      showScreen(first.screen);
+    }
+    showToast(msg);
+    if (!def.lock && first.focus) { const g = $(first.focus); if (g) g.scrollIntoView({ block: "center" }); }
+  }
+  var HO_SESSION_KEY = "fwmc-client-session-v1"; // {start, snap:{key: raw|null}}
+  var HO_RUNS_KEY = "fwmc-client-runs-v1"; // Kunden-Training runs waiting for the handover
+  var HO_PARTS_KEY = "fwmc-import-parts-v1"; // {g, n, ts, parts:{i: chunk}} while 2-3 codes are scanned (not in backups)
+  var HO_APP_URL = "https://fwmcoaching.github.io/fwmc-Training-app/";
+  var HO_SINGLE_MAX = 1200; // a whole URL up to this length fits one code
+  var HO_PART_MAX = 1000; // data characters per code when split
+  // Kunden-Training snapshots these on start and puts them back on "Beenden",
+  // so a client's runs never set this device's bests or "Weitermachen".
+  var HO_SNAP_RE = /^fwmc-(.*-best-v1|resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1)$/;
+  function hoSession() {
+    const s = readJSON("fwmc-client-session-v1", null);
+    return s && typeof s.start === "number" ? s : null;
+  }
+  function hoClientRunActive() { return !!hoSession(); }
+  function hoClientRuns() { const l = readJSON("fwmc-client-runs-v1", []); return Array.isArray(l) ? l : []; }
+  function hoAddClientRun(item) {
+    const s = hoSession();
+    item.client = s ? s.start : 1;
+    const l = hoClientRuns();
+    l.unshift(item);
+    writeJSON(HO_RUNS_KEY, l.slice(0, 200));
+    hoSyncStrip();
+    return item.id;
+  }
+  function hoPatchClientRun(id, fn) {
+    const l = hoClientRuns();
+    const it = l.find((e) => e.id === id);
+    if (!it) return;
+    fn(it);
+    writeJSON(HO_RUNS_KEY, l);
+  }
+  const hoHM = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const hoCount = (n) => (n === 1 ? "1 Training" : `${n} Trainings`);
+  function hoWhen(ts) {
+    const d = new Date(ts);
+    const today = new Date();
+    if (d.toDateString() === today.toDateString()) return hoHM(d);
+    return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}. ${hoHM(d)}`;
+  }
+
+  // ---- encoding ----
+  function hoB64u(bytes) {
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function hoUnB64u(str) {
+    const b = atob(str.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((str.length + 3) % 4));
+    const out = new Uint8Array(b.length);
+    for (let i = 0; i < b.length; i++) out[i] = b.charCodeAt(i);
+    return out;
+  }
+  async function hoStream(bytes, Ctor) {
+    const st = new Blob([bytes]).stream().pipeThrough(new Ctor("deflate-raw"));
+    return new Uint8Array(await new Response(st).arrayBuffer());
+  }
+  function hoPack(e) {
+    const a = [String(e.id || ""), Math.round(new Date(e.ts).getTime() / 1000), String(e.kind || ""), String(e.title || ""),
+      Math.max(0, Math.round(Number(e.seconds) || 0)), String(e.note || ""), Number(e.rating) || 0, e.aborted ? 1 : 0,
+      String(e.exId || ""), String(e.progKey || "")];
+    while (a.length > 4 && (a[a.length - 1] === "" || a[a.length - 1] === 0)) a.pop();
+    return a;
+  }
+  async function hoEncode(entries) {
+    const bytes = new TextEncoder().encode(JSON.stringify({ v: 1, e: entries.map(hoPack) }));
+    if (typeof CompressionStream === "function") {
+      try { return "z" + hoB64u(await hoStream(bytes, CompressionStream)); } catch (e) { /* plain below */ }
+    }
+    return "j" + hoB64u(bytes);
+  }
+  const hoStr = (v, max) => (v == null || v === "" ? "" : typeof v === "string" && v.length <= max ? v : null);
+  function hoUnpack(a) {
+    if (!Array.isArray(a) || a.length < 4) return null;
+    const [id, t, kind, title, sec = 0, note = "", rating = 0, aborted = 0, exId = "", progKey = ""] = a;
+    const nowS = Date.now() / 1000;
+    const ok = typeof id === "string" && /^[\w.-]{1,40}$/.test(id) && typeof t === "number" && t > 1577836800 && t < nowS + 86400 &&
+      typeof kind === "string" && /^[a-z0-9-]{0,40}$/.test(kind) && typeof title === "string" && title.trim() && title.length <= 120 &&
+      typeof sec === "number" && sec >= 0 && sec <= 86400 && hoStr(note, 300) !== null && [0, 1, 2, 3, 4, 5].includes(rating) &&
+      (aborted === 0 || aborted === 1) && hoStr(exId, 60) !== null && hoStr(progKey, 80) !== null;
+    if (!ok) return null;
+    return { id, t, kind, title, seconds: Math.round(sec), note, rating, aborted: aborted === 1, exId, progKey };
+  }
+  // Returns the entries or throws (any problem = one friendly message).
+  async function hoDecode(data) {
+    if (typeof data !== "string" || data.length < 2 || data.length > 30000 || !/^[zj][A-Za-z0-9_-]+$/.test(data)) throw new Error("format");
+    let bytes = hoUnB64u(data.slice(1));
+    if (data[0] === "z") {
+      if (typeof DecompressionStream !== "function") throw new Error("nodecomp");
+      bytes = await hoStream(bytes, DecompressionStream);
+    }
+    const obj = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+    if (!obj || obj.v !== 1 || !Array.isArray(obj.e) || !obj.e.length || obj.e.length > 200) throw new Error("shape");
+    const out = obj.e.map(hoUnpack);
+    if (out.some((x) => !x)) throw new Error("entry");
+    return out;
+  }
+  function hoBaseUrl() {
+    const h = location.hostname;
+    const own = /^https?:$/.test(location.protocol) && (/github\.io$/.test(h) || /fabian-westermann\.de$/.test(h) || h === "localhost" || h === "127.0.0.1");
+    return own ? location.origin + location.pathname : HO_APP_URL;
+  }
+  // One token per code. Short enough = one code, else equal parts.
+  function hoTokens(data) {
+    const g = Math.random().toString(36).slice(2, 6).padEnd(4, "0");
+    const head = hoBaseUrl() + "#import=1.1." + g + ".";
+    if (head.length + data.length <= HO_SINGLE_MAX) return [`1.1.${g}.${data}`];
+    const n = Math.ceil(data.length / HO_PART_MAX);
+    const size = Math.ceil(data.length / n);
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(`${i + 1}.${n}.${g}.${data.slice(i * size, (i + 1) * size)}`);
+    return out;
+  }
+  function hoParseToken(raw) {
+    let s = String(raw || "").replace(/\s+/g, "");
+    const at = s.indexOf("import=");
+    if (at >= 0) s = s.slice(at + 7);
+    try { s = decodeURIComponent(s); } catch (e) { return null; }
+    const m = /^(\d{1,2})\.(\d{1,2})\.([a-z0-9]{2,8})\.([A-Za-z0-9_-]+)$/.exec(s);
+    if (!m) return null;
+    const i = Number(m[1]), n = Number(m[2]);
+    if (n < 1 || i < 1 || i > n || n > 20) return null;
+    return { i, n, g: m[3], chunk: m[4] };
+  }
+  // Collects the parts of a split code (localStorage, because the iPhone
+  // camera opens every scan in a new Safari tab). Returns the whole data or
+  // {need: next part number, n}.
+  function hoCollect(tok) {
+    if (tok.n === 1) return { data: tok.chunk };
+    let st = readJSON(HO_PARTS_KEY, null);
+    if (!st || st.g !== tok.g || st.n !== tok.n || Date.now() - (st.ts || 0) > 30 * 60000) st = { g: tok.g, n: tok.n, ts: Date.now(), parts: {} };
+    st.parts[tok.i] = tok.chunk;
+    st.ts = Date.now();
+    const have = Object.keys(st.parts).length;
+    if (have >= tok.n) {
+      try { localStorage.removeItem(HO_PARTS_KEY); } catch (e) { /* private mode */ }
+      let data = "";
+      for (let i = 1; i <= tok.n; i++) data += st.parts[i];
+      return { data };
+    }
+    writeJSON(HO_PARTS_KEY, st);
+    let need = 1;
+    while (st.parts[need]) need++;
+    return { need, n: tok.n, have };
+  }
+
+  // ---- import on the client's phone ----
+  function hoImport(entries) {
+    const p = loadProgress(); // seeds from the old history first, so nothing counts twice
+    const list = loadHistory();
+    const seen = new Set();
+    list.forEach((e) => { seen.add(`${e.srcId || e.id}|${Math.round(new Date(e.ts).getTime() / 1000)}`); });
+    let added = 0;
+    entries.forEach((x) => {
+      const key = `${x.id}|${x.t}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const item = { id: `tr${x.id}-${Math.random().toString(36).slice(2, 6)}`, ts: new Date(x.t * 1000).toISOString(), rating: x.rating || null,
+        kind: x.kind, title: x.title, seconds: x.seconds, trainer: 1, srcId: x.id };
+      if (x.note) item.note = x.note;
+      if (x.aborted) item.aborted = true;
+      if (x.exId) item.exId = x.exId;
+      if (x.progKey) item.progKey = x.progKey;
+      list.push(item);
+      if (!item.aborted) progressAdd(p, item);
+      added++;
+    });
+    if (added) {
+      list.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+      writeJSON(HISTORY_KEY, list.slice(0, 200));
+      writeJSON(PROGRESS_KEY, p);
+      reminderPlanChanged();
+      hoRefreshViews();
+    }
+    return added;
+  }
+  function hoRefreshViews() {
+    renderHistory();
+    if (!els.todayHome.hidden) renderToday();
+    if (!els.progressScreen.hidden) { renderProgressScreen(); hoRenderProgressGroup(); }
+  }
+  function hoClearHash() {
+    if (!/^#import=/.test(location.hash)) return;
+    try { history.replaceState(history.state, "", location.pathname + location.search); } catch (e) { /* ignore */ }
+  }
+  let hoPendingImport = null; // {entries, data}
+  function hoIosBrowser() {
+    const forced = readJSON("fwmc-test-ios-browser", null);
+    if (forced !== null) return !!forced;
+    return isIOS && !standalone;
+  }
+  function hoOpenSheet() {
+    const sheet = $("handoverImportSheet");
+    sheet.hidden = false;
+    // Focus the dialog itself, not a button: no focus ring on open (Prüfer 08.10.).
+    const inner = sheet.querySelector(".sheet-inner");
+    if (inner) { inner.tabIndex = -1; inner.focus({ preventScroll: true }); }
+  }
+  function hoShowImportError(text) {
+    hoPendingImport = null;
+    $("handoverImportTitle").textContent = "Das hat nicht geklappt";
+    $("handoverImportText").textContent = text || "Der Code ließ sich nicht lesen. Es wurde nichts übernommen. Lass dir den QR-Code bitte noch einmal zeigen.";
+    $("handoverImportList").hidden = true;
+    $("handoverImportIos").hidden = true;
+    $("handoverImportYesBtn").hidden = true;
+    $("handoverImportCopyBtn").hidden = true;
+    $("handoverImportNoBtn").textContent = "Schließen";
+    hoOpenSheet();
+  }
+  function hoShowNeedNext(r) {
+    hoPendingImport = null;
+    $("handoverImportTitle").textContent = `Code ${r.have} von ${r.n} gelesen`;
+    $("handoverImportText").textContent = `Es gibt ${r.n} Codes. Scanne jetzt Code ${r.need} von ${r.n} mit der Kamera.`;
+    $("handoverImportList").hidden = true;
+    $("handoverImportIos").hidden = true;
+    $("handoverImportYesBtn").hidden = true;
+    $("handoverImportCopyBtn").hidden = true;
+    $("handoverImportNoBtn").textContent = "OK";
+    hoOpenSheet();
+  }
+  function hoShowImport(entries, data, fromPaste) {
+    hoPendingImport = { entries, data };
+    $("handoverImportTitle").textContent = `${hoCount(entries.length)} von deinem Trainer übernehmen?`;
+    $("handoverImportText").textContent = "Sie kommen in deinen Verlauf und zählen für deinen Fortschritt.";
+    const ul = $("handoverImportList");
+    ul.hidden = false;
+    ul.innerHTML = entries.map((x) => `<li><span class="h-title">${esc(x.title)}</span><span class="h-meta">${hoWhen(x.t * 1000)}${x.seconds ? " · " + fmtMinutes(x.seconds) : ""}</span></li>`).join("");
+    const ios = hoIosBrowser() && !fromPaste;
+    $("handoverImportIos").hidden = !ios;
+    $("handoverImportCopyBtn").hidden = !ios;
+    $("handoverImportCopyBtn").textContent = "Code kopieren";
+    $("handoverImportYesBtn").hidden = false;
+    $("handoverImportYesBtn").textContent = ios ? "Hier in Safari übernehmen" : "Übernehmen";
+    $("handoverImportNoBtn").textContent = "Nicht jetzt";
+    hoOpenSheet();
+  }
+  async function hoHandleToken(raw, fromPaste) {
+    const tok = hoParseToken(raw);
+    if (!tok) { hoShowImportError(); return; }
+    const r = hoCollect(tok);
+    if (!r.data) { hoShowNeedNext(r); return; }
+    await hoHandleData(r.data, fromPaste);
+  }
+  async function hoHandleData(data, fromPaste) {
+    const r = { data };
+    try {
+      const entries = await hoDecode(r.data);
+      hoShowImport(entries, r.data, fromPaste);
+    } catch (e) {
+      hoShowImportError(e && e.message === "nodecomp"
+        ? "Dieser Browser kann den Code nicht lesen. Bitte aktualisiere dein Handy oder öffne die App in einem aktuellen Browser. Es wurde nichts übernommen."
+        : null);
+    }
+  }
+  function hoCheckHash() {
+    if (!/^#import=/.test(location.hash)) return;
+    const raw = location.hash;
+    hoClearHash();
+    hoHandleToken(raw, false);
+  }
+  function hoCloseImport() {
+    $("handoverImportSheet").hidden = true;
+    hoPendingImport = null;
+  }
+  $("handoverImportYesBtn").addEventListener("click", () => {
+    const p = hoPendingImport;
+    hoCloseImport();
+    if (!p) return;
+    const n = hoImport(p.entries);
+    showToast(n ? `${hoCount(n)} übernommen.` : "Diese Trainings sind schon in deinem Verlauf.");
+  });
+  $("handoverImportNoBtn").addEventListener("click", hoCloseImport);
+  $("handoverImportSheet").addEventListener("click", (e) => { if (e.target === e.currentTarget) hoCloseImport(); });
+  $("handoverImportSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") hoCloseImport(); });
+  async function hoCopy(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* fallback below */ }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return ok;
+    } catch (e) { return false; }
+  }
+  $("handoverImportCopyBtn").addEventListener("click", async () => {
+    const p = hoPendingImport;
+    if (!p) return;
+    const ok = await hoCopy(`1.1.code.${p.data}`);
+    $("handoverImportCopyBtn").textContent = ok ? "Kopiert ✓" : "Kopieren ging nicht";
+    if (ok) showToast("Kopiert. Öffne jetzt die App vom Startbildschirm: Fortschritt › Trainer-QR-Code scannen › Code von Hand einfügen.");
+  });
+  // Paste field (home-screen app on the iPhone: Safari has its own storage)
+  function hoOpenPaste() {
+    $("handoverPasteInput").value = "";
+    $("handoverPasteError").hidden = true;
+    $("handoverPasteSheet").hidden = false;
+    $("handoverPasteInput").focus();
+  }
+  function hoClosePaste() { $("handoverPasteSheet").hidden = true; }
+  $("handoverPasteCancelBtn").addEventListener("click", hoClosePaste);
+  $("handoverPasteSheet").addEventListener("click", (e) => { if (e.target === e.currentTarget) hoClosePaste(); });
+  $("handoverPasteSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") hoClosePaste(); });
+  $("handoverPasteGoBtn").addEventListener("click", () => {
+    const v = $("handoverPasteInput").value;
+    if (!hoParseToken(v) && /[#?&]code=/.test(v) && codeFromQrText(v)) { hoClosePaste(); openCodeAsTyped(codeFromQrText(v)); return; }
+    if (!hoParseToken(v)) {
+      $("handoverPasteError").textContent = "Das sieht nicht nach einem Übergabe-Code aus. Kopiere ihn bitte noch einmal.";
+      $("handoverPasteError").hidden = false;
+      return;
+    }
+    hoClosePaste();
+    hoHandleToken(v, true);
+  });
+  // ---- Trainer-QR-Code scannen (Fabian 08.10.): in-app camera. The read
+  // token goes the same way as #import= / paste (parts, dedupe, the
+  // "übernehmen?" sheet). BarcodeDetector where it exists, else jsqr.js
+  // (vendored, loaded only here). Nothing is stored or sent. ----
+  let hoScan = null; // {stream, timer, detector, canvas, lastRaw}
+  let hoJsQrLib = null;
+  function hoLoadJsQr() {
+    if (window.jsQR) return Promise.resolve(window.jsQR);
+    if (hoJsQrLib) return hoJsQrLib;
+    hoJsQrLib = new Promise((res, rej) => {
+      const sc = document.createElement("script");
+      sc.src = "jsqr.js";
+      sc.onload = () => (window.jsQR ? res(window.jsQR) : rej(new Error("jsqr")));
+      sc.onerror = () => { hoJsQrLib = null; rej(new Error("jsqr")); };
+      document.head.appendChild(sc);
+    });
+    return hoJsQrLib;
+  }
+  function hoScanStatus(t) { $("handoverScanStatus").textContent = t || ""; }
+  function hoScanError(t) {
+    hoScanStop();
+    $("handoverScanView").hidden = true;
+    $("handoverScanHelp").hidden = true;
+    $("handoverScanError").textContent = t;
+    $("handoverScanError").hidden = false;
+    hoScanStatus("");
+  }
+  function hoScanStop() {
+    const sc = hoScan;
+    hoScan = null;
+    if (!sc) return;
+    clearTimeout(sc.timer);
+    if (sc.stream) sc.stream.getTracks().forEach((t) => { try { t.stop(); } catch (e) {} });
+    const v = $("handoverScanVideo");
+    try { v.pause(); } catch (e) {}
+    v.srcObject = null;
+  }
+  async function hoOpenScan() {
+    const sheet = $("handoverScanSheet");
+    $("handoverScanView").hidden = false;
+    $("handoverScanHelp").hidden = false;
+    $("handoverScanError").hidden = true;
+    hoScanStatus("Kamera startet …");
+    sheet.hidden = false;
+    const inner = sheet.querySelector(".sheet-inner");
+    if (inner) { inner.tabIndex = -1; inner.focus({ preventScroll: true }); }
+    if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      hoScanError("Die Kamera lässt sich hier nicht öffnen. Öffne die App über ihre normale Adresse oder vom Startbildschirm, oder füge den Code von Hand ein.");
+      return;
+    }
+    const sc = { stream: null, timer: 0, detector: null, canvas: null, lastRaw: "" };
+    hoScan = sc;
+    try {
+      sc.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+    } catch (e) {
+      if (hoScan !== sc) return;
+      const n = e && e.name;
+      hoScanError(n === "NotAllowedError" || n === "SecurityError"
+        ? "Die App darf die Kamera nicht nutzen. Du kannst das in den Einstellungen deines Handys erlauben, oder du fügst den Code von Hand ein."
+        : n === "NotFoundError" || n === "OverconstrainedError"
+          ? "Auf diesem Gerät wurde keine Kamera gefunden. Füge den Code von Hand ein."
+          : "Die Kamera ließ sich nicht starten. Versuche es noch einmal oder füge den Code von Hand ein.");
+      return;
+    }
+    if (hoScan !== sc) { sc.stream.getTracks().forEach((t) => t.stop()); return; }
+    const v = $("handoverScanVideo");
+    v.srcObject = sc.stream;
+    try { await v.play(); } catch (e) { /* autoplay muted: fine */ }
+    try {
+      if ("BarcodeDetector" in window) {
+        const formats = window.BarcodeDetector.getSupportedFormats ? await window.BarcodeDetector.getSupportedFormats() : ["qr_code"];
+        if (formats.includes("qr_code")) sc.detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+      }
+    } catch (e) { sc.detector = null; }
+    if (!sc.detector) {
+      try { await hoLoadJsQr(); } catch (e) { if (hoScan === sc) hoScanError("Der Scanner ließ sich nicht laden. Prüfe die Verbindung oder füge den Code von Hand ein."); return; }
+    }
+    if (hoScan !== sc) return;
+    hoScanStatus("");
+    hoScanTick(sc);
+  }
+  async function hoScanRead(sc) {
+    const v = $("handoverScanVideo");
+    if (!v.videoWidth || v.readyState < 2) return "";
+    if (sc.detector) {
+      const codes = await sc.detector.detect(v);
+      return codes && codes[0] ? String(codes[0].rawValue || "") : "";
+    }
+    const scale = Math.min(1, 720 / Math.max(v.videoWidth, v.videoHeight));
+    const w = Math.round(v.videoWidth * scale), h = Math.round(v.videoHeight * scale);
+    if (!sc.canvas) sc.canvas = document.createElement("canvas");
+    sc.canvas.width = w; sc.canvas.height = h;
+    const ctx = sc.canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(v, 0, 0, w, h);
+    const r = window.jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "dontInvert" });
+    return r && r.data ? String(r.data) : "";
+  }
+  async function hoScanTick(sc) {
+    if (hoScan !== sc) return;
+    let raw = "";
+    try { raw = await hoScanRead(sc); } catch (e) { raw = ""; }
+    if (hoScan !== sc) return;
+    if (raw && raw !== sc.lastRaw) {
+      sc.lastRaw = raw;
+      const tok = hoParseToken(raw);
+      const code = tok ? "" : codeFromQrText(raw);
+      if (code) {
+        // A trainer code (training, plan, Freischaltung): same path as typing it.
+        hoScanStop();
+        $("handoverScanSheet").hidden = true;
+        openCodeAsTyped(code);
+        return;
+      }
+      if (!tok) hoScanStatus("Das ist kein Code deines Trainers. Halte die Kamera auf den QR-Code deines Trainers.");
+      else {
+        const r = hoCollect(tok);
+        if (!r.data) {
+          hoScanStatus(`Code ${r.have} von ${r.n} gelesen. Halte die Kamera jetzt auf Code ${r.need}.`);
+        } else {
+          hoScanStop();
+          $("handoverScanSheet").hidden = true;
+          hoHandleData(r.data, true);
+          return;
+        }
+      }
+    }
+    sc.timer = setTimeout(() => hoScanTick(sc), 160);
+  }
+  function hoCloseScan() { hoScanStop(); $("handoverScanSheet").hidden = true; }
+  $("handoverScanOpenBtn").addEventListener("click", hoOpenScan);
+  $("handoverScanCancelBtn").addEventListener("click", hoCloseScan);
+  $("handoverScanPasteBtn").addEventListener("click", () => { hoCloseScan(); hoOpenPaste(); });
+  $("handoverScanSheet").addEventListener("click", (e) => { if (e.target === e.currentTarget) hoCloseScan(); });
+  $("handoverScanSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") hoCloseScan(); });
+  // Closed any other way (pull-down, leaving the page): the camera goes off too.
+  new MutationObserver(() => { if ($("handoverScanSheet").hidden) hoScanStop(); }).observe($("handoverScanSheet"), { attributes: true, attributeFilter: ["hidden"] });
+  document.addEventListener("visibilitychange", () => { if (document.hidden && hoScan) hoCloseScan(); });
+  if (navigator.webdriver) window.__hoScan = () => ({ open: !$("handoverScanSheet").hidden, running: !!hoScan, detector: !!(hoScan && hoScan.detector), tracks: hoScan && hoScan.stream ? hoScan.stream.getTracks().filter((t) => t.readyState === "live").length : 0 });
+  window.addEventListener("hashchange", hoCheckHash);
+
+  // ---- trainer side: pick entries ----
+  let hoRange = "since";
+  let hoSinceMin = null; // minutes after midnight
+  let hoChecked = new Set();
+  let hoRangeIds = [];
+  let hoQr = null; // {ids, source:"history"|"client", tokens, idx, meta}
+  function hoDefaultSince() {
+    const now = Date.now();
+    const recent = loadHistory().filter((e) => now - new Date(e.ts).getTime() <= 2 * 3600000);
+    const d = recent.length ? new Date(Math.min(...recent.map((e) => new Date(e.ts).getTime()))) : new Date(now - 3600000);
+    return d.getHours() * 60 + Math.floor(d.getMinutes() / 5) * 5;
+  }
+  function hoRangeFrom() {
+    const now = new Date();
+    if (hoRange !== "since") return now.getTime() - Number(hoRange) * 60000;
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), Math.floor(hoSinceMin / 60), hoSinceMin % 60);
+    if (d.getTime() > now.getTime()) d.setDate(d.getDate() - 1); // "seit 23:30" after midnight
+    return d.getTime();
+  }
+  const hoMinText = (m) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  function hoRenderPick(resetChecks) {
+    const from = hoRangeFrom();
+    const list = loadHistory().filter((e) => new Date(e.ts).getTime() >= from);
+    hoRangeIds = list.map((e) => e.id);
+    if (resetChecks) hoChecked = new Set(hoRangeIds);
+    $("handoverSinceLabel").textContent = `seit ${hoMinText(hoSinceMin)}`;
+    $("handoverSinceInput").value = hoMinText(hoSinceMin);
+    $("handoverSinceRow").hidden = hoRange !== "since";
+    document.querySelectorAll("#handoverRangeRow .choice").forEach((b) => {
+      const on = b.dataset.hoRange === hoRange;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    const ul = $("handoverList");
+    ul.innerHTML = list.length ? list.map((e) => `<li><label class="checkbox-row tap-row handover-check"><input type="checkbox" data-ho-id="${esc(e.id)}"${hoChecked.has(e.id) ? " checked" : ""}>
+        <span class="handover-check-text"><span class="h-title">${esc(e.title)}</span><span class="h-meta">${hoWhen(e.ts)}${e.seconds ? " · " + fmtMinutes(e.seconds) : ""}${e.aborted ? " · abgebrochen" : ""}</span></span></label></li>`).join("")
+      : '<li class="history-empty">In diesem Zeitraum gibt es kein Training. Wähle einen früheren Zeitpunkt.</li>';
+    ul.querySelectorAll("input[data-ho-id]").forEach((cb) => cb.addEventListener("change", () => {
+      if (cb.checked) hoChecked.add(cb.dataset.hoId); else hoChecked.delete(cb.dataset.hoId);
+      hoSyncGo();
+    }));
+    hoSyncGo();
+  }
+  function hoSelectedIds() { return hoRangeIds.filter((id) => hoChecked.has(id)); }
+  function hoSyncGo() {
+    const n = hoSelectedIds().length;
+    const btn = $("handoverGoBtn");
+    btn.disabled = n === 0;
+    btn.textContent = `${hoCount(n)} übergeben`;
+  }
+  function hoOpenPick() {
+    hoRange = "since";
+    hoSinceMin = hoDefaultSince();
+    hoRenderPick(true);
+    showScreen("handoverScreen");
+  }
+  document.querySelectorAll("#handoverRangeRow .choice").forEach((b) => b.addEventListener("click", () => {
+    hoRange = b.dataset.hoRange;
+    hoRenderPick(true);
+    if (hoRange === "since") $("handoverSinceInput").focus();
+  }));
+  $("handoverSinceInput").addEventListener("change", () => {
+    const m = /^(\d{1,2}):(\d{2})/.exec($("handoverSinceInput").value);
+    if (!m) return;
+    hoSinceMin = Math.min(23 * 60 + 59, Number(m[1]) * 60 + Number(m[2]));
+    hoRenderPick(true);
+  });
+  $("handoverOpenBtn").addEventListener("click", hoOpenPick);
+  $("handoverBackBtn").addEventListener("click", () => showScreen("progressScreen"));
+  $("handoverGoBtn").addEventListener("click", () => {
+    const ids = hoSelectedIds();
+    if (!ids.length) return;
+    const meta = hoRange === "since" ? `seit ${hoMinText(hoSinceMin)} Uhr` : `letzte ${hoRange} Min.`;
+    hoStartQr(ids, "history", meta);
+  });
+
+  // ---- QR screen ----
+  let hoQrLib = null;
+  function hoLoadQrLib() {
+    if (window.qrcode) return Promise.resolve(window.qrcode);
+    if (hoQrLib) return hoQrLib;
+    hoQrLib = new Promise((res, rej) => {
+      const s = document.createElement("script");
+      s.src = "qrcode.js";
+      s.onload = () => (window.qrcode ? res(window.qrcode) : rej(new Error("qr")));
+      s.onerror = () => { hoQrLib = null; rej(new Error("qr")); };
+      document.head.appendChild(s);
+    });
+    return hoQrLib;
+  }
+  function hoEntriesFor(ids, source) {
+    const all = source === "client" ? hoClientRuns() : loadHistory();
+    return all.filter((e) => ids.includes(e.id));
+  }
+  async function hoStartQr(ids, source, meta) {
+    const entries = hoEntriesFor(ids, source);
+    if (!entries.length) return;
+    const data = await hoEncode(entries);
+    hoQr = { ids, source, tokens: hoTokens(data), idx: 0, meta, n: entries.length };
+    $("handoverQrMeta").textContent = `${hoCount(entries.length)} · ${meta}`;
+    $("handoverQrError").hidden = true;
+    showScreen("handoverQrScreen");
+    hoDrawQr();
+  }
+  async function hoDrawQr() {
+    if (!hoQr) return;
+    const multi = hoQr.tokens.length > 1;
+    $("handoverPartNav").hidden = !multi;
+    $("handoverPartLabel").textContent = `Code ${hoQr.idx + 1} von ${hoQr.tokens.length}`;
+    $("handoverPrevBtn").disabled = hoQr.idx === 0;
+    $("handoverNextBtn").disabled = hoQr.idx >= hoQr.tokens.length - 1;
+    $("handoverQrHint").textContent = multi ? `Erst Code ${hoQr.idx + 1} scannen lassen, dann mit › zum nächsten. Die App deines Kunden sammelt die Teile.` : "";
+    $("handoverQrHint").hidden = !multi;
+    const url = hoBaseUrl() + "#import=" + hoQr.tokens[hoQr.idx];
+    const cv = $("handoverQrCanvas");
+    cv.dataset.url = url;
+    try {
+      const qrcode = await hoLoadQrLib();
+      const qr = qrcode(0, "M");
+      qr.addData(url, "Byte");
+      qr.make();
+      const n = qr.getModuleCount(), quiet = 4, total = n + quiet * 2;
+      const scale = Math.max(2, Math.floor(720 / total));
+      cv.width = cv.height = total * scale;
+      const ctx = cv.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, cv.width, cv.height);
+      ctx.fillStyle = "#0b1a1f";
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * scale, (r + quiet) * scale, scale, scale);
+      cv.dataset.modules = String(n);
+      cv.setAttribute("aria-label", multi ? `QR-Code ${hoQr.idx + 1} von ${hoQr.tokens.length}` : "QR-Code für die Übergabe");
+    } catch (e) {
+      $("handoverQrError").hidden = false;
+    }
+  }
+  $("handoverPrevBtn").addEventListener("click", () => { if (hoQr && hoQr.idx > 0) { hoQr.idx--; hoDrawQr(); } });
+  $("handoverNextBtn").addEventListener("click", () => { if (hoQr && hoQr.idx < hoQr.tokens.length - 1) { hoQr.idx++; hoDrawQr(); } });
+  $("handoverQrBackBtn").addEventListener("click", () => {
+    if (hoQr && hoQr.source === "history") showScreen("handoverScreen"); else showScreen("progressScreen");
+  });
+  function hoDeleteFromHistory(ids) {
+    const p = loadProgress();
+    const list = loadHistory();
+    const keep = [];
+    list.forEach((e) => {
+      if (!ids.includes(e.id)) { keep.push(e); return; }
+      if (e.aborted) return;
+      const day = p.days[progressDay(e.ts)];
+      if (!day) return;
+      const area = historyAreaOf(e);
+      day.n = Math.max(0, day.n - 1);
+      day.s = Math.max(0, day.s - Math.max(0, Math.round(Number(e.seconds) || 0)));
+      if (day.a && day.a[area]) { day.a[area] -= 1; if (day.a[area] <= 0) delete day.a[area]; }
+      if (!day.n) delete p.days[progressDay(e.ts)];
+    });
+    writeJSON(HISTORY_KEY, keep);
+    writeJSON(PROGRESS_KEY, p);
+    reminderPlanChanged();
+    return list.length - keep.length;
+  }
+  $("handoverDoneBtn").addEventListener("click", () => {
+    const q = hoQr;
+    hoQr = null;
+    if (!q) { showScreen("progressScreen"); return; }
+    if (q.source === "client") {
+      const left = hoClientRuns().filter((e) => !q.ids.includes(e.id));
+      writeJSON(HO_RUNS_KEY, left);
+      showScreen("progressScreen");
+      showToast(`Übergeben. ${q.n === 1 ? "Das Kunden-Training ist" : "Die Kunden-Trainings sind"} von deinem Gerät gelöscht.`);
+      return;
+    }
+    showScreen("progressScreen");
+    const n = q.ids.length;
+    confirmDialog("Dein Kunde hat sie jetzt in seiner App.", () => {
+      hoDeleteFromHistory(q.ids);
+      hoRefreshViews();
+      showToast(`${hoCount(n)} gelöscht.`);
+    }, { title: `${n === 1 ? "Dieses Training" : `Diese ${n} Trainings`} auf deinem Gerät löschen?`, yes: "Löschen", no: "Behalten" });
+  });
+
+  // ---- Kunden-Training ----
+  function hoSnapshot() {
+    const snap = {};
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && HO_SNAP_RE.test(k)) snap[k] = localStorage.getItem(k);
+      }
+    } catch (e) { /* private mode */ }
+    return snap;
+  }
+  function hoRestoreSnapshot(snap) {
+    try {
+      const now = [];
+      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && HO_SNAP_RE.test(k)) now.push(k); }
+      now.forEach((k) => { if (!(k in snap)) localStorage.removeItem(k); });
+      Object.entries(snap || {}).forEach(([k, v]) => { if (typeof v === "string") localStorage.setItem(k, v); });
+    } catch (e) { /* private mode */ }
+  }
+  function hoStartClientRun() {
+    if (hoSession()) return;
+    writeJSON(HO_SESSION_KEY, { start: Date.now(), snap: hoSnapshot() });
+    hoSyncStrip();
+    hoRenderProgressGroup();
+    showToast("Kunden-Training läuft. Was jetzt trainiert wird, zählt nicht für dich.");
+  }
+  function hoEndClientRun() {
+    const s = hoSession();
+    if (!s) return;
+    try { localStorage.removeItem(HO_SESSION_KEY); } catch (e) { /* ignore */ }
+    hoRestoreSnapshot(s.snap || {});
+    hoSyncStrip();
+    const runs = hoClientRuns();
+    if (!runs.length) {
+      showScreen("progressScreen");
+      showToast("Kunden-Training beendet. Es wurde kein Training aufgezeichnet.");
+      return;
+    }
+    hoStartQr(runs.map((e) => e.id), "client", `Kunden-Training seit ${hoHM(new Date(Math.min(...runs.map((e) => e.client || s.start))))} Uhr`);
+  }
+  function hoShowPendingQr() {
+    const runs = hoClientRuns();
+    if (!runs.length) return;
+    hoStartQr(runs.map((e) => e.id), "client", "Kunden-Training");
+  }
+  $("clientRunStartBtn").addEventListener("click", hoStartClientRun);
+  $("clientRunEndBtn").addEventListener("click", hoEndClientRun);
+  $("clientRunPendingBtn").addEventListener("click", hoShowPendingQr);
+  $("clientRunDropBtn").addEventListener("click", () => {
+    const n = hoClientRuns().length;
+    confirmDialog(`${n === 1 ? "Das Kunden-Training" : `Die ${n} Kunden-Trainings`} löschen, ohne sie zu übergeben?`, () => {
+      try { localStorage.removeItem(HO_RUNS_KEY); } catch (e) { /* ignore */ }
+      hoRenderProgressGroup();
+    }, { yes: "Löschen", no: "Behalten" });
+  });
+  function hoRenderProgressGroup() {
+    const active = hoClientRunActive();
+    const pending = active ? 0 : hoClientRuns().length;
+    // Freischaltung per Code (Fabian 08.10., code type "feature-unlock"):
+    // "trainer-tools" shows the two trainer buttons; "Trainer-QR-Code
+    // scannen" is for everyone. A running or unsent Kunden-Training stays
+    // reachable after a lock.
+    const tools = featureOn("trainer-tools");
+    $("handoverOpenItem").hidden = !tools;
+    $("clientRunItem").hidden = !(tools || active || pending);
+    $("clientRunStartHelp").hidden = active || !tools;
+    $("clientRunStartBtn").hidden = active || !tools;
+    $("clientRunActiveNote").hidden = !active;
+    $("clientRunPending").hidden = !pending;
+    if (pending) $("clientRunPendingText").textContent = `${hoCount(pending)} aus dem Kunden-Training ${pending === 1 ? "ist" : "sind"} noch nicht übergeben.`;
+  }
+  let hoStripRaf = 0;
+  function hoSyncStrip() {
+    const strip = $("clientRunStrip");
+    const s = hoSession();
+    const onScreen = !!document.querySelector(".screen:not([hidden])");
+    const show = !!s && onScreen;
+    if (s) {
+      const n = hoClientRuns().filter((e) => e.client === s.start).length;
+      $("clientRunSince").textContent = hoHM(new Date(s.start));
+      $("clientRunCount").textContent = n ? ` · ${hoCount(n)}` : "";
+    }
+    if (strip.hidden !== !show) strip.hidden = !show;
+    document.body.classList.toggle("client-run-on", show);
+  }
+  new MutationObserver(() => {
+    if (hoStripRaf) return;
+    hoStripRaf = requestAnimationFrame(() => { hoStripRaf = 0; hoSyncStrip(); });
+  }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["hidden"] });
+  els.handoverScreen = $("handoverScreen");
+  els.handoverQrScreen = $("handoverQrScreen");
+  SCREENS.push("handoverScreen", "handoverQrScreen");
+  NAV_TAB_OF.handoverScreen = "progress";
+  NAV_TAB_OF.handoverQrScreen = "progress";
+  hoSyncStrip();
+
   // ---- Start-up ----
+  applyFeatureClasses();
   renderHistory();
   initStartScreen();
+  const startHash = location.hash;
   openFromHash();
-  if (!startOnboarding() && !readJSON(TIPS_KEY, false)) openTips();
+  // A QR-Übergabe link opens its own sheet; slides and tips wait for the next start.
+  if (/^#import=/.test(location.hash)) hoCheckHash();
+  else if (/^#code=/.test(startHash)) { /* trainer code link: no slides/tips on top */ }
+  else if (!startOnboarding() && !readJSON(TIPS_KEY, false)) openTips();
 
   // ---- Startbild ausblenden (2026-10-05) ----
   // #appSplash covers the first paint; once the app is set up it fades out,

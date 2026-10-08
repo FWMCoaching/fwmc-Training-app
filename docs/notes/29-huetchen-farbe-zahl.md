@@ -37,3 +37,10 @@ disc always fills the free stage), not in CVD_* (no right/wrong feedback).
 Tests: `tests/huetchen_farbe_zahl_1007_test.py`, `hint_overlap_all_test.py`
 (`run_cn`), `text_wrap_audit_test.py` (visual/cone-number). Cardio guest
 index shifts: the 14 VT guests come before periph-flash now (picker 20 types).
+
+## Hilfsmittel für alle Hütchen-Übungen (Fabian 08.10.)
+`HILFSMITTEL` also has `cone-compass` ("Hütchen oder Becher in den eingestellten
+Farben und ein Kreuz oder einen Stern aus Klebeband") and `cone-tap` ("vier
+Hütchen oder Becher in Rot, Gelb, Grün und Blau, nebeneinander vor dir");
+same `.hilfsmittel-note` on the VT ready screen, link empty.
+Test: `tests/hilfsmittel_texte_1008_test.py`.

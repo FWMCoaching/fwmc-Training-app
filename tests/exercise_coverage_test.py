@@ -1,5 +1,8 @@
-import asyncio
+import asyncio, sys
 from playwright.async_api import async_playwright
+# --neuro: run the whole check with Neuro-Aktivierung unlocked (hidden area,
+# 2026-10-08); without it the area must stay invisible and is not counted.
+NEURO = "--neuro" in sys.argv
 URL = "http://localhost:8845/index.html?bereich=visual"
 
 # Standing coverage guard (client rule, 2026-10-02, after Kraftübungen
@@ -38,7 +41,7 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args=["--no-sandbox"])
         ctx = await b.new_context(viewport={"width": 390, "height": 844}, service_workers="block")
-        await ctx.add_init_script("localStorage.setItem('fwmc-tips-seen','true')")
+        await ctx.add_init_script("localStorage.setItem('fwmc-tips-seen','true')" + (";localStorage.setItem('fwmc-test-neuro','true')" if NEURO else ""))
         pg = await ctx.new_page()
         pg.on("pageerror", lambda e: errors.append("pageerror: " + str(e)))
         pg.on("console", lambda m: errors.append("console: " + m.text) if m.type == "error" else None)
@@ -83,6 +86,7 @@ async def main():
         hub_areas = await pg.evaluate("() => [...document.querySelectorAll('#hubAreaGrid .area-tile')].map((t) => t.dataset.area)")
         await pg.evaluate("() => localStorage.removeItem('fwmc-test-bottomnav')")
         print("areas on the Training page:", hub_areas)
+        if NEURO != ("neuro" in hub_areas): fails.append(f"Neuro-Aktivierung on the hub must follow the unlock (unlocked={NEURO})")
         if len(hub_areas) < 7: fails.append(f"Training hub lists only {hub_areas}")
         no_group = [a for a in hub_areas if a != "test" and a not in domains]
         print("every area has its own group in the Kombi:", not no_group, domains)
@@ -99,7 +103,11 @@ async def main():
         if not breath_cards or miss_b: fails.append("Atem missing in Kombi: " + ", ".join(miss_b or ["no cards found"]))
         for dom, sel in [("workout", "#workoutHome > section:not(.featured-programs) .featured-card[id$='StartCard']"),
                          ("movement", "#movementHome .featured-card[id$='StartCard']"),
-                         ("cardio", "#cardioHome .featured-card[id$='StartCard']")]:
+                         ("cardio", "#cardioHome .featured-card[id$='StartCard']"),
+                         # Aktivierung (2026-10-08): every own exercise tile
+                         ("activation", "#activationHome [data-act-ex]")] + (
+                         # Neuro-Aktivierung (2026-10-08): only when the hub shows it (unlocked)
+                         [("neuro", "#neuroHome [data-neuro-ex]")] if "neuro" in hub_areas else []):
             n_cards = await pg.evaluate("(s) => document.querySelectorAll(s).length", sel)
             n_kombi = len(await group_labels(dom))
             print(f"{dom}: every exercise type ({n_cards}) has a Kombi entry ({n_kombi}):", n_cards > 0 and n_kombi >= n_cards)

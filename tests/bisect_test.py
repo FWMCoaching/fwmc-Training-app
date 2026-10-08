@@ -38,7 +38,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#bisectBgColorPicker .color-swatch").count())
         await pg.click('#bisectBgColorPicker .color-swatch[data-key="gruen"]'); await pg.wait_for_timeout(80)
         await pg.fill("#bisectBgIntensitySlider", "0.5"); await pg.dispatch_event("#bisectBgIntensitySlider", "input")
-        print("intensity value label updated:", "50%" in (await pg.inner_text("#bisectBgIntensityValue")))
+        print("intensity value label updated:", "50 %" in (await pg.inner_text("#bisectBgIntensityValue")))
 
         await pg.click('#bisectLengthRow [data-bisect-length="kurz"]'); await pg.wait_for_timeout(60)
         print("kurz marked active:", "active" in (await pg.get_attribute('#bisectLengthRow [data-bisect-length="kurz"]', "class") or ""))
