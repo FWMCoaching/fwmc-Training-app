@@ -169,7 +169,13 @@ async def main():
 
         # ---- 7. Tipps-Karte auf Heute (Fabian 07.10.) ----
         for w, scheme in [(390, "light"), (390, "dark"), (1024, "light")]:
-            ctx, pg = await page(w, 844, scheme, init="localStorage.setItem('fwmc-test-tipshint','true');")
+            # 08.10.: since 07.10. (7e15737, "Heute für Neue") an empty history shows
+            # the newcomer layout (Wochenplan below the code card, progress card
+            # hidden), so "between week and progress" only exists for a regular
+            # client - seed three finished runs (starterStage() -> null).
+            regular = "[" + ",".join('{"id":"r%d","ts":"2026-10-01T10:00:00.000Z","kind":"exercise","exId":"vt-color","title":"X","seconds":300}' % i for i in range(3)) + "]"
+            ctx, pg = await page(w, 844, scheme, init="localStorage.setItem('fwmc-test-tipshint','true');"
+                                 f"if(!localStorage.getItem('fwmc-history-v1'))localStorage.setItem('fwmc-history-v1','{regular}');")
             await pg.goto(BASE + "?bereich=heute"); await pg.wait_for_timeout(500)
             info = await pg.evaluate("""() => { const c = document.getElementById('todayTipsCard').getBoundingClientRect();
               const wk = document.querySelector('.today-week').getBoundingClientRect(), pr = document.querySelector('.today-progress').getBoundingClientRect();
