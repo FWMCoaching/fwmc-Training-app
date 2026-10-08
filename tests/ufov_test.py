@@ -49,7 +49,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#ufovBgColorPicker .color-swatch").count())
         await pg.click('#ufovBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
         await pg.fill("#ufovBgIntensitySlider", "0.6"); await pg.dispatch_event("#ufovBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#ufovBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#ufovBgIntensityValue")))
 
         # "kurz" = 20 trials, enough to exercise the staircase without a long test run.
         await pg.click('#ufovLengthRow [data-ufov-length="kurz"]'); await pg.wait_for_timeout(60)

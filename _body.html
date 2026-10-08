@@ -289,7 +289,7 @@
   <section class="today-hello">
     <h1 class="today-greeting" id="todayGreeting">Guten Tag</h1>
     <p class="today-date" id="todayDate"></p>
-    <button class="text-link small hello-name-btn" id="helloNameBtn" type="button" hidden>+ Wie d&uuml;rfen wir dich nennen?</button>
+    <button class="text-link small hello-name-btn" id="helloNameBtn" type="button" hidden>+ Wie hei&szlig;t du?</button>
     <form class="hello-name-form" id="helloNameForm" hidden>
       <div class="hello-name-row">
         <input type="text" id="helloNameInput" class="plan-input" maxlength="30" autocomplete="given-name" autocapitalize="words" spellcheck="false" placeholder="Dein Vorname" aria-label="Dein Vorname">
@@ -521,7 +521,7 @@
     <button class="back-link" id="gearBackBtn">&larr; Zur&uuml;ck</button>
   </div>
   <h1 class="page-title">Hilfsmittel und Starterpaket</h1>
-  <p class="page-sub">F&uuml;r einige &Uuml;bungen brauchst du ein paar einfache Dinge, zum Beispiel H&uuml;tchen oder eine Farbmatte. Hier siehst du, was wof&uuml;r gebraucht wird. Tippe auf eine &Uuml;bung, um sie zu &ouml;ffnen.</p>
+  <p class="page-sub">F&uuml;r einige &Uuml;bungen brauchst du ein paar einfache Dinge, zum Beispiel H&uuml;tchen oder eine Farbmatte. Hier siehst du, was wof&uuml;r gebraucht wird. Tippe auf eine &Uuml;bung, um sie zu &ouml;ffnen. Hak ab, was du hast. Dann siehst du bei jeder &Uuml;bung, was dir noch fehlt.</p>
   <div class="hub-group-title hub-first">Starterpaket</div>
   <p class="hub-sub">Ein Starterpaket f&uuml;r den Anfang: Diese Dinge brauchst du am h&auml;ufigsten.</p>
   <div class="gear-list" id="gearStarterList"></div>
@@ -589,15 +589,15 @@
     </div>
   </section>
   <div class="group handover-group" id="handoverGroup">
-    <div class="group-label">Training beim Trainer</div>
-    <div class="handover-item">
+    <div class="group-label" id="handoverGroupLabel">Training beim Trainer</div>
+    <div class="handover-item" id="handoverOpenItem">
       <button class="start-btn secondary" id="handoverOpenBtn" type="button">An Kunden &uuml;bergeben</button>
       <p class="group-help">Schickt Trainings per QR-Code auf das Handy deines Kunden.</p>
     </div>
-    <div class="handover-item">
+    <div class="handover-item" id="clientRunItem">
       <button class="start-btn secondary" id="clientRunStartBtn" type="button">Kunden-Training starten</button>
       <p class="group-help" id="clientRunActiveNote" hidden>Ein Kunden-Training l&auml;uft. Beenden kannst du es oben im Streifen.</p>
-      <p class="group-help">Trainiert jetzt ein Kunde auf deinem Ger&auml;t? Dann z&auml;hlt nichts davon f&uuml;r deinen Fortschritt, und am Ende kommt direkt der QR-Code.</p>
+      <p class="group-help" id="clientRunStartHelp">Trainiert jetzt ein Kunde auf deinem Ger&auml;t? Dann z&auml;hlt nichts davon f&uuml;r deinen Fortschritt, und am Ende kommt direkt der QR-Code.</p>
       <div class="handover-pending" id="clientRunPending" hidden>
         <p class="group-help" id="clientRunPendingText"></p>
         <div class="handover-pending-actions">
@@ -606,9 +606,9 @@
         </div>
       </div>
     </div>
-    <div class="handover-item">
-      <button class="text-link small handover-paste-link" id="handoverPasteOpenBtn" type="button">&Uuml;bergabe-Code einf&uuml;gen</button>
-      <p class="group-help">Hast du den Code in Safari kopiert? Hier f&uuml;gst du ihn in der App vom Startbildschirm ein.</p>
+    <div class="handover-item" id="handoverScanItem">
+      <button class="text-link small handover-paste-link" id="handoverScanOpenBtn" type="button">Trainer-QR-Code scannen</button>
+      <p class="group-help">Zeigt dir dein Trainer einen QR-Code mit deinen Trainings? Scanne ihn hier, dann landen sie in dieser App.</p>
     </div>
   </div>
 </div>
@@ -633,6 +633,13 @@
     <div class="group-label">Trainings</div>
     <ul class="history-list handover-list" id="handoverList"></ul>
   </div>
+  <div class="handover-precheck" id="handoverPrecheck">
+    <div class="hilfsmittel-kicker">Bevor dein Kunde scannt:</div>
+    <ul>
+      <li>Hat er die App auf seinem Handy (am besten auf dem Startbildschirm)?</li>
+      <li>Er tippt in seiner App unter Fortschritt auf &bdquo;Trainer-QR-Code scannen&ldquo;.</li>
+    </ul>
+  </div>
   <button class="start-btn" id="handoverGoBtn" type="button" disabled>0 Trainings &uuml;bergeben</button>
 </div>
 
@@ -641,7 +648,7 @@
     <button class="back-link" id="handoverQrBackBtn">&larr; Zur&uuml;ck</button>
   </div>
   <h1 class="page-title">Scannen lassen</h1>
-  <p class="page-sub">Dein Kunde &ouml;ffnet die Kamera und h&auml;lt sie auf den Code. Seine App fragt dann einmal, ob er die Trainings &uuml;bernehmen m&ouml;chte.</p>
+  <p class="page-sub">Dein Kunde tippt in seiner App unter Fortschritt auf &bdquo;Trainer-QR-Code scannen&ldquo;. Seine App fragt dann einmal, ob er die Trainings &uuml;bernehmen m&ouml;chte.</p>
   <div class="handover-qr-card">
     <canvas class="handover-qr" id="handoverQrCanvas" role="img" aria-label="QR-Code f&uuml;r die &Uuml;bergabe" width="10" height="10"></canvas>
     <p class="handover-qr-error" id="handoverQrError" hidden>Der QR-Code konnte nicht erzeugt werden. Bitte lade die Seite neu und versuche es noch einmal.</p>
@@ -738,7 +745,7 @@
 <!-- Regeln + Meine Notiz (Idee 72, 2026-10-08), docs/notes/35 -->
 <div class="sheet" id="regelnSheet" hidden>
   <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="regelnTitle">
-    <h2 id="regelnTitle">Regeln</h2>
+    <h2 id="regelnTitle">Regeln und Notiz</h2>
     <div class="regeln-ex" id="regelnEx"></div>
     <div class="group-label">So geht&rsquo;s gerade</div>
     <ul class="regeln-list" id="regelnList"></ul>
@@ -1928,7 +1935,7 @@
   <section class="hero">
     <div class="hero-kicker">Neuro-Aktivierung</div>
     <h1 class="hero-title">Gezielt aktivieren, Schritt f&uuml;r Schritt.</h1>
-    <p class="hero-text">Gef&uuml;hrte Aktivierungen mit Hilfsmitteln wie Vibrationsger&auml;t oder Massageball. Dein Trainer hat diesen Bereich f&uuml;r dich freigeschaltet.</p>
+    <p class="hero-text">Gef&uuml;hrte Aktivierungen, meist mit Hilfsmitteln wie Vibrationsger&auml;t oder Massageball.</p>
   </section>
 
   <p class="group-help free-trainer-notice" id="neuroUnlockNotice" role="status" hidden>Neu f&uuml;r dich freigeschaltet: Neuro-Aktivierung.</p>
@@ -1945,7 +1952,7 @@
 
   <section class="patterns">
     <div class="section-head">
-      <h2>Aktivierungen mit Hilfsmittel</h2>
+      <h2>&Uuml;bungen</h2>
       <span class="section-note">gef&uuml;hrt, Schritt f&uuml;r Schritt</span>
     </div>
     <div class="card-grid" id="neuroGrid"></div>
@@ -1993,20 +2000,15 @@
 
   <div class="group">
     <div class="group-label">Dauer pro Schritt</div>
-    <div class="choice-row" data-nr-row="stepS">
-      <button type="button" class="choice" data-nr-f="stepS" data-nr-v="20">20 Sek</button>
-      <button type="button" class="choice" data-nr-f="stepS" data-nr-v="30">30 Sek</button>
-      <button type="button" class="choice" data-nr-f="stepS" data-nr-v="45">45 Sek</button>
-    </div>
     <div class="slider-row"><input type="range" data-nr-r="stepS" min="10" max="120" step="5" aria-label="Dauer pro Schritt in Sekunden"><span class="slider-value" data-nr-out="stepS"></span></div>
   </div>
 
   <div class="group">
     <div class="group-label">Durchg&auml;nge</div>
     <div class="choice-row" data-nr-row="reps">
-      <button type="button" class="choice" data-nr-f="reps" data-nr-v="1">1&times;<small>einmal</small></button>
-      <button type="button" class="choice" data-nr-f="reps" data-nr-v="2">2&times;<small>zweimal</small></button>
-      <button type="button" class="choice" data-nr-f="reps" data-nr-v="3">3&times;<small>dreimal</small></button>
+      <button type="button" class="choice" data-nr-f="reps" data-nr-v="1">1&times;</button>
+      <button type="button" class="choice" data-nr-f="reps" data-nr-v="2">2&times;</button>
+      <button type="button" class="choice" data-nr-f="reps" data-nr-v="3">3&times;</button>
     </div>
     <div class="group-help" data-nr-out="total"></div>
   </div>
@@ -2101,13 +2103,12 @@
       <div class="group">
         <div class="group-label">Dauer pro Schritt</div>
         <div class="slider-row"><input type="range" data-nr-r="stepS" min="10" max="120" step="5" aria-label="Dauer pro Schritt in Sekunden"><span class="slider-value" data-nr-out="stepS"></span></div>
-        <div class="group-help">Gilt ab dem n&auml;chsten Schritt.</div>
       </div>
       <div class="group" data-nr-show="hasAlt">
         <div class="group-label">Seitenwechsel bei &bdquo;abwechselnd&ldquo; alle</div>
         <div class="slider-row"><input type="range" data-nr-r="altS" min="2" max="15" step="1" aria-label="Seitenwechsel alle ... Sekunden"><span class="slider-value" data-nr-out="altS"></span></div>
       </div>
-      <div class="group-help" id="neuroPauseHelp">Gilt sofort und bleibt gespeichert, wie auf der &Uuml;bungsseite.</div>
+      <div class="group-help" id="neuroPauseHelp">Der Takt gilt sofort, die Dauer ab dem n&auml;chsten Schritt. Beides bleibt gespeichert, wie auf der &Uuml;bungsseite.</div>
       <button class="start-btn" id="neuroResumeBtn">Weiter</button>
     </div>
   </div>
@@ -3635,7 +3636,7 @@
     <button class="back-link" id="corsiReadyBackToHome">&larr; Zur&uuml;ck</button>
   </div>
   <h1 class="page-title">Blockspanne-Test (Corsi)</h1>
-  <p class="page-sub">Neun Bl&ouml;cke sind verstreut &ndash; einige davon leuchten nacheinander in einer bestimmten Reihenfolge auf. Merke dir die Reihenfolge und tippe die Bl&ouml;cke danach genau in dieser Reihenfolge nochmal an. Jede LNach jeder richtig erinnerten Folge wird sie um einen Block l&auml;nger, bis ein Tipp daneben geht.auml;nge kommt zweimal. Ist mindestens eine der beiden Folgen richtig, wird es um einen Block lNach jeder richtig erinnerten Folge wird sie um einen Block l&auml;nger, bis ein Tipp daneben geht.auml;nger; gehen beide daneben, ist der Test vorbei (wie im Standard-Test). Klassisches Paradigma zur visuell-r&auml;umlichen Merkspanne (Corsi, 1972), h&auml;ufig eingesetzt zur Messung des r&auml;umlichen Arbeitsged&auml;chtnisses.</p>
+  <p class="page-sub">Neun Bl&ouml;cke sind verstreut &ndash; einige davon leuchten nacheinander in einer bestimmten Reihenfolge auf. Merke dir die Reihenfolge und tippe die Bl&ouml;cke danach genau in dieser Reihenfolge nochmal an. Jede L&auml;nge kommt zweimal. Ist mindestens eine der beiden Folgen richtig, wird es um einen Block l&auml;nger; gehen beide daneben, ist der Test vorbei (wie im Standard-Test). Klassisches Paradigma zur visuell-r&auml;umlichen Merkspanne (Corsi, 1972), h&auml;ufig eingesetzt zur Messung des r&auml;umlichen Arbeitsged&auml;chtnisses.</p>
 
   <div class="group">
     <div class="group-label">Tempo</div>
@@ -4821,20 +4822,24 @@
       <button class="choice" data-bal-content="stifte">Buchstaben-Stifte<small>Blick auf einen Buchstaben</small></button>
       <button class="choice" data-bal-content="woerter">W&ouml;rter<small>wechseln im Takt</small></button>
     </div>
-    <div id="balanceWordBox" hidden>
+  </div>
+  <div id="balanceWordBox" hidden>
+    <div class="group">
       <div class="group-label">W&ouml;rter</div>
       <div class="choice-row" id="balanceWordListRow">
         <button class="choice" data-bal-wordlist="tiere">Tiere<small>Hund, Adler &hellip;</small></button>
         <button class="choice" data-bal-wordlist="alltag">Alltag<small>Tisch, Tasse &hellip;</small></button>
         <button class="choice" data-bal-wordlist="farben">Farbw&ouml;rter<small>in anderer Farbe</small></button>
       </div>
-      <div id="balanceWordReadBox" hidden>
-        <div class="group-label">Lies</div>
-        <div class="choice-row two" id="balanceWordReadRow">
-          <button class="choice" data-bal-wordread="wort">das Wort<small>was da steht</small></button>
-          <button class="choice" data-bal-wordread="farbe">die Farbe<small>in der es steht</small></button>
-        </div>
+    </div>
+    <div class="group" id="balanceWordReadBox" hidden>
+      <div class="group-label">Lies</div>
+      <div class="choice-row two" id="balanceWordReadRow">
+        <button class="choice" data-bal-wordread="wort">das Wort<small>was da steht</small></button>
+        <button class="choice" data-bal-wordread="farbe">die Farbe<small>in der es steht</small></button>
       </div>
+    </div>
+    <div class="group">
       <div class="group-label">Wort wechselt</div>
       <div class="choice-row" id="balanceWordEveryRow">
         <button class="choice" data-bal-wordevery="1">jeden Schlag</button>
@@ -5403,7 +5408,8 @@
 
     <div id="addonConfigBody" hidden>
       <!-- Zusatzaufgabe Rechnen (2026-10-08): which add-on runs -->
-      <div class="choice-row two" style="margin-top:10px" id="addonTaskRow">
+      <div class="group-label addon-task-label">Art der Zusatzaufgabe</div>
+      <div class="choice-row two" id="addonTaskRow">
         <button class="choice" data-addon-task="periph">Zeichen am Rand<small>Periphere Wahrnehmung</small></button>
         <button class="choice" data-addon-task="rechnen">Rechnen<small>stimmt die Aufgabe?</small></button>
       </div>
@@ -5554,7 +5560,7 @@
     <div class="advanced-body">
       <div class="group" id="zusGroup" hidden>
         <div class="zus-row">
-          <span class="zus-row-label">Zusatz f&uuml;r oben:</span>
+          <span class="zus-row-label">Zusatz f&uuml;r oben</span>
           <span class="zus-chips" id="zusChips"></span>
           <button type="button" class="zus-add-btn" id="zusAddBtn">+ Zusatz</button>
         </div>
@@ -6794,7 +6800,7 @@
   <div class="pause-overlay" id="balancePauseOverlay" hidden>
     <div class="pause-panel">
       <h3>Pausiert</h3>
-      <div class="group">
+      <div class="group" id="balancePauseTempoGroup">
         <div class="group-label">Tempo <span class="slider-value" id="balancePauseBpmValue"></span></div>
         <input type="range" id="balancePauseBpmSlider" min="30" max="200" step="5" aria-label="Tempo in Schl&auml;gen pro Minute">
       </div>
@@ -6802,7 +6808,7 @@
         <div class="group-label">Lautst&auml;rke <span class="slider-value" id="balancePauseVolumeValue"></span></div>
         <input type="range" id="balancePauseVolumeSlider" min="0" max="1" step="0.05" aria-label="Lautst&auml;rke">
       </div>
-      <div class="group">
+      <div class="group" id="balancePauseStick1Group">
         <div class="group-label" id="balancePauseColor1Label">Farbe des Stifts</div>
         <div class="color-picker" id="balancePauseColor1Picker"></div>
         <div class="group-label" id="balancePauseLetter1Label">Farbe der Buchstaben</div>
@@ -6814,7 +6820,7 @@
         <div class="group-label">Farbe der Buchstaben &middot; Stift 2</div>
         <div class="color-picker" id="balancePauseLetterColor2Picker"></div>
       </div>
-      <div class="group">
+      <div class="group" id="balancePauseStickSizeGroup">
         <div class="group-label">L&auml;nge der Stifte <span class="slider-value" id="balancePauseLengthValue"></span></div>
         <input type="range" id="balancePauseLengthSlider" min="30" max="100" step="5" aria-label="L&auml;nge der Stifte">
         <div class="group-label">Breite der Stifte <span class="slider-value" id="balancePauseWidthValue"></span></div>
@@ -8587,7 +8593,7 @@
 
     <details class="faq-item">
       <summary>Was wird auf deinem Ger&auml;t gespeichert?</summary>
-      <div class="faq-body">Dein Vorname (wenn du ihn f&uuml;r die Begr&uuml;&szlig;ung eingibst), dein Trainingsverlauf, dein Fortschritt, dein Wochenplan, deine Termine, deine Einstellungen, gespeicherte Programme und Bilder, die du f&uuml;r Ausdauertraining ausw&auml;hlst. Alles liegt nur im Speicher dieses Browsers auf diesem Ger&auml;t, nicht in einer Cloud. L&ouml;schst du die Browserdaten, ist es weg. In den Grundeinstellungen kannst du eine Sicherung als Datei speichern und wieder einlesen &ndash; die Datei liegt dann nur bei dir. Bei der &Uuml;bergabe an einen Kunden wandern Trainings per QR-Code direkt von Ger&auml;t zu Ger&auml;t, ohne Server.</div>
+      <div class="faq-body">Dein Vorname (wenn du ihn f&uuml;r die Begr&uuml;&szlig;ung eingibst), dein Trainingsverlauf, dein Fortschritt, dein Wochenplan, deine Termine, deine Einstellungen, gespeicherte Programme und Bilder, die du f&uuml;r Ausdauertraining ausw&auml;hlst. Alles liegt nur im Speicher dieses Browsers auf diesem Ger&auml;t, nicht in einer Cloud. L&ouml;schst du die Browserdaten, ist es weg. In den Grundeinstellungen kannst du eine Sicherung als Datei speichern und wieder einlesen &ndash; die Datei liegt dann nur bei dir. Bei der &Uuml;bergabe an einen Kunden wandern Trainings per QR-Code direkt von Ger&auml;t zu Ger&auml;t, ohne Server. Beim Scannen des Trainer-QR-Codes nutzt die App die Kamera nur, um den Code auf deinem Ger&auml;t zu lesen. Kein Bild wird gespeichert oder verschickt.</div>
     </details>
 
     <details class="faq-item">
@@ -8893,7 +8899,7 @@
     <h2 id="handoverImportTitle"></h2>
     <p class="group-help" id="handoverImportText"></p>
     <ul class="history-list handover-import-list" id="handoverImportList"></ul>
-    <p class="group-help handover-ios-note" id="handoverImportIos" hidden>Nutzt du die App vom Startbildschirm? Safari und die App haben getrennte Speicher. Tippe dann auf &bdquo;Code kopieren&ldquo;, &ouml;ffne die App und f&uuml;ge den Code unter Fortschritt bei &bdquo;&Uuml;bergabe-Code einf&uuml;gen&ldquo; ein.</p>
+    <p class="group-help handover-ios-note" id="handoverImportIos" hidden>Nutzt du die App vom Startbildschirm? Safari und die App haben getrennte Speicher. Tippe dann auf &bdquo;Code kopieren&ldquo;, &ouml;ffne die App und f&uuml;ge ihn unter Fortschritt &rsaquo; &bdquo;Trainer-QR-Code scannen&ldquo; &rsaquo; &bdquo;Code von Hand einf&uuml;gen&ldquo; ein.</p>
     <div class="handover-sheet-actions">
       <button class="start-btn" id="handoverImportYesBtn" type="button">&Uuml;bernehmen</button>
       <button class="start-btn secondary" id="handoverImportCopyBtn" type="button" hidden>Code kopieren</button>
@@ -8912,6 +8918,24 @@
       <button class="start-btn secondary" id="handoverPasteCancelBtn" type="button">Abbrechen</button>
       <button class="start-btn" id="handoverPasteGoBtn" type="button">Weiter</button>
     </div>
+  </div>
+</div>
+
+<!-- Trainer-QR-Code scannen (Fabian 08.10.): in-app camera, so the runs land
+     in this app (on the iPhone Safari and the home-screen app have separate
+     storage). jsqr.js is loaded only when this opens. docs/notes/36. -->
+<div class="sheet scan-sheet" id="handoverScanSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="handoverScanTitle">
+    <h2 id="handoverScanTitle">Trainer-QR-Code scannen</h2>
+    <p class="group-help" id="handoverScanHelp">Halte die Kamera auf den QR-Code deines Trainers.</p>
+    <div class="scan-view" id="handoverScanView">
+      <video id="handoverScanVideo" playsinline muted autoplay></video>
+      <div class="scan-frame" aria-hidden="true"></div>
+    </div>
+    <p class="group-help scan-status" id="handoverScanStatus" role="status"></p>
+    <p class="scan-error" id="handoverScanError" role="alert" hidden></p>
+    <button class="text-link small scan-paste-link" id="handoverScanPasteBtn" type="button">Code von Hand einf&uuml;gen</button>
+    <button class="start-btn secondary" id="handoverScanCancelBtn" type="button">Abbrechen</button>
   </div>
 </div>
 

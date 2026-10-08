@@ -54,8 +54,10 @@ async def main():
         check("Lies row only for Farbwörter", not await pg.is_visible("#balanceWordReadBox"))
         check("look label says Wörter", "Größe der Wörter" in await pg.inner_text('#balanceReady [data-look-size="balance"]'))
         await pg.click("#balanceAdvanced summary"); await pg.wait_for_timeout(80)
-        check("Feineinstellungen: stick colours/length hidden, Schriftgröße stays",
-              not await pg.is_visible("#balanceColor1Picker") and not await pg.is_visible("#balanceLengthSlider") and await pg.is_visible("#balanceFontSlider"))
+        # Prüfer 08.10.: one size control for words ("Größe der Wörter"), so the
+        # stick "Schriftgröße" is hidden too.
+        check("Feineinstellungen: stick colours/length/Schriftgröße hidden",
+              not await pg.is_visible("#balanceColor1Picker") and not await pg.is_visible("#balanceLengthSlider") and not await pg.is_visible("#balanceFontSlider"))
         await pg.click('[data-bal-wordlist="farben"]'); await pg.click('[data-bal-wordread="farbe"]'); await pg.click('[data-bal-wordevery="2"]'); await pg.wait_for_timeout(80)
         check("Farbwörter: Lies row + help", await pg.is_visible("#balanceWordReadBox") and "Sag laut die Farbe" in await pg.inner_text("#balanceWordHelp"))
         await pg.locator("#balanceContentGroup").scroll_into_view_if_needed()

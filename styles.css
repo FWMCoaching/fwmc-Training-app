@@ -578,6 +578,9 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .color-hint.warn{color:var(--warn);font-weight:700}
 /* Bereich-Hinweis (Flash/Periph/Zusatzaufgabe): leer = keine Lücke vor "Eigene Auswahl" (Fabian 2026-10-05) */
 .color-hint[id$="FieldHint"]:empty{display:none}
+/* Zusatzaufgabe: no empty hint line above "Art der Zusatzaufgabe" (Prüfer 08.10.) */
+#addonPhaseHint:empty{display:none}
+.addon-task-label{margin:10px 0 10px}
 
 /* ---- Movement: picker chips + figure pictogram + lane player ---- */
 .movement-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -1510,8 +1513,10 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .breath-dur-off .choice-row,.breath-dur-off .slider-row{opacity:.45}
 .chapter-nav{display:flex;align-items:center;justify-content:center;gap:8px}
 .chapter-nav button{
-  border:none;background:rgba(22,35,42,.07);color:#16232a;width:42px;height:42px;
-  border-radius:50%;font-size:calc(17px * var(--ts,1));cursor:pointer;font-weight:700;
+  /* Same size as the shared step-nav (46 px, Prüfer 08.10.): the buttons
+     fall back here whenever the step bar is hidden (pause sheet). */
+  border:none;background:rgba(22,35,42,.07);color:#16232a;width:46px;height:46px;
+  border-radius:50%;font-size:calc(18px * var(--ts,1));cursor:pointer;font-weight:700;
 }
 
 /* ---- Modals ---- */
@@ -2709,6 +2714,7 @@ html.onb-open,html.onb-open body{overflow:hidden}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]) .done-panel{background:var(--bg);color:var(--ink)}
   :root:not([data-theme="light"]) .done-panel h2{color:var(--ink)}
+  :root:not([data-theme="light"]) .done-panel .pause-countdown{color:var(--ink)}
   :root:not([data-theme="light"]) .done-summary,:root:not([data-theme="light"]) .rating-scale{color:var(--ink-soft)}
   :root:not([data-theme="light"]) .rating{background:var(--surface);border-color:var(--line)}
   :root:not([data-theme="light"]) .rating-row button:not(.active){background:var(--surface-2);border-color:var(--line);color:var(--ink)}
@@ -2723,6 +2729,7 @@ html.onb-open,html.onb-open body{overflow:hidden}
 }
   :root[data-theme="dark"] .done-panel{background:var(--bg);color:var(--ink)}
   :root[data-theme="dark"] .done-panel h2{color:var(--ink)}
+  :root[data-theme="dark"] .done-panel .pause-countdown{color:var(--ink)}
   :root[data-theme="dark"] .done-summary,:root[data-theme="dark"] .rating-scale{color:var(--ink-soft)}
   :root[data-theme="dark"] .rating{background:var(--surface);border-color:var(--line)}
   :root[data-theme="dark"] .rating-row button:not(.active){background:var(--surface-2);border-color:var(--line);color:var(--ink)}
@@ -2862,6 +2869,10 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 /* Pausenfenster höher als der Bildschirm: "Weiter" bleibt unten sichtbar
    (Prüfer 06.10., Gleichgewicht; gilt für jedes Pausenfenster) */
 .pause-panel > .start-btn:last-child{position:sticky;bottom:0;box-shadow:0 0 0 12px var(--surface),0 8px 0 12px var(--surface),0 -16px 14px 2px var(--surface)}
+/* The fade above the sticky "Weiter" must never cover the last line of a
+   loose help text or link (Prüfer 08.10., Neuro-Pause): such a last item
+   keeps the same distance as a .group. */
+.pause-panel > :nth-last-child(2):not(.group){margin-bottom:14px}
 /* (Prüfer 07.10. Nr. 8: the cover below "Weiter" ends with the panel's own
    padding, so no second card edge shows under the panel.) */
 /* iPad/Laptop: Pausenfenster breiter, Auswahlknöpfe einzeilig wie auf der Übungsseite (Prüfer 07.10.) */
@@ -3088,6 +3099,12 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 .ff-hand-row .ff-dot{width:22px;height:22px;border-radius:50%;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
 .ff-hand-row .ff-hand-name{flex:1 1 auto;min-width:0;font-weight:600;font-size:calc(14px * var(--ts,1));color:var(--ink)}
 .ff-hand-row .plan-select{flex:0 1 auto;width:auto;min-width:0}
+.color-choice-line{display:flex;flex-direction:column;gap:6px}
+.color-choice-line + .color-choice-line{margin-top:6px}
+.color-choice-head{display:flex;align-items:center;gap:10px}
+.color-choice-head .ff-dot{width:22px;height:22px;border-radius:50%;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.color-choice-head .ff-hand-name{font-weight:600;font-size:calc(14px * var(--ts,1));color:var(--ink)}
+@media (min-width:560px){.color-choice-line .choice-row.two{grid-template-columns:repeat(4,1fr)}}
 /* ---- Nichtraucher-Pause auf Heute (2026-10-07): ruhige, kompakte Karte ---- */
 .today-break-head{display:flex;align-items:center;gap:12px}
 .today-break-icon{flex:none;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--brand-pale);color:var(--brand-deep)}
@@ -3299,7 +3316,22 @@ body.soft-flash .flash-digit:not([hidden]){animation:fwmcSoftIn .3s ease-out 1}
 .combo-block-info + .combo-block-remove{margin-left:4px}
 /* With ⓘ the bar has five chips: on small phones they move closer so the
    row still fits from 360 px (Idee 72). */
-@media (max-width:400px){.player-bar:has(.regeln-bar-btn:not([hidden])){gap:4px;padding-left:8px;padding-right:8px}.player-bar:has(.regeln-bar-btn:not([hidden])) button:not(.regeln-bar-btn),.player-bar:has(.regeln-bar-btn:not([hidden])) .player-status{padding-left:10px;padding-right:10px}}
+/* Leiste bleibt ab 360 px einzeilig, auch mit ⓘ (Prüfer 08.10.: MOT drei
+   Zeilen, Flash-Vollbild in Zeile 2): on phones Pause and Vollbild become
+   round 44 px symbols next to the ⓘ; their text stays in the DOM (screen
+   readers, auto-pause and the Vollbild code read it). Flash/MOT also use a
+   short status (barCompact() in app.js). */
+@media (max-width:480px){
+  .player-bar:has(.regeln-bar-btn:not([hidden])) > button[id$="PauseBtn"],.player-bar:has(.regeln-bar-btn:not([hidden])) > button[id$="FsBtn"]{font-size:0;width:44px;min-width:44px;height:44px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .player-bar:has(.regeln-bar-btn:not([hidden])) > button[id$="PauseBtn"]::before,.player-bar:has(.regeln-bar-btn:not([hidden])) > button[id$="FsBtn"]::before{content:"";width:18px;height:18px;background:currentColor;-webkit-mask:var(--bar-icon) center/contain no-repeat;mask:var(--bar-icon) center/contain no-repeat}
+  .player-bar:has(.regeln-bar-btn:not([hidden])) > button[id$="PauseBtn"]{--bar-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='4' width='5' height='16' rx='1.5'/%3E%3Crect x='14' y='4' width='5' height='16' rx='1.5'/%3E%3C/svg%3E")}
+  .player-bar:has(.regeln-bar-btn:not([hidden])) > button[id$="FsBtn"]{--bar-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5'/%3E%3C/svg%3E")}
+  .player-bar .regeln-bar-btn{height:44px}
+  .player-bar:has(.regeln-bar-btn:not([hidden])) > button#fsBtn{font-size:0;width:44px;min-width:44px;height:44px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;flex:none;--bar-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5'/%3E%3C/svg%3E")}
+  .player-bar:has(.regeln-bar-btn:not([hidden])) > button#fsBtn::before{content:"";width:18px;height:18px;background:currentColor;-webkit-mask:var(--bar-icon) center/contain no-repeat;mask:var(--bar-icon) center/contain no-repeat}
+  .player-bar:has(.regeln-bar-btn:not([hidden])) > .player-status{font-size:calc(13px * var(--ts,1));padding-left:8px!important;padding-right:8px!important}
+}
+@media (max-width:400px){.player-bar:has(.regeln-bar-btn:not([hidden])){gap:3px;padding-left:6px;padding-right:6px}.player-bar:has(.regeln-bar-btn:not([hidden])) button:not(.regeln-bar-btn),.player-bar:has(.regeln-bar-btn:not([hidden])) .player-status{padding-left:10px;padding-right:10px}}
 /* ---- Meine Hilfsmittel (Idee 67, 2026-10-08) ---- */
 .featured-card .excard-gear-note{margin-top:6px}
 .excard-gear-note{color:var(--bg)}
@@ -3363,7 +3395,10 @@ body.client-run-on .screen>.brandbar{top:calc(48px + env(safe-area-inset-top,0px
 .special-tag{display:inline-block;align-self:center;margin:4px 0 2px;padding:3px 10px;border-radius:999px;border:1px solid var(--brand);color:var(--brand);background:var(--surface);font-size:calc(12px * var(--ts,1));font-weight:700;line-height:1.35}
 .special-tag[hidden]{display:none}
 .bundle-item .special-tag{align-self:flex-start;margin-top:6px}
-.player .special-tag{border-color:#e0a43a;color:#7a4b00;background:#fff3d6}
+/* One style everywhere (Prüfer 08.10.): teal outline; players use fixed hex. */
+.player .special-tag{border-color:#007094;color:#007094;background:#ffffff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .player.calm-dk .special-tag{border-color:#39a7cc;color:#39a7cc;background:#16262b}}
+:root[data-theme="dark"] .player.calm-dk .special-tag{border-color:#39a7cc;color:#39a7cc;background:#16262b}
 .neuro-side{display:inline-block;margin:10px auto 2px;padding:8px 22px;border-radius:999px;background:#007094;color:#ffffff;font-family:"Magra",sans-serif;font-weight:700;font-size:calc(26px * var(--ts,1));line-height:1.2;max-width:100%;overflow-wrap:break-word}
 .neuro-side[hidden]{display:none}
 .neuro-side.neuro-moving{background:#5c6b73}
@@ -3371,3 +3406,28 @@ body.client-run-on .screen>.brandbar{top:calc(48px + env(safe-area-inset-top,0px
 .neuro-stage .free-run-item{font-size:calc(28px * var(--ts,1))}
 @media (max-width:380px){.neuro-stage .free-run-item{font-size:calc(24px * var(--ts,1))}.neuro-side{font-size:calc(22px * var(--ts,1))}}
 .neuro-controls .chapter-row .info span{white-space:normal}
+
+/* Eine Checkbox für die ganze App (Prüfer 08.10.: "Hab ich", "Stand
+   ansagen" waren grau und klein, die QR-Liste teal und groß): brand colour,
+   22 px, everywhere a visible checkbox sits next to its text. */
+input[type=checkbox]{accent-color:var(--brand)}
+.checkbox-row input[type=checkbox],.inline-check input[type=checkbox],.warn-check input[type=checkbox],.cardio-interval-toggle input[type=checkbox],label > input[type=checkbox].strength-superset,label > input[type=checkbox].strength-pyrback{width:22px;height:22px;flex:none;margin:0}
+.warn-check input[type=checkbox]{margin-top:1px}
+/* A sheet focused on open (keyboard/screen reader start inside) shows no ring. */
+.sheet-inner:focus{outline:none}
+
+/* QR-Übergabe (08.10. abends): trainer pre-check card (Hilfsmittel-note look)
+   and the client's in-app scanner (full height sheet, camera view with frame). */
+.handover-precheck{display:flex;flex-direction:column;gap:4px;font-size:calc(14px * var(--ts,1));line-height:1.5;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:16px}
+.handover-precheck ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.scan-sheet .sheet-inner{height:100dvh;max-height:100dvh;border-radius:0;padding-top:calc(24px + env(safe-area-inset-top,0px))}
+@supports not (height:1dvh){.scan-sheet .sheet-inner{height:100vh;max-height:100vh}}
+@media (min-width:600px){.scan-sheet .sheet-inner{height:auto;max-height:90dvh;border-radius:22px}}
+.scan-view{position:relative;width:100%;aspect-ratio:3/4;max-height:58dvh;background:#0c1b20;border-radius:16px;overflow:hidden;margin:6px 0 10px;flex:none}
+.scan-view video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.scan-frame{position:absolute;left:50%;top:50%;width:64%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:18px;box-shadow:0 0 0 2000px rgba(12,27,32,.45);border:3px solid #ffffff}
+.scan-status{min-height:1.4em}
+.scan-error{margin:4px 0 8px;padding:12px 14px;border-radius:12px;background:var(--brand-pale);color:var(--ink);font-size:calc(14px * var(--ts,1));line-height:1.5}
+.scan-paste-link{align-self:center;min-height:44px}
+#handoverScanCancelBtn{margin-top:auto}
+

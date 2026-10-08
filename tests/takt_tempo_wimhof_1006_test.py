@@ -178,7 +178,7 @@ async def main():
         r = await pg.evaluate(BAR_CLEAR_JS, "motPauseOverlay")
         check("42 MOT pause sheet starts below the (wrapping) player bar, also scrolled", r[1] >= r[0] and r[2] >= r[0], r)
         await pg.fill("#motPauseSpeedSlider", "0.33"); await pg.wait_for_timeout(100)
-        check("42 MOT value label follows", (await pg.inner_text("#motPauseSpeedValue")).strip() == "33%")
+        check("42 MOT value label follows", (await pg.inner_text("#motPauseSpeedValue")).strip() == "33 %")
         await pg.click("#motResumeBtn"); await pg.wait_for_timeout(500)
         await pg.click("#motPauseBtn"); await pg.wait_for_timeout(200)
         check("42 MOT new speed kept for this run", (await pg.input_value("#motPauseSpeedSlider")) == "0.33")

@@ -44,7 +44,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#testNbackBgColorPicker .color-swatch").count())
         await pg.click('#testNbackBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
         await pg.fill("#testNbackBgIntensitySlider", "0.6"); await pg.dispatch_event("#testNbackBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#testNbackBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#testNbackBgIntensityValue")))
 
         await pg.click('#testNbackStartRow [data-nback-start="1"]'); await pg.wait_for_timeout(60)
         await pg.click("#testNbackReadyStartBtn"); await pg.wait_for_timeout(200)

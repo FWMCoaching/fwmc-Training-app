@@ -54,7 +54,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#merkBgColorPicker .color-swatch").count())
         await pg.click('#merkBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
         await pg.fill("#merkBgIntensitySlider", "0.6"); await pg.dispatch_event("#merkBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#merkBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#merkBgIntensityValue")))
 
         async def field_count():
             return await pg.eval_on_selector("#merkField", "el => el.children.length")

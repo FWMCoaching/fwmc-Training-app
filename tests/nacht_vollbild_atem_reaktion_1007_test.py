@@ -320,7 +320,7 @@ async def main():
             await pg.click('#movementBgColorPicker [data-key="gelb"]'); await pg.wait_for_timeout(100)
             if scheme == "light":
                 check("own signal colour + Standard link", "Eigene Farbe: Blau" in await pg.inner_text("#movementSigStatus") and await pg.is_visible("[data-mv-sig-reset]"))
-                check("bg pick jumps to 50 %", (await pg.inner_text("#movementBgIntensityValue")).strip() == "50%")
+                check("bg pick jumps to 50 %", (await pg.inner_text("#movementBgIntensityValue")).strip() == "50 %")
                 chip = await pg.inner_html("#movementPicker")
                 check("movement chips draw the signal colour", "#1565c0" in chip)
             await pg.locator("#movementSigGroup").scroll_into_view_if_needed()

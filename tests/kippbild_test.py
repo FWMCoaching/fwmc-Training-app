@@ -43,7 +43,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#kippbildBgColorPicker .color-swatch").count())
         await pg.click('#kippbildBgColorPicker .color-swatch[data-key="gruen"]'); await pg.wait_for_timeout(80)
         await pg.fill("#kippbildBgIntensitySlider", "0.5"); await pg.dispatch_event("#kippbildBgIntensitySlider", "input")
-        print("intensity value label updated:", "50%" in (await pg.inner_text("#kippbildBgIntensityValue")))
+        print("intensity value label updated:", "50 %" in (await pg.inner_text("#kippbildBgIntensityValue")))
 
         await pg.click("#kippbildReadyStartBtn"); await pg.wait_for_timeout(250)
         print("kippbildPlayer visible:", await pg.is_visible("#kippbildPlayer"))

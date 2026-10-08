@@ -52,7 +52,7 @@ async def main():
         print("bg swatch count:", await pg.locator("#searchBgColorPicker .color-swatch").count())
         await pg.click('#searchBgColorPicker .color-swatch[data-key="orange"]'); await pg.wait_for_timeout(80)
         await pg.fill("#searchBgIntensitySlider", "0.6"); await pg.dispatch_event("#searchBgIntensitySlider", "input")
-        print("intensity value label updated:", "60%" in (await pg.inner_text("#searchBgIntensityValue")))
+        print("intensity value label updated:", "60 %" in (await pg.inner_text("#searchBgIntensityValue")))
 
         # "kurz" = 12 trials, fast enough for a short test run.
         await pg.click('#searchLengthRow [data-search-length="kurz"]'); await pg.wait_for_timeout(60)

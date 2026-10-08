@@ -29,7 +29,7 @@ async def main():
         print("no default set yet - 'Keinen Standard' hidden:", await pg.is_hidden("#masterBgNoneBtn"))
         await pg.click('#masterBgColorPicker [data-key="rot"]'); await pg.wait_for_timeout(150)
         print("intensity row now visible:", await pg.is_visible("#masterBgIntensityRow"))
-        print("intensity jumped to 50% on first pick:", "50%" in await pg.inner_text("#masterBgIntensityValue"))
+        print("intensity jumped to 50% on first pick:", "50 %" in await pg.inner_text("#masterBgIntensityValue"))
         print("'Keinen Standard' now visible:", await pg.is_visible("#masterBgNoneBtn"))
         await pg.click("#masterSettingsCloseBtn"); await pg.wait_for_timeout(150)
 

@@ -758,6 +758,17 @@
   const FF_COUNT_PHASE = 6;
   const FF_ORIENT_S = 2; // Einblenden: the full grid once at the start
   const FF_HAND_ACTIONS = { keine: "Keine", hoch: "Hände hoch", seitlich: "Hände seitlich", klatschen: "Klatschen" };
+  // One chip row per colour (Prüfer 08.10.: no native <select> for a colour's
+  // meaning; same chips as every other choice). Used by the Farbfelder hand
+  // rows and the Richtungskreuz Farbregel.
+  function colorChoiceRowsHtml(keys, options, curOf, attr, aria) {
+    return keys.map((k) => {
+      const c = COLOR_BY_KEY[k], cur = curOf(k);
+      return `<div class="color-choice-line" role="group" aria-label="${esc(aria(c.name))}"><div class="color-choice-head"><span class="ff-dot" style="background:${c.hex}"></span><span class="ff-hand-name">${esc(c.name)}</span></div>` +
+        `<div class="choice-row two">` + Object.entries(options).map(([v, label]) =>
+          `<button type="button" class="choice${v === cur ? " active" : ""}" data-${attr}="${k}" data-val="${v}" aria-pressed="${v === cur}">${esc(label)}</button>`).join("") + `</div></div>`;
+    }).join("");
+  }
   const FF_SEQ_MAX = 12;
   const FF_ANSWERS = ["treten", "tippen"];
   // Pure rule: which field (0-3) a symbol shown on `field` points to.
@@ -862,6 +873,7 @@
   // Farbregel: each colour can mean something else than "normal".
   const RK_MEANINGS = { normal: "normal", gegen: "Gegenrichtung", stehen: "stehen bleiben", kreis: "Kreisrichtung wechseln" };
   const RK_MEANING_RULES = { normal: "Schritt in die gezeigte Richtung", gegen: "Schritt in die Gegenrichtung", stehen: "stehen bleiben, kein Schritt", kreis: "kein Schritt, die Kreisrichtung des Balls wechseln" };
+  const RK_MEANING_CHIPS = { normal: "Normal", gegen: "Gegenrichtung", stehen: "Stehen bleiben", kreis: "Kreis wechseln" };
   const RK_DEFAULT_RULES = { blau: "gegen" };
   const RK_ORIENT_S = 3; // the cross overview at the start of a run
   const RK_NUM_MAX = 9;
@@ -1659,19 +1671,19 @@
       title: "4 Pfeile · gerade", type: "arrows", dirset: 4, dual: false, usesArrowColors: true,
       task: "Reagiere so schnell wie möglich in die gezeigte Richtung.",
       trains: "Reaktionsgeschwindigkeit und Richtungserkennung",
-      rules: "Ein Pfeil zeigt nach vorne, rechts, hinten oder links. Reagiere so schnell wie möglich in diese Richtung.",
+      rules: "Ein Pfeil zeigt nach vorne, rechts, hinten oder links. Beweg dich so schnell wie möglich in die Richtung, in die er zeigt.",
     },
     "4-diag": {
       title: "4 Pfeile · diagonal", type: "arrows", dirset: "diag", dual: false, usesArrowColors: true,
       task: "Reagiere so schnell wie möglich in die gezeigte Schrägrichtung.",
       trains: "Reaktionsgeschwindigkeit und Orientierung",
-      rules: "Ein Pfeil zeigt in eine der vier Schrägrichtungen. Reagiere so schnell wie möglich in diese Richtung.",
+      rules: "Ein Pfeil zeigt in eine der vier Schrägrichtungen. Beweg dich so schnell wie möglich in die Richtung, in die er zeigt.",
     },
     "8-solo": {
       title: "8 Pfeile", type: "arrows", dirset: 8, dual: false, usesArrowColors: true,
       task: "Reagiere so schnell wie möglich in die gezeigte Richtung.",
       trains: "Reaktion in alle Richtungen",
-      rules: "Ein Pfeil zeigt in eine von acht Richtungen – gerade oder schräg. Reagiere so schnell wie möglich in diese Richtung.",
+      rules: "Ein Pfeil zeigt in eine von acht Richtungen – gerade oder schräg. Beweg dich so schnell wie möglich in die Richtung, in die er zeigt.",
     },
     "8-vrw": {
       title: "8 Pfeile · Rot/Grün", type: "arrows", dirset: 8, dual: true,
@@ -1733,7 +1745,7 @@
       title: "Farbfelder", type: "farbfelder", bgIsStimulus: true,
       task: "Tritt auf das richtige Farbfeld deiner Matte.",
       trains: "Farbwahrnehmung, Fußarbeit und schnelles Umsetzen von Regeln",
-      rules: "Leg deine vier Farbfelder so auf den Boden, wie sie unten unter „Anordnung deiner Matte“ eingestellt sind, und stell dich davor. Der Bildschirm zeigt dieselben vier Felder: Oben ist die Reihe, die näher am Bildschirm liegt. Je nach Modus trittst du auf das Feld, das aufleuchtet oder erscheint, auf das Feld, das ein Symbol dir sagt, auf das leere Feld, eine ganze Abfolge nach, auf die gesagte Farbe, auf die Schriftfarbe eines Farbworts, mit Fuß und Hand zugleich oder nach Bild und Ansage.",
+      rules: "Leg deine vier Farbfelder so auf den Boden, wie unten unter „Anordnung deiner Matte“ eingestellt, und stell dich davor. Der Bildschirm zeigt dieselben vier Felder, oben ist die Reihe nahe am Bildschirm. Was du tust, bestimmt der Modus.",
     },
     // Richtungskreuz (Idee 70, Fabian 08.10.): four directions around the
     // client, each with a colour and/or number; docs/notes/35.
@@ -4622,14 +4634,14 @@
           }
         } catch (e) {}
         renderPresetList(bgPresetStore, t.presetList, t.presetGroup, null,
-          (p) => `${STROOP_COLOR_BY_KEY[p.colorKey].name} · ${Math.round(p.intensity * 100)}%`,
+          (p) => `${STROOP_COLOR_BY_KEY[p.colorKey].name} · ${Math.round(p.intensity * 100)} %`,
           (p) => apply(p.colorKey, p.intensity));
       });
     }
     function sync() {
       refs.pickers.forEach((el) => syncSingleSelectPicker(el, store.bgColorKey));
       refs.sliders.forEach((el) => { el.value = store.bgIntensity; });
-      const pct = Math.round(store.bgIntensity * 100) + "%";
+      const pct = Math.round(store.bgIntensity * 100) + " %";
       refs.valueEls.forEach((el) => { el.textContent = pct; });
       const tip = bgContrastHintText(store.bgColorKey, store.bgIntensity);
       (refs.hintEls || []).forEach((el) => {
@@ -4689,7 +4701,7 @@
       wirePresetSaveForm({
         saveBtn: t.saveBtn, form: t.form, nameInput: t.nameInput,
         cancelBtn: t.cancelBtn, confirmBtn: t.confirmBtn,
-        defaultName: () => `${STROOP_COLOR_BY_KEY[store.bgColorKey].name} ${Math.round(store.bgIntensity * 100)}%`,
+        defaultName: () => `${STROOP_COLOR_BY_KEY[store.bgColorKey].name} ${Math.round(store.bgIntensity * 100)} %`,
         onSave: (name) => {
           const list = bgPresetStore.load();
           list.push({ id: String(Date.now()), name, colorKey: store.bgColorKey, intensity: store.bgIntensity });
@@ -5200,7 +5212,7 @@
     // Richtungskreuz: equipment is optional (`optional: true`), it also
     // works without ("Richtungen merken").
     richtungskreuz: {
-      text: "Optional: eine Farbmatte oder vier Hütchen in den eingestellten Farben, vorne, hinten, links und rechts um dich. Es geht auch ohne: Dann merkst du dir die Richtungen.",
+      text: "Eine Farbmatte oder vier Hütchen in den eingestellten Farben, vorne, hinten, links und rechts um dich. Es geht auch ohne: Dann merkst du dir die Richtungen.",
       link: "", gear: ["mat", "cups"], optional: true,
     },
     // Farbbrille exercises (Test-Bereich); a shop link can go into `link`.
@@ -5210,7 +5222,7 @@
     },
     // Neuro-Aktivierung (2026-10-08, only shown with the area unlocked;
     // the ready screen reads NEURO_EXERCISES[..].need, the chips read gear).
-    "neuro-vibration": { text: "Du brauchst: ein kleines Vibrationsgerät (z. B. Z-Vibe).", link: "", gear: ["vibration"] },
+    "neuro-vibration": { text: "Du brauchst: ein kleines Vibrationsgerät (z. B. Z‑Vibe).", link: "", gear: ["vibration"] },
     "neuro-ball-fuss": { text: "Du brauchst: einen Massageball oder Massagepilz.", link: "", gear: ["massageball"] },
     "neuro-ball-hand": { text: "Du brauchst: einen Massageball oder Massagepilz.", link: "", gear: ["massageball"] },
   };
@@ -5331,14 +5343,7 @@
     ffEls.footRow.querySelectorAll("[data-ff-foot]").forEach((b) => setActive(b, b.dataset.ffFoot === state.ffFoot));
     ffEls.handsRow.querySelectorAll("[data-ff-hands]").forEach((b) => setActive(b, (b.dataset.ffHands === "1") === state.ffHands));
     ffEls.handBody.hidden = !state.ffHands;
-    ffEls.handRows.innerHTML = state.ffLayout.map((k) => {
-      const c = COLOR_BY_KEY[k];
-      const cur = state.ffHandRules[k] || "keine";
-      return `<label class="ff-hand-row"><span class="ff-dot" style="background:${c.hex}"></span><span class="ff-hand-name">${esc(c.name)}</span>` +
-        `<select class="plan-select" data-ff-hand="${k}" aria-label="Hände bei ${esc(c.name)}">` +
-        Object.entries(FF_HAND_ACTIONS).map(([v, label]) => `<option value="${v}"${v === cur ? " selected" : ""}>${esc(label)}</option>`).join("") +
-        `</select></label>`;
-    }).join("");
+    ffEls.handRows.innerHTML = colorChoiceRowsHtml(state.ffLayout, FF_HAND_ACTIONS, (k) => state.ffHandRules[k] || "keine", "ff-hand", (n) => `Hände bei ${n}`);
   }
   // Single-select swatches for the chosen field; a colour that already sits
   // on another field swaps places, so all four always stay different.
@@ -5495,11 +5500,11 @@
       try { return buildFarbfelderSchedule({}, Math.random).schedule; } finally { Object.assign(state, keep); }
     },
   };
-  ffEls.handRows.addEventListener("change", (e) => {
-    const sel = e.target.closest("[data-ff-hand]");
-    if (!sel) return;
-    state.ffHandRules = { ...state.ffHandRules, [sel.dataset.ffHand]: sel.value };
-    ffSave();
+  ffEls.handRows.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-ff-hand][data-val]");
+    if (!b) return;
+    state.ffHandRules = { ...state.ffHandRules, [b.dataset.ffHand]: b.dataset.val };
+    ffSave(); syncFfUI();
   });
 
 
@@ -5726,6 +5731,7 @@
     if (t === "breath-program" || t === "workout-plan" || t === "combo-program") return !nonEmpty(def.blocks);
     if (t === "free-template") return freeTemplateDefProblem(def);
     if (t === "neuro-unlock") return false;
+    if (t === "feature-unlock") return !Array.isArray(def.features) || !def.features.length || def.features.some((f) => !FEATURE_UNLOCKS[f]);
     if (t === "training-plan") return !def.plan || !nonEmpty(def.plan.phases);
     if (t) return true;
     return !nonEmpty(def.blocks) || def.blocks.some((b) => !b || !EXERCISES[b.exercise]);
@@ -5743,6 +5749,22 @@
     };
     el.textContent = texts[kind] || el.dataset.defaultText;
     el.hidden = false;
+    // A collapsed code card (quiet layout) opens, so the message is seen.
+    const card = el.closest(".code-card.is-collapsed");
+    if (card) {
+      card.classList.remove("is-collapsed");
+      const t = card.querySelector(".code-toggle");
+      if (t) t.setAttribute("aria-expanded", "true");
+    }
+  }
+  // Trainer codes as QR (Fabian 08.10.): "<app url>#code=<CODE>" (dashboard
+  // "QR-Code zeigen") or the bare code text. Returns the code or "".
+  function codeFromQrText(raw) {
+    const s = String(raw || "").trim();
+    const m = /[#?&]code=([^&#\s]+)/.exec(s);
+    let c = m ? m[1] : (/^[A-Za-z0-9][A-Za-z0-9_-]{1,39}$/.test(s) ? s : "");
+    try { c = decodeURIComponent(c); } catch (e) { return ""; }
+    return normCode(c);
   }
 
   // ---- Codes with a run time and seats (config.validFrom / validUntil as
@@ -5834,6 +5856,7 @@
       if (def.type === "combo-program") { comboOriginBundle = null; startComboProgram(def, code, code, ctx.homeScreen); return; }
       if (def.type === "free-template") { importTrainerTemplates(def, code); return; }
       if (def.type === "neuro-unlock") { applyNeuroUnlockCode(def); return; }
+      if (def.type === "feature-unlock") { applyFeatureUnlockCode(def); return; }
       if (def.type === "training-plan") { offerTrainerPlan(def, code, ctx); return; }
       originBundle = null;
       renderProgramIntro(def, code, code, ctx);
@@ -6020,6 +6043,13 @@
   function openFromHash() {
     if (!location.hash || location.hash.length < 2) return;
     if (/^#import=/.test(location.hash)) return; // QR-Übergabe, see hoCheckHash (docs/notes/36)
+    if (/^#code=/.test(location.hash)) {
+      // Trainer code QR scanned with the phone's own camera (docs/notes/36).
+      const c = codeFromQrText(location.hash);
+      try { history.replaceState(history.state, "", location.pathname + location.search); } catch (e) { /* ignore */ }
+      openCodeAsTyped(c);
+      return;
+    }
     const tokenCode = normCode(decodeURIComponent(location.hash.slice(1)));
     if (!tokenCode) return;
     els.programCodeInput.value = tokenCode;
@@ -7275,6 +7305,8 @@
   // DOM/SVG stage instead of the canvas schedule: the app can't see the walk,
   // so there is no stimulus timing and no scoring. Settings live in the VT
   // state (lw*), snapshot `lw` in Kombi blocks and presets. docs/notes/33.
+  // Phones: player bars with ⓘ use short status texts (one row from 360 px).
+  function barCompact() { return window.innerWidth <= 480; }
   const LW_LENGTHS = { kurz: { n: 3, label: "Kurz" }, mittel: { n: 5, label: "Mittel" }, lang: { n: 7, label: "Lang" } };
   const LW_ROW_DEFAULTS = ["gelb", "blau", "rot", "gruen"];
   const LW_VARIANT_LABELS = { karte: "Karte in der Hand", merken: "Weg merken" };
@@ -7437,10 +7469,15 @@
     svg += `<text x="${x0 + 0.12}" y="${y0 + 0.3}" font-size="0.2" font-family="'Public Sans',sans-serif" font-weight="600" fill="#5c6e75">hinten</text>`;
     path.cones.forEach((k) => { svg += lwConeSvg(k.c, k.r, (COLOR_BY_KEY[rowColors[k.r]] || COLOR_BY_KEY.rot).hex); });
     if (showPath && path.d) {
-      svg += `<path class="lw-path" d="${path.d}" fill="none" stroke="#ffffff" stroke-width="0.13" stroke-linecap="round" stroke-linejoin="round"/>`;
-      svg += `<path class="lw-path" data-lw-path="1" d="${path.d}" fill="none" stroke="#16232a" stroke-width="0.065" stroke-linecap="round" stroke-linejoin="round"/>`;
-      // small direction marks along the way (every ~1.1 units, not at the ends)
+      // Phone (narrow map): thinner line and fewer direction marks, so the
+      // way stays readable (Prüfer 08.10.).
+      const thin = !!opts.narrow;
+      svg += `<path class="lw-path" d="${path.d}" fill="none" stroke="#ffffff" stroke-width="${thin ? 0.11 : 0.13}" stroke-linecap="round" stroke-linejoin="round"/>`;
+      svg += `<path class="lw-path" data-lw-path="1" d="${path.d}" fill="none" stroke="#16232a" stroke-width="${thin ? 0.05 : 0.065}" stroke-linecap="round" stroke-linejoin="round"/>`;
+      // small direction marks along the way (every ~1.1 units, 1.6 on a
+      // phone, not at the ends, never two on top of each other)
       const P = path.pts;
+      const step = thin ? 1.6 : 1.1, marks = [];
       let total = 0;
       for (let i = 1; i < P.length; i++) total += Math.hypot(P[i].x - P[i - 1].x, P[i].y - P[i - 1].y);
       let acc = 0, nextAt = 0.9;
@@ -7450,8 +7487,11 @@
           const t = (nextAt - acc) / seg, x = P[i - 1].x + (P[i].x - P[i - 1].x) * t, y = P[i - 1].y + (P[i].y - P[i - 1].y) * t;
           const an = Math.atan2(P[i].y - P[i - 1].y, P[i].x - P[i - 1].x), cs = Math.cos(an), sn = Math.sin(an);
           const pt = (f, l) => `${(x + cs * f - sn * l).toFixed(3)} ${(y + sn * f + cs * l).toFixed(3)}`;
-          svg += `<path class="lw-chevron" d="M${pt(-0.08, -0.1)} L${pt(0.1, 0)} L${pt(-0.08, 0.1)} Z" fill="#16232a" stroke="#ffffff" stroke-width="0.02" stroke-linejoin="round"/>`;
-          nextAt += 1.1;
+          if (!marks.some((m) => Math.hypot(m.x - x, m.y - y) < 0.45)) {
+            marks.push({ x, y });
+            svg += `<path class="lw-chevron" d="M${pt(-0.08, -0.1)} L${pt(0.1, 0)} L${pt(-0.08, 0.1)} Z" fill="#16232a" stroke="#ffffff" stroke-width="0.02" stroke-linejoin="round"/>`;
+          }
+          nextAt += step;
         }
         acc += seg;
       }
@@ -7526,7 +7566,7 @@
     const r = lwRun;
     if (!r) return;
     const show = r.phase !== "walk";
-    $("lwMap").innerHTML = lwMapSvg(r.path, r.cfg.lwRowColors, show, { label: show ? "Karte mit deinem Weg" : "Karte ohne Weg" });
+    $("lwMap").innerHTML = lwMapSvg(r.path, r.cfg.lwRowColors, show, { label: show ? "Karte mit deinem Weg" : "Karte ohne Weg", narrow: lwNarrow() });
     const of = r.cfg.lwEnd === "runden" ? ` von ${r.cfg.lwRounds}` : "";
     const left = Math.max(0, Math.ceil(r.showEnd - lwNow()));
     $("lwCaption").textContent = r.phase === "show" ? `Weg ${r.round}${of} · merk dir den Weg · noch ${left} s`
@@ -7540,10 +7580,45 @@
     $("lwNextBtn").hidden = r.phase === "show";
   }
   function lwNow() { return (performance.now() - session.startTime) / 1000; }
+  // How tangled a path looks (Prüfer 08.10.: "Weg verknotet" at 390 px):
+  // crossings of the drawn line with itself, minus one per full loop (a full
+  // loop round a cone always crosses its own entry once), and the closest
+  // the line comes to any cone.
+  function lwPathScore(path) {
+    const P = path.pts, n = P.length;
+    const cross = (a, b, c, d) => {
+      const o = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+      const d1 = o(c, d, a), d2 = o(c, d, b), d3 = o(a, b, c), d4 = o(a, b, d);
+      return ((d1 > 0) !== (d2 > 0)) && ((d3 > 0) !== (d4 > 0)) && d1 * d2 < 0 && d3 * d4 < 0;
+    };
+    let crossings = 0;
+    for (let i = 0; i < n - 1; i++) for (let j = i + 3; j < n - 1; j++) if (cross(P[i], P[i + 1], P[j], P[j + 1])) crossings++;
+    const full = path.targets.filter((t) => t.loop === "full").length;
+    let clearance = Infinity;
+    P.forEach((p) => path.cones.forEach((k) => { clearance = Math.min(clearance, Math.hypot(k.c - p.x, k.r - p.y)); }));
+    return { tangle: Math.max(0, crossings - full), crossings, clearance };
+  }
+  // Several candidates, the calmest wins; a narrow stage (phone) is
+  // stricter: no extra crossing at all.
+  function lwPickPath(rows, cols, length, narrow, avoidD) {
+    const limit = narrow ? 0 : 1;
+    let best = null;
+    // 400 tries: a long Mittel/Lang path is calm in only ~1 of 100 raw
+    // drafts; scoring all 400 takes a few ms once per round.
+    for (let i = 0; i < 400; i++) {
+      const p = lwMakePath(rows, cols, length, Math.random);
+      if (avoidD && p.d === avoidD) continue;
+      const sc = lwPathScore(p);
+      p.score = sc;
+      if (sc.tangle <= limit && sc.clearance >= 0.25) return p;
+      if (!best || sc.tangle < best.score.tangle || (sc.tangle === best.score.tangle && sc.clearance > best.score.clearance)) best = p;
+    }
+    return best;
+  }
+  const lwNarrow = () => { const w = $("lwStage").clientWidth || window.innerWidth; return w < 560; };
   function lwNewPath() {
     const r = lwRun;
-    let p, tries = 0;
-    do { p = lwMakePath(r.cfg.lwRows, r.cfg.lwCols, r.cfg.lwLength, Math.random); tries++; } while (r.path && p.d === r.path.d && tries < 5);
+    const p = lwPickPath(r.cfg.lwRows, r.cfg.lwCols, r.cfg.lwLength, lwNarrow(), r.path && r.path.d);
     r.path = p;
     if (navigator.webdriver) window.__lwLast = p;
     if (r.cfg.lwVariant === "merken") { r.phase = "show"; r.showEnd = lwNow() + r.cfg.lwShowS; } else r.phase = "karte";
@@ -7631,6 +7706,8 @@
     make: (rows, cols, length, seed) => { let x = seed || 1; const rng = () => ((x = (x * 16807) % 2147483647) / 2147483647); return lwMakePath(rows, cols, length, rng); },
     run: () => (lwRun ? { round: lwRun.round, phase: lwRun.phase, cfg: lwRun.cfg, paused: !!lwRun.pausedAt, d: lwRun.path && lwRun.path.d } : null),
     finish: () => { if (lwRun) lwComplete(); },
+    score: (path) => lwPathScore(path),
+    pick: (rows, cols, length, narrow) => { const p = lwPickPath(rows, cols, length, narrow, null); return { score: p.score, d: p.d }; },
   };
 
   // idx indexes program.steps (exercises and video steps interleaved).
@@ -9021,14 +9098,9 @@
     root.querySelectorAll("[data-rk-rule]").forEach((b) => setActive(b, (b.dataset.rkRule === "1") === state.rkRuleOn));
     $("rkRuleBody").hidden = !state.rkRuleOn;
     $("rkRuleHelp").textContent = state.rkRuleOn
-      ? (state.rkSigns === "beide" ? "Die Zahl zeigt die Richtung, die Farbe sagt, was du tust. „Kreisrichtung wechseln“ passt zum Zusatz „Ball um den Körper kreisen“." : "Die Farbe zeigt die Richtung und sagt, was du tust. „Kreisrichtung wechseln“ passt zum Zusatz „Ball um den Körper kreisen“.")
+      ? (state.rkSigns === "beide" ? "Die Zahl zeigt die Richtung, die Farbe sagt, was du tust. „Kreis wechseln“ heißt: Kreisrichtung des Balls wechseln, passend zum Zusatz „Ball um den Körper kreisen“." : "Die Farbe zeigt die Richtung und sagt, was du tust. „Kreis wechseln“ heißt: Kreisrichtung des Balls wechseln, passend zum Zusatz „Ball um den Körper kreisen“.")
       : "Jede Farbe kann eine eigene Bedeutung bekommen, zum Beispiel Blau = Gegenrichtung.";
-    $("rkRuleRows").innerHTML = RK_DIRS.map((d) => state.rkColors[d]).map((k) => {
-      const c = COLOR_BY_KEY[k], cur = state.rkRules[k] || "normal";
-      return `<label class="ff-hand-row"><span class="ff-dot" style="background:${c.hex}"></span><span class="ff-hand-name">${esc(c.name)}</span>` +
-        `<select class="plan-select" data-rk-rulecol="${k}" aria-label="Bedeutung von ${esc(c.name)}">` +
-        Object.entries(RK_MEANINGS).map(([v, label]) => `<option value="${v}"${v === cur ? " selected" : ""}>${esc(label)}</option>`).join("") + `</select></label>`;
-    }).join("");
+    $("rkRuleRows").innerHTML = colorChoiceRowsHtml(RK_DIRS.map((d) => state.rkColors[d]), RK_MEANING_CHIPS, (k) => state.rkRules[k] || "normal", "rk-rulecol", (n) => `Bedeutung von ${n}`);
   }
   (function wireRkUI() {
     const root = $("rkSettings");
@@ -9079,10 +9151,10 @@
       }
       save();
     });
-    $("rkRuleRows").addEventListener("change", (e) => {
-      const sel = e.target.closest("[data-rk-rulecol]");
-      if (!sel) return;
-      state.rkRules = { ...state.rkRules, [sel.dataset.rkRulecol]: sel.value };
+    $("rkRuleRows").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-rk-rulecol][data-val]");
+      if (!b) return;
+      state.rkRules = { ...state.rkRules, [b.dataset.rkRulecol]: b.dataset.val };
       save();
     });
   })();
@@ -9285,7 +9357,9 @@
       });
       if (rkRuleActive()) {
         if (state.rkSigns === "beide") L.push("Farbregel: Die Zahl zeigt die Richtung, die Farbe sagt, was du tust.");
-        RK_DIRS.map((d) => state.rkColors[d]).forEach((k) => L.push(`${COLOR_BY_KEY[k].name}: ${RK_MEANING_RULES[state.rkRules[k] || "normal"]}.`));
+        // Only the colours that differ from "normal" (Prüfer 08.10.).
+        RK_DIRS.map((d) => state.rkColors[d]).filter((k) => (state.rkRules[k] || "normal") !== "normal").forEach((k) => L.push(`${COLOR_BY_KEY[k].name}: ${RK_MEANING_RULES[state.rkRules[k]]}.`));
+        if (RK_DIRS.some((d) => (state.rkRules[state.rkColors[d]] || "normal") === "normal")) L.push("Alle anderen Farben: Schritt in die gezeigte Richtung.");
       }
     } else if (ex.type === "laufweg") {
       L.push(ex.task, state.lwVariant === "merken" ? "Weg merken: Präg dir den Weg ein und lauf ihn ohne Karte." : "Karte in der Hand: Nimm das Handy mit und lauf den Weg ab.");
@@ -9398,13 +9472,16 @@
     input.value = note;
     regelnNoteHelp();
     $("regelnDoneBtn").textContent = ctx.mode === "run" ? "Weiter" : "Fertig";
+    // Colour example only where colours carry a meaning (Prüfer 08.10.).
+    input.placeholder = /\b(Rot|Blau|Grün|Gelb|Farbe|Farben|Pfeil auf Farbe)\b/.test(lines.join(" "))
+      ? "z.\u202fB. Blau heißt bei mir: zurück" : "z.\u202fB. Erst ruhig anfangen, dann schneller werden";
     const sheet = $("regelnSheet");
     // In fullscreen the sheet has to live inside the fullscreen element.
     const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
     if (fsEl && !fsEl.contains(sheet)) fsEl.appendChild(sheet);
     regelnCtx.opener = document.activeElement;
     sheet.hidden = false;
-    setTimeout(() => { try { $("regelnDoneBtn").focus({ preventScroll: true }); } catch (e) {} }, 30);
+    setTimeout(() => { try { const inner = sheet.querySelector(".sheet-inner"); inner.tabIndex = -1; inner.focus({ preventScroll: true }); } catch (e) {} }, 30);
   }
   function regelnNoteHelp() {
     const ctx = regelnCtx || {};
@@ -9460,7 +9537,7 @@
       const wrap = document.createElement("div");
       wrap.className = "regeln-ready";
       wrap.dataset.regelnWrap = key;
-      wrap.innerHTML = `<button type="button" class="regeln-btn" data-regeln="${key}">${REGELN_I_SVG}<span>Regeln</span></button><span class="regeln-preview" data-regeln-preview="${key}" hidden></span>`;
+      wrap.innerHTML = `<button type="button" class="regeln-btn" data-regeln="${key}">${REGELN_I_SVG}<span>Regeln und Notiz</span></button><span class="regeln-preview" data-regeln-preview="${key}" hidden></span>`;
       const anchor = screen.querySelector(cfg.anchor) || screen.querySelector(".page-title");
       if (anchor) anchor.after(wrap);
       wrap.querySelector("button").addEventListener("click", () => openRegeln({ key, mode: "ready" }));
@@ -9471,8 +9548,8 @@
       b.type = "button";
       b.className = "regeln-bar-btn";
       b.dataset.regelnBar = key;
-      b.setAttribute("aria-label", "Regeln");
-      b.title = "Regeln";
+      b.setAttribute("aria-label", "Regeln und Notiz");
+      b.title = "Regeln und Notiz";
       b.innerHTML = REGELN_I_SVG;
       const fs = [...bar.children].find((c) => /fsbtn$/i.test(c.id || ""));
       bar.insertBefore(b, fs || null);
@@ -9761,7 +9838,7 @@
     els.masterBgNoneBtn.hidden = !masterPrefs.defaultBgColorKey;
     els.masterBgIntensityRow.hidden = !masterPrefs.defaultBgColorKey;
     els.masterBgIntensitySlider.value = masterPrefs.defaultBgIntensity;
-    els.masterBgIntensityValue.textContent = `${Math.round(masterPrefs.defaultBgIntensity * 100)}%`;
+    els.masterBgIntensityValue.textContent = `${Math.round(masterPrefs.defaultBgIntensity * 100)} %`;
     const tip = masterPrefs.defaultBgColorKey ? bgContrastHintText(masterPrefs.defaultBgColorKey, masterPrefs.defaultBgIntensity) : null;
     els.masterBgContrastHint.hidden = !tip;
     els.masterBgContrastHint.textContent = tip || "";
@@ -13716,8 +13793,11 @@
     flashState.shownIndex = 0;
     els.flashInputPanel.hidden = true;
     els.flashHint.textContent = "Merken …";
+    // Phone: short status so the bar with ⓘ stays one row (Prüfer 08.10.).
     els.flashLevelEl.textContent = flashState.mode === "constant"
-      ? (flashState.roundLimit ? `Runde ${flashState.roundsPlayed + 1}/${flashState.roundLimit} · ` : "") + `Tempo-Stufe ${flashState.speedStep + 1}`
+      ? (barCompact()
+        ? (flashState.roundLimit ? `${flashState.roundsPlayed + 1}/${flashState.roundLimit} · ` : "") + `Stufe ${flashState.speedStep + 1}`
+        : (flashState.roundLimit ? `Runde ${flashState.roundsPlayed + 1}/${flashState.roundLimit} · ` : "") + `Tempo-Stufe ${flashState.speedStep + 1}`)
       : `${flashState.count} ${flashUnitLabel(flashState.kind)}`;
     flashShowDigit();
   }
@@ -14474,10 +14554,12 @@
     // The stick groups make no sense for words.
     if (words) {
       ["balanceSticksGroup", "balanceLettersGroup"].forEach((id) => { balEl(id).hidden = true; });
-      [balanceUi.color1, balanceUi.letterColor, balanceUi.length, balanceUi.width, balanceUi.count, balEl("balanceResetPosBtn"), balanceUi.color2, balanceUi.letterColor2].forEach((el) => { const g = el.closest(".group"); if (g) g.hidden = true; });
+      // One size control for words: "Größe der Wörter" (Prüfer 08.10.);
+      // the letter "Schriftgröße" belongs to the sticks.
+      [balanceUi.color1, balanceUi.letterColor, balanceUi.length, balanceUi.width, balanceUi.font, balanceUi.count, balEl("balanceResetPosBtn"), balanceUi.color2, balanceUi.letterColor2].forEach((el) => { const g = el.closest(".group"); if (g) g.hidden = true; });
     } else {
       ["balanceSticksGroup", "balanceLettersGroup"].forEach((id) => { balEl(id).hidden = false; });
-      [balanceUi.color1, balanceUi.letterColor, balanceUi.length, balanceUi.width, balEl("balanceResetPosBtn")].forEach((el) => { const g = el.closest(".group"); if (g) g.hidden = false; });
+      [balanceUi.color1, balanceUi.letterColor, balanceUi.length, balanceUi.width, balanceUi.font, balEl("balanceResetPosBtn")].forEach((el) => { const g = el.closest(".group"); if (g) g.hidden = false; });
     }
     syncLook("balance");
   }
@@ -14678,7 +14760,9 @@
     const a = balanceArea();
     const aw = a.x1 - a.x0, ah = a.y1 - a.y0;
     const len = Math.max(3, [...st.word.text].length);
-    const fsWanted = 46 * st.size * st.fontF;
+    // Words have one size control ("Größe der Wörter" = st.size); the
+    // stick font factor stays with the sticks.
+    const fsWanted = 46 * st.size;
     const fs = Math.round(Math.max(16, Math.min(fsWanted, (aw * 0.9) / (len * 0.66 + 1.1), ah * 0.45)));
     balP.word.style.fontSize = fs + "px";
     balP.word.style.left = Math.round(a.x0 + aw / 2) + "px";
@@ -14788,6 +14872,13 @@
     ["color1", "color2", "letterColor"].forEach((f) => syncSingleSelectPicker(balPauseLook[f], st[f]));
     syncSingleSelectPicker(balPauseLook.letterColor2, st.letterColor2 || st.letterColor);
     ["lengthPct", "widthF", "fontF"].forEach((f) => { const [inp, val, fmt] = balPauseLook[f]; inp.value = st[f]; val.textContent = fmt(st[f]); });
+    // Words (Prüfer 08.10.): no stick rows; the size is "Größe der Wörter",
+    // the word rows (Liste / Wechsel) come from addPauseChoiceRow below.
+    const words = st.content === "woerter";
+    ["balancePauseStick1Group", "balancePauseStickSizeGroup", "balancePauseResetPosBtn"].forEach((id) => { balEl(id).hidden = words; });
+    if (words) balPauseLook.stick2.hidden = true;
+    const sizeLabel = balP.pauseOverlay.querySelector('[data-live-look="balance"] .group-label');
+    if (sizeLabel && sizeLabel.firstChild) sizeLabel.firstChild.textContent = (words ? "Größe der Wörter" : LOOK_SPECS.balance.size.label) + " ";
   }
   buildSingleSelectPicker(balPauseLook.color1, BALANCE_STICK_COLORS, (k) => balanceLiveLook("color1", k));
   buildSingleSelectPicker(balPauseLook.color2, BALANCE_STICK_COLORS, (k) => balanceLiveLook("color2", k));
@@ -15134,14 +15225,14 @@
       `<div class="group-label">Stifte</div>` + row("sticks", [[1, "1 Stift"], [2, "2 Stifte"]], "two") +
       `<div class="group-label">Buchstaben</div>` + row("letters", [["zufall", "Zufällig"], ["einzeln", "Nur einer"]], "two") +
       `<div class="group-label">Takt</div>` + row("metro", [[true, "Mit Takt"], [false, "Ohne Takt"]], "two") +
-      (cfg.metro ? `<div class="slider-row"><span class="slider-label">Tempo</span><input type="range" min="30" max="200" step="5" data-type="${typeId}" data-f="bpm" value="${cfg.bpm}"><span class="slider-value" data-fvalue="${typeId}-bpm">${cfg.bpm}</span></div>` : "") +
+      (cfg.metro ? `<div class="slider-row"><span class="slider-label">Tempo</span><input type="range" min="30" max="200" step="5" data-type="${typeId}" data-f="bpm" value="${cfg.bpm}"><span class="slider-value" data-fvalue="${typeId}-bpm">${cgFmt("bpm", cfg.bpm)}</span></div>` : "") +
       `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` +
       `<div class="group-label">${esc(LOOK_SPECS.balance.size.label)}</div>` +
-      `<div class="slider-row"><input type="range" min="0.6" max="2" step="0.1" data-type="${typeId}" data-f="size" value="${cfg.size}"><span class="slider-value" data-fvalue="${typeId}-size">${cfg.size}</span></div>` +
+      `<div class="slider-row"><input type="range" min="0.6" max="2" step="0.1" data-type="${typeId}" data-f="size" value="${cfg.size}"><span class="slider-value" data-fvalue="${typeId}-size">${cgFmt("size", cfg.size)}</span></div>` +
       `<div class="group-label">Farbe des Stifts</div><div class="cardio-guest-colors">` +
       BALANCE_STICK_COLORS.map((c) => `<label><input type="radio" name="cardioBalColor-${typeId}" data-looktype="${typeId}" data-lookfield="color1" data-lookcolor="${c.key}" ${cfg.color1 === c.key ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") + `</div>` +
       `<div class="group-label">Lautstärke</div>` +
-      `<div class="slider-row"><input type="range" min="0" max="1" step="0.05" data-type="${typeId}" data-f="volume" value="${cfg.volume}"><span class="slider-value" data-fvalue="${typeId}-volume">${cfg.volume}</span></div>` +
+      `<div class="slider-row"><input type="range" min="0" max="1" step="0.05" data-type="${typeId}" data-f="volume" value="${cfg.volume}"><span class="slider-value" data-fvalue="${typeId}-volume">${cgFmt("volume", cfg.volume)}</span></div>` +
       `</div></details>`;
   }
 
@@ -15347,6 +15438,7 @@
       row.querySelectorAll("[data-pause-val]").forEach((c) => setActive(c, c.dataset.pauseVal === v));
     }
     new MutationObserver(() => { if (!overlay.hidden) sync(); }).observe(overlay, { attributes: true, attributeFilter: ["hidden"] });
+    return sync;
   }
   addPauseChoiceRow(els.rememberPauseOverlay, { label: "Bei Fehler", sourceRow: "rememberErrorRow", attr: "remember-error",
     visible: () => !!rememberState && rememberState.mode !== "training", get: () => rememberState.errorMode, set: (v) => { if (rememberState) rememberState.errorMode = v; } });
@@ -15358,6 +15450,15 @@
     visible: () => !!flashState && flashState.mode !== "training", get: () => flashState.errorMode, set: (v) => { if (flashState) flashState.errorMode = v; } });
   addPauseChoiceRow(els.motPauseOverlay, { label: "Bei Fehler", sourceRow: "motErrorRow", attr: "mot-error",
     visible: () => !!motState, get: () => motState.errorMode, set: (v) => { if (motState) motState.errorMode = v; } });
+  // Gleichgewicht with words: the word rows live in the pause sheet too
+  // (inserted after Tempo, so added in reverse order).
+  const balWordsLive = () => !!balanceState && balanceState.content === "woerter";
+  addPauseChoiceRow(balP.pauseOverlay, { label: "Wort wechselt", sourceRow: "balanceWordEveryRow", attr: "bal-wordevery",
+    visible: balWordsLive, get: () => String(balanceState.wordEvery), set: (v) => balanceLive("wordEvery", Number(v)) });
+  const balReadSync = addPauseChoiceRow(balP.pauseOverlay, { label: "Lies", sourceRow: "balanceWordReadRow", attr: "bal-wordread",
+    visible: () => balWordsLive() && balanceState.wordList === "farben", get: () => balanceState.wordRead, set: (v) => { balanceLive("wordRead", v); balanceNextWord(); } });
+  addPauseChoiceRow(balP.pauseOverlay, { label: "Wörter", sourceRow: "balanceWordListRow", attr: "bal-wordlist",
+    visible: balWordsLive, get: () => balanceState.wordList, set: (v) => { balanceLive("wordList", v); balanceNextWord(); if (balReadSync) balReadSync(); } });
 
   initLookControls({
     balance: { prefs: balancePrefs, save: saveBalancePrefsToStorage },
@@ -15462,7 +15563,7 @@
   function syncMotSpeedUI() {
     [[els.motSpeedSlider, els.motSpeedValue], [els.motTrainingSpeedSlider, els.motTrainingSpeedValue]].forEach(([slider, value]) => {
       slider.value = motPrefs.speed;
-      value.textContent = Math.round(motPrefs.speed * 100) + "%";
+      value.textContent = Math.round(motPrefs.speed * 100) + " %";
     });
     [[els.motTrackSlider, els.motTrackValue], [els.motTrainingTrackSlider, els.motTrainingTrackValue]].forEach(([slider, value]) => {
       slider.value = motPrefs.trackS;
@@ -15977,6 +16078,9 @@
   }
   function motLevelLabel() {
     const { n, k } = motCountsForRound();
+    if (barCompact()) {
+      return motState.mode === "count" ? `${k} aus ${n}` : `${k}/${n} · Stufe ${motState.speedStep + 1}`;
+    }
     const base = `${n} Objekte · ${k} Ziel${k > 1 ? "e" : ""}`;
     return motState.mode === "count" ? base : `${base} · Tempo-Stufe ${motState.speedStep + 1}`;
   }
@@ -16166,7 +16270,7 @@
   // settings stay as they are.
   function syncMotPauseSpeed() {
     $("motPauseSpeedSlider").value = motState.speed;
-    $("motPauseSpeedValue").textContent = Math.round(motState.speed * 100) + "%";
+    $("motPauseSpeedValue").textContent = Math.round(motState.speed * 100) + " %";
   }
   $("motPauseSpeedSlider").addEventListener("input", (e) => { if (motState) { motState.speed = Number(e.target.value); syncMotPauseSpeed(); } });
   function resumeMot() {
@@ -19190,7 +19294,7 @@
   function cardioLookFieldsHtml(kind, typeId, cfg) {
     const { size, color } = LOOK_SPECS[kind];
     let html = `<div class="group-label">${esc(size.label)}</div>` +
-      `<div class="slider-row"><input type="range" min="${size.min}" max="${size.max}" step="${size.step}" data-type="${typeId}" data-f="${size.field}" value="${cfg[size.field]}" aria-label="${esc(size.label)}"><span class="slider-value" data-fvalue="${typeId}-${size.field}">${cfg[size.field]}</span></div>`;
+      `<div class="slider-row"><input type="range" min="${size.min}" max="${size.max}" step="${size.step}" data-type="${typeId}" data-f="${size.field}" value="${cfg[size.field]}" aria-label="${esc(size.label)}"><span class="slider-value" data-fvalue="${typeId}-${size.field}">${cgFmt(size.field, cfg[size.field])}</span></div>`;
     if (color) {
       html += `<div class="group-label">${esc(color.label)}</div><div class="cardio-guest-colors">` +
         color.lib.map((c) => `<label><input type="radio" name="cardioGuestLook-${typeId}" data-looktype="${typeId}" data-lookfield="${color.field}" data-lookcolor="${c.key}" ${cfg[color.field] === c.key ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
@@ -19286,14 +19390,14 @@
           // continuously.
           html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` + cardioLookFieldsHtml("remember", t.id, cfg) +
             `<div class="group-label">Einblenddauer bei 2 Zahlen</div>` +
-            `<div class="slider-row"><input type="range" min="0.4" max="3" step="0.1" data-type="${t.id}" data-f="revealBaseS" value="${cfg.revealBaseS}"><span class="slider-value" data-fvalue="${t.id}-revealBaseS">${cfg.revealBaseS}</span></div>` +
+            `<div class="slider-row"><input type="range" min="0.4" max="3" step="0.1" data-type="${t.id}" data-f="revealBaseS" value="${cfg.revealBaseS}"><span class="slider-value" data-fvalue="${t.id}-revealBaseS">${cgFmt("revealBaseS", cfg.revealBaseS)}</span></div>` +
             `<div class="group-label">Zusätzliche Zeit je weiterer Zahl</div>` +
-            `<div class="slider-row"><input type="range" min="0.05" max="0.6" step="0.05" data-type="${t.id}" data-f="revealStepS" value="${cfg.revealStepS}"><span class="slider-value" data-fvalue="${t.id}-revealStepS">${cfg.revealStepS}</span></div>` +
+            `<div class="slider-row"><input type="range" min="0.05" max="0.6" step="0.05" data-type="${t.id}" data-f="revealStepS" value="${cfg.revealStepS}"><span class="slider-value" data-fvalue="${t.id}-revealStepS">${cgFmt("revealStepS", cfg.revealStepS)}</span></div>` +
             // Trainingsmodus-eigene Startwerte - nur relevant, wenn der
             // Modus oben auch tatsächlich auf Trainingsmodus steht.
             (cfg.mode === "training" ? (
               `<div class="group-label">Startzahl <span class="group-count">${cfg.trainingStart}</span></div>` +
-              `<div class="slider-row"><input type="range" min="2" max="16" step="1" data-type="${t.id}" data-f="trainingStart" value="${cfg.trainingStart}"><span class="slider-value" data-fvalue="${t.id}-trainingStart">${cfg.trainingStart}</span></div>` +
+              `<div class="slider-row"><input type="range" min="2" max="16" step="1" data-type="${t.id}" data-f="trainingStart" value="${cfg.trainingStart}"><span class="slider-value" data-fvalue="${t.id}-trainingStart">${cgFmt("trainingStart", cfg.trainingStart)}</span></div>` +
               `<div class="group-label">Positionsart</div>` +
               `<div class="choice-row two">` +
               `<button class="choice${cfg.trainingPositionMode === "fixed" ? " active" : ""}" data-type="${t.id}" data-posmode="fixed">Feste Positionen<small>bisherige bleiben</small></button>` +
@@ -19315,9 +19419,9 @@
           // Feineinstellungen (#flashAdvanced).
           html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` + cardioLookFieldsHtml("flash", t.id, cfg) +
             `<div class="group-label">Einblenddauer je Zahl</div>` +
-            `<div class="slider-row"><input type="range" min="0.3" max="2" step="0.1" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"><span class="slider-value" data-fvalue="${t.id}-stimulusS">${cfg.stimulusS}</span></div>` +
+            `<div class="slider-row"><input type="range" min="0.3" max="2" step="0.1" data-type="${t.id}" data-f="stimulusS" value="${cfg.stimulusS}"><span class="slider-value" data-fvalue="${t.id}-stimulusS">${cgFmt("stimulusS", cfg.stimulusS)}</span></div>` +
             `<div class="group-label">Pause zwischen den Zahlen</div>` +
-            `<div class="slider-row"><input type="range" min="0.2" max="2" step="0.1" data-type="${t.id}" data-f="intervalS" value="${cfg.intervalS}"><span class="slider-value" data-fvalue="${t.id}-intervalS">${cfg.intervalS}</span></div>` +
+            `<div class="slider-row"><input type="range" min="0.2" max="2" step="0.1" data-type="${t.id}" data-f="intervalS" value="${cfg.intervalS}"><span class="slider-value" data-fvalue="${t.id}-intervalS">${cgFmt("intervalS", cfg.intervalS)}</span></div>` +
             `<div class="group-label">Fixpunkt in der Mitte</div>` +
             `<div class="choice-row two" data-fixtoggle-row="${t.id}">` +
             `<button class="choice${cfg.fixEnabled ? " active" : ""}" data-type="${t.id}" data-fixtoggle="1">Anzeigen</button>` +
@@ -19328,7 +19432,7 @@
               `<div class="cardio-guest-colors" data-fixcolors="${t.id}">` +
               FIX_COLOR_LIB.map((c) => `<label><input type="radio" name="cardioGuestFix-${t.id}" data-fixtype="${t.id}" data-fixcolor="${c.key}" ${cfg.fixColor === c.key ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
               `</div>` +
-              `<div class="slider-row"><span class="slider-label">Größe</span><input type="range" min="0.6" max="2" step="0.1" data-type="${t.id}" data-f="fixSize" value="${cfg.fixSize}"><span class="slider-value" data-fvalue="${t.id}-fixSize">${cfg.fixSize}</span></div>`
+              `<div class="slider-row"><span class="slider-label">Größe</span><input type="range" min="0.6" max="2" step="0.1" data-type="${t.id}" data-f="fixSize" value="${cfg.fixSize}"><span class="slider-value" data-fvalue="${t.id}-fixSize">${cgFmt("fixSize", cfg.fixSize)}</span></div>`
             ) : "") +
             // Modus-eigene Startwerte - welches Feld gezeigt wird, hängt
             // vom oben gewählten Modus ab, genau wie auf den jeweils
@@ -19336,10 +19440,10 @@
             // flashRepsGroup/flashTrainingReady).
             (cfg.mode === "constant" ? (
               `<div class="group-label">Anzahl der Zeichen <span class="group-count">${cfg.constantCount}</span></div>` +
-              `<div class="slider-row"><input type="range" min="2" max="6" step="1" data-type="${t.id}" data-f="constantCount" value="${cfg.constantCount}"><span class="slider-value" data-fvalue="${t.id}-constantCount">${cfg.constantCount}</span></div>`
+              `<div class="slider-row"><input type="range" min="2" max="6" step="1" data-type="${t.id}" data-f="constantCount" value="${cfg.constantCount}"><span class="slider-value" data-fvalue="${t.id}-constantCount">${cgFmt("constantCount", cfg.constantCount)}</span></div>`
             ) : cfg.mode === "climb" || cfg.mode === "climbRepeat" ? (
               `<div class="group-label">Startanzahl <span class="group-count">${cfg.startCount}</span></div>` +
-              `<div class="slider-row"><input type="range" min="2" max="9" step="1" data-type="${t.id}" data-f="startCount" value="${cfg.startCount}"><span class="slider-value" data-fvalue="${t.id}-startCount">${cfg.startCount}</span></div>` +
+              `<div class="slider-row"><input type="range" min="2" max="9" step="1" data-type="${t.id}" data-f="startCount" value="${cfg.startCount}"><span class="slider-value" data-fvalue="${t.id}-startCount">${cgFmt("startCount", cfg.startCount)}</span></div>` +
               (cfg.mode === "climbRepeat" ? (
                 `<div class="group-label">Wiederholungen je Stufe</div>` +
                 `<div class="choice-row two">` +
@@ -19348,7 +19452,7 @@
               ) : "")
             ) : cfg.mode === "training" ? (
               `<div class="group-label">Start mit <span class="group-count">${cfg.trainingStart} Zeichen</span></div>` +
-              `<div class="slider-row"><input type="range" min="2" max="9" step="1" data-type="${t.id}" data-f="trainingStart" value="${cfg.trainingStart}"><span class="slider-value" data-fvalue="${t.id}-trainingStart">${cfg.trainingStart}</span></div>` +
+              `<div class="slider-row"><input type="range" min="2" max="9" step="1" data-type="${t.id}" data-f="trainingStart" value="${cfg.trainingStart}"><span class="slider-value" data-fvalue="${t.id}-trainingStart">${cgFmt("trainingStart", cfg.trainingStart)}</span></div>` +
               `<div class="group-label">Nach Erfolg</div>` +
               `<div class="choice-row two">` +
               `<button class="choice${cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="1">Weiter steigern<small>wie gewohnt +1</small></button>` +
@@ -19364,32 +19468,32 @@
           // screen nests them under its own Feineinstellungen (#motAdvanced).
           html += `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` + cardioLookFieldsHtml("mot", t.id, cfg) +
             `<div class="group-label">Geschwindigkeit</div>` +
-            `<div class="slider-row"><input type="range" min="0.05" max="0.4" step="0.01" data-type="${t.id}" data-f="speed" value="${cfg.speed}"><span class="slider-value" data-fvalue="${t.id}-speed">${cfg.speed}</span></div>` +
+            `<div class="slider-row"><input type="range" min="0.05" max="0.4" step="0.01" data-type="${t.id}" data-f="speed" value="${cfg.speed}"><span class="slider-value" data-fvalue="${t.id}-speed">${cgFmt("speed", cfg.speed)}</span></div>` +
             `<div class="group-label">Verfolgungsdauer</div>` +
-            `<div class="slider-row"><input type="range" min="3" max="15" step="0.5" data-type="${t.id}" data-f="trackS" value="${cfg.trackS}"><span class="slider-value" data-fvalue="${t.id}-trackS">${cfg.trackS}</span></div>` +
+            `<div class="slider-row"><input type="range" min="3" max="15" step="0.5" data-type="${t.id}" data-f="trackS" value="${cfg.trackS}"><span class="slider-value" data-fvalue="${t.id}-trackS">${cgFmt("trackS", cfg.trackS)}</span></div>` +
             `<div class="group-label">Markierdauer</div>` +
-            `<div class="slider-row"><input type="range" min="1" max="4" step="0.1" data-type="${t.id}" data-f="highlightS" value="${cfg.highlightS}"><span class="slider-value" data-fvalue="${t.id}-highlightS">${cfg.highlightS}</span></div>` +
+            `<div class="slider-row"><input type="range" min="1" max="4" step="0.1" data-type="${t.id}" data-f="highlightS" value="${cfg.highlightS}"><span class="slider-value" data-fvalue="${t.id}-highlightS">${cgFmt("highlightS", cfg.highlightS)}</span></div>` +
             // Modus-eigene Objekt-/Ziel-Anzahlen - welches Feldpaar gezeigt
             // wird, hängt vom oben gewählten Modus ab, genau wie auf den
             // jeweils eigenen Ready-Seiten (motFixedCountGroup/
             // motGrowStartGroup/motTrainingReady).
             (cfg.mode === "speed" ? (
               `<div class="group-label">Anzahl Objekte <span class="group-count">${cfg.objectCount}</span></div>` +
-              `<div class="slider-row"><input type="range" min="4" max="12" step="1" data-type="${t.id}" data-f="objectCount" value="${cfg.objectCount}"><span class="slider-value" data-fvalue="${t.id}-objectCount">${cfg.objectCount}</span></div>` +
+              `<div class="slider-row"><input type="range" min="4" max="12" step="1" data-type="${t.id}" data-f="objectCount" value="${cfg.objectCount}"><span class="slider-value" data-fvalue="${t.id}-objectCount">${cgFmt("objectCount", cfg.objectCount)}</span></div>` +
               `<div class="group-label">Anzahl Ziele <span class="group-count">${cfg.targetCount}</span></div>` +
-              `<div class="slider-row"><input type="range" min="1" max="4" step="1" data-type="${t.id}" data-f="targetCount" value="${cfg.targetCount}"><span class="slider-value" data-fvalue="${t.id}-targetCount">${cfg.targetCount}</span></div>`
+              `<div class="slider-row"><input type="range" min="1" max="4" step="1" data-type="${t.id}" data-f="targetCount" value="${cfg.targetCount}"><span class="slider-value" data-fvalue="${t.id}-targetCount">${cgFmt("targetCount", cfg.targetCount)}</span></div>`
             ) : cfg.mode === "count" || cfg.mode === "both" ? (
               `<div class="group-label">Start-Anzahl Objekte <span class="group-count">${cfg.growStartObjects}</span></div>` +
-              `<div class="slider-row"><input type="range" min="3" max="8" step="1" data-type="${t.id}" data-f="growStartObjects" value="${cfg.growStartObjects}"><span class="slider-value" data-fvalue="${t.id}-growStartObjects">${cfg.growStartObjects}</span></div>` +
+              `<div class="slider-row"><input type="range" min="3" max="8" step="1" data-type="${t.id}" data-f="growStartObjects" value="${cfg.growStartObjects}"><span class="slider-value" data-fvalue="${t.id}-growStartObjects">${cgFmt("growStartObjects", cfg.growStartObjects)}</span></div>` +
               `<div class="group-label">Start-Anzahl Ziele <span class="group-count">${cfg.growStartTargets}</span></div>` +
-              `<div class="slider-row"><input type="range" min="1" max="3" step="1" data-type="${t.id}" data-f="growStartTargets" value="${cfg.growStartTargets}"><span class="slider-value" data-fvalue="${t.id}-growStartTargets">${cfg.growStartTargets}</span></div>`
+              `<div class="slider-row"><input type="range" min="1" max="3" step="1" data-type="${t.id}" data-f="growStartTargets" value="${cfg.growStartTargets}"><span class="slider-value" data-fvalue="${t.id}-growStartTargets">${cgFmt("growStartTargets", cfg.growStartTargets)}</span></div>`
             ) : cfg.mode === "training" ? (
               `<div class="group-label">Start-Anzahl Objekte <span class="group-count">${cfg.trainingObjects}</span></div>` +
-              `<div class="slider-row"><input type="range" min="3" max="12" step="1" data-type="${t.id}" data-f="trainingObjects" value="${cfg.trainingObjects}"><span class="slider-value" data-fvalue="${t.id}-trainingObjects">${cfg.trainingObjects}</span></div>` +
+              `<div class="slider-row"><input type="range" min="3" max="12" step="1" data-type="${t.id}" data-f="trainingObjects" value="${cfg.trainingObjects}"><span class="slider-value" data-fvalue="${t.id}-trainingObjects">${cgFmt("trainingObjects", cfg.trainingObjects)}</span></div>` +
               `<div class="group-label">Start-Anzahl Ziele <span class="group-count">${cfg.trainingTargets}</span></div>` +
-              `<div class="slider-row"><input type="range" min="1" max="4" step="1" data-type="${t.id}" data-f="trainingTargets" value="${cfg.trainingTargets}"><span class="slider-value" data-fvalue="${t.id}-trainingTargets">${cfg.trainingTargets}</span></div>` +
+              `<div class="slider-row"><input type="range" min="1" max="4" step="1" data-type="${t.id}" data-f="trainingTargets" value="${cfg.trainingTargets}"><span class="slider-value" data-fvalue="${t.id}-trainingTargets">${cgFmt("trainingTargets", cfg.trainingTargets)}</span></div>` +
               `<div class="group-label">Start-Tempo-Stufe <span class="group-count">${cfg.trainingSpeedStep}</span></div>` +
-              `<div class="slider-row"><input type="range" min="0" max="20" step="1" data-type="${t.id}" data-f="trainingSpeedStep" value="${cfg.trainingSpeedStep}"><span class="slider-value" data-fvalue="${t.id}-trainingSpeedStep">${cfg.trainingSpeedStep}</span></div>` +
+              `<div class="slider-row"><input type="range" min="0" max="20" step="1" data-type="${t.id}" data-f="trainingSpeedStep" value="${cfg.trainingSpeedStep}"><span class="slider-value" data-fvalue="${t.id}-trainingSpeedStep">${cgFmt("trainingSpeedStep", cfg.trainingSpeedStep)}</span></div>` +
               `<div class="group-label">Nach Erfolg</div>` +
               `<div class="choice-row two">` +
               `<button class="choice${cfg.trainingProgress ? " active" : ""}" data-type="${t.id}" data-progressfield="trainingProgress" data-progressval="1">Weiter steigern<small>wie gewohnt</small></button>` +
@@ -19524,6 +19628,18 @@
   // bg radio/bg slider) - native input state already reflects the change, so
   // no re-render is forced (matters most for the bg-intensity slider: a full
   // rebuild on every "input" tick while dragging would be janky).
+  // Value labels of the Cardio guest sliders in German form (Prüfer 08.10.:
+  // "1.5 s" -> "1,5 s", "0.8" -> "80 %").
+  function cgFmt(field, v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return String(v);
+    const de = (x) => String(Math.round(x * 100) / 100).replace(".", ",");
+    if (/S$/.test(field)) return `${de(n)} s`;
+    if (field === "volume" || field === "speed") return `${Math.round(n * 100)} %`;
+    if (field === "bpm") return `${n}/min`;
+    if (/(size|Scale)$/i.test(field)) return `${de(n)}×`;
+    return de(n);
+  }
   function wireCardioGuestFields(container, getCfg, { onSelect, onPersist } = {}) {
     const select = onSelect || (() => {});
     const persist = onPersist || (() => {});
@@ -19538,7 +19654,7 @@
         // for those.
         if (input.type === "range") {
           const valueEl = container.querySelector(`[data-fvalue="${input.dataset.type}-${input.dataset.f}"]`);
-          if (valueEl) valueEl.textContent = input.value;
+          if (valueEl) valueEl.textContent = cgFmt(input.dataset.f, Number(input.value));
         }
       });
     });
@@ -19727,7 +19843,7 @@
         cfg.bgIntensity = Number(slider.value);
         persist();
         const valueEl = container.querySelector(`[data-bgintensityvalue="${slider.dataset.bgintensity}"]`);
-        if (valueEl) valueEl.textContent = `${Math.round(cfg.bgIntensity * 100)}%`;
+        if (valueEl) valueEl.textContent = `${Math.round(cfg.bgIntensity * 100)} %`;
       });
     });
   }
@@ -20970,10 +21086,10 @@
   // {label, text} into the run; the next pause shows it once ("Eben: …"),
   // the closing panel lists all of them and the history note keeps them.
   // A new scored block only needs one blockResultPush() call. ----
-  function blockResultPush(run, label, text) {
+  function blockResultPush(run, label, text, note) {
     if (!run) return;
     run.results = run.results || [];
-    run.results.push({ label, text });
+    run.results.push(note ? { label, text, note } : { label, text });
     run.lastResult = { label, text };
   }
   function showBlockResult(el, run) {
@@ -20989,7 +21105,7 @@
   }
   function blockResultsNote(run) {
     const rs = (run && run.results) || [];
-    return rs.length ? rs.map((r) => `${r.label}: ${r.text}`).join("; ") : undefined;
+    return rs.length ? rs.map((r) => r.note || `${r.label}: ${r.text}`).join("; ") : undefined;
   }
   function advanceComboProgram(playedS) {
     if (!comboProgram) return;
@@ -22195,7 +22311,7 @@
   const TRAINER_PROGRAMS_KEY = "fwmc-trainer-programs-v1";
   const BUNDLE_ITEM_TYPE = { "bundle": undefined, "breath-bundle": "breath-program", "workout-bundle": "workout-plan", "movement-bundle": "movement-plan", "cardio-bundle": "cardio-plan", "combo-bundle": "combo-program" };
   function rememberTrainerProgram(code, def) {
-    if (!def || def.type === "free-template" || def.type === "training-plan" || def.type === "neuro-unlock" || PROGRAMS[code] || BREATH_PROGRAMS[code] || WORKOUT_PLANS[code]) return;
+    if (!def || def.type === "free-template" || def.type === "training-plan" || def.type === "neuro-unlock" || def.type === "feature-unlock" || PROGRAMS[code] || BREATH_PROGRAMS[code] || WORKOUT_PLANS[code]) return;
     const all = readJSON(TRAINER_PROGRAMS_KEY, {});
     all[code] = { def, at: new Date().toISOString() };
     const keep = Object.entries(all).sort((a, b) => b[1].at.localeCompare(a[1].at)).slice(0, CODE_HISTORY_MAX);
@@ -27560,7 +27676,7 @@
       desc: "Eine Brille mit einem roten und einem grünen Glas. Vor dem ersten Training stellst du sie in der App einmal ein.", link: "" },
     // Neuro-Aktivierung (2026-10-08): `neuro: true` = only with that area unlocked.
     { id: "vibration", neuro: true, name: "Vibrationsgerät",
-      desc: "Ein kleines, handliches Vibrationsgerät mit glattem Aufsatz, z. B. ein Z-Vibe.", link: "" },
+      desc: "Ein kleines, handliches Vibrationsgerät mit glattem Aufsatz, z. B. ein Z‑Vibe.", link: "" },
     { id: "massageball", neuro: true, name: "Massageball oder Massagepilz",
       desc: "Ein fester Ball mit Noppen (Igelball) oder ein Massagepilz, etwa so groß wie ein Tennisball.", link: "" },
     // Prepared for a later exercise (no exercise yet, Fabian 08.10.).
@@ -34167,7 +34283,7 @@
   // Vorname in der Begrüßung (Fabian 08.10.): stored only on this device
   // (fwmc-name-v1, plain string, trimmed, max 30 chars; in backups via the
   // fwmc- prefix). Never part of a reminder payload or any Worker call.
-  // Without a name the hello card offers "+ Wie dürfen wir dich nennen?",
+  // Without a name the hello card offers "+ Wie heißt du?",
   // which opens an inline form; Grundeinstellungen "Dein Name" edits/clears it.
   const NAME_KEY = "fwmc-name-v1";
   const NAME_MAX = 30;
@@ -34854,6 +34970,14 @@
   // Code entry sits on Training (Fabian 2026-10-05: "eher oben bei Training"; ids kept from its time on Mehr)
   const MORE_CODE_CTX = { goBtn: $("moreCodeGoBtn"), errorEl: $("moreCodeError"), homeScreen: "trainingHub" };
   function goMoreCode() { const code = $("moreCodeInput").value.trim(); if (code) openProgramIntro(code, MORE_CODE_CTX); }
+  // A trainer code from a QR (scanner) or a #code= link runs exactly the
+  // code card's path: Training page, code in the field, goMoreCode().
+  function openCodeAsTyped(code) {
+    if (!code) return;
+    showScreen("trainingHub");
+    $("moreCodeInput").value = code;
+    goMoreCode();
+  }
   $("moreCodeGoBtn").addEventListener("click", goMoreCode);
   $("moreCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") goMoreCode(); });
   $("moreSettingsBtn").addEventListener("click", openMasterSettings);
@@ -34879,7 +35003,7 @@
     // tiles (Workout, Cardio, Eigenes Training, Test when unlocked).
     const tile = (a, core) => `<button type="button" class="area-tile${core ? " hub-core-tile" : ""}" data-area="${a.key}"${core ? ` style="--tile-c:${a.color}"` : ""}>
       <span class="area-icon" style="background:${a.color}"><svg viewBox="0 0 24 24" aria-hidden="true">${a.icon}</svg></span>
-      ${core ? "" : '<span class="t-wrap">'}<span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(HUB_TEXT[a.key] || (a.key === "nat" ? "Neuroathletik: " + a.text : a.text))}</span>${a.key === "test" || a.key === "neuro" ? '<span class="test-unlock-badge">Mit Code freigeschaltet</span>' : ""}${core ? "" : "</span>"}${HUB_TEST_MARK.includes(a.key) ? '<span class="hub-test-mark">Test</span>' : ""}</button>`;
+      ${core ? "" : '<span class="t-wrap">'}<span class="area-name">${esc(a.key === "nat" ? a.short : a.label)}</span><span class="area-text">${esc(HUB_TEXT[a.key] || (a.key === "nat" ? "Neuroathletik: " + a.text : a.text))}</span>${a.key === "test" ? '<span class="test-unlock-badge">Mit Code freigeschaltet</span>' : ""}${core ? "" : "</span>"}${HUB_TEST_MARK.includes(a.key) ? '<span class="hub-test-mark">Test</span>' : ""}</button>`;
     const core = tiles.filter((a) => HUB_CORE.includes(a.key)), extra = tiles.filter((a) => !HUB_CORE.includes(a.key));
     grid.innerHTML = `<div class="hub-group-title hub-first">Unser Schwerpunkttraining</div><p class="hub-sub">Neurozentrierte Grundlagen gezielt trainieren.</p>
       <div class="area-grid hub-core">${core.map((a) => tile(a, true)).join("")}</div>
@@ -36936,7 +37060,7 @@
     return !!(navigator.webdriver && readJSON("fwmc-test-neuro", false));
   }
   const NEURO_AREA = { key: "neuro", label: "Neuro-Aktivierung", short: "Neuro", color: "#8a4b2a", screen: "neuroHome",
-    text: "Geführt mit Hilfsmitteln, für dich freigeschaltet.",
+    text: "Geführt mit Vibration oder Massageball.",
     icon: '<circle cx="12" cy="12" r="2.6" fill="#fff"/><path d="M8.2 8.2a5.4 5.4 0 0 0 0 7.6M15.8 8.2a5.4 5.4 0 0 1 0 7.6M5.4 5.4a9.4 9.4 0 0 0 0 13.2M18.6 5.4a9.4 9.4 0 0 1 0 13.2" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' };
   // Simple stick figure (same style as STRETCH_ICONS) with the joint marked.
   const NEURO_FIG = '<circle cx="12" cy="3.6" r="2" fill="#fff"/><path d="M12 5.6V13M12 7.6l-3.4 3-1.4 3.6M12 7.6l3.4 3 1.4 3.6M12 13l-2 4-0.6 4M12 13l2 4 0.6 4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>';
@@ -36960,7 +37084,7 @@
       title: "Vibration links / rechts", tag: "Vibration", gear: ["vibration"],
       desc: "Ein Vibrationsgerät nacheinander an verschiedene Stellen, Seite für Seite.",
       intro: "Halte das Vibrationsgerät mit leichtem Druck an die genannte Stelle. Die App sagt dir, welche Seite dran ist, und zählt die Zeit.",
-      need: "Du brauchst: ein kleines Vibrationsgerät (z. B. Z-Vibe) mit glattem Aufsatz.",
+      need: "Du brauchst: ein kleines Vibrationsgerät (z. B. Z‑Vibe) mit glattem Aufsatz.",
       safety: "Nicht an die Augen, nicht vorne an den Hals und nicht auf Wunden halten. Leichter Druck reicht.",
       defaults: { stepS: 20, moveS: 5 },
       icon: '<path d="M9 4.5h6v15H9z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M5.5 8.5v7M18.5 8.5v7M3 10.5v3M21 10.5v3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>',
@@ -37383,7 +37507,9 @@
     const secs = Math.round(neuroElapsedS(r));
     const title = `Neuro-Aktivierung · ${neuroTitle(r.ex)}`;
     if (comboProgram) {
-      if (r.special) blockResultPush(comboProgram, neuroTitle(r.ex), `${NEURO_SPECIAL_LABEL} · ${fmtClock(secs)}`);
+      // The pause line stays short ("Eben: Gelenke kreisen / erledigt · 0:09",
+      // Prüfer 08.10.); the history note still names the Spezialübung.
+      if (r.special) blockResultPush(comboProgram, neuroTitle(r.ex), `erledigt · ${fmtClock(secs)}`, `${neuroTitle(r.ex)}: ${NEURO_SPECIAL_LABEL} · ${fmtClock(secs)}`);
       advanceComboProgram(secs);
       return;
     }
@@ -37408,7 +37534,7 @@
     if (!r || r.pausedAt != null) return;
     r.pausedAt = performance.now();
     neuroP.pauseBtn.hidden = true;
-    $("neuroPauseHelp").textContent = r.own ? "Gilt sofort und bleibt gespeichert, wie auf der Übungsseite." : "Gilt sofort, nur für diesen Durchgang.";
+    $("neuroPauseHelp").textContent = r.own ? "Der Takt gilt sofort, die Dauer ab dem nächsten Schritt. Beides bleibt gespeichert, wie auf der Übungsseite." : "Der Takt gilt sofort, die Dauer ab dem nächsten Schritt. Nur für diesen Durchgang.";
     neuroSyncControls(neuroP.pauseControls, r.p, r.ex);
     neuroP.pauseOverlay.hidden = false;
   }
@@ -38261,6 +38387,50 @@
   // when CompressionStream exists ("z…") or plain ("j…"), base64url.
   // Never the name (fwmc-name-v1), settings, plan or anything else.
   // Token: "<part>.<parts>.<group>.<data chunk>". Details: docs/notes/36.
+  // ---- Freischaltungen per Code (Fabian 08.10.): code type
+  // "feature-unlock" {type, name, features:[…], lock?} switches app features
+  // on (or off with lock:true) on this device, like "neuro-unlock"; one code
+  // may carry several. Registry FEATURE_UNLOCKS: a new feature = one entry
+  // here + its checkbox in dashboard.html's FEATURE_UNLOCKS copy. Per entry:
+  // label, on/off (toast text), screen (+ tab, focus element) shown after
+  // an unlock, apply() re-renders what depends on it. Every active feature
+  // also sets body.feat-<key>, so CSS alone can show/hide things.
+  // Store fwmc-features-v1 = {feature: true}; tests: fwmc-test-<feature>.
+  var FEATURES_KEY = "fwmc-features-v1";
+  var FEATURE_UNLOCKS = {
+    "trainer-tools": {
+      label: "Trainer-Werkzeuge",
+      on: "Trainer-Werkzeuge sind jetzt freigeschaltet. Du findest sie unter Fortschritt.",
+      off: "Trainer-Werkzeuge sind wieder ausgeblendet.",
+      tab: "today", screen: "progressScreen", focus: "handoverGroup",
+      apply: () => hoRenderProgressGroup(),
+    },
+  };
+  function featureOn(f) {
+    if (readJSON(FEATURES_KEY, {})[f] === true) return true;
+    return !!(navigator.webdriver && readJSON("fwmc-test-" + f, false));
+  }
+  function applyFeatureClasses() {
+    Object.keys(FEATURE_UNLOCKS).forEach((f) => document.body.classList.toggle("feat-" + f, featureOn(f)));
+  }
+  function applyFeatureUnlockCode(def) {
+    const cur = readJSON(FEATURES_KEY, {});
+    const fs = def.features.filter((f) => FEATURE_UNLOCKS[f]);
+    fs.forEach((f) => { if (def.lock) delete cur[f]; else cur[f] = true; });
+    writeJSON(FEATURES_KEY, cur);
+    applyFeatureClasses();
+    fs.forEach((f) => { try { FEATURE_UNLOCKS[f].apply && FEATURE_UNLOCKS[f].apply(); } catch (e) { /* ignore */ } });
+    const first = FEATURE_UNLOCKS[fs[0]];
+    const labels = fs.map((f) => FEATURE_UNLOCKS[f].label).join(", ");
+    const msg = fs.length === 1 ? first[def.lock ? "off" : "on"]
+      : def.lock ? `Wieder ausgeblendet: ${labels}.` : `Jetzt freigeschaltet: ${labels}.`;
+    if (first.screen) {
+      if (first.tab) activateSectionTab(first.tab);
+      showScreen(first.screen);
+    }
+    showToast(msg);
+    if (!def.lock && first.focus) { const g = $(first.focus); if (g) g.scrollIntoView({ block: "center" }); }
+  }
   var HO_SESSION_KEY = "fwmc-client-session-v1"; // {start, snap:{key: raw|null}}
   var HO_RUNS_KEY = "fwmc-client-runs-v1"; // Kunden-Training runs waiting for the handover
   var HO_PARTS_KEY = "fwmc-import-parts-v1"; // {g, n, ts, parts:{i: chunk}} while 2-3 codes are scanned (not in backups)
@@ -38454,8 +38624,9 @@
   function hoOpenSheet() {
     const sheet = $("handoverImportSheet");
     sheet.hidden = false;
-    const b = sheet.querySelector(".start-btn:not([hidden])");
-    if (b) b.focus();
+    // Focus the dialog itself, not a button: no focus ring on open (Prüfer 08.10.).
+    const inner = sheet.querySelector(".sheet-inner");
+    if (inner) { inner.tabIndex = -1; inner.focus({ preventScroll: true }); }
   }
   function hoShowImportError(text) {
     hoPendingImport = null;
@@ -38500,6 +38671,10 @@
     if (!tok) { hoShowImportError(); return; }
     const r = hoCollect(tok);
     if (!r.data) { hoShowNeedNext(r); return; }
+    await hoHandleData(r.data, fromPaste);
+  }
+  async function hoHandleData(data, fromPaste) {
+    const r = { data };
     try {
       const entries = await hoDecode(r.data);
       hoShowImport(entries, r.data, fromPaste);
@@ -38545,7 +38720,7 @@
     if (!p) return;
     const ok = await hoCopy(`1.1.code.${p.data}`);
     $("handoverImportCopyBtn").textContent = ok ? "Kopiert ✓" : "Kopieren ging nicht";
-    if (ok) showToast("Kopiert. Öffne jetzt die App vom Startbildschirm: Fortschritt › Übergabe-Code einfügen.");
+    if (ok) showToast("Kopiert. Öffne jetzt die App vom Startbildschirm: Fortschritt › Trainer-QR-Code scannen › Code von Hand einfügen.");
   });
   // Paste field (home-screen app on the iPhone: Safari has its own storage)
   function hoOpenPaste() {
@@ -38560,6 +38735,7 @@
   $("handoverPasteSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") hoClosePaste(); });
   $("handoverPasteGoBtn").addEventListener("click", () => {
     const v = $("handoverPasteInput").value;
+    if (!hoParseToken(v) && /[#?&]code=/.test(v) && codeFromQrText(v)) { hoClosePaste(); openCodeAsTyped(codeFromQrText(v)); return; }
     if (!hoParseToken(v)) {
       $("handoverPasteError").textContent = "Das sieht nicht nach einem Übergabe-Code aus. Kopiere ihn bitte noch einmal.";
       $("handoverPasteError").hidden = false;
@@ -38568,7 +38744,144 @@
     hoClosePaste();
     hoHandleToken(v, true);
   });
-  $("handoverPasteOpenBtn").addEventListener("click", hoOpenPaste);
+  // ---- Trainer-QR-Code scannen (Fabian 08.10.): in-app camera. The read
+  // token goes the same way as #import= / paste (parts, dedupe, the
+  // "übernehmen?" sheet). BarcodeDetector where it exists, else jsqr.js
+  // (vendored, loaded only here). Nothing is stored or sent. ----
+  let hoScan = null; // {stream, timer, detector, canvas, lastRaw}
+  let hoJsQrLib = null;
+  function hoLoadJsQr() {
+    if (window.jsQR) return Promise.resolve(window.jsQR);
+    if (hoJsQrLib) return hoJsQrLib;
+    hoJsQrLib = new Promise((res, rej) => {
+      const sc = document.createElement("script");
+      sc.src = "jsqr.js";
+      sc.onload = () => (window.jsQR ? res(window.jsQR) : rej(new Error("jsqr")));
+      sc.onerror = () => { hoJsQrLib = null; rej(new Error("jsqr")); };
+      document.head.appendChild(sc);
+    });
+    return hoJsQrLib;
+  }
+  function hoScanStatus(t) { $("handoverScanStatus").textContent = t || ""; }
+  function hoScanError(t) {
+    hoScanStop();
+    $("handoverScanView").hidden = true;
+    $("handoverScanHelp").hidden = true;
+    $("handoverScanError").textContent = t;
+    $("handoverScanError").hidden = false;
+    hoScanStatus("");
+  }
+  function hoScanStop() {
+    const sc = hoScan;
+    hoScan = null;
+    if (!sc) return;
+    clearTimeout(sc.timer);
+    if (sc.stream) sc.stream.getTracks().forEach((t) => { try { t.stop(); } catch (e) {} });
+    const v = $("handoverScanVideo");
+    try { v.pause(); } catch (e) {}
+    v.srcObject = null;
+  }
+  async function hoOpenScan() {
+    const sheet = $("handoverScanSheet");
+    $("handoverScanView").hidden = false;
+    $("handoverScanHelp").hidden = false;
+    $("handoverScanError").hidden = true;
+    hoScanStatus("Kamera startet …");
+    sheet.hidden = false;
+    const inner = sheet.querySelector(".sheet-inner");
+    if (inner) { inner.tabIndex = -1; inner.focus({ preventScroll: true }); }
+    if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      hoScanError("Die Kamera lässt sich hier nicht öffnen. Öffne die App über ihre normale Adresse oder vom Startbildschirm, oder füge den Code von Hand ein.");
+      return;
+    }
+    const sc = { stream: null, timer: 0, detector: null, canvas: null, lastRaw: "" };
+    hoScan = sc;
+    try {
+      sc.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+    } catch (e) {
+      if (hoScan !== sc) return;
+      const n = e && e.name;
+      hoScanError(n === "NotAllowedError" || n === "SecurityError"
+        ? "Die App darf die Kamera nicht nutzen. Du kannst das in den Einstellungen deines Handys erlauben, oder du fügst den Code von Hand ein."
+        : n === "NotFoundError" || n === "OverconstrainedError"
+          ? "Auf diesem Gerät wurde keine Kamera gefunden. Füge den Code von Hand ein."
+          : "Die Kamera ließ sich nicht starten. Versuche es noch einmal oder füge den Code von Hand ein.");
+      return;
+    }
+    if (hoScan !== sc) { sc.stream.getTracks().forEach((t) => t.stop()); return; }
+    const v = $("handoverScanVideo");
+    v.srcObject = sc.stream;
+    try { await v.play(); } catch (e) { /* autoplay muted: fine */ }
+    try {
+      if ("BarcodeDetector" in window) {
+        const formats = window.BarcodeDetector.getSupportedFormats ? await window.BarcodeDetector.getSupportedFormats() : ["qr_code"];
+        if (formats.includes("qr_code")) sc.detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+      }
+    } catch (e) { sc.detector = null; }
+    if (!sc.detector) {
+      try { await hoLoadJsQr(); } catch (e) { if (hoScan === sc) hoScanError("Der Scanner ließ sich nicht laden. Prüfe die Verbindung oder füge den Code von Hand ein."); return; }
+    }
+    if (hoScan !== sc) return;
+    hoScanStatus("");
+    hoScanTick(sc);
+  }
+  async function hoScanRead(sc) {
+    const v = $("handoverScanVideo");
+    if (!v.videoWidth || v.readyState < 2) return "";
+    if (sc.detector) {
+      const codes = await sc.detector.detect(v);
+      return codes && codes[0] ? String(codes[0].rawValue || "") : "";
+    }
+    const scale = Math.min(1, 720 / Math.max(v.videoWidth, v.videoHeight));
+    const w = Math.round(v.videoWidth * scale), h = Math.round(v.videoHeight * scale);
+    if (!sc.canvas) sc.canvas = document.createElement("canvas");
+    sc.canvas.width = w; sc.canvas.height = h;
+    const ctx = sc.canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(v, 0, 0, w, h);
+    const r = window.jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "dontInvert" });
+    return r && r.data ? String(r.data) : "";
+  }
+  async function hoScanTick(sc) {
+    if (hoScan !== sc) return;
+    let raw = "";
+    try { raw = await hoScanRead(sc); } catch (e) { raw = ""; }
+    if (hoScan !== sc) return;
+    if (raw && raw !== sc.lastRaw) {
+      sc.lastRaw = raw;
+      const tok = hoParseToken(raw);
+      const code = tok ? "" : codeFromQrText(raw);
+      if (code) {
+        // A trainer code (training, plan, Freischaltung): same path as typing it.
+        hoScanStop();
+        $("handoverScanSheet").hidden = true;
+        openCodeAsTyped(code);
+        return;
+      }
+      if (!tok) hoScanStatus("Das ist kein Code deines Trainers. Halte die Kamera auf den QR-Code deines Trainers.");
+      else {
+        const r = hoCollect(tok);
+        if (!r.data) {
+          hoScanStatus(`Code ${r.have} von ${r.n} gelesen. Halte die Kamera jetzt auf Code ${r.need}.`);
+        } else {
+          hoScanStop();
+          $("handoverScanSheet").hidden = true;
+          hoHandleData(r.data, true);
+          return;
+        }
+      }
+    }
+    sc.timer = setTimeout(() => hoScanTick(sc), 160);
+  }
+  function hoCloseScan() { hoScanStop(); $("handoverScanSheet").hidden = true; }
+  $("handoverScanOpenBtn").addEventListener("click", hoOpenScan);
+  $("handoverScanCancelBtn").addEventListener("click", hoCloseScan);
+  $("handoverScanPasteBtn").addEventListener("click", () => { hoCloseScan(); hoOpenPaste(); });
+  $("handoverScanSheet").addEventListener("click", (e) => { if (e.target === e.currentTarget) hoCloseScan(); });
+  $("handoverScanSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") hoCloseScan(); });
+  // Closed any other way (pull-down, leaving the page): the camera goes off too.
+  new MutationObserver(() => { if ($("handoverScanSheet").hidden) hoScanStop(); }).observe($("handoverScanSheet"), { attributes: true, attributeFilter: ["hidden"] });
+  document.addEventListener("visibilitychange", () => { if (document.hidden && hoScan) hoCloseScan(); });
+  if (navigator.webdriver) window.__hoScan = () => ({ open: !$("handoverScanSheet").hidden, running: !!hoScan, detector: !!(hoScan && hoScan.detector), tracks: hoScan && hoScan.stream ? hoScan.stream.getTracks().filter((t) => t.readyState === "live").length : 0 });
   window.addEventListener("hashchange", hoCheckHash);
 
   // ---- trainer side: pick entries ----
@@ -38809,7 +39122,15 @@
   function hoRenderProgressGroup() {
     const active = hoClientRunActive();
     const pending = active ? 0 : hoClientRuns().length;
-    $("clientRunStartBtn").hidden = active;
+    // Freischaltung per Code (Fabian 08.10., code type "feature-unlock"):
+    // "trainer-tools" shows the two trainer buttons; "Trainer-QR-Code
+    // scannen" is for everyone. A running or unsent Kunden-Training stays
+    // reachable after a lock.
+    const tools = featureOn("trainer-tools");
+    $("handoverOpenItem").hidden = !tools;
+    $("clientRunItem").hidden = !(tools || active || pending);
+    $("clientRunStartHelp").hidden = active || !tools;
+    $("clientRunStartBtn").hidden = active || !tools;
     $("clientRunActiveNote").hidden = !active;
     $("clientRunPending").hidden = !pending;
     if (pending) $("clientRunPendingText").textContent = `${hoCount(pending)} aus dem Kunden-Training ${pending === 1 ? "ist" : "sind"} noch nicht übergeben.`;
@@ -38840,11 +39161,14 @@
   hoSyncStrip();
 
   // ---- Start-up ----
+  applyFeatureClasses();
   renderHistory();
   initStartScreen();
+  const startHash = location.hash;
   openFromHash();
   // A QR-Übergabe link opens its own sheet; slides and tips wait for the next start.
   if (/^#import=/.test(location.hash)) hoCheckHash();
+  else if (/^#code=/.test(startHash)) { /* trainer code link: no slides/tips on top */ }
   else if (!startOnboarding() && !readJSON(TIPS_KEY, false)) openTips();
 
   // ---- Startbild ausblenden (2026-10-05) ----

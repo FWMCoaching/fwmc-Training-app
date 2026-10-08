@@ -118,7 +118,7 @@ async def main():
         await pg.click('[data-ff-mode="regeln"]'); await pg.click('[data-ff-level="3"]'); await pg.wait_for_timeout(80)
         check("Stufe 3 lists three rules", await pg.locator("#ffRuleList li").count() == 3)
         await pg.click('[data-ff-hands="1"]'); await pg.wait_for_timeout(80)
-        check("hand rows for the 4 layout colours", await pg.locator("#ffHandRows select").count() == 4)
+        check("hand rows for the 4 layout colours (chips)", await pg.locator("#ffHandRows .color-choice-line").count() == 4)
         await pg.goto(URL); await pg.wait_for_timeout(400)
         await open_ff(pg)
         check("arrangement persists across reload", [ (await pg.inner_text(f'#ffLayoutGrid [data-ff-cell="{i}"]')).strip() for i in range(4)] == ["Blau", "Lila", "Gelb", "Grün"])

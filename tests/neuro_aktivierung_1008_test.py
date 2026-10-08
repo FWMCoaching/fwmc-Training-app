@@ -66,6 +66,11 @@ async def no_side_scroll(pg):
     return await pg.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
 
 
+async def set_step(pg, v):
+    # Dauer pro Schritt is one slider since 08.10. (no duplicate chips)
+    await pg.evaluate("(v) => { const i = document.querySelector('#neuroReadyControls input[data-nr-r=stepS]'); i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })); }", v)
+
+
 async def skip_step(pg):
     await pg.evaluate("window.__neuroSkipTime(999)"); await pg.wait_for_timeout(160)
 
@@ -192,7 +197,7 @@ async def main():
         await pg.goto(BASE + "?bereich=neuro"); await pg.wait_for_timeout(300)
         # Vibration: links -> Umsetzen -> rechts, spoken
         await pg.click('[data-neuro-ex="vibration"]'); await pg.wait_for_timeout(200)
-        check("ready: Hilfsmittel note", await pg.is_visible("#neuroHilfsmittel") and "Z-Vibe" in await pg.inner_text("#neuroHilfsmittel"))
+        check("ready: Hilfsmittel note", await pg.is_visible("#neuroHilfsmittel") and "Z\u2011Vibe" in await pg.inner_text("#neuroHilfsmittel"))
         check("ready: start button 'Training starten'", (await pg.inner_text("#neuroStartBtn")).strip() == "Training starten")
         check("ready: step list (5 places x 2 sides)", await pg.locator("#neuroReadySteps .chapter-row").count() == 10)
         await pg.screenshot(path=os.path.join(SHOTS, "ready_390_light.png"), full_page=True)
@@ -267,11 +272,11 @@ async def main():
         # ================= 5. presets + persistence =================
         await pg.goto(BASE + "?bereich=neuro"); await pg.wait_for_timeout(250)
         await pg.click('[data-neuro-ex="gelenke"]'); await pg.wait_for_timeout(150)
-        await pg.click('#neuroReadyControls [data-nr-f="stepS"][data-nr-v="45"]')
+        await set_step(pg, 45)
         await pg.click('#neuroReadyControls [data-nr-f="reps"][data-nr-v="2"]')
         check("settings: total updates", "26 Schritte" in await pg.inner_text('#neuroReadyControls [data-nr-out="total"]'))
         await pg.click("#neuroSaveBtn"); await pg.fill("#neuroSaveNameInput", "Lang"); await pg.click("#neuroSaveConfirmBtn"); await pg.wait_for_timeout(100)
-        await pg.click('#neuroReadyControls [data-nr-f="stepS"][data-nr-v="20"]')
+        await set_step(pg, 20)
         await pg.reload(); await pg.wait_for_timeout(300)
         await pg.click('[data-neuro-ex="gelenke"]'); await pg.wait_for_timeout(150)
         check("settings persist across reload", await pg.evaluate("JSON.parse(localStorage.getItem('fwmc-neuro-prefs-v1')).gelenke.reps") == 2)
@@ -301,7 +306,7 @@ async def main():
         await pg.locator("#comboAddGrid .combo-domain-group[data-domain=neuro] .combo-add-btn", has_text="Massageball: Fußsohlen").click(); await pg.wait_for_timeout(200)
         check("Kombi: capture opens the ready screen", await visible_screen(pg) == "neuroReady" and "Baustein:" in await pg.inner_text("#neuroReadyTitle")
               and (await pg.inner_text("#neuroStartBtn")).strip() == "Baustein übernehmen")
-        await pg.click('#neuroReadyControls [data-nr-f="stepS"][data-nr-v="20"]')
+        await set_step(pg, 20)
         await pg.click("#neuroStartBtn"); await pg.wait_for_timeout(200)
         rows = await pg.locator("#comboBlockList .chapter-row").count()
         check("Kombi: Baustein added", await visible_screen(pg) == "comboScreen" and rows == 1 and "Massageball: Fußsohlen" in await pg.inner_text("#comboBlockList"))

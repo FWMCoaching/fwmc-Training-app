@@ -51,7 +51,9 @@ def entry(i, minutes_ago, title=None, kind="exercise", sec=300):
 async def new_page(b, scheme="light", width=390, height=844, seed=None, extra_init=""):
     ctx = await b.new_context(viewport={"width": width, "height": height}, color_scheme=scheme, locale="de-DE",
                               service_workers="block", has_touch=True)
-    init = "try{localStorage.setItem('fwmc-tips-seen','true');localStorage.setItem('fwmc-master-v1','{\"startCountdown\":false}');"
+    # Trainer-Werkzeuge are unlocked by a code since 08.10. (feature-unlock);
+    # the trainer device in this test has them (test flag, webdriver only).
+    init = "try{localStorage.setItem('fwmc-tips-seen','true');localStorage.setItem('fwmc-master-v1','{\"startCountdown\":false}');localStorage.setItem('fwmc-test-trainer-tools','true');"
     if seed is not None:
         init += "if(!sessionStorage.getItem('seeded')){sessionStorage.setItem('seeded','1');"
         for k, v in seed.items():
@@ -312,7 +314,9 @@ async def main():
         await sctx.close()
         actx, ap = await new_page(b)
         await open_progress(ap)
-        await ap.click("#handoverPasteOpenBtn"); await ap.wait_for_timeout(200)
+        # the paste field lives in the scanner sheet ("Code von Hand einfügen")
+        await ap.click("#handoverScanOpenBtn"); await ap.wait_for_timeout(300)
+        await ap.click("#handoverScanPasteBtn"); await ap.wait_for_timeout(200)
         await ap.fill("#handoverPasteInput", "hallo welt")
         await ap.click("#handoverPasteGoBtn"); await ap.wait_for_timeout(150)
         check("paste: garbage -> inline error, sheet stays", await ap.is_visible("#handoverPasteError") and await ap.is_visible("#handoverPasteSheet"))
@@ -424,7 +428,8 @@ async def main():
                 ok.append(44 <= sh <= 60)
                 await pg.screenshot(path=os.path.join(SHOTS, f"L7_streifen_{tag}.png"))
                 await pg.click("#clientRunEndBtn"); await pg.wait_for_timeout(300)
-                await pg.click("#handoverPasteOpenBtn"); await pg.wait_for_timeout(200)
+                await pg.click("#handoverScanOpenBtn"); await pg.wait_for_timeout(300)
+                await pg.click("#handoverScanPasteBtn"); await pg.wait_for_timeout(200)
                 await pg.screenshot(path=os.path.join(SHOTS, f"L6_einfuegen_{tag}.png"))
                 await pg.click("#handoverPasteCancelBtn")
                 cctx, cp = await new_page(b, scheme, w, h, extra_init="localStorage.setItem('fwmc-test-ios-browser','true');")

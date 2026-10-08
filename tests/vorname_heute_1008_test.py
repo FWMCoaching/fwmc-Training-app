@@ -1,6 +1,6 @@
 """Vorname in der Begrüßung (Fabian, 2026-10-08).
 
-Heute's hello card: without a name "+ Wie dürfen wir dich nennen?" opens an
+Heute's hello card: without a name "+ Wie heißt du?" opens an
 inline form (Speichern / Enter / Abbrechen); with a name the greeting reads
 "Guten …, <Name>". Stored only on the device (fwmc-name-v1, trimmed, max 30),
 editable/clearable in Grundeinstellungen "Dein Name", shown as text (no HTML),
@@ -69,7 +69,7 @@ async def main():
         # --- without a name ---
         check("no name stored", await pg.evaluate("localStorage.getItem('fwmc-name-v1')") is None)
         check("button shown without name", await vis(pg, "#helloNameBtn"))
-        check("button text", "Wie dürfen wir dich nennen?" in await pg.inner_text("#helloNameBtn"))
+        check("button text", "Wie heißt du?" in await pg.inner_text("#helloNameBtn"))
         bh = await pg.evaluate("document.getElementById('helloNameBtn').getBoundingClientRect().height")
         check(f"button >= 44 px ({bh})", bh >= 44)
         check("button inside the hello card", await pg.evaluate("!!document.querySelector('.today-hello #helloNameBtn')"))
