@@ -3489,6 +3489,8 @@ input[type=checkbox]{accent-color:var(--brand)}
 .tm-tools:empty{display:none}
 .h-tag.tm-tag-try{color:#ffffff;background:#5d4a8f}
 .h-tag.tm-tag-client{color:#ffffff;background:#a85a12}
+.h-tag.tm-tag-own{color:#ffffff;background:#007094}
+#tmCloseBtn{margin-top:18px}
 #handoverList li{touch-action:pan-y}
 .handover-del{display:block;margin:12px auto 0;min-height:44px;padding:0 12px}
 .handover-del:disabled{opacity:.45}

@@ -38623,7 +38623,7 @@
   function hoWhen(ts) {
     const d = new Date(ts);
     const today = new Date();
-    if (d.toDateString() === today.toDateString()) return hoHM(d);
+    if (d.toDateString() === today.toDateString()) return `Heute, ${hoHM(d)}`;
     return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}. ${hoHM(d)}`;
   }
 
@@ -39122,7 +39122,7 @@
   function hoTag(e, kind, clientPick, storePick) {
     if (kind === "try") return '<span class="h-tag tm-tag-try">Test</span>';
     if (kind === "client") return storePick ? '<span class="h-tag tm-tag-client">Kunde</span>' : clientPick && e.client !== hoPickClient ? '<span class="h-tag">früher</span>' : "";
-    return clientPick || storePick ? '<span class="h-tag">eigenes</span>' : "";
+    return clientPick || storePick ? '<span class="h-tag tm-tag-own">Eigenes</span>' : "";
   }
   function hoSelectedIds() { return hoRangeIds.filter((id) => hoChecked.has(id)); }
   function hoSyncGo() {
@@ -39531,6 +39531,8 @@
     note.hidden = !txt;
   }
   function tmOpenMenu() {
+    const from = TM_MAIN.find((id) => $(id) && !$(id).hidden);
+    if (from) hoHomeId = from; // handover/overview screens return here
     tmSync();
     hoRenderProgressGroup();
     $("trainerMenuSheet").hidden = false;
@@ -39580,7 +39582,7 @@
     const show = !!(s || t) && onScreen;
     const slim = !!(s || t) && !onScreen;
     if (t) {
-      $("clientRunLabel").textContent = s ? "Ausprobieren · Kunden-Training pausiert" : "Ausprobieren · zählt nicht";
+      $("clientRunLabel").textContent = s ? "Ausprobieren · Kunde pausiert" : "Ausprobieren · zählt nicht";
       $("clientRunSince").textContent = "";
       $("clientRunCount").textContent = "";
       $("clientRunSep").hidden = true;
@@ -39604,8 +39606,8 @@
   els.handoverScreen = $("handoverScreen");
   els.handoverQrScreen = $("handoverQrScreen");
   SCREENS.push("handoverScreen", "handoverQrScreen");
-  NAV_TAB_OF.handoverScreen = "progress";
-  NAV_TAB_OF.handoverQrScreen = "progress";
+  // The bottom tab stays on the page the trainer came from (Heute, Training, ...).
+  ["handoverScreen", "handoverQrScreen"].forEach((id) => Object.defineProperty(NAV_TAB_OF, id, { get: () => NAV_TAB_OF[hoHomeId] || "training", configurable: true }));
   hoSyncStrip();
   tmCheckReturn();
 

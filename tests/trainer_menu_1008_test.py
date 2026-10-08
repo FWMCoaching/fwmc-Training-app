@@ -138,9 +138,9 @@ async def main():
         await set_mode(pg, "own")
         rows = await pg.evaluate("[...document.querySelectorAll('#handoverList li')].map(li => ({t: li.querySelector('.h-title').textContent, c: li.querySelector('input').checked}))")
         check("Mein Training ends the client run: selection, the 2 client runs ticked, test and own runs listed unticked",
-              await pg.is_visible("#handoverScreen") and [r["c"] for r in rows if not r["t"].endswith(("Test", "eigenes"))] == [True, True]
+              await pg.is_visible("#handoverScreen") and [r["c"] for r in rows if not r["t"].endswith(("Test", "Eigenes"))] == [True, True]
               and [r["c"] for r in rows if r["t"].endswith("Test")] == [False]
-              and [r["c"] for r in rows if r["t"].endswith("eigenes")] == [False], rows)
+              and [r["c"] for r in rows if r["t"].endswith("Eigenes")] == [False], rows)
         await pg.screenshot(path=os.path.join(SHOTS, "auswahl_kunde_390_light.png"), full_page=True)
         await pg.click("#handoverGoBtn"); await pg.wait_for_timeout(600)
         meta = await pg.inner_text("#handoverQrMeta") if await pg.is_visible("#handoverQrScreen") else ""
