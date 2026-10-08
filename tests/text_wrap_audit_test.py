@@ -91,6 +91,12 @@ async def main():
                     for s in subs[1:]:
                         await pg.click(f'#natHome .sub-tab[data-nat-sub="{s}"]'); await pg.wait_for_timeout(150)
                         await audit(pg, f"{w}px{ts_tag(ts)} nat/{s}", problems)
+                    # Gleichgewicht · Wörter + Bewegter Hintergrund (2026-10-08): ready screen with every row open
+                    await pg.evaluate("() => document.getElementById('balanceOpenBtn').click()"); await pg.wait_for_timeout(150)
+                    await pg.evaluate("() => { ['[data-bal-content=woerter]','[data-bal-wordlist=farben]'].forEach(s => document.querySelector(s).click()); document.getElementById('balanceAdvanced').open = true; const g = document.querySelector('#balanceReady .mbg-group'); g.querySelector('[data-opto-v=punkte]').click(); g.querySelector('[data-opto-v=schraeg]').click(); }")
+                    await pg.wait_for_timeout(100)
+                    await audit(pg, f"{w}px{ts_tag(ts)} nat/balance-woerter-mbg", problems)
+                    await pg.evaluate("() => { document.querySelector('[data-bal-content=stifte]').click(); const g = document.querySelector('#balanceReady .mbg-group'); g.querySelector('[data-opto-v=links]').click(); g.querySelector('[data-opto-v=aus]').click(); }")
                 if area == "visual":
                     # Farbfelder ready screen (2026-10-07): Modus, Stufe 1-4, hand rows
                     await pg.click('.excard[data-exercise="farbfelder"]'); await pg.wait_for_timeout(150)

@@ -280,7 +280,7 @@ everywhere goes here, short.
 | 28-farbfelder | Farbfelder (VT, 2x2 mat grid): modes, rule function, Abfolge timing, Kombi/Cardio wiring, generic Hilfsmittel note |
 | 29-huetchen-farbe-zahl | Hütchen · Farbe + Zahl (VT, 3-6 numbered fields): cnFields, colour cap, drawing, Kombi/Cardio/preset wiring |
 | 30-farbbrille | Farbbrille (Rot-Grün-Brille, Test-Bereich): shared settings `fwmc-anaglyph-v1`, mandatory calibration `#anaglyphCalib`, lock `anaglyphGate`/`anaglyphStart`, pre-start hint, exercise "Jedes Auge zählt" |
-| 31-aktivierung-optodrum | Aktivierung (8th area `activation`): frame, `ACTIVATION_LINKS` for later link cards; Optodrum: prefs, shared ready/pause controls, canvas engine, Wechsel, Sanfte Reize cap, Kombi/plan/history |
+| 31-aktivierung-optodrum | Aktivierung (8th area `activation`): frame, `ACTIVATION_LINKS` for later link cards; Optodrum: prefs, shared ready/pause controls, canvas engine, Wechsel, Sanfte Reize cap, Kombi/plan/history; shared renderer `optoPaint` + Bewegter Hintergrund (`MOVING_BG`) |
 
 ## Must-do rules collected from the detail notes
 
@@ -566,5 +566,11 @@ For every new or changed exercise/screen, in the same commit:
   needs: PLAN_AREAS + `--area-<key>` token, home screen in SCREENS/
   AREA_HOME_IDS/HOME_SCREENS/HISTORY_PREFIXES, `?bereich=`, a Kombi group,
   `historyAreaOf`. Details docs/notes/31, test `tests/aktivierung_optodrum_1008_test.py`.
+- Bewegter Hintergrund (2026-10-08): the Optodrum pattern (`optoPaint`/`optoAdvance`, one
+  renderer) behind Gleichgewicht, Positionen merken, Flash. A new exercise gets it via one
+  `MOVING_BG` entry + `mbg: mbgCopy(p.mbg)` in its run state + `mbgStart(kind)` (controls in
+  Feineinstellungen and the pause sheet come for free). Gleichgewicht also has "Wörter"
+  (`content`). Kombi/Trainer-Programm block scores: `blockResultPush(run, label, text)`.
+  Details docs/notes/31 + 02.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

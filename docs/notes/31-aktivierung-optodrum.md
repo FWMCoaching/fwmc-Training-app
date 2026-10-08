@@ -99,3 +99,31 @@ Test: `tests/aktivierung_optodrum_1008_test.py` (screenshots
 (AREAS "aktivierung" + Optodrum ready screen), `tests/hint_overlap_all_test.py`
 (`run_opto`), `tests/exercise_coverage_test.py` (activation tiles vs Kombi),
 `tests/bottom_nav_1005_test.py` / `tests/today_test.py` (8 area tiles).
+
+## Shared renderer + Bewegter Hintergrund (Fabian 08.10.)
+- `optoPaint(ctx, W, H, m, fg, bg)` draws streifen/punkte/schach from a motion object
+  `m = {pattern, size, gap, s, dx, dy, a}`; `optoAdvance(m, v, a, dt)` moves it (CSS px,
+  wraps the numbers). Optodrum's `optoDraw`/`optoTick` use both; nothing is duplicated.
+- **Bewegter Hintergrund** (`==== Bewegter Hintergrund` in app.js, after Optodrum): the same
+  pattern as a layer behind Gleichgewicht, Positionen merken and Flash-Speicher-Test.
+  `MOVING_BG` = one entry per exercise (`stage`, `overlay`, `state`, `prefs`, `save`, `own`,
+  `readies`). Each exercise's prefs hold `mbg` (`MBG_DEFAULTS`: pattern aus|streifen|punkte,
+  dir links|rechts|hoch|runter|schraeg + diag, speed 1-10, size 10-160, gap 10-200, fg/bg
+  `OPTO_COLORS` keys, fgInt/bgInt 10-100 %; `normalizeMbg`). Colours: bg = white mixed toward
+  the bg colour by bgInt, pattern = bg mixed toward the pattern colour by fgInt (`mbgColors`).
+- Controls: `MBG_CONTROLS_HTML` (data-opto-* attributes, so `optoBind`/`optoSyncControls` work;
+  `data-opto-lbl` switches Streifenbreite/Punktgröße and the gap/colour labels) is inserted by JS
+  into each ready screen's Feineinstellungen right after "Hintergrund" (`.mbg-group`) and into
+  the pause sheet as a closed `details.mbg-pause` before "Weiter". Ready edits replace
+  `prefs.mbg` with a new object (Kombi capture backups are shallow copies). Pause edits change
+  the run's copy `st.mbg` and, for standalone runs (`L.own()`), save to prefs.
+- Run: `mbg: mbgCopy(p.mbg)` in the run state + `mbgStart(kind)` in the start function. The
+  canvas (`canvas.mbg-canvas`, first child of the stage, `z-index:-1`, `pointer-events:none`,
+  stages have `isolation:isolate`) never covers or blocks content; one rAF per exercise, frozen
+  while the pause sheet is open, stops itself when the player hides or the state ends.
+  Sanfte Reize: `mbgEffSpeed` caps at `OPTO_SOFT_MAX`, pattern 45 % softer. Contrast tip in the
+  group (pattern vs. background, or pattern intensity > 60 %), epilepsy/dizziness sentence.
+  Cardio guests start without (their cfg has no mbg). Test hook `window.__mbg(kind)`.
+- A new exercise = one `MOVING_BG` entry + `mbg` in its run state + `mbgStart(kind)`.
+Test: `tests/bewegter_hintergrund_1008_test.py` (screenshots `tests/screenshots/bewegter_hintergrund/`),
+`tests/hint_overlap_all_test.py` (balance words+mbg, flash mbg), `tests/text_wrap_audit_test.py`.

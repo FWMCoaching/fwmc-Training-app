@@ -603,6 +603,18 @@ study - adjust if he finds them too easy/hard: Positionen merken ≥ 7 reached
   history kind `balance`, BG_SOURCES/MASTER_BG_TARGETS, LEADIN_START_IDS, dashboard
   overview. No CVD entry (no right/wrong feedback), no Stufen-Vorschlag (no levels).
 - Test: tests/gleichgewicht_1006_test.py.
+- **Wörter (VOR, Fabian 08.10.)**: `balancePrefs.content` stifte|woerter, `wordList`
+  tiere|alltag|farben (`BALANCE_WORDS`, Farbwörter from `BALANCE_WORD_INKS`, never in their own
+  colour, never word+ink twice in a row: `balancePickWord`), `wordEvery` 1|2|4, `wordRead`
+  wort|farbe. Ready group "Inhalt" (`#balanceContentGroup`, hidden for Sakkaden; words need the
+  sticks there). One `#balanceWord` (white plate, Magra, caption via `data-cap` "Lies laut" /
+  "Lies das Wort" / "Sag die Farbe") in the centre of `balanceArea()`; `balanceLayoutWord` sizes
+  it from `size` (LOOK, live + pinch) × `fontF`, capped to the free width/height. The first
+  beat keeps the opening word, then a new one every 1st/2nd/4th beat (`balanceBeat`); without
+  Takt the same rhythm runs silently (`nextWordAt`, tempo row stays visible). Stick groups are
+  hidden in words mode; history note "… · Wörter (Tiere)". Kombi/presets carry the fields;
+  Cardio guest: sticks only. Test: tests/gleichgewicht_woerter_1008_test.py.
+- **Bewegter Hintergrund (08.10.)**: `balancePrefs.mbg` (shared module, see docs/notes/31).
 
 - 2026-10-06 evening (Fabian): status shows "⏸ m:ss" while the clock is held (no word, the bar stays one line); `balanceLayout` sizes letters with the stick and shows only `st.visN` letters (`.balance-letter.off`) when they would not fit; the "Regler" chip is hidden, size/colours/length/width/font are live in the pause sheet (`balPauseLook`, `balanceLiveLook`, `syncBalancePauseLook`, saved for own runs); `letterColor2` = letter colour of stick 2 (falls back to `letterColor`); beat runs keep the "auto" audio session so the client's music (Spotify) keeps playing; the first beat run on an iPhone/iPad shows a one-time silent-switch hint (`silentSwitchHint`, `fwmc-silent-hint-v1`, test flag `fwmc-test-silenthint`); "playback" only via the Grundeinstellungen opt-in, labelled "pausiert Musik" and `unlockCueAudio` resumes/recreates a dead AudioContext on every tap.
 

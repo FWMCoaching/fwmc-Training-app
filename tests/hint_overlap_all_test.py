@@ -15,7 +15,7 @@ JS="""(p)=>{const pl=document.getElementById(p+'Player'); if(!pl||pl.hidden) ret
 const hint=document.getElementById(p+'Hint'); const bar=document.getElementById(p+'PlayerBar');
 const R=e=>e.getBoundingClientRect(); const out=[];
 const zones=[]; if(hint&&hint.textContent.trim()&&R(hint).height) zones.push(['hint',R(hint)]); if(bar&&R(bar).height){ for(const c of bar.children){const r=R(c); if(r.height) zones.push(['bar:'+(c.id||c.textContent.trim().slice(0,10)),r]);}}
-for(const e of pl.querySelectorAll('*')){ if(['bisectArea','subitizeDots','trailLinesSvg','optoCanvas'].includes(e.id)||e===hint||(hint&&hint.contains(e))||(bar&&bar.contains(e))) continue;
+for(const e of pl.querySelectorAll('*')){ if(['bisectArea','subitizeDots','trailLinesSvg','optoCanvas'].includes(e.id)||e.classList.contains('mbg-canvas')||e===hint||(hint&&hint.contains(e))||(bar&&bar.contains(e))) continue;
  if(e.closest('.pause-overlay,.done-panel,[id$=DonePanel],[id$=PauseOverlay]')) continue;
  const cs=getComputedStyle(e); if(cs.visibility==='hidden'||cs.display==='none'||+cs.opacity===0) continue;
  if([...e.children].some(c=>{const r=R(c);return r.width&&r.height;})) continue;
@@ -23,8 +23,9 @@ for(const e of pl.querySelectorAll('*')){ if(['bisectArea','subitizeDots','trail
  for(const [n,z] of zones){ if(r.left<z.right-1&&r.right>z.left+1&&r.top<z.bottom-1&&r.bottom>z.top+1) out.push(n+' <> '+(e.id||e.className||e.tagName)); }}
 return out;}"""
 BAD=[]
-async def run(b,vp,p,opener=None,worst=False):
+async def run(b,vp,p,opener=None,worst=False,seed=None,tag=""):
     ctx=await b.new_context(viewport=vp,service_workers="block"); pg=await ctx.new_page()
+    if seed: await pg.add_init_script(seed)
     await pg.add_init_script("localStorage.setItem('fwmc-test-unlocked','true');localStorage.setItem('fwmc-tips-seen','true')")
     # Farbbrille exercises start only once calibrated (eyecount, 2026-10-08)
     await pg.add_init_script("localStorage.setItem('fwmc-anaglyph-v1',JSON.stringify({left:'rot',red:'#ff0000',green:'#00ff00',calibrated:true,hintOff:true}))")
@@ -48,8 +49,8 @@ async def run(b,vp,p,opener=None,worst=False):
             try: await pg.click("#bisectArea", position={"x":20,"y":300}, timeout=500)
             except Exception: pass
     if errs: found.add("pageerror: "+errs[0][:80])
-    print(vp['width'],p,"worst" if worst else "","OK" if not found else sorted(found)[:6])
-    if found: BAD.append((vp['width'],p))
+    print(vp['width'],p,tag or ("worst" if worst else ""),"OK" if not found else sorted(found)[:6])
+    if found: BAD.append((vp['width'],p+tag))
     await ctx.close()
 # Farbfelder (2026-10-07) draws its grid on the shared VT canvas, under the
 # floating player bar: every mode must keep the grid below the bar and above
@@ -124,6 +125,9 @@ async def main():
         for vp in [{"width":390,"height":844},{"width":1000,"height":750}]:
             for p in TEST: await run(b,vp,p)
             for p,o in NAT: await run(b,vp,p,o)
+            # Gleichgewicht · Wörter + Bewegter Hintergrund (2026-10-08): the word stays below the hint
+            await run(b,vp,"balance","#balanceOpenBtn",seed="localStorage.setItem('fwmc-balance-prefs-v1',JSON.stringify({content:'woerter',wordList:'farben',size:2,bpm:200,mbg:{pattern:'punkte'}}))",tag=" woerter+mbg")
+            await run(b,vp,"flash","#flashOpenConstant",seed="localStorage.setItem('fwmc-flash-prefs-v1',JSON.stringify({mbg:{pattern:'streifen'}}))",tag=" mbg")
             await run(b,vp,"bisect",worst=True)
             await run_ff(b,vp)
             await run_cn(b,vp)

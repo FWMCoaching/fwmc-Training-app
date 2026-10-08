@@ -4226,7 +4226,37 @@
     <div class="group-help" id="balanceModeHelp"></div>
   </div>
 
-  <div class="group">
+  <div class="group" id="balanceContentGroup">
+    <div class="group-label">Inhalt</div>
+    <div class="choice-row two" id="balanceContentRow">
+      <button class="choice" data-bal-content="stifte">Buchstaben-Stifte<small>Blick auf einen Buchstaben</small></button>
+      <button class="choice" data-bal-content="woerter">W&ouml;rter<small>wechseln im Takt</small></button>
+    </div>
+    <div id="balanceWordBox" hidden>
+      <div class="group-label">W&ouml;rter</div>
+      <div class="choice-row" id="balanceWordListRow">
+        <button class="choice" data-bal-wordlist="tiere">Tiere<small>Hund, Adler &hellip;</small></button>
+        <button class="choice" data-bal-wordlist="alltag">Alltag<small>Tisch, Tasse &hellip;</small></button>
+        <button class="choice" data-bal-wordlist="farben">Farbw&ouml;rter<small>in anderer Farbe</small></button>
+      </div>
+      <div id="balanceWordReadBox" hidden>
+        <div class="group-label">Lies</div>
+        <div class="choice-row two" id="balanceWordReadRow">
+          <button class="choice" data-bal-wordread="wort">das Wort<small>was da steht</small></button>
+          <button class="choice" data-bal-wordread="farbe">die Farbe<small>in der es steht</small></button>
+        </div>
+      </div>
+      <div class="group-label">Wort wechselt</div>
+      <div class="choice-row" id="balanceWordEveryRow">
+        <button class="choice" data-bal-wordevery="1">jeden Schlag</button>
+        <button class="choice" data-bal-wordevery="2">jeden 2.</button>
+        <button class="choice" data-bal-wordevery="4">jeden 4.</button>
+      </div>
+      <div class="group-help" id="balanceWordHelp"></div>
+    </div>
+  </div>
+
+  <div class="group" id="balanceSticksGroup">
     <div class="group-label">Stifte</div>
     <div class="choice-row two" id="balanceSticksRow">
       <button class="choice" data-bal-sticks="1">1 Stift</button>
@@ -4235,7 +4265,7 @@
     <div class="group-help">W&auml;hrend der &Uuml;bung kannst du die Stifte mit dem Finger verschieben &ndash; auf dem iPad quer oder am Fernseher auch weit auseinander.</div>
   </div>
 
-  <div class="group">
+  <div class="group" id="balanceLettersGroup">
     <div class="group-label">Buchstaben</div>
     <div class="choice-row" id="balanceLettersRow">
       <button class="choice" data-bal-letters="zufall">Zuf&auml;llig<small>neu gemischt</small></button>
@@ -5941,6 +5971,7 @@
     <div class="remember-hint" id="balanceHint"></div>
     <div class="balance-stick" id="balanceStick0" data-i="0"></div>
     <div class="balance-stick" id="balanceStick1" data-i="1" hidden></div>
+    <div class="balance-word" id="balanceWord" hidden></div>
     <div class="balance-rest" id="balanceRest" hidden>
       <div class="balance-rest-label">Pause</div>
       <div class="balance-rest-count" id="balanceRestCount">0:30</div>

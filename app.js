@@ -10730,11 +10730,13 @@
       errorMode: p.errorMode,
       trainingStart: p.trainingStart, trainingProgress: p.trainingProgress,
       markerScale: p.markerScale || 1,
+      mbg: mbgCopy(p.mbg),
       paused: false,
     };
     els.rememberStage.style.setProperty("--remember-num-color", lookColorHex("remember", p.numColor));
     els.rememberStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
     requestWakeLock();
+    mbgStart("remember");
     startRememberLevel();
     // Kombi block: Remember has no natural end of its own (unlike VT's
     // fixed-length schedule), so a Kombi block gives it a duration and just
@@ -12335,8 +12337,10 @@
       charScale: p.charScale || 1, charColor: p.charColor,
       trainingProgress: p.trainingProgress, startLevel: p.startCount, trainingStartLevel: p.trainingStart,
       startTime: performance.now(), paused: false,
+      mbg: mbgCopy(p.mbg),
     };
     renderFlashKeypad();
+    mbgStart("flash");
     els.flashStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
     renderFlashFixpoint();
     requestWakeLock();
@@ -12615,8 +12619,37 @@
     metro: true, bpm: 60, timing: "timed", setS: 30, sets: 3, restS: 30, stance: "normal", stanceSpeak: false,
     size: 1, lengthPct: 70, widthF: 1, fontF: 1, color1: "blau", color2: "gelb", letterColor: "auto", letterColor2: "auto", volume: 0.8,
     pos: null, bgColorKey: "gruen", bgIntensity: 0,
+    // Wörter (VOR, Fabian 2026-10-08): a word in the centre instead of the sticks.
+    content: "stifte", wordList: "tiere", wordEvery: 1, wordRead: "wort",
   };
   const balancePrefs = JSON.parse(JSON.stringify(BALANCE_DEFAULTS));
+  const BALANCE_WORDS = {
+    tiere: { name: "Tiere", words: ["Hund", "Katze", "Maus", "Pferd", "Kuh", "Schaf", "Ziege", "Fuchs", "Hase", "Igel", "Bär", "Wolf", "Adler", "Eule", "Fisch", "Frosch", "Ente", "Gans", "Huhn", "Löwe", "Tiger", "Zebra", "Affe", "Biene"] },
+    alltag: { name: "Alltag", words: ["Tisch", "Stuhl", "Tasse", "Brot", "Schuh", "Jacke", "Uhr", "Lampe", "Buch", "Stift", "Glas", "Teller", "Löffel", "Gabel", "Bett", "Tür", "Fenster", "Auto", "Rad", "Ball", "Brief", "Handy", "Kissen", "Schal"] },
+    farben: { name: "Farbwörter", words: [] },
+  };
+  // Farbwörter: the word names one colour and is printed in another.
+  const BALANCE_WORD_INKS = [
+    { key: "rot", word: "ROT", hex: "#d32f2f" }, { key: "blau", word: "BLAU", hex: "#1f5fbf" },
+    { key: "gruen", word: "GRÜN", hex: "#2e7d32" }, { key: "gelb", word: "GELB", hex: "#f2c200" },
+    { key: "lila", word: "LILA", hex: "#7b3fa0" }, { key: "schwarz", word: "SCHWARZ", hex: "#16232a" },
+  ];
+  // Next word, never the same as the last one (Farbwörter: never the same
+  // word and ink, never the word printed in its own colour).
+  function balancePickWord(p, prev) {
+    if (p.wordList === "farben") {
+      for (let k = 0; k < 50; k++) {
+        const w = BALANCE_WORD_INKS[Math.floor(Math.random() * BALANCE_WORD_INKS.length)];
+        const inks = BALANCE_WORD_INKS.filter((c) => c.key !== w.key);
+        const ink = inks[Math.floor(Math.random() * inks.length)];
+        if (!prev || prev.text !== w.word || prev.ink !== ink.hex) return { text: w.word, ink: ink.hex, inkKey: ink.key, wordKey: w.key };
+      }
+    }
+    const list = (BALANCE_WORDS[p.wordList] || BALANCE_WORDS.tiere).words;
+    let t = list[Math.floor(Math.random() * list.length)];
+    for (let k = 0; k < 20 && prev && t === prev.text; k++) t = list[Math.floor(Math.random() * list.length)];
+    return { text: t, ink: "#16232a" };
+  }
   const balClamp = (v, lo, hi, d) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
   function normalizeBalancePrefs(p) {
     const d = BALANCE_DEFAULTS;
@@ -12648,8 +12681,14 @@
     if (!Array.isArray(p.pos) || !p.pos.every((q) => q && Number.isFinite(q.x) && Number.isFinite(q.y))) p.pos = null;
     if (!STROOP_COLOR_BY_KEY[p.bgColorKey]) p.bgColorKey = d.bgColorKey;
     if (!Number.isFinite(p.bgIntensity) || p.bgIntensity < 0 || p.bgIntensity > 1) p.bgIntensity = 0;
+    if (p.content !== "stifte" && p.content !== "woerter") p.content = d.content;
+    if (!BALANCE_WORDS[p.wordList]) p.wordList = d.wordList;
+    if (![1, 2, 4].includes(p.wordEvery)) p.wordEvery = d.wordEvery;
+    if (p.wordRead !== "wort" && p.wordRead !== "farbe") p.wordRead = d.wordRead;
     return p;
   }
+  // Sakkaden live on the sticks: words only for the head-movement modes.
+  const balanceWordsOn = (p) => p.content === "woerter" && p.mode !== "sakk";
   (function loadBalancePrefs() {
     const saved = readJSON(BALANCE_PREFS_KEY, null);
     if (saved && typeof saved === "object") Object.assign(balancePrefs, saved);
@@ -12726,6 +12765,10 @@
   }));
   document.querySelectorAll("#balanceSticksRow [data-bal-sticks]").forEach((b) => b.addEventListener("click", () => balanceSet("sticks", Number(b.dataset.balSticks))));
   document.querySelectorAll("#balanceLettersRow [data-bal-letters]").forEach((b) => b.addEventListener("click", () => balanceSet("letters", b.dataset.balLetters)));
+  document.querySelectorAll("#balanceContentRow [data-bal-content]").forEach((b) => b.addEventListener("click", () => balanceSet("content", b.dataset.balContent)));
+  document.querySelectorAll("#balanceWordListRow [data-bal-wordlist]").forEach((b) => b.addEventListener("click", () => balanceSet("wordList", b.dataset.balWordlist)));
+  document.querySelectorAll("#balanceWordEveryRow [data-bal-wordevery]").forEach((b) => b.addEventListener("click", () => balanceSet("wordEvery", Number(b.dataset.balWordevery))));
+  document.querySelectorAll("#balanceWordReadRow [data-bal-wordread]").forEach((b) => b.addEventListener("click", () => balanceSet("wordRead", b.dataset.balWordread)));
   document.querySelectorAll("#balanceSingleRow [data-bal-single]").forEach((b) => b.addEventListener("click", () => balanceSet("singleS", Number(b.dataset.balSingle))));
   document.querySelectorAll("#balanceMetroRow [data-bal-metro]").forEach((b) => b.addEventListener("click", () => balanceSet("metro", b.dataset.balMetro === "1")));
   document.querySelectorAll("#balanceTimingRow [data-bal-timing]").forEach((b) => b.addEventListener("click", () => balanceSet("timing", b.dataset.balTiming)));
@@ -12757,7 +12800,22 @@
     act("#balanceMetroRow [data-bal-metro]", "balMetro", p.metro ? 1 : 0);
     act("#balanceTimingRow [data-bal-timing]", "balTiming", p.timing);
     act("#balanceStanceRow [data-bal-stance]", "balStance", p.stance);
-    balanceUi.modeHelp.textContent = BALANCE_MODES[p.mode].help;
+    act("#balanceContentRow [data-bal-content]", "balContent", p.content);
+    act("#balanceWordListRow [data-bal-wordlist]", "balWordlist", p.wordList);
+    act("#balanceWordEveryRow [data-bal-wordevery]", "balWordevery", p.wordEvery);
+    act("#balanceWordReadRow [data-bal-wordread]", "balWordread", p.wordRead);
+    const words = balanceWordsOn(p);
+    balEl("balanceContentGroup").hidden = p.mode === "sakk";
+    balEl("balanceWordBox").hidden = !words;
+    balEl("balanceWordReadBox").hidden = p.wordList !== "farben";
+    balEl("balanceWordHelp").textContent = !p.metro
+      ? "Ohne Takt wechselt das Wort im eingestellten Tempo, nur ohne Ton. Lies jedes Wort laut, während du den Kopf bewegst."
+      : p.wordList === "farben"
+        ? (p.wordRead === "farbe" ? "Das Wort steht in einer anderen Farbe. Sag laut die Farbe, in der es geschrieben ist, nicht das Wort." : "Das Wort steht in einer anderen Farbe. Lies laut das Wort, nicht die Farbe.")
+        : "Lies jedes neue Wort laut, während du den Kopf im Takt bewegst. Bleibt es scharf, passt das Tempo.";
+    document.querySelectorAll('[data-look-size="balance"] .group-label').forEach((el) => { el.textContent = words ? "Größe der Wörter" : "Größe der Stifte"; });
+    document.querySelectorAll('[data-look-size="balance"] .group-help').forEach((el) => { el.textContent = words ? "Die Schrift wächst mit und bleibt immer ganz auf dem Bildschirm. Während der Übung: mit zwei Fingern ziehen." : LOOK_SPECS.balance.size.help; });
+    balanceUi.modeHelp.textContent = BALANCE_MODES[p.mode].help + (words ? " Statt auf einen Buchstaben schaust du auf das Wort in der Mitte." : "");
     balanceUi.customBox.hidden = p.letters !== "eigen";
     balanceUi.custom.value = p.custom;
     balanceUi.custom2.value = p.custom2;
@@ -12767,7 +12825,7 @@
     balanceUi.singleHelp.textContent = p.mode === "sakk"
       ? (p.sticks === 2 ? "Nur ein Buchstabe ist zu sehen. Er springt mit jedem Schlag zum anderen Stift, jedes Mal an eine andere Höhe." : "Nur ein Buchstabe ist zu sehen. Er springt mit jedem Schlag an eine andere Höhe.")
       : "Nur ein Buchstabe ist zu sehen, jedes Mal an einer anderen Höhe.";
-    balanceUi.bpmRow.hidden = !p.metro;
+    balanceUi.bpmRow.hidden = !p.metro && !balanceWordsOn(p);
     balanceUi.bpm.value = p.bpm;
     balanceUi.bpmValue.textContent = `${p.bpm}/min`;
     balanceUi.timedBox.hidden = p.timing !== "timed";
@@ -12794,6 +12852,14 @@
     balanceUi.count.value = p.letterCount; balanceUi.countValue.textContent = String(p.letterCount);
     balanceUi.volume.value = p.volume; balanceUi.volumeValue.textContent = fmtPct(p.volume);
     balanceUi.posHelp.textContent = p.pos ? "Du hast die Stifte verschoben. Die Position bleibt gespeichert." : "Die Stifte stehen in der Mitte. Verschieben geht während der Übung mit dem Finger.";
+    // The stick groups make no sense for words.
+    if (words) {
+      ["balanceSticksGroup", "balanceLettersGroup"].forEach((id) => { balEl(id).hidden = true; });
+      [balanceUi.color1, balanceUi.letterColor, balanceUi.length, balanceUi.width, balanceUi.count, balEl("balanceResetPosBtn"), balanceUi.color2, balanceUi.letterColor2].forEach((el) => { const g = el.closest(".group"); if (g) g.hidden = true; });
+    } else {
+      ["balanceSticksGroup", "balanceLettersGroup"].forEach((id) => { balEl(id).hidden = false; });
+      [balanceUi.color1, balanceUi.letterColor, balanceUi.length, balanceUi.width, balEl("balanceResetPosBtn")].forEach((el) => { const g = el.closest(".group"); if (g) g.hidden = false; });
+    }
     syncLook("balance");
   }
   const applyBalanceBg = makeBgApplier(balEl("balanceStage"), balancePrefs);
@@ -12869,7 +12935,7 @@
 
   // ---- Player ----
   const balP = {
-    player: els.balancePlayer, stage: balEl("balanceStage"), hint: balEl("balanceHint"), sticks: [balEl("balanceStick0"), balEl("balanceStick1")],
+    player: els.balancePlayer, stage: balEl("balanceStage"), hint: balEl("balanceHint"), sticks: [balEl("balanceStick0"), balEl("balanceStick1")], word: balEl("balanceWord"),
     rest: balEl("balanceRest"), restCount: balEl("balanceRestCount"), restNext: balEl("balanceRestNext"), toast: balEl("balanceToast"),
     live: balEl("balanceLive"), cue: balEl("balanceCue"), bpmMinus: balEl("balanceBpmMinus"), bpmPlus: balEl("balanceBpmPlus"), bpmLive: balEl("balanceBpmLive"),
     metroBtn: balEl("balanceMetroBtn"), clockBtn: balEl("balanceClockBtn"), knobBtn: balEl("balanceKnobBtn"), finishBtn: balEl("balanceFinishBtn"),
@@ -12928,7 +12994,7 @@
   function balanceRenderSticks() {
     const st = balanceState;
     balP.sticks.forEach((el, i) => {
-      el.hidden = i >= st.sticks;
+      el.hidden = i >= st.sticks || st.content === "woerter";
       if (el.hidden) return;
       const letters = st.letterSets[i];
       el.innerHTML = letters.map((ch, j) => `<span class="balance-letter" data-j="${j}">${esc(ch)}</span>`).join("");
@@ -12972,9 +13038,37 @@
     const bottom = Math.max(top + 80, (liveTop > 0 ? liveTop : rect.height) - 12);
     return { rect, x0: 12, x1: Math.max(60, rect.width - 12), y0: top, y1: bottom };
   }
+  // Wörter: the next word (Farbwörter: in another ink), drawn on a white
+  // plate in the centre of the free area (readable on any background, also
+  // on the moving one); its size follows "Größe" and the Schriftgröße and
+  // is capped so the longest word always fits.
+  function balanceNextWord() {
+    const st = balanceState;
+    if (!st || st.content !== "woerter") return;
+    st.word = balancePickWord(st, st.word);
+    st.wordCount = (st.wordCount || 0) + 1;
+    balP.word.textContent = st.word.text;
+    balP.word.dataset.cap = st.wordList === "farben" ? (st.wordRead === "farbe" ? "Sag die Farbe" : "Lies das Wort") : "Lies laut";
+    balP.word.style.color = st.word.ink;
+    balP.word.classList.toggle("light-ink", st.word.inkKey === "gelb");
+    balanceLayoutWord();
+  }
+  function balanceLayoutWord() {
+    const st = balanceState;
+    if (!st || st.content !== "woerter" || !st.word) return;
+    const a = balanceArea();
+    const aw = a.x1 - a.x0, ah = a.y1 - a.y0;
+    const len = Math.max(3, [...st.word.text].length);
+    const fsWanted = 46 * st.size * st.fontF;
+    const fs = Math.round(Math.max(16, Math.min(fsWanted, (aw * 0.9) / (len * 0.66 + 1.1), ah * 0.45)));
+    balP.word.style.fontSize = fs + "px";
+    balP.word.style.left = Math.round(a.x0 + aw / 2) + "px";
+    balP.word.style.top = Math.round(a.y0 + ah / 2) + "px";
+  }
   function balanceLayout() {
     const st = balanceState;
     if (!st) return;
+    if (st.content === "woerter") { balanceLayoutWord(); return; }
     const a = balanceArea();
     const aw = a.x1 - a.x0, ah = a.y1 - a.y0;
     const z = st.size;
@@ -13031,7 +13125,7 @@
     balP.liveSizeValue.textContent = st.size.toFixed(1).replace(".", ",") + "×";
     balP.pauseBpm.value = st.bpm; balP.pauseBpmValue.textContent = `${st.bpm}/min`;
     balP.pauseVolume.value = st.volume; balP.pauseVolumeValue.textContent = fmtPct(st.volume);
-    balP.live.querySelector(".balance-tempo").classList.toggle("is-off", !st.metro);
+    balP.live.querySelector(".balance-tempo").classList.toggle("is-off", !st.metro && st.content !== "woerter"); // words keep their rhythm without the click
     if (!st.metro) { balP.cue.textContent = ""; }
   }
   // Live changes during a standalone run are saved to the client's own
@@ -13167,8 +13261,10 @@
     st.phaseElapsed = 0;
     st.beatCount = 0;
     balP.rest.hidden = true;
-    balP.sticks.forEach((el, i) => { el.hidden = i >= st.sticks; });
+    balP.sticks.forEach((el, i) => { el.hidden = i >= st.sticks || st.content === "woerter"; });
+    balP.word.hidden = st.content !== "woerter";
     balanceSetHint();
+    if (st.content === "woerter") { balanceNextWord(); st.nextWordAt = performance.now() + (st.wordEvery * 60000) / st.bpm; }
     balanceLayout();
     if (st.letters === "einzeln") balanceNextSingle();
     st.nextSingleAt = performance.now() + st.singleS * 1000;
@@ -13183,6 +13279,7 @@
     st.restBeeped = new Set();
     balP.cue.textContent = "";
     balP.sticks.forEach((el) => { el.hidden = true; });
+    balP.word.hidden = true;
     balP.rest.hidden = false;
     balP.restNext.textContent = `Als Nächstes: Satz ${st.setIdx + 2} · ${balanceStanceLabel(st, st.setIdx + 1)}`;
     balanceStatus();
@@ -13192,6 +13289,9 @@
     const even = st.beatCount % 2 === 0;
     st.beatCount++;
     balanceClick(even);
+    // Wörter: the first beat keeps the opening word, then a new one every
+    // 1st/2nd/4th beat.
+    if (st.content === "woerter" && st.beatCount > 1 && (st.beatCount - 1) % st.wordEvery === 0) balanceNextWord();
     let cue = BALANCE_MODES[st.mode].cue[even ? 0 : 1];
     if (st.mode === "sakk" && st.sticks === 1) cue = even ? "▲ oben" : "▼ unten";
     // Sakkaden with one visible letter: the letter jumps on the beat and
@@ -13220,6 +13320,11 @@
         balanceBeat();
         const step = 60000 / st.bpm;
         st.nextBeatAt = Math.max(st.nextBeatAt + step, now + step * 0.5);
+      }
+      // Wörter without the audible beat: same rhythm, silent.
+      if (st.content === "woerter" && !st.metro && now >= st.nextWordAt) {
+        balanceNextWord();
+        st.nextWordAt = now + (st.wordEvery * 60000) / st.bpm;
       }
       if (st.letters === "einzeln" && !(st.mode === "sakk" && st.metro) && now >= st.nextSingleAt) {
         balanceNextSingle();
@@ -13251,6 +13356,11 @@
       beatCount: 0, single: null, raf: null, lastNow: 0,
     };
     if (guest) { st.timing = "timed"; st.sets = 1; st.setS = opts.comboDurationS; st.restS = 0; }
+    st.mbg = mbgCopy(p.mbg);
+    st.content = balanceWordsOn(st) ? "woerter" : "stifte";
+    st.word = null;
+    st.wordCount = 0;
+    balP.word.hidden = true;
     const posOk = Array.isArray(p.pos) && p.pos.length >= st.sticks;
     st.pos = posOk ? p.pos.slice(0, st.sticks).map((q) => ({ ...q })) : balanceDefaultPos(st.sticks);
     st.letterSets = [0, 1].map((i) => balanceLettersFor(p, i));
@@ -13270,6 +13380,7 @@
     balanceBeginSet();
     st.lastNow = performance.now();
     st.raf = requestAnimationFrame(balanceTick);
+    mbgStart("balance");
     if (st.metro) silentSwitchHint();
   }
   function balanceCleanup() {
@@ -13303,6 +13414,7 @@
     if (aborted) note = "abgebrochen";
     else if (st.timing === "open") note = `${fmtClock(played)}${beat}`;
     else note = `${countLabel(st.sets, "Satz", "Sätze")} à ${fmtClock(st.setS)}${beat}`;
+    if (!aborted && st.content === "woerter") note += ` · Wörter (${BALANCE_WORDS[st.wordList].name}${st.wordList === "farben" && st.wordRead === "farbe" ? ", Farbe lesen" : ""})`;
     balP.bar.hidden = true;
     setDonePanelAborted(balP.done, aborted, "Gleichgewicht beendet");
     balP.doneSummary.textContent = aborted ? `Abgebrochen · ${fmtClock(played)}` : `${title} · ${note}`;
@@ -33476,14 +33588,16 @@
     root.querySelectorAll("[data-opto-c]").forEach((el) => syncSingleSelectPicker(el, p[el.dataset.optoC]));
     const out = {
       swapS: `${p.swapS} s`, speed: `Stufe ${p.speed}`, size: `${p.size} px`, gap: `${p.gap} px`,
-      durationS: fmtMinutes(p.durationS), speedHelp: optoSpeedHelp(p),
+      durationS: fmtMinutes(p.durationS), speedHelp: root.querySelector('[data-opto-out="speedHelp"]') ? optoSpeedHelp(p) : "",
+      fgInt: `${p.fgInt} %`, bgInt: `${p.bgInt} %`,
     };
     root.querySelectorAll("[data-opto-out]").forEach((el) => {
       const k = el.dataset.optoOut;
       if (k === "contrast") { el.hidden = contrastRatio(optoHex(p.fg), optoHex(p.bg)) >= 1.6; return; }
+      if (!(k in out)) return; // e.g. the moving background's own outputs
       if (el.textContent !== out[k]) el.textContent = out[k];
     });
-    const pat = OPTO_PATTERNS[p.pattern];
+    const pat = OPTO_PATTERNS[p.pattern] || OPTO_PATTERNS.streifen; // "aus" (Bewegter Hintergrund)
     root.querySelectorAll("[data-opto-lbl]").forEach((el) => { el.textContent = pat[el.dataset.optoLbl]; });
     root.querySelectorAll("[data-opto-show]").forEach((el) => {
       const [k, v] = el.dataset.optoShow.split(":");
@@ -33609,6 +33723,44 @@
     optoDraw();
   }
   const optoMod = (a, m) => ((a % m) + m) % m;
+  // Shared pattern renderer (Optodrum + "Bewegter Hintergrund", 2026-10-08):
+  // m = { pattern: streifen|punkte|schach, size, gap, s, dx, dy, a } in CSS
+  // px, fg/bg hex. Stripes stand across the direction of travel `a` and
+  // move by `s`; raster/checkerboard stay axis-aligned and drift by dx/dy.
+  function optoPaint(ctx, W, H, m, fg, bg) {
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = fg;
+    if (m.pattern === "streifen") {
+      const P = m.size + m.gap;
+      const D = Math.hypot(W, H) / 2 + P;
+      ctx.save();
+      ctx.translate(W / 2, H / 2);
+      ctx.rotate(m.a);
+      const s = optoMod(m.s, P);
+      for (let x = s - Math.ceil((D + s) / P) * P; x < D; x += P) ctx.fillRect(x, -D, m.size, 2 * D);
+      ctx.restore();
+    } else if (m.pattern === "punkte") {
+      const P = m.size + m.gap;
+      const ox = optoMod(m.dx, P) - P, oy = optoMod(m.dy, P) - P;
+      for (let y = oy; y < H; y += P) for (let x = ox; x < W; x += P) ctx.fillRect(x, y, m.size, m.size);
+    } else if (m.pattern === "schach") {
+      const L = m.size;
+      const ox = optoMod(m.dx, 2 * L) - 2 * L, oy = optoMod(m.dy, 2 * L) - 2 * L;
+      for (let r = 0, y = oy; y < H; r++, y += L) for (let q = 0, x = ox; x < W; q++, x += L) if (((r + q) & 1) === 0) ctx.fillRect(x, y, L, L);
+    }
+  }
+  // Moves m by v px/s along angle a for dt s; keeps the numbers small (the
+  // drawing only uses them modulo the period).
+  function optoAdvance(m, v, a, dt) {
+    m.s += v * dt;
+    m.dx += v * dt * Math.cos(a);
+    m.dy += v * dt * Math.sin(a);
+    const M = (m.size + m.gap) * 2 * m.size;
+    if (Math.abs(m.dx) > M * 50) m.dx = optoMod(m.dx, M);
+    if (Math.abs(m.dy) > M * 50) m.dy = optoMod(m.dy, M);
+    if (Math.abs(m.s) > M * 50) m.s = optoMod(m.s, m.size + m.gap);
+  }
   function optoDraw() {
     const st = optoState;
     if (!st || !st.w) return;
@@ -33617,29 +33769,8 @@
     ctx.setTransform(st.dpr, 0, 0, st.dpr, 0, 0);
     const bg = optoHex(st.bg);
     const fg = softOn("optodrum") ? mixHex(optoHex(st.fg), bg, 0.45) : optoHex(st.fg);
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = fg;
-    if (st.pattern === "streifen") {
-      // Rotate so the stripes stand across the direction of travel; st.s is
-      // the travelled distance along it.
-      const P = st.size + st.gap;
-      const D = Math.hypot(W, H) / 2 + P;
-      ctx.save();
-      ctx.translate(W / 2, H / 2);
-      ctx.rotate(optoBase(st).a);
-      const s = optoMod(st.s, P);
-      for (let x = s - Math.ceil((D + s) / P) * P; x < D; x += P) ctx.fillRect(x, -D, st.size, 2 * D);
-      ctx.restore();
-    } else if (st.pattern === "punkte") {
-      const P = st.size + st.gap;
-      const ox = optoMod(st.dx, P) - P, oy = optoMod(st.dy, P) - P;
-      for (let y = oy; y < H; y += P) for (let x = ox; x < W; x += P) ctx.fillRect(x, y, st.size, st.size);
-    } else {
-      const L = st.size;
-      const ox = optoMod(st.dx, 2 * L) - 2 * L, oy = optoMod(st.dy, 2 * L) - 2 * L;
-      for (let r = 0, y = oy; y < H; r++, y += L) for (let q = 0, x = ox; x < W; q++, x += L) if (((r + q) & 1) === 0) ctx.fillRect(x, y, L, L);
-    }
+    st.a = optoBase(st).a;
+    optoPaint(ctx, W, H, st, fg, bg);
     if (st.fix) {
       // Fixation point: red dot with a white and a thin dark ring, visible on any colour.
       ctx.beginPath();
@@ -33689,16 +33820,7 @@
       st.flips++;
       st.nextFlip = st.t + st.swapS;
     }
-    const v = OPTO_SPEEDS[optoEffSpeed(st) - 1] * optoSign(st);
-    const a = optoBase(st).a;
-    st.s += v * dt;
-    st.dx += v * dt * Math.cos(a);
-    st.dy += v * dt * Math.sin(a);
-    // keep the numbers small: the drawing only uses them modulo the period
-    const M = (st.size + st.gap) * 2 * st.size;
-    if (Math.abs(st.dx) > M * 50) st.dx = optoMod(st.dx, M);
-    if (Math.abs(st.dy) > M * 50) st.dy = optoMod(st.dy, M);
-    if (Math.abs(st.s) > M * 50) st.s = optoMod(st.s, st.size + st.gap);
+    optoAdvance(st, OPTO_SPEEDS[optoEffSpeed(st) - 1] * optoSign(st), optoBase(st).a, dt);
     optoDraw();
     optoStatus();
     if (!st.noLimit && st.t >= st.durationS) optoFinish(false);
@@ -33818,6 +33940,253 @@
       speed: optoState.speed, eff: optoEffSpeed(optoState), pxs: OPTO_SPEEDS[optoEffSpeed(optoState) - 1], dir: optoState.dir, pattern: optoState.pattern,
       w: optoState.w, h: optoState.h, own: optoState.own, paused: optoState.paused } : null);
   }
+  // ==== Bewegter Hintergrund (Fabian 2026-10-08) ====
+  // The Optodrum pattern (optoPaint/optoAdvance, one renderer) as a slowly
+  // moving layer BEHIND an exercise's content: Gleichgewicht, Positionen
+  // merken and Flash-Speicher-Test. Each exercise keeps its own `mbg`
+  // object in its prefs ({pattern: aus|streifen|punkte, dir, diag, speed
+  // 1-10, size, gap, fg, bg, fgInt, bgInt in %}), so presets, Kombi blocks
+  // (prefsOverride snapshot) and "Nochmal" carry it; the run's state gets
+  // its own copy (st.mbg), which the pause sheet changes live (saved for
+  // standalone runs only). Controls reuse the Optodrum markup attributes
+  // (data-opto-*) and optoBind/optoSyncControls. The canvas sits first in
+  // the stage with z-index -1 (the stage isolates), so every number, key
+  // and stick paints above it and stays tappable (pointer-events none).
+  // Sanfte Reize: tempo capped at OPTO_SOFT_MAX and a softer pattern, like
+  // Optodrum. A new exercise = one MOVING_BG entry + mbgStart(kind) in its
+  // start function + `mbg: mbgCopy(p.mbg)` in its run state.
+  const MBG_DEFAULTS = { pattern: "aus", dir: "links", diag: "ro", speed: 3, size: 40, gap: 40, fg: "grau", bg: "weiss", fgInt: 35, bgInt: 100 };
+  const MBG_DIRS = ["links", "rechts", "hoch", "runter", "schraeg"];
+  function normalizeMbg(m) {
+    const d = MBG_DEFAULTS;
+    const p = Object.assign({}, d, m && typeof m === "object" ? m : {});
+    if (!["aus", "streifen", "punkte"].includes(p.pattern)) p.pattern = d.pattern;
+    if (!MBG_DIRS.includes(p.dir)) p.dir = d.dir;
+    if (!OPTO_DIAGS[p.diag]) p.diag = d.diag;
+    p.speed = Math.round(optoClamp(p.speed, 1, 10, d.speed));
+    p.size = Math.round(optoClamp(p.size, 10, 160, d.size));
+    p.gap = Math.round(optoClamp(p.gap, 10, 200, d.gap));
+    if (!OPTO_COLORS.some((c) => c.key === p.fg)) p.fg = d.fg;
+    if (!OPTO_COLORS.some((c) => c.key === p.bg)) p.bg = d.bg;
+    p.fgInt = Math.round(optoClamp(p.fgInt, 10, 100, d.fgInt) / 5) * 5;
+    p.bgInt = Math.round(optoClamp(p.bgInt, 10, 100, d.bgInt) / 5) * 5;
+    return p;
+  }
+  const mbgCopy = (m) => normalizeMbg(m ? JSON.parse(JSON.stringify(m)) : null);
+  function mbgColors(m, kind) {
+    const bg = mixHex("#ffffff", optoHex(m.bg), m.bgInt / 100);
+    let fg = mixHex(bg, optoHex(m.fg), m.fgInt / 100);
+    if (softOn(kind)) fg = mixHex(fg, bg, 0.45);
+    return { fg, bg };
+  }
+  function mbgEffSpeed(m, kind) { return softOn(kind) ? Math.min(m.speed, OPTO_SOFT_MAX) : m.speed; }
+  const MOVING_BG = {
+    balance: { label: "Gleichgewicht", stage: () => balP.stage, overlay: () => balP.pauseOverlay, state: () => balanceState,
+      prefs: () => balancePrefs, save: () => saveBalancePrefsToStorage(), own: () => !!(balanceState && balanceState.own) && !comboProgram && !cardioGuestActive,
+      readies: ["balanceReady"] },
+    remember: { label: "Positionen merken", stage: () => els.rememberStage, overlay: () => els.rememberPauseOverlay, state: () => rememberState,
+      prefs: () => rememberPrefs, save: () => saveRememberPrefsToStorage(), own: () => !comboProgram && !cardioGuestActive,
+      readies: ["rememberReady", "rememberTrainingReady"] },
+    flash: { label: "Flash-Speicher-Test", stage: () => els.flashStage, overlay: () => els.flashPauseOverlay, state: () => flashState,
+      prefs: () => flashPrefs, save: () => saveFlashPrefsToStorage(), own: () => !comboProgram && !cardioGuestActive,
+      readies: ["flashReady", "flashTrainingReady"] },
+  };
+  const MBG_CONTROLS_HTML = `
+    <div class="choice-row" data-opto-row="pattern">
+      <button type="button" class="choice" data-opto-f="pattern" data-opto-v="aus">Aus<small>ruhig</small></button>
+      <button type="button" class="choice" data-opto-f="pattern" data-opto-v="streifen">Streifen<small>klassisch</small></button>
+      <button type="button" class="choice" data-opto-f="pattern" data-opto-v="punkte">Punkte<small>Raster</small></button>
+    </div>
+    <div class="group-help" data-mbg-help>Ein Muster zieht langsam hinter der Übung durch und fordert Augen und Gleichgewicht zusätzlich. Alles, was du lesen oder antippen musst, bleibt davor.</div>
+    <div class="mbg-more" data-opto-show="notpattern:aus" hidden>
+      <div class="group-label">Richtung</div>
+      <div class="choice-row opto-dir-row mbg-dir-row" data-opto-row="dir">
+        <button type="button" class="choice" data-opto-f="dir" data-opto-v="links">Links<small>&larr;</small></button>
+        <button type="button" class="choice" data-opto-f="dir" data-opto-v="rechts">Rechts<small>&rarr;</small></button>
+        <button type="button" class="choice" data-opto-f="dir" data-opto-v="hoch">Hoch<small>&uarr;</small></button>
+        <button type="button" class="choice" data-opto-f="dir" data-opto-v="runter">Runter<small>&darr;</small></button>
+        <button type="button" class="choice" data-opto-f="dir" data-opto-v="schraeg">Schr&auml;g<small>diagonal</small></button>
+      </div>
+      <div class="opto-sub" data-opto-show="dir:schraeg" hidden>
+        <div class="group-label">Schr&auml;g nach</div>
+        <div class="choice-row two" data-opto-row="diag">
+          <button type="button" class="choice" data-opto-f="diag" data-opto-v="lo">&nwarr; links oben</button>
+          <button type="button" class="choice" data-opto-f="diag" data-opto-v="ro">&nearr; rechts oben</button>
+          <button type="button" class="choice" data-opto-f="diag" data-opto-v="lu">&swarr; links unten</button>
+          <button type="button" class="choice" data-opto-f="diag" data-opto-v="ru">&searr; rechts unten</button>
+        </div>
+      </div>
+      <div class="group-label">Tempo</div>
+      <div class="slider-row"><input type="range" data-opto-r="speed" min="1" max="10" step="1" aria-label="Tempo des Hintergrunds, Stufe 1 bis 10"><span class="slider-value" data-opto-out="speed"></span></div>
+      <div class="group-help" data-mbg-out="soft" hidden></div>
+      <div class="group-label" data-opto-lbl="size">Streifenbreite</div>
+      <div class="slider-row"><input type="range" data-opto-r="size" min="10" max="160" step="2" aria-label="Breite oder Punktgr&ouml;&szlig;e"><span class="slider-value" data-opto-out="size"></span></div>
+      <div class="group-label" data-opto-lbl="gap">Abstand zwischen den Streifen</div>
+      <div class="slider-row"><input type="range" data-opto-r="gap" min="10" max="200" step="2" aria-label="Abstand"><span class="slider-value" data-opto-out="gap"></span></div>
+      <div class="group-label" data-opto-lbl="fg">Farbe der Streifen</div>
+      <div class="color-picker" data-opto-c="fg"></div>
+      <div class="slider-row"><span class="slider-label">Intensit&auml;t</span><input type="range" data-opto-r="fgInt" min="10" max="100" step="5" aria-label="Intensit&auml;t des Musters"><span class="slider-value" data-opto-out="fgInt"></span></div>
+      <div class="group-label">Hintergrundfarbe</div>
+      <div class="color-picker" data-opto-c="bg"></div>
+      <div class="slider-row"><span class="slider-label">Intensit&auml;t</span><input type="range" data-opto-r="bgInt" min="10" max="100" step="5" aria-label="Intensit&auml;t der Hintergrundfarbe"><span class="slider-value" data-opto-out="bgInt"></span></div>
+      <div class="group-help look-contrast-hint" data-mbg-out="contrast" hidden></div>
+      <div class="group-help">Solange der bewegte Hintergrund an ist, gilt seine Hintergrundfarbe statt der normalen. Bewegte Muster k&ouml;nnen bei Lichtempfindlichkeit oder Epilepsie Anf&auml;lle ausl&ouml;sen: Kl&auml;re das in diesem Fall vorher &auml;rztlich ab. Bei Schwindel oder &Uuml;belkeit sofort aufh&ouml;ren.</div>
+    </div>`;
+  function mbgSyncRoot(root, m, kind) {
+    optoSyncControls(root, m);
+    const soft = root.querySelector('[data-mbg-out="soft"]');
+    if (soft) { soft.hidden = !softOn(kind) || m.speed <= OPTO_SOFT_MAX; soft.textContent = `Sanfte Reize: höchstens Stufe ${OPTO_SOFT_MAX}.`; }
+    const tip = root.querySelector('[data-mbg-out="contrast"]');
+    if (tip) {
+      const c = mbgColors(m, kind);
+      const t = contrastRatio(c.fg, c.bg) < 1.15 ? "Tipp: Muster und Hintergrund heben sich kaum voneinander ab."
+        : m.fgInt > 60 ? "Tipp: Ein kräftiges Muster lenkt stark ab. Sind Zahlen, Tasten oder Stifte schwer zu lesen, nimm die Intensität des Musters zurück." : "";
+      tip.hidden = !t;
+      if (tip.textContent !== t) tip.textContent = t;
+    }
+  }
+  const mbgReadyRoots = {}; // kind -> [root]
+  function syncMbgReady(kind) { (mbgReadyRoots[kind] || []).forEach((r) => mbgSyncRoot(r, mbgCopy(MOVING_BG[kind].prefs().mbg), kind)); }
+  const mbgRuns = {}; // kind -> { canvas, m (motion), w, h, dpr, last, raf }
+  function mbgCanvas(kind) {
+    const stage = MOVING_BG[kind].stage();
+    let c = stage.querySelector(":scope > canvas.mbg-canvas");
+    if (!c) {
+      c = document.createElement("canvas");
+      c.className = "mbg-canvas";
+      c.setAttribute("aria-hidden", "true");
+      c.hidden = true;
+      stage.insertBefore(c, stage.firstChild);
+    }
+    return c;
+  }
+  function mbgDraw(kind) {
+    const run = mbgRuns[kind];
+    const st = MOVING_BG[kind].state();
+    if (!run || !st || !st.mbg) return;
+    const stage = MOVING_BG[kind].stage();
+    const r = stage.getBoundingClientRect();
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+    if (run.w !== w || run.h !== h || run.dpr !== dpr) {
+      run.w = w; run.h = h; run.dpr = dpr;
+      run.canvas.width = Math.round(w * dpr);
+      run.canvas.height = Math.round(h * dpr);
+    }
+    const m = st.mbg;
+    Object.assign(run.m, { pattern: m.pattern, size: m.size, gap: m.gap, a: optoBase(m).a });
+    const ctx = run.canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const c = mbgColors(m, kind);
+    optoPaint(ctx, w, h, run.m, c.fg, c.bg);
+  }
+  function mbgStop(kind) {
+    const run = mbgRuns[kind];
+    if (run && run.raf) cancelAnimationFrame(run.raf);
+    delete mbgRuns[kind];
+    const stage = MOVING_BG[kind].stage();
+    const c = stage && stage.querySelector(":scope > canvas.mbg-canvas");
+    if (c) c.hidden = true;
+    if (stage) stage.classList.remove("has-mbg");
+  }
+  function mbgTick(kind, now) {
+    const run = mbgRuns[kind];
+    if (!run) return;
+    const L = MOVING_BG[kind];
+    const st = L.state();
+    const player = L.stage().closest(".player");
+    if (!st || !st.mbg || st.mbg.pattern === "aus" || (player && player.hidden)) { mbgStop(kind); return; }
+    run.raf = requestAnimationFrame((t) => mbgTick(kind, t));
+    const dt = Math.min(0.1, Math.max(0, (now - (run.last || now)) / 1000));
+    run.last = now;
+    const ov = L.overlay();
+    const frozen = st.paused || (ov && !ov.hidden);
+    if (!frozen) optoAdvance(run.m, OPTO_SPEEDS[mbgEffSpeed(st.mbg, kind) - 1], optoBase(st.mbg).a, dt);
+    mbgDraw(kind);
+  }
+  // Called by each exercise's start function (after its run state exists)
+  // and after every live change: starts, redraws or stops the layer.
+  function mbgStart(kind) {
+    const L = MOVING_BG[kind];
+    const st = L.state();
+    if (!st || !st.mbg || st.mbg.pattern === "aus") { mbgStop(kind); return; }
+    const canvas = mbgCanvas(kind);
+    canvas.hidden = false;
+    L.stage().classList.add("has-mbg");
+    if (!mbgRuns[kind]) {
+      mbgRuns[kind] = { canvas, m: { s: 0, dx: 0, dy: 0, size: st.mbg.size, gap: st.mbg.gap }, w: 0, h: 0, dpr: 0, last: 0, raf: null };
+      mbgRuns[kind].raf = requestAnimationFrame((t) => mbgTick(kind, t));
+    }
+    mbgDraw(kind);
+  }
+  Object.entries(MOVING_BG).forEach(([kind, L]) => {
+    // Ready screens: one group in Feineinstellungen, right after "Hintergrund".
+    mbgReadyRoots[kind] = [];
+    L.readies.forEach((screenId) => {
+      const scr = document.getElementById(screenId);
+      const body = scr && scr.querySelector("details.advanced .advanced-body");
+      if (!body) return;
+      const g = document.createElement("div");
+      g.className = "group mbg-group";
+      g.dataset.mbg = kind;
+      g.innerHTML = `<div class="group-label">Bewegter Hintergrund</div>${MBG_CONTROLS_HTML}`;
+      const bgGroup = [...body.querySelectorAll(":scope > .group")].find((x) => x.querySelector('[id$="BgIntensitySlider"]'));
+      if (bgGroup) bgGroup.after(g); else body.appendChild(g);
+      optoBind(g, (f, v) => {
+        const p = L.prefs();
+        p.mbg = normalizeMbg({ ...mbgCopy(p.mbg), [f]: v }); // a new object: Kombi capture backups stay untouched
+        L.save();
+        syncMbgReady(kind);
+      });
+      mbgReadyRoots[kind].push(g);
+      scr.addEventListener("click", (e) => { if (e.target.closest("[data-soft-ex], [data-soft-reset]")) setTimeout(() => syncMbgReady(kind), 0); });
+    });
+    // Pause sheet: the same controls, live, in a closed "Bewegter Hintergrund" box.
+    const ov = L.overlay();
+    const panel = ov && ov.querySelector(".pause-panel");
+    if (panel) {
+      const d = document.createElement("details");
+      d.className = "advanced mbg-pause";
+      d.dataset.mbg = kind;
+      d.innerHTML = `<summary>Bewegter Hintergrund</summary><div class="advanced-body"><div class="group mbg-group">${MBG_CONTROLS_HTML}<div class="group-help" data-mbg-live></div></div></div>`;
+      const anchor = panel.querySelector('[id$="ResumeBtn"]') || panel.querySelector(".start-btn");
+      panel.insertBefore(d, anchor);
+      const root = d.querySelector(".mbg-group");
+      optoBind(root, (f, v) => {
+        const st = L.state();
+        if (!st) return;
+        st.mbg = normalizeMbg({ ...mbgCopy(st.mbg), [f]: v });
+        if (L.own()) { L.prefs().mbg = mbgCopy(st.mbg); L.save(); syncMbgReady(kind); }
+        mbgSyncRoot(root, st.mbg, kind);
+        mbgStart(kind);
+      });
+      new MutationObserver(() => {
+        const st = L.state();
+        if (ov.hidden || !st) return;
+        if (!st.mbg) st.mbg = mbgCopy(null);
+        mbgSyncRoot(root, st.mbg, kind);
+        d.querySelector("[data-mbg-live]").textContent = L.own() ? "Gilt sofort und bleibt gespeichert, wie auf der Übungsseite." : "Gilt sofort, nur für diesen Durchgang.";
+      }).observe(ov, { attributes: true, attributeFilter: ["hidden"] });
+      ov.addEventListener("click", (e) => { if (e.target.closest("[data-soft-live]")) setTimeout(() => { const st = L.state(); if (st && st.mbg) { mbgSyncRoot(root, st.mbg, kind); mbgDraw(kind); } }, 0); });
+    }
+    const p = L.prefs();
+    p.mbg = mbgCopy(p.mbg);
+    syncMbgReady(kind);
+  });
+  if (typeof ResizeObserver !== "undefined") {
+    const ro = new ResizeObserver(() => Object.keys(mbgRuns).forEach(mbgDraw));
+    Object.values(MOVING_BG).forEach((L) => ro.observe(L.stage()));
+  }
+  if (navigator.webdriver) {
+    window.__balWord = () => (balanceState ? { content: balanceState.content, word: balanceState.word, count: balanceState.wordCount, beats: balanceState.beatCount, every: balanceState.wordEvery, hidden: balP.word.hidden, size: balanceState.size } : null);
+    window.__mbg = (kind) => {
+      const run = mbgRuns[kind], st = MOVING_BG[kind].state();
+      return { running: !!run, m: run ? { s: run.m.s, dx: run.m.dx, dy: run.m.dy } : null, st: st && st.mbg ? { ...st.mbg } : null,
+        eff: st && st.mbg ? mbgEffSpeed(st.mbg, kind) : null, colors: st && st.mbg ? mbgColors(st.mbg, kind) : null,
+        prefs: { ...MOVING_BG[kind].prefs().mbg } };
+    };
+  }
+
   function comboActivationCaptureEntries() {
     return [{ label: "Optodrum", meta: "Muster, Richtung, Tempo & Dauer einstellen", open: () => openOptoComboCapture(null, null) }];
   }
