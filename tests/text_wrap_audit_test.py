@@ -11,7 +11,7 @@ from playwright.async_api import async_playwright
 # New screens get covered by adding them to AREAS / the NAT loop.
 
 BASE = "http://localhost:8845/index.html?bereich="
-AREAS = ["heute", "visual", "breath", "movement", "workout", "cardio", "nat", "test", "free", "aktivierung", "hilfsmittel"]
+AREAS = ["heute", "visual", "breath", "movement", "workout", "cardio", "nat", "test", "free", "aktivierung", "neuro", "hilfsmittel", "fortschritt"]
 WIDTHS = [375, 390, 430, 600, 768, 820, 1024, 1180, 1366]
 # iPhone text size (2026-10-06): the app follows the iOS setting up to 1.25x
 # (--ts), so small phones are also checked with the biggest and smallest factor.
@@ -79,7 +79,7 @@ async def main():
         b = await p.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args=["--no-sandbox"])
         for w, ts in [(w, 1) for w in WIDTHS] + SCALED:
             ctx = await b.new_context(viewport={"width": w, "height": 900}, service_workers="block")
-            await ctx.add_init_script("localStorage.setItem('fwmc-test-unlocked','true');localStorage.setItem('fwmc-tips-seen','true')"
+            await ctx.add_init_script("localStorage.setItem('fwmc-test-unlocked','true');localStorage.setItem('fwmc-tips-seen','true');localStorage.setItem('fwmc-test-neuro','true')"
                                       + (f";localStorage.setItem('fwmc-test-textscale','{ts}');localStorage.setItem('fwmc-test-bottomnav','true')" if ts != 1 else ""))
             pg = await ctx.new_page()
             pg.on("pageerror", lambda e: errors.append("pageerror: " + str(e)))
@@ -98,6 +98,26 @@ async def main():
                     await pg.goto(BASE + "heute"); await pg.wait_for_timeout(250)
                     await audit(pg, f"{w}px{ts_tag(ts)} heute/vorname-lang", problems)
                     await pg.evaluate("() => localStorage.removeItem('fwmc-name-v1')")
+                if area == "fortschritt":
+                    # QR-Übergabe (2026-10-08): range screen, QR code, import sheet, paste sheet, Kunden-Training strip
+                    await pg.evaluate("""() => { const t = Date.now(); localStorage.setItem('fwmc-history-v1', JSON.stringify([0, 1, 2].map(i => ({id: 'w' + i, ts: new Date(t - (5 + i * 20) * 60000).toISOString(), kind: 'exercise', title: ['Objektverfolgung (MOT) · Geschwindigkeit', 'Farbfelder · Antippen', 'Gleichgewicht · Wörter'][i], seconds: 300, rating: null})))); }""")
+                    await pg.goto(BASE + "fortschritt"); await pg.wait_for_timeout(250)
+                    await audit(pg, f"{w}px{ts_tag(ts)} fortschritt/verlauf", problems)
+                    await pg.evaluate("() => document.getElementById('handoverOpenBtn').click()"); await pg.wait_for_timeout(150)
+                    await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/zeitraum", problems)
+                    await pg.evaluate("() => document.getElementById('handoverGoBtn').click()"); await pg.wait_for_timeout(500)
+                    await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/qr", problems)
+                    qurl = await pg.get_attribute("#handoverQrCanvas", "data-url")
+                    await pg.evaluate("() => { localStorage.setItem('fwmc-test-ios-browser', 'true'); localStorage.removeItem('fwmc-history-v1'); }")
+                    await pg.goto(qurl); await pg.wait_for_timeout(400)
+                    await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/import-sheet", problems)
+                    await pg.evaluate("() => { localStorage.removeItem('fwmc-test-ios-browser'); document.getElementById('handoverImportNoBtn').click(); }")
+                    await pg.goto(BASE + "fortschritt"); await pg.wait_for_timeout(250)
+                    await pg.evaluate("() => document.getElementById('handoverPasteOpenBtn').click()"); await pg.wait_for_timeout(100)
+                    await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/einfuegen", problems)
+                    await pg.evaluate("() => { document.getElementById('handoverPasteCancelBtn').click(); document.getElementById('clientRunStartBtn').click(); }"); await pg.wait_for_timeout(150)
+                    await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/kunden-training", problems)
+                    await pg.evaluate("() => localStorage.removeItem('fwmc-client-session-v1')")
                 if area == "hilfsmittel":
                     # with a shop link: "Ansehen" + "Werbung · Partner-Link" + partner sentence
                     await pg.evaluate("() => { window.__gear.items.forEach(g => { g.link = 'https://example.com/' + g.id; }); window.__gear.render(); }")
@@ -114,6 +134,11 @@ async def main():
                     await pg.wait_for_timeout(100)
                     await audit(pg, f"{w}px{ts_tag(ts)} nat/balance-woerter-mbg", problems)
                     await pg.evaluate("() => { document.querySelector('[data-bal-content=stifte]').click(); const g = document.querySelector('#balanceReady .mbg-group'); g.querySelector('[data-opto-v=links]').click(); g.querySelector('[data-opto-v=aus]').click(); }")
+                    # Objektverfolgung (MOT) + Bewegter Hintergrund (2026-10-08)
+                    await pg.evaluate("() => { document.getElementById('motOpenSpeed').click(); document.getElementById('motAdvanced').open = true; const g = document.querySelector('#motReady .mbg-group'); g.querySelector('[data-opto-v=streifen]').click(); g.querySelector('[data-opto-v=schraeg]').click(); }")
+                    await pg.wait_for_timeout(150)
+                    await audit(pg, f"{w}px{ts_tag(ts)} nat/mot-mbg", problems)
+                    await pg.evaluate("() => { const g = document.querySelector('#motReady .mbg-group'); g.querySelector('[data-opto-v=links]').click(); g.querySelector('[data-opto-v=aus]').click(); }")
                 if area == "visual":
                     # Farbfelder ready screen (2026-10-07): Modus, Stufe 1-4, hand rows
                     await pg.click('.excard[data-exercise="farbfelder"]'); await pg.wait_for_timeout(150)
@@ -184,6 +209,16 @@ async def main():
                     await pg.wait_for_timeout(100)
                     await audit(pg, f"{w}px{ts_tag(ts)} aktivierung/optodrum-wechsel", problems)
                     await pg.evaluate("() => document.querySelector('#optoReadyControls [data-opto-f=dir][data-opto-v=links]').click()")
+                if area == "neuro":
+                    # Neuro-Aktivierung (2026-10-08, unlocked via fwmc-test-neuro): every
+                    # template's ready screen with Feineinstellungen + Sicherheitshinweis open
+                    for ex in ["vibration", "ball-fuss", "ball-hand", "gelenke"]:
+                        await pg.goto(BASE + "neuro"); await pg.wait_for_timeout(200)
+                        await pg.click(f'[data-neuro-ex="{ex}"]'); await pg.wait_for_timeout(150)
+                        await pg.evaluate("() => { document.getElementById('neuroAdvanced').open = true; document.getElementById('neuroSafety').open = true; document.querySelector('#neuroReadyControls [data-nr-f=takt][data-nr-v=\"1\"]').click(); }")
+                        await pg.wait_for_timeout(100)
+                        await audit(pg, f"{w}px{ts_tag(ts)} neuro/{ex}", problems)
+                        await pg.evaluate("() => document.querySelector('#neuroReadyControls [data-nr-f=takt][data-nr-v=\"0\"]').click()")
                 if area == "free":
                     # Freie Bausteine: ready screen and editor (checklist) of the template
                     await pg.click('#freeTplGrid [data-free-id="tpl-dehnen"]'); await pg.wait_for_timeout(150)

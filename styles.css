@@ -33,9 +33,9 @@
   /* Area colours (AREA_BY_KEY in app.js) as tokens, + a text variant with
      >= 4.5:1 on the cards (darker in light mode, lighter in dark mode). */
   --area-visual:#1f7ab8;--area-breath:#2a9d8f;--area-nat:#3a7d2c;--area-movement:#c77d12;
-  --area-workout:#c0392b;--area-cardio:#7b4fb8;--area-free:#a0527a;--area-activation:#3b4fa8;
+  --area-workout:#c0392b;--area-cardio:#7b4fb8;--area-free:#a0527a;--area-activation:#3b4fa8;--area-neuro:#8a4b2a;
   --area-visual-ink:#1c6ea6;--area-breath-ink:#20766b;--area-nat-ink:#37772a;--area-movement-ink:#955e0e;
-  --area-workout-ink:#c0392b;--area-cardio-ink:#7b4fb8;--area-free-ink:#9d5078;--area-activation-ink:#3b4fa8;
+  --area-workout-ink:#c0392b;--area-cardio-ink:#7b4fb8;--area-free-ink:#9d5078;--area-activation-ink:#3b4fa8;--area-neuro-ink:#8a4b2a;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
@@ -57,7 +57,7 @@
     --warn:#ef9a9a;
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
     --area-visual-ink:#60a1cd;--area-breath-ink:#44a99c;--area-nat-ink:#77a56d;--area-movement-ink:#cd8b2c;
-    --area-workout-ink:#d78279;--area-cardio-ink:#a98dd1;--area-free-ink:#bf8ba6;--area-activation-ink:#9aa7e0;
+    --area-workout-ink:#d78279;--area-cardio-ink:#a98dd1;--area-free-ink:#bf8ba6;--area-activation-ink:#9aa7e0;--area-neuro-ink:#d39a78;
     color-scheme:dark;
   }
 }
@@ -79,7 +79,7 @@
   --warn:#ef9a9a;
   --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
   --area-visual-ink:#60a1cd;--area-breath-ink:#44a99c;--area-nat-ink:#77a56d;--area-movement-ink:#cd8b2c;
-  --area-workout-ink:#d78279;--area-cardio-ink:#a98dd1;--area-free-ink:#bf8ba6;--area-activation-ink:#9aa7e0;
+  --area-workout-ink:#d78279;--area-cardio-ink:#a98dd1;--area-free-ink:#bf8ba6;--area-activation-ink:#9aa7e0;--area-neuro-ink:#d39a78;
   color-scheme:dark;
 }
 
@@ -369,7 +369,11 @@ section{margin-bottom:26px}
    mirrors this exercise-level check rather than filtering blocked
    exercises away silently. */
 .combo-add-btn.incompatible{opacity:.5}
-.excard-blocked-note{
+/* Meine Hilfsmittel (Idee 67): equipment not ticked = slightly greyed, still
+   openable; the "Braucht: …" pill stays fully readable. */
+.excard.gear-missing > :not(.excard-gear-note),.featured-card.gear-missing > :not(.excard-gear-note){opacity:.55}
+.excard.gear-missing .icon-badge,.excard.gear-missing .icon-tile{filter:grayscale(.7)}
+.excard-blocked-note,.excard-gear-note,.gear-need-tag{
   display:inline-block;font-size:calc(10.5px * var(--ts,1));font-weight:700;color:#fff;
   background:var(--ink-soft);padding:3px 8px;border-radius:999px;align-self:flex-start;
 }
@@ -2565,10 +2569,10 @@ body.drag-busy{user-select:none;-webkit-user-select:none}
 .cal-slide-next{animation:calSlideNext .32s cubic-bezier(.2,.8,.2,1)}
 .cal-slide-prev{animation:calSlidePrev .32s cubic-bezier(.2,.8,.2,1)}
 .today-week .week-nav{overflow:hidden;padding:3px;margin:-3px}
-#hubAreaGrid .area-tile,#todayAreaGrid .area-tile,#home .excard,#natExercises .nat-tile,#activationGrid .nat-tile,#freeOwnGrid .featured-card,#freeTplGrid .featured-card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#hubAreaGrid .area-tile,#todayAreaGrid .area-tile,#home .excard,#natExercises .nat-tile,#activationGrid .nat-tile,#neuroGrid .nat-tile,#freeOwnGrid .featured-card,#freeTplGrid .featured-card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .lp-pressing{transform:scale(.97)!important;transition:transform .35s ease!important}
 /* Long press: no iOS text selection, loupe or link preview on the tiles (2026-10-06) */
-#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #activationGrid [data-act-ex], [data-free-id]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #activationGrid [data-act-ex], #neuroGrid [data-neuro-ex], [data-free-id]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .tile-action-list{display:flex;flex-direction:column;gap:8px}
 .tile-action-list .text-link{min-height:44px;align-self:center;padding:6px 18px}
 /* Schritt-Nummern im Dunkelmodus lesbar (Fabian-Blick 2026-10-05: weiß auf
@@ -3202,7 +3206,7 @@ body.soft-flash .flash-digit:not([hidden]){animation:fwmcSoftIn .3s ease-out 1}
 .block-result{display:flex;flex-direction:column;gap:2px}
 .block-result-label{font-size:calc(12px * var(--ts,1));font-weight:700;opacity:.8}
 /* Bewegter Hintergrund (2026-10-08): Optodrum pattern behind the content */
-.remember-stage,.flash-stage,.balance-stage{isolation:isolate}
+.remember-stage,.flash-stage,.balance-stage,.mot-stage{isolation:isolate}
 .mbg-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block}
 .mbg-canvas[hidden]{display:none}
 .mbg-group .mbg-more{display:flex;flex-direction:column;gap:8px;margin-top:10px}
@@ -3296,3 +3300,74 @@ body.soft-flash .flash-digit:not([hidden]){animation:fwmcSoftIn .3s ease-out 1}
 /* With ⓘ the bar has five chips: on small phones they move closer so the
    row still fits from 360 px (Idee 72). */
 @media (max-width:400px){.player-bar:has(.regeln-bar-btn:not([hidden])){gap:4px;padding-left:8px;padding-right:8px}.player-bar:has(.regeln-bar-btn:not([hidden])) button:not(.regeln-bar-btn),.player-bar:has(.regeln-bar-btn:not([hidden])) .player-status{padding-left:10px;padding-right:10px}}
+/* ---- Meine Hilfsmittel (Idee 67, 2026-10-08) ---- */
+.featured-card .excard-gear-note{margin-top:6px}
+.excard-gear-note{color:var(--bg)}
+.gear-need-tag,.chapter-row .info > .gear-need-tag{margin-top:5px;line-height:1.35;color:var(--bg);font-size:calc(10.5px * var(--ts,1))}
+html:root body .start-btn.gear-missing:not(.secondary){background:var(--surface);color:var(--brand-deep);border:1.5px solid var(--brand);box-shadow:none}
+@media (hover:hover){.start-btn.gear-missing:hover{background:var(--brand-pale)}}
+.hilfsmittel-have-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
+.hilfsmittel-missing{flex-basis:100%;font-weight:700;color:var(--ink)}
+.hilfsmittel-have{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:12px;border:1.5px solid var(--brand);background:var(--surface);color:var(--brand-deep);font-weight:700;font-size:calc(15px * var(--ts,1));font-family:inherit;cursor:pointer;max-width:100%}
+.hilfsmittel-have:active{background:var(--brand-pale)}
+.gear-ask-card{margin:0 0 14px}
+.gear-ask-card[hidden]{display:none}
+.gear-ask-title{font-size:calc(16px * var(--ts,1));line-height:1.3;color:var(--ink)}
+.gear-ask-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:6px}
+.gear-ask-actions .text-link{min-height:44px;display:inline-flex;align-items:center}
+.gear-have{margin-top:8px}
+.gear-program-note{font-weight:700;color:var(--ink)}
+/* ---- QR-Übergabe (Idee 69, 2026-10-08, docs/notes/36) ---- */
+.handover-group .handover-item{display:flex;flex-direction:column;gap:4px}
+.handover-group .handover-item + .handover-item{margin-top:8px}
+.handover-group .start-btn.secondary{font-size:calc(17px * var(--ts,1));padding:13px 16px;min-height:48px}
+.handover-paste-link{align-self:flex-start}
+.handover-pending{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 14px;margin-top:4px}
+.handover-pending-actions{display:flex;gap:16px;flex-wrap:wrap}
+.h-tag{display:inline-block;vertical-align:1px;margin-left:4px;font-size:calc(11px * var(--ts,1));font-weight:700;line-height:1.3;color:var(--brand-deep);background:var(--brand-pale);border-radius:6px;padding:1px 6px;white-space:nowrap}
+.choice-row.handover-range{grid-template-columns:1.35fr 1fr 1fr 1fr}
+.handover-range .choice{min-height:44px;font-size:calc(14px * min(var(--ts,1), 1.05));padding:8px 4px;white-space:nowrap}
+.handover-since{display:flex;align-items:center;gap:8px;font-weight:600;font-size:calc(14px * var(--ts,1))}
+.handover-since input{min-height:44px}
+.handover-list li{padding:0 14px}
+.handover-list li.history-empty{padding:12px 14px}
+.handover-check{min-height:52px;gap:12px;cursor:pointer;font-weight:400}
+.handover-check input{width:22px;height:22px;flex:none;accent-color:var(--brand)}
+.handover-check-text{display:flex;flex-direction:column;min-width:0}
+.handover-check input:not(:checked) + .handover-check-text .h-title{color:var(--ink-soft)}
+.handover-qr-card{align-self:center;background:#ffffff;border-radius:16px;padding:12px;box-shadow:var(--shadow);border:1px solid var(--line);margin:4px 0 14px}
+.handover-qr{display:block;width:min(76vw,340px);height:min(76vw,340px);image-rendering:pixelated}
+.handover-qr-error{color:#8a1c1c;font-size:calc(13px * var(--ts,1));max-width:300px;margin:8px 0 0}
+.handover-part-nav{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:6px}
+.handover-part-label{font-weight:700;font-variant-numeric:tabular-nums;min-width:110px;text-align:center}
+.handover-qr-hint,.handover-qr-meta{text-align:center;margin:0 0 8px}
+.handover-import-list{max-height:40vh;overflow-y:auto}
+.handover-import-list li{grid-template-columns:1fr}
+.handover-sheet-actions{display:flex;flex-direction:column;gap:8px}
+.handover-sheet-actions .start-btn{margin-top:0}
+.handover-paste-input{width:100%;font-family:ui-monospace,Menlo,monospace;font-size:16px;resize:vertical;word-break:break-all}
+/* Kunden-Training strip: slim, on top of every page (not in players) */
+.client-run-strip{position:fixed;top:0;left:0;right:0;z-index:36;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  box-sizing:border-box;height:calc(48px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 16px 0;background:#007094;color:#ffffff;font-weight:700;font-size:calc(14px * var(--ts,1))}
+.client-run-text{min-width:0;font-variant-numeric:tabular-nums}
+.client-run-end{flex:none;min-height:44px;min-width:44px;padding:0 14px;border:1.5px solid rgba(255,255,255,.75);border-radius:999px;background:transparent;color:#ffffff;font-weight:700;font-size:calc(14px * var(--ts,1));cursor:pointer}
+.client-run-end:active{background:rgba(255,255,255,.18)}
+/* the sub page bar sticks right below the strip; the strip already covers the notch */
+body.client-run-on{padding-top:calc(48px + env(safe-area-inset-top,0px))}
+body.client-run-on .screen>.brandbar{top:calc(48px + env(safe-area-inset-top,0px));padding-top:4px}
+/* ---- Neuro-Aktivierung (2026-10-08, docs/notes/37) ----
+   Hidden area unlocked by a trainer code: tiles reuse the NAT/VT tile look
+   with the area colour on the badge; the player reuses the Eigenes-Training
+   stage (.free-stage, calm-dk) plus a big side pill. Player = fixed hex. */
+#neuroGrid .neuro-badge{background:var(--area-neuro)}
+.special-tag{display:inline-block;align-self:center;margin:4px 0 2px;padding:3px 10px;border-radius:999px;border:1px solid var(--brand);color:var(--brand);background:var(--surface);font-size:calc(12px * var(--ts,1));font-weight:700;line-height:1.35}
+.special-tag[hidden]{display:none}
+.bundle-item .special-tag{align-self:flex-start;margin-top:6px}
+.player .special-tag{border-color:#e0a43a;color:#7a4b00;background:#fff3d6}
+.neuro-side{display:inline-block;margin:10px auto 2px;padding:8px 22px;border-radius:999px;background:#007094;color:#ffffff;font-family:"Magra",sans-serif;font-weight:700;font-size:calc(26px * var(--ts,1));line-height:1.2;max-width:100%;overflow-wrap:break-word}
+.neuro-side[hidden]{display:none}
+.neuro-side.neuro-moving{background:#5c6b73}
+.free-run-item.neuro-moving{opacity:.75}
+.neuro-stage .free-run-item{font-size:calc(28px * var(--ts,1))}
+@media (max-width:380px){.neuro-stage .free-run-item{font-size:calc(24px * var(--ts,1))}.neuro-side{font-size:calc(22px * var(--ts,1))}}
+.neuro-controls .chapter-row .info span{white-space:normal}

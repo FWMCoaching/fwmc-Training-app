@@ -285,6 +285,8 @@ everywhere goes here, short.
 | 33-huetchen-laufweg | Hütchen · Laufweg (VT, cone map with drawn path): why VT-catalog architecture, path maker, variants, what is not wired |
 | 34-ton-sequenz | Ton-Sequenz (Test-Bereich): step model, audio graph (merger, fades, cueVolume), Kanal-Test, Suchlauf, presets, safety, iPhone checks |
 | 35-richtungskreuz-zusaetze-regeln | Richtungskreuz (VT, 4 directions, Farbregel), Zusätze für oben (`ZUSAETZE`, signal), ⓘ Regeln + Meine Notiz (`REGELN_EXERCISES`, notes in presets/Kombi, trainer note) |
+| 36-qr-uebergabe | QR-Übergabe trainer → client: range screen, payload fields, split codes, import/dedupe, iPhone Safari copy + paste field, Kunden-Training (own store, snapshot of bests) |
+| 37-neuro-aktivierung | Neuro-Aktivierung (hidden 9th area `neuro`, unlocked by code type `neuro-unlock`): step player, `NEURO_EXERCISES`, Kombi/plan only when unlocked, "Spezialübung von deinem Trainer" in trainer Kombi codes, dashboard builder, texts Fabian reviews |
 
 ## Must-do rules collected from the detail notes
 
@@ -557,6 +559,11 @@ For every new or changed exercise/screen, in the same commit:
   the VT ready screen renders it as `.hilfsmittel-note`. Details docs/notes/28.
   A new Hilfsmittel = one HILFSMITTEL entry (`gear`) + its `GEAR_ITEMS` card
   (page "Hilfsmittel und Starterpaket" under Mehr, `#gearScreen`, 2026-10-08).
+  Meine Hilfsmittel (2026-10-08): ticks in `fwmc-gear-v1` (Grundeinstellungen,
+  page, "Hab ich"); unticked `gear` = card greyed + start "Braucht: …" with
+  one confirmDialog, never blocked; `optional: true` never greys, `anyOf: true`
+  needs one. Automated browsers own everything unless `fwmc-test-gear`.
+  Details docs/notes/28, test `tests/meine_hilfsmittel_1008_test.py`.
 - Sanfte Reize (2026-10-07): Grundeinstellungen "Sehen und Reize"
   (`masterPrefs.softStimuli`, + Schriftgröße `textSize` on top of `--ts`).
   Every exercise with fast light changes honours it: VT canvas exercises get
@@ -596,5 +603,20 @@ For every new or changed exercise/screen, in the same commit:
   engines one entry: ready screens, bar, pause overlays, domain). The bar ⓘ
   pauses via the visible `…PauseBtn` and resumes via `…ResumeBtn`.
   Details docs/notes/35.
+- QR-Übergabe (2026-10-08): history entries travel only in the URL
+  fragment (`#import=`), never via a server; a new history field that
+  Fortschritt needs goes into `hoPack`/`hoUnpack`. Anything that records a
+  run goes through `addHistory()` (Kunden-Training diverts it there), and a
+  new per-exercise best/level store is named `fwmc-…-best-v1` or added to
+  `HO_SNAP_RE`. `qrcode.js` (vendored) belongs in every Artifact publish.
+  Details docs/notes/36, test `tests/qr_uebergabe_1008_test.py`.
+- Neuro-Aktivierung (2026-10-08): hidden area `neuro`, visible only after a
+  `neuro-unlock` code (`fwmc-neuro-unlocked-v1`; tests seed `fwmc-test-neuro`).
+  Anything that lists areas/exercises (hub, PLAN_AREAS, Kombi groups, tray,
+  gear cards) must follow `neuroUnlocked()`; neuro blocks in a trainer Kombi
+  code always play, tagged "Spezialübung von deinem Trainer" when locked, and
+  never get copied into own Kombis (`neuroStripBlocks`). A new template = one
+  `NEURO_EXERCISES` entry + dashboard `NEURO_EX`. Details docs/notes/37, test
+  `tests/neuro_aktivierung_1008_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

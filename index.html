@@ -35,6 +35,10 @@
 <body>
 <script>try{var f=localStorage.getItem("fwmc-test-bottomnav");if(!navigator.webdriver||(f&&f!=="false"))document.body.classList.add("has-bottom-nav")}catch(e){}</script>
 <div class="app-splash" id="appSplash" aria-hidden="true"><img src="logo-white.png" width="900" height="177" alt=""></div>
+<div class="client-run-strip" id="clientRunStrip" role="status" hidden>
+  <span class="client-run-text">Kunden-Training &middot; seit <span id="clientRunSince"></span><span id="clientRunCount"></span></span>
+  <button class="client-run-end" id="clientRunEndBtn" type="button">Beenden</button>
+</div>
 <div class="screen" id="home" hidden>
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" width="900" height="177" alt="Fabian Westermann Mentalcoaching">
@@ -288,7 +292,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 18:27</p>
+    <p class="app-version">Stand: 08.10.2026, 18:29</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -448,7 +452,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 18:27</p>
+    <p class="app-version">Stand: 08.10.2026, 18:29</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -484,7 +488,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 18:27</p>
+    <p class="app-version">Stand: 08.10.2026, 18:29</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -538,7 +542,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 18:27</p>
+    <p class="app-version">Stand: 08.10.2026, 18:29</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -608,6 +612,84 @@
     <div class="progress-milestones" id="progressMilestones"></div>
     <p class="group-help" id="progressNextText"></p>
   </div>
+  <section class="history" id="progressHistorySection" hidden>
+    <div class="section-head">
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
+    </div>
+    <div class="history-stats" id="progressHistoryStats"></div>
+    <ul class="history-list" id="progressHistoryList"></ul>
+    <div class="history-actions">
+      <button class="text-link small" id="progressHistoryMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="progressHistoryClearBtn">Verlauf l&ouml;schen</button>
+    </div>
+  </section>
+  <div class="group handover-group" id="handoverGroup">
+    <div class="group-label">Training beim Trainer</div>
+    <div class="handover-item">
+      <button class="start-btn secondary" id="handoverOpenBtn" type="button">An Kunden &uuml;bergeben</button>
+      <p class="group-help">Schickt Trainings per QR-Code auf das Handy deines Kunden.</p>
+    </div>
+    <div class="handover-item">
+      <button class="start-btn secondary" id="clientRunStartBtn" type="button">Kunden-Training starten</button>
+      <p class="group-help" id="clientRunActiveNote" hidden>Ein Kunden-Training l&auml;uft. Beenden kannst du es oben im Streifen.</p>
+      <p class="group-help">Trainiert jetzt ein Kunde auf deinem Ger&auml;t? Dann z&auml;hlt nichts davon f&uuml;r deinen Fortschritt, und am Ende kommt direkt der QR-Code.</p>
+      <div class="handover-pending" id="clientRunPending" hidden>
+        <p class="group-help" id="clientRunPendingText"></p>
+        <div class="handover-pending-actions">
+          <button class="text-link small" id="clientRunPendingBtn" type="button">QR-Code zeigen</button>
+          <button class="text-link small danger" id="clientRunDropBtn" type="button">L&ouml;schen</button>
+        </div>
+      </div>
+    </div>
+    <div class="handover-item">
+      <button class="text-link small handover-paste-link" id="handoverPasteOpenBtn" type="button">&Uuml;bergabe-Code einf&uuml;gen</button>
+      <p class="group-help">Hast du den Code in Safari kopiert? Hier f&uuml;gst du ihn in der App vom Startbildschirm ein.</p>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="handoverScreen" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="handoverBackBtn">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">An Kunden &uuml;bergeben</h1>
+  <p class="page-sub">Welche Trainings bekommt dein Kunde? W&auml;hle den Zeitraum und nimm einzelne Trainings heraus, die nicht zu ihm geh&ouml;ren.</p>
+  <div class="group">
+    <div class="group-label">Zeitraum</div>
+    <div class="choice-row handover-range" id="handoverRangeRow">
+      <button class="choice" type="button" data-ho-range="since"><span id="handoverSinceLabel">seit</span></button>
+      <button class="choice" type="button" data-ho-range="30">30 Min</button>
+      <button class="choice" type="button" data-ho-range="60">60 Min</button>
+      <button class="choice" type="button" data-ho-range="90">90 Min</button>
+    </div>
+    <label class="handover-since" id="handoverSinceRow"><span>Seit</span> <input type="time" id="handoverSinceInput" class="plan-date-input" step="300"> <span>Uhr</span></label>
+  </div>
+  <div class="group">
+    <div class="group-label">Trainings</div>
+    <ul class="history-list handover-list" id="handoverList"></ul>
+  </div>
+  <button class="start-btn" id="handoverGoBtn" type="button" disabled>0 Trainings &uuml;bergeben</button>
+</div>
+
+<div class="screen" id="handoverQrScreen" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="handoverQrBackBtn">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Scannen lassen</h1>
+  <p class="page-sub">Dein Kunde &ouml;ffnet die Kamera und h&auml;lt sie auf den Code. Seine App fragt dann einmal, ob er die Trainings &uuml;bernehmen m&ouml;chte.</p>
+  <div class="handover-qr-card">
+    <canvas class="handover-qr" id="handoverQrCanvas" role="img" aria-label="QR-Code f&uuml;r die &Uuml;bergabe" width="10" height="10"></canvas>
+    <p class="handover-qr-error" id="handoverQrError" hidden>Der QR-Code konnte nicht erzeugt werden. Bitte lade die Seite neu und versuche es noch einmal.</p>
+  </div>
+  <div class="handover-part-nav" id="handoverPartNav" hidden>
+    <button class="progress-goal-btn" id="handoverPrevBtn" type="button" aria-label="Vorheriger Code">&lsaquo;</button>
+    <span class="handover-part-label" id="handoverPartLabel"></span>
+    <button class="progress-goal-btn" id="handoverNextBtn" type="button" aria-label="N&auml;chster Code">&rsaquo;</button>
+  </div>
+  <p class="group-help handover-qr-hint" id="handoverQrHint" hidden></p>
+  <p class="group-help handover-qr-meta" id="handoverQrMeta"></p>
+  <button class="start-btn" id="handoverDoneBtn" type="button">Fertig</button>
 </div>
 
 <div class="screen" id="planScreen" hidden>
@@ -876,7 +958,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 18:27</p>
+    <p class="app-version">Stand: 08.10.2026, 18:29</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -951,7 +1033,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 18:27</p>
+    <p class="app-version">Stand: 08.10.2026, 18:29</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1062,7 +1144,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 18:27</p>
+    <p class="app-version">Stand: 08.10.2026, 18:29</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1134,7 +1216,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 18:27</p>
+    <p class="app-version">Stand: 08.10.2026, 18:29</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1430,7 +1512,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 18:27</p>
+    <p class="app-version">Stand: 08.10.2026, 18:29</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1606,7 +1688,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 18:27</p>
+    <p class="app-version">Stand: 08.10.2026, 18:29</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1858,6 +1940,235 @@
   </div>
 </div>
 
+<div class="screen" id="neuroHome" hidden>
+  <header class="brandbar">
+    <img class="brand-logo" src="logo-full.png" width="900" height="177" alt="Fabian Westermann Mentalcoaching">
+    <em class="brand-sub">FWMC <span class="nowrap">Online-Training</span></em>
+    <button class="master-settings-btn" type="button" aria-label="Grundeinstellungen"><svg class="gear-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+  </header>
+
+  <nav class="section-switch" role="tablist" aria-label="Trainingsbereich">
+    <button class="section-tab" data-section="today" role="tab" aria-selected="false">Heute</button>
+    <button class="section-tab" data-section="visual" role="tab" aria-selected="false">Visuell</button>
+    <button class="section-tab" data-section="breath" role="tab" aria-selected="false">Atemtraining</button>
+    <button class="section-tab" data-section="movement" role="tab" aria-selected="false">Reaktion</button>
+    <button class="section-tab" data-section="workout" role="tab" aria-selected="false">Kraft</button>
+    <button class="section-tab" data-section="cardio" role="tab" aria-selected="false">Ausdauer</button>
+    <button class="section-tab" data-section="nat" role="tab" aria-selected="false">NAT</button>
+    <button class="section-tab" data-section="test" role="tab" aria-selected="false">Test</button>
+  </nav>
+
+  <button class="combo-entry-link" data-open-combo="1">Kombi-Programm aus mehreren Bereichen &rarr;</button>
+
+  <!-- ==== Neuro-Aktivierung (Idee 68, Fabian 08.10.) - only with the area unlocked by a trainer code ==== -->
+  <section class="hero">
+    <div class="hero-kicker">Neuro-Aktivierung</div>
+    <h1 class="hero-title">Gezielt aktivieren, Schritt f&uuml;r Schritt.</h1>
+    <p class="hero-text">Gef&uuml;hrte Aktivierungen mit Hilfsmitteln wie Vibrationsger&auml;t oder Massageball. Dein Trainer hat diesen Bereich f&uuml;r dich freigeschaltet.</p>
+  </section>
+
+  <p class="group-help free-trainer-notice" id="neuroUnlockNotice" role="status" hidden>Neu f&uuml;r dich freigeschaltet: Neuro-Aktivierung.</p>
+
+  <section class="code-card">
+    <h2>Dein pers&ouml;nliches Training</h2>
+    <p>Dein Trainer stellt dir einen Plan zusammen, der genau zu dir passt: deine &Uuml;bungen, dein Tempo, dein Ziel. Du bekommst daf&uuml;r einen Code. Gib ihn hier ein.</p>
+    <div class="program-entry-row">
+      <input type="text" id="neuroProgramCodeInput" placeholder="Trainings-Code" aria-label="Trainings-Code" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <button id="neuroProgramGoBtn">&Ouml;ffnen</button>
+    </div>
+    <div class="program-error" id="neuroProgramError" role="alert" hidden>Zu diesem Code wurde kein Training gefunden. Bitte pr&uuml;fe die Schreibweise.</div>
+  </section>
+
+  <section class="patterns">
+    <div class="section-head">
+      <h2>Aktivierungen mit Hilfsmittel</h2>
+      <span class="section-note">gef&uuml;hrt, Schritt f&uuml;r Schritt</span>
+    </div>
+    <div class="card-grid" id="neuroGrid"></div>
+  </section>
+
+  <section class="history" id="neuroHistorySection" hidden>
+    <div class="section-head">
+      <h2>Gesamter Trainingsverlauf</h2>
+      <span class="section-note">nur auf diesem Ger&auml;t &middot; alle Bereiche zusammen</span>
+    </div>
+    <div class="history-stats" id="neuroHistoryStats"></div>
+    <ul class="history-list" id="neuroHistoryList"></ul>
+    <div class="history-actions">
+      <button class="text-link small" id="neuroHistoryMoreBtn" hidden>Alle anzeigen</button>
+      <button class="text-link small" id="neuroHistoryClearBtn">Verlauf l&ouml;schen</button>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
+    <p class="app-version">Stand: 08.10.2026, 18:29</p>
+    <nav>
+      <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
+      <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
+      <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a>
+      <button class="privacy-open-btn" type="button">Datenschutz</button>
+    </nav>
+  </footer>
+</div>
+
+<div class="screen" id="neuroReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="neuroBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="neuroReadyTitle">Neuro-Aktivierung</h1>
+  <p class="page-sub" id="neuroReadyDesc"></p>
+
+  <div class="hilfsmittel-note" id="neuroHilfsmittel" hidden>
+    <span class="hilfsmittel-kicker">Hilfsmittel</span>
+    <span id="neuroHilfsmittelText"></span>
+    <button class="text-link small hilfsmittel-all" type="button">Alle Hilfsmittel</button>
+  </div>
+
+  <div class="neuro-controls" id="neuroReadyControls">
+
+  <div class="group">
+    <div class="group-label">Dauer pro Schritt</div>
+    <div class="choice-row" data-nr-row="stepS">
+      <button type="button" class="choice" data-nr-f="stepS" data-nr-v="20">20 Sek</button>
+      <button type="button" class="choice" data-nr-f="stepS" data-nr-v="30">30 Sek</button>
+      <button type="button" class="choice" data-nr-f="stepS" data-nr-v="45">45 Sek</button>
+    </div>
+    <div class="slider-row"><input type="range" data-nr-r="stepS" min="10" max="120" step="5" aria-label="Dauer pro Schritt in Sekunden"><span class="slider-value" data-nr-out="stepS"></span></div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Durchg&auml;nge</div>
+    <div class="choice-row" data-nr-row="reps">
+      <button type="button" class="choice" data-nr-f="reps" data-nr-v="1">1&times;<small>einmal</small></button>
+      <button type="button" class="choice" data-nr-f="reps" data-nr-v="2">2&times;<small>zweimal</small></button>
+      <button type="button" class="choice" data-nr-f="reps" data-nr-v="3">3&times;<small>dreimal</small></button>
+    </div>
+    <div class="group-help" data-nr-out="total"></div>
+  </div>
+
+  <details class="advanced" id="neuroAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="group">
+        <div class="group-label">Seite zuerst</div>
+        <div class="choice-row two" data-nr-row="order">
+          <button type="button" class="choice" data-nr-f="order" data-nr-v="lr">Links zuerst</button>
+          <button type="button" class="choice" data-nr-f="order" data-nr-v="rl">Rechts zuerst</button>
+        </div>
+      </div>
+      <div class="group" data-nr-show="hasAlt">
+        <div class="group-label">Seitenwechsel bei &bdquo;abwechselnd&ldquo; alle</div>
+        <div class="slider-row"><input type="range" data-nr-r="altS" min="2" max="15" step="1" aria-label="Seitenwechsel alle ... Sekunden"><span class="slider-value" data-nr-out="altS"></span></div>
+      </div>
+      <div class="group">
+        <div class="group-label">Umsetzen zwischen den Schritten</div>
+        <div class="slider-row"><input type="range" data-nr-r="moveS" min="0" max="30" step="5" aria-label="Zeit zum Umsetzen zwischen den Schritten in Sekunden"><span class="slider-value" data-nr-out="moveS"></span></div>
+        <div class="group-help">Zeit, um das Hilfsmittel umzusetzen oder die Seite zu wechseln. 0 = direkt weiter.</div>
+      </div>
+      <div class="group">
+        <div class="group-label">Takt</div>
+        <div class="choice-row two" data-nr-row="takt">
+          <button type="button" class="choice" data-nr-f="takt" data-nr-v="0">Aus<small>nur Ansagen</small></button>
+          <button type="button" class="choice" data-nr-f="takt" data-nr-v="1">An<small>leiser Ton im Takt</small></button>
+        </div>
+        <div class="slider-row" data-nr-show="takt"><input type="range" data-nr-r="bpm" min="30" max="120" step="5" aria-label="Takt in Schl&auml;gen pro Minute"><span class="slider-value" data-nr-out="bpm"></span></div>
+      </div>
+    </div>
+  </details>
+  </div>
+
+  <div class="group neuro-steps-group">
+    <div class="group-label">Ablauf <span class="group-count" id="neuroStepCount"></span></div>
+    <div class="chapter-list" id="neuroReadySteps"></div>
+  </div>
+
+  <details class="advanced balance-safety" id="neuroSafety">
+    <summary>Sicherheitshinweis</summary>
+    <div class="advanced-body">
+    <p id="neuroSafetyText">Arbeite mit leichtem Druck und nur so lange, wie es angenehm ist. Bei Schmerzen, Taubheit, Schwindel oder Unwohlsein sofort aufh&ouml;ren.</p>
+    <p>Nicht auf Wunden, Entz&uuml;ndungen, frischen Verletzungen oder Krampfadern. Mit einem Herzschrittmacher, in der Schwangerschaft oder bei einer bekannten Erkrankung kl&auml;re die &Uuml;bung vorher &auml;rztlich ab.</p>
+    </div>
+  </details>
+
+  <div class="group nat-saved-group" id="neuroSavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="neuroSavedList"></div>
+  </div>
+  <button class="text-link small" id="neuroSaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="neuroSaveForm" hidden>
+    <input type="text" id="neuroSaveNameInput" placeholder="Name (z.&#8239;B. Kurz am Morgen)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="neuroSaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="neuroSaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
+
+  <button class="start-btn" id="neuroStartBtn">Training starten</button>
+</div>
+
+<div class="player calm-dk" id="neuroPlayer" hidden>
+  <div class="cardio-stage free-stage neuro-stage">
+    <div class="cardio-block-progress" id="neuroRunProgress"></div>
+    <h2 class="cardio-activity-title" id="neuroRunTitle"></h2>
+    <span class="special-tag" id="neuroRunSpecial" hidden>Spezialübung von deinem Trainer</span>
+    <div class="tabata-icon free-run-icon" id="neuroRunIcon" hidden></div>
+    <div class="free-run-item" id="neuroRunItem"></div>
+    <div class="neuro-side" id="neuroRunSide" hidden></div>
+    <div class="cardio-countdown" id="neuroRunCountdown">0:00</div>
+    <div class="cardio-activity-label" id="neuroRunNext" hidden></div>
+    <div class="chapter-nav">
+      <button id="neuroPrevBtn" title="Vorheriger Schritt" aria-label="Vorheriger Schritt">&laquo;</button>
+      <button id="neuroRestartBtn" title="Schritt neu starten" aria-label="Schritt neu starten">&#8635;</button>
+      <button id="neuroSkipBtn" title="Weiter zum n&auml;chsten Schritt" aria-label="Weiter zum n&auml;chsten Schritt">&raquo;</button>
+    </div>
+  </div>
+  <div class="pause-overlay" id="neuroPauseOverlay" hidden>
+    <div class="pause-panel neuro-controls" id="neuroPauseControls">
+      <h3>Pausiert</h3>
+      <div class="group">
+        <div class="group-label">Takt</div>
+        <div class="choice-row two" data-nr-row="takt">
+          <button type="button" class="choice" data-nr-f="takt" data-nr-v="0">Aus<small>nur Ansagen</small></button>
+          <button type="button" class="choice" data-nr-f="takt" data-nr-v="1">An<small>leiser Ton im Takt</small></button>
+        </div>
+        <div class="slider-row" data-nr-show="takt"><input type="range" data-nr-r="bpm" min="30" max="120" step="5" aria-label="Takt in Schl&auml;gen pro Minute"><span class="slider-value" data-nr-out="bpm"></span></div>
+      </div>
+      <div class="group">
+        <div class="group-label">Dauer pro Schritt</div>
+        <div class="slider-row"><input type="range" data-nr-r="stepS" min="10" max="120" step="5" aria-label="Dauer pro Schritt in Sekunden"><span class="slider-value" data-nr-out="stepS"></span></div>
+        <div class="group-help">Gilt ab dem n&auml;chsten Schritt.</div>
+      </div>
+      <div class="group" data-nr-show="hasAlt">
+        <div class="group-label">Seitenwechsel bei &bdquo;abwechselnd&ldquo; alle</div>
+        <div class="slider-row"><input type="range" data-nr-r="altS" min="2" max="15" step="1" aria-label="Seitenwechsel alle ... Sekunden"><span class="slider-value" data-nr-out="altS"></span></div>
+      </div>
+      <div class="group-help" id="neuroPauseHelp">Gilt sofort und bleibt gespeichert, wie auf der &Uuml;bungsseite.</div>
+      <button class="start-btn" id="neuroResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="neuroPlayerBar">
+    <button id="neuroBackBtn">&#10005; Beenden</button>
+    <button id="neuroPauseBtn">Pause</button>
+    <button id="neuroFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="neuroFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="neuroFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="neuroFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+</div>
+
+<div class="done-panel" id="neuroDonePanel" hidden>
+  <div class="done-check">&#10003;</div>
+  <h2>Geschafft!</h2>
+  <p class="done-summary" id="neuroDoneSummary"></p>
+  <div class="rating" id="neuroRating"></div>
+  <button class="again" id="neuroAgainBtn">Nochmal</button>
+  <button class="back" id="neuroDoneBackBtn">Zur &Uuml;bersicht</button>
+</div>
+<!-- ==== /Neuro-Aktivierung ==== -->
+
 <div class="screen" id="natHome" hidden>
   <header class="brandbar">
     <img class="brand-logo" src="logo-full.png" width="900" height="177" alt="Fabian Westermann Mentalcoaching">
@@ -2074,7 +2385,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 18:27</p>
+    <p class="app-version">Stand: 08.10.2026, 18:29</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -2287,7 +2598,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 08.10.2026, 18:27</p>
+    <p class="app-version">Stand: 08.10.2026, 18:29</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -4762,6 +5073,7 @@
   <p class="page-sub" id="programDesc"></p>
   <video class="intro-video" id="introVideo" hidden controls playsinline></video>
   <div class="chapter-list" id="chapterList"></div>
+  <p class="program-hint gear-program-note" id="programGearNote" hidden></p>
   <p class="program-hint">Das Programm l&auml;uft automatisch durch alle &Uuml;bungen, mit kurzer Pause dazwischen. Tippe auf eine &Uuml;bung, um direkt dort einzusteigen.</p>
   <button class="start-btn" id="programStartBtn">Training starten</button>
 </div>
@@ -8170,6 +8482,7 @@
 <div class="done-panel standalone" id="comboTransition" hidden>
   <p class="block-result" id="comboTransitionResult" hidden></p>
   <div class="next-label">Pause &ndash; als N&auml;chstes:</div>
+  <span class="special-tag" id="comboTransitionSpecial" hidden>Spezialübung von deinem Trainer</span>
   <h2 id="comboTransitionTitle"></h2>
   <p class="done-summary" id="comboTransitionMeta"></p>
   <div class="pause-countdown" id="comboTransitionCountdown"></div>
@@ -8310,7 +8623,7 @@
 
     <details class="faq-item">
       <summary>Was wird auf deinem Ger&auml;t gespeichert?</summary>
-      <div class="faq-body">Dein Vorname (wenn du ihn f&uuml;r die Begr&uuml;&szlig;ung eingibst), dein Trainingsverlauf, dein Fortschritt, dein Wochenplan, deine Termine, deine Einstellungen, gespeicherte Programme und Bilder, die du f&uuml;r Ausdauertraining ausw&auml;hlst. Alles liegt nur im Speicher dieses Browsers auf diesem Ger&auml;t, nicht in einer Cloud. L&ouml;schst du die Browserdaten, ist es weg. In den Grundeinstellungen kannst du eine Sicherung als Datei speichern und wieder einlesen &ndash; die Datei liegt dann nur bei dir.</div>
+      <div class="faq-body">Dein Vorname (wenn du ihn f&uuml;r die Begr&uuml;&szlig;ung eingibst), dein Trainingsverlauf, dein Fortschritt, dein Wochenplan, deine Termine, deine Einstellungen, gespeicherte Programme und Bilder, die du f&uuml;r Ausdauertraining ausw&auml;hlst. Alles liegt nur im Speicher dieses Browsers auf diesem Ger&auml;t, nicht in einer Cloud. L&ouml;schst du die Browserdaten, ist es weg. In den Grundeinstellungen kannst du eine Sicherung als Datei speichern und wieder einlesen &ndash; die Datei liegt dann nur bei dir. Bei der &Uuml;bergabe an einen Kunden wandern Trainings per QR-Code direkt von Ger&auml;t zu Ger&auml;t, ohne Server.</div>
     </details>
 
     <details class="faq-item">
@@ -8386,6 +8699,13 @@
       <div class="group-label">H&ouml;ren</div>
       <label class="checkbox-row tap-row"><input type="checkbox" id="masterHearingCheck"> Geh&ouml;rlosigkeit oder eingeschr&auml;nktes H&ouml;ren</label>
       <div class="group-help">&Uuml;bungen, die zwingend Ton ben&ouml;tigen (aktuell nur &bdquo;Sehen &amp; H&ouml;ren&ldquo;), werden dann in der &Uuml;bersicht ausgegraut und markiert, statt versteckt.</div>
+    </div>
+
+    <div class="group" id="masterGearGroup">
+      <div class="group-label">Meine Hilfsmittel</div>
+      <div class="group-help">Hak an, was du zum Training da hast. &Uuml;bungen, f&uuml;r die dir noch etwas fehlt, sind leicht ausgegraut &ndash; du kannst sie trotzdem &ouml;ffnen und starten.</div>
+      <div id="masterGearList"></div>
+      <button class="text-link small" type="button" id="masterGearOpenBtn">Alle Hilfsmittel ansehen</button>
     </div>
 
     <div class="group" id="masterSeeGroup">
@@ -8601,6 +8921,33 @@
   <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="tileActionTitle">
     <h2 id="tileActionTitle"></h2>
     <div class="tile-action-list" id="tileActionList"></div>
+  </div>
+</div>
+
+<div class="sheet" id="handoverImportSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="handoverImportTitle">
+    <h2 id="handoverImportTitle"></h2>
+    <p class="group-help" id="handoverImportText"></p>
+    <ul class="history-list handover-import-list" id="handoverImportList"></ul>
+    <p class="group-help handover-ios-note" id="handoverImportIos" hidden>Nutzt du die App vom Startbildschirm? Safari und die App haben getrennte Speicher. Tippe dann auf &bdquo;Code kopieren&ldquo;, &ouml;ffne die App und f&uuml;ge den Code unter Fortschritt bei &bdquo;&Uuml;bergabe-Code einf&uuml;gen&ldquo; ein.</p>
+    <div class="handover-sheet-actions">
+      <button class="start-btn" id="handoverImportYesBtn" type="button">&Uuml;bernehmen</button>
+      <button class="start-btn secondary" id="handoverImportCopyBtn" type="button" hidden>Code kopieren</button>
+      <button class="start-btn secondary" id="handoverImportNoBtn" type="button">Nicht jetzt</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="handoverPasteSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="handoverPasteTitle">
+    <h2 id="handoverPasteTitle">&Uuml;bergabe-Code einf&uuml;gen</h2>
+    <p class="group-help">Den Code hast du in Safari mit &bdquo;Code kopieren&ldquo; kopiert. Halte den Finger in das Feld und tippe auf &bdquo;Einsetzen&ldquo;.</p>
+    <textarea class="plan-input handover-paste-input" id="handoverPasteInput" rows="4" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="&Uuml;bergabe-Code"></textarea>
+    <div class="program-error" id="handoverPasteError" role="alert" hidden></div>
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="handoverPasteCancelBtn" type="button">Abbrechen</button>
+      <button class="start-btn" id="handoverPasteGoBtn" type="button">Weiter</button>
+    </div>
   </div>
 </div>
 

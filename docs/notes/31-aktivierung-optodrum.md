@@ -105,7 +105,10 @@ Test: `tests/aktivierung_optodrum_1008_test.py` (screenshots
   `m = {pattern, size, gap, s, dx, dy, a}`; `optoAdvance(m, v, a, dt)` moves it (CSS px,
   wraps the numbers). Optodrum's `optoDraw`/`optoTick` use both; nothing is duplicated.
 - **Bewegter Hintergrund** (`==== Bewegter Hintergrund` in app.js, after Optodrum): the same
-  pattern as a layer behind Gleichgewicht, Positionen merken and Flash-Speicher-Test.
+  pattern as a layer behind Gleichgewicht, Positionen merken, Flash-Speicher-Test and
+  Objektverfolgung (MOT, added 08.10. evening: `.mot-stage` isolates, the balls are DOM nodes in
+  `#motObjectsLayer` above the canvas and keep their own `onGameTap` targets; default pattern
+  grey 35 % keeps black balls >= 4.5:1, yellow targets differ by hue).
   `MOVING_BG` = one entry per exercise (`stage`, `overlay`, `state`, `prefs`, `save`, `own`,
   `readies`). Each exercise's prefs hold `mbg` (`MBG_DEFAULTS`: pattern aus|streifen|punkte,
   dir links|rechts|hoch|runter|schraeg + diag, speed 1-10, size 10-160, gap 10-200, fg/bg
@@ -126,4 +129,6 @@ Test: `tests/aktivierung_optodrum_1008_test.py` (screenshots
   Cardio guests start without (their cfg has no mbg). Test hook `window.__mbg(kind)`.
 - A new exercise = one `MOVING_BG` entry + `mbg` in its run state + `mbgStart(kind)`.
 Test: `tests/bewegter_hintergrund_1008_test.py` (screenshots `tests/screenshots/bewegter_hintergrund/`),
-`tests/hint_overlap_all_test.py` (balance words+mbg, flash mbg), `tests/text_wrap_audit_test.py`.
+`tests/bewegter_hintergrund_mot_1008_test.py` (MOT: off by default, moves, real-pointer tap
+selection with the pattern on, pause live, Sanfte Reize, Kombi isolation; screenshots `mot_*`),
+`tests/hint_overlap_all_test.py` (balance words+mbg, flash mbg, mot mbg), `tests/text_wrap_audit_test.py` (nat/mot-mbg).
