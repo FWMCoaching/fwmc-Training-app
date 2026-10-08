@@ -57,7 +57,7 @@ shows only when `link` is set (empty for now - Fabian names a product later).
 Test: `tests/farbfelder_1007_test.py`; screenshots `tests/screenshots/farbfelder/`.
 
 ## Reize A-E (Fabian 07.10. 21:53, built the same night)
-Four more entries in the same "Modus" row (8 modes, 2 per row) plus one option.
+Four more entries in the same "Modus" row (8 modes, 2 per row; 9 since Einblenden) plus one option.
 State: `ffGilt` (gesagt|gezeigt, default gesagt), `ffMix` (`FF_MIXES` key,
 default ausgewogen), `ffFlip` (0|2|3, default 0) - in snapshot/normalize, so
 presets, Kombi blocks and Cardio guests carry them. Pure rules (exposed on
@@ -157,3 +157,37 @@ follows the pointer, source `.ff-drag-src`, target `.ff-drop-target`, drop swaps
 drag is swallowed. Hand rules are keyed by colour and move with it. The edge
 swipe back ignores touches that start on `.ff-layout-grid`.
 Test: `tests/farbfelder_tippen_1008_test.py`, screenshots `tests/screenshots/farbfelder_tippen/`.
+
+## Einblenden (Fabian 08.10., "immer nur ein Feld angeblendet")
+9th mode `einblenden` in the same "Modus" row, placed right after Leuchten
+("Einblenden" / small "nur das Feld ist zu sehen"); with 9 tiles the last one
+(Sehen und Hören) spans the row (`.ff-mode-row>.choice:last-child:nth-child(odd)`,
+also on the Cardio guest mode row).
+- Run: after the 3-2-1 the full grid shows for `FF_ORIENT_S` = 2 s with caption
+  "So liegen deine Felder" (payload `phase: "orient"`); then the stage stays
+  white (no faded grid, resting/blank frames draw nothing) and only the shown
+  field(s) appear at their grid place in full colour (same rounded rect, no ring).
+  A live tempo change does not repeat the orientation (`ffSkipOrient`).
+- "Wie viele Felder" (`#ffCountGroup`, only for this mode), state `ffCount`
+  (`FF_COUNTS`: eins "Nur eins" / wechsel "Im Wechsel" = default / phasen
+  "Phasenweise") in DEFAULTS/snapshot/normalize, so presets, Kombi blocks and the
+  Cardio guest (`count`, same row) carry it. `ffEinCount()`: Wechsel = 50/50,
+  never more than `FF_COUNT_RUN_MAX` = 3 of one count in a row; Phasen = blocks of
+  `FF_COUNT_PHASE` = 6 single, then 6 double, ... Two fields always differ; the
+  exact previous set is never repeated.
+- Payload `{ fields, count, target: fields[0], targets }`. L/R badge and Hände
+  (caption + spoken) only on single fields; two fields = both feet, no badge.
+  No Rhythmus-Umkehr (not in FF_FLIP_MODES).
+- Tempo/Dauer/Feineinstellungen/Sanfte Reize: the shared VT ones (vtShowS,
+  randInterval, cross-fade), nothing of its own.
+- Antippen: orientation opens no window (taps ignored); one field as Leuchten;
+  two fields (`cur.targets/got`): each shown field counts once, right when both
+  came (rt = last needed tap), a tap on a field not shown = wrong, only one of
+  two = missed. A tap on an empty spot gets a grey neutral ring (white would
+  vanish on the white stage); Haken & Kreuz as before.
+- History note `Einblenden · ein Feld | ein und zwei Felder im Wechsel | … phasenweise`
+  (`FF_COUNT_NOTES`). Kombi block rows of Farbfelder now name the mode
+  ("Farbfelder · Einblenden", for every mode).
+- Test hook: `window.__ffLastDrawn` (mode, shown fields, phase / "rest").
+Test: `tests/farbfelder_einblenden_1008_test.py`, screenshots
+`tests/screenshots/farbfelder_einblenden/`.

@@ -186,7 +186,7 @@ async def main():
         await pg.reload(); await pg.wait_for_timeout(400)
         await open_ff(pg)
         await pg.click('[data-ff-answer="treten"]'); await pg.wait_for_timeout(60)
-        await pg.locator("#ffLayoutGrid").scroll_into_view_if_needed()
+        await pg.evaluate("() => document.getElementById('ffLayoutGrid').scrollIntoView({block: 'center'})"); await pg.wait_for_timeout(100)  # centre: the sticky start bar must not cover the bottom row
         x0, y0 = await cell_center(pg, 0); x3, y3 = await cell_center(pg, 3)
         await pg.mouse.move(x0, y0); await pg.mouse.down()
         await pg.mouse.move(x0 + 3, y0 + 3); await pg.wait_for_timeout(30)

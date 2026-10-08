@@ -101,6 +101,11 @@ async def main():
                     await pg.evaluate("() => ['[data-ff-mode=sehenhoeren]','[data-ff-flip=\"2\"]'].forEach(s => document.querySelector(s).click())")
                     await pg.wait_for_timeout(100)
                     await audit(pg, f"{w}px{ts_tag(ts)} visual/farbfelder-sehenhoeren", problems)
+                    # Einblenden (2026-10-08): "Wie viele Felder" row
+                    await pg.evaluate("() => ['[data-ff-mode=einblenden]','[data-ff-count=phasen]'].forEach(s => document.querySelector(s).click())")
+                    await pg.wait_for_timeout(100)
+                    await audit(pg, f"{w}px{ts_tag(ts)} visual/farbfelder-einblenden", problems)
+                    await pg.evaluate("() => document.querySelector('[data-ff-count=wechsel]').click()")
                     await pg.evaluate("() => ['[data-ff-hands=\"0\"]','[data-ff-flip=\"0\"]','[data-ff-mode=leuchten]'].forEach(s => document.querySelector(s).click())")
                     # Hütchen · Farbe + Zahl ready screen (2026-10-07): Anzahl Felder, Hilfsmittel
                     await pg.click("#backToHome"); await pg.wait_for_timeout(150)

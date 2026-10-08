@@ -4065,8 +4065,9 @@
   <div id="ffSettings" hidden>
     <div class="group">
       <div class="group-label">Modus</div>
-      <div class="choice-row two" id="ffModeRow" role="group" aria-label="Modus">
+      <div class="choice-row two ff-mode-row" id="ffModeRow" role="group" aria-label="Modus">
         <button type="button" class="choice" data-ff-mode="leuchten">Leuchten<small>ein Feld leuchtet auf</small></button>
+        <button type="button" class="choice" data-ff-mode="einblenden">Einblenden<small>nur das Feld ist zu sehen</small></button>
         <button type="button" class="choice" data-ff-mode="regeln">Regeln<small>das Symbol sagt, wohin</small></button>
         <button type="button" class="choice" data-ff-mode="leer">Das leere Feld<small>tritt aufs freie Feld</small></button>
         <button type="button" class="choice" data-ff-mode="abfolge">Abfolge merken<small>Folge nachtreten</small></button>
@@ -4090,6 +4091,16 @@
         <div class="choice-row"><button type="button" class="choice" data-cvd-ex="farbfelder" data-cvd-kind="fb" data-cvd-val="1">An</button><button type="button" class="choice" data-cvd-ex="farbfelder" data-cvd-kind="fb" data-cvd-val="0">Aus</button></div>
         <div class="group-help cvd-status" data-cvd-status="farbfelder:fb"></div>
       </div>
+    </div>
+
+    <div class="group" id="ffCountGroup" hidden>
+      <div class="group-label">Wie viele Felder</div>
+      <div class="choice-row" id="ffCountRow" role="group" aria-label="Wie viele Felder">
+        <button type="button" class="choice" data-ff-count="eins">Nur eins<small>immer ein Feld</small></button>
+        <button type="button" class="choice" data-ff-count="wechsel">Im Wechsel<small>eins und zwei</small></button>
+        <button type="button" class="choice" data-ff-count="phasen">Phasenweise<small>erst eins, dann zwei</small></button>
+      </div>
+      <div class="group-help" id="ffCountHelp"></div>
     </div>
 
     <div class="group" id="ffLevelGroup" hidden>

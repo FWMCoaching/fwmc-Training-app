@@ -2974,6 +2974,7 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 .ff-rules{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .ff-rules li{display:flex;align-items:center;gap:10px;font-size:calc(14px * var(--ts,1));color:var(--ink);line-height:1.35}
 .ff-rules svg{width:22px;height:22px;flex:none}
+.ff-mode-row>.choice:last-child:nth-child(odd){grid-column:1/-1}
 .ff-layout-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-width:280px}
 .ff-cell{position:relative;min-height:64px;border:none;border-radius:10px;font:inherit;font-weight:700;font-size:calc(14px * var(--ts,1));cursor:grab;box-shadow:0 0 0 1px rgba(0,0,0,.08);transition:box-shadow .12s ease,transform .15s ease,opacity .15s ease;
   display:flex;align-items:center;justify-content:center;padding:8px 26px;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}

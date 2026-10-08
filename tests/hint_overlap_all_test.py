@@ -58,7 +58,7 @@ async def run_ff(b,vp):
     errs=[]; pg.on("pageerror", lambda e: errs.append(str(e)))
     await pg.goto(URL); await pg.wait_for_timeout(250)
     # + the Reize (2026-10-07 night): Ansage, Farbwort, Fuß und Hand, Sehen und Hören
-    for mode in ["leuchten","regeln","leer","abfolge","ansage","farbwort","fusshand","sehenhoeren"]:
+    for mode in ["leuchten","einblenden","regeln","leer","abfolge","ansage","farbwort","fusshand","sehenhoeren"]:
         await pg.click('.excard[data-exercise="farbfelder"]'); await pg.wait_for_timeout(150)
         await pg.evaluate("(m)=>{document.querySelector(`[data-ff-mode=${m}]`).click();document.querySelector('[data-ff-foot=wechsel]').click();document.querySelector('[data-ff-flip=\"2\"]').click()}",mode)
         await pg.evaluate("()=>document.getElementById('startBtn').click()")

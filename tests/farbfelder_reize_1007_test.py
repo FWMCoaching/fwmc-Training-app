@@ -119,7 +119,7 @@ async def main():
 
         # ---- ready screen: groups per mode ----
         await open_ff(pg)
-        check("8 modes in the Modus row", await pg.locator("#ffModeRow [data-ff-mode]").count() == 8)
+        check("9 modes in the Modus row (+ Einblenden 08.10.)", await pg.locator("#ffModeRow [data-ff-mode]").count() == 9)
         await pg.click('[data-ff-mode="sehenhoeren"]'); await pg.wait_for_timeout(80)
         check("Sehen und Hören: gilt + Mischung + Umkehr visible", await pg.is_visible("#ffGiltGroup") and await pg.is_visible("#ffFlipGroup"))
         await pg.click('[data-ff-mode="farbwort"]'); await pg.wait_for_timeout(80)
@@ -236,7 +236,7 @@ async def main():
         await pg.check("#cardioAddonEnableToggle"); await pg.wait_for_timeout(150)
         await pg.check('#cardioAddonPoolGrid [data-pool="farbfelder"]'); await pg.wait_for_timeout(150)
         panel = pg.locator("#cardioAddonPerType")
-        check("Cardio settings: 8 Farbfelder modes", await panel.locator('[data-mode-row="farbfelder"] [data-mode]').count() == 8)
+        check("Cardio settings: 9 Farbfelder modes", await panel.locator('[data-mode-row="farbfelder"] [data-mode]').count() == 9)
         await panel.locator('[data-mode-row="farbfelder"] [data-mode="sehenhoeren"]').click(); await pg.wait_for_timeout(120)
         check("Cardio settings: gilt + Mischung + Umkehr for Sehen und Hören",
               await panel.locator('[data-balf="gilt"]').count() == 2 and await panel.locator('[data-balf="mix"]').count() == 3 and await panel.locator('[data-balf="flip"]').count() == 3)
