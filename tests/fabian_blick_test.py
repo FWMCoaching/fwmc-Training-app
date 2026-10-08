@@ -219,6 +219,25 @@ def key_of(state):
     return " / ".join(p for p in parts if p)
 
 
+# (history.back() and SWIPE_JS keep the plain pg.evaluate: they act, and a retry would act twice.)
+async def ev(pg, js, arg=None):
+    """pg.evaluate that survives a page navigation in flight (08.10.: under
+    full-suite load a click's navigation could land between click and
+    evaluate - "Execution context was destroyed" - and crash the whole walk).
+    Waits for the new document and evaluates again, at most twice."""
+    for attempt in range(3):
+        try:
+            return await (pg.evaluate(js) if arg is None else pg.evaluate(js, arg))
+        except Exception as e:
+            if attempt == 2 or "Execution context was destroyed" not in str(e):
+                raise
+            try:
+                await pg.wait_for_load_state("load", timeout=10000)
+            except Exception:
+                pass
+            await pg.wait_for_timeout(300)
+
+
 async def new_page(b, w, h, scheme):
     ctx = await b.new_context(viewport={"width": w, "height": h}, color_scheme=scheme,
                               service_workers="block", device_scale_factor=1)
@@ -270,7 +289,7 @@ async def discover(b):
     for e in ENTRIES + ["nav:training", "nav:progress", "nav:more", "nav:gear"]:
         if not await replay(pg, e, []):
             continue
-        st = await pg.evaluate(STATE_JS)
+        st = await ev(pg, STATE_JS)
         k = key_of(st)
         if k and k not in states:
             states[k] = (e, [], e)
@@ -281,10 +300,10 @@ async def discover(b):
             continue
         if not await replay(pg, entry, clicks):
             continue
-        base_state = await pg.evaluate(STATE_JS)
+        base_state = await ev(pg, STATE_JS)
         # Remember how to start the exercise from this screen (player audit).
         if not base_state["player"] and not base_state["sheet"]:
-            sb = await pg.evaluate("""() => { const vis = el => el.getBoundingClientRect().width > 0 && !el.closest('[hidden]');
+            sb = await ev(pg, """() => { const vis = el => el.getBoundingClientRect().width > 0 && !el.closest('[hidden]');
               const s = [...document.querySelectorAll('.screen')].find(e => !e.hidden && vis(e));
               let b = s && [...s.querySelectorAll('button')].find(x => vis(x) && !x.disabled && x.textContent.trim() === 'Training starten');
               if (!b) return null; if (b.id) return '#' + CSS.escape(b.id);
@@ -294,7 +313,7 @@ async def discover(b):
               return parts.join(' > '); }""")
             if sb and key_of(base_state) not in starts:
                 starts[key_of(base_state)] = (entry, clicks + [sb])
-        cands = await pg.evaluate(CANDIDATES_JS, SKIP_TEXT.pattern)
+        cands = await ev(pg, CANDIDATES_JS, SKIP_TEXT.pattern)
         dirty = False
         for c in cands:
             if dirty:
@@ -306,7 +325,7 @@ async def discover(b):
             except Exception:
                 continue
             await pg.wait_for_timeout(160)
-            st = await pg.evaluate(STATE_JS)
+            st = await ev(pg, STATE_JS)
             if st == base_state:
                 continue
             dirty = True
@@ -366,7 +385,7 @@ async def scroll_check(pg):
     then check the page still reacts (Fabian 2026-10-05: Grundeinstellungen
     froze after scrolling to the top)."""
     try:
-        return await asyncio.wait_for(pg.evaluate(SCROLL_JS), timeout=8)
+        return await asyncio.wait_for(ev(pg, SCROLL_JS), timeout=8)
     except Exception as e:
         return [{"cat": "eingefroren", "msg": "Seite hängt nach Scrollen (" + type(e).__name__ + ")", "el": ""}]
 
@@ -400,24 +419,24 @@ async def jump_pass(b, states):
     pg = await ctx.new_page()
     out = []
     async def bad():
-        return await pg.evaluate("window.__fbBad || 0")
+        return await ev(pg, "window.__fbBad || 0")
     for k, (entry, clicks, _) in states.items():
         if k.startswith("sheet:") or "player:" in k:
             continue
         if not await replay(pg, entry, clicks):
             continue
         await pg.wait_for_timeout(450)
-        r1 = await pg.evaluate(JUMP_RECT_JS)
+        r1 = await ev(pg, JUMP_RECT_JS)
         await pg.wait_for_timeout(400)
-        r2 = await pg.evaluate(JUMP_RECT_JS)
+        r2 = await ev(pg, JUMP_RECT_JS)
         w = await bad()
         if w:
             out.append({"cat": "sprung", "state": k, "el": "", "msg": f"Seite beim Hereinschieben breiter als das Handy ({w} px), springt danach zurück"})
         elif r1 and r2 and (abs(r1[0] - r2[0]) > 3 or abs(r1[1] - r2[1]) > 3):
             out.append({"cat": "sprung", "state": k, "el": "", "msg": "Seite verschiebt/vergrößert sich nach dem Hereinschieben"})
-        if not await pg.evaluate(BACK_VISIBLE_JS):
+        if not await ev(pg, BACK_VISIBLE_JS):
             continue
-        await pg.evaluate("window.__fbBad = 0")
+        await ev(pg, "window.__fbBad = 0")
         await pg.evaluate(SWIPE_JS); await pg.wait_for_timeout(600)
         w = await bad()
         if w:
@@ -442,10 +461,10 @@ async def audit_config(b, cfg, states, starts):
         if is_start:
             await pg.wait_for_timeout(1800)
         await pg.mouse.move(0, 0)  # no :hover left on the last clicked button
-        st = await pg.evaluate(STATE_JS)
+        st = await ev(pg, STATE_JS)
         if is_start and not st["player"]:
             continue  # starts a sheet/confirm instead; covered elsewhere
-        res = await pg.evaluate(AUDIT_JS, {"isStart": is_start})
+        res = await ev(pg, AUDIT_JS, {"isStart": is_start})
         if not is_start:
             res["findings"] += await scroll_check(pg)
         infos[k] = res["info"]
@@ -458,22 +477,22 @@ async def audit_config(b, cfg, states, starts):
         except Exception:
             pass
         if cfg == CONFIGS[0] and not is_start and not st["sheet"] and not st["player"]:
-            lp = await pg.evaluate(LONGPRESS_JS)
+            lp = await ev(pg, LONGPRESS_JS)
             for m in lp or []:
                 findings.append({"cat": "lange", "state": k, "el": "", "msg": m})
             if lp is not None and not await replay(pg, entry, clicks):
                 continue
         if cfg == CONFIGS[0] and not is_start and not st["sheet"] and not st["player"]:
-            for fid in await pg.evaluate(FORM_OPENERS_JS):
-                await pg.evaluate(f"() => document.getElementById('{fid}').scrollIntoView({{block: 'end'}})")
+            for fid in await ev(pg, FORM_OPENERS_JS):
+                await ev(pg, f"() => document.getElementById('{fid}').scrollIntoView({{block: 'end'}})")
                 await pg.wait_for_timeout(120)
-                for m in await pg.evaluate(FORM_CHECK_JS, fid):
+                for m in await ev(pg, FORM_CHECK_JS, fid):
                     findings.append({"cat": "verdeckt", "state": k, "el": "#" + fid, "msg": m})
         # zurueck (Fabian 2026-10-06): wherever a ‹ is visible, swiping back
         # (Safari edge swipe = browser back, Android back) must go back too.
-        if cfg == CONFIGS[0] and not is_start and not st["sheet"] and not st["player"] and await pg.evaluate(BACK_VISIBLE_JS):
+        if cfg == CONFIGS[0] and not is_start and not st["sheet"] and not st["player"] and await ev(pg, BACK_VISIBLE_JS):
             await pg.evaluate("history.back()"); await pg.wait_for_timeout(350)
-            after = await pg.evaluate(STATE_JS)
+            after = await ev(pg, STATE_JS)
             if "localhost" not in pg.url or after["screen"] == st["screen"] or not after["screen"]:
                 findings.append({"cat": "zurueck", "state": k, "el": "",
                                  "msg": "‹ sichtbar, aber Zurückwischen/Zurück-Taste bleibt auf der Seite oder verlässt die App"})
