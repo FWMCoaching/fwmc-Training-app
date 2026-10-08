@@ -18,7 +18,7 @@ async def main():
     errors = []
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args=["--no-sandbox"])
-        ctx = await b.new_context(viewport={"width": 390, "height": 844}, service_workers="block")
+        ctx = await b.new_context(viewport={"width": 600, "height": 844}, service_workers="block")  # 08.10.: >480 px shows the long status text (barCompact)
         pg = await ctx.new_page()
         pg.on("pageerror", lambda e: errors.append("pageerror: " + str(e)))
         pg.on("console", lambda m: errors.append("console: " + m.text) if m.type == "error" else None)

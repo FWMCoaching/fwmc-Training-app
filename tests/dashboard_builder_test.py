@@ -45,7 +45,7 @@ async def main():
 
         # 08.10.: the Baukasten got a 6th kind "Neuro-Aktivierung" (data-kind="neuro").
         kinds = await pg.eval_on_selector_all("#kindRow [data-kind]", "els => els.map(e => e.dataset.kind)")
-        print("kind row with 6 areas:", kinds == ["visual", "movement", "cardio", "workout", "free", "neuro"], kinds)
+        print("kind row with 7 kinds:", kinds == ["visual", "movement", "cardio", "workout", "free", "neuro", "unlock"], kinds)
         print("visual builder shown by default:", await pg.is_visible("#visualBuilder") and await pg.is_hidden("#movementBuilder"))
 
         # ---- Movement ----
