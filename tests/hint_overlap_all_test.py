@@ -9,7 +9,7 @@
 import asyncio, sys
 from playwright.async_api import async_playwright
 URL="http://localhost:8845/index.html?bereich=visual"
-TEST=["ab","alarm","anti","antizip","bisect","corsi","dsst","flanker","gng","hick","iconic","kippbild","merk","navon","posner","pvt","reakt","rotation","search","simon","stop","stroop","subitize","testNback","trail","ts","ufov","vorlauf","wcst"]
+TEST=["ab","alarm","anti","antizip","bisect","corsi","dsst","eyecount","flanker","gng","hick","iconic","kippbild","merk","navon","posner","pvt","reakt","rotation","search","simon","stop","stroop","subitize","testNback","trail","ts","ufov","vorlauf","wcst"]
 NAT=[("remember","#rememberOpenFixed"),("blitz","#blitzOpenBtn"),("flash","#flashOpenConstant"),("mot","#motOpenSpeed"),("balance","#balanceOpenBtn")]
 JS="""(p)=>{const pl=document.getElementById(p+'Player'); if(!pl||pl.hidden) return null;
 const hint=document.getElementById(p+'Hint'); const bar=document.getElementById(p+'PlayerBar');
@@ -26,6 +26,8 @@ BAD=[]
 async def run(b,vp,p,opener=None,worst=False):
     ctx=await b.new_context(viewport=vp,service_workers="block"); pg=await ctx.new_page()
     await pg.add_init_script("localStorage.setItem('fwmc-test-unlocked','true');localStorage.setItem('fwmc-tips-seen','true')")
+    # Farbbrille exercises start only once calibrated (eyecount, 2026-10-08)
+    await pg.add_init_script("localStorage.setItem('fwmc-anaglyph-v1',JSON.stringify({left:'rot',red:'#ff0000',green:'#00ff00',calibrated:true,hintOff:true}))")
     if worst: await pg.add_init_script("Math.random=()=>0")
     errs=[]; pg.on("pageerror", lambda e: errs.append(str(e)))
     await pg.goto(URL); await pg.wait_for_timeout(250)

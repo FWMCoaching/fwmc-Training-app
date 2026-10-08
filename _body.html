@@ -1815,6 +1815,11 @@
       <span class="fc-title">Kippbild-Test</span>
       <span class="fc-desc">Ein einfacher Drahtw&uuml;rfel (Necker-W&uuml;rfel) wird dauerhaft angezeigt &ndash; das Bild selbst &auml;ndert sich nie, aber deine Wahrnehmung seiner Ausrichtung kippt von selbst immer wieder um. Tippe jedes Mal, wenn du so einen Wechsel bemerkst. Klassisches Verfahren zur multistabilen Wahrnehmung (Necker-W&uuml;rfel, Necker 1832) &ndash; wie oft das kippt, ist von Mensch zu Mensch sehr unterschiedlich und weder Erfolg noch Misserfolg.</span>
     </button>
+    <button class="featured-card" id="eyecountOpenBtn">
+      <span class="fc-title">Jedes Auge z&auml;hlt</span>
+      <span class="fc-desc">Mit Rot-Gr&uuml;n-Brille: Auf schwarzem Grund erscheinen nacheinander Punkte, jeder ist nur f&uuml;r ein Auge sichtbar. Tippe jeden Punkt an, sobald du ihn siehst &ndash; am Ende siehst du, wie viele Punkte jedes Auge erwischt hat und wie schnell.</span>
+      <span class="fc-meta" id="eyecountBestHint"></span>
+    </button>
   </section>
 
   <section class="history" id="testHistorySection" hidden>
@@ -2428,6 +2433,66 @@
   </details>
 
   <button class="start-btn" id="kippbildReadyStartBtn">Training starten</button>
+</div>
+
+<div class="screen" id="eyecountReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="eyecountReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Jedes Auge z&auml;hlt</h1>
+  <p class="page-sub">Setz deine Rot-Gr&uuml;n-Brille auf. Auf schwarzem Grund erscheinen nacheinander Punkte &ndash; jeder ist nur f&uuml;r ein Auge sichtbar, das andere Auge sieht ihn nicht. Lass den Blick auf dem Kreuz in der Mitte ruhen und tippe jeden Punkt an, sobald du ihn siehst. Am Ende siehst du f&uuml;r jedes Auge, wie viele Punkte du erwischt hast und wie schnell.</p>
+
+  <div class="hilfsmittel-note" id="eyecountHilfsmittel" data-hilfsmittel="farbbrille" hidden>
+    <span class="hilfsmittel-kicker">Hilfsmittel</span>
+    <span class="hilfsmittel-text"></span>
+    <a class="text-link small hilfsmittel-link" href="#" target="_blank" rel="noopener" hidden>Passendes Hilfsmittel ansehen &rarr;</a>
+    <button class="text-link small anaglyph-set-link" type="button" data-anaglyph-calib>Farbbrille einstellen</button>
+  </div>
+
+  <div class="anaglyph-lock" id="eyecountLock" hidden>
+    <div class="anaglyph-lock-title">Erst die Farbbrille abgleichen</div>
+    <div class="group-help">Einmal pro Ger&auml;t, dauert etwa eine Minute: Du stellst Rot und Gr&uuml;n so ein, dass jedes Auge nur seine Farbe sieht.</div>
+    <button class="start-btn secondary" type="button" data-anaglyph-calib>Jetzt abgleichen</button>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Dauer</div>
+    <div class="choice-row" id="eyecountLengthRow">
+      <button class="choice" data-eyecount-length="1">1 Min</button>
+      <button class="choice" data-eyecount-length="2">2 Min</button>
+      <button class="choice" data-eyecount-length="3">3 Min</button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Tempo</div>
+    <div class="choice-row" id="eyecountTempoRow">
+      <button class="choice" data-eyecount-tempo="leicht">Leicht<small>2 s pro Punkt</small></button>
+      <button class="choice" data-eyecount-tempo="mittel">Mittel<small>1,4 s pro Punkt</small></button>
+      <button class="choice" data-eyecount-tempo="schwer">Schwer<small>0,9 s pro Punkt</small></button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Verteilung</div>
+    <div class="choice-row" id="eyecountSplitRow">
+      <button class="choice" data-eyecount-split="gleich">Ausgewogen<small>50 / 50</small></button>
+      <button class="choice" data-eyecount-split="links">Linkes Auge<small>bekommt 70 %</small></button>
+      <button class="choice" data-eyecount-split="rechts">Rechtes Auge<small>bekommt 70 %</small></button>
+    </div>
+    <div class="group-help">Welches Auge mehr Punkte bekommt. Die Seiten deiner Brille stellst du unter &bdquo;Farbbrille einstellen&ldquo; ein.</div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Gr&ouml;&szlig;e der Punkte</div>
+    <div class="choice-row" id="eyecountSizeRow">
+      <button class="choice" data-eyecount-size="klein">Klein</button>
+      <button class="choice" data-eyecount-size="mittel">Mittel</button>
+      <button class="choice" data-eyecount-size="gross">Gro&szlig;</button>
+    </div>
+  </div>
+
+  <button class="start-btn" id="eyecountReadyStartBtn">Training starten</button>
 </div>
 
 <div class="screen" id="simonReady" hidden>
@@ -6389,6 +6454,42 @@
   </div>
 </div>
 
+<div class="player" id="eyecountPlayer" hidden>
+  <div class="eyecount-stage" id="eyecountStage">
+    <div class="remember-hint" id="eyecountHint"></div>
+    <div class="eyecount-cross" id="eyecountCross" aria-hidden="true"></div>
+    <div class="eyecount-dot" id="eyecountDot" hidden></div>
+  </div>
+  <div class="pause-overlay" id="eyecountPauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <p class="group-help">Nimm die Brille kurz ab, wenn du magst. Mit &bdquo;Weiter&ldquo; kommt der n&auml;chste Punkt.</p>
+      <button class="start-btn" id="eyecountResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="eyecountPlayerBar">
+    <button id="eyecountBackBtn">&#10005; Beenden</button>
+    <button id="eyecountPauseBtn">Pause</button>
+    <span class="player-status" id="eyecountProgressEl"></span>
+    <button id="eyecountFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="eyecountFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="eyecountFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="eyecountFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="eyecountDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="eyecountDoneSummary"></p>
+    <div class="eyecount-eyes" id="eyecountEyes"></div>
+    <div class="rating" id="eyecountRating"></div>
+    <button class="again" id="eyecountAgainBtn">Nochmal</button>
+    <button class="back" id="eyecountDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
 <div class="player" id="simonPlayer" hidden>
   <div class="simon-stage" id="simonStage">
     <div class="remember-hint" id="simonHint"></div>
@@ -7387,6 +7488,20 @@
       <button class="text-link small" type="button" id="masterSoftResetBtn" hidden>Eigene Einstellungen der &Uuml;bungen zur&uuml;cksetzen</button>
     </div>
 
+    <div class="group test-teaser" id="masterAnaglyphGroup" hidden>
+      <div class="group-label">Farbbrille</div>
+      <div class="group-help">F&uuml;r &Uuml;bungen mit Rot-Gr&uuml;n-Brille. Einmal einstellen, gilt dann f&uuml;r alle Farbbrillen-&Uuml;bungen auf diesem Ger&auml;t.</div>
+      <div class="group-label">Welches Glas sitzt links?</div>
+      <div class="choice-row two" id="masterAnaglyphSideRow">
+        <button class="choice" type="button" data-anaglyph-left="rot">Rot</button>
+        <button class="choice" type="button" data-anaglyph-left="gruen">Gr&uuml;n</button>
+      </div>
+      <div class="group-help">Brille umgedreht? Dann hier tauschen.</div>
+      <div class="group-help anaglyph-status" id="masterAnaglyphStatus"></div>
+      <button class="start-btn secondary" type="button" id="masterAnaglyphCalibBtn" data-anaglyph-calib>Farbbrille abgleichen</button>
+      <label class="checkbox-row tap-row"><input type="checkbox" id="masterAnaglyphHintCheck"> Vor jeder Farbbrillen-&Uuml;bung an Helligkeit, Night Shift und True Tone erinnern</label>
+    </div>
+
     <div class="group">
       <div class="group-label">Feineinstellungen</div>
       <div class="group-help">Gilt f&uuml;r alle &Uuml;bungen mit eigener Hintergrundfarbe. Neue Vorgabe wirkt sofort als Startwert &uuml;berall dort, wo noch keine eigene Hintergrundfarbe gew&auml;hlt wurde &ndash; einmal pro &Uuml;bung selbst ge&auml;ndert, bleibt diese eigene Wahl bestehen. In jeder &Uuml;bung steht dazu au&szlig;erdem ein &bdquo;Wie in den Grundeinstellungen&ldquo;-Button bereit, um jederzeit zur&uuml;ckzuwechseln.</div>
@@ -7484,6 +7599,62 @@
     </div>
 
     <button class="start-btn" id="masterSettingsCloseBtn">Schlie&szlig;en</button>
+  </div>
+</div>
+
+<div class="sheet" id="anaglyphHintSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="anaglyphHintTitle">
+    <h2 id="anaglyphHintTitle">F&uuml;r die Farbbrille</h2>
+    <p class="group-help">Bildschirm ganz hell, Night Shift und True Tone aus (Kontrollzentrum bzw. Einstellungen &rsaquo; Anzeige &amp; Helligkeit). Sonst sieht ein Auge die Farbe des anderen mit.</p>
+    <p class="group-help">Dann die Brille aufsetzen.</p>
+    <button class="start-btn" type="button" id="anaglyphHintOkBtn">Erledigt</button>
+    <button class="text-link anaglyph-hint-off" type="button" id="anaglyphHintOffBtn">Nicht mehr anzeigen</button>
+  </div>
+</div>
+
+<div class="anaglyph-calib" id="anaglyphCalib" role="dialog" aria-modal="true" aria-labelledby="anaglyphCalibTitle" hidden>
+  <div class="anaglyph-calib-bar">
+    <button type="button" class="anaglyph-calib-close" id="anaglyphCalibCloseBtn">&#10005; Schlie&szlig;en</button>
+    <span class="anaglyph-calib-step" id="anaglyphCalibStepEl"></span>
+  </div>
+  <div class="anaglyph-calib-body">
+    <h2 class="anaglyph-calib-title" id="anaglyphCalibTitle"></h2>
+    <p class="anaglyph-calib-text" id="anaglyphCalibText"></p>
+
+    <div class="anaglyph-calib-pane" data-calib-pane="side">
+      <div class="anaglyph-calib-choice" id="anaglyphCalibSideRow">
+        <button type="button" data-anaglyph-left="rot">Links Rot<small>rechts Gr&uuml;n</small></button>
+        <button type="button" data-anaglyph-left="gruen">Links Gr&uuml;n<small>rechts Rot</small></button>
+      </div>
+    </div>
+
+    <div class="anaglyph-calib-pane" data-calib-pane="tune" hidden>
+      <div class="anaglyph-calib-square" id="anaglyphCalibSquare"></div>
+      <div class="anaglyph-calib-label">Helligkeit</div>
+      <div class="anaglyph-calib-slider">
+        <button type="button" class="anaglyph-calib-step-btn" data-calib-nudge="v:-2" aria-label="Dunkler">&minus;</button>
+        <input type="range" id="anaglyphCalibV" min="10" max="100" step="1" aria-label="Helligkeit der Farbe">
+        <button type="button" class="anaglyph-calib-step-btn" data-calib-nudge="v:2" aria-label="Heller">+</button>
+      </div>
+      <div class="anaglyph-calib-label">Farbton</div>
+      <div class="anaglyph-calib-slider">
+        <button type="button" class="anaglyph-calib-step-btn" data-calib-nudge="h:-1" aria-label="Farbton zur einen Seite">&minus;</button>
+        <input type="range" id="anaglyphCalibH" min="-20" max="20" step="1" aria-label="Farbton der Farbe">
+        <button type="button" class="anaglyph-calib-step-btn" data-calib-nudge="h:1" aria-label="Farbton zur anderen Seite">+</button>
+      </div>
+    </div>
+
+    <div class="anaglyph-calib-pane" data-calib-pane="check" hidden>
+      <div class="anaglyph-calib-words">
+        <span class="anaglyph-calib-word" id="anaglyphCalibWordL">Links</span>
+        <span class="anaglyph-calib-word" id="anaglyphCalibWordR">Rechts</span>
+      </div>
+    </div>
+
+    <div class="anaglyph-calib-actions">
+      <button type="button" class="anaglyph-calib-btn secondary" id="anaglyphCalibPrevBtn">Zur&uuml;ck</button>
+      <button type="button" class="anaglyph-calib-btn" id="anaglyphCalibNextBtn">Weiter</button>
+    </div>
   </div>
 </div>
 

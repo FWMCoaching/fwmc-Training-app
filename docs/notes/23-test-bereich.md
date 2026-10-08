@@ -1638,6 +1638,16 @@ doesn't:
   rects never actually overlap, rather than trusting a fixed offset.
   Test: `tests/kippbild_test.py`.
 
+- **Jedes Auge zählt (Farbbrille)** (2026-10-08, built on Fabian's request,
+  not by the Routine): red-green anaglyph glasses; on a black stage dots
+  appear one at a time in the calibrated red or green, so only one eye sees
+  each; tap it; result per eye (found/shown, mean time) plus one neutral
+  sentence. Needs the shared Farbbrille settings + mandatory calibration in
+  the Grundeinstellungen (`fwmc-anaglyph-v1`, `#anaglyphCalib`,
+  `anaglyphGate`/`anaglyphStart`) and shows the pre-start brightness/Night
+  Shift/True Tone hint. Everything in docs/notes/30-farbbrille.md. Test:
+  `tests/farbbrille_1008_test.py`.
+
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
 - **Linienhalbierungs-Test: no "best" concept really fits a bias

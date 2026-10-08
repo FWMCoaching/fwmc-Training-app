@@ -279,6 +279,7 @@ everywhere goes here, short.
 | 27-trainingsplanung | Plan model (phases, weeks A-D, pauses, weekOps, Sonderwochen, dayOv), planWeekMap, Mein Plan, scope question, trainer plan code + versions; nothing changes training automatically |
 | 28-farbfelder | Farbfelder (VT, 2x2 mat grid): modes, rule function, Abfolge timing, Kombi/Cardio wiring, generic Hilfsmittel note |
 | 29-huetchen-farbe-zahl | Hütchen · Farbe + Zahl (VT, 3-6 numbered fields): cnFields, colour cap, drawing, Kombi/Cardio/preset wiring |
+| 30-farbbrille | Farbbrille (Rot-Grün-Brille, Test-Bereich): shared settings `fwmc-anaglyph-v1`, mandatory calibration `#anaglyphCalib`, lock `anaglyphGate`/`anaglyphStart`, pre-start hint, exercise "Jedes Auge zählt" |
 
 ## Must-do rules collected from the detail notes
 

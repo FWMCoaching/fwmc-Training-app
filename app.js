@@ -2670,6 +2670,7 @@
     kippbildFsBtn: $("kippbildFsBtn"), kippbildFsHint: $("kippbildFsHint"), kippbildFsHintOpenBtn: $("kippbildFsHintOpenBtn"), kippbildFsHintClose: $("kippbildFsHintClose"),
     kippbildDonePanel: $("kippbildDonePanel"), kippbildDoneSummary: $("kippbildDoneSummary"), kippbildRating: $("kippbildRating"),
     kippbildAgainBtn: $("kippbildAgainBtn"), kippbildDoneBackBtn: $("kippbildDoneBackBtn"),
+    eyecountReady: $("eyecountReady"), eyecountPlayer: $("eyecountPlayer"),
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
@@ -2953,7 +2954,7 @@
 
   els.trainingHub = $("trainingHub"); els.moreScreen = $("moreScreen");
   els.freeHome = $("freeHome"); els.freeReady = $("freeReady"); els.freeEdit = $("freeEdit"); els.freePlayer = $("freePlayer");
-  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady"];
+  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady", "eyecountReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -4844,6 +4845,11 @@
       text: "Du brauchst: eine Farbmatte mit 4 Feldern oder 4 farbige Hütchen, Bälle oder Zettel auf dem Boden, angeordnet wie hier eingestellt.",
       link: "",
     },
+    // Farbbrille exercises (Test-Bereich); a shop link can go into `link`.
+    farbbrille: {
+      text: "Du brauchst eine Rot-Grün-Brille.",
+      link: "",
+    },
   };
   function renderHilfsmittel(exId) {
     const box = document.getElementById("hilfsmittelNote");
@@ -6428,6 +6434,7 @@
     els.pvtPlayer.hidden = true;
     els.bisectPlayer.hidden = true;
     els.kippbildPlayer.hidden = true;
+    els.eyecountPlayer.hidden = true;
     els.workoutPlayer.hidden = true;
     els.cardioPlayer.hidden = true;
     els.freePlayer.hidden = true;
@@ -8260,6 +8267,7 @@
     masterSettingsReturnFocus = document.activeElement;
     syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; syncMasterBgUI(); syncMasterPauseUI(); syncMasterVolumeUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
     syncMasterSeeUI();
+    syncAnaglyphMasterUI();
     els.masterSettingsSheet.hidden = false;
     // openMasterSettings("someGroupId") opens the sheet at that section
     // (the "Sanfte Reize sind an" notes, the Nichtraucher-Pause info).
@@ -25523,6 +25531,536 @@
   els.kippbildAgainBtn.addEventListener("click", () => { els.kippbildDonePanel.hidden = true; startKippbildGame(); });
   els.kippbildDoneBackBtn.addEventListener("click", () => { els.kippbildPlayer.hidden = true; els.kippbildDonePanel.hidden = true; showScreen("testHome"); });
   wireFullscreen({ player: els.kippbildPlayer, btn: els.kippbildFsBtn, hint: els.kippbildFsHint, hintOpen: els.kippbildFsHintOpenBtn, hintClose: els.kippbildFsHintClose });
+
+  // ==== Farbbrille (Rot-Grün-Brille, Fabian 2026-10-08) ====
+  // Shared settings for every exercise that is played with red-green
+  // anaglyph glasses: which lens sits left (glasses can be flipped) and the
+  // calibrated red/green (each colour tuned until the eye behind the OTHER
+  // lens no longer sees it). One key per device, part of the backup.
+  // Calibration is mandatory (Fabian 08.10.): until it was done once, every
+  // Farbbrille start is locked (anaglyphGate). Details: docs/notes/30.
+  const ANAGLYPH_KEY = "fwmc-anaglyph-v1";
+  const ANAGLYPH_DEFAULT = { left: "rot", red: "#ff0000", green: "#00ff00", calibrated: false, hintOff: false,
+    redCal: { v: 100, h: 0 }, greenCal: { v: 100, h: 0 }, calibratedAt: null };
+  const anaglyphPrefs = JSON.parse(JSON.stringify(ANAGLYPH_DEFAULT));
+  (function loadAnaglyphPrefs() {
+    const saved = readJSON(ANAGLYPH_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(anaglyphPrefs, saved);
+    if (anaglyphPrefs.left !== "rot" && anaglyphPrefs.left !== "gruen") anaglyphPrefs.left = "rot";
+    const hex = /^#[0-9a-f]{6}$/i;
+    if (!hex.test(anaglyphPrefs.red)) anaglyphPrefs.red = ANAGLYPH_DEFAULT.red;
+    if (!hex.test(anaglyphPrefs.green)) anaglyphPrefs.green = ANAGLYPH_DEFAULT.green;
+    ["redCal", "greenCal"].forEach((k) => {
+      const c = anaglyphPrefs[k];
+      if (!c || typeof c.v !== "number" || typeof c.h !== "number") anaglyphPrefs[k] = { v: 100, h: 0 };
+    });
+    anaglyphPrefs.calibrated = anaglyphPrefs.calibrated === true;
+    anaglyphPrefs.hintOff = anaglyphPrefs.hintOff === true;
+  })();
+  function saveAnaglyphPrefs() { writeJSON(ANAGLYPH_KEY, anaglyphPrefs); }
+  // HSV -> hex; red sits at hue 0, green at 120, the "Farbton" slider shifts
+  // that by up to ±20°, "Helligkeit" is V in percent.
+  function anaglyphHex(base, cal) {
+    const h = (((base + cal.h) % 360) + 360) % 360, v = Math.max(0, Math.min(100, cal.v)) / 100;
+    const f = (n) => { const k = (n + h / 60) % 6; return v - v * Math.max(0, Math.min(k, 4 - k, 1)); };
+    return "#" + [f(5), f(3), f(1)].map((x) => Math.round(x * 255).toString(16).padStart(2, "0")).join("");
+  }
+  // Which colour an eye sees: the eye behind the red lens sees red stimuli
+  // (green ones are blocked and vanish on black), and vice versa.
+  function anaglyphLensOf(eye, prefs) {
+    const p = prefs || anaglyphPrefs;
+    if (eye === "left") return p.left;
+    return p.left === "rot" ? "gruen" : "rot";
+  }
+  function anaglyphColorForEye(eye, prefs) {
+    const p = prefs || anaglyphPrefs;
+    return anaglyphLensOf(eye, p) === "rot" ? p.red : p.green;
+  }
+  function anaglyphReady() { return anaglyphPrefs.calibrated === true; }
+
+  // Lock: a start button of a Farbbrille exercise looks disabled and its
+  // lock box ("Erst die Farbbrille abgleichen" + "Jetzt abgleichen") shows
+  // until the calibration was done once. A later "Mit Farbbrille" switch in
+  // another exercise registers its start button here too.
+  const ANAGLYPH_GATES = [];
+  function anaglyphGate(startBtn, lockEl) {
+    ANAGLYPH_GATES.push({ startBtn, lockEl });
+    syncAnaglyphGates();
+  }
+  function syncAnaglyphGates() {
+    const ok = anaglyphReady();
+    ANAGLYPH_GATES.forEach(({ startBtn, lockEl }) => {
+      startBtn.classList.toggle("is-locked", !ok);
+      startBtn.setAttribute("aria-disabled", ok ? "false" : "true");
+      if (lockEl) lockEl.hidden = ok;
+    });
+  }
+  // Every Farbbrille start goes through here: locked -> calibration;
+  // otherwise the brightness / Night Shift / True Tone hint (until "Nicht
+  // mehr anzeigen"), then the shared 3-2-1 (dark), then the run.
+  let anaglyphHintGo = null;
+  function anaglyphStart(go) {
+    if (!anaglyphReady()) { openAnaglyphCalib(); return; }
+    const run = () => { if (leadInWanted()) runLeadIn(go, true); else go(); };
+    if (anaglyphPrefs.hintOff) { run(); return; }
+    anaglyphHintGo = run;
+    $("anaglyphHintSheet").hidden = false;
+    $("anaglyphHintOkBtn").focus();
+  }
+  function closeAnaglyphHint(start) {
+    $("anaglyphHintSheet").hidden = true;
+    const go = anaglyphHintGo;
+    anaglyphHintGo = null;
+    if (start && go) go();
+  }
+  $("anaglyphHintOkBtn").addEventListener("click", () => closeAnaglyphHint(true));
+  $("anaglyphHintOffBtn").addEventListener("click", () => {
+    anaglyphPrefs.hintOff = true;
+    saveAnaglyphPrefs();
+    syncAnaglyphMasterUI();
+    closeAnaglyphHint(true);
+  });
+  $("anaglyphHintSheet").addEventListener("click", (e) => { if (e.target === $("anaglyphHintSheet")) closeAnaglyphHint(false); });
+  $("anaglyphHintSheet").addEventListener("keydown", (e) => trapTabKey($("anaglyphHintSheet"), e));
+
+  // Hilfsmittel note on a ready screen outside VT: same HILFSMITTEL map,
+  // `<div class="hilfsmittel-note" data-hilfsmittel="key">`.
+  function renderHilfsmittelBox(box) {
+    const h = HILFSMITTEL[box.dataset.hilfsmittel];
+    box.hidden = !h;
+    if (!h) return;
+    box.querySelector(".hilfsmittel-text").textContent = h.text;
+    const a = box.querySelector(".hilfsmittel-link");
+    a.hidden = !h.link;
+    if (h.link) a.href = h.link; else a.removeAttribute("href");
+  }
+  document.querySelectorAll("[data-hilfsmittel]").forEach(renderHilfsmittelBox);
+
+  // ---- Grundeinstellungen group "Farbbrille" (only with the Test-Bereich
+  // unlocked: .test-teaser, same gate as the tab) ----
+  function syncAnaglyphMasterUI() {
+    document.querySelectorAll("#masterAnaglyphSideRow [data-anaglyph-left]").forEach((b) => setActive(b, b.dataset.anaglyphLeft === anaglyphPrefs.left));
+    const st = $("masterAnaglyphStatus");
+    if (anaglyphPrefs.calibrated) {
+      const d = anaglyphPrefs.calibratedAt ? new Date(anaglyphPrefs.calibratedAt) : null;
+      const when = d && !isNaN(d) ? ` am ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}` : "";
+      st.textContent = `Abgeglichen${when}. Rot und Grün sind auf deine Brille eingestellt.`;
+    } else {
+      st.textContent = "Noch nicht abgeglichen. Farbbrillen-Übungen starten erst danach.";
+    }
+    $("masterAnaglyphCalibBtn").textContent = anaglyphPrefs.calibrated ? "Neu abgleichen" : "Farbbrille abgleichen";
+    $("masterAnaglyphHintCheck").checked = !anaglyphPrefs.hintOff;
+  }
+  document.querySelectorAll("#masterAnaglyphSideRow [data-anaglyph-left]").forEach((b) => b.addEventListener("click", () => {
+    anaglyphPrefs.left = b.dataset.anaglyphLeft;
+    saveAnaglyphPrefs();
+    syncAnaglyphMasterUI();
+  }));
+  $("masterAnaglyphHintCheck").addEventListener("change", () => {
+    anaglyphPrefs.hintOff = !$("masterAnaglyphHintCheck").checked;
+    saveAnaglyphPrefs();
+  });
+  syncAnaglyphMasterUI();
+
+  // ---- Abgleich (#anaglyphCalib): 1 Brille (side), 2 Rot ausblenden,
+  // 3 Grün ausblenden, 4 Probe. Works on a copy; "Fertig" saves it,
+  // "Schließen" discards. Black stage, fixed hex colours. ----
+  const CALIB_STEPS = ["side", "red", "green", "check"];
+  let calib = null;
+  const eyeAcc = { left: "linke", right: "rechte" };
+  const eyeDat = { left: "linken", right: "rechten" };
+  function calibEyeBehind(lens, p) { return anaglyphLensOf("left", p) === lens ? "left" : "right"; }
+  function openAnaglyphCalib() {
+    calib = {
+      step: 0, returnFocus: document.activeElement,
+      p: { left: anaglyphPrefs.left, redCal: { ...anaglyphPrefs.redCal }, greenCal: { ...anaglyphPrefs.greenCal } },
+    };
+    $("anaglyphCalib").hidden = false;
+    requestWakeLock();
+    renderCalib();
+    $("anaglyphCalibNextBtn").focus();
+  }
+  function closeAnaglyphCalib() {
+    if (!calib) return;
+    const back = calib.returnFocus;
+    calib = null;
+    $("anaglyphCalib").hidden = true;
+    releaseWakeLock();
+    if (back && back.focus && back.getClientRects().length) back.focus();
+  }
+  function calibColors() {
+    return { left: calib.p.left, red: anaglyphHex(0, calib.p.redCal), green: anaglyphHex(120, calib.p.greenCal) };
+  }
+  function renderCalib() {
+    if (!calib) return;
+    const step = CALIB_STEPS[calib.step];
+    const col = calibColors();
+    $("anaglyphCalibStepEl").textContent = `Schritt ${calib.step + 1} von ${CALIB_STEPS.length}`;
+    document.querySelectorAll("#anaglyphCalib [data-calib-pane]").forEach((el) => {
+      el.hidden = el.dataset.calibPane !== (step === "red" || step === "green" ? "tune" : step);
+    });
+    const title = $("anaglyphCalibTitle"), text = $("anaglyphCalibText");
+    const prev = $("anaglyphCalibPrevBtn"), next = $("anaglyphCalibNextBtn");
+    prev.hidden = calib.step === 0;
+    prev.textContent = step === "check" ? "Neu abgleichen" : "Zurück";
+    next.textContent = step === "check" ? "Fertig" : "Weiter";
+    if (step === "side") {
+      title.textContent = "Brille aufsetzen";
+      text.textContent = "Setz deine Rot-Grün-Brille auf. Welches Glas sitzt vor deinem linken Auge?";
+      document.querySelectorAll("#anaglyphCalibSideRow [data-anaglyph-left]").forEach((b) => setActive(b, b.dataset.anaglyphLeft === calib.p.left));
+    } else if (step === "red" || step === "green") {
+      const isRed = step === "red";
+      const shut = calibEyeBehind(isRed ? "rot" : "gruen", col);
+      const look = shut === "left" ? "right" : "left";
+      const cal = isRed ? calib.p.redCal : calib.p.greenCal;
+      title.textContent = isRed ? "Rot ausblenden" : "Grün ausblenden";
+      text.textContent = `Halte dir das ${eyeAcc[shut]} Auge zu (${isRed ? "rotes" : "grünes"} Glas) und schau nur mit dem ${eyeDat[look]} Auge durch das ${isRed ? "grüne" : "rote"} Glas. ` +
+        `Stell die Regler so ein, dass das ${isRed ? "rote" : "grüne"} Quadrat verschwindet oder kaum noch zu sehen ist. Meist hilft es, die Helligkeit zu senken – nimm die hellste Einstellung, bei der es gerade verschwindet.`;
+      $("anaglyphCalibSquare").style.background = isRed ? col.red : col.green;
+      $("anaglyphCalibV").value = String(cal.v);
+      $("anaglyphCalibH").value = String(cal.h);
+    } else {
+      title.textContent = "Probe";
+      text.textContent = "Mit beiden Augen offen siehst du beide Wörter. Hältst du dir das rechte Auge zu, siehst du nur „Links“ – hältst du dir das linke zu, nur „Rechts“. Siehst du ein Wort mit dem falschen Auge noch deutlich, tippe auf „Neu abgleichen“.";
+      $("anaglyphCalibWordL").style.color = anaglyphColorForEye("left", col);
+      $("anaglyphCalibWordR").style.color = anaglyphColorForEye("right", col);
+    }
+  }
+  function calibCurrentCal() {
+    const step = CALIB_STEPS[calib.step];
+    return step === "red" ? calib.p.redCal : step === "green" ? calib.p.greenCal : null;
+  }
+  function calibSet(kind, value) {
+    const cal = calibCurrentCal();
+    if (!cal) return;
+    if (kind === "v") cal.v = Math.max(10, Math.min(100, Math.round(value)));
+    else cal.h = Math.max(-20, Math.min(20, Math.round(value)));
+    renderCalib();
+  }
+  $("anaglyphCalibV").addEventListener("input", (e) => calibSet("v", Number(e.target.value)));
+  $("anaglyphCalibH").addEventListener("input", (e) => calibSet("h", Number(e.target.value)));
+  document.querySelectorAll("#anaglyphCalib [data-calib-nudge]").forEach((b) => b.addEventListener("click", () => {
+    const cal = calibCurrentCal();
+    if (!cal) return;
+    const [kind, d] = b.dataset.calibNudge.split(":");
+    calibSet(kind, cal[kind] + Number(d));
+  }));
+  document.querySelectorAll("#anaglyphCalibSideRow [data-anaglyph-left]").forEach((b) => b.addEventListener("click", () => {
+    if (!calib) return;
+    calib.p.left = b.dataset.anaglyphLeft;
+    renderCalib();
+  }));
+  $("anaglyphCalibPrevBtn").addEventListener("click", () => {
+    if (!calib) return;
+    calib.step = CALIB_STEPS[calib.step] === "check" ? 1 : Math.max(0, calib.step - 1);
+    renderCalib();
+  });
+  $("anaglyphCalibNextBtn").addEventListener("click", () => {
+    if (!calib) return;
+    if (calib.step < CALIB_STEPS.length - 1) { calib.step += 1; renderCalib(); return; }
+    const col = calibColors();
+    Object.assign(anaglyphPrefs, {
+      left: col.left, red: col.red, green: col.green, redCal: { ...calib.p.redCal }, greenCal: { ...calib.p.greenCal },
+      calibrated: true, calibratedAt: new Date().toISOString(),
+    });
+    saveAnaglyphPrefs();
+    syncAnaglyphMasterUI();
+    syncAnaglyphGates();
+    closeAnaglyphCalib();
+  });
+  $("anaglyphCalibCloseBtn").addEventListener("click", closeAnaglyphCalib);
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (calib) { closeAnaglyphCalib(); return; }
+    if (!$("anaglyphHintSheet").hidden) closeAnaglyphHint(false);
+  });
+  document.querySelectorAll("[data-anaglyph-calib]").forEach((b) => b.addEventListener("click", openAnaglyphCalib));
+
+  // ==== Jedes Auge zählt (Test-Bereich, Farbbrille, 2026-10-08) ====
+  // Black stage, white fixation cross (both eyes see white). Dots appear one
+  // at a time at random places, each in the calibrated red OR green, so only
+  // the eye behind that lens sees it. Tap the dot (pointerdown, by
+  // coordinates); it stays until tapped or the tempo's time runs out.
+  // Result per eye: found/shown and mean reaction time. Training, no
+  // diagnosis: one neutral sentence if one eye is clearly behind.
+  const EYECOUNT_PREFS_KEY = "fwmc-eyecount-prefs-v1";
+  const EYECOUNT_LAST_KEY = "fwmc-eyecount-last-v1";
+  const EYECOUNT_TEMPOS = {
+    leicht: { title: "Leicht", showMs: 2000, gapMin: 600, gapMax: 1200 },
+    mittel: { title: "Mittel", showMs: 1400, gapMin: 400, gapMax: 900 },
+    schwer: { title: "Schwer", showMs: 900, gapMin: 250, gapMax: 600 },
+  };
+  const EYECOUNT_SIZES = { klein: 28, mittel: 40, gross: 56 };
+  // left = how many of every 10 dots go to the left eye
+  const EYECOUNT_SPLITS = { gleich: { title: "Ausgewogen", left: 5 }, links: { title: "mehr links", left: 7 }, rechts: { title: "mehr rechts", left: 3 } };
+  const EYECOUNT_MIN_PLAYED_S = 10;
+  const eyecountPrefs = { length: 2, tempo: "mittel", split: "gleich", size: "mittel" };
+  (function loadEyecountPrefs() {
+    const saved = readJSON(EYECOUNT_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(eyecountPrefs, saved);
+    if (![1, 2, 3].includes(eyecountPrefs.length)) eyecountPrefs.length = 2;
+    if (!EYECOUNT_TEMPOS[eyecountPrefs.tempo]) eyecountPrefs.tempo = "mittel";
+    if (!EYECOUNT_SPLITS[eyecountPrefs.split]) eyecountPrefs.split = "gleich";
+    if (!EYECOUNT_SIZES[eyecountPrefs.size]) eyecountPrefs.size = "mittel";
+  })();
+  function saveEyecountPrefs() { writeJSON(EYECOUNT_PREFS_KEY, eyecountPrefs); }
+  const ecEl = (id) => document.getElementById("eyecount" + id);
+  function syncEyecountUI() {
+    ecEl("LengthRow").querySelectorAll("[data-eyecount-length]").forEach((b) => setActive(b, Number(b.dataset.eyecountLength) === eyecountPrefs.length));
+    ecEl("TempoRow").querySelectorAll("[data-eyecount-tempo]").forEach((b) => setActive(b, b.dataset.eyecountTempo === eyecountPrefs.tempo));
+    ecEl("SplitRow").querySelectorAll("[data-eyecount-split]").forEach((b) => setActive(b, b.dataset.eyecountSplit === eyecountPrefs.split));
+    ecEl("SizeRow").querySelectorAll("[data-eyecount-size]").forEach((b) => setActive(b, b.dataset.eyecountSize === eyecountPrefs.size));
+  }
+  [["LengthRow", "length", (v) => Number(v)], ["TempoRow", "tempo", String], ["SplitRow", "split", String], ["SizeRow", "size", String]].forEach(([row, key, conv]) => {
+    ecEl(row).querySelectorAll(`[data-eyecount-${key}]`).forEach((b) => b.addEventListener("click", () => {
+      eyecountPrefs[key] = conv(b.dataset["eyecount" + key[0].toUpperCase() + key.slice(1)]);
+      saveEyecountPrefs();
+      syncEyecountUI();
+    }));
+  });
+  function eyecountPct(hit, shown) { return shown ? Math.round((hit / shown) * 100) : 0; }
+  function renderEyecountBest() {
+    const last = readJSON(EYECOUNT_LAST_KEY, null);
+    ecEl("BestHint").textContent = last && typeof last.l === "number" && typeof last.r === "number"
+      ? `Zuletzt: linkes Auge ${last.l} %, rechtes Auge ${last.r} %` : "";
+  }
+  renderEyecountBest();
+  anaglyphGate(ecEl("ReadyStartBtn"), ecEl("Lock"));
+  ecEl("OpenBtn").addEventListener("click", () => {
+    syncEyecountUI();
+    syncAnaglyphGates();
+    showScreen("eyecountReady");
+  });
+  ecEl("ReadyBackToHome").addEventListener("click", () => showScreen("testHome"));
+
+  let eyecountState = null;
+  function ecSchedule(name, fn, delayMs) {
+    const st = eyecountState;
+    if (st.timers[name]) clearTimeout(st.timers[name].id);
+    const t = { fn, at: performance.now() + delayMs, id: 0, left: null };
+    t.id = setTimeout(() => { if (st.timers[name] === t) st.timers[name] = null; fn(); }, delayMs);
+    st.timers[name] = t;
+  }
+  function ecClearTimers(st) { Object.keys(st.timers).forEach((k) => { if (st.timers[k]) clearTimeout(st.timers[k].id); st.timers[k] = null; }); }
+  function ecFmtTime(ms) { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
+  function ecRenderStatus() {
+    const st = eyecountState;
+    if (!st || st.paused) return;
+    const left = st.totalMs - (performance.now() - st.startTime);
+    ecEl("ProgressEl").textContent = `${st.stats.left.hit + st.stats.right.hit} Treffer · ${ecFmtTime(left)}`;
+  }
+  function ecDrawEye(st) {
+    if (!st.deck.length) {
+      const n = st.split.left;
+      st.deck = Array.from({ length: 10 }, (_, i) => (i < n ? "left" : "right"));
+      for (let i = st.deck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [st.deck[i], st.deck[j]] = [st.deck[j], st.deck[i]]; }
+    }
+    return st.deck.pop();
+  }
+  // Random place on the stage: below the hint/player-bar, clear of the
+  // fixation cross, inside the edges.
+  function ecPlace(st) {
+    const stage = ecEl("Stage");
+    const rect = stage.getBoundingClientRect();
+    const r = st.sizePx / 2;
+    const margin = Math.max(16, 22 - r + 8);
+    const minY = stageTopClearanceY(rect, ecEl("Hint"), ecEl("PlayerBar"), r + margin, r);
+    const maxY = rect.height - r - margin;
+    const minX = r + margin, maxX = rect.width - r - margin;
+    const cx = rect.width / 2, cy = rect.height / 2;
+    let x = cx, y = Math.max(minY, cy - 90);
+    for (let i = 0; i < 40; i++) {
+      const tx = minX + Math.random() * Math.max(0, maxX - minX);
+      const ty = minY + Math.random() * Math.max(0, maxY - minY);
+      x = tx; y = ty;
+      if (Math.hypot(tx - cx, ty - cy) >= r + 44) break;
+    }
+    return { x, y };
+  }
+  function ecShowDot() {
+    const st = eyecountState;
+    if (!st || st.paused) return;
+    const eye = ecDrawEye(st);
+    const pos = ecPlace(st);
+    const dot = ecEl("Dot");
+    dot.style.width = dot.style.height = st.sizePx + "px";
+    dot.style.left = Math.round(pos.x) + "px";
+    dot.style.top = Math.round(pos.y) + "px";
+    dot.style.background = anaglyphColorForEye(eye);
+    dot.dataset.eye = eye;
+    dot.hidden = false;
+    st.dot = { eye, x: pos.x, y: pos.y, shownAt: performance.now() };
+    st.stats[eye].shown += 1;
+    ecSchedule("trial", ecDotTimeout, st.tempo.showMs);
+  }
+  function ecHideDot(st) {
+    ecEl("Dot").hidden = true;
+    st.dot = null;
+  }
+  function ecGapThenNext(st) {
+    const gap = st.tempo.gapMin + Math.random() * (st.tempo.gapMax - st.tempo.gapMin);
+    ecSchedule("trial", ecShowDot, gap);
+  }
+  function ecDotTimeout() {
+    const st = eyecountState;
+    if (!st) return;
+    ecHideDot(st);
+    ecGapThenNext(st);
+  }
+  function startEyecountGame() {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    ecEl("Player").hidden = false;
+    ecEl("PlayerBar").hidden = false;
+    ecEl("DonePanel").hidden = true;
+    ecEl("PauseOverlay").hidden = true;
+    ecEl("PauseBtn").hidden = false;
+    ecEl("Dot").hidden = true;
+    const tempo = EYECOUNT_TEMPOS[eyecountPrefs.tempo];
+    eyecountState = {
+      tempo, split: EYECOUNT_SPLITS[eyecountPrefs.split], sizePx: EYECOUNT_SIZES[eyecountPrefs.size],
+      minutes: eyecountPrefs.length, totalMs: eyecountPrefs.length * 60000,
+      startTime: performance.now(), paused: false, pausedAt: 0, timers: { trial: null, end: null },
+      deck: [], dot: null, misses: 0,
+      stats: { left: { shown: 0, hit: 0, rts: [] }, right: { shown: 0, hit: 0, rts: [] } },
+      displayInterval: null,
+    };
+    ecEl("Hint").textContent = "Blick aufs Kreuz · tippe jeden Punkt an, sobald du ihn siehst";
+    ecRenderStatus();
+    placeHintBelowBar(ecEl("Hint"), ecEl("PlayerBar"));
+    requestWakeLock();
+    eyecountState.displayInterval = setInterval(ecRenderStatus, 250);
+    ecSchedule("end", eyecountFinish, eyecountState.totalMs);
+    ecSchedule("trial", ecShowDot, 700);
+  }
+  ecEl("ReadyStartBtn").addEventListener("click", () => anaglyphStart(startEyecountGame));
+
+  ecEl("Stage").addEventListener("pointerdown", (e) => {
+    const st = eyecountState;
+    if (!st || st.paused || !ecEl("DonePanel").hidden) return;
+    if (e.target.closest("button")) return;
+    const rect = ecEl("Stage").getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    if (st.dot) {
+      const hitR = Math.max(st.sizePx / 2, 22) + 10;
+      if (Math.hypot(x - st.dot.x, y - st.dot.y) <= hitR) {
+        const s = st.stats[st.dot.eye];
+        s.hit += 1;
+        s.rts.push(performance.now() - st.dot.shownAt);
+        ecHideDot(st);
+        ecGapThenNext(st);
+        ecRenderStatus();
+        return;
+      }
+    }
+    st.misses += 1;
+  });
+
+  function pauseEyecount() {
+    const st = eyecountState;
+    if (!st || st.paused) return;
+    st.paused = true;
+    st.pausedAt = performance.now();
+    if (st.timers.end) { clearTimeout(st.timers.end.id); st.endLeft = Math.max(0, st.timers.end.at - st.pausedAt); st.timers.end = null; }
+    if (st.timers.trial) { clearTimeout(st.timers.trial.id); st.timers.trial = null; }
+    // the dot on screen during the pause is not counted
+    if (st.dot) { st.stats[st.dot.eye].shown -= 1; ecHideDot(st); }
+    ecEl("PauseBtn").hidden = true;
+    ecEl("PauseOverlay").hidden = false;
+  }
+  function resumeEyecount() {
+    const st = eyecountState;
+    if (!st || !st.paused) return;
+    st.startTime += performance.now() - st.pausedAt;
+    st.paused = false;
+    ecSchedule("end", eyecountFinish, st.endLeft != null ? st.endLeft : Math.max(0, st.totalMs - (performance.now() - st.startTime)));
+    st.endLeft = null;
+    ecSchedule("trial", ecShowDot, 600);
+    ecEl("PauseOverlay").hidden = true;
+    ecEl("PauseBtn").hidden = false;
+    ecRenderStatus();
+  }
+  ecEl("PauseBtn").addEventListener("click", pauseEyecount);
+  ecEl("ResumeBtn").addEventListener("click", resumeEyecount);
+
+  function ecEyeLine(label, s) {
+    const avg = s.rts.length ? s.rts.reduce((a, b) => a + b, 0) / s.rts.length : null;
+    const avgTxt = avg == null ? "–" : (avg / 1000).toFixed(2).replace(".", ",") + " s";
+    return { text: `${label}: ${s.hit} von ${s.shown} · Ø ${avgTxt}`, avg };
+  }
+  // Neutral, no diagnosis: only when one eye is clearly behind.
+  function ecCompareSentence(st, L, R) {
+    const l = st.stats.left, r = st.stats.right;
+    if (l.shown < 5 || r.shown < 5) return "";
+    const rl = l.hit / l.shown, rr = r.hit / r.shown;
+    const talk = " Sprich das bei Bedarf mit deinem Trainer ab.";
+    if (Math.abs(rl - rr) >= 0.15) return `Dein ${rl < rr ? "linkes" : "rechtes"} Auge hat weniger Punkte erwischt.${talk}`;
+    if (l.rts.length >= 3 && r.rts.length >= 3 && L.avg && R.avg) {
+      const slow = Math.max(L.avg, R.avg), fast = Math.min(L.avg, R.avg);
+      if (slow / fast >= 1.2 && slow - fast >= 80) return `Dein ${L.avg > R.avg ? "linkes" : "rechtes"} Auge war langsamer.${talk}`;
+    }
+    return "Beide Augen lagen ungefähr gleichauf.";
+  }
+  function finalizeEyecountRun(st, playedS, aborted) {
+    ecEl("PauseOverlay").hidden = true;
+    ecEl("PlayerBar").hidden = true;
+    ecEl("Dot").hidden = true;
+    const L = ecEyeLine("Linkes Auge", st.stats.left), R = ecEyeLine("Rechtes Auge", st.stats.right);
+    const hits = st.stats.left.hit + st.stats.right.hit, shown = st.stats.left.shown + st.stats.right.shown;
+    const panel = ecEl("DonePanel");
+    setDonePanelAborted(panel, aborted, "Jedes Auge zählt beendet");
+    ecEl("DoneSummary").textContent = `${aborted ? "Abgebrochen · " : ""}Jedes Auge zählt (${st.tempo.title}, ${aborted ? Math.round(playedS) + " s" : st.minutes + " Min"}) · ${hits} von ${shown} Punkten`;
+    const box = ecEl("Eyes");
+    box.textContent = "";
+    [L.text, R.text].forEach((t) => { const p = document.createElement("p"); p.className = "eyecount-eye-line"; p.textContent = t; box.appendChild(p); });
+    const sentence = ecCompareSentence(st, L, R);
+    if (sentence) { const p = document.createElement("p"); p.className = "eyecount-eye-note"; p.textContent = sentence; box.appendChild(p); }
+    if (st.misses) { const p = document.createElement("p"); p.className = "eyecount-eye-note"; p.textContent = `Daneben getippt: ${st.misses}`; box.appendChild(p); }
+    const entry = { kind: "eyecount", title: "Jedes Auge zählt", seconds: Math.round(playedS), note: `${L.text}; ${R.text}` };
+    if (aborted) { entry.aborted = true; entry.note = "abgebrochen"; }
+    const id = addHistory(entry);
+    if (!aborted) {
+      writeJSON(EYECOUNT_LAST_KEY, { l: eyecountPct(st.stats.left.hit, st.stats.left.shown), r: eyecountPct(st.stats.right.hit, st.stats.right.shown), ts: Date.now() });
+      renderEyecountBest();
+    }
+    renderRating(ecEl("Rating"), id, "Wie gut hast du die Punkte gesehen?");
+    panel.hidden = false;
+  }
+  function ecTeardown(st) {
+    ecClearTimers(st);
+    if (st.displayInterval) clearInterval(st.displayInterval);
+    releaseWakeLock();
+    if (document.fullscreenElement === ecEl("Player")) document.exitFullscreen().catch(() => {});
+    ecEl("FsHint").hidden = true;
+  }
+  function eyecountFinish() {
+    const st = eyecountState;
+    if (!st) return;
+    eyecountState = null;
+    // a dot still on screen at the end does not count
+    if (st.dot) st.stats[st.dot.eye].shown -= 1;
+    ecTeardown(st);
+    finalizeEyecountRun(st, st.totalMs / 1000, false);
+  }
+  function eyecountStop() {
+    const st = eyecountState;
+    if (!st) return;
+    const playedS = ((st.paused ? st.pausedAt : performance.now()) - st.startTime) / 1000;
+    eyecountState = null;
+    if (st.dot) st.stats[st.dot.eye].shown -= 1;
+    ecTeardown(st);
+    ecEl("PauseOverlay").hidden = true;
+    if (playedS >= EYECOUNT_MIN_PLAYED_S && st.stats.left.shown + st.stats.right.shown > 0) {
+      finalizeEyecountRun(st, playedS, true);
+    } else {
+      ecEl("Player").hidden = true;
+      showScreen("testHome");
+    }
+  }
+  ecEl("BackBtn").addEventListener("click", eyecountStop);
+  ecEl("AgainBtn").addEventListener("click", () => anaglyphStart(startEyecountGame));
+  ecEl("DoneBackBtn").addEventListener("click", () => { ecEl("Player").hidden = true; ecEl("DonePanel").hidden = true; showScreen("testHome"); });
+  wireFullscreen({ player: ecEl("Player"), btn: ecEl("FsBtn"), hint: ecEl("FsHint"), hintOpen: ecEl("FsHintOpenBtn"), hintClose: ecEl("FsHintClose") });
 
   // Rotationstest (Mentale Rotation) - grounded in the classic mental-
   // rotation/character-rotation chronometric paradigm (Cooper & Shepard,

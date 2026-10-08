@@ -3036,3 +3036,60 @@ body.soft-flash .flash-digit:not([hidden]){animation:fwmcSoftIn .3s ease-out 1}
    end while it runs - "Fertig" (counts as done). The bar's "✕ Beenden"
    (counts as aborted) comes back in the pause sheet. */
 #breathPlayer:has(#breathFinishBtn:not([hidden])):not(:has(#breathPauseOverlay:not([hidden]))) #breathBackBtn{visibility:hidden}
+
+/* ---- Farbbrille (Rot-Grün-Brille, 2026-10-08): lock, calibration,
+   "Jedes Auge zählt". Stage/calibration use fixed hex (black ground, the
+   best base for anaglyph glasses). ---- */
+.anaglyph-set-link{align-self:flex-start;min-height:44px;display:inline-flex;align-items:center;padding:0}
+.anaglyph-lock{display:flex;flex-direction:column;gap:8px;border:1px dashed var(--line);border-radius:14px;padding:14px;margin:4px 0 14px;background:var(--surface)}
+.anaglyph-lock-title{font-weight:700;font-size:calc(15px * var(--ts,1));color:var(--ink)}
+.anaglyph-lock .start-btn{margin:0}
+.start-btn.is-locked{opacity:.42;filter:grayscale(1)}
+#masterAnaglyphGroup .start-btn.secondary{margin:8px 0 6px}
+.anaglyph-status{font-weight:600}
+
+.anaglyph-calib{position:fixed;inset:0;z-index:65;background:#000000;color:#e3e9eb;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain}
+.anaglyph-calib-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(14px + env(safe-area-inset-top,0px)) 14px 8px}
+.anaglyph-calib-close{min-height:44px;border:none;border-radius:999px;background:#1d2427;color:#e3e9eb;font-weight:600;font-size:calc(14px * var(--ts,1));padding:0 16px;cursor:pointer;white-space:nowrap}
+.anaglyph-calib-step{font-size:calc(13.5px * var(--ts,1));color:#9aa9ae;font-variant-numeric:tabular-nums;white-space:nowrap}
+.anaglyph-calib-body{flex:1;display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:520px;margin:0 auto;padding:8px 16px calc(20px + env(safe-area-inset-bottom,0px));box-sizing:border-box}
+.anaglyph-calib-title{margin:0;font-family:"Magra",sans-serif;font-size:calc(24px * var(--ts,1));color:#ffffff;text-align:center}
+.anaglyph-calib-text{margin:0;font-size:calc(15px * var(--ts,1));line-height:1.45;color:#c4cfd3;text-align:center}
+.anaglyph-calib-pane{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px}
+.anaglyph-calib-pane[hidden]{display:none}
+.anaglyph-calib-choice{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.anaglyph-calib-choice button{min-height:64px;border-radius:14px;border:2px solid #3a4549;background:#12181a;color:#e3e9eb;font-weight:700;font-size:calc(16px * var(--ts,1));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}
+.anaglyph-calib-choice button small{font-weight:500;font-size:calc(12.5px * var(--ts,1));color:#9aa9ae}
+.anaglyph-calib-choice button.active{border-color:#ffffff;background:#1f2a2e}
+.anaglyph-calib-square{width:min(56vw,46vh,260px);height:min(56vw,46vh,260px);border-radius:10px;margin:6px 0}
+.anaglyph-calib-label{align-self:flex-start;font-size:calc(13.5px * var(--ts,1));font-weight:700;color:#9aa9ae}
+.anaglyph-calib-slider{display:flex;align-items:center;gap:10px;width:100%}
+.anaglyph-calib-step-btn{flex:none;width:48px;height:48px;border-radius:50%;border:none;background:#1d2427;color:#ffffff;font-size:24px;font-weight:700;cursor:pointer;line-height:1}
+.anaglyph-calib-slider input[type=range]{flex:1;min-width:0;height:44px;-webkit-appearance:none;appearance:none;background:transparent;accent-color:#9aa9ae}
+.anaglyph-calib-slider input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:#3a4549}
+.anaglyph-calib-slider input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:#3a4549}
+.anaglyph-calib-slider input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:44px;height:44px;margin-top:-19px;border-radius:50%;background:#e3e9eb;border:none}
+.anaglyph-calib-slider input[type=range]::-moz-range-thumb{width:44px;height:44px;border-radius:50%;background:#e3e9eb;border:none}
+.anaglyph-calib-words{display:flex;gap:28px;justify-content:center;align-items:center;min-height:min(40vh,220px)}
+.anaglyph-calib-word{font-family:"Magra",sans-serif;font-weight:700;font-size:clamp(40px,13vw,84px)}
+.anaglyph-calib-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-top:auto;padding-top:8px}
+.anaglyph-calib-actions:has(> [hidden]){grid-template-columns:1fr}
+.anaglyph-calib-actions [hidden]{display:none}
+.anaglyph-calib-btn{min-height:52px;border:none;border-radius:14px;background:#007094;color:#ffffff;font-family:"Magra",sans-serif;font-weight:700;font-size:calc(17px * var(--ts,1));cursor:pointer;padding:0 12px}
+.anaglyph-calib-btn.secondary{background:#1d2427;color:#e3e9eb}
+
+#eyecountPlayer{background:#000000}
+.eyecount-stage{flex:1;position:relative;min-height:0;background:#000000;overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.eyecount-stage .remember-hint{background:rgba(255,255,255,.1);color:#c4cfd3}
+#eyecountPlayer .player-bar button,#eyecountPlayer .player-status{background:rgba(255,255,255,.14);color:#e3e9eb;box-shadow:none}
+.eyecount-cross{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);pointer-events:none}
+.eyecount-cross::before,.eyecount-cross::after{content:"";position:absolute;background:#ffffff;border-radius:1px}
+.eyecount-cross::before{left:0;right:0;top:10px;height:2px}
+.eyecount-cross::after{top:0;bottom:0;left:10px;width:2px}
+.eyecount-dot{position:absolute;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none}
+.eyecount-eyes{display:flex;flex-direction:column;gap:4px;max-width:360px}
+.eyecount-eye-line{margin:0;font-weight:700;font-size:calc(16px * var(--ts,1));color:#16232a;font-variant-numeric:tabular-nums}
+.eyecount-eye-note{margin:4px 0 0;font-size:calc(14px * var(--ts,1));color:#4f6168;line-height:1.4}
+.anaglyph-hint-off{align-self:center;min-height:44px;margin-top:6px}
+#eyecountPlayer .step-nav{background:#000000;border-top-color:#1d2427}
+#eyecountPlayer .step-nav button{background:#1d2427;color:#e3e9eb}
