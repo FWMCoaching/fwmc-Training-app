@@ -284,6 +284,7 @@ everywhere goes here, short.
 | 32-zusatz-rechnen | Zusatzaufgabe "Rechnen" (VT canvas + Cardio `addon-math`): statements, Doppelkreis/Nur stimmt/Laut, placement, scoring |
 | 33-huetchen-laufweg | Hütchen · Laufweg (VT, cone map with drawn path): why VT-catalog architecture, path maker, variants, what is not wired |
 | 34-ton-sequenz | Ton-Sequenz (Test-Bereich): step model, audio graph (merger, fades, cueVolume), Kanal-Test, Suchlauf, presets, safety, iPhone checks |
+| 36-qr-uebergabe | QR-Übergabe trainer → client: range screen, payload fields, split codes, import/dedupe, iPhone Safari copy + paste field, Kunden-Training (own store, snapshot of bests) |
 
 ## Must-do rules collected from the detail notes
 
@@ -586,5 +587,12 @@ For every new or changed exercise/screen, in the same commit:
 - Tones on purpose (Ton-Sequenz, 2026-10-08): every audible tone goes
   through `cueVolume()`, starts with a fade-in, ear choice via
   ChannelMerger; docs/notes/34.
+- QR-Übergabe (2026-10-08): history entries travel only in the URL
+  fragment (`#import=`), never via a server; a new history field that
+  Fortschritt needs goes into `hoPack`/`hoUnpack`. Anything that records a
+  run goes through `addHistory()` (Kunden-Training diverts it there), and a
+  new per-exercise best/level store is named `fwmc-…-best-v1` or added to
+  `HO_SNAP_RE`. `qrcode.js` (vendored) belongs in every Artifact publish.
+  Details docs/notes/36, test `tests/qr_uebergabe_1008_test.py`.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.
