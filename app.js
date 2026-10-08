@@ -2976,7 +2976,7 @@
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
     if (name === "todayHome") renderToday();
-    if (name === "progressScreen") renderProgressScreen();
+    if (name === "progressScreen") { renderProgressScreen(); renderHistory(); hoRenderProgressGroup(); }
     if (name === "freeHome") renderFreeHome();
     if (name === "activationHome") renderActivationHome();
     if (name !== "activationHome") $("activationProgramError").hidden = true;
@@ -3176,8 +3176,11 @@
   let stepNavSilent = false;
   function addHistory(entry) {
     if (stepNavSilent) return null;
-    const list = loadHistory();
     const item = { id: String(Date.now()), ts: new Date().toISOString(), rating: null, ...entry };
+    // Kunden-Training (QR-Übergabe, docs/notes/36): a client's run goes to
+    // its own store, never into this device's history or progress.
+    if (hoClientRunActive()) return hoAddClientRun(item);
+    const list = loadHistory();
     list.unshift(item);
     writeJSON(HISTORY_KEY, list.slice(0, 200));
     recordProgress(item);
@@ -3188,6 +3191,7 @@
     const list = loadHistory();
     const item = list.find((e) => e.id === id);
     if (item) { item.rating = rating; writeJSON(HISTORY_KEY, list); }
+    else hoPatchClientRun(id, (e) => { e.rating = rating; });
   }
   // ==== Mein Fortschritt (Fabian, 2026-10-03: "umsetzen") ====
   // Weekly goal, a week streak, milestones and an overview across all areas.
@@ -3435,7 +3439,8 @@
       const date = `${WEEKDAYS[d.getDay()]}, ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
       const rating = e.rating ? ` · ${ratingLabel(e.kind)} ${e.rating}/5` : "";
       const note = e.note ? ` · ${esc(e.note)}` : "";
-      return `<li><span class="h-date">${date}</span><span class="h-title">${esc(e.title)}</span><span class="h-meta">${fmtMinutes(e.seconds || 0)}${note}${rating}</span></li>`;
+      const tag = e.trainer ? ' <span class="h-tag">bei deinem Trainer</span>' : "";
+      return `<li><span class="h-date">${date}</span><span class="h-title">${esc(e.title)}${tag}</span><span class="h-meta">${fmtMinutes(e.seconds || 0)}${note}${rating}</span></li>`;
     }).join("");
     moreBtn.hidden = list.length <= HISTORY_VISIBLE_SHORT;
     moreBtn.textContent = expanded ? "Weniger anzeigen" : "Alle anzeigen";
@@ -3443,7 +3448,7 @@
   // One "Gesamter Trainingsverlauf" section per area home (Fabian, 2026-10-04:
   // it was missing in Cardio, NAT and Test). A new area adds its prefix here
   // and the same markup block (ids <prefix>HistorySection/Stats/List/MoreBtn/ClearBtn).
-  const HISTORY_PREFIXES = ["", "breath", "movement", "workout", "cardio", "nat", "test", "free", "activation"];
+  const HISTORY_PREFIXES = ["", "breath", "movement", "workout", "cardio", "nat", "test", "free", "activation", "progress"];
   const historyEl = (prefix, part) => document.getElementById(prefix ? prefix + "History" + part : "history" + part);
   function renderHistory() {
     const list = loadHistory();
@@ -5714,6 +5719,7 @@
   // box, home screen) if the code isn't found assumes Visual Training.
   function openFromHash() {
     if (!location.hash || location.hash.length < 2) return;
+    if (/^#import=/.test(location.hash)) return; // QR-Übergabe, see hoCheckHash (docs/notes/36)
     const tokenCode = normCode(decodeURIComponent(location.hash.slice(1)));
     if (!tokenCode) return;
     els.programCodeInput.value = tokenCode;
@@ -20345,6 +20351,7 @@
     panel.querySelectorAll(".level-suggest").forEach((n) => n.remove());
     const def = LEVEL_SUGGEST_EX[ex];
     if (!def || mode === "training") return;
+    if (hoClientRunActive()) return; // a client's runs never change this device's levels (docs/notes/36)
     const diff = def.bucket();
     const order = ["leicht", "mittel", "schwer"];
     if (!order.includes(diff)) return;
@@ -20923,7 +20930,7 @@
   // Keys that must never travel in a client backup file: the coach
   // dashboard (dashboard.html, same origin) keeps its admin token under an
   // fwmc- key in this same localStorage.
-  const BACKUP_EXCLUDE = ["fwmc-admin-token", "fwmc-reminders-v1"]; // reminders belong to this device's push subscription
+  const BACKUP_EXCLUDE = ["fwmc-admin-token", "fwmc-reminders-v1", "fwmc-import-parts-v1"]; // reminders belong to this device's push subscription
   function buildBackup() {
     const data = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -27915,6 +27922,7 @@
     const list = loadHistory();
     const item = list.find((e) => e.id === run.histId);
     if (item) { item.after = v; item.note = `${run.noteBase} · Nachher: ${v}`; writeJSON(HISTORY_KEY, list); }
+    else hoPatchClientRun(run.histId, (e) => { e.after = v; e.note = `${run.noteBase} · Nachher: ${v}`; });
     tonEl("AfterSaved").hidden = false;
   });
   wireEnterToSave(tonEl("AfterInput"), tonEl("AfterSaveBtn"));
@@ -36731,11 +36739,601 @@
       .observe(document.body, { subtree: true, attributes: true, attributeFilter: ["hidden"], childList: true });
   })();
 
+  // ==== QR-Übergabe (Idee 69, Fabian 2026-10-08, Variante A + Kunden-Training) ====
+  // A client trains on the trainer's phone; at the end the trainer shows one
+  // QR code (or 2-3 in a row) and the client's app takes the runs into its
+  // own history, tagged "bei deinem Trainer". No server: the data travels in
+  // the URL fragment (#import=…), which browsers never send anywhere.
+  // Payload = {v:1, e:[[id, tsSeconds, kind, title, seconds, note, rating,
+  // aborted, exId, progKey], …]} (trailing empty fields dropped), deflate-raw
+  // when CompressionStream exists ("z…") or plain ("j…"), base64url.
+  // Never the name (fwmc-name-v1), settings, plan or anything else.
+  // Token: "<part>.<parts>.<group>.<data chunk>". Details: docs/notes/36.
+  var HO_SESSION_KEY = "fwmc-client-session-v1"; // {start, snap:{key: raw|null}}
+  var HO_RUNS_KEY = "fwmc-client-runs-v1"; // Kunden-Training runs waiting for the handover
+  var HO_PARTS_KEY = "fwmc-import-parts-v1"; // {g, n, ts, parts:{i: chunk}} while 2-3 codes are scanned (not in backups)
+  var HO_APP_URL = "https://fwmcoaching.github.io/fwmc-Training-app/";
+  var HO_SINGLE_MAX = 1200; // a whole URL up to this length fits one code
+  var HO_PART_MAX = 1000; // data characters per code when split
+  // Kunden-Training snapshots these on start and puts them back on "Beenden",
+  // so a client's runs never set this device's bests or "Weitermachen".
+  var HO_SNAP_RE = /^fwmc-(.*-best-v1|resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1)$/;
+  function hoSession() {
+    const s = readJSON("fwmc-client-session-v1", null);
+    return s && typeof s.start === "number" ? s : null;
+  }
+  function hoClientRunActive() { return !!hoSession(); }
+  function hoClientRuns() { const l = readJSON("fwmc-client-runs-v1", []); return Array.isArray(l) ? l : []; }
+  function hoAddClientRun(item) {
+    const s = hoSession();
+    item.client = s ? s.start : 1;
+    const l = hoClientRuns();
+    l.unshift(item);
+    writeJSON(HO_RUNS_KEY, l.slice(0, 200));
+    hoSyncStrip();
+    return item.id;
+  }
+  function hoPatchClientRun(id, fn) {
+    const l = hoClientRuns();
+    const it = l.find((e) => e.id === id);
+    if (!it) return;
+    fn(it);
+    writeJSON(HO_RUNS_KEY, l);
+  }
+  const hoHM = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const hoCount = (n) => (n === 1 ? "1 Training" : `${n} Trainings`);
+  function hoWhen(ts) {
+    const d = new Date(ts);
+    const today = new Date();
+    if (d.toDateString() === today.toDateString()) return hoHM(d);
+    return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}. ${hoHM(d)}`;
+  }
+
+  // ---- encoding ----
+  function hoB64u(bytes) {
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function hoUnB64u(str) {
+    const b = atob(str.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((str.length + 3) % 4));
+    const out = new Uint8Array(b.length);
+    for (let i = 0; i < b.length; i++) out[i] = b.charCodeAt(i);
+    return out;
+  }
+  async function hoStream(bytes, Ctor) {
+    const st = new Blob([bytes]).stream().pipeThrough(new Ctor("deflate-raw"));
+    return new Uint8Array(await new Response(st).arrayBuffer());
+  }
+  function hoPack(e) {
+    const a = [String(e.id || ""), Math.round(new Date(e.ts).getTime() / 1000), String(e.kind || ""), String(e.title || ""),
+      Math.max(0, Math.round(Number(e.seconds) || 0)), String(e.note || ""), Number(e.rating) || 0, e.aborted ? 1 : 0,
+      String(e.exId || ""), String(e.progKey || "")];
+    while (a.length > 4 && (a[a.length - 1] === "" || a[a.length - 1] === 0)) a.pop();
+    return a;
+  }
+  async function hoEncode(entries) {
+    const bytes = new TextEncoder().encode(JSON.stringify({ v: 1, e: entries.map(hoPack) }));
+    if (typeof CompressionStream === "function") {
+      try { return "z" + hoB64u(await hoStream(bytes, CompressionStream)); } catch (e) { /* plain below */ }
+    }
+    return "j" + hoB64u(bytes);
+  }
+  const hoStr = (v, max) => (v == null || v === "" ? "" : typeof v === "string" && v.length <= max ? v : null);
+  function hoUnpack(a) {
+    if (!Array.isArray(a) || a.length < 4) return null;
+    const [id, t, kind, title, sec = 0, note = "", rating = 0, aborted = 0, exId = "", progKey = ""] = a;
+    const nowS = Date.now() / 1000;
+    const ok = typeof id === "string" && /^[\w.-]{1,40}$/.test(id) && typeof t === "number" && t > 1577836800 && t < nowS + 86400 &&
+      typeof kind === "string" && /^[a-z0-9-]{0,40}$/.test(kind) && typeof title === "string" && title.trim() && title.length <= 120 &&
+      typeof sec === "number" && sec >= 0 && sec <= 86400 && hoStr(note, 300) !== null && [0, 1, 2, 3, 4, 5].includes(rating) &&
+      (aborted === 0 || aborted === 1) && hoStr(exId, 60) !== null && hoStr(progKey, 80) !== null;
+    if (!ok) return null;
+    return { id, t, kind, title, seconds: Math.round(sec), note, rating, aborted: aborted === 1, exId, progKey };
+  }
+  // Returns the entries or throws (any problem = one friendly message).
+  async function hoDecode(data) {
+    if (typeof data !== "string" || data.length < 2 || data.length > 30000 || !/^[zj][A-Za-z0-9_-]+$/.test(data)) throw new Error("format");
+    let bytes = hoUnB64u(data.slice(1));
+    if (data[0] === "z") {
+      if (typeof DecompressionStream !== "function") throw new Error("nodecomp");
+      bytes = await hoStream(bytes, DecompressionStream);
+    }
+    const obj = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+    if (!obj || obj.v !== 1 || !Array.isArray(obj.e) || !obj.e.length || obj.e.length > 200) throw new Error("shape");
+    const out = obj.e.map(hoUnpack);
+    if (out.some((x) => !x)) throw new Error("entry");
+    return out;
+  }
+  function hoBaseUrl() {
+    const h = location.hostname;
+    const own = /^https?:$/.test(location.protocol) && (/github\.io$/.test(h) || /fabian-westermann\.de$/.test(h) || h === "localhost" || h === "127.0.0.1");
+    return own ? location.origin + location.pathname : HO_APP_URL;
+  }
+  // One token per code. Short enough = one code, else equal parts.
+  function hoTokens(data) {
+    const g = Math.random().toString(36).slice(2, 6).padEnd(4, "0");
+    const head = hoBaseUrl() + "#import=1.1." + g + ".";
+    if (head.length + data.length <= HO_SINGLE_MAX) return [`1.1.${g}.${data}`];
+    const n = Math.ceil(data.length / HO_PART_MAX);
+    const size = Math.ceil(data.length / n);
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(`${i + 1}.${n}.${g}.${data.slice(i * size, (i + 1) * size)}`);
+    return out;
+  }
+  function hoParseToken(raw) {
+    let s = String(raw || "").replace(/\s+/g, "");
+    const at = s.indexOf("import=");
+    if (at >= 0) s = s.slice(at + 7);
+    try { s = decodeURIComponent(s); } catch (e) { return null; }
+    const m = /^(\d{1,2})\.(\d{1,2})\.([a-z0-9]{2,8})\.([A-Za-z0-9_-]+)$/.exec(s);
+    if (!m) return null;
+    const i = Number(m[1]), n = Number(m[2]);
+    if (n < 1 || i < 1 || i > n || n > 20) return null;
+    return { i, n, g: m[3], chunk: m[4] };
+  }
+  // Collects the parts of a split code (localStorage, because the iPhone
+  // camera opens every scan in a new Safari tab). Returns the whole data or
+  // {need: next part number, n}.
+  function hoCollect(tok) {
+    if (tok.n === 1) return { data: tok.chunk };
+    let st = readJSON(HO_PARTS_KEY, null);
+    if (!st || st.g !== tok.g || st.n !== tok.n || Date.now() - (st.ts || 0) > 30 * 60000) st = { g: tok.g, n: tok.n, ts: Date.now(), parts: {} };
+    st.parts[tok.i] = tok.chunk;
+    st.ts = Date.now();
+    const have = Object.keys(st.parts).length;
+    if (have >= tok.n) {
+      try { localStorage.removeItem(HO_PARTS_KEY); } catch (e) { /* private mode */ }
+      let data = "";
+      for (let i = 1; i <= tok.n; i++) data += st.parts[i];
+      return { data };
+    }
+    writeJSON(HO_PARTS_KEY, st);
+    let need = 1;
+    while (st.parts[need]) need++;
+    return { need, n: tok.n, have };
+  }
+
+  // ---- import on the client's phone ----
+  function hoImport(entries) {
+    const p = loadProgress(); // seeds from the old history first, so nothing counts twice
+    const list = loadHistory();
+    const seen = new Set();
+    list.forEach((e) => { seen.add(`${e.srcId || e.id}|${Math.round(new Date(e.ts).getTime() / 1000)}`); });
+    let added = 0;
+    entries.forEach((x) => {
+      const key = `${x.id}|${x.t}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const item = { id: `tr${x.id}-${Math.random().toString(36).slice(2, 6)}`, ts: new Date(x.t * 1000).toISOString(), rating: x.rating || null,
+        kind: x.kind, title: x.title, seconds: x.seconds, trainer: 1, srcId: x.id };
+      if (x.note) item.note = x.note;
+      if (x.aborted) item.aborted = true;
+      if (x.exId) item.exId = x.exId;
+      if (x.progKey) item.progKey = x.progKey;
+      list.push(item);
+      if (!item.aborted) progressAdd(p, item);
+      added++;
+    });
+    if (added) {
+      list.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+      writeJSON(HISTORY_KEY, list.slice(0, 200));
+      writeJSON(PROGRESS_KEY, p);
+      reminderPlanChanged();
+      hoRefreshViews();
+    }
+    return added;
+  }
+  function hoRefreshViews() {
+    renderHistory();
+    if (!els.todayHome.hidden) renderToday();
+    if (!els.progressScreen.hidden) { renderProgressScreen(); hoRenderProgressGroup(); }
+  }
+  function hoClearHash() {
+    if (!/^#import=/.test(location.hash)) return;
+    try { history.replaceState(history.state, "", location.pathname + location.search); } catch (e) { /* ignore */ }
+  }
+  let hoPendingImport = null; // {entries, data}
+  function hoIosBrowser() {
+    const forced = readJSON("fwmc-test-ios-browser", null);
+    if (forced !== null) return !!forced;
+    return isIOS && !standalone;
+  }
+  function hoOpenSheet() {
+    const sheet = $("handoverImportSheet");
+    sheet.hidden = false;
+    const b = sheet.querySelector(".start-btn:not([hidden])");
+    if (b) b.focus();
+  }
+  function hoShowImportError(text) {
+    hoPendingImport = null;
+    $("handoverImportTitle").textContent = "Das hat nicht geklappt";
+    $("handoverImportText").textContent = text || "Der Code ließ sich nicht lesen. Es wurde nichts übernommen. Lass dir den QR-Code bitte noch einmal zeigen.";
+    $("handoverImportList").hidden = true;
+    $("handoverImportIos").hidden = true;
+    $("handoverImportYesBtn").hidden = true;
+    $("handoverImportCopyBtn").hidden = true;
+    $("handoverImportNoBtn").textContent = "Schließen";
+    hoOpenSheet();
+  }
+  function hoShowNeedNext(r) {
+    hoPendingImport = null;
+    $("handoverImportTitle").textContent = `Code ${r.have} von ${r.n} gelesen`;
+    $("handoverImportText").textContent = `Es gibt ${r.n} Codes. Scanne jetzt Code ${r.need} von ${r.n} mit der Kamera.`;
+    $("handoverImportList").hidden = true;
+    $("handoverImportIos").hidden = true;
+    $("handoverImportYesBtn").hidden = true;
+    $("handoverImportCopyBtn").hidden = true;
+    $("handoverImportNoBtn").textContent = "OK";
+    hoOpenSheet();
+  }
+  function hoShowImport(entries, data, fromPaste) {
+    hoPendingImport = { entries, data };
+    $("handoverImportTitle").textContent = `${hoCount(entries.length)} von deinem Trainer übernehmen?`;
+    $("handoverImportText").textContent = "Sie kommen in deinen Verlauf und zählen für deinen Fortschritt.";
+    const ul = $("handoverImportList");
+    ul.hidden = false;
+    ul.innerHTML = entries.map((x) => `<li><span class="h-title">${esc(x.title)}</span><span class="h-meta">${hoWhen(x.t * 1000)}${x.seconds ? " · " + fmtMinutes(x.seconds) : ""}</span></li>`).join("");
+    const ios = hoIosBrowser() && !fromPaste;
+    $("handoverImportIos").hidden = !ios;
+    $("handoverImportCopyBtn").hidden = !ios;
+    $("handoverImportCopyBtn").textContent = "Code kopieren";
+    $("handoverImportYesBtn").hidden = false;
+    $("handoverImportYesBtn").textContent = ios ? "Hier in Safari übernehmen" : "Übernehmen";
+    $("handoverImportNoBtn").textContent = "Nicht jetzt";
+    hoOpenSheet();
+  }
+  async function hoHandleToken(raw, fromPaste) {
+    const tok = hoParseToken(raw);
+    if (!tok) { hoShowImportError(); return; }
+    const r = hoCollect(tok);
+    if (!r.data) { hoShowNeedNext(r); return; }
+    try {
+      const entries = await hoDecode(r.data);
+      hoShowImport(entries, r.data, fromPaste);
+    } catch (e) {
+      hoShowImportError(e && e.message === "nodecomp"
+        ? "Dieser Browser kann den Code nicht lesen. Bitte aktualisiere dein Handy oder öffne die App in einem aktuellen Browser. Es wurde nichts übernommen."
+        : null);
+    }
+  }
+  function hoCheckHash() {
+    if (!/^#import=/.test(location.hash)) return;
+    const raw = location.hash;
+    hoClearHash();
+    hoHandleToken(raw, false);
+  }
+  function hoCloseImport() {
+    $("handoverImportSheet").hidden = true;
+    hoPendingImport = null;
+  }
+  $("handoverImportYesBtn").addEventListener("click", () => {
+    const p = hoPendingImport;
+    hoCloseImport();
+    if (!p) return;
+    const n = hoImport(p.entries);
+    showToast(n ? `${hoCount(n)} übernommen.` : "Diese Trainings sind schon in deinem Verlauf.");
+  });
+  $("handoverImportNoBtn").addEventListener("click", hoCloseImport);
+  $("handoverImportSheet").addEventListener("click", (e) => { if (e.target === e.currentTarget) hoCloseImport(); });
+  $("handoverImportSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") hoCloseImport(); });
+  async function hoCopy(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* fallback below */ }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return ok;
+    } catch (e) { return false; }
+  }
+  $("handoverImportCopyBtn").addEventListener("click", async () => {
+    const p = hoPendingImport;
+    if (!p) return;
+    const ok = await hoCopy(`1.1.code.${p.data}`);
+    $("handoverImportCopyBtn").textContent = ok ? "Kopiert ✓" : "Kopieren ging nicht";
+    if (ok) showToast("Kopiert. Öffne jetzt die App vom Startbildschirm: Fortschritt › Übergabe-Code einfügen.");
+  });
+  // Paste field (home-screen app on the iPhone: Safari has its own storage)
+  function hoOpenPaste() {
+    $("handoverPasteInput").value = "";
+    $("handoverPasteError").hidden = true;
+    $("handoverPasteSheet").hidden = false;
+    $("handoverPasteInput").focus();
+  }
+  function hoClosePaste() { $("handoverPasteSheet").hidden = true; }
+  $("handoverPasteCancelBtn").addEventListener("click", hoClosePaste);
+  $("handoverPasteSheet").addEventListener("click", (e) => { if (e.target === e.currentTarget) hoClosePaste(); });
+  $("handoverPasteSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") hoClosePaste(); });
+  $("handoverPasteGoBtn").addEventListener("click", () => {
+    const v = $("handoverPasteInput").value;
+    if (!hoParseToken(v)) {
+      $("handoverPasteError").textContent = "Das sieht nicht nach einem Übergabe-Code aus. Kopiere ihn bitte noch einmal.";
+      $("handoverPasteError").hidden = false;
+      return;
+    }
+    hoClosePaste();
+    hoHandleToken(v, true);
+  });
+  $("handoverPasteOpenBtn").addEventListener("click", hoOpenPaste);
+  window.addEventListener("hashchange", hoCheckHash);
+
+  // ---- trainer side: pick entries ----
+  let hoRange = "since";
+  let hoSinceMin = null; // minutes after midnight
+  let hoChecked = new Set();
+  let hoRangeIds = [];
+  let hoQr = null; // {ids, source:"history"|"client", tokens, idx, meta}
+  function hoDefaultSince() {
+    const now = Date.now();
+    const recent = loadHistory().filter((e) => now - new Date(e.ts).getTime() <= 2 * 3600000);
+    const d = recent.length ? new Date(Math.min(...recent.map((e) => new Date(e.ts).getTime()))) : new Date(now - 3600000);
+    return d.getHours() * 60 + Math.floor(d.getMinutes() / 5) * 5;
+  }
+  function hoRangeFrom() {
+    const now = new Date();
+    if (hoRange !== "since") return now.getTime() - Number(hoRange) * 60000;
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), Math.floor(hoSinceMin / 60), hoSinceMin % 60);
+    if (d.getTime() > now.getTime()) d.setDate(d.getDate() - 1); // "seit 23:30" after midnight
+    return d.getTime();
+  }
+  const hoMinText = (m) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  function hoRenderPick(resetChecks) {
+    const from = hoRangeFrom();
+    const list = loadHistory().filter((e) => new Date(e.ts).getTime() >= from);
+    hoRangeIds = list.map((e) => e.id);
+    if (resetChecks) hoChecked = new Set(hoRangeIds);
+    $("handoverSinceLabel").textContent = `seit ${hoMinText(hoSinceMin)}`;
+    $("handoverSinceInput").value = hoMinText(hoSinceMin);
+    $("handoverSinceRow").hidden = hoRange !== "since";
+    document.querySelectorAll("#handoverRangeRow .choice").forEach((b) => {
+      const on = b.dataset.hoRange === hoRange;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    const ul = $("handoverList");
+    ul.innerHTML = list.length ? list.map((e) => `<li><label class="checkbox-row tap-row handover-check"><input type="checkbox" data-ho-id="${esc(e.id)}"${hoChecked.has(e.id) ? " checked" : ""}>
+        <span class="handover-check-text"><span class="h-title">${esc(e.title)}</span><span class="h-meta">${hoWhen(e.ts)}${e.seconds ? " · " + fmtMinutes(e.seconds) : ""}${e.aborted ? " · abgebrochen" : ""}</span></span></label></li>`).join("")
+      : '<li class="history-empty">In diesem Zeitraum gibt es kein Training. Wähle einen früheren Zeitpunkt.</li>';
+    ul.querySelectorAll("input[data-ho-id]").forEach((cb) => cb.addEventListener("change", () => {
+      if (cb.checked) hoChecked.add(cb.dataset.hoId); else hoChecked.delete(cb.dataset.hoId);
+      hoSyncGo();
+    }));
+    hoSyncGo();
+  }
+  function hoSelectedIds() { return hoRangeIds.filter((id) => hoChecked.has(id)); }
+  function hoSyncGo() {
+    const n = hoSelectedIds().length;
+    const btn = $("handoverGoBtn");
+    btn.disabled = n === 0;
+    btn.textContent = `${hoCount(n)} übergeben`;
+  }
+  function hoOpenPick() {
+    hoRange = "since";
+    hoSinceMin = hoDefaultSince();
+    hoRenderPick(true);
+    showScreen("handoverScreen");
+  }
+  document.querySelectorAll("#handoverRangeRow .choice").forEach((b) => b.addEventListener("click", () => {
+    hoRange = b.dataset.hoRange;
+    hoRenderPick(true);
+    if (hoRange === "since") $("handoverSinceInput").focus();
+  }));
+  $("handoverSinceInput").addEventListener("change", () => {
+    const m = /^(\d{1,2}):(\d{2})/.exec($("handoverSinceInput").value);
+    if (!m) return;
+    hoSinceMin = Math.min(23 * 60 + 59, Number(m[1]) * 60 + Number(m[2]));
+    hoRenderPick(true);
+  });
+  $("handoverOpenBtn").addEventListener("click", hoOpenPick);
+  $("handoverBackBtn").addEventListener("click", () => showScreen("progressScreen"));
+  $("handoverGoBtn").addEventListener("click", () => {
+    const ids = hoSelectedIds();
+    if (!ids.length) return;
+    const meta = hoRange === "since" ? `seit ${hoMinText(hoSinceMin)} Uhr` : `letzte ${hoRange} Min.`;
+    hoStartQr(ids, "history", meta);
+  });
+
+  // ---- QR screen ----
+  let hoQrLib = null;
+  function hoLoadQrLib() {
+    if (window.qrcode) return Promise.resolve(window.qrcode);
+    if (hoQrLib) return hoQrLib;
+    hoQrLib = new Promise((res, rej) => {
+      const s = document.createElement("script");
+      s.src = "qrcode.js";
+      s.onload = () => (window.qrcode ? res(window.qrcode) : rej(new Error("qr")));
+      s.onerror = () => { hoQrLib = null; rej(new Error("qr")); };
+      document.head.appendChild(s);
+    });
+    return hoQrLib;
+  }
+  function hoEntriesFor(ids, source) {
+    const all = source === "client" ? hoClientRuns() : loadHistory();
+    return all.filter((e) => ids.includes(e.id));
+  }
+  async function hoStartQr(ids, source, meta) {
+    const entries = hoEntriesFor(ids, source);
+    if (!entries.length) return;
+    const data = await hoEncode(entries);
+    hoQr = { ids, source, tokens: hoTokens(data), idx: 0, meta, n: entries.length };
+    $("handoverQrMeta").textContent = `${hoCount(entries.length)} · ${meta}`;
+    $("handoverQrError").hidden = true;
+    showScreen("handoverQrScreen");
+    hoDrawQr();
+  }
+  async function hoDrawQr() {
+    if (!hoQr) return;
+    const multi = hoQr.tokens.length > 1;
+    $("handoverPartNav").hidden = !multi;
+    $("handoverPartLabel").textContent = `Code ${hoQr.idx + 1} von ${hoQr.tokens.length}`;
+    $("handoverPrevBtn").disabled = hoQr.idx === 0;
+    $("handoverNextBtn").disabled = hoQr.idx >= hoQr.tokens.length - 1;
+    $("handoverQrHint").textContent = multi ? `Erst Code ${hoQr.idx + 1} scannen lassen, dann mit › zum nächsten. Die App deines Kunden sammelt die Teile.` : "";
+    $("handoverQrHint").hidden = !multi;
+    const url = hoBaseUrl() + "#import=" + hoQr.tokens[hoQr.idx];
+    const cv = $("handoverQrCanvas");
+    cv.dataset.url = url;
+    try {
+      const qrcode = await hoLoadQrLib();
+      const qr = qrcode(0, "M");
+      qr.addData(url, "Byte");
+      qr.make();
+      const n = qr.getModuleCount(), quiet = 4, total = n + quiet * 2;
+      const scale = Math.max(2, Math.floor(720 / total));
+      cv.width = cv.height = total * scale;
+      const ctx = cv.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, cv.width, cv.height);
+      ctx.fillStyle = "#0b1a1f";
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * scale, (r + quiet) * scale, scale, scale);
+      cv.dataset.modules = String(n);
+      cv.setAttribute("aria-label", multi ? `QR-Code ${hoQr.idx + 1} von ${hoQr.tokens.length}` : "QR-Code für die Übergabe");
+    } catch (e) {
+      $("handoverQrError").hidden = false;
+    }
+  }
+  $("handoverPrevBtn").addEventListener("click", () => { if (hoQr && hoQr.idx > 0) { hoQr.idx--; hoDrawQr(); } });
+  $("handoverNextBtn").addEventListener("click", () => { if (hoQr && hoQr.idx < hoQr.tokens.length - 1) { hoQr.idx++; hoDrawQr(); } });
+  $("handoverQrBackBtn").addEventListener("click", () => {
+    if (hoQr && hoQr.source === "history") showScreen("handoverScreen"); else showScreen("progressScreen");
+  });
+  function hoDeleteFromHistory(ids) {
+    const p = loadProgress();
+    const list = loadHistory();
+    const keep = [];
+    list.forEach((e) => {
+      if (!ids.includes(e.id)) { keep.push(e); return; }
+      if (e.aborted) return;
+      const day = p.days[progressDay(e.ts)];
+      if (!day) return;
+      const area = historyAreaOf(e);
+      day.n = Math.max(0, day.n - 1);
+      day.s = Math.max(0, day.s - Math.max(0, Math.round(Number(e.seconds) || 0)));
+      if (day.a && day.a[area]) { day.a[area] -= 1; if (day.a[area] <= 0) delete day.a[area]; }
+      if (!day.n) delete p.days[progressDay(e.ts)];
+    });
+    writeJSON(HISTORY_KEY, keep);
+    writeJSON(PROGRESS_KEY, p);
+    reminderPlanChanged();
+    return list.length - keep.length;
+  }
+  $("handoverDoneBtn").addEventListener("click", () => {
+    const q = hoQr;
+    hoQr = null;
+    if (!q) { showScreen("progressScreen"); return; }
+    if (q.source === "client") {
+      const left = hoClientRuns().filter((e) => !q.ids.includes(e.id));
+      writeJSON(HO_RUNS_KEY, left);
+      showScreen("progressScreen");
+      showToast(`Übergeben. ${q.n === 1 ? "Das Kunden-Training ist" : "Die Kunden-Trainings sind"} von deinem Gerät gelöscht.`);
+      return;
+    }
+    showScreen("progressScreen");
+    const n = q.ids.length;
+    confirmDialog("Dein Kunde hat sie jetzt in seiner App.", () => {
+      hoDeleteFromHistory(q.ids);
+      hoRefreshViews();
+      showToast(`${hoCount(n)} gelöscht.`);
+    }, { title: `${n === 1 ? "Dieses Training" : `Diese ${n} Trainings`} auf deinem Gerät löschen?`, yes: "Löschen", no: "Behalten" });
+  });
+
+  // ---- Kunden-Training ----
+  function hoSnapshot() {
+    const snap = {};
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && HO_SNAP_RE.test(k)) snap[k] = localStorage.getItem(k);
+      }
+    } catch (e) { /* private mode */ }
+    return snap;
+  }
+  function hoRestoreSnapshot(snap) {
+    try {
+      const now = [];
+      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && HO_SNAP_RE.test(k)) now.push(k); }
+      now.forEach((k) => { if (!(k in snap)) localStorage.removeItem(k); });
+      Object.entries(snap || {}).forEach(([k, v]) => { if (typeof v === "string") localStorage.setItem(k, v); });
+    } catch (e) { /* private mode */ }
+  }
+  function hoStartClientRun() {
+    if (hoSession()) return;
+    writeJSON(HO_SESSION_KEY, { start: Date.now(), snap: hoSnapshot() });
+    hoSyncStrip();
+    hoRenderProgressGroup();
+    showToast("Kunden-Training läuft. Was jetzt trainiert wird, zählt nicht für dich.");
+  }
+  function hoEndClientRun() {
+    const s = hoSession();
+    if (!s) return;
+    try { localStorage.removeItem(HO_SESSION_KEY); } catch (e) { /* ignore */ }
+    hoRestoreSnapshot(s.snap || {});
+    hoSyncStrip();
+    const runs = hoClientRuns();
+    if (!runs.length) {
+      showScreen("progressScreen");
+      showToast("Kunden-Training beendet. Es wurde kein Training aufgezeichnet.");
+      return;
+    }
+    hoStartQr(runs.map((e) => e.id), "client", `Kunden-Training seit ${hoHM(new Date(Math.min(...runs.map((e) => e.client || s.start))))} Uhr`);
+  }
+  function hoShowPendingQr() {
+    const runs = hoClientRuns();
+    if (!runs.length) return;
+    hoStartQr(runs.map((e) => e.id), "client", "Kunden-Training");
+  }
+  $("clientRunStartBtn").addEventListener("click", hoStartClientRun);
+  $("clientRunEndBtn").addEventListener("click", hoEndClientRun);
+  $("clientRunPendingBtn").addEventListener("click", hoShowPendingQr);
+  $("clientRunDropBtn").addEventListener("click", () => {
+    const n = hoClientRuns().length;
+    confirmDialog(`${n === 1 ? "Das Kunden-Training" : `Die ${n} Kunden-Trainings`} löschen, ohne sie zu übergeben?`, () => {
+      try { localStorage.removeItem(HO_RUNS_KEY); } catch (e) { /* ignore */ }
+      hoRenderProgressGroup();
+    }, { yes: "Löschen", no: "Behalten" });
+  });
+  function hoRenderProgressGroup() {
+    const active = hoClientRunActive();
+    const pending = active ? 0 : hoClientRuns().length;
+    $("clientRunStartBtn").hidden = active;
+    $("clientRunActiveNote").hidden = !active;
+    $("clientRunPending").hidden = !pending;
+    if (pending) $("clientRunPendingText").textContent = `${hoCount(pending)} aus dem Kunden-Training ${pending === 1 ? "ist" : "sind"} noch nicht übergeben.`;
+  }
+  let hoStripRaf = 0;
+  function hoSyncStrip() {
+    const strip = $("clientRunStrip");
+    const s = hoSession();
+    const onScreen = !!document.querySelector(".screen:not([hidden])");
+    const show = !!s && onScreen;
+    if (s) {
+      const n = hoClientRuns().filter((e) => e.client === s.start).length;
+      $("clientRunSince").textContent = hoHM(new Date(s.start));
+      $("clientRunCount").textContent = n ? ` · ${hoCount(n)}` : "";
+    }
+    if (strip.hidden !== !show) strip.hidden = !show;
+    document.body.classList.toggle("client-run-on", show);
+  }
+  new MutationObserver(() => {
+    if (hoStripRaf) return;
+    hoStripRaf = requestAnimationFrame(() => { hoStripRaf = 0; hoSyncStrip(); });
+  }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["hidden"] });
+  els.handoverScreen = $("handoverScreen");
+  els.handoverQrScreen = $("handoverQrScreen");
+  SCREENS.push("handoverScreen", "handoverQrScreen");
+  NAV_TAB_OF.handoverScreen = "progress";
+  NAV_TAB_OF.handoverQrScreen = "progress";
+  hoSyncStrip();
+
   // ---- Start-up ----
   renderHistory();
   initStartScreen();
   openFromHash();
-  if (!startOnboarding() && !readJSON(TIPS_KEY, false)) openTips();
+  // A QR-Übergabe link opens its own sheet; slides and tips wait for the next start.
+  if (/^#import=/.test(location.hash)) hoCheckHash();
+  else if (!startOnboarding() && !readJSON(TIPS_KEY, false)) openTips();
 
   // ---- Startbild ausblenden (2026-10-05) ----
   // #appSplash covers the first paint; once the app is set up it fades out,

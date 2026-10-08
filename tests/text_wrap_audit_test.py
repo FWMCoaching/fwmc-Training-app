@@ -11,7 +11,7 @@ from playwright.async_api import async_playwright
 # New screens get covered by adding them to AREAS / the NAT loop.
 
 BASE = "http://localhost:8845/index.html?bereich="
-AREAS = ["heute", "visual", "breath", "movement", "workout", "cardio", "nat", "test", "free", "aktivierung", "hilfsmittel"]
+AREAS = ["heute", "visual", "breath", "movement", "workout", "cardio", "nat", "test", "free", "aktivierung", "hilfsmittel", "fortschritt"]
 WIDTHS = [375, 390, 430, 600, 768, 820, 1024, 1180, 1366]
 # iPhone text size (2026-10-06): the app follows the iOS setting up to 1.25x
 # (--ts), so small phones are also checked with the biggest and smallest factor.
@@ -98,6 +98,26 @@ async def main():
                     await pg.goto(BASE + "heute"); await pg.wait_for_timeout(250)
                     await audit(pg, f"{w}px{ts_tag(ts)} heute/vorname-lang", problems)
                     await pg.evaluate("() => localStorage.removeItem('fwmc-name-v1')")
+                if area == "fortschritt":
+                    # QR-Übergabe (2026-10-08): range screen, QR code, import sheet, paste sheet, Kunden-Training strip
+                    await pg.evaluate("""() => { const t = Date.now(); localStorage.setItem('fwmc-history-v1', JSON.stringify([0, 1, 2].map(i => ({id: 'w' + i, ts: new Date(t - (5 + i * 20) * 60000).toISOString(), kind: 'exercise', title: ['Objektverfolgung (MOT) · Geschwindigkeit', 'Farbfelder · Antippen', 'Gleichgewicht · Wörter'][i], seconds: 300, rating: null})))); }""")
+                    await pg.goto(BASE + "fortschritt"); await pg.wait_for_timeout(250)
+                    await audit(pg, f"{w}px{ts_tag(ts)} fortschritt/verlauf", problems)
+                    await pg.evaluate("() => document.getElementById('handoverOpenBtn').click()"); await pg.wait_for_timeout(150)
+                    await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/zeitraum", problems)
+                    await pg.evaluate("() => document.getElementById('handoverGoBtn').click()"); await pg.wait_for_timeout(500)
+                    await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/qr", problems)
+                    qurl = await pg.get_attribute("#handoverQrCanvas", "data-url")
+                    await pg.evaluate("() => { localStorage.setItem('fwmc-test-ios-browser', 'true'); localStorage.removeItem('fwmc-history-v1'); }")
+                    await pg.goto(qurl); await pg.wait_for_timeout(400)
+                    await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/import-sheet", problems)
+                    await pg.evaluate("() => { localStorage.removeItem('fwmc-test-ios-browser'); document.getElementById('handoverImportNoBtn').click(); }")
+                    await pg.goto(BASE + "fortschritt"); await pg.wait_for_timeout(250)
+                    await pg.evaluate("() => document.getElementById('handoverPasteOpenBtn').click()"); await pg.wait_for_timeout(100)
+                    await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/einfuegen", problems)
+                    await pg.evaluate("() => { document.getElementById('handoverPasteCancelBtn').click(); document.getElementById('clientRunStartBtn').click(); }"); await pg.wait_for_timeout(150)
+                    await audit(pg, f"{w}px{ts_tag(ts)} uebergabe/kunden-training", problems)
+                    await pg.evaluate("() => localStorage.removeItem('fwmc-client-session-v1')")
                 if area == "hilfsmittel":
                     # with a shop link: "Ansehen" + "Werbung · Partner-Link" + partner sentence
                     await pg.evaluate("() => { window.__gear.items.forEach(g => { g.link = 'https://example.com/' + g.id; }); window.__gear.render(); }")
