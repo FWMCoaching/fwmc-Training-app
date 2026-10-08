@@ -183,3 +183,12 @@ Settings › Safari/App brings it back), the rear camera is chosen, scan
 speed on a dense code; camera scan of a dense code
 (150 entries = several codes), Safari tab per scan collecting parts,
 "Code kopieren" → paste in the home-screen app, the strip under the notch.
+
+
+## Safari-Hinweis für #code= (2026-10-08 abends, Fabian)
+On the iPhone the camera app opens Safari, whose storage is not the home-screen
+app's. A `#code=` link in iOS Safari (`hoIosBrowser()`) therefore asks once via
+`confirmDialog` ("Lieber in der App scannen": "Hier in Safari öffnen" / "Abbrechen")
+before `openCodeAsTyped`; everywhere else it runs at once. The trainer pre-check
+card and the dashboard QR hint both say: scan in the app, not with the camera app.
+Test: `tests/safari_code_hinweis_1008_test.py`.

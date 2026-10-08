@@ -6047,6 +6047,13 @@
       // Trainer code QR scanned with the phone's own camera (docs/notes/36).
       const c = codeFromQrText(location.hash);
       try { history.replaceState(history.state, "", location.pathname + location.search); } catch (e) { /* ignore */ }
+      // iPhone camera app opens Safari, whose storage is not the home-screen
+      // app's (Fabian 08.10.): say so once before the code lands here.
+      if (hoIosBrowser()) {
+        confirmDialog("Du bist gerade in Safari. Hast du die App auf dem Startbildschirm, landet der Code sonst nicht dort. Öffne dann lieber die App und scanne unter Fortschritt mit „Trainer-QR-Code scannen“.",
+          () => openCodeAsTyped(c), { title: "Lieber in der App scannen", yes: "Hier in Safari öffnen", no: "Abbrechen" });
+        return;
+      }
       openCodeAsTyped(c);
       return;
     }
