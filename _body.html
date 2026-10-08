@@ -458,6 +458,10 @@
       <span class="fc-title">So trainierst du richtig</span>
       <span class="fc-desc">Kurze Tipps f&uuml;r dein Training und wie du die App nutzt.</span>
     </button>
+    <button class="featured-card" id="moreGearBtn" type="button">
+      <span class="fc-title">Hilfsmittel</span>
+      <span class="fc-desc">Was du f&uuml;r die &Uuml;bungen mit H&uuml;tchen oder Farbmatte brauchst, mit Starterpaket f&uuml;r den Anfang.</span>
+    </button>
     <button class="featured-card faq-open-btn" type="button">
       <span class="fc-title">H&auml;ufige Fragen</span>
       <span class="fc-desc">Antworten rund um Training, Codes, Daten und Offline-Nutzung.</span>
@@ -486,6 +490,20 @@
       <button class="privacy-open-btn" type="button">Datenschutz</button>
     </nav>
   </footer>
+</div>
+
+<div class="screen" id="gearScreen" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="gearBackBtn">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title">Hilfsmittel und Starterpaket</h1>
+  <p class="page-sub">F&uuml;r einige &Uuml;bungen brauchst du ein paar einfache Dinge, zum Beispiel H&uuml;tchen oder eine Farbmatte. Hier siehst du, was wof&uuml;r gebraucht wird. Tippe auf eine &Uuml;bung, um sie zu &ouml;ffnen.</p>
+  <div class="hub-group-title hub-first">Starterpaket</div>
+  <p class="hub-sub">Ein Starterpaket f&uuml;r den Anfang: Diese Dinge brauchst du am h&auml;ufigsten.</p>
+  <div class="gear-list" id="gearStarterList"></div>
+  <div class="hub-group-title" id="gearMoreTitle">F&uuml;r einzelne &Uuml;bungen</div>
+  <div class="gear-list" id="gearMoreList"></div>
+  <p class="group-help gear-partner-note" id="gearPartnerNote" hidden>Wenn du &uuml;ber einen Link kaufst, bekommt dein Trainer eine kleine Provision. F&uuml;r dich &auml;ndert sich der Preis nicht.</p>
 </div>
 
 <nav class="bottom-nav" id="bottomNav" aria-label="Hauptnavigation" hidden>
@@ -2780,6 +2798,7 @@
     <span class="hilfsmittel-kicker">Hilfsmittel</span>
     <span class="hilfsmittel-text"></span>
     <a class="text-link small hilfsmittel-link" href="#" target="_blank" rel="noopener" hidden>Passendes Hilfsmittel ansehen &rarr;</a>
+    <button class="text-link small hilfsmittel-all" type="button">Alle Hilfsmittel</button>
     <button class="text-link small anaglyph-set-link" type="button" data-anaglyph-calib>Farbbrille einstellen</button>
   </div>
 
@@ -4670,6 +4689,7 @@
     <span class="hilfsmittel-kicker">Hilfsmittel</span>
     <span id="hilfsmittelText"></span>
     <a class="text-link small hilfsmittel-link" id="hilfsmittelLink" href="#" target="_blank" rel="noopener" hidden>Passendes Hilfsmittel ansehen &rarr;</a>
+    <button class="text-link small hilfsmittel-all" type="button">Alle Hilfsmittel</button>
   </div>
 
   <div id="ffSettings" hidden>
@@ -8132,7 +8152,7 @@
 
     <details class="faq-item">
       <summary>Videos und Links</summary>
-      <div class="faq-body">Videos, die dein Trainer in ein Programm einbindet, und Links zur Website werden vom jeweiligen Anbieter geladen. Dort gelten dessen Datenschutzregeln. Ohne solche Inhalte l&auml;dt die App nichts von fremden Anbietern, auch die Schriften nicht.</div>
+      <div class="faq-body">Videos, die dein Trainer in ein Programm einbindet, und Links zur Website werden vom jeweiligen Anbieter geladen. Dort gelten dessen Datenschutzregeln. Kauf-Links f&uuml;hren zu externen Shops; dort gelten deren Datenschutzregeln. Ohne solche Inhalte l&auml;dt die App nichts von fremden Anbietern, auch die Schriften nicht.</div>
     </details>
 
     <p class="group-help">Die vollst&auml;ndige <a href="https://www.fabian-westermann.de/datenschutzerklaerung-eu/" target="_blank" rel="noopener">Datenschutzerkl&auml;rung</a> und das <a href="https://www.fabian-westermann.de/impressum/" target="_blank" rel="noopener">Impressum</a> findest du auf der Website.</p>

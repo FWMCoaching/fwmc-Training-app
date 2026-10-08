@@ -2968,10 +2968,10 @@
     comboAgainBtn: $("comboAgainBtn"), comboDoneBackBtn: $("comboDoneBackBtn"),
   };
 
-  els.trainingHub = $("trainingHub"); els.moreScreen = $("moreScreen");
+  els.trainingHub = $("trainingHub"); els.moreScreen = $("moreScreen"); els.gearScreen = $("gearScreen");
   els.freeHome = $("freeHome"); els.freeReady = $("freeReady"); els.freeEdit = $("freeEdit"); els.freePlayer = $("freePlayer");
   els.activationHome = $("activationHome"); els.optoReady = $("optoReady"); els.optoPlayer = $("optoPlayer");
-  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "activationHome", "optoReady", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady", "eyecountReady", "tonReady"];
+  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "gearScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "activationHome", "optoReady", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady", "eyecountReady", "tonReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -4885,29 +4885,31 @@
   // ---- Hilfsmittel note (2026-10-07, first used by Farbfelder): one entry
   // per exercise that needs equipment; `link` (a product page) is shown only
   // once Fabian sets a URL. A new exercise that needs something = one entry.
+  // `gear` names its GEAR_ITEMS cards (page "Hilfsmittel und Starterpaket"
+  // under Mehr): the exercise chips on those cards are read from here.
   const HILFSMITTEL = {
     // Hütchen exercises (Fabian 08.10.): every one names its equipment.
     "cone-compass": {
       text: "Du brauchst: Hütchen oder Becher in den eingestellten Farben und ein Kreuz oder einen Stern aus Klebeband auf dem Boden.",
-      link: "",
+      link: "", gear: ["cups", "tape"],
     },
     "cone-tap": {
       text: "Du brauchst: vier Hütchen oder Becher in Rot, Gelb, Grün und Blau, nebeneinander vor dir.",
-      link: "",
+      link: "", gear: ["cups"],
     },
-    "cone-path": { text: "Du brauchst: Hütchen oder Becher in den eingestellten Farben, ausgelegt wie auf der Karte.", link: "" },
+    "cone-path": { text: "Du brauchst: Hütchen oder Becher in den eingestellten Farben, ausgelegt wie auf der Karte.", link: "", gear: ["cups"] },
     "cone-number": {
       text: "Du brauchst: 3-6 farbige Hütchen oder Becher und nummerierte Felder (z. B. Zettel mit 1-6).",
-      link: "",
+      link: "", gear: ["cups", "numbers"],
     },
     farbfelder: {
       text: "Du brauchst: eine Farbmatte mit 4 Feldern oder 4 farbige Hütchen, Bälle oder Zettel auf dem Boden, angeordnet wie hier eingestellt.",
-      link: "",
+      link: "", gear: ["mat", "cups"],
     },
     // Farbbrille exercises (Test-Bereich); a shop link can go into `link`.
     farbbrille: {
       text: "Du brauchst eine Rot-Grün-Brille.",
-      link: "",
+      link: "", gear: ["glasses"],
     },
   };
   function renderHilfsmittel(exId) {
@@ -26557,6 +26559,79 @@
   }
   document.querySelectorAll("[data-hilfsmittel]").forEach(renderHilfsmittelBox);
 
+  // ---- Hilfsmittel und Starterpaket (Fabian 08.10., "Starterpaket Stufe 1") ----
+  // Page #gearScreen under Mehr: one card per GEAR_ITEMS entry, starter items
+  // first. Which exercises use an item is read from HILFSMITTEL[...].gear, so
+  // the chips stay in sync with the ready-screen notes. `link` = shop page
+  // (partner link): empty = no button at all; with one, "Ansehen" + the
+  // "Werbung · Partner-Link" marker, and the page shows the Provision
+  // sentence. `test: true` = only with the Test-Bereich unlocked.
+  // A new Hilfsmittel = one HILFSMITTEL entry (with `gear`) + its card here.
+  const GEAR_ITEMS = [
+    { id: "cups", starter: true, name: "Hütchen oder Becher in 4 Farben",
+      desc: "Je ein Hütchen oder Becher in Rot, Gelb, Grün und Blau. Kleine Markierungshütchen aus dem Sportbedarf reichen, einfache Plastikbecher auch.", link: "" },
+    { id: "mat", starter: true, name: "Farbmatte mit 4 Feldern",
+      desc: "Eine Matte mit vier farbigen Feldern in Rot, Gelb, Grün und Blau. Für den Anfang gehen auch vier farbige Zettel auf dem Boden.", link: "" },
+    { id: "numbers", name: "Nummerierte Felder 1–6",
+      desc: "Sechs Zettel oder Karten mit den Zahlen 1 bis 6, auf dem Boden ausgelegt. Selbst geschrieben reicht.", link: "" },
+    { id: "tape", name: "Klebeband für den Boden",
+      desc: "Damit klebst du ein Kreuz oder einen Stern auf den Boden. Malerkrepp lässt sich leicht wieder ablösen.", link: "" },
+    { id: "glasses", test: true, name: "Rot-Grün-Brille",
+      desc: "Eine Brille mit einem roten und einem grünen Glas. Vor dem ersten Training stellst du sie in der App einmal ein.", link: "" },
+  ];
+  // HILFSMITTEL keys that are not VT exercise ids: title + opener.
+  const GEAR_EX_OPEN = {
+    farbbrille: { title: "Jedes Auge zählt", open: () => { $("eyecountOpenBtn").click(); eyecountReturnScreen = "gearScreen"; } },
+  };
+  function gearExercises(itemId) {
+    return Object.keys(HILFSMITTEL).filter((k) => (HILFSMITTEL[k].gear || []).includes(itemId)).map((k) => {
+      if (GEAR_EX_OPEN[k]) return { key: k, ...GEAR_EX_OPEN[k] };
+      const card = document.querySelector(`.excard[data-exercise="${k}"]`);
+      if (!EXERCISES[k] || !card) return null;
+      return { key: k, title: EXERCISES[k].title, open: () => {
+        card.click();
+        if (!els.ready.hidden) readyReturnScreen = "gearScreen";
+      } };
+    }).filter(Boolean);
+  }
+  let gearReturnScreen = "moreScreen";
+  function renderGearScreen() {
+    const items = GEAR_ITEMS.filter((g) => !g.test || isTestUnlocked());
+    const card = (g) => {
+      const exs = gearExercises(g.id);
+      return `<div class="gear-card" data-gear="${g.id}">
+        <div class="fc-title">${esc(g.name)}</div>
+        <div class="fc-desc">${esc(g.desc)}</div>
+        ${exs.length ? `<div class="gear-uses-label">Dafür brauchst du es</div><div class="gear-chips">${exs.map((x) => `<button type="button" class="filter-chip gear-ex-chip" data-gear-ex="${x.key}">${esc(x.title)}</button>`).join("")}</div>` : ""}
+        ${g.link ? `<div class="gear-shop"><a class="gear-shop-btn" href="${esc(g.link)}" target="_blank" rel="noopener sponsored">Ansehen</a><span class="gear-ad">Werbung · Partner-Link</span></div>` : ""}
+      </div>`;
+    };
+    $("gearStarterList").innerHTML = items.filter((g) => g.starter).map(card).join("");
+    const more = items.filter((g) => !g.starter);
+    $("gearMoreList").innerHTML = more.map(card).join("");
+    $("gearMoreTitle").hidden = !more.length;
+    $("gearPartnerNote").hidden = !items.some((g) => g.link);
+    els.gearScreen.querySelectorAll(".gear-ex-chip").forEach((b) => b.addEventListener("click", () => {
+      const x = gearExercises(b.closest(".gear-card").dataset.gear).find((e) => e.key === b.dataset.gearEx);
+      gearReturnScreen = "moreScreen";
+      if (x) x.open();
+    }));
+  }
+  function openGearScreen(from) {
+    gearReturnScreen = from || "moreScreen";
+    renderGearScreen();
+    showScreen("gearScreen");
+    window.scrollTo(0, 0);
+  }
+  $("moreGearBtn").addEventListener("click", () => openGearScreen("moreScreen"));
+  $("gearBackBtn").addEventListener("click", () => showScreen(gearReturnScreen));
+  // "Alle Hilfsmittel" in every .hilfsmittel-note: back returns to that page.
+  document.querySelectorAll(".hilfsmittel-all").forEach((b) => b.addEventListener("click", () => {
+    const scr = b.closest(".screen");
+    openGearScreen(scr ? scr.id : "moreScreen");
+  }));
+  window.__gear = { items: GEAR_ITEMS, render: renderGearScreen, exercises: gearExercises };
+
   // ---- Grundeinstellungen group "Farbbrille" (only with the Test-Bereich
   // unlocked: .test-teaser, same gate as the tab) ----
   function syncAnaglyphMasterUI() {
@@ -26752,7 +26827,10 @@
     syncAnaglyphGates();
     showScreen("eyecountReady");
   });
-  ecEl("ReadyBackToHome").addEventListener("click", () => showScreen("testHome"));
+  // From the Hilfsmittel page (chip "Jedes Auge zählt") back goes there.
+  let eyecountReturnScreen = "testHome";
+  ecEl("OpenBtn").addEventListener("click", () => { eyecountReturnScreen = "testHome"; }, true);
+  ecEl("ReadyBackToHome").addEventListener("click", () => showScreen(eyecountReturnScreen));
 
   let eyecountState = null;
   function ecSchedule(name, fn, delayMs) {
@@ -33502,7 +33580,7 @@
   $("moreCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") goMoreCode(); });
   $("moreSettingsBtn").addEventListener("click", openMasterSettings);
   $("moreTipsBtn").addEventListener("click", () => els.tipsBtn.click());
-  const NAV_TAB_OF = { todayHome: "today", planScreen: "today", myPlanScreen: "today", trainingHub: "training", progressScreen: "progress", moreScreen: "more" };
+  const NAV_TAB_OF = { todayHome: "today", planScreen: "today", myPlanScreen: "today", trainingHub: "training", progressScreen: "progress", moreScreen: "more", gearScreen: "more" };
   const AREA_HOME_IDS = ["home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "activationHome"];
   const TEST_TILE = { color: "#5c6b73", label: "Test", text: "Neue Übungen zum Ausprobieren.",
     icon: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>' };

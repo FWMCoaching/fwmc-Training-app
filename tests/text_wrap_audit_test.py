@@ -11,7 +11,7 @@ from playwright.async_api import async_playwright
 # New screens get covered by adding them to AREAS / the NAT loop.
 
 BASE = "http://localhost:8845/index.html?bereich="
-AREAS = ["heute", "visual", "breath", "movement", "workout", "cardio", "nat", "test", "free", "aktivierung"]
+AREAS = ["heute", "visual", "breath", "movement", "workout", "cardio", "nat", "test", "free", "aktivierung", "hilfsmittel"]
 WIDTHS = [375, 390, 430, 600, 768, 820, 1024, 1180, 1366]
 # iPhone text size (2026-10-06): the app follows the iOS setting up to 1.25x
 # (--ts), so small phones are also checked with the biggest and smallest factor.
@@ -84,8 +84,16 @@ async def main():
             pg = await ctx.new_page()
             pg.on("pageerror", lambda e: errors.append("pageerror: " + str(e)))
             for area in AREAS:
-                await pg.goto(BASE + area); await pg.wait_for_timeout(250)
+                await pg.goto(BASE + ("heute" if area == "hilfsmittel" else area)); await pg.wait_for_timeout(250)
+                if area == "hilfsmittel":
+                    # Hilfsmittel und Starterpaket (Mehr, 2026-10-08): no page parameter, opened like the Mehr row
+                    await pg.evaluate("() => document.getElementById('moreGearBtn').click()"); await pg.wait_for_timeout(150)
                 await audit(pg, f"{w}px{ts_tag(ts)} {area}", problems)
+                if area == "hilfsmittel":
+                    # with a shop link: "Ansehen" + "Werbung · Partner-Link" + partner sentence
+                    await pg.evaluate("() => { window.__gear.items.forEach(g => { g.link = 'https://example.com/' + g.id; }); window.__gear.render(); }")
+                    await pg.wait_for_timeout(100)
+                    await audit(pg, f"{w}px{ts_tag(ts)} hilfsmittel-links", problems)
                 if area == "nat":
                     subs = await pg.eval_on_selector_all("#natHome .sub-tab", "els => els.map(e => e.dataset.natSub)")
                     for s in subs[1:]:

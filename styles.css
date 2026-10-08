@@ -3032,6 +3032,21 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 .hilfsmittel-note{display:flex;flex-direction:column;gap:4px;font-size:calc(14px * var(--ts,1));line-height:1.5;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:16px}
 .hilfsmittel-kicker{font-size:calc(11.5px * var(--ts,1));font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--brand-deep)}
 .hilfsmittel-link{align-self:flex-start;min-height:44px;display:inline-flex;align-items:center}
+.hilfsmittel-all{align-self:flex-start;min-height:44px;display:inline-flex;align-items:center;padding-top:0;padding-bottom:0}
+/* Hilfsmittel und Starterpaket (Mehr, 2026-10-08): GEAR_ITEMS cards in the
+   .featured-card look (not tappable as a whole: the chips and "Ansehen" are). */
+.gear-list{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}
+.gear-card{display:flex;flex-direction:column;gap:4px;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);border-left:4px solid var(--brand);line-height:1.4}
+.gear-uses-label{margin-top:8px;font-size:calc(12px * var(--ts,1));font-weight:700;color:var(--ink-soft)}
+.gear-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+.gear-ex-chip{min-height:44px;padding:10px 14px;text-align:left;color:var(--brand-deep);line-height:1.25;max-width:100%}
+@media (hover:hover){.gear-ex-chip:hover{border-color:var(--brand)}}
+.gear-ex-chip:active{background:var(--brand-pale)}
+.gear-shop{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:10px}
+.gear-shop-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:12px;border:1.5px solid var(--brand);background:var(--surface);color:var(--brand-deep);font-weight:700;font-size:calc(15px * var(--ts,1));text-decoration:none}
+.gear-shop-btn:active{background:var(--brand-pale)}
+.gear-ad{font-size:calc(11.5px * var(--ts,1));font-weight:600;color:var(--ink-soft)}
+.gear-partner-note{margin:14px 0 0}
 .choice-row.four{grid-template-columns:repeat(4,1fr)}
 .ff-rules{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .ff-rules li{display:flex;align-items:center;gap:10px;font-size:calc(14px * var(--ts,1));color:var(--ink);line-height:1.35}

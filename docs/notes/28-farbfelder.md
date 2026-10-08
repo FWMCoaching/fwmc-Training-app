@@ -53,6 +53,28 @@ MASTER_BG_TARGETS beyond the shared VT state (bg is the stimulus).
 `HILFSMITTEL` in app.js: `{ exId: { text, link } }`, rendered by
 `renderHilfsmittel()` on the VT ready screen as `.hilfsmittel-note`; the link
 shows only when `link` is set (empty for now - Fabian names a product later).
+Every note also has "Alle Hilfsmittel" (`.hilfsmittel-all`), which opens the
+Hilfsmittel page; its ‹ returns to the ready screen it came from.
+
+### Hilfsmittel und Starterpaket (Mehr, Fabian 08.10. "Starterpaket Stufe 1")
+Mehr row `#moreGearBtn` opens `#gearScreen` (tab Mehr stays active). Cards come
+from ONE list `GEAR_ITEMS` in app.js (`id, name, desc, link, starter, test`):
+`starter: true` = section "Starterpaket" (Hütchen/Becher in 4 Farben,
+Farbmatte), the rest under "Für einzelne Übungen" (Nummerierte Felder 1-6,
+Klebeband); `test: true` (Rot-Grün-Brille) shows only with the Test-Bereich
+unlocked. The exercise chips are read from `HILFSMITTEL[key].gear` (list of
+GEAR_ITEMS ids), so notes and page never drift apart. A VT key opens via its
+`.excard` click (restrictions respected), then `readyReturnScreen =
+"gearScreen"`; other keys need a `GEAR_EX_OPEN` entry (`farbbrille` -> Jedes
+Auge zählt, `eyecountReturnScreen`).
+Links: none set yet. Empty `link` = no shop button at all. With a link the card
+shows "Ansehen" (new tab, `rel="noopener sponsored"`) + "Werbung · Partner-Link",
+and `#gearPartnerNote` (Provision sentence, "dein Trainer") appears once any
+link is set. Datenschutz "Videos und Links" names external shops. Note: the
+privacy intro says "keine Werbung" - revisit that sentence when the first
+partner link goes live. Test hook `window.__gear` (`items`, `render`).
+A new Hilfsmittel = one HILFSMITTEL entry (with `gear`) + its GEAR_ITEMS card.
+Test: `tests/hilfsmittel_liste_1008_test.py`, screenshots `tests/screenshots/hilfsmittel_liste/`.
 
 Test: `tests/farbfelder_1007_test.py`; screenshots `tests/screenshots/farbfelder/`.
 

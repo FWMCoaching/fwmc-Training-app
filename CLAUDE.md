@@ -371,7 +371,7 @@ For every new or changed exercise/screen, in the same commit:
   with Heute / Training (`#trainingHub`: code card - moved here from Mehr,
   Fabian 2026-10-05, ids still `moreCode*` - and tiles from `PLAN_AREAS` + Test
   when unlocked) / Fortschritt / Mehr (`#moreScreen`: Grundeinstellungen,
-  Tipps, FAQ, Datenschutz, Website, Impressum). The old 8-tab grid and the
+  Tipps, Hilfsmittel, FAQ, Datenschutz, Website, Impressum). The old 8-tab grid and the
   Heute "Bereiche" tiles are hidden via `body.has-bottom-nav`; area homes get
   a ‹ back to Training. Shown only while a `.screen` is visible (never in a
   player). Off in automated browsers unless `fwmc-test-bottomnav`. **Undo if
@@ -554,6 +554,8 @@ For every new or changed exercise/screen, in the same commit:
 - Hilfsmittel (2026-10-07): an exercise that needs equipment gets one
   `HILFSMITTEL` entry in app.js (text + optional `link`, shown only when set);
   the VT ready screen renders it as `.hilfsmittel-note`. Details docs/notes/28.
+  A new Hilfsmittel = one HILFSMITTEL entry (`gear`) + its `GEAR_ITEMS` card
+  (page "Hilfsmittel und Starterpaket" under Mehr, `#gearScreen`, 2026-10-08).
 - Sanfte Reize (2026-10-07): Grundeinstellungen "Sehen und Reize"
   (`masterPrefs.softStimuli`, + Schriftgröße `textSize` on top of `--ts`).
   Every exercise with fast light changes honours it: VT canvas exercises get
