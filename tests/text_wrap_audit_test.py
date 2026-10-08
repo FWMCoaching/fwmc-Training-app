@@ -114,6 +114,11 @@ async def main():
                     await pg.wait_for_timeout(100)
                     await audit(pg, f"{w}px{ts_tag(ts)} nat/balance-woerter-mbg", problems)
                     await pg.evaluate("() => { document.querySelector('[data-bal-content=stifte]').click(); const g = document.querySelector('#balanceReady .mbg-group'); g.querySelector('[data-opto-v=links]').click(); g.querySelector('[data-opto-v=aus]').click(); }")
+                    # Objektverfolgung (MOT) + Bewegter Hintergrund (2026-10-08)
+                    await pg.evaluate("() => { document.getElementById('motOpenSpeed').click(); document.getElementById('motAdvanced').open = true; const g = document.querySelector('#motReady .mbg-group'); g.querySelector('[data-opto-v=streifen]').click(); g.querySelector('[data-opto-v=schraeg]').click(); }")
+                    await pg.wait_for_timeout(150)
+                    await audit(pg, f"{w}px{ts_tag(ts)} nat/mot-mbg", problems)
+                    await pg.evaluate("() => { const g = document.querySelector('#motReady .mbg-group'); g.querySelector('[data-opto-v=links]').click(); g.querySelector('[data-opto-v=aus]').click(); }")
                 if area == "visual":
                     # Farbfelder ready screen (2026-10-07): Modus, Stufe 1-4, hand rows
                     await pg.click('.excard[data-exercise="farbfelder"]'); await pg.wait_for_timeout(150)

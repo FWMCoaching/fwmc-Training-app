@@ -15176,8 +15176,10 @@
       errorMode: p.errorMode, style: p.style, colors: p.colors.slice(), targetColors: p.targetColors.slice(),
       objScale: p.objScale || 1,
       startTime: performance.now(), timer: null, comboDurationTimer: null, raf: null, paused: false,
+      mbg: mbgCopy(p.mbg),
     };
     els.motStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
+    mbgStart("mot");
     requestWakeLock();
     motStartRound();
     // Kombi block: Objektverfolgung (MOT) has no natural end of its own, same as
@@ -35452,7 +35454,8 @@
   // ==== Bewegter Hintergrund (Fabian 2026-10-08) ====
   // The Optodrum pattern (optoPaint/optoAdvance, one renderer) as a slowly
   // moving layer BEHIND an exercise's content: Gleichgewicht, Positionen
-  // merken and Flash-Speicher-Test. Each exercise keeps its own `mbg`
+  // merken, Flash-Speicher-Test and Objektverfolgung (MOT, the balls are DOM
+  // elements above the canvas and keep their own tap targets). Each exercise keeps its own `mbg`
   // object in its prefs ({pattern: aus|streifen|punkte, dir, diag, speed
   // 1-10, size, gap, fg, bg, fgInt, bgInt in %}), so presets, Kombi blocks
   // (prefsOverride snapshot) and "Nochmal" carry it; the run's state gets
@@ -35499,6 +35502,9 @@
     flash: { label: "Flash-Speicher-Test", stage: () => els.flashStage, overlay: () => els.flashPauseOverlay, state: () => flashState,
       prefs: () => flashPrefs, save: () => saveFlashPrefsToStorage(), own: () => !comboProgram && !cardioGuestActive,
       readies: ["flashReady", "flashTrainingReady"] },
+    mot: { label: "Objektverfolgung (MOT)", stage: () => els.motStage, overlay: () => els.motPauseOverlay, state: () => motState,
+      prefs: () => motPrefs, save: () => saveMotPrefsToStorage(), own: () => !comboProgram && !cardioGuestActive,
+      readies: ["motReady", "motTrainingReady"] },
   };
   const MBG_CONTROLS_HTML = `
     <div class="choice-row" data-opto-row="pattern">

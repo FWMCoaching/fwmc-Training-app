@@ -148,6 +148,7 @@ async def main():
             # Gleichgewicht · Wörter + Bewegter Hintergrund (2026-10-08): the word stays below the hint
             await run(b,vp,"balance","#balanceOpenBtn",seed="localStorage.setItem('fwmc-balance-prefs-v1',JSON.stringify({content:'woerter',wordList:'farben',size:2,bpm:200,mbg:{pattern:'punkte'}}))",tag=" woerter+mbg")
             await run(b,vp,"flash","#flashOpenConstant",seed="localStorage.setItem('fwmc-flash-prefs-v1',JSON.stringify({mbg:{pattern:'streifen'}}))",tag=" mbg")
+            await run(b,vp,"mot","#motOpenSpeed",seed="localStorage.setItem('fwmc-mot-prefs-v1',JSON.stringify({mbg:{pattern:'streifen'}}))",tag=" mbg")
             await run(b,vp,"bisect",worst=True)
             await run_ff(b,vp)
             await run_cn(b,vp)

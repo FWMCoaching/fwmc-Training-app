@@ -3202,7 +3202,7 @@ body.soft-flash .flash-digit:not([hidden]){animation:fwmcSoftIn .3s ease-out 1}
 .block-result{display:flex;flex-direction:column;gap:2px}
 .block-result-label{font-size:calc(12px * var(--ts,1));font-weight:700;opacity:.8}
 /* Bewegter Hintergrund (2026-10-08): Optodrum pattern behind the content */
-.remember-stage,.flash-stage,.balance-stage{isolation:isolate}
+.remember-stage,.flash-stage,.balance-stage,.mot-stage{isolation:isolate}
 .mbg-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block}
 .mbg-canvas[hidden]{display:none}
 .mbg-group .mbg-more{display:flex;flex-direction:column;gap:8px;margin-top:10px}
