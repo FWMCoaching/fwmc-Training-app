@@ -87,7 +87,9 @@ async def main():
 
         # ---- push: area home -> exercise page ----
         await pg.goto(BASE + "?bereich=nat"); await pg.wait_for_timeout(600)
-        await pg.click(".nat-tile >> nth=0")
+        # 08.10.: the Aktivierung tiles (#activationHome, hidden here) reuse
+        # .nat-tile and come first in the DOM - scope the NAT tiles to #natHome.
+        await pg.click("#natHome .nat-tile >> nth=0")
         await pg.wait_for_timeout(30)
         sid = await pg.evaluate(CUR)
         anims = await pg.evaluate(ANIMS_JS, "#" + sid)
@@ -119,7 +121,7 @@ async def main():
         # Chromium's own edge-swipe would leave the page (history back), so give
         # it a harmless in-page history entry; only the app's handler can change the screen.
         await pg.evaluate("history.pushState({}, '', location.href)")
-        await pg.click(".nat-tile >> nth=0"); await pg.wait_for_timeout(800)
+        await pg.click("#natHome .nat-tile >> nth=0"); await pg.wait_for_timeout(800)
         before = await pg.evaluate(CUR)
         await touch_swipe(pg, 8, 420, 300, 425)
         await pg.wait_for_timeout(800)
@@ -195,7 +197,7 @@ async def main():
         await ctx.add_init_script(INIT)
         pg = await ctx.new_page()
         await pg.goto(BASE + "?bereich=nat"); await pg.wait_for_timeout(600)
-        await pg.click(".nat-tile >> nth=0"); await pg.wait_for_timeout(30)
+        await pg.click("#natHome .nat-tile >> nth=0"); await pg.wait_for_timeout(30)
         sid = await pg.evaluate(CUR)
         anims = await pg.evaluate(ANIMS_JS, "#" + sid)
         check("Bewegung reduzieren: kein Schieben, nur Blenden (Benchmark 4)",

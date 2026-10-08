@@ -43,7 +43,9 @@ async def main():
         await pg.add_init_script("localStorage.setItem('fwmc-admin-token','test')")
         await pg.goto(DASH); await pg.wait_for_timeout(500)
 
-        print("kind row with 5 areas:", await pg.locator("#kindRow [data-kind]").count() == 5)
+        # 08.10.: the Baukasten got a 6th kind "Neuro-Aktivierung" (data-kind="neuro").
+        kinds = await pg.eval_on_selector_all("#kindRow [data-kind]", "els => els.map(e => e.dataset.kind)")
+        print("kind row with 6 areas:", kinds == ["visual", "movement", "cardio", "workout", "free", "neuro"], kinds)
         print("visual builder shown by default:", await pg.is_visible("#visualBuilder") and await pg.is_hidden("#movementBuilder"))
 
         # ---- Movement ----
