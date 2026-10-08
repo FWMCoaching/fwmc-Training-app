@@ -141,6 +141,11 @@ async def main():
             s5 = await pg.evaluate("() => window.__math.state()")
             if not s5["cur"] or s5["cur"]["id"] != cur_id: break
             await pg.wait_for_timeout(100)
+        # the engine closes it on its next frame (state() reads the wall clock)
+        for _ in range(20):
+            if s5["miss"] >= 1: break
+            await pg.wait_for_timeout(100)
+            s5 = await pg.evaluate("() => window.__math.state()")
         check("unanswered statement counts as verpasst", s5["miss"] >= 1, f"miss={s5['miss']}")
         # pause: taps on the sheet do nothing
         await pg.click("#periphPauseBtn"); await pg.wait_for_timeout(150)

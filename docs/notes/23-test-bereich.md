@@ -1648,6 +1648,17 @@ doesn't:
   Shift/True Tone hint. Everything in docs/notes/30-farbbrille.md. Test:
   `tests/farbbrille_1008_test.py`.
 
+- **Ton-Sequenz** (2026-10-08, built on Fabian's request, not by the
+  Routine): a tool, not a scored test - tones on the left/right/both ears as
+  a sequence of steps (frequency 20-2000 Hz, Sinus/Dreieck/Rechteck,
+  Dauerton/Puls/Gleiten, Wechsel, pause 0-180 s, repeats, max 10 min),
+  Kanal-Test, Frequenz-Suchlauf with "Merken", presets Referenz 500/100 Hz
+  and Seitenvergleich L/R only, Vorher/Nachher note in the history, safety
+  note "Training, keine Therapie". Grounded in the research file
+  /mnt/project-files/app/recherche/ton-sequenzen-2026-10-08.md (VEMP
+  reference frequencies; no effect claims). Everything in
+  docs/notes/34-ton-sequenz.md. Test: `tests/ton_sequenz_1008_test.py`.
+
 ### Offene Fragen (uncertain items for the client to weigh in on)
 
 - **Linienhalbierungs-Test: no "best" concept really fits a bias

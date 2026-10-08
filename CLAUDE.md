@@ -281,6 +281,9 @@ everywhere goes here, short.
 | 29-huetchen-farbe-zahl | Hütchen · Farbe + Zahl (VT, 3-6 numbered fields): cnFields, colour cap, drawing, Kombi/Cardio/preset wiring |
 | 30-farbbrille | Farbbrille (Rot-Grün-Brille, Test-Bereich): shared settings `fwmc-anaglyph-v1`, mandatory calibration `#anaglyphCalib`, lock `anaglyphGate`/`anaglyphStart`, pre-start hint, exercise "Jedes Auge zählt" |
 | 31-aktivierung-optodrum | Aktivierung (8th area `activation`): frame, `ACTIVATION_LINKS` for later link cards; Optodrum: prefs, shared ready/pause controls, canvas engine, Wechsel, Sanfte Reize cap, Kombi/plan/history |
+| 32-zusatz-rechnen | Zusatzaufgabe "Rechnen" (VT canvas + Cardio `addon-math`): statements, Doppelkreis/Nur stimmt/Laut, placement, scoring |
+| 33-huetchen-laufweg | Hütchen · Laufweg (VT, cone map with drawn path): why VT-catalog architecture, path maker, variants, what is not wired |
+| 34-ton-sequenz | Ton-Sequenz (Test-Bereich): step model, audio graph (merger, fades, cueVolume), Kanal-Test, Suchlauf, presets, safety, iPhone checks |
 
 ## Must-do rules collected from the detail notes
 
@@ -566,5 +569,14 @@ For every new or changed exercise/screen, in the same commit:
   needs: PLAN_AREAS + `--area-<key>` token, home screen in SCREENS/
   AREA_HOME_IDS/HOME_SCREENS/HISTORY_PREFIXES, `?bereich=`, a Kombi group,
   `historyAreaOf`. Details docs/notes/31, test `tests/aktivierung_optodrum_1008_test.py`.
+- Zusatzaufgabe-Arten (2026-10-08): "Zeichen am Rand" and "Rechnen"
+  (`#addonTaskRow`, entry `task`); a new kind = one `task` value, its body
+  in `#addonGroup`, a branch in `buildAddonSchedule`/`drawAddonOverlay`/
+  `finishSession`, a Cardio type appended LAST to `CARDIO_GUEST_TYPES`
+  (picker tests count the types). Overlay taps stop propagation on
+  pointerdown so host taps never see them. Details docs/notes/32.
+- Tones on purpose (Ton-Sequenz, 2026-10-08): every audible tone goes
+  through `cueVolume()`, starts with a fade-in, ear choice via
+  ChannelMerger; docs/notes/34.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

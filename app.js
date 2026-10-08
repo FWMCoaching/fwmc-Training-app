@@ -2686,6 +2686,7 @@
     kippbildDonePanel: $("kippbildDonePanel"), kippbildDoneSummary: $("kippbildDoneSummary"), kippbildRating: $("kippbildRating"),
     kippbildAgainBtn: $("kippbildAgainBtn"), kippbildDoneBackBtn: $("kippbildDoneBackBtn"),
     eyecountReady: $("eyecountReady"), eyecountPlayer: $("eyecountPlayer"),
+    tonReady: $("tonReady"), tonPlayer: $("tonPlayer"), // Ton-Sequenz
     rotationOpenBtn: $("rotationOpenBtn"), rotationBestHint: $("rotationBestHint"), rotationReady: $("rotationReady"),
     rotationReadyBackToHome: $("rotationReadyBackToHome"), rotationDifficultyRow: $("rotationDifficultyRow"),
     rotationAdvanced: $("rotationAdvanced"), rotationBgColorPicker: $("rotationBgColorPicker"), rotationBgIntensitySlider: $("rotationBgIntensitySlider"),
@@ -2970,7 +2971,7 @@
   els.trainingHub = $("trainingHub"); els.moreScreen = $("moreScreen");
   els.freeHome = $("freeHome"); els.freeReady = $("freeReady"); els.freeEdit = $("freeEdit"); els.freePlayer = $("freePlayer");
   els.activationHome = $("activationHome"); els.optoReady = $("optoReady"); els.optoPlayer = $("optoPlayer");
-  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "activationHome", "optoReady", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady", "eyecountReady"];
+  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "activationHome", "optoReady", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady", "eyecountReady", "tonReady"];
   function showScreen(name) {
     SCREENS.forEach((s) => { els[s].hidden = s !== name; });
     if (name === "home" || name === "breathHome" || name === "movementHome" || name === "workoutHome") renderHistory();
@@ -6485,6 +6486,18 @@
       if (!best || score < best.score) best = { x, y, score };
       if (score === 0) break;
     }
+    // Random tries missed: scan a grid (with, then without the extra air)
+    // before accepting an overlap - small stages leave few free spots.
+    for (const air of [8, 0]) {
+      if (best.score === 0) break;
+      for (let gy = 0; gy <= 14 && best.score > 0; gy++) for (let gx = 0; gx <= 10; gx++) {
+        const x = xMax > xMin ? xMin + (gx / 10) * (xMax - xMin) : cw / 2;
+        const y = yMax > yMin ? yMin + (gy / 14) * (yMax - yMin) : Math.min(ch - g.R, yMin);
+        const score = mathOverlap(x, y, g.R + air * g.k, obs);
+        if (score < best.score) best = { x, y, score };
+        if (score === 0) break;
+      }
+    }
     return best;
   }
   // Statements are placed in runs of consecutive frames of the chosen
@@ -6758,6 +6771,7 @@
     els.bisectPlayer.hidden = true;
     els.kippbildPlayer.hidden = true;
     els.eyecountPlayer.hidden = true;
+    els.tonPlayer.hidden = true; tonHaltSilently(); // Ton-Sequenz
     els.workoutPlayer.hidden = true;
     els.cardioPlayer.hidden = true;
     els.freePlayer.hidden = true;
@@ -26786,6 +26800,646 @@
   ecEl("AgainBtn").addEventListener("click", () => anaglyphStart(startEyecountGame));
   ecEl("DoneBackBtn").addEventListener("click", () => { ecEl("Player").hidden = true; ecEl("DonePanel").hidden = true; showScreen("testHome"); });
   wireFullscreen({ player: ecEl("Player"), btn: ecEl("FsBtn"), hint: ecEl("FsHint"), hintOpen: ecEl("FsHintOpenBtn"), hintClose: ecEl("FsHintClose") });
+
+  // ==== Ton-Sequenz (Test-Bereich, Fabian 2026-10-08) ====
+  // A tool, not a scored test: plays tones on the left, right or both ears
+  // as a sequence of steps (Dauerton / Puls / Gleiten, pause after each
+  // step, whole sequence repeated). Spec: the "Empfehlung" section of
+  // /mnt/project-files/app/recherche/ton-sequenzen-2026-10-08.md; no effect
+  // claims, no dB, always starts quiet, max 10 min per run.
+  // Audio graph per tone (one "voice"):
+  //   Oscillator -> pulse gain -> fade gain -> L gain / R gain
+  //   -> ChannelMerger(2) (input 0 = left, 1 = right) -> master gain
+  //   (step volume x wave factor x cueVolume()) -> destination.
+  // The merger (not a StereoPanner) keeps "Links" strictly on channel 0.
+  // Details: docs/notes/34-ton-sequenz.md. Test: tests/ton_sequenz_1008_test.py.
+  const TON_SEQ_KEY = "fwmc-ton-seq-v1";        // saved sequences (presets list)
+  const TON_CUR_KEY = "fwmc-ton-current-v1";    // the sequence being edited
+  const TON_CHANTEST_KEY = "fwmc-ton-chantest-v1";
+  const TON_LAST_KEY = "fwmc-ton-last-v1";
+  const TON_MAX_S = 600;
+  const TON_MAX_STEPS = 12;
+  const TON_FADE_IN_S = 1.5;
+  const TON_MIN_PLAYED_S = 5;
+  const TON_WAVES = { sine: "Sinus", triangle: "Dreieck", square: "Rechteck" };
+  // Square/triangle sound much louder than a sine at the same gain.
+  const TON_WAVE_GAIN = { sine: 1, triangle: 0.85, square: 0.45 };
+  const TON_EARS = { left: "Links", right: "Rechts", both: "Beide Ohren", alt: "Wechsel" };
+  const TON_PATTERNS = { steady: "Dauerton", pulse: "Puls", glide: "Gleiten" };
+  const TON_SWEEP = { from: 100, to: 1000, s: 60 };
+  const tonEl = (id) => document.getElementById("ton" + id);
+  function tonClamp(v, lo, hi, d) { v = Number(v); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; }
+  function tonStepDefault() {
+    return { freq: 500, wave: "sine", ear: "both", altS: 2, pattern: "steady", pulseUnit: "ms", onMs: 500, offMs: 500, bpm: 60, glideTo: 1000, dur: 30, pause: 0, vol: 20 };
+  }
+  function tonNormStep(s) {
+    const d = tonStepDefault();
+    s = s && typeof s === "object" ? s : {};
+    const r5 = (v, lo, hi, def, step) => Math.round(tonClamp(v, lo, hi, def) / step) * step;
+    return {
+      freq: Math.round(tonClamp(s.freq, 20, 2000, d.freq)),
+      wave: TON_WAVES[s.wave] ? s.wave : d.wave,
+      ear: TON_EARS[s.ear] ? s.ear : d.ear,
+      altS: r5(s.altS, 0.5, 10, d.altS, 0.5),
+      pattern: TON_PATTERNS[s.pattern] ? s.pattern : d.pattern,
+      pulseUnit: s.pulseUnit === "bpm" ? "bpm" : "ms",
+      onMs: r5(s.onMs, 50, 2000, d.onMs, 50),
+      offMs: r5(s.offMs, 50, 2000, d.offMs, 50),
+      bpm: Math.round(tonClamp(s.bpm, 20, 240, d.bpm)),
+      glideTo: Math.round(tonClamp(s.glideTo, 20, 2000, d.glideTo)),
+      dur: r5(s.dur, 5, 300, d.dur, 5),
+      pause: r5(s.pause, 0, 180, d.pause, 5),
+      vol: r5(s.vol, 5, 100, d.vol, 5),
+    };
+  }
+  function tonNormSeq(q) {
+    q = q && typeof q === "object" ? q : {};
+    const steps = Array.isArray(q.steps) && q.steps.length ? q.steps.slice(0, TON_MAX_STEPS).map(tonNormStep) : [tonStepDefault()];
+    return { name: typeof q.name === "string" ? q.name.slice(0, 40) : "", repeat: Math.round(tonClamp(q.repeat, 1, 10, 1)), steps };
+  }
+  // Only what sources carry (research §5.3): two diagnostic reference
+  // frequencies and a pure procedure template. No "Sacculus/Utriculus".
+  const TON_PRESETS = {
+    ref500: { name: "Referenz 500 Hz", repeat: 1, steps: [{ freq: 500, dur: 30 }] },
+    ref100: { name: "Referenz 100 Hz", repeat: 1, steps: [{ freq: 100, dur: 30 }] },
+    lr: { name: "Seitenvergleich L/R", repeat: 1, steps: [{ freq: 500, ear: "left", dur: 20, pause: 10 }, { freq: 500, ear: "right", dur: 20 }] },
+  };
+  let tonSeq = tonNormSeq(readJSON(TON_CUR_KEY, null));
+  let tonSel = 0;
+  // var, not let: hideAllPlayers() may run before this block is reached.
+  var tonRun = null, tonTool = null, tonLastRun = null;
+  function tonSaveCur() { writeJSON(TON_CUR_KEY, tonSeq); }
+  // Log slider 0..1000 <-> 20..2000 Hz.
+  function tonPosToHz(p) { return Math.round(20 * Math.pow(100, tonClamp(p, 0, 1000, 500) / 1000)); }
+  function tonHzToPos(hz) { return Math.round((Math.log(tonClamp(hz, 20, 2000, 500) / 20) / Math.log(100)) * 1000); }
+  function tonFmtS(s) {
+    s = Math.max(0, Math.round(s));
+    return s < 60 ? `${s} s` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} Min`;
+  }
+  function tonDec(v) { return String(v).replace(".", ","); }
+  function tonPulseTimes(st) {
+    if (st.pulseUnit === "bpm") {
+      const per = 60 / st.bpm;
+      const on = Math.max(0.05, Math.min(0.5 * per, 0.6));
+      return { on, off: per - on };
+    }
+    return { on: st.onMs / 1000, off: st.offMs / 1000 };
+  }
+  function tonPatternText(st) {
+    if (st.pattern === "pulse") return st.pulseUnit === "bpm" ? `Puls ${st.bpm} pro Minute` : `Puls ${st.onMs} ms an, ${st.offMs} ms aus`;
+    if (st.pattern === "glide") return `Gleiten ${st.freq} → ${st.glideTo} Hz`;
+    return "Dauerton";
+  }
+  function tonEarText(st) { return st.ear === "alt" ? `Wechsel alle ${tonDec(st.altS)} s` : TON_EARS[st.ear]; }
+  function tonStepSummary(st) {
+    const hz = st.pattern === "glide" ? `${st.freq} → ${st.glideTo} Hz` : `${st.freq} Hz`;
+    const pat = st.pattern === "pulse" ? (st.pulseUnit === "bpm" ? `Puls ${st.bpm}/Min` : `Puls ${st.onMs}/${st.offMs} ms`) : st.pattern === "glide" ? "Gleiten" : "Dauerton";
+    return `${hz} · ${tonEarText(st)} · ${pat} · ${tonFmtS(st.dur)}${st.pause ? ` · Pause ${tonFmtS(st.pause)}` : ""}`;
+  }
+  function tonSeqSeconds(q) {
+    let t = 0;
+    for (let r = 0; r < q.repeat; r++) q.steps.forEach((s) => { t += s.dur + s.pause; });
+    const last = q.steps[q.steps.length - 1];
+    return t - (last ? last.pause : 0);
+  }
+
+  // ---- audio ----
+  function tonCtx() {
+    try {
+      applyCueAudioSession();
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!workoutAudioCtx) workoutAudioCtx = new AC();
+      if (workoutAudioCtx.state !== "running") workoutAudioCtx.resume().catch(() => {});
+      return workoutAudioCtx;
+    } catch (e) { return null; }
+  }
+  // Plays step `st` from `fromS` seconds into it for `lenS` seconds.
+  // opts: vol (overrides st.vol), fadeIn (s), total (glide/alt reference length).
+  function tonVoice(st, fromS, lenS, opts) {
+    opts = opts || {};
+    const ctx = tonCtx();
+    if (!ctx || lenS <= 0) return null;
+    try {
+      const t0 = ctx.currentTime + 0.02;
+      const end = t0 + lenS;
+      const total = opts.total || st.dur;
+      const osc = ctx.createOscillator();
+      osc.type = st.wave;
+      if (st.pattern === "glide") {
+        const f = (x) => st.freq * Math.pow(st.glideTo / st.freq, Math.min(1, Math.max(0, x / total)));
+        osc.frequency.setValueAtTime(f(fromS), t0);
+        osc.frequency.exponentialRampToValueAtTime(f(fromS + lenS), end);
+      } else {
+        osc.frequency.setValueAtTime(st.freq, t0);
+      }
+      const pulse = ctx.createGain(), fade = ctx.createGain(), gL = ctx.createGain(), gR = ctx.createGain();
+      const merger = ctx.createChannelMerger(2);
+      const master = ctx.createGain();
+      osc.connect(pulse); pulse.connect(fade); fade.connect(gL); fade.connect(gR);
+      gL.connect(merger, 0, 0); gR.connect(merger, 0, 1);
+      merger.connect(master); master.connect(ctx.destination);
+      const level = () => ((opts.vol != null ? opts.vol : st.vol) / 100) * 0.5 * (TON_WAVE_GAIN[st.wave] || 1) * cueVolume();
+      master.gain.setValueAtTime(level(), t0);
+      // Always starts quiet: a slow fade-in on a fresh start, a short one on resume.
+      const fin = Math.min(opts.fadeIn != null ? opts.fadeIn : (fromS < 0.01 ? TON_FADE_IN_S : 0.3), lenS / 2);
+      fade.gain.setValueAtTime(0.0001, t0);
+      fade.gain.exponentialRampToValueAtTime(1, t0 + Math.max(0.01, fin));
+      fade.gain.setValueAtTime(1, Math.max(t0 + Math.max(0.01, fin), end - 0.06));
+      fade.gain.linearRampToValueAtTime(0, end);
+      if (st.pattern === "pulse") {
+        // 8 ms ramps on every edge against clicks.
+        const { on, off } = tonPulseTimes(st);
+        const per = on + off;
+        pulse.gain.setValueAtTime(0, t0);
+        for (let ts = Math.floor(fromS / per) * per - fromS; ts < lenS; ts += per) {
+          const b = t0 + ts + on;
+          if (b <= t0 + 0.01) continue;
+          const a = t0 + Math.max(0, ts);
+          pulse.gain.setValueAtTime(0, a);
+          pulse.gain.linearRampToValueAtTime(1, a + 0.008);
+          pulse.gain.setValueAtTime(1, Math.max(a + 0.008, b - 0.008));
+          pulse.gain.linearRampToValueAtTime(0, b);
+        }
+      } else {
+        pulse.gain.setValueAtTime(1, t0);
+      }
+      if (st.ear === "alt") {
+        // Starts left; each switch glides over ~5 ms (setTargetAtTime).
+        let k = Math.floor(fromS / st.altS);
+        let first = true;
+        for (let ts = k * st.altS - fromS; ts < lenS; ts += st.altS, k++) {
+          const leftOn = k % 2 === 0 ? 1 : 0;
+          const a = t0 + Math.max(0, ts);
+          if (first) { gL.gain.setValueAtTime(leftOn, a); gR.gain.setValueAtTime(1 - leftOn, a); first = false; }
+          else { gL.gain.setTargetAtTime(leftOn, a, 0.005); gR.gain.setTargetAtTime(1 - leftOn, a, 0.005); }
+        }
+      } else {
+        gL.gain.setValueAtTime(st.ear === "right" ? 0 : 1, t0);
+        gR.gain.setValueAtTime(st.ear === "left" ? 0 : 1, t0);
+      }
+      osc.start(t0);
+      osc.stop(end + 0.05);
+      const voice = {
+        stopped: false, st, t0, end,
+        stop() {
+          if (voice.stopped) return;
+          voice.stopped = true;
+          try {
+            const n = ctx.currentTime;
+            fade.gain.cancelScheduledValues(n);
+            fade.gain.setValueAtTime(Math.max(0.0001, Number(fade.gain.value) || 0.0001), n);
+            fade.gain.linearRampToValueAtTime(0, n + 0.04);
+            osc.stop(n + 0.06);
+          } catch (e) {}
+          setTimeout(() => { try { master.disconnect(); } catch (e) {} }, 250);
+        },
+        setVol(v) {
+          opts.vol = v;
+          try { master.gain.setTargetAtTime(level(), ctx.currentTime, 0.05); } catch (e) {}
+        },
+      };
+      return voice;
+    } catch (e) { return null; }
+  }
+  function tonMuted() { return cueVolume() <= 0; }
+  const TON_MUTED_TEXT = "Töne sind ausgeschaltet. Schalte sie mit 🔊 oder in den Grundeinstellungen ein.";
+
+  // ---- ready-screen helpers (only one sound at a time) ----
+  function tonToolStop() {
+    const tool = tonTool;
+    tonTool = null;
+    if (tool) {
+      (tool.timers || []).forEach((t) => clearTimeout(t));
+      if (tool.iv) clearInterval(tool.iv);
+      if (tool.voice) tool.voice.stop();
+      if (tool.kind === "chan") { const s = tonEl("ChannelStatus"); if (s && s.dataset.ear) { s.textContent = ""; delete s.dataset.ear; } }
+    }
+    const set = (id, txt) => { const b = tonEl(id); if (b) b.textContent = txt; };
+    set("ChannelBtn", "Kanal-Test starten");
+    set("PreviewBtn", "Probehören");
+    set("SweepBtn", "Suchlauf starten");
+    const m = tonEl("SweepMarkBtn");
+    if (m) m.hidden = true;
+  }
+  function tonChannelTest() {
+    if (tonTool && tonTool.kind === "chan") { tonToolStop(); return; }
+    tonToolStop();
+    const status = tonEl("ChannelStatus");
+    if (tonMuted()) { status.textContent = TON_MUTED_TEXT; return; }
+    unlockCueAudio();
+    silentSwitchHint();
+    const tool = { kind: "chan", timers: [], voice: null };
+    tonTool = tool;
+    tonEl("ChannelBtn").textContent = "Kanal-Test stoppen";
+    const beep = (ear, label) => {
+      if (tool.voice) tool.voice.stop();
+      status.textContent = label;
+      status.dataset.ear = ear;
+      tool.voice = tonVoice({ ...tonStepDefault(), freq: 600, ear, pattern: "pulse", onMs: 250, offMs: 150, dur: 2 }, 0, 2, { fadeIn: 0.02, vol: 25 });
+    };
+    beep("left", "Jetzt links …");
+    tool.timers.push(setTimeout(() => beep("right", "Jetzt rechts …"), 2600));
+    tool.timers.push(setTimeout(() => {
+      if (tonTool !== tool) return;
+      tool.voice = null;
+      tonToolStop();
+      delete status.dataset.ear;
+      status.textContent = "Fertig. Kam „links“ nur links und „rechts“ nur rechts an? Wenn nicht: Kopfhörer richtig herum aufsetzen und am iPhone Mono-Audio ausschalten.";
+      try { localStorage.setItem(TON_CHANTEST_KEY, "1"); } catch (e) {}
+    }, 4800));
+  }
+  function tonPreview() {
+    if (tonTool && tonTool.kind === "preview") { tonToolStop(); return; }
+    tonToolStop();
+    if (tonMuted()) { showToast(TON_MUTED_TEXT); return; }
+    unlockCueAudio();
+    silentSwitchHint();
+    const st = tonSeq.steps[tonSel];
+    const len = Math.min(st.dur, 10);
+    const tool = { kind: "preview", timers: [], voice: tonVoice(st, 0, len, { fadeIn: 0.6, total: len }) };
+    tonTool = tool;
+    tonEl("PreviewBtn").textContent = "Probehören stoppen";
+    tool.timers.push(setTimeout(() => { if (tonTool === tool) tonToolStop(); }, len * 1000 + 100));
+  }
+  function tonSweepHzAt(t) { return TON_SWEEP.from * Math.pow(TON_SWEEP.to / TON_SWEEP.from, Math.min(1, Math.max(0, t / TON_SWEEP.s))); }
+  function tonSweep() {
+    if (tonTool && tonTool.kind === "sweep") { tonToolStop(); tonEl("SweepHz").textContent = ""; return; }
+    tonToolStop();
+    if (tonMuted()) { tonEl("SweepHz").textContent = TON_MUTED_TEXT; return; }
+    unlockCueAudio();
+    silentSwitchHint();
+    const base = tonSeq.steps[tonSel];
+    const st = { ...base, freq: TON_SWEEP.from, glideTo: TON_SWEEP.to, pattern: "glide", ear: base.ear === "alt" ? "both" : base.ear, dur: TON_SWEEP.s };
+    const tool = { kind: "sweep", timers: [], voice: tonVoice(st, 0, TON_SWEEP.s, { fadeIn: 0.8 }), t0: performance.now(), iv: null };
+    tonTool = tool;
+    tonEl("SweepBtn").textContent = "Suchlauf stoppen";
+    tonEl("SweepMarkBtn").hidden = false;
+    const show = () => { tonEl("SweepHz").textContent = `${Math.round(tonSweepHzAt((performance.now() - tool.t0) / 1000))} Hz`; };
+    show();
+    tool.iv = setInterval(show, 100);
+    tool.timers.push(setTimeout(() => { if (tonTool !== tool) return; tonToolStop(); tonEl("SweepHz").textContent = "Suchlauf zu Ende."; }, TON_SWEEP.s * 1000 + 100));
+  }
+  function tonSweepMark() {
+    if (!tonTool || tonTool.kind !== "sweep") return;
+    const hz = Math.round(tonSweepHzAt((performance.now() - tonTool.t0) / 1000));
+    tonToolStop();
+    tonSeq.steps[tonSel].freq = hz;
+    tonSaveCur();
+    tonRender();
+    tonEl("SweepHz").textContent = `${hz} Hz gemerkt – steht jetzt in Schritt ${tonSel + 1}.`;
+  }
+
+  // ---- ready screen ----
+  function renderTonBest() {
+    const last = readJSON(TON_LAST_KEY, null);
+    const el = tonEl("BestHint");
+    if (el) el.textContent = last && last.name ? `Zuletzt: ${last.name}` : "";
+  }
+  renderTonBest();
+  function tonRenderList() {
+    const list = tonEl("StepList");
+    const n = tonSeq.steps.length;
+    list.innerHTML = tonSeq.steps.map((st, i) =>
+      `<div class="ton-step-row${i === tonSel ? " active" : ""}">` +
+      `<button type="button" class="ton-step-main" data-ton-sel="${i}" aria-pressed="${i === tonSel}"><strong>Schritt ${i + 1}</strong><span>${esc(tonStepSummary(st))}</span></button>` +
+      `<div class="ton-step-actions">` +
+      `<button type="button" class="combo-block-move" data-ton-up="${i}" aria-label="Schritt ${i + 1} nach oben"${i === 0 ? " disabled" : ""}>↑</button>` +
+      `<button type="button" class="combo-block-move" data-ton-down="${i}" aria-label="Schritt ${i + 1} nach unten"${i === n - 1 ? " disabled" : ""}>↓</button>` +
+      `<button type="button" class="combo-block-move" data-ton-dup="${i}" aria-label="Schritt ${i + 1} duplizieren"${n >= TON_MAX_STEPS ? " disabled" : ""}>⧉</button>` +
+      `<button type="button" class="combo-block-remove" data-ton-del="${i}" aria-label="Schritt ${i + 1} entfernen"${n <= 1 ? " disabled" : ""}>✕</button>` +
+      `</div></div>`).join("");
+    tonEl("AddStepBtn").hidden = n >= TON_MAX_STEPS;
+  }
+  function tonRenderEditor() {
+    const st = tonSeq.steps[tonSel];
+    tonEl("EditorTitle").textContent = `Schritt ${tonSel + 1} bearbeiten`;
+    tonEl("FreqSlider").value = tonHzToPos(st.freq);
+    tonEl("FreqValue").textContent = `${st.freq} Hz`;
+    if (document.activeElement !== tonEl("FreqInput")) tonEl("FreqInput").value = st.freq;
+    tonEl("LowHint").hidden = Math.min(st.freq, st.pattern === "glide" ? st.glideTo : st.freq) >= 150;
+    const act = (row, attr, val) => tonEl(row).querySelectorAll(`[${attr}]`).forEach((b) => setActive(b, b.getAttribute(attr) === val));
+    act("WaveRow", "data-ton-wave", st.wave);
+    act("EarRow", "data-ton-ear", st.ear);
+    act("PatternRow", "data-ton-pattern", st.pattern);
+    act("PulseUnitRow", "data-ton-pulseunit", st.pulseUnit);
+    tonEl("AltGroup").hidden = st.ear !== "alt";
+    tonEl("AltSlider").value = st.altS;
+    tonEl("AltValue").textContent = `${tonDec(st.altS)} s`;
+    tonEl("PulseGroup").hidden = st.pattern !== "pulse";
+    tonEl("PulseMsGroup").hidden = st.pulseUnit !== "ms";
+    tonEl("PulseBpmGroup").hidden = st.pulseUnit !== "bpm";
+    tonEl("OnSlider").value = st.onMs; tonEl("OnValue").textContent = `${st.onMs} ms`;
+    tonEl("OffSlider").value = st.offMs; tonEl("OffValue").textContent = `${st.offMs} ms`;
+    tonEl("BpmSlider").value = st.bpm; tonEl("BpmValue").textContent = `${st.bpm}/Min`;
+    tonEl("GlideGroup").hidden = st.pattern !== "glide";
+    tonEl("GlideSlider").value = tonHzToPos(st.glideTo); tonEl("GlideValue").textContent = `${st.glideTo} Hz`;
+    tonEl("DurSlider").value = st.dur; tonEl("DurValue").textContent = tonFmtS(st.dur);
+    tonEl("PauseSlider").value = st.pause; tonEl("PauseValue").textContent = st.pause ? tonFmtS(st.pause) : "direkt weiter";
+    tonEl("VolSlider").value = st.vol; tonEl("VolValue").textContent = `${st.vol} %`;
+  }
+  function tonRender() {
+    if (tonSel >= tonSeq.steps.length) tonSel = tonSeq.steps.length - 1;
+    tonRenderList();
+    tonRenderEditor();
+    tonEl("RepeatSlider").value = tonSeq.repeat;
+    tonEl("RepeatValue").textContent = `${tonSeq.repeat}×`;
+    const total = tonSeqSeconds(tonSeq);
+    tonEl("TotalHelp").textContent = `Wie oft die ganze Sequenz läuft. Gesamt: ${tonFmtS(Math.min(total, TON_MAX_S))}` +
+      (total > TON_MAX_S ? ` – die Sequenz endet nach 10 Minuten (Obergrenze, damit es keine Dauerbeschallung wird).` : ".");
+  }
+  function tonEdit(fn) { fn(tonSeq.steps[tonSel]); tonSeq.steps[tonSel] = tonNormStep(tonSeq.steps[tonSel]); tonSaveCur(); tonRender(); }
+  tonEl("StepList").addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b || b.disabled) return;
+    const d = b.dataset;
+    const steps = tonSeq.steps;
+    if (d.tonSel != null) tonSel = Number(d.tonSel);
+    else if (d.tonUp != null) { const i = Number(d.tonUp); if (i > 0) { [steps[i - 1], steps[i]] = [steps[i], steps[i - 1]]; tonSel = i - 1; } }
+    else if (d.tonDown != null) { const i = Number(d.tonDown); if (i < steps.length - 1) { [steps[i + 1], steps[i]] = [steps[i], steps[i + 1]]; tonSel = i + 1; } }
+    else if (d.tonDup != null) { const i = Number(d.tonDup); if (steps.length < TON_MAX_STEPS) { steps.splice(i + 1, 0, { ...steps[i] }); tonSel = i + 1; } }
+    else if (d.tonDel != null) { const i = Number(d.tonDel); if (steps.length > 1) { steps.splice(i, 1); if (tonSel >= i && tonSel > 0) tonSel -= 1; } }
+    else return;
+    tonToolStop();
+    tonSaveCur();
+    tonRender();
+  });
+  tonEl("AddStepBtn").addEventListener("click", () => {
+    if (tonSeq.steps.length >= TON_MAX_STEPS) return;
+    const last = tonSeq.steps[tonSeq.steps.length - 1];
+    tonSeq.steps.push(tonNormStep({ ...last }));
+    tonSel = tonSeq.steps.length - 1;
+    tonSaveCur();
+    tonRender();
+  });
+  tonEl("FreqSlider").addEventListener("input", (e) => tonEdit((st) => { st.freq = tonPosToHz(e.target.value); }));
+  tonEl("FreqInput").addEventListener("change", (e) => tonEdit((st) => { st.freq = Math.round(tonClamp(e.target.value, 20, 2000, st.freq)); e.target.value = Math.round(tonClamp(e.target.value, 20, 2000, st.freq)); }));
+  tonEl("FreqInput").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } });
+  document.querySelectorAll("[data-ton-fstep]").forEach((b) => b.addEventListener("click", () => tonEdit((st) => { st.freq = st.freq + Number(b.dataset.tonFstep); })));
+  const tonChoice = (row, attr, key) => tonEl(row).querySelectorAll(`[${attr}]`).forEach((b) => b.addEventListener("click", () => tonEdit((st) => { st[key] = b.getAttribute(attr); })));
+  tonChoice("WaveRow", "data-ton-wave", "wave");
+  tonChoice("EarRow", "data-ton-ear", "ear");
+  tonChoice("PatternRow", "data-ton-pattern", "pattern");
+  tonChoice("PulseUnitRow", "data-ton-pulseunit", "pulseUnit");
+  const tonSlider = (id, key, conv) => tonEl(id).addEventListener("input", (e) => tonEdit((st) => { st[key] = conv ? conv(e.target.value) : Number(e.target.value); }));
+  tonSlider("AltSlider", "altS");
+  tonSlider("OnSlider", "onMs");
+  tonSlider("OffSlider", "offMs");
+  tonSlider("BpmSlider", "bpm");
+  tonSlider("GlideSlider", "glideTo", tonPosToHz);
+  tonSlider("DurSlider", "dur");
+  tonSlider("PauseSlider", "pause");
+  tonSlider("VolSlider", "vol");
+  tonEl("RepeatSlider").addEventListener("input", (e) => { tonSeq.repeat = Math.round(tonClamp(e.target.value, 1, 10, 1)); tonSaveCur(); tonRender(); });
+  tonEl("PresetRow").querySelectorAll("[data-ton-preset]").forEach((b) => b.addEventListener("click", () => {
+    tonToolStop();
+    tonSeq = tonNormSeq(JSON.parse(JSON.stringify(TON_PRESETS[b.dataset.tonPreset])));
+    tonSel = 0;
+    tonSaveCur();
+    tonRender();
+    showToast(`Vorlage „${tonSeq.name}“ geladen.`);
+  }));
+  tonEl("ChannelBtn").addEventListener("click", tonChannelTest);
+  tonEl("PreviewBtn").addEventListener("click", tonPreview);
+  tonEl("SweepBtn").addEventListener("click", tonSweep);
+  tonEl("SweepMarkBtn").addEventListener("click", tonSweepMark);
+
+  const tonSavedStore = makePresetStore(TON_SEQ_KEY);
+  function renderTonSaved() {
+    renderPresetList(tonSavedStore, tonEl("SavedList"), tonEl("SavedGroup"), null,
+      (e) => { const q = tonNormSeq(e.seq); return `${q.steps.length} ${q.steps.length === 1 ? "Schritt" : "Schritte"} · ${tonFmtS(Math.min(tonSeqSeconds(q), TON_MAX_S))}`; },
+      (e) => { tonToolStop(); tonSeq = tonNormSeq(JSON.parse(JSON.stringify(e.seq))); tonSeq.name = e.name; tonSel = 0; tonSaveCur(); tonRender(); showToast(`„${e.name}“ geladen.`); },
+      { confirmDelete: true });
+  }
+  wirePresetSaveForm({
+    saveBtn: tonEl("SaveBtn"), form: tonEl("SaveForm"), nameInput: tonEl("SaveNameInput"),
+    cancelBtn: tonEl("SaveCancelBtn"), confirmBtn: tonEl("SaveConfirmBtn"),
+    defaultName: () => tonSeq.name || `Sequenz ${tonSavedStore.load().length + 1}`,
+    onSave: (name) => {
+      const list = tonSavedStore.load();
+      tonSeq.name = name;
+      tonSaveCur();
+      list.push({ id: String(Date.now()), name, seq: JSON.parse(JSON.stringify(tonSeq)) });
+      tonSavedStore.save(list.slice(-20));
+      renderTonSaved();
+      showToast(`„${name}“ gespeichert.`);
+    },
+  });
+
+  tonEl("OpenBtn").addEventListener("click", () => {
+    tonRender();
+    renderTonSaved();
+    tonEl("ChannelStatus").textContent = "";
+    tonEl("SweepHz").textContent = "";
+    showScreen("tonReady");
+  });
+  tonEl("ReadyBackToHome").addEventListener("click", () => { tonToolStop(); showScreen("testHome"); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") tonToolStop(); });
+
+  // ---- player ----
+  function tonBuildSegs(q) {
+    const segs = [];
+    for (let r = 0; r < q.repeat; r++) q.steps.forEach((st, i) => {
+      segs.push({ kind: "tone", st, i, r, dur: st.dur });
+      if (st.pause) segs.push({ kind: "pause", st, i, r, dur: st.pause });
+    });
+    if (segs.length && segs[segs.length - 1].kind === "pause") segs.pop();
+    const out = [];
+    let acc = 0;
+    for (const s of segs) {
+      if (acc >= TON_MAX_S) break;
+      const d = Math.min(s.dur, TON_MAX_S - acc);
+      out.push({ ...s, dur: d });
+      acc += d;
+    }
+    return out;
+  }
+  function tonSegElapsed(run) { return run.segOff + (run.paused ? 0 : (performance.now() - run.segStart) / 1000); }
+  function tonPlayedS(run) { return ((run.paused ? run.pausedAt : performance.now()) - run.startTime - run.pausedTotal) / 1000; }
+  function tonRenderNow() {
+    const run = tonRun;
+    if (!run) return;
+    const seg = run.segs[run.idx];
+    if (!seg) return;
+    const n = run.q.steps.length;
+    const el = tonSegElapsed(run);
+    const left = Math.max(0, Math.ceil(seg.dur - el - 0.001));
+    const rep = run.q.repeat > 1 ? ` · Durchgang ${seg.r + 1} von ${run.q.repeat}` : "";
+    const st = seg.st;
+    if (seg.kind === "pause") {
+      tonEl("NowStep").textContent = `Pause nach Schritt ${seg.i + 1}${rep}`;
+      tonEl("NowHz").textContent = "Pause";
+      const next = run.segs[run.idx + 1];
+      tonEl("NowEar").textContent = next ? `Danach: ${next.st.freq} Hz · ${tonEarText(next.st)}` : "";
+      tonEl("NowPattern").textContent = "";
+    } else {
+      tonEl("NowStep").textContent = `Schritt ${seg.i + 1} von ${n}${rep}`;
+      const hz = st.pattern === "glide" ? Math.round(st.freq * Math.pow(st.glideTo / st.freq, Math.min(1, el / st.dur))) : st.freq;
+      tonEl("NowHz").textContent = `${hz} Hz`;
+      tonEl("NowEar").textContent = st.ear === "alt" ? `Wechsel · jetzt ${Math.floor(el / st.altS) % 2 === 0 ? "links" : "rechts"}` : TON_EARS[st.ear];
+      tonEl("NowPattern").textContent = `${tonPatternText(st)} · ${TON_WAVES[st.wave]}`;
+    }
+    tonEl("NowTime").textContent = `noch ${tonFmtS(left)}`;
+    tonEl("NowMute").hidden = !tonMuted();
+    const totalLeft = run.segs.slice(run.idx).reduce((a, s) => a + s.dur, 0) - el;
+    tonEl("ProgressEl").textContent = `Gesamt noch ${tonFmtS(totalLeft)}`;
+  }
+  function tonPlaySeg() {
+    const run = tonRun;
+    const seg = run.segs[run.idx];
+    run.segStart = performance.now();
+    const left = seg.dur - run.segOff;
+    if (seg.kind === "tone") run.voice = tonVoice(seg.st, run.segOff, left, { vol: run.vols[seg.i] != null ? run.vols[seg.i] : seg.st.vol });
+    clearTimeout(run.timer);
+    run.timer = setTimeout(tonNextSeg, Math.max(0, left * 1000));
+    tonRenderNow();
+  }
+  function tonNextSeg() {
+    const run = tonRun;
+    if (!run) return;
+    if (run.voice) { run.voice.stop(); run.voice = null; }
+    run.idx += 1;
+    if (run.idx >= run.segs.length) { tonFinish(); return; }
+    run.segOff = 0;
+    tonPlaySeg();
+  }
+  function startTon() {
+    tonToolStop();
+    unlockCueAudio();
+    silentSwitchHint();
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    tonEl("Player").hidden = false;
+    tonEl("PlayerBar").hidden = false;
+    tonEl("DonePanel").hidden = true;
+    tonEl("PauseOverlay").hidden = true;
+    tonEl("PauseBtn").hidden = false;
+    const q = tonNormSeq(JSON.parse(JSON.stringify(tonSeq)));
+    tonRun = {
+      q, segs: tonBuildSegs(q), idx: -1, segStart: 0, segOff: 0, paused: false, pausedAt: 0, pausedTotal: 0,
+      startTime: performance.now(), voice: null, timer: null, iv: null, vols: {},
+      before: tonEl("BeforeInput").value.trim().slice(0, 80),
+    };
+    tonEl("Hint").textContent = "Bei Schwindel, Übelkeit, Druck oder Ohrgeräusch sofort stoppen.";
+    tonNextSeg();
+    placeHintBelowBar(tonEl("Hint"), tonEl("PlayerBar"));
+    requestWakeLock();
+    tonRun.iv = setInterval(tonRenderNow, 250);
+  }
+  // Before the first run with one-sided tones: offer the Kanal-Test once.
+  tonEl("ReadyStartBtn").addEventListener("click", () => {
+    let tested = false;
+    try { tested = !!localStorage.getItem(TON_CHANTEST_KEY); } catch (e) {}
+    if (tested || !tonSeq.steps.some((s) => s.ear !== "both")) { startTon(); return; }
+    confirmDialog("Deine Sequenz spielt Töne nur links oder rechts. Der Kanal-Test zeigt dir in 5 Sekunden, ob die Seiten richtig ankommen.",
+      () => { const g = tonEl("ChannelBtn"); try { g.scrollIntoView({ block: "center" }); } catch (e) {} tonChannelTest(); },
+      { title: "Erst den Kanal-Test?", yes: "Kanal-Test machen", no: "Ohne Test starten", onNo: () => { try { localStorage.setItem(TON_CHANTEST_KEY, "skip"); } catch (e) {} startTon(); } });
+  });
+  function tonPause() {
+    const run = tonRun;
+    if (!run || run.paused) return;
+    run.segOff = tonSegElapsed(run);
+    run.paused = true;
+    run.pausedAt = performance.now();
+    clearTimeout(run.timer);
+    if (run.voice) { run.voice.stop(); run.voice = null; }
+    const seg = run.segs[run.idx];
+    const v = run.vols[seg.i] != null ? run.vols[seg.i] : seg.st.vol;
+    tonEl("LiveVolSlider").value = v;
+    tonEl("LiveVolValue").textContent = `${v} %`;
+    tonEl("PauseBtn").hidden = true;
+    tonEl("PauseOverlay").hidden = false;
+    tonRenderNow();
+  }
+  function tonResume() {
+    const run = tonRun;
+    if (!run || !run.paused) return;
+    unlockCueAudio();
+    run.pausedTotal += performance.now() - run.pausedAt;
+    run.paused = false;
+    tonEl("PauseOverlay").hidden = true;
+    tonEl("PauseBtn").hidden = false;
+    tonPlaySeg();
+  }
+  tonEl("PauseBtn").addEventListener("click", tonPause);
+  tonEl("ResumeBtn").addEventListener("click", tonResume);
+  tonEl("LiveVolSlider").addEventListener("input", (e) => {
+    const run = tonRun;
+    if (!run) return;
+    const seg = run.segs[run.idx];
+    const v = Math.round(tonClamp(e.target.value, 5, 100, 20) / 5) * 5;
+    run.vols[seg.i] = v;
+    tonEl("LiveVolValue").textContent = `${v} %`;
+  });
+  function tonTeardown(run) {
+    clearTimeout(run.timer);
+    clearInterval(run.iv);
+    if (run.voice) { run.voice.stop(); run.voice = null; }
+    releaseWakeLock();
+  }
+  function tonNoteBase(run) {
+    const name = run.q.name || "Eigene Sequenz";
+    const freqs = [...new Set(run.q.steps.map((s) => s.freq))].slice(0, 4).join(" / ");
+    return `${name} · ${freqs} Hz${run.before ? ` · Vorher: ${run.before}` : ""}`;
+  }
+  function tonFinalize(run, playedS, aborted) {
+    tonEl("PauseOverlay").hidden = true;
+    tonEl("PlayerBar").hidden = true;
+    const panel = tonEl("DonePanel");
+    setDonePanelAborted(panel, aborted, "Ton-Sequenz beendet");
+    const name = run.q.name || "Eigene Sequenz";
+    const n = run.q.steps.length;
+    tonEl("DoneSummary").textContent = `${aborted ? "Abgebrochen · " : ""}Ton-Sequenz „${name}“ · ${n} ${n === 1 ? "Schritt" : "Schritte"} · ${tonFmtS(playedS)}`;
+    const base = tonNoteBase(run);
+    const entry = { kind: "tonseq", title: "Ton-Sequenz", seconds: Math.round(playedS), note: base };
+    if (run.before) entry.before = run.before;
+    if (aborted) { entry.aborted = true; entry.note = `abgebrochen · ${base}`; }
+    run.histId = addHistory(entry);
+    run.noteBase = entry.note;
+    tonLastRun = run;
+    tonEl("AfterInput").value = "";
+    tonEl("AfterSaved").hidden = true;
+    if (!aborted) { writeJSON(TON_LAST_KEY, { name, ts: Date.now() }); renderTonBest(); }
+    renderRating(tonEl("Rating"), run.histId, "Wie ging es dir mit den Tönen?");
+    panel.hidden = false;
+  }
+  tonEl("AfterSaveBtn").addEventListener("click", () => {
+    const v = tonEl("AfterInput").value.trim().slice(0, 80);
+    const run = tonLastRun;
+    if (!v || !run || !run.histId) return;
+    const list = loadHistory();
+    const item = list.find((e) => e.id === run.histId);
+    if (item) { item.after = v; item.note = `${run.noteBase} · Nachher: ${v}`; writeJSON(HISTORY_KEY, list); }
+    tonEl("AfterSaved").hidden = false;
+  });
+  wireEnterToSave(tonEl("AfterInput"), tonEl("AfterSaveBtn"));
+  function tonFinish() {
+    const run = tonRun;
+    if (!run) return;
+    tonRun = null;
+    tonTeardown(run);
+    tonFinalize(run, tonPlayedS(run), false);
+  }
+  function tonStop() {
+    const run = tonRun;
+    if (!run) return;
+    const played = tonPlayedS(run);
+    tonRun = null;
+    tonTeardown(run);
+    tonEl("PauseOverlay").hidden = true;
+    if (played >= TON_MIN_PLAYED_S) tonFinalize(run, played, true);
+    else { tonEl("Player").hidden = true; showScreen("testHome"); }
+  }
+  // hideAllPlayers() (another player starting, Cardio takeover ...) silences everything.
+  function tonHaltSilently() {
+    if (tonRun) { const r = tonRun; tonRun = null; tonTeardown(r); }
+    if (tonTool) tonToolStop();
+  }
+  tonEl("BackBtn").addEventListener("click", tonStop);
+  tonEl("AgainBtn").addEventListener("click", () => { tonEl("DonePanel").hidden = true; startTon(); });
+  tonEl("DoneBackBtn").addEventListener("click", () => { tonEl("Player").hidden = true; tonEl("DonePanel").hidden = true; showScreen("testHome"); });
+  if (navigator.webdriver) window.__ton = { seq: () => tonSeq, run: () => tonRun, tool: () => tonTool, sel: () => tonSel, finish: () => tonFinish() };
+  // ==== Ende Ton-Sequenz ====
 
   // Rotationstest (Mentale Rotation) - grounded in the classic mental-
   // rotation/character-rotation chronometric paradigm (Cooper & Shepard,

@@ -1271,6 +1271,44 @@ button.wcst-card{font:inherit;-webkit-appearance:none;appearance:none}
 .lw-swatch{width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;box-shadow:0 0 0 1px rgba(0,0,0,.1)}
 .lw-swatch.active{box-shadow:0 0 0 3px var(--bg),0 0 0 5.5px var(--ink)}
 
+/* ---- Ton-Sequenz (Test-Bereich, 2026-10-08) ---- */
+.ton-step-list{display:flex;flex-direction:column;gap:8px;margin-bottom:6px}
+.ton-step-row{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:6px 6px 6px 4px}
+.ton-step-row.active{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand) inset}
+.ton-step-main{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;min-height:44px;padding:6px 8px;border:none;background:none;text-align:left;font-family:inherit;color:var(--ink);cursor:pointer}
+.ton-step-main strong{font-size:calc(14px * var(--ts,1))}
+.ton-step-main span{font-size:calc(12.5px * var(--ts,1));color:var(--ink-soft);overflow-wrap:normal;word-break:normal;hyphens:manual}
+.ton-step-actions{display:flex;justify-content:flex-end;gap:6px}
+.ton-step-actions button,.ton-step-actions .combo-block-remove{width:44px;height:44px;margin-left:0;border-radius:50%;border:none;background:var(--surface-2);color:var(--ink-soft);font-size:calc(16px * var(--ts,1));font-weight:700;cursor:pointer;flex:none}
+.ton-step-actions button:disabled{opacity:.35;cursor:default}
+.ton-field-label{font-size:calc(13px * var(--ts,1));font-weight:700;color:var(--ink);margin:14px 0 6px}
+.ton-freq-line{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
+.ton-step-btn{min-width:44px;height:44px;padding:0 8px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font-family:inherit;font-weight:700;font-size:calc(14px * var(--ts,1));cursor:pointer;font-variant-numeric:tabular-nums}
+#tonFreqInput{width:5.2em;height:44px;border:1px solid var(--line);border-radius:10px;padding:0 8px;font-size:calc(16px * var(--ts,1));font-family:inherit;color:var(--ink);background:var(--surface);text-align:right;font-variant-numeric:tabular-nums}
+.ton-unit{font-weight:700;color:var(--ink-soft)}
+.ton-low-hint{color:var(--warn)}
+#tonPreviewBtn,#tonChannelBtn{margin-top:12px}
+.ton-channel-status{min-height:1.4em;margin-top:8px;font-size:calc(14px * var(--ts,1));color:var(--ink)}
+.ton-channel-status[data-ear]{font-size:calc(20px * var(--ts,1));font-weight:700;color:var(--brand)}
+.ton-sweep-line{display:flex;gap:8px;margin-top:10px}
+.ton-sweep-line .start-btn{flex:1;margin:0}
+.ton-sweep-hz{min-height:1.4em;margin-top:8px;font-size:calc(18px * var(--ts,1));font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.ton-text-input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:calc(14px * var(--ts,1));font-family:inherit;color:var(--ink);background:var(--surface)}
+@media (pointer:coarse){.ton-text-input{font-size:16px}}
+.ton-stage{flex:1;position:relative;min-height:0;display:flex;align-items:center;justify-content:center;padding:96px 20px 24px;overflow:hidden}
+.ton-now{text-align:center;max-width:520px}
+.ton-now-step{font-size:calc(15px * var(--ts,1));font-weight:600;opacity:.75}
+.ton-now-hz{font-family:"Magra",sans-serif;font-size:calc(64px * min(var(--ts,1),1.1));font-weight:700;line-height:1.1;margin:10px 0 6px;font-variant-numeric:tabular-nums}
+.ton-now-ear{font-size:calc(22px * var(--ts,1));font-weight:700}
+.ton-now-pattern{font-size:calc(15px * var(--ts,1));opacity:.75;margin-top:6px}
+.ton-now-time{font-size:calc(18px * var(--ts,1));margin-top:14px;font-variant-numeric:tabular-nums}
+.ton-now-mute{margin-top:14px;font-size:calc(14px * var(--ts,1));color:#b3261e;font-weight:600}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #tonPlayer .remember-hint{background:rgba(233,240,242,.1);color:#c4cfd3}}
+:root[data-theme="dark"] #tonPlayer .remember-hint{background:rgba(233,240,242,.1);color:#c4cfd3}
+.ton-after{display:flex;flex-direction:column;gap:8px;margin:6px 0 12px;width:100%;max-width:420px}
+.ton-after .start-btn{margin:0}
+.ton-after-saved{font-size:calc(13px * var(--ts,1));color:var(--ok)}
+
 /* ---- Breathing player ---- */
 .breath-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:0 20px}
 .breath.big{width:min(64vw,270px);height:min(64vw,270px)}
