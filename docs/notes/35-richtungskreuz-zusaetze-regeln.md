@@ -131,3 +131,6 @@ Tests: `tests/richtungskreuz_1008_test.py`, `tests/zusaetze_oben_1008_test.py`,
   rules come from the ready-screen description (not the block's own mode).
 - Dashboard Baukasten fields for `trainerNote`/`zus` (JSON only for now).
 - A "Ball" card on the Hilfsmittel page for the Zusätze (not built).
+
+## Körperregel je Farbe (Idee 75, Fabian 09.10.: per exercise, never global)
+Lives in the exercise's Zusätze entry: `state.zusOben[exId].body = {on, rules: {colourKey: action}}` (`bodyNormalize`, actions `BODY_ACTIONS`/`BODY_TEXT`), so presets, Kombi blocks and codes carry it with `zus` (snapshot also when only `body` is set). UI `#bodyRuleBox` inside `#zusGroup` (checkbox, one chip row per colour of the exercise: `state.colors`, Richtungskreuz `rkColors`, plus colours that already have a rule), "Von anderer Übung übernehmen" lists every ZUS exercise with an active rule. Ready note (`#zusNote`, kicker "Körperregel") and Regeln sheet (`zusRuleLines`). The app does not check it. FAQ "Was ist die Körperregel je Farbe?".

@@ -51,16 +51,15 @@ async def main():
         print("centre pixel isn't the fixpoint dot's grey once disabled:", canvas_has_dot != "143,162,168")
         await pg.click("#backBtn"); await pg.wait_for_timeout(150)
 
-        # --- re-enable, applies to a DIFFERENT VT exercise too (shared setting) ---
+        # --- a DIFFERENT VT exercise is not affected (own setting per exercise since 09.10.) ---
         await pg.click("#backToHome"); await pg.wait_for_timeout(100)
         await pg.click('.section-tab[data-section="visual"]:visible'); await pg.wait_for_timeout(150)
         await pg.click('.excard[data-exercise="4-straight"]'); await pg.wait_for_timeout(150)
         if not await pg.is_visible("#periphFixOptions") and not await pg.is_visible('#periphFixToggleRow [data-periph-fix="1"]'):
             await pg.click("#advanced summary"); await pg.wait_for_timeout(100)
-        print("a different VT exercise shows the same disabled state (shared, not per-exercise):",
-              "active" in (await pg.get_attribute('#periphFixToggleRow [data-periph-fix="0"]', "class") or ""))
-        await pg.click('#periphFixToggleRow [data-periph-fix="1"]'); await pg.wait_for_timeout(80)
-        print("re-enabled:", "active" in (await pg.get_attribute('#periphFixToggleRow [data-periph-fix="1"]', "class") or ""))
+        # Since 09.10.2026 every exercise keeps its own Fixpunkt (Fabian).
+        print("a different VT exercise still shows the standard (per exercise, not shared):",
+              "active" in (await pg.get_attribute('#periphFixToggleRow [data-periph-fix="1"]', "class") or ""))
         await pg.click("#backToHome"); await pg.wait_for_timeout(100)
 
         # --- Flash-Speicher-Test: fixpoint always hidden once the answer panel opens ---

@@ -50,10 +50,13 @@ async def main():
         await pg.click('#natHome .sub-tab[data-nat-sub="remember"]'); await pg.wait_for_timeout(150)
         await pg.click("#rememberOpenFixed"); await pg.wait_for_timeout(150)
         await pg.click("#rememberAdvanced summary"); await pg.wait_for_timeout(100)
-        print("Remember source row lists only VT/NAT:", await pg.locator("#rememberBgSourceRow button").all_inner_texts())
+        await pg.click('#rememberBgSourceRow .xfer-btn'); await pg.wait_for_timeout(100)
+        print("Remember source sheet lists only VT/NAT (09.10.: one 'Von anderer Übung übernehmen' sheet):", await pg.locator("#xferList .xfer-item").all_inner_texts())
+        await pg.click('#xferList .text-link'); await pg.wait_for_timeout(80)
         print("Remember lists the VT-saved preset too (not domain-scoped):", await pg.locator("#rememberBgPresetList .bundle-item").all_inner_texts())
 
-        await pg.click('#rememberBgSourceRow button:has-text("Visuelles Training")'); await pg.wait_for_timeout(100)
+        await pg.click('#rememberBgSourceRow .xfer-btn'); await pg.wait_for_timeout(100)
+        await pg.click('#xferList .xfer-item:has-text("Visuelles Training")'); await pg.wait_for_timeout(100)
         prefs = await pg.evaluate("() => JSON.parse(localStorage.getItem('fwmc-remember-prefs-v1')||'{}')")
         print("quick-copy picked up VT's CURRENT colour (rot, not the saved preset):", prefs.get("bgColorKey") == "rot")
 

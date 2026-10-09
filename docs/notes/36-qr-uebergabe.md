@@ -254,3 +254,15 @@ main page, light/dark: `tests/knopf_lesbar_1008_test.py`.
   „Mit Kunde“ zählt die laufende Sitzung nicht), `#clientRunPending` steht oben im
   Trainer-Menü, `#handoverWaitNote` in der Übersicht und beim Übergeben (mit
   „Nur Kunden-Trainings zeigen“). Petrol-Strich links wie der Kunden-Modus.
+
+## Bestwerte + Einstellungen vom Trainer (2026-10-09)
+- Kunden-Training clears the four NAT best stores after the snapshot (`hoClearBests`), so each client run carries the client's own session bests `bs`, the settings `ps` (`HO_SETTINGS`: remember, blitz, flash, mot, balance; never volume/colours) and the device kind `dk` (`hoAttachExtras` in `hoAddClientRun`).
+- Payload v1 gains optional `b` (bests merged per exercise), `s` (latest settings per exercise), `d` (phone|tablet), built by `hoExtrasFor`. Old apps ignore them. `hoCheckExtras` drops anything unknown or of the wrong type (the runs still import).
+- Client: `hoMergeBests` (higher is better, own other values stay), then one `confirmDialog` per exercise „Mit den Einstellungen deines Trainers weitertrainieren?“ (`hoAskSettings`); size only with the same device kind, otherwise a note. Applied = `fwmc-trainer-settings-v1` + `.trainer-set-note` on the ready screen. FAQ „Was bekomme ich von meinem Trainer?“. Test: `tests/trainer_uebernahme_0910_test.py`. Schulte joins `HO_BEST_KEYS`/`HO_SETTINGS` when it is merged.
+
+### Paket 09.10. nachmittags (Fabian's answers)
+- **Verschickt** (`HO_SENT_KEY` = `fwmc-trainer-sent-v1`, 21 days by `sent`): "Fertig" after a QR copies the sent runs there (`hoMarkSent`) before `hoDeleteEverywhere` removes them as before (own runs still leave Verlauf/Fortschritt). Gespeicherte Trainings lists them last with a green "verschickt" tag and the send time; chip "Verschickt"; they can be ticked and shown as QR again (`hoEntriesFor` reads the archive); deleting removes the copy.
+- **Ausgeblendete zeigen**: `#handoverHiddenBtn` in Gespeicherte Trainings (only with hidden own runs of the last 14 days, filter Alle/Eigene) toggles `hoShowHidden`; such rows get a dashed "ausgeblendet" tag and can be sent.
+- **Kürzel pro Kunden-Training**: `#clientTagSheet` right after "Mit Kunde" starts (`hoAskTag`, max 4 chars, no spaces), stored in the session (`tag`) and on each client run; shown in the tags ("Kunde · MK", "früher · MK", "verschickt · MK"). Never in the QR payload. Automated browsers only with `fwmc-test-clienttag`.
+- **QR sub field**: payload position 11 = `freeId` or `neuroEx` (≤ 60, `[\w.:-]`); the import sets it back, so a plan entry `free:<id>` / `neuro:<ex>` is ticked on the client's phone (see docs/notes/04).
+Test: `tests/paket_0910_nachmittag_test.py`.

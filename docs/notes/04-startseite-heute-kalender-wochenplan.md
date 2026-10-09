@@ -153,3 +153,33 @@ Heute scrolled to it (push "Zeit für eine Atempause"). Details: docs/notes/20
   name is listed under "Was wird auf deinem Gerät gespeichert?".
 Test: `tests/vorname_heute_1008_test.py`; the wrap audit covers the open form
 and a 30-char name on Heute.
+
+## Auswahl vs. heute, ungeplante Trainings (2026-10-09, Fabian)
+- Ausgewählter Tag = gefüllt in `--brand` (Text `--on-brand-fill`, hell weiß / dunkel #0c1b20), heute = Rahmen + Zahl in Markenfarbe. Gilt für Wochenleiste und Monatskalender (iOS-Kalender-Logik).
+- Punkte ohne Plan-Eintrag (`extraAreasOn`) erklären sich im Tagesfeld: `extraEntriesOn` + `extraDayHtml` listen sie unter „Zusätzlich trainiert (nicht geplant)“ mit Uhrzeit, Dauer, Bereich. Test `tests/kalender_auswahl_0910_test.py`.
+
+## Heute Entwurf E (2026-10-09, Fabian „Okay, wir nehmen E“)
+- No plan for today: `#todayMain.is-flat` is one row „Zuletzt · <Tag>“ + name + pill „Nochmal“ (`lastDayWord`). Planned training / Weitermachen / all done keep their big card; newcomers keep the starter ask.
+- `#todayPair`: half tile `#todayBreak` („Nichtraucher-Pause“ in quotes, „Gönn dir einmal durchatmen.“, „N Min. starten →“; 1/2/3 Min. now in `#breakInfoSheet`) + `#todayNewTile` „Neu für dich · <Bereich>“ (`newTilePick`: never-done STARTER from the first three of the goal's order, by day) or, when all are tried, „Bestleistung“ (`bestTilePick`, Positionen merken/Blitz/Flash/MOT, „Heute die 8?“). Newcomers: tile hidden, pause full width (`.single`).
+- `#todayAsk`: „Trainierst du mit einem Trainer?“ as one slim line until answered (only own mode, not for newcomers who get it in the main card).
+- `hasTrainerCode()`: a code-history entry whose `type` (recorded by `recordCodeUsage` since 09.10.) is not `feature-unlock`/`neuro-unlock`, or a QR-imported run (`trainer: 1`). Old entries without type count. `starterStage` uses it.
+- `#todayGoal` under the week: „Für dein Ziel: <Ziel> ›“ (tap = goal chips), swipe row without the tile's exercise, never-done first, rotating by day; compact with a trainer; hint „Für dein persönliches Training sprich mit deinem Trainer.“ / „Noch keinen Trainer?“ (`PLAN_REQUEST_URL`). `fwmc-start-v1` gains `goalAt`; after 42 days „Passt dein Ziel noch?“ (Ja renews the date). Mehr › „Dein Ziel“ (`openGoalPicker`). Nothing is written in Kunden-/Test-Modus (`starterSave`). FAQ „Woher kommen die Vorschläge auf Heute?“. Test: `tests/heute_e_0910_test.py`.
+
+## Tagesform (09.10., replaces "Neu für dich")
+Fabian 09.10.: Heute must not show exercises twice ("Zuletzt" row + tile).
+The right half tile `#todayNewTile` is now the Tagesform (`renderMoodTile`):
+"Wie fühlst du dich heute?" müde / okay / fit, stored in `fwmc-mood-v1`
+(`{ "YYYY-MM-DD": { v: 1|2|3, at } }`, ~400 days, only in "Mein Training"
+mode, never sent). Once answered the tile shows the week (same numbers as
+Fortschritt, `progressSummary().cur`) + "ändern" + "Fortschritt →".
+Fortschritt › "Deine Tagesform" (`renderMoodProgress`): 4-week dot grid
+(colour = Tagesform, green ring = trained), from 5 days on two levels one
+sentence "An „müde“-Tagen hast du in X % trainiert, an „fit“ …". Not in
+handover/QR yet (Fabian to decide). Old `newTilePick`/`bestTilePick` stay
+unused for now. Test: `tests/heute_e_0910_test.py`.
+
+## Plan-Haken genau (09.10. nachmittags)
+`occurrencesOn` matches history runs to plan entries per area, except entries naming one training: `free:<id>` needs `h.freeId === id`, `neuro:<ex>` needs `h.neuroEx === ex` (also for runs from the trainer's QR). Specific entries pick first. FAQ "Wann bekommt ein geplantes Training seinen Haken?". Test hook `window.__ho0910.planTry`.
+
+## Vorher und nachher (09.10. nachmittags)
+With today's Tagesform set, every done panel of a finished (not aborted) run asks once "Und wie geht es dir jetzt?" (`moodAfterOffer`, called from the done-panel observer; own mode only; the run must be < 15 s old). Stored on the history entry as `moodBefore`/`moodAfter`. Fortschritt "Deine Tagesform" adds "Vorher und nachher" per area from 3 answers (`moodAfterHtml`). FAQ Tagesform extended. Test: `tests/paket_0910_nachmittag_test.py`.

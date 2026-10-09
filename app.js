@@ -58,6 +58,155 @@
   const FIX_COLOR_LIB = [{ key: "grau", name: "Grau", hex: DOT }, ...STROOP_COLOR_LIB];
   const FIX_COLOR_BY_KEY = Object.fromEntries(FIX_COLOR_LIB.map((c) => [c.key, c]));
 
+  // ---- Fixpunkt: ein Modul für alle Übungen (Fabian 09.10.2026) ----
+  // The Grundeinstellungen hold the standard (masterPrefs.fix: Inhalt Punkt /
+  // Kreuz / Text up to 12 characters incl. name or emoji, Farbe, Größe).
+  // Every exercise (key "vt:<id>", "flash", "mot:<mode>", "schulte:<mode>",
+  // "optodrum") follows it until the client changes the fixation point
+  // there; that change is stored for this key only in fwmc-fix-v1. "Auf
+  // Grundeinstellung zurück" drops one key, "Für alle übernehmen, auch
+  // geänderte" (Grundeinstellungen, with confirmDialog) drops them all.
+  // Engines keep their old runtime fields (state.periphFix*, prefs.fix*), so
+  // presets, Kombi snapshots and codes carry them unchanged; fixLoad() fills
+  // them from the module whenever a ready screen opens or a block starts.
+  // A new exercise: one FIX_ADAPTERS entry + a fix group (fixGroupHtml).
+  const FIX_KEY = "fwmc-fix-v1";
+  const FIX_ADAPTERS = {};
+  const FIX_TEXT_MAX = 12;
+  const FIX_KINDS = [{ key: "punkt", name: "Punkt" }, { key: "kreuz", name: "Kreuz" }, { key: "text", name: "Text" }];
+  // Standard aus (Fabian 09.10.: e.g. Optodrum), switchable per exercise.
+  const FIX_STD_OFF = /^optodrum/;
+  const FIX_FIELDS = {
+    vt: { on: "periphFixEnabled", kind: "periphFixKind", text: "periphFixChar", color: "periphFixColor", size: "periphFixSize" },
+    std: { on: "fixEnabled", kind: "fixKind", text: "fixChar", color: "fixColor", size: "fixSize" },
+  };
+  function fixNorm(f, onDefault) {
+    const o = f && typeof f === "object" ? f : {};
+    const text = String(o.text == null ? "" : o.text).replace(/\s+/g, " ").slice(0, FIX_TEXT_MAX);
+    let kind = FIX_KINDS.some((k) => k.key === o.kind) ? o.kind : (text.trim() ? "text" : "punkt");
+    if (kind === "text" && !text.trim()) kind = "punkt";
+    const size = Number(o.size);
+    return {
+      on: typeof o.on === "boolean" ? o.on : onDefault !== false,
+      kind, text,
+      color: FIX_COLOR_BY_KEY[o.color] ? o.color : "grau",
+      size: Number.isFinite(size) && size >= 0.6 && size <= 2 ? Math.round(size * 10) / 10 : 1,
+    };
+  }
+  function fixStd() {
+    let m = null;
+    try { m = masterPrefs.fix; } catch (e) { /* masterPrefs not declared yet at page load */ }
+    const f = fixNorm(m, true);
+    f.on = true;
+    return f;
+  }
+  function fixOwnAll() {
+    const v = readJSON(FIX_KEY, {});
+    return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+  }
+  function fixIsOwn(key) { return !!fixOwnAll()[key]; }
+  function fixGet(key) {
+    const own = fixOwnAll()[key];
+    if (own) return fixNorm(own, true);
+    const f = fixStd();
+    f.on = !FIX_STD_OFF.test(key);
+    return f;
+  }
+  function fixSetOwn(key, f) { const all = fixOwnAll(); all[key] = fixNorm(f, true); writeJSON(FIX_KEY, all); }
+  function fixClear(key) { const all = fixOwnAll(); delete all[key]; writeJSON(FIX_KEY, all); }
+  function fixRead(obj, names) {
+    return fixNorm({ on: obj[names.on], kind: obj[names.kind], text: obj[names.text], color: obj[names.color], size: obj[names.size] }, true);
+  }
+  function fixWrite(obj, names, f) {
+    const n = fixNorm(f, true);
+    obj[names.on] = n.on; obj[names.kind] = n.kind; obj[names.text] = n.text; obj[names.color] = n.color; obj[names.size] = n.size;
+  }
+  function fixDescribe(f) {
+    if (!f.on) return "ausgeblendet";
+    const k = f.kind === "text" ? `„${f.text.trim()}“` : FIX_KINDS.find((x) => x.key === f.kind).name;
+    return `${k} · ${(FIX_COLOR_BY_KEY[f.color] || FIX_COLOR_BY_KEY.grau).name} · ${f.size.toFixed(1).replace(".", ",")}×`;
+  }
+  // Canvas drawing, shared by every canvas engine. Text shrinks until it
+  // fits maxW (default: 60 % of the unit), so 12 characters never run off.
+  function fixDraw(c, cx, cy, unit, f, maxW) {
+    if (!f || !f.on) return;
+    const color = (FIX_COLOR_BY_KEY[f.color] || FIX_COLOR_BY_KEY.grau).hex;
+    c.save();
+    if (f.kind === "text" && f.text.trim()) {
+      const t = f.text.trim();
+      let px = Math.max(10, Math.round(unit * 0.09 * f.size));
+      c.font = `700 ${px}px Magra, sans-serif`;
+      const lim = maxW || unit * 0.6;
+      const w = c.measureText(t).width;
+      if (w > lim) { px = Math.max(10, Math.floor(px * lim / w)); c.font = `700 ${px}px Magra, sans-serif`; }
+      c.textAlign = "center";
+      c.textBaseline = "middle";
+      c.fillStyle = color;
+      c.fillText(t, cx, cy);
+    } else if (f.kind === "kreuz") {
+      const r = unit * 0.035 * f.size;
+      c.strokeStyle = color;
+      c.lineWidth = Math.max(2, unit * 0.012 * f.size);
+      c.lineCap = "round";
+      c.beginPath();
+      c.moveTo(cx - r, cy); c.lineTo(cx + r, cy);
+      c.moveTo(cx, cy - r); c.lineTo(cx, cy + r);
+      c.stroke();
+    } else {
+      c.beginPath();
+      c.fillStyle = color;
+      c.arc(cx, cy, unit * 0.03 * f.size, 0, Math.PI * 2);
+      c.fill();
+    }
+    c.restore();
+  }
+  // DOM version (Flash, Schulte): an absolutely centred element.
+  function fixRenderEl(el, f, basePx, maxW) {
+    if (!f || !f.on) { el.hidden = true; return; }
+    el.hidden = false;
+    const color = (FIX_COLOR_BY_KEY[f.color] || FIX_COLOR_BY_KEY.grau).hex;
+    el.style.background = "transparent";
+    el.style.borderRadius = "0";
+    el.style.width = "auto";
+    el.style.height = "auto";
+    el.style.whiteSpace = "nowrap";
+    if (f.kind === "text" && f.text.trim()) {
+      const t = f.text.trim();
+      let px = Math.round(28 * (basePx || 1) * f.size);
+      // ~0.6 em per character in Magra bold: shrink until it fits maxW.
+      if (maxW && t.length * px * 0.6 > maxW) px = Math.max(10, Math.floor(maxW / (t.length * 0.6)));
+      el.textContent = t;
+      el.style.fontSize = px + "px";
+      el.style.color = color;
+    } else if (f.kind === "kreuz") {
+      const size = Math.round(18 * (basePx || 1) * f.size);
+      el.textContent = "";
+      el.innerHTML = `<svg viewBox="0 0 20 20" width="${size}" height="${size}" style="display:block"><path d="M2 10H18M10 2V18" stroke="${color}" stroke-width="3.2" stroke-linecap="round" fill="none"/></svg>`;
+    } else {
+      el.textContent = "";
+      const size = Math.round(12 * (basePx || 1) * f.size);
+      el.style.width = size + "px";
+      el.style.height = size + "px";
+      el.style.background = color;
+      el.style.borderRadius = "50%";
+    }
+  }
+  // One settings group, same markup as the original VT/Flash groups (ids
+  // = prefix + ToggleRow/Options/CharInput/ColorPicker/SizeSlider/
+  // SizeValue), so every place looks the same. toggle:false = no
+  // Anzeigen/Ausblenden row (Grundeinstellungen).
+  function fixGroupHtml(prefix, label, toggle, attr) {
+    const a = attr || "data-fix-on";
+    return `<div class="group fix-group" id="${prefix}Group">` +
+      `<div class="group-label">${esc(label)}</div>` +
+      (toggle === false ? "" : `<div class="choice-row two" id="${prefix}ToggleRow"><button class="choice" ${a}="1">Anzeigen</button><button class="choice" ${a}="0">Ausblenden</button></div>`) +
+      `<div id="${prefix}Options">` +
+      `<input type="text" id="${prefix}CharInput" maxlength="${FIX_TEXT_MAX}" placeholder="Eigener Text, z. B. dein Name oder 🙂" aria-label="Text für den Fixpunkt">` +
+      `<div class="color-picker" id="${prefix}ColorPicker"></div>` +
+      `<div class="slider-row"><span class="slider-label">Größe</span><input type="range" id="${prefix}SizeSlider" min="0.6" max="2" step="0.1" aria-label="Größe des Fixpunkts"><span class="slider-value" id="${prefix}SizeValue"></span></div>` +
+      `</div></div>`;
+  }
+
   // ---- Größe + Farbe der Zahlen/Zeichen (Fabian, 2026-10-05) ----
   // Positionen merken (Kreise + Zahl), Flash-Speicher-Test (Zeichen) and MOT
   // (Objekte, no text, so size only) get the same two Feineinstellungen on
@@ -85,6 +234,12 @@
     balance: {
       size: { field: "size", min: 0.6, max: 2, step: 0.1, label: "Größe der Stifte", help: "Länge, Breite und Schrift wachsen mit. Während der Übung: mit zwei Fingern ziehen oder unter „Regler“." },
     },
+    // Schulte-Tabelle (09.10.): the cells keep their size (they are the tap
+    // targets), only the number grows - capped so two digits always fit.
+    schulte: {
+      size: { field: "numScale", min: 0.6, max: 1.6, step: 0.1, label: "Größe der Zahlen", help: "Die Felder bleiben gleich groß, nur die Zahlen wachsen. Passt eine Zahl nicht mehr ins Feld, wird sie automatisch begrenzt." },
+      color: { field: "numColor", lib: FLASH_CHAR_COLOR_LIB, def: "standard", label: "Farbe der Zahlen", against: () => "#ffffff", tip: "Tipp: Diese Farbe hebt sich kaum von den weißen Feldern ab." },
+    },
   };
   function normalizeLookPrefs(kind, p) {
     const { size, color } = LOOK_SPECS[kind];
@@ -105,7 +260,8 @@
     const a = lum(hexA), b = lum(hexB);
     return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
   }
-  const LOOK_SYNCS = { remember: [], flash: [], mot: [], balance: [] };
+  const LOOK_NAMES = { remember: "Positionen merken", flash: "Flash-Speicher-Test", mot: "Objektverfolgung (MOT)", balance: "Gleichgewicht", schulte: "Schulte-Tabelle" };
+  const LOOK_SYNCS = { remember: [], flash: [], mot: [], balance: [], schulte: [] };
   function syncLook(kind) { LOOK_SYNCS[kind].forEach((fn) => fn()); }
   function initLookControls(sources) {
     document.querySelectorAll(".look-host[data-look]").forEach((host) => {
@@ -139,6 +295,25 @@
         buildSingleSelectPicker(picker, color.lib, (key) => { prefs[color.field] = key; save(); syncLook(kind); });
         nodes.push(colorGroup);
       }
+      // Größe/Farbe von einer anderen Übung übernehmen (Fabian 09.10.).
+      const xferWrap = document.createElement("div");
+      xferWrap.className = "group xfer-group";
+      xferWrap.appendChild(xferButton(color ? "Größe und Farbe übernehmen" : "Größe übernehmen", () => {
+        const fmt = (v) => v.toFixed(1).replace(".", ",") + "×";
+        const items = [{ label: "Auf Standard zurück", sub: "Größe 1,0×" + (color ? " · " + color.lib.find((c) => c.key === color.def).name : ""),
+          pick: () => { prefs[size.field] = Math.min(size.max, Math.max(size.min, 1)); if (color) prefs[color.field] = color.def; save(); syncLook(kind); } }];
+        Object.keys(LOOK_SPECS).filter((k) => k !== kind && sources[k]).forEach((k) => {
+          let op;
+          try { op = sources[k].prefs; } catch (e) { return; }
+          const os = LOOK_SPECS[k];
+          const v = Math.min(size.max, Math.max(size.min, op[os.size.field]));
+          const oc = color && os.color && color.lib.find((c) => c.key === op[os.color.field]);
+          items.push({ label: "Wie bei " + LOOK_NAMES[k], sub: "Größe " + fmt(v) + (oc ? " · " + oc.name : ""), swatch: oc ? oc.hex : null,
+            pick: () => { prefs[size.field] = v; if (oc) prefs[color.field] = oc.key; save(); syncLook(kind); } });
+        });
+        return items;
+      }));
+      nodes.push(xferWrap);
       LOOK_SYNCS[kind].push(() => {
         slider.value = prefs[size.field];
         sizeValue.textContent = prefs[size.field].toFixed(1).replace(".", ",") + "×";
@@ -549,32 +724,11 @@
     }
   }
 
-  // The small centre dot every VT-style exercise shows between stimuli, so
-  // the eyes have somewhere fixed to rest on. Periphere Wahrnehmung is the
-  // first exercise that lets the client swap it for their own character and
-  // change its size/colour - every other exercise keeps the plain default
-  // dot untouched.
+  // The centre fixation point every VT-style exercise shows between
+  // stimuli, so the eyes have somewhere fixed to rest on (shared Fixpunkt
+  // module, per exercise since 09.10.2026).
   function drawFixationPoint(cx, cy, unit) {
-    if (!state.periphFixEnabled) return;
-    const ex = EXERCISES[state.exercise];
-    // Every exercise with this dot can customise it now, except "Hütchen
-    // sortieren" which never shows it at all (own colour-tap mechanic).
-    const custom = ex && ex.type !== "color-tap";
-    const color = custom ? (FIX_COLOR_BY_KEY[state.periphFixColor] || FIX_COLOR_BY_KEY.grau).hex : DOT;
-    const scale = custom ? state.periphFixSize : 1;
-    const char = custom ? state.periphFixChar.trim() : "";
-    if (char) {
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.font = `700 ${Math.round(unit * 0.09 * scale)}px Magra, sans-serif`;
-      ctx.fillStyle = color;
-      ctx.fillText(char.slice(0, 3), cx, cy);
-    } else {
-      ctx.beginPath();
-      ctx.fillStyle = color;
-      ctx.arc(cx, cy, unit * 0.03 * scale, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    fixDraw(ctx, cx, cy, unit, fixRead(state, FIX_FIELDS.vt));
   }
 
   // Draws one peripheral character (used both by Periphere Wahrnehmung's own
@@ -946,7 +1100,27 @@
     if (!Number.isFinite(sigMax) || sigMax < 3 || sigMax > 60) sigMax = ZUS_SIG_DEFAULT.sigMax;
     if (sigMax < sigMin) sigMax = sigMin;
     const trainerIds = Array.isArray(o.trainerIds) ? o.trainerIds.filter((id) => ids.includes(id)) : [];
-    return { ids, sigMin, sigMax, trainerIds };
+    const out = { ids, sigMin, sigMax, trainerIds };
+    const body = bodyNormalize(o.body);
+    if (body) out.body = body;
+    return out;
+  }
+  // Körperregel je Farbe (Fabian 09.10., Idee 75): stored per exercise in
+  // its Zusätze entry (so presets, Kombi blocks and codes carry it), never
+  // one global rule per colour. "Von anderer Übung übernehmen" copies it.
+  const BODY_ACTIONS = { "": "Nichts", haende: "Hände hoch", rhand: "Rechte Hand", lhand: "Linke Hand", rfuss: "Rechter Fuß", lfuss: "Linker Fuß", hocke: "In die Hocke", klatsch: "Klatschen" };
+  const BODY_TEXT = { haende: "beide Hände hoch", rhand: "rechte Hand hoch", lhand: "linke Hand hoch", rfuss: "mit dem rechten Fuß antippen", lfuss: "mit dem linken Fuß antippen", hocke: "kurz in die Hocke", klatsch: "einmal klatschen" };
+  function bodyNormalize(b) {
+    if (!b || typeof b !== "object") return null;
+    const rules = {};
+    Object.entries(b.rules && typeof b.rules === "object" ? b.rules : {}).forEach(([k, v]) => { if (COLOR_BY_KEY[k] && BODY_TEXT[v]) rules[k] = v; });
+    if (!b.on && !Object.keys(rules).length) return null;
+    return { on: !!b.on, rules };
+  }
+  function bodyActive(z) { return !!(z && z.body && z.body.on && Object.keys(z.body.rules).length); }
+  function bodyLines(z) {
+    if (!bodyActive(z)) return [];
+    return Object.entries(z.body.rules).map(([k, v]) => `Bei ${COLOR_BY_KEY[k].name}: ${BODY_TEXT[v]}.`);
   }
   function zusNormalizeMap(m) {
     const src = m && typeof m === "object" && !Array.isArray(m) ? m : {};
@@ -1787,6 +1961,7 @@
     "flash": { title: "Flash-Speicher-Test", type: "flash" },
     "mot": { title: "Objektverfolgung (MOT)", type: "mot" },
     "balance": { title: "Gleichgewicht", type: "balance" },
+    "schulte": { title: "Schulte-Tabelle", type: "schulte" },
   };
 
   // ---- Programmes: coach-authored multi-block sessions. Real client
@@ -2268,6 +2443,7 @@
     if (block.domain === "flash") return `Flash-Speicher-Test · ${flashModeTitle(block.mode)}`;
     if (block.domain === "mot") return `Objektverfolgung (MOT) · ${motModeTitle(block.mode)}`;
     if (block.domain === "balance") return `Gleichgewicht · ${BALANCE_MODES[balanceBlockPrefs(block).mode].name}`;
+    if (block.domain === "schulte") return `Schulte-Tabelle · ${schulteModeTitle(block.mode)}`;
     if (block.domain === "cardio") return `Ausdauertraining · ${countLabel(block.items.length, "Aktivität", "Aktivitäten")}`;
     if (block.domain === "free") return block.free.title;
     if (block.domain === "optodrum") return `Optodrum · ${OPTO_PATTERNS[optoBlockPrefs(block).pattern].name}`;
@@ -2285,6 +2461,7 @@
     if (block.domain === "flash") return fmtMinutes((block.duration ?? 60));
     if (block.domain === "mot") return fmtMinutes((block.duration ?? 60));
     if (block.domain === "balance") return balanceMeta(balanceBlockPrefs(block));
+    if (block.domain === "schulte") { const g = (block.prefs && block.prefs.gridSize) || 5; return `${fmtMinutes(block.duration ?? 120)} · ${g}×${g}`; }
     if (block.domain === "cardio") return fmtMinutes(cardioItemsSeconds(block.items));
     if (block.domain === "free") return freeBlockMeta(block.free);
     if (block.domain === "optodrum") { const p = optoBlockPrefs(block); return `${optoTimeLabel(p)} · ${optoDirName(p)} · Stufe ${p.speed}`; }
@@ -2302,6 +2479,7 @@
     if (block.domain === "flash") return block.duration ?? 60;
     if (block.domain === "mot") return block.duration ?? 60;
     if (block.domain === "balance") return balanceTotalSeconds(balanceBlockPrefs(block));
+    if (block.domain === "schulte") return block.duration ?? 120;
     if (block.domain === "cardio") return cardioItemsSeconds(block.items);
     if (block.domain === "free") return freeBlockSeconds(block.free);
     if (block.domain === "optodrum") { const p = optoBlockPrefs(block); return p.noLimit ? 0 : p.durationS; }
@@ -2362,6 +2540,9 @@
       { label: "Objektverfolgung (MOT) · Beides steigt", meta: "Schwierigkeit & Dauer einstellen", open: () => openMotComboCapture("both", null, null) },
       { label: "Objektverfolgung (MOT) · Trainingsmodus", meta: "gezielt bei einer Stufe üben", open: () => openMotComboCapture("training", null, null) },
       { label: "Gleichgewicht", meta: "Modus, Takt, Stand & Ablauf einstellen", open: () => openBalanceComboCapture(null, null) },
+      { label: "Schulte-Tabelle · Fest", meta: "Raster, Fixpunkt & Dauer einstellen", open: () => openSchulteComboCapture("fest", null, null) },
+      { label: "Schulte-Tabelle · Wechselnd", meta: "Raster, Fixpunkt & Dauer einstellen", open: () => openSchulteComboCapture("wechselnd", null, null) },
+      { label: "Schulte-Tabelle · Aus der Erinnerung", meta: "Raster, Fixpunkt & Dauer einstellen", open: () => openSchulteComboCapture("erinnerung", null, null) },
     ],
     // "Zirkel" (circuit/Tabata) and "Kraft-/Wiederholungstraining" (reps,
     // with a real rep-range picker - see the CLAUDE.md note) both have a
@@ -2401,6 +2582,7 @@
     flash: (block, i) => openFlashComboCapture(block.mode, block, i),
     mot: (block, i) => openMotComboCapture(block.mode, block, i),
     balance: (block, i) => openBalanceComboCapture(block, i),
+    schulte: (block, i) => openSchulteComboCapture(block.mode, block, i),
     free: (block, i) => openFreeComboCapture(block.free, i),
     optodrum: (block, i) => openOptoComboCapture(block, i),
     neuro: (block, i) => openNeuroComboCapture(block.ex, block, i),
@@ -2463,7 +2645,7 @@
     vtPauseTempoGroup: $("vtPauseTempoGroup"), vtPauseStimulusSlider: $("vtPauseStimulusSlider"), vtPauseStimulusValue: $("vtPauseStimulusValue"),
     vtPauseIntervalMinSlider: $("vtPauseIntervalMinSlider"), vtPauseIntervalMaxSlider: $("vtPauseIntervalMaxSlider"), vtPauseIntervalValue: $("vtPauseIntervalValue"),
     vtPauseBgIntensityGroup: $("vtPauseBgIntensityGroup"), vtPauseBgColorGroup: $("vtPauseBgColorGroup"),
-    vtPauseFixColorGroup: $("vtPauseFixColorGroup"), vtPauseFixSizeGroup: $("vtPauseFixSizeGroup"), vtPauseStimColorGroup: $("vtPauseStimColorGroup"),
+    periphPauseFixGroup: $("periphPauseFixGroup"), vtPauseStimColorGroup: $("vtPauseStimColorGroup"),
     durationGroup: $("durationGroup"), tempoGroup: $("tempoGroup"), advanced: $("advanced"),
     vtSavedGroup: $("vtSavedGroup"), vtSavedList: $("vtSavedList"), vtSaveBtn: $("vtSaveBtn"),
     vtSaveForm: $("vtSaveForm"), vtSaveNameInput: $("vtSaveNameInput"),
@@ -3109,6 +3291,21 @@
     motPlayerBar: $("motPlayerBar"), motBackBtn: $("motBackBtn"), motPauseBtn: $("motPauseBtn"), motLevelEl: $("motLevelEl"),
     motFsBtn: $("motFsBtn"), motFsHint: $("motFsHint"), motFsHintOpenBtn: $("motFsHintOpenBtn"), motFsHintClose: $("motFsHintClose"),
     motDonePanel: $("motDonePanel"), motDoneSummary: $("motDoneSummary"), motRating: $("motRating"),
+    // Schulte-Tabelle (NAT, 09.10.2026)
+    natSchultePanel: $("natSchultePanel"), schulteOpenFest: $("schulteOpenFest"), schulteOpenWechselnd: $("schulteOpenWechselnd"), schulteOpenErinnerung: $("schulteOpenErinnerung"),
+    schulteReady: $("schulteReady"), schulteReadyTitle: $("schulteReadyTitle"), schulteReadyDesc: $("schulteReadyDesc"), schulteReadyBackToHome: $("schulteReadyBackToHome"),
+    schulteReadyStartBtn: $("schulteReadyStartBtn"), schulteReadyBestHint: $("schulteReadyBestHint"), schulteAdvanced: $("schulteAdvanced"),
+    schulteComboDurationGroup: $("schulteComboDurationGroup"), schulteComboDurationSlider: $("schulteComboDurationSlider"), schulteComboDurationValue: $("schulteComboDurationValue"),
+    schulteBgColorPicker: $("schulteBgColorPicker"), schulteBgIntensitySlider: $("schulteBgIntensitySlider"), schulteBgIntensityValue: $("schulteBgIntensityValue"),
+    schulteBgContrastHint: $("schulteBgContrastHint"), schulteBgMasterStatus: $("schulteBgMasterStatus"), schulteBgSourceRow: $("schulteBgSourceRow"),
+    schulteBgPresetGroup: $("schulteBgPresetGroup"), schulteBgPresetList: $("schulteBgPresetList"), schulteBgSaveBtn: $("schulteBgSaveBtn"), schulteBgSaveForm: $("schulteBgSaveForm"),
+    schulteBgSaveNameInput: $("schulteBgSaveNameInput"), schulteBgSaveCancelBtn: $("schulteBgSaveCancelBtn"), schulteBgSaveConfirmBtn: $("schulteBgSaveConfirmBtn"),
+    schultePlayer: $("schultePlayer"), schulteStage: $("schulteStage"), schulteHint: $("schulteHint"), schulteBoard: $("schulteBoard"), schulteGrid: $("schulteGrid"),
+    schulteFixpointEl: $("schulteFixpointEl"), schultePauseOverlay: $("schultePauseOverlay"), schultePauseBgSlider: $("schultePauseBgSlider"), schultePauseBgValue: $("schultePauseBgValue"),
+    schultePauseBgColorPicker: $("schultePauseBgColorPicker"), schultePauseBgContrastHint: $("schultePauseBgContrastHint"), schulteResumeBtn: $("schulteResumeBtn"),
+    schultePlayerBar: $("schultePlayerBar"), schulteBackBtn: $("schulteBackBtn"), schultePauseBtn: $("schultePauseBtn"), schulteLevelEl: $("schulteLevelEl"),
+    schulteFsBtn: $("schulteFsBtn"), schulteFsHint: $("schulteFsHint"), schulteFsHintOpenBtn: $("schulteFsHintOpenBtn"), schulteFsHintClose: $("schulteFsHintClose"),
+    schulteDonePanel: $("schulteDonePanel"), schulteDoneSummary: $("schulteDoneSummary"), schulteRating: $("schulteRating"), schulteAgainBtn: $("schulteAgainBtn"), schulteDoneBackBtn: $("schulteDoneBackBtn"),
     motAgainBtn: $("motAgainBtn"), motDoneBackBtn: $("motDoneBackBtn"),
     rememberOpenFixed: $("rememberOpenFixed"), rememberOpenShuffle: $("rememberOpenShuffle"), rememberOpenTraining: $("rememberOpenTraining"),
     rememberBestFixed: $("rememberBestFixed"), rememberBestShuffle: $("rememberBestShuffle"), rememberBestTraining: $("rememberBestTraining"),
@@ -3245,7 +3442,7 @@
   els.freeHome = $("freeHome"); els.freeReady = $("freeReady"); els.freeEdit = $("freeEdit"); els.freePlayer = $("freePlayer");
   els.activationHome = $("activationHome"); els.optoReady = $("optoReady"); els.optoPlayer = $("optoPlayer");
   els.neuroHome = $("neuroHome"); els.neuroReady = $("neuroReady"); els.neuroPlayer = $("neuroPlayer");
-  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "gearScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "activationHome", "optoReady", "neuroHome", "neuroReady", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady", "eyecountReady", "tonReady"];
+  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "gearScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "activationHome", "optoReady", "neuroHome", "neuroReady", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "schulteReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady", "eyecountReady", "tonReady"];
   function showScreen(name) {
     // Neuro-Aktivierung is hidden without the trainer's unlock code.
     if ((name === "neuroHome" || name === "neuroReady") && !neuroUnlocked() && !comboNeuroCapture) { activateSectionTab("today"); name = "todayHome"; }
@@ -3309,10 +3506,12 @@
       els.natFlashPanel.hidden = sub !== "flash";
       els.natMotPanel.hidden = sub !== "mot";
       els.natBalancePanel.hidden = sub !== "balance";
+      els.natSchultePanel.hidden = sub !== "schulte";
       if (sub === "remember") renderRememberBests();
       if (sub === "blitz") renderBlitzBest();
       if (sub === "flash") renderFlashBests();
       if (sub === "mot") renderMotBests();
+      if (sub === "schulte") renderSchulteBests();
     });
   });
   document.querySelectorAll("[data-open-combo]").forEach((btn) => btn.addEventListener("click", () => openComboScreen()));
@@ -3341,6 +3540,10 @@
       { key: "count", label: "Anzahl steigt", sub: "immer mehr Objekte", card: "motOpenCount", screen: "motReady" },
       { key: "both", label: "Beides steigt", sub: "Tempo und Anzahl", card: "motOpenBoth", screen: "motReady" },
       { key: "training", label: "Trainingsmodus", sub: "gezielt üben", card: "motOpenTraining", screen: "motTrainingReady" }] },
+    schulte: { title: "Schulte-Tabelle", modes: [
+      { key: "fest", label: "Fest", sub: "Zahlen bleiben", card: "schulteOpenFest", screen: "schulteReady" },
+      { key: "wechselnd", label: "Wechselnd", sub: "tauschen nach jedem Tipp", card: "schulteOpenWechselnd", screen: "schulteReady" },
+      { key: "erinnerung", label: "Aus der Erinnerung", sub: "Zahlen verschwinden", card: "schulteOpenErinnerung", screen: "schulteReady" }] },
   };
   const NAT_MODE_KEY = "fwmc-nat-mode-v1";
   // Set further down (NAT presets); `var` so showScreen() can test it before.
@@ -3665,6 +3868,7 @@
         }).join("")
       : `<p class="group-help">In den letzten 4 Wochen noch kein Training. Leg einfach los, dann siehst du hier, wie sich dein Training auf die Bereiche verteilt.</p>`;
     els.progressAreasNote.textContent = areaRows.length ? `Zusammen ${s.areaS ? fmtMinutes(s.areaS) : "unter einer Minute"} in den letzten 4 Wochen.` : "";
+    renderMoodProgress(loadHistory());
     els.progressMilestones.innerHTML = PROGRESS_MILESTONES.map((m) =>
       `<div class="progress-milestone${s.total >= m ? " reached" : ""}"><strong>${m}</strong><span>${m === 1 ? "Training" : "Trainings"}</span></div>`).join("");
     els.progressNextText.textContent = s.next
@@ -4007,7 +4211,7 @@
     stroopWeights: {},
     periphKind: "gemischt",
     periphFixEnabled: true,
-    periphFixChar: "",
+    periphFixChar: "", // + periphFixKind (punkt/kreuz/text), inferred from the text for older saves
     periphFixColor: "grau",
     periphFixSize: 1,
     periphAxes: ["horizontal", "vertikal", "diagonal"],
@@ -4058,10 +4262,7 @@
     if (!state.stroopWeights || typeof state.stroopWeights !== "object" || Array.isArray(state.stroopWeights)) state.stroopWeights = {};
     state.stroopWeights = Object.fromEntries(Object.entries(state.stroopWeights).filter(([k, v]) => STROOP_COLOR_BY_KEY[k] && [1, 2, 3].includes(v)));
     if (!["buchstaben", "zahlen", "gemischt"].includes(state.periphKind)) state.periphKind = "gemischt";
-    if (typeof state.periphFixEnabled !== "boolean") state.periphFixEnabled = true;
-    if (typeof state.periphFixChar !== "string") state.periphFixChar = "";
-    if (!FIX_COLOR_BY_KEY[state.periphFixColor]) state.periphFixColor = "grau";
-    if (typeof state.periphFixSize !== "number" || state.periphFixSize < 0.6 || state.periphFixSize > 2) state.periphFixSize = 1;
+    fixWrite(state, FIX_FIELDS.vt, fixRead(state, FIX_FIELDS.vt));
     if (!Array.isArray(state.periphAxes) || !state.periphAxes.every((a) => ["horizontal", "vertikal", "diagonal"].includes(a))) state.periphAxes = DEFAULTS.periphAxes.slice();
     if (typeof state.periphUseZones !== "boolean") state.periphUseZones = false;
     if (!Array.isArray(state.periphZones) || !state.periphZones.length || !state.periphZones.every((z) => PERIPH_ZONE_KEYS.includes(z))) state.periphZones = DEFAULTS.periphZones.slice();
@@ -4454,6 +4655,7 @@
     { id: "flash", label: "Flash-Speicher-Test", get: () => ({ colorKey: flashPrefs.bgColorKey, intensity: flashPrefs.bgIntensity }) },
     { id: "mot", label: "Objektverfolgung (MOT)", get: () => ({ colorKey: motPrefs.bgColorKey, intensity: motPrefs.bgIntensity }) },
     { id: "balance", label: "Gleichgewicht", get: () => ({ colorKey: balancePrefs.bgColorKey, intensity: balancePrefs.bgIntensity }) },
+    { id: "schulte", label: "Schulte-Tabelle", get: () => ({ colorKey: schultePrefs.bgColorKey, intensity: schultePrefs.bgIntensity }) },
     { id: "movement", label: "Reaktionstraining", get: () => ({ colorKey: movementPrefs.bgColorKey, intensity: movementPrefs.bgIntensity }) },
   ];
   const BG_PRESETS_KEY = "fwmc-bg-presets-v1"; // [{ id, name, colorKey, intensity }] - not scoped to a domain, any saved combo applies anywhere
@@ -4477,6 +4679,7 @@
     () => ({ prefs: flashPrefs, key: FLASH_PREFS_KEY, save: saveFlashPrefsToStorage }),
     () => ({ prefs: motPrefs, key: MOT_PREFS_KEY, save: saveMotPrefsToStorage }),
     () => ({ prefs: balancePrefs, key: BALANCE_PREFS_KEY, save: saveBalancePrefsToStorage }),
+    () => ({ prefs: schultePrefs, key: SCHULTE_PREFS_KEY, save: saveSchultePrefsToStorage }),
     () => ({ prefs: movementPrefs, key: MOVEMENT_PREFS_KEY, save: saveMovementPrefs }),
     () => ({ prefs: gngPrefs, key: GNG_PREFS_KEY, save: saveGngPrefsToStorage }),
     () => ({ prefs: testNbackPrefs, key: TEST_NBACK_PREFS_KEY, save: saveTestNbackPrefsToStorage }),
@@ -4565,6 +4768,208 @@
         : "";
     };
   }
+  // ---- Einstellungen übernehmen (Fabian 09.10.2026) ----
+  // One small, discreet button per settings group ("Von anderer Übung
+  // übernehmen") opens one shared sheet: "Wie bei <Übung>" for every
+  // sibling with the same kind of setting, plus "Wie in den
+  // Grundeinstellungen" where the group has a standard there. Used by
+  // Hintergrund, Fixpunkt and Größe/Farbe; a new group only builds its
+  // item list (label, optional swatch/sub line, pick()).
+  let xferReturn = null, xferWired = false;
+  function closeXfer() {
+    $("xferSheet").hidden = true;
+    if (xferReturn && document.body.contains(xferReturn)) xferReturn.focus({ preventScroll: true });
+    xferReturn = null;
+  }
+  function openXfer(title, items, from) {
+    const sheet = $("xferSheet");
+    if (!xferWired) {
+      xferWired = true;
+      sheet.addEventListener("click", (e) => { if (e.target === sheet) closeXfer(); });
+      sheet.addEventListener("keydown", (e) => { if (e.key === "Escape") closeXfer(); else trapTabKey(sheet, e); });
+    }
+    $("xferTitle").textContent = title;
+    const list = $("xferList");
+    list.innerHTML = "";
+    items.forEach((it) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "xfer-item";
+      if (it.swatch) {
+        const sw = document.createElement("span");
+        sw.className = "xfer-swatch";
+        sw.style.background = it.swatch;
+        b.appendChild(sw);
+      }
+      const t = document.createElement("span");
+      t.className = "xfer-text";
+      t.textContent = it.label;
+      if (it.sub) {
+        const sm = document.createElement("small");
+        sm.textContent = it.sub;
+        t.appendChild(sm);
+      }
+      b.appendChild(t);
+      b.addEventListener("click", () => { closeXfer(); it.pick(); showToast("Übernommen: " + it.label + "."); });
+      list.appendChild(b);
+    });
+    if (!items.length) {
+      const p = document.createElement("p");
+      p.className = "group-help";
+      p.textContent = "Noch keine andere Übung mit dieser Einstellung.";
+      list.appendChild(p);
+    }
+    const c = document.createElement("button");
+    c.type = "button";
+    c.className = "text-link";
+    c.textContent = "Abbrechen";
+    c.addEventListener("click", closeXfer);
+    list.appendChild(c);
+    xferReturn = from || null;
+    sheet.hidden = false;
+    focusFirstIn(sheet);
+  }
+  function xferButton(title, getItems) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "text-link small xfer-btn";
+    b.textContent = "Von anderer Übung übernehmen";
+    b.addEventListener("click", () => openXfer(title, getItems(), b));
+    return b;
+  }
+  // ---- Fixpunkt-Gruppe verdrahten (one code path for every exercise and
+  // the Grundeinstellungen). ad = FIX_ADAPTERS entry, or {name: "master",
+  // master: true}. Every change applies to the run at once (redraw) and is
+  // remembered for this exercise only.
+  const FIX_SYNCS = {};
+  function fixSync(name) { (FIX_SYNCS[name] || []).forEach((fn) => fn()); }
+  const FIX_LABELS = { flash: "Flash-Speicher-Test", optodrum: "Optodrum" };
+  function fixLabel(key) {
+    if (key.startsWith("vt:")) { const ex = EXERCISES[key.slice(3)]; return ex ? ex.title : key; }
+    if (FIX_LABELS[key]) return FIX_LABELS[key];
+    const [base, mode] = key.split(":");
+    const names = { flash: "Flash-Speicher-Test", mot: "Objektverfolgung (MOT)", schulte: "Schulte-Tabelle" };
+    const m = NAT_MODES[base] && NAT_MODES[base].modes.find((x) => x.key === mode);
+    return (names[base] || base) + (m ? " · " + m.label : "");
+  }
+  function fixLoad(name) {
+    const ad = FIX_ADAPTERS[name];
+    fixWrite(ad.obj(), ad.names, fixGet(ad.key()));
+    fixSync(name);
+  }
+  function wireFixGroup(prefix, attr, ad) {
+    const row = $(prefix + "ToggleRow"), opts = $(prefix + "Options"), input = $(prefix + "CharInput");
+    const picker = $(prefix + "ColorPicker"), slider = $(prefix + "SizeSlider"), val = $(prefix + "SizeValue");
+    const group = opts.parentElement;
+    input.maxLength = FIX_TEXT_MAX;
+    input.placeholder = "Eigener Text, z. B. dein Name oder 🙂";
+    input.setAttribute("aria-label", "Text für den Fixpunkt");
+    const kindRow = document.createElement("div");
+    kindRow.className = "choice-row three fix-kind-row";
+    kindRow.id = prefix + "KindRow";
+    FIX_KINDS.forEach((k) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "choice";
+      b.dataset.fixKind = k.key;
+      b.textContent = k.name;
+      kindRow.appendChild(b);
+    });
+    opts.insertBefore(kindRow, opts.firstChild);
+    const status = document.createElement("div");
+    status.className = "fix-status";
+    status.id = prefix + "Status";
+    if (!ad.master) group.appendChild(status);
+    let wantText = false;
+    const inPause = /Pause/.test(prefix);
+    const cur = () => (ad.master ? fixStd() : fixRead(ad.obj(), ad.names));
+    function commit(f) {
+      if (ad.master) {
+        const n = fixNorm(f, true);
+        masterPrefs.fix = { kind: n.kind, text: n.text, color: n.color, size: n.size };
+        saveMasterPrefs();
+        // Exercises without their own change follow at once.
+        Object.keys(FIX_ADAPTERS).forEach((name) => { try { if (!fixIsOwn(FIX_ADAPTERS[name].key())) fixLoad(name); } catch (e) { /* not opened yet */ } });
+      } else {
+        fixWrite(ad.obj(), ad.names, f);
+        // A Kombi never changes the exercise's own setting (09.10.): pause edits there count for the run only.
+        if (!(inPause && comboProgram)) fixSetOwn(ad.key(), f);
+        ad.save();
+        if (ad.redraw) ad.redraw();
+      }
+      fixSync(ad.name);
+    }
+    if (row) row.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+      const f = cur();
+      f.on = b.getAttribute(attr) === "1";
+      commit(f);
+    }));
+    kindRow.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+      const f = cur();
+      wantText = b.dataset.fixKind === "text" && !f.text.trim();
+      f.kind = b.dataset.fixKind;
+      commit(f);
+      if (b.dataset.fixKind === "text") input.focus({ preventScroll: true });
+    }));
+    input.addEventListener("input", () => {
+      const f = cur();
+      f.text = input.value.slice(0, FIX_TEXT_MAX);
+      f.kind = f.text.trim() ? "text" : (f.kind === "text" ? "punkt" : f.kind);
+      wantText = !f.text.trim() && document.activeElement === input && wantText;
+      commit(f);
+    });
+    buildSingleSelectPicker(picker, FIX_COLOR_LIB, (key) => { const f = cur(); f.color = key; commit(f); });
+    slider.addEventListener("input", () => { const f = cur(); f.size = Number(slider.value); commit(f); });
+    function sync() {
+      let f;
+      try { f = cur(); } catch (e) { return; } // state of a later engine not declared yet
+      if (row) row.querySelectorAll("button").forEach((b) => setActive(b, (b.getAttribute(attr) === "1") === f.on));
+      opts.hidden = !f.on;
+      const kind = wantText ? "text" : f.kind;
+      kindRow.querySelectorAll("button").forEach((b) => setActive(b, b.dataset.fixKind === kind));
+      if (document.activeElement !== input) input.value = f.text;
+      input.hidden = kind !== "text";
+      syncSingleSelectPicker(picker, f.color);
+      slider.value = f.size;
+      val.textContent = f.size.toFixed(1).replace(".", ",") + "×";
+      if (ad.master) return;
+      status.innerHTML = "";
+      if (inPause) {
+        // Pause sheets stay short: no reset/übernehmen here.
+        status.innerHTML = '<div class="group-help">Gilt sofort und bleibt für diese Übung gespeichert.</div>';
+        return;
+      }
+      const own = fixIsOwn(ad.key());
+      const line = document.createElement("div");
+      line.className = "group-help";
+      line.textContent = own ? "Eigene Einstellung für diese Übung. " : "Wie in den Grundeinstellungen. Änderst du ihn hier, gilt das nur für diese Übung.";
+      if (own) {
+        const r = document.createElement("button");
+        r.type = "button";
+        r.className = "text-link small";
+        r.textContent = "Auf Grundeinstellung zurück";
+        r.addEventListener("click", () => {
+          fixClear(ad.key());
+          fixLoad(ad.name);
+          ad.save();
+          if (ad.redraw) ad.redraw();
+        });
+        line.appendChild(r);
+      }
+      status.appendChild(line);
+      status.appendChild(xferButton("Fixpunkt übernehmen", () => {
+        const items = [{ label: "Wie in den Grundeinstellungen", sub: fixDescribe(fixStd()), swatch: (FIX_COLOR_BY_KEY[fixStd().color] || FIX_COLOR_BY_KEY.grau).hex,
+          pick: () => { fixClear(ad.key()); fixLoad(ad.name); ad.save(); if (ad.redraw) ad.redraw(); } }];
+        Object.keys(fixOwnAll()).filter((k) => k !== ad.key()).forEach((k) => {
+          const g = fixGet(k);
+          items.push({ label: "Wie bei " + fixLabel(k), sub: fixDescribe(g), swatch: g.on ? (FIX_COLOR_BY_KEY[g.color] || FIX_COLOR_BY_KEY.grau).hex : null, pick: () => commit(g) });
+        });
+        return items;
+      }));
+    }
+    (FIX_SYNCS[ad.name] = FIX_SYNCS[ad.name] || []).push(sync);
+    sync();
+  }
   function wireBgIntensityControl(store, refs, onChange, transferSelfId) {
     // bgCustom marks whether the CLIENT explicitly chose this exercise's
     // current colour/intensity (true - a real pick, a "Wie bei X"/saved-
@@ -4600,41 +5005,26 @@
     function renderTransfer() {
       (refs.transfer || []).forEach((t) => {
         t.sourceRow.innerHTML = "";
-        BG_SOURCES.filter((s) => s.id !== transferSelfId).forEach((s) => {
-          // A source whose own prefs object is declared later in the file
-          // (rememberPrefs isn't initialised yet when this first runs for
-          // the VT/Periph instance, at page-load time) throws a TDZ error -
-          // skip it for now, it'll render fine once actually opened, after
-          // every top-level const has run.
-          let v;
-          try { v = s.get(); } catch (e) { return; }
-          const hex = STROOP_COLOR_BY_KEY[v.colorKey].hex;
-          const btn = document.createElement("button");
-          btn.className = "choice";
-          btn.innerHTML = `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${hex};margin-right:6px;vertical-align:-1px"></span>Wie bei ${s.label}`;
-          btn.addEventListener("click", () => apply(v.colorKey, v.intensity));
-          t.sourceRow.appendChild(btn);
-        });
-        // One-click override back to the Master-Einstellungen default,
-        // whenever one is set - alongside the "Wie bei X" buttons above,
-        // not instead of them, so a client can always get back to the
-        // Master colour after picking a per-exercise override. Wrapped in
-        // try/catch for the same reason the BG_SOURCES loop above is:
-        // Visual's own bg picker wires up (and calls sync()/renderTransfer()
-        // immediately) at module-init time, well before masterPrefs itself
-        // is declared further down the file - a real TDZ error, not
-        // theoretical. Renders fine from the second call on (any later
-        // sync(), e.g. once the client actually opens a settings screen).
-        try {
-          if (masterPrefs.defaultBgColorKey && STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey]) {
-            const hex = STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey].hex;
-            const btn = document.createElement("button");
-            btn.className = "choice";
-            btn.innerHTML = `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${hex};margin-right:6px;vertical-align:-1px"></span>Wie in den Grundeinstellungen`;
-            btn.addEventListener("click", () => apply(masterPrefs.defaultBgColorKey, masterPrefs.defaultBgIntensity, false));
-            t.sourceRow.appendChild(btn);
-          }
-        } catch (e) {}
+        t.sourceRow.appendChild(xferButton("Hintergrund übernehmen", () => {
+          const items = [];
+          // Sources whose prefs object is declared later in the file throw a
+          // TDZ error at page-load time - skipped, fine once opened later.
+          try {
+            if (masterPrefs.defaultBgColorKey && STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey]) {
+              const c = STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey];
+              items.push({ label: "Wie in den Grundeinstellungen", sub: `${c.name} · ${Math.round(masterPrefs.defaultBgIntensity * 100)} %`, swatch: c.hex,
+                pick: () => apply(masterPrefs.defaultBgColorKey, masterPrefs.defaultBgIntensity, false) });
+            }
+          } catch (e) {}
+          BG_SOURCES.filter((s) => s.id !== transferSelfId).forEach((s) => {
+            let v;
+            try { v = s.get(); } catch (e) { return; }
+            const c = STROOP_COLOR_BY_KEY[v.colorKey];
+            items.push({ label: `Wie bei ${s.label}`, sub: v.intensity > 0 ? `${c.name} · ${Math.round(v.intensity * 100)} %` : "ohne Farbe", swatch: v.intensity > 0 ? c.hex : "#ffffff",
+              pick: () => apply(v.colorKey, v.intensity) });
+          });
+          return items;
+        }));
         renderPresetList(bgPresetStore, t.presetList, t.presetGroup, null,
           (p) => `${STROOP_COLOR_BY_KEY[p.colorKey].name} · ${Math.round(p.intensity * 100)} %`,
           (p) => apply(p.colorKey, p.intensity));
@@ -4715,56 +5105,14 @@
     sync();
     return sync;
   }
-  // On/off toggle for the fixation point itself - same "Anzeigen"/
-  // "Ausblenden" pattern as Flash-Speicher-Test's, added so it can be fully
-  // removed (not just recoloured/resized) for every exercise that shows it
-  // (Periphere Wahrnehmung and, since drawFixationPoint() is shared, every
-  // other VT-canvas exercise too - one shared state.periphFixEnabled, no
-  // per-exercise duplication needed).
-  document.querySelectorAll("#periphFixToggleRow [data-periph-fix]").forEach((el) => {
-    el.addEventListener("click", () => {
-      state.periphFixEnabled = el.dataset.periphFix === "1";
-      savePrefs();
-      syncPeriphFixUI();
-    });
-  });
-  buildSingleSelectPicker(els.periphFixColorPicker, FIX_COLOR_LIB, (key) => {
-    state.periphFixColor = key;
-    savePrefs();
-    syncPeriphFixUI();
-  });
-  buildSingleSelectPicker(els.periphPauseFixColorPicker, FIX_COLOR_LIB, (key) => {
-    state.periphFixColor = key;
-    savePrefs();
-    syncPeriphFixUI();
-    redrawFrozenFrame();
-  });
-  els.periphFixCharInput.addEventListener("input", () => {
-    state.periphFixChar = els.periphFixCharInput.value.slice(0, 3);
-    savePrefs();
-  });
-  els.periphFixSizeSlider.addEventListener("input", () => {
-    state.periphFixSize = Number(els.periphFixSizeSlider.value);
-    savePrefs();
-    syncPeriphFixUI();
-  });
-  els.periphPauseFixSizeSlider.addEventListener("input", () => {
-    state.periphFixSize = Number(els.periphPauseFixSizeSlider.value);
-    savePrefs();
-    syncPeriphFixUI();
-    redrawFrozenFrame();
-  });
-  function syncPeriphFixUI() {
-    document.querySelectorAll("#periphFixToggleRow [data-periph-fix]").forEach((el) => setActive(el, (el.dataset.periphFix === "1") === state.periphFixEnabled));
-    els.periphFixOptions.hidden = !state.periphFixEnabled;
-    syncSingleSelectPicker(els.periphFixColorPicker, state.periphFixColor);
-    syncSingleSelectPicker(els.periphPauseFixColorPicker, state.periphFixColor);
-    els.periphFixCharInput.value = state.periphFixChar;
-    els.periphFixSizeSlider.value = state.periphFixSize;
-    els.periphFixSizeValue.textContent = state.periphFixSize.toFixed(1).replace(".", ",") + "×";
-    els.periphPauseFixSizeSlider.value = state.periphFixSize;
-    els.periphPauseFixSizeValue.textContent = state.periphFixSize.toFixed(1).replace(".", ",") + "×";
-  }
+  // Fixpunkt (Fabian 09.10.): the shared module (wireFixGroup) drives both
+  // the Feineinstellungen and the pause sheet; the value belongs to this
+  // exercise ("vt:<id>"), see fixLoad() in openReady().
+  function vtFixApplies(ex) { return !!ex && !/^(color-tap|farbfelder|richtungskreuz|laufweg)$/.test(ex.type); }
+  FIX_ADAPTERS.vt = { name: "vt", key: () => "vt:" + state.exercise, obj: () => state, names: FIX_FIELDS.vt, save: () => savePrefs(), redraw: () => redrawFrozenFrame() };
+  wireFixGroup("periphFix", "data-periph-fix", FIX_ADAPTERS.vt);
+  wireFixGroup("periphPauseFix", "data-fix-on", FIX_ADAPTERS.vt);
+  function syncPeriphFixUI() { fixSync("vt"); }
   // Horizontal/Vertikal/Diagonal are a multi-select set, same pattern as
   // the arrow-colour picker: "Überall" is the "alle Farben" shortcut for
   // "all three at once", auto-activates once all three end up selected by
@@ -5120,6 +5468,7 @@
     const ex = EXERCISES[id];
     loadPrefs(); // drop any values a programme run left in `state`
     state.exercise = id;
+    fixLoad("vt"); // this exercise's own Fixpunkt, or the Grundeinstellungen
     savePrefs();
     els.readyTitle.textContent = ex.title;
     els.readyIcon.innerHTML = iconHtml;
@@ -5146,7 +5495,7 @@
     // The fixation-point Feineinstellung applies to every exercise with
     // this dot (i.e. everything except Hütchen sortieren), not just
     // Periphere Wahrnehmung - it was just built there first.
-    els.periphFixGroup.hidden = isConeTap || isFf || ex.type === "richtungskreuz"; // Farbfelder/Richtungskreuz: no centre dot
+    els.periphFixGroup.hidden = !vtFixApplies(ex); // Farbfelder/Richtungskreuz/Hütchen: no centre dot
     ffEls.settings.hidden = !isFf;
     $("cnFieldsGroup").hidden = ex.type !== "colornum";
     if (ex.type === "colornum") syncCnUI();
@@ -7076,6 +7425,7 @@
 
   function applyBlockToState(block) {
     state.exercise = block.exercise;
+    fixWrite(state, FIX_FIELDS.vt, fixGet("vt:" + block.exercise));
     state.duration = block.duration;
     state.stimulusS = block.stimulusS ?? 1.5;
     state.intervalMin = block.intervalMin ?? 2;
@@ -7129,6 +7479,7 @@
     els.flashPlayer.hidden = true;
     els.motPlayer.hidden = true;
     els.balancePlayer.hidden = true;
+    els.schultePlayer.hidden = true;
     els.gngPlayer.hidden = true;
     els.testNbackPlayer.hidden = true;
     els.trailPlayer.hidden = true;
@@ -8156,7 +8507,7 @@
     const ex = EXERCISES[state.exercise] || {};
     els.vtPauseTempoGroup.hidden = ex.type === "flash-host";
     els.vtPauseBgIntensityGroup.hidden = els.vtPauseBgColorGroup.hidden = !!ex.bgIsStimulus;
-    els.vtPauseFixColorGroup.hidden = els.vtPauseFixSizeGroup.hidden = !state.periphFixEnabled || ex.type === "farbfelder";
+    els.periphPauseFixGroup.hidden = !vtFixApplies(ex);
     els.vtPauseStimColorGroup.hidden = ex.type !== "periph";
     document.getElementById("vtPauseFfFbGroup").hidden = !session.ffTap;
     vtPauseTempoAtStart = { stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax };
@@ -8302,6 +8653,7 @@
   wireFullscreen({ player: els.blitzPlayer, btn: els.blitzFsBtn, hint: els.blitzFsHint, hintOpen: els.blitzFsHintOpenBtn, hintClose: els.blitzFsHintClose });
   wireFullscreen({ player: els.flashPlayer, btn: els.flashFsBtn, hint: els.flashFsHint, hintOpen: els.flashFsHintOpenBtn, hintClose: els.flashFsHintClose });
   wireFullscreen({ player: els.motPlayer, btn: els.motFsBtn, hint: els.motFsHint, hintOpen: els.motFsHintOpenBtn, hintClose: els.motFsHintClose });
+  wireFullscreen({ player: els.schultePlayer, btn: els.schulteFsBtn, hint: els.schulteFsHint, hintOpen: els.schulteFsHintOpenBtn, hintClose: els.schulteFsHintClose });
   wireFullscreen({ player: els.gngPlayer, btn: els.gngFsBtn, hint: els.gngFsHint, hintOpen: els.gngFsHintOpenBtn, hintClose: els.gngFsHintClose });
   wireFullscreen({ player: els.testNbackPlayer, btn: els.testNbackFsBtn, hint: els.testNbackFsHint, hintOpen: els.testNbackFsHintOpenBtn, hintClose: els.testNbackFsHintClose });
   wireFullscreen({ player: els.trailPlayer, btn: els.trailFsBtn, hint: els.trailFsHint, hintOpen: els.trailFsHintOpenBtn, hintClose: els.trailFsHintClose });
@@ -8544,9 +8896,11 @@
   })();
   function saveCueOverrides() { writeJSON(CUE_OVERRIDES_KEY, cueOverrides); }
 
-  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true, volume: 1, textSize: "normal", softStimuli: false, pauseBreath: false };
+  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true, volume: 1, textSize: "normal", softStimuli: false, pauseBreath: false, fix: { kind: "punkt", text: "", color: "grau", size: 1 } };
+  var masterFixStored = false; // fixMigrate(): was a Standard-Fixpunkt ever saved?
   function loadMasterPrefs() {
     const saved = readJSON(MASTER_PREFS_KEY, null);
+    masterFixStored = !!(saved && saved.fix);
     if (saved && typeof saved === "object") {
       Object.assign(masterPrefs, saved);
       // migrate every older single-select shape: colorVision was
@@ -8582,6 +8936,7 @@
     if (typeof masterPrefs.cuesIgnoreSilent !== "boolean") masterPrefs.cuesIgnoreSilent = false;
     if (!TEXT_SIZE_FACTORS[masterPrefs.textSize]) masterPrefs.textSize = "normal";
     masterPrefs.softStimuli = masterPrefs.softStimuli === true;
+    { const f = fixNorm(masterPrefs.fix, true); masterPrefs.fix = { kind: f.kind, text: f.text, color: f.color, size: f.size }; }
     // Persist immediately so a migrated (or just-cleaned-up) shape actually
     // lands on disk right away, rather than silently staying in the old
     // shape in storage until the client happens to touch some toggle -
@@ -8651,6 +9006,7 @@
     remember: { screens: ["rememberReady", "rememberTrainingReady"], fb: true },
     blitz: { screens: ["blitzReady"], fb: true },
     mot: { screens: ["motReady", "motTrainingReady"], fb: true },
+    schulte: { screens: ["schulteReady"], fb: true },
     gng: { screens: ["gngReady"], fb: true, pal: true },
     testNback: { screens: ["testNbackReady"], fb: true },
     trail: { screens: ["trailReady"], fb: true },
@@ -8683,6 +9039,7 @@
     remember: [".remember-marker.correct", ".remember-marker.wrong"],
     blitz: [".blitz-cell.correct", ".blitz-cell.wrong"],
     mot: [".mot-object.correct", ".mot-object.wrong"],
+    schulte: [".schulte-cell.correct", ".schulte-cell.wrong"],
     gng: [".gng-stimulus.hit", ".gng-stimulus.wrong"],
     testNback: [".nback-match-btn.correct", ".nback-match-btn.wrong"],
     trail: [null, ".trail-marker.wrong"],
@@ -8932,13 +9289,17 @@
     "@vt": { screens: ["ready"], pause: "periphPauseOverlay", noteAfter: "#hilfsmittelNote" },
     blitz: { screens: ["blitzReady"], pause: "blitzPauseOverlay", noteAfter: ".page-sub" },
     flash: { screens: ["flashReady", "flashTrainingReady"], pause: "flashPauseOverlay", noteAfter: ".page-sub" },
+    // Schulte-Tabelle (09.10.): Wechselnd swaps every number at once - with
+    // Sanfte Reize the numbers fade in instead of jumping, the red/green
+    // marks fade too.
+    schulte: { screens: ["schulteReady"], pause: "schultePauseOverlay", noteAfter: ".page-sub" },
     // Optodrum (Aktivierung, 2026-10-08): tempo capped, softer contrast.
     optodrum: { screens: ["optoReady"], pause: "optoPauseOverlay", noteAfter: ".page-sub" },
   };
   let softLive = null; // { ex, on } - pause-sheet choice for the running exercise only
   function softResolve(ex) { return ex === "@vt" ? state.exercise : ex; }
   function softApplies(ex) {
-    if (ex === "blitz" || ex === "flash" || ex === "optodrum") return true;
+    if (ex === "blitz" || ex === "flash" || ex === "optodrum" || ex === "schulte") return true;
     const e = EXERCISES[ex];
     return !!e && e.type !== "color-tap" && e.type !== "laufweg";
   }
@@ -9019,7 +9380,7 @@
     applySoftState();
   });
   function applySoftState() {
-    ["blitz", "flash"].forEach((ex) => document.body.classList.toggle(`soft-${ex}`, softOn(ex)));
+    ["blitz", "flash", "schulte"].forEach((ex) => document.body.classList.toggle(`soft-${ex}`, softOn(ex)));
     document.querySelectorAll("[data-soft-ex]").forEach((b) => setActive(b, (b.dataset.softVal === "1") === softStored(softResolve(b.dataset.softEx))));
     document.querySelectorAll("[data-soft-live]").forEach((b) => setActive(b, (b.dataset.softVal === "1") === softOn(softResolve(b.dataset.softLive))));
     document.querySelectorAll("[data-soft-note]").forEach((n) => {
@@ -9084,7 +9445,7 @@
     if (ex && ex.type === "richtungskreuz") out.rk = rkStateSnapshot();
     if (ZUS_EXERCISES.includes(exId)) {
       const z = zusGet(exId);
-      if (z.ids.length || withEmpty) out.zus = JSON.parse(JSON.stringify(z));
+      if (z.ids.length || z.body || withEmpty) out.zus = JSON.parse(JSON.stringify(z));
     }
     const n = (state.exNotes || {})[exId];
     if (n) out.note = n;
@@ -9238,12 +9599,36 @@
     $("zusRowWarn").hidden = z.ids.length < 2;
     // The instructions on the ready screen (Begleit-Zusätze are not checked).
     const note = $("zusNote");
-    note.hidden = !on || !z.ids.length;
-    note.innerHTML = z.ids.length ? `<span class="hilfsmittel-kicker">Zusatz für oben</span>` + z.ids.map((id) => {
+    const bl = on ? bodyLines(z) : [];
+    note.hidden = !on || (!z.ids.length && !bl.length);
+    note.innerHTML = (z.ids.length ? `<span class="hilfsmittel-kicker">Zusatz für oben</span>` + z.ids.map((id) => {
       const d = ZUS_BY_ID[id];
       return `<span class="zus-note-line"><strong>${esc(d.title)}:</strong> ${esc(d.text)}${d.signal ? ` Alle ${z.sigMin}–${z.sigMax} s.` : ""}${zusTrainerMark(z, id) ? " <em>(von deinem Trainer)</em>" : ""}</span>`;
-    }).join("") + `<span class="zus-note-line zus-note-small">Ein Ball liegt bereit. Die App prüft die Zusätze nicht.</span>` : "";
+    }).join("") + `<span class="zus-note-line zus-note-small">Ein Ball liegt bereit. Die App prüft die Zusätze nicht.</span>` : "") +
+      (bl.length ? `<span class="hilfsmittel-kicker">Körperregel</span>` + bl.map((l) => `<span class="zus-note-line">${esc(l)}</span>`).join("") : "");
+    syncBodyUI(on, z);
     if (!$("zusatzSheet").hidden) renderZusSheet();
+  }
+  function bodyColorsFor(exId, z) {
+    const ex = EXERCISES[exId] || {};
+    const base = ex.type === "richtungskreuz" && state.rkColors ? Object.values(state.rkColors) : (state.colors || []);
+    const set = new Set(base.concat(Object.keys((z.body || {}).rules || {})));
+    return COLOR_LIB.map((c) => c.key).filter((k) => set.has(k));
+  }
+  function syncBodyUI(on, z) {
+    const box = $("bodyRuleBox");
+    if (!box) return;
+    box.hidden = !on;
+    if (!on) return;
+    const b = z.body || { on: false, rules: {} };
+    $("bodyRuleOn").checked = !!b.on;
+    $("bodyRuleRows").hidden = !b.on;
+    $("bodyRuleRows").innerHTML = b.on ? colorChoiceRowsHtml(bodyColorsFor(state.exercise, z), BODY_ACTIONS, (k) => b.rules[k] || "", "body-col", (n) => "Körperregel bei " + n) : "";
+    const xh = $("bodyRuleXfer");
+    if (!xh.firstChild) xh.appendChild(xferButton("Körperregel übernehmen", () => ZUS_EXERCISES.filter((id) => id !== state.exercise && EXERCISES[id]).map((id) => {
+      const oz = zusGet(id);
+      return bodyActive(oz) ? { label: "Wie bei " + EXERCISES[id].title.replace(/^VT · /, ""), sub: bodyLines(oz).join(" "), pick: () => { const cur = zusGet(state.exercise); zusSet(state.exercise, { ...cur, body: JSON.parse(JSON.stringify(oz.body)) }); } } : null;
+    }).filter(Boolean)));
   }
   function renderZusSheet() {
     const z = zusGet(state.exercise);
@@ -9272,6 +9657,18 @@
     if (zusSheetOpener && zusSheetOpener.focus) zusSheetOpener.focus({ preventScroll: true });
   }
   $("zusAddBtn").addEventListener("click", openZusSheet);
+  $("bodyRuleOn").addEventListener("change", () => {
+    const z = zusGet(state.exercise);
+    zusSet(state.exercise, { ...z, body: { on: $("bodyRuleOn").checked, rules: (z.body || {}).rules || {} } });
+  });
+  $("bodyRuleRows").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-body-col][data-val]");
+    if (!b) return;
+    const z = zusGet(state.exercise);
+    const rules = { ...((z.body || {}).rules || {}) };
+    if (b.dataset.val) rules[b.dataset.bodyCol] = b.dataset.val; else delete rules[b.dataset.bodyCol];
+    zusSet(state.exercise, { ...z, body: { on: true, rules } });
+  });
   $("zusatzDoneBtn").addEventListener("click", closeZusSheet);
   $("zusatzSheet").addEventListener("click", (e) => { if (e.target === $("zusatzSheet")) closeZusSheet(); });
   $("zusatzSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closeZusSheet(); else trapTabKey($("zusatzSheet"), e); });
@@ -9370,6 +9767,7 @@
     "nat:flash": { domain: "flash", title: "Flash-Speicher-Test", screens: ["flashReady", "flashTrainingReady"], anchor: ".page-sub", bar: "flashPlayerBar", pauses: ["flashPauseOverlay"], desc: "flashReadyDesc" },
     "nat:mot": { domain: "mot", title: "Objektverfolgung (MOT)", screens: ["motReady"], anchor: "#motReadyDesc", bar: "motPlayerBar", pauses: ["motPauseOverlay"], desc: "motReadyDesc" },
     "nat:balance": { domain: "balance", title: "Gleichgewicht", screens: ["balanceReady"], anchor: "#balanceReadyDesc", bar: "balancePlayerBar", pauses: ["balancePauseOverlay"], desc: "balanceReadyDesc" },
+    "nat:schulte": { domain: "schulte", title: "Schulte-Tabelle", screens: ["schulteReady"], anchor: "#schulteReadyDesc", bar: "schultePlayerBar", pauses: ["schultePauseOverlay"], desc: "schulteReadyDesc" },
   };
   const REGELN_DOMAIN_KEY = Object.fromEntries(Object.entries(REGELN_EXERCISES).map(([k, c]) => [c.domain, k]));
   const NAT_NOTES_KEY = "fwmc-notes-v1";
@@ -9426,7 +9824,7 @@
     return z.ids.map((id) => {
       const d = ZUS_BY_ID[id];
       return `${d.title}: ${d.text}${d.signal ? ` Alle ${z.sigMin}–${z.sigMax} s.` : ""}${zusTrainerMark(z, id) ? " (Von deinem Trainer)" : ""}`;
-    });
+    }).concat(bodyLines(z).map((l) => "Körperregel: " + l));
   }
   function regelnTitle(key) { return key === "@vt" ? (EXERCISES[state.exercise] || {}).title || "" : REGELN_EXERCISES[key].title; }
   function regelnLines(key) {
@@ -10006,6 +10404,8 @@
     let existing = list.find((h) => h.code === code);
     if (existing) existing.lastUsed = today;
     else { existing = { code, firstUsed: today, lastUsed: today }; list.push(existing); }
+    // Heute (09.10.): only a training code means "Mit Trainer", never an unlock code.
+    existing.type = (def && def.type) || "program";
     if (message) existing.message = message; else delete existing.message;
     const validUntil = isoDay(def && def.validUntil);
     if (validUntil) existing.validUntil = validUntil; else delete existing.validUntil;
@@ -10045,10 +10445,28 @@
   }
 
   let masterSettingsReturnFocus = null;
+  // ---- Standard-Fixpunkt (Fabian 09.10.2026) ----
+  wireFixGroup("masterFix", null, { name: "master", master: true });
+  function syncMasterFixInfo() {
+    const n = Object.keys(fixOwnAll()).length;
+    $("masterFixOwnInfo").textContent = n ? (n === 1 ? "1 Übung hat eine eigene Einstellung." : n + " Übungen haben eine eigene Einstellung.") : "Alle Übungen folgen diesem Standard.";
+    $("masterFixAllBtn").hidden = !n;
+    document.querySelector("#masterFixGroup .fix-all-note").hidden = !n;
+  }
+  (FIX_SYNCS.master = FIX_SYNCS.master || []).push(syncMasterFixInfo);
+  $("masterFixAllBtn").addEventListener("click", () => {
+    confirmDialog("Alle Übungen bekommen diesen Standard-Fixpunkt. Das überschreibt alle deine Änderungen in den einzelnen Übungen.", () => {
+      writeJSON(FIX_KEY, {});
+      Object.keys(FIX_ADAPTERS).forEach((name) => { try { fixLoad(name); FIX_ADAPTERS[name].save(); } catch (e) { /* not opened yet */ } });
+      fixSync("master");
+      showToast("Alle Übungen nutzen jetzt den Standard-Fixpunkt.");
+    }, { title: "Für alle übernehmen?", yes: "Überschreiben", no: "Abbrechen" });
+  });
   function openMasterSettings(section) {
     masterSettingsReturnFocus = document.activeElement;
     syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; $("masterPauseBreathCheck").checked = masterPrefs.pauseBreath === true; syncMasterBgUI(); syncMasterPauseUI(); syncMasterVolumeUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
     syncMasterSeeUI();
+    fixSync("master");
     syncAnaglyphMasterUI();
     gearRenderMaster();
     { const mn = $("masterNameInput"); if (mn) mn.value = getUserName(); }
@@ -13355,10 +13773,7 @@
     if (typeof flashPrefs.trainingProgress !== "boolean") flashPrefs.trainingProgress = true;
     if (!STROOP_COLOR_BY_KEY[flashPrefs.bgColorKey]) flashPrefs.bgColorKey = "gruen";
     if (typeof flashPrefs.bgIntensity !== "number" || flashPrefs.bgIntensity < 0 || flashPrefs.bgIntensity > 1) flashPrefs.bgIntensity = 0;
-    if (typeof flashPrefs.fixEnabled !== "boolean") flashPrefs.fixEnabled = true;
-    if (typeof flashPrefs.fixChar !== "string") flashPrefs.fixChar = "";
-    if (!FIX_COLOR_BY_KEY[flashPrefs.fixColor]) flashPrefs.fixColor = "grau";
-    if (typeof flashPrefs.fixSize !== "number" || flashPrefs.fixSize < 0.6 || flashPrefs.fixSize > 2) flashPrefs.fixSize = 1;
+    fixWrite(flashPrefs, FIX_FIELDS.std, fixRead(flashPrefs, FIX_FIELDS.std));
     normalizeLookPrefs("flash", flashPrefs);
   }
   function saveFlashPrefsToStorage() { writeJSON(FLASH_PREFS_KEY, flashPrefs); }
@@ -13415,49 +13830,32 @@
   // phase) as a constant reference point. Shared flashPrefs.fix* fields,
   // both ready screens carry a synced instance (same pattern as Bereich/
   // Hintergrund above).
-  document.querySelectorAll("#flashFixToggleRow [data-flash-fix], #flashTrainingFixToggleRow [data-flash-fix]").forEach((el) => {
-    el.addEventListener("click", () => {
-      flashPrefs.fixEnabled = el.dataset.flashFix === "1";
-      saveFlashPrefsToStorage();
-      syncFlashFixUI();
-    });
-  });
-  buildSingleSelectPicker(els.flashFixColorPicker, FIX_COLOR_LIB, (key) => {
-    flashPrefs.fixColor = key;
-    saveFlashPrefsToStorage();
-    syncFlashFixUI();
-  });
-  buildSingleSelectPicker(els.flashTrainingFixColorPicker, FIX_COLOR_LIB, (key) => {
-    flashPrefs.fixColor = key;
-    saveFlashPrefsToStorage();
-    syncFlashFixUI();
-  });
-  function flashFixCharInputHandler(input) {
-    flashPrefs.fixChar = input.value.slice(0, 3);
-    saveFlashPrefsToStorage();
-    if (flashState) renderFlashFixpoint();
-  }
-  els.flashFixCharInput.addEventListener("input", () => flashFixCharInputHandler(els.flashFixCharInput));
-  els.flashTrainingFixCharInput.addEventListener("input", () => flashFixCharInputHandler(els.flashTrainingFixCharInput));
-  function flashFixSizeSliderInput(slider) {
-    flashPrefs.fixSize = Number(slider.value);
-    saveFlashPrefsToStorage();
-    syncFlashFixUI();
-  }
-  els.flashFixSizeSlider.addEventListener("input", () => flashFixSizeSliderInput(els.flashFixSizeSlider));
-  els.flashTrainingFixSizeSlider.addEventListener("input", () => flashFixSizeSliderInput(els.flashTrainingFixSizeSlider));
+  // Since 09.10.2026 the shared Fixpunkt module (wireFixGroup), stored per
+  // Flash mode ("flash:<mode>"), loaded by both ready screens.
+  let flashFixMode = "constant";
+  FIX_ADAPTERS.flash = { name: "flash", key: () => "flash:" + flashFixMode, obj: () => flashPrefs, names: FIX_FIELDS.std,
+    save: () => saveFlashPrefsToStorage(), redraw: () => { if (flashState) { fixWrite(flashState, FIX_FIELDS.std, fixRead(flashPrefs, FIX_FIELDS.std)); renderFlashFixpoint(); } } };
+  wireFixGroup("flashFix", "data-flash-fix", FIX_ADAPTERS.flash);
+  wireFixGroup("flashTrainingFix", "data-flash-fix", FIX_ADAPTERS.flash);
+  wireFixGroup("flashPauseFix", "data-fix-on", FIX_ADAPTERS.flash);
+  // One-time move (09.10.2026): until now Visual Training shared one
+  // Fixpunkt for all its exercises and Flash had its own. The VT one becomes
+  // the standard in the Grundeinstellungen; a different Flash one stays
+  // Flash's own (all modes), a switched-off VT one stays off per exercise.
+  (function fixMigrate() {
+    if (readJSON(FIX_KEY, null) !== null) return;
+    if (masterFixStored) { writeJSON(FIX_KEY, {}); return; }
+    const vt = fixRead(state, FIX_FIELDS.vt);
+    masterPrefs.fix = { kind: vt.kind, text: vt.text, color: vt.color, size: vt.size };
+    saveMasterPrefs();
+    const own = {};
+    if (!vt.on) Object.keys(EXERCISES).filter((id) => vtFixApplies(EXERCISES[id])).forEach((id) => { own["vt:" + id] = vt; });
+    const fl = fixRead(flashPrefs, FIX_FIELDS.std);
+    if (JSON.stringify(fl) !== JSON.stringify({ ...vt, on: true })) ["constant", "climb", "climbRepeat", "training"].forEach((m) => { own["flash:" + m] = fl; });
+    writeJSON(FIX_KEY, own);
+  })();
   function syncFlashFixUI() {
-    [
-      [els.flashFixToggleRow, els.flashFixOptions, els.flashFixColorPicker, els.flashFixCharInput, els.flashFixSizeSlider, els.flashFixSizeValue],
-      [els.flashTrainingFixToggleRow, els.flashTrainingFixOptions, els.flashTrainingFixColorPicker, els.flashTrainingFixCharInput, els.flashTrainingFixSizeSlider, els.flashTrainingFixSizeValue],
-    ].forEach(([toggleRow, options, picker, charInput, sizeSlider, sizeValue]) => {
-      toggleRow.querySelectorAll("[data-flash-fix]").forEach((el) => setActive(el, (el.dataset.flashFix === "1") === flashPrefs.fixEnabled));
-      options.hidden = !flashPrefs.fixEnabled;
-      syncSingleSelectPicker(picker, flashPrefs.fixColor);
-      charInput.value = flashPrefs.fixChar;
-      sizeSlider.value = flashPrefs.fixSize;
-      sizeValue.textContent = flashPrefs.fixSize.toFixed(1).replace(".", ",") + "×";
-    });
+    fixSync("flash");
     if (flashState) renderFlashFixpoint();
   }
   // Mirrors Periph's drawFixationPoint(): a custom character (sized text,
@@ -13468,28 +13866,9 @@
   // flashPrefs only in the Ready-screen preview context, before flashState
   // exists.
   function renderFlashFixpoint() {
-    const el = els.flashFixpointEl;
     const src = flashState || flashPrefs;
-    if (!src.fixEnabled) { el.hidden = true; return; }
-    el.hidden = false;
-    const color = (FIX_COLOR_BY_KEY[src.fixColor] || FIX_COLOR_BY_KEY.grau).hex;
-    const char = src.fixChar.trim();
-    if (char) {
-      el.textContent = char;
-      el.style.fontSize = Math.round(28 * src.fixSize) + "px";
-      el.style.color = color;
-      el.style.background = "transparent";
-      el.style.width = "auto";
-      el.style.height = "auto";
-      el.style.borderRadius = "0";
-    } else {
-      el.textContent = "";
-      const size = Math.round(12 * src.fixSize);
-      el.style.width = size + "px";
-      el.style.height = size + "px";
-      el.style.background = color;
-      el.style.borderRadius = "50%";
-    }
+    const stage = els.flashFixpointEl.parentElement;
+    fixRenderEl(els.flashFixpointEl, fixRead(src, FIX_FIELDS.std), 1, stage ? stage.clientWidth * 0.5 : 0);
   }
 
   // ---- Zeichentyp - same three-way choice as Periphere Wahrnehmung's own
@@ -13708,6 +14087,8 @@
     syncFlashStartUI();
     syncFlashRepsUI();
     syncFlashBgUI();
+    flashFixMode = mode;
+    fixLoad("flash");
     syncFlashFixUI();
     updateFlashReadyBestHint();
     showScreen("flashReady");
@@ -13725,6 +14106,8 @@
     syncFlashFieldUI();
     syncFlashTrainingUI();
     syncFlashBgUI();
+    flashFixMode = "training";
+    fixLoad("flash");
     syncFlashFixUI();
     showScreen("flashTrainingReady");
   }
@@ -14079,7 +14462,7 @@
       sequence: [], shownIndex: 0, typed: "", phase: "flash", timer: null, comboDurationTimer: null,
       stimulusS: p.stimulusS, intervalS: p.intervalS, errorMode: p.errorMode,
       axes: p.axes.slice(), zones: p.zones.slice(), useZones: p.useZones,
-      fixEnabled: p.fixEnabled, fixChar: p.fixChar, fixColor: p.fixColor, fixSize: p.fixSize,
+      fixEnabled: p.fixEnabled, fixKind: p.fixKind, fixChar: p.fixChar, fixColor: p.fixColor, fixSize: p.fixSize,
       charScale: p.charScale || 1, charColor: p.charColor,
       trainingProgress: p.trainingProgress, startLevel: p.startCount, trainingStartLevel: p.trainingStart,
       startTime: performance.now(), paused: false,
@@ -14301,6 +14684,8 @@
     growStartObjects: 4, growStartTargets: 1, // "count"/"both" modes' starting counts
     trainingObjects: 6, trainingTargets: 2, trainingSpeedStep: 0, trainingProgress: true,
     objScale: 1,
+    // Fixpunkt (09.10.2026, new for MOT): filled from the Fixpunkt module.
+    fixEnabled: true, fixKind: "punkt", fixChar: "", fixColor: "grau", fixSize: 1,
   };
   function loadMotPrefs() {
     const saved = readJSON(MOT_PREFS_KEY, null);
@@ -14310,6 +14695,7 @@
     if (typeof motPrefs.highlightS !== "number" || motPrefs.highlightS < 1 || motPrefs.highlightS > 4) motPrefs.highlightS = MOT_DIFFICULTIES.mittel.highlightS;
     if (!["reset2", "backOne", "stay"].includes(motPrefs.errorMode)) motPrefs.errorMode = "reset2";
     if (!["flach", "3d"].includes(motPrefs.style)) motPrefs.style = "flach";
+    fixWrite(motPrefs, FIX_FIELDS.std, fixRead(motPrefs, FIX_FIELDS.std));
     if (!Array.isArray(motPrefs.colors) || !motPrefs.colors.length || !motPrefs.colors.every((k) => STROOP_COLOR_BY_KEY[k])) motPrefs.colors = ["schwarz"];
     if (!Array.isArray(motPrefs.targetColors) || !motPrefs.targetColors.length || !motPrefs.targetColors.every((k) => STROOP_COLOR_BY_KEY[k])) motPrefs.targetColors = ["gelb"];
     if (!STROOP_COLOR_BY_KEY[motPrefs.bgColorKey]) motPrefs.bgColorKey = "gruen";
@@ -14330,6 +14716,39 @@
   function saveMotPrefsToStorage() { writeJSON(MOT_PREFS_KEY, motPrefs); }
   loadMotPrefs();
 
+  // ==== Schulte-Tabelle (NAT, Fabian 09.10.2026, freigegeben 10:42) ====
+  // Prefs live up here (before LIVE_LOOK/initLookControls read them); the
+  // ready screen, engine, Kombi capture and pause sheet sit further down
+  // ("Schulte-Tabelle: ready screen + engine"). docs/notes/38.
+  const SCHULTE_PREFS_KEY = "fwmc-schulte-prefs-v1";
+  const SCHULTE_BEST_KEY = "fwmc-schulte-best-v1"; // { "<mode>:<grid>[f]": bestMs } - "f" = odd grid with the middle cell free
+  const SCHULTE_MODES = {
+    fest: { title: "Fest", desc: "Die Zahlen bleiben die ganze Zeit an ihrem Platz." },
+    wechselnd: { title: "Wechselnd", desc: "Nach jedem richtigen Tipp tauschen die übrigen Zahlen ihre Plätze." },
+    erinnerung: { title: "Aus der Erinnerung", desc: "Präg dir die Plätze ein: Sobald du die 1 antippst, verschwinden alle Zahlen und du tippst aus der Erinnerung weiter." },
+  };
+  const SCHULTE_GRIDS = [3, 4, 5, 6];
+  const schultePrefs = {
+    gridSize: 5,
+    bgColorKey: "gruen",
+    bgIntensity: 0,
+  };
+  function normalizeSchultePrefs(p) {
+    if (!SCHULTE_GRIDS.includes(p.gridSize)) p.gridSize = 5;
+    if (!STROOP_COLOR_BY_KEY[p.bgColorKey]) p.bgColorKey = "gruen";
+    if (typeof p.bgIntensity !== "number" || p.bgIntensity < 0 || p.bgIntensity > 1) p.bgIntensity = 0;
+    fixWrite(p, FIX_FIELDS.std, fixRead(p, FIX_FIELDS.std));
+    normalizeLookPrefs("schulte", p);
+    return p;
+  }
+  function loadSchultePrefs() {
+    const saved = readJSON(SCHULTE_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(schultePrefs, saved);
+    normalizeSchultePrefs(schultePrefs);
+  }
+  function saveSchultePrefsToStorage() { writeJSON(SCHULTE_PREFS_KEY, schultePrefs); }
+  loadSchultePrefs();
+
   // ==== Gleichgewicht (NAT, Fabian 2026-10-06, Bauauftrag 12:31/12:33) ====
   // One or two vertical letter sticks ("Augen-Stifte") on the stage, the
   // client moves the head in time (Nein-Nein, Ja-Ja, Ohr-Schulter,
@@ -14346,8 +14765,11 @@
     ohr: { name: "Ohr-Schulter", hint: "Ohr im Takt zur Schulter neigen", help: "Kopf im Takt seitlich neigen, Ohr Richtung Schulter, der Blick bleibt auf einem Buchstaben.", cue: ["◀ Ohr links", "Ohr rechts ▶"] },
     diag: { name: "Diagonal", hint: "Kopf etwa 45° gedreht, so im Takt nicken", help: "Kopf etwa 45° zur Seite drehen und in dieser Stellung im Takt nicken. Die Seite wechselt mit jedem Satz.", cue: ["▲ hoch", "▼ runter"] },
     sakk: { name: "Sakkaden", hint: "Kopf ruhig, nur die Augen springen im Takt", help: "Kopf bleibt ruhig, nur die Augen springen im Takt von Stift zu Stift. Am besten mit 2 Stiften weit auseinander.", cue: ["◀ links", "rechts ▶"] },
+    // VOR x2 (VORtrain, Fabian 09.10. 👍): the target glides from side to side
+    // with the beat, the head turns the other way (balanceWander).
+    wander: { name: "Wanderndes Ziel", hint: "Ziel wandert, Kopf dreht in die Gegenrichtung", help: "Das Ziel wandert im Takt hin und her. Dreh den Kopf jeweils in die Gegenrichtung und halte den Blick darauf, es soll scharf bleiben. Fang langsam an.", cue: ["◀ Kopf links", "Kopf rechts ▶"] },
   };
-  const BALANCE_STANCES = { sitzen: "Sitzen", normal: "Normaler Stand", eng: "Enger Stand", halbtandem: "Halbtandem", tandem: "Tandem", einbein: "Einbeinstand" };
+  const BALANCE_STANCES = { sitzen: "Sitzen", normal: "Normaler Stand", eng: "Enger Stand", halbtandem: "Halbtandem", tandem: "Tandem", einbein: "Einbeinstand", gehen: "Gehen" };
   const BALANCE_STICK_COLORS = [
     { key: "blau", name: "Blau", hex: "#1f5fbf" }, { key: "gelb", name: "Gelb", hex: "#f2c200" },
     { key: "rot", name: "Rot", hex: "#d32f2f" }, { key: "gruen", name: "Grün", hex: "#2e7d32" },
@@ -14373,7 +14795,23 @@
     tiere: { name: "Tiere", words: ["Hund", "Katze", "Maus", "Pferd", "Kuh", "Schaf", "Ziege", "Fuchs", "Hase", "Igel", "Bär", "Wolf", "Adler", "Eule", "Fisch", "Frosch", "Ente", "Gans", "Huhn", "Löwe", "Tiger", "Zebra", "Affe", "Biene"] },
     alltag: { name: "Alltag", words: ["Tisch", "Stuhl", "Tasse", "Brot", "Schuh", "Jacke", "Uhr", "Lampe", "Buch", "Stift", "Glas", "Teller", "Löffel", "Gabel", "Bett", "Tür", "Fenster", "Auto", "Rad", "Ball", "Brief", "Handy", "Kissen", "Schal"] },
     farben: { name: "Farbwörter", words: [] },
+    // Richtungen (VORtrain, Fabian 09.10.): "Lies" can be "das Gegenteil" (LINKS -> rechts).
+    richtungen: { name: "Richtungen", words: ["LINKS", "RECHTS", "OBEN", "UNTEN"] },
   };
+  const BALANCE_OPPOSITE = { LINKS: "rechts", RECHTS: "links", OBEN: "unten", UNTEN: "oben" };
+  // What "Lies" means for this list (a choice that does not fit the list reads the word).
+  function balanceReadOf(p) {
+    if (p.wordList === "farben" && p.wordRead === "farbe") return "farbe";
+    if (p.wordList === "richtungen" && p.wordRead === "gegenteil") return "gegenteil";
+    return "wort";
+  }
+  // The "Lies" buttons fitting the list: Farbwörter = Wort/Farbe, Richtungen = Wort/Gegenteil.
+  function balanceReadButtons(root, attr, list) {
+    root.querySelectorAll(`[${attr}]`).forEach((b) => {
+      const v = b.getAttribute(attr);
+      b.hidden = (v === "farbe" && list !== "farben") || (v === "gegenteil" && list !== "richtungen");
+    });
+  }
   // Farbwörter: the word names one colour and is printed in another.
   const BALANCE_WORD_INKS = [
     { key: "rot", word: "ROT", hex: "#d32f2f" }, { key: "blau", word: "BLAU", hex: "#1f5fbf" },
@@ -14430,7 +14868,7 @@
     if (p.content !== "stifte" && p.content !== "woerter") p.content = d.content;
     if (!BALANCE_WORDS[p.wordList]) p.wordList = d.wordList;
     if (![1, 2, 4].includes(p.wordEvery)) p.wordEvery = d.wordEvery;
-    if (p.wordRead !== "wort" && p.wordRead !== "farbe") p.wordRead = d.wordRead;
+    if (!["wort", "farbe", "gegenteil"].includes(p.wordRead)) p.wordRead = d.wordRead;
     return p;
   }
   // Sakkaden live on the sticks: words only for the head-movement modes.
@@ -14467,6 +14905,7 @@
     return balanceRandomLetters(p.letterCount);
   }
   function balanceStanceLabel(p, setIdx) {
+    if (p.stance === "gehen") return "Gehen, langsam, Blick bleibt auf dem Ziel";
     if (p.stance !== "einbein") return BALANCE_STANCES[p.stance];
     if (p.timing === "open") return "Einbeinstand, Seite nach Gefühl wechseln";
     return setIdx % 2 === 0 ? "Einbein links" : "Einbein rechts";
@@ -14553,12 +14992,15 @@
     const words = balanceWordsOn(p);
     balEl("balanceContentGroup").hidden = p.mode === "sakk";
     balEl("balanceWordBox").hidden = !words;
-    balEl("balanceWordReadBox").hidden = p.wordList !== "farben";
+    balEl("balanceWordReadBox").hidden = p.wordList !== "farben" && p.wordList !== "richtungen";
+    balanceReadButtons(balEl("balanceWordReadRow"), "data-bal-wordread", p.wordList);
     balEl("balanceWordHelp").textContent = !p.metro
-      ? "Ohne Takt wechselt das Wort im eingestellten Tempo, nur ohne Ton. Lies jedes Wort laut, während du den Kopf bewegst."
+      ? "Ohne Takt wechselt das Wort im eingestellten Tempo, nur ohne Ton. " + (balanceReadOf(p) === "gegenteil" ? "Sag bei jedem Wort laut das Gegenteil, während du den Kopf bewegst." : "Lies jedes Wort laut, während du den Kopf bewegst.")
       : p.wordList === "farben"
         ? (p.wordRead === "farbe" ? "Das Wort steht in einer anderen Farbe. Sag laut die Farbe, in der es geschrieben ist, nicht das Wort." : "Das Wort steht in einer anderen Farbe. Lies laut das Wort, nicht die Farbe.")
-        : "Lies jedes neue Wort laut, während du den Kopf im Takt bewegst. Bleibt es scharf, passt das Tempo.";
+        : balanceReadOf(p) === "gegenteil"
+          ? "Sag laut das Gegenteil: Steht da LINKS, sagst du „rechts“, bei OBEN „unten“."
+          : "Lies jedes neue Wort laut, während du den Kopf im Takt bewegst. Bleibt es scharf, passt das Tempo.";
     document.querySelectorAll('[data-look-size="balance"] .group-label').forEach((el) => { el.textContent = words ? "Größe der Wörter" : "Größe der Stifte"; });
     document.querySelectorAll('[data-look-size="balance"] .group-help').forEach((el) => { el.textContent = words ? "Die Schrift wächst mit und bleibt immer ganz auf dem Bildschirm. Während der Übung: mit zwei Fingern ziehen." : LOOK_SPECS.balance.size.help; });
     balanceUi.modeHelp.textContent = BALANCE_MODES[p.mode].help + (words ? " Statt auf einen Buchstaben schaust du auf das Wort in der Mitte." : "");
@@ -14796,7 +15238,8 @@
     st.word = balancePickWord(st, st.word);
     st.wordCount = (st.wordCount || 0) + 1;
     balP.word.textContent = st.word.text;
-    balP.word.dataset.cap = st.wordList === "farben" ? (st.wordRead === "farbe" ? "Sag die Farbe" : "Lies das Wort") : "Lies laut";
+    const rd = balanceReadOf(st);
+    balP.word.dataset.cap = rd === "farbe" ? "Sag die Farbe" : rd === "gegenteil" ? "Sag das Gegenteil" : st.wordList === "farben" ? "Lies das Wort" : "Lies laut";
     balP.word.style.color = st.word.ink;
     balP.word.classList.toggle("light-ink", st.word.inkKey === "gelb");
     balanceLayoutWord();
@@ -14814,6 +15257,7 @@
     balP.word.style.fontSize = fs + "px";
     balP.word.style.left = Math.round(a.x0 + aw / 2) + "px";
     balP.word.style.top = Math.round(a.y0 + ah / 2) + "px";
+    balanceWanderRange();
   }
   function balanceLayout() {
     const st = balanceState;
@@ -14849,6 +15293,7 @@
       el.querySelectorAll(".balance-letter").forEach((sp, j) => sp.classList.toggle("off", j >= k));
       el.style.borderRadius = Math.round(Math.min(14, w / 3)) + "px";
     });
+    balanceWanderRange();
   }
   function balanceSetHint() {
     const st = balanceState;
@@ -15045,7 +15490,8 @@
     const st = balanceState;
     const even = st.beatCount % 2 === 0;
     st.beatCount++;
-    balanceClick(even);
+    st.lastBeatAt = performance.now();
+    if (st.metro) balanceClick(even);
     // Wörter: the first beat keeps the opening word, then a new one every
     // 1st/2nd/4th beat.
     if (st.content === "woerter" && st.beatCount > 1 && (st.beatCount - 1) % st.wordEvery === 0) balanceNextWord();
@@ -15073,7 +15519,7 @@
     st.lastNow = now;
     if (!st.clockHeld) { st.phaseElapsed += dt; st.playedS += dt; }
     if (st.phase === "set") {
-      if (st.metro && now >= st.nextBeatAt) {
+      if ((st.metro || st.mode === "wander") && now >= st.nextBeatAt) {
         balanceBeat();
         const step = 60000 / st.bpm;
         st.nextBeatAt = Math.max(st.nextBeatAt + step, now + step * 0.5);
@@ -15098,7 +15544,34 @@
       balP.restCount.textContent = fmtClock(remain);
       if (remain <= 0) { st.setIdx++; balanceBeginSet(); }
     }
+    if (st.mode === "wander") balanceWander(now);
     balanceStatus();
+  }
+  // Wanderndes Ziel: the word / the sticks glide to the other side within
+  // each beat (cosine, so they rest briefly at the turn), as far as the free
+  // area allows. Starts on the right: first cue "Kopf links".
+  function balanceWander(now) {
+    const st = balanceState;
+    if (!st || st.phase !== "set") { balanceWanderReset(); return; }
+    const step = 60000 / st.bpm;
+    const frac = st.beatCount ? Math.min(1, Math.max(0, (now - (st.lastBeatAt || now)) / step)) : 0;
+    const x = Math.round((st.wanderA || 0) * Math.cos(Math.PI * (frac + Math.max(0, st.beatCount - 1))));
+    const els2 = st.content === "woerter" ? [balP.word] : balP.sticks.slice(0, st.sticks);
+    els2.forEach((el) => { el.style.translate = `${x}px 0`; });
+  }
+  function balanceWanderReset() { [balP.word, ...balP.sticks].forEach((el) => { el.style.translate = ""; }); }
+  function balanceWanderRange() {
+    const st = balanceState;
+    if (!st || st.mode !== "wander") { if (st) st.wanderA = 0; balanceWanderReset(); return; }
+    const a = balanceArea();
+    // Fabian 09.10.: edge to edge (iPad landscape: from the far left to the far right).
+    let A = (a.x1 - a.x0) / 2;
+    if (st.content === "woerter") A = Math.min(A, ((a.x1 - a.x0) - balP.word.offsetWidth) / 2 - 8);
+    else balP.sticks.slice(0, st.sticks).forEach((el) => {
+      const l = parseFloat(el.style.left) || 0, w = el.offsetWidth;
+      A = Math.min(A, l - a.x0 - 6, a.x1 - (l + w) - 6);
+    });
+    st.wanderA = Math.max(0, A);
   }
   // opts.comboDurationS: one continuous run of that length (Cardio-
   // Zusatzaufgabe). prefsOverride: Kombi block / Cardio cfg - never touches
@@ -15171,7 +15644,7 @@
     if (aborted) note = "abgebrochen";
     else if (st.timing === "open") note = `${fmtClock(played)}${beat}`;
     else note = `${countLabel(st.sets, "Satz", "Sätze")} à ${fmtClock(st.setS)}${beat}`;
-    if (!aborted && st.content === "woerter") note += ` · Wörter (${BALANCE_WORDS[st.wordList].name}${st.wordList === "farben" && st.wordRead === "farbe" ? ", Farbe lesen" : ""})`;
+    if (!aborted && st.content === "woerter") note += ` · Wörter (${BALANCE_WORDS[st.wordList].name}${balanceReadOf(st) === "farbe" ? ", Farbe lesen" : balanceReadOf(st) === "gegenteil" ? ", Gegenteil" : ""})`;
     balP.bar.hidden = true;
     setDonePanelAborted(balP.done, aborted, "Gleichgewicht beendet");
     balP.doneSummary.textContent = aborted ? `Abgebrochen · ${fmtClock(played)}` : `${title} · ${note}`;
@@ -15283,12 +15756,27 @@
       `</div></details>`;
   }
 
+  // Schulte-Tabelle as Cardio-Zusatzaufgabe: the same choices as its ready
+  // screen (Modus, Raster, Fixpunkt, Größe/Farbe der Zahlen; Hintergrund
+  // comes from the shared panel code).
+  function schulteCardioFieldsHtml(typeId, cfg) {
+    const row = (field, opts, cls) => `<div class="choice-row${cls ? " " + cls : ""}">` +
+      opts.map(([v, label]) => `<button class="choice${String(cfg[field]) === String(v) ? " active" : ""}" data-type="${typeId}" data-balf="${field}" data-balv="${v}">${label}</button>`).join("") + `</div>`;
+    return `<div class="choice-row" data-mode-row="${typeId}">` +
+      CARDIO_GUEST_MODE_LISTS.schulte.map((m) => `<button class="choice${cfg.mode === m.id ? " active" : ""}" data-type="${typeId}" data-mode="${m.id}">${esc(m.title)}</button>`).join("") + `</div>` +
+      `<div class="cardio-guest-field-row"><div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${typeId}" data-f="duration" value="${cfg.duration}"></div></div>` +
+      `<div class="group-label">Rastergröße</div>` + row("gridSize", SCHULTE_GRIDS.map((g) => [g, `${g}&times;${g}`]), "four") +
+      `<div class="group-label">Fixpunkt in der Mitte</div>` + row("fixEnabled", [[true, "Anzeigen"], [false, "Ausblenden"]], "two") +
+      `<div class="group-help">Mit Fixpunkt bleibt bei 3×3 und 5×5 das Mittelfeld ohne Zahl. Ist eine Tabelle fertig, kommt bis zum Ende der Dauer die nächste.</div>` +
+      `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` + cardioLookFieldsHtml("schulte", typeId, cfg) + `</div></details>`;
+  }
+
   // ---- Größe während der Übung (Fabian 2026-10-06: "schadet doch nicht") ----
   // Every exercise with "Größe der …" (LOOK_SPECS) gets the same size
   // slider in its "Pausiert" sheet plus two-finger pinch on its stage
   // (ctrl+wheel = trackpad pinch). A standalone run saves the new value;
   // inside a Kombi or as a Cardio-Zusatzaufgabe it only changes this run.
-  const GAME_TAP_SEL = ".remember-marker.covered, .blitz-cell.tappable, .mot-object.tappable, .flash-key";
+  const GAME_TAP_SEL = ".remember-marker.covered, .blitz-cell.tappable, .mot-object.tappable, .flash-key, .schulte-cell.tappable";
   // Every other answer tap counts on touch-down too (Fabian 07.10.: "überall,
   // wo du eine Berührung brauchst" - Hütchen sortieren and the Test-Bereich
   // reacted only sometimes). One delegated listener: a touch/pen pointerdown
@@ -15420,6 +15908,7 @@
     flash: { stage: () => els.flashStage, overlay: () => document.getElementById("flashPauseOverlay"), state: () => flashState, prefs: () => flashPrefs, save: () => saveFlashPrefsToStorage(), apply: flashLiveSize },
     mot: { stage: () => els.motStage, overlay: () => document.getElementById("motPauseOverlay"), state: () => motState, prefs: () => motPrefs, save: () => saveMotPrefsToStorage(), apply: motLiveSize },
     balance: { stage: () => balP.stage, overlay: () => balP.pauseOverlay, state: () => balanceState, prefs: () => balancePrefs, save: () => saveBalancePrefsToStorage(), apply: (v) => balanceLive("size", v), ownState: true },
+    schulte: { stage: () => els.schulteStage, overlay: () => els.schultePauseOverlay, state: () => schulteState, prefs: () => schultePrefs, save: () => saveSchultePrefsToStorage(), apply: (v) => { if (schulteState) { schulteState.numScale = v; schulteSizeNumbers(); } } },
   };
   Object.entries(LIVE_LOOK).forEach(([kind, L]) => {
     const { size } = LOOK_SPECS[kind];
@@ -15503,7 +15992,11 @@
   addPauseChoiceRow(balP.pauseOverlay, { label: "Wort wechselt", sourceRow: "balanceWordEveryRow", attr: "bal-wordevery",
     visible: balWordsLive, get: () => String(balanceState.wordEvery), set: (v) => balanceLive("wordEvery", Number(v)) });
   const balReadSync = addPauseChoiceRow(balP.pauseOverlay, { label: "Lies", sourceRow: "balanceWordReadRow", attr: "bal-wordread",
-    visible: () => balWordsLive() && balanceState.wordList === "farben", get: () => balanceState.wordRead, set: (v) => { balanceLive("wordRead", v); balanceNextWord(); } });
+    visible: () => {
+      const on = balWordsLive() && (balanceState.wordList === "farben" || balanceState.wordList === "richtungen");
+      if (on) balanceReadButtons(balP.pauseOverlay, "data-pause-val", balanceState.wordList);
+      return on;
+    }, get: () => balanceReadOf(balanceState), set: (v) => { balanceLive("wordRead", v); balanceNextWord(); } });
   addPauseChoiceRow(balP.pauseOverlay, { label: "Wörter", sourceRow: "balanceWordListRow", attr: "bal-wordlist",
     visible: balWordsLive, get: () => balanceState.wordList, set: (v) => { balanceLive("wordList", v); balanceNextWord(); if (balReadSync) balReadSync(); } });
 
@@ -15512,6 +16005,7 @@
     remember: { prefs: rememberPrefs, save: saveRememberPrefsToStorage },
     flash: { prefs: flashPrefs, save: saveFlashPrefsToStorage },
     mot: { prefs: motPrefs, save: saveMotPrefsToStorage },
+    schulte: { prefs: schultePrefs, save: saveSchultePrefsToStorage },
   });
 
   const MOT_BEST_KEY = "fwmc-mot-best-v1"; // { speed: bestLevel, count: N, both: N, training: N }
@@ -15742,6 +16236,18 @@
       ? (motReadyMode === "speed" ? `Deine Bestleistung: Tempo-Stufe ${best + 1}.` : `Deine bisher höchste geschaffte Stufe: ${best}.`)
       : "Noch keine Bestleistung bei diesem Modus – leg los!";
   }
+  // Fixpunkt (Fabian 09.10.2026): new for MOT, standard on (free centre),
+  // stored per mode ("mot:<mode>"); the objects glide over it.
+  let motFixMode = "speed";
+  FIX_ADAPTERS.mot = { name: "mot", key: () => "mot:" + motFixMode, obj: () => motPrefs, names: FIX_FIELDS.std,
+    save: () => saveMotPrefsToStorage(), redraw: () => { if (motState) { fixWrite(motState, FIX_FIELDS.std, fixRead(motPrefs, FIX_FIELDS.std)); renderMotFixpoint(); } } };
+  function renderMotFixpoint() {
+    const src = motState || motPrefs;
+    fixRenderEl($("motFixpointEl"), fixRead(src, FIX_FIELDS.std), 1, els.motStage.clientWidth * 0.5);
+  }
+  wireFixGroup("motFix", "data-fix-on", FIX_ADAPTERS.mot);
+  wireFixGroup("motTrainingFix", "data-fix-on", FIX_ADAPTERS.mot);
+  wireFixGroup("motPauseFix", "data-fix-on", FIX_ADAPTERS.mot);
   function openMotReady(mode) {
     syncLook("mot");
     motReadyMode = mode;
@@ -15760,6 +16266,8 @@
     syncMotCountsUI();
     syncMotGrowStartUI();
     syncMotBgUI();
+    motFixMode = mode;
+    fixLoad("mot");
     updateMotReadyBestHint();
     showScreen("motReady");
   }
@@ -15776,6 +16284,8 @@
     syncMotColorUI();
     syncMotTrainingUI();
     syncMotBgUI();
+    motFixMode = "training";
+    fixLoad("mot");
     showScreen("motTrainingReady");
   }
   els.motOpenTraining.addEventListener("click", openMotTrainingReady);
@@ -15847,6 +16357,546 @@
     els.motTrainingComboDurationValue.textContent = fmtSeconds(comboMotDurationS);
   });
 
+  // ==== Schulte-Tabelle: ready screen + engine (NAT, Fabian 09.10.2026) ====
+  // A grid of numbers 1..N in random cells; the client taps them in
+  // ascending order as fast as possible, the time counts. Three modes:
+  // Fest (numbers stay), Wechselnd (after every right tap the numbers not
+  // yet tapped swap places), Aus der Erinnerung (numbers vanish with the
+  // first right tap, the client goes on from memory). Each with or without
+  // the shared Fixpunkt (key "schulte:<mode>", standard on): on an odd grid
+  // the middle cell then carries no number (3×3 = 1..8, 5×5 = 1..24), on an
+  // even grid the point sits on the crossing. A wrong tap only costs time
+  // (short red mark, counted in the result). One table = one run; inside a
+  // Kombi or as a Cardio-Zusatzaufgabe tables repeat until the time is up.
+  // Details: docs/notes/38-schulte-tabelle.md.
+  function schulteModeTitle(mode) { return (SCHULTE_MODES[mode] || SCHULTE_MODES.fest).title; }
+  function schulteCenterFree(grid, fixOn) { return !!fixOn && grid % 2 === 1; }
+  function schulteCount(grid, fixOn) { return grid * grid - (schulteCenterFree(grid, fixOn) ? 1 : 0); }
+  function schulteBestKey(mode, grid, fixOn) { return `${mode}:${grid}${schulteCenterFree(grid, fixOn) ? "f" : ""}`; }
+  function schulteBestFor(mode, grid, fixOn) {
+    const v = readJSON(SCHULTE_BEST_KEY, {})[schulteBestKey(mode, grid, fixOn)];
+    return typeof v === "number" && v > 0 ? v : 0;
+  }
+  function saveSchulteBest(mode, grid, fixOn, ms) {
+    const all = readJSON(SCHULTE_BEST_KEY, {});
+    const k = schulteBestKey(mode, grid, fixOn);
+    if (!(all[k] > 0) || ms < all[k]) { all[k] = Math.round(ms); writeJSON(SCHULTE_BEST_KEY, all); return true; }
+    return false;
+  }
+  // "23,4 s" below a minute, "1:05,2 min" above.
+  function fmtSchulteTime(ms) {
+    const t = Math.round(Math.max(0, ms) / 100) / 10;
+    if (t < 60) return `${t.toFixed(1).replace(".", ",")} s`;
+    const m = Math.floor(t / 60);
+    return `${m}:${(t - m * 60).toFixed(1).padStart(4, "0").replace(".", ",")} min`;
+  }
+  function renderSchulteBests() {
+    const g = schultePrefs.gridSize;
+    [["fest", "schulteBestFest"], ["wechselnd", "schulteBestWechselnd"], ["erinnerung", "schulteBestErinnerung"]].forEach(([mode, id]) => {
+      const el = $(id);
+      if (!el) return;
+      const best = schulteBestFor(mode, g, fixGet("schulte:" + mode).on);
+      el.textContent = best ? `Bestzeit ${g}×${g}: ${fmtSchulteTime(best)}` : "";
+    });
+  }
+  renderSchulteBests();
+
+  // ---- Ready screen ----
+  let schulteReadyMode = "fest";
+  let schulteFixMode = "fest";
+  function schulteReadyDescText(mode) {
+    return `Tippe die Zahlen so schnell wie möglich der Reihe nach an, von der 1 an. ${(SCHULTE_MODES[mode] || SCHULTE_MODES.fest).desc} Ein falscher Tipp kostet nur Zeit.`;
+  }
+  function updateSchulteReadyBestHint() {
+    const g = schultePrefs.gridSize;
+    const best = schulteBestFor(schulteReadyMode, g, schultePrefs.fixEnabled);
+    els.schulteReadyBestHint.textContent = best
+      ? `Deine Bestzeit bei ${g}×${g} in diesem Modus: ${fmtSchulteTime(best)}.`
+      : `Noch keine Bestzeit bei ${g}×${g} in diesem Modus – leg los!`;
+  }
+  function syncSchulteGridUI() {
+    document.querySelectorAll("#schulteGridRow [data-schulte-grid]").forEach((el) => setActive(el, Number(el.dataset.schulteGrid) === schultePrefs.gridSize));
+    const g = schultePrefs.gridSize, n = schulteCount(g, schultePrefs.fixEnabled);
+    $("schulteGridCount").textContent = schulteCenterFree(g, schultePrefs.fixEnabled)
+      ? `Diese Tabelle: Zahlen 1 bis ${n}, das Mittelfeld bleibt für den Fixpunkt frei.`
+      : `Diese Tabelle: Zahlen 1 bis ${n}.`;
+  }
+  document.querySelectorAll("#schulteGridRow [data-schulte-grid]").forEach((el) => {
+    el.addEventListener("click", () => {
+      schultePrefs.gridSize = Number(el.dataset.schulteGrid);
+      saveSchultePrefsToStorage();
+      syncSchulteGridUI();
+      updateSchulteReadyBestHint();
+      renderSchulteBests();
+    });
+  });
+  FIX_ADAPTERS.schulte = { name: "schulte", key: () => "schulte:" + schulteFixMode, obj: () => schultePrefs, names: FIX_FIELDS.std,
+    save: () => { saveSchultePrefsToStorage(); syncSchulteGridUI(); updateSchulteReadyBestHint(); renderSchulteBests(); },
+    redraw: () => schulteLiveFix() };
+  wireFixGroup("schulteFix", "data-fix-on", FIX_ADAPTERS.schulte);
+  wireFixGroup("schultePauseFix", "data-fix-on", FIX_ADAPTERS.schulte);
+  const applySchulteBg = makeBgApplier(els.schulteStage, schultePrefs);
+  const syncSchulteBgUI = wireBgIntensityControl(schultePrefs, {
+    pickers: [els.schulteBgColorPicker, els.schultePauseBgColorPicker],
+    sliders: [els.schulteBgIntensitySlider, els.schultePauseBgSlider],
+    valueEls: [els.schulteBgIntensityValue, els.schultePauseBgValue],
+    hintEls: [els.schulteBgContrastHint, els.schultePauseBgContrastHint],
+    masterStatusEls: [els.schulteBgMasterStatus],
+    transfer: [{
+      sourceRow: els.schulteBgSourceRow, presetGroup: els.schulteBgPresetGroup, presetList: els.schulteBgPresetList,
+      saveBtn: els.schulteBgSaveBtn, form: els.schulteBgSaveForm, nameInput: els.schulteBgSaveNameInput,
+      cancelBtn: els.schulteBgSaveCancelBtn, confirmBtn: els.schulteBgSaveConfirmBtn,
+    }],
+  }, () => {
+    saveSchultePrefsToStorage();
+    // A run follows the pause sheet at once (its own copy of the colour).
+    if (schulteState) { schulteState.bgColorKey = schultePrefs.bgColorKey; schulteState.bgIntensity = schultePrefs.bgIntensity; schulteApplyStageBg(); }
+    else applySchulteBg();
+  }, "schulte");
+  function openSchulteReady(mode) {
+    schulteReadyMode = SCHULTE_MODES[mode] ? mode : "fest";
+    els.schulteReadyTitle.textContent = "Schulte-Tabelle";
+    els.schulteReadyDesc.textContent = schulteReadyDescText(schulteReadyMode);
+    schulteFixMode = schulteReadyMode;
+    fixLoad("schulte");
+    syncLook("schulte");
+    syncSchulteBgUI();
+    syncSchulteGridUI();
+    updateSchulteReadyBestHint();
+    showScreen("schulteReady");
+  }
+  els.schulteOpenFest.addEventListener("click", () => openSchulteReady("fest"));
+  els.schulteOpenWechselnd.addEventListener("click", () => openSchulteReady("wechselnd"));
+  els.schulteOpenErinnerung.addEventListener("click", () => openSchulteReady("erinnerung"));
+  els.schulteReadyBackToHome.addEventListener("click", () => {
+    if (comboSchulteCaptureOriginal) { exitSchulteComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("natHome");
+  });
+
+  // ---- Kombi-Baustein capture (same pattern as MOT: one ready screen,
+  // mode fixed per block, a duration slider only while capturing). A
+  // block repeats tables until its time is up. ----
+  let comboSchulteCaptureOriginal = null;
+  let comboSchulteEditIndex = null;
+  let comboSchulteCaptureMode = null;
+  let comboSchulteDurationS = 120;
+  function openSchulteComboCapture(mode, existingBlock, editIndex) {
+    const m = SCHULTE_MODES[mode] ? mode : "fest";
+    comboSchulteCaptureOriginal = JSON.parse(JSON.stringify(schultePrefs));
+    comboSchulteCaptureMode = m;
+    comboSchulteEditIndex = editIndex ?? null;
+    comboSchulteDurationS = existingBlock ? (existingBlock.duration ?? 120) : 120;
+    if (existingBlock && existingBlock.prefs) Object.assign(schultePrefs, JSON.parse(JSON.stringify(existingBlock.prefs)));
+    normalizeSchultePrefs(schultePrefs);
+    openSchulteReady(m);
+    // The block's own Fixpunkt wins over the module's (re-editing a block).
+    if (existingBlock && existingBlock.prefs && existingBlock.prefs.fixEnabled != null) {
+      fixWrite(schultePrefs, FIX_FIELDS.std, fixRead(existingBlock.prefs, FIX_FIELDS.std));
+      fixSync("schulte");
+      syncSchulteGridUI();
+    }
+    els.schulteReadyTitle.textContent = `Baustein: Schulte-Tabelle · ${schulteModeTitle(m)}`;
+    els.schulteReadyDesc.textContent = "Stelle Raster, Fixpunkt und Dauer für diesen Baustein ein. Ist eine Tabelle fertig, kommt bis zum Ende der Dauer gleich die nächste.";
+    els.schulteComboDurationGroup.hidden = false;
+    els.schulteComboDurationSlider.value = comboSchulteDurationS;
+    els.schulteComboDurationValue.textContent = fmtSeconds(comboSchulteDurationS);
+    els.schulteReadyStartBtn.textContent = "Baustein übernehmen";
+  }
+  function exitSchulteComboCapture() {
+    if (comboSchulteCaptureOriginal) {
+      Object.keys(schultePrefs).forEach((k) => { if (!(k in comboSchulteCaptureOriginal)) delete schultePrefs[k]; });
+      Object.assign(schultePrefs, comboSchulteCaptureOriginal);
+      saveSchultePrefsToStorage();
+      comboSchulteCaptureOriginal = null;
+    }
+    comboSchulteEditIndex = null;
+    comboSchulteCaptureMode = null;
+    els.schulteComboDurationGroup.hidden = true;
+    els.schulteReadyStartBtn.textContent = "Training starten";
+  }
+  function commitSchulteComboCapture() {
+    const block = { domain: "schulte", mode: comboSchulteCaptureMode, duration: comboSchulteDurationS, prefs: JSON.parse(JSON.stringify(schultePrefs)) };
+    if (comboSchulteEditIndex != null) comboDraftBlocks[comboSchulteEditIndex] = block;
+    else comboDraftBlocks.push(block);
+    exitSchulteComboCapture();
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+  els.schulteComboDurationSlider.addEventListener("input", () => {
+    comboSchulteDurationS = Number(els.schulteComboDurationSlider.value);
+    els.schulteComboDurationValue.textContent = fmtSeconds(comboSchulteDurationS);
+  });
+  // A Kombi block's prefs: the client's current settings + this mode's
+  // Fixpunkt, the block's own snapshot on top (fields added later still
+  // get a value). Never written back to schultePrefs.
+  function schulteBlockPrefs(block) {
+    const p = JSON.parse(JSON.stringify(schultePrefs));
+    fixWrite(p, FIX_FIELDS.std, fixGet("schulte:" + (SCHULTE_MODES[block.mode] ? block.mode : "fest")));
+    if (block.prefs) Object.assign(p, JSON.parse(JSON.stringify(block.prefs)));
+    return normalizeSchultePrefs(p);
+  }
+  // Cardio-Zusatzaufgabe: the guest cfg (own grid, Fixpunkt an/aus, look,
+  // background); the Fixpunkt's look comes from this mode's own setting.
+  function schulteGuestPrefs(cfg) {
+    const p = JSON.parse(JSON.stringify(schultePrefs));
+    fixWrite(p, FIX_FIELDS.std, fixGet("schulte:" + (SCHULTE_MODES[cfg.mode] ? cfg.mode : "fest")));
+    p.fixEnabled = cfg.fixEnabled !== false;
+    ["gridSize", "numScale", "numColor", "bgColorKey", "bgIntensity"].forEach((k) => { if (cfg[k] != null) p[k] = cfg[k]; });
+    p.mbg = null;
+    return normalizeSchultePrefs(p);
+  }
+
+  // ---- Engine ----
+  let schulteState = null;
+  let lastSchulteMode = "fest";
+  function scheduleSchulteTimer(fn, delayMs) {
+    schulteState.timerFn = fn;
+    schulteState.timerFiresAt = performance.now() + delayMs;
+    schulteState.timer = setTimeout(fn, delayMs);
+  }
+  function schulteShuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  function schulteApplyStageBg() {
+    const st = schulteState;
+    els.schulteStage.style.background = st && st.bgIntensity > 0 && STROOP_COLOR_BY_KEY[st.bgColorKey] ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[st.bgColorKey].hex, st.bgIntensity) : "";
+  }
+  function schulteHintText() {
+    const st = schulteState;
+    const fix = st.fixEnabled ? "Blick auf den Fixpunkt. " : "";
+    if (st.mode === "erinnerung") return st.hidden ? `${fix}Aus der Erinnerung weiter` : `${fix}Plätze einprägen, dann mit der 1 starten`;
+    if (st.mode === "wechselnd") return `${fix}Der Reihe nach, die übrigen Zahlen tauschen`;
+    return `${fix}Tippe 1, 2, 3 … der Reihe nach`;
+  }
+  function schulteStatusText() {
+    const st = schulteState;
+    const ms = st.phase === "play" ? (st.paused ? st.pausedAt : performance.now()) - st.tableStart : st.lastMs || 0;
+    return `${Math.min(st.next - 1, st.total)}/${st.total} · ${fmtSchulteTime(ms)}`;
+  }
+  function schulteTickStatus() {
+    if (!schulteState) return;
+    els.schulteLevelEl.textContent = schulteStatusText();
+  }
+  // Keep the grid below the hint (same rule as Blitz-Raster): the stage
+  // reserves the hint's height at the top, the square board takes the rest.
+  function fitSchulteBoard() {
+    const stage = els.schulteStage, hint = els.schulteHint, board = els.schulteBoard;
+    if (!stage || !stage.offsetParent) return;
+    placeHintBelowBar(hint, els.schultePlayerBar);
+    stage.style.paddingTop = "";
+    board.style.maxWidth = "";
+    const sr = stage.getBoundingClientRect(), hr = hint.getBoundingClientRect();
+    const top = Math.max(24, Math.ceil(hr.bottom - sr.top + 10));
+    stage.style.paddingTop = top + "px";
+    const room = Math.floor(Math.min(sr.height - top - 24, sr.width - 32));
+    if (room > 0) board.style.maxWidth = Math.min(560, room) + "px";
+    schulteSizeNumbers();
+  }
+  // Number size: the cell stays the tap target, the number follows "Größe
+  // der Zahlen" and is capped so two digits always fit inside the cell.
+  function schulteSizeNumbers() {
+    const st = schulteState;
+    if (!st) return;
+    const cell = els.schulteGrid.querySelector(".schulte-cell");
+    const w = cell ? cell.getBoundingClientRect().width : 0;
+    if (!w) return;
+    const px = Math.max(12, Math.min(w * 0.42 * (st.numScale || 1), w * 0.6));
+    els.schulteGrid.style.setProperty("--schulte-num-px", Math.round(px) + "px");
+    renderSchulteFixpoint();
+  }
+  function renderSchulteFixpoint() {
+    const st = schulteState;
+    const f = st ? fixRead(st, FIX_FIELDS.std) : fixRead(schultePrefs, FIX_FIELDS.std);
+    const cell = els.schulteGrid.querySelector(".schulte-cell");
+    const w = cell ? cell.getBoundingClientRect().width : 60;
+    // Odd grid: the free middle cell holds the point. Even grid: it sits on
+    // the crossing of the four middle cells, so it stays small enough to
+    // leave their numbers readable.
+    const odd = st ? st.grid % 2 === 1 : true;
+    const base = odd ? Math.min(1, (w * 0.7) / (18 * f.size)) : Math.min(1, (w * 0.42) / (18 * f.size));
+    fixRenderEl(els.schulteFixpointEl, f, base, odd ? w * 0.9 : w * 0.5);
+  }
+  function schulteBuildTable() {
+    const st = schulteState;
+    const n = st.grid, cells = n * n;
+    st.center = schulteCenterFree(n, st.fixEnabled) ? Math.floor(cells / 2) : -1;
+    const slots = [];
+    for (let i = 0; i < cells; i++) if (i !== st.center) slots.push(i);
+    st.total = slots.length;
+    const nums = schulteShuffle(slots.map((_, i) => i + 1));
+    st.cellNum = new Array(cells).fill(0);
+    slots.forEach((c, i) => { st.cellNum[c] = nums[i]; });
+    st.next = 1;
+    st.done = new Set();
+    st.hidden = false;
+    st.tableErrors = 0;
+    els.schulteGrid.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+    els.schulteGrid.style.gridTemplateRows = `repeat(${n}, 1fr)`;
+    els.schulteGrid.style.gap = n <= 4 ? "10px" : n === 5 ? "8px" : "6px";
+    els.schulteGrid.innerHTML = "";
+    st.cellEls = [];
+    for (let i = 0; i < cells; i++) {
+      let el;
+      if (i === st.center) {
+        el = document.createElement("div");
+        el.className = "schulte-cell free";
+        el.setAttribute("aria-hidden", "true");
+      } else {
+        el = document.createElement("button");
+        el.type = "button";
+        el.className = "schulte-cell tappable";
+        const idx = i;
+        onGameTap(el, () => schulteTap(idx));
+      }
+      st.cellEls.push(el);
+      els.schulteGrid.appendChild(el);
+    }
+    schulteRenderNumbers();
+    st.phase = "play";
+    els.schulteHint.textContent = schulteHintText();
+    fitSchulteBoard();
+    st.tableStart = st.paused ? st.pausedAt : performance.now();
+    schulteTickStatus();
+  }
+  function schulteRenderNumbers(fade) {
+    const st = schulteState;
+    st.cellEls.forEach((el, i) => {
+      if (i === st.center) return;
+      const done = st.done.has(i);
+      const show = done || !st.hidden;
+      el.textContent = show ? String(st.cellNum[i]) : "";
+      el.setAttribute("aria-label", show ? `Zahl ${st.cellNum[i]}` : "Verdecktes Feld");
+      el.classList.toggle("done", done);
+      el.classList.toggle("tappable", !done);
+      el.classList.toggle("covered", !show);
+      if (fade && !done) { el.classList.remove("swap"); void el.offsetWidth; el.classList.add("swap"); }
+    });
+  }
+  function schulteMark(el, cls, ms) {
+    el.classList.remove("correct", "wrong");
+    void el.offsetWidth;
+    el.classList.add(cls);
+    clearTimeout(el._schulteMark);
+    el._schulteMark = setTimeout(() => el.classList.remove(cls), ms);
+  }
+  function schulteTap(i) {
+    const st = schulteState;
+    if (!st || st.paused || st.phase !== "play" || st.done.has(i) || i === st.center) return;
+    const el = st.cellEls[i];
+    if (st.cellNum[i] !== st.next) {
+      st.errors++;
+      st.tableErrors++;
+      schulteMark(el, "wrong", 450);
+      return;
+    }
+    st.done.add(i);
+    st.next++;
+    if (st.mode === "erinnerung" && !st.hidden) {
+      st.hidden = true;
+      els.schulteHint.textContent = schulteHintText();
+    }
+    if (st.next > st.total) {
+      schulteRenderNumbers();
+      schulteMark(el, "correct", 350);
+      schulteTableDone();
+      return;
+    }
+    // Wechselnd: the numbers not tapped yet swap their places.
+    if (st.mode === "wechselnd") {
+      const open = st.cellEls.map((_, k) => k).filter((k) => k !== st.center && !st.done.has(k));
+      const vals = schulteShuffle(open.map((k) => st.cellNum[k]));
+      open.forEach((k, j) => { st.cellNum[k] = vals[j]; });
+    }
+    schulteRenderNumbers(st.mode === "wechselnd");
+    schulteMark(el, "correct", 350);
+    schulteTickStatus();
+  }
+  function schulteTableDone() {
+    const st = schulteState;
+    st.phase = "between";
+    st.lastMs = performance.now() - st.tableStart;
+    st.tables++;
+    st.bestRunMs = st.bestRunMs ? Math.min(st.bestRunMs, st.lastMs) : st.lastMs;
+    schulteTickStatus();
+    if (st.repeat) {
+      els.schulteHint.textContent = `Geschafft in ${fmtSchulteTime(st.lastMs)} – gleich kommt die nächste Tabelle`;
+      scheduleSchulteTimer(() => { if (schulteState) schulteBuildTable(); }, 1600);
+      return;
+    }
+    els.schulteHint.textContent = `Geschafft in ${fmtSchulteTime(st.lastMs)}`;
+    scheduleSchulteTimer(() => schulteFinish(), 700);
+  }
+  // A Fixpunkt change in the pause sheet (or anywhere while running): on an
+  // odd grid switching it on/off changes the middle cell, so the table
+  // starts afresh; otherwise only the point is redrawn.
+  function schulteLiveFix() {
+    const st = schulteState;
+    if (!st) return;
+    const before = schulteCenterFree(st.grid, st.fixEnabled);
+    fixWrite(st, FIX_FIELDS.std, fixRead(schultePrefs, FIX_FIELDS.std));
+    if (schulteCenterFree(st.grid, st.fixEnabled) !== before && st.phase === "play") {
+      st.errors -= st.tableErrors;
+      schulteBuildTable();
+    } else {
+      els.schulteHint.textContent = st.phase === "play" ? schulteHintText() : els.schulteHint.textContent;
+      renderSchulteFixpoint();
+    }
+  }
+  // prefsOverride: Kombi block snapshot or Cardio guest cfg - never reads
+  // or writes the client's own schultePrefs. opts.comboDurationS: tables
+  // repeat until the time is up (Kombi block, Cardio-Zusatzaufgabe).
+  function startSchulteGame(mode, opts, prefsOverride) {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.schultePlayer.hidden = false;
+    els.schultePlayerBar.hidden = false;
+    els.schulteDonePanel.hidden = true;
+    els.schultePauseOverlay.hidden = true;
+    els.schultePauseBtn.hidden = false;
+    els.schulteBoard.classList.remove("is-paused");
+    softStartRun();
+    const p = prefsOverride || schultePrefs;
+    const m = SCHULTE_MODES[mode] ? mode : "fest";
+    lastSchulteMode = m;
+    schulteState = {
+      mode: m, grid: SCHULTE_GRIDS.includes(p.gridSize) ? p.gridSize : 5,
+      numScale: p.numScale || 1, numColor: p.numColor || "standard",
+      bgColorKey: p.bgColorKey, bgIntensity: p.bgIntensity,
+      errors: 0, tableErrors: 0, tables: 0, lastMs: 0, bestRunMs: 0,
+      phase: "build", paused: false, timer: null, comboDurationTimer: null,
+      repeat: !!(opts && opts.comboDurationS), startTime: performance.now(),
+      mbg: mbgCopy(p.mbg),
+    };
+    fixWrite(schulteState, FIX_FIELDS.std, fixRead(p, FIX_FIELDS.std));
+    els.schulteGrid.style.setProperty("--schulte-num-color", lookColorHex("schulte", schulteState.numColor));
+    schulteApplyStageBg();
+    mbgStart("schulte");
+    requestWakeLock();
+    schulteBuildTable();
+    clearInterval(startSchulteGame.tick);
+    startSchulteGame.tick = setInterval(() => { if (schulteState && !schulteState.paused && schulteState.phase === "play") schulteTickStatus(); }, 100);
+    if (opts && opts.comboDurationS) {
+      schulteState.comboDurationFiresAt = performance.now() + opts.comboDurationS * 1000;
+      schulteState.comboDurationTimer = setTimeout(finishSchulteCombo, opts.comboDurationS * 1000);
+    }
+  }
+  window.addEventListener("resize", () => { if (schulteState && !els.schultePlayer.hidden) fitSchulteBoard(); });
+  function schulteTeardown() {
+    const st = schulteState;
+    if (!st) return null;
+    if (st.timer) clearTimeout(st.timer);
+    if (st.comboDurationTimer) clearTimeout(st.comboDurationTimer);
+    clearInterval(startSchulteGame.tick);
+    schulteState = null;
+    els.schultePauseOverlay.hidden = true;
+    els.schulteBoard.classList.remove("is-paused");
+    releaseWakeLock();
+    if (document.fullscreenElement === els.schultePlayer) document.exitFullscreen().catch(() => {});
+    els.schulteFsHint.hidden = true;
+    return st;
+  }
+  function finishSchulteCombo() {
+    if (!schulteState) return;
+    const st = schulteTeardown();
+    const playedS = (performance.now() - st.startTime) / 1000;
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
+    if (comboProgram) {
+      blockResultPush(comboProgram, `Schulte-Tabelle · ${schulteModeTitle(st.mode)}`,
+        st.tables ? `${countLabel(st.tables, "Tabelle", "Tabellen")} · beste ${fmtSchulteTime(st.bestRunMs)}` : "keine Tabelle fertig");
+      advanceComboProgram(playedS);
+    }
+  }
+  // Standalone: one table, then the result.
+  function schulteFinish() {
+    const st = schulteTeardown();
+    if (st) schulteShowResult(st);
+  }
+  function schulteShowResult(st) {
+    const g = st.grid;
+    const isRecord = saveSchulteBest(st.mode, g, st.fixEnabled, st.lastMs);
+    renderSchulteBests();
+    const time = fmtSchulteTime(st.lastMs);
+    const errText = st.errors ? `${st.errors} Fehler` : "fehlerfrei";
+    const fixText = st.fixEnabled ? " mit Fixpunkt" : "";
+    els.schultePlayerBar.hidden = true;
+    els.schulteDoneSummary.textContent = `Schulte-Tabelle · ${schulteModeTitle(st.mode)} · ${g}×${g}${fixText} · ${time} · ${errText}` + (isRecord ? " · Neue Bestzeit!" : "");
+    markBest(els.schulteDoneSummary, "· ", time.replace(/ (s|min)$/, ""));
+    const id = addHistory({ kind: "schulte", title: `Schulte-Tabelle · ${schulteModeTitle(st.mode)}`, seconds: Math.max(1, Math.round(st.lastMs / 1000)), note: `${g}×${g}${fixText} · ${time} · ${errText}` });
+    renderRating(els.schulteRating, id, "Wie war deine Konzentration?");
+    levelSuggestAfter("schulte", st.mode, { errors: st.errors, lastMs: st.lastMs, total: st.total }, els.schulteDonePanel, els.schulteRating);
+    els.schulteDonePanel.hidden = false;
+  }
+  function schulteStop() {
+    if (!schulteState) return;
+    const st = schulteTeardown();
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
+    // "Beenden" mid-Kombi quits the whole Kombi, like every sibling.
+    if (comboProgram) { abortComboProgram(); return; }
+    // Standalone: a finished table (Beenden in the short "Geschafft" moment)
+    // still counts; an unfinished one leaves no entry (like MOT without a level).
+    if (st && !st.repeat && st.tables > 0) { schulteShowResult(st); return; }
+    if (st) { els.schultePlayer.hidden = true; showScreen("schulteReady"); }
+  }
+  els.schulteReadyStartBtn.addEventListener("click", () => {
+    if (comboSchulteCaptureOriginal) { commitSchulteComboCapture(); return; }
+    startSchulteGame(schulteReadyMode);
+  });
+  els.schulteBackBtn.addEventListener("click", schulteStop);
+  els.schulteAgainBtn.addEventListener("click", () => { els.schulteDonePanel.hidden = true; startSchulteGame(lastSchulteMode); });
+  els.schulteDoneBackBtn.addEventListener("click", () => { els.schultePlayer.hidden = true; els.schulteDonePanel.hidden = true; showScreen("schulteReady"); });
+
+  // ---- Pause: the clock stops, the numbers are covered (so the pause
+  // never helps the search), Fixpunkt/Hintergrund/Größe change live. ----
+  function pauseSchulte() {
+    const st = schulteState;
+    if (!st || st.paused) return;
+    st.paused = true;
+    st.pausedAt = performance.now();
+    if (st.timer) {
+      clearTimeout(st.timer);
+      st.timer = null;
+      st.timerRemainingMs = Math.max(0, st.timerFiresAt - st.pausedAt);
+    }
+    if (st.comboDurationTimer) {
+      clearTimeout(st.comboDurationTimer);
+      st.comboDurationTimer = null;
+      st.comboRemainingMs = Math.max(0, st.comboDurationFiresAt - st.pausedAt);
+    }
+    schulteTickStatus();
+    syncSchulteBgUI();
+    fixSync("schulte");
+    els.schulteBoard.classList.add("is-paused");
+    els.schultePauseBtn.hidden = true;
+    els.schultePauseOverlay.hidden = false;
+  }
+  function resumeSchulte() {
+    const st = schulteState;
+    if (!st || !st.paused) return;
+    const d = performance.now() - st.pausedAt;
+    st.startTime += d;
+    st.tableStart += d;
+    st.paused = false;
+    if (st.timerFn && st.timerRemainingMs != null) {
+      scheduleSchulteTimer(st.timerFn, st.timerRemainingMs);
+      st.timerRemainingMs = null;
+    }
+    if (st.comboRemainingMs != null) {
+      st.comboDurationFiresAt = performance.now() + st.comboRemainingMs;
+      st.comboDurationTimer = setTimeout(finishSchulteCombo, st.comboRemainingMs);
+      st.comboRemainingMs = null;
+    }
+    els.schulteBoard.classList.remove("is-paused");
+    els.schultePauseOverlay.hidden = true;
+    els.schultePauseBtn.hidden = false;
+    fitSchulteBoard();
+  }
+  els.schultePauseBtn.addEventListener("click", pauseSchulte);
+  els.schulteResumeBtn.addEventListener("click", resumeSchulte);
+
   // ---- NAT: "Aktuelle Einstellung speichern" (Idee 54, Fabian 2026-10-07).
   // Same list + inline name form as VT/Atem/Reaktion (makePresetStore,
   // renderPresetList, wirePresetSaveForm) on all eight NAT ready screens
@@ -15896,6 +16946,12 @@
         capturing: () => (comboBalanceCaptureOriginal ? "-" : null),
         meta: (e) => [(BALANCE_MODES[e.prefs.mode] || {}).name || "", `${e.prefs.sticks === 2 ? "2 Stifte" : "1 Stift"}`, `${e.prefs.bpm}/min`],
       },
+      schulte: {
+        prefs: schultePrefs, put: (p) => { Object.assign(schultePrefs, p); normalizeSchultePrefs(schultePrefs); saveSchultePrefsToStorage(); },
+        open: (mode) => openSchulteReady(mode),
+        capturing: () => (comboSchulteCaptureOriginal ? comboSchulteCaptureMode : null),
+        meta: (e) => [modeLabel("schulte", e.mode), `Raster ${e.prefs.gridSize}×${e.prefs.gridSize}`, e.prefs.fixEnabled === false ? "ohne Fixpunkt" : "mit Fixpunkt"],
+      },
     };
     // screen id -> exercise, its start button and the mode it currently shows
     const SCREENS_NAT = {
@@ -15907,6 +16963,7 @@
       motReady: { ex: "mot", start: "motReadyStartBtn", mode: () => motReadyMode },
       motTrainingReady: { ex: "mot", start: "motTrainingStartBtn", mode: () => "training" },
       balanceReady: { ex: "balance", start: "balanceReadyStartBtn", mode: () => null },
+      schulteReady: { ex: "schulte", start: "schulteReadyStartBtn", mode: () => schulteReadyMode },
     };
     const startOf = (ex, mode) => SCREENS_NAT[Object.keys(SCREENS_NAT).find((k) => SCREENS_NAT[k].ex === ex && (mode === "training") === k.includes("Training"))].start;
     function render(sid) {
@@ -16254,6 +17311,8 @@
       startTime: performance.now(), timer: null, comboDurationTimer: null, raf: null, paused: false,
       mbg: mbgCopy(p.mbg),
     };
+    fixWrite(motState, FIX_FIELDS.std, fixRead(p, FIX_FIELDS.std));
+    renderMotFixpoint();
     els.motStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
     mbgStart("mot");
     requestWakeLock();
@@ -19003,7 +20062,16 @@
     // Richtungskreuz (Idee 70, 2026-10-08): appended last in the "Weitere"
     // group, so older picker positions and group headings stay.
     { id: "richtungskreuz", title: "Richtungskreuz", group: "extra" },
+    // Schulte-Tabelle (NAT, 2026-10-09): appended last (picker tests count
+    // positions); shown in the NAT group by its `group`.
+    { id: "schulte", title: "Schulte-Tabelle", group: "nat" },
   ];
+  // Picker and pool show the types grouped (vt, nat, extra) whatever the
+  // array order, so a type appended last still lands under its heading.
+  function cardioGuestTypesGrouped() {
+    const order = Object.keys(CARDIO_GUEST_GROUPS);
+    return CARDIO_GUEST_TYPES.slice().sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group));
+  }
   // "addon-flash" and "periph-flash" both flash a coloured digit/letter at
   // a random peripheral position (the former as a Zusatzaufgabe overlay on
   // a blank host, the latter as the actual Periphere Wahrnehmung exercise)
@@ -19049,6 +20117,7 @@
   function cardioGuestIsFlash(guestId) { return guestId === "flash"; }
   function cardioGuestIsMot(guestId) { return guestId === "mot"; }
   function cardioGuestIsBalance(guestId) { return guestId === "balance"; }
+  function cardioGuestIsSchulte(guestId) { return guestId === "schulte"; }
   function cardioGuestIsFarbfelder(guestId) { return guestId === "farbfelder"; }
   // Any type with more than one starting mode (Remember/Flash/MOT each
   // have several - training vs. fixed vs. shuffle vs. ...) needs an extra
@@ -19062,6 +20131,7 @@
     flash: [{ id: "constant", title: "Konstant" }, { id: "climb", title: "Steigend, direkt" }, { id: "climbRepeat", title: "Steigend, mit Wiederholung" }, { id: "training", title: "Trainingsmodus" }],
     mot: [{ id: "speed", title: "Tempo steigt" }, { id: "count", title: "Anzahl steigt" }, { id: "both", title: "Beides steigt" }, { id: "training", title: "Trainingsmodus" }],
     balance: Object.entries(BALANCE_MODES).map(([id, m]) => ({ id, title: m.name })),
+    schulte: Object.entries(SCHULTE_MODES).map(([id, m]) => ({ id, title: m.title })),
     farbfelder: Object.entries(FF_MODE_LABELS).map(([id, title]) => ({ id, title })),
   };
   function cardioGuestModeList(guestId) { return CARDIO_GUEST_MODE_LISTS[guestId] || null; }
@@ -19082,6 +20152,8 @@
     if (guestId === "remember") return { duration: 20, mode: "fixed", revealBaseS: REMEMBER_DIFFICULTIES.mittel.revealBaseS, revealStepS: REMEMBER_DIFFICULTIES.mittel.revealStepS, errorMode: "reset2", trainingStart: 8, trainingProgress: true, trainingPositionMode: "shuffle", markerScale: 1, numColor: "weiss", ...bg };
     if (guestId === "flash") return { duration: 20, mode: "constant", kind: "zahlen", stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS, intervalS: FLASH_DIFFICULTIES.mittel.intervalS, errorMode: "reset2", axes: PERIPH_AXIS_KEYS.slice(), useZones: false, zones: PERIPH_ZONE_KEYS.slice(), fixEnabled: true, fixChar: "", fixColor: "grau", fixSize: 1, constantCount: 3, startCount: 3, repsPerLevel: 2, trainingStart: 5, trainingProgress: true, charScale: 1, charColor: "standard", ...bg };
     if (guestId === "balance") return { ...JSON.parse(JSON.stringify(BALANCE_DEFAULTS)), duration: 20, ...bg };
+    // Schulte-Tabelle: a table takes longer than a flash - 45 s by default.
+    if (guestId === "schulte") return { duration: 45, mode: "fest", gridSize: 4, fixEnabled: true, numScale: 1, numColor: "standard", ...bg };
     // Farbfelder: the mat layout and the hand rules always come from the
     // client's own Farbfelder settings (it is the same mat on the floor).
     // Richtungskreuz: colours/numbers/Farbregel meanings come from the
@@ -19155,6 +20227,11 @@
       if (cardioGuestIsFlash(t.id)) normalizeLookPrefs("flash", p);
       if (cardioGuestIsMot(t.id)) normalizeLookPrefs("mot", p);
       if (cardioGuestIsBalance(t.id)) { const dur = p.duration; normalizeBalancePrefs(p); p.duration = dur; }
+      if (cardioGuestIsSchulte(t.id)) {
+        if (!SCHULTE_GRIDS.includes(p.gridSize)) p.gridSize = d.gridSize;
+        if (typeof p.fixEnabled !== "boolean") p.fixEnabled = d.fixEnabled;
+        normalizeLookPrefs("schulte", p);
+      }
       if (t.id === "cone-number") {
         if (!Number.isFinite(p.fields) || p.fields < CN_MIN_FIELDS || p.fields > CN_MAX_FIELDS) p.fields = d.fields;
         p.fields = Math.round(p.fields);
@@ -19273,7 +20350,7 @@
     syncCardioAddonWindowBounds();
     els.cardioAddonPoolGrid.innerHTML = "";
     let lastPoolGroup = null;
-    CARDIO_GUEST_TYPES.forEach((t) => {
+    cardioGuestTypesGrouped().forEach((t) => {
       if (t.group !== lastPoolGroup) {
         lastPoolGroup = t.group;
         const heading = document.createElement("div");
@@ -19419,6 +20496,8 @@
           `</div>`;
       } else if (cardioGuestIsBalance(t.id)) {
         html += balanceCardioFieldsHtml(t.id, cfg);
+      } else if (cardioGuestIsSchulte(t.id)) {
+        html += schulteCardioFieldsHtml(t.id, cfg);
       } else if (t.id === "richtungskreuz") {
         html += rkCardioFieldsHtml(t.id, cfg);
       } else if (cardioGuestIsFarbfelder(t.id)) {
@@ -19488,7 +20567,7 @@
             `<button class="choice${!cfg.fixEnabled ? " active" : ""}" data-type="${t.id}" data-fixtoggle="0">Ausblenden</button>` +
             `</div>` +
             (cfg.fixEnabled ? (
-              `<input type="text" maxlength="3" data-type="${t.id}" data-fixchar="1" value="${esc(cfg.fixChar)}" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen für den Fixpunkt (leer lassen für den Standardpunkt)">` +
+              `<input type="text" maxlength="12" data-type="${t.id}" data-fixchar="1" value="${esc(cfg.fixChar)}" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen für den Fixpunkt (leer lassen für den Standardpunkt)">` +
               `<div class="cardio-guest-colors" data-fixcolors="${t.id}">` +
               FIX_COLOR_LIB.map((c) => `<label><input type="radio" name="cardioGuestFix-${t.id}" data-fixtype="${t.id}" data-fixcolor="${c.key}" ${cfg.fixColor === c.key ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
               `</div>` +
@@ -19856,7 +20935,7 @@
       btn.addEventListener("click", () => { getCfg(btn.dataset.type).fixEnabled = btn.dataset.fixtoggle === "1"; select(); });
     });
     container.querySelectorAll("input[data-fixchar]").forEach((input) => {
-      input.addEventListener("input", () => { getCfg(input.dataset.type).fixChar = input.value.slice(0, 3); persist(); });
+      input.addEventListener("input", () => { getCfg(input.dataset.type).fixChar = input.value.slice(0, FIX_TEXT_MAX); persist(); });
     });
     container.querySelectorAll("input[data-lookcolor]").forEach((radio) => {
       radio.addEventListener("change", () => {
@@ -20175,6 +21254,7 @@
 
   function applyCardioGuestToState(guestId, cfg) {
     state.exercise = guestId;
+    fixWrite(state, FIX_FIELDS.vt, fixGet("vt:" + guestId));
     state.duration = cfg.duration;
     state.stimulusS = cfg.stimulusS;
     state.intervalMin = cfg.intervalMin;
@@ -20372,6 +21452,7 @@
     else if (cardioGuestIsFlash(guestId)) startFlashGame(cfg.mode, comboOpts, cfg);
     else if (cardioGuestIsMot(guestId)) startMotGame(cfg.mode, comboOpts, cfg);
     else if (cardioGuestIsBalance(guestId)) startBalanceGame(comboOpts, cfg);
+    else if (cardioGuestIsSchulte(guestId)) startSchulteGame(cfg.mode, comboOpts, schulteGuestPrefs(cfg));
     else {
       applyCardioGuestToState(realId, cfg);
       // "Hütchen sortieren" (cone-tap) is the one type here with its own
@@ -20419,7 +21500,7 @@
   function renderCardioAddonPicker() {
     els.cardioAddonPickerTypeRow.innerHTML = "";
     let lastPickerGroup = null;
-    CARDIO_GUEST_TYPES.forEach((t) => {
+    cardioGuestTypesGrouped().forEach((t) => {
       if (t.group !== lastPickerGroup) {
         lastPickerGroup = t.group;
         const heading = document.createElement("div");
@@ -20681,6 +21762,12 @@
       breath: JSON.parse(JSON.stringify(breathPrefs)),
       movement: JSON.parse(JSON.stringify(movementPrefs)),
       wimhof: JSON.parse(JSON.stringify(wimhofSettings)),
+      // NAT engines (09.10., Fabian: background jumped to 50 % in the pause):
+      // the pause controls edit these shared objects, so a block's own
+      // values go in for the block and the client's come back at the end.
+      nat: { remember: JSON.parse(JSON.stringify(rememberPrefs)), blitz: JSON.parse(JSON.stringify(blitzPrefs)),
+        flash: JSON.parse(JSON.stringify(flashPrefs)), mot: JSON.parse(JSON.stringify(motPrefs)), balance: JSON.parse(JSON.stringify(balancePrefs)),
+        schulte: JSON.parse(JSON.stringify(schultePrefs)) },
     };
     if (block.domain === "wimhof") {
       // Safety first, always: even inside a combo, Wim-Hof-style breathing
@@ -20714,6 +21801,7 @@
       program = null;
       state.exercise = block.exercise;
       const visEx = EXERCISES[block.exercise];
+      fixWrite(state, FIX_FIELDS.vt, fixGet("vt:" + block.exercise)); // a block's own periph snapshot below wins
       if (block.periph) Object.assign(state, JSON.parse(JSON.stringify(block.periph)));
       if (block.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
       if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
@@ -20743,19 +21831,34 @@
       // snapshot is merged over the current prefs so fields added later
       // still have a value.
       const snap = (own, b) => (b.prefs ? { ...JSON.parse(JSON.stringify(own)), ...JSON.parse(JSON.stringify(b.prefs)) } : undefined);
-      startRememberGame(block.mode || "fixed", { comboDurationS: block.duration ?? 60 }, snap(rememberPrefs, block));
+      const rp = snap(rememberPrefs, block);
+      comboAdoptBg(rememberPrefs, rp, syncRememberBgUI);
+      startRememberGame(block.mode || "fixed", { comboDurationS: block.duration ?? 60 }, rp);
     } else if (block.domain === "blitz") {
       const p = block.prefs ? { ...JSON.parse(JSON.stringify(blitzPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : { ...blitzPrefs };
       p.gridSize = block.gridSize ?? p.gridSize;
       p.zones = block.zones ? block.zones.slice() : (p.zones || []).slice();
       p.startCount = block.startCount ?? p.startCount;
+      comboAdoptBg(blitzPrefs, p, syncBlitzBgUI);
       startBlitzGame({ comboDurationS: block.duration ?? 60 }, p);
     } else if (block.domain === "flash") {
-      startFlashGame(block.mode || "constant", { comboDurationS: block.duration ?? 60 }, block.prefs ? { ...JSON.parse(JSON.stringify(flashPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : undefined);
+      fixWrite(flashPrefs, FIX_FIELDS.std, fixGet("flash:" + (block.mode || "constant"))); // a block's own prefs snapshot wins
+      const fp = block.prefs ? { ...JSON.parse(JSON.stringify(flashPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : undefined;
+      comboAdoptBg(flashPrefs, fp, syncFlashBgUI);
+      startFlashGame(block.mode || "constant", { comboDurationS: block.duration ?? 60 }, fp);
     } else if (block.domain === "mot") {
-      startMotGame(block.mode || "speed", { comboDurationS: block.duration ?? 60 }, block.prefs ? { ...JSON.parse(JSON.stringify(motPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : undefined);
+      fixWrite(motPrefs, FIX_FIELDS.std, fixGet("mot:" + (block.mode || "speed"))); // a block's own prefs snapshot wins
+      const mp = block.prefs ? { ...JSON.parse(JSON.stringify(motPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : undefined;
+      comboAdoptBg(motPrefs, mp, syncMotBgUI);
+      startMotGame(block.mode || "speed", { comboDurationS: block.duration ?? 60 }, mp);
     } else if (block.domain === "balance") {
-      startBalanceGame(null, balanceBlockPrefs(block));
+      const bp = balanceBlockPrefs(block);
+      comboAdoptBg(balancePrefs, bp, syncBalanceBgUI);
+      startBalanceGame(null, bp);
+    } else if (block.domain === "schulte") {
+      const sp = schulteBlockPrefs(block);
+      comboAdoptBg(schultePrefs, sp, syncSchulteBgUI);
+      startSchulteGame(block.mode || "fest", { comboDurationS: block.duration ?? 120 }, sp);
     } else if (block.domain === "cardio") {
       cardioProgram = null;
       startStandaloneCardio(block.items.map(copyCardioItem));
@@ -21191,7 +22294,23 @@
     Object.assign(breathPrefs, comboPrefsBackup.breath);
     Object.assign(movementPrefs, comboPrefsBackup.movement);
     Object.assign(wimhofSettings, comboPrefsBackup.wimhof);
+    const nat = comboPrefsBackup.nat;
     comboPrefsBackup = null;
+    if (nat) {
+      [[rememberPrefs, nat.remember, saveRememberPrefsToStorage, syncRememberBgUI], [blitzPrefs, nat.blitz, saveBlitzPrefsToStorage, syncBlitzBgUI],
+        [flashPrefs, nat.flash, saveFlashPrefsToStorage, syncFlashBgUI], [motPrefs, nat.mot, saveMotPrefsToStorage, syncMotBgUI],
+        [balancePrefs, nat.balance, saveBalancePrefsToStorage, syncBalanceBgUI], [schultePrefs, nat.schulte, saveSchultePrefsToStorage, syncSchulteBgUI]].forEach(([obj, old, save, sync]) => {
+        Object.assign(obj, old); save(); try { sync(); } catch (e) {}
+      });
+    }
+  }
+  // The block's background goes into the shared prefs, so the pause colour
+  // picker starts from what is on screen (no 0 % -> 50 % jump) and edits
+  // the stage of this run; restoreComboPrefs() puts the client's back.
+  function comboAdoptBg(obj, p, sync) {
+    if (!p || p === obj) return;
+    ["bgColorKey", "bgIntensity", "bgCustom"].forEach((k) => { if (p[k] !== undefined) obj[k] = p[k]; });
+    try { sync(); } catch (e) {}
   }
   function finishComboProgram() {
     resumeClear();
@@ -21354,6 +22473,7 @@
   const FB_HINT_STARTS = {
     rememberReadyStartBtn: ["remember", () => rememberPrefs], rememberTrainingStartBtn: ["remember", () => rememberPrefs],
     blitzReadyStartBtn: ["blitz", () => blitzPrefs], motReadyStartBtn: ["mot", () => motPrefs], motTrainingStartBtn: ["mot", () => motPrefs],
+    schulteReadyStartBtn: ["schulte", () => schultePrefs],
   };
   const FB_OK_HEX = "#2e7d32", FB_BAD_HEX = "#d32f2f";
   let fbHintBypass = false;
@@ -21383,7 +22503,7 @@
   }, true);
   const LEADIN_START_IDS = ["movementStartBtn", "movementProgramStartBtn", "breathStartBtn", "breathProgramStartBtn",
     "rememberReadyStartBtn", "rememberTrainingStartBtn", "blitzReadyStartBtn", "flashReadyStartBtn", "flashTrainingStartBtn",
-    "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn", "optoStartBtn", "neuroStartBtn",
+    "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "schulteReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn", "optoStartBtn", "neuroStartBtn",
     "wimhofStartBtn"];
   let leadInBypass = false, leadInTimer = null;
   function stopLeadIn() { clearTimeout(leadInTimer); leadInTimer = null; $("leadIn").hidden = true; }
@@ -21466,6 +22586,12 @@
     // Mittel/Schwer); streaks are kept per mode. Only single tap runs count.
     farbfelder: { title: "Farbfelder", where: "Tempo", diffs: VT_TEMPO_DIFFS, bucket: () => vtTempoBucket(),
       apply: (d) => { state.stimulusS = d.stimulusS; state.intervalMin = d.intervalMin; state.intervalMax = d.intervalMax; savePrefs(); syncTempoUI(); } },
+    // Schulte-Tabelle (09.10.): the ladder is the grid size 3×3 → 6×6
+    // (own order); streaks per mode and grid.
+    schulte: { title: "Schulte-Tabelle", where: "Rastergröße", order: ["g3", "g4", "g5", "g6"],
+      diffs: Object.fromEntries(SCHULTE_GRIDS.map((g) => ["g" + g, { title: `${g}×${g}`, grid: g }])),
+      bucket: () => "g" + schultePrefs.gridSize,
+      apply: (d) => { schultePrefs.gridSize = d.grid; saveSchultePrefsToStorage(); } },
   };
   // What counts as a very good run, per exercise and mode.
   function levelRunIsGood(ex, mode, st) {
@@ -21476,6 +22602,10 @@
     // Farbfelder · Antippen: Abfolge = every round right (at least 2 rounds),
     // else ≥ 90 % right with at least 5 fields shown.
     if (ex === "farbfelder") return mode === "abfolge" ? (st.rounds >= 2 && st.roundsOk === st.rounds) : (st.total >= 5 && st.hits / st.total >= 0.9);
+    // Schulte-Tabelle: at most one wrong tap and a quick pace per number
+    // (assumed thresholds, docs/notes/38): Fest 1,2 s, Wechselnd 1,6 s,
+    // Aus der Erinnerung 2,0 s per number.
+    if (ex === "schulte") return st.errors <= 1 && st.lastMs / Math.max(1, st.total) <= ({ fest: 1200, wechselnd: 1600, erinnerung: 2000 }[mode] || 1200);
     return false;
   }
   function levelSuggestAfter(ex, mode, st, panel, beforeEl) {
@@ -21484,7 +22614,7 @@
     if (!def || mode === "training") return;
     if (hoClientRunActive() || tmTry()) return; // client and test runs never change this device's levels (docs/notes/36)
     const diff = def.bucket();
-    const order = ["leicht", "mittel", "schwer"];
+    const order = def.order || ["leicht", "mittel", "schwer"];
     if (!order.includes(diff)) return;
     const s = readJSON(LEVEL_SUGGEST_KEY, {});
     s.streaks = s.streaks || {}; s.muted = s.muted || {};
@@ -28030,6 +29160,48 @@
       try { b.click(); } finally { gearStartBypass = false; }
     }, { title: "Hilfsmittel", yes: "Trotzdem starten", no: "Abbrechen" });
   }, true);
+  // Erste graue Übung (Fabian 09.10.): the first time a client opens an
+  // exercise that is greyed for missing equipment, one sheet asks "Hast du
+  // …?" and offers the other Hilfsmittel to tick in the same go. Once only
+  // (fwmc-gear-first-v1); after that the grey cards behave as before.
+  const GEAR_FIRST_KEY = "fwmc-gear-first-v1";
+  function gearFirstAsk(key) {
+    const miss = gearMissing(key);
+    if (!miss.length) return;
+    writeJSON(GEAR_FIRST_KEY, true);
+    const sheet = $("gearFirstSheet");
+    $("gearFirstTitle").textContent = `Hast du ${gearMissingText(key)}?`;
+    const o = gearOwnedRaw();
+    $("gearFirstMore").innerHTML = GEAR_ITEMS.filter((g) => !g.test || isTestUnlocked()).filter((g) => !miss.includes(g.id)).map((g) =>
+      `<label class="checkbox-row tap-row"><input type="checkbox" data-gear-have="${g.id}"${o[g.id] ? " checked" : ""}> ${esc(g.name)}</label>`).join("");
+    const close = () => { sheet.hidden = true; };
+    const what = gearMissingText(key);
+    const answer = (yes) => {
+      if (yes) gearSetOwned(miss, true);
+      setActive($("gearFirstYesBtn"), yes);
+      setActive($("gearFirstNoBtn"), !yes);
+      $("gearFirstAnswer").hidden = false;
+      $("gearFirstAnswer").textContent = yes ? `${what}: jetzt unter Meine Hilfsmittel abgehakt.` : "Kein Problem. Du kannst die Übung trotzdem starten.";
+    };
+    $("gearFirstYesBtn").onclick = () => answer(true);
+    $("gearFirstNoBtn").onclick = () => answer(false);
+    setActive($("gearFirstYesBtn"), false);
+    setActive($("gearFirstNoBtn"), false);
+    $("gearFirstDoneBtn").onclick = close;
+    sheet.onclick = (e) => { if (e.target === sheet) close(); };
+    $("gearFirstAnswer").hidden = true;
+    sheet.hidden = false;
+  }
+  document.addEventListener("click", (e) => {
+    if (!gearModuleReady || gearAllOwned() || readJSON(GEAR_FIRST_KEY, false)) return;
+    if (navigator.webdriver && !readJSON("fwmc-test-gearfirst", false)) return;
+    const card = e.target && e.target.closest ? e.target.closest(".gear-missing") : null;
+    if (!card || card.classList.contains("start-btn")) return;
+    const hit = gearCards().find((c) => c.el === card);
+    if (!hit) return;
+    const key = card.classList.contains("excard") ? gearKeyOfExercise(hit.key) : hit.key;
+    setTimeout(() => gearFirstAsk(key), 350);
+  });
   // Back on a ready screen: label again (after "Trotzdem starten").
   document.querySelectorAll(".screen").forEach((scr) => {
     if (!scr.querySelector(".hilfsmittel-note")) return;
@@ -33871,7 +35043,7 @@
   // area tile, but a plan entry kind (what "combo:<savedId>").
   AREA_BY_KEY.combo = { key: "combo", label: "Kombi-Programm", short: "Kombi", color: "#007094", screen: "comboScreen" };
   const AREA_TO_SECTION = { visual: "visual", breath: "breath", movement: "movement", workout: "workout", cardio: "cardio", nat: "nat", test: "test", free: "free", activation: "activation" };
-  const NAT_SUBS = [["peripher", "Periphere Wahrnehmung"], ["remember", "Positionen merken"], ["blitz", "Blitz-Raster"], ["flash", "Flash-Speicher-Test"], ["mot", "Objektverfolgung (MOT)"], ["balance", "Gleichgewicht"]];
+  const NAT_SUBS = [["peripher", "Periphere Wahrnehmung"], ["remember", "Positionen merken"], ["blitz", "Blitz-Raster"], ["flash", "Flash-Speicher-Test"], ["mot", "Objektverfolgung (MOT)"], ["balance", "Gleichgewicht"], ["schulte", "Schulte-Tabelle"]];
   const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
   const WD_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
   const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -34059,7 +35231,7 @@
     if (k.startsWith("movement")) return "movement";
     if (k.startsWith("workout")) return "workout";
     if (k.startsWith("cardio")) return "cardio";
-    if (["remember", "blitz", "flash", "mot", "balance"].includes(k)) return "nat";
+    if (["remember", "blitz", "flash", "mot", "balance", "schulte"].includes(k)) return "nat";
     if (k === "exercise") return e.exId === "periph-flash" ? "nat" : "visual";
     if (k === "program") return "visual";
     if (k === "combo") return "combo";
@@ -34094,11 +35266,23 @@
     (plan.extras[date] || []).forEach((e) => out.push({ ...e, extra: true, noScore: false }));
     out.sort((a, b) => (timeToMin(a.time) ?? 9999) - (timeToMin(b.time) ?? 9999));
     const manual = plan.done[date] || [];
-    const hist = (historyList || loadHistory()).filter((h) => !h.aborted && dStr(new Date(h.ts)) === date).map(historyAreaOf);
+    const hist = (historyList || loadHistory()).filter((h) => !h.aborted && dStr(new Date(h.ts)) === date);
     out.forEach((o) => { o.manual = manual.includes(o.id); o.done = o.manual; });
-    out.forEach((o) => {
+    // Fabian 09.10.: a plan entry naming one Eigenes Training / Neuro exercise
+    // ("free:<id>", "neuro:<ex>") is ticked only by exactly that training
+    // (also when it came by QR from the trainer); everything else by area.
+    // Specific entries pick first, so a general one never takes their run.
+    const fits = (o, h) => {
+      if (historyAreaOf(h) !== o.area) return false;
+      const w = o.what || "";
+      if (w.startsWith("free:")) return h.freeId === w.slice(5);
+      if (w.startsWith("neuro:")) return h.neuroEx === w.slice(6);
+      return true;
+    };
+    const specific = (o) => /^(free|neuro):./.test(o.what || "");
+    out.filter(specific).concat(out.filter((o) => !specific(o))).forEach((o) => {
       if (o.done) return;
-      const i = hist.indexOf(o.area);
+      const i = hist.findIndex((h) => fits(o, h));
       if (i >= 0) { hist.splice(i, 1); o.done = true; o.auto = true; }
     });
     return out;
@@ -34375,7 +35559,7 @@
   function continueFromHistory(h) {
     const area = historyAreaOf(h);
     if (h.kind === "exercise" && h.exId) { startEntry({ area: area === "nat" ? "nat" : "visual", what: area === "nat" ? "nat:peripher" : "ex:" + h.exId }); return; }
-    const natSub = { remember: "remember", blitz: "blitz", flash: "flash", mot: "mot", balance: "balance" }[h.kind];
+    const natSub = { remember: "remember", blitz: "blitz", flash: "flash", mot: "mot", balance: "balance", schulte: "schulte" }[h.kind];
     if (natSub) { startEntry({ area: "nat", what: "nat:" + natSub }); return; }
     if (h.kind === "free" && h.freeId && freeFind(h.freeId)) { startEntry({ area: "free", what: "free:" + h.freeId }); return; }
     if (h.kind === "optodrum") { startEntry({ area: "activation", what: "act:optodrum" }); return; }
@@ -34495,7 +35679,7 @@
     const open = occ.filter((o) => !o.done);
     const last = hist.find((h) => !h.aborted) || hist[0];
     const hint = "Nutze gerne die bereitstehenden Trainings oder gestalte dir eigene. Wenn du Hilfe brauchst, nimm gerne Kontakt zu deinem Trainer auf.";
-    let html;
+    let html, flat = false;
     const resume = resumeGet();
     if (open.length) {
       const e = open[0];
@@ -34516,17 +35700,22 @@
         <div class="today-resume-actions"><button class="text-link small" type="button" id="todayResumeRestartBtn">Von vorne</button><button class="text-link small danger" type="button" id="todayResumeDropBtn">Verwerfen</button></div>`;
     } else {
       const doneAll = occ.length > 0;
-      const lastRow = last ? `<p class="today-main-meta">Zuletzt: ${esc(last.title)} · ${esc(longDate(dStr(new Date(last.ts))))}</p>
-        <button class="start-btn" type="button" id="todayContinueBtn">Nochmal trainieren</button>` : "";
       const starter = starterStage(hist);
-      html = `<div class="today-main-kicker">${doneAll ? "Heute alles geschafft" : last ? "Zuletzt trainiert" : "Los geht’s"}</div>
+      if (!doneAll && last && starter !== "new") {
+        // Entwurf E (Fabian 09.10.): one flat row "Zuletzt · Mittwoch", name, "Nochmal".
+        flat = true;
+        html = `<div class="today-last"><div class="today-last-text"><div class="today-main-kicker">Zuletzt · ${esc(lastDayWord(last.ts))}</div>
+          <h2 class="today-last-title">${esc(last.title)}</h2></div>
+          <button class="today-last-btn" type="button" id="todayContinueBtn">Nochmal</button></div>`;
+      } else html = `<div class="today-main-kicker">${doneAll ? "Heute alles geschafft" : last ? "Zuletzt trainiert" : "Los geht’s"}</div>
         <h2 class="today-main-title">${doneAll ? "Stark, dein Training für heute ist erledigt." : last ? esc(last.title) : "Schön, dass du da bist."}</h2>
-        ${doneAll ? "" : lastRow}
         ${starter === "new" ? starterAskHtml() : `<p class="today-main-hint">${doneAll ? "Wenn du magst, findest du unter „Training“ weitere Übungen." : (occ.length ? "" : "Für heute ist nichts geplant. ") + hint}</p>`}
-        ${starter && !doneAll ? starterRowHtml() : ""}`;
+        ${starter === "new" && !doneAll ? starterRowHtml() : ""}`;
     }
     els.todayMain.innerHTML = html;
-    wireStarter();
+    els.todayMain.classList.toggle("is-flat", flat);
+    wireStarter(els.todayMain);
+    renderTodayExtras(hist);
     applyNewcomerLayout(hist);
     const startBtn = els.todayMain.querySelector("[data-today-start]");
     if (startBtn) startBtn.addEventListener("click", () => { const e = open.find((o) => o.id === startBtn.dataset.todayStart); if (e) startEntry(e); });
@@ -34546,22 +35735,36 @@
   // The row stays until about 3 trainings or a plan/code (soft change);
   // Fortschritt shows only after the first training, the week moves below
   // the code card while nothing is there yet. Nothing leaves the device. ----
+  const PLAN_REQUEST_URL = "https://www.fabian-westermann.de/#Kontakt"; // "Noch keinen Trainer?" (code cards, Heute)
   const STARTER_KEY = "fwmc-start-v1"; // { who: "trainer"|"allein", goal }
+  // Tagesform (Fabian 09.10.: replaces the "Neu für dich" tile so Heute never
+  // shows two exercises): { "YYYY-MM-DD": { v: 1 müde | 2 okay | 3 fit, at } },
+  // only on this device, about one year kept; Fortschritt shows it back.
+  const MOOD_KEY = "fwmc-mood-v1";
+  const MOODS = [{ v: 1, label: "müde" }, { v: 2, label: "okay" }, { v: 3, label: "fit" }];
   const openNatStarter = (ex) => () => {
     goArea("nat");
     if (natModesOn) openNatExercise(ex);
     else { const tab = document.querySelector(`.sub-tab[data-nat-sub="${ex}"]`); if (tab) tab.click(); }
   };
   const STARTERS = {
-    box: { area: "breath", title: "Box-Atmung", desc: "Ein, halten, aus, halten. Bringt dich zur Ruhe.", open: () => { goArea("breath"); openBreathReady("box"); } },
-    coherent: { area: "breath", title: "Ruhige Atmung", desc: "Gleichmäßig und langsam atmen.", open: () => { goArea("breath"); openBreathReady("coherent"); } },
-    reset: { area: "breath", title: "Feierabend-Reset", desc: "Zwei Atemübungen zum Runterkommen.", open: () => { goArea("breath"); openProgramIntro("atem-reset", BREATH_CODE_CTX); } },
-    vt: { area: "visual", title: "Farbe & Seite", desc: "Schnell auf Farben reagieren.", open: () => { goArea("visual"); const c = document.querySelector('#home .excard[data-exercise="vt-color"]'); if (c) c.click(); } },
-    remember: { area: "nat", title: "Positionen merken", desc: "Zahlen merken und der Reihe nach antippen.", open: openNatStarter("remember") },
-    blitz: { area: "nat", title: "Blitz-Raster", desc: "Aufleuchtende Felder merken.", open: openNatStarter("blitz") },
-    peripher: { area: "nat", title: "Periphere Wahrnehmung", desc: "Den Blick weiten.", open: openNatStarter("peripher") },
-    balance: { area: "nat", title: "Gleichgewicht", desc: "Stand und Blick im Takt.", open: openNatStarter("balance") },
-    kraft: { area: "workout", title: "Ganzkörper-Einstieg", desc: "Drei Kraftübungen und ein kurzes Intervall.", open: () => { goArea("workout"); openProgramIntro("workout-start", WORKOUT_CODE_CTX); } },
+    box: { area: "breath", title: "Box-Atmung", desc: "Ein, halten, aus, halten. Bringt dich zur Ruhe.", open: () => { goArea("breath"); openBreathReady("box"); },
+      done: (h) => h.kind === "breath" && h.title === "Box-Atmung" },
+    coherent: { area: "breath", title: "Ruhige Atmung", desc: "Gleichmäßig und langsam atmen.", open: () => { goArea("breath"); openBreathReady("coherent"); },
+      done: (h) => h.kind === "breath" && String(h.title).startsWith("Ruhige Atmung") },
+    reset: { area: "breath", title: "Feierabend-Reset", desc: "Zwei Atemübungen zum Runterkommen.", open: () => { goArea("breath"); openProgramIntro("atem-reset", BREATH_CODE_CTX); },
+      done: (h) => h.progKey === "atem-reset" },
+    vt: { area: "visual", title: "Farbe & Seite", desc: "Schnell auf Farben reagieren.", open: () => { goArea("visual"); const c = document.querySelector('#home .excard[data-exercise="vt-color"]'); if (c) c.click(); },
+      done: (h) => h.kind === "exercise" && h.exId === "vt-color" },
+    remember: { area: "nat", title: "Positionen merken", desc: "Zahlen merken und der Reihe nach antippen.", open: openNatStarter("remember"), done: (h) => h.kind === "remember" },
+    blitz: { area: "nat", title: "Blitz-Raster", desc: "Aufleuchtende Felder merken.", open: openNatStarter("blitz"), done: (h) => h.kind === "blitz" },
+    peripher: { area: "nat", title: "Periphere Wahrnehmung", desc: "Den Blick weiten.", open: openNatStarter("peripher"), done: (h) => h.kind === "exercise" && h.exId === "periph-flash" },
+    balance: { area: "nat", title: "Gleichgewicht", desc: "Stand und Blick im Takt.", open: openNatStarter("balance"), done: (h) => h.kind === "balance" },
+    kraft: { area: "workout", title: "Ganzkörper-Einstieg", desc: "Drei Kraftübungen und ein kurzes Intervall.", open: () => { goArea("workout"); openProgramIntro("workout-start", WORKOUT_CODE_CTX); },
+      done: (h) => h.progKey === "workout-start" },
+    flash: { area: "nat", title: "Flash-Speicher-Test", desc: "Zeichen kurz sehen und merken.", open: openNatStarter("flash"), done: (h) => h.kind === "flash" },
+    mot: { area: "nat", title: "Objektverfolgung (MOT)", desc: "Mehrere Punkte zugleich im Blick behalten.", open: openNatStarter("mot"), done: (h) => h.kind === "mot" },
+    schulte: { area: "nat", title: "Schulte-Tabelle", desc: "Zahlen der Reihe nach finden.", open: openNatStarter("schulte"), done: (h) => h.kind === "schulte" },
   };
   const STARTER_GOALS = [
     { key: "ruhe", label: "Ruhe", order: ["box", "coherent", "reset", "balance", "peripher", "vt"] },
@@ -34573,8 +35776,16 @@
   function starterPrefs() { const p = readJSON(STARTER_KEY, {}); return p && typeof p === "object" ? p : {}; }
   function starterDone(hist) { return hist.filter((h) => !h.aborted).length; }
   // "new" = nothing in the app yet, "soft" = first trainings, null = regular Heute.
+  // Mit Trainer = a training code (program, plan, Kombi, free-template, ...)
+  // or a run the trainer handed over by QR; unlock codes never count.
+  // Old code-history entries without a type count (they were training codes).
+  const UNLOCK_CODE_TYPES = ["feature-unlock", "neuro-unlock"];
+  function hasTrainerCode(hist) {
+    if (loadCodeHistory().some((c) => !UNLOCK_CODE_TYPES.includes(c.type))) return true;
+    return (hist || loadHistory()).some((h) => h.trainer);
+  }
   function starterStage(hist) {
-    if (planHasEntries() || loadCodeHistory().length) return null;
+    if (planHasEntries() || hasTrainerCode(hist)) return null;
     const n = starterDone(hist);
     return n === 0 ? "new" : n < 3 ? "soft" : null;
   }
@@ -34600,15 +35811,16 @@
         return `<button class="starter-card" type="button" role="listitem" data-starter="${k}" style="--area:var(--area-${a.key});--area-ink:var(--area-${a.key}-ink)"><span class="starter-area">${esc(a.short)}</span><strong>${esc(it.title)}</strong><span class="starter-desc">${esc(it.desc)}</span></button>`;
       }).join("")}</div>`;
   }
-  function wireStarter() {
-    const m = els.todayMain;
-    const save = (patch) => { writeJSON(STARTER_KEY, { ...starterPrefs(), ...patch }); renderToday(); };
+  // Kunden-/Test-Modus: the client's answers are never written (09.10.).
+  function starterSave(patch) { if (tmMode() === "own") writeJSON(STARTER_KEY, { ...starterPrefs(), ...patch }); }
+  function wireStarter(m) {
+    const save = (patch) => { starterSave(patch); renderToday(); };
     m.querySelectorAll("[data-starter-who]").forEach((b) => b.addEventListener("click", () => {
       save({ who: b.dataset.starterWho });
       if (b.dataset.starterWho === "trainer") openTodayCodeCard();
     }));
-    m.querySelectorAll("[data-starter-goal]").forEach((b) => b.addEventListener("click", () => save({ goal: b.dataset.starterGoal })));
-    m.querySelectorAll("[data-starter-reset]").forEach((b) => b.addEventListener("click", () => { writeJSON(STARTER_KEY, { who: "allein" }); renderToday(); }));
+    m.querySelectorAll("[data-starter-goal]").forEach((b) => b.addEventListener("click", () => { goalPickOpen = false; save({ goal: b.dataset.starterGoal, goalAt: todayStr() }); }));
+    m.querySelectorAll("[data-starter-reset]").forEach((b) => b.addEventListener("click", () => { if (tmMode() === "own") writeJSON(STARTER_KEY, { who: "allein" }); renderToday(); }));
     m.querySelectorAll("[data-starter-code]").forEach((b) => b.addEventListener("click", openTodayCodeCard));
     m.querySelectorAll("[data-starter]").forEach((b) => b.addEventListener("click", () => { const it = STARTERS[b.dataset.starter]; if (it) it.open(); }));
   }
@@ -34621,6 +35833,236 @@
     const inp = card.querySelector("input");
     if (inp) setTimeout(() => { try { inp.focus({ preventScroll: true }); } catch (e) {} }, 350);
   }
+  // ---- Heute Entwurf E (Fabian 09.10.): "Zuletzt" row, two half tiles
+  // (Nichtraucher-Pause + "Neu für dich" / Bestleistung), the trainer
+  // question as a slim line until answered, and the "Für dein Ziel" row
+  // under the week. Nothing animates; nothing leaves the device. ----
+  let goalPickOpen = false;
+  const GOAL_CHECK_DAYS = 42; // "Passt dein Ziel noch?" after 6 weeks (assumption, Fabian may change)
+  function lastDayWord(ts) {
+    const d = dStr(new Date(ts)), n = dDiff(d, todayStr());
+    if (n <= 0) return "heute";
+    if (n === 1) return "gestern";
+    if (n < 7) return new Date(ts).toLocaleDateString("de-DE", { weekday: "long" });
+    return shortDate(d);
+  }
+  function todayDayNum() { return Math.floor(dParse(todayStr()).getTime() / 86400000); }
+  function starterPool(goal) {
+    const g = STARTER_GOALS.find((x) => x.key === goal);
+    const first = g ? g.order : STARTER_DEFAULT;
+    return first.concat(Object.keys(STARTERS).filter((k) => !first.includes(k)));
+  }
+  function starterTried(k, hist) { const it = STARTERS[k]; return !!(it && it.done && hist.some((h) => !h.aborted && it.done(h))); }
+  function rotList(list, n) { if (!list.length) return list; const i = ((n % list.length) + list.length) % list.length; return list.slice(i).concat(list.slice(0, i)); }
+  // The never-done exercise of the tile: one of the first three of the goal's
+  // order, changing by day, so the tile does not show the same thing forever.
+  function newTilePick(hist) {
+    const fresh = starterPool(starterPrefs().goal).filter((k) => !starterTried(k, hist));
+    if (!fresh.length) return null;
+    return fresh[todayDayNum() % Math.min(3, fresh.length)];
+  }
+  function maxNumIn(o) { let m = 0; const walk = (v) => { if (typeof v === "number" && isFinite(v)) m = Math.max(m, v); else if (v && typeof v === "object") Object.values(v).forEach(walk); }; walk(o); return m; }
+  // Everything tried: one best value to beat (rotating by day).
+  function bestTilePick() {
+    const out = [];
+    const r = maxNumIn(readJSON(REMEMBER_BEST_KEY, {}));
+    if (r) out.push({ k: "remember", line: `${r} Zahlen geschafft. Heute die ${r + 1}?` });
+    const b = maxNumIn(readJSON(BLITZ_BEST_KEY, {}));
+    if (b) out.push({ k: "blitz", line: `Stufe ${b} geschafft. Heute Stufe ${b + 1}?` });
+    const fb = readJSON(FLASH_BEST_KEY, {}) || {};
+    const f = maxNumIn({ a: fb.climb, b: fb.climbRepeat, c: fb.training });
+    if (f) out.push({ k: "flash", line: `${f} Zeichen geschafft. Heute ${f + 1}?` });
+    const mb = readJSON(MOT_BEST_KEY, {}) || {};
+    const m = maxNumIn({ a: mb.count, b: mb.both, c: mb.training });
+    if (m) out.push({ k: "mot", line: `Stufe ${m} geschafft. Heute Stufe ${m + 1}?` });
+    return out.length ? out[todayDayNum() % out.length] : null;
+  }
+  function starterCardHtml(k, compact) {
+    const it = STARTERS[k], a = AREA_BY_KEY[it.area];
+    return `<button class="starter-card${compact ? " is-compact" : ""}" type="button" role="listitem" data-starter="${k}" style="--area:var(--area-${a.key});--area-ink:var(--area-${a.key}-ink)"><span class="starter-area">${esc(a.short)}</span><strong>${esc(it.title)}</strong>${compact ? "" : `<span class="starter-desc">${esc(it.desc)}</span>`}</button>`;
+  }
+  function renderTodayExtras(hist) {
+    const own = tmMode() === "own";
+    const stage = starterStage(hist);
+    const p = starterPrefs();
+    const trainer = hasTrainerCode(hist);
+    // Half tile "Tagesform" (never on the very first visit: the starter row is there).
+    const tile = $("todayNewTile");
+    const tileKey = null;
+    renderMoodTile(tile, own && stage !== "new");
+    $("todayPair").classList.toggle("single", tile.hidden);
+    wireStarter(tile);
+    // Trainer question: stays until answered, as one slim line once there is a history.
+    const ask = $("todayAsk");
+    ask.hidden = !(own && stage !== "new" && !p.who && !trainer);
+    ask.innerHTML = ask.hidden ? "" : `<p class="today-ask-q">Trainierst du mit einem Trainer?</p>
+      <div class="today-ask-btns"><button class="choice" type="button" data-starter-who="trainer">Mit Trainer</button><button class="choice" type="button" data-starter-who="allein">Allein</button></div>`;
+    wireStarter(ask);
+    renderGoalRow(hist, stage, p, trainer, tileKey, own);
+  }
+  function moodLoad() { const m = readJSON(MOOD_KEY, {}); return m && typeof m === "object" && !Array.isArray(m) ? m : {}; }
+  function moodSet(v) {
+    if (tmMode() !== "own") return;
+    const all = moodLoad(), today = todayStr(), cut = dAdd(today, -400);
+    Object.keys(all).forEach((k) => { if (k < cut) delete all[k]; });
+    all[today] = { v, at: Date.now() };
+    writeJSON(MOOD_KEY, all);
+  }
+  // Vorher und nachher (Fabian 09.10.): when today's Tagesform is set, a
+  // finished (not aborted) training asks once "Und wie geht es dir jetzt?"
+  // in its done panel. Stored on the history entry (moodBefore/moodAfter),
+  // evaluated under Fortschritt. Own mode only, never sent anywhere.
+  function moodAfterOffer(panel) {
+    const old = panel.querySelector(".mood-after");
+    if (old) old.remove();
+    panel.querySelectorAll('.rating[data-mood-hid="1"]').forEach((r) => { r.hidden = false; delete r.dataset.moodHid; });
+    if (tmMode() !== "own") return;
+    const chk = panel.querySelector(".done-check");
+    if (!chk || chk.hidden || panel.classList.contains("aborted") || getComputedStyle(chk).display === "none") return;
+    const before = moodLoad()[todayStr()];
+    if (!before) return;
+    const h = loadHistory()[0];
+    if (!h || h.aborted || h.moodAfter || Date.now() - new Date(h.ts).getTime() > 15000) return;
+    const box = document.createElement("div");
+    box.className = "rating mood-after";
+    // One question per panel (Prüfer 09.10.): the run's own 1-5 rating steps aside.
+    panel.querySelectorAll(".rating:not(.mood-after)").forEach((r) => { r.hidden = true; r.dataset.moodHid = "1"; });
+    box.innerHTML = `<div class="rating-q">Und wie geht es dir jetzt?</div><div class="rating-row mood-after-btns">${MOODS.map((m) => `<button type="button" data-mood-after="${m.v}">${m.label}</button>`).join("")}</div><div class="rating-thanks" hidden></div>`;
+    box.querySelectorAll("[data-mood-after]").forEach((b) => b.addEventListener("click", () => {
+      const v = Number(b.dataset.moodAfter);
+      const list = loadHistory();
+      const it = list.find((e) => e.id === h.id);
+      if (it) { it.moodBefore = before.v; it.moodAfter = v; writeJSON(HISTORY_KEY, list); }
+      const d = v - before.v;
+      box.querySelectorAll("[data-mood-after]").forEach((x) => setActive(x, x === b));
+      const t = box.querySelector(".rating-thanks");
+      t.hidden = false;
+      t.textContent = `Vorher ${moodLabel(before.v)}, jetzt ${moodLabel(v)}. ` + (d > 0 ? "Schön, dass es dir jetzt besser geht." : "Danke, das hilft deinem Überblick.");
+    }));
+    const sum = panel.querySelector(".done-summary");
+    if (sum && sum.parentNode) sum.parentNode.insertBefore(box, sum.nextSibling); else panel.appendChild(box);
+  }
+  function moodLabel(v) { const m = MOODS.find((x) => x.v === v); return m ? m.label : ""; }
+  let moodEdit = false;
+  function renderMoodTile(tile, show) {
+    tile.hidden = !show;
+    if (!show) { tile.innerHTML = ""; return; }
+    tile.style.setProperty("--area", "var(--brand)");
+    tile.style.setProperty("--area-ink", "var(--brand)");
+    tile.classList.add("today-mood");
+    const cur = moodLoad()[todayStr()];
+    if (!cur || moodEdit) {
+      tile.classList.remove("is-set");
+      tile.innerHTML = `<div class="today-main-kicker today-new-kicker">Tagesform</div>
+        <h2 class="today-tile-title" id="todayMoodQ">Wie fühlst du dich heute?</h2>
+        <div class="today-mood-btns" role="group" aria-labelledby="todayMoodQ">${MOODS.map((m) =>
+          `<button class="choice${cur && cur.v === m.v ? " active" : ""}" type="button" data-mood="${m.v}">${m.label}</button>`).join("")}</div>`;
+      tile.querySelectorAll("[data-mood]").forEach((b) => b.addEventListener("click", () => {
+        moodSet(Number(b.dataset.mood)); moodEdit = false; renderToday();
+      }));
+      return;
+    }
+    // Answered today: the week's status instead (same numbers as Fortschritt).
+    const c = progressSummary(loadProgress()).cur;
+    const left = Math.max(0, c.goal - c.planDone);
+    const sub = c.pause ? "Diese Woche ist Pause." : !c.goal ? "diese Woche" : left ? `Trainings diese Woche. Noch ${left} bis zum Ziel.` : "Trainings diese Woche. Ziel erreicht, stark!";
+    tile.classList.add("is-set");
+    tile.innerHTML = `<div class="today-main-kicker today-new-kicker">Heute ${esc(moodLabel(cur.v))} <button class="text-link small today-mood-change" type="button" id="todayMoodChangeBtn">ändern</button></div>
+      <h2 class="today-tile-title today-mood-week">${c.goal && !c.pause ? `${c.planDone} von ${c.goal}` : `${c.n} ${c.n === 1 ? "Training" : "Trainings"}`}</h2>
+      ${c.goal && !c.pause ? `<div class="progress-bar today-mood-bar"><span style="width:${Math.min(100, Math.round((c.planDone / c.goal) * 100))}%"></span></div>` : ""}
+      <p class="today-tile-sub">${esc(sub)}</p>
+      <button class="text-link today-tile-go" type="button" id="todayMoodProgressBtn">Fortschritt &rarr;</button>`;
+    $("todayMoodChangeBtn").addEventListener("click", () => { moodEdit = true; renderToday(); });
+    $("todayMoodProgressBtn").addEventListener("click", () => showScreen("progressScreen"));
+  }
+  // Fortschritt › Tagesform: the last 4 weeks as dots, and once there is
+  // enough (5+ days on two of the three levels) one honest sentence on how
+  // often the client trained on such days. Nothing is guessed beyond that.
+  function renderMoodProgress(hist) {
+    const box = $("progressMood");
+    if (!box) return;
+    const all = moodLoad(), today = todayStr();
+    const keys = Object.keys(all).filter((k) => all[k] && MOODS.some((m) => m.v === all[k].v));
+    const grp = box.closest(".group");
+    if (grp) grp.hidden = !keys.length;
+    if (!keys.length) { box.innerHTML = ""; if ($("progressMoodAfter")) $("progressMoodAfter").innerHTML = ""; return; }
+    const trainedDays = new Set(hist.filter((h) => !h.aborted).map((h) => dStr(new Date(h.ts))));
+    const start = dAdd(mondayOf(today), -21);
+    const cells = [];
+    for (let i = 0; i < 28; i++) {
+      const d = dAdd(start, i), e = all[d];
+      const lab = e ? moodLabel(e.v) : "";
+      cells.push(`<span class="mood-cell${e ? " m" + e.v : ""}${trainedDays.has(d) ? " trained" : ""}${d > today ? " future" : ""}${d === today ? " today" : ""}" title="${shortDate(d)}${lab ? ": " + lab : ""}${trainedDays.has(d) ? ", trainiert" : ""}"></span>`);
+    }
+    const stats = MOODS.map((m) => {
+      const days = keys.filter((k) => all[k].v === m.v);
+      return { m, n: days.length, t: days.filter((k) => trainedDays.has(k)).length };
+    });
+    const enough = stats.filter((x) => x.n >= 5);
+    const left = 10 - keys.length;
+    const sentence = enough.length >= 2
+      ? enough.map((x, i) => `${i ? "an" : "An"} „${x.m.label}“-Tagen hast du in ${Math.round((x.t / x.n) * 100)} % trainiert`).join(", ") + "."
+      : left > 0 ? `Noch ${left} ${left === 1 ? "Tag" : "Tage"} Tagesform, dann siehst du hier, wie oft du an müden und an fitten Tagen trainierst.`
+      : "Sobald du an mehreren Tagen unterschiedlich fit bist, siehst du hier den Vergleich.";
+    box.innerHTML = `<div class="mood-head">${WD_SHORT.map((w) => `<span>${w}</span>`).join("")}</div>
+      <div class="mood-grid">${cells.join("")}</div>
+      <div class="mood-legend">${MOODS.map((m) => `<span><i class="mood-cell m${m.v}"></i>${m.label}</span>`).join("")}<span><i class="mood-cell trained"></i>trainiert</span></div>
+      <p class="group-help mood-sentence">${esc(sentence)}</p>`;
+    const after = $("progressMoodAfter");
+    if (after) after.innerHTML = moodAfterHtml(hist);
+  }
+  // Vorher/nachher (Fabian 09.10.): per area, how often the client felt
+  // better / the same / worse after a training. From 3 answers per area.
+  function moodAfterHtml(hist) {
+    const rows = {};
+    hist.forEach((h) => {
+      if (!h.moodAfter || !h.moodBefore) return;
+      const a = historyAreaOf(h);
+      const r = rows[a] || (rows[a] = { n: 0, up: 0, same: 0, down: 0 });
+      r.n++;
+      if (h.moodAfter > h.moodBefore) r.up++; else if (h.moodAfter === h.moodBefore) r.same++; else r.down++;
+    });
+    const total = Object.values(rows).reduce((x, r) => x + r.n, 0);
+    if (!total) return "";
+    const list = Object.entries(rows).filter(([, r]) => r.n >= 3).sort((x, y) => y[1].n - x[1].n);
+    const name = (a) => (AREA_BY_KEY[a] ? AREA_BY_KEY[a].label : a === "combo" ? "Kombi-Programm" : "Training");
+    const part = (k, w) => (k ? `${k} Mal ${w}` : "");
+    const lines = list.map(([a, r]) => `<li><b>${esc(name(a))}:</b> ${[r.up ? `${r.up} von ${r.n} Mal danach besser` : `${r.n} Mal angegeben`, part(r.same, "gleich"), part(r.down, "danach müder")].filter(Boolean).join(", ")}</li>`).join("");
+    return `<div class="mood-after-sum"><div class="group-label">Vorher und nachher</div>${lines ? `<ul>${lines}</ul>` : ""}<p class="group-help">${lines ? "Gezählt, wenn du nach dem Training angibst, wie es dir jetzt geht." : `Schon ${total} ${total === 1 ? "Antwort" : "Antworten"} nach dem Training. Ab 3 je Bereich siehst du hier, was dir guttut.`}</p></div>`;
+  }
+  function renderGoalRow(hist, stage, p, trainer, tileKey, own) {
+    const box = $("todayGoal");
+    const g = STARTER_GOALS.find((x) => x.key === p.goal);
+    const show = own && stage !== "new" && (g || goalPickOpen || (!trainer && (stage === "soft" || p.who === "allein")));
+    box.hidden = !show;
+    if (!show) { box.innerHTML = ""; return; }
+    if (g && !p.goalAt) starterSave({ goalAt: todayStr() }); // goals from before 09.10. start their 6 weeks now
+    const compact = trainer;
+    box.classList.toggle("is-compact", compact);
+    const fresh = [], tried = [];
+    starterPool(p.goal).forEach((k) => { if (k !== tileKey) (starterTried(k, hist) ? tried : fresh).push(k); });
+    const keys = rotList(fresh, todayDayNum()).concat(rotList(tried, todayDayNum())).slice(0, 6);
+    const due = g && p.goalAt && dDiff(p.goalAt, todayStr()) >= GOAL_CHECK_DAYS;
+    const picker = goalPickOpen ? `<div class="choice-row starter-goals today-goal-pick">${STARTER_GOALS.map((x) => `<button class="choice${x.key === p.goal ? " active" : ""}" type="button" data-starter-goal="${x.key}">${esc(x.label)}</button>`).join("")}</div>` : "";
+    box.innerHTML = `<button class="today-goal-head" type="button" id="todayGoalHead" aria-expanded="${goalPickOpen}">${g ? `Für dein Ziel: ${esc(g.label)}` : "Zum Ausprobieren · Ziel wählen"} <span aria-hidden="true">›</span></button>
+      ${picker}
+      ${due && !goalPickOpen ? `<div class="today-goal-check"><span>Passt dein Ziel noch?</span><button class="text-link small" type="button" id="todayGoalOkBtn">Ja</button><button class="text-link small" type="button" id="todayGoalChangeBtn">Ziel ändern</button></div>` : ""}
+      <div class="starter-row" role="list">${keys.map((k) => starterCardHtml(k, compact)).join("")}</div>
+      <p class="today-goal-hint">${trainer ? "Für dein persönliches Training sprich mit deinem Trainer." : `<a class="text-link small" href="${PLAN_REQUEST_URL}" target="_blank" rel="noopener">Noch keinen Trainer?</a>`}</p>`;
+    const toggle = () => { goalPickOpen = !goalPickOpen; renderToday(); };
+    $("todayGoalHead").addEventListener("click", toggle);
+    if ($("todayGoalChangeBtn")) $("todayGoalChangeBtn").addEventListener("click", toggle);
+    if ($("todayGoalOkBtn")) $("todayGoalOkBtn").addEventListener("click", () => { starterSave({ goalAt: todayStr() }); renderToday(); });
+    wireStarter(box);
+  }
+  // Mehr › "Dein Ziel": Heute with the goal choice open.
+  function openGoalPicker() {
+    goalPickOpen = true;
+    goToHeute();
+    setTimeout(() => { const b = $("todayGoal"); if (b && !b.hidden) try { b.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) {} }, 120);
+  }
+  $("moreGoalBtn").addEventListener("click", openGoalPicker);
+
   let todayWeekHome = null;
   function applyNewcomerLayout(hist) {
     const isNew = starterStage(hist) === "new";
@@ -34715,6 +36157,30 @@
       if (i >= 0) done.splice(i, 1); else out.push(a);
     });
     return out;
+  }
+  // Trainings an einem Tag, die kein Plan-Eintrag abdeckt (Fabian 09.10.: der
+  // Punkt am Tag muss sich im Tagesfeld erklären). Gleiche Zuordnung wie
+  // extraAreasOn, aber mit dem Verlaufseintrag selbst.
+  function extraEntriesOn(date, hist, occ) {
+    const done = occ.filter((o) => o.auto).map((o) => o.area);
+    const out = [];
+    (hist || loadHistory()).filter((h) => !h.aborted && dStr(new Date(h.ts)) === date).slice().reverse().forEach((h) => {
+      const i = done.indexOf(historyAreaOf(h));
+      if (i >= 0) done.splice(i, 1); else out.push(h);
+    });
+    return out;
+  }
+  function extraDayHtml(list) {
+    if (!list.length) return "";
+    const row = (h) => {
+      const area = historyAreaOf(h);
+      const t = new Date(h.ts);
+      const meta = [String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0") + " Uhr"]
+        .concat(h.seconds ? [Math.max(1, Math.round(h.seconds / 60)) + " Min."] : [])
+        .concat(AREA_BY_KEY[area] ? [AREA_BY_KEY[area].short] : []).join(" · ");
+      return `<div class="day-item done day-extra"><div class="day-item-main">${areaDot(area)}<div><div class="day-item-title">${esc(h.title || "Training")}</div><div class="day-item-meta">${esc(meta)} · erledigt</div></div></div></div>`;
+    };
+    return `<div class="day-subhead">${list.length === 1 ? "Zusätzlich trainiert (nicht geplant)" : `Zusätzlich trainiert (${list.length}, nicht geplant)`}</div>` + list.map(row).join("");
   }
   function dayStateClass(date, hist) {
     const occ = occurrencesOn(date, hist);
@@ -34848,9 +36314,10 @@
       $("dayPauseEditBtn").addEventListener("click", () => openPauseSheet(pzDay.id));
       return;
     }
+    const extraHtml = date <= todayStr() ? extraDayHtml(extraEntriesOn(date, hist, occ)) : "";
     if (!occ.length) {
       const ph = phaseFor(date);
-      els.dayPanelBody.innerHTML = hasEvents ? `<p class="day-empty">Kein Training aus der App geplant.</p>` : `<p class="day-empty">${ph || planHasEntries() ? "Ruhetag, an diesem Tag ist nichts geplant." : "Noch kein Plan. Lege unten deinen Wochenplan an oder trage ein App-Training nur für diesen Tag ein."}</p>`;
+      els.dayPanelBody.innerHTML = extraHtml ? `<p class="day-empty">Kein Training aus der App geplant.</p>${extraHtml}` : hasEvents ? `<p class="day-empty">Kein Training aus der App geplant.</p>` : `<p class="day-empty">${ph || planHasEntries() ? "Ruhetag, an diesem Tag ist nichts geplant." : "Noch kein Plan. Lege unten deinen Wochenplan an oder trage ein App-Training nur für diesen Tag ein."}</p>`;
       return;
     }
     const item = (o, style, compact) => {
@@ -34910,8 +36377,8 @@
       const lastBottom = Math.max(0, ...bottoms);
       html += timed.length ? `<div class="hour-grid" style="height:${Math.max((to - from) * H, lastBottom + 8)}px">${rows}${blocks}</div>` : "";
     }
-    els.dayPanelBody.innerHTML = html;
-    els.dayPanelBody.querySelectorAll(".day-item").forEach((el) => {
+    els.dayPanelBody.innerHTML = html + extraHtml;
+    els.dayPanelBody.querySelectorAll(".day-item[data-occ]").forEach((el) => {
       const o = occ.find((x) => x.id === el.dataset.occ);
       el.querySelectorAll(".day-act").forEach((b) => b.addEventListener("click", () => dayAction(date, o, b.dataset.act)));
     });
@@ -36990,6 +38457,9 @@
     mot: { label: "Objektverfolgung (MOT)", stage: () => els.motStage, overlay: () => els.motPauseOverlay, state: () => motState,
       prefs: () => motPrefs, save: () => saveMotPrefsToStorage(), own: () => !comboProgram && !cardioGuestActive,
       readies: ["motReady", "motTrainingReady"] },
+    schulte: { label: "Schulte-Tabelle", stage: () => els.schulteStage, overlay: () => els.schultePauseOverlay, state: () => schulteState,
+      prefs: () => schultePrefs, save: () => saveSchultePrefsToStorage(), own: () => !comboProgram && !cardioGuestActive,
+      readies: ["schulteReady"] },
   };
   const MBG_CONTROLS_HTML = `
     <div class="choice-row" data-opto-row="pattern">
@@ -37962,6 +39432,7 @@
         flash: () => openFlashComboCapture(mode, null, null),
         mot: () => openMotComboCapture(mode, null, null),
         balance: () => openBalanceComboCapture(null, null),
+        schulte: () => openSchulteComboCapture(mode, null, null),
       }[sub];
       return {
         title: name("h3"), open: () => tile.click(),
@@ -38179,7 +39650,8 @@
   (function initDoneEffects() {
     document.querySelectorAll(".done-check").forEach((c) => { c.innerHTML = DONE_CHECK_SVG; c.setAttribute("aria-hidden", "true"); });
     const obs = new MutationObserver((recs) => recs.forEach((r) => {
-      if (!r.target.hidden) requestAnimationFrame(() => celebrateDone(r.target));
+      if (!r.target.hidden) requestAnimationFrame(() => { celebrateDone(r.target); moodAfterOffer(r.target); });
+      else { const m = r.target.querySelector(".mood-after"); if (m) m.remove(); r.target.querySelectorAll('.rating[data-mood-hid="1"]').forEach((x) => { x.hidden = false; delete x.dataset.moodHid; }); }
     }));
     document.querySelectorAll(".done-panel").forEach((p) => obs.observe(p, { attributes: true, attributeFilter: ["hidden"] }));
   })();
@@ -38535,7 +40007,9 @@
   // own history, tagged "bei deinem Trainer". No server: the data travels in
   // the URL fragment (#import=…), which browsers never send anywhere.
   // Payload = {v:1, e:[[id, tsSeconds, kind, title, seconds, note, rating,
-  // aborted, exId, progKey], …]} (trailing empty fields dropped), deflate-raw
+  // aborted, exId, progKey, sub], …]} (trailing empty fields dropped; sub =
+  // freeId or neuroEx, Fabian 09.10.: so a plan entry for exactly that
+  // training gets its tick on the client's phone), deflate-raw
   // when CompressionStream exists ("z…") or plain ("j…"), base64url.
   // Never the name (fwmc-name-v1), settings, plan or anything else.
   // Token: "<part>.<parts>.<group>.<data chunk>". Details: docs/notes/36.
@@ -38589,9 +40063,11 @@
   var HO_APP_URL = "https://fwmcoaching.github.io/fwmc-Training-app/";
   var HO_SINGLE_MAX = 1200; // a whole URL up to this length fits one code
   var HO_PART_MAX = 1000; // data characters per code when split
-  // Kunden-Training snapshots these on start and puts them back on "Beenden",
+  // Kunden-Training snapshots these on start and puts them back on "Beenden".
+  // Every fwmc- key is sorted in tests/speicher_register.json (restore / keep /
+  // device); a new key that is not listed there fails speicher_register_0910_test.
   // so a client's runs never set this device's bests or "Weitermachen".
-  var HO_SNAP_RE = /^fwmc-(.*-best-v1|resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1|.*-prefs-v1|master-v1|webapp-v3|movement-v1|breath-v1|cardio-v1|cardio-addon-v1|wimhof-v1|workout-circuit-v1|workout-reps-builder-v1|workout-reps-progress-v1|workout-sound-v1|addon-v1|nat-mode-v1|signal-colors-v1|cue-overrides-v1|cvd-overrides-v1|soft-overrides-v1|anaglyph-v1|atempause-v1|plan-v1|plan-check-v1|code-history-v1|trainer-programs-v1|free-trainer-v1|coach-message-seen-v1|neuro-unlocked-v1|features-v1|events-v1|free-blocks-v1|notes-v1|ton-current-v1|ton-seq-v1|week-intent-v1|gear-v1|reminders-v1)$/;
+  var HO_SNAP_RE = /^fwmc-(.*-best-v1|resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1|.*-prefs-v1|master-v1|webapp-v3|movement-v1|breath-v1|cardio-v1|cardio-addon-v1|wimhof-v1|workout-circuit-v1|workout-reps-builder-v1|workout-reps-progress-v1|workout-sound-v1|addon-v1|nat-mode-v1|signal-colors-v1|cue-overrides-v1|cvd-overrides-v1|soft-overrides-v1|anaglyph-v1|atempause-v1|plan-v1|plan-check-v1|code-history-v1|trainer-programs-v1|free-trainer-v1|coach-message-seen-v1|neuro-unlocked-v1|features-v1|events-v1|free-blocks-v1|notes-v1|ton-current-v1|ton-seq-v1|week-intent-v1|gear-v1|reminders-v1|name-v1|start-v1|progress-v1|workout-custom-v1|fix-v1|trainer-settings-v1|mood-v1)$/;
   // Einstellungen (Fabian 09.10.): what the trainer sets up for a client or
   // while trying something out (levels, tempo, colours, a client's plan code
   // ...) is put back afterwards too. Saved presets stay. Those keys live in
@@ -38612,9 +40088,35 @@
     if (keep.length !== l.length) writeJSON("fwmc-client-runs-v1", keep);
     return keep;
   }
+  // Verschickt (Fabian 09.10.): what went out by QR is no longer just gone.
+  // A copy stays 21 days in fwmc-trainer-sent-v1, tagged "verschickt" in
+  // Gespeicherte Trainings, so it can be shown again if the client's phone
+  // missed it. Own runs still leave your Verlauf and Fortschritt on sending.
+  const HO_SENT_KEY = "fwmc-trainer-sent-v1";
+  const HO_SENT_KEEP_MS = 21 * 86400e3;
+  function hoSentRuns() {
+    const l = readJSON(HO_SENT_KEY, []);
+    if (!Array.isArray(l)) return [];
+    const keep = l.filter((e) => e && typeof e.sent === "number" && Date.now() - e.sent < HO_SENT_KEEP_MS);
+    if (keep.length !== l.length) writeJSON(HO_SENT_KEY, keep);
+    return keep;
+  }
+  function hoMarkSent(entries) {
+    const ids = entries.map((e) => e.id);
+    const l = hoSentRuns().filter((e) => !ids.includes(e.id));
+    const now = Date.now();
+    entries.forEach((e) => {
+      const c = { ...e, sent: now };
+      delete c.hidden;
+      l.unshift(c);
+    });
+    writeJSON(HO_SENT_KEY, l.slice(0, 500));
+  }
   function hoAddClientRun(item) {
     const s = hoSession();
     item.client = s ? s.start : 1;
+    if (s && s.tag) item.tag = s.tag;
+    hoAttachExtras(item);
     const l = hoClientRuns();
     l.unshift(item);
     writeJSON(HO_RUNS_KEY, l.slice(0, 200));
@@ -38656,12 +40158,12 @@
   function hoPack(e) {
     const a = [String(e.id || ""), Math.round(new Date(e.ts).getTime() / 1000), String(e.kind || ""), String(e.title || "").slice(0, 120),
       Math.max(0, Math.round(Number(e.seconds) || 0)), String(e.note || "").slice(0, 300), Number(e.rating) || 0, e.aborted ? 1 : 0,
-      String(e.exId || ""), String(e.progKey || "")];
+      String(e.exId || ""), String(e.progKey || ""), String(e.freeId || e.neuroEx || "").slice(0, 60)];
     while (a.length > 4 && (a[a.length - 1] === "" || a[a.length - 1] === 0)) a.pop();
     return a;
   }
   async function hoEncode(entries) {
-    const bytes = new TextEncoder().encode(JSON.stringify({ v: 1, e: entries.map(hoPack) }));
+    const bytes = new TextEncoder().encode(JSON.stringify({ v: 1, e: entries.map(hoPack), ...hoExtrasFor(entries) }));
     if (typeof CompressionStream === "function") {
       try { return "z" + hoB64u(await hoStream(bytes, CompressionStream)); } catch (e) { /* plain below */ }
     }
@@ -38670,14 +40172,15 @@
   const hoStr = (v, max) => (v == null || v === "" ? "" : typeof v === "string" && v.length <= max ? v : null);
   function hoUnpack(a) {
     if (!Array.isArray(a) || a.length < 4) return null;
-    const [id, t, kind, title, sec = 0, note = "", rating = 0, aborted = 0, exId = "", progKey = ""] = a;
+    const [id, t, kind, title, sec = 0, note = "", rating = 0, aborted = 0, exId = "", progKey = "", sub = ""] = a;
     const nowS = Date.now() / 1000;
     const ok = typeof id === "string" && /^[\w.-]{1,40}$/.test(id) && typeof t === "number" && t > 1577836800 && t < nowS + 86400 &&
       typeof kind === "string" && /^[a-z0-9-]{0,40}$/.test(kind) && typeof title === "string" && title.trim() && title.length <= 120 &&
       typeof sec === "number" && sec >= 0 && sec <= 86400 && hoStr(note, 300) !== null && [0, 1, 2, 3, 4, 5].includes(rating) &&
-      (aborted === 0 || aborted === 1) && hoStr(exId, 60) !== null && hoStr(progKey, 80) !== null;
+      (aborted === 0 || aborted === 1) && hoStr(exId, 60) !== null && hoStr(progKey, 80) !== null &&
+      hoStr(sub, 60) !== null && /^[\w.:-]*$/.test(sub);
     if (!ok) return null;
-    return { id, t, kind, title, seconds: Math.round(sec), note, rating, aborted: aborted === 1, exId, progKey };
+    return { id, t, kind, title, seconds: Math.round(sec), note, rating, aborted: aborted === 1, exId, progKey, sub };
   }
   // Returns the entries or throws (any problem = one friendly message).
   async function hoDecode(data) {
@@ -38691,6 +40194,7 @@
     if (!obj || obj.v !== 1 || !Array.isArray(obj.e) || !obj.e.length || obj.e.length > 200) throw new Error("shape");
     const out = obj.e.map(hoUnpack);
     if (out.some((x) => !x)) throw new Error("entry");
+    out.extra = hoCheckExtras(obj); // bests/settings: anything odd is dropped, never the runs
     return out;
   }
   function hoBaseUrl() {
@@ -38759,6 +40263,8 @@
       if (x.aborted) item.aborted = true;
       if (x.exId) item.exId = x.exId;
       if (x.progKey) item.progKey = x.progKey;
+      if (x.sub && x.kind === "free") item.freeId = x.sub;
+      if (x.sub && x.kind === "neuro") item.neuroEx = x.sub;
       list.push(item);
       if (!item.aborted) progressAdd(p, item);
       added++;
@@ -38772,6 +40278,153 @@
     }
     return added;
   }
+  // ---- Bestwerte + Einstellungen vom Trainer (Fabian 09.10.: "seine Übungen
+  // sind seine Übungen"; "Vorschlag gut") ----
+  // A Kunden-Training starts with empty best stores (the trainer's own come
+  // back with the snapshot), so each client run can carry the client's own
+  // session bests (`bs`) and the settings it was played with (`ps`). The QR
+  // payload adds {b: merged bests, s: latest settings per exercise, d:
+  // "phone"|"tablet"}. On the client's phone bests merge upwards (all four
+  // are "higher is better"); settings are offered per exercise with one
+  // question. Size only travels between devices of the same kind; volume and
+  // colours never. Applied settings get the note "von deinem Trainer
+  // übernommen" on the ready screen (fwmc-trainer-settings-v1).
+  const HO_TRAINER_SET_KEY = "fwmc-trainer-settings-v1"; // {remember: "2026-10-09", ...}
+  const HO_BEST_KEYS = { remember: "fwmc-remember-best-v1", blitz: "fwmc-blitz-best-v1", flash: "fwmc-flash-best-v1", mot: "fwmc-mot-best-v1", schulte: "fwmc-schulte-best-v1" };
+  const HO_BEST_LOWER = { schulte: true }; // Schulte: best time in ms, lower is better
+  const HO_SETTINGS = {
+    remember: { label: "Positionen merken", obj: () => rememberPrefs, save: () => { saveRememberPrefsToStorage(); loadRememberPrefs(); },
+      fields: ["revealBaseS", "revealStepS", "errorMode", "trainingStart", "trainingProgress", "trainingPositionMode"], size: ["markerScale"] },
+    blitz: { label: "Blitz-Raster", obj: () => blitzPrefs, save: () => { saveBlitzPrefsToStorage(); loadBlitzPrefs(); },
+      fields: ["flashS", "errorMode", "gridSize", "zones", "startCount"], size: [] },
+    flash: { label: "Flash-Speicher-Test", obj: () => flashPrefs, save: () => { saveFlashPrefsToStorage(); loadFlashPrefs(); },
+      fields: ["kind", "stimulusS", "intervalS", "errorMode", "axes", "useZones", "zones", "constantCount", "constantRounds", "startCount", "repsPerLevel", "trainingStart", "trainingProgress"], size: ["charScale"] },
+    mot: { label: "Objektverfolgung (MOT)", obj: () => motPrefs, save: () => { saveMotPrefsToStorage(); loadMotPrefs(); },
+      fields: ["speed", "trackS", "highlightS", "errorMode", "objectCount", "targetCount", "growStartObjects", "growStartTargets", "trainingObjects", "trainingTargets", "trainingSpeedStep", "trainingProgress"], size: ["objScale"] },
+    balance: { label: "Gleichgewicht", obj: () => balancePrefs, save: () => { normalizeBalancePrefs(balancePrefs); saveBalancePrefsToStorage(); },
+      fields: ["mode", "sticks", "letters", "singleS", "letterCount", "metro", "bpm", "timing", "setS", "sets", "restS", "stance", "content", "wordList", "wordEvery", "wordRead"], size: ["size", "lengthPct", "widthF", "fontF"] },
+    schulte: { label: "Schulte-Tabelle", obj: () => schultePrefs, save: () => { saveSchultePrefsToStorage(); loadSchultePrefs(); }, fields: ["gridSize"], size: [] },
+  };
+  function hoDeviceKind() { try { return Math.min(screen.width, screen.height) >= 600 ? "tablet" : "phone"; } catch (e) { return "phone"; } }
+  function hoClearBests() {
+    Object.values(HO_BEST_KEYS).forEach((k) => { try { localStorage.removeItem(k); } catch (e) { /* private mode */ } });
+  }
+  function hoAttachExtras(item) {
+    const k = item.kind;
+    if (HO_BEST_KEYS[k]) { const b = readJSON(HO_BEST_KEYS[k], null); if (b && typeof b === "object") item.bs = b; }
+    const def = HO_SETTINGS[k];
+    if (def) {
+      const o = def.obj(), ps = {};
+      def.fields.concat(def.size).forEach((f) => { if (o[f] !== undefined) ps[f] = JSON.parse(JSON.stringify(o[f])); });
+      item.ps = ps;
+      item.dk = hoDeviceKind();
+    }
+  }
+  function hoMaxMerge(a, b, lower) {
+    if (typeof b === "number") return typeof a === "number" ? (lower ? Math.min(a, b) : Math.max(a, b)) : b;
+    if (!b || typeof b !== "object") return a;
+    const out = a && typeof a === "object" && !Array.isArray(a) ? { ...a } : {};
+    Object.keys(b).forEach((k) => { out[k] = hoMaxMerge(out[k], b[k], lower); });
+    return out;
+  }
+  function hoExtrasFor(entries) {
+    const b = {}, s = {};
+    let d = null;
+    entries.slice().sort((x, y) => new Date(x.ts) - new Date(y.ts)).forEach((e) => {
+      if (e.bs && HO_BEST_KEYS[e.kind]) b[e.kind] = hoMaxMerge(b[e.kind], e.bs, HO_BEST_LOWER[e.kind]);
+      if (e.ps && HO_SETTINGS[e.kind]) { s[e.kind] = e.ps; d = e.dk || d; }
+    });
+    const out = {};
+    if (Object.keys(b).length) out.b = b;
+    if (Object.keys(s).length) { out.s = s; out.d = d || hoDeviceKind(); }
+    return out;
+  }
+  // Untrusted input: only known exercises, known fields, the same type as
+  // the client's own value, small numbers and short strings.
+  function hoBestOk(v, depth) {
+    if (typeof v === "number") return isFinite(v) && v >= 0 && v <= 3600000;
+    if (!v || typeof v !== "object" || Array.isArray(v) || depth > 2) return false;
+    const ks = Object.keys(v);
+    return ks.length <= 30 && ks.every((k) => /^[A-Za-z0-9_-]{1,24}$/.test(k) && hoBestOk(v[k], depth + 1));
+  }
+  function hoValOk(mine, v) {
+    if (Array.isArray(mine)) return Array.isArray(v) && v.length <= 20 && v.every((x) => typeof x === "string" && x.length <= 24);
+    if (typeof mine === "number") return typeof v === "number" && isFinite(v) && Math.abs(v) <= 1000;
+    if (typeof mine === "boolean") return typeof v === "boolean";
+    if (typeof mine === "string") return typeof v === "string" && v.length <= 24;
+    return false;
+  }
+  function hoCheckExtras(obj) {
+    const out = {};
+    if (obj.b && typeof obj.b === "object") {
+      const b = {};
+      Object.keys(obj.b).forEach((k) => { if (HO_BEST_KEYS[k] && hoBestOk(obj.b[k], 0)) b[k] = obj.b[k]; });
+      if (Object.keys(b).length) out.b = b;
+    }
+    if (obj.s && typeof obj.s === "object") {
+      const s = {};
+      Object.keys(obj.s).forEach((k) => {
+        const def = HO_SETTINGS[k], v = obj.s[k];
+        if (!def || !v || typeof v !== "object") return;
+        const o = def.obj(), ps = {};
+        def.fields.concat(def.size).forEach((f) => { if (f in v && hoValOk(o[f], v[f])) ps[f] = v[f]; });
+        if (Object.keys(ps).length) s[k] = ps;
+      });
+      if (Object.keys(s).length) { out.s = s; out.d = obj.d === "tablet" ? "tablet" : "phone"; }
+    }
+    return out;
+  }
+  function hoMergeBests(b) {
+    if (!b) return 0;
+    let n = 0;
+    Object.keys(b).forEach((k) => {
+      const key = HO_BEST_KEYS[k];
+      const mine = readJSON(key, {}) || {};
+      const merged = hoMaxMerge(mine, b[k], HO_BEST_LOWER[k]);
+      if (JSON.stringify(merged) !== JSON.stringify(mine)) { writeJSON(key, merged); n++; }
+    });
+    return n;
+  }
+  function hoAskSettings(s, d) {
+    const kinds = Object.keys(s || {});
+    if (!kinds.length) return;
+    const same = d === hoDeviceKind();
+    const where = (k) => (k === "tablet" ? "einem Tablet" : "einem Handy");
+    const next = (i) => {
+      if (i >= kinds.length) return;
+      const k = kinds[i], def = HO_SETTINGS[k];
+      const hasSize = def.size.some((f) => f in s[k]);
+      const sizeNote = hasSize && !same ? ` Dein Trainer hat auf ${where(d)} trainiert, Größen können auf deinem Gerät anders wirken. Die Größe bleibt deshalb bei dir.` : "";
+      confirmDialog(`„${def.label}“: Möchtest du mit den Einstellungen deines Trainers weitertrainieren (Tempo, Stufe, Anzahl, Modus)? Deine bisherigen Einstellungen für diese Übung werden dabei ersetzt.${sizeNote}`, () => {
+        const o = def.obj();
+        Object.keys(s[k]).forEach((f) => { if (def.size.includes(f) && !same) return; o[f] = JSON.parse(JSON.stringify(s[k][f])); });
+        def.save();
+        const marks = readJSON(HO_TRAINER_SET_KEY, {}) || {};
+        marks[k] = todayStr();
+        writeJSON(HO_TRAINER_SET_KEY, marks);
+        hoTrainerSetNotes();
+        showToast(`Übernommen: Einstellungen von deinem Trainer für ${def.label}.`);
+        setTimeout(() => next(i + 1), 350);
+      }, { title: "Einstellungen übernehmen?", yes: "Übernehmen", no: "Meine behalten", onNo: () => setTimeout(() => next(i + 1), 350) });
+    };
+    setTimeout(() => next(0), 400);
+  }
+  // "Von deinem Trainer übernommen" under the best line of the ready screens.
+  function hoTrainerSetNotes() {
+    const marks = readJSON(HO_TRAINER_SET_KEY, {}) || {};
+    [["remember", ["rememberReadyBestHint", "rememberTrainingBestHint"]], ["blitz", ["blitzReadyBestHint"]], ["flash", ["flashReadyBestHint", "flashTrainingBestHint"]],
+      ["mot", ["motReadyBestHint", "motTrainingBestHint"]], ["balance", ["balanceReadyDesc"]], ["schulte", ["schulteReadyBestHint"]]].forEach(([k, ids]) => {
+      ids.forEach((id) => {
+        const host = $(id);
+        if (!host) return;
+        let n = host.parentNode.querySelector(`.trainer-set-note[data-for="${id}"]`);
+        if (!marks[k]) { if (n) n.remove(); return; }
+        if (!n) { n = document.createElement("p"); n.className = "group-help trainer-set-note"; n.dataset.for = id; host.after(n); }
+        n.textContent = `Einstellungen von deinem Trainer übernommen (${shortDate(marks[k])}). Du kannst sie jederzeit ändern.`;
+      });
+    });
+  }
+  hoTrainerSetNotes();
   function hoRefreshViews() {
     renderHistory();
     if (!els.todayHome.hidden) renderToday();
@@ -38819,7 +40472,9 @@
   function hoShowImport(entries, data, fromPaste) {
     hoPendingImport = { entries, data };
     $("handoverImportTitle").textContent = `${hoCount(entries.length)} von deinem Trainer übernehmen?`;
-    $("handoverImportText").textContent = "Sie kommen in deinen Verlauf und zählen für deinen Fortschritt.";
+    const ex = entries.extra || {};
+    $("handoverImportText").textContent = "Sie kommen in deinen Verlauf und zählen für deinen Fortschritt" + (ex.b ? " und deine Bestleistungen" : "") + "." +
+      (ex.s ? " Danach fragt die App, ob du mit den Einstellungen deines Trainers weitertrainieren möchtest." : "");
     const ul = $("handoverImportList");
     ul.hidden = false;
     ul.innerHTML = entries.map((x) => `<li><span class="h-title">${esc(x.title)}</span><span class="h-meta">${hoWhen(x.t * 1000)}${x.seconds ? " · " + fmtMinutes(x.seconds) : ""}</span></li>`).join("");
@@ -38865,7 +40520,10 @@
     hoCloseImport();
     if (!p) return;
     const n = hoImport(p.entries);
-    showToast(n ? `${hoCount(n)} übernommen.` : "Diese Trainings sind schon in deinem Verlauf.");
+    const ex = p.entries.extra || {};
+    const nb = hoMergeBests(ex.b);
+    showToast(n ? `${hoCount(n)} übernommen.${nb ? " Deine Bestleistungen sind aktualisiert." : ""}` : nb ? "Deine Bestleistungen sind aktualisiert." : "Diese Trainings sind schon in deinem Verlauf.");
+    hoAskSettings(ex.s, ex.d);
   });
   $("handoverImportNoBtn").addEventListener("click", hoCloseImport);
   $("handoverImportSheet").addEventListener("click", (e) => { if (e.target === e.currentTarget) hoCloseImport(); });
@@ -39047,6 +40705,14 @@
   // Closed any other way (pull-down, leaving the page): the camera goes off too.
   new MutationObserver(() => { if ($("handoverScanSheet").hidden) hoScanStop(); }).observe($("handoverScanSheet"), { attributes: true, attributeFilter: ["hidden"] });
   document.addEventListener("visibilitychange", () => { if (document.hidden && hoScan) hoCloseScan(); });
+  if (navigator.webdriver) window.__ho0910 = {
+    pack: (e) => hoPack(e), unpack: (a) => hoUnpack(a),
+    planTry: (date, extras, hist) => {
+      const keep = plan.extras[date];
+      plan.extras[date] = extras;
+      try { return occurrencesOn(date, hist).filter((o) => o.extra).map((o) => ({ what: o.what || "", done: !!o.done })); } finally { if (keep) plan.extras[date] = keep; else delete plan.extras[date]; }
+    },
+  };
   if (navigator.webdriver) window.__hoScan = () => ({ open: !$("handoverScanSheet").hidden, running: !!hoScan, detector: !!(hoScan && hoScan.detector), tracks: hoScan && hoScan.stream ? hoScan.stream.getTracks().filter((t) => t.readyState === "live").length : 0 });
   window.addEventListener("hashchange", hoCheckHash);
 
@@ -39085,13 +40751,21 @@
     // (fwmc-trainer-hidden-v1); Verlauf und Fortschritt behalten sie. Nur
     // Verschicken nimmt sie auch dort heraus (Fabian 08.10. abends).
     const hidden = new Set(readJSON(HO_HIDDEN_KEY, []));
-    const recentOwn = () => loadHistory().filter((e) => !hidden.has(e.id) && Date.now() - new Date(e.ts).getTime() < HO_KEEP_MS);
-    const kindOf = (e) => (e.tryRun ? "try" : e.client ? "client" : "own");
-    let list = clientPick || storePick ? hoClientRuns().concat(tmTryRuns(), recentOwn())
+    // Fabian 09.10. ("Safety first"): Gespeicherte Trainings can show the
+    // hidden own runs again (tag "ausgeblendet"), so they can still go along.
+    const showHid = storePick && hoShowHidden;
+    const recentOwn = () => loadHistory().filter((e) => (showHid || !hidden.has(e.id)) && Date.now() - new Date(e.ts).getTime() < HO_KEEP_MS);
+    const kindOf = (e) => (e.sent ? "sent" : e.tryRun ? "try" : e.client ? "client" : "own");
+    let list = clientPick ? hoClientRuns().concat(tmTryRuns(), recentOwn())
+      : storePick ? hoClientRuns().concat(tmTryRuns(), recentOwn(), hoSentRuns())
       : loadHistory().filter((e) => !hidden.has(e.id)).concat(tmTryRuns(), hoClientRuns()).filter((e) => new Date(e.ts).getTime() >= from);
+    const hidCount = storePick ? loadHistory().filter((e) => hidden.has(e.id) && Date.now() - new Date(e.ts).getTime() < HO_KEEP_MS).length : 0;
+    $("handoverHiddenBtn").hidden = !hidCount || (hoKind !== "all" && hoKind !== "own");
+    $("handoverHiddenBtn").textContent = hoShowHidden ? "Ausgeblendete wieder verbergen" : `Ausgeblendete zeigen (${hidCount})`;
     if (storePick && hoKind !== "all") list = list.filter((e) => kindOf(e) === hoKind);
-    list.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    list.sort((a, b) => (a.sent ? 1 : 0) - (b.sent ? 1 : 0) || new Date(b.ts) - new Date(a.ts));
     hoRangeIds = list.map((e) => e.id);
+    const isHid = (e) => kindOf(e) === "own" && hidden.has(e.id);
     // Zeitfenster: liegen Kunden-Trainings darin, sind nur die des letzten
     // Kunden-Trainings angehakt (nie deine eigenen), sonst deine eigenen.
     const lastClient = Math.max(0, ...list.filter((e) => kindOf(e) === "client").map((e) => e.client));
@@ -39108,7 +40782,7 @@
     });
     const clr = $("handoverClearBtn");
     clr.hidden = !storePick || !list.length;
-    clr.textContent = { all: "Alles löschen", client: "Alle Kunden-Trainings löschen", try: "Alle Test-Trainings löschen", own: "Alle eigenen löschen" }[hoKind];
+    clr.textContent = { all: "Alles löschen", client: "Alle Kunden-Trainings löschen", try: "Alle Test-Trainings löschen", own: "Alle eigenen löschen", sent: "Alle verschickten löschen" }[hoKind];
     // Fabian 09.10.: say plainly that client trainings still wait for the handover.
     const waiting = storePick ? hoClientRuns().length : hoLeftovers().length;
     $("handoverWaitNote").hidden = !waiting || clientPick;
@@ -39116,7 +40790,7 @@
     $("handoverWaitBtn").hidden = !storePick || hoKind === "client";
     $("handoverPickTitle").textContent = storePick ? "Gespeicherte Trainings" : clientPick ? "Kunden-Training übergeben" : "An Kunden übergeben";
     $("handoverPickSub").textContent = storePick
-      ? "Alles der letzten 14 Tage auf diesem Gerät. Hake an, was du übergeben oder löschen willst. Nach links wischen löscht ein einzelnes Training."
+      ? "Trainings bleiben 14 Tage auf diesem Gerät, verschickte 21 Tage. Hake an, was du übergeben oder löschen willst. Nach links wischen löscht ein einzelnes Training."
       : clientPick
       ? "Angehakt ist dieses Kunden-Training. Test-Trainings, eigene und Liegengebliebenes von früher kannst du dazunehmen oder löschen."
       : "Welche Trainings bekommt dein Kunde? Wähle den Zeitraum und nimm einzelne Trainings heraus, die nicht zu ihm gehören.";
@@ -39130,7 +40804,7 @@
     });
     const ul = $("handoverList");
     ul.innerHTML = list.length ? list.map((e) => `<li><label class="checkbox-row tap-row handover-check"><input type="checkbox" data-ho-id="${esc(e.id)}"${hoChecked.has(e.id) ? " checked" : ""}>
-        <span class="handover-check-text"><span class="h-title">${esc(e.title)}${hoTag(e, kindOf(e), clientPick, storePick)}</span><span class="h-meta">${hoWhen(e.ts)}${e.seconds ? " · " + fmtMinutes(e.seconds) : ""}${e.aborted ? " · abgebrochen" : ""}</span></span></label></li>`).join("")
+        <span class="handover-check-text"><span class="h-title">${esc(e.title)}${hoTag(e, kindOf(e), clientPick, storePick)}${isHid(e) ? '<span class="h-tag tm-tag-hidden">Ausgeblendet</span>' : ""}</span><span class="h-meta">${hoWhen(e.ts)}${e.sent ? " · gesendet " + hoWhen(new Date(e.sent).toISOString()).replace(/^Heute/, "heute").replace(/^Gestern/, "gestern") : ""}${e.seconds ? " · " + fmtMinutes(e.seconds) : ""}${e.aborted ? " · abgebrochen" : ""}</span></span></label></li>`).join("")
       : `<li class="history-empty">${clientPick || storePick ? "Hier liegt nichts mehr." : "In diesem Zeitraum gibt es kein Training. Wähle einen früheren Zeitpunkt."}</li>`;
     ul.querySelectorAll("input[data-ho-id]").forEach((cb) => cb.addEventListener("change", () => {
       if (cb.checked) hoChecked.add(cb.dataset.hoId); else hoChecked.delete(cb.dataset.hoId);
@@ -39139,8 +40813,10 @@
     hoSyncGo();
   }
   function hoTag(e, kind, clientPick, storePick) {
+    if (kind === "sent") return `<span class="h-tag tm-tag-sent">Verschickt${e.tag ? " · " + esc(e.tag) : ""}</span>`;
     if (kind === "try") return '<span class="h-tag tm-tag-try">Test</span>';
-    if (kind === "client") return clientPick && e.client !== hoPickClient ? '<span class="h-tag">früher</span>' : clientPick ? "" : '<span class="h-tag tm-tag-client">Kunde</span>';
+    const tg = e.tag ? " · " + esc(e.tag) : "";
+    if (kind === "client") return clientPick && e.client !== hoPickClient ? `<span class="h-tag">Früher${tg}</span>` : clientPick ? (tg ? `<span class="h-tag tm-tag-client">${esc(e.tag)}</span>` : "") : `<span class="h-tag tm-tag-client">Kunde${tg}</span>`;
     return clientPick || storePick ? '<span class="h-tag tm-tag-own">Eigenes</span>' : "";
   }
   function hoSelectedIds() { return hoRangeIds.filter((id) => hoChecked.has(id)); }
@@ -39148,11 +40824,12 @@
     const n = hoSelectedIds().length;
     const btn = $("handoverGoBtn");
     btn.disabled = n === 0 || n > 200;
-    btn.textContent = n > 200 ? "Höchstens 200 auf einmal" : `${hoCount(n)} übergeben`;
+    btn.textContent = n > 200 ? "Höchstens 200 auf einmal" : n === 0 ? "Trainings zum Übergeben anhaken" : `${hoCount(n)} übergeben`;
     $("handoverDeleteBtn").disabled = n === 0;
   }
   let hoPick = "range"; // "range" (Zeitfenster) | "client" (nach einem Kunden-Training) | "store" (Übersicht)
-  let hoKind = "all"; // Übersicht-Filter: all | client | try | own
+  let hoKind = "all"; // Übersicht-Filter: all | client | try | own | sent
+  let hoShowHidden = false; // Übersicht: ausgeblendete eigene zeigen
   let hoPickClient = 0; // start of the Kunden-Training whose runs are ticked
   function hoOpenClientPick(start) {
     hoPick = "client";
@@ -39163,6 +40840,7 @@
   function hoOpenStore() {
     hoPick = "store";
     hoKind = "all";
+    hoShowHidden = false;
     hoRenderPick(true);
     showScreen("handoverScreen");
   }
@@ -39170,8 +40848,13 @@
     hoKind = b.dataset.hoKind;
     hoRenderPick(true);
   }));
+  $("handoverHiddenBtn").addEventListener("click", () => {
+    hoShowHidden = !hoShowHidden;
+    hoRenderPick(false);
+  });
   function hoAskDelete(ids, title) {
-    const ownIds = new Set(loadHistory().map((e) => e.id));
+    const sentIds = new Set(hoSentRuns().map((e) => e.id));
+    const ownIds = new Set(loadHistory().map((e) => e.id).filter((id) => !sentIds.has(id)));
     const own = ids.filter((id) => ownIds.has(id)), other = ids.filter((id) => !ownIds.has(id));
     const text = !own.length ? "Sie sind danach auf diesem Gerät weg und lassen sich nicht mehr übergeben."
       : !other.length ? "Eigene Trainings verschwinden nur aus dieser Liste. In deinem Verlauf und Fortschritt bleiben sie."
@@ -39243,7 +40926,8 @@
     return hoQrLib;
   }
   function hoEntriesFor(ids, source) {
-    const all = loadHistory().concat(hoClientRuns(), tmTryRuns());
+    const seen = new Set();
+    const all = loadHistory().concat(hoClientRuns(), tmTryRuns(), hoSentRuns()).filter((e) => !seen.has(e.id) && seen.add(e.id));
     return all.filter((e) => ids.includes(e.id));
   }
   async function hoStartQr(ids, source, meta) {
@@ -39302,6 +40986,8 @@
     if (hoQr) { hoRenderPick(false); showScreen("handoverScreen"); } else showScreen(hoHomeId);
   });
   function hoDeleteEverywhere(ids) {
+    const sr = hoSentRuns();
+    if (sr.some((e) => ids.includes(e.id))) writeJSON(HO_SENT_KEY, sr.filter((e) => !ids.includes(e.id)));
     const cl = hoClientRuns();
     if (cl.some((e) => ids.includes(e.id))) writeJSON(HO_RUNS_KEY, cl.filter((e) => !ids.includes(e.id)));
     hoDeleteFromHistory(ids);
@@ -39337,11 +41023,13 @@
     const q = hoQr;
     hoQr = null;
     if (!q) { showScreen(hoHomeId); return; }
+    const sentEntries = hoEntriesFor(q.ids, q.source);
     if (q.source === "client") {
       hoDeleteEverywhere(q.ids);
+      hoMarkSent(sentEntries);
       hoRenderProgressGroup();
       showScreen(hoHomeId);
-      showToast(`Übergeben. ${q.n === 1 ? "Das Kunden-Training ist" : "Die Kunden-Trainings sind"} von deinem Gerät gelöscht.`);
+      showToast(`Übergeben. Unter „Gespeicherte Trainings“ ${q.n === 1 ? "bleibt es" : "bleiben sie"} noch 21 Tage als „verschickt“.`);
       return;
     }
     showScreen(hoHomeId);
@@ -39349,8 +41037,9 @@
     // aus deinem Verlauf und Fortschritt.
     const n = q.ids.length;
     hoDeleteEverywhere(q.ids);
+    hoMarkSent(sentEntries);
     hoRefreshViews();
-    showToast(`Übergeben. ${n === 1 ? "Das Training ist" : `Die ${n} Trainings sind`} aus deinem Verlauf entfernt.`);
+    showToast(`Übergeben. ${n === 1 ? "Es ist" : `Die ${n} sind`} aus deinem Verlauf entfernt und bleiben 21 Tage als „verschickt“ abrufbar.`);
   });
 
   // ---- Kunden-Training ----
@@ -39396,10 +41085,38 @@
     if (hoSession()) return;
     writeJSON(HO_SESSION_KEY, { start: Date.now(), snap: hoSnapshot() });
     hoClearResume();
+    hoClearBests();
     hoSyncStrip();
     hoRenderProgressGroup();
-    showToast("Kunden-Training läuft. Was jetzt trainiert wird, zählt nicht für dich.");
+    if (!hoAskTag()) showToast("Kunden-Training läuft. Was jetzt trainiert wird, zählt nicht für dich.");
   }
+  // Kürzel pro Kunden-Training (Fabian 09.10.): optional, max. 4 Zeichen,
+  // only on this device (never in the QR payload), shown in the lists.
+  function hoAskTag() {
+    const s = hoSession();
+    if (!s) return false;
+    if (navigator.webdriver && !readJSON("fwmc-test-clienttag", false)) return false; // automated browsers: only on request
+    $("clientTagInput").value = s.tag || "";
+    $("clientTagSheet").hidden = false;
+    setTimeout(() => $("clientTagInput").focus({ preventScroll: true }), 60);
+    return true;
+  }
+  function hoSetTag(v) {
+    $("clientTagSheet").hidden = true;
+    const s = hoSession();
+    if (!s) return;
+    const tag = String(v || "").replace(/\s+/g, "").slice(0, 4);
+    if (tag) s.tag = tag; else delete s.tag;
+    writeJSON(HO_SESSION_KEY, s);
+    showToast(tag ? `Kunden-Training ${tag} läuft. Was jetzt trainiert wird, zählt nicht für dich.` : "Kunden-Training läuft. Was jetzt trainiert wird, zählt nicht für dich.");
+    const l = hoClientRuns();
+    if (l.some((e) => e.client === s.start)) writeJSON(HO_RUNS_KEY, l.map((e) => (e.client === s.start ? (tag ? { ...e, tag } : (({ tag: _t, ...r }) => r)(e)) : e)));
+    hoSyncStrip();
+  }
+  $("clientTagOkBtn").addEventListener("click", () => hoSetTag($("clientTagInput").value));
+  $("clientTagSkipBtn").addEventListener("click", () => hoSetTag(""));
+  $("clientTagInput").addEventListener("keydown", (e) => { if (e.key === "Enter") hoSetTag($("clientTagInput").value); });
+  $("clientTagSheet").addEventListener("click", (e) => { if (e.target === $("clientTagSheet")) hoSetTag($("clientTagInput").value); });
   function hoEndClientRun() {
     const s = hoSession();
     if (!s) return;
@@ -39549,10 +41266,11 @@
         // start the session from the restored state, reload once at the end.
         const resumed = !!hoSession();
         tmEndTry(false, "", true);
-        if (!resumed) { writeJSON(HO_SESSION_KEY, { start: Date.now(), snap: hoSnapshot() }); hoClearResume(); }
+        if (!resumed) { writeJSON(HO_SESSION_KEY, { start: Date.now(), snap: hoSnapshot() }); hoClearResume(); hoClearBests(); }
         const msg = resumed ? "Das Kunden-Training läuft weiter." : "Kunden-Training läuft. Was jetzt trainiert wird, zählt nicht für dich.";
         if (hoReloadIfNeeded({ toast: msg })) return;
-        hoSyncStrip(); hoRenderProgressGroup(); showToast(msg);
+        hoSyncStrip(); hoRenderProgressGroup();
+        if (resumed || !hoAskTag()) showToast(msg);
         return;
       }
       // "Mein Training" during a Kunden-Training: the client run's end reloads once for both.
@@ -40005,7 +41723,6 @@
   // tests keep typing straight into the open card.
   // "Noch keinen Trainer?" under every code card (Fabian 07.10.: the card
   // should make people without a code curious about a personal plan).
-  const PLAN_REQUEST_URL = "https://www.fabian-westermann.de/#Kontakt";
   document.querySelectorAll(".code-card").forEach((card) => {
     const a = document.createElement("a");
     a.className = "text-link small code-ask-link";

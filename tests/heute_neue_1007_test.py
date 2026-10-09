@@ -101,7 +101,7 @@ async def main():
         # soft stage: 1 training
         await fresh(pg, {"fwmc-history-v1": hist(1), "fwmc-start-v1": {"who": "allein", "goal": "ruhe"}})
         check("soft: no ask", await pg.locator("#todayMain [data-starter-who], #todayMain [data-starter-goal]").count() == 0)
-        check("soft: row stays", await pg.is_visible("#todayMain .starter-row"))
+        check("soft: row stays (since 09.10. as Für dein Ziel under the week)", await pg.is_visible("#todayGoal .starter-row"))
         check("soft: Fortschritt shown", await pg.is_visible("#todayHome .today-progress"))
         back = await pg.evaluate("() => { const c = document.querySelector('#todayHome .today-code'); return c.nextElementSibling !== document.querySelector('#todayHome .today-week'); }")
         check("soft: week back in its place", back)

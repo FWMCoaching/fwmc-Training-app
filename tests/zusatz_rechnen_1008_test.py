@@ -246,7 +246,9 @@ async def main():
         heads = await pg.locator("#cardioAddonPickerTypeRow .cardio-addon-picker-group-label").all_inner_texts()
         check("picker: own group 'Weitere Zusatzaufgaben' at the end", heads[-1] == "Weitere Zusatzaufgaben", str(heads))
         # Richtungskreuz (08.10.) follows Rechnen in the same group
-        last = pg.locator("#cardioAddonPickerTypeRow .choice").nth(20)
+        # 09.10.: types are grouped (Schulte joined NAT), so find Rechnen by its place: second to last
+        n_types = await pg.locator("#cardioAddonPickerTypeRow .choice").count()
+        last = pg.locator("#cardioAddonPickerTypeRow .choice").nth(n_types - 2)
         check("picker: Rechnen is the first of the last group", "Rechnen" in await last.inner_text())
         await last.click(); await pg.wait_for_timeout(100)
         det = pg.locator("#cardioAddonPickerDetail")

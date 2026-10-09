@@ -268,3 +268,6 @@ also on the Cardio guest mode row).
 - Test hook: `window.__ffLastDrawn` (mode, shown fields, phase / "rest").
 Test: `tests/farbfelder_einblenden_1008_test.py`, screenshots
 `tests/screenshots/farbfelder_einblenden/`.
+
+## Erste graue Übung (09.10. nachmittags)
+The first tap on a card greyed for missing equipment opens `#gearFirstSheet` once (`fwmc-gear-first-v1`): "Hast du …?" (Ja, hab ich / Noch nicht) plus all other GEAR_ITEMS to tick ("Weitere Hilfsmittel, die du schon hast?"), ticks go to fwmc-gear-v1. Automated browsers only with `fwmc-test-gearfirst` (and `fwmc-test-gear`).

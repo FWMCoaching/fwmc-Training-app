@@ -287,6 +287,7 @@ everywhere goes here, short.
 | 35-richtungskreuz-zusaetze-regeln | Richtungskreuz (VT, 4 directions, Farbregel), Zusätze für oben (`ZUSAETZE`, signal), ⓘ Regeln + Meine Notiz (`REGELN_EXERCISES`, notes in presets/Kombi, trainer note) |
 | 36-qr-uebergabe | QR-Übergabe trainer → client: range screen, payload fields, split codes, import/dedupe, iPhone Safari copy + paste field, Kunden-Training (own store, snapshot of bests), in-app scanner, trainer codes as QR (`#code=`), Freischaltungen (`FEATURE_UNLOCKS`) |
 | 37-neuro-aktivierung | Neuro-Aktivierung (hidden 9th area `neuro`, unlocked by code type `neuro-unlock`): step player, `NEURO_EXERCISES`, Kombi/plan only when unlocked, "Spezialübung von deinem Trainer" in trainer Kombi codes, dashboard builder, texts Fabian reviews |
+| 38-schulte-tabelle | Schulte-Tabelle (7th NAT exercise): grids 3-6, Fest/Wechselnd/Aus der Erinnerung, Fixpunkt `schulte:<mode>` (odd grid = free middle cell), bests `fwmc-schulte-best-v1`, pause covers numbers, Kombi repeats tables, Cardio guest, assumed level thresholds |
 
 ## Must-do rules collected from the detail notes
 
@@ -308,8 +309,17 @@ For every new or changed exercise/screen, in the same commit:
 - Plannable on Heute: `PLAN_AREAS`/`NAT_SUBS` + `historyAreaOf`.
 - VT/NAT exercise: Cardio guest parity (`CARDIO_GUEST_TYPES`, full settings,
   `prefsOverride` isolation) and Kombi capture/edit/playback.
-- New localStorage keys start with `fwmc-` (backup picks them up).
+- New localStorage keys start with `fwmc-` (backup picks them up) and get an
+  entry in `tests/speicher_register.json` (restore in Kunden-/Test-Modus or
+  keep, backup yes/no); `tests/speicher_register_0910_test.py` fails on an
+  unlisted key and replays both modes with codes against a storage diff.
+  A new feature with state (mode, client, unlock) starts with this inventory.
 - Anything that sends data off the device goes into the privacy sheet.
+- Erklären gehört dazu (Fabian 2026-10-09): every new rule with consequences
+  the client should understand (what is saved where, what overwrites what,
+  what travels to the trainer, defaults vs. own changes) gets, in the same
+  commit, its FAQ entry under Mehr and a short `group-help` line where it is
+  set. The abgabe-check asks "Muss der Kunde das wissen? Steht es in der FAQ?".
 - Player conventions: exit button id `…BackBtn` + "Beenden", pause button
   id `…PauseBtn` + "Pause", class `.player` (gives step-nav, auto-pause,
   end-confirm for free).

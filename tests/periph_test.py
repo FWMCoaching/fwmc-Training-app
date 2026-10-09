@@ -37,7 +37,7 @@ async def main():
         print("periphFixGroup visible:", await pg.is_visible("#periphFixGroup"))
         fix_swatch_count = await pg.locator("#periphFixColorPicker .color-swatch").count()
         print("fix colour swatch count (grau + 9 = 10):", fix_swatch_count)
-        await pg.fill("#periphFixCharInput", "X")
+        await pg.click('#periphFixKindRow [data-fix-kind="text"]'); await pg.fill("#periphFixCharInput", "X")
         await pg.click('#periphFixColorPicker .color-swatch[data-key="rot"]'); await pg.wait_for_timeout(80)
         await pg.fill("#periphFixSizeSlider", "1.6")
         await pg.dispatch_event("#periphFixSizeSlider", "input")

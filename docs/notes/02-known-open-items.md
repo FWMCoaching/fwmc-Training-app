@@ -569,7 +569,7 @@ weak run resets it too. Covered: Positionen merken, Blitz-Raster (standard),
 Flash, MOT. "Very good" thresholds are ASSUMPTIONS, not from Fabian or a
 study - adjust if he finds them too easy/hard: Positionen merken ≥ 7 reached
 (≥ 6 with shuffled positions), Blitz ≥ 6, Flash climbing ≥ 7, Flash constant
-≥ 8 rounds with ≥ 90 % correct, MOT ≥ 8. Farbfelder · Antippen (08.10.): ≥ 90 % right with ≥ 5 fields, Abfolge all rounds right (≥ 2), on the shared VT tempo.
+≥ 8 rounds with ≥ 90 % correct, MOT ≥ 8. Farbfelder · Antippen (08.10.): ≥ 90 % right with ≥ 5 fields, Abfolge all rounds right (≥ 2), on the shared VT tempo. Schulte-Tabelle (09.10.): suggests the next grid size (3×3 → 6×6) after ≤ 1 Fehler and ≤ 1,2 s per number (Fest), 1,6 s (Wechselnd), 2,0 s (Erinnerung); docs/notes/38.
 
 ## Gleichgewicht (6th NAT exercise, built 2026-10-06, Fabian's build order 12:31/12:33)
 
@@ -621,6 +621,15 @@ study - adjust if he finds them too easy/hard: Positionen merken ≥ 7 reached
   the word rows (Wörter, Wort wechselt, Lies [Farbwörter only]) via `addPauseChoiceRow`, which
   now returns its sync function.
 - **Bewegter Hintergrund (08.10.)**: `balancePrefs.mbg` (shared module, see docs/notes/31).
+- **VORtrain-Teil (Fabian 09.10. 👍)**: mode `wander` "Wanderndes Ziel" (button "Ziel wandert"):
+  the word or the sticks glide to the other side within each beat (`balanceWander`, cosine,
+  CSS `translate` on top of left/top, range `balanceWanderRange` = free area, ≤ 35 % of its width),
+  first cue "◀ Kopf links"; the beat runs silently without Takt (`st.lastBeatAt`). Word list
+  `richtungen` (LINKS/RECHTS/OBEN/UNTEN) with `wordRead: "gegenteil"` ("Sag das Gegenteil");
+  `balanceReadOf(p)` maps a choice that does not fit the list to "wort", `balanceReadButtons`
+  shows only the fitting "Lies" buttons (ready + pause). Stance `gehen` ("Gehen, langsam, Blick
+  bleibt auf dem Ziel"). Kombi/presets/Weitermachen/Cardio carry it through the prefs.
+  Test: tests/gleichgewicht_vor_0910_test.py.
 
 - 2026-10-06 evening (Fabian): status shows "⏸ m:ss" while the clock is held (no word, the bar stays one line); `balanceLayout` sizes letters with the stick and shows only `st.visN` letters (`.balance-letter.off`) when they would not fit; the "Regler" chip is hidden, size/colours/length/width/font are live in the pause sheet (`balPauseLook`, `balanceLiveLook`, `syncBalancePauseLook`, saved for own runs); `letterColor2` = letter colour of stick 2 (falls back to `letterColor`); beat runs keep the "auto" audio session so the client's music (Spotify) keeps playing; the first beat run on an iPhone/iPad shows a one-time silent-switch hint (`silentSwitchHint`, `fwmc-silent-hint-v1`, test flag `fwmc-test-silenthint`); "playback" only via the Grundeinstellungen opt-in, labelled "pausiert Musik" and `unlockCueAudio` resumes/recreates a dead AudioContext on every tap.
 

@@ -447,5 +447,13 @@
 "taste|workoutProgramIntro[Ganzkörper-Einstieg]|button.chapter-main|nur # px hoch (mind. #)",
 "taste|workoutRepsReady|button.ca-plus-btn|nur # px hoch (mind. #)",
 "taste|workoutTabataReady|button#workoutTabataSoundToggleBtn.sound-toggle-btn|nur # px hoch (mind. #)",
-"taste|workoutTabataReady|button.ca-plus-btn|nur # px hoch (mind. #)"
+"taste|workoutTabataReady|button.ca-plus-btn|nur # px hoch (mind. #)",
+"dunkel|player:schultePlayer|button#schulteBackBtn|Heller Fleck im Dunkelmodus ",
+"dunkel|player:schultePlayer|button#schulteFsBtn|Heller Fleck im Dunkelmodus ",
+"dunkel|player:schultePlayer|button#schultePauseBtn|Heller Fleck im Dunkelmodus ",
+"dunkel|player:schultePlayer|button.schulte-cell.tappable|Heller Fleck im Dunkelmodus ",
+"dunkel|player:schultePlayer|div#schulteHint.remember-hint|Heller Fleck im Dunkelmodus ",
+"dunkel|player:schultePlayer|div#schultePlayer.player|Heller Fleck im Dunkelmodus ",
+"dunkel|player:schultePlayer|nav#stepNav.step-nav|Heller Fleck im Dunkelmodus ",
+"dunkel|player:schultePlayer|span#schulteLevelEl.player-status|Heller Fleck im Dunkelmodus "
 ]

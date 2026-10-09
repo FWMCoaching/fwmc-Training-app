@@ -63,8 +63,9 @@ async def main():
         await pg.click('[data-nat-sub="remember"]'); await pg.wait_for_timeout(150)
         await pg.click("#rememberOpenFixed"); await pg.wait_for_timeout(200)
         await pg.click("#rememberAdvanced summary"); await pg.wait_for_timeout(150)
-        print("Remember offers the Master transfer button:", "Wie in den Grundeinstellungen" in await pg.inner_text("#rememberAdvanced"))
-        await pg.click('#rememberAdvanced >> text="Wie in den Grundeinstellungen"'); await pg.wait_for_timeout(150)
+        await pg.click('#rememberBgSourceRow .xfer-btn'); await pg.wait_for_timeout(100)
+        print("Remember offers the Master transfer button:", "Wie in den Grundeinstellungen" in await pg.inner_text("#xferList"))
+        await pg.click('#xferList .xfer-item:has-text("Wie in den Grundeinstellungen")'); await pg.wait_for_timeout(150)
         print("Remember switched to rot after tapping the Master button:", "active" in (await pg.get_attribute('#rememberBgColorPicker [data-key="rot"]', "class") or ""))
 
         # ---- clearing the Master default doesn't retroactively undo
