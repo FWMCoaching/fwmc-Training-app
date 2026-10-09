@@ -272,6 +272,20 @@ async def main():
               (await ls(pg, "fwmc-master-v1") or {}).get("volume") != 0.2 and await ls(pg, "fwmc-trainer-mode-v1") is None)
         await ctx.close()
 
+        # ---- Test straight into Mit Kunde starts a real session (Prüfer 09.10.) ----
+        ctx, pg = await new_page(b)
+        await pg.goto(ROOT + "?bereich=training"); await pg.wait_for_timeout(300)
+        await set_mode(pg, "try")
+        await pg.evaluate("localStorage.setItem('fwmc-mot-prefs-v1', JSON.stringify({speed: 9}))")
+        await set_mode(pg, "client"); await pg.wait_for_timeout(1200)
+        check("Test -> Mit Kunde: session runs, test settings gone, button says Kunde",
+              (await ls(pg, "fwmc-client-session-v1") or {}).get("start") and await ls(pg, "fwmc-trainer-mode-v1") is None
+              and await ls(pg, "fwmc-mot-prefs-v1") is None and (await (await menu_btn(pg)).inner_text()).strip() == "Kunde")
+        await do_free(pg, "f1")
+        check("the run after the switch lands in the client store, not in history",
+              len(await ls(pg, "fwmc-client-runs-v1", [])) == 1 and await ls(pg, "fwmc-history-v1", []) == [])
+        await ctx.close()
+
         # ---- probe alone, bests restored ----
         ctx, pg = await new_page(b, extra="localStorage.setItem('fwmc-remember-best-v1','{\"leicht\":4}');")
         await pg.goto(ROOT + "?bereich=training"); await pg.wait_for_timeout(300)

@@ -3490,6 +3490,9 @@ input[type=checkbox]{accent-color:var(--brand)}
 .h-tag.tm-tag-try{color:#ffffff;background:#5d4a8f}
 .h-tag.tm-tag-client{color:#ffffff;background:#007094}
 .h-tag.tm-tag-own{color:#ffffff;background:#5b6b70}
+/* Liegengebliebene Kunden-Trainings: kleiner Punkt am Trainer-Knopf */
+.trainer-mode-btn.tm-pending{position:relative}
+.trainer-mode-btn.tm-pending::after{content:"";position:absolute;top:4px;right:4px;width:10px;height:10px;border-radius:50%;background:#007094;box-shadow:0 0 0 2px var(--bg,#f7f4ef)}
 #tmCloseBtn{margin-top:18px}
 #handoverList li{touch-action:pan-y}
 .handover-del{display:block;margin:12px auto 0;min-height:44px;padding:0 12px}

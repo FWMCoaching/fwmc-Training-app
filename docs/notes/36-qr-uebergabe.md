@@ -233,3 +233,14 @@ runs removes them; deleting **own** runs only hides them from the trainer lists
 (`fwmc-trainer-hidden-v1`), history and Fortschritt keep them (`hoAskDelete`).
 Test: `tests/trainer_menu_1008_test.py`; readability of every button on every
 main page, light/dark: `tests/knopf_lesbar_1008_test.py`.
+
+### Absicherung (Prüfer-Runde 09.10.)
+- Snapshot (`HO_SNAP_RE`) covers bests/resume/levels plus settings, plan, code list, unlocks, events, Eigenes Training, notes, Ton, gear, reminders. A restore that changes a settings key (`HO_PREFS_RE`) reloads once (`hoReloadIfNeeded`), `hoAfterReload` then opens the selection or shows the toast.
+- Starting client/test mode puts "Weitermachen" aside (`hoClearResume`; it comes back with the snapshot).
+- Test → Mit Kunde: restore first, then start the session from the restored state, one reload.
+- Mode checks (`tmCheckReturn`) never run while a `.player` is open; a 60 s interval also enforces the 3 h limit while the app stays in front.
+- Time-window selection includes client runs; if there are any, only the latest Kunden-Training is ticked, never own runs.
+- Split QR: "Fertig" before the last part asks "Alle Teile gescannt?". More than 20 parts or 200 runs cannot be sent at once.
+- `hoPack` trims title (120) and note (300), so a long Kombi note never breaks the whole import.
+- Backup excludes the session/mode keys. The trainer button shows a dot while client runs wait for handover.
+- Ton-Sequenz "Nachher" also lands on test runs; level suggestions are off in test mode too.
