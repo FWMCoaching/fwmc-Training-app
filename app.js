@@ -442,9 +442,9 @@
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   }
   function fmtMinutes(sec) {
-    if (sec < 60) return `${Math.max(1, Math.round(sec))} Sek`;
+    if (sec < 60) return `${Math.max(1, Math.round(sec))} Sek.`;
     const m = Math.round(sec / 30) / 2;
-    return `${String(m).replace(".", ",")} Min`;
+    return `${String(m).replace(".", ",")} Min.`;
   }
   function fmtSeconds(sec) {
     return `${String(Math.round(sec * 10) / 10).replace(".", ",")} s`;
@@ -1759,7 +1759,7 @@
       const ok = tp.rounds.filter((r) => r.ok);
       const longest = ok.reduce((m, r) => Math.max(m, r.seq.length), 0);
       return { rounds: tp.rounds.length, roundsOk: ok.length, longest,
-        text: `${ok.length} von ${tp.rounds.length} Runden richtig` + (longest ? ` · längste Folge ${longest}` : "") };
+        text: `${ok.length} von ${countLabel(tp.rounds.length, "Runde", "Runden")} richtig` + (longest ? ` · längste Folge ${longest}` : "") };
     }
     const hits = tp.items.filter((i) => i.ok);
     const rts = hits.map((i) => i.rt).filter((v) => v != null);
@@ -2372,7 +2372,7 @@
     return [...Object.entries(WORKOUT_EXERCISES), ...customWorkoutExercises.map((c) => [c.id, c])];
   }
   function circuitSummaryLabel(block) {
-    return `Zirkel · ${block.items.length} Übung${block.items.length === 1 ? "" : "en"}` + (block.sets > 1 ? ` × ${block.sets} Sätze` : "");
+    return `Zirkel · ${block.items.length} Übung${block.items.length === 1 ? "" : "en"}` + (block.sets > 1 ? ` × ${countLabel(block.sets, "Satz", "Sätze")}` : "");
   }
   function workoutBlockLabel(block) {
     if (block.kind === "circuit") return circuitSummaryLabel(block);
@@ -2380,8 +2380,8 @@
     return findWorkoutExercise(block.exercise).name;
   }
   function workoutBlockMeta(block) {
-    if (block.kind === "tabata") return `${block.rounds} Runden à ${block.workS}s/${block.restS}s`;
-    if (block.kind === "circuit") return `${block.items.length} Übungen × ${block.sets} Sätze`;
+    if (block.kind === "tabata") return `${countLabel(block.rounds, "Runde", "Runden")} à ${block.workS} s/${block.restS} s`;
+    if (block.kind === "circuit") return `${countLabel(block.items.length, "Übung", "Übungen")} × ${countLabel(block.sets, "Satz", "Sätze")}`;
     if (block.kind === "strength") return block.items.map((it) => `${findWorkoutExercise(it.exercise).name} ${strengthItemTargetText(it)}${it.supersetNext ? " (Supersatz mit nächster)" : ""}`).join(" · ");
     if (block.rangeMin != null) return `${block.sets}×${block.rangeMin}–${block.rangeMax}`;
     return `${block.sets}×${block.reps}`;
@@ -2451,7 +2451,7 @@
     return block.domain;
   }
   function comboBlockMeta(block) {
-    if (block.domain === "wimhof") return `${block.rounds ?? WIMHOF_DEFAULTS.rounds} Runden` + (whRoundRestOf(block) ? ` · ${whRoundRestOf(block)} s Pause` : "");
+    if (block.domain === "wimhof") return `${countLabel(block.rounds ?? WIMHOF_DEFAULTS.rounds, "Runde", "Runden")}` + (whRoundRestOf(block) ? ` · ${whRoundRestOf(block)} s Pause` : "");
     if (block.domain === "breath") return (block.noLimit ? "ohne Zeitlimit" : fmtMinutes((block.durationMin ?? 5) * 60)) + (block.listen ? " · Hörmodus" : "");
     if (block.domain === "movement") return fmtMinutes((block.durationMin ?? 2) * 60);
     if (block.domain === "workout") return workoutBlockMeta(block);
@@ -3764,6 +3764,18 @@
     if (st && st.planned > 0 && st.scored === 0) return { ...w, goal: 0, planDone: 0, extra: w.n, fromPlan: true, noScore: true, reached: false };
     return { ...w, goal: p.weekGoal, planDone: Math.min(w.n, p.weekGoal), extra: Math.max(0, w.n - p.weekGoal), fromPlan: false, reached: w.n >= p.weekGoal };
   }
+  // "Noch N bis zum Ziel" ehrlich (Prüfer 09.10.): bei einem Plan zählen nur die
+  // Einheiten, die diese Woche noch möglich sind (heute und später, nicht erledigt).
+  function goalLeftText(c) {
+    const left = Math.max(0, c.goal - c.planDone);
+    if (!left) return "";
+    if (c.fromPlan) {
+      let ahead = 0;
+      try { const t = todayStr(), sun = dAdd(mondayOf(t), 6), h = loadHistory(); for (let d = t; d <= sun; d = dAdd(d, 1)) ahead += occurrencesOn(d, h).filter((o) => !o.done).length; } catch (e) { ahead = left; }
+      if (ahead < left) return ahead ? `Noch ${ahead} ${ahead === 1 ? "Einheit" : "Einheiten"} diese Woche geplant.` : "Diese Woche ist nichts mehr geplant.";
+    }
+    return `Noch ${left} bis zum Ziel.`;
+  }
   function progressSummary(p, now) {
     const thisMon = progressMonday(now || new Date());
     const weekAt = (back) => { const m = new Date(thisMon); m.setDate(m.getDate() - back * 7); return m; };
@@ -3841,7 +3853,7 @@
     els.progressWeekText.textContent = c.pause ? "Diese Woche ist Pause. Deine Serie bleibt erhalten."
       : c.noScore ? `Diese Woche ist ohne Wertung. ${c.n} ${c.n === 1 ? "Training" : "Trainings"} bisher.`
       : left
-      ? `Diese Woche ${c.planDone} von ${c.goal}${c.fromPlan ? " geplanten" : ""}. Noch ${left} bis zum Ziel.${extraTxt}`
+      ? `Diese Woche ${c.planDone} von ${c.goal}${c.fromPlan ? " geplanten" : ""}. ${goalLeftText(c)}${extraTxt}`
       : `Diese Woche ${c.planDone} von ${c.goal}${c.fromPlan ? " geplanten" : ""}. Ziel erreicht, stark!${extraTxt}`;
     // No training yet (Fabian 2026-10-06): one friendly start card instead of
     // zeros and empty bars; the week goal stays adjustable above it.
@@ -3858,7 +3870,7 @@
     const maxN = Math.max(...s.weeks.map((w) => Math.max(w.goal * 1.25, w.planDone + w.extra)), 1);
     els.progressWeeks.innerHTML = s.weeks.map((w, i) => {
       const hp = Math.round((w.planDone / maxN) * 100), he = Math.round((w.extra / maxN) * 100);
-      const label = i === s.weeks.length - 1 ? "diese" : `${String(w.monday.getDate()).padStart(2, "0")}.${String(w.monday.getMonth() + 1).padStart(2, "0")}.`;
+      const label = i === s.weeks.length - 1 ? "jetzt" : `${w.monday.getDate()}.${w.monday.getMonth() + 1}.`; // gleiches Format wie die Tagesform
       const title = w.pause ? "Pause" : `${w.planDone} von ${w.goal}${w.extra ? `, ${w.extra} zusätzlich` : ""}`;
       return `<div class="progress-week${w.reached ? " reached" : ""}${w.pause ? " pause" : ""}" title="${title}">
         <span class="progress-week-n">${w.pause ? "–" : w.planDone + w.extra}</span>
@@ -5416,7 +5428,7 @@
     if (isConeTap) {
       const best = coneBestFor(state.duration);
       els.coneBestHint.textContent = best
-        ? `Deine Bestleistung bei dieser Dauer: ${best} Durchgänge.`
+        ? `Deine Bestleistung bei dieser Dauer: ${countLabel(best, "Durchgang", "Durchgänge")}.`
         : "Noch keine Bestleistung bei dieser Dauer – leg los!";
     }
   }
@@ -8355,8 +8367,8 @@
     let summary, note;
     if (coneTap) {
       const isRecord = saveConeBest(coneTap.duration, coneTap.count);
-      note = `${coneTap.count} Durchgänge`;
-      summary = `${coneTap.count} Durchgänge · ${fmtMinutes(spent)}` + (isRecord && coneTap.count > 0 ? " · Neue Bestleistung!" : "");
+      note = countLabel(coneTap.count, "Durchgang", "Durchgänge");
+      summary = `${countLabel(coneTap.count, "Durchgang", "Durchgänge")} · ${fmtMinutes(spent)}` + (isRecord && coneTap.count > 0 ? " · Neue Bestleistung!" : "");
     } else if (lwDone) {
       summary = `${lwResultText(lwDone)} · ${fmtMinutes(spent)}`;
       note = lwNote(lwDone);
@@ -11561,7 +11573,7 @@
     els.wimhofPlayerBar.hidden = true;
     els.wimhofPauseBtn.hidden = true;
     const avgHold = retentions.length ? retentions.reduce((a, b) => a + b, 0) / retentions.length : 0;
-    els.wimhofDoneSummary.textContent = `${wimhofSettings.rounds} Runden${avgHold ? " · komfortable Anhaltezeit " + fmtClock(avgHold) : ""}`;
+    els.wimhofDoneSummary.textContent = `${countLabel(wimhofSettings.rounds, "Runde", "Runden")}${avgHold ? " · komfortable Anhaltezeit " + fmtClock(avgHold) : ""}`;
     const id = addHistory({ kind: "breath", title: WIMHOF_INFO.name, seconds: Math.round(played) });
     renderRating(els.wimhofRating, id, "Wie wach und energiegeladen fühlst du dich?");
     els.wimhofDonePanel.hidden = false;
@@ -35594,12 +35606,26 @@
 
   // ---- "Heute" screen ----
   let todaySel = todayStr();
+  // Neuer Tag, während die App im Speicher lag (Prüfer 09.10.: auf dem iPhone der
+  // Normalfall): beim Zurückkehren oder spätestens nach einer Minute springt Heute
+  // auf den neuen Tag, wenn der alte Tag gewählt war, und baut sich neu auf.
+  let todayKnown = todaySel;
+  function todayRollover() {
+    const t = todayStr();
+    if (t === todayKnown) return;
+    if (todaySel === todayKnown) todaySel = t;
+    todayKnown = t;
+    try { renderToday(); } catch (e) {}
+  }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) todayRollover(); });
+  window.addEventListener("focus", todayRollover);
+  setInterval(todayRollover, 60000);
   let calMode = null; // null | "month" | "quarter" | "year"
   let calShowNext = false;
   let calYear = new Date().getFullYear();
   let dayView = readJSON(DAY_VIEW_KEY, "list") === "hours" ? "hours" : "list";
 
-  function greetingFor(h) { return h < 5 ? "Guten Abend" : h < 11 ? "Guten Morgen" : h < 17 ? "Guten Tag" : "Guten Abend"; }
+  function greetingFor(h) { return h < 5 ? "Hallo" : h < 11 ? "Guten Morgen" : h < 17 ? "Guten Tag" : "Guten Abend"; }
   function areaDot(area, extraClass) {
     const a = AREA_BY_KEY[area];
     return `<span class="area-dot ${extraClass || ""}" style="background:${a ? a.color : "#888"}" aria-hidden="true"></span>`;
@@ -35989,7 +36015,7 @@
     // Answered today: the week's status instead (same numbers as Fortschritt).
     const c = progressSummary(loadProgress()).cur;
     const left = Math.max(0, c.goal - c.planDone);
-    const sub = c.pause ? "Diese Woche ist Pause." : !c.goal ? "diese Woche" : left ? `Trainings diese Woche. Noch ${left} bis zum Ziel.` : "Trainings diese Woche. Ziel erreicht, stark!";
+    const sub = c.pause ? "Diese Woche ist Pause." : !c.goal ? "diese Woche" : left ? `Trainings diese Woche. ${goalLeftText(c)}` : "Trainings diese Woche. Ziel erreicht, stark!";
     tile.classList.add("is-set");
     tile.innerHTML = `<div class="today-main-kicker today-new-kicker">Heute ${esc(moodLabel(cur.v))} <button class="text-link small today-mood-change" type="button" id="todayMoodChangeBtn">ändern</button></div>
       <h2 class="today-tile-title today-mood-week">${c.goal && !c.pause ? `${c.planDone} von ${c.goal}` : `${c.n} ${c.n === 1 ? "Training" : "Trainings"}`}</h2>
@@ -36016,8 +36042,8 @@
     for (let i = 0; i < 28; i++) {
       const d = dAdd(start, i), e = all[d];
       // Zeilen tragen ihr Datum (Fabian 09.10.: ohne Datum wirkte eine vergangene
-      // Woche wie die laufende); die laufende Woche heißt "Diese".
-      if (i % 7 === 0) { const dd = dParse(d); cells.push(`<span class="mood-row-label">${i === 21 ? "Diese" : `${dd.getDate()}.${dd.getMonth() + 1}.`}</span>`); }
+      // Woche wie die laufende); die laufende Woche heißt "jetzt" (wie im Wochen-Balken).
+      if (i % 7 === 0) { const dd = dParse(d); cells.push(`<span class="mood-row-label">${i === 21 ? "jetzt" : `${dd.getDate()}.${dd.getMonth() + 1}.`}</span>`); }
       const lab = e ? moodLabel(e.v) : "";
       cells.push(`<span class="mood-cell${e ? " m" + e.v : ""}${trainedDays.has(d) ? " trained" : ""}${d > today ? " future" : ""}${d === today ? " today" : ""}" title="${shortDate(d)}${lab ? ": " + lab : ""}${trainedDays.has(d) ? ", trainiert" : ""}"></span>`);
     }
@@ -36030,7 +36056,7 @@
     const sentence = enough.length >= 2
       ? enough.map((x, i) => `${i ? "an" : "An"} „${x.m.label}“-Tagen hast du in ${Math.round((x.t / x.n) * 100)} % trainiert`).join(", ") + "."
       : left > 0 ? `Noch ${left} ${left === 1 ? "Tag" : "Tage"} Tagesform, dann siehst du hier, wie oft du an müden und an fitten Tagen trainierst.`
-      : "Sobald du an mehreren Tagen unterschiedlich fit bist, siehst du hier den Vergleich.";
+      : `Bisher ${stats.map((x) => `${x.m.label} ${x.n === 1 ? "1 Tag" : x.n + " Tage"}`).join(", ")}. Sobald zwei Stufen je 5 Tage haben, siehst du hier den Vergleich.`;
     box.innerHTML = `<div class="mood-head"><span></span>${WD_SHORT.map((w) => `<span>${w}</span>`).join("")}</div>
       <div class="mood-grid">${cells.join("")}</div>
       <div class="mood-legend">${MOODS.map((m) => `<span><i class="mood-cell m${m.v}"></i>${m.label}</span>`).join("")}<span><i class="mood-cell trained"></i>mit Training</span></div>
@@ -36123,7 +36149,10 @@
     const box = els.todayWeekReview;
     const intents = readJSON(WEEK_INTENT_KEY, {}) || {};
     const monday = mondayOf(today);
-    if (wdIdx(today) === 6) {
+    // Erst bewerten, wenn der Sonntag durch ist (Prüfer 09.10.): solange heute noch
+    // eine geplante Einheit offen ist, kommt der Abschluss erst ab 20 Uhr.
+    const sundayOpen = wdIdx(today) === 6 && occurrencesOn(today, hist).some((o) => !o.done);
+    if (wdIdx(today) === 6 && (!sundayOpen || new Date().getHours() >= 20)) {
       const rows = [];
       let planned = 0, done = 0;
       for (let i = 0; i < 7; i++) {
@@ -36349,17 +36378,22 @@
     }
     const item = (o, style, compact) => {
       const meta = [o.time ? (o.time + "–" + minToTime(timeToMin(o.time) + o.minutes)) : "ohne Uhrzeit", `${o.minutes} Min.`, AREA_BY_KEY[o.area].short].concat(o.special ? ["Sondertraining"] : []).join(" · ");
-      const status = o.done ? (o.auto && !o.manual ? "erledigt (aus deinem Verlauf)" : "erledigt") : "offen";
+      // Zeitform je Tag (Fabian 09.10.): kommende Tage "geplant" und ohne Abhaken,
+      // vergangene "nicht gemacht", nur heute "offen" / "Heute auslassen".
+      const isFuture = date > todayStr(), isPast = date < todayStr();
+      const openWord = isFuture ? "geplant" : isPast ? "nicht gemacht" : "offen";
+      const status = o.done ? (o.auto && !o.manual ? "erledigt (aus deinem Verlauf)" : "erledigt") : openWord;
+      const doneBtn = isFuture && !o.manual ? "" : null;
       if (compact) return `<div class="day-item compact${o.done ? " done" : ""}" style="${style}" data-occ="${esc(o.id)}">
         <div class="day-item-title">${areaDot(o.area)} ${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div>
-        <div class="day-item-meta">${esc(o.time)}–${esc(minToTime(timeToMin(o.time) + o.minutes))} · ${o.done ? "✓ erledigt" : "offen"}</div>
-        <div class="day-item-actions"><button type="button" class="day-act" data-act="start">Starten</button><button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}" aria-label="${o.manual ? "Erledigt, zurücknehmen" : "Abhaken"}">✓</button></div></div>`;
+        <div class="day-item-meta">${esc(o.time)}–${esc(minToTime(timeToMin(o.time) + o.minutes))} · ${o.done ? "✓ erledigt" : openWord}</div>
+        <div class="day-item-actions"><button type="button" class="day-act" data-act="start">Starten</button>${doneBtn ?? `<button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}" aria-label="${o.manual ? "Erledigt, zurücknehmen" : "Abhaken"}">✓</button>`}</div></div>`;
       return `<div class="day-item${o.done ? " done" : ""}" ${style ? `style="${style}"` : ""} data-occ="${esc(o.id)}">
         <div class="day-item-main">${areaDot(o.area)}<div><div class="day-item-title">${o.special ? "★ " : ""}${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div><div class="day-item-meta">${esc(meta)} · ${status}</div></div></div>
         <div class="day-item-actions">
           <button type="button" class="day-act" data-act="start">Starten</button>
-          <button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}">${o.manual ? "✓ Erledigt" : "Abhaken"}</button>
-          ${compact ? "" : `<button type="button" class="day-act subtle" data-act="change">Ändern</button><button type="button" class="day-act subtle" data-act="${o.extra ? "remove" : "skip"}">${o.extra ? "Löschen" : "Heute auslassen"}</button>`}
+          ${doneBtn ?? `<button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}">${o.manual ? "✓ Erledigt" : "Abhaken"}</button>`}
+          ${compact ? "" : `<button type="button" class="day-act subtle" data-act="change">Ändern</button><button type="button" class="day-act subtle" data-act="${o.extra ? "remove" : "skip"}">${o.extra ? "Löschen" : date === todayStr() ? "Heute auslassen" : "Auslassen"}</button>`}
         </div></div>`;
     };
     const timed = occ.filter((o) => o.time), untimed = occ.filter((o) => !o.time);
@@ -36420,6 +36454,7 @@
       return;
     }
     if (act === "done") {
+      if (date > todayStr() && !(plan.done[date] || []).includes(o.id)) return; // kommende Tage nicht abhaken
       const l = plan.done[date] || [];
       plan.done[date] = l.includes(o.id) ? l.filter((x) => x !== o.id) : [...l, o.id];
       if (!plan.done[date].length) delete plan.done[date];
@@ -37784,7 +37819,7 @@
     $("myPlanFocusHelp").textContent = goals.length
       ? "Unsere Empfehlung: in der Woche davor eher locker trainieren, in der Wettkampfwoche nur kurz, danach Erholung einplanen. Dein Plan ändert sich dadurch nicht von selbst. Passe ihn an, wie du es mit deinem Trainer abgesprochen hast."
       : "Trage einen Wettkampf, ein Spiel oder eine Prüfung als Termin auf Heute ein. Dann steht hier und in deinem Plan, wie du die Wochen davor und danach am besten angehst.";
-    $("myPlanFocus").innerHTML = goals.map((g) => `<div class="day-item"><div class="day-item-main"><span class="myplan-goal">◆</span><div><div class="day-item-title">${esc(g.title)}</div><div class="day-item-meta">${esc(longDate(g.date))}${daysUntil(g.date) > 0 ? ` · noch ${daysUntil(g.date)} Tage` : ""}</div></div></div></div>`).join("");
+    $("myPlanFocus").innerHTML = goals.map((g) => `<div class="day-item"><div class="day-item-main"><span class="myplan-goal">◆</span><div><div class="day-item-title">${esc(g.title)}</div><div class="day-item-meta">${esc(longDate(g.date))}${daysUntil(g.date) > 0 ? ` · noch ${countLabel(daysUntil(g.date), "Tag", "Tage")}` : ""}</div></div></div></div>`).join("");
   }
   function shortDate(d) { const x = dParse(d); return `${x.getDate()}.${x.getMonth() + 1}.${x.getFullYear()}`; }
   function goalOverrun(note) {

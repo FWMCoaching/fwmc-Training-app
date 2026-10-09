@@ -673,5 +673,14 @@ For every new or changed exercise/screen, in the same commit:
   (from 04:00, or after 12 h); the dot on the trainer button and
   `#clientRunPending` (top of the menu) / `#handoverWaitNote` show waiting
   client trainings in every mode.
+- Zeitform + Zahlwörter (Fabian 09.10.: "Ich will nicht mehr der sein, dem
+  sowas auffällt"): anything date-related says what is true for THAT day -
+  coming days "geplant" (no Abhaken, no "erledigt"/"trainiert"), past days
+  "nicht gemacht" (never "offen"/"Heute auslassen"), Sunday review only once
+  Sunday is through, "Noch N" never more than still possible, Heute follows
+  midnight (`todayRollover`), grids carry dates. Counts always via
+  `countLabel()`, units "Min."/"Sek."/"30 s". `tests/zeitreise_0910_test.py`
+  replays fixed dates (weekdays, Sunday, Monday 00:30, New Year, DST) with a
+  fake clock; a new date-dependent screen or text joins it.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.

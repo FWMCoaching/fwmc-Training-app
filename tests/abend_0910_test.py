@@ -53,7 +53,7 @@ with sync_playwright() as p:
           localStorage.setItem('fwmc-mood-v1', JSON.stringify(m)); }""")
         pg.goto(URL + "?bereich=fortschritt"); pg.wait_for_timeout(400)
         labels = pg.locator("#progressMood .mood-row-label").all_inner_texts()
-        check(f"{scheme}: 4 Zeilen mit Datum, letzte 'Diese'", len(labels) == 4 and labels[-1] == "Diese" and labels[0].endswith("."), labels)
+        check(f"{scheme}: 4 Zeilen mit Datum, letzte 'jetzt'", len(labels) == 4 and labels[-1] == "jetzt" and labels[0].endswith("."), labels)
         leg = pg.inner_text("#progressMood .mood-legend")
         check(f"{scheme}: Legende 'mit Training', nicht 'trainiert'", "mit Training" in leg and "trainiert" not in leg, leg)
         w = pg.evaluate("document.querySelector('#progressMood .mood-grid').scrollWidth <= document.querySelector('#progressMood').clientWidth + 1")

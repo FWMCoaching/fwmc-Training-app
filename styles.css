@@ -3617,7 +3617,7 @@ input[type=checkbox]{accent-color:var(--brand)}
 .mood-cell.m1{background:#9bb3bd}.mood-cell.m2{background:#5fa3b8}.mood-cell.m3{background:#007094}
 .mood-cell.trained{border-color:#2e7d4f}
 .mood-cell.future{opacity:.35}
-.mood-cell.today{outline:2px solid var(--ink-soft);outline-offset:1px}
+.mood-cell.today{outline:2px dashed var(--ink-soft);outline-offset:2px}
 .mood-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:calc(13px * var(--ts,1));color:var(--ink-soft)}
 .mood-legend span{display:inline-flex;align-items:center;gap:6px}
 .mood-legend .mood-cell{width:14px;height:14px;display:inline-block}
