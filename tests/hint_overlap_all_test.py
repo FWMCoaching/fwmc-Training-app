@@ -10,7 +10,7 @@ import asyncio, sys
 from playwright.async_api import async_playwright
 URL="http://localhost:8845/index.html?bereich=visual"
 TEST=["ab","alarm","anti","antizip","bisect","corsi","dsst","eyecount","flanker","gng","hick","iconic","kippbild","merk","navon","posner","pvt","reakt","rotation","search","simon","stop","stroop","subitize","testNback","trail","ts","ufov","vorlauf","wcst","ton"]
-NAT=[("remember","#rememberOpenFixed"),("blitz","#blitzOpenBtn"),("flash","#flashOpenConstant"),("mot","#motOpenSpeed"),("balance","#balanceOpenBtn")]
+NAT=[("remember","#rememberOpenFixed"),("blitz","#blitzOpenBtn"),("flash","#flashOpenConstant"),("mot","#motOpenSpeed"),("balance","#balanceOpenBtn"),("schulte","#schulteOpenFest")]
 JS="""(p)=>{const pl=document.getElementById(p+'Player'); if(!pl||pl.hidden) return null;
 const hint=document.getElementById(p+'Hint'); const bar=document.getElementById(p+'PlayerBar');
 const R=e=>e.getBoundingClientRect(); const out=[];

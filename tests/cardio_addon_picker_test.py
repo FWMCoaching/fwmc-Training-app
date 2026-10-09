@@ -111,9 +111,9 @@ async def main():
 
         # ---- default selection + duration ----
         choices = pg.locator("#cardioAddonPickerTypeRow .choice")
-        # 08.10.: 22 guest types now - "Zusatzaufgabe · Rechnen" and "Richtungskreuz"
+        # 09.10.: 23 guest types now (+ Schulte-Tabelle); 08.10.: 22 - "Zusatzaufgabe · Rechnen" and "Richtungskreuz"
         # were appended last to CARDIO_GUEST_TYPES (was 20).
-        print("all 22 exercise choices offered (not just the addon pool):", await choices.count() == 22, await choices.count())
+        print("all 23 exercise choices offered (not just the addon pool):", await choices.count() == 23, await choices.count())
         print("first type pre-selected by default:", "active" in (await choices.nth(0).get_attribute("class")))
         print("default duration shown as 20 (matches the saved default):",
               (await pg.locator('#cardioAddonPickerDetail input[data-f="duration"]').input_value()) == "20")
