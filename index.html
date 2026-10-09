@@ -292,7 +292,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 13:01</p>
+    <p class="app-version">Stand: 09.10.2026, 13:12</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -360,24 +360,20 @@
     <svg class="install-pointer-arrow" viewBox="0 0 40 64" width="40" height="64" aria-hidden="true"><path d="M20 4v52M6 42l14 16 14-16" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </div>
 
-  <section class="today-main today-break" id="todayBreak" aria-labelledby="todayBreakTitle">
-    <div class="today-break-head">
-      <span class="today-break-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h11a3 3 0 1 0-3-3"/><path d="M3 13h15a3 3 0 1 1-3 3"/><path d="M3 17h7"/></svg></span>
-      <div class="today-break-text">
-        <h2 class="today-break-title" id="todayBreakTitle">Nichtraucher-Pause</h2>
-        <p class="today-break-sub"><span id="todayBreakMinText">2 Min.</span> Atempause &middot; ruhig atmen, kurz abschalten</p>
+  <!-- Heute Entwurf E (Fabian 09.10.): zwei halbe Kacheln unter "Zuletzt" -->
+  <div class="today-pair" id="todayPair">
+    <section class="today-tile today-break" id="todayBreak" aria-labelledby="todayBreakTitle">
+      <div class="today-tile-top">
+        <span class="today-break-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h11a3 3 0 1 0-3-3"/><path d="M3 13h15a3 3 0 1 1-3 3"/><path d="M3 17h7"/></svg></span>
+        <button class="today-break-info" id="todayBreakInfoBtn" type="button" aria-label="Was ist die Nichtraucher-Pause? Dauer einstellen"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".6" fill="currentColor"/></svg></button>
       </div>
-      <button class="today-break-info" id="todayBreakInfoBtn" type="button" aria-label="Was ist die Nichtraucher-Pause?"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".6" fill="currentColor"/></svg></button>
-    </div>
-    <div class="today-break-actions">
-      <div class="today-break-mins" role="group" aria-label="Dauer der Atempause">
-        <button class="choice" type="button" data-break-min="1">1 Min.</button>
-        <button class="choice" type="button" data-break-min="2">2 Min.</button>
-        <button class="choice" type="button" data-break-min="3">3 Min.</button>
-      </div>
-      <button class="text-link today-break-start" id="todayBreakStartBtn" type="button">Atempause starten &rarr;</button>
-    </div>
-  </section>
+      <h2 class="today-tile-title" id="todayBreakTitle">&bdquo;Nichtraucher-Pause&ldquo;</h2>
+      <p class="today-tile-sub">G&ouml;nn dir einmal durchatmen.</p>
+      <button class="text-link today-tile-go" id="todayBreakStartBtn" type="button"><span id="todayBreakMinText">2 Min.</span> starten &rarr;</button>
+    </section>
+    <section class="today-tile today-new" id="todayNewTile" hidden></section>
+  </div>
+  <section class="today-ask" id="todayAsk" hidden></section>
 
   <section class="today-week">
     <div class="section-head">
@@ -419,6 +415,8 @@
     </div>
   </section>
 
+  <section class="today-goal" id="todayGoal" hidden></section>
+
   <section class="today-main tips-card" id="todayTipsCard" hidden>
     <div class="today-main-kicker">Tipp</div>
     <h2 class="today-main-title">So trainierst du richtig</h2>
@@ -452,7 +450,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 13:01</p>
+    <p class="app-version">Stand: 09.10.2026, 13:12</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -488,7 +486,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 13:01</p>
+    <p class="app-version">Stand: 09.10.2026, 13:12</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -513,6 +511,10 @@
     <button class="featured-card" id="moreSettingsBtn" type="button">
       <span class="fc-title">Grundeinstellungen</span>
       <span class="fc-desc">T&ouml;ne, Countdown, Hintergrundfarbe, Farbsehen und Sicherung deiner Daten.</span>
+    </button>
+    <button class="featured-card" id="moreGoalBtn" type="button">
+      <span class="fc-title">Dein Ziel</span>
+      <span class="fc-desc">Wof&uuml;r du trainierst. Danach richten sich die &Uuml;bungsvorschl&auml;ge auf Heute.</span>
     </button>
     <button class="featured-card" id="moreTipsBtn" type="button">
       <span class="fc-title">So trainierst du richtig</span>
@@ -542,7 +544,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 13:01</p>
+    <p class="app-version">Stand: 09.10.2026, 13:12</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -990,7 +992,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 13:01</p>
+    <p class="app-version">Stand: 09.10.2026, 13:12</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1065,7 +1067,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 13:01</p>
+    <p class="app-version">Stand: 09.10.2026, 13:12</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1176,7 +1178,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 13:01</p>
+    <p class="app-version">Stand: 09.10.2026, 13:12</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1248,7 +1250,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 13:01</p>
+    <p class="app-version">Stand: 09.10.2026, 13:12</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1545,7 +1547,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 13:01</p>
+    <p class="app-version">Stand: 09.10.2026, 13:12</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1721,7 +1723,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 13:01</p>
+    <p class="app-version">Stand: 09.10.2026, 13:12</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -2035,7 +2037,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 13:01</p>
+    <p class="app-version">Stand: 09.10.2026, 13:12</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -2412,7 +2414,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 13:01</p>
+    <p class="app-version">Stand: 09.10.2026, 13:12</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -2625,7 +2627,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 13:01</p>
+    <p class="app-version">Stand: 09.10.2026, 13:12</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -9046,6 +9048,12 @@
     <h2 id="breakInfoTitle">Die Nichtraucher-Pause</h2>
     <p class="group-help break-info-text">Wer raucht, g&ouml;nnt sich oft etwas, das jedem guttut: mehrmals am Tag ein paar Minuten nur f&uuml;r sich &ndash; kurz raus, durchatmen, abschalten. Diese kleine Auszeit kannst du dir auch ohne Zigarette nehmen, mit ein paar ruhigen Atemz&uuml;gen. Ob zwischen zwei Terminen oder mitten im Alltag: G&ouml;nn dir diese Pause, so oft du magst.</p>
     <p class="group-help">Gleichm&auml;&szlig;ig ein- und ausatmen, kein Halten (Ruhige Atmung). Auf Wunsch erinnert dich die App tags&uuml;ber daran: <button class="inline-link" type="button" id="breakInfoReminderLink">Erinnerungen einstellen</button>.</p>
+    <div class="group-label break-info-dauer">Dauer</div>
+    <div class="choice-row today-break-mins" role="group" aria-label="Dauer der Atempause">
+      <button class="choice" type="button" data-break-min="1">1 Min.</button>
+      <button class="choice" type="button" data-break-min="2">2 Min.</button>
+      <button class="choice" type="button" data-break-min="3">3 Min.</button>
+    </div>
     <button class="start-btn" id="breakInfoCloseBtn" type="button">Alles klar</button>
   </div>
 </div>

@@ -3528,3 +3528,42 @@ input[type=checkbox]{accent-color:var(--brand)}
 /* Kunden-Trainings warten (Fabian 09.10.): petrol mark like the Kunde mode */
 #clientRunPending,.ho-wait-note{border-left:4px solid #007094}
 #trainerMenuSheet #clientRunPending{margin:0 0 14px}
+
+/* ==== Heute Entwurf E (Fabian 09.10.): flache "Zuletzt"-Zeile, zwei halbe
+   Kacheln (Nichtraucher-Pause + Neu für dich/Bestleistung), schmale
+   Trainer-Frage, Zeile "Für dein Ziel" unter der Woche. Keine Animation. ==== */
+.today-main.is-flat{padding:12px 12px 12px 16px}
+.today-last{display:flex;align-items:center;gap:12px}
+.today-last-text{flex:1 1 auto;min-width:0}
+.today-last-title{margin:3px 0 0;font-size:calc(17px * var(--ts,1));line-height:1.25;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.today-last-btn{flex:none;min-height:44px;padding:0 18px;border-radius:999px;border:1.5px solid var(--brand);background:transparent;color:var(--brand);font:inherit;font-weight:700;font-size:calc(15px * min(var(--ts,1),1.1));cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap}
+.today-last-btn:active{background:var(--brand-pale)}
+.today-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 22px}
+.today-pair.single{grid-template-columns:1fr}
+.today-tile{position:relative;display:flex;flex-direction:column;align-items:flex-start;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 14px 10px;margin:0}
+.today-tile.today-new{border-top:4px solid var(--area);padding-top:11px}
+.today-tile-top{display:flex;width:100%;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.today-tile .today-break-info{position:relative;z-index:1;margin:-6px -8px 0 0}
+.today-tile-title{margin:2px 0 4px;font-size:calc(16px * var(--ts,1));line-height:1.25;color:var(--ink);overflow-wrap:normal;hyphens:manual}
+.today-tile-sub{margin:0 0 6px;font-size:calc(13.5px * var(--ts,1));line-height:1.4;color:var(--ink-soft);flex:1 1 auto}
+.today-tile-go{margin:auto 0 0;min-height:44px;padding:0;text-align:left;font-weight:700;white-space:nowrap}
+.today-tile-go::after{content:"";position:absolute;inset:0;border-radius:inherit}
+.today-tile:active{background:var(--surface-2)}
+.today-new-kicker{color:var(--area-ink,var(--brand))}
+.today-pair.single .today-tile-go::after{border-radius:var(--radius)}
+.today-ask{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:-10px 0 22px;padding:10px 12px 10px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius)}
+.today-ask-q{margin:0;flex:1 1 120px;min-width:0;font-size:calc(14.5px * var(--ts,1));font-weight:600;color:var(--ink)}
+.today-ask-btns{display:flex;gap:8px;flex:0 0 auto}
+.today-ask-btns .choice{min-height:44px;padding:8px 14px;white-space:nowrap}
+.today-goal{margin:0 0 22px}
+.today-goal-head{display:flex;align-items:center;gap:6px;min-height:44px;padding:0;border:none;background:none;font:inherit;font-weight:700;font-size:calc(12px * var(--ts,1));letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);cursor:pointer}
+.today-goal-pick{margin:2px 0 10px}
+.today-goal-check{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin:0 0 8px;font-size:calc(14px * var(--ts,1));color:var(--ink)}
+.today-goal-check .text-link{min-height:44px}
+.today-goal-hint{margin:4px 0 0;font-size:calc(13px * var(--ts,1));color:var(--ink-soft)}
+.today-goal-hint .text-link{min-height:44px;display:inline-flex;align-items:center}
+.today-goal.is-compact .starter-card{min-height:0;flex-basis:min(44%,170px);padding:9px 12px;border-top-width:3px}
+.today-goal.is-compact .starter-card strong{font-size:calc(14px * var(--ts,1))}
+.break-info-dauer{margin-top:14px}
+#breakInfoSheet .today-break-mins{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 16px}
+@media (max-width:359px){.today-pair{grid-template-columns:1fr}}
