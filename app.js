@@ -22062,7 +22062,7 @@
   // Keys that must never travel in a client backup file: the coach
   // dashboard (dashboard.html, same origin) keeps its admin token under an
   // fwmc- key in this same localStorage.
-  const BACKUP_EXCLUDE = ["fwmc-admin-token", "fwmc-reminders-v1", "fwmc-import-parts-v1", "fwmc-client-session-v1", "fwmc-trainer-mode-v1", "fwmc-trainer-seen-v1"]; // reminders belong to this device's push subscription
+  const BACKUP_EXCLUDE = ["fwmc-admin-token", "fwmc-reminders-v1", "fwmc-import-parts-v1", "fwmc-client-session-v1", "fwmc-trainer-mode-v1", "fwmc-trainer-seen-v1", "fwmc-trainer-asked-v1"]; // reminders belong to this device's push subscription
   function buildBackup() {
     const data = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -39109,6 +39109,11 @@
     const clr = $("handoverClearBtn");
     clr.hidden = !storePick || !list.length;
     clr.textContent = { all: "Alles löschen", client: "Alle Kunden-Trainings löschen", try: "Alle Test-Trainings löschen", own: "Alle eigenen löschen" }[hoKind];
+    // Fabian 09.10.: say plainly that client trainings still wait for the handover.
+    const waiting = storePick ? hoClientRuns().length : hoLeftovers().length;
+    $("handoverWaitNote").hidden = !waiting || clientPick;
+    $("handoverWaitText").textContent = waiting ? `${hoCount(waiting)} ${storePick ? "von Kunden" : "aus einem früheren Kunden-Training"} ${waiting === 1 ? "wartet" : "warten"} noch auf die Übergabe.` : "";
+    $("handoverWaitBtn").hidden = !storePick || hoKind === "client";
     $("handoverPickTitle").textContent = storePick ? "Gespeicherte Trainings" : clientPick ? "Kunden-Training übergeben" : "An Kunden übergeben";
     $("handoverPickSub").textContent = storePick
       ? "Alles der letzten 14 Tage auf diesem Gerät. Hake an, was du übergeben oder löschen willst. Nach links wischen löscht ein einzelnes Training."
@@ -39485,6 +39490,7 @@
   var TM_KEY = "fwmc-trainer-mode-v1"; // {mode:"try", since, snap}
   var TM_TRY_KEY = "fwmc-try-runs-v1";
   var TM_SEEN_KEY = "fwmc-trainer-seen-v1"; // last time the app went to the background
+  var TM_ASKED_KEY = "fwmc-trainer-asked-v1"; // last "läuft das noch?" after 3 h
   const TM_MAX_MS = 3 * 3600e3, TM_TRY_KEEP_MS = 14 * 86400e3, TM_ASK_MS = 30 * 60e3;
   const TM_MAIN = ["todayHome", "trainingHub", "progressScreen", "moreScreen"];
   function tmTry() {
@@ -39578,7 +39584,9 @@
   function tmSync() {
     const m = tmMode();
     const on = featureOn("trainer-tools") || m !== "own";
-    const pending = m === "own" && hoLeftovers().length > 0;
+    // Fabian 09.10.: the dot shows in every mode while client trainings wait
+    // (in "Mit Kunde" the running session itself does not count).
+    const pending = (m === "client" ? hoLeftovers() : hoClientRuns()).length > 0;
     document.querySelectorAll(".trainer-mode-btn").forEach((btn) => {
       btn.hidden = !on;
       btn.classList.toggle("tm-pending", pending);
@@ -39615,31 +39623,54 @@
   $("trainerMenuSheet").addEventListener("click", (e) => { if (e.target === e.currentTarget) tmCloseMenu(); });
   $("handoverOpenBtn").addEventListener("click", tmCloseMenu);
   $("tmStoreBtn").addEventListener("click", () => { tmCloseMenu(); hoOpenStore(); });
+  $("handoverWaitBtn").addEventListener("click", () => { hoKind = "client"; hoRenderPick(); });
   $("clientRunPendingBtn").addEventListener("click", tmCloseMenu);
   // 3 h limit + "weiter oder beenden?" after 30 min in the background.
+  // Fabian 09.10.: never end on its own during the day. After 3 h the app
+  // only asks "läuft das noch?" (again every 3 h after "Weiter"); it ends
+  // by itself on the next day (from 04:00) or after 12 h at the latest.
+  // Unsent client trainings stay for the handover either way.
+  function tmNextDay(since) {
+    const now = new Date(), s = new Date(since);
+    if (now - s > 12 * 3600e3) return true;
+    return now.toDateString() !== s.toDateString() && now.getHours() >= 4;
+  }
   function tmCheckReturn() {
     const m = tmMode();
     if (m === "own") return;
     // never mid-exercise: checked again when the player is closed (interval below)
     if (document.querySelector(".player:not([hidden])")) return;
+    if (document.querySelector("#confirmSheet:not([hidden])")) return;
     const since = m === "try" ? tmTry().since : hoSession().start;
-    if (Date.now() - since > TM_MAX_MS) {
-      if (m === "try") { tmEndTry(false, "Ausprobieren wurde nach 3 Stunden beendet."); return; }
+    if (tmNextDay(since)) {
+      try { localStorage.removeItem(TM_ASKED_KEY); } catch (e) { /* ignore */ }
+      if (m === "try") { tmEndTry(false, "Ausprobieren vom Vortag wurde beendet."); return; }
       const sess = hoSession();
       try { localStorage.removeItem(HO_SESSION_KEY); } catch (e) { /* ignore */ }
       hoRestoreSnapshot(sess.snap || {});
-      if (hoReloadIfNeeded({ toast: hoClientRuns().length ? "Das Kunden-Training wurde nach 3 Stunden beendet. Die Trainings warten im Trainer-Menü auf die Übergabe." : "" })) return;
+      const msg = "Das Kunden-Training vom Vortag wurde beendet. Die Trainings warten im Trainer-Menü auf die Übergabe.";
+      if (hoReloadIfNeeded({ toast: hoClientRuns().length ? msg : "" })) return;
       hoSyncStrip();
       hoRenderProgressGroup();
-      if (hoClientRuns().length) showToast("Das Kunden-Training wurde nach 3 Stunden beendet. Die Trainings warten im Trainer-Menü auf die Übergabe.");
+      tmSync();
+      if (hoClientRuns().length) showToast(msg);
+      return;
+    }
+    const word = m === "try" ? "Ausprobieren" : "Kunden-Training";
+    const end = () => (m === "try" ? tmEndTry(true) : hoEndClientRun());
+    const asked = Number(readJSON(TM_ASKED_KEY, 0)) || 0;
+    if (Date.now() - Math.max(since, asked) > TM_MAX_MS) {
+      writeJSON(TM_ASKED_KEY, Date.now());
+      writeJSON(TM_SEEN_KEY, 0);
+      confirmDialog(`„${word}“ läuft seit ${hoHM(new Date(since))} Uhr. ${m === "try" ? "Solange zählt nichts für dich." : "Solange zählt nichts für deinen Fortschritt."}`,
+        () => {}, { title: `Läuft ${m === "try" ? "„Ausprobieren“" : "das Kunden-Training"} noch?`, yes: "Weiter", no: "Beenden", onNo: end });
       return;
     }
     const seen = Number(readJSON(TM_SEEN_KEY, 0)) || 0;
     if (!seen || Date.now() - seen < TM_ASK_MS) return;
     writeJSON(TM_SEEN_KEY, 0);
-    const word = m === "try" ? "Ausprobieren" : "Kunden-Training";
     confirmDialog(`Seit ${hoHM(new Date(since))} Uhr läuft noch „${word}“. ${m === "try" ? "Solange zählt nichts für dich." : "Solange zählt nichts für deinen Fortschritt."}`,
-      () => {}, { title: `${word} fortsetzen?`, yes: "Weiter", no: "Beenden", onNo: () => (m === "try" ? tmEndTry(true) : hoEndClientRun()) });
+      () => {}, { title: `${word} fortsetzen?`, yes: "Weiter", no: "Beenden", onNo: end });
   }
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) { if (tmMode() !== "own") writeJSON(TM_SEEN_KEY, Date.now()); }

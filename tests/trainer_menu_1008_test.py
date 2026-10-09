@@ -309,8 +309,29 @@ async def main():
         await ctx.close()
         ctx, pg = await new_page(b, extra=f"localStorage.setItem('fwmc-client-session-v1', JSON.stringify({{start:{now - 4 * 3600000}, snap:{{}}}}));")
         await pg.goto(ROOT + "?bereich=training"); await pg.wait_for_timeout(500)
-        check("Kunden-Training older than 3 h ends by itself", await ls(pg, "fwmc-client-session-v1") is None
-              and not await pg.is_visible("#clientRunStrip"))
+        check("after 3 h the Kunden-Training only asks (Fabian 09.10.)", await ls(pg, "fwmc-client-session-v1") is not None
+              and await pg.is_visible("#confirmSheet") and "noch" in await pg.inner_text("#confirmTitle"))
+        await pg.click("#confirmYesBtn"); await pg.wait_for_timeout(200)
+        await pg.reload(); await pg.wait_for_timeout(500)
+        check("'Weiter' keeps it and does not ask again right away", await ls(pg, "fwmc-client-session-v1") is not None
+              and not await pg.is_visible("#confirmSheet") and await pg.is_visible("#clientRunStrip"))
+        await ctx.close()
+        runs = [{"id": "c1", "ts": iso(now - 26 * 3600e3), "title": "Box-Atmung", "kind": "breath", "seconds": 60, "client": now - 26 * 3600000}]
+        ctx, pg = await new_page(b, extra=f"localStorage.setItem('fwmc-client-session-v1', JSON.stringify({{start:{now - 26 * 3600000}, snap:{{}}}}));"
+                                          f"localStorage.setItem('fwmc-client-runs-v1', {json.dumps(json.dumps(runs))});")
+        await pg.goto(ROOT + "?bereich=training"); await pg.wait_for_timeout(500)
+        check("a Kunden-Training from the day before ends by itself, runs stay", await ls(pg, "fwmc-client-session-v1") is None
+              and not await pg.is_visible("#clientRunStrip") and len(await ls(pg, "fwmc-client-runs-v1") or []) == 1)
+        await set_mode(pg, "try")
+        check("waiting client trainings: dot on the trainer button also in 'Ausprobieren'",
+              await pg.evaluate("[...document.querySelectorAll('.trainer-mode-btn')].some(b => b.offsetParent && b.classList.contains('tm-pending'))"))
+        await (await menu_btn(pg)).click(); await pg.wait_for_timeout(200)
+        await pg.click("#tmStoreBtn"); await pg.wait_for_timeout(300)
+        check("overview says client trainings still wait", await pg.is_visible("#handoverWaitNote")
+              and "wartet noch auf die Übergabe" in await pg.inner_text("#handoverWaitText"))
+        await pg.click("#handoverWaitBtn"); await pg.wait_for_timeout(200)
+        check("'Nur Kunden-Trainings zeigen' filters", await pg.locator("#handoverList li input").count() == 1
+              and not await pg.is_visible("#handoverWaitBtn"))
         await ctx.close()
 
         # ---- looks: 390/1024 light/dark ----
