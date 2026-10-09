@@ -3672,6 +3672,7 @@ input[type=checkbox]{accent-color:var(--brand)}
 /* Begrüßung: eine Zeile, Datum rechts */
 #todayHome .today-hello{background:none;padding:0;margin:2px 0 12px;border-radius:0;overflow:visible}
 #todayHome .today-hello::after{display:none}
+#todayHome .hello-name-btn{margin:2px 0 0;padding-left:0;padding-right:0}
 .today-hello-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 #todayHome .today-greeting{font-size:calc(22px * var(--ts,1));line-height:1.2;min-width:0}
 #todayHome .today-greeting.has-long-name{font-size:calc(20px * var(--ts,1))}
