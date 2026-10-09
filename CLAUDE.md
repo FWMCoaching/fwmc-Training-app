@@ -287,6 +287,7 @@ everywhere goes here, short.
 | 35-richtungskreuz-zusaetze-regeln | Richtungskreuz (VT, 4 directions, Farbregel), Zusätze für oben (`ZUSAETZE`, signal), ⓘ Regeln + Meine Notiz (`REGELN_EXERCISES`, notes in presets/Kombi, trainer note) |
 | 36-qr-uebergabe | QR-Übergabe trainer → client: range screen, payload fields, split codes, import/dedupe, iPhone Safari copy + paste field, Kunden-Training (own store, snapshot of bests), in-app scanner, trainer codes as QR (`#code=`), Freischaltungen (`FEATURE_UNLOCKS`) |
 | 37-neuro-aktivierung | Neuro-Aktivierung (hidden 9th area `neuro`, unlocked by code type `neuro-unlock`): step player, `NEURO_EXERCISES`, Kombi/plan only when unlocked, "Spezialübung von deinem Trainer" in trainer Kombi codes, dashboard builder, texts Fabian reviews |
+| 38-schulte-tabelle | Schulte-Tabelle (7th NAT exercise): grids 3-6, Fest/Wechselnd/Aus der Erinnerung, Fixpunkt `schulte:<mode>` (odd grid = free middle cell), bests `fwmc-schulte-best-v1`, pause covers numbers, Kombi repeats tables, Cardio guest, assumed level thresholds |
 
 ## Must-do rules collected from the detail notes
 

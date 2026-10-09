@@ -2188,6 +2188,7 @@
     <button class="sub-tab" data-nat-sub="flash" role="tab" aria-selected="false">Flash-Speicher-Test</button>
     <button class="sub-tab" data-nat-sub="mot" role="tab" aria-selected="false">Objekt&shy;verfolgung (MOT)</button>
     <button class="sub-tab" data-nat-sub="balance" role="tab" aria-selected="false">Gleichgewicht</button>
+    <button class="sub-tab" data-nat-sub="schulte" role="tab" aria-selected="false">Schulte-Tabelle</button>
   </nav>
 
   <button class="combo-entry-link" data-open-combo="1">Kombi-Programm aus mehreren Bereichen &rarr;</button>
@@ -2248,6 +2249,12 @@
         <h3>Gleichgewicht</h3>
         <p>Blick auf den Stift, Kopf im Takt bewegen.</p>
         <span class="tag">Gleichgewicht</span>
+      </button>
+      <button class="nat-tile" type="button" data-nat-ex="schulte">
+        <div class="icon-badge"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2" fill="none" stroke="#fff" stroke-width="1.6"/><path d="M12 3.5v17M3.5 12h17" stroke="#fff" stroke-width="1.4"/><text x="7.75" y="10" text-anchor="middle" font-family="Magra, sans-serif" font-weight="700" font-size="6" fill="#fff">3</text><text x="16.25" y="10" text-anchor="middle" font-family="Magra, sans-serif" font-weight="700" font-size="6" fill="#fff">1</text><text x="7.75" y="18.5" text-anchor="middle" font-family="Magra, sans-serif" font-weight="700" font-size="6" fill="#fff">2</text><text x="16.25" y="18.5" text-anchor="middle" font-family="Magra, sans-serif" font-weight="700" font-size="6" fill="#fff">4</text></svg></div>
+        <h3>Schulte-Tabelle</h3>
+        <p>Zahlen im Raster der Reihe nach antippen, auf Zeit.</p>
+        <span class="tag">Blick</span>
       </button>
     </div>
   </section>
@@ -2360,6 +2367,28 @@
       <span class="fc-title">Gleichgewicht starten</span>
       <span class="fc-desc">Ein oder zwei Buchstaben-Stifte auf dem Bildschirm. Nein-Nein, Ja-Ja, Ohr-Schulter, Diagonal oder Sakkaden &ndash; mit Takt, Stand und S&auml;tzen.</span>
       <span class="fc-meta" id="balanceLastHint"></span>
+    </button>
+  </section>
+
+  <section class="nat-panel" id="natSchultePanel" hidden>
+    <div class="section-head">
+      <h2>Schulte-Tabelle</h2>
+      <span class="section-note">Zahlen der Reihe nach finden, Blick ruhig in der Mitte</span>
+    </div>
+    <button class="featured-card" id="schulteOpenFest">
+      <span class="fc-title">Fest</span>
+      <span class="fc-desc">Die Zahlen bleiben an ihrem Platz. Tippe sie von 1 an der Reihe nach an, so schnell du kannst.</span>
+      <span class="fc-meta" id="schulteBestFest"></span>
+    </button>
+    <button class="featured-card" id="schulteOpenWechselnd">
+      <span class="fc-title">Wechselnd</span>
+      <span class="fc-desc">Nach jedem richtigen Tipp tauschen die &uuml;brigen Zahlen ihre Pl&auml;tze. Du suchst jede Zahl neu.</span>
+      <span class="fc-meta" id="schulteBestWechselnd"></span>
+    </button>
+    <button class="featured-card" id="schulteOpenErinnerung">
+      <span class="fc-title">Aus der Erinnerung</span>
+      <span class="fc-desc">Pr&auml;ge dir das Raster ein. Nach dem ersten Tipp verschwinden die Zahlen, den Rest tippst du aus dem Ged&auml;chtnis.</span>
+      <span class="fc-meta" id="schulteBestErinnerung"></span>
     </button>
   </section>
 
@@ -5088,6 +5117,100 @@
   <button class="start-btn" id="balanceReadyStartBtn">Training starten</button>
 </div>
 
+<div class="screen" id="schulteReady" hidden>
+  <div class="readyhead">
+    <button class="back-link" id="schulteReadyBackToHome">&larr; Zur&uuml;ck</button>
+  </div>
+  <h1 class="page-title" id="schulteReadyTitle">&nbsp;</h1>
+  <p class="page-sub" id="schulteReadyDesc"></p>
+
+  <div class="group" id="schulteComboDurationGroup" hidden>
+    <div class="group-label">Dauer dieses Bausteins</div>
+    <div class="slider-row">
+      <input type="range" id="schulteComboDurationSlider" min="15" max="300" step="5" aria-label="Dauer dieses Bausteins">
+      <span class="slider-value" id="schulteComboDurationValue"></span>
+    </div>
+    <div class="group-help">Ist eine Tabelle fertig, kommt gleich die n&auml;chste, bis die Zeit um ist.</div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Rastergr&ouml;&szlig;e</div>
+    <div class="choice-row four" id="schulteGridRow">
+      <button class="choice" data-schulte-grid="3">3&times;3</button>
+      <button class="choice" data-schulte-grid="4">4&times;4</button>
+      <button class="choice" data-schulte-grid="5">5&times;5</button>
+      <button class="choice" data-schulte-grid="6">6&times;6</button>
+    </div>
+    <div class="group-help" id="schulteGridCount"></div>
+  </div>
+
+  <div class="group fix-group" id="schulteFixGroup">
+    <div class="group-label">Fixpunkt in der Mitte</div>
+    <div class="choice-row two" id="schulteFixToggleRow">
+      <button class="choice" data-fix-on="1">Anzeigen</button>
+      <button class="choice" data-fix-on="0">Ausblenden</button>
+    </div>
+    <div class="group-help">Mit Fixpunkt bleibt dein Blick in der Mitte und du findest die Zahlen aus dem Augenwinkel. Bei 3&times;3 und 5&times;5 bleibt das mittlere Feld dann frei, bei 4&times;4 und 6&times;6 sitzt der Punkt auf der Kreuzung der mittleren Felder.</div>
+    <div id="schulteFixOptions">
+      <input type="text" id="schulteFixCharInput" maxlength="12">
+      <div class="color-picker" id="schulteFixColorPicker"></div>
+      <div class="slider-row">
+        <span class="slider-label">Gr&ouml;&szlig;e</span>
+        <input type="range" id="schulteFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Gr&ouml;&szlig;e des Fixpunkts">
+        <span class="slider-value" id="schulteFixSizeValue"></span>
+      </div>
+    </div>
+  </div>
+
+  <details class="advanced" id="schulteAdvanced">
+    <summary>Feineinstellungen</summary>
+    <div class="advanced-body">
+      <div class="look-host" data-look="schulte"></div>
+      <div class="group">
+        <div class="group-label">Hintergrund</div>
+        <div class="color-picker" id="schulteBgColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Intensit&auml;t</span>
+          <input type="range" id="schulteBgIntensitySlider" min="0" max="1" step="0.05" aria-label="Intensit&auml;t der Hintergrundfarbe">
+          <span class="slider-value" id="schulteBgIntensityValue"></span>
+        </div>
+        <div class="group-help" id="schulteBgContrastHint" hidden></div>
+        <div class="bg-master-status" id="schulteBgMasterStatus"></div>
+        <div class="choice-row" id="schulteBgSourceRow"></div>
+        <div class="group" id="schulteBgPresetGroup" hidden>
+          <div class="group-label">Gespeicherte Farbgestaltungen</div>
+          <div class="bundle-list" id="schulteBgPresetList"></div>
+        </div>
+        <button class="text-link small" id="schulteBgSaveBtn">Aktuelle Farbgestaltung speichern</button>
+        <div class="custom-exercise-form" id="schulteBgSaveForm" hidden>
+          <input type="text" id="schulteBgSaveNameInput" placeholder="Name (z.&#8239;B. Warmes Gelb)" maxlength="40">
+          <div class="custom-exercise-form-actions">
+            <button class="start-btn secondary" id="schulteBgSaveCancelBtn">Abbrechen</button>
+            <button class="start-btn" id="schulteBgSaveConfirmBtn">Speichern</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="group-help" id="schulteReadyBestHint"></div>
+
+  <div class="group nat-saved-group" id="schulteReadySavedGroup" hidden>
+    <div class="group-label">Deine gespeicherten Einstellungen</div>
+    <div class="bundle-list" id="schulteReadySavedList"></div>
+  </div>
+  <button class="text-link small" id="schulteReadySaveBtn">Aktuelle Einstellung speichern</button>
+  <div class="custom-exercise-form" id="schulteReadySaveForm" hidden>
+    <input type="text" id="schulteReadySaveNameInput" placeholder="Name (z.&#8239;B. 5&times;5 wechselnd)" maxlength="40">
+    <div class="custom-exercise-form-actions">
+      <button class="start-btn secondary" id="schulteReadySaveCancelBtn">Abbrechen</button>
+      <button class="start-btn" id="schulteReadySaveConfirmBtn">Speichern</button>
+    </div>
+  </div>
+
+  <button class="start-btn" id="schulteReadyStartBtn">Training starten</button>
+</div>
+
 <div class="screen" id="bundleOverview" hidden>
   <div class="readyhead">
     <button class="back-link" id="bundleBackToHome">&larr; Zur&uuml;ck</button>
@@ -6969,6 +7092,69 @@
   </div>
 </div>
 
+<div class="player" id="schultePlayer" hidden>
+  <div class="schulte-stage" id="schulteStage">
+    <div class="remember-hint" id="schulteHint"></div>
+    <div class="schulte-board" id="schulteBoard">
+      <div class="schulte-grid" id="schulteGrid"></div>
+      <div class="flash-fixpoint schulte-fixpoint" id="schulteFixpointEl" hidden></div>
+    </div>
+  </div>
+  <div class="pause-overlay" id="schultePauseOverlay" hidden>
+    <div class="pause-panel">
+      <h3>Pausiert</h3>
+      <div class="group-help">Die Uhr steht, die Zahlen sind solange verdeckt.</div>
+      <div class="group">
+        <div class="group-label">Hintergrund-Intensit&auml;t <span class="slider-value" id="schultePauseBgValue"></span></div>
+        <input type="range" id="schultePauseBgSlider" min="0" max="1" step="0.05" aria-label="Hintergrund-Intensit&auml;t">
+      </div>
+      <div class="group">
+        <div class="group-label">Hintergrundfarbe</div>
+        <div class="color-picker" id="schultePauseBgColorPicker"></div>
+        <div class="group-help" id="schultePauseBgContrastHint" hidden></div>
+      </div>
+      <div class="group fix-group" id="schultePauseFixGroup">
+        <div class="group-label">Fixpunkt in der Mitte</div>
+        <div class="choice-row two" id="schultePauseFixToggleRow">
+          <button class="choice" data-fix-on="1">Anzeigen</button>
+          <button class="choice" data-fix-on="0">Ausblenden</button>
+        </div>
+        <div class="group-help">Bei 3&times;3 und 5&times;5 beginnt die Tabelle neu, wenn du den Fixpunkt an- oder ausschaltest, weil sich das mittlere Feld &auml;ndert.</div>
+        <div id="schultePauseFixOptions">
+          <input type="text" id="schultePauseFixCharInput" maxlength="12">
+          <div class="color-picker" id="schultePauseFixColorPicker"></div>
+          <div class="slider-row">
+            <span class="slider-label">Gr&ouml;&szlig;e</span>
+            <input type="range" id="schultePauseFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Gr&ouml;&szlig;e des Fixpunkts">
+            <span class="slider-value" id="schultePauseFixSizeValue"></span>
+          </div>
+        </div>
+      </div>
+      <button class="start-btn" id="schulteResumeBtn">Weiter</button>
+    </div>
+  </div>
+  <div class="player-bar" id="schultePlayerBar">
+    <button id="schulteBackBtn">&#10005; Beenden</button>
+    <button id="schultePauseBtn">Pause</button>
+    <span class="player-status" id="schulteLevelEl"></span>
+    <button id="schulteFsBtn">Vollbild</button>
+  </div>
+  <div class="fs-hint" id="schulteFsHint" hidden>
+    <span>Vollbild wird in dieser eingebetteten Ansicht nicht unterst&uuml;tzt. Ein neuer Tab startet die App neu &ndash; dein aktuelles Training geht dabei verloren.</span>
+    <button id="schulteFsHintOpenBtn">App neu &ouml;ffnen</button>
+    <button class="fs-hint-close" id="schulteFsHintClose" aria-label="Schlie&szlig;en">&times;</button>
+  </div>
+
+  <div class="done-panel" id="schulteDonePanel" hidden>
+    <div class="done-check">&#10003;</div>
+    <h2>Geschafft!</h2>
+    <p class="done-summary" id="schulteDoneSummary"></p>
+    <div class="rating" id="schulteRating"></div>
+    <button class="again" id="schulteAgainBtn">Nochmal</button>
+    <button class="back" id="schulteDoneBackBtn">Zur &Uuml;bersicht</button>
+  </div>
+</div>
+
 <div class="player" id="gngPlayer" hidden>
   <div class="gng-stage" id="gngStage">
     <div class="remember-hint" id="gngHint"></div>
@@ -8693,6 +8879,11 @@
     <details class="faq-item">
       <summary>Was ist der Unterschied zwischen den Bereichen?</summary>
       <div class="faq-body"><strong>Visuelles Training</strong> trainiert schnelle visuelle Entscheidungen. <strong>Atemtraining</strong> f&uuml;hrt durch Atemmuster. <strong>NAT</strong> sind neuroathletische &Uuml;bungen wie Ged&auml;chtnis- und Wahrnehmungstraining. <strong>Reaktionstraining</strong> verbindet Bewegung mit visuellen Reizen. <strong>Krafttraining</strong> ist reines Zeit-/Wiederholungstraining. <strong>Ausdauertraining</strong> stellt Ausdauer-Einheiten zusammen, auf Wunsch mit kleinen Zusatzaufgaben f&uuml;r den Kopf. Unter <strong>Eigenes Training</strong> legst du dir eigene Punkte an, zum Beispiel Dehnen, Eisbad oder Journal. <span class="test-teaser" hidden><strong>Test</strong> ist ein laufend wachsender Experimentierbereich mit neuen &Uuml;bungen.</span></div>
+    </details>
+
+    <details class="faq-item">
+      <summary>Wie funktioniert die Schulte-Tabelle?</summary>
+      <div class="faq-body">Du tippst die Zahlen im Raster von 1 an der Reihe nach an, die Zeit l&auml;uft mit. <strong>Fest</strong>: die Zahlen bleiben an ihrem Platz. <strong>Wechselnd</strong>: nach jedem richtigen Tipp tauschen die &uuml;brigen Zahlen ihre Pl&auml;tze. <strong>Aus der Erinnerung</strong>: nach dem ersten Tipp verschwinden die Zahlen. Mit Fixpunkt bleibt dein Blick in der Mitte; bei 3&times;3 und 5&times;5 bleibt das mittlere Feld dann frei, darum hat die Tabelle eine Zahl weniger und z&auml;hlt als eigene Bestzeit. Ein falscher Tipp leuchtet kurz rot und wird gez&auml;hlt. In der Pause steht die Uhr und die Zahlen sind verdeckt. Deine Bestzeiten bleiben nur auf diesem Ger&auml;t, getrennt nach Modus und Rastergr&ouml;&szlig;e.</div>
     </details>
 
     <details class="faq-item test-teaser" hidden>

@@ -19,6 +19,7 @@ EX = {
     "flash": ("flash", "#flashOpenClimb", "fwmc-flash-prefs-v1", {"domain": "flash", "mode": "climb", "duration": 60}),
     "mot": ("mot", "#motOpenSpeed", "fwmc-mot-prefs-v1", {"domain": "mot", "mode": "speed", "duration": 60}),
     "balance": ("balance", "#balanceOpenBtn", "fwmc-balance-prefs-v1", {"domain": "balance", "duration": 60}),
+    "schulte": ("schulte", "#schulteOpenFest", "fwmc-schulte-prefs-v1", {"domain": "schulte", "mode": "fest", "duration": 120}),
 }
 
 async def ctx_page(b, store):

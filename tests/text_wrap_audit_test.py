@@ -150,6 +150,10 @@ async def main():
                     await pg.wait_for_timeout(150)
                     await audit(pg, f"{w}px{ts_tag(ts)} nat/mot-mbg", problems)
                     await pg.evaluate("() => { const g = document.querySelector('#motReady .mbg-group'); g.querySelector('[data-opto-v=links]').click(); g.querySelector('[data-opto-v=aus]').click(); }")
+                    # Schulte-Tabelle (2026-10-09): ready screen, 6x6, Feineinstellungen open
+                    await pg.evaluate("() => { document.getElementById('schulteOpenErinnerung').click(); document.querySelector('[data-schulte-grid=\"6\"]').click(); document.getElementById('schulteAdvanced').open = true; }")
+                    await pg.wait_for_timeout(150)
+                    await audit(pg, f"{w}px{ts_tag(ts)} nat/schulte-ready", problems)
                 if area == "visual":
                     # Farbfelder ready screen (2026-10-07): Modus, Stufe 1-4, hand rows
                     await pg.click('.excard[data-exercise="farbfelder"]'); await pg.wait_for_timeout(150)

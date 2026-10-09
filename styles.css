@@ -632,6 +632,31 @@ h1.page-title{font-size:clamp(25px,6vw,32px);line-height:1.1;margin:2px 0 6px;te
 .blitz-cell.correct{background:#2e7d32}
 .blitz-cell.wrong{background:#d32f2f}
 
+/* Schulte-Tabelle (NAT, 2026-10-09): white number cells like the Flash keys,
+   fixed hex colours (player rule), the cell is the tap target. */
+.schulte-stage{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:24px;min-height:0}
+.schulte-board{position:relative;width:100%;max-width:560px;aspect-ratio:1/1}
+.schulte-grid{display:grid;width:100%;height:100%}
+.schulte-cell{
+  display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;
+  border-radius:12px;border:2px solid #cfdde1;padding:0;background:#ffffff;
+  font-family:"Magra",sans-serif;font-weight:700;line-height:1;
+  font-size:var(--schulte-num-px,28px);color:var(--schulte-num-color,#16232a);
+  font-variant-numeric:tabular-nums;
+  transition:background .12s ease,color .12s ease,transform .1s ease;cursor:default;
+}
+.schulte-cell.tappable{cursor:pointer}
+.schulte-cell.tappable:active{transform:scale(.94)}
+.schulte-cell.done{background:#e5f1f4;border-color:#e5f1f4;color:#8fa2a8}
+.schulte-cell.covered{background:#eef3f5}
+.schulte-cell.correct{background:#2e7d32;border-color:#2e7d32;color:#ffffff}
+.schulte-cell.wrong{background:#d32f2f;border-color:#d32f2f;color:#ffffff}
+.schulte-cell.free{background:transparent;border-color:transparent}
+.schulte-board.is-paused .schulte-cell{color:transparent}
+.schulte-fixpoint{z-index:2}
+body.soft-schulte .schulte-cell.swap{animation:fwmcSoftIn .35s ease-out 1}
+body.soft-schulte .schulte-cell{transition:background .3s ease,color .3s ease,transform .1s ease}
+
 .flash-stage{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .flash-fixpoint{
   position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
@@ -2971,7 +2996,7 @@ body.has-bottom-nav .screen:not(#trainingHub) > .combo-entry-link{display:none}
 
 /* Game answer buttons count on touch-down (onGameTap in app.js): no
    callout, selection or grey tap flash, no double-tap zoom between taps. */
-.remember-marker,.blitz-cell,.mot-object,.flash-key{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.remember-marker,.blitz-cell,.mot-object,.flash-key,.schulte-cell{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 
 /* Kombi: Hinweis "Kopie von …" / "Du bearbeitest …" (07.10.) */
 .combo-edit-note{margin:0 0 16px;padding:10px 12px;border-radius:12px;background:var(--surface-2);color:var(--ink)}
@@ -3256,7 +3281,7 @@ body.soft-flash .flash-digit:not([hidden]){animation:fwmcSoftIn .3s ease-out 1}
 .block-result{display:flex;flex-direction:column;gap:2px}
 .block-result-label{font-size:calc(12px * var(--ts,1));font-weight:700;opacity:.8}
 /* Bewegter Hintergrund (2026-10-08): Optodrum pattern behind the content */
-.remember-stage,.flash-stage,.balance-stage,.mot-stage{isolation:isolate}
+.remember-stage,.flash-stage,.balance-stage,.mot-stage,.schulte-stage{isolation:isolate}
 .mbg-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block}
 .mbg-canvas[hidden]{display:none}
 .mbg-group .mbg-more{display:flex;flex-direction:column;gap:8px;margin-top:10px}

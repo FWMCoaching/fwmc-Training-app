@@ -234,6 +234,12 @@
     balance: {
       size: { field: "size", min: 0.6, max: 2, step: 0.1, label: "Größe der Stifte", help: "Länge, Breite und Schrift wachsen mit. Während der Übung: mit zwei Fingern ziehen oder unter „Regler“." },
     },
+    // Schulte-Tabelle (09.10.): the cells keep their size (they are the tap
+    // targets), only the number grows - capped so two digits always fit.
+    schulte: {
+      size: { field: "numScale", min: 0.6, max: 1.6, step: 0.1, label: "Größe der Zahlen", help: "Die Felder bleiben gleich groß, nur die Zahlen wachsen. Passt eine Zahl nicht mehr ins Feld, wird sie automatisch begrenzt." },
+      color: { field: "numColor", lib: FLASH_CHAR_COLOR_LIB, def: "standard", label: "Farbe der Zahlen", against: () => "#ffffff", tip: "Tipp: Diese Farbe hebt sich kaum von den weißen Feldern ab." },
+    },
   };
   function normalizeLookPrefs(kind, p) {
     const { size, color } = LOOK_SPECS[kind];
@@ -254,8 +260,8 @@
     const a = lum(hexA), b = lum(hexB);
     return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
   }
-  const LOOK_NAMES = { remember: "Positionen merken", flash: "Flash-Speicher-Test", mot: "Objektverfolgung (MOT)", balance: "Gleichgewicht" };
-  const LOOK_SYNCS = { remember: [], flash: [], mot: [], balance: [] };
+  const LOOK_NAMES = { remember: "Positionen merken", flash: "Flash-Speicher-Test", mot: "Objektverfolgung (MOT)", balance: "Gleichgewicht", schulte: "Schulte-Tabelle" };
+  const LOOK_SYNCS = { remember: [], flash: [], mot: [], balance: [], schulte: [] };
   function syncLook(kind) { LOOK_SYNCS[kind].forEach((fn) => fn()); }
   function initLookControls(sources) {
     document.querySelectorAll(".look-host[data-look]").forEach((host) => {
@@ -1935,6 +1941,7 @@
     "flash": { title: "Flash-Speicher-Test", type: "flash" },
     "mot": { title: "Objektverfolgung (MOT)", type: "mot" },
     "balance": { title: "Gleichgewicht", type: "balance" },
+    "schulte": { title: "Schulte-Tabelle", type: "schulte" },
   };
 
   // ---- Programmes: coach-authored multi-block sessions. Real client
@@ -2416,6 +2423,7 @@
     if (block.domain === "flash") return `Flash-Speicher-Test · ${flashModeTitle(block.mode)}`;
     if (block.domain === "mot") return `Objektverfolgung (MOT) · ${motModeTitle(block.mode)}`;
     if (block.domain === "balance") return `Gleichgewicht · ${BALANCE_MODES[balanceBlockPrefs(block).mode].name}`;
+    if (block.domain === "schulte") return `Schulte-Tabelle · ${schulteModeTitle(block.mode)}`;
     if (block.domain === "cardio") return `Ausdauertraining · ${countLabel(block.items.length, "Aktivität", "Aktivitäten")}`;
     if (block.domain === "free") return block.free.title;
     if (block.domain === "optodrum") return `Optodrum · ${OPTO_PATTERNS[optoBlockPrefs(block).pattern].name}`;
@@ -2433,6 +2441,7 @@
     if (block.domain === "flash") return fmtMinutes((block.duration ?? 60));
     if (block.domain === "mot") return fmtMinutes((block.duration ?? 60));
     if (block.domain === "balance") return balanceMeta(balanceBlockPrefs(block));
+    if (block.domain === "schulte") { const g = (block.prefs && block.prefs.gridSize) || 5; return `${fmtMinutes(block.duration ?? 120)} · ${g}×${g}`; }
     if (block.domain === "cardio") return fmtMinutes(cardioItemsSeconds(block.items));
     if (block.domain === "free") return freeBlockMeta(block.free);
     if (block.domain === "optodrum") { const p = optoBlockPrefs(block); return `${optoTimeLabel(p)} · ${optoDirName(p)} · Stufe ${p.speed}`; }
@@ -2450,6 +2459,7 @@
     if (block.domain === "flash") return block.duration ?? 60;
     if (block.domain === "mot") return block.duration ?? 60;
     if (block.domain === "balance") return balanceTotalSeconds(balanceBlockPrefs(block));
+    if (block.domain === "schulte") return block.duration ?? 120;
     if (block.domain === "cardio") return cardioItemsSeconds(block.items);
     if (block.domain === "free") return freeBlockSeconds(block.free);
     if (block.domain === "optodrum") { const p = optoBlockPrefs(block); return p.noLimit ? 0 : p.durationS; }
@@ -2510,6 +2520,9 @@
       { label: "Objektverfolgung (MOT) · Beides steigt", meta: "Schwierigkeit & Dauer einstellen", open: () => openMotComboCapture("both", null, null) },
       { label: "Objektverfolgung (MOT) · Trainingsmodus", meta: "gezielt bei einer Stufe üben", open: () => openMotComboCapture("training", null, null) },
       { label: "Gleichgewicht", meta: "Modus, Takt, Stand & Ablauf einstellen", open: () => openBalanceComboCapture(null, null) },
+      { label: "Schulte-Tabelle · Fest", meta: "Raster, Fixpunkt & Dauer einstellen", open: () => openSchulteComboCapture("fest", null, null) },
+      { label: "Schulte-Tabelle · Wechselnd", meta: "Raster, Fixpunkt & Dauer einstellen", open: () => openSchulteComboCapture("wechselnd", null, null) },
+      { label: "Schulte-Tabelle · Aus der Erinnerung", meta: "Raster, Fixpunkt & Dauer einstellen", open: () => openSchulteComboCapture("erinnerung", null, null) },
     ],
     // "Zirkel" (circuit/Tabata) and "Kraft-/Wiederholungstraining" (reps,
     // with a real rep-range picker - see the CLAUDE.md note) both have a
@@ -2549,6 +2562,7 @@
     flash: (block, i) => openFlashComboCapture(block.mode, block, i),
     mot: (block, i) => openMotComboCapture(block.mode, block, i),
     balance: (block, i) => openBalanceComboCapture(block, i),
+    schulte: (block, i) => openSchulteComboCapture(block.mode, block, i),
     free: (block, i) => openFreeComboCapture(block.free, i),
     optodrum: (block, i) => openOptoComboCapture(block, i),
     neuro: (block, i) => openNeuroComboCapture(block.ex, block, i),
@@ -3257,6 +3271,21 @@
     motPlayerBar: $("motPlayerBar"), motBackBtn: $("motBackBtn"), motPauseBtn: $("motPauseBtn"), motLevelEl: $("motLevelEl"),
     motFsBtn: $("motFsBtn"), motFsHint: $("motFsHint"), motFsHintOpenBtn: $("motFsHintOpenBtn"), motFsHintClose: $("motFsHintClose"),
     motDonePanel: $("motDonePanel"), motDoneSummary: $("motDoneSummary"), motRating: $("motRating"),
+    // Schulte-Tabelle (NAT, 09.10.2026)
+    natSchultePanel: $("natSchultePanel"), schulteOpenFest: $("schulteOpenFest"), schulteOpenWechselnd: $("schulteOpenWechselnd"), schulteOpenErinnerung: $("schulteOpenErinnerung"),
+    schulteReady: $("schulteReady"), schulteReadyTitle: $("schulteReadyTitle"), schulteReadyDesc: $("schulteReadyDesc"), schulteReadyBackToHome: $("schulteReadyBackToHome"),
+    schulteReadyStartBtn: $("schulteReadyStartBtn"), schulteReadyBestHint: $("schulteReadyBestHint"), schulteAdvanced: $("schulteAdvanced"),
+    schulteComboDurationGroup: $("schulteComboDurationGroup"), schulteComboDurationSlider: $("schulteComboDurationSlider"), schulteComboDurationValue: $("schulteComboDurationValue"),
+    schulteBgColorPicker: $("schulteBgColorPicker"), schulteBgIntensitySlider: $("schulteBgIntensitySlider"), schulteBgIntensityValue: $("schulteBgIntensityValue"),
+    schulteBgContrastHint: $("schulteBgContrastHint"), schulteBgMasterStatus: $("schulteBgMasterStatus"), schulteBgSourceRow: $("schulteBgSourceRow"),
+    schulteBgPresetGroup: $("schulteBgPresetGroup"), schulteBgPresetList: $("schulteBgPresetList"), schulteBgSaveBtn: $("schulteBgSaveBtn"), schulteBgSaveForm: $("schulteBgSaveForm"),
+    schulteBgSaveNameInput: $("schulteBgSaveNameInput"), schulteBgSaveCancelBtn: $("schulteBgSaveCancelBtn"), schulteBgSaveConfirmBtn: $("schulteBgSaveConfirmBtn"),
+    schultePlayer: $("schultePlayer"), schulteStage: $("schulteStage"), schulteHint: $("schulteHint"), schulteBoard: $("schulteBoard"), schulteGrid: $("schulteGrid"),
+    schulteFixpointEl: $("schulteFixpointEl"), schultePauseOverlay: $("schultePauseOverlay"), schultePauseBgSlider: $("schultePauseBgSlider"), schultePauseBgValue: $("schultePauseBgValue"),
+    schultePauseBgColorPicker: $("schultePauseBgColorPicker"), schultePauseBgContrastHint: $("schultePauseBgContrastHint"), schulteResumeBtn: $("schulteResumeBtn"),
+    schultePlayerBar: $("schultePlayerBar"), schulteBackBtn: $("schulteBackBtn"), schultePauseBtn: $("schultePauseBtn"), schulteLevelEl: $("schulteLevelEl"),
+    schulteFsBtn: $("schulteFsBtn"), schulteFsHint: $("schulteFsHint"), schulteFsHintOpenBtn: $("schulteFsHintOpenBtn"), schulteFsHintClose: $("schulteFsHintClose"),
+    schulteDonePanel: $("schulteDonePanel"), schulteDoneSummary: $("schulteDoneSummary"), schulteRating: $("schulteRating"), schulteAgainBtn: $("schulteAgainBtn"), schulteDoneBackBtn: $("schulteDoneBackBtn"),
     motAgainBtn: $("motAgainBtn"), motDoneBackBtn: $("motDoneBackBtn"),
     rememberOpenFixed: $("rememberOpenFixed"), rememberOpenShuffle: $("rememberOpenShuffle"), rememberOpenTraining: $("rememberOpenTraining"),
     rememberBestFixed: $("rememberBestFixed"), rememberBestShuffle: $("rememberBestShuffle"), rememberBestTraining: $("rememberBestTraining"),
@@ -3393,7 +3422,7 @@
   els.freeHome = $("freeHome"); els.freeReady = $("freeReady"); els.freeEdit = $("freeEdit"); els.freePlayer = $("freePlayer");
   els.activationHome = $("activationHome"); els.optoReady = $("optoReady"); els.optoPlayer = $("optoPlayer");
   els.neuroHome = $("neuroHome"); els.neuroReady = $("neuroReady"); els.neuroPlayer = $("neuroPlayer");
-  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "gearScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "activationHome", "optoReady", "neuroHome", "neuroReady", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady", "eyecountReady", "tonReady"];
+  const SCREENS = ["todayHome", "trainingHub", "moreScreen", "gearScreen", "planScreen", "myPlanScreen", "progressScreen", "home", "breathHome", "movementHome", "workoutHome", "cardioHome", "natHome", "testHome", "freeHome", "freeReady", "freeEdit", "activationHome", "optoReady", "neuroHome", "neuroReady", "bundleOverview", "programIntro", "ready", "breathReady", "breathBundleOverview", "breathProgramIntro", "wimhofReady", "movementReady", "movementBundleOverview", "movementProgramIntro", "workoutBundleOverview", "workoutProgramIntro", "workoutTabataReady", "workoutRepsReady", "cardioReady", "cardioBundleOverview", "cardioProgramIntro", "comboScreen", "comboBundleOverview", "rememberReady", "rememberTrainingReady", "blitzReady", "flashReady", "flashTrainingReady", "motReady", "motTrainingReady", "balanceReady", "schulteReady", "gngReady", "testNbackReady", "trailReady", "flankerReady", "ufovReady", "posnerReady", "rotationReady", "merkReady", "simonReady", "searchReady", "abReady", "antizipReady", "hickReady", "corsiReady", "reaktReady", "tsReady", "antiReady", "stroopReady", "subitizeReady", "alarmReady", "vorlaufReady", "stopReady", "dsstReady", "wcstReady", "navonReady", "iconicReady", "pvtReady", "bisectReady", "kippbildReady", "eyecountReady", "tonReady"];
   function showScreen(name) {
     // Neuro-Aktivierung is hidden without the trainer's unlock code.
     if ((name === "neuroHome" || name === "neuroReady") && !neuroUnlocked() && !comboNeuroCapture) { activateSectionTab("today"); name = "todayHome"; }
@@ -3457,10 +3486,12 @@
       els.natFlashPanel.hidden = sub !== "flash";
       els.natMotPanel.hidden = sub !== "mot";
       els.natBalancePanel.hidden = sub !== "balance";
+      els.natSchultePanel.hidden = sub !== "schulte";
       if (sub === "remember") renderRememberBests();
       if (sub === "blitz") renderBlitzBest();
       if (sub === "flash") renderFlashBests();
       if (sub === "mot") renderMotBests();
+      if (sub === "schulte") renderSchulteBests();
     });
   });
   document.querySelectorAll("[data-open-combo]").forEach((btn) => btn.addEventListener("click", () => openComboScreen()));
@@ -3489,6 +3520,10 @@
       { key: "count", label: "Anzahl steigt", sub: "immer mehr Objekte", card: "motOpenCount", screen: "motReady" },
       { key: "both", label: "Beides steigt", sub: "Tempo und Anzahl", card: "motOpenBoth", screen: "motReady" },
       { key: "training", label: "Trainingsmodus", sub: "gezielt üben", card: "motOpenTraining", screen: "motTrainingReady" }] },
+    schulte: { title: "Schulte-Tabelle", modes: [
+      { key: "fest", label: "Fest", sub: "Zahlen bleiben", card: "schulteOpenFest", screen: "schulteReady" },
+      { key: "wechselnd", label: "Wechselnd", sub: "tauschen nach jedem Tipp", card: "schulteOpenWechselnd", screen: "schulteReady" },
+      { key: "erinnerung", label: "Aus der Erinnerung", sub: "Zahlen verschwinden", card: "schulteOpenErinnerung", screen: "schulteReady" }] },
   };
   const NAT_MODE_KEY = "fwmc-nat-mode-v1";
   // Set further down (NAT presets); `var` so showScreen() can test it before.
@@ -4599,6 +4634,7 @@
     { id: "flash", label: "Flash-Speicher-Test", get: () => ({ colorKey: flashPrefs.bgColorKey, intensity: flashPrefs.bgIntensity }) },
     { id: "mot", label: "Objektverfolgung (MOT)", get: () => ({ colorKey: motPrefs.bgColorKey, intensity: motPrefs.bgIntensity }) },
     { id: "balance", label: "Gleichgewicht", get: () => ({ colorKey: balancePrefs.bgColorKey, intensity: balancePrefs.bgIntensity }) },
+    { id: "schulte", label: "Schulte-Tabelle", get: () => ({ colorKey: schultePrefs.bgColorKey, intensity: schultePrefs.bgIntensity }) },
     { id: "movement", label: "Reaktionstraining", get: () => ({ colorKey: movementPrefs.bgColorKey, intensity: movementPrefs.bgIntensity }) },
   ];
   const BG_PRESETS_KEY = "fwmc-bg-presets-v1"; // [{ id, name, colorKey, intensity }] - not scoped to a domain, any saved combo applies anywhere
@@ -4622,6 +4658,7 @@
     () => ({ prefs: flashPrefs, key: FLASH_PREFS_KEY, save: saveFlashPrefsToStorage }),
     () => ({ prefs: motPrefs, key: MOT_PREFS_KEY, save: saveMotPrefsToStorage }),
     () => ({ prefs: balancePrefs, key: BALANCE_PREFS_KEY, save: saveBalancePrefsToStorage }),
+    () => ({ prefs: schultePrefs, key: SCHULTE_PREFS_KEY, save: saveSchultePrefsToStorage }),
     () => ({ prefs: movementPrefs, key: MOVEMENT_PREFS_KEY, save: saveMovementPrefs }),
     () => ({ prefs: gngPrefs, key: GNG_PREFS_KEY, save: saveGngPrefsToStorage }),
     () => ({ prefs: testNbackPrefs, key: TEST_NBACK_PREFS_KEY, save: saveTestNbackPrefsToStorage }),
@@ -7421,6 +7458,7 @@
     els.flashPlayer.hidden = true;
     els.motPlayer.hidden = true;
     els.balancePlayer.hidden = true;
+    els.schultePlayer.hidden = true;
     els.gngPlayer.hidden = true;
     els.testNbackPlayer.hidden = true;
     els.trailPlayer.hidden = true;
@@ -8594,6 +8632,7 @@
   wireFullscreen({ player: els.blitzPlayer, btn: els.blitzFsBtn, hint: els.blitzFsHint, hintOpen: els.blitzFsHintOpenBtn, hintClose: els.blitzFsHintClose });
   wireFullscreen({ player: els.flashPlayer, btn: els.flashFsBtn, hint: els.flashFsHint, hintOpen: els.flashFsHintOpenBtn, hintClose: els.flashFsHintClose });
   wireFullscreen({ player: els.motPlayer, btn: els.motFsBtn, hint: els.motFsHint, hintOpen: els.motFsHintOpenBtn, hintClose: els.motFsHintClose });
+  wireFullscreen({ player: els.schultePlayer, btn: els.schulteFsBtn, hint: els.schulteFsHint, hintOpen: els.schulteFsHintOpenBtn, hintClose: els.schulteFsHintClose });
   wireFullscreen({ player: els.gngPlayer, btn: els.gngFsBtn, hint: els.gngFsHint, hintOpen: els.gngFsHintOpenBtn, hintClose: els.gngFsHintClose });
   wireFullscreen({ player: els.testNbackPlayer, btn: els.testNbackFsBtn, hint: els.testNbackFsHint, hintOpen: els.testNbackFsHintOpenBtn, hintClose: els.testNbackFsHintClose });
   wireFullscreen({ player: els.trailPlayer, btn: els.trailFsBtn, hint: els.trailFsHint, hintOpen: els.trailFsHintOpenBtn, hintClose: els.trailFsHintClose });
@@ -8946,6 +8985,7 @@
     remember: { screens: ["rememberReady", "rememberTrainingReady"], fb: true },
     blitz: { screens: ["blitzReady"], fb: true },
     mot: { screens: ["motReady", "motTrainingReady"], fb: true },
+    schulte: { screens: ["schulteReady"], fb: true },
     gng: { screens: ["gngReady"], fb: true, pal: true },
     testNback: { screens: ["testNbackReady"], fb: true },
     trail: { screens: ["trailReady"], fb: true },
@@ -8978,6 +9018,7 @@
     remember: [".remember-marker.correct", ".remember-marker.wrong"],
     blitz: [".blitz-cell.correct", ".blitz-cell.wrong"],
     mot: [".mot-object.correct", ".mot-object.wrong"],
+    schulte: [".schulte-cell.correct", ".schulte-cell.wrong"],
     gng: [".gng-stimulus.hit", ".gng-stimulus.wrong"],
     testNback: [".nback-match-btn.correct", ".nback-match-btn.wrong"],
     trail: [null, ".trail-marker.wrong"],
@@ -9227,13 +9268,17 @@
     "@vt": { screens: ["ready"], pause: "periphPauseOverlay", noteAfter: "#hilfsmittelNote" },
     blitz: { screens: ["blitzReady"], pause: "blitzPauseOverlay", noteAfter: ".page-sub" },
     flash: { screens: ["flashReady", "flashTrainingReady"], pause: "flashPauseOverlay", noteAfter: ".page-sub" },
+    // Schulte-Tabelle (09.10.): Wechselnd swaps every number at once - with
+    // Sanfte Reize the numbers fade in instead of jumping, the red/green
+    // marks fade too.
+    schulte: { screens: ["schulteReady"], pause: "schultePauseOverlay", noteAfter: ".page-sub" },
     // Optodrum (Aktivierung, 2026-10-08): tempo capped, softer contrast.
     optodrum: { screens: ["optoReady"], pause: "optoPauseOverlay", noteAfter: ".page-sub" },
   };
   let softLive = null; // { ex, on } - pause-sheet choice for the running exercise only
   function softResolve(ex) { return ex === "@vt" ? state.exercise : ex; }
   function softApplies(ex) {
-    if (ex === "blitz" || ex === "flash" || ex === "optodrum") return true;
+    if (ex === "blitz" || ex === "flash" || ex === "optodrum" || ex === "schulte") return true;
     const e = EXERCISES[ex];
     return !!e && e.type !== "color-tap" && e.type !== "laufweg";
   }
@@ -9314,7 +9359,7 @@
     applySoftState();
   });
   function applySoftState() {
-    ["blitz", "flash"].forEach((ex) => document.body.classList.toggle(`soft-${ex}`, softOn(ex)));
+    ["blitz", "flash", "schulte"].forEach((ex) => document.body.classList.toggle(`soft-${ex}`, softOn(ex)));
     document.querySelectorAll("[data-soft-ex]").forEach((b) => setActive(b, (b.dataset.softVal === "1") === softStored(softResolve(b.dataset.softEx))));
     document.querySelectorAll("[data-soft-live]").forEach((b) => setActive(b, (b.dataset.softVal === "1") === softOn(softResolve(b.dataset.softLive))));
     document.querySelectorAll("[data-soft-note]").forEach((n) => {
@@ -9665,6 +9710,7 @@
     "nat:flash": { domain: "flash", title: "Flash-Speicher-Test", screens: ["flashReady", "flashTrainingReady"], anchor: ".page-sub", bar: "flashPlayerBar", pauses: ["flashPauseOverlay"], desc: "flashReadyDesc" },
     "nat:mot": { domain: "mot", title: "Objektverfolgung (MOT)", screens: ["motReady"], anchor: "#motReadyDesc", bar: "motPlayerBar", pauses: ["motPauseOverlay"], desc: "motReadyDesc" },
     "nat:balance": { domain: "balance", title: "Gleichgewicht", screens: ["balanceReady"], anchor: "#balanceReadyDesc", bar: "balancePlayerBar", pauses: ["balancePauseOverlay"], desc: "balanceReadyDesc" },
+    "nat:schulte": { domain: "schulte", title: "Schulte-Tabelle", screens: ["schulteReady"], anchor: "#schulteReadyDesc", bar: "schultePlayerBar", pauses: ["schultePauseOverlay"], desc: "schulteReadyDesc" },
   };
   const REGELN_DOMAIN_KEY = Object.fromEntries(Object.entries(REGELN_EXERCISES).map(([k, c]) => [c.domain, k]));
   const NAT_NOTES_KEY = "fwmc-notes-v1";
@@ -14613,6 +14659,39 @@
   function saveMotPrefsToStorage() { writeJSON(MOT_PREFS_KEY, motPrefs); }
   loadMotPrefs();
 
+  // ==== Schulte-Tabelle (NAT, Fabian 09.10.2026, freigegeben 10:42) ====
+  // Prefs live up here (before LIVE_LOOK/initLookControls read them); the
+  // ready screen, engine, Kombi capture and pause sheet sit further down
+  // ("Schulte-Tabelle: ready screen + engine"). docs/notes/38.
+  const SCHULTE_PREFS_KEY = "fwmc-schulte-prefs-v1";
+  const SCHULTE_BEST_KEY = "fwmc-schulte-best-v1"; // { "<mode>:<grid>[f]": bestMs } - "f" = odd grid with the middle cell free
+  const SCHULTE_MODES = {
+    fest: { title: "Fest", desc: "Die Zahlen bleiben die ganze Zeit an ihrem Platz." },
+    wechselnd: { title: "Wechselnd", desc: "Nach jedem richtigen Tipp tauschen die übrigen Zahlen ihre Plätze." },
+    erinnerung: { title: "Aus der Erinnerung", desc: "Präg dir die Plätze ein: Sobald du die 1 antippst, verschwinden alle Zahlen und du tippst aus der Erinnerung weiter." },
+  };
+  const SCHULTE_GRIDS = [3, 4, 5, 6];
+  const schultePrefs = {
+    gridSize: 5,
+    bgColorKey: "gruen",
+    bgIntensity: 0,
+  };
+  function normalizeSchultePrefs(p) {
+    if (!SCHULTE_GRIDS.includes(p.gridSize)) p.gridSize = 5;
+    if (!STROOP_COLOR_BY_KEY[p.bgColorKey]) p.bgColorKey = "gruen";
+    if (typeof p.bgIntensity !== "number" || p.bgIntensity < 0 || p.bgIntensity > 1) p.bgIntensity = 0;
+    fixWrite(p, FIX_FIELDS.std, fixRead(p, FIX_FIELDS.std));
+    normalizeLookPrefs("schulte", p);
+    return p;
+  }
+  function loadSchultePrefs() {
+    const saved = readJSON(SCHULTE_PREFS_KEY, null);
+    if (saved && typeof saved === "object") Object.assign(schultePrefs, saved);
+    normalizeSchultePrefs(schultePrefs);
+  }
+  function saveSchultePrefsToStorage() { writeJSON(SCHULTE_PREFS_KEY, schultePrefs); }
+  loadSchultePrefs();
+
   // ==== Gleichgewicht (NAT, Fabian 2026-10-06, Bauauftrag 12:31/12:33) ====
   // One or two vertical letter sticks ("Augen-Stifte") on the stage, the
   // client moves the head in time (Nein-Nein, Ja-Ja, Ohr-Schulter,
@@ -15619,12 +15698,27 @@
       `</div></details>`;
   }
 
+  // Schulte-Tabelle as Cardio-Zusatzaufgabe: the same choices as its ready
+  // screen (Modus, Raster, Fixpunkt, Größe/Farbe der Zahlen; Hintergrund
+  // comes from the shared panel code).
+  function schulteCardioFieldsHtml(typeId, cfg) {
+    const row = (field, opts, cls) => `<div class="choice-row${cls ? " " + cls : ""}">` +
+      opts.map(([v, label]) => `<button class="choice${String(cfg[field]) === String(v) ? " active" : ""}" data-type="${typeId}" data-balf="${field}" data-balv="${v}">${label}</button>`).join("") + `</div>`;
+    return `<div class="choice-row" data-mode-row="${typeId}">` +
+      CARDIO_GUEST_MODE_LISTS.schulte.map((m) => `<button class="choice${cfg.mode === m.id ? " active" : ""}" data-type="${typeId}" data-mode="${m.id}">${esc(m.title)}</button>`).join("") + `</div>` +
+      `<div class="cardio-guest-field-row"><div><label>Dauer (Sek.)</label><input type="number" min="5" max="120" step="5" data-type="${typeId}" data-f="duration" value="${cfg.duration}"></div></div>` +
+      `<div class="group-label">Rastergröße</div>` + row("gridSize", SCHULTE_GRIDS.map((g) => [g, `${g}&times;${g}`]), "four") +
+      `<div class="group-label">Fixpunkt in der Mitte</div>` + row("fixEnabled", [[true, "Anzeigen"], [false, "Ausblenden"]], "two") +
+      `<div class="group-help">Mit Fixpunkt bleibt bei 3×3 und 5×5 das Mittelfeld ohne Zahl. Ist eine Tabelle fertig, kommt bis zum Ende der Dauer die nächste.</div>` +
+      `<details class="advanced"><summary>Feineinstellungen</summary><div class="advanced-body">` + cardioLookFieldsHtml("schulte", typeId, cfg) + `</div></details>`;
+  }
+
   // ---- Größe während der Übung (Fabian 2026-10-06: "schadet doch nicht") ----
   // Every exercise with "Größe der …" (LOOK_SPECS) gets the same size
   // slider in its "Pausiert" sheet plus two-finger pinch on its stage
   // (ctrl+wheel = trackpad pinch). A standalone run saves the new value;
   // inside a Kombi or as a Cardio-Zusatzaufgabe it only changes this run.
-  const GAME_TAP_SEL = ".remember-marker.covered, .blitz-cell.tappable, .mot-object.tappable, .flash-key";
+  const GAME_TAP_SEL = ".remember-marker.covered, .blitz-cell.tappable, .mot-object.tappable, .flash-key, .schulte-cell.tappable";
   // Every other answer tap counts on touch-down too (Fabian 07.10.: "überall,
   // wo du eine Berührung brauchst" - Hütchen sortieren and the Test-Bereich
   // reacted only sometimes). One delegated listener: a touch/pen pointerdown
@@ -15756,6 +15850,7 @@
     flash: { stage: () => els.flashStage, overlay: () => document.getElementById("flashPauseOverlay"), state: () => flashState, prefs: () => flashPrefs, save: () => saveFlashPrefsToStorage(), apply: flashLiveSize },
     mot: { stage: () => els.motStage, overlay: () => document.getElementById("motPauseOverlay"), state: () => motState, prefs: () => motPrefs, save: () => saveMotPrefsToStorage(), apply: motLiveSize },
     balance: { stage: () => balP.stage, overlay: () => balP.pauseOverlay, state: () => balanceState, prefs: () => balancePrefs, save: () => saveBalancePrefsToStorage(), apply: (v) => balanceLive("size", v), ownState: true },
+    schulte: { stage: () => els.schulteStage, overlay: () => els.schultePauseOverlay, state: () => schulteState, prefs: () => schultePrefs, save: () => saveSchultePrefsToStorage(), apply: (v) => { if (schulteState) { schulteState.numScale = v; schulteSizeNumbers(); } } },
   };
   Object.entries(LIVE_LOOK).forEach(([kind, L]) => {
     const { size } = LOOK_SPECS[kind];
@@ -15852,6 +15947,7 @@
     remember: { prefs: rememberPrefs, save: saveRememberPrefsToStorage },
     flash: { prefs: flashPrefs, save: saveFlashPrefsToStorage },
     mot: { prefs: motPrefs, save: saveMotPrefsToStorage },
+    schulte: { prefs: schultePrefs, save: saveSchultePrefsToStorage },
   });
 
   const MOT_BEST_KEY = "fwmc-mot-best-v1"; // { speed: bestLevel, count: N, both: N, training: N }
@@ -16203,6 +16299,546 @@
     els.motTrainingComboDurationValue.textContent = fmtSeconds(comboMotDurationS);
   });
 
+  // ==== Schulte-Tabelle: ready screen + engine (NAT, Fabian 09.10.2026) ====
+  // A grid of numbers 1..N in random cells; the client taps them in
+  // ascending order as fast as possible, the time counts. Three modes:
+  // Fest (numbers stay), Wechselnd (after every right tap the numbers not
+  // yet tapped swap places), Aus der Erinnerung (numbers vanish with the
+  // first right tap, the client goes on from memory). Each with or without
+  // the shared Fixpunkt (key "schulte:<mode>", standard on): on an odd grid
+  // the middle cell then carries no number (3×3 = 1..8, 5×5 = 1..24), on an
+  // even grid the point sits on the crossing. A wrong tap only costs time
+  // (short red mark, counted in the result). One table = one run; inside a
+  // Kombi or as a Cardio-Zusatzaufgabe tables repeat until the time is up.
+  // Details: docs/notes/38-schulte-tabelle.md.
+  function schulteModeTitle(mode) { return (SCHULTE_MODES[mode] || SCHULTE_MODES.fest).title; }
+  function schulteCenterFree(grid, fixOn) { return !!fixOn && grid % 2 === 1; }
+  function schulteCount(grid, fixOn) { return grid * grid - (schulteCenterFree(grid, fixOn) ? 1 : 0); }
+  function schulteBestKey(mode, grid, fixOn) { return `${mode}:${grid}${schulteCenterFree(grid, fixOn) ? "f" : ""}`; }
+  function schulteBestFor(mode, grid, fixOn) {
+    const v = readJSON(SCHULTE_BEST_KEY, {})[schulteBestKey(mode, grid, fixOn)];
+    return typeof v === "number" && v > 0 ? v : 0;
+  }
+  function saveSchulteBest(mode, grid, fixOn, ms) {
+    const all = readJSON(SCHULTE_BEST_KEY, {});
+    const k = schulteBestKey(mode, grid, fixOn);
+    if (!(all[k] > 0) || ms < all[k]) { all[k] = Math.round(ms); writeJSON(SCHULTE_BEST_KEY, all); return true; }
+    return false;
+  }
+  // "23,4 s" below a minute, "1:05,2 min" above.
+  function fmtSchulteTime(ms) {
+    const t = Math.round(Math.max(0, ms) / 100) / 10;
+    if (t < 60) return `${t.toFixed(1).replace(".", ",")} s`;
+    const m = Math.floor(t / 60);
+    return `${m}:${(t - m * 60).toFixed(1).padStart(4, "0").replace(".", ",")} min`;
+  }
+  function renderSchulteBests() {
+    const g = schultePrefs.gridSize;
+    [["fest", "schulteBestFest"], ["wechselnd", "schulteBestWechselnd"], ["erinnerung", "schulteBestErinnerung"]].forEach(([mode, id]) => {
+      const el = $(id);
+      if (!el) return;
+      const best = schulteBestFor(mode, g, fixGet("schulte:" + mode).on);
+      el.textContent = best ? `Bestzeit ${g}×${g}: ${fmtSchulteTime(best)}` : "";
+    });
+  }
+  renderSchulteBests();
+
+  // ---- Ready screen ----
+  let schulteReadyMode = "fest";
+  let schulteFixMode = "fest";
+  function schulteReadyDescText(mode) {
+    return `Tippe die Zahlen so schnell wie möglich der Reihe nach an, von der 1 an. ${(SCHULTE_MODES[mode] || SCHULTE_MODES.fest).desc} Ein falscher Tipp kostet nur Zeit.`;
+  }
+  function updateSchulteReadyBestHint() {
+    const g = schultePrefs.gridSize;
+    const best = schulteBestFor(schulteReadyMode, g, schultePrefs.fixEnabled);
+    els.schulteReadyBestHint.textContent = best
+      ? `Deine Bestzeit bei ${g}×${g} in diesem Modus: ${fmtSchulteTime(best)}.`
+      : `Noch keine Bestzeit bei ${g}×${g} in diesem Modus – leg los!`;
+  }
+  function syncSchulteGridUI() {
+    document.querySelectorAll("#schulteGridRow [data-schulte-grid]").forEach((el) => setActive(el, Number(el.dataset.schulteGrid) === schultePrefs.gridSize));
+    const g = schultePrefs.gridSize, n = schulteCount(g, schultePrefs.fixEnabled);
+    $("schulteGridCount").textContent = schulteCenterFree(g, schultePrefs.fixEnabled)
+      ? `Diese Tabelle: Zahlen 1 bis ${n}, das Mittelfeld bleibt für den Fixpunkt frei.`
+      : `Diese Tabelle: Zahlen 1 bis ${n}.`;
+  }
+  document.querySelectorAll("#schulteGridRow [data-schulte-grid]").forEach((el) => {
+    el.addEventListener("click", () => {
+      schultePrefs.gridSize = Number(el.dataset.schulteGrid);
+      saveSchultePrefsToStorage();
+      syncSchulteGridUI();
+      updateSchulteReadyBestHint();
+      renderSchulteBests();
+    });
+  });
+  FIX_ADAPTERS.schulte = { name: "schulte", key: () => "schulte:" + schulteFixMode, obj: () => schultePrefs, names: FIX_FIELDS.std,
+    save: () => { saveSchultePrefsToStorage(); syncSchulteGridUI(); updateSchulteReadyBestHint(); renderSchulteBests(); },
+    redraw: () => schulteLiveFix() };
+  wireFixGroup("schulteFix", "data-fix-on", FIX_ADAPTERS.schulte);
+  wireFixGroup("schultePauseFix", "data-fix-on", FIX_ADAPTERS.schulte);
+  const applySchulteBg = makeBgApplier(els.schulteStage, schultePrefs);
+  const syncSchulteBgUI = wireBgIntensityControl(schultePrefs, {
+    pickers: [els.schulteBgColorPicker, els.schultePauseBgColorPicker],
+    sliders: [els.schulteBgIntensitySlider, els.schultePauseBgSlider],
+    valueEls: [els.schulteBgIntensityValue, els.schultePauseBgValue],
+    hintEls: [els.schulteBgContrastHint, els.schultePauseBgContrastHint],
+    masterStatusEls: [els.schulteBgMasterStatus],
+    transfer: [{
+      sourceRow: els.schulteBgSourceRow, presetGroup: els.schulteBgPresetGroup, presetList: els.schulteBgPresetList,
+      saveBtn: els.schulteBgSaveBtn, form: els.schulteBgSaveForm, nameInput: els.schulteBgSaveNameInput,
+      cancelBtn: els.schulteBgSaveCancelBtn, confirmBtn: els.schulteBgSaveConfirmBtn,
+    }],
+  }, () => {
+    saveSchultePrefsToStorage();
+    // A run follows the pause sheet at once (its own copy of the colour).
+    if (schulteState) { schulteState.bgColorKey = schultePrefs.bgColorKey; schulteState.bgIntensity = schultePrefs.bgIntensity; schulteApplyStageBg(); }
+    else applySchulteBg();
+  }, "schulte");
+  function openSchulteReady(mode) {
+    schulteReadyMode = SCHULTE_MODES[mode] ? mode : "fest";
+    els.schulteReadyTitle.textContent = "Schulte-Tabelle";
+    els.schulteReadyDesc.textContent = schulteReadyDescText(schulteReadyMode);
+    schulteFixMode = schulteReadyMode;
+    fixLoad("schulte");
+    syncLook("schulte");
+    syncSchulteBgUI();
+    syncSchulteGridUI();
+    updateSchulteReadyBestHint();
+    showScreen("schulteReady");
+  }
+  els.schulteOpenFest.addEventListener("click", () => openSchulteReady("fest"));
+  els.schulteOpenWechselnd.addEventListener("click", () => openSchulteReady("wechselnd"));
+  els.schulteOpenErinnerung.addEventListener("click", () => openSchulteReady("erinnerung"));
+  els.schulteReadyBackToHome.addEventListener("click", () => {
+    if (comboSchulteCaptureOriginal) { exitSchulteComboCapture(); showScreen("comboScreen"); return; }
+    showScreen("natHome");
+  });
+
+  // ---- Kombi-Baustein capture (same pattern as MOT: one ready screen,
+  // mode fixed per block, a duration slider only while capturing). A
+  // block repeats tables until its time is up. ----
+  let comboSchulteCaptureOriginal = null;
+  let comboSchulteEditIndex = null;
+  let comboSchulteCaptureMode = null;
+  let comboSchulteDurationS = 120;
+  function openSchulteComboCapture(mode, existingBlock, editIndex) {
+    const m = SCHULTE_MODES[mode] ? mode : "fest";
+    comboSchulteCaptureOriginal = JSON.parse(JSON.stringify(schultePrefs));
+    comboSchulteCaptureMode = m;
+    comboSchulteEditIndex = editIndex ?? null;
+    comboSchulteDurationS = existingBlock ? (existingBlock.duration ?? 120) : 120;
+    if (existingBlock && existingBlock.prefs) Object.assign(schultePrefs, JSON.parse(JSON.stringify(existingBlock.prefs)));
+    normalizeSchultePrefs(schultePrefs);
+    openSchulteReady(m);
+    // The block's own Fixpunkt wins over the module's (re-editing a block).
+    if (existingBlock && existingBlock.prefs && existingBlock.prefs.fixEnabled != null) {
+      fixWrite(schultePrefs, FIX_FIELDS.std, fixRead(existingBlock.prefs, FIX_FIELDS.std));
+      fixSync("schulte");
+      syncSchulteGridUI();
+    }
+    els.schulteReadyTitle.textContent = `Baustein: Schulte-Tabelle · ${schulteModeTitle(m)}`;
+    els.schulteReadyDesc.textContent = "Stelle Raster, Fixpunkt und Dauer für diesen Baustein ein. Ist eine Tabelle fertig, kommt bis zum Ende der Dauer gleich die nächste.";
+    els.schulteComboDurationGroup.hidden = false;
+    els.schulteComboDurationSlider.value = comboSchulteDurationS;
+    els.schulteComboDurationValue.textContent = fmtSeconds(comboSchulteDurationS);
+    els.schulteReadyStartBtn.textContent = "Baustein übernehmen";
+  }
+  function exitSchulteComboCapture() {
+    if (comboSchulteCaptureOriginal) {
+      Object.keys(schultePrefs).forEach((k) => { if (!(k in comboSchulteCaptureOriginal)) delete schultePrefs[k]; });
+      Object.assign(schultePrefs, comboSchulteCaptureOriginal);
+      saveSchultePrefsToStorage();
+      comboSchulteCaptureOriginal = null;
+    }
+    comboSchulteEditIndex = null;
+    comboSchulteCaptureMode = null;
+    els.schulteComboDurationGroup.hidden = true;
+    els.schulteReadyStartBtn.textContent = "Training starten";
+  }
+  function commitSchulteComboCapture() {
+    const block = { domain: "schulte", mode: comboSchulteCaptureMode, duration: comboSchulteDurationS, prefs: JSON.parse(JSON.stringify(schultePrefs)) };
+    if (comboSchulteEditIndex != null) comboDraftBlocks[comboSchulteEditIndex] = block;
+    else comboDraftBlocks.push(block);
+    exitSchulteComboCapture();
+    renderComboBlockList();
+    showScreen("comboScreen");
+  }
+  els.schulteComboDurationSlider.addEventListener("input", () => {
+    comboSchulteDurationS = Number(els.schulteComboDurationSlider.value);
+    els.schulteComboDurationValue.textContent = fmtSeconds(comboSchulteDurationS);
+  });
+  // A Kombi block's prefs: the client's current settings + this mode's
+  // Fixpunkt, the block's own snapshot on top (fields added later still
+  // get a value). Never written back to schultePrefs.
+  function schulteBlockPrefs(block) {
+    const p = JSON.parse(JSON.stringify(schultePrefs));
+    fixWrite(p, FIX_FIELDS.std, fixGet("schulte:" + (SCHULTE_MODES[block.mode] ? block.mode : "fest")));
+    if (block.prefs) Object.assign(p, JSON.parse(JSON.stringify(block.prefs)));
+    return normalizeSchultePrefs(p);
+  }
+  // Cardio-Zusatzaufgabe: the guest cfg (own grid, Fixpunkt an/aus, look,
+  // background); the Fixpunkt's look comes from this mode's own setting.
+  function schulteGuestPrefs(cfg) {
+    const p = JSON.parse(JSON.stringify(schultePrefs));
+    fixWrite(p, FIX_FIELDS.std, fixGet("schulte:" + (SCHULTE_MODES[cfg.mode] ? cfg.mode : "fest")));
+    p.fixEnabled = cfg.fixEnabled !== false;
+    ["gridSize", "numScale", "numColor", "bgColorKey", "bgIntensity"].forEach((k) => { if (cfg[k] != null) p[k] = cfg[k]; });
+    p.mbg = null;
+    return normalizeSchultePrefs(p);
+  }
+
+  // ---- Engine ----
+  let schulteState = null;
+  let lastSchulteMode = "fest";
+  function scheduleSchulteTimer(fn, delayMs) {
+    schulteState.timerFn = fn;
+    schulteState.timerFiresAt = performance.now() + delayMs;
+    schulteState.timer = setTimeout(fn, delayMs);
+  }
+  function schulteShuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  function schulteApplyStageBg() {
+    const st = schulteState;
+    els.schulteStage.style.background = st && st.bgIntensity > 0 && STROOP_COLOR_BY_KEY[st.bgColorKey] ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[st.bgColorKey].hex, st.bgIntensity) : "";
+  }
+  function schulteHintText() {
+    const st = schulteState;
+    const fix = st.fixEnabled ? "Blick auf den Fixpunkt. " : "";
+    if (st.mode === "erinnerung") return st.hidden ? `${fix}Aus der Erinnerung weiter` : `${fix}Plätze einprägen, dann mit der 1 starten`;
+    if (st.mode === "wechselnd") return `${fix}Der Reihe nach, die übrigen Zahlen tauschen`;
+    return `${fix}Tippe 1, 2, 3 … der Reihe nach`;
+  }
+  function schulteStatusText() {
+    const st = schulteState;
+    const ms = st.phase === "play" ? (st.paused ? st.pausedAt : performance.now()) - st.tableStart : st.lastMs || 0;
+    return `${Math.min(st.next - 1, st.total)}/${st.total} · ${fmtSchulteTime(ms)}`;
+  }
+  function schulteTickStatus() {
+    if (!schulteState) return;
+    els.schulteLevelEl.textContent = schulteStatusText();
+  }
+  // Keep the grid below the hint (same rule as Blitz-Raster): the stage
+  // reserves the hint's height at the top, the square board takes the rest.
+  function fitSchulteBoard() {
+    const stage = els.schulteStage, hint = els.schulteHint, board = els.schulteBoard;
+    if (!stage || !stage.offsetParent) return;
+    placeHintBelowBar(hint, els.schultePlayerBar);
+    stage.style.paddingTop = "";
+    board.style.maxWidth = "";
+    const sr = stage.getBoundingClientRect(), hr = hint.getBoundingClientRect();
+    const top = Math.max(24, Math.ceil(hr.bottom - sr.top + 10));
+    stage.style.paddingTop = top + "px";
+    const room = Math.floor(Math.min(sr.height - top - 24, sr.width - 32));
+    if (room > 0) board.style.maxWidth = Math.min(560, room) + "px";
+    schulteSizeNumbers();
+  }
+  // Number size: the cell stays the tap target, the number follows "Größe
+  // der Zahlen" and is capped so two digits always fit inside the cell.
+  function schulteSizeNumbers() {
+    const st = schulteState;
+    if (!st) return;
+    const cell = els.schulteGrid.querySelector(".schulte-cell");
+    const w = cell ? cell.getBoundingClientRect().width : 0;
+    if (!w) return;
+    const px = Math.max(12, Math.min(w * 0.42 * (st.numScale || 1), w * 0.6));
+    els.schulteGrid.style.setProperty("--schulte-num-px", Math.round(px) + "px");
+    renderSchulteFixpoint();
+  }
+  function renderSchulteFixpoint() {
+    const st = schulteState;
+    const f = st ? fixRead(st, FIX_FIELDS.std) : fixRead(schultePrefs, FIX_FIELDS.std);
+    const cell = els.schulteGrid.querySelector(".schulte-cell");
+    const w = cell ? cell.getBoundingClientRect().width : 60;
+    // Odd grid: the free middle cell holds the point. Even grid: it sits on
+    // the crossing of the four middle cells, so it stays small enough to
+    // leave their numbers readable.
+    const odd = st ? st.grid % 2 === 1 : true;
+    const base = odd ? Math.min(1, (w * 0.7) / (18 * f.size)) : Math.min(1, (w * 0.42) / (18 * f.size));
+    fixRenderEl(els.schulteFixpointEl, f, base, odd ? w * 0.9 : w * 0.5);
+  }
+  function schulteBuildTable() {
+    const st = schulteState;
+    const n = st.grid, cells = n * n;
+    st.center = schulteCenterFree(n, st.fixEnabled) ? Math.floor(cells / 2) : -1;
+    const slots = [];
+    for (let i = 0; i < cells; i++) if (i !== st.center) slots.push(i);
+    st.total = slots.length;
+    const nums = schulteShuffle(slots.map((_, i) => i + 1));
+    st.cellNum = new Array(cells).fill(0);
+    slots.forEach((c, i) => { st.cellNum[c] = nums[i]; });
+    st.next = 1;
+    st.done = new Set();
+    st.hidden = false;
+    st.tableErrors = 0;
+    els.schulteGrid.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+    els.schulteGrid.style.gridTemplateRows = `repeat(${n}, 1fr)`;
+    els.schulteGrid.style.gap = n <= 4 ? "10px" : n === 5 ? "8px" : "6px";
+    els.schulteGrid.innerHTML = "";
+    st.cellEls = [];
+    for (let i = 0; i < cells; i++) {
+      let el;
+      if (i === st.center) {
+        el = document.createElement("div");
+        el.className = "schulte-cell free";
+        el.setAttribute("aria-hidden", "true");
+      } else {
+        el = document.createElement("button");
+        el.type = "button";
+        el.className = "schulte-cell tappable";
+        const idx = i;
+        onGameTap(el, () => schulteTap(idx));
+      }
+      st.cellEls.push(el);
+      els.schulteGrid.appendChild(el);
+    }
+    schulteRenderNumbers();
+    st.phase = "play";
+    els.schulteHint.textContent = schulteHintText();
+    fitSchulteBoard();
+    st.tableStart = st.paused ? st.pausedAt : performance.now();
+    schulteTickStatus();
+  }
+  function schulteRenderNumbers(fade) {
+    const st = schulteState;
+    st.cellEls.forEach((el, i) => {
+      if (i === st.center) return;
+      const done = st.done.has(i);
+      const show = done || !st.hidden;
+      el.textContent = show ? String(st.cellNum[i]) : "";
+      el.setAttribute("aria-label", show ? `Zahl ${st.cellNum[i]}` : "Verdecktes Feld");
+      el.classList.toggle("done", done);
+      el.classList.toggle("tappable", !done);
+      el.classList.toggle("covered", !show);
+      if (fade && !done) { el.classList.remove("swap"); void el.offsetWidth; el.classList.add("swap"); }
+    });
+  }
+  function schulteMark(el, cls, ms) {
+    el.classList.remove("correct", "wrong");
+    void el.offsetWidth;
+    el.classList.add(cls);
+    clearTimeout(el._schulteMark);
+    el._schulteMark = setTimeout(() => el.classList.remove(cls), ms);
+  }
+  function schulteTap(i) {
+    const st = schulteState;
+    if (!st || st.paused || st.phase !== "play" || st.done.has(i) || i === st.center) return;
+    const el = st.cellEls[i];
+    if (st.cellNum[i] !== st.next) {
+      st.errors++;
+      st.tableErrors++;
+      schulteMark(el, "wrong", 450);
+      return;
+    }
+    st.done.add(i);
+    st.next++;
+    if (st.mode === "erinnerung" && !st.hidden) {
+      st.hidden = true;
+      els.schulteHint.textContent = schulteHintText();
+    }
+    if (st.next > st.total) {
+      schulteRenderNumbers();
+      schulteMark(el, "correct", 350);
+      schulteTableDone();
+      return;
+    }
+    // Wechselnd: the numbers not tapped yet swap their places.
+    if (st.mode === "wechselnd") {
+      const open = st.cellEls.map((_, k) => k).filter((k) => k !== st.center && !st.done.has(k));
+      const vals = schulteShuffle(open.map((k) => st.cellNum[k]));
+      open.forEach((k, j) => { st.cellNum[k] = vals[j]; });
+    }
+    schulteRenderNumbers(st.mode === "wechselnd");
+    schulteMark(el, "correct", 350);
+    schulteTickStatus();
+  }
+  function schulteTableDone() {
+    const st = schulteState;
+    st.phase = "between";
+    st.lastMs = performance.now() - st.tableStart;
+    st.tables++;
+    st.bestRunMs = st.bestRunMs ? Math.min(st.bestRunMs, st.lastMs) : st.lastMs;
+    schulteTickStatus();
+    if (st.repeat) {
+      els.schulteHint.textContent = `Geschafft in ${fmtSchulteTime(st.lastMs)} – gleich kommt die nächste Tabelle`;
+      scheduleSchulteTimer(() => { if (schulteState) schulteBuildTable(); }, 1600);
+      return;
+    }
+    els.schulteHint.textContent = `Geschafft in ${fmtSchulteTime(st.lastMs)}`;
+    scheduleSchulteTimer(() => schulteFinish(), 700);
+  }
+  // A Fixpunkt change in the pause sheet (or anywhere while running): on an
+  // odd grid switching it on/off changes the middle cell, so the table
+  // starts afresh; otherwise only the point is redrawn.
+  function schulteLiveFix() {
+    const st = schulteState;
+    if (!st) return;
+    const before = schulteCenterFree(st.grid, st.fixEnabled);
+    fixWrite(st, FIX_FIELDS.std, fixRead(schultePrefs, FIX_FIELDS.std));
+    if (schulteCenterFree(st.grid, st.fixEnabled) !== before && st.phase === "play") {
+      st.errors -= st.tableErrors;
+      schulteBuildTable();
+    } else {
+      els.schulteHint.textContent = st.phase === "play" ? schulteHintText() : els.schulteHint.textContent;
+      renderSchulteFixpoint();
+    }
+  }
+  // prefsOverride: Kombi block snapshot or Cardio guest cfg - never reads
+  // or writes the client's own schultePrefs. opts.comboDurationS: tables
+  // repeat until the time is up (Kombi block, Cardio-Zusatzaufgabe).
+  function startSchulteGame(mode, opts, prefsOverride) {
+    hideAllPlayers();
+    SCREENS.forEach((s) => { els[s].hidden = true; });
+    els.schultePlayer.hidden = false;
+    els.schultePlayerBar.hidden = false;
+    els.schulteDonePanel.hidden = true;
+    els.schultePauseOverlay.hidden = true;
+    els.schultePauseBtn.hidden = false;
+    els.schulteBoard.classList.remove("is-paused");
+    softStartRun();
+    const p = prefsOverride || schultePrefs;
+    const m = SCHULTE_MODES[mode] ? mode : "fest";
+    lastSchulteMode = m;
+    schulteState = {
+      mode: m, grid: SCHULTE_GRIDS.includes(p.gridSize) ? p.gridSize : 5,
+      numScale: p.numScale || 1, numColor: p.numColor || "standard",
+      bgColorKey: p.bgColorKey, bgIntensity: p.bgIntensity,
+      errors: 0, tableErrors: 0, tables: 0, lastMs: 0, bestRunMs: 0,
+      phase: "build", paused: false, timer: null, comboDurationTimer: null,
+      repeat: !!(opts && opts.comboDurationS), startTime: performance.now(),
+      mbg: mbgCopy(p.mbg),
+    };
+    fixWrite(schulteState, FIX_FIELDS.std, fixRead(p, FIX_FIELDS.std));
+    els.schulteGrid.style.setProperty("--schulte-num-color", lookColorHex("schulte", schulteState.numColor));
+    schulteApplyStageBg();
+    mbgStart("schulte");
+    requestWakeLock();
+    schulteBuildTable();
+    clearInterval(startSchulteGame.tick);
+    startSchulteGame.tick = setInterval(() => { if (schulteState && !schulteState.paused && schulteState.phase === "play") schulteTickStatus(); }, 100);
+    if (opts && opts.comboDurationS) {
+      schulteState.comboDurationFiresAt = performance.now() + opts.comboDurationS * 1000;
+      schulteState.comboDurationTimer = setTimeout(finishSchulteCombo, opts.comboDurationS * 1000);
+    }
+  }
+  window.addEventListener("resize", () => { if (schulteState && !els.schultePlayer.hidden) fitSchulteBoard(); });
+  function schulteTeardown() {
+    const st = schulteState;
+    if (!st) return null;
+    if (st.timer) clearTimeout(st.timer);
+    if (st.comboDurationTimer) clearTimeout(st.comboDurationTimer);
+    clearInterval(startSchulteGame.tick);
+    schulteState = null;
+    els.schultePauseOverlay.hidden = true;
+    els.schulteBoard.classList.remove("is-paused");
+    releaseWakeLock();
+    if (document.fullscreenElement === els.schultePlayer) document.exitFullscreen().catch(() => {});
+    els.schulteFsHint.hidden = true;
+    return st;
+  }
+  function finishSchulteCombo() {
+    if (!schulteState) return;
+    const st = schulteTeardown();
+    const playedS = (performance.now() - st.startTime) / 1000;
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
+    if (comboProgram) {
+      blockResultPush(comboProgram, `Schulte-Tabelle · ${schulteModeTitle(st.mode)}`,
+        st.tables ? `${countLabel(st.tables, "Tabelle", "Tabellen")} · beste ${fmtSchulteTime(st.bestRunMs)}` : "keine Tabelle fertig");
+      advanceComboProgram(playedS);
+    }
+  }
+  // Standalone: one table, then the result.
+  function schulteFinish() {
+    const st = schulteTeardown();
+    if (st) schulteShowResult(st);
+  }
+  function schulteShowResult(st) {
+    const g = st.grid;
+    const isRecord = saveSchulteBest(st.mode, g, st.fixEnabled, st.lastMs);
+    renderSchulteBests();
+    const time = fmtSchulteTime(st.lastMs);
+    const errText = st.errors ? `${st.errors} Fehler` : "fehlerfrei";
+    const fixText = st.fixEnabled ? " mit Fixpunkt" : "";
+    els.schultePlayerBar.hidden = true;
+    els.schulteDoneSummary.textContent = `Schulte-Tabelle · ${schulteModeTitle(st.mode)} · ${g}×${g}${fixText} · ${time} · ${errText}` + (isRecord ? " · Neue Bestzeit!" : "");
+    markBest(els.schulteDoneSummary, "· ", time.replace(/ (s|min)$/, ""));
+    const id = addHistory({ kind: "schulte", title: `Schulte-Tabelle · ${schulteModeTitle(st.mode)}`, seconds: Math.max(1, Math.round(st.lastMs / 1000)), note: `${g}×${g}${fixText} · ${time} · ${errText}` });
+    renderRating(els.schulteRating, id, "Wie war deine Konzentration?");
+    levelSuggestAfter("schulte", st.mode, { errors: st.errors, lastMs: st.lastMs, total: st.total }, els.schulteDonePanel, els.schulteRating);
+    els.schulteDonePanel.hidden = false;
+  }
+  function schulteStop() {
+    if (!schulteState) return;
+    const st = schulteTeardown();
+    if (cardioGuestActive) { returnFromCardioGuest(); return; }
+    // "Beenden" mid-Kombi quits the whole Kombi, like every sibling.
+    if (comboProgram) { abortComboProgram(); return; }
+    // Standalone: a finished table (Beenden in the short "Geschafft" moment)
+    // still counts; an unfinished one leaves no entry (like MOT without a level).
+    if (st && !st.repeat && st.tables > 0) { schulteShowResult(st); return; }
+    if (st) { els.schultePlayer.hidden = true; showScreen("schulteReady"); }
+  }
+  els.schulteReadyStartBtn.addEventListener("click", () => {
+    if (comboSchulteCaptureOriginal) { commitSchulteComboCapture(); return; }
+    startSchulteGame(schulteReadyMode);
+  });
+  els.schulteBackBtn.addEventListener("click", schulteStop);
+  els.schulteAgainBtn.addEventListener("click", () => { els.schulteDonePanel.hidden = true; startSchulteGame(lastSchulteMode); });
+  els.schulteDoneBackBtn.addEventListener("click", () => { els.schultePlayer.hidden = true; els.schulteDonePanel.hidden = true; showScreen("schulteReady"); });
+
+  // ---- Pause: the clock stops, the numbers are covered (so the pause
+  // never helps the search), Fixpunkt/Hintergrund/Größe change live. ----
+  function pauseSchulte() {
+    const st = schulteState;
+    if (!st || st.paused) return;
+    st.paused = true;
+    st.pausedAt = performance.now();
+    if (st.timer) {
+      clearTimeout(st.timer);
+      st.timer = null;
+      st.timerRemainingMs = Math.max(0, st.timerFiresAt - st.pausedAt);
+    }
+    if (st.comboDurationTimer) {
+      clearTimeout(st.comboDurationTimer);
+      st.comboDurationTimer = null;
+      st.comboRemainingMs = Math.max(0, st.comboDurationFiresAt - st.pausedAt);
+    }
+    schulteTickStatus();
+    syncSchulteBgUI();
+    fixSync("schulte");
+    els.schulteBoard.classList.add("is-paused");
+    els.schultePauseBtn.hidden = true;
+    els.schultePauseOverlay.hidden = false;
+  }
+  function resumeSchulte() {
+    const st = schulteState;
+    if (!st || !st.paused) return;
+    const d = performance.now() - st.pausedAt;
+    st.startTime += d;
+    st.tableStart += d;
+    st.paused = false;
+    if (st.timerFn && st.timerRemainingMs != null) {
+      scheduleSchulteTimer(st.timerFn, st.timerRemainingMs);
+      st.timerRemainingMs = null;
+    }
+    if (st.comboRemainingMs != null) {
+      st.comboDurationFiresAt = performance.now() + st.comboRemainingMs;
+      st.comboDurationTimer = setTimeout(finishSchulteCombo, st.comboRemainingMs);
+      st.comboRemainingMs = null;
+    }
+    els.schulteBoard.classList.remove("is-paused");
+    els.schultePauseOverlay.hidden = true;
+    els.schultePauseBtn.hidden = false;
+    fitSchulteBoard();
+  }
+  els.schultePauseBtn.addEventListener("click", pauseSchulte);
+  els.schulteResumeBtn.addEventListener("click", resumeSchulte);
+
   // ---- NAT: "Aktuelle Einstellung speichern" (Idee 54, Fabian 2026-10-07).
   // Same list + inline name form as VT/Atem/Reaktion (makePresetStore,
   // renderPresetList, wirePresetSaveForm) on all eight NAT ready screens
@@ -16252,6 +16888,12 @@
         capturing: () => (comboBalanceCaptureOriginal ? "-" : null),
         meta: (e) => [(BALANCE_MODES[e.prefs.mode] || {}).name || "", `${e.prefs.sticks === 2 ? "2 Stifte" : "1 Stift"}`, `${e.prefs.bpm}/min`],
       },
+      schulte: {
+        prefs: schultePrefs, put: (p) => { Object.assign(schultePrefs, p); normalizeSchultePrefs(schultePrefs); saveSchultePrefsToStorage(); },
+        open: (mode) => openSchulteReady(mode),
+        capturing: () => (comboSchulteCaptureOriginal ? comboSchulteCaptureMode : null),
+        meta: (e) => [modeLabel("schulte", e.mode), `Raster ${e.prefs.gridSize}×${e.prefs.gridSize}`, e.prefs.fixEnabled === false ? "ohne Fixpunkt" : "mit Fixpunkt"],
+      },
     };
     // screen id -> exercise, its start button and the mode it currently shows
     const SCREENS_NAT = {
@@ -16263,6 +16905,7 @@
       motReady: { ex: "mot", start: "motReadyStartBtn", mode: () => motReadyMode },
       motTrainingReady: { ex: "mot", start: "motTrainingStartBtn", mode: () => "training" },
       balanceReady: { ex: "balance", start: "balanceReadyStartBtn", mode: () => null },
+      schulteReady: { ex: "schulte", start: "schulteReadyStartBtn", mode: () => schulteReadyMode },
     };
     const startOf = (ex, mode) => SCREENS_NAT[Object.keys(SCREENS_NAT).find((k) => SCREENS_NAT[k].ex === ex && (mode === "training") === k.includes("Training"))].start;
     function render(sid) {
@@ -19361,6 +20004,9 @@
     // Richtungskreuz (Idee 70, 2026-10-08): appended last in the "Weitere"
     // group, so older picker positions and group headings stay.
     { id: "richtungskreuz", title: "Richtungskreuz", group: "extra" },
+    // Schulte-Tabelle (NAT, 2026-10-09): appended last (picker tests count
+    // positions); shown in the NAT group by its `group`.
+    { id: "schulte", title: "Schulte-Tabelle", group: "nat" },
   ];
   // "addon-flash" and "periph-flash" both flash a coloured digit/letter at
   // a random peripheral position (the former as a Zusatzaufgabe overlay on
@@ -19407,6 +20053,7 @@
   function cardioGuestIsFlash(guestId) { return guestId === "flash"; }
   function cardioGuestIsMot(guestId) { return guestId === "mot"; }
   function cardioGuestIsBalance(guestId) { return guestId === "balance"; }
+  function cardioGuestIsSchulte(guestId) { return guestId === "schulte"; }
   function cardioGuestIsFarbfelder(guestId) { return guestId === "farbfelder"; }
   // Any type with more than one starting mode (Remember/Flash/MOT each
   // have several - training vs. fixed vs. shuffle vs. ...) needs an extra
@@ -19420,6 +20067,7 @@
     flash: [{ id: "constant", title: "Konstant" }, { id: "climb", title: "Steigend, direkt" }, { id: "climbRepeat", title: "Steigend, mit Wiederholung" }, { id: "training", title: "Trainingsmodus" }],
     mot: [{ id: "speed", title: "Tempo steigt" }, { id: "count", title: "Anzahl steigt" }, { id: "both", title: "Beides steigt" }, { id: "training", title: "Trainingsmodus" }],
     balance: Object.entries(BALANCE_MODES).map(([id, m]) => ({ id, title: m.name })),
+    schulte: Object.entries(SCHULTE_MODES).map(([id, m]) => ({ id, title: m.title })),
     farbfelder: Object.entries(FF_MODE_LABELS).map(([id, title]) => ({ id, title })),
   };
   function cardioGuestModeList(guestId) { return CARDIO_GUEST_MODE_LISTS[guestId] || null; }
@@ -19440,6 +20088,8 @@
     if (guestId === "remember") return { duration: 20, mode: "fixed", revealBaseS: REMEMBER_DIFFICULTIES.mittel.revealBaseS, revealStepS: REMEMBER_DIFFICULTIES.mittel.revealStepS, errorMode: "reset2", trainingStart: 8, trainingProgress: true, trainingPositionMode: "shuffle", markerScale: 1, numColor: "weiss", ...bg };
     if (guestId === "flash") return { duration: 20, mode: "constant", kind: "zahlen", stimulusS: FLASH_DIFFICULTIES.mittel.stimulusS, intervalS: FLASH_DIFFICULTIES.mittel.intervalS, errorMode: "reset2", axes: PERIPH_AXIS_KEYS.slice(), useZones: false, zones: PERIPH_ZONE_KEYS.slice(), fixEnabled: true, fixChar: "", fixColor: "grau", fixSize: 1, constantCount: 3, startCount: 3, repsPerLevel: 2, trainingStart: 5, trainingProgress: true, charScale: 1, charColor: "standard", ...bg };
     if (guestId === "balance") return { ...JSON.parse(JSON.stringify(BALANCE_DEFAULTS)), duration: 20, ...bg };
+    // Schulte-Tabelle: a table takes longer than a flash - 45 s by default.
+    if (guestId === "schulte") return { duration: 45, mode: "fest", gridSize: 4, fixEnabled: true, numScale: 1, numColor: "standard", ...bg };
     // Farbfelder: the mat layout and the hand rules always come from the
     // client's own Farbfelder settings (it is the same mat on the floor).
     // Richtungskreuz: colours/numbers/Farbregel meanings come from the
@@ -19513,6 +20163,11 @@
       if (cardioGuestIsFlash(t.id)) normalizeLookPrefs("flash", p);
       if (cardioGuestIsMot(t.id)) normalizeLookPrefs("mot", p);
       if (cardioGuestIsBalance(t.id)) { const dur = p.duration; normalizeBalancePrefs(p); p.duration = dur; }
+      if (cardioGuestIsSchulte(t.id)) {
+        if (!SCHULTE_GRIDS.includes(p.gridSize)) p.gridSize = d.gridSize;
+        if (typeof p.fixEnabled !== "boolean") p.fixEnabled = d.fixEnabled;
+        normalizeLookPrefs("schulte", p);
+      }
       if (t.id === "cone-number") {
         if (!Number.isFinite(p.fields) || p.fields < CN_MIN_FIELDS || p.fields > CN_MAX_FIELDS) p.fields = d.fields;
         p.fields = Math.round(p.fields);
@@ -19777,6 +20432,8 @@
           `</div>`;
       } else if (cardioGuestIsBalance(t.id)) {
         html += balanceCardioFieldsHtml(t.id, cfg);
+      } else if (cardioGuestIsSchulte(t.id)) {
+        html += schulteCardioFieldsHtml(t.id, cfg);
       } else if (t.id === "richtungskreuz") {
         html += rkCardioFieldsHtml(t.id, cfg);
       } else if (cardioGuestIsFarbfelder(t.id)) {
@@ -20731,6 +21388,7 @@
     else if (cardioGuestIsFlash(guestId)) startFlashGame(cfg.mode, comboOpts, cfg);
     else if (cardioGuestIsMot(guestId)) startMotGame(cfg.mode, comboOpts, cfg);
     else if (cardioGuestIsBalance(guestId)) startBalanceGame(comboOpts, cfg);
+    else if (cardioGuestIsSchulte(guestId)) startSchulteGame(cfg.mode, comboOpts, schulteGuestPrefs(cfg));
     else {
       applyCardioGuestToState(realId, cfg);
       // "Hütchen sortieren" (cone-tap) is the one type here with its own
@@ -21044,7 +21702,8 @@
       // the pause controls edit these shared objects, so a block's own
       // values go in for the block and the client's come back at the end.
       nat: { remember: JSON.parse(JSON.stringify(rememberPrefs)), blitz: JSON.parse(JSON.stringify(blitzPrefs)),
-        flash: JSON.parse(JSON.stringify(flashPrefs)), mot: JSON.parse(JSON.stringify(motPrefs)), balance: JSON.parse(JSON.stringify(balancePrefs)) },
+        flash: JSON.parse(JSON.stringify(flashPrefs)), mot: JSON.parse(JSON.stringify(motPrefs)), balance: JSON.parse(JSON.stringify(balancePrefs)),
+        schulte: JSON.parse(JSON.stringify(schultePrefs)) },
     };
     if (block.domain === "wimhof") {
       // Safety first, always: even inside a combo, Wim-Hof-style breathing
@@ -21132,6 +21791,10 @@
       const bp = balanceBlockPrefs(block);
       comboAdoptBg(balancePrefs, bp, syncBalanceBgUI);
       startBalanceGame(null, bp);
+    } else if (block.domain === "schulte") {
+      const sp = schulteBlockPrefs(block);
+      comboAdoptBg(schultePrefs, sp, syncSchulteBgUI);
+      startSchulteGame(block.mode || "fest", { comboDurationS: block.duration ?? 120 }, sp);
     } else if (block.domain === "cardio") {
       cardioProgram = null;
       startStandaloneCardio(block.items.map(copyCardioItem));
@@ -21572,7 +22235,7 @@
     if (nat) {
       [[rememberPrefs, nat.remember, saveRememberPrefsToStorage, syncRememberBgUI], [blitzPrefs, nat.blitz, saveBlitzPrefsToStorage, syncBlitzBgUI],
         [flashPrefs, nat.flash, saveFlashPrefsToStorage, syncFlashBgUI], [motPrefs, nat.mot, saveMotPrefsToStorage, syncMotBgUI],
-        [balancePrefs, nat.balance, saveBalancePrefsToStorage, syncBalanceBgUI]].forEach(([obj, old, save, sync]) => {
+        [balancePrefs, nat.balance, saveBalancePrefsToStorage, syncBalanceBgUI], [schultePrefs, nat.schulte, saveSchultePrefsToStorage, syncSchulteBgUI]].forEach(([obj, old, save, sync]) => {
         Object.assign(obj, old); save(); try { sync(); } catch (e) {}
       });
     }
@@ -21746,6 +22409,7 @@
   const FB_HINT_STARTS = {
     rememberReadyStartBtn: ["remember", () => rememberPrefs], rememberTrainingStartBtn: ["remember", () => rememberPrefs],
     blitzReadyStartBtn: ["blitz", () => blitzPrefs], motReadyStartBtn: ["mot", () => motPrefs], motTrainingStartBtn: ["mot", () => motPrefs],
+    schulteReadyStartBtn: ["schulte", () => schultePrefs],
   };
   const FB_OK_HEX = "#2e7d32", FB_BAD_HEX = "#d32f2f";
   let fbHintBypass = false;
@@ -21775,7 +22439,7 @@
   }, true);
   const LEADIN_START_IDS = ["movementStartBtn", "movementProgramStartBtn", "breathStartBtn", "breathProgramStartBtn",
     "rememberReadyStartBtn", "rememberTrainingStartBtn", "blitzReadyStartBtn", "flashReadyStartBtn", "flashTrainingStartBtn",
-    "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn", "optoStartBtn", "neuroStartBtn",
+    "motReadyStartBtn", "motTrainingStartBtn", "balanceReadyStartBtn", "schulteReadyStartBtn", "cardioStartBtn", "cardioProgramStartBtn", "freeStartBtn", "optoStartBtn", "neuroStartBtn",
     "wimhofStartBtn"];
   let leadInBypass = false, leadInTimer = null;
   function stopLeadIn() { clearTimeout(leadInTimer); leadInTimer = null; $("leadIn").hidden = true; }
@@ -21858,6 +22522,12 @@
     // Mittel/Schwer); streaks are kept per mode. Only single tap runs count.
     farbfelder: { title: "Farbfelder", where: "Tempo", diffs: VT_TEMPO_DIFFS, bucket: () => vtTempoBucket(),
       apply: (d) => { state.stimulusS = d.stimulusS; state.intervalMin = d.intervalMin; state.intervalMax = d.intervalMax; savePrefs(); syncTempoUI(); } },
+    // Schulte-Tabelle (09.10.): the ladder is the grid size 3×3 → 6×6
+    // (own order); streaks per mode and grid.
+    schulte: { title: "Schulte-Tabelle", where: "Rastergröße", order: ["g3", "g4", "g5", "g6"],
+      diffs: Object.fromEntries(SCHULTE_GRIDS.map((g) => ["g" + g, { title: `${g}×${g}`, grid: g }])),
+      bucket: () => "g" + schultePrefs.gridSize,
+      apply: (d) => { schultePrefs.gridSize = d.grid; saveSchultePrefsToStorage(); } },
   };
   // What counts as a very good run, per exercise and mode.
   function levelRunIsGood(ex, mode, st) {
@@ -21868,6 +22538,10 @@
     // Farbfelder · Antippen: Abfolge = every round right (at least 2 rounds),
     // else ≥ 90 % right with at least 5 fields shown.
     if (ex === "farbfelder") return mode === "abfolge" ? (st.rounds >= 2 && st.roundsOk === st.rounds) : (st.total >= 5 && st.hits / st.total >= 0.9);
+    // Schulte-Tabelle: at most one wrong tap and a quick pace per number
+    // (assumed thresholds, docs/notes/38): Fest 1,2 s, Wechselnd 1,6 s,
+    // Aus der Erinnerung 2,0 s per number.
+    if (ex === "schulte") return st.errors <= 1 && st.lastMs / Math.max(1, st.total) <= ({ fest: 1200, wechselnd: 1600, erinnerung: 2000 }[mode] || 1200);
     return false;
   }
   function levelSuggestAfter(ex, mode, st, panel, beforeEl) {
@@ -21876,7 +22550,7 @@
     if (!def || mode === "training") return;
     if (hoClientRunActive() || tmTry()) return; // client and test runs never change this device's levels (docs/notes/36)
     const diff = def.bucket();
-    const order = ["leicht", "mittel", "schwer"];
+    const order = def.order || ["leicht", "mittel", "schwer"];
     if (!order.includes(diff)) return;
     const s = readJSON(LEVEL_SUGGEST_KEY, {});
     s.streaks = s.streaks || {}; s.muted = s.muted || {};
@@ -34263,7 +34937,7 @@
   // area tile, but a plan entry kind (what "combo:<savedId>").
   AREA_BY_KEY.combo = { key: "combo", label: "Kombi-Programm", short: "Kombi", color: "#007094", screen: "comboScreen" };
   const AREA_TO_SECTION = { visual: "visual", breath: "breath", movement: "movement", workout: "workout", cardio: "cardio", nat: "nat", test: "test", free: "free", activation: "activation" };
-  const NAT_SUBS = [["peripher", "Periphere Wahrnehmung"], ["remember", "Positionen merken"], ["blitz", "Blitz-Raster"], ["flash", "Flash-Speicher-Test"], ["mot", "Objektverfolgung (MOT)"], ["balance", "Gleichgewicht"]];
+  const NAT_SUBS = [["peripher", "Periphere Wahrnehmung"], ["remember", "Positionen merken"], ["blitz", "Blitz-Raster"], ["flash", "Flash-Speicher-Test"], ["mot", "Objektverfolgung (MOT)"], ["balance", "Gleichgewicht"], ["schulte", "Schulte-Tabelle"]];
   const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
   const WD_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
   const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -34451,7 +35125,7 @@
     if (k.startsWith("movement")) return "movement";
     if (k.startsWith("workout")) return "workout";
     if (k.startsWith("cardio")) return "cardio";
-    if (["remember", "blitz", "flash", "mot", "balance"].includes(k)) return "nat";
+    if (["remember", "blitz", "flash", "mot", "balance", "schulte"].includes(k)) return "nat";
     if (k === "exercise") return e.exId === "periph-flash" ? "nat" : "visual";
     if (k === "program") return "visual";
     if (k === "combo") return "combo";
@@ -34767,7 +35441,7 @@
   function continueFromHistory(h) {
     const area = historyAreaOf(h);
     if (h.kind === "exercise" && h.exId) { startEntry({ area: area === "nat" ? "nat" : "visual", what: area === "nat" ? "nat:peripher" : "ex:" + h.exId }); return; }
-    const natSub = { remember: "remember", blitz: "blitz", flash: "flash", mot: "mot", balance: "balance" }[h.kind];
+    const natSub = { remember: "remember", blitz: "blitz", flash: "flash", mot: "mot", balance: "balance", schulte: "schulte" }[h.kind];
     if (natSub) { startEntry({ area: "nat", what: "nat:" + natSub }); return; }
     if (h.kind === "free" && h.freeId && freeFind(h.freeId)) { startEntry({ area: "free", what: "free:" + h.freeId }); return; }
     if (h.kind === "optodrum") { startEntry({ area: "activation", what: "act:optodrum" }); return; }
@@ -34967,6 +35641,7 @@
       done: (h) => h.progKey === "workout-start" },
     flash: { area: "nat", title: "Flash-Speicher-Test", desc: "Zeichen kurz sehen und merken.", open: openNatStarter("flash"), done: (h) => h.kind === "flash" },
     mot: { area: "nat", title: "Objektverfolgung (MOT)", desc: "Mehrere Punkte zugleich im Blick behalten.", open: openNatStarter("mot"), done: (h) => h.kind === "mot" },
+    schulte: { area: "nat", title: "Schulte-Tabelle", desc: "Zahlen der Reihe nach finden.", open: openNatStarter("schulte"), done: (h) => h.kind === "schulte" },
   };
   const STARTER_GOALS = [
     { key: "ruhe", label: "Ruhe", order: ["box", "coherent", "reset", "balance", "peripher", "vt"] },
@@ -37543,6 +38218,9 @@
     mot: { label: "Objektverfolgung (MOT)", stage: () => els.motStage, overlay: () => els.motPauseOverlay, state: () => motState,
       prefs: () => motPrefs, save: () => saveMotPrefsToStorage(), own: () => !comboProgram && !cardioGuestActive,
       readies: ["motReady", "motTrainingReady"] },
+    schulte: { label: "Schulte-Tabelle", stage: () => els.schulteStage, overlay: () => els.schultePauseOverlay, state: () => schulteState,
+      prefs: () => schultePrefs, save: () => saveSchultePrefsToStorage(), own: () => !comboProgram && !cardioGuestActive,
+      readies: ["schulteReady"] },
   };
   const MBG_CONTROLS_HTML = `
     <div class="choice-row" data-opto-row="pattern">
@@ -38515,6 +39193,7 @@
         flash: () => openFlashComboCapture(mode, null, null),
         mot: () => openMotComboCapture(mode, null, null),
         balance: () => openBalanceComboCapture(null, null),
+        schulte: () => openSchulteComboCapture(mode, null, null),
       }[sub];
       return {
         title: name("h3"), open: () => tile.click(),
@@ -39341,7 +40020,8 @@
   // colours never. Applied settings get the note "von deinem Trainer
   // übernommen" on the ready screen (fwmc-trainer-settings-v1).
   const HO_TRAINER_SET_KEY = "fwmc-trainer-settings-v1"; // {remember: "2026-10-09", ...}
-  const HO_BEST_KEYS = { remember: "fwmc-remember-best-v1", blitz: "fwmc-blitz-best-v1", flash: "fwmc-flash-best-v1", mot: "fwmc-mot-best-v1" };
+  const HO_BEST_KEYS = { remember: "fwmc-remember-best-v1", blitz: "fwmc-blitz-best-v1", flash: "fwmc-flash-best-v1", mot: "fwmc-mot-best-v1", schulte: "fwmc-schulte-best-v1" };
+  const HO_BEST_LOWER = { schulte: true }; // Schulte: best time in ms, lower is better
   const HO_SETTINGS = {
     remember: { label: "Positionen merken", obj: () => rememberPrefs, save: () => { saveRememberPrefsToStorage(); loadRememberPrefs(); },
       fields: ["revealBaseS", "revealStepS", "errorMode", "trainingStart", "trainingProgress", "trainingPositionMode"], size: ["markerScale"] },
@@ -39353,6 +40033,7 @@
       fields: ["speed", "trackS", "highlightS", "errorMode", "objectCount", "targetCount", "growStartObjects", "growStartTargets", "trainingObjects", "trainingTargets", "trainingSpeedStep", "trainingProgress"], size: ["objScale"] },
     balance: { label: "Gleichgewicht", obj: () => balancePrefs, save: () => { normalizeBalancePrefs(balancePrefs); saveBalancePrefsToStorage(); },
       fields: ["mode", "sticks", "letters", "singleS", "letterCount", "metro", "bpm", "timing", "setS", "sets", "restS", "stance", "content", "wordList", "wordEvery", "wordRead"], size: ["size", "lengthPct", "widthF", "fontF"] },
+    schulte: { label: "Schulte-Tabelle", obj: () => schultePrefs, save: () => { saveSchultePrefsToStorage(); loadSchultePrefs(); }, fields: ["gridSize"], size: [] },
   };
   function hoDeviceKind() { try { return Math.min(screen.width, screen.height) >= 600 ? "tablet" : "phone"; } catch (e) { return "phone"; } }
   function hoClearBests() {
@@ -39369,18 +40050,18 @@
       item.dk = hoDeviceKind();
     }
   }
-  function hoMaxMerge(a, b) {
-    if (typeof b === "number") return typeof a === "number" ? Math.max(a, b) : b;
+  function hoMaxMerge(a, b, lower) {
+    if (typeof b === "number") return typeof a === "number" ? (lower ? Math.min(a, b) : Math.max(a, b)) : b;
     if (!b || typeof b !== "object") return a;
     const out = a && typeof a === "object" && !Array.isArray(a) ? { ...a } : {};
-    Object.keys(b).forEach((k) => { out[k] = hoMaxMerge(out[k], b[k]); });
+    Object.keys(b).forEach((k) => { out[k] = hoMaxMerge(out[k], b[k], lower); });
     return out;
   }
   function hoExtrasFor(entries) {
     const b = {}, s = {};
     let d = null;
     entries.slice().sort((x, y) => new Date(x.ts) - new Date(y.ts)).forEach((e) => {
-      if (e.bs && HO_BEST_KEYS[e.kind]) b[e.kind] = hoMaxMerge(b[e.kind], e.bs);
+      if (e.bs && HO_BEST_KEYS[e.kind]) b[e.kind] = hoMaxMerge(b[e.kind], e.bs, HO_BEST_LOWER[e.kind]);
       if (e.ps && HO_SETTINGS[e.kind]) { s[e.kind] = e.ps; d = e.dk || d; }
     });
     const out = {};
@@ -39391,7 +40072,7 @@
   // Untrusted input: only known exercises, known fields, the same type as
   // the client's own value, small numbers and short strings.
   function hoBestOk(v, depth) {
-    if (typeof v === "number") return isFinite(v) && v >= 0 && v <= 1000;
+    if (typeof v === "number") return isFinite(v) && v >= 0 && v <= 3600000;
     if (!v || typeof v !== "object" || Array.isArray(v) || depth > 2) return false;
     const ks = Object.keys(v);
     return ks.length <= 30 && ks.every((k) => /^[A-Za-z0-9_-]{1,24}$/.test(k) && hoBestOk(v[k], depth + 1));
@@ -39429,7 +40110,7 @@
     Object.keys(b).forEach((k) => {
       const key = HO_BEST_KEYS[k];
       const mine = readJSON(key, {}) || {};
-      const merged = hoMaxMerge(mine, b[k]);
+      const merged = hoMaxMerge(mine, b[k], HO_BEST_LOWER[k]);
       if (JSON.stringify(merged) !== JSON.stringify(mine)) { writeJSON(key, merged); n++; }
     });
     return n;
@@ -39462,7 +40143,7 @@
   function hoTrainerSetNotes() {
     const marks = readJSON(HO_TRAINER_SET_KEY, {}) || {};
     [["remember", ["rememberReadyBestHint", "rememberTrainingBestHint"]], ["blitz", ["blitzReadyBestHint"]], ["flash", ["flashReadyBestHint", "flashTrainingBestHint"]],
-      ["mot", ["motReadyBestHint", "motTrainingBestHint"]], ["balance", ["balanceReadyDesc"]]].forEach(([k, ids]) => {
+      ["mot", ["motReadyBestHint", "motTrainingBestHint"]], ["balance", ["balanceReadyDesc"]], ["schulte", ["schulteReadyBestHint"]]].forEach(([k, ids]) => {
       ids.forEach((id) => {
         const host = $(id);
         if (!host) return;
