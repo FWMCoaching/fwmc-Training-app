@@ -21482,7 +21482,7 @@
     panel.querySelectorAll(".level-suggest").forEach((n) => n.remove());
     const def = LEVEL_SUGGEST_EX[ex];
     if (!def || mode === "training") return;
-    if (hoClientRunActive()) return; // a client's runs never change this device's levels (docs/notes/36)
+    if (hoClientRunActive() || tmTry()) return; // client and test runs never change this device's levels (docs/notes/36)
     const diff = def.bucket();
     const order = ["leicht", "mittel", "schwer"];
     if (!order.includes(diff)) return;
@@ -22062,7 +22062,7 @@
   // Keys that must never travel in a client backup file: the coach
   // dashboard (dashboard.html, same origin) keeps its admin token under an
   // fwmc- key in this same localStorage.
-  const BACKUP_EXCLUDE = ["fwmc-admin-token", "fwmc-reminders-v1", "fwmc-import-parts-v1"]; // reminders belong to this device's push subscription
+  const BACKUP_EXCLUDE = ["fwmc-admin-token", "fwmc-reminders-v1", "fwmc-import-parts-v1", "fwmc-client-session-v1", "fwmc-trainer-mode-v1", "fwmc-trainer-seen-v1", "fwmc-trainer-asked-v1"]; // reminders belong to this device's push subscription
   function buildBackup() {
     const data = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -29077,7 +29077,11 @@
     const list = loadHistory();
     const item = list.find((e) => e.id === run.histId);
     if (item) { item.after = v; item.note = `${run.noteBase} · Nachher: ${v}`; writeJSON(HISTORY_KEY, list); }
-    else hoPatchClientRun(run.histId, (e) => { e.after = v; e.note = `${run.noteBase} · Nachher: ${v}`; });
+    else {
+      const patch = (e) => { e.after = v; e.note = `${run.noteBase} · Nachher: ${v}`; };
+      hoPatchClientRun(run.histId, patch);
+      tmPatchTryRun(run.histId, patch);
+    }
     tonEl("AfterSaved").hidden = false;
   });
   wireEnterToSave(tonEl("AfterInput"), tonEl("AfterSaveBtn"));
@@ -38587,7 +38591,13 @@
   var HO_PART_MAX = 1000; // data characters per code when split
   // Kunden-Training snapshots these on start and puts them back on "Beenden",
   // so a client's runs never set this device's bests or "Weitermachen".
-  var HO_SNAP_RE = /^fwmc-(.*-best-v1|resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1)$/;
+  var HO_SNAP_RE = /^fwmc-(.*-best-v1|resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1|.*-prefs-v1|master-v1|webapp-v3|movement-v1|breath-v1|cardio-v1|cardio-addon-v1|wimhof-v1|workout-circuit-v1|workout-reps-builder-v1|workout-reps-progress-v1|workout-sound-v1|addon-v1|nat-mode-v1|signal-colors-v1|cue-overrides-v1|cvd-overrides-v1|soft-overrides-v1|anaglyph-v1|atempause-v1|plan-v1|plan-check-v1|code-history-v1|trainer-programs-v1|free-trainer-v1|coach-message-seen-v1|neuro-unlocked-v1|features-v1|events-v1|free-blocks-v1|notes-v1|ton-current-v1|ton-seq-v1|week-intent-v1|gear-v1|reminders-v1)$/;
+  // Einstellungen (Fabian 09.10.): what the trainer sets up for a client or
+  // while trying something out (levels, tempo, colours, a client's plan code
+  // ...) is put back afterwards too. Saved presets stay. Those keys live in
+  // memory as well, so a restore that changes one reloads the app once.
+  var HO_PREFS_RE = /^fwmc-(?!.*-best-v1$|resume-v1$|resume-single-v1$|level-suggest-v1$|ton-last-v1$|eyecount-last-v1$)/;
+  var hoNeedReload = false;
   function hoSession() {
     const s = readJSON("fwmc-client-session-v1", null);
     return s && typeof s.start === "number" ? s : null;
@@ -38644,8 +38654,8 @@
     return new Uint8Array(await new Response(st).arrayBuffer());
   }
   function hoPack(e) {
-    const a = [String(e.id || ""), Math.round(new Date(e.ts).getTime() / 1000), String(e.kind || ""), String(e.title || ""),
-      Math.max(0, Math.round(Number(e.seconds) || 0)), String(e.note || ""), Number(e.rating) || 0, e.aborted ? 1 : 0,
+    const a = [String(e.id || ""), Math.round(new Date(e.ts).getTime() / 1000), String(e.kind || ""), String(e.title || "").slice(0, 120),
+      Math.max(0, Math.round(Number(e.seconds) || 0)), String(e.note || "").slice(0, 300), Number(e.rating) || 0, e.aborted ? 1 : 0,
       String(e.exId || ""), String(e.progKey || "")];
     while (a.length > 4 && (a[a.length - 1] === "" || a[a.length - 1] === 0)) a.pop();
     return a;
@@ -39078,11 +39088,15 @@
     const recentOwn = () => loadHistory().filter((e) => !hidden.has(e.id) && Date.now() - new Date(e.ts).getTime() < HO_KEEP_MS);
     const kindOf = (e) => (e.tryRun ? "try" : e.client ? "client" : "own");
     let list = clientPick || storePick ? hoClientRuns().concat(tmTryRuns(), recentOwn())
-      : loadHistory().filter((e) => !hidden.has(e.id)).concat(tmTryRuns()).filter((e) => new Date(e.ts).getTime() >= from);
+      : loadHistory().filter((e) => !hidden.has(e.id)).concat(tmTryRuns(), hoClientRuns()).filter((e) => new Date(e.ts).getTime() >= from);
     if (storePick && hoKind !== "all") list = list.filter((e) => kindOf(e) === hoKind);
     list.sort((a, b) => new Date(b.ts) - new Date(a.ts));
     hoRangeIds = list.map((e) => e.id);
-    const mine = (e) => (storePick ? false : clientPick ? kindOf(e) === "client" && e.client === hoPickClient : !e.tryRun);
+    // Zeitfenster: liegen Kunden-Trainings darin, sind nur die des letzten
+    // Kunden-Trainings angehakt (nie deine eigenen), sonst deine eigenen.
+    const lastClient = Math.max(0, ...list.filter((e) => kindOf(e) === "client").map((e) => e.client));
+    const mine = (e) => (storePick ? false : clientPick ? kindOf(e) === "client" && e.client === hoPickClient
+      : lastClient ? kindOf(e) === "client" && e.client === lastClient : kindOf(e) === "own");
     if (resetChecks) hoChecked = new Set(list.filter(mine).map((e) => e.id));
     $("handoverRangeGroup").hidden = clientPick || storePick;
     $("handoverKindGroup").hidden = !storePick;
@@ -39095,6 +39109,11 @@
     const clr = $("handoverClearBtn");
     clr.hidden = !storePick || !list.length;
     clr.textContent = { all: "Alles löschen", client: "Alle Kunden-Trainings löschen", try: "Alle Test-Trainings löschen", own: "Alle eigenen löschen" }[hoKind];
+    // Fabian 09.10.: say plainly that client trainings still wait for the handover.
+    const waiting = storePick ? hoClientRuns().length : hoLeftovers().length;
+    $("handoverWaitNote").hidden = !waiting || clientPick;
+    $("handoverWaitText").textContent = waiting ? `${hoCount(waiting)} ${storePick ? "von Kunden" : "aus einem früheren Kunden-Training"} ${waiting === 1 ? "wartet" : "warten"} noch auf die Übergabe.` : "";
+    $("handoverWaitBtn").hidden = !storePick || hoKind === "client";
     $("handoverPickTitle").textContent = storePick ? "Gespeicherte Trainings" : clientPick ? "Kunden-Training übergeben" : "An Kunden übergeben";
     $("handoverPickSub").textContent = storePick
       ? "Alles der letzten 14 Tage auf diesem Gerät. Hake an, was du übergeben oder löschen willst. Nach links wischen löscht ein einzelnes Training."
@@ -39121,15 +39140,15 @@
   }
   function hoTag(e, kind, clientPick, storePick) {
     if (kind === "try") return '<span class="h-tag tm-tag-try">Test</span>';
-    if (kind === "client") return storePick ? '<span class="h-tag tm-tag-client">Kunde</span>' : clientPick && e.client !== hoPickClient ? '<span class="h-tag">früher</span>' : "";
+    if (kind === "client") return clientPick && e.client !== hoPickClient ? '<span class="h-tag">früher</span>' : clientPick ? "" : '<span class="h-tag tm-tag-client">Kunde</span>';
     return clientPick || storePick ? '<span class="h-tag tm-tag-own">Eigenes</span>' : "";
   }
   function hoSelectedIds() { return hoRangeIds.filter((id) => hoChecked.has(id)); }
   function hoSyncGo() {
     const n = hoSelectedIds().length;
     const btn = $("handoverGoBtn");
-    btn.disabled = n === 0;
-    btn.textContent = `${hoCount(n)} übergeben`;
+    btn.disabled = n === 0 || n > 200;
+    btn.textContent = n > 200 ? "Höchstens 200 auf einmal" : `${hoCount(n)} übergeben`;
     $("handoverDeleteBtn").disabled = n === 0;
   }
   let hoPick = "range"; // "range" (Zeitfenster) | "client" (nach einem Kunden-Training) | "store" (Übersicht)
@@ -39231,7 +39250,9 @@
     const entries = hoEntriesFor(ids, source);
     if (!entries.length) return;
     const data = await hoEncode(entries);
-    hoQr = { ids, source, tokens: hoTokens(data), idx: 0, meta, n: entries.length };
+    const tokens = hoTokens(data);
+    if (tokens.length > 20) { showToast("Das sind zu viele Trainings für einen QR-Code. Nimm ein paar heraus und übergib sie in zwei Durchgängen."); return; }
+    hoQr = { ids, source, tokens, idx: 0, maxIdx: 0, seenAll: tokens.length === 1, meta, n: entries.length };
     $("handoverQrMeta").textContent = `${hoCount(entries.length)} · ${meta}`;
     $("handoverQrError").hidden = true;
     showScreen("handoverQrScreen");
@@ -39269,7 +39290,14 @@
     }
   }
   $("handoverPrevBtn").addEventListener("click", () => { if (hoQr && hoQr.idx > 0) { hoQr.idx--; hoDrawQr(); } });
-  $("handoverNextBtn").addEventListener("click", () => { if (hoQr && hoQr.idx < hoQr.tokens.length - 1) { hoQr.idx++; hoDrawQr(); } });
+  $("handoverNextBtn").addEventListener("click", () => {
+    if (hoQr && hoQr.idx < hoQr.tokens.length - 1) {
+      hoQr.idx++;
+      hoQr.maxIdx = Math.max(hoQr.maxIdx, hoQr.idx);
+      if (hoQr.maxIdx === hoQr.tokens.length - 1) hoQr.seenAll = true;
+      hoDrawQr();
+    }
+  });
   $("handoverQrBackBtn").addEventListener("click", () => {
     if (hoQr) { hoRenderPick(false); showScreen("handoverScreen"); } else showScreen(hoHomeId);
   });
@@ -39301,6 +39329,11 @@
     return list.length - keep.length;
   }
   $("handoverDoneBtn").addEventListener("click", () => {
+    if (hoQr && hoQr.tokens.length > 1 && !hoQr.seenAll) {
+      confirmDialog(`Du hast erst ${hoQr.maxIdx + 1} von ${hoQr.tokens.length} Teilen gezeigt. Erst wenn dein Kunde alle Teile gescannt hat, sind die Trainings bei ihm. Danach werden sie hier gelöscht.`, () => { hoQr.seenAll = true; $("handoverDoneBtn").click(); },
+        { title: "Alle Teile gescannt?", yes: "Ja, fertig", no: "Weiter zeigen" });
+      return;
+    }
     const q = hoQr;
     hoQr = null;
     if (!q) { showScreen(hoHomeId); return; }
@@ -39335,13 +39368,34 @@
     try {
       const now = [];
       for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && HO_SNAP_RE.test(k)) now.push(k); }
-      now.forEach((k) => { if (!(k in snap)) localStorage.removeItem(k); });
-      Object.entries(snap || {}).forEach(([k, v]) => { if (typeof v === "string") localStorage.setItem(k, v); });
+      now.forEach((k) => { if (!(k in snap)) { if (HO_PREFS_RE.test(k)) hoNeedReload = true; localStorage.removeItem(k); } });
+      Object.entries(snap || {}).forEach(([k, v]) => {
+        if (typeof v !== "string") return;
+        if (HO_PREFS_RE.test(k) && localStorage.getItem(k) !== v) hoNeedReload = true;
+        localStorage.setItem(k, v);
+      });
     } catch (e) { /* private mode */ }
+  }
+  // After a restore that touched settings: reload once, then continue (open
+  // the selection or show the toast) from the fresh state.
+  const HO_AFTER_KEY = "fwmc-tm-after";
+  function hoReloadIfNeeded(after) {
+    if (!hoNeedReload) return false;
+    hoNeedReload = false;
+    try { sessionStorage.setItem(HO_AFTER_KEY, JSON.stringify(after || {})); } catch (e) { /* ignore */ }
+    location.reload();
+    return true;
+  }
+  // Your "Weitermachen" is put aside for a client or test run (it comes back
+  // with the snapshot), so nobody else continues your Kombi.
+  function hoClearResume() {
+    try { localStorage.removeItem("fwmc-resume-v1"); localStorage.removeItem("fwmc-resume-single-v1"); } catch (e) { /* ignore */ }
+    if (els.todayHome && !els.todayHome.hidden) renderToday();
   }
   function hoStartClientRun() {
     if (hoSession()) return;
     writeJSON(HO_SESSION_KEY, { start: Date.now(), snap: hoSnapshot() });
+    hoClearResume();
     hoSyncStrip();
     hoRenderProgressGroup();
     showToast("Kunden-Training läuft. Was jetzt trainiert wird, zählt nicht für dich.");
@@ -39351,6 +39405,7 @@
     if (!s) return;
     try { localStorage.removeItem(HO_SESSION_KEY); } catch (e) { /* ignore */ }
     hoRestoreSnapshot(s.snap || {});
+    if (hoReloadIfNeeded({ end: s.start })) return;
     hoSyncStrip();
     // Only this session's runs: leftovers of an earlier client stay apart
     // (they wait in the Trainer-Menü), so a new client never gets them.
@@ -39435,6 +39490,7 @@
   var TM_KEY = "fwmc-trainer-mode-v1"; // {mode:"try", since, snap}
   var TM_TRY_KEY = "fwmc-try-runs-v1";
   var TM_SEEN_KEY = "fwmc-trainer-seen-v1"; // last time the app went to the background
+  var TM_ASKED_KEY = "fwmc-trainer-asked-v1"; // last "läuft das noch?" after 3 h
   const TM_MAX_MS = 3 * 3600e3, TM_TRY_KEEP_MS = 14 * 86400e3, TM_ASK_MS = 30 * 60e3;
   const TM_MAIN = ["todayHome", "trainingHub", "progressScreen", "moreScreen"];
   function tmTry() {
@@ -39466,24 +39522,43 @@
   function tmStartTry() {
     if (tmTry()) return;
     writeJSON(TM_KEY, { mode: "try", since: Date.now(), snap: hoSnapshot() });
+    hoClearResume();
     hoSyncStrip();
     showToast(hoSession() ? "Ausprobieren läuft. Das Kunden-Training ist so lange pausiert." : "Ausprobieren läuft. Nichts davon zählt für dich.");
   }
-  function tmEndTry(toast) {
+  function tmEndTry(toast, text, deferReload) {
     const t = tmTry();
     if (!t) return;
     try { localStorage.removeItem(TM_KEY); } catch (e) { /* ignore */ }
     hoRestoreSnapshot(t.snap || {});
+    const msg = text || (toast ? (hoSession() ? "Ausprobieren beendet. Das Kunden-Training läuft weiter." : "Ausprobieren beendet.") : "");
+    if (!deferReload && hoReloadIfNeeded(msg ? { toast: msg } : {})) return true;
     hoSyncStrip();
     hoRenderProgressGroup();
-    if (toast) showToast(hoSession() ? "Ausprobieren beendet. Das Kunden-Training läuft weiter." : "Ausprobieren beendet.");
+    if (msg) showToast(msg);
+    return false;
   }
   function tmSetMode(m) {
     const cur = tmMode();
     tmCloseMenu();
     if (m === cur) return;
     if (m === "try") { tmStartTry(); return; }
-    if (cur === "try") tmEndTry(false);
+    if (cur === "try") {
+      if (m === "client") {
+        // back to (or straight into) a Kunden-Training: restore first, then
+        // start the session from the restored state, reload once at the end.
+        const resumed = !!hoSession();
+        tmEndTry(false, "", true);
+        if (!resumed) { writeJSON(HO_SESSION_KEY, { start: Date.now(), snap: hoSnapshot() }); hoClearResume(); }
+        const msg = resumed ? "Das Kunden-Training läuft weiter." : "Kunden-Training läuft. Was jetzt trainiert wird, zählt nicht für dich.";
+        if (hoReloadIfNeeded({ toast: msg })) return;
+        hoSyncStrip(); hoRenderProgressGroup(); showToast(msg);
+        return;
+      }
+      // "Mein Training" during a Kunden-Training: the client run's end reloads once for both.
+      if (hoSession()) tmEndTry(false, "", true);
+      else if (tmEndTry(false, "Mein Training: alles zählt wieder für dich.")) return;
+    }
     if (m === "client") {
       if (hoSession()) { hoSyncStrip(); showToast("Das Kunden-Training läuft weiter."); }
       else hoStartClientRun();
@@ -39509,8 +39584,12 @@
   function tmSync() {
     const m = tmMode();
     const on = featureOn("trainer-tools") || m !== "own";
+    // Fabian 09.10.: the dot shows in every mode while client trainings wait
+    // (in "Mit Kunde" the running session itself does not count).
+    const pending = (m === "client" ? hoLeftovers() : hoClientRuns()).length > 0;
     document.querySelectorAll(".trainer-mode-btn").forEach((btn) => {
       btn.hidden = !on;
+      btn.classList.toggle("tm-pending", pending);
       btn.classList.toggle("tm-client", m === "client");
       btn.classList.toggle("tm-try", m === "try");
       const html = m === "own" ? TM_ICON : `<span class="tm-btn-word">${m === "try" ? "Test" : "Kunde"}</span>`;
@@ -39539,33 +39618,61 @@
   }
   function tmCloseMenu() { $("trainerMenuSheet").hidden = true; }
   $("tmToolsHost").append($("handoverOpenItem"), $("tmStoreItem"), $("clientRunItem"));
+  // Fabian 09.10.: waiting client trainings are the first thing in the menu.
+  $("trainerMenuTitle").after($("clientRunPending"));
   document.querySelectorAll("#tmModes .tm-mode").forEach((b) => b.addEventListener("click", () => tmSetMode(b.dataset.tm)));
   $("tmCloseBtn").addEventListener("click", tmCloseMenu);
   $("trainerMenuSheet").addEventListener("click", (e) => { if (e.target === e.currentTarget) tmCloseMenu(); });
   $("handoverOpenBtn").addEventListener("click", tmCloseMenu);
   $("tmStoreBtn").addEventListener("click", () => { tmCloseMenu(); hoOpenStore(); });
+  $("handoverWaitBtn").addEventListener("click", () => { hoKind = "client"; hoRenderPick(); });
   $("clientRunPendingBtn").addEventListener("click", tmCloseMenu);
   // 3 h limit + "weiter oder beenden?" after 30 min in the background.
+  // Fabian 09.10.: never end on its own during the day. After 3 h the app
+  // only asks "läuft das noch?" (again every 3 h after "Weiter"); it ends
+  // by itself on the next day (from 04:00) or after 12 h at the latest.
+  // Unsent client trainings stay for the handover either way.
+  function tmNextDay(since) {
+    const now = new Date(), s = new Date(since);
+    if (now - s > 12 * 3600e3) return true;
+    return now.toDateString() !== s.toDateString() && now.getHours() >= 4;
+  }
   function tmCheckReturn() {
     const m = tmMode();
     if (m === "own") return;
+    // never mid-exercise: checked again when the player is closed (interval below)
+    if (document.querySelector(".player:not([hidden])")) return;
+    if (document.querySelector("#confirmSheet:not([hidden])")) return;
     const since = m === "try" ? tmTry().since : hoSession().start;
-    if (Date.now() - since > TM_MAX_MS) {
-      if (m === "try") { tmEndTry(false); showToast("Ausprobieren wurde nach 3 Stunden beendet."); return; }
+    if (tmNextDay(since)) {
+      try { localStorage.removeItem(TM_ASKED_KEY); } catch (e) { /* ignore */ }
+      if (m === "try") { tmEndTry(false, "Ausprobieren vom Vortag wurde beendet."); return; }
       const sess = hoSession();
       try { localStorage.removeItem(HO_SESSION_KEY); } catch (e) { /* ignore */ }
       hoRestoreSnapshot(sess.snap || {});
+      const msg = "Das Kunden-Training vom Vortag wurde beendet. Die Trainings warten im Trainer-Menü auf die Übergabe.";
+      if (hoReloadIfNeeded({ toast: hoClientRuns().length ? msg : "" })) return;
       hoSyncStrip();
       hoRenderProgressGroup();
-      if (hoClientRuns().length) showToast("Das Kunden-Training wurde nach 3 Stunden beendet. Die Trainings warten im Trainer-Menü auf die Übergabe.");
+      tmSync();
+      if (hoClientRuns().length) showToast(msg);
+      return;
+    }
+    const word = m === "try" ? "Ausprobieren" : "Kunden-Training";
+    const end = () => (m === "try" ? tmEndTry(true) : hoEndClientRun());
+    const asked = Number(readJSON(TM_ASKED_KEY, 0)) || 0;
+    if (Date.now() - Math.max(since, asked) > TM_MAX_MS) {
+      writeJSON(TM_ASKED_KEY, Date.now());
+      writeJSON(TM_SEEN_KEY, 0);
+      confirmDialog(`„${word}“ läuft seit ${hoHM(new Date(since))} Uhr. ${m === "try" ? "Solange zählt nichts für dich." : "Solange zählt nichts für deinen Fortschritt."}`,
+        () => {}, { title: `Läuft ${m === "try" ? "„Ausprobieren“" : "das Kunden-Training"} noch?`, yes: "Weiter", no: "Beenden", onNo: end });
       return;
     }
     const seen = Number(readJSON(TM_SEEN_KEY, 0)) || 0;
     if (!seen || Date.now() - seen < TM_ASK_MS) return;
     writeJSON(TM_SEEN_KEY, 0);
-    const word = m === "try" ? "Ausprobieren" : "Kunden-Training";
     confirmDialog(`Seit ${hoHM(new Date(since))} Uhr läuft noch „${word}“. ${m === "try" ? "Solange zählt nichts für dich." : "Solange zählt nichts für deinen Fortschritt."}`,
-      () => {}, { title: `${word} fortsetzen?`, yes: "Weiter", no: "Beenden", onNo: () => (m === "try" ? tmEndTry(true) : hoEndClientRun()) });
+      () => {}, { title: `${word} fortsetzen?`, yes: "Weiter", no: "Beenden", onNo: end });
   }
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) { if (tmMode() !== "own") writeJSON(TM_SEEN_KEY, Date.now()); }
@@ -39609,6 +39716,20 @@
   // The bottom tab stays on the page the trainer came from (Heute, Training, ...).
   ["handoverScreen", "handoverQrScreen"].forEach((id) => Object.defineProperty(NAV_TAB_OF, id, { get: () => NAV_TAB_OF[hoHomeId] || "training", configurable: true }));
   hoSyncStrip();
+  // The 3 h limit also while the app stays in front (Prüfer 09.10.).
+  setInterval(() => { if (!document.hidden) tmCheckReturn(); }, 60000);
+  // Continue after a settings restore reloaded the app (hoReloadIfNeeded).
+  (function hoAfterReload() {
+    let after = null;
+    try { after = JSON.parse(sessionStorage.getItem(HO_AFTER_KEY) || "null"); sessionStorage.removeItem(HO_AFTER_KEY); } catch (e) { /* ignore */ }
+    if (!after) return;
+    setTimeout(() => {
+      if (after.end) {
+        if (hoClientRuns().some((e) => e.client === after.end)) hoOpenClientPick(after.end);
+        else showToast("Kunden-Training beendet. Es wurde kein Training aufgezeichnet.");
+      } else if (after.toast) showToast(after.toast);
+    }, 0);
+  })();
   tmCheckReturn();
 
   // ---- Start-up ----

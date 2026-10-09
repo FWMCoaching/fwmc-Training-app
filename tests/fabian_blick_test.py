@@ -249,7 +249,7 @@ async def new_page(b, w, h, scheme):
     return ctx, pg, errs
 
 
-async def replay(pg, entry, clicks):
+async def replay(pg, entry, clicks, slow=False):
     """Open the entry point and replay a click path. Returns False (and
     remembers the failing selector in pg.last_fail) if a click fails."""
     if entry.startswith("nav:"):
@@ -273,7 +273,7 @@ async def replay(pg, entry, clicks):
     await pg.wait_for_timeout(250)
     for sel in clicks:
         try:
-            await pg.click(sel, timeout=2500)
+            await pg.click(sel, timeout=8000 if slow else 2500)
         except Exception:
             pg.last_fail = sel
             return False
@@ -455,7 +455,11 @@ async def audit_config(b, cfg, states, starts):
     items = [(k, v[0], v[1], False) for k, v in states.items()] + \
             [(f"start:{scr}", v[0], v[1], True) for scr, v in starts.items()]
     for k, entry, clicks, is_start in items:
-        if not await replay(pg, entry, clicks):
+        # 12 configs run in parallel; se-hell does extra checks and gets the
+        # least CPU. A missed click under that load is retried once slowly
+        # before it counts (09.10.: 55 false "nicht nachspielbar" in se-hell,
+        # 0 when se-hell ran alone).
+        if not await replay(pg, entry, clicks) and not await replay(pg, entry, clicks, slow=True):
             findings.append({"cat": "rundgang", "state": k, "msg": "Weg nicht nachspielbar", "el": getattr(pg, "last_fail", "")})
             continue
         if is_start:
