@@ -14776,6 +14776,7 @@
     // with the beat, the head turns the other way (balanceWander).
     wander: { name: "Wanderndes Ziel", hint: "Ziel wandert, Kopf dreht in die Gegenrichtung", help: "Das Ziel wandert im Takt hin und her. Dreh den Kopf jeweils in die Gegenrichtung und halte den Blick darauf, es soll scharf bleiben. Fang langsam an.", cue: ["◀ Kopf links", "Kopf rechts ▶"] },
   };
+  const BALANCE_SIDED = { halbtandem: 1, tandem: 1, einbein: 1 };
   const BALANCE_STANCES = { sitzen: "Sitzen", normal: "Normaler Stand", eng: "Enger Stand", halbtandem: "Halbtandem", tandem: "Tandem", einbein: "Einbeinstand", gehen: "Gehen" };
   const BALANCE_STICK_COLORS = [
     { key: "blau", name: "Blau", hex: "#1f5fbf" }, { key: "gelb", name: "Gelb", hex: "#f2c200" },
@@ -14791,7 +14792,7 @@
   const BALANCE_ALPHABET = "ABCDEFGHKLMNPRSTUVXZ"; // no I/J/O/Q/W/Y: easy to mix up at a glance
   const BALANCE_DEFAULTS = {
     mode: "nein", sticks: 1, letters: "zufall", custom: "", custom2: "", singleS: 5, letterCount: 7,
-    metro: true, bpm: 60, timing: "timed", setS: 30, sets: 3, restS: 30, stance: "normal", stanceSpeak: false,
+    metro: true, bpm: 60, timing: "timed", setS: 30, sets: 3, restS: 30, stance: "normal", stanceSide: "wechsel", stanceSpeak: false,
     size: 1, lengthPct: 70, widthF: 1, fontF: 1, color1: "blau", color2: "gelb", letterColor: "auto", letterColor2: "auto", volume: 0.8,
     pos: null, bgColorKey: "gruen", bgIntensity: 0,
     // Wörter (VOR, Fabian 2026-10-08): a word in the centre instead of the sticks.
@@ -14858,6 +14859,7 @@
     p.sets = Math.round(balClamp(p.sets, 1, 10, d.sets));
     p.restS = balClamp(p.restS, 0, 180, d.restS);
     if (!BALANCE_STANCES[p.stance]) p.stance = d.stance;
+    if (!["links", "rechts", "wechsel"].includes(p.stanceSide)) p.stanceSide = d.stanceSide;
     if (typeof p.stanceSpeak !== "boolean") p.stanceSpeak = d.stanceSpeak;
     p.size = Math.round(balClamp(p.size, 0.6, 2, 1) * 10) / 10;
     p.lengthPct = balClamp(p.lengthPct, 30, 100, d.lengthPct);
@@ -14913,9 +14915,13 @@
   }
   function balanceStanceLabel(p, setIdx) {
     if (p.stance === "gehen") return "Gehen, langsam, Blick bleibt auf dem Ziel";
-    if (p.stance !== "einbein") return BALANCE_STANCES[p.stance];
-    if (p.timing === "open") return "Einbeinstand, Seite nach Gefühl wechseln";
-    return setIdx % 2 === 0 ? "Einbein links" : "Einbein rechts";
+    // Seite (Fabian 09.10.): Halbtandem/Tandem = welcher Fuß vorne,
+    // Einbeinstand = welches Bein in der Luft; "wechsel" = je Satz (links zuerst).
+    if (!BALANCE_SIDED[p.stance]) return BALANCE_STANCES[p.stance];
+    const side = p.stanceSide === "wechsel" ? (p.timing === "open" ? "" : (setIdx % 2 === 0 ? "links" : "rechts")) : p.stanceSide;
+    if (!side) return p.stance === "einbein" ? "Einbeinstand, Bein nach Gefühl wechseln" : `${BALANCE_STANCES[p.stance]}, Fuß vorne nach Gefühl wechseln`;
+    const lr = side === "links" ? "linke" : "rechte";
+    return p.stance === "einbein" ? `Einbeinstand, ${lr}s Bein in der Luft` : `${BALANCE_STANCES[p.stance]}, ${lr}r Fuß vorne`;
   }
   function balanceTotalSeconds(p) { return p.timing === "open" ? 0 : p.sets * p.setS + Math.max(0, p.sets - 1) * p.restS; }
   function balanceMeta(p) {
@@ -14965,6 +14971,7 @@
   document.querySelectorAll("#balanceMetroRow [data-bal-metro]").forEach((b) => b.addEventListener("click", () => balanceSet("metro", b.dataset.balMetro === "1")));
   document.querySelectorAll("#balanceTimingRow [data-bal-timing]").forEach((b) => b.addEventListener("click", () => balanceSet("timing", b.dataset.balTiming)));
   document.querySelectorAll("#balanceStanceRow [data-bal-stance]").forEach((b) => b.addEventListener("click", () => balanceSet("stance", b.dataset.balStance)));
+  document.querySelectorAll("#balanceSideRow [data-bal-side]").forEach((b) => b.addEventListener("click", () => balanceSet("stanceSide", b.dataset.balSide)));
   balanceUi.stanceSpeak.addEventListener("change", () => balanceSet("stanceSpeak", balanceUi.stanceSpeak.checked));
   balanceUi.custom.addEventListener("input", () => { balancePrefs.custom = balanceUi.custom.value.slice(0, 12); saveBalancePrefsToStorage(); });
   balanceUi.custom2.addEventListener("input", () => { balancePrefs.custom2 = balanceUi.custom2.value.slice(0, 12); saveBalancePrefsToStorage(); });
@@ -14992,6 +14999,10 @@
     act("#balanceMetroRow [data-bal-metro]", "balMetro", p.metro ? 1 : 0);
     act("#balanceTimingRow [data-bal-timing]", "balTiming", p.timing);
     act("#balanceStanceRow [data-bal-stance]", "balStance", p.stance);
+    act("#balanceSideRow [data-bal-side]", "balSide", p.stanceSide);
+    balEl("balanceSideBox").hidden = !BALANCE_SIDED[p.stance];
+    balEl("balanceSideLabel").textContent = p.stance === "einbein" ? "Welches Bein ist in der Luft?" : "Welcher Fuß ist vorne?";
+    balEl("balanceSideWechselBtn").textContent = p.timing === "open" ? "Nach Gefühl" : "Je Satz wechseln";
     act("#balanceContentRow [data-bal-content]", "balContent", p.content);
     act("#balanceWordListRow [data-bal-wordlist]", "balWordlist", p.wordList);
     act("#balanceWordEveryRow [data-bal-wordevery]", "balWordevery", p.wordEvery);
@@ -28950,6 +28961,12 @@
     window.scrollTo(0, 0);
   }
   $("moreGearBtn").addEventListener("click", () => openGearScreen("moreScreen"));
+  // "Mehr mit deinem Trainer" (Fabian 09.10.): macht neugierig auf das, was nur
+  // mit einem Trainer geht; "Trainer anfragen" = derselbe Link wie "Noch keinen Trainer?".
+  $("moreTrainerExtrasBtn").addEventListener("click", () => confirmDialog(
+    "Arbeitest du mit einem Trainer zusammen, kann er dir in der App mehr freischalten: einen persönlichen Trainingsplan, der zu dir passt, eigene Vorlagen und Kombi-Programme, Spezialübungen mit Hilfsmitteln und Einstellungen, die er für dich vorbereitet. Alles kommt per Code oder QR-Code zu dir, ohne Anmeldung.",
+    () => { window.open(PLAN_REQUEST_URL, "_blank", "noopener"); },
+    { title: "Mehr mit deinem Trainer", yes: "Trainer anfragen", no: "Schließen" }));
   $("gearBackBtn").addEventListener("click", () => showScreen(gearReturnScreen));
   // "Alle Hilfsmittel" in every .hilfsmittel-note: back returns to that page.
   document.querySelectorAll(".hilfsmittel-all").forEach((b) => b.addEventListener("click", () => {
@@ -35998,6 +36015,9 @@
     const cells = [];
     for (let i = 0; i < 28; i++) {
       const d = dAdd(start, i), e = all[d];
+      // Zeilen tragen ihr Datum (Fabian 09.10.: ohne Datum wirkte eine vergangene
+      // Woche wie die laufende); die laufende Woche heißt "Diese".
+      if (i % 7 === 0) { const dd = dParse(d); cells.push(`<span class="mood-row-label">${i === 21 ? "Diese" : `${dd.getDate()}.${dd.getMonth() + 1}.`}</span>`); }
       const lab = e ? moodLabel(e.v) : "";
       cells.push(`<span class="mood-cell${e ? " m" + e.v : ""}${trainedDays.has(d) ? " trained" : ""}${d > today ? " future" : ""}${d === today ? " today" : ""}" title="${shortDate(d)}${lab ? ": " + lab : ""}${trainedDays.has(d) ? ", trainiert" : ""}"></span>`);
     }
@@ -36011,9 +36031,9 @@
       ? enough.map((x, i) => `${i ? "an" : "An"} „${x.m.label}“-Tagen hast du in ${Math.round((x.t / x.n) * 100)} % trainiert`).join(", ") + "."
       : left > 0 ? `Noch ${left} ${left === 1 ? "Tag" : "Tage"} Tagesform, dann siehst du hier, wie oft du an müden und an fitten Tagen trainierst.`
       : "Sobald du an mehreren Tagen unterschiedlich fit bist, siehst du hier den Vergleich.";
-    box.innerHTML = `<div class="mood-head">${WD_SHORT.map((w) => `<span>${w}</span>`).join("")}</div>
+    box.innerHTML = `<div class="mood-head"><span></span>${WD_SHORT.map((w) => `<span>${w}</span>`).join("")}</div>
       <div class="mood-grid">${cells.join("")}</div>
-      <div class="mood-legend">${MOODS.map((m) => `<span><i class="mood-cell m${m.v}"></i>${m.label}</span>`).join("")}<span><i class="mood-cell trained"></i>trainiert</span></div>
+      <div class="mood-legend">${MOODS.map((m) => `<span><i class="mood-cell m${m.v}"></i>${m.label}</span>`).join("")}<span><i class="mood-cell trained"></i>mit Training</span></div>
       <p class="group-help mood-sentence">${esc(sentence)}</p>`;
     const after = $("progressMoodAfter");
     if (after) after.innerHTML = moodAfterHtml(hist);
@@ -38323,11 +38343,14 @@
     optoP.pauseOverlay.hidden = true;
     optoP.pauseBtn.hidden = false;
     optoP.finishBtn.hidden = !st.noLimit;
+    optoSaveBtn.hidden = true; delete optoSaveBtn.dataset.saved; optoSaveBtn.textContent = "Speichern";
+    optoToast.hidden = true;
     requestWakeLock();
     optoSize();
     optoStatus();
     st.lastNow = performance.now();
     st.raf = requestAnimationFrame(optoTick);
+    if (st.own) optoGestureHint();
   }
   function optoCleanup() {
     const st = optoState;
@@ -38335,6 +38358,7 @@
     if (st.raf) cancelAnimationFrame(st.raf);
     optoState = null;
     optoP.pauseOverlay.hidden = true;
+    optoSaveBtn.hidden = true;
     releaseWakeLock();
     if (document.fullscreenElement === optoP.player) document.exitFullscreen().catch(() => {});
     optoP.fsHint.hidden = true;
@@ -38376,6 +38400,8 @@
     optoP.pauseBtn.hidden = true;
     optoP.pauseHelp.textContent = st.own ? "Gilt sofort und bleibt gespeichert, wie auf der Übungsseite." : "Gilt sofort, nur für diesen Durchgang.";
     optoSyncControls(optoP.pauseControls, st);
+    optoSaveBtn.hidden = true;
+    optoToast.hidden = true;
     optoP.pauseOverlay.hidden = false;
     try { applySoftState(); } catch (e) {}
   }
@@ -38386,6 +38412,7 @@
     st.lastNow = performance.now();
     optoP.pauseOverlay.hidden = true;
     optoP.pauseBtn.hidden = false;
+    optoSyncSave();
   }
   optoP.pauseBtn.addEventListener("click", pauseOpto);
   optoP.resumeBtn.addEventListener("click", resumeOpto);
@@ -38402,6 +38429,7 @@
     optoSyncControls(optoP.pauseControls, st);
     optoDraw();
     optoStatus();
+    optoSyncSave();
   });
   // Sanfte Reize switched live in the pause sheet: redraw with the new contrast.
   optoP.pauseOverlay.addEventListener("click", (e) => {
@@ -38417,6 +38445,121 @@
   });
   optoP.againBtn.addEventListener("click", () => { optoP.done.hidden = true; startOptoRun(optoLastRunPrefs || undefined); });
   optoP.doneBackBtn.addEventListener("click", () => { optoP.player.hidden = true; optoP.done.hidden = true; showScreen(optoReturnScreen); });
+  // Gesten in der laufenden Übung (Fabian 09.10.): Wischen = Laufrichtung (8
+  // Richtungen, schräg = "Schräg"), zwei Finger auseinander/zusammen = Breite
+  // (Streifenbreite / Punktgröße / Feldgröße). Gilt sofort für diesen Lauf;
+  // "Speichern" (erscheint nach einer Änderung, nur bei eigenen Läufen, nie im
+  // Kombi) übernimmt es in die Optodrum-Einstellungen. Das Pausenfenster zeigt
+  // die Live-Werte.
+  const OPTO_GESTURE_HINT_KEY = "fwmc-opto-gesture-hint-v1";
+  const optoSaveBtn = document.createElement("button");
+  optoSaveBtn.type = "button";
+  optoSaveBtn.className = "balance-chip opto-save";
+  optoSaveBtn.id = "optoLiveSaveBtn";
+  optoSaveBtn.textContent = "Speichern";
+  optoSaveBtn.hidden = true;
+  optoP.stage.appendChild(optoSaveBtn);
+  const optoToast = document.createElement("div");
+  optoToast.className = "look-toast opto-toast";
+  optoToast.hidden = true;
+  optoP.stage.appendChild(optoToast);
+  function optoShowToast(text, ms, wrap) {
+    optoToast.textContent = text;
+    optoToast.classList.toggle("opto-toast-wrap", !!wrap);
+    optoToast.hidden = false;
+    clearTimeout(optoToast._t);
+    optoToast._t = setTimeout(() => { optoToast.hidden = true; }, ms || 1200);
+  }
+  function optoUnsaved(st) {
+    return !!st && st.own && !comboProgram && (st.dir !== optoPrefs.dir || st.size !== optoPrefs.size || (st.dir === "schraeg" && st.diag !== optoPrefs.diag));
+  }
+  function optoSyncSave() {
+    const st = optoState;
+    if (optoSaveBtn.dataset.saved) return;
+    optoSaveBtn.hidden = !optoUnsaved(st);
+  }
+  optoSaveBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const st = optoState;
+    if (!st || !optoUnsaved(st)) return;
+    optoPrefs.dir = st.dir; optoPrefs.diag = st.diag; optoPrefs.size = st.size;
+    normalizeOptoPrefs(optoPrefs);
+    saveOptoPrefs();
+    syncOptoReadyUI();
+    optoSaveBtn.textContent = "Gespeichert ✓";
+    optoSaveBtn.dataset.saved = "1";
+    clearTimeout(optoSaveBtn._t);
+    optoSaveBtn._t = setTimeout(() => { delete optoSaveBtn.dataset.saved; optoSaveBtn.textContent = "Speichern"; optoSyncSave(); }, 1400);
+  });
+  function optoGestureDir(dx, dy) {
+    const deg = (Math.atan2(dy, dx) * 180) / Math.PI; // Bildschirm: y nach unten
+    const k = Math.round(deg / 45); // -4..4
+    return { 0: ["rechts"], 1: ["schraeg", "ru"], 2: ["runter"], 3: ["schraeg", "lu"], 4: ["links"], "-4": ["links"], "-3": ["schraeg", "lo"], "-2": ["hoch"], "-1": ["schraeg", "ro"] }[k];
+  }
+  (function wireOptoGestures(stage) {
+    const pts = new Map();
+    let one = null, pinch = null;
+    const dist = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+    stage.addEventListener("pointerdown", (e) => {
+      const st = optoState;
+      if (!st || st.paused || (e.target.closest && e.target.closest("button"))) return;
+      if (e.isPrimary) { pts.clear(); one = null; pinch = null; }
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size === 1) one = e.clientX <= 28 && e.pointerType === "touch" ? null : { x: e.clientX, y: e.clientY, t: performance.now() };
+      if (pts.size === 2) { one = null; pinch = { d: Math.max(20, dist()), v: st.size }; }
+    });
+    stage.addEventListener("pointermove", (e) => {
+      if (!pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const st = optoState;
+      if (!st || !pinch || pts.size < 2) return;
+      const v = Math.round(Math.min(160, Math.max(10, pinch.v * dist() / pinch.d)));
+      if (v !== st.size) {
+        st.size = v;
+        optoDraw();
+        optoShowToast(`${OPTO_PATTERNS[st.pattern].size} ${v} px`);
+        optoSyncSave();
+      }
+    });
+    const up = (e) => {
+      if (!pts.has(e.pointerId)) return;
+      const p = pts.get(e.pointerId);
+      pts.delete(e.pointerId);
+      if (pts.size < 2) pinch = null;
+      const st = optoState;
+      if (!one || !st || st.paused) { if (!pts.size) one = null; return; }
+      const dx = p.x - one.x, dy = p.y - one.y;
+      const quick = performance.now() - one.t < 900;
+      one = null;
+      if (e.type !== "pointerup" || !quick || Math.hypot(dx, dy) < 40) return;
+      const [dir, diag] = optoGestureDir(dx, dy);
+      st.dir = dir;
+      if (diag) st.diag = diag;
+      st.sign = 1; st.flips = 0; st.flipAt = st.t; st.nextFlip = st.t + st.swapS;
+      optoDraw();
+      optoStatus();
+      optoShowToast(`${optoBase(st).arrow} ${optoBase(st).name}`);
+      optoSyncSave();
+    };
+    stage.addEventListener("pointerup", up);
+    stage.addEventListener("pointercancel", up);
+    stage.addEventListener("wheel", (e) => {
+      const st = optoState;
+      if (!e.ctrlKey || !st || st.paused) return;
+      e.preventDefault();
+      st.size = Math.round(Math.min(160, Math.max(10, st.size * (e.deltaY < 0 ? 1.1 : 1 / 1.1))));
+      optoDraw();
+      optoShowToast(`${OPTO_PATTERNS[st.pattern].size} ${st.size} px`);
+      optoSyncSave();
+    }, { passive: false });
+  })(optoP.stage);
+  function optoGestureHint() {
+    // Die ersten 3 eigenen Läufe zeigen kurz, was die Gesten tun.
+    const n = Number(readJSON(OPTO_GESTURE_HINT_KEY, 0)) || 0;
+    if (n >= 3 || (navigator.webdriver && !localStorage.getItem("fwmc-test-optohint"))) return;
+    writeJSON(OPTO_GESTURE_HINT_KEY, n + 1);
+    optoShowToast("Wischen ändert die Richtung, zwei Finger die Breite.", 3200, true);
+  }
   if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => { if (optoState) optoSize(); }).observe(optoP.stage);
   window.addEventListener("resize", () => { if (optoState) optoSize(); });
   if (navigator.webdriver) {
@@ -38521,7 +38664,7 @@
       <div class="color-picker" data-opto-c="bg"></div>
       <div class="slider-row"><span class="slider-label">Intensit&auml;t</span><input type="range" data-opto-r="bgInt" min="10" max="100" step="5" aria-label="Intensit&auml;t der Hintergrundfarbe"><span class="slider-value" data-opto-out="bgInt"></span></div>
       <div class="group-help look-contrast-hint" data-mbg-out="contrast" hidden></div>
-      <div class="group-help">Solange der bewegte Hintergrund an ist, gilt seine Hintergrundfarbe statt der normalen. Bewegte Muster k&ouml;nnen bei Lichtempfindlichkeit oder Epilepsie Anf&auml;lle ausl&ouml;sen: Kl&auml;re das in diesem Fall vorher &auml;rztlich ab. Bei Schwindel oder &Uuml;belkeit sofort aufh&ouml;ren.</div>
+      <div class="group-help">Solange das Optodrum im Hintergrund l&auml;uft, gilt seine Hintergrundfarbe statt der normalen. Bewegte Muster k&ouml;nnen bei Lichtempfindlichkeit oder Epilepsie Anf&auml;lle ausl&ouml;sen: Kl&auml;re das in diesem Fall vorher &auml;rztlich ab. Bei Schwindel oder &Uuml;belkeit sofort aufh&ouml;ren.</div>
     </div>`;
   function mbgSyncRoot(root, m, kind) {
     optoSyncControls(root, m);
@@ -38620,7 +38763,7 @@
       const g = document.createElement("div");
       g.className = "group mbg-group";
       g.dataset.mbg = kind;
-      g.innerHTML = `<div class="group-label">Bewegter Hintergrund</div>${MBG_CONTROLS_HTML}`;
+      g.innerHTML = `<div class="group-label">Optodrum (bewegter Hintergrund)</div>${MBG_CONTROLS_HTML}`;
       const bgGroup = [...body.querySelectorAll(":scope > .group")].find((x) => x.querySelector('[id$="BgIntensitySlider"]'));
       if (bgGroup) bgGroup.after(g); else body.appendChild(g);
       optoBind(g, (f, v) => {
@@ -38639,7 +38782,7 @@
       const d = document.createElement("details");
       d.className = "advanced mbg-pause";
       d.dataset.mbg = kind;
-      d.innerHTML = `<summary>Bewegter Hintergrund</summary><div class="advanced-body"><div class="group mbg-group">${MBG_CONTROLS_HTML}<div class="group-help" data-mbg-live></div></div></div>`;
+      d.innerHTML = `<summary>Optodrum (bewegter Hintergrund)</summary><div class="advanced-body"><div class="group mbg-group">${MBG_CONTROLS_HTML}<div class="group-help" data-mbg-live></div></div></div>`;
       const anchor = panel.querySelector('[id$="ResumeBtn"]') || panel.querySelector(".start-btn");
       panel.insertBefore(d, anchor);
       const root = d.querySelector(".mbg-group");
@@ -40323,7 +40466,7 @@
     mot: { label: "Objektverfolgung (MOT)", obj: () => motPrefs, save: () => { saveMotPrefsToStorage(); loadMotPrefs(); },
       fields: ["speed", "trackS", "highlightS", "errorMode", "objectCount", "targetCount", "growStartObjects", "growStartTargets", "trainingObjects", "trainingTargets", "trainingSpeedStep", "trainingProgress"], size: ["objScale"] },
     balance: { label: "Gleichgewicht", obj: () => balancePrefs, save: () => { normalizeBalancePrefs(balancePrefs); saveBalancePrefsToStorage(); },
-      fields: ["mode", "sticks", "letters", "singleS", "letterCount", "metro", "bpm", "timing", "setS", "sets", "restS", "stance", "content", "wordList", "wordEvery", "wordRead"], size: ["size", "lengthPct", "widthF", "fontF"] },
+      fields: ["mode", "sticks", "letters", "singleS", "letterCount", "metro", "bpm", "timing", "setS", "sets", "restS", "stance", "stanceSide", "content", "wordList", "wordEvery", "wordRead"], size: ["size", "lengthPct", "widthF", "fontF"] },
     schulte: { label: "Schulte-Tabelle", obj: () => schultePrefs, save: () => { saveSchultePrefsToStorage(); loadSchultePrefs(); }, fields: ["gridSize"], size: [] },
   };
   function hoDeviceKind() { try { return Math.min(screen.width, screen.height) >= 600 ? "tablet" : "phone"; } catch (e) { return "phone"; } }

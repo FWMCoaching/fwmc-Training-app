@@ -132,3 +132,16 @@ Test: `tests/bewegter_hintergrund_1008_test.py` (screenshots `tests/screenshots/
 `tests/bewegter_hintergrund_mot_1008_test.py` (MOT: off by default, moves, real-pointer tap
 selection with the pattern on, pause live, Sanfte Reize, Kombi isolation; screenshots `mot_*`),
 `tests/hint_overlap_all_test.py` (balance words+mbg, flash mbg, mot mbg), `tests/text_wrap_audit_test.py` (nat/mot-mbg).
+
+## Gesten in der Übung (Fabian 09.10.)
+- Wischen auf `#optoStage` (≥ 40 px, < 0,9 s, nicht vom linken Rand ≤ 28 px) setzt die Laufrichtung
+  (8 Sektoren: links/rechts/hoch/runter, schräg = `dir:"schraeg"` + `diag`), zwei Finger
+  (oder Strg+Mausrad) die Breite `size` 10-160 px. Kurzer Text in der Mitte (`.opto-toast`).
+- Gilt sofort für den Lauf; `#optoLiveSaveBtn` „Speichern" (unten rechts) erscheint, sobald
+  Richtung/Breite von den gespeicherten Optodrum-Einstellungen abweichen, nur bei eigenen Läufen
+  (nie im Kombi), verschwindet in der Pause (die Pause zeigt die Live-Werte und speichert ihr
+  Feld wie bisher sofort). Die ersten 3 eigenen Läufe zeigen kurz den Gesten-Hinweis
+  (`fwmc-opto-gesture-hint-v1`; Tests: `fwmc-test-optohint`). Test: `tests/optodrum_gesten_0910_test.py`.
+- Client-facing name of the background layer: „Optodrum (bewegter Hintergrund)" (Fabian 09.10.).
+- Offen (Vorschlag an Fabian): Ebenen-Umschalter „Übung | Hintergrund" für Gesten in den
+  vier Übungen mit Optodrum im Hintergrund (dort gehören Wischen/zwei Finger/Tippen der Übung).

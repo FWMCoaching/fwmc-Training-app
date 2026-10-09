@@ -3269,6 +3269,8 @@ body.soft-flash .flash-digit:not([hidden]){animation:fwmcSoftIn .3s ease-out 1}
 .opto-stage{flex:1;position:relative;overflow:hidden;min-height:0;background:#ffffff;touch-action:none;user-select:none;-webkit-user-select:none}
 .opto-stage canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
 .opto-finish{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:3}
+.opto-save{position:absolute;right:12px;bottom:14px;z-index:3;background:#007094;color:#ffffff}
+.opto-toast.opto-toast-wrap{white-space:normal;text-align:center;width:max-content;max-width:min(80%,320px);line-height:1.3;border-radius:16px}
 .opto-dir-row{grid-template-columns:repeat(3,1fr)}
 .opto-sub{margin-top:12px}
 .opto-sub .choice-row + .group-label{margin-top:12px}
@@ -3607,7 +3609,8 @@ input[type=checkbox]{accent-color:var(--brand)}
 .today-mood-change{position:relative;z-index:1;min-height:32px;padding:0 4px;margin-left:4px;text-transform:none;letter-spacing:0;font-weight:500}
 .today-mood-week{font-size:calc(22px * var(--ts,1));white-space:nowrap}
 .today-mood-bar{width:100%;margin:2px 0 6px}
-.mood-head,.mood-grid{display:grid;grid-template-columns:repeat(7,30px);gap:10px}
+.mood-head,.mood-grid{display:grid;grid-template-columns:40px repeat(7,30px);gap:10px;align-items:center}
+.mood-row-label{font-size:calc(11px * var(--ts,1));color:var(--ink-soft);white-space:nowrap;text-align:right}
 .mood-head span{font-size:calc(12px * var(--ts,1));color:var(--ink-soft);text-align:center}
 .mood-grid{margin-top:4px}
 .mood-cell{display:block;aspect-ratio:1;border-radius:50%;background:var(--surface-2);border:2px solid transparent;box-sizing:border-box}
