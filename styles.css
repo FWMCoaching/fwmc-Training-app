@@ -3498,3 +3498,11 @@ input[type=checkbox]{accent-color:var(--brand)}
 #handoverList li{touch-action:pan-y}
 .handover-del{display:block;margin:12px auto 0;min-height:44px;padding:0 12px}
 .handover-del:disabled{opacity:.45}
+/* Symbole mit fester Größe (09.10., altes iPad mini: Zahnrad als Punkt).
+   Older Safari treats an SVG's width/height attributes in a flex button
+   as a hint and shrinks the icon; a CSS size per icon class keeps it. tests/symbol_groesse_0910_test.py */
+.master-settings-btn .gear-icon,.trainer-mode-btn svg,.today-break-info svg,.sound-toggle-btn svg{width:22px;height:22px;flex:none}
+.qr-mini{width:20px;height:20px;flex:none}
+/* Kunden-Trainings warten (Fabian 09.10.): petrol mark like the Kunde mode */
+#clientRunPending,.ho-wait-note{border-left:4px solid #007094}
+#trainerMenuSheet #clientRunPending{margin:0 0 14px}

@@ -39618,6 +39618,8 @@
   }
   function tmCloseMenu() { $("trainerMenuSheet").hidden = true; }
   $("tmToolsHost").append($("handoverOpenItem"), $("tmStoreItem"), $("clientRunItem"));
+  // Fabian 09.10.: waiting client trainings are the first thing in the menu.
+  $("trainerMenuTitle").after($("clientRunPending"));
   document.querySelectorAll("#tmModes .tm-mode").forEach((b) => b.addEventListener("click", () => tmSetMode(b.dataset.tm)));
   $("tmCloseBtn").addEventListener("click", tmCloseMenu);
   $("trainerMenuSheet").addEventListener("click", (e) => { if (e.target === e.currentTarget) tmCloseMenu(); });
