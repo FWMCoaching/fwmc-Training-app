@@ -14629,8 +14629,11 @@
     ohr: { name: "Ohr-Schulter", hint: "Ohr im Takt zur Schulter neigen", help: "Kopf im Takt seitlich neigen, Ohr Richtung Schulter, der Blick bleibt auf einem Buchstaben.", cue: ["◀ Ohr links", "Ohr rechts ▶"] },
     diag: { name: "Diagonal", hint: "Kopf etwa 45° gedreht, so im Takt nicken", help: "Kopf etwa 45° zur Seite drehen und in dieser Stellung im Takt nicken. Die Seite wechselt mit jedem Satz.", cue: ["▲ hoch", "▼ runter"] },
     sakk: { name: "Sakkaden", hint: "Kopf ruhig, nur die Augen springen im Takt", help: "Kopf bleibt ruhig, nur die Augen springen im Takt von Stift zu Stift. Am besten mit 2 Stiften weit auseinander.", cue: ["◀ links", "rechts ▶"] },
+    // VOR x2 (VORtrain, Fabian 09.10. 👍): the target glides from side to side
+    // with the beat, the head turns the other way (balanceWander).
+    wander: { name: "Wanderndes Ziel", hint: "Ziel wandert, Kopf dreht in die Gegenrichtung", help: "Das Ziel wandert im Takt hin und her. Dreh den Kopf jeweils in die Gegenrichtung und halte den Blick darauf, es soll scharf bleiben. Fang langsam an.", cue: ["◀ Kopf links", "Kopf rechts ▶"] },
   };
-  const BALANCE_STANCES = { sitzen: "Sitzen", normal: "Normaler Stand", eng: "Enger Stand", halbtandem: "Halbtandem", tandem: "Tandem", einbein: "Einbeinstand" };
+  const BALANCE_STANCES = { sitzen: "Sitzen", normal: "Normaler Stand", eng: "Enger Stand", halbtandem: "Halbtandem", tandem: "Tandem", einbein: "Einbeinstand", gehen: "Gehen" };
   const BALANCE_STICK_COLORS = [
     { key: "blau", name: "Blau", hex: "#1f5fbf" }, { key: "gelb", name: "Gelb", hex: "#f2c200" },
     { key: "rot", name: "Rot", hex: "#d32f2f" }, { key: "gruen", name: "Grün", hex: "#2e7d32" },
@@ -14656,7 +14659,23 @@
     tiere: { name: "Tiere", words: ["Hund", "Katze", "Maus", "Pferd", "Kuh", "Schaf", "Ziege", "Fuchs", "Hase", "Igel", "Bär", "Wolf", "Adler", "Eule", "Fisch", "Frosch", "Ente", "Gans", "Huhn", "Löwe", "Tiger", "Zebra", "Affe", "Biene"] },
     alltag: { name: "Alltag", words: ["Tisch", "Stuhl", "Tasse", "Brot", "Schuh", "Jacke", "Uhr", "Lampe", "Buch", "Stift", "Glas", "Teller", "Löffel", "Gabel", "Bett", "Tür", "Fenster", "Auto", "Rad", "Ball", "Brief", "Handy", "Kissen", "Schal"] },
     farben: { name: "Farbwörter", words: [] },
+    // Richtungen (VORtrain, Fabian 09.10.): "Lies" can be "das Gegenteil" (LINKS -> rechts).
+    richtungen: { name: "Richtungen", words: ["LINKS", "RECHTS", "OBEN", "UNTEN"] },
   };
+  const BALANCE_OPPOSITE = { LINKS: "rechts", RECHTS: "links", OBEN: "unten", UNTEN: "oben" };
+  // What "Lies" means for this list (a choice that does not fit the list reads the word).
+  function balanceReadOf(p) {
+    if (p.wordList === "farben" && p.wordRead === "farbe") return "farbe";
+    if (p.wordList === "richtungen" && p.wordRead === "gegenteil") return "gegenteil";
+    return "wort";
+  }
+  // The "Lies" buttons fitting the list: Farbwörter = Wort/Farbe, Richtungen = Wort/Gegenteil.
+  function balanceReadButtons(root, attr, list) {
+    root.querySelectorAll(`[${attr}]`).forEach((b) => {
+      const v = b.getAttribute(attr);
+      b.hidden = (v === "farbe" && list !== "farben") || (v === "gegenteil" && list !== "richtungen");
+    });
+  }
   // Farbwörter: the word names one colour and is printed in another.
   const BALANCE_WORD_INKS = [
     { key: "rot", word: "ROT", hex: "#d32f2f" }, { key: "blau", word: "BLAU", hex: "#1f5fbf" },
@@ -14713,7 +14732,7 @@
     if (p.content !== "stifte" && p.content !== "woerter") p.content = d.content;
     if (!BALANCE_WORDS[p.wordList]) p.wordList = d.wordList;
     if (![1, 2, 4].includes(p.wordEvery)) p.wordEvery = d.wordEvery;
-    if (p.wordRead !== "wort" && p.wordRead !== "farbe") p.wordRead = d.wordRead;
+    if (!["wort", "farbe", "gegenteil"].includes(p.wordRead)) p.wordRead = d.wordRead;
     return p;
   }
   // Sakkaden live on the sticks: words only for the head-movement modes.
@@ -14750,6 +14769,7 @@
     return balanceRandomLetters(p.letterCount);
   }
   function balanceStanceLabel(p, setIdx) {
+    if (p.stance === "gehen") return "Gehen, langsam, Blick bleibt auf dem Ziel";
     if (p.stance !== "einbein") return BALANCE_STANCES[p.stance];
     if (p.timing === "open") return "Einbeinstand, Seite nach Gefühl wechseln";
     return setIdx % 2 === 0 ? "Einbein links" : "Einbein rechts";
@@ -14836,12 +14856,15 @@
     const words = balanceWordsOn(p);
     balEl("balanceContentGroup").hidden = p.mode === "sakk";
     balEl("balanceWordBox").hidden = !words;
-    balEl("balanceWordReadBox").hidden = p.wordList !== "farben";
+    balEl("balanceWordReadBox").hidden = p.wordList !== "farben" && p.wordList !== "richtungen";
+    balanceReadButtons(balEl("balanceWordReadRow"), "data-bal-wordread", p.wordList);
     balEl("balanceWordHelp").textContent = !p.metro
-      ? "Ohne Takt wechselt das Wort im eingestellten Tempo, nur ohne Ton. Lies jedes Wort laut, während du den Kopf bewegst."
+      ? "Ohne Takt wechselt das Wort im eingestellten Tempo, nur ohne Ton. " + (balanceReadOf(p) === "gegenteil" ? "Sag bei jedem Wort laut das Gegenteil, während du den Kopf bewegst." : "Lies jedes Wort laut, während du den Kopf bewegst.")
       : p.wordList === "farben"
         ? (p.wordRead === "farbe" ? "Das Wort steht in einer anderen Farbe. Sag laut die Farbe, in der es geschrieben ist, nicht das Wort." : "Das Wort steht in einer anderen Farbe. Lies laut das Wort, nicht die Farbe.")
-        : "Lies jedes neue Wort laut, während du den Kopf im Takt bewegst. Bleibt es scharf, passt das Tempo.";
+        : balanceReadOf(p) === "gegenteil"
+          ? "Sag laut das Gegenteil: Steht da LINKS, sagst du „rechts“, bei OBEN „unten“."
+          : "Lies jedes neue Wort laut, während du den Kopf im Takt bewegst. Bleibt es scharf, passt das Tempo.";
     document.querySelectorAll('[data-look-size="balance"] .group-label').forEach((el) => { el.textContent = words ? "Größe der Wörter" : "Größe der Stifte"; });
     document.querySelectorAll('[data-look-size="balance"] .group-help').forEach((el) => { el.textContent = words ? "Die Schrift wächst mit und bleibt immer ganz auf dem Bildschirm. Während der Übung: mit zwei Fingern ziehen." : LOOK_SPECS.balance.size.help; });
     balanceUi.modeHelp.textContent = BALANCE_MODES[p.mode].help + (words ? " Statt auf einen Buchstaben schaust du auf das Wort in der Mitte." : "");
@@ -15079,7 +15102,8 @@
     st.word = balancePickWord(st, st.word);
     st.wordCount = (st.wordCount || 0) + 1;
     balP.word.textContent = st.word.text;
-    balP.word.dataset.cap = st.wordList === "farben" ? (st.wordRead === "farbe" ? "Sag die Farbe" : "Lies das Wort") : "Lies laut";
+    const rd = balanceReadOf(st);
+    balP.word.dataset.cap = rd === "farbe" ? "Sag die Farbe" : rd === "gegenteil" ? "Sag das Gegenteil" : st.wordList === "farben" ? "Lies das Wort" : "Lies laut";
     balP.word.style.color = st.word.ink;
     balP.word.classList.toggle("light-ink", st.word.inkKey === "gelb");
     balanceLayoutWord();
@@ -15097,6 +15121,7 @@
     balP.word.style.fontSize = fs + "px";
     balP.word.style.left = Math.round(a.x0 + aw / 2) + "px";
     balP.word.style.top = Math.round(a.y0 + ah / 2) + "px";
+    balanceWanderRange();
   }
   function balanceLayout() {
     const st = balanceState;
@@ -15132,6 +15157,7 @@
       el.querySelectorAll(".balance-letter").forEach((sp, j) => sp.classList.toggle("off", j >= k));
       el.style.borderRadius = Math.round(Math.min(14, w / 3)) + "px";
     });
+    balanceWanderRange();
   }
   function balanceSetHint() {
     const st = balanceState;
@@ -15328,7 +15354,8 @@
     const st = balanceState;
     const even = st.beatCount % 2 === 0;
     st.beatCount++;
-    balanceClick(even);
+    st.lastBeatAt = performance.now();
+    if (st.metro) balanceClick(even);
     // Wörter: the first beat keeps the opening word, then a new one every
     // 1st/2nd/4th beat.
     if (st.content === "woerter" && st.beatCount > 1 && (st.beatCount - 1) % st.wordEvery === 0) balanceNextWord();
@@ -15356,7 +15383,7 @@
     st.lastNow = now;
     if (!st.clockHeld) { st.phaseElapsed += dt; st.playedS += dt; }
     if (st.phase === "set") {
-      if (st.metro && now >= st.nextBeatAt) {
+      if ((st.metro || st.mode === "wander") && now >= st.nextBeatAt) {
         balanceBeat();
         const step = 60000 / st.bpm;
         st.nextBeatAt = Math.max(st.nextBeatAt + step, now + step * 0.5);
@@ -15381,7 +15408,33 @@
       balP.restCount.textContent = fmtClock(remain);
       if (remain <= 0) { st.setIdx++; balanceBeginSet(); }
     }
+    if (st.mode === "wander") balanceWander(now);
     balanceStatus();
+  }
+  // Wanderndes Ziel: the word / the sticks glide to the other side within
+  // each beat (cosine, so they rest briefly at the turn), as far as the free
+  // area allows. Starts on the right: first cue "Kopf links".
+  function balanceWander(now) {
+    const st = balanceState;
+    if (!st || st.phase !== "set") { balanceWanderReset(); return; }
+    const step = 60000 / st.bpm;
+    const frac = st.beatCount ? Math.min(1, Math.max(0, (now - (st.lastBeatAt || now)) / step)) : 0;
+    const x = Math.round((st.wanderA || 0) * Math.cos(Math.PI * (frac + Math.max(0, st.beatCount - 1))));
+    const els2 = st.content === "woerter" ? [balP.word] : balP.sticks.slice(0, st.sticks);
+    els2.forEach((el) => { el.style.translate = `${x}px 0`; });
+  }
+  function balanceWanderReset() { [balP.word, ...balP.sticks].forEach((el) => { el.style.translate = ""; }); }
+  function balanceWanderRange() {
+    const st = balanceState;
+    if (!st || st.mode !== "wander") { if (st) st.wanderA = 0; balanceWanderReset(); return; }
+    const a = balanceArea();
+    let A = (a.x1 - a.x0) * 0.35;
+    if (st.content === "woerter") A = Math.min(A, ((a.x1 - a.x0) - balP.word.offsetWidth) / 2 - 8);
+    else balP.sticks.slice(0, st.sticks).forEach((el) => {
+      const l = parseFloat(el.style.left) || 0, w = el.offsetWidth;
+      A = Math.min(A, l - a.x0 - 4, a.x1 - (l + w) - 4);
+    });
+    st.wanderA = Math.max(0, A);
   }
   // opts.comboDurationS: one continuous run of that length (Cardio-
   // Zusatzaufgabe). prefsOverride: Kombi block / Cardio cfg - never touches
@@ -15454,7 +15507,7 @@
     if (aborted) note = "abgebrochen";
     else if (st.timing === "open") note = `${fmtClock(played)}${beat}`;
     else note = `${countLabel(st.sets, "Satz", "Sätze")} à ${fmtClock(st.setS)}${beat}`;
-    if (!aborted && st.content === "woerter") note += ` · Wörter (${BALANCE_WORDS[st.wordList].name}${st.wordList === "farben" && st.wordRead === "farbe" ? ", Farbe lesen" : ""})`;
+    if (!aborted && st.content === "woerter") note += ` · Wörter (${BALANCE_WORDS[st.wordList].name}${balanceReadOf(st) === "farbe" ? ", Farbe lesen" : balanceReadOf(st) === "gegenteil" ? ", Gegenteil" : ""})`;
     balP.bar.hidden = true;
     setDonePanelAborted(balP.done, aborted, "Gleichgewicht beendet");
     balP.doneSummary.textContent = aborted ? `Abgebrochen · ${fmtClock(played)}` : `${title} · ${note}`;
@@ -15786,7 +15839,11 @@
   addPauseChoiceRow(balP.pauseOverlay, { label: "Wort wechselt", sourceRow: "balanceWordEveryRow", attr: "bal-wordevery",
     visible: balWordsLive, get: () => String(balanceState.wordEvery), set: (v) => balanceLive("wordEvery", Number(v)) });
   const balReadSync = addPauseChoiceRow(balP.pauseOverlay, { label: "Lies", sourceRow: "balanceWordReadRow", attr: "bal-wordread",
-    visible: () => balWordsLive() && balanceState.wordList === "farben", get: () => balanceState.wordRead, set: (v) => { balanceLive("wordRead", v); balanceNextWord(); } });
+    visible: () => {
+      const on = balWordsLive() && (balanceState.wordList === "farben" || balanceState.wordList === "richtungen");
+      if (on) balanceReadButtons(balP.pauseOverlay, "data-pause-val", balanceState.wordList);
+      return on;
+    }, get: () => balanceReadOf(balanceState), set: (v) => { balanceLive("wordRead", v); balanceNextWord(); } });
   addPauseChoiceRow(balP.pauseOverlay, { label: "Wörter", sourceRow: "balanceWordListRow", attr: "bal-wordlist",
     visible: balWordsLive, get: () => balanceState.wordList, set: (v) => { balanceLive("wordList", v); balanceNextWord(); if (balReadSync) balReadSync(); } });
 

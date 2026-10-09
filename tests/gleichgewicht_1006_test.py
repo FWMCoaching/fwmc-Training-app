@@ -36,7 +36,7 @@ async def main():
         ok("NAT tile 'Gleichgewicht' present", await pg.locator('#natHome .nat-tile[data-nat-ex="balance"]').count() == 1, fails)
         await pg.click('#natHome .nat-tile[data-nat-ex="balance"]'); await pg.wait_for_timeout(250)
         ok("ready screen open", await pg.is_visible("#balanceReady"), fails)
-        ok("five modes", await pg.locator("#balanceModeRow .choice").count() == 5, fails)
+        ok("six modes (Wanderndes Ziel since 09.10.)", await pg.locator("#balanceModeRow .choice").count() == 6, fails)
         ok("start button reads 'Training starten'", (await pg.inner_text("#balanceReadyStartBtn")).strip() == "Training starten", fails)
         ok("safety note is collapsed (discreet)", await pg.evaluate("() => !document.getElementById('balanceSafety').open"), fails)
         ok("look control 'Größe der Stifte' on the ready screen", await pg.locator('#balanceReady [data-look-size="balance"]').count() == 1, fails)
