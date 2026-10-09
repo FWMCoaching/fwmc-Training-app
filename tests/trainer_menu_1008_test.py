@@ -160,7 +160,7 @@ async def main():
         await set_mode(pg, "own")
         rows = await pg.evaluate("[...document.querySelectorAll('#handoverList li')].map(li => ({t: li.querySelector('.h-title').textContent, c: li.querySelector('input').checked}))")
         check("second client: only his run ticked, the first client's leftover listed as 'früher' unticked",
-              [r["c"] for r in rows if "früher" in r["t"]] == [False] and sum(r["c"] for r in rows) == 1, rows)
+              [r["c"] for r in rows if "Früher" in r["t"]] == [False] and sum(r["c"] for r in rows) == 1, rows)
         await pg.click("#handoverGoBtn"); await pg.wait_for_timeout(600)
         meta = await pg.inner_text("#handoverQrMeta")
         check("second client gets only his 1 run, not the leftover of the first", meta.startswith("1 Training"), meta)

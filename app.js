@@ -9612,7 +9612,8 @@
   function bodyColorsFor(exId, z) {
     const ex = EXERCISES[exId] || {};
     const base = ex.type === "richtungskreuz" && state.rkColors ? Object.values(state.rkColors) : (state.colors || []);
-    return [...new Set(base.concat(Object.keys((z.body || {}).rules || {})))].filter((k) => COLOR_BY_KEY[k]);
+    const set = new Set(base.concat(Object.keys((z.body || {}).rules || {})));
+    return COLOR_LIB.map((c) => c.key).filter((k) => set.has(k));
   }
   function syncBodyUI(on, z) {
     const box = $("bodyRuleBox");
@@ -9626,7 +9627,7 @@
     const xh = $("bodyRuleXfer");
     if (!xh.firstChild) xh.appendChild(xferButton("Körperregel übernehmen", () => ZUS_EXERCISES.filter((id) => id !== state.exercise && EXERCISES[id]).map((id) => {
       const oz = zusGet(id);
-      return bodyActive(oz) ? { label: "Wie bei " + EXERCISES[id].title, sub: bodyLines(oz).join(" "), pick: () => { const cur = zusGet(state.exercise); zusSet(state.exercise, { ...cur, body: JSON.parse(JSON.stringify(oz.body)) }); } } : null;
+      return bodyActive(oz) ? { label: "Wie bei " + EXERCISES[id].title.replace(/^VT · /, ""), sub: bodyLines(oz).join(" "), pick: () => { const cur = zusGet(state.exercise); zusSet(state.exercise, { ...cur, body: JSON.parse(JSON.stringify(oz.body)) }); } } : null;
     }).filter(Boolean)));
   }
   function renderZusSheet() {
@@ -29174,13 +29175,21 @@
     $("gearFirstMore").innerHTML = GEAR_ITEMS.filter((g) => !g.test || isTestUnlocked()).filter((g) => !miss.includes(g.id)).map((g) =>
       `<label class="checkbox-row tap-row"><input type="checkbox" data-gear-have="${g.id}"${o[g.id] ? " checked" : ""}> ${esc(g.name)}</label>`).join("");
     const close = () => { sheet.hidden = true; };
-    $("gearFirstYesBtn").onclick = () => { gearSetOwned(miss, true); $("gearFirstAnswer").hidden = false; $("gearFirstAnswer").textContent = "Abgehakt."; $("gearFirstYesBtn").hidden = true; $("gearFirstNoBtn").hidden = true; };
-    $("gearFirstNoBtn").onclick = () => { $("gearFirstAnswer").hidden = false; $("gearFirstAnswer").textContent = "Kein Problem. Du kannst die Übung trotzdem starten."; $("gearFirstYesBtn").hidden = true; $("gearFirstNoBtn").hidden = true; };
+    const what = gearMissingText(key);
+    const answer = (yes) => {
+      if (yes) gearSetOwned(miss, true);
+      setActive($("gearFirstYesBtn"), yes);
+      setActive($("gearFirstNoBtn"), !yes);
+      $("gearFirstAnswer").hidden = false;
+      $("gearFirstAnswer").textContent = yes ? `${what}: jetzt unter Meine Hilfsmittel abgehakt.` : "Kein Problem. Du kannst die Übung trotzdem starten.";
+    };
+    $("gearFirstYesBtn").onclick = () => answer(true);
+    $("gearFirstNoBtn").onclick = () => answer(false);
+    setActive($("gearFirstYesBtn"), false);
+    setActive($("gearFirstNoBtn"), false);
     $("gearFirstDoneBtn").onclick = close;
     sheet.onclick = (e) => { if (e.target === sheet) close(); };
     $("gearFirstAnswer").hidden = true;
-    $("gearFirstYesBtn").hidden = false;
-    $("gearFirstNoBtn").hidden = false;
     sheet.hidden = false;
   }
   document.addEventListener("click", (e) => {
@@ -35906,6 +35915,7 @@
   function moodAfterOffer(panel) {
     const old = panel.querySelector(".mood-after");
     if (old) old.remove();
+    panel.querySelectorAll('.rating[data-mood-hid="1"]').forEach((r) => { r.hidden = false; delete r.dataset.moodHid; });
     if (tmMode() !== "own") return;
     const chk = panel.querySelector(".done-check");
     if (!chk || chk.hidden || panel.classList.contains("aborted") || getComputedStyle(chk).display === "none") return;
@@ -35914,15 +35924,20 @@
     const h = loadHistory()[0];
     if (!h || h.aborted || h.moodAfter || Date.now() - new Date(h.ts).getTime() > 15000) return;
     const box = document.createElement("div");
-    box.className = "mood-after";
-    box.innerHTML = `<div class="mood-after-q">Und wie geht es dir jetzt?</div><div class="choice-row mood-after-btns">${MOODS.map((m) => `<button type="button" class="choice" data-mood-after="${m.v}">${m.label}</button>`).join("")}</div>`;
+    box.className = "rating mood-after";
+    // One question per panel (Prüfer 09.10.): the run's own 1-5 rating steps aside.
+    panel.querySelectorAll(".rating:not(.mood-after)").forEach((r) => { r.hidden = true; r.dataset.moodHid = "1"; });
+    box.innerHTML = `<div class="rating-q">Und wie geht es dir jetzt?</div><div class="rating-row mood-after-btns">${MOODS.map((m) => `<button type="button" data-mood-after="${m.v}">${m.label}</button>`).join("")}</div><div class="rating-thanks" hidden></div>`;
     box.querySelectorAll("[data-mood-after]").forEach((b) => b.addEventListener("click", () => {
       const v = Number(b.dataset.moodAfter);
       const list = loadHistory();
       const it = list.find((e) => e.id === h.id);
       if (it) { it.moodBefore = before.v; it.moodAfter = v; writeJSON(HISTORY_KEY, list); }
       const d = v - before.v;
-      box.innerHTML = `<div class="mood-after-q">Vorher ${moodLabel(before.v)}, jetzt ${moodLabel(v)}.${d > 0 ? " Schön, das Training hat dir gutgetan." : ""}</div>`;
+      box.querySelectorAll("[data-mood-after]").forEach((x) => setActive(x, x === b));
+      const t = box.querySelector(".rating-thanks");
+      t.hidden = false;
+      t.textContent = `Vorher ${moodLabel(before.v)}, jetzt ${moodLabel(v)}. ` + (d > 0 ? "Schön, dass es dir jetzt besser geht." : "Danke, das hilft deinem Überblick.");
     }));
     const sum = panel.querySelector(".done-summary");
     if (sum && sum.parentNode) sum.parentNode.insertBefore(box, sum.nextSibling); else panel.appendChild(box);
@@ -35970,7 +35985,7 @@
     const keys = Object.keys(all).filter((k) => all[k] && MOODS.some((m) => m.v === all[k].v));
     const grp = box.closest(".group");
     if (grp) grp.hidden = !keys.length;
-    if (!keys.length) { box.innerHTML = ""; return; }
+    if (!keys.length) { box.innerHTML = ""; if ($("progressMoodAfter")) $("progressMoodAfter").innerHTML = ""; return; }
     const trainedDays = new Set(hist.filter((h) => !h.aborted).map((h) => dStr(new Date(h.ts))));
     const start = dAdd(mondayOf(today), -21);
     const cells = [];
@@ -35992,7 +36007,9 @@
     box.innerHTML = `<div class="mood-head">${WD_SHORT.map((w) => `<span>${w}</span>`).join("")}</div>
       <div class="mood-grid">${cells.join("")}</div>
       <div class="mood-legend">${MOODS.map((m) => `<span><i class="mood-cell m${m.v}"></i>${m.label}</span>`).join("")}<span><i class="mood-cell trained"></i>trainiert</span></div>
-      <p class="group-help mood-sentence">${esc(sentence)}</p>${moodAfterHtml(hist)}`;
+      <p class="group-help mood-sentence">${esc(sentence)}</p>`;
+    const after = $("progressMoodAfter");
+    if (after) after.innerHTML = moodAfterHtml(hist);
   }
   // Vorher/nachher (Fabian 09.10.): per area, how often the client felt
   // better / the same / worse after a training. From 3 answers per area.
@@ -36001,15 +36018,16 @@
     hist.forEach((h) => {
       if (!h.moodAfter || !h.moodBefore) return;
       const a = historyAreaOf(h);
-      const r = rows[a] || (rows[a] = { n: 0, up: 0, same: 0 });
+      const r = rows[a] || (rows[a] = { n: 0, up: 0, same: 0, down: 0 });
       r.n++;
-      if (h.moodAfter > h.moodBefore) r.up++; else if (h.moodAfter === h.moodBefore) r.same++;
+      if (h.moodAfter > h.moodBefore) r.up++; else if (h.moodAfter === h.moodBefore) r.same++; else r.down++;
     });
     const total = Object.values(rows).reduce((x, r) => x + r.n, 0);
     if (!total) return "";
     const list = Object.entries(rows).filter(([, r]) => r.n >= 3).sort((x, y) => y[1].n - x[1].n);
     const name = (a) => (AREA_BY_KEY[a] ? AREA_BY_KEY[a].label : a === "combo" ? "Kombi-Programm" : "Training");
-    const lines = list.map(([a, r]) => `<li><b>${esc(name(a))}:</b> ${r.up} von ${r.n} Mal danach besser, ${r.same} Mal gleich</li>`).join("");
+    const part = (k, w) => (k ? `${k} Mal ${w}` : "");
+    const lines = list.map(([a, r]) => `<li><b>${esc(name(a))}:</b> ${[r.up ? `${r.up} von ${r.n} Mal danach besser` : `${r.n} Mal angegeben`, part(r.same, "gleich"), part(r.down, "danach müder")].filter(Boolean).join(", ")}</li>`).join("");
     return `<div class="mood-after-sum"><div class="group-label">Vorher und nachher</div>${lines ? `<ul>${lines}</ul>` : ""}<p class="group-help">${lines ? "Gezählt, wenn du nach dem Training angibst, wie es dir jetzt geht." : `Schon ${total} ${total === 1 ? "Antwort" : "Antworten"} nach dem Training. Ab 3 je Bereich siehst du hier, was dir guttut.`}</p></div>`;
   }
   function renderGoalRow(hist, stage, p, trainer, tileKey, own) {
@@ -39633,7 +39651,7 @@
     document.querySelectorAll(".done-check").forEach((c) => { c.innerHTML = DONE_CHECK_SVG; c.setAttribute("aria-hidden", "true"); });
     const obs = new MutationObserver((recs) => recs.forEach((r) => {
       if (!r.target.hidden) requestAnimationFrame(() => { celebrateDone(r.target); moodAfterOffer(r.target); });
-      else { const m = r.target.querySelector(".mood-after"); if (m) m.remove(); }
+      else { const m = r.target.querySelector(".mood-after"); if (m) m.remove(); r.target.querySelectorAll('.rating[data-mood-hid="1"]').forEach((x) => { x.hidden = false; delete x.dataset.moodHid; }); }
     }));
     document.querySelectorAll(".done-panel").forEach((p) => obs.observe(p, { attributes: true, attributeFilter: ["hidden"] }));
   })();
@@ -40772,7 +40790,7 @@
     $("handoverWaitBtn").hidden = !storePick || hoKind === "client";
     $("handoverPickTitle").textContent = storePick ? "Gespeicherte Trainings" : clientPick ? "Kunden-Training übergeben" : "An Kunden übergeben";
     $("handoverPickSub").textContent = storePick
-      ? "Alles der letzten 14 Tage auf diesem Gerät, Verschicktes 21 Tage. Hake an, was du übergeben oder löschen willst. Nach links wischen löscht ein einzelnes Training."
+      ? "Trainings bleiben 14 Tage auf diesem Gerät, verschickte 21 Tage. Hake an, was du übergeben oder löschen willst. Nach links wischen löscht ein einzelnes Training."
       : clientPick
       ? "Angehakt ist dieses Kunden-Training. Test-Trainings, eigene und Liegengebliebenes von früher kannst du dazunehmen oder löschen."
       : "Welche Trainings bekommt dein Kunde? Wähle den Zeitraum und nimm einzelne Trainings heraus, die nicht zu ihm gehören.";
@@ -40786,7 +40804,7 @@
     });
     const ul = $("handoverList");
     ul.innerHTML = list.length ? list.map((e) => `<li><label class="checkbox-row tap-row handover-check"><input type="checkbox" data-ho-id="${esc(e.id)}"${hoChecked.has(e.id) ? " checked" : ""}>
-        <span class="handover-check-text"><span class="h-title">${esc(e.title)}${hoTag(e, kindOf(e), clientPick, storePick)}${isHid(e) ? '<span class="h-tag tm-tag-hidden">ausgeblendet</span>' : ""}</span><span class="h-meta">${hoWhen(e.ts)}${e.sent ? " · verschickt " + hoWhen(new Date(e.sent).toISOString()) : ""}${e.seconds ? " · " + fmtMinutes(e.seconds) : ""}${e.aborted ? " · abgebrochen" : ""}</span></span></label></li>`).join("")
+        <span class="handover-check-text"><span class="h-title">${esc(e.title)}${hoTag(e, kindOf(e), clientPick, storePick)}${isHid(e) ? '<span class="h-tag tm-tag-hidden">Ausgeblendet</span>' : ""}</span><span class="h-meta">${hoWhen(e.ts)}${e.sent ? " · gesendet " + hoWhen(new Date(e.sent).toISOString()).replace(/^Heute/, "heute").replace(/^Gestern/, "gestern") : ""}${e.seconds ? " · " + fmtMinutes(e.seconds) : ""}${e.aborted ? " · abgebrochen" : ""}</span></span></label></li>`).join("")
       : `<li class="history-empty">${clientPick || storePick ? "Hier liegt nichts mehr." : "In diesem Zeitraum gibt es kein Training. Wähle einen früheren Zeitpunkt."}</li>`;
     ul.querySelectorAll("input[data-ho-id]").forEach((cb) => cb.addEventListener("change", () => {
       if (cb.checked) hoChecked.add(cb.dataset.hoId); else hoChecked.delete(cb.dataset.hoId);
@@ -40795,10 +40813,10 @@
     hoSyncGo();
   }
   function hoTag(e, kind, clientPick, storePick) {
-    if (kind === "sent") return `<span class="h-tag tm-tag-sent">verschickt${e.tag ? " · " + esc(e.tag) : ""}</span>`;
+    if (kind === "sent") return `<span class="h-tag tm-tag-sent">Verschickt${e.tag ? " · " + esc(e.tag) : ""}</span>`;
     if (kind === "try") return '<span class="h-tag tm-tag-try">Test</span>';
     const tg = e.tag ? " · " + esc(e.tag) : "";
-    if (kind === "client") return clientPick && e.client !== hoPickClient ? `<span class="h-tag">früher${tg}</span>` : clientPick ? (tg ? `<span class="h-tag tm-tag-client">${esc(e.tag)}</span>` : "") : `<span class="h-tag tm-tag-client">Kunde${tg}</span>`;
+    if (kind === "client") return clientPick && e.client !== hoPickClient ? `<span class="h-tag">Früher${tg}</span>` : clientPick ? (tg ? `<span class="h-tag tm-tag-client">${esc(e.tag)}</span>` : "") : `<span class="h-tag tm-tag-client">Kunde${tg}</span>`;
     return clientPick || storePick ? '<span class="h-tag tm-tag-own">Eigenes</span>' : "";
   }
   function hoSelectedIds() { return hoRangeIds.filter((id) => hoChecked.has(id)); }
@@ -40806,7 +40824,7 @@
     const n = hoSelectedIds().length;
     const btn = $("handoverGoBtn");
     btn.disabled = n === 0 || n > 200;
-    btn.textContent = n > 200 ? "Höchstens 200 auf einmal" : `${hoCount(n)} übergeben`;
+    btn.textContent = n > 200 ? "Höchstens 200 auf einmal" : n === 0 ? "Trainings zum Übergeben anhaken" : `${hoCount(n)} übergeben`;
     $("handoverDeleteBtn").disabled = n === 0;
   }
   let hoPick = "range"; // "range" (Zeitfenster) | "client" (nach einem Kunden-Training) | "store" (Übersicht)
@@ -41070,18 +41088,18 @@
     hoClearBests();
     hoSyncStrip();
     hoRenderProgressGroup();
-    showToast("Kunden-Training läuft. Was jetzt trainiert wird, zählt nicht für dich.");
-    hoAskTag();
+    if (!hoAskTag()) showToast("Kunden-Training läuft. Was jetzt trainiert wird, zählt nicht für dich.");
   }
   // Kürzel pro Kunden-Training (Fabian 09.10.): optional, max. 4 Zeichen,
   // only on this device (never in the QR payload), shown in the lists.
   function hoAskTag() {
     const s = hoSession();
-    if (!s) return;
-    if (navigator.webdriver && !readJSON("fwmc-test-clienttag", false)) return; // automated browsers: only on request
+    if (!s) return false;
+    if (navigator.webdriver && !readJSON("fwmc-test-clienttag", false)) return false; // automated browsers: only on request
     $("clientTagInput").value = s.tag || "";
     $("clientTagSheet").hidden = false;
     setTimeout(() => $("clientTagInput").focus({ preventScroll: true }), 60);
+    return true;
   }
   function hoSetTag(v) {
     $("clientTagSheet").hidden = true;
@@ -41090,6 +41108,7 @@
     const tag = String(v || "").replace(/\s+/g, "").slice(0, 4);
     if (tag) s.tag = tag; else delete s.tag;
     writeJSON(HO_SESSION_KEY, s);
+    showToast(tag ? `Kunden-Training ${tag} läuft. Was jetzt trainiert wird, zählt nicht für dich.` : "Kunden-Training läuft. Was jetzt trainiert wird, zählt nicht für dich.");
     const l = hoClientRuns();
     if (l.some((e) => e.client === s.start)) writeJSON(HO_RUNS_KEY, l.map((e) => (e.client === s.start ? (tag ? { ...e, tag } : (({ tag: _t, ...r }) => r)(e)) : e)));
     hoSyncStrip();
@@ -41250,8 +41269,8 @@
         if (!resumed) { writeJSON(HO_SESSION_KEY, { start: Date.now(), snap: hoSnapshot() }); hoClearResume(); hoClearBests(); }
         const msg = resumed ? "Das Kunden-Training läuft weiter." : "Kunden-Training läuft. Was jetzt trainiert wird, zählt nicht für dich.";
         if (hoReloadIfNeeded({ toast: msg })) return;
-        hoSyncStrip(); hoRenderProgressGroup(); showToast(msg);
-        if (!resumed) hoAskTag();
+        hoSyncStrip(); hoRenderProgressGroup();
+        if (resumed || !hoAskTag()) showToast(msg);
         return;
       }
       // "Mein Training" during a Kunden-Training: the client run's end reloads once for both.

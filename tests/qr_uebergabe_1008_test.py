@@ -176,7 +176,7 @@ async def main():
         for i in range(await boxes.count()):
             await boxes.nth(i).uncheck()
         check("0 selected: button disabled", not await pg.is_enabled("#handoverGoBtn")
-              and (await pg.inner_text("#handoverGoBtn")).strip() == "0 Trainings übergeben")
+              and (await pg.inner_text("#handoverGoBtn")).strip() == "Trainings zum Übergeben anhaken")
         await pg.click('#handoverRangeRow [data-ho-range="90"]'); await pg.wait_for_timeout(100)
         await boxes.nth(1).uncheck(); await boxes.nth(1).check()
         check("range change resets to all checked", await pg.inner_text("#handoverGoBtn") == "3 Trainings übergeben")
