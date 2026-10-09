@@ -254,3 +254,8 @@ main page, light/dark: `tests/knopf_lesbar_1008_test.py`.
   „Mit Kunde“ zählt die laufende Sitzung nicht), `#clientRunPending` steht oben im
   Trainer-Menü, `#handoverWaitNote` in der Übersicht und beim Übergeben (mit
   „Nur Kunden-Trainings zeigen“). Petrol-Strich links wie der Kunden-Modus.
+
+## Bestwerte + Einstellungen vom Trainer (2026-10-09)
+- Kunden-Training clears the four NAT best stores after the snapshot (`hoClearBests`), so each client run carries the client's own session bests `bs`, the settings `ps` (`HO_SETTINGS`: remember, blitz, flash, mot, balance; never volume/colours) and the device kind `dk` (`hoAttachExtras` in `hoAddClientRun`).
+- Payload v1 gains optional `b` (bests merged per exercise), `s` (latest settings per exercise), `d` (phone|tablet), built by `hoExtrasFor`. Old apps ignore them. `hoCheckExtras` drops anything unknown or of the wrong type (the runs still import).
+- Client: `hoMergeBests` (higher is better, own other values stay), then one `confirmDialog` per exercise „Mit den Einstellungen deines Trainers weitertrainieren?“ (`hoAskSettings`); size only with the same device kind, otherwise a note. Applied = `fwmc-trainer-settings-v1` + `.trainer-set-note` on the ready screen. FAQ „Was bekomme ich von meinem Trainer?“. Test: `tests/trainer_uebernahme_0910_test.py`. Schulte joins `HO_BEST_KEYS`/`HO_SETTINGS` when it is merged.

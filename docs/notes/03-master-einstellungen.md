@@ -280,3 +280,9 @@ breathing), Krafttraining-Plan transition (4 s), Eigenes Training.
 A new pause: wrap its countdown in `.breath-host`, add a `.breath-label`, call
 `breathGuideFor(host, label, pauseS)` when it starts and `breathGuideStop` when
 it ends. Test: `tests/atemfuehrung_1008_test.py`.
+
+## Fixpunkt-Standard + eigene Einstellung je Übung (2026-10-09, Fabian)
+- One module at the top of app.js (`FIX_*`, `fixGet/fixSetOwn/fixClear`, `fixDraw`, `fixRenderEl`, `wireFixGroup`, `FIX_ADAPTERS`). `masterPrefs.fix` = standard; `fwmc-fix-v1` = own settings keyed `vt:<id>`, `flash:<mode>`, `mot:<mode>` (Schulte: `schulte:<mode>`). Engines keep their runtime fields (`periphFix*`, `fix*`), `fixLoad(name)` fills them on open/block start.
+- Grundeinstellungen `#masterFixGroup`: count of own settings, `#masterFixAllBtn` „Für alle übernehmen“ (confirmDialog, clears the store). In an exercise: status line + „Auf Grundeinstellung zurück“ + `xferButton` „Von anderer Übung übernehmen“. Pause groups (`…PauseFix`) save as the exercise's own setting, except in a Kombi (run only).
+- Migration `fixMigrate()`: old VT value = standard, differing Flash value = own for all Flash modes, VT „aus“ = own for all VT exercises.
+- „Einstellungen übernehmen“ (`openXfer`/`xferButton`, `#xferSheet`) is the one pattern for Hintergrund, Fixpunkt, Größe/Farbe. FAQ „Grundeinstellungen und eigene Einstellungen je Übung“. Test: `tests/fixpunkt_modul_0910_test.py`.
