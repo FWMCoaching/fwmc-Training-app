@@ -199,7 +199,7 @@ async def main():
         await pg.click('#cardioAddGrid >> text="Joggen"'); await pg.wait_for_timeout(100)
         await pg.click("#cardioStartBtn"); await pg.wait_for_timeout(500)
         await pg.click("#cardioAddonTriggerBtn"); await pg.wait_for_timeout(200)
-        check("picker offers 22 types", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 22)
+        check("picker offers 23 types", await pg.locator("#cardioAddonPickerTypeRow .choice").count() == 23)
         await pg.click('#cardioAddonPickerTypeRow .choice:has-text("Richtungskreuz")'); await pg.wait_for_timeout(120)
         await pg.evaluate("() => { window.__rkLastDrawn = null; }")
         await pg.click("#cardioAddonPickerStartBtn"); await pg.wait_for_timeout(4500)

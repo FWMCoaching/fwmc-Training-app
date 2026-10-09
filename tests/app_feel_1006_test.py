@@ -36,8 +36,8 @@ async def main():
             check(f"[{w}] range follows ‹ ›", r2 != await pg.inner_text("#todayWeekRange"), r2)
             await pg.click('#bottomNav [data-nav="more"]'); await pg.wait_for_timeout(200)
             marks = await pg.evaluate("""() => [...document.querySelectorAll('#moreScreen .more-list .featured-card')].map(c => { const s = getComputedStyle(c, '::after'); return (s.maskImage || s.webkitMaskImage).includes('M1.5') ? '>' : (s.maskImage || s.webkitMaskImage).includes('M5') ? 'ext' : '?'; })""")
-            # 08.10.: Mehr got a 5th in-app row "Hilfsmittel" (#gearScreen), so 5 x › then ↗.
-            check(f"[{w}] Mehr: › inside the app, ↗ for links out", marks[:5] == ['>'] * 5 and len(marks) > 5 and all(m == 'ext' for m in marks[5:]), marks)
+            # 08.10.: 5th in-app row "Hilfsmittel"; 09.10.: 6th "Dein Ziel" -> 6 x › then ↗.
+            check(f"[{w}] Mehr: › inside the app, ↗ for links out", marks[:6] == ['>'] * 6 and len(marks) > 6 and all(m == 'ext' for m in marks[6:]), marks)
             await pg.goto(BASE + "index.html?bereich=movement"); await pg.wait_for_timeout(300)
             await pg.click("#movementStartCard"); await pg.wait_for_timeout(300)
             for y in (0, 400):

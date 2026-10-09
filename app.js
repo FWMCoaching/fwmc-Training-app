@@ -15508,11 +15508,12 @@
     const st = balanceState;
     if (!st || st.mode !== "wander") { if (st) st.wanderA = 0; balanceWanderReset(); return; }
     const a = balanceArea();
-    let A = (a.x1 - a.x0) * 0.35;
+    // Fabian 09.10.: edge to edge (iPad landscape: from the far left to the far right).
+    let A = (a.x1 - a.x0) / 2;
     if (st.content === "woerter") A = Math.min(A, ((a.x1 - a.x0) - balP.word.offsetWidth) / 2 - 8);
     else balP.sticks.slice(0, st.sticks).forEach((el) => {
       const l = parseFloat(el.style.left) || 0, w = el.offsetWidth;
-      A = Math.min(A, l - a.x0 - 4, a.x1 - (l + w) - 4);
+      A = Math.min(A, l - a.x0 - 6, a.x1 - (l + w) - 6);
     });
     st.wanderA = Math.max(0, A);
   }
@@ -20009,6 +20010,12 @@
     // positions); shown in the NAT group by its `group`.
     { id: "schulte", title: "Schulte-Tabelle", group: "nat" },
   ];
+  // Picker and pool show the types grouped (vt, nat, extra) whatever the
+  // array order, so a type appended last still lands under its heading.
+  function cardioGuestTypesGrouped() {
+    const order = Object.keys(CARDIO_GUEST_GROUPS);
+    return CARDIO_GUEST_TYPES.slice().sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group));
+  }
   // "addon-flash" and "periph-flash" both flash a coloured digit/letter at
   // a random peripheral position (the former as a Zusatzaufgabe overlay on
   // a blank host, the latter as the actual Periphere Wahrnehmung exercise)
@@ -20287,7 +20294,7 @@
     syncCardioAddonWindowBounds();
     els.cardioAddonPoolGrid.innerHTML = "";
     let lastPoolGroup = null;
-    CARDIO_GUEST_TYPES.forEach((t) => {
+    cardioGuestTypesGrouped().forEach((t) => {
       if (t.group !== lastPoolGroup) {
         lastPoolGroup = t.group;
         const heading = document.createElement("div");
@@ -21437,7 +21444,7 @@
   function renderCardioAddonPicker() {
     els.cardioAddonPickerTypeRow.innerHTML = "";
     let lastPickerGroup = null;
-    CARDIO_GUEST_TYPES.forEach((t) => {
+    cardioGuestTypesGrouped().forEach((t) => {
       if (t.group !== lastPickerGroup) {
         lastPickerGroup = t.group;
         const heading = document.createElement("div");
