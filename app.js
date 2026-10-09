@@ -12640,6 +12640,8 @@
     const rect = els.rememberStage.getBoundingClientRect();
     const w = rect.width || 390;
     const h = rect.height || 600;
+    // The Übung | Hintergrund switch keeps the bottom free (positions stay % of the full height).
+    const hFree = h - mbgInset(els.rememberStage);
     // "Größe der Kreise" scales the starting size; the shrink loop below
     // still caps it so all REMEMBER_MAX_MARKERS fit without overlapping.
     const scale = (rememberState ? rememberState.markerScale : rememberPrefs.markerScale) || 1;
@@ -12649,7 +12651,7 @@
     // Bigger than standard only needs room for the markers this level
     // actually shows (with headroom); later levels shrink it again.
     const need = scale > 1 && rememberState ? Math.min(REMEMBER_MAX_MARKERS, Math.max(8, rememberState.level * 2)) : REMEMBER_MAX_MARKERS;
-    while (px > minPx && rememberHexSlots(w, h, minYFor(px), px) < need) px -= 4;
+    while (px > minPx && rememberHexSlots(w, hFree, minYFor(px), px) < need) px -= 4;
     // Within one run the size only ever shrinks (the hint text and with it
     // the free height change between levels), so fixed positions laid out
     // once stay far enough apart.
@@ -12662,7 +12664,7 @@
     els.rememberStage.style.setProperty("--remember-marker-px", px + "px");
     const half = px / 2;
     const minY = minYFor(px);
-    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY, maxY: Math.max(minY, h - half - 8) };
+    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY, maxY: Math.max(minY, hFree - half - 8) };
   }
   function randomRememberPixelPosition(existingPx, bounds) {
     for (let attempt = 0; attempt < 300; attempt++) {
@@ -14285,7 +14287,7 @@
     if (!stageRect.height) return fy;
     const half = (els.flashDigitEl.getBoundingClientRect().height || 64) / 2;
     const minY = stageTopClearanceY(stageRect, els.flashHint, els.flashPlayerBar, 0, half, 16);
-    const maxFy = Math.max(0, (stageRect.height - half) / stageRect.height);
+    const maxFy = Math.max(0, (stageRect.height - half - mbgInset(els.flashStage)) / stageRect.height);
     return Math.min(maxFy, Math.max(fy, minY / stageRect.height));
   }
   // Same idea sideways: a large character centred near the edge must not be
@@ -15855,6 +15857,8 @@
       // two-thumb tapping must not resize or swallow taps).
       if (e.isPrimary) { pts.clear(); start = null; delete stage.dataset.pinching; }
       if (e.target.closest && e.target.closest(GAME_TAP_SEL)) return;
+      // "Hintergrund" on the Übung | Hintergrund switch: two fingers belong to the background.
+      if (stage.classList.contains("mbg-bg-mode") || (e.target.closest && e.target.closest(".mbg-ebene-bar"))) return;
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pts.size === 2) {
         const v = get();
@@ -15881,7 +15885,7 @@
     stage.addEventListener("pointerup", up, true);
     stage.addEventListener("pointercancel", up, true);
     stage.addEventListener("wheel", (e) => {
-      if (!e.ctrlKey) return;
+      if (!e.ctrlKey || stage.classList.contains("mbg-bg-mode")) return;
       const cur = get();
       if (cur == null) return;
       e.preventDefault();
@@ -15905,7 +15909,7 @@
     for (let i = 0; i < pts.length; i++) {
       for (let j = i + 1; j < pts.length; j++) cap = Math.min(cap, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y) - 10);
       const p = pts[i];
-      cap = Math.min(cap, 2 * (p.x - 8), 2 * (rect.width - p.x - 8), 2 * (rect.height - p.y - 8), 2 * (p.y - top));
+      cap = Math.min(cap, 2 * (p.x - 8), 2 * (rect.width - p.x - 8), 2 * (rect.height - mbgInset(els.rememberStage) - p.y - 8), 2 * (p.y - top));
     }
     const px = Math.max(24, Math.min(REMEMBER_MARKER_PX, Math.floor(cap)));
     st.markerPx = px;
@@ -16622,7 +16626,7 @@
     const sr = stage.getBoundingClientRect(), hr = hint.getBoundingClientRect();
     const top = Math.max(24, Math.ceil(hr.bottom - sr.top + 10));
     stage.style.paddingTop = top + "px";
-    const room = Math.floor(Math.min(sr.height - top - 24, sr.width - 32));
+    const room = Math.floor(Math.min(sr.height - top - 24 - mbgInset(stage), sr.width - 32));
     if (room > 0) board.style.maxWidth = Math.min(560, room) + "px";
     schulteSizeNumbers();
   }
@@ -36444,6 +36448,8 @@
     const evs = renderDayEvents(date);
     const hasEvents = evs.length > 0;
     const occ = occurrencesOn(date, hist);
+    // Same pick as renderTodayMain(): today's first open training is on the top card.
+    const topOpenId = date === today ? ((occ.find((o) => !o.done) || {}).id ?? null) : null;
     const pzDay = pauseOn(date);
     const sub = $("dayPanelSub");
     const extraList = date <= today ? extraEntriesOn(date, hist, occ) : [];
@@ -36492,12 +36498,16 @@
       }).join("")}${combo.blocks.length > 6 ? `<li class="t1-blocks-more"><span>+ ${combo.blocks.length - 6} weitere</span></li>` : ""}</ul>` : "";
       const repeat = !o.extra && !o.override && !o.insert ? `<div class="t1-repeat">${T1_REPEAT_SVG}<span>jede Woche${fromTrainer ? " (Plan von deinem Trainer)" : ""}</span></div>` : "";
       const bigStart = !o.done && !isFuture && !isPast;
+      // Only one filled main button on screen: while the top card
+      // "Heutiges Training" shows its big start (today has an open training),
+      // the day cards' starts use the outline style.
+      const startCls = topOpenId != null ? "start-btn secondary t1-start" : "start-btn t1-start";
       const auto = o.done && o.auto && !o.manual ? " · aus deinem Verlauf" : "";
       return `<div class="day-item t1-card${o.done ? " done" : ""}" style="--ac:${v.c}" data-occ="${esc(o.id)}">
         <div class="t1-top">${icon}<span class="t1-top-r">${reminderBellHtml(date, o)}${chip}</span></div>
         <div class="day-item-title">${o.special ? "★ " : ""}${esc(entryTitle(o))}${trTag}</div><div class="day-item-meta">${esc(meta + auto)}</div>
         ${blocks}${repeat}
-        ${bigStart ? '<button type="button" class="start-btn t1-start" data-act="start">Training starten</button>' : ""}
+        ${bigStart ? `<button type="button" class="${startCls}" data-act="start">Training starten</button>` : ""}
         <div class="day-item-actions">
           ${bigStart ? "" : '<button type="button" class="day-act" data-act="start">Starten</button>'}
           ${doneBtn ?? `<button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}">${o.manual ? "✓ Erledigt" : "Abhaken"}</button>`}
@@ -38610,87 +38620,135 @@
   // Kombi) übernimmt es in die Optodrum-Einstellungen. Das Pausenfenster zeigt
   // die Live-Werte.
   const OPTO_GESTURE_HINT_KEY = "fwmc-opto-gesture-hint-v1";
-  const optoSaveBtn = document.createElement("button");
-  optoSaveBtn.type = "button";
-  optoSaveBtn.className = "balance-chip opto-save";
-  optoSaveBtn.id = "optoLiveSaveBtn";
-  optoSaveBtn.textContent = "Speichern";
-  optoSaveBtn.hidden = true;
-  optoP.stage.appendChild(optoSaveBtn);
-  const optoToast = document.createElement("div");
-  optoToast.className = "look-toast opto-toast";
-  optoToast.hidden = true;
-  optoP.stage.appendChild(optoToast);
-  function optoShowToast(text, ms, wrap) {
-    optoToast.textContent = text;
-    optoToast.classList.toggle("opto-toast-wrap", !!wrap);
-    optoToast.hidden = false;
-    clearTimeout(optoToast._t);
-    optoToast._t = setTimeout(() => { optoToast.hidden = true; }, ms || 1200);
+  // Shared with the "Übung | Hintergrund" switch of the exercises with the
+  // Optodrum as moving background (Fabian 10.10.): toast, live "Speichern"
+  // button, swipe/pinch wiring and the 3-times hint live in one place each.
+  function makeStageToast(stage) {
+    // One toast per stage: reuses the "Größe" pinch toast (wirePinchSize) when there is one.
+    let el = stage.querySelector(":scope > .look-toast");
+    if (!el) { el = document.createElement("div"); el.className = "look-toast"; el.hidden = true; stage.appendChild(el); }
+    el.classList.add("opto-toast");
+    const show = (text, ms, wrap) => {
+      el.textContent = text;
+      el.classList.toggle("opto-toast-wrap", !!wrap);
+      el.hidden = false;
+      clearTimeout(el._t);
+      el._t = setTimeout(() => { el.hidden = true; }, ms || 1200);
+    };
+    show.el = el;
+    return show;
   }
-  function optoUnsaved(st) {
-    return !!st && st.own && !comboProgram && (st.dir !== optoPrefs.dir || st.size !== optoPrefs.size || (st.dir === "schraeg" && st.diag !== optoPrefs.diag));
+  // "Speichern" appears while the run differs from the saved settings
+  // (unsaved()), says "Gespeichert ✓" for a moment after a tap.
+  function makeLiveSaveBtn(parent, { id, unsaved, save, visible }) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "balance-chip opto-save";
+    btn.id = id;
+    btn.textContent = "Speichern";
+    btn.hidden = true;
+    parent.appendChild(btn);
+    const sync = () => {
+      if (btn.dataset.saved) return;
+      btn.hidden = !(visible ? visible() : true) || !unsaved();
+    };
+    const reset = () => { clearTimeout(btn._t); btn.hidden = true; delete btn.dataset.saved; btn.textContent = "Speichern"; };
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!unsaved()) return;
+      save();
+      btn.textContent = "Gespeichert ✓";
+      btn.dataset.saved = "1";
+      clearTimeout(btn._t);
+      btn._t = setTimeout(() => { delete btn.dataset.saved; btn.textContent = "Speichern"; sync(); }, 1400);
+    });
+    return { btn, sync, reset };
   }
-  function optoSyncSave() {
-    const st = optoState;
-    if (optoSaveBtn.dataset.saved) return;
-    optoSaveBtn.hidden = !optoUnsaved(st);
-  }
-  optoSaveBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const st = optoState;
-    if (!st || !optoUnsaved(st)) return;
-    optoPrefs.dir = st.dir; optoPrefs.diag = st.diag; optoPrefs.size = st.size;
-    normalizeOptoPrefs(optoPrefs);
-    saveOptoPrefs();
-    syncOptoReadyUI();
-    optoSaveBtn.textContent = "Gespeichert ✓";
-    optoSaveBtn.dataset.saved = "1";
-    clearTimeout(optoSaveBtn._t);
-    optoSaveBtn._t = setTimeout(() => { delete optoSaveBtn.dataset.saved; optoSaveBtn.textContent = "Speichern"; optoSyncSave(); }, 1400);
-  });
+  // Swipe (>= 40 px, < 0.9 s, not from the left edge <= 28 px on touch) =
+  // direction (8 sectors), two fingers or ctrl+wheel = size 10-160 px.
   function optoGestureDir(dx, dy) {
     const deg = (Math.atan2(dy, dx) * 180) / Math.PI; // Bildschirm: y nach unten
     const k = Math.round(deg / 45); // -4..4
     return { 0: ["rechts"], 1: ["schraeg", "ru"], 2: ["runter"], 3: ["schraeg", "lu"], 4: ["links"], "-4": ["links"], "-3": ["schraeg", "lo"], "-2": ["hoch"], "-1": ["schraeg", "ro"] }[k];
   }
-  (function wireOptoGestures(stage) {
+  function wireSwipePinch(el, { live, skip, size, onSize, onDir }) {
     const pts = new Map();
     let one = null, pinch = null;
+    const clampS = (v) => Math.round(Math.min(160, Math.max(10, v)));
     const dist = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
-    stage.addEventListener("pointerdown", (e) => {
-      const st = optoState;
-      if (!st || st.paused || (e.target.closest && e.target.closest("button"))) return;
+    el.addEventListener("pointerdown", (e) => {
+      if (!live() || (skip && skip(e))) return;
       if (e.isPrimary) { pts.clear(); one = null; pinch = null; }
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pts.size === 1) one = e.clientX <= 28 && e.pointerType === "touch" ? null : { x: e.clientX, y: e.clientY, t: performance.now() };
-      if (pts.size === 2) { one = null; pinch = { d: Math.max(20, dist()), v: st.size }; }
+      if (pts.size === 2) { one = null; pinch = { d: Math.max(20, dist()), v: size() }; }
     });
-    stage.addEventListener("pointermove", (e) => {
+    el.addEventListener("pointermove", (e) => {
       if (!pts.has(e.pointerId)) return;
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      const st = optoState;
-      if (!st || !pinch || pts.size < 2) return;
-      const v = Math.round(Math.min(160, Math.max(10, pinch.v * dist() / pinch.d)));
-      if (v !== st.size) {
-        st.size = v;
-        optoDraw();
-        optoShowToast(`${OPTO_PATTERNS[st.pattern].size} ${v} px`);
-        optoSyncSave();
-      }
+      if (!pinch || pts.size < 2 || !live()) return;
+      const v = clampS(pinch.v * dist() / pinch.d);
+      if (v !== size()) onSize(v);
     });
     const up = (e) => {
       if (!pts.has(e.pointerId)) return;
       const p = pts.get(e.pointerId);
       pts.delete(e.pointerId);
       if (pts.size < 2) pinch = null;
-      const st = optoState;
-      if (!one || !st || st.paused) { if (!pts.size) one = null; return; }
+      if (!one || !live()) { if (!pts.size) one = null; return; }
       const dx = p.x - one.x, dy = p.y - one.y;
       const quick = performance.now() - one.t < 900;
       one = null;
       if (e.type !== "pointerup" || !quick || Math.hypot(dx, dy) < 40) return;
       const [dir, diag] = optoGestureDir(dx, dy);
+      onDir(dir, diag);
+    };
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+    el.addEventListener("wheel", (e) => {
+      if (!e.ctrlKey || !live()) return;
+      e.preventDefault();
+      onSize(clampS(size() * (e.deltaY < 0 ? 1.1 : 1 / 1.1)));
+    }, { passive: false });
+  }
+  // The first 3 runs show a short hint (automated browsers only with the test flag).
+  function gestureHintDue(key, testFlag) {
+    const n = Number(readJSON(key, 0)) || 0;
+    if (n >= 3 || (navigator.webdriver && !localStorage.getItem(testFlag))) return false;
+    writeJSON(key, n + 1);
+    return true;
+  }
+  const optoSave = makeLiveSaveBtn(optoP.stage, {
+    id: "optoLiveSaveBtn",
+    unsaved: () => optoUnsaved(optoState),
+    save: () => {
+      const st = optoState;
+      optoPrefs.dir = st.dir; optoPrefs.diag = st.diag; optoPrefs.size = st.size;
+      normalizeOptoPrefs(optoPrefs);
+      saveOptoPrefs();
+      syncOptoReadyUI();
+    },
+  });
+  const optoSaveBtn = optoSave.btn;
+  const optoShowToast = makeStageToast(optoP.stage);
+  const optoToast = optoShowToast.el;
+  function optoUnsaved(st) {
+    return !!st && st.own && !comboProgram && (st.dir !== optoPrefs.dir || st.size !== optoPrefs.size || (st.dir === "schraeg" && st.diag !== optoPrefs.diag));
+  }
+  function optoSyncSave() { optoSave.sync(); }
+  wireSwipePinch(optoP.stage, {
+    live: () => !!optoState && !optoState.paused,
+    skip: (e) => !!(e.target.closest && e.target.closest("button")),
+    size: () => optoState.size,
+    onSize: (v) => {
+      const st = optoState;
+      st.size = v;
+      optoDraw();
+      optoShowToast(`${OPTO_PATTERNS[st.pattern].size} ${v} px`);
+      optoSyncSave();
+    },
+    onDir: (dir, diag) => {
+      const st = optoState;
       st.dir = dir;
       if (diag) st.diag = diag;
       st.sign = 1; st.flips = 0; st.flipAt = st.t; st.nextFlip = st.t + st.swapS;
@@ -38698,25 +38756,11 @@
       optoStatus();
       optoShowToast(`${optoBase(st).arrow} ${optoBase(st).name}`);
       optoSyncSave();
-    };
-    stage.addEventListener("pointerup", up);
-    stage.addEventListener("pointercancel", up);
-    stage.addEventListener("wheel", (e) => {
-      const st = optoState;
-      if (!e.ctrlKey || !st || st.paused) return;
-      e.preventDefault();
-      st.size = Math.round(Math.min(160, Math.max(10, st.size * (e.deltaY < 0 ? 1.1 : 1 / 1.1))));
-      optoDraw();
-      optoShowToast(`${OPTO_PATTERNS[st.pattern].size} ${st.size} px`);
-      optoSyncSave();
-    }, { passive: false });
-  })(optoP.stage);
+    },
+  });
   function optoGestureHint() {
     // Die ersten 3 eigenen Läufe zeigen kurz, was die Gesten tun.
-    const n = Number(readJSON(OPTO_GESTURE_HINT_KEY, 0)) || 0;
-    if (n >= 3 || (navigator.webdriver && !localStorage.getItem("fwmc-test-optohint"))) return;
-    writeJSON(OPTO_GESTURE_HINT_KEY, n + 1);
-    optoShowToast("Wischen ändert die Richtung, zwei Finger die Breite.", 3200, true);
+    if (gestureHintDue(OPTO_GESTURE_HINT_KEY, "fwmc-test-optohint")) optoShowToast("Wischen ändert die Richtung, zwei Finger die Breite.", 3200, true);
   }
   if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => { if (optoState) optoSize(); }).observe(optoP.stage);
   window.addEventListener("resize", () => { if (optoState) optoSize(); });
@@ -38769,7 +38813,7 @@
   const MOVING_BG = {
     balance: { label: "Gleichgewicht", stage: () => balP.stage, overlay: () => balP.pauseOverlay, state: () => balanceState,
       prefs: () => balancePrefs, save: () => saveBalancePrefsToStorage(), own: () => !!(balanceState && balanceState.own) && !comboProgram && !cardioGuestActive,
-      readies: ["balanceReady"] },
+      readies: ["balanceReady"], relayout: () => balanceLayout() },
     remember: { label: "Positionen merken", stage: () => els.rememberStage, overlay: () => els.rememberPauseOverlay, state: () => rememberState,
       prefs: () => rememberPrefs, save: () => saveRememberPrefsToStorage(), own: () => !comboProgram && !cardioGuestActive,
       readies: ["rememberReady", "rememberTrainingReady"] },
@@ -38781,7 +38825,7 @@
       readies: ["motReady", "motTrainingReady"] },
     schulte: { label: "Schulte-Tabelle", stage: () => els.schulteStage, overlay: () => els.schultePauseOverlay, state: () => schulteState,
       prefs: () => schultePrefs, save: () => saveSchultePrefsToStorage(), own: () => !comboProgram && !cardioGuestActive,
-      readies: ["schulteReady"] },
+      readies: ["schulteReady"], relayout: () => fitSchulteBoard() },
   };
   const MBG_CONTROLS_HTML = `
     <div class="choice-row" data-opto-row="pattern">
@@ -38791,6 +38835,7 @@
     </div>
     <div class="group-help" data-mbg-help>Ein Muster zieht langsam hinter der Übung durch und fordert Augen und Gleichgewicht zusätzlich. Alles, was du lesen oder antippen musst, bleibt davor.</div>
     <div class="mbg-more" data-opto-show="notpattern:aus" hidden>
+      <div class="group-help" data-mbg-gesture-help>W&auml;hrend der &Uuml;bung: Tippe unten auf &bdquo;Hintergrund&ldquo;, dann &auml;ndert Wischen die Richtung und zwei Finger die Breite. Auf &bdquo;&Uuml;bung&ldquo; z&auml;hlt Tippen wieder wie gewohnt.</div>
       <div class="group-label">Richtung</div>
       <div class="choice-row opto-dir-row mbg-dir-row" data-opto-row="dir">
         <button type="button" class="choice" data-opto-f="dir" data-opto-v="links">Links<small>&larr;</small></button>
@@ -38880,6 +38925,7 @@
     const c = stage && stage.querySelector(":scope > canvas.mbg-canvas");
     if (c) c.hidden = true;
     if (stage) stage.classList.remove("has-mbg");
+    mbgEbeneOff(kind);
   }
   function mbgTick(kind, now) {
     const run = mbgRuns[kind];
@@ -38895,12 +38941,16 @@
     const frozen = st.paused || (ov && !ov.hidden);
     if (!frozen) optoAdvance(run.m, OPTO_SPEEDS[mbgEffSpeed(st.mbg, kind) - 1], optoBase(st.mbg).a, dt);
     mbgDraw(kind);
+    mbgEbeneSync(kind);
   }
   // Called by each exercise's start function (after its run state exists)
   // and after every live change: starts, redraws or stops the layer.
   function mbgStart(kind) {
     const L = MOVING_BG[kind];
     const st = L.state();
+    const E = mbgEbene[kind];
+    const fresh = !!(E && st && E.st !== st);
+    if (fresh) { E.st = st; E.save.reset(); mbgSetEbene(kind, "uebung"); }
     if (!st || !st.mbg || st.mbg.pattern === "aus") { mbgStop(kind); return; }
     const canvas = mbgCanvas(kind);
     canvas.hidden = false;
@@ -38910,6 +38960,7 @@
       mbgRuns[kind].raf = requestAnimationFrame((t) => mbgTick(kind, t));
     }
     mbgDraw(kind);
+    mbgEbeneOn(kind);
   }
   Object.entries(MOVING_BG).forEach(([kind, L]) => {
     // Ready screens: one group in Feineinstellungen, right after "Hintergrund".
@@ -38965,6 +39016,142 @@
     p.mbg = mbgCopy(p.mbg);
     syncMbgReady(kind);
   });
+  // ---- Ebenen-Umschalter „Übung | Hintergrund“ (Fabian 10.10.) ----
+  // While the moving background runs, a small segmented switch sits at the
+  // bottom of the stage. "Übung" = everything as before (taps, stick drag,
+  // pinch for "Größe"). "Hintergrund" = a transparent gesture layer covers
+  // the stage (no answer, stick or pinch below it ever sees a touch):
+  // swipe = direction, two fingers / ctrl+wheel = width (same ranges as
+  // Optodrum, wireSwipePinch). "Speichern" next to it writes direction and
+  // width to that exercise's own mbg (standalone runs only; Kombi/trainer
+  // programme/Cardio = this run only, like Optodrum). Every start begins on
+  // "Übung"; hidden in pause and at the end. The first 3 switches to
+  // "Hintergrund" show a short hint (MBG_EBENE_HINT_KEY). The stage gets .has-mbg-switch
+  // (--mbg-inset) so the engines keep their content above the switch
+  // (mbgInset(stage) in JS, CSS for flex/absolute layouts). A new MOVING_BG
+  // entry gets all of this for free (optional `relayout` when its layout
+  // has to be redone after the inset changes).
+  const MBG_EBENE_HINT_KEY = "fwmc-mbg-ebene-hint-v1";
+  const mbgEbene = {}; // kind -> { bar, layer, btns, toast, save, mode, st, on }
+  function mbgUnsaved(kind) {
+    const L = MOVING_BG[kind];
+    const st = L.state();
+    if (!st || !st.mbg || !L.own()) return false;
+    const p = normalizeMbg(L.prefs().mbg), m = st.mbg;
+    return m.dir !== p.dir || m.size !== p.size || (m.dir === "schraeg" && m.diag !== p.diag);
+  }
+  function mbgFrozen(kind) {
+    const L = MOVING_BG[kind];
+    const st = L.state();
+    const ov = L.overlay();
+    const player = L.stage().closest(".player");
+    return !st || !!st.paused || !!(ov && !ov.hidden) || !player || player.hidden
+      || !!player.querySelector(".done-panel:not([hidden])");
+  }
+  function mbgSetEbene(kind, mode) {
+    const E = mbgEbene[kind];
+    if (!E) return;
+    E.mode = mode === "bg" ? "bg" : "uebung";
+    E.btns.forEach((b) => { const on = b.dataset.ebene === E.mode; b.classList.toggle("active", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
+    MOVING_BG[kind].stage().classList.toggle("mbg-bg-mode", E.mode === "bg");
+    mbgEbeneSync(kind, true);
+  }
+  function mbgEbeneSync(kind, force) {
+    const E = mbgEbene[kind];
+    if (!E) return;
+    const shown = E.on && !mbgFrozen(kind);
+    if (!force && shown === E.shown) { if (shown && E.mode === "bg") E.save.sync(); return; }
+    E.shown = shown;
+    E.bar.hidden = !shown;
+    E.layer.hidden = !shown || E.mode !== "bg";
+    E.save.sync();
+  }
+  function mbgEbeneOn(kind) {
+    const E = mbgEbene[kind];
+    if (!E) return;
+    const L = MOVING_BG[kind];
+    const stage = L.stage();
+    E.on = true;
+    if (!stage.classList.contains("has-mbg-switch")) {
+      stage.classList.add("has-mbg-switch");
+      if (L.relayout) try { L.relayout(); } catch (e) {}
+    }
+    mbgEbeneSync(kind, true);
+  }
+  function mbgEbeneOff(kind) {
+    const E = mbgEbene[kind];
+    if (!E) return;
+    const L = MOVING_BG[kind];
+    const stage = L.stage();
+    E.on = false;
+    E.mode = "uebung";
+    E.btns.forEach((b) => { const on = b.dataset.ebene === "uebung"; b.classList.toggle("active", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
+    stage.classList.remove("mbg-bg-mode");
+    E.save.reset();
+    if (stage.classList.contains("has-mbg-switch")) {
+      stage.classList.remove("has-mbg-switch");
+      if (L.relayout && L.state()) try { L.relayout(); } catch (e) {}
+    }
+    mbgEbeneSync(kind, true);
+  }
+  function mbgLiveGesture(kind, patch, text) {
+    const st = MOVING_BG[kind].state();
+    if (!st || !st.mbg) return;
+    st.mbg = normalizeMbg({ ...mbgCopy(st.mbg), ...patch });
+    mbgDraw(kind);
+    mbgEbene[kind].toast(text);
+    mbgEbene[kind].save.sync();
+  }
+  Object.keys(MOVING_BG).forEach((kind) => {
+    const L = MOVING_BG[kind];
+    const stage = L.stage();
+    if (!stage) return;
+    const layer = document.createElement("div");
+    layer.className = "mbg-gesture";
+    layer.hidden = true;
+    stage.appendChild(layer);
+    const bar = document.createElement("div");
+    bar.className = "mbg-ebene-bar";
+    bar.hidden = true;
+    bar.innerHTML = '<div class="mbg-ebene" role="group" aria-label="Wischen und zwei Finger ändern"><button type="button" data-ebene="uebung" class="active" aria-pressed="true">Übung</button><button type="button" data-ebene="bg" aria-pressed="false">Hintergrund</button></div>';
+    stage.appendChild(bar);
+    const E = mbgEbene[kind] = { bar, layer, btns: [...bar.querySelectorAll("[data-ebene]")], toast: makeStageToast(stage), mode: "uebung", st: null, on: false, shown: false };
+    E.save = makeLiveSaveBtn(bar, {
+      id: kind + "MbgSaveBtn",
+      visible: () => E.mode === "bg" && !bar.hidden,
+      unsaved: () => mbgUnsaved(kind),
+      save: () => {
+        const st = L.state();
+        const p = L.prefs();
+        p.mbg = normalizeMbg({ ...mbgCopy(p.mbg), dir: st.mbg.dir, diag: st.mbg.diag, size: st.mbg.size });
+        L.save();
+        syncMbgReady(kind);
+      },
+    });
+    E.btns.forEach((b) => b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const was = E.mode;
+      mbgSetEbene(kind, b.dataset.ebene);
+      // The first 3 switches to "Hintergrund" say what the fingers do now
+      // (shown only then, so it never covers numbers while answering).
+      if (was !== "bg" && E.mode === "bg" && gestureHintDue(MBG_EBENE_HINT_KEY, "fwmc-test-mbghint")) E.toast("Wischen ändert die Richtung, zwei Finger die Breite. Tippen zählt so lange nicht.", 3200, true);
+    }));
+    // Nothing on the switch counts as a tap on the exercise below it.
+    ["pointerdown", "pointerup", "click"].forEach((t) => bar.addEventListener(t, (e) => e.stopPropagation()));
+    ["pointerdown", "click"].forEach((t) => layer.addEventListener(t, (e) => { e.stopPropagation(); if (t === "pointerdown") e.preventDefault(); }));
+    wireSwipePinch(layer, {
+      live: () => E.mode === "bg" && !layer.hidden && !!(L.state() && L.state().mbg),
+      size: () => L.state().mbg.size,
+      onSize: (v) => mbgLiveGesture(kind, { size: v }, `${(OPTO_PATTERNS[L.state().mbg.pattern] || OPTO_PATTERNS.streifen).size} ${v} px`),
+      onDir: (dir, diag) => {
+        const patch = diag ? { dir, diag } : { dir };
+        const b = optoBase({ ...L.state().mbg, ...patch });
+        mbgLiveGesture(kind, patch, `${b.arrow} ${b.name}`);
+      },
+    });
+  });
+  // Bottom room the engines keep free for the switch (= --mbg-inset in styles.css).
+  function mbgInset(stage) { return stage && stage.classList.contains("has-mbg-switch") ? 66 : 0; }
   if (typeof ResizeObserver !== "undefined") {
     const ro = new ResizeObserver(() => Object.keys(mbgRuns).forEach(mbgDraw));
     Object.values(MOVING_BG).forEach((L) => ro.observe(L.stage()));
@@ -38975,6 +39162,7 @@
       const run = mbgRuns[kind], st = MOVING_BG[kind].state();
       return { running: !!run, m: run ? { s: run.m.s, dx: run.m.dx, dy: run.m.dy } : null, st: st && st.mbg ? { ...st.mbg } : null,
         eff: st && st.mbg ? mbgEffSpeed(st.mbg, kind) : null, colors: st && st.mbg ? mbgColors(st.mbg, kind) : null,
+        ebene: mbgEbene[kind] ? mbgEbene[kind].mode : null, ebeneShown: !!(mbgEbene[kind] && mbgEbene[kind].shown),
         prefs: { ...MOVING_BG[kind].prefs().mbg } };
     };
   }
