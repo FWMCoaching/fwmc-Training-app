@@ -38614,9 +38614,11 @@
   var HO_APP_URL = "https://fwmcoaching.github.io/fwmc-Training-app/";
   var HO_SINGLE_MAX = 1200; // a whole URL up to this length fits one code
   var HO_PART_MAX = 1000; // data characters per code when split
-  // Kunden-Training snapshots these on start and puts them back on "Beenden",
+  // Kunden-Training snapshots these on start and puts them back on "Beenden".
+  // Every fwmc- key is sorted in tests/speicher_register.json (restore / keep /
+  // device); a new key that is not listed there fails speicher_register_0910_test.
   // so a client's runs never set this device's bests or "Weitermachen".
-  var HO_SNAP_RE = /^fwmc-(.*-best-v1|resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1|.*-prefs-v1|master-v1|webapp-v3|movement-v1|breath-v1|cardio-v1|cardio-addon-v1|wimhof-v1|workout-circuit-v1|workout-reps-builder-v1|workout-reps-progress-v1|workout-sound-v1|addon-v1|nat-mode-v1|signal-colors-v1|cue-overrides-v1|cvd-overrides-v1|soft-overrides-v1|anaglyph-v1|atempause-v1|plan-v1|plan-check-v1|code-history-v1|trainer-programs-v1|free-trainer-v1|coach-message-seen-v1|neuro-unlocked-v1|features-v1|events-v1|free-blocks-v1|notes-v1|ton-current-v1|ton-seq-v1|week-intent-v1|gear-v1|reminders-v1)$/;
+  var HO_SNAP_RE = /^fwmc-(.*-best-v1|resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1|.*-prefs-v1|master-v1|webapp-v3|movement-v1|breath-v1|cardio-v1|cardio-addon-v1|wimhof-v1|workout-circuit-v1|workout-reps-builder-v1|workout-reps-progress-v1|workout-sound-v1|addon-v1|nat-mode-v1|signal-colors-v1|cue-overrides-v1|cvd-overrides-v1|soft-overrides-v1|anaglyph-v1|atempause-v1|plan-v1|plan-check-v1|code-history-v1|trainer-programs-v1|free-trainer-v1|coach-message-seen-v1|neuro-unlocked-v1|features-v1|events-v1|free-blocks-v1|notes-v1|ton-current-v1|ton-seq-v1|week-intent-v1|gear-v1|reminders-v1|name-v1|start-v1|progress-v1|workout-custom-v1)$/;
   // Einstellungen (Fabian 09.10.): what the trainer sets up for a client or
   // while trying something out (levels, tempo, colours, a client's plan code
   // ...) is put back afterwards too. Saved presets stay. Those keys live in

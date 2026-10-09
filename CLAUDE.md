@@ -308,7 +308,11 @@ For every new or changed exercise/screen, in the same commit:
 - Plannable on Heute: `PLAN_AREAS`/`NAT_SUBS` + `historyAreaOf`.
 - VT/NAT exercise: Cardio guest parity (`CARDIO_GUEST_TYPES`, full settings,
   `prefsOverride` isolation) and Kombi capture/edit/playback.
-- New localStorage keys start with `fwmc-` (backup picks them up).
+- New localStorage keys start with `fwmc-` (backup picks them up) and get an
+  entry in `tests/speicher_register.json` (restore in Kunden-/Test-Modus or
+  keep, backup yes/no); `tests/speicher_register_0910_test.py` fails on an
+  unlisted key and replays both modes with codes against a storage diff.
+  A new feature with state (mode, client, unlock) starts with this inventory.
 - Anything that sends data off the device goes into the privacy sheet.
 - Erklären gehört dazu (Fabian 2026-10-09): every new rule with consequences
   the client should understand (what is saved where, what overwrites what,

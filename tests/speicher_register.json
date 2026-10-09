@@ -1,0 +1,90 @@
+{
+ "_doc": "Speicher-Register (Fabian 09.10.2026: Fehlerquellen ohne Zufallsbefund finden). Every localStorage key of the app is listed here. cat: restore = Kunden-/Test-Modus snapshot puts it back (must match HO_SNAP_RE in app.js); keep = deliberately not restored (presets, history which addHistory() diverts, hints, mode bookkeeping); test = test switch only. backup: false = in BACKUP_EXCLUDE. A new key needs an entry here, speicher_register_0910_test.py checks app.js and live localStorage against it.",
+ "entries": [
+  {
+   "re": "^fwmc-.*-best-v1$",
+   "cat": "restore",
+   "why": "Bestwerte je Übung; ein Kunde setzt nie die Bestwerte des Geräts"
+  },
+  {
+   "re": "^fwmc-.*-prefs-v1$",
+   "cat": "restore",
+   "why": "Einstellungen je Übung"
+  },
+  {
+   "re": "^fwmc-(resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1)$",
+   "cat": "restore",
+   "why": "Weitermachen, Stufen-Vorschlag, letzte Werte"
+  },
+  {
+   "re": "^fwmc-(master-v1|webapp-v3|movement-v1|breath-v1|cardio-v1|cardio-addon-v1|wimhof-v1|workout-circuit-v1|workout-reps-builder-v1|workout-reps-progress-v1|workout-sound-v1|addon-v1|nat-mode-v1|signal-colors-v1|cue-overrides-v1|cvd-overrides-v1|soft-overrides-v1|anaglyph-v1|atempause-v1)$",
+   "cat": "restore",
+   "why": "Grundeinstellungen und Bereichs-Einstellungen"
+  },
+  {
+   "re": "^fwmc-(plan-v1|plan-check-v1|code-history-v1|trainer-programs-v1|free-trainer-v1|coach-message-seen-v1|neuro-unlocked-v1|features-v1|events-v1|free-blocks-v1|notes-v1|ton-current-v1|ton-seq-v1|week-intent-v1|gear-v1)$",
+   "cat": "restore",
+   "why": "Plan, Codes, Freischaltungen, Termine, eigene Inhalte"
+  },
+  {
+   "re": "^fwmc-reminders-v1$",
+   "cat": "restore",
+   "backup": false,
+   "why": "Erinnerungen gehören zum Push-Abo dieses Geräts"
+  },
+  {
+   "re": "^fwmc-(name-v1|start-v1|progress-v1|workout-custom-v1)$",
+   "cat": "restore",
+   "why": "Vorname, Ziel/Trainer-Antwort, Wochenziel, eigene Kraftübungen (09.10. ergänzt)"
+  },
+  {
+   "re": "^fwmc-.*-saved-v1$",
+   "cat": "keep",
+   "why": "gespeicherte Vorlagen bleiben bewusst (Fabian 09.10.)"
+  },
+  {
+   "re": "^fwmc-(addon-presets-v1|bg-presets-v1|cardio-images-v1)$",
+   "cat": "keep",
+   "why": "Vorlagen und Bilder, auf die Vorlagen zeigen"
+  },
+  {
+   "re": "^fwmc-history-v1$",
+   "cat": "keep",
+   "why": "addHistory() leitet Läufe im Kunden-/Test-Modus um"
+  },
+  {
+   "re": "^fwmc-(client-session-v1|trainer-mode-v1|trainer-seen-v1|trainer-asked-v1|import-parts-v1)$",
+   "cat": "keep",
+   "backup": false,
+   "why": "Buchführung der Trainer-Modi und Übergabe"
+  },
+  {
+   "re": "^fwmc-(client-runs-v1|try-runs-v1|trainer-hidden-v1)$",
+   "cat": "keep",
+   "why": "Trainer-Ablage (Kunden-/Test-Läufe, ausgeblendete eigene Läufe), bewusst in der Sicherung"
+  },
+  {
+   "re": "^fwmc-(admin-token)$",
+   "cat": "keep",
+   "backup": false,
+   "why": "Trainer-Dashboard-Zugang, nie in Sicherungen"
+  },
+  {
+   "re": "^fwmc-(device-id|day-view-v1|onboarding-v1|tips-seen|tips-card-hidden|install-hint-dismissed|gear-hint-dismissed|silent-hint-v1|fb-hint-v1|program-video-skip-v1|ton-chantest-v1)$",
+   "cat": "keep",
+   "why": "Gerät und gesehene Hinweise"
+  },
+  {
+   "re": "^fwmc-test-",
+   "cat": "test",
+   "why": "nur für automatische Tests"
+  }
+ ],
+ "not_keys": [
+  "fwmc-",
+  "fwmc-test-",
+  "fwmc-sicherung-",
+  "fwmc-training",
+  "fwmc-tm-after"
+ ]
+}
