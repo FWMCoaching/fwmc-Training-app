@@ -250,6 +250,28 @@ async def main():
               and await pg.locator("#handoverList li input").count() == 0, txt)
         await ctx.close()
 
+        # ---- settings come back after a Kunden-Training (Fabian 09.10.) ----
+        ctx, pg = await new_page(b, extra="localStorage.setItem('fwmc-plan-v1', JSON.stringify({mine: 1}));")
+        await pg.goto(ROOT + "?bereich=training"); await pg.wait_for_timeout(300)
+        await set_mode(pg, "client")
+        await do_free(pg, "f1")
+        # a client's plan code and a changed setting while the client trains
+        await pg.evaluate("localStorage.setItem('fwmc-plan-v1', JSON.stringify({client: 1})); localStorage.setItem('fwmc-mot-prefs-v1', JSON.stringify({speed: 9}))")
+        await set_mode(pg, "own"); await pg.wait_for_timeout(1200)
+        check("after the client run: own plan and settings back, app reloaded once, selection open",
+              await ls(pg, "fwmc-plan-v1") == {"mine": 1} and await ls(pg, "fwmc-mot-prefs-v1") is None
+              and await pg.is_visible("#handoverScreen")
+              and await pg.locator("#handoverList input:checked").count() == 1)
+        await ctx.close()
+        ctx, pg = await new_page(b)
+        await pg.goto(ROOT + "?bereich=training"); await pg.wait_for_timeout(300)
+        await set_mode(pg, "try")
+        await pg.evaluate("localStorage.setItem('fwmc-master-v1', JSON.stringify({startCountdown: false, volume: 0.2}))")
+        await pg.click("#clientRunEndBtn"); await pg.wait_for_timeout(1200)
+        check("after Ausprobieren: Grundeinstellungen back as before",
+              (await ls(pg, "fwmc-master-v1") or {}).get("volume") != 0.2 and await ls(pg, "fwmc-trainer-mode-v1") is None)
+        await ctx.close()
+
         # ---- probe alone, bests restored ----
         ctx, pg = await new_page(b, extra="localStorage.setItem('fwmc-remember-best-v1','{\"leicht\":4}');")
         await pg.goto(ROOT + "?bereich=training"); await pg.wait_for_timeout(300)
