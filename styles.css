@@ -2149,7 +2149,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .cal-month.mini .cal-cell{min-height:24px;padding:4px 0 2px;border-radius:4px}
 .cal-month.mini .cal-num{font-size:calc(10.5px * var(--ts,1))}
 .cal-month.mini .cal-check{display:none}
-.cal-month.mini .cal-cell.planned .cal-num,.cal-month.mini .cal-cell.partial .cal-num,.cal-month.mini .cal-cell.missed .cal-num{color:var(--brand);font-weight:900}
+.cal-month.mini .cal-cell.planned .cal-num,.cal-month.mini .cal-cell.partial .cal-num,.cal-month.mini .cal-cell.missed .cal-num,.cal-month.mini .cal-cell.extra-done .cal-num{color:var(--brand);font-weight:900}
 .cal-month.mini .cal-month-title{font-size:calc(13px * var(--ts,1))}
 .cal-month.mini .cal-wd{font-size:9.5px}
 .cal-quarter{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 20px) / 3);gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px}

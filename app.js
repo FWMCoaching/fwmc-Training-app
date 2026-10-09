@@ -36299,11 +36299,15 @@
       const ph = phaseFor(date);
       if (ph) phases.set(ph.index, ph.phase.name);
       const band = ph ? `<span class="cal-band" style="background:${PHASE_TINTS[ph.index % PHASE_TINTS.length]}"></span>` : "";
-      const dots = mini ? "" : `<span class="cal-dots">${[...new Set(occ.map((o) => o.area))].slice(0, 4).map((a) => areaDot(a)).join("")}</span>`;
+      // Fabian 09.10.: month/quarter/year show the same trainings as the week
+      // strip, incl. ones done without a plan entry (extraAreasOn).
+      const extra = date <= today ? extraAreasOn(date, hist, occ) : [];
+      const dots = mini ? "" : `<span class="cal-dots">${[...new Set(occ.map((o) => o.area).concat(extra))].slice(0, 4).map((a) => areaDot(a)).join("")}</span>`;
+      const xCls = extra.length && cls.startsWith("rest") ? " extra-done" : "";
       const check = (cls === "done" ? `<span class="cal-check">✓</span>` : "") + (occ.some((o) => o.special || o.insert) ? `<span class="cal-star" aria-hidden="true">★</span>` : "");
       const evN = eventsOn(date, evList).length;
-      const calLabel = longDate(date) + (evN ? `, ${evN === 1 ? "1 Termin" : evN + " Termine"}` : "");
-      cells += `<button type="button" class="cal-cell ${cls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}" data-date="${date}" aria-label="${esc(calLabel)}">${band}${eventMarkHtml(date, evList)}<span class="cal-num">${d}</span>${check}${dots}</button>`;
+      const calLabel = longDate(date) + (extra.length ? `, ${countLabel(extra.length, "Training", "Trainings")} ohne Plan` : "") + (evN ? `, ${evN === 1 ? "1 Termin" : evN + " Termine"}` : "");
+      cells += `<button type="button" class="cal-cell ${cls}${xCls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}" data-date="${date}" aria-label="${esc(calLabel)}">${band}${eventMarkHtml(date, evList)}<span class="cal-num">${d}</span>${check}${dots}</button>`;
     }
     const legend = phases.size ? `<div class="cal-legend">${[...phases].map(([i, n]) => `<span><i style="background:${PHASE_TINTS[i % PHASE_TINTS.length]}"></i>${esc(n)}</span>`).join("")}</div>` : "";
     return `<div class="cal-month${mini ? " mini" : ""}"><div class="cal-month-title">${MONTHS[month]} ${year}</div><div class="cal-grid">${cells}</div>${legend}</div>`;
