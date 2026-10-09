@@ -59,9 +59,9 @@
    "why": "Buchführung der Trainer-Modi und Übergabe"
   },
   {
-   "re": "^fwmc-(client-runs-v1|try-runs-v1|trainer-hidden-v1)$",
+   "re": "^fwmc-(client-runs-v1|try-runs-v1|trainer-hidden-v1|trainer-sent-v1)$",
    "cat": "keep",
-   "why": "Trainer-Ablage (Kunden-/Test-Läufe, ausgeblendete eigene Läufe), bewusst in der Sicherung"
+   "why": "Trainer-Ablage (Kunden-/Test-Läufe, ausgeblendete eigene Läufe, 21 Tage verschickte), bewusst in der Sicherung"
   },
   {
    "re": "^fwmc-(admin-token)$",
@@ -70,7 +70,7 @@
    "why": "Trainer-Dashboard-Zugang, nie in Sicherungen"
   },
   {
-   "re": "^fwmc-(device-id|day-view-v1|onboarding-v1|tips-seen|tips-card-hidden|install-hint-dismissed|gear-hint-dismissed|silent-hint-v1|fb-hint-v1|program-video-skip-v1|ton-chantest-v1)$",
+   "re": "^fwmc-(device-id|day-view-v1|onboarding-v1|tips-seen|tips-card-hidden|install-hint-dismissed|gear-hint-dismissed|gear-first-v1|silent-hint-v1|fb-hint-v1|program-video-skip-v1|ton-chantest-v1)$",
    "cat": "keep",
    "why": "Gerät und gesehene Hinweise"
   },

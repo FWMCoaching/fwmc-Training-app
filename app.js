@@ -1100,7 +1100,27 @@
     if (!Number.isFinite(sigMax) || sigMax < 3 || sigMax > 60) sigMax = ZUS_SIG_DEFAULT.sigMax;
     if (sigMax < sigMin) sigMax = sigMin;
     const trainerIds = Array.isArray(o.trainerIds) ? o.trainerIds.filter((id) => ids.includes(id)) : [];
-    return { ids, sigMin, sigMax, trainerIds };
+    const out = { ids, sigMin, sigMax, trainerIds };
+    const body = bodyNormalize(o.body);
+    if (body) out.body = body;
+    return out;
+  }
+  // Körperregel je Farbe (Fabian 09.10., Idee 75): stored per exercise in
+  // its Zusätze entry (so presets, Kombi blocks and codes carry it), never
+  // one global rule per colour. "Von anderer Übung übernehmen" copies it.
+  const BODY_ACTIONS = { "": "Nichts", haende: "Hände hoch", rhand: "Rechte Hand", lhand: "Linke Hand", rfuss: "Rechter Fuß", lfuss: "Linker Fuß", hocke: "In die Hocke", klatsch: "Klatschen" };
+  const BODY_TEXT = { haende: "beide Hände hoch", rhand: "rechte Hand hoch", lhand: "linke Hand hoch", rfuss: "mit dem rechten Fuß antippen", lfuss: "mit dem linken Fuß antippen", hocke: "kurz in die Hocke", klatsch: "einmal klatschen" };
+  function bodyNormalize(b) {
+    if (!b || typeof b !== "object") return null;
+    const rules = {};
+    Object.entries(b.rules && typeof b.rules === "object" ? b.rules : {}).forEach(([k, v]) => { if (COLOR_BY_KEY[k] && BODY_TEXT[v]) rules[k] = v; });
+    if (!b.on && !Object.keys(rules).length) return null;
+    return { on: !!b.on, rules };
+  }
+  function bodyActive(z) { return !!(z && z.body && z.body.on && Object.keys(z.body.rules).length); }
+  function bodyLines(z) {
+    if (!bodyActive(z)) return [];
+    return Object.entries(z.body.rules).map(([k, v]) => `Bei ${COLOR_BY_KEY[k].name}: ${BODY_TEXT[v]}.`);
   }
   function zusNormalizeMap(m) {
     const src = m && typeof m === "object" && !Array.isArray(m) ? m : {};
@@ -9425,7 +9445,7 @@
     if (ex && ex.type === "richtungskreuz") out.rk = rkStateSnapshot();
     if (ZUS_EXERCISES.includes(exId)) {
       const z = zusGet(exId);
-      if (z.ids.length || withEmpty) out.zus = JSON.parse(JSON.stringify(z));
+      if (z.ids.length || z.body || withEmpty) out.zus = JSON.parse(JSON.stringify(z));
     }
     const n = (state.exNotes || {})[exId];
     if (n) out.note = n;
@@ -9579,12 +9599,35 @@
     $("zusRowWarn").hidden = z.ids.length < 2;
     // The instructions on the ready screen (Begleit-Zusätze are not checked).
     const note = $("zusNote");
-    note.hidden = !on || !z.ids.length;
-    note.innerHTML = z.ids.length ? `<span class="hilfsmittel-kicker">Zusatz für oben</span>` + z.ids.map((id) => {
+    const bl = on ? bodyLines(z) : [];
+    note.hidden = !on || (!z.ids.length && !bl.length);
+    note.innerHTML = (z.ids.length ? `<span class="hilfsmittel-kicker">Zusatz für oben</span>` + z.ids.map((id) => {
       const d = ZUS_BY_ID[id];
       return `<span class="zus-note-line"><strong>${esc(d.title)}:</strong> ${esc(d.text)}${d.signal ? ` Alle ${z.sigMin}–${z.sigMax} s.` : ""}${zusTrainerMark(z, id) ? " <em>(von deinem Trainer)</em>" : ""}</span>`;
-    }).join("") + `<span class="zus-note-line zus-note-small">Ein Ball liegt bereit. Die App prüft die Zusätze nicht.</span>` : "";
+    }).join("") + `<span class="zus-note-line zus-note-small">Ein Ball liegt bereit. Die App prüft die Zusätze nicht.</span>` : "") +
+      (bl.length ? `<span class="hilfsmittel-kicker">Körperregel</span>` + bl.map((l) => `<span class="zus-note-line">${esc(l)}</span>`).join("") : "");
+    syncBodyUI(on, z);
     if (!$("zusatzSheet").hidden) renderZusSheet();
+  }
+  function bodyColorsFor(exId, z) {
+    const ex = EXERCISES[exId] || {};
+    const base = ex.type === "richtungskreuz" && state.rkColors ? Object.values(state.rkColors) : (state.colors || []);
+    return [...new Set(base.concat(Object.keys((z.body || {}).rules || {})))].filter((k) => COLOR_BY_KEY[k]);
+  }
+  function syncBodyUI(on, z) {
+    const box = $("bodyRuleBox");
+    if (!box) return;
+    box.hidden = !on;
+    if (!on) return;
+    const b = z.body || { on: false, rules: {} };
+    $("bodyRuleOn").checked = !!b.on;
+    $("bodyRuleRows").hidden = !b.on;
+    $("bodyRuleRows").innerHTML = b.on ? colorChoiceRowsHtml(bodyColorsFor(state.exercise, z), BODY_ACTIONS, (k) => b.rules[k] || "", "body-col", (n) => "Körperregel bei " + n) : "";
+    const xh = $("bodyRuleXfer");
+    if (!xh.firstChild) xh.appendChild(xferButton("Körperregel übernehmen", () => ZUS_EXERCISES.filter((id) => id !== state.exercise && EXERCISES[id]).map((id) => {
+      const oz = zusGet(id);
+      return bodyActive(oz) ? { label: "Wie bei " + EXERCISES[id].title, sub: bodyLines(oz).join(" "), pick: () => { const cur = zusGet(state.exercise); zusSet(state.exercise, { ...cur, body: JSON.parse(JSON.stringify(oz.body)) }); } } : null;
+    }).filter(Boolean)));
   }
   function renderZusSheet() {
     const z = zusGet(state.exercise);
@@ -9613,6 +9656,18 @@
     if (zusSheetOpener && zusSheetOpener.focus) zusSheetOpener.focus({ preventScroll: true });
   }
   $("zusAddBtn").addEventListener("click", openZusSheet);
+  $("bodyRuleOn").addEventListener("change", () => {
+    const z = zusGet(state.exercise);
+    zusSet(state.exercise, { ...z, body: { on: $("bodyRuleOn").checked, rules: (z.body || {}).rules || {} } });
+  });
+  $("bodyRuleRows").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-body-col][data-val]");
+    if (!b) return;
+    const z = zusGet(state.exercise);
+    const rules = { ...((z.body || {}).rules || {}) };
+    if (b.dataset.val) rules[b.dataset.bodyCol] = b.dataset.val; else delete rules[b.dataset.bodyCol];
+    zusSet(state.exercise, { ...z, body: { on: true, rules } });
+  });
   $("zusatzDoneBtn").addEventListener("click", closeZusSheet);
   $("zusatzSheet").addEventListener("click", (e) => { if (e.target === $("zusatzSheet")) closeZusSheet(); });
   $("zusatzSheet").addEventListener("keydown", (e) => { if (e.key === "Escape") closeZusSheet(); else trapTabKey($("zusatzSheet"), e); });
@@ -9768,7 +9823,7 @@
     return z.ids.map((id) => {
       const d = ZUS_BY_ID[id];
       return `${d.title}: ${d.text}${d.signal ? ` Alle ${z.sigMin}–${z.sigMax} s.` : ""}${zusTrainerMark(z, id) ? " (Von deinem Trainer)" : ""}`;
-    });
+    }).concat(bodyLines(z).map((l) => "Körperregel: " + l));
   }
   function regelnTitle(key) { return key === "@vt" ? (EXERCISES[state.exercise] || {}).title || "" : REGELN_EXERCISES[key].title; }
   function regelnLines(key) {
@@ -20511,7 +20566,7 @@
             `<button class="choice${!cfg.fixEnabled ? " active" : ""}" data-type="${t.id}" data-fixtoggle="0">Ausblenden</button>` +
             `</div>` +
             (cfg.fixEnabled ? (
-              `<input type="text" maxlength="3" data-type="${t.id}" data-fixchar="1" value="${esc(cfg.fixChar)}" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen für den Fixpunkt (leer lassen für den Standardpunkt)">` +
+              `<input type="text" maxlength="12" data-type="${t.id}" data-fixchar="1" value="${esc(cfg.fixChar)}" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen für den Fixpunkt (leer lassen für den Standardpunkt)">` +
               `<div class="cardio-guest-colors" data-fixcolors="${t.id}">` +
               FIX_COLOR_LIB.map((c) => `<label><input type="radio" name="cardioGuestFix-${t.id}" data-fixtype="${t.id}" data-fixcolor="${c.key}" ${cfg.fixColor === c.key ? "checked" : ""}><span class="cardio-guest-color-dot" style="background:${c.hex}"></span>${esc(c.name)}</label>`).join("") +
               `</div>` +
@@ -20879,7 +20934,7 @@
       btn.addEventListener("click", () => { getCfg(btn.dataset.type).fixEnabled = btn.dataset.fixtoggle === "1"; select(); });
     });
     container.querySelectorAll("input[data-fixchar]").forEach((input) => {
-      input.addEventListener("input", () => { getCfg(input.dataset.type).fixChar = input.value.slice(0, 3); persist(); });
+      input.addEventListener("input", () => { getCfg(input.dataset.type).fixChar = input.value.slice(0, FIX_TEXT_MAX); persist(); });
     });
     container.querySelectorAll("input[data-lookcolor]").forEach((radio) => {
       radio.addEventListener("change", () => {
@@ -29104,6 +29159,40 @@
       try { b.click(); } finally { gearStartBypass = false; }
     }, { title: "Hilfsmittel", yes: "Trotzdem starten", no: "Abbrechen" });
   }, true);
+  // Erste graue Übung (Fabian 09.10.): the first time a client opens an
+  // exercise that is greyed for missing equipment, one sheet asks "Hast du
+  // …?" and offers the other Hilfsmittel to tick in the same go. Once only
+  // (fwmc-gear-first-v1); after that the grey cards behave as before.
+  const GEAR_FIRST_KEY = "fwmc-gear-first-v1";
+  function gearFirstAsk(key) {
+    const miss = gearMissing(key);
+    if (!miss.length) return;
+    writeJSON(GEAR_FIRST_KEY, true);
+    const sheet = $("gearFirstSheet");
+    $("gearFirstTitle").textContent = `Hast du ${gearMissingText(key)}?`;
+    const o = gearOwnedRaw();
+    $("gearFirstMore").innerHTML = GEAR_ITEMS.filter((g) => !g.test || isTestUnlocked()).filter((g) => !miss.includes(g.id)).map((g) =>
+      `<label class="checkbox-row tap-row"><input type="checkbox" data-gear-have="${g.id}"${o[g.id] ? " checked" : ""}> ${esc(g.name)}</label>`).join("");
+    const close = () => { sheet.hidden = true; };
+    $("gearFirstYesBtn").onclick = () => { gearSetOwned(miss, true); $("gearFirstAnswer").hidden = false; $("gearFirstAnswer").textContent = "Abgehakt."; $("gearFirstYesBtn").hidden = true; $("gearFirstNoBtn").hidden = true; };
+    $("gearFirstNoBtn").onclick = () => { $("gearFirstAnswer").hidden = false; $("gearFirstAnswer").textContent = "Kein Problem. Du kannst die Übung trotzdem starten."; $("gearFirstYesBtn").hidden = true; $("gearFirstNoBtn").hidden = true; };
+    $("gearFirstDoneBtn").onclick = close;
+    sheet.onclick = (e) => { if (e.target === sheet) close(); };
+    $("gearFirstAnswer").hidden = true;
+    $("gearFirstYesBtn").hidden = false;
+    $("gearFirstNoBtn").hidden = false;
+    sheet.hidden = false;
+  }
+  document.addEventListener("click", (e) => {
+    if (!gearModuleReady || gearAllOwned() || readJSON(GEAR_FIRST_KEY, false)) return;
+    if (navigator.webdriver && !readJSON("fwmc-test-gearfirst", false)) return;
+    const card = e.target && e.target.closest ? e.target.closest(".gear-missing") : null;
+    if (!card || card.classList.contains("start-btn")) return;
+    const hit = gearCards().find((c) => c.el === card);
+    if (!hit) return;
+    const key = card.classList.contains("excard") ? gearKeyOfExercise(hit.key) : hit.key;
+    setTimeout(() => gearFirstAsk(key), 350);
+  });
   // Back on a ready screen: label again (after "Trotzdem starten").
   document.querySelectorAll(".screen").forEach((scr) => {
     if (!scr.querySelector(".hilfsmittel-note")) return;
@@ -35168,11 +35257,23 @@
     (plan.extras[date] || []).forEach((e) => out.push({ ...e, extra: true, noScore: false }));
     out.sort((a, b) => (timeToMin(a.time) ?? 9999) - (timeToMin(b.time) ?? 9999));
     const manual = plan.done[date] || [];
-    const hist = (historyList || loadHistory()).filter((h) => !h.aborted && dStr(new Date(h.ts)) === date).map(historyAreaOf);
+    const hist = (historyList || loadHistory()).filter((h) => !h.aborted && dStr(new Date(h.ts)) === date);
     out.forEach((o) => { o.manual = manual.includes(o.id); o.done = o.manual; });
-    out.forEach((o) => {
+    // Fabian 09.10.: a plan entry naming one Eigenes Training / Neuro exercise
+    // ("free:<id>", "neuro:<ex>") is ticked only by exactly that training
+    // (also when it came by QR from the trainer); everything else by area.
+    // Specific entries pick first, so a general one never takes their run.
+    const fits = (o, h) => {
+      if (historyAreaOf(h) !== o.area) return false;
+      const w = o.what || "";
+      if (w.startsWith("free:")) return h.freeId === w.slice(5);
+      if (w.startsWith("neuro:")) return h.neuroEx === w.slice(6);
+      return true;
+    };
+    const specific = (o) => /^(free|neuro):./.test(o.what || "");
+    out.filter(specific).concat(out.filter((o) => !specific(o))).forEach((o) => {
       if (o.done) return;
-      const i = hist.indexOf(o.area);
+      const i = hist.findIndex((h) => fits(o, h));
       if (i >= 0) { hist.splice(i, 1); o.done = true; o.auto = true; }
     });
     return out;
@@ -35798,6 +35899,34 @@
     all[today] = { v, at: Date.now() };
     writeJSON(MOOD_KEY, all);
   }
+  // Vorher und nachher (Fabian 09.10.): when today's Tagesform is set, a
+  // finished (not aborted) training asks once "Und wie geht es dir jetzt?"
+  // in its done panel. Stored on the history entry (moodBefore/moodAfter),
+  // evaluated under Fortschritt. Own mode only, never sent anywhere.
+  function moodAfterOffer(panel) {
+    const old = panel.querySelector(".mood-after");
+    if (old) old.remove();
+    if (tmMode() !== "own") return;
+    const chk = panel.querySelector(".done-check");
+    if (!chk || chk.hidden || panel.classList.contains("aborted") || getComputedStyle(chk).display === "none") return;
+    const before = moodLoad()[todayStr()];
+    if (!before) return;
+    const h = loadHistory()[0];
+    if (!h || h.aborted || h.moodAfter || Date.now() - new Date(h.ts).getTime() > 15000) return;
+    const box = document.createElement("div");
+    box.className = "mood-after";
+    box.innerHTML = `<div class="mood-after-q">Und wie geht es dir jetzt?</div><div class="choice-row mood-after-btns">${MOODS.map((m) => `<button type="button" class="choice" data-mood-after="${m.v}">${m.label}</button>`).join("")}</div>`;
+    box.querySelectorAll("[data-mood-after]").forEach((b) => b.addEventListener("click", () => {
+      const v = Number(b.dataset.moodAfter);
+      const list = loadHistory();
+      const it = list.find((e) => e.id === h.id);
+      if (it) { it.moodBefore = before.v; it.moodAfter = v; writeJSON(HISTORY_KEY, list); }
+      const d = v - before.v;
+      box.innerHTML = `<div class="mood-after-q">Vorher ${moodLabel(before.v)}, jetzt ${moodLabel(v)}.${d > 0 ? " Schön, das Training hat dir gutgetan." : ""}</div>`;
+    }));
+    const sum = panel.querySelector(".done-summary");
+    if (sum && sum.parentNode) sum.parentNode.insertBefore(box, sum.nextSibling); else panel.appendChild(box);
+  }
   function moodLabel(v) { const m = MOODS.find((x) => x.v === v); return m ? m.label : ""; }
   let moodEdit = false;
   function renderMoodTile(tile, show) {
@@ -35863,7 +35992,25 @@
     box.innerHTML = `<div class="mood-head">${WD_SHORT.map((w) => `<span>${w}</span>`).join("")}</div>
       <div class="mood-grid">${cells.join("")}</div>
       <div class="mood-legend">${MOODS.map((m) => `<span><i class="mood-cell m${m.v}"></i>${m.label}</span>`).join("")}<span><i class="mood-cell trained"></i>trainiert</span></div>
-      <p class="group-help mood-sentence">${esc(sentence)}</p>`;
+      <p class="group-help mood-sentence">${esc(sentence)}</p>${moodAfterHtml(hist)}`;
+  }
+  // Vorher/nachher (Fabian 09.10.): per area, how often the client felt
+  // better / the same / worse after a training. From 3 answers per area.
+  function moodAfterHtml(hist) {
+    const rows = {};
+    hist.forEach((h) => {
+      if (!h.moodAfter || !h.moodBefore) return;
+      const a = historyAreaOf(h);
+      const r = rows[a] || (rows[a] = { n: 0, up: 0, same: 0 });
+      r.n++;
+      if (h.moodAfter > h.moodBefore) r.up++; else if (h.moodAfter === h.moodBefore) r.same++;
+    });
+    const total = Object.values(rows).reduce((x, r) => x + r.n, 0);
+    if (!total) return "";
+    const list = Object.entries(rows).filter(([, r]) => r.n >= 3).sort((x, y) => y[1].n - x[1].n);
+    const name = (a) => (AREA_BY_KEY[a] ? AREA_BY_KEY[a].label : a === "combo" ? "Kombi-Programm" : "Training");
+    const lines = list.map(([a, r]) => `<li><b>${esc(name(a))}:</b> ${r.up} von ${r.n} Mal danach besser, ${r.same} Mal gleich</li>`).join("");
+    return `<div class="mood-after-sum"><div class="group-label">Vorher und nachher</div>${lines ? `<ul>${lines}</ul>` : ""}<p class="group-help">${lines ? "Gezählt, wenn du nach dem Training angibst, wie es dir jetzt geht." : `Schon ${total} ${total === 1 ? "Antwort" : "Antworten"} nach dem Training. Ab 3 je Bereich siehst du hier, was dir guttut.`}</p></div>`;
   }
   function renderGoalRow(hist, stage, p, trainer, tileKey, own) {
     const box = $("todayGoal");
@@ -39485,7 +39632,8 @@
   (function initDoneEffects() {
     document.querySelectorAll(".done-check").forEach((c) => { c.innerHTML = DONE_CHECK_SVG; c.setAttribute("aria-hidden", "true"); });
     const obs = new MutationObserver((recs) => recs.forEach((r) => {
-      if (!r.target.hidden) requestAnimationFrame(() => celebrateDone(r.target));
+      if (!r.target.hidden) requestAnimationFrame(() => { celebrateDone(r.target); moodAfterOffer(r.target); });
+      else { const m = r.target.querySelector(".mood-after"); if (m) m.remove(); }
     }));
     document.querySelectorAll(".done-panel").forEach((p) => obs.observe(p, { attributes: true, attributeFilter: ["hidden"] }));
   })();
@@ -39841,7 +39989,9 @@
   // own history, tagged "bei deinem Trainer". No server: the data travels in
   // the URL fragment (#import=…), which browsers never send anywhere.
   // Payload = {v:1, e:[[id, tsSeconds, kind, title, seconds, note, rating,
-  // aborted, exId, progKey], …]} (trailing empty fields dropped), deflate-raw
+  // aborted, exId, progKey, sub], …]} (trailing empty fields dropped; sub =
+  // freeId or neuroEx, Fabian 09.10.: so a plan entry for exactly that
+  // training gets its tick on the client's phone), deflate-raw
   // when CompressionStream exists ("z…") or plain ("j…"), base64url.
   // Never the name (fwmc-name-v1), settings, plan or anything else.
   // Token: "<part>.<parts>.<group>.<data chunk>". Details: docs/notes/36.
@@ -39920,9 +40070,34 @@
     if (keep.length !== l.length) writeJSON("fwmc-client-runs-v1", keep);
     return keep;
   }
+  // Verschickt (Fabian 09.10.): what went out by QR is no longer just gone.
+  // A copy stays 21 days in fwmc-trainer-sent-v1, tagged "verschickt" in
+  // Gespeicherte Trainings, so it can be shown again if the client's phone
+  // missed it. Own runs still leave your Verlauf and Fortschritt on sending.
+  const HO_SENT_KEY = "fwmc-trainer-sent-v1";
+  const HO_SENT_KEEP_MS = 21 * 86400e3;
+  function hoSentRuns() {
+    const l = readJSON(HO_SENT_KEY, []);
+    if (!Array.isArray(l)) return [];
+    const keep = l.filter((e) => e && typeof e.sent === "number" && Date.now() - e.sent < HO_SENT_KEEP_MS);
+    if (keep.length !== l.length) writeJSON(HO_SENT_KEY, keep);
+    return keep;
+  }
+  function hoMarkSent(entries) {
+    const ids = entries.map((e) => e.id);
+    const l = hoSentRuns().filter((e) => !ids.includes(e.id));
+    const now = Date.now();
+    entries.forEach((e) => {
+      const c = { ...e, sent: now };
+      delete c.hidden;
+      l.unshift(c);
+    });
+    writeJSON(HO_SENT_KEY, l.slice(0, 500));
+  }
   function hoAddClientRun(item) {
     const s = hoSession();
     item.client = s ? s.start : 1;
+    if (s && s.tag) item.tag = s.tag;
     hoAttachExtras(item);
     const l = hoClientRuns();
     l.unshift(item);
@@ -39965,7 +40140,7 @@
   function hoPack(e) {
     const a = [String(e.id || ""), Math.round(new Date(e.ts).getTime() / 1000), String(e.kind || ""), String(e.title || "").slice(0, 120),
       Math.max(0, Math.round(Number(e.seconds) || 0)), String(e.note || "").slice(0, 300), Number(e.rating) || 0, e.aborted ? 1 : 0,
-      String(e.exId || ""), String(e.progKey || "")];
+      String(e.exId || ""), String(e.progKey || ""), String(e.freeId || e.neuroEx || "").slice(0, 60)];
     while (a.length > 4 && (a[a.length - 1] === "" || a[a.length - 1] === 0)) a.pop();
     return a;
   }
@@ -39979,14 +40154,15 @@
   const hoStr = (v, max) => (v == null || v === "" ? "" : typeof v === "string" && v.length <= max ? v : null);
   function hoUnpack(a) {
     if (!Array.isArray(a) || a.length < 4) return null;
-    const [id, t, kind, title, sec = 0, note = "", rating = 0, aborted = 0, exId = "", progKey = ""] = a;
+    const [id, t, kind, title, sec = 0, note = "", rating = 0, aborted = 0, exId = "", progKey = "", sub = ""] = a;
     const nowS = Date.now() / 1000;
     const ok = typeof id === "string" && /^[\w.-]{1,40}$/.test(id) && typeof t === "number" && t > 1577836800 && t < nowS + 86400 &&
       typeof kind === "string" && /^[a-z0-9-]{0,40}$/.test(kind) && typeof title === "string" && title.trim() && title.length <= 120 &&
       typeof sec === "number" && sec >= 0 && sec <= 86400 && hoStr(note, 300) !== null && [0, 1, 2, 3, 4, 5].includes(rating) &&
-      (aborted === 0 || aborted === 1) && hoStr(exId, 60) !== null && hoStr(progKey, 80) !== null;
+      (aborted === 0 || aborted === 1) && hoStr(exId, 60) !== null && hoStr(progKey, 80) !== null &&
+      hoStr(sub, 60) !== null && /^[\w.:-]*$/.test(sub);
     if (!ok) return null;
-    return { id, t, kind, title, seconds: Math.round(sec), note, rating, aborted: aborted === 1, exId, progKey };
+    return { id, t, kind, title, seconds: Math.round(sec), note, rating, aborted: aborted === 1, exId, progKey, sub };
   }
   // Returns the entries or throws (any problem = one friendly message).
   async function hoDecode(data) {
@@ -40069,6 +40245,8 @@
       if (x.aborted) item.aborted = true;
       if (x.exId) item.exId = x.exId;
       if (x.progKey) item.progKey = x.progKey;
+      if (x.sub && x.kind === "free") item.freeId = x.sub;
+      if (x.sub && x.kind === "neuro") item.neuroEx = x.sub;
       list.push(item);
       if (!item.aborted) progressAdd(p, item);
       added++;
@@ -40509,6 +40687,14 @@
   // Closed any other way (pull-down, leaving the page): the camera goes off too.
   new MutationObserver(() => { if ($("handoverScanSheet").hidden) hoScanStop(); }).observe($("handoverScanSheet"), { attributes: true, attributeFilter: ["hidden"] });
   document.addEventListener("visibilitychange", () => { if (document.hidden && hoScan) hoCloseScan(); });
+  if (navigator.webdriver) window.__ho0910 = {
+    pack: (e) => hoPack(e), unpack: (a) => hoUnpack(a),
+    planTry: (date, extras, hist) => {
+      const keep = plan.extras[date];
+      plan.extras[date] = extras;
+      try { return occurrencesOn(date, hist).filter((o) => o.extra).map((o) => ({ what: o.what || "", done: !!o.done })); } finally { if (keep) plan.extras[date] = keep; else delete plan.extras[date]; }
+    },
+  };
   if (navigator.webdriver) window.__hoScan = () => ({ open: !$("handoverScanSheet").hidden, running: !!hoScan, detector: !!(hoScan && hoScan.detector), tracks: hoScan && hoScan.stream ? hoScan.stream.getTracks().filter((t) => t.readyState === "live").length : 0 });
   window.addEventListener("hashchange", hoCheckHash);
 
@@ -40547,13 +40733,21 @@
     // (fwmc-trainer-hidden-v1); Verlauf und Fortschritt behalten sie. Nur
     // Verschicken nimmt sie auch dort heraus (Fabian 08.10. abends).
     const hidden = new Set(readJSON(HO_HIDDEN_KEY, []));
-    const recentOwn = () => loadHistory().filter((e) => !hidden.has(e.id) && Date.now() - new Date(e.ts).getTime() < HO_KEEP_MS);
-    const kindOf = (e) => (e.tryRun ? "try" : e.client ? "client" : "own");
-    let list = clientPick || storePick ? hoClientRuns().concat(tmTryRuns(), recentOwn())
+    // Fabian 09.10. ("Safety first"): Gespeicherte Trainings can show the
+    // hidden own runs again (tag "ausgeblendet"), so they can still go along.
+    const showHid = storePick && hoShowHidden;
+    const recentOwn = () => loadHistory().filter((e) => (showHid || !hidden.has(e.id)) && Date.now() - new Date(e.ts).getTime() < HO_KEEP_MS);
+    const kindOf = (e) => (e.sent ? "sent" : e.tryRun ? "try" : e.client ? "client" : "own");
+    let list = clientPick ? hoClientRuns().concat(tmTryRuns(), recentOwn())
+      : storePick ? hoClientRuns().concat(tmTryRuns(), recentOwn(), hoSentRuns())
       : loadHistory().filter((e) => !hidden.has(e.id)).concat(tmTryRuns(), hoClientRuns()).filter((e) => new Date(e.ts).getTime() >= from);
+    const hidCount = storePick ? loadHistory().filter((e) => hidden.has(e.id) && Date.now() - new Date(e.ts).getTime() < HO_KEEP_MS).length : 0;
+    $("handoverHiddenBtn").hidden = !hidCount || (hoKind !== "all" && hoKind !== "own");
+    $("handoverHiddenBtn").textContent = hoShowHidden ? "Ausgeblendete wieder verbergen" : `Ausgeblendete zeigen (${hidCount})`;
     if (storePick && hoKind !== "all") list = list.filter((e) => kindOf(e) === hoKind);
-    list.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    list.sort((a, b) => (a.sent ? 1 : 0) - (b.sent ? 1 : 0) || new Date(b.ts) - new Date(a.ts));
     hoRangeIds = list.map((e) => e.id);
+    const isHid = (e) => kindOf(e) === "own" && hidden.has(e.id);
     // Zeitfenster: liegen Kunden-Trainings darin, sind nur die des letzten
     // Kunden-Trainings angehakt (nie deine eigenen), sonst deine eigenen.
     const lastClient = Math.max(0, ...list.filter((e) => kindOf(e) === "client").map((e) => e.client));
@@ -40570,7 +40764,7 @@
     });
     const clr = $("handoverClearBtn");
     clr.hidden = !storePick || !list.length;
-    clr.textContent = { all: "Alles löschen", client: "Alle Kunden-Trainings löschen", try: "Alle Test-Trainings löschen", own: "Alle eigenen löschen" }[hoKind];
+    clr.textContent = { all: "Alles löschen", client: "Alle Kunden-Trainings löschen", try: "Alle Test-Trainings löschen", own: "Alle eigenen löschen", sent: "Alle verschickten löschen" }[hoKind];
     // Fabian 09.10.: say plainly that client trainings still wait for the handover.
     const waiting = storePick ? hoClientRuns().length : hoLeftovers().length;
     $("handoverWaitNote").hidden = !waiting || clientPick;
@@ -40578,7 +40772,7 @@
     $("handoverWaitBtn").hidden = !storePick || hoKind === "client";
     $("handoverPickTitle").textContent = storePick ? "Gespeicherte Trainings" : clientPick ? "Kunden-Training übergeben" : "An Kunden übergeben";
     $("handoverPickSub").textContent = storePick
-      ? "Alles der letzten 14 Tage auf diesem Gerät. Hake an, was du übergeben oder löschen willst. Nach links wischen löscht ein einzelnes Training."
+      ? "Alles der letzten 14 Tage auf diesem Gerät, Verschicktes 21 Tage. Hake an, was du übergeben oder löschen willst. Nach links wischen löscht ein einzelnes Training."
       : clientPick
       ? "Angehakt ist dieses Kunden-Training. Test-Trainings, eigene und Liegengebliebenes von früher kannst du dazunehmen oder löschen."
       : "Welche Trainings bekommt dein Kunde? Wähle den Zeitraum und nimm einzelne Trainings heraus, die nicht zu ihm gehören.";
@@ -40592,7 +40786,7 @@
     });
     const ul = $("handoverList");
     ul.innerHTML = list.length ? list.map((e) => `<li><label class="checkbox-row tap-row handover-check"><input type="checkbox" data-ho-id="${esc(e.id)}"${hoChecked.has(e.id) ? " checked" : ""}>
-        <span class="handover-check-text"><span class="h-title">${esc(e.title)}${hoTag(e, kindOf(e), clientPick, storePick)}</span><span class="h-meta">${hoWhen(e.ts)}${e.seconds ? " · " + fmtMinutes(e.seconds) : ""}${e.aborted ? " · abgebrochen" : ""}</span></span></label></li>`).join("")
+        <span class="handover-check-text"><span class="h-title">${esc(e.title)}${hoTag(e, kindOf(e), clientPick, storePick)}${isHid(e) ? '<span class="h-tag tm-tag-hidden">ausgeblendet</span>' : ""}</span><span class="h-meta">${hoWhen(e.ts)}${e.sent ? " · verschickt " + hoWhen(new Date(e.sent).toISOString()) : ""}${e.seconds ? " · " + fmtMinutes(e.seconds) : ""}${e.aborted ? " · abgebrochen" : ""}</span></span></label></li>`).join("")
       : `<li class="history-empty">${clientPick || storePick ? "Hier liegt nichts mehr." : "In diesem Zeitraum gibt es kein Training. Wähle einen früheren Zeitpunkt."}</li>`;
     ul.querySelectorAll("input[data-ho-id]").forEach((cb) => cb.addEventListener("change", () => {
       if (cb.checked) hoChecked.add(cb.dataset.hoId); else hoChecked.delete(cb.dataset.hoId);
@@ -40601,8 +40795,10 @@
     hoSyncGo();
   }
   function hoTag(e, kind, clientPick, storePick) {
+    if (kind === "sent") return `<span class="h-tag tm-tag-sent">verschickt${e.tag ? " · " + esc(e.tag) : ""}</span>`;
     if (kind === "try") return '<span class="h-tag tm-tag-try">Test</span>';
-    if (kind === "client") return clientPick && e.client !== hoPickClient ? '<span class="h-tag">früher</span>' : clientPick ? "" : '<span class="h-tag tm-tag-client">Kunde</span>';
+    const tg = e.tag ? " · " + esc(e.tag) : "";
+    if (kind === "client") return clientPick && e.client !== hoPickClient ? `<span class="h-tag">früher${tg}</span>` : clientPick ? (tg ? `<span class="h-tag tm-tag-client">${esc(e.tag)}</span>` : "") : `<span class="h-tag tm-tag-client">Kunde${tg}</span>`;
     return clientPick || storePick ? '<span class="h-tag tm-tag-own">Eigenes</span>' : "";
   }
   function hoSelectedIds() { return hoRangeIds.filter((id) => hoChecked.has(id)); }
@@ -40614,7 +40810,8 @@
     $("handoverDeleteBtn").disabled = n === 0;
   }
   let hoPick = "range"; // "range" (Zeitfenster) | "client" (nach einem Kunden-Training) | "store" (Übersicht)
-  let hoKind = "all"; // Übersicht-Filter: all | client | try | own
+  let hoKind = "all"; // Übersicht-Filter: all | client | try | own | sent
+  let hoShowHidden = false; // Übersicht: ausgeblendete eigene zeigen
   let hoPickClient = 0; // start of the Kunden-Training whose runs are ticked
   function hoOpenClientPick(start) {
     hoPick = "client";
@@ -40625,6 +40822,7 @@
   function hoOpenStore() {
     hoPick = "store";
     hoKind = "all";
+    hoShowHidden = false;
     hoRenderPick(true);
     showScreen("handoverScreen");
   }
@@ -40632,8 +40830,13 @@
     hoKind = b.dataset.hoKind;
     hoRenderPick(true);
   }));
+  $("handoverHiddenBtn").addEventListener("click", () => {
+    hoShowHidden = !hoShowHidden;
+    hoRenderPick(false);
+  });
   function hoAskDelete(ids, title) {
-    const ownIds = new Set(loadHistory().map((e) => e.id));
+    const sentIds = new Set(hoSentRuns().map((e) => e.id));
+    const ownIds = new Set(loadHistory().map((e) => e.id).filter((id) => !sentIds.has(id)));
     const own = ids.filter((id) => ownIds.has(id)), other = ids.filter((id) => !ownIds.has(id));
     const text = !own.length ? "Sie sind danach auf diesem Gerät weg und lassen sich nicht mehr übergeben."
       : !other.length ? "Eigene Trainings verschwinden nur aus dieser Liste. In deinem Verlauf und Fortschritt bleiben sie."
@@ -40705,7 +40908,8 @@
     return hoQrLib;
   }
   function hoEntriesFor(ids, source) {
-    const all = loadHistory().concat(hoClientRuns(), tmTryRuns());
+    const seen = new Set();
+    const all = loadHistory().concat(hoClientRuns(), tmTryRuns(), hoSentRuns()).filter((e) => !seen.has(e.id) && seen.add(e.id));
     return all.filter((e) => ids.includes(e.id));
   }
   async function hoStartQr(ids, source, meta) {
@@ -40764,6 +40968,8 @@
     if (hoQr) { hoRenderPick(false); showScreen("handoverScreen"); } else showScreen(hoHomeId);
   });
   function hoDeleteEverywhere(ids) {
+    const sr = hoSentRuns();
+    if (sr.some((e) => ids.includes(e.id))) writeJSON(HO_SENT_KEY, sr.filter((e) => !ids.includes(e.id)));
     const cl = hoClientRuns();
     if (cl.some((e) => ids.includes(e.id))) writeJSON(HO_RUNS_KEY, cl.filter((e) => !ids.includes(e.id)));
     hoDeleteFromHistory(ids);
@@ -40799,11 +41005,13 @@
     const q = hoQr;
     hoQr = null;
     if (!q) { showScreen(hoHomeId); return; }
+    const sentEntries = hoEntriesFor(q.ids, q.source);
     if (q.source === "client") {
       hoDeleteEverywhere(q.ids);
+      hoMarkSent(sentEntries);
       hoRenderProgressGroup();
       showScreen(hoHomeId);
-      showToast(`Übergeben. ${q.n === 1 ? "Das Kunden-Training ist" : "Die Kunden-Trainings sind"} von deinem Gerät gelöscht.`);
+      showToast(`Übergeben. Unter „Gespeicherte Trainings“ ${q.n === 1 ? "bleibt es" : "bleiben sie"} noch 21 Tage als „verschickt“.`);
       return;
     }
     showScreen(hoHomeId);
@@ -40811,8 +41019,9 @@
     // aus deinem Verlauf und Fortschritt.
     const n = q.ids.length;
     hoDeleteEverywhere(q.ids);
+    hoMarkSent(sentEntries);
     hoRefreshViews();
-    showToast(`Übergeben. ${n === 1 ? "Das Training ist" : `Die ${n} Trainings sind`} aus deinem Verlauf entfernt.`);
+    showToast(`Übergeben. ${n === 1 ? "Es ist" : `Die ${n} sind`} aus deinem Verlauf entfernt und bleiben 21 Tage als „verschickt“ abrufbar.`);
   });
 
   // ---- Kunden-Training ----
@@ -40862,7 +41071,33 @@
     hoSyncStrip();
     hoRenderProgressGroup();
     showToast("Kunden-Training läuft. Was jetzt trainiert wird, zählt nicht für dich.");
+    hoAskTag();
   }
+  // Kürzel pro Kunden-Training (Fabian 09.10.): optional, max. 4 Zeichen,
+  // only on this device (never in the QR payload), shown in the lists.
+  function hoAskTag() {
+    const s = hoSession();
+    if (!s) return;
+    if (navigator.webdriver && !readJSON("fwmc-test-clienttag", false)) return; // automated browsers: only on request
+    $("clientTagInput").value = s.tag || "";
+    $("clientTagSheet").hidden = false;
+    setTimeout(() => $("clientTagInput").focus({ preventScroll: true }), 60);
+  }
+  function hoSetTag(v) {
+    $("clientTagSheet").hidden = true;
+    const s = hoSession();
+    if (!s) return;
+    const tag = String(v || "").replace(/\s+/g, "").slice(0, 4);
+    if (tag) s.tag = tag; else delete s.tag;
+    writeJSON(HO_SESSION_KEY, s);
+    const l = hoClientRuns();
+    if (l.some((e) => e.client === s.start)) writeJSON(HO_RUNS_KEY, l.map((e) => (e.client === s.start ? (tag ? { ...e, tag } : (({ tag: _t, ...r }) => r)(e)) : e)));
+    hoSyncStrip();
+  }
+  $("clientTagOkBtn").addEventListener("click", () => hoSetTag($("clientTagInput").value));
+  $("clientTagSkipBtn").addEventListener("click", () => hoSetTag(""));
+  $("clientTagInput").addEventListener("keydown", (e) => { if (e.key === "Enter") hoSetTag($("clientTagInput").value); });
+  $("clientTagSheet").addEventListener("click", (e) => { if (e.target === $("clientTagSheet")) hoSetTag($("clientTagInput").value); });
   function hoEndClientRun() {
     const s = hoSession();
     if (!s) return;
@@ -41016,6 +41251,7 @@
         const msg = resumed ? "Das Kunden-Training läuft weiter." : "Kunden-Training läuft. Was jetzt trainiert wird, zählt nicht für dich.";
         if (hoReloadIfNeeded({ toast: msg })) return;
         hoSyncStrip(); hoRenderProgressGroup(); showToast(msg);
+        if (!resumed) hoAskTag();
         return;
       }
       // "Mein Training" during a Kunden-Training: the client run's end reloads once for both.
