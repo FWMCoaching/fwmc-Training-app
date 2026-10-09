@@ -39089,7 +39089,7 @@
   // Every fwmc- key is sorted in tests/speicher_register.json (restore / keep /
   // device); a new key that is not listed there fails speicher_register_0910_test.
   // so a client's runs never set this device's bests or "Weitermachen".
-  var HO_SNAP_RE = /^fwmc-(.*-best-v1|resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1|.*-prefs-v1|master-v1|webapp-v3|movement-v1|breath-v1|cardio-v1|cardio-addon-v1|wimhof-v1|workout-circuit-v1|workout-reps-builder-v1|workout-reps-progress-v1|workout-sound-v1|addon-v1|nat-mode-v1|signal-colors-v1|cue-overrides-v1|cvd-overrides-v1|soft-overrides-v1|anaglyph-v1|atempause-v1|plan-v1|plan-check-v1|code-history-v1|trainer-programs-v1|free-trainer-v1|coach-message-seen-v1|neuro-unlocked-v1|features-v1|events-v1|free-blocks-v1|notes-v1|ton-current-v1|ton-seq-v1|week-intent-v1|gear-v1|reminders-v1|name-v1|start-v1|progress-v1|workout-custom-v1|fix-v1)$/;
+  var HO_SNAP_RE = /^fwmc-(.*-best-v1|resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1|.*-prefs-v1|master-v1|webapp-v3|movement-v1|breath-v1|cardio-v1|cardio-addon-v1|wimhof-v1|workout-circuit-v1|workout-reps-builder-v1|workout-reps-progress-v1|workout-sound-v1|addon-v1|nat-mode-v1|signal-colors-v1|cue-overrides-v1|cvd-overrides-v1|soft-overrides-v1|anaglyph-v1|atempause-v1|plan-v1|plan-check-v1|code-history-v1|trainer-programs-v1|free-trainer-v1|coach-message-seen-v1|neuro-unlocked-v1|features-v1|events-v1|free-blocks-v1|notes-v1|ton-current-v1|ton-seq-v1|week-intent-v1|gear-v1|reminders-v1|name-v1|start-v1|progress-v1|workout-custom-v1|fix-v1|trainer-settings-v1)$/;
   // Einstellungen (Fabian 09.10.): what the trainer sets up for a client or
   // while trying something out (levels, tempo, colours, a client's plan code
   // ...) is put back afterwards too. Saved presets stay. Those keys live in
@@ -39113,6 +39113,7 @@
   function hoAddClientRun(item) {
     const s = hoSession();
     item.client = s ? s.start : 1;
+    hoAttachExtras(item);
     const l = hoClientRuns();
     l.unshift(item);
     writeJSON(HO_RUNS_KEY, l.slice(0, 200));
@@ -39159,7 +39160,7 @@
     return a;
   }
   async function hoEncode(entries) {
-    const bytes = new TextEncoder().encode(JSON.stringify({ v: 1, e: entries.map(hoPack) }));
+    const bytes = new TextEncoder().encode(JSON.stringify({ v: 1, e: entries.map(hoPack), ...hoExtrasFor(entries) }));
     if (typeof CompressionStream === "function") {
       try { return "z" + hoB64u(await hoStream(bytes, CompressionStream)); } catch (e) { /* plain below */ }
     }
@@ -39189,6 +39190,7 @@
     if (!obj || obj.v !== 1 || !Array.isArray(obj.e) || !obj.e.length || obj.e.length > 200) throw new Error("shape");
     const out = obj.e.map(hoUnpack);
     if (out.some((x) => !x)) throw new Error("entry");
+    out.extra = hoCheckExtras(obj); // bests/settings: anything odd is dropped, never the runs
     return out;
   }
   function hoBaseUrl() {
@@ -39270,6 +39272,151 @@
     }
     return added;
   }
+  // ---- Bestwerte + Einstellungen vom Trainer (Fabian 09.10.: "seine Übungen
+  // sind seine Übungen"; "Vorschlag gut") ----
+  // A Kunden-Training starts with empty best stores (the trainer's own come
+  // back with the snapshot), so each client run can carry the client's own
+  // session bests (`bs`) and the settings it was played with (`ps`). The QR
+  // payload adds {b: merged bests, s: latest settings per exercise, d:
+  // "phone"|"tablet"}. On the client's phone bests merge upwards (all four
+  // are "higher is better"); settings are offered per exercise with one
+  // question. Size only travels between devices of the same kind; volume and
+  // colours never. Applied settings get the note "von deinem Trainer
+  // übernommen" on the ready screen (fwmc-trainer-settings-v1).
+  const HO_TRAINER_SET_KEY = "fwmc-trainer-settings-v1"; // {remember: "2026-10-09", ...}
+  const HO_BEST_KEYS = { remember: "fwmc-remember-best-v1", blitz: "fwmc-blitz-best-v1", flash: "fwmc-flash-best-v1", mot: "fwmc-mot-best-v1" };
+  const HO_SETTINGS = {
+    remember: { label: "Positionen merken", obj: () => rememberPrefs, save: () => { saveRememberPrefsToStorage(); loadRememberPrefs(); },
+      fields: ["revealBaseS", "revealStepS", "errorMode", "trainingStart", "trainingProgress", "trainingPositionMode"], size: ["markerScale"] },
+    blitz: { label: "Blitz-Raster", obj: () => blitzPrefs, save: () => { saveBlitzPrefsToStorage(); loadBlitzPrefs(); },
+      fields: ["flashS", "errorMode", "gridSize", "zones", "startCount"], size: [] },
+    flash: { label: "Flash-Speicher-Test", obj: () => flashPrefs, save: () => { saveFlashPrefsToStorage(); loadFlashPrefs(); },
+      fields: ["kind", "stimulusS", "intervalS", "errorMode", "axes", "useZones", "zones", "constantCount", "constantRounds", "startCount", "repsPerLevel", "trainingStart", "trainingProgress"], size: ["charScale"] },
+    mot: { label: "Objektverfolgung (MOT)", obj: () => motPrefs, save: () => { saveMotPrefsToStorage(); loadMotPrefs(); },
+      fields: ["speed", "trackS", "highlightS", "errorMode", "objectCount", "targetCount", "growStartObjects", "growStartTargets", "trainingObjects", "trainingTargets", "trainingSpeedStep", "trainingProgress"], size: ["objScale"] },
+    balance: { label: "Gleichgewicht", obj: () => balancePrefs, save: () => { normalizeBalancePrefs(balancePrefs); saveBalancePrefsToStorage(); },
+      fields: ["mode", "sticks", "letters", "singleS", "letterCount", "metro", "bpm", "timing", "setS", "sets", "restS", "stance", "content", "wordList", "wordEvery", "wordRead"], size: ["size", "lengthPct", "widthF", "fontF"] },
+  };
+  function hoDeviceKind() { try { return Math.min(screen.width, screen.height) >= 600 ? "tablet" : "phone"; } catch (e) { return "phone"; } }
+  function hoClearBests() {
+    Object.values(HO_BEST_KEYS).forEach((k) => { try { localStorage.removeItem(k); } catch (e) { /* private mode */ } });
+  }
+  function hoAttachExtras(item) {
+    const k = item.kind;
+    if (HO_BEST_KEYS[k]) { const b = readJSON(HO_BEST_KEYS[k], null); if (b && typeof b === "object") item.bs = b; }
+    const def = HO_SETTINGS[k];
+    if (def) {
+      const o = def.obj(), ps = {};
+      def.fields.concat(def.size).forEach((f) => { if (o[f] !== undefined) ps[f] = JSON.parse(JSON.stringify(o[f])); });
+      item.ps = ps;
+      item.dk = hoDeviceKind();
+    }
+  }
+  function hoMaxMerge(a, b) {
+    if (typeof b === "number") return typeof a === "number" ? Math.max(a, b) : b;
+    if (!b || typeof b !== "object") return a;
+    const out = a && typeof a === "object" && !Array.isArray(a) ? { ...a } : {};
+    Object.keys(b).forEach((k) => { out[k] = hoMaxMerge(out[k], b[k]); });
+    return out;
+  }
+  function hoExtrasFor(entries) {
+    const b = {}, s = {};
+    let d = null;
+    entries.slice().sort((x, y) => new Date(x.ts) - new Date(y.ts)).forEach((e) => {
+      if (e.bs && HO_BEST_KEYS[e.kind]) b[e.kind] = hoMaxMerge(b[e.kind], e.bs);
+      if (e.ps && HO_SETTINGS[e.kind]) { s[e.kind] = e.ps; d = e.dk || d; }
+    });
+    const out = {};
+    if (Object.keys(b).length) out.b = b;
+    if (Object.keys(s).length) { out.s = s; out.d = d || hoDeviceKind(); }
+    return out;
+  }
+  // Untrusted input: only known exercises, known fields, the same type as
+  // the client's own value, small numbers and short strings.
+  function hoBestOk(v, depth) {
+    if (typeof v === "number") return isFinite(v) && v >= 0 && v <= 1000;
+    if (!v || typeof v !== "object" || Array.isArray(v) || depth > 2) return false;
+    const ks = Object.keys(v);
+    return ks.length <= 30 && ks.every((k) => /^[A-Za-z0-9_-]{1,24}$/.test(k) && hoBestOk(v[k], depth + 1));
+  }
+  function hoValOk(mine, v) {
+    if (Array.isArray(mine)) return Array.isArray(v) && v.length <= 20 && v.every((x) => typeof x === "string" && x.length <= 24);
+    if (typeof mine === "number") return typeof v === "number" && isFinite(v) && Math.abs(v) <= 1000;
+    if (typeof mine === "boolean") return typeof v === "boolean";
+    if (typeof mine === "string") return typeof v === "string" && v.length <= 24;
+    return false;
+  }
+  function hoCheckExtras(obj) {
+    const out = {};
+    if (obj.b && typeof obj.b === "object") {
+      const b = {};
+      Object.keys(obj.b).forEach((k) => { if (HO_BEST_KEYS[k] && hoBestOk(obj.b[k], 0)) b[k] = obj.b[k]; });
+      if (Object.keys(b).length) out.b = b;
+    }
+    if (obj.s && typeof obj.s === "object") {
+      const s = {};
+      Object.keys(obj.s).forEach((k) => {
+        const def = HO_SETTINGS[k], v = obj.s[k];
+        if (!def || !v || typeof v !== "object") return;
+        const o = def.obj(), ps = {};
+        def.fields.concat(def.size).forEach((f) => { if (f in v && hoValOk(o[f], v[f])) ps[f] = v[f]; });
+        if (Object.keys(ps).length) s[k] = ps;
+      });
+      if (Object.keys(s).length) { out.s = s; out.d = obj.d === "tablet" ? "tablet" : "phone"; }
+    }
+    return out;
+  }
+  function hoMergeBests(b) {
+    if (!b) return 0;
+    let n = 0;
+    Object.keys(b).forEach((k) => {
+      const key = HO_BEST_KEYS[k];
+      const mine = readJSON(key, {}) || {};
+      const merged = hoMaxMerge(mine, b[k]);
+      if (JSON.stringify(merged) !== JSON.stringify(mine)) { writeJSON(key, merged); n++; }
+    });
+    return n;
+  }
+  function hoAskSettings(s, d) {
+    const kinds = Object.keys(s || {});
+    if (!kinds.length) return;
+    const same = d === hoDeviceKind();
+    const where = (k) => (k === "tablet" ? "einem Tablet" : "einem Handy");
+    const next = (i) => {
+      if (i >= kinds.length) return;
+      const k = kinds[i], def = HO_SETTINGS[k];
+      const hasSize = def.size.some((f) => f in s[k]);
+      const sizeNote = hasSize && !same ? ` Dein Trainer hat auf ${where(d)} trainiert, Größen können auf deinem Gerät anders wirken. Die Größe bleibt deshalb bei dir.` : "";
+      confirmDialog(`„${def.label}“: Möchtest du mit den Einstellungen deines Trainers weitertrainieren (Tempo, Stufe, Anzahl, Modus)? Deine bisherigen Einstellungen für diese Übung werden dabei ersetzt.${sizeNote}`, () => {
+        const o = def.obj();
+        Object.keys(s[k]).forEach((f) => { if (def.size.includes(f) && !same) return; o[f] = JSON.parse(JSON.stringify(s[k][f])); });
+        def.save();
+        const marks = readJSON(HO_TRAINER_SET_KEY, {}) || {};
+        marks[k] = todayStr();
+        writeJSON(HO_TRAINER_SET_KEY, marks);
+        hoTrainerSetNotes();
+        showToast(`Übernommen: Einstellungen von deinem Trainer für ${def.label}.`);
+        setTimeout(() => next(i + 1), 350);
+      }, { title: "Einstellungen übernehmen?", yes: "Übernehmen", no: "Meine behalten", onNo: () => setTimeout(() => next(i + 1), 350) });
+    };
+    setTimeout(() => next(0), 400);
+  }
+  // "Von deinem Trainer übernommen" under the best line of the ready screens.
+  function hoTrainerSetNotes() {
+    const marks = readJSON(HO_TRAINER_SET_KEY, {}) || {};
+    [["remember", ["rememberReadyBestHint", "rememberTrainingBestHint"]], ["blitz", ["blitzReadyBestHint"]], ["flash", ["flashReadyBestHint", "flashTrainingBestHint"]],
+      ["mot", ["motReadyBestHint", "motTrainingBestHint"]], ["balance", ["balanceReadyDesc"]]].forEach(([k, ids]) => {
+      ids.forEach((id) => {
+        const host = $(id);
+        if (!host) return;
+        let n = host.parentNode.querySelector(`.trainer-set-note[data-for="${id}"]`);
+        if (!marks[k]) { if (n) n.remove(); return; }
+        if (!n) { n = document.createElement("p"); n.className = "group-help trainer-set-note"; n.dataset.for = id; host.after(n); }
+        n.textContent = `Einstellungen von deinem Trainer übernommen (${shortDate(marks[k])}). Du kannst sie jederzeit ändern.`;
+      });
+    });
+  }
+  hoTrainerSetNotes();
   function hoRefreshViews() {
     renderHistory();
     if (!els.todayHome.hidden) renderToday();
@@ -39317,7 +39464,9 @@
   function hoShowImport(entries, data, fromPaste) {
     hoPendingImport = { entries, data };
     $("handoverImportTitle").textContent = `${hoCount(entries.length)} von deinem Trainer übernehmen?`;
-    $("handoverImportText").textContent = "Sie kommen in deinen Verlauf und zählen für deinen Fortschritt.";
+    const ex = entries.extra || {};
+    $("handoverImportText").textContent = "Sie kommen in deinen Verlauf und zählen für deinen Fortschritt" + (ex.b ? " und deine Bestleistungen" : "") + "." +
+      (ex.s ? " Danach fragt die App, ob du mit den Einstellungen deines Trainers weitertrainieren möchtest." : "");
     const ul = $("handoverImportList");
     ul.hidden = false;
     ul.innerHTML = entries.map((x) => `<li><span class="h-title">${esc(x.title)}</span><span class="h-meta">${hoWhen(x.t * 1000)}${x.seconds ? " · " + fmtMinutes(x.seconds) : ""}</span></li>`).join("");
@@ -39363,7 +39512,10 @@
     hoCloseImport();
     if (!p) return;
     const n = hoImport(p.entries);
-    showToast(n ? `${hoCount(n)} übernommen.` : "Diese Trainings sind schon in deinem Verlauf.");
+    const ex = p.entries.extra || {};
+    const nb = hoMergeBests(ex.b);
+    showToast(n ? `${hoCount(n)} übernommen.${nb ? " Deine Bestleistungen sind aktualisiert." : ""}` : nb ? "Deine Bestleistungen sind aktualisiert." : "Diese Trainings sind schon in deinem Verlauf.");
+    hoAskSettings(ex.s, ex.d);
   });
   $("handoverImportNoBtn").addEventListener("click", hoCloseImport);
   $("handoverImportSheet").addEventListener("click", (e) => { if (e.target === e.currentTarget) hoCloseImport(); });
@@ -39894,6 +40046,7 @@
     if (hoSession()) return;
     writeJSON(HO_SESSION_KEY, { start: Date.now(), snap: hoSnapshot() });
     hoClearResume();
+    hoClearBests();
     hoSyncStrip();
     hoRenderProgressGroup();
     showToast("Kunden-Training läuft. Was jetzt trainiert wird, zählt nicht für dich.");
@@ -40047,7 +40200,7 @@
         // start the session from the restored state, reload once at the end.
         const resumed = !!hoSession();
         tmEndTry(false, "", true);
-        if (!resumed) { writeJSON(HO_SESSION_KEY, { start: Date.now(), snap: hoSnapshot() }); hoClearResume(); }
+        if (!resumed) { writeJSON(HO_SESSION_KEY, { start: Date.now(), snap: hoSnapshot() }); hoClearResume(); hoClearBests(); }
         const msg = resumed ? "Das Kunden-Training läuft weiter." : "Kunden-Training läuft. Was jetzt trainiert wird, zählt nicht für dich.";
         if (hoReloadIfNeeded({ toast: msg })) return;
         hoSyncStrip(); hoRenderProgressGroup(); showToast(msg);
