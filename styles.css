@@ -3592,3 +3592,26 @@ input[type=checkbox]{accent-color:var(--brand)}
 .break-info-dauer{margin-top:14px}
 #breakInfoSheet .today-break-mins{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 16px}
 @media (max-width:359px){.today-pair{grid-template-columns:1fr}}
+
+/* Tagesform (09.10.): half tile on Heute + 4-week strip in Fortschritt */
+.today-mood-btns{display:flex;flex-direction:column;gap:6px;width:100%;margin:8px 0 4px}
+.today-mood-btns .choice{display:flex;align-items:center;justify-content:center;min-height:44px;min-width:0;margin:0;padding:6px 8px;font-size:calc(15px * min(var(--ts,1),1.1));white-space:nowrap}
+.today-pair.single .today-mood-btns,.today-mood-wide .today-mood-btns{flex-direction:row}
+.today-pair.single .today-mood-btns .choice{flex:1 1 0}
+.today-mood-change{position:relative;z-index:1;min-height:32px;padding:0 4px;margin-left:4px;text-transform:none;letter-spacing:0;font-weight:500}
+.today-mood-week{font-size:calc(22px * var(--ts,1));white-space:nowrap}
+.today-mood-bar{width:100%;margin:2px 0 6px}
+.mood-head,.mood-grid{display:grid;grid-template-columns:repeat(7,30px);gap:10px}
+.mood-head span{font-size:calc(12px * var(--ts,1));color:var(--ink-soft);text-align:center}
+.mood-grid{margin-top:4px}
+.mood-cell{display:block;aspect-ratio:1;border-radius:50%;background:var(--surface-2);border:2px solid transparent;box-sizing:border-box}
+.mood-cell.m1{background:#9bb3bd}.mood-cell.m2{background:#5fa3b8}.mood-cell.m3{background:#007094}
+.mood-cell.trained{border-color:#2e7d4f}
+.mood-cell.future{opacity:.35}
+.mood-cell.today{outline:2px solid var(--ink-soft);outline-offset:1px}
+.mood-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:calc(13px * var(--ts,1));color:var(--ink-soft)}
+.mood-legend span{display:inline-flex;align-items:center;gap:6px}
+.mood-legend .mood-cell{width:14px;height:14px;display:inline-block}
+.mood-legend .mood-cell.trained{background:transparent}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .mood-cell.m1{background:#4e6870}:root:not([data-theme="light"]) .mood-cell.m2{background:#3f8aa3}:root:not([data-theme="light"]) .mood-cell.m3{background:#4fb3d4}:root:not([data-theme="light"]) .mood-cell.trained{border-color:#6fcf97}}
+:root[data-theme="dark"] .mood-cell.m1{background:#4e6870}:root[data-theme="dark"] .mood-cell.m2{background:#3f8aa3}:root[data-theme="dark"] .mood-cell.m3{background:#4fb3d4}:root[data-theme="dark"] .mood-cell.trained{border-color:#6fcf97}

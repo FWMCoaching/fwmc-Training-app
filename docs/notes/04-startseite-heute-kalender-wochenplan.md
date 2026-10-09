@@ -164,3 +164,16 @@ and a 30-char name on Heute.
 - `#todayAsk`: „Trainierst du mit einem Trainer?“ as one slim line until answered (only own mode, not for newcomers who get it in the main card).
 - `hasTrainerCode()`: a code-history entry whose `type` (recorded by `recordCodeUsage` since 09.10.) is not `feature-unlock`/`neuro-unlock`, or a QR-imported run (`trainer: 1`). Old entries without type count. `starterStage` uses it.
 - `#todayGoal` under the week: „Für dein Ziel: <Ziel> ›“ (tap = goal chips), swipe row without the tile's exercise, never-done first, rotating by day; compact with a trainer; hint „Für dein persönliches Training sprich mit deinem Trainer.“ / „Noch keinen Trainer?“ (`PLAN_REQUEST_URL`). `fwmc-start-v1` gains `goalAt`; after 42 days „Passt dein Ziel noch?“ (Ja renews the date). Mehr › „Dein Ziel“ (`openGoalPicker`). Nothing is written in Kunden-/Test-Modus (`starterSave`). FAQ „Woher kommen die Vorschläge auf Heute?“. Test: `tests/heute_e_0910_test.py`.
+
+## Tagesform (09.10., replaces "Neu für dich")
+Fabian 09.10.: Heute must not show exercises twice ("Zuletzt" row + tile).
+The right half tile `#todayNewTile` is now the Tagesform (`renderMoodTile`):
+"Wie fühlst du dich heute?" müde / okay / fit, stored in `fwmc-mood-v1`
+(`{ "YYYY-MM-DD": { v: 1|2|3, at } }`, ~400 days, only in "Mein Training"
+mode, never sent). Once answered the tile shows the week (same numbers as
+Fortschritt, `progressSummary().cur`) + "ändern" + "Fortschritt →".
+Fortschritt › "Deine Tagesform" (`renderMoodProgress`): 4-week dot grid
+(colour = Tagesform, green ring = trained), from 5 days on two levels one
+sentence "An „müde“-Tagen hast du in X % trainiert, an „fit“ …". Not in
+handover/QR yet (Fabian to decide). Old `newTilePick`/`bestTilePick` stay
+unused for now. Test: `tests/heute_e_0910_test.py`.

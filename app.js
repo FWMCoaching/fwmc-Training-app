@@ -3848,6 +3848,7 @@
         }).join("")
       : `<p class="group-help">In den letzten 4 Wochen noch kein Training. Leg einfach los, dann siehst du hier, wie sich dein Training auf die Bereiche verteilt.</p>`;
     els.progressAreasNote.textContent = areaRows.length ? `Zusammen ${s.areaS ? fmtMinutes(s.areaS) : "unter einer Minute"} in den letzten 4 Wochen.` : "";
+    renderMoodProgress(loadHistory());
     els.progressMilestones.innerHTML = PROGRESS_MILESTONES.map((m) =>
       `<div class="progress-milestone${s.total >= m ? " reached" : ""}"><strong>${m}</strong><span>${m === 1 ? "Training" : "Trainings"}</span></div>`).join("");
     els.progressNextText.textContent = s.next
@@ -35619,6 +35620,11 @@
   // the code card while nothing is there yet. Nothing leaves the device. ----
   const PLAN_REQUEST_URL = "https://www.fabian-westermann.de/#Kontakt"; // "Noch keinen Trainer?" (code cards, Heute)
   const STARTER_KEY = "fwmc-start-v1"; // { who: "trainer"|"allein", goal }
+  // Tagesform (Fabian 09.10.: replaces the "Neu für dich" tile so Heute never
+  // shows two exercises): { "YYYY-MM-DD": { v: 1 müde | 2 okay | 3 fit, at } },
+  // only on this device, about one year kept; Fortschritt shows it back.
+  const MOOD_KEY = "fwmc-mood-v1";
+  const MOODS = [{ v: 1, label: "müde" }, { v: 2, label: "okay" }, { v: 3, label: "fit" }];
   const openNatStarter = (ex) => () => {
     goArea("nat");
     if (natModesOn) openNatExercise(ex);
@@ -35763,24 +35769,10 @@
     const stage = starterStage(hist);
     const p = starterPrefs();
     const trainer = hasTrainerCode(hist);
-    // Half tile "Neu für dich" (never on the very first visit: the starter row is there).
+    // Half tile "Tagesform" (never on the very first visit: the starter row is there).
     const tile = $("todayNewTile");
-    let tileKey = null;
-    if (stage !== "new") {
-      tileKey = newTilePick(hist);
-      const best = tileKey ? null : bestTilePick();
-      const k = tileKey || (best && best.k);
-      if (k) {
-        const it = STARTERS[k], a = AREA_BY_KEY[it.area];
-        tile.style.setProperty("--area", `var(--area-${a.key})`);
-        tile.style.setProperty("--area-ink", `var(--area-${a.key}-ink)`);
-        tile.innerHTML = `<div class="today-main-kicker today-new-kicker">${tileKey ? "Neu für dich" : "Bestleistung"} · ${esc(a.short)}</div>
-          <h2 class="today-tile-title">${esc(it.title)}</h2>
-          <p class="today-tile-sub">${esc(tileKey ? it.desc : best.line)}</p>
-          <button class="text-link today-tile-go" type="button" data-starter="${k}">${tileKey ? "Ausprobieren" : "Los geht’s"} &rarr;</button>`;
-        tile.hidden = false;
-      } else tile.hidden = true;
-    } else tile.hidden = true;
+    const tileKey = null;
+    renderMoodTile(tile, own && stage !== "new");
     $("todayPair").classList.toggle("single", tile.hidden);
     wireStarter(tile);
     // Trainer question: stays until answered, as one slim line once there is a history.
@@ -35790,6 +35782,81 @@
       <div class="today-ask-btns"><button class="choice" type="button" data-starter-who="trainer">Mit Trainer</button><button class="choice" type="button" data-starter-who="allein">Allein</button></div>`;
     wireStarter(ask);
     renderGoalRow(hist, stage, p, trainer, tileKey, own);
+  }
+  function moodLoad() { const m = readJSON(MOOD_KEY, {}); return m && typeof m === "object" && !Array.isArray(m) ? m : {}; }
+  function moodSet(v) {
+    if (tmMode() !== "own") return;
+    const all = moodLoad(), today = todayStr(), cut = dAdd(today, -400);
+    Object.keys(all).forEach((k) => { if (k < cut) delete all[k]; });
+    all[today] = { v, at: Date.now() };
+    writeJSON(MOOD_KEY, all);
+  }
+  function moodLabel(v) { const m = MOODS.find((x) => x.v === v); return m ? m.label : ""; }
+  let moodEdit = false;
+  function renderMoodTile(tile, show) {
+    tile.hidden = !show;
+    if (!show) { tile.innerHTML = ""; return; }
+    tile.style.setProperty("--area", "var(--brand)");
+    tile.style.setProperty("--area-ink", "var(--brand)");
+    tile.classList.add("today-mood");
+    const cur = moodLoad()[todayStr()];
+    if (!cur || moodEdit) {
+      tile.classList.remove("is-set");
+      tile.innerHTML = `<div class="today-main-kicker today-new-kicker">Tagesform</div>
+        <h2 class="today-tile-title" id="todayMoodQ">Wie fühlst du dich heute?</h2>
+        <div class="today-mood-btns" role="group" aria-labelledby="todayMoodQ">${MOODS.map((m) =>
+          `<button class="choice${cur && cur.v === m.v ? " active" : ""}" type="button" data-mood="${m.v}">${m.label}</button>`).join("")}</div>`;
+      tile.querySelectorAll("[data-mood]").forEach((b) => b.addEventListener("click", () => {
+        moodSet(Number(b.dataset.mood)); moodEdit = false; renderToday();
+      }));
+      return;
+    }
+    // Answered today: the week's status instead (same numbers as Fortschritt).
+    const c = progressSummary(loadProgress()).cur;
+    const left = Math.max(0, c.goal - c.planDone);
+    const sub = c.pause ? "Diese Woche ist Pause." : !c.goal ? "diese Woche" : left ? `Trainings diese Woche. Noch ${left} bis zum Ziel.` : "Trainings diese Woche. Ziel erreicht, stark!";
+    tile.classList.add("is-set");
+    tile.innerHTML = `<div class="today-main-kicker today-new-kicker">Heute ${esc(moodLabel(cur.v))} <button class="text-link small today-mood-change" type="button" id="todayMoodChangeBtn">ändern</button></div>
+      <h2 class="today-tile-title today-mood-week">${c.goal && !c.pause ? `${c.planDone} von ${c.goal}` : `${c.n} ${c.n === 1 ? "Training" : "Trainings"}`}</h2>
+      ${c.goal && !c.pause ? `<div class="progress-bar today-mood-bar"><span style="width:${Math.min(100, Math.round((c.planDone / c.goal) * 100))}%"></span></div>` : ""}
+      <p class="today-tile-sub">${esc(sub)}</p>
+      <button class="text-link today-tile-go" type="button" id="todayMoodProgressBtn">Fortschritt &rarr;</button>`;
+    $("todayMoodChangeBtn").addEventListener("click", () => { moodEdit = true; renderToday(); });
+    $("todayMoodProgressBtn").addEventListener("click", () => showScreen("progressScreen"));
+  }
+  // Fortschritt › Tagesform: the last 4 weeks as dots, and once there is
+  // enough (5+ days on two of the three levels) one honest sentence on how
+  // often the client trained on such days. Nothing is guessed beyond that.
+  function renderMoodProgress(hist) {
+    const box = $("progressMood");
+    if (!box) return;
+    const all = moodLoad(), today = todayStr();
+    const keys = Object.keys(all).filter((k) => all[k] && MOODS.some((m) => m.v === all[k].v));
+    const grp = box.closest(".group");
+    if (grp) grp.hidden = !keys.length;
+    if (!keys.length) { box.innerHTML = ""; return; }
+    const trainedDays = new Set(hist.filter((h) => !h.aborted).map((h) => dStr(new Date(h.ts))));
+    const start = dAdd(mondayOf(today), -21);
+    const cells = [];
+    for (let i = 0; i < 28; i++) {
+      const d = dAdd(start, i), e = all[d];
+      const lab = e ? moodLabel(e.v) : "";
+      cells.push(`<span class="mood-cell${e ? " m" + e.v : ""}${trainedDays.has(d) ? " trained" : ""}${d > today ? " future" : ""}${d === today ? " today" : ""}" title="${shortDate(d)}${lab ? ": " + lab : ""}${trainedDays.has(d) ? ", trainiert" : ""}"></span>`);
+    }
+    const stats = MOODS.map((m) => {
+      const days = keys.filter((k) => all[k].v === m.v);
+      return { m, n: days.length, t: days.filter((k) => trainedDays.has(k)).length };
+    });
+    const enough = stats.filter((x) => x.n >= 5);
+    const left = 10 - keys.length;
+    const sentence = enough.length >= 2
+      ? enough.map((x, i) => `${i ? "an" : "An"} „${x.m.label}“-Tagen hast du in ${Math.round((x.t / x.n) * 100)} % trainiert`).join(", ") + "."
+      : left > 0 ? `Noch ${left} ${left === 1 ? "Tag" : "Tage"} Tagesform, dann siehst du hier, wie oft du an müden und an fitten Tagen trainierst.`
+      : "Sobald du an mehreren Tagen unterschiedlich fit bist, siehst du hier den Vergleich.";
+    box.innerHTML = `<div class="mood-head">${WD_SHORT.map((w) => `<span>${w}</span>`).join("")}</div>
+      <div class="mood-grid">${cells.join("")}</div>
+      <div class="mood-legend">${MOODS.map((m) => `<span><i class="mood-cell m${m.v}"></i>${m.label}</span>`).join("")}<span><i class="mood-cell trained"></i>trainiert</span></div>
+      <p class="group-help mood-sentence">${esc(sentence)}</p>`;
   }
   function renderGoalRow(hist, stage, p, trainer, tileKey, own) {
     const box = $("todayGoal");
@@ -39825,7 +39892,7 @@
   // Every fwmc- key is sorted in tests/speicher_register.json (restore / keep /
   // device); a new key that is not listed there fails speicher_register_0910_test.
   // so a client's runs never set this device's bests or "Weitermachen".
-  var HO_SNAP_RE = /^fwmc-(.*-best-v1|resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1|.*-prefs-v1|master-v1|webapp-v3|movement-v1|breath-v1|cardio-v1|cardio-addon-v1|wimhof-v1|workout-circuit-v1|workout-reps-builder-v1|workout-reps-progress-v1|workout-sound-v1|addon-v1|nat-mode-v1|signal-colors-v1|cue-overrides-v1|cvd-overrides-v1|soft-overrides-v1|anaglyph-v1|atempause-v1|plan-v1|plan-check-v1|code-history-v1|trainer-programs-v1|free-trainer-v1|coach-message-seen-v1|neuro-unlocked-v1|features-v1|events-v1|free-blocks-v1|notes-v1|ton-current-v1|ton-seq-v1|week-intent-v1|gear-v1|reminders-v1|name-v1|start-v1|progress-v1|workout-custom-v1|fix-v1|trainer-settings-v1)$/;
+  var HO_SNAP_RE = /^fwmc-(.*-best-v1|resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1|.*-prefs-v1|master-v1|webapp-v3|movement-v1|breath-v1|cardio-v1|cardio-addon-v1|wimhof-v1|workout-circuit-v1|workout-reps-builder-v1|workout-reps-progress-v1|workout-sound-v1|addon-v1|nat-mode-v1|signal-colors-v1|cue-overrides-v1|cvd-overrides-v1|soft-overrides-v1|anaglyph-v1|atempause-v1|plan-v1|plan-check-v1|code-history-v1|trainer-programs-v1|free-trainer-v1|coach-message-seen-v1|neuro-unlocked-v1|features-v1|events-v1|free-blocks-v1|notes-v1|ton-current-v1|ton-seq-v1|week-intent-v1|gear-v1|reminders-v1|name-v1|start-v1|progress-v1|workout-custom-v1|fix-v1|trainer-settings-v1|mood-v1)$/;
   // Einstellungen (Fabian 09.10.): what the trainer sets up for a client or
   // while trying something out (levels, tempo, colours, a client's plan code
   // ...) is put back afterwards too. Saved presets stay. Those keys live in
