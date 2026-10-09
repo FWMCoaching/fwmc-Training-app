@@ -4834,7 +4834,8 @@
         Object.keys(FIX_ADAPTERS).forEach((name) => { try { if (!fixIsOwn(FIX_ADAPTERS[name].key())) fixLoad(name); } catch (e) { /* not opened yet */ } });
       } else {
         fixWrite(ad.obj(), ad.names, f);
-        fixSetOwn(ad.key(), f);
+        // A Kombi never changes the exercise's own setting (09.10.): pause edits there count for the run only.
+        if (!(inPause && comboProgram)) fixSetOwn(ad.key(), f);
         ad.save();
         if (ad.redraw) ad.redraw();
       }
@@ -20982,6 +20983,11 @@
       breath: JSON.parse(JSON.stringify(breathPrefs)),
       movement: JSON.parse(JSON.stringify(movementPrefs)),
       wimhof: JSON.parse(JSON.stringify(wimhofSettings)),
+      // NAT engines (09.10., Fabian: background jumped to 50 % in the pause):
+      // the pause controls edit these shared objects, so a block's own
+      // values go in for the block and the client's come back at the end.
+      nat: { remember: JSON.parse(JSON.stringify(rememberPrefs)), blitz: JSON.parse(JSON.stringify(blitzPrefs)),
+        flash: JSON.parse(JSON.stringify(flashPrefs)), mot: JSON.parse(JSON.stringify(motPrefs)), balance: JSON.parse(JSON.stringify(balancePrefs)) },
     };
     if (block.domain === "wimhof") {
       // Safety first, always: even inside a combo, Wim-Hof-style breathing
@@ -21045,21 +21051,30 @@
       // snapshot is merged over the current prefs so fields added later
       // still have a value.
       const snap = (own, b) => (b.prefs ? { ...JSON.parse(JSON.stringify(own)), ...JSON.parse(JSON.stringify(b.prefs)) } : undefined);
-      startRememberGame(block.mode || "fixed", { comboDurationS: block.duration ?? 60 }, snap(rememberPrefs, block));
+      const rp = snap(rememberPrefs, block);
+      comboAdoptBg(rememberPrefs, rp, syncRememberBgUI);
+      startRememberGame(block.mode || "fixed", { comboDurationS: block.duration ?? 60 }, rp);
     } else if (block.domain === "blitz") {
       const p = block.prefs ? { ...JSON.parse(JSON.stringify(blitzPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : { ...blitzPrefs };
       p.gridSize = block.gridSize ?? p.gridSize;
       p.zones = block.zones ? block.zones.slice() : (p.zones || []).slice();
       p.startCount = block.startCount ?? p.startCount;
+      comboAdoptBg(blitzPrefs, p, syncBlitzBgUI);
       startBlitzGame({ comboDurationS: block.duration ?? 60 }, p);
     } else if (block.domain === "flash") {
       fixWrite(flashPrefs, FIX_FIELDS.std, fixGet("flash:" + (block.mode || "constant"))); // a block's own prefs snapshot wins
-      startFlashGame(block.mode || "constant", { comboDurationS: block.duration ?? 60 }, block.prefs ? { ...JSON.parse(JSON.stringify(flashPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : undefined);
+      const fp = block.prefs ? { ...JSON.parse(JSON.stringify(flashPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : undefined;
+      comboAdoptBg(flashPrefs, fp, syncFlashBgUI);
+      startFlashGame(block.mode || "constant", { comboDurationS: block.duration ?? 60 }, fp);
     } else if (block.domain === "mot") {
       fixWrite(motPrefs, FIX_FIELDS.std, fixGet("mot:" + (block.mode || "speed"))); // a block's own prefs snapshot wins
-      startMotGame(block.mode || "speed", { comboDurationS: block.duration ?? 60 }, block.prefs ? { ...JSON.parse(JSON.stringify(motPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : undefined);
+      const mp = block.prefs ? { ...JSON.parse(JSON.stringify(motPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : undefined;
+      comboAdoptBg(motPrefs, mp, syncMotBgUI);
+      startMotGame(block.mode || "speed", { comboDurationS: block.duration ?? 60 }, mp);
     } else if (block.domain === "balance") {
-      startBalanceGame(null, balanceBlockPrefs(block));
+      const bp = balanceBlockPrefs(block);
+      comboAdoptBg(balancePrefs, bp, syncBalanceBgUI);
+      startBalanceGame(null, bp);
     } else if (block.domain === "cardio") {
       cardioProgram = null;
       startStandaloneCardio(block.items.map(copyCardioItem));
@@ -21495,7 +21510,23 @@
     Object.assign(breathPrefs, comboPrefsBackup.breath);
     Object.assign(movementPrefs, comboPrefsBackup.movement);
     Object.assign(wimhofSettings, comboPrefsBackup.wimhof);
+    const nat = comboPrefsBackup.nat;
     comboPrefsBackup = null;
+    if (nat) {
+      [[rememberPrefs, nat.remember, saveRememberPrefsToStorage, syncRememberBgUI], [blitzPrefs, nat.blitz, saveBlitzPrefsToStorage, syncBlitzBgUI],
+        [flashPrefs, nat.flash, saveFlashPrefsToStorage, syncFlashBgUI], [motPrefs, nat.mot, saveMotPrefsToStorage, syncMotBgUI],
+        [balancePrefs, nat.balance, saveBalancePrefsToStorage, syncBalanceBgUI]].forEach(([obj, old, save, sync]) => {
+        Object.assign(obj, old); save(); try { sync(); } catch (e) {}
+      });
+    }
+  }
+  // The block's background goes into the shared prefs, so the pause colour
+  // picker starts from what is on screen (no 0 % -> 50 % jump) and edits
+  // the stage of this run; restoreComboPrefs() puts the client's back.
+  function comboAdoptBg(obj, p, sync) {
+    if (!p || p === obj) return;
+    ["bgColorKey", "bgIntensity", "bgCustom"].forEach((k) => { if (p[k] !== undefined) obj[k] = p[k]; });
+    try { sync(); } catch (e) {}
   }
   function finishComboProgram() {
     resumeClear();
@@ -34967,7 +34998,7 @@
     return first.concat(Object.keys(STARTERS).filter((k) => !first.includes(k)));
   }
   function starterTried(k, hist) { const it = STARTERS[k]; return !!(it && it.done && hist.some((h) => !h.aborted && it.done(h))); }
-  function rotate(list, n) { if (!list.length) return list; const i = ((n % list.length) + list.length) % list.length; return list.slice(i).concat(list.slice(0, i)); }
+  function rotList(list, n) { if (!list.length) return list; const i = ((n % list.length) + list.length) % list.length; return list.slice(i).concat(list.slice(0, i)); }
   // The never-done exercise of the tile: one of the first three of the goal's
   // order, changing by day, so the tile does not show the same thing forever.
   function newTilePick(hist) {
@@ -35039,7 +35070,7 @@
     box.classList.toggle("is-compact", compact);
     const fresh = [], tried = [];
     starterPool(p.goal).forEach((k) => { if (k !== tileKey) (starterTried(k, hist) ? tried : fresh).push(k); });
-    const keys = rotate(fresh, todayDayNum()).concat(rotate(tried, todayDayNum())).slice(0, 6);
+    const keys = rotList(fresh, todayDayNum()).concat(rotList(tried, todayDayNum())).slice(0, 6);
     const due = g && p.goalAt && dDiff(p.goalAt, todayStr()) >= GOAL_CHECK_DAYS;
     const picker = goalPickOpen ? `<div class="choice-row starter-goals today-goal-pick">${STARTER_GOALS.map((x) => `<button class="choice${x.key === p.goal ? " active" : ""}" type="button" data-starter-goal="${x.key}">${esc(x.label)}</button>`).join("")}</div>` : "";
     box.innerHTML = `<button class="today-goal-head" type="button" id="todayGoalHead" aria-expanded="${goalPickOpen}">${g ? `Für dein Ziel: ${esc(g.label)}` : "Zum Ausprobieren · Ziel wählen"} <span aria-hidden="true">›</span></button>
