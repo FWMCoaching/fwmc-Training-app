@@ -29,7 +29,7 @@ async def main():
             await pg.click(f"#{prefix}OpenBtn"); await pg.wait_for_timeout(150)
 
         await pg.goto(URL); await pg.wait_for_timeout(300)
-        print("controls injected into ready screens (26 exercises + 2 training screens):", await pg.evaluate("() => [...document.querySelectorAll('.cvd-group')].filter(g => !g.closest('.pause-overlay')).length") == 28)  # pause-sheet groups (Haken & Kreuz, 07.10.) are not ready-screen controls
+        print("controls injected into ready screens (27 exercises incl. Schulte + 2 training screens):", await pg.evaluate("() => [...document.querySelectorAll('.cvd-group')].filter(g => !g.closest('.pause-overlay')).length") == 29)  # pause-sheet groups (Haken & Kreuz, 07.10.) are not ready-screen controls
         print("off by default (no Master selection):", not await body_has("fbs-flanker") and not await body_has("cvdp-gng"))
 
         # --- Master switches everything on ---
