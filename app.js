@@ -58,6 +58,155 @@
   const FIX_COLOR_LIB = [{ key: "grau", name: "Grau", hex: DOT }, ...STROOP_COLOR_LIB];
   const FIX_COLOR_BY_KEY = Object.fromEntries(FIX_COLOR_LIB.map((c) => [c.key, c]));
 
+  // ---- Fixpunkt: ein Modul für alle Übungen (Fabian 09.10.2026) ----
+  // The Grundeinstellungen hold the standard (masterPrefs.fix: Inhalt Punkt /
+  // Kreuz / Text up to 12 characters incl. name or emoji, Farbe, Größe).
+  // Every exercise (key "vt:<id>", "flash", "mot:<mode>", "schulte:<mode>",
+  // "optodrum") follows it until the client changes the fixation point
+  // there; that change is stored for this key only in fwmc-fix-v1. "Auf
+  // Grundeinstellung zurück" drops one key, "Für alle übernehmen, auch
+  // geänderte" (Grundeinstellungen, with confirmDialog) drops them all.
+  // Engines keep their old runtime fields (state.periphFix*, prefs.fix*), so
+  // presets, Kombi snapshots and codes carry them unchanged; fixLoad() fills
+  // them from the module whenever a ready screen opens or a block starts.
+  // A new exercise: one FIX_ADAPTERS entry + a fix group (fixGroupHtml).
+  const FIX_KEY = "fwmc-fix-v1";
+  const FIX_ADAPTERS = {};
+  const FIX_TEXT_MAX = 12;
+  const FIX_KINDS = [{ key: "punkt", name: "Punkt" }, { key: "kreuz", name: "Kreuz" }, { key: "text", name: "Text" }];
+  // Standard aus (Fabian 09.10.: e.g. Optodrum), switchable per exercise.
+  const FIX_STD_OFF = /^optodrum/;
+  const FIX_FIELDS = {
+    vt: { on: "periphFixEnabled", kind: "periphFixKind", text: "periphFixChar", color: "periphFixColor", size: "periphFixSize" },
+    std: { on: "fixEnabled", kind: "fixKind", text: "fixChar", color: "fixColor", size: "fixSize" },
+  };
+  function fixNorm(f, onDefault) {
+    const o = f && typeof f === "object" ? f : {};
+    const text = String(o.text == null ? "" : o.text).replace(/\s+/g, " ").slice(0, FIX_TEXT_MAX);
+    let kind = FIX_KINDS.some((k) => k.key === o.kind) ? o.kind : (text.trim() ? "text" : "punkt");
+    if (kind === "text" && !text.trim()) kind = "punkt";
+    const size = Number(o.size);
+    return {
+      on: typeof o.on === "boolean" ? o.on : onDefault !== false,
+      kind, text,
+      color: FIX_COLOR_BY_KEY[o.color] ? o.color : "grau",
+      size: Number.isFinite(size) && size >= 0.6 && size <= 2 ? Math.round(size * 10) / 10 : 1,
+    };
+  }
+  function fixStd() {
+    let m = null;
+    try { m = masterPrefs.fix; } catch (e) { /* masterPrefs not declared yet at page load */ }
+    const f = fixNorm(m, true);
+    f.on = true;
+    return f;
+  }
+  function fixOwnAll() {
+    const v = readJSON(FIX_KEY, {});
+    return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+  }
+  function fixIsOwn(key) { return !!fixOwnAll()[key]; }
+  function fixGet(key) {
+    const own = fixOwnAll()[key];
+    if (own) return fixNorm(own, true);
+    const f = fixStd();
+    f.on = !FIX_STD_OFF.test(key);
+    return f;
+  }
+  function fixSetOwn(key, f) { const all = fixOwnAll(); all[key] = fixNorm(f, true); writeJSON(FIX_KEY, all); }
+  function fixClear(key) { const all = fixOwnAll(); delete all[key]; writeJSON(FIX_KEY, all); }
+  function fixRead(obj, names) {
+    return fixNorm({ on: obj[names.on], kind: obj[names.kind], text: obj[names.text], color: obj[names.color], size: obj[names.size] }, true);
+  }
+  function fixWrite(obj, names, f) {
+    const n = fixNorm(f, true);
+    obj[names.on] = n.on; obj[names.kind] = n.kind; obj[names.text] = n.text; obj[names.color] = n.color; obj[names.size] = n.size;
+  }
+  function fixDescribe(f) {
+    if (!f.on) return "ausgeblendet";
+    const k = f.kind === "text" ? `„${f.text.trim()}“` : FIX_KINDS.find((x) => x.key === f.kind).name;
+    return `${k} · ${(FIX_COLOR_BY_KEY[f.color] || FIX_COLOR_BY_KEY.grau).name} · ${f.size.toFixed(1).replace(".", ",")}×`;
+  }
+  // Canvas drawing, shared by every canvas engine. Text shrinks until it
+  // fits maxW (default: 60 % of the unit), so 12 characters never run off.
+  function fixDraw(c, cx, cy, unit, f, maxW) {
+    if (!f || !f.on) return;
+    const color = (FIX_COLOR_BY_KEY[f.color] || FIX_COLOR_BY_KEY.grau).hex;
+    c.save();
+    if (f.kind === "text" && f.text.trim()) {
+      const t = f.text.trim();
+      let px = Math.max(10, Math.round(unit * 0.09 * f.size));
+      c.font = `700 ${px}px Magra, sans-serif`;
+      const lim = maxW || unit * 0.6;
+      const w = c.measureText(t).width;
+      if (w > lim) { px = Math.max(10, Math.floor(px * lim / w)); c.font = `700 ${px}px Magra, sans-serif`; }
+      c.textAlign = "center";
+      c.textBaseline = "middle";
+      c.fillStyle = color;
+      c.fillText(t, cx, cy);
+    } else if (f.kind === "kreuz") {
+      const r = unit * 0.035 * f.size;
+      c.strokeStyle = color;
+      c.lineWidth = Math.max(2, unit * 0.012 * f.size);
+      c.lineCap = "round";
+      c.beginPath();
+      c.moveTo(cx - r, cy); c.lineTo(cx + r, cy);
+      c.moveTo(cx, cy - r); c.lineTo(cx, cy + r);
+      c.stroke();
+    } else {
+      c.beginPath();
+      c.fillStyle = color;
+      c.arc(cx, cy, unit * 0.03 * f.size, 0, Math.PI * 2);
+      c.fill();
+    }
+    c.restore();
+  }
+  // DOM version (Flash, Schulte): an absolutely centred element.
+  function fixRenderEl(el, f, basePx, maxW) {
+    if (!f || !f.on) { el.hidden = true; return; }
+    el.hidden = false;
+    const color = (FIX_COLOR_BY_KEY[f.color] || FIX_COLOR_BY_KEY.grau).hex;
+    el.style.background = "transparent";
+    el.style.borderRadius = "0";
+    el.style.width = "auto";
+    el.style.height = "auto";
+    el.style.whiteSpace = "nowrap";
+    if (f.kind === "text" && f.text.trim()) {
+      const t = f.text.trim();
+      let px = Math.round(28 * (basePx || 1) * f.size);
+      // ~0.6 em per character in Magra bold: shrink until it fits maxW.
+      if (maxW && t.length * px * 0.6 > maxW) px = Math.max(10, Math.floor(maxW / (t.length * 0.6)));
+      el.textContent = t;
+      el.style.fontSize = px + "px";
+      el.style.color = color;
+    } else if (f.kind === "kreuz") {
+      const size = Math.round(18 * (basePx || 1) * f.size);
+      el.textContent = "";
+      el.innerHTML = `<svg viewBox="0 0 20 20" width="${size}" height="${size}" style="display:block"><path d="M2 10H18M10 2V18" stroke="${color}" stroke-width="3.2" stroke-linecap="round" fill="none"/></svg>`;
+    } else {
+      el.textContent = "";
+      const size = Math.round(12 * (basePx || 1) * f.size);
+      el.style.width = size + "px";
+      el.style.height = size + "px";
+      el.style.background = color;
+      el.style.borderRadius = "50%";
+    }
+  }
+  // One settings group, same markup as the original VT/Flash groups (ids
+  // = prefix + ToggleRow/Options/CharInput/ColorPicker/SizeSlider/
+  // SizeValue), so every place looks the same. toggle:false = no
+  // Anzeigen/Ausblenden row (Grundeinstellungen).
+  function fixGroupHtml(prefix, label, toggle, attr) {
+    const a = attr || "data-fix-on";
+    return `<div class="group fix-group" id="${prefix}Group">` +
+      `<div class="group-label">${esc(label)}</div>` +
+      (toggle === false ? "" : `<div class="choice-row two" id="${prefix}ToggleRow"><button class="choice" ${a}="1">Anzeigen</button><button class="choice" ${a}="0">Ausblenden</button></div>`) +
+      `<div id="${prefix}Options">` +
+      `<input type="text" id="${prefix}CharInput" maxlength="${FIX_TEXT_MAX}" placeholder="Eigener Text, z. B. dein Name oder 🙂" aria-label="Text für den Fixpunkt">` +
+      `<div class="color-picker" id="${prefix}ColorPicker"></div>` +
+      `<div class="slider-row"><span class="slider-label">Größe</span><input type="range" id="${prefix}SizeSlider" min="0.6" max="2" step="0.1" aria-label="Größe des Fixpunkts"><span class="slider-value" id="${prefix}SizeValue"></span></div>` +
+      `</div></div>`;
+  }
+
   // ---- Größe + Farbe der Zahlen/Zeichen (Fabian, 2026-10-05) ----
   // Positionen merken (Kreise + Zahl), Flash-Speicher-Test (Zeichen) and MOT
   // (Objekte, no text, so size only) get the same two Feineinstellungen on
@@ -105,6 +254,7 @@
     const a = lum(hexA), b = lum(hexB);
     return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
   }
+  const LOOK_NAMES = { remember: "Positionen merken", flash: "Flash-Speicher-Test", mot: "Objektverfolgung (MOT)", balance: "Gleichgewicht" };
   const LOOK_SYNCS = { remember: [], flash: [], mot: [], balance: [] };
   function syncLook(kind) { LOOK_SYNCS[kind].forEach((fn) => fn()); }
   function initLookControls(sources) {
@@ -139,6 +289,25 @@
         buildSingleSelectPicker(picker, color.lib, (key) => { prefs[color.field] = key; save(); syncLook(kind); });
         nodes.push(colorGroup);
       }
+      // Größe/Farbe von einer anderen Übung übernehmen (Fabian 09.10.).
+      const xferWrap = document.createElement("div");
+      xferWrap.className = "group xfer-group";
+      xferWrap.appendChild(xferButton(color ? "Größe und Farbe übernehmen" : "Größe übernehmen", () => {
+        const fmt = (v) => v.toFixed(1).replace(".", ",") + "×";
+        const items = [{ label: "Auf Standard zurück", sub: "Größe 1,0×" + (color ? " · " + color.lib.find((c) => c.key === color.def).name : ""),
+          pick: () => { prefs[size.field] = Math.min(size.max, Math.max(size.min, 1)); if (color) prefs[color.field] = color.def; save(); syncLook(kind); } }];
+        Object.keys(LOOK_SPECS).filter((k) => k !== kind && sources[k]).forEach((k) => {
+          let op;
+          try { op = sources[k].prefs; } catch (e) { return; }
+          const os = LOOK_SPECS[k];
+          const v = Math.min(size.max, Math.max(size.min, op[os.size.field]));
+          const oc = color && os.color && color.lib.find((c) => c.key === op[os.color.field]);
+          items.push({ label: "Wie bei " + LOOK_NAMES[k], sub: "Größe " + fmt(v) + (oc ? " · " + oc.name : ""), swatch: oc ? oc.hex : null,
+            pick: () => { prefs[size.field] = v; if (oc) prefs[color.field] = oc.key; save(); syncLook(kind); } });
+        });
+        return items;
+      }));
+      nodes.push(xferWrap);
       LOOK_SYNCS[kind].push(() => {
         slider.value = prefs[size.field];
         sizeValue.textContent = prefs[size.field].toFixed(1).replace(".", ",") + "×";
@@ -549,32 +718,11 @@
     }
   }
 
-  // The small centre dot every VT-style exercise shows between stimuli, so
-  // the eyes have somewhere fixed to rest on. Periphere Wahrnehmung is the
-  // first exercise that lets the client swap it for their own character and
-  // change its size/colour - every other exercise keeps the plain default
-  // dot untouched.
+  // The centre fixation point every VT-style exercise shows between
+  // stimuli, so the eyes have somewhere fixed to rest on (shared Fixpunkt
+  // module, per exercise since 09.10.2026).
   function drawFixationPoint(cx, cy, unit) {
-    if (!state.periphFixEnabled) return;
-    const ex = EXERCISES[state.exercise];
-    // Every exercise with this dot can customise it now, except "Hütchen
-    // sortieren" which never shows it at all (own colour-tap mechanic).
-    const custom = ex && ex.type !== "color-tap";
-    const color = custom ? (FIX_COLOR_BY_KEY[state.periphFixColor] || FIX_COLOR_BY_KEY.grau).hex : DOT;
-    const scale = custom ? state.periphFixSize : 1;
-    const char = custom ? state.periphFixChar.trim() : "";
-    if (char) {
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.font = `700 ${Math.round(unit * 0.09 * scale)}px Magra, sans-serif`;
-      ctx.fillStyle = color;
-      ctx.fillText(char.slice(0, 3), cx, cy);
-    } else {
-      ctx.beginPath();
-      ctx.fillStyle = color;
-      ctx.arc(cx, cy, unit * 0.03 * scale, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    fixDraw(ctx, cx, cy, unit, fixRead(state, FIX_FIELDS.vt));
   }
 
   // Draws one peripheral character (used both by Periphere Wahrnehmung's own
@@ -2463,7 +2611,7 @@
     vtPauseTempoGroup: $("vtPauseTempoGroup"), vtPauseStimulusSlider: $("vtPauseStimulusSlider"), vtPauseStimulusValue: $("vtPauseStimulusValue"),
     vtPauseIntervalMinSlider: $("vtPauseIntervalMinSlider"), vtPauseIntervalMaxSlider: $("vtPauseIntervalMaxSlider"), vtPauseIntervalValue: $("vtPauseIntervalValue"),
     vtPauseBgIntensityGroup: $("vtPauseBgIntensityGroup"), vtPauseBgColorGroup: $("vtPauseBgColorGroup"),
-    vtPauseFixColorGroup: $("vtPauseFixColorGroup"), vtPauseFixSizeGroup: $("vtPauseFixSizeGroup"), vtPauseStimColorGroup: $("vtPauseStimColorGroup"),
+    periphPauseFixGroup: $("periphPauseFixGroup"), vtPauseStimColorGroup: $("vtPauseStimColorGroup"),
     durationGroup: $("durationGroup"), tempoGroup: $("tempoGroup"), advanced: $("advanced"),
     vtSavedGroup: $("vtSavedGroup"), vtSavedList: $("vtSavedList"), vtSaveBtn: $("vtSaveBtn"),
     vtSaveForm: $("vtSaveForm"), vtSaveNameInput: $("vtSaveNameInput"),
@@ -4007,7 +4155,7 @@
     stroopWeights: {},
     periphKind: "gemischt",
     periphFixEnabled: true,
-    periphFixChar: "",
+    periphFixChar: "", // + periphFixKind (punkt/kreuz/text), inferred from the text for older saves
     periphFixColor: "grau",
     periphFixSize: 1,
     periphAxes: ["horizontal", "vertikal", "diagonal"],
@@ -4058,10 +4206,7 @@
     if (!state.stroopWeights || typeof state.stroopWeights !== "object" || Array.isArray(state.stroopWeights)) state.stroopWeights = {};
     state.stroopWeights = Object.fromEntries(Object.entries(state.stroopWeights).filter(([k, v]) => STROOP_COLOR_BY_KEY[k] && [1, 2, 3].includes(v)));
     if (!["buchstaben", "zahlen", "gemischt"].includes(state.periphKind)) state.periphKind = "gemischt";
-    if (typeof state.periphFixEnabled !== "boolean") state.periphFixEnabled = true;
-    if (typeof state.periphFixChar !== "string") state.periphFixChar = "";
-    if (!FIX_COLOR_BY_KEY[state.periphFixColor]) state.periphFixColor = "grau";
-    if (typeof state.periphFixSize !== "number" || state.periphFixSize < 0.6 || state.periphFixSize > 2) state.periphFixSize = 1;
+    fixWrite(state, FIX_FIELDS.vt, fixRead(state, FIX_FIELDS.vt));
     if (!Array.isArray(state.periphAxes) || !state.periphAxes.every((a) => ["horizontal", "vertikal", "diagonal"].includes(a))) state.periphAxes = DEFAULTS.periphAxes.slice();
     if (typeof state.periphUseZones !== "boolean") state.periphUseZones = false;
     if (!Array.isArray(state.periphZones) || !state.periphZones.length || !state.periphZones.every((z) => PERIPH_ZONE_KEYS.includes(z))) state.periphZones = DEFAULTS.periphZones.slice();
@@ -4565,6 +4710,207 @@
         : "";
     };
   }
+  // ---- Einstellungen übernehmen (Fabian 09.10.2026) ----
+  // One small, discreet button per settings group ("Von anderer Übung
+  // übernehmen") opens one shared sheet: "Wie bei <Übung>" for every
+  // sibling with the same kind of setting, plus "Wie in den
+  // Grundeinstellungen" where the group has a standard there. Used by
+  // Hintergrund, Fixpunkt and Größe/Farbe; a new group only builds its
+  // item list (label, optional swatch/sub line, pick()).
+  let xferReturn = null, xferWired = false;
+  function closeXfer() {
+    $("xferSheet").hidden = true;
+    if (xferReturn && document.body.contains(xferReturn)) xferReturn.focus({ preventScroll: true });
+    xferReturn = null;
+  }
+  function openXfer(title, items, from) {
+    const sheet = $("xferSheet");
+    if (!xferWired) {
+      xferWired = true;
+      sheet.addEventListener("click", (e) => { if (e.target === sheet) closeXfer(); });
+      sheet.addEventListener("keydown", (e) => { if (e.key === "Escape") closeXfer(); else trapTabKey(sheet, e); });
+    }
+    $("xferTitle").textContent = title;
+    const list = $("xferList");
+    list.innerHTML = "";
+    items.forEach((it) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "xfer-item";
+      if (it.swatch) {
+        const sw = document.createElement("span");
+        sw.className = "xfer-swatch";
+        sw.style.background = it.swatch;
+        b.appendChild(sw);
+      }
+      const t = document.createElement("span");
+      t.className = "xfer-text";
+      t.textContent = it.label;
+      if (it.sub) {
+        const sm = document.createElement("small");
+        sm.textContent = it.sub;
+        t.appendChild(sm);
+      }
+      b.appendChild(t);
+      b.addEventListener("click", () => { closeXfer(); it.pick(); showToast("Übernommen: " + it.label + "."); });
+      list.appendChild(b);
+    });
+    if (!items.length) {
+      const p = document.createElement("p");
+      p.className = "group-help";
+      p.textContent = "Noch keine andere Übung mit dieser Einstellung.";
+      list.appendChild(p);
+    }
+    const c = document.createElement("button");
+    c.type = "button";
+    c.className = "text-link";
+    c.textContent = "Abbrechen";
+    c.addEventListener("click", closeXfer);
+    list.appendChild(c);
+    xferReturn = from || null;
+    sheet.hidden = false;
+    focusFirstIn(sheet);
+  }
+  function xferButton(title, getItems) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "text-link small xfer-btn";
+    b.textContent = "Von anderer Übung übernehmen";
+    b.addEventListener("click", () => openXfer(title, getItems(), b));
+    return b;
+  }
+  // ---- Fixpunkt-Gruppe verdrahten (one code path for every exercise and
+  // the Grundeinstellungen). ad = FIX_ADAPTERS entry, or {name: "master",
+  // master: true}. Every change applies to the run at once (redraw) and is
+  // remembered for this exercise only.
+  const FIX_SYNCS = {};
+  function fixSync(name) { (FIX_SYNCS[name] || []).forEach((fn) => fn()); }
+  const FIX_LABELS = { flash: "Flash-Speicher-Test", optodrum: "Optodrum" };
+  function fixLabel(key) {
+    if (key.startsWith("vt:")) { const ex = EXERCISES[key.slice(3)]; return ex ? ex.title : key; }
+    if (FIX_LABELS[key]) return FIX_LABELS[key];
+    const [base, mode] = key.split(":");
+    const names = { flash: "Flash-Speicher-Test", mot: "Objektverfolgung (MOT)", schulte: "Schulte-Tabelle" };
+    const m = NAT_MODES[base] && NAT_MODES[base].modes.find((x) => x.key === mode);
+    return (names[base] || base) + (m ? " · " + m.label : "");
+  }
+  function fixLoad(name) {
+    const ad = FIX_ADAPTERS[name];
+    fixWrite(ad.obj(), ad.names, fixGet(ad.key()));
+    fixSync(name);
+  }
+  function wireFixGroup(prefix, attr, ad) {
+    const row = $(prefix + "ToggleRow"), opts = $(prefix + "Options"), input = $(prefix + "CharInput");
+    const picker = $(prefix + "ColorPicker"), slider = $(prefix + "SizeSlider"), val = $(prefix + "SizeValue");
+    const group = opts.parentElement;
+    input.maxLength = FIX_TEXT_MAX;
+    input.placeholder = "Eigener Text, z. B. dein Name oder 🙂";
+    input.setAttribute("aria-label", "Text für den Fixpunkt");
+    const kindRow = document.createElement("div");
+    kindRow.className = "choice-row three fix-kind-row";
+    kindRow.id = prefix + "KindRow";
+    FIX_KINDS.forEach((k) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "choice";
+      b.dataset.fixKind = k.key;
+      b.textContent = k.name;
+      kindRow.appendChild(b);
+    });
+    opts.insertBefore(kindRow, opts.firstChild);
+    const status = document.createElement("div");
+    status.className = "fix-status";
+    status.id = prefix + "Status";
+    if (!ad.master) group.appendChild(status);
+    let wantText = false;
+    const inPause = /Pause/.test(prefix);
+    const cur = () => (ad.master ? fixStd() : fixRead(ad.obj(), ad.names));
+    function commit(f) {
+      if (ad.master) {
+        const n = fixNorm(f, true);
+        masterPrefs.fix = { kind: n.kind, text: n.text, color: n.color, size: n.size };
+        saveMasterPrefs();
+        // Exercises without their own change follow at once.
+        Object.keys(FIX_ADAPTERS).forEach((name) => { try { if (!fixIsOwn(FIX_ADAPTERS[name].key())) fixLoad(name); } catch (e) { /* not opened yet */ } });
+      } else {
+        fixWrite(ad.obj(), ad.names, f);
+        fixSetOwn(ad.key(), f);
+        ad.save();
+        if (ad.redraw) ad.redraw();
+      }
+      fixSync(ad.name);
+    }
+    if (row) row.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+      const f = cur();
+      f.on = b.getAttribute(attr) === "1";
+      commit(f);
+    }));
+    kindRow.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+      const f = cur();
+      wantText = b.dataset.fixKind === "text" && !f.text.trim();
+      f.kind = b.dataset.fixKind;
+      commit(f);
+      if (b.dataset.fixKind === "text") input.focus({ preventScroll: true });
+    }));
+    input.addEventListener("input", () => {
+      const f = cur();
+      f.text = input.value.slice(0, FIX_TEXT_MAX);
+      f.kind = f.text.trim() ? "text" : (f.kind === "text" ? "punkt" : f.kind);
+      wantText = !f.text.trim() && document.activeElement === input && wantText;
+      commit(f);
+    });
+    buildSingleSelectPicker(picker, FIX_COLOR_LIB, (key) => { const f = cur(); f.color = key; commit(f); });
+    slider.addEventListener("input", () => { const f = cur(); f.size = Number(slider.value); commit(f); });
+    function sync() {
+      let f;
+      try { f = cur(); } catch (e) { return; } // state of a later engine not declared yet
+      if (row) row.querySelectorAll("button").forEach((b) => setActive(b, (b.getAttribute(attr) === "1") === f.on));
+      opts.hidden = !f.on;
+      const kind = wantText ? "text" : f.kind;
+      kindRow.querySelectorAll("button").forEach((b) => setActive(b, b.dataset.fixKind === kind));
+      if (document.activeElement !== input) input.value = f.text;
+      input.hidden = kind !== "text";
+      syncSingleSelectPicker(picker, f.color);
+      slider.value = f.size;
+      val.textContent = f.size.toFixed(1).replace(".", ",") + "×";
+      if (ad.master) return;
+      status.innerHTML = "";
+      if (inPause) {
+        // Pause sheets stay short: no reset/übernehmen here.
+        status.innerHTML = '<div class="group-help">Gilt sofort und bleibt für diese Übung gespeichert.</div>';
+        return;
+      }
+      const own = fixIsOwn(ad.key());
+      const line = document.createElement("div");
+      line.className = "group-help";
+      line.textContent = own ? "Eigene Einstellung für diese Übung. " : "Wie in den Grundeinstellungen. Änderst du ihn hier, gilt das nur für diese Übung.";
+      if (own) {
+        const r = document.createElement("button");
+        r.type = "button";
+        r.className = "text-link small";
+        r.textContent = "Auf Grundeinstellung zurück";
+        r.addEventListener("click", () => {
+          fixClear(ad.key());
+          fixLoad(ad.name);
+          ad.save();
+          if (ad.redraw) ad.redraw();
+        });
+        line.appendChild(r);
+      }
+      status.appendChild(line);
+      status.appendChild(xferButton("Fixpunkt übernehmen", () => {
+        const items = [{ label: "Wie in den Grundeinstellungen", sub: fixDescribe(fixStd()), swatch: (FIX_COLOR_BY_KEY[fixStd().color] || FIX_COLOR_BY_KEY.grau).hex,
+          pick: () => { fixClear(ad.key()); fixLoad(ad.name); ad.save(); if (ad.redraw) ad.redraw(); } }];
+        Object.keys(fixOwnAll()).filter((k) => k !== ad.key()).forEach((k) => {
+          const g = fixGet(k);
+          items.push({ label: "Wie bei " + fixLabel(k), sub: fixDescribe(g), swatch: g.on ? (FIX_COLOR_BY_KEY[g.color] || FIX_COLOR_BY_KEY.grau).hex : null, pick: () => commit(g) });
+        });
+        return items;
+      }));
+    }
+    (FIX_SYNCS[ad.name] = FIX_SYNCS[ad.name] || []).push(sync);
+    sync();
+  }
   function wireBgIntensityControl(store, refs, onChange, transferSelfId) {
     // bgCustom marks whether the CLIENT explicitly chose this exercise's
     // current colour/intensity (true - a real pick, a "Wie bei X"/saved-
@@ -4600,41 +4946,26 @@
     function renderTransfer() {
       (refs.transfer || []).forEach((t) => {
         t.sourceRow.innerHTML = "";
-        BG_SOURCES.filter((s) => s.id !== transferSelfId).forEach((s) => {
-          // A source whose own prefs object is declared later in the file
-          // (rememberPrefs isn't initialised yet when this first runs for
-          // the VT/Periph instance, at page-load time) throws a TDZ error -
-          // skip it for now, it'll render fine once actually opened, after
-          // every top-level const has run.
-          let v;
-          try { v = s.get(); } catch (e) { return; }
-          const hex = STROOP_COLOR_BY_KEY[v.colorKey].hex;
-          const btn = document.createElement("button");
-          btn.className = "choice";
-          btn.innerHTML = `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${hex};margin-right:6px;vertical-align:-1px"></span>Wie bei ${s.label}`;
-          btn.addEventListener("click", () => apply(v.colorKey, v.intensity));
-          t.sourceRow.appendChild(btn);
-        });
-        // One-click override back to the Master-Einstellungen default,
-        // whenever one is set - alongside the "Wie bei X" buttons above,
-        // not instead of them, so a client can always get back to the
-        // Master colour after picking a per-exercise override. Wrapped in
-        // try/catch for the same reason the BG_SOURCES loop above is:
-        // Visual's own bg picker wires up (and calls sync()/renderTransfer()
-        // immediately) at module-init time, well before masterPrefs itself
-        // is declared further down the file - a real TDZ error, not
-        // theoretical. Renders fine from the second call on (any later
-        // sync(), e.g. once the client actually opens a settings screen).
-        try {
-          if (masterPrefs.defaultBgColorKey && STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey]) {
-            const hex = STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey].hex;
-            const btn = document.createElement("button");
-            btn.className = "choice";
-            btn.innerHTML = `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${hex};margin-right:6px;vertical-align:-1px"></span>Wie in den Grundeinstellungen`;
-            btn.addEventListener("click", () => apply(masterPrefs.defaultBgColorKey, masterPrefs.defaultBgIntensity, false));
-            t.sourceRow.appendChild(btn);
-          }
-        } catch (e) {}
+        t.sourceRow.appendChild(xferButton("Hintergrund übernehmen", () => {
+          const items = [];
+          // Sources whose prefs object is declared later in the file throw a
+          // TDZ error at page-load time - skipped, fine once opened later.
+          try {
+            if (masterPrefs.defaultBgColorKey && STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey]) {
+              const c = STROOP_COLOR_BY_KEY[masterPrefs.defaultBgColorKey];
+              items.push({ label: "Wie in den Grundeinstellungen", sub: `${c.name} · ${Math.round(masterPrefs.defaultBgIntensity * 100)} %`, swatch: c.hex,
+                pick: () => apply(masterPrefs.defaultBgColorKey, masterPrefs.defaultBgIntensity, false) });
+            }
+          } catch (e) {}
+          BG_SOURCES.filter((s) => s.id !== transferSelfId).forEach((s) => {
+            let v;
+            try { v = s.get(); } catch (e) { return; }
+            const c = STROOP_COLOR_BY_KEY[v.colorKey];
+            items.push({ label: `Wie bei ${s.label}`, sub: v.intensity > 0 ? `${c.name} · ${Math.round(v.intensity * 100)} %` : "ohne Farbe", swatch: v.intensity > 0 ? c.hex : "#ffffff",
+              pick: () => apply(v.colorKey, v.intensity) });
+          });
+          return items;
+        }));
         renderPresetList(bgPresetStore, t.presetList, t.presetGroup, null,
           (p) => `${STROOP_COLOR_BY_KEY[p.colorKey].name} · ${Math.round(p.intensity * 100)} %`,
           (p) => apply(p.colorKey, p.intensity));
@@ -4715,56 +5046,14 @@
     sync();
     return sync;
   }
-  // On/off toggle for the fixation point itself - same "Anzeigen"/
-  // "Ausblenden" pattern as Flash-Speicher-Test's, added so it can be fully
-  // removed (not just recoloured/resized) for every exercise that shows it
-  // (Periphere Wahrnehmung and, since drawFixationPoint() is shared, every
-  // other VT-canvas exercise too - one shared state.periphFixEnabled, no
-  // per-exercise duplication needed).
-  document.querySelectorAll("#periphFixToggleRow [data-periph-fix]").forEach((el) => {
-    el.addEventListener("click", () => {
-      state.periphFixEnabled = el.dataset.periphFix === "1";
-      savePrefs();
-      syncPeriphFixUI();
-    });
-  });
-  buildSingleSelectPicker(els.periphFixColorPicker, FIX_COLOR_LIB, (key) => {
-    state.periphFixColor = key;
-    savePrefs();
-    syncPeriphFixUI();
-  });
-  buildSingleSelectPicker(els.periphPauseFixColorPicker, FIX_COLOR_LIB, (key) => {
-    state.periphFixColor = key;
-    savePrefs();
-    syncPeriphFixUI();
-    redrawFrozenFrame();
-  });
-  els.periphFixCharInput.addEventListener("input", () => {
-    state.periphFixChar = els.periphFixCharInput.value.slice(0, 3);
-    savePrefs();
-  });
-  els.periphFixSizeSlider.addEventListener("input", () => {
-    state.periphFixSize = Number(els.periphFixSizeSlider.value);
-    savePrefs();
-    syncPeriphFixUI();
-  });
-  els.periphPauseFixSizeSlider.addEventListener("input", () => {
-    state.periphFixSize = Number(els.periphPauseFixSizeSlider.value);
-    savePrefs();
-    syncPeriphFixUI();
-    redrawFrozenFrame();
-  });
-  function syncPeriphFixUI() {
-    document.querySelectorAll("#periphFixToggleRow [data-periph-fix]").forEach((el) => setActive(el, (el.dataset.periphFix === "1") === state.periphFixEnabled));
-    els.periphFixOptions.hidden = !state.periphFixEnabled;
-    syncSingleSelectPicker(els.periphFixColorPicker, state.periphFixColor);
-    syncSingleSelectPicker(els.periphPauseFixColorPicker, state.periphFixColor);
-    els.periphFixCharInput.value = state.periphFixChar;
-    els.periphFixSizeSlider.value = state.periphFixSize;
-    els.periphFixSizeValue.textContent = state.periphFixSize.toFixed(1).replace(".", ",") + "×";
-    els.periphPauseFixSizeSlider.value = state.periphFixSize;
-    els.periphPauseFixSizeValue.textContent = state.periphFixSize.toFixed(1).replace(".", ",") + "×";
-  }
+  // Fixpunkt (Fabian 09.10.): the shared module (wireFixGroup) drives both
+  // the Feineinstellungen and the pause sheet; the value belongs to this
+  // exercise ("vt:<id>"), see fixLoad() in openReady().
+  function vtFixApplies(ex) { return !!ex && !/^(color-tap|farbfelder|richtungskreuz|laufweg)$/.test(ex.type); }
+  FIX_ADAPTERS.vt = { name: "vt", key: () => "vt:" + state.exercise, obj: () => state, names: FIX_FIELDS.vt, save: () => savePrefs(), redraw: () => redrawFrozenFrame() };
+  wireFixGroup("periphFix", "data-periph-fix", FIX_ADAPTERS.vt);
+  wireFixGroup("periphPauseFix", "data-fix-on", FIX_ADAPTERS.vt);
+  function syncPeriphFixUI() { fixSync("vt"); }
   // Horizontal/Vertikal/Diagonal are a multi-select set, same pattern as
   // the arrow-colour picker: "Überall" is the "alle Farben" shortcut for
   // "all three at once", auto-activates once all three end up selected by
@@ -5120,6 +5409,7 @@
     const ex = EXERCISES[id];
     loadPrefs(); // drop any values a programme run left in `state`
     state.exercise = id;
+    fixLoad("vt"); // this exercise's own Fixpunkt, or the Grundeinstellungen
     savePrefs();
     els.readyTitle.textContent = ex.title;
     els.readyIcon.innerHTML = iconHtml;
@@ -5146,7 +5436,7 @@
     // The fixation-point Feineinstellung applies to every exercise with
     // this dot (i.e. everything except Hütchen sortieren), not just
     // Periphere Wahrnehmung - it was just built there first.
-    els.periphFixGroup.hidden = isConeTap || isFf || ex.type === "richtungskreuz"; // Farbfelder/Richtungskreuz: no centre dot
+    els.periphFixGroup.hidden = !vtFixApplies(ex); // Farbfelder/Richtungskreuz/Hütchen: no centre dot
     ffEls.settings.hidden = !isFf;
     $("cnFieldsGroup").hidden = ex.type !== "colornum";
     if (ex.type === "colornum") syncCnUI();
@@ -7076,6 +7366,7 @@
 
   function applyBlockToState(block) {
     state.exercise = block.exercise;
+    fixWrite(state, FIX_FIELDS.vt, fixGet("vt:" + block.exercise));
     state.duration = block.duration;
     state.stimulusS = block.stimulusS ?? 1.5;
     state.intervalMin = block.intervalMin ?? 2;
@@ -8156,7 +8447,7 @@
     const ex = EXERCISES[state.exercise] || {};
     els.vtPauseTempoGroup.hidden = ex.type === "flash-host";
     els.vtPauseBgIntensityGroup.hidden = els.vtPauseBgColorGroup.hidden = !!ex.bgIsStimulus;
-    els.vtPauseFixColorGroup.hidden = els.vtPauseFixSizeGroup.hidden = !state.periphFixEnabled || ex.type === "farbfelder";
+    els.periphPauseFixGroup.hidden = !vtFixApplies(ex);
     els.vtPauseStimColorGroup.hidden = ex.type !== "periph";
     document.getElementById("vtPauseFfFbGroup").hidden = !session.ffTap;
     vtPauseTempoAtStart = { stimulusS: state.stimulusS, intervalMin: state.intervalMin, intervalMax: state.intervalMax };
@@ -8544,9 +8835,11 @@
   })();
   function saveCueOverrides() { writeJSON(CUE_OVERRIDES_KEY, cueOverrides); }
 
-  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true, volume: 1, textSize: "normal", softStimuli: false, pauseBreath: false };
+  const masterPrefs = { cues: normalizeCueCfg(null), cuesIgnoreSilent: false, colorVision: [], restrictedLimbs: [], hearing: false, defaultBgColorKey: null, defaultBgIntensity: 0, defaultPauseS: 20, startCountdown: true, levelSuggest: true, volume: 1, textSize: "normal", softStimuli: false, pauseBreath: false, fix: { kind: "punkt", text: "", color: "grau", size: 1 } };
+  var masterFixStored = false; // fixMigrate(): was a Standard-Fixpunkt ever saved?
   function loadMasterPrefs() {
     const saved = readJSON(MASTER_PREFS_KEY, null);
+    masterFixStored = !!(saved && saved.fix);
     if (saved && typeof saved === "object") {
       Object.assign(masterPrefs, saved);
       // migrate every older single-select shape: colorVision was
@@ -8582,6 +8875,7 @@
     if (typeof masterPrefs.cuesIgnoreSilent !== "boolean") masterPrefs.cuesIgnoreSilent = false;
     if (!TEXT_SIZE_FACTORS[masterPrefs.textSize]) masterPrefs.textSize = "normal";
     masterPrefs.softStimuli = masterPrefs.softStimuli === true;
+    { const f = fixNorm(masterPrefs.fix, true); masterPrefs.fix = { kind: f.kind, text: f.text, color: f.color, size: f.size }; }
     // Persist immediately so a migrated (or just-cleaned-up) shape actually
     // lands on disk right away, rather than silently staying in the old
     // shape in storage until the client happens to touch some toggle -
@@ -10045,10 +10339,28 @@
   }
 
   let masterSettingsReturnFocus = null;
+  // ---- Standard-Fixpunkt (Fabian 09.10.2026) ----
+  wireFixGroup("masterFix", null, { name: "master", master: true });
+  function syncMasterFixInfo() {
+    const n = Object.keys(fixOwnAll()).length;
+    $("masterFixOwnInfo").textContent = n ? (n === 1 ? "1 Übung hat eine eigene Einstellung." : n + " Übungen haben eine eigene Einstellung.") : "Alle Übungen folgen diesem Standard.";
+    $("masterFixAllBtn").hidden = !n;
+    document.querySelector("#masterFixGroup .fix-all-note").hidden = !n;
+  }
+  (FIX_SYNCS.master = FIX_SYNCS.master || []).push(syncMasterFixInfo);
+  $("masterFixAllBtn").addEventListener("click", () => {
+    confirmDialog("Alle Übungen bekommen diesen Standard-Fixpunkt. Das überschreibt alle deine Änderungen in den einzelnen Übungen.", () => {
+      writeJSON(FIX_KEY, {});
+      Object.keys(FIX_ADAPTERS).forEach((name) => { try { fixLoad(name); FIX_ADAPTERS[name].save(); } catch (e) { /* not opened yet */ } });
+      fixSync("master");
+      showToast("Alle Übungen nutzen jetzt den Standard-Fixpunkt.");
+    }, { title: "Für alle übernehmen?", yes: "Überschreiben", no: "Abbrechen" });
+  });
   function openMasterSettings(section) {
     masterSettingsReturnFocus = document.activeElement;
     syncMasterCvdUI(); syncMasterLimbUI(); syncMasterHearingUI(); els.masterStartCountdownCheck.checked = masterPrefs.startCountdown !== false; $("masterLevelSuggestCheck").checked = masterPrefs.levelSuggest !== false; $("masterPauseBreathCheck").checked = masterPrefs.pauseBreath === true; syncMasterBgUI(); syncMasterPauseUI(); syncMasterVolumeUI(); renderMasterCues(); renderMasterCodeHistory(); if (remState && remState.syncUI) remState.syncUI();
     syncMasterSeeUI();
+    fixSync("master");
     syncAnaglyphMasterUI();
     gearRenderMaster();
     { const mn = $("masterNameInput"); if (mn) mn.value = getUserName(); }
@@ -13355,10 +13667,7 @@
     if (typeof flashPrefs.trainingProgress !== "boolean") flashPrefs.trainingProgress = true;
     if (!STROOP_COLOR_BY_KEY[flashPrefs.bgColorKey]) flashPrefs.bgColorKey = "gruen";
     if (typeof flashPrefs.bgIntensity !== "number" || flashPrefs.bgIntensity < 0 || flashPrefs.bgIntensity > 1) flashPrefs.bgIntensity = 0;
-    if (typeof flashPrefs.fixEnabled !== "boolean") flashPrefs.fixEnabled = true;
-    if (typeof flashPrefs.fixChar !== "string") flashPrefs.fixChar = "";
-    if (!FIX_COLOR_BY_KEY[flashPrefs.fixColor]) flashPrefs.fixColor = "grau";
-    if (typeof flashPrefs.fixSize !== "number" || flashPrefs.fixSize < 0.6 || flashPrefs.fixSize > 2) flashPrefs.fixSize = 1;
+    fixWrite(flashPrefs, FIX_FIELDS.std, fixRead(flashPrefs, FIX_FIELDS.std));
     normalizeLookPrefs("flash", flashPrefs);
   }
   function saveFlashPrefsToStorage() { writeJSON(FLASH_PREFS_KEY, flashPrefs); }
@@ -13415,49 +13724,32 @@
   // phase) as a constant reference point. Shared flashPrefs.fix* fields,
   // both ready screens carry a synced instance (same pattern as Bereich/
   // Hintergrund above).
-  document.querySelectorAll("#flashFixToggleRow [data-flash-fix], #flashTrainingFixToggleRow [data-flash-fix]").forEach((el) => {
-    el.addEventListener("click", () => {
-      flashPrefs.fixEnabled = el.dataset.flashFix === "1";
-      saveFlashPrefsToStorage();
-      syncFlashFixUI();
-    });
-  });
-  buildSingleSelectPicker(els.flashFixColorPicker, FIX_COLOR_LIB, (key) => {
-    flashPrefs.fixColor = key;
-    saveFlashPrefsToStorage();
-    syncFlashFixUI();
-  });
-  buildSingleSelectPicker(els.flashTrainingFixColorPicker, FIX_COLOR_LIB, (key) => {
-    flashPrefs.fixColor = key;
-    saveFlashPrefsToStorage();
-    syncFlashFixUI();
-  });
-  function flashFixCharInputHandler(input) {
-    flashPrefs.fixChar = input.value.slice(0, 3);
-    saveFlashPrefsToStorage();
-    if (flashState) renderFlashFixpoint();
-  }
-  els.flashFixCharInput.addEventListener("input", () => flashFixCharInputHandler(els.flashFixCharInput));
-  els.flashTrainingFixCharInput.addEventListener("input", () => flashFixCharInputHandler(els.flashTrainingFixCharInput));
-  function flashFixSizeSliderInput(slider) {
-    flashPrefs.fixSize = Number(slider.value);
-    saveFlashPrefsToStorage();
-    syncFlashFixUI();
-  }
-  els.flashFixSizeSlider.addEventListener("input", () => flashFixSizeSliderInput(els.flashFixSizeSlider));
-  els.flashTrainingFixSizeSlider.addEventListener("input", () => flashFixSizeSliderInput(els.flashTrainingFixSizeSlider));
+  // Since 09.10.2026 the shared Fixpunkt module (wireFixGroup), stored per
+  // Flash mode ("flash:<mode>"), loaded by both ready screens.
+  let flashFixMode = "constant";
+  FIX_ADAPTERS.flash = { name: "flash", key: () => "flash:" + flashFixMode, obj: () => flashPrefs, names: FIX_FIELDS.std,
+    save: () => saveFlashPrefsToStorage(), redraw: () => { if (flashState) { fixWrite(flashState, FIX_FIELDS.std, fixRead(flashPrefs, FIX_FIELDS.std)); renderFlashFixpoint(); } } };
+  wireFixGroup("flashFix", "data-flash-fix", FIX_ADAPTERS.flash);
+  wireFixGroup("flashTrainingFix", "data-flash-fix", FIX_ADAPTERS.flash);
+  wireFixGroup("flashPauseFix", "data-fix-on", FIX_ADAPTERS.flash);
+  // One-time move (09.10.2026): until now Visual Training shared one
+  // Fixpunkt for all its exercises and Flash had its own. The VT one becomes
+  // the standard in the Grundeinstellungen; a different Flash one stays
+  // Flash's own (all modes), a switched-off VT one stays off per exercise.
+  (function fixMigrate() {
+    if (readJSON(FIX_KEY, null) !== null) return;
+    if (masterFixStored) { writeJSON(FIX_KEY, {}); return; }
+    const vt = fixRead(state, FIX_FIELDS.vt);
+    masterPrefs.fix = { kind: vt.kind, text: vt.text, color: vt.color, size: vt.size };
+    saveMasterPrefs();
+    const own = {};
+    if (!vt.on) Object.keys(EXERCISES).filter((id) => vtFixApplies(EXERCISES[id])).forEach((id) => { own["vt:" + id] = vt; });
+    const fl = fixRead(flashPrefs, FIX_FIELDS.std);
+    if (JSON.stringify(fl) !== JSON.stringify({ ...vt, on: true })) ["constant", "climb", "climbRepeat", "training"].forEach((m) => { own["flash:" + m] = fl; });
+    writeJSON(FIX_KEY, own);
+  })();
   function syncFlashFixUI() {
-    [
-      [els.flashFixToggleRow, els.flashFixOptions, els.flashFixColorPicker, els.flashFixCharInput, els.flashFixSizeSlider, els.flashFixSizeValue],
-      [els.flashTrainingFixToggleRow, els.flashTrainingFixOptions, els.flashTrainingFixColorPicker, els.flashTrainingFixCharInput, els.flashTrainingFixSizeSlider, els.flashTrainingFixSizeValue],
-    ].forEach(([toggleRow, options, picker, charInput, sizeSlider, sizeValue]) => {
-      toggleRow.querySelectorAll("[data-flash-fix]").forEach((el) => setActive(el, (el.dataset.flashFix === "1") === flashPrefs.fixEnabled));
-      options.hidden = !flashPrefs.fixEnabled;
-      syncSingleSelectPicker(picker, flashPrefs.fixColor);
-      charInput.value = flashPrefs.fixChar;
-      sizeSlider.value = flashPrefs.fixSize;
-      sizeValue.textContent = flashPrefs.fixSize.toFixed(1).replace(".", ",") + "×";
-    });
+    fixSync("flash");
     if (flashState) renderFlashFixpoint();
   }
   // Mirrors Periph's drawFixationPoint(): a custom character (sized text,
@@ -13468,28 +13760,9 @@
   // flashPrefs only in the Ready-screen preview context, before flashState
   // exists.
   function renderFlashFixpoint() {
-    const el = els.flashFixpointEl;
     const src = flashState || flashPrefs;
-    if (!src.fixEnabled) { el.hidden = true; return; }
-    el.hidden = false;
-    const color = (FIX_COLOR_BY_KEY[src.fixColor] || FIX_COLOR_BY_KEY.grau).hex;
-    const char = src.fixChar.trim();
-    if (char) {
-      el.textContent = char;
-      el.style.fontSize = Math.round(28 * src.fixSize) + "px";
-      el.style.color = color;
-      el.style.background = "transparent";
-      el.style.width = "auto";
-      el.style.height = "auto";
-      el.style.borderRadius = "0";
-    } else {
-      el.textContent = "";
-      const size = Math.round(12 * src.fixSize);
-      el.style.width = size + "px";
-      el.style.height = size + "px";
-      el.style.background = color;
-      el.style.borderRadius = "50%";
-    }
+    const stage = els.flashFixpointEl.parentElement;
+    fixRenderEl(els.flashFixpointEl, fixRead(src, FIX_FIELDS.std), 1, stage ? stage.clientWidth * 0.5 : 0);
   }
 
   // ---- Zeichentyp - same three-way choice as Periphere Wahrnehmung's own
@@ -13708,6 +13981,8 @@
     syncFlashStartUI();
     syncFlashRepsUI();
     syncFlashBgUI();
+    flashFixMode = mode;
+    fixLoad("flash");
     syncFlashFixUI();
     updateFlashReadyBestHint();
     showScreen("flashReady");
@@ -13725,6 +14000,8 @@
     syncFlashFieldUI();
     syncFlashTrainingUI();
     syncFlashBgUI();
+    flashFixMode = "training";
+    fixLoad("flash");
     syncFlashFixUI();
     showScreen("flashTrainingReady");
   }
@@ -14079,7 +14356,7 @@
       sequence: [], shownIndex: 0, typed: "", phase: "flash", timer: null, comboDurationTimer: null,
       stimulusS: p.stimulusS, intervalS: p.intervalS, errorMode: p.errorMode,
       axes: p.axes.slice(), zones: p.zones.slice(), useZones: p.useZones,
-      fixEnabled: p.fixEnabled, fixChar: p.fixChar, fixColor: p.fixColor, fixSize: p.fixSize,
+      fixEnabled: p.fixEnabled, fixKind: p.fixKind, fixChar: p.fixChar, fixColor: p.fixColor, fixSize: p.fixSize,
       charScale: p.charScale || 1, charColor: p.charColor,
       trainingProgress: p.trainingProgress, startLevel: p.startCount, trainingStartLevel: p.trainingStart,
       startTime: performance.now(), paused: false,
@@ -14301,6 +14578,8 @@
     growStartObjects: 4, growStartTargets: 1, // "count"/"both" modes' starting counts
     trainingObjects: 6, trainingTargets: 2, trainingSpeedStep: 0, trainingProgress: true,
     objScale: 1,
+    // Fixpunkt (09.10.2026, new for MOT): filled from the Fixpunkt module.
+    fixEnabled: true, fixKind: "punkt", fixChar: "", fixColor: "grau", fixSize: 1,
   };
   function loadMotPrefs() {
     const saved = readJSON(MOT_PREFS_KEY, null);
@@ -14310,6 +14589,7 @@
     if (typeof motPrefs.highlightS !== "number" || motPrefs.highlightS < 1 || motPrefs.highlightS > 4) motPrefs.highlightS = MOT_DIFFICULTIES.mittel.highlightS;
     if (!["reset2", "backOne", "stay"].includes(motPrefs.errorMode)) motPrefs.errorMode = "reset2";
     if (!["flach", "3d"].includes(motPrefs.style)) motPrefs.style = "flach";
+    fixWrite(motPrefs, FIX_FIELDS.std, fixRead(motPrefs, FIX_FIELDS.std));
     if (!Array.isArray(motPrefs.colors) || !motPrefs.colors.length || !motPrefs.colors.every((k) => STROOP_COLOR_BY_KEY[k])) motPrefs.colors = ["schwarz"];
     if (!Array.isArray(motPrefs.targetColors) || !motPrefs.targetColors.length || !motPrefs.targetColors.every((k) => STROOP_COLOR_BY_KEY[k])) motPrefs.targetColors = ["gelb"];
     if (!STROOP_COLOR_BY_KEY[motPrefs.bgColorKey]) motPrefs.bgColorKey = "gruen";
@@ -15742,6 +16022,18 @@
       ? (motReadyMode === "speed" ? `Deine Bestleistung: Tempo-Stufe ${best + 1}.` : `Deine bisher höchste geschaffte Stufe: ${best}.`)
       : "Noch keine Bestleistung bei diesem Modus – leg los!";
   }
+  // Fixpunkt (Fabian 09.10.2026): new for MOT, standard on (free centre),
+  // stored per mode ("mot:<mode>"); the objects glide over it.
+  let motFixMode = "speed";
+  FIX_ADAPTERS.mot = { name: "mot", key: () => "mot:" + motFixMode, obj: () => motPrefs, names: FIX_FIELDS.std,
+    save: () => saveMotPrefsToStorage(), redraw: () => { if (motState) { fixWrite(motState, FIX_FIELDS.std, fixRead(motPrefs, FIX_FIELDS.std)); renderMotFixpoint(); } } };
+  function renderMotFixpoint() {
+    const src = motState || motPrefs;
+    fixRenderEl($("motFixpointEl"), fixRead(src, FIX_FIELDS.std), 1, els.motStage.clientWidth * 0.5);
+  }
+  wireFixGroup("motFix", "data-fix-on", FIX_ADAPTERS.mot);
+  wireFixGroup("motTrainingFix", "data-fix-on", FIX_ADAPTERS.mot);
+  wireFixGroup("motPauseFix", "data-fix-on", FIX_ADAPTERS.mot);
   function openMotReady(mode) {
     syncLook("mot");
     motReadyMode = mode;
@@ -15760,6 +16052,8 @@
     syncMotCountsUI();
     syncMotGrowStartUI();
     syncMotBgUI();
+    motFixMode = mode;
+    fixLoad("mot");
     updateMotReadyBestHint();
     showScreen("motReady");
   }
@@ -15776,6 +16070,8 @@
     syncMotColorUI();
     syncMotTrainingUI();
     syncMotBgUI();
+    motFixMode = "training";
+    fixLoad("mot");
     showScreen("motTrainingReady");
   }
   els.motOpenTraining.addEventListener("click", openMotTrainingReady);
@@ -16254,6 +16550,8 @@
       startTime: performance.now(), timer: null, comboDurationTimer: null, raf: null, paused: false,
       mbg: mbgCopy(p.mbg),
     };
+    fixWrite(motState, FIX_FIELDS.std, fixRead(p, FIX_FIELDS.std));
+    renderMotFixpoint();
     els.motStage.style.background = p.bgIntensity > 0 ? mixHex("#ffffff", STROOP_COLOR_BY_KEY[p.bgColorKey].hex, p.bgIntensity) : "";
     mbgStart("mot");
     requestWakeLock();
@@ -20175,6 +20473,7 @@
 
   function applyCardioGuestToState(guestId, cfg) {
     state.exercise = guestId;
+    fixWrite(state, FIX_FIELDS.vt, fixGet("vt:" + guestId));
     state.duration = cfg.duration;
     state.stimulusS = cfg.stimulusS;
     state.intervalMin = cfg.intervalMin;
@@ -20714,6 +21013,7 @@
       program = null;
       state.exercise = block.exercise;
       const visEx = EXERCISES[block.exercise];
+      fixWrite(state, FIX_FIELDS.vt, fixGet("vt:" + block.exercise)); // a block's own periph snapshot below wins
       if (block.periph) Object.assign(state, JSON.parse(JSON.stringify(block.periph)));
       if (block.ff) { Object.assign(state, { ffAnswer: "treten" }, JSON.parse(JSON.stringify(block.ff))); ffNormalize(state); }
       if (block.cn) { Object.assign(state, block.cn); cnNormalize(state); }
@@ -20751,8 +21051,10 @@
       p.startCount = block.startCount ?? p.startCount;
       startBlitzGame({ comboDurationS: block.duration ?? 60 }, p);
     } else if (block.domain === "flash") {
+      fixWrite(flashPrefs, FIX_FIELDS.std, fixGet("flash:" + (block.mode || "constant"))); // a block's own prefs snapshot wins
       startFlashGame(block.mode || "constant", { comboDurationS: block.duration ?? 60 }, block.prefs ? { ...JSON.parse(JSON.stringify(flashPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : undefined);
     } else if (block.domain === "mot") {
+      fixWrite(motPrefs, FIX_FIELDS.std, fixGet("mot:" + (block.mode || "speed"))); // a block's own prefs snapshot wins
       startMotGame(block.mode || "speed", { comboDurationS: block.duration ?? 60 }, block.prefs ? { ...JSON.parse(JSON.stringify(motPrefs)), ...JSON.parse(JSON.stringify(block.prefs)) } : undefined);
     } else if (block.domain === "balance") {
       startBalanceGame(null, balanceBlockPrefs(block));
@@ -38618,7 +38920,7 @@
   // Every fwmc- key is sorted in tests/speicher_register.json (restore / keep /
   // device); a new key that is not listed there fails speicher_register_0910_test.
   // so a client's runs never set this device's bests or "Weitermachen".
-  var HO_SNAP_RE = /^fwmc-(.*-best-v1|resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1|.*-prefs-v1|master-v1|webapp-v3|movement-v1|breath-v1|cardio-v1|cardio-addon-v1|wimhof-v1|workout-circuit-v1|workout-reps-builder-v1|workout-reps-progress-v1|workout-sound-v1|addon-v1|nat-mode-v1|signal-colors-v1|cue-overrides-v1|cvd-overrides-v1|soft-overrides-v1|anaglyph-v1|atempause-v1|plan-v1|plan-check-v1|code-history-v1|trainer-programs-v1|free-trainer-v1|coach-message-seen-v1|neuro-unlocked-v1|features-v1|events-v1|free-blocks-v1|notes-v1|ton-current-v1|ton-seq-v1|week-intent-v1|gear-v1|reminders-v1|name-v1|start-v1|progress-v1|workout-custom-v1)$/;
+  var HO_SNAP_RE = /^fwmc-(.*-best-v1|resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1|.*-prefs-v1|master-v1|webapp-v3|movement-v1|breath-v1|cardio-v1|cardio-addon-v1|wimhof-v1|workout-circuit-v1|workout-reps-builder-v1|workout-reps-progress-v1|workout-sound-v1|addon-v1|nat-mode-v1|signal-colors-v1|cue-overrides-v1|cvd-overrides-v1|soft-overrides-v1|anaglyph-v1|atempause-v1|plan-v1|plan-check-v1|code-history-v1|trainer-programs-v1|free-trainer-v1|coach-message-seen-v1|neuro-unlocked-v1|features-v1|events-v1|free-blocks-v1|notes-v1|ton-current-v1|ton-seq-v1|week-intent-v1|gear-v1|reminders-v1|name-v1|start-v1|progress-v1|workout-custom-v1|fix-v1)$/;
   // Einstellungen (Fabian 09.10.): what the trainer sets up for a client or
   // while trying something out (levels, tempo, colours, a client's plan code
   // ...) is put back afterwards too. Saved presets stay. Those keys live in

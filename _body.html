@@ -4382,7 +4382,7 @@
           <button class="choice" data-flash-fix="0">Ausblenden</button>
         </div>
         <div id="flashFixOptions">
-          <input type="text" id="flashFixCharInput" maxlength="3" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen f&uuml;r den Fixpunkt (leer lassen f&uuml;r den Standardpunkt)">
+          <input type="text" id="flashFixCharInput" maxlength="12" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen f&uuml;r den Fixpunkt (leer lassen f&uuml;r den Standardpunkt)">
           <div class="color-picker" id="flashFixColorPicker"></div>
           <div class="slider-row">
             <span class="slider-label">Gr&ouml;&szlig;e</span>
@@ -4525,7 +4525,7 @@
           <button class="choice" data-flash-fix="0">Ausblenden</button>
         </div>
         <div id="flashTrainingFixOptions">
-          <input type="text" id="flashTrainingFixCharInput" maxlength="3" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen f&uuml;r den Fixpunkt (leer lassen f&uuml;r den Standardpunkt)">
+          <input type="text" id="flashTrainingFixCharInput" maxlength="12" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen f&uuml;r den Fixpunkt (leer lassen f&uuml;r den Standardpunkt)">
           <div class="color-picker" id="flashTrainingFixColorPicker"></div>
           <div class="slider-row">
             <span class="slider-label">Gr&ouml;&szlig;e</span>
@@ -4652,6 +4652,22 @@
           <input type="range" id="motHighlightSlider" min="1" max="4" step="0.1" aria-label="Markierdauer">
         </div>
       </div>
+      <div class="group fix-group" id="motFixGroup">
+        <div class="group-label">Fixpunkt in der Mitte</div>
+        <div class="choice-row two" id="motFixToggleRow">
+          <button class="choice" data-fix-on="1">Anzeigen</button>
+          <button class="choice" data-fix-on="0">Ausblenden</button>
+        </div>
+        <div id="motFixOptions">
+          <input type="text" id="motFixCharInput" maxlength="12">
+          <div class="color-picker" id="motFixColorPicker"></div>
+          <div class="slider-row">
+            <span class="slider-label">Gr&ouml;&szlig;e</span>
+            <input type="range" id="motFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Gr&ouml;&szlig;e des Fixpunkts">
+            <span class="slider-value" id="motFixSizeValue"></span>
+          </div>
+        </div>
+      </div>
       <div class="look-host" data-look="mot"></div>
       <div class="group">
         <div class="group-label">Hintergrund</div>
@@ -4775,6 +4791,22 @@
         <div class="group-label">Markierdauer <span class="slider-value" id="motTrainingHighlightValue"></span></div>
         <div class="slider-row">
           <input type="range" id="motTrainingHighlightSlider" min="1" max="4" step="0.1" aria-label="Markierdauer">
+        </div>
+      </div>
+      <div class="group fix-group" id="motTrainingFixGroup">
+        <div class="group-label">Fixpunkt in der Mitte</div>
+        <div class="choice-row two" id="motTrainingFixToggleRow">
+          <button class="choice" data-fix-on="1">Anzeigen</button>
+          <button class="choice" data-fix-on="0">Ausblenden</button>
+        </div>
+        <div id="motTrainingFixOptions">
+          <input type="text" id="motTrainingFixCharInput" maxlength="12">
+          <div class="color-picker" id="motTrainingFixColorPicker"></div>
+          <div class="slider-row">
+            <span class="slider-label">Gr&ouml;&szlig;e</span>
+            <input type="range" id="motTrainingFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Gr&ouml;&szlig;e des Fixpunkts">
+            <span class="slider-value" id="motTrainingFixSizeValue"></span>
+          </div>
         </div>
       </div>
       <div class="look-host" data-look="mot"></div>
@@ -5645,7 +5677,7 @@
           <button class="choice" data-periph-fix="0">Ausblenden</button>
         </div>
         <div id="periphFixOptions">
-          <input type="text" id="periphFixCharInput" maxlength="3" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen f&uuml;r den Fixpunkt (leer lassen f&uuml;r den Standardpunkt)">
+          <input type="text" id="periphFixCharInput" maxlength="12" placeholder="Leer = Punkt, oder z.B. X, 7, :)" aria-label="Zeichen f&uuml;r den Fixpunkt (leer lassen f&uuml;r den Standardpunkt)">
           <div class="color-picker" id="periphFixColorPicker"></div>
           <div class="slider-row">
             <span class="slider-label">Gr&ouml;&szlig;e</span>
@@ -6282,13 +6314,21 @@
           <div class="color-picker" id="periphPauseBgColorPicker"></div>
           <div class="group-help" id="periphPauseBgContrastHint" hidden></div>
         </div>
-        <div class="group" id="vtPauseFixColorGroup">
-          <div class="group-label">Fixpunkt-Farbe</div>
-          <div class="color-picker" id="periphPauseFixColorPicker"></div>
-        </div>
-        <div class="group" id="vtPauseFixSizeGroup">
-          <div class="group-label">Fixpunkt-Gr&ouml;&szlig;e <span class="slider-value" id="periphPauseFixSizeValue"></span></div>
-          <input type="range" id="periphPauseFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Fixpunkt-Gr&ouml;&szlig;e">
+        <div class="group fix-group" id="periphPauseFixGroup">
+          <div class="group-label">Fixpunkt in der Mitte</div>
+          <div class="choice-row two" id="periphPauseFixToggleRow">
+            <button class="choice" data-fix-on="1">Anzeigen</button>
+            <button class="choice" data-fix-on="0">Ausblenden</button>
+          </div>
+          <div id="periphPauseFixOptions">
+            <input type="text" id="periphPauseFixCharInput" maxlength="12">
+            <div class="color-picker" id="periphPauseFixColorPicker"></div>
+            <div class="slider-row">
+              <span class="slider-label">Gr&ouml;&szlig;e</span>
+              <input type="range" id="periphPauseFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Gr&ouml;&szlig;e des Fixpunkts">
+              <span class="slider-value" id="periphPauseFixSizeValue"></span>
+            </div>
+          </div>
         </div>
         <div class="group" id="vtPauseStimColorGroup">
           <div class="group-label">Farbe der Reize</div>
@@ -6720,6 +6760,22 @@
         <div class="color-picker" id="flashPauseBgColorPicker"></div>
         <div class="group-help" id="flashPauseBgContrastHint" hidden></div>
       </div>
+      <div class="group fix-group" id="flashPauseFixGroup">
+        <div class="group-label">Fixpunkt in der Mitte</div>
+        <div class="choice-row two" id="flashPauseFixToggleRow">
+          <button class="choice" data-fix-on="1">Anzeigen</button>
+          <button class="choice" data-fix-on="0">Ausblenden</button>
+        </div>
+        <div id="flashPauseFixOptions">
+          <input type="text" id="flashPauseFixCharInput" maxlength="12">
+          <div class="color-picker" id="flashPauseFixColorPicker"></div>
+          <div class="slider-row">
+            <span class="slider-label">Gr&ouml;&szlig;e</span>
+            <input type="range" id="flashPauseFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Gr&ouml;&szlig;e des Fixpunkts">
+            <span class="slider-value" id="flashPauseFixSizeValue"></span>
+          </div>
+        </div>
+      </div>
       <button class="start-btn" id="flashResumeBtn">Weiter</button>
     </div>
   </div>
@@ -6748,6 +6804,7 @@
 <div class="player" id="motPlayer" hidden>
   <div class="mot-stage" id="motStage">
     <div class="remember-hint" id="motHint"></div>
+    <div class="flash-fixpoint mot-fixpoint" id="motFixpointEl" hidden></div>
     <div class="mot-objects" id="motObjectsLayer"></div>
   </div>
   <div class="pause-overlay" id="motPauseOverlay" hidden>
@@ -6766,6 +6823,22 @@
         <div class="group-label">Hintergrundfarbe</div>
         <div class="color-picker" id="motPauseBgColorPicker"></div>
         <div class="group-help" id="motPauseBgContrastHint" hidden></div>
+      </div>
+      <div class="group fix-group" id="motPauseFixGroup">
+        <div class="group-label">Fixpunkt in der Mitte</div>
+        <div class="choice-row two" id="motPauseFixToggleRow">
+          <button class="choice" data-fix-on="1">Anzeigen</button>
+          <button class="choice" data-fix-on="0">Ausblenden</button>
+        </div>
+        <div id="motPauseFixOptions">
+          <input type="text" id="motPauseFixCharInput" maxlength="12">
+          <div class="color-picker" id="motPauseFixColorPicker"></div>
+          <div class="slider-row">
+            <span class="slider-label">Gr&ouml;&szlig;e</span>
+            <input type="range" id="motPauseFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Gr&ouml;&szlig;e des Fixpunkts">
+            <span class="slider-value" id="motPauseFixSizeValue"></span>
+          </div>
+        </div>
       </div>
       <button class="start-btn" id="motResumeBtn">Weiter</button>
     </div>
@@ -8766,6 +8839,23 @@
       <button class="text-link small" id="masterBgResetAllBtn">Alle eigenen Hintergrundfarben zur&uuml;cksetzen</button>
     </div>
 
+    <div class="group fix-group" id="masterFixGroup">
+      <div class="group-label">Standard-Fixpunkt</div>
+      <div class="group-help">Der Punkt in der Mitte, auf den du beim Training schaust. Er gilt f&uuml;r alle &Uuml;bungen, in denen du ihn nicht selbst ge&auml;ndert hast. &Auml;nderst du ihn in einer &Uuml;bung, gilt das nur dort, jeder Modus f&uuml;r sich.</div>
+      <div id="masterFixOptions">
+        <input type="text" id="masterFixCharInput" maxlength="12">
+        <div class="color-picker" id="masterFixColorPicker"></div>
+        <div class="slider-row">
+          <span class="slider-label">Gr&ouml;&szlig;e</span>
+          <input type="range" id="masterFixSizeSlider" min="0.6" max="2" step="0.1" aria-label="Gr&ouml;&szlig;e des Standard-Fixpunkts">
+          <span class="slider-value" id="masterFixSizeValue"></span>
+        </div>
+      </div>
+      <div class="group-help" id="masterFixOwnInfo"></div>
+      <button class="text-link small" type="button" id="masterFixAllBtn">F&uuml;r alle &uuml;bernehmen, auch ge&auml;nderte</button>
+      <div class="group-help fix-all-note">&Uuml;berschreibt alle deine &Auml;nderungen in den einzelnen &Uuml;bungen.</div>
+    </div>
+
     <div class="group">
       <div class="group-label">Standard-Pause zwischen &Uuml;bungen</div>
       <div class="group-help">Startwert f&uuml;r neue Pausen im Kombi-Programm und zwischen Ausdauer-Aktivit&auml;ten &ndash; z.&nbsp;B. um Material zu wechseln oder eine neue Position einzunehmen. Jede Pause bleibt einzeln anpassbar und l&auml;sst sich w&auml;hrend des Trainings jederzeit &uuml;berspringen.</div>
@@ -8921,6 +9011,13 @@
     <p class="group-help break-info-text">Wer raucht, g&ouml;nnt sich oft etwas, das jedem guttut: mehrmals am Tag ein paar Minuten nur f&uuml;r sich &ndash; kurz raus, durchatmen, abschalten. Diese kleine Auszeit kannst du dir auch ohne Zigarette nehmen, mit ein paar ruhigen Atemz&uuml;gen. Ob zwischen zwei Terminen oder mitten im Alltag: G&ouml;nn dir diese Pause, so oft du magst.</p>
     <p class="group-help">Gleichm&auml;&szlig;ig ein- und ausatmen, kein Halten (Ruhige Atmung). Auf Wunsch erinnert dich die App tags&uuml;ber daran: <button class="inline-link" type="button" id="breakInfoReminderLink">Erinnerungen einstellen</button>.</p>
     <button class="start-btn" id="breakInfoCloseBtn" type="button">Alles klar</button>
+  </div>
+</div>
+
+<div class="sheet" id="xferSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="xferTitle">
+    <h2 id="xferTitle"></h2>
+    <div class="xfer-list" id="xferList"></div>
   </div>
 </div>
 

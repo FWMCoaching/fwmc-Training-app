@@ -2599,6 +2599,19 @@ body.drag-busy{user-select:none;-webkit-user-select:none}
 /* Long press: no iOS text selection, loupe or link preview on the tiles (2026-10-06) */
 #hubAreaGrid .area-tile, #todayAreaGrid .area-tile, #home .excard[data-exercise], #natExercises .nat-tile, #activationGrid [data-act-ex], #neuroGrid [data-neuro-ex], [data-free-id]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .tile-action-list{display:flex;flex-direction:column;gap:8px}
+/* Einstellungen übernehmen (09.10.): one discreet link per settings group, one shared sheet */
+.xfer-btn{min-height:44px;padding:6px 0;align-self:flex-start}
+.xfer-list{display:flex;flex-direction:column}
+.fix-kind-row{margin-bottom:8px}
+.fix-group input[hidden]{display:none}
+.fix-status{margin-top:6px}
+.fix-status .group-help .text-link{margin-left:4px}
+.xfer-list .text-link{min-height:44px;align-self:center;padding:6px 18px;margin-top:6px}
+.xfer-item{display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 4px;background:none;border:0;border-bottom:1px solid var(--line);color:var(--ink);font:inherit;text-align:left;cursor:pointer;width:100%}
+.xfer-item:active{background:var(--brand-pale)}
+.xfer-swatch{flex:none;width:22px;height:22px;border-radius:50%;border:1px solid var(--line)}
+.xfer-text{display:flex;flex-direction:column;font-size:calc(15px * var(--ts,1));font-weight:600}
+.xfer-text small{font-size:calc(13px * var(--ts,1));font-weight:400;color:var(--ink-soft)}
 .tile-action-list .text-link{min-height:44px;align-self:center;padding:6px 18px}
 /* Schritt-Nummern im Dunkelmodus lesbar (Fabian-Blick 2026-10-05: weiß auf
    hellem Petrol nur 2,8 : 1) - dark digits on the dark-mode brand colour. */

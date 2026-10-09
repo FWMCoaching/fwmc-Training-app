@@ -33,9 +33,9 @@
    "why": "Erinnerungen gehören zum Push-Abo dieses Geräts"
   },
   {
-   "re": "^fwmc-(name-v1|start-v1|progress-v1|workout-custom-v1)$",
+   "re": "^fwmc-(name-v1|start-v1|progress-v1|workout-custom-v1|fix-v1)$",
    "cat": "restore",
-   "why": "Vorname, Ziel/Trainer-Antwort, Wochenziel, eigene Kraftübungen (09.10. ergänzt)"
+   "why": "Vorname, Ziel/Trainer-Antwort, Wochenziel, eigene Kraftübungen (09.10. ergänzt), Fixpunkt je Übung"
   },
   {
    "re": "^fwmc-.*-saved-v1$",
