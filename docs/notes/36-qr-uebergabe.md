@@ -244,3 +244,13 @@ main page, light/dark: `tests/knopf_lesbar_1008_test.py`.
 - `hoPack` trims title (120) and note (300), so a long Kombi note never breaks the whole import.
 - Backup excludes the session/mode keys. The trainer button shows a dot while client runs wait for handover.
 - Ton-Sequenz "Nachher" also lands on test runs; level suggestions are off in test mode too.
+
+## Nachtrag 09.10. morgens (Fabian)
+- 3-Stunden-Grenze ersetzt: `tmCheckReturn` fragt nach 3 h nur „Läuft … noch?“
+  (`fwmc-trainer-asked-v1` = letzte Frage, erneut alle 3 h), beendet selbst erst
+  am nächsten Tag (`tmNextDay`: anderes Datum ab 04:00 oder > 12 h). Nie während
+  ein Player oder `#confirmSheet` offen ist. Unversendete Trainings bleiben 14 Tage.
+- Wartende Kunden-Trainings: Punkt am Trainer-Knopf in jedem Modus (im Modus
+  „Mit Kunde“ zählt die laufende Sitzung nicht), `#clientRunPending` steht oben im
+  Trainer-Menü, `#handoverWaitNote` in der Übersicht und beim Übergeben (mit
+  „Nur Kunden-Trainings zeigen“). Petrol-Strich links wie der Kunden-Modus.

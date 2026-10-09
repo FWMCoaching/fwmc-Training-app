@@ -654,5 +654,14 @@ For every new or changed exercise/screen, in the same commit:
   anything reading events by date uses `eventsOn`/`eventNextDate`, planning
   recommendations `loadSingleEvents`. A choice "only this / all" uses
   `confirmDialog(..., {cancel})` so tapping beside never deletes. docs/notes/04.
+- Symbole mit fester Größe (2026-10-09, old iPad mini showed the gear as a
+  dot): every SVG icon inside a button/link gets its size from a CSS rule
+  on its class, never only from width/height attributes (older Safari
+  shrinks those in flex buttons). Test: `tests/symbol_groesse_0910_test.py`.
+- Trainer-Menü (09.10.): after 3 h the app only asks „Läuft … noch?“ (again
+  every 3 h), it ends a client/test session by itself only the next day
+  (from 04:00, or after 12 h); the dot on the trainer button and
+  `#clientRunPending` (top of the menu) / `#handoverWaitNote` show waiting
+  client trainings in every mode.
 - Tests load `index.html?bereich=visual` (or the area); Test-Bereich tests
   pre-seed `fwmc-test-unlocked`.
