@@ -14,6 +14,7 @@
 /* iPhone-Schriftgröße (2026-10-06): --ts scales text 10.5-22 px, set by textScale() in app.js */
 :root{--ts:1;
   --brand:#007094;
+  --on-brand-fill:#ffffff;
   --brand-deep:#005973;
   --brand-light:#2f95b8;
   --brand-pale:#e5f1f4;
@@ -41,6 +42,7 @@
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     --brand:#39a7cc;
+    --on-brand-fill:#0c1b20;
     --brand-deep:#69c2e0;
     --brand-light:#69c2e0;
     --brand-pale:#122b32;
@@ -63,6 +65,7 @@
 }
 :root[data-theme="dark"]{
   --brand:#39a7cc;
+  --on-brand-fill:#0c1b20;
   --brand-deep:#69c2e0;
   --brand-light:#69c2e0;
   --brand-pale:#122b32;
@@ -2074,6 +2077,14 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .week-dots .area-dot{width:7px;height:7px}
 .week-day.is-today{border-color:var(--brand)}
 .week-day.selected{background:var(--brand-pale);border-color:var(--brand);box-shadow:var(--shadow)}
+/* Ausgewählt vs. heute eindeutig (Fabian 09.10., wie iOS-Kalender): ausgewählter Tag
+   gefüllt in Markenfarbe, heute nur mit Rahmen + Zahl in Markenfarbe. */
+.week-day.selected,.cal-cell.selected,.cal-cell.selected.done{background:var(--brand);border-color:var(--brand);color:var(--on-brand-fill)}
+.week-day.selected .week-day-name,.week-day.selected .week-day-mark,.cal-cell.selected .cal-check{color:var(--on-brand-fill)}
+.week-day.selected .area-dot,.cal-cell.selected .area-dot{box-shadow:0 0 0 1.5px var(--on-brand-fill)}
+.week-day.is-today:not(.selected) .week-day-num,.cal-cell.is-today:not(.selected) .cal-num{color:var(--brand)}
+.week-day.is-today:not(.selected) .week-day-name{color:var(--brand)}
+.week-day.selected .week-day-num{color:inherit}
 .week-day.missed .week-day-num{color:var(--ink-soft)}
 .cal-switch{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0}
 .cal-switch-btn{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:9px 14px;font-size:calc(13.5px * var(--ts,1));font-weight:700;cursor:pointer}
@@ -2106,9 +2117,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .cal-dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center}
 .cal-dots .area-dot{width:6px;height:6px}
 .cal-cell.is-today{border-color:var(--brand);border-width:2px}
-.cal-cell.selected{background:var(--brand-pale)}
 .cal-cell.done{background:color-mix(in srgb, var(--ok) 12%, var(--surface))}
-.cal-cell.selected.done{background:var(--brand-pale)}
 .cal-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;font-size:calc(12px * var(--ts,1));color:var(--ink-soft)}
 .cal-legend i{display:inline-block;width:12px;height:4px;border-radius:2px;margin-right:4px;vertical-align:middle}
 .cal-month.mini .cal-grid{gap:1px}

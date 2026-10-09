@@ -153,3 +153,7 @@ Heute scrolled to it (push "Zeit für eine Atempause"). Details: docs/notes/20
   name is listed under "Was wird auf deinem Gerät gespeichert?".
 Test: `tests/vorname_heute_1008_test.py`; the wrap audit covers the open form
 and a 30-char name on Heute.
+
+## Auswahl vs. heute, ungeplante Trainings (2026-10-09, Fabian)
+- Ausgewählter Tag = gefüllt in `--brand` (Text `--on-brand-fill`, hell weiß / dunkel #0c1b20), heute = Rahmen + Zahl in Markenfarbe. Gilt für Wochenleiste und Monatskalender (iOS-Kalender-Logik).
+- Punkte ohne Plan-Eintrag (`extraAreasOn`) erklären sich im Tagesfeld: `extraEntriesOn` + `extraDayHtml` listen sie unter „Zusätzlich trainiert (nicht geplant)“ mit Uhrzeit, Dauer, Bereich. Test `tests/kalender_auswahl_0910_test.py`.

@@ -34716,6 +34716,30 @@
     });
     return out;
   }
+  // Trainings an einem Tag, die kein Plan-Eintrag abdeckt (Fabian 09.10.: der
+  // Punkt am Tag muss sich im Tagesfeld erklären). Gleiche Zuordnung wie
+  // extraAreasOn, aber mit dem Verlaufseintrag selbst.
+  function extraEntriesOn(date, hist, occ) {
+    const done = occ.filter((o) => o.auto).map((o) => o.area);
+    const out = [];
+    (hist || loadHistory()).filter((h) => !h.aborted && dStr(new Date(h.ts)) === date).slice().reverse().forEach((h) => {
+      const i = done.indexOf(historyAreaOf(h));
+      if (i >= 0) done.splice(i, 1); else out.push(h);
+    });
+    return out;
+  }
+  function extraDayHtml(list) {
+    if (!list.length) return "";
+    const row = (h) => {
+      const area = historyAreaOf(h);
+      const t = new Date(h.ts);
+      const meta = [String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0") + " Uhr"]
+        .concat(h.seconds ? [Math.max(1, Math.round(h.seconds / 60)) + " Min."] : [])
+        .concat(AREA_BY_KEY[area] ? [AREA_BY_KEY[area].short] : []).join(" · ");
+      return `<div class="day-item done day-extra"><div class="day-item-main">${areaDot(area)}<div><div class="day-item-title">${esc(h.title || "Training")}</div><div class="day-item-meta">${esc(meta)} · erledigt</div></div></div></div>`;
+    };
+    return `<div class="day-subhead">${list.length === 1 ? "Zusätzlich trainiert (nicht geplant)" : `Zusätzlich trainiert (${list.length}, nicht geplant)`}</div>` + list.map(row).join("");
+  }
   function dayStateClass(date, hist) {
     const occ = occurrencesOn(date, hist);
     if (!occ.length) return { cls: pauseOn(date) ? "rest pause" : "rest", occ };
@@ -34848,9 +34872,10 @@
       $("dayPauseEditBtn").addEventListener("click", () => openPauseSheet(pzDay.id));
       return;
     }
+    const extraHtml = date <= todayStr() ? extraDayHtml(extraEntriesOn(date, hist, occ)) : "";
     if (!occ.length) {
       const ph = phaseFor(date);
-      els.dayPanelBody.innerHTML = hasEvents ? `<p class="day-empty">Kein Training aus der App geplant.</p>` : `<p class="day-empty">${ph || planHasEntries() ? "Ruhetag, an diesem Tag ist nichts geplant." : "Noch kein Plan. Lege unten deinen Wochenplan an oder trage ein App-Training nur für diesen Tag ein."}</p>`;
+      els.dayPanelBody.innerHTML = extraHtml ? `<p class="day-empty">Kein Training aus der App geplant.</p>${extraHtml}` : hasEvents ? `<p class="day-empty">Kein Training aus der App geplant.</p>` : `<p class="day-empty">${ph || planHasEntries() ? "Ruhetag, an diesem Tag ist nichts geplant." : "Noch kein Plan. Lege unten deinen Wochenplan an oder trage ein App-Training nur für diesen Tag ein."}</p>`;
       return;
     }
     const item = (o, style, compact) => {
@@ -34910,8 +34935,8 @@
       const lastBottom = Math.max(0, ...bottoms);
       html += timed.length ? `<div class="hour-grid" style="height:${Math.max((to - from) * H, lastBottom + 8)}px">${rows}${blocks}</div>` : "";
     }
-    els.dayPanelBody.innerHTML = html;
-    els.dayPanelBody.querySelectorAll(".day-item").forEach((el) => {
+    els.dayPanelBody.innerHTML = html + extraHtml;
+    els.dayPanelBody.querySelectorAll(".day-item[data-occ]").forEach((el) => {
       const o = occ.find((x) => x.id === el.dataset.occ);
       el.querySelectorAll(".day-act").forEach((b) => b.addEventListener("click", () => dayAction(date, o, b.dataset.act)));
     });
