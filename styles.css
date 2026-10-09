@@ -3403,8 +3403,8 @@ html:root body .start-btn.gear-missing:not(.secondary){background:var(--surface)
 .handover-paste-input{width:100%;font-family:ui-monospace,Menlo,monospace;font-size:16px;resize:vertical;word-break:break-all}
 /* Kunden-Training strip: slim, on top of every page (not in players) */
 .client-run-strip{position:fixed;top:0;left:0;right:0;z-index:36;display:flex;align-items:center;justify-content:space-between;gap:12px;
-  box-sizing:border-box;height:calc(48px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 16px 0;background:#a85a12;color:#ffffff;font-weight:700;font-size:calc(14px * var(--ts,1))}
-/* Trainer-Menü modes (08.10. abends): Kunde = warm orange, Test = violet;
+  box-sizing:border-box;height:calc(48px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 16px 0;background:#007094;color:#ffffff;font-weight:700;font-size:calc(14px * var(--ts,1))}
+/* Trainer-Menü modes (08.10. abends): Kunde = petrol (brand, Fabian 09.10.), Test = violet;
    in a player only a thin line in the mode colour */
 .client-run-strip.tm-try{background:#5d4a8f}
 .client-run-strip.slim{height:calc(5px + env(safe-area-inset-top,0px));padding:0;pointer-events:none}
@@ -3471,7 +3471,7 @@ input[type=checkbox]{accent-color:var(--brand)}
   display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .trainer-mode-btn[hidden]{display:none}
 .trainer-mode-btn:active{transform:scale(.94);background:var(--surface-2)}
-.trainer-mode-btn.tm-client{background:#a85a12;border-color:#a85a12;color:#ffffff}
+.trainer-mode-btn.tm-client{background:#007094;border-color:#007094;color:#ffffff}
 .trainer-mode-btn.tm-try{background:#5d4a8f;border-color:#5d4a8f;color:#ffffff}
 .tm-btn-word{font-size:10.5px;font-weight:800;letter-spacing:.01em;line-height:1}
 .brandbar:has(.trainer-mode-btn:not([hidden]))::before{display:none}
@@ -3483,13 +3483,13 @@ input[type=checkbox]{accent-color:var(--brand)}
 .tm-mode-title{font-weight:700;font-size:calc(16px * var(--ts,1));display:inline-flex;align-items:center;gap:8px}
 .tm-mode-sub{font-size:calc(13.5px * var(--ts,1));color:var(--ink-soft);line-height:1.35}
 .tm-dot{width:10px;height:10px;border-radius:50%;flex:none}
-.tm-dot-client{background:#a85a12}
+.tm-dot-client{background:#007094}
 .tm-dot-try{background:#5d4a8f}
 .tm-tools{margin:14px 0 0}
 .tm-tools:empty{display:none}
 .h-tag.tm-tag-try{color:#ffffff;background:#5d4a8f}
-.h-tag.tm-tag-client{color:#ffffff;background:#a85a12}
-.h-tag.tm-tag-own{color:#ffffff;background:#007094}
+.h-tag.tm-tag-client{color:#ffffff;background:#007094}
+.h-tag.tm-tag-own{color:#ffffff;background:#5b6b70}
 #tmCloseBtn{margin-top:18px}
 #handoverList li{touch-action:pan-y}
 .handover-del{display:block;margin:12px auto 0;min-height:44px;padding:0 12px}

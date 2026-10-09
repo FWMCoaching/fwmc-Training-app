@@ -116,7 +116,7 @@ async def main():
         await set_mode(pg, "client")
         word = await (await menu_btn(pg)).inner_text()
         col = await pg.evaluate("getComputedStyle(document.getElementById('clientRunStrip')).backgroundColor")
-        check("Mit Kunde: button says 'Kunde', strip orange", word.strip() == "Kunde" and col == "rgb(168, 90, 18)", (word, col))
+        check("Mit Kunde: button says 'Kunde', strip petrol", word.strip() == "Kunde" and col == "rgb(0, 112, 148)", (word, col))
         await do_free(pg, "f1")
         await set_mode(pg, "try")
         word = await (await menu_btn(pg)).inner_text()

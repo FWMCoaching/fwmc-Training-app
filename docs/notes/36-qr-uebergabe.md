@@ -205,7 +205,7 @@ next to the code cards: `HO_HOSTS` + `hoPlaceGroup()`; the trainer items
 Modes (`tmSetMode`):
 - **Mein Training** (`own`): everything counts. Button shows the icon.
 - **Mit Kunde** (`client`): Kunden-Training (`fwmc-client-session-v1`), runs go to
-  `fwmc-client-runs-v1` stamped `client: <session start>`; orange `#a85a12`,
+  `fwmc-client-runs-v1` stamped `client: <session start>`; petrol `#007094` (Fabian 09.10., was orange),
   button word "Kunde". Ending it opens the selection with exactly this session ticked.
 - **Ausprobieren** (`try`): nothing counts, runs go to `fwmc-try-runs-v1`
   (`tryRun: true`), bests snapshot/restore; violet `#5d4a8f`, button/tag word
