@@ -3639,3 +3639,155 @@ input[type=checkbox]{accent-color:var(--brand)}
 #bodyRuleRows .color-choice-line .choice-row.two{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media (min-width:560px){#bodyRuleRows .color-choice-line .choice-row.two{grid-template-columns:repeat(4,minmax(0,1fr))}}
 #bodyRuleRows .choice{font-size:calc(13.5px * min(var(--ts,1), 1.05));padding:8px 4px}
+
+/* ==== Heute neu (Fabian 10.10., Vorschau freigegeben) ====================
+   Begrüßung in einer Zeile, Zuletzt mit Streifen in der Bereichsfarbe,
+   Atempause + Ring nebeneinander, ruhige Kalender-Zeichen (D1, keine
+   Bereichsfarben) und der Tag als Zeitleiste (T1). Ab 900 px: oben Karten
+   nebeneinander, darunter links Woche/Monat, rechts der Tag (B1). */
+:root{--track:#e5ddd0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--track:#2a4950}}
+:root[data-theme="dark"]{--track:#2a4950}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* Begrüßung: eine Zeile, Datum rechts */
+#todayHome .today-hello{background:none;padding:0;margin:2px 0 12px;border-radius:0;overflow:visible}
+#todayHome .today-hello::after{display:none}
+.today-hello-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+#todayHome .today-greeting{font-size:calc(22px * var(--ts,1));line-height:1.2;min-width:0}
+#todayHome .today-greeting.has-long-name{font-size:calc(20px * var(--ts,1))}
+#todayHome .today-date{flex:none;margin:0;font-size:calc(13.5px * var(--ts,1));color:var(--ink-soft);white-space:nowrap}
+
+/* Zuletzt: Karte mit Streifen links in der Bereichsfarbe */
+#todayMain.is-flat{position:relative;overflow:hidden;padding:12px 14px 12px 20px;border-radius:20px;box-shadow:var(--shadow);margin-bottom:12px}
+#todayMain.is-flat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--ac,var(--brand))}
+.today-last-ico{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--ac-ink,var(--brand));background:color-mix(in srgb,var(--ac,var(--brand)) 16%,transparent)}
+.today-last-ico svg{width:22px;height:22px}
+#todayMain.is-flat .today-main-kicker{color:var(--ac-ink,var(--brand))}
+#todayMain.is-flat .today-last-title{white-space:normal;overflow:visible;font-size:calc(17px * var(--ts,1));line-height:1.2;overflow-wrap:normal;hyphens:manual}
+
+/* Zwei Karten: Atempause + Woche im Ring, gleich hoch, gespiegelt */
+#todayHome .today-pair{margin:0 0 22px;align-items:stretch}
+#todayHome .today-tile{border-radius:20px;box-shadow:var(--shadow);padding:16px 14px 6px 16px;min-height:236px}
+#todayHome .today-tile.today-new{border-top:1px solid var(--line);padding-top:16px}
+#todayHome .today-tile-top{align-items:center;min-height:22px;margin-bottom:0}
+#todayHome .today-tile .today-break-info{margin:-11px -10px -11px 0}
+.today-tile-circle{width:96px;height:96px;margin:12px 0 10px;flex:none}
+#todayHome .today-break-icon.today-tile-circle{border-radius:50%;display:grid;place-items:center;background:none;border:10px solid color-mix(in srgb,var(--area-breath) 22%,transparent);color:var(--area-breath-ink);box-sizing:border-box}
+#todayHome .today-break-icon.today-tile-circle svg{width:34px;height:34px}
+.today-break-kicker{color:var(--area-breath-ink)}
+#todayHome .today-break-title{font-size:calc(17px * var(--ts,1));line-height:1.15;margin:0 0 4px}
+#todayHome .today-break .today-tile-go{color:var(--area-breath-ink)}
+#todayHome .today-tile-go{margin-top:auto}
+.today-mood .today-main-kicker{display:flex;align-items:center;flex-wrap:wrap;gap:0 6px;min-height:22px}
+#todayHome .today-mood .today-mood-change{min-height:44px;margin:-11px 0;padding:0 4px}
+.today-ring{position:relative}
+.today-ring svg{width:100%;height:100%;transform:rotate(-90deg);display:block}
+.today-ring circle{fill:none;stroke-width:10}
+.today-ring .ring-done{stroke:var(--brand)}
+.today-ring .ring-open{stroke:var(--track)}
+.today-ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:"Magra",system-ui,sans-serif;font-weight:700;font-size:calc(24px * min(var(--ts,1),1.1));color:var(--ink);font-variant-numeric:tabular-nums}
+.today-ring-num small{font-size:calc(15px * min(var(--ts,1),1.1));color:var(--ink-soft);font-weight:700}
+#todayHome .today-mood.is-set .today-tile-sub{flex:0 0 auto;margin:0 0 4px}
+
+/* Woche: D1-Zeichen (neutral) */
+.d1-marks{display:flex;justify-content:center;align-items:center;gap:3px;height:8px}
+.d1-dot,.d1-sq{display:inline-block;width:6px;height:6px;flex:none;position:static;transform:none;box-sizing:border-box}
+.d1-dot{border-radius:50%;background:var(--ink)}
+.d1-dot.is-plan{background:transparent;box-shadow:inset 0 0 0 1.4px var(--ink-soft)}
+.d1-dot.is-missed{background:var(--ink-soft);opacity:.3}
+.d1-sq{border-radius:1.5px;background:var(--ink-soft)}
+.d1-sq.is-series{background:transparent;box-shadow:inset 0 0 0 1.4px var(--ink-soft)}
+.d1-more{font-size:10px;line-height:8px;font-weight:700;color:var(--ink-soft)}
+.week-day.selected .d1-dot.is-done,.week-day.selected .d1-sq.is-single,.cal-cell.selected .d1-dot.is-done,.cal-cell.selected .d1-sq.is-single{background:var(--on-brand-fill)}
+.week-day.selected .d1-dot.is-plan,.week-day.selected .d1-sq.is-series,.cal-cell.selected .d1-dot.is-plan,.cal-cell.selected .d1-sq.is-series{box-shadow:inset 0 0 0 1.4px var(--on-brand-fill)}
+.week-day.selected .d1-dot.is-missed,.week-day.selected .d1-more{background:var(--on-brand-fill);color:var(--on-brand-fill)}
+.week-day.selected .d1-more{background:none}
+#todayHome .week-day-mark{height:10px;margin-top:3px}
+#todayHome .week-day{border-width:1px}
+.d1-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:calc(12px * var(--ts,1));color:var(--ink-soft);align-items:center}
+.d1-legend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+
+/* Monat: ruhige Zellen, Zahl im Kreis, Woche hinterlegt */
+#calExpand{border-radius:18px;box-shadow:var(--shadow);padding:12px 12px 14px}
+.cal-head-month{margin-bottom:2px}
+.cal-head-title{font-family:"Magra",system-ui,sans-serif;font-weight:700;font-size:calc(19px * var(--ts,1));color:var(--ink)}
+.cal-head-month + .cal-month > .cal-month-title{display:none}
+#calExpand .cal-month:not(.mini) .cal-grid{gap:2px 0}
+#calExpand .cal-month:not(.mini) .cal-cell{border:none;background:none;min-height:50px;padding:3px 0 2px;border-radius:0;gap:2px;overflow:visible}
+#calExpand .cal-month:not(.mini) .cal-cell .cal-num{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;font-size:calc(15px * min(var(--ts,1),1.1));font-weight:500;font-variant-numeric:tabular-nums}
+#calExpand .cal-month:not(.mini) .cal-cell.in-week{background:color-mix(in srgb,var(--brand) 8%,transparent)}
+#calExpand .cal-month:not(.mini) .cal-grid > .cal-cell.in-week:nth-child(7n+1){border-radius:12px 0 0 12px}
+#calExpand .cal-month:not(.mini) .cal-grid > .cal-cell.in-week:nth-child(7n){border-radius:0 12px 12px 0}
+#calExpand .cal-month:not(.mini) .cal-cell.selected{background:color-mix(in srgb,var(--brand) 8%,transparent);color:var(--ink)}
+#calExpand .cal-month:not(.mini) .cal-cell.selected:not(.in-week){background:none}
+#calExpand .cal-month:not(.mini) .cal-cell.selected .cal-num{background:var(--brand);color:var(--on-brand-fill);font-weight:700}
+#calExpand .cal-month:not(.mini) .cal-cell.is-today:not(.selected) .cal-num{box-shadow:inset 0 0 0 2px var(--brand);color:var(--brand);font-weight:700}
+#calExpand .cal-month:not(.mini) .cal-cell.missed .cal-num{color:var(--ink)}
+#calExpand .cal-month:not(.mini) .cal-band{top:auto;bottom:0;left:12px;right:12px;height:2px;opacity:.35}
+#calExpand .cal-month:not(.mini) .cal-star{position:absolute;top:0;right:4px;font-size:10px;color:var(--ink-soft)}
+.cal-month:not(.mini) .cal-cell.selected .d1-dot.is-done,.cal-month:not(.mini) .cal-cell.selected .d1-sq.is-single{background:var(--ink)}
+.cal-month:not(.mini) .cal-cell.selected .d1-dot.is-plan,.cal-month:not(.mini) .cal-cell.selected .d1-sq.is-series{box-shadow:inset 0 0 0 1.4px var(--ink-soft)}
+
+/* Tag als Zeitleiste (T1) */
+#todayHome .day-panel{background:none;border:none;border-top:1px solid var(--line);border-radius:0;padding:14px 0 0;margin-top:22px}
+#todayHome .day-panel-head{margin-bottom:0}
+#todayHome .day-panel-head h3{font-size:calc(20px * var(--ts,1));line-height:1.2}
+.day-panel-sub{margin:2px 0 10px;font-size:calc(12.5px * var(--ts,1));color:var(--ink-soft)}
+.t1{display:flex;flex-direction:column;position:relative}
+.t1 > #dayEvents,.t1 > #dayPanelBody{display:contents}
+.t1.is-hours{display:block}
+.t1.is-hours > #dayEvents,.t1.is-hours > #dayPanelBody{display:block}
+.t1-row{display:grid;grid-template-columns:46px 16px minmax(0,1fr);column-gap:8px;align-items:start;position:relative;margin-bottom:6px}
+.t1-row::before{content:"";position:absolute;left:61px;top:0;bottom:-6px;width:2px;background:var(--line)}
+.t1-time{padding-top:12px;font-size:calc(13.5px * min(var(--ts,1),1.1));font-weight:700;text-align:right;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.t1-node{width:14px;height:14px;border-radius:50%;margin-top:14px;position:relative;z-index:1;box-sizing:border-box;background:var(--bg);box-shadow:0 0 0 3px var(--bg)}
+.t1-node.is-done{background:var(--ok)}
+.t1-node.is-open{border:2.5px solid var(--brand)}
+.t1-node.is-plan{border:2.5px solid var(--ink-soft)}
+.t1-node.is-missed{border:2.5px solid var(--ink-soft);opacity:.45}
+.t1-node.is-ev{border-radius:4px;border:2.5px solid var(--ink-soft)}
+#todayHome .t1-card{margin:0;border:1px solid var(--line);border-left:4px solid var(--ac,var(--brand));border-radius:14px;padding:10px 12px;background:var(--surface);box-shadow:var(--shadow)}
+#todayHome .t1-card.done{opacity:1}
+#todayHome .t1-card.done .day-item-title{color:var(--ink-soft)}
+.t1-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.t1-top-r{display:inline-flex;align-items:center;gap:6px}
+.t1-ico{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none}
+.t1-ico svg{width:18px;height:18px}
+.t1-ico.is-ev{border-radius:50%}
+.combo-ico{width:30px;height:30px;border-radius:9px;background:var(--surface-2);display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:6px;box-sizing:border-box;flex:none}
+.combo-ico i{border-radius:2.5px;background:var(--track)}
+.t1-chip{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;font-size:calc(12px * min(var(--ts,1),1.1));font-weight:600;white-space:nowrap}
+.t1-chip.is-done{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+.t1-chip.is-open{background:var(--brand-pale);color:var(--brand)}
+.t1-chip.is-plan{box-shadow:inset 0 0 0 1.2px var(--line);color:var(--ink-soft)}
+.t1-chip.is-missed{color:var(--ink-soft);box-shadow:inset 0 0 0 1.2px var(--line)}
+.t1-chip.is-ev{background:var(--surface-2);color:var(--ink-soft)}
+#todayHome .t1-card .day-item-title{font-weight:600;font-size:calc(15px * var(--ts,1));line-height:1.25}
+.t1-tag{display:inline-block;font-size:calc(10.5px * min(var(--ts,1),1.1));font-weight:700;letter-spacing:.04em;color:var(--brand);background:var(--brand-pale);border-radius:999px;padding:1px 7px;vertical-align:2px;white-space:nowrap}
+.t1-blocks{list-style:none;margin:8px 0 2px;padding:0;display:flex;flex-direction:column;gap:4px}
+.t1-blocks li{display:flex;align-items:center;gap:8px;font-size:calc(13px * var(--ts,1));color:var(--ink)}
+.t1-blocks li i{width:8px;height:8px;border-radius:2px;flex:none}
+.t1-blocks li span{flex:1;min-width:0;overflow-wrap:anywhere}
+.t1-blocks li small{flex:none;color:var(--ink-soft);font-size:calc(12px * var(--ts,1))}
+.t1-repeat{display:flex;align-items:center;gap:5px;font-size:calc(12.5px * var(--ts,1));color:var(--ink-soft);margin-top:4px}
+.t1-repeat svg{flex:none}
+#todayHome .t1-start{width:100%;margin-top:10px;min-height:48px;padding:10px 12px;font-size:calc(16px * min(var(--ts,1),1.1));border-radius:14px;box-shadow:none}
+#todayHome .t1-card .day-item-actions{margin-top:8px}
+#todayHome .t1-card .day-item-actions:empty{display:none}
+#todayHome .t1-card .rem-bell{color:var(--ink-soft);display:inline-flex}
+#dayTimeline > * > .day-gap,#dayTimeline .day-gap{margin:0 0 6px 70px;padding-left:2px;font-style:italic;font-size:calc(11.5px * var(--ts,1));color:var(--ink-soft);position:relative}
+#dayTimeline .day-gap::before{display:none}
+#dayTimeline .day-subhead,#dayTimeline .day-empty{margin-left:0}
+
+/* iPad / Laptop (B1): Karten oben nebeneinander, Woche + Monat links, Tag rechts */
+@media (min-width:900px){
+  #todayHome.screen{max-width:1040px}
+  .today-top{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:start;margin-bottom:8px}
+  .today-top .today-pair{margin:0}
+  #todayHome .today-top .today-tile{min-height:220px}
+  .today-week{display:grid;grid-template-columns:440px minmax(0,1fr);column-gap:28px;align-items:start}
+  .today-week > .today-week-cal{grid-column:1;grid-row:1}
+  #todayHome .today-week > .day-panel{grid-column:2;grid-row:1;border-top:none;margin-top:0;padding-top:0}
+  .today-week > .today-plan-btn,.today-week > .today-plan-links{grid-column:1}
+}

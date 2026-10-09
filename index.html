@@ -292,7 +292,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 22:35</p>
+    <p class="app-version">Stand: 09.10.2026, 23:46</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -322,9 +322,13 @@
 
   <button class="combo-entry-link" data-open-combo="1">Kombi-Programm aus mehreren Bereichen &rarr;</button>
 
+  <div class="today-top">
+  <div class="today-top-main">
   <section class="today-hello">
-    <h1 class="today-greeting" id="todayGreeting">Guten Tag</h1>
-    <p class="today-date" id="todayDate"></p>
+    <div class="today-hello-row">
+      <h1 class="today-greeting" id="todayGreeting">Guten Tag</h1>
+      <p class="today-date" id="todayDate"></p>
+    </div>
     <button class="text-link small hello-name-btn" id="helloNameBtn" type="button" hidden>+ Wie hei&szlig;t du?</button>
     <form class="hello-name-form" id="helloNameForm" hidden>
       <div class="hello-name-row">
@@ -360,22 +364,25 @@
     <svg class="install-pointer-arrow" viewBox="0 0 40 64" width="40" height="64" aria-hidden="true"><path d="M20 4v52M6 42l14 16 14-16" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </div>
 
-  <!-- Heute Entwurf E (Fabian 09.10.): zwei halbe Kacheln unter "Zuletzt" -->
+  </div>
+  <!-- Heute Entwurf E (Fabian 09.10.): zwei halbe Kacheln unter "Zuletzt"; Heute neu (10.10.): Atempause + Ring -->
   <div class="today-pair" id="todayPair">
     <section class="today-tile today-break" id="todayBreak" aria-labelledby="todayBreakTitle">
       <div class="today-tile-top">
-        <span class="today-break-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h11a3 3 0 1 0-3-3"/><path d="M3 13h15a3 3 0 1 1-3 3"/><path d="M3 17h7"/></svg></span>
+        <span class="today-main-kicker today-break-kicker">Atempause</span>
         <button class="today-break-info" id="todayBreakInfoBtn" type="button" aria-label="Was ist die Nichtraucher-Pause? Dauer einstellen"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".6" fill="currentColor"/></svg></button>
       </div>
-      <h2 class="today-tile-title" id="todayBreakTitle">&bdquo;Nichtraucher-Pause&ldquo;</h2>
-      <p class="today-tile-sub">G&ouml;nn dir einmal durchatmen.</p>
+      <span class="today-break-icon today-tile-circle" aria-hidden="true"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h11a3 3 0 1 0-3-3"/><path d="M3 13h15a3 3 0 1 1-3 3"/><path d="M3 17h7"/></svg></span>
+      <h2 class="today-tile-title today-break-title" id="todayBreakTitle">&bdquo;Nichtraucher-Pause&ldquo;</h2>
       <button class="text-link today-tile-go" id="todayBreakStartBtn" type="button"><span id="todayBreakMinText">2 Min.</span> starten &rarr;</button>
     </section>
     <section class="today-tile today-new" id="todayNewTile" hidden></section>
   </div>
+  </div>
   <section class="today-ask" id="todayAsk" hidden></section>
 
   <section class="today-week">
+    <div class="today-week-cal">
     <div class="section-head">
       <h2 id="todayWeekTitle">Diese Woche</h2>
       <span class="section-note" id="todayProgress"></span>
@@ -394,6 +401,7 @@
       <button class="cal-switch-btn" id="calYearBtn" type="button" aria-pressed="false">Jahr</button>
     </div>
     <div class="cal-expand" id="calExpand" hidden></div>
+    </div>
 
     <div class="day-panel" id="todayDayPanel">
       <div class="day-panel-head">
@@ -403,8 +411,11 @@
           <button class="day-view-btn" data-day-view="hours" type="button">Stunden</button>
         </div>
       </div>
-      <div id="dayEvents"></div>
-      <div id="dayPanelBody"></div>
+      <p class="day-panel-sub" id="dayPanelSub" hidden></p>
+      <div class="t1" id="dayTimeline">
+        <div id="dayEvents"></div>
+        <div id="dayPanelBody"></div>
+      </div>
       <button class="text-link small" id="dayAddBtn" type="button">+ App-Training nur f&uuml;r diesen Tag eintragen</button>
       <button class="text-link small" id="dayEventAddBtn" type="button">+ Eigenen Termin eintragen (z. B. Wettkampf)</button>
     </div>
@@ -450,7 +461,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 22:35</p>
+    <p class="app-version">Stand: 09.10.2026, 23:46</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -486,7 +497,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 22:35</p>
+    <p class="app-version">Stand: 09.10.2026, 23:46</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -548,7 +559,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 22:35</p>
+    <p class="app-version">Stand: 09.10.2026, 23:46</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1004,7 +1015,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 22:35</p>
+    <p class="app-version">Stand: 09.10.2026, 23:46</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1079,7 +1090,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 22:35</p>
+    <p class="app-version">Stand: 09.10.2026, 23:46</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1190,7 +1201,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 22:35</p>
+    <p class="app-version">Stand: 09.10.2026, 23:46</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1262,7 +1273,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 22:35</p>
+    <p class="app-version">Stand: 09.10.2026, 23:46</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1559,7 +1570,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 22:35</p>
+    <p class="app-version">Stand: 09.10.2026, 23:46</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -1735,7 +1746,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 22:35</p>
+    <p class="app-version">Stand: 09.10.2026, 23:46</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -2050,7 +2061,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 22:35</p>
+    <p class="app-version">Stand: 09.10.2026, 23:46</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -2456,7 +2467,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 22:35</p>
+    <p class="app-version">Stand: 09.10.2026, 23:46</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>
@@ -2669,7 +2680,7 @@
 
   <footer class="site-footer">
     <p>Ein Angebot von <strong>Fabian Westermann Mentalcoaching</strong></p>
-    <p class="app-version">Stand: 09.10.2026, 22:35</p>
+    <p class="app-version">Stand: 09.10.2026, 23:46</p>
     <nav>
       <button class="faq-open-btn" type="button">H&auml;ufige Fragen</button>
       <a href="https://www.fabian-westermann.de/" target="_blank" rel="noopener">Website &amp; Kontakt</a>

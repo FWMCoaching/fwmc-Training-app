@@ -35626,6 +35626,47 @@
   let dayView = readJSON(DAY_VIEW_KEY, "list") === "hours" ? "hours" : "list";
 
   function greetingFor(h) { return h < 5 ? "Hallo" : h < 11 ? "Guten Morgen" : h < 17 ? "Guten Tag" : "Guten Abend"; }
+  // ---- Heute neu (Fabian 10.10., Vorschau freigegeben): Begrüßung in einer
+  // Zeile mit kurzem Datum, Zuletzt mit Streifen in der Bereichsfarbe, Ring
+  // für die Woche, ruhige Kalender-Zeichen (D1) und der Tag als Zeitleiste (T1).
+  const MONTHS_SHORT = ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sept.", "Okt.", "Nov.", "Dez."];
+  function shortDayDate(s) { const d = dParse(s); return `${WD_SHORT[wdIdx(s)]}, ${d.getDate()}. ${MONTHS_SHORT[d.getMonth()]}`; }
+  // Area colour as CSS values (stripe, icon, Kombi squares); Kombi = brand.
+  function areaVars(k) {
+    if (k === "combo") return { c: "var(--brand)", ink: "var(--brand)" };
+    if (k === "test") return { c: "var(--test-accent)", ink: "var(--test-accent-deep)" };
+    if (AREA_BY_KEY[k] && k !== "combo") return { c: `var(--area-${k}, ${AREA_BY_KEY[k].color})`, ink: `var(--area-${k}-ink, ${AREA_BY_KEY[k].color})` };
+    return { c: "var(--ink-soft)", ink: "var(--ink-soft)" };
+  }
+  // Kombi block -> area (for the four squares of the Kombi icon).
+  const COMBO_BLOCK_AREA = { wimhof: "breath", breath: "breath", movement: "movement", workout: "workout", cardio: "cardio", visual: "visual",
+    nat: "nat", blitz: "nat", flash: "nat", mot: "nat", balance: "nat", schulte: "nat", free: "free", optodrum: "activation", neuro: "neuro" };
+  function comboBlockArea(b) { return b && b.domain === "visual" && b.exercise === "periph-flash" ? "nat" : COMBO_BLOCK_AREA[b && b.domain] || ""; }
+  // Kombi icon: four small squares in the colours of its Bausteine (unused = neutral).
+  function comboIconHtml(blocks, cls) {
+    const areas = [];
+    (blocks || []).forEach((b) => { const a = comboBlockArea(b); if (a && !areas.includes(a)) areas.push(a); });
+    const sq = [0, 1, 2, 3].map((i) => areas[i] ? `<i style="background:${areaVars(areas[i]).c}"></i>` : "<i></i>").join("");
+    return `<span class="combo-ico${cls ? " " + cls : ""}" aria-hidden="true">${sq}</span>`;
+  }
+  function areaIconHtml(k, cls) {
+    const a = AREA_BY_KEY[k];
+    return `<span class="t1-ico${cls ? " " + cls : ""}" style="background:${areaVars(k).c}" aria-hidden="true">${a && a.icon ? `<svg viewBox="0 0 24 24">${a.icon}</svg>` : ""}</span>`;
+  }
+  // D1 (Fabian 10.10.): neutral marks, no area colours. Round = training
+  // (filled done, hollow planned, faded = past day not done), square = own
+  // appointment (filled single, hollow series). At most 3, then "+".
+  function d1MarksHtml(date, occ, extra, evs) {
+    const today = todayStr();
+    const tr = occ.map((o) => o.done ? "is-done" : date < today ? "is-missed" : "is-plan").concat(extra.map(() => "is-done"));
+    const ev = evs.map((e) => (eventRepeatDays(e) ? "is-series" : "is-single") + (e.goal ? " goal" : ""));
+    const total = tr.length + ev.length;
+    const tShow = tr.slice(0, ev.length ? Math.min(tr.length, total > 3 ? 2 : 3) : 3);
+    const eShow = ev.slice(0, Math.max(0, 3 - tShow.length));
+    const more = total > tShow.length + eShow.length;
+    return tShow.map((c) => `<i class="d1-dot ${c}"></i>`).join("") + eShow.map((c) => `<i class="d1-sq event-mark ${c}"></i>`).join("") + (more ? '<b class="d1-more">+</b>' : "");
+  }
+  const D1_LEGEND = `<div class="d1-legend"><span><i class="d1-dot is-done"></i>Training erledigt</span><span><i class="d1-dot is-plan"></i>geplant</span><span><i class="d1-dot is-missed"></i>nicht gemacht</span><span><i class="d1-sq is-single"></i>Termin</span><span><i class="d1-sq is-series"></i>Termin-Serie</span></div>`;
   function areaDot(area, extraClass) {
     const a = AREA_BY_KEY[area];
     return `<span class="area-dot ${extraClass || ""}" style="background:${a ? a.color : "#888"}" aria-hidden="true"></span>`;
@@ -35694,7 +35735,8 @@
     const now = new Date();
     const today = todayStr();
     renderHello(now);
-    els.todayDate.textContent = longDate(today);
+    els.todayDate.textContent = shortDayDate(today);
+    els.todayDate.setAttribute("aria-label", longDate(today));
     const hist = loadHistory();
     renderTodayMain(today, hist);
     renderWeekReview(today, hist);
@@ -35729,7 +35771,7 @@
     const open = occ.filter((o) => !o.done);
     const last = hist.find((h) => !h.aborted) || hist[0];
     const hint = "Nutze gerne die bereitstehenden Trainings oder gestalte dir eigene. Wenn du Hilfe brauchst, nimm gerne Kontakt zu deinem Trainer auf.";
-    let html, flat = false;
+    let html, flat = false, lastArea = null;
     const resume = resumeGet();
     if (open.length) {
       const e = open[0];
@@ -35754,7 +35796,8 @@
       if (!doneAll && last && starter !== "new") {
         // Entwurf E (Fabian 09.10.): one flat row "Zuletzt · Mittwoch", name, "Nochmal".
         flat = true;
-        html = `<div class="today-last"><div class="today-last-text"><div class="today-main-kicker">Zuletzt · ${esc(lastDayWord(last.ts))}</div>
+        lastArea = historyAreaOf(last);
+        html = `<div class="today-last"><span class="today-last-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/></svg></span><div class="today-last-text"><div class="today-main-kicker">Zuletzt · ${esc(lastDayWord(last.ts))}</div>
           <h2 class="today-last-title">${esc(last.title)}</h2></div>
           <button class="today-last-btn" type="button" id="todayContinueBtn">Nochmal</button></div>`;
       } else html = `<div class="today-main-kicker">${doneAll ? "Heute alles geschafft" : last ? "Zuletzt trainiert" : "Los geht’s"}</div>
@@ -35764,6 +35807,8 @@
     }
     els.todayMain.innerHTML = html;
     els.todayMain.classList.toggle("is-flat", flat);
+    if (flat) { const v = areaVars(lastArea); els.todayMain.style.setProperty("--ac", v.c); els.todayMain.style.setProperty("--ac-ink", v.ink); }
+    else { els.todayMain.style.removeProperty("--ac"); els.todayMain.style.removeProperty("--ac-ink"); }
     wireStarter(els.todayMain);
     renderTodayExtras(hist);
     applyNewcomerLayout(hist);
@@ -35994,6 +36039,18 @@
   }
   function moodLabel(v) { const m = MOODS.find((x) => x.v === v); return m ? m.label : ""; }
   let moodEdit = false;
+  // 96 px ring, r = 40 in a 100 box; n segments with 4-unit gaps (one segment = full circle).
+  function weekRingSvg(n, done) {
+    const C = 2 * Math.PI * 40, segs = Math.min(n, 21);
+    let arcs = "";
+    if (!segs) arcs = `<circle cx="50" cy="50" r="40" class="ring-open"/>`;
+    else if (segs === 1) arcs = `<circle cx="50" cy="50" r="40" class="${done ? "ring-done" : "ring-open"}"/>`;
+    else {
+      const gap = segs > 10 ? 2.5 : 4, len = C / segs - gap;
+      for (let i = 0; i < segs; i++) arcs += `<circle cx="50" cy="50" r="40" class="${i < done ? "ring-done" : "ring-open"}" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-(i * C / segs) - gap / 2).toFixed(2)}"/>`;
+    }
+    return `<svg viewBox="0 0 100 100" aria-hidden="true">${arcs}</svg>`;
+  }
   function renderMoodTile(tile, show) {
     tile.hidden = !show;
     if (!show) { tile.innerHTML = ""; return; }
@@ -36012,14 +36069,19 @@
       }));
       return;
     }
-    // Answered today: the week's status instead (same numbers as Fortschritt).
+    // Answered today: the week's status as a ring (Heute neu 10.10.): one segment
+    // per planned training of the week (same numbers as Fortschritt), done =
+    // brand colour, still open = grey, small gaps between the segments.
     const c = progressSummary(loadProgress()).cur;
     const left = Math.max(0, c.goal - c.planDone);
-    const sub = c.pause ? "Diese Woche ist Pause." : !c.goal ? "diese Woche" : left ? `Trainings diese Woche. ${goalLeftText(c)}` : "Trainings diese Woche. Ziel erreicht, stark!";
+    const counted = c.goal && !c.pause;
+    const sub = c.pause ? "Diese Woche ist Pause." : !c.goal ? "diese Woche" : left ? goalLeftText(c) : "Ziel erreicht, stark!";
+    const said = counted ? `${c.planDone} von ${c.goal} Trainings diese Woche` : c.pause ? "Pause diese Woche" : `${countLabel(c.n, "Training", "Trainings")} diese Woche`;
     tile.classList.add("is-set");
     tile.innerHTML = `<div class="today-main-kicker today-new-kicker">Heute ${esc(moodLabel(cur.v))} <button class="text-link small today-mood-change" type="button" id="todayMoodChangeBtn">ändern</button></div>
-      <h2 class="today-tile-title today-mood-week">${c.goal && !c.pause ? `${c.planDone} von ${c.goal}` : `${c.n} ${c.n === 1 ? "Training" : "Trainings"}`}</h2>
-      ${c.goal && !c.pause ? `<div class="progress-bar today-mood-bar"><span style="width:${Math.min(100, Math.round((c.planDone / c.goal) * 100))}%"></span></div>` : ""}
+      <div class="today-ring today-tile-circle" role="img" aria-label="${esc(said)}">${weekRingSvg(counted ? c.goal : 0, counted ? c.planDone : 0)}
+        <span class="today-ring-num" aria-hidden="true">${counted ? `${c.planDone}<small>/${c.goal}</small>` : c.pause ? "–" : c.n}</span>
+        <span class="today-mood-week sr-only">${esc(said)}</span></div>
       <p class="today-tile-sub">${esc(sub)}</p>
       <button class="text-link today-tile-go" type="button" id="todayMoodProgressBtn">Fortschritt &rarr;</button>`;
     $("todayMoodChangeBtn").addEventListener("click", () => { moodEdit = true; renderToday(); });
@@ -36228,15 +36290,18 @@
   }
   function extraDayHtml(list) {
     if (!list.length) return "";
-    const row = (h) => {
+    const row = (h, n) => {
       const area = historyAreaOf(h);
       const t = new Date(h.ts);
-      const meta = [String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0") + " Uhr"]
+      const hm = String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0");
+      const meta = [hm + " Uhr"]
         .concat(h.seconds ? [Math.max(1, Math.round(h.seconds / 60)) + " Min."] : [])
         .concat(AREA_BY_KEY[area] ? [AREA_BY_KEY[area].short] : []).join(" · ");
-      return `<div class="day-item done day-extra"><div class="day-item-main">${areaDot(area)}<div><div class="day-item-title">${esc(h.title || "Training")}</div><div class="day-item-meta">${esc(meta)} · erledigt</div></div></div></div>`;
+      const v = areaVars(area);
+      return t1Row(2992 + n, hm, "is-done", `<div class="day-item done day-extra t1-card" style="--ac:${v.c}"><div class="t1-top">${area === "combo" ? comboIconHtml(h.blocks) : areaIconHtml(area)}<span class="t1-chip is-done">erledigt</span></div>
+        <div class="day-item-title">${esc(h.title || "Training")}</div><div class="day-item-meta">${esc(meta)} · erledigt</div></div>`);
     };
-    return `<div class="day-subhead">${list.length === 1 ? "Zusätzlich trainiert (nicht geplant)" : `Zusätzlich trainiert (${list.length}, nicht geplant)`}</div>` + list.map(row).join("");
+    return `<div class="day-subhead" style="order:2991">${list.length === 1 ? "Zusätzlich trainiert (nicht geplant)" : `Zusätzlich trainiert (${list.length}, nicht geplant)`}</div>` + list.map(row).join("");
   }
   function dayStateClass(date, hist) {
     const occ = occurrencesOn(date, hist);
@@ -36260,13 +36325,14 @@
       const date = dAdd(monday, i);
       const { cls, occ } = dayStateClass(date, hist);
       const extra = date <= today ? extraAreasOn(date, hist, occ) : [];
-      const dots = occ.filter((o) => o.done).map((o) => areaDot(o.area)).slice(0, 3).join("") + occ.filter((o) => !o.done).map((o) => areaDot(o.area, "ring")).slice(0, Math.max(0, 3 - occ.filter((o) => o.done).length)).join("") + extra.slice(0, 2).map((a) => areaDot(a, "extra")).join("");
-      const mark = cls === "done" && !extra.length ? "✓" : (cls.startsWith("rest") && !extra.length) ? (cls.includes("pause") ? "<span class=\"week-pause\" aria-hidden=\"true\">–</span>" : "") : `<span class="week-dots">${dots}</span>`;
+      const dayEvs = eventsOn(date, evList);
+      const marks = d1MarksHtml(date, occ, extra, dayEvs);
+      const mark = marks ? `<span class="d1-marks">${marks}</span>` : cls.includes("pause") ? "<span class=\"week-pause\" aria-hidden=\"true\">–</span>" : "";
       const label = `${WD_LONG[i]}, ${dParse(date).getDate()}. ${MONTHS[dParse(date).getMonth()]}: ${cls.includes("pause") ? "Pause" : cls === "rest" ? "nichts geplant" : `${occ.filter((o) => o.done).length} von ${occ.length} erledigt`}${extra.length ? `, ${extra.length} zusätzlich` : ""}`;
-      const evCount = eventsOn(date, evList).length;
+      const evCount = dayEvs.length;
       const fullLabel = evCount ? `${label}, ${evCount === 1 ? "1 Termin" : evCount + " Termine"}` : label;
       html += `<button type="button" class="week-day ${cls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}" data-date="${date}" aria-label="${esc(fullLabel)}">
-        ${eventMarkHtml(date, evList)}<span class="week-day-name">${WD_SHORT[i]}</span><span class="week-day-num">${dParse(date).getDate()}</span><span class="week-day-mark">${mark}</span></button>`;
+        <span class="week-day-name">${WD_SHORT[i]}</span><span class="week-day-num">${dParse(date).getDate()}</span><span class="week-day-mark">${mark}</span></button>`;
     }
     els.todayWeekStrip.innerHTML = html;
     // Week range above the strip, iOS calendar style: "5.–11. Oktober"
@@ -36290,6 +36356,7 @@
     const lead = wdIdx(first);
     const today = todayStr();
     const evList = loadEvents();
+    const selMon = mondayOf(todaySel);
     const phases = new Map();
     let cells = WD_SHORT.map((w) => `<span class="cal-wd">${mini ? w[0] : w}</span>`).join("");
     for (let i = 0; i < lead; i++) cells += `<span class="cal-cell empty"></span>`;
@@ -36302,12 +36369,14 @@
       // Fabian 09.10.: month/quarter/year show the same trainings as the week
       // strip, incl. ones done without a plan entry (extraAreasOn).
       const extra = date <= today ? extraAreasOn(date, hist, occ) : [];
-      const dots = mini ? "" : `<span class="cal-dots">${[...new Set(occ.map((o) => o.area).concat(extra))].slice(0, 4).map((a) => areaDot(a)).join("")}</span>`;
+      const dayEvs = eventsOn(date, evList);
+      const dots = mini ? "" : `<span class="d1-marks">${d1MarksHtml(date, occ, extra, dayEvs)}</span>`;
       const xCls = extra.length && cls.startsWith("rest") ? " extra-done" : "";
-      const check = (cls === "done" ? `<span class="cal-check">✓</span>` : "") + (occ.some((o) => o.special || o.insert) ? `<span class="cal-star" aria-hidden="true">★</span>` : "");
-      const evN = eventsOn(date, evList).length;
+      const check = (mini && cls === "done" ? `<span class="cal-check">✓</span>` : "") + (occ.some((o) => o.special || o.insert) ? `<span class="cal-star" aria-hidden="true">★</span>` : "");
+      const evN = dayEvs.length;
+      const inWeek = !mini && date >= selMon && date <= dAdd(selMon, 6);
       const calLabel = longDate(date) + (extra.length ? `, ${countLabel(extra.length, "Training", "Trainings")} ohne Plan` : "") + (evN ? `, ${evN === 1 ? "1 Termin" : evN + " Termine"}` : "");
-      cells += `<button type="button" class="cal-cell ${cls}${xCls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}" data-date="${date}" aria-label="${esc(calLabel)}">${band}${eventMarkHtml(date, evList)}<span class="cal-num">${d}</span>${check}${dots}</button>`;
+      cells += `<button type="button" class="cal-cell ${cls}${xCls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}${inWeek ? " in-week" : ""}" data-date="${date}" aria-label="${esc(calLabel)}">${band}${mini ? eventMarkHtml(date, evList) : ""}<span class="cal-num">${d}</span>${check}${dots}</button>`;
     }
     const legend = phases.size ? `<div class="cal-legend">${[...phases].map(([i, n]) => `<span><i style="background:${PHASE_TINTS[i % PHASE_TINTS.length]}"></i>${esc(n)}</span>`).join("")}</div>` : "";
     return `<div class="cal-month${mini ? " mini" : ""}"><div class="cal-month-title">${MONTHS[month]} ${year}</div><div class="cal-grid">${cells}</div>${legend}</div>`;
@@ -36327,10 +36396,10 @@
     if (!calMode) { els.calExpand.innerHTML = ""; return; }
     const sel = dParse(todaySel);
     if (calMode === "month") {
-      let html = `<div class="cal-head"><button type="button" class="week-nav-btn" data-cal-step="-1" aria-label="Vorheriger Monat">&lsaquo;</button><span></span><button type="button" class="week-nav-btn" data-cal-step="1" aria-label="Nächster Monat">&rsaquo;</button></div>`;
+      let html = `<div class="cal-head cal-head-month"><button type="button" class="week-nav-btn" data-cal-step="-1" aria-label="Vorheriger Monat">&lsaquo;</button><span class="cal-head-title">${MONTHS[sel.getMonth()]} ${sel.getFullYear()}</span><button type="button" class="week-nav-btn" data-cal-step="1" aria-label="Nächster Monat">&rsaquo;</button></div>`;
       html += monthGridHtml(sel.getFullYear(), sel.getMonth(), hist, false);
       if (calShowNext) { const n = new Date(sel.getFullYear(), sel.getMonth() + 1, 1); html += monthGridHtml(n.getFullYear(), n.getMonth(), hist, false); }
-      els.calExpand.innerHTML = html;
+      els.calExpand.innerHTML = html + D1_LEGEND;
     } else if (calMode === "quarter") {
       let html = `<p class="cal-hint">Seitlich wischen für weitere Monate. Auf iPad oder Laptop am besten lesbar.</p><div class="cal-quarter" id="calQuarterScroller">`;
       for (let i = -3; i <= 12; i++) { const m = new Date(sel.getFullYear(), sel.getMonth() + i, 1); html += monthGridHtml(m.getFullYear(), m.getMonth(), hist, true); }
@@ -36361,57 +36430,96 @@
     }
     return `<span class="rem-bell" title="Mit Erinnerung" aria-label="mit Erinnerung">${BELL_SVG}</span>`;
   }
+  function comboOfEntry(o) {
+    if (o.area !== "combo" || !(o.what || "").startsWith("combo:")) return null;
+    return comboSavedStore.load().find((x) => x.id === o.what.slice(6)) || null;
+  }
   function renderDayPanel(hist) {
     const date = todaySel;
-    els.dayPanelTitle.textContent = date === todayStr() ? `Heute, ${longDate(date)}` : longDate(date);
+    const today = todayStr();
+    els.dayPanelTitle.textContent = date === today ? `Heute, ${longDate(date)}` : longDate(date);
     document.querySelectorAll(".day-view-btn").forEach((b) => b.classList.toggle("active", b.dataset.dayView === dayView));
-    const hasEvents = renderDayEvents(date);
+    const tl = $("dayTimeline");
+    if (tl) tl.classList.toggle("is-hours", dayView === "hours");
+    const evs = renderDayEvents(date);
+    const hasEvents = evs.length > 0;
     const occ = occurrencesOn(date, hist);
     const pzDay = pauseOn(date);
+    const sub = $("dayPanelSub");
+    const extraList = date <= today ? extraEntriesOn(date, hist, occ) : [];
+    if (sub) {
+      const nT = occ.length + extraList.length;
+      const parts = [nT ? countLabel(nT, "Training", "Trainings") : "", evs.length ? countLabel(evs.length, "Termin", "Termine") : ""].filter(Boolean);
+      sub.textContent = parts.join(" · ");
+      sub.hidden = !parts.length;
+    }
     if (!occ.length && pzDay) {
       const r = PAUSE_BY_KEY[pzDay.reason] || PAUSE_BY_KEY.sonstiges;
-      els.dayPanelBody.innerHTML = `<p class="day-empty"><span class="pause-ico inline" aria-hidden="true">${r[2]}</span> Pause (${esc(r[1])}) bis ${esc(shortDate(pzDay.to))}. Keine Erinnerungen, deine Serie reißt nicht ab. <button type="button" class="text-link small" id="dayPauseEditBtn">Pause bearbeiten</button></p>`;
+      els.dayPanelBody.innerHTML = `<p class="day-empty" style="order:2990"><span class="pause-ico inline" aria-hidden="true">${r[2]}</span> Pause (${esc(r[1])}) bis ${esc(shortDate(pzDay.to))}. Keine Erinnerungen, deine Serie reißt nicht ab. <button type="button" class="text-link small" id="dayPauseEditBtn">Pause bearbeiten</button></p>`;
       $("dayPauseEditBtn").addEventListener("click", () => openPauseSheet(pzDay.id));
       return;
     }
-    const extraHtml = date <= todayStr() ? extraDayHtml(extraEntriesOn(date, hist, occ)) : "";
+    const extraHtml = extraDayHtml(extraList);
+    const untimedEvents = evs.some((e) => !e.time);
     if (!occ.length) {
       const ph = phaseFor(date);
-      els.dayPanelBody.innerHTML = extraHtml ? `<p class="day-empty">Kein Training aus der App geplant.</p>${extraHtml}` : hasEvents ? `<p class="day-empty">Kein Training aus der App geplant.</p>` : `<p class="day-empty">${ph || planHasEntries() ? "Ruhetag, an diesem Tag ist nichts geplant." : "Noch kein Plan. Lege unten deinen Wochenplan an oder trage ein App-Training nur für diesen Tag ein."}</p>`;
+      const msg = extraHtml || hasEvents ? "Kein Training aus der App geplant." : ph || planHasEntries() ? "Ruhetag, an diesem Tag ist nichts geplant." : "Noch kein Plan. Lege unten deinen Wochenplan an oder trage ein App-Training nur für diesen Tag ein.";
+      els.dayPanelBody.innerHTML = (untimedEvents ? `<div class="day-subhead" style="order:2881">Ohne Uhrzeit</div>` : "") + `<p class="day-empty" style="order:2990">${msg}</p>${extraHtml}`;
       return;
     }
+    const isFuture = date > today, isPast = date < today;
+    const fromTrainer = !!(plan.source && plan.source.code);
     const item = (o, style, compact) => {
-      const meta = [o.time ? (o.time + "–" + minToTime(timeToMin(o.time) + o.minutes)) : "ohne Uhrzeit", `${o.minutes} Min.`, AREA_BY_KEY[o.area].short].concat(o.special ? ["Sondertraining"] : []).join(" · ");
+      const combo = comboOfEntry(o);
+      const kombiMeta = combo && Array.isArray(combo.blocks) ? countLabel(combo.blocks.length, "Baustein", "Bausteine") : AREA_BY_KEY[o.area].short;
+      const meta = [o.time ? (o.time + "–" + minToTime(timeToMin(o.time) + o.minutes)) : "ohne Uhrzeit", `${o.minutes} Min.`, kombiMeta].concat(o.special ? ["Sondertraining"] : []).join(" · ");
       // Zeitform je Tag (Fabian 09.10.): kommende Tage "geplant" und ohne Abhaken,
       // vergangene "nicht gemacht", nur heute "offen" / "Heute auslassen".
-      const isFuture = date > todayStr(), isPast = date < todayStr();
       const openWord = isFuture ? "geplant" : isPast ? "nicht gemacht" : "offen";
-      const status = o.done ? (o.auto && !o.manual ? "erledigt (aus deinem Verlauf)" : "erledigt") : openWord;
+      const st = o.done ? "is-done" : isFuture ? "is-plan" : isPast ? "is-missed" : "is-open";
       const doneBtn = isFuture && !o.manual ? "" : null;
       if (compact) return `<div class="day-item compact${o.done ? " done" : ""}" style="${style}" data-occ="${esc(o.id)}">
         <div class="day-item-title">${areaDot(o.area)} ${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div>
         <div class="day-item-meta">${esc(o.time)}–${esc(minToTime(timeToMin(o.time) + o.minutes))} · ${o.done ? "✓ erledigt" : openWord}</div>
         <div class="day-item-actions"><button type="button" class="day-act" data-act="start">Starten</button>${doneBtn ?? `<button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}" aria-label="${o.manual ? "Erledigt, zurücknehmen" : "Abhaken"}">✓</button>`}</div></div>`;
-      return `<div class="day-item${o.done ? " done" : ""}" ${style ? `style="${style}"` : ""} data-occ="${esc(o.id)}">
-        <div class="day-item-main">${areaDot(o.area)}<div><div class="day-item-title">${o.special ? "★ " : ""}${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div><div class="day-item-meta">${esc(meta)} · ${status}</div></div></div>
+      const v = areaVars(o.area);
+      const icon = o.area === "combo" ? comboIconHtml(combo && combo.blocks) : areaIconHtml(o.area);
+      const chip = `<span class="t1-chip ${st}">${o.done ? "erledigt" : openWord}</span>`;
+      const trTag = fromTrainer && !o.extra && !o.override ? ' <span class="t1-tag">von deinem Trainer</span>' : "";
+      const blocks = combo && Array.isArray(combo.blocks) && combo.blocks.length ? `<ul class="t1-blocks">${combo.blocks.slice(0, 6).map((b) => {
+        const sec = comboBlockSeconds(b), a = comboBlockArea(b);
+        return `<li><i style="background:${a ? areaVars(a).c : "var(--line)"}"></i><span>${esc(comboBlockLabel(b))}</span>${sec ? `<small>${Math.max(1, Math.round(sec / 60))} Min.</small>` : ""}</li>`;
+      }).join("")}${combo.blocks.length > 6 ? `<li class="t1-blocks-more"><span>+ ${combo.blocks.length - 6} weitere</span></li>` : ""}</ul>` : "";
+      const repeat = !o.extra && !o.override && !o.insert ? `<div class="t1-repeat">${T1_REPEAT_SVG}<span>jede Woche${fromTrainer ? " (Plan von deinem Trainer)" : ""}</span></div>` : "";
+      const bigStart = !o.done && !isFuture && !isPast;
+      const auto = o.done && o.auto && !o.manual ? " · aus deinem Verlauf" : "";
+      return `<div class="day-item t1-card${o.done ? " done" : ""}" style="--ac:${v.c}" data-occ="${esc(o.id)}">
+        <div class="t1-top">${icon}<span class="t1-top-r">${reminderBellHtml(date, o)}${chip}</span></div>
+        <div class="day-item-title">${o.special ? "★ " : ""}${esc(entryTitle(o))}${trTag}</div><div class="day-item-meta">${esc(meta + auto)}</div>
+        ${blocks}${repeat}
+        ${bigStart ? '<button type="button" class="start-btn t1-start" data-act="start">Training starten</button>' : ""}
         <div class="day-item-actions">
-          <button type="button" class="day-act" data-act="start">Starten</button>
+          ${bigStart ? "" : '<button type="button" class="day-act" data-act="start">Starten</button>'}
           ${doneBtn ?? `<button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}">${o.manual ? "✓ Erledigt" : "Abhaken"}</button>`}
-          ${compact ? "" : `<button type="button" class="day-act subtle" data-act="change">Ändern</button><button type="button" class="day-act subtle" data-act="${o.extra ? "remove" : "skip"}">${o.extra ? "Löschen" : date === todayStr() ? "Heute auslassen" : "Auslassen"}</button>`}
+          <button type="button" class="day-act subtle" data-act="change">Ändern</button><button type="button" class="day-act subtle" data-act="${o.extra ? "remove" : "skip"}">${o.extra ? "Löschen" : date === today ? "Heute auslassen" : "Auslassen"}</button>
         </div></div>`;
     };
+    const nodeOf = (o) => o.done ? "is-done" : isFuture ? "is-plan" : isPast ? "is-missed" : "is-open";
     const timed = occ.filter((o) => o.time), untimed = occ.filter((o) => !o.time);
     let html = "";
     if (dayView === "list") {
-      timed.forEach((o, i) => {
-        if (i > 0) {
-          const prev = timed[i - 1];
-          const gap = timeToMin(o.time) - (timeToMin(prev.time) + prev.minutes);
-          if (gap >= 15) html += `<div class="day-gap" aria-label="${esc(fmtGap(gap))} frei"><span>${esc(fmtGap(gap))} dazwischen</span></div>`;
-        }
-        html += item(o);
+      // Gaps over the whole day (trainings and appointments together).
+      const spans = timed.map((o) => [timeToMin(o.time), timeToMin(o.time) + o.minutes])
+        .concat(evs.filter((e) => e.time).map((e) => [timeToMin(e.time), timeToMin(e.time)]))
+        .sort((a, b) => a[0] - b[0]);
+      let end = null;
+      spans.forEach(([st, en]) => {
+        if (end != null && st - end >= 15) html += `<div class="day-gap" style="order:${st * 2 + 1}" aria-label="${esc(fmtGap(st - end))} frei"><span>${esc(fmtGap(st - end))} dazwischen</span></div>`;
+        end = end == null ? en : Math.max(end, en);
       });
-      if (untimed.length) html += `<div class="day-subhead">Ohne Uhrzeit</div>` + untimed.map((o) => item(o)).join("");
+      timed.forEach((o) => { html += t1Row(t1Order(o.time), o.time, nodeOf(o), item(o)); });
+      if (untimed.length || untimedEvents) html += `<div class="day-subhead" style="order:2881">Ohne Uhrzeit</div>`;
+      untimed.forEach((o) => { html += t1Row(2883, "", nodeOf(o), item(o)); });
     } else {
       if (untimed.length) html += `<div class="day-subhead">Ohne Uhrzeit</div>` + untimed.map((o) => item(o)).join("");
       const starts = timed.map((o) => timeToMin(o.time)), ends = timed.map((o) => timeToMin(o.time) + o.minutes);
@@ -36445,7 +36553,7 @@
     els.dayPanelBody.innerHTML = html + extraHtml;
     els.dayPanelBody.querySelectorAll(".day-item[data-occ]").forEach((el) => {
       const o = occ.find((x) => x.id === el.dataset.occ);
-      el.querySelectorAll(".day-act").forEach((b) => b.addEventListener("click", () => dayAction(date, o, b.dataset.act)));
+      el.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", () => dayAction(date, o, b.dataset.act)));
     });
   }
   function dayAction(date, o, act) {
@@ -36547,18 +36655,29 @@
       $("dayPanelTitle").scrollIntoView({ block: "start", behavior: "smooth" });
     });
   }
+  const T1_CAL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>';
+  const T1_REPEAT_SVG = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg>';
+  // T1 (Heute neu 10.10.): every entry of a day is one row of the timeline -
+  // time on the left, a node on the line, the card on the right. Events live
+  // in #dayEvents, trainings in #dayPanelBody; both containers are
+  // display:contents inside #dayTimeline, so the rows sort by CSS order (= time).
+  function t1Order(time, untimedBase) { const m = timeToMin(time); return m == null ? untimedBase : m * 2 + 2; }
+  function t1Row(order, time, node, card) {
+    return `<div class="t1-row" style="order:${order}"><div class="t1-time">${time ? esc(time) : ""}</div><span class="t1-node ${node}" aria-hidden="true"></span>${card}</div>`;
+  }
   function renderDayEvents(date) {
     const box = $("dayEvents");
     const ev = eventsOn(date);
     box.innerHTML = ev.map((e) => {
       const k = EVENT_KIND_BY_KEY[e.kind] || EVENT_KINDS[3];
       const meta = [e.time ? `${e.time} Uhr` : "ohne Uhrzeit", k.label, EVENT_REPEAT_META[eventRepeatDays(e) ? e.repeat : ""] || "", e.goal ? "Ziel mit Countdown" : ""].filter(Boolean).join(" · ");
-      return `<div class="day-item event-item" style="border-left-color:${k.color}" data-event="${esc(e.id)}" data-event-date="${esc(date)}">
-        <div class="day-item-main"><span class="area-dot event-dot" style="background:${k.color}" aria-hidden="true"></span><div><div class="day-item-title">${esc(e.title)}</div><div class="day-item-meta">${esc(meta)}</div></div></div>
-        <div class="day-item-actions"><button type="button" class="day-act" data-event-edit="${esc(e.id)}">Bearbeiten</button></div></div>`;
+      return t1Row(t1Order(e.time, 2882), e.time, "is-ev", `<div class="day-item event-item t1-card" style="--ac:${k.color}" data-event="${esc(e.id)}" data-event-date="${esc(date)}">
+        <div class="t1-top"><span class="t1-ico is-ev" style="background:${k.color}" aria-hidden="true">${T1_CAL_SVG}</span><span class="t1-chip is-ev">Termin</span></div>
+        <div class="day-item-title">${esc(e.title)}</div><div class="day-item-meta">${esc(meta)}</div>
+        <div class="day-item-actions"><button type="button" class="day-act" data-event-edit="${esc(e.id)}">Bearbeiten</button></div></div>`);
     }).join("");
     box.querySelectorAll("[data-event-edit]").forEach((b) => b.addEventListener("click", () => openEventSheet(b.dataset.eventEdit, date)));
-    return ev.length > 0;
+    return ev;
   }
   let eventEditId = null, eventEditDate = null, eventKind = "wettkampf", eventRepeat = "none", eventEditTrainer = false, eventReturnFocus = null;
   function renderEventRepeat() {

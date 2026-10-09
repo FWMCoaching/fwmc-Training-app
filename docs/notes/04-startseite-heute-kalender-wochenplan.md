@@ -183,3 +183,58 @@ unused for now. Test: `tests/heute_e_0910_test.py`.
 
 ## Vorher und nachher (09.10. nachmittags)
 With today's Tagesform set, every done panel of a finished (not aborted) run asks once "Und wie geht es dir jetzt?" (`moodAfterOffer`, called from the done-panel observer; own mode only; the run must be < 15 s old). Stored on the history entry as `moodBefore`/`moodAfter`. Fortschritt "Deine Tagesform" adds "Vorher und nachher" per area from 3 answers (`moodAfterHtml`). FAQ Tagesform extended. Test: `tests/paket_0910_nachmittag_test.py`.
+
+## Heute neu (10.10., Fabian: Vorschau „Heute – Vorschau“ freigegeben, Tag = T1)
+Built from the approved preview; data and functions are the existing ones.
+- **Begrüßung**: `.today-hello` is no longer a soft card but one row
+  `.today-hello-row`: `#todayGreeting` left (22 px, name logic unchanged,
+  "+ Wie heißt du?" stays below), `#todayDate` right as short date
+  `shortDayDate()` ("Fr, 9. Okt.", `MONTHS_SHORT`), aria-label = long date.
+- **Zuletzt** (`#todayMain.is-flat`): card with a 6 px stripe (`::before`) in
+  the area colour of the last run (`areaVars(historyAreaOf(last))` sets
+  `--ac`/`--ac-ink` on the card), redo icon `.today-last-ico`, kicker in the
+  area ink. The other `#todayMain` states (Heutiges Training, Weitermachen,
+  alles geschafft, Neue) are unchanged.
+- **Paar** `#todayPair`: `#todayBreak` = kicker „Atempause“ + ⓘ (break sheet),
+  96 px soft circle `.today-tile-circle` with the breath icon, title,
+  „N Min. starten →“ (sub line dropped). `#todayNewTile` answered = „Heute fit“
+  + ändern + 96 px ring `weekRingSvg(goal, planDone)` (one segment per counted
+  planned training of `progressSummary().cur`, done = `--brand`, open =
+  `--track`, gaps 4 units; pause/no rating = plain grey ring) with „3/4“ in the
+  middle (+ `.today-mood-week.sr-only` for screen readers), `goalLeftText`
+  below, „Fortschritt →“. Unanswered Tagesform unchanged.
+- **D1-Zeichen** (week strip + month): `d1MarksHtml(date, occ, extra, evs)` -
+  `.d1-dot.is-done|is-plan|is-missed` (trainings incl. ones without a plan),
+  `.d1-sq.event-mark.is-single|is-series` (own appointments), max 3 then
+  `.d1-more` „+“ (an appointment keeps at least one place). No area colours,
+  no ✓ any more (the year/quarter mini months keep their bold numbers).
+  Selected day: marks in `--on-brand-fill`. `D1_LEGEND` under the month.
+  The old corner diamond `eventMarkHtml` remains only in mini months.
+- **Monat**: borderless cells, number in a 32 px circle (selected = filled
+  brand, today = brand ring), the selected week row tinted (`.in-week`),
+  title between ‹ › (`.cal-head-month`), phase band as a faint line.
+- **Tag (T1)**: `#dayEvents` + `#dayPanelBody` sit in `#dayTimeline` (`.t1`,
+  flex column) and are `display:contents`, so every `.t1-row` (time, node,
+  card) sorts by CSS `order` = minutes×2+2 (`t1Order`); gaps (`.day-gap`,
+  ≥ 15 min, trainings and appointments together) get the odd order between.
+  Untimed: subhead 2881, events 2882, trainings 2883; „Zusätzlich trainiert“
+  2991+; empty texts 2990. Hours view: `.t1.is-hours` turns this off.
+  Cards `.day-item.t1-card` keep ids/data attributes, so `SWIPE_ROWS`,
+  Abhaken/Ändern/Auslassen, reminder bell and event edit work as before.
+  Chip `.t1-chip` follows the Zeitform rule (erledigt / offen / geplant /
+  nicht gemacht), plan entries show „↻ jede Woche“ (+ „(Plan von deinem
+  Trainer)“ and the `.t1-tag` when `plan.source`). Kombi entries
+  (`combo:<id>`) show `comboIconHtml(blocks)` (four squares in the Bausteine'
+  area colours via `COMBO_BLOCK_AREA`, unused = neutral) and their Bausteine
+  with minutes (`comboBlockSeconds`). Today's open entries get the full-width
+  „Training starten“ (`data-act="start"`); the action listener reads every
+  `[data-act]`. `#dayPanelSub` = „1 Training · 1 Termin“.
+- **≥ 900 px (B1)**: `#todayHome` widens to 1040 px; `.today-top` = grid
+  (`.today-top-main` with greeting + cards | `#todayPair`), `.today-week` =
+  grid (`.today-week-cal` 440 px | `#todayDayPanel`). Phones keep one column
+  in the old order.
+- Open: with a planned training today the top card is still „Heutiges
+  Training“ (logic unchanged), so „Training starten“ appears there and in the
+  day card - Fabian to decide (the preview showed „Zuletzt“ on top).
+Tests: `tests/heute_neu_1010_test.py`; `kalender_ansichten_0910_test.py`
+now counts `.d1-dot`; `atempause_sanft_1007_test.py` checks the kicker.

@@ -1,6 +1,7 @@
 """Woche, Monat, Quartal und Jahr zeigen für jeden Tag dasselbe (Fabian 09.10.2026:
 Trainings ohne Plan-Eintrag hatten Punkte in der Wochenleiste, aber nicht im Monat).
-Allgemeine Prüfung: jede Kalender-Ansicht wird gegen die Wochenleiste abgeglichen."""
+Allgemeine Prüfung: jede Kalender-Ansicht wird gegen die Wochenleiste abgeglichen.
+Heute neu (10.10.): Trainings sind neutrale D1-Punkte (.d1-dot) statt Bereichsfarben/Haken."""
 import json
 from datetime import datetime, timedelta
 from playwright.sync_api import sync_playwright
@@ -39,13 +40,13 @@ with sync_playwright() as p:
     pg.wait_for_timeout(900)
 
     week = pg.evaluate("""() => Object.fromEntries([...document.querySelectorAll('#todayWeekStrip [data-date]')].map(b =>
-        [b.dataset.date, b.querySelectorAll('.area-dot').length + (b.querySelector('.week-day-mark')?.textContent.includes('✓') ? 1 : 0)]))""")
+        [b.dataset.date, b.querySelectorAll('.d1-dot').length]))""")
     marked = [d for d, n in week.items() if n]
     check("Wochenleiste zeigt die Trainings ohne Plan", len(marked) == 3, week)
 
     def month_cells():
         return pg.evaluate("""() => Object.fromEntries([...document.querySelectorAll('#calExpand .cal-cell[data-date]')].map(c =>
-            [c.dataset.date, {dots: c.querySelectorAll('.area-dot').length, check: !!c.querySelector('.cal-check'),
+            [c.dataset.date, {dots: c.querySelectorAll('.d1-dot').length, check: !!c.querySelector('.cal-check'),
              cls: c.className, label: c.getAttribute('aria-label'), num: getComputedStyle(c.querySelector('.cal-num')).fontWeight}]))""")
 
     pg.click("#calMonthBtn"); pg.wait_for_timeout(300)
