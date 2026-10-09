@@ -177,3 +177,9 @@ Fortschritt › "Deine Tagesform" (`renderMoodProgress`): 4-week dot grid
 sentence "An „müde“-Tagen hast du in X % trainiert, an „fit“ …". Not in
 handover/QR yet (Fabian to decide). Old `newTilePick`/`bestTilePick` stay
 unused for now. Test: `tests/heute_e_0910_test.py`.
+
+## Plan-Haken genau (09.10. nachmittags)
+`occurrencesOn` matches history runs to plan entries per area, except entries naming one training: `free:<id>` needs `h.freeId === id`, `neuro:<ex>` needs `h.neuroEx === ex` (also for runs from the trainer's QR). Specific entries pick first. FAQ "Wann bekommt ein geplantes Training seinen Haken?". Test hook `window.__ho0910.planTry`.
+
+## Vorher und nachher (09.10. nachmittags)
+With today's Tagesform set, every done panel of a finished (not aborted) run asks once "Und wie geht es dir jetzt?" (`moodAfterOffer`, called from the done-panel observer; own mode only; the run must be < 15 s old). Stored on the history entry as `moodBefore`/`moodAfter`. Fortschritt "Deine Tagesform" adds "Vorher und nachher" per area from 3 answers (`moodAfterHtml`). FAQ Tagesform extended. Test: `tests/paket_0910_nachmittag_test.py`.
