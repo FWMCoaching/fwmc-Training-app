@@ -2251,7 +2251,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .progress-area-bar{height:10px;border-radius:999px;background:var(--line);overflow:hidden}
 .progress-area-bar span{display:block;height:100%;border-radius:999px}
 .progress-area-n{font-weight:700;font-size:calc(14px * var(--ts,1));min-width:2ch;text-align:right}
-.progress-milestones{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}
+.progress-milestones{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;max-width:520px}
 .progress-milestone{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:12px;border:1px dashed var(--line);color:var(--ink-soft);min-width:0}
 .progress-milestone strong{font-family:"Magra",sans-serif;font-size:calc(20px * var(--ts,1));line-height:1.1}
 .progress-milestone span{font-size:calc(11px * var(--ts,1))}

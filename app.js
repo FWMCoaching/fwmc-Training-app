@@ -3685,6 +3685,15 @@
   // from the existing history. Aborted runs never count.
   const PROGRESS_KEY = "fwmc-progress-v1";
   const PROGRESS_MILESTONES = [1, 5, 10, 25, 50, 100, 150, 200, 300, 500, 750, 1000];
+  // Meilensteine (Fabian 09.10.): nach 1000 endlos weiter in 250er-Schritten;
+  // gezeigt werden 5 Felder: die letzten 2 geschafften und die nächsten 3.
+  function milestoneAt(i) { return i < PROGRESS_MILESTONES.length ? PROGRESS_MILESTONES[i] : 1000 + 250 * (i - PROGRESS_MILESTONES.length + 1); }
+  function milestoneWindow(total) {
+    let i = 0; while (milestoneAt(i) <= total) i++; // i = Index des nächsten Meilensteins
+    const from = Math.max(0, i - 2);
+    return Array.from({ length: 5 }, (_, k) => milestoneAt(from + k)); // anfangs mehr kommende
+
+  }
   function loadProgress() {
     const raw = readJSON(PROGRESS_KEY, null);
     const p = raw && typeof raw === "object" ? raw : {};
@@ -3788,7 +3797,7 @@
       Object.entries(w.a).forEach(([k, v]) => { areas[k] = (areas[k] || 0) + v; });
       areaS += w.s;
     }
-    const next = PROGRESS_MILESTONES.find((m) => m > total) || null;
+    const next = milestoneWindow(total).find((m) => m > total);
     return { cur, streak, best: Math.max(best, streak), total, totalS, weeks, areas, areaS, next };
   }
   const PROGRESS_AREA_LABEL = { combo: ["Kombi-Programm", "#007094"], test: ["Test-Bereich", "#b45309"] };
@@ -3869,11 +3878,9 @@
       : `<p class="group-help">In den letzten 4 Wochen noch kein Training. Leg einfach los, dann siehst du hier, wie sich dein Training auf die Bereiche verteilt.</p>`;
     els.progressAreasNote.textContent = areaRows.length ? `Zusammen ${s.areaS ? fmtMinutes(s.areaS) : "unter einer Minute"} in den letzten 4 Wochen.` : "";
     renderMoodProgress(loadHistory());
-    els.progressMilestones.innerHTML = PROGRESS_MILESTONES.map((m) =>
+    els.progressMilestones.innerHTML = milestoneWindow(s.total).map((m) =>
       `<div class="progress-milestone${s.total >= m ? " reached" : ""}"><strong>${m}</strong><span>${m === 1 ? "Training" : "Trainings"}</span></div>`).join("");
-    els.progressNextText.textContent = s.next
-      ? `Noch ${s.next - s.total} ${s.next - s.total === 1 ? "Training" : "Trainings"} bis zum nächsten Meilenstein (${s.next}).`
-      : "Alle Meilensteine geschafft. Respekt!";
+    els.progressNextText.textContent = `Noch ${s.next - s.total} ${s.next - s.total === 1 ? "Training" : "Trainings"} bis zum nächsten Meilenstein (${s.next}).`;
   }
   function setProgressGoal(delta) {
     const p = loadProgress();
@@ -36417,14 +36424,28 @@
     els.todayAreaGrid.querySelectorAll(".area-tile").forEach((b) => b.addEventListener("click", () => goArea(b.dataset.area)));
   }
 
-  els.todayWeekStrip.addEventListener("click", (e) => { const b = e.target.closest("[data-date]"); if (b) selectDay(b.dataset.date); });
+  // Tippen auf einen Kalendertag springt zur Tagesansicht (Fabian 09.10.): Wochenleiste
+  // ganz nach oben (Tag direkt darunter sichtbar), im Monat/Quartal/Jahr die Tagesansicht.
+  // Kein Sprung, wenn die Tagesansicht schon gut im Bild ist.
+  function dayJump(target) {
+    const panel = document.getElementById("todayDayPanel");
+    if (!panel || !target) return;
+    let bar = 0; // untere Kante der sichtbaren Kopfleiste (sticky .brandbar oder feste .app-bar)
+    document.querySelectorAll(".brandbar, .app-bar").forEach((el) => { const r = el.getBoundingClientRect(); if (r.height > 0 && r.top <= 1) bar = Math.max(bar, r.bottom); });
+    const top = panel.getBoundingClientRect().top;
+    if (top >= bar && top <= window.innerHeight * 0.45) return;
+    const y = window.scrollY + target.getBoundingClientRect().top - bar - 8;
+    const rm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: Math.max(0, y), behavior: rm ? "auto" : "smooth" });
+  }
+  els.todayWeekStrip.addEventListener("click", (e) => { const b = e.target.closest("[data-date]"); if (b) { selectDay(b.dataset.date); dayJump(els.todayWeekStrip.closest(".week-nav")); } });
   els.calExpand.addEventListener("click", (e) => {
     const step = e.target.closest("[data-cal-step]");
     if (step) { const d = dParse(todaySel); const n = new Date(d.getFullYear(), d.getMonth() + Number(step.dataset.calStep), 1); selectDay(dStr(n)); return; }
     const ys = e.target.closest("[data-year-step]");
     if (ys) { calYear += Number(ys.dataset.yearStep); renderCalendar(loadHistory()); return; }
     const b = e.target.closest("[data-date]");
-    if (b) { selectDay(b.dataset.date); els.dayPanelTitle.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+    if (b) { selectDay(b.dataset.date); dayJump(document.getElementById("todayDayPanel")); }
   });
   document.getElementById("todayWeekTodayBtn").addEventListener("click", () => selectDay(todayStr()));
   els.todayWeekPrev.addEventListener("click", () => selectDay(dAdd(todaySel, -7)));
