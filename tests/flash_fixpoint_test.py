@@ -1,4 +1,5 @@
 import asyncio
+import json
 from playwright.async_api import async_playwright
 URL = "http://localhost:8845/index.html?bereich=visual"
 OUT = "screenshots/"
@@ -67,7 +68,7 @@ async def main():
 
         # --- custom character + colour + size ---
         await pg.click('#flashFixToggleRow [data-flash-fix="1"]'); await pg.wait_for_timeout(80)
-        await pg.fill("#flashFixCharInput", "X")
+        await pg.click('#flashFixKindRow [data-fix-kind="text"]'); await pg.fill("#flashFixCharInput", "X")
         await pg.click('#flashFixColorPicker .color-swatch[data-key="rot"]'); await pg.wait_for_timeout(80)
         await pg.fill("#flashFixSizeSlider", "1.8"); await pg.dispatch_event("#flashFixSizeSlider", "input")
         await pg.click("#flashReadyStartBtn"); await pg.wait_for_timeout(200)
@@ -77,7 +78,7 @@ async def main():
         await pg.screenshot(path=OUT + "flash_fixpoint_custom.png")
         await pg.click("#flashBackBtn"); await pg.wait_for_timeout(150)
 
-        # --- settings persist across reload, and the Trainingsmodus screen shares them ---
+        # --- settings persist across reload; since 09.10. every Flash mode keeps its own Fixpunkt ---
         await pg.reload(); await pg.wait_for_timeout(300)
         if await pg.is_visible("#tipsCloseBtn"):
             await pg.click("#tipsCloseBtn"); await pg.wait_for_timeout(150)
@@ -85,8 +86,8 @@ async def main():
         await pg.click('#natHome .sub-tab[data-nat-sub="flash"]'); await pg.wait_for_timeout(150)
         await pg.click("#flashOpenTraining"); await pg.wait_for_timeout(150)
         await pg.click("#flashTrainingAdvanced summary"); await pg.wait_for_timeout(100)
-        print("Trainingsmodus shows the same saved char:", await pg.input_value("#flashTrainingFixCharInput") == "X")
-        print("Trainingsmodus shows the same saved colour (rot active):", "active" in (await pg.get_attribute('#flashTrainingFixColorPicker .color-swatch[data-key="rot"]', "class") or ""))
+        print("Trainingsmodus keeps its own Fixpunkt (standard, not the Aufsteigend one):", await pg.evaluate("document.querySelector('#flashTrainingFixKindRow .choice.active').dataset.fixKind") == "punkt")
+        print("Aufsteigend char persisted across reload:", json.loads(await pg.evaluate("localStorage.getItem('fwmc-fix-v1')")).get("flash:climb", {}).get("text") == "X")
 
         await b.close()
     print("ERRORS:", errors)
