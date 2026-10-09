@@ -38587,7 +38587,13 @@
   var HO_PART_MAX = 1000; // data characters per code when split
   // Kunden-Training snapshots these on start and puts them back on "Beenden",
   // so a client's runs never set this device's bests or "Weitermachen".
-  var HO_SNAP_RE = /^fwmc-(.*-best-v1|resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1)$/;
+  var HO_SNAP_RE = /^fwmc-(.*-best-v1|resume-v1|resume-single-v1|level-suggest-v1|ton-last-v1|eyecount-last-v1|.*-prefs-v1|master-v1|webapp-v3|movement-v1|breath-v1|cardio-v1|cardio-addon-v1|wimhof-v1|workout-circuit-v1|workout-reps-builder-v1|workout-reps-progress-v1|workout-sound-v1|addon-v1|nat-mode-v1|signal-colors-v1|cue-overrides-v1|cvd-overrides-v1|soft-overrides-v1|anaglyph-v1|atempause-v1|plan-v1|plan-check-v1|code-history-v1|trainer-programs-v1|free-trainer-v1|coach-message-seen-v1)$/;
+  // Einstellungen (Fabian 09.10.): what the trainer sets up for a client or
+  // while trying something out (levels, tempo, colours, a client's plan code
+  // ...) is put back afterwards too. Saved presets stay. Those keys live in
+  // memory as well, so a restore that changes one reloads the app once.
+  var HO_PREFS_RE = /^fwmc-(?!.*-best-v1$|resume-v1$|resume-single-v1$|level-suggest-v1$|ton-last-v1$|eyecount-last-v1$)/;
+  var hoNeedReload = false;
   function hoSession() {
     const s = readJSON("fwmc-client-session-v1", null);
     return s && typeof s.start === "number" ? s : null;
@@ -39335,9 +39341,23 @@
     try {
       const now = [];
       for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && HO_SNAP_RE.test(k)) now.push(k); }
-      now.forEach((k) => { if (!(k in snap)) localStorage.removeItem(k); });
-      Object.entries(snap || {}).forEach(([k, v]) => { if (typeof v === "string") localStorage.setItem(k, v); });
+      now.forEach((k) => { if (!(k in snap)) { if (HO_PREFS_RE.test(k)) hoNeedReload = true; localStorage.removeItem(k); } });
+      Object.entries(snap || {}).forEach(([k, v]) => {
+        if (typeof v !== "string") return;
+        if (HO_PREFS_RE.test(k) && localStorage.getItem(k) !== v) hoNeedReload = true;
+        localStorage.setItem(k, v);
+      });
     } catch (e) { /* private mode */ }
+  }
+  // After a restore that touched settings: reload once, then continue (open
+  // the selection or show the toast) from the fresh state.
+  const HO_AFTER_KEY = "fwmc-tm-after";
+  function hoReloadIfNeeded(after) {
+    if (!hoNeedReload) return false;
+    hoNeedReload = false;
+    try { sessionStorage.setItem(HO_AFTER_KEY, JSON.stringify(after || {})); } catch (e) { /* ignore */ }
+    location.reload();
+    return true;
   }
   function hoStartClientRun() {
     if (hoSession()) return;
@@ -39351,6 +39371,7 @@
     if (!s) return;
     try { localStorage.removeItem(HO_SESSION_KEY); } catch (e) { /* ignore */ }
     hoRestoreSnapshot(s.snap || {});
+    if (hoReloadIfNeeded({ end: s.start })) return;
     hoSyncStrip();
     // Only this session's runs: leftovers of an earlier client stay apart
     // (they wait in the Trainer-Menü), so a new client never gets them.
@@ -39469,21 +39490,28 @@
     hoSyncStrip();
     showToast(hoSession() ? "Ausprobieren läuft. Das Kunden-Training ist so lange pausiert." : "Ausprobieren läuft. Nichts davon zählt für dich.");
   }
-  function tmEndTry(toast) {
+  function tmEndTry(toast, text, deferReload) {
     const t = tmTry();
     if (!t) return;
     try { localStorage.removeItem(TM_KEY); } catch (e) { /* ignore */ }
     hoRestoreSnapshot(t.snap || {});
+    const msg = text || (toast ? (hoSession() ? "Ausprobieren beendet. Das Kunden-Training läuft weiter." : "Ausprobieren beendet.") : "");
+    if (!deferReload && hoReloadIfNeeded(msg ? { toast: msg } : {})) return true;
     hoSyncStrip();
     hoRenderProgressGroup();
-    if (toast) showToast(hoSession() ? "Ausprobieren beendet. Das Kunden-Training läuft weiter." : "Ausprobieren beendet.");
+    if (msg) showToast(msg);
+    return false;
   }
   function tmSetMode(m) {
     const cur = tmMode();
     tmCloseMenu();
     if (m === cur) return;
     if (m === "try") { tmStartTry(); return; }
-    if (cur === "try") tmEndTry(false);
+    if (cur === "try") {
+      // "Mein Training" during a Kunden-Training: the client run's end reloads once for both.
+      if (m === "own" && hoSession()) tmEndTry(false, "", true);
+      else if (tmEndTry(false, m === "own" ? "Mein Training: alles zählt wieder für dich." : "Das Kunden-Training läuft weiter.")) return;
+    }
     if (m === "client") {
       if (hoSession()) { hoSyncStrip(); showToast("Das Kunden-Training läuft weiter."); }
       else hoStartClientRun();
@@ -39551,10 +39579,11 @@
     if (m === "own") return;
     const since = m === "try" ? tmTry().since : hoSession().start;
     if (Date.now() - since > TM_MAX_MS) {
-      if (m === "try") { tmEndTry(false); showToast("Ausprobieren wurde nach 3 Stunden beendet."); return; }
+      if (m === "try") { tmEndTry(false, "Ausprobieren wurde nach 3 Stunden beendet."); return; }
       const sess = hoSession();
       try { localStorage.removeItem(HO_SESSION_KEY); } catch (e) { /* ignore */ }
       hoRestoreSnapshot(sess.snap || {});
+      if (hoReloadIfNeeded({ toast: hoClientRuns().length ? "Das Kunden-Training wurde nach 3 Stunden beendet. Die Trainings warten im Trainer-Menü auf die Übergabe." : "" })) return;
       hoSyncStrip();
       hoRenderProgressGroup();
       if (hoClientRuns().length) showToast("Das Kunden-Training wurde nach 3 Stunden beendet. Die Trainings warten im Trainer-Menü auf die Übergabe.");
@@ -39609,6 +39638,18 @@
   // The bottom tab stays on the page the trainer came from (Heute, Training, ...).
   ["handoverScreen", "handoverQrScreen"].forEach((id) => Object.defineProperty(NAV_TAB_OF, id, { get: () => NAV_TAB_OF[hoHomeId] || "training", configurable: true }));
   hoSyncStrip();
+  // Continue after a settings restore reloaded the app (hoReloadIfNeeded).
+  (function hoAfterReload() {
+    let after = null;
+    try { after = JSON.parse(sessionStorage.getItem(HO_AFTER_KEY) || "null"); sessionStorage.removeItem(HO_AFTER_KEY); } catch (e) { /* ignore */ }
+    if (!after) return;
+    setTimeout(() => {
+      if (after.end) {
+        if (hoClientRuns().some((e) => e.client === after.end)) hoOpenClientPick(after.end);
+        else showToast("Kunden-Training beendet. Es wurde kein Training aufgezeichnet.");
+      } else if (after.toast) showToast(after.toast);
+    }, 0);
+  })();
   tmCheckReturn();
 
   // ---- Start-up ----
