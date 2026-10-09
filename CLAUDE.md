@@ -310,6 +310,11 @@ For every new or changed exercise/screen, in the same commit:
   `prefsOverride` isolation) and Kombi capture/edit/playback.
 - New localStorage keys start with `fwmc-` (backup picks them up).
 - Anything that sends data off the device goes into the privacy sheet.
+- Erklären gehört dazu (Fabian 2026-10-09): every new rule with consequences
+  the client should understand (what is saved where, what overwrites what,
+  what travels to the trainer, defaults vs. own changes) gets, in the same
+  commit, its FAQ entry under Mehr and a short `group-help` line where it is
+  set. The abgabe-check asks "Muss der Kunde das wissen? Steht es in der FAQ?".
 - Player conventions: exit button id `…BackBtn` + "Beenden", pause button
   id `…PauseBtn` + "Pause", class `.player` (gives step-nav, auto-pause,
   end-confirm for free).
