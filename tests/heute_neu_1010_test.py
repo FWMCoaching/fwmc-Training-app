@@ -42,7 +42,7 @@ PLAN = {"startDate": d(-7), "phases": [{"id": "p1", "name": "Grundphase", "weeks
     "extras": {}, "skips": {}, "done": {}, "source": {"code": "TESTPLAN", "version": 1, "at": "2026-10-01T10:00:00Z", "baseTimes": {}}}
 COMBO = [{"id": "k1", "name": "Kombi-Programm", "blocks": [
     {"domain": "visual", "exercise": "vt-color", "duration": 480},
-    {"domain": "nat", "mode": "classic", "duration": 600},
+    {"domain": "nat", "mode": "fixed", "duration": 600},
     {"domain": "breath", "pattern": "box", "durationMin": 7}]}]
 EVENTS = [
     {"id": "e1", "date": d(4), "time": "12:15", "title": "Physio", "kind": "erholung"},
@@ -99,7 +99,8 @@ with sync_playwright() as p:
     check("Ring-Mitte 3/4", summ.replace(" ", "") == "3/4", summ)
     prog = pg.inner_text("#todayProgress")
     check("Ring passt zur Wochenzeile", "3 von 4" in prog, prog)
-    check("ehrliche Zeile unter dem Ring", "Noch 1" in pg.inner_text("#todayNewTile"), pg.inner_text("#todayNewTile"))
+    # Kundenblick 10.10.: with a plan the line names planned units like the week line.
+    check("Zeile unter dem Ring: '3 von 4 geplanten'", "3 von 4 geplanten" in pg.inner_text("#todayNewTile"), pg.inner_text("#todayNewTile"))
     check("Ring vorgelesen", "3 von 4" in (pg.get_attribute("#todayNewTile .today-ring", "aria-label") or ""))
     # D1 Woche
     wk = pg.evaluate("""() => Object.fromEntries([...document.querySelectorAll('#todayWeekStrip [data-date]')].map(b => [b.dataset.date,
@@ -223,6 +224,93 @@ with sync_playwright() as p:
     ctx, pg, errs = open_page(b, store())
     y = [box(pg, s)["y"] for s in ("#todayGreeting", "#todayMain", "#todayPair", ".today-week-cal", "#todayDayPanel")]
     check("iPhone: eine Spalte, Reihenfolge Begrüßung > Karte > Paar > Woche > Tag", y == sorted(y), y)
+    ctx.close()
+
+    # ---- 7. Kundenblick-Fixes 10.10. ----
+    # A: an unplanned training this week -> ring line still "geplanten"
+    st = store()
+    st["fwmc-history-v1"] = json.dumps(HIST + [{"id": "h4", "ts": ts(d(3), 9), "kind": "breath", "title": "Box-Atmung", "seconds": 690}])
+    ctx, pg, errs = open_page(b, st)
+    tile = pg.inner_text("#todayNewTile .today-tile-sub")
+    check("A: Ring-Zeile '3 von 4 geplanten, 1 zusätzlich'", "3 von 4 geplanten" in tile and "1 zusätzlich" in tile, tile)
+    aria = pg.get_attribute("#todayNewTile .today-ring", "aria-label") or ""
+    check("A: Ring vorgelesen mit 'geplanten'", "geplanten" in aria and "Trainings diese Woche" not in aria, aria)
+    # C: done entry -> no Auslassen, start button "Training starten"
+    k = "#dayPanelBody .day-item[data-occ='k']"
+    pg.click(f"{k} [data-act='done']"); pg.wait_for_timeout(200)
+    acts = pg.locator(f"{k} .day-act").all_inner_texts()
+    check("C: erledigt -> kein 'Auslassen'", not any("auslassen" in a.lower() for a in acts), acts)
+    st_txt = pg.locator(f"{k} [data-act='start']").all_inner_texts()
+    check("C: Start heißt 'Training starten'", [t.strip() for t in st_txt] == ["Training starten"], st_txt)
+    pg.click(f"#todayWeekStrip [data-date='{d(1)}']"); pg.wait_for_timeout(200)
+    starts = pg.locator("#dayPanelBody [data-act='start']").all_inner_texts()
+    check("C: alle Starts im Tag 'Training starten'", starts and all(t.strip() == "Training starten" for t in starts), starts)
+    # I: whole minutes in Verlauf/Fortschritt (690 s -> 12 Min., never "11,5")
+    pg.click(".bottom-nav-btn[data-nav='progress']"); pg.wait_for_timeout(400)
+    txt = pg.inner_text("#progressScreen")
+    check("I: keine Minuten mit Komma im Fortschritt", ",5 Min." not in txt, [l for l in txt.splitlines() if ",5 Min" in l][:3])
+    check("A-C: keine Seitenfehler", not errs, errs[:3])
+    ctx.close()
+    # C: large text: "Ändern" never alone in its row
+    st = store(); st["fwmc-test-textscale"] = "1.25"
+    ctx, pg, errs = open_page(b, st)
+    pg.click(f"{k} [data-act='done']"); pg.wait_for_timeout(200)
+    rows = pg.evaluate(f"""() => {{ const m = {{}}; document.querySelectorAll("{k} .day-item-actions > button, {k} .t1-start").forEach(b => {{ const y = Math.round(b.getBoundingClientRect().top); m[y] = (m[y] || []).concat(b.textContent.trim()); }}); return Object.values(m); }}""")
+    check("C: Schrift 1,25: 'Ändern' nicht allein in einer Zeile", not any(r == ["Ändern"] for r in rows), rows)
+    pg.click(f"#todayWeekStrip [data-date='{d(1)}']"); pg.wait_for_timeout(200)
+    rows = pg.evaluate("""() => { const m = {}; document.querySelectorAll("#dayPanelBody .t1-card .day-item-actions > button, #dayPanelBody .t1-card .t1-start").forEach(b => { const y = Math.round(b.getBoundingClientRect().top); m[y] = (m[y] || []).concat(b.textContent.trim()); }); return Object.values(m); }""")
+    check("C: Schrift 1,25, vergangener erledigter Tag: 'Ändern' nicht allein", rows and not any(r == ["Ändern"] for r in rows), rows)
+    ctx.close()
+
+    # B: past days show only what happened
+    st = store(); st["fwmc-start-v1"] = json.dumps({"who": "allein"})
+    ctx, pg, errs = open_page(b, st)
+    pg.click(f"#todayWeekStrip [data-date='{d(-1)}']") if pg.locator(f"#todayWeekStrip [data-date='{d(-1)}']").count() else (pg.click("#todayWeekPrev"), pg.wait_for_timeout(150), pg.click(f"#todayWeekStrip [data-date='{d(-1)}']"))
+    pg.wait_for_timeout(200)
+    body = pg.inner_text("#dayPanelBody")
+    check("B: leerer vergangener Tag: 'An diesem Tag war nichts geplant.'", "An diesem Tag war nichts geplant." in body and "Noch kein Plan" not in body, body)
+    check("B: vergangener Tag: kein '+ App-Training'", not pg.is_visible("#dayAddBtn"))
+    check("B: vergangener Tag: kein '+ Eigenen Termin'", not pg.is_visible("#dayEventAddBtn"))
+    check("B: vergangener Tag: keine Ausprobieren-Karten", not pg.is_visible("#todayGoal"))
+    pg.click("#todayWeekTodayBtn"); pg.wait_for_timeout(200)
+    check("B: heute wieder mit '+ App-Training' und '+ Eigenen Termin'", pg.is_visible("#dayAddBtn") and pg.is_visible("#dayEventAddBtn"))
+    check("B: keine Seitenfehler", not errs, errs[:3])
+    ctx.close()
+
+    # E: iPad landscape: plan button under the calendar, top row one height, same bar on every tab
+    ctx, pg, errs = open_page(b, store(), w=1024, h=768)
+    cal, plb, day = box(pg, ".today-week-cal"), box(pg, "#todayPlanBtn"), box(pg, "#todayDayPanel")
+    check("E: Wochenplan-Knopf links direkt unter dem Kalender", plb["x"] < day["x"] and 0 <= plb["y"] - (cal["y"] + cal["height"]) < 60, (cal, plb))
+    mn, pr = box(pg, "#todayMain"), box(pg, "#todayPair")
+    check("E: obere Reihe endet auf einer Linie", abs((mn["y"] + mn["height"]) - (pr["y"] + pr["height"])) < 3, (mn, pr))
+    def bar(scr):
+        return pg.evaluate(f"""() => {{ const b = document.querySelector('#{scr} > .brandbar'); const r = (s) => b.querySelector(s).getBoundingClientRect();
+            const lw = getComputedStyle(b).borderImageOutset; return [Math.round(r('.brand-logo').left), Math.round(r('.master-settings-btn').right), lw]; }}""")
+    bh = bar("todayHome")
+    pg.click(".bottom-nav-btn[data-nav='more']"); pg.wait_for_timeout(400)
+    bm = bar("moreScreen")
+    check("E: Kopfleiste auf Heute und Mehr gleich (Logo, Zahnrad)", bh[:2] == bm[:2], (bh, bm))
+    pg.click(".bottom-nav-btn[data-nav='training']"); pg.wait_for_timeout(400)
+    bt = bar("trainingHub")
+    check("E: Kopfleiste auf Training gleich", bt[:2] == bh[:2], (bh, bt))
+    check("E: keine Seitenfehler", not errs, errs[:3])
+    ctx.close()
+
+    # F: Kombi block with an unknown NAT mode (old trainer code) plays the default
+    st = store()
+    st["fwmc-combo-saved-v1"] = json.dumps([{"id": "k1", "name": "Kombi-Programm", "blocks": [{"domain": "nat", "mode": "classic", "duration": 600}]}])
+    ctx, pg, errs = open_page(b, st)
+    pg.click("#todayMain .start-btn[data-today-start='k']"); pg.wait_for_timeout(1200)
+    check("F: unbekannter NAT-Modus startet Positionen merken", pg.is_visible("#rememberPlayer"))
+    check("F: keine Seitenfehler", not errs, errs[:3])
+    ctx.close()
+
+    # G: plan editor ✎ / ✕ are 44 px targets
+    ctx, pg, errs = open_page(b, store())
+    pg.click("#todayPlanBtn"); pg.wait_for_timeout(500)
+    sz = pg.evaluate("[...document.querySelectorAll('.plan-item-btn')].filter(b => b.offsetParent).map(b => { const r = b.getBoundingClientRect(); return [r.width, r.height]; })")
+    check("G: ✎/✕ ≥ 44 px", sz and all(w >= 44 and h >= 44 for w, h in sz), sz[:4])
+    check("G: keine Seitenfehler", not errs, errs[:3])
     ctx.close()
     b.close()
 

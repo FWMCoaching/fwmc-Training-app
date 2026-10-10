@@ -8802,6 +8802,8 @@
     const m = readJSON("fwmc-master-v1", null);
     ts = Math.min(TEXT_SCALE_MAX, ts * (TEXT_SIZE_FACTORS[m && m.textSize] || 1));
     document.documentElement.style.setProperty("--ts", String(Math.round(ts * 100) / 100));
+    // Large text: rows that only fit side by side at normal size stack (CSS .ts-large).
+    document.documentElement.classList.toggle("ts-large", ts >= 1.12);
   }
   applyTextScale();
   document.addEventListener("visibilitychange", () => { if (!document.hidden) applyTextScale(); });
@@ -36090,8 +36092,10 @@
     const c = progressSummary(loadProgress()).cur;
     const left = Math.max(0, c.goal - c.planDone);
     const counted = c.goal && !c.pause;
-    const sub = c.pause ? "Diese Woche ist Pause." : !c.goal ? "diese Woche" : left ? goalLeftText(c) : "Ziel erreicht, stark!";
-    const said = counted ? `${c.planDone} von ${c.goal} Trainings diese Woche` : c.pause ? "Pause diese Woche" : `${countLabel(c.n, "Training", "Trainings")} diese Woche`;
+    // Kundenblick 10.10.: with a plan the ring counts planned units only, so
+    // the line says so ("3 von 5 geplanten"), like the week line and Fortschritt.
+    const sub = c.pause ? "Diese Woche ist Pause." : !c.goal ? "diese Woche" : left ? (c.fromPlan ? `${c.planDone} von ${c.goal} geplanten${c.extra ? `, ${c.extra} zusätzlich` : ""}` : goalLeftText(c)) : "Ziel erreicht, stark!";
+    const said = counted ? `${c.planDone} von ${c.goal}${c.fromPlan ? " geplanten Einheiten" : " Trainings"} diese Woche${c.fromPlan && c.extra ? `, ${c.extra} zusätzlich` : ""}` : c.pause ? "Pause diese Woche" : `${countLabel(c.n, "Training", "Trainings")} diese Woche`;
     tile.classList.add("is-set");
     tile.innerHTML = `<div class="today-main-kicker today-new-kicker">Heute ${esc(moodLabel(cur.v))} <button class="text-link small today-mood-change" type="button" id="todayMoodChangeBtn">ändern</button></div>
       <div class="today-ring today-tile-circle" role="img" aria-label="${esc(said)}">${weekRingSvg(counted ? c.goal : 0, counted ? c.planDone : 0)}
@@ -36163,7 +36167,7 @@
   function renderGoalRow(hist, stage, p, trainer, tileKey, own) {
     const box = $("todayGoal");
     const g = STARTER_GOALS.find((x) => x.key === p.goal);
-    const show = own && stage !== "new" && (g || goalPickOpen || (!trainer && (stage === "soft" || p.who === "allein")));
+    const show = own && stage !== "new" && todaySel >= todayStr() && (g || goalPickOpen || (!trainer && (stage === "soft" || p.who === "allein")));
     box.hidden = !show;
     if (!show) { box.innerHTML = ""; return; }
     if (g && !p.goalAt) starterSave({ goalAt: todayStr() }); // goals from before 09.10. start their 6 weeks now
@@ -36470,6 +36474,11 @@
       sub.textContent = parts.join(" · ");
       sub.hidden = !parts.length;
     }
+    // Vergangene Tage zeigen nur, was war (Kundenblick 10.10.): kein Eintragen
+    // (ergäbe sofort ein verpasstes Training), kein "Noch kein Plan".
+    const pastDay = date < today;
+    els.dayAddBtn.hidden = pastDay;
+    $("dayEventAddBtn").hidden = pastDay;
     if (!occ.length && pzDay) {
       const r = PAUSE_BY_KEY[pzDay.reason] || PAUSE_BY_KEY.sonstiges;
       els.dayPanelBody.innerHTML = `<p class="day-empty" style="order:2990"><span class="pause-ico inline" aria-hidden="true">${r[2]}</span> Pause (${esc(r[1])}) bis ${esc(shortDate(pzDay.to))}. Keine Erinnerungen, deine Serie reißt nicht ab. <button type="button" class="text-link small" id="dayPauseEditBtn">Pause bearbeiten</button></p>`;
@@ -36480,7 +36489,7 @@
     const untimedEvents = evs.some((e) => !e.time);
     if (!occ.length) {
       const ph = phaseFor(date);
-      const msg = extraHtml || hasEvents ? "Kein Training aus der App geplant." : ph || planHasEntries() ? "Ruhetag, an diesem Tag ist nichts geplant." : "Noch kein Plan. Lege unten deinen Wochenplan an oder trage ein App-Training nur für diesen Tag ein.";
+      const msg = extraHtml || hasEvents ? (pastDay ? "An diesem Tag war kein Training aus der App geplant." : "Kein Training aus der App geplant.") : pastDay ? "An diesem Tag war nichts geplant." : ph || planHasEntries() ? "Ruhetag, an diesem Tag ist nichts geplant." : "Noch kein Plan. Lege unten deinen Wochenplan an oder trage ein App-Training nur für diesen Tag ein.";
       els.dayPanelBody.innerHTML = (untimedEvents ? `<div class="day-subhead" style="order:2881">Ohne Uhrzeit</div>` : "") + `<p class="day-empty" style="order:2990">${msg}</p>${extraHtml}`;
       return;
     }
@@ -36498,7 +36507,7 @@
       if (compact) return `<div class="day-item compact${o.done ? " done" : ""}" style="${style}" data-occ="${esc(o.id)}">
         <div class="day-item-title">${areaDot(o.area)} ${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div>
         <div class="day-item-meta">${esc(o.time)}–${esc(minToTime(timeToMin(o.time) + o.minutes))} · ${o.done ? "✓ erledigt" : openWord}</div>
-        <div class="day-item-actions"><button type="button" class="day-act" data-act="start">Starten</button>${doneBtn ?? `<button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}" aria-label="${o.manual ? "Erledigt, zurücknehmen" : "Abhaken"}">✓</button>`}</div></div>`;
+        <div class="day-item-actions"><button type="button" class="day-act" data-act="start" aria-label="Training starten" title="Training starten">&#9654;&#xFE0E;</button>${doneBtn ?? `<button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}" aria-label="${o.manual ? "Erledigt, zurücknehmen" : "Abhaken"}">✓</button>`}</div></div>`;
       const v = areaVars(o.area);
       const icon = o.area === "combo" ? comboIconHtml(combo && combo.blocks) : areaIconHtml(o.area);
       const chip = `<span class="t1-chip ${st}">${o.done ? "erledigt" : openWord}</span>`;
@@ -36509,6 +36518,9 @@
       }).join("")}${combo.blocks.length > 6 ? `<li class="t1-blocks-more"><span>+ ${combo.blocks.length - 6} weitere</span></li>` : ""}</ul>` : "";
       const repeat = !o.extra && !o.override && !o.insert ? `<div class="t1-repeat">${T1_REPEAT_SVG}<span>jede Woche${fromTrainer ? " (Plan von deinem Trainer)" : ""}</span></div>` : "";
       const bigStart = !o.done && !isFuture && !isPast;
+      // "Training starten" is always its own full-width row (Kundenblick
+      // 10.10.: a small start in the action row pushed "Ändern" onto a line
+      // of its own); outlined unless it is today's open training.
       // Only one filled main button on screen: while the top card
       // "Heutiges Training" shows its big start (today has an open training),
       // the day cards' starts use the outline style.
@@ -36518,11 +36530,10 @@
         <div class="t1-top">${icon}<span class="t1-top-r">${reminderBellHtml(date, o)}${chip}</span></div>
         <div class="day-item-title">${o.special ? "★ " : ""}${esc(entryTitle(o))}${trTag}</div><div class="day-item-meta">${esc(meta + auto)}</div>
         ${blocks}${repeat}
-        ${bigStart ? `<button type="button" class="${startCls}" data-act="start">Training starten</button>` : ""}
+        <button type="button" class="${bigStart ? startCls : "start-btn secondary t1-start"}" data-act="start">Training starten</button>
         <div class="day-item-actions">
-          ${bigStart ? "" : '<button type="button" class="day-act" data-act="start">Starten</button>'}
           ${doneBtn ?? `<button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}">${o.manual ? "✓ Erledigt" : "Abhaken"}</button>`}
-          <button type="button" class="day-act subtle" data-act="change">Ändern</button><button type="button" class="day-act subtle" data-act="${o.extra ? "remove" : "skip"}">${o.extra ? "Löschen" : date === today ? "Heute auslassen" : "Auslassen"}</button>
+          <button type="button" class="day-act subtle" data-act="change">Ändern</button>${o.done && !o.extra ? "" : `<button type="button" class="day-act subtle" data-act="${o.extra ? "remove" : "skip"}">${o.extra ? "Löschen" : date === today ? "Heute auslassen" : "Auslassen"}</button>`}
         </div></div>`;
     };
     const nodeOf = (o) => o.done ? "is-done" : isFuture ? "is-plan" : isPast ? "is-missed" : "is-open";

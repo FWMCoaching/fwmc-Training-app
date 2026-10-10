@@ -2205,7 +2205,9 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .plan-item{display:flex;align-items:center;gap:8px;width:100%;border:1px solid var(--line);border-radius:10px;padding:6px 8px;box-sizing:border-box}
 .plan-item-text{flex:1;min-width:0;font-size:calc(14px * var(--ts,1));font-weight:600;overflow-wrap:anywhere;color:var(--ink)}
 .plan-item-text small{display:block;font-weight:400;color:var(--ink-soft);font-size:calc(12px * var(--ts,1))}
-.plan-item-btn{flex:0 0 32px;height:32px;border:1px solid var(--line);background:var(--surface);border-radius:50%;cursor:pointer;color:var(--ink-soft)}
+/* ✎ / ✕: 44 px to tap, the visible circle stays 32 px (Kundenblick 10.10.) */
+.plan-item-btn{flex:0 0 44px;height:44px;margin:-6px -4px;padding:0;border:none;background:radial-gradient(circle closest-side,var(--surface) 15px,var(--line) 15px 16px,transparent 16.5px);border-radius:50%;cursor:pointer;color:var(--ink-soft)}
+.ts-large .plan-phase-head{grid-template-columns:minmax(0,1fr)}
 .plan-rest{font-size:calc(13px * var(--ts,1));color:var(--ink-soft);padding-top:6px}
 .plan-phase-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
 .text-link.danger{color:var(--warn)}
@@ -3803,11 +3805,35 @@ input[type=checkbox]{accent-color:var(--brand)}
 /* iPad / Laptop (B1): Karten oben nebeneinander, Woche + Monat links, Tag rechts */
 @media (min-width:900px){
   #todayHome.screen{max-width:1040px}
-  .today-top{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:start;margin-bottom:8px}
-  .today-top .today-pair{margin:0}
+  /* Kundenblick 10.10.: both top columns end on one line (the main card
+     grows to the tiles' height), and the plan buttons sit in the left
+     column right under the calendar (the day panel spans all rows, the
+     last 1fr row takes its extra height). */
+  .today-top{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:stretch;margin-bottom:22px}
+  .today-top-main{display:flex;flex-direction:column}
+  .today-top-main > #todayMain:not([hidden]){flex:1 1 auto}
+  .today-top-main > .today-main:not([hidden]):not(:has(~ .today-main:not([hidden]))){margin-bottom:0}
+  #todayHome .today-top .today-pair{margin:0}
   #todayHome .today-top .today-tile{min-height:220px}
-  .today-week{display:grid;grid-template-columns:440px minmax(0,1fr);column-gap:28px;align-items:start}
+  .today-week{display:grid;grid-template-columns:440px minmax(0,1fr);grid-template-rows:auto auto auto 1fr;column-gap:28px;align-items:start}
   .today-week > .today-week-cal{grid-column:1;grid-row:1}
-  #todayHome .today-week > .day-panel{grid-column:2;grid-row:1;border-top:none;margin-top:0;padding-top:0}
-  .today-week > .today-plan-btn,.today-week > .today-plan-links{grid-column:1}
+  #todayHome .today-week > .day-panel{grid-column:2;grid-row:1 / -1;border-top:none;margin-top:0;padding-top:0}
+  .today-week > .today-plan-btn{grid-column:1;grid-row:2}
+  .today-week > .today-plan-links{grid-column:1;grid-row:3}
 }
+
+/* Kopfleiste gleich auf jedem Tab (Kundenblick 10.10.): Heute is wider from
+   900 px (1040 px), the other pages 760 px. The bar's content is always the
+   same 720 px in the middle and its line always runs across the whole
+   window, so logo, title and gear sit at the same place on every tab. */
+.screen>.brandbar{padding-left:max(20px,calc(50% - 340px));padding-right:max(20px,calc(50% - 340px));
+  border-image:linear-gradient(var(--line),var(--line)) 0 0 1 0 / 0 0 1px 0 / 0 100vw}
+.tr-ghost > .ghost-bar > .brandbar{border-image:linear-gradient(var(--line),var(--line)) 0 0 1 0 / 0 0 1px 0 / 0 100vw}
+/* Sheet "Training eintragen" (Kundenblick 10.10.): the button bar stays at the bottom
+   on an opaque surface with room below, so no field ever hides under it
+   (large text scrolls the sheet). */
+#planEntrySheet .custom-exercise-form-actions{
+  position:sticky;bottom:0;z-index:2;background:var(--surface);
+  margin:16px -22px 0;padding:10px 22px calc(22px + env(safe-area-inset-bottom,0px));
+  box-shadow:0 -1px 0 var(--line)}
+#planEntrySheet .sheet-inner{padding-bottom:0}

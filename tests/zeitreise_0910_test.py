@@ -4,7 +4,7 @@ Allgemeine Prüfung statt Einzelfall: die App läuft mit verstellter Uhr an fest
 (Wochentage, Sonntag früh/spät, Montag 00:30, Silvester, Neujahr, Zeitumstellung) mit
 festem Beispielverlauf. Regeln:
 - Kalendertage nach heute: kein "erledigt"/"offen"/"Abhaken"/"Heute auslassen" (heißt "geplant").
-- Kalendertage vor heute: kein "offen", kein "Heute auslassen".
+- Kalendertage vor heute: kein "offen", kein "Heute auslassen", kein Eintragen, keine Vorschläge.
 - Begrüßung passt zur Stunde.
 - Kein Wochenabschluss, solange am Sonntag noch eine Einheit aussteht (vor 20 Uhr).
 - "Noch N bis zum Ziel": N nie größer als die noch möglichen Einheiten.
@@ -82,6 +82,15 @@ async def run_date(b, t):
         elif d < today:
             bad = [w for w in (" offen", "Heute auslassen", "· geplant") if w in body]
             check(f"{tag} {d} (vorbei): kein 'offen'/'Heute auslassen'", not bad, bad)
+            # Kundenblick 10.10.: a past day only shows what happened - no
+            # "Noch kein Plan", no adding (would be missed at once), no suggestions.
+            vis = await pg.evaluate("['dayAddBtn','dayEventAddBtn','todayGoal'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && e.getClientRects().length; })")
+            check(f"{tag} {d} (vorbei): nichts zum Eintragen, keine Vorschläge", not vis and "Noch kein Plan" not in body, vis)
+            if not await pg.locator("#dayPanelBody .day-item, #dayPanelBody .extra-item, #dayEvents .event-item").count() and "Pause" not in body:
+                check(f"{tag} {d} (vorbei, leer): 'An diesem Tag war nichts geplant.'", "An diesem Tag war nichts geplant." in body or "kein Training aus der App geplant" in body, body[:80])
+        else:
+            vis = await pg.evaluate("['dayAddBtn','dayEventAddBtn'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && e.getClientRects().length; })")
+            check(f"{tag} {d} (heute): Eintragen möglich", len(vis) == 2, vis)
     # Wochenabschluss am Sonntag erst, wenn der Sonntag durch ist
     if now.weekday() == 6:
         review = await pg.evaluate("(document.querySelector('#todayWeekReview')||{}).innerText || ''")

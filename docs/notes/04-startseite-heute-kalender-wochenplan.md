@@ -238,3 +238,25 @@ Built from the approved preview; data and functions are the existing ones.
   day card - Fabian to decide (the preview showed „Zuletzt“ on top).
 Tests: `tests/heute_neu_1010_test.py`; `kalender_ansichten_0910_test.py`
 now counts `.d1-dot`; `atempause_sanft_1007_test.py` checks the kicker.
+
+### Kundenblick-Fixes (10.10.2026)
+
+- Ring-Zeile: with a plan it says „3 von 5 geplanten“ (+ „, 1 zusätzlich“),
+  like the week line; aria-label „… geplanten Einheiten diese Woche“.
+- Past days show only what happened: no „Noch kein Plan …“, no „+ App-Training
+  …“, no „+ Eigenen Termin …“ (`dayAddBtn`/`dayEventAddBtn` hidden), no
+  „Zum Ausprobieren“ row (`renderGoalRow` needs `todaySel >= today`); empty
+  past day: „An diesem Tag war nichts geplant.“ (zeitreise test checks it).
+- Day cards: „Training starten“ is always its own full-width `.t1-start` row
+  (outlined unless it is today's open training); done entries have no
+  „Auslassen“; hour-grid blocks show ▶ (aria „Training starten“) for space.
+- iPad ≥ 900 px: plan buttons in the left column right under the calendar
+  (day panel spans rows `1 / -1`, last row `1fr`); top row columns stretch,
+  `#todayMain` grows to the tiles' height.
+- Kopfleiste: `.screen>.brandbar` content is always 720 px centred
+  (`padding-inline:max(20px,calc(50% - 340px))`), its line runs across the
+  window (`border-image` outset), so Heute (1040 px) and the 760 px pages
+  look the same.
+- Open (Fabian): the logo bar in pause/end phases of every player
+  (`body:has(...) .app-bar`, 2026-10-03, docs/notes/20 „Logo-Leiste“) moves
+  the player bar down by `--appbar-h`; it was his request, so not changed.
