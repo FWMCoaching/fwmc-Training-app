@@ -446,6 +446,12 @@
     const m = Math.round(sec / 30) / 2;
     return `${String(m).replace(".", ",")} Min.`;
   }
+  // Verlauf/Fortschritt (Kundenblick 10.10.): whole minutes, under one
+  // minute seconds ("45 Sek."), never "11,5 Min.".
+  function fmtMinutesWhole(sec) {
+    if (sec < 60) return `${Math.max(1, Math.round(sec))} Sek.`;
+    return `${Math.round(sec / 60)} Min.`;
+  }
   function fmtSeconds(sec) {
     return `${String(Math.round(sec * 10) / 10).replace(".", ",")} s`;
   }
@@ -2438,7 +2444,7 @@
       if (block.rk && RK_MODES[block.rk.rkMode]) return `${t} · ${RK_MODES[block.rk.rkMode].label}`;
       return block.ff && FF_MODE_LABELS[block.ff.ffMode] ? `${t} · ${FF_MODE_LABELS[block.ff.ffMode]}` : t;
     }
-    if (block.domain === "nat") return `Positionen merken · ${REMEMBER_MODES[block.mode] ? REMEMBER_MODES[block.mode].title : block.mode}`;
+    if (block.domain === "nat") return `Positionen merken · ${(REMEMBER_MODES[block.mode] || REMEMBER_MODES.fixed).title}`;
     if (block.domain === "blitz") return "Blitz-Raster";
     if (block.domain === "flash") return `Flash-Speicher-Test · ${flashModeTitle(block.mode)}`;
     if (block.domain === "mot") return `Objektverfolgung (MOT) · ${motModeTitle(block.mode)}`;
@@ -3864,7 +3870,7 @@
       `<div class="stat"><strong>${progressStreakText(s.streak)}</strong><span>Serie (Wochenziel in Folge erreicht)</span></div>` +
       `<div class="stat"><strong>${progressStreakText(s.best)}</strong><span>Längste Serie</span></div>` +
       `<div class="stat"><strong>${s.total}</strong><span>Trainings gesamt</span></div>` +
-      `<div class="stat"><strong>${s.totalS ? fmtMinutes(s.totalS) : "–"}</strong><span>Trainingszeit gesamt</span></div>`;
+      `<div class="stat"><strong>${s.totalS ? fmtMinutesWhole(s.totalS) : "–"}</strong><span>Trainingszeit gesamt</span></div>`;
     // Split bars (kp2, Fabian 06.10.): below strong = planned and done,
     // above lighter and narrower = extra; each week its own goal tick.
     const maxN = Math.max(...s.weeks.map((w) => Math.max(w.goal * 1.25, w.planDone + w.extra)), 1);
@@ -3888,7 +3894,7 @@
             <span class="progress-area-n">${n}</span></div>`;
         }).join("")
       : `<p class="group-help">In den letzten 4 Wochen noch kein Training. Leg einfach los, dann siehst du hier, wie sich dein Training auf die Bereiche verteilt.</p>`;
-    els.progressAreasNote.textContent = areaRows.length ? `Zusammen ${s.areaS ? fmtMinutes(s.areaS) : "unter einer Minute"} in den letzten 4 Wochen.` : "";
+    els.progressAreasNote.textContent = areaRows.length ? `Zusammen ${s.areaS ? fmtMinutesWhole(s.areaS) : "unter einer Minute"} in den letzten 4 Wochen.` : "";
     renderMoodProgress(loadHistory());
     els.progressMilestones.innerHTML = milestoneWindow(s.total).map((m) =>
       `<div class="progress-milestone${s.total >= m ? " reached" : ""}"><strong>${m}</strong><span>${m === 1 ? "Training" : "Trainings"}</span></div>`).join("");
@@ -3935,7 +3941,7 @@
     const weekSec = week.reduce((s, e) => s + (e.seconds || 0), 0);
     statsEl.innerHTML =
       `<div class="stat"><strong>${week.length}</strong><span>Trainings diese Woche</span></div>` +
-      `<div class="stat"><strong>${week.length ? fmtMinutes(weekSec) : "–"}</strong><span>Trainingszeit diese Woche</span></div>` +
+      `<div class="stat"><strong>${week.length ? fmtMinutesWhole(weekSec) : "–"}</strong><span>Trainingszeit diese Woche</span></div>` +
       `<div class="stat"><strong>${list.length}</strong><span>Trainings gesamt</span></div>`;
     const expanded = listEl.dataset.expanded === "1";
     const visibleCount = expanded ? HISTORY_VISIBLE_EXPANDED : HISTORY_VISIBLE_SHORT;
@@ -3945,7 +3951,7 @@
       const rating = e.rating ? ` · ${ratingLabel(e.kind)} ${e.rating}/5` : "";
       const note = e.note ? ` · ${esc(e.note)}` : "";
       const tag = e.trainer ? ' <span class="h-tag">bei deinem Trainer</span>' : "";
-      return `<li><span class="h-date">${date}</span><span class="h-title">${esc(e.title)}${tag}</span><span class="h-meta">${fmtMinutes(e.seconds || 0)}${note}${rating}</span></li>`;
+      return `<li><span class="h-date">${date}</span><span class="h-title">${esc(e.title)}${tag}</span><span class="h-meta">${fmtMinutesWhole(e.seconds || 0)}${note}${rating}</span></li>`;
     }).join("");
     moreBtn.hidden = list.length <= HISTORY_VISIBLE_SHORT;
     moreBtn.textContent = expanded ? "Weniger anzeigen" : "Alle anzeigen";
@@ -10938,9 +10944,10 @@
     els.breathPauseTempoSlider.value = d.tempo;
     els.breathPauseTempoValue.textContent = d.tempo === 1 ? "wie eingestellt" : d.tempo > 1 ? `${d.tempo.toFixed(1).replace(".", ",")}× langsamer` : `${(1 / d.tempo).toFixed(1).replace(".", ",")}× schneller`;
     const ph = breathScaledPhases(breathSession.basePhases, d.tempo);
-    els.breathPausePhases.textContent = PHASE_ORDER.filter((k) => ph[k] > 0).map((k) => `${PHASE_LABELS[k]} ${String(ph[k]).replace(".", ",")} s`).join(" · ");
+    els.breathPausePhases.textContent = PHASE_ORDER.filter((k) => ph[k] > 0).map((k) => `${PHASE_LABELS[k]}\u00a0${String(ph[k]).replace(".", ",")}\u00a0s`).join(" · ");
     els.breathPauseRestSlider.value = d.restMin;
-    els.breathPauseRestValue.textContent = `${d.restMin} Min`;
+    // Untouched: the real rest like the timer ("1:48"); moved: whole minutes.
+    els.breathPauseRestValue.textContent = d.restMin === d.restMinAtStart && d.restS != null ? els.breathTimeEl.textContent || fmtClock(d.restS) : `${d.restMin}\u00a0Min.`;
     document.querySelectorAll("[data-breath-pause-sound]").forEach((el) => setActive(el, (el.dataset.breathPauseSound === "on") === d.sound));
   }
   els.breathPauseTempoSlider.addEventListener("input", () => { if (breathPauseDraft) { breathPauseDraft.tempo = Number(els.breathPauseTempoSlider.value); syncBreathPauseUI(); } });
@@ -10958,7 +10965,7 @@
     els.breathPhaseLabel.textContent = "Pausiert";
     const elapsed = Math.min((breathPauseTime - breathSession.startTime) / 1000, breathSession.plannedTotal);
     const restMin = Math.min(30, Math.max(1, Math.round((breathSession.plannedTotal - elapsed) / 60)));
-    breathPauseDraft = { tempo: breathSession.tempo, restMin, restMinAtStart: restMin, sound: breathSession.sound };
+    breathPauseDraft = { tempo: breathSession.tempo, restMin, restMinAtStart: restMin, restS: breathSession.plannedTotal - elapsed, sound: breathSession.sound };
     resumeSingleNote("breath");
     syncBreathPauseUI();
     $("breathPauseRestGroup").hidden = !!breathSession.open;
@@ -12892,6 +12899,8 @@
   // batch turned up: they used to read rememberPrefs directly regardless of
   // prefsOverride.
   function startRememberGame(mode, opts, prefsOverride) {
+    // Unknown modes (old trainer codes, e.g. "classic") play the default.
+    if (!REMEMBER_MODES[mode]) mode = "fixed";
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.rememberPlayer.hidden = false;
@@ -13020,6 +13029,7 @@
     });
   }
   function openRememberReady(mode) {
+    if (!REMEMBER_MODES[mode]) mode = "fixed";
     syncLook("remember");
     rememberReadyMode = mode;
     const m = REMEMBER_MODES[mode];
@@ -13074,6 +13084,7 @@
   let comboRememberCaptureMode = null;
   let comboRememberDurationS = 60;
   function openRememberComboCapture(mode, existingBlock, editIndex) {
+    if (!REMEMBER_MODES[mode]) mode = "fixed";
     comboRememberCaptureOriginal = { ...rememberPrefs };
     comboRememberCaptureMode = mode;
     comboRememberEditIndex = editIndex ?? null;
@@ -40987,7 +40998,7 @@
       (ex.s ? " Danach fragt die App, ob du mit den Einstellungen deines Trainers weitertrainieren möchtest." : "");
     const ul = $("handoverImportList");
     ul.hidden = false;
-    ul.innerHTML = entries.map((x) => `<li><span class="h-title">${esc(x.title)}</span><span class="h-meta">${hoWhen(x.t * 1000)}${x.seconds ? " · " + fmtMinutes(x.seconds) : ""}</span></li>`).join("");
+    ul.innerHTML = entries.map((x) => `<li><span class="h-title">${esc(x.title)}</span><span class="h-meta">${hoWhen(x.t * 1000)}${x.seconds ? " · " + fmtMinutesWhole(x.seconds) : ""}</span></li>`).join("");
     const ios = hoIosBrowser() && !fromPaste;
     $("handoverImportIos").hidden = !ios;
     $("handoverImportCopyBtn").hidden = !ios;
@@ -41314,7 +41325,7 @@
     });
     const ul = $("handoverList");
     ul.innerHTML = list.length ? list.map((e) => `<li><label class="checkbox-row tap-row handover-check"><input type="checkbox" data-ho-id="${esc(e.id)}"${hoChecked.has(e.id) ? " checked" : ""}>
-        <span class="handover-check-text"><span class="h-title">${esc(e.title)}${hoTag(e, kindOf(e), clientPick, storePick)}${isHid(e) ? '<span class="h-tag tm-tag-hidden">Ausgeblendet</span>' : ""}</span><span class="h-meta">${hoWhen(e.ts)}${e.sent ? " · gesendet " + hoWhen(new Date(e.sent).toISOString()).replace(/^Heute/, "heute").replace(/^Gestern/, "gestern") : ""}${e.seconds ? " · " + fmtMinutes(e.seconds) : ""}${e.aborted ? " · abgebrochen" : ""}</span></span></label></li>`).join("")
+        <span class="handover-check-text"><span class="h-title">${esc(e.title)}${hoTag(e, kindOf(e), clientPick, storePick)}${isHid(e) ? '<span class="h-tag tm-tag-hidden">Ausgeblendet</span>' : ""}</span><span class="h-meta">${hoWhen(e.ts)}${e.sent ? " · gesendet " + hoWhen(new Date(e.sent).toISOString()).replace(/^Heute/, "heute").replace(/^Gestern/, "gestern") : ""}${e.seconds ? " · " + fmtMinutesWhole(e.seconds) : ""}${e.aborted ? " · abgebrochen" : ""}</span></span></label></li>`).join("")
       : `<li class="history-empty">${clientPick || storePick ? "Hier liegt nichts mehr." : "In diesem Zeitraum gibt es kein Training. Wähle einen früheren Zeitpunkt."}</li>`;
     ul.querySelectorAll("input[data-ho-id]").forEach((cb) => cb.addEventListener("change", () => {
       if (cb.checked) hoChecked.add(cb.dataset.hoId); else hoChecked.delete(cb.dataset.hoId);
