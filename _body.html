@@ -26,7 +26,7 @@
   <section class="hero">
     <div class="hero-kicker">Visuelles Training</div>
     <h1 class="hero-title">Wahrnehmen. Entscheiden. Reagieren.</h1>
-    <p class="hero-text">Kurze visuelle Trainingseinheiten f&uuml;r schnelle, klare Entscheidungen &ndash; direkt im Browser auf Handy, Tablet oder Laptop.</p>
+    <p class="hero-text">Kurze visuelle Trainingseinheiten f&uuml;r schnelle, klare Entscheidungen auf Handy, Tablet oder Laptop.</p>
     <button class="text-link" id="tipsBtn">So trainierst du richtig &rarr;</button>
   </section>
 
@@ -286,9 +286,13 @@
 
   <button class="combo-entry-link" data-open-combo="1">Kombi-Programm aus mehreren Bereichen &rarr;</button>
 
+  <div class="today-top">
+  <div class="today-top-main">
   <section class="today-hello">
-    <h1 class="today-greeting" id="todayGreeting">Guten Tag</h1>
-    <p class="today-date" id="todayDate"></p>
+    <div class="today-hello-row">
+      <h1 class="today-greeting" id="todayGreeting">Guten Tag</h1>
+      <p class="today-date" id="todayDate"></p>
+    </div>
     <button class="text-link small hello-name-btn" id="helloNameBtn" type="button" hidden>+ Wie hei&szlig;t du?</button>
     <form class="hello-name-form" id="helloNameForm" hidden>
       <div class="hello-name-row">
@@ -324,22 +328,25 @@
     <svg class="install-pointer-arrow" viewBox="0 0 40 64" width="40" height="64" aria-hidden="true"><path d="M20 4v52M6 42l14 16 14-16" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </div>
 
-  <!-- Heute Entwurf E (Fabian 09.10.): zwei halbe Kacheln unter "Zuletzt" -->
+  </div>
+  <!-- Heute Entwurf E (Fabian 09.10.): zwei halbe Kacheln unter "Zuletzt"; Heute neu (10.10.): Atempause + Ring -->
   <div class="today-pair" id="todayPair">
     <section class="today-tile today-break" id="todayBreak" aria-labelledby="todayBreakTitle">
       <div class="today-tile-top">
-        <span class="today-break-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h11a3 3 0 1 0-3-3"/><path d="M3 13h15a3 3 0 1 1-3 3"/><path d="M3 17h7"/></svg></span>
+        <span class="today-main-kicker today-break-kicker">Atempause</span>
         <button class="today-break-info" id="todayBreakInfoBtn" type="button" aria-label="Was ist die Nichtraucher-Pause? Dauer einstellen"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".6" fill="currentColor"/></svg></button>
       </div>
-      <h2 class="today-tile-title" id="todayBreakTitle">&bdquo;Nichtraucher-Pause&ldquo;</h2>
-      <p class="today-tile-sub">G&ouml;nn dir einmal durchatmen.</p>
+      <span class="today-break-icon today-tile-circle" aria-hidden="true"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h11a3 3 0 1 0-3-3"/><path d="M3 13h15a3 3 0 1 1-3 3"/><path d="M3 17h7"/></svg></span>
+      <h2 class="today-tile-title today-break-title" id="todayBreakTitle">&bdquo;Nichtraucher-Pause&ldquo;</h2>
       <button class="text-link today-tile-go" id="todayBreakStartBtn" type="button"><span id="todayBreakMinText">2 Min.</span> starten &rarr;</button>
     </section>
     <section class="today-tile today-new" id="todayNewTile" hidden></section>
   </div>
+  </div>
   <section class="today-ask" id="todayAsk" hidden></section>
 
   <section class="today-week">
+    <div class="today-week-cal">
     <div class="section-head">
       <h2 id="todayWeekTitle">Diese Woche</h2>
       <span class="section-note" id="todayProgress"></span>
@@ -358,6 +365,7 @@
       <button class="cal-switch-btn" id="calYearBtn" type="button" aria-pressed="false">Jahr</button>
     </div>
     <div class="cal-expand" id="calExpand" hidden></div>
+    </div>
 
     <div class="day-panel" id="todayDayPanel">
       <div class="day-panel-head">
@@ -367,8 +375,11 @@
           <button class="day-view-btn" data-day-view="hours" type="button">Stunden</button>
         </div>
       </div>
-      <div id="dayEvents"></div>
-      <div id="dayPanelBody"></div>
+      <p class="day-panel-sub" id="dayPanelSub" hidden></p>
+      <div class="t1" id="dayTimeline">
+        <div id="dayEvents"></div>
+        <div id="dayPanelBody"></div>
+      </div>
       <button class="text-link small" id="dayAddBtn" type="button">+ App-Training nur f&uuml;r diesen Tag eintragen</button>
       <button class="text-link small" id="dayEventAddBtn" type="button">+ Eigenen Termin eintragen (z. B. Wettkampf)</button>
     </div>
@@ -487,6 +498,10 @@
     <button class="featured-card" id="moreGearBtn" type="button">
       <span class="fc-title">Hilfsmittel</span>
       <span class="fc-desc">Was du f&uuml;r die &Uuml;bungen mit H&uuml;tchen oder Farbmatte brauchst, mit Starterpaket f&uuml;r den Anfang.</span>
+    </button>
+    <button class="featured-card" id="moreTrainerExtrasBtn" type="button">
+      <span class="fc-title">Mehr mit deinem Trainer</span>
+      <span class="fc-desc">Wer mit einem Trainer zusammenarbeitet, bekommt zus&auml;tzliche Bereiche, Einstellungen und M&ouml;glichkeiten.</span>
     </button>
     <button class="featured-card faq-open-btn" type="button">
       <span class="fc-title">H&auml;ufige Fragen</span>
@@ -918,7 +933,7 @@
   <section class="hero">
     <div class="hero-kicker">Atemtraining</div>
     <h1 class="hero-title">Ruhig werden. Fokus finden.</h1>
-    <p class="hero-text">Gef&uuml;hrte Atemmuster mit visuellem Takt &ndash; pr&auml;ziser einstellbar als ein Metronom, direkt im Browser.</p>
+    <p class="hero-text">Gef&uuml;hrte Atemmuster mit visuellem Takt &ndash; pr&auml;ziser einstellbar als ein Metronom.</p>
     <button class="text-link" id="breathTipsBtn">Wie funktioniert das? &rarr;</button>
   </section>
 
@@ -1091,7 +1106,7 @@
   <section class="hero">
     <div class="hero-kicker">Krafttraining</div>
     <h1 class="hero-title">K&ouml;rperliches Training.</h1>
-    <p class="hero-text">Trainingspl&auml;ne mit festen S&auml;tzen und Wiederholungen, oder ein Tabata-/Intervall-Timer &ndash; direkt im Browser.</p>
+    <p class="hero-text">Trainingspl&auml;ne mit festen S&auml;tzen und Wiederholungen, oder ein Tabata-/Intervall-Timer.</p>
   </section>
 
   <section class="code-card">
@@ -1711,6 +1726,7 @@
   </div>
   <h1 class="page-title" id="optoReadyTitle">Optodrum</h1>
   <p class="page-sub" id="optoReadyDesc">Ein Muster zieht gleichm&auml;&szlig;ig &uuml;ber den Bildschirm. Schau entspannt hin und lass die Augen mitlaufen &ndash; sie springen von selbst zur&uuml;ck. Mit Fixierpunkt bleibt der Blick in der Mitte.</p>
+  <p class="group-help" id="optoGestureHelp">W&auml;hrend der &Uuml;bung: Wischen &auml;ndert die Laufrichtung, zwei Finger auseinander oder zusammen &auml;ndern die Breite. Mit &bdquo;Speichern&ldquo; bleibt es f&uuml;r das n&auml;chste Mal.</p>
 
   <div class="opto-controls" id="optoReadyControls">
   <div class="group">
@@ -5019,8 +5035,16 @@
       <button class="choice" data-bal-stance="eng">Eng<small>F&uuml;&szlig;e zusammen</small></button>
       <button class="choice" data-bal-stance="halbtandem">Halbtandem<small>Fu&szlig; halb vor</small></button>
       <button class="choice" data-bal-stance="tandem">Tandem<small>Fu&szlig; vor Fu&szlig;</small></button>
-      <button class="choice" data-bal-stance="einbein">Einbein<small>Seite wechselt</small></button>
+      <button class="choice" data-bal-stance="einbein">Einbein<small>ein Bein hoch</small></button>
       <button class="choice" data-bal-stance="gehen">Gehen<small>Blick aufs Ziel</small></button>
+    </div>
+    <div id="balanceSideBox" hidden>
+      <div class="group-label" id="balanceSideLabel">Welcher Fu&szlig; ist vorne?</div>
+      <div class="choice-row" id="balanceSideRow">
+        <button class="choice" data-bal-side="links">Links</button>
+        <button class="choice" data-bal-side="rechts">Rechts</button>
+        <button class="choice" data-bal-side="wechsel" id="balanceSideWechselBtn">Je Satz wechseln</button>
+      </div>
     </div>
     <label class="checkbox-row tap-row"><input type="checkbox" id="balanceStanceSpeak"> Stand ansagen (sonst nur eingeblendet)</label>
   </div>
@@ -8873,6 +8897,11 @@
     <details class="faq-item">
       <summary>Woher kommen die Vorschl&auml;ge auf Heute?</summary>
       <div class="faq-body">Die Reihe &bdquo;F&uuml;r dein Ziel&ldquo; richtet sich nach deinem Ziel (Ruhe, Fokus, Sport oder Gleichgewicht), zeigt zuerst Neues und wechselt von Tag zu Tag. Dein Ziel &auml;nderst du mit einem Tipp auf die &Uuml;berschrift der Reihe oder unter &bdquo;Mehr&ldquo; &rsaquo; &bdquo;Dein Ziel&ldquo;. Nach sechs Wochen fragt die App einmal, ob dein Ziel noch passt. Ziel und Antwort bleiben nur auf deinem Ger&auml;t; ein pers&ouml;nliches Training stellt dir dein Trainer zusammen.</div>
+    </details>
+
+    <details class="faq-item">
+      <summary>Kann ich beim Optodrum Richtung und Breite w&auml;hrend der &Uuml;bung &auml;ndern?</summary>
+      <div class="faq-body">Ja. Wisch in die Richtung, in die das Muster laufen soll (auch schr&auml;g). Mit zwei Fingern auseinander oder zusammen wird die Breite gr&ouml;&szlig;er oder kleiner. Das gilt sofort, aber erst einmal nur f&uuml;r diesen Durchgang. Tippst du auf &bdquo;Speichern&ldquo;, &uuml;bernimmt die App es in deine Optodrum-Einstellungen. In der Pause siehst du die aktuellen Werte und kannst fein nachstellen. Im Kombi-Programm gilt eine &Auml;nderung nur f&uuml;r diesen Baustein. L&auml;uft das Optodrum als bewegter Hintergrund hinter einer &Uuml;bung (Gleichgewicht, Positionen merken, Flash-Speicher-Test, Objektverfolgung, Schulte-Tabelle), erscheint unten der Umschalter &bdquo;&Uuml;bung | Hintergrund&ldquo;: Auf &bdquo;Hintergrund&ldquo; &auml;ndern Wischen und zwei Finger das Muster und Tippen z&auml;hlt nicht als Antwort, auf &bdquo;&Uuml;bung&ldquo; ist alles wie gewohnt.</div>
     </details>
 
     <details class="faq-item">

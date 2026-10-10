@@ -2149,7 +2149,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .cal-month.mini .cal-cell{min-height:24px;padding:4px 0 2px;border-radius:4px}
 .cal-month.mini .cal-num{font-size:calc(10.5px * var(--ts,1))}
 .cal-month.mini .cal-check{display:none}
-.cal-month.mini .cal-cell.planned .cal-num,.cal-month.mini .cal-cell.partial .cal-num,.cal-month.mini .cal-cell.missed .cal-num{color:var(--brand);font-weight:900}
+.cal-month.mini .cal-cell.planned .cal-num,.cal-month.mini .cal-cell.partial .cal-num,.cal-month.mini .cal-cell.missed .cal-num,.cal-month.mini .cal-cell.extra-done .cal-num{color:var(--brand);font-weight:900}
 .cal-month.mini .cal-month-title{font-size:calc(13px * var(--ts,1))}
 .cal-month.mini .cal-wd{font-size:9.5px}
 .cal-quarter{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 20px) / 3);gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px}
@@ -2205,7 +2205,9 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .plan-item{display:flex;align-items:center;gap:8px;width:100%;border:1px solid var(--line);border-radius:10px;padding:6px 8px;box-sizing:border-box}
 .plan-item-text{flex:1;min-width:0;font-size:calc(14px * var(--ts,1));font-weight:600;overflow-wrap:anywhere;color:var(--ink)}
 .plan-item-text small{display:block;font-weight:400;color:var(--ink-soft);font-size:calc(12px * var(--ts,1))}
-.plan-item-btn{flex:0 0 32px;height:32px;border:1px solid var(--line);background:var(--surface);border-radius:50%;cursor:pointer;color:var(--ink-soft)}
+/* ✎ / ✕: 44 px to tap, the visible circle stays 32 px (Kundenblick 10.10.) */
+.plan-item-btn{flex:0 0 44px;height:44px;margin:-6px -4px;padding:0;border:none;background:radial-gradient(circle closest-side,var(--surface) 15px,var(--line) 15px 16px,transparent 16.5px);border-radius:50%;cursor:pointer;color:var(--ink-soft)}
+.ts-large .plan-phase-head{grid-template-columns:minmax(0,1fr)}
 .plan-rest{font-size:calc(13px * var(--ts,1));color:var(--ink-soft);padding-top:6px}
 .plan-phase-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
 .text-link.danger{color:var(--warn)}
@@ -2251,7 +2253,7 @@ body.cvdp-wcst .wcst-shape{-webkit-text-stroke:1px #16232a}
 .progress-area-bar{height:10px;border-radius:999px;background:var(--line);overflow:hidden}
 .progress-area-bar span{display:block;height:100%;border-radius:999px}
 .progress-area-n{font-weight:700;font-size:calc(14px * var(--ts,1));min-width:2ch;text-align:right}
-.progress-milestones{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}
+.progress-milestones{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;max-width:520px}
 .progress-milestone{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:12px;border:1px dashed var(--line);color:var(--ink-soft);min-width:0}
 .progress-milestone strong{font-family:"Magra",sans-serif;font-size:calc(20px * var(--ts,1));line-height:1.1}
 .progress-milestone span{font-size:calc(11px * var(--ts,1))}
@@ -3269,6 +3271,27 @@ body.soft-flash .flash-digit:not([hidden]){animation:fwmcSoftIn .3s ease-out 1}
 .opto-stage{flex:1;position:relative;overflow:hidden;min-height:0;background:#ffffff;touch-action:none;user-select:none;-webkit-user-select:none}
 .opto-stage canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
 .opto-finish{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:3}
+.opto-save{position:absolute;right:12px;bottom:14px;z-index:3;background:#007094;color:#ffffff}
+.opto-toast.opto-toast-wrap{white-space:normal;text-align:center;width:max-content;max-width:min(80%,320px);line-height:1.3;border-radius:16px}
+/* Ebenen-Umschalter "Übung | Hintergrund" (Fabian 10.10.): bottom of every stage with the
+   Optodrum as moving background; the stage keeps --mbg-inset free for it. Fixed hex (player rule). */
+.has-mbg-switch{--mbg-inset:66px}
+.mbg-ebene-bar{position:absolute;left:0;right:0;bottom:10px;z-index:5;display:flex;justify-content:center;align-items:center;gap:8px;padding:0 10px;pointer-events:none}
+.mbg-ebene-bar[hidden]{display:none}
+.mbg-ebene-bar>*{pointer-events:auto}
+.mbg-ebene{display:inline-flex;gap:2px;padding:3px;border-radius:999px;background:rgba(255,255,255,.94);box-shadow:0 1px 3px rgba(16,40,48,.2)}
+.mbg-ebene button{min-height:44px;min-width:44px;border:none;border-radius:999px;padding:0 16px;background:transparent;color:#16232a;font-weight:600;font-size:calc(14px * min(var(--ts,1),1.1));white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background-color .15s ease,color .15s ease}
+.mbg-ebene button.active{background:#007094;color:#ffffff}
+.mbg-ebene button:not(.active):active{background:rgba(0,112,148,.14)}
+.mbg-ebene-bar .opto-save{position:static}
+.mbg-ebene-bar .opto-save[hidden]{display:none}
+.mbg-gesture{position:absolute;inset:0;z-index:4;touch-action:none;background:transparent}
+.mbg-gesture[hidden]{display:none}
+.balance-stage.has-mbg-switch .balance-live{bottom:calc(8px + var(--mbg-inset))}
+.mot-stage.has-mbg-switch .mot-objects{bottom:var(--mbg-inset)}
+.flash-stage.has-mbg-switch{padding-bottom:var(--mbg-inset);box-sizing:border-box}
+.schulte-stage.has-mbg-switch{padding-bottom:calc(24px + var(--mbg-inset))}
+@media (hover:hover){.mbg-ebene button:not(.active):hover{background:rgba(0,112,148,.1)}}
 .opto-dir-row{grid-template-columns:repeat(3,1fr)}
 .opto-sub{margin-top:12px}
 .opto-sub .choice-row + .group-label{margin-top:12px}
@@ -3607,14 +3630,15 @@ input[type=checkbox]{accent-color:var(--brand)}
 .today-mood-change{position:relative;z-index:1;min-height:32px;padding:0 4px;margin-left:4px;text-transform:none;letter-spacing:0;font-weight:500}
 .today-mood-week{font-size:calc(22px * var(--ts,1));white-space:nowrap}
 .today-mood-bar{width:100%;margin:2px 0 6px}
-.mood-head,.mood-grid{display:grid;grid-template-columns:repeat(7,30px);gap:10px}
+.mood-head,.mood-grid{display:grid;grid-template-columns:40px repeat(7,30px);gap:10px;align-items:center}
+.mood-row-label{font-size:calc(11px * var(--ts,1));color:var(--ink-soft);white-space:nowrap;text-align:right}
 .mood-head span{font-size:calc(12px * var(--ts,1));color:var(--ink-soft);text-align:center}
 .mood-grid{margin-top:4px}
 .mood-cell{display:block;aspect-ratio:1;border-radius:50%;background:var(--surface-2);border:2px solid transparent;box-sizing:border-box}
 .mood-cell.m1{background:#9bb3bd}.mood-cell.m2{background:#5fa3b8}.mood-cell.m3{background:#007094}
 .mood-cell.trained{border-color:#2e7d4f}
 .mood-cell.future{opacity:.35}
-.mood-cell.today{outline:2px solid var(--ink-soft);outline-offset:1px}
+.mood-cell.today{outline:2px dashed var(--ink-soft);outline-offset:2px}
 .mood-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:calc(13px * var(--ts,1));color:var(--ink-soft)}
 .mood-legend span{display:inline-flex;align-items:center;gap:6px}
 .mood-legend .mood-cell{width:14px;height:14px;display:inline-block}
@@ -3636,3 +3660,180 @@ input[type=checkbox]{accent-color:var(--brand)}
 #bodyRuleRows .color-choice-line .choice-row.two{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media (min-width:560px){#bodyRuleRows .color-choice-line .choice-row.two{grid-template-columns:repeat(4,minmax(0,1fr))}}
 #bodyRuleRows .choice{font-size:calc(13.5px * min(var(--ts,1), 1.05));padding:8px 4px}
+
+/* ==== Heute neu (Fabian 10.10., Vorschau freigegeben) ====================
+   Begrüßung in einer Zeile, Zuletzt mit Streifen in der Bereichsfarbe,
+   Atempause + Ring nebeneinander, ruhige Kalender-Zeichen (D1, keine
+   Bereichsfarben) und der Tag als Zeitleiste (T1). Ab 900 px: oben Karten
+   nebeneinander, darunter links Woche/Monat, rechts der Tag (B1). */
+:root{--track:#e5ddd0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--track:#2a4950}}
+:root[data-theme="dark"]{--track:#2a4950}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* Begrüßung: eine Zeile, Datum rechts */
+#todayHome .today-hello{background:none;padding:0;margin:2px 0 12px;border-radius:0;overflow:visible}
+#todayHome .today-hello::after{display:none}
+#todayHome .hello-name-btn{margin:2px 0 0;padding-left:0;padding-right:0}
+.today-hello-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+#todayHome .today-greeting{font-size:calc(22px * var(--ts,1));line-height:1.2;min-width:0}
+#todayHome .today-greeting.has-long-name{font-size:calc(20px * var(--ts,1))}
+#todayHome .today-date{flex:none;margin:0;font-size:calc(13.5px * var(--ts,1));color:var(--ink-soft);white-space:nowrap}
+
+/* Zuletzt: Karte mit Streifen links in der Bereichsfarbe */
+#todayMain.is-flat{position:relative;overflow:hidden;padding:12px 14px 12px 20px;border-radius:20px;box-shadow:var(--shadow);margin-bottom:12px}
+#todayMain.is-flat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--ac,var(--brand))}
+.today-last-ico{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--ac-ink,var(--brand));background:color-mix(in srgb,var(--ac,var(--brand)) 16%,transparent)}
+.today-last-ico svg{width:22px;height:22px}
+#todayMain.is-flat .today-main-kicker{color:var(--ac-ink,var(--brand))}
+#todayMain.is-flat .today-last-title{white-space:normal;overflow:visible;font-size:calc(17px * var(--ts,1));line-height:1.2;overflow-wrap:normal;hyphens:manual}
+
+/* Zwei Karten: Atempause + Woche im Ring, gleich hoch, gespiegelt */
+#todayHome .today-pair{margin:0 0 22px;align-items:stretch}
+#todayHome .today-tile{border-radius:20px;box-shadow:var(--shadow);padding:16px 14px 6px 16px;min-height:236px}
+#todayHome .today-tile.today-new{border-top:1px solid var(--line);padding-top:16px}
+#todayHome .today-tile-top{align-items:center;min-height:22px;margin-bottom:0}
+#todayHome .today-tile .today-break-info{margin:-11px -10px -11px 0}
+.today-tile-circle{width:96px;height:96px;margin:12px 0 10px;flex:none}
+#todayHome .today-break-icon.today-tile-circle{border-radius:50%;display:grid;place-items:center;background:none;border:10px solid color-mix(in srgb,var(--area-breath) 22%,transparent);color:var(--area-breath-ink);box-sizing:border-box}
+#todayHome .today-break-icon.today-tile-circle svg{width:34px;height:34px}
+.today-break-kicker{color:var(--area-breath-ink)}
+#todayHome .today-break-title{font-size:calc(17px * var(--ts,1));line-height:1.15;margin:0 0 4px}
+#todayHome .today-break .today-tile-go{color:var(--area-breath-ink)}
+#todayHome .today-tile-go{margin-top:auto}
+.today-mood .today-main-kicker{display:flex;align-items:center;flex-wrap:wrap;gap:0 6px;min-height:22px}
+#todayHome .today-mood .today-mood-change{min-height:44px;margin:-11px 0;padding:0 4px}
+.today-ring{position:relative}
+.today-ring svg{width:100%;height:100%;transform:rotate(-90deg);display:block}
+.today-ring circle{fill:none;stroke-width:10}
+.today-ring .ring-done{stroke:var(--brand)}
+.today-ring .ring-open{stroke:var(--track)}
+.today-ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:"Magra",system-ui,sans-serif;font-weight:700;font-size:calc(24px * min(var(--ts,1),1.1));color:var(--ink);font-variant-numeric:tabular-nums}
+.today-ring-num small{font-size:calc(15px * min(var(--ts,1),1.1));color:var(--ink-soft);font-weight:700}
+#todayHome .today-mood.is-set .today-tile-sub{flex:0 0 auto;margin:0 0 4px}
+
+/* Woche: D1-Zeichen (neutral) */
+.d1-marks{display:flex;justify-content:center;align-items:center;gap:3px;height:8px}
+.d1-dot,.d1-sq{display:inline-block;width:6px;height:6px;flex:none;position:static;transform:none;box-sizing:border-box}
+.d1-dot{border-radius:50%;background:var(--ink)}
+.d1-dot.is-plan{background:transparent;box-shadow:inset 0 0 0 1.4px var(--ink-soft)}
+.d1-dot.is-missed{background:var(--ink-soft);opacity:.3}
+.d1-sq{border-radius:1.5px;background:var(--ink-soft)}
+.d1-sq.is-series{background:transparent;box-shadow:inset 0 0 0 1.4px var(--ink-soft)}
+.d1-more{font-size:10px;line-height:8px;font-weight:700;color:var(--ink-soft)}
+.week-day.selected .d1-dot.is-done,.week-day.selected .d1-sq.is-single,.cal-cell.selected .d1-dot.is-done,.cal-cell.selected .d1-sq.is-single{background:var(--on-brand-fill)}
+.week-day.selected .d1-dot.is-plan,.week-day.selected .d1-sq.is-series,.cal-cell.selected .d1-dot.is-plan,.cal-cell.selected .d1-sq.is-series{box-shadow:inset 0 0 0 1.4px var(--on-brand-fill)}
+.week-day.selected .d1-dot.is-missed,.week-day.selected .d1-more{background:var(--on-brand-fill);color:var(--on-brand-fill)}
+.week-day.selected .d1-more{background:none}
+#todayHome .week-day-mark{height:10px;margin-top:3px}
+#todayHome .week-day{border-width:1px}
+.d1-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:calc(12px * var(--ts,1));color:var(--ink-soft);align-items:center}
+.d1-legend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+
+/* Monat: ruhige Zellen, Zahl im Kreis, Woche hinterlegt */
+#calExpand{border-radius:18px;box-shadow:var(--shadow);padding:12px 12px 14px}
+.cal-head-month{margin-bottom:2px}
+.cal-head-title{font-family:"Magra",system-ui,sans-serif;font-weight:700;font-size:calc(19px * var(--ts,1));color:var(--ink)}
+.cal-head-month + .cal-month > .cal-month-title{display:none}
+#calExpand .cal-month:not(.mini) .cal-grid{gap:2px 0}
+#calExpand .cal-month:not(.mini) .cal-cell{border:none;background:none;min-height:50px;padding:3px 0 2px;border-radius:0;gap:2px;overflow:visible}
+#calExpand .cal-month:not(.mini) .cal-cell .cal-num{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;font-size:calc(15px * min(var(--ts,1),1.1));font-weight:500;font-variant-numeric:tabular-nums}
+#calExpand .cal-month:not(.mini) .cal-cell.in-week{background:color-mix(in srgb,var(--brand) 8%,transparent)}
+#calExpand .cal-month:not(.mini) .cal-grid > .cal-cell.in-week:nth-child(7n+1){border-radius:12px 0 0 12px}
+#calExpand .cal-month:not(.mini) .cal-grid > .cal-cell.in-week:nth-child(7n){border-radius:0 12px 12px 0}
+#calExpand .cal-month:not(.mini) .cal-cell.selected{background:color-mix(in srgb,var(--brand) 8%,transparent);color:var(--ink)}
+#calExpand .cal-month:not(.mini) .cal-cell.selected:not(.in-week){background:none}
+#calExpand .cal-month:not(.mini) .cal-cell.selected .cal-num{background:var(--brand);color:var(--on-brand-fill);font-weight:700}
+#calExpand .cal-month:not(.mini) .cal-cell.is-today:not(.selected) .cal-num{box-shadow:inset 0 0 0 2px var(--brand);color:var(--brand);font-weight:700}
+#calExpand .cal-month:not(.mini) .cal-cell.missed .cal-num{color:var(--ink)}
+#calExpand .cal-month:not(.mini) .cal-band{top:auto;bottom:0;left:12px;right:12px;height:2px;opacity:.35}
+#calExpand .cal-month:not(.mini) .cal-star{position:absolute;top:0;right:4px;font-size:10px;color:var(--ink-soft)}
+.cal-month:not(.mini) .cal-cell.selected .d1-dot.is-done,.cal-month:not(.mini) .cal-cell.selected .d1-sq.is-single{background:var(--ink)}
+.cal-month:not(.mini) .cal-cell.selected .d1-dot.is-plan,.cal-month:not(.mini) .cal-cell.selected .d1-sq.is-series{box-shadow:inset 0 0 0 1.4px var(--ink-soft)}
+
+/* Tag als Zeitleiste (T1) */
+#todayHome .day-panel{background:none;border:none;border-top:1px solid var(--line);border-radius:0;padding:14px 0 0;margin-top:22px}
+#todayHome .day-panel-head{margin-bottom:0}
+#todayHome .day-panel-head h3{font-size:calc(20px * var(--ts,1));line-height:1.2}
+.day-panel-sub{margin:2px 0 10px;font-size:calc(12.5px * var(--ts,1));color:var(--ink-soft)}
+.t1{display:flex;flex-direction:column;position:relative}
+.t1 > #dayEvents,.t1 > #dayPanelBody{display:contents}
+.t1.is-hours{display:block}
+.t1.is-hours > #dayEvents,.t1.is-hours > #dayPanelBody{display:block}
+.t1-row{display:grid;grid-template-columns:46px 16px minmax(0,1fr);column-gap:8px;align-items:start;position:relative;margin-bottom:6px}
+.t1-row::before{content:"";position:absolute;left:61px;top:0;bottom:-6px;width:2px;background:var(--line)}
+.t1-time{padding-top:12px;font-size:calc(13.5px * min(var(--ts,1),1.1));font-weight:700;text-align:right;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.t1-node{width:14px;height:14px;border-radius:50%;margin-top:14px;position:relative;z-index:1;box-sizing:border-box;background:var(--bg);box-shadow:0 0 0 3px var(--bg)}
+.t1-node.is-done{background:var(--ok)}
+.t1-node.is-open{border:2.5px solid var(--brand)}
+.t1-node.is-plan{border:2.5px solid var(--ink-soft)}
+.t1-node.is-missed{border:2.5px solid var(--ink-soft);opacity:.45}
+.t1-node.is-ev{border-radius:4px;border:2.5px solid var(--ink-soft)}
+#todayHome .t1-card{margin:0;border:1px solid var(--line);border-left:4px solid var(--ac,var(--brand));border-radius:14px;padding:10px 12px;background:var(--surface);box-shadow:var(--shadow)}
+#todayHome .t1-card.done{opacity:1}
+#todayHome .t1-card.done .day-item-title{color:var(--ink-soft)}
+.t1-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.t1-top-r{display:inline-flex;align-items:center;gap:6px}
+.t1-ico{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none}
+.t1-ico svg{width:18px;height:18px}
+.t1-ico.is-ev{border-radius:50%}
+.combo-ico{width:30px;height:30px;border-radius:9px;background:var(--surface-2);display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:6px;box-sizing:border-box;flex:none}
+.combo-ico i{border-radius:2.5px;background:var(--track)}
+.t1-chip{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;font-size:calc(12px * min(var(--ts,1),1.1));font-weight:600;white-space:nowrap}
+.t1-chip.is-done{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+.t1-chip.is-open{background:var(--brand-pale);color:var(--brand)}
+.t1-chip.is-plan{box-shadow:inset 0 0 0 1.2px var(--line);color:var(--ink-soft)}
+.t1-chip.is-missed{color:var(--ink-soft);box-shadow:inset 0 0 0 1.2px var(--line)}
+.t1-chip.is-ev{background:var(--surface-2);color:var(--ink-soft)}
+#todayHome .t1-card .day-item-title{font-weight:600;font-size:calc(15px * var(--ts,1));line-height:1.25}
+.t1-tag{display:inline-block;font-size:calc(10.5px * min(var(--ts,1),1.1));font-weight:700;letter-spacing:.04em;color:var(--brand);background:var(--brand-pale);border-radius:999px;padding:1px 7px;vertical-align:2px;white-space:nowrap}
+.t1-blocks{list-style:none;margin:8px 0 2px;padding:0;display:flex;flex-direction:column;gap:4px}
+.t1-blocks li{display:flex;align-items:center;gap:8px;font-size:calc(13px * var(--ts,1));color:var(--ink)}
+.t1-blocks li i{width:8px;height:8px;border-radius:2px;flex:none}
+.t1-blocks li span{flex:1;min-width:0;overflow-wrap:anywhere}
+.t1-blocks li small{flex:none;color:var(--ink-soft);font-size:calc(12px * var(--ts,1))}
+.t1-repeat{display:flex;align-items:center;gap:5px;font-size:calc(12.5px * var(--ts,1));color:var(--ink-soft);margin-top:4px}
+.t1-repeat svg{flex:none}
+#todayHome .t1-start{width:100%;margin-top:10px;min-height:48px;padding:10px 12px;font-size:calc(16px * min(var(--ts,1),1.1));border-radius:14px;box-shadow:none}
+#todayHome .t1-card .day-item-actions{margin-top:8px}
+#todayHome .t1-card .day-item-actions:empty{display:none}
+#todayHome .t1-card .rem-bell{color:var(--ink-soft);display:inline-flex}
+#dayTimeline > * > .day-gap,#dayTimeline .day-gap{margin:0 0 6px 70px;padding-left:2px;font-style:italic;font-size:calc(11.5px * var(--ts,1));color:var(--ink-soft);position:relative}
+#dayTimeline .day-gap::before{display:none}
+#dayTimeline .day-subhead,#dayTimeline .day-empty{margin-left:0}
+
+/* iPad / Laptop (B1): Karten oben nebeneinander, Woche + Monat links, Tag rechts */
+@media (min-width:900px){
+  #todayHome.screen{max-width:1040px}
+  /* Kundenblick 10.10.: both top columns end on one line (the main card
+     grows to the tiles' height), and the plan buttons sit in the left
+     column right under the calendar (the day panel spans all rows, the
+     last 1fr row takes its extra height). */
+  .today-top{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:stretch;margin-bottom:22px}
+  .today-top-main{display:flex;flex-direction:column}
+  .today-top-main > #todayMain:not([hidden]){flex:1 1 auto}
+  .today-top-main > .today-main:not([hidden]):not(:has(~ .today-main:not([hidden]))){margin-bottom:0}
+  #todayHome .today-top .today-pair{margin:0}
+  #todayHome .today-top .today-tile{min-height:220px}
+  .today-week{display:grid;grid-template-columns:440px minmax(0,1fr);grid-template-rows:auto auto auto 1fr;column-gap:28px;align-items:start}
+  .today-week > .today-week-cal{grid-column:1;grid-row:1}
+  #todayHome .today-week > .day-panel{grid-column:2;grid-row:1 / -1;border-top:none;margin-top:0;padding-top:0}
+  .today-week > .today-plan-btn{grid-column:1;grid-row:2}
+  .today-week > .today-plan-links{grid-column:1;grid-row:3}
+}
+
+/* Kopfleiste gleich auf jedem Tab (Kundenblick 10.10.): Heute is wider from
+   900 px (1040 px), the other pages 760 px. The bar's content is always the
+   same 720 px in the middle and its line always runs across the whole
+   window, so logo, title and gear sit at the same place on every tab. */
+.screen>.brandbar{padding-left:max(20px,calc(50% - 340px));padding-right:max(20px,calc(50% - 340px));
+  border-image:linear-gradient(var(--line),var(--line)) 0 0 1 0 / 0 0 1px 0 / 0 100vw}
+.tr-ghost > .ghost-bar > .brandbar{border-image:linear-gradient(var(--line),var(--line)) 0 0 1 0 / 0 0 1px 0 / 0 100vw}
+/* Sheet "Training eintragen" (Kundenblick 10.10.): the button bar stays at the bottom
+   on an opaque surface with room below, so no field ever hides under it
+   (large text scrolls the sheet). */
+#planEntrySheet .custom-exercise-form-actions{
+  position:sticky;bottom:0;z-index:2;background:var(--surface);
+  margin:16px -22px 0;padding:10px 22px calc(22px + env(safe-area-inset-bottom,0px));
+  box-shadow:0 -1px 0 var(--line)}
+#planEntrySheet .sheet-inner{padding-bottom:0}

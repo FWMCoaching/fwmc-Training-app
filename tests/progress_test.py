@@ -63,7 +63,7 @@ async def main():
         check("3 weeks marked reached", await pg.locator("#progressWeeks .progress-week.reached").count() == 3)
         areas = await pg.inner_text("#progressAreas")
         check("areas list all trained areas", all(a in areas for a in ["Visuelles Training", "Atemtraining", "Krafttraining", "Ausdauertraining", "Reaktionstraining"]), areas)
-        check("milestones 1/5/10 reached", await pg.locator(".progress-milestone.reached").count() == 3)
+        check("milestones: window shows last 2 reached (5, 10) + next 3", await pg.locator(".progress-milestone.reached").count() == 2 and await pg.locator(".progress-milestone").count() == 5 and (await pg.inner_text("#progressMilestones")).split()[0] == "5")
         check("next milestone text", "15 Trainings bis zum nächsten Meilenstein (25)" in await pg.inner_text("#progressNextText"))
 
         # goal up -> this week no longer reached, streak drops to 0 (old weeks had 3 < 4)

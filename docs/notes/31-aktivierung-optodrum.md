@@ -132,3 +132,45 @@ Test: `tests/bewegter_hintergrund_1008_test.py` (screenshots `tests/screenshots/
 `tests/bewegter_hintergrund_mot_1008_test.py` (MOT: off by default, moves, real-pointer tap
 selection with the pattern on, pause live, Sanfte Reize, Kombi isolation; screenshots `mot_*`),
 `tests/hint_overlap_all_test.py` (balance words+mbg, flash mbg, mot mbg), `tests/text_wrap_audit_test.py` (nat/mot-mbg).
+
+## Gesten in der Übung (Fabian 09.10.)
+- Wischen auf `#optoStage` (≥ 40 px, < 0,9 s, nicht vom linken Rand ≤ 28 px) setzt die Laufrichtung
+  (8 Sektoren: links/rechts/hoch/runter, schräg = `dir:"schraeg"` + `diag`), zwei Finger
+  (oder Strg+Mausrad) die Breite `size` 10-160 px. Kurzer Text in der Mitte (`.opto-toast`).
+- Gilt sofort für den Lauf; `#optoLiveSaveBtn` „Speichern" (unten rechts) erscheint, sobald
+  Richtung/Breite von den gespeicherten Optodrum-Einstellungen abweichen, nur bei eigenen Läufen
+  (nie im Kombi), verschwindet in der Pause (die Pause zeigt die Live-Werte und speichert ihr
+  Feld wie bisher sofort). Die ersten 3 eigenen Läufe zeigen kurz den Gesten-Hinweis
+  (`fwmc-opto-gesture-hint-v1`; Tests: `fwmc-test-optohint`). Test: `tests/optodrum_gesten_0910_test.py`.
+- Client-facing name of the background layer: „Optodrum (bewegter Hintergrund)" (Fabian 09.10.).
+- Shared helpers (10.10., used by Optodrum and the switch below): `makeStageToast(stage)`,
+  `makeLiveSaveBtn(parent, {id, unsaved, save, visible})`, `wireSwipePinch(el, {live, skip, size,
+  onSize, onDir})` (+ `optoGestureDir`), `gestureHintDue(key, testFlag)` (3 times).
+
+## Ebenen-Umschalter „Übung | Hintergrund" (Fabian 10.10., 👍 on the proposal)
+- Every `MOVING_BG` exercise (Gleichgewicht, Positionen merken, Flash-Speicher-Test, MOT,
+  Schulte-Tabelle) gets, generically (`mbgEbene` setup loop after the MOVING_BG wiring), a
+  segmented switch `.mbg-ebene-bar` at the bottom of the stage (z 5, chips 44 px, fixed hex).
+  Shown only while the pattern runs (`mbgEbeneOn` from `mbgStart`, `mbgEbeneOff` from
+  `mbgStop`), hidden while paused / pause sheet open / done panel (`mbgEbeneSync` per frame in
+  `mbgTick`). Every new run state starts on „Übung" (`mbgStart` compares `E.st`).
+- „Hintergrund": a transparent `.mbg-gesture` layer (z 4) covers the stage, so no answer
+  (`onGameTap`/FAST_TAP), stick drag or balance control below ever sees a touch;
+  `wirePinchSize` (LIVE_LOOK) ignores the stage while it has `.mbg-bg-mode`. Swipe = `dir`/`diag`,
+  two fingers / ctrl+wheel = `size` 10-160 (same `wireSwipePinch` as Optodrum), toast in the
+  middle. `#<kind>MbgSaveBtn` „Speichern" next to the switch, only in „Hintergrund", only when
+  `L.own()` and dir/diag/size differ from the exercise's prefs; writes those three into
+  `prefs.mbg`. Kombi / trainer programme / Cardio guest: no Speichern, this run only. The pause
+  sheet shows the live values (its observer reads `st.mbg`).
+- Room for the switch: the stage gets `.has-mbg-switch` (`--mbg-inset: 66px`, JS `mbgInset(stage)`).
+  Remember: `rememberStageBounds` / `rememberLiveSize` keep markers above it (percentages stay of
+  the full height); Flash: `flashSafeFy` + stage padding-bottom (keypad centred above);
+  MOT: `.mot-objects{bottom:inset}` (physics bounds from the layer); Schulte: `fitSchulteBoard`
+  + padding (entry `relayout`); Gleichgewicht: `.balance-live` moves up, `balanceArea` follows
+  (entry `relayout`). A new MOVING_BG exercise gets the switch for free; its engine only has to
+  keep content above `mbgInset(stage)` (optional `relayout` when the inset toggles).
+- Hint: the first 3 switches to „Hintergrund" (not at the start, so it never covers numbers while
+  answering) show „Wischen ändert die Richtung, zwei Finger die Breite. Tippen zählt so lange
+  nicht." (`fwmc-mbg-ebene-hint-v1`, seen-hints keep group; tests: `fwmc-test-mbghint`).
+- Explained in the Feineinstellungen group (`data-mbg-gesture-help`) and the Optodrum gestures FAQ.
+- Test: `tests/optodrum_ebene_1010_test.py` (screenshots `tests/screenshots/optodrum_ebene/`).

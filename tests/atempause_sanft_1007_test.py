@@ -90,9 +90,10 @@ async def main():
         await pg.goto(BASE + "?bereich=heute"); await pg.clock.run_for(600)
         check("A: card visible on Heute", await pg.is_visible("#todayBreak"))
         title = await pg.inner_text("#todayBreakTitle")
-        sub = await pg.inner_text("#todayBreak .today-tile-sub")
-        # Heute E (09.10.): half tile, title in quotes, minutes in the ⓘ sheet
-        check("A: recognisable as a breathing pause", title == "„Nichtraucher-Pause“" and "durchatmen" in sub, f"{title} / {sub}")
+        sub = await pg.inner_text("#todayBreak .today-break-kicker")
+        # Heute E (09.10.): half tile, title in quotes, minutes in the ⓘ sheet;
+        # Heute neu (10.10.): kicker "Atempause" + breath circle instead of the sub line
+        check("A: recognisable as a breathing pause", title == "„Nichtraucher-Pause“" and sub.strip().lower() == "atempause", f"{title} / {sub}")
         check("A: default 2 Min. active", await pg.locator('[data-break-min="2"].active').count() == 1 and (await pg.inner_text("#todayBreakStartBtn")).startswith("2 Min."))
         sizes = await pg.evaluate("() => [...document.querySelectorAll('#todayBreak button')].map(e => Math.min(e.getBoundingClientRect().width, e.getBoundingClientRect().height))")
         check("A: tap targets >= 44 px", min(sizes) >= 44, sizes)

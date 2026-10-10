@@ -442,9 +442,15 @@
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   }
   function fmtMinutes(sec) {
-    if (sec < 60) return `${Math.max(1, Math.round(sec))} Sek`;
+    if (sec < 60) return `${Math.max(1, Math.round(sec))} Sek.`;
     const m = Math.round(sec / 30) / 2;
-    return `${String(m).replace(".", ",")} Min`;
+    return `${String(m).replace(".", ",")} Min.`;
+  }
+  // Verlauf/Fortschritt (Kundenblick 10.10.): whole minutes, under one
+  // minute seconds ("45 Sek."), never "11,5 Min.".
+  function fmtMinutesWhole(sec) {
+    if (sec < 60) return `${Math.max(1, Math.round(sec))} Sek.`;
+    return `${Math.round(sec / 60)} Min.`;
   }
   function fmtSeconds(sec) {
     return `${String(Math.round(sec * 10) / 10).replace(".", ",")} s`;
@@ -1759,7 +1765,7 @@
       const ok = tp.rounds.filter((r) => r.ok);
       const longest = ok.reduce((m, r) => Math.max(m, r.seq.length), 0);
       return { rounds: tp.rounds.length, roundsOk: ok.length, longest,
-        text: `${ok.length} von ${tp.rounds.length} Runden richtig` + (longest ? ` · längste Folge ${longest}` : "") };
+        text: `${ok.length} von ${countLabel(tp.rounds.length, "Runde", "Runden")} richtig` + (longest ? ` · längste Folge ${longest}` : "") };
     }
     const hits = tp.items.filter((i) => i.ok);
     const rts = hits.map((i) => i.rt).filter((v) => v != null);
@@ -2372,7 +2378,7 @@
     return [...Object.entries(WORKOUT_EXERCISES), ...customWorkoutExercises.map((c) => [c.id, c])];
   }
   function circuitSummaryLabel(block) {
-    return `Zirkel · ${block.items.length} Übung${block.items.length === 1 ? "" : "en"}` + (block.sets > 1 ? ` × ${block.sets} Sätze` : "");
+    return `Zirkel · ${block.items.length} Übung${block.items.length === 1 ? "" : "en"}` + (block.sets > 1 ? ` × ${countLabel(block.sets, "Satz", "Sätze")}` : "");
   }
   function workoutBlockLabel(block) {
     if (block.kind === "circuit") return circuitSummaryLabel(block);
@@ -2380,8 +2386,8 @@
     return findWorkoutExercise(block.exercise).name;
   }
   function workoutBlockMeta(block) {
-    if (block.kind === "tabata") return `${block.rounds} Runden à ${block.workS}s/${block.restS}s`;
-    if (block.kind === "circuit") return `${block.items.length} Übungen × ${block.sets} Sätze`;
+    if (block.kind === "tabata") return `${countLabel(block.rounds, "Runde", "Runden")} à ${block.workS} s/${block.restS} s`;
+    if (block.kind === "circuit") return `${countLabel(block.items.length, "Übung", "Übungen")} × ${countLabel(block.sets, "Satz", "Sätze")}`;
     if (block.kind === "strength") return block.items.map((it) => `${findWorkoutExercise(it.exercise).name} ${strengthItemTargetText(it)}${it.supersetNext ? " (Supersatz mit nächster)" : ""}`).join(" · ");
     if (block.rangeMin != null) return `${block.sets}×${block.rangeMin}–${block.rangeMax}`;
     return `${block.sets}×${block.reps}`;
@@ -2438,7 +2444,7 @@
       if (block.rk && RK_MODES[block.rk.rkMode]) return `${t} · ${RK_MODES[block.rk.rkMode].label}`;
       return block.ff && FF_MODE_LABELS[block.ff.ffMode] ? `${t} · ${FF_MODE_LABELS[block.ff.ffMode]}` : t;
     }
-    if (block.domain === "nat") return `Positionen merken · ${REMEMBER_MODES[block.mode] ? REMEMBER_MODES[block.mode].title : block.mode}`;
+    if (block.domain === "nat") return `Positionen merken · ${(REMEMBER_MODES[block.mode] || REMEMBER_MODES.fixed).title}`;
     if (block.domain === "blitz") return "Blitz-Raster";
     if (block.domain === "flash") return `Flash-Speicher-Test · ${flashModeTitle(block.mode)}`;
     if (block.domain === "mot") return `Objektverfolgung (MOT) · ${motModeTitle(block.mode)}`;
@@ -2451,7 +2457,7 @@
     return block.domain;
   }
   function comboBlockMeta(block) {
-    if (block.domain === "wimhof") return `${block.rounds ?? WIMHOF_DEFAULTS.rounds} Runden` + (whRoundRestOf(block) ? ` · ${whRoundRestOf(block)} s Pause` : "");
+    if (block.domain === "wimhof") return `${countLabel(block.rounds ?? WIMHOF_DEFAULTS.rounds, "Runde", "Runden")}` + (whRoundRestOf(block) ? ` · ${whRoundRestOf(block)} s Pause` : "");
     if (block.domain === "breath") return (block.noLimit ? "ohne Zeitlimit" : fmtMinutes((block.durationMin ?? 5) * 60)) + (block.listen ? " · Hörmodus" : "");
     if (block.domain === "movement") return fmtMinutes((block.durationMin ?? 2) * 60);
     if (block.domain === "workout") return workoutBlockMeta(block);
@@ -3685,6 +3691,15 @@
   // from the existing history. Aborted runs never count.
   const PROGRESS_KEY = "fwmc-progress-v1";
   const PROGRESS_MILESTONES = [1, 5, 10, 25, 50, 100, 150, 200, 300, 500, 750, 1000];
+  // Meilensteine (Fabian 09.10.): nach 1000 endlos weiter in 250er-Schritten;
+  // gezeigt werden 5 Felder: die letzten 2 geschafften und die nächsten 3.
+  function milestoneAt(i) { return i < PROGRESS_MILESTONES.length ? PROGRESS_MILESTONES[i] : 1000 + 250 * (i - PROGRESS_MILESTONES.length + 1); }
+  function milestoneWindow(total) {
+    let i = 0; while (milestoneAt(i) <= total) i++; // i = Index des nächsten Meilensteins
+    const from = Math.max(0, i - 2);
+    return Array.from({ length: 5 }, (_, k) => milestoneAt(from + k)); // anfangs mehr kommende
+
+  }
   function loadProgress() {
     const raw = readJSON(PROGRESS_KEY, null);
     const p = raw && typeof raw === "object" ? raw : {};
@@ -3755,6 +3770,18 @@
     if (st && st.planned > 0 && st.scored === 0) return { ...w, goal: 0, planDone: 0, extra: w.n, fromPlan: true, noScore: true, reached: false };
     return { ...w, goal: p.weekGoal, planDone: Math.min(w.n, p.weekGoal), extra: Math.max(0, w.n - p.weekGoal), fromPlan: false, reached: w.n >= p.weekGoal };
   }
+  // "Noch N bis zum Ziel" ehrlich (Prüfer 09.10.): bei einem Plan zählen nur die
+  // Einheiten, die diese Woche noch möglich sind (heute und später, nicht erledigt).
+  function goalLeftText(c) {
+    const left = Math.max(0, c.goal - c.planDone);
+    if (!left) return "";
+    if (c.fromPlan) {
+      let ahead = 0;
+      try { const t = todayStr(), sun = dAdd(mondayOf(t), 6), h = loadHistory(); for (let d = t; d <= sun; d = dAdd(d, 1)) ahead += occurrencesOn(d, h).filter((o) => !o.done).length; } catch (e) { ahead = left; }
+      if (ahead < left) return ahead ? `Noch ${ahead} ${ahead === 1 ? "Einheit" : "Einheiten"} diese Woche geplant.` : "Diese Woche ist nichts mehr geplant.";
+    }
+    return `Noch ${left} bis zum Ziel.`;
+  }
   function progressSummary(p, now) {
     const thisMon = progressMonday(now || new Date());
     const weekAt = (back) => { const m = new Date(thisMon); m.setDate(m.getDate() - back * 7); return m; };
@@ -3788,7 +3815,7 @@
       Object.entries(w.a).forEach(([k, v]) => { areas[k] = (areas[k] || 0) + v; });
       areaS += w.s;
     }
-    const next = PROGRESS_MILESTONES.find((m) => m > total) || null;
+    const next = milestoneWindow(total).find((m) => m > total);
     return { cur, streak, best: Math.max(best, streak), total, totalS, weeks, areas, areaS, next };
   }
   const PROGRESS_AREA_LABEL = { combo: ["Kombi-Programm", "#007094"], test: ["Test-Bereich", "#b45309"] };
@@ -3832,7 +3859,7 @@
     els.progressWeekText.textContent = c.pause ? "Diese Woche ist Pause. Deine Serie bleibt erhalten."
       : c.noScore ? `Diese Woche ist ohne Wertung. ${c.n} ${c.n === 1 ? "Training" : "Trainings"} bisher.`
       : left
-      ? `Diese Woche ${c.planDone} von ${c.goal}${c.fromPlan ? " geplanten" : ""}. Noch ${left} bis zum Ziel.${extraTxt}`
+      ? `Diese Woche ${c.planDone} von ${c.goal}${c.fromPlan ? " geplanten" : ""}. ${goalLeftText(c)}${extraTxt}`
       : `Diese Woche ${c.planDone} von ${c.goal}${c.fromPlan ? " geplanten" : ""}. Ziel erreicht, stark!${extraTxt}`;
     // No training yet (Fabian 2026-10-06): one friendly start card instead of
     // zeros and empty bars; the week goal stays adjustable above it.
@@ -3843,13 +3870,13 @@
       `<div class="stat"><strong>${progressStreakText(s.streak)}</strong><span>Serie (Wochenziel in Folge erreicht)</span></div>` +
       `<div class="stat"><strong>${progressStreakText(s.best)}</strong><span>Längste Serie</span></div>` +
       `<div class="stat"><strong>${s.total}</strong><span>Trainings gesamt</span></div>` +
-      `<div class="stat"><strong>${s.totalS ? fmtMinutes(s.totalS) : "–"}</strong><span>Trainingszeit gesamt</span></div>`;
+      `<div class="stat"><strong>${s.totalS ? fmtMinutesWhole(s.totalS) : "–"}</strong><span>Trainingszeit gesamt</span></div>`;
     // Split bars (kp2, Fabian 06.10.): below strong = planned and done,
     // above lighter and narrower = extra; each week its own goal tick.
     const maxN = Math.max(...s.weeks.map((w) => Math.max(w.goal * 1.25, w.planDone + w.extra)), 1);
     els.progressWeeks.innerHTML = s.weeks.map((w, i) => {
       const hp = Math.round((w.planDone / maxN) * 100), he = Math.round((w.extra / maxN) * 100);
-      const label = i === s.weeks.length - 1 ? "diese" : `${String(w.monday.getDate()).padStart(2, "0")}.${String(w.monday.getMonth() + 1).padStart(2, "0")}.`;
+      const label = i === s.weeks.length - 1 ? "jetzt" : `${w.monday.getDate()}.${w.monday.getMonth() + 1}.`; // gleiches Format wie die Tagesform
       const title = w.pause ? "Pause" : `${w.planDone} von ${w.goal}${w.extra ? `, ${w.extra} zusätzlich` : ""}`;
       return `<div class="progress-week${w.reached ? " reached" : ""}${w.pause ? " pause" : ""}" title="${title}">
         <span class="progress-week-n">${w.pause ? "–" : w.planDone + w.extra}</span>
@@ -3867,13 +3894,11 @@
             <span class="progress-area-n">${n}</span></div>`;
         }).join("")
       : `<p class="group-help">In den letzten 4 Wochen noch kein Training. Leg einfach los, dann siehst du hier, wie sich dein Training auf die Bereiche verteilt.</p>`;
-    els.progressAreasNote.textContent = areaRows.length ? `Zusammen ${s.areaS ? fmtMinutes(s.areaS) : "unter einer Minute"} in den letzten 4 Wochen.` : "";
+    els.progressAreasNote.textContent = areaRows.length ? `Zusammen ${s.areaS ? fmtMinutesWhole(s.areaS) : "unter einer Minute"} in den letzten 4 Wochen.` : "";
     renderMoodProgress(loadHistory());
-    els.progressMilestones.innerHTML = PROGRESS_MILESTONES.map((m) =>
+    els.progressMilestones.innerHTML = milestoneWindow(s.total).map((m) =>
       `<div class="progress-milestone${s.total >= m ? " reached" : ""}"><strong>${m}</strong><span>${m === 1 ? "Training" : "Trainings"}</span></div>`).join("");
-    els.progressNextText.textContent = s.next
-      ? `Noch ${s.next - s.total} ${s.next - s.total === 1 ? "Training" : "Trainings"} bis zum nächsten Meilenstein (${s.next}).`
-      : "Alle Meilensteine geschafft. Respekt!";
+    els.progressNextText.textContent = `Noch ${s.next - s.total} ${s.next - s.total === 1 ? "Training" : "Trainings"} bis zum nächsten Meilenstein (${s.next}).`;
   }
   function setProgressGoal(delta) {
     const p = loadProgress();
@@ -3916,7 +3941,7 @@
     const weekSec = week.reduce((s, e) => s + (e.seconds || 0), 0);
     statsEl.innerHTML =
       `<div class="stat"><strong>${week.length}</strong><span>Trainings diese Woche</span></div>` +
-      `<div class="stat"><strong>${week.length ? fmtMinutes(weekSec) : "–"}</strong><span>Trainingszeit diese Woche</span></div>` +
+      `<div class="stat"><strong>${week.length ? fmtMinutesWhole(weekSec) : "–"}</strong><span>Trainingszeit diese Woche</span></div>` +
       `<div class="stat"><strong>${list.length}</strong><span>Trainings gesamt</span></div>`;
     const expanded = listEl.dataset.expanded === "1";
     const visibleCount = expanded ? HISTORY_VISIBLE_EXPANDED : HISTORY_VISIBLE_SHORT;
@@ -3926,7 +3951,7 @@
       const rating = e.rating ? ` · ${ratingLabel(e.kind)} ${e.rating}/5` : "";
       const note = e.note ? ` · ${esc(e.note)}` : "";
       const tag = e.trainer ? ' <span class="h-tag">bei deinem Trainer</span>' : "";
-      return `<li><span class="h-date">${date}</span><span class="h-title">${esc(e.title)}${tag}</span><span class="h-meta">${fmtMinutes(e.seconds || 0)}${note}${rating}</span></li>`;
+      return `<li><span class="h-date">${date}</span><span class="h-title">${esc(e.title)}${tag}</span><span class="h-meta">${fmtMinutesWhole(e.seconds || 0)}${note}${rating}</span></li>`;
     }).join("");
     moreBtn.hidden = list.length <= HISTORY_VISIBLE_SHORT;
     moreBtn.textContent = expanded ? "Weniger anzeigen" : "Alle anzeigen";
@@ -5409,7 +5434,7 @@
     if (isConeTap) {
       const best = coneBestFor(state.duration);
       els.coneBestHint.textContent = best
-        ? `Deine Bestleistung bei dieser Dauer: ${best} Durchgänge.`
+        ? `Deine Bestleistung bei dieser Dauer: ${countLabel(best, "Durchgang", "Durchgänge")}.`
         : "Noch keine Bestleistung bei dieser Dauer – leg los!";
     }
   }
@@ -8348,8 +8373,8 @@
     let summary, note;
     if (coneTap) {
       const isRecord = saveConeBest(coneTap.duration, coneTap.count);
-      note = `${coneTap.count} Durchgänge`;
-      summary = `${coneTap.count} Durchgänge · ${fmtMinutes(spent)}` + (isRecord && coneTap.count > 0 ? " · Neue Bestleistung!" : "");
+      note = countLabel(coneTap.count, "Durchgang", "Durchgänge");
+      summary = `${countLabel(coneTap.count, "Durchgang", "Durchgänge")} · ${fmtMinutes(spent)}` + (isRecord && coneTap.count > 0 ? " · Neue Bestleistung!" : "");
     } else if (lwDone) {
       summary = `${lwResultText(lwDone)} · ${fmtMinutes(spent)}`;
       note = lwNote(lwDone);
@@ -8777,6 +8802,8 @@
     const m = readJSON("fwmc-master-v1", null);
     ts = Math.min(TEXT_SCALE_MAX, ts * (TEXT_SIZE_FACTORS[m && m.textSize] || 1));
     document.documentElement.style.setProperty("--ts", String(Math.round(ts * 100) / 100));
+    // Large text: rows that only fit side by side at normal size stack (CSS .ts-large).
+    document.documentElement.classList.toggle("ts-large", ts >= 1.12);
   }
   applyTextScale();
   document.addEventListener("visibilitychange", () => { if (!document.hidden) applyTextScale(); });
@@ -10919,9 +10946,10 @@
     els.breathPauseTempoSlider.value = d.tempo;
     els.breathPauseTempoValue.textContent = d.tempo === 1 ? "wie eingestellt" : d.tempo > 1 ? `${d.tempo.toFixed(1).replace(".", ",")}× langsamer` : `${(1 / d.tempo).toFixed(1).replace(".", ",")}× schneller`;
     const ph = breathScaledPhases(breathSession.basePhases, d.tempo);
-    els.breathPausePhases.textContent = PHASE_ORDER.filter((k) => ph[k] > 0).map((k) => `${PHASE_LABELS[k]} ${String(ph[k]).replace(".", ",")} s`).join(" · ");
+    els.breathPausePhases.textContent = PHASE_ORDER.filter((k) => ph[k] > 0).map((k) => `${PHASE_LABELS[k]}\u00a0${String(ph[k]).replace(".", ",")}\u00a0s`).join(" · ");
     els.breathPauseRestSlider.value = d.restMin;
-    els.breathPauseRestValue.textContent = `${d.restMin} Min`;
+    // Untouched: the real rest like the timer ("1:48"); moved: whole minutes.
+    els.breathPauseRestValue.textContent = d.restMin === d.restMinAtStart && d.restS != null ? els.breathTimeEl.textContent || fmtClock(d.restS) : `${d.restMin}\u00a0Min.`;
     document.querySelectorAll("[data-breath-pause-sound]").forEach((el) => setActive(el, (el.dataset.breathPauseSound === "on") === d.sound));
   }
   els.breathPauseTempoSlider.addEventListener("input", () => { if (breathPauseDraft) { breathPauseDraft.tempo = Number(els.breathPauseTempoSlider.value); syncBreathPauseUI(); } });
@@ -10939,7 +10967,7 @@
     els.breathPhaseLabel.textContent = "Pausiert";
     const elapsed = Math.min((breathPauseTime - breathSession.startTime) / 1000, breathSession.plannedTotal);
     const restMin = Math.min(30, Math.max(1, Math.round((breathSession.plannedTotal - elapsed) / 60)));
-    breathPauseDraft = { tempo: breathSession.tempo, restMin, restMinAtStart: restMin, sound: breathSession.sound };
+    breathPauseDraft = { tempo: breathSession.tempo, restMin, restMinAtStart: restMin, restS: breathSession.plannedTotal - elapsed, sound: breathSession.sound };
     resumeSingleNote("breath");
     syncBreathPauseUI();
     $("breathPauseRestGroup").hidden = !!breathSession.open;
@@ -11554,7 +11582,7 @@
     els.wimhofPlayerBar.hidden = true;
     els.wimhofPauseBtn.hidden = true;
     const avgHold = retentions.length ? retentions.reduce((a, b) => a + b, 0) / retentions.length : 0;
-    els.wimhofDoneSummary.textContent = `${wimhofSettings.rounds} Runden${avgHold ? " · komfortable Anhaltezeit " + fmtClock(avgHold) : ""}`;
+    els.wimhofDoneSummary.textContent = `${countLabel(wimhofSettings.rounds, "Runde", "Runden")}${avgHold ? " · komfortable Anhaltezeit " + fmtClock(avgHold) : ""}`;
     const id = addHistory({ kind: "breath", title: WIMHOF_INFO.name, seconds: Math.round(played) });
     renderRating(els.wimhofRating, id, "Wie wach und energiegeladen fühlst du dich?");
     els.wimhofDonePanel.hidden = false;
@@ -12621,6 +12649,8 @@
     const rect = els.rememberStage.getBoundingClientRect();
     const w = rect.width || 390;
     const h = rect.height || 600;
+    // The Übung | Hintergrund switch keeps the bottom free (positions stay % of the full height).
+    const hFree = h - mbgInset(els.rememberStage);
     // "Größe der Kreise" scales the starting size; the shrink loop below
     // still caps it so all REMEMBER_MAX_MARKERS fit without overlapping.
     const scale = (rememberState ? rememberState.markerScale : rememberPrefs.markerScale) || 1;
@@ -12630,7 +12660,7 @@
     // Bigger than standard only needs room for the markers this level
     // actually shows (with headroom); later levels shrink it again.
     const need = scale > 1 && rememberState ? Math.min(REMEMBER_MAX_MARKERS, Math.max(8, rememberState.level * 2)) : REMEMBER_MAX_MARKERS;
-    while (px > minPx && rememberHexSlots(w, h, minYFor(px), px) < need) px -= 4;
+    while (px > minPx && rememberHexSlots(w, hFree, minYFor(px), px) < need) px -= 4;
     // Within one run the size only ever shrinks (the hint text and with it
     // the free height change between levels), so fixed positions laid out
     // once stay far enough apart.
@@ -12643,7 +12673,7 @@
     els.rememberStage.style.setProperty("--remember-marker-px", px + "px");
     const half = px / 2;
     const minY = minYFor(px);
-    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY, maxY: Math.max(minY, h - half - 8) };
+    return { w, h, minX: half + 8, maxX: Math.max(half + 8, w - half - 8), minY, maxY: Math.max(minY, hFree - half - 8) };
   }
   function randomRememberPixelPosition(existingPx, bounds) {
     for (let attempt = 0; attempt < 300; attempt++) {
@@ -12871,6 +12901,8 @@
   // batch turned up: they used to read rememberPrefs directly regardless of
   // prefsOverride.
   function startRememberGame(mode, opts, prefsOverride) {
+    // Unknown modes (old trainer codes, e.g. "classic") play the default.
+    if (!REMEMBER_MODES[mode]) mode = "fixed";
     hideAllPlayers();
     SCREENS.forEach((s) => { els[s].hidden = true; });
     els.rememberPlayer.hidden = false;
@@ -12999,6 +13031,7 @@
     });
   }
   function openRememberReady(mode) {
+    if (!REMEMBER_MODES[mode]) mode = "fixed";
     syncLook("remember");
     rememberReadyMode = mode;
     const m = REMEMBER_MODES[mode];
@@ -13053,6 +13086,7 @@
   let comboRememberCaptureMode = null;
   let comboRememberDurationS = 60;
   function openRememberComboCapture(mode, existingBlock, editIndex) {
+    if (!REMEMBER_MODES[mode]) mode = "fixed";
     comboRememberCaptureOriginal = { ...rememberPrefs };
     comboRememberCaptureMode = mode;
     comboRememberEditIndex = editIndex ?? null;
@@ -14266,7 +14300,7 @@
     if (!stageRect.height) return fy;
     const half = (els.flashDigitEl.getBoundingClientRect().height || 64) / 2;
     const minY = stageTopClearanceY(stageRect, els.flashHint, els.flashPlayerBar, 0, half, 16);
-    const maxFy = Math.max(0, (stageRect.height - half) / stageRect.height);
+    const maxFy = Math.max(0, (stageRect.height - half - mbgInset(els.flashStage)) / stageRect.height);
     return Math.min(maxFy, Math.max(fy, minY / stageRect.height));
   }
   // Same idea sideways: a large character centred near the edge must not be
@@ -14769,6 +14803,7 @@
     // with the beat, the head turns the other way (balanceWander).
     wander: { name: "Wanderndes Ziel", hint: "Ziel wandert, Kopf dreht in die Gegenrichtung", help: "Das Ziel wandert im Takt hin und her. Dreh den Kopf jeweils in die Gegenrichtung und halte den Blick darauf, es soll scharf bleiben. Fang langsam an.", cue: ["◀ Kopf links", "Kopf rechts ▶"] },
   };
+  const BALANCE_SIDED = { halbtandem: 1, tandem: 1, einbein: 1 };
   const BALANCE_STANCES = { sitzen: "Sitzen", normal: "Normaler Stand", eng: "Enger Stand", halbtandem: "Halbtandem", tandem: "Tandem", einbein: "Einbeinstand", gehen: "Gehen" };
   const BALANCE_STICK_COLORS = [
     { key: "blau", name: "Blau", hex: "#1f5fbf" }, { key: "gelb", name: "Gelb", hex: "#f2c200" },
@@ -14784,7 +14819,7 @@
   const BALANCE_ALPHABET = "ABCDEFGHKLMNPRSTUVXZ"; // no I/J/O/Q/W/Y: easy to mix up at a glance
   const BALANCE_DEFAULTS = {
     mode: "nein", sticks: 1, letters: "zufall", custom: "", custom2: "", singleS: 5, letterCount: 7,
-    metro: true, bpm: 60, timing: "timed", setS: 30, sets: 3, restS: 30, stance: "normal", stanceSpeak: false,
+    metro: true, bpm: 60, timing: "timed", setS: 30, sets: 3, restS: 30, stance: "normal", stanceSide: "wechsel", stanceSpeak: false,
     size: 1, lengthPct: 70, widthF: 1, fontF: 1, color1: "blau", color2: "gelb", letterColor: "auto", letterColor2: "auto", volume: 0.8,
     pos: null, bgColorKey: "gruen", bgIntensity: 0,
     // Wörter (VOR, Fabian 2026-10-08): a word in the centre instead of the sticks.
@@ -14851,6 +14886,7 @@
     p.sets = Math.round(balClamp(p.sets, 1, 10, d.sets));
     p.restS = balClamp(p.restS, 0, 180, d.restS);
     if (!BALANCE_STANCES[p.stance]) p.stance = d.stance;
+    if (!["links", "rechts", "wechsel"].includes(p.stanceSide)) p.stanceSide = d.stanceSide;
     if (typeof p.stanceSpeak !== "boolean") p.stanceSpeak = d.stanceSpeak;
     p.size = Math.round(balClamp(p.size, 0.6, 2, 1) * 10) / 10;
     p.lengthPct = balClamp(p.lengthPct, 30, 100, d.lengthPct);
@@ -14906,9 +14942,13 @@
   }
   function balanceStanceLabel(p, setIdx) {
     if (p.stance === "gehen") return "Gehen, langsam, Blick bleibt auf dem Ziel";
-    if (p.stance !== "einbein") return BALANCE_STANCES[p.stance];
-    if (p.timing === "open") return "Einbeinstand, Seite nach Gefühl wechseln";
-    return setIdx % 2 === 0 ? "Einbein links" : "Einbein rechts";
+    // Seite (Fabian 09.10.): Halbtandem/Tandem = welcher Fuß vorne,
+    // Einbeinstand = welches Bein in der Luft; "wechsel" = je Satz (links zuerst).
+    if (!BALANCE_SIDED[p.stance]) return BALANCE_STANCES[p.stance];
+    const side = p.stanceSide === "wechsel" ? (p.timing === "open" ? "" : (setIdx % 2 === 0 ? "links" : "rechts")) : p.stanceSide;
+    if (!side) return p.stance === "einbein" ? "Einbeinstand, Bein nach Gefühl wechseln" : `${BALANCE_STANCES[p.stance]}, Fuß vorne nach Gefühl wechseln`;
+    const lr = side === "links" ? "linke" : "rechte";
+    return p.stance === "einbein" ? `Einbeinstand, ${lr}s Bein in der Luft` : `${BALANCE_STANCES[p.stance]}, ${lr}r Fuß vorne`;
   }
   function balanceTotalSeconds(p) { return p.timing === "open" ? 0 : p.sets * p.setS + Math.max(0, p.sets - 1) * p.restS; }
   function balanceMeta(p) {
@@ -14958,6 +14998,7 @@
   document.querySelectorAll("#balanceMetroRow [data-bal-metro]").forEach((b) => b.addEventListener("click", () => balanceSet("metro", b.dataset.balMetro === "1")));
   document.querySelectorAll("#balanceTimingRow [data-bal-timing]").forEach((b) => b.addEventListener("click", () => balanceSet("timing", b.dataset.balTiming)));
   document.querySelectorAll("#balanceStanceRow [data-bal-stance]").forEach((b) => b.addEventListener("click", () => balanceSet("stance", b.dataset.balStance)));
+  document.querySelectorAll("#balanceSideRow [data-bal-side]").forEach((b) => b.addEventListener("click", () => balanceSet("stanceSide", b.dataset.balSide)));
   balanceUi.stanceSpeak.addEventListener("change", () => balanceSet("stanceSpeak", balanceUi.stanceSpeak.checked));
   balanceUi.custom.addEventListener("input", () => { balancePrefs.custom = balanceUi.custom.value.slice(0, 12); saveBalancePrefsToStorage(); });
   balanceUi.custom2.addEventListener("input", () => { balancePrefs.custom2 = balanceUi.custom2.value.slice(0, 12); saveBalancePrefsToStorage(); });
@@ -14985,6 +15026,10 @@
     act("#balanceMetroRow [data-bal-metro]", "balMetro", p.metro ? 1 : 0);
     act("#balanceTimingRow [data-bal-timing]", "balTiming", p.timing);
     act("#balanceStanceRow [data-bal-stance]", "balStance", p.stance);
+    act("#balanceSideRow [data-bal-side]", "balSide", p.stanceSide);
+    balEl("balanceSideBox").hidden = !BALANCE_SIDED[p.stance];
+    balEl("balanceSideLabel").textContent = p.stance === "einbein" ? "Welches Bein ist in der Luft?" : "Welcher Fuß ist vorne?";
+    balEl("balanceSideWechselBtn").textContent = p.timing === "open" ? "Nach Gefühl" : "Je Satz wechseln";
     act("#balanceContentRow [data-bal-content]", "balContent", p.content);
     act("#balanceWordListRow [data-bal-wordlist]", "balWordlist", p.wordList);
     act("#balanceWordEveryRow [data-bal-wordevery]", "balWordevery", p.wordEvery);
@@ -15825,6 +15870,8 @@
       // two-thumb tapping must not resize or swallow taps).
       if (e.isPrimary) { pts.clear(); start = null; delete stage.dataset.pinching; }
       if (e.target.closest && e.target.closest(GAME_TAP_SEL)) return;
+      // "Hintergrund" on the Übung | Hintergrund switch: two fingers belong to the background.
+      if (stage.classList.contains("mbg-bg-mode") || (e.target.closest && e.target.closest(".mbg-ebene-bar"))) return;
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pts.size === 2) {
         const v = get();
@@ -15851,7 +15898,7 @@
     stage.addEventListener("pointerup", up, true);
     stage.addEventListener("pointercancel", up, true);
     stage.addEventListener("wheel", (e) => {
-      if (!e.ctrlKey) return;
+      if (!e.ctrlKey || stage.classList.contains("mbg-bg-mode")) return;
       const cur = get();
       if (cur == null) return;
       e.preventDefault();
@@ -15875,7 +15922,7 @@
     for (let i = 0; i < pts.length; i++) {
       for (let j = i + 1; j < pts.length; j++) cap = Math.min(cap, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y) - 10);
       const p = pts[i];
-      cap = Math.min(cap, 2 * (p.x - 8), 2 * (rect.width - p.x - 8), 2 * (rect.height - p.y - 8), 2 * (p.y - top));
+      cap = Math.min(cap, 2 * (p.x - 8), 2 * (rect.width - p.x - 8), 2 * (rect.height - mbgInset(els.rememberStage) - p.y - 8), 2 * (p.y - top));
     }
     const px = Math.max(24, Math.min(REMEMBER_MARKER_PX, Math.floor(cap)));
     st.markerPx = px;
@@ -16592,7 +16639,7 @@
     const sr = stage.getBoundingClientRect(), hr = hint.getBoundingClientRect();
     const top = Math.max(24, Math.ceil(hr.bottom - sr.top + 10));
     stage.style.paddingTop = top + "px";
-    const room = Math.floor(Math.min(sr.height - top - 24, sr.width - 32));
+    const room = Math.floor(Math.min(sr.height - top - 24 - mbgInset(stage), sr.width - 32));
     if (room > 0) board.style.maxWidth = Math.min(560, room) + "px";
     schulteSizeNumbers();
   }
@@ -28943,6 +28990,12 @@
     window.scrollTo(0, 0);
   }
   $("moreGearBtn").addEventListener("click", () => openGearScreen("moreScreen"));
+  // "Mehr mit deinem Trainer" (Fabian 09.10.): macht neugierig auf das, was nur
+  // mit einem Trainer geht; "Trainer anfragen" = derselbe Link wie "Noch keinen Trainer?".
+  $("moreTrainerExtrasBtn").addEventListener("click", () => confirmDialog(
+    "Arbeitest du mit einem Trainer zusammen, kann er dir in der App mehr freischalten: einen persönlichen Trainingsplan, der zu dir passt, eigene Vorlagen und Kombi-Programme, Spezialübungen mit Hilfsmitteln und Einstellungen, die er für dich vorbereitet. Alles kommt per Code oder QR-Code zu dir, ohne Anmeldung.",
+    () => { window.open(PLAN_REQUEST_URL, "_blank", "noopener"); },
+    { title: "Mehr mit deinem Trainer", yes: "Trainer anfragen", no: "Schließen" }));
   $("gearBackBtn").addEventListener("click", () => showScreen(gearReturnScreen));
   // "Alle Hilfsmittel" in every .hilfsmittel-note: back returns to that page.
   document.querySelectorAll(".hilfsmittel-all").forEach((b) => b.addEventListener("click", () => {
@@ -35570,12 +35623,67 @@
 
   // ---- "Heute" screen ----
   let todaySel = todayStr();
+  // Neuer Tag, während die App im Speicher lag (Prüfer 09.10.: auf dem iPhone der
+  // Normalfall): beim Zurückkehren oder spätestens nach einer Minute springt Heute
+  // auf den neuen Tag, wenn der alte Tag gewählt war, und baut sich neu auf.
+  let todayKnown = todaySel;
+  function todayRollover() {
+    const t = todayStr();
+    if (t === todayKnown) return;
+    if (todaySel === todayKnown) todaySel = t;
+    todayKnown = t;
+    try { renderToday(); } catch (e) {}
+  }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) todayRollover(); });
+  window.addEventListener("focus", todayRollover);
+  setInterval(todayRollover, 60000);
   let calMode = null; // null | "month" | "quarter" | "year"
   let calShowNext = false;
   let calYear = new Date().getFullYear();
   let dayView = readJSON(DAY_VIEW_KEY, "list") === "hours" ? "hours" : "list";
 
-  function greetingFor(h) { return h < 5 ? "Guten Abend" : h < 11 ? "Guten Morgen" : h < 17 ? "Guten Tag" : "Guten Abend"; }
+  function greetingFor(h) { return h < 5 ? "Hallo" : h < 11 ? "Guten Morgen" : h < 17 ? "Guten Tag" : "Guten Abend"; }
+  // ---- Heute neu (Fabian 10.10., Vorschau freigegeben): Begrüßung in einer
+  // Zeile mit kurzem Datum, Zuletzt mit Streifen in der Bereichsfarbe, Ring
+  // für die Woche, ruhige Kalender-Zeichen (D1) und der Tag als Zeitleiste (T1).
+  const MONTHS_SHORT = ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sept.", "Okt.", "Nov.", "Dez."];
+  function shortDayDate(s) { const d = dParse(s); return `${WD_SHORT[wdIdx(s)]}, ${d.getDate()}. ${MONTHS_SHORT[d.getMonth()]}`; }
+  // Area colour as CSS values (stripe, icon, Kombi squares); Kombi = brand.
+  function areaVars(k) {
+    if (k === "combo") return { c: "var(--brand)", ink: "var(--brand)" };
+    if (k === "test") return { c: "var(--test-accent)", ink: "var(--test-accent-deep)" };
+    if (AREA_BY_KEY[k] && k !== "combo") return { c: `var(--area-${k}, ${AREA_BY_KEY[k].color})`, ink: `var(--area-${k}-ink, ${AREA_BY_KEY[k].color})` };
+    return { c: "var(--ink-soft)", ink: "var(--ink-soft)" };
+  }
+  // Kombi block -> area (for the four squares of the Kombi icon).
+  const COMBO_BLOCK_AREA = { wimhof: "breath", breath: "breath", movement: "movement", workout: "workout", cardio: "cardio", visual: "visual",
+    nat: "nat", blitz: "nat", flash: "nat", mot: "nat", balance: "nat", schulte: "nat", free: "free", optodrum: "activation", neuro: "neuro" };
+  function comboBlockArea(b) { return b && b.domain === "visual" && b.exercise === "periph-flash" ? "nat" : COMBO_BLOCK_AREA[b && b.domain] || ""; }
+  // Kombi icon: four small squares in the colours of its Bausteine (unused = neutral).
+  function comboIconHtml(blocks, cls) {
+    const areas = [];
+    (blocks || []).forEach((b) => { const a = comboBlockArea(b); if (a && !areas.includes(a)) areas.push(a); });
+    const sq = [0, 1, 2, 3].map((i) => areas[i] ? `<i style="background:${areaVars(areas[i]).c}"></i>` : "<i></i>").join("");
+    return `<span class="combo-ico${cls ? " " + cls : ""}" aria-hidden="true">${sq}</span>`;
+  }
+  function areaIconHtml(k, cls) {
+    const a = AREA_BY_KEY[k];
+    return `<span class="t1-ico${cls ? " " + cls : ""}" style="background:${areaVars(k).c}" aria-hidden="true">${a && a.icon ? `<svg viewBox="0 0 24 24">${a.icon}</svg>` : ""}</span>`;
+  }
+  // D1 (Fabian 10.10.): neutral marks, no area colours. Round = training
+  // (filled done, hollow planned, faded = past day not done), square = own
+  // appointment (filled single, hollow series). At most 3, then "+".
+  function d1MarksHtml(date, occ, extra, evs) {
+    const today = todayStr();
+    const tr = occ.map((o) => o.done ? "is-done" : date < today ? "is-missed" : "is-plan").concat(extra.map(() => "is-done"));
+    const ev = evs.map((e) => (eventRepeatDays(e) ? "is-series" : "is-single") + (e.goal ? " goal" : ""));
+    const total = tr.length + ev.length;
+    const tShow = tr.slice(0, ev.length ? Math.min(tr.length, total > 3 ? 2 : 3) : 3);
+    const eShow = ev.slice(0, Math.max(0, 3 - tShow.length));
+    const more = total > tShow.length + eShow.length;
+    return tShow.map((c) => `<i class="d1-dot ${c}"></i>`).join("") + eShow.map((c) => `<i class="d1-sq event-mark ${c}"></i>`).join("") + (more ? '<b class="d1-more">+</b>' : "");
+  }
+  const D1_LEGEND = `<div class="d1-legend"><span><i class="d1-dot is-done"></i>Training erledigt</span><span><i class="d1-dot is-plan"></i>geplant</span><span><i class="d1-dot is-missed"></i>nicht gemacht</span><span><i class="d1-sq is-single"></i>Termin</span><span><i class="d1-sq is-series"></i>Termin-Serie</span></div>`;
   function areaDot(area, extraClass) {
     const a = AREA_BY_KEY[area];
     return `<span class="area-dot ${extraClass || ""}" style="background:${a ? a.color : "#888"}" aria-hidden="true"></span>`;
@@ -35644,7 +35752,8 @@
     const now = new Date();
     const today = todayStr();
     renderHello(now);
-    els.todayDate.textContent = longDate(today);
+    els.todayDate.textContent = shortDayDate(today);
+    els.todayDate.setAttribute("aria-label", longDate(today));
     const hist = loadHistory();
     renderTodayMain(today, hist);
     renderWeekReview(today, hist);
@@ -35679,7 +35788,7 @@
     const open = occ.filter((o) => !o.done);
     const last = hist.find((h) => !h.aborted) || hist[0];
     const hint = "Nutze gerne die bereitstehenden Trainings oder gestalte dir eigene. Wenn du Hilfe brauchst, nimm gerne Kontakt zu deinem Trainer auf.";
-    let html, flat = false;
+    let html, flat = false, lastArea = null;
     const resume = resumeGet();
     if (open.length) {
       const e = open[0];
@@ -35704,7 +35813,8 @@
       if (!doneAll && last && starter !== "new") {
         // Entwurf E (Fabian 09.10.): one flat row "Zuletzt · Mittwoch", name, "Nochmal".
         flat = true;
-        html = `<div class="today-last"><div class="today-last-text"><div class="today-main-kicker">Zuletzt · ${esc(lastDayWord(last.ts))}</div>
+        lastArea = historyAreaOf(last);
+        html = `<div class="today-last"><span class="today-last-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/></svg></span><div class="today-last-text"><div class="today-main-kicker">Zuletzt · ${esc(lastDayWord(last.ts))}</div>
           <h2 class="today-last-title">${esc(last.title)}</h2></div>
           <button class="today-last-btn" type="button" id="todayContinueBtn">Nochmal</button></div>`;
       } else html = `<div class="today-main-kicker">${doneAll ? "Heute alles geschafft" : last ? "Zuletzt trainiert" : "Los geht’s"}</div>
@@ -35714,6 +35824,8 @@
     }
     els.todayMain.innerHTML = html;
     els.todayMain.classList.toggle("is-flat", flat);
+    if (flat) { const v = areaVars(lastArea); els.todayMain.style.setProperty("--ac", v.c); els.todayMain.style.setProperty("--ac-ink", v.ink); }
+    else { els.todayMain.style.removeProperty("--ac"); els.todayMain.style.removeProperty("--ac-ink"); }
     wireStarter(els.todayMain);
     renderTodayExtras(hist);
     applyNewcomerLayout(hist);
@@ -35944,6 +36056,18 @@
   }
   function moodLabel(v) { const m = MOODS.find((x) => x.v === v); return m ? m.label : ""; }
   let moodEdit = false;
+  // 96 px ring, r = 40 in a 100 box; n segments with 4-unit gaps (one segment = full circle).
+  function weekRingSvg(n, done) {
+    const C = 2 * Math.PI * 40, segs = Math.min(n, 21);
+    let arcs = "";
+    if (!segs) arcs = `<circle cx="50" cy="50" r="40" class="ring-open"/>`;
+    else if (segs === 1) arcs = `<circle cx="50" cy="50" r="40" class="${done ? "ring-done" : "ring-open"}"/>`;
+    else {
+      const gap = segs > 10 ? 2.5 : 4, len = C / segs - gap;
+      for (let i = 0; i < segs; i++) arcs += `<circle cx="50" cy="50" r="40" class="${i < done ? "ring-done" : "ring-open"}" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-(i * C / segs) - gap / 2).toFixed(2)}"/>`;
+    }
+    return `<svg viewBox="0 0 100 100" aria-hidden="true">${arcs}</svg>`;
+  }
   function renderMoodTile(tile, show) {
     tile.hidden = !show;
     if (!show) { tile.innerHTML = ""; return; }
@@ -35962,14 +36086,21 @@
       }));
       return;
     }
-    // Answered today: the week's status instead (same numbers as Fortschritt).
+    // Answered today: the week's status as a ring (Heute neu 10.10.): one segment
+    // per planned training of the week (same numbers as Fortschritt), done =
+    // brand colour, still open = grey, small gaps between the segments.
     const c = progressSummary(loadProgress()).cur;
     const left = Math.max(0, c.goal - c.planDone);
-    const sub = c.pause ? "Diese Woche ist Pause." : !c.goal ? "diese Woche" : left ? `Trainings diese Woche. Noch ${left} bis zum Ziel.` : "Trainings diese Woche. Ziel erreicht, stark!";
+    const counted = c.goal && !c.pause;
+    // Kundenblick 10.10.: with a plan the ring counts planned units only, so
+    // the line says so ("3 von 5 geplanten"), like the week line and Fortschritt.
+    const sub = c.pause ? "Diese Woche ist Pause." : !c.goal ? "diese Woche" : left ? (c.fromPlan ? `${c.planDone} von ${c.goal} geplanten${c.extra ? `, ${c.extra} zusätzlich` : ""}` : goalLeftText(c)) : "Ziel erreicht, stark!";
+    const said = counted ? `${c.planDone} von ${c.goal}${c.fromPlan ? " geplanten Einheiten" : " Trainings"} diese Woche${c.fromPlan && c.extra ? `, ${c.extra} zusätzlich` : ""}` : c.pause ? "Pause diese Woche" : `${countLabel(c.n, "Training", "Trainings")} diese Woche`;
     tile.classList.add("is-set");
     tile.innerHTML = `<div class="today-main-kicker today-new-kicker">Heute ${esc(moodLabel(cur.v))} <button class="text-link small today-mood-change" type="button" id="todayMoodChangeBtn">ändern</button></div>
-      <h2 class="today-tile-title today-mood-week">${c.goal && !c.pause ? `${c.planDone} von ${c.goal}` : `${c.n} ${c.n === 1 ? "Training" : "Trainings"}`}</h2>
-      ${c.goal && !c.pause ? `<div class="progress-bar today-mood-bar"><span style="width:${Math.min(100, Math.round((c.planDone / c.goal) * 100))}%"></span></div>` : ""}
+      <div class="today-ring today-tile-circle" role="img" aria-label="${esc(said)}">${weekRingSvg(counted ? c.goal : 0, counted ? c.planDone : 0)}
+        <span class="today-ring-num" aria-hidden="true">${counted ? `${c.planDone}<small>/${c.goal}</small>` : c.pause ? "–" : c.n}</span>
+        <span class="today-mood-week sr-only">${esc(said)}</span></div>
       <p class="today-tile-sub">${esc(sub)}</p>
       <button class="text-link today-tile-go" type="button" id="todayMoodProgressBtn">Fortschritt &rarr;</button>`;
     $("todayMoodChangeBtn").addEventListener("click", () => { moodEdit = true; renderToday(); });
@@ -35991,6 +36122,9 @@
     const cells = [];
     for (let i = 0; i < 28; i++) {
       const d = dAdd(start, i), e = all[d];
+      // Zeilen tragen ihr Datum (Fabian 09.10.: ohne Datum wirkte eine vergangene
+      // Woche wie die laufende); die laufende Woche heißt "jetzt" (wie im Wochen-Balken).
+      if (i % 7 === 0) { const dd = dParse(d); cells.push(`<span class="mood-row-label">${i === 21 ? "jetzt" : `${dd.getDate()}.${dd.getMonth() + 1}.`}</span>`); }
       const lab = e ? moodLabel(e.v) : "";
       cells.push(`<span class="mood-cell${e ? " m" + e.v : ""}${trainedDays.has(d) ? " trained" : ""}${d > today ? " future" : ""}${d === today ? " today" : ""}" title="${shortDate(d)}${lab ? ": " + lab : ""}${trainedDays.has(d) ? ", trainiert" : ""}"></span>`);
     }
@@ -36003,10 +36137,10 @@
     const sentence = enough.length >= 2
       ? enough.map((x, i) => `${i ? "an" : "An"} „${x.m.label}“-Tagen hast du in ${Math.round((x.t / x.n) * 100)} % trainiert`).join(", ") + "."
       : left > 0 ? `Noch ${left} ${left === 1 ? "Tag" : "Tage"} Tagesform, dann siehst du hier, wie oft du an müden und an fitten Tagen trainierst.`
-      : "Sobald du an mehreren Tagen unterschiedlich fit bist, siehst du hier den Vergleich.";
-    box.innerHTML = `<div class="mood-head">${WD_SHORT.map((w) => `<span>${w}</span>`).join("")}</div>
+      : `Bisher ${stats.map((x) => `${x.m.label} ${x.n === 1 ? "1 Tag" : x.n + " Tage"}`).join(", ")}. Sobald zwei Stufen je 5 Tage haben, siehst du hier den Vergleich.`;
+    box.innerHTML = `<div class="mood-head"><span></span>${WD_SHORT.map((w) => `<span>${w}</span>`).join("")}</div>
       <div class="mood-grid">${cells.join("")}</div>
-      <div class="mood-legend">${MOODS.map((m) => `<span><i class="mood-cell m${m.v}"></i>${m.label}</span>`).join("")}<span><i class="mood-cell trained"></i>trainiert</span></div>
+      <div class="mood-legend">${MOODS.map((m) => `<span><i class="mood-cell m${m.v}"></i>${m.label}</span>`).join("")}<span><i class="mood-cell trained"></i>mit Training</span></div>
       <p class="group-help mood-sentence">${esc(sentence)}</p>`;
     const after = $("progressMoodAfter");
     if (after) after.innerHTML = moodAfterHtml(hist);
@@ -36033,7 +36167,7 @@
   function renderGoalRow(hist, stage, p, trainer, tileKey, own) {
     const box = $("todayGoal");
     const g = STARTER_GOALS.find((x) => x.key === p.goal);
-    const show = own && stage !== "new" && (g || goalPickOpen || (!trainer && (stage === "soft" || p.who === "allein")));
+    const show = own && stage !== "new" && todaySel >= todayStr() && (g || goalPickOpen || (!trainer && (stage === "soft" || p.who === "allein")));
     box.hidden = !show;
     if (!show) { box.innerHTML = ""; return; }
     if (g && !p.goalAt) starterSave({ goalAt: todayStr() }); // goals from before 09.10. start their 6 weeks now
@@ -36096,7 +36230,10 @@
     const box = els.todayWeekReview;
     const intents = readJSON(WEEK_INTENT_KEY, {}) || {};
     const monday = mondayOf(today);
-    if (wdIdx(today) === 6) {
+    // Erst bewerten, wenn der Sonntag durch ist (Prüfer 09.10.): solange heute noch
+    // eine geplante Einheit offen ist, kommt der Abschluss erst ab 20 Uhr.
+    const sundayOpen = wdIdx(today) === 6 && occurrencesOn(today, hist).some((o) => !o.done);
+    if (wdIdx(today) === 6 && (!sundayOpen || new Date().getHours() >= 20)) {
       const rows = [];
       let planned = 0, done = 0;
       for (let i = 0; i < 7; i++) {
@@ -36172,15 +36309,18 @@
   }
   function extraDayHtml(list) {
     if (!list.length) return "";
-    const row = (h) => {
+    const row = (h, n) => {
       const area = historyAreaOf(h);
       const t = new Date(h.ts);
-      const meta = [String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0") + " Uhr"]
+      const hm = String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0");
+      const meta = [hm + " Uhr"]
         .concat(h.seconds ? [Math.max(1, Math.round(h.seconds / 60)) + " Min."] : [])
         .concat(AREA_BY_KEY[area] ? [AREA_BY_KEY[area].short] : []).join(" · ");
-      return `<div class="day-item done day-extra"><div class="day-item-main">${areaDot(area)}<div><div class="day-item-title">${esc(h.title || "Training")}</div><div class="day-item-meta">${esc(meta)} · erledigt</div></div></div></div>`;
+      const v = areaVars(area);
+      return t1Row(2992 + n, hm, "is-done", `<div class="day-item done day-extra t1-card" style="--ac:${v.c}"><div class="t1-top">${area === "combo" ? comboIconHtml(h.blocks) : areaIconHtml(area)}<span class="t1-chip is-done">erledigt</span></div>
+        <div class="day-item-title">${esc(h.title || "Training")}</div><div class="day-item-meta">${esc(meta)} · erledigt</div></div>`);
     };
-    return `<div class="day-subhead">${list.length === 1 ? "Zusätzlich trainiert (nicht geplant)" : `Zusätzlich trainiert (${list.length}, nicht geplant)`}</div>` + list.map(row).join("");
+    return `<div class="day-subhead" style="order:2991">${list.length === 1 ? "Zusätzlich trainiert (nicht geplant)" : `Zusätzlich trainiert (${list.length}, nicht geplant)`}</div>` + list.map(row).join("");
   }
   function dayStateClass(date, hist) {
     const occ = occurrencesOn(date, hist);
@@ -36204,13 +36344,14 @@
       const date = dAdd(monday, i);
       const { cls, occ } = dayStateClass(date, hist);
       const extra = date <= today ? extraAreasOn(date, hist, occ) : [];
-      const dots = occ.filter((o) => o.done).map((o) => areaDot(o.area)).slice(0, 3).join("") + occ.filter((o) => !o.done).map((o) => areaDot(o.area, "ring")).slice(0, Math.max(0, 3 - occ.filter((o) => o.done).length)).join("") + extra.slice(0, 2).map((a) => areaDot(a, "extra")).join("");
-      const mark = cls === "done" && !extra.length ? "✓" : (cls.startsWith("rest") && !extra.length) ? (cls.includes("pause") ? "<span class=\"week-pause\" aria-hidden=\"true\">–</span>" : "") : `<span class="week-dots">${dots}</span>`;
+      const dayEvs = eventsOn(date, evList);
+      const marks = d1MarksHtml(date, occ, extra, dayEvs);
+      const mark = marks ? `<span class="d1-marks">${marks}</span>` : cls.includes("pause") ? "<span class=\"week-pause\" aria-hidden=\"true\">–</span>" : "";
       const label = `${WD_LONG[i]}, ${dParse(date).getDate()}. ${MONTHS[dParse(date).getMonth()]}: ${cls.includes("pause") ? "Pause" : cls === "rest" ? "nichts geplant" : `${occ.filter((o) => o.done).length} von ${occ.length} erledigt`}${extra.length ? `, ${extra.length} zusätzlich` : ""}`;
-      const evCount = eventsOn(date, evList).length;
+      const evCount = dayEvs.length;
       const fullLabel = evCount ? `${label}, ${evCount === 1 ? "1 Termin" : evCount + " Termine"}` : label;
       html += `<button type="button" class="week-day ${cls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}" data-date="${date}" aria-label="${esc(fullLabel)}">
-        ${eventMarkHtml(date, evList)}<span class="week-day-name">${WD_SHORT[i]}</span><span class="week-day-num">${dParse(date).getDate()}</span><span class="week-day-mark">${mark}</span></button>`;
+        <span class="week-day-name">${WD_SHORT[i]}</span><span class="week-day-num">${dParse(date).getDate()}</span><span class="week-day-mark">${mark}</span></button>`;
     }
     els.todayWeekStrip.innerHTML = html;
     // Week range above the strip, iOS calendar style: "5.–11. Oktober"
@@ -36234,6 +36375,7 @@
     const lead = wdIdx(first);
     const today = todayStr();
     const evList = loadEvents();
+    const selMon = mondayOf(todaySel);
     const phases = new Map();
     let cells = WD_SHORT.map((w) => `<span class="cal-wd">${mini ? w[0] : w}</span>`).join("");
     for (let i = 0; i < lead; i++) cells += `<span class="cal-cell empty"></span>`;
@@ -36243,11 +36385,17 @@
       const ph = phaseFor(date);
       if (ph) phases.set(ph.index, ph.phase.name);
       const band = ph ? `<span class="cal-band" style="background:${PHASE_TINTS[ph.index % PHASE_TINTS.length]}"></span>` : "";
-      const dots = mini ? "" : `<span class="cal-dots">${[...new Set(occ.map((o) => o.area))].slice(0, 4).map((a) => areaDot(a)).join("")}</span>`;
-      const check = (cls === "done" ? `<span class="cal-check">✓</span>` : "") + (occ.some((o) => o.special || o.insert) ? `<span class="cal-star" aria-hidden="true">★</span>` : "");
-      const evN = eventsOn(date, evList).length;
-      const calLabel = longDate(date) + (evN ? `, ${evN === 1 ? "1 Termin" : evN + " Termine"}` : "");
-      cells += `<button type="button" class="cal-cell ${cls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}" data-date="${date}" aria-label="${esc(calLabel)}">${band}${eventMarkHtml(date, evList)}<span class="cal-num">${d}</span>${check}${dots}</button>`;
+      // Fabian 09.10.: month/quarter/year show the same trainings as the week
+      // strip, incl. ones done without a plan entry (extraAreasOn).
+      const extra = date <= today ? extraAreasOn(date, hist, occ) : [];
+      const dayEvs = eventsOn(date, evList);
+      const dots = mini ? "" : `<span class="d1-marks">${d1MarksHtml(date, occ, extra, dayEvs)}</span>`;
+      const xCls = extra.length && cls.startsWith("rest") ? " extra-done" : "";
+      const check = (mini && cls === "done" ? `<span class="cal-check">✓</span>` : "") + (occ.some((o) => o.special || o.insert) ? `<span class="cal-star" aria-hidden="true">★</span>` : "");
+      const evN = dayEvs.length;
+      const inWeek = !mini && date >= selMon && date <= dAdd(selMon, 6);
+      const calLabel = longDate(date) + (extra.length ? `, ${countLabel(extra.length, "Training", "Trainings")} ohne Plan` : "") + (evN ? `, ${evN === 1 ? "1 Termin" : evN + " Termine"}` : "");
+      cells += `<button type="button" class="cal-cell ${cls}${xCls}${date === today ? " is-today" : ""}${date === todaySel ? " selected" : ""}${inWeek ? " in-week" : ""}" data-date="${date}" aria-label="${esc(calLabel)}">${band}${mini ? eventMarkHtml(date, evList) : ""}<span class="cal-num">${d}</span>${check}${dots}</button>`;
     }
     const legend = phases.size ? `<div class="cal-legend">${[...phases].map(([i, n]) => `<span><i style="background:${PHASE_TINTS[i % PHASE_TINTS.length]}"></i>${esc(n)}</span>`).join("")}</div>` : "";
     return `<div class="cal-month${mini ? " mini" : ""}"><div class="cal-month-title">${MONTHS[month]} ${year}</div><div class="cal-grid">${cells}</div>${legend}</div>`;
@@ -36267,10 +36415,10 @@
     if (!calMode) { els.calExpand.innerHTML = ""; return; }
     const sel = dParse(todaySel);
     if (calMode === "month") {
-      let html = `<div class="cal-head"><button type="button" class="week-nav-btn" data-cal-step="-1" aria-label="Vorheriger Monat">&lsaquo;</button><span></span><button type="button" class="week-nav-btn" data-cal-step="1" aria-label="Nächster Monat">&rsaquo;</button></div>`;
+      let html = `<div class="cal-head cal-head-month"><button type="button" class="week-nav-btn" data-cal-step="-1" aria-label="Vorheriger Monat">&lsaquo;</button><span class="cal-head-title">${MONTHS[sel.getMonth()]} ${sel.getFullYear()}</span><button type="button" class="week-nav-btn" data-cal-step="1" aria-label="Nächster Monat">&rsaquo;</button></div>`;
       html += monthGridHtml(sel.getFullYear(), sel.getMonth(), hist, false);
       if (calShowNext) { const n = new Date(sel.getFullYear(), sel.getMonth() + 1, 1); html += monthGridHtml(n.getFullYear(), n.getMonth(), hist, false); }
-      els.calExpand.innerHTML = html;
+      els.calExpand.innerHTML = html + D1_LEGEND;
     } else if (calMode === "quarter") {
       let html = `<p class="cal-hint">Seitlich wischen für weitere Monate. Auf iPad oder Laptop am besten lesbar.</p><div class="cal-quarter" id="calQuarterScroller">`;
       for (let i = -3; i <= 12; i++) { const m = new Date(sel.getFullYear(), sel.getMonth() + i, 1); html += monthGridHtml(m.getFullYear(), m.getMonth(), hist, true); }
@@ -36301,52 +36449,109 @@
     }
     return `<span class="rem-bell" title="Mit Erinnerung" aria-label="mit Erinnerung">${BELL_SVG}</span>`;
   }
+  function comboOfEntry(o) {
+    if (o.area !== "combo" || !(o.what || "").startsWith("combo:")) return null;
+    return comboSavedStore.load().find((x) => x.id === o.what.slice(6)) || null;
+  }
   function renderDayPanel(hist) {
     const date = todaySel;
-    els.dayPanelTitle.textContent = date === todayStr() ? `Heute, ${longDate(date)}` : longDate(date);
+    const today = todayStr();
+    els.dayPanelTitle.textContent = date === today ? `Heute, ${longDate(date)}` : longDate(date);
     document.querySelectorAll(".day-view-btn").forEach((b) => b.classList.toggle("active", b.dataset.dayView === dayView));
-    const hasEvents = renderDayEvents(date);
+    const tl = $("dayTimeline");
+    if (tl) tl.classList.toggle("is-hours", dayView === "hours");
+    const evs = renderDayEvents(date);
+    const hasEvents = evs.length > 0;
     const occ = occurrencesOn(date, hist);
+    // Same pick as renderTodayMain(): today's first open training is on the top card.
+    const topOpenId = date === today ? ((occ.find((o) => !o.done) || {}).id ?? null) : null;
     const pzDay = pauseOn(date);
+    const sub = $("dayPanelSub");
+    const extraList = date <= today ? extraEntriesOn(date, hist, occ) : [];
+    if (sub) {
+      const nT = occ.length + extraList.length;
+      const parts = [nT ? countLabel(nT, "Training", "Trainings") : "", evs.length ? countLabel(evs.length, "Termin", "Termine") : ""].filter(Boolean);
+      sub.textContent = parts.join(" · ");
+      sub.hidden = !parts.length;
+    }
+    // Vergangene Tage zeigen nur, was war (Kundenblick 10.10.): kein Eintragen
+    // (ergäbe sofort ein verpasstes Training), kein "Noch kein Plan".
+    const pastDay = date < today;
+    els.dayAddBtn.hidden = pastDay;
+    $("dayEventAddBtn").hidden = pastDay;
     if (!occ.length && pzDay) {
       const r = PAUSE_BY_KEY[pzDay.reason] || PAUSE_BY_KEY.sonstiges;
-      els.dayPanelBody.innerHTML = `<p class="day-empty"><span class="pause-ico inline" aria-hidden="true">${r[2]}</span> Pause (${esc(r[1])}) bis ${esc(shortDate(pzDay.to))}. Keine Erinnerungen, deine Serie reißt nicht ab. <button type="button" class="text-link small" id="dayPauseEditBtn">Pause bearbeiten</button></p>`;
+      els.dayPanelBody.innerHTML = `<p class="day-empty" style="order:2990"><span class="pause-ico inline" aria-hidden="true">${r[2]}</span> Pause (${esc(r[1])}) bis ${esc(shortDate(pzDay.to))}. Keine Erinnerungen, deine Serie reißt nicht ab. <button type="button" class="text-link small" id="dayPauseEditBtn">Pause bearbeiten</button></p>`;
       $("dayPauseEditBtn").addEventListener("click", () => openPauseSheet(pzDay.id));
       return;
     }
-    const extraHtml = date <= todayStr() ? extraDayHtml(extraEntriesOn(date, hist, occ)) : "";
+    const extraHtml = extraDayHtml(extraList);
+    const untimedEvents = evs.some((e) => !e.time);
     if (!occ.length) {
       const ph = phaseFor(date);
-      els.dayPanelBody.innerHTML = extraHtml ? `<p class="day-empty">Kein Training aus der App geplant.</p>${extraHtml}` : hasEvents ? `<p class="day-empty">Kein Training aus der App geplant.</p>` : `<p class="day-empty">${ph || planHasEntries() ? "Ruhetag, an diesem Tag ist nichts geplant." : "Noch kein Plan. Lege unten deinen Wochenplan an oder trage ein App-Training nur für diesen Tag ein."}</p>`;
+      const msg = extraHtml || hasEvents ? (pastDay ? "An diesem Tag war kein Training aus der App geplant." : "Kein Training aus der App geplant.") : pastDay ? "An diesem Tag war nichts geplant." : ph || planHasEntries() ? "Ruhetag, an diesem Tag ist nichts geplant." : "Noch kein Plan. Lege unten deinen Wochenplan an oder trage ein App-Training nur für diesen Tag ein.";
+      els.dayPanelBody.innerHTML = (untimedEvents ? `<div class="day-subhead" style="order:2881">Ohne Uhrzeit</div>` : "") + `<p class="day-empty" style="order:2990">${msg}</p>${extraHtml}`;
       return;
     }
+    const isFuture = date > today, isPast = date < today;
+    const fromTrainer = !!(plan.source && plan.source.code);
     const item = (o, style, compact) => {
-      const meta = [o.time ? (o.time + "–" + minToTime(timeToMin(o.time) + o.minutes)) : "ohne Uhrzeit", `${o.minutes} Min.`, AREA_BY_KEY[o.area].short].concat(o.special ? ["Sondertraining"] : []).join(" · ");
-      const status = o.done ? (o.auto && !o.manual ? "erledigt (aus deinem Verlauf)" : "erledigt") : "offen";
+      const combo = comboOfEntry(o);
+      const kombiMeta = combo && Array.isArray(combo.blocks) ? countLabel(combo.blocks.length, "Baustein", "Bausteine") : AREA_BY_KEY[o.area].short;
+      const meta = [o.time ? (o.time + "–" + minToTime(timeToMin(o.time) + o.minutes)) : "ohne Uhrzeit", `${o.minutes} Min.`, kombiMeta].concat(o.special ? ["Sondertraining"] : []).join(" · ");
+      // Zeitform je Tag (Fabian 09.10.): kommende Tage "geplant" und ohne Abhaken,
+      // vergangene "nicht gemacht", nur heute "offen" / "Heute auslassen".
+      const openWord = isFuture ? "geplant" : isPast ? "nicht gemacht" : "offen";
+      const st = o.done ? "is-done" : isFuture ? "is-plan" : isPast ? "is-missed" : "is-open";
+      const doneBtn = isFuture && !o.manual ? "" : null;
       if (compact) return `<div class="day-item compact${o.done ? " done" : ""}" style="${style}" data-occ="${esc(o.id)}">
         <div class="day-item-title">${areaDot(o.area)} ${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div>
-        <div class="day-item-meta">${esc(o.time)}–${esc(minToTime(timeToMin(o.time) + o.minutes))} · ${o.done ? "✓ erledigt" : "offen"}</div>
-        <div class="day-item-actions"><button type="button" class="day-act" data-act="start">Starten</button><button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}" aria-label="${o.manual ? "Erledigt, zurücknehmen" : "Abhaken"}">✓</button></div></div>`;
-      return `<div class="day-item${o.done ? " done" : ""}" ${style ? `style="${style}"` : ""} data-occ="${esc(o.id)}">
-        <div class="day-item-main">${areaDot(o.area)}<div><div class="day-item-title">${o.special ? "★ " : ""}${esc(entryTitle(o))}${reminderBellHtml(date, o)}</div><div class="day-item-meta">${esc(meta)} · ${status}</div></div></div>
+        <div class="day-item-meta">${esc(o.time)}–${esc(minToTime(timeToMin(o.time) + o.minutes))} · ${o.done ? "✓ erledigt" : openWord}</div>
+        <div class="day-item-actions"><button type="button" class="day-act" data-act="start" aria-label="Training starten" title="Training starten">&#9654;&#xFE0E;</button>${doneBtn ?? `<button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}" aria-label="${o.manual ? "Erledigt, zurücknehmen" : "Abhaken"}">✓</button>`}</div></div>`;
+      const v = areaVars(o.area);
+      const icon = o.area === "combo" ? comboIconHtml(combo && combo.blocks) : areaIconHtml(o.area);
+      const chip = `<span class="t1-chip ${st}">${o.done ? "erledigt" : openWord}</span>`;
+      const trTag = fromTrainer && !o.extra && !o.override ? ' <span class="t1-tag">von deinem Trainer</span>' : "";
+      const blocks = combo && Array.isArray(combo.blocks) && combo.blocks.length ? `<ul class="t1-blocks">${combo.blocks.slice(0, 6).map((b) => {
+        const sec = comboBlockSeconds(b), a = comboBlockArea(b);
+        return `<li><i style="background:${a ? areaVars(a).c : "var(--line)"}"></i><span>${esc(comboBlockLabel(b))}</span>${sec ? `<small>${Math.max(1, Math.round(sec / 60))} Min.</small>` : ""}</li>`;
+      }).join("")}${combo.blocks.length > 6 ? `<li class="t1-blocks-more"><span>+ ${combo.blocks.length - 6} weitere</span></li>` : ""}</ul>` : "";
+      const repeat = !o.extra && !o.override && !o.insert ? `<div class="t1-repeat">${T1_REPEAT_SVG}<span>jede Woche${fromTrainer ? " (Plan von deinem Trainer)" : ""}</span></div>` : "";
+      const bigStart = !o.done && !isFuture && !isPast;
+      // "Training starten" is always its own full-width row (Kundenblick
+      // 10.10.: a small start in the action row pushed "Ändern" onto a line
+      // of its own); outlined unless it is today's open training.
+      // Only one filled main button on screen: while the top card
+      // "Heutiges Training" shows its big start (today has an open training),
+      // the day cards' starts use the outline style.
+      const startCls = topOpenId != null ? "start-btn secondary t1-start" : "start-btn t1-start";
+      const auto = o.done && o.auto && !o.manual ? " · aus deinem Verlauf" : "";
+      return `<div class="day-item t1-card${o.done ? " done" : ""}" style="--ac:${v.c}" data-occ="${esc(o.id)}">
+        <div class="t1-top">${icon}<span class="t1-top-r">${reminderBellHtml(date, o)}${chip}</span></div>
+        <div class="day-item-title">${o.special ? "★ " : ""}${esc(entryTitle(o))}${trTag}</div><div class="day-item-meta">${esc(meta + auto)}</div>
+        ${blocks}${repeat}
+        <button type="button" class="${bigStart ? startCls : "start-btn secondary t1-start"}" data-act="start">Training starten</button>
         <div class="day-item-actions">
-          <button type="button" class="day-act" data-act="start">Starten</button>
-          <button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}">${o.manual ? "✓ Erledigt" : "Abhaken"}</button>
-          ${compact ? "" : `<button type="button" class="day-act subtle" data-act="change">Ändern</button><button type="button" class="day-act subtle" data-act="${o.extra ? "remove" : "skip"}">${o.extra ? "Löschen" : "Heute auslassen"}</button>`}
+          ${doneBtn ?? `<button type="button" class="day-act" data-act="done" aria-pressed="${o.manual ? "true" : "false"}">${o.manual ? "✓ Erledigt" : "Abhaken"}</button>`}
+          <button type="button" class="day-act subtle" data-act="change">Ändern</button>${o.done && !o.extra ? "" : `<button type="button" class="day-act subtle" data-act="${o.extra ? "remove" : "skip"}">${o.extra ? "Löschen" : date === today ? "Heute auslassen" : "Auslassen"}</button>`}
         </div></div>`;
     };
+    const nodeOf = (o) => o.done ? "is-done" : isFuture ? "is-plan" : isPast ? "is-missed" : "is-open";
     const timed = occ.filter((o) => o.time), untimed = occ.filter((o) => !o.time);
     let html = "";
     if (dayView === "list") {
-      timed.forEach((o, i) => {
-        if (i > 0) {
-          const prev = timed[i - 1];
-          const gap = timeToMin(o.time) - (timeToMin(prev.time) + prev.minutes);
-          if (gap >= 15) html += `<div class="day-gap" aria-label="${esc(fmtGap(gap))} frei"><span>${esc(fmtGap(gap))} dazwischen</span></div>`;
-        }
-        html += item(o);
+      // Gaps over the whole day (trainings and appointments together).
+      const spans = timed.map((o) => [timeToMin(o.time), timeToMin(o.time) + o.minutes])
+        .concat(evs.filter((e) => e.time).map((e) => [timeToMin(e.time), timeToMin(e.time)]))
+        .sort((a, b) => a[0] - b[0]);
+      let end = null;
+      spans.forEach(([st, en]) => {
+        if (end != null && st - end >= 15) html += `<div class="day-gap" style="order:${st * 2 + 1}" aria-label="${esc(fmtGap(st - end))} frei"><span>${esc(fmtGap(st - end))} dazwischen</span></div>`;
+        end = end == null ? en : Math.max(end, en);
       });
-      if (untimed.length) html += `<div class="day-subhead">Ohne Uhrzeit</div>` + untimed.map((o) => item(o)).join("");
+      timed.forEach((o) => { html += t1Row(t1Order(o.time), o.time, nodeOf(o), item(o)); });
+      if (untimed.length || untimedEvents) html += `<div class="day-subhead" style="order:2881">Ohne Uhrzeit</div>`;
+      untimed.forEach((o) => { html += t1Row(2883, "", nodeOf(o), item(o)); });
     } else {
       if (untimed.length) html += `<div class="day-subhead">Ohne Uhrzeit</div>` + untimed.map((o) => item(o)).join("");
       const starts = timed.map((o) => timeToMin(o.time)), ends = timed.map((o) => timeToMin(o.time) + o.minutes);
@@ -36380,7 +36585,7 @@
     els.dayPanelBody.innerHTML = html + extraHtml;
     els.dayPanelBody.querySelectorAll(".day-item[data-occ]").forEach((el) => {
       const o = occ.find((x) => x.id === el.dataset.occ);
-      el.querySelectorAll(".day-act").forEach((b) => b.addEventListener("click", () => dayAction(date, o, b.dataset.act)));
+      el.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", () => dayAction(date, o, b.dataset.act)));
     });
   }
   function dayAction(date, o, act) {
@@ -36393,6 +36598,7 @@
       return;
     }
     if (act === "done") {
+      if (date > todayStr() && !(plan.done[date] || []).includes(o.id)) return; // kommende Tage nicht abhaken
       const l = plan.done[date] || [];
       plan.done[date] = l.includes(o.id) ? l.filter((x) => x !== o.id) : [...l, o.id];
       if (!plan.done[date].length) delete plan.done[date];
@@ -36417,14 +36623,28 @@
     els.todayAreaGrid.querySelectorAll(".area-tile").forEach((b) => b.addEventListener("click", () => goArea(b.dataset.area)));
   }
 
-  els.todayWeekStrip.addEventListener("click", (e) => { const b = e.target.closest("[data-date]"); if (b) selectDay(b.dataset.date); });
+  // Tippen auf einen Kalendertag springt zur Tagesansicht (Fabian 09.10.): Wochenleiste
+  // ganz nach oben (Tag direkt darunter sichtbar), im Monat/Quartal/Jahr die Tagesansicht.
+  // Kein Sprung, wenn die Tagesansicht schon gut im Bild ist.
+  function dayJump(target) {
+    const panel = document.getElementById("todayDayPanel");
+    if (!panel || !target) return;
+    let bar = 0; // untere Kante der sichtbaren Kopfleiste (sticky .brandbar oder feste .app-bar)
+    document.querySelectorAll(".brandbar, .app-bar").forEach((el) => { const r = el.getBoundingClientRect(); if (r.height > 0 && r.top <= 1) bar = Math.max(bar, r.bottom); });
+    const top = panel.getBoundingClientRect().top;
+    if (top >= bar && top <= window.innerHeight * 0.45) return;
+    const y = window.scrollY + target.getBoundingClientRect().top - bar - 8;
+    const rm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: Math.max(0, y), behavior: rm ? "auto" : "smooth" });
+  }
+  els.todayWeekStrip.addEventListener("click", (e) => { const b = e.target.closest("[data-date]"); if (b) { selectDay(b.dataset.date); dayJump(els.todayWeekStrip.closest(".week-nav")); } });
   els.calExpand.addEventListener("click", (e) => {
     const step = e.target.closest("[data-cal-step]");
     if (step) { const d = dParse(todaySel); const n = new Date(d.getFullYear(), d.getMonth() + Number(step.dataset.calStep), 1); selectDay(dStr(n)); return; }
     const ys = e.target.closest("[data-year-step]");
     if (ys) { calYear += Number(ys.dataset.yearStep); renderCalendar(loadHistory()); return; }
     const b = e.target.closest("[data-date]");
-    if (b) { selectDay(b.dataset.date); els.dayPanelTitle.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+    if (b) { selectDay(b.dataset.date); dayJump(document.getElementById("todayDayPanel")); }
   });
   document.getElementById("todayWeekTodayBtn").addEventListener("click", () => selectDay(todayStr()));
   els.todayWeekPrev.addEventListener("click", () => selectDay(dAdd(todaySel, -7)));
@@ -36467,18 +36687,29 @@
       $("dayPanelTitle").scrollIntoView({ block: "start", behavior: "smooth" });
     });
   }
+  const T1_CAL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>';
+  const T1_REPEAT_SVG = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg>';
+  // T1 (Heute neu 10.10.): every entry of a day is one row of the timeline -
+  // time on the left, a node on the line, the card on the right. Events live
+  // in #dayEvents, trainings in #dayPanelBody; both containers are
+  // display:contents inside #dayTimeline, so the rows sort by CSS order (= time).
+  function t1Order(time, untimedBase) { const m = timeToMin(time); return m == null ? untimedBase : m * 2 + 2; }
+  function t1Row(order, time, node, card) {
+    return `<div class="t1-row" style="order:${order}"><div class="t1-time">${time ? esc(time) : ""}</div><span class="t1-node ${node}" aria-hidden="true"></span>${card}</div>`;
+  }
   function renderDayEvents(date) {
     const box = $("dayEvents");
     const ev = eventsOn(date);
     box.innerHTML = ev.map((e) => {
       const k = EVENT_KIND_BY_KEY[e.kind] || EVENT_KINDS[3];
       const meta = [e.time ? `${e.time} Uhr` : "ohne Uhrzeit", k.label, EVENT_REPEAT_META[eventRepeatDays(e) ? e.repeat : ""] || "", e.goal ? "Ziel mit Countdown" : ""].filter(Boolean).join(" · ");
-      return `<div class="day-item event-item" style="border-left-color:${k.color}" data-event="${esc(e.id)}" data-event-date="${esc(date)}">
-        <div class="day-item-main"><span class="area-dot event-dot" style="background:${k.color}" aria-hidden="true"></span><div><div class="day-item-title">${esc(e.title)}</div><div class="day-item-meta">${esc(meta)}</div></div></div>
-        <div class="day-item-actions"><button type="button" class="day-act" data-event-edit="${esc(e.id)}">Bearbeiten</button></div></div>`;
+      return t1Row(t1Order(e.time, 2882), e.time, "is-ev", `<div class="day-item event-item t1-card" style="--ac:${k.color}" data-event="${esc(e.id)}" data-event-date="${esc(date)}">
+        <div class="t1-top"><span class="t1-ico is-ev" style="background:${k.color}" aria-hidden="true">${T1_CAL_SVG}</span><span class="t1-chip is-ev">Termin</span></div>
+        <div class="day-item-title">${esc(e.title)}</div><div class="day-item-meta">${esc(meta)}</div>
+        <div class="day-item-actions"><button type="button" class="day-act" data-event-edit="${esc(e.id)}">Bearbeiten</button></div></div>`);
     }).join("");
     box.querySelectorAll("[data-event-edit]").forEach((b) => b.addEventListener("click", () => openEventSheet(b.dataset.eventEdit, date)));
-    return ev.length > 0;
+    return ev;
   }
   let eventEditId = null, eventEditDate = null, eventKind = "wettkampf", eventRepeat = "none", eventEditTrainer = false, eventReturnFocus = null;
   function renderEventRepeat() {
@@ -37743,7 +37974,7 @@
     $("myPlanFocusHelp").textContent = goals.length
       ? "Unsere Empfehlung: in der Woche davor eher locker trainieren, in der Wettkampfwoche nur kurz, danach Erholung einplanen. Dein Plan ändert sich dadurch nicht von selbst. Passe ihn an, wie du es mit deinem Trainer abgesprochen hast."
       : "Trage einen Wettkampf, ein Spiel oder eine Prüfung als Termin auf Heute ein. Dann steht hier und in deinem Plan, wie du die Wochen davor und danach am besten angehst.";
-    $("myPlanFocus").innerHTML = goals.map((g) => `<div class="day-item"><div class="day-item-main"><span class="myplan-goal">◆</span><div><div class="day-item-title">${esc(g.title)}</div><div class="day-item-meta">${esc(longDate(g.date))}${daysUntil(g.date) > 0 ? ` · noch ${daysUntil(g.date)} Tage` : ""}</div></div></div></div>`).join("");
+    $("myPlanFocus").innerHTML = goals.map((g) => `<div class="day-item"><div class="day-item-main"><span class="myplan-goal">◆</span><div><div class="day-item-title">${esc(g.title)}</div><div class="day-item-meta">${esc(longDate(g.date))}${daysUntil(g.date) > 0 ? ` · noch ${countLabel(daysUntil(g.date), "Tag", "Tage")}` : ""}</div></div></div></div>`).join("");
   }
   function shortDate(d) { const x = dParse(d); return `${x.getDate()}.${x.getMonth() + 1}.${x.getFullYear()}`; }
   function goalOverrun(note) {
@@ -38302,11 +38533,14 @@
     optoP.pauseOverlay.hidden = true;
     optoP.pauseBtn.hidden = false;
     optoP.finishBtn.hidden = !st.noLimit;
+    optoSaveBtn.hidden = true; delete optoSaveBtn.dataset.saved; optoSaveBtn.textContent = "Speichern";
+    optoToast.hidden = true;
     requestWakeLock();
     optoSize();
     optoStatus();
     st.lastNow = performance.now();
     st.raf = requestAnimationFrame(optoTick);
+    if (st.own) optoGestureHint();
   }
   function optoCleanup() {
     const st = optoState;
@@ -38314,6 +38548,7 @@
     if (st.raf) cancelAnimationFrame(st.raf);
     optoState = null;
     optoP.pauseOverlay.hidden = true;
+    optoSaveBtn.hidden = true;
     releaseWakeLock();
     if (document.fullscreenElement === optoP.player) document.exitFullscreen().catch(() => {});
     optoP.fsHint.hidden = true;
@@ -38355,6 +38590,8 @@
     optoP.pauseBtn.hidden = true;
     optoP.pauseHelp.textContent = st.own ? "Gilt sofort und bleibt gespeichert, wie auf der Übungsseite." : "Gilt sofort, nur für diesen Durchgang.";
     optoSyncControls(optoP.pauseControls, st);
+    optoSaveBtn.hidden = true;
+    optoToast.hidden = true;
     optoP.pauseOverlay.hidden = false;
     try { applySoftState(); } catch (e) {}
   }
@@ -38365,6 +38602,7 @@
     st.lastNow = performance.now();
     optoP.pauseOverlay.hidden = true;
     optoP.pauseBtn.hidden = false;
+    optoSyncSave();
   }
   optoP.pauseBtn.addEventListener("click", pauseOpto);
   optoP.resumeBtn.addEventListener("click", resumeOpto);
@@ -38381,6 +38619,7 @@
     optoSyncControls(optoP.pauseControls, st);
     optoDraw();
     optoStatus();
+    optoSyncSave();
   });
   // Sanfte Reize switched live in the pause sheet: redraw with the new contrast.
   optoP.pauseOverlay.addEventListener("click", (e) => {
@@ -38396,6 +38635,155 @@
   });
   optoP.againBtn.addEventListener("click", () => { optoP.done.hidden = true; startOptoRun(optoLastRunPrefs || undefined); });
   optoP.doneBackBtn.addEventListener("click", () => { optoP.player.hidden = true; optoP.done.hidden = true; showScreen(optoReturnScreen); });
+  // Gesten in der laufenden Übung (Fabian 09.10.): Wischen = Laufrichtung (8
+  // Richtungen, schräg = "Schräg"), zwei Finger auseinander/zusammen = Breite
+  // (Streifenbreite / Punktgröße / Feldgröße). Gilt sofort für diesen Lauf;
+  // "Speichern" (erscheint nach einer Änderung, nur bei eigenen Läufen, nie im
+  // Kombi) übernimmt es in die Optodrum-Einstellungen. Das Pausenfenster zeigt
+  // die Live-Werte.
+  const OPTO_GESTURE_HINT_KEY = "fwmc-opto-gesture-hint-v1";
+  // Shared with the "Übung | Hintergrund" switch of the exercises with the
+  // Optodrum as moving background (Fabian 10.10.): toast, live "Speichern"
+  // button, swipe/pinch wiring and the 3-times hint live in one place each.
+  function makeStageToast(stage) {
+    // One toast per stage: reuses the "Größe" pinch toast (wirePinchSize) when there is one.
+    let el = stage.querySelector(":scope > .look-toast");
+    if (!el) { el = document.createElement("div"); el.className = "look-toast"; el.hidden = true; stage.appendChild(el); }
+    el.classList.add("opto-toast");
+    const show = (text, ms, wrap) => {
+      el.textContent = text;
+      el.classList.toggle("opto-toast-wrap", !!wrap);
+      el.hidden = false;
+      clearTimeout(el._t);
+      el._t = setTimeout(() => { el.hidden = true; }, ms || 1200);
+    };
+    show.el = el;
+    return show;
+  }
+  // "Speichern" appears while the run differs from the saved settings
+  // (unsaved()), says "Gespeichert ✓" for a moment after a tap.
+  function makeLiveSaveBtn(parent, { id, unsaved, save, visible }) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "balance-chip opto-save";
+    btn.id = id;
+    btn.textContent = "Speichern";
+    btn.hidden = true;
+    parent.appendChild(btn);
+    const sync = () => {
+      if (btn.dataset.saved) return;
+      btn.hidden = !(visible ? visible() : true) || !unsaved();
+    };
+    const reset = () => { clearTimeout(btn._t); btn.hidden = true; delete btn.dataset.saved; btn.textContent = "Speichern"; };
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!unsaved()) return;
+      save();
+      btn.textContent = "Gespeichert ✓";
+      btn.dataset.saved = "1";
+      clearTimeout(btn._t);
+      btn._t = setTimeout(() => { delete btn.dataset.saved; btn.textContent = "Speichern"; sync(); }, 1400);
+    });
+    return { btn, sync, reset };
+  }
+  // Swipe (>= 40 px, < 0.9 s, not from the left edge <= 28 px on touch) =
+  // direction (8 sectors), two fingers or ctrl+wheel = size 10-160 px.
+  function optoGestureDir(dx, dy) {
+    const deg = (Math.atan2(dy, dx) * 180) / Math.PI; // Bildschirm: y nach unten
+    const k = Math.round(deg / 45); // -4..4
+    return { 0: ["rechts"], 1: ["schraeg", "ru"], 2: ["runter"], 3: ["schraeg", "lu"], 4: ["links"], "-4": ["links"], "-3": ["schraeg", "lo"], "-2": ["hoch"], "-1": ["schraeg", "ro"] }[k];
+  }
+  function wireSwipePinch(el, { live, skip, size, onSize, onDir }) {
+    const pts = new Map();
+    let one = null, pinch = null;
+    const clampS = (v) => Math.round(Math.min(160, Math.max(10, v)));
+    const dist = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+    el.addEventListener("pointerdown", (e) => {
+      if (!live() || (skip && skip(e))) return;
+      if (e.isPrimary) { pts.clear(); one = null; pinch = null; }
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size === 1) one = e.clientX <= 28 && e.pointerType === "touch" ? null : { x: e.clientX, y: e.clientY, t: performance.now() };
+      if (pts.size === 2) { one = null; pinch = { d: Math.max(20, dist()), v: size() }; }
+    });
+    el.addEventListener("pointermove", (e) => {
+      if (!pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (!pinch || pts.size < 2 || !live()) return;
+      const v = clampS(pinch.v * dist() / pinch.d);
+      if (v !== size()) onSize(v);
+    });
+    const up = (e) => {
+      if (!pts.has(e.pointerId)) return;
+      const p = pts.get(e.pointerId);
+      pts.delete(e.pointerId);
+      if (pts.size < 2) pinch = null;
+      if (!one || !live()) { if (!pts.size) one = null; return; }
+      const dx = p.x - one.x, dy = p.y - one.y;
+      const quick = performance.now() - one.t < 900;
+      one = null;
+      if (e.type !== "pointerup" || !quick || Math.hypot(dx, dy) < 40) return;
+      const [dir, diag] = optoGestureDir(dx, dy);
+      onDir(dir, diag);
+    };
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+    el.addEventListener("wheel", (e) => {
+      if (!e.ctrlKey || !live()) return;
+      e.preventDefault();
+      onSize(clampS(size() * (e.deltaY < 0 ? 1.1 : 1 / 1.1)));
+    }, { passive: false });
+  }
+  // The first 3 runs show a short hint (automated browsers only with the test flag).
+  function gestureHintDue(key, testFlag) {
+    const n = Number(readJSON(key, 0)) || 0;
+    if (n >= 3 || (navigator.webdriver && !localStorage.getItem(testFlag))) return false;
+    writeJSON(key, n + 1);
+    return true;
+  }
+  const optoSave = makeLiveSaveBtn(optoP.stage, {
+    id: "optoLiveSaveBtn",
+    unsaved: () => optoUnsaved(optoState),
+    save: () => {
+      const st = optoState;
+      optoPrefs.dir = st.dir; optoPrefs.diag = st.diag; optoPrefs.size = st.size;
+      normalizeOptoPrefs(optoPrefs);
+      saveOptoPrefs();
+      syncOptoReadyUI();
+    },
+  });
+  const optoSaveBtn = optoSave.btn;
+  const optoShowToast = makeStageToast(optoP.stage);
+  const optoToast = optoShowToast.el;
+  function optoUnsaved(st) {
+    return !!st && st.own && !comboProgram && (st.dir !== optoPrefs.dir || st.size !== optoPrefs.size || (st.dir === "schraeg" && st.diag !== optoPrefs.diag));
+  }
+  function optoSyncSave() { optoSave.sync(); }
+  wireSwipePinch(optoP.stage, {
+    live: () => !!optoState && !optoState.paused,
+    skip: (e) => !!(e.target.closest && e.target.closest("button")),
+    size: () => optoState.size,
+    onSize: (v) => {
+      const st = optoState;
+      st.size = v;
+      optoDraw();
+      optoShowToast(`${OPTO_PATTERNS[st.pattern].size} ${v} px`);
+      optoSyncSave();
+    },
+    onDir: (dir, diag) => {
+      const st = optoState;
+      st.dir = dir;
+      if (diag) st.diag = diag;
+      st.sign = 1; st.flips = 0; st.flipAt = st.t; st.nextFlip = st.t + st.swapS;
+      optoDraw();
+      optoStatus();
+      optoShowToast(`${optoBase(st).arrow} ${optoBase(st).name}`);
+      optoSyncSave();
+    },
+  });
+  function optoGestureHint() {
+    // Die ersten 3 eigenen Läufe zeigen kurz, was die Gesten tun.
+    if (gestureHintDue(OPTO_GESTURE_HINT_KEY, "fwmc-test-optohint")) optoShowToast("Wischen ändert die Richtung, zwei Finger die Breite.", 3200, true);
+  }
   if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => { if (optoState) optoSize(); }).observe(optoP.stage);
   window.addEventListener("resize", () => { if (optoState) optoSize(); });
   if (navigator.webdriver) {
@@ -38447,7 +38835,7 @@
   const MOVING_BG = {
     balance: { label: "Gleichgewicht", stage: () => balP.stage, overlay: () => balP.pauseOverlay, state: () => balanceState,
       prefs: () => balancePrefs, save: () => saveBalancePrefsToStorage(), own: () => !!(balanceState && balanceState.own) && !comboProgram && !cardioGuestActive,
-      readies: ["balanceReady"] },
+      readies: ["balanceReady"], relayout: () => balanceLayout() },
     remember: { label: "Positionen merken", stage: () => els.rememberStage, overlay: () => els.rememberPauseOverlay, state: () => rememberState,
       prefs: () => rememberPrefs, save: () => saveRememberPrefsToStorage(), own: () => !comboProgram && !cardioGuestActive,
       readies: ["rememberReady", "rememberTrainingReady"] },
@@ -38459,7 +38847,7 @@
       readies: ["motReady", "motTrainingReady"] },
     schulte: { label: "Schulte-Tabelle", stage: () => els.schulteStage, overlay: () => els.schultePauseOverlay, state: () => schulteState,
       prefs: () => schultePrefs, save: () => saveSchultePrefsToStorage(), own: () => !comboProgram && !cardioGuestActive,
-      readies: ["schulteReady"] },
+      readies: ["schulteReady"], relayout: () => fitSchulteBoard() },
   };
   const MBG_CONTROLS_HTML = `
     <div class="choice-row" data-opto-row="pattern">
@@ -38469,6 +38857,7 @@
     </div>
     <div class="group-help" data-mbg-help>Ein Muster zieht langsam hinter der Übung durch und fordert Augen und Gleichgewicht zusätzlich. Alles, was du lesen oder antippen musst, bleibt davor.</div>
     <div class="mbg-more" data-opto-show="notpattern:aus" hidden>
+      <div class="group-help" data-mbg-gesture-help>W&auml;hrend der &Uuml;bung: Tippe unten auf &bdquo;Hintergrund&ldquo;, dann &auml;ndert Wischen die Richtung und zwei Finger die Breite. Auf &bdquo;&Uuml;bung&ldquo; z&auml;hlt Tippen wieder wie gewohnt.</div>
       <div class="group-label">Richtung</div>
       <div class="choice-row opto-dir-row mbg-dir-row" data-opto-row="dir">
         <button type="button" class="choice" data-opto-f="dir" data-opto-v="links">Links<small>&larr;</small></button>
@@ -38500,7 +38889,7 @@
       <div class="color-picker" data-opto-c="bg"></div>
       <div class="slider-row"><span class="slider-label">Intensit&auml;t</span><input type="range" data-opto-r="bgInt" min="10" max="100" step="5" aria-label="Intensit&auml;t der Hintergrundfarbe"><span class="slider-value" data-opto-out="bgInt"></span></div>
       <div class="group-help look-contrast-hint" data-mbg-out="contrast" hidden></div>
-      <div class="group-help">Solange der bewegte Hintergrund an ist, gilt seine Hintergrundfarbe statt der normalen. Bewegte Muster k&ouml;nnen bei Lichtempfindlichkeit oder Epilepsie Anf&auml;lle ausl&ouml;sen: Kl&auml;re das in diesem Fall vorher &auml;rztlich ab. Bei Schwindel oder &Uuml;belkeit sofort aufh&ouml;ren.</div>
+      <div class="group-help">Solange das Optodrum im Hintergrund l&auml;uft, gilt seine Hintergrundfarbe statt der normalen. Bewegte Muster k&ouml;nnen bei Lichtempfindlichkeit oder Epilepsie Anf&auml;lle ausl&ouml;sen: Kl&auml;re das in diesem Fall vorher &auml;rztlich ab. Bei Schwindel oder &Uuml;belkeit sofort aufh&ouml;ren.</div>
     </div>`;
   function mbgSyncRoot(root, m, kind) {
     optoSyncControls(root, m);
@@ -38558,6 +38947,7 @@
     const c = stage && stage.querySelector(":scope > canvas.mbg-canvas");
     if (c) c.hidden = true;
     if (stage) stage.classList.remove("has-mbg");
+    mbgEbeneOff(kind);
   }
   function mbgTick(kind, now) {
     const run = mbgRuns[kind];
@@ -38573,12 +38963,16 @@
     const frozen = st.paused || (ov && !ov.hidden);
     if (!frozen) optoAdvance(run.m, OPTO_SPEEDS[mbgEffSpeed(st.mbg, kind) - 1], optoBase(st.mbg).a, dt);
     mbgDraw(kind);
+    mbgEbeneSync(kind);
   }
   // Called by each exercise's start function (after its run state exists)
   // and after every live change: starts, redraws or stops the layer.
   function mbgStart(kind) {
     const L = MOVING_BG[kind];
     const st = L.state();
+    const E = mbgEbene[kind];
+    const fresh = !!(E && st && E.st !== st);
+    if (fresh) { E.st = st; E.save.reset(); mbgSetEbene(kind, "uebung"); }
     if (!st || !st.mbg || st.mbg.pattern === "aus") { mbgStop(kind); return; }
     const canvas = mbgCanvas(kind);
     canvas.hidden = false;
@@ -38588,6 +38982,7 @@
       mbgRuns[kind].raf = requestAnimationFrame((t) => mbgTick(kind, t));
     }
     mbgDraw(kind);
+    mbgEbeneOn(kind);
   }
   Object.entries(MOVING_BG).forEach(([kind, L]) => {
     // Ready screens: one group in Feineinstellungen, right after "Hintergrund".
@@ -38599,7 +38994,7 @@
       const g = document.createElement("div");
       g.className = "group mbg-group";
       g.dataset.mbg = kind;
-      g.innerHTML = `<div class="group-label">Bewegter Hintergrund</div>${MBG_CONTROLS_HTML}`;
+      g.innerHTML = `<div class="group-label">Optodrum (bewegter Hintergrund)</div>${MBG_CONTROLS_HTML}`;
       const bgGroup = [...body.querySelectorAll(":scope > .group")].find((x) => x.querySelector('[id$="BgIntensitySlider"]'));
       if (bgGroup) bgGroup.after(g); else body.appendChild(g);
       optoBind(g, (f, v) => {
@@ -38618,7 +39013,7 @@
       const d = document.createElement("details");
       d.className = "advanced mbg-pause";
       d.dataset.mbg = kind;
-      d.innerHTML = `<summary>Bewegter Hintergrund</summary><div class="advanced-body"><div class="group mbg-group">${MBG_CONTROLS_HTML}<div class="group-help" data-mbg-live></div></div></div>`;
+      d.innerHTML = `<summary>Optodrum (bewegter Hintergrund)</summary><div class="advanced-body"><div class="group mbg-group">${MBG_CONTROLS_HTML}<div class="group-help" data-mbg-live></div></div></div>`;
       const anchor = panel.querySelector('[id$="ResumeBtn"]') || panel.querySelector(".start-btn");
       panel.insertBefore(d, anchor);
       const root = d.querySelector(".mbg-group");
@@ -38643,6 +39038,142 @@
     p.mbg = mbgCopy(p.mbg);
     syncMbgReady(kind);
   });
+  // ---- Ebenen-Umschalter „Übung | Hintergrund“ (Fabian 10.10.) ----
+  // While the moving background runs, a small segmented switch sits at the
+  // bottom of the stage. "Übung" = everything as before (taps, stick drag,
+  // pinch for "Größe"). "Hintergrund" = a transparent gesture layer covers
+  // the stage (no answer, stick or pinch below it ever sees a touch):
+  // swipe = direction, two fingers / ctrl+wheel = width (same ranges as
+  // Optodrum, wireSwipePinch). "Speichern" next to it writes direction and
+  // width to that exercise's own mbg (standalone runs only; Kombi/trainer
+  // programme/Cardio = this run only, like Optodrum). Every start begins on
+  // "Übung"; hidden in pause and at the end. The first 3 switches to
+  // "Hintergrund" show a short hint (MBG_EBENE_HINT_KEY). The stage gets .has-mbg-switch
+  // (--mbg-inset) so the engines keep their content above the switch
+  // (mbgInset(stage) in JS, CSS for flex/absolute layouts). A new MOVING_BG
+  // entry gets all of this for free (optional `relayout` when its layout
+  // has to be redone after the inset changes).
+  const MBG_EBENE_HINT_KEY = "fwmc-mbg-ebene-hint-v1";
+  const mbgEbene = {}; // kind -> { bar, layer, btns, toast, save, mode, st, on }
+  function mbgUnsaved(kind) {
+    const L = MOVING_BG[kind];
+    const st = L.state();
+    if (!st || !st.mbg || !L.own()) return false;
+    const p = normalizeMbg(L.prefs().mbg), m = st.mbg;
+    return m.dir !== p.dir || m.size !== p.size || (m.dir === "schraeg" && m.diag !== p.diag);
+  }
+  function mbgFrozen(kind) {
+    const L = MOVING_BG[kind];
+    const st = L.state();
+    const ov = L.overlay();
+    const player = L.stage().closest(".player");
+    return !st || !!st.paused || !!(ov && !ov.hidden) || !player || player.hidden
+      || !!player.querySelector(".done-panel:not([hidden])");
+  }
+  function mbgSetEbene(kind, mode) {
+    const E = mbgEbene[kind];
+    if (!E) return;
+    E.mode = mode === "bg" ? "bg" : "uebung";
+    E.btns.forEach((b) => { const on = b.dataset.ebene === E.mode; b.classList.toggle("active", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
+    MOVING_BG[kind].stage().classList.toggle("mbg-bg-mode", E.mode === "bg");
+    mbgEbeneSync(kind, true);
+  }
+  function mbgEbeneSync(kind, force) {
+    const E = mbgEbene[kind];
+    if (!E) return;
+    const shown = E.on && !mbgFrozen(kind);
+    if (!force && shown === E.shown) { if (shown && E.mode === "bg") E.save.sync(); return; }
+    E.shown = shown;
+    E.bar.hidden = !shown;
+    E.layer.hidden = !shown || E.mode !== "bg";
+    E.save.sync();
+  }
+  function mbgEbeneOn(kind) {
+    const E = mbgEbene[kind];
+    if (!E) return;
+    const L = MOVING_BG[kind];
+    const stage = L.stage();
+    E.on = true;
+    if (!stage.classList.contains("has-mbg-switch")) {
+      stage.classList.add("has-mbg-switch");
+      if (L.relayout) try { L.relayout(); } catch (e) {}
+    }
+    mbgEbeneSync(kind, true);
+  }
+  function mbgEbeneOff(kind) {
+    const E = mbgEbene[kind];
+    if (!E) return;
+    const L = MOVING_BG[kind];
+    const stage = L.stage();
+    E.on = false;
+    E.mode = "uebung";
+    E.btns.forEach((b) => { const on = b.dataset.ebene === "uebung"; b.classList.toggle("active", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
+    stage.classList.remove("mbg-bg-mode");
+    E.save.reset();
+    if (stage.classList.contains("has-mbg-switch")) {
+      stage.classList.remove("has-mbg-switch");
+      if (L.relayout && L.state()) try { L.relayout(); } catch (e) {}
+    }
+    mbgEbeneSync(kind, true);
+  }
+  function mbgLiveGesture(kind, patch, text) {
+    const st = MOVING_BG[kind].state();
+    if (!st || !st.mbg) return;
+    st.mbg = normalizeMbg({ ...mbgCopy(st.mbg), ...patch });
+    mbgDraw(kind);
+    mbgEbene[kind].toast(text);
+    mbgEbene[kind].save.sync();
+  }
+  Object.keys(MOVING_BG).forEach((kind) => {
+    const L = MOVING_BG[kind];
+    const stage = L.stage();
+    if (!stage) return;
+    const layer = document.createElement("div");
+    layer.className = "mbg-gesture";
+    layer.hidden = true;
+    stage.appendChild(layer);
+    const bar = document.createElement("div");
+    bar.className = "mbg-ebene-bar";
+    bar.hidden = true;
+    bar.innerHTML = '<div class="mbg-ebene" role="group" aria-label="Wischen und zwei Finger ändern"><button type="button" data-ebene="uebung" class="active" aria-pressed="true">Übung</button><button type="button" data-ebene="bg" aria-pressed="false">Hintergrund</button></div>';
+    stage.appendChild(bar);
+    const E = mbgEbene[kind] = { bar, layer, btns: [...bar.querySelectorAll("[data-ebene]")], toast: makeStageToast(stage), mode: "uebung", st: null, on: false, shown: false };
+    E.save = makeLiveSaveBtn(bar, {
+      id: kind + "MbgSaveBtn",
+      visible: () => E.mode === "bg" && !bar.hidden,
+      unsaved: () => mbgUnsaved(kind),
+      save: () => {
+        const st = L.state();
+        const p = L.prefs();
+        p.mbg = normalizeMbg({ ...mbgCopy(p.mbg), dir: st.mbg.dir, diag: st.mbg.diag, size: st.mbg.size });
+        L.save();
+        syncMbgReady(kind);
+      },
+    });
+    E.btns.forEach((b) => b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const was = E.mode;
+      mbgSetEbene(kind, b.dataset.ebene);
+      // The first 3 switches to "Hintergrund" say what the fingers do now
+      // (shown only then, so it never covers numbers while answering).
+      if (was !== "bg" && E.mode === "bg" && gestureHintDue(MBG_EBENE_HINT_KEY, "fwmc-test-mbghint")) E.toast("Wischen ändert die Richtung, zwei Finger die Breite. Tippen zählt so lange nicht.", 3200, true);
+    }));
+    // Nothing on the switch counts as a tap on the exercise below it.
+    ["pointerdown", "pointerup", "click"].forEach((t) => bar.addEventListener(t, (e) => e.stopPropagation()));
+    ["pointerdown", "click"].forEach((t) => layer.addEventListener(t, (e) => { e.stopPropagation(); if (t === "pointerdown") e.preventDefault(); }));
+    wireSwipePinch(layer, {
+      live: () => E.mode === "bg" && !layer.hidden && !!(L.state() && L.state().mbg),
+      size: () => L.state().mbg.size,
+      onSize: (v) => mbgLiveGesture(kind, { size: v }, `${(OPTO_PATTERNS[L.state().mbg.pattern] || OPTO_PATTERNS.streifen).size} ${v} px`),
+      onDir: (dir, diag) => {
+        const patch = diag ? { dir, diag } : { dir };
+        const b = optoBase({ ...L.state().mbg, ...patch });
+        mbgLiveGesture(kind, patch, `${b.arrow} ${b.name}`);
+      },
+    });
+  });
+  // Bottom room the engines keep free for the switch (= --mbg-inset in styles.css).
+  function mbgInset(stage) { return stage && stage.classList.contains("has-mbg-switch") ? 66 : 0; }
   if (typeof ResizeObserver !== "undefined") {
     const ro = new ResizeObserver(() => Object.keys(mbgRuns).forEach(mbgDraw));
     Object.values(MOVING_BG).forEach((L) => ro.observe(L.stage()));
@@ -38653,6 +39184,7 @@
       const run = mbgRuns[kind], st = MOVING_BG[kind].state();
       return { running: !!run, m: run ? { s: run.m.s, dx: run.m.dx, dy: run.m.dy } : null, st: st && st.mbg ? { ...st.mbg } : null,
         eff: st && st.mbg ? mbgEffSpeed(st.mbg, kind) : null, colors: st && st.mbg ? mbgColors(st.mbg, kind) : null,
+        ebene: mbgEbene[kind] ? mbgEbene[kind].mode : null, ebeneShown: !!(mbgEbene[kind] && mbgEbene[kind].shown),
         prefs: { ...MOVING_BG[kind].prefs().mbg } };
     };
   }
@@ -40302,7 +40834,7 @@
     mot: { label: "Objektverfolgung (MOT)", obj: () => motPrefs, save: () => { saveMotPrefsToStorage(); loadMotPrefs(); },
       fields: ["speed", "trackS", "highlightS", "errorMode", "objectCount", "targetCount", "growStartObjects", "growStartTargets", "trainingObjects", "trainingTargets", "trainingSpeedStep", "trainingProgress"], size: ["objScale"] },
     balance: { label: "Gleichgewicht", obj: () => balancePrefs, save: () => { normalizeBalancePrefs(balancePrefs); saveBalancePrefsToStorage(); },
-      fields: ["mode", "sticks", "letters", "singleS", "letterCount", "metro", "bpm", "timing", "setS", "sets", "restS", "stance", "content", "wordList", "wordEvery", "wordRead"], size: ["size", "lengthPct", "widthF", "fontF"] },
+      fields: ["mode", "sticks", "letters", "singleS", "letterCount", "metro", "bpm", "timing", "setS", "sets", "restS", "stance", "stanceSide", "content", "wordList", "wordEvery", "wordRead"], size: ["size", "lengthPct", "widthF", "fontF"] },
     schulte: { label: "Schulte-Tabelle", obj: () => schultePrefs, save: () => { saveSchultePrefsToStorage(); loadSchultePrefs(); }, fields: ["gridSize"], size: [] },
   };
   function hoDeviceKind() { try { return Math.min(screen.width, screen.height) >= 600 ? "tablet" : "phone"; } catch (e) { return "phone"; } }
@@ -40477,7 +41009,7 @@
       (ex.s ? " Danach fragt die App, ob du mit den Einstellungen deines Trainers weitertrainieren möchtest." : "");
     const ul = $("handoverImportList");
     ul.hidden = false;
-    ul.innerHTML = entries.map((x) => `<li><span class="h-title">${esc(x.title)}</span><span class="h-meta">${hoWhen(x.t * 1000)}${x.seconds ? " · " + fmtMinutes(x.seconds) : ""}</span></li>`).join("");
+    ul.innerHTML = entries.map((x) => `<li><span class="h-title">${esc(x.title)}</span><span class="h-meta">${hoWhen(x.t * 1000)}${x.seconds ? " · " + fmtMinutesWhole(x.seconds) : ""}</span></li>`).join("");
     const ios = hoIosBrowser() && !fromPaste;
     $("handoverImportIos").hidden = !ios;
     $("handoverImportCopyBtn").hidden = !ios;
@@ -40804,7 +41336,7 @@
     });
     const ul = $("handoverList");
     ul.innerHTML = list.length ? list.map((e) => `<li><label class="checkbox-row tap-row handover-check"><input type="checkbox" data-ho-id="${esc(e.id)}"${hoChecked.has(e.id) ? " checked" : ""}>
-        <span class="handover-check-text"><span class="h-title">${esc(e.title)}${hoTag(e, kindOf(e), clientPick, storePick)}${isHid(e) ? '<span class="h-tag tm-tag-hidden">Ausgeblendet</span>' : ""}</span><span class="h-meta">${hoWhen(e.ts)}${e.sent ? " · gesendet " + hoWhen(new Date(e.sent).toISOString()).replace(/^Heute/, "heute").replace(/^Gestern/, "gestern") : ""}${e.seconds ? " · " + fmtMinutes(e.seconds) : ""}${e.aborted ? " · abgebrochen" : ""}</span></span></label></li>`).join("")
+        <span class="handover-check-text"><span class="h-title">${esc(e.title)}${hoTag(e, kindOf(e), clientPick, storePick)}${isHid(e) ? '<span class="h-tag tm-tag-hidden">Ausgeblendet</span>' : ""}</span><span class="h-meta">${hoWhen(e.ts)}${e.sent ? " · gesendet " + hoWhen(new Date(e.sent).toISOString()).replace(/^Heute/, "heute").replace(/^Gestern/, "gestern") : ""}${e.seconds ? " · " + fmtMinutesWhole(e.seconds) : ""}${e.aborted ? " · abgebrochen" : ""}</span></span></label></li>`).join("")
       : `<li class="history-empty">${clientPick || storePick ? "Hier liegt nichts mehr." : "In diesem Zeitraum gibt es kein Training. Wähle einen früheren Zeitpunkt."}</li>`;
     ul.querySelectorAll("input[data-ho-id]").forEach((cb) => cb.addEventListener("change", () => {
       if (cb.checked) hoChecked.add(cb.dataset.hoId); else hoChecked.delete(cb.dataset.hoId);
